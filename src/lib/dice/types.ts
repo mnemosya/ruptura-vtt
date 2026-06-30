@@ -30,15 +30,19 @@ export interface DiceRollResult {
   total: number;
 }
 
-/** Parâmetros de `rollPericia()` — rolagem base do Ruptura. */
+/**
+ * Parâmetros de `rollPericia()` — rolagem base do Ruptura. Perícia é
+ * opcional: omitir periciaId/periciaNome/periciaValor representa "sem
+ * perícia" (bônus de perícia tratado como 0 — ver rollRuptura.ts).
+ */
 export interface RupturaRollParams {
   atributoId: string;
   atributoNome: string;
   /** Quantidade de d8 a rolar (= valor do atributo). */
   atributoValor: number;
-  periciaId: string;
-  periciaNome: string;
-  periciaValor: number;
+  periciaId?: string;
+  periciaNome?: string;
+  periciaValor?: number;
   modificador: number;
   /** CD opcional — se ausente, não calcula sucesso/falha/margem. */
   cd?: number;
@@ -48,13 +52,16 @@ export interface RupturaRollParams {
  * Resultado de `rollPericia()`: maior d8 entre N dados (N = atributo) +
  * perícia + modificador manual. Espelha a regra do PRD: "maior dado
  * entre (Atributo)d8 + Perícia + modificadores".
+ *
+ * periciaId/periciaNome ausentes = rolagem "sem perícia" — periciaValor
+ * sempre vem preenchido (0 nesse caso), nunca fica `undefined`.
  */
 export interface RupturaRollResult {
   atributoId: string;
   atributoNome: string;
   atributoValor: number;
-  periciaId: string;
-  periciaNome: string;
+  periciaId?: string;
+  periciaNome?: string;
   periciaValor: number;
   modificador: number;
   /** Resultado de cada d8 rolado, na ordem em que saíram. */
@@ -65,4 +72,17 @@ export interface RupturaRollResult {
   sucesso?: boolean;
   /** total - cd (positivo em sucesso, negativo em falha). Só presente se houver CD. */
   margem?: number;
+}
+
+/**
+ * Rolagem "preparada" a partir de um clique em Atributos/Perícias —
+ * ponte entre CharacterSheetClient e RollsTab (ver item 1/2 do
+ * checkpoint v0.10). `periciaId: null` representa "sem perícia"
+ * (clique veio de um atributo). `origem` é só texto para o histórico
+ * (ex.: "Atributo: Corpo", "Perícia: Arcanismo").
+ */
+export interface PreparedRoll {
+  atributoId: string;
+  periciaId: string | null;
+  origem: string;
 }

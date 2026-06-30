@@ -30,6 +30,7 @@ import type {
   CharacterResources,
   CharacterRulesPayload,
 } from "../../../lib/character";
+import type { PreparedRoll } from "../../../lib/dice";
 import { CharacterSheetTabs, type TabId } from "./components/CharacterSheetTabs";
 import { GeneralTab } from "./components/GeneralTab";
 import { AttributesTab } from "./components/AttributesTab";
@@ -68,6 +69,10 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
   const [activeTab, setActiveTab] = useState<TabId>("geral");
   // Estado de UI local — não vai para o payload salvo (ver handleSave).
   const [sheetMode, setSheetMode] = useState<SheetMode>("jogo");
+  // "Rolagem preparada" — ponte entre o clique em "Rolar" nas abas
+  // Atributos/Perícias e a aba Rolagens (ver RollsTab). Também é só
+  // estado de UI, nunca persiste no payload.
+  const [preparedRoll, setPreparedRoll] = useState<PreparedRoll | null>(null);
 
   const derivados = useMemo(
     () => computeDerivedStats(character.atributos, regras),
@@ -212,6 +217,37 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
     setCharacter((prev) => ({ ...prev, estado_jogo: { ...prev.estado_jogo, [key]: 0 } }));
   }
 
+  /**
+   * "Rolar" num atributo (aba Atributos): muda para a aba Rolagens com
+   * esse atributo selecionado e SEM perícia. Funciona nos dois modos —
+   * rolar não é "editar a ficha", por isso não tem guard de sheetMode
+   * (mesmo critério já usado para PA/Reações).
+   */
+  function handleRollAtributo(id: keyof CharacterAttributes) {
+    const nome = regras?.atributos.find((a) => a.id === id)?.nome ?? id;
+    setPreparedRoll({ atributoId: id, periciaId: null, origem: `Atributo: ${nome}` });
+    setActiveTab("rolagens");
+  }
+
+  /**
+   * "Rolar" numa perícia (aba Perícias): muda para a aba Rolagens com
+   * essa perícia selecionada e o atributo padrão dela.
+   *
+   * Atributo padrão: usa skill.atributo_primario do payload de
+   * regras_personagem quando é um id válido (corpo/mente/animo) — dado
+   * REAL das regras, não inventado (ver checkpoint v0.10 no relatório).
+   * Só cai para "corpo" como fallback se atributo_primario estiver
+   * ausente ou vier um valor fora dos 3 atributos conhecidos.
+   */
+  function handleRollPericia(periciaId: string) {
+    const def = regras?.pericias.find((p) => p.id === periciaId);
+    const candidato = def?.atributo_primario;
+    const atributoPadrao: keyof CharacterAttributes =
+      candidato === "corpo" || candidato === "mente" || candidato === "animo" ? candidato : "corpo";
+    setPreparedRoll({ atributoId: atributoPadrao, periciaId, origem: `Perícia: ${def?.nome ?? periciaId}` });
+    setActiveTab("rolagens");
+  }
+
   return (
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
       <p style={{ opacity: 0.6, fontSize: 13, marginBottom: 4 }}>
@@ -246,6 +282,7 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
           definitions={regras?.atributos}
           readOnly={sheetMode === "jogo"}
           onChange={updateAtributo}
+          onRoll={handleRollAtributo}
         />
       )}
 
@@ -255,6 +292,7 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
           definitions={regras?.pericias}
           readOnly={sheetMode === "jogo"}
           onChange={updatePericia}
+          onRoll={handleRollPericia}
         />
       )}
 
@@ -281,6 +319,8 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
           atributoDefinitions={regras?.atributos}
           pericias={character.pericias}
           periciaDefinitions={regras?.pericias}
+          preparedRoll={preparedRoll}
+          onPreparedRollApplied={() => setPreparedRoll(null)}
         />
       )}
 

@@ -1363,3 +1363,201 @@ Resultado: **passou em todos os 16 passos**.
 - **Chat/log persistente, rolagem pública/privada**: não implementados —
   histórico é só estado local em memória, perdido ao trocar de aba/recarregar.
 - Nenhuma chave secreta exposta.
+
+---
+
+# Checkpoint v0.10 — Rolagens integradas à ficha
+
+Adiciona botões "Rolar" em cada atributo (aba Atributos) e em cada perícia
+(aba Perícias), que preenchem a aba Rolagens com a seleção correta — sem
+rolar automaticamente.
+
+## 1. Arquivos alterados
+
+- `src/lib/dice/types.ts` — `RupturaRollParams`/`RupturaRollResult` passaram
+  a ter `periciaId`/`periciaNome`/`periciaValor` **opcionais** (rolagem "sem
+  perícia"); `periciaValor` no resultado continua sempre presente (0 quando
+  não há perícia). Novo tipo `PreparedRoll` (`atributoId`,
+  `periciaId: string | null`, `origem: string`) — ponte entre o clique em
+  "Rolar" e a aba Rolagens.
+- `src/lib/dice/rollRuptura.ts` — `rollPericia()` trata `periciaValor`
+  ausente como `0` (`params.periciaValor ?? 0`), mantendo a regra
+  `total = maior d8 + perícia + modificador` igual, só com perícia opcional.
+- `src/app/dev/character-sheet/components/AttributesTab.tsx` — cada atributo
+  ganhou um botão "Rolar" (`data-testid="atributo-<id>-rolar"`), **fora** do
+  `disabled` do campo numérico — funciona nos dois modos.
+- `src/app/dev/character-sheet/components/SkillsTab.tsx` — cada perícia
+  ganhou um link discreto "Rolar" (`data-testid="pericia-<id>-rolar"`), mesma
+  lógica: nunca desabilitado por `readOnly`.
+- `src/app/dev/character-sheet/components/RollsTab.tsx` — select de perícia
+  ganhou a opção "Sem perícia" (`value=""`); novo `useEffect` que aplica a
+  prop `preparedRoll` (seleciona atributo/perícia, registra `origem`) e avisa
+  o pai (`onPreparedRollApplied`) para limpar a rolagem preparada; histórico
+  passou a guardar `origem` opcional por entrada e exibi-la
+  (`data-testid="roll-historico-item-origem"`); resultado mostra "Sem
+  perícia" quando `periciaNome` está ausente.
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — novo estado
+  `preparedRoll` (UI local, não persiste); `handleRollAtributo(id)` e
+  `handleRollPericia(id)` montam o `PreparedRoll` e chamam
+  `setActiveTab("rolagens")`; passados como `onRoll` para
+  `AttributesTab`/`SkillsTab` e como `preparedRoll`/`onPreparedRollApplied`
+  para `RollsTab`.
+
+`CharacterSheetTabs.tsx` **não precisou mudar** nesta etapa (a aba
+"Rolagens" já existia desde o checkpoint v0.9) — só a navegação programática
+via `setActiveTab("rolagens")`, que já usa o mesmo estado de aba existente.
+`storage.ts` não foi alterado.
+
+## 2. Comportamento do botão "Rolar" em atributos
+
+Ao clicar em "Rolar" num atributo (Corpo/Mente/Ânimo):
+
+1. Monta `PreparedRoll { atributoId, periciaId: null, origem: "Atributo: <Nome>" }`.
+2. Muda `activeTab` para `"rolagens"`.
+3. Na aba Rolagens, o `useEffect` aplica a seleção: atributo selecionado,
+   perícia em "Sem perícia", modificador/CD **não são tocados** (continuam o
+   que já estava no formulário).
+4. **Não rola automaticamente** — só preenche os campos, como pedido.
+5. Funciona nos dois modos: testado clicando "Rolar" em Corpo travado (Modo
+   Jogo, `disabled === true` no campo numérico) — o botão "Rolar" funcionou
+   normalmente.
+
+## 3. Comportamento do botão "Rolar" em perícias
+
+Mesmo fluxo, mas:
+
+1. Monta `PreparedRoll { atributoId: <atributo padrão>, periciaId, origem: "Perícia: <Nome>" }`.
+2. O **atributo padrão** vem de `skill.atributo_primario` (ver seção 4).
+3. Muda para a aba Rolagens com a perícia já selecionada.
+
+## 4. Como foi escolhido o atributo padrão das perícias
+
+O payload real de `regras_personagem` (`content/db_regras_personagem_normalizado_v1_4.json`)
+**já tem** `atributo_primario` em cada perícia, com valores válidos
+(`"corpo"`, `"mente"` ou `"animo"`) — confirmado por inspeção direta do JSON
+antes de implementar (ex.: perícia "Arcanismo" tem
+`"atributo_primario": "mente"`). Por isso `handleRollPericia()` usa esse
+campo real:
+
+```ts
+const candidato = def?.atributo_primario;
+const atributoPadrao = candidato === "corpo" || candidato === "mente" || candidato === "animo"
+  ? candidato
+  : "corpo"; // fallback só se o dado vier ausente/inválido
+```
+
+"Corpo" só entra como fallback de segurança (campo ausente ou valor fora dos
+3 atributos conhecidos) — **não é a associação real** usada na prática, já
+que todas as perícias do payload atual têm `atributo_primario` válido. Isso
+foi confirmado no teste manual: "Rolar" em Arcanismo abriu a aba Rolagens com
+**Mente** pré-selecionado (não Corpo), batendo com o dado real do payload.
+
+## 5. Comportamento de perícia opcional
+
+- Select de perícia ganhou a opção "Sem perícia" (`value=""`), padrão ao
+  abrir a aba sem nenhuma rolagem preparada.
+- Sem perícia selecionada: `rollPericia()` recebe `periciaId`/`periciaNome`/
+  `periciaValor` todos `undefined` → resultado tem `periciaValor: 0` e
+  `periciaNome` ausente → UI mostra "Sem perícia" e "Bônus de perícia: +0".
+- Com perícia selecionada: usa o valor atual da perícia (`pericias[periciaId] ?? 0`),
+  como já funcionava antes.
+- Campos de modificador manual e CD opcional não mudaram.
+
+## 6. Comportamento do histórico local
+
+- Continua limitado a 10 entradas (`HISTORICO_MAX`), igual ao checkpoint v0.9.
+- Cada entrada de rolagem de perícia agora pode carregar uma `origem`
+  opcional (`"Atributo: Corpo"` / `"Perícia: Arcanismo"`), atribuída quando a
+  rolagem veio de um clique em "Rolar" nas abas Atributos/Perícias.
+- A origem é **preservada** mesmo se o usuário trocar o atributo
+  manualmente depois de chegar via "Rolar" numa perícia (ex.: "Rolar" em
+  Arcanismo seleciona Mente; trocar para Corpo manualmente mantém
+  "Perícia: Arcanismo" como origem) — decisão deliberada, pois trocar o
+  atributo não muda qual perícia está sendo testada. A origem só é limpa
+  (`null`) quando o usuário troca a **perícia** manualmente (faz sentido:
+  nesse ponto a rolagem deixou de ser "a que veio daquele clique").
+- Rolagens feitas só pelo formulário da aba Rolagens (sem vir de um clique em
+  "Rolar" de Atributos/Perícias) não têm origem — nada é exibido, como antes.
+
+## 7. Confirmação — sem chat/log persistente
+
+Mesma confirmação do checkpoint v0.9: nenhuma chamada a `storage.ts`, Server
+Actions ou Supabase a partir de `RollsTab`/`AttributesTab`/`SkillsTab`/
+`src/lib/dice`. O estado de `preparedRoll` em `CharacterSheetClient` também é
+só UI local — não entra no payload salvo (`Character` não ganhou nenhum
+campo novo nesta etapa).
+
+## 8. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully in 1564ms
+  Running TypeScript ...
+  Finished TypeScript in 2.1s ...
+✓ Generating static pages using 4 workers (2/2) in 238ms
+```
+
+(Primeira tentativa de build falhou por um erro de tipo: `Omit<HistoricoEntry, "id">`
+não distribui sobre union types em TypeScript, perdendo o campo `origem`
+exclusivo da variante `"pericia"`. Corrigido com um `DistributiveOmit<T, K>`
+local — `T extends unknown ? Omit<T, K> : never` — antes do build final
+acima, que passou limpo.)
+
+```
+$ npm run test:character-storage
+=== test-character-storage ===
+1. Criado: id=d8477aee-3112-4e2b-b89d-7e6b51047237, schema_version=1
+2. Carregado por id: nome="__TESTE_STORAGE_RUPTURA__"
+3. Atualizado: nome="__TESTE_STORAGE_RUPTURA___editado", corpo=4
+4. Encontrado na listagem (2 personagens no total).
+5. Apagado e confirmado ausente via getCharacter.
+6. Confirmado: nenhum registro de teste residual.
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros.
+
+## 9. Resultado do teste manual (browser, via preview tools)
+
+Executados os 19 passos pedidos, de ponta a ponta:
+
+1–4. Abri `/dev/character-sheet`, Modo Evolução, Corpo=4/Mente=3/Ânimo=5,
+   Arcanismo=2.
+5–6. Modo Jogo, aba Atributos.
+7. Cliquei "Rolar" em Corpo — confirmei antes que o campo `disabled === true`
+   (travado em Modo Jogo) e mesmo assim o botão funcionou.
+8. Confirmado: aba Rolagens aberta, atributo "corpo" selecionado, perícia
+   `""` (Sem perícia).
+9–10. Rolei: resultado real `Corpo (4d8) + Sem perícia`, resultados
+   individuais `2, 4, 2, 6`, maior d8 `6`, bônus de perícia `+0`,
+   modificador `+0`, total `6` — todos corretos, com `Origem: Atributo: Corpo`.
+11–13. Aba Perícias, cliquei "Rolar" em Arcanismo — aba Rolagens abriu com
+   perícia "arcanismo" selecionada e **atributo "mente"** pré-selecionado
+   (dado real do payload, não fallback — ver seção 4).
+14. Selecionei Corpo manualmente.
+15. Modificador `+1`, CD `7`, "Rolar".
+16. Confirmado: `Corpo (4d8) + Arcanismo`, resultados individuais
+    `4, 1, 7, 2`, maior d8 `7`, perícia `+2`, modificador `+1`, total `10`
+    (7+2+1), CD `7`, **Sucesso**, margem `+3` — todos os campos pedidos
+    presentes e corretos.
+17. Confirmado: histórico mostrou `Origem: Perícia: Arcanismo` — preservada
+    mesmo após trocar o atributo manualmente no passo 14.
+18. Rolei a expressão `2d6+3`: `Dados: d6=5, d6=4`, modificador `+3`, total
+    `12` — expressão genérica continua funcionando normalmente.
+19. Nome "Teste Rolagens Integradas" → salvei → recarreguei a página →
+    "Personagens salvos" → "Carregar" → nome voltou "Teste Rolagens
+    Integradas" — salvar/carregar continua funcionando com a integração
+    presente. Apaguei o personagem de teste ao final; sobrou só "Kael
+    Ironwood" na lista.
+
+Resultado: **passou em todos os 19 passos**.
+
+## 10. Confirmação de escopo
+
+- **Banco/migrations**: nenhuma alteração.
+- **`storage.ts`**: não alterado.
+- **Biblioteca do Sistema** (`src/lib/content`): não alterada.
+- **Combate, ações, condições, inventário, magia**: não implementados.
+- **Chat/log persistente, rolagem pública/privada**: não implementados —
+  mesma limitação do checkpoint v0.9, histórico continua só local em memória.
+- Nenhuma chave secreta exposta.

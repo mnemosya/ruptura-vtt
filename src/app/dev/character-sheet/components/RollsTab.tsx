@@ -8,7 +8,7 @@
  * etapa (item 5 do pedido: "não salvar no Supabase ainda").
  */
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Section } from "./Section";
 import { buttonStyle } from "./styles";
 import {
@@ -16,15 +16,20 @@ import {
   rollPericia,
   DiceExpressionError,
   type DiceRollResult,
+  type PreparedRoll,
   type RupturaRollResult,
 } from "../../../../lib/dice";
 import type { CharacterAttributes, CharacterSkills, AttributeDefinition, SkillDefinition } from "../../../../lib/character";
 
 const HISTORICO_MAX = 10;
+const SEM_PERICIA = "";
 
 type HistoricoEntry =
-  | { id: string; kind: "pericia"; resultado: RupturaRollResult }
+  | { id: string; kind: "pericia"; resultado: RupturaRollResult; origem?: string }
   | { id: string; kind: "expressao"; resultado: DiceRollResult };
+
+/** Omit que distribui sobre union (Omit normal colapsa a união e perde campos exclusivos). */
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 
 const selectStyle = {
   background: "#0f1014",
@@ -56,17 +61,22 @@ export function RollsTab({
   atributoDefinitions,
   pericias,
   periciaDefinitions,
+  preparedRoll,
+  onPreparedRollApplied,
 }: {
   atributos: CharacterAttributes;
   atributoDefinitions: AttributeDefinition[] | undefined;
   pericias: CharacterSkills;
   periciaDefinitions: SkillDefinition[] | undefined;
+  preparedRoll: PreparedRoll | null;
+  onPreparedRollApplied: () => void;
 }) {
   const atributoIds = ["corpo", "mente", "animo"] as const;
   const [atributoId, setAtributoId] = useState<(typeof atributoIds)[number]>("corpo");
-  const [periciaId, setPericiaId] = useState<string>(periciaDefinitions?.[0]?.id ?? "");
+  const [periciaId, setPericiaId] = useState<string>(SEM_PERICIA);
   const [modificadorInput, setModificadorInput] = useState("0");
   const [cdInput, setCdInput] = useState("");
+  const [origemAtual, setOrigemAtual] = useState<string | null>(null);
 
   const [expressaoInput, setExpressaoInput] = useState("");
   const [expressaoErro, setExpressaoErro] = useState<string | null>(null);
@@ -74,7 +84,19 @@ export function RollsTab({
   const [historico, setHistorico] = useState<HistoricoEntry[]>([]);
   const counterRef = useRef(0);
 
-  function pushHistorico(entry: Omit<HistoricoEntry, "id">) {
+  // Aplica a seleção vinda de um clique em "Rolar" nas abas
+  // Atributos/Perícias (ver CharacterSheetClient). Não rola
+  // automaticamente — só preenche os campos, como pedido.
+  useEffect(() => {
+    if (!preparedRoll) return;
+    setAtributoId(preparedRoll.atributoId as (typeof atributoIds)[number]);
+    setPericiaId(preparedRoll.periciaId ?? SEM_PERICIA);
+    setOrigemAtual(preparedRoll.origem);
+    onPreparedRollApplied();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preparedRoll]);
+
+  function pushHistorico(entry: DistributiveOmit<HistoricoEntry, "id">) {
     counterRef.current += 1;
     const full = { ...entry, id: `${entry.kind}-${counterRef.current}` } as HistoricoEntry;
     setHistorico((prev) => [full, ...prev].slice(0, HISTORICO_MAX));
@@ -85,19 +107,20 @@ export function RollsTab({
     const periciaDef = periciaDefinitions?.find((p) => p.id === periciaId);
     const modificador = parseIntOrDefault(modificadorInput, 0);
     const cd = cdInput.trim() === "" ? undefined : parseIntOrDefault(cdInput, 0);
+    const temPericia = periciaId !== SEM_PERICIA;
 
     const resultado = rollPericia({
       atributoId,
       atributoNome: atributoDef?.nome ?? atributoId,
       atributoValor: atributos[atributoId],
-      periciaId,
-      periciaNome: periciaDef?.nome ?? periciaId,
-      periciaValor: pericias[periciaId] ?? 0,
+      periciaId: temPericia ? periciaId : undefined,
+      periciaNome: temPericia ? periciaDef?.nome ?? periciaId : undefined,
+      periciaValor: temPericia ? pericias[periciaId] ?? 0 : undefined,
       modificador,
       cd,
     });
 
-    pushHistorico({ kind: "pericia", resultado });
+    pushHistorico({ kind: "pericia", resultado, origem: origemAtual ?? undefined });
   }
 
   function handleRolarExpressao() {
@@ -145,9 +168,13 @@ export function RollsTab({
             <select
               data-testid="roll-pericia-select"
               value={periciaId}
-              onChange={(e) => setPericiaId(e.target.value)}
+              onChange={(e) => {
+                setPericiaId(e.target.value);
+                setOrigemAtual(null);
+              }}
               style={{ ...selectStyle, minWidth: 160 }}
             >
+              <option value={SEM_PERICIA}>Sem perícia</option>
               {(periciaDefinitions ?? []).map((skill) => (
                 <option key={skill.id} value={skill.id}>
                   {skill.nome} ({pericias[skill.id] ?? 0})
@@ -223,7 +250,11 @@ export function RollsTab({
               data-testid="roll-historico-item"
               style={{ background: "#1d1e24", borderRadius: 8, padding: "10px 14px", fontSize: 13 }}
             >
-              {entry.kind === "pericia" ? <PericiaResultado resultado={entry.resultado} /> : <ExpressaoResultado resultado={entry.resultado} />}
+              {entry.kind === "pericia" ? (
+                <PericiaResultado resultado={entry.resultado} origem={entry.origem} />
+              ) : (
+                <ExpressaoResultado resultado={entry.resultado} />
+              )}
             </div>
           ))}
         </div>
@@ -232,11 +263,12 @@ export function RollsTab({
   );
 }
 
-function PericiaResultado({ resultado }: { resultado: RupturaRollResult }) {
+function PericiaResultado({ resultado, origem }: { resultado: RupturaRollResult; origem?: string }) {
   return (
     <div>
+      {origem && <div data-testid="roll-historico-item-origem" style={{ fontSize: 11, opacity: 0.5 }}>Origem: {origem}</div>}
       <div style={{ fontWeight: 700, marginBottom: 4 }}>
-        {resultado.atributoNome} ({resultado.atributoValor}d8) + {resultado.periciaNome}
+        {resultado.atributoNome} ({resultado.atributoValor}d8) + {resultado.periciaNome ?? "Sem perícia"}
       </div>
       <div>Resultados individuais: {resultado.dados.join(", ") || "—"}</div>
       <div>Maior d8: {resultado.maiorDado}</div>
