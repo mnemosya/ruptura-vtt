@@ -54,6 +54,22 @@ function formatRolagem(payload: Record<string, unknown>): string {
   return JSON.stringify(payload);
 }
 
+const ENTRY_KIND_LABELS: Record<string, string> = {
+  chat: "Mensagem",
+  rolagem_pericia: "Rolagem de Perícia",
+  rolagem_expressao: "Rolagem de Expressão",
+};
+
+function entryKindLabel(type: string): string {
+  return ENTRY_KIND_LABELS[type] ?? type;
+}
+
+function entryIcon(type: string): string {
+  if (type === "chat") return "💬";
+  if (type === "rolagem_pericia" || type === "rolagem_expressao") return "🎲";
+  return "•";
+}
+
 interface Props {
   mesasIniciais: Campaign[];
 }
@@ -109,12 +125,25 @@ export default function TableClient({ mesasIniciais }: Props) {
         campaignId: selectedCampaignId,
         type: "chat",
         visibility: visibilidade,
-        payload: { mensagem: mensagemInput.trim() || "(mensagem de teste vazia)" },
+        payload: { mensagem: mensagemInput.trim() || "(mensagem vazia)" },
       });
       setMensagemInput("");
       setLogs(await listLogs(selectedCampaignId));
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao registrar log.");
+    }
+  }
+
+  async function handleRefreshLogs() {
+    if (!selectedCampaignId) return;
+    setErrorMessage(null);
+    setLoadingLogs(true);
+    try {
+      setLogs(await listLogs(selectedCampaignId));
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao atualizar logs.");
+    } finally {
+      setLoadingLogs(false);
     }
   }
 
@@ -186,7 +215,7 @@ export default function TableClient({ mesasIniciais }: Props) {
         <>
           <section style={{ marginBottom: 32 }}>
             <h2 style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, opacity: 0.6, marginBottom: 12 }}>
-              Adicionar mensagem de teste — {mesaAtual?.name ?? selectedCampaignId}
+              Enviar mensagem — {mesaAtual?.name ?? selectedCampaignId}
             </h2>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
               <input
@@ -194,7 +223,7 @@ export default function TableClient({ mesasIniciais }: Props) {
                 type="text"
                 value={mensagemInput}
                 onChange={(e) => setMensagemInput(e.target.value)}
-                placeholder="Mensagem de teste"
+                placeholder="Mensagem"
                 style={{ ...inputStyle, flex: 1, minWidth: 200 }}
               />
               <select
@@ -210,52 +239,61 @@ export default function TableClient({ mesasIniciais }: Props) {
                 ))}
               </select>
               <button data-testid="adicionar-log-button" onClick={handleAddLog} style={buttonStyle}>
-                Adicionar ao log
+                Enviar
               </button>
             </div>
           </section>
 
           <section>
-            <h2 style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, opacity: 0.6, marginBottom: 12 }}>
-              Log da mesa ({logs.length})
-            </h2>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <h2 style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, opacity: 0.6 }}>
+                Log da mesa ({logs.length})
+              </h2>
+              <button data-testid="atualizar-logs-button" onClick={handleRefreshLogs} style={buttonStyle}>
+                Atualizar logs
+              </button>
+            </div>
             {loadingLogs && <p style={{ fontSize: 13, opacity: 0.6 }}>Carregando…</p>}
             {!loadingLogs && logs.length === 0 && (
               <p style={{ fontSize: 13, opacity: 0.6 }}>Nenhum log ainda nesta mesa.</p>
             )}
-            <div data-testid="logs-lista" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {logs.map((entry) => (
-                <div
-                  key={entry.id}
-                  data-testid="log-entry"
-                  style={{
-                    display: "flex",
-                    alignItems: "baseline",
-                    gap: 10,
-                    background: "#1d1e24",
-                    borderRadius: 8,
-                    padding: "8px 12px",
-                    fontSize: 13,
-                  }}
-                >
-                  <span style={{ fontSize: 11, opacity: 0.5, fontFamily: "monospace" }}>
-                    {new Date(entry.created_at).toLocaleString("pt-BR")}
-                  </span>
-                  <span data-testid="log-entry-visibility" style={{ fontSize: 11, opacity: 0.6, minWidth: 70 }}>
-                    [{VISIBILITY_LABELS[entry.visibility]}]
-                  </span>
-                  <span data-testid="log-entry-type" style={{ fontSize: 11, opacity: 0.6 }}>
-                    {entry.type}:
-                  </span>
-                  <span data-testid="log-entry-mensagem">
-                    {entry.type === "chat" && typeof entry.payload.mensagem === "string"
-                      ? entry.payload.mensagem
-                      : entry.type === "rolagem_pericia" || entry.type === "rolagem_expressao"
-                        ? formatRolagem(entry.payload)
-                        : JSON.stringify(entry.payload)}
-                  </span>
-                </div>
-              ))}
+            <div data-testid="logs-lista" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {logs.map((entry) => {
+                const isChat = entry.type === "chat";
+                const isRolagem = entry.type === "rolagem_pericia" || entry.type === "rolagem_expressao";
+                const conteudo = isChat && typeof entry.payload.mensagem === "string"
+                  ? entry.payload.mensagem
+                  : isRolagem
+                    ? formatRolagem(entry.payload)
+                    : JSON.stringify(entry.payload);
+
+                return (
+                  <div
+                    key={entry.id}
+                    data-testid="log-entry"
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 4,
+                      background: "#1d1e24",
+                      borderRadius: 8,
+                      padding: "10px 14px",
+                      fontSize: 13,
+                      borderLeft: `3px solid ${isChat ? "#4f8cff" : "#ffb84f"}`,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, opacity: 0.6 }}>
+                      <span aria-hidden="true">{entryIcon(entry.type)}</span>
+                      <span data-testid="log-entry-type">{entryKindLabel(entry.type)}</span>
+                      <span data-testid="log-entry-visibility">[{VISIBILITY_LABELS[entry.visibility]}]</span>
+                      <span style={{ marginLeft: "auto", fontFamily: "monospace" }}>
+                        {new Date(entry.created_at).toLocaleString("pt-BR")}
+                      </span>
+                    </div>
+                    <span data-testid="log-entry-mensagem">{conteudo}</span>
+                  </div>
+                );
+              })}
             </div>
           </section>
         </>

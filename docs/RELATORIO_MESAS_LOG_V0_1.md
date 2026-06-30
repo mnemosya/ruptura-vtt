@@ -375,3 +375,149 @@ Resultado: **todos os passos do teste manual passaram**.
   migration 0003 tal como estavam.
 - **Biblioteca do Sistema** (`src/lib/content`): não alterada.
 - Nenhuma chave secreta exposta.
+
+---
+
+# Checkpoint v0.3 — Console mínimo de mesa
+
+Melhora a apresentação de `/dev/table` sem alterar banco/migrations nem a
+camada de storage: renderização das entradas de log como cartões legíveis
+(chat e rolagens), botão "Atualizar logs" e clareza no formulário de
+mensagem manual. Nenhuma tabela, policy ou Server Action nova.
+
+## 1. Arquivos alterados
+
+- `src/app/dev/table/TableClient.tsx` — único arquivo alterado:
+  - novo mapa `ENTRY_KIND_LABELS` (`chat` → "Mensagem",
+    `rolagem_pericia` → "Rolagem de Perícia", `rolagem_expressao` →
+    "Rolagem de Expressão") e helpers `entryKindLabel()`/`entryIcon()`
+    (`💬` para chat, `🎲` para rolagens, `•` para qualquer outro tipo
+    futuro);
+  - `formatRolagem()` (já existente desde o commit `4834169`) **mantida
+    sem nenhuma mudança de comportamento**;
+  - nova função `handleRefreshLogs()` — recarrega `listLogs(campaignId)`
+    sem precisar reselecionar a mesa;
+  - novo botão "Atualizar logs" (`data-testid="atualizar-logs-button"`),
+    ao lado do título "Log da mesa (N)";
+  - cada entrada do log passou de uma linha (`flex` horizontal) para um
+    cartão (`flex-direction: column`), com cabeçalho (ícone + tipo
+    legível + visibilidade + horário) e o conteúdo formatado abaixo;
+    borda lateral colorida (`#4f8cff` para chat, `#ffb84f` para
+    rolagens) para diferenciar tipos rapidamente;
+  - formulário de mensagem manual renomeado de "Adicionar mensagem de
+    teste" para "Enviar mensagem", botão "Adicionar ao log" → "Enviar"
+    (mesmos `data-testid`, comportamento idêntico — só rótulos).
+
+Nenhuma mudança em `src/lib/table/storage.ts`, `src/lib/table/types.ts`,
+banco, migrations, `src/app/dev/character-sheet` (ficha) ou
+`src/lib/content` (Biblioteca do Sistema).
+
+## 2. Tipos reais confirmados em `table_logs.type` antes da implementação
+
+Conferido em `src/lib/table/types.ts` (campo livre, `type: string`) e nos
+dois pontos reais de escrita:
+
+- `"chat"` — gravado por `TableClient.handleAddLog()` (mensagem manual).
+- `"rolagem_pericia"` / `"rolagem_expressao"` — gravados por
+  `RollsTab.persistirNaMesa()` (`src/app/dev/character-sheet/components/
+  RollsTab.tsx`), valores literais do tipo
+  `"rolagem_pericia" | "rolagem_expressao"` passado para `onLog`.
+
+`ENTRY_KIND_LABELS` cobre exatamente esses três; qualquer `type` futuro
+não mapeado cai no fallback (`entryKindLabel` retorna o próprio `type`,
+`entryIcon` retorna `"•"`), sem quebrar a renderização.
+
+## 3. Botão "Atualizar logs"
+
+- Reusa a mesma Server Action `listLogs(campaignId)` já usada por
+  `handleSelectMesa` — não foi criada nenhuma função de storage nova.
+- Mostra o mesmo indicador "Carregando…" (`loadingLogs`) usado ao
+  selecionar uma mesa.
+- Erros de rede/Supabase aparecem na mesma área de erro já existente no
+  topo da página (`errorMessage`).
+
+## 4. Campo de mensagem manual + visibilidade
+
+Comportamento idêntico ao já existente desde o checkpoint v0.1 — só
+rótulos mais claros ("Enviar mensagem" / "Enviar"). Continua usando o
+mesmo `<select>` com as 3 opções de `TABLE_LOG_VISIBILITIES`
+(`public`/`private`/`gm`) e gravando via `addLog({ type: "chat", ... })`.
+**Reforço do aviso já documentado**: `visibility` continua sendo só um
+campo de dados — sem filtro de RLS (ver migration 0003).
+
+## 5. Renderização em cartões — chat vs. rolagens
+
+Cada entrada de `logs` agora é um cartão com:
+
+1. Cabeçalho: ícone (`💬`/`🎲`/`•`) + label legível do tipo + visibilidade
+   entre colchetes + horário (`toLocaleString("pt-BR")`), alinhado à
+   direita.
+2. Conteúdo: para `chat`, o texto da mensagem
+   (`entry.payload.mensagem`); para `rolagem_pericia`/
+   `rolagem_expressao`, `formatRolagem(entry.payload)` — **a mesma
+   função e o mesmo formato já validados no commit `4834169`**, sem
+   nenhuma alteração de lógica; para qualquer outro `type`,
+   `JSON.stringify(entry.payload)` (fallback inalterado).
+
+## 6. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully in 1760ms
+  Running TypeScript ...
+  Finished TypeScript in 2.4s ...
+✓ Generating static pages using 5 workers (2/2) in 253ms
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /dev/character-sheet
+└ ƒ /dev/table
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage ===
+1. Criado: id=f3d8e76c-b5f3-4da7-95d0-9e0c0a81c8f1, schema_version=1
+2. Carregado por id: nome="__TESTE_STORAGE_RUPTURA__"
+3. Atualizado: nome="__TESTE_STORAGE_RUPTURA___editado", corpo=4
+4. Encontrado na listagem (2 personagens no total).
+5. Apagado e confirmado ausente via getCharacter.
+6. Confirmado: nenhum registro de teste residual.
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros — confirma que a mudança puramente de UI não
+afetou a camada de storage de personagem.
+
+## 7. Resultado do teste manual (browser, via preview tools)
+
+1. Abri `/dev/table`, mesa "Mesa Teste Fase 0" já existente (de
+   checkpoints anteriores) selecionada.
+2. Enviei a mensagem "Mensagem manual de teste do console" (visibilidade
+   Pública, padrão) via "Enviar".
+3. Confirmado: apareceu como cartão com cabeçalho `💬 Mensagem [Pública]`
+   + horário, conteúdo "Mensagem manual de teste do console".
+4. Confirmado: as rolagens já existentes (de checkpoints anteriores —
+   "Heroi Conectado: Corpo (sem perícia) = 4", "Heroi Conectado: 2d6+1 =
+   11", "Novo Personagem: Mente + Arcanismo = 6") renderizaram como
+   cartões `🎲 Rolagem de Perícia`/`🎲 Rolagem de Expressão`, com o
+   **mesmo texto formatado** de antes (`formatRolagem`, sem mudança).
+5. Cliquei "Atualizar logs" — lista recarregada sem erro no console
+   (verificado via `preview_console_logs`), contagem "LOG DA MESA (5)"
+   mantida.
+
+Resultado: **todos os passos do teste manual passaram**. Não rolei pela
+ficha nesta rodada (fluxo já validado no checkpoint v0.2 de Mesas/Log e
+não alterado aqui), mas confirmei que rolagens gravadas anteriormente
+continuam renderizando corretamente após a mudança de apresentação.
+
+## 8. Confirmação de escopo
+
+- **Banco/migrations**: nenhuma alteração.
+- **Ficha** (`src/app/dev/character-sheet`): não alterada.
+- **Realtime**: não implementado.
+- **Autenticação**: não implementada — RLS continua na política temporária
+  de desenvolvimento da migration 0003.
+- **Biblioteca do Sistema** (`src/lib/content`): não alterada.
+- Nenhuma chave secreta exposta — mudança inteiramente de apresentação em
+  `TableClient.tsx`, sem tocar em env vars, Server Actions ou queries.
