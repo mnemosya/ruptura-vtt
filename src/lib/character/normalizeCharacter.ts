@@ -1,6 +1,7 @@
 import type {
   Character,
   CharacterAttributes,
+  CharacterGameState,
   CharacterMetadata,
   CharacterResources,
   DerivedStats,
@@ -24,7 +25,10 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  *     magia/combate sem perder dados já gravados;
  *   - se `derived` for passado, preenche em recursos_atuais somente os
  *     valores AUSENTES (pv/pe/mana/integridade) com os _max
- *     correspondentes — nunca sobrescreve um valor que já existia.
+ *     correspondentes — nunca sobrescreve um valor que já existia;
+ *   - garante estado_jogo (pa_gastos/reacoes_usadas) com padrão 0 quando
+ *     ausente, preservando campos desconhecidos dentro do objeto e
+ *     qualquer valor já existente (nunca reseta um contador salvo).
  */
 export function normalizeCharacter(character: unknown, derived?: DerivedStats): Character {
   const raw = isPlainObject(character) ? character : {};
@@ -65,6 +69,13 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     }
   }
 
+  const estadoJogoRaw = isPlainObject(raw.estado_jogo) ? raw.estado_jogo : {};
+  const estado_jogo: CharacterGameState = {
+    ...estadoJogoRaw,
+    pa_gastos: typeof estadoJogoRaw.pa_gastos === "number" ? estadoJogoRaw.pa_gastos : 0,
+    reacoes_usadas: typeof estadoJogoRaw.reacoes_usadas === "number" ? estadoJogoRaw.reacoes_usadas : 0,
+  };
+
   return {
     ...raw,
     nome,
@@ -72,5 +83,6 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     pericias,
     recursos_atuais,
     metadados,
+    estado_jogo,
   } as Character;
 }

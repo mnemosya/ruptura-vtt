@@ -47,6 +47,19 @@ export interface CharacterMetadata {
   [key: string]: unknown;
 }
 
+/**
+ * Estado operacional de turno/sessão — não é progressão nem ficha
+ * permanente. Controla quanto de PA/Reações já foi gasto/usado na
+ * rodada atual. Editável em Modo Jogo e Modo Evolução (não é travado
+ * pelo seletor de modo, ao contrário de atributos/perícias).
+ */
+export interface CharacterGameState {
+  pa_gastos?: number;
+  reacoes_usadas?: number;
+  /** Outros campos operacionais futuros — não interpretados pela ficha mínima. */
+  [key: string]: unknown;
+}
+
 export interface Character {
   nome: string;
   atributos: CharacterAttributes;
@@ -55,6 +68,8 @@ export interface Character {
   recursos_atuais?: CharacterResources;
   /** Metadados simples e livres, incluindo schema_version. */
   metadados?: CharacterMetadata;
+  /** PA gastos / reações usadas no turno atual, se já existirem. */
+  estado_jogo?: CharacterGameState;
 }
 
 // ---------------------------------------------------------------------

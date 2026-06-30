@@ -25,6 +25,7 @@ import { createCharacter, updateCharacter, getCharacter, listCharacters, deleteC
 import type {
   Character,
   CharacterAttributes,
+  CharacterGameState,
   CharacterRecord,
   CharacterResources,
   CharacterRulesPayload,
@@ -191,6 +192,25 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
     }));
   }
 
+  /**
+   * Contadores de turno (PA gastos / reações usadas). Estado
+   * operacional, não progressão — por isso editável em Modo Jogo E
+   * Modo Evolução (sem guard de sheetMode, ao contrário de
+   * updateAtributo/updatePericia). Nunca negativo; sem teto — se passar
+   * do máximo, a UI mostra aviso discreto, não bloqueia.
+   */
+  function adjustEstadoJogo(key: keyof Pick<CharacterGameState, "pa_gastos" | "reacoes_usadas">, delta: number) {
+    setCharacter((prev) => {
+      const atual = prev.estado_jogo?.[key] ?? 0;
+      const novo = Math.max(0, Math.trunc(atual + delta));
+      return { ...prev, estado_jogo: { ...prev.estado_jogo, [key]: novo } };
+    });
+  }
+
+  function resetEstadoJogo(key: keyof Pick<CharacterGameState, "pa_gastos" | "reacoes_usadas">) {
+    setCharacter((prev) => ({ ...prev, estado_jogo: { ...prev.estado_jogo, [key]: 0 } }));
+  }
+
   return (
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
       <p style={{ opacity: 0.6, fontSize: 13, marginBottom: 4 }}>
@@ -244,6 +264,13 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
           recursosAtuais={character.recursos_atuais}
           onChangeRecursoAtual={updateRecursoAtual}
           onRestoreMax={handleRestoreRecursosMax}
+          estadoJogo={character.estado_jogo}
+          onGastarPA={() => adjustEstadoJogo("pa_gastos", 1)}
+          onDesfazerPA={() => adjustEstadoJogo("pa_gastos", -1)}
+          onResetarPA={() => resetEstadoJogo("pa_gastos")}
+          onUsarReacao={() => adjustEstadoJogo("reacoes_usadas", 1)}
+          onDesfazerReacao={() => adjustEstadoJogo("reacoes_usadas", -1)}
+          onResetarReacoes={() => resetEstadoJogo("reacoes_usadas")}
         />
       )}
 

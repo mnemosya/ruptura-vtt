@@ -39,6 +39,10 @@ export function createInitialCharacter(
     },
     pericias,
     recursos_atuais: {},
+    estado_jogo: {
+      pa_gastos: 0,
+      reacoes_usadas: 0,
+    },
     metadados: {
       schema_version: 1,
       criado_em: new Date().toISOString(),

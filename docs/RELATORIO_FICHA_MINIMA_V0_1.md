@@ -1054,3 +1054,157 @@ Resultado: **passou em todos os 18 passos**.
   não passa pelo payload nem pela normalização.
 - **Biblioteca do Sistema** (`src/lib/content`): não alterada.
 - Nenhuma chave secreta exposta.
+
+---
+
+# Checkpoint v0.8 — Contadores de PA e Reações
+
+Adiciona controle manual de PA gastos e Reações usadas na aba Recursos,
+conforme o PRD: a ficha controla o que é gasto/usado, sem implementar
+combate, rodada, janela rápida/lenta ou ações automatizadas ainda.
+
+## 1. Arquivos criados
+
+- `src/app/dev/character-sheet/components/TurnCounters.tsx` — renderiza os
+  dois blocos (PA e Reações) com `usados / max`, `restantes`, aviso "acima do
+  máximo" quando aplicável, e os 3 botões de cada (gastar/usar, desfazer,
+  resetar). Internamente usa um `CounterBlock` não-exportado compartilhado
+  pelos dois blocos.
+
+## 2. Arquivos alterados
+
+- `src/lib/character/types.ts` — novo tipo `CharacterGameState`
+  (`pa_gastos?`, `reacoes_usadas?`, mais índice para campos futuros) e novo
+  campo opcional `estado_jogo?: CharacterGameState` em `Character`.
+- `src/lib/character/createCharacter.ts` — `createInitialCharacter` agora
+  inicia `estado_jogo: { pa_gastos: 0, reacoes_usadas: 0 }`.
+- `src/lib/character/normalizeCharacter.ts` — garante `estado_jogo` com
+  `pa_gastos`/`reacoes_usadas` padrão `0` quando ausentes, preservando
+  qualquer valor já existente e qualquer campo desconhecido dentro do objeto
+  (mesmo padrão já usado para `recursos_atuais`/`metadados`).
+- `src/app/dev/character-sheet/components/ResourcesTab.tsx` — nova `Section
+  title="Turno"` com `<TurnCounters>`, recebendo `estadoJogo` e os 6
+  callbacks (gastar/desfazer/resetar PA, usar/desfazer/resetar reação).
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — novas funções
+  `adjustEstadoJogo(key, delta)` e `resetEstadoJogo(key)`; passadas para
+  `ResourcesTab` via 6 callbacks específicos. **Sem guard de `sheetMode`** —
+  diferente de `updateAtributo`/`updatePericia`, esses contadores ficam
+  editáveis nos dois modos (item 6 do pedido).
+
+`storage.ts` não foi alterado.
+
+## 3. Estrutura de `estado_jogo` no payload
+
+```json
+"estado_jogo": {
+  "pa_gastos": 2,
+  "reacoes_usadas": 4
+}
+```
+
+Objeto opcional dentro de `Character`, paralelo a `recursos_atuais` e
+`metadados`. Não é progressão nem ficha permanente — é estado operacional de
+turno/rodada, por isso não é travado pelo Modo Jogo/Evolução.
+
+## 4. Comportamento dos contadores de PA
+
+- `pa_gastos` começa em `0` (personagem novo) ou no valor salvo (personagem
+  carregado).
+- "Gastar 1 PA": `pa_gastos += 1`.
+- "Desfazer 1 PA": `pa_gastos -= 1`, nunca abaixo de `0`
+  (`Math.max(0, ...)`).
+- "Resetar PA": volta `pa_gastos` para `0`.
+- PA máximo exibido = `derivados.pa_max` (calculado pelas regras reais).
+- Se `pa_gastos > pa_max`, aparece aviso discreto "acima do máximo" — não há
+  bloqueio.
+
+## 5. Comportamento dos contadores de Reações
+
+Mesma lógica de PA, espelhada para `reacoes_usadas`:
+
+- "Usar reação": `reacoes_usadas += 1`.
+- "Desfazer reação": `reacoes_usadas -= 1`, nunca abaixo de `0`.
+- "Resetar reações": volta para `0`.
+- Máximo exibido = `derivados.reacoes_por_rodada`.
+- Aviso "acima do máximo" quando `reacoes_usadas > reacoes_por_rodada`, sem
+  bloqueio.
+
+## 6. Confirmação — compatibilidade com personagens antigos
+
+`normalizeCharacter` trata `estado_jogo` ausente exatamente como já tratava
+`recursos_atuais`/`metadados`: se o payload salvo não tiver o campo (caso de
+personagens salvos antes deste checkpoint, ex. "Kael Ironwood"),
+`pa_gastos`/`reacoes_usadas` viram `0` automaticamente, sem lançar erro. Não
+testei especificamente o carregamento de "Kael Ironwood" nesta rodada (já
+verificado em checkpoints anteriores que personagens pré-`estado_jogo`/
+pré-`metadados` abrem sem quebrar), mas a lógica é idêntica à já validada.
+
+## 7. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully in 1530ms
+  Running TypeScript ...
+  Finished TypeScript in 2.1s ...
+✓ Generating static pages using 4 workers (2/2) in 239ms
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage ===
+1. Criado: id=eeb72245-9df7-4d5a-95f4-f4b3b73945dc, schema_version=1
+2. Carregado por id: nome="__TESTE_STORAGE_RUPTURA__"
+3. Atualizado: nome="__TESTE_STORAGE_RUPTURA___editado", corpo=4
+4. Encontrado na listagem (2 personagens no total).
+5. Apagado e confirmado ausente via getCharacter.
+6. Confirmado: nenhum registro de teste residual.
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros.
+
+## 8. Resultado do teste manual (browser, via preview tools)
+
+Executados os 22 passos pedidos, de ponta a ponta:
+
+1–3. Abri `/dev/character-sheet`, criei novo personagem, fui para Modo
+   Evolução.
+4. Corpo=4, Mente=3, Ânimo=5.
+5–6. Aba Recursos.
+7. Derivados confirmados: `pa_max=3`, `reacoes_por_rodada=3`. PA `0/3`,
+   restantes `3`; Reações `0/3`, restantes `3` — confirmados via
+   `data-testid`.
+8. "Gastar 1 PA" x2.
+9. Confirmado: PA `2/3`, restantes `1`.
+10. "Usar reação" x1.
+11. Confirmado: Reações `1/3`, restantes `2`.
+12. "Desfazer 1 PA".
+13. Confirmado: PA `1/3`.
+14. "Resetar PA".
+15. Confirmado: PA `0/3`.
+16. "Usar reação" x4 (a partir de Reações já zeradas — resetei antes para
+    isolar a contagem, já que clicar 4 vezes a partir do `1` do passo 10
+    daria `5`, não `4`; resetar primeiro foi o que fez o resultado bater
+    com o `4/3` esperado no passo 17).
+17. Confirmado: Reações `4/3`, aviso "acima do máximo" presente.
+18. Nome "Teste PA Reacoes" → "Salvar personagem" → "✓ Salvo".
+19. Página recarregada.
+20. "Personagens salvos" → "Carregar" no personagem de teste.
+21. Confirmado: PA `0/3` e Reações `4/3` (com aviso) — exatamente os valores
+    salvos no passo 18, voltaram intactos após reload + carregar.
+22. Apaguei o personagem de teste — confirmado que sobrou só "Kael Ironwood"
+    na lista.
+
+Resultado: **passou em todos os 22 passos** (com a ressalva documentada no
+passo 16 sobre o reset prévio de Reações, necessário para o resultado bater
+com o `4/3` esperado no passo 17).
+
+## 9. Confirmação de escopo
+
+- **Combate, rodada, ações, janela rápida/lenta**: não implementados — só os
+  contadores manuais pedidos.
+- **Inventário, magia**: não implementados.
+- **Banco/migrations**: nenhuma alteração.
+- **`storage.ts`**: não alterado.
+- **Biblioteca do Sistema** (`src/lib/content`): não alterada.
+- Nenhuma chave secreta exposta.
