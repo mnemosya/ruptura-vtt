@@ -29,3 +29,21 @@ export interface TableLogEntry {
   payload: Record<string, unknown>;
   created_at: string;
 }
+
+/**
+ * Linha completa de `campaign_profiles` (migration 0004). Perfil DEV de
+ * mesa — só apelido + bloqueio manual + personagem ativo opcional. Não é
+ * conta de usuário, login, link de convite nem presença real (sem
+ * heartbeat) — ver aviso completo na migration antes de tratar isto
+ * como o fluxo final de jogador do PRD.
+ */
+export interface CampaignProfile {
+  id: string;
+  campaign_id: string;
+  nickname: string;
+  color_label: string | null;
+  is_locked: boolean;
+  active_character_id: string | null;
+  created_at: string;
+  updated_at: string;
+}

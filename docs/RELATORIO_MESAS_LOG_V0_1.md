@@ -810,3 +810,213 @@ externa enquanto a aba de teste só observa).
   `scripts/_tmp_add_external_log2.ts`) usaram exclusivamente
   `SUPABASE_URL`/`SUPABASE_ANON_KEY` (mesma `getContentClient()` de
   sempre), foram criados e apagados na mesma sessão, nunca commitados.
+
+---
+
+# Checkpoint v0.6 — Perfis dev de mesa
+
+Adiciona `campaign_profiles`: um registro DEV de "quem está jogando"
+dentro de uma mesa — apelido + bloqueio manual + personagem ativo
+opcional. **Não é o fluxo final de jogador do PRD** (seção 1.2/1.3):
+sem login, sem link de convite, sem heartbeat de presença. É só o
+suporte mínimo de dados para visualizar/testar o conceito de "perfil"
+em `/dev/table`.
+
+## 1. Arquivos criados/alterados
+
+**Migration:**
+- `supabase/migrations/0004_campaign_profiles.sql` — tabela
+  `campaign_profiles` + RLS de desenvolvimento (novo).
+
+**Camada de dados (`src/lib/table/`):**
+- `types.ts` — novo tipo `CampaignProfile` (linha completa da tabela).
+- `storage.ts` — três novas Server Actions: `createCampaignProfile`,
+  `listCampaignProfiles`, `setCampaignProfileLocked`.
+
+**Rota dev (`src/app/dev/table/`):**
+- `TableClient.tsx` — nova seção "Perfis da mesa", estados
+  `perfis`/`novoPerfilApelido`/`loadingPerfis`, handlers
+  `handleRefreshPerfis`/`handleCreatePerfil`/`handleToggleLockPerfil`.
+
+**Este relatório:**
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.
+
+Nenhuma mudança em `src/app/dev/character-sheet` (ficha), `src/lib/content`
+(Biblioteca do Sistema), `campaigns`/`table_logs` (migrations 0002/0003,
+exceto a FK opcional já existente de `characters` reaproveitada aqui) ou
+nas funcionalidades dos checkpoints v0.3–v0.5 (cartões, filtro de
+visibilidade, autoatualização — todos intactos).
+
+## 2. SQL aplicado (migration 0004)
+
+Aplicada via conexão direta Postgres (`SUPABASE_DB_URL`), mesmo padrão
+das migrations 0001–0003 (idempotente — `create table if not exists`,
+`drop policy if exists` + `create policy`), usando um script auxiliar
+(`scripts/_tmp_apply_0004.ts`) criado e removido na mesma sessão, nunca
+commitado.
+
+```sql
+create table if not exists campaign_profiles (
+  id                   uuid primary key default gen_random_uuid(),
+  campaign_id          uuid not null references campaigns(id) on delete cascade,
+  nickname             text not null,
+  color_label          text,
+  is_locked            boolean not null default false,
+  active_character_id  uuid references characters(id) on delete set null,
+  created_at           timestamptz not null default now(),
+  updated_at           timestamptz not null default now()
+);
+```
+
+Índices: `campaign_profiles_campaign_id_idx`,
+`campaign_profiles_campaign_created_at_idx` (campaign_id, created_at
+desc). Trigger `campaign_profiles_set_updated_at` reusa a função
+`set_updated_at()` de 0001. `active_character_id` é opcional, nullable,
+`on delete set null` — mesmo padrão de `table_logs.character_id`
+(0003): um perfil sobrevive se o personagem associado for apagado.
+
+Verificado após aplicar (consulta a `information_schema.tables` e
+`pg_policies`):
+
+```
+Migration 0004 aplicada.
+Tabela campaign_profiles existe: true
+Policies:
+ - campaign_profiles_dev_anon_select SELECT {anon,authenticated}
+ - campaign_profiles_dev_anon_insert INSERT {anon,authenticated}
+ - campaign_profiles_dev_anon_update UPDATE {anon,authenticated}
+ - campaign_profiles_dev_anon_delete DELETE {anon,authenticated}
+```
+
+## 3. Policies criadas (RLS) — TEMPORÁRIAS, sem autenticação
+
+CRUD completo (select/insert/update/delete) liberado para
+`anon`/`authenticated` — mesmo padrão já usado em `campaigns`
+(migration 0003), pelo mesmo motivo: nesta fase de dev, qualquer
+cliente com a anon key precisa poder criar/listar/bloquear perfis para
+testar o fluxo via `/dev/table`.
+
+### Riscos documentados (mesmo princípio dos checkpoints anteriores, mais os específicos de perfil)
+
+- Qualquer pessoa com a anon key pode ler/criar/editar/apagar
+  **qualquer** perfil de **qualquer** mesa — sem isolamento por
+  usuário, sem checagem de que quem bloqueia/desbloqueia é realmente o
+  narrador daquela mesa.
+- **`is_locked` é só um boolean de dados**: não há enforcement real de
+  "perfil bloqueado não pode ser usado" em nenhuma camada — isso
+  dependeria de autenticação + lógica de aplicação que ainda não
+  existe. Bloquear aqui é só um indicador visual em `/dev/table`.
+- **Sem link de convite**: não há token/segredo associado a um perfil —
+  qualquer cliente com a anon key pode listar todos os perfis de
+  qualquer mesa diretamente, sem precisar de nenhum link.
+- **Sem heartbeat**: um perfil bloqueado manualmente fica bloqueado até
+  alguém desbloquear manualmente — sem timeout, sem liberação
+  automática por inatividade/fechar aba (isso é requisito explícito do
+  PRD, seção 1.3, ainda não implementado).
+- Sem rate limit: nada impede criação ilimitada de perfis.
+- TODO explícito na migration (bloqueante para produção): coluna de
+  dono/narrador, restringir insert/update ao narrador da mesa,
+  heartbeat real de presença, link de convite com token revogável.
+
+## 4. Camada server (`src/lib/table/storage.ts`)
+
+| Função | O que faz |
+|---|---|
+| `createCampaignProfile(campaignId, nickname, colorLabel?)` | Insere um perfil novo (apelido vazio vira "Perfil sem apelido"). |
+| `listCampaignProfiles(campaignId)` | Lista perfis de uma mesa, mais recentemente criados primeiro. |
+| `setCampaignProfileLocked(profileId, locked)` | Atualiza `is_locked` (bloquear/desbloquear). |
+
+Todas usam `getContentClient()` (mesmo cliente Supabase com anon key já
+usado pelo resto de `src/lib/table`) e lançam `TableStorageError` em
+caso de falha, preservando o erro original em `cause` — mesmo padrão
+de `createCampaign`/`listCampaigns`/`addLog`/`listLogs`.
+
+## 5. UI em `/dev/table`
+
+Nova seção "Perfis da mesa (N) — {nome da mesa}", entre a lista de
+mesas e o formulário "Enviar mensagem":
+
+- Aviso fixo: "Perfil DEV: só apelido + bloqueio manual. Sem login, sem
+  link de convite, sem heartbeat de presença — bloqueio aqui é só um
+  indicador visual, sem enforcement real (ver migration 0004)."
+- Campo de texto "Apelido do perfil" + botão "Criar perfil"
+  (`data-testid="novo-perfil-apelido"`/`"criar-perfil-button"`).
+- Lista de perfis (`data-testid="perfis-lista"`), cada um mostrando
+  apelido, status ("Livre"/"Bloqueado", cor verde/âmbar) e botão
+  "Bloquear"/"Desbloquear" (`data-testid="bloquear-perfil-{id}"`).
+- Selecionar uma mesa (`handleSelectMesa`) agora também busca os perfis
+  daquela mesa automaticamente, junto com os logs.
+
+## 6. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully in 1834ms
+  Running TypeScript ...
+  Finished TypeScript in 2.3s ...
+✓ Generating static pages using 5 workers (2/2) in 240ms
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /dev/character-sheet
+└ ƒ /dev/table
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage ===
+1. Criado: id=c5e5ee46-2a0c-47a5-bc8b-69dbf07295bf, schema_version=1
+2. Carregado por id: nome="__TESTE_STORAGE_RUPTURA__"
+3. Atualizado: nome="__TESTE_STORAGE_RUPTURA___editado", corpo=4
+4. Encontrado na listagem (3 personagens no total).
+5. Apagado e confirmado ausente via getCharacter.
+6. Confirmado: nenhum registro de teste residual.
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros — confirma que a nova tabela/UI não afetou a
+camada de storage de personagem.
+
+## 7. Resultado do teste manual (browser, via preview tools)
+
+1. Abri `/dev/table`, selecionei "Mesa Teste Fase 0" — nova seção
+   "Perfis da mesa (0)" apareceu, vazia (mesa ainda sem perfis).
+2. Criei o perfil "Kael o Jogador" via "Criar perfil" — apareceu na
+   lista com status "Livre" e botão "Bloquear".
+3. **Recarreguei a página inteira** (`window.location.reload()`),
+   reselecionei a mesa — "Perfis da mesa (1)" reapareceu com "Kael o
+   Jogador" / "Livre", carregado do servidor, não de estado local —
+   confirma persistência real no Supabase.
+4. Cliquei "Bloquear" — status mudou para "Bloqueado" (cor âmbar),
+   botão virou "Desbloquear".
+5. Recarreguei a página novamente, reselecionei a mesa — status
+   continuou "Bloqueado"/"Desbloquear", confirmando que o bloqueio
+   também persiste no banco, não é só estado de UI.
+6. Cliquei "Desbloquear" — status voltou a "Livre"/"Bloquear".
+7. Sem erros no console (`preview_console_logs`) durante toda a
+   sequência.
+8. Removi o perfil de teste "Kael o Jogador" via script auxiliar
+   (`scripts/_tmp_cleanup_profile.ts`, criado e removido na mesma
+   sessão, nunca commitado) — sem botão de apagar perfil na UI nesta
+   etapa (fora de escopo do pedido).
+
+Resultado: **todos os passos do teste manual passaram**, incluindo
+persistência de criação e de bloqueio/desbloqueio através de reloads
+completos da página.
+
+## 8. Confirmação de escopo
+
+- **Autenticação**: não implementada.
+- **Link de convite**: não implementado — perfis são criados
+  diretamente em `/dev/table`, sem token nem fluxo de convite.
+- **Heartbeat de presença**: não implementado — `is_locked` é só um
+  boolean manual, sem liberação automática por timeout/inatividade.
+- **Ficha** (`src/app/dev/character-sheet`): não alterada.
+- **Biblioteca do Sistema** (`src/lib/content`): não alterada.
+- **`campaigns`/`table_logs`** (migrations 0002/0003): não alteradas.
+- Nenhuma chave secreta exposta: os scripts auxiliares
+  (`scripts/_tmp_apply_0004.ts`, `scripts/_tmp_cleanup_profile.ts`)
+  usaram exclusivamente `SUPABASE_URL`/`SUPABASE_ANON_KEY`/
+  `SUPABASE_DB_URL` (mesmas variáveis já documentadas, nunca a service
+  role key), foram criados e removidos na mesma sessão, nunca
+  commitados.

@@ -8,10 +8,19 @@
  */
 
 import { useEffect, useState } from "react";
-import { createCampaign, listCampaigns, addLog, listLogs } from "../../../lib/table/storage";
+import {
+  createCampaign,
+  listCampaigns,
+  addLog,
+  listLogs,
+  createCampaignProfile,
+  listCampaignProfiles,
+  setCampaignProfileLocked,
+} from "../../../lib/table/storage";
 import {
   TABLE_LOG_VISIBILITIES,
   type Campaign,
+  type CampaignProfile,
   type TableLogEntry,
   type TableLogVisibility,
 } from "../../../lib/table";
@@ -98,6 +107,9 @@ export default function TableClient({ mesasIniciais }: Props) {
   const [visibilidadeFiltro, setVisibilidadeFiltro] = useState<VisibilityFilter>("todos");
   const [autoAtualizar, setAutoAtualizar] = useState(false);
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState<Date | null>(null);
+  const [perfis, setPerfis] = useState<CampaignProfile[]>([]);
+  const [novoPerfilApelido, setNovoPerfilApelido] = useState("");
+  const [loadingPerfis, setLoadingPerfis] = useState(false);
 
   async function refreshMesas() {
     try {
@@ -130,6 +142,41 @@ export default function TableClient({ mesasIniciais }: Props) {
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao carregar logs.");
     } finally {
       setLoadingLogs(false);
+    }
+    await handleRefreshPerfis(id);
+  }
+
+  async function handleRefreshPerfis(campaignId: string) {
+    setLoadingPerfis(true);
+    try {
+      setPerfis(await listCampaignProfiles(campaignId));
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao carregar perfis.");
+    } finally {
+      setLoadingPerfis(false);
+    }
+  }
+
+  async function handleCreatePerfil() {
+    if (!selectedCampaignId) return;
+    setErrorMessage(null);
+    try {
+      await createCampaignProfile(selectedCampaignId, novoPerfilApelido);
+      setNovoPerfilApelido("");
+      await handleRefreshPerfis(selectedCampaignId);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao criar perfil.");
+    }
+  }
+
+  async function handleToggleLockPerfil(profile: CampaignProfile) {
+    if (!selectedCampaignId) return;
+    setErrorMessage(null);
+    try {
+      await setCampaignProfileLocked(profile.id, !profile.is_locked);
+      await handleRefreshPerfis(selectedCampaignId);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao bloquear/desbloquear perfil.");
     }
   }
 
@@ -254,6 +301,67 @@ export default function TableClient({ mesasIniciais }: Props) {
 
       {selectedCampaignId && (
         <>
+          <section style={{ marginBottom: 32 }}>
+            <h2 style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, opacity: 0.6, marginBottom: 12 }}>
+              Perfis da mesa ({perfis.length}) — {mesaAtual?.name ?? selectedCampaignId}
+            </h2>
+            <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
+              Perfil DEV: só apelido + bloqueio manual. Sem login, sem link de convite, sem
+              heartbeat de presença — bloqueio aqui é só um indicador visual, sem enforcement real
+              (ver migration 0004).
+            </p>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              <input
+                data-testid="novo-perfil-apelido"
+                type="text"
+                value={novoPerfilApelido}
+                onChange={(e) => setNovoPerfilApelido(e.target.value)}
+                placeholder="Apelido do perfil"
+                style={{ ...inputStyle, flex: 1 }}
+              />
+              <button data-testid="criar-perfil-button" onClick={handleCreatePerfil} style={buttonStyle}>
+                Criar perfil
+              </button>
+            </div>
+            {loadingPerfis && <p style={{ fontSize: 13, opacity: 0.6 }}>Carregando…</p>}
+            {!loadingPerfis && perfis.length === 0 && (
+              <p style={{ fontSize: 13, opacity: 0.6 }}>Nenhum perfil criado ainda nesta mesa.</p>
+            )}
+            <div data-testid="perfis-lista" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {perfis.map((perfil) => (
+                <div
+                  key={perfil.id}
+                  data-testid="perfil-entry"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    background: "#1d1e24",
+                    borderRadius: 8,
+                    padding: "10px 14px",
+                    fontSize: 13,
+                  }}
+                >
+                  <div>
+                    <span data-testid="perfil-apelido" style={{ fontWeight: 600 }}>
+                      {perfil.nickname}
+                    </span>
+                    <span
+                      data-testid="perfil-status"
+                      style={{ marginLeft: 10, fontSize: 11, opacity: 0.7, color: perfil.is_locked ? "#ffb84f" : "#7fd99a" }}
+                    >
+                      {perfil.is_locked ? "Bloqueado" : "Livre"}
+                    </span>
+                  </div>
+                  <button data-testid={`bloquear-perfil-${perfil.id}`} onClick={() => handleToggleLockPerfil(perfil)} style={buttonStyle}>
+                    {perfil.is_locked ? "Desbloquear" : "Bloquear"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+
           <section style={{ marginBottom: 32 }}>
             <h2 style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, opacity: 0.6, marginBottom: 12 }}>
               Enviar mensagem — {mesaAtual?.name ?? selectedCampaignId}
