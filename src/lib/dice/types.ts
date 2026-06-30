@@ -49,6 +49,23 @@ export interface RupturaRollParams {
 }
 
 /**
+ * Classificação simples da margem quando há CD. Não é regra de jogo
+ * nova (dano/região do corpo/combate) — só uma leitura mais rápida do
+ * número de margem já calculado:
+ *   - falha: total < CD;
+ *   - sucesso_limitado: total >= CD e margem entre 0 e 1;
+ *   - sucesso_padrao: margem entre 2 e 4;
+ *   - sucesso_critico: margem 5+.
+ */
+export const MARGEM_CLASSIFICACOES = [
+  "falha",
+  "sucesso_limitado",
+  "sucesso_padrao",
+  "sucesso_critico",
+] as const;
+export type MargemClassificacao = (typeof MARGEM_CLASSIFICACOES)[number];
+
+/**
  * Resultado de `rollPericia()`: maior d8 entre N dados (N = atributo) +
  * perícia + modificador manual. Espelha a regra do PRD: "maior dado
  * entre (Atributo)d8 + Perícia + modificadores".
@@ -72,6 +89,8 @@ export interface RupturaRollResult {
   sucesso?: boolean;
   /** total - cd (positivo em sucesso, negativo em falha). Só presente se houver CD. */
   margem?: number;
+  /** Classificação simples da margem (ver MargemClassificacao). Só presente se houver CD. */
+  classificacaoMargem?: MargemClassificacao;
 }
 
 /**

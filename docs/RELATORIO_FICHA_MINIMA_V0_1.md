@@ -1561,3 +1561,125 @@ Resultado: **passou em todos os 19 passos**.
 - **Chat/log persistente, rolagem pública/privada**: não implementados —
   mesma limitação do checkpoint v0.9, histórico continua só local em memória.
 - Nenhuma chave secreta exposta.
+
+---
+
+# Checkpoint v0.11 — Classificação de margem
+
+Adiciona uma leitura rápida da margem (quando há CD) em 4 categorias —
+falha, sucesso limitado, sucesso padrão, sucesso crítico — sem mudar a regra
+de rolagem nem o histórico de expressões genéricas.
+
+## 1. Arquivos alterados
+
+- `src/lib/dice/types.ts` — `MARGEM_CLASSIFICACOES` e o tipo
+  `MargemClassificacao` (`"falha" | "sucesso_limitado" | "sucesso_padrao" |
+  "sucesso_critico"`); `RupturaRollResult` ganhou o campo opcional
+  `classificacaoMargem` (só presente quando há CD, espelhando
+  `sucesso`/`margem`).
+- `src/lib/dice/rollRuptura.ts` — nova função interna `classificarMargem(sucesso, margem)`
+  e chamada dela em `rollPericia()`, só quando `cd` é informado.
+- `src/app/dev/character-sheet/components/RollsTab.tsx` — `MARGEM_LABELS` e
+  `MARGEM_CORES` (rótulo e cor por classificação); `PericiaResultado` passou
+  a exibir a classificação (`data-testid="roll-historico-item-classificacao"`)
+  logo abaixo da margem numérica, quando presente.
+
+Nenhum outro arquivo precisou mudar — a classificação é só uma leitura sobre
+o `margem`/`sucesso` já calculados, não uma regra nova.
+
+## 2. Regra de classificação implementada
+
+```
+falha:             total < CD
+sucesso_limitado:  total >= CD  e  margem 0–1
+sucesso_padrao:    margem 2–4
+sucesso_critico:   margem 5+
+```
+
+`classificarMargem()`:
+
+```ts
+function classificarMargem(sucesso, margem) {
+  if (!sucesso) return "falha";
+  if (margem <= 1) return "sucesso_limitado";
+  if (margem <= 4) return "sucesso_padrao";
+  return "sucesso_critico";
+}
+```
+
+A regra de rolagem em si (`total = maior d8 + perícia + modificador`,
+`sucesso = total >= cd`, `margem = total - cd`) **não foi alterada** — a
+classificação só roda em cima do resultado já calculado.
+
+## 3. Onde aparece
+
+- No bloco de resultado de cada rolagem de perícia no histórico (que já é a
+  única superfície de "resultado" desta Dice Tray — não existe um painel de
+  resultado separado do histórico), logo abaixo da linha "Margem: ±N".
+- O valor numérico da margem continua exibido como antes — a classificação é
+  um rótulo adicional, não uma substituição.
+- Só aparece quando há CD (mesma condição de `sucesso`/`margem`); rolagem sem
+  CD não mostra `classificacaoMargem` (campo ausente no resultado, nada
+  renderizado).
+- Histórico de expressões genéricas (`rollExpression`) não foi tocado — não
+  tem CD, não tem classificação, segue exatamente igual.
+
+## 4. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully in 1692ms
+  Running TypeScript ...
+  Finished TypeScript in 2.7s ...
+✓ Generating static pages using 4 workers (2/2) in 238ms
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage ===
+1. Criado: id=7aebf84f-94f9-414f-8d0f-d6b2a6909e20, schema_version=1
+2. Carregado por id: nome="__TESTE_STORAGE_RUPTURA__"
+3. Atualizado: nome="__TESTE_STORAGE_RUPTURA___editado", corpo=4
+4. Encontrado na listagem (2 personagens no total).
+5. Apagado e confirmado ausente via getCharacter.
+6. Confirmado: nenhum registro de teste residual.
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros.
+
+## 5. Resultado do teste manual (browser, via preview tools)
+
+Personagem novo (Corpo=1 por padrão → 1d8 por rolagem, sem perícia), aba
+Rolagens:
+
+- **CD=4**, 15 rolagens seguidas → classificações observadas:
+  `Falha` (total 1–3), `Sucesso limitado` (total 4–5, margem 0–1),
+  `Sucesso padrão` (total 6–8, margem 2–4) — as três presentes na amostra.
+- **CD=1**, 15 rolagens seguidas → classificações observadas:
+  `Sucesso limitado`, `Sucesso padrão` e **`Sucesso crítico`** (total 6–8,
+  margem 5–7) — confirmando a quarta categoria.
+- **Sem CD**: limpei o histórico, rolei uma vez com o campo CD vazio →
+  resultado mostrou só `Corpo (1d8) + Sem perícia`, dados, maior d8, bônus,
+  modificador e total — **nenhum** elemento
+  `roll-historico-item-classificacao` presente (confirmado via
+  `querySelectorAll`, contagem 0).
+- **Expressão genérica**: rolei `1d6+2` → `Dados: d6=6`, modificador `+2`,
+  total `8` — funcionando exatamente como antes, sem classificação (não se
+  aplica a expressões).
+
+Resultado: **as 4 classificações foram observadas em condições reais de
+rolagem** (sem mockar RNG), e os comportamentos sem-CD e de expressão
+genérica permaneceram intactos.
+
+## 6. Confirmação de escopo
+
+- **Regra de rolagem**: não alterada — só uma camada de leitura sobre o
+  resultado já calculado.
+- **Histórico de expressões genéricas**: não alterado.
+- **Região do corpo, dano, combate, ações**: não implementados.
+- **Banco/storage/Biblioteca do Sistema**: não alterados.
+- **Chat/log persistente**: não implementado.
+- **`eval`**: não usado em nenhum momento (classificação é só comparações
+  numéricas com `if`).
+- Nenhuma chave secreta exposta.

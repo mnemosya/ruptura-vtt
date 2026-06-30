@@ -16,6 +16,7 @@ import {
   rollPericia,
   DiceExpressionError,
   type DiceRollResult,
+  type MargemClassificacao,
   type PreparedRoll,
   type RupturaRollResult,
 } from "../../../../lib/dice";
@@ -23,6 +24,20 @@ import type { CharacterAttributes, CharacterSkills, AttributeDefinition, SkillDe
 
 const HISTORICO_MAX = 10;
 const SEM_PERICIA = "";
+
+const MARGEM_LABELS: Record<MargemClassificacao, string> = {
+  falha: "Falha",
+  sucesso_limitado: "Sucesso limitado",
+  sucesso_padrao: "Sucesso padrão",
+  sucesso_critico: "Sucesso crítico",
+};
+
+const MARGEM_CORES: Record<MargemClassificacao, string> = {
+  falha: "#ff6b6b",
+  sucesso_limitado: "#f5a623",
+  sucesso_padrao: "#4caf50",
+  sucesso_critico: "#5ec8ff",
+};
 
 type HistoricoEntry =
   | { id: string; kind: "pericia"; resultado: RupturaRollResult; origem?: string }
@@ -282,6 +297,14 @@ function PericiaResultado({ resultado, origem }: { resultado: RupturaRollResult;
             {resultado.sucesso ? "Sucesso" : "Falha"}
           </div>
           <div>Margem: {resultado.margem != null && resultado.margem >= 0 ? "+" : ""}{resultado.margem}</div>
+          {resultado.classificacaoMargem && (
+            <div
+              data-testid="roll-historico-item-classificacao"
+              style={{ color: MARGEM_CORES[resultado.classificacaoMargem], fontWeight: 700 }}
+            >
+              {MARGEM_LABELS[resultado.classificacaoMargem]}
+            </div>
+          )}
         </>
       )}
     </div>
