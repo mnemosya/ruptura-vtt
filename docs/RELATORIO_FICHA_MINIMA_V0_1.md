@@ -1777,3 +1777,132 @@ rolagem** (sem mockar RNG), cobrindo agora os dois lados do eixo de margem.
 Mesma confirmação do checkpoint v0.11: regra de rolagem, histórico de
 expressões, banco/storage/Biblioteca do Sistema, região do corpo/dano/
 combate/ações não foram tocados; nenhum `eval`; nenhuma chave exposta.
+
+---
+
+# Checkpoint v0.12 — Log local da ficha
+
+Adiciona uma aba "Log" que registra, em ordem cronológica reversa, os
+principais eventos de sessão: rolagens, mudanças de recursos atuais e
+mudanças de PA/Reações. Local apenas — sem chat, sem persistência no
+Supabase.
+
+## 1. Arquivos criados
+
+- `src/app/dev/character-sheet/components/LogTab.tsx` — define `LOG_TIPOS`,
+  o tipo `LogTipo` (`"rolagem_pericia" | "rolagem_expressao" | "recurso" |
+  "pa" | "reacao"`), a interface `LogEntry` (`id`, `horario`, `tipo`,
+  `resumo`) e o componente `LogTab` (lista + botão "Limpar log").
+
+## 2. Arquivos alterados
+
+- `src/app/dev/character-sheet/components/CharacterSheetTabs.tsx` — nova aba
+  `"log"` (`TABS`/`TAB_LABELS`), entre Rolagens e Personagens salvos.
+- `src/app/dev/character-sheet/components/RollsTab.tsx` — novo prop
+  `onLog(tipo, resumo)`, chamado ao final de `handleRolarPericia()` e
+  `handleRolarExpressao()` (só em caso de sucesso — expressão inválida não
+  gera entrada de log, já que nenhuma rolagem aconteceu).
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — estado central
+  `log: LogEntry[]` (máx. 50, `LOG_MAX`) e `addLogEntry(tipo, resumo)`;
+  `updateRecursoAtual`, `handleRestoreRecursosMax`, `adjustEstadoJogo` e
+  `resetEstadoJogo` passaram a chamar `addLogEntry` quando o valor
+  efetivamente muda; `onLog={addLogEntry}` passado para `RollsTab`; nova aba
+  `"log"` renderiza `<LogTab log={log} onClear={() => setLog([])} />`.
+- `docs/RELATORIO_FICHA_MINIMA_V0_1.md` — esta seção.
+
+Nenhuma mudança em `storage.ts`, banco, migrations ou
+`src/lib/content` (Biblioteca do Sistema). `Character`/`normalizeCharacter`
+também não mudaram — o log é estado de UI puro em `CharacterSheetClient`,
+nunca entra no payload salvo.
+
+## 3. Por que o log vive em `CharacterSheetClient`, não numa aba isolada
+
+Diferente do histórico de rolagens (que é só local a `RollsTab`), o log
+precisa agregar eventos de **múltiplas abas** (Rolagens, Recursos) — por
+isso o estado central é o único lugar que já tinha acesso a todos esses
+handlers. `RollsTab` ganhou um callback (`onLog`) em vez de duplicar o
+estado; `ResourcesTab` não precisou de nenhuma mudança, porque os handlers
+de recurso/PA/Reação já vivem inteiramente em `CharacterSheetClient`.
+
+## 4. O que é registrado
+
+| Evento | Tipo | Exemplo de resumo |
+|---|---|---|
+| Rolagem de perícia | `rolagem_pericia` | `"Corpo + Arcanismo: total 10 vs CD 7 (Sucesso)"` |
+| Rolagem de expressão | `rolagem_expressao` | `'"1d6+2": total 8'` |
+| Mudança manual de PV/PE/Mana/Integridade | `recurso` | `"PV: 14 → 7"` |
+| "Restaurar recursos ao máximo" | `recurso` | `"Restaurados ao máximo — PV 14, PE 13, Mana 20, Integridade 20"` |
+| Gastar/desfazer/resetar PA | `pa` | `"PA gastos: 0 → 1"` |
+| Usar/desfazer/resetar Reação | `reacao` | `"Reações usadas: 0 → 1"` |
+
+Cada entrada tem `horario` (formatado via `toLocaleTimeString("pt-BR")`),
+`tipo` e um `resumo` de uma linha. Mudanças que não alteram o valor (ex.:
+clicar "Desfazer 1 PA" quando já está em 0) não geram entrada — só eventos
+que de fato mudaram algo.
+
+## 5. Limite e botão "Limpar log"
+
+- Lista limitada a 50 entradas (`LOG_MAX = 50`), mais recente primeiro —
+  mesmo padrão de `.slice(0, N)` já usado no histórico de rolagens.
+- Botão "Limpar log" zera `log` (`setLog([])`).
+- Não salva no Supabase — confirmado por leitura do código (nenhuma chamada
+  a `storage.ts`/Server Actions a partir de `LogTab` ou da lógica de log em
+  `CharacterSheetClient`).
+
+## 6. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully in 1540ms
+  Running TypeScript ...
+  Finished TypeScript in 2.1s ...
+✓ Generating static pages using 4 workers (2/2) in 241ms
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage ===
+1. Criado: id=d9341441-e3dd-42b4-b58b-6ce5652594b8, schema_version=1
+2. Carregado por id: nome="__TESTE_STORAGE_RUPTURA__"
+3. Atualizado: nome="__TESTE_STORAGE_RUPTURA___editado", corpo=4
+4. Encontrado na listagem (2 personagens no total).
+5. Apagado e confirmado ausente via getCharacter.
+6. Confirmado: nenhum registro de teste residual.
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros.
+
+## 7. Resultado do teste manual (browser, via preview tools)
+
+1. Personagem novo, aba Rolagens — rolei uma perícia (Corpo, sem perícia
+   selecionada).
+2. Rolei a expressão `1d6+2`.
+3. Aba Recursos — mudei PV para `7`.
+4. "Gastar 1 PA" e "Usar reação" (uma vez cada).
+5. Aba Log — confirmado, em ordem (mais recente primeiro):
+   ```
+   Reação    | Reações usadas: 0 → 1
+   PA        | PA gastos: 0 → 1
+   Recurso   | PV: 0 → 7
+   Rolagem de expressão | "1d6+2": total 8
+   Rolagem de perícia   | Corpo (sem perícia): total 7
+   ```
+   Cabeçalho mostrou `LOG (5/50)`.
+6. "Limpar log" → `0` entradas confirmadas via `querySelectorAll`.
+7. Nome "Teste Log Local" → salvei → recarreguei a página → "Personagens
+   salvos" → "Carregar" → nome voltou "Teste Log Local" — salvar/carregar
+   continua funcionando com o Log presente. Apaguei o personagem de teste ao
+   final; sobrou só "Kael Ironwood" na lista.
+
+Resultado: **todos os eventos pedidos foram registrados corretamente**, o
+log limpa, e salvar/carregar não foi afetado.
+
+## 8. Confirmação de escopo
+
+- **Banco/storage/Biblioteca do Sistema**: não alterados.
+- **Chat persistente, público/privado**: não implementado — log é só local,
+  em memória, desta sessão.
+- **Combate, ações, condições, inventário, magia**: não implementados.
+- **`eval`**: não usado.
+- Nenhuma chave secreta exposta.

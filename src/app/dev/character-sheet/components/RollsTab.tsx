@@ -82,6 +82,7 @@ export function RollsTab({
   periciaDefinitions,
   preparedRoll,
   onPreparedRollApplied,
+  onLog,
 }: {
   atributos: CharacterAttributes;
   atributoDefinitions: AttributeDefinition[] | undefined;
@@ -89,6 +90,8 @@ export function RollsTab({
   periciaDefinitions: SkillDefinition[] | undefined;
   preparedRoll: PreparedRoll | null;
   onPreparedRollApplied: () => void;
+  /** Registra a rolagem no Log local (ver LogTab) — não persiste no Supabase. */
+  onLog: (tipo: "rolagem_pericia" | "rolagem_expressao", resumo: string) => void;
 }) {
   const atributoIds = ["corpo", "mente", "animo"] as const;
   const [atributoId, setAtributoId] = useState<(typeof atributoIds)[number]>("corpo");
@@ -140,6 +143,11 @@ export function RollsTab({
     });
 
     pushHistorico({ kind: "pericia", resultado, origem: origemAtual ?? undefined });
+
+    const periciaParte = resultado.periciaNome ? ` + ${resultado.periciaNome}` : " (sem perícia)";
+    const cdParte =
+      resultado.cd != null ? ` vs CD ${resultado.cd} (${resultado.sucesso ? "Sucesso" : "Falha"})` : "";
+    onLog("rolagem_pericia", `${resultado.atributoNome}${periciaParte}: total ${resultado.total}${cdParte}`);
   }
 
   function handleRolarExpressao() {
@@ -147,6 +155,7 @@ export function RollsTab({
     try {
       const resultado = rollExpression(expressaoInput);
       pushHistorico({ kind: "expressao", resultado });
+      onLog("rolagem_expressao", `"${resultado.expression}": total ${resultado.total}`);
     } catch (err) {
       setExpressaoErro(err instanceof DiceExpressionError ? err.message : "Expressão inválida.");
     }

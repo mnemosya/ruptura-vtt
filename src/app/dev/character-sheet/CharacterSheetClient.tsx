@@ -19,7 +19,7 @@
  * trivial, se algum dia precisar) e sem acesso direto ao Supabase.
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createInitialCharacter, computeDerivedStats, normalizeCharacter } from "../../../lib/character";
 import { createCharacter, updateCharacter, getCharacter, listCharacters, deleteCharacter } from "../../../lib/character/storage";
 import type {
@@ -37,9 +37,19 @@ import { AttributesTab } from "./components/AttributesTab";
 import { SkillsTab } from "./components/SkillsTab";
 import { ResourcesTab } from "./components/ResourcesTab";
 import { RollsTab } from "./components/RollsTab";
+import { LogTab, type LogEntry, type LogTipo } from "./components/LogTab";
 import { SavedCharactersTab } from "./components/SavedCharactersTab";
 import { DebugTab } from "./components/DebugTab";
 import type { SheetMode } from "./components/ModeToggle";
+
+const LOG_MAX = 50;
+
+const RECURSO_LABELS: Record<keyof CharacterResources, string> = {
+  pv: "PV",
+  pe: "PE",
+  mana: "Mana",
+  integridade: "Integridade",
+};
 
 interface Props {
   regras: CharacterRulesPayload | null;
@@ -73,6 +83,22 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
   // Atributos/Perícias e a aba Rolagens (ver RollsTab). Também é só
   // estado de UI, nunca persiste no payload.
   const [preparedRoll, setPreparedRoll] = useState<PreparedRoll | null>(null);
+  // Log local mínimo (não persiste no Supabase) — alimentado por rolagens
+  // (via callback passado a RollsTab) e pelos handlers de recurso/PA/
+  // reação abaixo. Limitado às últimas 50 entradas.
+  const [log, setLog] = useState<LogEntry[]>([]);
+  const logCounterRef = useRef(0);
+
+  function addLogEntry(tipo: LogTipo, resumo: string) {
+    logCounterRef.current += 1;
+    const entry: LogEntry = {
+      id: `log-${logCounterRef.current}`,
+      horario: new Date().toLocaleTimeString("pt-BR"),
+      tipo,
+      resumo,
+    };
+    setLog((prev) => [entry, ...prev].slice(0, LOG_MAX));
+  }
 
   const derivados = useMemo(
     () => computeDerivedStats(character.atributos, regras),
@@ -180,10 +206,15 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
    * fica para depois, aqui é só edição livre com aviso visual.
    */
   function updateRecursoAtual(id: keyof CharacterResources, rawValue: number) {
+    const anterior = character.recursos_atuais?.[id] ?? 0;
+    const novo = parseRecursoAtual(rawValue);
     setCharacter((prev) => ({
       ...prev,
-      recursos_atuais: { ...prev.recursos_atuais, [id]: parseRecursoAtual(rawValue) },
+      recursos_atuais: { ...prev.recursos_atuais, [id]: novo },
     }));
+    if (novo !== anterior) {
+      addLogEntry("recurso", `${RECURSO_LABELS[id]}: ${anterior} → ${novo}`);
+    }
   }
 
   function handleRestoreRecursosMax() {
@@ -196,6 +227,10 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
         integridade: derivados.integridade_max,
       },
     }));
+    addLogEntry(
+      "recurso",
+      `Restaurados ao máximo — PV ${derivados.pv_max}, PE ${derivados.pe_max}, Mana ${derivados.mana_max}, Integridade ${derivados.integridade_max}`,
+    );
   }
 
   /**
@@ -206,15 +241,28 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
    * do máximo, a UI mostra aviso discreto, não bloqueia.
    */
   function adjustEstadoJogo(key: keyof Pick<CharacterGameState, "pa_gastos" | "reacoes_usadas">, delta: number) {
+    const anterior = character.estado_jogo?.[key] ?? 0;
+    const novo = Math.max(0, Math.trunc(anterior + delta));
     setCharacter((prev) => {
       const atual = prev.estado_jogo?.[key] ?? 0;
-      const novo = Math.max(0, Math.trunc(atual + delta));
-      return { ...prev, estado_jogo: { ...prev.estado_jogo, [key]: novo } };
+      const novoPrev = Math.max(0, Math.trunc(atual + delta));
+      return { ...prev, estado_jogo: { ...prev.estado_jogo, [key]: novoPrev } };
     });
+    if (novo !== anterior) {
+      const tipo: LogTipo = key === "pa_gastos" ? "pa" : "reacao";
+      const label = key === "pa_gastos" ? "PA gastos" : "Reações usadas";
+      addLogEntry(tipo, `${label}: ${anterior} → ${novo}`);
+    }
   }
 
   function resetEstadoJogo(key: keyof Pick<CharacterGameState, "pa_gastos" | "reacoes_usadas">) {
+    const anterior = character.estado_jogo?.[key] ?? 0;
     setCharacter((prev) => ({ ...prev, estado_jogo: { ...prev.estado_jogo, [key]: 0 } }));
+    if (anterior !== 0) {
+      const tipo: LogTipo = key === "pa_gastos" ? "pa" : "reacao";
+      const label = key === "pa_gastos" ? "PA gastos" : "Reações usadas";
+      addLogEntry(tipo, `${label} resetado: ${anterior} → 0`);
+    }
   }
 
   /**
@@ -321,8 +369,11 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
           periciaDefinitions={regras?.pericias}
           preparedRoll={preparedRoll}
           onPreparedRollApplied={() => setPreparedRoll(null)}
+          onLog={addLogEntry}
         />
       )}
+
+      {activeTab === "log" && <LogTab log={log} onClear={() => setLog([])} />}
 
       {activeTab === "personagens" && (
         <SavedCharactersTab
