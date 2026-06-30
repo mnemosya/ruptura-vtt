@@ -1208,3 +1208,158 @@ com o `4/3` esperado no passo 17).
 - **`storage.ts`**: não alterado.
 - **Biblioteca do Sistema** (`src/lib/content`): não alterada.
 - Nenhuma chave secreta exposta.
+
+---
+
+# Checkpoint v0.9 — Dice Tray local
+
+Adiciona uma aba "Rolagens" com Dice Tray local: rolagem base do Ruptura
+("maior dado entre (Atributo)d8 + Perícia + modificadores") e uma expressão
+genérica de dados (sem eval). Sem chat, sem log persistente, sem mesa online.
+
+## 1. Arquivos criados
+
+- `src/lib/dice/types.ts` — `ALLOWED_DICE_SIDES`, `DiceExpressionError`,
+  `DiceTerm`, `DiceRollResult`, `RupturaRollParams`, `RupturaRollResult`.
+- `src/lib/dice/rollExpression.ts` — `rollDie(sides)` e `rollExpression(expr)`:
+  parser estrito de expressões tipo `"1d8+1d4-1"`, **sem eval**.
+- `src/lib/dice/rollRuptura.ts` — `rollPericia(params)`: regra base do
+  Ruptura (maior d8 entre N dados + perícia + modificador, com
+  sucesso/falha/margem opcionais se houver CD).
+- `src/lib/dice/index.ts` — ponto de entrada único do módulo de dados.
+- `src/app/dev/character-sheet/components/RollsTab.tsx` — UI da aba
+  Rolagens: formulário de rolagem de perícia, campo de expressão genérica,
+  histórico local (até 10 itens) e botão "Limpar histórico".
+
+## 2. Arquivos alterados
+
+- `src/app/dev/character-sheet/components/CharacterSheetTabs.tsx` — nova aba
+  `"rolagens"` (`TABS`/`TAB_LABELS`), entre Recursos e Personagens salvos.
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — importa e
+  renderiza `<RollsTab>` quando `activeTab === "rolagens"`, passando
+  `character.atributos`/`character.pericias` (read-only, a Dice Tray só lê
+  os valores atuais — não edita o personagem) e as definições de
+  `regras?.atributos`/`regras?.pericias` para os rótulos.
+- `docs/RELATORIO_FICHA_MINIMA_V0_1.md` — esta seção.
+
+`storage.ts` não foi alterado — a Dice Tray não salva nada no Supabase.
+
+## 3. Regra implementada para rolagem de perícia
+
+`rollPericia()` segue literalmente o PRD: rola `atributoValor` dados de 8
+faces, usa o **maior**, soma o valor da perícia e o modificador manual:
+
+```
+total = maior(d8 × N) + perícia + modificador,  N = valor do atributo
+```
+
+Se `cd` for informado: `sucesso = total >= cd`, `margem = total - cd`. Sem
+CD, esses três campos simplesmente não aparecem no resultado (não são
+`null`/`0` inventados — ficam `undefined`/ausentes).
+
+## 4. Regra implementada para expressão genérica de dados
+
+`rollExpression()` é um parser estrito, **sem `eval`**, em duas camadas de
+defesa:
+
+1. **Whitelist de caracteres**: a string só pode conter `0-9`, `d`, `+`, `-`
+   (depois de remover espaços) — qualquer outro caractere (letras, parênteses
+   etc., como em `"alert(1)"`) é rejeitado imediatamente com
+   `DiceExpressionError`, antes de qualquer outro processamento.
+2. **Parsing por termo**: a expressão é quebrada em termos pelo sinal (`+`/
+   `-`) e cada termo precisa casar exatamente com `/^\d+d\d+$/` (dado) ou
+   `/^\d+$/` (número fixo). Termos de dado só são aceitos se as faces
+   estiverem em `ALLOWED_DICE_SIDES` (4, 6, 8, 10, 12, 20, 100) e a
+   quantidade for entre 1 e 100 (proteção simples contra expressão absurda
+   tipo `"99999999d8"`).
+
+Qualquer falha nas duas camadas lança `DiceExpressionError`, capturada pela UI
+(`RollsTab`), que mostra a mensagem em `data-testid="roll-expressao-erro"` —
+nenhuma rolagem é executada nesse caso.
+
+## 5. Comportamento do histórico local
+
+- Mantido em `useState` **dentro de `RollsTab`** (não em
+  `CharacterSheetClient`) — é estado puramente visual da Dice Tray, não faz
+  parte do `Character` nem do payload salvo. Decisão deliberada: trocar de
+  aba ou recarregar a página reseta o histórico, o que é esperado e
+  documentado aqui (item 5 do pedido: "não salvar no Supabase ainda").
+- Cada rolagem (de perícia ou de expressão) é inserida no topo da lista;
+  `.slice(0, 10)` garante no máximo 10 itens — a 11ª rolagem empurra a mais
+  antiga para fora.
+- Botão "Limpar histórico" zera a lista (`setHistorico([])`).
+
+## 6. Confirmação — sem chat/log persistente
+
+- Nenhuma chamada a `storage.ts`, Server Actions ou ao Supabase a partir de
+  `RollsTab`/`src/lib/dice` — confirmado por leitura do código (só
+  `useState`/`useRef` locais).
+- Não existe tabela de log de rolagens nem migration nova.
+- Não há envio para chat — a Dice Tray é local à página `/dev/character-sheet`.
+
+## 7. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully in 1517ms
+  Running TypeScript ...
+  Finished TypeScript in 2.2s ...
+✓ Generating static pages using 4 workers (2/2) in 238ms
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage ===
+1. Criado: id=67035883-1561-4727-9cab-142fff410b79, schema_version=1
+2. Carregado por id: nome="__TESTE_STORAGE_RUPTURA__"
+3. Atualizado: nome="__TESTE_STORAGE_RUPTURA___editado", corpo=4
+4. Encontrado na listagem (2 personagens no total).
+5. Apagado e confirmado ausente via getCharacter.
+6. Confirmado: nenhum registro de teste residual.
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros — confirma que a Dice Tray não quebrou tipos nem a
+camada de storage (mesmo sem tocar nela).
+
+## 8. Resultado do teste manual (browser, via preview tools)
+
+Executados os 16 passos pedidos, de ponta a ponta:
+
+1–4. Abri `/dev/character-sheet`, Modo Evolução, Corpo=4/Mente=3/Ânimo=5,
+   Arcanismo=2.
+5. Aba Rolagens — confirmado "Corpo (4)" e "Arcanismo (2)" já refletidos nos
+   seletores.
+6–7. Rolei Corpo + Arcanismo + modificador 1 contra CD 7. Resultado real:
+   `Corpo (4d8) + Arcanismo`, resultados individuais `2, 3, 4, 3`, maior d8
+   `4`, perícia `+2`, modificador `+1`, total `7` (4+2+1), CD `7`,
+   **Sucesso**, margem `+0` — todos os campos pedidos presentes e corretos.
+8–9. Rolei Mente + Arcanismo sem CD: `Mente (3d8) + Arcanismo`, total `8`
+   (5+2+1), **sem** CD/sucesso/margem (campos ausentes, como esperado).
+10–11. Rolei a expressão `1d8+1d4-1`: `Dados: d8=3, d4=2`, modificador `-1`,
+    total `4` (3+2-1).
+12–13. Tentei a expressão `alert(1)` — confirmei com um `window.alert`
+    espião que **`alert()` nunca foi chamado**; a UI mostrou o erro
+    `Expressão contém caracteres não permitidos: "alert(1)".` e o histórico
+    permaneceu com 3 itens (a tentativa inválida não foi adicionada).
+14. Rolei a expressão `1d6` onze vezes seguidas — histórico final: exatamente
+    **10/10** itens (cabeçalho "Histórico (10/10)").
+15. "Limpar histórico" — histórico foi a **0** itens.
+16. Nome "Teste Dice Tray" → salvei → recarreguei a página → fui em
+    "Personagens salvos" → "Carregar" → nome voltou "Teste Dice Tray" —
+    salvar/carregar continua funcionando normalmente com a Dice Tray
+    presente. Apaguei o personagem de teste ao final; sobrou só "Kael
+    Ironwood" na lista.
+
+Resultado: **passou em todos os 16 passos**.
+
+## 9. Confirmação de escopo
+
+- **Banco/migrations**: nenhuma alteração.
+- **`storage.ts`**: não alterado.
+- **Biblioteca do Sistema** (`src/lib/content`): não alterada.
+- **Combate, ações, condições, inventário, magia**: não implementados — a
+  Dice Tray só rola dados, não interage com nenhum desses sistemas.
+- **Chat/log persistente, rolagem pública/privada**: não implementados —
+  histórico é só estado local em memória, perdido ao trocar de aba/recarregar.
+- Nenhuma chave secreta exposta.

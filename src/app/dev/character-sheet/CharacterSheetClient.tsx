@@ -35,6 +35,7 @@ import { GeneralTab } from "./components/GeneralTab";
 import { AttributesTab } from "./components/AttributesTab";
 import { SkillsTab } from "./components/SkillsTab";
 import { ResourcesTab } from "./components/ResourcesTab";
+import { RollsTab } from "./components/RollsTab";
 import { SavedCharactersTab } from "./components/SavedCharactersTab";
 import { DebugTab } from "./components/DebugTab";
 import type { SheetMode } from "./components/ModeToggle";
@@ -271,6 +272,15 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
           onUsarReacao={() => adjustEstadoJogo("reacoes_usadas", 1)}
           onDesfazerReacao={() => adjustEstadoJogo("reacoes_usadas", -1)}
           onResetarReacoes={() => resetEstadoJogo("reacoes_usadas")}
+        />
+      )}
+
+      {activeTab === "rolagens" && (
+        <RollsTab
+          atributos={character.atributos}
+          atributoDefinitions={regras?.atributos}
+          pericias={character.pericias}
+          periciaDefinitions={regras?.pericias}
         />
       )}
 
