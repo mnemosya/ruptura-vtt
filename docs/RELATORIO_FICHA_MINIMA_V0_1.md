@@ -760,3 +760,137 @@ Resultado: **passou em todos os 14 passos**.
 - **`storage.ts`**: não alterado.
 - Nenhuma chave secreta exposta — nenhuma mudança na aba Debug nem em
   variáveis de ambiente.
+
+---
+
+# Checkpoint v0.6 — Refatoração da ficha em componentes
+
+Quebra `CharacterSheetClient.tsx` (que tinha crescido para ~480 linhas) em
+componentes menores por aba, em `src/app/dev/character-sheet/components/`,
+sem mudar nenhum comportamento, texto ou nome de aba.
+
+## 1. Arquivos criados
+
+Todos em `src/app/dev/character-sheet/components/`:
+
+- `styles.ts` — `buttonStyle` compartilhado entre componentes.
+- `Section.tsx` — wrapper de seção com título (`<section>` + `<h2>`).
+- `Stat.tsx` — card de exibição somente leitura (label + valor + hint).
+- `NumberField.tsx` — input numérico com clamp (usado em Atributos/Perícias).
+- `ResourceField.tsx` — input numérico de recurso atual (com "/ máximo" e aviso
+  "acima do máximo").
+- `CharacterSheetTabs.tsx` — navegação de abas; exporta também `TABS`,
+  `TabId` e `TAB_LABELS` (única fonte de verdade dos ids/labels de aba).
+- `GeneralTab.tsx` — nome, botões salvar/novo, estado de save, id, schema
+  version.
+- `AttributesTab.tsx` — Corpo/Mente/Ânimo editáveis.
+- `SkillsTab.tsx` — lista de perícias editável.
+- `ResourcesTab.tsx` — os 8 derivados + recursos atuais editáveis + botão
+  "Restaurar recursos ao máximo" (inclui `RECURSO_ATUAL_FIELDS` e
+  `derivedMetaById`, que eram só de apresentação).
+- `SavedCharactersTab.tsx` — lista de personagens salvos com Carregar/Apagar.
+- `DebugTab.tsx` — informações técnicas simples.
+
+## 2. Arquivos alterados
+
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — reduzido de ~480
+  para ~250 linhas. Continua sendo o único componente com `useState` de
+  personagem/id/lista/saveState/activeTab, os handlers (`handleSave`,
+  `handleLoad`, `handleDelete`, `handleNew`, `updateAtributo`,
+  `updatePericia`, `updateRecursoAtual`, `handleRestoreRecursosMax`) e as
+  chamadas às Server Actions de `storage.ts`. Os componentes de aba são
+  importados e recebem tudo via props.
+
+Nenhuma mudança em `storage.ts`, `normalizeCharacter.ts`, `types.ts`, banco,
+migrations ou `src/lib/content` (Biblioteca do Sistema).
+
+## 3. Componentes extraídos
+
+| Componente | Responsabilidade |
+|---|---|
+| `CharacterSheetTabs` | Navegação entre as 6 abas (mesmos textos/ids de antes) |
+| `GeneralTab` | Nome, salvar/novo personagem, status de save, id, schema version |
+| `AttributesTab` | Corpo/Mente/Ânimo |
+| `SkillsTab` | Lista de perícias |
+| `ResourcesTab` | 8 derivados + recursos atuais editáveis + restaurar ao máximo |
+| `SavedCharactersTab` | Lista de personagens salvos, carregar/apagar |
+| `DebugTab` | Informações técnicas simples |
+| `Section`, `Stat`, `NumberField`, `ResourceField` | Primitivos de apresentação reusados entre abas |
+
+Todos recebem dados e callbacks via props (`onChange`, `onSave`, `onLoad`
+etc.) — nenhum componente filho importa `storage.ts`, chama Server Actions ou
+duplica estado (além de não ter nenhum estado próprio: são funções puras de
+apresentação).
+
+## 4. Confirmação — comportamento não mudou
+
+- Mesmos 6 nomes de aba, mesma ordem, mesmo `data-testid="tab-<id>"`.
+- Mesmos textos de botão ("Salvar personagem", "Novo personagem", "Carregar",
+  "Apagar", "Restaurar recursos ao máximo").
+- Mesma lógica de clamp em atributos/perícias, mesmo `parseRecursoAtual`
+  (inteiro, sem negativo) para recursos atuais — ambos continuam em
+  `CharacterSheetClient.tsx`, só os componentes de input mudaram de lugar.
+- Mesmo fluxo de salvar/carregar via `normalizeCharacter` + Server Actions —
+  nada nessa lógica foi tocado, só movida a apresentação ao redor dela.
+- Confirmado na prática com o teste manual completo (seção 6).
+
+## 5. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully in 2.5s
+  Running TypeScript ...
+  Finished TypeScript in 2.3s ...
+✓ Generating static pages using 4 workers (2/2) in 335ms
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage ===
+1. Criado: id=838e590a-2d42-4e32-9ca3-dce06ec6dda8, schema_version=1
+2. Carregado por id: nome="__TESTE_STORAGE_RUPTURA__"
+3. Atualizado: nome="__TESTE_STORAGE_RUPTURA___editado", corpo=4
+4. Encontrado na listagem (2 personagens no total).
+5. Apagado e confirmado ausente via getCharacter.
+6. Confirmado: nenhum registro de teste residual.
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros — confirma que a refatoração não quebrou tipos nem a
+camada de storage.
+
+## 6. Resultado do teste manual (browser, via preview tools)
+
+Executados os 13 passos pedidos, de ponta a ponta:
+
+1. Abri `/dev/character-sheet`.
+2. Troquei entre as 6 abas (Atributos, Perícias, Personagens salvos, Debug,
+   Geral) — todas renderizaram com os mesmos textos de antes.
+3. Nome alterado para "Teste Refatoracao" (aba Geral).
+4. Corpo=4, Mente=3, Ânimo=5 (aba Atributos).
+5. Aba Recursos.
+6. Derivados confirmados: `pv_max=14, pe_max=13, mana_max=20,
+   integridade_max=20, reacoes_por_rodada=3, andar_m=14m, correr_m=28m,
+   pa_max=3` — todos corretos.
+7. "Restaurar recursos ao máximo".
+8. Editei manualmente: PV=7, PE=8, Mana=11, Integridade=15.
+9. "Salvar personagem" → "✓ Salvo".
+10. Página recarregada.
+11. Fui em "Personagens salvos" → "Carregar" no personagem de teste.
+12. Confirmado: nome="Teste Refatoracao" (aba Geral), atributos
+    `{corpo:4, mente:3, animo:5}` (aba Atributos), derivados idênticos ao
+    passo 6 e recursos atuais `{pv:7, pe:8, mana:11, integridade:15}` (aba
+    Recursos) — todos corretos após reload + carregar.
+13. Apaguei o personagem de teste via "Apagar" — confirmado que sobrou só
+    "Kael Ironwood" na lista.
+
+Resultado: **passou em todos os 13 passos**.
+
+## 7. Confirmação de escopo
+
+- **Inventário, magia, combate**: não implementados.
+- **Banco/migrations**: nenhuma alteração.
+- **`storage.ts`**: não alterado.
+- **Biblioteca do Sistema** (`src/lib/content`): não alterada.
+- Nenhuma chave secreta exposta — refatoração foi inteiramente de UI/
+  apresentação, sem tocar em env vars ou Server Actions.
