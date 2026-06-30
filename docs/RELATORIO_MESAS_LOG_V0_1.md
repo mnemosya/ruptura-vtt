@@ -1155,3 +1155,232 @@ página.
   (`scripts/_tmp_cleanup_profile2.ts`) usou exclusivamente
   `SUPABASE_URL`/`SUPABASE_ANON_KEY` (mesma `getContentClient()` de
   sempre), foi criado e removido na mesma sessão, nunca commitado.
+
+---
+
+# Checkpoint v0.8 — Ficha conectada ao perfil ativo
+
+Conecta `/dev/character-sheet` aos perfis de `/dev/table`: ao selecionar
+uma mesa na aba Geral, a ficha agora também carrega os perfis daquela
+mesa, permite escolher um e oferece "Carregar personagem ativo" — que
+busca o personagem vinculado (`active_character_id`) e carrega na
+ficha, reusando o mesmo fluxo de "Personagens salvos". Rolagens
+gravadas em `table_logs` passam a anotar `profileId`/`profileNickname`
+no payload, além de já preencherem a coluna `character_id` quando há
+personagem carregado.
+
+## 1. Arquivos alterados
+
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx`:
+  - novo import de `listCampaignProfiles` (`src/lib/table/storage`) e
+    do tipo `CampaignProfile`;
+  - novos estados `perfis: CampaignProfile[]`, `selectedProfileId:
+    string | null`, `profileWarning: string | null`;
+  - nova função `handleSelectCampaign(id)` — substitui o
+    `setSelectedCampaignId` direto passado antes para `GeneralTab`:
+    além de trocar a mesa, busca `listCampaignProfiles(id)` e limpa o
+    perfil selecionado anterior (perfis são por mesa, não fazem sentido
+    "vazar" de uma mesa pra outra);
+  - nova função `handleLoadPersonagemAtivo()` — encontra o perfil
+    selecionado, se não tiver `active_character_id` mostra
+    `profileWarning`, senão chama `handleLoad(activeCharacterId)`
+    (mesma função já usada por "Personagens salvos", sem duplicar
+    lógica de carregar);
+  - `GeneralTab` e `RollsTab` ganharam novas props (ver abaixo).
+- `src/app/dev/character-sheet/components/GeneralTab.tsx`:
+  - novas props `perfis`, `selectedProfileId`, `onSelectProfile`,
+    `onLoadPersonagemAtivo`, `profileWarning`, `personagens` (lista de
+    `CharacterRecord`, usada só para resolver o nome do personagem
+    ativo a partir do id);
+  - quando há mesa selecionada, novo `<select data-testid="perfil-select">`
+    listando os perfis (`"{apelido} ({Livre|Bloqueado})"`);
+  - quando há perfil selecionado, novo bloco mostrando "Status:
+    Livre/Bloqueado" (`data-testid="perfil-selecionado-status"`),
+    "Personagem ativo: {nome}" ou "nenhum"
+    (`data-testid="perfil-selecionado-personagem-ativo"`), botão
+    "Carregar personagem ativo" e o aviso discreto
+    (`data-testid="perfil-aviso"`) quando aplicável.
+- `src/app/dev/character-sheet/components/RollsTab.tsx`:
+  - novas props `profileId: string | null`, `profileNickname: string |
+    null`;
+  - os dois payloads já gravados em `persistirNaMesa` (rolagem de
+    perícia e de expressão) ganharam os campos `profileId` e
+    `profileNickname` no início do objeto — `characterId` e
+    `characterNome` já existiam desde o checkpoint v0.2 do relatório de
+    Mesas/Log, mantidos sem mudança.
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.
+
+Nenhuma migration nova, nenhuma mudança em `src/lib/table/storage.ts`,
+`src/lib/character/storage.ts`, `src/lib/content` (Biblioteca do
+Sistema) ou em `/dev/table` (exceto leitura — nenhum arquivo de
+`src/app/dev/table` foi tocado).
+
+## 2. Como o carregamento de perfis funciona
+
+- `handleSelectCampaign` é chamado pelo `<select>` de mesa (mesmo
+  elemento de antes, só trocou o handler) — busca
+  `listCampaignProfiles(campaignId)` via Server Action já existente
+  desde o checkpoint v0.6, sem nenhuma função nova em
+  `src/lib/table/storage.ts`.
+- Trocar de mesa zera `selectedProfileId` e `profileWarning` — evita
+  mostrar um perfil de uma mesa diferente da selecionada.
+- A lista de perfis (`perfis`) é estática após o fetch — não há
+  autoatualização nem refresh automático aqui; se o vínculo
+  personagem↔perfil mudar em `/dev/table` enquanto a ficha está aberta,
+  é preciso reselecionar a mesa (ou recarregar a página) para ver o
+  valor novo. Limitação aceita nesta etapa, mesmo critério já usado
+  para a lista de personagens (checkpoint v0.7).
+
+## 3. Como "Carregar personagem ativo" funciona
+
+- Lê `perfil.active_character_id` do perfil selecionado.
+- Se ausente (`null`): mostra `profileWarning` com o nome do perfil,
+  sem tentar nenhuma chamada ao Supabase.
+- Se presente: chama `handleLoad(activeCharacterId)` — a mesma função
+  já usada pela aba "Personagens salvos" desde a ficha mínima v0.2
+  (`getCharacter` + `normalizeCharacter` + `setCharacter`/`setCharacterId`).
+  Não há nenhuma lógica de carregamento duplicada; "Carregar personagem
+  ativo" é só um atalho para a mesma operação de carregar por id.
+- Depois de carregado, `characterId` na ficha passa a ser o id do
+  personagem vinculado ao perfil — é esse `characterId` que, na aba
+  Rolagens, preenche a coluna `character_id` de `table_logs` (já
+  existia desde o checkpoint v0.2 de Mesas/Log; não foi alterado aqui,
+  só passou a ter um valor real quando o personagem vem de "Carregar
+  personagem ativo").
+
+## 4. O que entra no payload das rolagens agora
+
+Exemplo real, persistido durante o teste manual (seção 5), de uma
+rolagem de perícia com mesa + perfil + personagem carregado:
+
+```json
+{
+  "character_id": "9dd19392-fd16-49b7-b32c-0b4929428b4d",
+  "type": "rolagem_pericia",
+  "visibility": "public",
+  "payload": {
+    "profileId": "a158b88a-86e1-4446-a54c-804aacbbc29b",
+    "profileNickname": "Mestre Teste v0.8",
+    "characterId": "9dd19392-fd16-49b7-b32c-0b4929428b4d",
+    "characterNome": "Kael Ironwood",
+    "atributo": "Corpo",
+    "atributoValor": 4,
+    "pericia": null,
+    "periciaValor": 0,
+    "modificador": 0,
+    "dados": [6, 1, 7, 2],
+    "maiorDado": 7,
+    "total": 7,
+    "cd": null,
+    "sucesso": null,
+    "margem": null,
+    "classificacaoMargem": null,
+    "origem": null
+  }
+}
+```
+
+A coluna `character_id` (fora do payload, na própria linha de
+`table_logs`) também veio preenchida, confirmando o item "se já houver
+selectedCharacterId na ficha, preencher também character_id na coluna"
+— isso já existia desde o checkpoint v0.2 do relatório de Mesas/Log
+(`addLog({ characterId: characterId ?? undefined, ... })`), e continua
+funcionando sem alteração; o que mudou aqui é que agora há um caminho
+direto (mesa → perfil → "Carregar personagem ativo") para chegar num
+`characterId` real antes de rolar.
+
+Se não houver mesa selecionada, ou mesa selecionada sem perfil
+escolhido, `profileId`/`profileNickname` simplesmente não são
+adicionados ao objeto passado para `persistirNaMesa` como `null`
+inventado — eles vêm diretamente do estado (`null` quando ausente,
+serializado como `"profileId": null` no JSONB, mesmo padrão já usado
+para `characterId`/`pericia`/`cd` etc.).
+
+## 5. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully in 2.4s
+  Running TypeScript ...
+  Finished TypeScript in 2.3s ...
+✓ Generating static pages using 5 workers (2/2) in 288ms
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /dev/character-sheet
+└ ƒ /dev/table
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage ===
+1. Criado: id=6bb5fd6a-77a9-4971-833e-0d4030db666f, schema_version=1
+2. Carregado por id: nome="__TESTE_STORAGE_RUPTURA__"
+3. Atualizado: nome="__TESTE_STORAGE_RUPTURA___editado", corpo=4
+4. Encontrado na listagem (3 personagens no total).
+5. Apagado e confirmado ausente via getCharacter.
+6. Confirmado: nenhum registro de teste residual.
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros — confirma que a conexão ficha↔perfil não
+afetou a camada de storage de personagem.
+
+## 6. Resultado do teste manual (browser, via preview tools)
+
+1. Em `/dev/table`, selecionei "Mesa Teste Fase 0", criei o perfil
+   "Mestre Teste v0.8" e vinculei "Kael Ironwood" como personagem ativo
+   (`<select>` do checkpoint v0.7) — confirmado o vínculo via leitura
+   do DOM.
+2. Naveguei para `/dev/character-sheet` — aba Geral, selecionei a
+   mesma mesa no `<select>` "Mesa" — novo `<select>` "Perfil nesta
+   mesa" apareceu, listando "Mestre Teste v0.8 (Livre)" e "gabi
+   (Livre)" (este último, perfil pré-existente de testes anteriores).
+3. Selecionei "Mestre Teste v0.8" — confirmado: "Status: Livre",
+   "Personagem ativo: Kael Ironwood".
+4. Cliquei "Carregar personagem ativo" — confirmado via leitura do DOM:
+   nome da ficha mudou para "Kael Ironwood", `id:
+   9dd19392-fd16-49b7-b32c-0b4929428b4d` (o mesmo id vinculado ao
+   perfil).
+5. Fui para a aba Rolagens, cliquei "Rolar" (rolagem de perícia,
+   Corpo, sem perícia) — sem erro de persistência
+   (`roll-persist-erro` ausente).
+6. Verifiquei o payload gravado diretamente via script auxiliar
+   (`scripts/_tmp_check_log_payload.ts`, criado e removido na mesma
+   sessão, nunca commitado, usando `listLogs` — a mesma Server Action
+   já pública) — confirmado: `character_id` da linha = id de Kael
+   Ironwood; `payload.profileId`/`profileNickname` = id/"Mestre Teste
+   v0.8"; `payload.characterId`/`characterNome` = id/"Kael Ironwood" —
+   ver JSON completo na seção 4.
+7. Testei o aviso: selecionei o perfil "gabi" (sem personagem ativo) e
+   cliquei "Carregar personagem ativo" — confirmado texto exato:
+   `O perfil "gabi" ainda não tem personagem ativo vinculado (ver
+   /dev/table).` (`data-testid="perfil-aviso"`), sem nenhuma chamada
+   de carregamento disparada.
+8. Sem erros no console (`preview_console_logs`) durante toda a
+   sequência.
+9. Removi o perfil de teste "Mestre Teste v0.8" via script auxiliar
+   (`scripts/_tmp_cleanup_v08.ts`, criado e removido na mesma sessão,
+   nunca commitado). A entrada de log gravada no passo 5 **não foi
+   removida** — `table_logs` é append-only por design (sem policy de
+   delete para anon/authenticated, ver migration 0003), mesmo critério
+   já aplicado nos checkpoints anteriores de rolagens de teste.
+
+Resultado: **todos os passos do teste manual passaram**, incluindo a
+confirmação direta no banco de que o payload inclui os 4 campos pedidos
+e que a coluna `character_id` foi preenchida.
+
+## 7. Confirmação de escopo
+
+- **Migration nova**: nenhuma.
+- **`/dev/table`**: não alterado — só leitura (perfis/personagens já
+  existiam de checkpoints anteriores).
+- **Autenticação**: não implementada.
+- **Link de convite**: não implementado.
+- **Heartbeat de presença**: não implementado.
+- **Biblioteca do Sistema** (`src/lib/content`): não alterada.
+- Nenhuma chave secreta exposta: os scripts auxiliares
+  (`scripts/_tmp_check_log_payload.ts`, `scripts/_tmp_cleanup_v08.ts`)
+  usaram exclusivamente `SUPABASE_URL`/`SUPABASE_ANON_KEY` (mesma
+  `getContentClient()`/Server Actions de sempre), foram criados e
+  removidos na mesma sessão, nunca commitados.

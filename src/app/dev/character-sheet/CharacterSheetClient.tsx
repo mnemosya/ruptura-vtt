@@ -31,7 +31,8 @@ import type {
   CharacterRulesPayload,
 } from "../../../lib/character";
 import type { PreparedRoll } from "../../../lib/dice";
-import type { Campaign } from "../../../lib/table";
+import { listCampaignProfiles } from "../../../lib/table/storage";
+import type { Campaign, CampaignProfile } from "../../../lib/table";
 import { CharacterSheetTabs, type TabId } from "./components/CharacterSheetTabs";
 import { GeneralTab } from "./components/GeneralTab";
 import { AttributesTab } from "./components/AttributesTab";
@@ -90,6 +91,14 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
   // rolagem em table_logs (ver checkpoint v0.2 do relatório de Mesas).
   const [mesas] = useState<Campaign[]>(mesasIniciais);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
+  // Perfis da mesa selecionada (campaign_profiles, migration 0004) — UI
+  // local, recarregada toda vez que a mesa muda. Perfil escolhido aqui
+  // também não persiste no payload do personagem, só serve para
+  // "Carregar personagem ativo" e para anotar profileId/profileNickname
+  // no payload das rolagens gravadas em table_logs (ver RollsTab).
+  const [perfis, setPerfis] = useState<CampaignProfile[]>([]);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [profileWarning, setProfileWarning] = useState<string | null>(null);
   // Log local mínimo (não persiste no Supabase) — alimentado por rolagens
   // (via callback passado a RollsTab) e pelos handlers de recurso/PA/
   // reação abaixo. Limitado às últimas 50 entradas.
@@ -174,6 +183,46 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
       setSaveState("error");
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao apagar.");
     }
+  }
+
+  /**
+   * Troca de mesa selecionada (aba Geral) — também recarrega os perfis
+   * dessa mesa (campaign_profiles). Trocar de mesa limpa o perfil
+   * selecionado anterior (perfis são por mesa, não fazem sentido
+   * "vazar" de uma mesa para outra).
+   */
+  async function handleSelectCampaign(id: string | null) {
+    setSelectedCampaignId(id);
+    setSelectedProfileId(null);
+    setProfileWarning(null);
+    if (!id) {
+      setPerfis([]);
+      return;
+    }
+    try {
+      setPerfis(await listCampaignProfiles(id));
+    } catch (err) {
+      setPerfis([]);
+      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao carregar perfis da mesa.");
+    }
+  }
+
+  /**
+   * Botão "Carregar personagem ativo" — busca o personagem vinculado
+   * (active_character_id) ao perfil selecionado e carrega na ficha,
+   * reusando handleLoad (mesmo fluxo de "Personagens salvos"). Se o
+   * perfil não tiver personagem ativo, mostra aviso discreto em vez de
+   * tentar carregar.
+   */
+  async function handleLoadPersonagemAtivo() {
+    setProfileWarning(null);
+    const perfil = perfis.find((p) => p.id === selectedProfileId);
+    if (!perfil) return;
+    if (!perfil.active_character_id) {
+      setProfileWarning(`O perfil "${perfil.nickname}" ainda não tem personagem ativo vinculado (ver /dev/table).`);
+      return;
+    }
+    await handleLoad(perfil.active_character_id);
   }
 
   function handleNew() {
@@ -330,7 +379,13 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
           onNew={handleNew}
           mesas={mesas}
           selectedCampaignId={selectedCampaignId}
-          onSelectCampaign={setSelectedCampaignId}
+          onSelectCampaign={handleSelectCampaign}
+          perfis={perfis}
+          selectedProfileId={selectedProfileId}
+          onSelectProfile={setSelectedProfileId}
+          onLoadPersonagemAtivo={handleLoadPersonagemAtivo}
+          profileWarning={profileWarning}
+          personagens={personagens}
         />
       )}
 
@@ -383,6 +438,8 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
           campaignId={selectedCampaignId}
           characterId={characterId}
           characterNome={character.nome}
+          profileId={selectedProfileId}
+          profileNickname={perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null}
         />
       )}
 

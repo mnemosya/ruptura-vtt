@@ -94,6 +94,8 @@ export function RollsTab({
   campaignId,
   characterId,
   characterNome,
+  profileId,
+  profileNickname,
 }: {
   atributos: CharacterAttributes;
   atributoDefinitions: AttributeDefinition[] | undefined;
@@ -107,6 +109,9 @@ export function RollsTab({
   campaignId: string | null;
   characterId: string | null;
   characterNome: string;
+  /** Perfil selecionado na aba Geral (campaign_profiles) — anotado no payload das rolagens. */
+  profileId: string | null;
+  profileNickname: string | null;
 }) {
   const atributoIds = ["corpo", "mente", "animo"] as const;
   const [atributoId, setAtributoId] = useState<(typeof atributoIds)[number]>("corpo");
@@ -190,6 +195,8 @@ export function RollsTab({
     onLog("rolagem_pericia", `${resultado.atributoNome}${periciaParte}: total ${resultado.total}${cdParte}`);
 
     await persistirNaMesa("rolagem_pericia", {
+      profileId,
+      profileNickname,
       characterId,
       characterNome,
       atributo: resultado.atributoNome,
@@ -216,6 +223,8 @@ export function RollsTab({
       onLog("rolagem_expressao", `"${resultado.expression}": total ${resultado.total}`);
 
       await persistirNaMesa("rolagem_expressao", {
+        profileId,
+        profileNickname,
         characterId,
         characterNome,
         expressao: resultado.expression,

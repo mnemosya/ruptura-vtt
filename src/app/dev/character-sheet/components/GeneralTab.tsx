@@ -1,11 +1,23 @@
 import { Section } from "./Section";
 import { buttonStyle } from "./styles";
 import { ModeToggle, type SheetMode } from "./ModeToggle";
-import type { Campaign } from "../../../../lib/table";
+import type { Campaign, CampaignProfile } from "../../../../lib/table";
+import type { CharacterRecord } from "../../../../lib/character";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
 const SEM_MESA = "";
+const SEM_PERFIL = "";
+
+const selectStyle = {
+  background: "#0f1014",
+  color: "inherit",
+  border: "1px solid #333",
+  borderRadius: 4,
+  padding: "6px 8px",
+  fontSize: 13,
+  maxWidth: 320,
+};
 
 export function GeneralTab({
   nome,
@@ -21,6 +33,12 @@ export function GeneralTab({
   mesas,
   selectedCampaignId,
   onSelectCampaign,
+  perfis,
+  selectedProfileId,
+  onSelectProfile,
+  onLoadPersonagemAtivo,
+  profileWarning,
+  personagens,
 }: {
   nome: string;
   characterId: string | null;
@@ -35,7 +53,17 @@ export function GeneralTab({
   mesas: Campaign[];
   selectedCampaignId: string | null;
   onSelectCampaign: (id: string | null) => void;
+  perfis: CampaignProfile[];
+  selectedProfileId: string | null;
+  onSelectProfile: (id: string | null) => void;
+  onLoadPersonagemAtivo: () => void;
+  profileWarning: string | null;
+  personagens: CharacterRecord[];
 }) {
+  const perfilSelecionado = perfis.find((p) => p.id === selectedProfileId) ?? null;
+  const personagemAtivo = perfilSelecionado
+    ? personagens.find((p) => p.id === perfilSelecionado.active_character_id) ?? null
+    : null;
   return (
     <Section title="Geral">
       <ModeToggle mode={sheetMode} onChange={onModeChange} />
@@ -72,21 +100,13 @@ export function GeneralTab({
         <span>schema version: {schemaVersion ?? "—"}</span>
       </div>
 
-      <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12 }}>
+      <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, marginBottom: 16 }}>
         Mesa (opcional — rolagens também gravam no log persistente dela)
         <select
           data-testid="mesa-select"
           value={selectedCampaignId ?? SEM_MESA}
           onChange={(e) => onSelectCampaign(e.target.value === SEM_MESA ? null : e.target.value)}
-          style={{
-            background: "#0f1014",
-            color: "inherit",
-            border: "1px solid #333",
-            borderRadius: 4,
-            padding: "6px 8px",
-            fontSize: 13,
-            maxWidth: 320,
-          }}
+          style={selectStyle}
         >
           <option value={SEM_MESA}>Nenhuma mesa (só log local)</option>
           {mesas.map((mesa) => (
@@ -96,6 +116,46 @@ export function GeneralTab({
           ))}
         </select>
       </label>
+
+      {selectedCampaignId && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12 }}>
+            Perfil nesta mesa (opcional — usado para "Carregar personagem ativo" e anotado nas rolagens)
+            <select
+              data-testid="perfil-select"
+              value={selectedProfileId ?? SEM_PERFIL}
+              onChange={(e) => onSelectProfile(e.target.value === SEM_PERFIL ? null : e.target.value)}
+              style={selectStyle}
+            >
+              <option value={SEM_PERFIL}>Nenhum perfil</option>
+              {perfis.map((perfil) => (
+                <option key={perfil.id} value={perfil.id}>
+                  {perfil.nickname} ({perfil.is_locked ? "Bloqueado" : "Livre"})
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {perfilSelecionado && (
+            <div style={{ fontSize: 12, opacity: 0.7, display: "flex", flexDirection: "column", gap: 4 }}>
+              <span data-testid="perfil-selecionado-status">
+                Status: {perfilSelecionado.is_locked ? "Bloqueado" : "Livre"}
+              </span>
+              <span data-testid="perfil-selecionado-personagem-ativo">
+                Personagem ativo: {personagemAtivo ? personagemAtivo.name : "nenhum"}
+              </span>
+              <button onClick={onLoadPersonagemAtivo} style={{ ...buttonStyle, alignSelf: "flex-start" }}>
+                Carregar personagem ativo
+              </button>
+              {profileWarning && (
+                <span data-testid="perfil-aviso" style={{ color: "#ffb84f" }}>
+                  {profileWarning}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </Section>
   );
 }
