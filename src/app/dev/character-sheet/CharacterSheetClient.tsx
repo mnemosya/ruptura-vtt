@@ -21,8 +21,10 @@ import type {
   Character,
   CharacterAttributes,
   CharacterRecord,
+  CharacterResources,
   CharacterRulesPayload,
   DerivedDefinition,
+  DerivedStats,
 } from "../../../lib/character";
 
 interface Props {
@@ -59,6 +61,19 @@ function clamp(value: number, min: number, max: number): number {
   if (Number.isNaN(value)) return min;
   return Math.min(max, Math.max(min, value));
 }
+
+/** Recurso atual: inteiro, sem teto (pode passar do máximo), nunca negativo. */
+function parseRecursoAtual(rawValue: number): number {
+  if (!Number.isFinite(rawValue)) return 0;
+  return Math.max(0, Math.trunc(rawValue));
+}
+
+const RECURSO_ATUAL_FIELDS = [
+  { id: "pv", label: "PV atual", maxId: "pv_max" },
+  { id: "pe", label: "PE atual", maxId: "pe_max" },
+  { id: "mana", label: "Mana atual", maxId: "mana_max" },
+  { id: "integridade", label: "Integridade atual", maxId: "integridade_max" },
+] as const satisfies readonly { id: keyof CharacterResources; label: string; maxId: keyof DerivedStats }[];
 
 function derivedMetaById(regras: CharacterRulesPayload | null, id: string): DerivedDefinition | undefined {
   return regras?.derivados.find((d) => d.id === id);
@@ -165,6 +180,30 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
     setCharacter((prev) => ({
       ...prev,
       pericias: { ...prev.pericias, [id]: clamp(rawValue, min, max) },
+    }));
+  }
+
+  /**
+   * Edição manual de recursos atuais (PV/PE/Mana/Integridade). Aceita
+   * só inteiro >= 0; não trava no máximo de propósito — combate/dano
+   * fica para depois, aqui é só edição livre com aviso visual.
+   */
+  function updateRecursoAtual(id: keyof CharacterResources, rawValue: number) {
+    setCharacter((prev) => ({
+      ...prev,
+      recursos_atuais: { ...prev.recursos_atuais, [id]: parseRecursoAtual(rawValue) },
+    }));
+  }
+
+  function handleRestoreRecursosMax() {
+    setCharacter((prev) => ({
+      ...prev,
+      recursos_atuais: {
+        pv: derivados.pv_max,
+        pe: derivados.pe_max,
+        mana: derivados.mana_max,
+        integridade: derivados.integridade_max,
+      },
     }));
   }
 
@@ -324,14 +363,23 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
 
           <Section title="Recursos atuais">
             <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 8 }}>
-              Somente leitura por enquanto — preenchido com os máximos ao salvar, se ainda
-              ausente. Dano/cura/gasto ficam para a etapa de combate.
+              Edição manual (inteiro, sem negativo). Sem regra de dano/cura/gasto ainda —
+              isso fica para a etapa de combate.
             </p>
+            <button onClick={handleRestoreRecursosMax} style={{ ...buttonStyle, marginBottom: 12 }}>
+              Restaurar recursos ao máximo
+            </button>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-              <Stat label="PV atual" value={character.recursos_atuais?.pv ?? "—"} />
-              <Stat label="PE atual" value={character.recursos_atuais?.pe ?? "—"} />
-              <Stat label="Mana atual" value={character.recursos_atuais?.mana ?? "—"} />
-              <Stat label="Integridade atual" value={character.recursos_atuais?.integridade ?? "—"} />
+              {RECURSO_ATUAL_FIELDS.map(({ id, label, maxId }) => (
+                <ResourceField
+                  key={id}
+                  testId={`recurso-atual-${id}`}
+                  label={label}
+                  value={character.recursos_atuais?.[id] ?? 0}
+                  max={derivados[maxId]}
+                  onChange={(v) => updateRecursoAtual(id, v)}
+                />
+              ))}
             </div>
           </Section>
         </>
@@ -425,6 +473,54 @@ function Stat({
         {value}
       </div>
       {hint && <div style={{ fontSize: 11, opacity: 0.4 }}>{hint}</div>}
+    </div>
+  );
+}
+
+function ResourceField({
+  label,
+  value,
+  max,
+  testId,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  testId?: string;
+  onChange: (value: number) => void;
+}) {
+  const acimaDoMaximo = value > max;
+  return (
+    <div style={{ background: "#1d1e24", borderRadius: 8, padding: "10px 14px" }}>
+      <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 4 }}>{label}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <input
+          type="number"
+          data-testid={testId}
+          value={value}
+          min={0}
+          step={1}
+          onChange={(e) => onChange(Number(e.target.value))}
+          style={{
+            width: 64,
+            fontSize: 18,
+            fontWeight: 700,
+            background: "#0f1014",
+            color: "inherit",
+            border: "1px solid #333",
+            borderRadius: 4,
+            padding: "4px 6px",
+            textAlign: "center",
+          }}
+        />
+        <span style={{ fontSize: 13, opacity: 0.5 }}>/ {max}</span>
+      </div>
+      {acimaDoMaximo && (
+        <div data-testid={testId ? `${testId}-aviso` : undefined} style={{ fontSize: 11, color: "#f5a623", marginTop: 4 }}>
+          acima do máximo
+        </div>
+      )}
     </div>
   );
 }

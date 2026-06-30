@@ -633,3 +633,130 @@ tabela.
 - Nenhuma chave secreta exposta: a aba Debug mostra só `selectedCharacterId`,
   `schema_version`, `saveState`, `errorMessage` e contagens — nunca o payload
   inteiro, nunca `.env.local` nem variáveis de ambiente.
+
+---
+
+# Checkpoint v0.5 — Recursos atuais editáveis
+
+Transforma "Recursos atuais" (PV/PE/Mana/Integridade), na aba Recursos, de
+somente leitura para campos editáveis manualmente — sem implementar dano,
+cura, descanso ou gasto automático (isso fica para a etapa de combate).
+
+## 1. Arquivos alterados
+
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — único arquivo
+  alterado:
+  - novo helper `parseRecursoAtual()` (inteiro, nunca negativo, sem teto);
+  - nova constante `RECURSO_ATUAL_FIELDS` (mapeia `pv`/`pe`/`mana`/`integridade`
+    para seus rótulos e ids de derivado `_max` correspondentes);
+  - novas funções `updateRecursoAtual(id, rawValue)` e
+    `handleRestoreRecursosMax()`;
+  - novo componente `ResourceField` (input numérico + "/ máximo" + aviso
+    "acima do máximo" quando aplicável);
+  - seção "Recursos atuais" da aba Recursos passou de `Stat` (somente leitura)
+    para `ResourceField` (editável) + botão "Restaurar recursos ao máximo".
+
+`src/lib/character/types.ts` e `src/lib/character/normalizeCharacter.ts`
+**não precisaram ser alterados** — `normalizeCharacter` já preservava valores
+existentes de `recursos_atuais` e só preenchia os ausentes com os `_max`
+(comportamento implementado no checkpoint v0.3), que é exatamente a regra
+pedida aqui: "recursos atuais só devem ser preenchidos automaticamente com
+máximos quando estiverem ausentes".
+
+Nenhuma mudança em `storage.ts`, banco, migrations ou `src/lib/content`
+(Biblioteca do Sistema).
+
+## 2. Comportamento dos campos editáveis
+
+- Cada campo (`PV atual`, `PE atual`, `Mana atual`, `Integridade atual`) é um
+  `<input type="number">` com o máximo correspondente exibido ao lado
+  (`/ pv_max`, `/ pe_max`, `/ mana_max`, `/ integridade_max`, calculados pela
+  ficha a partir das regras reais do Supabase).
+- `parseRecursoAtual()` aceita apenas inteiro (`Math.trunc`) e nunca permite
+  valor negativo (`Math.max(0, ...)`) — não há trava de máximo de propósito.
+- Editar um recurso atualiza só aquele campo em `character.recursos_atuais`
+  (spread preserva os outros três).
+- Se o valor digitado for maior que o `_max` correspondente, aparece um aviso
+  discreto "acima do máximo" abaixo do campo (cor âmbar, sem bloquear nada).
+
+## 3. Comportamento do botão "Restaurar recursos ao máximo"
+
+Preenche de uma vez os quatro campos com os derivados atuais calculados pela
+ficha: `pv = pv_max`, `pe = pe_max`, `mana = mana_max`,
+`integridade = integridade_max`. É uma ação local — só reflete no estado da
+UI; só persiste no banco se o usuário clicar em "Salvar personagem" depois.
+
+## 4. Confirmação — salvar/carregar preserva recursos atuais
+
+- Ao salvar, `handleSave` continua chamando
+  `normalizeCharacter(character, derivados)`: como os quatro campos de
+  `recursos_atuais` já estão preenchidos (editados manualmente ou via
+  "Restaurar ao máximo"), `normalizeCharacter` não sobrescreve nada — só
+  preencheria automaticamente um campo que ainda estivesse ausente (ex.: se o
+  usuário editasse só PV e deixasse os outros três sem tocar, esses sim
+  herdariam o `_max` ao salvar, conforme já documentado no checkpoint v0.3).
+- Testado na prática (ver seção 6): editar os quatro valores manualmente,
+  salvar, recarregar a página e carregar o personagem trouxe de volta
+  exatamente os valores editados, não os máximos.
+- Personagem antigo sem `recursos_atuais` no payload (`Kael Ironwood`, salvo
+  antes do checkpoint v0.3) continua carregando sem erro — `normalizeCharacter`
+  garante o objeto `recursos_atuais` mesmo vazio, e os campos exibem `0` (valor
+  do helper `?? 0`, já que agora são inputs editáveis, não mais "—").
+
+## 5. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully in 1634ms
+  Running TypeScript ...
+  Finished TypeScript in 2.0s ...
+✓ Generating static pages using 4 workers (2/2) in 239ms
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage ===
+1. Criado: id=92dccfb3-f7a5-4d08-af22-71c140f31304, schema_version=1
+2. Carregado por id: nome="__TESTE_STORAGE_RUPTURA__"
+3. Atualizado: nome="__TESTE_STORAGE_RUPTURA___editado", corpo=4
+4. Encontrado na listagem (2 personagens no total).
+5. Apagado e confirmado ausente via getCharacter.
+6. Confirmado: nenhum registro de teste residual.
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros.
+
+## 6. Resultado do teste manual (browser, via preview tools)
+
+Executados os 14 passos pedidos, de ponta a ponta:
+
+1–2. Abri `/dev/character-sheet`, criei novo personagem ("Novo personagem").
+3. Corpo=4, Mente=3, Ânimo=5 (aba Atributos).
+4–5. Aba Recursos → "Restaurar recursos ao máximo".
+6. Confirmado: PV=14/14, PE=13/13, Mana=20/20, Integridade=20/20.
+7. Editei manualmente: PV=7, PE=8, Mana=11, Integridade=15.
+8. Nome alterado para "Teste Recursos Editaveis" → "Salvar personagem" → "✓
+   Salvo".
+9. Página recarregada.
+10. Fui em "Personagens salvos" → "Carregar" no personagem de teste.
+11. Confirmado na aba Recursos: PV=7, PE=8, Mana=11, Integridade=15 —
+    exatamente os valores salvos no passo 7/8.
+12. Cliquei "Restaurar recursos ao máximo" de novo → confirmado: PV=14, PE=13,
+    Mana=20, Integridade=20.
+13. Editei PV para 99 → apareceu o aviso discreto "acima do máximo" abaixo do
+    campo PV (os outros três, dentro do limite, sem aviso).
+14. Apaguei o personagem de teste via "Apagar" na aba Personagens salvos —
+    confirmado que sobrou só "Kael Ironwood" na lista.
+
+Resultado: **passou em todos os 14 passos**.
+
+## 7. Confirmação de escopo
+
+- **Biblioteca do Sistema**, **banco/migrations**: não alterados.
+- **Inventário, magia, combate**: não implementados — recursos atuais
+  continuam sem dano/cura/gasto automático, só edição manual livre.
+- **Autenticação**: não implementada.
+- **`storage.ts`**: não alterado.
+- Nenhuma chave secreta exposta — nenhuma mudança na aba Debug nem em
+  variáveis de ambiente.
