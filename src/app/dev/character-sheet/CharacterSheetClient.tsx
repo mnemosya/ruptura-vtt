@@ -36,6 +36,7 @@ import { SkillsTab } from "./components/SkillsTab";
 import { ResourcesTab } from "./components/ResourcesTab";
 import { SavedCharactersTab } from "./components/SavedCharactersTab";
 import { DebugTab } from "./components/DebugTab";
+import type { SheetMode } from "./components/ModeToggle";
 
 interface Props {
   regras: CharacterRulesPayload | null;
@@ -63,6 +64,8 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>("geral");
+  // Estado de UI local — não vai para o payload salvo (ver handleSave).
+  const [sheetMode, setSheetMode] = useState<SheetMode>("jogo");
 
   const derivados = useMemo(
     () => computeDerivedStats(character.atributos, regras),
@@ -141,6 +144,9 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
   }
 
   function updateAtributo(id: keyof CharacterAttributes, rawValue: number) {
+    // Defesa em profundidade: o input já vem `disabled` em Modo Jogo
+    // (não dispara onChange), mas o handler também recusa por garantia.
+    if (sheetMode === "jogo") return;
     const def = regras?.atributos.find((a) => a.id === id);
     const min = def?.valor_minimo ?? 1;
     const max = def?.valor_maximo ?? 5;
@@ -151,6 +157,7 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
   }
 
   function updatePericia(id: string, rawValue: number) {
+    if (sheetMode === "jogo") return;
     const def = regras?.pericias.find((p) => p.id === id);
     const min = def?.valor_minimo ?? 0;
     const max = def?.valor_maximo ?? 5;
@@ -204,6 +211,8 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
           schemaVersion={character.metadados?.schema_version}
           saveState={saveState}
           errorMessage={errorMessage}
+          sheetMode={sheetMode}
+          onModeChange={setSheetMode}
           onNomeChange={(value) => setCharacter((prev) => ({ ...prev, nome: value }))}
           onSave={handleSave}
           onNew={handleNew}
@@ -211,11 +220,21 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
       )}
 
       {activeTab === "atributos" && (
-        <AttributesTab atributos={character.atributos} definitions={regras?.atributos} onChange={updateAtributo} />
+        <AttributesTab
+          atributos={character.atributos}
+          definitions={regras?.atributos}
+          readOnly={sheetMode === "jogo"}
+          onChange={updateAtributo}
+        />
       )}
 
       {activeTab === "pericias" && (
-        <SkillsTab pericias={character.pericias} definitions={regras?.pericias} onChange={updatePericia} />
+        <SkillsTab
+          pericias={character.pericias}
+          definitions={regras?.pericias}
+          readOnly={sheetMode === "jogo"}
+          onChange={updatePericia}
+        />
       )}
 
       {activeTab === "recursos" && (

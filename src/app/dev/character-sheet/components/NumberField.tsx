@@ -5,6 +5,7 @@ export function NumberField({
   max,
   compact,
   testId,
+  disabled,
   onChange,
 }: {
   label: string;
@@ -13,6 +14,7 @@ export function NumberField({
   max: number;
   compact?: boolean;
   testId?: string;
+  disabled?: boolean;
   onChange: (value: number) => void;
 }) {
   return (
@@ -25,6 +27,7 @@ export function NumberField({
         background: "#1d1e24",
         borderRadius: 8,
         padding: compact ? "6px 10px" : "10px 14px",
+        opacity: disabled ? 0.55 : 1,
       }}
     >
       <span style={{ fontSize: compact ? 13 : 14 }}>{label}</span>
@@ -34,6 +37,7 @@ export function NumberField({
         value={value}
         min={min}
         max={max}
+        disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
         style={{
           width: 56,
@@ -43,6 +47,7 @@ export function NumberField({
           borderRadius: 4,
           padding: "2px 6px",
           textAlign: "center",
+          cursor: disabled ? "not-allowed" : "text",
         }}
       />
     </label>

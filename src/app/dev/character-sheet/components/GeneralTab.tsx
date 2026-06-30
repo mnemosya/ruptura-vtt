@@ -1,5 +1,6 @@
 import { Section } from "./Section";
 import { buttonStyle } from "./styles";
+import { ModeToggle, type SheetMode } from "./ModeToggle";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -9,6 +10,8 @@ export function GeneralTab({
   schemaVersion,
   saveState,
   errorMessage,
+  sheetMode,
+  onModeChange,
   onNomeChange,
   onSave,
   onNew,
@@ -18,12 +21,16 @@ export function GeneralTab({
   schemaVersion: number | undefined;
   saveState: SaveState;
   errorMessage: string | null;
+  sheetMode: SheetMode;
+  onModeChange: (mode: SheetMode) => void;
   onNomeChange: (value: string) => void;
   onSave: () => void;
   onNew: () => void;
 }) {
   return (
     <Section title="Geral">
+      <ModeToggle mode={sheetMode} onChange={onModeChange} />
+
       <input
         value={nome}
         onChange={(e) => onNomeChange(e.target.value)}

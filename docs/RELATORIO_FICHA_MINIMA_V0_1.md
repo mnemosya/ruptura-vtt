@@ -894,3 +894,163 @@ Resultado: **passou em todos os 13 passos**.
 - **Biblioteca do Sistema** (`src/lib/content`): não alterada.
 - Nenhuma chave secreta exposta — refatoração foi inteiramente de UI/
   apresentação, sem tocar em env vars ou Server Actions.
+
+---
+
+# Checkpoint v0.7 — Modo Jogo e Modo Evolução
+
+Adiciona um seletor de modo à ficha (`Modo Jogo` / `Modo Evolução`), conforme o
+PRD: Jogo é a visão padrão de sessão (só o que muda em jogo é editável);
+Evolução é o modo deliberado para alterações permanentes. Sem progressão por
+PM ainda — isso fica para uma etapa futura.
+
+## 1. Arquivos criados
+
+- `src/app/dev/character-sheet/components/ModeToggle.tsx` — exporta
+  `SHEET_MODES`, o tipo `SheetMode` (`"jogo" | "evolucao"`) e o componente
+  `ModeToggle` (dois botões, com `data-testid="mode-jogo"`/`"mode-evolucao"`).
+
+## 2. Arquivos alterados
+
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — novo estado
+  `sheetMode` (`useState<SheetMode>("jogo")`, padrão Jogo); `updateAtributo` e
+  `updatePericia` agora recusam a mudança (`return` antecipado) quando
+  `sheetMode === "jogo"` — defesa em profundidade, já que o input desabilitado
+  já não dispara `onChange`; `sheetMode` e `onModeChange` passados para
+  `GeneralTab`; `readOnly={sheetMode === "jogo"}` passado para `AttributesTab`
+  e `SkillsTab`.
+- `src/app/dev/character-sheet/components/GeneralTab.tsx` — recebe
+  `sheetMode`/`onModeChange`, renderiza `<ModeToggle>` no topo da aba.
+- `src/app/dev/character-sheet/components/AttributesTab.tsx` — recebe
+  `readOnly: boolean`; passa `disabled={readOnly}` para cada `NumberField` e
+  mostra "Edite este bloco no Modo Evolução." quando `readOnly`.
+- `src/app/dev/character-sheet/components/SkillsTab.tsx` — mesma mudança de
+  `AttributesTab` (prop `readOnly`, `disabled`, aviso).
+- `src/app/dev/character-sheet/components/NumberField.tsx` — novo prop opcional
+  `disabled`; quando ativo, o `<input>` ganha `disabled`, opacidade reduzida e
+  cursor `not-allowed`.
+
+`ResourcesTab.tsx` **não foi alterado** — recursos atuais continuam editáveis
+em ambos os modos por design (item 3/4 do pedido), então não havia nada para
+mudar ali. `storage.ts` e `normalizeCharacter.ts` também não foram tocados.
+
+## 3. Comportamento do Modo Jogo (padrão)
+
+- Nome: editável (aba Geral).
+- Recursos atuais (PV/PE/Mana/Integridade): editáveis, botão "Restaurar
+  recursos ao máximo" funcionando normalmente.
+- Atributos: campos `disabled`, com aviso "Edite este bloco no Modo Evolução."
+  no topo da aba.
+- Perícias: mesma coisa — campos `disabled` + aviso.
+- Nenhuma aba foi removida; as abas Atributos/Perícias continuam visíveis e
+  navegáveis, só os campos dentro delas ficam travados.
+
+## 4. Comportamento do Modo Evolução
+
+- Atributos voltam a ser editáveis (sem `disabled`, sem aviso).
+- Perícias voltam a ser editáveis.
+- Recursos atuais continuam editáveis (sem mudança de comportamento entre os
+  dois modos).
+- Derivados continuam recalculando via `useMemo` ao alterar atributos —
+  nenhuma mudança nessa lógica.
+
+## 5. O que fica travado em cada modo
+
+| Bloco | Modo Jogo | Modo Evolução |
+|---|---|---|
+| Nome | editável | editável |
+| Atributos | **travado** (+ aviso) | editável |
+| Perícias | **travado** (+ aviso) | editável |
+| Recursos atuais | editável | editável |
+| Derivados | somente leitura (sempre foram) | somente leitura |
+
+## 6. Confirmação — salvar/carregar continua funcionando
+
+- `sheetMode` é estado de UI local — **não** entra no payload salvo (não foi
+  adicionado a `Character`/`normalizeCharacter`, exatamente como pedido).
+- `handleSave` continua chamando `normalizeCharacter(character, derivados)` e
+  `createCharacter`/`updateCharacter` sem nenhuma mudança.
+- Ao carregar (`handleLoad`), o modo da UI **é mantido como estava antes do
+  carregamento** — `handleLoad` não toca em `sheetMode`. Essa foi a opção mais
+  simples (zero código extra) entre as duas sugeridas no pedido; documentado
+  aqui conforme solicitado. Na prática, como o `sheetMode` por padrão começa
+  em "jogo" e só muda por ação explícita do usuário, isso significa: se o
+  usuário não mexeu no seletor, carregar um personagem mantém Modo Jogo; se
+  ele tinha trocado para Evolução antes de carregar, o carregamento preserva
+  Evolução.
+- Testado na prática (seção 8): editei atributos/perícia em Modo Evolução,
+  voltei para Modo Jogo, editei PV atual, salvei, recarreguei a página,
+  carreguei o personagem — atributos, perícias, derivados e PV salvo vieram
+  todos corretos.
+
+## 7. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully in 1535ms
+  Running TypeScript ...
+  Finished TypeScript in 2.2s ...
+✓ Generating static pages using 4 workers (2/2) in 241ms
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage ===
+1. Criado: id=97976cea-477e-4caa-a549-418d74b4aa85, schema_version=1
+2. Carregado por id: nome="__TESTE_STORAGE_RUPTURA__"
+3. Atualizado: nome="__TESTE_STORAGE_RUPTURA___editado", corpo=4
+4. Encontrado na listagem (2 personagens no total).
+5. Apagado e confirmado ausente via getCharacter.
+6. Confirmado: nenhum registro de teste residual.
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros.
+
+## 8. Resultado do teste manual (browser, via preview tools)
+
+Executados os 18 passos pedidos, de ponta a ponta:
+
+1–2. Abri `/dev/character-sheet` — confirmado abrindo em Modo Jogo (botão
+   "Modo Jogo" em negrito/destacado).
+3. Aba Atributos: `corpo.disabled === true`, aviso "Edite este bloco no Modo
+   Evolução." presente.
+4. Aba Perícias: input `disabled === true`, mesmo aviso presente.
+5. Aba Recursos: PV/PE/Mana/Integridade atuais com `disabled === false` —
+   continuam editáveis em Modo Jogo.
+6. Voltei para Geral, cliquei "Modo Evolução".
+7. Aba Atributos: `disabled === false` (destravado); Corpo=4, Mente=3,
+   Ânimo=5.
+8. Aba Perícias: `disabled === false`; alterei uma perícia (Arcanismo) para 2.
+9. Aba Recursos — derivados confirmados: `pv_max=14, pe_max=13, mana_max=20,
+   integridade_max=20, reacoes_por_rodada=3, andar_m=14m, correr_m=28m,
+   pa_max=3`.
+10. Voltei para Geral, cliquei "Modo Jogo".
+11. Aba Atributos: voltou `disabled === true`, valores preservados
+    (Corpo=4, Mente=3, Ânimo=5); aba Perícias: também `disabled === true`.
+12. Aba Recursos: "Restaurar recursos ao máximo".
+13. Editei PV atual para 7.
+14. Nome alterado para "Teste Modo Jogo Evolucao" → "Salvar personagem" →
+    "✓ Salvo".
+15. Página recarregada.
+16. Fui em "Personagens salvos" → "Carregar" no personagem de teste.
+17. Confirmado: atributos `{corpo:4, mente:3, animo:5}`, derivados
+    `{pv_max:14, pe_max:13, mana_max:20, integridade_max:20}`, recursos atuais
+    `{pv:7, pe:13, mana:20, integridade:20}` (PV editado preservado, os
+    outros três nos máximos restaurados no passo 12) — todos corretos.
+18. Apaguei o personagem de teste via "Apagar" — confirmado que sobrou só
+    "Kael Ironwood" na lista.
+
+Resultado: **passou em todos os 18 passos**.
+
+## 9. Confirmação de escopo
+
+- **PM/progressão**: não implementado — o seletor de modo existe, mas não há
+  nenhuma lógica de pontos de melhoria associada ainda.
+- **Inventário, magia, combate**: não implementados.
+- **Banco/migrations**: nenhuma alteração.
+- **`storage.ts`**: não alterado.
+- **`normalizeCharacter.ts`**: não alterado — `sheetMode` é estado de UI puro,
+  não passa pelo payload nem pela normalização.
+- **Biblioteca do Sistema** (`src/lib/content`): não alterada.
+- Nenhuma chave secreta exposta.
