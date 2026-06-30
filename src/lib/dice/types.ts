@@ -51,14 +51,19 @@ export interface RupturaRollParams {
 /**
  * Classificação simples da margem quando há CD. Não é regra de jogo
  * nova (dano/região do corpo/combate) — só uma leitura mais rápida do
- * número de margem já calculado:
- *   - falha: total < CD;
- *   - sucesso_limitado: total >= CD e margem entre 0 e 1;
- *   - sucesso_padrao: margem entre 2 e 4;
- *   - sucesso_critico: margem 5+.
+ * número de margem já calculado, cobrindo todo o eixo (negativo e
+ * positivo):
+ *   - falha_critica:    margem <= -5;
+ *   - falha:             margem entre -4 e -2;
+ *   - falha_limitada:    margem == -1;
+ *   - sucesso_limitado:  margem entre 0 e 1;
+ *   - sucesso_padrao:    margem entre 2 e 4;
+ *   - sucesso_critico:   margem >= 5.
  */
 export const MARGEM_CLASSIFICACOES = [
+  "falha_critica",
   "falha",
+  "falha_limitada",
   "sucesso_limitado",
   "sucesso_padrao",
   "sucesso_critico",

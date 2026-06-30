@@ -2,13 +2,15 @@ import { rollDie } from "./rollExpression";
 import type { MargemClassificacao, RupturaRollParams, RupturaRollResult } from "./types";
 
 /**
- * Classifica a margem de uma rolagem já resolvida contra CD. Não
- * reinterpreta a regra de sucesso/falha (já decidida por `total >= cd`
- * antes de chamar isto) — só agrupa o número de margem numa leitura
- * rápida, sem mexer em dano/região do corpo/combate.
+ * Classifica a margem de uma rolagem já resolvida contra CD. A margem
+ * sozinha já determina a categoria (negativa = falha, >=0 = sucesso) —
+ * não reinterpreta `sucesso`/`total >= cd`, só agrupa o número numa
+ * leitura rápida, sem mexer em dano/região do corpo/combate.
  */
-function classificarMargem(sucesso: boolean, margem: number): MargemClassificacao {
-  if (!sucesso) return "falha";
+function classificarMargem(margem: number): MargemClassificacao {
+  if (margem <= -5) return "falha_critica";
+  if (margem <= -2) return "falha";
+  if (margem === -1) return "falha_limitada";
   if (margem <= 1) return "sucesso_limitado";
   if (margem <= 4) return "sucesso_padrao";
   return "sucesso_critico";
@@ -52,6 +54,6 @@ export function rollPericia(params: RupturaRollParams): RupturaRollResult {
     cd: params.cd,
     sucesso,
     margem,
-    classificacaoMargem: classificarMargem(sucesso, margem),
+    classificacaoMargem: classificarMargem(margem),
   };
 }

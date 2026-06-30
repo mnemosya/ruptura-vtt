@@ -26,14 +26,18 @@ const HISTORICO_MAX = 10;
 const SEM_PERICIA = "";
 
 const MARGEM_LABELS: Record<MargemClassificacao, string> = {
+  falha_critica: "Falha crítica",
   falha: "Falha",
+  falha_limitada: "Falha limitada",
   sucesso_limitado: "Sucesso limitado",
   sucesso_padrao: "Sucesso padrão",
   sucesso_critico: "Sucesso crítico",
 };
 
 const MARGEM_CORES: Record<MargemClassificacao, string> = {
+  falha_critica: "#c0392b",
   falha: "#ff6b6b",
+  falha_limitada: "#ff9f6b",
   sucesso_limitado: "#f5a623",
   sucesso_padrao: "#4caf50",
   sucesso_critico: "#5ec8ff",

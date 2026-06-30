@@ -1683,3 +1683,97 @@ genérica permaneceram intactos.
 - **`eval`**: não usado em nenhum momento (classificação é só comparações
   numéricas com `if`).
 - Nenhuma chave secreta exposta.
+
+---
+
+# Checkpoint v0.11.1 — Classificação de margem nas falhas
+
+Estende a classificação do checkpoint v0.11 (que só cobria o lado de
+sucesso) para o eixo negativo: agora toda a margem, positiva ou negativa,
+cai em alguma das 6 categorias.
+
+## 1. Arquivos alterados
+
+- `src/lib/dice/types.ts` — `MARGEM_CLASSIFICACOES` ganhou
+  `"falha_critica"`, `"falha"` e `"falha_limitada"` (antes só existia
+  `"falha"` cobrindo todo o lado negativo).
+- `src/lib/dice/rollRuptura.ts` — `classificarMargem()` reescrita para
+  classificar a partir só do número de `margem` (não precisa mais do
+  booleano `sucesso` como parâmetro, já que margem negativa por si só
+  já identifica falha):
+  ```ts
+  function classificarMargem(margem: number): MargemClassificacao {
+    if (margem <= -5) return "falha_critica";
+    if (margem <= -2) return "falha";
+    if (margem === -1) return "falha_limitada";
+    if (margem <= 1) return "sucesso_limitado";
+    if (margem <= 4) return "sucesso_padrao";
+    return "sucesso_critico";
+  }
+  ```
+- `src/app/dev/character-sheet/components/RollsTab.tsx` — `MARGEM_LABELS`/
+  `MARGEM_CORES` ganharam as 3 entradas novas ("Falha crítica" #c0392b,
+  "Falha" #ff6b6b, "Falha limitada" #ff9f6b).
+
+## 2. Regra final (6 categorias)
+
+```
+falha_critica:      margem <= -5
+falha:               margem -4 a -2
+falha_limitada:      margem -1
+sucesso_limitado:    margem 0-1
+sucesso_padrao:      margem 2-4
+sucesso_critico:     margem >= 5
+```
+
+A regra de rolagem (`total = maior d8 + perícia + modificador`, `sucesso`,
+`margem`) continua intacta — só a classificação ficou mais granular no lado
+negativo.
+
+## 3. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully in 1568ms
+  Running TypeScript ...
+  Finished TypeScript in 2.1s ...
+✓ Generating static pages using 4 workers (2/2) in 239ms
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage ===
+1. Criado: id=45b9447e-450f-45eb-92b7-5e64a7415c88, schema_version=1
+2. Carregado por id: nome="__TESTE_STORAGE_RUPTURA__"
+3. Atualizado: nome="__TESTE_STORAGE_RUPTURA___editado", corpo=4
+4. Encontrado na listagem (2 personagens no total).
+5. Apagado e confirmado ausente via getCharacter.
+6. Confirmado: nenhum registro de teste residual.
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros.
+
+## 4. Resultado do teste manual (browser, via preview tools)
+
+Personagem novo (Corpo=1 → 1d8, sem perícia, total 1–8), aba Rolagens:
+
+- **CD=9**, 15 rolagens → `margem = total - 9` (sempre negativo, range
+  -8 a -1): observei **Falha crítica** (margem -8 a -5), **Falha** (margem
+  -4 a -2) e **Falha limitada** (margem -1) — as 3 faixas negativas
+  confirmadas.
+- **CD=1**, 15 rolagens → observei **Sucesso limitado**, **Sucesso padrão**
+  e **Sucesso crítico** — as 3 faixas positivas reconfirmadas.
+- **Sem CD**: limpei o histórico, rolei sem CD → `0` elementos de
+  classificação no DOM, comportamento inalterado.
+- **Expressão genérica**: `2d6+3` → `Dados: d6=3, d6=3`, modificador `+3`,
+  total `9` — segue funcionando normalmente.
+
+Resultado: **as 6 categorias foram observadas em condições reais de
+rolagem** (sem mockar RNG), cobrindo agora os dois lados do eixo de margem.
+
+## 5. Confirmação de escopo
+
+Mesma confirmação do checkpoint v0.11: regra de rolagem, histórico de
+expressões, banco/storage/Biblioteca do Sistema, região do corpo/dano/
+combate/ações não foram tocados; nenhum `eval`; nenhuma chave exposta.
