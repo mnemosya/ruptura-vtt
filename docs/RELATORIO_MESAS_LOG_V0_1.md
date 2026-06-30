@@ -656,3 +656,157 @@ entre filtros com dados reais de cada tipo presentes).
 - **Autenticação**: não implementada.
 - **Biblioteca do Sistema** (`src/lib/content`): não alterada.
 - Nenhuma chave secreta exposta.
+
+---
+
+# Checkpoint v0.5 — Autoatualização visual do Log
+
+Adiciona um toggle "Autoatualizar" em `/dev/table`: quando ligado, busca
+os logs da mesa selecionada a cada 5 segundos via polling
+(`setInterval` + `listLogs()`, a mesma Server Action já usada pelo botão
+"Atualizar logs"). **Não é Supabase Realtime** — é polling simples no
+cliente, sem WebSocket/subscription.
+
+## 1. Arquivos alterados
+
+- `src/app/dev/table/TableClient.tsx` — único arquivo alterado:
+  - import de `useEffect` adicionado;
+  - nova constante `AUTO_REFRESH_INTERVAL_MS = 5000`;
+  - novos estados `autoAtualizar` (`useState<boolean>(false)`, padrão
+    desligado) e `ultimaAtualizacao` (`useState<Date | null>(null)`);
+  - `handleSelectMesa`, `handleAddLog` e `handleRefreshLogs` passaram a
+    chamar `setUltimaAtualizacao(new Date())` logo após
+    `setLogs(...)` — qualquer busca de logs (manual ou automática)
+    atualiza o mesmo carimbo de horário;
+  - novo `useEffect` com `setInterval(..., AUTO_REFRESH_INTERVAL_MS)`,
+    ativo só quando `autoAtualizar && selectedCampaignId`; busca
+    `listLogs(selectedCampaignId)`, chama `setLogs()` e
+    `setUltimaAtualizacao()`; `return () => clearInterval(intervalId)`
+    limpa o timer ao desligar o toggle, trocar de mesa ou desmontar o
+    componente;
+  - novo `<input type="checkbox" data-testid="auto-atualizar-toggle">`
+    com label "Autoatualizar", ao lado do botão "Atualizar logs";
+  - novo parágrafo `data-testid="auto-atualizar-status"`, mostrando
+    "Autoatualização ligada"/"Autoatualização desligada" + "— Última
+    atualização: HH:mm:ss" (via `toLocaleTimeString("pt-BR")") quando já
+    houve alguma busca.
+
+Nenhuma mudança em `src/lib/table/storage.ts`, `src/lib/table/types.ts`,
+banco, migrations, `src/app/dev/character-sheet` (ficha) ou
+`src/lib/content` (Biblioteca do Sistema). `formatRolagem`,
+`entryKindLabel`, `entryIcon`, o filtro de visibilidade (`visibilidadeFiltro`/
+`logsFiltrados`, do checkpoint v0.4) e `handleAddLog` não foram alterados
+em sua lógica — `handleAddLog` só ganhou a linha extra de
+`setUltimaAtualizacao`.
+
+## 2. Como o polling funciona
+
+- Intervalo fixo de 5000ms (`AUTO_REFRESH_INTERVAL_MS`), sem backoff nem
+  configuração de intervalo pela UI.
+- Cada tick chama exatamente `listLogs(selectedCampaignId)` — a mesma
+  Server Action de sempre — e faz `setLogs(proximosLogs)`, substituindo
+  a lista inteira a partir do servidor. Não há `[...logs, ...novos]`
+  nem merge manual, então **não há risco de duplicar entradas**: cada
+  tick reflete o estado real e completo da tabela `table_logs` para
+  aquela mesa no momento da consulta.
+- O filtro de visibilidade (`visibilidadeFiltro`) vive em um `useState`
+  separado, nunca tocado pelo efeito de polling — trocar de filtro e
+  deixar a autoatualização ligada não reseta a seleção do filtro.
+- Erros de rede durante o polling usam a mesma área de erro já existente
+  (`setErrorMessage`), sem travar o timer (o próximo tick tenta de
+  novo).
+- Trocar de mesa (`selectedCampaignId` muda) ou desligar o toggle
+  cancela o timer anterior via `clearInterval` no cleanup do
+  `useEffect`, evitando dois intervals concorrentes ou polling de uma
+  mesa que não está mais selecionada.
+
+## 3. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully in 2.3s
+  Running TypeScript ...
+  Finished TypeScript in 2.2s ...
+✓ Generating static pages using 5 workers (2/2) in 364ms
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /dev/character-sheet
+└ ƒ /dev/table
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage ===
+1. Criado: id=6406242b-fc70-4ba3-86bc-8ef05f766344, schema_version=1
+2. Carregado por id: nome="__TESTE_STORAGE_RUPTURA__"
+3. Atualizado: nome="__TESTE_STORAGE_RUPTURA___editado", corpo=4
+4. Encontrado na listagem (3 personagens no total).
+5. Apagado e confirmado ausente via getCharacter.
+6. Confirmado: nenhum registro de teste residual.
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros — confirma que o polling de UI não afetou a
+camada de storage de personagem.
+
+## 4. Resultado do teste manual (browser, via preview tools)
+
+1. Abri `/dev/table`, selecionei "Mesa Teste Fase 0" (11 logs
+   existentes) — status mostrou "Autoatualização desligada — Última
+   atualização: 17:15:03" (carimbo já preenchido pela própria seleção
+   da mesa, mesmo com o toggle desligado).
+2. Liguei "Autoatualizar" → status mudou para "Autoatualização ligada
+   — Última atualização: 17:15:03".
+3. Troquei o filtro para "Privada" → "LOG DA MESA (1/11)".
+4. Enviei pela própria UI uma mensagem privada de teste → apareceu na
+   hora (comportamento já existente de `handleAddLog`, inalterado),
+   contagem "LOG DA MESA (2/12)", filtro "Privada" preservado.
+5. **Simulei outro cliente**: inserido externamente, via script
+   (`scripts/_tmp_add_external_log.ts`, criado e removido na mesma
+   sessão, nunca commitado) usando a mesma `addLog()`/`listCampaigns()`
+   de `src/lib/table/storage.ts`, uma mensagem **pública** na mesma
+   mesa — sem clicar em nada na UI.
+6. Aguardei ~4s sem interagir → "LOG DA MESA (2/13)": o total subiu de
+   12 para 13 sozinho (a nova mensagem pública foi buscada pelo
+   polling), a contagem **filtrada continuou em 2** (a nova mensagem é
+   pública, então o filtro "Privada" corretamente a manteve oculta) —
+   "Última atualização" avançou para 17:16:22 sem nenhum clique manual.
+7. Troquei o filtro para "Todos" → confirmei a mensagem pública externa
+   no topo da lista, texto íntegro.
+8. Desliguei "Autoatualizar" → status voltou a "Autoatualização
+   desligada", carimbo parou em 17:16:47.
+9. Inseri mais uma entrada pública externamente (mesmo método do passo
+   5, script removido ao final). Aguardei 8s sem tocar na UI →
+   contagem **permaneceu em "LOG DA MESA (13/13)"**, carimbo
+   inalterado (17:16:47) — confirma que desligar o toggle realmente
+   para o polling.
+10. Cliquei "Atualizar logs" manualmente → contagem foi para
+    "LOG DA MESA (14/14)", confirmando que a entrada estava no banco o
+    tempo todo, só não tinha sido buscada automaticamente.
+11. Sem erros no console (`preview_console_logs`) durante toda a
+    sequência.
+
+Resultado: **todos os passos do teste manual passaram**, incluindo o
+cenário "outro cliente grava no banco" que o checklist original pedia
+implicitamente (uma mesa real, compartilhada, recebendo uma escrita
+externa enquanto a aba de teste só observa).
+
+## 5. Confirmação de escopo
+
+- **Supabase Realtime**: não implementado — o mecanismo é polling por
+  `setInterval` no cliente, não subscription/WebSocket.
+- **Banco/migrations**: nenhuma alteração.
+- **Ficha** (`src/app/dev/character-sheet`): não alterada.
+- **Envio de mensagens** (`handleAddLog`, payload de `table_logs`): não
+  alterado em sua lógica — só ganhou a atualização do carimbo de
+  horário, que é puramente de UI.
+- **Filtro de visibilidade** (checkpoint v0.4): preservado e testado em
+  conjunto com a autoatualização (passos 3–7 acima).
+- **Autenticação**: não implementada.
+- **Biblioteca do Sistema** (`src/lib/content`): não alterada.
+- Nenhuma chave secreta exposta: os dois scripts auxiliares usados para
+  simular gravações externas (`scripts/_tmp_add_external_log.ts` e
+  `scripts/_tmp_add_external_log2.ts`) usaram exclusivamente
+  `SUPABASE_URL`/`SUPABASE_ANON_KEY` (mesma `getContentClient()` de
+  sempre), foram criados e apagados na mesma sessão, nunca commitados.

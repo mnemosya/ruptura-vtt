@@ -7,7 +7,7 @@
  * padrão de CharacterSheetClient.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createCampaign, listCampaigns, addLog, listLogs } from "../../../lib/table/storage";
 import {
   TABLE_LOG_VISIBILITIES,
@@ -70,6 +70,8 @@ function entryIcon(type: string): string {
   return "•";
 }
 
+const AUTO_REFRESH_INTERVAL_MS = 5000;
+
 const VISIBILITY_FILTERS = ["todos", ...TABLE_LOG_VISIBILITIES] as const;
 type VisibilityFilter = (typeof VISIBILITY_FILTERS)[number];
 
@@ -94,6 +96,8 @@ export default function TableClient({ mesasIniciais }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [visibilidadeFiltro, setVisibilidadeFiltro] = useState<VisibilityFilter>("todos");
+  const [autoAtualizar, setAutoAtualizar] = useState(false);
+  const [ultimaAtualizacao, setUltimaAtualizacao] = useState<Date | null>(null);
 
   async function refreshMesas() {
     try {
@@ -121,6 +125,7 @@ export default function TableClient({ mesasIniciais }: Props) {
     setLoadingLogs(true);
     try {
       setLogs(await listLogs(id));
+      setUltimaAtualizacao(new Date());
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao carregar logs.");
     } finally {
@@ -140,6 +145,7 @@ export default function TableClient({ mesasIniciais }: Props) {
       });
       setMensagemInput("");
       setLogs(await listLogs(selectedCampaignId));
+      setUltimaAtualizacao(new Date());
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao registrar log.");
     }
@@ -151,12 +157,34 @@ export default function TableClient({ mesasIniciais }: Props) {
     setLoadingLogs(true);
     try {
       setLogs(await listLogs(selectedCampaignId));
+      setUltimaAtualizacao(new Date());
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao atualizar logs.");
     } finally {
       setLoadingLogs(false);
     }
   }
+
+  // Autoatualização: re-busca os logs da mesa selecionada a cada
+  // AUTO_REFRESH_INTERVAL_MS, sem mexer no filtro de visibilidade (estado
+  // separado, não tocado aqui) e sem indicador de "Carregando…" (evita
+  // piscar a lista a cada 5s). setLogs substitui a lista inteira a partir
+  // do servidor — não há append, então não há risco de duplicar entradas.
+  useEffect(() => {
+    if (!autoAtualizar || !selectedCampaignId) return;
+
+    const intervalId = setInterval(async () => {
+      try {
+        const proximosLogs = await listLogs(selectedCampaignId);
+        setLogs(proximosLogs);
+        setUltimaAtualizacao(new Date());
+      } catch (err) {
+        setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido na autoatualização.");
+      }
+    }, AUTO_REFRESH_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [autoAtualizar, selectedCampaignId]);
 
   const mesaAtual = mesas.find((m) => m.id === selectedCampaignId);
   const logsFiltrados =
@@ -278,10 +306,23 @@ export default function TableClient({ mesasIniciais }: Props) {
                 <button data-testid="atualizar-logs-button" onClick={handleRefreshLogs} style={buttonStyle}>
                   Atualizar logs
                 </button>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+                  <input
+                    data-testid="auto-atualizar-toggle"
+                    type="checkbox"
+                    checked={autoAtualizar}
+                    onChange={(e) => setAutoAtualizar(e.target.checked)}
+                  />
+                  Autoatualizar
+                </label>
               </div>
             </div>
-            <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
+            <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 4 }}>
               Filtro visual apenas; ainda sem segurança real.
+            </p>
+            <p data-testid="auto-atualizar-status" style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
+              {autoAtualizar ? "Autoatualização ligada" : "Autoatualização desligada"}
+              {ultimaAtualizacao && ` — Última atualização: ${ultimaAtualizacao.toLocaleTimeString("pt-BR")}`}
             </p>
             {loadingLogs && <p style={{ fontSize: 13, opacity: 0.6 }}>Carregando…</p>}
             {!loadingLogs && logs.length === 0 && (
