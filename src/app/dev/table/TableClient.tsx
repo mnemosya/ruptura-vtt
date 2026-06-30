@@ -16,6 +16,7 @@ import {
   createCampaignProfile,
   listCampaignProfiles,
   setCampaignProfileLocked,
+  setCampaignProfileActiveCharacter,
 } from "../../../lib/table/storage";
 import {
   TABLE_LOG_VISIBILITIES,
@@ -24,6 +25,7 @@ import {
   type TableLogEntry,
   type TableLogVisibility,
 } from "../../../lib/table";
+import type { CharacterRecord } from "../../../lib/character";
 
 const buttonStyle: React.CSSProperties = {
   background: "#1d1e24",
@@ -93,10 +95,12 @@ const VISIBILITY_FILTER_LABELS: Record<VisibilityFilter, string> = {
 
 interface Props {
   mesasIniciais: Campaign[];
+  personagensIniciais: CharacterRecord[];
 }
 
-export default function TableClient({ mesasIniciais }: Props) {
+export default function TableClient({ mesasIniciais, personagensIniciais }: Props) {
   const [mesas, setMesas] = useState<Campaign[]>(mesasIniciais);
+  const [personagens] = useState<CharacterRecord[]>(personagensIniciais);
   const [novaMesaNome, setNovaMesaNome] = useState("");
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const [logs, setLogs] = useState<TableLogEntry[]>([]);
@@ -177,6 +181,17 @@ export default function TableClient({ mesasIniciais }: Props) {
       await handleRefreshPerfis(selectedCampaignId);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao bloquear/desbloquear perfil.");
+    }
+  }
+
+  async function handleSetPersonagemAtivo(profileId: string, characterId: string | null) {
+    if (!selectedCampaignId) return;
+    setErrorMessage(null);
+    try {
+      await setCampaignProfileActiveCharacter(profileId, characterId);
+      await handleRefreshPerfis(selectedCampaignId);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao vincular personagem ativo.");
     }
   }
 
@@ -328,37 +343,68 @@ export default function TableClient({ mesasIniciais }: Props) {
               <p style={{ fontSize: 13, opacity: 0.6 }}>Nenhum perfil criado ainda nesta mesa.</p>
             )}
             <div data-testid="perfis-lista" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {perfis.map((perfil) => (
-                <div
-                  key={perfil.id}
-                  data-testid="perfil-entry"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 12,
-                    background: "#1d1e24",
-                    borderRadius: 8,
-                    padding: "10px 14px",
-                    fontSize: 13,
-                  }}
-                >
-                  <div>
-                    <span data-testid="perfil-apelido" style={{ fontWeight: 600 }}>
-                      {perfil.nickname}
-                    </span>
-                    <span
-                      data-testid="perfil-status"
-                      style={{ marginLeft: 10, fontSize: 11, opacity: 0.7, color: perfil.is_locked ? "#ffb84f" : "#7fd99a" }}
-                    >
-                      {perfil.is_locked ? "Bloqueado" : "Livre"}
-                    </span>
+              {perfis.map((perfil) => {
+                const personagemAtivo = personagens.find((p) => p.id === perfil.active_character_id);
+
+                return (
+                  <div
+                    key={perfil.id}
+                    data-testid="perfil-entry"
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                      background: "#1d1e24",
+                      borderRadius: 8,
+                      padding: "10px 14px",
+                      fontSize: 13,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                      <div>
+                        <span data-testid="perfil-apelido" style={{ fontWeight: 600 }}>
+                          {perfil.nickname}
+                        </span>
+                        <span
+                          data-testid="perfil-status"
+                          style={{ marginLeft: 10, fontSize: 11, opacity: 0.7, color: perfil.is_locked ? "#ffb84f" : "#7fd99a" }}
+                        >
+                          {perfil.is_locked ? "Bloqueado" : "Livre"}
+                        </span>
+                      </div>
+                      <button data-testid={`bloquear-perfil-${perfil.id}`} onClick={() => handleToggleLockPerfil(perfil)} style={buttonStyle}>
+                        {perfil.is_locked ? "Desbloquear" : "Bloquear"}
+                      </button>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <span data-testid="perfil-personagem-ativo" style={{ fontSize: 11, opacity: 0.7 }}>
+                        Personagem ativo: {personagemAtivo ? personagemAtivo.name : "nenhum"}
+                      </span>
+                      <select
+                        data-testid={`perfil-personagem-select-${perfil.id}`}
+                        value={perfil.active_character_id ?? ""}
+                        onChange={(e) => handleSetPersonagemAtivo(perfil.id, e.target.value || null)}
+                        style={inputStyle}
+                      >
+                        <option value="">— selecionar personagem —</option>
+                        {personagens.map((personagem) => (
+                          <option key={personagem.id} value={personagem.id}>
+                            {personagem.name}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        data-testid={`limpar-personagem-ativo-${perfil.id}`}
+                        onClick={() => handleSetPersonagemAtivo(perfil.id, null)}
+                        style={buttonStyle}
+                        disabled={!perfil.active_character_id}
+                      >
+                        Limpar personagem
+                      </button>
+                    </div>
                   </div>
-                  <button data-testid={`bloquear-perfil-${perfil.id}`} onClick={() => handleToggleLockPerfil(perfil)} style={buttonStyle}>
-                    {perfil.is_locked ? "Desbloquear" : "Bloquear"}
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
 

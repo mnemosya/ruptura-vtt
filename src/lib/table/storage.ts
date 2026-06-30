@@ -154,3 +154,30 @@ export async function setCampaignProfileLocked(profileId: string, locked: boolea
   }
   return data as CampaignProfile;
 }
+
+/**
+ * Define ou limpa o personagem ativo de um perfil (`active_character_id`).
+ * Passar `characterId: null` limpa o vínculo. Vínculo simples de UI dev —
+ * não checa se o personagem pertence a um "dono" do perfil (sem
+ * autenticação ainda, mesmo aviso da migration 0004).
+ */
+export async function setCampaignProfileActiveCharacter(
+  profileId: string,
+  characterId: string | null,
+): Promise<CampaignProfile> {
+  const client = getContentClient();
+  const { data, error } = await client
+    .from(CAMPAIGN_PROFILES_TABLE)
+    .update({ active_character_id: characterId })
+    .eq("id", profileId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new TableStorageError(
+      `Falha ao atualizar personagem ativo do perfil "${profileId}": ${error.message}`,
+      error,
+    );
+  }
+  return data as CampaignProfile;
+}

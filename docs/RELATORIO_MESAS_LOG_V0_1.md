@@ -1020,3 +1020,138 @@ completos da página.
   `SUPABASE_DB_URL` (mesmas variáveis já documentadas, nunca a service
   role key), foram criados e removidos na mesma sessão, nunca
   commitados.
+
+---
+
+# Checkpoint v0.7 — Personagem ativo do perfil
+
+Permite vincular um personagem salvo (`characters`) a um perfil DEV de
+mesa (`campaign_profiles.active_character_id`, coluna já existente
+desde a migration 0004, só não tinha UI/Server Action ainda). **Nenhuma
+migration nova** — só camada de dados e UI sobre a coluna que já
+existia.
+
+## 1. Arquivos alterados
+
+- `src/lib/table/storage.ts` — nova Server Action
+  `setCampaignProfileActiveCharacter(profileId, characterId)`, onde
+  `characterId: null` limpa o vínculo (`active_character_id = null`).
+- `src/app/dev/table/page.tsx` — agora também busca
+  `listCharacters()` (de `src/lib/character/storage`) e passa como
+  `personagensIniciais` para `TableClient`.
+- `src/app/dev/table/TableClient.tsx`:
+  - novo prop `personagensIniciais: CharacterRecord[]`, guardado em
+    `useState<CharacterRecord[]>` (`personagens` — lista estática
+    desta etapa, sem refresh próprio, já que personagens não mudam
+    pela tela de mesa);
+  - novo handler `handleSetPersonagemAtivo(profileId, characterId)`,
+    chama `setCampaignProfileActiveCharacter` e recarrega a lista de
+    perfis (`handleRefreshPerfis`) — mesmo padrão de
+    `handleToggleLockPerfil`;
+  - cada cartão de perfil ganhou uma segunda linha: texto "Personagem
+    ativo: {nome}" ou "nenhum", `<select>` para escolher entre os
+    personagens carregados (`data-testid="perfil-personagem-select-{id}"`)
+    e botão "Limpar personagem" (`data-testid="limpar-personagem-ativo-{id}"`,
+    desabilitado quando já não há vínculo).
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.
+
+Nenhuma migration nova, nenhuma mudança em `src/app/dev/character-sheet`
+(ficha), `src/lib/content` (Biblioteca do Sistema) ou nas
+funcionalidades dos checkpoints v0.3–v0.6 (cartões, filtro, autoatualização,
+criação/bloqueio de perfil — todos intactos).
+
+## 2. Como o vínculo funciona
+
+- `setCampaignProfileActiveCharacter` é um `update` simples na coluna
+  `active_character_id` de `campaign_profiles`, reusando
+  `getContentClient()` (anon key) — mesmo padrão de
+  `setCampaignProfileLocked`.
+- A lista de personagens (`personagens`) vem do Server Component
+  (`page.tsx`, via `listCharacters()`, já existente desde a ficha
+  mínima) e é passada como prop — não há nova busca client-side, então
+  criar um personagem novo na ficha enquanto `/dev/table` está aberto
+  só aparece no `<select>` depois de recarregar a página (limitação
+  aceita nesta etapa, sem refresh automático da lista de personagens).
+- Selecionar uma opção no `<select>` chama `handleSetPersonagemAtivo`
+  imediatamente (`onChange`), sem precisar de um botão "Salvar"
+  separado — o botão "Limpar personagem" só existe para o caso de
+  voltar a "nenhum" (já que a primeira opção do select, "— selecionar
+  personagem —", tem valor vazio, que também limpa, mas o botão deixa a
+  ação explícita e funciona mesmo se o usuário não quiser navegar o
+  `<select>` até o topo).
+- Vínculo é puramente de dados — não há nenhuma checagem de que o
+  personagem "pertence" ao perfil/apelido (sem autenticação, mesmo
+  aviso da migration 0004): qualquer personagem salvo pode ser vinculado
+  a qualquer perfil de qualquer mesa.
+
+## 3. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully in 2.1s
+  Running TypeScript ...
+  Finished TypeScript in 2.4s ...
+✓ Generating static pages using 5 workers (2/2) in 291ms
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /dev/character-sheet
+└ ƒ /dev/table
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage ===
+1. Criado: id=7b5cb2c5-68f4-44d6-8816-f3eeee827143, schema_version=1
+2. Carregado por id: nome="__TESTE_STORAGE_RUPTURA__"
+3. Atualizado: nome="__TESTE_STORAGE_RUPTURA___editado", corpo=4
+4. Encontrado na listagem (3 personagens no total).
+5. Apagado e confirmado ausente via getCharacter.
+6. Confirmado: nenhum registro de teste residual.
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros — confirma que o vínculo perfil↔personagem não
+afetou a camada de storage de personagem nem a ficha.
+
+## 4. Resultado do teste manual (browser, via preview tools)
+
+1. Abri `/dev/table`, selecionei "Mesa Teste Fase 0" — seção "Perfis da
+   mesa" mostrou os perfis existentes (incluindo um perfil "gabi" já
+   criado manualmente antes desta etapa), cada um com a nova linha
+   "Personagem ativo: nenhum" + `<select>` (opções "Novo Personagem",
+   "Kael Ironwood") + botão "Limpar personagem".
+2. Criei o perfil "Perfil Teste Vinculo" via "Criar perfil".
+3. No `<select>` desse perfil, escolhi "Kael Ironwood" — texto mudou
+   na hora para "Personagem ativo: Kael Ironwood".
+4. **Recarreguei a página inteira** (`window.location.href` para a
+   mesma URL), reselecionei a mesa — "Personagem ativo: Kael Ironwood"
+   continuou aparecendo no perfil de teste, carregado do servidor —
+   confirma persistência real no Supabase, não estado de UI.
+5. Cliquei "Limpar personagem" no perfil de teste.
+6. Recarreguei a página novamente, reselecionei a mesa — confirmado
+   "Personagem ativo: nenhum" para o perfil de teste, persistindo a
+   limpeza do vínculo.
+7. Sem erros no console (`preview_console_logs`) durante toda a
+   sequência.
+8. Removi o perfil de teste "Perfil Teste Vinculo" via script auxiliar
+   (`scripts/_tmp_cleanup_profile2.ts`, criado e removido na mesma
+   sessão, nunca commitado).
+
+Resultado: **todos os passos do teste manual passaram**, incluindo
+persistência de vínculo e de limpeza através de reloads completos da
+página.
+
+## 5. Confirmação de escopo
+
+- **Migration nova**: nenhuma — `active_character_id` já existia desde
+  a migration 0004 (campo só não tinha Server Action/UI ainda).
+- **Ficha** (`src/app/dev/character-sheet`): não alterada.
+- **Autenticação**: não implementada.
+- **Link de convite**: não implementado.
+- **Heartbeat de presença**: não implementado.
+- **Biblioteca do Sistema** (`src/lib/content`): não alterada.
+- Nenhuma chave secreta exposta: o script auxiliar de limpeza
+  (`scripts/_tmp_cleanup_profile2.ts`) usou exclusivamente
+  `SUPABASE_URL`/`SUPABASE_ANON_KEY` (mesma `getContentClient()` de
+  sempre), foi criado e removido na mesma sessão, nunca commitado.

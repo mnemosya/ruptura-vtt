@@ -9,17 +9,21 @@
  */
 
 import { listCampaigns } from "../../../lib/table/storage";
+import { listCharacters } from "../../../lib/character/storage";
 import type { Campaign } from "../../../lib/table";
+import type { CharacterRecord } from "../../../lib/character";
 import TableClient from "./TableClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function TablePage() {
   let mesasIniciais: Campaign[] = [];
+  let personagensIniciais: CharacterRecord[] = [];
   let errorMessage: string | null = null;
 
   try {
     mesasIniciais = await listCampaigns();
+    personagensIniciais = await listCharacters();
   } catch (err) {
     errorMessage = err instanceof Error ? err.message : "Erro desconhecido ao carregar mesas.";
   }
@@ -37,5 +41,5 @@ export default async function TablePage() {
     );
   }
 
-  return <TableClient mesasIniciais={mesasIniciais} />;
+  return <TableClient mesasIniciais={mesasIniciais} personagensIniciais={personagensIniciais} />;
 }
