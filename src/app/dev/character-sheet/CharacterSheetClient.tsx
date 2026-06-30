@@ -49,6 +49,7 @@ import { SkillsTab } from "./components/SkillsTab";
 import { ResourcesTab } from "./components/ResourcesTab";
 import { RollsTab } from "./components/RollsTab";
 import { LogTab, type LogEntry, type LogTipo } from "./components/LogTab";
+import { MesaTab } from "./components/MesaTab";
 import { SavedCharactersTab } from "./components/SavedCharactersTab";
 import { DebugTab } from "./components/DebugTab";
 import type { SheetMode } from "./components/ModeToggle";
@@ -626,6 +627,13 @@ export default function CharacterSheetClient({
       )}
 
       {activeTab === "log" && <LogTab log={log} onClear={() => setLog([])} />}
+
+      {activeTab === "mesa" && (
+        <MesaTab
+          campaignId={selectedCampaignId}
+          mesaNome={mesas.find((m) => m.id === selectedCampaignId)?.name ?? null}
+        />
+      )}
 
       {activeTab === "personagens" && (
         <SavedCharactersTab

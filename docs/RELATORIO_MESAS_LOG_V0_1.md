@@ -1833,3 +1833,108 @@ ficha sem nenhuma ação extra do usuário.
   `SUPABASE_URL`/`SUPABASE_ANON_KEY` (mesma `getContentClient()`/Server
   Actions de sempre), foram criados e removidos na mesma sessão, nunca
   commitados.
+
+---
+
+# Checkpoint v0.11 — Log compartilhado na ficha
+
+Adiciona uma aba "Mesa" à ficha (`/dev/character-sheet`) que **lê e
+escreve** no log persistente da mesa selecionada (`table_logs`), sem
+realtime — atualização só manual via botão. O Log local (aba "Log")
+continua existindo, intacto.
+
+## 1. Arquivos criados/alterados
+
+- `src/app/dev/character-sheet/components/MesaTab.tsx` (novo) — Client
+  Component com estado próprio (logs/filtro/input), chamando
+  `listLogs`/`addLog` diretamente (mesmo padrão do RollsTab).
+- `src/app/dev/character-sheet/components/CharacterSheetTabs.tsx` — nova
+  aba `"mesa"` (label "Mesa"), entre "log" e "personagens".
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — importa e
+  renderiza `<MesaTab>` quando `activeTab === "mesa"`, passando
+  `campaignId` (mesa selecionada) e `mesaNome`.
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.
+
+Nenhuma migration. Nenhuma mudança em `/dev/table`, `src/lib/table/storage.ts`,
+`src/lib/character` ou `src/lib/content` (Biblioteca do Sistema).
+
+## 2. Como a aba Mesa funciona
+
+- **Sem mesa selecionada** (aba Geral): mostra aviso "Nenhuma mesa
+  selecionada — escolha uma mesa na aba Geral...".
+- **Com mesa selecionada**: carrega `listLogs(campaignId)` ao abrir a
+  aba e ao trocar de mesa (`useEffect` em `[campaignId]`); recargas
+  posteriores são manuais (botão "Atualizar logs"), sem polling/realtime.
+- **Envio de mensagem**: input de texto + seletor de visibilidade
+  (Pública/Privada/Narrador) + botão "Enviar" — grava via `addLog`
+  (`type: "chat"`, payload `{ mensagem }`, **mesmo formato do
+  `/dev/table`**, para não precisar mudar nada lá nesta etapa). Após
+  enviar, recarrega a lista automaticamente uma vez.
+- **Filtro visual** (Todos/Pública/Privada/Narrador): esconde/mostra
+  cartões já carregados, mesma lógica do `/dev/table`; aviso "Filtro
+  visual apenas; ainda sem segurança real".
+- **Renderização em cartões**: `chat` (mensagem), `rolagem_pericia`/
+  `rolagem_expressao` (via `formatRolagem`), `profile_event` (via
+  `formatProfileEvent`) — mesmos formatos/ícones/cores do `/dev/table`,
+  com fallback `JSON.stringify` para tipos desconhecidos.
+
+## 3. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully in 1238ms
+  Running TypeScript ...
+  Finished TypeScript in 1688ms ...
+✓ Generating static pages using 6 workers (2/2) in 149ms
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /dev/character-sheet
+├ ƒ /dev/join/[campaignId]
+└ ƒ /dev/table
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros.
+
+## 4. Resultado do teste manual (browser, via preview tools)
+
+1. Criei o perfil "Mesa Tab v0.11" (vinculado a Kael Ironwood) na "Mesa
+   Teste Fase 0".
+2. Entrei pela `/dev/join/[campaignId]` como esse perfil, cliquei
+   "Abrir ficha".
+3. Confirmado: aba Geral com mesa "Mesa Teste Fase 0" e perfil "Mesa
+   Tab v0.11 (Bloqueado)" pré-selecionados, status "Em uso por esta
+   aba".
+4. Aba Mesa → enviei "Olá da ficha v0.11" (visibilidade Pública) —
+   apareceu no topo da lista como cartão de Mensagem; eventos de perfil
+   e rolagens anteriores renderizaram como cartões corretamente.
+5. Aba Rolagens → rolei uma perícia (sem erro de persistência).
+6. Voltei à aba Mesa, cliquei "Atualizar logs" — a rolagem nova
+   apareceu no topo ("...: Corpo (sem perícia) = 6").
+7. Filtro "Narrador" → confirmado que só entradas `[Narrador]` ficaram
+   visíveis (os `profile_event`, gravados com visibilidade gm).
+8. Abri `/dev/table`, selecionei a mesma mesa — confirmado que tanto o
+   chat "Olá da ficha v0.11" quanto a rolagem aparecem lá também.
+9. Sem erros no console (`preview_console_logs`).
+
+Resultado: **todos os passos do teste manual passaram**.
+
+## 5. Confirmação de escopo
+
+- **Realtime**: não implementado — atualização só manual.
+- **Migration**: nenhuma.
+- **`/dev/table`**: não alterado (a ficha grava chat no mesmo formato
+  `{ mensagem }`).
+- **Log local**: não removido — continua na aba "Log".
+- **Autenticação**: não implementada.
+- **Biblioteca do Sistema** (`src/lib/content`): não alterada.
+- Nenhuma chave secreta exposta: o script auxiliar
+  (`scripts/_tmp_setup_v011.ts`, `scripts/_tmp_cleanup_v011.ts`) usou
+  exclusivamente `SUPABASE_URL`/`SUPABASE_ANON_KEY` (mesma
+  `getContentClient()`/Server Actions), foi criado e removido na mesma
+  sessão, nunca commitado.
