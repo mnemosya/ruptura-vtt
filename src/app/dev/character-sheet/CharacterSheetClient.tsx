@@ -8,6 +8,10 @@
  * `characters` via Server Actions (src/lib/character/storage.ts).
  * Os derivados são recalculados automaticamente a cada render porque
  * dependem de `character.atributos` via useMemo.
+ *
+ * UI organizada em abas (useState local, sem lib nova) só para
+ * preparar o crescimento futuro (inventário/magia/combate) sem
+ * empilhar tudo numa página só — nenhuma regra muda por causa disso.
  */
 
 import { useMemo, useState } from "react";
@@ -28,6 +32,18 @@ interface Props {
 }
 
 type SaveState = "idle" | "saving" | "saved" | "error";
+
+const TABS = ["geral", "atributos", "pericias", "recursos", "personagens", "debug"] as const;
+type TabId = (typeof TABS)[number];
+
+const TAB_LABELS: Record<TabId, string> = {
+  geral: "Geral",
+  atributos: "Atributos",
+  pericias: "Perícias",
+  recursos: "Recursos",
+  personagens: "Personagens salvos",
+  debug: "Debug",
+};
 
 const buttonStyle: React.CSSProperties = {
   background: "#1d1e24",
@@ -54,6 +70,7 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
   const [personagens, setPersonagens] = useState<CharacterRecord[]>(personagensIniciais);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabId>("geral");
 
   const derivados = useMemo(
     () => computeDerivedStats(character.atributos, regras),
@@ -165,160 +182,216 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
         </p>
       )}
 
-      <input
-        value={character.nome}
-        onChange={(e) => setCharacter((prev) => ({ ...prev, nome: e.target.value }))}
+      <nav
         style={{
-          fontSize: 28,
-          fontWeight: 700,
-          background: "transparent",
-          color: "inherit",
-          border: "none",
+          display: "flex",
+          gap: 4,
+          marginBottom: 24,
           borderBottom: "1px solid #333",
-          padding: "4px 0",
-          marginBottom: 12,
-          width: "100%",
+          flexWrap: "wrap",
         }}
-      />
+      >
+        {TABS.map((tab) => (
+          <button
+            key={tab}
+            data-testid={`tab-${tab}`}
+            onClick={() => setActiveTab(tab)}
+            style={{
+              background: "transparent",
+              color: activeTab === tab ? "inherit" : "#888",
+              border: "none",
+              borderBottom: activeTab === tab ? "2px solid #4caf50" : "2px solid transparent",
+              padding: "8px 12px",
+              fontSize: 13,
+              fontWeight: activeTab === tab ? 700 : 400,
+              cursor: "pointer",
+            }}
+          >
+            {TAB_LABELS[tab]}
+            {tab === "personagens" ? ` (${personagens.length})` : ""}
+          </button>
+        ))}
+      </nav>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
-        <button onClick={handleSave} disabled={saveState === "saving"} style={buttonStyle}>
-          {saveState === "saving" ? "Salvando…" : "Salvar personagem"}
-        </button>
-        <button onClick={handleNew} style={buttonStyle}>
-          Novo personagem
-        </button>
-        <span style={{ fontSize: 12, opacity: 0.6 }}>
-          {characterId ? `id: ${characterId}` : "ainda não salvo"}
-          {character.metadados?.schema_version != null
-            ? ` · schema v${character.metadados.schema_version}`
-            : ""}
-        </span>
-        {saveState === "saved" && <span style={{ fontSize: 13, color: "#4caf50" }}>✓ Salvo</span>}
-        {saveState === "error" && (
-          <span style={{ fontSize: 13, color: "#ff6b6b" }}>Erro: {errorMessage}</span>
-        )}
-      </div>
+      {activeTab === "geral" && (
+        <Section title="Geral">
+          <input
+            value={character.nome}
+            onChange={(e) => setCharacter((prev) => ({ ...prev, nome: e.target.value }))}
+            style={{
+              fontSize: 28,
+              fontWeight: 700,
+              background: "transparent",
+              color: "inherit",
+              border: "none",
+              borderBottom: "1px solid #333",
+              padding: "4px 0",
+              marginBottom: 12,
+              width: "100%",
+            }}
+          />
 
-      <Section title="Atributos">
-        <div style={{ display: "flex", gap: 16 }}>
-          {(["corpo", "mente", "animo"] as const).map((id) => {
-            const def = regras?.atributos.find((a) => a.id === id);
-            return (
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+            <button onClick={handleSave} disabled={saveState === "saving"} style={buttonStyle}>
+              {saveState === "saving" ? "Salvando…" : "Salvar personagem"}
+            </button>
+            <button onClick={handleNew} style={buttonStyle}>
+              Novo personagem
+            </button>
+            {saveState === "saved" && <span style={{ fontSize: 13, color: "#4caf50" }}>✓ Salvo</span>}
+            {saveState === "error" && (
+              <span style={{ fontSize: 13, color: "#ff6b6b" }}>Erro: {errorMessage}</span>
+            )}
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13, opacity: 0.7 }}>
+            <span>id: {characterId ?? "ainda não salvo"}</span>
+            <span>schema version: {character.metadados?.schema_version ?? "—"}</span>
+          </div>
+        </Section>
+      )}
+
+      {activeTab === "atributos" && (
+        <Section title="Atributos">
+          <div style={{ display: "flex", gap: 16 }}>
+            {(["corpo", "mente", "animo"] as const).map((id) => {
+              const def = regras?.atributos.find((a) => a.id === id);
+              return (
+                <NumberField
+                  key={id}
+                  testId={`atributo-${id}`}
+                  label={def?.nome ?? id}
+                  value={character.atributos[id]}
+                  min={def?.valor_minimo ?? 1}
+                  max={def?.valor_maximo ?? 5}
+                  onChange={(v) => updateAtributo(id, v)}
+                />
+              );
+            })}
+          </div>
+        </Section>
+      )}
+
+      {activeTab === "pericias" && (
+        <Section title={`Perícias (${Object.keys(character.pericias).length})`}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "8px 16px" }}>
+            {(regras?.pericias ?? []).map((skill) => (
               <NumberField
-                key={id}
-                testId={`atributo-${id}`}
-                label={def?.nome ?? id}
-                value={character.atributos[id]}
-                min={def?.valor_minimo ?? 1}
-                max={def?.valor_maximo ?? 5}
-                onChange={(v) => updateAtributo(id, v)}
+                key={skill.id}
+                label={skill.nome}
+                value={character.pericias[skill.id] ?? 0}
+                min={skill.valor_minimo}
+                max={skill.valor_maximo}
+                compact
+                onChange={(v) => updatePericia(skill.id, v)}
               />
-            );
-          })}
-        </div>
-      </Section>
+            ))}
+          </div>
+        </Section>
+      )}
 
-      <Section title="Recursos">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-          {recursoIds.map((id) => {
-            const meta = derivedMetaById(regras, id);
-            return (
-              <Stat
-                key={id}
-                testId={`derivado-${id}`}
-                label={meta?.nome ?? id}
-                value={derivados[id]}
-                hint={meta?.formula_label}
-              />
-            );
-          })}
-        </div>
-      </Section>
+      {activeTab === "recursos" && (
+        <>
+          <Section title="Derivados (máximos)">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+              {recursoIds.map((id) => {
+                const meta = derivedMetaById(regras, id);
+                return (
+                  <Stat
+                    key={id}
+                    testId={`derivado-${id}`}
+                    label={meta?.nome ?? id}
+                    value={derivados[id]}
+                    hint={meta?.formula_label}
+                  />
+                );
+              })}
+              {outrosDerivadosIds.map((id) => {
+                const meta = derivedMetaById(regras, id);
+                const unidade = meta?.unidade ? ` ${meta.unidade}` : "";
+                return (
+                  <Stat
+                    key={id}
+                    testId={`derivado-${id}`}
+                    label={meta?.nome ?? id}
+                    value={`${derivados[id]}${unidade}`}
+                    hint={meta?.formula_label}
+                  />
+                );
+              })}
+            </div>
+          </Section>
 
-      <Section title="Recursos atuais">
-        <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 8 }}>
-          Somente leitura por enquanto — preenchido com os máximos ao salvar, se ainda
-          ausente. Dano/cura/gasto ficam para a etapa de combate.
-        </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-          <Stat label="PV atual" value={character.recursos_atuais?.pv ?? "—"} />
-          <Stat label="PE atual" value={character.recursos_atuais?.pe ?? "—"} />
-          <Stat label="Mana atual" value={character.recursos_atuais?.mana ?? "—"} />
-          <Stat label="Integridade atual" value={character.recursos_atuais?.integridade ?? "—"} />
-        </div>
-      </Section>
+          <Section title="Recursos atuais">
+            <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 8 }}>
+              Somente leitura por enquanto — preenchido com os máximos ao salvar, se ainda
+              ausente. Dano/cura/gasto ficam para a etapa de combate.
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+              <Stat label="PV atual" value={character.recursos_atuais?.pv ?? "—"} />
+              <Stat label="PE atual" value={character.recursos_atuais?.pe ?? "—"} />
+              <Stat label="Mana atual" value={character.recursos_atuais?.mana ?? "—"} />
+              <Stat label="Integridade atual" value={character.recursos_atuais?.integridade ?? "—"} />
+            </div>
+          </Section>
+        </>
+      )}
 
-      <Section title="Derivados">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-          {outrosDerivadosIds.map((id) => {
-            const meta = derivedMetaById(regras, id);
-            const unidade = meta?.unidade ? ` ${meta.unidade}` : "";
-            return (
-              <Stat
-                key={id}
-                testId={`derivado-${id}`}
-                label={meta?.nome ?? id}
-                value={`${derivados[id]}${unidade}`}
-                hint={meta?.formula_label}
-              />
-            );
-          })}
-        </div>
-      </Section>
-
-      <Section title={`Perícias (${Object.keys(character.pericias).length})`}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "8px 16px" }}>
-          {(regras?.pericias ?? []).map((skill) => (
-            <NumberField
-              key={skill.id}
-              label={skill.nome}
-              value={character.pericias[skill.id] ?? 0}
-              min={skill.valor_minimo}
-              max={skill.valor_maximo}
-              compact
-              onChange={(v) => updatePericia(skill.id, v)}
-            />
-          ))}
-        </div>
-      </Section>
-
-      <Section title={`Personagens salvos (${personagens.length})`}>
-        {personagens.length === 0 && (
-          <p style={{ fontSize: 13, opacity: 0.6 }}>Nenhum personagem salvo ainda.</p>
-        )}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {personagens.map((p) => (
-            <div
-              key={p.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 12,
-                background: p.id === characterId ? "#26283280" : "#1d1e24",
-                borderRadius: 8,
-                padding: "10px 14px",
-              }}
-            >
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>{p.name}</div>
-                <div style={{ fontSize: 11, opacity: 0.5 }}>
-                  {p.id} · atualizado em {new Date(p.updated_at).toLocaleString("pt-BR")}
+      {activeTab === "personagens" && (
+        <Section title={`Personagens salvos (${personagens.length})`}>
+          {personagens.length === 0 && (
+            <p style={{ fontSize: 13, opacity: 0.6 }}>Nenhum personagem salvo ainda.</p>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {personagens.map((p) => (
+              <div
+                key={p.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  background: p.id === characterId ? "#26283280" : "#1d1e24",
+                  borderRadius: 8,
+                  padding: "10px 14px",
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>{p.name}</div>
+                  <div style={{ fontSize: 11, opacity: 0.5 }}>
+                    {p.id} · atualizado em {new Date(p.updated_at).toLocaleString("pt-BR")}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => handleLoad(p.id)} style={buttonStyle}>
+                    Carregar
+                  </button>
+                  <button onClick={() => handleDelete(p.id)} style={{ ...buttonStyle, color: "#ff6b6b" }}>
+                    Apagar
+                  </button>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => handleLoad(p.id)} style={buttonStyle}>
-                  Carregar
-                </button>
-                <button onClick={() => handleDelete(p.id)} style={{ ...buttonStyle, color: "#ff6b6b" }}>
-                  Apagar
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Section>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {activeTab === "debug" && (
+        <Section title="Debug">
+          <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 8 }}>
+            Informações técnicas simples — nunca o payload inteiro, nunca variáveis de
+            ambiente ou chaves.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontFamily: "monospace" }}>
+            <span>selectedCharacterId: {characterId ?? "null"}</span>
+            <span>schema_version: {character.metadados?.schema_version ?? "—"}</span>
+            <span>saveState: {saveState}</span>
+            <span>errorMessage: {errorMessage ?? "null"}</span>
+            <span>personagens salvos (count): {personagens.length}</span>
+            <span>usandoFallback (regras_personagem): {String(usandoFallback)}</span>
+          </div>
+        </Section>
+      )}
     </main>
   );
 }

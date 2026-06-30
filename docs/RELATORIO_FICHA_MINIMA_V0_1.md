@@ -528,3 +528,108 @@ de teste anterior) na tabela.
   a mesma camada de `storage.ts`), nunca `SUPABASE_SERVICE_ROLE_KEY`. O script
   auxiliar de verificação de import (`scripts/_tmp_test_import.ts`) foi criado e
   removido na mesma sessão, nunca commitado.
+
+---
+
+# Checkpoint v0.4 — Estrutura visual em abas
+
+Reorganiza a UI de `/dev/character-sheet` em abas (estado local, sem lib nova),
+preparando o crescimento futuro (inventário/magia/combate) sem mudar nenhuma
+regra ou mecânica.
+
+## 1. Arquivos alterados
+
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — único arquivo
+  alterado. Toda a lógica existente (`handleSave`, `handleLoad`, `handleDelete`,
+  `handleNew`, `updateAtributo`, `updatePericia`, `computeDerivedStats`,
+  `normalizeCharacter`) foi mantida **sem nenhuma mudança de comportamento** —
+  só a apresentação foi reorganizada em abas via `useState<TabId>`.
+
+Nenhum outro arquivo foi tocado: `storage.ts`, migrations, `src/lib/content`
+(Biblioteca do Sistema) e `globals.css` permaneceram intactos (não foi
+necessário CSS global novo — só estilos inline já existentes no componente).
+
+## 2. Abas criadas
+
+`TABS = ["geral", "atributos", "pericias", "recursos", "personagens", "debug"]`,
+navegação via `<nav>` com botões e `data-testid="tab-<id>"`, troca de conteúdo
+100% client-side (`useState` local, sem reload de página).
+
+| Aba | Conteúdo |
+|---|---|
+| **Geral** | Nome editável, botões "Salvar personagem"/"Novo personagem", estado de save (salvando/✓ salvo/erro), id do personagem atual, schema version. |
+| **Atributos** | Corpo, Mente, Ânimo — mesmos campos editáveis de antes, recalculando derivados via `useMemo`. |
+| **Perícias** | Lista de perícias carregadas das regras, edição igual à de antes — nenhuma mecânica nova. |
+| **Recursos** | Os 8 derivados (`pv_max`, `pe_max`, `mana_max`, `integridade_max`, `reacoes_por_rodada`, `andar_m`, `correr_m`, `pa_max`) + seção "Recursos atuais" somente leitura (`pv`, `pe`, `mana`, `integridade`). |
+| **Personagens salvos** | Lista de personagens salvos com botões "Carregar"/"Apagar" — comportamento idêntico ao de antes. |
+| **Debug** | `selectedCharacterId`, `schema_version`, `saveState`, `errorMessage`, contagem de personagens salvos, `usandoFallback` — nunca o payload inteiro, nunca variáveis de ambiente/chaves. |
+
+## 3. Confirmação — salvar/carregar continua funcionando
+
+Testado de ponta a ponta no browser (preview tools), não só lido no código:
+criei um personagem ("Ficha em Abas", Corpo=4/Mente=3/Ânimo=5), salvei, recarreguei
+a página, fui em "Personagens salvos" e carreguei de volta — nome, atributos,
+derivados e recursos atuais vieram corretos (ver seção 5). Mesmo fluxo
+Server Actions de antes (`createCharacter`/`updateCharacter`/`getCharacter`/
+`listCharacters`/`deleteCharacter`), sem nenhuma alteração em `storage.ts`.
+
+## 4. Resultado do build
+
+```
+$ npm run build
+✓ Compiled successfully in 1661ms
+  Running TypeScript ...
+  Finished TypeScript in 2.3s ...
+✓ Generating static pages using 4 workers (2/2) in 306ms
+
+Route (app)
+┌ ○ /_not-found
+└ ƒ /dev/character-sheet
+```
+
+Sem erros de tipo, sem warnings novos.
+
+Também rodei `npm run test:character-storage` como checagem extra (CRUD
+completo na camada de storage, independente da UI): **todos os 6 passos
+passaram** (criar → carregar → atualizar → listar → apagar → confirmar limpeza),
+sem registro de teste residual.
+
+## 5. Resultado do teste manual (browser, via preview tools)
+
+Executado os 10 passos pedidos:
+
+1. Abri `/dev/character-sheet`.
+2. Troquei entre as 6 abas (Geral → Atributos → Perícias → Recursos →
+   Personagens salvos → Debug → Geral) — conteúdo trocou sem reload de página,
+   confirmado lendo o DOM após cada clique.
+3. Nome alterado para "Ficha em Abas" (aba Geral).
+4. Corpo=4, Mente=3, Ânimo=5 (aba Atributos).
+5. Derivados conferidos na aba Recursos: `pv_max=14, pe_max=13, mana_max=20,
+   integridade_max=20, reacoes_por_rodada=3, andar_m=14m, correr_m=28m,
+   pa_max=3` — todos batendo com o esperado.
+6. "Salvar personagem" (aba Geral) → "✓ Salvo", id atribuído.
+7. Página recarregada.
+8. Fui em "Personagens salvos" → lista reapareceu com 2 personagens ("Ficha em
+   Abas" + "Kael Ironwood", de uma etapa anterior).
+9. "Carregar" em "Ficha em Abas".
+10. Confirmado: nome="Ficha em Abas" (aba Geral), atributos
+    `{corpo:4, mente:3, animo:5}` (aba Atributos), derivados idênticos ao
+    passo 5 e recursos atuais `{pv:14, pe:13, mana:20, integridade:20}` (aba
+    Recursos) — todos corretos após o reload + carregar.
+
+Resultado: **passou em todos os 10 passos**. O registro de teste "Ficha em
+Abas" foi apagado ao final pela própria UI; sobrou só "Kael Ironwood" na
+tabela.
+
+## 6. Confirmação de escopo
+
+- **Biblioteca do Sistema** (`content_packs`, `content_documents`,
+  `src/lib/content`): não alterada.
+- **Banco/migrations**: nenhuma migration criada ou alterada nesta etapa.
+- **Inventário, magia, combate**: não implementados.
+- **Autenticação**: não implementada.
+- **`storage.ts`**: não alterado (a reorganização ficou inteiramente em
+  `CharacterSheetClient.tsx`).
+- Nenhuma chave secreta exposta: a aba Debug mostra só `selectedCharacterId`,
+  `schema_version`, `saveState`, `errorMessage` e contagens — nunca o payload
+  inteiro, nunca `.env.local` nem variáveis de ambiente.
