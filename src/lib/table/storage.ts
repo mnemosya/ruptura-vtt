@@ -49,6 +49,22 @@ export async function listCampaigns(): Promise<Campaign[]> {
   return (data as Campaign[]) ?? [];
 }
 
+/**
+ * Busca uma mesa por id — usada por `/dev/join/[campaignId]` (checkpoint
+ * v0.10) para resolver o link de entrada dev. Retorna `null` se não
+ * existir (não lança erro nesse caso, só em falha de rede/RLS), para a
+ * rota distinguir "mesa não encontrada" de "erro ao buscar".
+ */
+export async function getCampaign(id: string): Promise<Campaign | null> {
+  const client = getContentClient();
+  const { data, error } = await client.from(CAMPAIGNS_TABLE).select().eq("id", id).maybeSingle();
+
+  if (error) {
+    throw new TableStorageError(`Falha ao buscar mesa "${id}": ${error.message}`, error);
+  }
+  return (data as Campaign | null) ?? null;
+}
+
 export interface AddLogParams {
   campaignId: string;
   characterId?: string;

@@ -38,9 +38,10 @@ import {
   leaveCampaignProfile,
   addLog,
 } from "../../../lib/table/storage";
-import { PROFILE_HEARTBEAT_INTERVAL_MS, PROFILE_HEARTBEAT_TIMEOUT_MS } from "../../../lib/table";
+import { PROFILE_HEARTBEAT_INTERVAL_MS } from "../../../lib/table";
 import type { Campaign, CampaignProfile } from "../../../lib/table";
-import { getOrCreateBrowserSessionId } from "./sessionId";
+import { getOrCreateBrowserSessionId } from "../../../lib/table/browserSession";
+import { computeProfileStatus } from "../../../lib/table/profileStatus";
 import { CharacterSheetTabs, type TabId } from "./components/CharacterSheetTabs";
 import { GeneralTab } from "./components/GeneralTab";
 import { AttributesTab } from "./components/AttributesTab";
@@ -66,6 +67,13 @@ interface Props {
   usandoFallback: boolean;
   personagensIniciais: CharacterRecord[];
   mesasIniciais: Campaign[];
+  /**
+   * Mesa/perfil pré-selecionados via query string (`?campaignId=...&
+   * profileId=...`) — vindos de `/dev/join/[campaignId]` (checkpoint
+   * v0.10). `null` quando a ficha é aberta diretamente, sem link.
+   */
+  initialCampaignId: string | null;
+  initialProfileId: string | null;
 }
 
 type SaveState = "idle" | "saving" | "saved" | "error";
@@ -75,31 +83,20 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-type ProfileStatus = "Livre" | "Em uso por esta aba" | "Expirado" | "Em uso";
-
-/**
- * Status exibido na UI para um perfil, dado o sessionId desta aba e o
- * instante atual (nowTick, atualizado a cada 5s — ver useEffect de
- * tick). Mesma janela de tolerância usada pelo servidor
- * (PROFILE_HEARTBEAT_TIMEOUT_MS) — decisão tomada no cliente, só para
- * exibição; a decisão que realmente importa (permitir entrar ou não)
- * é sempre revalidada no servidor por enterCampaignProfile.
- */
-function computeProfileStatus(perfil: CampaignProfile, sessionId: string | null, now: number): ProfileStatus {
-  if (!perfil.is_locked) return "Livre";
-  if (sessionId && perfil.lock_session_id === sessionId) return "Em uso por esta aba";
-  const lastSeenMs = perfil.last_seen_at ? new Date(perfil.last_seen_at).getTime() : 0;
-  if (now - lastSeenMs > PROFILE_HEARTBEAT_TIMEOUT_MS) return "Expirado";
-  return "Em uso";
-}
-
 /** Recurso atual: inteiro, sem teto (pode passar do máximo), nunca negativo. */
 function parseRecursoAtual(rawValue: number): number {
   if (!Number.isFinite(rawValue)) return 0;
   return Math.max(0, Math.trunc(rawValue));
 }
 
-export default function CharacterSheetClient({ regras, usandoFallback, personagensIniciais, mesasIniciais }: Props) {
+export default function CharacterSheetClient({
+  regras,
+  usandoFallback,
+  personagensIniciais,
+  mesasIniciais,
+  initialCampaignId,
+  initialProfileId,
+}: Props) {
   const [character, setCharacter] = useState<Character>(() => createInitialCharacter(regras));
   const [characterId, setCharacterId] = useState<string | null>(null);
   const [personagens, setPersonagens] = useState<CharacterRecord[]>(personagensIniciais);
@@ -160,6 +157,39 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
   useEffect(() => {
     setSessionId(getOrCreateBrowserSessionId());
   }, []);
+
+  // Pré-seleção via link de mesa (/dev/join/[campaignId], checkpoint
+  // v0.10): se a página foi aberta com ?campaignId=...&profileId=...,
+  // seleciona a mesa (que já dispara o fetch de perfis) e, em seguida,
+  // o perfil — roda só uma vez (didPrefillRef), sem depender de
+  // sessionId (handleSelectCampaign não precisa dele).
+  const didPrefillRef = useRef(false);
+  useEffect(() => {
+    if (didPrefillRef.current || !initialCampaignId) return;
+    didPrefillRef.current = true;
+    handleSelectCampaign(initialCampaignId).then(() => {
+      if (initialProfileId) setSelectedProfileId(initialProfileId);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCampaignId, initialProfileId]);
+
+  // Retomar heartbeat após vir de /dev/join: se o perfil pré-selecionado
+  // já está bloqueado por ESTA MESMA sessão (porque a entrada já
+  // aconteceu na tela de join, via enterCampaignProfile), assume
+  // enteredProfile aqui para o useEffect de heartbeat (mais abaixo)
+  // retomar o envio de last_seen_at — sem chamar enterCampaignProfile
+  // de novo. resumedHeartbeatRef garante que isso só roda uma vez,
+  // mesmo que `perfis` mude depois por outros motivos.
+  const resumedHeartbeatRef = useRef(false);
+  useEffect(() => {
+    if (resumedHeartbeatRef.current || !sessionId || !initialProfileId) return;
+    const perfil = perfis.find((p) => p.id === initialProfileId);
+    if (!perfil) return; // perfis desta mesa ainda não carregou
+    resumedHeartbeatRef.current = true;
+    if (perfil.lock_session_id === sessionId) {
+      setEnteredProfile({ id: perfil.id, nickname: perfil.nickname });
+    }
+  }, [perfis, sessionId, initialProfileId]);
 
   // Tick de exibição (não busca nada do servidor) — só recalcula se um
   // perfil parece "Expirado" comparando last_seen_at já carregado com

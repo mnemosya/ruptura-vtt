@@ -17,7 +17,17 @@ import CharacterSheetClient from "./CharacterSheetClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function CharacterSheetPage() {
+interface PageProps {
+  /**
+   * `?campaignId=...&profileId=...` — vindos de `/dev/join/[campaignId]`
+   * (checkpoint v0.10), repassados para CharacterSheetClient
+   * pré-selecionar mesa/perfil. Ausentes na abertura direta da ficha.
+   */
+  searchParams: Promise<{ campaignId?: string; profileId?: string }>;
+}
+
+export default async function CharacterSheetPage({ searchParams }: PageProps) {
+  const params = await searchParams;
   let regras: CharacterRulesPayload | null = null;
   let errorMessage: string | null = null;
 
@@ -66,6 +76,8 @@ export default async function CharacterSheetPage() {
       usandoFallback={usandoFallback}
       personagensIniciais={personagensSalvos}
       mesasIniciais={mesasIniciais}
+      initialCampaignId={params.campaignId ?? null}
+      initialProfileId={params.profileId ?? null}
     />
   );
 }

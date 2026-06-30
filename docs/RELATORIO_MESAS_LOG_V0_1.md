@@ -1629,3 +1629,207 @@ voluntária e liberação forçada pelo narrador.
   `SUPABASE_DB_URL` (mesmas variáveis já documentadas, nunca a service
   role key), foram criados e removidos na mesma sessão, nunca
   commitados.
+
+---
+
+# Checkpoint v0.10 — Entrada dev por link de mesa
+
+Implementa a rota `/dev/join/[campaignId]` (PRD seção 1.2/1.4: "o link
+leva à seleção do perfil associado"; "cada mesa possui um link de
+entrada"). **Não é convite seguro** — o "link" é literalmente a URL com
+o `campaignId` em texto puro, sem token, sem expiração, sem revogação,
+sem autenticação. A ficha (`/dev/character-sheet`) passou a aceitar
+`?campaignId=...&profileId=...` na URL para pré-selecionar mesa/perfil
+e retomar o heartbeat automaticamente.
+
+## 1. Arquivos criados/alterados
+
+**Nova rota:**
+- `src/app/dev/join/[campaignId]/page.tsx` — Server Component, resolve
+  a mesa (`getCampaign`) e busca perfis/personagens.
+- `src/app/dev/join/[campaignId]/JoinClient.tsx` — Client Component:
+  lista perfis com status (heartbeat), botão "Entrar como perfil" por
+  perfil, botão "Abrir ficha" (aparece após entrar).
+
+**Camada de dados (`src/lib/table/`):**
+- `storage.ts` — nova Server Action `getCampaign(id)` (retorna `null`
+  se não existir, em vez de lançar erro — usado pela rota de join para
+  distinguir "mesa não encontrada" de "erro de rede/RLS").
+- `browserSession.ts` (novo) — `getOrCreateBrowserSessionId()`,
+  **movido** de `src/app/dev/character-sheet/sessionId.ts` (arquivo
+  antigo removido) para ser reusado também por `/dev/join`.
+- `profileStatus.ts` (novo) — `computeProfileStatus()` e o tipo
+  `ProfileStatus`, **extraído** da função antes local a
+  `CharacterSheetClient.tsx` (checkpoint v0.9), agora compartilhado
+  entre a ficha e a página de join.
+
+**Ficha (`src/app/dev/character-sheet/`):**
+- `page.tsx` — agora lê `searchParams` (`campaignId`/`profileId`) e
+  repassa como `initialCampaignId`/`initialProfileId`.
+- `CharacterSheetClient.tsx` — novas props `initialCampaignId`/
+  `initialProfileId`; dois novos `useEffect`: um para pré-selecionar
+  mesa+perfil vindos da URL, outro para retomar o heartbeat
+  automaticamente se o perfil pré-selecionado já está bloqueado por
+  esta mesma sessão (sem chamar `enterCampaignProfile` de novo); import
+  de `computeProfileStatus`/`getOrCreateBrowserSessionId` trocado para
+  os novos arquivos compartilhados.
+
+**Este relatório:**
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.
+
+Nenhuma migration nova. Nenhuma mudança em `src/app/dev/table`,
+`src/lib/character`, `src/lib/content` (Biblioteca do Sistema) ou nas
+regras da ficha (atributos/perícias/recursos/PA/reações).
+
+## 2. Por que não houve migration
+
+O pedido permitia migration "só se for inevitável". A rota de join só
+precisou de uma forma de buscar uma mesa por id (`getCampaign`) — usa a
+tabela `campaigns` e as policies de RLS já existentes desde a migration
+0003 (select liberado para `anon`/`authenticated`). Nenhuma coluna ou
+tabela nova foi necessária.
+
+## 3. Como `/dev/join/[campaignId]` funciona
+
+- Server Component (`page.tsx`) busca a mesa via `getCampaign(campaignId)`:
+  - mesa inexistente → tela "Mesa não encontrada" com o id buscado;
+  - erro de rede/RLS → tela de erro com instrução de `.env.local`;
+  - mesa encontrada → busca `listCampaignProfiles` e `listCharacters`,
+    passa tudo para `JoinClient`.
+- `JoinClient` (Client Component) gera/lê o `sessionId` do navegador
+  (mesmo `getOrCreateBrowserSessionId` da ficha) e mostra cada perfil
+  com:
+  - apelido + status (`computeProfileStatus`: Livre/Em uso por esta
+    aba/Expirado/Em uso, mesmas 4 cores usadas na ficha);
+  - "Personagem ativo: {nome}" ou "nenhum" (resolvido a partir de
+    `active_character_id` + a lista de personagens);
+  - botão "Entrar como perfil" — habilitado quando o status é "Livre",
+    "Expirado" ou "Em uso por esta aba"; desabilitado (mas ainda
+    clicável tecnicamente — a validação real é sempre no servidor) só
+    visualmente quando "Em uso" por outra sessão ativa.
+- Ao clicar "Entrar como perfil", chama `enterCampaignProfile` (mesma
+  Server Action do checkpoint v0.9) — sucesso atualiza o perfil na
+  lista e troca o botão "Entrar" por um link **"Abrir ficha"**
+  apontando para `/dev/character-sheet?campaignId={id}&profileId={id}`;
+  falha (perfil em uso por outra sessão ativa) mostra a mensagem de
+  erro já existente em `enterCampaignProfile`.
+- Um `useEffect` reconhece automaticamente, ao carregar a página, se
+  algum perfil já está bloqueado por esta mesma sessão (ex.: o usuário
+  voltou ao link depois de já ter entrado) — nesse caso, "Abrir ficha"
+  já aparece sem precisar clicar "Entrar" de novo.
+- Tick local de 5s (mesmo padrão da ficha/`/dev/table`) mantém o status
+  "Expirado" atualizado sem precisar recarregar a página.
+- Botão "Atualizar perfis" — recarrega a lista manualmente (sem
+  autoatualização automática nesta rota).
+
+## 4. Como a ficha resolve `?campaignId=...&profileId=...`
+
+- `page.tsx` lê `searchParams` (assíncrono, padrão Next.js 15+/16) e
+  repassa como `initialCampaignId`/`initialProfileId` —
+  `null`/`undefined` quando a ficha é aberta direto, sem query string.
+- Primeiro `useEffect` (`didPrefillRef`, roda uma vez): se
+  `initialCampaignId` existir, chama `handleSelectCampaign` (mesma
+  função já usada pelo `<select>` de mesa — busca os perfis daquela
+  mesa) e, ao terminar, define `selectedProfileId = initialProfileId`.
+- Segundo `useEffect` (`resumedHeartbeatRef`, roda uma vez, depende de
+  `perfis`/`sessionId`/`initialProfileId`): assim que a lista de
+  perfis carregar e conter o `initialProfileId`, verifica se
+  `perfil.lock_session_id === sessionId` (ou seja, **esta mesma
+  sessão** já entrou nele, via `/dev/join`) — se sim, define
+  `enteredProfile` diretamente, sem chamar `enterCampaignProfile` de
+  novo, o que faz o `useEffect` de heartbeat já existente (checkpoint
+  v0.9) retomar o envio de `last_seen_at` a cada 10s automaticamente.
+- Resultado visível: a aba Geral já abre com mesa e perfil
+  pré-selecionados, status "Em uso por esta aba", botão "Sair do
+  perfil" (em vez de "Entrar") e "Carregar personagem ativo"
+  disponível — sem nenhuma ação extra do usuário além de ter clicado
+  "Abrir ficha" na página de join.
+
+## 5. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully in 1661ms
+  Running TypeScript ...
+  Finished TypeScript in 1623ms ...
+✓ Generating static pages using 6 workers (2/2) in 164ms
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /dev/character-sheet
+├ ƒ /dev/join/[campaignId]
+└ ƒ /dev/table
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage ===
+1. Criado: id=e5b15bff-fad3-4bfd-8e00-4e3fe7dc404a, schema_version=1
+2. Carregado por id: nome="__TESTE_STORAGE_RUPTURA__"
+3. Atualizado: nome="__TESTE_STORAGE_RUPTURA___editado", corpo=4
+4. Encontrado na listagem (3 personagens no total).
+5. Apagado e confirmado ausente via getCharacter.
+6. Confirmado: nenhum registro de teste residual.
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros.
+
+## 6. Resultado do teste manual (browser, via preview tools)
+
+1. Em `/dev/table`, criei o perfil "Join Teste v0.10" na mesa "Mesa
+   Teste Fase 0" e vinculei "Kael Ironwood" como personagem ativo.
+2. Abri `/dev/join/2d2d5ea8-2bdd-4ac3-87d4-164ac911ba24` — confirmado:
+   nome da mesa, aviso de "não é convite seguro", lista "PERFIS (2)"
+   com "Join Teste v0.10" (Livre, Personagem ativo: Kael Ironwood) e
+   "gabi" (Livre, nenhum).
+3. Cliquei "Entrar como perfil" em "Join Teste v0.10" — status mudou
+   para "Em uso por esta aba", botão "Abrir ficha" apareceu com
+   `href="/dev/character-sheet?campaignId=2d2d5ea8-...&profileId=213d0336-..."`.
+4. Cliquei "Abrir ficha" — confirmado via leitura do DOM: `<select>`
+   "Mesa" já em "Mesa Teste Fase 0", `<select>` "Perfil" já em "Join
+   Teste v0.10 (Bloqueado)", "Status: Em uso por esta aba", botão "Sair
+   do perfil" já visível (sem precisar clicar "Entrar" de novo) — tudo
+   pré-selecionado a partir da URL.
+5. Cliquei "Carregar personagem ativo" — confirmado: nome da ficha
+   mudou para "Kael Ironwood".
+6. Confirmei que o heartbeat continuou rodando após vir do link de
+   join: consultei `last_seen_at` do perfil duas vezes com 15s de
+   intervalo (script auxiliar `scripts/_tmp_check_join_heartbeat.ts`,
+   criado e removido na mesma sessão) — avançou de `22:48:51` para
+   `22:49:10`, confirmando que o `useEffect` de heartbeat foi retomado
+   automaticamente, sem precisar entrar manualmente de novo.
+7. Testei `/dev/join/00000000-0000-0000-0000-000000000000` (uuid
+   inexistente) — confirmada a tela "Mesa não encontrada" com o id
+   buscado e instrução para conferir o link em `/dev/table`.
+8. Sem erros no console (`preview_console_logs`) durante toda a
+   sequência.
+9. Removi o perfil de teste "Join Teste v0.10" via script auxiliar
+   (`scripts/_tmp_cleanup_v010.ts`, criado e removido na mesma sessão,
+   nunca commitado).
+
+Resultado: **todos os passos do teste manual passaram**, incluindo a
+retomada automática do heartbeat ao navegar de `/dev/join` para a
+ficha sem nenhuma ação extra do usuário.
+
+## 7. Confirmação de escopo
+
+- **Migration nova**: nenhuma — `getCampaign` reusa `campaigns` e as
+  policies já existentes da migration 0003.
+- **Convite seguro/revogável**: não implementado — o "link" é só
+  `campaignId` em texto puro na URL, documentado explicitamente como
+  risco no topo da própria página `/dev/join/[campaignId]` e no
+  comentário de `page.tsx`. Qualquer pessoa com a URL (ou só o uuid da
+  mesa) pode ver todos os perfis e entrar em qualquer um livre/expirado,
+  usando a mesma anon key pública de sempre.
+- **Autenticação**: não implementada.
+- **`/dev/table`**: não alterado nesta etapa.
+- **Biblioteca do Sistema** (`src/lib/content`): não alterada.
+- **Lógica de ficha** (atributos, perícias, recursos, PA, reações):
+  não alterada.
+- Nenhuma chave secreta exposta: os scripts auxiliares
+  (`scripts/_tmp_check_join_heartbeat.ts`,
+  `scripts/_tmp_cleanup_v010.ts`) usaram exclusivamente
+  `SUPABASE_URL`/`SUPABASE_ANON_KEY` (mesma `getContentClient()`/Server
+  Actions de sempre), foram criados e removidos na mesma sessão, nunca
+  commitados.
