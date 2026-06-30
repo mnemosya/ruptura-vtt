@@ -119,9 +119,11 @@ const VISIBILITY_FILTER_LABELS: Record<VisibilityFilter, string> = {
 interface Props {
   mesasIniciais: Campaign[];
   personagensIniciais: CharacterRecord[];
+  /** Email do narrador logado (auth dev, checkpoint v0.13) — null se não logado. Só informativo. */
+  currentUserEmail: string | null;
 }
 
-export default function TableClient({ mesasIniciais, personagensIniciais }: Props) {
+export default function TableClient({ mesasIniciais, personagensIniciais, currentUserEmail }: Props) {
   const [mesas, setMesas] = useState<Campaign[]>(mesasIniciais);
   const [personagens] = useState<CharacterRecord[]>(personagensIniciais);
   const [novaMesaNome, setNovaMesaNome] = useState("");
@@ -299,11 +301,29 @@ export default function TableClient({ mesasIniciais, personagensIniciais }: Prop
 
   return (
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
-      <p style={{ opacity: 0.6, fontSize: 13, marginBottom: 16 }}>
+      <p style={{ opacity: 0.6, fontSize: 13, marginBottom: 12 }}>
         /dev/table — base mínima de Mesa/Log persistente. Sem chat real, sem realtime, sem
         autenticação. Visibilidade ("Pública"/"Privada"/"Mestre") é só um campo de dados nesta
         etapa — não há filtro de RLS por enquanto (ver migration 0003).
       </p>
+
+      {currentUserEmail ? (
+        <p
+          data-testid="auth-banner-logado"
+          style={{ fontSize: 12, marginBottom: 16, padding: "8px 12px", background: "#15301a", border: "1px solid #2a5a35", borderRadius: 6 }}
+        >
+          Narrador logado: <strong>{currentUserEmail}</strong> ·{" "}
+          <a href="/dev/auth/status" style={{ color: "#5ec8ff" }}>status</a>
+        </p>
+      ) : (
+        <p
+          data-testid="auth-banner-deslogado"
+          style={{ fontSize: 12, marginBottom: 16, padding: "8px 12px", background: "#2a2a15", border: "1px solid #5a5a2a", borderRadius: 6 }}
+        >
+          Nenhum narrador logado (modo dev anon). A RLS ainda é aberta — login não é obrigatório
+          nesta etapa. <a href="/dev/login" style={{ color: "#5ec8ff" }}>Entrar</a>
+        </p>
+      )}
 
       {errorMessage && (
         <p style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 16 }}>Erro: {errorMessage}</p>

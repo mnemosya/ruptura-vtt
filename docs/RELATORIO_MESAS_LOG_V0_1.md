@@ -2067,3 +2067,151 @@ Resultado: **todos os passos do teste manual passaram**.
   (`scripts/_tmp_setup_v012.ts`, `scripts/_tmp_cleanup_v012.ts`) usaram
   exclusivamente `SUPABASE_URL`/`SUPABASE_ANON_KEY`, foram criados e
   removidos na mesma sessão, nunca commitados.
+
+---
+
+# Checkpoint v0.13 — Auth dev de narrador
+
+Cria a **base** de autenticação dev de narrador (email/senha via
+Supabase Auth), sem endurecer a RLS — os fluxos dev anon continuam
+funcionando sem login. Login é server-side (Server Actions + anon key +
+cookie httpOnly), mantendo o modelo do projeto de não expor chaves no
+navegador (sem `NEXT_PUBLIC_*`).
+
+## 1. Decisão de arquitetura (e por que não client-side)
+
+O projeto já tinha o padrão: `SUPABASE_URL`/`SUPABASE_ANON_KEY`
+**server-side**, todo acesso via Server Actions, nada de
+`NEXT_PUBLIC_*` no bundle. Manter isso para auth significa **não** usar
+o SDK client-side do Supabase (que exigiria expor URL+anon key ao
+navegador). Em vez disso:
+
+- Login/logout/cadastro são **Server Actions** (`src/lib/auth/actions.ts`)
+  que usam a anon key server-side e gravam/limpam a sessão num **cookie
+  httpOnly** (`ruptura_auth`).
+- A leitura de "quem está logado" (`getCurrentUser`) valida o access
+  token via `supabase.auth.getUser(access_token)` — valida o JWT direto
+  no Supabase, sem rotacionar refresh token (evita o problema de
+  rotação que o `@supabase/ssr` resolveria; não adicionei essa
+  dependência nesta etapa).
+
+Nenhum secret novo, nenhuma chave colada — reusa as variáveis já
+existentes.
+
+## 2. Arquivos criados/alterados
+
+- `src/lib/auth/anonClient.ts` (novo) — `createAnonAuthClient()`
+  (anon key, `persistSession:false`/`autoRefreshToken:false`).
+- `src/lib/auth/session.ts` (novo) — cookie httpOnly (`readAuthTokens`/
+  `writeAuthTokens`/`clearAuthTokens`) + `getCurrentUser()` (server-only,
+  lido por RSC).
+- `src/lib/auth/actions.ts` (novo, "use server") — `signInWithPassword`,
+  `signUpDevNarrator`, `signOut`.
+- `src/app/dev/login/page.tsx` (novo) — form email/senha (Entrar /
+  Cadastrar dev).
+- `src/app/dev/auth/status/page.tsx` + `SignOutButton.tsx` (novos) —
+  status do usuário logado + botão Sair.
+- `src/app/dev/table/page.tsx` — busca `getCurrentUser()` e passa o
+  email ao TableClient.
+- `src/app/dev/table/TableClient.tsx` — banner: "Narrador logado: X" ou
+  "Nenhum narrador logado (modo dev anon)..." com link para /dev/login.
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.
+
+Nenhuma migration. Nenhuma mudança de RLS. Nenhuma mudança em
+`src/lib/content` (Biblioteca do Sistema).
+
+## 3. Magic link vs. senha
+
+A tela oferece **email/senha** (funciona só com a anon key, sem config
+de painel). **Magic link não foi oferecido** porque depende de provider
+de email configurado no painel do Supabase (SMTP ou o email embutido do
+Supabase com rate limit) + allowlist de redirect URL — configuração
+externa que não dá para garantir só por código. Documentado como
+pendência (seção 6).
+
+## 4. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully
+Route (app)
+┌ ○ /_not-found
+├ ƒ /dev/auth/status
+├ ƒ /dev/character-sheet
+├ ƒ /dev/join/[campaignId]
+├ ○ /dev/login
+└ ƒ /dev/table
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros.
+
+## 5. Resultado do teste manual (browser, via preview tools)
+
+1. `/dev/login` renderiza (campos email/senha, botões Entrar /
+   Cadastrar dev).
+2. **Caminho negativo (prova do wiring)**: tentei login com
+   `inexistente@gmail.com` / senha errada — o Server Action chegou ao
+   Supabase Auth e retornou `Erro no login: Invalid login credentials`,
+   confirmando que a auth está acessível ponta a ponta (Server Action →
+   Supabase Auth → resposta na UI).
+3. `/dev/auth/status` mostra "Nenhum narrador logado" (estado
+   deslogado correto).
+4. `/dev/table` abre normalmente e mostra o banner "Nenhum narrador
+   logado (modo dev anon)..."; a lista de mesas continua acessível
+   (RLS dev aberta, login não obrigatório).
+5. `/dev/character-sheet` abre normalmente (abas presentes).
+6. Sem erros no console.
+
+**Não testei o caminho positivo (login bem-sucedido) end-to-end** —
+ver seção 6: depende de um usuário confirmado, o que envolve
+configuração externa / envio de email que eu não devo disparar num
+projeto compartilhado sem consentimento. O auth verificado em `auth.users`
+estava com **0 usuários** antes e depois desta etapa (nenhum criado).
+
+## 6. Pendências / configuração externa (bloqueios do caminho positivo)
+
+Para exercer o login bem-sucedido de verdade, é preciso uma das opções
+abaixo — todas dependem de ação no painel do Supabase ou de envio de
+email, fora do escopo "só código":
+
+1. **Desativar "Confirm email"** em Authentication → Providers → Email
+   (painel Supabase). Com isso, "Cadastrar (dev)" na `/dev/login` já
+   loga direto (o Server Action grava o cookie e redireciona para
+   `/dev/auth/status`). Recomendado para dev.
+2. **Manter confirmação e usar um email real**: "Cadastrar (dev)" cria
+   o usuário e o Supabase envia o link de confirmação; após confirmar,
+   "Entrar" funciona. Não fiz isso para não disparar email num projeto
+   compartilhado sem o ok da pessoa dona.
+3. **Magic link**: exige SMTP/allowlist de redirect configurados no
+   painel.
+
+Validação empírica feita nesta etapa: `signUp` com `@example.com` é
+rejeitado pelo Supabase ("Email address is invalid") — a validação de
+domínio do projeto recusa domínios de teste, então o cadastro dev
+precisa de um domínio real, reforçando que o caminho positivo depende
+de email real ou de desativar a confirmação.
+
+## 7. Confirmação de escopo
+
+- **RLS**: NÃO endurecida nesta etapa — `campaigns`/`table_logs`/
+  `campaign_profiles`/`characters` continuam com as policies dev
+  abertas (CRUD para anon/authenticated). Confirmado via
+  `get_advisors(security)`: vários avisos `rls_policy_always_true`
+  nessas tabelas — esperado, é exatamente o que o checkpoint v0.14 vai
+  endurecer.
+- **Fluxos dev anon**: não quebrados — `/dev/table`, `/dev/character-sheet`,
+  `/dev/join` funcionam logado ou não.
+- **Convite seguro**: não implementado.
+- **Service role no frontend**: não usada — auth usa só a anon key
+  server-side.
+- **Biblioteca do Sistema** (`src/lib/content`): não alterada.
+- Nenhuma chave secreta exposta: nenhum valor de `.env.local` foi
+  impresso; o probe de auth (`scripts/_tmp_probe_auth.ts`) usou só
+  `SUPABASE_URL`/`SUPABASE_ANON_KEY`, foi criado e removido na mesma
+  sessão, nunca commitado, e não criou nenhum usuário (rejeitado pela
+  validação de email).

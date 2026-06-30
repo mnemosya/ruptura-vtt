@@ -10,6 +10,7 @@
 
 import { listCampaigns } from "../../../lib/table/storage";
 import { listCharacters } from "../../../lib/character/storage";
+import { getCurrentUser } from "../../../lib/auth/session";
 import type { Campaign } from "../../../lib/table";
 import type { CharacterRecord } from "../../../lib/character";
 import TableClient from "./TableClient";
@@ -20,6 +21,10 @@ export default async function TablePage() {
   let mesasIniciais: Campaign[] = [];
   let personagensIniciais: CharacterRecord[] = [];
   let errorMessage: string | null = null;
+
+  // Auth dev (checkpoint v0.13) — só informativo nesta etapa: a RLS ainda
+  // é a dev aberta, então o fluxo funciona logado ou não.
+  const currentUser = await getCurrentUser();
 
   try {
     mesasIniciais = await listCampaigns();
@@ -41,5 +46,11 @@ export default async function TablePage() {
     );
   }
 
-  return <TableClient mesasIniciais={mesasIniciais} personagensIniciais={personagensIniciais} />;
+  return (
+    <TableClient
+      mesasIniciais={mesasIniciais}
+      personagensIniciais={personagensIniciais}
+      currentUserEmail={currentUser?.email ?? null}
+    />
+  );
 }
