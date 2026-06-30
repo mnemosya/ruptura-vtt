@@ -31,6 +31,7 @@ import type {
   CharacterRulesPayload,
 } from "../../../lib/character";
 import type { PreparedRoll } from "../../../lib/dice";
+import type { Campaign } from "../../../lib/table";
 import { CharacterSheetTabs, type TabId } from "./components/CharacterSheetTabs";
 import { GeneralTab } from "./components/GeneralTab";
 import { AttributesTab } from "./components/AttributesTab";
@@ -55,6 +56,7 @@ interface Props {
   regras: CharacterRulesPayload | null;
   usandoFallback: boolean;
   personagensIniciais: CharacterRecord[];
+  mesasIniciais: Campaign[];
 }
 
 type SaveState = "idle" | "saving" | "saved" | "error";
@@ -70,7 +72,7 @@ function parseRecursoAtual(rawValue: number): number {
   return Math.max(0, Math.trunc(rawValue));
 }
 
-export default function CharacterSheetClient({ regras, usandoFallback, personagensIniciais }: Props) {
+export default function CharacterSheetClient({ regras, usandoFallback, personagensIniciais, mesasIniciais }: Props) {
   const [character, setCharacter] = useState<Character>(() => createInitialCharacter(regras));
   const [characterId, setCharacterId] = useState<string | null>(null);
   const [personagens, setPersonagens] = useState<CharacterRecord[]>(personagensIniciais);
@@ -83,6 +85,11 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
   // Atributos/Perícias e a aba Rolagens (ver RollsTab). Também é só
   // estado de UI, nunca persiste no payload.
   const [preparedRoll, setPreparedRoll] = useState<PreparedRoll | null>(null);
+  // Mesa (campaign) selecionada — estado de UI local, não persiste no
+  // payload do personagem. Quando presente, RollsTab também grava cada
+  // rolagem em table_logs (ver checkpoint v0.2 do relatório de Mesas).
+  const [mesas] = useState<Campaign[]>(mesasIniciais);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   // Log local mínimo (não persiste no Supabase) — alimentado por rolagens
   // (via callback passado a RollsTab) e pelos handlers de recurso/PA/
   // reação abaixo. Limitado às últimas 50 entradas.
@@ -321,6 +328,9 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
           onNomeChange={(value) => setCharacter((prev) => ({ ...prev, nome: value }))}
           onSave={handleSave}
           onNew={handleNew}
+          mesas={mesas}
+          selectedCampaignId={selectedCampaignId}
+          onSelectCampaign={setSelectedCampaignId}
         />
       )}
 
@@ -370,6 +380,9 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
           preparedRoll={preparedRoll}
           onPreparedRollApplied={() => setPreparedRoll(null)}
           onLog={addLogEntry}
+          campaignId={selectedCampaignId}
+          characterId={characterId}
+          characterNome={character.nome}
         />
       )}
 

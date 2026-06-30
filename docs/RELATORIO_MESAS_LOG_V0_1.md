@@ -194,3 +194,184 @@ Resultado: **todos os passos do teste manual passaram**.
   auxiliar usado para aplicar a migration via `SUPABASE_DB_URL`
   (`scripts/_tmp_apply_0003.ts`) foi criado e removido na mesma sessão,
   nunca commitado.
+
+---
+
+# Checkpoint v0.2 — Ficha conectada ao Log persistente
+
+Conecta `/dev/character-sheet` ao log persistente de `/dev/table`: a aba
+Geral ganhou um seletor de mesa, e a aba Rolagens passou a gravar cada
+rolagem (perícia ou expressão) em `table_logs` quando há mesa selecionada —
+mantendo o Log local intacto.
+
+## 1. Arquivos alterados
+
+- `src/app/dev/character-sheet/page.tsx` — busca a lista inicial de mesas
+  via `listCampaigns()` (de `src/lib/table/storage`) e passa como
+  `mesasIniciais` para `CharacterSheetClient`.
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — novo estado
+  `selectedCampaignId` (UI local, não persiste no payload do personagem);
+  `mesas` guarda a lista recebida do server; ambos passados para
+  `GeneralTab` (seleção) e `RollsTab` (gravação + `characterId`/
+  `character.nome`, usados no payload do log).
+- `src/app/dev/character-sheet/components/GeneralTab.tsx` — novo `<select>`
+  "Mesa" (`data-testid="mesa-select"`), com opção "Nenhuma mesa (só log
+  local)" como padrão.
+- `src/app/dev/character-sheet/components/RollsTab.tsx` — novo estado
+  `visibilidade` (padrão `"public"`) e `persistError`; nova função
+  `persistirNaMesa(tipo, payload)` chamada ao final de
+  `handleRolarPericia`/`handleRolarExpressao` (agora `async`), só quando
+  `campaignId` está presente; nova seção "Mesa" no topo da aba com o
+  seletor de visibilidade e o erro discreto de persistência, quando houver.
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.
+
+Nenhuma mudança em `storage.ts` (nem de personagem, nem de mesa), banco,
+migrations ou `src/lib/content` (Biblioteca do Sistema).
+
+## 2. Seleção de mesa
+
+Vive na aba Geral, ao lado do nome/Modo Jogo-Evolução — é estado de sessão,
+não de payload. `CharacterSheetClient` busca a lista de mesas uma vez (na
+carga da página, via Server Component) e mantém em estado local; não há
+botão de "criar mesa" na ficha — isso continua sendo responsabilidade de
+`/dev/table`, a ficha só **seleciona** uma mesa já existente.
+
+## 3. O que acontece numa rolagem com mesa selecionada
+
+Para rolagem de perícia (`handleRolarPericia`) e de expressão
+(`handleRolarExpressao`), nesta ordem:
+
+1. Calcula o resultado (mesma lógica de sempre, `rollPericia`/
+   `rollExpression` — **não mudou**).
+2. Adiciona ao histórico local da Dice Tray (`pushHistorico`) — igual a
+   antes.
+3. Registra no **Log local** via `onLog(...)` — igual a antes, **não foi
+   removido**.
+4. Se `campaignId` estiver definido, chama `persistirNaMesa(tipo, payload)`,
+   que chama `addLog()` (Server Action de `src/lib/table/storage.ts`) com a
+   visibilidade selecionada. Se não houver mesa selecionada, este passo é
+   pulado silenciosamente (`if (!campaignId) return;`).
+
+## 4. Payload gravado em `table_logs`
+
+**Rolagem de perícia** (`type: "rolagem_pericia"`):
+
+```json
+{
+  "characterId": "<uuid ou null>",
+  "characterNome": "Heroi Conectado",
+  "atributo": "Corpo",
+  "atributoValor": 1,
+  "pericia": null,
+  "periciaValor": 0,
+  "modificador": 0,
+  "dados": [4],
+  "maiorDado": 4,
+  "total": 4,
+  "cd": null,
+  "sucesso": null,
+  "margem": null,
+  "classificacaoMargem": null,
+  "origem": null
+}
+```
+
+**Rolagem de expressão** (`type: "rolagem_expressao"`):
+
+```json
+{
+  "characterId": "<uuid ou null>",
+  "characterNome": "Heroi Conectado",
+  "expressao": "2d6+1",
+  "dados": [{ "sides": 6, "value": 6, "sign": 1 }, { "sides": 6, "value": 4, "sign": 1 }],
+  "modificador": 1,
+  "total": 11
+}
+```
+
+Campos ausentes na rolagem (sem CD, sem perícia) vão como `null` no
+payload, não são omitidos — mantém o formato previsível para quem for ler
+depois.
+
+## 5. Visibilidade
+
+Seletor "Visibilidade no log da mesa" com as 3 opções pedidas — Pública,
+Privada, Narrador — mapeadas para os valores reais da coluna
+(`public`/`private`/`gm`, definidos na migration 0003). **Padrão: Pública**,
+conforme pedido. O seletor fica desabilitado (visualmente e via `disabled`)
+quando não há mesa selecionada, já que não há onde persistir.
+
+**Reforço do aviso já documentado na migration 0003**: a visibilidade
+escolhida aqui é só um **campo de dados** — não há filtro de RLS por
+visibilidade nesta etapa (depende de autenticação, que não existe ainda).
+Marcar uma rolagem como "Privada" ou "Narrador" não impede ninguém com a
+anon key de lê-la em `/dev/table`.
+
+## 6. Erro discreto de gravação
+
+Se `addLog()` falhar (mesa apagada entretanto, problema de rede, etc.), a
+UI mostra uma linha discreta (`data-testid="roll-persist-erro"`, vermelho,
+fonte pequena) logo abaixo do seletor de visibilidade: "Não foi possível
+gravar no log persistente da mesa: \<mensagem\>". A rolagem em si e o Log
+local **não são afetados** — eles já aconteceram antes dessa chamada.
+
+## 7. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully in 1588ms
+  Running TypeScript ...
+  Finished TypeScript in 3.0s ...
+✓ Generating static pages using 5 workers (2/2) in 310ms
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /dev/character-sheet
+└ ƒ /dev/table
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage ===
+1. Criado: id=632c8dcd-8e64-4d1f-b01b-bce8026528df, schema_version=1
+2. Carregado por id: nome="__TESTE_STORAGE_RUPTURA__"
+3. Atualizado: nome="__TESTE_STORAGE_RUPTURA___editado", corpo=4
+4. Encontrado na listagem (2 personagens no total).
+5. Apagado e confirmado ausente via getCharacter.
+6. Confirmado: nenhum registro de teste residual.
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros.
+
+## 8. Resultado do teste manual (browser, via preview tools)
+
+1. Abri `/dev/character-sheet`, novo personagem, nome "Heroi Conectado".
+2. Aba Geral → seletor "Mesa" já mostrava "Mesa Teste Fase 0" (criada no
+   checkpoint v0.1) — selecionei.
+3. Aba Rolagens → seção "Mesa" confirmou "Mesa selecionada..." e
+   visibilidade padrão "Pública".
+4. Rolei uma perícia (Corpo, sem perícia selecionada) — nenhum erro de
+   persistência (`roll-persist-erro` ausente).
+5. Rolei a expressão `2d6+1` — idem, sem erro.
+6. Conferi a aba Log (local) — as 2 rolagens apareceram normalmente,
+   confirmando que **o Log local não foi removido**.
+7. Naveguei para `/dev/table`, selecionei "Mesa Teste Fase 0" — **3 entradas**
+   no log da mesa: a mensagem de teste do checkpoint v0.1 + as 2 rolagens
+   novas, com payload completo (`characterNome: "Heroi Conectado"`,
+   atributo, dados, total, modificador, expressão) e `[Pública]` —
+   confirmando persistência real no Supabase.
+
+Resultado: **todos os passos do teste manual passaram**.
+
+## 9. Confirmação de escopo
+
+- **Realtime**: não implementado.
+- **Autenticação**: não implementada.
+- **Chat completo**: não implementado — `/dev/table` continua sendo só
+  visualização de log + mensagem de teste manual, sem interface de
+  conversa.
+- **Banco/migrations**: nenhuma alteração — reusa as tabelas/policies da
+  migration 0003 tal como estavam.
+- **Biblioteca do Sistema** (`src/lib/content`): não alterada.
+- Nenhuma chave secreta exposta.

@@ -21,9 +21,17 @@ import {
   type RupturaRollResult,
 } from "../../../../lib/dice";
 import type { CharacterAttributes, CharacterSkills, AttributeDefinition, SkillDefinition } from "../../../../lib/character";
+import { addLog } from "../../../../lib/table/storage";
+import { TABLE_LOG_VISIBILITIES, type TableLogVisibility } from "../../../../lib/table";
 
 const HISTORICO_MAX = 10;
 const SEM_PERICIA = "";
+
+const VISIBILITY_LABELS: Record<TableLogVisibility, string> = {
+  public: "Pública",
+  private: "Privada",
+  gm: "Narrador",
+};
 
 const MARGEM_LABELS: Record<MargemClassificacao, string> = {
   falha_critica: "Falha crítica",
@@ -83,6 +91,9 @@ export function RollsTab({
   preparedRoll,
   onPreparedRollApplied,
   onLog,
+  campaignId,
+  characterId,
+  characterNome,
 }: {
   atributos: CharacterAttributes;
   atributoDefinitions: AttributeDefinition[] | undefined;
@@ -92,6 +103,10 @@ export function RollsTab({
   onPreparedRollApplied: () => void;
   /** Registra a rolagem no Log local (ver LogTab) — não persiste no Supabase. */
   onLog: (tipo: "rolagem_pericia" | "rolagem_expressao", resumo: string) => void;
+  /** Mesa selecionada na aba Geral — null = nenhuma, não persiste em table_logs. */
+  campaignId: string | null;
+  characterId: string | null;
+  characterNome: string;
 }) {
   const atributoIds = ["corpo", "mente", "animo"] as const;
   const [atributoId, setAtributoId] = useState<(typeof atributoIds)[number]>("corpo");
@@ -105,6 +120,31 @@ export function RollsTab({
 
   const [historico, setHistorico] = useState<HistoricoEntry[]>([]);
   const counterRef = useRef(0);
+
+  // Visibilidade da próxima gravação em table_logs — só usada quando há
+  // mesa selecionada (campaignId). Padrão pública, conforme pedido.
+  const [visibilidade, setVisibilidade] = useState<TableLogVisibility>("public");
+  // Erro discreto de gravação no log persistente — nunca bloqueia a
+  // rolagem nem o Log local, que já aconteceram antes desta chamada.
+  const [persistError, setPersistError] = useState<string | null>(null);
+
+  async function persistirNaMesa(tipo: "rolagem_pericia" | "rolagem_expressao", payload: Record<string, unknown>) {
+    if (!campaignId) return;
+    try {
+      await addLog({
+        campaignId,
+        characterId: characterId ?? undefined,
+        type: tipo,
+        visibility: visibilidade,
+        payload,
+      });
+      setPersistError(null);
+    } catch (err) {
+      setPersistError(
+        err instanceof Error ? err.message : "Erro desconhecido ao gravar no log persistente da mesa.",
+      );
+    }
+  }
 
   // Aplica a seleção vinda de um clique em "Rolar" nas abas
   // Atributos/Perícias (ver CharacterSheetClient). Não rola
@@ -124,7 +164,7 @@ export function RollsTab({
     setHistorico((prev) => [full, ...prev].slice(0, HISTORICO_MAX));
   }
 
-  function handleRolarPericia() {
+  async function handleRolarPericia() {
     const atributoDef = atributoDefinitions?.find((a) => a.id === atributoId);
     const periciaDef = periciaDefinitions?.find((p) => p.id === periciaId);
     const modificador = parseIntOrDefault(modificadorInput, 0);
@@ -148,14 +188,41 @@ export function RollsTab({
     const cdParte =
       resultado.cd != null ? ` vs CD ${resultado.cd} (${resultado.sucesso ? "Sucesso" : "Falha"})` : "";
     onLog("rolagem_pericia", `${resultado.atributoNome}${periciaParte}: total ${resultado.total}${cdParte}`);
+
+    await persistirNaMesa("rolagem_pericia", {
+      characterId,
+      characterNome,
+      atributo: resultado.atributoNome,
+      atributoValor: resultado.atributoValor,
+      pericia: resultado.periciaNome ?? null,
+      periciaValor: resultado.periciaValor,
+      modificador: resultado.modificador,
+      dados: resultado.dados,
+      maiorDado: resultado.maiorDado,
+      total: resultado.total,
+      cd: resultado.cd ?? null,
+      sucesso: resultado.sucesso ?? null,
+      margem: resultado.margem ?? null,
+      classificacaoMargem: resultado.classificacaoMargem ?? null,
+      origem: origemAtual ?? null,
+    });
   }
 
-  function handleRolarExpressao() {
+  async function handleRolarExpressao() {
     setExpressaoErro(null);
     try {
       const resultado = rollExpression(expressaoInput);
       pushHistorico({ kind: "expressao", resultado });
       onLog("rolagem_expressao", `"${resultado.expression}": total ${resultado.total}`);
+
+      await persistirNaMesa("rolagem_expressao", {
+        characterId,
+        characterNome,
+        expressao: resultado.expression,
+        dados: resultado.dice,
+        modificador: resultado.modifier,
+        total: resultado.total,
+      });
     } catch (err) {
       setExpressaoErro(err instanceof DiceExpressionError ? err.message : "Expressão inválida.");
     }
@@ -167,6 +234,39 @@ export function RollsTab({
 
   return (
     <>
+      <Section title="Mesa">
+        {campaignId ? (
+          <p style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>
+            Mesa selecionada — rolagens também gravam no log persistente dela (além do Log local).
+          </p>
+        ) : (
+          <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 8 }}>
+            Nenhuma mesa selecionada (ver aba Geral) — rolagens ficam só no Log local.
+          </p>
+        )}
+        <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, maxWidth: 200 }}>
+          Visibilidade no log da mesa
+          <select
+            data-testid="roll-visibilidade-select"
+            value={visibilidade}
+            onChange={(e) => setVisibilidade(e.target.value as TableLogVisibility)}
+            disabled={!campaignId}
+            style={{ ...selectStyle, opacity: campaignId ? 1 : 0.5 }}
+          >
+            {TABLE_LOG_VISIBILITIES.map((v) => (
+              <option key={v} value={v}>
+                {VISIBILITY_LABELS[v]}
+              </option>
+            ))}
+          </select>
+        </label>
+        {persistError && (
+          <p data-testid="roll-persist-erro" style={{ fontSize: 12, color: "#ff6b6b", marginTop: 8 }}>
+            Não foi possível gravar no log persistente da mesa: {persistError}
+          </p>
+        )}
+      </Section>
+
       <Section title="Rolagem de perícia">
         <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 12 }}>
           Maior dado entre (Atributo)d8 + Perícia + modificador (regra base do Ruptura).

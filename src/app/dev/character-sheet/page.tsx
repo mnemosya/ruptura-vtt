@@ -10,7 +10,9 @@
 
 import { getCharacterRules } from "../../../lib/content";
 import { listCharacters } from "../../../lib/character/storage";
+import { listCampaigns } from "../../../lib/table/storage";
 import type { CharacterRecord, CharacterRulesPayload } from "../../../lib/character";
+import type { Campaign } from "../../../lib/table";
 import CharacterSheetClient from "./CharacterSheetClient";
 
 export const dynamic = "force-dynamic";
@@ -50,11 +52,20 @@ export default async function CharacterSheetPage() {
     // o Client Component mostra o erro ao tentar salvar, não bloqueia a página.
   }
 
+  let mesasIniciais: Campaign[] = [];
+  try {
+    mesasIniciais = await listCampaigns();
+  } catch {
+    // Lista vazia se a tabela campaigns ainda não existir/estiver fora do ar;
+    // a ficha funciona normalmente sem mesa selecionada (ver RollsTab).
+  }
+
   return (
     <CharacterSheetClient
       regras={regras}
       usandoFallback={usandoFallback}
       personagensIniciais={personagensSalvos}
+      mesasIniciais={mesasIniciais}
     />
   );
 }
