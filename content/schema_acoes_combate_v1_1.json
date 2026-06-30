@@ -1,0 +1,361 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ruptura.vtt.content.acoes_combate.v1.1.schema.json",
+  "title": "Ruptura VTT - Ações de Combate v1.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "_schema",
+    "_meta",
+    "enums",
+    "acoes"
+  ],
+  "properties": {
+    "_schema": {
+      "const": "ruptura.vtt.content.acoes_combate.v1.1"
+    },
+    "_meta": {
+      "type": "object"
+    },
+    "enums": {
+      "type": "object"
+    },
+    "acoes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/acao"
+      }
+    }
+  },
+  "$defs": {
+    "pericia": {
+      "type": "string",
+      "enum": [
+        "arcanismo",
+        "artes",
+        "balistica",
+        "biologia",
+        "carisma",
+        "engenharia",
+        "furtividade",
+        "influencia",
+        "intimidacao",
+        "logica",
+        "luta",
+        "mobilidade",
+        "percepcao",
+        "precisao",
+        "psicologia",
+        "reflexos",
+        "robotica",
+        "sociedade",
+        "tecnomagia",
+        "vigor",
+        "vontade",
+        "variavel"
+      ]
+    },
+    "condicao": {
+      "type": "string",
+      "enum": [
+        "agarrado",
+        "agarrando",
+        "atordoado",
+        "caido",
+        "cego",
+        "contundido",
+        "envenenado",
+        "imobilizado",
+        "inconsciente",
+        "insaturado",
+        "lento",
+        "ofuscado",
+        "queimando",
+        "sangrando",
+        "saturado",
+        "sufocando",
+        "surdo"
+      ]
+    },
+    "acao_ref": {
+      "type": "string",
+      "enum": [
+        "acessar_trama",
+        "agarrar",
+        "apagar_fogo",
+        "aparar",
+        "atacar",
+        "bloquear",
+        "derrubar",
+        "desarmar",
+        "deslocar",
+        "empurrar",
+        "escapar",
+        "esquivar",
+        "estrangular",
+        "falar",
+        "fintar",
+        "gestos_rapidos",
+        "interagir",
+        "levantar",
+        "mirar",
+        "postura_defensiva",
+        "postura_ofensiva",
+        "preparar_turno",
+        "recarregar",
+        "resistir",
+        "sacar_dificil",
+        "sacar_rapido",
+        "soltar_alvo",
+        "usar_pericia"
+      ]
+    },
+    "tag": {
+      "type": "string",
+      "enum": [
+        "acao",
+        "arcanismo",
+        "artes",
+        "ataque_area",
+        "ataque_corpo_a_corpo",
+        "ataque_direcional",
+        "ataque_distancia",
+        "audicao",
+        "balistica",
+        "biologia",
+        "carisma",
+        "cobertura",
+        "conjuracao",
+        "corpo",
+        "defensiva",
+        "engenharia",
+        "furtividade",
+        "influencia",
+        "intimidacao",
+        "logica",
+        "luta",
+        "magia",
+        "malha",
+        "mobilidade",
+        "movimento",
+        "ofensiva",
+        "percepcao",
+        "precisao",
+        "psicologia",
+        "reacao",
+        "reflexos",
+        "robotica",
+        "sentido",
+        "social",
+        "sociedade",
+        "tecnomagia",
+        "terreno",
+        "trama",
+        "vigor",
+        "visao",
+        "vontade"
+      ]
+    },
+    "acao": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "slug",
+        "nome",
+        "categoria",
+        "tipo",
+        "custo",
+        "janela",
+        "visibilidade",
+        "tags",
+        "descricao_curta",
+        "descricao_longa",
+        "payload_automacao",
+        "status",
+        "versao",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "enum": [
+            "acessar_trama",
+            "agarrar",
+            "apagar_fogo",
+            "aparar",
+            "atacar",
+            "bloquear",
+            "derrubar",
+            "desarmar",
+            "deslocar",
+            "empurrar",
+            "escapar",
+            "esquivar",
+            "estrangular",
+            "falar",
+            "fintar",
+            "gestos_rapidos",
+            "interagir",
+            "levantar",
+            "mirar",
+            "postura_defensiva",
+            "postura_ofensiva",
+            "preparar_turno",
+            "recarregar",
+            "resistir",
+            "sacar_dificil",
+            "sacar_rapido",
+            "soltar_alvo",
+            "usar_pericia"
+          ]
+        },
+        "slug": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "nome": {
+          "type": "string",
+          "minLength": 1
+        },
+        "categoria": {
+          "enum": [
+            "movimento",
+            "ofensiva",
+            "defensiva",
+            "diversa",
+            "livre"
+          ]
+        },
+        "tipo": {
+          "enum": [
+            "acao",
+            "reacao",
+            "acao_livre",
+            "acao_reacao"
+          ]
+        },
+        "custo": {
+          "type": "object",
+          "required": [
+            "tipo"
+          ],
+          "properties": {
+            "tipo": {
+              "enum": [
+                "pa",
+                "reacao",
+                "livre",
+                "composto",
+                "variavel"
+              ]
+            },
+            "valor": {
+              "type": [
+                "number",
+                "string"
+              ]
+            }
+          },
+          "additionalProperties": true
+        },
+        "janela": {
+          "type": "string"
+        },
+        "visibilidade": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "descricao_curta": {
+          "type": "string",
+          "minLength": 1
+        },
+        "descricao_longa": {
+          "type": "string",
+          "minLength": 1
+        },
+        "teste": {
+          "type": "object"
+        },
+        "modos": {
+          "type": "array"
+        },
+        "variantes": {
+          "type": "array"
+        },
+        "requisitos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "tipo"
+            ],
+            "properties": {
+              "tipo": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "efeitos_por_margem": {
+          "type": "array"
+        },
+        "efeitos_por_margem_ref": {
+          "type": "string"
+        },
+        "falha": {
+          "type": "array"
+        },
+        "falha_ao_proteger_aliado": {
+          "type": [
+            "array",
+            "object"
+          ]
+        },
+        "sucesso": {
+          "type": [
+            "array",
+            "object"
+          ]
+        },
+        "payload_automacao": {
+          "type": "object",
+          "required": [
+            "efeitos"
+          ],
+          "properties": {
+            "efeitos": {
+              "type": "array"
+            }
+          },
+          "additionalProperties": true
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "published",
+            "archived"
+          ]
+        },
+        "versao": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

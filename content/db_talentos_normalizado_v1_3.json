@@ -1,0 +1,3431 @@
+{
+  "_schema": "ruptura.vtt.content.talentos.v1.3",
+  "_meta": {
+    "conteudo": "talentos",
+    "fonte": "talentos.md",
+    "versao_schema": "1.3.0",
+    "status_padrao": "published",
+    "gerado_em": "2026-06-25",
+    "hash_sha256_origem": "f69647396d6071403032da3e9c3beb466ec54bd3eeda0305de7f5edf3233ffde",
+    "total_talentos": 22,
+    "total_niveis": 66,
+    "regra_criacao": "Na criação de personagem, todo jogador escolhe um talento de nível 1.",
+    "regra_progressao": "Com Pontos de Melhoria (PM), o personagem pode evoluir o mesmo talento para nível 2 e depois 3, ou adquirir um novo talento de nível 1.",
+    "observacoes": [
+      "Descrições foram extraídas do Markdown original e limpas de artefatos de Notion.",
+      "Cada talento foi modelado como uma árvore de 3 níveis.",
+      "Cada nível recebeu payload_automacao.efeitos com estrutura data-driven.",
+      "Campos de perícia, condição, margem, cadência e tags usam IDs internos em snake_case.",
+      "Efeitos narrativos sem automação direta foram mantidos como payloads do tipo acao_narrativa ou equivalentes.",
+      "v1.3: alvo_tags deve conter perícias ou tags semânticas de rolagem; IDs de ação ficam em alvo_acoes."
+    ],
+    "revisao": "v1.2: camada familia (dispatch §12.1) sobre tipo; corrigido campo condicao->requisito em Camuflagem Optica; removidos aparar/bloquear do enum de pericias. | v1.3: alvo_tags com IDs de ação (aparar/bloquear) migrados para alvo_acoes; schema passa a validar alvo_acoes e contrato de alvo_tags."
+  },
+  "enums": {
+    "status": [
+      "draft",
+      "published",
+      "archived"
+    ],
+    "niveis": [
+      1,
+      2,
+      3
+    ],
+    "cadencia": [
+      "rodada",
+      "cena",
+      "combate",
+      "sessao",
+      "sessao_malha",
+      "dia",
+      "missao",
+      "descanso_longo",
+      "permanente"
+    ],
+    "margem": [
+      "falha",
+      "falha_limitada",
+      "sucesso_limitado",
+      "sucesso_padrao",
+      "sucesso_critico"
+    ],
+    "pericias": [
+      "arcanismo",
+      "balistica",
+      "engenharia",
+      "furtividade",
+      "influencia",
+      "logica",
+      "percepcao",
+      "precisao",
+      "psicologia",
+      "robotica",
+      "tecnomagia",
+      "luta",
+      "vigor"
+    ],
+    "tags_sistema": [
+      "acao",
+      "arma",
+      "armadura",
+      "ativo",
+      "companheiro",
+      "controle",
+      "cura",
+      "dano",
+      "defensiva",
+      "drone",
+      "economia",
+      "equipamento",
+      "escudo",
+      "furtividade",
+      "loja",
+      "magia",
+      "malha",
+      "mana",
+      "margem",
+      "mit",
+      "movimento",
+      "narrativo",
+      "ofensiva",
+      "pa",
+      "passivo",
+      "pd",
+      "pericia",
+      "reacao",
+      "robo",
+      "robotica",
+      "runa",
+      "sobrecarga",
+      "social",
+      "suporte",
+      "trama"
+    ],
+    "tipo_efeito": [
+      "acao_narrativa",
+      "alterar_alcance_protecao",
+      "alterar_dado_condicao",
+      "alterar_limite_sobrecarga",
+      "alterar_protocolo",
+      "anular_dano_bloqueado",
+      "aplicar_condicao_em_margem",
+      "aplicar_penalidade_pos_critico",
+      "aprimorar_item_temporario",
+      "ataque_extra",
+      "ativar_desativar_runa_sem_pa",
+      "aumentar_espacos_runa",
+      "aumentar_recurso",
+      "avaliar_mercadoria_sem_teste",
+      "briefing_pre_cena",
+      "buff_empilhavel",
+      "canalizar_mana",
+      "comando_livre_sem_custo",
+      "comando_sem_teste",
+      "companheiro_acao_extra",
+      "companheiro_bonus_primeiro_teste",
+      "companheiro_grupo_coordenado",
+      "companheiro_pa_bonus",
+      "companheiro_pa_por_rodada",
+      "companheiro_script",
+      "compra_fiada",
+      "conceder_cobertura_pos_bloqueio",
+      "conhecer_proximo_mercado_noturno",
+      "contra_ataque_sem_pa",
+      "declarar_execucao",
+      "desconto_loja",
+      "detectar_falha_sem_teste",
+      "dobrar_efeito_positivo",
+      "encontrar_local_seguro",
+      "escape_narrativo",
+      "estabilizar_aliado",
+      "estender_duracao_efeito_negativo",
+      "estender_efeito_positivo",
+      "forcar_abertura_social",
+      "forcar_margem",
+      "gatilho_prevenir_zero_pv",
+      "ignorar_penalidade",
+      "instalar_remover_runa",
+      "invocar_contato",
+      "ler_vulnerabilidade_social",
+      "manter_furtividade_em_movimento_exposto",
+      "marcar_alvo_ou_detalhe",
+      "marcar_inimigo_afetado",
+      "modificador",
+      "modificar_talento_existente",
+      "multiplicar_alcance_area_magia",
+      "nao_deixar_rastros_fisicos",
+      "override_turno_aliado",
+      "piso_margem",
+      "promocao_margem",
+      "promocao_margem_manual",
+      "propagar_efeito_negativo",
+      "reacao_cura_em_queda",
+      "reacao_gatilho",
+      "reacao_gratuita",
+      "recrutar_pn_aliado_temporario",
+      "recurso_dado_gatilho",
+      "reduzir_custo_pa",
+      "reposicionamento_pos_acerto",
+      "ruptura_imediata_sem_perda_integridade",
+      "saque_sem_pa",
+      "segundo_disparo",
+      "sequencia_arremessos",
+      "showdown",
+      "sondar_automatico",
+      "substituir_bonus_acao",
+      "toggle_condicional",
+      "token_sucesso_limitado",
+      "trocar_atributo",
+      "trocar_dano_por_condicao"
+    ],
+    "tipo_efeito_familia": [
+      "aquisicao_nivel",
+      "modificador",
+      "margem",
+      "dado_gatilho",
+      "buff_empilhavel",
+      "reacao",
+      "economia_pa",
+      "aplicar_condicao",
+      "ataque_adicional",
+      "companheiro",
+      "trama",
+      "economia_loja",
+      "runa",
+      "troca_atributo",
+      "recurso",
+      "protecao",
+      "magia",
+      "propagacao_efeito",
+      "meta_talento",
+      "habilidade_narrativa",
+      "regra_especial"
+    ]
+  },
+  "talentos": [
+    {
+      "id": "artifice",
+      "slug": "artifice",
+      "nome": "Artífice",
+      "descricao_curta": "O Artífice improvisa soluções onde ninguém mais vê saída.",
+      "descricao_longa": "O Artífice improvisa soluções onde ninguém mais vê saída. Transforma sucata em ferramenta, reforça o que já está em uso e cria meios de vantagem mesmo em condições adversas.",
+      "tags": [
+        "equipamento",
+        "pericia"
+      ],
+      "niveis": [
+        {
+          "id": "artifice_bricolagem",
+          "slug": "artifice_bricolagem",
+          "talento_id": "artifice",
+          "nivel": 1,
+          "nome": "Bricolagem",
+          "requisitos": [],
+          "tags": [
+            "equipamento",
+            "pericia"
+          ],
+          "descricao_curta": "Sempre que examina um mecanismo, estrutura ou sistema simples (ex.: portas, fechaduras, veículos comuns, drones básicos, circuitos triviais), identifica imediatamente a falha principal ou o ponto vulnerável sem precisar de teste.",
+          "descricao_longa": "Sempre que examina um mecanismo, estrutura ou sistema simples (ex.: portas, fechaduras, veículos comuns, drones básicos, circuitos triviais), identifica imediatamente a falha principal ou o ponto vulnerável sem precisar de teste. Ao tentar consertar ou explorar essa falha, recebe +1 no teste de **`Engenharia`** ou **`Robótica`** relacionado.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "modificador",
+                "tipo": "detectar_falha_sem_teste",
+                "alvos": [
+                  "mecanismo",
+                  "estrutura",
+                  "sistema_simples"
+                ],
+                "escopo": [
+                  "portas",
+                  "fechaduras",
+                  "veiculos_comuns",
+                  "drones_basicos",
+                  "circuitos_triviais"
+                ]
+              },
+              {
+                "familia": "modificador",
+                "tipo": "modificador",
+                "valor": 1,
+                "alvo_tags": [
+                  "engenharia",
+                  "robotica"
+                ],
+                "alvo_texto": "testes de Engenharia ou Robótica para consertar ou explorar a falha identificada"
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "artifice_toque_de_midas",
+          "slug": "artifice_toque_de_midas",
+          "talento_id": "artifice",
+          "nivel": 2,
+          "nome": "Toque de Midas",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "artifice",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "dano",
+            "equipamento",
+            "pericia"
+          ],
+          "descricao_curta": "Uma vez por dia, pode transformar um objeto comum em versão aprimorada temporária que dura 1 hora.",
+          "descricao_longa": "Uma vez por dia, pode transformar um objeto comum em versão aprimorada temporária que dura 1 hora.\n\n- **Armas:** recebem +1 em todos os testes de ataque e dano.\n- **Armaduras:** recebem +2 de Mitigação (MIT).\n- **Escudos**: recebem +3 Pontos de Durabilidade (PD).\n- **Ferramentas/dispositivos:** concedem +1 nos testes relacionados.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "regra_especial",
+                "tipo": "aprimorar_item_temporario",
+                "usos": 1,
+                "cadencia": "dia",
+                "duracao": "1 hora",
+                "opcoes": [
+                  {
+                    "alvo": "arma",
+                    "modificadores": [
+                      {
+                        "tipo": "modificador",
+                        "valor": 1,
+                        "alvo_tags": [
+                          "ataque"
+                        ]
+                      },
+                      {
+                        "tipo": "modificador_dano",
+                        "valor": 1
+                      }
+                    ]
+                  },
+                  {
+                    "alvo": "armadura",
+                    "modificadores": [
+                      {
+                        "tipo": "mit_bonus",
+                        "valor": 2
+                      }
+                    ]
+                  },
+                  {
+                    "alvo": "escudo",
+                    "modificadores": [
+                      {
+                        "tipo": "pd_bonus",
+                        "valor": 3
+                      }
+                    ]
+                  },
+                  {
+                    "alvo": "ferramenta_dispositivo",
+                    "modificadores": [
+                      {
+                        "tipo": "modificador",
+                        "valor": 1,
+                        "alvo_tags": [
+                          "teste_relacionado"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "artifice_gambiarra_expressa",
+          "slug": "artifice_gambiarra_expressa",
+          "talento_id": "artifice",
+          "nivel": 3,
+          "nome": "Gambiarra Expressa",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "artifice",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "equipamento",
+            "narrativo",
+            "pericia"
+          ],
+          "descricao_curta": "Uma vez por sessão, em apenas 5 minutos, pode criar ou modificar uma estrutura, equipamento ou autômato, sem teste estendido, obtendo efeito que normalmente exigiria horas ou dias, desde que haja algum material de base.",
+          "descricao_longa": "Uma vez por sessão, em apenas 5 minutos, pode criar ou modificar uma estrutura, equipamento ou autômato, sem teste estendido, obtendo efeito que normalmente exigiria horas ou dias, desde que haja algum material de base.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "habilidade_narrativa",
+                "tipo": "acao_narrativa",
+                "usos": 1,
+                "cadencia": "sessao",
+                "tempo_execucao": "5 minutos",
+                "alvos": [
+                  "estrutura",
+                  "equipamento",
+                  "automato"
+                ],
+                "requer_material_base": true,
+                "ignora_teste_estendido": true
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "assassino",
+      "slug": "assassino",
+      "nome": "Assassino",
+      "descricao_curta": "O Assassino atua sem ser visto e desaparece antes da resposta.",
+      "descricao_longa": "O Assassino atua sem ser visto e desaparece antes da resposta. Suas lâminas abrem feridas profundas que sangram até a morte, e ele só retorna quando é hora de finalizar o alvo.",
+      "tags": [
+        "ofensiva",
+        "furtividade",
+        "dano"
+      ],
+      "niveis": [
+        {
+          "id": "assassino_lamina_oculta",
+          "slug": "assassino_lamina_oculta",
+          "talento_id": "assassino",
+          "nivel": 1,
+          "nome": "Lâmina Oculta",
+          "requisitos": [],
+          "tags": [
+            "dano",
+            "furtividade",
+            "margem",
+            "ofensiva",
+            "pa"
+          ],
+          "descricao_curta": "Quando ataca um alvo que não percebe sua presença, uma falha limitada conta como sucesso limitado.",
+          "descricao_longa": "Quando ataca um alvo que não percebe sua presença, uma falha limitada conta como sucesso limitado. Além disso, em um sucesso padrão ou superior, pode se reposicionar em até 3 metros sem gastar PA.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "margem",
+                "tipo": "promocao_margem",
+                "de": "falha_limitada",
+                "para": "sucesso_limitado",
+                "contexto": "ataque contra alvo que não percebe sua presença"
+              },
+              {
+                "familia": "habilidade_narrativa",
+                "tipo": "reposicionamento_pos_acerto",
+                "distancia_m": 3,
+                "custo_pa": 0,
+                "margem_minima": "sucesso_padrao",
+                "contexto": "ataque contra alvo que não percebe sua presença"
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "assassino_hemorragia",
+          "slug": "assassino_hemorragia",
+          "talento_id": "assassino",
+          "nivel": 2,
+          "nome": "Hemorragia",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "assassino",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "dano",
+            "furtividade",
+            "margem",
+            "ofensiva"
+          ],
+          "descricao_curta": "Sempre que atacar com uma arma que possua a propriedade Sangramento, um sucesso padrão já aplica a condição Sangrando (em vez de exigir sucesso crítico).",
+          "descricao_longa": "Sempre que atacar com uma arma que possua a propriedade *Sangramento*, um sucesso padrão já aplica a condição **`Sangrando`** (em vez de exigir sucesso crítico). Além disso, em sucesso crítico, o dano contínuo de **`Sangrando`** aumenta para 1d8 em vez de 1d6.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "aplicar_condicao",
+                "tipo": "aplicar_condicao_em_margem",
+                "condicao": "sangrando",
+                "margem_minima": "sucesso_padrao",
+                "contexto": "ataque com arma com propriedade Sangramento"
+              },
+              {
+                "familia": "aplicar_condicao",
+                "tipo": "alterar_dado_condicao",
+                "condicao": "sangrando",
+                "dado": "1d8",
+                "contexto": "sucesso crítico com arma com propriedade Sangramento"
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "assassino_executar",
+          "slug": "assassino_executar",
+          "talento_id": "assassino",
+          "nivel": 3,
+          "nome": "Executar",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "assassino",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "dano",
+            "furtividade",
+            "margem",
+            "ofensiva"
+          ],
+          "descricao_curta": "Uma vez por cena, ao atacar um inimigo que esteja com menos de 50% dos PV, que não tenha percebido sua presença ou que esteja Imobilizado ou Atordoado, pode declarar uma Execução.",
+          "descricao_longa": "Uma vez por cena, ao atacar um inimigo que esteja com menos de 50% dos PV, que não tenha percebido sua presença ou que esteja **`Imobilizado`** ou **`Atordoado`**, pode declarar uma *Execução*. Se acertar, o ataque ignora qualquer armadura e é considerado um sucesso crítico.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "regra_especial",
+                "tipo": "declarar_execucao",
+                "usos": 1,
+                "cadencia": "cena",
+                "gatilhos_qualquer_um": [
+                  {
+                    "tipo": "alvo_pv_percentual_abaixo",
+                    "valor": 50
+                  },
+                  {
+                    "tipo": "alvo_nao_percebe_personagem"
+                  },
+                  {
+                    "tipo": "alvo_com_condicao",
+                    "condicoes": [
+                      "imobilizado",
+                      "atordoado"
+                    ]
+                  }
+                ],
+                "em_acerto": [
+                  {
+                    "tipo": "ignorar_armadura"
+                  },
+                  {
+                    "tipo": "forcar_margem",
+                    "margem": "sucesso_critico"
+                  }
+                ]
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "atirador_de_elite",
+      "slug": "atirador_de_elite",
+      "nome": "Atirador de Elite",
+      "descricao_curta": "O Atirador de Elite domina a distância.",
+      "descricao_longa": "O Atirador de Elite domina a distância. Calcula cada disparo com frieza, espera o instante perfeito e transforma um único tiro em resultado decisivo ao explorar qualquer brecha para alcançar um sucesso impactante.",
+      "tags": [
+        "ofensiva",
+        "arma",
+        "margem"
+      ],
+      "niveis": [
+        {
+          "id": "atirador_de_elite_1_tiro_1_acerto",
+          "slug": "atirador_de_elite_1_tiro_1_acerto",
+          "talento_id": "atirador_de_elite",
+          "nivel": 1,
+          "nome": "1 Tiro, 1 Acerto",
+          "requisitos": [],
+          "tags": [
+            "arma",
+            "margem",
+            "ofensiva"
+          ],
+          "descricao_curta": "Quando é bem sucedido na ação de Mirar, recebe +2 em Precisão ou Balística no próximo disparo até o fim da rodada (em vez de apenas +1).",
+          "descricao_longa": "Quando é bem sucedido na ação de **Mirar**, recebe +2 em **`Precisão`** ou **`Balística`** no próximo disparo até o fim da rodada (em vez de apenas +1). Se obtiver sucesso crítico, recebe +3.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "modificador",
+                "tipo": "substituir_bonus_acao",
+                "acao": "mirar",
+                "resultado": "sucesso",
+                "bonus_padrao": 2,
+                "bonus_critico": 3,
+                "alvo_tags": [
+                  "precisao",
+                  "balistica"
+                ],
+                "duracao": "fim_da_rodada"
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "atirador_de_elite_a_espreita",
+          "slug": "atirador_de_elite_a_espreita",
+          "talento_id": "atirador_de_elite",
+          "nivel": 2,
+          "nome": "À Espreita",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "atirador_de_elite",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "arma",
+            "margem",
+            "ofensiva"
+          ],
+          "descricao_curta": "Se o alvo não está ciente da sua presença, ataques à distância contra ele após um sucesso de Mirar contam como sucesso padrão, mesmo em caso de sucesso limitado ou falha limitada.",
+          "descricao_longa": "Se o alvo não está ciente da sua presença, ataques à distância contra ele após um sucesso de **Mirar** contam como sucesso padrão, mesmo em caso de sucesso limitado ou falha limitada.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "margem",
+                "tipo": "piso_margem",
+                "margem_minima": "sucesso_padrao",
+                "contexto": "ataque à distância contra alvo que não está ciente da presença após sucesso em Mirar",
+                "aplica_em": [
+                  "sucesso_limitado",
+                  "falha_limitada"
+                ]
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "atirador_de_elite_headshot",
+          "slug": "atirador_de_elite_headshot",
+          "talento_id": "atirador_de_elite",
+          "nivel": 3,
+          "nome": "Headshot",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "atirador_de_elite",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "arma",
+            "margem",
+            "ofensiva"
+          ],
+          "descricao_curta": "Ao acertar um ataque à distância após um sucesso crítico de Mirar, pode tratar o ataque como um sucesso crítico independente da margem.",
+          "descricao_longa": "Ao acertar um ataque à distância após um sucesso crítico de **Mirar**, pode tratar o ataque como um sucesso crítico independente da margem.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "margem",
+                "tipo": "forcar_margem",
+                "margem": "sucesso_critico",
+                "contexto": "ataque à distância acertado após sucesso crítico em Mirar"
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "berserker",
+      "slug": "berserker",
+      "nome": "Berserker",
+      "descricao_curta": "O Berserker transforma dor em força.",
+      "descricao_longa": "O Berserker transforma dor em força. Cada golpe sofrido aumenta sua fúria, e sua resistência só acaba quando o corpo não aguenta mais.",
+      "tags": [
+        "ofensiva",
+        "dano",
+        "passivo"
+      ],
+      "niveis": [
+        {
+          "id": "berserker_furia",
+          "slug": "berserker_furia",
+          "talento_id": "berserker",
+          "nivel": 1,
+          "nome": "Fúria",
+          "requisitos": [],
+          "tags": [
+            "dano",
+            "ofensiva",
+            "passivo"
+          ],
+          "descricao_curta": "Sempre que sofrer dano, recebe +1 em Luta até o fim do seu próximo turno (acumula até +3).",
+          "descricao_longa": "Sempre que sofrer dano, recebe +1 em **`Luta`** até o fim do seu próximo turno (acumula até +3).",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "buff_empilhavel",
+                "tipo": "buff_empilhavel",
+                "gatilho": "sofrer_dano",
+                "valor_por_pilha": 1,
+                "max_pilhas": 3,
+                "alvo_tags": [
+                  "luta"
+                ],
+                "duracao": "fim_do_proximo_turno"
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "berserker_sede_de_sangue",
+          "slug": "berserker_sede_de_sangue",
+          "talento_id": "berserker",
+          "nivel": 2,
+          "nome": "Sede de Sangue",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "berserker",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "dano",
+            "ofensiva",
+            "passivo"
+          ],
+          "descricao_curta": "Enquanto estiver com PV abaixo da metade, pode escolher sofrer –1 em ações defensivas para dobrar o bônus de Corpo no dano corpo a corpo até o fim da cena (ou até recuperar o PV acima da metade).",
+          "descricao_longa": "Enquanto estiver com PV abaixo da metade, pode escolher sofrer –1 em ações defensivas para dobrar o bônus de **Corpo** no dano corpo a corpo até o fim da cena (ou até recuperar o PV acima da metade).",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "modificador",
+                "tipo": "toggle_condicional",
+                "condicao_ativacao": {
+                  "tipo": "pv_abaixo_metade"
+                },
+                "penalidades": [
+                  {
+                    "tipo": "modificador",
+                    "valor": -1,
+                    "alvo_tags": [
+                      "defensiva"
+                    ],
+                    "alvo_texto": "ações defensivas"
+                  }
+                ],
+                "beneficios": [
+                  {
+                    "tipo": "dobrar_bonus_atributo_no_dano",
+                    "atributo": "corpo",
+                    "contexto": "dano corpo a corpo"
+                  }
+                ],
+                "duracao": "fim_da_cena_ou_pv_acima_da_metade"
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "berserker_ultimo_folego",
+          "slug": "berserker_ultimo_folego",
+          "talento_id": "berserker",
+          "nivel": 3,
+          "nome": "Último Fôlego",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "berserker",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "dano",
+            "ofensiva",
+            "passivo"
+          ],
+          "descricao_curta": "Uma vez por cena, quando iria chegar a 0 PV pela primeira vez, permanece de pé com 1 PV, além de receber +2 em Luta e +1d6 de dano corpo a corpo até o fim da cena.",
+          "descricao_longa": "Uma vez por cena, quando iria chegar a 0 PV pela primeira vez, permanece de pé com 1 PV, além de receber +2 em **`Luta`** e +1d6 de dano corpo a corpo até o fim da cena.\n\nCaso ainda esteja de pé quando a cena terminar, cai automaticamente a 0 PV, mesmo que tenha recuperado PV de outra forma.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "reacao",
+                "tipo": "gatilho_prevenir_zero_pv",
+                "usos": 1,
+                "cadencia": "cena",
+                "primeira_vez_na_cena": true,
+                "pv_resultante": 1,
+                "buffs": [
+                  {
+                    "tipo": "modificador",
+                    "valor": 2,
+                    "alvo_tags": [
+                      "luta"
+                    ],
+                    "alvo_texto": "Luta até o fim da cena"
+                  },
+                  {
+                    "tipo": "dano_extra",
+                    "valor": "1d6",
+                    "contexto": "dano corpo a corpo até o fim da cena"
+                  }
+                ],
+                "consequencia_fim_cena": {
+                  "tipo": "cair_a_zero_pv"
+                }
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "dissecador",
+      "slug": "dissecador",
+      "nome": "Dissecador",
+      "descricao_curta": "O Dissecador lê o corpo e o movimento do inimigo com frieza.",
+      "descricao_longa": "O Dissecador lê o corpo e o movimento do inimigo com frieza. Golpeia de forma precisa, desmontando defesas e controlando o ritmo da luta.",
+      "tags": [
+        "ofensiva",
+        "controle",
+        "reacao"
+      ],
+      "niveis": [
+        {
+          "id": "dissecador_golpe_cirurgico",
+          "slug": "dissecador_golpe_cirurgico",
+          "talento_id": "dissecador",
+          "nivel": 1,
+          "nome": "Golpe Cirúrgico",
+          "requisitos": [],
+          "tags": [
+            "controle",
+            "dano",
+            "ofensiva",
+            "pericia",
+            "reacao"
+          ],
+          "descricao_curta": "Pode usar Mente em vez de Corpo em testes de Atacar e Desviar desde que esteja desarmado ou com arma corpo a corpo contundente.",
+          "descricao_longa": "Pode usar **Mente** em vez de **Corpo** em testes de **Atacar** e **Desviar** desde que esteja desarmado ou com arma corpo a corpo contundente. Além disso, uma vez por rodada, em sucesso crítico que cause dano contundente, pode impor –2 na próxima ação ofensiva do alvo.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "troca_atributo",
+                "tipo": "trocar_atributo",
+                "de": "corpo",
+                "para": "mente",
+                "contexto": "testes de Atacar e Desviar desarmado ou com arma corpo a corpo contundente"
+              },
+              {
+                "familia": "aplicar_condicao",
+                "tipo": "aplicar_penalidade_pos_critico",
+                "usos": 1,
+                "cadencia": "rodada",
+                "contexto": "sucesso crítico que cause dano contundente",
+                "alvo": "proxima_acao_ofensiva_do_alvo",
+                "valor": -2
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "dissecador_fincada",
+          "slug": "dissecador_fincada",
+          "talento_id": "dissecador",
+          "nivel": 2,
+          "nome": "Fincada",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "dissecador",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "controle",
+            "dano",
+            "ofensiva",
+            "reacao"
+          ],
+          "descricao_curta": "Uma vez por rodada, ao causar dano contundente com ataque corpo a corpo, pode optar por reduzir o dano em –1 para aplicar Lento (até o fim do próximo turno do alvo) ou Caído.",
+          "descricao_longa": "Uma vez por rodada, ao causar dano contundente com ataque corpo a corpo, pode optar por reduzir o dano em –1 para aplicar **`Lento`** (até o fim do próximo turno do alvo) ou **`Caído`**.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "aplicar_condicao",
+                "tipo": "trocar_dano_por_condicao",
+                "usos": 1,
+                "cadencia": "rodada",
+                "contexto": "ao causar dano contundente com ataque corpo a corpo",
+                "reducao_dano": 1,
+                "opcoes_condicao": [
+                  {
+                    "condicao": "lento",
+                    "duracao": "fim_do_proximo_turno_do_alvo"
+                  },
+                  {
+                    "condicao": "caido"
+                  }
+                ]
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "dissecador_contra_medida",
+          "slug": "dissecador_contra_medida",
+          "talento_id": "dissecador",
+          "nivel": 3,
+          "nome": "Contra-medida",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "dissecador",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "controle",
+            "ofensiva",
+            "pa",
+            "reacao"
+          ],
+          "descricao_curta": "Quando um inimigo errar um ataque corpo a corpo contra você, pode imediatamente fazer um ataque corpo a corpo desarmado ou com arma contundente como Reação.",
+          "descricao_longa": "Quando um inimigo errar um ataque corpo a corpo contra você, pode imediatamente fazer um ataque corpo a corpo desarmado ou com arma contundente como Reação.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "reacao",
+                "tipo": "reacao_gatilho",
+                "gatilho": "inimigo_erra_ataque_corpo_a_corpo_contra_voce",
+                "acao": "ataque_corpo_a_corpo",
+                "restricoes": [
+                  "desarmado",
+                  "arma_contundente"
+                ],
+                "custo_pa": 0
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "droneiro",
+      "slug": "droneiro",
+      "nome": "Droneiro",
+      "descricao_curta": "O Droneiro é especialista em controle remoto de drones, extraindo o máximo de resposta, precisão e eficiência desses dispositivos em qualquer situação.",
+      "descricao_longa": "O Droneiro é especialista em controle remoto de drones, extraindo o máximo de resposta, precisão e eficiência desses dispositivos em qualquer situação. Seus comandos são quase instantâneos, e os drones sob seu comando realizam manobras e ações com uma sincronia difícil de igualar.",
+      "tags": [
+        "drone",
+        "companheiro",
+        "robotica"
+      ],
+      "niveis": [
+        {
+          "id": "droneiro_sinal_limpo",
+          "slug": "droneiro_sinal_limpo",
+          "talento_id": "droneiro",
+          "nivel": 1,
+          "nome": "Sinal Limpo",
+          "requisitos": [],
+          "tags": [
+            "companheiro",
+            "drone",
+            "margem",
+            "pa",
+            "pericia",
+            "robotica"
+          ],
+          "descricao_curta": "Sempre que assumir o controle de um drone, falhas limitadas no teste de Robótica contam como sucesso limitado.",
+          "descricao_longa": "Sempre que assumir o controle de um drone, falhas limitadas no teste de **`Robótica`** contam como sucesso limitado.\n\nAlém disso, uma vez por cena, no início do seu turno, escolha um drone sob seu controle. Esse drone recebe +1 PA apenas nesta rodada.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "margem",
+                "tipo": "promocao_margem",
+                "de": "falha_limitada",
+                "para": "sucesso_limitado",
+                "contexto": "testes de Robótica ao assumir o controle de um drone",
+                "pericias": [
+                  "robotica"
+                ]
+              },
+              {
+                "familia": "companheiro",
+                "tipo": "companheiro_pa_bonus",
+                "usos": 1,
+                "cadencia": "cena",
+                "momento": "inicio_do_turno",
+                "alvo": "drone_sob_controle",
+                "pa_bonus": 1,
+                "duracao": "rodada_atual"
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "droneiro_script",
+          "slug": "droneiro_script",
+          "talento_id": "droneiro",
+          "nivel": 2,
+          "nome": "Script",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "droneiro",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "companheiro",
+            "drone",
+            "pa",
+            "robotica"
+          ],
+          "descricao_curta": "Sempre que ativar o drone pela primeira vez na cena, pode definir 1 gatilho simples (ex: “enviar alerta ao detectar movimento”, “transmitir imagem ao identificar ruído”, “atacar ao detectar uma presença”).",
+          "descricao_longa": "Sempre que ativar o drone pela primeira vez na cena, pode definir 1 gatilho simples (ex: “enviar alerta ao detectar movimento”, “transmitir imagem ao identificar ruído”, “atacar ao detectar uma presença”). O drone executa essa ação automaticamente na próxima vez que o gatilho acontecer, sem gastar seu PA.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "companheiro",
+                "tipo": "companheiro_script",
+                "gatilho": "ativar_drone_primeira_vez_na_cena",
+                "quantidade_gatilhos": 1,
+                "execucao": "automatica_na_proxima_ocorrencia",
+                "custo_pa": 0
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "droneiro_enxame",
+          "slug": "droneiro_enxame",
+          "talento_id": "droneiro",
+          "nivel": 3,
+          "nome": "Enxame",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "droneiro",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "companheiro",
+            "drone",
+            "robotica"
+          ],
+          "descricao_curta": "Uma vez por dia, você pode designar até 3 modelos idênticos de drones como “pareados”.",
+          "descricao_longa": "Uma vez por dia, você pode designar até 3 modelos idênticos de drones como “pareados”. Enquanto permanecerem ativos, todos respondem a seus comandos como uma unidade coordenada.\n\nPara cada ação específica que você ordena, escolha se quer executá-la:\n\n- **Pareada:** todos os drones designados executam a mesma ação de forma simultânea, cada um rolando e aplicando resultados separadamente, sem custo extra de PA.\n- **Independente:** os drones agem de forma separada, cada um podendo receber comandos diferentes (custando PA normalmente para cada ação).",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "companheiro",
+                "tipo": "companheiro_grupo_coordenado",
+                "usos": 1,
+                "cadencia": "dia",
+                "max_unidades": 3,
+                "requisito": "modelos_identicos_de_drones",
+                "modos": [
+                  "pareada",
+                  "independente"
+                ]
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "espadachim",
+      "slug": "espadachim",
+      "nome": "Espadachim",
+      "descricao_curta": "O Espadachim combina defesa refinada e ataque preciso.",
+      "descricao_longa": "O Espadachim combina defesa refinada e ataque preciso. Aparar golpes e ripostar faz parte de seu estilo, mantendo a lâmina sempre pronta para punir aberturas.",
+      "tags": [
+        "defensiva",
+        "reacao",
+        "arma"
+      ],
+      "niveis": [
+        {
+          "id": "espadachim_aparar",
+          "slug": "espadachim_aparar",
+          "talento_id": "espadachim",
+          "nivel": 1,
+          "nome": "Aparar",
+          "requisitos": [],
+          "tags": [
+            "arma",
+            "defensiva",
+            "margem",
+            "pericia",
+            "reacao"
+          ],
+          "descricao_curta": "Recebe +1 em testes de Aparar usando lâminas.",
+          "descricao_longa": "Recebe +1 em testes de **Aparar** usando lâminas. Além disso, uma vez por cena, pode tratar um sucesso padrão em **Aparar** como sucesso crítico.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "modificador",
+                "tipo": "modificador",
+                "valor": 1,
+                "alvo_texto": "testes de Aparar usando lâminas",
+                "alvo_acoes": [
+                  "aparar"
+                ]
+              },
+              {
+                "familia": "margem",
+                "tipo": "promocao_margem_manual",
+                "usos": 1,
+                "cadencia": "cena",
+                "acao": "aparar",
+                "de": "sucesso_padrao",
+                "para": "sucesso_critico",
+                "requisito": "usando_lamina"
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "espadachim_estocar",
+          "slug": "espadachim_estocar",
+          "talento_id": "espadachim",
+          "nivel": 2,
+          "nome": "Estocar",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "espadachim",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "arma",
+            "defensiva",
+            "reacao"
+          ],
+          "descricao_curta": "Uma vez por combate, pode reduzir em 1 o custo de PA de um ataque corpo a corpo com lâmina.",
+          "descricao_longa": "Uma vez por combate, pode reduzir em 1 o custo de PA de um ataque corpo a corpo com lâmina.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "economia_pa",
+                "tipo": "reduzir_custo_pa",
+                "usos": 1,
+                "cadencia": "combate",
+                "acao": "ataque_corpo_a_corpo",
+                "requisito": "usando_lamina",
+                "reducao": 1,
+                "minimo": 1
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "espadachim_ripostar",
+          "slug": "espadachim_ripostar",
+          "talento_id": "espadachim",
+          "nivel": 3,
+          "nome": "Ripostar",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "espadachim",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "arma",
+            "defensiva",
+            "pa",
+            "reacao"
+          ],
+          "descricao_curta": "Uma vez por rodada, ao obter sucesso crítico em Aparar com uma lâmina, pode contraatacar imediatamente o agressor com um ataque corpo a corpo com lâmina, sem custo de PA.",
+          "descricao_longa": "Uma vez por rodada, ao obter sucesso crítico em **Aparar** com uma lâmina, pode contra-atacar imediatamente o agressor com um ataque corpo a corpo com lâmina, sem custo de PA.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "reacao",
+                "tipo": "contra_ataque_sem_pa",
+                "usos": 1,
+                "cadencia": "rodada",
+                "gatilho": "sucesso_critico_em_aparar",
+                "acao": "ataque_corpo_a_corpo",
+                "requisito": "usando_lamina",
+                "custo_pa": 0
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "estrategista",
+      "slug": "estrategista",
+      "nome": "Estrategista",
+      "descricao_curta": "O Estrategista enxerga padrões onde outros veem caos.",
+      "descricao_longa": "O Estrategista enxerga padrões onde outros veem caos. Ele calcula posições, reconhece pontos fracos e transforma pequenas vantagens em vitórias. Seja em combate, numa negociação ou numa infiltração, mantém o grupo sempre um passo à frente.",
+      "tags": [
+        "suporte",
+        "pa",
+        "narrativo"
+      ],
+      "niveis": [
+        {
+          "id": "estrategista_falcao",
+          "slug": "estrategista_falcao",
+          "talento_id": "estrategista",
+          "nivel": 1,
+          "nome": "Falcão",
+          "requisitos": [],
+          "tags": [
+            "narrativo",
+            "pa",
+            "pericia",
+            "suporte"
+          ],
+          "descricao_curta": "Uma vez por cena, pode gastar tempo avaliando o ambiente com um teste de Percepção ou Lógica.",
+          "descricao_longa": "Uma vez por cena, pode gastar tempo avaliando o ambiente com um teste de **`Percepção`** ou **`Lógica`**. Se tiver sucesso, escolha uma criatura ou detalhe relevante do cenário. O próximo personagem do grupo que agir diretamente sobre esse alvo recebe +2 de vantagem no teste.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "modificador",
+                "tipo": "marcar_alvo_ou_detalhe",
+                "usos": 1,
+                "cadencia": "cena",
+                "teste": {
+                  "pericias": [
+                    "percepcao",
+                    "logica"
+                  ]
+                },
+                "beneficio": {
+                  "tipo": "modificador",
+                  "valor": 2,
+                  "alvo_tags": [
+                    "qualquer_teste"
+                  ],
+                  "alvo_texto": "próximo personagem do grupo que agir diretamente sobre o alvo/detalhe"
+                }
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "estrategista_briefing_de_campo",
+          "slug": "estrategista_briefing_de_campo",
+          "talento_id": "estrategista",
+          "nivel": 2,
+          "nome": "Briefing de Campo",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "estrategista",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "narrativo",
+            "pa",
+            "pericia",
+            "suporte"
+          ],
+          "descricao_curta": "Se separar cinco minutos para orientar o grupo antes de uma cena, pode escolher até 3 aliados.",
+          "descricao_longa": "Se separar cinco minutos para orientar o grupo antes de uma cena, pode escolher até 3 aliados. Para cada um, deve indicar uma entre as seguintes perícias: **`Percepção`**, **`Furtividade`**, **`Influência`** ou **`Lógica`**. No próximo teste dessa perícia, se o aliado falhar, pode rerrolar o teste mais uma vez, somando +1 ao resultado.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "habilidade_narrativa",
+                "tipo": "briefing_pre_cena",
+                "tempo_execucao": "5 minutos",
+                "max_aliados": 3,
+                "pericias_opcoes": [
+                  "percepcao",
+                  "furtividade",
+                  "influencia",
+                  "logica"
+                ],
+                "beneficio": {
+                  "tipo": "rerrolar_em_falha",
+                  "bonus": 1,
+                  "usos_por_aliado": 1
+                }
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "estrategista_imposicao_de_ritmo",
+          "slug": "estrategista_imposicao_de_ritmo",
+          "talento_id": "estrategista",
+          "nivel": 3,
+          "nome": "Imposição de Ritmo",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "estrategista",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "narrativo",
+            "pa",
+            "reacao",
+            "suporte"
+          ],
+          "descricao_curta": "Uma vez por cena, pode gastar uma Reação para permitir que um aliado em até 10 m aja imediatamente, ignorando a alternância PJ/PN.",
+          "descricao_longa": "Uma vez por cena, pode gastar uma Reação para permitir que um aliado em até 10 m aja imediatamente, ignorando a alternância PJ/PN. Esse aliado recebe +1 PA na rodada e pode agir com 3 PA ou mais mesmo em turnos rápidos. Além disso, agora você pode escolher até 6 aliados para o seu *Briefing de Campo*.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "reacao",
+                "tipo": "override_turno_aliado",
+                "usos": 1,
+                "cadencia": "cena",
+                "custo": "reacao",
+                "alcance_m": 10,
+                "ignora_alternancia_pj_pn": true,
+                "pa_bonus": 1,
+                "permite_acao_lenta_em_turno_rapido": true
+              },
+              {
+                "familia": "meta_talento",
+                "tipo": "modificar_talento_existente",
+                "talento": "briefing_de_campo",
+                "campo": "max_aliados",
+                "valor": 6
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "guardiao",
+      "slug": "guardiao",
+      "nome": "Guardião",
+      "descricao_curta": "O Guardião é a linha que separa aliados do perigo.",
+      "descricao_longa": "O Guardião é a linha que separa aliados do perigo. Ele intercepta ataques, absorve impacto e mantém todos seguros atrás de sua guarda.",
+      "tags": [
+        "defensiva",
+        "reacao",
+        "escudo"
+      ],
+      "niveis": [
+        {
+          "id": "guardiao_sentinela",
+          "slug": "guardiao_sentinela",
+          "talento_id": "guardiao",
+          "nivel": 1,
+          "nome": "Sentinela",
+          "requisitos": [],
+          "tags": [
+            "defensiva",
+            "escudo",
+            "reacao"
+          ],
+          "descricao_curta": "Uma vez por rodada, pode usar Bloquear como Reação gratuita.",
+          "descricao_longa": "Uma vez por rodada, pode usar **Bloquear** como Reação gratuita. Além disso, pode proteger aliados a até 1 metro de distância (em vez de apenas adjacentes).",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "reacao",
+                "tipo": "reacao_gratuita",
+                "usos": 1,
+                "cadencia": "rodada",
+                "acao": "bloquear"
+              },
+              {
+                "familia": "protecao",
+                "tipo": "alterar_alcance_protecao",
+                "acao": "bloquear",
+                "alcance_m": 1
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "guardiao_blindagem",
+          "slug": "guardiao_blindagem",
+          "talento_id": "guardiao",
+          "nivel": 2,
+          "nome": "Blindagem",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "guardiao",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "dano",
+            "defensiva",
+            "escudo",
+            "pericia",
+            "reacao"
+          ],
+          "descricao_curta": "Recebe +1 em todos os testes de Bloquear.",
+          "descricao_longa": "Recebe +1 em todos os testes de **Bloquear**. Além disso, uma vez por cena, ao ter sucesso em **Bloquear**, pode anular totalmente o dano. Nada é aplicado ao escudo, ao defensor ou ao aliado.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "modificador",
+                "tipo": "modificador",
+                "valor": 1,
+                "alvo_texto": "testes de Bloquear",
+                "alvo_acoes": [
+                  "bloquear"
+                ]
+              },
+              {
+                "familia": "protecao",
+                "tipo": "anular_dano_bloqueado",
+                "usos": 1,
+                "cadencia": "cena",
+                "gatilho": "sucesso_em_bloquear"
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "guardiao_muralha",
+          "slug": "guardiao_muralha",
+          "talento_id": "guardiao",
+          "nivel": 3,
+          "nome": "Muralha",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "guardiao",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "defensiva",
+            "escudo",
+            "reacao"
+          ],
+          "descricao_curta": "Sempre que obtiver um sucesso em Bloquear, concede cobertura parcial (–1 nos testes de ação ofensiva com ataques direcionais contra o alvo) a si mesmo e ao aliado protegido até o fim da rodada, mesmo sem sucesso crítico.",
+          "descricao_longa": "Sempre que obtiver um sucesso em **Bloquear**, concede cobertura parcial (–1 nos testes de ação ofensiva com ataques direcionais contra o alvo) a si mesmo e ao aliado protegido até o fim da rodada, mesmo sem sucesso crítico.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "protecao",
+                "tipo": "conceder_cobertura_pos_bloqueio",
+                "gatilho": "sucesso_em_bloquear",
+                "cobertura": "parcial",
+                "penalidade_ofensiva_direcional": -1,
+                "alvos": [
+                  "voce",
+                  "aliado_protegido"
+                ],
+                "duracao": "fim_da_rodada"
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "mago_de_batalha",
+      "slug": "mago_de_batalha",
+      "nome": "Mago de Batalha",
+      "descricao_curta": "O Mago de Batalha é um magista treinado para confrontos diretos.",
+      "descricao_longa": "O Mago de Batalha é um magista treinado para confrontos diretos. Ele projeta magia como força dominante no campo, sustenta ofensiva contínua à distância e administra mana e sobrecarga como recursos de combate, não como limite.",
+      "tags": [
+        "magia",
+        "mana",
+        "sobrecarga"
+      ],
+      "niveis": [
+        {
+          "id": "mago_de_batalha_dominio_territorial",
+          "slug": "mago_de_batalha_dominio_territorial",
+          "talento_id": "mago_de_batalha",
+          "nivel": 1,
+          "nome": "Domínio Territorial",
+          "requisitos": [],
+          "tags": [
+            "magia",
+            "mana",
+            "sobrecarga"
+          ],
+          "descricao_curta": "O alcance e a área de efeito de todas as suas magias de Ataque aumentam em 50%.",
+          "descricao_longa": "O alcance e a área de efeito de todas as suas magias de **`Ataque`** aumentam em 50%.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "magia",
+                "tipo": "multiplicar_alcance_area_magia",
+                "magia_tipo": "ataque",
+                "multiplicador": 1.5
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "mago_de_batalha_canalizar",
+          "slug": "mago_de_batalha_canalizar",
+          "talento_id": "mago_de_batalha",
+          "nivel": 2,
+          "nome": "Canalizar",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "mago_de_batalha",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "dano",
+            "magia",
+            "mana",
+            "sobrecarga"
+          ],
+          "descricao_curta": "Uma vez por rodada, pode escolher 1 das opções abaixo para canalizar.",
+          "descricao_longa": "Uma vez por rodada, pode escolher 1 das opções abaixo para canalizar.\n\n- **Potencializar:** ao conjurar uma magia de **`Ataque`**, gaste mana adicional para aumentar o dano causado em +1 para cada ponto de mana gasto.\n- **Amortecer:** quando sofrer dano, gaste mana para reduzir o dano recebido em 1 para cada ponto de mana gasto, antes da aplicação de MIT ou PD.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "recurso",
+                "tipo": "canalizar_mana",
+                "usos": 1,
+                "cadencia": "rodada",
+                "opcoes": [
+                  {
+                    "id": "potencializar",
+                    "gatilho": "conjurar_magia_ataque",
+                    "custo": "mana_adicional",
+                    "efeito": {
+                      "tipo": "aumentar_dano",
+                      "valor_por_mana": 1
+                    }
+                  },
+                  {
+                    "id": "amortecer",
+                    "gatilho": "sofrer_dano",
+                    "custo": "mana",
+                    "momento": "antes_de_mit_ou_pd",
+                    "efeito": {
+                      "tipo": "reduzir_dano",
+                      "valor_por_mana": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "mago_de_batalha_ascensao",
+          "slug": "mago_de_batalha_ascensao",
+          "talento_id": "mago_de_batalha",
+          "nivel": 3,
+          "nome": "Ascensão",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "mago_de_batalha",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "magia",
+            "mana",
+            "sobrecarga"
+          ],
+          "descricao_curta": "Ao adquirir este nível do talento, você sofre imediatamente 1 Ruptura.",
+          "descricao_longa": "Ao adquirir este nível do talento, você sofre imediatamente 1 Ruptura. Essa Ruptura não reduz sua Integridade e não é considerada para cálculos futuros de Integridade.\n\nAlém disso, seu limite diário de Surtos de Sobrecarga sobe para 5.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "recurso",
+                "tipo": "ruptura_imediata_sem_perda_integridade",
+                "momento": "ao_adquirir_talento",
+                "nao_conta_para_calculos_futuros": true
+              },
+              {
+                "familia": "recurso",
+                "tipo": "alterar_limite_sobrecarga",
+                "novo_limite_diario": 5
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "malabarista",
+      "slug": "malabarista",
+      "nome": "Malabarista",
+      "descricao_curta": "O Malabarista transforma armas arremessadas em espetáculo letal.",
+      "descricao_longa": "O Malabarista transforma armas arremessadas em espetáculo letal. Facas, dardos e shurikens giram no ar como extensão de suas mãos, mantendo inimigos cercados e sob pressão constante.",
+      "tags": [
+        "ofensiva",
+        "arma",
+        "movimento"
+      ],
+      "niveis": [
+        {
+          "id": "malabarista_saque_fantasma",
+          "slug": "malabarista_saque_fantasma",
+          "talento_id": "malabarista",
+          "nivel": 1,
+          "nome": "Saque Fantasma",
+          "requisitos": [],
+          "tags": [
+            "arma",
+            "movimento",
+            "ofensiva",
+            "pa"
+          ],
+          "descricao_curta": "Sempre que arremessar uma arma leve com a propriedade Arremesso, pode sacar outra sem custo de PA.",
+          "descricao_longa": "Sempre que arremessar uma arma leve com a propriedade Arremesso, pode sacar outra sem custo de PA. Além disso, ignora a penalidade de –1 ao usar a propriedade *Rajada* com essas armas.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "economia_pa",
+                "tipo": "saque_sem_pa",
+                "gatilho": "arremessar_arma_leve_com_propriedade_arremesso",
+                "custo_pa": 0
+              },
+              {
+                "familia": "modificador",
+                "tipo": "ignorar_penalidade",
+                "penalidade": "rajada_-1",
+                "contexto": "armas leves com propriedade Arremesso"
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "malabarista_revoada",
+          "slug": "malabarista_revoada",
+          "talento_id": "malabarista",
+          "nivel": 2,
+          "nome": "Revoada",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "malabarista",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "arma",
+            "movimento",
+            "ofensiva"
+          ],
+          "descricao_curta": "Uma vez por rodada, ao atingir um alvo com ataque à distância usando arma leve com a propriedade Arremesso, pode atacar uma segunda vez o mesmo alvo ou um alvo adjacente com outra arma arremessada leve.",
+          "descricao_longa": "Uma vez por rodada, ao atingir um alvo com ataque à distância usando arma leve com a propriedade *Arremesso*, pode atacar uma segunda vez o mesmo alvo ou um alvo adjacente com outra arma arremessada leve.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "ataque_adicional",
+                "tipo": "ataque_extra",
+                "usos": 1,
+                "cadencia": "rodada",
+                "gatilho": "atingir_alvo_com_ataque_distancia_arma_leve_arremesso",
+                "alvos_validos": [
+                  "mesmo_alvo",
+                  "alvo_adjacente"
+                ],
+                "requer_outra_arma_arremessada_leve": true
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "malabarista_espetaculo_mortal",
+          "slug": "malabarista_espetaculo_mortal",
+          "talento_id": "malabarista",
+          "nivel": 3,
+          "nome": "Espetáculo Mortal",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "malabarista",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "arma",
+            "dano",
+            "movimento",
+            "ofensiva"
+          ],
+          "descricao_curta": "Uma vez por cena, pode realizar uma sequência de arremessos coordenados.",
+          "descricao_longa": "Uma vez por cena, pode realizar uma sequência de arremessos coordenados. Você precisa ter pelo menos 3 armas leves de arremesso disponíveis, mesmo que não estejam sacadas. Ao ativar, escolha um dos efeitos:\n\n- **Convergência:** concentre todos os arremessos em um único alvo. Faça uma única ação de **Atacar**. Se acertar, o alvo sofre o dano das 3 armas arremessadas.\n- **Dispersão:** selecione até 3 alvos em alcance *muito perto* (todos em até 5 metros entre si) e faça uma única ação de **Atacar** contra eles. Cada alvo sofre o efeito de um arremesso.\n\nEm ambos os casos, uma falha limitada é considerada sucesso limitado.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "ataque_adicional",
+                "tipo": "sequencia_arremessos",
+                "usos": 1,
+                "cadencia": "cena",
+                "opcoes": [
+                  {
+                    "id": "convergencia",
+                    "alvos": 1,
+                    "rolagens": 1,
+                    "em_acerto": "dano_de_3_armas"
+                  },
+                  {
+                    "id": "dispersao",
+                    "max_alvos": 3,
+                    "alcance_relativo_m": 5,
+                    "rolagens": 1,
+                    "em_acerto": "cada_alvo_sofre_1_arremesso"
+                  }
+                ],
+                "falha_limitada_conta_como": "sucesso_limitado",
+                "quantidade_armas_leves_arremesso": 3
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "manipulador",
+      "slug": "manipulador",
+      "nome": "Manipulador",
+      "descricao_curta": "O Manipulador conduz conversas e emoções como ferramentas.",
+      "descricao_longa": "O Manipulador conduz conversas e emoções como ferramentas. Ele planta dúvidas, explora fragilidades e transforma a fala em arma. Usa influência e leitura psicológica para colocar os outros na posição que deseja.",
+      "tags": [
+        "social",
+        "controle",
+        "narrativo"
+      ],
+      "niveis": [
+        {
+          "id": "manipulador_olhar_penetrante",
+          "slug": "manipulador_olhar_penetrante",
+          "talento_id": "manipulador",
+          "nivel": 1,
+          "nome": "Olhar Penetrante",
+          "requisitos": [],
+          "tags": [
+            "controle",
+            "margem",
+            "narrativo",
+            "pericia",
+            "social"
+          ],
+          "descricao_curta": "Sempre que fizer um teste de Influência para distorcer percepções, convencer ou manipular, ou de Psicologia para identificar vulnerabilidades e motivações que possam ser exploradas, em caso de falha limitada trate o resultado como sucesso limitado.",
+          "descricao_longa": "Sempre que fizer um teste de **`Influência`** para distorcer percepções, convencer ou manipular, ou de **`Psicologia`** para identificar vulnerabilidades e motivações que possam ser exploradas, em caso de falha limitada trate o resultado como sucesso limitado.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "margem",
+                "tipo": "promocao_margem",
+                "de": "falha_limitada",
+                "para": "sucesso_limitado",
+                "contexto": "Influência para distorcer percepções, convencer ou manipular",
+                "pericias": [
+                  "influencia"
+                ]
+              },
+              {
+                "familia": "margem",
+                "tipo": "promocao_margem",
+                "de": "falha_limitada",
+                "para": "sucesso_limitado",
+                "contexto": "Psicologia para identificar vulnerabilidades e motivações exploráveis",
+                "pericias": [
+                  "psicologia"
+                ]
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "manipulador_entrelinhas",
+          "slug": "manipulador_entrelinhas",
+          "talento_id": "manipulador",
+          "nivel": 2,
+          "nome": "Entrelinhas",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "manipulador",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "controle",
+            "narrativo",
+            "pericia",
+            "social"
+          ],
+          "descricao_curta": "Uma vez por cena, ao conversar por pelo menos alguns instantes com uma criatura, você pode fazer um teste de Psicologia.",
+          "descricao_longa": "Uma vez por cena, ao conversar por pelo menos alguns instantes com uma criatura, você pode fazer um teste de **`Psicologia`**. Em sucesso, descubra uma das opções:\n\n1. algo que parece deixá-la desconfortável;\n2. algo que ela parece querer obter;\n3. alguém ou algo que ela demonstra proteger;\n4. um assunto que ela tenta evitar;\n5. um ponto em que sua fala, postura ou reação parece contraditória.\n\nO próximo teste de **`Influência`** feito por você contra essa criatura recebe +2 de vantagem, desde que use essa impressão na abordagem.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "habilidade_narrativa",
+                "tipo": "ler_vulnerabilidade_social",
+                "usos": 1,
+                "cadencia": "cena",
+                "requer_conversa_breve": true,
+                "teste": {
+                  "pericia": "psicologia"
+                },
+                "opcoes_descoberta": [
+                  "desconforto",
+                  "desejo",
+                  "proteção",
+                  "assunto_evitado",
+                  "contradicao"
+                ],
+                "beneficio": {
+                  "tipo": "modificador",
+                  "valor": 2,
+                  "alvo_tags": [
+                    "influencia"
+                  ],
+                  "alvo_texto": "próximo teste de Influência contra a criatura usando a impressão descoberta"
+                }
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "manipulador_puxar_os_fios",
+          "slug": "manipulador_puxar_os_fios",
+          "talento_id": "manipulador",
+          "nivel": 3,
+          "nome": "Puxar os Fios",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "manipulador",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "controle",
+            "narrativo",
+            "pericia",
+            "social"
+          ],
+          "descricao_curta": "Uma vez por cena, ao usar Influência contra uma criatura depois de descobrir uma vulnerabilidade dela com Entrelinhas, você pode forçar uma abertura social.",
+          "descricao_longa": "Uma vez por cena, ao usar **`Influência`** contra uma criatura depois de descobrir uma vulnerabilidade dela com *Entrelinhas*, você pode forçar uma abertura social.\n\nEm sucesso, escolha um:\n\n1. o alvo deixa escapar uma informação relevante ligada à vulnerabilidade descoberta;\n2. o alvo entrega uma contradição que pode ser usada contra ele até o fim da cena;\n3. o alvo aceita uma concessão menor, desde que ela não o coloque em risco direto;\n4. o alvo hesita antes de agir contra você, impedindo que inicie uma ação hostil contra você até ele ser provocado novamente;\n5. uma criatura presente passa a duvidar do alvo, hesita em apoiá-lo ou exige explicação.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "habilidade_narrativa",
+                "tipo": "forcar_abertura_social",
+                "usos": 1,
+                "cadencia": "cena",
+                "teste": {
+                  "pericia": "influencia"
+                },
+                "requisito": "vulnerabilidade_descoberta_por_entrelinhas",
+                "opcoes_sucesso": [
+                  "informacao_relevante",
+                  "contradicao_usavel",
+                  "concessao_menor",
+                  "hesitacao_hostil",
+                  "terceiro_duvida_do_alvo"
+                ]
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "mecatronico",
+      "slug": "mecatronico",
+      "nome": "Mecatrônico",
+      "descricao_curta": "O Mecatrônico domina a arte de programar e otimizar máquinas autônomas.",
+      "descricao_longa": "O Mecatrônico domina a arte de programar e otimizar máquinas autônomas. Suas instruções são mais claras, seus protocolos mais estáveis e seus robôs reagem além do padrão comum, funcionando como extensões calculadas de sua estratégia.",
+      "tags": [
+        "robo",
+        "companheiro",
+        "robotica"
+      ],
+      "niveis": [
+        {
+          "id": "mecatronico_chave_de_arranque",
+          "slug": "mecatronico_chave_de_arranque",
+          "talento_id": "mecatronico",
+          "nivel": 1,
+          "nome": "Chave de Arranque",
+          "requisitos": [],
+          "tags": [
+            "companheiro",
+            "margem",
+            "pericia",
+            "robo",
+            "robotica"
+          ],
+          "descricao_curta": "Sempre que programar um robô, falhas limitadas em testes de Robótica contam como sucesso limitado.",
+          "descricao_longa": "Sempre que programar um robô, falhas limitadas em testes de **`Robótica`** contam como sucesso limitado. Além disso, robôs programados por você recebem +1 no primeiro teste que fizerem em cada cena.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "margem",
+                "tipo": "promocao_margem",
+                "de": "falha_limitada",
+                "para": "sucesso_limitado",
+                "contexto": "testes de Robótica para programar robô",
+                "pericias": [
+                  "robotica"
+                ]
+              },
+              {
+                "familia": "companheiro",
+                "tipo": "companheiro_bonus_primeiro_teste",
+                "alvo": "robo_programado",
+                "valor": 1,
+                "cadencia": "cena"
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "mecatronico_marcha_dupla",
+          "slug": "mecatronico_marcha_dupla",
+          "talento_id": "mecatronico",
+          "nivel": 2,
+          "nome": "Marcha Dupla",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "mecatronico",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "companheiro",
+            "robo",
+            "robotica"
+          ],
+          "descricao_curta": "Uma vez por cena, ao gastar PA para dar uma ordem em tempo real, o robô executa a instrução sem substituir sua ação autônoma, agindo duas vezes na rodada.",
+          "descricao_longa": "Uma vez por cena, ao gastar PA para dar uma ordem em tempo real, o robô executa a instrução sem substituir sua ação autônoma, agindo duas vezes na rodada.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "companheiro",
+                "tipo": "companheiro_acao_extra",
+                "usos": 1,
+                "cadencia": "cena",
+                "gatilho": "gastar_pa_para_ordem_em_tempo_real",
+                "alvo": "robo",
+                "nao_substitui_acao_autonoma": true
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "mecatronico_overclock",
+          "slug": "mecatronico_overclock",
+          "talento_id": "mecatronico",
+          "nivel": 3,
+          "nome": "Overclock",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "mecatronico",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "companheiro",
+            "pa",
+            "robo",
+            "robotica"
+          ],
+          "descricao_curta": "Uma vez por dia, escolha um robô programado.",
+          "descricao_longa": "Uma vez por dia, escolha um robô programado. Ele recebe +1 PA por rodada durante a cena.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "companheiro",
+                "tipo": "companheiro_pa_por_rodada",
+                "usos": 1,
+                "cadencia": "dia",
+                "alvo": "robo_programado",
+                "pa_bonus": 1,
+                "duracao": "cena"
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "mercador",
+      "slug": "mercador",
+      "nome": "Mercador",
+      "descricao_curta": "O Mercador conhece cada rosto, senha e esquina dos mercados ilegais.",
+      "descricao_longa": "O Mercador conhece cada rosto, senha e esquina dos mercados ilegais. Sabe distinguir produto legítimo de golpe barato, negocia favores como quem troca carta, e sempre encontra o que ninguém mais consegue, seja pagando à vista, seja prometendo para depois.",
+      "tags": [
+        "loja",
+        "economia",
+        "narrativo"
+      ],
+      "niveis": [
+        {
+          "id": "mercador_garimpo_de_rua",
+          "slug": "mercador_garimpo_de_rua",
+          "talento_id": "mercador",
+          "nivel": 1,
+          "nome": "Garimpo de Rua",
+          "requisitos": [],
+          "tags": [
+            "economia",
+            "loja",
+            "narrativo",
+            "pericia"
+          ],
+          "descricao_curta": "Uma vez por dia, reduz em 20% o preço de compras nos Mercados Noturnos e sempre sabe onde e quando será o próximo.",
+          "descricao_longa": "Uma vez por dia, reduz em 20% o preço de compras nos Mercados Noturnos e sempre sabe onde e quando será o próximo. Além disso, ao examinar mercadorias, identifica automaticamente o valor justo e se há sinais de adulteração.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "economia_loja",
+                "tipo": "desconto_loja",
+                "usos": 1,
+                "cadencia": "dia",
+                "contexto": "Mercados Noturnos",
+                "percentual": 20
+              },
+              {
+                "familia": "economia_loja",
+                "tipo": "conhecer_proximo_mercado_noturno"
+              },
+              {
+                "familia": "economia_loja",
+                "tipo": "avaliar_mercadoria_sem_teste",
+                "detecta": [
+                  "valor_justo",
+                  "sinais_de_adulteracao"
+                ]
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "mercador_caderneta_de_divida",
+          "slug": "mercador_caderneta_de_divida",
+          "talento_id": "mercador",
+          "nivel": 2,
+          "nome": "Caderneta de Dívida",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "mercador",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "economia",
+            "loja",
+            "narrativo"
+          ],
+          "descricao_curta": "Uma vez por sessão, pode garantir a aquisição de um item de raridade até Raro mesmo sem ter todo o valor no momento.",
+          "descricao_longa": "Uma vez por sessão, pode garantir a aquisição de um item de raridade até Raro mesmo sem ter todo o valor no momento. O saldo devido se torna uma dívida com o fornecedor, a ser cobrada depois.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "economia_loja",
+                "tipo": "compra_fiada",
+                "usos": 1,
+                "cadencia": "sessao",
+                "raridade_maxima": "raro",
+                "gera_divida": true
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "mercador_rede_de_favores",
+          "slug": "mercador_rede_de_favores",
+          "talento_id": "mercador",
+          "nivel": 3,
+          "nome": "Rede de Favores",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "mercador",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "economia",
+            "loja",
+            "narrativo"
+          ],
+          "descricao_curta": "Você não negocia apenas com bens, mas também com pessoas.",
+          "descricao_longa": "Você não negocia apenas com bens, mas também com pessoas. Uma vez por sessão, pode recrutar temporariamente um PN como aliado, em troca de promessas, favores ou pagamento simbólico.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "habilidade_narrativa",
+                "tipo": "recrutar_pn_aliado_temporario",
+                "usos": 1,
+                "cadencia": "sessao",
+                "pagamento": [
+                  "promessas",
+                  "favores",
+                  "pagamento_simbolico"
+                ]
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "paramedico",
+      "slug": "paramedico",
+      "nome": "Paramédico",
+      "descricao_curta": "O Paramédico atua direto na linha de frente, mantendo aliados de pé em situações em que segundos decidem a vida ou a morte.",
+      "descricao_longa": "O Paramédico atua direto na linha de frente, mantendo aliados de pé em situações em que segundos decidem a vida ou a morte. Usa técnica, improviso ou magia somática para salvar companheiros no calor da batalha.",
+      "tags": [
+        "cura",
+        "suporte",
+        "reacao"
+      ],
+      "niveis": [
+        {
+          "id": "paramedico_pronto_socorro",
+          "slug": "paramedico_pronto_socorro",
+          "talento_id": "paramedico",
+          "nivel": 1,
+          "nome": "Pronto-socorro",
+          "requisitos": [],
+          "tags": [
+            "cura",
+            "pericia",
+            "reacao",
+            "suporte"
+          ],
+          "descricao_curta": "Uma vez por cena, pode estabilizar automaticamente um aliado adjacente a 0 PV, sem teste ou gasto de recurso.",
+          "descricao_longa": "Uma vez por cena, pode estabilizar automaticamente um aliado adjacente a 0 PV, sem teste ou gasto de recurso. Além disso, esse aliado recobre a consciência imediatamente, fica com 1 PV e pode agir nessa rodada (caso não tenha agido ainda) com 1 PA.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "recurso",
+                "tipo": "estabilizar_aliado",
+                "usos": 1,
+                "cadencia": "cena",
+                "alvo": "aliado_adjacente_a_0_pv",
+                "sem_teste": true,
+                "sem_recurso": true,
+                "pv_resultante": 1,
+                "recobra_consciencia": true,
+                "pa_para_agir_na_rodada": 1
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "paramedico_ritmo_de_campo",
+          "slug": "paramedico_ritmo_de_campo",
+          "talento_id": "paramedico",
+          "nivel": 2,
+          "nome": "Ritmo de Campo",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "paramedico",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "cura",
+            "reacao",
+            "suporte"
+          ],
+          "descricao_curta": "Suas ações de cura custam –1 PA.",
+          "descricao_longa": "Suas ações de cura custam –1 PA.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "economia_pa",
+                "tipo": "reduzir_custo_pa",
+                "acao_tags": [
+                  "cura"
+                ],
+                "reducao": 1,
+                "minimo": 1
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "paramedico_protocolo_de_emergencia",
+          "slug": "paramedico_protocolo_de_emergencia",
+          "talento_id": "paramedico",
+          "nivel": 3,
+          "nome": "Protocolo de Emergência",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "paramedico",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "cura",
+            "reacao",
+            "suporte"
+          ],
+          "descricao_curta": "Uma vez por cena, ao ver um aliado a até 5 metros cair a 0 PV, você pode usar uma Reação para avançar até ele e aplicar um Medkit, Injetor Nanocurativo ou magia de cura.",
+          "descricao_longa": "Uma vez por cena, ao ver um aliado a até 5 metros cair a 0 PV, você pode usar uma Reação para avançar até ele e aplicar um Medkit, Injetor Nanocurativo ou magia de cura. Caso já esteja adjacente, não precisa se mover. O aliado permanece de pé, ignorando o efeito de queda.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "reacao",
+                "tipo": "reacao_cura_em_queda",
+                "usos": 1,
+                "cadencia": "cena",
+                "gatilho": "aliado_a_ate_5m_cai_a_0_pv",
+                "custo": "reacao",
+                "movimento_ate_alvo": true,
+                "opcoes": [
+                  "medkit",
+                  "injetor_nanocurativo",
+                  "magia_de_cura"
+                ],
+                "alvo_ignora_queda": true
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "pistoleiro",
+      "slug": "pistoleiro",
+      "nome": "Pistoleiro",
+      "descricao_curta": "O Pistoleiro domina armas curtas com precisão e agressividade.",
+      "descricao_longa": "O Pistoleiro domina armas curtas com precisão e agressividade. Seu estilo gira em torno do manejo instintivo do gatilho, controle de ritmo e explosões breves de fogo concentrado que viram o rumo de um combate.",
+      "tags": [
+        "ofensiva",
+        "arma",
+        "dano"
+      ],
+      "niveis": [
+        {
+          "id": "pistoleiro_gatilho_quente",
+          "slug": "pistoleiro_gatilho_quente",
+          "talento_id": "pistoleiro",
+          "nivel": 1,
+          "nome": "Gatilho Quente",
+          "requisitos": [],
+          "tags": [
+            "arma",
+            "dano",
+            "ofensiva",
+            "pericia"
+          ],
+          "descricao_curta": "Você possui 3 dados de gatilho, recuperados a cada descanso longo.",
+          "descricao_longa": "Você possui 3 dados de gatilho, recuperados a cada descanso longo. Sempre que fizer um ataque com pistola ou revólver, pode escolher usar um desses dados. O dado de gatilho é um d8 de cor diferente, rolado junto com os demais do teste.\n\nSe o resultado do dado de gatilho for 8, além do resultado normal do teste, você causa dano extra igual à sua perícia **`Balística`**. Em qualquer outro resultado, o dado de gatilho apenas conta normalmente como um dado normal do teste.\n\nVocê só pode usar 1 dado de gatilho por ataque.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "dado_gatilho",
+                "tipo": "recurso_dado_gatilho",
+                "dados": 3,
+                "dado": "d8",
+                "cadencia_recuperacao": "descanso_longo",
+                "contexto": "ataque com pistola ou revólver",
+                "max_por_ataque": 1,
+                "gatilho_resultado": 8,
+                "efeito_resultado": {
+                  "tipo": "dano_extra",
+                  "valor": "pericia_balistica"
+                }
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "pistoleiro_bang_bang",
+          "slug": "pistoleiro_bang_bang",
+          "talento_id": "pistoleiro",
+          "nivel": 2,
+          "nome": "Bang Bang",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "pistoleiro",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "arma",
+            "dano",
+            "ofensiva",
+            "pa",
+            "pericia"
+          ],
+          "descricao_curta": "Você ganha +1 dado de gatilho.",
+          "descricao_longa": "Você ganha +1 dado de gatilho.\n\nAlém disso, ao usar um dado de gatilho, se escolher o resultado dele como parte do teste de ataque, pode gastar +1 PA para fazer um segundo disparo imediato com −1 de desvantagem. O segundo ataque segue as mesmas regras de ataque normal.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "recurso",
+                "tipo": "aumentar_recurso",
+                "recurso": "dado_gatilho",
+                "valor": 1
+              },
+              {
+                "familia": "ataque_adicional",
+                "tipo": "segundo_disparo",
+                "gatilho": "usar_dado_gatilho_e_escolher_resultado_dele_no_teste",
+                "custo_pa_extra": 1,
+                "penalidade": -1
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "pistoleiro_showdown",
+          "slug": "pistoleiro_showdown",
+          "talento_id": "pistoleiro",
+          "nivel": 3,
+          "nome": "Showdown",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "pistoleiro",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "arma",
+            "dano",
+            "ofensiva",
+            "pericia"
+          ],
+          "descricao_curta": "Você ganha +1 dado de gatilho.",
+          "descricao_longa": "Você ganha +1 dado de gatilho.\n\nAlém disso, uma vez por cena, ao atacar com pistola ou revólver, pode gastar até 3 dados de gatilho de uma vez. Role todos junto à pool de ataque.\n\nPara cada dado de gatilho que tirar de 6 a 8, o alvo sofre um efeito à sua escolha:\n\n1. Sofre dano extra igual ao dobro da sua perícia **`Balística`**.\n2. Perde 1 PA nessa rodada ou na próxima, ao seu critério.\n3. Sofre −1 de desvantagem em todas as ações ofensivas e defensivas até o fim da rodada.\n4. É desarmado conforme as regras da ação **Desarmar**.\n\nOs efeitos são escolhidos separadamente para cada dado de gatilho que atingir o intervalo indicado.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "recurso",
+                "tipo": "aumentar_recurso",
+                "recurso": "dado_gatilho",
+                "valor": 1
+              },
+              {
+                "familia": "ataque_adicional",
+                "tipo": "showdown",
+                "usos": 1,
+                "cadencia": "cena",
+                "contexto": "ataque com pistola ou revólver",
+                "max_dados_gatilho": 3,
+                "intervalo_ativa": [
+                  6,
+                  7,
+                  8
+                ],
+                "opcoes_por_dado": [
+                  {
+                    "id": "dano_extra",
+                    "efeito": {
+                      "tipo": "dano_extra",
+                      "valor": "2x_pericia_balistica"
+                    }
+                  },
+                  {
+                    "id": "perder_pa",
+                    "efeito": {
+                      "tipo": "perda_pa",
+                      "valor": 1,
+                      "momento": "rodada_atual_ou_proxima"
+                    }
+                  },
+                  {
+                    "id": "desvantagem",
+                    "efeito": {
+                      "tipo": "modificador",
+                      "valor": -1,
+                      "alvo_tags": [
+                        "ofensiva",
+                        "defensiva"
+                      ],
+                      "duracao": "fim_da_rodada"
+                    }
+                  },
+                  {
+                    "id": "desarmar",
+                    "efeito": {
+                      "tipo": "aplicar_desarmar"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "praga",
+      "slug": "praga",
+      "nome": "Praga",
+      "descricao_curta": "A Praga é a presença que mina a força dos inimigos.",
+      "descricao_longa": "A Praga é a presença que mina a força dos inimigos. Ela espalha dúvida, fraqueza e desgaste, deixando cada adversário mais fácil de atingir. Não derruba sozinha, mas transforma qualquer golpe contra o alvo em algo mais doloroso e difícil de suportar.",
+      "tags": [
+        "controle",
+        "dano",
+        "suporte"
+      ],
+      "niveis": [
+        {
+          "id": "praga_marca_da_dor",
+          "slug": "praga_marca_da_dor",
+          "talento_id": "praga",
+          "nivel": 1,
+          "nome": "Marca da Dor",
+          "requisitos": [],
+          "tags": [
+            "controle",
+            "dano",
+            "suporte"
+          ],
+          "descricao_curta": "Uma vez por rodada, quando um inimigo afetado por um efeito negativo seu for alvo de um ataque, o atacante recebe +1 nesse teste contra ele.",
+          "descricao_longa": "Uma vez por rodada, quando um inimigo afetado por um efeito negativo seu for alvo de um ataque, o atacante recebe +1 nesse teste contra ele.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "modificador",
+                "tipo": "marcar_inimigo_afetado",
+                "usos": 1,
+                "cadencia": "rodada",
+                "gatilho": "inimigo_afetado_por_efeito_negativo_seu_e_alvo_de_ataque",
+                "beneficio_atacante": {
+                  "tipo": "modificador",
+                  "valor": 1,
+                  "alvo_tags": [
+                    "ataque"
+                  ],
+                  "alvo_texto": "ataque contra inimigo afetado por efeito negativo seu"
+                }
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "praga_sangria_lenta",
+          "slug": "praga_sangria_lenta",
+          "talento_id": "praga",
+          "nivel": 2,
+          "nome": "Sangria Lenta",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "praga",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "controle",
+            "dano",
+            "suporte"
+          ],
+          "descricao_curta": "Sempre que aplica um efeito negativo, ele dura 1 rodada extra além do normal.",
+          "descricao_longa": "Sempre que aplica um efeito negativo, ele dura 1 rodada extra além do normal.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "propagacao_efeito",
+                "tipo": "estender_duracao_efeito_negativo",
+                "rodadas_extra": 1
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "praga_contagio",
+          "slug": "praga_contagio",
+          "talento_id": "praga",
+          "nivel": 3,
+          "nome": "Contágio",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "praga",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "controle",
+            "dano",
+            "suporte"
+          ],
+          "descricao_curta": "Uma vez por cena, ao aplicar um efeito negativo, você pode tornálo contagioso, fazendo com que se propague a partir do alvo ou dos alvos originais e atinja até o dobro de inimigos que estejam a até 3 metros deles.",
+          "descricao_longa": "Uma vez por cena, ao aplicar um efeito negativo, você pode torná-lo contagioso, fazendo com que se propague a partir do alvo ou dos alvos originais e atinja até o dobro de inimigos que estejam a até 3 metros deles.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "propagacao_efeito",
+                "tipo": "propagar_efeito_negativo",
+                "usos": 1,
+                "cadencia": "cena",
+                "alcance_m": 3,
+                "max_alvos_multiplicador": 2
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "rato_de_rua",
+      "slug": "rato_de_rua",
+      "nome": "Rato de Rua",
+      "descricao_curta": "O Rato de Rua aprendeu a viver entre becos e esconderijos.",
+      "descricao_longa": "O Rato de Rua aprendeu a viver entre becos e esconderijos. Conhece rotas secretas, contatos e abrigos que ninguém mais saberia encontrar. Usa isso para despistar perseguidores, arranjar recursos e manter o grupo em segurança.",
+      "tags": [
+        "narrativo",
+        "movimento",
+        "suporte"
+      ],
+      "niveis": [
+        {
+          "id": "rato_de_rua_ze_da_esquina",
+          "slug": "rato_de_rua_ze_da_esquina",
+          "talento_id": "rato_de_rua",
+          "nivel": 1,
+          "nome": "Zé da Esquina",
+          "requisitos": [],
+          "tags": [
+            "movimento",
+            "narrativo",
+            "suporte"
+          ],
+          "descricao_curta": "Uma vez por missão, pode gastar alguns minutos na cidade para invocar um contato que fornece informação, abrigo ou um recurso imediato.",
+          "descricao_longa": "Uma vez por missão, pode gastar alguns minutos na cidade para invocar um contato que fornece informação, abrigo ou um recurso imediato. O narrador define os limites, mas o contato sempre resolve uma complicação menor da cena.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "habilidade_narrativa",
+                "tipo": "invocar_contato",
+                "usos": 1,
+                "cadencia": "missao",
+                "tempo_execucao": "alguns minutos",
+                "opcoes": [
+                  "informacao",
+                  "abrigo",
+                  "recurso_imediato"
+                ],
+                "resolve_complicacao_menor": true
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "rato_de_rua_gato_de_telhado",
+          "slug": "rato_de_rua_gato_de_telhado",
+          "talento_id": "rato_de_rua",
+          "nivel": 2,
+          "nome": "Gato de Telhado",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "rato_de_rua",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "movimento",
+            "narrativo",
+            "suporte"
+          ],
+          "descricao_curta": "Uma vez por dia, em ambiente urbano, pode conduzir o grupo até um local seguro que não poderia ser encontrado sem sua ajuda.",
+          "descricao_longa": "Uma vez por dia, em ambiente urbano, pode conduzir o grupo até um local seguro que não poderia ser encontrado sem sua ajuda. Enquanto permanecerem lá, inimigos não podem rastrear ou localizar o grupo sem pista direta ou ação narrativa forte do narrador.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "habilidade_narrativa",
+                "tipo": "encontrar_local_seguro",
+                "usos": 1,
+                "cadencia": "dia",
+                "contexto": "ambiente_urbano",
+                "protege_contra_rastreamento_sem_pista": true
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "rato_de_rua_saida_dos_fundos",
+          "slug": "rato_de_rua_saida_dos_fundos",
+          "talento_id": "rato_de_rua",
+          "nivel": 3,
+          "nome": "Saída dos Fundos",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "rato_de_rua",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "movimento",
+            "narrativo",
+            "suporte"
+          ],
+          "descricao_curta": "Uma vez por dia, pode escapar instantaneamente de uma situação de risco iminente (emboscada, perseguição, prisão).",
+          "descricao_longa": "Uma vez por dia, pode escapar instantaneamente de uma situação de risco iminente (emboscada, perseguição, prisão). O narrador deve apresentar uma consequência menor, mas você não pode ser capturado, morto ou rendido nessa cena.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "habilidade_narrativa",
+                "tipo": "escape_narrativo",
+                "usos": 1,
+                "cadencia": "dia",
+                "contexto": [
+                  "emboscada",
+                  "perseguicao",
+                  "prisao",
+                  "risco_iminente"
+                ],
+                "narrador_aplica_consequencia_menor": true,
+                "impede": [
+                  "captura",
+                  "morte",
+                  "rendicao_na_cena"
+                ]
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "runico",
+      "slug": "runico",
+      "nome": "Rúnico",
+      "descricao_curta": "O Rúnico domina o uso e a manipulação de inscrições arcanas.",
+      "descricao_longa": "O Rúnico domina o uso e a manipulação de inscrições arcanas. Ele aciona, ajusta e sobrecarrega runas com naturalidade, ampliando o potencial de qualquer equipamento rúnico que empunhe.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "acao"
+      ],
+      "niveis": [
+        {
+          "id": "runico_gatilho_runico",
+          "slug": "runico_gatilho_runico",
+          "talento_id": "runico",
+          "nivel": 1,
+          "nome": "Gatilho Rúnico",
+          "requisitos": [],
+          "tags": [
+            "acao",
+            "equipamento",
+            "pa",
+            "runa"
+          ],
+          "descricao_curta": "Pode ativar ou desativar qualquer runa de seus equipamentos sem gastar PA.",
+          "descricao_longa": "Pode ativar ou desativar qualquer runa de seus equipamentos sem gastar PA.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "runa",
+                "tipo": "ativar_desativar_runa_sem_pa",
+                "alvo": "runa_de_equipamento_proprio",
+                "custo_pa": 0
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "runico_entalhe_rapido",
+          "slug": "runico_entalhe_rapido",
+          "talento_id": "runico",
+          "nivel": 2,
+          "nome": "Entalhe Rápido",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "runico",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "acao",
+            "equipamento",
+            "pa",
+            "pericia",
+            "runa"
+          ],
+          "descricao_curta": "Por 1 PA, pode instalar ou remover uma runa em um equipamento com um teste de Engenharia (CD definida pelo narrador).",
+          "descricao_longa": "Por 1 PA, pode instalar ou remover uma runa em um equipamento com um teste de **`Engenharia`** (CD definida pelo narrador).",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "runa",
+                "tipo": "instalar_remover_runa",
+                "custo_pa": 1,
+                "teste": {
+                  "pericia": "engenharia",
+                  "cd": "definida_pelo_narrador"
+                }
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "runico_sobregravacao",
+          "slug": "runico_sobregravacao",
+          "talento_id": "runico",
+          "nivel": 3,
+          "nome": "Sobregravação",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "runico",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "acao",
+            "equipamento",
+            "pericia",
+            "runa"
+          ],
+          "descricao_curta": "Cada equipamento seu comporta o dobro de runas extra, mas apenas você ou aliados previamente instruídos podem ativar ou se beneficiar desse espaço adicional.",
+          "descricao_longa": "Cada equipamento seu comporta o dobro de runas extra, mas apenas você ou aliados previamente instruídos podem ativar ou se beneficiar desse espaço adicional. Outros usuários veem a inscrição, mas não conseguem acessar seu efeito, a menos que sejam bem-sucedidos em um teste de **`Tecnomagia`** ou **`Arcanismo`** CD 8.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "runa",
+                "tipo": "aumentar_espacos_runa",
+                "alvo": "equipamento_proprio",
+                "multiplicador_espacos_extra": 2,
+                "usuarios_autorizados": [
+                  "voce",
+                  "aliados_instruidos"
+                ],
+                "outros_usuarios_requerem_teste": {
+                  "pericias": [
+                    "tecnomagia",
+                    "arcanismo"
+                  ],
+                  "cd": 8
+                }
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "sorrateiro",
+      "slug": "sorrateiro",
+      "nome": "Sorrateiro",
+      "descricao_curta": "O Sorrateiro domina a furtividade em qualquer ambiente.",
+      "descricao_longa": "O Sorrateiro domina a furtividade em qualquer ambiente. Move-se sem ser visto, atravessa lugares vigiados e ataca no instante certo, antes de desaparecer novamente.",
+      "tags": [
+        "furtividade",
+        "ofensiva",
+        "margem"
+      ],
+      "niveis": [
+        {
+          "id": "sorrateiro_passo_fantasma",
+          "slug": "sorrateiro_passo_fantasma",
+          "talento_id": "sorrateiro",
+          "nivel": 1,
+          "nome": "Passo Fantasma",
+          "requisitos": [],
+          "tags": [
+            "furtividade",
+            "margem",
+            "ofensiva",
+            "pericia"
+          ],
+          "descricao_curta": "Sempre que fizer um teste de Furtividade, trate falhas limitadas como se fossem sucesso limitado.",
+          "descricao_longa": "Sempre que fizer um teste de **`Furtividade`**, trate falhas limitadas como se fossem sucesso limitado. Além disso, você não deixa marcas, pegadas ou sinais físicos quando se move furtivamente.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "margem",
+                "tipo": "promocao_margem",
+                "de": "falha_limitada",
+                "para": "sucesso_limitado",
+                "contexto": "testes de Furtividade",
+                "pericias": [
+                  "furtividade"
+                ]
+              },
+              {
+                "familia": "habilidade_narrativa",
+                "tipo": "nao_deixar_rastros_fisicos",
+                "contexto": "movimento furtivo"
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "sorrateiro_camuflagem_optica",
+          "slug": "sorrateiro_camuflagem_optica",
+          "talento_id": "sorrateiro",
+          "nivel": 2,
+          "nome": "Camuflagem Óptica",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "sorrateiro",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "furtividade",
+            "margem",
+            "ofensiva"
+          ],
+          "descricao_curta": "Entrar na linha de visão de inimigos ou se mover fora de cobertura não obriga a encerrar a furtividade, desde que termine o deslocamento em um ponto plausível para continuar escondido.",
+          "descricao_longa": "Entrar na linha de visão de inimigos ou se mover fora de cobertura não obriga a encerrar a furtividade, desde que termine o deslocamento em um ponto plausível para continuar escondido.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "habilidade_narrativa",
+                "tipo": "manter_furtividade_em_movimento_exposto",
+                "requisito": "terminar deslocamento em ponto plausível para continuar escondido"
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "sorrateiro_ataque_fatal",
+          "slug": "sorrateiro_ataque_fatal",
+          "talento_id": "sorrateiro",
+          "nivel": 3,
+          "nome": "Ataque Fatal",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "sorrateiro",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "furtividade",
+            "margem",
+            "ofensiva"
+          ],
+          "descricao_curta": "Ao sair de furtividade para atacar, pode tratar um sucesso como sucesso crítico independentemente da margem.",
+          "descricao_longa": "Ao sair de furtividade para atacar, pode tratar um sucesso como sucesso crítico independentemente da margem.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "margem",
+                "tipo": "forcar_margem",
+                "margem": "sucesso_critico",
+                "contexto": "ataque ao sair de furtividade em caso de sucesso"
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "tecelao",
+      "slug": "tecelao",
+      "nome": "Tecelão",
+      "descricao_curta": "O Tecelão opera a Malha como se fosse terreno físico.",
+      "descricao_longa": "O Tecelão opera a Malha como se fosse terreno físico. Lê trilhas, encontra brechas e manipula sistemas com eficiência, evitando detecção e mantendo controle sobre o fluxo digital.",
+      "tags": [
+        "trama",
+        "malha",
+        "acao"
+      ],
+      "niveis": [
+        {
+          "id": "tecelao_olho_de_botao",
+          "slug": "tecelao_olho_de_botao",
+          "talento_id": "tecelao",
+          "nivel": 1,
+          "nome": "Olho de Botão",
+          "requisitos": [],
+          "tags": [
+            "acao",
+            "malha",
+            "trama"
+          ],
+          "descricao_curta": "Sempre que acessa uma trama pela primeira vez, revela automaticamente até 2 níveis da trilha, como em um uso do protocolo Sondar, identificando Bloqueios, Nós ou presenças hostis.",
+          "descricao_longa": "Sempre que acessa uma trama pela primeira vez, revela automaticamente até 2 níveis da trilha, como em um uso do protocolo **Sondar**, identificando Bloqueios, Nós ou presenças hostis.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "trama",
+                "tipo": "sondar_automatico",
+                "gatilho": "acessar_trama_primeira_vez",
+                "niveis_revelados": 2,
+                "identifica": [
+                  "bloqueios",
+                  "nos",
+                  "presencas_hostis"
+                ]
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "tecelao_bypass",
+          "slug": "tecelao_bypass",
+          "talento_id": "tecelao",
+          "nivel": 2,
+          "nome": "Bypass",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "tecelao",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "acao",
+            "malha",
+            "pericia",
+            "trama"
+          ],
+          "descricao_curta": "Uma vez por Sessão, pode executar um Comando à sua escolha sem realizar teste (ainda consumindo PA e RAM).",
+          "descricao_longa": "Uma vez por Sessão, pode executar um Comando à sua escolha sem realizar teste (ainda consumindo PA e RAM). Além disso, seu protocolo **Avançar** percorre 15 espaços em vez de apenas 10.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "trama",
+                "tipo": "comando_sem_teste",
+                "usos": 1,
+                "cadencia": "sessao_malha",
+                "consome_pa_ram": true
+              },
+              {
+                "familia": "companheiro",
+                "tipo": "alterar_protocolo",
+                "protocolo": "avancar",
+                "distancia_espacos": 15
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "tecelao_agulha_fina",
+          "slug": "tecelao_agulha_fina",
+          "talento_id": "tecelao",
+          "nivel": 3,
+          "nome": "Agulha Fina",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "tecelao",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "acao",
+            "malha",
+            "pa",
+            "trama"
+          ],
+          "descricao_curta": "Uma vez por Sessão, pode executar Apagar Rastros ou Modificar Assinatura como ação livre, sem consumir PA ou RAM, desde que não esteja com Detecção já acionada.",
+          "descricao_longa": "Uma vez por Sessão, pode executar **Apagar Rastros** ou **Modificar Assinatura** como ação livre, sem consumir PA ou RAM, desde que não esteja com Detecção já acionada.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "companheiro",
+                "tipo": "comando_livre_sem_custo",
+                "usos": 1,
+                "cadencia": "sessao_malha",
+                "comandos": [
+                  "Apagar Rastros",
+                  "Modificar Assinatura"
+                ],
+                "custo_pa": 0,
+                "custo_ram": 0,
+                "requisito": "deteccao_nao_acionada"
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "totem",
+      "slug": "totem",
+      "nome": "Totem",
+      "descricao_curta": "O Totem é quem sustenta a equipe.",
+      "descricao_longa": "O Totem é quem sustenta a equipe. Ele faz cada magia, técnica ou gesto de suporte render além do normal. Não é quem causa o maior impacto direto, mas é quem garante que os outros possam continuar lutando, resistindo e avançando.",
+      "tags": [
+        "suporte",
+        "cura",
+        "margem"
+      ],
+      "niveis": [
+        {
+          "id": "totem_bencao",
+          "slug": "totem_bencao",
+          "talento_id": "totem",
+          "nivel": 1,
+          "nome": "Benção",
+          "requisitos": [],
+          "tags": [
+            "cura",
+            "margem",
+            "pericia",
+            "suporte"
+          ],
+          "descricao_curta": "Sempre que aplicar um efeito positivo em alguém (como cura, reforço ou proteção), falhas limitadas no seu teste contam como sucesso limitado.",
+          "descricao_longa": "Sempre que aplicar um efeito positivo em alguém (como cura, reforço ou proteção), falhas limitadas no seu teste contam como sucesso limitado.\n\nAlém disso, uma vez por cena, o primeiro teste realizado por um dos aliados que receberam esse efeito na cena, à sua escolha, é tratado como sucesso limitado caso resulte em falha limitada.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "margem",
+                "tipo": "promocao_margem",
+                "de": "falha_limitada",
+                "para": "sucesso_limitado",
+                "contexto": "testes para aplicar efeito positivo em alguém"
+              },
+              {
+                "familia": "margem",
+                "tipo": "token_sucesso_limitado",
+                "usos": 1,
+                "cadencia": "cena",
+                "gatilho": "aliado_que_recebeu_efeito_positivo_tem_falha_limitada",
+                "resultado": "sucesso_limitado"
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "totem_onda_solidaria",
+          "slug": "totem_onda_solidaria",
+          "talento_id": "totem",
+          "nivel": 2,
+          "nome": "Onda Solidária",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "totem",
+              "nivel": 1
+            }
+          ],
+          "tags": [
+            "cura",
+            "margem",
+            "suporte"
+          ],
+          "descricao_curta": "Sempre que aplicar um efeito positivo em um aliado, pode estendêlo para um segundo aliado adjacente, contanto que faça sentido na ficção.",
+          "descricao_longa": "Sempre que aplicar um efeito positivo em um aliado, pode estendê-lo para um segundo aliado adjacente, contanto que faça sentido na ficção.",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "propagacao_efeito",
+                "tipo": "estender_efeito_positivo",
+                "gatilho": "aplicar_efeito_positivo_em_aliado",
+                "alvo_extra": "segundo_aliado_adjacente",
+                "requer_ficcao_plausivel": true
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        },
+        {
+          "id": "totem_chama_redobrada",
+          "slug": "totem_chama_redobrada",
+          "talento_id": "totem",
+          "nivel": 3,
+          "nome": "Chama Redobrada",
+          "requisitos": [
+            {
+              "tipo": "talento_nivel_adquirido",
+              "talento_id": "totem",
+              "nivel": 2
+            }
+          ],
+          "tags": [
+            "cura",
+            "margem",
+            "suporte"
+          ],
+          "descricao_curta": "Uma vez por cena, ao aplicar um efeito positivo, pode dobrar o efeito numérico (ex: +2 vira +4; +1d6 vira +2d6) ou dobrar a duração.",
+          "descricao_longa": "Uma vez por cena, ao aplicar um efeito positivo, pode dobrar o efeito numérico (ex: +2 vira +4; +1d6 vira +2d6) ou dobrar a duração.\n\n---\n\n<aside>\n<img src=\"https://app.notion.com/icons/arrow-left_gray.svg\" alt=\"https://app.notion.com/icons/arrow-left_gray.svg\" width=\"40px\" />\n\n**Anterior: [10. PERÍCIAS](https://app.notion.com/p/10-PER-CIAS-5840a1363552825cb06a01c2c7118e11?pvs=21)**\n\n</aside>\n\n<aside>\n<img src=\"https://app.notion.com/icons/arrow-right_gray.svg\" alt=\"https://app.notion.com/icons/arrow-right_gray.svg\" width=\"40px\" />\n\n**Próximo: [12. VIDA, ESTRESSE E MANA](https://app.notion.com/p/12-VIDA-ESTRESSE-E-MANA-bab0a136355283feb01c019d92c71eec?pvs=21)**\n\n</aside>",
+          "payload_automacao": {
+            "efeitos": [
+              {
+                "familia": "propagacao_efeito",
+                "tipo": "dobrar_efeito_positivo",
+                "usos": 1,
+                "cadencia": "cena",
+                "opcoes": [
+                  "dobrar_efeito_numerico",
+                  "dobrar_duracao"
+                ]
+              }
+            ]
+          },
+          "status": "published",
+          "versao": "1.0.0",
+          "created_at": "2026-06-25",
+          "updated_at": "2026-06-25"
+        }
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    }
+  ]
+}

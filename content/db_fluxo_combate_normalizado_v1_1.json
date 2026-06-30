@@ -1,0 +1,125 @@
+{
+  "_schema": "ruptura.vtt.core.fluxo_combate.v1.1",
+  "_meta": {
+    "conteudo": "fluxo_combate",
+    "fonte": "16 COMBATE 0210a136355282b09ba50128db510387.md",
+    "hash_sha256_origem": "462f093c61a7c623fb8fcd16180515825ba04d57afb8f4f1a2e2dece0d90596b",
+    "versao_schema": "1.1.0",
+    "status_padrao": "published",
+    "gerado_em": "2026-06-25",
+    "observacoes": [
+      "Regra-base de rodada, janelas, alternância, fragmentação, emboscada, trégua e reações.",
+      "Estado atual de combate deve ficar em tabelas de instância."
+    ],
+    "revisao": "v1.1: schema isolado por responsabilidade (sem seções de outros pacotes). Tabela de config/regra-base, interpretada pelo motor."
+  },
+  "rodada": {
+    "duracao_segundos": 10,
+    "encerra_quando": "fim_da_janela_lenta",
+    "renova_pa_em": "inicio_da_rodada",
+    "renova_reacoes_em": "inicio_da_rodada"
+  },
+  "pontos_de_acao": {
+    "base": 3,
+    "pode_expandir_com_pm": true,
+    "fonte_derivado": "pa_max"
+  },
+  "janelas_turno": [
+    {
+      "id": "rapida",
+      "nome": "Turnos Rápidos",
+      "ordem": 1,
+      "pa_max": 2
+    },
+    {
+      "id": "lenta",
+      "nome": "Turnos Lentos",
+      "ordem": 2,
+      "pa_min": 3
+    }
+  ],
+  "duracao_um_rodada": {
+    "regra": "termina_no_fim_da_proxima_janela_igual_a_janela_de_aplicacao"
+  },
+  "ordem_de_turnos": {
+    "alternancia": "pj_pn",
+    "mantem_entre_janelas": true,
+    "se_um_lado_sem_participantes": "lado_restante_age_em_sequencia",
+    "ordem_pj": "jogadores_escolhem_em_grupo_a_cada_vez",
+    "conflito_mesmo_lado": [
+      {
+        "criterio": "maior_treinamento_em_reflexos"
+      },
+      {
+        "criterio": "teste_reflexos_em_empate"
+      }
+    ],
+    "inicio_combate": {
+      "acao_inicial_ate_2_pa": "iniciador_age_primeiro_na_janela_rapida",
+      "acao_inicial_3_pa_ou_mais": "personagens_com_acoes_rapidas_tem_prioridade",
+      "prioridade_rapida_narrativa": [
+        "mais_atento",
+        "mais_proximo_do_perigo",
+        "previamente_alerta"
+      ]
+    }
+  },
+  "fragmentacao_pa": {
+    "permitida": true,
+    "max_por_rodada": 1,
+    "nao_precisa_anunciar": true,
+    "gastar_parte_e_guardar_resto": true,
+    "retorno_respeita_alternancia": true,
+    "se_fragmentou_na_janela_rapida": {
+      "retorna_na_janela_lenta": true,
+      "mantem_limite_total_da_janela_rapida": true
+    }
+  },
+  "emboscada": {
+    "rodada_surpresa": true,
+    "grupo_surpreendente_age_sem_alternar": true,
+    "limite_padrao": "apenas_acoes_de_turnos_rapidos",
+    "excecao": "coordenacao_mais_elaborada_se_fizer_sentido_na_ficcao",
+    "determinacao": {
+      "teste_comum": {
+        "atacante": "furtividade",
+        "defensor": "percepcao"
+      },
+      "decisao_final": "narrador"
+    },
+    "apos_rodada_surpresa": "inicia_novo_ciclo_normal"
+  },
+  "tregua": {
+    "pode_ser_proposta": "qualquer_momento",
+    "se_aceita": {
+      "combate_suspenso": true,
+      "modo": "narrativa_livre",
+      "sem_turnos_pa": true
+    },
+    "encerra_imediatamente_se": [
+      "ataque",
+      "magia_ofensiva",
+      "fuga",
+      "movimento_suspeito_percebido"
+    ],
+    "reinicio": "novo_ciclo_de_rodadas_considerando_o_que_aconteceu_na_tregua"
+  },
+  "reacoes": {
+    "max_por_rodada": {
+      "ref": "atributo",
+      "id": "mente"
+    },
+    "reseta_em": "inicio_da_rodada",
+    "acoes_defensivas_consumem_reacao": true,
+    "sem_reacao_disponivel": {
+      "defesa_ainda_permitida": true,
+      "penalidade_cumulativa": -1,
+      "escopo": "rodada",
+      "zera_em": "inicio_da_rodada"
+    }
+  },
+  "status": "published",
+  "versao": "1.0.0",
+  "created_at": "2026-06-25",
+  "updated_at": "2026-06-25"
+}

@@ -1,0 +1,396 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ruptura.vtt.content.condicoes.v1.5.schema.json",
+  "title": "Ruptura VTT - Condições v1.5",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "_schema",
+    "_meta",
+    "enums",
+    "condicoes"
+  ],
+  "properties": {
+    "_schema": {
+      "const": "ruptura.vtt.content.condicoes.v1.5"
+    },
+    "_meta": {
+      "type": "object"
+    },
+    "enums": {
+      "type": "object"
+    },
+    "condicoes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "slug",
+          "nome",
+          "categoria",
+          "categoria_label",
+          "descricao_curta",
+          "descricao_longa",
+          "tags",
+          "duracao_padrao",
+          "remove_por",
+          "acoes_habilitadas",
+          "payload_automacao",
+          "status",
+          "versao",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "agarrado",
+              "agarrando",
+              "atordoado",
+              "caido",
+              "cego",
+              "contundido",
+              "envenenado",
+              "imobilizado",
+              "insaturado",
+              "inconsciente",
+              "lento",
+              "ofuscado",
+              "queimando",
+              "sufocando",
+              "sangrando",
+              "saturado",
+              "surdo"
+            ]
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "nome": {
+            "type": "string",
+            "minLength": 1
+          },
+          "categoria": {
+            "const": "condicao"
+          },
+          "categoria_label": {
+            "const": "Condição"
+          },
+          "descricao_curta": {
+            "type": "string",
+            "minLength": 1
+          },
+          "descricao_longa": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "acao_remove",
+                "ambiente",
+                "arcano",
+                "asfixia",
+                "audicao",
+                "conjuracao",
+                "controle",
+                "cronometro",
+                "dano",
+                "dano_continuo",
+                "falha_automatica",
+                "fim_de_rodada",
+                "fisico",
+                "igneo",
+                "incapacitante",
+                "penalidade",
+                "penalidade_atributo",
+                "penalidade_defensiva",
+                "penalidade_ofensiva",
+                "penalidade_pericia",
+                "postura",
+                "reduz_pa",
+                "relacional",
+                "remove_por_cura",
+                "restricao_movimento",
+                "risco_morte",
+                "saturacao",
+                "sentido",
+                "teste_unico_por_cena",
+                "trava_acao",
+                "trava_defensiva",
+                "trava_ofensiva",
+                "trava_reacao",
+                "veneno",
+                "visao",
+                "vulneravel"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "duracao_padrao": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "remove_por": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "tipo",
+                    "minimo_pv"
+                  ],
+                  "properties": {
+                    "tipo": {
+                      "const": "recuperar_pv"
+                    },
+                    "minimo_pv": {
+                      "type": "number"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "acoes_habilitadas": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "payload_automacao": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "efeitos"
+            ],
+            "properties": {
+              "efeitos": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "$ref": "#/$defs/efeito"
+                }
+              },
+              "observacoes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ]
+          },
+          "versao": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "efeito": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tipo"
+      ],
+      "properties": {
+        "acao": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "alvo": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "alvo_tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "apos_rodadas": {
+          "type": "number"
+        },
+        "arredondamento": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "base_acao": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "cadencia": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "condicao": {
+          "type": "string"
+        },
+        "condicoes_possiveis": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "custo": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "custo_pa": {
+          "type": "number"
+        },
+        "dano": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "escopo": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "falha": {
+          "type": "object"
+        },
+        "inclui_triviais": {
+          "type": "boolean"
+        },
+        "minimo_pv": {
+          "type": "number"
+        },
+        "multiplicador": {
+          "type": "number"
+        },
+        "operacao": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "quando": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "remove_condicao": {
+          "type": "string"
+        },
+        "resistencia": {
+          "type": "object"
+        },
+        "tempo_min": {
+          "type": "number"
+        },
+        "tipo": {
+          "type": "string",
+          "enum": [
+            "alterar_custo_mana",
+            "aplicar_condicao_apos_tempo",
+            "aplicar_condicao_associada",
+            "bloquear_acoes",
+            "bloquear_reacoes",
+            "dano_fim_de_rodada",
+            "definir_deslocamento",
+            "exigir_teste_conjuracao",
+            "falha_automatica",
+            "habilitar_acao",
+            "manter_condicao_no_alvo",
+            "modificador",
+            "modificador_recebido",
+            "morte_apos_tempo",
+            "multiplicar_deslocamento",
+            "reduzir_pa",
+            "remover_ao_recuperar_pv",
+            "teste_apos_exposicao",
+            "teste_fim_de_rodada",
+            "teste_fim_de_rodada_para_remover_condicao"
+          ]
+        },
+        "tipo_dano": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "valor": {
+          "type": "number"
+        }
+      }
+    }
+  }
+}

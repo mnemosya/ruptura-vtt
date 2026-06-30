@@ -1,0 +1,12 @@
+/* Estilos mínimos só para as páginas de /dev — não é o design system do VTT. */
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #14151a;
+  color: #e8e8ec;
+}

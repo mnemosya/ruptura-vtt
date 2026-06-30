@@ -1,0 +1,900 @@
+{
+  "_schema": "ruptura.vtt.content.condicoes.v1.5",
+  "_meta": {
+    "conteudo": "condicoes",
+    "fonte": "Capitulo CONDICOES (upload de junho/2026)",
+    "versao_schema": "1.5.0",
+    "status_padrao": "published",
+    "gerado_em": "2026-06-25",
+    "total_registros": 17,
+    "hash_sha256_origem": "7360fa68c5ada3f49296b805a380db5c180abcef02419d71fbe8e0b18c95330c",
+    "observacoes": [
+      "Condições foram normalizadas como IDs internos sem acento e em snake_case.",
+      "Descrições foram separadas em descricao_curta e descricao_longa.",
+      "Efeitos foram estruturados em payload_automacao.efeitos.",
+      "Ações habilitadas por condição foram separadas de modificadores passivos.",
+      "v1.3: Sangrando causa 1d6 de dano físico no fim de cada rodada. A condição dura até recuperar pelo menos 1 PV. Não há teste, sucesso, metade do dano ou resolução manual.",
+      "v1.5: remove_por usa minimo_pv para remoção por cura; schema passa a validar essa estrutura."
+    ],
+    "revisao": "Correção de Sangrando: removida qualquer resolução de sucesso/metade. A condição causa apenas 1d6 físico no fim de cada rodada e termina ao recuperar pelo menos 1 PV. | v1.4: remove_por.minimo -> minimo_pv (alinhado ao payload). | v1.5: created_at/updated_at adicionados; remove_por validado como recuperar_pv/minimo_pv."
+  },
+  "enums": {
+    "status": [
+      "draft",
+      "published",
+      "archived"
+    ],
+    "categoria": [
+      "condicao"
+    ],
+    "tags_sistema": [
+      "acao_remove",
+      "ambiente",
+      "arcano",
+      "asfixia",
+      "audicao",
+      "conjuracao",
+      "controle",
+      "cronometro",
+      "dano",
+      "dano_continuo",
+      "falha_automatica",
+      "fim_de_rodada",
+      "fisico",
+      "igneo",
+      "incapacitante",
+      "penalidade",
+      "penalidade_atributo",
+      "penalidade_defensiva",
+      "penalidade_ofensiva",
+      "penalidade_pericia",
+      "postura",
+      "reduz_pa",
+      "relacional",
+      "remove_por_cura",
+      "restricao_movimento",
+      "risco_morte",
+      "saturacao",
+      "sentido",
+      "teste_unico_por_cena",
+      "trava_acao",
+      "trava_defensiva",
+      "trava_ofensiva",
+      "trava_reacao",
+      "veneno",
+      "visao",
+      "vulneravel"
+    ],
+    "tipo_efeito": [
+      "alterar_custo_mana",
+      "aplicar_condicao_apos_tempo",
+      "aplicar_condicao_associada",
+      "bloquear_acoes",
+      "bloquear_reacoes",
+      "dano_fim_de_rodada",
+      "definir_deslocamento",
+      "exigir_teste_conjuracao",
+      "falha_automatica",
+      "habilitar_acao",
+      "manter_condicao_no_alvo",
+      "modificador",
+      "modificador_recebido",
+      "morte_apos_tempo",
+      "multiplicar_deslocamento",
+      "reduzir_pa",
+      "remover_ao_recuperar_pv",
+      "teste_apos_exposicao",
+      "teste_fim_de_rodada",
+      "teste_fim_de_rodada_para_remover_condicao"
+    ],
+    "cadencia": [
+      "rodada",
+      "cena",
+      "enquanto_na_area"
+    ],
+    "pericias": [
+      "vigor",
+      "luta",
+      "mobilidade",
+      "reflexos"
+    ],
+    "atributos": [
+      "corpo"
+    ],
+    "tags_rolagem": [
+      "acao",
+      "audicao",
+      "conjuracao",
+      "defensiva",
+      "luta",
+      "mobilidade",
+      "ofensiva",
+      "reflexos",
+      "visao",
+      "corpo"
+    ]
+  },
+  "condicoes": [
+    {
+      "id": "agarrado",
+      "slug": "agarrado",
+      "nome": "Agarrado",
+      "categoria": "condicao",
+      "categoria_label": "Condição",
+      "descricao_curta": "Deslocamento total 0; –1 em ações ofensivas e defensivas; exige Escapar para se libertar.",
+      "descricao_longa": "Seu deslocamento total é 0. Suas ações ofensivas e defensivas sofrem –1 de desvantagem, e precisa usar a ação Escapar para se libertar.",
+      "tags": [
+        "controle",
+        "penalidade_defensiva",
+        "penalidade_ofensiva",
+        "restricao_movimento"
+      ],
+      "duracao_padrao": null,
+      "remove_por": [],
+      "acoes_habilitadas": [
+        {
+          "acao": "escapar",
+          "custo_pa": 2
+        }
+      ],
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "definir_deslocamento",
+            "valor": 0,
+            "escopo": "total"
+          },
+          {
+            "tipo": "modificador",
+            "valor": -1,
+            "alvo_tags": [
+              "ofensiva",
+              "defensiva"
+            ]
+          },
+          {
+            "tipo": "habilitar_acao",
+            "acao": "escapar",
+            "custo_pa": 2
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "agarrando",
+      "slug": "agarrando",
+      "nome": "Agarrando",
+      "categoria": "condicao",
+      "categoria_label": "Condição",
+      "descricao_curta": "Deslocamento à metade; –1 em ações ofensivas e defensivas; mantém alvo Agarrado ou Imobilizado.",
+      "descricao_longa": "Enquanto mantém essa condição, o personagem reduz seu deslocamento à metade e tem –1 de desvantagem em ações ofensivas e defensivas; ele também mantém o alvo sob a condição Agarrado ou Imobilizado. É possível remover essa condição como ação livre a qualquer momento, mesmo fora do turno.",
+      "tags": [
+        "controle",
+        "penalidade_defensiva",
+        "penalidade_ofensiva",
+        "relacional",
+        "restricao_movimento"
+      ],
+      "duracao_padrao": null,
+      "remove_por": [],
+      "acoes_habilitadas": [
+        {
+          "acao": "soltar_alvo",
+          "custo": "livre"
+        }
+      ],
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "multiplicar_deslocamento",
+            "multiplicador": 0.5,
+            "arredondamento": "baixo"
+          },
+          {
+            "tipo": "modificador",
+            "valor": -1,
+            "alvo_tags": [
+              "ofensiva",
+              "defensiva"
+            ]
+          },
+          {
+            "tipo": "manter_condicao_no_alvo",
+            "condicoes_possiveis": [
+              "agarrado",
+              "imobilizado"
+            ]
+          },
+          {
+            "tipo": "habilitar_acao",
+            "acao": "soltar_alvo",
+            "custo": "livre"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "atordoado",
+      "slug": "atordoado",
+      "nome": "Atordoado",
+      "categoria": "condicao",
+      "categoria_label": "Condição",
+      "descricao_curta": "Não pode realizar ações ou reações.",
+      "descricao_longa": "Não pode realizar ações ou reações.",
+      "tags": [
+        "incapacitante",
+        "trava_acao",
+        "trava_reacao"
+      ],
+      "duracao_padrao": null,
+      "remove_por": [],
+      "acoes_habilitadas": [],
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "bloquear_acoes",
+            "alvo_tags": [
+              "acao"
+            ]
+          },
+          {
+            "tipo": "bloquear_reacoes"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "caido",
+      "slug": "caido",
+      "nome": "Caído",
+      "categoria": "condicao",
+      "categoria_label": "Condição",
+      "descricao_curta": "Ataques ofensivos contra o alvo recebem +1; suas ofensivas sofrem –1; deslocamento à metade; exige Levantar 1 PA.",
+      "descricao_longa": "Ações ofensivas contra ele recebem +1 de vantagem e suas próprias ações ofensivas sofrem –1 de desvantagem; seu deslocamento é reduzido à metade e precisa usar a ação Levantar 1 PA para remover a condição.",
+      "tags": [
+        "penalidade_ofensiva",
+        "postura",
+        "restricao_movimento",
+        "vulneravel"
+      ],
+      "duracao_padrao": null,
+      "remove_por": [],
+      "acoes_habilitadas": [
+        {
+          "acao": "levantar",
+          "custo_pa": 1
+        }
+      ],
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador_recebido",
+            "valor": 1,
+            "alvo_tags": [
+              "ofensiva"
+            ],
+            "quando": "acoes_ofensivas_contra_o_alvo"
+          },
+          {
+            "tipo": "modificador",
+            "valor": -1,
+            "alvo_tags": [
+              "ofensiva"
+            ]
+          },
+          {
+            "tipo": "multiplicar_deslocamento",
+            "multiplicador": 0.5,
+            "arredondamento": "baixo"
+          },
+          {
+            "tipo": "habilitar_acao",
+            "acao": "levantar",
+            "custo_pa": 1
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "cego",
+      "slug": "cego",
+      "nome": "Cego",
+      "categoria": "condicao",
+      "categoria_label": "Condição",
+      "descricao_curta": "Falha automaticamente em testes de visão; ofensivas contra o alvo recebem +2; suas ofensivas sofrem –2.",
+      "descricao_longa": "Falha automaticamente em testes que dependem de visão; ações ofensivas contra ele recebem +2 de vantagem, e suas próprias ações ofensivas sofrem –2 de desvantagem.",
+      "tags": [
+        "falha_automatica",
+        "penalidade_ofensiva",
+        "sentido",
+        "visao",
+        "vulneravel"
+      ],
+      "duracao_padrao": null,
+      "remove_por": [],
+      "acoes_habilitadas": [],
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "falha_automatica",
+            "alvo_tags": [
+              "visao"
+            ]
+          },
+          {
+            "tipo": "modificador_recebido",
+            "valor": 2,
+            "alvo_tags": [
+              "ofensiva"
+            ],
+            "quando": "acoes_ofensivas_contra_o_alvo"
+          },
+          {
+            "tipo": "modificador",
+            "valor": -2,
+            "alvo_tags": [
+              "ofensiva"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "contundido",
+      "slug": "contundido",
+      "nome": "Contundido",
+      "categoria": "condicao",
+      "categoria_label": "Condição",
+      "descricao_curta": "–1 em Luta, Mobilidade e Reflexos; dura até recuperar pelo menos 1 PV.",
+      "descricao_longa": "Sofre –1 de desvantagem em testes de Luta, Mobilidade e Reflexos. A condição dura até recuperar pelo menos 1 PV.",
+      "tags": [
+        "dano",
+        "penalidade_pericia",
+        "remove_por_cura"
+      ],
+      "duracao_padrao": null,
+      "remove_por": [
+        {
+          "tipo": "recuperar_pv",
+          "minimo_pv": 1
+        }
+      ],
+      "acoes_habilitadas": [],
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": -1,
+            "alvo_tags": [
+              "luta",
+              "mobilidade",
+              "reflexos"
+            ]
+          },
+          {
+            "tipo": "remover_ao_recuperar_pv",
+            "minimo_pv": 1
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.5.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "envenenado",
+      "slug": "envenenado",
+      "nome": "Envenenado",
+      "categoria": "condicao",
+      "categoria_label": "Condição",
+      "descricao_curta": "Perde 1 PA; no fim de cada rodada faz Vigor CD 7 ou sofre 1d4 tóxico; dura até recuperar pelo menos 1 PV.",
+      "descricao_longa": "O alvo perde 1 PA para agir na rodada. Além disso, no fim de cada rodada deve realizar um teste de Vigor CD 7; em caso de falha, sofre 1d4 de dano tóxico. A condição dura até recuperar pelo menos 1 PV.",
+      "tags": [
+        "dano_continuo",
+        "fim_de_rodada",
+        "reduz_pa",
+        "remove_por_cura",
+        "veneno"
+      ],
+      "duracao_padrao": null,
+      "remove_por": [
+        {
+          "tipo": "recuperar_pv",
+          "minimo_pv": 1
+        }
+      ],
+      "acoes_habilitadas": [],
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "reduzir_pa",
+            "valor": 1,
+            "escopo": "rodada"
+          },
+          {
+            "tipo": "teste_fim_de_rodada",
+            "resistencia": {
+              "pericia": "vigor",
+              "cd": 7
+            },
+            "falha": {
+              "dano": "1d4",
+              "tipo_dano": "toxico"
+            }
+          },
+          {
+            "tipo": "remover_ao_recuperar_pv",
+            "minimo_pv": 1
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.5.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "imobilizado",
+      "slug": "imobilizado",
+      "nome": "Imobilizado",
+      "categoria": "condicao",
+      "categoria_label": "Condição",
+      "descricao_curta": "Deslocamento total 0; não pode realizar ações ofensivas ou defensivas; exige Escapar para se libertar.",
+      "descricao_longa": "Seu deslocamento total é 0. Não pode realizar ações ofensivas ou defensivas; para se libertar precisa usar a ação Escapar.",
+      "tags": [
+        "controle",
+        "restricao_movimento",
+        "trava_defensiva",
+        "trava_ofensiva"
+      ],
+      "duracao_padrao": null,
+      "remove_por": [],
+      "acoes_habilitadas": [
+        {
+          "acao": "escapar",
+          "custo_pa": 2
+        }
+      ],
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "definir_deslocamento",
+            "valor": 0,
+            "escopo": "total"
+          },
+          {
+            "tipo": "bloquear_acoes",
+            "alvo_tags": [
+              "ofensiva",
+              "defensiva"
+            ]
+          },
+          {
+            "tipo": "habilitar_acao",
+            "acao": "escapar",
+            "custo_pa": 2
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "insaturado",
+      "slug": "insaturado",
+      "nome": "Insaturado",
+      "categoria": "condicao",
+      "categoria_label": "Condição",
+      "descricao_curta": "Após 1 rodada em baixa saturação, criaturas fazem Vigor CD 7 uma vez por cena; falha aplica Lento. Magistas têm conjuração mais difícil e custosa.",
+      "descricao_longa": "Todas as criaturas após 1 rodada expostas à área de baixa saturação devem realizar um teste de Vigor CD 7. Em falha, sofrem Lento até que deixem a área. Esse teste é feito apenas uma vez por cena. No caso de magistas, enquanto permanecer na área, todas as conjurações passam a exigir teste, mesmo as triviais, sofrendo –1 de desvantagem e custando +1 de mana.",
+      "tags": [
+        "ambiente",
+        "arcano",
+        "conjuracao",
+        "saturacao",
+        "teste_unico_por_cena"
+      ],
+      "duracao_padrao": "enquanto_na_area",
+      "remove_por": [],
+      "acoes_habilitadas": [],
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "teste_apos_exposicao",
+            "apos_rodadas": 1,
+            "cadencia": "cena",
+            "resistencia": {
+              "pericia": "vigor",
+              "cd": 7
+            },
+            "falha": {
+              "aplicar_condicao": "lento",
+              "duracao": "ate_sair_da_area"
+            }
+          },
+          {
+            "tipo": "exigir_teste_conjuracao",
+            "alvo": "magistas",
+            "inclui_triviais": true
+          },
+          {
+            "tipo": "modificador",
+            "valor": -1,
+            "alvo_tags": [
+              "conjuracao"
+            ],
+            "alvo": "magistas"
+          },
+          {
+            "tipo": "alterar_custo_mana",
+            "valor": 1,
+            "operacao": "somar",
+            "alvo": "magistas"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "inconsciente",
+      "slug": "inconsciente",
+      "nome": "Inconsciente",
+      "categoria": "condicao",
+      "categoria_label": "Condição",
+      "descricao_curta": "Perde a consciência, fica Caído e não pode realizar ação ou reação.",
+      "descricao_longa": "Perde a consciência e fica em estado de Caído; não pode realizar nenhuma ação ou reação.",
+      "tags": [
+        "incapacitante",
+        "postura",
+        "trava_acao",
+        "trava_reacao"
+      ],
+      "duracao_padrao": null,
+      "remove_por": [],
+      "acoes_habilitadas": [],
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "aplicar_condicao_associada",
+            "condicao": "caido"
+          },
+          {
+            "tipo": "bloquear_acoes",
+            "alvo_tags": [
+              "acao"
+            ]
+          },
+          {
+            "tipo": "bloquear_reacoes"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "lento",
+      "slug": "lento",
+      "nome": "Lento",
+      "categoria": "condicao",
+      "categoria_label": "Condição",
+      "descricao_curta": "Deslocamento à metade; –1 em Reflexos e Mobilidade.",
+      "descricao_longa": "Seu deslocamento é reduzido à metade. Além disso, sofre –1 de desvantagem em testes de Reflexos e Mobilidade.",
+      "tags": [
+        "penalidade_pericia",
+        "restricao_movimento"
+      ],
+      "duracao_padrao": null,
+      "remove_por": [],
+      "acoes_habilitadas": [],
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "multiplicar_deslocamento",
+            "multiplicador": 0.5,
+            "arredondamento": "baixo"
+          },
+          {
+            "tipo": "modificador",
+            "valor": -1,
+            "alvo_tags": [
+              "reflexos",
+              "mobilidade"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "ofuscado",
+      "slug": "ofuscado",
+      "nome": "Ofuscado",
+      "categoria": "condicao",
+      "categoria_label": "Condição",
+      "descricao_curta": "–1 em todos os testes que dependem de visão, incluindo ações ofensivas e defensivas.",
+      "descricao_longa": "Sofre –1 de desvantagem em todos os testes que dependem de visão, incluindo ações ofensivas e defensivas.",
+      "tags": [
+        "penalidade",
+        "sentido",
+        "visao"
+      ],
+      "duracao_padrao": null,
+      "remove_por": [],
+      "acoes_habilitadas": [],
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": -1,
+            "alvo_tags": [
+              "visao"
+            ]
+          },
+          {
+            "tipo": "modificador",
+            "valor": -1,
+            "alvo_tags": [
+              "ofensiva",
+              "defensiva"
+            ],
+            "quando": "dependem_de_visao"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "queimando",
+      "slug": "queimando",
+      "nome": "Queimando",
+      "categoria": "condicao",
+      "categoria_label": "Condição",
+      "descricao_curta": "Sofre 1d6 ígneo no fim de cada rodada; Interagir 1 PA apaga o fogo e encerra a condição.",
+      "descricao_longa": "Sofre 1d6 de dano ígneo no fim de cada rodada enquanto estiver sob o efeito. O personagem pode usar a ação Interagir 1 PA para apagar o fogo e a condição termina.",
+      "tags": [
+        "acao_remove",
+        "dano_continuo",
+        "fim_de_rodada",
+        "igneo"
+      ],
+      "duracao_padrao": null,
+      "remove_por": [],
+      "acoes_habilitadas": [
+        {
+          "acao": "apagar_fogo",
+          "base_acao": "interagir",
+          "custo_pa": 1
+        }
+      ],
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "dano_fim_de_rodada",
+            "dano": "1d6",
+            "tipo_dano": "igneo"
+          },
+          {
+            "tipo": "habilitar_acao",
+            "acao": "apagar_fogo",
+            "base_acao": "interagir",
+            "custo_pa": 1,
+            "remove_condicao": "queimando"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "sufocando",
+      "slug": "sufocando",
+      "nome": "Sufocando",
+      "categoria": "condicao",
+      "categoria_label": "Condição",
+      "descricao_curta": "–1 em testes de Corpo; após 3 minutos fica Inconsciente; após 5 minutos morre.",
+      "descricao_longa": "Sofre –1 de desvantagem em testes de Corpo. Após 3 minutos consecutivos nessa condição, o personagem fica Inconsciente; após 5 minutos, ele morre.",
+      "tags": [
+        "asfixia",
+        "cronometro",
+        "penalidade_atributo",
+        "risco_morte"
+      ],
+      "duracao_padrao": null,
+      "remove_por": [],
+      "acoes_habilitadas": [],
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": -1,
+            "alvo_tags": [
+              "corpo"
+            ]
+          },
+          {
+            "tipo": "aplicar_condicao_apos_tempo",
+            "tempo_min": 3,
+            "condicao": "inconsciente"
+          },
+          {
+            "tipo": "morte_apos_tempo",
+            "tempo_min": 5
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "sangrando",
+      "slug": "sangrando",
+      "nome": "Sangrando",
+      "categoria": "condicao",
+      "categoria_label": "Condição",
+      "descricao_curta": "No fim de cada rodada sofre 1d6 de dano físico. Dura até recuperar pelo menos 1 PV.",
+      "descricao_longa": "No fim de cada rodada sofre 1d6 de dano físico. A condição dura até recuperar pelo menos 1 PV.",
+      "tags": [
+        "dano_continuo",
+        "fim_de_rodada",
+        "fisico",
+        "remove_por_cura"
+      ],
+      "duracao_padrao": null,
+      "remove_por": [
+        {
+          "tipo": "recuperar_pv",
+          "minimo_pv": 1
+        }
+      ],
+      "acoes_habilitadas": [],
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "dano_fim_de_rodada",
+            "dano": "1d6",
+            "tipo_dano": "fisico"
+          },
+          {
+            "tipo": "remover_ao_recuperar_pv",
+            "minimo_pv": 1
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.5.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "saturado",
+      "slug": "saturado",
+      "nome": "Saturado",
+      "categoria": "condicao",
+      "categoria_label": "Condição",
+      "descricao_curta": "Após 1 rodada em saturação, criaturas fazem Vigor CD 7 uma vez por cena; falha aplica Envenenado. Magistas conjuram com menor custo e +1.",
+      "descricao_longa": "Todas as criaturas após 1 rodada expostas à área de saturação devem realizar um teste de Vigor CD 7. Em falha, sofrem Envenenado. Esse teste é feito apenas uma vez por cena. Pode-se realizar um novo teste de Vigor todo fim de rodada para remover Envenenado. No caso de magistas, enquanto permanecer na área, toda magia custa –1 de mana e recebe +1 de vantagem nos testes de conjuração.",
+      "tags": [
+        "ambiente",
+        "arcano",
+        "conjuracao",
+        "saturacao",
+        "teste_unico_por_cena"
+      ],
+      "duracao_padrao": "enquanto_na_area",
+      "remove_por": [],
+      "acoes_habilitadas": [],
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "teste_apos_exposicao",
+            "apos_rodadas": 1,
+            "cadencia": "cena",
+            "resistencia": {
+              "pericia": "vigor",
+              "cd": 7
+            },
+            "falha": {
+              "aplicar_condicao": "envenenado"
+            }
+          },
+          {
+            "tipo": "teste_fim_de_rodada_para_remover_condicao",
+            "condicao": "envenenado",
+            "resistencia": {
+              "pericia": "vigor",
+              "cd": 7
+            }
+          },
+          {
+            "tipo": "alterar_custo_mana",
+            "valor": -1,
+            "operacao": "somar",
+            "alvo": "magistas"
+          },
+          {
+            "tipo": "modificador",
+            "valor": 1,
+            "alvo_tags": [
+              "conjuracao"
+            ],
+            "alvo": "magistas"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "surdo",
+      "slug": "surdo",
+      "nome": "Surdo",
+      "categoria": "condicao",
+      "categoria_label": "Condição",
+      "descricao_curta": "Falha automaticamente em testes que dependem de audição.",
+      "descricao_longa": "Falha automaticamente em testes que dependem de audição.",
+      "tags": [
+        "audicao",
+        "falha_automatica",
+        "sentido"
+      ],
+      "duracao_padrao": null,
+      "remove_por": [],
+      "acoes_habilitadas": [],
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "falha_automatica",
+            "alvo_tags": [
+              "audicao"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    }
+  ]
+}

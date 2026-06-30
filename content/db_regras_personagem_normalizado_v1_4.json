@@ -1,0 +1,2228 @@
+{
+  "_schema": "ruptura.vtt.core.regras_personagem.v1.4",
+  "_meta": {
+    "conteudo": "regras_personagem",
+    "fontes": [
+      {
+        "arquivo": "9 ATRIBUTOS 7a60a1363552826c9f7681712a9719a7.md",
+        "hash_sha256": "5a31b4310e3d98b7b19a3881879dea19ade0ff64a67ef4ea259ad11e1ae7fdce",
+        "capitulo": "9. Atributos"
+      },
+      {
+        "arquivo": "10 PERÍCIAS 5840a1363552825cb06a01c2c7118e11.md",
+        "hash_sha256": "6200587914ca70e3f4cd8c34af867ba9cc4f064141443f409759d41d092a6702",
+        "capitulo": "10. Perícias"
+      },
+      {
+        "arquivo": "12 VIDA, ESTRESSE E MANA bab0a136355283feb01c019d92c71eec.md",
+        "hash_sha256": "fea46566f5af883042e49a97832a6889914fab836dbb0d5508ff4278dbaaa64b",
+        "capitulo": "12. Vida, Estresse e Mana"
+      }
+    ],
+    "versao_schema": "1.4.0",
+    "status_padrao": "published",
+    "gerado_em": "2026-06-25",
+    "observacoes": [
+      "Atributos, perícias, derivados, requisitos de vertente, dano, colapso e descanso foram reunidos em um único pacote de regras-base.",
+      "Perícias usam atributo principal e atributos contextuais na ordem declarada pelo capítulo de Perícias.",
+      "Fórmulas são representadas como AST JSON para evitar eval em código.",
+      "Condições associadas a tipos de dano foram registradas como possíveis, mas não automáticas; o VTT deve aplicar condição apenas quando o efeito/propriedade/magia/item declarar.",
+      "v1.2: auditado contra o PRD consolidado.",
+      "v1.2: Mana foi confirmada pelo PRD como 10 + (Ânimo × 2).",
+      "v1.2: Descanso longo agora reseta Sobrecarga, conforme PRD.",
+      "v1.2: PA base, pontos de vertente, talento inicial e compra inicial foram adicionados à criação de personagem.",
+      "v1.2: Recuperação paga foi marcada como fora do roadmap inicial, sem automação ativa.",
+      "v1.2: Reações, Sobrecarga, Ruptura e faixas de Integridade foram adicionadas como regras-base.",
+      "Contrato de binding de tags: alvo_tags de um efeito casa contra a UNIAO {id_da_pericia_da_rolagem} ∪ {tags_rolagem semanticas da rolagem}. IDs de pericia (luta, mobilidade, reflexos, etc.) sao alvo_tags validos sem precisar estar duplicados em tags_rolagem. A tag \"acao\" marca qualquer rolagem de acao (usada por Atordoado/Inconsciente para bloquear).",
+      "v1.4: atributos_alternativos agora usa sempre {atributo, contexto}; campo condicao não é aceito."
+    ],
+    "auditoria_prd": {
+      "arquivo": "Ruptura VTT — Documento de Requisitos Consolidado 3890a1363552807a8827ead34e804d89.md",
+      "hash_sha256": "86b400b99d34f6d5e215dafe4abf9a5b41a8dcef3169c3d4cfef6c164e0cf687",
+      "resultado": "corrigido_para_alinhamento_com_prd"
+    },
+    "revisao": " | v1.3.1: sociedade atributos_alternativos=[animo] (faltava). | v1.4: sociedade.atributos_alternativos corrigido de condicao para contexto; schema passa a estruturar atributos_alternativos."
+  },
+  "enums": {
+    "atributos": [
+      "corpo",
+      "mente",
+      "animo"
+    ],
+    "pericias": [
+      "arcanismo",
+      "artes",
+      "balistica",
+      "biologia",
+      "carisma",
+      "engenharia",
+      "furtividade",
+      "influencia",
+      "intimidacao",
+      "logica",
+      "luta",
+      "mobilidade",
+      "percepcao",
+      "precisao",
+      "psicologia",
+      "reflexos",
+      "robotica",
+      "sociedade",
+      "tecnomagia",
+      "vigor",
+      "vontade"
+    ],
+    "status": [
+      "draft",
+      "published",
+      "archived"
+    ],
+    "recursos": [
+      "pv",
+      "pe",
+      "mana",
+      "integridade",
+      "pv_temporario",
+      "mana_temporaria",
+      "pa",
+      "sobrecarga"
+    ],
+    "tipos_dano": [
+      "fisico",
+      "energetico",
+      "acido",
+      "toxico",
+      "psiquico",
+      "trauma"
+    ],
+    "vertentes": [
+      "cinetica",
+      "energetica",
+      "material",
+      "somatica",
+      "sinaptica",
+      "cognitiva"
+    ],
+    "operadores_formula": [
+      "+",
+      "-",
+      "*",
+      "/",
+      "floor",
+      "ceil",
+      "min",
+      "max"
+    ],
+    "tags_rolagem": [
+      "acao",
+      "agilidade",
+      "analise",
+      "arcano",
+      "arma_de_fogo",
+      "arma_energetica",
+      "arremesso",
+      "atencao",
+      "audicao",
+      "ciencia",
+      "cinetica",
+      "cognitiva",
+      "combate",
+      "conhecimento",
+      "conjuracao",
+      "construcao",
+      "coordenacao",
+      "corpo",
+      "corpo_a_corpo",
+      "criatividade",
+      "cultura",
+      "deducao",
+      "defensiva",
+      "discricao",
+      "distancia",
+      "drones",
+      "emocao",
+      "emocional",
+      "empatia",
+      "energetica",
+      "expressao",
+      "historia",
+      "magia",
+      "malha",
+      "manipulacao",
+      "material",
+      "medicina",
+      "medo",
+      "mente",
+      "mira",
+      "movimento",
+      "ocultacao",
+      "ofensiva",
+      "performance",
+      "pericia",
+      "persuasao",
+      "politica",
+      "presenca",
+      "pressao",
+      "programacao",
+      "raciocinio",
+      "reacao",
+      "reparo",
+      "resistencia",
+      "resistencia_mental",
+      "robos",
+      "sentido",
+      "sinaptica",
+      "sobrecarga",
+      "social",
+      "somatica",
+      "tecnica",
+      "tecnomagia",
+      "toxicologia",
+      "trama",
+      "velocidade",
+      "vida",
+      "visao"
+    ],
+    "sistemas_personagem": [
+      "reacoes",
+      "sobrecarga",
+      "ruptura",
+      "integridade",
+      "colapso",
+      "descanso",
+      "evolucao"
+    ],
+    "derivados": [
+      "pv_max",
+      "pe_max",
+      "mana_max",
+      "integridade_max",
+      "reacoes_por_rodada",
+      "andar_m",
+      "correr_m",
+      "pa_max"
+    ]
+  },
+  "rolagem": {
+    "id": "rolagem_base",
+    "dado": "d8",
+    "pool": {
+      "quantidade": {
+        "ref": "atributo",
+        "id": "atributo_escolhido"
+      },
+      "seleciona": "maior"
+    },
+    "resultado_label": "maior d8 rolado + perícia + modificadores",
+    "status": "published",
+    "versao": "1.1.0",
+    "adicionar_ao_resultado": [
+      {
+        "ref": "pericia",
+        "id": "pericia_escolhida"
+      },
+      {
+        "ref": "modificadores",
+        "id": "modificadores_ativos"
+      }
+    ]
+  },
+  "criacao_personagem": {
+    "atributos": {
+      "valor_inicial": 1,
+      "pontos_adicionais": 3,
+      "maximo_na_criacao": 3,
+      "maximo_absoluto": 5
+    },
+    "pericias": {
+      "pontos_totais": 25,
+      "maximo_na_criacao": 3,
+      "maximo_absoluto": 5,
+      "total_pericias": 21
+    },
+    "status": "published",
+    "versao": "1.1.0",
+    "pa_base": 3,
+    "vertentes": {
+      "pontos_totais": 3,
+      "total_vertentes": 6,
+      "validar_requisitos_atributo_por_nivel": true
+    },
+    "talento_inicial": {
+      "quantidade": 1,
+      "nivel": 1
+    },
+    "inventario": {
+      "aretz_iniciais": 5000,
+      "raridade_maxima_compra_criacao": "incomum",
+      "raridades_bloqueadas": [
+        "raro",
+        "muito_raro"
+      ],
+      "saldo_restante_vira_aretz_inicial": true
+    },
+    "progressao": {
+      "moeda": "pm",
+      "custos": "placeholder_editavel",
+      "pode_investir_em": [
+        "atributo",
+        "pericia",
+        "vertente",
+        "talento",
+        "pa"
+      ]
+    }
+  },
+  "atributos": [
+    {
+      "id": "corpo",
+      "slug": "corpo",
+      "nome": "Corpo",
+      "abreviacao": "C",
+      "categoria": "atributo",
+      "descricao_curta": "Força, vigor, agilidade e coordenação motora.",
+      "descricao_longa": "Corpo é o canal físico do personagem. Tudo que envolve movimento, esforço ou reflexos passa por ele.",
+      "valor_minimo": 1,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "pericias_primarias": [
+        "balistica",
+        "furtividade",
+        "luta",
+        "vigor",
+        "mobilidade",
+        "precisao",
+        "reflexos"
+      ],
+      "pericias_alternativas": [
+        {
+          "pericia": "intimidacao",
+          "contexto": "quando domínio físico fizer mais sentido do que presença inata"
+        }
+      ],
+      "niveis": [
+        {
+          "valor": 1,
+          "label": "Corpo mole",
+          "descricao": "Movimentos imprecisos, perde o fôlego fácil. Quase tudo exige esforço dobrado."
+        },
+        {
+          "valor": 2,
+          "label": "Frango",
+          "descricao": "Consegue acompanhar o ritmo e se virar em esforço físico moderado quando se empenha."
+        },
+        {
+          "valor": 3,
+          "label": "Atleta amador",
+          "descricao": "Boa coordenação, fôlego estável e controle corporal visível. Confiável em ação."
+        },
+        {
+          "valor": 4,
+          "label": "Medalhista olímpico",
+          "descricao": "Ágil, forte ou resistente o bastante para chamar atenção. Dificilmente perde o controle do próprio corpo."
+        },
+        {
+          "valor": 5,
+          "label": "Super-herói",
+          "descricao": "Reflexo e potência em nível excepcional. O corpo responde com exatidão antes mesmo do pensamento."
+        }
+      ],
+      "tags": [
+        "atributo",
+        "fisico",
+        "movimento",
+        "resistencia",
+        "reflexo"
+      ],
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "id": "mente",
+      "slug": "mente",
+      "nome": "Mente",
+      "abreviacao": "M",
+      "categoria": "atributo",
+      "descricao_curta": "Raciocínio, foco, perspicácia e memória.",
+      "descricao_longa": "Mente é o canal intelectual e cognitivo. Interpreta ambiente, processa informação e sustenta decisões sob pressão.",
+      "valor_minimo": 1,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "pericias_primarias": [
+        "arcanismo",
+        "biologia",
+        "engenharia",
+        "logica",
+        "percepcao",
+        "psicologia",
+        "robotica",
+        "sociedade",
+        "tecnomagia"
+      ],
+      "pericias_alternativas": [
+        {
+          "pericia": "balistica",
+          "contexto": "quando conhecimento sobre armas, trajetória, munição ou mecanismo for mais relevante do que prática física"
+        },
+        {
+          "pericia": "luta",
+          "contexto": "quando conhecimento marcial, análise técnica ou leitura de padrões for mais relevante do que prática física"
+        }
+      ],
+      "niveis": [
+        {
+          "valor": 1,
+          "label": "Cabeça de vento",
+          "descricao": "Se perde fácil nas ideias ou demora para entender o que está acontecendo."
+        },
+        {
+          "valor": 2,
+          "label": "Nota 7",
+          "descricao": "Raciocina bem, mas precisa de tempo para processar demandas complexas."
+        },
+        {
+          "valor": 3,
+          "label": "QI acima da média",
+          "descricao": "Lê o clima, percebe padrões e resolve problemas antes de outros notarem o risco."
+        },
+        {
+          "valor": 4,
+          "label": "Campeão de xadrez",
+          "descricao": "Capta padrões no ar, pensa em várias saídas e enxerga além do óbvio."
+        },
+        {
+          "valor": 5,
+          "label": "Sherlock",
+          "descricao": "Junta informações em segundos, resolve o improvável e ainda antecipa próximos passos."
+        }
+      ],
+      "tags": [
+        "atributo",
+        "cognitivo",
+        "analise",
+        "memoria",
+        "foco"
+      ],
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "id": "animo",
+      "slug": "animo",
+      "nome": "Ânimo",
+      "abreviacao": "A",
+      "categoria": "atributo",
+      "descricao_curta": "Vontade, instinto, carisma e determinação.",
+      "descricao_longa": "Ânimo é o canal emocional e essencial do personagem. Sustenta autocontrole, presença, identidade e relação segura com o arcano.",
+      "valor_minimo": 1,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "pericias_primarias": [
+        "artes",
+        "carisma",
+        "intimidacao",
+        "vontade"
+      ],
+      "pericias_alternativas": [
+        {
+          "pericia": "influencia",
+          "contexto": "quando equilíbrio emocional, presença ou força de personalidade forem mais relevantes do que raciocínio"
+        },
+        {
+          "pericia": "psicologia",
+          "contexto": "quando sensibilidade emocional e presença forem mais relevantes do que análise racional"
+        }
+      ],
+      "niveis": [
+        {
+          "valor": 1,
+          "label": "Chora no banho",
+          "descricao": "Frágil. Difícil manter firmeza quando o emocional aperta. Estoura fácil."
+        },
+        {
+          "valor": 2,
+          "label": "Estável com remédios",
+          "descricao": "Segura bem na maioria das vezes, mas cede quando tudo vem de uma vez."
+        },
+        {
+          "valor": 3,
+          "label": "Aguenta o rojão",
+          "descricao": "Mantém firmeza mesmo sob pressão. Segura as pontas."
+        },
+        {
+          "valor": 4,
+          "label": "Instrutor de meditação",
+          "descricao": "Aguenta pressão emocional, não desmonta fácil e ajuda outros a se manterem inteiros."
+        },
+        {
+          "valor": 5,
+          "label": "Monge",
+          "descricao": "Permanece em pé mesmo com tudo desabando. Sustenta a própria integridade no osso."
+        }
+      ],
+      "tags": [
+        "atributo",
+        "emocional",
+        "presenca",
+        "identidade",
+        "arcano"
+      ],
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    }
+  ],
+  "pericias": [
+    {
+      "id": "arcanismo",
+      "nome": "Arcanismo",
+      "atributos": [
+        "mente"
+      ],
+      "descricao_curta": "Conhecimento teórico e prático sobre o arcano, vertentes e efeitos mágicos.",
+      "descricao_longa": "Arcanismo cobre leitura de estruturas mágicas, análise de resíduos arcanos, identificação de feitiços e interpretação de fenômenos ligados ao uso da magia.",
+      "tags": [
+        "analise",
+        "arcano",
+        "conhecimento",
+        "magia",
+        "pericia"
+      ],
+      "slug": "arcanismo",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "mente",
+      "atributos_alternativos": [],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "artes",
+      "nome": "Artes",
+      "atributos": [
+        "animo",
+        "corpo"
+      ],
+      "descricao_curta": "Capacidade criativa e expressiva em performance, produção estética e manipulação simbólica.",
+      "descricao_longa": "Artes cobre música, dança, pintura, encenação, apresentações públicas, impacto cultural e uso criativo para inspirar, distrair ou manipular audiência.",
+      "tags": [
+        "criatividade",
+        "expressao",
+        "performance",
+        "pericia",
+        "social"
+      ],
+      "slug": "artes",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "animo",
+      "atributos_alternativos": [
+        {
+          "atributo": "corpo",
+          "contexto": "uso contextual conforme ficção e foco da ação"
+        }
+      ],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "balistica",
+      "nome": "Balística",
+      "atributos": [
+        "corpo",
+        "mente"
+      ],
+      "descricao_curta": "Controle e eficiência no uso de armas de disparo, armas de fogo e armas de energia.",
+      "descricao_longa": "Balística cobre ataques à distância com armas de fogo ou energia, postura, controle de recuo, cálculo de trajetória, identificação de calibres, modificações e análise de disparos.",
+      "tags": [
+        "arma_de_fogo",
+        "arma_energetica",
+        "combate",
+        "distancia",
+        "ofensiva",
+        "pericia"
+      ],
+      "slug": "balistica",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "corpo",
+      "atributos_alternativos": [
+        {
+          "atributo": "mente",
+          "contexto": "uso contextual conforme ficção e foco da ação"
+        }
+      ],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "biologia",
+      "nome": "Biologia",
+      "atributos": [
+        "mente"
+      ],
+      "descricao_curta": "Estudo de organismos vivos, fisiologia, toxicologia, genética e medicina.",
+      "descricao_longa": "Biologia cobre tratar ferimentos, diagnosticar doenças, aplicar primeiros socorros, identificar toxinas e conduzir experimentos com tecidos orgânicos.",
+      "tags": [
+        "ciencia",
+        "medicina",
+        "pericia",
+        "somatica",
+        "toxicologia",
+        "vida"
+      ],
+      "slug": "biologia",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "mente",
+      "atributos_alternativos": [],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "carisma",
+      "nome": "Carisma",
+      "atributos": [
+        "animo"
+      ],
+      "descricao_curta": "Presença magnética, empatia espontânea e impacto imediato sobre outras pessoas.",
+      "descricao_longa": "Carisma aparece em primeiras impressões, simpatia, confiança, motivação de aliados e desarme de hostilidade pela presença pessoal.",
+      "tags": [
+        "empatia",
+        "pericia",
+        "presenca",
+        "social"
+      ],
+      "slug": "carisma",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "animo",
+      "atributos_alternativos": [],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "engenharia",
+      "nome": "Engenharia",
+      "atributos": [
+        "mente"
+      ],
+      "descricao_curta": "Conhecimento aplicado em construção, manutenção, adaptação e sabotagem de estruturas físicas.",
+      "descricao_longa": "Engenharia cobre projetar construções, reforçar defesas, criar armadilhas, sabotar infraestrutura, reparar equipamentos e sustentar efeitos da vertente Material.",
+      "tags": [
+        "construcao",
+        "material",
+        "pericia",
+        "reparo",
+        "tecnica"
+      ],
+      "slug": "engenharia",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "mente",
+      "atributos_alternativos": [],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "furtividade",
+      "nome": "Furtividade",
+      "atributos": [
+        "corpo"
+      ],
+      "descricao_curta": "Habilidade de evitar atenção, se esconder, apagar sinais e se mover sem ser percebido.",
+      "descricao_longa": "Furtividade cobre se esgueirar em áreas vigiadas, escapar sem chamar atenção, esconder-se em combate, disfarçar sons e apagar rastros.",
+      "tags": [
+        "discricao",
+        "movimento",
+        "ocultacao",
+        "pericia"
+      ],
+      "slug": "furtividade",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "corpo",
+      "atributos_alternativos": [],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "influencia",
+      "nome": "Influência",
+      "atributos": [
+        "mente",
+        "animo"
+      ],
+      "descricao_curta": "Habilidade de moldar opiniões e controlar interações sociais por discurso, persuasão ou manipulação.",
+      "descricao_longa": "Influência cobre negociações, discursos, interrogatórios, convencimento direto, manipulação de grupos e algumas magias Cognitivas ligadas a discurso e percepção social.",
+      "tags": [
+        "cognitiva",
+        "manipulacao",
+        "pericia",
+        "persuasao",
+        "social"
+      ],
+      "slug": "influencia",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "mente",
+      "atributos_alternativos": [
+        {
+          "atributo": "animo",
+          "contexto": "uso contextual conforme ficção e foco da ação"
+        }
+      ],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "intimidacao",
+      "nome": "Intimidação",
+      "atributos": [
+        "animo",
+        "corpo"
+      ],
+      "descricao_curta": "Capacidade de impor medo, pressão ou desconforto por presença emocional ou força física.",
+      "descricao_longa": "Intimidação aparece em interrogatórios, confrontos sociais e negociações onde ameaça, violência ou demonstração de poder mudam o resultado.",
+      "tags": [
+        "medo",
+        "pericia",
+        "pressao",
+        "social"
+      ],
+      "slug": "intimidacao",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "animo",
+      "atributos_alternativos": [
+        {
+          "atributo": "corpo",
+          "contexto": "uso contextual conforme ficção e foco da ação"
+        }
+      ],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "logica",
+      "nome": "Lógica",
+      "atributos": [
+        "mente"
+      ],
+      "descricao_curta": "Raciocínio estruturado, dedução e resolução de problemas objetivos.",
+      "descricao_longa": "Lógica cobre enigmas, sequências, códigos, resistência a magias cognitivas, identificação de ilusões e manutenção de clareza diante de distorções psíquicas.",
+      "tags": [
+        "cognitiva",
+        "deducao",
+        "pericia",
+        "raciocinio",
+        "resistencia_mental"
+      ],
+      "slug": "logica",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "mente",
+      "atributos_alternativos": [],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "luta",
+      "nome": "Luta",
+      "atributos": [
+        "corpo",
+        "mente"
+      ],
+      "descricao_curta": "Combate corpo a corpo com armas brancas, técnicas desarmadas, agarrões e imobilizações.",
+      "descricao_longa": "Luta cobre ataques de curto alcance, agarrões, imobilizações, leitura de adversário, conhecimento de escolas marciais, táticas de duelo e história de armas.",
+      "tags": [
+        "combate",
+        "corpo_a_corpo",
+        "defensiva",
+        "ofensiva",
+        "pericia"
+      ],
+      "slug": "luta",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "corpo",
+      "atributos_alternativos": [
+        {
+          "atributo": "mente",
+          "contexto": "uso contextual conforme ficção e foco da ação"
+        }
+      ],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "mobilidade",
+      "nome": "Mobilidade",
+      "atributos": [
+        "corpo"
+      ],
+      "descricao_curta": "Agilidade do corpo em movimento, equilíbrio, velocidade e adaptação a terrenos.",
+      "descricao_longa": "Mobilidade cobre correr por superfícies instáveis, atravessar passagens estreitas, escalar, nadar, saltar, mover-se em combate acrobático e resistir a movimento forçado.",
+      "tags": [
+        "agilidade",
+        "cinetica",
+        "defensiva",
+        "movimento",
+        "pericia"
+      ],
+      "slug": "mobilidade",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "corpo",
+      "atributos_alternativos": [],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "percepcao",
+      "nome": "Percepção",
+      "atributos": [
+        "mente"
+      ],
+      "descricao_curta": "Atenção e capacidade de notar detalhes no ambiente por qualquer sentido básico.",
+      "descricao_longa": "Percepção cobre perceber inimigos escondidos, mudanças sutis de cenário, sons abafados, armadilhas e estímulos inesperados.",
+      "tags": [
+        "atencao",
+        "audicao",
+        "pericia",
+        "sentido",
+        "visao"
+      ],
+      "slug": "percepcao",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "mente",
+      "atributos_alternativos": [],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "precisao",
+      "nome": "Precisão",
+      "atributos": [
+        "corpo"
+      ],
+      "descricao_curta": "Controle de mira e execução de movimentos calculados com exatidão.",
+      "descricao_longa": "Precisão cobre arremessos delicados, manipulação de mecanismos sensíveis e direção de vetores ou fluxos de energia em magias Cinéticas e Energéticas.",
+      "tags": [
+        "arremesso",
+        "cinetica",
+        "coordenacao",
+        "energetica",
+        "mira",
+        "ofensiva",
+        "pericia"
+      ],
+      "slug": "precisao",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "corpo",
+      "atributos_alternativos": [],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "psicologia",
+      "nome": "Psicologia",
+      "atributos": [
+        "mente",
+        "animo"
+      ],
+      "descricao_curta": "Compreensão da mente humana, emoções, motivações e padrões comportamentais.",
+      "descricao_longa": "Psicologia cobre análise emocional, identificação de motivações ocultas, recuperação de calma e base para magias cognitivas de ilusão, emoção e distorção sensorial.",
+      "tags": [
+        "cognitiva",
+        "emocao",
+        "mente",
+        "pericia",
+        "social"
+      ],
+      "slug": "psicologia",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "mente",
+      "atributos_alternativos": [
+        {
+          "atributo": "animo",
+          "contexto": "uso contextual conforme ficção e foco da ação"
+        }
+      ],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "reflexos",
+      "nome": "Reflexos",
+      "atributos": [
+        "corpo"
+      ],
+      "descricao_curta": "Rapidez de reação física e coordenação diante de estímulos inesperados.",
+      "descricao_longa": "Reflexos cobre agir antes do inimigo, agarrar objetos em queda, responder a armadilhas, Desviar e Bloquear.",
+      "tags": [
+        "defensiva",
+        "pericia",
+        "reacao",
+        "velocidade"
+      ],
+      "slug": "reflexos",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "corpo",
+      "atributos_alternativos": [],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "robotica",
+      "nome": "Robótica",
+      "atributos": [
+        "mente"
+      ],
+      "descricao_curta": "Construção, manutenção, programação e controle de unidades autônomas ou semiautônomas.",
+      "descricao_longa": "Robótica cobre drones, robôs, máquinas de guerra, comando direto, reconfiguração e subversão de autômatos.",
+      "tags": [
+        "drones",
+        "pericia",
+        "programacao",
+        "robos",
+        "tecnica"
+      ],
+      "slug": "robotica",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "mente",
+      "atributos_alternativos": [],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "sociedade",
+      "nome": "Sociedade",
+      "atributos": [
+        "mente",
+        "animo"
+      ],
+      "descricao_curta": "Conhecimento de estruturas sociais, história, política, cultura, protocolos e hierarquias.",
+      "descricao_longa": "Sociedade cobre costumes locais, uniformes, insígnias, gangues, instituições, influência social e navegação em ambientes formais ou caóticos.",
+      "tags": [
+        "cultura",
+        "historia",
+        "pericia",
+        "politica",
+        "social"
+      ],
+      "slug": "sociedade",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "mente",
+      "atributos_alternativos": [
+        {
+          "atributo": "animo",
+          "contexto": "quando domínio cultural ou vínculos emocionais fizerem mais sentido"
+        }
+      ],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.4.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "tecnomagia",
+      "nome": "Tecnomagia",
+      "atributos": [
+        "mente"
+      ],
+      "descricao_curta": "Leitura, operação e manipulação de dispositivos que integram runas e circuitos.",
+      "descricao_longa": "Tecnomagia cobre equipamentos tecnomágicos, invasões em sistemas protegidos, reparos em dispositivos, Tecer a Malha e efeitos da vertente Sináptica.",
+      "tags": [
+        "malha",
+        "pericia",
+        "sinaptica",
+        "tecnica",
+        "tecnomagia",
+        "trama"
+      ],
+      "slug": "tecnomagia",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "mente",
+      "atributos_alternativos": [],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "vigor",
+      "nome": "Vigor",
+      "atributos": [
+        "corpo"
+      ],
+      "descricao_curta": "Resistência física contra dor, fadiga, doenças, impactos e ambientes hostis.",
+      "descricao_longa": "Vigor cobre esforço prolongado, suportar ferimentos, atravessar ambientes tóxicos e a ação defensiva Resistir.",
+      "tags": [
+        "corpo",
+        "defensiva",
+        "pericia",
+        "resistencia"
+      ],
+      "slug": "vigor",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "corpo",
+      "atributos_alternativos": [],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "vontade",
+      "nome": "Vontade",
+      "atributos": [
+        "animo"
+      ],
+      "descricao_curta": "Força interior e resiliência mental/emocional contra medo, dor psíquica e manipulação arcana.",
+      "descricao_longa": "Vontade cobre resistir a controle mental, pressão emocional, colapso psicológico, Sobrecarga e magias Cognitivas.",
+      "tags": [
+        "cognitiva",
+        "emocional",
+        "pericia",
+        "resistencia_mental",
+        "sobrecarga"
+      ],
+      "slug": "vontade",
+      "categoria": "pericia",
+      "categoria_label": "Perícia",
+      "atributo_primario": "animo",
+      "atributos_alternativos": [],
+      "valor_minimo": 0,
+      "valor_maximo": 5,
+      "maximo_criacao": 3,
+      "aparece_na_criacao": true,
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-25"
+    }
+  ],
+  "derivados": [
+    {
+      "id": "pv_max",
+      "nome": "Pontos de Vida",
+      "abreviacao": "PV",
+      "categoria": "recurso",
+      "formula": {
+        "op": "+",
+        "args": [
+          {
+            "const": 10
+          },
+          {
+            "ref": "atributo",
+            "id": "corpo"
+          }
+        ]
+      },
+      "formula_label": "10 + Corpo",
+      "reduzido_por": [
+        "fisico",
+        "energetico",
+        "acido",
+        "toxico"
+      ],
+      "colapso_ao_zerar": "fisico",
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "id": "pe_max",
+      "nome": "Pontos de Estresse",
+      "abreviacao": "PE",
+      "categoria": "recurso",
+      "formula": {
+        "op": "+",
+        "args": [
+          {
+            "const": 10
+          },
+          {
+            "ref": "atributo",
+            "id": "mente"
+          }
+        ]
+      },
+      "formula_label": "10 + Mente",
+      "reduzido_por": [
+        "psiquico",
+        "trauma"
+      ],
+      "colapso_ao_zerar": "mental",
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "id": "mana_max",
+      "nome": "Mana",
+      "abreviacao": "Mana",
+      "categoria": "recurso",
+      "formula": {
+        "op": "+",
+        "args": [
+          {
+            "const": 10
+          },
+          {
+            "op": "*",
+            "args": [
+              {
+                "ref": "atributo",
+                "id": "animo"
+              },
+              {
+                "const": 2
+              }
+            ]
+          }
+        ]
+      },
+      "formula_label": "10 + (Ânimo × 2)",
+      "status_revisao": "confirmado_prd",
+      "conflitos_detectados": [
+        {
+          "fonte": "atributos",
+          "formula": "10 + (Ânimo × 2)",
+          "status": "confirmado_pelo_prd"
+        },
+        {
+          "fonte": "vida_estresse_mana",
+          "formula": "10 + Ânimo",
+          "status": "diverge_do_prd"
+        }
+      ],
+      "decisao_vtt": "Usar 10 + (Ânimo × 2), conforme PRD consolidado.",
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24",
+      "fonte_confirmacao": "PRD 10.1 Recursos"
+    },
+    {
+      "id": "integridade_max",
+      "nome": "Integridade",
+      "abreviacao": "Integridade",
+      "categoria": "recurso",
+      "formula": {
+        "op": "+",
+        "args": [
+          {
+            "const": 10
+          },
+          {
+            "op": "*",
+            "args": [
+              {
+                "ref": "atributo",
+                "id": "animo"
+              },
+              {
+                "const": 2
+              }
+            ]
+          }
+        ]
+      },
+      "formula_label": "10 + (Ânimo × 2)",
+      "reduzido_por": [
+        "ruptura",
+        "custo_integridade_escalpo"
+      ],
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "id": "reacoes_por_rodada",
+      "nome": "Reações por rodada",
+      "abreviacao": "Reações",
+      "categoria": "derivado",
+      "formula": {
+        "ref": "atributo",
+        "id": "mente"
+      },
+      "formula_label": "Mente",
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "id": "andar_m",
+      "nome": "Andar",
+      "abreviacao": "Andar",
+      "categoria": "deslocamento",
+      "unidade": "m",
+      "formula": {
+        "op": "+",
+        "args": [
+          {
+            "const": 10
+          },
+          {
+            "ref": "atributo",
+            "id": "corpo"
+          }
+        ]
+      },
+      "formula_label": "10 + Corpo metros",
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "id": "correr_m",
+      "nome": "Correr",
+      "abreviacao": "Correr",
+      "categoria": "deslocamento",
+      "unidade": "m",
+      "formula": {
+        "op": "*",
+        "args": [
+          {
+            "ref": "derivado",
+            "id": "andar_m"
+          },
+          {
+            "const": 2
+          }
+        ]
+      },
+      "formula_label": "Andar × 2",
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "id": "pa_max",
+      "nome": "Pontos de Ação",
+      "abreviacao": "PA",
+      "categoria": "acao",
+      "formula": {
+        "const": 3
+      },
+      "formula_label": "3",
+      "observacao": "PA base definido em 3 na criação; evolução por PM usa custo placeholder editável até fechamento de playtest.",
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    }
+  ],
+  "requisitos_vertentes": [
+    {
+      "vertente": "cinetica",
+      "nome": "Cinética",
+      "requisitos_por_nivel": {
+        "1": {
+          "corpo": 2
+        },
+        "2": {
+          "corpo": 3
+        },
+        "3": {
+          "corpo": 3
+        },
+        "4": {
+          "corpo": 4
+        },
+        "5": {
+          "corpo": 5
+        }
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "vertente": "energetica",
+      "nome": "Energética",
+      "requisitos_por_nivel": {
+        "1": {
+          "corpo": 2
+        },
+        "2": {
+          "corpo": 3
+        },
+        "3": {
+          "corpo": 3
+        },
+        "4": {
+          "corpo": 4
+        },
+        "5": {
+          "corpo": 5
+        }
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "vertente": "material",
+      "nome": "Material",
+      "requisitos_por_nivel": {
+        "1": {
+          "corpo": 1,
+          "mente": 2
+        },
+        "2": {
+          "corpo": 2,
+          "mente": 2
+        },
+        "3": {
+          "corpo": 2,
+          "mente": 3
+        },
+        "4": {
+          "corpo": 3,
+          "mente": 3
+        },
+        "5": {
+          "corpo": 3,
+          "mente": 4
+        }
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "vertente": "somatica",
+      "nome": "Somática",
+      "requisitos_por_nivel": {
+        "1": {
+          "corpo": 2,
+          "mente": 1
+        },
+        "2": {
+          "corpo": 2,
+          "mente": 2
+        },
+        "3": {
+          "corpo": 3,
+          "mente": 2
+        },
+        "4": {
+          "corpo": 3,
+          "mente": 3
+        },
+        "5": {
+          "corpo": 4,
+          "mente": 3
+        }
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "vertente": "sinaptica",
+      "nome": "Sináptica",
+      "requisitos_por_nivel": {
+        "1": {
+          "mente": 2
+        },
+        "2": {
+          "mente": 3
+        },
+        "3": {
+          "mente": 3
+        },
+        "4": {
+          "mente": 4
+        },
+        "5": {
+          "mente": 5
+        }
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "vertente": "cognitiva",
+      "nome": "Cognitiva",
+      "requisitos_por_nivel": {
+        "1": {
+          "mente": 2
+        },
+        "2": {
+          "mente": 3
+        },
+        "3": {
+          "mente": 3
+        },
+        "4": {
+          "mente": 4
+        },
+        "5": {
+          "mente": 5
+        }
+      },
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    }
+  ],
+  "recursos_temporarios": [
+    {
+      "id": "pv_temporario",
+      "recurso_base": "pv",
+      "consumo": "antes_do_recurso_normal",
+      "empilhamento": "fontes_diferentes_somam; mesma_fonte_mantem_maior_valor",
+      "remove_em": [
+        "descanso_longo"
+      ],
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "id": "mana_temporaria",
+      "recurso_base": "mana",
+      "consumo": "antes_do_recurso_normal",
+      "empilhamento": "fontes_diferentes_somam; mesma_fonte_mantem_maior_valor",
+      "remove_em": [
+        "descanso_longo"
+      ],
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    }
+  ],
+  "tipos_dano": [
+    {
+      "id": "fisico",
+      "nome": "Dano físico",
+      "afeta_recurso": "pv",
+      "subtipos": [
+        "cortante",
+        "contundente",
+        "perfurante"
+      ],
+      "condicoes_associadas_possiveis": [
+        {
+          "subtipo": "cortante",
+          "condicao": "sangrando"
+        },
+        {
+          "subtipo": "contundente",
+          "condicao": "contundido"
+        },
+        {
+          "subtipo": "perfurante",
+          "condicao": "sangrando"
+        }
+      ],
+      "aplicacao_condicoes": "nao_automatica_por_tipo; aplicar apenas quando propriedade, magia, item ou efeito declarar",
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "id": "energetico",
+      "nome": "Dano energético",
+      "afeta_recurso": "pv",
+      "subtipos": [
+        "igneo",
+        "gelido",
+        "eletrico"
+      ],
+      "condicoes_associadas_possiveis": [
+        {
+          "subtipo": "igneo",
+          "condicao": "queimando"
+        },
+        {
+          "subtipo": "gelido",
+          "condicao": "lento"
+        },
+        {
+          "subtipo": "eletrico",
+          "condicao": "atordoado"
+        }
+      ],
+      "aplicacao_condicoes": "nao_automatica_por_tipo; aplicar apenas quando propriedade, magia, item ou efeito declarar",
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "id": "acido",
+      "nome": "Dano ácido",
+      "afeta_recurso": "pv",
+      "subtipos": [
+        "acido"
+      ],
+      "interacao_equipamento": [
+        {
+          "alvo": "mit",
+          "efeito": "reduz_2_ao_sofrer_dano"
+        },
+        {
+          "alvo": "pd",
+          "efeito": "vulnerabilidade_contextual"
+        }
+      ],
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "id": "toxico",
+      "nome": "Dano tóxico",
+      "afeta_recurso": "pv",
+      "subtipos": [
+        "toxico"
+      ],
+      "condicoes_associadas_possiveis": [
+        {
+          "subtipo": "toxico",
+          "condicao": "envenenado"
+        }
+      ],
+      "aplicacao_condicoes": "nao_automatica_por_tipo; aplicar apenas quando propriedade, magia, item ou efeito declarar",
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "id": "psiquico",
+      "nome": "Dano psíquico",
+      "afeta_recurso": "pe",
+      "subtipos": [
+        "psiquico"
+      ],
+      "fontes_comuns": [
+        "sobrecarga",
+        "magia_cognitiva",
+        "magia_sinaptica",
+        "trama_digital"
+      ],
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "id": "trauma",
+      "nome": "Trauma",
+      "afeta_recurso": "pe",
+      "subtipos": [
+        "trauma"
+      ],
+      "resolucao": "narrador_define_perda_de_pe_pelo_peso_do_evento",
+      "pode_converter_em": [
+        "perda_integridade"
+      ],
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    }
+  ],
+  "resistencia_vulnerabilidade": {
+    "resistencia": {
+      "formula": "floor(dano / 2)",
+      "descricao": "O alvo reduz todo dano recebido daquele tipo à metade, arredondando para baixo."
+    },
+    "vulnerabilidade": {
+      "formula": "dano * 2",
+      "descricao": "O alvo sofre o dobro do dano recebido daquele tipo."
+    },
+    "fontes_possiveis": [
+      "armaduras",
+      "escudos",
+      "runas",
+      "magias_material"
+    ],
+    "status": "published",
+    "versao": "1.1.0",
+    "created_at": "2026-06-24",
+    "updated_at": "2026-06-24"
+  },
+  "colapso": {
+    "id": "colapso",
+    "segmentos": 3,
+    "gatilhos": [
+      {
+        "recurso": "pv",
+        "tipo": "fisico",
+        "condicao": "inconsciente",
+        "teste_fim_rodada": {
+          "atributo": "corpo",
+          "falha_se_menor_que": 7
+        }
+      },
+      {
+        "recurso": "pe",
+        "tipo": "mental",
+        "condicao": "inconsciente",
+        "teste_fim_rodada": {
+          "atributo": "mente",
+          "falha_se_menor_que": 7
+        }
+      }
+    ],
+    "avanco": [
+      {
+        "evento": "resultado_abaixo_de_7_no_fim_da_rodada",
+        "segmentos": 1
+      },
+      {
+        "evento": "dano_adicional_da_mesma_dimensao",
+        "segmentos": 1
+      }
+    ],
+    "terceiro_segmento": {
+      "teste_imediato": true,
+      "resultado_8": "mantem_por_mais_uma_rodada",
+      "falha": {
+        "fisico": "morte",
+        "mental": "coma_profundo_fora_de_jogo"
+      }
+    },
+    "intervencao": [
+      {
+        "tipo": "cura_1_ou_mais",
+        "recursos": [
+          "pv",
+          "pe"
+        ],
+        "efeito": "remove_marcador_e_recobra_consciencia",
+        "pa_ao_erguer": 1
+      },
+      {
+        "tipo": "kit_estabilizacao",
+        "efeito": "interrompe_avanco_mas_mantem_inconsciente"
+      }
+    ],
+    "pos_colapso": {
+      "cicatriz": "definida_por_jogador_e_narrador"
+    },
+    "status": "published",
+    "versao": "1.1.0",
+    "created_at": "2026-06-24",
+    "updated_at": "2026-06-24"
+  },
+  "descansos": [
+    {
+      "id": "descanso_curto",
+      "nome": "Descanso curto",
+      "duracao_min": 30,
+      "requisitos": [
+        "fora_de_perigo_imediato",
+        "sem_atividade_extenuante"
+      ],
+      "efeitos": [
+        {
+          "tipo": "recuperar_recurso",
+          "recurso": "mana",
+          "formula": {
+            "op": "floor",
+            "args": [
+              {
+                "op": "/",
+                "args": [
+                  {
+                    "ref": "recurso",
+                    "id": "mana_max"
+                  },
+                  {
+                    "const": 2
+                  }
+                ]
+              }
+            ]
+          },
+          "formula_label": "metade da Mana máxima"
+        },
+        {
+          "tipo": "recuperar_recursos_por_cadencia",
+          "cadencia": "descanso_curto"
+        }
+      ],
+      "status": "published",
+      "versao": "1.1.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    },
+    {
+      "id": "descanso_longo",
+      "nome": "Descanso longo",
+      "duracao_horas": 8,
+      "sono_ou_repouso_completo_min_horas": 6,
+      "requisitos": [
+        "ambiente_seguro",
+        "fora_de_perigo_imediato"
+      ],
+      "efeitos": [
+        {
+          "tipo": "recuperar_recurso",
+          "recurso": "pv",
+          "formula": {
+            "op": "+",
+            "args": [
+              {
+                "ref": "atributo",
+                "id": "corpo"
+              },
+              {
+                "const": 2
+              }
+            ]
+          },
+          "formula_label": "Corpo + 2"
+        },
+        {
+          "tipo": "recuperar_recurso",
+          "recurso": "pe",
+          "formula": {
+            "op": "+",
+            "args": [
+              {
+                "ref": "atributo",
+                "id": "mente"
+              },
+              {
+                "const": 2
+              }
+            ]
+          },
+          "formula_label": "Mente + 2"
+        },
+        {
+          "tipo": "repor_recurso_ao_maximo",
+          "recurso": "mana"
+        },
+        {
+          "tipo": "zerar_recurso_temporario",
+          "recurso": "pv_temporario"
+        },
+        {
+          "tipo": "zerar_recurso_temporario",
+          "recurso": "mana_temporaria"
+        },
+        {
+          "tipo": "recuperar_recursos_por_cadencia",
+          "cadencia": "descanso_longo"
+        },
+        {
+          "tipo": "resetar_sobrecarga"
+        }
+      ],
+      "interrupcao": {
+        "se_minimo_30_min_concluido": "concede_descanso_curto"
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24"
+    }
+  ],
+  "atendimentos": [
+    {
+      "id": "clinica_oficial",
+      "nome": "Clínicas oficiais",
+      "requisitos_contextuais": [
+        "RPI ativo",
+        "cadastro imperial regular"
+      ],
+      "observacoes": [
+        "RPI falsificada pode funcionar com nível mínimo 2; magistas podem gerar perguntas indesejadas."
+      ],
+      "usa_para": [
+        "pv",
+        "pe"
+      ],
+      "faixas": [
+        {
+          "recuperacao": "ate_8",
+          "tempo": "imediato",
+          "risco_percentual": 0,
+          "preco_aretz": 300
+        },
+        {
+          "recuperacao": "9_13",
+          "tempo": "1d4 horas",
+          "risco_percentual": 1,
+          "preco_aretz": 500
+        },
+        {
+          "recuperacao": "13_mais",
+          "tempo": "1d4 dias",
+          "risco_percentual": 2,
+          "preco_aretz": 900
+        }
+      ],
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24",
+      "produto_status": "fora_do_roadmap_inicial",
+      "automacao_habilitada_no_vtt_inicial": false,
+      "observacao_prd": "Recuperação paga por clínica, magista ou serviço similar não entra por enquanto."
+    },
+    {
+      "id": "clinica_clandestina",
+      "nome": "Clínicas clandestinas",
+      "requisitos_contextuais": [
+        "sem_RPI",
+        "sem_historico",
+        "sem_perguntas"
+      ],
+      "observacoes": [
+        "Qualidade variável; comum no Submundo e periferias."
+      ],
+      "usa_para": [
+        "pv",
+        "pe"
+      ],
+      "faixas": [
+        {
+          "recuperacao": "ate_8",
+          "tempo": "imediato",
+          "risco_percentual": 5,
+          "preco_aretz": 100
+        },
+        {
+          "recuperacao": "9_13",
+          "tempo": "1d4 horas",
+          "risco_percentual": 10,
+          "preco_aretz": 150
+        },
+        {
+          "recuperacao": "13_mais",
+          "tempo": "1d4 dias",
+          "risco_percentual": 15,
+          "preco_aretz": 200
+        }
+      ],
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24",
+      "produto_status": "fora_do_roadmap_inicial",
+      "automacao_habilitada_no_vtt_inicial": false,
+      "observacao_prd": "Recuperação paga por clínica, magista ou serviço similar não entra por enquanto."
+    },
+    {
+      "id": "magista_particular",
+      "nome": "Magista particular",
+      "requisitos_contextuais": [
+        "contrato_informal",
+        "subfrequencia_ou_mercado_noturno"
+      ],
+      "observacoes": [
+        "Atendimento rápido, não registrado e sujeito a golpe ou emboscada."
+      ],
+      "usa_para": [
+        "pv",
+        "pe"
+      ],
+      "faixas": [
+        {
+          "recuperacao": "ate_5",
+          "tempo": "imediato",
+          "risco_percentual": 0,
+          "preco_aretz": 250
+        },
+        {
+          "recuperacao": "6_10",
+          "tempo": "imediato",
+          "risco_percentual": 0,
+          "preco_aretz": 450
+        },
+        {
+          "recuperacao": "11_mais",
+          "tempo": "imediato",
+          "risco_percentual": 0,
+          "preco_aretz": 700
+        }
+      ],
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-24",
+      "updated_at": "2026-06-24",
+      "produto_status": "fora_do_roadmap_inicial",
+      "automacao_habilitada_no_vtt_inicial": false,
+      "observacao_prd": "Recuperação paga por clínica, magista ou serviço similar não entra por enquanto."
+    }
+  ],
+  "evolucao": {
+    "id": "evolucao_personagem",
+    "atributos": {
+      "modo_edicao": "modo_evolucao",
+      "ao_aumentar_atributo": [
+        {
+          "tipo": "recalcular_derivados_maximos",
+          "derivados_afetados": [
+            "pv_max",
+            "pe_max",
+            "mana_max",
+            "integridade_max",
+            "reacoes_por_rodada",
+            "andar_m",
+            "correr_m"
+          ]
+        },
+        {
+          "tipo": "aumentar_atual_na_mesma_diferenca_quando_aplicavel",
+          "recursos": [
+            "pv",
+            "pe",
+            "mana",
+            "integridade"
+          ]
+        }
+      ]
+    },
+    "pericias": {
+      "modo_edicao": "modo_evolucao",
+      "valor_maximo": 5
+    },
+    "historico": {
+      "registrar_pm_recebidos": true,
+      "registrar_pm_gastos": true,
+      "registrar_sessao_data_e_alteracao": true,
+      "permitir_auditoria_e_desfazer": true
+    },
+    "status": "published",
+    "versao": "1.2.0",
+    "created_at": "2026-06-24",
+    "updated_at": "2026-06-24"
+  },
+  "reacoes": {
+    "id": "reacoes",
+    "maximo_por_rodada": {
+      "ref": "atributo",
+      "id": "mente"
+    },
+    "reseta_em": "encerrar_rodada",
+    "defesas_consumem_reacao": true,
+    "ao_esgotar": {
+      "novas_defesas": {
+        "modificador_cumulativo": -1,
+        "escopo": "rodada"
+      }
+    },
+    "modos_configuracao": [
+      "perguntar",
+      "automatica",
+      "manual_desligada"
+    ],
+    "status": "published",
+    "versao": "1.2.0",
+    "created_at": "2026-06-24",
+    "updated_at": "2026-06-24"
+  },
+  "sobrecarga": {
+    "id": "sobrecarga",
+    "cargas_maximas_por_dia": 3,
+    "recupera_em": "descanso_longo",
+    "surto": {
+      "dano_imediato": {
+        "dado": "1d4",
+        "tipo_dano": "psiquico"
+      },
+      "aplicar_dano_na_hora": true
+    },
+    "terceiro_surto": {
+      "momento_teste": "fim_da_acao",
+      "teste": {
+        "pericia": "vontade",
+        "cd": 7
+      },
+      "falha": {
+        "aplicar_condicao": "atordoado",
+        "duracao": "1 rodada"
+      }
+    },
+    "ruptura": {
+      "resolucao": "separada_no_fim_da_cena",
+      "marcar_ruptura_pendente_ao_chegar_a_3_sobrecargas": true
+    },
+    "interface": {
+      "mostrar_cargas": 3,
+      "seletor_tipo_surto": true,
+      "prompt_vontade_cd7_no_terceiro": true,
+      "indicador_ruptura_pendente": true
+    },
+    "status": "published",
+    "versao": "1.2.0",
+    "created_at": "2026-06-24",
+    "updated_at": "2026-06-24"
+  },
+  "ruptura": {
+    "id": "ruptura",
+    "gatilho": "fim_de_cena_com_3_sobrecargas",
+    "efeitos": [
+      {
+        "tipo": "reduzir_integridade",
+        "valor": {
+          "ref": "ruptura",
+          "campo": "numero_da_ruptura"
+        }
+      },
+      {
+        "tipo": "aumentar_mana_maxima",
+        "formula": {
+          "op": "+",
+          "args": [
+            {
+              "ref": "atributo",
+              "id": "animo"
+            },
+            {
+              "const": 2
+            }
+          ]
+        },
+        "formula_label": "Ânimo + 2"
+      },
+      {
+        "tipo": "oferecer_escolha_marca"
+      },
+      {
+        "tipo": "oferecer_escolha_traco"
+      }
+    ],
+    "pendencias": {
+      "marca_e_traco_podem_ficar_pendentes": true,
+      "registrar_pendente_na_ficha": true,
+      "permitir_resolver_depois": true
+    },
+    "status": "published",
+    "versao": "1.2.0",
+    "created_at": "2026-06-24",
+    "updated_at": "2026-06-24"
+  },
+  "integridade": {
+    "id": "integridade",
+    "formula_maxima": {
+      "op": "+",
+      "args": [
+        {
+          "const": 10
+        },
+        {
+          "op": "*",
+          "args": [
+            {
+              "ref": "atributo",
+              "id": "animo"
+            },
+            {
+              "const": 2
+            }
+          ]
+        }
+      ]
+    },
+    "formula_label": "10 + (Ânimo × 2)",
+    "perdas": [
+      "ruptura",
+      "custo_integridade_escalpo"
+    ],
+    "faixas": [
+      {
+        "min": 7,
+        "max": null,
+        "estado": "integro",
+        "distorcoes": 0
+      },
+      {
+        "min": 5,
+        "max": 6,
+        "estado": "1_distorcao",
+        "distorcoes": 1
+      },
+      {
+        "min": 3,
+        "max": 4,
+        "estado": "2_distorcoes",
+        "distorcoes": 2
+      },
+      {
+        "min": 2,
+        "max": 2,
+        "estado": "3_distorcoes",
+        "distorcoes": 3
+      },
+      {
+        "min": 1,
+        "max": 1,
+        "estado": "eu_em_dissolucao",
+        "distorcoes": 3
+      },
+      {
+        "min": 0,
+        "max": 0,
+        "estado": "fim_da_ficha",
+        "distorcoes": null
+      }
+    ],
+    "ao_chegar_a_zero": {
+      "magista": "vestigio",
+      "nao_magista": "casca_npc_futuro",
+      "se_perda_final_veio_de_ruptura": "libera_ultima_vontade"
+    },
+    "status": "published",
+    "versao": "1.2.0",
+    "created_at": "2026-06-24",
+    "updated_at": "2026-06-24"
+  }
+}

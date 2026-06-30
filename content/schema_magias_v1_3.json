@@ -1,0 +1,846 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ruptura.vtt.content.magias.v1.3.schema.json",
+  "title": "Ruptura VTT - Magias v1.3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "_schema",
+    "_meta",
+    "enums",
+    "especializacoes",
+    "magias"
+  ],
+  "properties": {
+    "_schema": {
+      "const": "ruptura.vtt.content.magias.v1.3"
+    },
+    "_meta": {
+      "type": "object",
+      "required": [
+        "conteudo",
+        "versao_schema",
+        "total_registros",
+        "hash_sha256_origem",
+        "cd_magia_formula"
+      ],
+      "properties": {
+        "conteudo": {
+          "const": "magias"
+        },
+        "versao_schema": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "total_registros": {
+          "type": "integer"
+        },
+        "hash_sha256_origem": {
+          "type": "string"
+        },
+        "cd_magia_formula": {
+          "type": "string"
+        }
+      }
+    },
+    "enums": {
+      "type": "object",
+      "required": [
+        "tipo_magia",
+        "resolucao",
+        "vertentes",
+        "tipo_efeito"
+      ]
+    },
+    "contagem_por_vertente": {
+      "type": "object"
+    },
+    "contagem_por_resolucao": {
+      "type": "object"
+    },
+    "contagem_por_tipo": {
+      "type": "object"
+    },
+    "especializacoes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "vertente",
+          "nome",
+          "slug",
+          "descricao",
+          "criterio_aplicacao",
+          "fonte"
+        ],
+        "properties": {
+          "vertente": {
+            "type": "string",
+            "enum": [
+              "cinetica",
+              "energetica",
+              "material",
+              "somatica",
+              "sinaptica",
+              "cognitiva"
+            ]
+          },
+          "nome": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "criterio_aplicacao": {
+            "type": "string"
+          },
+          "fonte": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "magias": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "slug",
+          "nome",
+          "categoria",
+          "categoria_label",
+          "vertente",
+          "vertente_label",
+          "descricao_curta",
+          "descricao_longa",
+          "tags",
+          "estatisticas",
+          "payload_automacao",
+          "status",
+          "versao",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "nome": {
+            "type": "string",
+            "minLength": 1
+          },
+          "categoria": {
+            "const": "magia"
+          },
+          "categoria_label": {
+            "const": "Magia"
+          },
+          "vertente": {
+            "type": "string",
+            "enum": [
+              "cinetica",
+              "energetica",
+              "material",
+              "somatica",
+              "sinaptica",
+              "cognitiva"
+            ]
+          },
+          "vertente_label": {
+            "type": "string"
+          },
+          "descricao_curta": {
+            "type": "string",
+            "minLength": 1
+          },
+          "descricao_longa": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "acao",
+                "acido",
+                "ambiente",
+                "arcano",
+                "arma",
+                "armadura",
+                "asfixia",
+                "ativo",
+                "audicao",
+                "companheiro",
+                "conjuracao",
+                "controle",
+                "cronometro",
+                "cura",
+                "dano",
+                "dano_continuo",
+                "defensiva",
+                "drone",
+                "economia",
+                "eletrico",
+                "equipamento",
+                "escudo",
+                "falha_automatica",
+                "fim_de_rodada",
+                "fisico",
+                "furtividade",
+                "gelido",
+                "igneo",
+                "incapacitante",
+                "loja",
+                "magia",
+                "malha",
+                "mana",
+                "margem",
+                "mit",
+                "movimento",
+                "narrativo",
+                "ofensiva",
+                "pa",
+                "passivo",
+                "pd",
+                "penalidade",
+                "penalidade_defensiva",
+                "penalidade_ofensiva",
+                "penalidade_pericia",
+                "pericia",
+                "postura",
+                "reacao",
+                "reduz_pa",
+                "relacional",
+                "remove_por_cura",
+                "restricao_movimento",
+                "risco_morte",
+                "robo",
+                "robotica",
+                "runa",
+                "saturacao",
+                "sentido",
+                "sobrecarga",
+                "social",
+                "suporte",
+                "teste_unico_por_cena",
+                "trama",
+                "trava_acao",
+                "veneno",
+                "visao",
+                "vulneravel"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "estatisticas": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "nivel",
+              "tipo_magia",
+              "resolucao"
+            ],
+            "properties": {
+              "nivel": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "tipo_magia": {
+                "type": "string",
+                "enum": [
+                  "ataque",
+                  "controle",
+                  "movimento",
+                  "suporte"
+                ]
+              },
+              "resolucao": {
+                "type": "string",
+                "enum": [
+                  "ataque",
+                  "resistencia",
+                  "automatica"
+                ]
+              },
+              "custo_pa": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "usa_reacao": {
+                "type": "boolean"
+              },
+              "custo_mana": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "pericia_teste": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "atributo_ataque": {
+                "type": "string"
+              },
+              "alcance": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "tipo": {
+                    "type": "string",
+                    "enum": [
+                      "pessoal",
+                      "adjacente",
+                      "distancia",
+                      "especial"
+                    ]
+                  },
+                  "valor_m": {
+                    "type": [
+                      "integer",
+                      "number"
+                    ]
+                  },
+                  "texto": {
+                    "type": "string"
+                  },
+                  "rotulo_livro": {
+                    "type": "string"
+                  }
+                }
+              },
+              "area": {
+                "type": "object",
+                "properties": {
+                  "tipo": {
+                    "type": "string",
+                    "enum": [
+                      "esfera",
+                      "domo",
+                      "aura",
+                      "linha",
+                      "faixa",
+                      "parede",
+                      "cubo",
+                      "cone"
+                    ]
+                  },
+                  "parametros_texto": {
+                    "type": "string"
+                  },
+                  "texto": {
+                    "type": "string"
+                  }
+                }
+              },
+              "alvo": {
+                "type": "object"
+              },
+              "duracao": {
+                "type": "object"
+              },
+              "pre_requisito": {
+                "type": "string"
+              },
+              "origem": {
+                "type": "string"
+              },
+              "requisitos_condicionais": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "resolucao": {
+                      "const": "ataque"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "pericia_teste",
+                    "atributo_ataque"
+                  ]
+                }
+              }
+            ]
+          },
+          "payload_automacao": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "efeitos"
+            ],
+            "properties": {
+              "efeitos": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "tipo"
+                  ],
+                  "properties": {
+                    "tipo": {
+                      "type": "string",
+                      "enum": [
+                        "efeito_com_resistencia",
+                        "dano",
+                        "aplicar_condicao",
+                        "remover_condicao",
+                        "cura",
+                        "recurso",
+                        "recurso_temporario",
+                        "modificador",
+                        "teste_colateral"
+                      ]
+                    },
+                    "resistencia": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "cd_formula"
+                      ],
+                      "properties": {
+                        "cd_formula": {
+                          "type": "string"
+                        },
+                        "acoes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "resistir",
+                              "esquivar",
+                              "bloquear",
+                              "aparar"
+                            ]
+                          },
+                          "minItems": 1
+                        },
+                        "pericias": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "arcanismo",
+                              "artes",
+                              "balistica",
+                              "biologia",
+                              "carisma",
+                              "engenharia",
+                              "furtividade",
+                              "influencia",
+                              "intimidacao",
+                              "logica",
+                              "luta",
+                              "mobilidade",
+                              "percepcao",
+                              "precisao",
+                              "psicologia",
+                              "reflexos",
+                              "robotica",
+                              "sociedade",
+                              "tecnomagia",
+                              "vigor",
+                              "vontade"
+                            ]
+                          },
+                          "minItems": 1
+                        }
+                      }
+                    },
+                    "condicional": {
+                      "type": "boolean"
+                    },
+                    "dado": {
+                      "type": "string",
+                      "pattern": "^\\d+d\\d+$"
+                    },
+                    "valor": {
+                      "type": [
+                        "integer",
+                        "number"
+                      ]
+                    },
+                    "tipo_dano": {
+                      "type": "string"
+                    },
+                    "subtipo_dano": {
+                      "type": "string"
+                    },
+                    "sucesso": {
+                      "type": "string"
+                    },
+                    "condicao": {
+                      "type": "string",
+                      "enum": [
+                        "agarrado",
+                        "agarrando",
+                        "atordoado",
+                        "caido",
+                        "cego",
+                        "contundido",
+                        "envenenado",
+                        "imobilizado",
+                        "inconsciente",
+                        "insaturado",
+                        "lento",
+                        "ofuscado",
+                        "queimando",
+                        "sangrando",
+                        "saturado",
+                        "sufocando",
+                        "surdo"
+                      ]
+                    },
+                    "recurso": {
+                      "type": "string",
+                      "enum": [
+                        "pv",
+                        "pe",
+                        "mana"
+                      ]
+                    },
+                    "pa": {
+                      "type": "integer"
+                    },
+                    "alvo_tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "arcanismo",
+                          "artes",
+                          "balistica",
+                          "biologia",
+                          "carisma",
+                          "engenharia",
+                          "furtividade",
+                          "influencia",
+                          "intimidacao",
+                          "logica",
+                          "luta",
+                          "mobilidade",
+                          "percepcao",
+                          "precisao",
+                          "psicologia",
+                          "reflexos",
+                          "robotica",
+                          "sociedade",
+                          "tecnomagia",
+                          "vigor",
+                          "vontade"
+                        ]
+                      }
+                    },
+                    "pericia": {
+                      "type": "string",
+                      "enum": [
+                        "arcanismo",
+                        "artes",
+                        "balistica",
+                        "biologia",
+                        "carisma",
+                        "engenharia",
+                        "furtividade",
+                        "influencia",
+                        "intimidacao",
+                        "logica",
+                        "luta",
+                        "mobilidade",
+                        "percepcao",
+                        "precisao",
+                        "psicologia",
+                        "reflexos",
+                        "robotica",
+                        "sociedade",
+                        "tecnomagia",
+                        "vigor",
+                        "vontade"
+                      ]
+                    },
+                    "cd": {
+                      "type": "integer"
+                    },
+                    "momento": {
+                      "type": "string"
+                    },
+                    "falha": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "aplicar_condicao": {
+                          "type": "string",
+                          "enum": [
+                            "agarrado",
+                            "agarrando",
+                            "atordoado",
+                            "caido",
+                            "cego",
+                            "contundido",
+                            "envenenado",
+                            "imobilizado",
+                            "inconsciente",
+                            "insaturado",
+                            "lento",
+                            "ofuscado",
+                            "queimando",
+                            "sangrando",
+                            "saturado",
+                            "sufocando",
+                            "surdo"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "allOf": [
+                    {
+                      "if": {
+                        "properties": {
+                          "tipo": {
+                            "const": "dano"
+                          }
+                        }
+                      },
+                      "then": {
+                        "required": [
+                          "tipo_dano",
+                          "subtipo_dano"
+                        ],
+                        "anyOf": [
+                          {
+                            "required": [
+                              "dado"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "valor"
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "tipo": {
+                            "const": "aplicar_condicao"
+                          }
+                        }
+                      },
+                      "then": {
+                        "required": [
+                          "condicao"
+                        ]
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "tipo": {
+                            "const": "remover_condicao"
+                          }
+                        }
+                      },
+                      "then": {
+                        "required": [
+                          "condicao"
+                        ]
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "tipo": {
+                            "const": "efeito_com_resistencia"
+                          }
+                        }
+                      },
+                      "then": {
+                        "required": [
+                          "resistencia"
+                        ]
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "tipo": {
+                            "const": "cura"
+                          }
+                        }
+                      },
+                      "then": {
+                        "required": [
+                          "recurso"
+                        ]
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "tipo": {
+                            "const": "recurso"
+                          }
+                        }
+                      },
+                      "then": {
+                        "required": [
+                          "recurso"
+                        ]
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "tipo": {
+                            "const": "recurso_temporario"
+                          }
+                        }
+                      },
+                      "then": {
+                        "required": [
+                          "recurso"
+                        ]
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "tipo": {
+                            "const": "teste_colateral"
+                          }
+                        }
+                      },
+                      "then": {
+                        "required": [
+                          "pericia"
+                        ]
+                      }
+                    },
+                    {
+                      "if": {
+                        "properties": {
+                          "tipo": {
+                            "const": "modificador"
+                          }
+                        }
+                      },
+                      "then": {
+                        "anyOf": [
+                          {
+                            "required": [
+                              "valor"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "pa"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "alvo_tags"
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ]
+          },
+          "versao": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "estatisticas": {
+                  "properties": {
+                    "resolucao": {
+                      "const": "resistencia"
+                    }
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "payload_automacao": {
+                  "properties": {
+                    "efeitos": {
+                      "contains": {
+                        "properties": {
+                          "tipo": {
+                            "const": "efeito_com_resistencia"
+                          }
+                        },
+                        "required": [
+                          "tipo"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

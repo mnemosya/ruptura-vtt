@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ruptura.vtt.master_tables.v1.0.schema.json",
+  "title": "Ruptura VTT - Tabelas Mestre v1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "_schema",
+    "_meta",
+    "policy",
+    "master_tables",
+    "content_tables",
+    "source_manifest"
+  ],
+  "properties": {
+    "_schema": {
+      "const": "ruptura.vtt.master_tables.v1.0"
+    },
+    "_meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "conteudo",
+        "versao_schema",
+        "gerado_em",
+        "total_master_tables",
+        "total_content_tables"
+      ],
+      "properties": {
+        "conteudo": {
+          "const": "tabelas_mestre"
+        },
+        "fonte": {
+          "type": "string"
+        },
+        "versao_schema": {
+          "const": "1.0.0"
+        },
+        "status_padrao": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "published",
+            "archived"
+          ]
+        },
+        "gerado_em": {
+          "type": "string"
+        },
+        "total_master_tables": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "total_content_tables": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "hash_manifest": {
+          "type": "string"
+        },
+        "hashes_por_db": {
+          "type": "object"
+        },
+        "hash_conjunto_fontes": {
+          "type": "string"
+        },
+        "observacoes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "master_tables": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "category",
+          "kind",
+          "validation",
+          "source",
+          "count",
+          "values",
+          "description",
+          "status",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^M[0-9]+$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "category": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "enum",
+              "registry",
+              "config"
+            ]
+          },
+          "validation": {
+            "type": "string",
+            "enum": [
+              "closed",
+              "union",
+              "open_registry"
+            ]
+          },
+          "source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "db",
+              "path",
+              "file",
+              "_schema"
+            ],
+            "properties": {
+              "db": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "file": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "_schema": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ]
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "content_tables": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "content_id",
+          "source_db",
+          "recommended_storage",
+          "primary_key",
+          "records",
+          "depends_on_master_tables",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^C[0-9]+$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_db": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recommended_storage": {
+            "type": "string",
+            "enum": [
+              "record_jsonb",
+              "singleton_jsonb"
+            ]
+          },
+          "primary_key": {
+            "type": "string"
+          },
+          "records": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "depends_on_master_tables": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^M[0-9]+$"
+            },
+            "uniqueItems": true
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "source_manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "file",
+        "hash_sha256",
+        "package_hash",
+        "package_version"
+      ],
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "hash_sha256": {
+          "type": "string"
+        },
+        "package_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "package_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}

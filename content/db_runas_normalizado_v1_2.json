@@ -1,0 +1,1722 @@
+{
+  "_schema": "ruptura.vtt.content.runas.v1.2",
+  "_meta": {
+    "conteudo": "runas",
+    "fonte": "Capitulo ARMAS E ARMADURAS (secoes RUNAS) — Ruptura",
+    "versao_schema": "1.2.0",
+    "status_padrao": "published",
+    "gerado_em": "2026-06-29",
+    "total_registros": 40,
+    "hash_sha256_origem": "b2f970c34dfd5cf481440d1bb92f40c12161a2a2b56e9997ecdd9567a4c0592f",
+    "precedencia_fonte": "bloco_detalhado_sobre_tabela_resumo",
+    "observacoes": [
+      "Runas nao tem custo de Integridade (exclusivo de escalpos): custo_integridade=0.",
+      "Efeitos em payload_automacao.efeitos[] com tipo do dominio de runas.",
+      "Resistencia normalizada: 'Desviar'->acao 'esquivar' (rotulo_livro preservado); CD 7 quando a runa especifica.",
+      "restricao_subtipo limita runas de arma ao subtipo (corpo_a_corpo, arremesso_disparo, fogo).",
+      "Capacidade de slots vem do item (leve 1, media 2, pesada 3), nao da runa.",
+      "Raridade e preco adotados dos blocos detalhados por runa onde as tabelas-resumo divergiam.",
+      "Cadencia normalizada: usos + cadencia (M9) + recupera_em quando aplicavel."
+    ],
+    "revisao_v1_2": [
+      "Adicionados created_at/updated_at por registro (alinhamento com os bancos irmaos)."
+    ]
+  },
+  "enums": {
+    "status": [
+      "draft",
+      "published",
+      "archived"
+    ],
+    "categoria": [
+      "runa"
+    ],
+    "raridade": [
+      "comum",
+      "incomum",
+      "muito_comum",
+      "muito_raro",
+      "raro"
+    ],
+    "slots_possiveis": [
+      "arma",
+      "armadura",
+      "escudo"
+    ],
+    "restricao_subtipo": [
+      "corpo_a_corpo",
+      "arremesso_disparo",
+      "fogo"
+    ],
+    "condicoes": [
+      "agarrado",
+      "agarrando",
+      "atordoado",
+      "caido",
+      "cego",
+      "contundido",
+      "envenenado",
+      "imobilizado",
+      "inconsciente",
+      "insaturado",
+      "lento",
+      "ofuscado",
+      "queimando",
+      "sangrando",
+      "saturado",
+      "sufocando",
+      "surdo"
+    ],
+    "tags_sistema": [
+      "acao",
+      "acao_remove",
+      "acido",
+      "ambiente",
+      "arcano",
+      "arma",
+      "armadura",
+      "asfixia",
+      "ativo",
+      "audicao",
+      "companheiro",
+      "conjuracao",
+      "controle",
+      "cronometro",
+      "cura",
+      "dano",
+      "dano_continuo",
+      "defensiva",
+      "drone",
+      "economia",
+      "eletrico",
+      "equipamento",
+      "escudo",
+      "falha_automatica",
+      "fim_de_rodada",
+      "fisico",
+      "furtividade",
+      "gelido",
+      "igneo",
+      "incapacitante",
+      "loja",
+      "magia",
+      "malha",
+      "mana",
+      "margem",
+      "mit",
+      "movimento",
+      "narrativo",
+      "ofensiva",
+      "pa",
+      "passivo",
+      "pd",
+      "penalidade",
+      "penalidade_atributo",
+      "penalidade_defensiva",
+      "penalidade_ofensiva",
+      "penalidade_pericia",
+      "pericia",
+      "postura",
+      "reacao",
+      "reduz_pa",
+      "relacional",
+      "remove_por_cura",
+      "restricao_movimento",
+      "risco_morte",
+      "robo",
+      "robotica",
+      "runa",
+      "saturacao",
+      "sentido",
+      "sobrecarga",
+      "social",
+      "suporte",
+      "teste_unico_por_cena",
+      "trama",
+      "trava_acao",
+      "trava_defensiva",
+      "trava_ofensiva",
+      "trava_reacao",
+      "veneno",
+      "visao",
+      "vulneravel"
+    ],
+    "tipo_efeito": [
+      "aplicar_condicao",
+      "ataque_adicional",
+      "autorreparo",
+      "dano_modificador",
+      "economia_pa",
+      "efeito_com_resistencia",
+      "modificador",
+      "narrativo",
+      "protecao",
+      "reacao",
+      "recurso",
+      "revelar",
+      "utilitario"
+    ],
+    "cadencia": [
+      "rodada",
+      "cena",
+      "dia",
+      "descanso_longo",
+      "sessao_malha"
+    ],
+    "acoes_defesa": [
+      "esquivar",
+      "resistir",
+      "aparar",
+      "bloquear",
+      "vigor"
+    ]
+  },
+  "contagem_por_dominio": {
+    "corpo_a_corpo": 11,
+    "arremesso_disparo": 7,
+    "fogo": 9,
+    "armadura": 6,
+    "escudo": 7
+  },
+  "runas": [
+    {
+      "id": "runa_cac_retratil",
+      "slug": "runa_cac_retratil",
+      "nome": "Runa Retrátil",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 500,
+      "descricao_curta": "Símbolos de Material comprimem a estrutura em placas móveis, recolhendo a lâmina ou o bastão em formato compacto.",
+      "descricao_longa": "Símbolos de Material comprimem a estrutura em placas móveis, recolhendo a lâmina ou o bastão em formato compacto.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "corpo_a_corpo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "efeito": "torna_ocultavel",
+            "ativacao": "interagir_1pa"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_cac_impeto",
+      "slug": "runa_cac_impeto",
+      "nome": "Runa do Ímpeto",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "descricao_curta": "Canaliza energia cinética acumulada em cada passo e a transfere ao golpe final, transformando deslocamento em impacto.",
+      "descricao_longa": "Canaliza energia cinética acumulada em cada passo e a transfere ao golpe final, transformando deslocamento em impacto.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "corpo_a_corpo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "dano_modificador",
+            "dado": "1d4"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_cac_finta",
+      "slug": "runa_cac_finta",
+      "nome": "Runa da Finta",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "descricao_curta": "O traçado altera o peso da arma de forma sutil, facilitando mudanças bruscas de direção que enganam o olhar do inimigo.",
+      "descricao_longa": "O traçado altera o peso da arma de forma sutil, facilitando mudanças bruscas de direção que enganam o olhar do inimigo.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "corpo_a_corpo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "economia_pa",
+            "efeito": "finta_como_parte_de_atacar",
+            "custo_extra": 0
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_cac_clarao",
+      "slug": "runa_cac_clarao",
+      "nome": "Runa do Clarão",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "descricao_curta": "Símbolos luminosos armazenam radiação latente, liberada em um estalo que rompe a escuridão e desorienta os próximos.",
+      "descricao_longa": "Símbolos luminosos armazenam radiação latente, liberada em um estalo que rompe a escuridão e desorienta os próximos.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "visao",
+        "incapacitante"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "corpo_a_corpo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "efeito_com_resistencia",
+            "resistencia": {
+              "pericia": "esquivar",
+              "rotulo_livro": "Desviar",
+              "cd": 7
+            },
+            "condicao_falha": "ofuscado",
+            "duracao": "fim_proximo_turno_alvo",
+            "custo_pa": 1,
+            "area_m": 2
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_cac_silenciadora",
+      "slug": "runa_cac_silenciadora",
+      "nome": "Runa Silenciadora",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "descricao_curta": "As linhas arcanas abafam vibrações e reverberações, como se o espaço ao redor da arma se fechasse em silêncio absoluto.",
+      "descricao_longa": "As linhas arcanas abafam vibrações e reverberações, como se o espaço ao redor da arma se fechasse em silêncio absoluto.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "furtividade"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "corpo_a_corpo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "efeito": "ataques_sem_ruido"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_cac_flamejante",
+      "slug": "runa_cac_flamejante",
+      "nome": "Runa Flamejante",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "descricao_curta": "Gravuras ígneas despertam labaredas que percorrem a arma, transformando cada ataque em um arco incandescente.",
+      "descricao_longa": "Gravuras ígneas despertam labaredas que percorrem a arma, transformando cada ataque em um arco incandescente.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "igneo",
+        "dano"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "corpo_a_corpo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "dano_modificador",
+            "dado": "1d4",
+            "tipo_dano": "energetico",
+            "subtipo_dano": "igneo",
+            "usos": 2,
+            "cadencia": "dia",
+            "recupera_em": "descanso_longo",
+            "ativacao": "interagir_1pa"
+          },
+          {
+            "tipo": "aplicar_condicao",
+            "condicao": "queimando",
+            "gatilho": "sucesso_critico"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_cac_eletrizante",
+      "slug": "runa_cac_eletrizante",
+      "nome": "Runa Eletrizante",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "descricao_curta": "Traços energéticos correm como veios de relâmpago sobre o metal, sobrecarregando nervos e circuitos a cada golpe.",
+      "descricao_longa": "Traços energéticos correm como veios de relâmpago sobre o metal, sobrecarregando nervos e circuitos a cada golpe.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "eletrico",
+        "dano"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "corpo_a_corpo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "dano_modificador",
+            "dado": "1d4",
+            "tipo_dano": "energetico",
+            "subtipo_dano": "eletrico",
+            "usos": 2,
+            "cadencia": "dia",
+            "recupera_em": "descanso_longo",
+            "ativacao": "interagir_1pa"
+          },
+          {
+            "tipo": "aplicar_condicao",
+            "condicao": "atordoado",
+            "gatilho": "sucesso_critico"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_cac_toxica",
+      "slug": "runa_cac_toxica",
+      "nome": "Runa Tóxica",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "descricao_curta": "Linhas esverdeadas liberam toxinas sutis a cada corte, enfraquecendo músculos e reflexos do alvo.",
+      "descricao_longa": "Linhas esverdeadas liberam toxinas sutis a cada corte, enfraquecendo músculos e reflexos do alvo.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "veneno"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "corpo_a_corpo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "efeito_com_resistencia",
+            "resistencia": {
+              "pericia": "vigor",
+              "cd": 7
+            },
+            "condicao_falha": "envenenado"
+          },
+          {
+            "tipo": "aplicar_condicao",
+            "condicao": "envenenado",
+            "gatilho": "a_cada_acerto",
+            "resistencia": {
+              "pericia": "vigor",
+              "cd": 7
+            }
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_cac_ruina",
+      "slug": "runa_cac_ruina",
+      "nome": "Runa da Ruína",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1600,
+      "descricao_curta": "Runas corrosivas impregnam o alvo com energia entrópica, fechando o corpo à cura por tempo breve.",
+      "descricao_longa": "Runas corrosivas impregnam o alvo com energia entrópica, fechando o corpo à cura por tempo breve.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "corpo_a_corpo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "efeito": "alvo_nao_recupera_pv",
+            "duracao": "1_rodada"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_cac_voragem",
+      "slug": "runa_cac_voragem",
+      "nome": "Runa da Voragem",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "descricao_curta": "O entalhe pulsa em tons escuros e abre microcanais invisíveis entre alvo e portador, drenando vitalidade.",
+      "descricao_longa": "O entalhe pulsa em tons escuros e abre microcanais invisíveis entre alvo e portador, drenando vitalidade.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "cura"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "corpo_a_corpo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "recurso",
+            "recurso": "pv",
+            "dado": "1d4",
+            "gatilho": "sucesso_critico"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_cac_frenesi",
+      "slug": "runa_cac_frenesi",
+      "nome": "Runa de Frenesi",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "descricao_curta": "O traço vibra ao sentir sangue no ar, devolvendo energia a cada abate e acelerando o corpo do portador.",
+      "descricao_longa": "O traço vibra ao sentir sangue no ar, devolvendo energia a cada abate e acelerando o corpo do portador.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "pa"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "corpo_a_corpo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "economia_pa",
+            "gatilho": "eliminar_inimigo",
+            "pa_imediato": 2
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_proj_retornavel",
+      "slug": "runa_proj_retornavel",
+      "nome": "Runa Retornável",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 500,
+      "descricao_curta": "Gravuras cinéticas criam um laço arcano entre usuário e projétil, que vibra e retorna em linha reta após a trajetória.",
+      "descricao_longa": "Gravuras cinéticas criam um laço arcano entre usuário e projétil, que vibra e retorna em linha reta após a trajetória.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "arremesso_disparo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "efeito": "projetil_retorna"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_proj_batedora",
+      "slug": "runa_proj_batedora",
+      "nome": "Runa Batedora",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 800,
+      "descricao_curta": "Símbolos gravados no projétil geram um pulso de varredura ao impacto, exibido como pontos luminosos a usuários com Óptica Rúnica ou óculos calibrados.",
+      "descricao_longa": "Símbolos gravados no projétil geram um pulso de varredura ao impacto, exibido como pontos luminosos a usuários com Óptica Rúnica ou óculos calibrados.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "sentido"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "arremesso_disparo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "revelar",
+            "gatilho": "ao_atingir",
+            "efeito": "revela_inimigos",
+            "raio_m": 10,
+            "requer": [
+              "optica_runica_ou_oculos_calibrado"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_proj_serpentina",
+      "slug": "runa_proj_serpentina",
+      "nome": "Runa Serpentina",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "descricao_curta": "A runa distorce o fluxo de energia no projétil, permitindo curvas abruptas que contornam obstáculos simples.",
+      "descricao_longa": "A runa distorce o fluxo de energia no projétil, permitindo curvas abruptas que contornam obstáculos simples.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "arremesso_disparo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "efeito": "contorna_obstaculos_simples",
+            "requisito": "haver_trajeto_fisico_possivel"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_proj_sombra",
+      "slug": "runa_proj_sombra",
+      "nome": "Runa da Sombra",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "descricao_curta": "A inscrição fragmenta a assinatura física do disparo, rompendo a ligação entre trajeto e origem.",
+      "descricao_longa": "A inscrição fragmenta a assinatura física do disparo, rompendo a ligação entre trajeto e origem.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "furtividade"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "arremesso_disparo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "narrativo",
+            "efeito": "ataque_nao_rastreavel",
+            "meios": [
+              "visual",
+              "magico",
+              "tecnologico"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_proj_ricochete",
+      "slug": "runa_proj_ricochete",
+      "nome": "Runa Ricochete",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "descricao_curta": "Entalhes angulares desviam o projétil no impacto, seguindo em curva impossível para atingir outro inimigo próximo.",
+      "descricao_longa": "Entalhes angulares desviam o projétil no impacto, seguindo em curva impossível para atingir outro inimigo próximo.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "arremesso_disparo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "ataque_adicional",
+            "gatilho": "ao_acertar",
+            "alcance_segundo_alvo_m": 2
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_proj_camuflagem",
+      "slug": "runa_proj_camuflagem",
+      "nome": "Runa da Camuflagem",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "descricao_curta": "Linhas de distorção ocultam o projétil em voo; o alvo percebe o disparo apenas no último instante.",
+      "descricao_longa": "Linhas de distorção ocultam o projétil em voo; o alvo percebe o disparo apenas no último instante.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "penalidade_defensiva"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "arremesso_disparo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "efeito": "penalidade_defesa_alvo",
+            "valor": -2
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_proj_toxica",
+      "slug": "runa_proj_toxica",
+      "nome": "Runa Tóxica",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "descricao_curta": "O entalhe impregna o projétil com energia corrosiva que libera toxinas ao penetrar no corpo do alvo.",
+      "descricao_longa": "O entalhe impregna o projétil com energia corrosiva que libera toxinas ao penetrar no corpo do alvo.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "veneno"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "arremesso_disparo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "efeito_com_resistencia",
+            "resistencia": {
+              "pericia": "vigor",
+              "cd": 7
+            },
+            "condicao_falha": "envenenado"
+          },
+          {
+            "tipo": "aplicar_condicao",
+            "condicao": "envenenado",
+            "gatilho": "a_cada_acerto",
+            "resistencia": {
+              "pericia": "vigor",
+              "cd": 7
+            }
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_fogo_silenciadora",
+      "slug": "runa_fogo_silenciadora",
+      "nome": "Runa Silenciadora",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "descricao_curta": "Circuitos acústicos dispersam o som no disparo, tornando os tiros inaudíveis mesmo em espaços fechados.",
+      "descricao_longa": "Circuitos acústicos dispersam o som no disparo, tornando os tiros inaudíveis mesmo em espaços fechados.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "furtividade"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "fogo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "efeito": "tiros_sem_ruido"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_fogo_rastreadora",
+      "slug": "runa_fogo_rastreadora",
+      "nome": "Runa Rastreadora",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "descricao_curta": "Símbolos sensoriais marcam o alvo atingido com energia rúnica rastreável, visível a usuários com Óptica Rúnica sintonizada.",
+      "descricao_longa": "Símbolos sensoriais marcam o alvo atingido com energia rúnica rastreável, visível a usuários com Óptica Rúnica sintonizada.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "sentido"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "fogo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "efeito": "rastreia_alvo",
+            "gatilho": "ao_atingir",
+            "duracao": "1_hora",
+            "requer": [
+              "optica_runica_sintonizada"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_fogo_pente_fantasma",
+      "slug": "runa_fogo_pente_fantasma",
+      "nome": "Runa do Pente Fantasma",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "descricao_curta": "Entalhes de recarga automática conectam munição reserva ao pente, garantindo fluxo contínuo de balas.",
+      "descricao_longa": "Entalhes de recarga automática conectam munição reserva ao pente, garantindo fluxo contínuo de balas.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "fogo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "recurso",
+            "efeito": "recarga_automatica",
+            "municao_por_rodada": 1,
+            "requisito": "haver_municao_disponivel"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_fogo_serpentina",
+      "slug": "runa_fogo_serpentina",
+      "nome": "Runa Serpentina",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "descricao_curta": "Gravuras manipulam microcorrentes de ar, permitindo trajetórias não-lineares para alvos atrás de obstáculos leves.",
+      "descricao_longa": "Gravuras manipulam microcorrentes de ar, permitindo trajetórias não-lineares para alvos atrás de obstáculos leves.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "fogo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "efeito": "contorna_obstaculos_leves",
+            "requisito": "haver_brecha_fisica"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_fogo_atordoante",
+      "slug": "runa_fogo_atordoante",
+      "nome": "Runa Atordoante",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "descricao_curta": "Símbolos vibratórios concentram energia de impacto capaz de sobrecarregar os sentidos do alvo.",
+      "descricao_longa": "Símbolos vibratórios concentram energia de impacto capaz de sobrecarregar os sentidos do alvo.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "incapacitante"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "fogo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "aplicar_condicao",
+            "condicao": "atordoado",
+            "gatilho": "sucesso_critico"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_fogo_ricochete",
+      "slug": "runa_fogo_ricochete",
+      "nome": "Runa Ricochete",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1600,
+      "descricao_curta": "Entalhes refletores alteram o ângulo do projétil ao impacto, fazendo a bala saltar para o próximo inimigo em linha.",
+      "descricao_longa": "Entalhes refletores alteram o ângulo do projétil ao impacto, fazendo a bala saltar para o próximo inimigo em linha.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "fogo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "ataque_adicional",
+            "gatilho": "ao_acertar",
+            "alcance_segundo_alvo_m": 2,
+            "dano": "metade"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_fogo_cadencia",
+      "slug": "runa_fogo_cadencia",
+      "nome": "Runa de Cadência",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "descricao_curta": "Runas de fluxo acelerado sincronizam mecanismos internos, permitindo disparos adicionais sem esforço extra.",
+      "descricao_longa": "Runas de fluxo acelerado sincronizam mecanismos internos, permitindo disparos adicionais sem esforço extra.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "fogo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "ataque_adicional",
+            "efeito": "bala_extra_sem_pa",
+            "usa_mesmo_resultado": true,
+            "usos": 1,
+            "cadencia": "cena"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_fogo_estabilidade",
+      "slug": "runa_fogo_estabilidade",
+      "nome": "Runa de Estabilidade",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "descricao_curta": "Gravuras de compensação reduzem o recuo e estabilizam a trajetória, melhorando a performance sob pressão.",
+      "descricao_longa": "Gravuras de compensação reduzem o recuo e estabilizam a trajetória, melhorando a performance sob pressão.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "fogo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "bonus": 1,
+            "alvo_tags": [
+              "ataque_distancia"
+            ],
+            "nota": "+1 em testes de ataque com esta arma"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_fogo_potencia",
+      "slug": "runa_fogo_potencia",
+      "nome": "Runa de Potência",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "descricao_curta": "Símbolos reforçados canalizam energia ao cano, potencializando cada disparo com força ampliada.",
+      "descricao_longa": "Símbolos reforçados canalizam energia ao cano, potencializando cada disparo com força ampliada.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "slots_possiveis": [
+        "arma"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "restricao_subtipo": "fogo",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "dano_modificador",
+            "dado": "1d4",
+            "aplica_a": "todos_os_disparos"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_armadura_autorreparo",
+      "slug": "runa_armadura_autorreparo",
+      "nome": "Runa de Autorreparo",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 500,
+      "descricao_curta": "Circuitos autorreparadores restauram lentamente a estrutura da peça durante o descanso.",
+      "descricao_longa": "Circuitos autorreparadores restauram lentamente a estrutura da peça durante o descanso.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "mit"
+      ],
+      "slots_possiveis": [
+        "armadura"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "autorreparo",
+            "gatilho": "descanso_longo",
+            "efeito": "recupera_mit_total"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_armadura_disfarce",
+      "slug": "runa_armadura_disfarce",
+      "nome": "Runa de Disfarce",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "descricao_curta": "Entalhes ilusionistas alteram a aparência externa da armadura, simulando roupas comuns.",
+      "descricao_longa": "Entalhes ilusionistas alteram a aparência externa da armadura, simulando roupas comuns.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "furtividade"
+      ],
+      "slots_possiveis": [
+        "armadura"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "narrativo",
+            "efeito": "aparencia_roupa_comum",
+            "deteccao": {
+              "pericia": "logica",
+              "cd": 7
+            }
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_armadura_rebote",
+      "slug": "runa_armadura_rebote",
+      "nome": "Runa de Rebote",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "descricao_curta": "Símbolos reflexivos acumulam energia dos golpes recebidos e devolvem parte do impacto.",
+      "descricao_longa": "Símbolos reflexivos acumulam energia dos golpes recebidos e devolvem parte do impacto.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja"
+      ],
+      "slots_possiveis": [
+        "armadura"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "reacao",
+            "efeito": "reflete_dano",
+            "gatilho": "primeiro_ataque_cac_por_cena",
+            "fracao": 0.5
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_armadura_isolante",
+      "slug": "runa_armadura_isolante",
+      "nome": "Runa Isolante",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1500,
+      "descricao_curta": "Runas gravadas criam uma camada de dispersão mágica que dissipa choques, calor e efeitos energéticos.",
+      "descricao_longa": "Runas gravadas criam uma camada de dispersão mágica que dissipa choques, calor e efeitos energéticos.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja"
+      ],
+      "slots_possiveis": [
+        "armadura"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "protecao",
+            "efeito": "concede_resistencia_energetica",
+            "enquanto": "equipada"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_armadura_regeneracao",
+      "slug": "runa_armadura_regeneracao",
+      "nome": "Runa de Regeneração",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "descricao_curta": "Microestruturas rúnicas liberam estímulos bioquímicos e coagulação local ao detectar dano grave.",
+      "descricao_longa": "Microestruturas rúnicas liberam estímulos bioquímicos e coagulação local ao detectar dano grave.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "cura"
+      ],
+      "slots_possiveis": [
+        "armadura"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "recurso",
+            "recurso": "pv",
+            "dado": "1d6",
+            "gatilho": "abaixo_metade_pv",
+            "usos": 1,
+            "cadencia": "dia"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_armadura_dissipacao",
+      "slug": "runa_armadura_dissipacao",
+      "nome": "Runa de Dissipação",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2000,
+      "descricao_curta": "Traços arcanos dispersam e enfraquecem a energia dirigida à peça, minimizando o estrago.",
+      "descricao_longa": "Traços arcanos dispersam e enfraquecem a energia dirigida à peça, minimizando o estrago.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja"
+      ],
+      "slots_possiveis": [
+        "armadura"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "protecao",
+            "efeito": "reduz_dano_recebido",
+            "dado": "1d4"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_escudo_autorreparo",
+      "slug": "runa_escudo_autorreparo",
+      "nome": "Runa de Autorreparo",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 500,
+      "descricao_curta": "Circuitos regenerativos restauram lentamente a integridade estrutural do escudo durante o repouso.",
+      "descricao_longa": "Circuitos regenerativos restauram lentamente a integridade estrutural do escudo durante o repouso.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "pd"
+      ],
+      "slots_possiveis": [
+        "escudo"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "autorreparo",
+            "gatilho": "descanso_longo",
+            "efeito": "recupera_pd_total"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_escudo_retratil",
+      "slug": "runa_escudo_retratil",
+      "nome": "Runa Retrátil",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 500,
+      "descricao_curta": "Placas segmentadas e material adaptativo permitem recolher o escudo em formato compacto.",
+      "descricao_longa": "Placas segmentadas e material adaptativo permitem recolher o escudo em formato compacto.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja"
+      ],
+      "slots_possiveis": [
+        "escudo"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "efeito": "torna_ocultavel"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_escudo_clarao",
+      "slug": "runa_escudo_clarao",
+      "nome": "Runa de Clarão",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "descricao_curta": "Circuitos rúnicos armazenam energia luminosa, liberada em um clarão súbito que confunde oponentes próximos.",
+      "descricao_longa": "Circuitos rúnicos armazenam energia luminosa, liberada em um clarão súbito que confunde oponentes próximos.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "visao",
+        "incapacitante"
+      ],
+      "slots_possiveis": [
+        "escudo"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "efeito_com_resistencia",
+            "resistencia": {
+              "pericia": "esquivar",
+              "rotulo_livro": "Desviar",
+              "cd": 7
+            },
+            "condicao_falha": "ofuscado",
+            "duracao": "fim_proximo_turno_alvo",
+            "custo_pa": 1,
+            "area": "cone_2m"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_escudo_blindagem",
+      "slug": "runa_escudo_blindagem",
+      "nome": "Runa de Blindagem",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "descricao_curta": "Entalhes de reforço potencializam a estrutura do escudo diante de impactos.",
+      "descricao_longa": "Entalhes de reforço potencializam a estrutura do escudo diante de impactos.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja",
+        "pd"
+      ],
+      "slots_possiveis": [
+        "escudo"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "recurso",
+            "efeito": "pd_temporario",
+            "valor": 2,
+            "gatilho": "inicio_de_cena"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_escudo_dissipacao",
+      "slug": "runa_escudo_dissipacao",
+      "nome": "Runa de Dissipação",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1700,
+      "descricao_curta": "Traços arcanos dispersam energia e força física antes que alcancem a estrutura central do escudo.",
+      "descricao_longa": "Traços arcanos dispersam energia e força física antes que alcancem a estrutura central do escudo.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja"
+      ],
+      "slots_possiveis": [
+        "escudo"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "protecao",
+            "efeito": "reduz_dano_antes_do_pd",
+            "dado": "1d4"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_escudo_interceptacao",
+      "slug": "runa_escudo_interceptacao",
+      "nome": "Runa de Interceptação",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "descricao_curta": "A runa acelera os movimentos do portador, permitindo deslocar-se no instante exato para proteger aliados mais distantes.",
+      "descricao_longa": "A runa acelera os movimentos do portador, permitindo deslocar-se no instante exato para proteger aliados mais distantes.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja"
+      ],
+      "slots_possiveis": [
+        "escudo"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "protecao",
+            "efeito": "mover_1m_sem_custo_para_bloquear_aliado",
+            "usos": 1,
+            "cadencia": "cena"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "runa_escudo_guarda",
+      "slug": "runa_escudo_guarda",
+      "nome": "Runa de Guarda",
+      "categoria": "runa",
+      "categoria_label": "Runa",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1500,
+      "descricao_curta": "A runa canaliza energia arcana para dar rapidez extra ao portador ao se interpor contra ataques frontais.",
+      "descricao_longa": "A runa canaliza energia arcana para dar rapidez extra ao portador ao se interpor contra ataques frontais.",
+      "tags": [
+        "runa",
+        "equipamento",
+        "loja"
+      ],
+      "slots_possiveis": [
+        "escudo"
+      ],
+      "custo_integridade": 0,
+      "requisito_pericia": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "bonus": 1,
+            "alvo_tags": [
+              "reflexos"
+            ],
+            "restrito_a": "bloquear",
+            "nota": "+1 em Reflexos apenas em testes de Bloquear com este escudo"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    }
+  ]
+}

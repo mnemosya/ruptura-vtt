@@ -1,0 +1,860 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ruptura.vtt.content.propriedades_arma.v1.0.schema.json",
+  "title": "Ruptura VTT - Propriedades de Arma v1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "_schema",
+    "_meta",
+    "enums",
+    "propriedades"
+  ],
+  "properties": {
+    "_schema": {
+      "const": "ruptura.vtt.content.propriedades_arma.v1.0"
+    },
+    "_meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "conteudo",
+        "fonte",
+        "versao_schema",
+        "gerado_em",
+        "total_registros"
+      ],
+      "properties": {
+        "conteudo": {
+          "const": "propriedades_arma"
+        },
+        "fonte": {
+          "type": "string"
+        },
+        "versao_schema": {
+          "const": "1.0.0"
+        },
+        "status_padrao": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "published",
+            "archived"
+          ]
+        },
+        "gerado_em": {
+          "type": "string"
+        },
+        "total_registros": {
+          "type": "integer"
+        },
+        "hashes_por_fonte": {
+          "type": "object"
+        },
+        "observacoes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "enums": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "categoria",
+        "ids",
+        "aplica_em",
+        "gatilhos",
+        "margens",
+        "condicoes",
+        "acoes",
+        "pericias",
+        "tags_sistema",
+        "tipo_efeito"
+      ],
+      "properties": {
+        "status": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "categoria": {
+          "type": "array",
+          "items": {
+            "const": "propriedade_arma"
+          },
+          "uniqueItems": true
+        },
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "alcance",
+              "aparar",
+              "arremesso",
+              "atordoamento",
+              "contusao",
+              "desarme",
+              "dispersao",
+              "empurrao",
+              "perfuracao",
+              "precisao",
+              "queimadura",
+              "rajada",
+              "sangramento",
+              "silencioso"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "aplica_em": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "gatilhos": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "margens": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "falha",
+              "falha_limitada",
+              "sucesso_limitado",
+              "sucesso_padrao",
+              "sucesso_critico"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "condicoes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "agarrado",
+              "agarrando",
+              "atordoado",
+              "caido",
+              "cego",
+              "contundido",
+              "envenenado",
+              "imobilizado",
+              "inconsciente",
+              "insaturado",
+              "lento",
+              "ofuscado",
+              "queimando",
+              "sangrando",
+              "saturado",
+              "sufocando",
+              "surdo"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "acoes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "deslocar",
+              "levantar",
+              "escapar",
+              "fintar",
+              "interagir",
+              "sacar_rapido",
+              "sacar_dificil",
+              "recarregar",
+              "postura_ofensiva",
+              "atacar",
+              "agarrar",
+              "estrangular",
+              "derrubar",
+              "empurrar",
+              "desarmar",
+              "postura_defensiva",
+              "aparar",
+              "bloquear",
+              "esquivar",
+              "resistir",
+              "mirar",
+              "acessar_trama",
+              "preparar_turno",
+              "usar_pericia",
+              "falar",
+              "gestos_rapidos",
+              "soltar_alvo",
+              "apagar_fogo"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "pericias": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "arcanismo",
+              "artes",
+              "balistica",
+              "biologia",
+              "carisma",
+              "engenharia",
+              "furtividade",
+              "influencia",
+              "intimidacao",
+              "logica",
+              "luta",
+              "mobilidade",
+              "percepcao",
+              "precisao",
+              "psicologia",
+              "reflexos",
+              "robotica",
+              "sociedade",
+              "tecnomagia",
+              "vigor",
+              "vontade"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "tags_sistema": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "acao",
+              "acao_remove",
+              "ambiente",
+              "arcano",
+              "arma",
+              "armadura",
+              "asfixia",
+              "ativo",
+              "audicao",
+              "companheiro",
+              "conjuracao",
+              "controle",
+              "cronometro",
+              "cura",
+              "dano",
+              "dano_continuo",
+              "defensiva",
+              "drone",
+              "economia",
+              "equipamento",
+              "escudo",
+              "falha_automatica",
+              "fim_de_rodada",
+              "fisico",
+              "furtividade",
+              "igneo",
+              "incapacitante",
+              "loja",
+              "magia",
+              "malha",
+              "mana",
+              "margem",
+              "mit",
+              "movimento",
+              "narrativo",
+              "ofensiva",
+              "pa",
+              "passivo",
+              "pd",
+              "penalidade",
+              "penalidade_atributo",
+              "penalidade_defensiva",
+              "penalidade_ofensiva",
+              "penalidade_pericia",
+              "pericia",
+              "postura",
+              "reacao",
+              "reduz_pa",
+              "relacional",
+              "remove_por_cura",
+              "restricao_movimento",
+              "risco_morte",
+              "robo",
+              "robotica",
+              "runa",
+              "saturacao",
+              "sentido",
+              "sobrecarga",
+              "social",
+              "suporte",
+              "teste_unico_por_cena",
+              "trama",
+              "trava_acao",
+              "trava_defensiva",
+              "trava_ofensiva",
+              "trava_reacao",
+              "veneno",
+              "visao",
+              "vulneravel"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "tipo_efeito": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "propriedades": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "slug",
+          "nome",
+          "categoria",
+          "categoria_label",
+          "descricao_curta",
+          "descricao_longa",
+          "tags",
+          "aplica_em",
+          "gatilhos",
+          "parametrica",
+          "parametros",
+          "custo_pa_adicional",
+          "margem_minima",
+          "aplica_condicao",
+          "payload_automacao",
+          "status",
+          "versao",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "alcance",
+              "aparar",
+              "arremesso",
+              "atordoamento",
+              "contusao",
+              "desarme",
+              "dispersao",
+              "empurrao",
+              "perfuracao",
+              "precisao",
+              "queimadura",
+              "rajada",
+              "sangramento",
+              "silencioso"
+            ]
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "nome": {
+            "type": "string",
+            "minLength": 1
+          },
+          "categoria": {
+            "const": "propriedade_arma"
+          },
+          "categoria_label": {
+            "const": "Propriedade de Arma"
+          },
+          "descricao_curta": {
+            "type": "string",
+            "minLength": 1
+          },
+          "descricao_longa": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "acao",
+                "acao_remove",
+                "ambiente",
+                "arcano",
+                "arma",
+                "armadura",
+                "asfixia",
+                "ativo",
+                "audicao",
+                "companheiro",
+                "conjuracao",
+                "controle",
+                "cronometro",
+                "cura",
+                "dano",
+                "dano_continuo",
+                "defensiva",
+                "drone",
+                "economia",
+                "equipamento",
+                "escudo",
+                "falha_automatica",
+                "fim_de_rodada",
+                "fisico",
+                "furtividade",
+                "igneo",
+                "incapacitante",
+                "loja",
+                "magia",
+                "malha",
+                "mana",
+                "margem",
+                "mit",
+                "movimento",
+                "narrativo",
+                "ofensiva",
+                "pa",
+                "passivo",
+                "pd",
+                "penalidade",
+                "penalidade_atributo",
+                "penalidade_defensiva",
+                "penalidade_ofensiva",
+                "penalidade_pericia",
+                "pericia",
+                "postura",
+                "reacao",
+                "reduz_pa",
+                "relacional",
+                "remove_por_cura",
+                "restricao_movimento",
+                "risco_morte",
+                "robo",
+                "robotica",
+                "runa",
+                "saturacao",
+                "sentido",
+                "sobrecarga",
+                "social",
+                "suporte",
+                "teste_unico_por_cena",
+                "trama",
+                "trava_acao",
+                "trava_defensiva",
+                "trava_ofensiva",
+                "trava_reacao",
+                "veneno",
+                "visao",
+                "vulneravel"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "aplica_em": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "qualquer_arma",
+                "corpo_a_corpo",
+                "arremesso_disparo",
+                "fogo",
+                "energia"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "gatilhos": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "sempre_ao_atacar",
+                "enquanto_empunhada",
+                "ao_escolher_modo_ataque",
+                "ao_atacar",
+                "ao_causar_dano",
+                "ao_declarar_ataque",
+                "sucesso_critico"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "parametrica": {
+            "type": "boolean"
+          },
+          "parametros": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "custo_pa_adicional": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "margem_minima": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "falha",
+              "falha_limitada",
+              "sucesso_limitado",
+              "sucesso_padrao",
+              "sucesso_critico",
+              null
+            ]
+          },
+          "aplica_condicao": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "agarrado",
+              "agarrando",
+              "atordoado",
+              "caido",
+              "cego",
+              "contundido",
+              "envenenado",
+              "imobilizado",
+              "inconsciente",
+              "insaturado",
+              "lento",
+              "ofuscado",
+              "queimando",
+              "sangrando",
+              "saturado",
+              "sufocando",
+              "surdo",
+              null
+            ]
+          },
+          "payload_automacao": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "efeitos"
+            ],
+            "properties": {
+              "efeitos": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "tipo"
+                  ],
+                  "properties": {
+                    "tipo": {
+                      "type": "string",
+                      "enum": [
+                        "alterar_alcance_arma",
+                        "habilitar_acao_defensiva",
+                        "habilitar_modo_ataque",
+                        "resistencia_critica_aplica_condicao",
+                        "aplicar_condicao_critico",
+                        "resistencia_critica_soltar_item",
+                        "ignorar_cobertura",
+                        "modificar_dano_alem_alcance_eficaz",
+                        "empurrar_critico",
+                        "ignorar_mit",
+                        "aumentar_dano_critico",
+                        "executar_rajada",
+                        "ocultar_origem_sonora"
+                      ]
+                    },
+                    "alcance_m": {
+                      "type": "number"
+                    },
+                    "sem_penalidade": {
+                      "type": "boolean"
+                    },
+                    "alvo_acoes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "deslocar",
+                          "levantar",
+                          "escapar",
+                          "fintar",
+                          "interagir",
+                          "sacar_rapido",
+                          "sacar_dificil",
+                          "recarregar",
+                          "postura_ofensiva",
+                          "atacar",
+                          "agarrar",
+                          "estrangular",
+                          "derrubar",
+                          "empurrar",
+                          "desarmar",
+                          "postura_defensiva",
+                          "aparar",
+                          "bloquear",
+                          "esquivar",
+                          "resistir",
+                          "mirar",
+                          "acessar_trama",
+                          "preparar_turno",
+                          "usar_pericia",
+                          "falar",
+                          "gestos_rapidos",
+                          "soltar_alvo",
+                          "apagar_fogo"
+                        ]
+                      },
+                      "uniqueItems": true
+                    },
+                    "acao": {
+                      "type": "string",
+                      "enum": [
+                        "deslocar",
+                        "levantar",
+                        "escapar",
+                        "fintar",
+                        "interagir",
+                        "sacar_rapido",
+                        "sacar_dificil",
+                        "recarregar",
+                        "postura_ofensiva",
+                        "atacar",
+                        "agarrar",
+                        "estrangular",
+                        "derrubar",
+                        "empurrar",
+                        "desarmar",
+                        "postura_defensiva",
+                        "aparar",
+                        "bloquear",
+                        "esquivar",
+                        "resistir",
+                        "mirar",
+                        "acessar_trama",
+                        "preparar_turno",
+                        "usar_pericia",
+                        "falar",
+                        "gestos_rapidos",
+                        "soltar_alvo",
+                        "apagar_fogo"
+                      ]
+                    },
+                    "requisito": {
+                      "type": "string"
+                    },
+                    "modo": {
+                      "type": "string"
+                    },
+                    "pericia_teste": {
+                      "type": "string",
+                      "enum": [
+                        "arcanismo",
+                        "artes",
+                        "balistica",
+                        "biologia",
+                        "carisma",
+                        "engenharia",
+                        "furtividade",
+                        "influencia",
+                        "intimidacao",
+                        "logica",
+                        "luta",
+                        "mobilidade",
+                        "percepcao",
+                        "precisao",
+                        "psicologia",
+                        "reflexos",
+                        "robotica",
+                        "sociedade",
+                        "tecnomagia",
+                        "vigor",
+                        "vontade"
+                      ]
+                    },
+                    "usa_estatisticas": {
+                      "type": "string"
+                    },
+                    "margem_minima": {
+                      "type": "string",
+                      "enum": [
+                        "falha",
+                        "falha_limitada",
+                        "sucesso_limitado",
+                        "sucesso_padrao",
+                        "sucesso_critico"
+                      ]
+                    },
+                    "resistencia": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "pericia": {
+                          "type": "string",
+                          "enum": [
+                            "arcanismo",
+                            "artes",
+                            "balistica",
+                            "biologia",
+                            "carisma",
+                            "engenharia",
+                            "furtividade",
+                            "influencia",
+                            "intimidacao",
+                            "logica",
+                            "luta",
+                            "mobilidade",
+                            "percepcao",
+                            "precisao",
+                            "psicologia",
+                            "reflexos",
+                            "robotica",
+                            "sociedade",
+                            "tecnomagia",
+                            "vigor",
+                            "vontade"
+                          ]
+                        },
+                        "cd": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "pericia",
+                        "cd"
+                      ]
+                    },
+                    "condicao": {
+                      "type": "string",
+                      "enum": [
+                        "agarrado",
+                        "agarrando",
+                        "atordoado",
+                        "caido",
+                        "cego",
+                        "contundido",
+                        "envenenado",
+                        "imobilizado",
+                        "inconsciente",
+                        "insaturado",
+                        "lento",
+                        "ofuscado",
+                        "queimando",
+                        "sangrando",
+                        "saturado",
+                        "sufocando",
+                        "surdo"
+                      ]
+                    },
+                    "duracao": {
+                      "type": "string"
+                    },
+                    "alvo": {
+                      "type": "string"
+                    },
+                    "grau": {
+                      "type": "string"
+                    },
+                    "quando": {
+                      "type": "string"
+                    },
+                    "multiplicador": {
+                      "type": "number"
+                    },
+                    "arredondamento": {
+                      "type": "string",
+                      "enum": [
+                        "baixo",
+                        "cima",
+                        "normal"
+                      ]
+                    },
+                    "distancia_m": {
+                      "type": "number"
+                    },
+                    "direcao": {
+                      "type": "string"
+                    },
+                    "valor": {
+                      "type": "number"
+                    },
+                    "dado_extra": {
+                      "type": "string"
+                    },
+                    "acumula_com_critico_padrao": {
+                      "type": "boolean"
+                    },
+                    "usa_parametro": {
+                      "type": "string"
+                    },
+                    "penalidade_teste": {
+                      "type": "number"
+                    },
+                    "consumo_municao": {
+                      "type": "string"
+                    },
+                    "distancia_minima_m": {
+                      "type": "number"
+                    },
+                    "revela_posicao_por_ruido": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ]
+          },
+          "versao": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

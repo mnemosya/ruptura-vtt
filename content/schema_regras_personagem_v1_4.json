@@ -1,0 +1,479 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ruptura.vtt.core.regras_personagem.v1.4.schema.json",
+  "title": "Ruptura VTT - Regras de Personagem v1.4",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "_schema",
+    "_meta",
+    "enums",
+    "rolagem",
+    "criacao_personagem",
+    "atributos",
+    "pericias",
+    "derivados",
+    "requisitos_vertentes",
+    "recursos_temporarios",
+    "tipos_dano",
+    "resistencia_vulnerabilidade",
+    "colapso",
+    "descansos",
+    "atendimentos",
+    "evolucao",
+    "reacoes",
+    "sobrecarga",
+    "ruptura",
+    "integridade"
+  ],
+  "properties": {
+    "_schema": {
+      "const": "ruptura.vtt.core.regras_personagem.v1.4"
+    },
+    "_meta": {
+      "type": "object"
+    },
+    "enums": {
+      "type": "object"
+    },
+    "rolagem": {
+      "type": "object",
+      "required": [
+        "id",
+        "dado",
+        "pool",
+        "adicionar_ao_resultado",
+        "resultado_label",
+        "status",
+        "versao"
+      ],
+      "properties": {
+        "id": {
+          "const": "rolagem_base"
+        },
+        "dado": {
+          "const": "d8"
+        },
+        "pool": {
+          "type": "object"
+        },
+        "resultado_label": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "published",
+            "archived"
+          ]
+        },
+        "versao": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "adicionar_ao_resultado": {
+          "type": "array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "criacao_personagem": {
+      "type": "object",
+      "required": [
+        "atributos",
+        "pericias",
+        "pa_base",
+        "vertentes",
+        "talento_inicial",
+        "inventario",
+        "progressao",
+        "status",
+        "versao"
+      ],
+      "properties": {
+        "atributos": {
+          "type": "object"
+        },
+        "pericias": {
+          "type": "object"
+        },
+        "pa_base": {
+          "const": 3
+        },
+        "vertentes": {
+          "type": "object"
+        },
+        "talento_inicial": {
+          "type": "object"
+        },
+        "inventario": {
+          "type": "object"
+        },
+        "progressao": {
+          "type": "object"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "published",
+            "archived"
+          ]
+        },
+        "versao": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "atributos": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "nome",
+          "abreviacao",
+          "categoria",
+          "descricao_curta",
+          "descricao_longa",
+          "valor_minimo",
+          "valor_maximo",
+          "maximo_criacao",
+          "pericias_primarias",
+          "pericias_alternativas",
+          "niveis",
+          "tags",
+          "status",
+          "versao",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "enum": [
+              "corpo",
+              "mente",
+              "animo"
+            ]
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "abreviacao": {
+            "enum": [
+              "C",
+              "M",
+              "A"
+            ]
+          },
+          "categoria": {
+            "const": "atributo"
+          },
+          "descricao_curta": {
+            "type": "string",
+            "minLength": 1
+          },
+          "descricao_longa": {
+            "type": "string",
+            "minLength": 1
+          },
+          "valor_minimo": {
+            "const": 1
+          },
+          "valor_maximo": {
+            "const": 5
+          },
+          "maximo_criacao": {
+            "const": 3
+          },
+          "pericias_primarias": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pericias_alternativas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "pericia",
+                "contexto"
+              ],
+              "properties": {
+                "pericia": {
+                  "type": "string",
+                  "enum": [
+                    "arcanismo",
+                    "artes",
+                    "balistica",
+                    "biologia",
+                    "carisma",
+                    "engenharia",
+                    "furtividade",
+                    "influencia",
+                    "intimidacao",
+                    "logica",
+                    "luta",
+                    "mobilidade",
+                    "percepcao",
+                    "precisao",
+                    "psicologia",
+                    "reflexos",
+                    "robotica",
+                    "sociedade",
+                    "tecnomagia",
+                    "vigor",
+                    "vontade"
+                  ]
+                },
+                "contexto": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "niveis": {
+            "type": "array",
+            "minItems": 5,
+            "maxItems": 5,
+            "items": {
+              "type": "object"
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ]
+          },
+          "versao": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "pericias": {
+      "type": "array",
+      "minItems": 21,
+      "maxItems": 21,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "nome",
+          "atributos",
+          "descricao_curta",
+          "descricao_longa",
+          "tags",
+          "slug",
+          "categoria",
+          "categoria_label",
+          "atributo_primario",
+          "atributos_alternativos",
+          "valor_minimo",
+          "valor_maximo",
+          "maximo_criacao",
+          "aparece_na_criacao",
+          "status",
+          "versao",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "nome": {
+            "type": "string",
+            "minLength": 1
+          },
+          "atributos": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "corpo",
+                "mente",
+                "animo"
+              ]
+            },
+            "minItems": 1
+          },
+          "descricao_curta": {
+            "type": "string",
+            "minLength": 1
+          },
+          "descricao_longa": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "categoria": {
+            "const": "pericia"
+          },
+          "categoria_label": {
+            "const": "Perícia"
+          },
+          "atributo_primario": {
+            "enum": [
+              "corpo",
+              "mente",
+              "animo"
+            ]
+          },
+          "atributos_alternativos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "atributo",
+                "contexto"
+              ],
+              "properties": {
+                "atributo": {
+                  "type": "string",
+                  "enum": [
+                    "corpo",
+                    "mente",
+                    "animo"
+                  ]
+                },
+                "contexto": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "valor_minimo": {
+            "const": 0
+          },
+          "valor_maximo": {
+            "const": 5
+          },
+          "maximo_criacao": {
+            "const": 3
+          },
+          "aparece_na_criacao": {
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ]
+          },
+          "versao": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "derivados": {
+      "type": "array",
+      "minItems": 8,
+      "items": {
+        "type": "object"
+      }
+    },
+    "requisitos_vertentes": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object"
+      }
+    },
+    "recursos_temporarios": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "tipos_dano": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "resistencia_vulnerabilidade": {
+      "type": "object"
+    },
+    "colapso": {
+      "type": "object"
+    },
+    "descansos": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "atendimentos": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "evolucao": {
+      "type": "object"
+    },
+    "reacoes": {
+      "type": "object"
+    },
+    "sobrecarga": {
+      "type": "object"
+    },
+    "ruptura": {
+      "type": "object"
+    },
+    "integridade": {
+      "type": "object"
+    }
+  }
+}

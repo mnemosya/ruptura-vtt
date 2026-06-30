@@ -1,0 +1,1950 @@
+{
+  "_schema": "ruptura.vtt.content.acoes_combate.v1.1",
+  "_meta": {
+    "conteudo": "acoes_combate",
+    "fonte": "16 COMBATE 0210a136355282b09ba50128db510387.md",
+    "hash_sha256_origem": "462f093c61a7c623fb8fcd16180515825ba04d57afb8f4f1a2e2dece0d90596b",
+    "versao_schema": "1.1.0",
+    "status_padrao": "published",
+    "gerado_em": "2026-06-25",
+    "total_registros": 28,
+    "observacoes": [
+      "Catálogo de ações extraído do capítulo de Combate.",
+      "Ações defensivas são tipo reacao.",
+      "Aparar, Bloquear e Resistir são ações; quando referenciadas por talentos, devem usar alvo_acoes.",
+      "Visibilidade condicional controla exibição por condição, não valida alvo ou token.",
+      "Fonte autoritativa do catálogo de ações (M5). Integridade referencial profunda validada por validação semântica customizada."
+    ],
+    "revisao": "v1.1: schema estrito (additionalProperties=false, enums de FK), efeitos_combate declarado, fonte autoritativa de M5."
+  },
+  "enums": {
+    "status": [
+      "draft",
+      "published",
+      "archived"
+    ],
+    "categoria": [
+      "movimento",
+      "ofensiva",
+      "defensiva",
+      "diversa",
+      "livre"
+    ],
+    "tipo": [
+      "acao",
+      "reacao",
+      "acao_livre",
+      "acao_reacao"
+    ],
+    "pericias": [
+      "arcanismo",
+      "artes",
+      "balistica",
+      "biologia",
+      "carisma",
+      "engenharia",
+      "furtividade",
+      "influencia",
+      "intimidacao",
+      "logica",
+      "luta",
+      "mobilidade",
+      "percepcao",
+      "precisao",
+      "psicologia",
+      "reflexos",
+      "robotica",
+      "sociedade",
+      "tecnomagia",
+      "vigor",
+      "vontade"
+    ],
+    "condicoes": [
+      "agarrado",
+      "agarrando",
+      "atordoado",
+      "caido",
+      "cego",
+      "contundido",
+      "envenenado",
+      "imobilizado",
+      "inconsciente",
+      "insaturado",
+      "lento",
+      "ofuscado",
+      "queimando",
+      "sangrando",
+      "saturado",
+      "sufocando",
+      "surdo"
+    ],
+    "acoes": [
+      "deslocar",
+      "levantar",
+      "escapar",
+      "fintar",
+      "interagir",
+      "sacar_rapido",
+      "sacar_dificil",
+      "recarregar",
+      "postura_ofensiva",
+      "atacar",
+      "agarrar",
+      "estrangular",
+      "derrubar",
+      "empurrar",
+      "desarmar",
+      "postura_defensiva",
+      "aparar",
+      "bloquear",
+      "esquivar",
+      "resistir",
+      "mirar",
+      "acessar_trama",
+      "preparar_turno",
+      "usar_pericia",
+      "falar",
+      "gestos_rapidos",
+      "soltar_alvo",
+      "apagar_fogo"
+    ],
+    "tags_rolagem": [
+      "acao",
+      "ofensiva",
+      "defensiva",
+      "movimento",
+      "visao",
+      "audicao",
+      "sentido",
+      "corpo",
+      "ataque_corpo_a_corpo",
+      "ataque_distancia",
+      "ataque_direcional",
+      "ataque_area",
+      "conjuracao",
+      "magia",
+      "reacao",
+      "cobertura",
+      "terreno",
+      "social",
+      "trama",
+      "malha",
+      "arcanismo",
+      "artes",
+      "balistica",
+      "biologia",
+      "carisma",
+      "engenharia",
+      "furtividade",
+      "influencia",
+      "intimidacao",
+      "logica",
+      "luta",
+      "mobilidade",
+      "percepcao",
+      "precisao",
+      "psicologia",
+      "reflexos",
+      "robotica",
+      "sociedade",
+      "tecnomagia",
+      "vigor",
+      "vontade"
+    ],
+    "efeitos_combate": [
+      "acao_livre",
+      "acao_pericia_aberta",
+      "acumular_bonus_mirar",
+      "aplicar_condicao",
+      "aplicar_condicao_em_si",
+      "aplicar_penalidade",
+      "aplicar_postura",
+      "bloquear_alvejamento",
+      "causar_dano",
+      "composto",
+      "conceder_cobertura",
+      "consequencia_narrador",
+      "controle_corpo_a_corpo",
+      "criar_abertura",
+      "criar_preparacao_turno",
+      "dano_extra_proximo_ataque",
+      "defesa_ativa",
+      "desarmar",
+      "desarmar_alvo",
+      "efeito_tatico_narrativo",
+      "empurrar",
+      "estrangular_alvo",
+      "executar_protocolo_malha",
+      "falha_automatica",
+      "forcar_gasto_pa_defesa",
+      "forcar_teste_simples",
+      "habilitar_deslocamento_em_partes",
+      "habilitar_teste_escapar_imediato",
+      "ignorar_terreno_dificil",
+      "incrementar_custo_por_repeticao_no_turno",
+      "limitar_alcance_visual",
+      "limitar_deslocamento",
+      "modificador",
+      "modificador_para_escapar",
+      "modificador_recebido",
+      "modificar_dano",
+      "movimento_forcado",
+      "multiplicar_altura",
+      "multiplicar_custo_deslocamento",
+      "multiplicar_deslocamento",
+      "multiplicar_distancia",
+      "opcional_narrador",
+      "recarregar_arma",
+      "remover_condicao",
+      "remover_condicao_do_oponente",
+      "remover_condicoes",
+      "remover_restricao_movimento",
+      "reposicionar",
+      "resolver_acao",
+      "resolver_ataque",
+      "sacar_ou_guardar",
+      "substituir_bonus"
+    ],
+    "custo_tipos": [
+      "pa",
+      "reacao",
+      "livre",
+      "composto"
+    ],
+    "teste_tipos": [
+      "contestado",
+      "simples",
+      "contestado_ou_cd",
+      "contestado_ou_simples",
+      "simples_ou_contestado",
+      "simples_condicional",
+      "opcional_narrador",
+      "nenhum"
+    ],
+    "requisito_tipos": [
+      "alcance",
+      "mao_livre",
+      "alvo_com_condicao_qualquer",
+      "arma_com_propriedade",
+      "protecao_empunhada",
+      "gatilho_unico_e_claro",
+      "reacao_disponivel_na_ativacao"
+    ]
+  },
+  "acoes": [
+    {
+      "id": "deslocar",
+      "slug": "deslocar",
+      "nome": "Deslocar-se",
+      "categoria": "movimento",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 1,
+        "repeticao_mesmo_turno_incremento": 1
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "sempre",
+      "tags": [
+        "movimento"
+      ],
+      "descricao_curta": "Move o personagem por andar, correr, manobrar ou saltar.",
+      "descricao_longa": "Gasta 1 PA para mover-se. Pode repetir no mesmo turno com +1 PA por repetição. O deslocamento de uma mesma ação pode ser dividido ao longo do turno.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "habilitar_deslocamento_em_partes"
+          },
+          {
+            "tipo": "incrementar_custo_por_repeticao_no_turno",
+            "incremento_pa": 1
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "variantes": [
+        {
+          "id": "andar",
+          "distancia_formula": {
+            "op": "+",
+            "args": [
+              {
+                "const": 10
+              },
+              {
+                "ref": "atributo",
+                "id": "corpo"
+              }
+            ]
+          },
+          "formula_label": "10 + Corpo metros",
+          "teste": null
+        },
+        {
+          "id": "correr",
+          "distancia_formula": {
+            "op": "*",
+            "args": [
+              {
+                "ref": "derivado",
+                "id": "andar_m"
+              },
+              {
+                "const": 2
+              }
+            ]
+          },
+          "formula_label": "Andar × 2",
+          "teste": {
+            "tipo": "simples_condicional",
+            "pericias": [
+              "mobilidade"
+            ],
+            "dispensa_teste_se_corpo_min": 3
+          },
+          "falha": [
+            {
+              "tipo": "limitar_deslocamento",
+              "valor_m": 10
+            },
+            {
+              "tipo": "consequencia_narrador",
+              "sugestoes": [
+                "caido"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "manobrar",
+          "distancia_formula": {
+            "op": "+",
+            "args": [
+              {
+                "const": 10
+              },
+              {
+                "ref": "atributo",
+                "id": "corpo"
+              }
+            ]
+          },
+          "formula_label": "10 + Corpo metros",
+          "teste": {
+            "tipo": "simples",
+            "pericias": [
+              "mobilidade"
+            ]
+          },
+          "sucesso": [
+            {
+              "tipo": "ignorar_terreno_dificil"
+            },
+            {
+              "tipo": "efeito_tatico_narrativo"
+            }
+          ],
+          "falha": [
+            {
+              "tipo": "multiplicar_deslocamento",
+              "multiplicador": 0.5,
+              "arredondamento": "baixo"
+            },
+            {
+              "tipo": "consequencia_narrador",
+              "sugestoes": [
+                "caido",
+                "lento",
+                "complicacao_leve"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "saltar_horizontal",
+          "usa_tabela_movimento": "salto_horizontal",
+          "impulso": {
+            "deslocamento_previo_m": 2,
+            "sem_impulso_multiplicador": 0.5
+          },
+          "extra_se_corpo_min": {
+            "corpo_min": 3,
+            "teste": {
+              "pericias": [
+                "mobilidade"
+              ]
+            },
+            "sucesso": {
+              "aumentar_distancia_m": 1
+            },
+            "falha": [
+              {
+                "tipo": "multiplicar_distancia",
+                "multiplicador": 0.5
+              },
+              {
+                "tipo": "aplicar_condicao",
+                "condicao": "caido"
+              }
+            ]
+          }
+        },
+        {
+          "id": "saltar_vertical",
+          "usa_tabela_movimento": "salto_vertical",
+          "extra_se_corpo_min": {
+            "corpo_min": 3,
+            "teste": {
+              "pericias": [
+                "mobilidade"
+              ]
+            },
+            "sucesso": {
+              "aumentar_altura_m": 0.2
+            },
+            "falha": [
+              {
+                "tipo": "multiplicar_altura",
+                "multiplicador": 0.5
+              },
+              {
+                "tipo": "aplicar_condicao",
+                "condicao": "caido"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "levantar",
+      "slug": "levantar",
+      "nome": "Levantar",
+      "categoria": "movimento",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 1
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "condicao:caido",
+      "tags": [
+        "movimento",
+        "acao_remove"
+      ],
+      "descricao_curta": "Remove a condição Caído.",
+      "descricao_longa": "Remove a condição Caído.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "remover_condicao",
+            "condicao": "caido"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "teste": {
+        "tipo": "opcional_narrador",
+        "pericias": [
+          "mobilidade",
+          "vigor"
+        ]
+      }
+    },
+    {
+      "id": "escapar",
+      "slug": "escapar",
+      "nome": "Escapar",
+      "categoria": "movimento",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 2
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "condicao:agarrado,imobilizado",
+      "tags": [
+        "movimento",
+        "acao_remove",
+        "controle"
+      ],
+      "descricao_curta": "Tenta se libertar de restrição de movimento.",
+      "descricao_longa": "Tenta se libertar de restrição de movimento.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "remover_restricao_movimento"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "teste": {
+        "tipo": "contestado_ou_simples",
+        "se_criatura": {
+          "atacante": {
+            "pericias": [
+              "luta",
+              "vigor"
+            ]
+          },
+          "defensor": {
+            "acoes_defensivas": [
+              "resistir"
+            ]
+          }
+        },
+        "se_inanimado": {
+          "pericias": [
+            "luta",
+            "vigor"
+          ],
+          "cd": "narrador"
+        }
+      },
+      "sucesso": [
+        {
+          "tipo": "remover_condicoes",
+          "condicoes": [
+            "agarrado",
+            "imobilizado"
+          ]
+        },
+        {
+          "tipo": "remover_condicao_do_oponente",
+          "condicao": "agarrando"
+        }
+      ]
+    },
+    {
+      "id": "fintar",
+      "slug": "fintar",
+      "nome": "Fintar",
+      "categoria": "ofensiva",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 1
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "sempre",
+      "tags": [
+        "ofensiva",
+        "social"
+      ],
+      "descricao_curta": "Cria abertura para o próximo ataque corpo a corpo.",
+      "descricao_longa": "Cria abertura para o próximo ataque corpo a corpo.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "criar_abertura",
+            "bonus": 1
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "teste": {
+        "tipo": "contestado",
+        "atacante": {
+          "pericias": [
+            "influencia"
+          ]
+        },
+        "defensor": {
+          "pericias": [
+            "percepcao"
+          ]
+        },
+        "sucesso_se_atacante_maior_ou_igual": true
+      },
+      "sucesso": [
+        {
+          "tipo": "modificador",
+          "valor": 1,
+          "alvo_acoes": [
+            "atacar"
+          ],
+          "alvo_tags": [
+            "ataque_corpo_a_corpo"
+          ],
+          "duracao": "mesmo_turno"
+        }
+      ],
+      "efeitos_por_margem": [
+        {
+          "margem": "sucesso_critico",
+          "intervalo_margem": [
+            5,
+            null
+          ],
+          "efeitos": [
+            {
+              "tipo": "forcar_gasto_pa_defesa",
+              "valor": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "interagir",
+      "slug": "interagir",
+      "nome": "Interagir",
+      "categoria": "diversa",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 1
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "sempre",
+      "tags": [
+        "diversa",
+        "objeto"
+      ],
+      "descricao_curta": "Manipula objeto, dispositivo ou elemento de cena.",
+      "descricao_longa": "Manipula objeto, dispositivo ou elemento de cena.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "resolver_acao"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "teste": {
+        "tipo": "opcional_narrador",
+        "pericias": [
+          "variavel"
+        ]
+      }
+    },
+    {
+      "id": "sacar_rapido",
+      "slug": "sacar_rapido",
+      "nome": "Sacar/Guardar (rápido)",
+      "categoria": "diversa",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 1
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "sempre",
+      "tags": [
+        "diversa",
+        "equipamento"
+      ],
+      "descricao_curta": "Saca ou guarda equipamento de acesso fácil.",
+      "descricao_longa": "Saca ou guarda equipamento de acesso fácil.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "sacar_ou_guardar",
+            "acesso": "rapido"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "sacar_dificil",
+      "slug": "sacar_dificil",
+      "nome": "Sacar/Guardar (difícil)",
+      "categoria": "diversa",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 2
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "sempre",
+      "tags": [
+        "diversa",
+        "equipamento"
+      ],
+      "descricao_curta": "Saca ou guarda equipamento de acesso difícil.",
+      "descricao_longa": "Saca ou guarda equipamento de acesso difícil.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "sacar_ou_guardar",
+            "acesso": "dificil"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "recarregar",
+      "slug": "recarregar",
+      "nome": "Recarregar",
+      "categoria": "diversa",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 1
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "sempre",
+      "tags": [
+        "diversa",
+        "arma"
+      ],
+      "descricao_curta": "Restaura munição de uma arma.",
+      "descricao_longa": "Restaura munição de uma arma.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "recarregar_arma"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "postura_ofensiva",
+      "slug": "postura_ofensiva",
+      "nome": "Postura Ofensiva",
+      "categoria": "ofensiva",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 1
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "sempre",
+      "tags": [
+        "ofensiva",
+        "postura"
+      ],
+      "descricao_curta": "+1 em ofensivas e magias de Ataque; –1 em defensivas.",
+      "descricao_longa": "+1 em ofensivas e magias de Ataque; –1 em defensivas.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "aplicar_postura",
+            "postura": "ofensiva"
+          },
+          {
+            "tipo": "modificador",
+            "valor": 1,
+            "alvo_tags": [
+              "ofensiva",
+              "conjuracao"
+            ]
+          },
+          {
+            "tipo": "modificador",
+            "valor": -1,
+            "alvo_tags": [
+              "defensiva"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "postura_defensiva",
+      "slug": "postura_defensiva",
+      "nome": "Postura Defensiva",
+      "categoria": "defensiva",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 1
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "sempre",
+      "tags": [
+        "defensiva",
+        "postura"
+      ],
+      "descricao_curta": "+1 em defensivas; –1 em ofensivas e magias de Ataque.",
+      "descricao_longa": "+1 em defensivas; –1 em ofensivas e magias de Ataque.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "aplicar_postura",
+            "postura": "defensiva"
+          },
+          {
+            "tipo": "modificador",
+            "valor": 1,
+            "alvo_tags": [
+              "defensiva"
+            ]
+          },
+          {
+            "tipo": "modificador",
+            "valor": -1,
+            "alvo_tags": [
+              "ofensiva",
+              "conjuracao"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "atacar",
+      "slug": "atacar",
+      "nome": "Atacar",
+      "categoria": "ofensiva",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 2
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "sempre",
+      "tags": [
+        "ofensiva",
+        "ataque"
+      ],
+      "descricao_curta": "Ataque básico contra criatura ou objeto.",
+      "descricao_longa": "Ataque básico contra criatura ou objeto.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "resolver_ataque"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "teste": {
+        "tipo": "contestado_ou_simples",
+        "contra_criatura": {
+          "defensor_escolhe_acoes": [
+            "esquivar",
+            "aparar",
+            "bloquear"
+          ]
+        },
+        "contra_objeto": {
+          "tipo": "simples",
+          "cd": "narrador"
+        }
+      },
+      "modos": [
+        {
+          "id": "corpo_a_corpo",
+          "pericias": [
+            "luta"
+          ],
+          "alcance": "adjacente",
+          "dano_bonus": {
+            "ref": "atributo",
+            "id": "corpo"
+          },
+          "desarmado": {
+            "tipo_dano": "fisico",
+            "subtipo_dano": "contundente",
+            "dano_formula": {
+              "ref": "atributo",
+              "id": "corpo"
+            }
+          },
+          "defesas_permitidas": [
+            "esquivar",
+            "aparar",
+            "bloquear"
+          ]
+        },
+        {
+          "id": "distancia_arremesso_disparo",
+          "pericias": [
+            "precisao"
+          ],
+          "defesas_permitidas": [
+            "esquivar",
+            "bloquear"
+          ]
+        },
+        {
+          "id": "distancia_arma_fogo",
+          "pericias": [
+            "balistica"
+          ],
+          "defesas_permitidas": [
+            "esquivar",
+            "bloquear"
+          ]
+        }
+      ],
+      "efeitos_por_margem_ref": "regiao_corpo_ataque"
+    },
+    {
+      "id": "agarrar",
+      "slug": "agarrar",
+      "nome": "Agarrar",
+      "categoria": "ofensiva",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 2
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "sempre",
+      "tags": [
+        "ofensiva",
+        "controle",
+        "corpo_a_corpo"
+      ],
+      "descricao_curta": "Prende alvo adjacente com teste de Luta.",
+      "descricao_longa": "Prende alvo adjacente com teste de Luta.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "controle_corpo_a_corpo"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "requisitos": [
+        {
+          "tipo": "alcance",
+          "valor": "adjacente"
+        },
+        {
+          "tipo": "mao_livre",
+          "quantidade_minima": 1
+        }
+      ],
+      "teste": {
+        "tipo": "contestado",
+        "atacante": {
+          "pericias": [
+            "luta"
+          ]
+        },
+        "defensor": {
+          "acoes_defensivas": [
+            "resistir",
+            "esquivar"
+          ]
+        }
+      },
+      "sucesso": [
+        {
+          "tipo": "aplicar_condicao_em_si",
+          "condicao": "agarrando"
+        }
+      ],
+      "efeitos_por_margem": [
+        {
+          "margem": "sucesso_limitado",
+          "intervalo_margem": [
+            0,
+            1
+          ],
+          "efeitos": [
+            {
+              "tipo": "aplicar_condicao",
+              "condicao": "agarrado"
+            },
+            {
+              "tipo": "modificador_para_escapar",
+              "valor": 1
+            }
+          ]
+        },
+        {
+          "margem": "sucesso_padrao",
+          "intervalo_margem": [
+            2,
+            4
+          ],
+          "efeitos": [
+            {
+              "tipo": "aplicar_condicao",
+              "condicao": "agarrado"
+            }
+          ]
+        },
+        {
+          "margem": "sucesso_critico",
+          "intervalo_margem": [
+            5,
+            null
+          ],
+          "efeitos": [
+            {
+              "tipo": "aplicar_condicao",
+              "condicao": "imobilizado"
+            },
+            {
+              "tipo": "modificador_para_escapar",
+              "valor": -2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "estrangular",
+      "slug": "estrangular",
+      "nome": "Estrangular",
+      "categoria": "ofensiva",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 2
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "sempre",
+      "tags": [
+        "ofensiva",
+        "controle",
+        "asfixia"
+      ],
+      "descricao_curta": "Incapacita alvo adjacente Imobilizado ou Atordoado.",
+      "descricao_longa": "Incapacita alvo adjacente Imobilizado ou Atordoado.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "estrangular_alvo"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "requisitos": [
+        {
+          "tipo": "alcance",
+          "valor": "adjacente"
+        },
+        {
+          "tipo": "alvo_com_condicao_qualquer",
+          "condicoes": [
+            "imobilizado",
+            "atordoado"
+          ]
+        }
+      ],
+      "teste": {
+        "tipo": "contestado",
+        "atacante": {
+          "pericias": [
+            "luta"
+          ]
+        },
+        "defensor": {
+          "pericias": [
+            "vigor"
+          ]
+        }
+      },
+      "falha": [
+        {
+          "tipo": "habilitar_teste_escapar_imediato",
+          "custo_pa": 0
+        }
+      ],
+      "efeitos_por_margem": [
+        {
+          "margem": "sucesso_limitado",
+          "intervalo_margem": [
+            0,
+            1
+          ],
+          "efeitos": [
+            {
+              "tipo": "aplicar_condicao",
+              "condicao": "inconsciente",
+              "duracao_rodadas_formula": "ceil(margem / 2)"
+            }
+          ]
+        },
+        {
+          "margem": "sucesso_padrao",
+          "intervalo_margem": [
+            2,
+            4
+          ],
+          "efeitos": [
+            {
+              "tipo": "causar_dano",
+              "dano": 1,
+              "tipo_dano": "fisico"
+            },
+            {
+              "tipo": "aplicar_condicao",
+              "condicao": "inconsciente",
+              "duracao_rodadas_formula": "margem"
+            }
+          ]
+        },
+        {
+          "margem": "sucesso_critico",
+          "intervalo_margem": [
+            5,
+            null
+          ],
+          "efeitos": [
+            {
+              "tipo": "causar_dano",
+              "dano": "1d4",
+              "tipo_dano": "fisico"
+            },
+            {
+              "tipo": "aplicar_condicao",
+              "condicao": "inconsciente",
+              "duracao_rodadas_formula": "margem * 2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "derrubar",
+      "slug": "derrubar",
+      "nome": "Derrubar",
+      "categoria": "ofensiva",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 2
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "sempre",
+      "tags": [
+        "ofensiva",
+        "controle",
+        "corpo_a_corpo"
+      ],
+      "descricao_curta": "Derruba alvo adjacente.",
+      "descricao_longa": "Derruba alvo adjacente.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "aplicar_condicao",
+            "condicao": "caido"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "requisitos": [
+        {
+          "tipo": "alcance",
+          "valor": "adjacente"
+        }
+      ],
+      "teste": {
+        "tipo": "contestado",
+        "atacante": {
+          "pericias": [
+            "luta"
+          ]
+        },
+        "defensor": {
+          "acoes_defensivas": [
+            "resistir",
+            "esquivar"
+          ]
+        }
+      },
+      "sucesso": [
+        {
+          "tipo": "aplicar_condicao",
+          "condicao": "caido"
+        }
+      ]
+    },
+    {
+      "id": "empurrar",
+      "slug": "empurrar",
+      "nome": "Empurrar",
+      "categoria": "ofensiva",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 2
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "sempre",
+      "tags": [
+        "ofensiva",
+        "controle",
+        "movimento_forcado"
+      ],
+      "descricao_curta": "Desloca o alvo à força.",
+      "descricao_longa": "Desloca o alvo à força.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "movimento_forcado"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "requisitos": [
+        {
+          "tipo": "alcance",
+          "valor": "adjacente"
+        }
+      ],
+      "teste": {
+        "tipo": "contestado",
+        "atacante": {
+          "pericias": [
+            "luta"
+          ]
+        },
+        "defensor": {
+          "acoes_defensivas": [
+            "resistir",
+            "esquivar"
+          ]
+        }
+      },
+      "efeitos_por_margem": [
+        {
+          "margem": "sucesso_limitado",
+          "intervalo_margem": [
+            0,
+            1
+          ],
+          "efeitos": [
+            {
+              "tipo": "empurrar",
+              "distancia_formula": "floor(margem / 2)"
+            }
+          ]
+        },
+        {
+          "margem": "sucesso_padrao",
+          "intervalo_margem": [
+            2,
+            4
+          ],
+          "efeitos": [
+            {
+              "tipo": "empurrar",
+              "distancia_formula": "margem"
+            }
+          ]
+        },
+        {
+          "margem": "sucesso_critico",
+          "intervalo_margem": [
+            5,
+            null
+          ],
+          "efeitos": [
+            {
+              "tipo": "empurrar",
+              "distancia_formula": "margem"
+            },
+            {
+              "tipo": "aplicar_condicao",
+              "condicao": "caido"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "desarmar",
+      "slug": "desarmar",
+      "nome": "Desarmar",
+      "categoria": "ofensiva",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 2
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "sempre",
+      "tags": [
+        "ofensiva",
+        "controle",
+        "arma"
+      ],
+      "descricao_curta": "Remove uma arma do alvo.",
+      "descricao_longa": "Remove uma arma do alvo.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "desarmar_alvo"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "requisitos": [
+        {
+          "tipo": "alcance",
+          "valor": "adjacente"
+        }
+      ],
+      "teste": {
+        "tipo": "contestado",
+        "atacante": {
+          "pericias": [
+            "luta"
+          ]
+        },
+        "defensor": {
+          "acoes_defensivas": [
+            "resistir",
+            "esquivar"
+          ]
+        }
+      },
+      "efeitos_por_margem": [
+        {
+          "margem": "sucesso_limitado",
+          "intervalo_margem": [
+            0,
+            1
+          ],
+          "efeitos": [
+            {
+              "tipo": "desarmar",
+              "queda": "aos_pes_do_alvo_no_mesmo_hex"
+            }
+          ]
+        },
+        {
+          "margem": "sucesso_padrao",
+          "intervalo_margem": [
+            2,
+            4
+          ],
+          "efeitos": [
+            {
+              "tipo": "desarmar",
+              "opcoes": [
+                "aos_pes_do_alvo",
+                "arremessar"
+              ],
+              "distancia_arremesso_formula": "ceil(margem / 2)"
+            }
+          ]
+        },
+        {
+          "margem": "sucesso_critico",
+          "intervalo_margem": [
+            5,
+            null
+          ],
+          "efeitos": [
+            {
+              "tipo": "desarmar",
+              "opcoes": [
+                "aos_pes_do_alvo",
+                "arremessar"
+              ],
+              "distancia_arremesso_formula": "margem"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "aparar",
+      "slug": "aparar",
+      "nome": "Aparar",
+      "categoria": "defensiva",
+      "tipo": "reacao",
+      "custo": {
+        "tipo": "reacao",
+        "valor": 1
+      },
+      "janela": "fora_do_turno",
+      "visibilidade": "sempre",
+      "tags": [
+        "defensiva",
+        "reacao"
+      ],
+      "descricao_curta": "Usa arma com Aparar para anular golpe corpo a corpo.",
+      "descricao_longa": "Usa arma com Aparar para anular golpe corpo a corpo.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "defesa_ativa",
+            "modo": "aparar"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "requisitos": [
+        {
+          "tipo": "arma_com_propriedade",
+          "propriedade": "aparar"
+        }
+      ],
+      "teste": {
+        "tipo": "contestado",
+        "defensor": {
+          "pericias": [
+            "luta"
+          ]
+        },
+        "contra": [
+          "ataque_corpo_a_corpo"
+        ]
+      },
+      "efeitos_por_margem": [
+        {
+          "margem": "sucesso_critico",
+          "intervalo_margem": [
+            5,
+            null
+          ],
+          "efeitos": [
+            {
+              "tipo": "aplicar_penalidade",
+              "alvo": "atacante",
+              "valor": -1,
+              "alvo_tags": [
+                "defensiva"
+              ],
+              "duracao": "1_turno_contra_voce"
+            },
+            {
+              "tipo": "dano_extra_proximo_ataque",
+              "dano": "1d4",
+              "tipo_dano": "mesmo_da_arma"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bloquear",
+      "slug": "bloquear",
+      "nome": "Bloquear",
+      "categoria": "defensiva",
+      "tipo": "reacao",
+      "custo": {
+        "tipo": "reacao",
+        "valor": 1
+      },
+      "janela": "fora_do_turno",
+      "visibilidade": "sempre",
+      "tags": [
+        "defensiva",
+        "reacao",
+        "escudo"
+      ],
+      "descricao_curta": "Usa escudo ou proteção empunhada para absorver ataque.",
+      "descricao_longa": "Usa escudo ou proteção empunhada para absorver ataque.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "defesa_ativa",
+            "modo": "bloquear"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "requisitos": [
+        {
+          "tipo": "protecao_empunhada"
+        }
+      ],
+      "teste": {
+        "tipo": "contestado",
+        "defensor": {
+          "pericias": [
+            "reflexos"
+          ]
+        },
+        "contra": [
+          "ataque_contra_si",
+          "ataque_contra_adjacente_visivel"
+        ]
+      },
+      "falha_ao_proteger_aliado": [
+        {
+          "tipo": "modificador",
+          "valor": -2,
+          "alvo": "defesa_do_aliado"
+        }
+      ],
+      "efeitos_por_margem": [
+        {
+          "margem": "sucesso_critico",
+          "intervalo_margem": [
+            5,
+            null
+          ],
+          "efeitos": [
+            {
+              "tipo": "conceder_cobertura",
+              "grau": "parcial",
+              "alvos": [
+                "defensor",
+                "aliado_protegido"
+              ],
+              "duracao": "fim_da_rodada"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "esquivar",
+      "slug": "esquivar",
+      "nome": "Esquivar",
+      "categoria": "defensiva",
+      "tipo": "reacao",
+      "custo": {
+        "tipo": "reacao",
+        "valor": 1
+      },
+      "janela": "fora_do_turno",
+      "visibilidade": "sempre",
+      "tags": [
+        "defensiva",
+        "reacao",
+        "movimento"
+      ],
+      "descricao_curta": "Evita impacto com Reflexos.",
+      "descricao_longa": "Evita impacto com Reflexos.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "defesa_ativa",
+            "modo": "esquivar"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "teste": {
+        "tipo": "contestado_ou_cd",
+        "defensor": {
+          "pericias": [
+            "reflexos"
+          ]
+        }
+      },
+      "efeitos_por_margem": [
+        {
+          "margem": "sucesso_critico",
+          "intervalo_margem": [
+            5,
+            null
+          ],
+          "efeitos": [
+            {
+              "tipo": "reposicionar",
+              "distancia_m": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "resistir",
+      "slug": "resistir",
+      "nome": "Resistir",
+      "categoria": "defensiva",
+      "tipo": "reacao",
+      "custo": {
+        "tipo": "reacao",
+        "valor": 1
+      },
+      "janela": "fora_do_turno",
+      "visibilidade": "sempre",
+      "tags": [
+        "defensiva",
+        "reacao",
+        "resistencia"
+      ],
+      "descricao_curta": "Resiste a deslocamento, derrubada, arrasto ou imobilização.",
+      "descricao_longa": "Resiste a deslocamento, derrubada, arrasto ou imobilização.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "defesa_ativa",
+            "modo": "resistir"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "teste": {
+        "tipo": "contestado_ou_cd",
+        "defensor": {
+          "pericias": [
+            "vigor",
+            "mobilidade"
+          ]
+        }
+      },
+      "efeitos_por_margem": [
+        {
+          "margem": "sucesso_critico",
+          "intervalo_margem": [
+            5,
+            null
+          ],
+          "efeitos": [
+            {
+              "tipo": "modificador",
+              "valor": 1,
+              "alvo_tags": [
+                "corpo"
+              ],
+              "duracao": "fim_do_proximo_turno"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mirar",
+      "slug": "mirar",
+      "nome": "Mirar",
+      "categoria": "diversa",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 1
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "sempre",
+      "tags": [
+        "diversa",
+        "ataque_distancia"
+      ],
+      "descricao_curta": "Alinha um ataque à distância e acumula bônus.",
+      "descricao_longa": "Alinha um ataque à distância e acumula bônus.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "acumular_bonus_mirar",
+            "bonus": 1,
+            "max": 2
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "teste": {
+        "tipo": "simples",
+        "pericias": [
+          "percepcao"
+        ],
+        "cd": "narrador"
+      },
+      "sucesso": [
+        {
+          "tipo": "modificador",
+          "valor": 1,
+          "alvo_tags": [
+            "ataque_distancia"
+          ],
+          "duracao": "fim_da_rodada",
+          "acumulo_max": 2
+        }
+      ],
+      "efeitos_por_margem": [
+        {
+          "margem": "sucesso_critico",
+          "intervalo_margem": [
+            5,
+            null
+          ],
+          "efeitos": [
+            {
+              "tipo": "substituir_bonus",
+              "valor": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "acessar_trama",
+      "slug": "acessar_trama",
+      "nome": "Acessar Trama",
+      "categoria": "diversa",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 2
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "sempre",
+      "tags": [
+        "diversa",
+        "trama",
+        "malha"
+      ],
+      "descricao_curta": "Estabelece vínculo com ponto de acesso exposto.",
+      "descricao_longa": "Estabelece vínculo com ponto de acesso exposto.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "executar_protocolo_malha",
+            "protocolo": "conectar"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "preparar_turno",
+      "slug": "preparar_turno",
+      "nome": "Preparar Turno",
+      "categoria": "diversa",
+      "tipo": "acao_reacao",
+      "custo": {
+        "tipo": "composto",
+        "pa": "soma_das_acoes_preparadas",
+        "reacao_para_ativar": 1
+      },
+      "janela": "conforme_pa_preparado",
+      "visibilidade": "sempre",
+      "tags": [
+        "diversa",
+        "reacao"
+      ],
+      "descricao_curta": "Prepara sequência de ações vinculada a gatilho objetivo.",
+      "descricao_longa": "Prepara sequência de ações vinculada a gatilho objetivo.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "criar_preparacao_turno"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "requisitos": [
+        {
+          "tipo": "gatilho_unico_e_claro"
+        },
+        {
+          "tipo": "reacao_disponivel_na_ativacao"
+        }
+      ]
+    },
+    {
+      "id": "usar_pericia",
+      "slug": "usar_pericia",
+      "nome": "Usar Perícia",
+      "categoria": "diversa",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 1
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "sempre",
+      "tags": [
+        "diversa",
+        "pericia"
+      ],
+      "descricao_curta": "Usa uma perícia para criar vantagem, impor desvantagem ou influenciar a cena.",
+      "descricao_longa": "Usa uma perícia para criar vantagem, impor desvantagem ou influenciar a cena.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "acao_pericia_aberta"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25",
+      "teste": {
+        "tipo": "simples_ou_contestado",
+        "pericias": [
+          "variavel"
+        ]
+      }
+    },
+    {
+      "id": "falar",
+      "slug": "falar",
+      "nome": "Falar",
+      "categoria": "livre",
+      "tipo": "acao_livre",
+      "custo": {
+        "tipo": "livre"
+      },
+      "janela": "qualquer_momento",
+      "visibilidade": "sempre",
+      "tags": [
+        "livre",
+        "social"
+      ],
+      "descricao_curta": "Fala livremente durante a rodada.",
+      "descricao_longa": "Fala livremente durante a rodada.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "acao_livre"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "gestos_rapidos",
+      "slug": "gestos_rapidos",
+      "nome": "Gestos Rápidos",
+      "categoria": "livre",
+      "tipo": "acao_livre",
+      "custo": {
+        "tipo": "livre"
+      },
+      "janela": "qualquer_momento",
+      "visibilidade": "sempre",
+      "tags": [
+        "livre"
+      ],
+      "descricao_curta": "Movimentos simples que comunicam intenção.",
+      "descricao_longa": "Movimentos simples que comunicam intenção.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "acao_livre"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "soltar_alvo",
+      "slug": "soltar_alvo",
+      "nome": "Soltar alvo",
+      "categoria": "livre",
+      "tipo": "acao_livre",
+      "custo": {
+        "tipo": "livre"
+      },
+      "janela": "qualquer_momento",
+      "visibilidade": "condicao:agarrando",
+      "tags": [
+        "livre",
+        "acao_remove",
+        "controle"
+      ],
+      "descricao_curta": "Remove Agarrando de si e libera o alvo.",
+      "descricao_longa": "Remove Agarrando de si e libera o alvo.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "remover_condicao",
+            "condicao": "agarrando"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "apagar_fogo",
+      "slug": "apagar_fogo",
+      "nome": "Apagar fogo",
+      "categoria": "movimento",
+      "tipo": "acao",
+      "custo": {
+        "tipo": "pa",
+        "valor": 1,
+        "base_acao": "interagir"
+      },
+      "janela": "rapida_ou_lenta_conforme_total_pa_gasto",
+      "visibilidade": "condicao:queimando",
+      "tags": [
+        "movimento",
+        "acao_remove",
+        "igneo"
+      ],
+      "descricao_curta": "Remove ou tenta remover Queimando.",
+      "descricao_longa": "Remove ou tenta remover Queimando.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "remover_condicao",
+            "condicao": "queimando"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    }
+  ]
+}

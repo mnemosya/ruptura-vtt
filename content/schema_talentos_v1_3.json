@@ -1,0 +1,1262 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ruptura.vtt.content.talentos.v1.3.schema.json",
+  "title": "Ruptura VTT - Talentos v1.3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "_schema",
+    "_meta",
+    "enums",
+    "talentos"
+  ],
+  "properties": {
+    "_schema": {
+      "const": "ruptura.vtt.content.talentos.v1.3"
+    },
+    "_meta": {
+      "type": "object"
+    },
+    "enums": {
+      "type": "object",
+      "required": [
+        "status",
+        "niveis",
+        "cadencia",
+        "margem",
+        "pericias",
+        "tags_sistema",
+        "tipo_efeito",
+        "tipo_efeito_familia"
+      ]
+    },
+    "talentos": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "slug",
+          "nome",
+          "descricao_curta",
+          "descricao_longa",
+          "tags",
+          "niveis",
+          "status",
+          "versao",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "nome": {
+            "type": "string",
+            "minLength": 1
+          },
+          "descricao_curta": {
+            "type": "string",
+            "minLength": 1
+          },
+          "descricao_longa": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "acao",
+                "arma",
+                "armadura",
+                "ativo",
+                "companheiro",
+                "controle",
+                "cura",
+                "dano",
+                "defensiva",
+                "drone",
+                "economia",
+                "equipamento",
+                "escudo",
+                "furtividade",
+                "loja",
+                "magia",
+                "malha",
+                "mana",
+                "margem",
+                "mit",
+                "movimento",
+                "narrativo",
+                "ofensiva",
+                "pa",
+                "passivo",
+                "pd",
+                "pericia",
+                "reacao",
+                "robo",
+                "robotica",
+                "runa",
+                "sobrecarga",
+                "social",
+                "suporte",
+                "trama"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "niveis": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "$ref": "#/$defs/nivel_talento"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ]
+          },
+          "versao": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "status_revisao_prd": {
+            "type": "string"
+          },
+          "decisao": {
+            "type": "string"
+          },
+          "pendencia": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "requisito": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tipo"
+      ],
+      "properties": {
+        "tipo": {
+          "type": "string",
+          "enum": [
+            "talento_nivel_adquirido"
+          ]
+        },
+        "talento_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "nivel": {
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3
+          ]
+        }
+      }
+    },
+    "nivel_talento": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "slug",
+        "talento_id",
+        "nivel",
+        "nome",
+        "requisitos",
+        "tags",
+        "descricao_curta",
+        "descricao_longa",
+        "payload_automacao",
+        "status",
+        "versao",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "slug": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "talento_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "nivel": {
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3
+          ]
+        },
+        "nome": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requisitos": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/requisito"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "acao",
+              "arma",
+              "armadura",
+              "ativo",
+              "companheiro",
+              "controle",
+              "cura",
+              "dano",
+              "defensiva",
+              "drone",
+              "economia",
+              "equipamento",
+              "escudo",
+              "furtividade",
+              "loja",
+              "magia",
+              "malha",
+              "mana",
+              "margem",
+              "mit",
+              "movimento",
+              "narrativo",
+              "ofensiva",
+              "pa",
+              "passivo",
+              "pd",
+              "pericia",
+              "reacao",
+              "robo",
+              "robotica",
+              "runa",
+              "sobrecarga",
+              "social",
+              "suporte",
+              "trama"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "descricao_curta": {
+          "type": "string",
+          "minLength": 1
+        },
+        "descricao_longa": {
+          "type": "string",
+          "minLength": 1
+        },
+        "payload_automacao": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "efeitos"
+          ],
+          "properties": {
+            "efeitos": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/efeito"
+              }
+            },
+            "observacoes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "published",
+            "archived"
+          ]
+        },
+        "versao": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      }
+    },
+    "efeito": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "familia",
+        "tipo"
+      ],
+      "properties": {
+        "acao": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "acao_tags": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "alcance_m": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "alvo": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "alvo_extra": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "alvo_ignora_queda": {
+          "type": "boolean"
+        },
+        "alvo_tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "acao",
+              "agilidade",
+              "analise",
+              "arcanismo",
+              "arcano",
+              "arma_de_fogo",
+              "arma_energetica",
+              "arremesso",
+              "artes",
+              "ataque",
+              "atencao",
+              "audicao",
+              "balistica",
+              "biologia",
+              "carisma",
+              "ciencia",
+              "combate",
+              "conhecimento",
+              "conjuracao",
+              "construcao",
+              "coordenacao",
+              "corpo",
+              "corpo_a_corpo",
+              "criatividade",
+              "cultura",
+              "deducao",
+              "defensiva",
+              "discricao",
+              "distancia",
+              "drones",
+              "emocao",
+              "empatia",
+              "engenharia",
+              "expressao",
+              "furtividade",
+              "historia",
+              "influencia",
+              "intimidacao",
+              "logica",
+              "luta",
+              "magia",
+              "malha",
+              "manipulacao",
+              "medicina",
+              "medo",
+              "mira",
+              "mobilidade",
+              "movimento",
+              "ocultacao",
+              "ofensiva",
+              "percepcao",
+              "performance",
+              "persuasao",
+              "politica",
+              "precisao",
+              "presenca",
+              "programacao",
+              "psicologia",
+              "qualquer_teste",
+              "raciocinio",
+              "reacao",
+              "reflexos",
+              "reparo",
+              "resistencia",
+              "resistencia_mental",
+              "robos",
+              "robotica",
+              "sentido",
+              "sobrecarga",
+              "social",
+              "sociedade",
+              "tecnica",
+              "tecnomagia",
+              "teste_relacionado",
+              "toxicologia",
+              "trama",
+              "velocidade",
+              "vida",
+              "vigor",
+              "visao",
+              "vontade"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "alvo_texto": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "alvos": {
+          "type": "array"
+        },
+        "alvos_validos": {
+          "type": "array"
+        },
+        "aplica_em": {
+          "type": "array"
+        },
+        "beneficio": {
+          "type": [
+            "object",
+            "string",
+            "array"
+          ]
+        },
+        "beneficio_atacante": {
+          "type": [
+            "object",
+            "string",
+            "array"
+          ]
+        },
+        "beneficios": {
+          "type": "array"
+        },
+        "bonus_critico": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "bonus_padrao": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "buffs": {
+          "type": "array"
+        },
+        "cadencia": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "cadencia_recuperacao": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "campo": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "cobertura": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "comandos": {
+          "type": "array"
+        },
+        "condicao": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "condicao_ativacao": {
+          "type": [
+            "object",
+            "string",
+            "array"
+          ]
+        },
+        "consequencia_fim_cena": {
+          "type": [
+            "object",
+            "string",
+            "array"
+          ]
+        },
+        "consome_pa_ram": {
+          "type": "boolean"
+        },
+        "contexto": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "custo": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "custo_pa": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "custo_pa_extra": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "custo_ram": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "dado": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "dados": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "de": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "detecta": {
+          "type": "array"
+        },
+        "distancia_espacos": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "distancia_m": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "duracao": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "efeito_resultado": {
+          "type": [
+            "object",
+            "string",
+            "array"
+          ]
+        },
+        "em_acerto": {
+          "type": [
+            "object",
+            "string",
+            "array"
+          ]
+        },
+        "escopo": {
+          "type": "array"
+        },
+        "execucao": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "falha_limitada_conta_como": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "gatilho": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "gatilho_resultado": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "gatilhos_qualquer_um": {
+          "type": "array"
+        },
+        "gera_divida": {
+          "type": "boolean"
+        },
+        "identifica": {
+          "type": "array"
+        },
+        "ignora_alternancia_pj_pn": {
+          "type": "boolean"
+        },
+        "ignora_teste_estendido": {
+          "type": "boolean"
+        },
+        "impede": {
+          "type": "array"
+        },
+        "intervalo_ativa": {
+          "type": "array"
+        },
+        "magia_tipo": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "margem": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "margem_minima": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "max_aliados": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "max_alvos_multiplicador": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "max_dados_gatilho": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "max_pilhas": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "max_por_ataque": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "max_unidades": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "minimo": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "modos": {
+          "type": "array"
+        },
+        "momento": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "movimento_ate_alvo": {
+          "type": "boolean"
+        },
+        "multiplicador": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "multiplicador_espacos_extra": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "nao_conta_para_calculos_futuros": {
+          "type": "boolean"
+        },
+        "nao_substitui_acao_autonoma": {
+          "type": "boolean"
+        },
+        "narrador_aplica_consequencia_menor": {
+          "type": "boolean"
+        },
+        "niveis_revelados": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "novo_limite_diario": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "opcoes": {
+          "type": "array"
+        },
+        "opcoes_condicao": {
+          "type": "array"
+        },
+        "opcoes_descoberta": {
+          "type": "array"
+        },
+        "opcoes_por_dado": {
+          "type": "array"
+        },
+        "opcoes_sucesso": {
+          "type": "array"
+        },
+        "outros_usuarios_requerem_teste": {
+          "type": [
+            "object",
+            "string",
+            "array"
+          ]
+        },
+        "pa_bonus": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "pa_para_agir_na_rodada": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "pagamento": {
+          "type": "array"
+        },
+        "para": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "penalidade": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "penalidade_ofensiva_direcional": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "penalidades": {
+          "type": "array"
+        },
+        "percentual": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "pericias": {
+          "type": "array"
+        },
+        "pericias_opcoes": {
+          "type": "array"
+        },
+        "permite_acao_lenta_em_turno_rapido": {
+          "type": "boolean"
+        },
+        "primeira_vez_na_cena": {
+          "type": "boolean"
+        },
+        "protege_contra_rastreamento_sem_pista": {
+          "type": "boolean"
+        },
+        "protocolo": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "pv_resultante": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "quantidade_armas_leves_arremesso": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "quantidade_gatilhos": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "raridade_maxima": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "recobra_consciencia": {
+          "type": "boolean"
+        },
+        "recurso": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "reducao": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "reducao_dano": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "requer_conversa_breve": {
+          "type": "boolean"
+        },
+        "requer_ficcao_plausivel": {
+          "type": "boolean"
+        },
+        "requer_material_base": {
+          "type": "boolean"
+        },
+        "requer_outra_arma_arremessada_leve": {
+          "type": "boolean"
+        },
+        "requisito": {
+          "type": [
+            "object",
+            "string",
+            "array"
+          ]
+        },
+        "resolve_complicacao_menor": {
+          "type": "boolean"
+        },
+        "restricoes": {
+          "type": "array"
+        },
+        "resultado": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "rodadas_extra": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "sem_recurso": {
+          "type": "boolean"
+        },
+        "sem_teste": {
+          "type": "boolean"
+        },
+        "talento": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "tempo_execucao": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "teste": {
+          "type": [
+            "object",
+            "string",
+            "array"
+          ]
+        },
+        "tipo": {
+          "type": "string"
+        },
+        "usos": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "usuarios_autorizados": {
+          "type": "array"
+        },
+        "valor": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "valor_por_pilha": {
+          "type": [
+            "number",
+            "integer",
+            "string"
+          ]
+        },
+        "familia": {
+          "type": "string",
+          "enum": [
+            "aquisicao_nivel",
+            "modificador",
+            "margem",
+            "dado_gatilho",
+            "buff_empilhavel",
+            "reacao",
+            "economia_pa",
+            "aplicar_condicao",
+            "ataque_adicional",
+            "companheiro",
+            "trama",
+            "economia_loja",
+            "runa",
+            "troca_atributo",
+            "recurso",
+            "protecao",
+            "magia",
+            "propagacao_efeito",
+            "meta_talento",
+            "habilidade_narrativa",
+            "regra_especial"
+          ]
+        },
+        "alvo_acoes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "acessar_trama",
+              "agarrar",
+              "apagar_fogo",
+              "aparar",
+              "atacar",
+              "ataque_corpo_a_corpo",
+              "bloquear",
+              "derrubar",
+              "desarmar",
+              "deslocar",
+              "empurrar",
+              "escapar",
+              "esquivar",
+              "estrangular",
+              "falar",
+              "fintar",
+              "interagir",
+              "levantar",
+              "mirar",
+              "postura_defensiva",
+              "postura_ofensiva",
+              "preparar_turno",
+              "recarregar",
+              "resistir",
+              "sacar_dificil",
+              "sacar_rapido",
+              "soltar_alvo",
+              "usar_pericia"
+            ]
+          },
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

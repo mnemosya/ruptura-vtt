@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ruptura.vtt.core.campo_combate.v1.1.schema.json",
+  "title": "Ruptura VTT - Campo de Combate v1.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "_schema",
+    "_meta",
+    "grade",
+    "tamanhos",
+    "alcances",
+    "areas",
+    "alvo_valido",
+    "regiao_corpo_ataque",
+    "cobertura",
+    "protecao_improvisada",
+    "terrenos",
+    "condicoes_ambientais",
+    "movimento",
+    "status",
+    "versao",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "_schema": {
+      "const": "ruptura.vtt.core.campo_combate.v1.1"
+    },
+    "_meta": {
+      "type": "object"
+    },
+    "grade": {
+      "type": "object"
+    },
+    "tamanhos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "nome"
+        ],
+        "properties": {
+          "id": {
+            "enum": [
+              "pequeno",
+              "medio",
+              "grande",
+              "enorme",
+              "colossal"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "alcances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "enum": [
+              "pessoal",
+              "adjacente",
+              "distancia"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "areas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "nome"
+        ],
+        "properties": {
+          "id": {
+            "enum": [
+              "esfera",
+              "domo",
+              "aura",
+              "linha",
+              "faixa",
+              "parede",
+              "cubo",
+              "cone"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "alvo_valido": {
+      "type": "object"
+    },
+    "regiao_corpo_ataque": {
+      "type": "object"
+    },
+    "cobertura": {
+      "type": "object"
+    },
+    "protecao_improvisada": {
+      "type": "object"
+    },
+    "terrenos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id"
+        ]
+      }
+    },
+    "condicoes_ambientais": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "efeitos"
+        ]
+      }
+    },
+    "movimento": {
+      "type": "object"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "published",
+        "archived"
+      ]
+    },
+    "versao": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string"
+    }
+  }
+}

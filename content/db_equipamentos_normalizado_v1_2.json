@@ -1,0 +1,5053 @@
+{
+  "_schema": "ruptura.vtt.content.equipamentos.v1.2",
+  "_meta": {
+    "conteudo": "equipamentos",
+    "fonte": "Capitulo 19 — Mercado Noturno (ARMAS E ARMADURAS, EXPLOSIVOS, FARMACIA, FERRAMENTAS E UTILIDADES, DISPOSITIVOS TECNOLOGICOS, VEICULOS, VERTINAS) + ruptura_vtt_tabelas_mestre.md",
+    "versao_schema": "1.2.0",
+    "status_padrao": "published",
+    "gerado_em": "2026-06-29",
+    "total_registros": 119,
+    "hash_sha256_origem": "090d0c585b7c04cbda0ac5bd8a778118ba3866a62266a9e91a4a3b235f68e38f",
+    "hashes_por_fonte": {
+      "ARMAS_E_ARMADURAS": "b2f970c34dfd5cf481440d1bb92f40c12161a2a2b56e9997ecdd9567a4c0592f",
+      "EXPLOSIVOS": "f48ab6d8891bf74838efb29f429d533a27c53817a5aad5f9eaa8ec906a9fba43",
+      "FARMACIA": "1d6b2ea5ecb177cd0345edbd4f364c1b315fa5e5574af7828dc32f604a132dcb",
+      "FERRAMENTAS_E_UTILIDADES": "2583c0097cb48f721ceb97abcece8a8353b78cb73f138b821ed381c929d1bfe2",
+      "DISPOSITIVOS_TECNOLOGICOS": "2b5667405959932e9ff3594693d1be0881f4b994c90152728204d445b3834e48",
+      "VEICULOS": "3c913c0026f03bf46de3832d0c3074a82c0926aa9374244ab53415000eb52bb8",
+      "VERTINAS": "006e7a3dd97ef1f299faace81fcc5dda7069275519dee620c56e70829d8e9249"
+    },
+    "precedencia_fonte": "bloco_detalhado_sobre_tabela_resumo",
+    "divergencias_fonte": [
+      "Espingarda: municao 5 e propriedade Dispersao (bloco detalhado) sobre 8/Sangramento (tabela).",
+      "Metralhadora: raridade mantida como 'raro' (tabela); bloco detalhado diz 'muito rara'.",
+      "Bateria runica: 5 cargas (bloco detalhado) sobre 3 (tabela).",
+      "Moto planada popular: 12.000 (bloco detalhado) sobre 13.000 (tabela).",
+      "Injetor de adrenalina: Lento por 10 minutos e duplicacao por reaplicacao (bloco detalhado)."
+    ],
+    "observacoes": [
+      "Dano normalizado em tipo_dano (M6) + subtipo_dano; cortante_ou_perfurante usa subtipos_dano_possiveis.",
+      "Estatisticas de item separadas de payload_automacao; efeitos acionaveis em payload_automacao.efeitos[].",
+      "Resistencia normalizada: 'Desviar' do livro mapeia para a acao 'esquivar' (rotulo_livro preservado); 'Resistir' mapeia para a acao 'resistir'.",
+      "Granadas nao trazem CD na fonte: resistencia.cd = null (definido pelo arremesso/narrador).",
+      "Tags restritas a M11 estendida (+eletrico, +gelido, +acido); tags-categoria redundantes removidas.",
+      "Compatibilidade de municao normalizada como FK por slug de arma.",
+      "M17 estendida com a categoria 'municao' (decisao do usuario).",
+      "Kravita e modificador de material no nivel de instancia (+1 dano arma, +2 MIT armadura, +3 PD escudo), nao item nem runa.",
+      "Custos de PM/preco placeholder seguem fechamento em playtest quando aplicavel."
+    ],
+    "revisao_v1_2": [
+      "Adicionados created_at/updated_at por registro (alinhamento com os bancos irmaos)."
+    ]
+  },
+  "enums": {
+    "status": [
+      "draft",
+      "published",
+      "archived"
+    ],
+    "categorias": [
+      "arma",
+      "armadura",
+      "escudo",
+      "explosivo",
+      "farmacia",
+      "vertina",
+      "ferramenta",
+      "dispositivo",
+      "veiculo",
+      "municao"
+    ],
+    "raridade": [
+      "comum",
+      "incomum",
+      "muito_comum",
+      "muito_raro",
+      "raro"
+    ],
+    "tipo_dano": [
+      "acido",
+      "energetico",
+      "fisico",
+      "psiquico",
+      "toxico",
+      "trauma"
+    ],
+    "subtipo_dano": [
+      "cortante",
+      "contundente",
+      "perfurante",
+      "igneo",
+      "gelido",
+      "eletrico",
+      "acido",
+      "toxico",
+      "psiquico",
+      "trauma"
+    ],
+    "pericias": [
+      "arcanismo",
+      "artes",
+      "balistica",
+      "biologia",
+      "carisma",
+      "engenharia",
+      "furtividade",
+      "influencia",
+      "intimidacao",
+      "logica",
+      "luta",
+      "mobilidade",
+      "percepcao",
+      "precisao",
+      "psicologia",
+      "reflexos",
+      "robotica",
+      "sociedade",
+      "tecnomagia",
+      "vigor",
+      "vontade"
+    ],
+    "propriedades_arma": [
+      "alcance",
+      "aparar",
+      "arremesso",
+      "atordoamento",
+      "contusao",
+      "desarme",
+      "dispersao",
+      "empurrao",
+      "perfuracao",
+      "precisao",
+      "queimadura",
+      "rajada",
+      "sangramento",
+      "silencioso"
+    ],
+    "regioes_corpo": [
+      "bracos",
+      "cabeca",
+      "pernas",
+      "tronco"
+    ],
+    "condicoes": [
+      "agarrado",
+      "agarrando",
+      "atordoado",
+      "caido",
+      "cego",
+      "contundido",
+      "envenenado",
+      "imobilizado",
+      "inconsciente",
+      "insaturado",
+      "lento",
+      "ofuscado",
+      "queimando",
+      "sangrando",
+      "saturado",
+      "sufocando",
+      "surdo"
+    ],
+    "tags_sistema": [
+      "acao",
+      "acao_remove",
+      "acido",
+      "ambiente",
+      "arcano",
+      "arma",
+      "armadura",
+      "asfixia",
+      "ativo",
+      "audicao",
+      "companheiro",
+      "conjuracao",
+      "controle",
+      "cronometro",
+      "cura",
+      "dano",
+      "dano_continuo",
+      "defensiva",
+      "drone",
+      "economia",
+      "eletrico",
+      "equipamento",
+      "escudo",
+      "falha_automatica",
+      "fim_de_rodada",
+      "fisico",
+      "furtividade",
+      "gelido",
+      "igneo",
+      "incapacitante",
+      "loja",
+      "magia",
+      "malha",
+      "mana",
+      "margem",
+      "mit",
+      "movimento",
+      "narrativo",
+      "ofensiva",
+      "pa",
+      "passivo",
+      "pd",
+      "penalidade",
+      "penalidade_atributo",
+      "penalidade_defensiva",
+      "penalidade_ofensiva",
+      "penalidade_pericia",
+      "pericia",
+      "postura",
+      "reacao",
+      "reduz_pa",
+      "relacional",
+      "remove_por_cura",
+      "restricao_movimento",
+      "risco_morte",
+      "robo",
+      "robotica",
+      "runa",
+      "saturacao",
+      "sentido",
+      "sobrecarga",
+      "social",
+      "suporte",
+      "teste_unico_por_cena",
+      "trama",
+      "trava_acao",
+      "trava_defensiva",
+      "trava_ofensiva",
+      "trava_reacao",
+      "veneno",
+      "visao",
+      "vulneravel"
+    ],
+    "tipo_efeito": [
+      "ambiente",
+      "aplicar_condicao",
+      "ataque_adicional",
+      "buff_magia",
+      "buff_temporario",
+      "cura",
+      "dano_em_area",
+      "desativar_dispositivos",
+      "economia_pa",
+      "efeito_com_resistencia",
+      "emocao_artificial",
+      "estabilizar",
+      "interferencia_sinal",
+      "mana_temporaria",
+      "modificador",
+      "narrativo",
+      "penalidade_pericia",
+      "recurso",
+      "reduzir_pa",
+      "remover_condicao",
+      "revelar",
+      "utilitario"
+    ],
+    "tipo_protecao": [
+      "fisica",
+      "energetica",
+      "hibrida"
+    ],
+    "classe_porte": [
+      "leve",
+      "media",
+      "pesada"
+    ],
+    "acoes_defesa": [
+      "esquivar",
+      "resistir",
+      "aparar",
+      "bloquear"
+    ]
+  },
+  "contagem_por_categoria": {
+    "arma": 31,
+    "armadura": 18,
+    "dispositivo": 8,
+    "escudo": 6,
+    "explosivo": 10,
+    "farmacia": 10,
+    "ferramenta": 12,
+    "municao": 10,
+    "veiculo": 6,
+    "vertina": 8
+  },
+  "itens": [
+    {
+      "id": "faca",
+      "slug": "faca",
+      "nome": "Faca",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "muito_comum",
+      "raridade_label": "Muito Comum",
+      "preco": 15,
+      "descricao_curta": "Lâmina curta e versátil, usada em cozinha, caça ou combate.",
+      "descricao_longa": "Lâmina curta e versátil, usada em cozinha, caça ou combate. Serve para confrontos corpo a corpo e arremessos rápidos e discretos, sendo o instrumento de ataque mais difundido nas ruas.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "corpo_a_corpo",
+      "estatisticas": {
+        "tipo_arma": "corpo_a_corpo",
+        "classe_porte": "leve",
+        "dado_dano": "1d6",
+        "soma_atributo": "corpo",
+        "pericia_teste": "luta",
+        "alcance": {
+          "tipo": "adjacente"
+        },
+        "propriedades": [
+          "arremesso",
+          "silencioso"
+        ],
+        "slots_runa_max": 1,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "perfurante",
+        "arremesso": {
+          "pericia_teste": "precisao",
+          "eficaz_m": 10,
+          "max_m": 20,
+          "penalidade_alem_eficaz": -2,
+          "soma_atributo": null
+        }
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "adaga",
+      "slug": "adaga",
+      "nome": "Adaga",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 120,
+      "descricao_curta": "Projetada para matar, com lâmina dupla e ponta reforçada que otimiza cortes e estocadas rápidas.",
+      "descricao_longa": "Projetada para matar, com lâmina dupla e ponta reforçada que otimiza cortes e estocadas rápidas. Discreta e amplamente usada por militares, agentes e assassinos.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "corpo_a_corpo",
+      "estatisticas": {
+        "tipo_arma": "corpo_a_corpo",
+        "classe_porte": "leve",
+        "dado_dano": "1d6",
+        "soma_atributo": "corpo",
+        "pericia_teste": "luta",
+        "alcance": {
+          "tipo": "adjacente"
+        },
+        "propriedades": [
+          "sangramento"
+        ],
+        "slots_runa_max": 1,
+        "tipo_dano": "fisico",
+        "subtipos_dano_possiveis": [
+          "cortante",
+          "perfurante"
+        ]
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "soco_ingles",
+      "slug": "soco_ingles",
+      "nome": "Soco-inglês",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "muito_comum",
+      "raridade_label": "Muito Comum",
+      "preco": 50,
+      "descricao_curta": "Peça de metal projetada para encaixar nos dedos e potencializar socos.",
+      "descricao_longa": "Peça de metal projetada para encaixar nos dedos e potencializar socos. Simples, barata e eficiente em curta distância, muito usada por gangues urbanas por ser fácil de esconder.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "corpo_a_corpo",
+      "estatisticas": {
+        "tipo_arma": "corpo_a_corpo",
+        "classe_porte": "leve",
+        "dado_dano": "1d4",
+        "soma_atributo": "corpo",
+        "pericia_teste": "luta",
+        "alcance": {
+          "tipo": "adjacente"
+        },
+        "propriedades": [
+          "contusao"
+        ],
+        "slots_runa_max": 1,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "contundente"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "tonfa",
+      "slug": "tonfa",
+      "nome": "Tonfa",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 120,
+      "descricao_curta": "Arma tradicional com empunhadura lateral que aumenta estabilidade e controle.",
+      "descricao_longa": "Arma tradicional com empunhadura lateral que aumenta estabilidade e controle. Funciona bem ofensiva e defensivamente, usada por forças de segurança e lutadores treinados.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "corpo_a_corpo",
+      "estatisticas": {
+        "tipo_arma": "corpo_a_corpo",
+        "classe_porte": "leve",
+        "dado_dano": "1d6",
+        "soma_atributo": "corpo",
+        "pericia_teste": "luta",
+        "alcance": {
+          "tipo": "adjacente"
+        },
+        "propriedades": [
+          "contusao",
+          "aparar"
+        ],
+        "slots_runa_max": 1,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "contundente"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "rapieira",
+      "slug": "rapieira",
+      "nome": "Rapieira",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 280,
+      "descricao_curta": "Lâmina estreita e longa, criada para estocadas rápidas e duelos de precisão.",
+      "descricao_longa": "Lâmina estreita e longa, criada para estocadas rápidas e duelos de precisão. Favorece estilo, mobilidade e técnica sobre força bruta.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "corpo_a_corpo",
+      "estatisticas": {
+        "tipo_arma": "corpo_a_corpo",
+        "classe_porte": "media",
+        "dado_dano": "1d8",
+        "soma_atributo": "corpo",
+        "pericia_teste": "luta",
+        "alcance": {
+          "tipo": "adjacente"
+        },
+        "propriedades": [
+          "perfuracao",
+          "aparar"
+        ],
+        "slots_runa_max": 2,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "perfurante"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "lanca",
+      "slug": "lanca",
+      "nome": "Lança",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 120,
+      "descricao_curta": "Haste leve com ponta perfurante, projetada para combate versátil.",
+      "descricao_longa": "Haste leve com ponta perfurante, projetada para combate versátil. Pode manter o inimigo à distância em corpo a corpo ou ser arremessada a curta distância.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "corpo_a_corpo",
+      "estatisticas": {
+        "tipo_arma": "corpo_a_corpo",
+        "classe_porte": "media",
+        "dado_dano": "1d6",
+        "soma_atributo": "corpo",
+        "pericia_teste": "luta",
+        "alcance": {
+          "tipo": "adjacente",
+          "estendido_m": 2
+        },
+        "propriedades": [
+          "perfuracao",
+          "alcance",
+          "arremesso"
+        ],
+        "slots_runa_max": 2,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "perfurante",
+        "arremesso": {
+          "pericia_teste": "precisao",
+          "eficaz_m": 10,
+          "max_m": 20,
+          "penalidade_alem_eficaz": -2,
+          "soma_atributo": null
+        }
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "espada_curta",
+      "slug": "espada_curta",
+      "nome": "Espada curta",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 200,
+      "descricao_curta": "Lâmina compacta feita para combate direto em ambientes urbanos.",
+      "descricao_longa": "Lâmina compacta feita para combate direto em ambientes urbanos. Favorece rapidez e manobrabilidade sem sacrificar letalidade.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "corpo_a_corpo",
+      "estatisticas": {
+        "tipo_arma": "corpo_a_corpo",
+        "classe_porte": "media",
+        "dado_dano": "1d8",
+        "soma_atributo": "corpo",
+        "pericia_teste": "luta",
+        "alcance": {
+          "tipo": "adjacente"
+        },
+        "propriedades": [
+          "sangramento",
+          "aparar"
+        ],
+        "slots_runa_max": 2,
+        "tipo_dano": "fisico",
+        "subtipos_dano_possiveis": [
+          "cortante",
+          "perfurante"
+        ]
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "machado_de_mao",
+      "slug": "machado_de_mao",
+      "nome": "Machado de mão",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 220,
+      "descricao_curta": "Ferramenta robusta adaptada para confronto.",
+      "descricao_longa": "Ferramenta robusta adaptada para confronto. Golpes pesados partem madeira, metal fino ou carne, e seu equilíbrio permite lançamento a curta distância.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "corpo_a_corpo",
+      "estatisticas": {
+        "tipo_arma": "corpo_a_corpo",
+        "classe_porte": "media",
+        "dado_dano": "1d8",
+        "soma_atributo": "corpo",
+        "pericia_teste": "luta",
+        "alcance": {
+          "tipo": "adjacente"
+        },
+        "propriedades": [
+          "sangramento",
+          "arremesso"
+        ],
+        "slots_runa_max": 2,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "cortante",
+        "arremesso": {
+          "pericia_teste": "precisao",
+          "eficaz_m": 6,
+          "max_m": 12,
+          "penalidade_alem_eficaz": -2,
+          "soma_atributo": null
+        }
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "bastao",
+      "slug": "bastao",
+      "nome": "Bastão",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "muito_comum",
+      "raridade_label": "Muito Comum",
+      "preco": 50,
+      "descricao_curta": "Arma simples, direta e confiável, feita de madeira endurecida, plástico reforçado ou qualquer material rígido.",
+      "descricao_longa": "Arma simples, direta e confiável, feita de madeira endurecida, plástico reforçado ou qualquer material rígido. Uma das armas mais antigas ainda em uso nas ruas e arenas.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "corpo_a_corpo",
+      "estatisticas": {
+        "tipo_arma": "corpo_a_corpo",
+        "classe_porte": "media",
+        "dado_dano": "1d6",
+        "soma_atributo": "corpo",
+        "pericia_teste": "luta",
+        "alcance": {
+          "tipo": "adjacente"
+        },
+        "propriedades": [
+          "contusao",
+          "aparar"
+        ],
+        "slots_runa_max": 2,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "contundente"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "corrente_leve",
+      "slug": "corrente_leve",
+      "nome": "Corrente leve",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 180,
+      "descricao_curta": "Segmentos metálicos reforçados ou sucata adaptada.",
+      "descricao_longa": "Segmentos metálicos reforçados ou sucata adaptada. Flexível e imprevisível, atinge além do braço e pode prender membros ou armas inimigas.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "corpo_a_corpo",
+      "estatisticas": {
+        "tipo_arma": "corpo_a_corpo",
+        "classe_porte": "media",
+        "dado_dano": "1d6",
+        "soma_atributo": "corpo",
+        "pericia_teste": "luta",
+        "alcance": {
+          "tipo": "adjacente",
+          "estendido_m": 2
+        },
+        "propriedades": [
+          "desarme",
+          "alcance"
+        ],
+        "slots_runa_max": 2,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "contundente"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "manoplas",
+      "slug": "manoplas",
+      "nome": "Manoplas",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 150,
+      "descricao_curta": "Punhos envoltos por camadas de metal leve ou compósitos rígidos, ampliando impacto em socos e bloqueios.",
+      "descricao_longa": "Punhos envoltos por camadas de metal leve ou compósitos rígidos, ampliando impacto em socos e bloqueios. Comuns em arenas de rua e fáceis de fabricar.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "corpo_a_corpo",
+      "estatisticas": {
+        "tipo_arma": "corpo_a_corpo",
+        "classe_porte": "media",
+        "dado_dano": "1d6",
+        "soma_atributo": "corpo",
+        "pericia_teste": "luta",
+        "alcance": {
+          "tipo": "adjacente"
+        },
+        "propriedades": [
+          "contusao",
+          "aparar"
+        ],
+        "slots_runa_max": 2,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "contundente"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "espada_longa",
+      "slug": "espada_longa",
+      "nome": "Espada longa",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 350,
+      "descricao_curta": "Lâmina extensa para golpes largos e estocadas de força.",
+      "descricao_longa": "Lâmina extensa para golpes largos e estocadas de força. Impraticável para discrição, mas devastadora em confrontos abertos.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "corpo_a_corpo",
+      "estatisticas": {
+        "tipo_arma": "corpo_a_corpo",
+        "classe_porte": "pesada",
+        "dado_dano": "1d10",
+        "soma_atributo": "corpo",
+        "pericia_teste": "luta",
+        "alcance": {
+          "tipo": "adjacente"
+        },
+        "propriedades": [
+          "sangramento",
+          "aparar"
+        ],
+        "slots_runa_max": 3,
+        "tipo_dano": "fisico",
+        "subtipos_dano_possiveis": [
+          "cortante",
+          "perfurante"
+        ]
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "machado_de_guerra",
+      "slug": "machado_de_guerra",
+      "nome": "Machado de guerra",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 350,
+      "descricao_curta": "Versão ampliada do machado de mão, feita para partir armaduras improvisadas, barricadas e corpos.",
+      "descricao_longa": "Versão ampliada do machado de mão, feita para partir armaduras improvisadas, barricadas e corpos. Impõe respeito instantâneo em campo aberto.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "corpo_a_corpo",
+      "estatisticas": {
+        "tipo_arma": "corpo_a_corpo",
+        "classe_porte": "pesada",
+        "dado_dano": "1d12",
+        "soma_atributo": "corpo",
+        "pericia_teste": "luta",
+        "alcance": {
+          "tipo": "adjacente"
+        },
+        "propriedades": [
+          "sangramento"
+        ],
+        "slots_runa_max": 3,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "cortante"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "martelo_pesado",
+      "slug": "martelo_pesado",
+      "nome": "Martelo pesado",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 350,
+      "descricao_curta": "Bloco maciço preso a uma haste, capaz de reduzir concreto e ossos a escombros.",
+      "descricao_longa": "Bloco maciço preso a uma haste, capaz de reduzir concreto e ossos a escombros. Símbolo de brutalidade, comum em execuções públicas e intimidação direta.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "corpo_a_corpo",
+      "estatisticas": {
+        "tipo_arma": "corpo_a_corpo",
+        "classe_porte": "pesada",
+        "dado_dano": "1d12",
+        "soma_atributo": "corpo",
+        "pericia_teste": "luta",
+        "alcance": {
+          "tipo": "adjacente"
+        },
+        "propriedades": [
+          "contusao",
+          "atordoamento",
+          "empurrao"
+        ],
+        "slots_runa_max": 3,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "contundente"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "alabarda",
+      "slug": "alabarda",
+      "nome": "Alabarda",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 350,
+      "descricao_curta": "Arma de haste longa unindo lâmina cortante e ponta perfurante.",
+      "descricao_longa": "Arma de haste longa unindo lâmina cortante e ponta perfurante. Alcance superior e versatilidade para manter inimigos afastados ou desarmá-los.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "corpo_a_corpo",
+      "estatisticas": {
+        "tipo_arma": "corpo_a_corpo",
+        "classe_porte": "pesada",
+        "dado_dano": "1d10",
+        "soma_atributo": "corpo",
+        "pericia_teste": "luta",
+        "alcance": {
+          "tipo": "adjacente",
+          "estendido_m": 2
+        },
+        "propriedades": [
+          "perfuracao",
+          "alcance",
+          "desarme"
+        ],
+        "slots_runa_max": 3,
+        "tipo_dano": "fisico",
+        "subtipos_dano_possiveis": [
+          "cortante",
+          "perfurante"
+        ]
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "dardos",
+      "slug": "dardos",
+      "nome": "Dardos",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 50,
+      "descricao_curta": "Arremesso leve e prático, equilibrado para voar em linha reta a curta distância.",
+      "descricao_longa": "Arremesso leve e prático, equilibrado para voar em linha reta a curta distância. Muito usado em emboscadas e por quem prefere um recurso discreto no bolso.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "arremesso_disparo",
+      "estatisticas": {
+        "tipo_arma": "arremesso_disparo",
+        "classe_porte": "leve",
+        "dado_dano": "1d4",
+        "soma_atributo": null,
+        "pericia_teste": "precisao",
+        "alcance": {
+          "tipo": "distancia",
+          "eficaz_m": 6,
+          "max_m": 12,
+          "penalidade_alem_eficaz": -2
+        },
+        "propriedades": [
+          "arremesso",
+          "silencioso",
+          "rajada"
+        ],
+        "slots_runa_max": 1,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "perfurante",
+        "inclui_na_compra": "conjunto com 4"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "shuriken",
+      "slug": "shuriken",
+      "nome": "Shuriken",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 200,
+      "descricao_curta": "Estrela metálica de múltiplas pontas para cortes superficiais e sangramentos rápidos.",
+      "descricao_longa": "Estrela metálica de múltiplas pontas para cortes superficiais e sangramentos rápidos. Carregada em conjuntos, permite arremessos sucessivos que pressionam pelo acúmulo de ferimentos.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "arremesso_disparo",
+      "estatisticas": {
+        "tipo_arma": "arremesso_disparo",
+        "classe_porte": "leve",
+        "dado_dano": "1d4",
+        "soma_atributo": null,
+        "pericia_teste": "precisao",
+        "alcance": {
+          "tipo": "distancia",
+          "eficaz_m": 10,
+          "max_m": 20,
+          "penalidade_alem_eficaz": -2
+        },
+        "propriedades": [
+          "arremesso",
+          "silencioso",
+          "rajada",
+          "sangramento"
+        ],
+        "slots_runa_max": 1,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "cortante",
+        "inclui_na_compra": "pacote com 6"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "arco_curto",
+      "slug": "arco_curto",
+      "nome": "Arco curto",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 200,
+      "descricao_curta": "Estrutura leve de madeira reforçada ou liga metálica, usada para caça e emboscadas discretas.",
+      "descricao_longa": "Estrutura leve de madeira reforçada ou liga metálica, usada para caça e emboscadas discretas. Versátil, dispara desde flechas comuns até projéteis especiais.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "arremesso_disparo",
+      "estatisticas": {
+        "tipo_arma": "arremesso_disparo",
+        "classe_porte": "media",
+        "dado_dano": "1d6",
+        "soma_atributo": null,
+        "pericia_teste": "precisao",
+        "alcance": {
+          "tipo": "distancia",
+          "eficaz_m": 30,
+          "max_m": 60,
+          "penalidade_alem_eficaz": -2
+        },
+        "propriedades": [
+          "silencioso",
+          "precisao"
+        ],
+        "slots_runa_max": 2,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "perfurante",
+        "municao_max": 1,
+        "inclui_na_compra": "12 flechas simples",
+        "municao_compativel": "flecha_simples"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "besta_leve",
+      "slug": "besta_leve",
+      "nome": "Besta leve",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 350,
+      "descricao_curta": "Versão simplificada da besta, popular entre quem precisa de algo discreto e confiável.",
+      "descricao_longa": "Versão simplificada da besta, popular entre quem precisa de algo discreto e confiável. Perde potência ante a versão pesada, mas continua silenciosa e mortal a média distância.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "arremesso_disparo",
+      "estatisticas": {
+        "tipo_arma": "arremesso_disparo",
+        "classe_porte": "media",
+        "dado_dano": "1d8",
+        "soma_atributo": null,
+        "pericia_teste": "precisao",
+        "alcance": {
+          "tipo": "distancia",
+          "eficaz_m": 60,
+          "max_m": 120,
+          "penalidade_alem_eficaz": -2
+        },
+        "propriedades": [
+          "silencioso",
+          "precisao"
+        ],
+        "slots_runa_max": 2,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "perfurante",
+        "municao_max": 1,
+        "inclui_na_compra": "6 virotes",
+        "municao_compativel": "virotes"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "arco_longo",
+      "slug": "arco_longo",
+      "nome": "Arco longo",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 400,
+      "descricao_curta": "Versão robusta do arco tradicional, feita para atingir alvos a grandes distâncias com mais potência.",
+      "descricao_longa": "Versão robusta do arco tradicional, feita para atingir alvos a grandes distâncias com mais potência. Exige treinamento e força, mas recompensa com precisão e impacto.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "arremesso_disparo",
+      "estatisticas": {
+        "tipo_arma": "arremesso_disparo",
+        "classe_porte": "pesada",
+        "dado_dano": "1d10",
+        "soma_atributo": null,
+        "pericia_teste": "precisao",
+        "alcance": {
+          "tipo": "distancia",
+          "eficaz_m": 300,
+          "max_m": 600,
+          "penalidade_alem_eficaz": -2
+        },
+        "propriedades": [
+          "perfuracao",
+          "silencioso",
+          "precisao"
+        ],
+        "slots_runa_max": 3,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "perfurante",
+        "municao_max": 1,
+        "inclui_na_compra": "12 flechas simples",
+        "municao_compativel": "flecha_simples"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "besta_pesada",
+      "slug": "besta_pesada",
+      "nome": "Besta pesada",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 600,
+      "descricao_curta": "Um dos projéteis mais temidos entre armas de disparo.",
+      "descricao_longa": "Um dos projéteis mais temidos entre armas de disparo. Lenta para recarregar, mas devastadora ao atingir, capaz de atravessar blindagens leves e causar ferimentos profundos.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "arremesso_disparo",
+      "estatisticas": {
+        "tipo_arma": "arremesso_disparo",
+        "classe_porte": "pesada",
+        "dado_dano": "1d12",
+        "soma_atributo": null,
+        "pericia_teste": "precisao",
+        "alcance": {
+          "tipo": "distancia",
+          "eficaz_m": 200,
+          "max_m": 400,
+          "penalidade_alem_eficaz": -2
+        },
+        "propriedades": [
+          "perfuracao",
+          "silencioso",
+          "precisao"
+        ],
+        "slots_runa_max": 3,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "perfurante",
+        "municao_max": 1,
+        "municao_compativel": "virotes"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "pistola_de_bolso",
+      "slug": "pistola_de_bolso",
+      "nome": "Pistola de bolso",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 300,
+      "descricao_curta": "Pequena, leve e extremamente discreta.",
+      "descricao_longa": "Pequena, leve e extremamente discreta. Preferida onde a vigilância é rígida mas a defesa é necessária. Letal a curta distância, perde eficiência rápido em combates abertos.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "fogo",
+      "estatisticas": {
+        "tipo_arma": "fogo",
+        "classe_porte": "leve",
+        "dado_dano": "1d6",
+        "soma_atributo": null,
+        "pericia_teste": "balistica",
+        "alcance": {
+          "tipo": "distancia",
+          "eficaz_m": 10,
+          "max_m": 20,
+          "penalidade_alem_eficaz": -2
+        },
+        "propriedades": [
+          "sangramento"
+        ],
+        "slots_runa_max": 1,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "perfurante",
+        "municao_max": 6,
+        "municao_compativel": "mun_pistola"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "revolver",
+      "slug": "revolver",
+      "nome": "Revólver",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 500,
+      "descricao_curta": "Arma robusta e confiável, conhecida por disparar mesmo após anos sem manutenção.",
+      "descricao_longa": "Arma robusta e confiável, conhecida por disparar mesmo após anos sem manutenção. Tambor de seis tiros limita a cadência, mas garante confiabilidade em qualquer situação.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "fogo",
+      "estatisticas": {
+        "tipo_arma": "fogo",
+        "classe_porte": "leve",
+        "dado_dano": "1d6",
+        "soma_atributo": null,
+        "pericia_teste": "balistica",
+        "alcance": {
+          "tipo": "distancia",
+          "eficaz_m": 20,
+          "max_m": 40,
+          "penalidade_alem_eficaz": -2
+        },
+        "propriedades": [
+          "sangramento",
+          "perfuracao"
+        ],
+        "slots_runa_max": 1,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "perfurante",
+        "municao_max": 6,
+        "municao_compativel": "mun_pistola"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "pistola_pesada",
+      "slug": "pistola_pesada",
+      "nome": "Pistola pesada",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "descricao_curta": "Modelo reforçado, de maior calibre e penetração.",
+      "descricao_longa": "Modelo reforçado, de maior calibre e penetração. Usada em confrontos de rua quando intimidação e impacto importam, ainda mantendo relativa discrição.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "fogo",
+      "estatisticas": {
+        "tipo_arma": "fogo",
+        "classe_porte": "leve",
+        "dado_dano": "1d8",
+        "soma_atributo": null,
+        "pericia_teste": "balistica",
+        "alcance": {
+          "tipo": "distancia",
+          "eficaz_m": 30,
+          "max_m": 60,
+          "penalidade_alem_eficaz": -2
+        },
+        "propriedades": [
+          "sangramento",
+          "perfuracao"
+        ],
+        "slots_runa_max": 1,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "perfurante",
+        "municao_max": 8,
+        "municao_compativel": "mun_pistola"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "submetralhadora",
+      "slug": "submetralhadora",
+      "nome": "Submetralhadora",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1500,
+      "descricao_curta": "Compacta e de disparo rápido, favorita em curta distância com múltiplos alvos.",
+      "descricao_longa": "Compacta e de disparo rápido, favorita em curta distância com múltiplos alvos. Poder por tiro baixo, compensado pela cadência.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "fogo",
+      "estatisticas": {
+        "tipo_arma": "fogo",
+        "classe_porte": "media",
+        "dado_dano": "1d6",
+        "soma_atributo": null,
+        "pericia_teste": "balistica",
+        "alcance": {
+          "tipo": "distancia",
+          "eficaz_m": 20,
+          "max_m": 40,
+          "penalidade_alem_eficaz": -2
+        },
+        "propriedades": [
+          "sangramento",
+          "rajada"
+        ],
+        "slots_runa_max": 2,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "perfurante",
+        "municao_max": 30,
+        "municao_por_ataque": 5,
+        "municao_compativel": "mun_fuzil"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "carabina",
+      "slug": "carabina",
+      "nome": "Carabina",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1500,
+      "descricao_curta": "Versão compacta do fuzil, de cano curto.",
+      "descricao_longa": "Versão compacta do fuzil, de cano curto. Favorece precisão a média distância com recuo mais controlável. Comum em vigilância privada e patrulhas urbanas.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "fogo",
+      "estatisticas": {
+        "tipo_arma": "fogo",
+        "classe_porte": "media",
+        "dado_dano": "1d8",
+        "soma_atributo": null,
+        "pericia_teste": "balistica",
+        "alcance": {
+          "tipo": "distancia",
+          "eficaz_m": 50,
+          "max_m": 100,
+          "penalidade_alem_eficaz": -2
+        },
+        "propriedades": [
+          "sangramento",
+          "perfuracao",
+          "precisao"
+        ],
+        "slots_runa_max": 2,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "perfurante",
+        "municao_max": 20,
+        "municao_compativel": "mun_fuzil"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "escopeta_curta",
+      "slug": "escopeta_curta",
+      "nome": "Escopeta curta",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "descricao_curta": "Arma brutal a curta distância, capaz de incapacitar com um único disparo.",
+      "descricao_longa": "Arma brutal a curta distância, capaz de incapacitar com um único disparo. Imprecisa a distância maior, mas no alcance ideal espalha destruição em área restrita.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "fogo",
+      "estatisticas": {
+        "tipo_arma": "fogo",
+        "classe_porte": "media",
+        "dado_dano": "1d10",
+        "soma_atributo": null,
+        "pericia_teste": "balistica",
+        "alcance": {
+          "tipo": "distancia",
+          "eficaz_m": 5,
+          "max_m": 10,
+          "penalidade_alem_eficaz": -2
+        },
+        "propriedades": [
+          "sangramento",
+          "atordoamento"
+        ],
+        "slots_runa_max": 2,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "perfurante",
+        "municao_max": 6,
+        "municao_compativel": "mun_escopeta"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "espingarda",
+      "slug": "espingarda",
+      "nome": "Espingarda",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1500,
+      "descricao_curta": "Versão de cano longo da escopeta, usada em combate de proximidade com mais estabilidade e potência.",
+      "descricao_longa": "Versão de cano longo da escopeta, usada em combate de proximidade com mais estabilidade e potência. Disparo concentrado capaz de abrir portas e destroçar barricadas leves.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "fogo",
+      "estatisticas": {
+        "tipo_arma": "fogo",
+        "classe_porte": "pesada",
+        "dado_dano": "2d6",
+        "soma_atributo": null,
+        "pericia_teste": "balistica",
+        "alcance": {
+          "tipo": "distancia",
+          "eficaz_m": 15,
+          "max_m": 30,
+          "penalidade_alem_eficaz": -2
+        },
+        "propriedades": [
+          "sangramento",
+          "dispersao"
+        ],
+        "slots_runa_max": 3,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "perfurante",
+        "municao_max": 5,
+        "municao_compativel": "mun_escopeta"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "rifle_de_assalto",
+      "slug": "rifle_de_assalto",
+      "nome": "Rifle de assalto",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2500,
+      "descricao_curta": "Arma de médio-calibre projetada para combates prolongados, equilibrando cadência, alcance e poder de fogo.",
+      "descricao_longa": "Arma de médio-calibre projetada para combates prolongados, equilibrando cadência, alcance e poder de fogo.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "fogo",
+      "estatisticas": {
+        "tipo_arma": "fogo",
+        "classe_porte": "pesada",
+        "dado_dano": "2d6",
+        "soma_atributo": null,
+        "pericia_teste": "balistica",
+        "alcance": {
+          "tipo": "distancia",
+          "eficaz_m": 100,
+          "max_m": 200,
+          "penalidade_alem_eficaz": -2
+        },
+        "propriedades": [
+          "sangramento",
+          "perfuracao",
+          "precisao"
+        ],
+        "slots_runa_max": 3,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "perfurante",
+        "municao_max": 30,
+        "municao_compativel": "mun_fuzil"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "rifle_de_precisao",
+      "slug": "rifle_de_precisao",
+      "nome": "Rifle de precisão",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 4000,
+      "descricao_curta": "Usado em emboscadas ou execuções planejadas, capaz de atingir alvos a grandes distâncias com letalidade extrema.",
+      "descricao_longa": "Usado em emboscadas ou execuções planejadas, capaz de atingir alvos a grandes distâncias com letalidade extrema.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "fogo",
+      "estatisticas": {
+        "tipo_arma": "fogo",
+        "classe_porte": "pesada",
+        "dado_dano": "2d10",
+        "soma_atributo": null,
+        "pericia_teste": "balistica",
+        "alcance": {
+          "tipo": "distancia",
+          "eficaz_m": 400,
+          "max_m": 800,
+          "penalidade_alem_eficaz": -2
+        },
+        "propriedades": [
+          "sangramento",
+          "perfuracao",
+          "precisao"
+        ],
+        "slots_runa_max": 3,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "perfurante",
+        "municao_max": 2,
+        "municao_compativel": "mun_precisao"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "metralhadora",
+      "slug": "metralhadora",
+      "nome": "Metralhadora",
+      "categoria": "arma",
+      "categoria_label": "Arma",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2500,
+      "descricao_curta": "Projetada para supressão, dispara rajadas contínuas que varrem áreas inteiras.",
+      "descricao_longa": "Projetada para supressão, dispara rajadas contínuas que varrem áreas inteiras. Peso e consumo a tornam pouco prática fora de combates planejados, mas devastadora em posição.",
+      "tags": [
+        "arma",
+        "equipamento",
+        "loja",
+        "dano"
+      ],
+      "subtipo": "fogo",
+      "estatisticas": {
+        "tipo_arma": "fogo",
+        "classe_porte": "pesada",
+        "dado_dano": "1d8",
+        "soma_atributo": null,
+        "pericia_teste": "balistica",
+        "alcance": {
+          "tipo": "distancia",
+          "eficaz_m": 100,
+          "max_m": 250,
+          "penalidade_alem_eficaz": -2
+        },
+        "propriedades": [
+          "sangramento",
+          "rajada"
+        ],
+        "slots_runa_max": 3,
+        "tipo_dano": "fisico",
+        "subtipo_dano": "perfurante",
+        "municao_max": 80,
+        "municao_por_ataque": 10,
+        "municao_compativel": "mun_fuzil"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "flecha_simples",
+      "slug": "flecha_simples",
+      "nome": "Flecha simples",
+      "categoria": "municao",
+      "categoria_label": "Munição",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 50,
+      "descricao_curta": "Projétil padrão para arcos, vendido em kits.",
+      "descricao_longa": "Projétil padrão para arcos, vendido em kits.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "kit": "12 flechas",
+        "compatibilidade": {
+          "subtipos_arma": [
+            "arremesso_disparo"
+          ],
+          "familia": "flechas",
+          "itens": [
+            "arco_curto",
+            "arco_longo"
+          ]
+        }
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "virotes",
+      "slug": "virotes",
+      "nome": "Virotes",
+      "categoria": "municao",
+      "categoria_label": "Munição",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 50,
+      "descricao_curta": "Projétil padrão para bestas, vendido em kits.",
+      "descricao_longa": "Projétil padrão para bestas, vendido em kits.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "kit": "6 virotes",
+        "compatibilidade": {
+          "familia": "virotes",
+          "itens": [
+            "besta_leve",
+            "besta_pesada"
+          ]
+        }
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "flecha_flamejante",
+      "slug": "flecha_flamejante",
+      "nome": "Flecha flamejante",
+      "categoria": "municao",
+      "categoria_label": "Munição",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 200,
+      "descricao_curta": "Flecha incendiária para arcos.",
+      "descricao_longa": "Flecha incendiária para arcos.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "kit": "12 flechas",
+        "compatibilidade": {
+          "familia": "flechas",
+          "itens": [
+            "arco_curto",
+            "arco_longo"
+          ]
+        }
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "dano_extra": "1d6",
+            "tipo_dano": "energetico",
+            "subtipo_dano": "igneo"
+          },
+          {
+            "tipo": "aplicar_condicao",
+            "condicao": "queimando",
+            "gatilho": "sucesso_critico"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "flecha_toxica",
+      "slug": "flecha_toxica",
+      "nome": "Flecha tóxica",
+      "categoria": "municao",
+      "categoria_label": "Munição",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 200,
+      "descricao_curta": "Flecha impregnada com toxinas, para arcos.",
+      "descricao_longa": "Flecha impregnada com toxinas, para arcos.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "kit": "12 flechas",
+        "compatibilidade": {
+          "familia": "flechas",
+          "itens": [
+            "arco_curto",
+            "arco_longo"
+          ]
+        }
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "aplicar_condicao",
+            "condicao": "envenenado"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "flecha_eletrica",
+      "slug": "flecha_eletrica",
+      "nome": "Flecha elétrica",
+      "categoria": "municao",
+      "categoria_label": "Munição",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 300,
+      "descricao_curta": "Flecha de descarga elétrica, para arcos.",
+      "descricao_longa": "Flecha de descarga elétrica, para arcos.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "kit": "12 flechas",
+        "compatibilidade": {
+          "familia": "flechas",
+          "itens": [
+            "arco_curto",
+            "arco_longo"
+          ]
+        }
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "dano_extra": "1d6",
+            "tipo_dano": "energetico",
+            "subtipo_dano": "eletrico"
+          },
+          {
+            "tipo": "aplicar_condicao",
+            "condicao": "atordoado",
+            "gatilho": "sucesso_critico"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "flecha_explosiva",
+      "slug": "flecha_explosiva",
+      "nome": "Flecha explosiva",
+      "categoria": "municao",
+      "categoria_label": "Munição",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 350,
+      "descricao_curta": "Flecha que explode em área ao impacto, para arcos.",
+      "descricao_longa": "Flecha que explode em área ao impacto, para arcos.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "kit": "12 flechas",
+        "compatibilidade": {
+          "familia": "flechas",
+          "itens": [
+            "arco_curto",
+            "arco_longo"
+          ]
+        }
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "dano_em_area",
+            "dado": "2d6",
+            "tipo_dano": "energetico",
+            "area_m": 1,
+            "subtipo_dano": "igneo"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "mun_pistola",
+      "slug": "mun_pistola",
+      "nome": "Munição de pistola",
+      "categoria": "municao",
+      "categoria_label": "Munição",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 50,
+      "descricao_curta": "Cartuchos para armas de fogo leves.",
+      "descricao_longa": "Cartuchos para armas de fogo leves.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "kit": "8 projéteis",
+        "compatibilidade": {
+          "familia": "pistola",
+          "itens": [
+            "pistola_de_bolso",
+            "revolver",
+            "pistola_pesada"
+          ]
+        }
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "mun_fuzil",
+      "slug": "mun_fuzil",
+      "nome": "Munição de fuzil",
+      "categoria": "municao",
+      "categoria_label": "Munição",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 150,
+      "descricao_curta": "Cartuchos para fuzis e armas automáticas.",
+      "descricao_longa": "Cartuchos para fuzis e armas automáticas.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "kit": "30 projéteis",
+        "compatibilidade": {
+          "familia": "fuzil",
+          "itens": [
+            "submetralhadora",
+            "carabina",
+            "rifle_de_assalto",
+            "metralhadora"
+          ]
+        }
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "mun_escopeta",
+      "slug": "mun_escopeta",
+      "nome": "Munição de escopeta",
+      "categoria": "municao",
+      "categoria_label": "Munição",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 100,
+      "descricao_curta": "Cartuchos para escopetas e espingardas.",
+      "descricao_longa": "Cartuchos para escopetas e espingardas.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "kit": "6 projéteis",
+        "compatibilidade": {
+          "familia": "escopeta",
+          "itens": [
+            "escopeta_curta",
+            "espingarda"
+          ]
+        }
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "mun_precisao",
+      "slug": "mun_precisao",
+      "nome": "Munição de precisão",
+      "categoria": "municao",
+      "categoria_label": "Munição",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 150,
+      "descricao_curta": "Cartuchos de alta precisão para rifles de longo alcance.",
+      "descricao_longa": "Cartuchos de alta precisão para rifles de longo alcance.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "kit": "5 projéteis",
+        "compatibilidade": {
+          "familia": "precisao",
+          "itens": [
+            "rifle_de_precisao"
+          ]
+        }
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "jaqueta_couro_reforcada",
+      "slug": "jaqueta_couro_reforcada",
+      "nome": "Jaqueta de couro reforçada",
+      "categoria": "armadura",
+      "categoria_label": "Armadura",
+      "raridade": "muito_comum",
+      "raridade_label": "Muito Comum",
+      "preco": 100,
+      "descricao_curta": "Jaqueta de rua adaptada com camadas internas de couro endurecido ou fibras sintéticas.",
+      "descricao_longa": "Jaqueta de rua adaptada com camadas internas de couro endurecido ou fibras sintéticas. Passa despercebida em bares e becos, protegendo o tronco de cortes e golpes leves.",
+      "tags": [
+        "armadura",
+        "mit",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "leve",
+      "ocultavel": "nao",
+      "estatisticas": {
+        "classe_porte": "leve",
+        "mit_base": 3,
+        "regioes": [
+          "tronco"
+        ],
+        "tipo_protecao": "fisica",
+        "slots_runa_max": 1
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "jaqueta_isolante",
+      "slug": "jaqueta_isolante",
+      "nome": "Jaqueta isolante",
+      "categoria": "armadura",
+      "categoria_label": "Armadura",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 400,
+      "descricao_curta": "Casaco reforçado com fibras tratadas contra condução elétrica e calor.",
+      "descricao_longa": "Casaco reforçado com fibras tratadas contra condução elétrica e calor. Protege contra choques, queimaduras superficiais e efeitos ígneos.",
+      "tags": [
+        "armadura",
+        "mit",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "leve",
+      "ocultavel": "nao",
+      "estatisticas": {
+        "classe_porte": "leve",
+        "mit_base": 2,
+        "regioes": [
+          "tronco"
+        ],
+        "tipo_protecao": "energetica",
+        "slots_runa_max": 1
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "traje_urbano_hibrido",
+      "slug": "traje_urbano_hibrido",
+      "nome": "Traje urbano híbrido",
+      "categoria": "armadura",
+      "categoria_label": "Armadura",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 600,
+      "descricao_curta": "Vestimenta de tecido reforçado com materiais mistos, atenua impacto físico e energia térmica ou elétrica.",
+      "descricao_longa": "Vestimenta de tecido reforçado com materiais mistos, atenua impacto físico e energia térmica ou elétrica. Valorizado por quem se move em áreas de risco sem chamar atenção.",
+      "tags": [
+        "armadura",
+        "mit",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "leve",
+      "ocultavel": "nao",
+      "estatisticas": {
+        "classe_porte": "leve",
+        "mit_base": 2,
+        "regioes": [
+          "tronco"
+        ],
+        "tipo_protecao": "hibrida",
+        "slots_runa_max": 1
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "cotoveleiras",
+      "slug": "cotoveleiras",
+      "nome": "Cotoveleiras",
+      "categoria": "armadura",
+      "categoria_label": "Armadura",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 150,
+      "descricao_curta": "Conjunto de braçadeiras e cotoveleiras acolchoadas.",
+      "descricao_longa": "Conjunto de braçadeiras e cotoveleiras acolchoadas. Adaptado para combate, protege contra fraturas leves e golpes diretos nos braços.",
+      "tags": [
+        "armadura",
+        "mit",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "leve",
+      "ocultavel": "parcial",
+      "estatisticas": {
+        "classe_porte": "leve",
+        "mit_base": 2,
+        "regioes": [
+          "bracos"
+        ],
+        "tipo_protecao": "fisica",
+        "slots_runa_max": 1
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "calca_acolchoada",
+      "slug": "calca_acolchoada",
+      "nome": "Calça acolchoada",
+      "categoria": "armadura",
+      "categoria_label": "Armadura",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 150,
+      "descricao_curta": "Roupa com camadas de enchimento e reforço em coxas e joelhos.",
+      "descricao_longa": "Roupa com camadas de enchimento e reforço em coxas e joelhos. Garante resistência contra quedas, chutes e estilhaços nas pernas.",
+      "tags": [
+        "armadura",
+        "mit",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "leve",
+      "ocultavel": "nao",
+      "estatisticas": {
+        "classe_porte": "leve",
+        "mit_base": 2,
+        "regioes": [
+          "pernas"
+        ],
+        "tipo_protecao": "fisica",
+        "slots_runa_max": 1
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "gorro_reforcado",
+      "slug": "gorro_reforcado",
+      "nome": "Gorro reforçado",
+      "categoria": "armadura",
+      "categoria_label": "Armadura",
+      "raridade": "muito_comum",
+      "raridade_label": "Muito Comum",
+      "preco": 100,
+      "descricao_curta": "Touca ou gorro urbano com reforços internos de fibras compactadas ou placas maleáveis.",
+      "descricao_longa": "Touca ou gorro urbano com reforços internos de fibras compactadas ou placas maleáveis. Discreto e barato, oferece proteção mínima contra impactos na cabeça.",
+      "tags": [
+        "armadura",
+        "mit",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "leve",
+      "ocultavel": "nao",
+      "estatisticas": {
+        "classe_porte": "leve",
+        "mit_base": 2,
+        "regioes": [
+          "cabeca"
+        ],
+        "tipo_protecao": "fisica",
+        "slots_runa_max": 1
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "capacete_balistico",
+      "slug": "capacete_balistico",
+      "nome": "Capacete balístico",
+      "categoria": "armadura",
+      "categoria_label": "Armadura",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 300,
+      "descricao_curta": "Ligas leves reforçadas com fibras de kravita cobrindo crânio e parte da face.",
+      "descricao_longa": "Ligas leves reforçadas com fibras de kravita cobrindo crânio e parte da face. Boa proteção contra impactos e projéteis, mas impossível de ocultar.",
+      "tags": [
+        "armadura",
+        "mit",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "media",
+      "ocultavel": "nao",
+      "estatisticas": {
+        "classe_porte": "media",
+        "mit_base": 3,
+        "regioes": [
+          "cabeca"
+        ],
+        "tipo_protecao": "fisica",
+        "slots_runa_max": 2
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "colete_balistico",
+      "slug": "colete_balistico",
+      "nome": "Colete balístico",
+      "categoria": "armadura",
+      "categoria_label": "Armadura",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 500,
+      "descricao_curta": "Versão moderna e rígida para resistir a lâminas e disparos de armas de fogo.",
+      "descricao_longa": "Versão moderna e rígida para resistir a lâminas e disparos de armas de fogo. Pode ser usado sob casacos, ainda que aumente o volume corporal.",
+      "tags": [
+        "armadura",
+        "mit",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "media",
+      "ocultavel": "parcial",
+      "estatisticas": {
+        "classe_porte": "media",
+        "mit_base": 4,
+        "regioes": [
+          "tronco"
+        ],
+        "tipo_protecao": "fisica",
+        "slots_runa_max": 2
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "ombreiras_compostas",
+      "slug": "ombreiras_compostas",
+      "nome": "Ombreiras compostas",
+      "categoria": "armadura",
+      "categoria_label": "Armadura",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 350,
+      "descricao_curta": "Placas reforçadas fixadas aos ombros e braços, cobrindo bíceps e antebraços.",
+      "descricao_longa": "Placas reforçadas fixadas aos ombros e braços, cobrindo bíceps e antebraços. Úteis contra golpes de contato direto e choques de bastões ou lâminas.",
+      "tags": [
+        "armadura",
+        "mit",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "media",
+      "ocultavel": "nao",
+      "estatisticas": {
+        "classe_porte": "media",
+        "mit_base": 3,
+        "regioes": [
+          "bracos"
+        ],
+        "tipo_protecao": "fisica",
+        "slots_runa_max": 2
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "perneiras_reforcadas",
+      "slug": "perneiras_reforcadas",
+      "nome": "Perneiras reforçadas",
+      "categoria": "armadura",
+      "categoria_label": "Armadura",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 400,
+      "descricao_curta": "Proteções robustas para coxas e canelas, usadas em zonas de confronto urbano.",
+      "descricao_longa": "Proteções robustas para coxas e canelas, usadas em zonas de confronto urbano. Escondem-se sob calças largas, mas deformam a silhueta e produzem ruído.",
+      "tags": [
+        "armadura",
+        "mit",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "media",
+      "ocultavel": "parcial",
+      "estatisticas": {
+        "classe_porte": "media",
+        "mit_base": 3,
+        "regioes": [
+          "pernas"
+        ],
+        "tipo_protecao": "fisica",
+        "slots_runa_max": 2
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "jaqueta_termoestatica",
+      "slug": "jaqueta_termoestatica",
+      "nome": "Jaqueta termoestática",
+      "categoria": "armadura",
+      "categoria_label": "Armadura",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 800,
+      "descricao_curta": "Revestida com fibras tratadas para resistir a calor e frio extremos.",
+      "descricao_longa": "Revestida com fibras tratadas para resistir a calor e frio extremos. Protege contra descargas energéticas, incêndios e ambientes instáveis.",
+      "tags": [
+        "armadura",
+        "mit",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "media",
+      "ocultavel": "parcial",
+      "estatisticas": {
+        "classe_porte": "media",
+        "mit_base": 3,
+        "regioes": [
+          "tronco"
+        ],
+        "tipo_protecao": "energetica",
+        "slots_runa_max": 2
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "colete_hibrido_urbano",
+      "slug": "colete_hibrido_urbano",
+      "nome": "Colete híbrido urbano",
+      "categoria": "armadura",
+      "categoria_label": "Armadura",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1200,
+      "descricao_curta": "Estrutura modular de placas compostas ajustada ao tronco.",
+      "descricao_longa": "Estrutura modular de placas compostas ajustada ao tronco. Equilibra proteção contra golpes físicos e ataques energéticos; aparência pesada e industrial.",
+      "tags": [
+        "armadura",
+        "mit",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "media",
+      "ocultavel": "nao",
+      "estatisticas": {
+        "classe_porte": "media",
+        "mit_base": 3,
+        "regioes": [
+          "tronco"
+        ],
+        "tipo_protecao": "hibrida",
+        "slots_runa_max": 2
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "capacete_integral",
+      "slug": "capacete_integral",
+      "nome": "Capacete integral",
+      "categoria": "armadura",
+      "categoria_label": "Armadura",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 600,
+      "descricao_curta": "Cobertura total para a cabeça, com viseira reforçada e proteção mandibular.",
+      "descricao_longa": "Cobertura total para a cabeça, com viseira reforçada e proteção mandibular. Resiste a impactos diretos e projéteis leves, reduzindo o campo de visão periférico.",
+      "tags": [
+        "armadura",
+        "mit",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "pesada",
+      "ocultavel": "nao",
+      "estatisticas": {
+        "classe_porte": "pesada",
+        "mit_base": 7,
+        "regioes": [
+          "cabeca"
+        ],
+        "tipo_protecao": "fisica",
+        "slots_runa_max": 3
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "penalidade_pericia",
+            "valor": -1,
+            "alvo_tags": [
+              "mobilidade"
+            ],
+            "condicao_aplicacao": "enquanto_equipada"
+          },
+          {
+            "tipo": "penalidade_pericia",
+            "valor": -1,
+            "alvo_tags": [
+              "reflexos"
+            ],
+            "condicao_aplicacao": "enquanto_equipada"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "colete_reforcado",
+      "slug": "colete_reforcado",
+      "nome": "Colete reforçado",
+      "categoria": "armadura",
+      "categoria_label": "Armadura",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 900,
+      "descricao_curta": "Placas rígidas sobre tecidos balísticos cobrindo peito e abdômen.",
+      "descricao_longa": "Placas rígidas sobre tecidos balísticos cobrindo peito e abdômen. Resiste a facadas, tiros de baixo calibre e impactos diretos. Comum em forças paramilitares.",
+      "tags": [
+        "armadura",
+        "mit",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "pesada",
+      "ocultavel": "nao",
+      "estatisticas": {
+        "classe_porte": "pesada",
+        "mit_base": 8,
+        "regioes": [
+          "tronco"
+        ],
+        "tipo_protecao": "fisica",
+        "slots_runa_max": 3
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "penalidade_pericia",
+            "valor": -1,
+            "alvo_tags": [
+              "mobilidade"
+            ],
+            "condicao_aplicacao": "enquanto_equipada"
+          },
+          {
+            "tipo": "penalidade_pericia",
+            "valor": -1,
+            "alvo_tags": [
+              "reflexos"
+            ],
+            "condicao_aplicacao": "enquanto_equipada"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "ombreiras_laminadas",
+      "slug": "ombreiras_laminadas",
+      "nome": "Ombreiras laminadas",
+      "categoria": "armadura",
+      "categoria_label": "Armadura",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 700,
+      "descricao_curta": "Placas sobrepostas que reforçam ombros, bíceps e antebraços.",
+      "descricao_longa": "Placas sobrepostas que reforçam ombros, bíceps e antebraços. Aumentam a capacidade de absorver pancadas em bloqueios e agarrões.",
+      "tags": [
+        "armadura",
+        "mit",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "pesada",
+      "ocultavel": "nao",
+      "estatisticas": {
+        "classe_porte": "pesada",
+        "mit_base": 7,
+        "regioes": [
+          "bracos"
+        ],
+        "tipo_protecao": "fisica",
+        "slots_runa_max": 3
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "penalidade_pericia",
+            "valor": -1,
+            "alvo_tags": [
+              "mobilidade"
+            ],
+            "condicao_aplicacao": "enquanto_equipada"
+          },
+          {
+            "tipo": "penalidade_pericia",
+            "valor": -1,
+            "alvo_tags": [
+              "reflexos"
+            ],
+            "condicao_aplicacao": "enquanto_equipada"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "perneiras_blindadas",
+      "slug": "perneiras_blindadas",
+      "nome": "Perneiras blindadas",
+      "categoria": "armadura",
+      "categoria_label": "Armadura",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 800,
+      "descricao_curta": "Placas densas recobrindo coxas e canelas, com estabilidade contra explosões próximas e golpes em corrida.",
+      "descricao_longa": "Placas densas recobrindo coxas e canelas, com estabilidade contra explosões próximas e golpes em corrida. Permitem mobilidade razoável em marcha.",
+      "tags": [
+        "armadura",
+        "mit",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "pesada",
+      "ocultavel": "nao",
+      "estatisticas": {
+        "classe_porte": "pesada",
+        "mit_base": 7,
+        "regioes": [
+          "pernas"
+        ],
+        "tipo_protecao": "fisica",
+        "slots_runa_max": 3
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "penalidade_pericia",
+            "valor": -1,
+            "alvo_tags": [
+              "mobilidade"
+            ],
+            "condicao_aplicacao": "enquanto_equipada"
+          },
+          {
+            "tipo": "penalidade_pericia",
+            "valor": -1,
+            "alvo_tags": [
+              "reflexos"
+            ],
+            "condicao_aplicacao": "enquanto_equipada"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "peitoral_isolante",
+      "slug": "peitoral_isolante",
+      "nome": "Peitoral isolante",
+      "categoria": "armadura",
+      "categoria_label": "Armadura",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1400,
+      "descricao_curta": "Camadas cerâmicas e compostos dielétricos rúnicos que dissipam calor e corrente.",
+      "descricao_longa": "Camadas cerâmicas e compostos dielétricos rúnicos que dissipam calor e corrente. Focada em proteção energética, menos eficiente contra lâminas e projéteis.",
+      "tags": [
+        "armadura",
+        "mit",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "pesada",
+      "ocultavel": "nao",
+      "estatisticas": {
+        "classe_porte": "pesada",
+        "mit_base": 7,
+        "regioes": [
+          "tronco"
+        ],
+        "tipo_protecao": "energetica",
+        "slots_runa_max": 3
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "penalidade_pericia",
+            "valor": -1,
+            "alvo_tags": [
+              "mobilidade"
+            ],
+            "condicao_aplicacao": "enquanto_equipada"
+          },
+          {
+            "tipo": "penalidade_pericia",
+            "valor": -1,
+            "alvo_tags": [
+              "reflexos"
+            ],
+            "condicao_aplicacao": "enquanto_equipada"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "exotraje_pesado",
+      "slug": "exotraje_pesado",
+      "nome": "Exotraje pesado",
+      "categoria": "armadura",
+      "categoria_label": "Armadura",
+      "raridade": "muito_raro",
+      "raridade_label": "Muito Raro",
+      "preco": 3000,
+      "descricao_curta": "Carcaça híbrida de placas metálicas e polímeros reforçados cobrindo tronco, braços e pernas.",
+      "descricao_longa": "Carcaça híbrida de placas metálicas e polímeros reforçados cobrindo tronco, braços e pernas. Segunda pele blindada usada em operações de choque e por inquisidores.",
+      "tags": [
+        "armadura",
+        "mit",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "pesada",
+      "ocultavel": "nao",
+      "estatisticas": {
+        "classe_porte": "pesada",
+        "mit_base": 10,
+        "regioes": [
+          "tronco",
+          "bracos",
+          "pernas"
+        ],
+        "tipo_protecao": "hibrida",
+        "slots_runa_max": 3
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "penalidade_pericia",
+            "valor": -1,
+            "alvo_tags": [
+              "mobilidade"
+            ],
+            "condicao_aplicacao": "enquanto_equipada"
+          },
+          {
+            "tipo": "penalidade_pericia",
+            "valor": -1,
+            "alvo_tags": [
+              "reflexos"
+            ],
+            "condicao_aplicacao": "enquanto_equipada"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "escudo_compacto",
+      "slug": "escudo_compacto",
+      "nome": "Escudo compacto",
+      "categoria": "escudo",
+      "categoria_label": "Escudo",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 150,
+      "descricao_curta": "Modelo pequeno, dobrável ou em ligas leves, para carregar discretamente.",
+      "descricao_longa": "Modelo pequeno, dobrável ou em ligas leves, para carregar discretamente. Útil para desviar golpes rápidos e conter ataques isolados.",
+      "tags": [
+        "escudo",
+        "pd",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "leve",
+      "ocultavel": "parcial",
+      "estatisticas": {
+        "classe_porte": "leve",
+        "pd_max": 5,
+        "tipo_protecao": "fisica",
+        "slots_runa_max": 1
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "escudo_tatico_leve",
+      "slug": "escudo_tatico_leve",
+      "nome": "Escudo tático leve",
+      "categoria": "escudo",
+      "categoria_label": "Escudo",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 400,
+      "descricao_curta": "Maior que o compacto, mas leve para manobras rápidas.",
+      "descricao_longa": "Maior que o compacto, mas leve para manobras rápidas. Compósitos balísticos que suportam confrontos mais intensos em ruas estreitas.",
+      "tags": [
+        "escudo",
+        "pd",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "leve",
+      "ocultavel": "parcial",
+      "estatisticas": {
+        "classe_porte": "leve",
+        "pd_max": 8,
+        "tipo_protecao": "fisica",
+        "slots_runa_max": 1
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "escudo_balistico",
+      "slug": "escudo_balistico",
+      "nome": "Escudo balístico",
+      "categoria": "escudo",
+      "categoria_label": "Escudo",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 600,
+      "descricao_curta": "Placa média em compósitos reforçados, usada em contenções urbanas.",
+      "descricao_longa": "Placa média em compósitos reforçados, usada em contenções urbanas. Protege contra ataques físicos diretos, especialmente projéteis de armas de fogo.",
+      "tags": [
+        "escudo",
+        "pd",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "media",
+      "ocultavel": "nao",
+      "estatisticas": {
+        "classe_porte": "media",
+        "pd_max": 12,
+        "tipo_protecao": "fisica",
+        "slots_runa_max": 2
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "escudo_reforcado_hibrido",
+      "slug": "escudo_reforcado_hibrido",
+      "nome": "Escudo reforçado híbrido",
+      "categoria": "escudo",
+      "categoria_label": "Escudo",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 900,
+      "descricao_curta": "Estrutura robusta com reforços rúnicos discretos.",
+      "descricao_longa": "Estrutura robusta com reforços rúnicos discretos. Proteção sólida contra impactos físicos e explosões energéticas.",
+      "tags": [
+        "escudo",
+        "pd",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "media",
+      "ocultavel": "nao",
+      "estatisticas": {
+        "classe_porte": "media",
+        "pd_max": 8,
+        "tipo_protecao": "hibrida",
+        "slots_runa_max": 2
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "escudo_torre",
+      "slug": "escudo_torre",
+      "nome": "Escudo torre",
+      "categoria": "escudo",
+      "categoria_label": "Escudo",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "descricao_curta": "Escudo de corpo inteiro em ligas densas, cobrindo do chão ao peito.",
+      "descricao_longa": "Escudo de corpo inteiro em ligas densas, cobrindo do chão ao peito. Transforma o usuário em muralha móvel; formidável em defesa estática.",
+      "tags": [
+        "escudo",
+        "pd",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "pesada",
+      "ocultavel": "nao",
+      "estatisticas": {
+        "classe_porte": "pesada",
+        "pd_max": 16,
+        "tipo_protecao": "fisica",
+        "slots_runa_max": 3
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "escudo_torre_hibrido",
+      "slug": "escudo_torre_hibrido",
+      "nome": "Escudo torre híbrido",
+      "categoria": "escudo",
+      "categoria_label": "Escudo",
+      "raridade": "muito_raro",
+      "raridade_label": "Muito Raro",
+      "preco": 2000,
+      "descricao_curta": "Versão avançada com camadas de kravita e reforço rúnico que dispersam energia além de impactos físicos.",
+      "descricao_longa": "Versão avançada com camadas de kravita e reforço rúnico que dispersam energia além de impactos físicos. Para operações de alto risco e arenas de elite.",
+      "tags": [
+        "escudo",
+        "pd",
+        "equipamento",
+        "loja",
+        "defensiva"
+      ],
+      "subtipo": "pesada",
+      "ocultavel": "nao",
+      "estatisticas": {
+        "classe_porte": "pesada",
+        "pd_max": 12,
+        "tipo_protecao": "hibrida",
+        "slots_runa_max": 3
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "granada_fumaca",
+      "slug": "granada_fumaca",
+      "nome": "Granada de fumaça",
+      "categoria": "explosivo",
+      "categoria_label": "Explosivo",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 120,
+      "descricao_curta": "Cilindro descartável que libera fumaça densa em segundos, ocultando movimentos e dificultando mira inimiga.",
+      "descricao_longa": "Cilindro descartável que libera fumaça densa em segundos, ocultando movimentos e dificultando mira inimiga.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "dano",
+        "ambiente"
+      ],
+      "estatisticas": {
+        "custo_pa": 2,
+        "area_m": 3,
+        "alcance_arremesso_m": 10
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "ambiente",
+            "efeito": "bloqueia_visao",
+            "duracao": "1_rodada"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "granada_luz",
+      "slug": "granada_luz",
+      "nome": "Granada de luz",
+      "categoria": "explosivo",
+      "categoria_label": "Explosivo",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 120,
+      "descricao_curta": "Dispositivo portátil que emite clarão intenso.",
+      "descricao_longa": "Dispositivo portátil que emite clarão intenso. Usada em infiltração e contenção urbana.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "dano",
+        "incapacitante",
+        "visao"
+      ],
+      "estatisticas": {
+        "custo_pa": 2,
+        "area_m": 2,
+        "alcance_arremesso_m": 10
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "efeito_com_resistencia",
+            "resistencia": {
+              "pericia": "esquivar",
+              "rotulo_livro": "Desviar",
+              "cd": null
+            },
+            "area": "raio",
+            "condicao_falha": "ofuscado",
+            "duracao_condicao": "fim_proximo_turno_alvo",
+            "condicao_falha_critica": "cego"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "granada_choque",
+      "slug": "granada_choque",
+      "nome": "Granada de choque",
+      "categoria": "explosivo",
+      "categoria_label": "Explosivo",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 250,
+      "descricao_curta": "Granada compacta que libera descarga elétrica radial.",
+      "descricao_longa": "Granada compacta que libera descarga elétrica radial. Usada para conter grupos rapidamente.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "dano",
+        "incapacitante",
+        "eletrico"
+      ],
+      "estatisticas": {
+        "custo_pa": 2,
+        "area_m": 2,
+        "alcance_arremesso_m": 10
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "efeito_com_resistencia",
+            "resistencia": {
+              "pericia": "resistir",
+              "cd": null
+            },
+            "area": "raio",
+            "condicao_falha": "atordoado",
+            "duracao_condicao": "fim_proximo_turno_alvo"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "granada_acido",
+      "slug": "granada_acido",
+      "nome": "Granada de ácido",
+      "categoria": "explosivo",
+      "categoria_label": "Explosivo",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 250,
+      "descricao_curta": "Cilindro pressurizado que libera jato corrosivo em área curta.",
+      "descricao_longa": "Cilindro pressurizado que libera jato corrosivo em área curta. Abre brechas rápidas ou enfraquece alvos blindados.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "dano",
+        "acido"
+      ],
+      "estatisticas": {
+        "custo_pa": 2,
+        "area_m": 2,
+        "alcance_arremesso_m": 10
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "efeito_com_resistencia",
+            "resistencia": {
+              "pericia": "resistir",
+              "cd": null
+            },
+            "area": "raio",
+            "dano": "1d6",
+            "tipo_dano": "acido",
+            "subtipo_dano": "acido",
+            "sucesso": "metade",
+            "nota": "estruturas e peças com MIT/PD sofrem dobra redução"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "granada_criogenica",
+      "slug": "granada_criogenica",
+      "nome": "Granada criogênica",
+      "categoria": "explosivo",
+      "categoria_label": "Explosivo",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 250,
+      "descricao_curta": "Cilindro pressurizado que libera gás supergelado, congelando rapidamente o entorno.",
+      "descricao_longa": "Cilindro pressurizado que libera gás supergelado, congelando rapidamente o entorno.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "dano",
+        "gelido",
+        "incapacitante"
+      ],
+      "estatisticas": {
+        "custo_pa": 2,
+        "area_m": 2,
+        "alcance_arremesso_m": 10
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "efeito_com_resistencia",
+            "resistencia": {
+              "pericia": "resistir",
+              "cd": null
+            },
+            "area": "raio",
+            "dano": "1d6",
+            "tipo_dano": "energetico",
+            "subtipo_dano": "gelido",
+            "sucesso": "metade_sem_condicao",
+            "condicao_falha": "lento",
+            "duracao_condicao": "fim_proxima_rodada"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "granada_explosiva",
+      "slug": "granada_explosiva",
+      "nome": "Granada explosiva",
+      "categoria": "explosivo",
+      "categoria_label": "Explosivo",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 250,
+      "descricao_curta": "Versão padrão de uso militar, projetada para causar dano letal em curta distância.",
+      "descricao_longa": "Versão padrão de uso militar, projetada para causar dano letal em curta distância.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "dano",
+        "igneo",
+        "fisico"
+      ],
+      "estatisticas": {
+        "custo_pa": 2,
+        "area_m": 2,
+        "alcance_arremesso_m": 10
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "efeito_com_resistencia",
+            "resistencia": {
+              "pericia": "esquivar",
+              "rotulo_livro": "Desviar",
+              "cd": null
+            },
+            "area": "raio",
+            "dano": "1d6",
+            "tipo_dano": "fisico",
+            "subtipo_dano": "contundente",
+            "sucesso": "metade"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "granada_pem",
+      "slug": "granada_pem",
+      "nome": "Granada PEM",
+      "categoria": "explosivo",
+      "categoria_label": "Explosivo",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 300,
+      "descricao_curta": "Dispositivo que emite pulso eletromagnético, neutralizando eletrônicos e tecnomagia em área (inclui conexões rúnicas de escalpos).",
+      "descricao_longa": "Dispositivo que emite pulso eletromagnético, neutralizando eletrônicos e tecnomagia em área (inclui conexões rúnicas de escalpos).",
+      "tags": [
+        "equipamento",
+        "loja",
+        "dano",
+        "malha"
+      ],
+      "estatisticas": {
+        "custo_pa": 2,
+        "area_m": 3,
+        "alcance_arremesso_m": 10
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "desativar_dispositivos",
+            "alvo": "dispositivos_tecnomagia",
+            "duracao": "1_minuto"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "granada_irritante",
+      "slug": "granada_irritante",
+      "nome": "Granada irritante",
+      "categoria": "explosivo",
+      "categoria_label": "Explosivo",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 300,
+      "descricao_curta": "Cilindro pressurizado que libera gás lacrimogêneo.",
+      "descricao_longa": "Cilindro pressurizado que libera gás lacrimogêneo. Usado para conter invasores ou dispersar grupos sem dano letal.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "dano",
+        "incapacitante",
+        "reduz_pa",
+        "visao"
+      ],
+      "estatisticas": {
+        "custo_pa": 2,
+        "area_m": 2,
+        "alcance_arremesso_m": 10
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "efeito_com_resistencia",
+            "resistencia": {
+              "pericia": "resistir",
+              "cd": null
+            },
+            "area": "raio",
+            "condicao_falha": "ofuscado",
+            "duracao_condicao": "fim_proxima_rodada"
+          },
+          {
+            "tipo": "reduzir_pa",
+            "valor": 1,
+            "gatilho": "falha",
+            "duracao": "fim_proxima_rodada"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "carga_explosiva_remota",
+      "slug": "carga_explosiva_remota",
+      "nome": "Carga explosiva remota",
+      "categoria": "explosivo",
+      "categoria_label": "Explosivo",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 400,
+      "descricao_curta": "Explosivo moldado em bloco para abrir brechas em paredes, portas ou veículos.",
+      "descricao_longa": "Explosivo moldado em bloco para abrir brechas em paredes, portas ou veículos. Detonado por controle à distância.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "dano",
+        "igneo",
+        "fisico"
+      ],
+      "estatisticas": {
+        "custo_pa": 2,
+        "area_m": 2
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "dano_em_area",
+            "dado": "2d6",
+            "tipo_dano": "fisico",
+            "area": "raio",
+            "subtipo_dano": "contundente"
+          },
+          {
+            "tipo": "dano_em_area",
+            "dado": "1d6",
+            "tipo_dano": "energetico",
+            "area": "raio",
+            "subtipo_dano": "igneo"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "mina_de_proximidade",
+      "slug": "mina_de_proximidade",
+      "nome": "Mina de proximidade",
+      "categoria": "explosivo",
+      "categoria_label": "Explosivo",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 400,
+      "descricao_curta": "Dispositivo de ativação automática, disparando explosão ao detectar movimento em raio curto.",
+      "descricao_longa": "Dispositivo de ativação automática, disparando explosão ao detectar movimento em raio curto.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "dano",
+        "igneo",
+        "fisico"
+      ],
+      "estatisticas": {
+        "custo_pa": 2,
+        "area_m": 2
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "dano_em_area",
+            "dado": "1d6",
+            "tipo_dano": "fisico",
+            "area": "raio",
+            "subtipo_dano": "contundente",
+            "gatilho": "proximidade"
+          },
+          {
+            "tipo": "dano_em_area",
+            "dado": "1d6",
+            "tipo_dano": "energetico",
+            "area": "raio",
+            "subtipo_dano": "igneo",
+            "gatilho": "proximidade"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "kit_estabilizacao_pv",
+      "slug": "kit_estabilizacao_pv",
+      "nome": "Kit de estabilização (PV)",
+      "categoria": "farmacia",
+      "categoria_label": "Farmácia",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 25,
+      "descricao_curta": "Estojo com faixas, géis hemostáticos e suprimentos mínimos para impedir o agravamento de feridas graves até tratamento adequado.",
+      "descricao_longa": "Estojo com faixas, géis hemostáticos e suprimentos mínimos para impedir o agravamento de feridas graves até tratamento adequado.",
+      "tags": [
+        "cura",
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 1,
+        "custo_pa": 2,
+        "pericia_teste": "biologia",
+        "alvo": "adjacente"
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "estabilizar",
+            "efeito": "impede_morte_imediata",
+            "pausa_marcador": "colapso_fisico"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "kit_estabilizacao_pe",
+      "slug": "kit_estabilizacao_pe",
+      "nome": "Kit de estabilização (PE)",
+      "categoria": "farmacia",
+      "categoria_label": "Farmácia",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 50,
+      "descricao_curta": "Conjunto de emergência com estabilizadores neuroquímicos e biofeedback portátil, mantendo função cerebral mínima e impedindo coma profundo.",
+      "descricao_longa": "Conjunto de emergência com estabilizadores neuroquímicos e biofeedback portátil, mantendo função cerebral mínima e impedindo coma profundo.",
+      "tags": [
+        "cura",
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 1,
+        "custo_pa": 2,
+        "pericia_teste": "biologia",
+        "alvo": "adjacente"
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "estabilizar",
+            "efeito": "impede_coma",
+            "pausa_marcador": "colapso_mental"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "ansiolitico",
+      "slug": "ansiolitico",
+      "nome": "Ansiolítico",
+      "categoria": "farmacia",
+      "categoria_label": "Farmácia",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 100,
+      "descricao_curta": "Composto químico de ação rápida que contém surtos de estresse intenso e restaura estabilidade mental em campo.",
+      "descricao_longa": "Composto químico de ação rápida que contém surtos de estresse intenso e restaura estabilidade mental em campo.",
+      "tags": [
+        "cura",
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 1,
+        "custo_pa": 1
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "cura",
+            "recurso": "pe",
+            "dado": "1d6"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "estimulante_neuromotor",
+      "slug": "estimulante_neuromotor",
+      "nome": "Estimulante neuromotor",
+      "categoria": "farmacia",
+      "categoria_label": "Farmácia",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 100,
+      "descricao_curta": "Solução injetável que bloqueia descargas nervosas descontroladas, restaurando funções motoras normais.",
+      "descricao_longa": "Solução injetável que bloqueia descargas nervosas descontroladas, restaurando funções motoras normais.",
+      "tags": [
+        "cura",
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 1,
+        "custo_pa": 1
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "remover_condicao",
+            "condicoes_possiveis": [
+              "lento",
+              "atordoado"
+            ],
+            "nota": "remove uma das condições"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "antidoto",
+      "slug": "antidoto",
+      "nome": "Antídoto",
+      "categoria": "farmacia",
+      "categoria_label": "Farmácia",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 100,
+      "descricao_curta": "Soro polivalente que neutraliza toxinas e venenos biológicos comuns, prevenindo paralisias e falhas orgânicas.",
+      "descricao_longa": "Soro polivalente que neutraliza toxinas e venenos biológicos comuns, prevenindo paralisias e falhas orgânicas.",
+      "tags": [
+        "cura",
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 3,
+        "custo_pa": 1
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "remover_condicao",
+            "condicoes_possiveis": [
+              "envenenado"
+            ]
+          },
+          {
+            "tipo": "remover_condicao",
+            "condicoes_possiveis": [
+              "envenenado"
+            ],
+            "efeito": "neutraliza_venenos_ativos"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "medkit",
+      "slug": "medkit",
+      "nome": "Medkit",
+      "categoria": "farmacia",
+      "categoria_label": "Farmácia",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 200,
+      "descricao_curta": "Pacote básico com curativos, selantes de pele, antissépticos e talas improvisadas para tratar ferimentos leves.",
+      "descricao_longa": "Pacote básico com curativos, selantes de pele, antissépticos e talas improvisadas para tratar ferimentos leves.",
+      "tags": [
+        "cura",
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 3,
+        "custo_pa": 2,
+        "pericia_teste": "biologia",
+        "alvo": "adjacente_ou_proprio"
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "cura",
+            "recurso": "pv",
+            "dado": "1d6",
+            "bonus": 2,
+            "falha": "metade"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "estabilizador_humor",
+      "slug": "estabilizador_humor",
+      "nome": "Estabilizador de humor",
+      "categoria": "farmacia",
+      "categoria_label": "Farmácia",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 200,
+      "descricao_curta": "Composto neuroquímico com microcristais rúnicos que equilibram descargas emocionais extremas e suavizam picos de estresse.",
+      "descricao_longa": "Composto neuroquímico com microcristais rúnicos que equilibram descargas emocionais extremas e suavizam picos de estresse.",
+      "tags": [
+        "cura",
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 1,
+        "custo_pa": "aplicado_no_inicio_do_descanso"
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "cura",
+            "recurso": "pe",
+            "dado": "3d6",
+            "gatilho": "descanso_curto"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "soro_anti_psiquico",
+      "slug": "soro_anti_psiquico",
+      "nome": "Soro anti-psíquico",
+      "categoria": "farmacia",
+      "categoria_label": "Farmácia",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 250,
+      "descricao_curta": "Mistura farmacológica que bloqueia impulsos arcanos, reduzindo vulnerabilidade a ataques mentais.",
+      "descricao_longa": "Mistura farmacológica que bloqueia impulsos arcanos, reduzindo vulnerabilidade a ataques mentais.",
+      "tags": [
+        "cura",
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 1,
+        "custo_pa": 1
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "buff_temporario",
+            "valor": 2,
+            "alvo_tags": [
+              "resistir",
+              "medo",
+              "controle_mental"
+            ],
+            "cadencia": "cena",
+            "nota": "+2 em resistência contra magias de medo ou controle mental"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "injetor_adrenalina",
+      "slug": "injetor_adrenalina",
+      "nome": "Injetor de adrenalina",
+      "categoria": "farmacia",
+      "categoria_label": "Farmácia",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 300,
+      "descricao_curta": "Dose concentrada de adrenalina sintética e estabilizadores que ativam resposta de emergência, ao custo de fadiga posterior.",
+      "descricao_longa": "Dose concentrada de adrenalina sintética e estabilizadores que ativam resposta de emergência, ao custo de fadiga posterior.",
+      "tags": [
+        "cura",
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 1,
+        "custo_pa": 1
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "buff_temporario",
+            "pa_bonus": 1,
+            "bonus_pericia": {
+              "pericia": "reflexos",
+              "valor": 1
+            },
+            "duracao": "6_rodadas"
+          },
+          {
+            "tipo": "aplicar_condicao",
+            "condicao": "lento",
+            "duracao": "10_minutos",
+            "momento": "apos_efeito",
+            "nota": "reaplicar dobra a duração do estado Lento atual"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "injetor_nanocurativo",
+      "slug": "injetor_nanocurativo",
+      "nome": "Injetor nanocurativo",
+      "categoria": "farmacia",
+      "categoria_label": "Farmácia",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 400,
+      "descricao_curta": "Seringa com nanorrobôs rúnicos que iniciam regeneração celular acelerada, fechando feridas médias a graves em segundos.",
+      "descricao_longa": "Seringa com nanorrobôs rúnicos que iniciam regeneração celular acelerada, fechando feridas médias a graves em segundos.",
+      "tags": [
+        "cura",
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 1,
+        "custo_pa": 1,
+        "alvo": "adjacente_ou_proprio"
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "cura",
+            "recurso": "pv",
+            "dado": "4d6"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "manta",
+      "slug": "manta",
+      "nome": "Manta",
+      "categoria": "vertina",
+      "categoria_label": "Vertina",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 50,
+      "descricao_curta": "Vertina cognitiva viciante em variantes por metal.",
+      "descricao_longa": "Vertina cognitiva viciante em variantes por metal. Cada metal corresponde a uma emoção artificial que substitui por completo a emoção real do usuário enquanto durar.",
+      "tags": [
+        "arcano",
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 1,
+        "duracao_buff": "30_minutos"
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "emocao_artificial",
+            "duracao": "30_minutos",
+            "variantes": [
+              {
+                "metal": "Cobre",
+                "emocao": "Alegria"
+              },
+              {
+                "metal": "Chumbo",
+                "emocao": "Tristeza"
+              },
+              {
+                "metal": "Mercúrio",
+                "emocao": "Desejo"
+              },
+              {
+                "metal": "Ferro",
+                "emocao": "Raiva"
+              },
+              {
+                "metal": "Ouro",
+                "emocao": "Euforia"
+              }
+            ],
+            "modificadores": [
+              {
+                "valor": -2,
+                "contexto": "testes sociais ligados à emoção real"
+              },
+              {
+                "valor": 2,
+                "contexto": "ações motivadas pela emoção artificial"
+              }
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "beijo_de_bruxa",
+      "slug": "beijo_de_bruxa",
+      "nome": "Beijo de bruxa",
+      "categoria": "vertina",
+      "categoria_label": "Vertina",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 100,
+      "descricao_curta": "Mistura procurada por magistas; provoca onda quente, foco estreito e fluxo de mana fácil.",
+      "descricao_longa": "Mistura procurada por magistas; provoca onda quente, foco estreito e fluxo de mana fácil. Após o efeito, fadiga pesada e risco de desmaio com uso rotineiro.",
+      "tags": [
+        "arcano",
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 1,
+        "duracao_buff": "1_hora"
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "buff_magia",
+            "duracao": "1_hora",
+            "valor": 1,
+            "alvo_tags": [
+              "conjuracao"
+            ],
+            "nota": "+1 em todos os testes de conjuração"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "lotus",
+      "slug": "lotus",
+      "nome": "Lótus",
+      "categoria": "vertina",
+      "categoria_label": "Vertina",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 250,
+      "descricao_curta": "Essência de flores arcanossaturadas de Zonas Anômalas que acelera os impulsos arcanos ligados ao ataque.",
+      "descricao_longa": "Essência de flores arcanossaturadas de Zonas Anômalas que acelera os impulsos arcanos ligados ao ataque.",
+      "tags": [
+        "arcano",
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 1,
+        "duracao_buff": "1_hora"
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "buff_magia",
+            "duracao": "1_hora",
+            "alvo_tipo_magia": "ataque",
+            "dano_extra": "1d6"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "zenite",
+      "slug": "zenite",
+      "nome": "Zênite",
+      "categoria": "vertina",
+      "categoria_label": "Vertina",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 250,
+      "descricao_curta": "Pó translúcido sintético, dissolvido ou inalado antes de manipulações elaboradas.",
+      "descricao_longa": "Pó translúcido sintético, dissolvido ou inalado antes de manipulações elaboradas. Expande a percepção e o alcance.",
+      "tags": [
+        "arcano",
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 1,
+        "duracao_buff": "1_hora"
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "buff_magia",
+            "duracao": "1_hora",
+            "alvo_tipo_magia": "controle",
+            "ampliacao_percentual": 50,
+            "afeta": [
+              "alcance",
+              "area"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "relicario",
+      "slug": "relicario",
+      "nome": "Relicário",
+      "categoria": "vertina",
+      "categoria_label": "Vertina",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 250,
+      "descricao_curta": "Líquido levemente dourado, amargo, com notas de raiz.",
+      "descricao_longa": "Líquido levemente dourado, amargo, com notas de raiz. Concede estabilidade estranha ao canalizar energia de suporte.",
+      "tags": [
+        "arcano",
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 1,
+        "duracao_buff": "1_hora"
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "buff_magia",
+            "duracao": "1_hora",
+            "alvo_tipo_magia": "suporte",
+            "alvos_adicionais": 1
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "raio_negro",
+      "slug": "raio_negro",
+      "nome": "Raio negro",
+      "categoria": "vertina",
+      "categoria_label": "Vertina",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 250,
+      "descricao_curta": "Solução pulsante em ampola escurecida.",
+      "descricao_longa": "Solução pulsante em ampola escurecida. Faz o corpo pulsar com energia inquieta, tornando o movimento ágil e instintivo.",
+      "tags": [
+        "arcano",
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 1,
+        "duracao_buff": "1_hora"
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "buff_magia",
+            "duracao": "1_hora",
+            "alvo_tipo_magia": "mobilidade",
+            "distancia_percentual": 50
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "marola",
+      "slug": "marola",
+      "nome": "Marola",
+      "categoria": "vertina",
+      "categoria_label": "Vertina",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 300,
+      "descricao_curta": "Pó cristalino azulado, inalado puro ou queimado, soltando fumaça espessa e azul.",
+      "descricao_longa": "Pó cristalino azulado, inalado puro ou queimado, soltando fumaça espessa e azul. Comum entre refratários em becos e bares subterrâneos.",
+      "tags": [
+        "arcano",
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 3
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "mana_temporaria",
+            "valor": 5,
+            "gatilho": "descanso_curto",
+            "nota": "o valor é sempre 5 por personagem, independente de quantos usos foram gastos no mesmo descanso"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "azulzinha",
+      "slug": "azulzinha",
+      "nome": "Azulzinha",
+      "categoria": "vertina",
+      "categoria_label": "Vertina",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 400,
+      "descricao_curta": "Ampola de mana sintética.",
+      "descricao_longa": "Ampola de mana sintética. Ao injetar, onda de energia crua e elétrica atravessa o corpo, seguida de cansaço pesado e sensação de vazio.",
+      "tags": [
+        "arcano",
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 1
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "recurso",
+            "recurso": "mana",
+            "dado": "2d6"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "papel_runico",
+      "slug": "papel_runico",
+      "nome": "Papel rúnico",
+      "categoria": "ferramenta",
+      "categoria_label": "Ferramenta",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 30,
+      "descricao_curta": "Folha tecnomágica fina e flexível, como um tablet descartável.",
+      "descricao_longa": "Folha tecnomágica fina e flexível, como um tablet descartável. Registra e apaga conteúdo visual sem caneta ou lápis.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "efeito": "registra_apaga_visual",
+        "duracao": "1_mes",
+        "recarregavel_por": "bateria_runica"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "bateria_runica",
+      "slug": "bateria_runica",
+      "nome": "Bateria rúnica",
+      "categoria": "ferramenta",
+      "categoria_label": "Ferramenta",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 50,
+      "descricao_curta": "Unidade compacta de gás arcano condensado com conectores universais entalhados com runas de fluxo, para recarregar dispositivos leves.",
+      "descricao_longa": "Unidade compacta de gás arcano condensado com conectores universais entalhados com runas de fluxo, para recarregar dispositivos leves.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 5,
+        "efeito": "recarrega_item_simples",
+        "alvos": [
+          "papel_runico",
+          "lanterna_runica",
+          "corda_runica"
+        ]
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "mascara_filtrante",
+      "slug": "mascara_filtrante",
+      "nome": "Máscara filtrante",
+      "categoria": "ferramenta",
+      "categoria_label": "Ferramenta",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 50,
+      "descricao_curta": "Máscara leve com filtros químicos e rúnicos básicos, usada em áreas industriais, protestos e tempestades arcanas.",
+      "descricao_longa": "Máscara leve com filtros químicos e rúnicos básicos, usada em áreas industriais, protestos e tempestades arcanas.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "ambiente"
+      ],
+      "estatisticas": {
+        "efeito": "protege_contra",
+        "alvos": [
+          "fumaca",
+          "gases_toxicos",
+          "saturado"
+        ],
+        "duracao": "1_cena",
+        "filtro_substituivel_preco": 10
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "lanterna_runica",
+      "slug": "lanterna_runica",
+      "nome": "Lanterna rúnica",
+      "categoria": "ferramenta",
+      "categoria_label": "Ferramenta",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 50,
+      "descricao_curta": "Dispositivo que emite luz branca intensa estabilizada por runas, atravessando fumaça, poeira e neblina.",
+      "descricao_longa": "Dispositivo que emite luz branca intensa estabilizada por runas, atravessando fumaça, poeira e neblina.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "visao"
+      ],
+      "estatisticas": {
+        "raio_m": 10,
+        "duracao_ativa": "2_horas",
+        "ignora": [
+          "fumaca_comum",
+          "poeira_densa"
+        ],
+        "recarregavel_por": "bateria_runica"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "spray_adesivo",
+      "slug": "spray_adesivo",
+      "nome": "Spray adesivo",
+      "categoria": "ferramenta",
+      "categoria_label": "Ferramenta",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 50,
+      "descricao_curta": "Aerossol de alta aderência que fixa objetos de até 10 kg em segundos.",
+      "descricao_longa": "Aerossol de alta aderência que fixa objetos de até 10 kg em segundos. Só remove com solvente potente.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 5,
+        "efeito": "cola_objeto",
+        "peso_max_kg": 10
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "kit_contencao",
+      "slug": "kit_contencao",
+      "nome": "Kit de contenção",
+      "categoria": "ferramenta",
+      "categoria_label": "Ferramenta",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 70,
+      "descricao_curta": "Conjunto com algemas reforçadas, lacres de restrição e limitadores de movimento, para capturar e prender alvos.",
+      "descricao_longa": "Conjunto com algemas reforçadas, lacres de restrição e limitadores de movimento, para capturar e prender alvos.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "restricao_movimento",
+        "incapacitante"
+      ],
+      "estatisticas": {
+        "efeito": "restringe_movimento",
+        "penalidade_escapar_forca": -2
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": -2,
+            "alvo_texto": "escapar com força bruta",
+            "alvo_tags": [
+              "mobilidade"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "kit_lock_picking",
+      "slug": "kit_lock_picking",
+      "nome": "Kit de lock picking",
+      "categoria": "ferramenta",
+      "categoria_label": "Ferramenta",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 70,
+      "descricao_curta": "Estojo com gazuas, tensores, chaves falsas e lâminas finas para manipular trancas mecânicas comuns e de segurança intermediária.",
+      "descricao_longa": "Estojo com gazuas, tensores, chaves falsas e lâminas finas para manipular trancas mecânicas comuns e de segurança intermediária.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "furtividade"
+      ],
+      "estatisticas": {
+        "cargas_max": 5,
+        "pericia_teste": "precisao",
+        "alvo": "fechaduras_mecanicas",
+        "nao_funciona_em": [
+          "trancas_runicas",
+          "trancas_digitais"
+        ],
+        "falha": "quebra_peca_perde_1_carga"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "kit_reparo",
+      "slug": "kit_reparo",
+      "nome": "Kit de reparo",
+      "categoria": "ferramenta",
+      "categoria_label": "Ferramenta",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 100,
+      "descricao_curta": "Estojo com placas entalhadas, grampos e compostos seladores que reativam o traço original das defesas da peça.",
+      "descricao_longa": "Estojo com placas entalhadas, grampos e compostos seladores que reativam o traço original das defesas da peça.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "mit",
+        "pd"
+      ],
+      "estatisticas": {
+        "cargas_max": 3,
+        "custo_pa": 3,
+        "pericia_teste": "engenharia",
+        "alvo": [
+          "armadura",
+          "escudo"
+        ],
+        "falha": "metade"
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "recurso",
+            "recurso": "mit_pd",
+            "dado": "1d6",
+            "falha": "metade",
+            "alvo": [
+              "armadura",
+              "escudo"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "kit_rastreamento",
+      "slug": "kit_rastreamento",
+      "nome": "Kit de rastreamento",
+      "categoria": "ferramenta",
+      "categoria_label": "Ferramenta",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 120,
+      "descricao_curta": "Estojo com reagentes, sprays e fitas de teste para detectar fluidos, resíduos e compostos orgânicos ocultos.",
+      "descricao_longa": "Estojo com reagentes, sprays e fitas de teste para detectar fluidos, resíduos e compostos orgânicos ocultos.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "cargas_max": 5,
+        "efeito": "revela_residuos_organicos_quimicos"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "detergente_enzimatico",
+      "slug": "detergente_enzimatico",
+      "nome": "Detergente enzimático",
+      "categoria": "ferramenta",
+      "categoria_label": "Ferramenta",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 120,
+      "descricao_curta": "Solução química que dissolve resíduos biológicos sem deixar vestígios detectáveis.",
+      "descricao_longa": "Solução química que dissolve resíduos biológicos sem deixar vestígios detectáveis. Elimina provas e rastros genéticos.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "furtividade"
+      ],
+      "estatisticas": {
+        "cargas_max": 5,
+        "efeito": "remove_rastros_organicos"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "tinta_runica_invisivel",
+      "slug": "tinta_runica_invisivel",
+      "nome": "Tinta rúnica invisível",
+      "categoria": "ferramenta",
+      "categoria_label": "Ferramenta",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 120,
+      "descricao_curta": "Pigmento tecnomágico visível apenas por óculos RA ou ópticas rúnicas sintonizadas.",
+      "descricao_longa": "Pigmento tecnomágico visível apenas por óculos RA ou ópticas rúnicas sintonizadas. Usado em marcações secretas e rotas.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "furtividade"
+      ],
+      "estatisticas": {
+        "cargas_max": 5,
+        "efeito": "marcacao_secreta",
+        "visivel_por": [
+          "oculos_ra",
+          "optica_runica"
+        ]
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "corda_runica",
+      "slug": "corda_runica",
+      "nome": "Corda rúnica",
+      "categoria": "ferramenta",
+      "categoria_label": "Ferramenta",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 120,
+      "descricao_curta": "Fibra de alta resistência com runas de aderência programáveis, ajustando-se ao terreno e ao usuário.",
+      "descricao_longa": "Fibra de alta resistência com runas de aderência programáveis, ajustando-se ao terreno e ao usuário.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "custo_pa": 1,
+        "comprimento_max_m": 20,
+        "suporta_kg": 500,
+        "duracao_ativa": "1_hora",
+        "recarregavel_por": "bateria_runica"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "chip_de_dados",
+      "slug": "chip_de_dados",
+      "nome": "Chip de dados",
+      "categoria": "dispositivo",
+      "categoria_label": "Dispositivo",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 50,
+      "descricao_curta": "Mídia portátil de alta capacidade, protegida por criptografia, para transportar, armazenar ou extrair arquivos digitais.",
+      "descricao_longa": "Mídia portátil de alta capacidade, protegida por criptografia, para transportar, armazenar ou extrair arquivos digitais.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "efeito": "armazenamento_criptografado",
+        "plugavel_em": [
+          "terminais",
+          "decks",
+          "processadores"
+        ]
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "escuta",
+      "slug": "escuta",
+      "nome": "Escuta",
+      "categoria": "dispositivo",
+      "categoria_label": "Dispositivo",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 100,
+      "descricao_curta": "Microdispositivo autônomo e ocultável, projetado para captar e transmitir conversas a até 500 m, usado em infiltrações e vigilância.",
+      "descricao_longa": "Microdispositivo autônomo e ocultável, projetado para captar e transmitir conversas a até 500 m, usado em infiltrações e vigilância.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "audicao",
+        "furtividade"
+      ],
+      "estatisticas": {
+        "efeito": "capta_transmite_audio",
+        "alcance_m": 500
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "rastreador",
+      "slug": "rastreador",
+      "nome": "Rastreador",
+      "categoria": "dispositivo",
+      "categoria_label": "Dispositivo",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 150,
+      "descricao_curta": "Chip adesivo descartável que transmite localização em tempo real por até 24 horas.",
+      "descricao_longa": "Chip adesivo descartável que transmite localização em tempo real por até 24 horas. Usado para monitorar alvos, veículos ou cargas.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "efeito": "transmite_localizacao",
+        "duracao": "24_horas",
+        "requer": "cobertura_de_rede"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "kit_intrusao_digital",
+      "slug": "kit_intrusao_digital",
+      "nome": "Kit de intrusão digital",
+      "categoria": "dispositivo",
+      "categoria_label": "Dispositivo",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 150,
+      "descricao_curta": "Estojo com miniterminais, decodificadores e placas de bypass sinápticos para invadir fechaduras rúnicas, digitais e sistemas tecnomágicos de nível civil ou corporativo.",
+      "descricao_longa": "Estojo com miniterminais, decodificadores e placas de bypass sinápticos para invadir fechaduras rúnicas, digitais e sistemas tecnomágicos de nível civil ou corporativo.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "malha"
+      ],
+      "estatisticas": {
+        "pericia_teste": "tecnomagia",
+        "alvo": [
+          "sistemas_digitais",
+          "trancas_runicas",
+          "redes_protegidas"
+        ],
+        "nao_invade": "tramas",
+        "cooldown": "10_minutos_sobrecarga",
+        "falha_critica": "trava_exige_manutencao"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "oculos_ra",
+      "slug": "oculos_ra",
+      "nome": "Óculos de realidade aumentada (RA)",
+      "categoria": "dispositivo",
+      "categoria_label": "Dispositivo",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 300,
+      "descricao_curta": "Óculos leves com interface digital que exibe dados táticos, mapas, comunicações, perfis de alvos e sinais da Malha no campo de visão.",
+      "descricao_longa": "Óculos leves com interface digital que exibe dados táticos, mapas, comunicações, perfis de alvos e sinais da Malha no campo de visão.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "visao",
+        "malha"
+      ],
+      "estatisticas": {
+        "efeito": "interface_tatica",
+        "exibe": [
+          "dados_taticos",
+          "sinais_malha",
+          "comunicacoes",
+          "perfis"
+        ]
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "scanner_sensores",
+      "slug": "scanner_sensores",
+      "nome": "Scanner de sensores",
+      "categoria": "dispositivo",
+      "categoria_label": "Dispositivo",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 350,
+      "descricao_curta": "Dispositivo portátil com visor digital que identifica sinais ativos de sensores, câmeras, escutas e armadilhas eletrônicas em até 10 m.",
+      "descricao_longa": "Dispositivo portátil com visor digital que identifica sinais ativos de sensores, câmeras, escutas e armadilhas eletrônicas em até 10 m.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "sentido"
+      ],
+      "estatisticas": {
+        "efeito": "detecta_vigilancia",
+        "alcance_m": 10,
+        "alvos": [
+          "sensores",
+          "cameras",
+          "escutas",
+          "armadilhas_eletronicas"
+        ]
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "revelar",
+            "alvos": [
+              "sensores",
+              "cameras",
+              "escutas",
+              "armadilhas_eletronicas"
+            ],
+            "alcance_m": 10
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "bloqueador_sinal",
+      "slug": "bloqueador_sinal",
+      "nome": "Bloqueador de sinal",
+      "categoria": "dispositivo",
+      "categoria_label": "Dispositivo",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 350,
+      "descricao_curta": "Aparelho compacto que emite pulsos de interferência, anulando transmissões digitais, chamadas, rastreadores e escutas em 10 m por 5 minutos.",
+      "descricao_longa": "Aparelho compacto que emite pulsos de interferência, anulando transmissões digitais, chamadas, rastreadores e escutas em 10 m por 5 minutos.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "malha"
+      ],
+      "estatisticas": {
+        "efeito": "interferencia_sinal",
+        "alcance_m": 10,
+        "duracao": "5_minutos",
+        "afeta": [
+          "comunicacao",
+          "rastreamento",
+          "cameras_conectadas",
+          "escutas"
+        ],
+        "nao_afeta": [
+          "gravacao_local_autonoma",
+          "dispositivos_por_cabo"
+        ]
+      },
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "interferencia_sinal",
+            "alcance_m": 10,
+            "duracao": "5_minutos",
+            "afeta": [
+              "comunicacao",
+              "rastreamento",
+              "cameras_conectadas",
+              "escutas"
+            ],
+            "nao_afeta": [
+              "gravacao_local_autonoma",
+              "dispositivos_por_cabo"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "capa_anti_optica",
+      "slug": "capa_anti_optica",
+      "nome": "Capa anti-óptica",
+      "categoria": "dispositivo",
+      "categoria_label": "Dispositivo",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "descricao_curta": "Tecido inteligente tratado com micro-runas de distorção e camuflagem térmica, capaz de driblar câmeras e sensores ópticos.",
+      "descricao_longa": "Tecido inteligente tratado com micro-runas de distorção e camuflagem térmica, capaz de driblar câmeras e sensores ópticos.",
+      "tags": [
+        "equipamento",
+        "loja",
+        "furtividade"
+      ],
+      "estatisticas": {
+        "efeito": "indetectavel_por",
+        "alvos": [
+          "cameras_comuns",
+          "sensores_termicos",
+          "leitores_optico"
+        ]
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "carro_hibrido",
+      "slug": "carro_hibrido",
+      "nome": "Carro híbrido",
+      "categoria": "veiculo",
+      "categoria_label": "Veículo",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 10000,
+      "descricao_curta": "Transporte urbano mais comum em Vosek.",
+      "descricao_longa": "Transporte urbano mais comum em Vosek. Motor rúnico-químico, fácil de manter e discreto no trânsito.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "tipo_veiculo": "terrestre",
+        "capacidade_passageiros": 4
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "moto_hibrida",
+      "slug": "moto_hibrida",
+      "nome": "Moto híbrida",
+      "categoria": "veiculo",
+      "categoria_label": "Veículo",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 4000,
+      "descricao_curta": "Duas rodas leves, baratas e rápidas.",
+      "descricao_longa": "Duas rodas leves, baratas e rápidas. Ideal para sumir entre carros ou cortar becos, mas vulnerável em confronto direto.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "tipo_veiculo": "terrestre",
+        "capacidade_passageiros": 2
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "carro_planado_popular",
+      "slug": "carro_planado_popular",
+      "nome": "Carro planado popular",
+      "categoria": "veiculo",
+      "categoria_label": "Veículo",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 18000,
+      "descricao_curta": "Versão mais barata de carro voador.",
+      "descricao_longa": "Versão mais barata de carro voador. Barulhento e instável em longas rotas, mas garante status e mobilidade aérea.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "tipo_veiculo": "planado",
+        "capacidade_passageiros": 2
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "moto_planada_popular",
+      "slug": "moto_planada_popular",
+      "nome": "Moto planada popular",
+      "categoria": "veiculo",
+      "categoria_label": "Veículo",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 12000,
+      "descricao_curta": "Moto voadora barata para quem não tem medo de queda.",
+      "descricao_longa": "Moto voadora barata para quem não tem medo de queda. Ágil e compacta, mas treme se passar do limite.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "tipo_veiculo": "planado",
+        "capacidade_passageiros": 2
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "carro_planado_premium",
+      "slug": "carro_planado_premium",
+      "nome": "Carro planado premium",
+      "categoria": "veiculo",
+      "categoria_label": "Veículo",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 80000,
+      "descricao_curta": "Símbolo de poder nas alturas de Vosek.",
+      "descricao_longa": "Símbolo de poder nas alturas de Vosek. Silencioso, veloz e com estabilizadores rúnicos de ponta.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "tipo_veiculo": "planado",
+        "capacidade_passageiros": 4
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    },
+    {
+      "id": "moto_planada_premium",
+      "slug": "moto_planada_premium",
+      "nome": "Moto planada premium",
+      "categoria": "veiculo",
+      "categoria_label": "Veículo",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 50000,
+      "descricao_curta": "Motor violento, carcaça cromada e piloto que não quer ser pego.",
+      "descricao_longa": "Motor violento, carcaça cromada e piloto que não quer ser pego. Gangues brigam por uma dessas.",
+      "tags": [
+        "equipamento",
+        "loja"
+      ],
+      "estatisticas": {
+        "tipo_veiculo": "planado",
+        "capacidade_passageiros": 2
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-06-29",
+      "updated_at": "2026-06-29"
+    }
+  ]
+}

@@ -1,0 +1,508 @@
+{
+  "_schema": "ruptura.vtt.core.campo_combate.v1.1",
+  "_meta": {
+    "conteudo": "campo_combate",
+    "fonte": "16 COMBATE 0210a136355282b09ba50128db510387.md",
+    "hash_sha256_origem": "462f093c61a7c623fb8fcd16180515825ba04d57afb8f4f1a2e2dece0d90596b",
+    "versao_schema": "1.1.0",
+    "status_padrao": "published",
+    "gerado_em": "2026-06-25",
+    "observacoes": [
+      "Regras de mapa, tamanho, alcance, área, alvo, regiões do corpo, cobertura, terreno, ambiente e movimento.",
+      "Posições de tokens, coberturas destruídas e ambientes ativos são estado de mesa.",
+      "Fonte autoritativa do vocabulário de campo. A tabela-mestre referencia este arquivo, não redeclara valores."
+    ],
+    "revisao": "v1.1: fonte autoritativa de M14 (regiões), M18 (tamanhos), M19 (áreas), M20 (alcances), M21 (cobertura), M22 (terrenos), M23 (ambientes)."
+  },
+  "grade": {
+    "tipo": "hex",
+    "metros_por_celula": 1,
+    "medida": "1 metro = 1 célula"
+  },
+  "tamanhos": [
+    {
+      "id": "pequeno",
+      "nome": "Pequeno",
+      "ocupacao": "1",
+      "altura_aproximada": "ate_1_m"
+    },
+    {
+      "id": "medio",
+      "nome": "Médio",
+      "ocupacao": "1",
+      "altura_aproximada": "1_a_2_m"
+    },
+    {
+      "id": "grande",
+      "nome": "Grande",
+      "ocupacao": "2x2",
+      "altura_aproximada": "2_a_3_m"
+    },
+    {
+      "id": "enorme",
+      "nome": "Enorme",
+      "ocupacao": "3x3",
+      "altura_aproximada": "3_a_5_m"
+    },
+    {
+      "id": "colossal",
+      "nome": "Colossal",
+      "ocupacao": "4x4_ou_mais",
+      "altura_aproximada": "5_m_ou_mais"
+    }
+  ],
+  "alcances": [
+    {
+      "id": "pessoal",
+      "nome": "Pessoal",
+      "alvos_validos": [
+        "self"
+      ]
+    },
+    {
+      "id": "adjacente",
+      "nome": "Adjacente",
+      "descricao": "Células que tocam o espaço ocupado pela criatura."
+    },
+    {
+      "id": "distancia",
+      "nome": "Distância",
+      "unidade": "m",
+      "medicao": "centro_da_celula_origem_ate_celula_alvo"
+    }
+  ],
+  "areas": [
+    {
+      "id": "esfera",
+      "nome": "Esfera",
+      "simbolo": "◎",
+      "origem": "ponto",
+      "parametros": [
+        "raio_m"
+      ],
+      "tridimensional": true,
+      "regra_celula_afetada": "metade_ou_mais"
+    },
+    {
+      "id": "domo",
+      "nome": "Domo",
+      "simbolo": "◯",
+      "origem": "ponto_na_superficie",
+      "parametros": [
+        "raio_m"
+      ],
+      "tridimensional": true,
+      "cobre": "meia_esfera_acima_da_superficie",
+      "regra_celula_afetada": "metade_ou_mais"
+    },
+    {
+      "id": "aura",
+      "nome": "Aura",
+      "simbolo": "⊙",
+      "origem": "personagem",
+      "parametros": [
+        "raio_m"
+      ],
+      "centrada_no_personagem": true,
+      "regra_celula_afetada": "metade_ou_mais"
+    },
+    {
+      "id": "linha",
+      "nome": "Linha",
+      "simbolo": "—",
+      "origem": "celula_origem",
+      "parametros": [
+        "comprimento_m"
+      ],
+      "largura_celulas": 1,
+      "regra_celula_afetada": "celula_atravessada_pela_linha"
+    },
+    {
+      "id": "faixa",
+      "nome": "Faixa",
+      "simbolo": "═",
+      "origem": "celula_origem",
+      "parametros": [
+        "comprimento_m",
+        "largura_m"
+      ],
+      "regra_celula_afetada": "metade_ou_mais"
+    },
+    {
+      "id": "parede",
+      "nome": "Parede",
+      "simbolo": "▭",
+      "origem": "celula_origem",
+      "parametros": [
+        "comprimento_m",
+        "altura_m"
+      ],
+      "largura_m": 1,
+      "bloqueia": [
+        "movimentacao",
+        "linha_de_efeito"
+      ]
+    },
+    {
+      "id": "cubo",
+      "nome": "Cubo",
+      "simbolo": "▢",
+      "origem": "ponto",
+      "parametros": [
+        "lado_m"
+      ],
+      "tridimensional": true,
+      "regra_celula_afetada": "volume_interno"
+    },
+    {
+      "id": "cone",
+      "nome": "Cone",
+      "simbolo": "◢",
+      "origem": "celula_ocupada_ou_ponto",
+      "parametros": [
+        "alcance_m"
+      ],
+      "abertura_graus": 45,
+      "tridimensional": true,
+      "regra_celula_afetada": "setor_triangular_ate_alcance"
+    }
+  ],
+  "alvo_valido": {
+    "condicoes": [
+      "dentro_do_alcance",
+      "linha_de_visao",
+      "linha_de_efeito"
+    ],
+    "excecoes_por_efeito": true,
+    "dano_area": {
+      "regiao_padrao": "tronco",
+      "margem_nao_altera_regiao": true
+    }
+  },
+  "regiao_corpo_ataque": {
+    "id": "regiao_corpo_ataque",
+    "margens": [
+      {
+        "id": "sucesso_limitado",
+        "intervalo_margem": [
+          0,
+          1
+        ],
+        "regioes": [
+          "tronco"
+        ],
+        "modificador_dano": -1
+      },
+      {
+        "id": "sucesso_padrao",
+        "intervalo_margem": [
+          2,
+          4
+        ],
+        "regioes": [
+          "tronco",
+          "bracos",
+          "pernas"
+        ],
+        "modificador_dano": 0
+      },
+      {
+        "id": "sucesso_critico",
+        "intervalo_margem": [
+          5,
+          null
+        ],
+        "regioes": [
+          "cabeca",
+          "tronco",
+          "bracos",
+          "pernas"
+        ],
+        "dano_extra": "+1_dado"
+      }
+    ],
+    "area": {
+      "regiao_padrao": "tronco",
+      "margem_nao_modifica_regiao": true
+    }
+  },
+  "cobertura": {
+    "graus": [
+      {
+        "id": "parcial",
+        "nome": "Cobertura parcial",
+        "efeitos": [
+          {
+            "tipo": "modificador_recebido",
+            "valor": -1,
+            "alvo_tags": [
+              "ofensiva"
+            ],
+            "quando": "ataque_direcional_contra_o_alvo"
+          }
+        ]
+      },
+      {
+        "id": "maior",
+        "nome": "Cobertura maior",
+        "efeitos": [
+          {
+            "tipo": "modificador_recebido",
+            "valor": -2,
+            "alvo_tags": [
+              "ofensiva"
+            ],
+            "quando": "ataque_direcional_contra_o_alvo"
+          }
+        ]
+      },
+      {
+        "id": "total",
+        "nome": "Cobertura total",
+        "efeitos": [
+          {
+            "tipo": "bloquear_alvejamento",
+            "quando": "ataque_direcional"
+          }
+        ]
+      }
+    ],
+    "durabilidade": [
+      {
+        "id": "fragil",
+        "pd_min": 2,
+        "pd_max": 5
+      },
+      {
+        "id": "media",
+        "pd_min": 6,
+        "pd_max": 15
+      },
+      {
+        "id": "resistente",
+        "pd_min": 16,
+        "pd_max": null
+      }
+    ],
+    "impacto_em_falha": [
+      {
+        "margem": "falha_limitada",
+        "atinge_cobertura_tamanhos": [
+          "todos"
+        ]
+      },
+      {
+        "margem": "falha",
+        "atinge_cobertura_tamanhos": [
+          "grande",
+          "enorme",
+          "colossal"
+        ]
+      },
+      {
+        "margem": "falha_critica",
+        "atinge_cobertura": false
+      }
+    ]
+  },
+  "protecao_improvisada": {
+    "durabilidade": [
+      {
+        "id": "fragil",
+        "pd_min": 1,
+        "pd_max": 3
+      },
+      {
+        "id": "media",
+        "pd_min": 4,
+        "pd_max": 7
+      },
+      {
+        "id": "resistente",
+        "pd_min": 8,
+        "pd_max": 12
+      }
+    ]
+  },
+  "terrenos": [
+    {
+      "id": "dificil",
+      "nome": "Terreno difícil",
+      "efeitos": [
+        {
+          "tipo": "multiplicar_custo_deslocamento",
+          "multiplicador": 2
+        }
+      ],
+      "acao_ignora": "manobrar"
+    },
+    {
+      "id": "elevado",
+      "nome": "Terreno elevado",
+      "requisitos": [
+        {
+          "tipo": "diferenca_altura_minima_m",
+          "valor": 3
+        }
+      ],
+      "efeitos": [
+        {
+          "tipo": "modificador",
+          "valor": 1,
+          "alvo_tags": [
+            "ataque_distancia"
+          ],
+          "quando": "atacante_acima_do_alvo"
+        }
+      ]
+    }
+  ],
+  "condicoes_ambientais": [
+    {
+      "id": "iluminacao_baixa",
+      "nome": "Iluminação baixa",
+      "efeitos": [
+        {
+          "tipo": "modificador",
+          "valor": -1,
+          "alvo_tags": [
+            "visao"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "escuridao",
+      "nome": "Escuridão",
+      "efeitos": [
+        {
+          "tipo": "falha_automatica",
+          "alvo_tags": [
+            "percepcao",
+            "visao"
+          ]
+        },
+        {
+          "tipo": "forcar_teste_simples",
+          "alvo_tags": [
+            "ofensiva"
+          ],
+          "quando": "posicao_conhecida_por_outro_sentido"
+        }
+      ]
+    },
+    {
+      "id": "nevoa",
+      "nome": "Névoa / Neblina",
+      "efeitos": [
+        {
+          "tipo": "limitar_alcance_visual",
+          "alcance_m": 3
+        },
+        {
+          "tipo": "modificador",
+          "valor": -2,
+          "alvo_tags": [
+            "ataque_distancia"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chuva",
+      "nome": "Chuva",
+      "efeitos": [
+        {
+          "tipo": "modificar_dano",
+          "subtipo_dano": "igneo",
+          "valor": -1
+        },
+        {
+          "tipo": "modificar_dano",
+          "subtipo_dano": "eletrico",
+          "valor": 1
+        }
+      ]
+    },
+    {
+      "id": "tempestade_arcana",
+      "nome": "Tempestade Arcana",
+      "efeitos": [
+        {
+          "tipo": "aplicar_condicao",
+          "condicao": "saturado",
+          "alvo": "todas_criaturas_na_area"
+        }
+      ]
+    }
+  ],
+  "movimento": {
+    "espacos_ocupados": {
+      "se_faz_sentido_passar": {
+        "permitido": true,
+        "tratar_como_terreno": "dificil"
+      },
+      "se_nao_faz_sentido_passar": {
+        "bloqueado": true
+      },
+      "inimigos_ativos_geralmente_bloqueiam": true,
+      "incapacitados_podem_permitir_passagem": [
+        "caido",
+        "imobilizado"
+      ]
+    },
+    "salto_horizontal": [
+      {
+        "corpo": 1,
+        "com_impulso_m": 1.0,
+        "sem_impulso_m": 0.5
+      },
+      {
+        "corpo": 2,
+        "com_impulso_m": 1.5,
+        "sem_impulso_m": 0.75
+      },
+      {
+        "corpo": 3,
+        "com_impulso_m": 2.0,
+        "sem_impulso_m": 1.0
+      },
+      {
+        "corpo": 4,
+        "com_impulso_m": 2.5,
+        "sem_impulso_m": 1.25
+      },
+      {
+        "corpo": 5,
+        "com_impulso_m": 3.0,
+        "sem_impulso_m": 1.5
+      }
+    ],
+    "salto_vertical": [
+      {
+        "corpo": 1,
+        "altura_m": 0.3
+      },
+      {
+        "corpo": 2,
+        "altura_m": 0.4
+      },
+      {
+        "corpo": 3,
+        "altura_m": 0.6
+      },
+      {
+        "corpo": 4,
+        "altura_m": 1.0
+      },
+      {
+        "corpo": 5,
+        "altura_m": 1.5
+      }
+    ]
+  },
+  "status": "published",
+  "versao": "1.0.0",
+  "created_at": "2026-06-25",
+  "updated_at": "2026-06-25"
+}

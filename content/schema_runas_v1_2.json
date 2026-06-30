@@ -1,0 +1,638 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ruptura.vtt.content.runas.v1.2.schema.json",
+  "title": "Ruptura VTT - Runas v1.2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "_schema",
+    "_meta",
+    "enums",
+    "runas"
+  ],
+  "properties": {
+    "_schema": {
+      "const": "ruptura.vtt.content.runas.v1.2"
+    },
+    "_meta": {
+      "type": "object"
+    },
+    "enums": {
+      "type": "object"
+    },
+    "contagem_por_dominio": {
+      "type": "object"
+    },
+    "runas": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "slug",
+          "nome",
+          "categoria",
+          "categoria_label",
+          "raridade",
+          "raridade_label",
+          "preco",
+          "descricao_curta",
+          "descricao_longa",
+          "tags",
+          "slots_possiveis",
+          "custo_integridade",
+          "requisito_pericia",
+          "payload_automacao",
+          "status",
+          "versao",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "nome": {
+            "type": "string",
+            "minLength": 1
+          },
+          "categoria": {
+            "const": "runa"
+          },
+          "categoria_label": {
+            "const": "Runa"
+          },
+          "raridade": {
+            "type": "string",
+            "enum": [
+              "comum",
+              "incomum",
+              "muito_comum",
+              "muito_raro",
+              "raro"
+            ]
+          },
+          "raridade_label": {
+            "type": "string"
+          },
+          "preco": {
+            "type": [
+              "integer",
+              "number"
+            ]
+          },
+          "descricao_curta": {
+            "type": "string",
+            "minLength": 1
+          },
+          "descricao_longa": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "acao",
+                "acao_remove",
+                "acido",
+                "ambiente",
+                "arcano",
+                "arma",
+                "armadura",
+                "asfixia",
+                "ativo",
+                "audicao",
+                "companheiro",
+                "conjuracao",
+                "controle",
+                "cronometro",
+                "cura",
+                "dano",
+                "dano_continuo",
+                "defensiva",
+                "drone",
+                "economia",
+                "eletrico",
+                "equipamento",
+                "escudo",
+                "falha_automatica",
+                "fim_de_rodada",
+                "fisico",
+                "furtividade",
+                "gelido",
+                "igneo",
+                "incapacitante",
+                "loja",
+                "magia",
+                "malha",
+                "mana",
+                "margem",
+                "mit",
+                "movimento",
+                "narrativo",
+                "ofensiva",
+                "pa",
+                "passivo",
+                "pd",
+                "penalidade",
+                "penalidade_atributo",
+                "penalidade_defensiva",
+                "penalidade_ofensiva",
+                "penalidade_pericia",
+                "pericia",
+                "postura",
+                "reacao",
+                "reduz_pa",
+                "relacional",
+                "remove_por_cura",
+                "restricao_movimento",
+                "risco_morte",
+                "robo",
+                "robotica",
+                "runa",
+                "saturacao",
+                "sentido",
+                "sobrecarga",
+                "social",
+                "suporte",
+                "teste_unico_por_cena",
+                "trama",
+                "trava_acao",
+                "trava_defensiva",
+                "trava_ofensiva",
+                "trava_reacao",
+                "veneno",
+                "visao",
+                "vulneravel"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "slots_possiveis": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "arma",
+                "armadura",
+                "escudo"
+              ]
+            },
+            "minItems": 1
+          },
+          "restricao_subtipo": {
+            "type": "string",
+            "enum": [
+              "corpo_a_corpo",
+              "arremesso_disparo",
+              "fogo"
+            ]
+          },
+          "custo_integridade": {
+            "type": "integer"
+          },
+          "requisito_pericia": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "payload_automacao": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "efeitos"
+            ],
+            "properties": {
+              "efeitos": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "tipo"
+                  ],
+                  "properties": {
+                    "tipo": {
+                      "type": "string",
+                      "enum": [
+                        "aplicar_condicao",
+                        "ataque_adicional",
+                        "autorreparo",
+                        "dano_modificador",
+                        "economia_pa",
+                        "efeito_com_resistencia",
+                        "modificador",
+                        "narrativo",
+                        "protecao",
+                        "reacao",
+                        "recurso",
+                        "revelar",
+                        "utilitario"
+                      ]
+                    },
+                    "familia": {
+                      "type": "string"
+                    },
+                    "resistencia": {
+                      "type": "object",
+                      "required": [
+                        "pericia",
+                        "cd"
+                      ],
+                      "properties": {
+                        "pericia": {
+                          "type": "string"
+                        },
+                        "cd": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "rotulo_livro": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "dado": {
+                      "type": "string"
+                    },
+                    "dano": {
+                      "type": "string"
+                    },
+                    "tipo_dano": {
+                      "type": "string",
+                      "enum": [
+                        "acido",
+                        "energetico",
+                        "fisico",
+                        "psiquico",
+                        "toxico",
+                        "trauma"
+                      ]
+                    },
+                    "subtipo_dano": {
+                      "type": "string",
+                      "enum": [
+                        "cortante",
+                        "contundente",
+                        "perfurante",
+                        "igneo",
+                        "gelido",
+                        "eletrico",
+                        "acido",
+                        "toxico",
+                        "psiquico",
+                        "trauma"
+                      ]
+                    },
+                    "condicao": {
+                      "type": "string",
+                      "enum": [
+                        "agarrado",
+                        "agarrando",
+                        "atordoado",
+                        "caido",
+                        "cego",
+                        "contundido",
+                        "envenenado",
+                        "imobilizado",
+                        "inconsciente",
+                        "insaturado",
+                        "lento",
+                        "ofuscado",
+                        "queimando",
+                        "sangrando",
+                        "saturado",
+                        "sufocando",
+                        "surdo"
+                      ]
+                    },
+                    "condicao_falha": {
+                      "type": "string",
+                      "enum": [
+                        "agarrado",
+                        "agarrando",
+                        "atordoado",
+                        "caido",
+                        "cego",
+                        "contundido",
+                        "envenenado",
+                        "imobilizado",
+                        "inconsciente",
+                        "insaturado",
+                        "lento",
+                        "ofuscado",
+                        "queimando",
+                        "sangrando",
+                        "saturado",
+                        "sufocando",
+                        "surdo"
+                      ]
+                    },
+                    "condicao_falha_critica": {
+                      "type": "string",
+                      "enum": [
+                        "agarrado",
+                        "agarrando",
+                        "atordoado",
+                        "caido",
+                        "cego",
+                        "contundido",
+                        "envenenado",
+                        "imobilizado",
+                        "inconsciente",
+                        "insaturado",
+                        "lento",
+                        "ofuscado",
+                        "queimando",
+                        "sangrando",
+                        "saturado",
+                        "sufocando",
+                        "surdo"
+                      ]
+                    },
+                    "condicoes_possiveis": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "agarrado",
+                          "agarrando",
+                          "atordoado",
+                          "caido",
+                          "cego",
+                          "contundido",
+                          "envenenado",
+                          "imobilizado",
+                          "inconsciente",
+                          "insaturado",
+                          "lento",
+                          "ofuscado",
+                          "queimando",
+                          "sangrando",
+                          "saturado",
+                          "sufocando",
+                          "surdo"
+                        ]
+                      }
+                    },
+                    "recurso": {
+                      "type": "string"
+                    },
+                    "valor": {
+                      "type": [
+                        "integer",
+                        "number"
+                      ]
+                    },
+                    "bonus": {
+                      "type": [
+                        "integer",
+                        "number"
+                      ]
+                    },
+                    "pa_bonus": {
+                      "type": [
+                        "integer",
+                        "number"
+                      ]
+                    },
+                    "bonus_pericia": {
+                      "type": "object"
+                    },
+                    "dano_extra": {
+                      "type": "string"
+                    },
+                    "alvo": {
+                      "type": [
+                        "string",
+                        "array"
+                      ]
+                    },
+                    "alvo_texto": {
+                      "type": "string"
+                    },
+                    "alvo_tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "gatilho": {
+                      "type": "string"
+                    },
+                    "duracao": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "duracao_condicao": {
+                      "type": "string"
+                    },
+                    "area": {
+                      "type": "string"
+                    },
+                    "area_m": {
+                      "type": [
+                        "integer",
+                        "number"
+                      ]
+                    },
+                    "sucesso": {
+                      "type": "string"
+                    },
+                    "falha": {
+                      "type": "string"
+                    },
+                    "nota": {
+                      "type": "string"
+                    },
+                    "efeito": {
+                      "type": "string"
+                    },
+                    "variantes": {
+                      "type": "array"
+                    },
+                    "modificadores": {
+                      "type": "array"
+                    },
+                    "pausa_marcador": {
+                      "type": "string"
+                    },
+                    "cadencia": {
+                      "type": "string",
+                      "enum": [
+                        "rodada",
+                        "cena",
+                        "dia",
+                        "descanso_longo",
+                        "sessao_malha"
+                      ]
+                    },
+                    "momento": {
+                      "type": "string"
+                    },
+                    "afeta": {
+                      "type": "array"
+                    },
+                    "nao_afeta": {
+                      "type": "array"
+                    },
+                    "alvos": {
+                      "type": "array"
+                    },
+                    "alcance_m": {
+                      "type": [
+                        "integer",
+                        "number"
+                      ]
+                    },
+                    "condicao_aplicacao": {
+                      "type": "string"
+                    },
+                    "ampliacao_percentual": {
+                      "type": [
+                        "integer",
+                        "number"
+                      ]
+                    },
+                    "distancia_percentual": {
+                      "type": [
+                        "integer",
+                        "number"
+                      ]
+                    },
+                    "alvos_adicionais": {
+                      "type": [
+                        "integer",
+                        "number"
+                      ]
+                    },
+                    "alvo_tipo_magia": {
+                      "type": "string"
+                    },
+                    "reduzir_pa": {
+                      "type": [
+                        "integer",
+                        "number"
+                      ]
+                    },
+                    "recupera_em": {
+                      "type": "string"
+                    },
+                    "usos": {
+                      "type": [
+                        "integer",
+                        "number"
+                      ]
+                    },
+                    "aplica_a": {
+                      "type": "string"
+                    },
+                    "ativacao": {
+                      "type": "string"
+                    },
+                    "restrito_a": {
+                      "type": "string"
+                    },
+                    "enquanto": {
+                      "type": "string"
+                    },
+                    "fracao": {
+                      "type": [
+                        "number"
+                      ]
+                    },
+                    "pa_imediato": {
+                      "type": [
+                        "integer",
+                        "number"
+                      ]
+                    },
+                    "alcance_segundo_alvo_m": {
+                      "type": [
+                        "integer",
+                        "number"
+                      ]
+                    },
+                    "municao_por_rodada": {
+                      "type": [
+                        "integer",
+                        "number"
+                      ]
+                    },
+                    "pd_temporario": {
+                      "type": [
+                        "integer",
+                        "number"
+                      ]
+                    },
+                    "usa_mesmo_resultado": {
+                      "type": "boolean"
+                    },
+                    "raio_m": {
+                      "type": [
+                        "integer",
+                        "number"
+                      ]
+                    },
+                    "requer": {
+                      "type": "array"
+                    },
+                    "requisito": {
+                      "type": "string"
+                    },
+                    "meios": {
+                      "type": "array"
+                    },
+                    "deteccao": {
+                      "type": "object"
+                    },
+                    "custo_extra": {
+                      "type": [
+                        "integer",
+                        "number"
+                      ]
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ]
+          },
+          "versao": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

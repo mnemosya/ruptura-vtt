@@ -1,0 +1,814 @@
+{
+  "_schema": "ruptura.vtt.content.propriedades_arma.v1.0",
+  "_meta": {
+    "conteudo": "propriedades_arma",
+    "fonte": "ARMAS E ARMADURAS + Ruptura VTT — Documento de Requisitos Consolidado + ruptura_vtt_tabelas_mestre + db_equipamentos_normalizado_v1_2",
+    "versao_schema": "1.0.0",
+    "status_padrao": "published",
+    "gerado_em": "2026-06-30",
+    "total_registros": 14,
+    "hashes_por_fonte": {
+      "armas_armaduras": "b2f970c34dfd5cf481440d1bb92f40c12161a2a2b56e9997ecdd9567a4c0592f",
+      "prd": "86b400b99d34f6d5e215dafe4abf9a5b41a8dcef3169c3d4cfef6c164e0cf687",
+      "tabelas_mestre": "4fb510595178064b052b34012240234b5bb2d96d271121b1db9855798082ade8",
+      "equipamentos": "cf03d594413e1fa90fc5e4207de66e2c44c9e5a179a8fe609bc0e9b0127e6aac"
+    },
+    "observacoes": [
+      "C9 define propriedades_arma como tabela de conteúdo da Biblioteca do Sistema.",
+      "Equipamentos v1.2 continuam guardando o enum local para validação rápida, mas a fonte autoritativa de regra passa a ser este DB.",
+      "Condições em crítico são aplicadas apenas quando a propriedade declarar, alinhado ao PRD §8.8.",
+      "Rajada é propriedade paramétrica: o item precisa informar rajada_x e/ou municao_por_ataque para automação completa."
+    ]
+  },
+  "enums": {
+    "status": [
+      "draft",
+      "published",
+      "archived"
+    ],
+    "categoria": [
+      "propriedade_arma"
+    ],
+    "ids": [
+      "alcance",
+      "aparar",
+      "arremesso",
+      "atordoamento",
+      "contusao",
+      "desarme",
+      "dispersao",
+      "empurrao",
+      "perfuracao",
+      "precisao",
+      "queimadura",
+      "rajada",
+      "sangramento",
+      "silencioso"
+    ],
+    "aplica_em": [
+      "qualquer_arma",
+      "corpo_a_corpo",
+      "arremesso_disparo",
+      "fogo",
+      "energia"
+    ],
+    "gatilhos": [
+      "sempre_ao_atacar",
+      "enquanto_empunhada",
+      "ao_escolher_modo_ataque",
+      "ao_atacar",
+      "ao_causar_dano",
+      "ao_declarar_ataque",
+      "sucesso_critico"
+    ],
+    "margens": [
+      "falha",
+      "falha_limitada",
+      "sucesso_limitado",
+      "sucesso_padrao",
+      "sucesso_critico"
+    ],
+    "condicoes": [
+      "agarrado",
+      "agarrando",
+      "atordoado",
+      "caido",
+      "cego",
+      "contundido",
+      "envenenado",
+      "imobilizado",
+      "inconsciente",
+      "insaturado",
+      "lento",
+      "ofuscado",
+      "queimando",
+      "sangrando",
+      "saturado",
+      "sufocando",
+      "surdo"
+    ],
+    "acoes": [
+      "deslocar",
+      "levantar",
+      "escapar",
+      "fintar",
+      "interagir",
+      "sacar_rapido",
+      "sacar_dificil",
+      "recarregar",
+      "postura_ofensiva",
+      "atacar",
+      "agarrar",
+      "estrangular",
+      "derrubar",
+      "empurrar",
+      "desarmar",
+      "postura_defensiva",
+      "aparar",
+      "bloquear",
+      "esquivar",
+      "resistir",
+      "mirar",
+      "acessar_trama",
+      "preparar_turno",
+      "usar_pericia",
+      "falar",
+      "gestos_rapidos",
+      "soltar_alvo",
+      "apagar_fogo"
+    ],
+    "pericias": [
+      "arcanismo",
+      "artes",
+      "balistica",
+      "biologia",
+      "carisma",
+      "engenharia",
+      "furtividade",
+      "influencia",
+      "intimidacao",
+      "logica",
+      "luta",
+      "mobilidade",
+      "percepcao",
+      "precisao",
+      "psicologia",
+      "reflexos",
+      "robotica",
+      "sociedade",
+      "tecnomagia",
+      "vigor",
+      "vontade"
+    ],
+    "tags_sistema": [
+      "acao",
+      "acao_remove",
+      "ambiente",
+      "arcano",
+      "arma",
+      "armadura",
+      "asfixia",
+      "ativo",
+      "audicao",
+      "companheiro",
+      "conjuracao",
+      "controle",
+      "cronometro",
+      "cura",
+      "dano",
+      "dano_continuo",
+      "defensiva",
+      "drone",
+      "economia",
+      "equipamento",
+      "escudo",
+      "falha_automatica",
+      "fim_de_rodada",
+      "fisico",
+      "furtividade",
+      "igneo",
+      "incapacitante",
+      "loja",
+      "magia",
+      "malha",
+      "mana",
+      "margem",
+      "mit",
+      "movimento",
+      "narrativo",
+      "ofensiva",
+      "pa",
+      "passivo",
+      "pd",
+      "penalidade",
+      "penalidade_atributo",
+      "penalidade_defensiva",
+      "penalidade_ofensiva",
+      "penalidade_pericia",
+      "pericia",
+      "postura",
+      "reacao",
+      "reduz_pa",
+      "relacional",
+      "remove_por_cura",
+      "restricao_movimento",
+      "risco_morte",
+      "robo",
+      "robotica",
+      "runa",
+      "saturacao",
+      "sentido",
+      "sobrecarga",
+      "social",
+      "suporte",
+      "teste_unico_por_cena",
+      "trama",
+      "trava_acao",
+      "trava_defensiva",
+      "trava_ofensiva",
+      "trava_reacao",
+      "veneno",
+      "visao",
+      "vulneravel"
+    ],
+    "tipo_efeito": [
+      "alterar_alcance_arma",
+      "habilitar_acao_defensiva",
+      "habilitar_modo_ataque",
+      "resistencia_critica_aplica_condicao",
+      "aplicar_condicao_critico",
+      "resistencia_critica_soltar_item",
+      "ignorar_cobertura",
+      "modificar_dano_alem_alcance_eficaz",
+      "empurrar_critico",
+      "ignorar_mit",
+      "aumentar_dano_critico",
+      "executar_rajada",
+      "ocultar_origem_sonora"
+    ]
+  },
+  "propriedades": [
+    {
+      "id": "alcance",
+      "slug": "alcance",
+      "nome": "Alcance",
+      "categoria": "propriedade_arma",
+      "categoria_label": "Propriedade de Arma",
+      "descricao_curta": "Permite atacar inimigos até 2 metros de distância sem penalidade.",
+      "descricao_longa": "Armas longas ou de haste permitem atingir inimigos fora do espaço adjacente. Ataques podem ser feitos contra inimigos até 2 metros de distância sem penalidade.",
+      "tags": [
+        "arma",
+        "ofensiva",
+        "movimento"
+      ],
+      "aplica_em": [
+        "corpo_a_corpo"
+      ],
+      "gatilhos": [
+        "sempre_ao_atacar"
+      ],
+      "parametrica": false,
+      "parametros": [],
+      "custo_pa_adicional": null,
+      "margem_minima": null,
+      "aplica_condicao": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "alterar_alcance_arma",
+            "alcance_m": 2,
+            "sem_penalidade": true,
+            "alvo_acoes": [
+              "atacar"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-30",
+      "updated_at": "2026-06-30"
+    },
+    {
+      "id": "aparar",
+      "slug": "aparar",
+      "nome": "Aparar",
+      "categoria": "propriedade_arma",
+      "categoria_label": "Propriedade de Arma",
+      "descricao_curta": "Permite usar a ação defensiva Aparar com a arma.",
+      "descricao_longa": "Algumas armas equilibradas podem ser usadas para desviar golpes inimigos. Armas com esta propriedade permitem usar a ação defensiva Aparar.",
+      "tags": [
+        "arma",
+        "defensiva",
+        "reacao"
+      ],
+      "aplica_em": [
+        "corpo_a_corpo"
+      ],
+      "gatilhos": [
+        "enquanto_empunhada"
+      ],
+      "parametrica": false,
+      "parametros": [],
+      "custo_pa_adicional": null,
+      "margem_minima": null,
+      "aplica_condicao": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "habilitar_acao_defensiva",
+            "acao": "aparar",
+            "requisito": "arma_empunhada_com_propriedade_aparar"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-30",
+      "updated_at": "2026-06-30"
+    },
+    {
+      "id": "arremesso",
+      "slug": "arremesso",
+      "nome": "Arremesso",
+      "categoria": "propriedade_arma",
+      "categoria_label": "Propriedade de Arma",
+      "descricao_curta": "Permite usar a arma como projétil.",
+      "descricao_longa": "Armas balanceadas para lançamento mantêm letalidade mesmo à distância curta. Podem ser usadas como projéteis usando as estatísticas de arremesso do item.",
+      "tags": [
+        "arma",
+        "ofensiva",
+        "dano"
+      ],
+      "aplica_em": [
+        "corpo_a_corpo",
+        "arremesso_disparo"
+      ],
+      "gatilhos": [
+        "ao_escolher_modo_ataque"
+      ],
+      "parametrica": true,
+      "parametros": [
+        {
+          "id": "arremesso",
+          "tipo": "objeto_estatisticas",
+          "origem": "item.estatisticas.arremesso",
+          "obrigatorio_quando": "arma_corpo_a_corpo_com_arremesso"
+        }
+      ],
+      "custo_pa_adicional": null,
+      "margem_minima": null,
+      "aplica_condicao": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "habilitar_modo_ataque",
+            "modo": "arremesso",
+            "acao": "atacar",
+            "pericia_teste": "precisao",
+            "usa_estatisticas": "item.estatisticas.arremesso"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-30",
+      "updated_at": "2026-06-30"
+    },
+    {
+      "id": "atordoamento",
+      "slug": "atordoamento",
+      "nome": "Atordoamento",
+      "categoria": "propriedade_arma",
+      "categoria_label": "Propriedade de Arma",
+      "descricao_curta": "Em sucesso crítico, pode deixar o alvo Atordoado.",
+      "descricao_longa": "Alguns impactos são fortes o bastante para desestabilizar completamente o alvo. Em um sucesso crítico, o alvo deve fazer um teste de Vigor, CD 7. Em falha, fica Atordoado até o fim do próximo turno dele.",
+      "tags": [
+        "arma",
+        "dano",
+        "incapacitante"
+      ],
+      "aplica_em": [
+        "qualquer_arma"
+      ],
+      "gatilhos": [
+        "sucesso_critico"
+      ],
+      "parametrica": false,
+      "parametros": [],
+      "custo_pa_adicional": null,
+      "margem_minima": "sucesso_critico",
+      "aplica_condicao": "atordoado",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "resistencia_critica_aplica_condicao",
+            "margem_minima": "sucesso_critico",
+            "resistencia": {
+              "pericia": "vigor",
+              "cd": 7
+            },
+            "condicao": "atordoado",
+            "duracao": "fim_proximo_turno_alvo"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-30",
+      "updated_at": "2026-06-30"
+    },
+    {
+      "id": "contusao",
+      "slug": "contusao",
+      "nome": "Contusão",
+      "categoria": "propriedade_arma",
+      "categoria_label": "Propriedade de Arma",
+      "descricao_curta": "Em sucesso crítico, aplica Contundido.",
+      "descricao_longa": "Armas de impacto provocam atordoamento momentâneo e dor aguda em músculos e ossos. Em um sucesso crítico, o alvo fica Contundido.",
+      "tags": [
+        "arma",
+        "dano",
+        "penalidade"
+      ],
+      "aplica_em": [
+        "qualquer_arma"
+      ],
+      "gatilhos": [
+        "sucesso_critico"
+      ],
+      "parametrica": false,
+      "parametros": [],
+      "custo_pa_adicional": null,
+      "margem_minima": "sucesso_critico",
+      "aplica_condicao": "contundido",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "aplicar_condicao_critico",
+            "margem_minima": "sucesso_critico",
+            "condicao": "contundido"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-30",
+      "updated_at": "2026-06-30"
+    },
+    {
+      "id": "desarme",
+      "slug": "desarme",
+      "nome": "Desarme",
+      "categoria": "propriedade_arma",
+      "categoria_label": "Propriedade de Arma",
+      "descricao_curta": "Em sucesso crítico, pode fazer o alvo soltar o item empunhado.",
+      "descricao_longa": "Correntes, lâminas curvas ou armas de gancho podem arrancar armas ou objetos do inimigo. Em um sucesso crítico, o alvo deve fazer um teste de Vigor, CD 7. Em falha, solta o item empunhado.",
+      "tags": [
+        "arma",
+        "ofensiva",
+        "controle"
+      ],
+      "aplica_em": [
+        "corpo_a_corpo"
+      ],
+      "gatilhos": [
+        "sucesso_critico"
+      ],
+      "parametrica": false,
+      "parametros": [],
+      "custo_pa_adicional": null,
+      "margem_minima": "sucesso_critico",
+      "aplica_condicao": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "resistencia_critica_soltar_item",
+            "margem_minima": "sucesso_critico",
+            "resistencia": {
+              "pericia": "vigor",
+              "cd": 7
+            },
+            "alvo": "item_empunhado"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-30",
+      "updated_at": "2026-06-30"
+    },
+    {
+      "id": "dispersao",
+      "slug": "dispersao",
+      "nome": "Dispersão",
+      "categoria": "propriedade_arma",
+      "categoria_label": "Propriedade de Arma",
+      "descricao_curta": "Ignora cobertura parcial adjacente no alcance eficaz; além dele, causa metade do dano.",
+      "descricao_longa": "Alguns disparos espalham múltiplos projéteis em área curta, como escopetas e espingardas. Ataques ignoram coberturas parciais adjacentes em alcance eficaz. Em alcance além do eficaz, causa metade do dano.",
+      "tags": [
+        "arma",
+        "ofensiva",
+        "dano"
+      ],
+      "aplica_em": [
+        "fogo",
+        "arremesso_disparo"
+      ],
+      "gatilhos": [
+        "ao_atacar"
+      ],
+      "parametrica": false,
+      "parametros": [],
+      "custo_pa_adicional": null,
+      "margem_minima": null,
+      "aplica_condicao": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "ignorar_cobertura",
+            "grau": "parcial",
+            "quando": "alvo_adjacente_a_cobertura_e_ataque_no_alcance_eficaz"
+          },
+          {
+            "tipo": "modificar_dano_alem_alcance_eficaz",
+            "multiplicador": 0.5,
+            "arredondamento": "baixo"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-30",
+      "updated_at": "2026-06-30"
+    },
+    {
+      "id": "empurrao",
+      "slug": "empurrao",
+      "nome": "Empurrão",
+      "categoria": "propriedade_arma",
+      "categoria_label": "Propriedade de Arma",
+      "descricao_curta": "Em sucesso crítico, empurra o alvo 2 metros.",
+      "descricao_longa": "Armas pesadas ou de impacto direto podem projetar o alvo alguns metros. Em um sucesso crítico, o alvo é empurrado 2 metros na direção oposta ao ataque.",
+      "tags": [
+        "arma",
+        "ofensiva",
+        "movimento"
+      ],
+      "aplica_em": [
+        "qualquer_arma"
+      ],
+      "gatilhos": [
+        "sucesso_critico"
+      ],
+      "parametrica": false,
+      "parametros": [],
+      "custo_pa_adicional": null,
+      "margem_minima": "sucesso_critico",
+      "aplica_condicao": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "empurrar_critico",
+            "margem_minima": "sucesso_critico",
+            "distancia_m": 2,
+            "direcao": "oposta_ao_ataque"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-30",
+      "updated_at": "2026-06-30"
+    },
+    {
+      "id": "perfuracao",
+      "slug": "perfuracao",
+      "nome": "Perfuração",
+      "categoria": "propriedade_arma",
+      "categoria_label": "Propriedade de Arma",
+      "descricao_curta": "Ao causar dano, ignora 1 ponto de MIT.",
+      "descricao_longa": "Projéteis, lâminas longas e armas com ponta reforçada possuem alta capacidade de atravessar superfícies resistentes. Ao causar dano, ignora 1 ponto de MIT da armadura do alvo.",
+      "tags": [
+        "arma",
+        "dano",
+        "mit"
+      ],
+      "aplica_em": [
+        "qualquer_arma"
+      ],
+      "gatilhos": [
+        "ao_causar_dano"
+      ],
+      "parametrica": false,
+      "parametros": [],
+      "custo_pa_adicional": null,
+      "margem_minima": null,
+      "aplica_condicao": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "ignorar_mit",
+            "valor": 1,
+            "quando": "ao_causar_dano"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-30",
+      "updated_at": "2026-06-30"
+    },
+    {
+      "id": "precisao",
+      "slug": "precisao",
+      "nome": "Precisão",
+      "categoria": "propriedade_arma",
+      "categoria_label": "Propriedade de Arma",
+      "descricao_curta": "Em sucesso crítico, o dano extra aumenta em +1 dado adicional.",
+      "descricao_longa": "Armas projetadas para estabilidade e foco de impacto aumentam a letalidade de um acerto perfeito. Em um sucesso crítico, o dano extra aumenta em +1 dado adicional.",
+      "tags": [
+        "arma",
+        "dano",
+        "margem"
+      ],
+      "aplica_em": [
+        "qualquer_arma"
+      ],
+      "gatilhos": [
+        "sucesso_critico"
+      ],
+      "parametrica": false,
+      "parametros": [],
+      "custo_pa_adicional": null,
+      "margem_minima": "sucesso_critico",
+      "aplica_condicao": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "aumentar_dano_critico",
+            "margem_minima": "sucesso_critico",
+            "dado_extra": "+1_dado_adicional",
+            "acumula_com_critico_padrao": true
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-30",
+      "updated_at": "2026-06-30"
+    },
+    {
+      "id": "queimadura",
+      "slug": "queimadura",
+      "nome": "Queimadura",
+      "categoria": "propriedade_arma",
+      "categoria_label": "Propriedade de Arma",
+      "descricao_curta": "Em sucesso crítico, aplica Queimando.",
+      "descricao_longa": "Armas baseadas em fogo, combustíveis ou energia ígnea aplicam queimaduras além do impacto inicial. Em um sucesso crítico, o alvo fica Queimando.",
+      "tags": [
+        "arma",
+        "dano",
+        "igneo"
+      ],
+      "aplica_em": [
+        "qualquer_arma"
+      ],
+      "gatilhos": [
+        "sucesso_critico"
+      ],
+      "parametrica": false,
+      "parametros": [],
+      "custo_pa_adicional": null,
+      "margem_minima": "sucesso_critico",
+      "aplica_condicao": "queimando",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "aplicar_condicao_critico",
+            "margem_minima": "sucesso_critico",
+            "condicao": "queimando"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-30",
+      "updated_at": "2026-06-30"
+    },
+    {
+      "id": "rajada",
+      "slug": "rajada",
+      "nome": "Rajada",
+      "categoria": "propriedade_arma",
+      "categoria_label": "Propriedade de Arma",
+      "descricao_curta": "Permite disparar X vezes com uma única ação em troca de mais munição e –1 no teste.",
+      "descricao_longa": "Armas automáticas ou de múltiplos disparos podem disparar projéteis em sequência. Com uma única ação de ataque, permite disparar X vezes em troca de mais gasto de munição e –1 de desvantagem no teste.",
+      "tags": [
+        "arma",
+        "ofensiva",
+        "pa"
+      ],
+      "aplica_em": [
+        "fogo",
+        "arremesso_disparo"
+      ],
+      "gatilhos": [
+        "ao_declarar_ataque"
+      ],
+      "parametrica": true,
+      "parametros": [
+        {
+          "id": "x",
+          "tipo": "inteiro",
+          "descricao": "número de disparos/projéteis da rajada",
+          "origem_preferencial": "item.estatisticas.rajada_x",
+          "fallback": "inferir_da_fonte_ou_definir_no_item",
+          "obrigatorio": true
+        },
+        {
+          "id": "municao_por_ataque",
+          "tipo": "inteiro",
+          "descricao": "munição consumida na ação",
+          "origem_preferencial": "item.estatisticas.municao_por_ataque",
+          "obrigatorio": false
+        }
+      ],
+      "custo_pa_adicional": null,
+      "margem_minima": null,
+      "aplica_condicao": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "executar_rajada",
+            "usa_parametro": "x",
+            "penalidade_teste": -1,
+            "consumo_municao": "item.estatisticas.municao_por_ataque_ou_x",
+            "acao": "atacar"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-30",
+      "updated_at": "2026-06-30"
+    },
+    {
+      "id": "sangramento",
+      "slug": "sangramento",
+      "nome": "Sangramento",
+      "categoria": "propriedade_arma",
+      "categoria_label": "Propriedade de Arma",
+      "descricao_curta": "Em sucesso crítico, aplica Sangrando.",
+      "descricao_longa": "Lâminas e projéteis perfurantes podem causar ferimentos abertos e contínuos. Em um sucesso crítico, o alvo fica Sangrando.",
+      "tags": [
+        "arma",
+        "dano",
+        "dano_continuo"
+      ],
+      "aplica_em": [
+        "qualquer_arma"
+      ],
+      "gatilhos": [
+        "sucesso_critico"
+      ],
+      "parametrica": false,
+      "parametros": [],
+      "custo_pa_adicional": null,
+      "margem_minima": "sucesso_critico",
+      "aplica_condicao": "sangrando",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "aplicar_condicao_critico",
+            "margem_minima": "sucesso_critico",
+            "condicao": "sangrando"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-30",
+      "updated_at": "2026-06-30"
+    },
+    {
+      "id": "silencioso",
+      "slug": "silencioso",
+      "nome": "Silencioso",
+      "categoria": "propriedade_arma",
+      "categoria_label": "Propriedade de Arma",
+      "descricao_curta": "A partir de 6 metros, o ruído do ataque não revela a posição do atacante.",
+      "descricao_longa": "Projetado para não chamar atenção em ataques à distância. A partir de 6 metros de distância, o ruído dos ataques não é suficiente para revelar a posição do atacante.",
+      "tags": [
+        "arma",
+        "furtividade",
+        "sentido"
+      ],
+      "aplica_em": [
+        "arremesso_disparo",
+        "fogo"
+      ],
+      "gatilhos": [
+        "ao_atacar"
+      ],
+      "parametrica": false,
+      "parametros": [],
+      "custo_pa_adicional": null,
+      "margem_minima": null,
+      "aplica_condicao": null,
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "ocultar_origem_sonora",
+            "distancia_minima_m": 6,
+            "revela_posicao_por_ruido": false
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-30",
+      "updated_at": "2026-06-30"
+    }
+  ]
+}

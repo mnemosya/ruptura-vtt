@@ -1,0 +1,2690 @@
+{
+  "_schema": "ruptura.vtt.content.escalpos.v1.3",
+  "_meta": {
+    "conteudo": "escalpos",
+    "fonte": "Capitulo ESCALPOS (versao reescrita, upload de junho/2026)",
+    "versao_schema": "1.3.0",
+    "status_padrao": "published",
+    "gerado_em": "2026-06-25",
+    "total_registros": 58,
+    "hash_sha256_origem": "fed1ff890918de5e9097b1cb8a2e0100f84f59485b92c3c82e44208db1fecea0",
+    "regra_integridade": "Cada escalpo usa custo_integridade positivo. A ficha soma os custos instalados e subtrai da Integridade máxima do personagem.",
+    "regra_slots": "Escalpos podem consumir pools globais, abrir pools por base ou abrir pools por instância. Upgrades de braços e pernas devem ser vinculados à instância específica do membro.",
+    "regra_suplemento": "Escalpos consomem gas arcano, mas o jogo assume abastecimento normal; nao rastrear por sessao.",
+    "observacoes": [
+      "Campos textuais foram separados em descricao_curta e descricao_longa.",
+      "Raridade foi normalizada como enum interno + label de exibição.",
+      "Requisitos textuais conhecidos foram convertidos em requisitos estruturados.",
+      "O antigo campo auto foi convertido para payload_automacao.efeitos.",
+      "v1.1: alvo_tags normalizadas para IDs internos sem acento e em snake_case.",
+      "v1.1: referencias a condicoes em payload foram normalizadas para IDs internos.",
+      "v1.1: save foi padronizado como resistencia.",
+      "v1.1: payload de Pulo Sismico restaurou PA e area, presentes na origem.",
+      "v1.1: comandos de decks foram padronizados como objeto com modo lista/todos.",
+      "v1.1: venenos do Beijo da Morte receberam ids e estrutura mecanica de falha/sucesso.",
+      "v1.3: tipo_dano guarda tipo principal; subtipos como contundente ficam em subtipo_dano.",
+      "v1.3: todos os subtipos físicos encontrados em tipo_dano foram normalizados para tipo_dano=fisico + subtipo_dano."
+    ],
+    "revisao": "v1.2: Pulo Sismico resistencia.pericia=\"resistir\" (invalido) -> acao Resistir (Vigor ou Mobilidade). | v1.3: tipo_dano contundente em Pulo Sismico normalizado para tipo_dano=fisico e subtipo_dano=contundente. | v1.3.1: lamina_retratil e garras_retrateis normalizadas para tipo_dano=fisico + subtipo_dano."
+  },
+  "enums": {
+    "raridade": [
+      "muito_comum",
+      "comum",
+      "incomum",
+      "raro",
+      "muito_raro"
+    ],
+    "status": [
+      "draft",
+      "published",
+      "archived"
+    ],
+    "modo_slot": [
+      "consome",
+      "abre_pool"
+    ],
+    "tipo_pool": [
+      "global",
+      "aberto_por_escalpo_base",
+      "por_instancia",
+      "sem_limite_definido"
+    ],
+    "categorias": [
+      "identidade",
+      "moda",
+      "neural",
+      "interno",
+      "optica",
+      "audicao",
+      "braco",
+      "perna"
+    ],
+    "cadencia": [
+      "cena",
+      "dia",
+      "descanso_longo",
+      "sessao_malha"
+    ],
+    "condicoes": [
+      "agarrado",
+      "agarrando",
+      "atordoado",
+      "caido",
+      "cego",
+      "contundido",
+      "envenenado",
+      "imobilizado",
+      "inconsciente",
+      "insaturado",
+      "lento",
+      "ofuscado",
+      "queimando",
+      "sangrando",
+      "saturado",
+      "sufocando",
+      "surdo"
+    ],
+    "tags_sistema": [
+      "arma",
+      "armazenamento",
+      "ativo",
+      "audicao",
+      "balistica",
+      "base",
+      "braco",
+      "carteira",
+      "condicao_ignore",
+      "escudo",
+      "identidade",
+      "interno",
+      "logica",
+      "luta",
+      "mana",
+      "mit",
+      "mobilidade",
+      "moda",
+      "movimento",
+      "neural",
+      "optica",
+      "passivo",
+      "percepcao",
+      "performance",
+      "perna",
+      "precisao",
+      "ram",
+      "reflexos",
+      "resistencia",
+      "sentido",
+      "social",
+      "trama",
+      "utilitario",
+      "vigor",
+      "visao",
+      "vontade"
+    ],
+    "tipo_efeito": [
+      "abrir_pool_de_espaco",
+      "acao_ativa",
+      "acao_utilitaria",
+      "alcance_utilitario",
+      "arma_ou_ataque_integrado",
+      "armazenamento_digital",
+      "armazenamento_fisico",
+      "comunicacao_silenciosa",
+      "cura_extra",
+      "deck_sinaptico",
+      "efeito_com_resistencia",
+      "efeito_textual_temporizado",
+      "escudo_integrado",
+      "habilitar_carteira",
+      "habilitar_recurso",
+      "identidade_forjada",
+      "ignorar_condicao",
+      "ignorar_penalidade_ambiental",
+      "iluminacao",
+      "mana_temporaria",
+      "mit_subdermico",
+      "modificador",
+      "modificar_deslocamento",
+      "modificar_salto",
+      "ocultar_rastro_digital",
+      "ram_bonus",
+      "recurso_temporario",
+      "reduzir_dano_queda",
+      "traducao_neural",
+      "upgrade_clandestino_opcional"
+    ]
+  },
+  "pools_de_espaco": {
+    "neural": {
+      "id": "neural",
+      "nome": "Neural",
+      "tipo": "global",
+      "capacidade": 4,
+      "descricao": "Orçamento global de espaços neurais."
+    },
+    "interno": {
+      "id": "interno",
+      "nome": "Interno",
+      "tipo": "global",
+      "capacidade": 5,
+      "descricao": "Orçamento global de espaços internos."
+    },
+    "optica": {
+      "id": "optica",
+      "nome": "Óptica",
+      "tipo": "aberto_por_escalpo_base",
+      "aberto_por": "optica_runica",
+      "capacidade": 3,
+      "descricao": "Pool aberto pela Óptica Rúnica."
+    },
+    "audicao": {
+      "id": "audicao",
+      "nome": "Audição",
+      "tipo": "aberto_por_escalpo_base",
+      "aberto_por": "audicao_runica",
+      "capacidade": 2,
+      "descricao": "Pool aberto pela Audição Rúnica."
+    },
+    "braco": {
+      "id": "braco",
+      "nome": "Braço",
+      "tipo": "por_instancia",
+      "aberto_por": "braco_runico",
+      "capacidade_por_unidade": 2,
+      "max_unidades": 2,
+      "instancias_sugeridas": [
+        "braco_esquerdo",
+        "braco_direito"
+      ],
+      "descricao": "Cada Braço Rúnico instalado abre um pool próprio de 2 espaços."
+    },
+    "perna": {
+      "id": "perna",
+      "nome": "Perna",
+      "tipo": "por_instancia",
+      "aberto_por": "perna_runica",
+      "capacidade_por_unidade": 3,
+      "max_unidades": 2,
+      "instancias_sugeridas": [
+        "perna_esquerda",
+        "perna_direita"
+      ],
+      "descricao": "Cada Perna Rúnica instalada abre um pool próprio de 3 espaços."
+    },
+    "moda": {
+      "id": "moda",
+      "nome": "Moda",
+      "tipo": "sem_limite_definido",
+      "capacidade": null,
+      "descricao": "O capítulo não declara orçamento máximo para escalpos de moda. A ficha registra consumo, mas não bloqueia por limite."
+    },
+    "identidade": {
+      "id": "identidade",
+      "nome": "Identidade",
+      "tipo": "sem_limite_definido",
+      "capacidade": null,
+      "descricao": "O capítulo não declara orçamento máximo para escalpos de identidade. A ficha registra itens de identidade sem bloquear por limite."
+    }
+  },
+  "escalpos": [
+    {
+      "id": "rpi_oficial",
+      "slug": "rpi_oficial",
+      "nome": "Registro Pessoal Imperial (RPI)",
+      "categoria": "identidade",
+      "categoria_label": "Identidade",
+      "raridade": "muito_comum",
+      "raridade_label": "Muito Comum",
+      "preco": 0,
+      "custo_integridade": 0,
+      "slot": null,
+      "requisitos": [],
+      "tags": [
+        "identidade"
+      ],
+      "descricao_curta": "Gera o ID sinaptico; necessario para verificacoes, transacoes formais e acesso a Malha oficial.",
+      "descricao_longa": "Gera o ID sinaptico; necessario para verificacoes, transacoes formais e acesso a Malha oficial. Sustenta a CDI. Sem ele, o personagem nao existe no sistema imperial.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "habilitar_recurso",
+            "recursos": [
+              "cdi_oficial",
+              "id_sinaptico"
+            ]
+          }
+        ],
+        "observacoes": [
+          "Personagem refratario tipicamente NAO tem RPI oficial valido; opera com RPI Forjado."
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "rpi_forjado_1",
+      "slug": "rpi_forjado_1",
+      "nome": "RPI Forjado (Nível 1)",
+      "categoria": "identidade",
+      "categoria_label": "Identidade",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 300,
+      "custo_integridade": 0,
+      "slot": null,
+      "requisitos": [],
+      "tags": [
+        "identidade"
+      ],
+      "descricao_curta": "Replica perfil sinaptico de baixo escalao.",
+      "descricao_longa": "Replica perfil sinaptico de baixo escalao. Funciona em areas perifericas e sistemas desatualizados. Falha automaticamente contra scanners modernos.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "identidade_forjada",
+            "confiabilidade": "baixa",
+            "falha_automatica": "scanners modernos"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "rpi_forjado_2",
+      "slug": "rpi_forjado_2",
+      "nome": "RPI Forjado (Nível 2)",
+      "categoria": "identidade",
+      "categoria_label": "Identidade",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "custo_integridade": 0,
+      "slot": null,
+      "requisitos": [],
+      "tags": [
+        "identidade"
+      ],
+      "descricao_curta": "Identidade reciclada de morto ou desaparecido.",
+      "descricao_longa": "Identidade reciclada de morto ou desaparecido. Funciona em distritos comuns; 20% de chance de falhar em zonas nobres ou checkpoints imperiais.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "identidade_forjada",
+            "confiabilidade": "media",
+            "chance_falha_zonas_nobres": 0.2
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "rpi_forjado_3",
+      "slug": "rpi_forjado_3",
+      "nome": "RPI Forjado (Nível 3)",
+      "categoria": "identidade",
+      "categoria_label": "Identidade",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 3000,
+      "custo_integridade": 0,
+      "slot": null,
+      "requisitos": [],
+      "tags": [
+        "identidade"
+      ],
+      "descricao_curta": "Identidade sintetica perfeita.",
+      "descricao_longa": "Identidade sintetica perfeita. Indetectavel por scanners comuns; so exposto por investigacao direta ou seguranca imperial de alto nivel.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "identidade_forjada",
+            "confiabilidade": "alta"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "cdi_craqueada",
+      "slug": "cdi_craqueada",
+      "nome": "CDI Craqueada",
+      "categoria": "identidade",
+      "categoria_label": "Identidade",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 500,
+      "custo_integridade": 0,
+      "slot": null,
+      "requisitos": [],
+      "tags": [
+        "carteira",
+        "identidade"
+      ],
+      "descricao_curta": "Versao adulterada da Carteira Digital Imperial.",
+      "descricao_longa": "Versao adulterada da Carteira Digital Imperial. Permite transferir e receber valor fora do rastreio imperial.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "habilitar_carteira",
+            "carteira": "cdi_craqueada"
+          }
+        ],
+        "observacoes": [
+          "Na ficha, distingue saldo aretz informal de saldo CDI. A CDI Craqueada move valor fora do rastreio."
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "derme_cromatica",
+      "slug": "derme_cromatica",
+      "nome": "Derme Cromática",
+      "categoria": "moda",
+      "categoria_label": "Moda",
+      "raridade": "muito_comum",
+      "raridade_label": "Muito Comum",
+      "preco": 150,
+      "custo_integridade": 0,
+      "slot": {
+        "modo": "consome",
+        "pool": "moda",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "passivo",
+        "moda"
+      ],
+      "descricao_curta": "Pele muda cor, brilho e textura.",
+      "descricao_longa": "Pele muda cor, brilho e textura.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": 1,
+            "alvo_texto": "interacoes sociais com estilo/moda/aparencia",
+            "alvo_tags": [
+              "social"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "olho_prismatico",
+      "slug": "olho_prismatico",
+      "nome": "Olho Prismático",
+      "categoria": "moda",
+      "categoria_label": "Moda",
+      "raridade": "muito_comum",
+      "raridade_label": "Muito Comum",
+      "preco": 150,
+      "custo_integridade": 0,
+      "slot": {
+        "modo": "consome",
+        "pool": "optica",
+        "quantidade": 1
+      },
+      "requisitos": [
+        {
+          "tipo": "escalpo_instalado",
+          "id": "optica_runica",
+          "quantidade": 1
+        }
+      ],
+      "tags": [
+        "passivo",
+        "moda"
+      ],
+      "descricao_curta": "Iris e esclera alteraveis.",
+      "descricao_longa": "Iris e esclera alteraveis. Exige Optica Runica como base.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": 1,
+            "alvo_texto": "interacoes sociais com estilo/moda/impacto visual",
+            "alvo_tags": [
+              "social"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "cabelo_runico",
+      "slug": "cabelo_runico",
+      "nome": "Cabelo Rúnico",
+      "categoria": "moda",
+      "categoria_label": "Moda",
+      "raridade": "muito_comum",
+      "raridade_label": "Muito Comum",
+      "preco": 150,
+      "custo_integridade": 0,
+      "slot": {
+        "modo": "consome",
+        "pool": "moda",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "passivo",
+        "moda"
+      ],
+      "descricao_curta": "Cabelo muda cor, forma e comprimento.",
+      "descricao_longa": "Cabelo muda cor, forma e comprimento.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": 1,
+            "alvo_texto": "interacoes sociais com estilo/moda/aparencia",
+            "alvo_tags": [
+              "social"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "padroes_luminescentes",
+      "slug": "padroes_luminescentes",
+      "nome": "Padrões Luminescentes",
+      "categoria": "moda",
+      "categoria_label": "Moda",
+      "raridade": "muito_comum",
+      "raridade_label": "Muito Comum",
+      "preco": 250,
+      "custo_integridade": 0,
+      "slot": {
+        "modo": "consome",
+        "pool": "moda",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "passivo",
+        "moda"
+      ],
+      "descricao_curta": "Tatuagens vivas que brilham sob a pele.",
+      "descricao_longa": "Tatuagens vivas que brilham sob a pele.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": 1,
+            "alvo_texto": "contextos de performance",
+            "alvo_tags": [
+              "performance"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "perfume_glandular",
+      "slug": "perfume_glandular",
+      "nome": "Perfume Glandular",
+      "categoria": "moda",
+      "categoria_label": "Moda",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 300,
+      "custo_integridade": 0,
+      "slot": {
+        "modo": "consome",
+        "pool": "moda",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "utilitario",
+        "moda"
+      ],
+      "descricao_curta": "Glandula que secreta aromas digitais.",
+      "descricao_longa": "Glandula que secreta aromas digitais. Sem vantagem mecanica direta; bonus situacional a criterio do narrador.",
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "voz_modulavel",
+      "slug": "voz_modulavel",
+      "nome": "Voz Modulável",
+      "categoria": "moda",
+      "categoria_label": "Moda",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 400,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "moda",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "passivo",
+        "moda"
+      ],
+      "descricao_curta": "Altera timbre, eco e intensidade da voz.",
+      "descricao_longa": "Altera timbre, eco e intensidade da voz.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": 1,
+            "alvo_texto": "testes de oratoria ou performance vocal",
+            "alvo_tags": [
+              "performance"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "pele_de_vidro",
+      "slug": "pele_de_vidro",
+      "nome": "Pele de Vidro",
+      "categoria": "moda",
+      "categoria_label": "Moda",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 450,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "moda",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "passivo",
+        "moda"
+      ],
+      "descricao_curta": "Camada translucida reflexiva na epiderme.",
+      "descricao_longa": "Camada translucida reflexiva na epiderme.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": 1,
+            "alvo_texto": "interacoes sociais onde esse estilo tenha peso",
+            "alvo_tags": [
+              "social"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "processador_sinaptico",
+      "slug": "processador_sinaptico",
+      "nome": "Processador Sináptico",
+      "categoria": "neural",
+      "categoria_label": "Neural",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 700,
+      "custo_integridade": 0,
+      "slot": {
+        "modo": "consome",
+        "pool": "neural",
+        "quantidade": 1
+      },
+      "requisitos": [
+        {
+          "tipo": "qualquer_um",
+          "opcoes": [
+            {
+              "tipo": "escalpo_instalado",
+              "id": "optica_runica",
+              "quantidade": 1
+            },
+            {
+              "tipo": "item_equipado",
+              "id": "oculos_ra",
+              "nome": "Óculos RA"
+            }
+          ]
+        }
+      ],
+      "tags": [
+        "utilitario",
+        "neural"
+      ],
+      "descricao_curta": "Transforma o cerebro em computador interno; acesso a Malha sem equipamento externo.",
+      "descricao_longa": "Transforma o cerebro em computador interno; acesso a Malha sem equipamento externo. Precisa de interface (Optica Runica ou Oculos RA) para controlar.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "habilitar_recurso",
+            "recursos": [
+              "acesso_malha_sem_dispositivo"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "banco_de_memoria",
+      "slug": "banco_de_memoria",
+      "nome": "Banco de Memória",
+      "categoria": "neural",
+      "categoria_label": "Neural",
+      "raridade": "muito_comum",
+      "raridade_label": "Muito Comum",
+      "preco": 300,
+      "custo_integridade": 0,
+      "slot": {
+        "modo": "consome",
+        "pool": "neural",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "armazenamento",
+        "neural"
+      ],
+      "descricao_curta": "Armazena dados crus (1 TB); conexao runica sem fio ate 10 m.",
+      "descricao_longa": "Armazena dados crus (1 TB); conexao runica sem fio ate 10 m.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "armazenamento_digital",
+            "capacidade_tb": 1,
+            "alcance_m": 10
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "arquivo_mnemonico",
+      "slug": "arquivo_mnemonico",
+      "nome": "Arquivo Mnemônico",
+      "categoria": "neural",
+      "categoria_label": "Neural",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1500,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "neural",
+        "quantidade": 1
+      },
+      "requisitos": [
+        {
+          "tipo": "qualquer_um",
+          "opcoes": [
+            {
+              "tipo": "escalpo_instalado",
+              "id": "banco_de_memoria",
+              "quantidade": 1
+            },
+            {
+              "tipo": "escalpo_instalado",
+              "id": "processador_sinaptico",
+              "quantidade": 1
+            }
+          ]
+        }
+      ],
+      "tags": [
+        "ativo",
+        "utilitario",
+        "neural"
+      ],
+      "descricao_curta": "Grava lembrancas em primeira pessoa por comando.",
+      "descricao_longa": "Grava lembrancas em primeira pessoa por comando. Em combate conta como Acao Livre.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "acao_utilitaria",
+            "custo": "livre",
+            "requer_repositorio": true
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "microfone_interno",
+      "slug": "microfone_interno",
+      "nome": "Microfone Interno",
+      "categoria": "neural",
+      "categoria_label": "Neural",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 800,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "neural",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "utilitario",
+        "neural"
+      ],
+      "descricao_curta": "Transmite voz por comando mental, sem fala audivel.",
+      "descricao_longa": "Transmite voz por comando mental, sem fala audivel.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "comunicacao_silenciosa",
+            "acionamento": "comando_mental",
+            "fala_audivel": false,
+            "descricao": "Permite transmitir voz por comando mental sem fala audível."
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "tradutor_neural",
+      "slug": "tradutor_neural",
+      "nome": "Tradutor Neural",
+      "categoria": "neural",
+      "categoria_label": "Neural",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "neural",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "utilitario",
+        "neural"
+      ],
+      "descricao_curta": "Compreensao e fala de ate 3 idiomas por vez.",
+      "descricao_longa": "Compreensao e fala de ate 3 idiomas por vez.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "traducao_neural",
+            "idiomas_simultaneos": 3
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "buffer_de_dor",
+      "slug": "buffer_de_dor",
+      "nome": "Buffer de Dor",
+      "categoria": "neural",
+      "categoria_label": "Neural",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "custo_integridade": 2,
+      "slot": {
+        "modo": "consome",
+        "pool": "neural",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "condicao_ignore",
+        "neural"
+      ],
+      "descricao_curta": "Ignora a primeira condicao de dor (Contundido, Sangrando ou Queimando) ou Atordoado por cena.",
+      "descricao_longa": "Ignora a primeira condicao de dor (Contundido, Sangrando ou Queimando) ou Atordoado por cena.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "ignorar_condicao",
+            "condicoes": [
+              "contundido",
+              "sangrando",
+              "queimando",
+              "atordoado"
+            ],
+            "usos": 1,
+            "cadencia": "cena"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "radar_neural",
+      "slug": "radar_neural",
+      "nome": "Radar Neural",
+      "categoria": "neural",
+      "categoria_label": "Neural",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2500,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "neural",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "passivo",
+        "sentido",
+        "neural"
+      ],
+      "descricao_curta": "Detecta seres vivos ate 10 m, mesmo sem linha de visao.",
+      "descricao_longa": "Detecta seres vivos ate 10 m, mesmo sem linha de visao.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": 2,
+            "alvo_texto": "Percepcao para detectar presencas",
+            "alvo_tags": [
+              "percepcao"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "acelerador_sinaptico",
+      "slug": "acelerador_sinaptico",
+      "nome": "Acelerador Sináptico",
+      "categoria": "neural",
+      "categoria_label": "Neural",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 2000,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "neural",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "passivo",
+        "neural"
+      ],
+      "descricao_curta": "Reacoes mais rapidas.",
+      "descricao_longa": "Reacoes mais rapidas.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": 2,
+            "alvo_texto": "Reflexos",
+            "alvo_tags": [
+              "reflexos"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "filtro_cognitivo",
+      "slug": "filtro_cognitivo",
+      "nome": "Filtro Cognitivo",
+      "categoria": "neural",
+      "categoria_label": "Neural",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1200,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "neural",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "passivo",
+        "neural"
+      ],
+      "descricao_curta": "Reforco contra intrusao mental.",
+      "descricao_longa": "Reforco contra intrusao mental.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": 1,
+            "alvo_texto": "Vontade e Logica contra magias/efeitos de leitura ou controle mental",
+            "alvo_tags": [
+              "vontade",
+              "logica"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "proxy_social",
+      "slug": "proxy_social",
+      "nome": "Proxy Social",
+      "categoria": "neural",
+      "categoria_label": "Neural",
+      "raridade": "muito_raro",
+      "raridade_label": "Muito Raro",
+      "preco": 2500,
+      "custo_integridade": 3,
+      "slot": {
+        "modo": "consome",
+        "pool": "neural",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "passivo",
+        "neural"
+      ],
+      "descricao_curta": "Simula identidades.",
+      "descricao_longa": "Simula identidades.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": 2,
+            "alvo_texto": "disfarce, persuasao ou infiltracao social",
+            "alvo_tags": [
+              "social"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "veu_de_malha",
+      "slug": "veu_de_malha",
+      "nome": "Veu de Malha",
+      "categoria": "neural",
+      "categoria_label": "Neural",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2000,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "neural",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "trama",
+        "neural"
+      ],
+      "descricao_curta": "Nao deixa rastros digitais basicos em conexoes comuns.",
+      "descricao_longa": "Nao deixa rastros digitais basicos em conexoes comuns. Ainda detectavel por Admins ou protocolos avancados.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "ocultar_rastro_digital",
+            "nivel": "basico"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "overclock",
+      "slug": "overclock",
+      "nome": "Overclock",
+      "categoria": "neural",
+      "categoria_label": "Neural",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2500,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "neural",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "ram",
+        "neural"
+      ],
+      "descricao_curta": "+5 de RAM ao iniciar uma Sessao na Malha.",
+      "descricao_longa": "+5 de RAM ao iniciar uma Sessao na Malha.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "ram_bonus",
+            "valor": 5,
+            "cadencia": "sessao_malha"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "deck_sinaptico_civil",
+      "slug": "deck_sinaptico_civil",
+      "nome": "Deck Sinaptico (Civil)",
+      "categoria": "neural",
+      "categoria_label": "Neural",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 500,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "neural",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "trama",
+        "neural"
+      ],
+      "descricao_curta": "Acesso a uma trama com alcance de 5 m.",
+      "descricao_longa": "Acesso a uma trama com alcance de 5 m.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "deck_sinaptico",
+            "alcance_m": 5,
+            "ram": 5,
+            "comandos": {
+              "modo": "lista",
+              "itens": [
+                "Controlar Sistema",
+                "Quebrar Bloqueio",
+                "Extrair Dados"
+              ]
+            }
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "deck_sinaptico_corporativo",
+      "slug": "deck_sinaptico_corporativo",
+      "nome": "Deck Sinaptico (Corporativo)",
+      "categoria": "neural",
+      "categoria_label": "Neural",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 1500,
+      "custo_integridade": 2,
+      "slot": {
+        "modo": "consome",
+        "pool": "neural",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "trama",
+        "neural"
+      ],
+      "descricao_curta": "Acesso a uma trama com alcance de 10 m.",
+      "descricao_longa": "Acesso a uma trama com alcance de 10 m.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "deck_sinaptico",
+            "alcance_m": 10,
+            "ram": 10,
+            "comandos": {
+              "modo": "lista",
+              "itens": [
+                "Controlar Sistema",
+                "Controlar Unidade",
+                "Quebrar Bloqueio",
+                "Corromper Dados",
+                "Extrair Dados",
+                "Forjar Credencial"
+              ]
+            }
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "deck_sinaptico_imperial",
+      "slug": "deck_sinaptico_imperial",
+      "nome": "Deck Sinaptico (Imperial)",
+      "categoria": "neural",
+      "categoria_label": "Neural",
+      "raridade": "muito_raro",
+      "raridade_label": "Muito Raro",
+      "preco": 5000,
+      "custo_integridade": 3,
+      "slot": {
+        "modo": "consome",
+        "pool": "neural",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "trama",
+        "neural"
+      ],
+      "descricao_curta": "Acesso a uma trama com alcance de 20 m.",
+      "descricao_longa": "Acesso a uma trama com alcance de 20 m.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "deck_sinaptico",
+            "alcance_m": 20,
+            "ram": 15,
+            "comandos": {
+              "modo": "todos",
+              "itens": []
+            }
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "ars_cabeca",
+      "slug": "ars_cabeca",
+      "nome": "ARS Cabeça",
+      "categoria": "interno",
+      "categoria_label": "Interno",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1500,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "interno",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "mit",
+        "ativo",
+        "interno"
+      ],
+      "descricao_curta": "Armadura subdermica craniana.",
+      "descricao_longa": "Armadura subdermica craniana. Ativar custa 1 PA (Interagir); todas as ARS ativam juntas. MIT restaura em descanso longo. Limite de uma ARS por regiao.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "mit_subdermico",
+            "mit": 3,
+            "regiao": "cabeca",
+            "ativacao_pa": 1,
+            "restaura": "descanso_longo",
+            "desgaste": "-1 MIT por dano absorvido"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "ars_bracos",
+      "slug": "ars_bracos",
+      "nome": "ARS Bracos",
+      "categoria": "interno",
+      "categoria_label": "Interno",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1500,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "interno",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "mit",
+        "ativo",
+        "interno"
+      ],
+      "descricao_curta": "Armadura subdermica nos bracos.",
+      "descricao_longa": "Armadura subdermica nos bracos.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "mit_subdermico",
+            "mit": 4,
+            "regiao": "bracos",
+            "ativacao_pa": 1,
+            "restaura": "descanso_longo",
+            "desgaste": "-1 MIT por dano absorvido"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "ars_pernas",
+      "slug": "ars_pernas",
+      "nome": "ARS Pernas",
+      "categoria": "interno",
+      "categoria_label": "Interno",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1500,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "interno",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "mit",
+        "ativo",
+        "interno"
+      ],
+      "descricao_curta": "Armadura subdermica nas pernas.",
+      "descricao_longa": "Armadura subdermica nas pernas.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "mit_subdermico",
+            "mit": 5,
+            "regiao": "pernas",
+            "ativacao_pa": 1,
+            "restaura": "descanso_longo",
+            "desgaste": "-1 MIT por dano absorvido"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "ars_tronco",
+      "slug": "ars_tronco",
+      "nome": "ARS Tronco",
+      "categoria": "interno",
+      "categoria_label": "Interno",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1500,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "interno",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "mit",
+        "ativo",
+        "interno"
+      ],
+      "descricao_curta": "Armadura subdermica toracica.",
+      "descricao_longa": "Armadura subdermica toracica.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "mit_subdermico",
+            "mit": 6,
+            "regiao": "tronco",
+            "ativacao_pa": 1,
+            "restaura": "descanso_longo",
+            "desgaste": "-1 MIT por dano absorvido"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "estimulador_cardiaco",
+      "slug": "estimulador_cardiaco",
+      "nome": "Estimulador Cardíaco",
+      "categoria": "interno",
+      "categoria_label": "Interno",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "interno",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "passivo",
+        "interno"
+      ],
+      "descricao_curta": "Reforco do miocardio.",
+      "descricao_longa": "Reforco do miocardio.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": 2,
+            "alvo_texto": "Vigor contra fadiga e esforco prolongado",
+            "alvo_tags": [
+              "vigor"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "filtro_hematologico",
+      "slug": "filtro_hematologico",
+      "nome": "Filtro Hematológico",
+      "categoria": "interno",
+      "categoria_label": "Interno",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1200,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "interno",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "passivo",
+        "interno"
+      ],
+      "descricao_curta": "Purificacao sanguinea.",
+      "descricao_longa": "Purificacao sanguinea.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": 2,
+            "alvo_texto": "resistencia contra venenos, drogas e infeccoes",
+            "alvo_tags": [
+              "resistencia"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "banco_de_adrenalina",
+      "slug": "banco_de_adrenalina",
+      "nome": "Banco de Adrenalina",
+      "categoria": "interno",
+      "categoria_label": "Interno",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1500,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "interno",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "condicao_ignore",
+        "interno"
+      ],
+      "descricao_curta": "Uma vez por cena, ignora Atordoado ou Lento.",
+      "descricao_longa": "Uma vez por cena, ignora Atordoado ou Lento.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "ignorar_condicao",
+            "condicoes": [
+              "atordoado",
+              "lento"
+            ],
+            "usos": 1,
+            "cadencia": "cena"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "reserva_pulmonar",
+      "slug": "reserva_pulmonar",
+      "nome": "Reserva Pulmonar",
+      "categoria": "interno",
+      "categoria_label": "Interno",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2500,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "interno",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "ativo",
+        "utilitario",
+        "interno"
+      ],
+      "descricao_curta": "Uma vez por dia, 10 min de respiracao independente.",
+      "descricao_longa": "Uma vez por dia, 10 min de respiracao independente.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "recurso_temporario",
+            "duracao_min": 10,
+            "usos": 1,
+            "cadencia": "dia"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "reserva_de_mana",
+      "slug": "reserva_de_mana",
+      "nome": "Reserva de Mana",
+      "categoria": "interno",
+      "categoria_label": "Interno",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2500,
+      "custo_integridade": 2,
+      "slot": {
+        "modo": "consome",
+        "pool": "interno",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "mana",
+        "interno"
+      ],
+      "descricao_curta": "+5 de mana temporaria por descanso longo.",
+      "descricao_longa": "+5 de mana temporaria por descanso longo.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "mana_temporaria",
+            "valor": 5,
+            "cadencia": "descanso_longo"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "catalisador_imunologico",
+      "slug": "catalisador_imunologico",
+      "nome": "Catalisador Imunológico",
+      "categoria": "interno",
+      "categoria_label": "Interno",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2500,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "interno",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "passivo",
+        "interno"
+      ],
+      "descricao_curta": "Descanso longo concede +2d6 PV adicionais recuperados.",
+      "descricao_longa": "Descanso longo concede +2d6 PV adicionais recuperados.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "cura_extra",
+            "valor": "2d6",
+            "cadencia": "descanso_longo"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "beijo_da_morte",
+      "slug": "beijo_da_morte",
+      "nome": "Beijo da Morte",
+      "categoria": "interno",
+      "categoria_label": "Interno",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2500,
+      "custo_integridade": 2,
+      "slot": {
+        "modo": "consome",
+        "pool": "interno",
+        "quantidade": 1
+      },
+      "requisitos": [],
+      "tags": [
+        "ativo",
+        "arma",
+        "interno"
+      ],
+      "descricao_curta": "Ao beijar ou morder um alvo, este faz Vigor CD 7; em falha sofre o veneno carregado.",
+      "descricao_longa": "Ao beijar ou morder um alvo, este faz Vigor CD 7; em falha sofre o veneno carregado. So mantem 1 veneno por vez.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "efeito_com_resistencia",
+            "resistencia": {
+              "pericia": "vigor",
+              "cd": 7
+            },
+            "veneno_unico": true,
+            "venenos": [
+              {
+                "nome": "Toxico",
+                "preco": 100,
+                "raridade": "incomum",
+                "efeito": "2d8 toxico; alvo fica Envenenado.",
+                "raridade_label": "Incomum",
+                "id": "toxico",
+                "falha": {
+                  "dano": "2d8",
+                  "tipo_dano": "toxico",
+                  "condicoes": [
+                    "envenenado"
+                  ]
+                },
+                "sucesso": {
+                  "efeito": "nenhum"
+                }
+              },
+              {
+                "nome": "Paralisante",
+                "preco": 100,
+                "raridade": "incomum",
+                "efeito": "Atordoado por 1d4+1 rodadas (metade em sucesso).",
+                "raridade_label": "Incomum",
+                "id": "paralisante",
+                "falha": {
+                  "condicoes": [
+                    "atordoado"
+                  ],
+                  "duracao": "1d4+1 rodadas"
+                },
+                "sucesso": {
+                  "condicoes": [
+                    "atordoado"
+                  ],
+                  "duracao": "metade"
+                }
+              },
+              {
+                "nome": "Sonifero",
+                "preco": 100,
+                "raridade": "incomum",
+                "efeito": "Adormece 1d4+1 rodadas (metade em sucesso).",
+                "raridade_label": "Incomum",
+                "id": "sonifero",
+                "falha": {
+                  "estado": "adormecido",
+                  "duracao": "1d4+1 rodadas"
+                },
+                "sucesso": {
+                  "estado": "adormecido",
+                  "duracao": "metade"
+                }
+              },
+              {
+                "nome": "Letal",
+                "preco": 200,
+                "raridade": "incomum",
+                "efeito": "3d10 fisico imediato (metade em sucesso).",
+                "raridade_label": "Incomum",
+                "id": "letal",
+                "falha": {
+                  "dano": "3d10",
+                  "tipo_dano": "fisico"
+                },
+                "sucesso": {
+                  "dano": "metade",
+                  "tipo_dano": "fisico"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "optica_runica",
+      "slug": "optica_runica",
+      "nome": "Óptica Rúnica",
+      "categoria": "optica",
+      "categoria_label": "Óptica",
+      "raridade": "muito_comum",
+      "raridade_label": "Muito Comum",
+      "preco": 700,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "abre_pool",
+        "pool": "optica",
+        "capacidade": 3
+      },
+      "requisitos": [],
+      "tags": [
+        "base",
+        "sentido",
+        "optica"
+      ],
+      "descricao_curta": "Implantes oculares que fundem visao biologica e digital.",
+      "descricao_longa": "Implantes oculares que fundem visao biologica e digital. Projeta dados do Processador Sinaptico na visao. Abre 3 espacos opticos. Versao clandestina (+300) consulta RPI de alvos no campo de visao.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "abrir_pool_de_espaco",
+            "pool": "optica",
+            "capacidade": 3,
+            "por_unidade": false
+          },
+          {
+            "tipo": "upgrade_clandestino_opcional",
+            "recurso": "consulta_rpi",
+            "preco_extra": 300
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "projetor_runico",
+      "slug": "projetor_runico",
+      "nome": "Projetor Rúnico",
+      "categoria": "optica",
+      "categoria_label": "Óptica",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 1200,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "optica",
+        "quantidade": 1
+      },
+      "requisitos": [
+        {
+          "tipo": "escalpo_instalado",
+          "id": "optica_runica",
+          "quantidade": 1
+        }
+      ],
+      "tags": [
+        "utilitario",
+        "optica"
+      ],
+      "descricao_curta": "Projeta imagens e dados ate 1 m, visiveis a todos.",
+      "descricao_longa": "Projeta imagens e dados ate 1 m, visiveis a todos. Sem audio.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "alcance_utilitario",
+            "alcance_m": 1
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "visao_noturna",
+      "slug": "visao_noturna",
+      "nome": "Visão Noturna",
+      "categoria": "optica",
+      "categoria_label": "Óptica",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 1000,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "optica",
+        "quantidade": 1
+      },
+      "requisitos": [
+        {
+          "tipo": "escalpo_instalado",
+          "id": "optica_runica",
+          "quantidade": 1
+        }
+      ],
+      "tags": [
+        "passivo",
+        "sentido",
+        "optica"
+      ],
+      "descricao_curta": "Enxerga no escuro, fumaca e neblina.",
+      "descricao_longa": "Enxerga no escuro, fumaca e neblina.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "ignorar_penalidade_ambiental",
+            "penalidades": [
+              "escuridao",
+              "fumaca",
+              "neblina"
+            ],
+            "tags": [
+              "visao"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "lentes_fotonicas",
+      "slug": "lentes_fotonicas",
+      "nome": "Lentes Fotonicas",
+      "categoria": "optica",
+      "categoria_label": "Óptica",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "optica",
+        "quantidade": 1
+      },
+      "requisitos": [
+        {
+          "tipo": "escalpo_instalado",
+          "id": "optica_runica",
+          "quantidade": 1
+        }
+      ],
+      "tags": [
+        "ativo",
+        "sentido",
+        "optica"
+      ],
+      "descricao_curta": "Lanterna ocular em cone de 10 m.",
+      "descricao_longa": "Lanterna ocular em cone de 10 m. Uma vez por cena, 1 PA, concentra a luz num adjacente: Reflexos CD 7 ou Ofuscado por 1 rodada.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "iluminacao",
+            "forma": "cone",
+            "alcance_m": 10
+          },
+          {
+            "tipo": "acao_ativa",
+            "cadencia": "cena",
+            "usos": 1,
+            "pa": 1,
+            "condicao": "ofuscado",
+            "duracao": "1 rodada",
+            "alcance": "adjacente",
+            "resistencia": {
+              "pericia": "reflexos",
+              "cd": 7
+            }
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "visao_telescopica",
+      "slug": "visao_telescopica",
+      "nome": "Visão Telescópica",
+      "categoria": "optica",
+      "categoria_label": "Óptica",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1500,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "optica",
+        "quantidade": 1
+      },
+      "requisitos": [
+        {
+          "tipo": "escalpo_instalado",
+          "id": "optica_runica",
+          "quantidade": 1
+        }
+      ],
+      "tags": [
+        "passivo",
+        "sentido",
+        "optica"
+      ],
+      "descricao_curta": "Identifica rostos a 200 m e individuos a 1 km.",
+      "descricao_longa": "Identifica rostos a 200 m e individuos a 1 km.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": 1,
+            "alvo_texto": "Percepcao ligada a visao",
+            "alvo_tags": [
+              "percepcao"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "audicao_runica",
+      "slug": "audicao_runica",
+      "nome": "Audição Rúnica",
+      "categoria": "audicao",
+      "categoria_label": "Audição",
+      "raridade": "muito_comum",
+      "raridade_label": "Muito Comum",
+      "preco": 300,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "abre_pool",
+        "pool": "audicao",
+        "capacidade": 2
+      },
+      "requisitos": [],
+      "tags": [
+        "base",
+        "sentido",
+        "audicao"
+      ],
+      "descricao_curta": "Recebe som digital direto na mente.",
+      "descricao_longa": "Recebe som digital direto na mente. Abre 2 espacos auditivos.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "abrir_pool_de_espaco",
+            "pool": "audicao",
+            "capacidade": 2,
+            "por_unidade": false
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "gravador_de_audio",
+      "slug": "gravador_de_audio",
+      "nome": "Gravador de Áudio",
+      "categoria": "audicao",
+      "categoria_label": "Audição",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "audicao",
+        "quantidade": 1
+      },
+      "requisitos": [
+        {
+          "tipo": "escalpo_instalado",
+          "id": "audicao_runica",
+          "quantidade": 1
+        }
+      ],
+      "tags": [
+        "ativo",
+        "utilitario",
+        "audicao"
+      ],
+      "descricao_curta": "Grava sons por comando para um repositorio.",
+      "descricao_longa": "Grava sons por comando para um repositorio. Em combate, Acao Livre.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "acao_utilitaria",
+            "custo": "livre",
+            "requer_repositorio": true
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "audicao_aprimorada",
+      "slug": "audicao_aprimorada",
+      "nome": "Audição Aprimorada",
+      "categoria": "audicao",
+      "categoria_label": "Audição",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1500,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "audicao",
+        "quantidade": 1
+      },
+      "requisitos": [
+        {
+          "tipo": "escalpo_instalado",
+          "id": "audicao_runica",
+          "quantidade": 1
+        }
+      ],
+      "tags": [
+        "passivo",
+        "sentido",
+        "audicao"
+      ],
+      "descricao_curta": "Capta sons ate 100 m em ambiente urbano.",
+      "descricao_longa": "Capta sons ate 100 m em ambiente urbano.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": 2,
+            "alvo_texto": "Percepcao baseada em som",
+            "alvo_tags": [
+              "percepcao"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "braco_runico",
+      "slug": "braco_runico",
+      "nome": "Braço Rúnico",
+      "categoria": "braco",
+      "categoria_label": "Braço",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 500,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "abre_pool",
+        "pool": "braco",
+        "capacidade": 2,
+        "por_unidade": true
+      },
+      "requisitos": [],
+      "tags": [
+        "base",
+        "passivo",
+        "movimento",
+        "braco"
+      ],
+      "descricao_curta": "Protese de braco com reforco.",
+      "descricao_longa": "Protese de braco com reforco. Cada braco da +1 em Vigor de esforco dos membros superiores e abre 2 espacos para aquela unidade. Pode ter dois (esquerdo e direito).",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": 1,
+            "alvo_texto": "Vigor de esforco fisico dos membros superiores",
+            "alvo_tags": [
+              "vigor"
+            ]
+          },
+          {
+            "tipo": "abrir_pool_de_espaco",
+            "pool": "braco",
+            "capacidade": 2,
+            "por_unidade": true
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "lamina_retratil",
+      "slug": "lamina_retratil",
+      "nome": "Lâmina Retrátil",
+      "categoria": "braco",
+      "categoria_label": "Braço",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "braco",
+        "quantidade": 1
+      },
+      "requisitos": [
+        {
+          "tipo": "escalpo_instalado",
+          "id": "braco_runico",
+          "quantidade": 1
+        }
+      ],
+      "tags": [
+        "ativo",
+        "arma",
+        "braco"
+      ],
+      "descricao_curta": "Lamina kravita de 40 cm.",
+      "descricao_longa": "Lamina kravita de 40 cm. 1 PA para ativar; arma corpo a corpo leve, 1d8+1 perfurante; Sangrando em critico. Retrair nao consome PA.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "arma_ou_ataque_integrado",
+            "dano": "1d8+1",
+            "tipo_dano": "fisico",
+            "pericia": "luta",
+            "soma_corpo": true,
+            "ativacao_pa": 1,
+            "propriedade_critico": {
+              "condicao": "sangrando"
+            },
+            "subtipo_dano": "perfurante"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.3.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "garras_retrateis",
+      "slug": "garras_retrateis",
+      "nome": "Garras Retráteis",
+      "categoria": "braco",
+      "categoria_label": "Braço",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1000,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "braco",
+        "quantidade": 1
+      },
+      "requisitos": [
+        {
+          "tipo": "escalpo_instalado",
+          "id": "braco_runico",
+          "quantidade": 1
+        }
+      ],
+      "tags": [
+        "ativo",
+        "arma",
+        "braco"
+      ],
+      "descricao_curta": "Tres laminas kravita no dorso da mao.",
+      "descricao_longa": "Tres laminas kravita no dorso da mao. 1 PA para ativar; arma corpo a corpo curta, 1d8+1 cortante; Sangrando em critico.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "arma_ou_ataque_integrado",
+            "dano": "1d8+1",
+            "tipo_dano": "fisico",
+            "pericia": "luta",
+            "soma_corpo": true,
+            "ativacao_pa": 1,
+            "propriedade_critico": {
+              "condicao": "sangrando"
+            },
+            "subtipo_dano": "cortante"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.3.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "escudo_retratil",
+      "slug": "escudo_retratil",
+      "nome": "Escudo Retrátil",
+      "categoria": "braco",
+      "categoria_label": "Braço",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1500,
+      "custo_integridade": 2,
+      "slot": {
+        "modo": "consome",
+        "pool": "braco",
+        "quantidade": 1
+      },
+      "requisitos": [
+        {
+          "tipo": "escalpo_instalado",
+          "id": "braco_runico",
+          "quantidade": 1
+        }
+      ],
+      "tags": [
+        "ativo",
+        "escudo",
+        "braco"
+      ],
+      "descricao_curta": "Escudo kravita oculto.",
+      "descricao_longa": "Escudo kravita oculto. Ativa como parte de Bloquear, consumindo 1 PA na defesa. 8 PD, recuperam em descanso longo.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "escudo_integrado",
+            "pd": 8,
+            "ativacao_pa": 1,
+            "ligado_acao": "Bloquear",
+            "restaura": "descanso_longo"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "bolso_de_braco",
+      "slug": "bolso_de_braco",
+      "nome": "Bolso de Braço",
+      "categoria": "braco",
+      "categoria_label": "Braço",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 400,
+      "custo_integridade": 0,
+      "slot": {
+        "modo": "consome",
+        "pool": "braco",
+        "quantidade": 1
+      },
+      "requisitos": [
+        {
+          "tipo": "escalpo_instalado",
+          "id": "braco_runico",
+          "quantidade": 1
+        }
+      ],
+      "tags": [
+        "armazenamento",
+        "braco"
+      ],
+      "descricao_curta": "Compartimento oculto: 1 item pequeno.",
+      "descricao_longa": "Compartimento oculto: 1 item pequeno.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "armazenamento_fisico",
+            "capacidade": "1 item pequeno"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "mao_firme",
+      "slug": "mao_firme",
+      "nome": "Mão Firme",
+      "categoria": "braco",
+      "categoria_label": "Braço",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1200,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "braco",
+        "quantidade": 1
+      },
+      "requisitos": [
+        {
+          "tipo": "escalpo_instalado",
+          "id": "braco_runico",
+          "quantidade": 1
+        }
+      ],
+      "tags": [
+        "passivo",
+        "braco"
+      ],
+      "descricao_curta": "Estabilizador de tiro.",
+      "descricao_longa": "Estabilizador de tiro.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificador",
+            "valor": 1,
+            "alvo_texto": "Precisao e Balistica ao atirar",
+            "alvo_tags": [
+              "precisao",
+              "balistica"
+            ]
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "perna_runica",
+      "slug": "perna_runica",
+      "nome": "Perna Rúnica",
+      "categoria": "perna",
+      "categoria_label": "Perna",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 700,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "abre_pool",
+        "pool": "perna",
+        "capacidade": 3,
+        "por_unidade": true
+      },
+      "requisitos": [],
+      "tags": [
+        "base",
+        "movimento",
+        "perna"
+      ],
+      "descricao_curta": "Protese de perna.",
+      "descricao_longa": "Protese de perna. Cada uma da +1 m no deslocamento base de Andar e abre 3 espacos para aquela unidade. Pode ter duas.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "abrir_pool_de_espaco",
+            "pool": "perna",
+            "capacidade": 3,
+            "por_unidade": true
+          },
+          {
+            "tipo": "modificar_deslocamento",
+            "andar_bonus_m": 1
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "salto_runico",
+      "slug": "salto_runico",
+      "nome": "Salto Rúnico",
+      "categoria": "perna",
+      "categoria_label": "Perna",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1500,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "perna",
+        "quantidade": 1
+      },
+      "requisitos": [
+        {
+          "tipo": "escalpo_instalado",
+          "id": "perna_runica",
+          "quantidade": 2
+        }
+      ],
+      "tags": [
+        "movimento",
+        "perna"
+      ],
+      "descricao_curta": "Saltos ate 3 m vertical e 6 m horizontal sem teste.",
+      "descricao_longa": "Saltos ate 3 m vertical e 6 m horizontal sem teste. Combina com Mobilidade para saltos maiores.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "modificar_salto",
+            "vertical_m": 3,
+            "horizontal_m": 6
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "amortecedor_inercial",
+      "slug": "amortecedor_inercial",
+      "nome": "Amortecedor Inercial",
+      "categoria": "perna",
+      "categoria_label": "Perna",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1500,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "perna",
+        "quantidade": 1
+      },
+      "requisitos": [
+        {
+          "tipo": "escalpo_instalado",
+          "id": "perna_runica",
+          "quantidade": 2
+        }
+      ],
+      "tags": [
+        "passivo",
+        "movimento",
+        "perna"
+      ],
+      "descricao_curta": "Ignora os primeiros 10 m de dano de queda.",
+      "descricao_longa": "Ignora os primeiros 10 m de dano de queda.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "reduzir_dano_queda",
+            "ignora_queda_m": 10
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "pulo_sismico",
+      "slug": "pulo_sismico",
+      "nome": "Pulo Sísmico",
+      "categoria": "perna",
+      "categoria_label": "Perna",
+      "raridade": "raro",
+      "raridade_label": "Raro",
+      "preco": 2500,
+      "custo_integridade": 2,
+      "slot": {
+        "modo": "consome",
+        "pool": "perna",
+        "quantidade": 1
+      },
+      "requisitos": [
+        {
+          "tipo": "escalpo_instalado",
+          "id": "perna_runica",
+          "quantidade": 1
+        }
+      ],
+      "tags": [
+        "ativo",
+        "arma",
+        "perna"
+      ],
+      "descricao_curta": "Por 2 PA, ao aterrissar ou bater o pe, atinge todos os adjacentes: Resistir CD 7 ou 1d6 contundente e Caido.",
+      "descricao_longa": "Por 2 PA, ao aterrissar ou bater o pe, atinge todos os adjacentes: Resistir CD 7 ou 1d6 contundente e Caido.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "efeito_com_resistencia",
+            "resistencia": {
+              "acao": "resistir",
+              "pericias_possiveis": [
+                "vigor",
+                "mobilidade"
+              ],
+              "cd": 7
+            },
+            "dano": "1d6",
+            "tipo_dano": "fisico",
+            "condicao_falha": "caido",
+            "pa": 2,
+            "area": "adjacentes",
+            "subtipo_dano": "contundente"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.3.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "propulsor",
+      "slug": "propulsor",
+      "nome": "Propulsor",
+      "categoria": "perna",
+      "categoria_label": "Perna",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 1300,
+      "custo_integridade": 1,
+      "slot": {
+        "modo": "consome",
+        "pool": "perna",
+        "quantidade": 1
+      },
+      "requisitos": [
+        {
+          "tipo": "escalpo_instalado",
+          "id": "perna_runica",
+          "quantidade": 2
+        }
+      ],
+      "tags": [
+        "ativo",
+        "movimento",
+        "perna"
+      ],
+      "descricao_curta": "Uma vez por cena, dobra o deslocamento base de Andar por 1 rodada.",
+      "descricao_longa": "Uma vez por cena, dobra o deslocamento base de Andar por 1 rodada.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "efeito_textual_temporizado",
+            "efeito": "Andar x2 por 1 rodada",
+            "usos": 1,
+            "cadencia": "cena"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    },
+    {
+      "id": "bolso_de_perna",
+      "slug": "bolso_de_perna",
+      "nome": "Bolso de Perna",
+      "categoria": "perna",
+      "categoria_label": "Perna",
+      "raridade": "incomum",
+      "raridade_label": "Incomum",
+      "preco": 600,
+      "custo_integridade": 0,
+      "slot": {
+        "modo": "consome",
+        "pool": "perna",
+        "quantidade": 1
+      },
+      "requisitos": [
+        {
+          "tipo": "escalpo_instalado",
+          "id": "perna_runica",
+          "quantidade": 1
+        }
+      ],
+      "tags": [
+        "armazenamento",
+        "perna"
+      ],
+      "descricao_curta": "Compartimento oculto: 1 item medio ou 2 pequenos.",
+      "descricao_longa": "Compartimento oculto: 1 item medio ou 2 pequenos.",
+      "payload_automacao": {
+        "efeitos": [
+          {
+            "tipo": "armazenamento_fisico",
+            "capacidade": "1 item medio ou 2 pequenos"
+          }
+        ]
+      },
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-06-25",
+      "updated_at": "2026-06-25"
+    }
+  ]
+}

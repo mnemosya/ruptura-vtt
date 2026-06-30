@@ -1,0 +1,633 @@
+{
+  "$schema": "ruptura.vtt.core_manifest.v0.1",
+  "package": {
+    "id": "ruptura-core",
+    "name": "Ruptura Core",
+    "version": "0.1.0",
+    "status": "draft_manifest",
+    "generated_at": "2026-06-29",
+    "content_hash_sha256": "3e7b0fa853a028130f0b360ce867422f6cbaf25cb1ba5daf4c3cedf85f4a3fea",
+    "description": "Manifesto do pacote base de conteúdo e regras do Ruptura VTT."
+  },
+  "policy": {
+    "schema_validation_required": true,
+    "cross_validation_required": true,
+    "import_strategy": "two_phase_import_then_cross_validate",
+    "allow_forward_refs": [
+      "acoes_combate<->condicoes"
+    ],
+    "source_of_truth": {
+      "acoes": "acoes_combate",
+      "campo_combate": "campo_combate",
+      "pericias_atributos_derivados": "regras_personagem",
+      "propriedades_arma": "propriedades",
+      "condicoes": "condicoes"
+    }
+  },
+  "contents": [
+    {
+      "id": "regras_personagem",
+      "name": "Regras de Personagem",
+      "role": "core_rules",
+      "import_phase": 1,
+      "status": "published",
+      "database": {
+        "file": "db_regras_personagem_normalizado_v1_4.json",
+        "path": "/mnt/data/db_regras_personagem_normalizado_v1_4.json",
+        "exists": true,
+        "_schema": "ruptura.vtt.core.regras_personagem.v1.4",
+        "conteudo": "regras_personagem",
+        "versao_schema": "1.4.0",
+        "hash_sha256": "4d857f34954bb3169abfb4af27a4fa42dc22ad1b4dc2c05282ae9a04851c4188",
+        "size_bytes": 59568,
+        "counts": {
+          "atributos": 3,
+          "pericias": 21
+        }
+      },
+      "schema": {
+        "file": "schema_regras_personagem_v1_4.json",
+        "path": "/mnt/data/schema_regras_personagem_v1_4.json",
+        "exists": true,
+        "$id": "ruptura.vtt.core.regras_personagem.v1.4.schema.json",
+        "title": "Ruptura VTT - Regras de Personagem v1.4",
+        "hash_sha256": "fc6bdd6ff4a0ade02d0c77ee284c0ffaa45862e953e6e5f4e03fe9c06b07addb",
+        "size_bytes": 10636
+      },
+      "provides": [
+        "atributos",
+        "pericias",
+        "rolagem_base",
+        "derivados",
+        "recursos",
+        "tipos_dano",
+        "vertentes",
+        "criacao_personagem"
+      ],
+      "depends_on": [],
+      "notes": [
+        "Base de atributos, perícias, rolagem, derivados e criação de personagem."
+      ]
+    },
+    {
+      "id": "campo_combate",
+      "name": "Campo de Combate",
+      "role": "core_rules",
+      "import_phase": 1,
+      "status": "published",
+      "database": {
+        "file": "db_campo_combate_normalizado_v1_1.json",
+        "path": "/mnt/data/db_campo_combate_normalizado_v1_1.json",
+        "exists": true,
+        "_schema": "ruptura.vtt.core.campo_combate.v1.1",
+        "conteudo": "campo_combate",
+        "versao_schema": "1.1.0",
+        "hash_sha256": "dc06d963c4c44e225e3242211b2d915eb222951c684c36581db11c42bf49b9ce",
+        "size_bytes": 10709,
+        "counts": {
+          "tamanhos": 5,
+          "alcances": 3,
+          "areas": 8,
+          "terrenos": 2,
+          "condicoes_ambientais": 5
+        }
+      },
+      "schema": {
+        "file": "schema_campo_combate_v1_1.json",
+        "path": "/mnt/data/schema_campo_combate_v1_1.json",
+        "exists": true,
+        "$id": "ruptura.vtt.core.campo_combate.v1.1.schema.json",
+        "title": "Ruptura VTT - Campo de Combate v1.1",
+        "hash_sha256": "1ad99c49be944eb2f38f198e99d253d8bd3392f367a7330a2a660036aaa6fde6",
+        "size_bytes": 2889
+      },
+      "provides": [
+        "grade_hex",
+        "tamanhos",
+        "alcances",
+        "areas",
+        "regioes_corpo",
+        "cobertura",
+        "terrenos",
+        "ambientes"
+      ],
+      "depends_on": [],
+      "notes": [
+        "Fonte autoritativa para M14 e M18–M23."
+      ]
+    },
+    {
+      "id": "fluxo_combate",
+      "name": "Fluxo de Combate",
+      "role": "core_rules",
+      "import_phase": 1,
+      "status": "published",
+      "database": {
+        "file": "db_fluxo_combate_normalizado_v1_1.json",
+        "path": "/mnt/data/db_fluxo_combate_normalizado_v1_1.json",
+        "exists": true,
+        "_schema": "ruptura.vtt.core.fluxo_combate.v1.1",
+        "conteudo": "fluxo_combate",
+        "versao_schema": "1.1.0",
+        "hash_sha256": "795d8be36b40eb391ff450aa52e2858392ed952b97594687630d7fe6974b745c",
+        "size_bytes": 3654,
+        "counts": {}
+      },
+      "schema": {
+        "file": "schema_fluxo_combate_v1_1.json",
+        "path": "/mnt/data/schema_fluxo_combate_v1_1.json",
+        "exists": true,
+        "$id": "ruptura.vtt.core.fluxo_combate.v1.1.schema.json",
+        "title": "Ruptura VTT - Fluxo de Combate v1.1",
+        "hash_sha256": "3c27002f24af68f52e154f163a3def38bb985fb0e9a17ea62ce04b4541fe0b0b",
+        "size_bytes": 1526
+      },
+      "provides": [
+        "rodada",
+        "pa",
+        "janelas_turno",
+        "alternancia",
+        "fragmentacao_pa",
+        "emboscada",
+        "tregua",
+        "reacoes"
+      ],
+      "depends_on": [
+        "regras_personagem"
+      ],
+      "notes": [
+        "Config/regra-base interpretada pelo motor."
+      ]
+    },
+    {
+      "id": "acoes_combate",
+      "name": "Ações de Combate",
+      "role": "content_catalog",
+      "import_phase": 2,
+      "status": "published",
+      "database": {
+        "file": "db_acoes_combate_normalizado_v1_1.json",
+        "path": "/mnt/data/db_acoes_combate_normalizado_v1_1.json",
+        "exists": true,
+        "_schema": "ruptura.vtt.content.acoes_combate.v1.1",
+        "conteudo": "acoes_combate",
+        "versao_schema": "1.1.0",
+        "hash_sha256": "36605aa197a975ffc807757e9a845dd985bacdb43a12f08a201372c17503b8dd",
+        "size_bytes": 46513,
+        "counts": {
+          "acoes": 28,
+          "total_registros_meta": 28
+        }
+      },
+      "schema": {
+        "file": "schema_acoes_combate_v1_1.json",
+        "path": "/mnt/data/schema_acoes_combate_v1_1.json",
+        "exists": true,
+        "$id": "ruptura.vtt.content.acoes_combate.v1.1.schema.json",
+        "title": "Ruptura VTT - Ações de Combate v1.1",
+        "hash_sha256": "2d8d3f18bc970c7bf2fd36596e224a5ba24ed33ede80fee4291a6eef83fc0fd0",
+        "size_bytes": 7458
+      },
+      "provides": [
+        "acoes",
+        "acoes_defensivas",
+        "efeitos_combate"
+      ],
+      "depends_on": [
+        "regras_personagem",
+        "campo_combate",
+        "condicoes"
+      ],
+      "notes": [
+        "Fonte autoritativa de M5. Tem dependência circular leve com condições; importar em duas fases e validar depois."
+      ]
+    },
+    {
+      "id": "condicoes",
+      "name": "Condições",
+      "role": "content_catalog",
+      "import_phase": 2,
+      "status": "published",
+      "database": {
+        "file": "db_condicoes_normalizado_v1_5.json",
+        "path": "/mnt/data/db_condicoes_normalizado_v1_5.json",
+        "exists": true,
+        "_schema": "ruptura.vtt.content.condicoes.v1.5",
+        "conteudo": "condicoes",
+        "versao_schema": "1.5.0",
+        "hash_sha256": "019128c9f0b4edcd6ea26c1c67dcdcc71ec10b51be9ce83e231af3b61a3b072e",
+        "size_bytes": 26231,
+        "counts": {
+          "condicoes": 17,
+          "total_registros_meta": 17
+        }
+      },
+      "schema": {
+        "file": "schema_condicoes_v1_5.json",
+        "path": "/mnt/data/schema_condicoes_v1_5.json",
+        "exists": true,
+        "$id": "ruptura.vtt.content.condicoes.v1.5.schema.json",
+        "title": "Ruptura VTT - Condições v1.5",
+        "hash_sha256": "9267b735f4177704945bd6733d4c0a810117428e7f83b73ec8c1b4ba9451297f",
+        "size_bytes": 9226
+      },
+      "provides": [
+        "condicoes",
+        "efeitos_condicao",
+        "acoes_habilitadas_por_condicao"
+      ],
+      "depends_on": [
+        "regras_personagem",
+        "acoes_combate"
+      ],
+      "notes": [
+        "Depende de ações para ações habilitadas como levantar, escapar, soltar_alvo e apagar_fogo."
+      ]
+    },
+    {
+      "id": "propriedades",
+      "name": "Propriedades de Arma",
+      "role": "content_catalog",
+      "import_phase": 2,
+      "status": "published",
+      "database": {
+        "file": "db_propriedades_normalizado_v1.json",
+        "path": "/mnt/data/db_propriedades_normalizado_v1.json",
+        "exists": true,
+        "_schema": "ruptura.vtt.content.propriedades_arma.v1.0",
+        "conteudo": "propriedades_arma",
+        "versao_schema": "1.0.0",
+        "hash_sha256": "d140efd86cad3fc50115f26c9f5164fe3e335902061148c09713a0e8f009b91f",
+        "size_bytes": 22896,
+        "counts": {
+          "propriedades": 14,
+          "total_registros_meta": 14
+        }
+      },
+      "schema": {
+        "file": "schema_propriedades_v1.json",
+        "path": "/mnt/data/schema_propriedades_v1.json",
+        "exists": true,
+        "$id": "ruptura.vtt.content.propriedades_arma.v1.0.schema.json",
+        "title": "Ruptura VTT - Propriedades de Arma v1.0",
+        "hash_sha256": "9f45edd107e1583e28213534f9aae0ad509730a762efb3fef989e3f42b2606a0",
+        "size_bytes": 24141
+      },
+      "provides": [
+        "propriedades_arma"
+      ],
+      "depends_on": [
+        "acoes_combate",
+        "condicoes",
+        "regras_personagem",
+        "campo_combate"
+      ],
+      "notes": [
+        "Fonte autoritativa de propriedades de arma; equipamentos referenciam por ID."
+      ]
+    },
+    {
+      "id": "equipamentos",
+      "name": "Equipamentos",
+      "role": "content_catalog",
+      "import_phase": 3,
+      "status": "published",
+      "database": {
+        "file": "db_equipamentos_normalizado_v1_2.json",
+        "path": "/mnt/data/db_equipamentos_normalizado_v1_2.json",
+        "exists": true,
+        "_schema": "ruptura.vtt.content.equipamentos.v1.2",
+        "conteudo": "equipamentos",
+        "versao_schema": "1.2.0",
+        "hash_sha256": "cf03d594413e1fa90fc5e4207de66e2c44c9e5a179a8fe609bc0e9b0127e6aac",
+        "size_bytes": 149112,
+        "counts": {
+          "itens": 119,
+          "total_registros_meta": 119,
+          "contagem_por_categoria": {
+            "arma": 31,
+            "armadura": 18,
+            "dispositivo": 8,
+            "escudo": 6,
+            "explosivo": 10,
+            "farmacia": 10,
+            "ferramenta": 12,
+            "municao": 10,
+            "veiculo": 6,
+            "vertina": 8
+          }
+        }
+      },
+      "schema": {
+        "file": "schema_equipamentos_v1_2.json",
+        "path": "/mnt/data/schema_equipamentos_v1_2.json",
+        "exists": false,
+        "$id": null,
+        "title": null,
+        "hash_sha256": null,
+        "size_bytes": null
+      },
+      "provides": [
+        "itens",
+        "armas",
+        "armaduras",
+        "escudos",
+        "explosivos",
+        "farmacia",
+        "ferramentas",
+        "dispositivos",
+        "veiculos",
+        "vertinas",
+        "municao"
+      ],
+      "depends_on": [
+        "regras_personagem",
+        "acoes_combate",
+        "campo_combate",
+        "condicoes",
+        "propriedades"
+      ],
+      "notes": [
+        "Usa C9/propriedades, M6/dano, M17/categorias e FKs de compatibilidade de munição."
+      ]
+    },
+    {
+      "id": "runas",
+      "name": "Runas",
+      "role": "content_catalog",
+      "import_phase": 3,
+      "status": "published",
+      "database": {
+        "file": "db_runas_normalizado_v1_2.json",
+        "path": "/mnt/data/db_runas_normalizado_v1_2.json",
+        "exists": true,
+        "_schema": "ruptura.vtt.content.runas.v1.2",
+        "conteudo": "runas",
+        "versao_schema": "1.2.0",
+        "hash_sha256": "ab760e4356e015a589a7f2083c7c76487a1d1f07a1694c2bc31704c927a5bc9e",
+        "size_bytes": 50376,
+        "counts": {
+          "runas": 40,
+          "total_registros_meta": 40,
+          "contagem_por_dominio": {
+            "corpo_a_corpo": 11,
+            "arremesso_disparo": 7,
+            "fogo": 9,
+            "armadura": 6,
+            "escudo": 7
+          }
+        }
+      },
+      "schema": {
+        "file": "schema_runas_v1_2.json",
+        "path": "/mnt/data/schema_runas_v1_2.json",
+        "exists": false,
+        "$id": null,
+        "title": null,
+        "hash_sha256": null,
+        "size_bytes": null
+      },
+      "provides": [
+        "runas"
+      ],
+      "depends_on": [
+        "equipamentos",
+        "condicoes",
+        "acoes_combate",
+        "regras_personagem",
+        "campo_combate"
+      ],
+      "notes": [
+        "Runas instalam em arma, armadura ou escudo; usam categorias e subtipos de equipamento."
+      ]
+    },
+    {
+      "id": "escalpos",
+      "name": "Escalpos",
+      "role": "content_catalog",
+      "import_phase": 3,
+      "status": "published",
+      "database": {
+        "file": "db_escalpos_normalizado_v1_3.json",
+        "path": "/mnt/data/db_escalpos_normalizado_v1_3.json",
+        "exists": true,
+        "_schema": "ruptura.vtt.content.escalpos.v1.3",
+        "conteudo": "escalpos",
+        "versao_schema": "1.3.0",
+        "hash_sha256": "53c120cc03233ea4b020a6ff42888ce3028dc019d2bb0235d783398676af8611",
+        "size_bytes": 73196,
+        "counts": {
+          "escalpos": 58,
+          "total_registros_meta": 58
+        }
+      },
+      "schema": {
+        "file": "schema_escalpos_v1_3.json",
+        "path": "/mnt/data/schema_escalpos_v1_3.json",
+        "exists": true,
+        "$id": "ruptura.vtt.content.escalpos.v1.3.schema.json",
+        "title": "Ruptura VTT - Escalpos v1.3",
+        "hash_sha256": "05f89e6ae3d96b8a2c7ff3f748225b411443f5225943db0c090448d89d0f5466",
+        "size_bytes": 18586
+      },
+      "provides": [
+        "escalpos",
+        "pools_de_espaco"
+      ],
+      "depends_on": [
+        "regras_personagem",
+        "condicoes",
+        "acoes_combate"
+      ],
+      "notes": [
+        "Usa Integridade, pools de espaço, condições e ações utilitárias/defensivas."
+      ]
+    },
+    {
+      "id": "talentos",
+      "name": "Talentos",
+      "role": "content_catalog",
+      "import_phase": 4,
+      "status": "published",
+      "database": {
+        "file": "db_talentos_normalizado_v1_3.json",
+        "path": "/mnt/data/db_talentos_normalizado_v1_3.json",
+        "exists": true,
+        "_schema": "ruptura.vtt.content.talentos.v1.3",
+        "conteudo": "talentos",
+        "versao_schema": "1.3.0",
+        "hash_sha256": "8aefe863bd340fab76ffec601573a6e9fa743268d5cf3c88d7517d64fcf3e64c",
+        "size_bytes": 128265,
+        "counts": {
+          "talentos": 22,
+          "niveis_talento": 66,
+          "total_talentos_meta": 22,
+          "total_niveis_meta": 66
+        }
+      },
+      "schema": {
+        "file": "schema_talentos_v1_3.json",
+        "path": "/mnt/data/schema_talentos_v1_3.json",
+        "exists": true,
+        "$id": "ruptura.vtt.content.talentos.v1.3.schema.json",
+        "title": "Ruptura VTT - Talentos v1.3",
+        "hash_sha256": "d13ef82ffdaaa831bd734b24a69efe0f09d70f0a0fbeb97c2ddfa80888ab6c6a",
+        "size_bytes": 27027
+      },
+      "provides": [
+        "talentos",
+        "niveis_talento"
+      ],
+      "depends_on": [
+        "regras_personagem",
+        "acoes_combate",
+        "condicoes",
+        "equipamentos",
+        "runas",
+        "escalpos"
+      ],
+      "notes": [
+        "Pode referenciar ações, condições, perícias, runas, equipamentos e recursos."
+      ]
+    },
+    {
+      "id": "magias",
+      "name": "Magias",
+      "role": "content_catalog",
+      "import_phase": 4,
+      "status": "published",
+      "database": {
+        "file": "db_magias_normalizado_v1_3.json",
+        "path": "/mnt/data/db_magias_normalizado_v1_3.json",
+        "exists": true,
+        "_schema": "ruptura.vtt.content.magias.v1.3",
+        "conteudo": "magias",
+        "versao_schema": "1.3.0",
+        "hash_sha256": "1facd49f9d7f937da70742b5e30be256bb551375b04951bf20bf80ed06184a17",
+        "size_bytes": 271084,
+        "counts": {
+          "magias": 132,
+          "especializacoes": 13,
+          "total_registros_meta": 132,
+          "contagem_por_vertente": {
+            "cinetica": 17,
+            "cognitiva": 25,
+            "energetica": 27,
+            "material": 22,
+            "sinaptica": 20,
+            "somatica": 21
+          }
+        }
+      },
+      "schema": {
+        "file": "schema_magias_v1_3.json",
+        "path": "/mnt/data/schema_magias_v1_3.json",
+        "exists": false,
+        "$id": null,
+        "title": null,
+        "hash_sha256": null,
+        "size_bytes": null
+      },
+      "provides": [
+        "magias",
+        "especializacoes_magicas"
+      ],
+      "depends_on": [
+        "regras_personagem",
+        "condicoes",
+        "acoes_combate",
+        "campo_combate"
+      ],
+      "notes": [
+        "Usa vertentes, condições, ações defensivas, alcances, áreas e CD runtime."
+      ]
+    }
+  ],
+  "import_order": [
+    "regras_personagem",
+    "campo_combate",
+    "fluxo_combate",
+    "acoes_combate",
+    "condicoes",
+    "propriedades",
+    "equipamentos",
+    "runas",
+    "escalpos",
+    "talentos",
+    "magias"
+  ],
+  "validation_order": [
+    "schema_validation_each_file",
+    "cross_reference_validation",
+    "payload_contract_validation",
+    "import_preview",
+    "seed_import"
+  ],
+  "dependency_graph": {
+    "regras_personagem": [],
+    "campo_combate": [],
+    "fluxo_combate": [
+      "regras_personagem"
+    ],
+    "acoes_combate": [
+      "regras_personagem",
+      "campo_combate",
+      "condicoes"
+    ],
+    "condicoes": [
+      "regras_personagem",
+      "acoes_combate"
+    ],
+    "propriedades": [
+      "acoes_combate",
+      "condicoes",
+      "regras_personagem",
+      "campo_combate"
+    ],
+    "equipamentos": [
+      "regras_personagem",
+      "acoes_combate",
+      "campo_combate",
+      "condicoes",
+      "propriedades"
+    ],
+    "runas": [
+      "equipamentos",
+      "condicoes",
+      "acoes_combate",
+      "regras_personagem",
+      "campo_combate"
+    ],
+    "escalpos": [
+      "regras_personagem",
+      "condicoes",
+      "acoes_combate"
+    ],
+    "talentos": [
+      "regras_personagem",
+      "acoes_combate",
+      "condicoes",
+      "equipamentos",
+      "runas",
+      "escalpos"
+    ],
+    "magias": [
+      "regras_personagem",
+      "condicoes",
+      "acoes_combate",
+      "campo_combate"
+    ]
+  },
+  "totals": {
+    "databases_expected": 11,
+    "databases_found": 11,
+    "schemas_expected": 11,
+    "schemas_found": 8,
+    "missing_files": [
+      "/mnt/data/schema_equipamentos_v1_2.json",
+      "/mnt/data/schema_runas_v1_2.json",
+      "/mnt/data/schema_magias_v1_3.json"
+    ]
+  },
+  "next_recommended_step": "Rodar validação cruzada global usando este manifesto."
+}

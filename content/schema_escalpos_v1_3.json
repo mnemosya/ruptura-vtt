@@ -1,0 +1,826 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ruptura.vtt.content.escalpos.v1.3.schema.json",
+  "title": "Ruptura VTT - Escalpos v1.3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "_schema",
+    "_meta",
+    "enums",
+    "pools_de_espaco",
+    "escalpos"
+  ],
+  "properties": {
+    "_schema": {
+      "const": "ruptura.vtt.content.escalpos.v1.3"
+    },
+    "_meta": {
+      "type": "object"
+    },
+    "enums": {
+      "type": "object"
+    },
+    "pools_de_espaco": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "id",
+          "nome",
+          "tipo",
+          "descricao"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "nome": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "global",
+              "aberto_por_escalpo_base",
+              "por_instancia",
+              "sem_limite_definido"
+            ]
+          },
+          "capacidade": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "capacidade_por_unidade": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_unidades": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "aberto_por": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "instancias_sugeridas": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9_]+$"
+            }
+          },
+          "descricao": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "escalpos": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "slug",
+          "nome",
+          "categoria",
+          "categoria_label",
+          "raridade",
+          "raridade_label",
+          "preco",
+          "custo_integridade",
+          "slot",
+          "requisitos",
+          "tags",
+          "descricao_curta",
+          "descricao_longa",
+          "payload_automacao",
+          "status",
+          "versao",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "nome": {
+            "type": "string",
+            "minLength": 1
+          },
+          "categoria": {
+            "type": "string",
+            "enum": [
+              "identidade",
+              "moda",
+              "neural",
+              "interno",
+              "optica",
+              "audicao",
+              "braco",
+              "perna"
+            ]
+          },
+          "categoria_label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "raridade": {
+            "type": "string",
+            "enum": [
+              "muito_comum",
+              "comum",
+              "incomum",
+              "raro",
+              "muito_raro"
+            ]
+          },
+          "raridade_label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "preco": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "custo_integridade": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "slot": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "modo",
+                  "pool",
+                  "quantidade"
+                ],
+                "properties": {
+                  "modo": {
+                    "const": "consome"
+                  },
+                  "pool": {
+                    "type": "string",
+                    "enum": [
+                      "neural",
+                      "interno",
+                      "optica",
+                      "audicao",
+                      "braco",
+                      "perna",
+                      "moda",
+                      "identidade"
+                    ]
+                  },
+                  "quantidade": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "modo",
+                  "pool",
+                  "capacidade"
+                ],
+                "properties": {
+                  "modo": {
+                    "const": "abre_pool"
+                  },
+                  "pool": {
+                    "type": "string",
+                    "enum": [
+                      "neural",
+                      "interno",
+                      "optica",
+                      "audicao",
+                      "braco",
+                      "perna",
+                      "moda",
+                      "identidade"
+                    ]
+                  },
+                  "capacidade": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "por_unidade": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            ]
+          },
+          "requisitos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/requisito"
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "arma",
+                "armazenamento",
+                "ativo",
+                "audicao",
+                "balistica",
+                "base",
+                "braco",
+                "carteira",
+                "condicao_ignore",
+                "escudo",
+                "identidade",
+                "interno",
+                "logica",
+                "luta",
+                "mana",
+                "mit",
+                "mobilidade",
+                "moda",
+                "movimento",
+                "neural",
+                "optica",
+                "passivo",
+                "percepcao",
+                "performance",
+                "perna",
+                "precisao",
+                "ram",
+                "reflexos",
+                "resistencia",
+                "sentido",
+                "social",
+                "trama",
+                "utilitario",
+                "vigor",
+                "visao",
+                "vontade"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "descricao_curta": {
+            "type": "string",
+            "minLength": 1
+          },
+          "descricao_longa": {
+            "type": "string",
+            "minLength": 1
+          },
+          "payload_automacao": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "efeitos"
+            ],
+            "properties": {
+              "efeitos": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/efeito"
+                }
+              },
+              "observacoes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ]
+          },
+          "versao": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "requisito": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tipo",
+            "id",
+            "quantidade"
+          ],
+          "properties": {
+            "tipo": {
+              "const": "escalpo_instalado"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-z0-9_]+$"
+            },
+            "quantidade": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tipo",
+            "id"
+          ],
+          "properties": {
+            "tipo": {
+              "const": "item_equipado"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-z0-9_]+$"
+            },
+            "nome": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tipo",
+            "opcoes"
+          ],
+          "properties": {
+            "tipo": {
+              "const": "qualquer_um"
+            },
+            "opcoes": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/requisito"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "efeito": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tipo"
+      ],
+      "properties": {
+        "acionamento": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "alcance": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "alcance_m": {
+          "type": "number"
+        },
+        "alvo_tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "alvo_texto": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "andar_bonus_m": {
+          "type": "number"
+        },
+        "area": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "ativacao_pa": {
+          "type": "number"
+        },
+        "cadencia": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "capacidade": {
+          "type": [
+            "number",
+            "string"
+          ]
+        },
+        "capacidade_tb": {
+          "type": "number"
+        },
+        "carteira": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "chance_falha_zonas_nobres": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "comandos": {
+          "type": "object"
+        },
+        "condicao": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "condicao_falha": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "condicoes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "confiabilidade": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "custo": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "dano": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "descricao": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "desgaste": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "duracao": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "duracao_min": {
+          "type": "number"
+        },
+        "efeito": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "fala_audivel": {
+          "type": "boolean"
+        },
+        "falha_automatica": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "forma": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "horizontal_m": {
+          "type": "number"
+        },
+        "idiomas_simultaneos": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "ignora_queda_m": {
+          "type": "number"
+        },
+        "ligado_acao": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "mit": {
+          "type": "number"
+        },
+        "nivel": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "pa": {
+          "type": "number"
+        },
+        "pd": {
+          "type": "number"
+        },
+        "penalidades": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "pericia": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "pool": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "por_unidade": {
+          "type": "boolean"
+        },
+        "preco_extra": {
+          "type": "number"
+        },
+        "propriedade_critico": {
+          "type": "object"
+        },
+        "ram": {
+          "type": "number"
+        },
+        "recurso": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "recursos": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "regiao": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "requer_repositorio": {
+          "type": "boolean"
+        },
+        "resistencia": {
+          "type": "object"
+        },
+        "restaura": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array"
+          ]
+        },
+        "soma_corpo": {
+          "type": "boolean"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tipo": {
+          "type": "string",
+          "enum": [
+            "abrir_pool_de_espaco",
+            "acao_ativa",
+            "acao_utilitaria",
+            "alcance_utilitario",
+            "arma_ou_ataque_integrado",
+            "armazenamento_digital",
+            "armazenamento_fisico",
+            "comunicacao_silenciosa",
+            "cura_extra",
+            "deck_sinaptico",
+            "efeito_com_resistencia",
+            "efeito_textual_temporizado",
+            "escudo_integrado",
+            "habilitar_carteira",
+            "habilitar_recurso",
+            "identidade_forjada",
+            "ignorar_condicao",
+            "ignorar_penalidade_ambiental",
+            "iluminacao",
+            "mana_temporaria",
+            "mit_subdermico",
+            "modificador",
+            "modificar_deslocamento",
+            "modificar_salto",
+            "ocultar_rastro_digital",
+            "ram_bonus",
+            "recurso_temporario",
+            "reduzir_dano_queda",
+            "traducao_neural",
+            "upgrade_clandestino_opcional"
+          ]
+        },
+        "tipo_dano": {
+          "type": "string",
+          "enum": [
+            "fisico",
+            "energetico",
+            "acido",
+            "toxico",
+            "psiquico",
+            "trauma"
+          ]
+        },
+        "usos": {
+          "type": "number"
+        },
+        "valor": {
+          "type": [
+            "number",
+            "string"
+          ]
+        },
+        "veneno_unico": {
+          "type": "boolean"
+        },
+        "venenos": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "vertical_m": {
+          "type": "number"
+        },
+        "subtipo_dano": {
+          "type": "string",
+          "enum": [
+            "cortante",
+            "contundente",
+            "perfurante",
+            "igneo",
+            "gelido",
+            "eletrico",
+            "acido",
+            "toxico",
+            "psiquico",
+            "trauma"
+          ]
+        }
+      }
+    }
+  }
+}

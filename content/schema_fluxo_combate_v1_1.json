@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ruptura.vtt.core.fluxo_combate.v1.1.schema.json",
+  "title": "Ruptura VTT - Fluxo de Combate v1.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "_schema",
+    "_meta",
+    "rodada",
+    "pontos_de_acao",
+    "janelas_turno",
+    "duracao_um_rodada",
+    "ordem_de_turnos",
+    "fragmentacao_pa",
+    "emboscada",
+    "tregua",
+    "reacoes",
+    "status",
+    "versao",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "_schema": {
+      "const": "ruptura.vtt.core.fluxo_combate.v1.1"
+    },
+    "_meta": {
+      "type": "object"
+    },
+    "rodada": {
+      "type": "object"
+    },
+    "pontos_de_acao": {
+      "type": "object"
+    },
+    "janelas_turno": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "ordem"
+        ]
+      }
+    },
+    "duracao_um_rodada": {
+      "type": "object"
+    },
+    "ordem_de_turnos": {
+      "type": "object"
+    },
+    "fragmentacao_pa": {
+      "type": "object"
+    },
+    "emboscada": {
+      "type": "object"
+    },
+    "tregua": {
+      "type": "object"
+    },
+    "reacoes": {
+      "type": "object"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "published",
+        "archived"
+      ]
+    },
+    "versao": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string"
+    }
+  }
+}
