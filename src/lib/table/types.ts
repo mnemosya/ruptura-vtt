@@ -11,6 +11,8 @@
 export interface Campaign {
   id: string;
   name: string;
+  /** Dono/narrador da mesa (auth dev, migration 0006). Null para mesas criadas sem login. */
+  owner_id: string | null;
   created_at: string;
   updated_at: string;
 }

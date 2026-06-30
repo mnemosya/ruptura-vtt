@@ -18,19 +18,47 @@
  */
 
 import { getContentClient } from "../content";
+import { getCurrentUser } from "../auth/session";
 import { TableStorageError } from "./storage.errors";
 import { PROFILE_HEARTBEAT_TIMEOUT_MS } from "./types";
 import type { Campaign, CampaignProfile, TableLogEntry, TableLogVisibility } from "./types";
+
+/**
+ * Id do narrador logado (auth dev, checkpoint v0.13) ou null. Best
+ * effort: getCurrentUser lê o cookie httpOnly via next/headers, que só
+ * existe num contexto de request (Server Action/RSC); fora disso
+ * (scripts node) cai no catch e retorna null, sem quebrar.
+ */
+async function currentOwnerId(): Promise<string | null> {
+  try {
+    const user = await getCurrentUser();
+    return user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
 
 const CAMPAIGNS_TABLE = "campaigns";
 const TABLE_LOGS_TABLE = "table_logs";
 const CAMPAIGN_PROFILES_TABLE = "campaign_profiles";
 
-/** Cria uma mesa (campaign) de desenvolvimento. */
+/**
+ * Cria uma mesa (campaign) de desenvolvimento. Carimba `owner_id` com o
+ * narrador logado quando há sessão (auth dev, v0.13/v0.14); fica null
+ * para mesas criadas sem login ("mesa dev legada"). A coluna owner_id é
+ * nullable e a RLS ainda é a dev aberta — stampar aqui só prepara o
+ * terreno para a segurança real futura (ver migration 0006), sem
+ * mudar quem pode criar/ver mesas hoje.
+ */
 export async function createCampaign(name: string): Promise<Campaign> {
   const client = getContentClient();
   const finalName = name.trim() ? name.trim() : "Mesa sem nome";
-  const { data, error } = await client.from(CAMPAIGNS_TABLE).insert({ name: finalName }).select().single();
+  const ownerId = await currentOwnerId();
+  const { data, error } = await client
+    .from(CAMPAIGNS_TABLE)
+    .insert({ name: finalName, owner_id: ownerId })
+    .select()
+    .single();
 
   if (error) {
     throw new TableStorageError(`Falha ao criar mesa: ${error.message}`, error);

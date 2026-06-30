@@ -2215,3 +2215,162 @@ de email real ou de desativar a confirmação.
   `SUPABASE_URL`/`SUPABASE_ANON_KEY`, foi criado e removido na mesma
   sessão, nunca commitado, e não criou nenhum usuário (rejeitado pela
   validação de email).
+
+---
+
+# Checkpoint v0.14 — RLS básica de mesa (modo de transição)
+
+Adiciona o **groundwork** de RLS real para mesa/log/perfis — coluna de
+dono (`campaigns.owner_id`) + policies owner-scoped — SEM endurecer de
+verdade ainda. As policies dev abertas continuam valendo (sinalizadas),
+porque cortar anon agora quebraria `/dev/join` e causaria lockout do
+storage atual. Esta etapa é explicitamente **modo de transição**, não
+segurança real.
+
+## 1. Auditoria das tabelas (estado de partida)
+
+Via `get_advisors(security)` + leitura de `pg_policies`:
+
+| Tabela | RLS | Policies | Risco |
+|---|---|---|---|
+| `campaigns` | on | `*_dev_anon_*` select/insert/update/delete (anon+authenticated, USING(true)) | CRUD aberto a qualquer anon |
+| `table_logs` | on | `*_dev_anon_*` select/insert (append-only) | leitura/escrita aberta; `visibility` sem filtro |
+| `campaign_profiles` | on | `*_dev_anon_*` select/insert/update/delete | CRUD aberto |
+| `characters` | on | `*_dev_anon_*` select/insert/update/delete | CRUD aberto |
+| Biblioteca (`content_*`) | on | leitura pública só de `status='published'` | já restrita, **não tocada** |
+
+`auth.users`: 0 usuários (nenhum narrador logado existe ainda — ver
+v0.13).
+
+## 2. Bloqueio de segurança real (por que NÃO endureci)
+
+Três fatos tornam o endurecimento real inseguro/inviável agora —
+documentados como bloqueio explícito (o checkpoint prevê isso):
+
+1. **Storage usa anon key sem sessão.** Todas as Server Actions
+   (`getContentClient()`) usam a anon key e não anexam JWT do narrador.
+   Qualquer policy baseada em `auth.uid()` negaria TODAS as Server
+   Actions atuais → lockout de escrita. Endurecer exigiria refatorar o
+   storage para um cliente autenticado.
+2. **Jogador é anon por design.** `/dev/join/[campaignId]`, heartbeat,
+   rolagens e chat da ficha funcionam **sem login**. Cortar o SELECT
+   anon de `campaigns`/`campaign_profiles` ou o INSERT anon de
+   `table_logs` quebraria entrar na mesa, rolar e conversar. Auth real
+   de jogador (convite seguro) ainda não existe.
+3. **Auth de narrador não é end-to-end ainda** (v0.13: 0 usuários,
+   caminho positivo de login bloqueado por config externa).
+
+Por isso, em vez de forçar RLS real (que travaria tudo), entreguei o
+terreno preparado de forma **aditiva e sem lockout**.
+
+## 3. Migration 0006 (aditiva, sem lockout)
+
+`supabase/migrations/0006_campaign_owner.sql`, aplicada via
+`SUPABASE_DB_URL` (script auxiliar criado/removido na mesma sessão),
+verificada:
+
+```
+Migration 0006 aplicada.
+owner_id: [{"column_name":"owner_id","is_nullable":"YES","data_type":"uuid"}]
+owner policies:
+ - campaign_profiles.campaign_profiles_owner_all (ALL)
+ - campaigns.campaigns_owner_select/insert/update/delete
+ - table_logs.table_logs_owner_select/insert
+dev-anon policies ainda presentes: 14
+```
+
+- `campaigns.owner_id uuid` **nullable**, FK → `auth.users(id) on
+  delete set null` + índice. Mesas antigas/sem login ficam `owner_id =
+  null` ("mesa dev legada").
+- Policies `*_owner_*` para o papel `authenticated`
+  (campaigns/table_logs/campaign_profiles), escopadas por
+  `owner_id = auth.uid()` (direto ou via subquery em campaigns).
+- **As 14 policies `*_dev_anon_*` NÃO foram removidas** — continuam
+  valendo. Como policies PERMISSIVE do mesmo comando se combinam com
+  OR, as `*_owner_*` **não restringem nada** enquanto as dev-abertas
+  coexistem. Isto está documentado no header da migration como
+  "groundwork, não segurança real".
+- Sem risco de lockout: nada removido, coluna nullable, policies só
+  ampliam (nunca restringem) enquanto coexistem com as dev-abertas.
+
+## 4. Ownership stampado (best effort)
+
+`createCampaign` (`src/lib/table/storage.ts`) passou a carimbar
+`owner_id` com o id do narrador logado (lido do cookie httpOnly via
+`getCurrentUser`, embrulhado em try/catch → null fora de um request,
+ex.: scripts node). Mesa criada sem login fica `owner_id = null`. Tipo
+`Campaign` ganhou `owner_id: string | null`.
+
+Não refatorei o storage para cliente autenticado (mudança grande e
+arriscada) — fica como pendência para o endurecimento real.
+
+## 5. Como ativar segurança real no futuro (NÃO fazer agora)
+
+Documentado no header da migration 0006:
+1. Implementar auth de jogador (convite seguro) e refatorar o storage
+   para anexar o JWT (narrador e jogador) nas Server Actions.
+2. Dropar as policies `*_dev_anon_*` de
+   campaigns/table_logs/campaign_profiles.
+3. As `*_owner_*` passam a valer; adicionar policies de jogador
+   (membro da mesa) conforme o modelo de convite.
+
+Fazer isso ANTES dos pré-requisitos quebraria `/dev/join` e travaria o
+storage anon — por isso é deferido.
+
+## 6. Resultado do build e dos testes
+
+```
+$ npm run build
+✓ Compiled successfully
+Route (app): /dev/auth/status, /dev/character-sheet,
+             /dev/join/[campaignId], /dev/login, /dev/table
+
+$ npm run test:character-storage
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+
+$ npm run test:content-read
+(Biblioteca do Sistema lê normalmente: magias, itens, condição
+ sangrando, ação atacar, tabelas mestre — RLS de conteúdo não tocada)
+```
+
+`characters` não foi tocada (RLS dev mantida) — o teste de storage de
+personagem segue passando.
+
+## 7. Resultado do teste manual (browser, via preview tools)
+
+1. `/dev/table` (deslogado): criei "Mesa RLS v0.14" — confirmado via
+   SQL direto que a linha nasceu com `owner_id = null` (mesa dev legada,
+   stamping best-effort sem login). O fluxo de criar mesa não quebrou.
+2. Selecionei a "Mesa Teste Fase 0" — logs (30) e perfis (1) listaram
+   normalmente (RLS dev aberta, sem login).
+3. `/dev/join/2d2d5ea8-...`: a mesa e o perfil carregaram normalmente
+   (jogador anon não quebrou).
+4. Sem erros no console.
+5. Removi a mesa de teste "Mesa RLS v0.14" (criada nesta sessão) ao
+   final.
+
+Resultado: **todos os passos passaram**; nenhum fluxo dev quebrou.
+
+## 8. Confirmação de escopo + riscos remanescentes
+
+- **Migration**: criada e aplicada (0006), aditiva, sem apagar dados,
+  sem lockout.
+- **Segurança real**: NÃO ativada — é modo de transição, claramente
+  sinalizado (policies dev mantidas; policies owner não enforçam
+  enquanto coexistem). Não fingimos segurança.
+- **Service role no frontend**: não usada.
+- **Biblioteca do Sistema**: não alterada; leitura pública de
+  `published` segue funcionando.
+- **`characters`**: não endurecida (evita quebrar o teste de storage
+  sem uma estratégia clara, conforme a regra do checkpoint).
+- **Riscos remanescentes (inalterados, agora com terreno para
+  corrigir)**: qualquer cliente com a anon key ainda pode ler/criar/
+  editar/apagar qualquer mesa, perfil, log e personagem; `visibility`
+  de `table_logs` continua sem filtro de RLS; heartbeat/forceRelease
+  continuam sem checagem de identidade; o link de `/dev/join` continua
+  inseguro (id em texto puro). O endurecimento depende dos
+  pré-requisitos da seção 5.
+- Nenhuma chave secreta exposta: o script de migration
+  (`scripts/_tmp_apply_0006.ts`) e os de verificação/limpeza usaram só
+  `SUPABASE_URL`/`SUPABASE_ANON_KEY`/`SUPABASE_DB_URL`, foram criados e
+  removidos na mesma sessão, nunca commitados.
