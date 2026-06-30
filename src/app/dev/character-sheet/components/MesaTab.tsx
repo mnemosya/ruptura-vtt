@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Aba "Mesa" da ficha — lê e escreve no log persistente da mesa
+ * Aba "Mesa" da ficha — chat mínimo + log persistente da mesa
  * selecionada (table_logs), sem realtime (só atualização manual via
  * botão). Não substitui o Log local (aba "Log"), que continua sendo o
  * histórico volátil desta sessão de ficha.
@@ -67,6 +67,24 @@ function entryBorderColor(type: string): string {
   return "#ffb84f";
 }
 
+/** Texto da mensagem de chat — aceita `text` (ficha, v0.12) ou `mensagem` (formato antigo do /dev/table). */
+function chatText(payload: Record<string, unknown>): string {
+  if (typeof payload.text === "string") return payload.text;
+  if (typeof payload.mensagem === "string") return payload.mensagem;
+  return JSON.stringify(payload);
+}
+
+/**
+ * Autor preferencial de uma mensagem de chat: personagem > perfil >
+ * "Mesa". Usa os campos que a ficha grava no payload (characterNome /
+ * profileNickname); mensagens antigas sem esses campos caem em "Mesa".
+ */
+function chatAuthor(payload: Record<string, unknown>): string {
+  if (typeof payload.characterNome === "string" && payload.characterNome.trim()) return payload.characterNome;
+  if (typeof payload.profileNickname === "string" && payload.profileNickname.trim()) return payload.profileNickname;
+  return "Mesa";
+}
+
 function formatRolagem(payload: Record<string, unknown>): string {
   if (typeof payload.characterNome === "string") {
     if (payload.atributo) {
@@ -88,19 +106,20 @@ function formatProfileEvent(payload: Record<string, unknown>): string {
   return JSON.stringify(payload);
 }
 
-function formatEntry(entry: TableLogEntry): string {
-  if (entry.type === "chat" && typeof entry.payload.mensagem === "string") return entry.payload.mensagem;
-  if (entry.type === "rolagem_pericia" || entry.type === "rolagem_expressao") return formatRolagem(entry.payload);
-  if (entry.type === "profile_event") return formatProfileEvent(entry.payload);
-  return JSON.stringify(entry.payload);
-}
-
 export function MesaTab({
   campaignId,
   mesaNome,
+  profileId,
+  profileNickname,
+  characterId,
+  characterNome,
 }: {
   campaignId: string | null;
   mesaNome: string | null;
+  profileId: string | null;
+  profileNickname: string | null;
+  characterId: string | null;
+  characterNome: string;
 }) {
   const [logs, setLogs] = useState<TableLogEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -124,7 +143,7 @@ export function MesaTab({
 
   // Carrega os logs ao abrir a aba com uma mesa selecionada, e recarrega
   // se a mesa mudar. Sem realtime — atualizações posteriores são manuais
-  // (botão "Atualizar logs").
+  // (botão "Atualizar logs") ou automáticas só uma vez após enviar.
   useEffect(() => {
     if (!campaignId) {
       setLogs([]);
@@ -136,13 +155,23 @@ export function MesaTab({
 
   async function handleEnviar() {
     if (!campaignId) return;
+    const text = mensagemInput.trim();
+    if (!text) return;
     setErrorMessage(null);
     try {
       await addLog({
         campaignId,
+        characterId: characterId ?? undefined,
         type: "chat",
         visibility: visibilidade,
-        payload: { mensagem: mensagemInput.trim() || "(mensagem vazia)" },
+        payload: {
+          text,
+          source: "character_sheet",
+          profileId,
+          profileNickname,
+          characterId,
+          characterNome,
+        },
       });
       setMensagemInput("");
       await refreshLogs();
@@ -163,6 +192,7 @@ export function MesaTab({
   }
 
   const logsFiltrados = filtro === "todos" ? logs : logs.filter((entry) => entry.visibility === filtro);
+  const podeEnviar = mensagemInput.trim().length > 0;
 
   return (
     <Section title={`Mesa — ${mesaNome ?? campaignId}`}>
@@ -170,32 +200,56 @@ export function MesaTab({
         <p style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 12 }}>Erro: {errorMessage}</p>
       )}
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 16 }}>
-        <input
-          data-testid="mesa-mensagem-input"
-          type="text"
-          value={mensagemInput}
-          onChange={(e) => setMensagemInput(e.target.value)}
-          placeholder="Mensagem para a mesa"
-          style={{ ...inputStyle, flex: 1, minWidth: 200 }}
-        />
-        <select
-          data-testid="mesa-visibilidade-select"
-          value={visibilidade}
-          onChange={(e) => setVisibilidade(e.target.value as TableLogVisibility)}
-          style={inputStyle}
-        >
-          {TABLE_LOG_VISIBILITIES.map((v) => (
-            <option key={v} value={v}>
-              {VISIBILITY_LABELS[v]}
-            </option>
-          ))}
-        </select>
-        <button data-testid="mesa-enviar-button" onClick={handleEnviar} style={buttonStyle}>
-          Enviar
-        </button>
+      {/* --- Área de envio --- */}
+      <div
+        style={{
+          background: "#15161b",
+          border: "1px solid #2a2b33",
+          borderRadius: 8,
+          padding: 12,
+          marginBottom: 20,
+        }}
+      >
+        <p style={{ fontSize: 12, opacity: 0.6, marginBottom: 8 }}>
+          Enviar mensagem como{" "}
+          <strong>{characterNome?.trim() || profileNickname || "Mesa"}</strong>
+        </p>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <input
+            data-testid="mesa-mensagem-input"
+            type="text"
+            value={mensagemInput}
+            onChange={(e) => setMensagemInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && podeEnviar) handleEnviar();
+            }}
+            placeholder="Mensagem para a mesa"
+            style={{ ...inputStyle, flex: 1, minWidth: 200 }}
+          />
+          <select
+            data-testid="mesa-visibilidade-select"
+            value={visibilidade}
+            onChange={(e) => setVisibilidade(e.target.value as TableLogVisibility)}
+            style={inputStyle}
+          >
+            {TABLE_LOG_VISIBILITIES.map((v) => (
+              <option key={v} value={v}>
+                {VISIBILITY_LABELS[v]}
+              </option>
+            ))}
+          </select>
+          <button
+            data-testid="mesa-enviar-button"
+            onClick={handleEnviar}
+            disabled={!podeEnviar}
+            style={{ ...buttonStyle, opacity: podeEnviar ? 1 : 0.5, cursor: podeEnviar ? "pointer" : "not-allowed" }}
+          >
+            Enviar
+          </button>
+        </div>
       </div>
 
+      {/* --- Lista de mensagens/eventos --- */}
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4, flexWrap: "wrap" }}>
         <span style={{ fontSize: 13, opacity: 0.6 }}>
           Log da mesa ({logsFiltrados.length}/{logs.length})
@@ -247,13 +301,27 @@ export function MesaTab({
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, opacity: 0.6 }}>
               <span aria-hidden="true">{entryIcon(entry.type)}</span>
-              <span data-testid="mesa-log-entry-type">{entryKindLabel(entry.type)}</span>
+              {entry.type === "chat" ? (
+                <span data-testid="mesa-log-entry-autor" style={{ fontWeight: 700 }}>
+                  {chatAuthor(entry.payload)}
+                </span>
+              ) : (
+                <span data-testid="mesa-log-entry-type">{entryKindLabel(entry.type)}</span>
+              )}
               <span data-testid="mesa-log-entry-visibility">[{VISIBILITY_LABELS[entry.visibility]}]</span>
               <span style={{ marginLeft: "auto", fontFamily: "monospace" }}>
                 {new Date(entry.created_at).toLocaleString("pt-BR")}
               </span>
             </div>
-            <span data-testid="mesa-log-entry-conteudo">{formatEntry(entry)}</span>
+            <span data-testid="mesa-log-entry-conteudo">
+              {entry.type === "chat"
+                ? chatText(entry.payload)
+                : entry.type === "rolagem_pericia" || entry.type === "rolagem_expressao"
+                  ? formatRolagem(entry.payload)
+                  : entry.type === "profile_event"
+                    ? formatProfileEvent(entry.payload)
+                    : JSON.stringify(entry.payload)}
+            </span>
           </div>
         ))}
       </div>

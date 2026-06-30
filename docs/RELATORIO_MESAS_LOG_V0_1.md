@@ -1938,3 +1938,132 @@ Resultado: **todos os passos do teste manual passaram**.
   exclusivamente `SUPABASE_URL`/`SUPABASE_ANON_KEY` (mesma
   `getContentClient()`/Server Actions), foi criado e removido na mesma
   sessão, nunca commitado.
+
+---
+
+# Checkpoint v0.12 — Chat mínimo pela ficha
+
+Refina a aba "Mesa" da ficha em um chat mínimo: área de envio separada
+visualmente da lista, payload de mensagem enriquecido
+(`text`/`source`/autor), renderização com autor preferencial
+(personagem > perfil > "Mesa"), botão "Enviar" desabilitado quando
+vazio e atualização automática única após enviar. Não é chat em tempo
+real nem DM real — visibilidade continua sendo só campo de dados.
+
+## 1. Arquivos alterados
+
+- `src/app/dev/character-sheet/components/MesaTab.tsx` — reescrito:
+  - área de envio agora num bloco visualmente separado (fundo/borda
+    próprios), com rótulo "Enviar mensagem como {autor}";
+  - mensagem gravada com payload rico (ver seção 2);
+  - botão "Enviar" com `disabled` quando o texto está vazio (+ Enter
+    envia quando há texto);
+  - cartões de chat agora mostram o **autor** (personagem > perfil >
+    "Mesa") em negrito no cabeçalho, em vez do rótulo genérico
+    "Mensagem"; rolagens e `profile_event` mantêm o formato anterior;
+  - chat lê `text` (novo) com fallback para `mensagem` (mensagens
+    antigas), via helper `chatText`.
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — passa
+  `profileId`/`profileNickname`/`characterId`/`characterNome` ao
+  `<MesaTab>`.
+- `src/app/dev/table/TableClient.tsx` — **mudança inevitável**: a
+  extração do texto de chat passou a aceitar `payload.text ??
+  payload.mensagem`, para que as mensagens enviadas pela ficha (que
+  agora usam `text`) apareçam corretamente no console da mesa, sem
+  cair no fallback `JSON.stringify`. Mensagens antigas (`mensagem`)
+  continuam funcionando.
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.
+
+Nenhuma migration — o `payload` JSONB já comporta os campos novos.
+Nenhuma mudança em `src/lib/table/storage.ts`, `src/lib/character` ou
+`src/lib/content` (Biblioteca do Sistema).
+
+## 2. Payload das mensagens enviadas pela ficha
+
+```json
+{
+  "text": "Mensagem publica do Kael",
+  "source": "character_sheet",
+  "profileId": "<uuid ou null>",
+  "profileNickname": "Chat v0.12",
+  "characterId": "<uuid ou null>",
+  "characterNome": "Kael Ironwood"
+}
+```
+
+- `source: "character_sheet"` distingue a origem; mensagens enviadas
+  pelo `/dev/table` não têm `source` e continuam válidas (renderizadas
+  pelo fallback `mensagem`).
+- Campos de perfil/personagem vão como `null` quando ausentes (sem
+  perfil selecionado ou personagem não carregado), nunca inventados.
+- A coluna `character_id` da linha de `table_logs` também é preenchida
+  quando há personagem carregado (mesmo `addLog({ characterId })` já
+  existente).
+
+## 3. Autor preferencial na renderização
+
+`chatAuthor(payload)`: usa `characterNome` se presente/não-vazio; senão
+`profileNickname`; senão `"Mesa"`. Aplicado tanto às mensagens enviadas
+pela ficha quanto às antigas (que caem em "Mesa" por não terem esses
+campos). Rolagens e eventos de perfil não usam esse cabeçalho de autor
+— mantêm o rótulo de tipo + `formatRolagem`/`formatProfileEvent` de
+antes.
+
+## 4. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully
+Route (app)
+┌ ○ /_not-found
+├ ƒ /dev/character-sheet
+├ ƒ /dev/join/[campaignId]
+└ ƒ /dev/table
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros.
+
+## 5. Resultado do teste manual (browser, via preview tools)
+
+1. Criei o perfil "Chat v0.12" (vinculado a Kael Ironwood), abri a
+   ficha com `?campaignId=...&profileId=...`, cliquei "Carregar
+   personagem ativo" (nome da ficha = "Kael Ironwood").
+2. Aba Mesa: confirmado botão "Enviar" **desabilitado** com input
+   vazio, e **habilitado** ao digitar texto.
+3. Enviei mensagem **Pública** ("Mensagem publica do Kael") — apareceu
+   como cartão com autor "Kael Ironwood", `[Pública]`.
+4. Enviei mensagem **Privada** ("Sussurro privado do Kael") — autor
+   "Kael Ironwood", `[Privada]`.
+5. Enviei mensagem **Narrador** ("Recado para o narrador") — autor
+   "Kael Ironwood", `[Narrador]`. Cada envio recarregou a lista
+   automaticamente (a mensagem nova apareceu no topo sem clicar
+   "Atualizar logs").
+6. Filtro "Privada" → só `[Privada]` visível; confirmado que rolagens
+   (`= ...`) e `Evento de Perfil` continuam renderizando com o filtro
+   "Todos".
+7. Abri `/dev/table`, selecionei a mesma mesa — confirmado que as 3
+   mensagens (formato `text`) aparecem corretamente lá também (sem
+   `JSON.stringify`).
+8. Sem erros no console (`preview_console_logs`).
+
+Resultado: **todos os passos do teste manual passaram**.
+
+## 6. Confirmação de escopo
+
+- **Realtime**: não implementado — atualização automática só uma vez
+  após enviar; o resto é manual.
+- **DM real entre usuários**: não implementado — visibilidade continua
+  sendo só campo de dados, com o aviso "sem segurança real" mantido na
+  UI.
+- **Migration**: nenhuma (payload JSONB já basta).
+- **Autenticação**: não implementada.
+- **Biblioteca do Sistema** (`src/lib/content`): não alterada.
+- Nenhuma chave secreta exposta: os scripts auxiliares
+  (`scripts/_tmp_setup_v012.ts`, `scripts/_tmp_cleanup_v012.ts`) usaram
+  exclusivamente `SUPABASE_URL`/`SUPABASE_ANON_KEY`, foram criados e
+  removidos na mesma sessão, nunca commitados.

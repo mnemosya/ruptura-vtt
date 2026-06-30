@@ -558,8 +558,15 @@ export default function TableClient({ mesasIniciais, personagensIniciais }: Prop
                 const isChat = entry.type === "chat";
                 const isRolagem = entry.type === "rolagem_pericia" || entry.type === "rolagem_expressao";
                 const isProfileEvent = entry.type === "profile_event";
-                const conteudo = isChat && typeof entry.payload.mensagem === "string"
-                  ? entry.payload.mensagem
+                // Chat aceita `text` (ficha, checkpoint v0.12) ou `mensagem` (formato antigo desta tela).
+                const chatTexto =
+                  typeof entry.payload.text === "string"
+                    ? entry.payload.text
+                    : typeof entry.payload.mensagem === "string"
+                      ? entry.payload.mensagem
+                      : null;
+                const conteudo = isChat && chatTexto != null
+                  ? chatTexto
                   : isRolagem
                     ? formatRolagem(entry.payload)
                     : isProfileEvent

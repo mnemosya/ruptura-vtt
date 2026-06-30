@@ -632,6 +632,10 @@ export default function CharacterSheetClient({
         <MesaTab
           campaignId={selectedCampaignId}
           mesaNome={mesas.find((m) => m.id === selectedCampaignId)?.name ?? null}
+          profileId={selectedProfileId}
+          profileNickname={perfilEmFoco?.nickname ?? null}
+          characterId={characterId}
+          characterNome={character.nome}
         />
       )}
 
