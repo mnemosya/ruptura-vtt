@@ -41,6 +41,19 @@ const VISIBILITY_LABELS: Record<TableLogVisibility, string> = {
   gm: "Mestre (GM)",
 };
 
+function formatRolagem(payload: Record<string, unknown>): string {
+  if (typeof payload.characterNome === "string") {
+    if (payload.atributo) {
+      const pericia = payload.pericia ? ` + ${payload.pericia}` : " (sem perícia)";
+      return `${payload.characterNome}: ${payload.atributo}${pericia} = ${payload.total}`;
+    }
+    if (payload.expressao) {
+      return `${payload.characterNome}: ${payload.expressao} = ${payload.total}`;
+    }
+  }
+  return JSON.stringify(payload);
+}
+
 interface Props {
   mesasIniciais: Campaign[];
 }
@@ -235,7 +248,11 @@ export default function TableClient({ mesasIniciais }: Props) {
                     {entry.type}:
                   </span>
                   <span data-testid="log-entry-mensagem">
-                    {typeof entry.payload.mensagem === "string" ? entry.payload.mensagem : JSON.stringify(entry.payload)}
+                    {entry.type === "chat" && typeof entry.payload.mensagem === "string"
+                      ? entry.payload.mensagem
+                      : entry.type === "rolagem_pericia" || entry.type === "rolagem_expressao"
+                        ? formatRolagem(entry.payload)
+                        : JSON.stringify(entry.payload)}
                   </span>
                 </div>
               ))}
