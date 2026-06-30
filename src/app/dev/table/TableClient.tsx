@@ -17,9 +17,11 @@ import {
   listCampaignProfiles,
   setCampaignProfileLocked,
   setCampaignProfileActiveCharacter,
+  forceReleaseCampaignProfile,
 } from "../../../lib/table/storage";
 import {
   TABLE_LOG_VISIBILITIES,
+  PROFILE_HEARTBEAT_TIMEOUT_MS,
   type Campaign,
   type CampaignProfile,
   type TableLogEntry,
@@ -65,10 +67,19 @@ function formatRolagem(payload: Record<string, unknown>): string {
   return JSON.stringify(payload);
 }
 
+function formatProfileEvent(payload: Record<string, unknown>): string {
+  const nickname = typeof payload.profileNickname === "string" ? payload.profileNickname : "perfil desconhecido";
+  if (payload.evento === "enter") return `${nickname}: entrou no perfil`;
+  if (payload.evento === "leave") return `${nickname}: saiu do perfil`;
+  if (payload.evento === "heartbeat_expirado") return `${nickname}: heartbeat expirado (perfil perdido)`;
+  return JSON.stringify(payload);
+}
+
 const ENTRY_KIND_LABELS: Record<string, string> = {
   chat: "Mensagem",
   rolagem_pericia: "Rolagem de Perícia",
   rolagem_expressao: "Rolagem de Expressão",
+  profile_event: "Evento de Perfil",
 };
 
 function entryKindLabel(type: string): string {
@@ -78,7 +89,19 @@ function entryKindLabel(type: string): string {
 function entryIcon(type: string): string {
   if (type === "chat") return "💬";
   if (type === "rolagem_pericia" || type === "rolagem_expressao") return "🎲";
+  if (type === "profile_event") return "🔑";
   return "•";
+}
+
+function formatLastSeen(lastSeenAt: string | null): string {
+  if (!lastSeenAt) return "nunca";
+  return new Date(lastSeenAt).toLocaleString("pt-BR");
+}
+
+function isPerfilExpirado(perfil: CampaignProfile, now: number): boolean {
+  if (!perfil.is_locked) return false;
+  const lastSeenMs = perfil.last_seen_at ? new Date(perfil.last_seen_at).getTime() : 0;
+  return now - lastSeenMs > PROFILE_HEARTBEAT_TIMEOUT_MS;
 }
 
 const AUTO_REFRESH_INTERVAL_MS = 5000;
@@ -114,6 +137,10 @@ export default function TableClient({ mesasIniciais, personagensIniciais }: Prop
   const [perfis, setPerfis] = useState<CampaignProfile[]>([]);
   const [novoPerfilApelido, setNovoPerfilApelido] = useState("");
   const [loadingPerfis, setLoadingPerfis] = useState(false);
+  // Tick local (5s) só para recalcular "parece expirado" comparando
+  // last_seen_at já carregado com Date.now() — não busca nada novo do
+  // servidor (ver mesmo padrão em CharacterSheetClient).
+  const [nowTick, setNowTick] = useState(() => Date.now());
 
   async function refreshMesas() {
     try {
@@ -195,6 +222,18 @@ export default function TableClient({ mesasIniciais, personagensIniciais }: Prop
     }
   }
 
+  /** Botão "Liberar perfil" — ação de "narrador", libera incondicionalmente (ver forceReleaseCampaignProfile). */
+  async function handleForceReleasePerfil(profileId: string) {
+    if (!selectedCampaignId) return;
+    setErrorMessage(null);
+    try {
+      await forceReleaseCampaignProfile(profileId);
+      await handleRefreshPerfis(selectedCampaignId);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao liberar perfil.");
+    }
+  }
+
   async function handleAddLog() {
     if (!selectedCampaignId) return;
     setErrorMessage(null);
@@ -247,6 +286,12 @@ export default function TableClient({ mesasIniciais, personagensIniciais }: Prop
 
     return () => clearInterval(intervalId);
   }, [autoAtualizar, selectedCampaignId]);
+
+  useEffect(() => {
+    if (!selectedCampaignId) return;
+    const id = setInterval(() => setNowTick(Date.now()), 5000);
+    return () => clearInterval(id);
+  }, [selectedCampaignId]);
 
   const mesaAtual = mesas.find((m) => m.id === selectedCampaignId);
   const logsFiltrados =
@@ -321,9 +366,10 @@ export default function TableClient({ mesasIniciais, personagensIniciais }: Prop
               Perfis da mesa ({perfis.length}) — {mesaAtual?.name ?? selectedCampaignId}
             </h2>
             <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
-              Perfil DEV: só apelido + bloqueio manual. Sem login, sem link de convite, sem
-              heartbeat de presença — bloqueio aqui é só um indicador visual, sem enforcement real
-              (ver migration 0004).
+              Perfil DEV: apelido + bloqueio manual ou via heartbeat (polling client-side, sem
+              Supabase Realtime). Sem login, sem link de convite real — "sessão" é só um id no
+              localStorage de quem entrou pela ficha, sem prova de identidade (ver migrations 0004
+              e 0005).
             </p>
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
               <input
@@ -345,6 +391,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais }: Prop
             <div data-testid="perfis-lista" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {perfis.map((perfil) => {
                 const personagemAtivo = personagens.find((p) => p.id === perfil.active_character_id);
+                const expirado = isPerfilExpirado(perfil, nowTick);
 
                 return (
                   <div
@@ -400,6 +447,27 @@ export default function TableClient({ mesasIniciais, personagensIniciais }: Prop
                         disabled={!perfil.active_character_id}
                       >
                         Limpar personagem
+                      </button>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <span data-testid={`perfil-last-seen-${perfil.id}`} style={{ fontSize: 11, opacity: 0.7 }}>
+                        Último sinal: {formatLastSeen(perfil.last_seen_at)}
+                      </span>
+                      {expirado && (
+                        <span
+                          data-testid={`perfil-expirado-${perfil.id}`}
+                          style={{ fontSize: 11, color: "#ff6b6b", fontWeight: 700 }}
+                        >
+                          Parece expirado
+                        </span>
+                      )}
+                      <button
+                        data-testid={`liberar-perfil-${perfil.id}`}
+                        onClick={() => handleForceReleasePerfil(perfil.id)}
+                        style={buttonStyle}
+                        disabled={!perfil.is_locked}
+                      >
+                        Liberar perfil
                       </button>
                     </div>
                   </div>
@@ -489,11 +557,15 @@ export default function TableClient({ mesasIniciais, personagensIniciais }: Prop
               {logsFiltrados.map((entry) => {
                 const isChat = entry.type === "chat";
                 const isRolagem = entry.type === "rolagem_pericia" || entry.type === "rolagem_expressao";
+                const isProfileEvent = entry.type === "profile_event";
                 const conteudo = isChat && typeof entry.payload.mensagem === "string"
                   ? entry.payload.mensagem
                   : isRolagem
                     ? formatRolagem(entry.payload)
-                    : JSON.stringify(entry.payload);
+                    : isProfileEvent
+                      ? formatProfileEvent(entry.payload)
+                      : JSON.stringify(entry.payload);
+                const corBorda = isChat ? "#4f8cff" : isProfileEvent ? "#ff6b9f" : "#ffb84f";
 
                 return (
                   <div
@@ -507,7 +579,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais }: Prop
                       borderRadius: 8,
                       padding: "10px 14px",
                       fontSize: 13,
-                      borderLeft: `3px solid ${isChat ? "#4f8cff" : "#ffb84f"}`,
+                      borderLeft: `3px solid ${corBorda}`,
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, opacity: 0.6 }}>

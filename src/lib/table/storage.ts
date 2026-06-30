@@ -19,6 +19,7 @@
 
 import { getContentClient } from "../content";
 import { TableStorageError } from "./storage.errors";
+import { PROFILE_HEARTBEAT_TIMEOUT_MS } from "./types";
 import type { Campaign, CampaignProfile, TableLogEntry, TableLogVisibility } from "./types";
 
 const CAMPAIGNS_TABLE = "campaigns";
@@ -178,6 +179,135 @@ export async function setCampaignProfileActiveCharacter(
       `Falha ao atualizar personagem ativo do perfil "${profileId}": ${error.message}`,
       error,
     );
+  }
+  return data as CampaignProfile;
+}
+
+/**
+ * Heartbeat dev de perfil (migration 0005). `sessionId` é só um id
+ * gerado no localStorage do navegador — NÃO é autenticação (ver aviso
+ * completo na migration). Lógica de leitura-então-escrita (não
+ * atômica): aceitável nesta etapa de dev de baixa concorrência; uma
+ * corrida real entre dois clientes entrando no mesmo instante não é
+ * coberta (mesmo princípio de "best effort" já documentado para
+ * is_locked desde a migration 0004).
+ */
+function isProfileExpired(profile: CampaignProfile): boolean {
+  const lastSeenMs = profile.last_seen_at ? new Date(profile.last_seen_at).getTime() : 0;
+  return Date.now() - lastSeenMs > PROFILE_HEARTBEAT_TIMEOUT_MS;
+}
+
+/**
+ * Entra num perfil: permite se o perfil está livre, se já é a mesma
+ * sessão que o detém, ou se o bloqueio atual expirou (sem heartbeat há
+ * mais de PROFILE_HEARTBEAT_TIMEOUT_MS). Caso contrário, lança erro
+ * (perfil em uso por outra sessão ativa).
+ */
+export async function enterCampaignProfile(profileId: string, sessionId: string): Promise<CampaignProfile> {
+  const client = getContentClient();
+  const { data: existing, error: fetchError } = await client
+    .from(CAMPAIGN_PROFILES_TABLE)
+    .select()
+    .eq("id", profileId)
+    .single();
+
+  if (fetchError) {
+    throw new TableStorageError(`Falha ao ler perfil "${profileId}": ${fetchError.message}`, fetchError);
+  }
+
+  const profile = existing as CampaignProfile;
+  const mesmaSessao = profile.lock_session_id === sessionId;
+
+  if (profile.is_locked && !mesmaSessao && !isProfileExpired(profile)) {
+    throw new TableStorageError(
+      `Perfil "${profile.nickname}" está em uso por outra sessão (sem expirar ainda).`,
+    );
+  }
+
+  const nowIso = new Date().toISOString();
+  const { data, error } = await client
+    .from(CAMPAIGN_PROFILES_TABLE)
+    .update({
+      is_locked: true,
+      lock_session_id: sessionId,
+      locked_at: nowIso,
+      last_seen_at: nowIso,
+    })
+    .eq("id", profileId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new TableStorageError(`Falha ao entrar no perfil "${profileId}": ${error.message}`, error);
+  }
+  return data as CampaignProfile;
+}
+
+/**
+ * Renova o heartbeat (`last_seen_at`) de um perfil — só funciona se
+ * `sessionId` ainda for quem detém o bloqueio (`lock_session_id`).
+ * Lança erro se a sessão não é mais a dona (perfil assumido por outra
+ * sessão após expirar, ou liberado manualmente).
+ */
+export async function heartbeatCampaignProfile(profileId: string, sessionId: string): Promise<CampaignProfile> {
+  const client = getContentClient();
+  const { data, error } = await client
+    .from(CAMPAIGN_PROFILES_TABLE)
+    .update({ last_seen_at: new Date().toISOString() })
+    .eq("id", profileId)
+    .eq("lock_session_id", sessionId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new TableStorageError(
+      `Heartbeat rejeitado para o perfil "${profileId}" — sessão não é mais a dona do bloqueio: ${error.message}`,
+      error,
+    );
+  }
+  return data as CampaignProfile;
+}
+
+/**
+ * Sai de um perfil — só libera (`is_locked = false`) se `sessionId`
+ * ainda for quem detém o bloqueio. Não apaga `last_seen_at` (fica como
+ * histórico de "última vez visto").
+ */
+export async function leaveCampaignProfile(profileId: string, sessionId: string): Promise<CampaignProfile> {
+  const client = getContentClient();
+  const { data, error } = await client
+    .from(CAMPAIGN_PROFILES_TABLE)
+    .update({ is_locked: false, lock_session_id: null, locked_at: null })
+    .eq("id", profileId)
+    .eq("lock_session_id", sessionId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new TableStorageError(
+      `Falha ao sair do perfil "${profileId}" (sessão pode não ser mais a dona do bloqueio): ${error.message}`,
+      error,
+    );
+  }
+  return data as CampaignProfile;
+}
+
+/**
+ * Libera um perfil incondicionalmente (sem checar sessionId) — ação de
+ * "narrador" em `/dev/table`. Sem checagem de autorização real (sem
+ * autenticação ainda, ver aviso na migration 0005).
+ */
+export async function forceReleaseCampaignProfile(profileId: string): Promise<CampaignProfile> {
+  const client = getContentClient();
+  const { data, error } = await client
+    .from(CAMPAIGN_PROFILES_TABLE)
+    .update({ is_locked: false, lock_session_id: null, locked_at: null })
+    .eq("id", profileId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new TableStorageError(`Falha ao liberar perfil "${profileId}": ${error.message}`, error);
   }
   return data as CampaignProfile;
 }

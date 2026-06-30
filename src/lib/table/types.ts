@@ -31,11 +31,12 @@ export interface TableLogEntry {
 }
 
 /**
- * Linha completa de `campaign_profiles` (migration 0004). Perfil DEV de
- * mesa — só apelido + bloqueio manual + personagem ativo opcional. Não é
- * conta de usuário, login, link de convite nem presença real (sem
- * heartbeat) — ver aviso completo na migration antes de tratar isto
- * como o fluxo final de jogador do PRD.
+ * Linha completa de `campaign_profiles` (migrations 0004 + 0005).
+ * Perfil DEV de mesa — apelido + bloqueio manual/heartbeat + personagem
+ * ativo opcional. Não é conta de usuário, login nem link de convite
+ * real — `lock_session_id` é só um id gerado no localStorage do
+ * navegador (ver aviso completo nas migrations antes de tratar isto
+ * como o fluxo final de jogador do PRD).
  */
 export interface CampaignProfile {
   id: string;
@@ -44,6 +45,24 @@ export interface CampaignProfile {
   color_label: string | null;
   is_locked: boolean;
   active_character_id: string | null;
+  /** Id de sessão (gerado no localStorage do navegador) que detém o bloqueio atual, se houver. */
+  lock_session_id: string | null;
+  /** Quando o bloqueio atual começou. */
+  locked_at: string | null;
+  /** Último heartbeat recebido — usado para decidir se o bloqueio expirou (ver PROFILE_HEARTBEAT_TIMEOUT_MS). */
+  last_seen_at: string | null;
   created_at: string;
   updated_at: string;
 }
+
+/**
+ * Janela de tolerância do heartbeat dev de perfil: se `last_seen_at`
+ * estiver mais velho que isto, o bloqueio é considerado expirado e
+ * outra sessão pode assumir o perfil. Decisão tomada no CLIENTE
+ * (comparando com Date.now() local) — não há job/cron no banco (ver
+ * aviso na migration 0005).
+ */
+export const PROFILE_HEARTBEAT_TIMEOUT_MS = 30_000;
+
+/** Intervalo de envio de heartbeat enquanto uma sessão está "dentro" de um perfil. */
+export const PROFILE_HEARTBEAT_INTERVAL_MS = 10_000;

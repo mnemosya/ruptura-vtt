@@ -19,7 +19,7 @@
  * trivial, se algum dia precisar) e sem acesso direto ao Supabase.
  */
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createInitialCharacter, computeDerivedStats, normalizeCharacter } from "../../../lib/character";
 import { createCharacter, updateCharacter, getCharacter, listCharacters, deleteCharacter } from "../../../lib/character/storage";
 import type {
@@ -31,8 +31,16 @@ import type {
   CharacterRulesPayload,
 } from "../../../lib/character";
 import type { PreparedRoll } from "../../../lib/dice";
-import { listCampaignProfiles } from "../../../lib/table/storage";
+import {
+  listCampaignProfiles,
+  enterCampaignProfile,
+  heartbeatCampaignProfile,
+  leaveCampaignProfile,
+  addLog,
+} from "../../../lib/table/storage";
+import { PROFILE_HEARTBEAT_INTERVAL_MS, PROFILE_HEARTBEAT_TIMEOUT_MS } from "../../../lib/table";
 import type { Campaign, CampaignProfile } from "../../../lib/table";
+import { getOrCreateBrowserSessionId } from "./sessionId";
 import { CharacterSheetTabs, type TabId } from "./components/CharacterSheetTabs";
 import { GeneralTab } from "./components/GeneralTab";
 import { AttributesTab } from "./components/AttributesTab";
@@ -67,6 +75,24 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+type ProfileStatus = "Livre" | "Em uso por esta aba" | "Expirado" | "Em uso";
+
+/**
+ * Status exibido na UI para um perfil, dado o sessionId desta aba e o
+ * instante atual (nowTick, atualizado a cada 5s — ver useEffect de
+ * tick). Mesma janela de tolerância usada pelo servidor
+ * (PROFILE_HEARTBEAT_TIMEOUT_MS) — decisão tomada no cliente, só para
+ * exibição; a decisão que realmente importa (permitir entrar ou não)
+ * é sempre revalidada no servidor por enterCampaignProfile.
+ */
+function computeProfileStatus(perfil: CampaignProfile, sessionId: string | null, now: number): ProfileStatus {
+  if (!perfil.is_locked) return "Livre";
+  if (sessionId && perfil.lock_session_id === sessionId) return "Em uso por esta aba";
+  const lastSeenMs = perfil.last_seen_at ? new Date(perfil.last_seen_at).getTime() : 0;
+  if (now - lastSeenMs > PROFILE_HEARTBEAT_TIMEOUT_MS) return "Expirado";
+  return "Em uso";
+}
+
 /** Recurso atual: inteiro, sem teto (pode passar do máximo), nunca negativo. */
 function parseRecursoAtual(rawValue: number): number {
   if (!Number.isFinite(rawValue)) return 0;
@@ -99,6 +125,19 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
   const [perfis, setPerfis] = useState<CampaignProfile[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [profileWarning, setProfileWarning] = useState<string | null>(null);
+  // Heartbeat dev de perfil (checkpoint v0.9) — sessionId é um id local
+  // de navegador (localStorage), não autenticação real (ver
+  // sessionId.ts e a migration 0005). null até o efeito de montagem
+  // rodar no cliente (localStorage não existe durante SSR).
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  // Perfil que ESTA aba/sessão entrou via heartbeat (distinto de
+  // `selectedProfileId`, que é só o perfil em foco no <select> — pode
+  // estar olhando um perfil sem ter entrado nele).
+  const [enteredProfile, setEnteredProfile] = useState<{ id: string; nickname: string } | null>(null);
+  // Tick local (atualizado a cada 5s) só para forçar recalcular o
+  // status "Expirado" exibido na UI, comparando last_seen_at com o
+  // relógio do navegador — não busca nada novo do servidor.
+  const [nowTick, setNowTick] = useState(() => Date.now());
   // Log local mínimo (não persiste no Supabase) — alimentado por rolagens
   // (via callback passado a RollsTab) e pelos handlers de recurso/PA/
   // reação abaixo. Limitado às últimas 50 entradas.
@@ -115,6 +154,112 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
     };
     setLog((prev) => [entry, ...prev].slice(0, LOG_MAX));
   }
+
+  // sessionId só existe no navegador (localStorage) — gerado/lido uma
+  // vez na montagem do componente, nunca durante SSR.
+  useEffect(() => {
+    setSessionId(getOrCreateBrowserSessionId());
+  }, []);
+
+  // Tick de exibição (não busca nada do servidor) — só recalcula se um
+  // perfil parece "Expirado" comparando last_seen_at já carregado com
+  // Date.now() local. Roda sempre que há mesa selecionada (perfis na
+  // tela), evitado nas outras abas.
+  useEffect(() => {
+    if (!selectedCampaignId) return;
+    const id = setInterval(() => setNowTick(Date.now()), 5000);
+    return () => clearInterval(id);
+  }, [selectedCampaignId]);
+
+  /**
+   * Registra um evento de perfil (entrar/sair/heartbeat_expirado) no
+   * Log local (sempre) e em table_logs como type="profile_event"
+   * (melhor esforço — falha de gravação não bloqueia o fluxo de
+   * entrar/sair). Visibilidade "gm": evento operacional de mesa, não é
+   * mensagem de jogador.
+   */
+  async function persistProfileEvent(
+    campaignId: string | null,
+    profile: { id: string; nickname: string },
+    evento: "enter" | "leave" | "heartbeat_expirado",
+  ) {
+    if (!campaignId) return;
+    try {
+      await addLog({
+        campaignId,
+        characterId: characterId ?? undefined,
+        type: "profile_event",
+        visibility: "gm",
+        payload: {
+          evento,
+          profileId: profile.id,
+          profileNickname: profile.nickname,
+          sessionId,
+          characterId,
+          characterNome: character.nome,
+        },
+      });
+    } catch {
+      // Best effort — o evento já foi registrado no Log local; falha
+      // aqui não deve travar entrar/sair/expirar.
+    }
+  }
+
+  /** Botão "Entrar como perfil" — ver regras de heartbeat em enterCampaignProfile (src/lib/table/storage.ts). */
+  async function handleEnterProfile() {
+    if (!selectedProfileId || !sessionId) return;
+    setProfileWarning(null);
+    try {
+      const updated = await enterCampaignProfile(selectedProfileId, sessionId);
+      setPerfis((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      setEnteredProfile({ id: updated.id, nickname: updated.nickname });
+      addLogEntry("perfil", `Entrou no perfil "${updated.nickname}".`);
+      await persistProfileEvent(selectedCampaignId, { id: updated.id, nickname: updated.nickname }, "enter");
+    } catch (err) {
+      setProfileWarning(err instanceof Error ? err.message : "Erro desconhecido ao entrar no perfil.");
+    }
+  }
+
+  /** Botão "Sair do perfil" — só libera se esta sessão ainda for a dona (ver leaveCampaignProfile). */
+  async function handleLeaveProfile() {
+    if (!enteredProfile || !sessionId) return;
+    setProfileWarning(null);
+    const profileSaindo = enteredProfile;
+    try {
+      const updated = await leaveCampaignProfile(profileSaindo.id, sessionId);
+      setPerfis((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      addLogEntry("perfil", `Saiu do perfil "${updated.nickname}".`);
+      await persistProfileEvent(selectedCampaignId, profileSaindo, "leave");
+    } catch (err) {
+      setProfileWarning(err instanceof Error ? err.message : "Erro desconhecido ao sair do perfil.");
+    } finally {
+      setEnteredProfile(null);
+    }
+  }
+
+  // Heartbeat: enquanto esta sessão estiver "dentro" de um perfil,
+  // renova last_seen_at a cada PROFILE_HEARTBEAT_INTERVAL_MS. Se o
+  // heartbeat for rejeitado (outra sessão assumiu o perfil após
+  // expirar, ou o perfil foi liberado manualmente em /dev/table), a
+  // sessão perde o perfil automaticamente e registra o evento.
+  useEffect(() => {
+    if (!enteredProfile || !sessionId) return;
+    const profileAtual = enteredProfile;
+
+    const intervalId = setInterval(async () => {
+      try {
+        const updated = await heartbeatCampaignProfile(profileAtual.id, sessionId);
+        setPerfis((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      } catch {
+        addLogEntry("perfil", `Heartbeat expirado — perfil "${profileAtual.nickname}" foi perdido por esta aba.`);
+        setEnteredProfile(null);
+        await persistProfileEvent(selectedCampaignId, profileAtual, "heartbeat_expirado");
+      }
+    }, PROFILE_HEARTBEAT_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enteredProfile, sessionId]);
 
   const derivados = useMemo(
     () => computeDerivedStats(character.atributos, regras),
@@ -352,6 +497,9 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
     setActiveTab("rolagens");
   }
 
+  const perfilEmFoco = perfis.find((p) => p.id === selectedProfileId) ?? null;
+  const perfilStatus = perfilEmFoco ? computeProfileStatus(perfilEmFoco, sessionId, nowTick) : null;
+
   return (
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
       <p style={{ opacity: 0.6, fontSize: 13, marginBottom: 4 }}>
@@ -386,6 +534,10 @@ export default function CharacterSheetClient({ regras, usandoFallback, personage
           onLoadPersonagemAtivo={handleLoadPersonagemAtivo}
           profileWarning={profileWarning}
           personagens={personagens}
+          perfilStatus={perfilStatus}
+          enteredProfileId={enteredProfile?.id ?? null}
+          onEnterProfile={handleEnterProfile}
+          onLeaveProfile={handleLeaveProfile}
         />
       )}
 

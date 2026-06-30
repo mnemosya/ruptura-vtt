@@ -1384,3 +1384,248 @@ e que a coluna `character_id` foi preenchida.
   usaram exclusivamente `SUPABASE_URL`/`SUPABASE_ANON_KEY` (mesma
   `getContentClient()`/Server Actions de sempre), foram criados e
   removidos na mesma sessão, nunca commitados.
+
+---
+
+# Checkpoint v0.9 — Heartbeat dev de perfil
+
+Implementa o heartbeat dev previsto no PRD (seção 1.3): bloqueio de
+perfil baseado em "sessão de navegador" (id gerado no localStorage,
+**não é autenticação**), liberação automática após 30s sem sinal, e
+botão de liberação forçada para o narrador em `/dev/table`. Polling
+client-side (`setInterval`) — **sem Supabase Realtime**.
+
+## 1. Arquivos criados/alterados
+
+**Migration:**
+- `supabase/migrations/0005_campaign_profiles_heartbeat.sql` — adiciona
+  `lock_session_id text`, `locked_at timestamptz`, `last_seen_at
+  timestamptz` a `campaign_profiles`. Sem mudança de RLS (as 4 policies
+  de CRUD da migration 0004 já cobrem as colunas novas).
+
+**Camada de dados (`src/lib/table/`):**
+- `types.ts` — `CampaignProfile` ganhou os 3 campos novos;
+  `PROFILE_HEARTBEAT_TIMEOUT_MS = 30_000` e
+  `PROFILE_HEARTBEAT_INTERVAL_MS = 10_000` (constantes compartilhadas
+  entre client components e a camada de storage).
+- `storage.ts` — 4 novas Server Actions: `enterCampaignProfile`,
+  `heartbeatCampaignProfile`, `leaveCampaignProfile`,
+  `forceReleaseCampaignProfile` (regras detalhadas na seção 3).
+
+**Ficha (`src/app/dev/character-sheet/`):**
+- `sessionId.ts` (novo) — `getOrCreateBrowserSessionId()`, gera/reusa
+  um `crypto.randomUUID()` no localStorage do navegador.
+- `CharacterSheetClient.tsx` — estados `sessionId`, `enteredProfile`,
+  `nowTick`; handlers `handleEnterProfile`, `handleLeaveProfile`,
+  `persistProfileEvent`; `useEffect` de heartbeat
+  (`PROFILE_HEARTBEAT_INTERVAL_MS`); função `computeProfileStatus`.
+- `components/GeneralTab.tsx` — novos botões "Entrar como perfil"/"Sair
+  do perfil", status nuançado (Livre/Em uso/Em uso por esta aba/Expirado).
+- `components/LogTab.tsx` — novo `LogTipo` "perfil" (label "Perfil",
+  cor `#ff6b9f`).
+
+**Mesa (`src/app/dev/table/TableClient.tsx`):**
+- exibe `last_seen_at` por perfil, indicador "Parece expirado", botão
+  "Liberar perfil"; renderização de `type="profile_event"` no log
+  (`formatProfileEvent`); aviso da seção "Perfis da mesa" atualizado
+  (heartbeat já existe, mas ainda sem auth/convite real).
+
+**Este relatório:**
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.
+
+Nenhuma mudança em `src/app/dev/character-sheet`'s lógica de ficha
+propriamente dita (atributos/perícias/recursos/PA/reações), em
+`src/lib/character` ou em `src/lib/content` (Biblioteca do Sistema).
+
+## 2. SQL aplicado (migration 0005)
+
+Aplicada via conexão direta Postgres (`SUPABASE_DB_URL`), mesmo padrão
+das migrations anteriores, usando um script auxiliar
+(`scripts/_tmp_apply_0005.ts`) criado e removido na mesma sessão, nunca
+commitado.
+
+```sql
+alter table campaign_profiles
+  add column if not exists lock_session_id text,
+  add column if not exists locked_at timestamptz,
+  add column if not exists last_seen_at timestamptz;
+```
+
+Verificado após aplicar (consulta a `information_schema.columns`):
+
+```
+Migration 0005 aplicada.
+Colunas novas:
+ - last_seen_at (timestamp with time zone)
+ - lock_session_id (text)
+ - locked_at (timestamp with time zone)
+```
+
+Sem mudança de RLS — as policies de `campaign_profiles` (migration
+0004) operam por linha, não por coluna, então `update` de
+`lock_session_id`/`locked_at`/`last_seen_at` já estava liberado pela
+policy `campaign_profiles_dev_anon_update` existente.
+
+## 3. Regras de heartbeat implementadas (`src/lib/table/storage.ts`)
+
+| Função | Regra |
+|---|---|
+| `enterCampaignProfile(profileId, sessionId)` | Lê o perfil; se **livre**, ou se **já é a mesma `sessionId`** que detém o bloqueio, ou se o bloqueio atual **expirou** (`last_seen_at` mais velho que `PROFILE_HEARTBEAT_TIMEOUT_MS`), grava `is_locked=true`, `lock_session_id=sessionId`, `locked_at`/`last_seen_at=agora`. Caso contrário, lança `TableStorageError` ("em uso por outra sessão"). |
+| `heartbeatCampaignProfile(profileId, sessionId)` | `update last_seen_at = agora` filtrando por `id` **e** `lock_session_id = sessionId` — se a sessão não for mais a dona (perfil assumido por outra sessão, ou liberado), o `update` não casa nenhuma linha e o `.single()` do Supabase lança erro, propagado como `TableStorageError`. |
+| `leaveCampaignProfile(profileId, sessionId)` | `update is_locked=false, lock_session_id=null, locked_at=null` filtrando por `id` **e** `lock_session_id = sessionId` — mesmo princípio: só libera se ainda for a sessão dona. `last_seen_at` é preservado (histórico de "última vez visto"). |
+| `forceReleaseCampaignProfile(profileId)` | `update is_locked=false, lock_session_id=null, locked_at=null` filtrando só por `id` — libera **sempre**, sem checar `sessionId` (ação de "narrador" em `/dev/table`). |
+
+Implementação é leitura-então-escrita (não atômica) — aceitável nesta
+etapa de dev de baixa concorrência; uma corrida real entre dois
+clientes entrando no exato mesmo instante não é coberta (mesmo
+princípio de "best effort" já documentado para `is_locked` desde a
+migration 0004), documentado em comentário no código.
+
+## 4. Heartbeat na ficha (`/dev/character-sheet`)
+
+- `sessionId` é gerado/lido uma vez na montagem do componente
+  (`useEffect` vazio — localStorage não existe durante SSR), via
+  `getOrCreateBrowserSessionId()` (`crypto.randomUUID()`,
+  `localStorage.setItem`).
+- Botão **"Entrar como perfil"**: chama `enterCampaignProfile`; em
+  sucesso, guarda `{ id, nickname }` em `enteredProfile`, registra no
+  Log local (tipo "perfil") e em `table_logs` (`type="profile_event"`,
+  `evento: "enter"`); em erro, mostra `profileWarning`.
+- Botão **"Sair do perfil"** (só aparece quando `enteredProfile.id ===
+  selectedProfileId`): chama `leaveCampaignProfile`, mesmo padrão de
+  log local + persistente (`evento: "leave"`).
+- `useEffect` de heartbeat: enquanto `enteredProfile` existir, chama
+  `heartbeatCampaignProfile` a cada `PROFILE_HEARTBEAT_INTERVAL_MS`
+  (10s); se rejeitado (outra sessão assumiu após expirar, ou perfil
+  liberado manualmente), a sessão perde o perfil automaticamente
+  (`setEnteredProfile(null)`), registra no Log local e em `table_logs`
+  (`evento: "heartbeat_expirado"`).
+- Status exibido (`computeProfileStatus`, recalculado a cada 5s via
+  `nowTick` para refletir expiração mesmo sem nova ação): "Livre" (não
+  bloqueado) / "Em uso por esta aba" (`lock_session_id === sessionId`)
+  / "Expirado" (`last_seen_at` mais velho que 30s) / "Em uso" (bloqueado,
+  outra sessão, ainda dentro da janela).
+- Aviso fixo na UI: "Heartbeat dev: id de sessão fica só no localStorage
+  deste navegador (não é login). Sem heartbeat por 30s, outra sessão
+  pode assumir o perfil."
+
+## 5. `/dev/table` — visibilidade e liberação
+
+- Cada cartão de perfil ganhou: "Último sinal: {data/hora ou 'nunca'}"
+  (`data-testid="perfil-last-seen-{id}"`); badge vermelho "Parece
+  expirado" (`data-testid="perfil-expirado-{id}"`) quando
+  `is_locked && last_seen_at` mais velho que 30s (mesmo
+  `PROFILE_HEARTBEAT_TIMEOUT_MS` importado de `src/lib/table`); botão
+  "Liberar perfil" (`data-testid="liberar-perfil-{id}"`, desabilitado
+  se já livre) chamando `forceReleaseCampaignProfile` sem checar
+  `sessionId` — ação de "narrador".
+- Mesmo tick de 5s (`nowTick`) usado na ficha, replicado aqui para
+  manter "Parece expirado" atualizado sem precisar reabrir a mesa.
+- Eventos `type="profile_event"` agora renderizam como cartão legível
+  (`formatProfileEvent`): "{apelido}: entrou no perfil" / "saiu do
+  perfil" / "heartbeat expirado (perfil perdido)" — em vez de cair no
+  fallback `JSON.stringify`.
+
+## 6. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully in 2.4s
+  Running TypeScript ...
+  Finished TypeScript in 2.5s ...
+✓ Generating static pages using 5 workers (2/2) in 263ms
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /dev/character-sheet
+└ ƒ /dev/table
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage ===
+1. Criado: id=34301611-1dc1-4ba7-9423-7a51497d5dfd, schema_version=1
+2. Carregado por id: nome="__TESTE_STORAGE_RUPTURA__"
+3. Atualizado: nome="__TESTE_STORAGE_RUPTURA___editado", corpo=4
+4. Encontrado na listagem (3 personagens no total).
+5. Apagado e confirmado ausente via getCharacter.
+6. Confirmado: nenhum registro de teste residual.
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros.
+
+## 7. Resultado do teste manual (browser + scripts auxiliares)
+
+Criei o perfil "Heartbeat Teste v0.9" em `/dev/table`. Sequência
+completa, combinando a aba real do browser com scripts auxiliares
+(`scripts/_tmp_*.ts`, criados e removidos na mesma sessão, nunca
+commitados, todos usando `enterCampaignProfile`/`listCampaignProfiles`
+de `src/lib/table/storage.ts` — a mesma camada pública, nunca a service
+role key) para simular **outra sessão** sem precisar de uma segunda
+aba/navegador real:
+
+1. Selecionei mesa + perfil na ficha, cliquei "Entrar como perfil" —
+   status mudou para "Em uso por esta aba", botão virou "Sair do
+   perfil", Log local registrou "Entrou no perfil...".
+2. **Bloqueio confirmado**: script auxiliar tentou
+   `enterCampaignProfile` com uma `sessionId` diferente enquanto o
+   heartbeat da aba estava ativo — rejeitado com
+   `Perfil "Heartbeat Teste v0.9" está em uso por outra sessão (sem
+   expirar ainda).`, exatamente a regra esperada.
+3. **`last_seen_at` avançando**: consultei o perfil duas vezes com 15s
+   de intervalo — `last_seen_at` avançou de `22:36:22` para `22:36:42`
+   (heartbeat de 10s confirmado funcionando em segundo plano na aba).
+4. **Expiração e assunção**: numa rodada anterior da sessão de teste
+   (antes de uma interrupção de conectividade do ambiente), uma
+   primeira "sessão" (`87c0d5bc...`) entrou no perfil; ao reabrir a
+   ficha depois de um intervalo sem heartbeat (>30s), a nova aba
+   (`sessionId` `dbd50177...`, diferente da primeira — confirmado via
+   `localStorage.getItem`) viu o status "Expirado" e, ao clicar
+   "Entrar como perfil", **assumiu o bloqueio com sucesso** — exatamente
+   o comportamento de liberação após 30s sem sinal pedido no PRD.
+   `table_logs` confirma o evento `heartbeat_expirado` da sessão
+   anterior (gravado pelo próprio heartbeat dela ao detectar a rejeição)
+   seguido do novo `enter` da sessão nova.
+5. **"Sair do perfil"**: cliquei o botão — status voltou a "Livre",
+   botão voltou a "Entrar como perfil". Confirmado em `table_logs`:
+   evento `leave` com `profileNickname`/`sessionId` corretos.
+6. **"Liberar perfil" em `/dev/table`**: com o perfil bloqueado por uma
+   sessão, cliquei "Liberar perfil" — status do cartão mudou
+   imediatamente para "Livre", sem precisar saber/forjar nenhuma
+   `sessionId`.
+7. Confirmado em `table_logs` (consulta direta, `type="profile_event"`)
+   o histórico completo: `enter` (sessão 1) → `heartbeat_expirado`
+   (sessão 1) → `enter` (sessão 2) → `leave` (sessão 2) — todos com
+   `profileId`/`profileNickname`/`sessionId`/`characterId`/
+   `characterNome` no payload.
+8. Sem erros no console (`preview_console_logs`) durante toda a
+   sequência.
+9. Removi o perfil de teste "Heartbeat Teste v0.9" via script auxiliar
+   ao final.
+
+Resultado: **todos os passos do teste manual passaram**, incluindo os
+cenários de bloqueio, heartbeat ativo, expiração/assunção, saída
+voluntária e liberação forçada pelo narrador.
+
+## 8. Confirmação de escopo
+
+- **Autenticação**: não implementada — `sessionId` continua sendo só
+  um valor de localStorage, sem prova de identidade (ver risco
+  detalhado na migration 0005).
+- **Link de convite real**: não implementado.
+- **Supabase Realtime**: não implementado — expiração e atualização de
+  status são detectadas por polling client-side (`setInterval`),
+  comparando `last_seen_at` com o relógio do navegador.
+- **Biblioteca do Sistema** (`src/lib/content`): não alterada.
+- **Lógica de ficha** (atributos, perícias, recursos, PA, reações):
+  não alterada.
+- Nenhuma chave secreta exposta: todos os scripts auxiliares usados
+  para aplicar a migration e simular sessões/eventos
+  (`scripts/_tmp_apply_0005.ts`, `scripts/_tmp_check_profile.ts`,
+  `scripts/_tmp_test_block.ts`, `scripts/_tmp_check_lastseen.ts`,
+  `scripts/_tmp_check_events.ts`, `scripts/_tmp_cleanup_v09.ts`)
+  usaram exclusivamente `SUPABASE_URL`/`SUPABASE_ANON_KEY`/
+  `SUPABASE_DB_URL` (mesmas variáveis já documentadas, nunca a service
+  role key), foram criados e removidos na mesma sessão, nunca
+  commitados.
