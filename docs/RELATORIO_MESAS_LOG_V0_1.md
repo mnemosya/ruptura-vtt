@@ -521,3 +521,138 @@ continuam renderizando corretamente após a mudança de apresentação.
 - **Biblioteca do Sistema** (`src/lib/content`): não alterada.
 - Nenhuma chave secreta exposta — mudança inteiramente de apresentação em
   `TableClient.tsx`, sem tocar em env vars, Server Actions ou queries.
+
+---
+
+# Checkpoint v0.4 — Filtros visuais de visibilidade
+
+Adiciona um filtro de visibilidade (Todos/Pública/Privada/Narrador) na
+seção "Log da mesa" de `/dev/table`. **Filtro 100% client-side** — só
+esconde/mostra cartões já carregados em memória; não muda a query ao
+Supabase, o payload gravado, nem implica nenhuma garantia de segurança.
+
+## 1. Arquivos alterados
+
+- `src/app/dev/table/TableClient.tsx` — único arquivo alterado:
+  - nova constante `VISIBILITY_FILTERS = ["todos", ...TABLE_LOG_VISIBILITIES]`
+    e tipo `VisibilityFilter`;
+  - novo mapa `VISIBILITY_FILTER_LABELS` (`todos` → "Todos", `public` →
+    "Pública", `private` → "Privada", `gm` → "Narrador" — rótulo "Narrador"
+    usado aqui em vez de "Mestre (GM)" por ser o termo pedido para o
+    filtro; o cabeçalho de cada cartão continua usando
+    `VISIBILITY_LABELS`/"Mestre (GM)", inalterado);
+  - novo estado `visibilidadeFiltro` (`useState<VisibilityFilter>("todos")`,
+    padrão "Todos");
+  - nova constante derivada `logsFiltrados` — `logs` quando o filtro é
+    "todos", senão `logs.filter(entry => entry.visibility === filtro)`;
+  - novo `<select data-testid="filtro-visibilidade-select">` ao lado do
+    botão "Atualizar logs";
+  - novo aviso discreto abaixo do cabeçalho: "Filtro visual apenas; ainda
+    sem segurança real." (`fontSize: 11, opacity: 0.5`);
+  - título da seção passou de "Log da mesa (N)" para
+    "Log da mesa (filtrados/total)" (ex.: `7/9`);
+  - nova mensagem "Nenhum log com essa visibilidade." quando o filtro
+    ativo não tem resultado, mas existem logs (distinta da mensagem já
+    existente "Nenhum log ainda nesta mesa.", que cobre o caso de a mesa
+    não ter log nenhum);
+  - a lista de cartões (`.map`) passou a iterar `logsFiltrados` em vez de
+    `logs` — `logs` continua intacto, usado só para a contagem total e
+    para os estados de loading/vazio.
+
+Nenhuma mudança em `src/lib/table/storage.ts`, `src/lib/table/types.ts`,
+banco, migrations, `src/app/dev/character-sheet` (ficha) ou
+`src/lib/content` (Biblioteca do Sistema). `formatRolagem`,
+`entryKindLabel`, `entryIcon` (do checkpoint v0.3) não foram tocados.
+
+## 2. Como o filtro funciona
+
+- Puramente em memória: `logsFiltrados` é derivado de `logs` a cada
+  render via `.filter()`, sem nenhuma chamada nova ao Supabase.
+- Trocar o filtro não dispara `listLogs()` — os dados já carregados (pela
+  seleção da mesa ou pelo botão "Atualizar logs") continuam os mesmos;
+  só a exibição muda.
+- `addLog` (envio de mensagem manual) e a estrutura de `payload` em
+  `table_logs` **não foram alterados** — o filtro não influencia o que é
+  gravado, só o que é mostrado depois de carregado.
+- Reforço do aviso já documentado desde a migration 0003: como não há
+  filtro de RLS por visibilidade, qualquer cliente com a anon key
+  continua recebendo as 3 visibilidades na mesma resposta de
+  `listLogs()` — o filtro de UI não esconde nada do servidor, só da tela.
+
+## 3. Resultado do build e do `test:character-storage`
+
+```
+$ npm run build
+✓ Compiled successfully in 1559ms
+  Running TypeScript ...
+  Finished TypeScript in 2.2s ...
+✓ Generating static pages using 5 workers (2/2) in 242ms
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /dev/character-sheet
+└ ƒ /dev/table
+```
+
+```
+$ npm run test:character-storage
+=== test-character-storage ===
+1. Criado: id=86e6a122-ed65-429b-9e62-24aec9551ccc, schema_version=1
+2. Carregado por id: nome="__TESTE_STORAGE_RUPTURA__"
+3. Atualizado: nome="__TESTE_STORAGE_RUPTURA___editado", corpo=4
+4. Encontrado na listagem (3 personagens no total).
+5. Apagado e confirmado ausente via getCharacter.
+6. Confirmado: nenhum registro de teste residual.
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+```
+
+Ambos passaram sem erros — confirma que o filtro puramente de UI não
+afetou a camada de storage de personagem (a contagem "3 personagens no
+total" reflete personagens reais já salvos em sessões anteriores, não um
+resíduo desta etapa — o passo 6 confirma ausência de registro de teste).
+
+## 4. Resultado do teste manual (browser, via preview tools)
+
+1. Abri `/dev/table`, selecionei "Mesa Teste Fase 0" (9 logs já
+   existentes de checkpoints anteriores, incluindo entradas Pública,
+   Privada e Mestre/GM).
+2. Filtro padrão "Todos" → "LOG DA MESA (9/9)", todas as 9 entradas
+   visíveis.
+3. Selecionei filtro "Pública" → "LOG DA MESA (7/9)", confirmado via
+   leitura do DOM que as 7 entradas visíveis tinham `[Pública]` no
+   cabeçalho — nenhuma `[Privada]`/`[Mestre (GM)]` aparecendo.
+4. Selecionei filtro "Privada" → "LOG DA MESA (1/9)", 1 entrada visível
+   com `[Privada]`.
+5. Selecionei filtro "Narrador" → "LOG DA MESA (1/9)", 1 entrada visível
+   com `[Mestre (GM)]` (rótulo do cartão, inalterado desde v0.3).
+6. Voltei para "Todos" → "LOG DA MESA (9/9)" novamente, todas as 9
+   entradas de volta.
+7. Confirmado: aviso "Filtro visual apenas; ainda sem segurança real."
+   visível abaixo do cabeçalho em todos os momentos.
+8. Confirmado: formulário "Enviar mensagem" com seletor de visibilidade
+   (Pública/Privada/Mestre) e botão "Enviar" continuam presentes e
+   funcionando, inalterados — não dependem do filtro de leitura.
+9. Confirmado: botão "Atualizar logs" continua presente e funcional ao
+   lado do novo seletor de filtro.
+10. Sem erros no console (`preview_console_logs`) durante toda a sequência.
+
+Resultado: **todos os passos do teste manual passaram**. Não criei
+mensagens novas de cada visibilidade nesta rodada porque a mesa já tinha
+as 3 visibilidades representadas (de testes anteriores do usuário) — a
+contagem 7/1/1 (pública/privada/gm) já cobre o cenário pedido (alternar
+entre filtros com dados reais de cada tipo presentes).
+
+## 5. Confirmação de escopo
+
+- **Banco/migrations**: nenhuma alteração.
+- **Ficha** (`src/app/dev/character-sheet`): não alterada.
+- **Payload de `table_logs`**: não alterado — `addLog()` continua
+  gravando exatamente como antes.
+- **RLS/segurança real por visibilidade**: não implementada — o aviso
+  "Filtro visual apenas; ainda sem segurança real." é explícito sobre
+  isso na própria UI, reforçando o já documentado na migration 0003 e
+  nos checkpoints anteriores.
+- **Realtime**: não implementado.
+- **Autenticação**: não implementada.
+- **Biblioteca do Sistema** (`src/lib/content`): não alterada.
+- Nenhuma chave secreta exposta.

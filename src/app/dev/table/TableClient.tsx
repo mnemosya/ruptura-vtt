@@ -70,6 +70,16 @@ function entryIcon(type: string): string {
   return "•";
 }
 
+const VISIBILITY_FILTERS = ["todos", ...TABLE_LOG_VISIBILITIES] as const;
+type VisibilityFilter = (typeof VISIBILITY_FILTERS)[number];
+
+const VISIBILITY_FILTER_LABELS: Record<VisibilityFilter, string> = {
+  todos: "Todos",
+  public: "Pública",
+  private: "Privada",
+  gm: "Narrador",
+};
+
 interface Props {
   mesasIniciais: Campaign[];
 }
@@ -83,6 +93,7 @@ export default function TableClient({ mesasIniciais }: Props) {
   const [visibilidade, setVisibilidade] = useState<TableLogVisibility>("public");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loadingLogs, setLoadingLogs] = useState(false);
+  const [visibilidadeFiltro, setVisibilidadeFiltro] = useState<VisibilityFilter>("todos");
 
   async function refreshMesas() {
     try {
@@ -148,6 +159,8 @@ export default function TableClient({ mesasIniciais }: Props) {
   }
 
   const mesaAtual = mesas.find((m) => m.id === selectedCampaignId);
+  const logsFiltrados =
+    visibilidadeFiltro === "todos" ? logs : logs.filter((entry) => entry.visibility === visibilidadeFiltro);
 
   return (
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
@@ -245,20 +258,40 @@ export default function TableClient({ mesasIniciais }: Props) {
           </section>
 
           <section>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
               <h2 style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, opacity: 0.6 }}>
-                Log da mesa ({logs.length})
+                Log da mesa ({logsFiltrados.length}/{logs.length})
               </h2>
-              <button data-testid="atualizar-logs-button" onClick={handleRefreshLogs} style={buttonStyle}>
-                Atualizar logs
-              </button>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <select
+                  data-testid="filtro-visibilidade-select"
+                  value={visibilidadeFiltro}
+                  onChange={(e) => setVisibilidadeFiltro(e.target.value as VisibilityFilter)}
+                  style={inputStyle}
+                >
+                  {VISIBILITY_FILTERS.map((v) => (
+                    <option key={v} value={v}>
+                      {VISIBILITY_FILTER_LABELS[v]}
+                    </option>
+                  ))}
+                </select>
+                <button data-testid="atualizar-logs-button" onClick={handleRefreshLogs} style={buttonStyle}>
+                  Atualizar logs
+                </button>
+              </div>
             </div>
+            <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
+              Filtro visual apenas; ainda sem segurança real.
+            </p>
             {loadingLogs && <p style={{ fontSize: 13, opacity: 0.6 }}>Carregando…</p>}
             {!loadingLogs && logs.length === 0 && (
               <p style={{ fontSize: 13, opacity: 0.6 }}>Nenhum log ainda nesta mesa.</p>
             )}
+            {!loadingLogs && logs.length > 0 && logsFiltrados.length === 0 && (
+              <p style={{ fontSize: 13, opacity: 0.6 }}>Nenhum log com essa visibilidade.</p>
+            )}
             <div data-testid="logs-lista" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {logs.map((entry) => {
+              {logsFiltrados.map((entry) => {
                 const isChat = entry.type === "chat";
                 const isRolagem = entry.type === "rolagem_pericia" || entry.type === "rolagem_expressao";
                 const conteudo = isChat && typeof entry.payload.mensagem === "string"
