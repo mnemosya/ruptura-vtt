@@ -2763,3 +2763,106 @@ mesma sessão, nunca commitados.
 - Ativar segurança real continua exigindo os pré-requisitos já
   documentados no checkpoint v0.14 (auth de jogador + dropar as
   policies dev-anon).
+
+---
+
+# Checkpoint v0.17 — RLS controlada
+
+Sai do estado "RLS dev-aberta total e SEM rótulo" para um estado
+**controlado**: as mesmas policies abertas, agora explicitamente
+renomeadas para `*_dev_transition_*`, comentadas no banco com o que
+remover, e com a superfície insegura documentada. **Não corta anon**
+(quebraria /dev/join + o teste + a ficha) — logo, NÃO é segurança real
+ainda, e isso é dito sem rodeios.
+
+## 1. Auditoria (estado de partida)
+
+| Tabela | Policies |
+|---|---|
+| `content_documents` | `content_documents_public_read` (SELECT, `status='published'`) — pública, intencional |
+| `content_packs` | `content_packs_public_read` (SELECT, USING true) — pública, intencional |
+| `content_changelog` | RLS on, **sem policy** (travada a service role) — intencional |
+| `campaigns` | 4× `dev_anon` (USING true) + 4× `owner_*` (owner-scoped) |
+| `campaign_profiles` | 4× `dev_anon` + `owner_all` |
+| `table_logs` | 2× `dev_anon` (select/insert) + 2× `owner_*` |
+| `characters` | 4× `dev_anon` — **sem** owner policies |
+
+Diagnóstico: as `dev_anon` (PERMISSIVE, USING true) coexistem com as
+`owner_*` e as sobrepõem por OR → as owner-scoped **não enforçam nada**.
+
+## 2. Migration 0007 (rename puro + comentários, zero risco)
+
+`supabase/migrations/0007_rls_controlled.sql`, aplicada via
+`SUPABASE_DB_URL`. Usa `ALTER POLICY ... RENAME TO` (preserva roles,
+cmd, USING e WITH CHECK — comportamento 100% idêntico) para renomear as
+14 policies `*_dev_anon_*` → `*_dev_transition_*`, e `COMMENT ON POLICY`
+em cada uma marcando-a como "TRANSICAO/INSEGURA" com o motivo e o que
+remover. Verificado: 14 renomeadas, **0** `_dev_anon_` restante.
+
+Separação explícita documentada no header da migration em 3 camadas:
+(1) públicas de conteúdo — não tocar; (2) produto/owner-scoped
+(migration 0006) — mantidas; (3) dev/transição — remover quando houver
+segurança real de jogador.
+
+## 3. Por que não cortar anon (bloqueio, item 4 do checkpoint)
+
+- Jogadores entram por `/dev/join` **sem login** (`anon`). Cortar
+  SELECT anon de campaigns/campaign_profiles ou INSERT anon de
+  table_logs quebra entrar/heartbeat/rolar/conversar.
+- A ficha e `npm run test:character-storage` usam a anon key **sem
+  sessão**. Cortar `characters` dev-transition quebra o teste (lockout)
+  e a ficha anon.
+- Mesmo com sessão de perfil (v0.18/v0.19), o jogador **não tem JWT do
+  Supabase** → `auth.uid()` não o identifica. A segurança de jogador
+  terá que ser **application-layer** (Server Actions validando tokens
+  hasheados), não RLS pura, enquanto jogador for anon.
+
+**Não restringi o role scoping** (ex.: limitar `authenticated` a
+owner-only) porque isso quebraria: (a) narrador logado usando mesas
+legadas (owner_id null) ou de terceiros; (b) narrador logado rolando
+dado numa mesa não-própria; (c) o `/dev/table` como console de
+diagnóstico que mostra todas as mesas.
+
+## 4. UI
+
+- `/dev/table`: já tinha o aviso de RLS em transição (v0.16), mantido.
+- `/dev/join`: aviso reforçado — além de "link não é convite seguro",
+  agora menciona explicitamente que a RLS está em modo de transição
+  (policies dev_transition abertas, migration 0007), nada protegido no
+  banco ainda.
+- Aba Mesa da ficha: já avisava "sem segurança real" (v0.11/v0.12),
+  mantido.
+
+## 5. Testes
+
+```
+$ npm run build → ✓
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM (anon CRUD intacto)
+$ npm run test:content-read → Biblioteca do Sistema lê normalmente
+```
+
+Manual (browser):
+- **Logado** (narrador dev confirmado): login → criar mesa ("Sua mesa",
+  owner correto) → criar perfil → vincular Kael → ver perfis. Tudo OK.
+- **Anon**: logout → `/dev/join/<id>` abre, lista o perfil, exibe o novo
+  aviso de RLS de transição, "Entrar como perfil" funciona (heartbeat/
+  enter via dev_transition) → "Abrir ficha" aparece. Fluxo anon intacto.
+- Biblioteca do Sistema: intacta (test:content-read + leitura pública).
+- Sem erros no console. Mesa de teste removida ao final.
+
+## 6. Escopo / segurança remanescente
+
+- **NÃO é segurança real** — as `*_dev_transition_*` seguem com
+  USING(true)/CHECK(true) para anon+authenticated; qualquer cliente com
+  a anon key faz bypass total de campaigns/campaign_profiles/table_logs/
+  characters. Isso está agora **rotulado e comentado no banco**, não
+  mais silencioso.
+- `characters` segue sem conceito de dono (não dá para endurecer sem
+  `owner_id` + auth na ficha, o que quebraria o teste).
+- `table_logs.visibility` segue sem filtro de RLS (v0.20 trata).
+- Nenhuma chave exposta; migration é rename puro (sem risco de
+  lockout); script auxiliar criado/removido na sessão.
+- **Policies a remover no futuro** (todas `*_dev_transition_*`):
+  4 em campaigns, 4 em campaign_profiles, 2 em table_logs, 4 em
+  characters = 14, quando os pré-requisitos de auth de jogador
+  existirem.

@@ -86,7 +86,9 @@ export default function JoinClient({ campaign, perfisIniciais, personagens }: Pr
       <p style={{ opacity: 0.5, fontSize: 11, marginBottom: 16 }}>
         Este link NÃO é um convite seguro: é literalmente o id da mesa em texto puro, sem token,
         sem expiração, sem revogação, sem autenticação — qualquer pessoa com esta URL pode ver e
-        entrar em qualquer perfil livre/expirado desta mesa.
+        entrar em qualquer perfil livre/expirado desta mesa. Além disso, a RLS está em modo de
+        transição (policies dev_transition abertas, migration 0007), então nada aqui é protegido no
+        banco ainda.
       </p>
 
       <h1 style={{ fontSize: 22, marginBottom: 4 }}>{campaign.name}</h1>
