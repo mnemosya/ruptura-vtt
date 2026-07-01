@@ -183,11 +183,21 @@ export interface AddLogParams {
   type: string;
   visibility: TableLogVisibility;
   payload: Record<string, unknown>;
+  /** Perfil que gerou o log (v0.20) — dono do 'private'. */
+  profileId?: string | null;
+  /** Sessão de perfil (v0.20), quando disponível. */
+  profileSessionId?: string | null;
 }
 
 /** Registra uma entrada no log persistente de uma mesa. Append-only. */
 export async function addLog(params: AddLogParams): Promise<TableLogEntry> {
   const client = await getScopedTableClient();
+  let user: Awaited<ReturnType<typeof getCurrentUser>> = null;
+  try {
+    user = await getCurrentUser();
+  } catch {
+    user = null;
+  }
   const { data, error } = await client
     .from(TABLE_LOGS_TABLE)
     .insert({
@@ -196,6 +206,9 @@ export async function addLog(params: AddLogParams): Promise<TableLogEntry> {
       type: params.type,
       visibility: params.visibility,
       payload: params.payload,
+      profile_id: params.profileId ?? null,
+      created_by_user_id: user?.id ?? null,
+      profile_session_id: params.profileSessionId ?? null,
     })
     .select()
     .single();
@@ -206,7 +219,11 @@ export async function addLog(params: AddLogParams): Promise<TableLogEntry> {
   return data as TableLogEntry;
 }
 
-/** Lista os logs de uma mesa, mais recentes primeiro. */
+/**
+ * Lista TODOS os logs de uma mesa (sem filtro de visibilidade). Uso
+ * dev/diagnóstico (/dev/table) e base do listLogsForViewer. NÃO usar
+ * direto em rota de jogador — usar listLogsForViewer.
+ */
 export async function listLogs(campaignId: string): Promise<TableLogEntry[]> {
   const client = await getScopedTableClient();
   const { data, error } = await client
@@ -219,6 +236,53 @@ export async function listLogs(campaignId: string): Promise<TableLogEntry[]> {
     throw new TableStorageError(`Falha ao listar logs da mesa "${campaignId}": ${error.message}`, error);
   }
   return (data as TableLogEntry[]) ?? [];
+}
+
+/** Quem está vendo os logs — define o filtro de visibilidade aplicado no servidor. */
+export interface LogViewer {
+  /** Perfil do jogador que está olhando (null = anon sem perfil). */
+  profileId?: string | null;
+}
+
+/**
+ * Lista os logs de uma mesa JÁ FILTRADOS por visibilidade, no servidor,
+ * conforme quem está pedindo (enforcement application-layer — checkpoint
+ * v0.20). Regras:
+ *   • narrador logado dono da mesa: vê TUDO (public/private/gm);
+ *   • jogador com perfil P: public + private do próprio P; NUNCA gm;
+ *   • anon sem perfil: só public.
+ *
+ * O 'private' do próprio perfil casa por `profile_id` (coluna, v0.20) OU
+ * por `payload.profileId` (compat com logs antigos sem a coluna). Logs
+ * 'private' sem dono identificável nunca vão para jogador (lado seguro).
+ */
+export async function listLogsForViewer(campaignId: string, viewer: LogViewer): Promise<TableLogEntry[]> {
+  const client = await getScopedTableClient();
+
+  // Narrador dono da mesa vê tudo.
+  let isOwner = false;
+  try {
+    const user = await getCurrentUser();
+    if (user) {
+      const { data: camp } = await client.from(CAMPAIGNS_TABLE).select("owner_id").eq("id", campaignId).maybeSingle();
+      isOwner = !!camp && (camp as { owner_id: string | null }).owner_id === user.id;
+    }
+  } catch {
+    isOwner = false;
+  }
+
+  const all = await listLogs(campaignId);
+  if (isOwner) return all;
+
+  const viewerProfileId = viewer.profileId ?? null;
+  return all.filter((entry) => {
+    if (entry.visibility === "public") return true;
+    if (entry.visibility === "gm") return false; // jogador nunca vê gm
+    // private: só o do próprio perfil
+    const logProfileId =
+      entry.profile_id ?? (typeof entry.payload.profileId === "string" ? (entry.payload.profileId as string) : null);
+    return viewerProfileId != null && logProfileId === viewerProfileId;
+  });
 }
 
 /**

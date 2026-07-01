@@ -3056,3 +3056,86 @@ via convite" → "Liberar perfil" → "nenhuma sessão ativa". Sem erros.
 - Compat dev com `lock_session_id` mantida (legado, documentado).
 - Riscos de RLS de transição inalterados (profile_sessions também tem
   dev_transition anon aberto — a remover no endurecimento futuro).
+
+---
+
+# Checkpoint v0.20 — Visibilidade real de logs
+
+`public`/`private`/`gm` deixam de ser só filtro visual: a leitura de
+logs passa a ser **filtrada no servidor por identidade do observador**
+(enforcement application-layer, `listLogsForViewer`). Jogador não recebe
+mais logs `gm` nem `private` de outro perfil — o filtro acontece antes
+de os dados saírem do servidor.
+
+## 1. Migration 0010 — colunas + backfill
+
+`table_logs` ganhou `profile_id` (FK campaign_profiles set null),
+`created_by_user_id` (FK auth.users set null), `profile_session_id`
+(FK profile_sessions set null) + índices em (campaign_id, visibility) e
+profile_id. Backfill **seguro** de `profile_id` a partir de
+`payload->>'profileId'` **só quando o perfil ainda existe** (respeita a
+FK). Verificado: 0/30 backfilled — os logs antigos referenciam perfis
+já apagados (limpeza de testes), então `profile_id` fica null, que é o
+lado seguro (private antigo sem dono não vaza para jogador).
+
+## 2. `addLog` grava colunas reais
+
+Além do payload, `addLog` agora grava `profile_id` (novo param
+`profileId`), `created_by_user_id` (derivado de `getCurrentUser`) e
+`profile_session_id` (novo param, opcional). Callers atualizados para
+passar `profileId`: chat (`MesaTab`), rolagens (`RollsTab`),
+`profile_event` (`CharacterSheetClient`).
+
+## 3. `listLogsForViewer(campaignId, viewer)` — enforcement server-side
+
+Regras aplicadas **no servidor**, filtrando antes de devolver:
+- **narrador logado dono da mesa**: vê TUDO;
+- **jogador com perfil P**: `public` + `private` do próprio P (casa por
+  coluna `profile_id` OU `payload.profileId` para logs antigos); NUNCA
+  `gm`;
+- **anon sem perfil**: só `public`.
+
+Como o jogador é anon (sem `auth.uid()`), a RLS não o distingue — por
+isso o filtro é application-layer. `listLogs` (sem filtro) continua para
+uso dev/diagnóstico.
+
+## 4. UI
+
+- Aba Mesa da ficha (`MesaTab`): troca `listLogs` → `listLogsForViewer({
+  profileId })`. O jogador que abre a ficha vê só o que pode.
+- `/dev/table`: **sinalizado** que é console dev/diagnóstico e vê TODOS
+  os logs (o filtro ali é só visual); a visibilidade real é nas rotas de
+  jogador.
+- Logs antigos (sem `profile_id`) e eventos de perfil continuam
+  renderizando (o filtro só decide se aparecem para o observador).
+
+## 5. Testes
+
+```
+$ npm run build → ✓
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca intacta
+```
+
+Script determinístico (removido ao final) — mesa com 4 logs (pública de
+A, privada de A, privada de B, gm):
+- `listLogs` (dev): 4 entradas.
+- **Jogador A**: `["PRIVADA de A","PUBLICA de A"]` — tem a pública e a
+  própria privada, **não** a privada de B, **não** o gm ✓
+- **Jogador B**: `["PRIVADA de B","PUBLICA de A"]` — própria privada
+  sim, privada de A não ✓
+- **Anon sem perfil**: só a pública ✓
+
+## 6. Escopo / pendências
+
+- **Não envia gm/private indevido ao cliente** ✓ (filtrado no servidor).
+- **Rota de jogador não depende de filtro visual** ✓ (`listLogsForViewer`).
+- **Logs antigos não quebram** ✓.
+- **`/dev/table` diagnóstico vê tudo** — mantido e **sinalizado** ✓.
+- Pendências: (a) `profile_session_id` só é gravado quando passado
+  explicitamente (hoje null na maioria); (b) o narrador-dono-vê-tudo
+  depende de `getCurrentUser` (auth) — validado logicamente, o branch
+  `isOwner` retorna `all`; (c) enquanto a RLS for dev_transition, um
+  cliente anon que chame `listLogs` direto (fora das rotas de jogador)
+  ainda lê tudo — por isso as rotas de jogador usam SÓ
+  `listLogsForViewer`, e `/dev/table` é explicitamente dev.

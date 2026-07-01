@@ -773,7 +773,9 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
               </div>
             </div>
             <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 4 }}>
-              Filtro visual apenas; ainda sem segurança real.
+              Console dev/diagnóstico: mostra TODOS os logs (public/private/gm), sem filtro real de
+              visibilidade — o filtro abaixo é só visual. A visibilidade real (v0.20) é aplicada nas
+              rotas de jogador (aba Mesa da ficha via listLogsForViewer), não aqui.
             </p>
             <p data-testid="auto-atualizar-status" style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
               {autoAtualizar ? "Autoatualização ligada" : "Autoatualização desligada"}

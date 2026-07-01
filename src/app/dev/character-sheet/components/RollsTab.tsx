@@ -139,6 +139,7 @@ export function RollsTab({
       await addLog({
         campaignId,
         characterId: characterId ?? undefined,
+        profileId,
         type: tipo,
         visibility: visibilidade,
         payload,

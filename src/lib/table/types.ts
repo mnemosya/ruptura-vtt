@@ -30,6 +30,12 @@ export interface TableLogEntry {
   visibility: TableLogVisibility;
   payload: Record<string, unknown>;
   created_at: string;
+  /** Perfil que gerou o log (migration 0010) — dono do 'private'. Null em logs antigos. */
+  profile_id: string | null;
+  /** Narrador logado que gerou (migration 0010). Null quando anon. */
+  created_by_user_id: string | null;
+  /** Sessão de perfil (migration 0010). Null quando não disponível. */
+  profile_session_id: string | null;
 }
 
 /**

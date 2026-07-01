@@ -15,7 +15,7 @@
 import { useEffect, useState } from "react";
 import { Section } from "./Section";
 import { buttonStyle } from "./styles";
-import { addLog, listLogs } from "../../../../lib/table/storage";
+import { addLog, listLogsForViewer } from "../../../../lib/table/storage";
 import { TABLE_LOG_VISIBILITIES, type TableLogEntry, type TableLogVisibility } from "../../../../lib/table";
 
 const inputStyle: React.CSSProperties = {
@@ -133,7 +133,10 @@ export function MesaTab({
     setLoading(true);
     setErrorMessage(null);
     try {
-      setLogs(await listLogs(campaignId));
+      // Visibilidade REAL (v0.20): o servidor filtra por observador —
+      // jogador vê public + private do próprio perfil, nunca gm; narrador
+      // dono vê tudo. Não é mais só filtro visual.
+      setLogs(await listLogsForViewer(campaignId, { profileId }));
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao carregar logs da mesa.");
     } finally {
@@ -162,6 +165,7 @@ export function MesaTab({
       await addLog({
         campaignId,
         characterId: characterId ?? undefined,
+        profileId,
         type: "chat",
         visibility: visibilidade,
         payload: {

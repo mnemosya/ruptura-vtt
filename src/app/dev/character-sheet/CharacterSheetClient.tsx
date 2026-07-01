@@ -219,6 +219,7 @@ export default function CharacterSheetClient({
       await addLog({
         campaignId,
         characterId: characterId ?? undefined,
+        profileId: profile.id,
         type: "profile_event",
         visibility: "gm",
         payload: {
