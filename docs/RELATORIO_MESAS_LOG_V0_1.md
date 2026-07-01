@@ -3705,3 +3705,152 @@ $ npm run test:content-read → Biblioteca intacta
   sempre se o navegador nunca mandar heartbeat de novo e ninguém clicar
   "Liberar" manualmente no dashboard) — ver v0.26.
 - Nenhuma RLS foi alterada nesta etapa.
+
+# Checkpoint v0.25 — Ciclo de vida de personagem
+
+Dashboard da mesa ganha uma área completa de gerenciamento de
+personagem: criar mínimo in-mesa, renomear, vincular/desvincular
+perfil, definir ativo (já existia desde v0.23), arquivar, restaurar,
+duplicar. Eventos de ciclo de vida são gravados em `table_logs`
+(visibilidade "gm"). Personagens legados continuam intactos.
+
+## 1. Auditoria (pré-requisito do checkpoint)
+
+Confirmado: a migration 0011 (v0.23) **não** adicionou nenhuma coluna
+de ciclo de vida — só `campaign_id`/`profile_id`/`owner_id`. A tabela
+`characters` já tinha uma coluna `status` (texto livre, default
+`'draft'`) desde a migration 0002 original, documentada desde o início
+como "campo simples de ciclo de vida" — mas um `grep` em `src/app`
+confirmou **zero** referências a ela em qualquer UI até hoje. Em vez
+de sobrecarregar essa coluna com um significado novo (arriscando
+ambiguidade com o que já existisse gravado como `'draft'`), a decisão
+foi criar uma coluna nova e inequívoca.
+
+## 2. Migration `0012_characters_lifecycle.sql`
+
+```sql
+alter table characters
+  add column if not exists archived_at timestamptz;
+
+create index if not exists characters_archived_at_idx on characters (archived_at);
+```
+
+100% aditiva/nullable, sem risco de lockout: `archived_at` null =
+ativo (todo personagem existente, sem exceção, nasce/continua ativo);
+preenchido = arquivado (timestamp de quando). Aplicada via
+`apply-migration-generic.ts`; verificado via SQL que a coluna existe e
+é nullable.
+
+## 3. Novas funções em `src/lib/character/storage.ts`
+
+- `renameCharacter(id, newName)` — atualiza `name` e `payload.nome`
+  juntos (mesmo invariante de `buildPayloadForSave`).
+- `archiveCharacter(id)` / `restoreCharacter(id)` — só tocam
+  `archived_at`; não desvinculam mesa/perfil (o narrador decide
+  separadamente se quer desvincular também).
+- `duplicateCharacter(id)` — clona o payload (nome com sufixo "
+  (cópia)"), mantém a mesma mesa, **nunca** copia `profile_id` (evita
+  ambiguidade sobre qual dos dois é "o" personagem de um perfil — só
+  `active_character_id` do perfil decide isso). `owner_id` carimbado
+  com o narrador logado, igual `createCharacter`.
+- `listArchivedCharactersForCampaign(campaignId)` — simétrica a
+  `listCharactersForCampaign` (v0.23), filtrando só arquivados.
+
+## 4. Dashboard `/mesas/[campaignId]` — área de gerenciamento
+
+Na seção "Personagens da mesa" (`MesaDetailClient.tsx`):
+
+- Campo "Nome do novo personagem" + botão "Criar personagem novo" —
+  cria via `createCharacter(createInitialCharacter(null, nome),
+  {campaignId})`, já nascendo vinculado à mesa; `owner_id` carimbado
+  automaticamente com o narrador logado (via `getCurrentUser()`
+  best-effort dentro de `createCharacter`, sem mudança de assinatura).
+- Cada personagem vinculado ganhou os botões "Renomear" (via
+  `window.prompt` — decisão deliberada de manter mínimo, sem modal
+  novo), "Duplicar" e "Arquivar", além do já existente "Desvincular da
+  mesa".
+- Nova seção "Personagens arquivados (N)", só aparece se houver algum,
+  com botão "Restaurar" por item — **derivada em memória** de
+  `personagensDaMesa` (filtro `archived_at`), sem round-trip extra ao
+  banco (mesma lista já buscada por `listCharactersForCampaign`).
+- O dropdown de "personagem ativo" de um perfil (seção Perfis) só
+  oferece personagens **não arquivados** (`personagensAtivosDaMesa`);
+  se um perfil já tinha um personagem que foi arquivado depois, o
+  nome continua aparecendo com o sufixo "(arquivado)" — visibilidade
+  sem forçar desvínculo automático.
+
+## 5. Log de ciclo de vida (`table_logs`, visibilidade "gm")
+
+`logCharacterEvent()` (melhor esforço, nunca bloqueia a ação já
+concluída no banco) grava:
+
+- `character_created` — ao criar in-mesa e ao duplicar (a cópia É um
+  personagem novo).
+- `character_assigned` — ao vincular à mesa e ao vincular a um perfil
+  (`payload.destino: "mesa" | "perfil"`).
+- `character_archived` / `character_restored` — nas respectivas ações.
+
+Testado e confirmado via UI (seção 7): os 4 eventos aparecem no "Log
+da mesa" do dashboard com `[gm]` na frente, na ordem correta.
+
+## 6. Build e testes
+
+```
+$ npm run build → ✓ (11 rotas, sem mudança de superfície)
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca intacta
+```
+
+## 7. Teste manual (browser, ponta a ponta)
+
+1. Criei mesa "Mesa v0.25"; criei "Personagem v0.25" direto na mesa
+   (botão "Criar personagem novo") → apareceu em "Personagens da mesa
+   (1)" ✓; log confirmado com `[gm] character_created` ✓.
+2. Renomeei para "Personagem v0.25 Renomeado" (via `window.prompt`
+   estubado no teste) → nome atualizado no card ✓.
+3. Dupliquei → "Personagem v0.25 Renomeado (cópia)" apareceu como
+   segundo personagem da mesa, sem perfil vinculado ✓; log confirmou
+   novo `character_created` (2 no total) ✓.
+4. Arquivei a cópia → sumiu de "Personagens da mesa" (voltou a
+   mostrar só 1) e apareceu em "Personagens arquivados (1)" com botão
+   "Restaurar" ✓; log confirmou `character_archived` ✓.
+5. Restaurei → voltou para "Personagens da mesa (2)", seção
+   "Arquivados" desapareceu (0 itens) ✓; log confirmou
+   `character_restored`, ordem final do log:
+   `character_restored, character_archived, character_created,
+   character_created` (mais recente primeiro) ✓.
+6. **Achado durante o teste (não é bug do meu código, documentado por
+   transparência)**: ao abrir `/dev/character-sheet` no navegador
+   automatizado de teste, a página ficou presa em "Carregando
+   regras_personagem…" (o `loading.tsx` daquela rota). Investigação
+   completa: `curl` direto ao servidor confirmou que o HTML retornado
+   já continha os dados corretos (incluindo "Kael Ironwood"); scripts
+   isolados confirmaram que `listCharacters()`/`listCampaigns()`/
+   `getCharacterRules()` resolvem em menos de 500ms cada; `git diff`
+   confirmou **zero alteração** nos arquivos daquela rota nesta etapa.
+   Causa raiz identificada: `document.hidden === true` no navegador de
+   teste automatizado — o mecanismo de streaming do React
+   (`$RC`/`$RV`) usado pelo boundary `loading.tsx` depende de
+   `requestAnimationFrame`, que fica pausado indefinidamente em abas
+   em segundo plano. Forçar manualmente o callback pendente
+   (`window.$RV(window.$RB)`) resolveu a página instantaneamente,
+   mostrando a aba "Personagens salvos (4)" com **todos** os
+   personagens (incluindo os 2 legados sem mesa) corretamente ✓ —
+   confirma que "legados não desaparecem de /dev/character-sheet" e
+   que o problema é 100% do ambiente de teste automatizado, não do
+   código (rota `/ficha`, sem `loading.tsx`, nunca é afetada por isso).
+7. Sem erros no console em nenhuma etapa. Limpeza: apaguei a mesa de
+   teste e os 2 personagens criados nela via SQL direto; confirmado
+   que Kael Ironwood e "Novo Personagem" (fixtures pré-existentes)
+   permaneceram intactos.
+
+## 8. Escopo e riscos
+
+- Nenhuma RLS foi alterada nesta etapa.
+- Arquivar um personagem **não** desvincula automaticamente de um
+  perfil que o tinha como ativo — decisão deliberada (visibilidade via
+  sufixo "(arquivado)" em vez de mutação automática de dados de outra
+  entidade); o narrador pode desvincular manualmente se quiser.
+- `renameCharacter`/`archiveCharacter`/`restoreCharacter`/
+  `duplicateCharacter` seguem sem RLS restritiva — herdam o mesmo
+  risco de `characters_dev_transition_*` documentado desde v0.17.

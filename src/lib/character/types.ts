@@ -91,6 +91,8 @@ export interface CharacterRecord {
   profile_id: string | null;
   /** Narrador logado dono do registro (migration 0011). Null = criado sem login. */
   owner_id: string | null;
+  /** Momento em que foi arquivado (migration 0012). Null = ativo/vivo. */
+  archived_at: string | null;
 }
 
 // ---------------------------------------------------------------------

@@ -12,13 +12,20 @@ import {
   revokeCampaignInvite,
   listProfileSessions,
   listLogsForViewer,
+  addLog,
 } from "../../../lib/table/storage";
 import {
   listCharacters,
   listCharactersForCampaign,
   assignCharacterToCampaign,
   assignCharacterToProfile,
+  createCharacter,
+  renameCharacter,
+  archiveCharacter,
+  restoreCharacter,
+  duplicateCharacter,
 } from "../../../lib/character/storage";
+import { createInitialCharacter } from "../../../lib/character";
 import type { Campaign, CampaignProfile, CampaignInvite, ProfileSession, TableLogEntry } from "../../../lib/table";
 import type { CharacterRecord } from "../../../lib/character";
 
@@ -55,6 +62,7 @@ export default function MesaDetailClient({
   const [personagensDaMesa, setPersonagensDaMesa] = useState(personagensDaMesaIniciais);
   const [personagensDisponiveis, setPersonagensDisponiveis] = useState(personagensDisponiveisIniciais);
   const [personagemParaVincular, setPersonagemParaVincular] = useState("");
+  const [novoPersonagemNome, setNovoPersonagemNome] = useState("");
   const [novoPerfil, setNovoPerfil] = useState("");
   const [conviteLabel, setConviteLabel] = useState("");
   const [linkNovo, setLinkNovo] = useState<string | null>(null);
@@ -84,12 +92,37 @@ export default function MesaDetailClient({
     } catch (e) { fail(e, "Erro ao recarregar personagens."); }
   }
 
+  /**
+   * Log de ciclo de vida de personagem (checkpoint v0.25) — melhor
+   * esforço, nunca bloqueia a ação principal. Visibilidade "gm": são
+   * eventos operacionais de mesa/narrador, não mensagens de jogador.
+   */
+  async function logCharacterEvent(
+    type: "character_created" | "character_assigned" | "character_archived" | "character_restored",
+    characterId: string,
+    characterNome: string,
+    extra: Record<string, unknown> = {},
+  ) {
+    try {
+      await addLog({
+        campaignId: campaign.id,
+        characterId,
+        type,
+        visibility: "gm",
+        payload: { characterId, characterNome, ...extra },
+      });
+    } catch {
+      // best-effort — não bloqueia a ação já concluída no banco.
+    }
+  }
+
   async function vincularPersonagemAMesa() {
     if (!personagemParaVincular) return;
     setError(null);
     try {
-      await assignCharacterToCampaign(personagemParaVincular, campaign.id);
+      const record = await assignCharacterToCampaign(personagemParaVincular, campaign.id);
       setPersonagemParaVincular("");
+      await logCharacterEvent("character_assigned", record.id, record.name, { destino: "mesa" });
       await reloadPersonagens();
     } catch (e) { fail(e, "Erro ao vincular personagem à mesa."); }
   }
@@ -104,9 +137,61 @@ export default function MesaDetailClient({
   async function vincularPersonagemAPerfil(characterId: string, profileId: string | null) {
     setError(null);
     try {
-      await assignCharacterToProfile(characterId, profileId);
+      const record = await assignCharacterToProfile(characterId, profileId);
+      if (profileId) await logCharacterEvent("character_assigned", record.id, record.name, { destino: "perfil", profileId });
       await reloadPersonagens();
     } catch (e) { fail(e, "Erro ao vincular personagem ao perfil."); }
+  }
+
+  /** Cria um personagem mínimo já nascendo vinculado a esta mesa (checkpoint v0.25). */
+  async function criarPersonagemNaMesa() {
+    if (!novoPersonagemNome.trim()) return;
+    setError(null);
+    try {
+      const record = await createCharacter(createInitialCharacter(null, novoPersonagemNome.trim()), {
+        campaignId: campaign.id,
+      });
+      setNovoPersonagemNome("");
+      await logCharacterEvent("character_created", record.id, record.name);
+      await reloadPersonagens();
+    } catch (e) { fail(e, "Erro ao criar personagem."); }
+  }
+
+  async function renomearPersonagem(characterId: string, nomeAtual: string) {
+    const novoNome = window.prompt("Novo nome do personagem:", nomeAtual);
+    if (novoNome == null || !novoNome.trim() || novoNome.trim() === nomeAtual) return;
+    setError(null);
+    try {
+      await renameCharacter(characterId, novoNome.trim());
+      await reloadPersonagens();
+    } catch (e) { fail(e, "Erro ao renomear personagem."); }
+  }
+
+  async function arquivarPersonagem(characterId: string, characterNome: string) {
+    setError(null);
+    try {
+      await archiveCharacter(characterId);
+      await logCharacterEvent("character_archived", characterId, characterNome);
+      await reloadPersonagens();
+    } catch (e) { fail(e, "Erro ao arquivar personagem."); }
+  }
+
+  async function restaurarPersonagem(characterId: string, characterNome: string) {
+    setError(null);
+    try {
+      await restoreCharacter(characterId);
+      await logCharacterEvent("character_restored", characterId, characterNome);
+      await reloadPersonagens();
+    } catch (e) { fail(e, "Erro ao restaurar personagem."); }
+  }
+
+  async function duplicarPersonagem(characterId: string) {
+    setError(null);
+    try {
+      const record = await duplicateCharacter(characterId);
+      await logCharacterEvent("character_created", record.id, record.name, { duplicadoDe: characterId });
+      await reloadPersonagens();
+    } catch (e) { fail(e, "Erro ao duplicar personagem."); }
   }
 
   async function criarPerfil() {
@@ -144,6 +229,14 @@ export default function MesaDetailClient({
     return sessoes.find((s) => s.profile_id === profileId && s.status === "active") ?? null;
   }
 
+  // Ciclo de vida (checkpoint v0.25): personagensDaMesa vem sem filtro
+  // de archived_at (listCharactersForCampaign) — separado aqui em duas
+  // listas de exibição. Só os ativos aparecem como opção de "personagem
+  // ativo" de um perfil (abaixo); os arquivados ganham uma seção própria
+  // com "Restaurar".
+  const personagensAtivosDaMesa = personagensDaMesa.filter((c) => !c.archived_at);
+  const personagensArquivadosDaMesa = personagensDaMesa.filter((c) => c.archived_at);
+
   return (
     <main style={{ maxWidth: 760, margin: "0 auto", padding: "32px 20px 80px" }}>
       <Link href="/mesas" style={{ color: "#5ec8ff", fontSize: 12 }}>← Minhas mesas</Link>
@@ -152,14 +245,14 @@ export default function MesaDetailClient({
 
       {error && <p style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 16 }}>Erro: {error}</p>}
 
-      {/* Personagens da mesa (checkpoint v0.23) */}
+      {/* Personagens da mesa (checkpoint v0.23; ciclo de vida v0.25) */}
       <section style={{ marginBottom: 32 }}>
-        <h2 style={h2}>Personagens da mesa ({personagensDaMesa.length})</h2>
+        <h2 style={h2}>Personagens da mesa ({personagensAtivosDaMesa.length})</h2>
         <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
           Só personagens vinculados a esta mesa aparecem para escolha como "personagem ativo" de
           um perfil (abaixo). Personagens sem mesa são legados/globais — ver /dev/character-sheet.
         </p>
-        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
           <select data-testid="det-personagem-disponivel-select" value={personagemParaVincular} onChange={(e) => setPersonagemParaVincular(e.target.value)} style={{ ...input, flex: 1 }}>
             <option value="">— selecionar personagem existente (sem mesa) —</option>
             {personagensDisponiveis.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -168,14 +261,26 @@ export default function MesaDetailClient({
             Vincular à mesa
           </button>
         </div>
-        {personagensDaMesa.length === 0 && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          <input
+            data-testid="det-novo-personagem-nome"
+            value={novoPersonagemNome}
+            onChange={(e) => setNovoPersonagemNome(e.target.value)}
+            placeholder="Nome do novo personagem"
+            style={{ ...input, flex: 1 }}
+          />
+          <button data-testid="det-criar-personagem" onClick={criarPersonagemNaMesa} disabled={!novoPersonagemNome.trim()} style={{ ...btn, opacity: novoPersonagemNome.trim() ? 1 : 0.5 }}>
+            Criar personagem novo
+          </button>
+        </div>
+        {personagensAtivosDaMesa.length === 0 && (
           <p style={{ fontSize: 13, opacity: 0.6 }}>Nenhum personagem vinculado a esta mesa ainda.</p>
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {personagensDaMesa.map((c) => (
+          {personagensAtivosDaMesa.map((c) => (
             <div key={c.id} data-testid="det-personagem-mesa" style={{ ...card, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <strong>{c.name}</strong>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 <span style={{ fontSize: 11, opacity: 0.6 }}>Perfil:</span>
                 <select
                   data-testid={`det-personagem-perfil-select-${c.id}`}
@@ -186,6 +291,15 @@ export default function MesaDetailClient({
                   <option value="">— nenhum —</option>
                   {perfis.map((p) => <option key={p.id} value={p.id}>{p.nickname}</option>)}
                 </select>
+                <button data-testid={`det-renomear-personagem-${c.id}`} onClick={() => renomearPersonagem(c.id, c.name)} style={btn}>
+                  Renomear
+                </button>
+                <button data-testid={`det-duplicar-personagem-${c.id}`} onClick={() => duplicarPersonagem(c.id)} style={btn}>
+                  Duplicar
+                </button>
+                <button data-testid={`det-arquivar-personagem-${c.id}`} onClick={() => arquivarPersonagem(c.id, c.name)} style={btn}>
+                  Arquivar
+                </button>
                 <button data-testid={`det-desvincular-personagem-${c.id}`} onClick={() => desvincularPersonagemDaMesa(c.id)} style={btn}>
                   Desvincular da mesa
                 </button>
@@ -193,6 +307,24 @@ export default function MesaDetailClient({
             </div>
           ))}
         </div>
+
+        {personagensArquivadosDaMesa.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <h3 style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 1, opacity: 0.5, marginBottom: 8 }}>
+              Personagens arquivados ({personagensArquivadosDaMesa.length})
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {personagensArquivadosDaMesa.map((c) => (
+                <div key={c.id} data-testid="det-personagem-arquivado" style={{ ...card, opacity: 0.7, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                  <span>{c.name}</span>
+                  <button data-testid={`det-restaurar-personagem-${c.id}`} onClick={() => restaurarPersonagem(c.id, c.name)} style={btn}>
+                    Restaurar
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Perfis */}
@@ -218,10 +350,12 @@ export default function MesaDetailClient({
                   </span>
                 </div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 11, opacity: 0.7 }}>Personagem: {ativo ? ativo.name : "nenhum"}</span>
+                  <span style={{ fontSize: 11, opacity: 0.7 }}>
+                    Personagem: {ativo ? `${ativo.name}${ativo.archived_at ? " (arquivado)" : ""}` : "nenhum"}
+                  </span>
                   <select data-testid={`det-personagem-${p.id}`} value={p.active_character_id ?? ""} onChange={(e) => vincular(p.id, e.target.value || null)} style={input}>
                     <option value="">— vincular —</option>
-                    {personagensDaMesa.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    {personagensAtivosDaMesa.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                   <button data-testid={`det-liberar-${p.id}`} onClick={() => liberar(p.id)} disabled={!p.is_locked} style={{ ...btn, opacity: p.is_locked ? 1 : 0.5 }}>Liberar</button>
                 </div>

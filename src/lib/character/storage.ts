@@ -248,3 +248,100 @@ export async function assignCharacterToProfile(characterId: string, profileId: s
   }
   return data as CharacterRecord;
 }
+
+// =====================================================================
+// Ciclo de vida (checkpoint v0.25) — ver migration 0012
+// =====================================================================
+
+/** Renomeia um personagem — atualiza a coluna `name` E `payload.nome` juntos (mesmo invariante de buildPayloadForSave). */
+export async function renameCharacter(id: string, newName: string): Promise<CharacterRecord> {
+  const current = await getCharacter(id);
+  if (!current) {
+    throw new CharacterStorageError(`Personagem "${id}" não encontrado para renomear.`);
+  }
+  const finalName = newName.trim() ? newName.trim() : current.name;
+  const client = getContentClient();
+  const { data, error } = await client
+    .from(TABLE)
+    .update({ name: finalName, payload: { ...current.payload, nome: finalName } })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new CharacterStorageError(`Falha ao renomear personagem "${id}": ${error.message}`, error);
+  }
+  return data as CharacterRecord;
+}
+
+/** Arquiva um personagem (`archived_at = agora`). Não desvincula mesa/perfil — só marca como inativo. */
+export async function archiveCharacter(id: string): Promise<CharacterRecord> {
+  const client = getContentClient();
+  const { data, error } = await client
+    .from(TABLE)
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new CharacterStorageError(`Falha ao arquivar personagem "${id}": ${error.message}`, error);
+  }
+  return data as CharacterRecord;
+}
+
+/** Restaura um personagem arquivado (`archived_at = null`). */
+export async function restoreCharacter(id: string): Promise<CharacterRecord> {
+  const client = getContentClient();
+  const { data, error } = await client
+    .from(TABLE)
+    .update({ archived_at: null })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new CharacterStorageError(`Falha ao restaurar personagem "${id}": ${error.message}`, error);
+  }
+  return data as CharacterRecord;
+}
+
+/**
+ * Duplica um personagem: clona o payload (nome com sufixo " (cópia)"),
+ * mantém a mesma mesa (campaign_id) mas NUNCA copia o profile_id — o
+ * duplicado nasce sem perfil, para nunca ficar ambíguo qual dos dois é
+ * "o" personagem daquele perfil (só active_character_id do perfil
+ * decide isso, e essa cópia não mexe nele). owner_id é carimbado com o
+ * narrador logado, igual createCharacter.
+ */
+export async function duplicateCharacter(id: string): Promise<CharacterRecord> {
+  const source = await getCharacter(id);
+  if (!source) {
+    throw new CharacterStorageError(`Personagem "${id}" não encontrado para duplicar.`);
+  }
+  const clonedPayload: Character = {
+    ...source.payload,
+    nome: `${source.payload.nome} (cópia)`,
+  };
+  return createCharacter(clonedPayload, {
+    ownerLabel: source.owner_label ?? undefined,
+    campaignId: source.campaign_id,
+    profileId: null,
+  });
+}
+
+/** Lista os personagens arquivados de uma mesa, mais recentemente atualizados primeiro. */
+export async function listArchivedCharactersForCampaign(campaignId: string): Promise<CharacterRecord[]> {
+  const client = getContentClient();
+  const { data, error } = await client
+    .from(TABLE)
+    .select()
+    .eq("campaign_id", campaignId)
+    .not("archived_at", "is", null)
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    throw new CharacterStorageError(`Falha ao listar personagens arquivados da mesa "${campaignId}": ${error.message}`, error);
+  }
+  return (data as CharacterRecord[]) ?? [];
+}
