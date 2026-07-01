@@ -28,7 +28,7 @@ interface PageProps {
 export default async function MesaDetailPage({ params }: PageProps) {
   const { campaignId } = await params;
   const user = await getCurrentUser();
-  if (!user) redirect("/dev/login");
+  if (!user) redirect("/login");
 
   let campaign: Campaign | null = null;
   try {

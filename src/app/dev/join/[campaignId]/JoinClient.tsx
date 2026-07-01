@@ -169,7 +169,7 @@ export default function JoinClient({ campaign, perfisIniciais, personagens, vari
               </span>
               {jaEntrei && (
                 <Link
-                  href={`/dev/character-sheet?campaignId=${campaign.id}&profileId=${perfil.id}`}
+                  href={`${variant === "invite" ? "/ficha" : "/dev/character-sheet"}?campaignId=${campaign.id}&profileId=${perfil.id}`}
                   data-testid={`join-abrir-ficha-${perfil.id}`}
                   style={{ ...buttonStyle, textDecoration: "none", display: "inline-block", width: "fit-content" }}
                 >

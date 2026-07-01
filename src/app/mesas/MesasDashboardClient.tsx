@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createCampaign, listCampaigns } from "../../lib/table/storage";
+import { createCampaign } from "../../lib/table/storage";
 import { signOut } from "../../lib/auth/actions";
 import type { Campaign } from "../../lib/table";
 
@@ -39,18 +39,6 @@ export default function MesasDashboardClient({ userEmail, mesasIniciais, errorIn
   const [error, setError] = useState<string | null>(errorInicial);
   const [busy, setBusy] = useState(false);
 
-  async function refresh() {
-    try {
-      const todas = await listCampaigns();
-      // O servidor carimba owner_id na criação; aqui filtramos por dono via
-      // a mesa recém-criada (a lista completa é filtrada no server em page.tsx,
-      // mas para refresh client-side reusamos createCampaign que já devolve a mesa).
-      setMesas(todas.filter((m) => mesasIniciais.some((x) => x.id === m.id) || m.name === novoNome));
-    } catch {
-      // silencioso
-    }
-  }
-
   async function handleCreate() {
     if (!novoNome.trim()) return;
     setBusy(true);
@@ -68,7 +56,7 @@ export default function MesasDashboardClient({ userEmail, mesasIniciais, errorIn
 
   async function handleLogout() {
     await signOut();
-    router.push("/dev/login");
+    router.push("/login");
     router.refresh();
   }
 

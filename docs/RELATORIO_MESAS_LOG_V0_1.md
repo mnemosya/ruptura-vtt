@@ -3202,3 +3202,88 @@ Manual (browser):
   fica como refino.
 - Design é funcional/mínimo, não final (conforme pedido).
 - `/dev/table` continua como console de diagnóstico (vê tudo, sem auth).
+
+---
+
+# Checkpoint v0.22 — Separação dev/prod
+
+Cria as rotas **reais** que faltavam (`/login`, `/ficha`) extraindo
+componentes compartilhados das versões dev já existentes, e aponta o
+fluxo de convite/dashboard para elas. Rotas `/dev/*` mantidas como
+diagnóstico.
+
+## 1. Arquivos criados/alterados
+
+- `src/app/LoginForm.tsx` (novo) — form de login/cadastro compartilhado
+  (prop `redirectTo` + `context: "prod"|"dev"`).
+- `src/app/login/page.tsx` (novo) — rota real, `redirectTo="/mesas"`.
+- `src/app/dev/login/page.tsx` — agora só renderiza `<LoginForm
+  redirectTo="/dev/auth/status" context="dev" />` (reuso, zero
+  duplicação de lógica de auth).
+- `src/app/CharacterSheetView.tsx` (novo) — Server Component
+  compartilhado (busca regras/personagens/mesas, renderiza
+  `CharacterSheetClient`).
+- `src/app/ficha/page.tsx` (novo) — rota real, `?campaignId&profileId`.
+- `src/app/dev/character-sheet/page.tsx` — agora só chama
+  `<CharacterSheetView>` (reuso).
+- `src/app/mesas/page.tsx` / `[campaignId]/page.tsx` — redirect ajustado
+  de `/dev/login` → `/login` (rota real de auth para a área de
+  produto).
+- `src/app/dev/join/[campaignId]/JoinClient.tsx` — "Abrir ficha" aponta
+  para `/ficha` quando `variant="invite"` (entrada por convite real),
+  mantém `/dev/character-sheet` quando `variant="dev"` (legado).
+
+Nenhuma migration. `/dev/table`, `/dev/join/[campaignId]`,
+`/dev/character-sheet`, `/dev/login`, `/dev/auth/status` **mantidos**.
+
+## 2. Mapa final de rotas
+
+| Rota | Tipo | Auth | Observação |
+|---|---|---|---|
+| `/login` | Real | — | Login/cadastro do narrador → `/mesas` |
+| `/mesas` | Real | Exige login | Dashboard: minhas mesas |
+| `/mesas/[campaignId]` | Real | Exige login + dono | Perfis/convites/log da mesa |
+| `/join/[token]` | Real | Anon (jogador) | Convite seguro (hash) → perfil → ficha |
+| `/ficha` | Real | Anon (jogador) | Ficha, `?campaignId&profileId` |
+| `/dev/login` | Dev | — | Mesmo form, destino dev |
+| `/dev/auth/status` | Dev | — | Status de auth (diagnóstico) |
+| `/dev/table` | Dev | — | Console: vê tudo, RLS de transição |
+| `/dev/join/[campaignId]` | Dev (legado) | Anon | Id cru na URL, avisado como inseguro |
+| `/dev/character-sheet` | Dev | — | Mesma ficha, acesso direto sem convite |
+
+## 3. Testes
+
+```
+$ npm run build → ✓ (11 rotas: /login, /mesas, /mesas/[campaignId],
+                     /join/[token], /ficha + as 5 /dev/* + /_not-found)
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca intacta
+```
+
+Manual (browser), fluxo real ponta a ponta:
+1. `/login` → login bem-sucedido → redirecionou para `/mesas` ✓.
+2. Criei mesa no dashboard → abri `/mesas/[id]` → criei perfil,
+   vinculei Kael, criei convite (`/join/<token>`).
+3. Abri o link de convite → "Entrar como perfil" → **"Abrir ficha"
+   apontou para `/ficha`** (não mais `/dev/character-sheet`) ✓.
+4. `/ficha?campaignId&profileId` abriu com mesa pré-selecionada,
+   status "Em uso por esta aba" ✓.
+5. Aba Mesa → chat enviado e persistido; aba Rolagens → rolagem
+   persistida sem erro; voltei à aba Mesa → rolagem apareceu
+   (visibilidade pública respeitada, `listLogsForViewer`) ✓.
+6. `/dev/table` → continua acessível normalmente ✓.
+7. Sem erros no console. Mesa de teste removida.
+
+## 4. Escopo / pendências
+
+- Rotas reais **não exibem avisos de "modo dev"** (LoginForm/CharacterSheetView
+  compartilhados, mas o texto varia por `context`/uso — a ficha em si
+  ainda tem o aviso genérico "ficha mínima..." herdado, pendência de
+  polish visual, não de segurança).
+- Rotas reais usam convite real + sessão real + visibilidade real
+  (checkpoints v0.18–v0.20), já embutidos por reusarem a mesma camada
+  de storage.
+- Rotas dev mantidas, sem remoção, conforme pedido.
+- Pendência: os textos internos de `/ficha` e `/mesas/[id]` ainda
+  referenciam nomenclatura "dev" em alguns comentários de código
+  (não visíveis ao usuário) — cosmético, não funcional.

@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 export default async function MesasPage() {
   const user = await getCurrentUser();
-  if (!user) redirect("/dev/login");
+  if (!user) redirect("/login");
 
   let minhasMesas: Campaign[] = [];
   let errorMessage: string | null = null;
