@@ -2534,3 +2534,62 @@ código):
 - **Biblioteca do Sistema, inventário, magia, combate, condições**: não
   tocados.
 - Nenhuma chave secreta exposta.
+
+---
+
+## Addendum ao v0.15 — Login positivo validado
+
+Pendência do checkpoint v0.15 (seção 7) resolvida nesta sessão, com
+confirmação explícita do usuário de que "Confirm email" já havia sido
+desativado no painel Supabase para o ambiente dev. Antes de testar,
+perguntei qual das três condições do checkpoint estava satisfeita
+(AskUserQuestion) — o usuário confirmou a desativação.
+
+Nenhuma mudança de código nesta etapa — só validação manual do fluxo já
+implementado.
+
+### Ciclo completo testado (browser, via preview tools)
+
+1. `/dev/login` → aba "Criar conta dev" → cadastrei
+   `ruptura.dev.narrador.checkpoint016@gmail.com` — **redirecionou
+   direto para `/dev/auth/status` sem exigir confirmação**, confirmando
+   que a config foi de fato desativada.
+2. `/dev/auth/status` → `auth-logado` presente, email e ID corretos
+   (`e31cc2e4-e86f-400a-99c1-1b9326fc1931`).
+3. Cliquei "Sair" → redirecionou para `/dev/login`; `/dev/auth/status`
+   voltou a mostrar `auth-deslogado`.
+4. `/dev/login` → aba "Entrar" (login por senha, não cadastro) com o
+   mesmo email/senha → logou com sucesso, `auth-logado` com o mesmo
+   email.
+5. `/dev/table` → banner mudou para "Narrador logado:
+   ruptura.dev.narrador.checkpoint016@gmail.com".
+6. Criei uma mesa ("Mesa Owner Teste v0.16") logado — confirmado via
+   script auxiliar (`scripts/_tmp_check_owner016.ts`, criado e removido
+   na mesma sessão) que a linha nasceu com `owner_id =
+   e31cc2e4-e86f-400a-99c1-1b9326fc1931` (o id do narrador logado) —
+   fecha o ciclo do checkpoint v0.14 (stamping de `owner_id` funciona
+   de ponta a ponta com um usuário real, não só com `null`).
+7. Sem erros no console durante toda a sequência.
+
+### Resultado
+
+**Login positivo validado — Entrar, Sair e Criar conta dev funcionam
+ponta a ponta** com a config de confirmação de email desativada.
+`owner_id` é carimbado corretamente com o id do narrador real ao criar
+mesas.
+
+### Usuário de teste criado — pendência de limpeza
+
+A conta `ruptura.dev.narrador.checkpoint016@gmail.com` (id
+`e31cc2e4-e86f-400a-99c1-1b9326fc1931`) **foi criada de verdade** em
+`auth.users` deste projeto para permitir a validação — é uma conta de
+teste claramente identificável (nome no email), não uma conta de
+narrador real. Não a apaguei nesta sessão (apagar usuários de
+`auth.users` está fora do alcance da anon key/Server Actions do app, e
+eu não tenho certeza se você quer mantê-la como sua conta de teste
+padrão para futuras validações ou prefere removê-la). Avise se quiser
+que eu peça a remoção, ou remova pelo painel Supabase (Authentication
+→ Users) quando quiser.
+
+A mesa de teste "Mesa Owner Teste v0.16" (criada e usada só para
+confirmar o `owner_id`) foi removida ao final desta validação.
