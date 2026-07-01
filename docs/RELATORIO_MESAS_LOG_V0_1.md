@@ -3139,3 +3139,66 @@ A, privada de A, privada de B, gm):
   cliente anon que chame `listLogs` direto (fora das rotas de jogador)
   ainda lê tudo — por isso as rotas de jogador usam SÓ
   `listLogsForViewer`, e `/dev/table` é explicitamente dev.
+
+---
+
+# Checkpoint v0.21 — Dashboard do narrador
+
+Cria a área de **produto** do narrador (`/mesas`), separada do console
+dev (`/dev/table`), exigindo login e escopada às mesas do dono.
+
+## 1. Rotas criadas
+
+- `src/app/mesas/page.tsx` (server): exige login (`getCurrentUser` →
+  senão `redirect("/dev/login")`); lista só as mesas do narrador
+  (`owner_id === user.id`); renderiza `MesasDashboardClient`.
+- `src/app/mesas/MesasDashboardClient.tsx`: lista "Minhas mesas", criar
+  mesa, "Abrir" → `/mesas/[id]`, "Sair", link para `/dev/table`.
+- `src/app/mesas/[campaignId]/page.tsx` (server): exige login **e** que
+  a mesa seja do dono (senão "Acesso negado"); mesa legada (owner null)
+  é bloqueada no dashboard (use `/dev/table`). Reúne perfis, convites,
+  sessões, log (visão de narrador = tudo, `listLogsForViewer({})` como
+  dono) e personagens.
+- `src/app/mesas/[campaignId]/MesaDetailClient.tsx`: perfis (criar,
+  vincular personagem, liberar), convites (criar/listar/revogar +
+  link), log da mesa (narrador vê tudo, com botão atualizar).
+
+Nenhuma migration. `/dev/table` mantido intacto como console de
+diagnóstico. Reusa 100% a camada de storage existente (sem duplicar
+Server Actions).
+
+## 2. Segurança
+
+- Área de produto usa **auth real**: sem login → redirect; mesa de
+  outro dono → "Acesso negado". Só as mesas do narrador aparecem.
+- O log no dashboard usa `listLogsForViewer(campaignId, {})` — como o
+  chamador é o dono autenticado, a função retorna tudo (branch
+  `isOwner`), enforçado no servidor.
+
+## 3. Testes
+
+```
+$ npm run build → ✓ (/mesas e /mesas/[campaignId] registradas)
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca intacta
+```
+
+Manual (browser):
+- **Logado**: `/mesas` abre ("Minhas mesas") → criar mesa → aparece na
+  lista → "Abrir" → detalhe com Perfis/Convites/Log → criar perfil →
+  vincular Kael → criar convite (link mostrado). Tudo OK.
+- **Deslogado**: `/mesas` e `/mesas/[id]` **redirecionam** para
+  `/dev/login`. ✓
+- Sem erros no console. Mesa de teste removida.
+
+## 4. Escopo / pendências
+
+- **Renomear mesa**: não implementado (pendência simples — precisaria de
+  um `updateCampaign(name)`).
+- **Arquivar mesa**: **pendência** — não há coluna `archived_at`/status
+  em `campaigns` (documentado; exigiria migration).
+- **Liberar sessão** granular: o dashboard libera o perfil (que marca a
+  sessão como released, v0.19); liberar uma sessão específica por id
+  fica como refino.
+- Design é funcional/mínimo, não final (conforme pedido).
+- `/dev/table` continua como console de diagnóstico (vê tudo, sem auth).
