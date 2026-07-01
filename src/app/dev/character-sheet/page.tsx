@@ -14,5 +14,7 @@ interface PageProps {
 
 export default async function DevCharacterSheetPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  return <CharacterSheetView campaignId={params.campaignId ?? null} profileId={params.profileId ?? null} />;
+  return (
+    <CharacterSheetView campaignId={params.campaignId ?? null} profileId={params.profileId ?? null} mode="dev" />
+  );
 }

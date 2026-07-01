@@ -116,6 +116,7 @@ export function MesaTab({
   profileNickname,
   characterId,
   characterNome,
+  profileSessionId,
 }: {
   campaignId: string | null;
   mesaNome: string | null;
@@ -123,6 +124,8 @@ export function MesaTab({
   profileNickname: string | null;
   characterId: string | null;
   characterNome: string;
+  /** sessionId do navegador (checkpoint v0.24) — anotado em table_logs.profile_session_id. */
+  profileSessionId?: string | null;
 }) {
   const [logs, setLogs] = useState<TableLogEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -169,6 +172,7 @@ export function MesaTab({
         campaignId,
         characterId: characterId ?? undefined,
         profileId,
+        profileSessionId,
         type: "chat",
         visibility: visibilidade,
         payload: {

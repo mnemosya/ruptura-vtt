@@ -17,11 +17,15 @@ export function CharacterSheetTabs({
   activeTab,
   personagensCount,
   onChange,
+  hiddenTabs,
 }: {
   activeTab: TabId;
   personagensCount: number;
   onChange: (tab: TabId) => void;
+  /** Abas a esconder (ex.: "personagens"/"debug" na rota de produto /ficha, checkpoint v0.24). */
+  hiddenTabs?: readonly TabId[];
 }) {
+  const visibleTabs = hiddenTabs ? TABS.filter((tab) => !hiddenTabs.includes(tab)) : TABS;
   return (
     <nav
       style={{
@@ -32,7 +36,7 @@ export function CharacterSheetTabs({
         flexWrap: "wrap",
       }}
     >
-      {TABS.map((tab) => (
+      {visibleTabs.map((tab) => (
         <button
           key={tab}
           data-testid={`tab-${tab}`}

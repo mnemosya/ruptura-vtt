@@ -32,7 +32,9 @@
  *   heartbeatCampaignProfile, leaveCampaignProfile,
  *   forceReleaseCampaignProfile, listProfileSessions,
  *   getActiveProfileSession, createCampaignInvite, listCampaignInvites,
- *   revokeCampaignInvite, resolveCampaignInvite.
+ *   revokeCampaignInvite, resolveCampaignInvite, validateProductSession
+ *   (checkpoint v0.24 — confere se o sessionId do navegador é o dono do
+ *   bloqueio do perfil antes de `/ficha` abrir a ficha real).
  *
  *   ¹ listCampaigns retorna TODAS as mesas (RLS ainda em transição) —
  *     /mesas filtra por owner_id no servidor antes de exibir. Quando a
@@ -584,6 +586,47 @@ export async function getActiveProfileSession(profileId: string): Promise<Profil
     throw new TableStorageError(`Falha ao ler sessão ativa do perfil "${profileId}": ${error.message}`, error);
   }
   return (data as ProfileSession | null) ?? null;
+}
+
+// =====================================================================
+// Sessão de perfil real da rota de produto (/ficha, checkpoint v0.24)
+// =====================================================================
+
+export interface ProductSessionResult {
+  ok: boolean;
+  reason?: "profile_not_found" | "wrong_campaign" | "not_locked";
+  campaign?: Campaign;
+  profile?: CampaignProfile;
+}
+
+/**
+ * Valida que o `sessionId` do navegador (localStorage, NÃO autenticação
+ * real) é de fato quem detém o bloqueio (`lock_session_id`) do perfil
+ * informado, dentro da mesa informada. Usado por `/ficha` (rota real,
+ * checkpoint v0.24) para decidir se abre a ficha do perfil ou mostra
+ * "Entre por um convite para abrir a ficha." — nunca lança por sessão
+ * inválida, só por falha real de rede/RLS.
+ */
+export async function validateProductSession(
+  campaignId: string,
+  profileId: string,
+  sessionId: string,
+): Promise<ProductSessionResult> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.from(CAMPAIGN_PROFILES_TABLE).select().eq("id", profileId).maybeSingle();
+
+  if (error) {
+    throw new TableStorageError(`Falha ao validar sessão do perfil "${profileId}": ${error.message}`, error);
+  }
+  if (!data) return { ok: false, reason: "profile_not_found" };
+
+  const profile = data as CampaignProfile;
+  if (profile.campaign_id !== campaignId) return { ok: false, reason: "wrong_campaign" };
+  if (!profile.is_locked || profile.lock_session_id !== sessionId) return { ok: false, reason: "not_locked" };
+
+  const campaign = await getCampaign(campaignId);
+  if (!campaign) return { ok: false, reason: "wrong_campaign" };
+  return { ok: true, campaign, profile };
 }
 
 // =====================================================================

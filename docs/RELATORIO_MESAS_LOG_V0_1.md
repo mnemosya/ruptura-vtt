@@ -3559,3 +3559,149 @@ $ npm run test:content-read → Biblioteca intacta
 - `characters` continua sem RLS restritiva — qualquer
   `anon`/`authenticated` ainda pode ler/escrever qualquer linha
   (herda o risco já documentado desde v0.17).
+
+# Checkpoint v0.24 — Ficha real por sessão de perfil
+
+`/ficha` para de ser uma ficha "livre" (mesa/perfil por dropdown,
+lista global de personagens) e passa a operar 100% a partir da sessão
+real de perfil salva no navegador (localStorage) do fluxo de convite
+— `campaignId`/`profileId` fixos na URL, validados contra o bloqueio
+do perfil no servidor antes de mostrar qualquer coisa. `/dev/character-
+sheet` mantém o comportamento de diagnóstico anterior, intocado.
+
+## 1. Nova validação de sessão real: `validateProductSession`
+
+`src/lib/table/storage.ts` ganhou `validateProductSession(campaignId,
+profileId, sessionId)`: busca o perfil, confere que `campaign_id`
+bate com a mesa da URL e que `is_locked && lock_session_id ===
+sessionId` — ou seja, que ESTE navegador é quem realmente "entrou"
+naquele perfil (via `/join/[token]` → `enterCampaignProfile`). Nunca
+lança por sessão inválida, só por falha real de rede/RLS; retorna
+`{ok:false, reason}` para os casos "perfil não encontrado", "mesa
+errada" e "não bloqueado por esta sessão".
+
+## 2. Modo "product" vs "dev" em `CharacterSheetView`/`CharacterSheetClient`
+
+- `CharacterSheetView` ganhou o parâmetro `mode: "dev" | "product"`.
+  Em modo "product" (`/ficha`), **nem busca** `listCharacters()`/
+  `listCampaigns()` no servidor — passa arrays vazios. Defesa em
+  profundidade: mesmo que a UI não mostrasse a lista global, ela nunca
+  chega a ser buscada nem passada como prop para a rota de produto.
+- `CharacterSheetClient` ganhou o prop `mode`. Em "product":
+  - Um novo estado `productSessionState` (`pending` → `no_params` |
+    `invalid` | `no_character` | `left` | `valid`) controla um early
+    return: enquanto não for `"valid"`, a ficha inteira não renderiza
+    — só a mensagem de bloqueio correspondente. Mensagem para
+    "sem parâmetros"/"sessão inválida": **"Entre por um convite para
+    abrir a ficha."** (texto exato pedido). "Sem personagem": "Este
+    perfil ainda não tem personagem vinculado. Peça ao narrador para
+    vincular um personagem a este perfil [...]". "Saiu do perfil":
+    "Você saiu deste perfil. Entre novamente por um convite [...]".
+  - `loadProductSession()` (chamada ao montar, e de novo pelo botão
+    "Recarregar personagem") valida a sessão e, se válida, carrega
+    **só** o personagem ativo do perfil (`getCharacter(profile.
+    active_character_id)`) — nunca por id arbitrário, nunca a lista.
+  - As abas "Personagens salvos" e "Debug" são escondidas
+    (`CharacterSheetTabs` ganhou `hiddenTabs`) e seus componentes nem
+    são renderizados (`mode === "dev" &&` antes de cada um).
+  - `GeneralTab` ganhou variante "product": mesa/perfil aparecem como
+    texto fixo (não seletor), sem botão "Novo personagem" (a ficha real
+    nunca cria personagem solto/detached), com "Recarregar personagem"
+    no lugar de "Carregar personagem ativo".
+  - `handleSave` tem defesa em profundidade: em modo product, nunca
+    cria (`createCharacter`) — só atualiza o characterId já carregado
+    pela sessão; `refreshList()` (que busca a lista global) é um no-op
+    em modo product.
+  - `handleLeaveProfile`, em modo product, também volta
+    `productSessionState` para `"left"` — sair do perfil pela própria
+    ficha invalida a sessão imediatamente (sem seletor para "trocar"
+    de perfil, é preciso entrar de novo pelo convite).
+- `/ficha/page.tsx` passa `mode="product"`; `/dev/character-sheet/
+  page.tsx` passa `mode="dev"` explicitamente.
+
+## 3. Bug real encontrado e corrigido: FK de `profile_session_id`
+
+Ao ligar rolagens/chat da ficha a `profileSessionId`, o teste manual
+revelou que eu estava passando o **sessionId do navegador** (string
+gerada em localStorage) direto para `table_logs.profile_session_id` —
+mas essa coluna é FK para `profile_sessions.id` (a linha da sessão no
+banco, migration 0009/0010), não para o sessionId bruto. Isso violava
+a constraint (`table_logs_profile_session_id_fkey`) e quebrava o envio
+de qualquer chat/rolagem com mesa selecionada, em AMBOS os modos
+(dev e product) — regressão introduzida por mim nesta mesma etapa,
+pega e corrigida antes do commit.
+
+**Correção**: novo estado `profileSessionRowId` (distinto de
+`sessionId`), resolvido via `getActiveProfileSession(profileId)` —
+função já existente desde v0.19/v0.20, só não estava sendo usada para
+isto — toda vez que uma sessão é assumida (`loadProductSession`,
+`handleEnterProfile`, resumo de heartbeat vindo de `/dev/join`), e
+limpo (`null`) ao sair/expirar. `RollsTab`/`MesaTab`/
+`persistProfileEvent` passaram a receber `profileSessionRowId`, nunca
+o `sessionId` bruto.
+
+## 4. Build e testes
+
+```
+$ npm run build → ✓ (11 rotas, sem mudança de superfície)
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca intacta
+```
+
+## 5. Teste manual (browser, ponta a ponta)
+
+1. `/ficha` sem parâmetros → **"Entre por um convite para abrir a
+   ficha."** ✓.
+2. `/ficha?campaignId=<uuid-inexistente>&profileId=<uuid-inexistente>`
+   → mesma mensagem de bloqueio (perfil não encontrado) ✓.
+3. Cadastrei narrador de teste, criei mesa "Mesa v0.24", vinculei Kael
+   Ironwood à mesa, criei "Perfil v0.24", defini Kael como personagem
+   ativo (fluxo v0.23), criei convite → `/join/<token>` → "Entrar como
+   perfil" → "Abrir ficha".
+4. `/ficha` abriu **direto no personagem certo** (Kael Ironwood, id
+   confirmado), texto de topo genérico ("Ficha...", sem "/dev/"), abas
+   visíveis: Geral/Atributos/Perícias/Recursos/Rolagens/Log/Mesa — **
+   sem "Personagens salvos" nem "Debug"** ✓. Mesa/Perfil aparecem como
+   texto fixo, com botões "Recarregar personagem"/"Sair do perfil" ✓.
+5. Enviei chat público pela aba Mesa: sucesso, sem erro de FK (após a
+   correção da seção 3); confirmado via SQL que `profile_session_id`
+   grava o id real da linha de `profile_sessions`, não o sessionId do
+   navegador.
+6. Rolei uma perícia: confirmado via SQL que `table_logs.character_id`
+   é o id real de Kael, `profile_id` o id real do perfil,
+   `profile_session_id` a sessão real — nunca vazio/fake.
+7. **Narrador vê tudo via /ficha, confirmado**: como o cookie do
+   narrador dono ainda estava ativo neste navegador, enviei uma
+   mensagem visibilidade "Narrador" (gm) pela aba Mesa do `/ficha` — a
+   própria mensagem apareceu na lista (porque `listLogsForViewer`
+   reconhece o dono independente da rota usada, `/ficha` incluído).
+   Comportamento **documentado como esperado**, não é vazamento — é a
+   mesma regra de "dono vê tudo" desde v0.20.
+8. Cliquei "Sair do perfil" em `/ficha` → bloqueio imediato
+   ("Você saiu deste perfil..."); **recarreguei a página** e confirmei
+   que o bloqueio é persistido no servidor (perfil realmente
+   desbloqueado no banco), não só estado local do React.
+9. No dashboard, desvinculei o personagem ativo do perfil → reabri
+   `/ficha` com os mesmos campaignId/profileId → **"Este perfil ainda
+   não tem personagem vinculado [...]"** ✓.
+10. `/dev/character-sheet` continua com TODAS as abas (incluindo
+    "Personagens salvos (2)" e "Debug") e o seletor livre de
+    mesa/perfil — comportamento de diagnóstico intocado ✓.
+11. Sem erros no console em nenhuma etapa. Mesa de teste apagada ao
+    final (SQL direto); confirmado que Kael Ironwood permaneceu no
+    banco, só perdendo o vínculo (`campaign_id`/`profile_id` → null).
+
+## 6. Escopo e riscos
+
+- `/ficha` nunca busca nem recebe a lista global de personagens/mesas
+  no servidor em modo product (nem só "esconde na UI" — o dado não é
+  buscado); nunca permite carregar um personagem por id arbitrário.
+- A validação de sessão (`validateProductSession`) é só tão forte
+  quanto o mecanismo de lock de perfil já existente (`lock_session_id`,
+  puramente app-layer, sem RLS restritiva em `campaign_profiles`) —
+  herda o mesmo risco documentado desde v0.9/v0.17 (ver v0.27 para
+  avaliação de endurecimento de RLS).
+- Sem expiração automática de sessão ainda (perfil "Bloqueado" para
+  sempre se o navegador nunca mandar heartbeat de novo e ninguém clicar
+  "Liberar" manualmente no dashboard) — ver v0.26.
+- Nenhuma RLS foi alterada nesta etapa.

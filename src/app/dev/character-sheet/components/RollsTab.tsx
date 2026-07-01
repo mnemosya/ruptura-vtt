@@ -96,6 +96,7 @@ export function RollsTab({
   characterNome,
   profileId,
   profileNickname,
+  profileSessionId,
 }: {
   atributos: CharacterAttributes;
   atributoDefinitions: AttributeDefinition[] | undefined;
@@ -112,6 +113,8 @@ export function RollsTab({
   /** Perfil selecionado na aba Geral (campaign_profiles) — anotado no payload das rolagens. */
   profileId: string | null;
   profileNickname: string | null;
+  /** sessionId do navegador (checkpoint v0.24) — anotado em table_logs.profile_session_id. */
+  profileSessionId?: string | null;
 }) {
   const atributoIds = ["corpo", "mente", "animo"] as const;
   const [atributoId, setAtributoId] = useState<(typeof atributoIds)[number]>("corpo");
@@ -140,6 +143,7 @@ export function RollsTab({
         campaignId,
         characterId: characterId ?? undefined,
         profileId,
+        profileSessionId,
         type: tipo,
         visibility: visibilidade,
         payload,

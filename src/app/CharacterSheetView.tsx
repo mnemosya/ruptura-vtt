@@ -3,6 +3,15 @@
  * real `/ficha` quanto pela rota dev `/dev/character-sheet`. Server
  * Component: busca regras_personagem, personagens e mesas, e renderiza
  * o CharacterSheetClient com a mesa/perfil pré-selecionados (via query).
+ *
+ * `mode` (checkpoint v0.24): "dev" mantém o comportamento anterior
+ * (lista global de personagens/mesas para o console de diagnóstico).
+ * "product" (`/ficha`) NUNCA busca a lista global — o personagem certo
+ * (o ativo do perfil da sessão real) é resolvido no cliente, depois de
+ * validar `sessionId` contra `lock_session_id` do perfil
+ * (validateProductSession, src/lib/table/storage.ts). Isso evita expor
+ * a lista global de personagens/mesas de outros narradores na rota de
+ * produto, mesmo que a UI não a exiba.
  */
 
 import { getCharacterRules } from "../lib/content";
@@ -15,9 +24,11 @@ import CharacterSheetClient from "./dev/character-sheet/CharacterSheetClient";
 export async function CharacterSheetView({
   campaignId,
   profileId,
+  mode = "dev",
 }: {
   campaignId: string | null;
   profileId: string | null;
+  mode?: "dev" | "product";
 }) {
   let regras: CharacterRulesPayload | null = null;
   let errorMessage: string | null = null;
@@ -45,17 +56,18 @@ export async function CharacterSheetView({
   const usandoFallback = !regras || regras.derivados.length === 0;
 
   let personagensSalvos: CharacterRecord[] = [];
-  try {
-    personagensSalvos = await listCharacters();
-  } catch {
-    // Lista vazia se a tabela characters estiver fora do ar; o Client mostra o erro ao salvar.
-  }
-
   let mesasIniciais: Campaign[] = [];
-  try {
-    mesasIniciais = await listCampaigns();
-  } catch {
-    // A ficha funciona sem mesa selecionada.
+  if (mode === "dev") {
+    try {
+      personagensSalvos = await listCharacters();
+    } catch {
+      // Lista vazia se a tabela characters estiver fora do ar; o Client mostra o erro ao salvar.
+    }
+    try {
+      mesasIniciais = await listCampaigns();
+    } catch {
+      // A ficha funciona sem mesa selecionada.
+    }
   }
 
   return (
@@ -66,6 +78,7 @@ export async function CharacterSheetView({
       mesasIniciais={mesasIniciais}
       initialCampaignId={campaignId}
       initialProfileId={profileId}
+      mode={mode}
     />
   );
 }

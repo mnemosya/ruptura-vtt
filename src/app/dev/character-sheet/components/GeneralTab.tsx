@@ -20,6 +20,7 @@ const selectStyle = {
 };
 
 export function GeneralTab({
+  mode = "dev",
   nome,
   characterId,
   schemaVersion,
@@ -44,6 +45,8 @@ export function GeneralTab({
   onEnterProfile,
   onLeaveProfile,
 }: {
+  /** "dev" (padrão) mantém os seletores de mesa/perfil; "product" (/ficha, v0.24) mostra mesa/perfil fixos como texto, sem seletor. */
+  mode?: "dev" | "product";
   nome: string;
   characterId: string | null;
   schemaVersion: number | undefined;
@@ -75,6 +78,8 @@ export function GeneralTab({
     ? personagens.find((p) => p.id === perfilSelecionado.active_character_id) ?? null
     : null;
   const estaNoPerfilSelecionado = perfilSelecionado != null && enteredProfileId === perfilSelecionado.id;
+  const mesaSelecionada = mesas.find((m) => m.id === selectedCampaignId) ?? null;
+
   return (
     <Section title="Geral">
       <ModeToggle mode={sheetMode} onChange={onModeChange} />
@@ -99,9 +104,11 @@ export function GeneralTab({
         <button onClick={onSave} disabled={saveState === "saving"} style={buttonStyle}>
           {saveState === "saving" ? "Salvando…" : "Salvar personagem"}
         </button>
-        <button onClick={onNew} style={buttonStyle}>
-          Novo personagem
-        </button>
+        {mode === "dev" && (
+          <button onClick={onNew} style={buttonStyle}>
+            Novo personagem
+          </button>
+        )}
         {saveState === "saved" && <span style={{ fontSize: 13, color: "#4caf50" }}>✓ Salvo</span>}
         {saveState === "error" && <span style={{ fontSize: 13, color: "#ff6b6b" }}>Erro: {errorMessage}</span>}
       </div>
@@ -111,74 +118,103 @@ export function GeneralTab({
         <span>schema version: {schemaVersion ?? "—"}</span>
       </div>
 
-      <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, marginBottom: 16 }}>
-        Mesa (opcional — rolagens também gravam no log persistente dela)
-        <select
-          data-testid="mesa-select"
-          value={selectedCampaignId ?? SEM_MESA}
-          onChange={(e) => onSelectCampaign(e.target.value === SEM_MESA ? null : e.target.value)}
-          style={selectStyle}
-        >
-          <option value={SEM_MESA}>Nenhuma mesa (só log local)</option>
-          {mesas.map((mesa) => (
-            <option key={mesa.id} value={mesa.id}>
-              {mesa.name}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      {selectedCampaignId && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12 }}>
-            Perfil nesta mesa (opcional — usado para "Carregar personagem ativo" e anotado nas rolagens)
+      {mode === "product" ? (
+        <div style={{ fontSize: 12, opacity: 0.7, display: "flex", flexDirection: "column", gap: 4, marginBottom: 16 }}>
+          <span>Mesa: {mesaSelecionada?.name ?? "—"}</span>
+          <span>Perfil: {perfilSelecionado?.nickname ?? "—"}</span>
+          <span data-testid="perfil-selecionado-status">Status: {perfilStatus ?? "—"}</span>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
+            <button data-testid="ficha-recarregar-button" onClick={onLoadPersonagemAtivo} style={buttonStyle}>
+              Recarregar personagem
+            </button>
+            {estaNoPerfilSelecionado && (
+              <button data-testid="perfil-sair-button" onClick={onLeaveProfile} style={buttonStyle}>
+                Sair do perfil
+              </button>
+            )}
+          </div>
+          <span style={{ fontSize: 11, opacity: 0.6 }}>
+            Heartbeat: id de sessão fica só no localStorage deste navegador. Sem heartbeat por 30s, outra
+            sessão pode assumir o perfil.
+          </span>
+          {profileWarning && (
+            <span data-testid="perfil-aviso" style={{ color: "#ffb84f" }}>
+              {profileWarning}
+            </span>
+          )}
+        </div>
+      ) : (
+        <>
+          <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, marginBottom: 16 }}>
+            Mesa (opcional — rolagens também gravam no log persistente dela)
             <select
-              data-testid="perfil-select"
-              value={selectedProfileId ?? SEM_PERFIL}
-              onChange={(e) => onSelectProfile(e.target.value === SEM_PERFIL ? null : e.target.value)}
+              data-testid="mesa-select"
+              value={selectedCampaignId ?? SEM_MESA}
+              onChange={(e) => onSelectCampaign(e.target.value === SEM_MESA ? null : e.target.value)}
               style={selectStyle}
             >
-              <option value={SEM_PERFIL}>Nenhum perfil</option>
-              {perfis.map((perfil) => (
-                <option key={perfil.id} value={perfil.id}>
-                  {perfil.nickname} ({perfil.is_locked ? "Bloqueado" : "Livre"})
+              <option value={SEM_MESA}>Nenhuma mesa (só log local)</option>
+              {mesas.map((mesa) => (
+                <option key={mesa.id} value={mesa.id}>
+                  {mesa.name}
                 </option>
               ))}
             </select>
           </label>
 
-          {perfilSelecionado && (
-            <div style={{ fontSize: 12, opacity: 0.7, display: "flex", flexDirection: "column", gap: 4 }}>
-              <span data-testid="perfil-selecionado-status">Status: {perfilStatus ?? "—"}</span>
-              <span data-testid="perfil-selecionado-personagem-ativo">
-                Personagem ativo: {personagemAtivo ? personagemAtivo.name : "nenhum"}
-              </span>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button onClick={onLoadPersonagemAtivo} style={buttonStyle}>
-                  Carregar personagem ativo
-                </button>
-                {estaNoPerfilSelecionado ? (
-                  <button data-testid="perfil-sair-button" onClick={onLeaveProfile} style={buttonStyle}>
-                    Sair do perfil
-                  </button>
-                ) : (
-                  <button data-testid="perfil-entrar-button" onClick={onEnterProfile} style={buttonStyle}>
-                    Entrar como perfil
-                  </button>
-                )}
-              </div>
-              <span style={{ fontSize: 11, opacity: 0.6 }}>
-                Heartbeat dev: id de sessão fica só no localStorage deste navegador (não é login). Sem heartbeat
-                por 30s, outra sessão pode assumir o perfil.
-              </span>
-              {profileWarning && (
-                <span data-testid="perfil-aviso" style={{ color: "#ffb84f" }}>
-                  {profileWarning}
-                </span>
+          {selectedCampaignId && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12 }}>
+                Perfil nesta mesa (opcional — usado para "Carregar personagem ativo" e anotado nas rolagens)
+                <select
+                  data-testid="perfil-select"
+                  value={selectedProfileId ?? SEM_PERFIL}
+                  onChange={(e) => onSelectProfile(e.target.value === SEM_PERFIL ? null : e.target.value)}
+                  style={selectStyle}
+                >
+                  <option value={SEM_PERFIL}>Nenhum perfil</option>
+                  {perfis.map((perfil) => (
+                    <option key={perfil.id} value={perfil.id}>
+                      {perfil.nickname} ({perfil.is_locked ? "Bloqueado" : "Livre"})
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {perfilSelecionado && (
+                <div style={{ fontSize: 12, opacity: 0.7, display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span data-testid="perfil-selecionado-status">Status: {perfilStatus ?? "—"}</span>
+                  <span data-testid="perfil-selecionado-personagem-ativo">
+                    Personagem ativo: {personagemAtivo ? personagemAtivo.name : "nenhum"}
+                  </span>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button onClick={onLoadPersonagemAtivo} style={buttonStyle}>
+                      Carregar personagem ativo
+                    </button>
+                    {estaNoPerfilSelecionado ? (
+                      <button data-testid="perfil-sair-button" onClick={onLeaveProfile} style={buttonStyle}>
+                        Sair do perfil
+                      </button>
+                    ) : (
+                      <button data-testid="perfil-entrar-button" onClick={onEnterProfile} style={buttonStyle}>
+                        Entrar como perfil
+                      </button>
+                    )}
+                  </div>
+                  <span style={{ fontSize: 11, opacity: 0.6 }}>
+                    Heartbeat dev: id de sessão fica só no localStorage deste navegador (não é login). Sem heartbeat
+                    por 30s, outra sessão pode assumir o perfil.
+                  </span>
+                  {profileWarning && (
+                    <span data-testid="perfil-aviso" style={{ color: "#ffb84f" }}>
+                      {profileWarning}
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           )}
-        </div>
+        </>
       )}
     </Section>
   );
