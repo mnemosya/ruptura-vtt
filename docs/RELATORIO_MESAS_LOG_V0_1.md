@@ -3975,3 +3975,130 @@ $ npx tsx scripts/dev/expire-profile-sessions.ts → roda limpo (0 sessões expi
   um jeito novo de perder o perfil, só formaliza no banco o que a UI
   já calculava sozinha desde v0.9.
 - Nenhuma RLS foi alterada nesta etapa.
+
+# Checkpoint v0.27 — Endurecimento parcial de RLS/dev_transition
+
+Auditoria completa das 6 tabelas com policies `*_dev_transition_*`
+(via `pg_policies`, não só grep no código) e endurecimento real de
+duas: **campaign_invites** e **campaigns**. As outras 4 continuam
+abertas — com o bloqueio concreto documentado em comentário SQL na
+própria policy (`comment on policy ...`), não só no relatório.
+
+## 1. Auditoria (classificação por tabela)
+
+| Tabela | Prioridade do checkpoint | Classificação | Motivo |
+|---|---|---|---|
+| `campaign_invites` | A | **Endurecida** (insert/update/delete) | Escritas só acontecem autenticado como dono da mesa (`/mesas`); nenhuma função apaga convites |
+| `campaigns` | E | **Endurecida** (insert/update/delete) | Nenhuma função faz update/delete; insert só autenticado no fluxo real |
+| `profile_sessions` | B | Ainda precisa de transição | insert/update rodam para jogador anônimo via heartbeat (/ficha, a cada 10s) |
+| `campaign_profiles` | D | Ainda precisa de transição | update é o próprio mecanismo de entrar/sair/heartbeat de perfil, jogador anônimo |
+| `table_logs` | C | Ainda precisa de transição (insert/select) | insert é a própria funcionalidade de chat/rolagem de jogador anônimo; update/delete já bloqueados por padrão (nenhuma policy existe para eles desde a migration 0003 — nada a fazer) |
+| `characters` | F | Depende de refactor de storage | `character/storage.ts` usa `getContentClient()` (client anon puro) para tudo — uma policy `owner_id = auth.uid()` nunca bateria hoje, porque a requisição nunca chega autenticada |
+
+**Critério de sucesso do checkpoint** ("pelo menos uma superfície real
+precisa ficar mais protegida sem quebrar o fluxo"): atendido —
+`campaign_invites` e `campaigns` tiveram insert/update/delete
+restritos a `authenticated` + dono real da mesa (`auth.uid()`).
+
+## 2. Migration `0013_harden_transitional_rls.sql`
+
+```sql
+-- A. campaign_invites: insert/update/delete de dev_transition removidas.
+drop policy if exists campaign_invites_dev_transition_insert on campaign_invites;
+drop policy if exists campaign_invites_dev_transition_update on campaign_invites;
+drop policy if exists campaign_invites_dev_transition_delete on campaign_invites;
+-- select mantida (comentário explica por quê — resolveCampaignInvite, anon).
+
+-- E. campaigns: insert/update/delete de dev_transition removidas.
+drop policy if exists campaigns_dev_transition_insert on campaigns;
+drop policy if exists campaigns_dev_transition_update on campaigns;
+drop policy if exists campaigns_dev_transition_delete on campaigns;
+-- select mantida (comentário explica por quê — getCampaign via /join e /ficha, anon).
+
+-- B, C, D, F: nenhuma policy removida — cada uma ganhou um
+-- `comment on policy` explicando o bloqueio concreto (ver migration).
+```
+
+Depois de remover as `dev_transition` de escrita, as policies
+`campaign_invites_owner_all`/`campaigns_owner_*` (já existentes desde
+as migrations 0006/0007, antes coexistindo sem efeito com as
+dev_transition) passam a ser as ÚNICAS que decidem insert/update/delete
+nessas duas tabelas — exigindo de fato `auth.uid()` = dono da mesa.
+
+**Nenhum client privilegiado novo (service role) foi necessário**: o
+fluxo de produto (`/mesas`) já sempre usa `getScopedTableClient()` com
+o JWT real do narrador logado desde o checkpoint v0.16 — bastava
+remover a concorrência das policies abertas. Service role continua
+nunca importada em nenhum Client Component (confirmado por `grep -rl
+SERVICE_ROLE src/app src/lib` — zero uso real, só o comentário de
+aviso já existente em `content/client.ts`).
+
+**Sem risco de lockout**: a mudança só restringe caminhos que já eram
+sempre autenticados no fluxo real (criar/revogar convite, criar mesa
+via `/mesas`) — `/login`, `/join/[token]` e `/ficha` continuam
+funcionando para visitantes anônimos porque o SELECT dessas duas
+tabelas foi deliberadamente mantido aberto.
+
+## 3. `content_documents`/`content_packs` — só verificação, sem alteração
+
+Confirmado via `pg_policies`: ambas seguem com apenas
+`*_public_read` (SELECT, anon+authenticated) — nenhuma policy tocada
+ou removida nesta etapa, conforme pedido.
+
+## 4. Build e testes
+
+```
+$ npm run build → ✓ (11 rotas, sem mudança de código/superfície — só SQL)
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca intacta
+```
+
+## 5. Teste manual (browser, ponta a ponta)
+
+1. Login como narrador → criei mesa "Mesa v0.27" (INSERT autenticado
+   em `campaigns`) ✓.
+2. Criei perfil, criei convite (INSERT autenticado em
+   `campaign_invites`) ✓; revoguei o convite (UPDATE autenticado) →
+   confirmado via SQL: `is_active=false`, `revoked_at` preenchido ✓.
+3. **Fiz logout** e abri `/join/<token>` como visitante genuinamente
+   anônimo (sem cookie de narrador) → convite resolveu normalmente,
+   mesa e perfil apareceram (SELECT anon em `campaigns`/
+   `campaign_invites` intacto) ✓.
+4. Entrei como perfil (anon, UPDATE em `campaign_profiles` — tabela
+   não tocada nesta etapa) → "Abrir ficha" → `/ficha` carregou
+   (`validateProductSession` lê `campaigns` via anon SELECT) →
+   corretamente mostrou "Este perfil ainda não tem personagem
+   vinculado" (sem personagem linkado, comportamento esperado) ✓.
+5. **Confirmei o efeito colateral aceito em `/dev/table`**: ainda
+   deslogado, selecionei uma mesa "sem dono (mesa dev legada)" e
+   tentei criar um convite → **erro exibido na UI**: `Falha ao criar
+   convite na mesa "...": new row violates row-level security policy
+   for table "campaign_invites"`. Isto é o comportamento **esperado e
+   documentado** (seção 2) — `/dev/table` é diagnóstico, não produto;
+   o narrador logado continua criando convites normalmente pelas suas
+   próprias mesas via `/mesas`.
+6. Sem erros de console em nenhum passo além do erro esperado do item
+   5 (que é tratado, não uma exceção não capturada). Limpeza: apaguei
+   a mesa de teste via SQL direto; mesas legadas pré-existentes
+   ("Mesa Teste Fase 0", "1") permaneceram intactas.
+
+## 6. Escopo e riscos
+
+- **RLS ainda NÃO é "segurança real" para a maior parte do sistema**:
+  `campaign_profiles`, `profile_sessions` e `table_logs` continuam com
+  `dev_transition` abertas para as operações que jogadores anônimos
+  realmente usam (entrar/sair/heartbeat de perfil, chat/rolagens) —
+  não há autenticação real de jogador ainda, então qualquer pessoa com
+  a anon key ainda pode, tecnicamente, escrever diretamente nessas
+  tabelas contornando a UI. Isso é o mesmo risco já documentado desde
+  v0.17, apenas confirmado e não resolvido nesta etapa (não podia ser,
+  sem quebrar o produto).
+- `characters` continua 100% sem RLS restritiva — bloqueio estrutural
+  (client anon puro em `character/storage.ts`), não só uma escolha de
+  prioridade; resolver isso é um refactor de storage, não desta
+  migration.
+- Efeito colateral aceito: `/dev/table` não consegue mais criar/revogar
+  convites quando ninguém está logado, ou para mesas de outro dono —
+  intencional (rota de diagnóstico, não de produto).
+- Nenhuma tabela teve linhas apagadas ou modificadas por esta migration
+  — só policies (metadados de acesso).
