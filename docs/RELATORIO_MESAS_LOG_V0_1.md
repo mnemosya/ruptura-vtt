@@ -2966,3 +2966,93 @@ Action aceita o parâmetro).
 - Risco de transição: RLS anon ainda aberta em `campaign_invites`
   (dev_transition) — a lista de token_hash é legível por anon (digests,
   não o token). A remover junto com as demais dev_transition.
+
+---
+
+# Checkpoint v0.19 — Sessão real de perfil
+
+Adiciona `profile_sessions`: sessões de perfil **rastreáveis e
+persistidas** (status/last_seen/histórico), que espelham o ciclo de
+vida antes preso ao `lock_session_id` (localStorage). Entrega
+**mínima-funcional** (documentada): augmenta as Server Actions de
+enter/heartbeat/leave/release existentes para manter a linha de sessão,
+sem tocar no heartbeat do cliente (evita risco na ficha).
+
+## 1. Migration 0009 — `profile_sessions`
+
+Colunas: `id`, `campaign_id` (FK cascade), `profile_id` (FK cascade),
+`invite_id` (FK campaign_invites, nullable), `session_token_hash`,
+`status` (`active`/`exited`/`expired`/`released`, check), `created_at`,
+`last_seen_at`, `exited_at`, `released_at`, `user_agent`. Índices em
+campaign_id, profile_id, (profile_id, token) e (profile_id, status).
+RLS: dev_transition (anon aberto, fluxo de jogador é anon) + owner_all.
+
+**Decisões documentadas:** (a) NÃO adicionei
+`campaign_profiles.active_session_id` — a sessão ativa é derivada por
+query (`status='active'`), evitando FK circular e escrita extra; (b) o
+"token de sessão" hoje é o `sha256(sessionId do navegador)` — estável
+por navegador, não um token único por sessão. Suficiente para
+rastrear/liberar; token por-sessão distinto fica como pendência.
+
+## 2. Augmentação das Server Actions (sem mudar o cliente)
+
+`enterCampaignProfile(profileId, sessionId, inviteId?)` — ganhou o
+parâmetro `inviteId` (vincula a sessão ao convite). Cada função de
+lock agora também mantém `profile_sessions` (best-effort, silenciado
+para nunca derrubar o lock):
+- **enter** → upsert sessão `active` (cria ou reativa), `last_seen=now`.
+- **heartbeat** → atualiza `last_seen_at` da sessão ativa.
+- **leave** → sessão `exited`, `exited_at=now`.
+- **forceRelease** → sessão(ões) ativa(s) `released`, `released_at=now`.
+
+Novas leituras: `listProfileSessions(campaignId)`,
+`getActiveProfileSession(profileId)` — ambas sem `session_token_hash`
+(tipo `ProfileSession` seguro + `PROFILE_SESSION_SAFE_COLUMNS`).
+
+## 3. UI
+
+- `/join/[token]` passa `inviteId` ao `JoinClient` → a sessão criada ao
+  entrar fica vinculada ao convite.
+- `/dev/table`: cada cartão de perfil mostra a sessão ativa ("ativa ·
+  último sinal … · via convite" ou "nenhuma sessão ativa"); "Liberar
+  perfil" agora também marca a sessão como `released`.
+- Heartbeat do cliente (ficha/join) **inalterado** — segue usando o
+  fluxo de sessionId, que agora também alimenta profile_sessions no
+  servidor. Compat total.
+
+## 4. Testes
+
+```
+$ npm run build → ✓
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca intacta
+```
+
+Script determinístico (removido ao final):
+1. enter S1 → sessão `active` com last_seen ✓
+2. heartbeat S1 ✓
+3. segunda sessão S2 bloqueada (perfil em uso) ✓
+4. leave S1 → `exited` + exited_at, sem sessão ativa ✓
+5. reentrar + forceRelease → sessão `released` + released_at ✓
+6. `session_token_hash` ausente do tipo retornado ✓
+
+Manual (browser, logado): criar mesa+perfil+convite → entrar por
+`/join/<token>` → `/dev/table` mostrou "Sessão: ativa · último sinal … ·
+via convite" → "Liberar perfil" → "nenhuma sessão ativa". Sem erros.
+
+## 5. Escopo / pendências
+
+- **Bloquear segunda sessão ativa**: ✓ (via lock existente, agora com
+  sessão rastreada).
+- **Expiração → `expired`**: a coluna e o status existem; hoje a
+  expiração é decidida no cliente (como no lock) e o narrador libera
+  (→released). Marcar `expired` automaticamente por job/cron fica como
+  pendência (sem Realtime/cron nesta sessão).
+- **Token por-sessão distinto do id do navegador**: pendência (hoje
+  sha256 do sessionId).
+- **Ficha retoma sessão existente**: já funciona via o mesmo sessionId
+  (o resume-heartbeat do v0.10 revalida o lock e o heartbeat alimenta a
+  sessão). Não foi preciso mudar a ficha.
+- Compat dev com `lock_session_id` mantida (legado, documentado).
+- Riscos de RLS de transição inalterados (profile_sessions também tem
+  dev_transition anon aberto — a remover no endurecimento futuro).

@@ -31,9 +31,11 @@ interface Props {
   personagens: CharacterRecord[];
   /** "dev" = /dev/join/[campaignId] (id cru, inseguro); "invite" = /join/[token] (convite real). */
   variant?: "dev" | "invite";
+  /** Id do convite (quando entrou por /join/[token]) — vincula a sessão de perfil ao convite. */
+  inviteId?: string | null;
 }
 
-export default function JoinClient({ campaign, perfisIniciais, personagens, variant = "dev" }: Props) {
+export default function JoinClient({ campaign, perfisIniciais, personagens, variant = "dev", inviteId = null }: Props) {
   const [perfis, setPerfis] = useState<CampaignProfile[]>(perfisIniciais);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [enteredProfileId, setEnteredProfileId] = useState<string | null>(null);
@@ -72,7 +74,7 @@ export default function JoinClient({ campaign, perfisIniciais, personagens, vari
     if (!sessionId) return;
     setErrorMessage(null);
     try {
-      const updated = await enterCampaignProfile(profileId, sessionId);
+      const updated = await enterCampaignProfile(profileId, sessionId, inviteId);
       setPerfis((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
       setEnteredProfileId(updated.id);
     } catch (err) {

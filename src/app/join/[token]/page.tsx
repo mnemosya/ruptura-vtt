@@ -73,5 +73,13 @@ export default async function InviteJoinPage({ params }: PageProps) {
     // JoinClient lida com lista vazia.
   }
 
-  return <JoinClient campaign={campaign} perfisIniciais={perfisIniciais} personagens={personagens} variant="invite" />;
+  return (
+    <JoinClient
+      campaign={campaign}
+      perfisIniciais={perfisIniciais}
+      personagens={personagens}
+      variant="invite"
+      inviteId={resolved.inviteId ?? null}
+    />
+  );
 }

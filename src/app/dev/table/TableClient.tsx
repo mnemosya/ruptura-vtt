@@ -21,6 +21,7 @@ import {
   createCampaignInvite,
   listCampaignInvites,
   revokeCampaignInvite,
+  listProfileSessions,
 } from "../../../lib/table/storage";
 import {
   TABLE_LOG_VISIBILITIES,
@@ -28,6 +29,7 @@ import {
   type Campaign,
   type CampaignInvite,
   type CampaignProfile,
+  type ProfileSession,
   type TableLogEntry,
   type TableLogVisibility,
 } from "../../../lib/table";
@@ -155,6 +157,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
   const [novoPerfilApelido, setNovoPerfilApelido] = useState("");
   const [loadingPerfis, setLoadingPerfis] = useState(false);
   const [mesaOwnerFiltro, setMesaOwnerFiltro] = useState<MesaOwnerFilter>("todas");
+  const [sessoes, setSessoes] = useState<ProfileSession[]>([]);
   const [convites, setConvites] = useState<CampaignInvite[]>([]);
   const [novoConviteLabel, setNovoConviteLabel] = useState("");
   const [conviteLinkNovo, setConviteLinkNovo] = useState<string | null>(null);
@@ -249,11 +252,17 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     setLoadingPerfis(true);
     try {
       setPerfis(await listCampaignProfiles(campaignId));
+      setSessoes(await listProfileSessions(campaignId));
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao carregar perfis.");
     } finally {
       setLoadingPerfis(false);
     }
+  }
+
+  /** Sessão ativa de um perfil (ou null) — derivada da lista carregada. */
+  function activeSessionOf(profileId: string): ProfileSession | null {
+    return sessoes.find((s) => s.profile_id === profileId && s.status === "active") ?? null;
   }
 
   async function handleCreatePerfil() {
@@ -598,6 +607,16 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                         Liberar perfil
                       </button>
                     </div>
+                    {(() => {
+                      const sess = activeSessionOf(perfil.id);
+                      return (
+                        <div data-testid={`perfil-sessao-${perfil.id}`} style={{ fontSize: 11, opacity: 0.7 }}>
+                          Sessão: {sess
+                            ? `ativa · último sinal ${formatLastSeen(sess.last_seen_at)}${sess.invite_id ? " · via convite" : ""}`
+                            : "nenhuma sessão ativa"}
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })}

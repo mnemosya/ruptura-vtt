@@ -26,8 +26,8 @@ import { createHash, randomBytes } from "node:crypto";
 import { getScopedTableClient } from "../auth/scopedClient";
 import { getCurrentUser } from "../auth/session";
 import { TableStorageError } from "./storage.errors";
-import { PROFILE_HEARTBEAT_TIMEOUT_MS, CAMPAIGN_INVITE_SAFE_COLUMNS } from "./types";
-import type { Campaign, CampaignInvite, CampaignProfile, TableLogEntry, TableLogVisibility } from "./types";
+import { PROFILE_HEARTBEAT_TIMEOUT_MS, CAMPAIGN_INVITE_SAFE_COLUMNS, PROFILE_SESSION_SAFE_COLUMNS } from "./types";
+import type { Campaign, CampaignInvite, CampaignProfile, ProfileSession, TableLogEntry, TableLogVisibility } from "./types";
 
 /**
  * Id do narrador logado (auth dev, checkpoint v0.13) ou null. Best
@@ -48,10 +48,82 @@ const CAMPAIGNS_TABLE = "campaigns";
 const TABLE_LOGS_TABLE = "table_logs";
 const CAMPAIGN_PROFILES_TABLE = "campaign_profiles";
 const CAMPAIGN_INVITES_TABLE = "campaign_invites";
+const PROFILE_SESSIONS_TABLE = "profile_sessions";
 
-/** Hash SHA-256 (hex) de um token de convite. O banco só guarda o hash. */
+/** Hash SHA-256 (hex). O banco só guarda hashes de tokens, nunca o bruto. */
+function sha256hex(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+/** Alias legível para hash de token de convite. */
 function hashInviteToken(rawToken: string): string {
-  return createHash("sha256").update(rawToken).digest("hex");
+  return sha256hex(rawToken);
+}
+
+/**
+ * Mantém a linha de `profile_sessions` (migration 0009) espelhando o
+ * ciclo de vida do lock de perfil. `sessionId` é o mesmo id do navegador
+ * que já flui pelas funções de enter/heartbeat/leave/release; guardamos
+ * só o hash. Best-effort: falhas aqui são silenciadas para NUNCA quebrar
+ * o fluxo de lock já existente (a sessão é uma camada de rastreio/
+ * visibilidade, não o mecanismo de lock em si).
+ */
+async function upsertActiveProfileSession(
+  client: Awaited<ReturnType<typeof getScopedTableClient>>,
+  profile: CampaignProfile,
+  sessionId: string,
+  inviteId?: string | null,
+): Promise<void> {
+  const tokenHash = sha256hex(sessionId);
+  try {
+    const { data: existing } = await client
+      .from(PROFILE_SESSIONS_TABLE)
+      .select("id, status")
+      .eq("profile_id", profile.id)
+      .eq("session_token_hash", tokenHash)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const nowIso = new Date().toISOString();
+    if (existing) {
+      // Reativa a sessão desta mesma origem (ex.: reentrou após sair/expirar).
+      await client
+        .from(PROFILE_SESSIONS_TABLE)
+        .update({ status: "active", last_seen_at: nowIso, exited_at: null, released_at: null })
+        .eq("id", (existing as { id: string }).id);
+    } else {
+      await client.from(PROFILE_SESSIONS_TABLE).insert({
+        campaign_id: profile.campaign_id,
+        profile_id: profile.id,
+        invite_id: inviteId ?? null,
+        session_token_hash: tokenHash,
+        status: "active",
+        last_seen_at: nowIso,
+      });
+    }
+  } catch {
+    // silencioso — camada de rastreio não pode derrubar o lock.
+  }
+}
+
+/** Marca a(s) sessão(ões) ativa(s) de um perfil com um status terminal (best-effort). */
+async function markProfileSessions(
+  client: Awaited<ReturnType<typeof getScopedTableClient>>,
+  profileId: string,
+  status: "exited" | "released" | "expired",
+  opts?: { sessionId?: string },
+): Promise<void> {
+  try {
+    const patch: Record<string, unknown> = { status };
+    if (status === "exited") patch.exited_at = new Date().toISOString();
+    if (status === "released") patch.released_at = new Date().toISOString();
+    let q = client.from(PROFILE_SESSIONS_TABLE).update(patch).eq("profile_id", profileId).eq("status", "active");
+    if (opts?.sessionId) q = q.eq("session_token_hash", sha256hex(opts.sessionId));
+    await q;
+  } catch {
+    // silencioso.
+  }
 }
 
 /**
@@ -259,7 +331,11 @@ function isProfileExpired(profile: CampaignProfile): boolean {
  * mais de PROFILE_HEARTBEAT_TIMEOUT_MS). Caso contrário, lança erro
  * (perfil em uso por outra sessão ativa).
  */
-export async function enterCampaignProfile(profileId: string, sessionId: string): Promise<CampaignProfile> {
+export async function enterCampaignProfile(
+  profileId: string,
+  sessionId: string,
+  inviteId?: string | null,
+): Promise<CampaignProfile> {
   const client = await getScopedTableClient();
   const { data: existing, error: fetchError } = await client
     .from(CAMPAIGN_PROFILES_TABLE)
@@ -296,7 +372,9 @@ export async function enterCampaignProfile(profileId: string, sessionId: string)
   if (error) {
     throw new TableStorageError(`Falha ao entrar no perfil "${profileId}": ${error.message}`, error);
   }
-  return data as CampaignProfile;
+  const updatedProfile = data as CampaignProfile;
+  await upsertActiveProfileSession(client, updatedProfile, sessionId, inviteId);
+  return updatedProfile;
 }
 
 /**
@@ -320,6 +398,17 @@ export async function heartbeatCampaignProfile(profileId: string, sessionId: str
       `Heartbeat rejeitado para o perfil "${profileId}" — sessão não é mais a dona do bloqueio: ${error.message}`,
       error,
     );
+  }
+  // Espelha o last_seen na sessão ativa desta origem (best-effort).
+  try {
+    await client
+      .from(PROFILE_SESSIONS_TABLE)
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq("profile_id", profileId)
+      .eq("session_token_hash", sha256hex(sessionId))
+      .eq("status", "active");
+  } catch {
+    // silencioso.
   }
   return data as CampaignProfile;
 }
@@ -345,6 +434,7 @@ export async function leaveCampaignProfile(profileId: string, sessionId: string)
       error,
     );
   }
+  await markProfileSessions(client, profileId, "exited", { sessionId });
   return data as CampaignProfile;
 }
 
@@ -365,7 +455,45 @@ export async function forceReleaseCampaignProfile(profileId: string): Promise<Ca
   if (error) {
     throw new TableStorageError(`Falha ao liberar perfil "${profileId}": ${error.message}`, error);
   }
+  await markProfileSessions(client, profileId, "released");
   return data as CampaignProfile;
+}
+
+// =====================================================================
+// Sessões de perfil — leitura (profile_sessions, migration 0009)
+// =====================================================================
+
+/** Lista as sessões de uma mesa (mais recentes primeiro). Nunca retorna o hash do token. */
+export async function listProfileSessions(campaignId: string): Promise<ProfileSession[]> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from(PROFILE_SESSIONS_TABLE)
+    .select(PROFILE_SESSION_SAFE_COLUMNS)
+    .eq("campaign_id", campaignId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new TableStorageError(`Falha ao listar sessões da mesa "${campaignId}": ${error.message}`, error);
+  }
+  return (data as ProfileSession[]) ?? [];
+}
+
+/** Status resumido da sessão ativa de um perfil (ou null se não houver). */
+export async function getActiveProfileSession(profileId: string): Promise<ProfileSession | null> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from(PROFILE_SESSIONS_TABLE)
+    .select(PROFILE_SESSION_SAFE_COLUMNS)
+    .eq("profile_id", profileId)
+    .eq("status", "active")
+    .order("last_seen_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new TableStorageError(`Falha ao ler sessão ativa do perfil "${profileId}": ${error.message}`, error);
+  }
+  return (data as ProfileSession | null) ?? null;
 }
 
 // =====================================================================

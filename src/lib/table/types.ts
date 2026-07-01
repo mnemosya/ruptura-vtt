@@ -89,3 +89,28 @@ export interface CampaignInvite {
 /** Colunas seguras de `campaign_invites` (nunca token_hash) — usado nos selects. */
 export const CAMPAIGN_INVITE_SAFE_COLUMNS =
   "id, campaign_id, label, is_active, expires_at, created_by, created_at, revoked_at";
+
+/** Status de uma sessão de perfil (tabela `profile_sessions`, migration 0009). */
+export type ProfileSessionStatus = "active" | "exited" | "expired" | "released";
+
+/**
+ * Sessão de perfil (migration 0009). Tipo PÚBLICO seguro: NÃO inclui
+ * `session_token_hash`. Rastreia o ciclo de vida de uma entrada de
+ * jogador num perfil (status/last_seen/histórico).
+ */
+export interface ProfileSession {
+  id: string;
+  campaign_id: string;
+  profile_id: string;
+  invite_id: string | null;
+  status: ProfileSessionStatus;
+  created_at: string;
+  last_seen_at: string;
+  exited_at: string | null;
+  released_at: string | null;
+  user_agent: string | null;
+}
+
+/** Colunas seguras de `profile_sessions` (nunca session_token_hash). */
+export const PROFILE_SESSION_SAFE_COLUMNS =
+  "id, campaign_id, profile_id, invite_id, status, created_at, last_seen_at, exited_at, released_at, user_agent";
