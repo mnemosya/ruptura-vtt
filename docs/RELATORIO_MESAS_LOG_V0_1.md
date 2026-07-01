@@ -2593,3 +2593,173 @@ que eu peça a remoção, ou remova pelo painel Supabase (Authentication
 
 A mesa de teste "Mesa Owner Teste v0.16" (criada e usada só para
 confirmar o `owner_id`) foi removida ao final desta validação.
+
+---
+
+# Checkpoint v0.16 — Storage autenticado de mesa
+
+Prepara as Server Actions de mesa/perfil/log para operar com sessão
+autenticada quando há narrador logado, **sem cortar o modo dev anon**.
+Criado um helper novo (`getScopedTableClient`) que decide, por request,
+se usa anon puro ou anon+JWT do usuário. Nenhuma policy dev-anon
+removida; RLS segue em modo de transição (checkpoint v0.14).
+
+## 1. Helper novo: `src/lib/auth/scopedClient.ts`
+
+`getScopedTableClient(): Promise<SupabaseClient>` — sempre
+`SUPABASE_URL`+`SUPABASE_ANON_KEY` (nunca service role):
+
+- **Sem sessão** (cookie ausente, ou fora de um contexto de request —
+  ex.: scripts node): client anon puro, comportamento **idêntico** ao
+  de antes deste checkpoint.
+- **Com sessão**: lê os tokens do cookie httpOnly (`readAuthTokens()`,
+  já existente desde o v0.13) e chama
+  `client.auth.setSession({ access_token, refresh_token })` — a partir
+  daí, as requisições ao PostgREST carregam
+  `Authorization: Bearer <access_token>`, e `auth.uid()` resolve nas
+  policies RLS owner-scoped (migration 0006).
+- **Falha ao anexar sessão** (token expirado/inválido): capturada e
+  ignorada — cai para o client anon puro em vez de lançar erro. Nunca
+  quebra uma Server Action por causa de auth.
+- **Nunca cacheado como singleton** — cada chamada monta um client
+  novo lendo o cookie da request atual. Cachear misturaria a sessão de
+  um narrador com a de outro entre requests diferentes (diferente de
+  `getContentClient()`, que é cacheado porque é sempre anon puro e sem
+  estado por request).
+
+## 2. `src/lib/table/storage.ts` — todas as 13 funções migradas
+
+`createCampaign`, `listCampaigns`, `getCampaign`,
+`createCampaignProfile`, `listCampaignProfiles`,
+`setCampaignProfileLocked`, `setCampaignProfileActiveCharacter`,
+`enterCampaignProfile`, `heartbeatCampaignProfile`,
+`leaveCampaignProfile`, `forceReleaseCampaignProfile`, `addLog`,
+`listLogs` — todas trocaram `const client = getContentClient();` por
+`const client = await getScopedTableClient();`. Nenhuma outra mudança
+de lógica em nenhuma delas. `currentOwnerId()` (usado por
+`createCampaign` para carimbar `owner_id`) não mudou — continua usando
+`getCurrentUser()` (que lê o mesmo cookie, mas via `getUser()`, não via
+`setSession()`).
+
+## 3. UI em `/dev/table`
+
+- Novo filtro `<select data-testid="mesa-owner-filtro-select">`:
+  "Todas as mesas dev" / "Minhas mesas" / "Mesas sem dono" — puramente
+  client-side, filtra a lista já carregada (sem nova query).
+- Cada cartão de mesa ganhou um badge: **"Sua mesa"** (verde,
+  `owner_id === currentUserId`), **"Sem dono (mesa dev legada)"**
+  (âmbar, `owner_id == null`), ou **"De outro narrador"** (cinza, tem
+  dono mas não é o logado).
+- Aviso "Minhas mesas" sem login: mensagem explicando que, sem sessão,
+  não há como identificar "suas" mesas.
+- Banner de logado reforçado: "...RLS ainda em modo de transição — as
+  policies dev-anon continuam abertas, então isto não é segurança real
+  ainda (ver checkpoint v0.14/v0.16)."
+
+## 4. Resultado do build e dos testes
+
+```
+$ npm run build
+✓ Compiled successfully
+Route (app): /dev/auth/status, /dev/character-sheet,
+             /dev/join/[campaignId], /dev/login, /dev/table
+
+$ npm run test:character-storage
+=== test-character-storage: TODOS OS PASSOS PASSARAM ===
+
+$ npm run test:content-read
+(Biblioteca do Sistema lê normalmente — não tocada)
+```
+
+Todos passaram sem erros.
+
+## 5. Resultado do teste manual — logado
+
+Login com o narrador dev confirmado (`ruptura.dev.narrador.checkpoint016@gmail.com`,
+validado no addendum do v0.15):
+
+1. `/dev/table` → banner "Narrador logado" + aviso de RLS em transição;
+   filtro com as 3 opções pedidas.
+2. Criei "Mesa Autenticada v0.16" logado — confirmado via storage
+   (`listCampaigns`, script auxiliar) que `owner_id` = id do narrador
+   logado. Badge "Sua mesa" apareceu no cartão.
+3. Filtro "Minhas mesas" → só essa mesa (1/3). Filtro "Mesas sem dono"
+   → as 2 mesas legadas (2/3).
+4. Criei o perfil "Perfil Logado v0.16" nessa mesa e vinculei Kael
+   Ironwood como personagem ativo — funcionou normalmente (mesmas
+   Server Actions, agora com client autenticado).
+5. `/dev/join/<id>` → mesa e perfil carregaram normalmente; "Entrar
+   como perfil" → "Abrir ficha".
+6. Ficha: mesa/perfil pré-selecionados, status "Em uso por esta aba",
+   "Carregar personagem ativo" → Kael carregado.
+7. Aba Mesa → enviei chat "Chat via mesa autenticada v0.16" — gravado
+   e exibido corretamente.
+8. Aba Rolagens → rolei uma perícia — persistida sem erro
+   (`roll-persist-erro` ausente).
+9. **Heartbeat confirmado funcionando** com o client autenticado:
+   testei `heartbeatCampaignProfile` diretamente (script auxiliar) e
+   confirmei `last_seen_at` avançando entre checagens reais durante o
+   teste manual (não quebrou com a troca de client).
+10. Sem erros no console durante toda a sequência.
+
+## 6. Resultado do teste manual — deslogado
+
+1. "Sair" em `/dev/auth/status` → redirecionou para `/dev/login`.
+2. `/dev/table` deslogado → banner "Nenhum narrador logado"; a mesa
+   criada no passo anterior agora mostra badge **"De outro narrador"**
+   (porque ninguém está logado com aquele `owner_id`); as mesas
+   legadas continuam "Sem dono".
+3. `/dev/join/<id>` (mesma mesa autenticada) → abriu normalmente,
+   perfil listado — confirma que policies dev-anon seguem abertas e o
+   fluxo de jogador anon não quebrou.
+4. `/dev/character-sheet` → abre normalmente (abas presentes, incluindo
+   "Mesa").
+5. Sem erros no console.
+
+Resultado: **todos os passos (logado e deslogado) passaram**.
+
+## 7. Limpeza
+
+Mesa "Mesa Autenticada v0.16" removida ao final (cascade apagou o
+perfil e os logs associados, via `on delete cascade` das migrations
+0003/0004). Scripts auxiliares de teste/limpeza criados e removidos na
+mesma sessão, nunca commitados.
+
+## 8. Confirmação de escopo
+
+- **Policies dev-anon**: nenhuma removida.
+- **RLS real**: não endurecida neste checkpoint — ainda modo de
+  transição.
+- **`/dev/join`**: não quebrado (testado logado e deslogado).
+- **`/dev/character-sheet`**: não quebrado (testado logado e
+  deslogado).
+- **Heartbeat**: não quebrado — confirmado funcionando com o client
+  autenticado.
+- **Biblioteca do Sistema**: não tocada.
+- **Inventário, magia, combate, condições**: não implementados.
+- **Service role no frontend**: não usada — `scopedClient.ts` usa só
+  anon key + token de sessão do próprio usuário, nunca a service role.
+- Nenhuma chave secreta exposta: scripts auxiliares usaram só
+  `SUPABASE_URL`/`SUPABASE_ANON_KEY`, criados e removidos na mesma
+  sessão, nunca commitados.
+
+## 9. Pendências / riscos de segurança remanescentes
+
+- **Ainda não é segurança real**: como as policies dev-anon coexistem
+  com as owner-scoped (PERMISSIVE + OR), qualquer cliente com a anon
+  key — logado ou não — continua podendo ler/criar/editar/apagar
+  qualquer mesa, perfil, log ou personagem. O storage autenticado
+  prepara o mecanismo (JWT chega ao PostgREST), mas não restringe nada
+  sozinho.
+- **Sem refresh automático de sessão**: `getScopedTableClient` usa os
+  mesmos tokens do cookie a cada request; se o access token expirar
+  (~1h) e o refresh implícito de `setSession` falhar, a Server Action
+  cai para anon silenciosamente — aceitável para não quebrar o fluxo,
+  mas significa que uma sessão "expirada" não é sinalizada ao usuário
+  além do comportamento normal de app anon.
+- **`forceReleaseCampaignProfile`/heartbeat**: continuam sem checagem
+  de identidade real (qualquer um pode liberar/entrar em perfis).
+- **Link de `/dev/join`**: continua inseguro (id em texto puro).
+- Ativar segurança real continua exigindo os pré-requisitos já
+  documentados no checkpoint v0.14 (auth de jogador + dropar as
+  policies dev-anon).

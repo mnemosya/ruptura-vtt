@@ -116,14 +116,25 @@ const VISIBILITY_FILTER_LABELS: Record<VisibilityFilter, string> = {
   gm: "Narrador",
 };
 
+const MESA_OWNER_FILTERS = ["todas", "minhas", "sem_dono"] as const;
+type MesaOwnerFilter = (typeof MESA_OWNER_FILTERS)[number];
+
+const MESA_OWNER_FILTER_LABELS: Record<MesaOwnerFilter, string> = {
+  todas: "Todas as mesas dev",
+  minhas: "Minhas mesas",
+  sem_dono: "Mesas sem dono",
+};
+
 interface Props {
   mesasIniciais: Campaign[];
   personagensIniciais: CharacterRecord[];
   /** Email do narrador logado (auth dev, checkpoint v0.13) — null se não logado. Só informativo. */
   currentUserEmail: string | null;
+  /** Id do narrador logado (checkpoint v0.16) — usado para comparar com campaigns.owner_id. */
+  currentUserId: string | null;
 }
 
-export default function TableClient({ mesasIniciais, personagensIniciais, currentUserEmail }: Props) {
+export default function TableClient({ mesasIniciais, personagensIniciais, currentUserEmail, currentUserId }: Props) {
   const [mesas, setMesas] = useState<Campaign[]>(mesasIniciais);
   const [personagens] = useState<CharacterRecord[]>(personagensIniciais);
   const [novaMesaNome, setNovaMesaNome] = useState("");
@@ -139,6 +150,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
   const [perfis, setPerfis] = useState<CampaignProfile[]>([]);
   const [novoPerfilApelido, setNovoPerfilApelido] = useState("");
   const [loadingPerfis, setLoadingPerfis] = useState(false);
+  const [mesaOwnerFiltro, setMesaOwnerFiltro] = useState<MesaOwnerFilter>("todas");
   // Tick local (5s) só para recalcular "parece expirado" comparando
   // last_seen_at já carregado com Date.now() — não busca nada novo do
   // servidor (ver mesmo padrão em CharacterSheetClient).
@@ -298,6 +310,11 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
   const mesaAtual = mesas.find((m) => m.id === selectedCampaignId);
   const logsFiltrados =
     visibilidadeFiltro === "todos" ? logs : logs.filter((entry) => entry.visibility === visibilidadeFiltro);
+  const mesasFiltradas = mesas.filter((mesa) => {
+    if (mesaOwnerFiltro === "minhas") return currentUserId != null && mesa.owner_id === currentUserId;
+    if (mesaOwnerFiltro === "sem_dono") return mesa.owner_id == null;
+    return true;
+  });
 
   return (
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
@@ -313,7 +330,9 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
           style={{ fontSize: 12, marginBottom: 16, padding: "8px 12px", background: "#15301a", border: "1px solid #2a5a35", borderRadius: 6 }}
         >
           Narrador logado: <strong>{currentUserEmail}</strong> ·{" "}
-          <a href="/dev/auth/status" style={{ color: "#5ec8ff" }}>status</a>
+          <a href="/dev/auth/status" style={{ color: "#5ec8ff" }}>status</a>. RLS ainda em modo de
+          transição — as policies dev-anon continuam abertas, então isto não é segurança real
+          ainda (ver checkpoint v0.14/v0.16).
         </p>
       ) : (
         <p
@@ -349,33 +368,68 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       </section>
 
       <section style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, opacity: 0.6, marginBottom: 12 }}>
-          Mesas ({mesas.length})
-        </h2>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+          <h2 style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, opacity: 0.6 }}>
+            Mesas ({mesasFiltradas.length}/{mesas.length})
+          </h2>
+          <select
+            data-testid="mesa-owner-filtro-select"
+            value={mesaOwnerFiltro}
+            onChange={(e) => setMesaOwnerFiltro(e.target.value as MesaOwnerFilter)}
+            style={inputStyle}
+          >
+            {MESA_OWNER_FILTERS.map((f) => (
+              <option key={f} value={f}>
+                {MESA_OWNER_FILTER_LABELS[f]}
+              </option>
+            ))}
+          </select>
+        </div>
+        {!currentUserId && mesaOwnerFiltro === "minhas" && (
+          <p style={{ fontSize: 11, opacity: 0.6, marginBottom: 12 }}>
+            Sem login, "Minhas mesas" não tem como identificar você — a lista fica vazia. Entre em{" "}
+            <a href="/dev/login" style={{ color: "#5ec8ff" }}>/dev/login</a>.
+          </p>
+        )}
         {mesas.length === 0 && <p style={{ fontSize: 13, opacity: 0.6 }}>Nenhuma mesa criada ainda.</p>}
+        {mesas.length > 0 && mesasFiltradas.length === 0 && (
+          <p style={{ fontSize: 13, opacity: 0.6 }}>Nenhuma mesa com esse filtro.</p>
+        )}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {mesas.map((mesa) => (
-            <div
-              key={mesa.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 12,
-                background: mesa.id === selectedCampaignId ? "#26283280" : "#1d1e24",
-                borderRadius: 8,
-                padding: "10px 14px",
-              }}
-            >
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>{mesa.name}</div>
-                <div style={{ fontSize: 11, opacity: 0.5 }}>{mesa.id}</div>
+          {mesasFiltradas.map((mesa) => {
+            const isMinha = currentUserId != null && mesa.owner_id === currentUserId;
+            const semDono = mesa.owner_id == null;
+            const ownerLabel = isMinha ? "Sua mesa" : semDono ? "Sem dono (mesa dev legada)" : "De outro narrador";
+            const ownerColor = isMinha ? "#7fd99a" : semDono ? "#ffb84f" : "#888";
+
+            return (
+              <div
+                key={mesa.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  background: mesa.id === selectedCampaignId ? "#26283280" : "#1d1e24",
+                  borderRadius: 8,
+                  padding: "10px 14px",
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>
+                    {mesa.name}{" "}
+                    <span data-testid={`mesa-owner-badge-${mesa.id}`} style={{ fontSize: 11, fontWeight: 400, color: ownerColor }}>
+                      · {ownerLabel}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, opacity: 0.5 }}>{mesa.id}</div>
+                </div>
+                <button data-testid={`selecionar-mesa-${mesa.id}`} onClick={() => handleSelectMesa(mesa.id)} style={buttonStyle}>
+                  {mesa.id === selectedCampaignId ? "Selecionada" : "Selecionar"}
+                </button>
               </div>
-              <button data-testid={`selecionar-mesa-${mesa.id}`} onClick={() => handleSelectMesa(mesa.id)} style={buttonStyle}>
-                {mesa.id === selectedCampaignId ? "Selecionada" : "Selecionar"}
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 

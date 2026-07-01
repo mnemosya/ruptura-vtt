@@ -1,23 +1,28 @@
 "use server";
 
 /**
- * Persistência mínima de Mesa/Log (tabelas `campaigns` e `table_logs`,
- * migration 0003_campaigns_table_logs.sql).
+ * Persistência mínima de Mesa/Log (tabelas `campaigns`, `table_logs`,
+ * `campaign_profiles`).
  *
- * Server Actions ("use server"): mesmo padrão de
- * src/lib/character/storage.ts — chamadas diretamente do Client
- * Component mas executadas no servidor, usando a anon key
- * (getContentClient(), nunca a service role key).
+ * Server Actions ("use server") — chamadas diretamente do Client
+ * Component mas executadas no servidor. Checkpoint v0.16: o cliente
+ * Supabase usado aqui é "scoped" à sessão da request
+ * (`getScopedTableClient()`, ver src/lib/auth/scopedClient.ts):
  *
- * Isso só funciona porque a migration 0003 cria policies de RLS
- * TEMPORÁRIAS de desenvolvimento (campaigns: CRUD completo;
- * table_logs: só select/insert, append-only) — ver o aviso completo no
- * topo daquela migration, incluindo o risco de que `visibility`
- * ('public'/'private'/'gm') hoje é só um campo de dados, sem filtro
- * real de RLS.
+ *   - Sem narrador logado: client anon puro — comportamento IDÊNTICO
+ *     ao de antes deste checkpoint.
+ *   - Com narrador logado: client com o access token da sessão anexado,
+ *     para que `auth.uid()` resolva nas policies RLS owner-scoped
+ *     (migration 0006). Hoje isso ainda não restringe nada de verdade,
+ *     porque as policies dev-anon (migrations 0002/0003/0004) continuam
+ *     coexistindo — ver aviso completo na migration 0006 e no
+ *     checkpoint v0.14 do relatório. É preparação, não segurança real
+ *     ainda.
+ *
+ * Nunca a service role key — nem aqui, nem em scopedClient.ts.
  */
 
-import { getContentClient } from "../content";
+import { getScopedTableClient } from "../auth/scopedClient";
 import { getCurrentUser } from "../auth/session";
 import { TableStorageError } from "./storage.errors";
 import { PROFILE_HEARTBEAT_TIMEOUT_MS } from "./types";
@@ -51,7 +56,7 @@ const CAMPAIGN_PROFILES_TABLE = "campaign_profiles";
  * mudar quem pode criar/ver mesas hoje.
  */
 export async function createCampaign(name: string): Promise<Campaign> {
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const finalName = name.trim() ? name.trim() : "Mesa sem nome";
   const ownerId = await currentOwnerId();
   const { data, error } = await client
@@ -68,7 +73,7 @@ export async function createCampaign(name: string): Promise<Campaign> {
 
 /** Lista mesas, mais recentemente atualizadas primeiro. */
 export async function listCampaigns(): Promise<Campaign[]> {
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const { data, error } = await client.from(CAMPAIGNS_TABLE).select().order("updated_at", { ascending: false });
 
   if (error) {
@@ -84,7 +89,7 @@ export async function listCampaigns(): Promise<Campaign[]> {
  * rota distinguir "mesa não encontrada" de "erro ao buscar".
  */
 export async function getCampaign(id: string): Promise<Campaign | null> {
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const { data, error } = await client.from(CAMPAIGNS_TABLE).select().eq("id", id).maybeSingle();
 
   if (error) {
@@ -103,7 +108,7 @@ export interface AddLogParams {
 
 /** Registra uma entrada no log persistente de uma mesa. Append-only. */
 export async function addLog(params: AddLogParams): Promise<TableLogEntry> {
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const { data, error } = await client
     .from(TABLE_LOGS_TABLE)
     .insert({
@@ -124,7 +129,7 @@ export async function addLog(params: AddLogParams): Promise<TableLogEntry> {
 
 /** Lista os logs de uma mesa, mais recentes primeiro. */
 export async function listLogs(campaignId: string): Promise<TableLogEntry[]> {
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const { data, error } = await client
     .from(TABLE_LOGS_TABLE)
     .select()
@@ -147,7 +152,7 @@ export async function createCampaignProfile(
   nickname: string,
   colorLabel?: string,
 ): Promise<CampaignProfile> {
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const finalNickname = nickname.trim() ? nickname.trim() : "Perfil sem apelido";
   const { data, error } = await client
     .from(CAMPAIGN_PROFILES_TABLE)
@@ -167,7 +172,7 @@ export async function createCampaignProfile(
 
 /** Lista os perfis de uma mesa, mais recentemente criados primeiro. */
 export async function listCampaignProfiles(campaignId: string): Promise<CampaignProfile[]> {
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const { data, error } = await client
     .from(CAMPAIGN_PROFILES_TABLE)
     .select()
@@ -186,7 +191,7 @@ export async function listCampaignProfiles(campaignId: string): Promise<Campaign
  * automática por timeout (ver aviso na migration 0004).
  */
 export async function setCampaignProfileLocked(profileId: string, locked: boolean): Promise<CampaignProfile> {
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const { data, error } = await client
     .from(CAMPAIGN_PROFILES_TABLE)
     .update({ is_locked: locked })
@@ -210,7 +215,7 @@ export async function setCampaignProfileActiveCharacter(
   profileId: string,
   characterId: string | null,
 ): Promise<CampaignProfile> {
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const { data, error } = await client
     .from(CAMPAIGN_PROFILES_TABLE)
     .update({ active_character_id: characterId })
@@ -248,7 +253,7 @@ function isProfileExpired(profile: CampaignProfile): boolean {
  * (perfil em uso por outra sessão ativa).
  */
 export async function enterCampaignProfile(profileId: string, sessionId: string): Promise<CampaignProfile> {
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const { data: existing, error: fetchError } = await client
     .from(CAMPAIGN_PROFILES_TABLE)
     .select()
@@ -294,7 +299,7 @@ export async function enterCampaignProfile(profileId: string, sessionId: string)
  * sessão após expirar, ou liberado manualmente).
  */
 export async function heartbeatCampaignProfile(profileId: string, sessionId: string): Promise<CampaignProfile> {
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const { data, error } = await client
     .from(CAMPAIGN_PROFILES_TABLE)
     .update({ last_seen_at: new Date().toISOString() })
@@ -318,7 +323,7 @@ export async function heartbeatCampaignProfile(profileId: string, sessionId: str
  * histórico de "última vez visto").
  */
 export async function leaveCampaignProfile(profileId: string, sessionId: string): Promise<CampaignProfile> {
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const { data, error } = await client
     .from(CAMPAIGN_PROFILES_TABLE)
     .update({ is_locked: false, lock_session_id: null, locked_at: null })
@@ -342,7 +347,7 @@ export async function leaveCampaignProfile(profileId: string, sessionId: string)
  * autenticação ainda, ver aviso na migration 0005).
  */
 export async function forceReleaseCampaignProfile(profileId: string): Promise<CampaignProfile> {
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const { data, error } = await client
     .from(CAMPAIGN_PROFILES_TABLE)
     .update({ is_locked: false, lock_session_id: null, locked_at: null })

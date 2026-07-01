@@ -51,6 +51,7 @@ export default async function TablePage() {
       mesasIniciais={mesasIniciais}
       personagensIniciais={personagensIniciais}
       currentUserEmail={currentUser?.email ?? null}
+      currentUserId={currentUser?.id ?? null}
     />
   );
 }
