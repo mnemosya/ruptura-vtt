@@ -20,11 +20,14 @@ export default async function AuthStatusPage() {
 
       {user ? (
         <div data-testid="auth-logado" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ background: "#15301a", border: "1px solid #2a5a35", borderRadius: 8, padding: 14 }}>
+          <div style={{ background: "#15301a", border: "1px solid #2a5a35", borderRadius: 8, padding: 14, display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ fontSize: 11, opacity: 0.6, textTransform: "uppercase", letterSpacing: 1 }}>Narrador logado</div>
             <div style={{ fontSize: 13 }}>
-              Logado como <strong data-testid="auth-email">{user.email ?? "(sem email)"}</strong>
+              Email: <strong data-testid="auth-email">{user.email ?? "(sem email)"}</strong>
             </div>
-            <div style={{ fontSize: 11, opacity: 0.6, fontFamily: "monospace", marginTop: 4 }}>{user.id}</div>
+            <div style={{ fontSize: 11, opacity: 0.7 }}>
+              ID: <span data-testid="auth-user-id" style={{ fontFamily: "monospace" }}>{user.id}</span>
+            </div>
           </div>
           <SignOutButton />
         </div>
