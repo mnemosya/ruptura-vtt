@@ -4102,3 +4102,159 @@ $ npm run test:content-read → Biblioteca intacta
   intencional (rota de diagnóstico, não de produto).
 - Nenhuma tabela teve linhas apagadas ou modificadas por esta migration
   — só policies (metadados de acesso).
+
+# Checkpoint v0.28 — Refactor seguro do character storage
+
+Prepara `characters` para RLS real sem endurecer nada ainda:
+`character/storage.ts` deixa de usar `getContentClient()` (client anon
+puro) para TODAS as operações e passa a usar o client certo por
+consumidor — reaproveitando `getScopedTableClient()` (mesmo helper de
+`table/storage.ts` desde v0.16) para as rotas de produto, e mantendo
+`getContentClient()` só onde é genuinamente dev/legado.
+
+## 1. Auditoria (antes de alterar)
+
+- `git status --short` limpo, `next-env.d.ts` sem modificação — nada a
+  restaurar.
+- `character/storage.ts` (antes): 100% das funções usavam
+  `getContentClient()`, mesmo as que já tinham `owner_id`/`campaign_id`
+  desde v0.23 — bloqueio confirmado exatamente como o relatório do
+  v0.27 descreveu.
+- `table/storage.ts`: já tinha o padrão certo desde v0.16
+  (`getScopedTableClient()`) e, desde v0.24, `validateProductSession()`
+  — reaproveitado aqui em vez de duplicado.
+- Policies de `characters`: confirmado via `pg_policies` que continuam
+  só `characters_dev_transition_*` (anon+authenticated, sem
+  restrição) — **nenhuma alterada nesta etapa**, exatamente como
+  pedido.
+- Usos em `/ficha`, `/dev/character-sheet` e `/mesas/[campaignId]`
+  mapeados um a um (ver seção 3) antes de qualquer edição.
+
+## 2. Estrutura nova de `character/storage.ts`
+
+Reorganizado em 4 seções comentadas, sem duplicar lógica onde dava
+para reusar:
+
+- **Seção 1 — Produto/Narrador** (`getScopedTableClient()`):
+  `listCharactersForNarratorCampaign`, `listCharactersForNarratorProfile`,
+  `listUnassignedCharactersForNarrator` (nova — substitui
+  `listCharacters()` + filtro em memória do dashboard),
+  `createCharacterForCampaign` (nova), `assignCharacterToCampaign`,
+  `assignCharacterToProfile`, `renameCharacter`, `archiveCharacter`,
+  `restoreCharacter`, `duplicateCharacter` (as 5 últimas migradas do
+  client anon para o escopado, mesmo nome). Só chamadas por
+  `/mesas/[campaignId]` (sempre autenticado desde v0.21).
+- **Seção 2 — Produto/Jogador por sessão** (`getScopedTableClient()` +
+  `validateProductSession`, sem login real de jogador):
+  `getCharacterForProfileSession` (nova — encapsula validar sessão +
+  buscar o personagem ativo num único ponto) e
+  `saveCharacterForProfileSession` (nova — revalida a sessão E confere
+  que o `characterId` ainda é o ativo do perfil antes de salvar, defesa
+  em profundidade). Só chamadas por `/ficha` (modo product).
+- **Seção 3 — Dev/diagnóstico** (`getContentClient()`, anon):
+  `listLegacyCharactersDev` (nova — hoje só chama `listCharacters()`
+  internamente; dá um nome claro para os call sites dev usarem daqui
+  pra frente).
+- **Seção 4 — Legado/compatibilidade** (`getContentClient()`, anon,
+  nomes INTOCADOS): `createCharacter`, `updateCharacter`, `getCharacter`,
+  `listCharacters`, `deleteCharacter` — mantidas exatamente como
+  estavam porque `scripts/test-character-storage.ts` e o modo dev de
+  `/dev/character-sheet` (handleSave/handleLoad/handleDelete/handleNew)
+  dependem delas. Também mantida `listCharactersForCampaign` (nome
+  antigo, client anon) — usada por `/join/[token]` para mostrar só os
+  personagens da MESMA mesa do convite a um visitante anônimo sem
+  login, nunca a lista global.
+
+Duas funções do v0.25 que nunca tiveram call site real
+(`listCharactersForProfile`, `listArchivedCharactersForCampaign`) foram
+substituídas pelas equivalentes escopadas da seção 1
+(`listCharactersForNarratorProfile`,
+`listArchivedCharactersForNarratorCampaign`) — sem perda, já que nada
+as chamava.
+
+## 3. Rotas atualizadas
+
+| Rota | Antes | Depois |
+|---|---|---|
+| `/mesas/[campaignId]` (page.tsx + MesaDetailClient) | `listCharacters()` (global) + filtro em memória; `listCharactersForCampaign`; `createCharacter(payload,{campaignId})` | `listUnassignedCharactersForNarrator()`; `listCharactersForNarratorCampaign()`; `createCharacterForCampaign()` — tudo via client escopado |
+| `/ficha` (CharacterSheetClient, modo product) | `validateProductSession()` + `getCharacter(id)` soltos no componente; `updateCharacter()`/`createCharacter()` no save | `getCharacterForProfileSession()` (um único ponto); `saveCharacterForProfileSession()` no save |
+| `/join/[token]` | `listCharacters()` (**global**) | `listCharactersForCampaign(campaign.id)` (escopado à mesa do convite) |
+| `/dev/character-sheet`, `/dev/table`, `/dev/join/[campaignId]` | `listCharacters()` direto | `listLegacyCharactersDev()` (mesmo comportamento, nome explícito) |
+
+`/mesas/[campaignId]` e `/ficha` nunca mais chamam uma função com
+client anon puro; `/join/[token]` não lista mais personagens
+globalmente (só os da própria mesa do convite).
+
+## 4. RLS — NENHUMA alterada nesta etapa
+
+Confirmado via `pg_policies` antes e depois da mudança: `characters`
+continua com exatamente as mesmas 4 policies
+`characters_dev_transition_*` (anon+authenticated, sem restrição) que
+tinha no início. Não foi necessário mudar nenhuma policy para o
+build/testes passarem — o refactor troca só QUEM PEDE os dados
+(client anon vs. escopado), não o que a RLS permite hoje.
+
+## 5. Build e testes
+
+```
+$ npm run build → ✓ (11 rotas, sem mudança de superfície)
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM (usa as funções legadas da seção 4, intocadas)
+$ npm run test:content-read → Biblioteca intacta
+```
+
+## 6. Teste manual (browser, ponta a ponta)
+
+1. Login como narrador → criei "Mesa v0.28" → criei "Personagem v0.28"
+   direto na mesa (via `createCharacterForCampaign`, client escopado)
+   → sem erro, apareceu em "Personagens da mesa (1)" ✓.
+2. Criei "Perfil v0.28", vinculei o personagem ao perfil e defini como
+   ativo (via `assignCharacterToProfile`/`setCampaignProfileActiveCharacter`,
+   ambos já escopados/table) ✓.
+3. Criei convite → **fiz logout** → abri `/join/<token>` como
+   visitante genuinamente anônimo → "Personagem ativo: Personagem
+   v0.28" apareceu corretamente (via `listCharactersForCampaign`,
+   escopado à mesa, não mais `listCharacters()` global) ✓.
+4. Entrei como perfil → "Abrir ficha" → `/ficha` carregou o personagem
+   certo automaticamente (via `getCharacterForProfileSession`) ✓.
+5. Editei o nome e cliquei "Salvar personagem" → "✓ Salvo" ✓;
+   confirmado via SQL direto que o nome persistiu no banco
+   (`saveCharacterForProfileSession` funcionando) ✓.
+6. Abri `/dev/character-sheet` → aba "Personagens salvos (3)" mostrou
+   o personagem recém-editado da mesa **e** os 2 personagens
+   legados/globais ("Kael Ironwood", "Novo Personagem") — lista global
+   dev intacta, via `listLegacyCharactersDev()` ✓.
+7. Sem erros no console em nenhuma etapa. Limpeza: apaguei a mesa de
+   teste e o personagem criado nela via SQL direto; os 2 personagens
+   legados permaneceram intactos.
+
+## 7. Escopo e riscos
+
+- **RLS de `characters` continua 100% aberta** — este checkpoint só
+  preparou o código para o dia em que ela for endurecida; não mudou
+  o que qualquer pessoa com a anon key pode fazer hoje.
+- `getScopedTableClient()` só tem efeito real quando existe sessão de
+  NARRADOR logado — jogadores continuam sem autenticação real (mesmo
+  bloqueio já documentado desde v0.19/v0.24), então
+  `getCharacterForProfileSession`/`saveCharacterForProfileSession`
+  ainda depender de `validateProductSession` (sessionId de navegador),
+  não de `auth.uid()` de jogador.
+- Não foi necessário mudar nenhuma policy para o build/testes
+  funcionarem — confirmado na seção 4.
+
+## 8. Blockers que ainda impedem endurecer RLS de `characters`
+
+1. **Sem autenticação real de jogador**: mesmo com o client certo
+   sendo usado agora, uma policy `profile_id`-scoped para jogador não
+   teria como verificar identidade real — `auth.uid()` só existe para
+   o narrador logado, nunca para quem entra por `/join`/`/ficha`.
+2. **Mesas/perfis legados sem `owner_id`**: personagens/mesas criados
+   antes do login existir (`owner_id: null`) não têm dono para uma
+   policy `owner_id = auth.uid()` reconhecer — precisam de uma
+   estratégia explícita (herdar dono ao vincular? ficar
+   permanentemente "sem dono, mas visível"?) antes de endurecer de
+   verdade.
+3. **`/dev/character-sheet` e `test:character-storage` dependem do
+   client anon**: qualquer policy que exigisse `authenticated` quebraria
+   as seções 3/4 deste arquivo — precisariam de uma policy dev
+   separada (ou aceitar que dev/teste continuam com uma abertura
+   controlada, documentada, mesmo depois do endurecimento do resto).

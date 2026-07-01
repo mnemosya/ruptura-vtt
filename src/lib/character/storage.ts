@@ -1,26 +1,64 @@
 "use server";
 
 /**
- * Persistência mínima de personagem (tabela `characters`, migration
- * 0002_characters.sql).
+ * Persistência de personagem (tabela `characters`, migration
+ * 0002_characters.sql; `campaign_id`/`profile_id`/`owner_id` desde a
+ * migration 0011, checkpoint v0.23; `archived_at` desde a migration
+ * 0012, checkpoint v0.25).
  *
- * Server Actions ("use server"): chamadas diretamente do Client
- * Component (CharacterSheetClient) mas executadas no servidor — assim
- * SUPABASE_URL/SUPABASE_ANON_KEY (variáveis sem prefixo NEXT_PUBLIC_)
- * nunca chegam ao bundle do navegador, mesmo sendo a anon key (que já
- * é uma chave pública por design, protegida pela RLS — não a service
- * role key, que nunca é usada aqui nem em nenhum outro lugar do
- * frontend).
+ * Checkpoint v0.28 — refactor de escopo (SEM mudança de RLS ainda):
+ * `characters` continua com policies `characters_dev_transition_*`
+ * totalmente abertas (anon+authenticated) — ver auditoria do
+ * checkpoint v0.27. O bloqueio identificado lá era que TODA função
+ * deste arquivo usava `getContentClient()` (client anon puro, nunca
+ * anexa o JWT do narrador logado), então mesmo com `owner_id`
+ * preenchido desde v0.23, nenhuma policy `owner_id = auth.uid()`
+ * poderia funcionar — a requisição nunca chegava como
+ * `authenticated`.
  *
- * Isso só funciona porque a migration 0002_characters.sql cria
- * policies de RLS TEMPORÁRIAS que liberam CRUD completo para
- * `anon`/`authenticated` — uma política de DESENVOLVIMENTO, válida
- * apenas enquanto não há autenticação. Ver o aviso completo no topo
- * daquela migration antes de usar isto em produção.
+ * Este checkpoint prepara o terreno SEM endurecer RLS ainda: separa
+ * as funções por quem realmente as chama, usando o client certo para
+ * cada consumidor:
+ *
+ *   - PRODUTO/NARRADOR (seção 1): `getScopedTableClient()` — o MESMO
+ *     helper já usado por `table/storage.ts` desde o checkpoint v0.16
+ *     (reutilizado aqui, não duplicado). Anexa o JWT do narrador
+ *     logado quando existe sessão; cai para anon puro se não houver
+ *     (mesmo comportamento de sempre, só que agora PRONTO para uma
+ *     policy `owner_id = auth.uid()` funcionar no dia em que a RLS for
+ *     endurecida). Usadas só por `/mesas/[campaignId]` (dashboard,
+ *     sempre autenticado).
+ *   - PRODUTO/JOGADOR POR SESSÃO (seção 2): também usam
+ *     `getScopedTableClient()`, mas a "identidade" de quem pode ler/
+ *     escrever não vem de `auth.uid()` (jogador não tem login real
+ *     ainda) — vem de `validateProductSession()` (table/storage.ts),
+ *     que confere se o sessionId do navegador é o dono do bloqueio do
+ *     perfil ANTES de tocar no personagem. Usadas só por `/ficha`
+ *     (modo product).
+ *   - DEV/DIAGNÓSTICO (seção 3): `getContentClient()` (anon puro,
+ *     como sempre foi) — usadas só por `/dev/character-sheet`,
+ *     `/dev/table`, `/dev/join/[campaignId]`. Mostram a lista global
+ *     de propósito (é a razão de existir dessas rotas).
+ *   - LEGADO/COMPATIBILIDADE (seção 4): `createCharacter`,
+ *     `updateCharacter`, `getCharacter`, `listCharacters`,
+ *     `deleteCharacter` — mantidas com o MESMO nome e client anon de
+ *     sempre porque `scripts/test-character-storage.ts` e o modo dev
+ *     de `/dev/character-sheet` dependem exatamente desse
+ *     comportamento. Não usar em rota de produto nova — usar as
+ *     seções 1/2 acima.
+ *
+ * Isso só continua funcionando porque `characters` ainda tem as
+ * policies dev_transition abertas (ver aviso completo na migration
+ * 0002 e na auditoria da migration 0013/checkpoint v0.27) — NENHUMA
+ * policy foi alterada neste checkpoint. Endurecer de verdade fica
+ * para depois (ver blockers no final deste arquivo e no relatório).
  */
 
 import { getContentClient } from "../content";
+import { getScopedTableClient } from "../auth/scopedClient";
 import { getCurrentUser } from "../auth/session";
+import { validateProductSession } from "../table/storage";
+import type { Campaign, CampaignProfile } from "../table";
 import { CharacterStorageError } from "./storage.errors";
 import type { Character, CharacterRecord } from "./types";
 
@@ -76,6 +114,366 @@ function buildPayloadForSave(character: Character): Character {
     },
   };
 }
+
+/** Insere um personagem via um client já resolvido (interno — compartilhado entre criação/duplicação de narrador). */
+async function insertCharacterScoped(
+  client: Awaited<ReturnType<typeof getScopedTableClient>>,
+  character: Character,
+  options: { campaignId?: string | null; profileId?: string | null; ownerLabel?: string } = {},
+): Promise<CharacterRecord> {
+  const payload = buildPayloadForSave(character);
+  const ownerId = await currentOwnerId();
+  const { data, error } = await client
+    .from(TABLE)
+    .insert({
+      name: payload.nome,
+      owner_label: options.ownerLabel ?? null,
+      status: "draft",
+      payload,
+      campaign_id: options.campaignId ?? null,
+      profile_id: options.profileId ?? null,
+      owner_id: ownerId,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw new CharacterStorageError(`Falha ao criar personagem: ${error.message}`, error);
+  }
+  return data as CharacterRecord;
+}
+
+// =====================================================================
+// SEÇÃO 1 — PRODUTO / NARRADOR (checkpoint v0.28)
+//
+// Usam getScopedTableClient() (anexa o JWT do narrador logado, cai
+// para anon se não houver sessão — mesmo helper de table/storage.ts,
+// reutilizado aqui, não duplicado). Chamadas só por
+// /mesas/[campaignId] (dashboard, sempre atrás de login desde v0.21).
+// =====================================================================
+
+/** Lista os personagens ligados a uma mesa (campaign_id), visão do narrador dono. Mais recentemente atualizados primeiro. */
+export async function listCharactersForNarratorCampaign(campaignId: string): Promise<CharacterRecord[]> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from(TABLE)
+    .select()
+    .eq("campaign_id", campaignId)
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    throw new CharacterStorageError(`Falha ao listar personagens da mesa "${campaignId}": ${error.message}`, error);
+  }
+  return (data as CharacterRecord[]) ?? [];
+}
+
+/** Lista os personagens ligados a um perfil (profile_id), visão do narrador dono. */
+export async function listCharactersForNarratorProfile(profileId: string): Promise<CharacterRecord[]> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from(TABLE)
+    .select()
+    .eq("profile_id", profileId)
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    throw new CharacterStorageError(`Falha ao listar personagens do perfil "${profileId}": ${error.message}`, error);
+  }
+  return (data as CharacterRecord[]) ?? [];
+}
+
+/**
+ * Lista personagens legados/globais (sem mesa) disponíveis para o
+ * narrador vincular a uma mesa — substitui o padrão antigo de
+ * `listCharacters()` + filtro em memória no dashboard (checkpoint
+ * v0.23/v0.25). Continua sem filtrar por owner_id (a tabela ainda não
+ * tem RLS restritiva — ver blockers no final do arquivo), mas já usa
+ * o client escopado, pronto para quando isso mudar.
+ */
+export async function listUnassignedCharactersForNarrator(): Promise<CharacterRecord[]> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from(TABLE)
+    .select()
+    .is("campaign_id", null)
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    throw new CharacterStorageError(`Falha ao listar personagens sem mesa: ${error.message}`, error);
+  }
+  return (data as CharacterRecord[]) ?? [];
+}
+
+/** Lista os personagens arquivados de uma mesa, visão do narrador dono. */
+export async function listArchivedCharactersForNarratorCampaign(campaignId: string): Promise<CharacterRecord[]> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from(TABLE)
+    .select()
+    .eq("campaign_id", campaignId)
+    .not("archived_at", "is", null)
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    throw new CharacterStorageError(`Falha ao listar personagens arquivados da mesa "${campaignId}": ${error.message}`, error);
+  }
+  return (data as CharacterRecord[]) ?? [];
+}
+
+/**
+ * Cria um personagem mínimo já nascendo vinculado a uma mesa
+ * (dashboard do narrador, checkpoint v0.25 — agora via client
+ * escopado). `owner_id` é carimbado com o narrador logado quando há
+ * sessão.
+ */
+export async function createCharacterForCampaign(
+  campaignId: string,
+  character: Character,
+  options: { profileId?: string | null; ownerLabel?: string } = {},
+): Promise<CharacterRecord> {
+  const client = await getScopedTableClient();
+  return insertCharacterScoped(client, character, { ...options, campaignId });
+}
+
+/**
+ * Vincula um personagem a uma mesa (ou remove o vínculo com
+ * `campaignId: null`). Não mexe em `profile_id` — desvincular da mesa
+ * não desvincula automaticamente do perfil (pode ficar inconsistente
+ * intencionalmente; quem chama decide se também limpa o perfil).
+ */
+export async function assignCharacterToCampaign(characterId: string, campaignId: string | null): Promise<CharacterRecord> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from(TABLE)
+    .update({ campaign_id: campaignId })
+    .eq("id", characterId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new CharacterStorageError(`Falha ao vincular personagem "${characterId}" à mesa: ${error.message}`, error);
+  }
+  return data as CharacterRecord;
+}
+
+/** Vincula um personagem a um perfil (ou remove o vínculo com `profileId: null`). */
+export async function assignCharacterToProfile(characterId: string, profileId: string | null): Promise<CharacterRecord> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from(TABLE)
+    .update({ profile_id: profileId })
+    .eq("id", characterId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new CharacterStorageError(`Falha ao vincular personagem "${characterId}" ao perfil: ${error.message}`, error);
+  }
+  return data as CharacterRecord;
+}
+
+/** Renomeia um personagem — atualiza a coluna `name` E `payload.nome` juntos (mesmo invariante de buildPayloadForSave). */
+export async function renameCharacter(id: string, newName: string): Promise<CharacterRecord> {
+  const client = await getScopedTableClient();
+  const { data: current, error: fetchError } = await client.from(TABLE).select().eq("id", id).maybeSingle();
+  if (fetchError) {
+    throw new CharacterStorageError(`Falha ao buscar personagem "${id}" para renomear: ${fetchError.message}`, fetchError);
+  }
+  if (!current) {
+    throw new CharacterStorageError(`Personagem "${id}" não encontrado para renomear.`);
+  }
+  const currentRecord = current as CharacterRecord;
+  const finalName = newName.trim() ? newName.trim() : currentRecord.name;
+  const { data, error } = await client
+    .from(TABLE)
+    .update({ name: finalName, payload: { ...currentRecord.payload, nome: finalName } })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new CharacterStorageError(`Falha ao renomear personagem "${id}": ${error.message}`, error);
+  }
+  return data as CharacterRecord;
+}
+
+/** Arquiva um personagem (`archived_at = agora`). Não desvincula mesa/perfil — só marca como inativo. */
+export async function archiveCharacter(id: string): Promise<CharacterRecord> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from(TABLE)
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new CharacterStorageError(`Falha ao arquivar personagem "${id}": ${error.message}`, error);
+  }
+  return data as CharacterRecord;
+}
+
+/** Restaura um personagem arquivado (`archived_at = null`). */
+export async function restoreCharacter(id: string): Promise<CharacterRecord> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from(TABLE)
+    .update({ archived_at: null })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new CharacterStorageError(`Falha ao restaurar personagem "${id}": ${error.message}`, error);
+  }
+  return data as CharacterRecord;
+}
+
+/**
+ * Duplica um personagem: clona o payload (nome com sufixo " (cópia)"),
+ * mantém a mesma mesa (campaign_id) mas NUNCA copia o profile_id — o
+ * duplicado nasce sem perfil, para nunca ficar ambíguo qual dos dois é
+ * "o" personagem daquele perfil (só active_character_id do perfil
+ * decide isso, e essa cópia não mexe nele). owner_id é carimbado com o
+ * narrador logado, igual createCharacterForCampaign.
+ */
+export async function duplicateCharacter(id: string): Promise<CharacterRecord> {
+  const client = await getScopedTableClient();
+  const { data: source, error: fetchError } = await client.from(TABLE).select().eq("id", id).maybeSingle();
+  if (fetchError) {
+    throw new CharacterStorageError(`Falha ao buscar personagem "${id}" para duplicar: ${fetchError.message}`, fetchError);
+  }
+  if (!source) {
+    throw new CharacterStorageError(`Personagem "${id}" não encontrado para duplicar.`);
+  }
+  const sourceRecord = source as CharacterRecord;
+  const clonedPayload: Character = {
+    ...sourceRecord.payload,
+    nome: `${sourceRecord.payload.nome} (cópia)`,
+  };
+  return insertCharacterScoped(client, clonedPayload, {
+    ownerLabel: sourceRecord.owner_label ?? undefined,
+    campaignId: sourceRecord.campaign_id,
+    profileId: null,
+  });
+}
+
+// =====================================================================
+// SEÇÃO 2 — PRODUTO / JOGADOR POR SESSÃO (checkpoint v0.28, /ficha)
+//
+// Não há login real de jogador ainda — a "identidade" vem de
+// validateProductSession() (table/storage.ts, checkpoint v0.24): o
+// sessionId do navegador precisa ser o dono do bloqueio do perfil
+// informado. Nunca expõem lista global nem aceitam um characterId
+// arbitrário — só o personagem ATIVO do perfil da sessão validada.
+// =====================================================================
+
+export interface CharacterForProfileSessionResult {
+  ok: boolean;
+  reason?: "invalid_session" | "no_character";
+  campaign?: Campaign;
+  profile?: CampaignProfile;
+  character?: CharacterRecord;
+}
+
+/**
+ * Busca o personagem ativo do perfil de uma sessão real e válida.
+ * Reusa validateProductSession (table/storage.ts) — nunca confia num
+ * characterId vindo do cliente; sempre resolve pelo
+ * `active_character_id` do perfil já validado.
+ */
+export async function getCharacterForProfileSession(
+  campaignId: string,
+  profileId: string,
+  sessionId: string,
+): Promise<CharacterForProfileSessionResult> {
+  const validation = await validateProductSession(campaignId, profileId, sessionId);
+  if (!validation.ok || !validation.profile) {
+    return { ok: false, reason: "invalid_session" };
+  }
+  if (!validation.profile.active_character_id) {
+    return { ok: false, reason: "no_character", campaign: validation.campaign, profile: validation.profile };
+  }
+
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from(TABLE)
+    .select()
+    .eq("id", validation.profile.active_character_id)
+    .maybeSingle();
+
+  if (error) {
+    throw new CharacterStorageError(`Falha ao buscar personagem da sessão de perfil: ${error.message}`, error);
+  }
+  if (!data) {
+    return { ok: false, reason: "no_character", campaign: validation.campaign, profile: validation.profile };
+  }
+  return { ok: true, campaign: validation.campaign, profile: validation.profile, character: data as CharacterRecord };
+}
+
+/**
+ * Salva (update) o personagem ativo de uma sessão real e válida.
+ * Revalida a sessão E confere que `characterId` ainda é de fato o
+ * personagem ativo do perfil — recusa salvar em qualquer outro id,
+ * mesmo que a chamada tente forçar um id diferente (defesa em
+ * profundidade contra um client comprometido/desatualizado).
+ */
+export async function saveCharacterForProfileSession(
+  campaignId: string,
+  profileId: string,
+  sessionId: string,
+  characterId: string,
+  character: Character,
+): Promise<CharacterRecord> {
+  const validation = await validateProductSession(campaignId, profileId, sessionId);
+  if (!validation.ok || !validation.profile) {
+    throw new CharacterStorageError("Sessão de perfil inválida — não é possível salvar o personagem.");
+  }
+  if (validation.profile.active_character_id !== characterId) {
+    throw new CharacterStorageError(
+      `Personagem "${characterId}" não é mais o ativo desta sessão de perfil — recarregue a ficha.`,
+    );
+  }
+
+  const payload = buildPayloadForSave(character);
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from(TABLE)
+    .update({ name: payload.nome, payload })
+    .eq("id", characterId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new CharacterStorageError(`Falha ao salvar personagem "${characterId}" da sessão de perfil: ${error.message}`, error);
+  }
+  return data as CharacterRecord;
+}
+
+// =====================================================================
+// SEÇÃO 3 — DEV / DIAGNÓSTICO
+//
+// Client anon puro (getContentClient), como sempre foi. Usadas só por
+// /dev/character-sheet, /dev/table e /dev/join/[campaignId] — rotas
+// de diagnóstico que mostram a lista global de propósito. Não usar em
+// rota de produto nova (usar as seções 1/2 acima).
+// =====================================================================
+
+/** Lista TODOS os personagens (global, sem filtro de mesa/dono) — só para telas dev/diagnóstico. */
+export async function listLegacyCharactersDev(): Promise<CharacterRecord[]> {
+  return listCharacters();
+}
+
+// =====================================================================
+// SEÇÃO 4 — LEGADO / COMPATIBILIDADE
+//
+// Mantidas com o MESMO nome e client anon (getContentClient) porque
+// scripts/test-character-storage.ts e o modo dev de
+// /dev/character-sheet (CharacterSheetClient, handleSave/handleLoad/
+// handleDelete/handleNew) já dependem exatamente deste comportamento.
+// NÃO usar em rota de produto nova — usar createCharacterForCampaign/
+// saveCharacterForProfileSession/etc. (seções 1/2).
+// =====================================================================
 
 /**
  * Cria um novo registro de personagem. payload guarda o Character inteiro.
@@ -179,10 +577,15 @@ export async function deleteCharacter(id: string): Promise<void> {
 }
 
 // =====================================================================
-// Vínculo a mesa/perfil (checkpoint v0.23) — ver migration 0011
+// Compat direta (checkpoint v0.23) — mantidas com o nome antigo porque
+// /join/[token] já as usa hoje para mostrar só os personagens da MESMA
+// mesa do convite (nunca a lista global) a um visitante anônimo, sem
+// exigir login. Usam client anon (mesmo comportamento de sempre) — a
+// diferença para a seção 1 é só quem chama (visitante anônimo vs.
+// narrador logado no dashboard), não o escopo dos dados.
 // =====================================================================
 
-/** Lista os personagens ligados a uma mesa (campaign_id), mais recentemente atualizados primeiro. */
+/** Lista os personagens ligados a uma mesa (campaign_id), mais recentemente atualizados primeiro. Uso: /join/[token] (anônimo, campanha-escopado, nunca global). */
 export async function listCharactersForCampaign(campaignId: string): Promise<CharacterRecord[]> {
   const client = getContentClient();
   const { data, error } = await client
@@ -193,155 +596,6 @@ export async function listCharactersForCampaign(campaignId: string): Promise<Cha
 
   if (error) {
     throw new CharacterStorageError(`Falha ao listar personagens da mesa "${campaignId}": ${error.message}`, error);
-  }
-  return (data as CharacterRecord[]) ?? [];
-}
-
-/** Lista os personagens ligados a um perfil (profile_id), mais recentemente atualizados primeiro. */
-export async function listCharactersForProfile(profileId: string): Promise<CharacterRecord[]> {
-  const client = getContentClient();
-  const { data, error } = await client
-    .from(TABLE)
-    .select()
-    .eq("profile_id", profileId)
-    .order("updated_at", { ascending: false });
-
-  if (error) {
-    throw new CharacterStorageError(`Falha ao listar personagens do perfil "${profileId}": ${error.message}`, error);
-  }
-  return (data as CharacterRecord[]) ?? [];
-}
-
-/**
- * Vincula um personagem a uma mesa (ou remove o vínculo com
- * `campaignId: null`). Não mexe em `profile_id` — desvincular da mesa
- * não desvincula automaticamente do perfil (pode ficar inconsistente
- * intencionalmente; quem chama decide se também limpa o perfil).
- */
-export async function assignCharacterToCampaign(characterId: string, campaignId: string | null): Promise<CharacterRecord> {
-  const client = getContentClient();
-  const { data, error } = await client
-    .from(TABLE)
-    .update({ campaign_id: campaignId })
-    .eq("id", characterId)
-    .select()
-    .single();
-
-  if (error) {
-    throw new CharacterStorageError(`Falha ao vincular personagem "${characterId}" à mesa: ${error.message}`, error);
-  }
-  return data as CharacterRecord;
-}
-
-/** Vincula um personagem a um perfil (ou remove o vínculo com `profileId: null`). */
-export async function assignCharacterToProfile(characterId: string, profileId: string | null): Promise<CharacterRecord> {
-  const client = getContentClient();
-  const { data, error } = await client
-    .from(TABLE)
-    .update({ profile_id: profileId })
-    .eq("id", characterId)
-    .select()
-    .single();
-
-  if (error) {
-    throw new CharacterStorageError(`Falha ao vincular personagem "${characterId}" ao perfil: ${error.message}`, error);
-  }
-  return data as CharacterRecord;
-}
-
-// =====================================================================
-// Ciclo de vida (checkpoint v0.25) — ver migration 0012
-// =====================================================================
-
-/** Renomeia um personagem — atualiza a coluna `name` E `payload.nome` juntos (mesmo invariante de buildPayloadForSave). */
-export async function renameCharacter(id: string, newName: string): Promise<CharacterRecord> {
-  const current = await getCharacter(id);
-  if (!current) {
-    throw new CharacterStorageError(`Personagem "${id}" não encontrado para renomear.`);
-  }
-  const finalName = newName.trim() ? newName.trim() : current.name;
-  const client = getContentClient();
-  const { data, error } = await client
-    .from(TABLE)
-    .update({ name: finalName, payload: { ...current.payload, nome: finalName } })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) {
-    throw new CharacterStorageError(`Falha ao renomear personagem "${id}": ${error.message}`, error);
-  }
-  return data as CharacterRecord;
-}
-
-/** Arquiva um personagem (`archived_at = agora`). Não desvincula mesa/perfil — só marca como inativo. */
-export async function archiveCharacter(id: string): Promise<CharacterRecord> {
-  const client = getContentClient();
-  const { data, error } = await client
-    .from(TABLE)
-    .update({ archived_at: new Date().toISOString() })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) {
-    throw new CharacterStorageError(`Falha ao arquivar personagem "${id}": ${error.message}`, error);
-  }
-  return data as CharacterRecord;
-}
-
-/** Restaura um personagem arquivado (`archived_at = null`). */
-export async function restoreCharacter(id: string): Promise<CharacterRecord> {
-  const client = getContentClient();
-  const { data, error } = await client
-    .from(TABLE)
-    .update({ archived_at: null })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) {
-    throw new CharacterStorageError(`Falha ao restaurar personagem "${id}": ${error.message}`, error);
-  }
-  return data as CharacterRecord;
-}
-
-/**
- * Duplica um personagem: clona o payload (nome com sufixo " (cópia)"),
- * mantém a mesma mesa (campaign_id) mas NUNCA copia o profile_id — o
- * duplicado nasce sem perfil, para nunca ficar ambíguo qual dos dois é
- * "o" personagem daquele perfil (só active_character_id do perfil
- * decide isso, e essa cópia não mexe nele). owner_id é carimbado com o
- * narrador logado, igual createCharacter.
- */
-export async function duplicateCharacter(id: string): Promise<CharacterRecord> {
-  const source = await getCharacter(id);
-  if (!source) {
-    throw new CharacterStorageError(`Personagem "${id}" não encontrado para duplicar.`);
-  }
-  const clonedPayload: Character = {
-    ...source.payload,
-    nome: `${source.payload.nome} (cópia)`,
-  };
-  return createCharacter(clonedPayload, {
-    ownerLabel: source.owner_label ?? undefined,
-    campaignId: source.campaign_id,
-    profileId: null,
-  });
-}
-
-/** Lista os personagens arquivados de uma mesa, mais recentemente atualizados primeiro. */
-export async function listArchivedCharactersForCampaign(campaignId: string): Promise<CharacterRecord[]> {
-  const client = getContentClient();
-  const { data, error } = await client
-    .from(TABLE)
-    .select()
-    .eq("campaign_id", campaignId)
-    .not("archived_at", "is", null)
-    .order("updated_at", { ascending: false });
-
-  if (error) {
-    throw new CharacterStorageError(`Falha ao listar personagens arquivados da mesa "${campaignId}": ${error.message}`, error);
   }
   return (data as CharacterRecord[]) ?? [];
 }

@@ -17,11 +17,11 @@ import {
 } from "../../../lib/table/storage";
 import { computeProfileStatus } from "../../../lib/table/profileStatus";
 import {
-  listCharacters,
-  listCharactersForCampaign,
+  listCharactersForNarratorCampaign,
+  listUnassignedCharactersForNarrator,
   assignCharacterToCampaign,
   assignCharacterToProfile,
-  createCharacter,
+  createCharacterForCampaign,
   renameCharacter,
   archiveCharacter,
   restoreCharacter,
@@ -88,9 +88,8 @@ export default function MesaDetailClient({
   }
   async function reloadPersonagens() {
     try {
-      setPersonagensDaMesa(await listCharactersForCampaign(campaign.id));
-      const todos = await listCharacters();
-      setPersonagensDisponiveis(todos.filter((c) => c.campaign_id == null));
+      setPersonagensDaMesa(await listCharactersForNarratorCampaign(campaign.id));
+      setPersonagensDisponiveis(await listUnassignedCharactersForNarrator());
     } catch (e) { fail(e, "Erro ao recarregar personagens."); }
   }
 
@@ -150,9 +149,7 @@ export default function MesaDetailClient({
     if (!novoPersonagemNome.trim()) return;
     setError(null);
     try {
-      const record = await createCharacter(createInitialCharacter(null, novoPersonagemNome.trim()), {
-        campaignId: campaign.id,
-      });
+      const record = await createCharacterForCampaign(campaign.id, createInitialCharacter(null, novoPersonagemNome.trim()));
       setNovoPersonagemNome("");
       await logCharacterEvent("character_created", record.id, record.name);
       await reloadPersonagens();
@@ -238,7 +235,7 @@ export default function MesaDetailClient({
   }
 
   // Ciclo de vida (checkpoint v0.25): personagensDaMesa vem sem filtro
-  // de archived_at (listCharactersForCampaign) — separado aqui em duas
+  // de archived_at (listCharactersForNarratorCampaign) — separado aqui em duas
   // listas de exibição. Só os ativos aparecem como opção de "personagem
   // ativo" de um perfil (abaixo); os arquivados ganham uma seção própria
   // com "Restaurar".

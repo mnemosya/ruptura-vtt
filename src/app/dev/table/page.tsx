@@ -9,7 +9,7 @@
  */
 
 import { listCampaigns } from "../../../lib/table/storage";
-import { listCharacters } from "../../../lib/character/storage";
+import { listLegacyCharactersDev } from "../../../lib/character/storage";
 import { getCurrentUser } from "../../../lib/auth/session";
 import type { Campaign } from "../../../lib/table";
 import type { CharacterRecord } from "../../../lib/character";
@@ -28,7 +28,7 @@ export default async function TablePage() {
 
   try {
     mesasIniciais = await listCampaigns();
-    personagensIniciais = await listCharacters();
+    personagensIniciais = await listLegacyCharactersDev();
   } catch (err) {
     errorMessage = err instanceof Error ? err.message : "Erro desconhecido ao carregar mesas.";
   }

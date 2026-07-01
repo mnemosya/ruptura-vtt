@@ -15,7 +15,7 @@
  */
 
 import { getCharacterRules } from "../lib/content";
-import { listCharacters } from "../lib/character/storage";
+import { listLegacyCharactersDev } from "../lib/character/storage";
 import { listCampaigns } from "../lib/table/storage";
 import type { CharacterRecord, CharacterRulesPayload } from "../lib/character";
 import type { Campaign } from "../lib/table";
@@ -59,7 +59,7 @@ export async function CharacterSheetView({
   let mesasIniciais: Campaign[] = [];
   if (mode === "dev") {
     try {
-      personagensSalvos = await listCharacters();
+      personagensSalvos = await listLegacyCharactersDev();
     } catch {
       // Lista vazia se a tabela characters estiver fora do ar; o Client mostra o erro ao salvar.
     }

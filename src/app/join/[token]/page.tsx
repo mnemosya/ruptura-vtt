@@ -11,7 +11,7 @@
  */
 
 import { resolveCampaignInvite, listCampaignProfiles, expireStaleProfileSessions } from "../../../lib/table/storage";
-import { listCharacters } from "../../../lib/character/storage";
+import { listCharactersForCampaign } from "../../../lib/character/storage";
 import type { CampaignProfile } from "../../../lib/table";
 import type { CharacterRecord } from "../../../lib/character";
 import JoinClient from "../../dev/join/[campaignId]/JoinClient";
@@ -69,7 +69,8 @@ export default async function InviteJoinPage({ params }: PageProps) {
     // v0.26: expira sessões velhas desta mesa antes de listar perfis — perfil expirado aparece como disponível.
     await expireStaleProfileSessions(campaign.id).catch(() => {});
     perfisIniciais = await listCampaignProfiles(campaign.id);
-    personagens = await listCharacters();
+    // v0.28: escopado à mesa do convite — nunca a lista global de personagens de outras mesas.
+    personagens = await listCharactersForCampaign(campaign.id);
   } catch {
     // Se perfis/personagens falharem, a página ainda mostra a mesa; o
     // JoinClient lida com lista vazia.

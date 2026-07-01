@@ -18,7 +18,7 @@
  */
 
 import { getCampaign, listCampaignProfiles } from "../../../../lib/table/storage";
-import { listCharacters } from "../../../../lib/character/storage";
+import { listLegacyCharactersDev } from "../../../../lib/character/storage";
 import type { Campaign, CampaignProfile } from "../../../../lib/table";
 import type { CharacterRecord } from "../../../../lib/character";
 import JoinClient from "./JoinClient";
@@ -41,7 +41,7 @@ export default async function JoinPage({ params }: PageProps) {
     campaign = await getCampaign(campaignId);
     if (campaign) {
       perfisIniciais = await listCampaignProfiles(campaignId);
-      personagens = await listCharacters();
+      personagens = await listLegacyCharactersDev();
     }
   } catch (err) {
     errorMessage = err instanceof Error ? err.message : "Erro desconhecido ao carregar a mesa.";

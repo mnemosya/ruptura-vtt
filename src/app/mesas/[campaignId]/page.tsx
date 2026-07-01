@@ -15,7 +15,7 @@ import {
   listLogsForViewer,
   expireStaleProfileSessions,
 } from "../../../lib/table/storage";
-import { listCharacters, listCharactersForCampaign } from "../../../lib/character/storage";
+import { listCharactersForNarratorCampaign, listUnassignedCharactersForNarrator } from "../../../lib/character/storage";
 import type { Campaign, CampaignProfile, CampaignInvite, ProfileSession, TableLogEntry } from "../../../lib/table";
 import type { CharacterRecord } from "../../../lib/character";
 import MesaDetailClient from "./MesaDetailClient";
@@ -72,12 +72,12 @@ export default async function MesaDetailPage({ params }: PageProps) {
     convites = await listCampaignInvites(campaignId);
     sessoes = await listProfileSessions(campaignId);
     logs = await listLogsForViewer(campaignId, {}); // narrador dono → vê tudo
-    personagensDaMesa = await listCharactersForCampaign(campaignId);
+    personagensDaMesa = await listCharactersForNarratorCampaign(campaignId);
     // "Disponíveis para vincular": personagens legados/globais, sem mesa
     // ainda (checkpoint v0.23 — não trata characters como lista global
     // solta; só oferece linkar os que ainda não têm campaign_id).
-    const todos = await listCharacters();
-    personagensDisponiveis = todos.filter((c) => c.campaign_id == null);
+    // v0.28: via client escopado do narrador, não mais a lista global dev.
+    personagensDisponiveis = await listUnassignedCharactersForNarrator();
   } catch {
     // parcial: a UI lida com listas vazias
   }

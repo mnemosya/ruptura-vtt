@@ -21,7 +21,15 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createInitialCharacter, computeDerivedStats, normalizeCharacter } from "../../../lib/character";
-import { createCharacter, updateCharacter, getCharacter, listCharacters, deleteCharacter } from "../../../lib/character/storage";
+import {
+  createCharacter,
+  updateCharacter,
+  getCharacter,
+  listLegacyCharactersDev,
+  deleteCharacter,
+  getCharacterForProfileSession,
+  saveCharacterForProfileSession,
+} from "../../../lib/character/storage";
 import type {
   Character,
   CharacterAttributes,
@@ -37,7 +45,6 @@ import {
   heartbeatCampaignProfile,
   leaveCampaignProfile,
   addLog,
-  validateProductSession,
   getActiveProfileSession,
 } from "../../../lib/table/storage";
 import { PROFILE_HEARTBEAT_INTERVAL_MS } from "../../../lib/table";
@@ -247,8 +254,10 @@ export default function CharacterSheetClient({
   // vêm fixos da URL (query string, montada por /join/[token] ao clicar
   // "Abrir ficha"). Antes de mostrar qualquer coisa, valida no servidor
   // que o sessionId deste navegador é quem detém o bloqueio do perfil
-  // (validateProductSession) — só então carrega o personagem ATIVO
-  // desse perfil (nunca uma lista global, nunca um id arbitrário).
+  // (getCharacterForProfileSession, checkpoint v0.28 — encapsula
+  // validateProductSession + a busca do personagem num único ponto em
+  // character/storage.ts) — só então carrega o personagem ATIVO desse
+  // perfil (nunca uma lista global, nunca um id arbitrário).
   const [productSessionState, setProductSessionState] = useState<ProductSessionState>("pending");
 
   async function loadProductSession() {
@@ -258,8 +267,8 @@ export default function CharacterSheetClient({
     }
     setProductSessionState("pending");
     try {
-      const result = await validateProductSession(initialCampaignId, initialProfileId, sessionId);
-      if (!result.ok || !result.profile) {
+      const result = await getCharacterForProfileSession(initialCampaignId, initialProfileId, sessionId);
+      if (!result.profile) {
         setProductSessionState("invalid");
         return;
       }
@@ -275,19 +284,13 @@ export default function CharacterSheetClient({
         setProfileSessionRowId(null);
       }
 
-      if (!result.profile.active_character_id) {
+      if (!result.character) {
         setCharacterId(null);
         setProductSessionState("no_character");
         return;
       }
-      const record = await getCharacter(result.profile.active_character_id);
-      if (!record) {
-        setCharacterId(null);
-        setProductSessionState("no_character");
-        return;
-      }
-      setCharacter(normalizeCharacter(record.payload));
-      setCharacterId(record.id);
+      setCharacter(normalizeCharacter(result.character.payload));
+      setCharacterId(result.character.id);
       setProductSessionState("valid");
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao validar sessão.");
@@ -433,7 +436,7 @@ export default function CharacterSheetClient({
   async function refreshList() {
     if (mode === "product") return;
     try {
-      setPersonagens(await listCharacters());
+      setPersonagens(await listLegacyCharactersDev());
     } catch {
       // Falha ao atualizar a lista não deve esconder o resultado do save/load.
     }
@@ -442,10 +445,11 @@ export default function CharacterSheetClient({
   async function handleSave() {
     // Defesa em profundidade: a ficha real (/ficha) só edita o
     // personagem ativo do perfil da sessão — nunca cria um personagem
-    // novo/solto. Na prática characterId nunca é null aqui em modo
-    // product (a UI de edição só aparece com productSessionState
-    // "valid", que exige um personagem já carregado).
-    if (mode === "product" && !characterId) return;
+    // novo/solto. Na prática characterId/selectedCampaignId/
+    // selectedProfileId/sessionId nunca são null aqui em modo product
+    // (a UI de edição só aparece com productSessionState "valid", que
+    // exige a sessão já validada e um personagem já carregado).
+    if (mode === "product" && (!characterId || !selectedCampaignId || !selectedProfileId || !sessionId)) return;
     setSaveState("saving");
     setErrorMessage(null);
     try {
@@ -453,9 +457,18 @@ export default function CharacterSheetClient({
       // recursos_atuais ausentes com os _max calculados aqui na UI
       // (derivados) — storage.ts só carimba atualizado_em por cima.
       const toSave = normalizeCharacter(character, derivados);
-      const record = characterId
-        ? await updateCharacter(characterId, toSave)
-        : await createCharacter(toSave);
+      const record =
+        mode === "product"
+          ? await saveCharacterForProfileSession(
+              selectedCampaignId as string,
+              selectedProfileId as string,
+              sessionId as string,
+              characterId as string,
+              toSave,
+            )
+          : characterId
+            ? await updateCharacter(characterId, toSave)
+            : await createCharacter(toSave);
       setCharacter(record.payload);
       setCharacterId(record.id);
       setSaveState("saved");
