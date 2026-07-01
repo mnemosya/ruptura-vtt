@@ -3435,3 +3435,127 @@ $ npm run test:content-read → Biblioteca intacta
 - Nenhuma chave secreta exposta; scripts de diagnóstico usados nesta
   auditoria (`_tmp_check_leak.ts`, `_tmp_cleanup.ts`) foram criados e
   removidos na mesma sessão, nunca commitados.
+
+# Checkpoint v0.23 — Personagem ligado à mesa/perfil
+
+Para de tratar `characters` como lista global solta: adiciona vínculo
+opcional a mesa (`campaign_id`), perfil (`profile_id`) e dono
+(`owner_id`, narrador logado). Nenhum personagem legado é apagado ou
+some da UI dev; o vínculo é 100% opcional e retroativo.
+
+## 1. Migration
+
+`supabase/migrations/0011_characters_campaign_link.sql` — 100%
+aditiva, sem risco de lockout:
+
+```sql
+alter table characters
+  add column if not exists campaign_id uuid references campaigns(id) on delete set null,
+  add column if not exists profile_id uuid references campaign_profiles(id) on delete set null,
+  add column if not exists owner_id uuid references auth.users(id) on delete set null;
+
+create index if not exists characters_campaign_id_idx on characters (campaign_id);
+create index if not exists characters_profile_id_idx on characters (profile_id);
+create index if not exists characters_owner_id_idx on characters (owner_id);
+```
+
+- Todas as colunas são **nullable** — personagens antigos continuam
+  existindo e visíveis em `/dev/character-sheet` sem quebrar nada.
+- FKs usam `on delete set null` (não `cascade`): apagar uma mesa,
+  perfil ou usuário **não apaga** o personagem, só remove o vínculo
+  (ele volta a ser "legado"). Confirmado na prática durante a limpeza
+  do teste manual (seção 5): ao apagar a mesa de teste, Kael Ironwood
+  permaneceu no banco com `campaign_id`/`profile_id` voltando a `null`.
+- RLS não foi tocada — `characters` continua em
+  `characters_dev_transition_*` (aberta), fora de escopo deste
+  checkpoint (ver v0.27).
+- Aplicada via `scripts/dev/apply-migration-generic.ts`; verificado
+  via SQL que as 3 colunas existem e são `nullable`.
+
+## 2. Novas funções em `src/lib/character/storage.ts`
+
+- `listCharactersForCampaign(campaignId)` — personagens com
+  `campaign_id` igual à mesa.
+- `listCharactersForProfile(profileId)` — personagens com
+  `profile_id` igual ao perfil.
+- `assignCharacterToCampaign(characterId, campaignId | null)` —
+  vincula/desvincula da mesa (não mexe em `profile_id`; desvincular da
+  mesa não desvincula automaticamente do perfil, por escolha).
+- `assignCharacterToProfile(characterId, profileId | null)` —
+  vincula/desvincula do perfil.
+- `createCharacter`/`updateCharacter` ganharam `campaignId`/`profileId`
+  opcionais em `SaveCharacterOptions`; `createCharacter` também carimba
+  `owner_id` com o narrador logado (best-effort via `getCurrentUser`,
+  nunca bloqueia a criação se não houver sessão).
+- **Deliberadamente não implementado nesta etapa**: `archiveCharacter`/
+  `restoreCharacter` — adiado para v0.25, que decide o esquema de
+  `archived_at`/`status` de ciclo de vida (evita adicionar colunas
+  antes de decidir a semântica).
+
+## 3. Dashboard `/mesas/[campaignId]` — seção "Personagens da mesa"
+
+Nova seção em `MesaDetailClient.tsx`, antes de "Perfis":
+
+- Lista os personagens já vinculados à mesa (`personagensDaMesa`).
+- Dropdown + botão "Vincular à mesa" para linkar um personagem
+  **legado/sem mesa** (`personagensDisponiveis`, filtrado por
+  `campaign_id == null`) — nunca "rouba" um personagem já vinculado a
+  outra mesa (só oferece os desvinculados).
+- Cada personagem vinculado tem um select de perfil (vincular/
+  desvincular do perfil dentro da mesa) e um botão "Desvincular da
+  mesa".
+- A seção "Perfis" agora só oferece os `personagensDaMesa` como opção
+  de personagem ativo (antes disso, a lógica de exibição do nome ainda
+  busca em `personagensDaMesa` + `personagensDisponiveis` juntos, para
+  não quebrar exibição de um `active_character_id` legado que aponte
+  para um personagem sem mesa).
+
+`/dev/table` e `/dev/character-sheet` continuam mostrando a lista
+global (diagnóstico) — `/dev/table` agora sinaliza personagens sem
+mesa com "(sem mesa — legado/dev)" ao lado do nome no select.
+
+## 4. Build e testes
+
+```
+$ npm run build → ✓ (11 rotas, sem mudança de superfície)
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca intacta
+```
+
+## 5. Teste manual (browser, ponta a ponta)
+
+1. Login como narrador → `/mesas` → criei mesa "Mesa v0.23".
+2. Abri o detalhe da mesa: seção "Personagens da mesa (0)" mostrou os
+   personagens legados disponíveis ("Novo Personagem", "Kael
+   Ironwood") no dropdown de vínculo.
+3. Vinculei "Kael Ironwood" à mesa → "Personagens da mesa (1)" ✓.
+4. Criei perfil "Perfil v0.23".
+5. Vinculei Kael a esse perfil pelo select de perfil do card do
+   personagem → **verificado via `.value`/`.selectedIndex` do select**
+   (não só pelo texto das opções, que é ambíguo) que a opção
+   selecionada realmente é "Perfil v0.23" ✓.
+6. Na seção "Perfis", defini Kael como personagem ativo do perfil
+   (select `det-personagem-{profileId}`) → confirmado `sel.value`
+   igual ao id de Kael ✓.
+7. Criei convite → `/join/<token>`: a lista de perfis já mostrou
+   "Personagem ativo: Kael Ironwood" corretamente ✓.
+8. Entrei como o perfil → "Abrir ficha" → `/ficha?campaignId&profileId`
+   → cliquei "Carregar personagem ativo" → o campo nome mudou para
+   "Kael Ironwood" ✓ (confirma que o vínculo mesa→perfil→personagem
+   funciona ponta a ponta através da rota real de convite).
+9. Sem erros no console (só ruído de HMR/React DevTools).
+10. Limpeza: apaguei a mesa de teste via SQL direto (MCP Supabase);
+    confirmado que Kael Ironwood permaneceu no banco com
+    `campaign_id`/`profile_id` voltando a `null` (FK `on delete set
+    null` funcionando como projetado, não `cascade`).
+
+## 6. Escopo e riscos
+
+- Nenhuma RLS foi endurecida ou alterada (fora de escopo; ver v0.27).
+- Nenhum personagem legado foi apagado, migrado à força, ou escondido
+  de `/dev/character-sheet`.
+- `archived_at`/status de ciclo de vida **não** foi adicionado nesta
+  migration — decisão deliberada, adiada para v0.25.
+- `characters` continua sem RLS restritiva — qualquer
+  `anon`/`authenticated` ainda pode ler/escrever qualquer linha
+  (herda o risco já documentado desde v0.17).

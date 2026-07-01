@@ -13,6 +13,12 @@ import {
   listProfileSessions,
   listLogsForViewer,
 } from "../../../lib/table/storage";
+import {
+  listCharacters,
+  listCharactersForCampaign,
+  assignCharacterToCampaign,
+  assignCharacterToProfile,
+} from "../../../lib/character/storage";
 import type { Campaign, CampaignProfile, CampaignInvite, ProfileSession, TableLogEntry } from "../../../lib/table";
 import type { CharacterRecord } from "../../../lib/character";
 
@@ -27,14 +33,28 @@ interface Props {
   convitesIniciais: CampaignInvite[];
   sessoesIniciais: ProfileSession[];
   logsIniciais: TableLogEntry[];
-  personagens: CharacterRecord[];
+  /** Personagens já ligados a esta mesa (campaign_id === campaign.id, checkpoint v0.23). */
+  personagensDaMesaIniciais: CharacterRecord[];
+  /** Personagens "legados" (sem mesa) disponíveis para vincular a esta mesa. */
+  personagensDisponiveisIniciais: CharacterRecord[];
 }
 
-export default function MesaDetailClient({ campaign, perfisIniciais, convitesIniciais, sessoesIniciais, logsIniciais, personagens }: Props) {
+export default function MesaDetailClient({
+  campaign,
+  perfisIniciais,
+  convitesIniciais,
+  sessoesIniciais,
+  logsIniciais,
+  personagensDaMesaIniciais,
+  personagensDisponiveisIniciais,
+}: Props) {
   const [perfis, setPerfis] = useState(perfisIniciais);
   const [convites, setConvites] = useState(convitesIniciais);
   const [sessoes, setSessoes] = useState(sessoesIniciais);
   const [logs, setLogs] = useState(logsIniciais);
+  const [personagensDaMesa, setPersonagensDaMesa] = useState(personagensDaMesaIniciais);
+  const [personagensDisponiveis, setPersonagensDisponiveis] = useState(personagensDisponiveisIniciais);
+  const [personagemParaVincular, setPersonagemParaVincular] = useState("");
   const [novoPerfil, setNovoPerfil] = useState("");
   const [conviteLabel, setConviteLabel] = useState("");
   const [linkNovo, setLinkNovo] = useState<string | null>(null);
@@ -55,6 +75,38 @@ export default function MesaDetailClient({ campaign, perfisIniciais, convitesIni
   }
   async function reloadLogs() {
     try { setLogs(await listLogsForViewer(campaign.id, {})); } catch (e) { fail(e, "Erro ao recarregar log."); }
+  }
+  async function reloadPersonagens() {
+    try {
+      setPersonagensDaMesa(await listCharactersForCampaign(campaign.id));
+      const todos = await listCharacters();
+      setPersonagensDisponiveis(todos.filter((c) => c.campaign_id == null));
+    } catch (e) { fail(e, "Erro ao recarregar personagens."); }
+  }
+
+  async function vincularPersonagemAMesa() {
+    if (!personagemParaVincular) return;
+    setError(null);
+    try {
+      await assignCharacterToCampaign(personagemParaVincular, campaign.id);
+      setPersonagemParaVincular("");
+      await reloadPersonagens();
+    } catch (e) { fail(e, "Erro ao vincular personagem à mesa."); }
+  }
+  async function desvincularPersonagemDaMesa(characterId: string) {
+    setError(null);
+    try {
+      await assignCharacterToCampaign(characterId, null);
+      await reloadPersonagens();
+      await reloadPerfis(); // um perfil pode ter esse personagem como ativo
+    } catch (e) { fail(e, "Erro ao desvincular personagem da mesa."); }
+  }
+  async function vincularPersonagemAPerfil(characterId: string, profileId: string | null) {
+    setError(null);
+    try {
+      await assignCharacterToProfile(characterId, profileId);
+      await reloadPersonagens();
+    } catch (e) { fail(e, "Erro ao vincular personagem ao perfil."); }
   }
 
   async function criarPerfil() {
@@ -100,6 +152,49 @@ export default function MesaDetailClient({ campaign, perfisIniciais, convitesIni
 
       {error && <p style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 16 }}>Erro: {error}</p>}
 
+      {/* Personagens da mesa (checkpoint v0.23) */}
+      <section style={{ marginBottom: 32 }}>
+        <h2 style={h2}>Personagens da mesa ({personagensDaMesa.length})</h2>
+        <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
+          Só personagens vinculados a esta mesa aparecem para escolha como "personagem ativo" de
+          um perfil (abaixo). Personagens sem mesa são legados/globais — ver /dev/character-sheet.
+        </p>
+        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          <select data-testid="det-personagem-disponivel-select" value={personagemParaVincular} onChange={(e) => setPersonagemParaVincular(e.target.value)} style={{ ...input, flex: 1 }}>
+            <option value="">— selecionar personagem existente (sem mesa) —</option>
+            {personagensDisponiveis.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <button data-testid="det-vincular-personagem-mesa" onClick={vincularPersonagemAMesa} disabled={!personagemParaVincular} style={{ ...btn, opacity: personagemParaVincular ? 1 : 0.5 }}>
+            Vincular à mesa
+          </button>
+        </div>
+        {personagensDaMesa.length === 0 && (
+          <p style={{ fontSize: 13, opacity: 0.6 }}>Nenhum personagem vinculado a esta mesa ainda.</p>
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {personagensDaMesa.map((c) => (
+            <div key={c.id} data-testid="det-personagem-mesa" style={{ ...card, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <strong>{c.name}</strong>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <span style={{ fontSize: 11, opacity: 0.6 }}>Perfil:</span>
+                <select
+                  data-testid={`det-personagem-perfil-select-${c.id}`}
+                  value={c.profile_id ?? ""}
+                  onChange={(e) => vincularPersonagemAPerfil(c.id, e.target.value || null)}
+                  style={input}
+                >
+                  <option value="">— nenhum —</option>
+                  {perfis.map((p) => <option key={p.id} value={p.id}>{p.nickname}</option>)}
+                </select>
+                <button data-testid={`det-desvincular-personagem-${c.id}`} onClick={() => desvincularPersonagemDaMesa(c.id)} style={btn}>
+                  Desvincular da mesa
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Perfis */}
       <section style={{ marginBottom: 32 }}>
         <h2 style={h2}>Perfis ({perfis.length})</h2>
@@ -109,7 +204,10 @@ export default function MesaDetailClient({ campaign, perfisIniciais, convitesIni
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {perfis.map((p) => {
-            const ativo = personagens.find((c) => c.id === p.active_character_id);
+            // Busca em ambas as listas (da mesa + disponíveis) só para exibir o
+            // nome — cobre o caso legado de um active_character_id apontar
+            // para um personagem ainda não vinculado formalmente à mesa.
+            const ativo = [...personagensDaMesa, ...personagensDisponiveis].find((c) => c.id === p.active_character_id);
             const sess = sessaoAtiva(p.id);
             return (
               <div key={p.id} data-testid="det-perfil" style={{ ...card, display: "flex", flexDirection: "column", gap: 6 }}>
@@ -123,7 +221,7 @@ export default function MesaDetailClient({ campaign, perfisIniciais, convitesIni
                   <span style={{ fontSize: 11, opacity: 0.7 }}>Personagem: {ativo ? ativo.name : "nenhum"}</span>
                   <select data-testid={`det-personagem-${p.id}`} value={p.active_character_id ?? ""} onChange={(e) => vincular(p.id, e.target.value || null)} style={input}>
                     <option value="">— vincular —</option>
-                    {personagens.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    {personagensDaMesa.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                   <button data-testid={`det-liberar-${p.id}`} onClick={() => liberar(p.id)} disabled={!p.is_locked} style={{ ...btn, opacity: p.is_locked ? 1 : 0.5 }}>Liberar</button>
                 </div>

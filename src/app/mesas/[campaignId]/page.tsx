@@ -1,7 +1,7 @@
 /**
  * Detalhe de mesa no dashboard do narrador (checkpoint v0.21). Exige
- * login E que o narrador seja o dono da mesa. Reúne perfis, convites e
- * log (visão de narrador = tudo) da mesa.
+ * login E que o narrador seja o dono da mesa. Reúne perfis, convites,
+ * personagens (checkpoint v0.23) e log (visão de narrador = tudo) da mesa.
  */
 
 import { redirect } from "next/navigation";
@@ -14,7 +14,7 @@ import {
   listProfileSessions,
   listLogsForViewer,
 } from "../../../lib/table/storage";
-import { listCharacters } from "../../../lib/character/storage";
+import { listCharacters, listCharactersForCampaign } from "../../../lib/character/storage";
 import type { Campaign, CampaignProfile, CampaignInvite, ProfileSession, TableLogEntry } from "../../../lib/table";
 import type { CharacterRecord } from "../../../lib/character";
 import MesaDetailClient from "./MesaDetailClient";
@@ -62,13 +62,19 @@ export default async function MesaDetailPage({ params }: PageProps) {
   let convites: CampaignInvite[] = [];
   let sessoes: ProfileSession[] = [];
   let logs: TableLogEntry[] = [];
-  let personagens: CharacterRecord[] = [];
+  let personagensDaMesa: CharacterRecord[] = [];
+  let personagensDisponiveis: CharacterRecord[] = [];
   try {
     perfis = await listCampaignProfiles(campaignId);
     convites = await listCampaignInvites(campaignId);
     sessoes = await listProfileSessions(campaignId);
     logs = await listLogsForViewer(campaignId, {}); // narrador dono → vê tudo
-    personagens = await listCharacters();
+    personagensDaMesa = await listCharactersForCampaign(campaignId);
+    // "Disponíveis para vincular": personagens legados/globais, sem mesa
+    // ainda (checkpoint v0.23 — não trata characters como lista global
+    // solta; só oferece linkar os que ainda não têm campaign_id).
+    const todos = await listCharacters();
+    personagensDisponiveis = todos.filter((c) => c.campaign_id == null);
   } catch {
     // parcial: a UI lida com listas vazias
   }
@@ -80,7 +86,8 @@ export default async function MesaDetailPage({ params }: PageProps) {
       convitesIniciais={convites}
       sessoesIniciais={sessoes}
       logsIniciais={logs}
-      personagens={personagens}
+      personagensDaMesaIniciais={personagensDaMesa}
+      personagensDisponiveisIniciais={personagensDisponiveis}
     />
   );
 }

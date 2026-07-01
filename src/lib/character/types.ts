@@ -85,6 +85,12 @@ export interface CharacterRecord {
   payload: Character;
   created_at: string;
   updated_at: string;
+  /** Mesa a que o personagem pertence (migration 0011). Null = legado/sem mesa. */
+  campaign_id: string | null;
+  /** Perfil a que o personagem pertence dentro da mesa (migration 0011). Null = sem perfil. */
+  profile_id: string | null;
+  /** Narrador logado dono do registro (migration 0011). Null = criado sem login. */
+  owner_id: string | null;
 }
 
 // ---------------------------------------------------------------------

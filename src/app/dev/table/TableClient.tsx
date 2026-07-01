@@ -574,6 +574,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                         {personagens.map((personagem) => (
                           <option key={personagem.id} value={personagem.id}>
                             {personagem.name}
+                            {personagem.campaign_id == null ? " (sem mesa — legado/dev)" : ""}
                           </option>
                         ))}
                       </select>
