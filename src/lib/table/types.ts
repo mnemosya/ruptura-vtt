@@ -68,3 +68,24 @@ export const PROFILE_HEARTBEAT_TIMEOUT_MS = 30_000;
 
 /** Intervalo de envio de heartbeat enquanto uma sessão está "dentro" de um perfil. */
 export const PROFILE_HEARTBEAT_INTERVAL_MS = 10_000;
+
+/**
+ * Convite de mesa (tabela `campaign_invites`, migration 0008). Tipo
+ * PÚBLICO seguro: NÃO inclui `token_hash` (nem o token bruto) — o hash
+ * fica só no banco, o token bruto só aparece no momento da criação. Ver
+ * createCampaignInvite/resolveCampaignInvite em storage.ts.
+ */
+export interface CampaignInvite {
+  id: string;
+  campaign_id: string;
+  label: string | null;
+  is_active: boolean;
+  expires_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  revoked_at: string | null;
+}
+
+/** Colunas seguras de `campaign_invites` (nunca token_hash) — usado nos selects. */
+export const CAMPAIGN_INVITE_SAFE_COLUMNS =
+  "id, campaign_id, label, is_active, expires_at, created_by, created_at, revoked_at";

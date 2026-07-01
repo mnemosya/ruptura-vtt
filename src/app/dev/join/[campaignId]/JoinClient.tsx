@@ -29,9 +29,11 @@ interface Props {
   campaign: Campaign;
   perfisIniciais: CampaignProfile[];
   personagens: CharacterRecord[];
+  /** "dev" = /dev/join/[campaignId] (id cru, inseguro); "invite" = /join/[token] (convite real). */
+  variant?: "dev" | "invite";
 }
 
-export default function JoinClient({ campaign, perfisIniciais, personagens }: Props) {
+export default function JoinClient({ campaign, perfisIniciais, personagens, variant = "dev" }: Props) {
   const [perfis, setPerfis] = useState<CampaignProfile[]>(perfisIniciais);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [enteredProfileId, setEnteredProfileId] = useState<string | null>(null);
@@ -80,16 +82,28 @@ export default function JoinClient({ campaign, perfisIniciais, personagens }: Pr
 
   return (
     <main style={{ maxWidth: 640, margin: "0 auto", padding: "32px 20px 80px" }}>
-      <p style={{ opacity: 0.6, fontSize: 13, marginBottom: 4 }}>
-        /dev/join/{campaign.id} — entrada DEV por link de mesa.
-      </p>
-      <p style={{ opacity: 0.5, fontSize: 11, marginBottom: 16 }}>
-        Este link NÃO é um convite seguro: é literalmente o id da mesa em texto puro, sem token,
-        sem expiração, sem revogação, sem autenticação — qualquer pessoa com esta URL pode ver e
-        entrar em qualquer perfil livre/expirado desta mesa. Além disso, a RLS está em modo de
-        transição (policies dev_transition abertas, migration 0007), então nada aqui é protegido no
-        banco ainda.
-      </p>
+      {variant === "dev" ? (
+        <>
+          <p style={{ opacity: 0.6, fontSize: 13, marginBottom: 4 }}>
+            /dev/join/{campaign.id} — entrada DEV por link de mesa (id cru).
+          </p>
+          <p style={{ opacity: 0.5, fontSize: 11, marginBottom: 16 }}>
+            Este link NÃO é um convite seguro: é literalmente o id da mesa em texto puro, sem token,
+            sem expiração, sem revogação, sem autenticação. Prefira um convite real
+            (/join/&lt;token&gt;, checkpoint v0.18). Além disso, a RLS está em modo de transição
+            (policies dev_transition abertas), então nada aqui é protegido no banco ainda.
+          </p>
+        </>
+      ) : (
+        <>
+          <p style={{ opacity: 0.6, fontSize: 13, marginBottom: 4 }}>Convite de mesa</p>
+          <p style={{ opacity: 0.5, fontSize: 11, marginBottom: 16 }}>
+            Você entrou por um link de convite com token (revogável). A RLS ainda está em modo de
+            transição — a validação do token é feita server-side, mas o banco ainda tem policies
+            dev abertas (ver checkpoint v0.17/v0.18).
+          </p>
+        </>
+      )}
 
       <h1 style={{ fontSize: 22, marginBottom: 4 }}>{campaign.name}</h1>
       <p style={{ opacity: 0.5, fontSize: 11, marginBottom: 24, fontFamily: "monospace" }}>{campaign.id}</p>

@@ -22,11 +22,12 @@
  * Nunca a service role key — nem aqui, nem em scopedClient.ts.
  */
 
+import { createHash, randomBytes } from "node:crypto";
 import { getScopedTableClient } from "../auth/scopedClient";
 import { getCurrentUser } from "../auth/session";
 import { TableStorageError } from "./storage.errors";
-import { PROFILE_HEARTBEAT_TIMEOUT_MS } from "./types";
-import type { Campaign, CampaignProfile, TableLogEntry, TableLogVisibility } from "./types";
+import { PROFILE_HEARTBEAT_TIMEOUT_MS, CAMPAIGN_INVITE_SAFE_COLUMNS } from "./types";
+import type { Campaign, CampaignInvite, CampaignProfile, TableLogEntry, TableLogVisibility } from "./types";
 
 /**
  * Id do narrador logado (auth dev, checkpoint v0.13) ou null. Best
@@ -46,6 +47,12 @@ async function currentOwnerId(): Promise<string | null> {
 const CAMPAIGNS_TABLE = "campaigns";
 const TABLE_LOGS_TABLE = "table_logs";
 const CAMPAIGN_PROFILES_TABLE = "campaign_profiles";
+const CAMPAIGN_INVITES_TABLE = "campaign_invites";
+
+/** Hash SHA-256 (hex) de um token de convite. O banco só guarda o hash. */
+function hashInviteToken(rawToken: string): string {
+  return createHash("sha256").update(rawToken).digest("hex");
+}
 
 /**
  * Cria uma mesa (campaign) de desenvolvimento. Carimba `owner_id` com o
@@ -359,4 +366,130 @@ export async function forceReleaseCampaignProfile(profileId: string): Promise<Ca
     throw new TableStorageError(`Falha ao liberar perfil "${profileId}": ${error.message}`, error);
   }
   return data as CampaignProfile;
+}
+
+// =====================================================================
+// Convites de mesa (campaign_invites, migration 0008)
+// =====================================================================
+
+export interface CreateInviteResult {
+  invite: CampaignInvite;
+  /** Token BRUTO — só retornado aqui, no momento da criação. Nunca é relido do banco (só o hash é guardado). */
+  rawToken: string;
+}
+
+export interface ResolvedInvite {
+  ok: boolean;
+  /** Motivo da recusa quando ok=false. */
+  reason?: "not_found" | "revoked" | "inactive" | "expired";
+  campaign?: Campaign;
+  inviteId?: string;
+}
+
+/**
+ * Cria um convite para uma mesa. Gera um token aleatório forte
+ * server-side, guarda só o SHA-256 no banco e devolve o token bruto
+ * UMA vez (para montar o link). Quando há narrador logado, recusa se
+ * ele não for o dono da mesa.
+ */
+export async function createCampaignInvite(
+  campaignId: string,
+  label?: string,
+  expiresAt?: string | null,
+): Promise<CreateInviteResult> {
+  const client = await getScopedTableClient();
+  let user: Awaited<ReturnType<typeof getCurrentUser>> = null;
+  try {
+    user = await getCurrentUser();
+  } catch {
+    user = null;
+  }
+
+  // Checagem de dono só quando há usuário logado (fluxo dev anon segue livre).
+  if (user) {
+    const { data: camp } = await client.from(CAMPAIGNS_TABLE).select("owner_id").eq("id", campaignId).maybeSingle();
+    if (camp && (camp as { owner_id: string | null }).owner_id && (camp as { owner_id: string | null }).owner_id !== user.id) {
+      throw new TableStorageError("Só o dono da mesa pode criar convites para ela.");
+    }
+  }
+
+  const rawToken = randomBytes(32).toString("base64url");
+  const tokenHash = hashInviteToken(rawToken);
+  const { data, error } = await client
+    .from(CAMPAIGN_INVITES_TABLE)
+    .insert({
+      campaign_id: campaignId,
+      token_hash: tokenHash,
+      label: label?.trim() ? label.trim() : null,
+      expires_at: expiresAt ?? null,
+      created_by: user?.id ?? null,
+    })
+    .select(CAMPAIGN_INVITE_SAFE_COLUMNS)
+    .single();
+
+  if (error) {
+    throw new TableStorageError(`Falha ao criar convite na mesa "${campaignId}": ${error.message}`, error);
+  }
+  return { invite: data as CampaignInvite, rawToken };
+}
+
+/** Lista convites de uma mesa (mais recentes primeiro). Nunca retorna token_hash. */
+export async function listCampaignInvites(campaignId: string): Promise<CampaignInvite[]> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from(CAMPAIGN_INVITES_TABLE)
+    .select(CAMPAIGN_INVITE_SAFE_COLUMNS)
+    .eq("campaign_id", campaignId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new TableStorageError(`Falha ao listar convites da mesa "${campaignId}": ${error.message}`, error);
+  }
+  return (data as CampaignInvite[]) ?? [];
+}
+
+/** Revoga um convite (is_active=false, revoked_at=agora). Idempotente. */
+export async function revokeCampaignInvite(inviteId: string): Promise<CampaignInvite> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from(CAMPAIGN_INVITES_TABLE)
+    .update({ is_active: false, revoked_at: new Date().toISOString() })
+    .eq("id", inviteId)
+    .select(CAMPAIGN_INVITE_SAFE_COLUMNS)
+    .single();
+
+  if (error) {
+    throw new TableStorageError(`Falha ao revogar convite "${inviteId}": ${error.message}`, error);
+  }
+  return data as CampaignInvite;
+}
+
+/**
+ * Resolve um token bruto de convite: hasheia, busca por token_hash e
+ * valida estado (revogado/inativo/expirado). Retorna a mesma-mesa
+ * quando válido. Nunca lança por convite inválido — só por falha real
+ * de rede/RLS.
+ */
+export async function resolveCampaignInvite(rawToken: string): Promise<ResolvedInvite> {
+  const client = await getScopedTableClient();
+  const tokenHash = hashInviteToken(rawToken);
+  const { data, error } = await client
+    .from(CAMPAIGN_INVITES_TABLE)
+    .select("id, campaign_id, is_active, expires_at, revoked_at")
+    .eq("token_hash", tokenHash)
+    .maybeSingle();
+
+  if (error) {
+    throw new TableStorageError(`Falha ao resolver convite: ${error.message}`, error);
+  }
+  if (!data) return { ok: false, reason: "not_found" };
+
+  const row = data as { id: string; campaign_id: string; is_active: boolean; expires_at: string | null; revoked_at: string | null };
+  if (row.revoked_at) return { ok: false, reason: "revoked" };
+  if (!row.is_active) return { ok: false, reason: "inactive" };
+  if (row.expires_at && new Date(row.expires_at).getTime() < Date.now()) return { ok: false, reason: "expired" };
+
+  const campaign = await getCampaign(row.campaign_id);
+  if (!campaign) return { ok: false, reason: "not_found" };
+  return { ok: true, campaign, inviteId: row.id };
 }

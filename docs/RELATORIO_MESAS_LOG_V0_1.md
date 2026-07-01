@@ -2866,3 +2866,103 @@ Manual (browser):
   4 em campaigns, 4 em campaign_profiles, 2 em table_logs, 4 em
   characters = 14, quando os pré-requisitos de auth de jogador
   existirem.
+
+---
+
+# Checkpoint v0.18 — Convite real de mesa
+
+Substitui o `/dev/join/[campaignId]` (id cru) por um convite com token
+revogável: rota real `/join/[token]`. O banco guarda só o **hash
+SHA-256** do token; o token bruto só existe no momento da criação
+(mostrado uma vez, no link). `/dev/join/[campaignId]` continua como
+legado dev, com aviso.
+
+## 1. Migration 0008 — `campaign_invites`
+
+`supabase/migrations/0008_campaign_invites.sql`, aplicada via
+`SUPABASE_DB_URL`, verificada. Colunas: `id`, `campaign_id` (FK cascade),
+`token_hash` (unique), `label`, `is_active` (default true), `expires_at`
+(nullable), `created_by` (FK auth.users, nullable), `created_at`,
+`revoked_at` (nullable). Índices em `campaign_id` e `token_hash`.
+
+RLS: mesma estratégia de transição — `*_dev_transition_*` (anon+
+authenticated, abertas, necessárias porque `/join` é anon) +
+`campaign_invites_owner_all` (owner-scoped via campanha). Comentado no
+banco como TRANSICAO/INSEGURA. token_hash é digest irreversível, mas a
+leitura anon expõe a lista de hashes — risco de transição documentado.
+
+## 2. Geração de token (server-side, só hash no banco)
+
+`hashInviteToken(raw) = sha256(raw) hex`. `createCampaignInvite`:
+`randomBytes(32).toString("base64url")` (43 chars, URL-safe) →
+guarda só o hash → devolve `{ invite, rawToken }` com o bruto **uma
+vez**. O tipo público `CampaignInvite` **não inclui** `token_hash`
+(nem os selects — `CAMPAIGN_INVITE_SAFE_COLUMNS`).
+
+## 3. Server Actions (`src/lib/table/storage.ts`)
+
+| Função | O que faz |
+|---|---|
+| `createCampaignInvite(campaignId, label?, expiresAt?)` | Gera token, guarda hash, devolve link uma vez. Recusa se há usuário logado que não é dono da mesa. |
+| `listCampaignInvites(campaignId)` | Lista convites (sem token_hash). |
+| `revokeCampaignInvite(inviteId)` | `is_active=false`, `revoked_at=agora`. |
+| `resolveCampaignInvite(rawToken)` | Hasheia, busca, valida (not_found/revoked/inactive/expired), devolve a mesa. Nunca lança por convite inválido. |
+
+## 4. Rota `/join/[token]`
+
+Server Component resolve o token → convite inválido mostra motivo
+(`Convite não encontrado/revogado/inativo/expirado`) sem vazar a mesa;
+válido busca perfis+personagens e renderiza o `JoinClient` existente
+com `variant="invite"` (aviso adequado, sem o texto de "link inseguro"
+do dev). O id da mesa **nunca** aparece na URL — só o token opaco.
+`JoinClient` ganhou o prop `variant` (`"dev" | "invite"`).
+
+## 5. UI `/dev/table` — seção "Convites"
+
+Por mesa selecionada: criar convite (rótulo opcional) → mostra o link
+uma vez com botão "Copiar"; lista de convites com estado
+(Ativo/Revogado/Expirado) e botão "Revogar" (desabilitado se já
+revogado). `/dev/join/[campaignId]` mantido como legado com aviso
+reforçado apontando para o convite real.
+
+## 6. Testes
+
+```
+$ npm run build → ✓ (rota /join/[token] registrada)
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca intacta
+```
+
+Script determinístico (criar→resolver→revogar), removido ao final:
+- rawToken 43 chars; `token_hash` ausente do tipo retornado ✓
+- resolve válido → ok; token errado → `not_found`; após revogar →
+  `revoked`; lista sem hash, `is_active=false`/`revoked_at` set ✓
+
+Manual (browser, logado):
+1. Login narrador → criar mesa → criar perfil → criar convite ("Link
+   dos players") → link `/join/<token>` mostrado uma vez, estado
+   "Ativo".
+2. Abri `/join/<token>` → nome da mesa, perfil listado, variante
+   "invite", **sem campaignId na URL**.
+3. "Entrar como perfil" → funcionou, "Abrir ficha" apareceu.
+4. `/dev/table` → "Revogar" → estado "Revogado".
+5. Reabri o mesmo link → **"Este convite foi revogado."**, sem listar
+   perfis nem vazar a mesa.
+6. Sem erros no console. Mesa de teste removida (cascade).
+
+Expiração: a coluna `expires_at` existe e `resolveCampaignInvite` a
+respeita (testado via lógica; a UI de definir data de expiração ficou
+como pendência simples — hoje cria sem expiração pela UI, mas a Server
+Action aceita o parâmetro).
+
+## 7. Escopo / pendências
+
+- **Não salva token bruto** no banco (só hash) ✓.
+- **Não expõe token_hash na UI** (tipo/selects seguros) ✓.
+- **Recusa convite de não-dono quando logado** ✓ (application-layer).
+- `/dev/join` legado **não quebrado** ✓.
+- Pendência: UI para definir `expires_at` ao criar (a action já
+  aceita); múltiplos convites por mesa suportados.
+- Risco de transição: RLS anon ainda aberta em `campaign_invites`
+  (dev_transition) — a lista de token_hash é legível por anon (digests,
+  não o token). A remover junto com as demais dev_transition.

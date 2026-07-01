@@ -18,11 +18,15 @@ import {
   setCampaignProfileLocked,
   setCampaignProfileActiveCharacter,
   forceReleaseCampaignProfile,
+  createCampaignInvite,
+  listCampaignInvites,
+  revokeCampaignInvite,
 } from "../../../lib/table/storage";
 import {
   TABLE_LOG_VISIBILITIES,
   PROFILE_HEARTBEAT_TIMEOUT_MS,
   type Campaign,
+  type CampaignInvite,
   type CampaignProfile,
   type TableLogEntry,
   type TableLogVisibility,
@@ -151,6 +155,10 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
   const [novoPerfilApelido, setNovoPerfilApelido] = useState("");
   const [loadingPerfis, setLoadingPerfis] = useState(false);
   const [mesaOwnerFiltro, setMesaOwnerFiltro] = useState<MesaOwnerFilter>("todas");
+  const [convites, setConvites] = useState<CampaignInvite[]>([]);
+  const [novoConviteLabel, setNovoConviteLabel] = useState("");
+  const [conviteLinkNovo, setConviteLinkNovo] = useState<string | null>(null);
+  const [conviteCopiado, setConviteCopiado] = useState(false);
   // Tick local (5s) só para recalcular "parece expirado" comparando
   // last_seen_at já carregado com Date.now() — não busca nada novo do
   // servidor (ver mesmo padrão em CharacterSheetClient).
@@ -189,6 +197,52 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       setLoadingLogs(false);
     }
     await handleRefreshPerfis(id);
+    await handleRefreshConvites(id);
+    setConviteLinkNovo(null);
+  }
+
+  async function handleRefreshConvites(campaignId: string) {
+    try {
+      setConvites(await listCampaignInvites(campaignId));
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao carregar convites.");
+    }
+  }
+
+  async function handleCreateConvite() {
+    if (!selectedCampaignId) return;
+    setErrorMessage(null);
+    setConviteCopiado(false);
+    try {
+      const { rawToken } = await createCampaignInvite(selectedCampaignId, novoConviteLabel);
+      setNovoConviteLabel("");
+      const link = `${window.location.origin}/join/${rawToken}`;
+      setConviteLinkNovo(link);
+      await handleRefreshConvites(selectedCampaignId);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao criar convite.");
+    }
+  }
+
+  async function handleRevokeConvite(inviteId: string) {
+    if (!selectedCampaignId) return;
+    setErrorMessage(null);
+    try {
+      await revokeCampaignInvite(inviteId);
+      await handleRefreshConvites(selectedCampaignId);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao revogar convite.");
+    }
+  }
+
+  async function handleCopyConviteLink() {
+    if (!conviteLinkNovo) return;
+    try {
+      await navigator.clipboard.writeText(conviteLinkNovo);
+      setConviteCopiado(true);
+    } catch {
+      // Clipboard pode falhar sem gesto do usuário; o link fica visível para cópia manual.
+    }
   }
 
   async function handleRefreshPerfis(campaignId: string) {
@@ -544,6 +598,92 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                         Liberar perfil
                       </button>
                     </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <section style={{ marginBottom: 32 }}>
+            <h2 style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, opacity: 0.6, marginBottom: 12 }}>
+              Convites ({convites.length}) — {mesaAtual?.name ?? selectedCampaignId}
+            </h2>
+            <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
+              Convite real com token revogável → gera <code>/join/&lt;token&gt;</code>. O banco guarda só
+              o hash do token; o link bruto aparece uma única vez, ao criar.
+            </p>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+              <input
+                data-testid="novo-convite-label"
+                type="text"
+                value={novoConviteLabel}
+                onChange={(e) => setNovoConviteLabel(e.target.value)}
+                placeholder="Rótulo do convite (opcional)"
+                style={{ ...inputStyle, flex: 1, minWidth: 180 }}
+              />
+              <button data-testid="criar-convite-button" onClick={handleCreateConvite} style={buttonStyle}>
+                Criar convite
+              </button>
+            </div>
+
+            {conviteLinkNovo && (
+              <div
+                data-testid="convite-link-novo"
+                style={{ background: "#15301a", border: "1px solid #2a5a35", borderRadius: 8, padding: 12, marginBottom: 12 }}
+              >
+                <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 6 }}>
+                  Link do convite (mostrado só agora — copie antes de sair):
+                </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <code style={{ fontSize: 12, wordBreak: "break-all", flex: 1 }}>{conviteLinkNovo}</code>
+                  <button data-testid="copiar-convite-button" onClick={handleCopyConviteLink} style={buttonStyle}>
+                    {conviteCopiado ? "Copiado ✓" : "Copiar"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {convites.length === 0 && <p style={{ fontSize: 13, opacity: 0.6 }}>Nenhum convite criado ainda.</p>}
+            <div data-testid="convites-lista" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {convites.map((convite) => {
+                const expirado = convite.expires_at != null && new Date(convite.expires_at).getTime() < nowTick;
+                const revogado = convite.revoked_at != null || !convite.is_active;
+                const estado = revogado ? "Revogado" : expirado ? "Expirado" : "Ativo";
+                const estadoCor = revogado ? "#ff6b6b" : expirado ? "#ffb84f" : "#7fd99a";
+
+                return (
+                  <div
+                    key={convite.id}
+                    data-testid="convite-entry"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      background: "#1d1e24",
+                      borderRadius: 8,
+                      padding: "10px 14px",
+                      fontSize: 13,
+                    }}
+                  >
+                    <div>
+                      <span style={{ fontWeight: 600 }}>{convite.label ?? "(sem rótulo)"}</span>
+                      <span data-testid="convite-estado" style={{ marginLeft: 10, fontSize: 11, color: estadoCor }}>
+                        {estado}
+                      </span>
+                      <div style={{ fontSize: 11, opacity: 0.5 }}>
+                        criado {new Date(convite.created_at).toLocaleString("pt-BR")}
+                        {convite.expires_at ? ` · expira ${new Date(convite.expires_at).toLocaleString("pt-BR")}` : ""}
+                      </div>
+                    </div>
+                    <button
+                      data-testid={`revogar-convite-${convite.id}`}
+                      onClick={() => handleRevokeConvite(convite.id)}
+                      disabled={revogado}
+                      style={{ ...buttonStyle, opacity: revogado ? 0.5 : 1 }}
+                    >
+                      Revogar
+                    </button>
                   </div>
                 );
               })}
