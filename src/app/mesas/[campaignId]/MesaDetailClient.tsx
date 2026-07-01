@@ -13,7 +13,9 @@ import {
   listProfileSessions,
   listLogsForViewer,
   addLog,
+  expireStaleProfileSessions,
 } from "../../../lib/table/storage";
+import { computeProfileStatus } from "../../../lib/table/profileStatus";
 import {
   listCharacters,
   listCharactersForCampaign,
@@ -210,6 +212,12 @@ export default function MesaDetailClient({
     try { await forceReleaseCampaignProfile(profileId); await reloadPerfis(); }
     catch (e) { fail(e, "Erro ao liberar perfil."); }
   }
+  /** Botão "Limpar expiradas" (checkpoint v0.26) — marca sessões velhas como expiradas e libera o bloqueio. */
+  async function limparExpiradas() {
+    setError(null);
+    try { await expireStaleProfileSessions(campaign.id); await reloadPerfis(); }
+    catch (e) { fail(e, "Erro ao limpar sessões expiradas."); }
+  }
   async function criarConvite() {
     setError(null);
     try {
@@ -329,7 +337,16 @@ export default function MesaDetailClient({
 
       {/* Perfis */}
       <section style={{ marginBottom: 32 }}>
-        <h2 style={h2}>Perfis ({perfis.length})</h2>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+          <h2 style={{ ...h2, marginBottom: 0 }}>Perfis ({perfis.length})</h2>
+          <button data-testid="det-limpar-expiradas" onClick={limparExpiradas} style={btn}>
+            Limpar expiradas
+          </button>
+        </div>
+        <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
+          Sessões sem heartbeat há mais de 30s (checkpoint v0.26) já são detectadas automaticamente ao
+          abrir esta página/o convite/a ficha; este botão só força a limpeza na hora, sem esperar.
+        </p>
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           <input data-testid="det-novo-perfil" value={novoPerfil} onChange={(e) => setNovoPerfil(e.target.value)} placeholder="Apelido do perfil" style={{ ...input, flex: 1 }} />
           <button data-testid="det-criar-perfil" onClick={criarPerfil} style={btn}>Criar perfil</button>
@@ -341,14 +358,22 @@ export default function MesaDetailClient({
             // para um personagem ainda não vinculado formalmente à mesa.
             const ativo = [...personagensDaMesa, ...personagensDisponiveis].find((c) => c.id === p.active_character_id);
             const sess = sessaoAtiva(p.id);
+            // Status calculado sem sessionId de navegador (visão do narrador,
+            // nunca "é esta aba") — reusa a mesma lógica de /ficha e /join.
+            const status = computeProfileStatus(p, null, Date.now());
+            const ultimoSinal = p.last_seen_at ? new Date(p.last_seen_at).toLocaleString("pt-BR") : "nunca";
             return (
               <div key={p.id} data-testid="det-perfil" style={{ ...card, display: "flex", flexDirection: "column", gap: 6 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                   <strong>{p.nickname}</strong>
-                  <span style={{ fontSize: 11, color: sess ? "#5ec8ff" : "#888" }}>
-                    {sess ? "sessão ativa" : "sem sessão"} · {p.is_locked ? "Bloqueado" : "Livre"}
+                  <span data-testid={`det-perfil-status-${p.id}`} style={{ fontSize: 11, color: sess ? "#5ec8ff" : "#888" }}>
+                    {sess ? "sessão ativa" : "sem sessão"} · {status}
                   </span>
                 </div>
+                <span style={{ fontSize: 10, opacity: 0.5 }}>
+                  Último sinal: {ultimoSinal}
+                  {status === "Expirado" ? ` (expirado há ${Math.round((Date.now() - new Date(p.last_seen_at ?? 0).getTime()) / 1000)}s)` : ""}
+                </span>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <span style={{ fontSize: 11, opacity: 0.7 }}>
                     Personagem: {ativo ? `${ativo.name}${ativo.archived_at ? " (arquivado)" : ""}` : "nenhum"}

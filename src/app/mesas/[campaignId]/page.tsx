@@ -13,6 +13,7 @@ import {
   listCampaignInvites,
   listProfileSessions,
   listLogsForViewer,
+  expireStaleProfileSessions,
 } from "../../../lib/table/storage";
 import { listCharacters, listCharactersForCampaign } from "../../../lib/character/storage";
 import type { Campaign, CampaignProfile, CampaignInvite, ProfileSession, TableLogEntry } from "../../../lib/table";
@@ -65,6 +66,8 @@ export default async function MesaDetailPage({ params }: PageProps) {
   let personagensDaMesa: CharacterRecord[] = [];
   let personagensDisponiveis: CharacterRecord[] = [];
   try {
+    // v0.26: expira sessões velhas desta mesa antes de listar perfis/sessões — ver expireStaleProfileSessions.
+    await expireStaleProfileSessions(campaignId).catch(() => {});
     perfis = await listCampaignProfiles(campaignId);
     convites = await listCampaignInvites(campaignId);
     sessoes = await listProfileSessions(campaignId);

@@ -167,6 +167,13 @@ export default function CharacterSheetClient({
   // uma sessão é assumida (entrar/retomar/validar sessão product);
   // limpo ao sair. Nulo é aceito pela coluna (nullable) — melhor esforço.
   const [profileSessionRowId, setProfileSessionRowId] = useState<string | null>(null);
+  // Aviso de sessão expirada (checkpoint v0.26, modo product/ficha) —
+  // true quando o heartbeat desta aba foi rejeitado (outra sessão
+  // assumiu o perfil, ou expireStaleProfileSessions liberou o
+  // bloqueio por inatividade). Não bloqueia a ficha sozinho — só avisa;
+  // a ficha continua legível/editável, mas o vínculo de "dono" do
+  // perfil pode já ter mudado no banco.
+  const [sessionExpiredWarning, setSessionExpiredWarning] = useState(false);
   // Tick local (atualizado a cada 5s) só para forçar recalcular o
   // status "Expirado" exibido na UI, comparando last_seen_at com o
   // relógio do navegador — não busca nada novo do servidor.
@@ -400,6 +407,10 @@ export default function CharacterSheetClient({
         addLogEntry("perfil", `Heartbeat expirado — perfil "${profileAtual.nickname}" foi perdido por esta aba.`);
         setEnteredProfile(null);
         setProfileSessionRowId(null);
+        // v0.26: /ficha detecta a própria sessão expirando e avisa —
+        // não bloqueia a ficha (o jogador pode continuar vendo/editando
+        // localmente), só sinaliza que o vínculo de perfil pode ter mudado.
+        if (mode === "product") setSessionExpiredWarning(true);
         await persistProfileEvent(selectedCampaignId, profileAtual, "heartbeat_expirado");
       }
     }, PROFILE_HEARTBEAT_INTERVAL_MS);
@@ -698,6 +709,13 @@ export default function CharacterSheetClient({
       {usandoFallback && (
         <p style={{ color: "#f5a623", fontSize: 13, marginBottom: 16 }}>
           ⚠ regras_personagem não veio do banco — usando fórmulas de fallback temporárias.
+        </p>
+      )}
+      {mode === "product" && sessionExpiredWarning && (
+        <p data-testid="ficha-sessao-expirada-aviso" style={{ color: "#ffb84f", fontSize: 13, marginBottom: 16 }}>
+          ⚠ Sua sessão deste perfil expirou (sem sinal por muito tempo) — outra pessoa pode ter
+          assumido este perfil. Suas próximas ações podem não ser salvas como esperado; recarregue a
+          página e entre novamente pelo convite se precisar.
         </p>
       )}
 

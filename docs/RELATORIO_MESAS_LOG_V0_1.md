@@ -3854,3 +3854,124 @@ $ npm run test:content-read → Biblioteca intacta
 - `renameCharacter`/`archiveCharacter`/`restoreCharacter`/
   `duplicateCharacter` seguem sem RLS restritiva — herdam o mesmo
   risco de `characters_dev_transition_*` documentado desde v0.17.
+
+# Checkpoint v0.26 — Expiração automática de sessões
+
+Sessões de perfil sem heartbeat viram `expired` de verdade no banco
+(não só um cálculo de exibição) em pontos de carregamento seguros —
+sem cron, sem Realtime. Perfil liberado automaticamente; dashboard
+ganha visibilidade (último sinal, "Limpar expiradas"); `/ficha` avisa
+o próprio jogador se a sessão dele expirar.
+
+## 1. `expireStaleProfileSessions(campaignId?, staleAfterSeconds=30)`
+
+Nova função em `src/lib/table/storage.ts`:
+
+1. Busca em `profile_sessions` linhas `status='active'` com
+   `last_seen_at` mais velho que `staleAfterSeconds` (default: mesma
+   janela do heartbeat, `PROFILE_HEARTBEAT_TIMEOUT_MS`), opcionalmente
+   filtradas por `campaignId`.
+2. Marca cada uma como `status='expired'` (idempotente: só se ainda
+   estava `'active'`, evita corrida com um heartbeat concorrente).
+3. Se essa sessão ainda é quem detém o bloqueio do perfil — confirmado
+   comparando `sha256(campaign_profiles.lock_session_id)` com o
+   `session_token_hash` guardado, **nunca** derrubando uma sessão mais
+   nova que já assumiu o mesmo perfil — libera o perfil (`is_locked =
+   false`) e grava um `profile_event` (`evento: "expirado_automatico"`,
+   visibilidade "gm").
+4. **Nunca apaga linhas** — só muda `status`. Melhor esforço por linha
+   (uma falha isolada não interrompe as demais).
+
+## 2. Pontos de chamada (sem cron/Realtime)
+
+- `src/app/mesas/[campaignId]/page.tsx` — antes de listar perfis/sessões.
+- `src/app/join/[token]/page.tsx` — antes de listar perfis (perfil
+  expirado já aparece "Livre" no convite).
+- `validateProductSession` (`/ficha`) — antes de checar o bloqueio.
+- `enterCampaignProfile` — antes de decidir se pode entrar (relê o
+  perfil depois, já refletindo a expiração).
+
+Nenhum job periódico real foi criado — é **trabalho futuro
+documentado**: um cron (ex.: Supabase Edge Function agendada, ou
+`pg_cron`) chamando `expireStaleProfileSessions()` sem `campaignId`
+periodicamente resolveria mesas que ninguém abre por muito tempo (hoje
+só expira quando alguém carrega uma das telas acima). Script manual
+disponível: `scripts/dev/expire-profile-sessions.ts [campaignId]
+[staleAfterSeconds]`.
+
+## 3. Dashboard `/mesas/[campaignId]`
+
+- Botão "Limpar expiradas" no cabeçalho da seção Perfis — chama
+  `expireStaleProfileSessions(campaign.id)` na hora, sem esperar o
+  próximo carregamento de página.
+- Cada card de perfil ganhou "Último sinal: <data/hora>" e, quando o
+  status calculado é "Expirado", "(expirado há Ns)" — reusa
+  `computeProfileStatus` (já existente desde v0.9/v0.10, agora também
+  importado aqui).
+
+## 4. `/ficha` — aviso de sessão expirada (modo product)
+
+Novo estado `sessionExpiredWarning`: quando o heartbeat desta aba é
+rejeitado (heartbeat sempre falha se outra sessão assumiu o perfil, ou
+se `expireStaleProfileSessions` já liberou o bloqueio por
+inatividade), o modo product mostra um aviso visível — **não bloqueia
+a ficha**, só avisa que o vínculo de "dono" do perfil pode ter mudado
+e recomenda recarregar/entrar de novo pelo convite. Modo dev mantém o
+comportamento anterior (só o Log local + `persistProfileEvent`).
+
+## 5. Build e testes
+
+```
+$ npm run build → ✓ (11 rotas, sem mudança de superfície)
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca intacta
+$ npx tsx scripts/dev/expire-profile-sessions.ts → roda limpo (0 sessões expiráveis no estado normal)
+```
+
+## 6. Teste manual (browser, ponta a ponta)
+
+1. Criei mesa "Mesa v0.26", perfil "Perfil v0.26", convite; entrei
+   como perfil pelo `/join/<token>` (bloqueou o perfil normalmente).
+2. **Simulei inatividade** via SQL direto (`last_seen_at` de
+   `campaign_profiles` e `profile_sessions` voltado 60s) — não esperei
+   o tempo real de propósito, para isolar a lógica de
+   `expireStaleProfileSessions` do heartbeat automático do navegador.
+3. Abri o dashboard `/mesas/[campaignId]` → perfil virou "sem sessão ·
+   Livre" automaticamente, com "Último sinal" mostrando o horário
+   correto; log da mesa mostrou `[gm] profile_event evento:
+   expirado_automatico` ✓. Confirmado via SQL:
+   `profile_sessions.status = 'expired'` e `campaign_profiles.is_locked
+   = false` (nenhuma linha apagada) ✓.
+4. Cliquei "Limpar expiradas" com nada mais para expirar → sem erro
+   (idempotente) ✓.
+5. Repeti o ciclo (entrar → backdate) e abri `/join/<token>` **direto**
+   (sem passar pelo dashboard antes) → perfil já apareceu "Livre" com
+   "Entrar como perfil" habilitado, confirmando que a própria rota de
+   convite faz a expiração, não só o dashboard ✓.
+6. Criei um personagem na mesa, vinculei ao perfil, entrei de novo e
+   abri `/ficha` → carregou normalmente (sessão fresca) ✓.
+7. Para testar o aviso do jogador sem esperar o tempo real de heartbeat
+   expirar, simulei "outra sessão assumiu o perfil" trocando
+   `lock_session_id` via SQL direto enquanto a ficha estava aberta;
+   esperei ~12s (o heartbeat desta aba roda a cada 10s) → o próximo
+   heartbeat falhou como esperado e a ficha mostrou o aviso "⚠ Sua
+   sessão deste perfil expirou (...) outra pessoa pode ter assumido
+   este perfil (...)" e escondeu o botão "Sair do perfil" (não é mais
+   a sessão dona) — ficha continuou navegável/editável, sem bloquear ✓.
+8. Sem erros no console em nenhuma etapa. Limpeza: apaguei a mesa de
+   teste e o personagem criado nela via SQL; Kael Ironwood e "Novo
+   Personagem" (fixtures pré-existentes) permaneceram intactos.
+
+## 7. Escopo e riscos
+
+- Nenhum cron/job real, nenhum Supabase Realtime — só chamadas em
+  pontos de carregamento normais da aplicação, como pedido.
+- Sem esses pontos de carregamento serem acessados, uma mesa "morta"
+  (ninguém abre o dashboard, convite ou ficha dela) nunca expira
+  sozinha — risco aceito e documentado como trabalho futuro (seção 2).
+- `heartbeatCampaignProfile` continua igual (não alterado); a nova
+  expiração só ATUA sobre bloqueios que o heartbeat já teria detectado
+  como mortos de qualquer forma (mesma janela de 30s) — não introduz
+  um jeito novo de perder o perfil, só formaliza no banco o que a UI
+  já calculava sozinha desde v0.9.
+- Nenhuma RLS foi alterada nesta etapa.

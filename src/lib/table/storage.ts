@@ -34,7 +34,10 @@
  *   getActiveProfileSession, createCampaignInvite, listCampaignInvites,
  *   revokeCampaignInvite, resolveCampaignInvite, validateProductSession
  *   (checkpoint v0.24 — confere se o sessionId do navegador é o dono do
- *   bloqueio do perfil antes de `/ficha` abrir a ficha real).
+ *   bloqueio do perfil antes de `/ficha` abrir a ficha real),
+ *   expireStaleProfileSessions (checkpoint v0.26 — marca sessões
+ *   velhas como 'expired' e libera o bloqueio do perfil; chamada em
+ *   pontos de carregamento seguros, nunca por cron/Realtime real).
  *
  *   ¹ listCampaigns retorna TODAS as mesas (RLS ainda em transição) —
  *     /mesas filtra por owner_id no servidor antes de exibir. Quando a
@@ -417,6 +420,99 @@ function isProfileExpired(profile: CampaignProfile): boolean {
   return Date.now() - lastSeenMs > PROFILE_HEARTBEAT_TIMEOUT_MS;
 }
 
+// =====================================================================
+// Expiração automática de sessões (checkpoint v0.26)
+// =====================================================================
+
+/**
+ * Varre `profile_sessions` ativas com `last_seen_at` mais velho que
+ * `staleAfterSeconds` (default: mesma janela do heartbeat,
+ * PROFILE_HEARTBEAT_TIMEOUT_MS) e marca `status = 'expired'`. Quando a
+ * sessão expirada ainda é quem detém o bloqueio do perfil (hash do
+ * sessionId bate com `session_token_hash`), libera o perfil
+ * (`is_locked = false`) e registra um `profile_event` (visibilidade
+ * "gm") — só faz isso quando o hash bate, para nunca derrubar uma
+ * sessão MAIS NOVA que já assumiu o mesmo perfil depois desta ficar
+ * velha.
+ *
+ * NUNCA apaga linhas — só muda `status` (histórico preservado). Sem
+ * cron/job automático ainda: é chamada em pontos de carregamento
+ * seguros (`/mesas/[campaignId]`, `/join/[token]`, `/ficha` via
+ * validateProductSession, `enterCampaignProfile`) — ver
+ * scripts/dev/expire-profile-sessions.ts para rodar manualmente. Um
+ * cron de verdade fica documentado como trabalho futuro (ver
+ * relatório), não implementado nesta etapa.
+ *
+ * Retorna quantas sessões foram marcadas expiradas. Melhor esforço por
+ * linha: uma falha isolada não interrompe as demais.
+ */
+export async function expireStaleProfileSessions(
+  campaignId?: string,
+  staleAfterSeconds: number = PROFILE_HEARTBEAT_TIMEOUT_MS / 1000,
+): Promise<number> {
+  const client = await getScopedTableClient();
+  const staleBeforeIso = new Date(Date.now() - staleAfterSeconds * 1000).toISOString();
+
+  let query = client
+    .from(PROFILE_SESSIONS_TABLE)
+    .select("id, campaign_id, profile_id, session_token_hash, last_seen_at")
+    .eq("status", "active")
+    .lt("last_seen_at", staleBeforeIso);
+  if (campaignId) query = query.eq("campaign_id", campaignId);
+
+  const { data, error } = await query;
+  if (error) {
+    throw new TableStorageError(`Falha ao buscar sessões expiráveis: ${error.message}`, error);
+  }
+
+  const staleRows =
+    (data as { id: string; campaign_id: string; profile_id: string; session_token_hash: string; last_seen_at: string }[]) ??
+    [];
+
+  let expiredCount = 0;
+  for (const row of staleRows) {
+    try {
+      const { error: sessErr } = await client
+        .from(PROFILE_SESSIONS_TABLE)
+        .update({ status: "expired" })
+        .eq("id", row.id)
+        .eq("status", "active"); // idempotente: só expira se ainda estava ativa (evita corrida com heartbeat concorrente)
+      if (sessErr) continue;
+      expiredCount++;
+
+      const { data: profileData } = await client
+        .from(CAMPAIGN_PROFILES_TABLE)
+        .select()
+        .eq("id", row.profile_id)
+        .maybeSingle();
+      const profile = profileData as CampaignProfile | null;
+
+      if (profile?.is_locked && profile.lock_session_id && sha256hex(profile.lock_session_id) === row.session_token_hash) {
+        await client
+          .from(CAMPAIGN_PROFILES_TABLE)
+          .update({ is_locked: false, lock_session_id: null, locked_at: null })
+          .eq("id", row.profile_id);
+
+        try {
+          await client.from(TABLE_LOGS_TABLE).insert({
+            campaign_id: row.campaign_id,
+            type: "profile_event",
+            visibility: "gm",
+            profile_id: row.profile_id,
+            profile_session_id: row.id,
+            payload: { evento: "expirado_automatico", profileId: row.profile_id },
+          });
+        } catch {
+          // log é melhor-esforço — não deve interromper a expiração.
+        }
+      }
+    } catch {
+      // best-effort por linha — uma falha isolada não interrompe as demais.
+    }
+  }
+  return expiredCount;
+}
+
 /**
  * Entra num perfil: permite se o perfil está livre, se já é a mesma
  * sessão que o detém, ou se o bloqueio atual expirou (sem heartbeat há
@@ -439,7 +535,19 @@ export async function enterCampaignProfile(
     throw new TableStorageError(`Falha ao ler perfil "${profileId}": ${fetchError.message}`, fetchError);
   }
 
-  const profile = existing as CampaignProfile;
+  // v0.26: expira sessões velhas desta mesa ANTES de decidir se pode
+  // entrar — evita que um bloqueio "tecnicamente expirado mas ainda
+  // marcado is_locked" precise do fallback isProfileExpired() abaixo
+  // (que já cobria isso via UI, mas agora o estado real do banco
+  // também é corrigido, não só contornado no cálculo).
+  await expireStaleProfileSessions(existing ? (existing as CampaignProfile).campaign_id : undefined).catch(() => {});
+
+  const { data: freshData } = await client
+    .from(CAMPAIGN_PROFILES_TABLE)
+    .select()
+    .eq("id", profileId)
+    .maybeSingle();
+  const profile = (freshData as CampaignProfile | null) ?? (existing as CampaignProfile);
   const mesmaSessao = profile.lock_session_id === sessionId;
 
   if (profile.is_locked && !mesmaSessao && !isProfileExpired(profile)) {
@@ -606,6 +714,10 @@ export interface ProductSessionResult {
  * checkpoint v0.24) para decidir se abre a ficha do perfil ou mostra
  * "Entre por um convite para abrir a ficha." — nunca lança por sessão
  * inválida, só por falha real de rede/RLS.
+ *
+ * v0.26: expira sessões velhas desta mesa antes de checar o bloqueio —
+ * garante que /ficha nunca valide contra um bloqueio "tecnicamente
+ * expirado" que ainda não tinha sido limpo no banco.
  */
 export async function validateProductSession(
   campaignId: string,
@@ -613,6 +725,7 @@ export async function validateProductSession(
   sessionId: string,
 ): Promise<ProductSessionResult> {
   const client = await getScopedTableClient();
+  await expireStaleProfileSessions(campaignId).catch(() => {});
   const { data, error } = await client.from(CAMPAIGN_PROFILES_TABLE).select().eq("id", profileId).maybeSingle();
 
   if (error) {

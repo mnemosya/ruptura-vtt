@@ -10,7 +10,7 @@
  * mesa nunca aparece na URL — só o token opaco.
  */
 
-import { resolveCampaignInvite, listCampaignProfiles } from "../../../lib/table/storage";
+import { resolveCampaignInvite, listCampaignProfiles, expireStaleProfileSessions } from "../../../lib/table/storage";
 import { listCharacters } from "../../../lib/character/storage";
 import type { CampaignProfile } from "../../../lib/table";
 import type { CharacterRecord } from "../../../lib/character";
@@ -66,6 +66,8 @@ export default async function InviteJoinPage({ params }: PageProps) {
   let perfisIniciais: CampaignProfile[] = [];
   let personagens: CharacterRecord[] = [];
   try {
+    // v0.26: expira sessões velhas desta mesa antes de listar perfis — perfil expirado aparece como disponível.
+    await expireStaleProfileSessions(campaign.id).catch(() => {});
     perfisIniciais = await listCampaignProfiles(campaign.id);
     personagens = await listCharacters();
   } catch {
