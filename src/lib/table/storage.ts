@@ -20,6 +20,32 @@
  *     ainda.
  *
  * Nunca a service role key — nem aqui, nem em scopedClient.ts.
+ *
+ * ---------------------------------------------------------------------
+ * CLASSIFICAÇÃO DAS FUNÇÕES (checkpoint v0.22.1 — auditoria pós dev/prod)
+ * ---------------------------------------------------------------------
+ * PRODUTO (seguras para rotas reais /login, /mesas, /join, /ficha):
+ *   createCampaign, listCampaigns¹, getCampaign, addLog,
+ *   listLogsForViewer (⚠ USE ESTA para ler logs em rota de jogador —
+ *     NUNCA listLogs), createCampaignProfile, listCampaignProfiles,
+ *   setCampaignProfileActiveCharacter, enterCampaignProfile,
+ *   heartbeatCampaignProfile, leaveCampaignProfile,
+ *   forceReleaseCampaignProfile, listProfileSessions,
+ *   getActiveProfileSession, createCampaignInvite, listCampaignInvites,
+ *   revokeCampaignInvite, resolveCampaignInvite.
+ *
+ *   ¹ listCampaigns retorna TODAS as mesas (RLS ainda em transição) —
+ *     /mesas filtra por owner_id no servidor antes de exibir. Quando a
+ *     RLS real cortar anon, a própria policy já devolverá só as do
+ *     narrador.
+ *
+ * DEV/DIAGNÓSTICO (não usar em rota de jogador/produto):
+ *   listLogs — SEM filtro de visibilidade, devolve tudo. Só para
+ *     /dev/table (narrador vê tudo por design) e uso interno de
+ *     listLogsForViewer quando o chamador é o dono da mesa.
+ *   setCampaignProfileLocked — bloqueio manual legado (pré-heartbeat,
+ *     migration 0004), só usado por /dev/table.
+ * ---------------------------------------------------------------------
  */
 
 import { createHash, randomBytes } from "node:crypto";

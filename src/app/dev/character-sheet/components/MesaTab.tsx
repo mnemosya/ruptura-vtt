@@ -8,8 +8,11 @@
  *
  * Segue o padrão do RollsTab: é um Client Component com estado próprio
  * (logs/filtro/input) que chama Server Actions diretamente
- * (listLogs/addLog), em vez de receber tudo via props do
- * CharacterSheetClient.
+ * (listLogsForViewer/addLog), em vez de receber tudo via props do
+ * CharacterSheetClient. IMPORTANTE (v0.20): usa listLogsForViewer, NÃO
+ * listLogs — este componente é usado tanto por /ficha (jogador) quanto
+ * por /dev/character-sheet, então a leitura já sai filtrada por
+ * visibilidade no servidor (nunca listLogs cru, que não filtra nada).
  */
 
 import { useEffect, useState } from "react";

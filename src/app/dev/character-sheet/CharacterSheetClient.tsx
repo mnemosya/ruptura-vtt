@@ -20,6 +20,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { createInitialCharacter, computeDerivedStats, normalizeCharacter } from "../../../lib/character";
 import { createCharacter, updateCharacter, getCharacter, listCharacters, deleteCharacter } from "../../../lib/character/storage";
 import type {
@@ -396,7 +397,7 @@ export default function CharacterSheetClient({
     const perfil = perfis.find((p) => p.id === selectedProfileId);
     if (!perfil) return;
     if (!perfil.active_character_id) {
-      setProfileWarning(`O perfil "${perfil.nickname}" ainda não tem personagem ativo vinculado (ver /dev/table).`);
+      setProfileWarning(`O perfil "${perfil.nickname}" ainda não tem personagem ativo vinculado. Peça ao narrador para vincular um personagem a este perfil.`);
       return;
     }
     await handleLoad(perfil.active_character_id);
@@ -532,10 +533,20 @@ export default function CharacterSheetClient({
   const perfilEmFoco = perfis.find((p) => p.id === selectedProfileId) ?? null;
   const perfilStatus = perfilEmFoco ? computeProfileStatus(perfilEmFoco, sessionId, nowTick) : null;
 
+  // Este componente é compartilhado entre a rota real (/ficha) e a rota
+  // dev (/dev/character-sheet) — checkpoint v0.22. O texto de topo não
+  // pode ficar fixo em "/dev/..." quando renderizado em /ficha (rota
+  // real não deve exibir rótulo de modo dev). usePathname() detecta em
+  // qual rota o componente foi montado.
+  const pathname = usePathname();
+  const isDevRoute = pathname?.startsWith("/dev/") ?? false;
+
   return (
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
       <p style={{ opacity: 0.6, fontSize: 13, marginBottom: 4 }}>
-        /dev/character-sheet — ficha mínima. Edição é local até clicar em "Salvar personagem".
+        {isDevRoute
+          ? '/dev/character-sheet — ficha mínima (dev). Edição é local até clicar em "Salvar personagem".'
+          : 'Ficha. Edição é local até clicar em "Salvar personagem".'}
       </p>
       {usandoFallback && (
         <p style={{ color: "#f5a623", fontSize: 13, marginBottom: 16 }}>

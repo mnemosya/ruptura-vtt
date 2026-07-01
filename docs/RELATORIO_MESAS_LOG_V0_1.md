@@ -3287,3 +3287,151 @@ Manual (browser), fluxo real ponta a ponta:
 - Pendência: os textos internos de `/ficha` e `/mesas/[id]` ainda
   referenciam nomenclatura "dev" em alguns comentários de código
   (não visíveis ao usuário) — cosmético, não funcional.
+
+---
+
+# Checkpoint v0.22.1 — Auditoria pós-separação dev/prod
+
+Auditoria de estabilização depois de v0.17–v0.22: nenhuma regressão
+grave nova foi introduzida pelas rotas de produto, mas a auditoria
+encontrou e corrigiu **uma regressão visual real** (rota real exibindo
+texto de "modo dev") e limpou um arquivo temporário solto. Nenhum
+refactor grande — só correções pontuais e comentários de classificação.
+
+## 1. Limpeza do working tree
+
+- `git status --short` mostrava só `scripts/_tmp_apply.ts` solto
+  (`next-env.d.ts` já estava limpo, sem precisar de `git restore`).
+- Esse script era o helper genérico de aplicar migration, reutilizado
+  nos checkpoints v0.17–v0.20 (passava o nome do arquivo por
+  `process.argv[2]`) — **útil de manter**, não descartável.
+- Generalizado (removida uma verificação hardcoded específica de
+  `campaign_invites` que tinha sobrado de quando foi escrito pela
+  primeira vez) e **movido** para
+  `scripts/dev/apply-migration-generic.ts`, documentado e commitado.
+
+## 2. Regressão encontrada e corrigida: rota real exibindo texto "dev"
+
+`CharacterSheetClient.tsx` é compartilhado entre `/ficha` (rota real,
+v0.22) e `/dev/character-sheet` (rota dev) — mas o texto de topo estava
+**fixo** em `"/dev/character-sheet — ficha mínima..."`, aparecendo
+literalmente em `/ficha` também. Isso violava a regra do checkpoint
+v0.22 ("rotas reais não devem exibir warnings de modo dev").
+
+**Correção**: `usePathname()` detecta a rota de montagem
+(`isDevRoute = pathname?.startsWith("/dev/")`) e mostra o texto
+correspondente — genérico ("Ficha. Edição é local...") em `/ficha`,
+com o rótulo "dev" preservado em `/dev/character-sheet`. Também corrigi
+o aviso de "personagem ativo ausente" (`profileWarning`), que apontava
+literalmente para `/dev/table` mesmo quando o jogador estava em
+`/ficha` — trocado por uma mensagem genérica ("peça ao narrador").
+
+Confirmado no teste manual (seção 5): `/ficha` agora mostra "Ficha.
+Edição é local até clicar em..." — sem menção a `/dev/`.
+
+## 3. Mapa de rotas auditado
+
+| Rota | Tipo | Sinalização visível | Usa função correta? |
+|---|---|---|---|
+| `/login` | Real | Sem menção a dev | `signInWithPassword`/`signUpDevNarrator` (mesma auth) |
+| `/mesas` | Real | Sem menção a dev | `getCurrentUser` + redirect; `listCampaigns` filtrado por dono no servidor |
+| `/mesas/[campaignId]` | Real | Sem menção a dev; "Acesso negado" se não for dono | `getCampaign` + checagem `owner_id===user.id`; `listLogsForViewer({})` (dono vê tudo, correto) |
+| `/join/[token]` | Real | Sem menção a dev | `resolveCampaignInvite` (hash), nunca `campaignId` cru na URL |
+| `/ficha` | Real | **Corrigido nesta etapa** (não mostrava mais "dev" após fix) | `listLogsForViewer` via `MesaTab` |
+| `/dev/login` | Dev | "auth dev do narrador" | idem `/login`, reuso de `LoginForm` |
+| `/dev/auth/status` | Dev | "/dev/auth/status — status de auth dev" visível | — |
+| `/dev/table` | Dev | "Console dev/diagnóstico: mostra TODOS os logs..." visível (v0.20) | `listLogs` (sem filtro) — correto, é diagnóstico |
+| `/dev/join/[campaignId]` | Dev (legado) | "entrada DEV por link de mesa (id cru)" + aponta para convite real | `enterCampaignProfile` direto por id cru — avisado como inseguro |
+| `/dev/character-sheet` | Dev | Mantém texto "/dev/character-sheet..." (branch `isDevRoute`) | mesma `MesaTab`/`listLogsForViewer` |
+
+## 4. Classificação das funções de `src/lib/table/storage.ts`
+
+Adicionado um bloco de comentário no topo do arquivo (sem mover nada de
+lugar — zero refactor estrutural) classificando as 22 funções
+exportadas em 2 grupos:
+
+- **Produto** (seguras para `/login`, `/mesas`, `/join`, `/ficha`):
+  `createCampaign`, `listCampaigns` (nota: retorna todas, filtrado no
+  server de `/mesas`), `getCampaign`, `addLog`, `listLogsForViewer`
+  (marcado com ⚠ como a função certa para logs de jogador),
+  `createCampaignProfile`, `listCampaignProfiles`,
+  `setCampaignProfileActiveCharacter`, `enterCampaignProfile`,
+  `heartbeatCampaignProfile`, `leaveCampaignProfile`,
+  `forceReleaseCampaignProfile`, `listProfileSessions`,
+  `getActiveProfileSession`, `createCampaignInvite`,
+  `listCampaignInvites`, `revokeCampaignInvite`,
+  `resolveCampaignInvite`.
+- **Dev/diagnóstico** (não usar em rota de jogador/produto): `listLogs`
+  (sem filtro de visibilidade — só `/dev/table` e uso interno de
+  `listLogsForViewer` quando o chamador é dono), `setCampaignProfileLocked`
+  (bloqueio manual legado pré-heartbeat, migration 0004).
+
+Corrigido também um comentário desatualizado em `MesaTab.tsx` que ainda
+citava `listLogs/addLog` (a função real já era `listLogsForViewer`
+desde o v0.20 — só o comentário estava obsoleto).
+
+## 5. Auditoria de segurança (checklist do pedido)
+
+| Item | Verificado como |
+|---|---|
+| Token bruto de convite não salvo no banco | `createCampaignInvite` insere só `token_hash`; `rawToken` só existe na memória da função e no retorno único |
+| `token_hash` não aparece na UI | `grep` em `src/app/**/*.tsx` — nenhuma referência (só 1 comentário técnico em `page.tsx`, não renderizado) |
+| Logs gm/private não vazam para jogador via rota produto | `MesaTab` (usado por `/ficha`) chama `listLogsForViewer`, nunca `listLogs`; testado deslogado (seção 6) |
+| `/join/[token]` não vaza dados em token inválido/revogado/expirado | `resolveCampaignInvite` retorna `{ok:false, reason}`; a página só renderiza `<JoinClient>` (que expõe mesa/perfis) quando `ok===true` |
+| Biblioteca do Sistema pública só para publicado | Consulta direta ao banco: `content_documents_public_read` filtra `status='published'`; `content_packs_public_read` público (intencional); `content_changelog` sem policy pública |
+| Nenhuma service role no frontend | `grep -rl SERVICE_ROLE src/app src/lib` — zero uso real, só o comentário de aviso em `content/client.ts` que reforça nunca usá-la |
+
+## 6. Resultado do build e dos testes
+
+```
+$ npm run build → ✓ (11 rotas, sem mudança de superfície)
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca intacta
+```
+
+## 7. Resultado do teste manual (browser, ponta a ponta)
+
+1. `/login` → login → `/mesas` ✓.
+2. Criei mesa, perfil, vinculei Kael, criei convite → `/join/<token>`.
+3. Entrei como perfil → "Abrir ficha" → `/ficha?campaignId&profileId`
+   → **confirmado o texto corrigido**: "Ficha. Edição é local..." (sem
+   "dev") ✓.
+4. Enviei chat público, privado e narrador (gm) pela ficha; fiz uma
+   rolagem.
+5. **Achado durante o teste** (não é bug de código, é nuance de
+   metodologia): testando ainda com o cookie do narrador ativo (mesmo
+   navegador, sem logout), a aba Mesa mostrou a mensagem "gm" — porque
+   o observador *era* o narrador dono da mesa, e a regra "dono vê tudo"
+   se aplica também via `/ficha`, não só via `/mesas`. **Isso é o
+   comportamento especificado, não um vazamento.**
+6. Refiz o teste deslogado (fiz logout, reabri `/ficha` com o mesmo
+   `sessionId`/perfil): a mensagem "gm" **desapareceu** corretamente;
+   restaram só a rolagem, a privada própria e a pública — confirmando
+   visibilidade real para jogador anon.
+7. `/dev/table` → continua acessível e funcional.
+8. Sem erros no console. Mesa de teste removida ao final.
+
+## 8. Working tree final e arquivos alterados
+
+- **Removido**: `scripts/_tmp_apply.ts` (solto).
+- **Criado**: `scripts/dev/apply-migration-generic.ts` (generalizado a
+  partir do temporário).
+- **Alterado**: `src/app/dev/character-sheet/CharacterSheetClient.tsx`
+  (fix de rótulo dev/real via `usePathname`; aviso de personagem ativo
+  genérico), `src/app/dev/character-sheet/components/MesaTab.tsx`
+  (comentário corrigido), `src/lib/table/storage.ts` (bloco de
+  classificação de funções, sem mudança de lógica).
+- **Relatório**: esta seção.
+
+## 9. Riscos remanescentes (inalterados desde v0.17–v0.20)
+
+- RLS ainda em modo de transição — `*_dev_transition_*` continuam
+  abertas em todas as tabelas de mesa (documentado desde v0.17); esta
+  auditoria não alterou nenhuma policy.
+- `characters` sem `owner_id`/conceito de dono.
+- Token de sessão de perfil = `sha256(sessionId do navegador)`, não um
+  token único por sessão.
+- Nenhum job/cron marca sessões como `expired` automaticamente.
+- Nenhuma chave secreta exposta; scripts de diagnóstico usados nesta
+  auditoria (`_tmp_check_leak.ts`, `_tmp_cleanup.ts`) foram criados e
+  removidos na mesma sessão, nunca commitados.
