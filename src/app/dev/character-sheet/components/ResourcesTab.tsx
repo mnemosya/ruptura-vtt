@@ -11,6 +11,7 @@ import {
   type CharacterGameState,
   type CharacterResources,
   type CharacterRulesPayload,
+  type Character,
   type DerivedDefinition,
   type DerivedStats,
 } from "../../../../lib/character";
@@ -50,6 +51,10 @@ export function ResourcesTab({
   overloadWillRollPending,
   onUseOverloadSurge,
   onRollOverloadWillTest,
+  colapso,
+  onStabilizeCollapse,
+  onAdvanceCollapseSegment,
+  onRollCollapseTest,
 }: {
   regras: CharacterRulesPayload | null;
   derivados: DerivedStats;
@@ -73,6 +78,11 @@ export function ResourcesTab({
   overloadWillRollPending: boolean;
   onUseOverloadSurge: (tipo: string) => void;
   onRollOverloadWillTest: () => void;
+  /** Checkpoint v0.38 — Colapso por PV/PE 0. */
+  colapso: Character["colapso"];
+  onStabilizeCollapse: () => void;
+  onAdvanceCollapseSegment: () => void;
+  onRollCollapseTest: (atributoId: "corpo" | "mente") => void;
 }) {
   const [tipoSurto, setTipoSurto] = useState<string>(OVERLOAD_SURGE_TYPES[0]);
   const pvAtual = recursosAtuais?.pv ?? 0;
@@ -241,6 +251,59 @@ export function ResourcesTab({
           </button>
         </div>
       </Section>
+
+      {(colapso?.ativo || colapso?.cicatrizPendente) && (
+        <Section title="Colapso">
+          {colapso.ativo ? (
+            <>
+              <p style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>
+                Tipo: <strong>{colapso.tipo === "pv" ? "PV" : "PE"}</strong> · Segmentos:{" "}
+                <strong data-testid="colapso-segmentos">{colapso.segmentos}/3</strong> ·{" "}
+                {colapso.estabilizado ? "Estabilizado" : "Não estabilizado"}
+              </p>
+              <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 10 }}>
+                {colapso.tipo === "pv"
+                  ? "3º segmento: risco de morte."
+                  : "3º segmento: risco de coma/fora de jogo."}{" "}
+                Estabilizar interrompe o avanço, mas não cura. Cura de 1+ do recurso colapsado
+                encerra o colapso automaticamente.
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  data-testid="colapso-teste-corpo-button"
+                  onClick={() => onRollCollapseTest("corpo")}
+                  style={buttonStyle}
+                >
+                  Teste de Colapso — Corpo CD 7
+                </button>
+                <button
+                  data-testid="colapso-teste-mente-button"
+                  onClick={() => onRollCollapseTest("mente")}
+                  style={buttonStyle}
+                >
+                  Teste de Colapso — Mente CD 7
+                </button>
+                <button data-testid="colapso-avancar-button" onClick={onAdvanceCollapseSegment} style={buttonStyle}>
+                  Avançar segmento manualmente
+                </button>
+                <button
+                  data-testid="colapso-estabilizar-button"
+                  onClick={onStabilizeCollapse}
+                  disabled={colapso.estabilizado}
+                  style={{ ...buttonStyle, opacity: colapso.estabilizado ? 0.5 : 1 }}
+                >
+                  Estabilizar Colapso
+                </button>
+              </div>
+            </>
+          ) : (
+            <p data-testid="colapso-cicatriz-pendente-aviso" style={{ fontSize: 12, color: "#f5a623" }}>
+              ⚠ Cicatriz pendente — o personagem sobreviveu a um colapso; preenchimento de cicatriz
+              ainda não implementado.
+            </p>
+          )}
+        </Section>
+      )}
 
       <Section title="Turno">
         <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 8 }}>

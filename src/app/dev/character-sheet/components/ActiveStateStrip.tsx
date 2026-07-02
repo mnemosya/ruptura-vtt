@@ -14,7 +14,7 @@
  * diferença de modo — ambos compartilham `character`/`activeEffects`).
  */
 
-import type { ActiveCondition, ActiveEffect } from "../../../../lib/character";
+import type { ActiveCondition, ActiveEffect, Character } from "../../../../lib/character";
 import type { ConditionOption } from "./ConditionsTab";
 
 export type StateChipKind = "condicao" | "debuff" | "buff" | "aviso" | "fim_de_rodada" | "pendencia" | "placeholder";
@@ -128,6 +128,7 @@ export function ActiveStateStrip({
   manaTemporaria = 0,
   sobrecargaUsadaDia = 0,
   rupturaPendente = false,
+  colapso,
 }: {
   /** `character.condicoes_ativas` completo (ativas e removidas) — o componente filtra `ativa:true` internamente. */
   condicoes: ActiveCondition[];
@@ -141,6 +142,8 @@ export function ActiveStateStrip({
   sobrecargaUsadaDia?: number;
   /** checkpoint v0.37 — Ruptura pendente (PRD 10.6), resolvida só no fim de cena (fora de escopo ainda). */
   rupturaPendente?: boolean;
+  /** checkpoint v0.38 — Colapso ativo/cicatriz pendente. */
+  colapso?: Character["colapso"];
 }) {
   const condicoesAtivas = condicoes.filter((c) => c.ativa);
   const chips = buildChips(condicoesAtivas, activeEffects, condicoesDisponiveis);
@@ -181,6 +184,22 @@ export function ActiveStateStrip({
       nome: "Ruptura pendente",
       tipo: "pendencia",
       descricao: "Resolvida no fim da cena (Marca/Traço) — ainda não automatizado; descanso não limpa isso.",
+    });
+  }
+  if (colapso?.ativo) {
+    pendencias.push({
+      id: "pendencia:colapso",
+      nome: `Colapso (${colapso.tipo === "pv" ? "PV" : "PE"}) ${colapso.segmentos}/3${colapso.estabilizado ? " · estabilizado" : ""}`,
+      tipo: "pendencia",
+      descricao: "Inconsciente. Ver aba Recursos para testes/estabilizar. Cura de 1+ do recurso colapsado encerra automaticamente.",
+    });
+  }
+  if (!colapso?.ativo && colapso?.cicatrizPendente) {
+    pendencias.push({
+      id: "pendencia:cicatriz",
+      nome: "Cicatriz pendente",
+      tipo: "pendencia",
+      descricao: "Personagem sobreviveu a um colapso — preenchimento de cicatriz ainda não implementado.",
     });
   }
   const todosChips = [...chips, ...pendencias];

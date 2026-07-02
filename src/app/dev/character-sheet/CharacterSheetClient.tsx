@@ -32,6 +32,9 @@ import {
   useOverloadSurge,
   applyStunFromFailedWillTest,
   OVERLOAD_WILL_TEST_CD,
+  detectCollapseOnResourceChange,
+  advanceCollapseSegment,
+  stabilizeCollapse,
 } from "../../../lib/character";
 import {
   createCharacter,
@@ -922,35 +925,103 @@ export default function CharacterSheetClient({
   }
 
   /**
+   * Registra collapse_started/collapse_ended no Log local e em
+   * `table_logs` (checkpoint v0.38) — mesmo padrão best-effort dos
+   * demais eventos.
+   */
+  async function persistCollapseEvent(
+    tipo: "collapse_started" | "collapse_advanced" | "collapse_stabilized" | "collapse_ended",
+    extra: Record<string, unknown>,
+  ) {
+    if (!selectedCampaignId) return;
+    try {
+      await addLog({
+        campaignId: selectedCampaignId,
+        characterId: characterId ?? undefined,
+        profileId: selectedProfileId,
+        profileSessionId: profileSessionToken?.profileSessionId ?? null,
+        type: tipo,
+        visibility: "public",
+        payload: {
+          characterId,
+          characterNome: character.nome,
+          profileId: selectedProfileId,
+          profileSessionId: profileSessionToken?.profileSessionId ?? null,
+          source: "character_sheet",
+          ...extra,
+        },
+      });
+    } catch {
+      // Best-effort — mesma justificativa de handleAddCondition.
+    }
+  }
+
+  /**
+   * Aplica os efeitos colaterais de uma mudança de PV/PE em conjunto —
+   * remoção automática por cura (v0.34, só PV) e detecção de Colapso
+   * (v0.38, PV e PE) — sobre um `Character` base, devolvendo o
+   * `Character` final e o que aconteceu, para o chamador decidir
+   * log/persistência. Não faz nenhum `setCharacter` sozinho.
+   */
+  function applyPvPeSideEffects(
+    base: Character,
+    beforePvPe: { pv: number; pe: number },
+    afterPvPe: { pv: number; pe: number },
+    nowIso: string,
+  ) {
+    const { condicoes: condsAposCura, removidas } = applyAutoHealRemoval(
+      base.condicoes_ativas ?? [],
+      beforePvPe.pv,
+      afterPvPe.pv,
+      nowIso,
+    );
+    const baseAposCura: Character = { ...base, condicoes_ativas: condsAposCura };
+    const colapso = detectCollapseOnResourceChange(baseAposCura, beforePvPe, afterPvPe, nowIso);
+    return { character: colapso.character, removidasPorCura: removidas, colapso };
+  }
+
+  /**
    * Edição manual de recursos atuais (PV/PE/Mana/Integridade). Aceita
    * só inteiro >= 0; não trava no máximo de propósito — combate/dano
    * fica para depois, aqui é só edição livre com aviso visual.
    *
-   * PV especificamente (checkpoint v0.34): um aumento (cura) dispara
-   * `applyAutoHealRemoval` sobre as condições ativas ANTES de aplicar
-   * o novo PV — os dois updates (`recursos_atuais.pv` e
-   * `condicoes_ativas`) entram no mesmo `setCharacter`, então nunca
-   * existe um estado intermediário com PV novo mas condição antiga.
+   * PV/PE (checkpoints v0.34 e v0.38): qualquer mudança nesses dois
+   * campos passa por `applyPvPeSideEffects` — cura automática de
+   * condição (só PV) e detecção de início/fim de Colapso (PV ou PE) —
+   * tudo combinado num único `setCharacter`, para nunca existir um
+   * estado intermediário inconsistente.
    */
   function updateRecursoAtual(id: keyof CharacterResources, rawValue: number) {
     const anterior = character.recursos_atuais?.[id] ?? 0;
     const novo = parseRecursoAtual(rawValue);
 
-    if (id === "pv" && novo > anterior) {
+    if (id === "pv" || id === "pe") {
       const nowIso = new Date().toISOString();
-      const { condicoes: proximasCondicoes, removidas } = applyAutoHealRemoval(
-        character.condicoes_ativas ?? [],
-        anterior,
-        novo,
+      const beforePvPe = { pv: character.recursos_atuais?.pv ?? 0, pe: character.recursos_atuais?.pe ?? 0 };
+      const afterPvPe = { ...beforePvPe, [id]: novo };
+      const { character: charComEfeitos, removidasPorCura, colapso } = applyPvPeSideEffects(
+        character,
+        beforePvPe,
+        afterPvPe,
         nowIso,
       );
-      setCharacter((prev) => ({
-        ...prev,
-        recursos_atuais: { ...prev.recursos_atuais, pv: novo },
-        condicoes_ativas: proximasCondicoes,
-      }));
-      addLogEntry("recurso", `${RECURSO_LABELS.pv}: ${anterior} → ${novo}`);
-      if (removidas.length > 0) void handleAutoHealRemovals(removidas, anterior, novo);
+
+      setCharacter({
+        ...charComEfeitos,
+        recursos_atuais: { ...charComEfeitos.recursos_atuais, [id]: novo },
+      });
+      if (novo !== anterior) {
+        addLogEntry("recurso", `${RECURSO_LABELS[id]}: ${anterior} → ${novo}`);
+      }
+      if (removidasPorCura.length > 0) void handleAutoHealRemovals(removidasPorCura, beforePvPe.pv, afterPvPe.pv);
+      if (colapso.started) {
+        addLogEntry("recurso", `Colapso iniciado (${colapso.tipo === "pv" ? "PV" : "PE"} a 0) — Inconsciente aplicado.`);
+        void persistCollapseEvent("collapse_started", { tipo: colapso.tipo });
+      }
+      if (colapso.ended) {
+        addLogEntry("recurso", `Colapso encerrado por cura — cicatriz pendente.`);
+        void persistCollapseEvent("collapse_ended", { tipo: colapso.tipo, motivo: "cura" });
+      }
       return;
     }
 
@@ -965,28 +1036,78 @@ export default function CharacterSheetClient({
 
   function handleRestoreRecursosMax() {
     const pvAnterior = character.recursos_atuais?.pv ?? 0;
+    const peAnterior = character.recursos_atuais?.pe ?? 0;
     const pvNovo = derivados.pv_max;
+    const peNovo = derivados.pe_max;
     const nowIso = new Date().toISOString();
-    const { condicoes: proximasCondicoes, removidas } =
-      pvNovo > pvAnterior
-        ? applyAutoHealRemoval(character.condicoes_ativas ?? [], pvAnterior, pvNovo, nowIso)
-        : { condicoes: character.condicoes_ativas ?? [], removidas: [] as ActiveCondition[] };
+    const { character: charComEfeitos, removidasPorCura: removidas, colapso } = applyPvPeSideEffects(
+      character,
+      { pv: pvAnterior, pe: peAnterior },
+      { pv: pvNovo, pe: peNovo },
+      nowIso,
+    );
 
-    setCharacter((prev) => ({
-      ...prev,
+    setCharacter({
+      ...charComEfeitos,
       recursos_atuais: {
         pv: pvNovo,
-        pe: derivados.pe_max,
+        pe: peNovo,
         mana: derivados.mana_max,
         integridade: derivados.integridade_max,
       },
-      condicoes_ativas: proximasCondicoes,
-    }));
+    });
     addLogEntry(
       "recurso",
       `Restaurados ao máximo — PV ${derivados.pv_max}, PE ${derivados.pe_max}, Mana ${derivados.mana_max}, Integridade ${derivados.integridade_max}`,
     );
     if (removidas.length > 0) void handleAutoHealRemovals(removidas, pvAnterior, pvNovo);
+    if (colapso.ended) {
+      addLogEntry("recurso", `Colapso encerrado por cura — cicatriz pendente.`);
+      void persistCollapseEvent("collapse_ended", { tipo: colapso.tipo, motivo: "cura" });
+    }
+  }
+
+  /** Botão "Estabilizar Colapso" — interrompe avanço de segmento, NUNCA cura nem remove Inconsciente (regra explícita do PRD). */
+  function handleStabilizeCollapse() {
+    const nowIso = new Date().toISOString();
+    setCharacter((prev) => stabilizeCollapse(prev, nowIso));
+    addLogEntry("recurso", "Colapso estabilizado — avanço de segmento interrompido (não cura).");
+    void persistCollapseEvent("collapse_stabilized", { tipo: character.colapso?.tipo ?? null });
+  }
+
+  /** Botão "Avançar segmento manualmente" — sem fim de rodada automático ainda (checkpoint v0.38). */
+  function handleAdvanceCollapseSegmentManual() {
+    const nowIso = new Date().toISOString();
+    const result = advanceCollapseSegment(character, "manual", nowIso);
+    setCharacter(result.character);
+    addLogEntry("recurso", `Colapso — segmento avançado manualmente: ${result.segmentos}/3.`);
+    void persistCollapseEvent("collapse_advanced", { segmentos: result.segmentos, motivo: "manual", tipo: character.colapso?.tipo ?? null });
+  }
+
+  /**
+   * Botões "Teste de Colapso — Corpo/Mente CD 7" — rola sem perícia
+   * (só o atributo puro, como pede o PRD 10.7: "teste simples de
+   * Corpo/Mente"); resultado abaixo de 7 avança 1 segmento.
+   */
+  function handleRollCollapseTest(atributoId: "corpo" | "mente") {
+    const atributoDef = regras?.atributos.find((a) => a.id === atributoId);
+    const resultado = rollPericia({
+      atributoId,
+      atributoNome: atributoDef?.nome ?? atributoId,
+      atributoValor: character.atributos[atributoId],
+      modificador: 0,
+      cd: 7,
+    });
+    const nowIso = new Date().toISOString();
+    addLogEntry(
+      "recurso",
+      `Teste de Colapso — ${atributoDef?.nome ?? atributoId} CD 7: total ${resultado.total} — ${resultado.sucesso ? "mantém" : "avança segmento"}.`,
+    );
+    if (!resultado.sucesso) {
+      const result = advanceCollapseSegment(character, `teste_${atributoId}`, nowIso);
+      setCharacter(result.character);
+      void persistCollapseEvent("collapse_advanced", { segmentos: result.segmentos, motivo: `teste_${atributoId}`, total: resultado.total, tipo: character.colapso?.tipo ?? null });
+    }
   }
 
   /**
@@ -1244,6 +1365,7 @@ export default function CharacterSheetClient({
         manaTemporaria={character.recursos_atuais?.mana_temporaria ?? 0}
         sobrecargaUsadaDia={character.sobrecarga_usada_dia ?? 0}
         rupturaPendente={character.ruptura_pendente ?? false}
+        colapso={character.colapso}
       />
 
       <CharacterSheetTabs
@@ -1324,6 +1446,10 @@ export default function CharacterSheetClient({
           overloadWillRollPending={overloadWillRollPending}
           onUseOverloadSurge={handleUseOverloadSurge}
           onRollOverloadWillTest={handleRollOverloadWillTest}
+          colapso={character.colapso}
+          onStabilizeCollapse={handleStabilizeCollapse}
+          onAdvanceCollapseSegment={handleAdvanceCollapseSegmentManual}
+          onRollCollapseTest={handleRollCollapseTest}
         />
       )}
 

@@ -59,6 +59,10 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   rest_long: "Descanso Longo",
   overload_surge: "Surto de Sobrecarga",
   overload_will_roll: "Teste de Vontade (Sobrecarga)",
+  collapse_started: "Colapso Iniciado",
+  collapse_advanced: "Colapso — Segmento Avançado",
+  collapse_stabilized: "Colapso Estabilizado",
+  collapse_ended: "Colapso Encerrado",
 };
 
 function entryKindLabel(type: string): string {
@@ -73,6 +77,7 @@ function entryIcon(type: string): string {
   if (type === "condition_auto_removed" || type === "condition_auto_removal_undone") return "✚";
   if (type === "rest_short" || type === "rest_long") return "💤";
   if (type === "overload_surge" || type === "overload_will_roll") return "⚡";
+  if (type.startsWith("collapse_")) return "💀";
   return "•";
 }
 
@@ -82,6 +87,7 @@ function entryBorderColor(type: string): string {
   if (type === "condition_auto_removed" || type === "condition_auto_removal_undone") return "#4caf50";
   if (type === "rest_short" || type === "rest_long") return "#5ec8ff";
   if (type === "overload_surge" || type === "overload_will_roll") return "#c0392b";
+  if (type.startsWith("collapse_")) return "#8e44ad";
   return "#ffb84f";
 }
 
@@ -128,6 +134,15 @@ function formatOverloadWillRoll(payload: Record<string, unknown>): string {
   const cd = typeof payload.cd === "number" ? payload.cd : "?";
   const sucesso = payload.sucesso === true;
   return `${characterNome}: total ${total} vs CD ${cd} — ${sucesso ? "Sucesso" : "Falha (Atordoado 1 rodada)"}`;
+}
+
+/** Checkpoint v0.38: cartões de collapse_started/collapse_advanced/collapse_stabilized/collapse_ended. */
+function formatCollapse(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const tipo = payload.tipo === "pv" ? "PV" : payload.tipo === "pe" ? "PE" : "?";
+  const segmentos = typeof payload.segmentos === "number" ? ` — segmento ${payload.segmentos}/3` : "";
+  const motivo = typeof payload.motivo === "string" ? ` (${payload.motivo})` : "";
+  return `${characterNome}: ${tipo}${segmentos}${motivo}`;
 }
 
 /** Texto da mensagem de chat — aceita `text` (ficha, v0.12) ou `mensagem` (formato antigo do /dev/table). */
@@ -419,7 +434,9 @@ export function MesaTab({
                           ? formatOverloadSurge(entry.payload)
                           : entry.type === "overload_will_roll"
                             ? formatOverloadWillRoll(entry.payload)
-                            : JSON.stringify(entry.payload)}
+                            : entry.type.startsWith("collapse_")
+                              ? formatCollapse(entry.payload)
+                              : JSON.stringify(entry.payload)}
             </span>
           </div>
         ))}

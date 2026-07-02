@@ -6286,3 +6286,183 @@ duração "1 rodada", origem correta), e que o 4º surto é bloqueado
   force a resolução da Ruptura pendente.
 - Sem Colapso — dano psíquico/PE a 0 não dispara nada além do que já
   existia antes deste checkpoint.
+
+# Checkpoint v0.38 — Colapso por PV/PE 0
+
+## 1. Auditoria (antes de alterar)
+
+`git status --short` limpo. `updateRecursoAtual` já tinha o ponto
+certo de integração (era onde `applyAutoHealRemoval`, v0.34, já
+rodava para PV) — generalizado para PV **e** PE no mesmo fluxo.
+`handleRestoreRecursosMax` também precisou do mesmo tratamento (é o
+outro único ponto que altera PV/PE em massa). `ActiveCondition`/
+`handleAddCondition` (v0.32) deram o modelo exato para aplicar
+Inconsciente programaticamente, mesmo padrão já usado no v0.37 para
+Atordoado. `rollPericia` (`lib/dice`) já cobria "só atributo + CD",
+reaproveitado sem mudança para os testes de Colapso.
+
+## 2. Modelo no personagem
+
+```ts
+Character.colapso?: {
+  ativo: boolean;
+  tipo: "pv" | "pe" | null;
+  segmentos: number;          // 0..3
+  estabilizado: boolean;
+  iniciadoEm?: string;
+  encerradoEm?: string | null;
+  cicatrizPendente?: boolean;
+  ultimoEvento?: string;
+}
+```
+
+## 3. Módulo `src/lib/character/collapse.ts`
+
+- `detectCollapseOnResourceChange(character, before, after, nowIso)` —
+  pura. Início: PV ou PE cai de >0 para <=0 sem colapso ativo →
+  `colapso.ativo=true`, aplica Inconsciente (`conditionId:"inconsciente"`,
+  origem `"Colapso (PV a 0)"`/`"Colapso (PE a 0)"` — string
+  distintiva usada depois para remover só ESSE Inconsciente, nunca um
+  aplicado manualmente por outro motivo). Fim: o recurso do tipo já
+  colapsado sobe de <=0 para 1+ → chama `endCollapseByHealing`. Se o
+  OUTRO recurso cai a 0 enquanto já há colapso ativo, não inicia um
+  segundo colapso (PRD não descreve colapso duplo) — só registra
+  warning.
+- `advanceCollapseSegment(character, reason, nowIso)` — avança 1
+  segmento (máx. 3); no 3º, devolve `thirdSegmentReached: true` +
+  warning de risco de morte (PV) ou coma/fora de jogo (PE) — **sem
+  resolver** a consequência final (fora de escopo).
+- `stabilizeCollapse(character, nowIso)` — só marca `estabilizado:true`;
+  confirmado no teste manual que **não** altera PV/PE nem remove
+  Inconsciente.
+- `endCollapseByHealing(character, nowIso)` — encerra
+  (`ativo:false`, `encerradoEm`, `cicatrizPendente:true`), remove só o
+  Inconsciente aplicado pelo colapso.
+
+## 4. Detecção (limitação documentada)
+
+Como `recursos_atuais.pv`/`pe` são clampados em 0 (nunca negativos) e
+a única forma de alterá-los hoje é edição manual direta (sem sistema
+de dano/combate), **"dano adicional da mesma dimensão avança o
+marcador" não é detectável automaticamente** quando o recurso já está
+em 0 (o valor não muda, não há diff para comparar). Por isso o
+avanço de segmento é **sempre manual** nesta versão — três caminhos:
+dois testes de atributo (Corpo/Mente CD 7, PRD 10.7) e um botão puro
+"Avançar segmento manualmente" — exatamente como o item 7 do pedido
+já antecipava ("se a integração ficar grande, documentar pendência e
+deixar avanço manual").
+
+## 5. Cura
+
+Confirmado (script `tsx` direto + teste manual): quando o recurso
+colapsado sobe de 0 para 1+, `endCollapseByHealing` roda automaticamente
+dentro do mesmo fluxo de `updateRecursoAtual`/`handleRestoreRecursosMax`
+que já detecta cura de condição (v0.34) — os três efeitos (cura de
+condição, fim de Colapso, remoção de Inconsciente) entram no mesmo
+`setCharacter`, nunca em estados intermediários separados.
+`cicatrizPendente` fica `true` até um checkpoint futuro implementar o
+preenchimento de cicatriz de verdade.
+
+## 6. Estabilizar
+
+Botão "Estabilizar Colapso" (desabilitado se já estabilizado) — só
+`estabilizado:true`. Confirmado no teste manual: PV continuou em 0
+depois de clicar, e o botão de estabilizar ficou desabilitado (sem
+"desestabilizar" nesta versão).
+
+## 7. UI
+
+Bloco "Colapso" na aba Recursos, condicional: aparece quando
+`colapso.ativo` (mostra tipo, segmentos, estabilizado, 2 testes de
+atributo + avançar manual + estabilizar) ou quando
+`colapso.cicatrizPendente` sem `ativo` (mostra só o aviso de cicatriz
+pendente). `ActiveStateStrip`: chip `"pendencia"` "Colapso (PV/PE)
+X/3" enquanto ativo, e "Cicatriz pendente" depois de encerrado por
+cura — mesmo padrão dos chips de Sobrecarga/Ruptura (v0.37), não
+clicáveis.
+
+## 8. Logs criados
+
+**`table_logs`**: `collapse_started`, `collapse_advanced`,
+`collapse_stabilized`, `collapse_ended` — `visibility="public"`,
+gravação best-effort via `persistCollapseEvent`, payload com
+`characterId`/`characterNome`/`profileId`/`profileSessionId`/`tipo`/
+`source` (mais `segmentos`/`motivo`/`total` quando aplicável).
+`MesaTab.tsx` ganhou `formatCollapse()` + rótulos/ícone (💀)/cor
+(roxo) próprios para os 4 tipos.
+
+**Log local**: reaproveita o `LogTipo` `"recurso"` já existente (sem
+novo tipo — mesma decisão do v0.37 para Sobrecarga).
+
+## 9. Arquivos alterados
+
+- `src/lib/character/collapse.ts` (novo).
+- `src/lib/character/types.ts` — campo `colapso` em `Character`.
+- `src/lib/character/index.ts` — export do novo módulo.
+- `src/app/dev/character-sheet/components/ResourcesTab.tsx` — bloco
+  "Colapso".
+- `src/app/dev/character-sheet/components/ActiveStateStrip.tsx` —
+  prop `colapso` + chips.
+- `src/app/dev/character-sheet/components/MesaTab.tsx` — formatação
+  dos 4 novos `type`.
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` —
+  `applyPvPeSideEffects` (combina auto-heal + detecção de colapso),
+  `updateRecursoAtual`/`handleRestoreRecursosMax` generalizados para
+  PV e PE, `handleStabilizeCollapse`/
+  `handleAdvanceCollapseSegmentManual`/`handleRollCollapseTest`,
+  `persistCollapseEvent`, wiring de props.
+
+Nenhuma migration — nada muda no schema do banco.
+
+## 10. Build e testes
+
+```
+$ npx tsc --noEmit -p tsconfig.json → limpo na primeira tentativa
+$ npm run build → ✓ compilado, rotas inalteradas
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca do Sistema intacta
+```
+
+## 11. Teste manual + script direto
+
+**Script `tsx` direto** (cobertura determinística da sequência
+completa): PV 5→0 iniciou colapso tipo PV + aplicou Inconsciente →
+avançar segmento manual foi para 1/3 → estabilizar marcou
+`estabilizado:true` sem alterar mais nada → PV 0→3 encerrou o colapso
+(`ativo:false`, `cicatrizPendente:true`) e removeu o Inconsciente
+aplicado pelo colapso (confirmado `ativa:false` no array final).
+
+**Navegador (`/dev/character-sheet`)**: PV 5→0 → **confirmado**: bloco
+"Colapso" apareceu (PV, 0/3, não estabilizado), faixa de estados
+mostrou "Inconsciente [Condição]"/"Inconsciente [Aviso]" (efeito
+derivado, v0.33) e "Colapso (PV) 0/3 [Pendência]" → clicado "Avançar
+segmento manualmente" → **confirmado**: 1/3 → clicado "Estabilizar
+Colapso" → **confirmado**: PV continuou em 0 (não curou), botão
+desabilitado → PV 0→2 → **confirmado**: bloco de segmentos sumiu,
+aviso "Cicatriz pendente" apareceu. Fluxo com PE não repetido
+manualmente no navegador (mesma função `detectCollapseOnResourceChange`
+usada para os dois tipos, já coberta pelo script direto e pela
+simetria do código — `tipo==="pe"` segue exatamente o mesmo caminho
+`tipo==="pv"`, só trocando o campo lido). `/dev/character-sheet`
+confirmado sem regressão durante todo o teste (mesma sessão usada
+para v0.37 e v0.38 seguidos, sem nenhum erro).
+
+Nenhum dado de teste persistido no banco (personagem "Novo Personagem"
+nunca salvo durante o teste) — sem necessidade de limpeza via SQL.
+
+## 12. Pendências
+
+- Morte (PV) e coma/fora de jogo (PE) no 3º segmento não são
+  resolvidos — só um warning textual. Resolução final é trabalho
+  futuro (fora de escopo explícito).
+- Cicatriz não tem UI de preenchimento — só o aviso "Cicatriz
+  pendente" (`cicatrizPendente: true`), sem campo de texto/mecânica.
+- Fim de rodada automático não existe — os testes de Colapso são
+  sempre disparados manualmente pelo jogador/narrador, não por um
+  sistema de rodada real.
+- "Dano adicional da mesma dimensão avança o marcador" não é
+  detectável automaticamente quando o recurso já está em 0 (ver seção
+  4) — mitigado com os 3 botões manuais, mas não é automático como o
+  PRD descreve na íntegra.
+- Colapso duplo (PV e PE simultâneos) não é suportado — só gera um
+  warning, sem modelar dois colapsos em paralelo.

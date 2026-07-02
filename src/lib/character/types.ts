@@ -151,6 +151,26 @@ export interface Character {
     danoPsiquico: number;
     criadoEm: string;
   };
+  /**
+   * Colapso (checkpoint v0.38, PRD 10.7) — dispara quando PV ou PE
+   * chega a 0. Primeira versão jogável: sem morte/coma definitivos,
+   * sem cicatriz completa (só a pendência é marcada). Ausente =
+   * personagem nunca colapsou.
+   */
+  colapso?: {
+    ativo: boolean;
+    tipo: "pv" | "pe" | null;
+    /** 0..3 — no 3º, risco de morte (PV) ou coma/fora de jogo (PE), resolução final não automatizada. */
+    segmentos: number;
+    /** Estabilizar interrompe o avanço de segmento, mas NÃO cura nem remove Inconsciente. */
+    estabilizado: boolean;
+    iniciadoEm?: string;
+    /** null enquanto ativo. */
+    encerradoEm?: string | null;
+    /** true após sobreviver a um colapso (cura) — campo de cicatriz pendente de preenchimento manual (fora de escopo ainda). */
+    cicatrizPendente?: boolean;
+    ultimoEvento?: string;
+  };
 }
 
 // ---------------------------------------------------------------------
