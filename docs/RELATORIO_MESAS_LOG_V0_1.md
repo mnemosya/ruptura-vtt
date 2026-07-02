@@ -6776,3 +6776,160 @@ restam só os 2 personagens legados esperados.
 - Histórico não é paginado/filtrável — cresce indefinidamente no
   payload do personagem (mesma observação já feita para o histórico de
   condições removidas, v0.32/v0.34).
+
+# Checkpoint v0.41 — Assistente de criação mínimo
+
+## 1. Auditoria (antes de alterar)
+
+`git status --short` limpo. `createCharacterForCampaign(campaignId,
+character, {profileId, ownerLabel})` (`character/storage.ts`, desde
+v0.23) já fazia exatamente o que o assistente precisa: criar o
+personagem já vinculado à mesa. `setCampaignProfileActiveCharacter`
+(`table/storage.ts`, desde v0.9) já vinculava um personagem como ativo
+de um perfil. `getCharacterRules()`/`listTalents()` (Biblioteca do
+Sistema) já expunham os dados reais necessários. Inspeção direta do
+conteúdo publicado (`regras_personagem.criacao_personagem`) confirmou
+que os números do PRD já existem de verdade no payload: atributos
+`pontos_adicionais: 3`, `maximo_na_criacao: 3`; perícias
+`pontos_totais: 25`, `maximo_na_criacao: 3`; `pa_base: 3`;
+`inventario.aretz_iniciais: 5000`, `raridade_maxima_compra_criacao:
+"incomum"` — nada precisou ser inventado. Vertentes não têm nenhum
+modelo real na ficha (só um campo `vertente` em magias) — confirmado
+via grep, sem função `listVertentes`/tipo dedicado.
+
+## 2. Nova rota
+
+`/mesas/[campaignId]/personagens/novo` — `page.tsx` (Server Component,
+mesmo guard de login+dono de `/mesas/[campaignId]`) +
+`CreateCharacterWizardClient.tsx`. Rota própria, não inflou o
+dashboard existente (`MesaDetailClient.tsx` ganhou só um link
+"Assistente de criação completo" ao lado do "Criar personagem novo"
+já existente — o fluxo rápido antigo continua funcionando, sem
+mudança).
+
+## 3. Etapas implementadas
+
+- **Etapa 1 — Conceito e identidade**: nome (obrigatório), alcunha,
+  conceito, origem (select com as 5 origens do PRD: Vastra, Beldran,
+  Talesh, Kravus, Torvash — hardcoded de propósito, são categorias
+  narrativas do PRD, não conteúdo da Biblioteca), idioma, afiliação.
+- **Etapa 2 — Atributos**: base 1 (`valor_inicial`), distribui os 3
+  pontos adicionais lidos de `regras.criacao_personagem`, teto de
+  criação 3 (também lido de `regras`) — botões +/- travam no teto e no
+  orçamento; contador de pontos restantes sempre visível, fica verde
+  só em 0.
+- **Etapa 3 — Perícias**: mesmo padrão, 25 pontos entre as 21 perícias
+  reais de `regras.pericias` (não hardcoded), teto 3.
+- **Etapa 4 — Vertentes**: placeholder — sem modelo de vertentes na
+  ficha, a etapa só explica que está pendente e permite avançar sem
+  gravar nada (conforme item 5 do pedido: "se não existir, mostrar
+  etapa como pendente").
+- **Etapa 5 — Talento inicial**: `listTalents()` real da Biblioteca —
+  cada talento tem um array `niveis`; o assistente achata só os
+  `nivel === 1` publicados numa lista de escolha. A escolha vira só um
+  rótulo em `metadados.talento_inicial_escolhido` (sem efeito
+  mecânico — não existe sistema de talentos ainda).
+- **Etapa 6 — Inventário**: mostra `aretz_iniciais` (5000, real da
+  Biblioteca) como saldo inicial em `metadados.aretz` — sem loja, sem
+  itens.
+- **Etapa 7 — Revisão**: resumo completo (identidade, atributos,
+  perícias investidas, talento, aretz), seletor opcional de perfil da
+  mesa para vincular, e o botão "Criar personagem" (desabilitado até
+  tudo validar).
+
+Navegação livre entre etapas (botões numerados sempre clicáveis, sem
+travar em ordem sequencial).
+
+## 4. Validação
+
+Bloqueia "Criar personagem" (Etapa 7) se: nome vazio; pontos de
+atributo restantes ≠ 0 (tem que gastar exatamente os 3 pontos
+adicionais); algum atributo fora de `[valor_inicial, teto]`; pontos de
+perícia restantes < 0 (pode gastar até 25, não precisa gastar tudo);
+alguma perícia fora de `[0, teto]`. Mensagens de erro específicas
+apontam para a etapa certa. Confirmado no teste manual: tentar subir
+Corpo além do teto (3) não teve efeito (botão "+" travou no valor
+máximo).
+
+## 5. Integração
+
+Ao finalizar: monta um `Character` completo (nome, atributos, perícias,
+metadados livres com identidade/talento/aretz, `estado_jogo` zerado) e
+chama `createCharacterForCampaign(campaign.id, character, {profileId})`
+— a mesma função já usada por todo o resto do app (não um caminho
+inseguro novo). Se um perfil foi selecionado na Revisão, chama também
+`setCampaignProfileActiveCharacter`. Ao terminar, redireciona para
+`/mesas/[campaignId]` via `router.push` (Next.js `useRouter`).
+Confirmado no teste manual: o personagem criado apareceu imediatamente
+em "Personagens da mesa" com o perfil já vinculado, e abriu
+corretamente tanto na página de convite (`/join/[token]`, "Personagem
+ativo: Herói de Teste") quanto em `/ficha` (nome, mesa, perfil e id
+corretos).
+
+## 6. Arquivos alterados
+
+- `src/app/mesas/[campaignId]/personagens/novo/page.tsx` (novo).
+- `src/app/mesas/[campaignId]/personagens/novo/CreateCharacterWizardClient.tsx`
+  (novo).
+- `src/lib/character/types.ts` — `CharacterRulesPayload.criacao_personagem`
+  estendido (pontos/teto de atributos e perícias, `pa_base`,
+  `inventario.aretz_iniciais`).
+- `src/app/mesas/[campaignId]/MesaDetailClient.tsx` — link "Assistente
+  de criação completo".
+
+Nenhuma migration — nada muda no schema do banco (o personagem criado
+usa exatamente o mesmo formato de payload já salvo por qualquer outro
+fluxo de criação).
+
+## 7. Build e testes
+
+```
+$ npx tsc --noEmit -p tsconfig.json → limpo na primeira tentativa
+$ npm run build → ✓ compilado, nova rota listada:
+  ƒ /mesas/[campaignId]/personagens/novo
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca do Sistema intacta
+```
+
+## 8. Teste manual (navegador, preview server)
+
+Narrador criou mesa "Mesa v0.41" e perfil "Perfil v0.41" →
+abriu o assistente pelo link no dashboard → Etapa 1: preencheu nome
+"Herói de Teste", origem "Vastra" (default) → Etapa 2: distribuiu
+Corpo +2, Mente +1 (3 pontos, dentro do teto 3) → **confirmado**:
+pontos restantes 0/3, tentativa de subir Corpo além do teto não teve
+efeito → Etapa 3: investiu 3 pontos em Luta → **confirmado**: 25/25
+disponíveis, teto 3 respeitado → Etapas 4/5/6 verificadas como
+placeholders funcionais (Vertentes pendente, Talento com lista real
+da Biblioteca, Inventário mostrando 5000 aretz) → Etapa 7: revisão
+mostrou tudo corretamente (Corpo 3 · Mente 2 · Ânimo 1, Luta 3, aretz
+5000), vinculado ao "Perfil v0.41", botão "Criar personagem"
+habilitado → clicado → **confirmado**: redirecionado para
+`/mesas/[campaignId]`, "PERSONAGENS DA MESA (1)" mostrando "Herói de
+Teste" já com "Perfil: Perfil v0.41" → confirmado via SQL direto que
+o payload persistiu com todos os campos corretos → criado convite →
+acessado `/join/[token]` como visitante → **confirmado**: "Personagem
+ativo: Herói de Teste" → entrou como perfil → abriu `/ficha` →
+**confirmado**: ficha carregou "Herói de Teste" com id/mesa/perfil
+corretos → `/dev/character-sheet` acessado diretamente e confirmado
+sem regressão ("Personagens salvos (3)", combobox de mesas com "Mesa
+v0.41" incluída, antes da limpeza).
+
+Dados de teste removidos ao final via SQL direto — confirmado que
+restam só os 2 personagens e as 2 campanhas legadas esperadas.
+
+## 9. Pendências
+
+- Vertentes: sem modelo real na ficha — etapa fica sempre como
+  pendente até um checkpoint de magia implementar o sistema.
+- Talento inicial: só registra o rótulo da escolha, sem nenhum efeito
+  mecânico (sem sistema de talentos implementado).
+- Inventário/loja: sem compra real, sem raridade bloqueada aplicada de
+  fato (`raridade_maxima_compra_criacao` lido mas não usado, porque
+  não há loja para filtrar) — só o saldo inicial é registrado.
+- Sem edição de campos narrativos adicionais além dos 6 pedidos (RPI,
+  cor/ícone de perfil, etc. — PRD 11.1 lista mais campos de
+  identidade que não entraram neste checkpoint mínimo).
+- Custos de progressão (PM) continuam placeholder — o assistente não
+  desconta PM na criação (criação é gratuita, como o PRD descreve —
+  PM é só para evolução pós-criação, v0.40).

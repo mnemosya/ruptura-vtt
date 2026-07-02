@@ -285,7 +285,19 @@ export interface CharacterRulesPayload {
   atributos: AttributeDefinition[];
   pericias: SkillDefinition[];
   derivados: DerivedDefinition[];
+  /**
+   * Orçamentos de criação de personagem (checkpoint v0.41) — vêm do
+   * payload real de `regras_personagem.criacao_personagem`
+   * (confirmado via inspeção do conteúdo publicado: pontos_adicionais
+   * de atributo = 3, teto de criação = 3, pontos de perícia = 25,
+   * aretz iniciais = 5000). Todos opcionais — o assistente cai em
+   * fallback documentado se o campo específico não vier no payload
+   * (nunca inventa um número diferente do que já existe no PRD).
+   */
   criacao_personagem?: {
-    atributos?: { valor_inicial?: number };
+    atributos?: { valor_inicial?: number; pontos_adicionais?: number; maximo_na_criacao?: number };
+    pericias?: { pontos_totais?: number; maximo_na_criacao?: number };
+    pa_base?: number;
+    inventario?: { aretz_iniciais?: number };
   };
 }

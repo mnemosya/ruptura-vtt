@@ -356,6 +356,13 @@ export default function MesaDetailClient({
             Criar personagem novo
           </button>
         </div>
+        <Link
+          href={`/mesas/${campaign.id}/personagens/novo`}
+          data-testid="det-abrir-assistente-criacao"
+          style={{ ...btn, textDecoration: "none", display: "inline-block", marginBottom: 12 }}
+        >
+          Assistente de criação completo
+        </Link>
         {personagensAtivosDaMesa.length === 0 && (
           <p style={{ fontSize: 13, opacity: 0.6 }}>Nenhum personagem vinculado a esta mesa ainda.</p>
         )}
