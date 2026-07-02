@@ -4445,3 +4445,115 @@ $ npm run test:content-read → Biblioteca intacta
    `auth.uid()` de jogador para uma policy row-level tradicional; a
    validação de sessão continua vivendo nas funções SQL, não em RLS
    pura.
+
+# Checkpoint v0.29.1 — Auditoria das RPCs de personagem
+
+Audita `get_character_for_profile_session`/
+`save_character_for_profile_session` (criadas no v0.29) contra o
+checklist do checkpoint, ANTES de avançar para um token de sessão
+real. RLS de `characters` (as 4 dev_transition + as 4 owner_*) e
+`/dev/character-sheet` **não foram tocados** — auditoria é só sobre as
+duas funções SQL.
+
+## 1. Achados
+
+| Item do checklist | Estado antes | Achado |
+|---|---|---|
+| `search_path` explícito | `set search_path = public`, tabelas sem qualificação de schema | Presente mas não no formato mais seguro (Postgres/Supabase Security Advisor recomenda `search_path = ''` + tudo qualificado) |
+| Validação de `session_token_hash` | Ausente | Funções só comparavam `campaign_profiles.lock_session_id` (texto puro) — nunca cruzavam com `profile_sessions.session_token_hash` (o hash SHA-256 da camada de rastreio, migration 0009) |
+| Validação de status da `profile_session` | Ausente | Mesma causa do item acima — nenhuma consulta a `profile_sessions` existia nas funções |
+| Validação de `campaign_id` (na consulta a campaign_profiles) | Presente | ✓ já correto |
+| Validação de `campaign_id` (na própria linha de `characters`) | **Ausente** | `desvincularPersonagemDaMesa` (MesaDetailClient, v0.23) limpa `characters.campaign_id` sem limpar `campaign_profiles.active_character_id` do perfil — deixava uma referência "fantasma" servível/salvável pela RPC |
+| Validação de `profile_id` (na própria linha de `characters`) | Ausente | Avaliada e **deliberadamente não adicionada** — o dropdown de "personagem ativo" no dashboard oferece qualquer personagem da mesa, não só os já vinculados àquele profile_id; exigir esse cruzamento quebraria um fluxo legítimo |
+| Validação de `active_character_id` | Presente | ✓ já correto (get e save) |
+| Bloqueio contra salvar personagem de outro perfil | Presente | ✓ já coberto pela comparação de `active_character_id`, agora reforçado pelo cruzamento de `campaign_id` |
+| Atualização só dos campos permitidos | Presente | ✓ já correto — o `UPDATE` só toca `name`/`payload`; `owner_id`/`campaign_id`/`profile_id`/`status`/`archived_at` nunca aparecem no `SET` |
+| `grant execute` restrito a anon/authenticated | Presente | ✓ já correto, mantido sem alteração |
+
+## 2. Correções feitas (migration `0015_harden_character_session_rpcs.sql`)
+
+1. **`search_path = ''`** + `public.characters`/`public.campaign_profiles`/
+   `public.profile_sessions`/`extensions.digest` totalmente
+   qualificados nas duas funções (recriadas via `create or replace
+   function`, mesma assinatura — nenhuma mudança de client TypeScript
+   necessária).
+2. **Cruzamento com `profile_sessions`** — calcula
+   `encode(extensions.digest(convert_to(p_session_id, 'UTF8'),
+   'sha256'), 'hex')` e rejeita (retorna vazio no get / lança exceção
+   no save) se existir uma linha de `profile_sessions` com esse hash e
+   `status <> 'active'`. Decisão deliberada: **não exige** que a linha
+   exista (profile_sessions é best-effort por design, ver aviso em
+   `table/storage.ts`) — só barra sessões que a camada de rastreio já
+   marcou expiradas/encerradas mesmo que `campaign_profiles` ainda não
+   tenha sido limpo (corrida entre `expireStaleProfileSessions` e o
+   lock).
+3. **`and campaign_id = p_campaign_id`** adicionado na consulta (get) e
+   no `UPDATE` (save) da própria linha de `characters` — um personagem
+   desvinculado da mesa deixa de ser servível/salvável por uma sessão
+   daquela mesa, mesmo que `active_character_id` do perfil ainda
+   aponte para ele.
+
+Nenhuma mudança no `grant`/`revoke` (permanece só anon+authenticated).
+Nenhuma mudança em `character/storage.ts` (as chamadas `client.rpc(...)`
+continuam idênticas — só o corpo das funções SQL mudou).
+
+## 3. Build e testes
+
+```
+$ npm run build → ✓ (sem mudança de código TypeScript)
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca intacta
+```
+
+## 4. Teste manual/script (todos os cenários do pedido)
+
+Script temporário (`scripts/_tmp_test_rpc.ts`, criado e apagado nesta
+mesma sessão — nunca commitado) criou fixtures via SQL direto
+(1 mesa, 2 perfis bloqueados com sessionId conhecido, 1 personagem
+ativo do perfil A, 1 personagem NÃO ativo) e chamou as RPCs via
+`@supabase/supabase-js` com a anon key (mesmo client que o app usa):
+
+1. **Sessão válida consegue ler** — `get_character_for_profile_session`
+   com sessionId correto retorna o personagem ativo certo ✓.
+2. **Sessão válida consegue salvar** — `save_character_for_profile_session`
+   persiste o novo nome ✓ (confirmado no retorno da própria função).
+3. **Sessão inválida não consegue** — sessionId incorreto: `get`
+   retorna vazio (sem lançar erro, mesmo padrão de
+   `validateProductSession`) ✓; `save` lança exceção ✓.
+4. **Sessão de outro perfil não consegue salvar** — sessão do Perfil B
+   tentando salvar o personagem ativo do Perfil A → exceção ✓.
+5. **Personagem não ativo não pode ser salvo pela sessão** — sessão
+   válida do Perfil A tentando salvar um personagem que não é o seu
+   `active_character_id` → exceção ✓.
+6. **Tentativa de trocar `campaign_id`/`profile_id`/`owner_id` não
+   funciona** — a RPC nem aceita esses parâmetros; salvamento válido
+   confirmado não alterar nenhum dos três no personagem ✓.
+7. **(achado extra, adicionado ao teste)** Personagem desvinculado da
+   mesa (`campaign_id = null`) simulando o cenário real do achado da
+   seção 1 → `get` passa a retornar vazio mesmo com
+   `active_character_id` ainda apontando para ele, confirmando a
+   correção ✓.
+
+Todos os 15 asserts passaram. Fixtures de teste removidos ao final —
+**achado colateral do próprio teste**: o cleanup do script tentou
+apagar a `campaign` de teste via client anon e falhou silenciosamente
+(RLS de `campaigns` já não permite mais `DELETE` anônimo desde o
+checkpoint v0.27) — limpo manualmente via SQL direto. Não é um bug
+desta auditoria; é a hardening do v0.27 funcionando como esperado
+(confirma, de passagem, que aquela policy continua efetiva).
+
+## 5. Riscos remanescentes
+
+- `characters_dev_transition_*` continuam abertas (fora de escopo
+  deste checkpoint) — quem contorna o app e chama a tabela direto via
+  REST ainda não passa pela validação das RPCs.
+- O cruzamento com `profile_sessions` é "soft" (não exige que a linha
+  exista) — se a camada de rastreio falhar silenciosamente ao marcar
+  uma sessão como expirada (cenário já aceito como best-effort desde
+  v0.19), a RPC ainda confiaria em `campaign_profiles.lock_session_id`
+  sozinho, igual antes desta auditoria.
+- Sem autenticação real de jogador — a "identidade" de quem chama a
+  RPC continua sendo só posse do sessionId de navegador (localStorage,
+  não um token assinado/rotacionável). Migrar para um token de sessão
+  real é o próximo passo natural, mencionado no pedido deste
+  checkpoint como objetivo seguinte.
