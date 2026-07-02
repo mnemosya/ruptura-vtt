@@ -4557,3 +4557,205 @@ desta auditoria; é a hardening do v0.27 funcionando como esperado
   não um token assinado/rotacionável). Migrar para um token de sessão
   real é o próximo passo natural, mencionado no pedido deste
   checkpoint como objetivo seguinte.
+
+# Checkpoint v0.30 — Token real por sessão de perfil
+
+## 1. Auditoria (antes de alterar)
+
+`git status --short` limpo, `next-env.d.ts` sem alteração. Reconfirmado
+o estado herdado do v0.29.1: as RPCs de personagem validavam
+`profile_sessions` de forma "soft" (best-effort — aceitavam a ausência
+da linha), e a identidade real de sessão era só
+`campaign_profiles.lock_session_id`, um id de navegador salvo em
+`localStorage` (`getOrCreateBrowserSessionId()`), nunca pensado como
+segredo. `profile_sessions.session_token_hash` já existia desde a
+migration 0009 (checkpoint v0.19), mas nada gerava um token real por
+trás — a coluna estava lá, sem uso como credencial.
+
+Fluxos auditados: `enterCampaignProfile`, `heartbeatCampaignProfile`,
+`leaveCampaignProfile`, `validateProductSession` (renomeada nesta
+checkpoint), `get_character_for_profile_session`,
+`save_character_for_profile_session`, `/join/[token]`
+(`JoinClient.tsx`, compartilhado com `/dev/join/[campaignId]`),
+`/ficha` (`CharacterSheetClient.tsx`, compartilhado com
+`/dev/character-sheet`).
+
+## 2. O que mudou
+
+### Migration `0016_real_profile_session_tokens.sql`
+
+`get_character_for_profile_session` e `save_character_for_profile_session`
+trocam de assinatura — de `(campaign_id, profile_id, session_id text)`
+para `(campaign_id, profile_id, profile_session_id uuid,
+raw_session_token text[, ...])`. Como Postgres não permite
+`create or replace` com lista de parâmetros diferente, as funções
+antigas são apagadas (`drop function`) e recriadas com HARD CHECK:
+precisa existir uma linha em `profile_sessions` com esse id, para esse
+`profile_id`/`campaign_id`, com `session_token_hash` batendo o SHA-256
+(via `extensions.digest`, `search_path=''`) do token bruto recebido, e
+`status = 'active'` — sem fallback para
+`campaign_profiles.lock_session_id` sozinho. Mantidas as checagens de
+defesa em profundidade do v0.29.1 (`is_locked = true`,
+`active_character_id` bate o personagem pedido,
+`characters.campaign_id` confirmado). `revoke all ... from public` +
+`grant execute ... to anon, authenticated` inalterados. Nenhuma policy
+de RLS tocada.
+
+**Breaking change aceito e documentado**: qualquer sessão de perfil
+ativa antes desta migration parou de validar contra as RPCs assim que
+o código do app passou a chamar a nova assinatura — jogadores com
+ficha já aberta precisam recarregar e entrar de novo pelo convite. Não
+há perda de dado (personagem/mesa/perfil intactos, só a sessão local
+precisa ser refeita).
+
+### `src/lib/table/browserSession.ts`
+
+Novo par `saveProfileSessionToken` / `readProfileSessionToken` /
+`clearProfileSessionToken`, guardando `{ profileSessionId,
+rawSessionToken }` no `localStorage`, chaveado por `profileId`
+(`ruptura_vtt_profile_session_token:<profileId>`) — múltiplos perfis
+no mesmo navegador guardam tokens independentes.
+`getOrCreateBrowserSessionId()` (id local antigo) permanece intacto
+como identificador auxiliar não secreto, usado só por
+`computeProfileStatus` (UI de concorrência) e pelo gate de "perfil já
+travado" do `enterCampaignProfile`.
+
+### `src/lib/table/storage.ts`
+
+- `upsertActiveProfileSession` → `createProfileSessionToken`: gera
+  `randomBytes(32).toString("base64url")` (mesmo padrão do token de
+  convite desde v0.18), salva só `sha256hex(rawToken)` em
+  `session_token_hash`, retorna `{ profileSessionId, rawSessionToken }`
+  — o bruto nunca é persistido. Antes de inserir, marca qualquer sessão
+  `'active'` anterior do mesmo perfil como `'released'`, garantindo no
+  máximo um token válido por perfil.
+- `validateProductSession` → `validateProfileSessionToken(campaignId,
+  profileId, profileSessionId, rawSessionToken)`: hash o token
+  recebido, busca a linha de `profile_sessions` por id, confere
+  `profile_id`/`campaign_id`/hash/`status==='active'`, confirma
+  `campaign_profiles.is_locked`. Nunca retorna `session_token_hash`
+  para o chamador.
+- `enterCampaignProfile` retorna `{ profile, profileSessionId,
+  rawSessionToken }` (antes retornava só o `profile`).
+- `heartbeatCampaignProfile(profileId, profileSessionId,
+  rawSessionToken)` e `leaveCampaignProfile(profileId, profileSessionId,
+  rawSessionToken)` passam a validar o token com o mesmo hard check
+  antes de agir; token errado ou sessão inativa lança erro.
+
+### `src/lib/character/storage.ts`
+
+`getCharacterForProfileSession` e `saveCharacterForProfileSession`
+passam a exigir `profileSessionId` + `rawSessionToken`, chamando
+`validateProfileSessionToken` antes de invocar a RPC (dupla checagem:
+JS e SQL) e repassando os dois parâmetros novos para
+`get_character_for_profile_session` / `save_character_for_profile_session`.
+
+### `src/app/dev/join/[campaignId]/JoinClient.tsx` (compartilhado com `/join/[token]`)
+
+`handleEnter` salva o token retornado por `enterCampaignProfile` via
+`saveProfileSessionToken` antes de marcar o perfil como "entrado".
+
+### `src/app/dev/character-sheet/CharacterSheetClient.tsx` (compartilhado com `/ficha`)
+
+- Modo produto (`/ficha`): `loadProductSession` agora lê o token do
+  `localStorage` primeiro (`readProfileSessionToken`); sem token, cai
+  direto em `no_params` sem chamar o servidor. Com token, chama
+  `getCharacterForProfileSession` passando `profileSessionId` +
+  `rawSessionToken`; se a validação falhar, `clearProfileSessionToken`
+  e estado `invalid`.
+- Modo dev: `handleEnterProfile` salva o token retornado; heartbeat,
+  save e leave usam o token do estado (`profileSessionToken`), não mais
+  o `sessionId` de navegador.
+- Mensagem de bloqueio (`no_params`/`invalid`/`left`) padronizada como
+  **"Sessão inválida ou expirada. Entre novamente pelo convite."**
+  (`left` inclui o prefixo "Você saiu deste perfil.").
+
+## 3. Build e testes
+
+```
+$ npx tsc --noEmit -p tsconfig.json → limpo (após ajustar call sites)
+$ npm run build → ✓ compilado, rotas dinâmicas inalteradas
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca do Sistema intacta
+```
+
+## 4. Teste manual/script (todos os cenários do pedido)
+
+**Script** (`scripts/_tmp_test_v030.ts`, criado e apagado nesta sessão,
+nunca commitado): fixture de mesa criada via SQL direto (anon não pode
+mais `INSERT` em `campaigns` desde v0.27), perfis/personagens via
+client anon. 19 asserts cobrindo:
+
+1. `enterCampaignProfile` cria `profile_sessions` com hash — raw token
+   nunca aparece em nenhuma linha da tabela (`JSON.stringify` de toda a
+   tabela não contém o token bruto) ✓.
+2. Hash tem 64 chars hex (SHA-256) e é diferente do token bruto ✓.
+3. `/ficha` (via `getCharacterForProfileSession`) carrega com token
+   válido ✓; falha (`ok:false`) com `profileSessionId` certo + token
+   errado ✓; falha com token de outro perfil ✓.
+4. Save (`saveCharacterForProfileSession`) funciona com token válido e
+   persiste ✓; falha com token inválido ✓.
+5. Heartbeat funciona com token válido ✓; falha com token errado ✓.
+6. Leave funciona com token válido, marca `status='exited'` ✓; token
+   inválido não consegue sair ✓.
+7. Sessão `exited`/`released` não valida mais (hard check `status`) ✓.
+8. Personagem não ativo do perfil não pode ser lido/salvo pela sessão
+   (RPC confere `active_character_id`) ✓.
+9. Segunda tentativa de entrar no mesmo perfil enquanto a primeira
+   sessão está ativa é bloqueada pelo gate existente de
+   `enterCampaignProfile`; e mesmo em reentrada na mesma sessão local,
+   `createProfileSessionToken` libera (`released`) qualquer sessão
+   `'active'` anterior do perfil antes de criar a nova — no máximo um
+   token válido por perfil ✓.
+
+Todos os 19 asserts passaram. Fixtures (perfis/personagens) e a mesa de
+teste (via SQL direto) removidos ao final.
+
+**Manual (navegador, preview server)**: login como narrador → criada
+mesa "Mesa v0.30" → personagem "Personagem v0.30" → perfil "Perfil
+v0.30" vinculado e ativado → convite criado → logout → acessou
+`/join/<token>` como visitante anônimo → "Entrar como perfil" (token
+salvo no `localStorage`, confirmado via `preview_eval`) → "Abrir ficha"
+→ `/ficha` carregou o personagem correto via token → editado o nome e
+salvo (`✓ Salvo`) → confirmado via SQL direto que o nome persistiu e
+que `session_token_hash` tem 64 chars hex, diferente do token bruto →
+"Sair do perfil" → mensagem exata **"Você saiu deste perfil. Sessão
+inválida ou expirada — entre novamente pelo convite."** exibida →
+confirmado token removido do `localStorage` e `profile_sessions.status
+= 'exited'` no banco → `/dev/character-sheet` verificado sem
+regressão (lista "Personagens salvos (3)", combobox de mesas incluindo
+as 2 legadas + a de teste, antes da limpeza). Nenhum `session_token_hash`
+observado em nenhuma resposta renderizada na UI (as chamadas de
+`/ficha` e `/join/[token]` são Server Actions — o corpo da resposta é
+protocolo RSC interno do Next.js, não JSON legível contendo campos de
+`profile_sessions`). Dados de teste removidos ao final (campanha "Mesa
+v0.30" e o personagem órfão que sobrou após o `delete` de `campaigns`
+não cascatear `characters`) — confirmado que restam só as 2 campanhas e
+os 2 personagens legados esperados.
+
+## 5. Riscos remanescentes
+
+- `characters_dev_transition_*` continuam abertas (fora de escopo
+  deste checkpoint, igual v0.29/v0.29.1) — quem contorna o app e chama
+  a tabela direto via REST ainda não passa pelas RPCs nem pelo token.
+- `campaign_profiles.lock_session_id` continua sendo um id de
+  navegador não assinado — é só o gate de "perfil já ocupado" na UI de
+  entrada (`enterCampaignProfile`), não mais o mecanismo de segurança
+  para heartbeat/leave/personagem (que agora é o token real). Mas
+  ainda não há rotação/expiração automática do próprio
+  `rawSessionToken` além de expirar via `expireStaleProfileSessions`
+  (heartbeat parado); não há revogação manual de uma sessão específica
+  pelo narrador (só `forceReleaseCampaignProfile`, que libera o lock
+  mas não necessariamente marca a linha de `profile_sessions` como
+  encerrada explicitamente por essa via).
+- Sem rotação de token durante a sessão (o mesmo `rawSessionToken` vive
+  enquanto o heartbeat mantiver `status='active'`) — se vazar (XSS,
+  extensão maliciosa, etc.), o invasor tem acesso completo ao
+  personagem daquele perfil até a sessão expirar ou o jogador sair.
+  Mitigação real (rotação periódica, binding a IP/user-agent) fica para
+  um checkpoint futuro.
+- RLS de `characters`/`campaign_profiles`/`profile_sessions` não foi
+  endurecida nesta checkpoint (regra explícita do pedido) — a proteção
+  contra chamadas fora das RPCs continua dependendo só das policies já
+  existentes desde v0.27/v0.29.
+  checkpoint como objetivo seguinte.

@@ -32,12 +32,18 @@
  *   heartbeatCampaignProfile, leaveCampaignProfile,
  *   forceReleaseCampaignProfile, listProfileSessions,
  *   getActiveProfileSession, createCampaignInvite, listCampaignInvites,
- *   revokeCampaignInvite, resolveCampaignInvite, validateProductSession
- *   (checkpoint v0.24 — confere se o sessionId do navegador é o dono do
- *   bloqueio do perfil antes de `/ficha` abrir a ficha real),
+ *   revokeCampaignInvite, resolveCampaignInvite,
  *   expireStaleProfileSessions (checkpoint v0.26 — marca sessões
  *   velhas como 'expired' e libera o bloqueio do perfil; chamada em
- *   pontos de carregamento seguros, nunca por cron/Realtime real).
+ *   pontos de carregamento seguros, nunca por cron/Realtime real),
+ *   validateProfileSessionToken (checkpoint v0.30 — substitui
+ *   validateProductSession do v0.24: exige um TOKEN REAL de sessão
+ *   [profileSessionId + rawSessionToken, hash comparado em
+ *   profile_sessions.session_token_hash, status='active'] em vez de
+ *   confiar no sessionId de navegador comparado com lock_session_id).
+ *   enterCampaignProfile/heartbeatCampaignProfile/leaveCampaignProfile
+ *   também passaram a exigir/gerar esse token real desde o v0.30 — ver
+ *   comentário de cada uma.
  *
  *   ¹ listCampaigns retorna TODAS as mesas (RLS ainda em transição) —
  *     /mesas filtra por owner_id no servidor antes de exibir. Quando a
@@ -92,66 +98,155 @@ function hashInviteToken(rawToken: string): string {
 }
 
 /**
- * Mantém a linha de `profile_sessions` (migration 0009) espelhando o
- * ciclo de vida do lock de perfil. `sessionId` é o mesmo id do navegador
- * que já flui pelas funções de enter/heartbeat/leave/release; guardamos
- * só o hash. Best-effort: falhas aqui são silenciadas para NUNCA quebrar
- * o fluxo de lock já existente (a sessão é uma camada de rastreio/
- * visibilidade, não o mecanismo de lock em si).
+ * Cria um token REAL de sessão de perfil (checkpoint v0.30) — 256 bits
+ * (`randomBytes(32)`, mesmo padrão do token de convite desde v0.18).
+ * O banco só grava o hash SHA-256 em `profile_sessions.
+ * session_token_hash`; o token BRUTO é devolvido UMA vez ao chamador
+ * (enterCampaignProfile) para guardar no localStorage do navegador —
+ * nunca é relido do banco.
+ *
+ * Invalida (`status = 'released'`) qualquer sessão AINDA 'active'
+ * deste perfil antes de criar a nova — garante no máximo UM token
+ * válido por perfil por vez (evita que um token antigo, esquecido em
+ * outra aba/navegador, continue validando depois de uma nova entrada
+ * legítima). Diferente da v0.29, que só marcava sessões 'expired' via
+ * `expireStaleProfileSessions` (por inatividade) — aqui é imediato,
+ * na entrada, independente de tempo.
+ *
+ * NÃO é mais best-effort: se a criação do token falhar, a função
+ * lança e `enterCampaignProfile` propaga o erro — sem um token válido,
+ * a "entrada" não tem como ser usada por heartbeat/ficha depois mesmo
+ * que o lock em campaign_profiles tenha sido concedido.
  */
-async function upsertActiveProfileSession(
+async function createProfileSessionToken(
   client: Awaited<ReturnType<typeof getScopedTableClient>>,
   profile: CampaignProfile,
-  sessionId: string,
   inviteId?: string | null,
-): Promise<void> {
-  const tokenHash = sha256hex(sessionId);
+): Promise<{ profileSessionId: string; rawSessionToken: string }> {
   try {
-    const { data: existing } = await client
+    await client
       .from(PROFILE_SESSIONS_TABLE)
-      .select("id, status")
+      .update({ status: "released", released_at: new Date().toISOString() })
       .eq("profile_id", profile.id)
-      .eq("session_token_hash", tokenHash)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    const nowIso = new Date().toISOString();
-    if (existing) {
-      // Reativa a sessão desta mesma origem (ex.: reentrou após sair/expirar).
-      await client
-        .from(PROFILE_SESSIONS_TABLE)
-        .update({ status: "active", last_seen_at: nowIso, exited_at: null, released_at: null })
-        .eq("id", (existing as { id: string }).id);
-    } else {
-      await client.from(PROFILE_SESSIONS_TABLE).insert({
-        campaign_id: profile.campaign_id,
-        profile_id: profile.id,
-        invite_id: inviteId ?? null,
-        session_token_hash: tokenHash,
-        status: "active",
-        last_seen_at: nowIso,
-      });
-    }
+      .eq("status", "active");
   } catch {
-    // silencioso — camada de rastreio não pode derrubar o lock.
+    // melhor esforço — mesmo se isso falhar, o hard check nas RPCs/
+    // validateProfileSessionToken ainda vai exigir status='active' E
+    // hash batendo, então um token antigo só continuaria válido se
+    // ninguém mais tivesse entrado depois (sem risco de "duas sessões
+    // ativas" de verdade, ver checkpoint v0.30 do relatório).
   }
+
+  const rawSessionToken = randomBytes(32).toString("base64url");
+  const tokenHash = sha256hex(rawSessionToken);
+  const nowIso = new Date().toISOString();
+  const { data, error } = await client
+    .from(PROFILE_SESSIONS_TABLE)
+    .insert({
+      campaign_id: profile.campaign_id,
+      profile_id: profile.id,
+      invite_id: inviteId ?? null,
+      session_token_hash: tokenHash,
+      status: "active",
+      last_seen_at: nowIso,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    throw new TableStorageError(`Falha ao criar sessão de perfil: ${error.message}`, error);
+  }
+  return { profileSessionId: (data as { id: string }).id, rawSessionToken };
 }
 
-/** Marca a(s) sessão(ões) ativa(s) de um perfil com um status terminal (best-effort). */
+/**
+ * Valida um token real de sessão de perfil (checkpoint v0.30) — HARD
+ * CHECK: precisa existir uma linha em `profile_sessions` com esse
+ * `profileSessionId`, para esse `profileId`/`campaignId`, com
+ * `session_token_hash` batendo o SHA-256 do `rawSessionToken`, e
+ * `status = 'active'`. Também reconfirma `campaign_profiles.
+ * is_locked = true` (perfil não foi liberado à força depois que a
+ * sessão foi criada). Sem fallback para `lock_session_id` — esse
+ * campo agora é só um identificador local auxiliar (ver
+ * browserSession.ts), nunca mais tratado como segredo.
+ *
+ * Nunca retorna `session_token_hash` — o objeto de sessão devolvido é
+ * sempre construído só com os campos seguros (`PROFILE_SESSION_SAFE_COLUMNS`).
+ */
+export interface ValidateProfileSessionTokenResult {
+  ok: boolean;
+  reason?: "profile_not_found" | "wrong_campaign" | "not_locked" | "session_not_found" | "session_inactive";
+  campaign?: Campaign;
+  profile?: CampaignProfile;
+  profileSession?: ProfileSession;
+}
+
+export async function validateProfileSessionToken(
+  campaignId: string,
+  profileId: string,
+  profileSessionId: string,
+  rawSessionToken: string,
+): Promise<ValidateProfileSessionTokenResult> {
+  const client = await getScopedTableClient();
+  await expireStaleProfileSessions(campaignId).catch(() => {});
+
+  const { data: profileData, error: profileError } = await client
+    .from(CAMPAIGN_PROFILES_TABLE)
+    .select()
+    .eq("id", profileId)
+    .maybeSingle();
+  if (profileError) {
+    throw new TableStorageError(`Falha ao validar sessão do perfil "${profileId}": ${profileError.message}`, profileError);
+  }
+  if (!profileData) return { ok: false, reason: "profile_not_found" };
+  const profile = profileData as CampaignProfile;
+  if (profile.campaign_id !== campaignId) return { ok: false, reason: "wrong_campaign" };
+  if (!profile.is_locked) return { ok: false, reason: "not_locked" };
+
+  const tokenHash = sha256hex(rawSessionToken);
+  const { data: sessionRow, error: sessionError } = await client
+    .from(PROFILE_SESSIONS_TABLE)
+    .select(`${PROFILE_SESSION_SAFE_COLUMNS}, session_token_hash`)
+    .eq("id", profileSessionId)
+    .eq("profile_id", profileId)
+    .eq("campaign_id", campaignId)
+    .maybeSingle();
+  if (sessionError) {
+    throw new TableStorageError(`Falha ao validar token de sessão: ${sessionError.message}`, sessionError);
+  }
+  if (!sessionRow) return { ok: false, reason: "session_not_found" };
+
+  const row = sessionRow as ProfileSession & { session_token_hash: string };
+  if (row.session_token_hash !== tokenHash) return { ok: false, reason: "session_not_found" }; // token errado = tratado igual a "não encontrada", não vaza qual parte bateu
+  if (row.status !== "active") return { ok: false, reason: "session_inactive" };
+
+  const { session_token_hash: _hash, ...safeSession } = row;
+  void _hash; // nunca retornado — descartado explicitamente
+
+  const campaign = await getCampaign(campaignId);
+  if (!campaign) return { ok: false, reason: "wrong_campaign" };
+
+  return { ok: true, campaign, profile, profileSession: safeSession as ProfileSession };
+}
+
+/**
+ * Marca a(s) sessão(ões) ativa(s) de um perfil com um status terminal
+ * (best-effort). Checkpoint v0.30: só usada por
+ * `forceReleaseCampaignProfile` (ação do narrador, sem token de
+ * sessão de jogador em mãos) — `leaveCampaignProfile` agora atualiza a
+ * linha exata por `profileSessionId` diretamente, já validada por
+ * token.
+ */
 async function markProfileSessions(
   client: Awaited<ReturnType<typeof getScopedTableClient>>,
   profileId: string,
   status: "exited" | "released" | "expired",
-  opts?: { sessionId?: string },
 ): Promise<void> {
   try {
     const patch: Record<string, unknown> = { status };
     if (status === "exited") patch.exited_at = new Date().toISOString();
     if (status === "released") patch.released_at = new Date().toISOString();
-    let q = client.from(PROFILE_SESSIONS_TABLE).update(patch).eq("profile_id", profileId).eq("status", "active");
-    if (opts?.sessionId) q = q.eq("session_token_hash", sha256hex(opts.sessionId));
-    await q;
+    await client.from(PROFILE_SESSIONS_TABLE).update(patch).eq("profile_id", profileId).eq("status", "active");
   } catch {
     // silencioso.
   }
@@ -513,17 +608,35 @@ export async function expireStaleProfileSessions(
   return expiredCount;
 }
 
+export interface EnterProfileResult {
+  profile: CampaignProfile;
+  /** Id da linha de profile_sessions (não secreto) — usar com rawSessionToken em heartbeat/leave/ficha. */
+  profileSessionId: string;
+  /** Token BRUTO (256 bits) — só devolvido aqui, uma vez. Guardar no localStorage; nunca volta do banco. */
+  rawSessionToken: string;
+}
+
 /**
  * Entra num perfil: permite se o perfil está livre, se já é a mesma
- * sessão que o detém, ou se o bloqueio atual expirou (sem heartbeat há
- * mais de PROFILE_HEARTBEAT_TIMEOUT_MS). Caso contrário, lança erro
- * (perfil em uso por outra sessão ativa).
+ * sessão (identificador local auxiliar) que o detém, ou se o bloqueio
+ * atual expirou (sem heartbeat há mais de PROFILE_HEARTBEAT_TIMEOUT_MS).
+ * Caso contrário, lança erro (perfil em uso por outra sessão ativa) —
+ * é este gate que impede uma segunda sessão concorrente de sequer criar
+ * um token novo enquanto a primeira ainda é válida.
+ *
+ * Checkpoint v0.30: além do lock de sempre (`is_locked`/
+ * `lock_session_id`, baseado no `sessionId` do navegador — só um
+ * identificador local, não secreto), gera um TOKEN REAL de sessão
+ * (`createProfileSessionToken`) e devolve `profileSessionId`/
+ * `rawSessionToken` — é esse par que autoriza heartbeat, sair do
+ * perfil, e ler/salvar o personagem ativo (nunca mais o `sessionId`
+ * sozinho).
  */
 export async function enterCampaignProfile(
   profileId: string,
   sessionId: string,
   inviteId?: string | null,
-): Promise<CampaignProfile> {
+): Promise<EnterProfileResult> {
   const client = await getScopedTableClient();
   const { data: existing, error: fetchError } = await client
     .from(CAMPAIGN_PROFILES_TABLE)
@@ -573,68 +686,121 @@ export async function enterCampaignProfile(
     throw new TableStorageError(`Falha ao entrar no perfil "${profileId}": ${error.message}`, error);
   }
   const updatedProfile = data as CampaignProfile;
-  await upsertActiveProfileSession(client, updatedProfile, sessionId, inviteId);
-  return updatedProfile;
+  const { profileSessionId, rawSessionToken } = await createProfileSessionToken(client, updatedProfile, inviteId);
+  return { profile: updatedProfile, profileSessionId, rawSessionToken };
 }
 
 /**
- * Renova o heartbeat (`last_seen_at`) de um perfil — só funciona se
- * `sessionId` ainda for quem detém o bloqueio (`lock_session_id`).
- * Lança erro se a sessão não é mais a dona (perfil assumido por outra
- * sessão após expirar, ou liberado manualmente).
+ * Renova o heartbeat (`last_seen_at`) de um perfil — checkpoint v0.30:
+ * HARD CHECK contra o token real da sessão (`profileSessionId` +
+ * `rawSessionToken`), não mais contra `lock_session_id`. Lança erro se
+ * o token não bate, se a sessão não está `status='active'`, ou se o
+ * perfil não está mais bloqueado (liberado à força, ou já expirado).
  */
-export async function heartbeatCampaignProfile(profileId: string, sessionId: string): Promise<CampaignProfile> {
+export async function heartbeatCampaignProfile(
+  profileId: string,
+  profileSessionId: string,
+  rawSessionToken: string,
+): Promise<CampaignProfile> {
   const client = await getScopedTableClient();
+  const tokenHash = sha256hex(rawSessionToken);
+
+  const { data: sessionRow, error: sessionError } = await client
+    .from(PROFILE_SESSIONS_TABLE)
+    .select("id, profile_id, status, session_token_hash")
+    .eq("id", profileSessionId)
+    .eq("profile_id", profileId)
+    .maybeSingle();
+  if (sessionError) {
+    throw new TableStorageError(`Falha ao validar sessão para heartbeat: ${sessionError.message}`, sessionError);
+  }
+  if (!sessionRow) {
+    throw new TableStorageError(`Sessão de perfil "${profileSessionId}" não encontrada.`);
+  }
+  const row = sessionRow as { id: string; profile_id: string; status: string; session_token_hash: string };
+  if (row.session_token_hash !== tokenHash) {
+    throw new TableStorageError("Heartbeat rejeitado — token de sessão inválido.");
+  }
+  if (row.status !== "active") {
+    throw new TableStorageError(`Heartbeat rejeitado — sessão de perfil não está mais ativa (status: "${row.status}").`);
+  }
+
+  const nowIso = new Date().toISOString();
   const { data, error } = await client
     .from(CAMPAIGN_PROFILES_TABLE)
-    .update({ last_seen_at: new Date().toISOString() })
+    .update({ last_seen_at: nowIso })
     .eq("id", profileId)
-    .eq("lock_session_id", sessionId)
+    .eq("is_locked", true)
     .select()
     .single();
 
   if (error) {
     throw new TableStorageError(
-      `Heartbeat rejeitado para o perfil "${profileId}" — sessão não é mais a dona do bloqueio: ${error.message}`,
+      `Heartbeat rejeitado para o perfil "${profileId}" — perfil não está mais bloqueado: ${error.message}`,
       error,
     );
   }
-  // Espelha o last_seen na sessão ativa desta origem (best-effort).
+
   try {
-    await client
-      .from(PROFILE_SESSIONS_TABLE)
-      .update({ last_seen_at: new Date().toISOString() })
-      .eq("profile_id", profileId)
-      .eq("session_token_hash", sha256hex(sessionId))
-      .eq("status", "active");
+    await client.from(PROFILE_SESSIONS_TABLE).update({ last_seen_at: nowIso }).eq("id", profileSessionId);
   } catch {
-    // silencioso.
+    // silencioso — atualizar o last_seen_at da própria linha de rastreio é melhor-esforço.
   }
+
   return data as CampaignProfile;
 }
 
 /**
- * Sai de um perfil — só libera (`is_locked = false`) se `sessionId`
- * ainda for quem detém o bloqueio. Não apaga `last_seen_at` (fica como
- * histórico de "última vez visto").
+ * Sai de um perfil — checkpoint v0.30: HARD CHECK contra o token real
+ * da sessão (`profileSessionId` + `rawSessionToken`), não mais contra
+ * `lock_session_id`. Marca a sessão como `exited` (nunca apaga a
+ * linha) e libera o perfil (`is_locked = false`).
  */
-export async function leaveCampaignProfile(profileId: string, sessionId: string): Promise<CampaignProfile> {
+export async function leaveCampaignProfile(
+  profileId: string,
+  profileSessionId: string,
+  rawSessionToken: string,
+): Promise<CampaignProfile> {
   const client = await getScopedTableClient();
+  const tokenHash = sha256hex(rawSessionToken);
+
+  const { data: sessionRow, error: sessionError } = await client
+    .from(PROFILE_SESSIONS_TABLE)
+    .select("id, profile_id, status, session_token_hash")
+    .eq("id", profileSessionId)
+    .eq("profile_id", profileId)
+    .maybeSingle();
+  if (sessionError) {
+    throw new TableStorageError(`Falha ao validar sessão para sair do perfil: ${sessionError.message}`, sessionError);
+  }
+  if (!sessionRow) {
+    throw new TableStorageError(`Sessão de perfil "${profileSessionId}" não encontrada.`);
+  }
+  const row = sessionRow as { id: string; profile_id: string; status: string; session_token_hash: string };
+  if (row.session_token_hash !== tokenHash) {
+    throw new TableStorageError("Não foi possível sair do perfil — token de sessão inválido.");
+  }
+  if (row.status !== "active") {
+    throw new TableStorageError(`Não foi possível sair do perfil — sessão não está mais ativa (status: "${row.status}").`);
+  }
+
   const { data, error } = await client
     .from(CAMPAIGN_PROFILES_TABLE)
     .update({ is_locked: false, lock_session_id: null, locked_at: null })
     .eq("id", profileId)
-    .eq("lock_session_id", sessionId)
     .select()
     .single();
 
   if (error) {
-    throw new TableStorageError(
-      `Falha ao sair do perfil "${profileId}" (sessão pode não ser mais a dona do bloqueio): ${error.message}`,
-      error,
-    );
+    throw new TableStorageError(`Falha ao sair do perfil "${profileId}": ${error.message}`, error);
   }
-  await markProfileSessions(client, profileId, "exited", { sessionId });
+
+  await client
+    .from(PROFILE_SESSIONS_TABLE)
+    .update({ status: "exited", exited_at: new Date().toISOString() })
+    .eq("id", profileSessionId)
+    .eq("status", "active");
+
   return data as CampaignProfile;
 }
 
@@ -697,50 +863,13 @@ export async function getActiveProfileSession(profileId: string): Promise<Profil
 }
 
 // =====================================================================
-// Sessão de perfil real da rota de produto (/ficha, checkpoint v0.24)
+// Sessão de perfil real da rota de produto (/ficha) — checkpoint v0.24,
+// substituída por token real no checkpoint v0.30. A validação de
+// sessão real de /ficha agora é `validateProfileSessionToken` (ver
+// definição mais acima neste arquivo) — exige profileSessionId +
+// rawSessionToken (hard check contra profile_sessions), não mais um
+// `sessionId` de navegador comparado com `lock_session_id`.
 // =====================================================================
-
-export interface ProductSessionResult {
-  ok: boolean;
-  reason?: "profile_not_found" | "wrong_campaign" | "not_locked";
-  campaign?: Campaign;
-  profile?: CampaignProfile;
-}
-
-/**
- * Valida que o `sessionId` do navegador (localStorage, NÃO autenticação
- * real) é de fato quem detém o bloqueio (`lock_session_id`) do perfil
- * informado, dentro da mesa informada. Usado por `/ficha` (rota real,
- * checkpoint v0.24) para decidir se abre a ficha do perfil ou mostra
- * "Entre por um convite para abrir a ficha." — nunca lança por sessão
- * inválida, só por falha real de rede/RLS.
- *
- * v0.26: expira sessões velhas desta mesa antes de checar o bloqueio —
- * garante que /ficha nunca valide contra um bloqueio "tecnicamente
- * expirado" que ainda não tinha sido limpo no banco.
- */
-export async function validateProductSession(
-  campaignId: string,
-  profileId: string,
-  sessionId: string,
-): Promise<ProductSessionResult> {
-  const client = await getScopedTableClient();
-  await expireStaleProfileSessions(campaignId).catch(() => {});
-  const { data, error } = await client.from(CAMPAIGN_PROFILES_TABLE).select().eq("id", profileId).maybeSingle();
-
-  if (error) {
-    throw new TableStorageError(`Falha ao validar sessão do perfil "${profileId}": ${error.message}`, error);
-  }
-  if (!data) return { ok: false, reason: "profile_not_found" };
-
-  const profile = data as CampaignProfile;
-  if (profile.campaign_id !== campaignId) return { ok: false, reason: "wrong_campaign" };
-  if (!profile.is_locked || profile.lock_session_id !== sessionId) return { ok: false, reason: "not_locked" };
-
-  const campaign = await getCampaign(campaignId);
-  if (!campaign) return { ok: false, reason: "wrong_campaign" };
-  return { ok: true, campaign, profile };
-}
 
 // =====================================================================
 // Convites de mesa (campaign_invites, migration 0008)

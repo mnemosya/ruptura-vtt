@@ -45,11 +45,16 @@ import {
   heartbeatCampaignProfile,
   leaveCampaignProfile,
   addLog,
-  getActiveProfileSession,
 } from "../../../lib/table/storage";
 import { PROFILE_HEARTBEAT_INTERVAL_MS } from "../../../lib/table";
 import type { Campaign, CampaignProfile } from "../../../lib/table";
-import { getOrCreateBrowserSessionId } from "../../../lib/table/browserSession";
+import {
+  getOrCreateBrowserSessionId,
+  readProfileSessionToken,
+  saveProfileSessionToken,
+  clearProfileSessionToken,
+  type StoredProfileSessionToken,
+} from "../../../lib/table/browserSession";
 import { computeProfileStatus } from "../../../lib/table/profileStatus";
 import { CharacterSheetTabs, type TabId } from "./components/CharacterSheetTabs";
 import { GeneralTab } from "./components/GeneralTab";
@@ -166,14 +171,13 @@ export default function CharacterSheetClient({
   // `selectedProfileId`, que é só o perfil em foco no <select> — pode
   // estar olhando um perfil sem ter entrado nele).
   const [enteredProfile, setEnteredProfile] = useState<{ id: string; nickname: string } | null>(null);
-  // Id da LINHA de `profile_sessions` (migration 0009) da sessão ativa —
-  // diferente de `sessionId` (id gerado no localStorage do navegador).
-  // `table_logs.profile_session_id` é FK para `profile_sessions.id`, não
-  // para o sessionId do navegador — nunca gravar `sessionId` ali direto
-  // (violaria a FK). Resolvido via getActiveProfileSession() sempre que
-  // uma sessão é assumida (entrar/retomar/validar sessão product);
-  // limpo ao sair. Nulo é aceito pela coluna (nullable) — melhor esforço.
-  const [profileSessionRowId, setProfileSessionRowId] = useState<string | null>(null);
+  // Token REAL de sessão de perfil (checkpoint v0.30) — par
+  // {profileSessionId, rawSessionToken} gerado por enterCampaignProfile
+  // e guardado no localStorage por perfil (browserSession.ts). É o que
+  // autoriza heartbeat/sair/ler/salvar personagem — nunca o sessionId
+  // de navegador sozinho. Nulo até entrar (ou retomar de localStorage);
+  // limpo ao sair ou quando o servidor rejeita o token.
+  const [profileSessionToken, setProfileSessionToken] = useState<StoredProfileSessionToken | null>(null);
   // Aviso de sessão expirada (checkpoint v0.26, modo product/ficha) —
   // true quando o heartbeat desta aba foi rejeitado (outra sessão
   // assumiu o perfil, ou expireStaleProfileSessions liberou o
@@ -239,36 +243,56 @@ export default function CharacterSheetClient({
     if (!perfil) return; // perfis desta mesa ainda não carregou
     resumedHeartbeatRef.current = true;
     if (perfil.lock_session_id === sessionId) {
-      setEnteredProfile({ id: perfil.id, nickname: perfil.nickname });
-      getActiveProfileSession(perfil.id)
-        .then((session) => setProfileSessionRowId(session?.id ?? null))
-        .catch(() => setProfileSessionRowId(null));
+      // v0.30: o token real de sessão vem do localStorage (salvo por
+      // JoinClient ao entrar) — sem ele, não há como retomar heartbeat
+      // (sessionId sozinho não autoriza mais nada).
+      const token = readProfileSessionToken(perfil.id);
+      if (token) {
+        setEnteredProfile({ id: perfil.id, nickname: perfil.nickname });
+        setProfileSessionToken(token);
+      }
     }
   }, [mode, perfis, sessionId, initialProfileId]);
 
   // =====================================================================
-  // Sessão real de perfil (modo "product" — /ficha, checkpoint v0.24)
+  // Sessão real de perfil (modo "product" — /ficha, checkpoint v0.24/v0.30)
   // =====================================================================
   //
   // /ficha não usa seletor livre de mesa/perfil: campaignId/profileId
   // vêm fixos da URL (query string, montada por /join/[token] ao clicar
-  // "Abrir ficha"). Antes de mostrar qualquer coisa, valida no servidor
-  // que o sessionId deste navegador é quem detém o bloqueio do perfil
-  // (getCharacterForProfileSession, checkpoint v0.28 — encapsula
-  // validateProductSession + a busca do personagem num único ponto em
-  // character/storage.ts) — só então carrega o personagem ATIVO desse
-  // perfil (nunca uma lista global, nunca um id arbitrário).
+  // "Abrir ficha"). O TOKEN REAL de sessão (profileSessionId +
+  // rawSessionToken, checkpoint v0.30) vem do localStorage — nunca da
+  // URL — salvo por JoinClient no momento de "Entrar como perfil".
+  // Sem token guardado, nem tenta validar no servidor: mostra
+  // diretamente "sessão inválida ou expirada". Com token, valida no
+  // servidor via getCharacterForProfileSession (hard check contra
+  // profile_sessions — checkpoint v0.28/v0.30) — só então carrega o
+  // personagem ATIVO desse perfil (nunca uma lista global, nunca um id
+  // arbitrário).
   const [productSessionState, setProductSessionState] = useState<ProductSessionState>("pending");
 
   async function loadProductSession() {
-    if (!sessionId || !initialCampaignId || !initialProfileId) {
+    if (!initialCampaignId || !initialProfileId) {
+      setProductSessionState("no_params");
+      return;
+    }
+    const token = readProfileSessionToken(initialProfileId);
+    if (!token) {
       setProductSessionState("no_params");
       return;
     }
     setProductSessionState("pending");
     try {
-      const result = await getCharacterForProfileSession(initialCampaignId, initialProfileId, sessionId);
+      const result = await getCharacterForProfileSession(
+        initialCampaignId,
+        initialProfileId,
+        token.profileSessionId,
+        token.rawSessionToken,
+      );
       if (!result.profile) {
+        // Token guardado não bate mais (expirado/trocado/revogado) —
+        // limpa para não ficar tentando de novo com um token morto.
+        clearProfileSessionToken(initialProfileId);
         setProductSessionState("invalid");
         return;
       }
@@ -277,12 +301,7 @@ export default function CharacterSheetClient({
       setPerfis([result.profile]);
       if (result.campaign) setMesas([result.campaign]);
       setEnteredProfile({ id: result.profile.id, nickname: result.profile.nickname });
-      try {
-        const session = await getActiveProfileSession(result.profile.id);
-        setProfileSessionRowId(session?.id ?? null);
-      } catch {
-        setProfileSessionRowId(null);
-      }
+      setProfileSessionToken(token);
 
       if (!result.character) {
         setCharacterId(null);
@@ -299,10 +318,10 @@ export default function CharacterSheetClient({
   }
 
   useEffect(() => {
-    if (mode !== "product" || !sessionId) return;
+    if (mode !== "product") return;
     loadProductSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, sessionId, initialCampaignId, initialProfileId]);
+  }, [mode, initialCampaignId, initialProfileId]);
 
   // Tick de exibição (não busca nada do servidor) — só recalcula se um
   // perfil parece "Expirado" comparando last_seen_at já carregado com
@@ -334,7 +353,7 @@ export default function CharacterSheetClient({
         profileId: profile.id,
         type: "profile_event",
         visibility: "gm",
-        profileSessionId: profileSessionRowId,
+        profileSessionId: profileSessionToken?.profileSessionId ?? null,
         payload: {
           evento,
           profileId: profile.id,
@@ -355,15 +374,14 @@ export default function CharacterSheetClient({
     if (!selectedProfileId || !sessionId) return;
     setProfileWarning(null);
     try {
-      const updated = await enterCampaignProfile(selectedProfileId, sessionId);
+      // v0.30: enterCampaignProfile agora também gera o token real de
+      // sessão — guardado no localStorage por perfil, usado por
+      // heartbeat/sair/salvar personagem daqui em diante.
+      const { profile: updated, profileSessionId, rawSessionToken } = await enterCampaignProfile(selectedProfileId, sessionId);
+      saveProfileSessionToken(selectedProfileId, { profileSessionId, rawSessionToken });
+      setProfileSessionToken({ profileSessionId, rawSessionToken });
       setPerfis((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
       setEnteredProfile({ id: updated.id, nickname: updated.nickname });
-      try {
-        const session = await getActiveProfileSession(updated.id);
-        setProfileSessionRowId(session?.id ?? null);
-      } catch {
-        setProfileSessionRowId(null);
-      }
       addLogEntry("perfil", `Entrou no perfil "${updated.nickname}".`);
       await persistProfileEvent(selectedCampaignId, { id: updated.id, nickname: updated.nickname }, "enter");
     } catch (err) {
@@ -371,21 +389,26 @@ export default function CharacterSheetClient({
     }
   }
 
-  /** Botão "Sair do perfil" — só libera se esta sessão ainda for a dona (ver leaveCampaignProfile). */
+  /** Botão "Sair do perfil" — valida o token real da sessão (ver leaveCampaignProfile, checkpoint v0.30). */
   async function handleLeaveProfile() {
-    if (!enteredProfile || !sessionId) return;
+    if (!enteredProfile || !profileSessionToken) return;
     setProfileWarning(null);
     const profileSaindo = enteredProfile;
     try {
-      const updated = await leaveCampaignProfile(profileSaindo.id, sessionId);
+      const updated = await leaveCampaignProfile(
+        profileSaindo.id,
+        profileSessionToken.profileSessionId,
+        profileSessionToken.rawSessionToken,
+      );
       setPerfis((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
       addLogEntry("perfil", `Saiu do perfil "${updated.nickname}".`);
       await persistProfileEvent(selectedCampaignId, profileSaindo, "leave");
     } catch (err) {
       setProfileWarning(err instanceof Error ? err.message : "Erro desconhecido ao sair do perfil.");
     } finally {
+      clearProfileSessionToken(profileSaindo.id);
       setEnteredProfile(null);
-      setProfileSessionRowId(null);
+      setProfileSessionToken(null);
       // No modo product (/ficha), sair do perfil invalida a sessão desta
       // aba — precisa entrar de novo pelo convite (não tem seletor livre
       // de perfil para "trocar" para outro).
@@ -394,22 +417,26 @@ export default function CharacterSheetClient({
   }
 
   // Heartbeat: enquanto esta sessão estiver "dentro" de um perfil,
-  // renova last_seen_at a cada PROFILE_HEARTBEAT_INTERVAL_MS. Se o
-  // heartbeat for rejeitado (outra sessão assumiu o perfil após
-  // expirar, ou o perfil foi liberado manualmente em /dev/table), a
-  // sessão perde o perfil automaticamente e registra o evento.
+  // renova last_seen_at a cada PROFILE_HEARTBEAT_INTERVAL_MS — validado
+  // pelo token real de sessão (checkpoint v0.30), não mais pelo
+  // sessionId de navegador sozinho. Se o heartbeat for rejeitado (token
+  // inválido, sessão não mais 'active', ou perfil liberado/assumido por
+  // outra sessão), a sessão perde o perfil automaticamente e registra
+  // o evento.
   useEffect(() => {
-    if (!enteredProfile || !sessionId) return;
+    if (!enteredProfile || !profileSessionToken) return;
     const profileAtual = enteredProfile;
+    const tokenAtual = profileSessionToken;
 
     const intervalId = setInterval(async () => {
       try {
-        const updated = await heartbeatCampaignProfile(profileAtual.id, sessionId);
+        const updated = await heartbeatCampaignProfile(profileAtual.id, tokenAtual.profileSessionId, tokenAtual.rawSessionToken);
         setPerfis((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
       } catch {
         addLogEntry("perfil", `Heartbeat expirado — perfil "${profileAtual.nickname}" foi perdido por esta aba.`);
+        clearProfileSessionToken(profileAtual.id);
         setEnteredProfile(null);
-        setProfileSessionRowId(null);
+        setProfileSessionToken(null);
         // v0.26: /ficha detecta a própria sessão expirando e avisa —
         // não bloqueia a ficha (o jogador pode continuar vendo/editando
         // localmente), só sinaliza que o vínculo de perfil pode ter mudado.
@@ -420,7 +447,7 @@ export default function CharacterSheetClient({
 
     return () => clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enteredProfile, sessionId]);
+  }, [enteredProfile, profileSessionToken]);
 
   const derivados = useMemo(
     () => computeDerivedStats(character.atributos, regras),
@@ -446,10 +473,11 @@ export default function CharacterSheetClient({
     // Defesa em profundidade: a ficha real (/ficha) só edita o
     // personagem ativo do perfil da sessão — nunca cria um personagem
     // novo/solto. Na prática characterId/selectedCampaignId/
-    // selectedProfileId/sessionId nunca são null aqui em modo product
-    // (a UI de edição só aparece com productSessionState "valid", que
-    // exige a sessão já validada e um personagem já carregado).
-    if (mode === "product" && (!characterId || !selectedCampaignId || !selectedProfileId || !sessionId)) return;
+    // selectedProfileId/profileSessionToken nunca são null aqui em modo
+    // product (a UI de edição só aparece com productSessionState
+    // "valid", que exige a sessão já validada e um personagem já
+    // carregado).
+    if (mode === "product" && (!characterId || !selectedCampaignId || !selectedProfileId || !profileSessionToken)) return;
     setSaveState("saving");
     setErrorMessage(null);
     try {
@@ -462,7 +490,8 @@ export default function CharacterSheetClient({
           ? await saveCharacterForProfileSession(
               selectedCampaignId as string,
               selectedProfileId as string,
-              sessionId as string,
+              (profileSessionToken as StoredProfileSessionToken).profileSessionId,
+              (profileSessionToken as StoredProfileSessionToken).rawSessionToken,
               characterId as string,
               toSave,
             )
@@ -697,11 +726,15 @@ export default function CharacterSheetClient({
   if (mode === "product" && productSessionState !== "valid") {
     const bloqueio: Record<Exclude<ProductSessionState, "valid">, string> = {
       pending: "Carregando…",
-      no_params: "Entre por um convite para abrir a ficha.",
-      invalid: "Entre por um convite para abrir a ficha.",
+      // v0.30: sem token real guardado (nunca entrou por convite nesta
+      // aba, ou o token foi limpo) — mesma mensagem de "invalid" abaixo.
+      no_params: "Sessão inválida ou expirada. Entre novamente pelo convite.",
+      // v0.30: token guardado existe, mas o servidor rejeitou (hash não
+      // bate, sessão não está mais 'active', ou perfil foi liberado).
+      invalid: "Sessão inválida ou expirada. Entre novamente pelo convite.",
       no_character:
         "Este perfil ainda não tem personagem vinculado. Peça ao narrador para vincular um personagem a este perfil (dashboard da mesa → Personagens da mesa).",
-      left: "Você saiu deste perfil. Entre novamente por um convite para abrir a ficha.",
+      left: "Você saiu deste perfil. Sessão inválida ou expirada — entre novamente pelo convite.",
     };
     return (
       <main style={{ maxWidth: 640, margin: "60px auto", padding: "0 20px" }}>
@@ -819,7 +852,7 @@ export default function CharacterSheetClient({
           characterNome={character.nome}
           profileId={selectedProfileId}
           profileNickname={perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null}
-          profileSessionId={profileSessionRowId}
+          profileSessionId={profileSessionToken?.profileSessionId ?? null}
         />
       )}
 
@@ -833,7 +866,7 @@ export default function CharacterSheetClient({
           profileNickname={perfilEmFoco?.nickname ?? null}
           characterId={characterId}
           characterNome={character.nome}
-          profileSessionId={profileSessionRowId}
+          profileSessionId={profileSessionToken?.profileSessionId ?? null}
         />
       )}
 

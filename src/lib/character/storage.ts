@@ -31,10 +31,11 @@
  *   - PRODUTO/JOGADOR POR SESSÃO (seção 2): também usam
  *     `getScopedTableClient()`, mas a "identidade" de quem pode ler/
  *     escrever não vem de `auth.uid()` (jogador não tem login real
- *     ainda) — vem de `validateProductSession()` (table/storage.ts),
- *     que confere se o sessionId do navegador é o dono do bloqueio do
- *     perfil ANTES de tocar no personagem. Usadas só por `/ficha`
- *     (modo product).
+ *     ainda) — vem de `validateProfileSessionToken()` (table/
+ *     storage.ts, checkpoint v0.30), que exige um TOKEN REAL de sessão
+ *     (profileSessionId + rawSessionToken, hash comparado em
+ *     profile_sessions) ANTES de tocar no personagem. Usadas só por
+ *     `/ficha` (modo product).
  *   - DEV/DIAGNÓSTICO (seção 3): `getContentClient()` (anon puro,
  *     como sempre foi) — usadas só por `/dev/character-sheet`,
  *     `/dev/table`, `/dev/join/[campaignId]`. Mostram a lista global
@@ -74,7 +75,7 @@
 import { getContentClient } from "../content";
 import { getScopedTableClient } from "../auth/scopedClient";
 import { getCurrentUser } from "../auth/session";
-import { validateProductSession } from "../table/storage";
+import { validateProfileSessionToken } from "../table/storage";
 import type { Campaign, CampaignProfile } from "../table";
 import { CharacterStorageError } from "./storage.errors";
 import type { Character, CharacterRecord } from "./types";
@@ -376,13 +377,17 @@ export async function duplicateCharacter(id: string): Promise<CharacterRecord> {
 }
 
 // =====================================================================
-// SEÇÃO 2 — PRODUTO / JOGADOR POR SESSÃO (checkpoint v0.28, /ficha)
+// SEÇÃO 2 — PRODUTO / JOGADOR POR SESSÃO (checkpoint v0.28/v0.30, /ficha)
 //
-// Não há login real de jogador ainda — a "identidade" vem de
-// validateProductSession() (table/storage.ts, checkpoint v0.24): o
-// sessionId do navegador precisa ser o dono do bloqueio do perfil
-// informado. Nunca expõem lista global nem aceitam um characterId
-// arbitrário — só o personagem ATIVO do perfil da sessão validada.
+// Não há login real de jogador ainda — a "identidade" vem de um TOKEN
+// REAL de sessão (checkpoint v0.30): `profileSessionId` +
+// `rawSessionToken`, gerados por `enterCampaignProfile`
+// (table/storage.ts) e guardados no localStorage do navegador (ver
+// browserSession.ts). `validateProfileSessionToken` faz o hard check
+// (hash bate, status='active', perfil ainda bloqueado) — sem
+// fallback para o sessionId antigo. Nunca expõem lista global nem
+// aceitam um characterId arbitrário — só o personagem ATIVO do perfil
+// da sessão validada.
 // =====================================================================
 
 export interface CharacterForProfileSessionResult {
@@ -396,22 +401,20 @@ export interface CharacterForProfileSessionResult {
 /**
  * Busca o personagem ativo do perfil de uma sessão real e válida.
  *
- * Checkpoint v0.29: a leitura do personagem em si NÃO vai mais direto
- * na tabela (`characters.dev_transition_select`) — usa a função SQL
- * `get_character_for_profile_session` (security definer, migration
- * 0014), que revalida a sessão DENTRO do banco (perfil pertence à
- * mesa, está bloqueado, lock_session_id bate) e devolve o personagem
- * ignorando RLS. `validateProductSession` (table/storage.ts) ainda é
- * chamada aqui só para obter `campaign`/`profile` completos para a UI
- * (perfis/mesas na tela) — a tabela `campaign_profiles` não faz parte
- * do escopo de RLS deste checkpoint (é sobre `characters`).
+ * Checkpoint v0.30: a validação da sessão (`validateProfileSessionToken`,
+ * table/storage.ts) e a leitura do personagem (RPC
+ * `get_character_for_profile_session`, security definer, migration
+ * 0016) exigem `profileSessionId`+`rawSessionToken` reais — hard check
+ * contra `profile_sessions.session_token_hash`/`status`, sem fallback
+ * para o sessionId de navegador antigo.
  */
 export async function getCharacterForProfileSession(
   campaignId: string,
   profileId: string,
-  sessionId: string,
+  profileSessionId: string,
+  rawSessionToken: string,
 ): Promise<CharacterForProfileSessionResult> {
-  const validation = await validateProductSession(campaignId, profileId, sessionId);
+  const validation = await validateProfileSessionToken(campaignId, profileId, profileSessionId, rawSessionToken);
   if (!validation.ok || !validation.profile) {
     return { ok: false, reason: "invalid_session" };
   }
@@ -423,7 +426,8 @@ export async function getCharacterForProfileSession(
   const { data, error } = await client.rpc("get_character_for_profile_session", {
     p_campaign_id: campaignId,
     p_profile_id: profileId,
-    p_session_id: sessionId,
+    p_profile_session_id: profileSessionId,
+    p_raw_session_token: rawSessionToken,
   });
 
   if (error) {
@@ -439,23 +443,25 @@ export async function getCharacterForProfileSession(
 /**
  * Salva (update) o personagem ativo de uma sessão real e válida.
  *
- * Checkpoint v0.29: a escrita vai via a função SQL
+ * Checkpoint v0.30: a escrita vai via a função SQL
  * `save_character_for_profile_session` (security definer, migration
- * 0014) — ela mesma revalida a sessão E confere que `characterId`
- * ainda é o ativo do perfil DENTRO do banco (atomicamente, sem
- * depender de RLS aberta na tabela). A checagem em TypeScript abaixo
- * fica como defesa em profundidade extra (falha cedo, com uma
- * mensagem mais específica, antes de gastar uma chamada de rede) —
- * mas quem realmente impede um id trocado é a função SQL.
+ * 0016) — ela mesma faz o hard check do token (hash bate,
+ * status='active', perfil bloqueado) E confere que `characterId`
+ * ainda é o ativo do perfil, DENTRO do banco, atomicamente. A checagem
+ * em TypeScript abaixo (via `validateProfileSessionToken`) fica como
+ * defesa em profundidade extra (falha cedo, com uma mensagem mais
+ * específica, antes de gastar a chamada da RPC) — mas quem realmente
+ * impede um token/id trocado é a função SQL.
  */
 export async function saveCharacterForProfileSession(
   campaignId: string,
   profileId: string,
-  sessionId: string,
+  profileSessionId: string,
+  rawSessionToken: string,
   characterId: string,
   character: Character,
 ): Promise<CharacterRecord> {
-  const validation = await validateProductSession(campaignId, profileId, sessionId);
+  const validation = await validateProfileSessionToken(campaignId, profileId, profileSessionId, rawSessionToken);
   if (!validation.ok || !validation.profile) {
     throw new CharacterStorageError("Sessão de perfil inválida — não é possível salvar o personagem.");
   }
@@ -470,7 +476,8 @@ export async function saveCharacterForProfileSession(
   const { data, error } = await client.rpc("save_character_for_profile_session", {
     p_campaign_id: campaignId,
     p_profile_id: profileId,
-    p_session_id: sessionId,
+    p_profile_session_id: profileSessionId,
+    p_raw_session_token: rawSessionToken,
     p_character_id: characterId,
     p_name: payload.nome,
     p_payload: payload,

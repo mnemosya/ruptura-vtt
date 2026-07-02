@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { listCampaignProfiles, enterCampaignProfile } from "../../../../lib/table/storage";
-import { getOrCreateBrowserSessionId } from "../../../../lib/table/browserSession";
+import { getOrCreateBrowserSessionId, saveProfileSessionToken } from "../../../../lib/table/browserSession";
 import { computeProfileStatus } from "../../../../lib/table/profileStatus";
 import type { Campaign, CampaignProfile } from "../../../../lib/table";
 import type { CharacterRecord } from "../../../../lib/character";
@@ -74,7 +74,12 @@ export default function JoinClient({ campaign, perfisIniciais, personagens, vari
     if (!sessionId) return;
     setErrorMessage(null);
     try {
-      const updated = await enterCampaignProfile(profileId, sessionId, inviteId);
+      // Checkpoint v0.30: enterCampaignProfile agora também gera um
+      // token real de sessão — guardado no localStorage (por perfil),
+      // nunca na URL. /ficha (ou /dev/character-sheet) lê esse token
+      // depois para validar a sessão de verdade.
+      const { profile: updated, profileSessionId, rawSessionToken } = await enterCampaignProfile(profileId, sessionId, inviteId);
+      saveProfileSessionToken(profileId, { profileSessionId, rawSessionToken });
       setPerfis((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
       setEnteredProfileId(updated.id);
     } catch (err) {
