@@ -98,6 +98,7 @@ import type { SheetMode } from "./components/ModeToggle";
 import { buttonStyle } from "./components/styles";
 
 const LOG_MAX = 50;
+const ACTION_DOUBLE_CLICK_GUARD_MS = 500;
 
 const RECURSO_LABELS: Record<keyof CharacterResources, string> = {
   pv: "PV",
@@ -119,6 +120,8 @@ interface Props {
   condicoesParaAcoes: { slug: string; acoes_habilitadas?: { acao: string }[] }[];
   /** Ações de combate publicadas na Biblioteca do Sistema (checkpoint v0.42) — fonte única do Console de Ação. */
   combatActionsIniciais: CombatActionContent[];
+  /** Falha explícita ao carregar o catálogo — nunca substituída por lista local. */
+  combatActionsError: string | null;
   /**
    * Mesa/perfil pré-selecionados via query string (`?campaignId=...&
    * profileId=...`) — vindos de `/dev/join/[campaignId]` (checkpoint
@@ -173,11 +176,14 @@ export default function CharacterSheetClient({
   condicoesDisponiveis,
   condicoesParaAcoes,
   combatActionsIniciais,
+  combatActionsError,
   initialCampaignId,
   initialProfileId,
   mode,
 }: Props) {
   const [character, setCharacter] = useState<Character>(() => createInitialCharacter(regras));
+  const characterRef = useRef(character);
+  characterRef.current = character;
   const [characterId, setCharacterId] = useState<string | null>(null);
   const [personagens, setPersonagens] = useState<CharacterRecord[]>(personagensIniciais);
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -234,6 +240,10 @@ export default function CharacterSheetClient({
   // reação abaixo. Limitado às últimas 50 entradas.
   const [log, setLog] = useState<LogEntry[]>([]);
   const logCounterRef = useRef(0);
+  // Trava síncrona contra clique duplo antes do próximo render.
+  const actionExecutionLockRef = useRef(false);
+  const lastActionExecutionRef = useRef<{ actionId: string; at: number } | null>(null);
+  const [executingActionId, setExecutingActionId] = useState<string | null>(null);
   // Aviso de remoção automática por cura (checkpoint v0.34, PRD 9.3) —
   // guarda a última leva de condições removidas por ter recuperado 1+
   // PV, para exibir o aviso e permitir "Desfazer" (reativa só essa
@@ -526,8 +536,9 @@ export default function CharacterSheetClient({
         condicoesParaAcoes,
         derivados.pa_max,
         derivados.reacoes_por_rodada,
+        regras?.pericias.map((pericia) => pericia.id) ?? [],
       ),
-    [character, combatActionsIniciais, condicoesParaAcoes, derivados.pa_max, derivados.reacoes_por_rodada],
+    [character, combatActionsIniciais, condicoesParaAcoes, derivados.pa_max, derivados.reacoes_por_rodada, regras],
   );
 
   /**
@@ -1404,12 +1415,45 @@ export default function CharacterSheetClient({
    * padrão de handleAddCondition/handleRemoveCondition).
    */
   async function handleUseAction(actionId: string) {
+    const nowMs = Date.now();
+    const lastExecution = lastActionExecutionRef.current;
+    if (
+      lastExecution?.actionId === actionId &&
+      nowMs - lastExecution.at < ACTION_DOUBLE_CLICK_GUARD_MS
+    ) {
+      return;
+    }
+    if (actionExecutionLockRef.current) return;
+    actionExecutionLockRef.current = true;
+    lastActionExecutionRef.current = { actionId, at: nowMs };
+    setExecutingActionId(actionId);
+
     const actionContent = combatActionsIniciais.find((a) => a.id === actionId);
-    const item = actionConsoleItems.find((a) => a.id === actionId);
-    if (!actionContent || !item || !item.enabled) return;
+    const currentCharacter = characterRef.current;
+    const currentItems = buildActionConsoleItems(
+      currentCharacter,
+      combatActionsIniciais,
+      condicoesParaAcoes,
+      derivados.pa_max,
+      derivados.reacoes_por_rodada,
+      regras?.pericias.map((pericia) => pericia.id) ?? [],
+    );
+    const item = currentItems.find((candidate) => candidate.id === actionId);
+    if (!actionContent || !item || !item.enabled) {
+      actionExecutionLockRef.current = false;
+      setExecutingActionId(null);
+      return;
+    }
 
     const nowIso = new Date().toISOString();
-    const result = executeActionOnCharacter(character, actionContent, derivados.pa_max, derivados.reacoes_por_rodada, nowIso);
+    const result = executeActionOnCharacter(
+      currentCharacter,
+      actionContent,
+      derivados.pa_max,
+      derivados.reacoes_por_rodada,
+      nowIso,
+    );
+    characterRef.current = result.character;
     setCharacter(result.character);
 
     const custoResumo =
@@ -1419,10 +1463,12 @@ export default function CharacterSheetClient({
           ? `Reação ${result.reactionBefore} → ${result.reactionAfter}`
           : "sem custo";
     const removidasResumo = result.removedConditions.length > 0 ? ` — removeu ${result.removedConditions.join(", ")}` : "";
-    addLogEntry("acao_combate", `${item.nome}: ${custoResumo}${removidasResumo}.`);
+    const pendenciasResumo =
+      result.pendingEffects.length > 0 ? " Uso registrado; efeitos pendentes exigem resolução manual." : "";
+    addLogEntry("acao_combate", `${item.nome}: ${custoResumo}${removidasResumo}.${pendenciasResumo}`);
 
-    if (selectedCampaignId) {
-      try {
+    try {
+      if (selectedCampaignId) {
         await addLog({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
@@ -1432,7 +1478,7 @@ export default function CharacterSheetClient({
           visibility: "public",
           payload: {
             characterId,
-            characterNome: character.nome,
+            characterNome: currentCharacter.nome,
             profileId: selectedProfileId,
             actionId: actionContent.id,
             actionName: actionContent.nome,
@@ -1449,9 +1495,12 @@ export default function CharacterSheetClient({
             source: "character_sheet",
           },
         });
-      } catch {
-        // Best-effort — a ação já foi executada no estado local; falha aqui não bloqueia o jogador.
       }
+    } catch {
+      // Best-effort — a ação já foi executada no estado local; falha aqui não bloqueia o jogador.
+    } finally {
+      actionExecutionLockRef.current = false;
+      setExecutingActionId(null);
     }
   }
 
@@ -1465,11 +1514,9 @@ export default function CharacterSheetClient({
    * atributo/perícia.
    */
   function handleRollAction(actionId: string) {
-    const actionContent = combatActionsIniciais.find((a) => a.id === actionId);
-    const teste = actionContent?.teste as { pericias?: unknown } | undefined;
-    const periciaId = Array.isArray(teste?.pericias) && typeof teste.pericias[0] === "string" ? teste.pericias[0] : undefined;
-    if (!actionContent || !periciaId) return;
-    handleRollPericia(periciaId);
+    const item = actionConsoleItems.find((action) => action.id === actionId);
+    if (!item?.rollSkillId) return;
+    handleRollPericia(item.rollSkillId);
   }
 
   /**
@@ -1704,6 +1751,8 @@ export default function CharacterSheetClient({
           paMax={derivados.pa_max}
           reacaoAtual={Math.max(0, derivados.reacoes_por_rodada - (character.estado_jogo?.reacoes_usadas ?? 0))}
           reacaoMax={derivados.reacoes_por_rodada}
+          catalogError={combatActionsError}
+          executingActionId={executingActionId}
           onExecute={handleUseAction}
           onRoll={handleRollAction}
         />

@@ -12,6 +12,7 @@
     "seed:content": "tsx scripts/seed-content.ts",
     "validate:content": "tsx scripts/validate-content-import.ts",
     "test:content-read": "tsx scripts/test-content-read.ts",
+    "test:action-console": "tsx scripts/test-action-console.ts",
     "test:character-storage": "tsx scripts/test-character-storage.ts"
   },
   "dependencies": {

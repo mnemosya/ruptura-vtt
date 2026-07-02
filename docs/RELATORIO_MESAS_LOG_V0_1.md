@@ -7179,13 +7179,14 @@ mecânico além de PA/Reação é alterado por eles.
 
 Integração mínima, reaproveitando a ponte já existente
 (`handleRollPericia`/`preparedRoll`, checkpoint v0.10): o botão
-"Rolar" só aparece quando `acao.teste.pericias` é um array não vazio
-(ex.: `escapar`, `derrubar`) — usa a primeira perícia listada, resolve
-o atributo primário dela via `regras.pericias[].atributo_primario` (dado
-real da Biblioteca, mesmo critério de `handleRollPericia`) e muda para
-a aba Rolagens com esse par pré-selecionado. Ações com `teste: null`
-ou sem `pericias` (`atacar`, `agarrar`, etc.) não mostram o botão —
-sem seletor de perícia múltipla nem qualquer heurística nova.
+"Rolar" foi inicialmente ligado apenas a `acao.teste.pericias` na
+raiz. A auditoria v0.42.1 constatou que exemplos antes citados aqui
+(`escapar`, `derrubar`) usam estruturas aninhadas/contestadas e,
+portanto, nunca estiveram cobertos por essa integração. O v0.42.1
+restringiu formalmente o botão ao único formato realmente seguro:
+`teste.tipo="simples"`, exatamente uma perícia canônica na raiz e
+existente em `regras.pericias` (hoje, `mirar`/`percepcao`). Os demais
+testes orientam usar a aba Rolagens manualmente.
 
 NÃO implementado (documentado como pedido, não como bug): margem,
 região do corpo, dano, defesa do alvo/MIT/PD, `efeitos_por_margem` —
@@ -7322,3 +7323,172 @@ já estavam publicadas na Biblioteca antes deste checkpoint.
   continuam inteiramente pendentes — aparecem só como texto
   informativo na ação, nunca simulados; ficam para checkpoints futuros
   de combate completo.
+
+# Checkpoint v0.42.1 — Endurecimento semântico do Console de Ação
+
+## 1. Contexto e problemas encontrados
+
+Auditoria corretiva sobre `f70423c` (v0.42), sem reescrever o Console
+de Ação e sem tocar em migrations, RLS, seed ou JSONs normalizados.
+Foram confirmados cinco riscos:
+
+- visibilidade/custo desconhecidos falhavam abertos;
+- `aplicar_postura` aparecia como automatizado sem criar estado real;
+- a rolagem aceitava qualquer `teste.pericias` de raiz, inclusive
+  `variavel`, e o relatório citava incorretamente testes aninhados;
+- o handler executava sobre um snapshot de `character`;
+- duplo clique em ação livre sem mesa selecionada podia produzir dois
+  usos/logs antes do próximo render.
+
+## 2. Falha segura de conteúdo
+
+`actionConsole.ts` ganhou interpretação estrita:
+
+- só `sempre` e `condicao:<slugs>` são visibilidades válidas;
+- formato ausente/desconhecido permanece visível para diagnóstico,
+  mas com execução desabilitada;
+- custos `pa`/`reacao` exigem número finito e não negativo;
+- tipo de custo ausente/desconhecido nunca vira custo zero;
+- custo composto continua válido como conteúdo, porém não executável.
+
+O card mostra o motivo de bloqueio. Se `listCombatActions()` falhar,
+`CharacterSheetView` repassa erro explícito e a aba mostra “Catálogo
+de ações indisponível. Nenhuma lista local foi usada.”
+
+## 3. `visibilidade` × `acoes_habilitadas`
+
+A redundância entre os dois DBs agora é validada por
+`validateConditionalActionConsistency()`:
+
+- `caido` → `levantar`;
+- `agarrado`/`imobilizado` → `escapar`;
+- `agarrando` → `soltar_alvo`;
+- `queimando` → `apagar_fogo`.
+
+Uma divergência desabilita a ação com diagnóstico; não há união
+silenciosa inventando relação. `conditionId` continua prioritário.
+Condições manuais usam normalização determinística NFD/ASCII
+(`"Caído"` → `caido`) apenas quando não existe `conditionId`.
+
+## 4. Efeitos automatizados e pendentes
+
+Somente estes tipos permanecem automatizados:
+
+- `remover_condicao`;
+- `remover_condicoes`;
+- `remover_restricao_movimento`.
+
+`aplicar_postura` foi movido para `pendingEffects`: ainda consome PA e
+registra uso, mas a UI não afirma que criou postura/modificador. Cards
+com qualquer pendência mostram: “Uso registrado; efeitos pendentes
+exigem resolução manual.”
+
+## 5. Reações sem saldo
+
+O conteúdo `combat_flow` permite defesa sem Reação com penalidade
+cumulativa. Essa penalidade continua fora do escopo do v0.42.1; para
+não fingir automação parcial, o bloqueio operacional foi mantido com
+mensagem explícita:
+
+> Sem Reação disponível. Defesa sem Reação e penalidade cumulativa
+> ainda não estão automatizadas.
+
+É uma divergência temporária e deliberada em relação ao DB de fluxo,
+pendente de um checkpoint de defesa/reação completo.
+
+## 6. Rolagem integrada
+
+`getSimpleActionRollSkill()` só libera “Rolar” quando:
+
+- `teste.tipo="simples"`;
+- há exatamente uma perícia diretamente em `teste.pericias`;
+- a perícia existe em `regras.pericias`;
+- a perícia não é `variavel`.
+
+No conteúdo atual, `mirar` prepara `percepcao`. Testes múltiplos,
+opcionais, variáveis, contestados ou aninhados exibem “Configure esta
+rolagem manualmente na aba Rolagens.” Escapar/Derrubar não são
+anunciados como integrados.
+
+## 7. Estado atual e clique duplo
+
+`CharacterSheetClient` agora:
+
+- mantém referência ao personagem mais recente;
+- reconstrói/revalida o item imediatamente antes do uso;
+- trava execução em andamento;
+- aplica guarda de 500 ms para duplo clique na mesma ação;
+- desabilita visualmente o botão durante registro.
+
+Teste manual encontrou o bug original (duplo clique em `falar`
+produziu 2 logs) e confirmou a correção: depois da guarda, o mesmo
+duplo clique produziu exatamente 1 uso e 1 log.
+
+## 8. Teste automatizado
+
+Novo `scripts/test-action-console.ts`, exposto por
+`npm run test:action-console`, lê os JSONs canônicos locais sem
+Supabase e cobre:
+
+- total 28 e 24 sempre visíveis;
+- os cinco vínculos condição→ação;
+- custo e remoção de condição no próprio personagem;
+- preservação de condição não relacionada;
+- fallback manual `"Caído"`;
+- PA/Reação insuficientes;
+- custo/visibilidade desconhecidos;
+- postura pendente;
+- custo composto;
+- coerência e divergência artificial entre os dois DBs;
+- limite de rolagem simples/canônica.
+
+Resultado: todos os cenários passaram.
+
+## 9. Teste manual
+
+Executado em `/dev/character-sheet` no servidor já existente, sem
+interromper processos:
+
+- 24 cards sem condição; quatro ações condicionais ausentes;
+- Postura Ofensiva exibida como Parcial/Pendente;
+- botão Rolar presente em Mirar e ausente em Usar Perícia;
+- Caído habilitou Levantar com badge Condição;
+- Levantar consumiu 1 PA, removeu Caído e desapareceu;
+- duplo clique em Falar gerou um único log após a correção;
+- personagem temporário `__TESTE_V0421_PERSISTENCIA__` foi salvo,
+  página recarregada e personagem carregado: PA permaneceu 2/3 e
+  Levantar continuou ausente (Caído removido persistiu);
+- personagem temporário apagado ao final; lista voltou a 2 registros;
+- nenhum erro no console do navegador;
+- `/ficha` manteve o bloqueio de sessão inválida esperado;
+- `/mesas` manteve o gate de login esperado.
+
+O fluxo autenticado completo por convite não foi executado por não
+haver sessão de perfil válida disponível nesta aba.
+
+## 10. Arquivos alterados
+
+- `src/lib/character/actionConsole.ts`
+- `src/app/CharacterSheetView.tsx`
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx`
+- `src/app/dev/character-sheet/components/ActionsTab.tsx`
+- `scripts/test-action-console.ts` (novo)
+- `package.json`
+- `docs/RELATORIO_MESAS_LOG_V0_1.md`
+
+## 11. Validação
+
+- `npm run test:action-console`: passou.
+- `npm run test:character-storage`: passou, sem resíduo.
+- `npm run test:content-read`: passou.
+- `npx tsc --noEmit -p tsconfig.json`: passou.
+- `npm run build`: passou; todas as rotas esperadas compiladas.
+
+## 12. Pendências
+
+- Implementar defesa sem Reação e penalidade cumulativa conforme
+  `combat_flow`.
+- Criar estado real de Postura Ofensiva/Defensiva.
+- Resolver testes múltiplos/contestados em checkpoint próprio.
+- Testar `action_used` no fluxo autenticado completo
+  convite→perfil→`/ficha` quando houver sessão de teste disponível.

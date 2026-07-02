@@ -100,11 +100,14 @@ export async function CharacterSheetView({
   // Ações de combate publicadas na Biblioteca (checkpoint v0.42) — fonte
   // de verdade única do console de ação; nunca uma lista manual aqui.
   let combatActions: CombatActionContent[] = [];
+  let combatActionsError: string | null = null;
   try {
     const docs = await listCombatActions();
     combatActions = docs.map((doc) => normalizeCombatActionContent(doc.payload as Record<string, unknown>));
-  } catch {
-    // Biblioteca fora do ar — aba Ações mostra lista vazia (sem inventar catálogo local).
+  } catch (error) {
+    // Biblioteca fora do ar — informa indisponibilidade, sem inventar catálogo local.
+    combatActionsError =
+      error instanceof Error ? error.message : "Não foi possível carregar o catálogo de ações.";
   }
 
   return (
@@ -116,6 +119,7 @@ export async function CharacterSheetView({
       condicoesDisponiveis={condicoesDisponiveis}
       condicoesParaAcoes={condicoesParaAcoes}
       combatActionsIniciais={combatActions}
+      combatActionsError={combatActionsError}
       initialCampaignId={campaignId}
       initialProfileId={profileId}
       mode={mode}

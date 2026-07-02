@@ -33,6 +33,8 @@ export function ActionsTab({
   paMax,
   reacaoAtual,
   reacaoMax,
+  catalogError,
+  executingActionId,
   onExecute,
   onRoll,
 }: {
@@ -41,6 +43,8 @@ export function ActionsTab({
   paMax: number;
   reacaoAtual: number;
   reacaoMax: number;
+  catalogError: string | null;
+  executingActionId: string | null;
   onExecute: (actionId: string) => void;
   /** undefined para uma ação = sem rolagem simples integrada disponível (sem `teste.pericias`). */
   onRoll: (actionId: string) => void;
@@ -65,6 +69,17 @@ export function ActionsTab({
         automaticamente.
       </p>
 
+      {catalogError && (
+        <p
+          data-testid="acoes-catalogo-erro"
+          style={{ fontSize: 13, color: "#ff6b6b", background: "#2a1717", borderRadius: 8, padding: "10px 12px" }}
+        >
+          Catálogo de ações indisponível. Nenhuma lista local foi usada.
+        </p>
+      )}
+
+      {!catalogError && (
+        <>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
         {CATEGORIAS.map((c) => (
           <button
@@ -86,9 +101,17 @@ export function ActionsTab({
 
       <div data-testid="acoes-lista" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {ordenadas.map((action) => (
-          <ActionCard key={action.id} action={action} onExecute={() => onExecute(action.id)} onRoll={() => onRoll(action.id)} />
+          <ActionCard
+            key={action.id}
+            action={action}
+            executing={executingActionId === action.id}
+            onExecute={() => onExecute(action.id)}
+            onRoll={() => onRoll(action.id)}
+          />
         ))}
       </div>
+        </>
+      )}
     </Section>
   );
 }
@@ -104,8 +127,19 @@ function Stat({ label, atual, max, testId }: { label: string; atual: number; max
   );
 }
 
-function ActionCard({ action, onExecute, onRoll }: { action: ActionConsoleItem; onExecute: () => void; onRoll: () => void }) {
-  const podeRolar = action.testeTexto != null;
+function ActionCard({
+  action,
+  executing,
+  onExecute,
+  onRoll,
+}: {
+  action: ActionConsoleItem;
+  executing: boolean;
+  onExecute: () => void;
+  onRoll: () => void;
+}) {
+  const podeRolar = action.rollSkillId != null;
+  const executeEnabled = action.enabled && !executing;
   return (
     <div
       data-testid={`acao-item-${action.slug}`}
@@ -141,13 +175,21 @@ function ActionCard({ action, onExecute, onRoll }: { action: ActionConsoleItem; 
         <p style={{ fontSize: 11, opacity: 0.55, margin: 0 }}>Requisito: {action.requisitoTexto}</p>
       )}
       {action.testeTexto && <p style={{ fontSize: 11, opacity: 0.55, margin: 0 }}>Teste: {action.testeTexto}</p>}
+      {action.testeTexto && action.rollDisabledReason && (
+        <p style={{ fontSize: 11, opacity: 0.55, margin: 0 }}>{action.rollDisabledReason}</p>
+      )}
       {action.automatedEffects.length > 0 && (
         <p style={{ fontSize: 11, color: "#4caf50", margin: 0 }}>
           Automatizado: {action.automatedEffects.join(" · ")}
         </p>
       )}
       {action.pendingEffects.length > 0 && (
-        <p style={{ fontSize: 11, color: "#5ec8ff", margin: 0 }}>Pendente: {action.pendingEffects.join(" · ")}</p>
+        <>
+          <p style={{ fontSize: 11, color: "#5ec8ff", margin: 0 }}>Pendente: {action.pendingEffects.join(" · ")}</p>
+          <p style={{ fontSize: 11, color: "#ffcf70", margin: 0 }}>
+            Uso registrado; efeitos pendentes exigem resolução manual.
+          </p>
+        </>
       )}
       {action.isConditionEnabled && (
         <p style={{ fontSize: 11, opacity: 0.55, margin: 0 }}>
@@ -164,10 +206,10 @@ function ActionCard({ action, onExecute, onRoll }: { action: ActionConsoleItem; 
         <button
           data-testid={`acao-executar-${action.slug}`}
           onClick={onExecute}
-          disabled={!action.enabled}
-          style={{ ...buttonStyle, opacity: action.enabled ? 1 : 0.4, cursor: action.enabled ? "pointer" : "not-allowed" }}
+          disabled={!executeEnabled}
+          style={{ ...buttonStyle, opacity: executeEnabled ? 1 : 0.4, cursor: executeEnabled ? "pointer" : "not-allowed" }}
         >
-          Executar
+          {executing ? "Registrando…" : "Executar"}
         </button>
         {podeRolar && (
           <button data-testid={`acao-rolar-${action.slug}`} onClick={onRoll} style={{ ...buttonStyle, opacity: 0.8 }}>
