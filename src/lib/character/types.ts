@@ -60,6 +60,33 @@ export interface CharacterGameState {
   [key: string]: unknown;
 }
 
+/**
+ * Condição ativa (ou já removida, se `ativa: false`) registrada no
+ * personagem — checkpoint v0.32. Ainda sem automação de modificadores:
+ * é só registro manual, visível na ficha e logado na mesa. `conditionId`
+ * aponta para o slug de `content_documents` (content_type="condition",
+ * ver db_condicoes_normalizado) quando a condição foi escolhida da
+ * Biblioteca; fica `null`/ausente para condições totalmente manuais
+ * (nome livre, sem vínculo com a Biblioteca).
+ */
+export interface ActiveCondition {
+  /** uuid gerado no cliente (crypto.randomUUID()) — não é id de content_documents. */
+  id: string;
+  /** slug de content_documents (content_type="condition"), se veio da Biblioteca. */
+  conditionId?: string | null;
+  nome: string;
+  descricao?: string;
+  origem?: string;
+  /** Texto livre — "3 rodadas", "até recuperar 1 PV", "cena inteira", etc. Não é contador automático. */
+  duracao?: string;
+  /** ISO timestamp de quando foi aplicada. */
+  aplicadaEm: string;
+  /** ISO timestamp de quando foi removida — null enquanto ativa. */
+  removidaEm?: string | null;
+  ativa: boolean;
+  observacoes?: string;
+}
+
 export interface Character {
   nome: string;
   atributos: CharacterAttributes;
@@ -70,6 +97,12 @@ export interface Character {
   metadados?: CharacterMetadata;
   /** PA gastos / reações usadas no turno atual, se já existirem. */
   estado_jogo?: CharacterGameState;
+  /**
+   * Condições ativas e histórico de remoções (checkpoint v0.32).
+   * Inclui entradas com `ativa: false` para manter histórico simples —
+   * nunca apagadas do array, só marcadas como removidas.
+   */
+  condicoes_ativas?: ActiveCondition[];
 }
 
 // ---------------------------------------------------------------------

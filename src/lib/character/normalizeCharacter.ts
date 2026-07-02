@@ -1,4 +1,5 @@
 import type {
+  ActiveCondition,
   Character,
   CharacterAttributes,
   CharacterGameState,
@@ -76,6 +77,13 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     reacoes_usadas: typeof estadoJogoRaw.reacoes_usadas === "number" ? estadoJogoRaw.reacoes_usadas : 0,
   };
 
+  // condicoes_ativas (checkpoint v0.32): array livre, sem inventar
+  // entradas — só garante que é sempre um array (payload antigo sem o
+  // campo vira []), preservando qualquer entrada já existente como-é.
+  const condicoes_ativas: ActiveCondition[] = Array.isArray(raw.condicoes_ativas)
+    ? (raw.condicoes_ativas as ActiveCondition[])
+    : [];
+
   return {
     ...raw,
     nome,
@@ -84,5 +92,6 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     recursos_atuais,
     metadados,
     estado_jogo,
+    condicoes_ativas,
   } as Character;
 }

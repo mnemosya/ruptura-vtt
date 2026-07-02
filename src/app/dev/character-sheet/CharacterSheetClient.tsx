@@ -31,6 +31,7 @@ import {
   saveCharacterForProfileSession,
 } from "../../../lib/character/storage";
 import type {
+  ActiveCondition,
   Character,
   CharacterAttributes,
   CharacterGameState,
@@ -63,6 +64,7 @@ import { SkillsTab } from "./components/SkillsTab";
 import { ResourcesTab } from "./components/ResourcesTab";
 import { RollsTab } from "./components/RollsTab";
 import { LogTab, type LogEntry, type LogTipo } from "./components/LogTab";
+import { ConditionsTab, type ConditionOption } from "./components/ConditionsTab";
 import { MesaTab } from "./components/MesaTab";
 import { SavedCharactersTab } from "./components/SavedCharactersTab";
 import { DebugTab } from "./components/DebugTab";
@@ -82,6 +84,8 @@ interface Props {
   usandoFallback: boolean;
   personagensIniciais: CharacterRecord[];
   mesasIniciais: Campaign[];
+  /** Condições publicadas na Biblioteca do Sistema (checkpoint v0.32) — só pré-preenchimento, não obrigatório. */
+  condicoesDisponiveis: ConditionOption[];
   /**
    * Mesa/perfil pré-selecionados via query string (`?campaignId=...&
    * profileId=...`) — vindos de `/dev/join/[campaignId]` (checkpoint
@@ -133,6 +137,7 @@ export default function CharacterSheetClient({
   usandoFallback,
   personagensIniciais,
   mesasIniciais,
+  condicoesDisponiveis,
   initialCampaignId,
   initialProfileId,
   mode,
@@ -685,6 +690,107 @@ export default function CharacterSheetClient({
   }
 
   /**
+   * Adicionar condição (aba Condições, checkpoint v0.32) — atualiza o
+   * estado local do personagem (persiste só ao "Salvar personagem",
+   * igual atributos/perícias) e registra o evento tanto no Log local
+   * quanto em table_logs (type="condition_applied", visibility=
+   * "public" por padrão — narrador e mesa toda veem que a condição foi
+   * aplicada). Falha ao gravar em table_logs é melhor-esforço: não
+   * bloqueia a condição de entrar na ficha.
+   */
+  async function handleAddCondition(input: {
+    conditionId: string | null;
+    nome: string;
+    descricao: string;
+    origem: string;
+    duracao: string;
+  }) {
+    const novaCondicao: ActiveCondition = {
+      id: crypto.randomUUID(),
+      conditionId: input.conditionId,
+      nome: input.nome,
+      descricao: input.descricao || undefined,
+      origem: input.origem || undefined,
+      duracao: input.duracao || undefined,
+      aplicadaEm: new Date().toISOString(),
+      removidaEm: null,
+      ativa: true,
+    };
+    setCharacter((prev) => ({
+      ...prev,
+      condicoes_ativas: [...(prev.condicoes_ativas ?? []), novaCondicao],
+    }));
+    addLogEntry("perfil", `Condição aplicada: "${novaCondicao.nome}".`);
+    if (selectedCampaignId) {
+      try {
+        await addLog({
+          campaignId: selectedCampaignId,
+          characterId: characterId ?? undefined,
+          profileId: selectedProfileId,
+          profileSessionId: profileSessionToken?.profileSessionId ?? null,
+          type: "condition_applied",
+          visibility: "public",
+          payload: {
+            conditionLocalId: novaCondicao.id,
+            conditionId: novaCondicao.conditionId,
+            nome: novaCondicao.nome,
+            descricao: novaCondicao.descricao,
+            origem: novaCondicao.origem,
+            duracao: novaCondicao.duracao,
+            characterId,
+            characterNome: character.nome,
+            profileId: selectedProfileId,
+          },
+        });
+      } catch {
+        // Best-effort — a condição já foi aplicada no estado local; falha
+        // aqui não deve impedir o jogador de continuar.
+      }
+    }
+  }
+
+  /**
+   * Remover condição — marca `ativa: false` e carimba `removidaEm`
+   * (NUNCA apaga a entrada do array, preservando histórico simples).
+   * Registra "condition_removed" em table_logs, mesmo padrão de
+   * best-effort de handleAddCondition.
+   */
+  async function handleRemoveCondition(id: string) {
+    const condicao = (character.condicoes_ativas ?? []).find((c) => c.id === id);
+    if (!condicao || !condicao.ativa) return;
+    const removidaEm = new Date().toISOString();
+    setCharacter((prev) => ({
+      ...prev,
+      condicoes_ativas: (prev.condicoes_ativas ?? []).map((c) =>
+        c.id === id ? { ...c, ativa: false, removidaEm } : c,
+      ),
+    }));
+    addLogEntry("perfil", `Condição removida: "${condicao.nome}".`);
+    if (selectedCampaignId) {
+      try {
+        await addLog({
+          campaignId: selectedCampaignId,
+          characterId: characterId ?? undefined,
+          profileId: selectedProfileId,
+          profileSessionId: profileSessionToken?.profileSessionId ?? null,
+          type: "condition_removed",
+          visibility: "public",
+          payload: {
+            conditionLocalId: condicao.id,
+            conditionId: condicao.conditionId,
+            nome: condicao.nome,
+            characterId,
+            characterNome: character.nome,
+            profileId: selectedProfileId,
+          },
+        });
+      } catch {
+        // Best-effort — mesma justificativa de handleAddCondition.
+      }
+    }
+  }
+
+  /**
    * "Rolar" num atributo (aba Atributos): muda para a aba Rolagens com
    * esse atributo selecionado e SEM perícia. Funciona nos dois modos —
    * rolar não é "editar a ficha", por isso não tem guard de sheetMode
@@ -835,6 +941,15 @@ export default function CharacterSheetClient({
           onUsarReacao={() => adjustEstadoJogo("reacoes_usadas", 1)}
           onDesfazerReacao={() => adjustEstadoJogo("reacoes_usadas", -1)}
           onResetarReacoes={() => resetEstadoJogo("reacoes_usadas")}
+        />
+      )}
+
+      {activeTab === "condicoes" && (
+        <ConditionsTab
+          condicoes={character.condicoes_ativas ?? []}
+          condicoesDisponiveis={condicoesDisponiveis}
+          onAdd={handleAddCondition}
+          onRemove={handleRemoveCondition}
         />
       )}
 

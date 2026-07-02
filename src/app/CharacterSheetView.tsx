@@ -14,11 +14,12 @@
  * produto, mesmo que a UI não a exiba.
  */
 
-import { getCharacterRules } from "../lib/content";
+import { getCharacterRules, listConditions } from "../lib/content";
 import { listLegacyCharactersDev } from "../lib/character/storage";
 import { listCampaigns } from "../lib/table/storage";
 import type { CharacterRecord, CharacterRulesPayload } from "../lib/character";
 import type { Campaign } from "../lib/table";
+import type { ConditionOption } from "./dev/character-sheet/components/ConditionsTab";
 import CharacterSheetClient from "./dev/character-sheet/CharacterSheetClient";
 
 export async function CharacterSheetView({
@@ -70,12 +71,31 @@ export async function CharacterSheetView({
     }
   }
 
+  // Condições publicadas na Biblioteca (checkpoint v0.32) — só para
+  // pré-preencher o formulário manual da aba Condições; falha aqui não
+  // deve travar a ficha (lista vazia = formulário totalmente manual).
+  let condicoesDisponiveis: ConditionOption[] = [];
+  try {
+    const docs = await listConditions();
+    condicoesDisponiveis = docs.map((doc) => {
+      const payload = doc.payload as { descricao_curta?: string } | null;
+      return {
+        slug: doc.slug,
+        nome: doc.nome ?? doc.slug,
+        descricao_curta: payload?.descricao_curta,
+      };
+    });
+  } catch {
+    // Biblioteca fora do ar — aba Condições continua funcional em modo manual.
+  }
+
   return (
     <CharacterSheetClient
       regras={regras}
       usandoFallback={usandoFallback}
       personagensIniciais={personagensSalvos}
       mesasIniciais={mesasIniciais}
+      condicoesDisponiveis={condicoesDisponiveis}
       initialCampaignId={campaignId}
       initialProfileId={profileId}
       mode={mode}

@@ -5016,3 +5016,179 @@ Inalterados em relação ao v0.31 (ver seção 6 daquele checkpoint) — a
 validação não revelou nenhum problema novo: segredo em texto plano na
 env, sem UI de aviso quando o cron não está configurado, sessões
 expiradas não são arquivadas/apagadas.
+
+# Checkpoint v0.32 — Condições e efeitos ativos
+
+## 1. Auditoria (antes de alterar)
+
+`git status --short` limpo. Conteúdo existente: `content/db_condicoes_normalizado_v1_5.json`
+já tinha 17 condições publicadas (`content_type="condition"`), e
+`src/lib/content/queries.ts` já expunha `listConditions()`/`getCondition(slug)`
+desde antes deste checkpoint — só faltava consumir isso na ficha.
+`Character.payload` (via `normalizeCharacter`) já usa spread para
+preservar campos desconhecidos, então adicionar `condicoes_ativas` sem
+tabela nova era direto. `table_logs.type` é `string` livre (sem enum no
+banco) — `condition_applied`/`condition_removed` encaixam no mesmo
+padrão de `profile_event`/`chat`/`rolagem_*` já em uso.
+
+## 2. Modelo de condição ativa
+
+Definido em `src/lib/character/types.ts` (`ActiveCondition`):
+
+```ts
+interface ActiveCondition {
+  id: string;              // uuid local (crypto.randomUUID()) — não é id de content_documents
+  conditionId?: string | null; // slug da Biblioteca (content_type="condition"), se veio de lá
+  nome: string;
+  descricao?: string;
+  origem?: string;
+  duracao?: string;        // texto livre: "3 rodadas", "até curar 1 PV", "cena inteira" — não é contador automático
+  aplicadaEm: string;      // ISO timestamp
+  removidaEm?: string | null;
+  ativa: boolean;
+  observacoes?: string;
+}
+```
+
+Nenhuma automação de modificador — a condição é só dado registrado,
+igual ao pedido.
+
+## 3. Persistência
+
+**Guardado no payload do personagem** (`character.condicoes_ativas: ActiveCondition[]`),
+não em tabela nova — a mesma decisão de `estado_jogo`/`recursos_atuais`
+já usada na ficha mínima. Justificativa: o array já viaja inteiro a
+cada save/load do personagem (mesmo padrão de todo o resto da ficha),
+não precisa de query própria, não precisa de RLS própria, e
+`normalizeCharacter` já garante que payload antigo sem o campo vira
+`[]` sem quebrar. Entradas removidas NUNCA são apagadas do array — só
+marcadas `ativa: false` + `removidaEm` carimbado, para manter um
+histórico simples (pedido do item 4 do checkpoint) sem precisar de
+tabela de auditoria separada.
+
+`normalizeCharacter.ts`: `condicoes_ativas` normalizado como array
+sempre presente (`Array.isArray(raw.condicoes_ativas) ? ... : []`),
+mesmo padrão dos outros campos.
+
+## 4. UI — aba "Condições"
+
+Nova aba entre "Recursos" e "Rolagens" (`CharacterSheetTabs.tsx`,
+`ConditionsTab.tsx`, novo componente). Formulário: seletor opcional
+"Escolher da Biblioteca" (pré-preenche nome/descrição a partir de
+`listConditions()`, mas o texto continua 100% editável — nada trava em
+um vínculo obrigatório com a Biblioteca) + campos manuais (nome,
+origem, duração, descrição/observações). Lista "Ativas (N)" com botão
+Remover por item; lista "Removidas (N)" abaixo, mostrando histórico
+simples (nome + timestamp de remoção) sem inflar o escopo com edição/
+restauração.
+
+## 5. Integração com mesa
+
+`handleAddCondition`/`handleRemoveCondition` em `CharacterSheetClient.tsx`:
+- Atualizam `character.condicoes_ativas` no estado local (só persiste
+  no banco ao clicar "Salvar personagem", igual atributos/perícias).
+- Registram no Log local da ficha (`addLogEntry`, tipo reaproveitado
+  `"perfil"` — não foi criado um novo `LogTipo` só para isso, já que o
+  Log local é só exibição volátil desta aba).
+- Registram em `table_logs` via `addLog()` — `type="condition_applied"`
+  / `"condition_removed"`, `visibility="public"` por padrão (evento
+  visível a toda a mesa, não é gm-only nem privado do jogador),
+  `profileId`/`profileSessionId`/`characterId` anotados quando
+  disponíveis. Melhor-esforço: falha ao gravar em `table_logs` não
+  desfaz a condição já aplicada localmente (mesmo padrão de
+  `persistProfileEvent`).
+
+## 6. Produto vs dev
+
+`/ficha` (mode="product") e `/dev/character-sheet` (mode="dev")
+compartilham o mesmo `ConditionsTab` sem diferença de comportamento —
+ambos operam sobre `character.condicoes_ativas` e usam
+`selectedCampaignId`/`selectedProfileId`/`profileSessionToken`, que já
+existiam unificados entre os dois modos desde checkpoints anteriores.
+Nenhuma mudança no fluxo de salvamento existente
+(`saveCharacterForProfileSession`/`updateCharacter`/`createCharacter`)
+— `condicoes_ativas` viaja dentro do mesmo payload já salvo, sem RPC
+nova.
+
+## 7. Biblioteca
+
+`CharacterSheetView.tsx` (Server Component) busca `listConditions()`
+uma vez por render da página e repassa como prop `condicoesDisponiveis`
+(`{ slug, nome, descricao_curta }[]`) para `CharacterSheetClient` →
+`ConditionsTab`. Falha ao buscar a Biblioteca não bloqueia a aba — cai
+para formulário 100% manual (`condicoesDisponiveis = []`, dropdown de
+biblioteca simplesmente não aparece).
+
+## 8. Arquivos alterados
+
+- `src/lib/character/types.ts` — `ActiveCondition` + campo
+  `condicoes_ativas` em `Character`.
+- `src/lib/character/normalizeCharacter.ts` — normaliza
+  `condicoes_ativas` como array sempre presente.
+- `src/app/dev/character-sheet/components/ConditionsTab.tsx` (novo) —
+  UI da aba.
+- `src/app/dev/character-sheet/components/CharacterSheetTabs.tsx` —
+  nova aba "condicoes"/"Condições".
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` —
+  `handleAddCondition`/`handleRemoveCondition`, prop
+  `condicoesDisponiveis`, render da nova aba.
+- `src/app/CharacterSheetView.tsx` — busca `listConditions()` e repassa
+  como `condicoesDisponiveis`.
+
+Nenhuma migration — sem tabela nova, sem RLS alterada.
+
+## 9. Build e testes
+
+```
+$ npx tsc --noEmit -p tsconfig.json → limpo na primeira tentativa
+$ npm run build → ✓ compilado, rotas inalteradas
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca do Sistema intacta
+```
+
+## 10. Teste manual (navegador, preview server)
+
+Fluxo completo pedido: login como narrador → criada mesa "Mesa v0.32"
+→ personagem "Personagem v0.32" vinculado à mesa → perfil "Perfil
+v0.32" criado, personagem vinculado como ativo → convite criado →
+acessado `/join/<token>` → "Entrar como perfil" → "Abrir ficha" →
+aba "Condições" visível → selecionada "Sangrando" da Biblioteca
+(auto-preencheu descrição real do banco: "No fim de cada rodada sofre
+1d6 de dano físico. Dura até recuperar pelo menos 1 PV.") → preenchido
+origem/duração manualmente → "Adicionar condição" → apareceu em
+"Ativas (1)" → "Salvar personagem" (`✓ Salvo`) → confirmado via SQL
+direto que `characters.payload.condicoes_ativas` contém a condição com
+`conditionId: "sangrando"` → **reload completo da página** → condição
+ainda aparece em "Ativas (1)" (confirma que `getCharacterForProfileSession`
+devolve o payload salvo, não um estado perdido) → "Remover" → condição
+moveu para "Removidas (1)" com timestamp → "Salvar personagem" de novo
+→ confirmado via SQL que a entrada ficou com `ativa: false` e
+`removidaEm` carimbado (nunca apagada do array) → aba "Mesa" → log da
+mesa mostra `condition_applied` e `condition_removed`, ambos
+`[Pública]`, com payload completo (nome, origem, duração, descrição,
+characterId, profileId, conditionId) → `/dev/character-sheet` acessado
+diretamente e confirmado sem regressão: aba "Condições" presente,
+"Personagens salvos (3)" e combobox de mesas corretos (antes da
+limpeza).
+
+Dados de teste removidos ao final via SQL direto (personagem e
+campanha de teste) — confirmado que restam só os 2 personagens e as 2
+campanhas legadas esperadas.
+
+## 11. Pendências
+
+- Nenhuma automação de modificador — condições não alteram
+  atributos/perícias/derivados/rolagens ainda (fora de escopo deste
+  checkpoint, como pedido).
+- `duracao` é texto livre, sem contador de rodadas automático nem
+  integração com um sistema de turnos (que também não existe ainda).
+- Histórico de condições removidas não tem paginação/limite — cresce
+  indefinidamente no payload do personagem junto com as ativas; para
+  uma campanha muito longa isso pode inflar o payload ao longo do
+  tempo (mitigação futura: arquivar/podar histórico antigo).
+- `LogTipo` do Log local não ganhou um tipo dedicado para condições —
+  reaproveita `"perfil"` (cosmético; não afeta `table_logs`, que usa
+  `type="condition_applied"/"condition_removed"` corretamente).
+- RLS de `characters` continua aberta (fora de escopo, igual
+  checkpoints anteriores) — nada nesta feature muda a superfície de
+  risco já documentada.
