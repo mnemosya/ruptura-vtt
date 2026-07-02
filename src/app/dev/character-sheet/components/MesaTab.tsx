@@ -73,6 +73,13 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   condition_end_round_check_created: "Teste de Condição Pendente",
   condition_end_round_check_resolved: "Teste de Condição Resolvido",
   round_pa_reduced_by_condition: "PA Reduzido por Condição",
+  round_end_processed: "Rodada Encerrada",
+  scene_end_processed: "Cena Encerrada",
+  rupture_resolved: "Ruptura Resolvida",
+  rupture_choice_created: "Marca e Traço Pendentes",
+  rupture_choice_resolved: "Marca e Traço Registrados",
+  integrity_zero_pending: "Integridade Zerada",
+  scene_effect_expired: "Efeito de Cena Encerrado",
 };
 
 function entryKindLabel(type: string): string {
@@ -94,6 +101,11 @@ function entryIcon(type: string): string {
   if (type === "condition_end_round_damage") return "🩸";
   if (type === "condition_end_round_check_created" || type === "condition_end_round_check_resolved") return "🎯";
   if (type === "round_pa_reduced_by_condition") return "⚡";
+  if (type === "round_end_processed" || type === "scene_end_processed") return "🎬";
+  if (type === "rupture_resolved") return "💔";
+  if (type === "rupture_choice_created" || type === "rupture_choice_resolved") return "📝";
+  if (type === "integrity_zero_pending") return "☠";
+  if (type === "scene_effect_expired") return "⏳";
   return "•";
 }
 
@@ -110,6 +122,11 @@ function entryBorderColor(type: string): string {
   if (type === "condition_end_round_damage") return "#c0392b";
   if (type === "condition_end_round_check_created" || type === "condition_end_round_check_resolved") return "#f5a623";
   if (type === "round_pa_reduced_by_condition") return "#f5a623";
+  if (type === "round_end_processed" || type === "scene_end_processed") return "#9b8cff";
+  if (type === "rupture_resolved") return "#c0392b";
+  if (type === "rupture_choice_created" || type === "rupture_choice_resolved") return "#5ec8ff";
+  if (type === "integrity_zero_pending") return "#c0392b";
+  if (type === "scene_effect_expired") return "#888";
   return "#ffb84f";
 }
 
@@ -284,6 +301,63 @@ function formatConditionRemoved(payload: Record<string, unknown>): string {
   const nome = typeof payload.nome === "string" ? payload.nome : typeof payload.conditionName === "string" ? payload.conditionName : "Condição";
   const origem = typeof payload.sourceConditionId === "string" ? ` (sucesso em teste de ${payload.sourceConditionId})` : "";
   return `${characterNome}: removida "${nome}"${origem}.`;
+}
+
+/** Checkpoint v0.44.1: cartão agregado de round_end_processed (faltava formatação nesta aba). */
+function formatRoundEndProcessed(payload: Record<string, unknown>): string {
+  const names = Array.isArray(payload.processedCharacterNames)
+    ? payload.processedCharacterNames.filter((n): n is string => typeof n === "string")
+    : [];
+  const dano = typeof payload.damageCount === "number" ? payload.damageCount : 0;
+  const pendencias = typeof payload.pendingCheckCount === "number" ? payload.pendingCheckCount : 0;
+  return `Rodada da mesa processada — ${names.length} personagem(ns), ${dano} dano(s) de condição, ${pendencias} pendência(s).`;
+}
+
+/** Checkpoint v0.45: cartão agregado de scene_end_processed. */
+function formatSceneEndProcessed(payload: Record<string, unknown>): string {
+  const names = Array.isArray(payload.processedCharacterNames)
+    ? payload.processedCharacterNames.filter((n): n is string => typeof n === "string")
+    : [];
+  const rupturas = typeof payload.ruptureResolvedCount === "number" ? payload.ruptureResolvedCount : 0;
+  const pendencias = typeof payload.pendingChoiceCount === "number" ? payload.pendingChoiceCount : 0;
+  return `Cena da mesa processada — ${names.length} personagem(ns), ${rupturas} Ruptura(s) resolvida(s), ${pendencias} pendência(s) de Marca/Traço.`;
+}
+
+/** Checkpoint v0.45: cartão de rupture_resolved. */
+function formatRuptureResolved(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const level = typeof payload.ruptureLevel === "number" ? payload.ruptureLevel : "?";
+  const integrityBefore = typeof payload.integrityBefore === "number" ? payload.integrityBefore : "?";
+  const integrityAfter = typeof payload.integrityAfter === "number" ? payload.integrityAfter : "?";
+  const manaBonus = typeof payload.manaBonusApplied === "number" ? payload.manaBonusApplied : "?";
+  return `${characterNome}: Ruptura nível ${level} — Integridade ${integrityBefore} → ${integrityAfter}, Mana máxima +${manaBonus}.`;
+}
+
+/** Checkpoint v0.45: cartão de rupture_choice_created. */
+function formatRuptureChoiceCreated(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  return `${characterNome}: Marca e Traço pendentes.`;
+}
+
+/** Checkpoint v0.45: cartão de rupture_choice_resolved. */
+function formatRuptureChoiceResolved(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const marca = typeof payload.marca === "string" && payload.marca ? payload.marca : "(sem marca)";
+  const traco = typeof payload.traco === "string" && payload.traco ? payload.traco : "(sem traço)";
+  return `${characterNome}: Marca e Traço registrados — ${marca} / ${traco}.`;
+}
+
+/** Checkpoint v0.45: cartão de integrity_zero_pending. */
+function formatIntegrityZeroPending(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  return `${characterNome}: Integridade zerada — Última Vontade pendente.`;
+}
+
+/** Checkpoint v0.45: cartão de scene_effect_expired. */
+function formatSceneEffectExpired(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const effectName = typeof payload.effectName === "string" ? payload.effectName : "Efeito";
+  return `${characterNome}: ${effectName} encerrado (duração de cena).`;
 }
 
 /** Texto da mensagem de chat — aceita `text` (ficha, v0.12) ou `mensagem` (formato antigo do /dev/table). */
@@ -595,7 +669,21 @@ export function MesaTab({
                                               ? formatConditionApplied(entry.payload)
                                               : entry.type === "condition_removed"
                                                 ? formatConditionRemoved(entry.payload)
-                                                : JSON.stringify(entry.payload)}
+                                                : entry.type === "round_end_processed"
+                                                  ? formatRoundEndProcessed(entry.payload)
+                                                  : entry.type === "scene_end_processed"
+                                                    ? formatSceneEndProcessed(entry.payload)
+                                                    : entry.type === "rupture_resolved"
+                                                      ? formatRuptureResolved(entry.payload)
+                                                      : entry.type === "rupture_choice_created"
+                                                        ? formatRuptureChoiceCreated(entry.payload)
+                                                        : entry.type === "rupture_choice_resolved"
+                                                          ? formatRuptureChoiceResolved(entry.payload)
+                                                          : entry.type === "integrity_zero_pending"
+                                                            ? formatIntegrityZeroPending(entry.payload)
+                                                            : entry.type === "scene_effect_expired"
+                                                              ? formatSceneEffectExpired(entry.payload)
+                                                              : JSON.stringify(entry.payload)}
             </span>
           </div>
         ))}

@@ -50,6 +50,7 @@ import {
   resolveEndRoundConditionsForCharacter,
   resolveConditionResistanceCheck,
   applyRoundScopedPaReductions,
+  resolvePendingRuptureChoice,
 } from "../../../lib/character";
 import {
   createCharacter,
@@ -544,8 +545,8 @@ export default function CharacterSheetClient({
   );
 
   const derivados = useMemo(
-    () => computeDerivedStats(character.atributos, regras),
-    [character.atributos, regras],
+    () => computeDerivedStats(character.atributos, regras, character.mana_bonus_ruptura ?? 0),
+    [character.atributos, regras, character.mana_bonus_ruptura],
   );
   const reactionAvailability = useMemo(
     () => getReactionAvailability(character, derivados.reacoes_por_rodada, reactionRules),
@@ -781,8 +782,9 @@ export default function CharacterSheetClient({
     if (depois === antes) return;
 
     const atributosNovos = { ...character.atributos, [id]: depois };
-    const derivadosAntes = computeDerivedStats(character.atributos, regras);
-    const derivadosDepois = computeDerivedStats(atributosNovos, regras);
+    const manaBonus = character.mana_bonus_ruptura ?? 0;
+    const derivadosAntes = computeDerivedStats(character.atributos, regras, manaBonus);
+    const derivadosDepois = computeDerivedStats(atributosNovos, regras, manaBonus);
 
     const RECURSO_MAX_MAP = {
       pv: "pv_max",
@@ -1521,6 +1523,48 @@ export default function CharacterSheetClient({
   }
 
   /**
+   * Preenche Marca/Traço de uma pendência de Ruptura (checkpoint
+   * v0.45, "Salvar Marca e Traço") — texto livre, nunca obrigatório.
+   * Registra log local e `table_log` best-effort (mesmo padrão dos
+   * demais handlers), preservando histórico (a pendência vira
+   * `status: "resolved"`, nunca é removida do array).
+   */
+  async function handleResolveRuptureChoice(choiceId: string, marca: string, traco: string) {
+    const current = characterRef.current;
+    const nowIso = new Date().toISOString();
+    const next = resolvePendingRuptureChoice(current, choiceId, marca, traco, nowIso);
+    if (next === current) return;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("ruptura", `Marca e Traço registrados: ${marca.trim() || "(sem marca)"} / ${traco.trim() || "(sem traço)"}.`);
+
+    if (selectedCampaignId) {
+      try {
+        await addLog({
+          campaignId: selectedCampaignId,
+          characterId: characterId ?? undefined,
+          profileId: selectedProfileId,
+          profileSessionId: profileSessionToken?.profileSessionId ?? null,
+          type: "rupture_choice_resolved",
+          visibility: "public",
+          payload: {
+            characterId,
+            characterNome: current.nome,
+            profileId: selectedProfileId,
+            pendingChoiceId: choiceId,
+            marca: marca.trim() || null,
+            traco: traco.trim() || null,
+            resolvedAt: nowIso,
+            source: "character_sheet",
+          },
+        });
+      } catch {
+        // Best-effort — a resolução já foi aplicada no estado local.
+      }
+    }
+  }
+
+  /**
    * Adicionar condição (aba Condições, checkpoint v0.32) — atualiza o
    * estado local do personagem (persiste só ao "Salvar personagem",
    * igual atributos/perícias) e registra o evento tanto no Log local
@@ -1961,6 +2005,9 @@ export default function CharacterSheetClient({
           currentRound={character.current_round ?? 1}
           onEndRound={handleEndRoundForCharacter}
           endRoundSummary={endRoundSummary}
+          ultimaVontadePendente={character.ultima_vontade_pendente ?? false}
+          ruptureChoices={character.pending_rupture_choices ?? []}
+          onResolveRuptureChoice={handleResolveRuptureChoice}
         />
       )}
 

@@ -14,10 +14,11 @@ import {
   listLogsForViewer,
   addLog,
   expireStaleProfileSessions,
-  endScene,
 } from "../../../lib/table/storage";
 import { endCampaignRound } from "../../../lib/table/endRound";
 import { buildCampaignEndRoundSummary } from "../../../lib/table/endRoundSummary";
+import { endCampaignScene } from "../../../lib/table/endScene";
+import { buildCampaignEndSceneSummary } from "../../../lib/table/endSceneSummary";
 import { computeProfileStatus } from "../../../lib/table/profileStatus";
 import {
   listCharactersForNarratorCampaign,
@@ -82,6 +83,47 @@ function formatCampaignRoundLog(type: string, payload: Record<string, unknown>):
     const nome = typeof payload.nome === "string" ? payload.nome : typeof payload.conditionName === "string" ? payload.conditionName : "Condição";
     return `${characterNome}: ${type === "condition_applied" ? "aplicada" : "removida"} "${nome}".`;
   }
+  if (type === "scene_ended") {
+    const prev = typeof payload.previousScene === "number" ? payload.previousScene : "?";
+    const next = typeof payload.newScene === "number" ? payload.newScene : "?";
+    return `Cena ${prev} → ${next}.`;
+  }
+  if (type === "scene_rupture_pending") {
+    const names = Array.isArray(payload.characterNames)
+      ? payload.characterNames.filter((n): n is string => typeof n === "string")
+      : [];
+    return `Ruptura pendente para: ${names.join(", ") || "(nenhum)"}.`;
+  }
+  if (type === "scene_end_processed") {
+    const names = Array.isArray(payload.processedCharacterNames)
+      ? payload.processedCharacterNames.filter((n): n is string => typeof n === "string")
+      : [];
+    const rupturas = typeof payload.ruptureResolvedCount === "number" ? payload.ruptureResolvedCount : 0;
+    const pendencias = typeof payload.pendingChoiceCount === "number" ? payload.pendingChoiceCount : 0;
+    return `Cena da mesa processada — ${names.length} personagem(ns), ${rupturas} Ruptura(s) resolvida(s), ${pendencias} pendência(s) de Marca/Traço.`;
+  }
+  if (type === "rupture_resolved") {
+    const level = typeof payload.ruptureLevel === "number" ? payload.ruptureLevel : "?";
+    const integrityBefore = typeof payload.integrityBefore === "number" ? payload.integrityBefore : "?";
+    const integrityAfter = typeof payload.integrityAfter === "number" ? payload.integrityAfter : "?";
+    const manaBonus = typeof payload.manaBonusApplied === "number" ? payload.manaBonusApplied : "?";
+    return `${characterNome}: Ruptura nível ${level} — Integridade ${integrityBefore} → ${integrityAfter}, Mana máxima +${manaBonus}.`;
+  }
+  if (type === "rupture_choice_created") {
+    return `${characterNome}: Marca e Traço pendentes.`;
+  }
+  if (type === "rupture_choice_resolved") {
+    const marca = typeof payload.marca === "string" ? payload.marca : "(sem marca)";
+    const traco = typeof payload.traco === "string" ? payload.traco : "(sem traço)";
+    return `${characterNome}: Marca e Traço registrados — ${marca} / ${traco}.`;
+  }
+  if (type === "integrity_zero_pending") {
+    return `${characterNome}: Integridade zerada — Última Vontade pendente.`;
+  }
+  if (type === "scene_effect_expired") {
+    const effectName = typeof payload.effectName === "string" ? payload.effectName : "Efeito";
+    return `${characterNome}: ${effectName} encerrado (duração de cena).`;
+  }
   return null;
 }
 
@@ -129,6 +171,9 @@ export default function MesaDetailClient({
   // mostra o resumo textual depois de concluído.
   const [endRoundProcessing, setEndRoundProcessing] = useState(false);
   const [endRoundSummary, setEndRoundSummary] = useState<string[] | null>(null);
+  // Checkpoint v0.45 — mesmo padrão para "Encerrar Cena" (endCampaignScene).
+  const [endSceneProcessing, setEndSceneProcessing] = useState(false);
+  const [endSceneSummary, setEndSceneSummary] = useState<string[] | null>(null);
 
   function fail(err: unknown, msg: string) {
     setError(err instanceof Error ? err.message : msg);
@@ -185,16 +230,32 @@ export default function MesaDetailClient({
     }
   }
 
-  /** Botão "Encerrar cena" (checkpoint v0.39, PRD seção 5) — só incrementa, loga, e avisa sobre Ruptura pendente; não resolve Marca/Traço. */
+  /**
+   * Botão "Encerrar Cena" CANÔNICO da mesa (checkpoint v0.45) —
+   * processa TODOS os personagens ativos da campanha através do motor
+   * `rupture.ts`: resolve Ruptura pendente, reduz Integridade, aumenta
+   * Mana máxima (Ânimo + 2), cria pendência de Marca/Traço e marca
+   * Última Vontade pendente se a Integridade chegar a 0. `expectedScene`
+   * é a mesma checagem otimista de idempotência do "Encerrar Rodada"
+   * (v0.44.1) — se a cena já avançou, a chamada falha antes de tocar
+   * em qualquer personagem.
+   */
   async function handleEndScene() {
     setError(null);
+    setEndSceneSummary(null);
+    setEndSceneProcessing(true);
     try {
-      const comRupturaPendente = personagensDaMesa.filter((c) => c.payload.ruptura_pendente === true).map((c) => c.name);
-      const updated = await endScene(campaign.id, comRupturaPendente);
-      setCampaignState(updated);
-      await reloadLogs();
+      const result = await endCampaignScene({
+        campaignId: campaign.id,
+        expectedScene: campaignState.current_scene,
+      });
+      setCampaignState((prev) => ({ ...prev, current_scene: result.nextScene }));
+      setEndSceneSummary(buildCampaignEndSceneSummary(result));
+      await Promise.all([reloadLogs(), reloadPersonagens()]);
     } catch (e) {
       fail(e, "Erro ao encerrar cena.");
+    } finally {
+      setEndSceneProcessing(false);
     }
   }
 
@@ -363,7 +424,9 @@ export default function MesaDetailClient({
           personagens vinculados (Queimando/Sangrando/Envenenado/Saturado/Insaturado): aplica dano de
           fim de rodada, cria pendências de teste, renova PA/Reações, zera penalidade de defesa sem
           Reação e aplica redução de PA por condição — sem trilha de iniciativa, sem alternância
-          PJ/PN, sem resolução de Ruptura. "Encerrar cena" continua só avisando sobre Ruptura pendente.
+          PJ/PN. "Encerrar Cena" resolve a Ruptura pendente de todos: reduz Integridade, aumenta Mana
+          máxima (Ânimo + 2), cria pendência de Marca/Traço e marca Última Vontade pendente se a
+          Integridade chegar a 0 — sem narrativa automática, sem escolha obrigatória.
         </p>
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <span data-testid="det-rodada-atual" style={{ fontSize: 13 }}>
@@ -380,8 +443,13 @@ export default function MesaDetailClient({
           <span data-testid="det-cena-atual" style={{ fontSize: 13 }}>
             Cena <strong>{campaignState.current_scene}</strong>
           </span>
-          <button data-testid="det-encerrar-cena" onClick={handleEndScene} style={btn}>
-            Encerrar cena
+          <button
+            data-testid="det-encerrar-cena"
+            onClick={handleEndScene}
+            disabled={endSceneProcessing}
+            style={{ ...btn, opacity: endSceneProcessing ? 0.6 : 1, cursor: endSceneProcessing ? "not-allowed" : "pointer" }}
+          >
+            {endSceneProcessing ? "Processando…" : "Encerrar Cena"}
           </button>
         </div>
         {endRoundProcessing && (
@@ -392,6 +460,20 @@ export default function MesaDetailClient({
         {endRoundSummary && !endRoundProcessing && (
           <div data-testid="det-encerrar-rodada-resumo" style={{ fontSize: 12, marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
             {endRoundSummary.map((line, i) => (
+              <p key={i} style={{ opacity: 0.8, margin: 0 }}>
+                {line}
+              </p>
+            ))}
+          </div>
+        )}
+        {endSceneProcessing && (
+          <p data-testid="det-encerrar-cena-processando" style={{ fontSize: 12, opacity: 0.7, marginTop: 10 }}>
+            Processando fim de cena…
+          </p>
+        )}
+        {endSceneSummary && !endSceneProcessing && (
+          <div data-testid="det-encerrar-cena-resumo" style={{ fontSize: 12, marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
+            {endSceneSummary.map((line, i) => (
               <p key={i} style={{ opacity: 0.8, margin: 0 }}>
                 {line}
               </p>

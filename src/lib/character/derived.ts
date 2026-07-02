@@ -81,9 +81,17 @@ function evaluateNode(
  * `regras` é o payload de getCharacterRules() (pode ser null se a
  * busca falhar — nesse caso tudo cai no fallback temporário).
  */
+/**
+ * `manaBonusRuptura` (checkpoint v0.45, PRD 10.6) é somado ao
+ * `mana_max` já resolvido pela fórmula, DEPOIS do cálculo — nunca
+ * reinterpretado dentro da árvore de fórmula (que vem inteira da
+ * Biblioteca). Único ponto de aplicação do bônus de Ruptura; nenhum
+ * outro componente deve somar isso de novo.
+ */
 export function computeDerivedStats(
   atributos: CharacterAttributes,
   regras: CharacterRulesPayload | null,
+  manaBonusRuptura = 0,
 ): DerivedStats {
   const formulas = new Map<string, FormulaNode>();
   for (const def of regras?.derivados ?? []) {
@@ -119,5 +127,6 @@ export function computeDerivedStats(
   for (const id of DERIVED_IDS) {
     result[id] = resolve(id);
   }
+  if (manaBonusRuptura) result.mana_max += manaBonusRuptura;
   return result;
 }

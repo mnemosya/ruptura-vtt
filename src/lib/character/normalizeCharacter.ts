@@ -9,6 +9,8 @@ import type {
   ConditionResistanceCheck,
   DerivedStats,
   EvolutionHistoryEntry,
+  PendingRuptureChoice,
+  RuptureResolvedEntry,
 } from "./types";
 
 const DEFAULT_NOME = "Personagem sem nome";
@@ -133,6 +135,21 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
       ? Math.trunc(raw.current_scene)
       : 1;
 
+  // mana_bonus_ruptura/pending_rupture_choices/ultima_vontade_pendente/
+  // historico_ruptura (checkpoint v0.45): mesmo critério — ausência
+  // vira 0/[]/false, nunca undefined.
+  const mana_bonus_ruptura =
+    typeof raw.mana_bonus_ruptura === "number" && Number.isFinite(raw.mana_bonus_ruptura) && raw.mana_bonus_ruptura >= 0
+      ? raw.mana_bonus_ruptura
+      : 0;
+  const pending_rupture_choices: PendingRuptureChoice[] = Array.isArray(raw.pending_rupture_choices)
+    ? (raw.pending_rupture_choices as PendingRuptureChoice[])
+    : [];
+  const ultima_vontade_pendente = raw.ultima_vontade_pendente === true;
+  const historico_ruptura: RuptureResolvedEntry[] = Array.isArray(raw.historico_ruptura)
+    ? (raw.historico_ruptura as RuptureResolvedEntry[])
+    : [];
+
   return {
     ...raw,
     nome,
@@ -150,5 +167,9 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     condition_effect_history,
     current_round,
     current_scene,
+    mana_bonus_ruptura,
+    pending_rupture_choices,
+    ultima_vontade_pendente,
+    historico_ruptura,
   } as Character;
 }

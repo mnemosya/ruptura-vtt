@@ -268,6 +268,66 @@ export interface Character {
    * Ausente/undefined = 1.
    */
   current_scene?: number;
+  /**
+   * Bônus acumulado de Mana máxima por Ruptura resolvida (checkpoint
+   * v0.45, PRD 10.6: "Aumenta Mana em Ânimo + 2"). Somado ao `mana_max`
+   * derivado (ver `computeDerivedStats`) — nunca um número solto
+   * substituindo o cálculo, e nunca altera o atributo Ânimo. Ausente =
+   * 0 (nenhuma Ruptura resolvida ainda).
+   */
+  mana_bonus_ruptura?: number;
+  /**
+   * Pendências de Marca/Traço narrativos criados ao resolver uma
+   * Ruptura (checkpoint v0.45, PRD 10.6) — texto livre, nunca
+   * obrigatório nem validado contra uma lista oficial (que ainda não
+   * existe como conteúdo da Biblioteca). Resolvidas ficam no array com
+   * `status: "resolved"` (histórico simples, nunca apagadas).
+   */
+  pending_rupture_choices?: PendingRuptureChoice[];
+  /**
+   * Marca que a Integridade chegou a 0 por causa de uma Ruptura
+   * (checkpoint v0.45, PRD 10.6: "Se a perda final veio de Ruptura,
+   * libera Última Vontade"). Nunca apaga o personagem, nunca bloqueia a
+   * UI, nunca aplica narrativa automática — só um sinalizador para a
+   * ficha/mesa mostrarem o aviso. Uma vez true, só volta a false por
+   * ação manual futura (fora de escopo deste checkpoint).
+   */
+  ultima_vontade_pendente?: boolean;
+  /**
+   * Histórico append-only de Rupturas resolvidas (checkpoint v0.45) —
+   * nunca reescrito/apagado, só para auditoria/exibição simples.
+   */
+  historico_ruptura?: RuptureResolvedEntry[];
+}
+
+/**
+ * Pendência de Marca/Traço narrativo de uma Ruptura resolvida
+ * (checkpoint v0.45, PRD 10.6) — ver `src/lib/character/rupture.ts`.
+ */
+export interface PendingRuptureChoice {
+  id: string;
+  ruptureLevel: number;
+  scene: number;
+  createdAt: string;
+  status: "pending" | "resolved";
+  marca?: string;
+  traco?: string;
+  resolvedAt?: string;
+}
+
+/** Uma entrada do histórico de Ruptura resolvida (checkpoint v0.45). */
+export interface RuptureResolvedEntry {
+  id: string;
+  scene: number;
+  ruptureLevel: number;
+  integridadeAntes: number;
+  integridadeDepois: number;
+  manaMaxBonusAntes: number;
+  manaMaxBonusDepois: number;
+  manaBonusAplicado: number;
+  pendingChoiceId: string;
+  ultimaVontadePendente: boolean;
+  resolvidoEm: string;
 }
 
 export type EvolutionHistoryEntryTipo = "ganho" | "gasto" | "ajuste";

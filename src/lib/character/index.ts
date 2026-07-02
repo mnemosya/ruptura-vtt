@@ -13,3 +13,4 @@ export * from "./evolution";
 export * from "./actionConsole";
 export * from "./reactions";
 export * from "./endRoundConditions";
+export * from "./rupture";

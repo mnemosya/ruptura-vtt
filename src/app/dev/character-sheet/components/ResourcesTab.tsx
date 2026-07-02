@@ -3,11 +3,13 @@ import { Section } from "./Section";
 import { Stat } from "./Stat";
 import { ResourceField } from "./ResourceField";
 import { TurnCounters } from "./TurnCounters";
+import { PendingRuptureChoices } from "./PendingRuptureChoices";
 import { buttonStyle } from "./styles";
 import {
   OVERLOAD_SURGE_TYPES,
   MAX_OVERLOAD_SURGES_PER_DAY,
   MAX_COLLAPSE_SEGMENTS,
+  getIntegrityBand,
   type CharacterAttributes,
   type CharacterGameState,
   type CharacterResources,
@@ -15,6 +17,7 @@ import {
   type Character,
   type DerivedDefinition,
   type DerivedStats,
+  type PendingRuptureChoice,
 } from "../../../../lib/character";
 
 const RECURSO_MAXIMO_IDS = ["pv_max", "pe_max", "mana_max", "integridade_max"] as const;
@@ -60,6 +63,9 @@ export function ResourcesTab({
   currentRound,
   onEndRound,
   endRoundSummary,
+  ultimaVontadePendente,
+  ruptureChoices,
+  onResolveRuptureChoice,
 }: {
   regras: CharacterRulesPayload | null;
   derivados: DerivedStats;
@@ -93,6 +99,10 @@ export function ResourcesTab({
   currentRound: number;
   onEndRound: () => void;
   endRoundSummary: { logs: string[]; warnings: string[] } | null;
+  /** Checkpoint v0.45 — Ruptura resolvida no fim de cena (mesa canônica). */
+  ultimaVontadePendente: boolean;
+  ruptureChoices: PendingRuptureChoice[];
+  onResolveRuptureChoice: (choiceId: string, marca: string, traco: string) => void;
 }) {
   const [tipoSurto, setTipoSurto] = useState<string>(OVERLOAD_SURGE_TYPES[0]);
   const pvAtual = recursosAtuais?.pv ?? 0;
@@ -221,7 +231,8 @@ export function ResourcesTab({
         </div>
         {rupturaPendente && (
           <p data-testid="ruptura-pendente-aviso" style={{ fontSize: 12, color: "#c0392b", marginBottom: 10 }}>
-            ⚠ Ruptura pendente — resolvida no fim da cena (Marca/Traço, ainda não implementado).
+            ⚠ Ruptura pendente — resolvida quando o narrador encerrar a cena pela mesa (checkpoint
+            v0.45): reduz Integridade, aumenta Mana máxima e cria pendência de Marca/Traço abaixo.
           </p>
         )}
         {overloadWillRollPending && (
@@ -373,6 +384,25 @@ export function ResourcesTab({
           </div>
         )}
       </Section>
+
+      <Section title="Ruptura">
+        <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 8 }}>
+          Resolvida pelo narrador ao encerrar a cena pela mesa (checkpoint v0.45, PRD 10.6) — reduz
+          Integridade, aumenta Mana máxima em Ânimo + 2 (já refletido acima) e cria a pendência de
+          Marca/Traço abaixo.
+        </p>
+        <p data-testid="integridade-banda" style={{ fontSize: 13, marginBottom: 10 }}>
+          Faixa de Integridade: <strong>{getIntegrityBand(recursosAtuais?.integridade ?? 0).texto}</strong>
+        </p>
+        {ultimaVontadePendente && (
+          <p data-testid="ultima-vontade-pendente-aviso" style={{ fontSize: 12, color: "#c0392b", marginBottom: 10 }}>
+            ☠ Integridade zerada por Ruptura — Última Vontade pendente. Nenhuma narrativa automática;
+            registre com o narrador quando estiver pronto.
+          </p>
+        )}
+      </Section>
+
+      <PendingRuptureChoices choices={ruptureChoices} onResolve={onResolveRuptureChoice} />
     </>
   );
 }

@@ -8145,3 +8145,263 @@ neste ambiente — sem credenciais de teste em `.env.local`):
 - Sufocando com cronômetro/morte.
 - Efeitos ambientais complexos (Saturado/Insaturado ligados a um motor
   de magia real).
+
+# Checkpoint v0.45 — Fim de cena real: Ruptura pendente, efeitos de cena e logs canônicos
+
+## 1. Commit base
+
+`8d9a094 feat: process campaign end-round condition effects` (v0.44.1)
+— `endRoundConditions.ts` (v0.44) e `endRound.ts`/`endRoundSummary.ts`
+(v0.44.1) não foram reimplementados nem alterados; este checkpoint
+segue o mesmo padrão estrutural, aplicado a "Encerrar Cena".
+
+## 2. Por que este checkpoint existe
+
+"Encerrar Rodada" já virou canônico pela mesa no v0.44.1. "Encerrar
+Cena" continuava com o comportamento mínimo do v0.39: só incrementava
+`campaigns.current_scene` e avisava (texto) quais personagens tinham
+`ruptura_pendente` — sem resolver a Ruptura de verdade (sem reduzir
+Integridade, sem aumentar Mana máxima, sem criar pendência de Marca/
+Traço). Este checkpoint fecha esse elo, espelhando a arquitetura do
+v0.44.1.
+
+## 3. Como a mesa virou fonte canônica de cena
+
+`campaign.current_scene` (migration 0017, v0.39) passa a ser usado
+pelo motor de Ruptura para TODOS os personagens da mesa. O botão
+"Encerrar Cena" em `/mesas/[campaignId]` (`MesaDetailClient.tsx`) agora
+chama `endCampaignScene({ campaignId, expectedScene })` — novo módulo
+`src/lib/table/endScene.ts` — que:
+1. Lê `campaign.current_scene`/`current_round` reais do banco.
+2. Processa TODOS os personagens ativos (não arquivados) da mesa.
+3. Avança `campaigns.current_scene` só depois de processar
+   (reaproveita `endScene()` de `table/storage.ts`, v0.39, sem alterar
+   sua regra).
+
+`campaigns.current_round` **não é resetado** ao encerrar cena — o
+código já existente (`endScene`, v0.39) nunca fez isso; este checkpoint
+audita e preserva esse comportamento (não inventado, conforme pedido).
+
+## 4. Como personagens da campanha são carregados
+
+Reaproveitado `listCharactersForNarratorCampaign(campaignId)` (mesma
+função de `endRound.ts`, v0.44.1) — mesmo filtro de não-arquivados.
+Nenhuma consulta nova.
+
+## 5. Como Ruptura pendente é detectada
+
+Módulo novo `src/lib/character/rupture.ts`, função `getPendingRupture`
+— lê os campos já existentes desde o v0.37, sem duplicar nada:
+- `ruptura_pendente` (boolean).
+- `ruptura_nivel_pendente` — fallback seguro `1` com warning se ausente
+  (o próprio `overload.ts` já documentava "sempre 1 quando
+  ruptura_pendente vira true", então este fallback nunca deveria
+  disparar na prática, mas está lá por segurança).
+
+## 6. Como Integridade é reduzida
+
+`resolvePendingRupture` reduz `recursos_atuais.integridade` em
+`ruptura_nivel_pendente` (PRD 10.6: "reduz Integridade em valor igual
+ao número da Ruptura"), nunca abaixo de 0. Testado com nível 1 (Integridade
+-1) e nível 2 (Integridade -2) no script automatizado — ambos batem com
+a fórmula.
+
+Nova função pura `getIntegrityBand(valor)` (`rupture.ts`) implementa as
+6 faixas do PRD 10.6 (7+ Íntegro, 5–6 1 distorção, 3–4 2 distorções, 2
+3 distorções, 1 Eu em dissolução, 0 Fim da ficha) — exibida na aba
+Recursos da ficha (`integridade-banda`, testado no preview).
+
+## 7. Como Mana máxima é aumentada
+
+Novo campo acumulativo `Character.mana_bonus_ruptura` (nunca um número
+solto substituindo o derivado) — `computeDerivedStats` ganhou um 3º
+parâmetro opcional `manaBonusRuptura` (default 0), somado ao `mana_max`
+JÁ calculado pela fórmula da Biblioteca, DEPOIS da resolução da árvore
+de fórmula (nunca reinterpretado dentro dela). Único ponto de
+aplicação — os 4 call sites existentes (`CharacterSheetClient.tsx` × 3,
+`endRound.ts` × 1 — que não precisa do bônus pois não mexe em Mana) e
+o novo `endScene.ts` (via `rupture.ts`) passam
+`character.mana_bonus_ruptura ?? 0`.
+
+`getRuptureManaBonus(character)` retorna `Ânimo + 2` — nunca lê/altera
+o atributo Ânimo. Mana ATUAL nunca é tocada (só o máximo aumenta) —
+testado explicitamente no script automatizado (cenário 8).
+
+## 8. Como Marca/Traço ficam pendentes
+
+Novo campo `Character.pending_rupture_choices` (array, nunca
+sobrescrito — histórico simples com `status: "pending" | "resolved"`).
+`createPendingRuptureChoice` cria uma pendência a cada Ruptura
+resolvida; `resolvePendingRuptureChoice` preenche `marca`/`traco` como
+texto livre e marca `resolved`, preservando a entrada (nunca some).
+
+UI: novo componente `PendingRuptureChoices.tsx`, renderizado na aba
+Recursos da ficha (`ResourcesTab.tsx`) — mostra nível/cena da Ruptura,
+dois campos de texto livre (Marca/Traço) e botão "Salvar Marca e
+Traço". Handler `handleResolveRuptureChoice` (`CharacterSheetClient.tsx`)
+persiste local + grava `rupture_choice_resolved` best-effort se houver
+mesa selecionada.
+
+## 9. Como Integridade 0 é tratada
+
+Novo campo `Character.ultima_vontade_pendente` (boolean) — marcado
+`true` quando a Integridade chega a 0 pela resolução de uma Ruptura
+(nunca desmarcado automaticamente; ação manual futura, fora de
+escopo). Personagem NUNCA é apagado, UI nunca bloqueia, nenhuma
+narrativa automática — só um aviso claro (`ultima-vontade-pendente-aviso`
+na ficha, testado; log `integrity_zero_pending` na mesa).
+
+## 10. Efeitos com duração de cena
+
+**NÃO implementado** — auditoria confirmou que não existe, hoje,
+nenhuma estrutura de efeito ativo com metadado de duração
+ESTRUTURADA: `ActiveCondition.duracao` é texto livre ("3 rodadas",
+"até recuperar 1 PV", "cena inteira" — nunca um enum/campo
+comparável programaticamente). Implementar a expiração automática
+exigiria inventar uma estrutura nova sem apoio no schema atual —
+exatamente o cenário que o pedido instrui a não implementar ("se a
+estrutura não existir ou estiver ambígua, não implementar remoção
+automática; documentar pendência"). `expireSceneDurationEffects` não
+foi criado; `CampaignEndSceneResult` não tem
+`expiredSceneEffects`/`scene_effect_expired` de verdade — o log
+`scene_effect_expired` foi só formatado preventivamente (MesaTab/
+MesaDetailClient) para quando essa estrutura existir num checkpoint
+futuro, mas nunca é emitido por este código.
+
+## 11. Logs criados/reutilizados
+
+Reaproveitados: `scene_ended`, `scene_rupture_pending` (v0.39, ainda
+emitidos por `endScene()`, agora com `attentionSummary` = nomes com
+Ruptura RESOLVIDA nesta chamada, em vez de só "pendente").
+
+Novos (checkpoint v0.45):
+- `scene_end_processed` (agregado da cena, mesmo papel de
+  `round_end_processed`).
+- `rupture_resolved`, `rupture_choice_created`, `rupture_choice_resolved`
+  (este último só emitido pela ficha, `source: "character_sheet"`),
+  `integrity_zero_pending`, `scene_effect_expired` (formatado, nunca
+  emitido — ver seção 10).
+
+**Formatação** (nunca JSON cru): `MesaDetailClient.tsx`
+(`formatCampaignRoundLog`, estendida com os novos tipos de cena/
+Ruptura) e `MesaTab.tsx` (ficha) — ambas cobrem os mesmos tipos.
+Também corrigido: `round_end_processed` (v0.44.1) não tinha
+formatação em `MesaTab.tsx` (só em `MesaDetailClient.tsx`) — lacuna
+identificada no relatório do v0.44.1 e fechada aqui.
+
+## 12. Idempotência
+
+- **Nível personagem**: se `ruptura_pendente` já é falso,
+  `resolvePendingRupture` devolve `resolved: false` sem tocar em nada.
+- **Nível mesa**: mesma checagem otimista `expectedScene` de
+  `endCampaignRound` (v0.44.1) — se a cena já avançou, a chamada falha
+  antes de tocar em qualquer personagem. Testado no automatizado
+  (cenário 6).
+- Mesma limitação documentada em v0.44.1: checagem otimista, não
+  transação atômica no Postgres.
+
+## 13. Arquivos alterados
+
+- `src/lib/character/rupture.ts` (novo) — `getPendingRupture`,
+  `getIntegrityBand`, `getRuptureManaBonus`,
+  `createPendingRuptureChoice`, `resolvePendingRupture`,
+  `resolvePendingRuptureChoice`.
+- `src/lib/character/types.ts` — `PendingRuptureChoice`,
+  `RuptureResolvedEntry`, `Character.mana_bonus_ruptura`,
+  `Character.pending_rupture_choices`, `Character.ultima_vontade_pendente`,
+  `Character.historico_ruptura`.
+- `src/lib/character/normalizeCharacter.ts` — defaults retrocompatíveis
+  dos 4 campos novos.
+- `src/lib/character/derived.ts` — `computeDerivedStats` ganhou 3º
+  parâmetro `manaBonusRuptura` (único ponto de aplicação do bônus).
+- `src/lib/character/index.ts` — export do novo módulo.
+- `src/lib/table/endScene.ts` (novo) — `resolveCampaignEndSceneForCharacters`,
+  `endCampaignScene`.
+- `src/lib/table/endSceneSummary.ts` (novo) — `buildCampaignEndSceneSummary`
+  (síncrona, arquivo separado pelo mesmo motivo de `endRoundSummary.ts`).
+- `src/app/dev/character-sheet/components/PendingRuptureChoices.tsx`
+  (novo) — UI de Marca/Traço.
+- `src/app/dev/character-sheet/components/ResourcesTab.tsx` — texto de
+  Ruptura pendente atualizado, nova seção "Ruptura" (faixa de
+  Integridade + aviso de Última Vontade), `PendingRuptureChoices`.
+- `src/app/dev/character-sheet/components/LogTab.tsx` — novo tipo
+  `"ruptura"`.
+- `src/app/dev/character-sheet/components/MesaTab.tsx` — formatação
+  dos novos tipos de log + correção de `round_end_processed` (v0.44.1).
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` —
+  `computeDerivedStats` com bônus de Mana, `handleResolveRuptureChoice`,
+  props novas em `ResourcesTab`.
+- `src/app/mesas/[campaignId]/MesaDetailClient.tsx` — `handleEndScene`
+  agora chama `endCampaignScene`; estado `endSceneProcessing`/
+  `endSceneSummary`; botão desabilitado durante processamento;
+  `formatCampaignRoundLog` estendida.
+- `scripts/test-campaign-end-scene.ts` (novo) — 10 cenários.
+- `package.json` — script `test:campaign-end-scene`.
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.
+
+Nenhuma migração foi criada — todos os campos novos vivem em
+`characters.payload` (JSONB), já flexível o suficiente.
+
+## 14. Testes executados
+
+- `npx tsc --noEmit -p tsconfig.json`: sem erros.
+- `npm run build`: sucesso, todas as rotas presentes.
+- `npm run test:action-console`: passou (sem regressão v0.42).
+- `npm run test:reactions`: passou (sem regressão v0.43).
+- `npm run test:end-round-conditions`: passou — 11/11 (sem regressão v0.44).
+- `npm run test:campaign-end-round`: passou — 6/6 (sem regressão v0.44.1).
+- `npm run test:campaign-end-scene`: passou — 10 cenários (2
+  personagens com/sem Ruptura; nível 1; nível maior (2); Integridade a
+  0; Marca/Traço; idempotência; cena sem Ruptura; Mana máxima;
+  efeitos de cena — documentado fora de escopo; logs agregados).
+- `npm run test:character-storage`: passou.
+- `npm run test:content-read`: passou.
+
+## 15. Teste manual
+
+Executado parcialmente no preview (sem sessão de narrador disponível
+neste ambiente, mesma limitação do v0.44.1 — sem credenciais de teste
+em `.env.local`):
+- `/dev/character-sheet`: aba Recursos mostra a nova seção "Ruptura"
+  com a faixa de Integridade ("Íntegro" após restaurar recursos ao
+  máximo) — confirmado visualmente.
+- Botão "Encerrar Rodada Manual" continua funcionando (regressão v0.44
+  verificada).
+- `/mesas`: carrega normalmente (gate de login, sem regressão).
+- Sem erros no console em nenhum momento.
+- **Não executado neste ambiente**: o roteiro completo de
+  `/mesas/[campaignId]` com narrador logado (aplicar Ruptura pendente
+  pela ficha, clicar "Encerrar Cena" no dashboard, confirmar
+  Integridade/Mana/pendência de Marca/Traço/logs) — sem credenciais de
+  narrador disponíveis. Esse roteiro é exatamente o que
+  `test:campaign-end-scene` valida de ponta a ponta contra o Supabase
+  real, usando as MESMAS funções de produção (`endCampaignScene`,
+  `updateCharacter`, `addLog`).
+
+## 16. Limitações
+
+- Mesma checagem otimista (não transacional) de idempotência de mesa
+  do v0.44.1.
+- Sem realtime: pendências de Marca/Traço só aparecem na ficha após
+  reload manual (v0.46, conforme o pedido).
+- Sem preview/modal antes de "Encerrar Cena".
+- Efeitos com duração de cena não implementados (sem estrutura no
+  schema atual — ver seção 10).
+- Estrutura atual só suporta UMA Ruptura pendente por vez
+  (`ruptura_pendente` é booleano, não pilha) — múltiplas Rupturas
+  acumuladas antes de encerrar cena não são suportadas; documentado
+  como limitação estrutural herdada do v0.37, não introduzida aqui.
+- Teste manual no dashboard da mesa com narrador logado não executado
+  neste ambiente — compensado pelo script automatizado.
+
+## 17. Pendências futuras
+
+- Realtime para atualizar a ficha do jogador sem reload.
+- Preview/modal antes de "Encerrar Cena" na mesa.
+- Transação/RPC atômica para o avanço de cena da campanha.
+- Tabela oficial de Marcas/Traços como conteúdo da Biblioteca.
+- Efeitos complexos de cena (estrutura de duração estruturada).
+- Sufocando com cronômetro/morte.
+- Magia/conjuração (Saturado/Insaturado ligados a um motor de magia real).
+- Iniciativa rápida/lenta completa.
+- Suporte a múltiplas Rupturas pendentes acumuladas.
