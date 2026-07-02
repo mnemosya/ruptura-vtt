@@ -5019,6 +5019,12 @@ expiradas não são arquivadas/apagadas.
 
 # Checkpoint v0.32 — Condições e efeitos ativos
 
+**Commit:** `a5ad472396802995f2f68fce13f4ea969263e0d8` ("feat: add active
+character conditions") — registrado retroativamente pela auditoria
+v0.32.1: nenhum checkpoint deste relatório vinha registrando o hash de
+commit na própria seção (só nas respostas de chat, fora do arquivo).
+Ver "Checkpoint v0.32.1" para a correção do padrão daqui para frente.
+
 ## 1. Auditoria (antes de alterar)
 
 `git status --short` limpo. Conteúdo existente: `content/db_condicoes_normalizado_v1_5.json`
@@ -5192,3 +5198,142 @@ campanhas legadas esperadas.
 - RLS de `characters` continua aberta (fora de escopo, igual
   checkpoints anteriores) — nada nesta feature muda a superfície de
   risco já documentada.
+
+# Checkpoint v0.32.1 — Auditoria de alinhamento com PRD
+
+## 1. Contexto
+
+O PRD (`docs/PRD Ruptura VTT.md`) foi reanexado depois do v0.32. Este
+checkpoint não muda código de produto — é uma auditoria de
+documentação/roadmap: confere se o relatório está registrando dados
+corretamente (hash de commit) e registra explicitamente quais decisões
+de implementação foram além do escopo imediato do PRD (e por quê),
+versus quais desvios precisam ser corrigidos daqui para frente.
+
+## 2. Auditoria do campo "Hash"
+
+Achado: nenhuma seção de checkpoint deste relatório (v0.1 a v0.32)
+registra o hash do commit git dentro do próprio arquivo — o hash só
+era entregue na resposta de chat ao final de cada checkpoint, nunca
+gravado no documento. Em compensação, o relatório usa a palavra "hash"
+extensivamente para se referir a **hash de token/segredo**
+(`token_hash`, `session_token_hash`, SHA-256 de convite/sessão — ver
+checkpoints v0.18, v0.19, v0.29.1, v0.30, v0.31.1), o que é correto
+nesses contextos e não precisou de correção.
+
+**Correção aplicada**: adicionada uma linha `**Commit:** <hash>` no
+topo da seção "Checkpoint v0.32", registrando retroativamente o commit
+`a5ad472396802995f2f68fce13f4ea969263e0d8` ("feat: add active character
+conditions"). Checkpoints anteriores (v0.1–v0.31.1) não foram
+retroativamente editados com o hash de commit — seria uma alteração
+grande e de baixo valor para checkpoints já fechados e já commitados;
+o padrão passa a valer a partir daqui.
+
+**Padrão daqui para frente**: toda entrega final de checkpoint deve
+distinguir claramente dois "hash" diferentes quando ambos aparecerem:
+- **Commit** — o hash do commit git (`git rev-parse HEAD` após
+  commitar), sempre rotulado "Commit:".
+- **Hash de segurança** — SHA-256 de token/segredo (convite, sessão),
+  sempre rotulado com o nome do campo real (`token_hash`,
+  `session_token_hash`), nunca só "Hash:" solto.
+
+## 3. Alinhamento pós-v0.32 com PRD
+
+### 3.1 Decisões mantidas mesmo indo além do PRD imediato
+
+O PRD (seção 1.4) trata link de convite como "decisão pendente", com
+requisito mínimo de "cada mesa possui um link de entrada" e menciona
+revogação como "melhoria de segurança" opcional. A implementação atual
+foi além desse mínimo em vários pontos:
+
+| Decisão | Onde | Vai além de | Motivo para manter |
+| --- | --- | --- | --- |
+| Convite com token real (não link cru) | v0.18 | PRD 1.4 pede só "um link de entrada"; token+hash+revogação é tratado como melhoria opcional | Segurança: um link de entrada sem token é a própria mesa exposta (`campaignId` cru na URL) — inaceitável mesmo em fase inicial |
+| Token real de sessão de perfil (`profile_sessions` + raw token) | v0.30 | PRD 1.2/1.3 só descreve "entra por link" + heartbeat de presença, sem especificar mecanismo de credencial | Segurança/estabilidade: sem um segredo real, a "sessão" de um perfil era só um id de navegador em localStorage — qualquer um podia assumir o perfil de outro jogador sabendo/adivinhando esse id |
+| RPC `security definer` para leitura/escrita de personagem | v0.28–v0.29.1 | PRD não especifica implementação; é decisão técnica de como aplicar RLS/isolamento | Segurança: permite hard-check de sessão sem expor a tabela `characters` inteira via RLS aberta nem introduzir a service role key no frontend |
+| RLS de transição (`*_dev_transition_*` abertas) | v0.17+ | PRD não pede RLS parcial — é decisão de sequenciamento técnico | Estabilidade/base de produto: permite construir e testar o fluxo completo (mesa → perfil → personagem → ficha) antes de travar todas as policies de uma vez, reduzindo risco de travar o próprio desenvolvimento numa RLS prematura e mal calibrada. Documentado como dívida técnica explícita em cada checkpoint que a toca (v0.27, v0.29) |
+| Cron interno de expiração de sessão (`/api/internal/expire-profile-sessions`) | v0.31 | PRD 1.3 só pede que o perfil libere "após um tempo sem sinal" — não especifica que isso precise funcionar sem alguém abrir o app | Estabilidade: expiração 100% dependente de navegação (só ao abrir `/mesas`/`/join`/`/ficha`) deixa sessões mortas presas indefinidamente se ninguém acessar a mesa — o cron é a forma de cumprir o requisito do PRD de verdade, não apenas na maioria dos casos |
+
+Resumo do motivo comum: **segurança, estabilidade e base de produto**
+— nenhuma dessas decisões contradiz o PRD; todas fecham lacunas que o
+PRD deixou como "decisão pendente" ou não detalhou, e fazem isso a
+favor de uma base mais defensável antes de construir mecânica em cima
+dela.
+
+### 3.2 Decisões que devem ser corrigidas daqui para frente
+
+- **Não tratar jogador como conta/login.** PRD 1.2 é explícito: "Entra
+  por link, sem login próprio." O token real de sessão (v0.30) é um
+  **segredo de anti-sequestro de sessão**, não uma conta — não deve
+  evoluir para cadastro de jogador, senha de jogador, ou qualquer coisa
+  que peça ao jogador para "criar conta". Se uma necessidade futura
+  parecer pedir login de jogador, isso é um desvio de PRD que exige
+  decisão de produto explícita antes de implementar, não uma extensão
+  natural do token de sessão atual.
+- **Não priorizar inventário antes de condições/evolução/descanso.** O
+  roadmap do PRD (seção 18) coloca Fase 1 (criação, evolução,
+  condições, descanso) antes da Fase 3 (inventário/loja/itens). O
+  v0.32 entregou uma fatia de Fase 1 (condições manuais), mas ainda
+  faltam: assistente de criação (3.2), Modo Evolução completo (4.2),
+  descanso curto/longo (5, 10.4). O próximo trabalho de mecânica deve
+  continuar fechando Fase 1 antes de abrir Fase 3 (loja/armas/
+  armaduras/explosivos/etc., seção 13) — mesmo que inventário pareça
+  "mais visível" ou mais fácil de demonstrar.
+- **Descanso deve seguir exatamente o PRD (seção 10.4)** quando for
+  implementado — sem inventar variação:
+  - Descanso curto (30 min): recupera metade da Mana máxima; recupera
+    recursos marcados como "descanso curto".
+  - Descanso longo (8h): PV recupera Corpo + 2; PE recupera Mente + 2;
+    Mana volta ao máximo; remove PV temporário; remove Mana temporária;
+    reseta Sobrecarga; recupera recursos marcados "descanso longo".
+  - Recuperação paga (clínica/magista) fica de fora por enquanto
+    (PRD explícito: "não entra por enquanto").
+- **Condições precisam virar efeitos ativos automatizados e
+  reversíveis.** O v0.32 entregou só registro manual — sem nenhuma
+  automação. O PRD (seção 9, especialmente a tabela 9.2 e o princípio
+  2: "Automação reversível") exige que cada condição:
+  - aplique modificadores reais nas rolagens/tags corretas (ofensiva,
+    defensiva, visão, audição, deslocamento etc.);
+  - habilite/desabilite ações derivadas (Escapar, Levantar, apagar
+    Queimando);
+  - agende testes/dano de fim de rodada quando aplicável (Sangrando,
+    Queimando, Envenenado, Saturado, Insaturado, Sufocando);
+  - seja removida automaticamente por cura quando a regra pedir
+    (Contundido, Envenenado, Sangrando — seção 9.3);
+  - tenha override manual e desfazer (princípio 2 do PRD) — nunca
+    travar o estado base do personagem de forma irreversível.
+  Isso é trabalho de automação real (não é mais "registro"), e é uma
+  correção de rota explícita: o v0.32 foi propositalmente o primeiro
+  passo (registro visível/logado), mas não deve ser confundido com a
+  entrega final de "condições" da Fase 1 — falta a automação.
+
+## 4. Arquivos alterados
+
+Só `docs/RELATORIO_MESAS_LOG_V0_1.md` (esta seção + a linha de commit
+retroativa na seção v0.32). Nenhum código alterado — nenhum erro
+trivial de texto foi encontrado que justificasse mexer em código.
+
+## 5. Build e testes
+
+```
+$ npm run build → ✓ compilado, sem mudança de código
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca do Sistema intacta
+```
+
+## 6. Próximos checkpoints recomendados
+
+1. **Automação de condições** (fecha a lacuna da seção 3.2 acima) —
+   tags de rolagem (9.1), tabela de automação por condição (9.2),
+   remoção automática por cura (9.3), faixa de estados (9.4).
+2. **Descanso curto/longo** (10.4) — recuperação de recursos, reset de
+   Sobrecarga, remoção de PV/Mana temporários, exatamente como
+   especificado no PRD.
+3. **Modo Evolução completo** (4.2/4.3) — edição permanente de
+   atributos/perícias/talentos fora do Modo Jogo, com histórico de PM
+   recebidos/gastos.
+4. **Assistente de criação** (3.2) — só depois dos três acima, ou em
+   paralelo se o escopo permitir, já que hoje a criação de personagem
+   ainda é manual/dev.
+5. Continuar adiando inventário/loja (Fase 3) e magia (Fase 5) até Fase
+   1 estar completa, conforme o roadmap do próprio PRD (seção 18).
