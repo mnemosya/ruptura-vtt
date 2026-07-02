@@ -124,6 +124,9 @@ export function ActiveStateStrip({
   activeEffects,
   condicoesDisponiveis,
   onVerCondicoes,
+  pvTemporario = 0,
+  manaTemporaria = 0,
+  sobrecargaUsadaDia = 0,
 }: {
   /** `character.condicoes_ativas` completo (ativas e removidas) — o componente filtra `ativa:true` internamente. */
   condicoes: ActiveCondition[];
@@ -131,13 +134,44 @@ export function ActiveStateStrip({
   activeEffects: ActiveEffect[];
   condicoesDisponiveis: ConditionOption[];
   onVerCondicoes: () => void;
+  /** checkpoint v0.36 — exibidos como pendência quando > 0, sem refator de layout. */
+  pvTemporario?: number;
+  manaTemporaria?: number;
+  sobrecargaUsadaDia?: number;
 }) {
   const condicoesAtivas = condicoes.filter((c) => c.ativa);
   const chips = buildChips(condicoesAtivas, activeEffects, condicoesDisponiveis);
   // "Estados pendentes" (item 2 do pedido): sem sistema de Ruptura/Marca/Traço
-  // pendente implementado ainda (PRD 10.6) — a lista fica vazia de propósito,
-  // nunca inventada. O ponto de extensão já existe (StateChipKind "pendencia").
+  // pendente implementado ainda (PRD 10.6) — nunca inventado. Checkpoint
+  // v0.36 populou este array pela primeira vez, mas só com os 3 campos
+  // mínimos que já existem de verdade (pv_temporario/mana_temporaria/
+  // sobrecarga_usada_dia) — nunca clicáveis (evita inflar escopo com
+  // navegação/edição pela faixa, como pedido).
   const pendencias: StateChip[] = [];
+  if (pvTemporario > 0) {
+    pendencias.push({
+      id: "pendencia:pv_temporario",
+      nome: `PV temporário: ${pvTemporario}`,
+      tipo: "pendencia",
+      descricao: "Removido automaticamente no próximo descanso longo.",
+    });
+  }
+  if (manaTemporaria > 0) {
+    pendencias.push({
+      id: "pendencia:mana_temporaria",
+      nome: `Mana temporária: ${manaTemporaria}`,
+      tipo: "pendencia",
+      descricao: "Removida automaticamente no próximo descanso longo.",
+    });
+  }
+  if (sobrecargaUsadaDia > 0) {
+    pendencias.push({
+      id: "pendencia:sobrecarga",
+      nome: `Sobrecarga: ${sobrecargaUsadaDia}/dia`,
+      tipo: "pendencia",
+      descricao: "Resetada automaticamente no próximo descanso longo.",
+    });
+  }
   const todosChips = [...chips, ...pendencias];
 
   return (

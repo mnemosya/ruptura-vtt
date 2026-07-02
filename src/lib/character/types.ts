@@ -30,6 +30,21 @@ export interface CharacterResources {
   pe?: number;
   mana?: number;
   integridade?: number;
+  /**
+   * PV temporário (checkpoint v0.36, PRD 10.2) — camada consumida
+   * antes do PV normal, some no descanso longo. Representado como um
+   * único número (total acumulado), não como lista de fontes — nada
+   * no código atual ainda cria PV temporário por fonte separada
+   * (isso é escopo de combate/magia/item, fora deste checkpoint); a
+   * estrutura mais simples compatível com "zerar no descanso longo" é
+   * só o total. Se um checkpoint futuro precisar rastrear fontes
+   * individuais (para a regra "fontes iguais não empilham, diferentes
+   * somam"), este campo pode evoluir para array sem quebrar leitura
+   * antiga (normalizeCharacter trata ausência como 0).
+   */
+  pv_temporario?: number;
+  /** Mana temporária (checkpoint v0.36, PRD 10.3) — mesmo formato/justificativa de `pv_temporario`. */
+  mana_temporaria?: number;
 }
 
 /**
@@ -111,6 +126,15 @@ export interface Character {
    * nunca apagadas do array, só marcadas como removidas.
    */
   condicoes_ativas?: ActiveCondition[];
+  /**
+   * Surtos de Sobrecarga usados no dia (checkpoint v0.36, PRD 10.5) —
+   * campo mínimo só para o descanso longo poder resetar algo real.
+   * NÃO é o sistema de Sobrecarga completo (sem cargas visuais, sem
+   * seletor de tipo de surto, sem dano psíquico, sem teste de Vontade
+   * no terceiro surto) — isso é trabalho futuro. Ausente/undefined =
+   * 0 (nenhum surto usado ainda).
+   */
+  sobrecarga_usada_dia?: number;
 }
 
 // ---------------------------------------------------------------------

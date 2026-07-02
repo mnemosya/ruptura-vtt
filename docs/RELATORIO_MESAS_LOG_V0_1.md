@@ -5896,3 +5896,223 @@ restam só os 2 personagens e as 2 campanhas legadas esperadas.
   futura, não funcional.
 - Chips de buff nunca aparecem hoje (nenhuma condição/efeito positivo
   mapeado ainda) — o tipo existe pronto para quando houver.
+
+# Checkpoint v0.36 — Descanso curto/longo conforme PRD
+
+## 1. Auditoria (antes de alterar)
+
+`git status --short` limpo, `next-env.d.ts` intocado. Conteúdo
+existente (`content/db_regras_personagem_normalizado_v1_4.json`,
+seção `descansos`) já descrevia exatamente as regras do PRD 10.4 —
+inclusive `recuperar_recursos_por_cadencia` (recursos marcados
+"descanso curto"/"descanso longo", que hoje não têm nenhuma estrutura
+de item/carga no código para amarrar) e `zerar_recurso_temporario`/
+`resetar_sobrecarga`, confirmando que nada disso existia ainda em
+`Character`/`CharacterResources`. `ResourcesTab` já tinha o botão
+"Restaurar recursos ao máximo" como precedente de "ação que muda
+vários recursos de uma vez" — o bloco "Descanso" seguiu o mesmo
+padrão visual. `autoHeal.ts` (v0.34) já expunha exatamente o
+mecanismo certo para reaproveitar quando PV sobe durante o descanso
+longo, sem precisar duplicar a lógica de remoção de
+Contundido/Envenenado/Sangrando.
+
+## 2. Regras aplicadas (verbatim do PRD 10.4)
+
+**Descanso curto (30 min)**: Mana atual `+= floor(manaMax / 2)`, sem
+ultrapassar `manaMax`. PV, PE e Integridade intocados.
+
+**Descanso longo (8h)**: PV atual `+= Corpo + 2` (sem ultrapassar
+`pvMax`); PE atual `+= Mente + 2` (sem ultrapassar `peMax`); Mana
+atual `= manaMax`; PV temporário e Mana temporária zerados; Sobrecarga
+usada no dia resetada a 0. **Integridade nunca é tocada** — nem curto,
+nem longo (omissão deliberada do PRD 10.4, não esquecimento; comentado
+explicitamente no código e na UI).
+
+## 3. Arredondamento usado
+
+`Math.floor(manaMax / 2)` — truncamento para baixo, igual ao payload
+real da Biblioteca (`{"op":"floor", "args":[{"op":"/","args":[...]}]}`
+em `descanso_curto.efeitos[0].formula`). Nenhum arredondamento
+aparece em `Corpo + 2`/`Mente + 2` (soma inteira direta, sem divisão).
+
+## 4. Campos criados
+
+- `CharacterResources.pv_temporario?: number` — total acumulado (não
+  lista de fontes; nada no código ainda cria PV temporário por fonte
+  separada, então a estrutura mais simples que atende "zerar no
+  descanso longo" é só o número; documentado como ponto de evolução
+  futura sem quebra, se um checkpoint de combate/magia precisar
+  rastrear fontes individualmente).
+- `CharacterResources.mana_temporaria?: number` — mesmo formato/
+  justificativa.
+- `Character.sobrecarga_usada_dia?: number` — campo mínimo pedido
+  explicitamente pelo checkpoint; **não** é o sistema de Sobrecarga
+  completo (sem cargas visuais, sem seletor de tipo de surto, sem dano
+  psíquico, sem teste de Vontade no terceiro surto — tudo isso
+  continua fora de escopo).
+
+`normalizeCharacter.ts` atualizado: os 3 campos viram `0` quando
+ausentes (nunca `undefined`), para o descanso longo sempre ter um
+número real para zerar/comparar mesmo em payload salvo antes deste
+checkpoint.
+
+## 5. Interação com auto-heal (v0.34)
+
+`applyLongRest` (`src/lib/character/rest.ts`) **não toca**
+`condicoes_ativas` — é puro, só devolve o `Character` com recursos
+atualizados. `handleApplyLongRest` (`CharacterSheetClient.tsx`), ao
+receber o resultado, chama `applyAutoHealRemoval(resultado.character.condicoes_ativas, before.pv, after.pv, nowIso)`
+— exatamente a mesma função que `updateRecursoAtual`/
+`handleRestoreRecursosMax` já usam para qualquer aumento manual de PV
+— e combina os dois resultados num único `setCharacter`. Se
+Contundido/Envenenado/Sangrando estavam ativos e o PV subiu, eles são
+removidos automaticamente e o banner "Desfazer" (v0.34) aparece
+normalmente, sem nenhuma lógica nova de cura duplicada em `rest.ts`.
+Confirmado no teste manual: aplicar descanso longo com "Sangrando"
+ativo e PV subindo de 2→5 disparou a remoção automática e o banner
+"Removida(s) automaticamente por cura (PV 2 → 5): Sangrando." — igual
+a qualquer outro aumento de PV.
+
+`applyLongRest` também adiciona o aviso fixo pedido — **"Revise
+condições com duração por descanso manualmente."** — mas só quando há
+pelo menos uma condição ativa no personagem (evita ruído para um
+personagem sem nenhuma condição).
+
+## 6. UI
+
+Novo bloco "Descanso" na aba Recursos (`ResourcesTab.tsx`), com dois
+cartões lado a lado — curto e longo — cada um com: descrição da regra,
+**prévia antes/depois calculada em tempo real** (Mana para o curto;
+PV/PE/Mana para o longo) e o botão de aplicar. Texto fixo lembrando
+que Integridade não recupera. Descanso longo pede confirmação via
+`window.confirm()` antes de aplicar (item 6 do pedido) — descanso
+curto não pede, por ser reversível/de baixo impacto (só Mana, dentro
+do limite).
+
+## 7. Logs criados
+
+**`table_logs`**: `type="rest_short"` e `type="rest_long"`,
+`visibility="public"`, payload com `characterId`, `characterNome`,
+`profileId`, `profileSessionId`, `before`, `after`, `diff`,
+`effectsApplied`, `warnings`, `source: "character_sheet"` — exatamente
+os campos pedidos. Gravação best-effort (mesmo padrão de
+`handleAddCondition`).
+
+**Log local**: novo `LogTipo` `"descanso"` (`LogTab.tsx`), cor própria
+— resumo textual ("Descanso longo — PV X → Y, PE X → Y, Mana X → Y.").
+
+**`MesaTab.tsx`**: rótulos "Descanso Curto"/"Descanso Longo" (ícone
+💤, borda azul) e `formatRest()`, que resume só os campos que
+mudaram ("PV 5 → 8, PE 5 → 8, Mana 3 → 12") em vez do JSON cru.
+
+## 8. ActiveStateStrip
+
+`pvTemporario`/`manaTemporaria`/`sobrecargaUsadaDia` agora são props
+opcionais — quando > 0, viram chips `tipo: "pendencia"` (não
+clicáveis, para não inflar escopo com navegação/edição pela faixa),
+com explicação "Removido/resetado automaticamente no próximo descanso
+longo." Como nada no código atual ainda cria PV/Mana temporário nem
+gasta Sobrecarga, esses chips nunca aparecem na prática ainda — o
+suporte está pronto para quando essas mecânicas existirem.
+
+## 9. Persistência
+
+Confirmado que `/ficha` (fluxo de sessão de perfil,
+`saveCharacterForProfileSession`) e `/dev/character-sheet` (fluxo dev,
+`updateCharacter`/`createCharacter`) salvam os novos campos sem
+mudança de código — eles viajam dentro do mesmo `Character`/payload já
+salvo. Reload confirmado mantendo o resultado (ver seção 10).
+
+## 10. Arquivos alterados
+
+- `src/lib/character/rest.ts` (novo) — `applyShortRest`/`applyLongRest`.
+- `src/lib/character/types.ts` — `pv_temporario`/`mana_temporaria` em
+  `CharacterResources`; `sobrecarga_usada_dia` em `Character`.
+- `src/lib/character/normalizeCharacter.ts` — normaliza os 3 campos
+  novos para `0` quando ausentes.
+- `src/lib/character/index.ts` — export do novo módulo.
+- `src/app/dev/character-sheet/components/ResourcesTab.tsx` — bloco
+  "Descanso" com prévia e os dois botões.
+- `src/app/dev/character-sheet/components/LogTab.tsx` — novo
+  `LogTipo` `"descanso"`.
+- `src/app/dev/character-sheet/components/MesaTab.tsx` — rótulos/
+  ícone/cor/`formatRest()` para `rest_short`/`rest_long`.
+- `src/app/dev/character-sheet/components/ActiveStateStrip.tsx` —
+  chips de pendência para temporários/sobrecarga.
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` —
+  `handleApplyShortRest`/`handleApplyLongRest`/`persistRest`, wiring
+  de props novas, `RECURSO_LABELS` atualizado.
+
+Nenhuma migration — nada muda no schema do banco.
+
+## 11. Build e testes
+
+```
+$ npx tsc --noEmit -p tsconfig.json → 1 erro encontrado e corrigido
+  (RECURSO_LABELS faltava as 2 chaves novas de CharacterResources) →
+  limpo na segunda tentativa
+$ npm run build → ✓ compilado, rotas inalteradas
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca do Sistema intacta
+```
+
+## 12. Teste manual (navegador, preview server)
+
+Fluxo completo: narrador criou mesa/personagem/perfil/convite →
+jogador entrou por `/join/[token]` → `/ficha` → definiu PV/PE/Mana/
+Integridade = 5/5/3/8 → **descanso curto**: Mana 3 → 9 (+6 =
+floor(12/2)), PV/PE/Integridade inalterados (**confirmado**) →
+aplicou "Sangrando" → reduziu PV/PE/Mana/Integridade para 2/2/1/4 →
+**descanso longo** (com `window.confirm` interceptado para o teste
+automatizado): PV 2 → 5 (+3 = Corpo(1)+2), PE 2 → 5 (+3 = Mente(1)+2),
+Mana → 12 (máximo), Integridade permaneceu 4 (**confirmado, nunca
+tocada**) → **auto-heal disparou**: banner "Removida(s)
+automaticamente por cura (PV 2 → 5): Sangrando." apareceu
+imediatamente, sem lógica nova — mesmo mecanismo do v0.34 → salvo →
+confirmado via SQL direto que `recursos_atuais` persistiu com
+`pv_temporario`/`mana_temporaria` normalizados a `0` → **reload
+completo da página**: valores confirmados intactos (PV=8, PE=8,
+Mana=12, Integridade=8, de uma segunda rodada de teste após
+reconexão de sessão) → aba Mesa confirmou os cartões "Descanso Longo"
+formatados corretamente ("Personagem v0.36: PV 5 → 8, PE 5 → 8, Mana 3
+→ 12") e o evento "Condição Removida (Cura)" do auto-heal → confirmado
+via SQL os payloads completos de `rest_short`/`rest_long` em
+`table_logs`, com `before`/`after`/`diff`/`effectsApplied`/`warnings`/
+`source` presentes e corretos → `/dev/character-sheet` acessado
+diretamente e confirmado sem regressão (workaround
+`window.$RV(window.$RB)` usado para o hang de Suspense conhecido do
+preview headless, documentado desde v0.25 — não é bug desta feature):
+faixa "Sem estados ativos.", bloco "Descanso" presente com os dois
+botões, "Personagens salvos (3)" e combobox de mesas corretos.
+
+**Nota lateral não relacionada ao código deste checkpoint**: durante o
+teste, a sessão de perfil expirou uma vez por inatividade prolongada
+entre passos manuais (heartbeat de 30s do checkpoint v0.19/v0.26,
+mecanismo pré-existente) — resolvido reentrando pelo convite, sem
+qualquer relação com `rest.ts`/descanso; documentado aqui só para
+constar que não é uma regressão desta funcionalidade.
+
+Dados de teste removidos ao final via SQL direto — confirmado que
+restam só os 2 personagens e as 2 campanhas legadas esperadas.
+
+## 13. Pendências
+
+- Recursos marcados como "descanso curto"/"descanso longo" (cadência
+  de item/carga, `recuperar_recursos_por_cadencia` no payload da
+  Biblioteca) não têm nenhuma estrutura de inventário para amarrar
+  ainda — sempre gera o warning fixo, nunca ajusta nada de verdade.
+  Isso é esperado até o checkpoint de inventário (Fase 3 do PRD).
+- `pv_temporario`/`mana_temporaria` só são **zerados** pelo descanso
+  longo — nada no código ainda **cria** PV/Mana temporário (é escopo
+  de combate/magia/item, todos fora deste checkpoint). Os chips de
+  pendência na faixa de estados nunca aparecem na prática por esse
+  motivo.
+- `sobrecarga_usada_dia` só é **resetado** pelo descanso longo — nada
+  ainda o incrementa (sem surto de Sobrecarga implementado).
+- Sem interrupção de descanso longo (`interrupcao.se_minimo_30_min_concluido`
+  no payload da Biblioteca, "concede descanso curto") — não
+  implementado; o descanso longo é tudo-ou-nada nesta versão.
+- Sem cronômetro real de "30 min"/"8h" — os descansos são instantâneos
+  na ficha (aplicam o efeito completo no clique), sem gating de tempo
+  de jogo (PRD 9.5, "duração por tempo de jogo", ainda não existe como
+  sistema geral).

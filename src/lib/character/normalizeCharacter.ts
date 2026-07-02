@@ -69,6 +69,11 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
       recursos_atuais.integridade = derived.integridade_max;
     }
   }
+  // pv_temporario/mana_temporaria (checkpoint v0.36, PRD 10.2/10.3):
+  // ausência vira 0, nunca undefined — para o descanso longo sempre
+  // ter um número para zerar/comparar, mesmo em payload antigo.
+  if (recursos_atuais.pv_temporario === undefined) recursos_atuais.pv_temporario = 0;
+  if (recursos_atuais.mana_temporaria === undefined) recursos_atuais.mana_temporaria = 0;
 
   const estadoJogoRaw = isPlainObject(raw.estado_jogo) ? raw.estado_jogo : {};
   const estado_jogo: CharacterGameState = {
@@ -84,6 +89,11 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     ? (raw.condicoes_ativas as ActiveCondition[])
     : [];
 
+  // sobrecarga_usada_dia (checkpoint v0.36, PRD 10.5): mesmo critério —
+  // ausência vira 0, nunca undefined.
+  const sobrecarga_usada_dia =
+    typeof raw.sobrecarga_usada_dia === "number" ? raw.sobrecarga_usada_dia : 0;
+
   return {
     ...raw,
     nome,
@@ -93,5 +103,6 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     metadados,
     estado_jogo,
     condicoes_ativas,
+    sobrecarga_usada_dia,
   } as Character;
 }

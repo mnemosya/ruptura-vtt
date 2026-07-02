@@ -27,6 +27,8 @@ import {
   deriveActiveEffectsFromConditions,
   applyAutoHealRemoval,
   undoAutoHealRemoval,
+  applyShortRest,
+  applyLongRest,
 } from "../../../lib/character";
 import {
   createCharacter,
@@ -86,6 +88,8 @@ const RECURSO_LABELS: Record<keyof CharacterResources, string> = {
   pe: "PE",
   mana: "Mana",
   integridade: "Integridade",
+  pv_temporario: "PV temporário",
+  mana_temporaria: "Mana temporária",
 };
 
 interface Props {
@@ -725,6 +729,83 @@ export default function CharacterSheetClient({
   }
 
   /**
+   * Registra um descanso (curto/longo) no Log local e em `table_logs`
+   * (checkpoint v0.36) — mesmo padrão best-effort dos demais eventos.
+   */
+  async function persistRest(
+    tipo: "rest_short" | "rest_long",
+    result: { before: unknown; after: unknown; diff: unknown; effectsApplied: string[]; warnings: string[] },
+  ) {
+    if (!selectedCampaignId) return;
+    try {
+      await addLog({
+        campaignId: selectedCampaignId,
+        characterId: characterId ?? undefined,
+        profileId: selectedProfileId,
+        profileSessionId: profileSessionToken?.profileSessionId ?? null,
+        type: tipo,
+        visibility: "public",
+        payload: {
+          characterId,
+          characterNome: character.nome,
+          profileId: selectedProfileId,
+          profileSessionId: profileSessionToken?.profileSessionId ?? null,
+          before: result.before,
+          after: result.after,
+          diff: result.diff,
+          effectsApplied: result.effectsApplied,
+          warnings: result.warnings,
+          source: "character_sheet",
+        },
+      });
+    } catch {
+      // Best-effort — mesma justificativa de handleAddCondition.
+    }
+  }
+
+  /** Botão "Aplicar descanso curto" (checkpoint v0.36, PRD 10.4) — Mana += floor(manaMax/2), nada mais. */
+  async function handleApplyShortRest() {
+    const nowIso = new Date().toISOString();
+    const result = applyShortRest(character, derivados, nowIso);
+    setCharacter(result.character);
+    addLogEntry("descanso", `Descanso curto — Mana ${result.before.mana} → ${result.after.mana}.`);
+    await persistRest("rest_short", result);
+  }
+
+  /**
+   * Botão "Aplicar descanso longo" — pede confirmação (item 6 do
+   * pedido), aplica PV/PE/Mana/temporários/Sobrecarga via
+   * `applyLongRest`, e reaproveita `applyAutoHealRemoval` (v0.34)
+   * exatamente como `updateRecursoAtual`/`handleRestoreRecursosMax`
+   * já fazem — se o PV aumentou, Contundido/Envenenado/Sangrando
+   * ativos podem ser removidos automaticamente pelo mesmo mecanismo,
+   * sem duplicar a lógica de cura aqui.
+   */
+  async function handleApplyLongRest() {
+    const confirmado = window.confirm(
+      "Aplicar descanso longo (8h)? PV recupera Corpo+2, PE recupera Mente+2, Mana volta ao máximo, PV/Mana temporários são removidos e Sobrecarga é resetada. Integridade NÃO é recuperada.",
+    );
+    if (!confirmado) return;
+
+    const nowIso = new Date().toISOString();
+    const result = applyLongRest(character, derivados, nowIso);
+    const { condicoes: proximasCondicoes, removidas } = applyAutoHealRemoval(
+      result.character.condicoes_ativas ?? [],
+      result.before.pv,
+      result.after.pv,
+      nowIso,
+    );
+
+    setCharacter({ ...result.character, condicoes_ativas: proximasCondicoes });
+    addLogEntry(
+      "descanso",
+      `Descanso longo — PV ${result.before.pv} → ${result.after.pv}, PE ${result.before.pe} → ${result.after.pe}, Mana ${result.before.mana} → ${result.after.mana}.`,
+    );
+    await persistRest("rest_long", result);
+    if (removidas.length > 0) void handleAutoHealRemovals(removidas, result.before.pv, result.after.pv);
+  }
+
+  /**
    * Edição manual de recursos atuais (PV/PE/Mana/Integridade). Aceita
    * só inteiro >= 0; não trava no máximo de propósito — combate/dano
    * fica para depois, aqui é só edição livre com aviso visual.
@@ -1043,6 +1124,9 @@ export default function CharacterSheetClient({
         activeEffects={activeEffects}
         condicoesDisponiveis={condicoesDisponiveis}
         onVerCondicoes={() => setActiveTab("condicoes")}
+        pvTemporario={character.recursos_atuais?.pv_temporario ?? 0}
+        manaTemporaria={character.recursos_atuais?.mana_temporaria ?? 0}
+        sobrecargaUsadaDia={character.sobrecarga_usada_dia ?? 0}
       />
 
       <CharacterSheetTabs
@@ -1115,6 +1199,9 @@ export default function CharacterSheetClient({
           onUsarReacao={() => adjustEstadoJogo("reacoes_usadas", 1)}
           onDesfazerReacao={() => adjustEstadoJogo("reacoes_usadas", -1)}
           onResetarReacoes={() => resetEstadoJogo("reacoes_usadas")}
+          atributos={character.atributos}
+          onApplyShortRest={handleApplyShortRest}
+          onApplyLongRest={handleApplyLongRest}
         />
       )}
 

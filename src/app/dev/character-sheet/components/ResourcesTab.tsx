@@ -4,6 +4,7 @@ import { ResourceField } from "./ResourceField";
 import { TurnCounters } from "./TurnCounters";
 import { buttonStyle } from "./styles";
 import type {
+  CharacterAttributes,
   CharacterGameState,
   CharacterResources,
   CharacterRulesPayload,
@@ -38,6 +39,9 @@ export function ResourcesTab({
   onUsarReacao,
   onDesfazerReacao,
   onResetarReacoes,
+  atributos,
+  onApplyShortRest,
+  onApplyLongRest,
 }: {
   regras: CharacterRulesPayload | null;
   derivados: DerivedStats;
@@ -51,7 +55,20 @@ export function ResourcesTab({
   onUsarReacao: () => void;
   onDesfazerReacao: () => void;
   onResetarReacoes: () => void;
+  /** Checkpoint v0.36 — só para calcular a prévia (a aplicação de verdade usa applyShortRest/applyLongRest, com o Character completo). */
+  atributos: CharacterAttributes;
+  onApplyShortRest: () => void;
+  onApplyLongRest: () => void;
 }) {
+  const pvAtual = recursosAtuais?.pv ?? 0;
+  const peAtual = recursosAtuais?.pe ?? 0;
+  const manaAtual = recursosAtuais?.mana ?? 0;
+  const ganhoManaCurto = Math.floor(derivados.mana_max / 2);
+  const previewManaCurto = Math.min(derivados.mana_max, manaAtual + ganhoManaCurto);
+  const ganhoPvLongo = atributos.corpo + 2;
+  const ganhoPeLongo = atributos.mente + 2;
+  const previewPvLongo = Math.min(derivados.pv_max, pvAtual + ganhoPvLongo);
+  const previewPeLongo = Math.min(derivados.pe_max, peAtual + ganhoPeLongo);
   return (
     <>
       <Section title="Derivados (máximos)">
@@ -103,6 +120,41 @@ export function ResourcesTab({
               onChange={(v) => onChangeRecursoAtual(id, v)}
             />
           ))}
+        </div>
+      </Section>
+
+      <Section title="Descanso">
+        <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 12 }}>
+          Regras do PRD, ao pé da letra — <strong>Integridade não recupera por descanso</strong>{" "}
+          (nem curto, nem longo).
+        </p>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+          <div style={{ background: "#15161b", border: "1px solid #2a2b33", borderRadius: 8, padding: 12, flex: "1 1 220px" }}>
+            <p style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>Descanso curto (30 min)</p>
+            <p style={{ fontSize: 11, opacity: 0.6, marginBottom: 8 }}>
+              +floor(Mana máxima / 2) Mana. Não altera PV, PE ou Integridade.
+            </p>
+            <p data-testid="descanso-curto-previa" style={{ fontSize: 11, opacity: 0.7, marginBottom: 8 }}>
+              Prévia: Mana {manaAtual} → {previewManaCurto} (+{previewManaCurto - manaAtual})
+            </p>
+            <button data-testid="descanso-curto-button" onClick={onApplyShortRest} style={buttonStyle}>
+              Aplicar descanso curto
+            </button>
+          </div>
+          <div style={{ background: "#15161b", border: "1px solid #2a2b33", borderRadius: 8, padding: 12, flex: "1 1 220px" }}>
+            <p style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>Descanso longo (8h)</p>
+            <p style={{ fontSize: 11, opacity: 0.6, marginBottom: 8 }}>
+              +Corpo+2 PV, +Mente+2 PE, Mana ao máximo. Remove PV/Mana temporários e reseta
+              Sobrecarga.
+            </p>
+            <p data-testid="descanso-longo-previa" style={{ fontSize: 11, opacity: 0.7, marginBottom: 8 }}>
+              Prévia: PV {pvAtual} → {previewPvLongo} (+{previewPvLongo - pvAtual}) · PE {peAtual} →{" "}
+              {previewPeLongo} (+{previewPeLongo - peAtual}) · Mana → {derivados.mana_max} (máximo)
+            </p>
+            <button data-testid="descanso-longo-button" onClick={onApplyLongRest} style={buttonStyle}>
+              Aplicar descanso longo
+            </button>
+          </div>
         </div>
       </Section>
 

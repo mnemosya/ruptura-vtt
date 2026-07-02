@@ -55,6 +55,8 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   condition_removed: "Condição Removida",
   condition_auto_removed: "Condição Removida (Cura)",
   condition_auto_removal_undone: "Remoção por Cura Desfeita",
+  rest_short: "Descanso Curto",
+  rest_long: "Descanso Longo",
 };
 
 function entryKindLabel(type: string): string {
@@ -67,6 +69,7 @@ function entryIcon(type: string): string {
   if (type === "profile_event") return "🔑";
   if (type === "condition_applied" || type === "condition_removed") return "⚠";
   if (type === "condition_auto_removed" || type === "condition_auto_removal_undone") return "✚";
+  if (type === "rest_short" || type === "rest_long") return "💤";
   return "•";
 }
 
@@ -74,6 +77,7 @@ function entryBorderColor(type: string): string {
   if (type === "chat") return "#4f8cff";
   if (type === "profile_event") return "#ff6b9f";
   if (type === "condition_auto_removed" || type === "condition_auto_removal_undone") return "#4caf50";
+  if (type === "rest_short" || type === "rest_long") return "#5ec8ff";
   return "#ffb84f";
 }
 
@@ -84,6 +88,23 @@ function formatAutoHeal(payload: Record<string, unknown>): string {
   const pvAnterior = typeof payload.pvAnterior === "number" ? payload.pvAnterior : "?";
   const pvNovo = typeof payload.pvNovo === "number" ? payload.pvNovo : "?";
   return `${characterNome}: ${nomes.join(", ") || "(nenhuma)"} — PV ${pvAnterior} → ${pvNovo}`;
+}
+
+/** Checkpoint v0.36: cartão de rest_short/rest_long — resume before→after dos campos que mudaram. */
+function formatRest(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const before = payload.before as Record<string, number> | undefined;
+  const after = payload.after as Record<string, number> | undefined;
+  if (!before || !after) return `${characterNome}: descanso aplicado.`;
+  const campos: [string, string][] = [
+    ["pv", "PV"],
+    ["pe", "PE"],
+    ["mana", "Mana"],
+  ];
+  const partes = campos
+    .filter(([key]) => before[key] !== after[key])
+    .map(([key, label]) => `${label} ${before[key]} → ${after[key]}`);
+  return `${characterNome}: ${partes.join(", ") || "sem mudança"}`;
 }
 
 /** Texto da mensagem de chat — aceita `text` (ficha, v0.12) ou `mensagem` (formato antigo do /dev/table). */
@@ -369,7 +390,9 @@ export function MesaTab({
                     ? formatProfileEvent(entry.payload)
                     : entry.type === "condition_auto_removed" || entry.type === "condition_auto_removal_undone"
                       ? formatAutoHeal(entry.payload)
-                      : JSON.stringify(entry.payload)}
+                      : entry.type === "rest_short" || entry.type === "rest_long"
+                        ? formatRest(entry.payload)
+                        : JSON.stringify(entry.payload)}
             </span>
           </div>
         ))}
