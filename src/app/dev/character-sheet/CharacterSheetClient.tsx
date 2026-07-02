@@ -35,6 +35,9 @@ import {
   detectCollapseOnResourceChange,
   advanceCollapseSegment,
   stabilizeCollapse,
+  gainPm,
+  spendPm,
+  logPermanentAdjustment,
 } from "../../../lib/character";
 import {
   createCharacter,
@@ -53,6 +56,7 @@ import type {
   CharacterRecord,
   CharacterResources,
   CharacterRulesPayload,
+  DerivedStats,
 } from "../../../lib/character";
 import { rollPericia, type PreparedRoll } from "../../../lib/dice";
 import {
@@ -638,6 +642,55 @@ export default function CharacterSheetClient({
     setErrorMessage(null);
   }
 
+  /**
+   * Registra um evento de evolução (ganho/gasto de PM ou ajuste
+   * permanente de atributo/perícia) em `table_logs`
+   * (`type="character_evolution"`, `visibility="gm"` — evento
+   * operacional de progressão, não mensagem de jogador) — best-effort,
+   * mesmo padrão dos demais eventos.
+   */
+  async function persistEvolutionEvent(
+    charAfter: Character,
+    tipo: "ganho" | "gasto" | "ajuste",
+    quantidade: number,
+    descricao: string,
+    antes?: number,
+    depois?: number,
+  ) {
+    if (!selectedCampaignId) return;
+    try {
+      await addLog({
+        campaignId: selectedCampaignId,
+        characterId: characterId ?? undefined,
+        profileId: selectedProfileId,
+        profileSessionId: profileSessionToken?.profileSessionId ?? null,
+        type: "character_evolution",
+        visibility: "gm",
+        payload: {
+          characterId,
+          characterNome: charAfter.nome,
+          tipo,
+          quantidade,
+          descricao,
+          antes: antes ?? null,
+          depois: depois ?? null,
+          pmTotal: charAfter.pm_total ?? 0,
+          pmDisponivel: charAfter.pm_disponivel ?? 0,
+          source: "character_sheet",
+        },
+      });
+    } catch {
+      // Best-effort — mesma justificativa de handleAddCondition.
+    }
+  }
+
+  /**
+   * Alteração permanente de atributo (Modo Evolução, checkpoint v0.40)
+   * — recalcula os derivados máximos antes/depois e soma a MESMA
+   * diferença nos recursos atuais correspondentes ("atuais sobem junto
+   * na medida aplicável", PRD 4.2), registra no histórico de evolução
+   * (`logPermanentAdjustment`) e loga (local + `table_logs`).
+   */
   function updateAtributo(id: keyof CharacterAttributes, rawValue: number) {
     // Defesa em profundidade: o input já vem `disabled` em Modo Jogo
     // (não dispara onChange), mas o handler também recusa por garantia.
@@ -645,21 +698,89 @@ export default function CharacterSheetClient({
     const def = regras?.atributos.find((a) => a.id === id);
     const min = def?.valor_minimo ?? 1;
     const max = def?.valor_maximo ?? 5;
-    setCharacter((prev) => ({
-      ...prev,
-      atributos: { ...prev.atributos, [id]: clamp(rawValue, min, max) },
-    }));
+    const antes = character.atributos[id];
+    const depois = clamp(rawValue, min, max);
+    if (depois === antes) return;
+
+    const atributosNovos = { ...character.atributos, [id]: depois };
+    const derivadosAntes = computeDerivedStats(character.atributos, regras);
+    const derivadosDepois = computeDerivedStats(atributosNovos, regras);
+
+    const RECURSO_MAX_MAP = {
+      pv: "pv_max",
+      pe: "pe_max",
+      mana: "mana_max",
+      integridade: "integridade_max",
+    } as const satisfies Record<keyof CharacterResources & ("pv" | "pe" | "mana" | "integridade"), keyof DerivedStats>;
+
+    const recursos_atuais: CharacterResources = { ...character.recursos_atuais };
+    (Object.keys(RECURSO_MAX_MAP) as (keyof typeof RECURSO_MAX_MAP)[]).forEach((campo) => {
+      const maxId = RECURSO_MAX_MAP[campo];
+      const delta = derivadosDepois[maxId] - derivadosAntes[maxId];
+      if (delta !== 0) {
+        recursos_atuais[campo] = Math.max(0, (recursos_atuais[campo] ?? 0) + delta);
+      }
+    });
+
+    const nowIso = new Date().toISOString();
+    const nomeAtributo = def?.nome ?? id;
+    const descricao = `${nomeAtributo}: ${antes} → ${depois}`;
+    const proximo = logPermanentAdjustment(
+      { ...character, atributos: atributosNovos, recursos_atuais },
+      `atributo:${id}`,
+      antes,
+      depois,
+      descricao,
+      nowIso,
+    );
+    setCharacter(proximo);
+    addLogEntry("recurso", `Evolução — ${descricao}.`);
+    void persistEvolutionEvent(proximo, "ajuste", 0, descricao, antes, depois);
   }
 
+  /** Alteração permanente de perícia (Modo Evolução) — mesma auditoria de `updateAtributo`, sem impacto em derivados. */
   function updatePericia(id: string, rawValue: number) {
     if (sheetMode === "jogo") return;
     const def = regras?.pericias.find((p) => p.id === id);
     const min = def?.valor_minimo ?? 0;
     const max = def?.valor_maximo ?? 5;
-    setCharacter((prev) => ({
-      ...prev,
-      pericias: { ...prev.pericias, [id]: clamp(rawValue, min, max) },
-    }));
+    const antes = character.pericias[id] ?? 0;
+    const depois = clamp(rawValue, min, max);
+    if (depois === antes) return;
+
+    const nowIso = new Date().toISOString();
+    const nomePericia = def?.nome ?? id;
+    const descricao = `${nomePericia}: ${antes} → ${depois}`;
+    const proximo = logPermanentAdjustment(
+      { ...character, pericias: { ...character.pericias, [id]: depois } },
+      `pericia:${id}`,
+      antes,
+      depois,
+      descricao,
+      nowIso,
+    );
+    setCharacter(proximo);
+    addLogEntry("recurso", `Evolução — ${descricao}.`);
+    void persistEvolutionEvent(proximo, "ajuste", 0, descricao, antes, depois);
+  }
+
+  /** Botão "Adicionar PM recebido" (Modo Evolução, checkpoint v0.40). */
+  function handleGainPm(quantidade: number, descricao: string) {
+    const nowIso = new Date().toISOString();
+    const result = gainPm(character, quantidade, descricao, nowIso);
+    setCharacter(result.character);
+    addLogEntry("recurso", `PM recebido: +${result.entry.quantidade} (${result.entry.descricao}).`);
+    void persistEvolutionEvent(result.character, "ganho", result.entry.quantidade, result.entry.descricao, result.entry.antes, result.entry.depois);
+  }
+
+  /** Botão "Registrar gasto manual" de PM (Modo Evolução, checkpoint v0.40). */
+  function handleSpendPm(quantidade: number, descricao: string) {
+    const nowIso = new Date().toISOString();
+    const result = spendPm(character, quantidade, descricao, nowIso);
+    setCharacter(result.character);
+    addLogEntry("recurso", `PM gasto: -${result.entry.quantidade} (${result.entry.descricao}).`);
+    if (result.warnings.length > 0) addLogEntry("recurso", result.warnings[0]);
+    void persistEvolutionEvent(result.character, "gasto", result.entry.quantidade, result.entry.descricao, result.entry.antes, result.entry.depois);
   }
 
   /**
@@ -1401,6 +1522,11 @@ export default function CharacterSheetClient({
           enteredProfileId={enteredProfile?.id ?? null}
           onEnterProfile={handleEnterProfile}
           onLeaveProfile={handleLeaveProfile}
+          pmTotal={character.pm_total ?? 0}
+          pmDisponivel={character.pm_disponivel ?? 0}
+          historicoEvolucao={character.historico_evolucao ?? []}
+          onGainPm={handleGainPm}
+          onSpendPm={handleSpendPm}
         />
       )}
 

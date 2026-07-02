@@ -171,6 +171,36 @@ export interface Character {
     cicatrizPendente?: boolean;
     ultimoEvento?: string;
   };
+  /**
+   * PM (Pontos de Maestria/evolução, checkpoint v0.40, PRD 3.3/4.3) —
+   * total recebido ao longo da campanha e o que ainda não foi gasto.
+   * `pm_disponivel` nunca é negativo (gasto além do disponível é
+   * clampado a 0, com warning — ver `spendPm`).
+   */
+  pm_total?: number;
+  pm_disponivel?: number;
+  /**
+   * Histórico de evolução (checkpoint v0.40, PRD 4.3) — append-only,
+   * nunca reescrito/apagado. Cobre ganho/gasto de PM e ajustes
+   * permanentes de atributo/perícia feitos em Modo Evolução.
+   */
+  historico_evolucao?: EvolutionHistoryEntry[];
+}
+
+export type EvolutionHistoryEntryTipo = "ganho" | "gasto" | "ajuste";
+
+export interface EvolutionHistoryEntry {
+  id: string;
+  tipo: EvolutionHistoryEntryTipo;
+  /** PM ganhos/gastos — 0 para entradas "ajuste" (atributo/perícia, sem custo de PM fechado ainda). */
+  quantidade: number;
+  descricao: string;
+  /** Ex.: "atributo:corpo", "pericia:luta" — só presente em "ajuste". */
+  campoAfetado?: string;
+  antes?: number;
+  depois?: number;
+  criadoEm: string;
+  criadoPor: "character_sheet";
 }
 
 // ---------------------------------------------------------------------

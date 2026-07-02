@@ -66,6 +66,7 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   round_ended: "Rodada Encerrada",
   scene_ended: "Cena Encerrada",
   scene_rupture_pending: "Ruptura Pendente (Fim de Cena)",
+  character_evolution: "Evolução",
 };
 
 function entryKindLabel(type: string): string {
@@ -82,6 +83,7 @@ function entryIcon(type: string): string {
   if (type === "overload_surge" || type === "overload_will_roll") return "⚡";
   if (type.startsWith("collapse_")) return "💀";
   if (type === "round_ended" || type === "scene_ended" || type === "scene_rupture_pending") return "🎬";
+  if (type === "character_evolution") return "📈";
   return "•";
 }
 
@@ -93,6 +95,7 @@ function entryBorderColor(type: string): string {
   if (type === "overload_surge" || type === "overload_will_roll") return "#c0392b";
   if (type.startsWith("collapse_")) return "#8e44ad";
   if (type === "round_ended" || type === "scene_ended" || type === "scene_rupture_pending") return "#9b8cff";
+  if (type === "character_evolution") return "#4caf50";
   return "#ffb84f";
 }
 
@@ -173,6 +176,17 @@ function formatRoundOrScene(type: string, payload: Record<string, unknown>): str
     return `Ruptura pendente para: ${nomes.join(", ") || "(nenhum)"}`;
   }
   return JSON.stringify(payload);
+}
+
+/** Checkpoint v0.40: cartão de character_evolution (PM ganho/gasto ou ajuste de atributo/perícia). */
+function formatEvolution(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const tipo = payload.tipo;
+  const descricao = typeof payload.descricao === "string" ? payload.descricao : "";
+  const quantidade = typeof payload.quantidade === "number" ? payload.quantidade : 0;
+  if (tipo === "ganho") return `${characterNome}: +${quantidade} PM — ${descricao}`;
+  if (tipo === "gasto") return `${characterNome}: -${quantidade} PM — ${descricao}`;
+  return `${characterNome}: ${descricao}`;
 }
 
 /** Texto da mensagem de chat — aceita `text` (ficha, v0.12) ou `mensagem` (formato antigo do /dev/table). */
@@ -468,7 +482,9 @@ export function MesaTab({
                               ? formatCollapse(entry.payload)
                               : entry.type === "round_ended" || entry.type === "scene_ended" || entry.type === "scene_rupture_pending"
                                 ? formatRoundOrScene(entry.type, entry.payload)
-                                : JSON.stringify(entry.payload)}
+                                : entry.type === "character_evolution"
+                                  ? formatEvolution(entry.payload)
+                                  : JSON.stringify(entry.payload)}
             </span>
           </div>
         ))}

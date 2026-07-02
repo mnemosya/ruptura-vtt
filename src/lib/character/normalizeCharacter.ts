@@ -6,6 +6,7 @@ import type {
   CharacterMetadata,
   CharacterResources,
   DerivedStats,
+  EvolutionHistoryEntry,
 } from "./types";
 
 const DEFAULT_NOME = "Personagem sem nome";
@@ -94,6 +95,14 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
   const sobrecarga_usada_dia =
     typeof raw.sobrecarga_usada_dia === "number" ? raw.sobrecarga_usada_dia : 0;
 
+  // pm_total/pm_disponivel/historico_evolucao (checkpoint v0.40, PRD
+  // 3.3/4.3): mesmo critério — ausência vira 0/[], nunca undefined.
+  const pm_total = typeof raw.pm_total === "number" ? raw.pm_total : 0;
+  const pm_disponivel = typeof raw.pm_disponivel === "number" ? raw.pm_disponivel : 0;
+  const historico_evolucao: EvolutionHistoryEntry[] = Array.isArray(raw.historico_evolucao)
+    ? (raw.historico_evolucao as EvolutionHistoryEntry[])
+    : [];
+
   return {
     ...raw,
     nome,
@@ -104,5 +113,8 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     estado_jogo,
     condicoes_ativas,
     sobrecarga_usada_dia,
+    pm_total,
+    pm_disponivel,
+    historico_evolucao,
   } as Character;
 }

@@ -6605,3 +6605,174 @@ restam só os 2 personagens e as 2 campanhas legadas esperadas.
   Biblioteca — uma condição manual chamada "Sangrando" sem
   `conditionId` (texto livre) não entra no resumo, mesma limitação já
   documentada no v0.34 para a remoção automática por cura.
+
+# Checkpoint v0.40 — Modo Evolução e histórico de PM
+
+## 1. Auditoria (antes de alterar)
+
+`git status --short` limpo. `SheetMode`/`ModeToggle` (checkpoints
+anteriores) já existiam com `"jogo"`/`"evolucao"`, e
+`updateAtributo`/`updatePericia` já tinham o guard `if (sheetMode ===
+"jogo") return;` — bloqueio de Modo Jogo já existente, só reforçado
+(não recriado). `computeDerivedStats` já era chamado via `useMemo` em
+`CharacterSheetClient` — reaproveitado (chamado duas vezes, antes/
+depois do atributo) para calcular o delta de recursos, sem nova lógica
+de derivados. `GeneralTab.tsx` já tinha `<ModeToggle>` no topo — ponto
+natural para a nova seção "PM e evolução", condicional a
+`sheetMode === "evolucao"`.
+
+## 2. Modelo no personagem
+
+```ts
+Character.pm_total?: number;
+Character.pm_disponivel?: number;
+Character.historico_evolucao?: EvolutionHistoryEntry[];
+
+interface EvolutionHistoryEntry {
+  id: string;
+  tipo: "ganho" | "gasto" | "ajuste";
+  quantidade: number;       // PM — 0 para "ajuste"
+  descricao: string;
+  campoAfetado?: string;    // "atributo:corpo", "pericia:luta" — só em "ajuste"
+  antes?: number;
+  depois?: number;
+  criadoEm: string;
+  criadoPor: "character_sheet";
+}
+```
+
+Defaults seguros em `normalizeCharacter.ts`: `pm_total`/`pm_disponivel`
+viram `0`, `historico_evolucao` vira `[]` quando ausentes — payload
+antigo nunca quebra.
+
+## 3. Módulo `src/lib/character/evolution.ts`
+
+- `gainPm(character, quantidade, descricao, nowIso)` — soma em
+  `pm_total` e `pm_disponivel`, registra `tipo:"ganho"`.
+- `spendPm(character, quantidade, descricao, nowIso)` — subtrai de
+  `pm_disponivel`; **nunca fica negativo** — clampa em 0 e devolve um
+  warning se o gasto for maior que o disponível (não bloqueia o
+  registro). Registra `tipo:"gasto"`.
+- `logPermanentAdjustment(character, campoAfetado, antes, depois,
+  descricao, nowIso)` — registra `tipo:"ajuste"` (`quantidade: 0`, sem
+  custo de PM fechado ainda — PRD 3.3 pede "valores placeholder
+  editáveis" enquanto os custos finais não fecham).
+
+## 4. UI — "PM e evolução"
+
+Nova seção em `GeneralTab.tsx`, visível só em Modo Evolução (some em
+Modo Jogo automaticamente): mostra PM disponível/total, dois
+formulários (quantidade + descrição livre) para "Adicionar PM
+recebido" e "Registrar gasto manual", e a lista do histórico completo
+(mais recente primeiro). Nenhuma tabela de custo fixo — tudo texto
+livre, conforme o placeholder pedido pelo PRD.
+
+## 5. Alterações permanentes de atributo/perícia
+
+`updateAtributo` (Modo Evolução) agora: calcula
+`computeDerivedStats` antes e depois da mudança, soma a MESMA
+diferença nos recursos atuais correspondentes (`pv`/`pe`/`mana`/
+`integridade`, clampado em 0) — "derivados máximos recalculam,
+atuais sobem junto na medida aplicável" (PRD 4.2) — e chama
+`logPermanentAdjustment` para o histórico, tudo no mesmo
+`setCharacter`. `updatePericia` faz o mesmo registro de histórico
+(sem impacto em derivados — nenhuma fórmula usa perícia como
+referência). Ambos continuam bloqueados em Modo Jogo pelo guard já
+existente.
+
+## 6. Logs criados
+
+**`table_logs`**: `type="character_evolution"`, `visibility="gm"`
+(evento operacional de progressão, não mensagem de jogador) — payload
+com `characterId`, `characterNome`, `tipo`, `quantidade`, `descricao`,
+`antes`, `depois`, `pmTotal`, `pmDisponivel`, `source`, gravação
+best-effort via `persistEvolutionEvent`. `MesaTab.tsx` ganhou
+`formatEvolution()` + rótulo/ícone (📈)/cor (verde) próprios — mesmo
+padrão dos checkpoints anteriores (não era pedido explicitamente para
+este `type`, mas mantém a consistência de toda a aba Mesa).
+
+**Log local**: reaproveita `LogTipo` `"recurso"` (sem tipo novo — mesma
+decisão dos checkpoints v0.37/v0.38 para eventos que ainda não
+justificam uma categoria própria de Log local).
+
+## 7. Produto vs dev
+
+Nenhuma diferença de código entre os dois modos — `ModeToggle`/"PM e
+evolução" aparecem igual em `/ficha` e `/dev/character-sheet` (mesmo
+componente `GeneralTab`). Não existe sinal de "é o narrador" dentro da
+sessão de perfil de jogador (a ficha de produto não distingue
+narrador de jogador — ambos usam o mesmo fluxo de sessão de perfil).
+Por isso, conforme a regra do checkpoint ("manter Modo Evolução
+acessível mas documentar pendência de permissão"), Modo Evolução
+continua acessível a qualquer sessão válida — **sem controle de quem
+pode editar permanentemente** (mesma limitação que já existia antes
+deste checkpoint para editar atributos/perícias em Modo Evolução, não
+uma regressão nova). Documentado como pendência (seção 8).
+
+## 8. Arquivos alterados
+
+- `src/lib/character/evolution.ts` (novo).
+- `src/lib/character/types.ts` — `pm_total`/`pm_disponivel`/
+  `historico_evolucao`/`EvolutionHistoryEntry` em `Character`.
+- `src/lib/character/normalizeCharacter.ts` — defaults dos 3 campos
+  novos.
+- `src/lib/character/index.ts` — export do novo módulo.
+- `src/app/dev/character-sheet/components/GeneralTab.tsx` — seção "PM
+  e evolução".
+- `src/app/dev/character-sheet/components/MesaTab.tsx` — formatação
+  de `character_evolution`.
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` —
+  `updateAtributo`/`updatePericia` reescritos com auditoria +
+  recálculo de recursos, `handleGainPm`/`handleSpendPm`/
+  `persistEvolutionEvent`, wiring de props.
+
+Nenhuma migration — nada muda no schema do banco.
+
+## 9. Build e testes
+
+```
+$ npx tsc --noEmit -p tsconfig.json → limpo na primeira tentativa
+$ npm run build → ✓ compilado, rotas inalteradas
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca do Sistema intacta
+```
+
+## 10. Teste manual (navegador, `/dev/character-sheet`)
+
+Ativado Modo Evolução → seção "PM e evolução" apareceu → adicionado
++5 PM ("Recompensa sessão 1") → **confirmado**: PM disponível 0 → 5,
+total 5 → registrado gasto manual de 2 PM ("Subir Corpo") →
+**confirmado**: PM disponível 5 → 3, total permaneceu 5 → definido PV
+atual em 5 (Corpo=1, pv_max=11) → subido Corpo de 1 para 2 em Modo
+Evolução → **confirmado**: PV atual foi de 5 para 6 (delta +1, igual
+ao delta de `pv_max` de 11 para 12) → histórico mostrou os 3 eventos
+na ordem certa (mais recente primeiro): "Ajuste — atributo:corpo: 1 →
+2", "Gasto 2 PM — Subir Corpo", "Ganho 5 PM — Recompensa sessão 1" →
+trocado para Modo Jogo → **confirmado**: campo "Corpo" ficou
+`disabled` (bloqueio reforçado, comportamento já existente desde antes
+deste checkpoint) → salvo personagem → confirmado via SQL direto que
+`pm_total=5`, `pm_disponivel=3` e os 3 eventos do `historico_evolucao`
+persistiram com todos os campos corretos → `/dev/character-sheet`
+confirmado sem regressão ("✓ Salvo", "Personagens salvos (3)").
+
+Dados de teste removidos ao final via SQL direto — confirmado que
+restam só os 2 personagens legados esperados.
+
+## 11. Pendências
+
+- Sem controle de permissão — qualquer sessão de perfil válida pode
+  usar Modo Evolução e se auto-conceder PM (mesma limitação de acesso
+  a Modo Evolução que já existia antes deste checkpoint, não uma
+  regressão nova; documentada aqui por ser mais visível agora com PM
+  de verdade em jogo).
+- Sem tabela de custo fixo de PM por ponto de atributo/perícia/
+  vertente/talento/PA — tudo é entrada livre (quantidade + descrição),
+  conforme o PRD pede explicitamente ("valores placeholder editáveis"
+  até os custos finais fecharem).
+- Vertentes/talentos/PA máximo não têm UI de evolução própria ainda —
+  só atributos e perícias entram no histórico automaticamente; PM
+  gasto nesses outros campos precisa ser registrado manualmente via
+  "Registrar gasto manual" (sem campo estruturado para eles ainda).
+- Histórico não é paginado/filtrável — cresce indefinidamente no
+  payload do personagem (mesma observação já feita para o histórico de
+  condições removidas, v0.32/v0.34).

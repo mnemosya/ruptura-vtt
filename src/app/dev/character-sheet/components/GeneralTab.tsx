@@ -1,8 +1,18 @@
+import { useState } from "react";
 import { Section } from "./Section";
 import { buttonStyle } from "./styles";
 import { ModeToggle, type SheetMode } from "./ModeToggle";
 import type { Campaign, CampaignProfile } from "../../../../lib/table";
-import type { CharacterRecord } from "../../../../lib/character";
+import type { CharacterRecord, EvolutionHistoryEntry } from "../../../../lib/character";
+
+const inputStyle: React.CSSProperties = {
+  background: "#0f1014",
+  color: "inherit",
+  border: "1px solid #333",
+  borderRadius: 4,
+  padding: "6px 8px",
+  fontSize: 13,
+};
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -44,6 +54,11 @@ export function GeneralTab({
   enteredProfileId,
   onEnterProfile,
   onLeaveProfile,
+  pmTotal,
+  pmDisponivel,
+  historicoEvolucao,
+  onGainPm,
+  onSpendPm,
 }: {
   /** "dev" (padrão) mantém os seletores de mesa/perfil; "product" (/ficha, v0.24) mostra mesa/perfil fixos como texto, sem seletor. */
   mode?: "dev" | "product";
@@ -72,7 +87,18 @@ export function GeneralTab({
   enteredProfileId: string | null;
   onEnterProfile: () => void;
   onLeaveProfile: () => void;
+  /** Checkpoint v0.40 — PM e histórico de evolução. */
+  pmTotal: number;
+  pmDisponivel: number;
+  historicoEvolucao: EvolutionHistoryEntry[];
+  onGainPm: (quantidade: number, descricao: string) => void;
+  onSpendPm: (quantidade: number, descricao: string) => void;
 }) {
+  const [ganhoQtd, setGanhoQtd] = useState("0");
+  const [ganhoDescricao, setGanhoDescricao] = useState("");
+  const [gastoQtd, setGastoQtd] = useState("0");
+  const [gastoDescricao, setGastoDescricao] = useState("");
+
   const perfilSelecionado = perfis.find((p) => p.id === selectedProfileId) ?? null;
   const personagemAtivo = perfilSelecionado
     ? personagens.find((p) => p.id === perfilSelecionado.active_character_id) ?? null
@@ -83,6 +109,100 @@ export function GeneralTab({
   return (
     <Section title="Geral">
       <ModeToggle mode={sheetMode} onChange={onModeChange} />
+
+      {sheetMode === "evolucao" && (
+        <div
+          data-testid="pm-evolucao-secao"
+          style={{
+            background: "#15161b",
+            border: "1px solid #2a2b33",
+            borderRadius: 8,
+            padding: 12,
+            marginBottom: 16,
+          }}
+        >
+          <p style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>PM e evolução</p>
+          <p data-testid="pm-disponivel" style={{ fontSize: 13, marginBottom: 8 }}>
+            PM disponível: <strong>{pmDisponivel}</strong> · PM total recebido: {pmTotal}
+          </p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+            <input
+              data-testid="pm-ganho-quantidade"
+              type="number"
+              value={ganhoQtd}
+              onChange={(e) => setGanhoQtd(e.target.value)}
+              style={{ ...inputStyle, width: 70 }}
+            />
+            <input
+              data-testid="pm-ganho-descricao"
+              type="text"
+              placeholder="Descrição (ex.: recompensa da sessão)"
+              value={ganhoDescricao}
+              onChange={(e) => setGanhoDescricao(e.target.value)}
+              style={{ ...inputStyle, flex: 1, minWidth: 160 }}
+            />
+            <button
+              data-testid="pm-ganho-button"
+              onClick={() => {
+                onGainPm(Number.parseInt(ganhoQtd, 10) || 0, ganhoDescricao);
+                setGanhoQtd("0");
+                setGanhoDescricao("");
+              }}
+              style={buttonStyle}
+            >
+              Adicionar PM recebido
+            </button>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+            <input
+              data-testid="pm-gasto-quantidade"
+              type="number"
+              value={gastoQtd}
+              onChange={(e) => setGastoQtd(e.target.value)}
+              style={{ ...inputStyle, width: 70 }}
+            />
+            <input
+              data-testid="pm-gasto-descricao"
+              type="text"
+              placeholder="Descrição (ex.: subir Corpo)"
+              value={gastoDescricao}
+              onChange={(e) => setGastoDescricao(e.target.value)}
+              style={{ ...inputStyle, flex: 1, minWidth: 160 }}
+            />
+            <button
+              data-testid="pm-gasto-button"
+              onClick={() => {
+                onSpendPm(Number.parseInt(gastoQtd, 10) || 0, gastoDescricao);
+                setGastoQtd("0");
+                setGastoDescricao("");
+              }}
+              style={buttonStyle}
+            >
+              Registrar gasto manual
+            </button>
+          </div>
+          <p style={{ fontSize: 11, opacity: 0.6, marginBottom: 6 }}>
+            Histórico de evolução ({historicoEvolucao.length}) — inclui PM ganho/gasto e ajustes
+            permanentes de atributo/perícia feitos em Modo Evolução.
+          </p>
+          <div data-testid="historico-evolucao-lista" style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 200, overflowY: "auto" }}>
+            {historicoEvolucao.length === 0 && (
+              <span style={{ fontSize: 12, opacity: 0.5 }}>Nenhum evento de evolução ainda.</span>
+            )}
+            {[...historicoEvolucao].reverse().map((h) => (
+              <div
+                key={h.id}
+                data-testid="historico-evolucao-item"
+                style={{ fontSize: 11, opacity: 0.8, background: "#1d1e24", borderRadius: 6, padding: "6px 8px" }}
+              >
+                <strong>{h.tipo === "ganho" ? "Ganho" : h.tipo === "gasto" ? "Gasto" : "Ajuste"}</strong>
+                {h.tipo !== "ajuste" ? ` ${h.quantidade} PM` : ""}
+                {h.campoAfetado ? ` — ${h.campoAfetado}: ${h.antes} → ${h.depois}` : ""} — {h.descricao}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <input
         value={nome}
