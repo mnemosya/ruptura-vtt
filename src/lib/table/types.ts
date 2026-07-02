@@ -15,6 +15,10 @@ export interface Campaign {
   owner_id: string | null;
   created_at: string;
   updated_at: string;
+  /** Rodada atual (checkpoint v0.39, migration 0017) — contador simples, não é trilha de iniciativa real. */
+  current_round: number;
+  /** Cena atual (checkpoint v0.39, migration 0017). */
+  current_scene: number;
 }
 
 /** Visibilidade de uma entrada de log — hoje é só um campo de dados, sem filtro de RLS (ver migration). */

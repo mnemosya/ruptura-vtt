@@ -63,6 +63,9 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   collapse_advanced: "Colapso — Segmento Avançado",
   collapse_stabilized: "Colapso Estabilizado",
   collapse_ended: "Colapso Encerrado",
+  round_ended: "Rodada Encerrada",
+  scene_ended: "Cena Encerrada",
+  scene_rupture_pending: "Ruptura Pendente (Fim de Cena)",
 };
 
 function entryKindLabel(type: string): string {
@@ -78,6 +81,7 @@ function entryIcon(type: string): string {
   if (type === "rest_short" || type === "rest_long") return "💤";
   if (type === "overload_surge" || type === "overload_will_roll") return "⚡";
   if (type.startsWith("collapse_")) return "💀";
+  if (type === "round_ended" || type === "scene_ended" || type === "scene_rupture_pending") return "🎬";
   return "•";
 }
 
@@ -88,6 +92,7 @@ function entryBorderColor(type: string): string {
   if (type === "rest_short" || type === "rest_long") return "#5ec8ff";
   if (type === "overload_surge" || type === "overload_will_roll") return "#c0392b";
   if (type.startsWith("collapse_")) return "#8e44ad";
+  if (type === "round_ended" || type === "scene_ended" || type === "scene_rupture_pending") return "#9b8cff";
   return "#ffb84f";
 }
 
@@ -143,6 +148,31 @@ function formatCollapse(payload: Record<string, unknown>): string {
   const segmentos = typeof payload.segmentos === "number" ? ` — segmento ${payload.segmentos}/3` : "";
   const motivo = typeof payload.motivo === "string" ? ` (${payload.motivo})` : "";
   return `${characterNome}: ${tipo}${segmentos}${motivo}`;
+}
+
+/** Checkpoint v0.39: cartões de round_ended/scene_ended/scene_rupture_pending. */
+function formatRoundOrScene(type: string, payload: Record<string, unknown>): string {
+  if (type === "round_ended") {
+    const prev = typeof payload.previousRound === "number" ? payload.previousRound : "?";
+    const next = typeof payload.newRound === "number" ? payload.newRound : "?";
+    const atencao = Array.isArray(payload.attentionSummary)
+      ? payload.attentionSummary.filter((n): n is string => typeof n === "string")
+      : [];
+    const aviso = atencao.length > 0 ? ` — atenção: ${atencao.join(", ")}` : "";
+    return `Rodada ${prev} → ${next}${aviso}`;
+  }
+  if (type === "scene_ended") {
+    const prev = typeof payload.previousScene === "number" ? payload.previousScene : "?";
+    const next = typeof payload.newScene === "number" ? payload.newScene : "?";
+    return `Cena ${prev} → ${next}`;
+  }
+  if (type === "scene_rupture_pending") {
+    const nomes = Array.isArray(payload.characterNames)
+      ? payload.characterNames.filter((n): n is string => typeof n === "string")
+      : [];
+    return `Ruptura pendente para: ${nomes.join(", ") || "(nenhum)"}`;
+  }
+  return JSON.stringify(payload);
 }
 
 /** Texto da mensagem de chat — aceita `text` (ficha, v0.12) ou `mensagem` (formato antigo do /dev/table). */
@@ -436,7 +466,9 @@ export function MesaTab({
                             ? formatOverloadWillRoll(entry.payload)
                             : entry.type.startsWith("collapse_")
                               ? formatCollapse(entry.payload)
-                              : JSON.stringify(entry.payload)}
+                              : entry.type === "round_ended" || entry.type === "scene_ended" || entry.type === "scene_rupture_pending"
+                                ? formatRoundOrScene(entry.type, entry.payload)
+                                : JSON.stringify(entry.payload)}
             </span>
           </div>
         ))}

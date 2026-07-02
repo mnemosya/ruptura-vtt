@@ -303,6 +303,105 @@ export async function getCampaign(id: string): Promise<Campaign | null> {
   return (data as Campaign | null) ?? null;
 }
 
+/**
+ * "Encerrar rodada" (checkpoint v0.39, PRD seção 5) — incrementa
+ * `campaigns.current_round` e registra `table_logs.type="round_ended"`.
+ * NÃO resolve dano recorrente/fim de rodada automaticamente — o
+ * `attentionSummary` (nomes/estados que precisam de atenção manual do
+ * narrador) é opcional, calculado pelo chamador a partir dos
+ * personagens da mesa (fora do escopo deste módulo, que só conhece
+ * `campaigns`/`table_logs`).
+ */
+export async function endRound(campaignId: string, attentionSummary?: string[]): Promise<Campaign> {
+  const client = await getScopedTableClient();
+  const { data: campaignData, error: fetchError } = await client
+    .from(CAMPAIGNS_TABLE)
+    .select()
+    .eq("id", campaignId)
+    .single();
+  if (fetchError) {
+    throw new TableStorageError(`Falha ao buscar mesa "${campaignId}" para encerrar rodada: ${fetchError.message}`, fetchError);
+  }
+  const previousRound = (campaignData as Campaign).current_round;
+  const newRound = previousRound + 1;
+
+  const { data, error } = await client
+    .from(CAMPAIGNS_TABLE)
+    .update({ current_round: newRound })
+    .eq("id", campaignId)
+    .select()
+    .single();
+  if (error) {
+    throw new TableStorageError(`Falha ao encerrar rodada da mesa "${campaignId}": ${error.message}`, error);
+  }
+
+  try {
+    await client.from(TABLE_LOGS_TABLE).insert({
+      campaign_id: campaignId,
+      type: "round_ended",
+      visibility: "public",
+      payload: { previousRound, newRound, attentionSummary: attentionSummary ?? [], source: "mesa_dashboard" },
+    });
+  } catch {
+    // Best-effort — a rodada já avançou; falha no log não deve travar o narrador.
+  }
+
+  return data as Campaign;
+}
+
+/**
+ * "Encerrar cena" (checkpoint v0.39, PRD seção 5) — incrementa
+ * `campaigns.current_scene` e registra `table_logs.type="scene_ended"`.
+ * Se `rupturaPendingCharacterNames` vier não-vazio, registra também
+ * `type="scene_rupture_pending"` — só o aviso; NÃO resolve Marca/Traço
+ * nem remove `ruptura_pendente` (isso é trabalho de um checkpoint
+ * futuro de resolução de Ruptura).
+ */
+export async function endScene(campaignId: string, rupturaPendingCharacterNames: string[] = []): Promise<Campaign> {
+  const client = await getScopedTableClient();
+  const { data: campaignData, error: fetchError } = await client
+    .from(CAMPAIGNS_TABLE)
+    .select()
+    .eq("id", campaignId)
+    .single();
+  if (fetchError) {
+    throw new TableStorageError(`Falha ao buscar mesa "${campaignId}" para encerrar cena: ${fetchError.message}`, fetchError);
+  }
+  const previousScene = (campaignData as Campaign).current_scene;
+  const newScene = previousScene + 1;
+
+  const { data, error } = await client
+    .from(CAMPAIGNS_TABLE)
+    .update({ current_scene: newScene })
+    .eq("id", campaignId)
+    .select()
+    .single();
+  if (error) {
+    throw new TableStorageError(`Falha ao encerrar cena da mesa "${campaignId}": ${error.message}`, error);
+  }
+
+  try {
+    await client.from(TABLE_LOGS_TABLE).insert({
+      campaign_id: campaignId,
+      type: "scene_ended",
+      visibility: "public",
+      payload: { previousScene, newScene, source: "mesa_dashboard" },
+    });
+    if (rupturaPendingCharacterNames.length > 0) {
+      await client.from(TABLE_LOGS_TABLE).insert({
+        campaign_id: campaignId,
+        type: "scene_rupture_pending",
+        visibility: "public",
+        payload: { characterNames: rupturaPendingCharacterNames, source: "mesa_dashboard" },
+      });
+    }
+  } catch {
+    // Best-effort — a cena já avançou; falha no log não deve travar o narrador.
+  }
+
+  return data as Campaign;
+}
+
 export interface AddLogParams {
   campaignId: string;
   characterId?: string;

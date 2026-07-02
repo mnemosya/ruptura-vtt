@@ -6466,3 +6466,142 @@ nunca salvo durante o teste) — sem necessidade de limpeza via SQL.
   PRD descreve na íntegra.
 - Colapso duplo (PV e PE simultâneos) não é suportado — só gera um
   warning, sem modelar dois colapsos em paralelo.
+
+# Checkpoint v0.39 — Gatilhos mínimos de rodada e cena
+
+## 1. Auditoria (antes de alterar)
+
+`git status --short` limpo. `campaigns` (migration 0003) é tabela
+relacional simples, sem coluna JSONB de payload livre — diferente de
+`characters.payload`. `listCharactersForCampaign`/
+`listCharactersForNarratorCampaign` (`character/storage.ts`) já
+existiam e já eram carregados na página `/mesas/[campaignId]`
+(`page.tsx`), dando acesso direto aos personagens da mesa sem nova
+consulta. `MesaDetailClient.tsx` (dashboard do narrador) já tinha o
+padrão de handlers `async function handleX() { ... setError ... }`
+reaproveitado para os dois novos botões. `MesaTab.tsx` (aba Mesa da
+ficha) já tinha os formatadores de todos os `table_logs.type`
+anteriores — só faltava adicionar mais três.
+
+## 2. Migration `0017_campaign_round_scene.sql` (aditiva)
+
+```sql
+alter table campaigns
+  add column if not exists current_round integer not null default 1,
+  add column if not exists current_scene integer not null default 1;
+```
+
+Decisão de "menor risco" (pedida no checkpoint): como `campaigns` não
+tem payload JSONB, e derivar a rodada contando `table_logs` seria
+frágil (convites revogados, filtros de visibilidade), duas colunas
+inteiras aditivas com default seguro é a opção mais simples — não
+afeta nenhuma linha existente, sem RLS nova. Aplicada via
+`npx tsx scripts/dev/apply-migration-generic.ts 0017_campaign_round_scene.sql`,
+confirmada via `information_schema.columns`.
+
+## 3. Modelo
+
+`Campaign.current_round: number` e `Campaign.current_scene: number` —
+sempre presentes (não opcionais: toda linha de `campaigns` já tem os
+defaults do banco). Sem trilha de iniciativa, sem estrutura
+PJ/PN — só os dois contadores pedidos.
+
+## 4. Funções em `src/lib/table/storage.ts`
+
+- `endRound(campaignId, attentionSummary?)` — incrementa
+  `current_round`, grava `table_logs.type="round_ended"` (payload:
+  `previousRound`, `newRound`, `attentionSummary`, `source`).
+- `endScene(campaignId, rupturaPendingCharacterNames?)` — incrementa
+  `current_scene`, grava `type="scene_ended"`; se a lista de nomes com
+  Ruptura pendente vier não-vazia, grava também
+  `type="scene_rupture_pending"` (payload: `characterNames`, `source`).
+
+Nenhuma das duas resolve dano recorrente ou Ruptura — só incrementam o
+contador e registram o aviso, exatamente como pedido.
+
+## 5. Resumo de "estados que precisam atenção"
+
+Calculado no cliente (`MesaDetailClient.tsx`,
+`personagensComAtencaoFimDeRodada()`), a partir dos personagens já
+carregados da mesa (`personagensDaMesa`, via
+`listCharactersForNarratorCampaign`): para cada um, verifica se há
+condição ativa cujo `conditionId` esteja no mesmo piso fixo do v0.35
+(`queimando`, `sangrando`, `envenenado`, `insaturado`, `saturado`) ou
+`payload.colapso?.ativo === true`. Devolve só uma lista de nomes — "o
+resumo pode ser só log público/lista", como o pedido antecipava.
+Ruptura pendente (para "Encerrar cena") usa o mesmo padrão, filtrando
+`payload.ruptura_pendente === true`.
+
+## 6. UI
+
+Nova seção "Rodada e cena" em `/mesas/[campaignId]`
+(`MesaDetailClient.tsx`), logo abaixo do cabeçalho da mesa: mostra
+`Rodada N` / `Cena N` e os dois botões. Estado local
+`campaignState` reflete o `Campaign` atualizado devolvido por
+`endRound`/`endScene`, sem precisar recarregar a página inteira.
+
+## 7. Logs criados
+
+**`table_logs`**: `round_ended`, `scene_ended`, `scene_rupture_pending`
+— `visibility="public"`, gravação best-effort (o contador já avançou
+mesmo se o log falhar). `MesaTab.tsx` (aba Mesa da ficha, usada em
+`/ficha`/`/dev/character-sheet`) ganhou `formatRoundOrScene()` +
+rótulos/ícone (🎬)/cor (roxo claro) próprios para os 3 tipos.
+
+## 8. Arquivos alterados
+
+- `supabase/migrations/0017_campaign_round_scene.sql` (novo, aplicado).
+- `src/lib/table/types.ts` — `current_round`/`current_scene` em
+  `Campaign`.
+- `src/lib/table/storage.ts` — `endRound`/`endScene`.
+- `src/app/mesas/[campaignId]/MesaDetailClient.tsx` — seção "Rodada e
+  cena", handlers, resumo de atenção.
+- `src/app/dev/character-sheet/components/MesaTab.tsx` — formatação
+  dos 3 novos `type`.
+
+## 9. Build e testes
+
+```
+$ npx tsc --noEmit -p tsconfig.json → limpo na primeira tentativa
+$ npm run build → ✓ compilado, rotas inalteradas
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca do Sistema intacta
+```
+
+## 10. Teste manual
+
+Criada mesa "Mesa v0.39" com personagem vinculado → confirmado
+"RODADA E CENA" mostrando Rodada 1/Cena 1 → via SQL direto, aplicada
+condição "Sangrando" ativa e `ruptura_pendente:true` no personagem
+(simulando o que a UI de Condições já produz, testada exaustivamente
+nos checkpoints v0.32-v0.37) → clicado "Encerrar rodada" →
+**confirmado**: Rodada 1 → 2, log `round_ended` com
+`attentionSummary: ["Personagem v0.39"]` → clicado "Encerrar cena" →
+**confirmado**: Cena 1 → 2, logs `scene_ended` e
+`scene_rupture_pending` com `characterNames: ["Personagem v0.39"]` →
+verificado na aba Mesa de `/dev/character-sheet` (mesma mesa
+selecionada) que os 3 cartões aparecem formatados corretamente:
+"Rodada Encerrada" → "Rodada 1 → 2 — atenção: Personagem v0.39",
+"Cena Encerrada" → "Cena 1 → 2", "Ruptura Pendente (Fim de Cena)" →
+"Ruptura pendente para: Personagem v0.39" → `/dev/character-sheet`
+confirmado sem regressão ("Personagens salvos (3)" correto).
+
+Dados de teste removidos ao final via SQL direto — confirmado que
+restam só os 2 personagens e as 2 campanhas legadas esperadas.
+
+## 11. Pendências
+
+- Sem iniciativa rápida/lenta nem alternância PJ/PN — os contadores são
+  puramente manuais, sem nenhuma estrutura de turno real.
+- Dano recorrente de fim de rodada (Queimando/Sangrando/Envenenado/
+  Insaturado/Saturado) não é resolvido automaticamente — "Encerrar
+  rodada" só avisa quais personagens precisam de atenção manual.
+- Ruptura pendente de fim de cena não é resolvida (Marca/Traço) — só
+  avisada. Resolução de Ruptura continua para um checkpoint futuro.
+- "Encerrar turno" (o quarto gatilho do PRD seção 5, disparado pelo
+  jogador) não foi implementado — só os dois gatilhos do narrador
+  (rodada/cena) + descanso (já existente desde v0.36).
+- O resumo de atenção só cobre condições com `conditionId` vinculado à
+  Biblioteca — uma condição manual chamada "Sangrando" sem
+  `conditionId` (texto livre) não entra no resumo, mesma limitação já
+  documentada no v0.34 para a remoção automática por cura.

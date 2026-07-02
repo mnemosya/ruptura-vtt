@@ -14,6 +14,8 @@ import {
   listLogsForViewer,
   addLog,
   expireStaleProfileSessions,
+  endRound,
+  endScene,
 } from "../../../lib/table/storage";
 import { computeProfileStatus } from "../../../lib/table/profileStatus";
 import {
@@ -30,6 +32,14 @@ import {
 import { createInitialCharacter } from "../../../lib/character";
 import type { Campaign, CampaignProfile, CampaignInvite, ProfileSession, TableLogEntry } from "../../../lib/table";
 import type { CharacterRecord } from "../../../lib/character";
+
+/**
+ * Slugs de condição com gatilho de fim de rodada (checkpoint v0.39,
+ * PRD 9.2/10.5) — mesmo piso mínimo usado em `ActiveStateStrip`
+ * (v0.35), reaproveitado aqui só para o RESUMO de "Encerrar rodada"
+ * (texto/lista, sem resolver dano recorrente automaticamente).
+ */
+const FIM_DE_RODADA_SLUGS = new Set(["queimando", "sangrando", "envenenado", "insaturado", "saturado"]);
 
 const btn: React.CSSProperties = { background: "#1d1e24", color: "inherit", border: "1px solid #333", borderRadius: 6, padding: "6px 12px", fontSize: 13, cursor: "pointer" };
 const input: React.CSSProperties = { background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "6px 8px", fontSize: 13 };
@@ -57,6 +67,7 @@ export default function MesaDetailClient({
   personagensDaMesaIniciais,
   personagensDisponiveisIniciais,
 }: Props) {
+  const [campaignState, setCampaignState] = useState(campaign);
   const [perfis, setPerfis] = useState(perfisIniciais);
   const [convites, setConvites] = useState(convitesIniciais);
   const [sessoes, setSessoes] = useState(sessoesIniciais);
@@ -91,6 +102,48 @@ export default function MesaDetailClient({
       setPersonagensDaMesa(await listCharactersForNarratorCampaign(campaign.id));
       setPersonagensDisponiveis(await listUnassignedCharactersForNarrator());
     } catch (e) { fail(e, "Erro ao recarregar personagens."); }
+  }
+
+  /**
+   * Nomes de personagens com estado de fim de rodada pendente
+   * (checkpoint v0.39) — só um resumo textual para o narrador revisar
+   * manualmente; nenhum dano/teste é resolvido automaticamente aqui.
+   */
+  function personagensComAtencaoFimDeRodada(): string[] {
+    return personagensDaMesa
+      .filter((c) => {
+        const condicoes = c.payload.condicoes_ativas ?? [];
+        const temFimDeRodada = condicoes.some((cond) => cond.ativa && cond.conditionId && FIM_DE_RODADA_SLUGS.has(cond.conditionId));
+        const colapsoAtivo = c.payload.colapso?.ativo === true;
+        return temFimDeRodada || colapsoAtivo;
+      })
+      .map((c) => c.name);
+  }
+
+  /** Botão "Encerrar rodada" (checkpoint v0.39, PRD seção 5) — só incrementa e loga; não resolve dano recorrente. */
+  async function handleEndRound() {
+    setError(null);
+    try {
+      const atencao = personagensComAtencaoFimDeRodada();
+      const updated = await endRound(campaign.id, atencao);
+      setCampaignState(updated);
+      await reloadLogs();
+    } catch (e) {
+      fail(e, "Erro ao encerrar rodada.");
+    }
+  }
+
+  /** Botão "Encerrar cena" (checkpoint v0.39, PRD seção 5) — só incrementa, loga, e avisa sobre Ruptura pendente; não resolve Marca/Traço. */
+  async function handleEndScene() {
+    setError(null);
+    try {
+      const comRupturaPendente = personagensDaMesa.filter((c) => c.payload.ruptura_pendente === true).map((c) => c.name);
+      const updated = await endScene(campaign.id, comRupturaPendente);
+      setCampaignState(updated);
+      await reloadLogs();
+    } catch (e) {
+      fail(e, "Erro ao encerrar cena.");
+    }
   }
 
   /**
@@ -249,6 +302,31 @@ export default function MesaDetailClient({
       <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 24, fontFamily: "monospace" }}>{campaign.id}</p>
 
       {error && <p style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 16 }}>Erro: {error}</p>}
+
+      {/* Gatilhos mínimos de rodada/cena (checkpoint v0.39) */}
+      <section style={{ marginBottom: 32 }}>
+        <h2 style={h2}>Rodada e cena</h2>
+        <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
+          Contadores simples — sem trilha de iniciativa, sem alternância PJ/PN, sem resolução
+          automática de dano recorrente/Ruptura. "Encerrar rodada" só avisa quais personagens têm
+          estado de fim de rodada pendente (Queimando/Sangrando/Envenenado/Insaturado/Saturado/Colapso);
+          "Encerrar cena" só avisa sobre Ruptura pendente.
+        </p>
+        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <span data-testid="det-rodada-atual" style={{ fontSize: 13 }}>
+            Rodada <strong>{campaignState.current_round}</strong>
+          </span>
+          <button data-testid="det-encerrar-rodada" onClick={handleEndRound} style={btn}>
+            Encerrar rodada
+          </button>
+          <span data-testid="det-cena-atual" style={{ fontSize: 13 }}>
+            Cena <strong>{campaignState.current_scene}</strong>
+          </span>
+          <button data-testid="det-encerrar-cena" onClick={handleEndScene} style={btn}>
+            Encerrar cena
+          </button>
+        </div>
+      </section>
 
       {/* Personagens da mesa (checkpoint v0.23; ciclo de vida v0.25) */}
       <section style={{ marginBottom: 32 }}>
