@@ -7601,3 +7601,282 @@ ações defensivas, isolamento de PA/Livre e campos do resultado.
   Supabase em ambiente com acesso local liberado.
 - Ataque contestado, dano, alvo, equipamento defensivo e requisitos de
   Aparar/Bloquear continuam fora deste checkpoint.
+
+# Checkpoint v0.44 — Fim de rodada real para condições data-driven
+
+## 1. Commits de base considerados
+
+- v0.42 — Console de ação básico data-driven (`f70423c`, hardening `44bd953`).
+- v0.43 — Reações defensivas e defesa sem Reação (`5429e6b`).
+- Nenhum dos dois foi reimplementado — só consumidos como estão
+  (`buildActionConsoleItems`/`executeActionOnCharacter`/`reactions.ts`
+  continuam intactos).
+
+## 2. Fontes de verdade usadas
+
+- `content_conditions`/C2 (`db_condicoes_normalizado_v1_5.json`): lido
+  via `listConditions()` (já existente, `src/lib/content/queries.ts`)
+  em `CharacterSheetView.tsx`, normalizado por
+  `normalizeConditionContent` (novo, `endRoundConditions.ts`) preservando
+  o payload inteiro (`payload_automacao`, `remove_por`, etc.) — nenhum
+  campo relevante achatado ou descartado.
+- `content_combat_flow`/C5 (`db_fluxo_combate_normalizado_v1_1.json`):
+  já lido via `getCombatFlow()`/`normalizeReactionRules` (v0.43) para
+  validar `rodada.renova_pa_em`/`renova_reacoes_em` = `"inicio_da_rodada"`
+  — confirmado no teste automatizado (`test:end-round-conditions`)
+  antes de qualquer asserção de efeito de condição.
+- `content_tables_mestre` não trouxe nada adicional relevante a este
+  checkpoint (nenhuma tabela de dano/CD específica de condição).
+- Nenhuma condição foi hardcoded como fonte primária: o código só
+  interpreta os NOMES dos tipos de efeito
+  (`dano_fim_de_rodada`, `teste_fim_de_rodada`,
+  `teste_fim_de_rodada_para_remover_condicao`, `teste_apos_exposicao`,
+  `reduzir_pa`) — os DADOS (fórmula, CD, perícia, condição a aplicar/
+  remover) vêm sempre do payload de `content_conditions`.
+
+## 3. Tipos de efeito interpretados
+
+Implementados neste checkpoint (`src/lib/character/endRoundConditions.ts`):
+
+1. `dano_fim_de_rodada` — rola a fórmula (`rollConditionFormula`, RNG
+   injetável), subtrai de PV, aciona `detectCollapseOnResourceChange`
+   (v0.38) se PV chegar a 0. Nunca aplica MIT/PD/armadura/escudo, nunca
+   pede alvo.
+2. `teste_fim_de_rodada` — cria `ConditionResistanceCheck` pendente
+   (perícia/CD/consequência de falha do próprio payload); nunca rola
+   sozinho.
+3. `teste_fim_de_rodada_para_remover_condicao` — só cria pendência se a
+   condição referenciada (`efeito.condicao`) estiver ativa no MESMO
+   personagem; sucesso remove-a, falha mantém.
+4. `teste_apos_exposicao` — respeita `apos_rodadas` (conta rodadas
+   desde a primeira observação da condição ativa) e `cadencia: "cena"`
+   (uma pendência por cena, por condição, por efeito — guard via
+   `hasExposureCheckAlreadyHappenedThisScene`/`markExposureCheckCreated`
+   e `condition_effect_history`). Falha aplica `falha.aplicar_condicao`
+   preservando `falha.duracao` textual.
+5. `reduzir_pa` (`escopo: "rodada"`) — aplicado DEPOIS da renovação de
+   PA da rodada nova (`applyRoundScopedPaReductions`), clampado para
+   nunca deixar o PA final negativo.
+6. `remover_ao_recuperar_pv` — **não reimplementado**: já existe em
+   `autoHeal.ts` (v0.34, `AUTO_HEAL_REMOVABLE_CONDITION_SLUGS` inclui
+   Sangrando/Contundido/Envenenado) e continua funcionando sem
+   alteração — confirmado no teste manual (Sangrando removido ao curar
+   1+ PV via o fluxo já existente).
+
+Deixados como pendência, sem gerar dano/efeito nem pendência
+(silenciosamente ignorados pelo motor, listados no `pendingEffects` do
+Console de Ação quando relevante, nunca simulados): `aplicar_condicao_apos_tempo`,
+`morte_apos_tempo` (Sufocando), `alterar_custo_mana`, `exigir_teste_conjuracao`,
+`modificador` ligado a conjuração (Saturado/Insaturado) — sem motor de
+magia ainda.
+
+## 4. Condições validadas
+
+- **Queimando**: 1d6 ígneo automático no fim da rodada; continua ativa
+  (Apagar fogo, v0.42, continua sendo a única forma de removê-la).
+  Testado no preview: PV 11 → 5 (rolagem real de 6).
+- **Sangrando**: 1d6 físico automático, sem teste, sem sucesso/metade;
+  só sai ao curar 1+ PV (autoHeal.ts). Validado no script automatizado
+  (`test:end-round-conditions`, cenário 2).
+- **Envenenado**: reduz 1 PA no escopo da rodada (testado no preview:
+  PA 3/3 → 1/3 usado após renovar + reduzir) e cria teste Vigor CD 7 no
+  fim da rodada; falha aplicou 1d4 tóxico (testado no preview,
+  acionando Colapso quando PV chegou a 0); sucesso não remove
+  Envenenado (script automatizado, cenário 4). Cura de 1+ PV remove
+  (autoHeal.ts, não retestado manualmente — já coberto por v0.34).
+- **Saturado**: cria teste de remover Envenenado só quando Envenenado
+  está ativo (cenário 5); não cria quando Envenenado ausente (cenário
+  6); exposição de 1 rodada cria teste Vigor CD 7 uma vez por cena,
+  falha aplica Envenenado (cenário 7).
+- **Insaturado**: mesma exposição de 1 rodada/uma vez por cena; falha
+  aplica Lento com duração textual `"ate_sair_da_area"` preservada do
+  payload (cenário 8). Efeitos de conjuração/mana ficam pendência (sem
+  motor de magia).
+- **Sufocando**: nenhuma automação implementada (cronômetro em
+  minutos, morte, Inconsciente após tempo) — documentado como
+  pendência explícita, conforme pedido.
+
+## 5. Ordem operacional de "Encerrar Rodada"
+
+A arquitetura atual tem DOIS botões "Encerrar Rodada" que não estavam
+ligados entre si:
+- **Mesa** (`MesaDetailClient.tsx`, v0.39): incrementa
+  `campaigns.current_round` e só lista nomes de personagens com estado
+  de fim de rodada pendente (aviso textual) — não resolve nada por
+  personagem, não muta `characters.payload`.
+- **Ficha** (`CharacterSheetClient.tsx`): PA/Reações eram resetados por
+  botões MANUAIS separados (`Resetar PA` / `Resetar reações`,
+  independentes), sem noção de "rodada" nem de condições.
+
+Este checkpoint **preservou o botão da Mesa como está** (documentado
+como pendência abaixo — os dois não foram ligados automaticamente,
+por ser refator de arquitetura maior que o escopo permite) e criou um
+novo botão único **"Encerrar Rodada" na aba Recursos da ficha**
+(`ResourcesTab.tsx`, ao lado dos contadores de Turno), operando sobre
+uma rodada LOCAL do próprio personagem (`Character.current_round`,
+novo campo, default 1) — é este botão que agora resolve tudo, na
+ordem pedida:
+
+1. `resolveEndRoundConditionsForCharacter` — dano/testes/exposição da
+   rodada que está terminando.
+2. `pa_gastos = 0` (renova PA) + `resetRoundReactionState` (renova
+   Reações e zera penalidade de defesa sem Reação, v0.43).
+3. `applyRoundScopedPaReductions` — Envenenado reduz PA já na rodada
+   nova.
+4. `current_round += 1`.
+
+## 6. Dano de condição
+
+`applyConditionEndRoundDamage` rola a fórmula (`rollConditionFormula`,
+parser estrito `NdM`, RNG injetável para testes determinísticos),
+subtrai de PV, chama `detectCollapseOnResourceChange` (v0.38, sem
+alteração) e devolve antes/depois de PV + aviso se Colapso iniciar.
+Nunca aplica MIT/PD/armadura/escudo, nunca pede alvo — confirmado
+manualmente (Queimando/Envenenado no preview) e no script automatizado
+(cenário 10 — dano reduzindo PV a 0 aciona Colapso PV existente).
+
+## 7. Pendências de teste (UI)
+
+Novo componente `PendingConditionChecks.tsx`, renderizado no topo da
+aba Condições (`ConditionsTab.tsx`) — mostra condição, origem (Fim de
+rodada / Fim de rodada — remover condição / Exposição), perícia, CD,
+consequência de falha, e botões "Marcar sucesso"/"Marcar falha". Nunca
+rola automaticamente; a resolução chama `resolveConditionResistanceCheck`
+(pura), que decide dano/aplicar condição/remover condição conforme
+`effectType` e `outcome`. Testado manualmente no preview (Envenenado →
+falha → dano tóxico → Colapso).
+
+## 8. Redução de PA por condição (Envenenado)
+
+`applyRoundScopedPaReductions` soma todos os efeitos `reduzir_pa` com
+`escopo: "rodada"` das condições ativas, aplica DEPOIS do reset de PA
+da rodada nova, e clampa a redução ao PA disponível (nunca negativo).
+Testado no preview: PA 3/3 renovado → 1 PA gasto por Envenenado → PA
+final 1/3 (2 restantes).
+
+## 9. Idempotência
+
+Chave única por `characterId` (implícito — o histórico vive dentro do
+próprio personagem), `conditionId`, `effectType`, `round`/`scene`/
+índice do efeito (`getEndRoundEffectKey`), guardada em
+`Character.condition_effect_history` (novo campo, nunca apagado).
+Antes de aplicar dano ou criar pendência, o motor verifica se a chave
+já existe — se sim, não aplica/cria de novo. Testado no script
+automatizado (cenário 9: processar a mesma rodada duas vezes não
+duplica dano nem pendência).
+
+## 10. Logs
+
+Local (`LogTab.tsx`): novo tipo `"rodada"` (cor/label próprios) para o
+resumo de "Encerrar Rodada"; pendências resolvidas continuam
+registradas como `"condicao"`.
+
+`table_logs` (novos `type`, todos com formatação dedicada em
+`MesaTab.tsx` — nunca JSON cru):
+- `condition_end_round_damage` ("Dano de Condição").
+- `condition_end_round_check_created` ("Teste de Condição Pendente").
+- `condition_end_round_check_resolved` ("Teste de Condição Resolvido").
+- `round_pa_reduced_by_condition` ("PA Reduzido por Condição").
+- `condition_applied`/`condition_removed` (reaproveitados de v0.32,
+  agora também emitidos com `source: "end_round_condition_check"` e
+  `sourceConditionId` — ganharam formatação dedicada nesta checkpoint,
+  que antes caíam em `JSON.stringify` bruto).
+
+## 11. Arquivos alterados
+
+- `src/lib/character/endRoundConditions.ts` (novo) — motor puro:
+  `normalizeConditionContent`, `getConditionEndRoundEffects`,
+  `getActiveConditionIds`, `getEndRoundEffectKey`,
+  `hasExposureCheckAlreadyHappenedThisScene`,
+  `markExposureCheckCreated`, `applyConditionEndRoundDamage`,
+  `buildConditionResistanceCheck`, `resolveEndRoundConditionsForCharacter`,
+  `resolveConditionResistanceCheck`, `applyRoundScopedPaReductions`.
+- `src/lib/character/types.ts` — `ConditionResistanceCheck`,
+  `ConditionEffectHistoryEntry`, `Character.pending_condition_checks`,
+  `Character.condition_effect_history`, `Character.current_round`,
+  `Character.current_scene`, `ActiveCondition.removidaOrigem` ganhou
+  `"end_round_condition_check"`.
+- `src/lib/character/normalizeCharacter.ts` — defaults retrocompatíveis
+  dos 4 campos novos (payload antigo sem eles vira `[]`/`{}`/`1`).
+- `src/lib/character/index.ts` — export do novo módulo.
+- `src/app/dev/character-sheet/components/PendingConditionChecks.tsx`
+  (novo) — UI de pendências.
+- `src/app/dev/character-sheet/components/ConditionsTab.tsx` — renderiza
+  `PendingConditionChecks`, novas props `pendingChecks`/`onResolveCheck`.
+- `src/app/dev/character-sheet/components/ResourcesTab.tsx` — nova
+  seção "Rodada" com o botão "Encerrar Rodada" e resumo textual.
+- `src/app/dev/character-sheet/components/LogTab.tsx` — novo tipo
+  `"rodada"`.
+- `src/app/dev/character-sheet/components/MesaTab.tsx` — 6 novas
+  funções de formatação (`condition_end_round_*`,
+  `round_pa_reduced_by_condition`, `condition_applied`/`condition_removed`).
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — prop
+  `conditionContents`, estado `endRoundSummary`,
+  `handleEndRoundForCharacter`, `handleResolveConditionCheck`, wiring
+  de `ResourcesTab`/`ConditionsTab`.
+- `src/app/CharacterSheetView.tsx` — reaproveita `listConditions()`
+  (já buscado) para também montar `conditionContents` — nenhuma
+  consulta nova ao banco.
+- `scripts/test-end-round-conditions.ts` (novo) — 11 cenários.
+- `package.json` — script `test:end-round-conditions`.
+
+## 12. Testes executados
+
+- `npx tsc --noEmit -p tsconfig.json`: sem erros.
+- `npm run build`: sucesso, todas as rotas presentes.
+- `npm run test:action-console`: passou (sem regressão v0.42).
+- `npm run test:reactions`: passou (sem regressão v0.43).
+- `npm run test:end-round-conditions`: passou — 11 cenários (Queimando,
+  Sangrando, Envenenado-PA, Envenenado-teste, Saturado+Envenenado,
+  Saturado sem Envenenado, Saturado-exposição, Insaturado-exposição,
+  idempotência, Colapso, regressão v0.43).
+- `npm run test:character-storage`: passou.
+- `npm run test:content-read`: passou.
+- Teste manual no preview (`/dev/character-sheet`): aplicado Queimando
+  → Encerrar Rodada → PV 11→5 (rolagem real de 6), Queimando continuou
+  ativo, log local e resumo corretos; aplicado Envenenado → Encerrar
+  Rodada → PA renovado e reduzido a 1/3, pendência Vigor CD 7 criada;
+  marcada Falha → dano tóxico aplicado, Colapso (PV) iniciado
+  automaticamente (segmentos 0/3 confirmados na aba Recursos); sem
+  erros no console do navegador; `/mesas` carregado sem regressão.
+  Cenários de Agarrado/Imobilizado/Saturado/Insaturado no preview
+  (além dos já cobertos no script automatizado) não foram clicados
+  manualmente um a um — cobertos pelos 11 cenários automatizados que
+  exercitam a mesma função pura.
+
+## 13. Limitações
+
+- A rodada da ficha (`Character.current_round`) e a rodada da mesa
+  (`campaigns.current_round`, v0.39) continuam desligadas uma da
+  outra — "Encerrar rodada" no dashboard da mesa não dispara a
+  resolução de condições da ficha, e vice-versa. Ligar as duas exigiria
+  o dashboard iterar todos os personagens da mesa e persistir cada um
+  (Server Action nova), o que é refator de arquitetura maior que o
+  escopo deste checkpoint permite — documentado aqui em vez de
+  implementado às pressas.
+- `Character.current_scene` nunca avança automaticamente neste
+  checkpoint (fica sempre 1) — não há gatilho de "encerrar cena" ligado
+  à ficha ainda, só ao dashboard da mesa (v0.39, que também não persiste
+  no personagem). Isso significa que a cadência "uma vez por cena" de
+  `teste_apos_exposicao` hoje é, na prática, "uma vez enquanto a ficha
+  não tiver uma cena nova reconhecida" — correto pela definição atual
+  de cena=1 fixo, mas preso à mesma limitação acima.
+- Sem preview/modal antes de aplicar "Encerrar Rodada" (pedido como
+  opcional se fosse simples) — os efeitos são aplicados direto, com
+  logs claros depois (resumo na aba Recursos + Log local).
+- Nenhuma integração com rolagem automática de teste de resistência —
+  a decisão de sucesso/falha é sempre manual (por design do
+  checkpoint), sem ponte com a aba Rolagens.
+
+## 14. Pendências futuras
+
+- Ligar rodada/cena da ficha à rodada/cena da mesa (arquitetura maior).
+- Sufocando: cronômetro em minutos, Inconsciente após 3min, morte após
+  5min — nenhuma automação implementada.
+- `alterar_custo_mana`, `exigir_teste_conjuracao`, modificadores de
+  conjuração de Saturado/Insaturado — dependem de um motor de magia
+  que ainda não existe.
+- `aplicar_condicao_apos_tempo`/`morte_apos_tempo` genéricos (fora de
+  Sufocando, se algum dia usados por outra condição) — mesmo padrão de
+  pendência.
+- Preview/modal de "Encerrar Rodada" antes de aplicar.

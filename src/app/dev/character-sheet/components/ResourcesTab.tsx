@@ -57,6 +57,9 @@ export function ResourcesTab({
   onStabilizeCollapse,
   onAdvanceCollapseSegment,
   onRollCollapseTest,
+  currentRound,
+  onEndRound,
+  endRoundSummary,
 }: {
   regras: CharacterRulesPayload | null;
   derivados: DerivedStats;
@@ -86,6 +89,10 @@ export function ResourcesTab({
   onStabilizeCollapse: () => void;
   onAdvanceCollapseSegment: () => void;
   onRollCollapseTest: (atributoId: "corpo" | "mente") => void;
+  /** Checkpoint v0.44 — rodada LOCAL do personagem (não a rodada da mesa, ver pendência do relatório). */
+  currentRound: number;
+  onEndRound: () => void;
+  endRoundSummary: { logs: string[]; warnings: string[] } | null;
 }) {
   const [tipoSurto, setTipoSurto] = useState<string>(OVERLOAD_SURGE_TYPES[0]);
   const pvAtual = recursosAtuais?.pv ?? 0;
@@ -327,6 +334,40 @@ export function ResourcesTab({
           onDesfazerReacao={onDesfazerReacao}
           onResetarReacoes={onResetarReacoes}
         />
+      </Section>
+
+      <Section title="Rodada">
+        <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 8 }}>
+          "Encerrar Rodada" resolve dano/testes de fim de rodada das condições ativas (Queimando,
+          Sangrando, Envenenado, Saturado, Insaturado — checkpoint v0.44), depois renova PA/Reações e
+          aplica redução de PA por condição (Envenenado). Rodada local desta ficha — não é a rodada
+          da mesa (ver aba Mesa, "Encerrar rodada" do narrador, ainda não ligados automaticamente).
+        </p>
+        <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12 }}>
+          <span data-testid="ficha-rodada-atual" style={{ fontSize: 13 }}>
+            Rodada <strong>{currentRound}</strong>
+          </span>
+          <button data-testid="ficha-encerrar-rodada" onClick={onEndRound} style={buttonStyle}>
+            Encerrar Rodada
+          </button>
+        </div>
+        {endRoundSummary && (
+          <div data-testid="ficha-encerrar-rodada-resumo" style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
+            {endRoundSummary.logs.length === 0 && endRoundSummary.warnings.length === 0 && (
+              <p style={{ opacity: 0.6 }}>Nenhum efeito de condição resolvido nesta rodada.</p>
+            )}
+            {endRoundSummary.logs.map((line, i) => (
+              <p key={`log-${i}`} style={{ opacity: 0.8, margin: 0 }}>
+                {line}
+              </p>
+            ))}
+            {endRoundSummary.warnings.map((line, i) => (
+              <p key={`warn-${i}`} style={{ color: "#f5a623", margin: 0 }}>
+                ⚠ {line}
+              </p>
+            ))}
+          </div>
+        )}
       </Section>
     </>
   );

@@ -5,6 +5,8 @@ import type {
   CharacterGameState,
   CharacterMetadata,
   CharacterResources,
+  ConditionEffectHistoryEntry,
+  ConditionResistanceCheck,
   DerivedStats,
   EvolutionHistoryEntry,
 } from "./types";
@@ -109,6 +111,28 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     ? (raw.historico_evolucao as EvolutionHistoryEntry[])
     : [];
 
+  // pending_condition_checks/condition_effect_history/current_round/
+  // current_scene (checkpoint v0.44): mesmo critério dos demais campos
+  // operacionais — payload antigo sem eles vira array/objeto vazio e
+  // rodada/cena 1, nunca undefined (para o motor de fim de rodada
+  // sempre ter algo consistente para ler/comparar).
+  const pending_condition_checks: ConditionResistanceCheck[] = Array.isArray(raw.pending_condition_checks)
+    ? (raw.pending_condition_checks as ConditionResistanceCheck[])
+    : [];
+  const condition_effect_history: Record<string, ConditionEffectHistoryEntry> = isPlainObject(
+    raw.condition_effect_history,
+  )
+    ? (raw.condition_effect_history as Record<string, ConditionEffectHistoryEntry>)
+    : {};
+  const current_round =
+    typeof raw.current_round === "number" && Number.isFinite(raw.current_round) && raw.current_round >= 1
+      ? Math.trunc(raw.current_round)
+      : 1;
+  const current_scene =
+    typeof raw.current_scene === "number" && Number.isFinite(raw.current_scene) && raw.current_scene >= 1
+      ? Math.trunc(raw.current_scene)
+      : 1;
+
   return {
     ...raw,
     nome,
@@ -122,5 +146,9 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     pm_total,
     pm_disponivel,
     historico_evolucao,
+    pending_condition_checks,
+    condition_effect_history,
+    current_round,
+    current_scene,
   } as Character;
 }

@@ -19,8 +19,10 @@ import { listLegacyCharactersDev } from "../lib/character/storage";
 import { listCampaigns } from "../lib/table/storage";
 import {
   normalizeCombatActionContent,
+  normalizeConditionContent,
   normalizeReactionRules,
   type CombatActionContent,
+  type ConditionContent,
   type ReactionRules,
 } from "../lib/character";
 import type { CharacterRecord, CharacterRulesPayload } from "../lib/character";
@@ -83,6 +85,8 @@ export async function CharacterSheetView({
   let condicoesDisponiveis: ConditionOption[] = [];
   /** Slug + acoes_habilitadas de cada condição (checkpoint v0.42) — usado só para cruzar visibilidade condicional de ações, ver actionConsole.ts. */
   let condicoesParaAcoes: { slug: string; acoes_habilitadas?: { acao: string }[] }[] = [];
+  /** Conteúdo completo (payload_automacao) de cada condição publicada (checkpoint v0.44) — fonte única do motor de fim de rodada, ver endRoundConditions.ts. */
+  let conditionContents: ConditionContent[] = [];
   try {
     const docs = await listConditions();
     condicoesDisponiveis = docs.map((doc) => {
@@ -98,8 +102,9 @@ export async function CharacterSheetView({
       const payload = doc.payload as { acoes_habilitadas?: { acao: string }[] } | null;
       return { slug: doc.slug, acoes_habilitadas: payload?.acoes_habilitadas };
     });
+    conditionContents = docs.map((doc) => normalizeConditionContent(doc.payload as Record<string, unknown>));
   } catch {
-    // Biblioteca fora do ar — aba Condições continua funcional em modo manual.
+    // Biblioteca fora do ar — aba Condições continua funcional em modo manual; fim de rodada fica sem efeitos data-driven.
   }
 
   // Ações de combate publicadas na Biblioteca (checkpoint v0.42) — fonte
@@ -132,6 +137,7 @@ export async function CharacterSheetView({
       mesasIniciais={mesasIniciais}
       condicoesDisponiveis={condicoesDisponiveis}
       condicoesParaAcoes={condicoesParaAcoes}
+      conditionContents={conditionContents}
       combatActionsIniciais={combatActions}
       combatActionsError={combatActionsError}
       reactionRules={reactionRules}

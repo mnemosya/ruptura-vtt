@@ -69,6 +69,10 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   scene_rupture_pending: "Ruptura Pendente (Fim de Cena)",
   character_evolution: "Evolução",
   action_used: "Ação Usada",
+  condition_end_round_damage: "Dano de Condição",
+  condition_end_round_check_created: "Teste de Condição Pendente",
+  condition_end_round_check_resolved: "Teste de Condição Resolvido",
+  round_pa_reduced_by_condition: "PA Reduzido por Condição",
 };
 
 function entryKindLabel(type: string): string {
@@ -87,6 +91,9 @@ function entryIcon(type: string): string {
   if (type === "round_ended" || type === "scene_ended" || type === "scene_rupture_pending") return "🎬";
   if (type === "character_evolution") return "📈";
   if (type === "action_used") return "⚔";
+  if (type === "condition_end_round_damage") return "🩸";
+  if (type === "condition_end_round_check_created" || type === "condition_end_round_check_resolved") return "🎯";
+  if (type === "round_pa_reduced_by_condition") return "⚡";
   return "•";
 }
 
@@ -100,6 +107,9 @@ function entryBorderColor(type: string): string {
   if (type === "round_ended" || type === "scene_ended" || type === "scene_rupture_pending") return "#9b8cff";
   if (type === "character_evolution") return "#4caf50";
   if (type === "action_used") return "#ff9f6b";
+  if (type === "condition_end_round_damage") return "#c0392b";
+  if (type === "condition_end_round_check_created" || type === "condition_end_round_check_resolved") return "#f5a623";
+  if (type === "round_pa_reduced_by_condition") return "#f5a623";
   return "#ffb84f";
 }
 
@@ -215,6 +225,65 @@ function formatActionUsed(payload: Record<string, unknown>): string {
   if (removedConditions.length > 0) partes.push(`removeu ${removedConditions.join(", ")}`);
   if (pendingEffects.length > 0) partes.push(`pendente: ${pendingEffects.join(", ")}`);
   return `${characterNome}: ${actionName} (${partes.join(" · ")})`;
+}
+
+/** Checkpoint v0.44: cartão de condition_end_round_damage. */
+function formatConditionEndRoundDamage(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const conditionName = typeof payload.conditionName === "string" ? payload.conditionName : "Condição";
+  const damage = typeof payload.damage === "number" ? payload.damage : "?";
+  const damageType = typeof payload.damageType === "string" ? payload.damageType : "";
+  const before = typeof payload.before === "number" ? payload.before : "?";
+  const after = typeof payload.after === "number" ? payload.after : "?";
+  return `${characterNome}: ${conditionName} causou ${damage} de dano ${damageType} (PV ${before} → ${after}).`;
+}
+
+/** Checkpoint v0.44: cartão de condition_end_round_check_created. */
+function formatConditionCheckCreated(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const conditionName = typeof payload.conditionName === "string" ? payload.conditionName : "Condição";
+  const resistance = payload.resistance as Record<string, unknown> | undefined;
+  const pericia = typeof resistance?.pericia === "string" ? resistance.pericia : "?";
+  const cd = typeof resistance?.cd === "number" ? resistance.cd : "?";
+  const target = typeof payload.targetConditionId === "string" ? ` (para remover ${payload.targetConditionId})` : "";
+  return `${characterNome}: ${conditionName} — teste de ${pericia} CD ${cd} pendente${target}.`;
+}
+
+/** Checkpoint v0.44: cartão de condition_end_round_check_resolved. */
+function formatConditionCheckResolved(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const conditionName = typeof payload.conditionName === "string" ? payload.conditionName : "Condição";
+  const result = payload.result === "success" ? "Sucesso" : "Falha";
+  const appliedEffects = Array.isArray(payload.appliedEffects)
+    ? payload.appliedEffects.filter((e): e is string => typeof e === "string")
+    : [];
+  return `${characterNome}: ${conditionName} — ${result}${appliedEffects.length > 0 ? ` (${appliedEffects.join(", ")})` : ""}.`;
+}
+
+/** Checkpoint v0.44: cartão de round_pa_reduced_by_condition. */
+function formatRoundPaReduced(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const conditionName = typeof payload.conditionName === "string" ? payload.conditionName : "Condição";
+  const value = typeof payload.value === "number" ? payload.value : "?";
+  const paBefore = typeof payload.paBefore === "number" ? payload.paBefore : "?";
+  const paAfter = typeof payload.paAfter === "number" ? payload.paAfter : "?";
+  return `${characterNome}: ${conditionName} reduziu ${value} PA (${paBefore} → ${paAfter}).`;
+}
+
+/** condition_applied — cobre o payload de v0.32 (manual) e v0.44 (por teste de exposição, com sourceConditionId). */
+function formatConditionApplied(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const nome = typeof payload.nome === "string" ? payload.nome : typeof payload.conditionName === "string" ? payload.conditionName : "Condição";
+  const origem = typeof payload.sourceConditionId === "string" ? ` (falha em teste de ${payload.sourceConditionId})` : "";
+  return `${characterNome}: aplicada "${nome}"${origem}.`;
+}
+
+/** condition_removed — cobre o payload de v0.32 (manual) e v0.44 (por teste de fim de rodada, com sourceConditionId). */
+function formatConditionRemoved(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const nome = typeof payload.nome === "string" ? payload.nome : typeof payload.conditionName === "string" ? payload.conditionName : "Condição";
+  const origem = typeof payload.sourceConditionId === "string" ? ` (sucesso em teste de ${payload.sourceConditionId})` : "";
+  return `${characterNome}: removida "${nome}"${origem}.`;
 }
 
 /** Texto da mensagem de chat — aceita `text` (ficha, v0.12) ou `mensagem` (formato antigo do /dev/table). */
@@ -514,7 +583,19 @@ export function MesaTab({
                                   ? formatEvolution(entry.payload)
                                   : entry.type === "action_used"
                                     ? formatActionUsed(entry.payload)
-                                    : JSON.stringify(entry.payload)}
+                                    : entry.type === "condition_end_round_damage"
+                                      ? formatConditionEndRoundDamage(entry.payload)
+                                      : entry.type === "condition_end_round_check_created"
+                                        ? formatConditionCheckCreated(entry.payload)
+                                        : entry.type === "condition_end_round_check_resolved"
+                                          ? formatConditionCheckResolved(entry.payload)
+                                          : entry.type === "round_pa_reduced_by_condition"
+                                            ? formatRoundPaReduced(entry.payload)
+                                            : entry.type === "condition_applied"
+                                              ? formatConditionApplied(entry.payload)
+                                              : entry.type === "condition_removed"
+                                                ? formatConditionRemoved(entry.payload)
+                                                : JSON.stringify(entry.payload)}
             </span>
           </div>
         ))}

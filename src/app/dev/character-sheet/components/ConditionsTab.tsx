@@ -16,7 +16,8 @@
 import { useState } from "react";
 import { Section } from "./Section";
 import { buttonStyle } from "./styles";
-import type { ActiveCondition, ActiveEffect } from "../../../../lib/character";
+import { PendingConditionChecks } from "./PendingConditionChecks";
+import type { ActiveCondition, ActiveEffect, ConditionResistanceCheck } from "../../../../lib/character";
 
 const EFFECT_KIND_LABELS: Record<ActiveEffect["kind"], string> = {
   modifier: "Modificador",
@@ -53,6 +54,8 @@ export function ConditionsTab({
   condicoes,
   condicoesDisponiveis,
   activeEffects,
+  pendingChecks,
+  onResolveCheck,
   onAdd,
   onRemove,
 }: {
@@ -60,6 +63,9 @@ export function ConditionsTab({
   condicoesDisponiveis: ConditionOption[];
   /** Efeitos derivados das condições ativas (checkpoint v0.33) — ver deriveActiveEffectsFromConditions. */
   activeEffects: ActiveEffect[];
+  /** Pendências de teste de resistência de fim de rodada/exposição (checkpoint v0.44). */
+  pendingChecks: ConditionResistanceCheck[];
+  onResolveCheck: (checkId: string, outcome: "success" | "failure") => void;
   onAdd: (input: { conditionId: string | null; nome: string; descricao: string; origem: string; duracao: string }) => void;
   onRemove: (id: string) => void;
 }) {
@@ -100,13 +106,16 @@ export function ConditionsTab({
   const podeAdicionar = nome.trim().length > 0;
 
   return (
-    <Section title="Condições">
+    <>
+      <PendingConditionChecks checks={pendingChecks} onResolve={onResolveCheck} />
+      <Section title="Condições">
       <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 16 }}>
         Registro manual de condições/efeitos ativos — sem automação de bônus/penalidade ainda.
         Adicionar/remover uma condição também registra um evento no log da mesa (aba Mesa).
       </p>
       <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 16 }}>
-        Ações habilitadas por condição (checkpoint v0.42) aparecem na aba Ações.
+        Ações habilitadas por condição (checkpoint v0.42) aparecem na aba Ações. Testes de fim de
+        rodada/exposição (checkpoint v0.44) aparecem no topo desta aba quando pendentes.
       </p>
 
       {/* --- Formulário de adição --- */}
@@ -290,6 +299,7 @@ export function ConditionsTab({
           </div>
         </>
       )}
-    </Section>
+      </Section>
+    </>
   );
 }

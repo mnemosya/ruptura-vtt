@@ -111,7 +111,54 @@ export interface ActiveCondition {
    * (checkpoint v0.42) marca remoção por efeito simples automatizado do
    * Console de Ação (ex.: Levantar removendo Caído).
    */
-  removidaOrigem?: "cura_pv" | "acao_combate";
+  removidaOrigem?: "cura_pv" | "acao_combate" | "end_round_condition_check";
+}
+
+/**
+ * Pendência de teste de resistência de fim de rodada/exposição
+ * (checkpoint v0.44) — criada por `resolveEndRoundConditionsForCharacter`
+ * (endRoundConditions.ts) quando o payload de uma condição ativa exige
+ * `teste_fim_de_rodada`, `teste_fim_de_rodada_para_remover_condicao` ou
+ * `teste_apos_exposicao`. Nunca rolada automaticamente — fica pendente
+ * até o jogador/narrador marcar "Sucesso" ou "Falha" manualmente (ver
+ * `resolveConditionResistanceCheck`).
+ */
+export interface ConditionResistanceCheck {
+  id: string;
+  /** slug canônico da condição de origem (ex.: "envenenado"). */
+  conditionId: string;
+  conditionName: string;
+  effectType: "teste_fim_de_rodada" | "teste_fim_de_rodada_para_remover_condicao" | "teste_apos_exposicao";
+  round: number;
+  scene: number;
+  createdAt: string;
+  status: "pending" | "success" | "failure";
+  resolvedAt?: string;
+  resistance: { pericia: string; cd: number };
+  /** payload bruto `falha` da condição — interpretado só na resolução manual. */
+  onFailure?: unknown;
+  /** payload bruto `sucesso`, se a condição declarar algo (nenhuma condição atual usa isso). */
+  onSuccess?: unknown;
+  /** só presente em `teste_fim_de_rodada_para_remover_condicao` — slug da condição a remover em sucesso. */
+  targetConditionId?: string;
+  source: "end_round_condition";
+}
+
+/**
+ * Registro de cadência de um efeito de fim de rodada/exposição já
+ * processado (checkpoint v0.44) — chave única em
+ * `Character.condition_effect_history`, usado só para idempotência
+ * (não aplicar o mesmo dano/pendência duas vezes na mesma rodada) e
+ * para a regra "uma vez por cena" de `teste_apos_exposicao`
+ * (Saturado/Insaturado). Nunca apagado — histórico simples.
+ */
+export interface ConditionEffectHistoryEntry {
+  conditionId: string;
+  effectType: string;
+  scene?: number;
+  round?: number;
+  createdAt: string;
+  resolvedAt?: string;
 }
 
 export interface Character {
@@ -189,6 +236,38 @@ export interface Character {
    * permanentes de atributo/perícia feitos em Modo Evolução.
    */
   historico_evolucao?: EvolutionHistoryEntry[];
+  /**
+   * Pendências de teste de resistência de fim de rodada/exposição
+   * (checkpoint v0.44) ainda não resolvidas — resolvidas são removidas
+   * deste array (o histórico de resolução vive em `table_logs`, não
+   * aqui). Ausente/undefined = nenhuma pendência.
+   */
+  pending_condition_checks?: ConditionResistanceCheck[];
+  /**
+   * Histórico de efeitos de fim de rodada/exposição já processados
+   * (checkpoint v0.44), por chave única (ver `getEndRoundEffectKey`) —
+   * garante idempotência (não aplicar o mesmo dano duas vezes na mesma
+   * rodada) e a cadência "uma vez por cena" de `teste_apos_exposicao`.
+   * Nunca apagado.
+   */
+  condition_effect_history?: Record<string, ConditionEffectHistoryEntry>;
+  /**
+   * Rodada local do personagem (checkpoint v0.44) — incrementada pelo
+   * botão "Encerrar Rodada" da própria ficha. Não é a rodada da mesa
+   * (`campaigns.current_round`, v0.39): a arquitetura atual não liga os
+   * dois automaticamente (ver pendência do relatório). Serve só para
+   * dar um número de rodada estável aos efeitos de condição e à
+   * idempotência. Ausente/undefined = 1 (primeira rodada).
+   */
+  current_round?: number;
+  /**
+   * Cena local do personagem (checkpoint v0.44) — usada só para a
+   * cadência "uma vez por cena" de `teste_apos_exposicao`. Não avança
+   * automaticamente neste checkpoint (sem gatilho de "encerrar cena"
+   * ligado à ficha ainda) — fica sempre 1, documentado como pendência.
+   * Ausente/undefined = 1.
+   */
+  current_scene?: number;
 }
 
 export type EvolutionHistoryEntryTipo = "ganho" | "gasto" | "ajuste";

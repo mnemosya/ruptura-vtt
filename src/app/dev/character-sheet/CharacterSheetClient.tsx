@@ -47,6 +47,9 @@ import {
   spendReactionForDefense,
   undoLastReactionUse,
   resetRoundReactionState,
+  resolveEndRoundConditionsForCharacter,
+  resolveConditionResistanceCheck,
+  applyRoundScopedPaReductions,
 } from "../../../lib/character";
 import {
   createCharacter,
@@ -68,6 +71,8 @@ import type {
   DerivedStats,
   CombatActionContent,
   ReactionRules,
+  ConditionContent,
+  ConditionResistanceCheck,
 } from "../../../lib/character";
 import { rollPericia, type PreparedRoll } from "../../../lib/dice";
 import {
@@ -126,6 +131,8 @@ interface Props {
   condicoesParaAcoes: { slug: string; acoes_habilitadas?: { acao: string }[] }[];
   /** Ações de combate publicadas na Biblioteca do Sistema (checkpoint v0.42) — fonte única do Console de Ação. */
   combatActionsIniciais: CombatActionContent[];
+  /** Conteúdo completo de cada condição publicada (checkpoint v0.44) — fonte única do motor de fim de rodada. */
+  conditionContents: ConditionContent[];
   /** Falha explícita ao carregar o catálogo — nunca substituída por lista local. */
   combatActionsError: string | null;
   /** Regras canônicas de Reação interpretadas do singleton combat_flow. */
@@ -184,6 +191,7 @@ export default function CharacterSheetClient({
   condicoesDisponiveis,
   condicoesParaAcoes,
   combatActionsIniciais,
+  conditionContents,
   combatActionsError,
   reactionRules,
   initialCampaignId,
@@ -264,6 +272,10 @@ export default function CharacterSheetClient({
   // 3º surto de Sobrecarga do dia exige teste de Vontade CD 7 (checkpoint
   // v0.37) — true entre "usar o 3º surto" e "rolar o teste".
   const [overloadWillRollPending, setOverloadWillRollPending] = useState(false);
+  // Resumo textual da última "Encerrar Rodada" (checkpoint v0.44) — só
+  // estado de UI, não persiste no payload; some ao trocar de aba/reload
+  // (o histórico real fica em table_logs + Log local).
+  const [endRoundSummary, setEndRoundSummary] = useState<{ logs: string[]; warnings: string[] } | null>(null);
 
   function addLogEntry(tipo: LogTipo, resumo: string) {
     logCounterRef.current += 1;
@@ -1394,6 +1406,121 @@ export default function CharacterSheetClient({
   }
 
   /**
+   * "Encerrar Rodada" (checkpoint v0.44) — ordem operacional:
+   *   1. Resolve efeitos de fim de rodada das condições ativas na
+   *      rodada ATUAL (dano determinístico + pendências de teste) via
+   *      `resolveEndRoundConditionsForCharacter` (endRoundConditions.ts,
+   *      data-driven a partir de `conditionContents`).
+   *   2. Avança para a nova rodada: reseta PA (`pa_gastos=0`) e
+   *      Reações/penalidade de defesa sem Reação
+   *      (`resetRoundReactionState`, v0.43).
+   *   3. Aplica redução de PA por condição (Envenenado) já na rodada
+   *      nova, via `applyRoundScopedPaReductions`.
+   *   4. Incrementa `current_round`.
+   * `current_round`/`current_scene` são LOCAIS ao personagem — não
+   * ligados à rodada/cena da mesa (`campaigns.current_round`, v0.39)
+   * neste checkpoint (ver pendência do relatório).
+   */
+  async function handleEndRoundForCharacter() {
+    const current = characterRef.current;
+    const round = current.current_round ?? 1;
+    const scene = current.current_scene ?? 1;
+    const nowIso = new Date().toISOString();
+
+    const resolved = resolveEndRoundConditionsForCharacter({
+      character: current,
+      conditions: conditionContents,
+      round,
+      scene,
+      nowIso,
+    });
+
+    let nextCharacter = resolved.character;
+    nextCharacter = { ...nextCharacter, estado_jogo: { ...nextCharacter.estado_jogo, pa_gastos: 0 } };
+    nextCharacter = resetRoundReactionState(nextCharacter);
+
+    const paReduction = applyRoundScopedPaReductions({
+      character: nextCharacter,
+      conditions: conditionContents,
+      paMax: derivados.pa_max,
+      round: round + 1,
+      scene,
+    });
+    nextCharacter = { ...paReduction.character, current_round: round + 1 };
+
+    characterRef.current = nextCharacter;
+    setCharacter(nextCharacter);
+
+    const allLogs = [...resolved.logs, ...paReduction.logs];
+    setEndRoundSummary({ logs: allLogs, warnings: resolved.warnings });
+    addLogEntry(
+      "rodada",
+      `Rodada ${round} encerrada → rodada ${round + 1} iniciada.${allLogs.length > 0 ? " " + allLogs.join(" ") : ""}`,
+    );
+
+    const allTableLogs = [...resolved.tableLogs, ...paReduction.tableLogs];
+    if (selectedCampaignId) {
+      for (const entry of allTableLogs) {
+        try {
+          await addLog({
+            campaignId: selectedCampaignId,
+            characterId: characterId ?? undefined,
+            profileId: selectedProfileId,
+            profileSessionId: profileSessionToken?.profileSessionId ?? null,
+            type: entry.type,
+            visibility: "public",
+            payload: { ...entry.payload, characterId, characterNome: current.nome, profileId: selectedProfileId },
+          });
+        } catch {
+          // Best-effort — os efeitos já foram aplicados no estado local.
+        }
+      }
+    }
+  }
+
+  /**
+   * Resolve manualmente uma pendência de teste de resistência
+   * (checkpoint v0.44, "Marcar sucesso"/"Marcar falha") — nunca rola
+   * automático; a consequência vem inteiramente de
+   * `resolveConditionResistanceCheck` (endRoundConditions.ts).
+   */
+  async function handleResolveConditionCheck(checkId: string, outcome: "success" | "failure") {
+    const current = characterRef.current;
+    const check = (current.pending_condition_checks ?? []).find((c) => c.id === checkId);
+    if (!check) return;
+    const nowIso = new Date().toISOString();
+    const result = resolveConditionResistanceCheck({
+      character: current,
+      check,
+      outcome,
+      conditions: conditionContents,
+      nowIso,
+    });
+    characterRef.current = result.character;
+    setCharacter(result.character);
+    for (const line of result.logs) addLogEntry("condicao", line);
+    for (const warning of result.warnings) addLogEntry("condicao", `⚠ ${warning}`);
+
+    if (selectedCampaignId) {
+      for (const entry of result.tableLogs) {
+        try {
+          await addLog({
+            campaignId: selectedCampaignId,
+            characterId: characterId ?? undefined,
+            profileId: selectedProfileId,
+            profileSessionId: profileSessionToken?.profileSessionId ?? null,
+            type: entry.type,
+            visibility: "public",
+            payload: { ...entry.payload, characterId, characterNome: current.nome, profileId: selectedProfileId },
+          });
+        } catch {
+          // Best-effort — a resolução já foi aplicada no estado local.
+        }
+      }
+    }
+  }
+
+  /**
    * Adicionar condição (aba Condições, checkpoint v0.32) — atualiza o
    * estado local do personagem (persiste só ao "Salvar personagem",
    * igual atributos/perícias) e registra o evento tanto no Log local
@@ -1831,6 +1958,9 @@ export default function CharacterSheetClient({
           onStabilizeCollapse={handleStabilizeCollapse}
           onAdvanceCollapseSegment={handleAdvanceCollapseSegmentManual}
           onRollCollapseTest={handleRollCollapseTest}
+          currentRound={character.current_round ?? 1}
+          onEndRound={handleEndRoundForCharacter}
+          endRoundSummary={endRoundSummary}
         />
       )}
 
@@ -1839,6 +1969,8 @@ export default function CharacterSheetClient({
           condicoes={character.condicoes_ativas ?? []}
           condicoesDisponiveis={condicoesDisponiveis}
           activeEffects={activeEffects}
+          pendingChecks={character.pending_condition_checks ?? []}
+          onResolveCheck={handleResolveConditionCheck}
           onAdd={handleAddCondition}
           onRemove={handleRemoveCondition}
         />

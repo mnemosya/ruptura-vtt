@@ -12,3 +12,4 @@ export * from "./collapse";
 export * from "./evolution";
 export * from "./actionConsole";
 export * from "./reactions";
+export * from "./endRoundConditions";

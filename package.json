@@ -14,6 +14,7 @@
     "test:content-read": "tsx scripts/test-content-read.ts",
     "test:action-console": "tsx scripts/test-action-console.ts",
     "test:reactions": "tsx scripts/test-reactions.ts",
+    "test:end-round-conditions": "tsx scripts/test-end-round-conditions.ts",
     "test:character-storage": "tsx scripts/test-character-storage.ts"
   },
   "dependencies": {
