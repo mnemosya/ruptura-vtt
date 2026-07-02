@@ -71,6 +71,8 @@ export interface CharacterMetadata {
 export interface CharacterGameState {
   pa_gastos?: number;
   reacoes_usadas?: number;
+  /** Defesas realizadas sem Reação na rodada atual (checkpoint v0.43). */
+  defesas_sem_reacao?: number;
   /** Outros campos operacionais futuros — não interpretados pela ficha mínima. */
   [key: string]: unknown;
 }

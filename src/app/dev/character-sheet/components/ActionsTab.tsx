@@ -33,6 +33,8 @@ export function ActionsTab({
   paMax,
   reacaoAtual,
   reacaoMax,
+  defesasSemReacao,
+  penalidadeDefensivaAtual,
   catalogError,
   executingActionId,
   onExecute,
@@ -43,6 +45,8 @@ export function ActionsTab({
   paMax: number;
   reacaoAtual: number;
   reacaoMax: number;
+  defesasSemReacao: number;
+  penalidadeDefensivaAtual: number;
   catalogError: string | null;
   executingActionId: string | null;
   onExecute: (actionId: string) => void;
@@ -59,6 +63,15 @@ export function ActionsTab({
       <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 12 }}>
         <Stat label="PA" atual={paAtual} max={paMax} testId="acoes-pa" />
         <Stat label="Reações" atual={reacaoAtual} max={reacaoMax} testId="acoes-reacao" />
+        <div data-testid="acoes-defesas-sem-reacao" style={{ fontSize: 13 }}>
+          <span style={{ opacity: 0.6 }}>Defesas sem Reação: </span>
+          <span style={{ fontWeight: 700 }}>{defesasSemReacao}</span>
+        </div>
+        {penalidadeDefensivaAtual < 0 && (
+          <div data-testid="acoes-penalidade-defensiva" style={{ fontSize: 13, color: "#f5a623" }}>
+            Penalidade defensiva atual: {penalidadeDefensivaAtual}
+          </div>
+        )}
       </div>
 
       <p
@@ -160,6 +173,7 @@ function ActionCard({
           </span>
           <span style={{ fontSize: 11, opacity: 0.5 }}>[{action.categoria} · {action.tipo}]</span>
           {action.custoReacao != null && <Badge cor="#f5a623">Reação</Badge>}
+          {action.defenseWithoutReaction && <Badge cor="#ff6b6b">Sem Reação</Badge>}
           {action.custoLivre && <Badge cor="#4caf50">Livre</Badge>}
           {action.custoComposto && <Badge cor="#c0392b">Composto</Badge>}
           {action.isConditionEnabled && <Badge cor="#ff9f6b">Condição</Badge>}
@@ -171,6 +185,11 @@ function ActionCard({
       </div>
 
       {action.descricaoCurta && <p style={{ fontSize: 12, opacity: 0.8, margin: 0 }}>{action.descricaoCurta}</p>}
+      {action.reactionWarning && (
+        <p data-testid="acao-aviso-sem-reacao" style={{ fontSize: 11, color: "#f5a623", margin: 0 }}>
+          {action.reactionWarning}
+        </p>
+      )}
       {action.requisitoTexto && (
         <p style={{ fontSize: 11, opacity: 0.55, margin: 0 }}>Requisito: {action.requisitoTexto}</p>
       )}

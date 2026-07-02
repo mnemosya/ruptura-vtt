@@ -38,6 +38,7 @@ export function ResourcesTab({
   onChangeRecursoAtual,
   onRestoreMax,
   estadoJogo,
+  penalidadeDefensivaAtual,
   onGastarPA,
   onDesfazerPA,
   onResetarPA,
@@ -63,6 +64,7 @@ export function ResourcesTab({
   onChangeRecursoAtual: (id: keyof CharacterResources, value: number) => void;
   onRestoreMax: () => void;
   estadoJogo: CharacterGameState | undefined;
+  penalidadeDefensivaAtual: number;
   onGastarPA: () => void;
   onDesfazerPA: () => void;
   onResetarPA: () => void;
@@ -316,6 +318,8 @@ export function ResourcesTab({
           paMax={derivados.pa_max}
           reacoesUsadas={estadoJogo?.reacoes_usadas ?? 0}
           reacoesMax={derivados.reacoes_por_rodada}
+          defesasSemReacao={estadoJogo?.defesas_sem_reacao ?? 0}
+          penalidadeDefensivaAtual={penalidadeDefensivaAtual}
           onGastarPA={onGastarPA}
           onDesfazerPA={onDesfazerPA}
           onResetarPA={onResetarPA}

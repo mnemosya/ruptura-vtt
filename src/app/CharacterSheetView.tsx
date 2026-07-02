@@ -14,10 +14,15 @@
  * produto, mesmo que a UI não a exiba.
  */
 
-import { getCharacterRules, listConditions, listCombatActions } from "../lib/content";
+import { getCharacterRules, getCombatFlow, listConditions, listCombatActions } from "../lib/content";
 import { listLegacyCharactersDev } from "../lib/character/storage";
 import { listCampaigns } from "../lib/table/storage";
-import { normalizeCombatActionContent, type CombatActionContent } from "../lib/character";
+import {
+  normalizeCombatActionContent,
+  normalizeReactionRules,
+  type CombatActionContent,
+  type ReactionRules,
+} from "../lib/character";
 import type { CharacterRecord, CharacterRulesPayload } from "../lib/character";
 import type { Campaign } from "../lib/table";
 import type { ConditionOption } from "./dev/character-sheet/components/ConditionsTab";
@@ -110,6 +115,15 @@ export async function CharacterSheetView({
       error instanceof Error ? error.message : "Não foi possível carregar o catálogo de ações.";
   }
 
+  let reactionRules: ReactionRules = normalizeReactionRules(null);
+  try {
+    const combatFlow = await getCombatFlow();
+    reactionRules = normalizeReactionRules(combatFlow?.payload);
+  } catch {
+    // Fail-closed: Reações normais continuam utilizáveis pelo custo da
+    // ação, mas defesa sem Reação fica indisponível sem combat_flow.
+  }
+
   return (
     <CharacterSheetClient
       regras={regras}
@@ -120,6 +134,7 @@ export async function CharacterSheetView({
       condicoesParaAcoes={condicoesParaAcoes}
       combatActionsIniciais={combatActions}
       combatActionsError={combatActionsError}
+      reactionRules={reactionRules}
       initialCampaignId={campaignId}
       initialProfileId={profileId}
       mode={mode}

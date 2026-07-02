@@ -42,6 +42,11 @@ import {
   logPermanentAdjustment,
   buildActionConsoleItems,
   executeActionOnCharacter,
+  deriveReactionDefenseEffect,
+  getReactionAvailability,
+  spendReactionForDefense,
+  undoLastReactionUse,
+  resetRoundReactionState,
 } from "../../../lib/character";
 import {
   createCharacter,
@@ -62,6 +67,7 @@ import type {
   CharacterRulesPayload,
   DerivedStats,
   CombatActionContent,
+  ReactionRules,
 } from "../../../lib/character";
 import { rollPericia, type PreparedRoll } from "../../../lib/dice";
 import {
@@ -122,6 +128,8 @@ interface Props {
   combatActionsIniciais: CombatActionContent[];
   /** Falha explícita ao carregar o catálogo — nunca substituída por lista local. */
   combatActionsError: string | null;
+  /** Regras canônicas de Reação interpretadas do singleton combat_flow. */
+  reactionRules: ReactionRules;
   /**
    * Mesa/perfil pré-selecionados via query string (`?campaignId=...&
    * profileId=...`) — vindos de `/dev/join/[campaignId]` (checkpoint
@@ -177,6 +185,7 @@ export default function CharacterSheetClient({
   condicoesParaAcoes,
   combatActionsIniciais,
   combatActionsError,
+  reactionRules,
   initialCampaignId,
   initialProfileId,
   mode,
@@ -514,13 +523,21 @@ export default function CharacterSheetClient({
   // pura, recalculada só quando condicoes_ativas muda. Fonte única
   // compartilhada entre ConditionsTab (lista) e RollsTab (chips).
   const activeEffects = useMemo(
-    () => deriveActiveEffectsFromConditions(character),
-    [character.condicoes_ativas],
+    () => {
+      const conditionEffects = deriveActiveEffectsFromConditions(character);
+      const reactionEffect = deriveReactionDefenseEffect(character, reactionRules);
+      return reactionEffect ? [...conditionEffects, reactionEffect] : conditionEffects;
+    },
+    [character, reactionRules],
   );
 
   const derivados = useMemo(
     () => computeDerivedStats(character.atributos, regras),
     [character.atributos, regras],
+  );
+  const reactionAvailability = useMemo(
+    () => getReactionAvailability(character, derivados.reacoes_por_rodada, reactionRules),
+    [character, derivados.reacoes_por_rodada, reactionRules],
   );
 
   // Itens do Console de Ação (checkpoint v0.42) — recalculados sempre que
@@ -537,8 +554,17 @@ export default function CharacterSheetClient({
         derivados.pa_max,
         derivados.reacoes_por_rodada,
         regras?.pericias.map((pericia) => pericia.id) ?? [],
+        reactionRules,
       ),
-    [character, combatActionsIniciais, condicoesParaAcoes, derivados.pa_max, derivados.reacoes_por_rodada, regras],
+    [
+      character,
+      combatActionsIniciais,
+      condicoesParaAcoes,
+      derivados.pa_max,
+      derivados.reacoes_por_rodada,
+      regras,
+      reactionRules,
+    ],
   );
 
   /**
@@ -1303,6 +1329,70 @@ export default function CharacterSheetClient({
     }
   }
 
+  /** Controle manual de Reação usa a mesma regra data-driven do Console. */
+  function handleUseReactionManual() {
+    const current = characterRef.current;
+    const result = spendReactionForDefense(
+      current,
+      derivados.reacoes_por_rodada,
+      reactionRules,
+    );
+    if (result.character === current) {
+      if (result.warnings[0]) addLogEntry("reacao", result.warnings[0]);
+      return;
+    }
+    characterRef.current = result.character;
+    setCharacter(result.character);
+    if (result.defenseWithoutReaction) {
+      addLogEntry(
+        "reacao",
+        `Defesa sem Reação: ${result.defensesWithoutReactionBefore} → ${result.defensesWithoutReactionAfter}; penalidade ${result.penaltyApplied}.`,
+      );
+    } else {
+      addLogEntry(
+        "reacao",
+        `Reações usadas: ${current.estado_jogo?.reacoes_usadas ?? 0} → ${result.character.estado_jogo?.reacoes_usadas ?? 0}.`,
+      );
+    }
+  }
+
+  function handleUndoReactionManual() {
+    const current = characterRef.current;
+    const overflowBefore = current.estado_jogo?.defesas_sem_reacao ?? 0;
+    const usedBefore = current.estado_jogo?.reacoes_usadas ?? 0;
+    const next = undoLastReactionUse(current);
+    if (next.estado_jogo?.defesas_sem_reacao === overflowBefore && next.estado_jogo?.reacoes_usadas === usedBefore) {
+      return;
+    }
+    characterRef.current = next;
+    setCharacter(next);
+    if (overflowBefore > 0) {
+      addLogEntry(
+        "reacao",
+        `Defesa sem Reação desfeita: ${overflowBefore} → ${next.estado_jogo?.defesas_sem_reacao ?? 0}.`,
+      );
+    } else {
+      addLogEntry(
+        "reacao",
+        `Reações usadas: ${usedBefore} → ${next.estado_jogo?.reacoes_usadas ?? 0}.`,
+      );
+    }
+  }
+
+  function handleResetReactions() {
+    const current = characterRef.current;
+    const usedBefore = current.estado_jogo?.reacoes_usadas ?? 0;
+    const overflowBefore = current.estado_jogo?.defesas_sem_reacao ?? 0;
+    if (usedBefore === 0 && overflowBefore === 0) return;
+    const next = resetRoundReactionState(current);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry(
+      "reacao",
+      `Reações resetadas: usadas ${usedBefore} → 0; defesas sem Reação ${overflowBefore} → 0.`,
+    );
+  }
+
   /**
    * Adicionar condição (aba Condições, checkpoint v0.32) — atualiza o
    * estado local do personagem (persiste só ao "Salvar personagem",
@@ -1437,6 +1527,7 @@ export default function CharacterSheetClient({
       derivados.pa_max,
       derivados.reacoes_por_rodada,
       regras?.pericias.map((pericia) => pericia.id) ?? [],
+      reactionRules,
     );
     const item = currentItems.find((candidate) => candidate.id === actionId);
     if (!actionContent || !item || !item.enabled) {
@@ -1452,12 +1543,14 @@ export default function CharacterSheetClient({
       derivados.pa_max,
       derivados.reacoes_por_rodada,
       nowIso,
+      reactionRules,
     );
     characterRef.current = result.character;
     setCharacter(result.character);
 
-    const custoResumo =
-      result.paBefore !== result.paAfter
+    const custoResumo = result.defenseWithoutReaction
+      ? `defesa sem Reação ${result.defensesWithoutReactionBefore} → ${result.defensesWithoutReactionAfter}; penalidade ${result.reactionPenaltyApplied}`
+      : result.paBefore !== result.paAfter
         ? `PA ${result.paBefore} → ${result.paAfter}`
         : result.reactionBefore !== result.reactionAfter
           ? `Reação ${result.reactionBefore} → ${result.reactionAfter}`
@@ -1492,6 +1585,12 @@ export default function CharacterSheetClient({
             removedConditions: result.removedConditions,
             automatedEffects: result.automatedEffects,
             pendingEffects: result.pendingEffects,
+            usedReaction: result.usedReaction,
+            defenseWithoutReaction: result.defenseWithoutReaction,
+            defensesWithoutReactionBefore: result.defensesWithoutReactionBefore,
+            defensesWithoutReactionAfter: result.defensesWithoutReactionAfter,
+            reactionPenaltyApplied: result.reactionPenaltyApplied,
+            reactionRulesSource: "combat_flow",
             source: "character_sheet",
           },
         });
@@ -1713,12 +1812,13 @@ export default function CharacterSheetClient({
           onChangeRecursoAtual={updateRecursoAtual}
           onRestoreMax={handleRestoreRecursosMax}
           estadoJogo={character.estado_jogo}
+          penalidadeDefensivaAtual={reactionAvailability.currentOverflowPenalty}
           onGastarPA={() => adjustEstadoJogo("pa_gastos", 1)}
           onDesfazerPA={() => adjustEstadoJogo("pa_gastos", -1)}
           onResetarPA={() => resetEstadoJogo("pa_gastos")}
-          onUsarReacao={() => adjustEstadoJogo("reacoes_usadas", 1)}
-          onDesfazerReacao={() => adjustEstadoJogo("reacoes_usadas", -1)}
-          onResetarReacoes={() => resetEstadoJogo("reacoes_usadas")}
+          onUsarReacao={handleUseReactionManual}
+          onDesfazerReacao={handleUndoReactionManual}
+          onResetarReacoes={handleResetReactions}
           atributos={character.atributos}
           onApplyShortRest={handleApplyShortRest}
           onApplyLongRest={handleApplyLongRest}
@@ -1751,6 +1851,8 @@ export default function CharacterSheetClient({
           paMax={derivados.pa_max}
           reacaoAtual={Math.max(0, derivados.reacoes_por_rodada - (character.estado_jogo?.reacoes_usadas ?? 0))}
           reacaoMax={derivados.reacoes_por_rodada}
+          defesasSemReacao={reactionAvailability.defensesWithoutReaction}
+          penalidadeDefensivaAtual={reactionAvailability.currentOverflowPenalty}
           catalogError={combatActionsError}
           executingActionId={executingActionId}
           onExecute={handleUseAction}

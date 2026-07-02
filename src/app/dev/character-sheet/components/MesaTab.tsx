@@ -193,7 +193,7 @@ function formatEvolution(payload: Record<string, unknown>): string {
   return `${characterNome}: ${descricao}`;
 }
 
-/** Checkpoint v0.42: cartão de action_used — nome do personagem, nome da ação, custo pago, condições removidas e pendências. */
+/** Checkpoints v0.42/v0.43: ação, custo, uso normal ou excedente de Reação e efeitos. */
 function formatActionUsed(payload: Record<string, unknown>): string {
   const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
   const actionName = typeof payload.actionName === "string" ? payload.actionName : "Ação";
@@ -206,6 +206,12 @@ function formatActionUsed(payload: Record<string, unknown>): string {
     ? payload.pendingEffects.filter((c): c is string => typeof c === "string")
     : [];
   const partes = [`custo ${custoLabel}`];
+  if (payload.defenseWithoutReaction === true) {
+    const penalty = typeof payload.reactionPenaltyApplied === "number" ? payload.reactionPenaltyApplied : null;
+    partes.push(`defesa sem Reação${penalty != null ? ` · penalidade ${penalty}` : ""}`);
+  } else if (payload.usedReaction === true) {
+    partes.push("usou 1 Reação");
+  }
   if (removedConditions.length > 0) partes.push(`removeu ${removedConditions.join(", ")}`);
   if (pendingEffects.length > 0) partes.push(`pendente: ${pendingEffects.join(", ")}`);
   return `${characterNome}: ${actionName} (${partes.join(" · ")})`;

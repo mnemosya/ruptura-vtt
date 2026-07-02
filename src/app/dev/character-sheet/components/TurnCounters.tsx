@@ -66,6 +66,8 @@ export function TurnCounters({
   paMax,
   reacoesUsadas,
   reacoesMax,
+  defesasSemReacao,
+  penalidadeDefensivaAtual,
   onGastarPA,
   onDesfazerPA,
   onResetarPA,
@@ -77,6 +79,8 @@ export function TurnCounters({
   paMax: number;
   reacoesUsadas: number;
   reacoesMax: number;
+  defesasSemReacao: number;
+  penalidadeDefensivaAtual: number;
   onGastarPA: () => void;
   onDesfazerPA: () => void;
   onResetarPA: () => void;
@@ -110,6 +114,13 @@ export function TurnCounters({
         onDecrement={onDesfazerReacao}
         onReset={onResetarReacoes}
       />
+      <div
+        data-testid="turno-defesas-sem-reacao"
+        style={{ gridColumn: "1 / -1", fontSize: 12, opacity: 0.75 }}
+      >
+        Defesas sem Reação nesta rodada: <strong>{defesasSemReacao}</strong>
+        {penalidadeDefensivaAtual < 0 && <> · penalidade defensiva atual: <strong>{penalidadeDefensivaAtual}</strong></>}
+      </div>
     </div>
   );
 }

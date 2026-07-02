@@ -19,6 +19,11 @@
  */
 
 import type { ActiveCondition, Character } from "./types";
+import {
+  canUseReactionAction,
+  spendReactionForDefense,
+  type ReactionRules,
+} from "./reactions";
 
 // ---------------------------------------------------------------------
 // Tipos de conteúdo bruto (subconjunto lido de content_documents.payload)
@@ -75,6 +80,9 @@ export interface ActionConsoleItem {
   pendingEffects: string[];
   rollSkillId?: string;
   rollDisabledReason?: string;
+  defenseWithoutReaction: boolean;
+  reactionPenalty: number;
+  reactionWarning?: string;
   sortOrder: number;
 }
 
@@ -321,6 +329,7 @@ export function canPayActionCost(
   cost: ActionCost,
   derivedPaMax: number | undefined,
   derivedReacaoMax: number | undefined,
+  reactionRules?: ReactionRules,
 ): CanPayResult {
   if (!cost.valid) {
     return { ok: false, reason: cost.invalidReason ?? "Custo inválido." };
@@ -340,17 +349,21 @@ export function canPayActionCost(
     return { ok: true };
   }
   if (cost.reacao != null) {
-    const reacaoMax = derivedReacaoMax ?? 0;
-    const reacoesUsadas = character.estado_jogo?.reacoes_usadas ?? 0;
-    const reacaoAtual = Math.max(0, reacaoMax - reacoesUsadas);
-    if (reacaoAtual < cost.reacao) {
-      return {
-        ok: false,
-        reason:
-          "Sem Reação disponível. Defesa sem Reação e penalidade cumulativa ainda não estão automatizadas.",
-      };
-    }
-    return { ok: true };
+    const fallbackRules: ReactionRules = reactionRules ?? {
+      actionsConsumeReaction: false,
+      allowDefenseWithoutReaction: false,
+      cumulativePenalty: 0,
+      resetAt: "",
+      valid: false,
+      invalidReason: "Regras de Reação indisponíveis.",
+    };
+    const canUse = canUseReactionAction(
+      character,
+      derivedReacaoMax,
+      fallbackRules,
+      cost.reacao,
+    );
+    return { ok: canUse.ok, reason: canUse.reason };
   }
   return { ok: true };
 }
@@ -467,6 +480,7 @@ export function buildActionConsoleItems(
   derivedPaMax: number | undefined,
   derivedReacaoMax: number | undefined,
   knownSkillIds: readonly string[] = [],
+  reactionRules?: ReactionRules,
 ): ActionConsoleItem[] {
   const activeConditions = character.condicoes_ativas ?? [];
   const enabledByConditionsMap = actionsEnabledByConditions(activeConditions, conditions);
@@ -484,7 +498,13 @@ export function buildActionConsoleItems(
       const visibility = parseActionVisibility(action);
       const consistencyIssue = validateConditionalActionConsistency(action, conditions);
       const cost = getActionCost(action);
-      const canPay = canPayActionCost(character, cost, derivedPaMax, derivedReacaoMax);
+      const canPay = canPayActionCost(
+        character,
+        cost,
+        derivedPaMax,
+        derivedReacaoMax,
+        reactionRules,
+      );
       const payloadEffects = getPayloadEffects(action);
       const contentIssues = [visibility.reason, consistencyIssue].filter((issue): issue is string => Boolean(issue));
 
@@ -507,6 +527,22 @@ export function buildActionConsoleItems(
 
       const enabledByConditions = enabledByConditionsMap.get(normalizeConditionSlug(action.slug)) ?? [];
       const roll = getSimpleActionRollSkill(action, knownSkillIds);
+      const reactionUse =
+        cost.reacao != null
+          ? canUseReactionAction(
+              character,
+              derivedReacaoMax,
+              reactionRules ?? {
+                actionsConsumeReaction: false,
+                allowDefenseWithoutReaction: false,
+                cumulativePenalty: 0,
+                resetAt: "",
+                valid: false,
+                invalidReason: "Regras de Reação indisponíveis.",
+              },
+              cost.reacao,
+            )
+          : null;
 
       return {
         id: action.id,
@@ -536,6 +572,11 @@ export function buildActionConsoleItems(
         pendingEffects,
         rollSkillId: roll.skillId,
         rollDisabledReason: roll.reason,
+        defenseWithoutReaction: reactionUse?.defenseWithoutReaction ?? false,
+        reactionPenalty: reactionUse?.penaltyApplied ?? 0,
+        reactionWarning: reactionUse?.defenseWithoutReaction
+          ? `Sem Reação: esta defesa será realizada com penalidade ${reactionUse.penaltyApplied}.`
+          : undefined,
         sortOrder: index,
       } satisfies ActionConsoleItem;
     });
@@ -554,6 +595,11 @@ export interface ExecuteActionResult {
   removedConditions: string[];
   automatedEffects: string[];
   pendingEffects: string[];
+  usedReaction: boolean;
+  defenseWithoutReaction: boolean;
+  defensesWithoutReactionBefore: number;
+  defensesWithoutReactionAfter: number;
+  reactionPenaltyApplied: number;
   warnings: string[];
 }
 
@@ -581,12 +627,19 @@ export function executeActionOnCharacter(
   derivedPaMax: number | undefined,
   derivedReacaoMax: number | undefined,
   nowIso: string,
+  reactionRules?: ReactionRules,
 ): ExecuteActionResult {
   const cost = getActionCost(action);
   const paBefore = Math.max(0, (derivedPaMax ?? 0) - (character.estado_jogo?.pa_gastos ?? 0));
   const reactionBefore = Math.max(0, (derivedReacaoMax ?? 0) - (character.estado_jogo?.reacoes_usadas ?? 0));
 
-  const canPay = canPayActionCost(character, cost, derivedPaMax, derivedReacaoMax);
+  const canPay = canPayActionCost(
+    character,
+    cost,
+    derivedPaMax,
+    derivedReacaoMax,
+    reactionRules,
+  );
   if (!canPay.ok) {
     return {
       character,
@@ -597,6 +650,11 @@ export function executeActionOnCharacter(
       removedConditions: [],
       automatedEffects: [],
       pendingEffects: [],
+      usedReaction: false,
+      defenseWithoutReaction: false,
+      defensesWithoutReactionBefore: character.estado_jogo?.defesas_sem_reacao ?? 0,
+      defensesWithoutReactionAfter: character.estado_jogo?.defesas_sem_reacao ?? 0,
+      reactionPenaltyApplied: 0,
       warnings: [canPay.reason ?? "Ação não pôde ser executada."],
     };
   }
@@ -604,15 +662,37 @@ export function executeActionOnCharacter(
   let nextCharacter: Character = character;
   let paAfter = paBefore;
   let reactionAfter = reactionBefore;
+  let usedReaction = false;
+  let defenseWithoutReaction = false;
+  let defensesWithoutReactionBefore = character.estado_jogo?.defesas_sem_reacao ?? 0;
+  let defensesWithoutReactionAfter = defensesWithoutReactionBefore;
+  let reactionPenaltyApplied = 0;
 
   if (cost.pa != null) {
     const paGastosAntes = character.estado_jogo?.pa_gastos ?? 0;
     nextCharacter = { ...nextCharacter, estado_jogo: { ...nextCharacter.estado_jogo, pa_gastos: paGastosAntes + cost.pa } };
     paAfter = paBefore - cost.pa;
   } else if (cost.reacao != null) {
-    const reacoesAntes = character.estado_jogo?.reacoes_usadas ?? 0;
-    nextCharacter = { ...nextCharacter, estado_jogo: { ...nextCharacter.estado_jogo, reacoes_usadas: reacoesAntes + cost.reacao } };
-    reactionAfter = reactionBefore - cost.reacao;
+    const spend = spendReactionForDefense(
+      character,
+      derivedReacaoMax,
+      reactionRules ?? {
+        actionsConsumeReaction: false,
+        allowDefenseWithoutReaction: false,
+        cumulativePenalty: 0,
+        resetAt: "",
+        valid: false,
+        invalidReason: "Regras de Reação indisponíveis.",
+      },
+      cost.reacao,
+    );
+    nextCharacter = spend.character;
+    reactionAfter = spend.reactionAfter;
+    usedReaction = spend.usedReaction;
+    defenseWithoutReaction = spend.defenseWithoutReaction;
+    defensesWithoutReactionBefore = spend.defensesWithoutReactionBefore;
+    defensesWithoutReactionAfter = spend.defensesWithoutReactionAfter;
+    reactionPenaltyApplied = spend.penaltyApplied;
   }
 
   const removal = getActionRemovalEffects(action);
@@ -646,6 +726,11 @@ export function executeActionOnCharacter(
     removedConditions,
     automatedEffects,
     pendingEffects,
+    usedReaction,
+    defenseWithoutReaction,
+    defensesWithoutReactionBefore,
+    defensesWithoutReactionAfter,
+    reactionPenaltyApplied,
     warnings,
   };
 }

@@ -7487,8 +7487,117 @@ haver sessão de perfil válida disponível nesta aba.
 ## 12. Pendências
 
 - Implementar defesa sem Reação e penalidade cumulativa conforme
-  `combat_flow`.
+  `combat_flow`. **Resolvido no checkpoint v0.43**; esta linha é
+  preservada como registro do estado que ainda era verdadeiro no v0.42.1.
 - Criar estado real de Postura Ofensiva/Defensiva.
 - Resolver testes múltiplos/contestados em checkpoint próprio.
 - Testar `action_used` no fluxo autenticado completo
   convite→perfil→`/ficha` quando houver sessão de teste disponível.
+
+# Checkpoint v0.43 — Defesa sem Reação e penalidade defensiva cumulativa
+
+## 1. Fonte e interpretação da regra
+
+A fonte é o singleton publicado `combat_flow`, slug `fluxo_combate`,
+carregado por `getCombatFlow()`. O interpretador puro valida
+`reacoes.acoes_defensivas_consumem_reacao`,
+`sem_reacao_disponivel.defesa_ainda_permitida`,
+`penalidade_cumulativa`, `reseta_em` e `zera_em`. O conteúdo atual
+define consumo de 1 Reação, defesa excedente permitida, passo `-1` e
+reset no início da rodada. Conteúdo ausente ou incompatível falha
+fechado para a defesa excedente, sem inventar penalidade.
+
+## 2. Modelo e comportamento
+
+`CharacterGameState` ganhou `defesas_sem_reacao`, normalizado como
+inteiro não negativo e iniciado em `0`. Com Reação disponível, a ação
+incrementa apenas `reacoes_usadas`. Sem Reação, as ações canônicas
+`aparar`, `bloquear`, `esquivar` e `resistir` permanecem disponíveis,
+mantêm `reacoes_usadas` no máximo e incrementam o novo contador. A
+progressão lida do DB foi validada como `-1`, `-2` e `-3`.
+
+## 3. Rolagens e UI
+
+O estado excedente deriva um `ActiveEffect` reversível com origem
+`reaction_overflow`, tags `defensiva` e `reacao` e modificador negativo
+acumulado. Assim, somente rolagens marcadas com uma dessas tags recebem
+o efeito; rolagens ofensivas ou sem tag compatível não são alteradas.
+
+A aba Ações mostra Reações restantes/máximas, contador excedente,
+penalidade atual, badge “Sem Reação” e a penalidade da próxima defesa.
+Recursos/TurnCounters mostram o mesmo contador. O ActiveStateStrip
+recebe o efeito derivado e o remove quando o estado é resetado.
+
+## 4. Reset, desfazer e persistência
+
+“Resetar reações” zera `reacoes_usadas` e `defesas_sem_reacao`.
+“Desfazer reação” remove primeiro a defesa excedente mais recente e,
+na ausência dela, reduz o uso normal, sem produzir negativos. O campo
+faz parte do payload normalizado do personagem e segue o fluxo de
+persistência já compartilhado por `/ficha` e `/dev/character-sheet`.
+
+O encerramento de rodada v0.39 atualiza apenas
+`campaigns.current_round`; ele não possui caminho seguro para salvar
+todos os personagens. Por isso não foi criado bulk update, RPC ou uso
+de service role no frontend. A sincronização automática do reset com
+o avanço da mesa permanece pendente; o reset seguro deste checkpoint é
+manual na ficha.
+
+## 5. Logs
+
+O log local diferencia consumo normal (`Reação 1 → 0`) de defesa
+excedente (`defesa sem Reação 0 → 1; penalidade -1`). O payload
+`action_used` passou a incluir `usedReaction`,
+`defenseWithoutReaction`, contadores antes/depois,
+`reactionPenaltyApplied` e `reactionRulesSource="combat_flow"`.
+`MesaTab` mantém compatibilidade com eventos antigos e formata os novos
+como “usou 1 Reação” ou “defesa sem Reação · penalidade -N”.
+
+## 6. Testes e validação
+
+Foi criado `scripts/test-reactions.ts` e o comando
+`npm run test:reactions`. O teste lê o JSON real e cobre interpretação,
+consumo normal, três defesas excedentes, teto de Reações, falha
+fechada, reset, normalização antiga/inválida, efeito e tags, as quatro
+ações defensivas, isolamento de PA/Livre e campos do resultado.
+
+- `test:reactions`: passou pela execução equivalente
+  `node --import tsx scripts/test-reactions.ts`.
+- `test:action-console`: passou pela execução equivalente
+  `node --import tsx scripts/test-action-console.ts`.
+- `npx tsc --noEmit -p tsconfig.json`: passou.
+- `npm run build`: passou.
+- `test:character-storage` e `test:content-read`: não concluídos neste
+  ambiente; a conexão externa com Supabase foi bloqueada (`fetch failed`).
+- Teste manual no navegador: não executado porque a política local do
+  navegador recusou acesso a `http://localhost:3000`. Nenhum processo
+  existente foi encerrado.
+
+## 7. Arquivos alterados
+
+- `src/lib/character/reactions.ts` (novo)
+- `src/lib/character/actionConsole.ts`
+- `src/lib/character/types.ts`
+- `src/lib/character/normalizeCharacter.ts`
+- `src/lib/character/createCharacter.ts`
+- `src/lib/character/activeEffects.ts`
+- `src/lib/character/index.ts`
+- `src/app/CharacterSheetView.tsx`
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx`
+- `src/app/dev/character-sheet/components/ActionsTab.tsx`
+- `src/app/dev/character-sheet/components/ResourcesTab.tsx`
+- `src/app/dev/character-sheet/components/TurnCounters.tsx`
+- `src/app/dev/character-sheet/components/MesaTab.tsx`
+- `scripts/test-reactions.ts` (novo)
+- `scripts/test-action-console.ts`
+- `package.json`
+- `docs/RELATORIO_MESAS_LOG_V0_1.md`
+
+## 8. Pendências
+
+- Vincular o reset dos dois contadores ao avanço de rodada quando
+  existir um caminho autorizado e seguro para atualizar personagens.
+- Executar o roteiro manual completo e os testes que dependem de
+  Supabase em ambiente com acesso local liberado.
+- Ataque contestado, dano, alvo, equipamento defensivo e requisitos de
+  Aparar/Bloquear continuam fora deste checkpoint.

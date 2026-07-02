@@ -156,7 +156,7 @@ assert.equal(
   insufficientReaction,
   "Reação insuficiente não pode alterar o personagem.",
 );
-assert.match(insufficientReactionResult.warnings[0] ?? "", /Defesa sem Reação/);
+assert.match(insufficientReactionResult.warnings[0] ?? "", /Regras de Reação indisponíveis/);
 
 const invalidCostAction: CombatActionContent = {
   ...action("falar"),

@@ -42,6 +42,7 @@ export function createInitialCharacter(
     estado_jogo: {
       pa_gastos: 0,
       reacoes_usadas: 0,
+      defesas_sem_reacao: 0,
     },
     metadados: {
       schema_version: 1,

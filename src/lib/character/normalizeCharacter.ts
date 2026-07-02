@@ -81,6 +81,12 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     ...estadoJogoRaw,
     pa_gastos: typeof estadoJogoRaw.pa_gastos === "number" ? estadoJogoRaw.pa_gastos : 0,
     reacoes_usadas: typeof estadoJogoRaw.reacoes_usadas === "number" ? estadoJogoRaw.reacoes_usadas : 0,
+    defesas_sem_reacao:
+      typeof estadoJogoRaw.defesas_sem_reacao === "number" &&
+      Number.isFinite(estadoJogoRaw.defesas_sem_reacao) &&
+      estadoJogoRaw.defesas_sem_reacao >= 0
+        ? Math.trunc(estadoJogoRaw.defesas_sem_reacao)
+        : 0,
   };
 
   // condicoes_ativas (checkpoint v0.32): array livre, sem inventar
