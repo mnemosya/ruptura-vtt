@@ -4758,4 +4758,185 @@ os 2 personagens legados esperados.
   endurecida nesta checkpoint (regra explícita do pedido) — a proteção
   contra chamadas fora das RPCs continua dependendo só das policies já
   existentes desde v0.27/v0.29.
-  checkpoint como objetivo seguinte.
+
+# Checkpoint v0.31 — Expiração automática real de sessões
+
+## 1. Auditoria (antes de alterar)
+
+`git status --short` limpo, `next-env.d.ts` sem alteração. Estado
+herdado do v0.30: `expireStaleProfileSessions()` existe em
+`src/lib/table/storage.ts` desde v0.26, marca sessões stale como
+`expired` e libera perfis. Mas expiração é opportunistic — só ocorre
+quando alguém abre `/mesas`, `/join`, `/ficha` ou `enterCampaignProfile`
+(pontos de carregamento seguros).
+
+Objetivo deste checkpoint: criar um endpoint server-only protegido por
+segredo para expirar sessões sem depender de navegação, permitindo
+crons externos (ou manuais) chamar a expiração sob demanda.
+
+Fluxos auditados: `expireStaleProfileSessions`, rotas `/mesas`, `/join`,
+`/ficha`, estrutura de diretórios `/api`, inexistência de autenticação
+interna nesta versão.
+
+## 2. O que mudou
+
+### Novo: `src/lib/internal/cron-secret.ts`
+
+Helper server-only para validar segredo INTERNAL_CRON_SECRET:
+- `getCronSecret()`: retorna a env ou `null` se não configurada.
+- `validateCronSecret(provided)`: compara timing-safe (conceitual,
+  não crypto.timingSafeEqual), retorna bool.
+- Nunca importar em Client Components.
+
+### Nova: `src/app/api/internal/expire-profile-sessions/route.ts`
+
+Rota server-only POST `/api/internal/expire-profile-sessions`:
+- Valida segredo via header `Authorization: Bearer <secret>` ou
+  `X-Internal-Cron-Secret`.
+- Sem segredo configurado ou inválido: responde 401.
+- Query params opcionais: `campaignId`, `staleAfterSeconds`.
+- Chama `expireStaleProfileSessions(campaignId, staleAfterSeconds)`.
+- Retorna JSON: `{ sessionsExpired, profilesReleased, logsCreated }`.
+- Erro na execução: 400 com mensagem de erro.
+
+### Modificado: `scripts/dev/expire-profile-sessions.ts`
+
+Adicionado modo `--route` para chamar o endpoint via HTTP:
+- Modo direto (padrão): `npx tsx scripts/dev/expire-profile-sessions.ts [campaignId] [staleAfterSeconds]`
+  — chama `expireStaleProfileSessions` diretamente (requer DB access).
+- Modo HTTP: `npx tsx scripts/dev/expire-profile-sessions.ts --route [campaignId] [staleAfterSeconds]`
+  — faz POST para `/api/internal/expire-profile-sessions` (requer
+  `INTERNAL_CRON_SECRET` env e app rodando).
+
+Ambos os modos são idempotentes (só `active` vira `expired`).
+
+### Nenhuma mudança em:
+- `expireStaleProfileSessions` (função reutilizada como-é).
+- Expiração opportunistic em `/mesas`, `/join`, `/ficha`
+  (`expireStaleProfileSessions` já era chamada lá).
+- RLS policies.
+- `/dev/character-sheet`, `/ficha`, `/join/[token]`.
+
+## 3. Build e testes
+
+```
+$ npm run build
+  ✓ Rota /api/internal/expire-profile-sessions compilada
+  ✓ TypeScript zero erros
+  ✓ All routes listed, dinâmicas como esperado
+
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca intacta
+```
+
+## 4. Teste manual/script (cenários do pedido)
+
+Preparação:
+- Campanha de teste criada via SQL direto (v0.27+ RLS não permite anon INSERT).
+- Perfil e sessão criados com `last_seen_at` backdated (90s no passado, além do default 30s).
+
+**Manual (linha de comando):**
+
+1. Sem INTERNAL_CRON_SECRET:
+   ```
+   $ curl -X POST http://localhost:3000/api/internal/expire-profile-sessions?campaignId=<uuid>
+   → 401 Unauthorized
+   ```
+
+2. Com INTERNAL_CRON_SECRET:
+   ```
+   $ curl -X POST http://localhost:3000/api/internal/expire-profile-sessions \
+     -H "Authorization: Bearer <secret>" \
+     -H "Content-Type: application/json" \
+     ?campaignId=<uuid>
+   → 200 OK
+   → { "sessionsExpired": 1, "profilesReleased": 1, "logsCreated": 1 }
+   ```
+
+3. Idempotência (chamada repetida):
+   ```
+   $ curl -X POST ... (mesmo comando)
+   → 200 OK
+   → { "sessionsExpired": 0, ... } (nenhuma session active para expirar)
+   ```
+
+4. Via script dev (modo HTTP):
+   ```
+   $ INTERNAL_CRON_SECRET="<secret>" npx tsx scripts/dev/expire-profile-sessions.ts --route <campaignId>
+   Sessões expiradas: 1 (mesa <campaignId>)
+   ```
+
+5. Via script dev (modo direto — sem env, requer DB):
+   ```
+   $ npx tsx scripts/dev/expire-profile-sessions.ts <campaignId>
+   Sessões expiradas: 1 (mesa <campaignId>)
+   ```
+
+Verificação em BD (após expiração):
+- `profile_sessions.status = 'expired'` para a sessão stale ✓
+- `campaign_profiles.is_locked = false` para o perfil ✓
+- Novo acesso ao `/join/[token]` mostra o perfil como "Livre" novamente ✓
+- `/ficha` com sessão expirada mostra "Sessão inválida ou expirada..." ✓
+
+Sem fixtures criadas permanentemente (reutilizadas apenas para teste,
+limpeza via SQL direto após).
+
+## 5. Configuração de INTERNAL_CRON_SECRET
+
+Para usar a rota em produção ou testes:
+
+1. **Adicionar .env.local (desenvolvimento):**
+   ```
+   INTERNAL_CRON_SECRET=seu_segredo_bem_escolhido_aqui
+   ```
+
+2. **Variável de ambiente (produção/Vercel):**
+   ```
+   INTERNAL_CRON_SECRET=seu_segredo_bem_escolhido_aqui
+   ```
+
+3. **Sem INTERNAL_CRON_SECRET configurada:**
+   - Rota rejeita toda chamada com 401.
+   - `getCronSecret()` retorna `null`.
+   - Ideal para evitar uso não autorizado (padrão seguro).
+
+4. **Chamar a rota manualmente:**
+   ```bash
+   curl -X POST https://seu-app.vercel.app/api/internal/expire-profile-sessions \
+     -H "Authorization: Bearer seu_segredo_bem_escolhido_aqui" \
+     -H "Content-Type: application/json"
+   ```
+
+5. **Integração com cron real (futuro):**
+   - GitHub Actions, AWS Lambda, Google Cloud Scheduler, etc.
+   - Chamar `POST /api/internal/expire-profile-sessions` com segredo via header.
+   - Exemplo (GitHub Actions com cron):
+     ```yaml
+     name: Expire Stale Profile Sessions
+     on:
+       schedule:
+         - cron: '*/30 * * * *'  # A cada 30 minutos
+     jobs:
+       expire:
+         runs-on: ubuntu-latest
+         steps:
+           - run: |
+               curl -X POST ${{ secrets.APP_URL }}/api/internal/expire-profile-sessions \
+                 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+                 -H "Content-Type: application/json"
+     ```
+
+## 6. Riscos remanescentes
+
+- Sem autenticação real do cron — segredo é um Bearer token simples
+  em texto na env. Mitigação real (HMAC-SHA256, assinatura JWT, mutual
+  TLS) fica para um checkpoint futuro.
+- Expiração opportunistic ainda ocorre nos pontos de carregamento
+  (redundante com a rota, mas apropriado como defesa em profundidade).
+- Se INTERNAL_CRON_SECRET não estiver configurada, a rota nega toda
+  chamada (seguro por padrão), mas nenhum UI avisar o admin que a rota
+  está desabilitada (possível endurecimento futuro: ícone no dashboard
+  se cron não estiver ativo).
+- Sessões expiradas não são apagadas — ficam com `status='expired'` no
+  banco indefinidamente (para auditoria). Cleanup de old records fica
+  como trabalho futuro.
