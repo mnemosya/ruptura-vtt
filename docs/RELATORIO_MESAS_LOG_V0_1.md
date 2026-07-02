@@ -5337,3 +5337,206 @@ $ npm run test:content-read → Biblioteca do Sistema intacta
    ainda é manual/dev.
 5. Continuar adiando inventário/loja (Fase 3) e magia (Fase 5) até Fase
    1 estar completa, conforme o roadmap do próprio PRD (seção 18).
+
+# Checkpoint v0.33 — Efeitos ativos e modificadores de condições
+
+## 1. Auditoria (antes de alterar)
+
+`git status --short` limpo, `next-env.d.ts` intocado. `src/lib/dice/`
+já tinha `rollPericia()` recebendo um `modificador` único (sem conceito
+de "modificador de condição" separado) — o modificador final passado a
+`rollPericia` continua sendo um único número, só que agora composto de
+`manualModifier + modificadorEfeitos` calculado no `RollsTab` antes de
+chamar a função (a regra de dados em si, "maior d8 + perícia +
+modificador", não mudou — só o que compõe o "modificador"). `SkillDefinition.id`
+já usa os mesmos ids em minúsculo do PRD (`luta`, `mobilidade`,
+`reflexos` etc.), o que permitiu mapear `affectedTags` de condição
+direto para `periciaId` sem tradução. `content_documents` (`condition`)
+já expunha os slugs certos (`agarrado`, `caido`, `cego`, `contundido`,
+`lento`, `ofuscado`, `sufocando`, entre outros) — usados como chave do
+mapeamento. `ConditionsTab`/`CharacterSheetClient`/`ActiveCondition`
+(v0.32) não precisaram de mudança estrutural, só de um novo dado
+derivado (efeitos) computado a partir do que já existia.
+
+## 2. Modelo de efeito ativo
+
+Novo módulo `src/lib/character/activeEffects.ts`:
+
+```ts
+interface ActiveEffect {
+  id: string;                    // `${conditionInstanceId}:${index}` — estável por instância de condição
+  sourceType: "condition";       // único tipo de fonte neste checkpoint
+  sourceId: string;               // slug da Biblioteca, ou id local se manual
+  sourceName: string;
+  affectedTags: string[];         // tags de rolagem afetadas (vazio = só informativo)
+  modifier: number;               // valor a somar quando kind="modifier"
+  explanation: string;
+  enabledByDefault: boolean;      // sempre true neste checkpoint
+  kind: "modifier" | "warning" | "lock" | "auto_fail";
+  reversible: true;               // sempre true — nenhum efeito irreversível é gerado
+}
+```
+
+`deriveActiveEffectsFromConditions(character)` é **função pura**: lê só
+`character.condicoes_ativas` (filtra `ativa: true`), não toca em
+estado, não persiste nada, não lança efeito colateral. Calculada uma
+vez em `CharacterSheetClient` via `useMemo` (recalcula só quando
+`condicoes_ativas` muda) e repassada como prop única para
+`ConditionsTab` e `RollsTab` — uma fonte, dois consumidores.
+
+## 3. Condições mapeadas
+
+| Condição (slug) | Efeitos gerados |
+| --- | --- |
+| `agarrado` | -1 `ofensiva` (modifier) · -1 `defensiva` (modifier) · aviso "deslocamento 0" (`deslocamento`, warning) |
+| `agarrando` | -1 `ofensiva` (modifier) · -1 `defensiva` (modifier) · aviso "deslocamento à metade" (`deslocamento`, warning) |
+| `caido` | -1 `ofensiva` (modifier) · aviso "deslocamento à metade" (`deslocamento`, warning) |
+| `cego` | -2 `ofensiva` (modifier) · falha automática em `visao` (auto_fail) |
+| `contundido` | -1 `luta` (modifier) · -1 `mobilidade` (modifier) · -1 `reflexos` (modifier) |
+| `lento` | -1 `reflexos` (modifier) · -1 `mobilidade` (modifier) · aviso "deslocamento à metade" (`deslocamento`, warning) |
+| `ofuscado` | -1 `visao` (modifier) |
+| `sufocando` | -1 `corpo` (modifier) |
+
+**Condições ainda não mapeadas** (Atordoado, Envenenado, Imobilizado,
+Inconsciente, Insaturado, Queimando, Sangrando, Saturado, Surdo, e
+qualquer condição manual sem `conditionId` da Biblioteca): geram um
+único efeito `kind: "warning"`, `affectedTags: []`, `modifier: 0`,
+explicação "Condição registrada — automação de modificador ainda não
+implementada para ela." — nunca inventa regra, nunca soma nada em
+nenhuma rolagem (array vazio de tags nunca casa com nenhum
+`rollTagsAtuais`).
+
+## 4. Como as tags são aplicadas
+
+**Tags automáticas** — sempre presentes em `rollTagsAtuais`: o
+`atributoId` escolhido (`corpo`/`mente`/`animo`) e o `periciaId`
+escolhido (se não for "sem perícia").
+
+**Tags extras (manuais)** — checkboxes em `RollsTab`, desligadas por
+padrão, ligadas pelo jogador antes de rolar: `ofensiva`, `defensiva`,
+`visao`, `audicao`, `reacao`, `manual`. Nenhuma inferência automática
+("Luta parece ofensiva") — decisão explícita do pedido (item 5: "não
+tentar inferir tudo automaticamente").
+
+**Cálculo do modificador final**: `RollsTab` filtra
+`activeEffects` em dois grupos a partir de `rollTagsAtuais`:
+- `chipsAplicaveis` (kind="modifier" com alguma tag em comum) — viram
+  chips clicáveis, ligados por padrão (`enabledByDefault`), exibindo
+  fonte + valor + explicação (tooltip). Clicar desliga/religa.
+- `avisosAplicaveis` (kind="warning"/"lock"/"auto_fail" com tag em
+  comum) — chips não-clicáveis, só informativos.
+
+`modificadorEfeitos = soma dos chips LIGADOS`; `finalModifier =
+manualModifier (campo "Modificador" já existente) + modificadorEfeitos`.
+Só `finalModifier` é passado para `rollPericia()`.
+
+## 5. RollsTab
+
+- Checkboxes de tags extras + chips de efeito, renderizados dentro da
+  seção "Rolagem de perícia" (ver seção 4 acima).
+- Payload gravado em `table_logs` (`type="rolagem_pericia"`) ganhou 5
+  campos novos: `rollTags` (array de tags usadas nesta rolagem),
+  `effectsApplied` (chips que estavam ligados — id/sourceName/
+  modifier/explanation), `effectsDisabled` (chips aplicáveis mas
+  desligados manualmente, mesmo formato), `manualModifier` (valor do
+  campo "Modificador" isolado), `finalModifier` (soma final realmente
+  usada na rolagem). Campos antigos (`modificador`, `total` etc.)
+  intactos — `modificador` agora reflete `finalModifier` (é o que
+  `rollPericia` de fato usou), sem quebrar leitura de rolagens antigas
+  (que simplesmente não têm os campos novos).
+
+## 6. ConditionsTab
+
+Nova seção "Efeitos ativos gerados (N)", abaixo de "Ativas"/acima de
+"Removidas": lista todo `ActiveEffect` corrente (de todas as condições
+ativas), mostrando fonte, tipo (Modificador/Aviso/Bloqueio/Falha
+automática, com cor própria), tags afetadas e explicação. Texto fixo
+deixando explícito o que ainda falta: "Fim de rodada, dano recorrente,
+ações derivadas (Escapar, Levantar, apagar Queimando) e remoção
+automática por cura ainda não estão automatizados."
+
+## 7. Log da mesa
+
+`MesaTab.formatRolagem` ganhou `formatEffectsApplied()`: quando
+`payload.effectsApplied` existe e não é vazio, acrescenta
+`" [Nome +/-N, ...]"` ao final do resumo do cartão de rolagem. Nenhum
+`type` novo em `table_logs` — reaproveita `rolagem_pericia` como já
+era (item 8 do pedido: "Não criar tipo novo de log se não for
+necessário").
+
+## 8. Arquivos alterados
+
+- `src/lib/character/activeEffects.ts` (novo) — modelo `ActiveEffect` +
+  `deriveActiveEffectsFromConditions()`.
+- `src/lib/character/index.ts` — export do novo módulo.
+- `src/app/dev/character-sheet/components/RollsTab.tsx` — tags extras,
+  chips de efeito, cálculo de `finalModifier`, payload estendido.
+- `src/app/dev/character-sheet/components/ConditionsTab.tsx` — seção
+  "Efeitos ativos gerados".
+- `src/app/dev/character-sheet/components/MesaTab.tsx` —
+  `formatEffectsApplied()` no cartão de rolagem.
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` —
+  `activeEffects` via `useMemo`, repassado a `ConditionsTab`/`RollsTab`.
+
+Nenhuma migration — nada muda no schema do banco (`table_logs.payload`
+já era `jsonb` livre).
+
+## 9. Build e testes
+
+```
+$ npx tsc --noEmit -p tsconfig.json → limpo na primeira tentativa
+$ npm run build → ✓ compilado, rotas inalteradas
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca do Sistema intacta
+```
+
+## 10. Teste manual (navegador, preview server)
+
+Fluxo completo: narrador criou mesa/personagem/perfil/convite → jogador
+entrou por `/join/[token]` → `/ficha` → aplicada condição "Contundido"
+(da Biblioteca) → aba Condições confirmou "Efeitos ativos gerados (3)":
+-1 luta, -1 mobilidade, -1 reflexos → aba Rolagens, perícia "Luta"
+selecionada → chip "Contundido -1" apareceu automaticamente (tag
+`luta` em comum) → rolou: dado 3, modificador -1, **total 2** (3-1,
+confirmado) → desligou o chip → rolou de novo: dado 5, modificador
+**+0**, total 5 (confirmado sem o -1) → aplicada condição "Agarrado" →
+selecionou "Sem perícia" + marcou checkbox "Ofensiva" → chip
+"Agarrado -1" apareceu → rolou: dado 6, modificador -1, total 5
+(confirmado) → confirmado via SQL direto em `table_logs` que as 3
+rolagens gravaram `rollTags`/`effectsApplied`/`effectsDisabled`/
+`manualModifier`/`finalModifier` corretamente (incluindo a rolagem com
+chip desligado, que gravou o efeito em `effectsDisabled`, array vazio
+em `effectsApplied`) → aba Mesa confirmou os cartões de rolagem
+mostrando `[Contundido -1]` e `[Agarrado -1]` quando aplicável, e sem
+sufixo na rolagem com o chip desligado → `/dev/character-sheet`
+acessado diretamente e confirmado sem regressão (nova aba "Condições"
+presente, "Personagens salvos (3)" e combobox de mesas corretos, antes
+da limpeza).
+
+Dados de teste removidos ao final via SQL direto — confirmado que
+restam só os 2 personagens e as 2 campanhas legadas esperadas.
+
+## 11. Pendências
+
+- Ações derivadas de condição (Escapar, Levantar, apagar Queimando) —
+  não implementadas; PRD seção 7.1 as trata como catálogo de ação
+  habilitado por estado, fora do escopo deste checkpoint.
+- Fim de rodada / dano recorrente (Sangrando, Queimando, Envenenado,
+  Saturado, Insaturado, Sufocando "3 min/5 min") — não implementado;
+  não há sistema de rodada/turno ainda no VTT.
+- Remoção automática por cura (Contundido/Envenenado/Sangrando somem
+  ao recuperar 1+ PV, PRD 9.3) — não implementada; `condicoes_ativas`
+  continua exigindo remoção manual pelo botão "Remover".
+- `kind: "lock"` existe no tipo mas nenhuma condição deste checkpoint
+  gera esse kind ainda (travamento de console por Atordoado/
+  Inconsciente é ação derivada/fim de escopo).
+- `auto_fail` (Cego em testes de visão) é só informativo na UI — o
+  `RollsTab` não impede a rolagem sozinho, só mostra o aviso; o
+  jogador/narrador ainda decide manualmente.
+- 9 condições da Biblioteca continuam no fallback informativo
+  (Atordoado, Envenenado, Imobilizado, Inconsciente, Insaturado,
+  Queimando, Sangrando, Saturado, Surdo) — mapear os efeitos delas é
+  trabalho incremental natural do próximo checkpoint de condições.
+- `affectedTags: ["deslocamento"]` nos avisos de movimento é só
+  informativo — não existe nenhum controle de deslocamento na ficha
+  ainda para a tag realmente afetar algo.

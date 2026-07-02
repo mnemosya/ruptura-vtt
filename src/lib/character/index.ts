@@ -4,3 +4,4 @@ export * from "./types";
 export * from "./derived";
 export * from "./createCharacter";
 export * from "./normalizeCharacter";
+export * from "./activeEffects";

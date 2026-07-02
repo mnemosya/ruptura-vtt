@@ -20,12 +20,46 @@ import {
   type PreparedRoll,
   type RupturaRollResult,
 } from "../../../../lib/dice";
-import type { CharacterAttributes, CharacterSkills, AttributeDefinition, SkillDefinition } from "../../../../lib/character";
+import type {
+  ActiveEffect,
+  CharacterAttributes,
+  CharacterSkills,
+  AttributeDefinition,
+  SkillDefinition,
+} from "../../../../lib/character";
 import { addLog } from "../../../../lib/table/storage";
 import { TABLE_LOG_VISIBILITIES, type TableLogVisibility } from "../../../../lib/table";
 
 const HISTORICO_MAX = 10;
 const SEM_PERICIA = "";
+
+/**
+ * Tags extras que o jogador pode ligar manualmente antes de rolar
+ * (checkpoint v0.33, item 5 do pedido) — além das automáticas
+ * (atributo escolhido + perícia escolhida, se houver). "manual" existe
+ * para marcar uma rolagem como taggeada à mão (não inferida), sem
+ * significado de automação próprio. Nenhuma inferência automática de
+ * "isso é uma ação ofensiva" a partir do nome da perícia — o jogador
+ * decide, como pedido ("não tentar inferir tudo automaticamente").
+ */
+const TOGGLE_TAGS = ["ofensiva", "defensiva", "visao", "audicao", "reacao", "manual"] as const;
+type ToggleTag = (typeof TOGGLE_TAGS)[number];
+
+const TOGGLE_TAG_LABELS: Record<ToggleTag, string> = {
+  ofensiva: "Ofensiva",
+  defensiva: "Defensiva",
+  visao: "Visão",
+  audicao: "Audição",
+  reacao: "Reação",
+  manual: "Manual",
+};
+
+const EFFECT_KIND_LABELS: Record<ActiveEffect["kind"], string> = {
+  modifier: "Modificador",
+  warning: "Aviso",
+  lock: "Bloqueio",
+  auto_fail: "Falha automática",
+};
 
 const VISIBILITY_LABELS: Record<TableLogVisibility, string> = {
   public: "Pública",
@@ -97,6 +131,7 @@ export function RollsTab({
   profileId,
   profileNickname,
   profileSessionId,
+  activeEffects,
 }: {
   atributos: CharacterAttributes;
   atributoDefinitions: AttributeDefinition[] | undefined;
@@ -115,6 +150,8 @@ export function RollsTab({
   profileNickname: string | null;
   /** sessionId do navegador (checkpoint v0.24) — anotado em table_logs.profile_session_id. */
   profileSessionId?: string | null;
+  /** Efeitos derivados das condições ativas do personagem (checkpoint v0.33) — ver deriveActiveEffectsFromConditions. */
+  activeEffects: ActiveEffect[];
 }) {
   const atributoIds = ["corpo", "mente", "animo"] as const;
   const [atributoId, setAtributoId] = useState<(typeof atributoIds)[number]>("corpo");
@@ -122,6 +159,45 @@ export function RollsTab({
   const [modificadorInput, setModificadorInput] = useState("0");
   const [cdInput, setCdInput] = useState("");
   const [origemAtual, setOrigemAtual] = useState<string | null>(null);
+  // Tags extras ligadas manualmente pelo jogador (checkpoint v0.33) —
+  // além de atributoId/periciaId, que sempre entram automaticamente.
+  const [tagsExtras, setTagsExtras] = useState<Set<ToggleTag>>(new Set());
+  // Chips de efeito DESLIGADOS manualmente antes de rolar (por id de
+  // ActiveEffect) — um chip ausente daqui está ligado (enabledByDefault
+  // é sempre true neste checkpoint, ver activeEffects.ts).
+  const [chipsDesligados, setChipsDesligados] = useState<Set<string>>(new Set());
+
+  function toggleTagExtra(tag: ToggleTag) {
+    setTagsExtras((prev) => {
+      const next = new Set(prev);
+      if (next.has(tag)) next.delete(tag);
+      else next.add(tag);
+      return next;
+    });
+  }
+
+  function toggleChip(effectId: string) {
+    setChipsDesligados((prev) => {
+      const next = new Set(prev);
+      if (next.has(effectId)) next.delete(effectId);
+      else next.add(effectId);
+      return next;
+    });
+  }
+
+  const rollTagsAtuais = [atributoId, ...(periciaId !== SEM_PERICIA ? [periciaId] : []), ...tagsExtras];
+
+  // Efeitos aplicáveis à seleção atual (kind="modifier" com pelo menos
+  // uma tag em comum) — chips somáveis, ligados por padrão.
+  const chipsAplicaveis = activeEffects.filter(
+    (e) => e.kind === "modifier" && e.affectedTags.some((tag) => rollTagsAtuais.includes(tag)),
+  );
+  // Avisos/falhas automáticas aplicáveis — só informativos, nunca somados.
+  const avisosAplicaveis = activeEffects.filter(
+    (e) => e.kind !== "modifier" && e.affectedTags.some((tag) => rollTagsAtuais.includes(tag)),
+  );
+  const chipsLigados = chipsAplicaveis.filter((e) => !chipsDesligados.has(e.id));
+  const modificadorEfeitos = chipsLigados.reduce((sum, e) => sum + e.modifier, 0);
 
   const [expressaoInput, setExpressaoInput] = useState("");
   const [expressaoErro, setExpressaoErro] = useState<string | null>(null);
@@ -177,9 +253,10 @@ export function RollsTab({
   async function handleRolarPericia() {
     const atributoDef = atributoDefinitions?.find((a) => a.id === atributoId);
     const periciaDef = periciaDefinitions?.find((p) => p.id === periciaId);
-    const modificador = parseIntOrDefault(modificadorInput, 0);
+    const manualModifier = parseIntOrDefault(modificadorInput, 0);
     const cd = cdInput.trim() === "" ? undefined : parseIntOrDefault(cdInput, 0);
     const temPericia = periciaId !== SEM_PERICIA;
+    const finalModifier = manualModifier + modificadorEfeitos;
 
     const resultado = rollPericia({
       atributoId,
@@ -188,7 +265,7 @@ export function RollsTab({
       periciaId: temPericia ? periciaId : undefined,
       periciaNome: temPericia ? periciaDef?.nome ?? periciaId : undefined,
       periciaValor: temPericia ? pericias[periciaId] ?? 0 : undefined,
-      modificador,
+      modificador: finalModifier,
       cd,
     });
 
@@ -217,6 +294,19 @@ export function RollsTab({
       margem: resultado.margem ?? null,
       classificacaoMargem: resultado.classificacaoMargem ?? null,
       origem: origemAtual ?? null,
+      // Checkpoint v0.33 — automação reversível de condições:
+      rollTags: rollTagsAtuais,
+      effectsApplied: chipsLigados.map((e) => ({
+        id: e.id,
+        sourceName: e.sourceName,
+        modifier: e.modifier,
+        explanation: e.explanation,
+      })),
+      effectsDisabled: chipsAplicaveis
+        .filter((e) => chipsDesligados.has(e.id))
+        .map((e) => ({ id: e.id, sourceName: e.sourceName, modifier: e.modifier, explanation: e.explanation })),
+      manualModifier,
+      finalModifier,
     });
   }
 
@@ -353,6 +443,87 @@ export function RollsTab({
             Rolar
           </button>
         </div>
+
+        {/* --- Tags extras (checkpoint v0.33) --- */}
+        <div style={{ marginBottom: 12 }}>
+          <p style={{ fontSize: 11, opacity: 0.6, marginBottom: 6 }}>
+            Tags extras desta rolagem (além de {atributoDefinitions?.find((a) => a.id === atributoId)?.nome ?? atributoId}
+            {periciaId !== SEM_PERICIA ? ` + ${periciaDefinitions?.find((p) => p.id === periciaId)?.nome ?? periciaId}` : ""}
+            , aplicadas automaticamente):
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {TOGGLE_TAGS.map((tag) => (
+              <label key={tag} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
+                <input
+                  data-testid={`roll-tag-${tag}`}
+                  type="checkbox"
+                  checked={tagsExtras.has(tag)}
+                  onChange={() => toggleTagExtra(tag)}
+                />
+                {TOGGLE_TAG_LABELS[tag]}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* --- Chips de modificadores de condição aplicáveis (checkpoint v0.33) --- */}
+        {(chipsAplicaveis.length > 0 || avisosAplicaveis.length > 0) && (
+          <div style={{ marginBottom: 12 }}>
+            <p style={{ fontSize: 11, opacity: 0.6, marginBottom: 6 }}>
+              Modificadores de condição aplicáveis a esta rolagem — desligue o chip para não somar:
+            </p>
+            <div data-testid="roll-chips-efeitos" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {chipsAplicaveis.map((e) => {
+                const ligado = !chipsDesligados.has(e.id);
+                return (
+                  <button
+                    key={e.id}
+                    data-testid={`roll-chip-${e.id}`}
+                    onClick={() => toggleChip(e.id)}
+                    title={e.explanation}
+                    style={{
+                      background: ligado ? "#3a1d1d" : "#1d1e24",
+                      color: ligado ? "#ff9f9f" : "#666",
+                      border: `1px solid ${ligado ? "#ff6b6b" : "#333"}`,
+                      borderRadius: 999,
+                      padding: "4px 10px",
+                      fontSize: 12,
+                      cursor: "pointer",
+                      textDecoration: ligado ? "none" : "line-through",
+                    }}
+                  >
+                    {e.sourceName} {e.modifier >= 0 ? "+" : ""}
+                    {e.modifier}
+                  </button>
+                );
+              })}
+              {avisosAplicaveis.map((e) => (
+                <span
+                  key={e.id}
+                  data-testid={`roll-aviso-${e.id}`}
+                  title={e.explanation}
+                  style={{
+                    background: "#1d1e24",
+                    color: "#f5a623",
+                    border: "1px solid #f5a623",
+                    borderRadius: 999,
+                    padding: "4px 10px",
+                    fontSize: 12,
+                  }}
+                >
+                  ⚠ {e.sourceName} ({EFFECT_KIND_LABELS[e.kind]})
+                </span>
+              ))}
+            </div>
+            {chipsAplicaveis.length > 0 && (
+              <p data-testid="roll-modificador-efeitos" style={{ fontSize: 11, opacity: 0.6, marginTop: 6 }}>
+                Modificador de condições ligadas: {modificadorEfeitos >= 0 ? "+" : ""}
+                {modificadorEfeitos} · Modificador final: {parseIntOrDefault(modificadorInput, 0) + modificadorEfeitos >= 0 ? "+" : ""}
+                {parseIntOrDefault(modificadorInput, 0) + modificadorEfeitos}
+              </p>
+            )}
+          </div>
+        )}
       </Section>
 
       <Section title="Expressão genérica">

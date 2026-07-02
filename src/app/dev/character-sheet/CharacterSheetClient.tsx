@@ -20,7 +20,12 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createInitialCharacter, computeDerivedStats, normalizeCharacter } from "../../../lib/character";
+import {
+  createInitialCharacter,
+  computeDerivedStats,
+  normalizeCharacter,
+  deriveActiveEffectsFromConditions,
+} from "../../../lib/character";
 import {
   createCharacter,
   updateCharacter,
@@ -453,6 +458,14 @@ export default function CharacterSheetClient({
     return () => clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enteredProfile, profileSessionToken]);
+
+  // Efeitos ativos derivados das condições (checkpoint v0.33) — função
+  // pura, recalculada só quando condicoes_ativas muda. Fonte única
+  // compartilhada entre ConditionsTab (lista) e RollsTab (chips).
+  const activeEffects = useMemo(
+    () => deriveActiveEffectsFromConditions(character),
+    [character.condicoes_ativas],
+  );
 
   const derivados = useMemo(
     () => computeDerivedStats(character.atributos, regras),
@@ -948,6 +961,7 @@ export default function CharacterSheetClient({
         <ConditionsTab
           condicoes={character.condicoes_ativas ?? []}
           condicoesDisponiveis={condicoesDisponiveis}
+          activeEffects={activeEffects}
           onAdd={handleAddCondition}
           onRemove={handleRemoveCondition}
         />
@@ -968,6 +982,7 @@ export default function CharacterSheetClient({
           profileId={selectedProfileId}
           profileNickname={perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null}
           profileSessionId={profileSessionToken?.profileSessionId ?? null}
+          activeEffects={activeEffects}
         />
       )}
 

@@ -88,11 +88,31 @@ function chatAuthor(payload: Record<string, unknown>): string {
   return "Mesa";
 }
 
+/**
+ * Sufixo com os modificadores de condição aplicados nesta rolagem
+ * (checkpoint v0.33, item 8: "cartões de rolagem devem exibir, quando
+ * houver, os modificadores de condição aplicados"). `effectsApplied`
+ * só existe em rolagens de perícia feitas depois deste checkpoint —
+ * rolagens antigas/de expressão simplesmente não têm o campo.
+ */
+function formatEffectsApplied(payload: Record<string, unknown>): string {
+  const effects = payload.effectsApplied;
+  if (!Array.isArray(effects) || effects.length === 0) return "";
+  const partes = effects
+    .filter((e): e is { sourceName?: unknown; modifier?: unknown } => typeof e === "object" && e !== null)
+    .map((e) => {
+      const nome = typeof e.sourceName === "string" ? e.sourceName : "?";
+      const mod = typeof e.modifier === "number" ? e.modifier : 0;
+      return `${nome} ${mod >= 0 ? "+" : ""}${mod}`;
+    });
+  return partes.length > 0 ? ` [${partes.join(", ")}]` : "";
+}
+
 function formatRolagem(payload: Record<string, unknown>): string {
   if (typeof payload.characterNome === "string") {
     if (payload.atributo) {
       const pericia = payload.pericia ? ` + ${payload.pericia}` : " (sem perícia)";
-      return `${payload.characterNome}: ${payload.atributo}${pericia} = ${payload.total}`;
+      return `${payload.characterNome}: ${payload.atributo}${pericia} = ${payload.total}${formatEffectsApplied(payload)}`;
     }
     if (payload.expressao) {
       return `${payload.characterNome}: ${payload.expressao} = ${payload.total}`;

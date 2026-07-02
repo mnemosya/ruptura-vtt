@@ -16,7 +16,21 @@
 import { useState } from "react";
 import { Section } from "./Section";
 import { buttonStyle } from "./styles";
-import type { ActiveCondition } from "../../../../lib/character";
+import type { ActiveCondition, ActiveEffect } from "../../../../lib/character";
+
+const EFFECT_KIND_LABELS: Record<ActiveEffect["kind"], string> = {
+  modifier: "Modificador",
+  warning: "Aviso",
+  lock: "Bloqueio",
+  auto_fail: "Falha automática",
+};
+
+const EFFECT_KIND_COLORS: Record<ActiveEffect["kind"], string> = {
+  modifier: "#ff6b6b",
+  warning: "#f5a623",
+  lock: "#c0392b",
+  auto_fail: "#ffb84f",
+};
 
 const inputStyle: React.CSSProperties = {
   background: "#0f1014",
@@ -36,11 +50,14 @@ export interface ConditionOption {
 export function ConditionsTab({
   condicoes,
   condicoesDisponiveis,
+  activeEffects,
   onAdd,
   onRemove,
 }: {
   condicoes: ActiveCondition[];
   condicoesDisponiveis: ConditionOption[];
+  /** Efeitos derivados das condições ativas (checkpoint v0.33) — ver deriveActiveEffectsFromConditions. */
+  activeEffects: ActiveEffect[];
   onAdd: (input: { conditionId: string | null; nome: string; descricao: string; origem: string; duracao: string }) => void;
   onRemove: (id: string) => void;
 }) {
@@ -201,6 +218,46 @@ export function ConditionsTab({
               {c.duracao && <span>Duração: {c.duracao}</span>}
               <span>Aplicada em: {new Date(c.aplicadaEm).toLocaleString("pt-BR")}</span>
             </div>
+          </div>
+        ))}
+      </div>
+
+      {/* --- Efeitos ativos gerados (checkpoint v0.33) --- */}
+      <p style={{ fontSize: 13, opacity: 0.6, marginBottom: 8 }}>Efeitos ativos gerados ({activeEffects.length})</p>
+      <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
+        Modificadores e avisos derivados automaticamente das condições ativas acima — aplicados na aba
+        Rolagens quando a tag correspondente estiver marcada. Fim de rodada, dano recorrente, ações
+        derivadas (Escapar, Levantar, apagar Queimando) e remoção automática por cura ainda não estão
+        automatizados — entram em um checkpoint futuro.
+      </p>
+      {activeEffects.length === 0 && (
+        <p style={{ fontSize: 13, opacity: 0.6, marginBottom: 20 }}>Nenhum efeito ativo gerado.</p>
+      )}
+      <div data-testid="efeitos-ativos-lista" style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 }}>
+        {activeEffects.map((e) => (
+          <div
+            key={e.id}
+            data-testid="efeito-ativo-item"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              background: "#1d1e24",
+              borderRadius: 8,
+              padding: "8px 12px",
+              fontSize: 12,
+              borderLeft: `3px solid ${EFFECT_KIND_COLORS[e.kind]}`,
+            }}
+          >
+            <span style={{ fontWeight: 700, minWidth: 110 }}>{e.sourceName}</span>
+            <span style={{ color: EFFECT_KIND_COLORS[e.kind] }}>
+              {EFFECT_KIND_LABELS[e.kind]}
+              {e.kind === "modifier" ? ` ${e.modifier >= 0 ? "+" : ""}${e.modifier}` : ""}
+            </span>
+            {e.affectedTags.length > 0 && (
+              <span style={{ opacity: 0.5 }}>[{e.affectedTags.join(", ")}]</span>
+            )}
+            <span style={{ opacity: 0.7, marginLeft: "auto" }}>{e.explanation}</span>
           </div>
         ))}
       </div>
