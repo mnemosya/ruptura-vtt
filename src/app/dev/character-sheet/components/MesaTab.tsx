@@ -68,6 +68,7 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   scene_ended: "Cena Encerrada",
   scene_rupture_pending: "Ruptura Pendente (Fim de Cena)",
   character_evolution: "Evolução",
+  action_used: "Ação Usada",
 };
 
 function entryKindLabel(type: string): string {
@@ -85,6 +86,7 @@ function entryIcon(type: string): string {
   if (type.startsWith("collapse_")) return "💀";
   if (type === "round_ended" || type === "scene_ended" || type === "scene_rupture_pending") return "🎬";
   if (type === "character_evolution") return "📈";
+  if (type === "action_used") return "⚔";
   return "•";
 }
 
@@ -97,6 +99,7 @@ function entryBorderColor(type: string): string {
   if (type.startsWith("collapse_")) return "#8e44ad";
   if (type === "round_ended" || type === "scene_ended" || type === "scene_rupture_pending") return "#9b8cff";
   if (type === "character_evolution") return "#4caf50";
+  if (type === "action_used") return "#ff9f6b";
   return "#ffb84f";
 }
 
@@ -188,6 +191,24 @@ function formatEvolution(payload: Record<string, unknown>): string {
   if (tipo === "ganho") return `${characterNome}: +${quantidade} PM — ${descricao}`;
   if (tipo === "gasto") return `${characterNome}: -${quantidade} PM — ${descricao}`;
   return `${characterNome}: ${descricao}`;
+}
+
+/** Checkpoint v0.42: cartão de action_used — nome do personagem, nome da ação, custo pago, condições removidas e pendências. */
+function formatActionUsed(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const actionName = typeof payload.actionName === "string" ? payload.actionName : "Ação";
+  const cost = payload.cost as Record<string, unknown> | undefined;
+  const custoLabel = typeof cost?.label === "string" ? cost.label : "—";
+  const removedConditions = Array.isArray(payload.removedConditions)
+    ? payload.removedConditions.filter((c): c is string => typeof c === "string")
+    : [];
+  const pendingEffects = Array.isArray(payload.pendingEffects)
+    ? payload.pendingEffects.filter((c): c is string => typeof c === "string")
+    : [];
+  const partes = [`custo ${custoLabel}`];
+  if (removedConditions.length > 0) partes.push(`removeu ${removedConditions.join(", ")}`);
+  if (pendingEffects.length > 0) partes.push(`pendente: ${pendingEffects.join(", ")}`);
+  return `${characterNome}: ${actionName} (${partes.join(" · ")})`;
 }
 
 /** Texto da mensagem de chat — aceita `text` (ficha, v0.12) ou `mensagem` (formato antigo do /dev/table). */
@@ -485,7 +506,9 @@ export function MesaTab({
                                 ? formatRoundOrScene(entry.type, entry.payload)
                                 : entry.type === "character_evolution"
                                   ? formatEvolution(entry.payload)
-                                  : JSON.stringify(entry.payload)}
+                                  : entry.type === "action_used"
+                                    ? formatActionUsed(entry.payload)
+                                    : JSON.stringify(entry.payload)}
             </span>
           </div>
         ))}

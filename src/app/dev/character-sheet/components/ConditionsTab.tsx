@@ -105,6 +105,9 @@ export function ConditionsTab({
         Registro manual de condições/efeitos ativos — sem automação de bônus/penalidade ainda.
         Adicionar/remover uma condição também registra um evento no log da mesa (aba Mesa).
       </p>
+      <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 16 }}>
+        Ações habilitadas por condição (checkpoint v0.42) aparecem na aba Ações.
+      </p>
 
       {/* --- Formulário de adição --- */}
       <div

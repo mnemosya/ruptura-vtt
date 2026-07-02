@@ -105,9 +105,11 @@ export interface ActiveCondition {
    * para remoção manual (botão "Remover", v0.32). `"cura_pv"` marca
    * remoção automática por ter recuperado 1+ PV (PRD 9.3), permitindo
    * ao "Desfazer" reativar só as condições removidas pela cura mais
-   * recente, sem tocar em remoções manuais anteriores.
+   * recente, sem tocar em remoções manuais anteriores. `"acao_combate"`
+   * (checkpoint v0.42) marca remoção por efeito simples automatizado do
+   * Console de Ação (ex.: Levantar removendo Caído).
    */
-  removidaOrigem?: "cura_pv";
+  removidaOrigem?: "cura_pv" | "acao_combate";
 }
 
 export interface Character {

@@ -40,6 +40,8 @@ import {
   gainPm,
   spendPm,
   logPermanentAdjustment,
+  buildActionConsoleItems,
+  executeActionOnCharacter,
 } from "../../../lib/character";
 import {
   createCharacter,
@@ -59,6 +61,7 @@ import type {
   CharacterResources,
   CharacterRulesPayload,
   DerivedStats,
+  CombatActionContent,
 } from "../../../lib/character";
 import { rollPericia, type PreparedRoll } from "../../../lib/dice";
 import {
@@ -86,6 +89,7 @@ import { ResourcesTab } from "./components/ResourcesTab";
 import { RollsTab } from "./components/RollsTab";
 import { LogTab, type LogEntry, type LogTipo } from "./components/LogTab";
 import { ConditionsTab, type ConditionOption } from "./components/ConditionsTab";
+import { ActionsTab } from "./components/ActionsTab";
 import { ActiveStateStrip } from "./components/ActiveStateStrip";
 import { MesaTab } from "./components/MesaTab";
 import { SavedCharactersTab } from "./components/SavedCharactersTab";
@@ -111,6 +115,10 @@ interface Props {
   mesasIniciais: Campaign[];
   /** Condições publicadas na Biblioteca do Sistema (checkpoint v0.32) — só pré-preenchimento, não obrigatório. */
   condicoesDisponiveis: ConditionOption[];
+  /** slug + acoes_habilitadas de cada condição (checkpoint v0.42) — cruzado com a visibilidade das ações. */
+  condicoesParaAcoes: { slug: string; acoes_habilitadas?: { acao: string }[] }[];
+  /** Ações de combate publicadas na Biblioteca do Sistema (checkpoint v0.42) — fonte única do Console de Ação. */
+  combatActionsIniciais: CombatActionContent[];
   /**
    * Mesa/perfil pré-selecionados via query string (`?campaignId=...&
    * profileId=...`) — vindos de `/dev/join/[campaignId]` (checkpoint
@@ -163,6 +171,8 @@ export default function CharacterSheetClient({
   personagensIniciais,
   mesasIniciais,
   condicoesDisponiveis,
+  condicoesParaAcoes,
+  combatActionsIniciais,
   initialCampaignId,
   initialProfileId,
   mode,
@@ -501,6 +511,23 @@ export default function CharacterSheetClient({
   const derivados = useMemo(
     () => computeDerivedStats(character.atributos, regras),
     [character.atributos, regras],
+  );
+
+  // Itens do Console de Ação (checkpoint v0.42) — recalculados sempre que
+  // as condições ativas mudam (visibilidade condicional) ou o PA/Reação
+  // disponível muda (habilitação do botão "Executar"). Nenhuma lista de
+  // ações é mantida à mão aqui — combatActionsIniciais vem inteiro da
+  // Biblioteca (ver CharacterSheetView.tsx).
+  const actionConsoleItems = useMemo(
+    () =>
+      buildActionConsoleItems(
+        character,
+        combatActionsIniciais,
+        condicoesParaAcoes,
+        derivados.pa_max,
+        derivados.reacoes_por_rodada,
+      ),
+    [character, combatActionsIniciais, condicoesParaAcoes, derivados.pa_max, derivados.reacoes_por_rodada],
   );
 
   /**
@@ -1367,6 +1394,85 @@ export default function CharacterSheetClient({
   }
 
   /**
+   * Executa uma ação do Console de Ação (checkpoint v0.42). Encontra o
+   * ActionConsoleItem atual (revalida enabled em cima do character mais
+   * recente, não confia em um snapshot antigo passado pela UI), aplica
+   * custo de PA/Reação + remoção simples de condição no próprio
+   * personagem via `executeActionOnCharacter` (lib/character/
+   * actionConsole.ts — pura, não decide nada aqui), registra no Log
+   * local e em table_logs (type="action_used", best-effort, mesmo
+   * padrão de handleAddCondition/handleRemoveCondition).
+   */
+  async function handleUseAction(actionId: string) {
+    const actionContent = combatActionsIniciais.find((a) => a.id === actionId);
+    const item = actionConsoleItems.find((a) => a.id === actionId);
+    if (!actionContent || !item || !item.enabled) return;
+
+    const nowIso = new Date().toISOString();
+    const result = executeActionOnCharacter(character, actionContent, derivados.pa_max, derivados.reacoes_por_rodada, nowIso);
+    setCharacter(result.character);
+
+    const custoResumo =
+      result.paBefore !== result.paAfter
+        ? `PA ${result.paBefore} → ${result.paAfter}`
+        : result.reactionBefore !== result.reactionAfter
+          ? `Reação ${result.reactionBefore} → ${result.reactionAfter}`
+          : "sem custo";
+    const removidasResumo = result.removedConditions.length > 0 ? ` — removeu ${result.removedConditions.join(", ")}` : "";
+    addLogEntry("acao_combate", `${item.nome}: ${custoResumo}${removidasResumo}.`);
+
+    if (selectedCampaignId) {
+      try {
+        await addLog({
+          campaignId: selectedCampaignId,
+          characterId: characterId ?? undefined,
+          profileId: selectedProfileId,
+          profileSessionId: profileSessionToken?.profileSessionId ?? null,
+          type: "action_used",
+          visibility: "public",
+          payload: {
+            characterId,
+            characterNome: character.nome,
+            profileId: selectedProfileId,
+            actionId: actionContent.id,
+            actionName: actionContent.nome,
+            category: actionContent.categoria,
+            actionType: actionContent.tipo,
+            cost: { label: item.custoLabel, pa: item.custoPA, reacao: item.custoReacao },
+            paBefore: result.paBefore,
+            paAfter: result.paAfter,
+            reactionBefore: result.reactionBefore,
+            reactionAfter: result.reactionAfter,
+            removedConditions: result.removedConditions,
+            automatedEffects: result.automatedEffects,
+            pendingEffects: result.pendingEffects,
+            source: "character_sheet",
+          },
+        });
+      } catch {
+        // Best-effort — a ação já foi executada no estado local; falha aqui não bloqueia o jogador.
+      }
+    }
+  }
+
+  /**
+   * "Rolar" numa ação (aba Ações) — só disponível quando `acao.teste`
+   * tem `pericias` (ver ActionConsoleItem.testeTexto). Reaproveita a
+   * mesma ponte de handleRollPericia: muda para a aba Rolagens com a
+   * primeira perícia do teste pré-selecionada. Margem, região do corpo,
+   * dano e defesa do alvo continuam fora de escopo (pendência do
+   * relatório) — este botão só evita repetir a seleção manual de
+   * atributo/perícia.
+   */
+  function handleRollAction(actionId: string) {
+    const actionContent = combatActionsIniciais.find((a) => a.id === actionId);
+    const teste = actionContent?.teste as { pericias?: unknown } | undefined;
+    const periciaId = Array.isArray(teste?.pericias) && typeof teste.pericias[0] === "string" ? teste.pericias[0] : undefined;
+    if (!actionContent || !periciaId) return;
+    handleRollPericia(periciaId);
+  }
+
+  /**
    * "Rolar" num atributo (aba Atributos): muda para a aba Rolagens com
    * esse atributo selecionado e SEM perícia. Funciona nos dois modos —
    * rolar não é "editar a ficha", por isso não tem guard de sheetMode
@@ -1588,6 +1694,18 @@ export default function CharacterSheetClient({
           activeEffects={activeEffects}
           onAdd={handleAddCondition}
           onRemove={handleRemoveCondition}
+        />
+      )}
+
+      {activeTab === "acoes" && (
+        <ActionsTab
+          actions={actionConsoleItems}
+          paAtual={Math.max(0, derivados.pa_max - (character.estado_jogo?.pa_gastos ?? 0))}
+          paMax={derivados.pa_max}
+          reacaoAtual={Math.max(0, derivados.reacoes_por_rodada - (character.estado_jogo?.reacoes_usadas ?? 0))}
+          reacaoMax={derivados.reacoes_por_rodada}
+          onExecute={handleUseAction}
+          onRoll={handleRollAction}
         />
       )}
 

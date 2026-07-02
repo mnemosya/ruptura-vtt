@@ -7055,3 +7055,270 @@ gerando inconsistência visual entre a lógica real e o texto exibido.
 - Nenhum bug grande foi encontrado durante a auditoria de payload,
   normalização ou relatórios — nenhuma pendência de bug grande a
   documentar além do já listado nos relatórios de v0.37–v0.41.
+
+# Checkpoint v0.42 — Console de ação básico data-driven
+
+## 1. Fonte dos dados
+
+100% data-driven, sem catálogo manual no frontend:
+
+- Ações: `content_documents` (`content_type="combat_action"`) — já
+  importadas antes deste checkpoint (confirmado via SQL:
+  `select content_type, count(*) ... group by content_type` retornou
+  `combat_action: 28`). Nenhum import foi necessário; o script
+  `scripts/seed-content.ts` já mapeia
+  `db_acoes_combate_normalizado_v1_1.json` (`collectionKey: "acoes"`)
+  para `combat_action` desde antes deste checkpoint.
+- Condições: `content_documents` (`content_type="condition"`) — já
+  importadas, 17 registros confirmados via a mesma consulta.
+- Leitura: reaproveitadas as funções já existentes em
+  `src/lib/content/queries.ts` — `listCombatActions()` e
+  `listConditions()` — sem criar nenhuma consulta nova.
+
+## 2. Totais
+
+- 28 ações de combate disponíveis (confirmado por SQL e por contagem
+  em runtime na aba Ações, filtro "Todos", sem condição ativa: 24
+  sempre-visíveis; as 4 condicionais — `levantar`, `escapar`,
+  `soltar_alvo`, `apagar_fogo` — ficam ocultas até a condição
+  correspondente estar ativa, como esperado).
+- 17 condições disponíveis.
+
+## 3. Visibilidade condicional
+
+Interpretada em `src/lib/character/actionConsole.ts`
+(`isActionVisibleForCharacter`):
+- `"sempre"` → sempre visível.
+- `"condicao:slug1,slug2"` → visível se QUALQUER slug estiver ativo
+  entre as condições do personagem (`ativa: true`), comparando por
+  `conditionId` (quando a condição veio da Biblioteca) ou pelo nome em
+  minúsculas (condição manual).
+- Cruzamento com `condicoes[].acoes_habilitadas`
+  (`actionsEnabledByConditions`): para cada condição ativa do
+  personagem, busca o registro completo na Biblioteca e expande
+  `acoes_habilitadas[].acao` — uma ação aparece se estiver visível por
+  `visibilidade` OU habilitada por `acoes_habilitadas` (união, nunca
+  duplicada — badge "Condição" mostrado quando habilitada por
+  condição).
+
+Ações condicionais validadas manualmente no preview:
+- **Caído → Levantar**: aplicado Caído na aba Condições, `levantar`
+  apareceu na aba Ações com badge Condição e "Habilitada por: caido";
+  executado com PA 3 → 2; Caído removido (`ativa: false`,
+  `removidaOrigem: "acao_combate"`); `levantar` desapareceu da lista
+  imediatamente após.
+- Agarrado/Imobilizado → Escapar, Agarrando → Soltar alvo, Queimando →
+  Apagar fogo: verificados por inspeção de payload/lógica (mesmo
+  caminho de código do teste com Caído — `visibilidade:
+  "condicao:..."` e `remover_condicao`/`remover_restricao_movimento`
+  no payload) — não repetidos manualmente um a um no preview por
+  seguirem exatamente o mesmo fluxo já confirmado com Caído/Levantar,
+  mas cobertos pela mesma função pura testada.
+
+## 4. Custos implementados
+
+`getActionCost`/`canPayActionCost`/`executeActionOnCharacter`
+(`actionConsole.ts`):
+- `custo.tipo = "pa"` → consome `estado_jogo.pa_gastos`; bloqueia
+  execução (botão desabilitado + motivo textual) se PA atual
+  (`pa_max - pa_gastos`) for menor que o custo.
+- `custo.tipo = "reacao"` → consome `estado_jogo.reacoes_usadas`;
+  mesmo bloqueio para Reação insuficiente.
+- `custo.tipo = "livre"` → não consome PA nem Reação; badge "Livre".
+- `custo.tipo = "composto"` → NÃO resolvido: botão sempre desabilitado
+  com motivo "Custo composto ainda não automatizado." — `preparar_turno`
+  é a única ação com esse custo e aparece só como informativa, badge
+  "Composto", nenhum PA/Reação é tocado.
+- `deslocar`: `repeticao_mesmo_turno_incremento` do payload NÃO é
+  aplicado (sem repetição incremental neste checkpoint, como pedido) —
+  cada clique em Executar sempre cobra 1 PA fixo. Pendência documentada
+  abaixo.
+- `sacar_rapido` e `sacar_dificil`: tratadas como duas ações
+  independentes, cada uma com seu próprio custo (1 PA / 2 PA) — nenhum
+  seletor artificial foi criado.
+
+Validado manualmente no preview: `deslocar` (PA 3→2), `atacar` (PA
+2→0, e depois bloqueado com "PA insuficiente (atual: 0, necessário:
+2)."), `esquivar` (Reação 1→0), `falar` (sem custo, log "sem custo").
+
+## 5. Efeitos automatizados
+
+Só os 3 tipos simples pedidos, sempre no próprio personagem
+(`executeActionOnCharacter`):
+- `remover_condicao` (payload `{ condicao: slug }`) — usado por
+  `levantar` (remove `caido`), `soltar_alvo` (remove `agarrando`),
+  `apagar_fogo` (remove `queimando`).
+- `remover_condicoes` (payload `{ condicoes: [slug, ...] }`).
+- `remover_restricao_movimento` — tratado como remoção fixa de
+  `agarrado` + `imobilizado` (usado por `escapar`).
+- `aplicar_postura` (`postura_ofensiva`/`postura_defensiva`): consome
+  PA e registra log/`table_log`, mas NÃO gera modificador ativo — sem
+  estrutura de "postura como estado ativo" na ficha ainda. Warning
+  explícito devolvido pela função pura: "Posturas ainda não geram
+  modificador ativo automático." — pendência documentada abaixo, como
+  pedido.
+
+Remoção de condição marca `ativa: false`, `removidaEm: nowIso`,
+`removidaOrigem: "acao_combate"` (novo valor adicionado ao union type
+de `ActiveCondition.removidaOrigem` em `types.ts`, ao lado do
+`"cura_pv"` já existente) — histórico preservado, nunca apagado do
+array. `ActiveStateStrip` reflete a remoção imediatamente (mesmo
+`character` state, sem re-fetch).
+
+Todos os outros tipos de `payload_automacao.efeitos`/`sucesso`
+(`resolver_ataque`, `controle_corpo_a_corpo`, `estrangular_alvo`,
+`aplicar_condicao`, `remover_condicao_do_oponente`, `movimento_forcado`,
+`desarmar_alvo`, `recarregar_arma`, `acumular_bonus_mirar`,
+`criar_preparacao_turno`, `executar_protocolo_malha`,
+`efeitos_por_margem`, `defesa_ativa`, etc.) aparecem só como texto
+"Pendente" na UI (badge "Parcial" quando a ação tem pelo menos um
+efeito pendente) e no `table_log` (`pendingEffects`) — nenhum estado
+mecânico além de PA/Reação é alterado por eles.
+
+## 6. Rolagem
+
+Integração mínima, reaproveitando a ponte já existente
+(`handleRollPericia`/`preparedRoll`, checkpoint v0.10): o botão
+"Rolar" só aparece quando `acao.teste.pericias` é um array não vazio
+(ex.: `escapar`, `derrubar`) — usa a primeira perícia listada, resolve
+o atributo primário dela via `regras.pericias[].atributo_primario` (dado
+real da Biblioteca, mesmo critério de `handleRollPericia`) e muda para
+a aba Rolagens com esse par pré-selecionado. Ações com `teste: null`
+ou sem `pericias` (`atacar`, `agarrar`, etc.) não mostram o botão —
+sem seletor de perícia múltipla nem qualquer heurística nova.
+
+NÃO implementado (documentado como pedido, não como bug): margem,
+região do corpo, dano, defesa do alvo/MIT/PD, `efeitos_por_margem` —
+tudo isso continua exigindo a aba Rolagens manual + leitura humana do
+resultado.
+
+## 7. Logs
+
+- Local (`LogTab`): novo tipo `"acao_combate"` em `LOG_TIPOS`
+  (`LogTab.tsx`), label "Ação", cor própria — resumo com nome da ação,
+  custo antes→depois e condições removidas.
+- `table_logs`: novo `type="action_used"`, payload conforme pedido
+  (`characterId`, `characterNome`, `profileId`, `profileSessionId`,
+  `actionId`, `actionName`, `category`, `actionType`, `cost`,
+  `paBefore`, `paAfter`, `reactionBefore`, `reactionAfter`,
+  `removedConditions`, `automatedEffects`, `pendingEffects`,
+  `source: "character_sheet"`) — gravação best-effort (mesmo padrão de
+  `handleAddCondition`/`handleRemoveCondition`: falha não bloqueia a
+  execução local da ação).
+- `action_roll` NÃO foi criado — como a rolagem integrada só reusa a
+  ponte existente para a aba Rolagens (que já grava
+  `rolagem_pericia`), um `type` novo geraria duplicidade sem
+  informação adicional; pendência documentada.
+- `MesaTab.tsx`: nova função `formatActionUsed` + entrada no mapa de
+  labels/ícones/cores (`ENTRY_KIND_LABELS`, `entryIcon`,
+  `entryBorderColor`) formatando "Ação Usada — Nome do personagem,
+  nome da ação, custo pago, condições removidas (se houver),
+  pendências (se houver)".
+
+## 8. Arquivos alterados
+
+- `src/lib/character/actionConsole.ts` (novo) — módulo puro de
+  interpretação: `normalizeCombatActionContent`,
+  `isActionVisibleForCharacter`, `getActionCost`,
+  `canPayActionCost`, `getActionRemovalEffects`,
+  `buildActionConsoleItems`, `executeActionOnCharacter`.
+- `src/lib/character/types.ts` — `ActiveCondition.removidaOrigem`
+  ganhou `"acao_combate"`.
+- `src/lib/character/index.ts` — export do novo módulo.
+- `src/app/dev/character-sheet/components/ActionsTab.tsx` (novo) —
+  aba "Ações": cabeçalho PA/Reação, aviso de escopo, filtro por
+  categoria, cartão por ação (badges Reação/Livre/Composto/
+  Condição/Parcial, custo, descrição, requisito, teste, efeitos
+  automatizados/pendentes, botões Executar/Rolar).
+- `src/app/dev/character-sheet/components/CharacterSheetTabs.tsx` —
+  nova aba `"acoes"` em `TABS`/`TAB_LABELS`.
+- `src/app/dev/character-sheet/components/ConditionsTab.tsx` — nota
+  discreta "Ações habilitadas por condição aparecem na aba Ações."
+  (sem duplicar ações derivadas nessa aba).
+- `src/app/dev/character-sheet/components/LogTab.tsx` — novo tipo
+  `"acao_combate"`.
+- `src/app/dev/character-sheet/components/MesaTab.tsx` —
+  `formatActionUsed` + entradas de label/ícone/cor para `action_used`.
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — props
+  `condicoesParaAcoes`/`combatActionsIniciais`, `useMemo
+  actionConsoleItems`, `handleUseAction`, `handleRollAction`,
+  renderização da aba "Ações".
+- `src/app/CharacterSheetView.tsx` — busca `listCombatActions()` +
+  `listConditions()` (reaproveitada para also extrair
+  `acoes_habilitadas`), normaliza via `normalizeCombatActionContent` e
+  passa para `CharacterSheetClient`.
+
+Nenhum import/seed de conteúdo foi necessário — as ações e condições
+já estavam publicadas na Biblioteca antes deste checkpoint.
+
+## 9. Build e testes
+
+- `npx tsc --noEmit -p tsconfig.json`: sem erros.
+- `npm run build`: sucesso, rotas auditadas presentes e sem erro
+  (`/mesas`, `/mesas/[campaignId]`,
+  `/mesas/[campaignId]/personagens/novo`, `/join/[token]`, `/ficha`,
+  `/dev/character-sheet`).
+- `npm run test:character-storage`: `TODOS OS PASSOS PASSARAM`.
+- `npm run test:content-read`: sucesso.
+- Teste manual no preview (`/dev/character-sheet`):
+  - Aba "Ações" presente; sem condição ativa, 24 ações sempre-visíveis
+    listadas (confirmado por contagem em runtime), as 4 condicionais
+    ausentes.
+  - `deslocar`: PA 3 → 2. `atacar`: PA 2 → 0, depois botão desabilitado
+    com "PA insuficiente (atual: 0, necessário: 2)." ao tentar de novo.
+  - `esquivar`: Reação 1 → 0. `falar`: sem custo, log "sem custo".
+  - Aplicado Caído (aba Condições) → `levantar` apareceu com badge
+    Condição e "Habilitada por: caido"; PA resetado e `levantar`
+    executado: PA 3 → 2, Caído removido, `levantar` desapareceu da
+    lista imediatamente, log local registrou "Levantar: PA 3 → 2 —
+    removeu Caído.".
+  - Log local (`LogTab`) mostrou todas as ações executadas com tipo
+    "Ação" e resumo correto.
+  - Sem erros no console do navegador em nenhum momento do teste.
+  - `/mesas` carregado sem regressão (gate de login normal, não
+    relacionado a este checkpoint).
+  - Agarrado/Imobilizado → Escapar, Agarrando → Soltar alvo, Queimando
+    → Apagar fogo: NÃO exercitados manualmente passo a passo no
+    preview (só Caído/Levantar foi); cobertos pela mesma função pura
+    (`isActionVisibleForCharacter`/`executeActionOnCharacter`) já
+    validada com Caído — mesmo caminho de código, dados de payload
+    conferidos por inspeção direta do JSON. Ver pendência abaixo.
+  - Salvar/reload e integração completa com convite/perfil (`/ficha`,
+    `/join/[token]`) NÃO foram exercitados neste checkpoint por
+    limitação de tempo — ver pendência.
+
+## 10. Pendências
+
+- Testar manualmente, passo a passo no preview, os 3 pares
+  condicionais restantes (Agarrado/Imobilizado → Escapar, Agarrando →
+  Soltar alvo, Queimando → Apagar fogo) — hoje só Caído → Levantar foi
+  exercitado ponta a ponta; os demais foram validados por inspeção de
+  payload e por compartilharem o mesmo código já testado.
+- Persistência: salvar/reload da ficha com condição removida por ação
+  e PA/Reação consumidos, e o fluxo completo criar mesa → convite →
+  `/ficha` → executar ação, não foram exercitados neste checkpoint —
+  recomenda-se cobrir num próximo checkpoint ou sessão dedicada.
+- `preparar_turno` (custo composto) continua só informativo — sem UI
+  de "informar custo preparado"; nenhuma regra simplificada foi
+  inventada, como pedido.
+- `deslocar` não implementa a repetição incremental de custo no mesmo
+  turno (`repeticao_mesmo_turno_incremento`) — cada execução cobra 1
+  PA fixo; texto de observação não foi adicionado ao card por
+  simplicidade, mas o comportamento está documentado aqui.
+- `aplicar_postura` (Postura Ofensiva/Defensiva) consome PA e loga,
+  mas não gera modificador ativo automático — falta estrutura de
+  "postura como estado ativo" na ficha (trabalho futuro).
+- Rolagem integrada cobre só o caso simples (`teste.pericias[0]`) —
+  ações com `teste` do tipo `contestado_ou_simples`/
+  `simples_condicional`/`opcional_narrador` ou com múltiplas perícias
+  possíveis continuam exigindo a aba Rolagens manual para qualquer
+  refinamento (CD, dispensa de teste, variantes). `action_roll` como
+  `table_log` type não foi criado (rolagem cai em `rolagem_pericia`,
+  já existente).
+- Efeitos de payload não automatizados (resolver_ataque, controle
+  corpo a corpo, estrangular, aplicar_condicao no alvo, movimento
+  forçado, desarmar, recarregar de fato, acumular bônus de Mirar,
+  protocolo Malha, efeitos_por_margem, dano, defesa do alvo/MIT/PD)
+  continuam inteiramente pendentes — aparecem só como texto
+  informativo na ação, nunca simulados; ficam para checkpoints futuros
+  de combate completo.

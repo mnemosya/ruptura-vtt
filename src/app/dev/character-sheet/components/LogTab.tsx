@@ -8,7 +8,7 @@ import { buttonStyle } from "./styles";
  * recursos/PA/Reações vêm dos handlers do próprio CharacterSheetClient).
  */
 
-export const LOG_TIPOS = ["rolagem_pericia", "rolagem_expressao", "recurso", "pa", "reacao", "perfil", "condicao", "descanso"] as const;
+export const LOG_TIPOS = ["rolagem_pericia", "rolagem_expressao", "recurso", "pa", "reacao", "perfil", "condicao", "descanso", "acao_combate"] as const;
 export type LogTipo = (typeof LOG_TIPOS)[number];
 
 export interface LogEntry {
@@ -28,6 +28,7 @@ const LOG_TIPO_LABELS: Record<LogTipo, string> = {
   perfil: "Perfil",
   condicao: "Condição",
   descanso: "Descanso",
+  acao_combate: "Ação",
 };
 
 const LOG_TIPO_CORES: Record<LogTipo, string> = {
@@ -39,6 +40,7 @@ const LOG_TIPO_CORES: Record<LogTipo, string> = {
   perfil: "#ff6b9f",
   condicao: "#ff6b6b",
   descanso: "#5ec8ff",
+  acao_combate: "#9b8cff",
 };
 
 const LOG_MAX = 50;

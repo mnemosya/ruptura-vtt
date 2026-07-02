@@ -14,9 +14,10 @@
  * produto, mesmo que a UI não a exiba.
  */
 
-import { getCharacterRules, listConditions } from "../lib/content";
+import { getCharacterRules, listConditions, listCombatActions } from "../lib/content";
 import { listLegacyCharactersDev } from "../lib/character/storage";
 import { listCampaigns } from "../lib/table/storage";
+import { normalizeCombatActionContent, type CombatActionContent } from "../lib/character";
 import type { CharacterRecord, CharacterRulesPayload } from "../lib/character";
 import type { Campaign } from "../lib/table";
 import type { ConditionOption } from "./dev/character-sheet/components/ConditionsTab";
@@ -75,6 +76,8 @@ export async function CharacterSheetView({
   // pré-preencher o formulário manual da aba Condições; falha aqui não
   // deve travar a ficha (lista vazia = formulário totalmente manual).
   let condicoesDisponiveis: ConditionOption[] = [];
+  /** Slug + acoes_habilitadas de cada condição (checkpoint v0.42) — usado só para cruzar visibilidade condicional de ações, ver actionConsole.ts. */
+  let condicoesParaAcoes: { slug: string; acoes_habilitadas?: { acao: string }[] }[] = [];
   try {
     const docs = await listConditions();
     condicoesDisponiveis = docs.map((doc) => {
@@ -86,8 +89,22 @@ export async function CharacterSheetView({
         tags: Array.isArray(payload?.tags) ? payload.tags : undefined,
       };
     });
+    condicoesParaAcoes = docs.map((doc) => {
+      const payload = doc.payload as { acoes_habilitadas?: { acao: string }[] } | null;
+      return { slug: doc.slug, acoes_habilitadas: payload?.acoes_habilitadas };
+    });
   } catch {
     // Biblioteca fora do ar — aba Condições continua funcional em modo manual.
+  }
+
+  // Ações de combate publicadas na Biblioteca (checkpoint v0.42) — fonte
+  // de verdade única do console de ação; nunca uma lista manual aqui.
+  let combatActions: CombatActionContent[] = [];
+  try {
+    const docs = await listCombatActions();
+    combatActions = docs.map((doc) => normalizeCombatActionContent(doc.payload as Record<string, unknown>));
+  } catch {
+    // Biblioteca fora do ar — aba Ações mostra lista vazia (sem inventar catálogo local).
   }
 
   return (
@@ -97,6 +114,8 @@ export async function CharacterSheetView({
       personagensIniciais={personagensSalvos}
       mesasIniciais={mesasIniciais}
       condicoesDisponiveis={condicoesDisponiveis}
+      condicoesParaAcoes={condicoesParaAcoes}
+      combatActionsIniciais={combatActions}
       initialCampaignId={campaignId}
       initialProfileId={profileId}
       mode={mode}
