@@ -7880,3 +7880,268 @@ registradas como `"condicao"`.
   Sufocando, se algum dia usados por outra condição) — mesmo padrão de
   pendência.
 - Preview/modal de "Encerrar Rodada" antes de aplicar.
+
+# Checkpoint v0.44.1 — Vincular fim de rodada da mesa ao motor de condições
+
+## 1. Commit base
+
+`8a46a30 feat: resolve end-round condition effects` (v0.44) — o motor
+`src/lib/character/endRoundConditions.ts` não foi reimplementado nem
+alterado; este checkpoint só o reaproveita a partir de um novo ponto
+de entrada em nível de mesa/campanha.
+
+## 2. Por que este checkpoint existe
+
+O v0.44 implementou o motor data-driven de fim de rodada corretamente,
+mas o único gatilho existente era o botão "Encerrar Rodada" da FICHA
+individual (`ResourcesTab.tsx`), operando sobre uma rodada LOCAL do
+personagem (`Character.current_round`) sem nenhuma relação com
+`campaigns.current_round`/`current_scene` (a rodada real da campanha,
+já existente desde v0.39). Isso deixava a "rodada oficial" da mesa
+sem processar dano/testes de condição nenhum — o dashboard do
+narrador só incrementava o contador e listava nomes em texto, como
+documentado na pendência do v0.44. Este checkpoint fecha esse elo.
+
+## 3. Como a mesa virou fonte canônica de rodada
+
+`campaign.current_round`/`campaign.current_scene` (migration 0017,
+v0.39) passam a ser os valores usados pelo motor de condições para
+TODOS os personagens da mesa. O botão "Encerrar Rodada" em
+`/mesas/[campaignId]` (`MesaDetailClient.tsx`) agora chama
+`endCampaignRound({ campaignId, expectedRound })` — um novo módulo
+(`src/lib/table/endRound.ts`) que:
+1. Lê `campaign.current_round`/`current_scene` reais do banco.
+2. Processa TODOS os personagens ativos (não arquivados) da mesa.
+3. Avança `campaigns.current_round` só depois de processar (reaproveita
+   `endRound()` de `table/storage.ts`, v0.39, sem alterar sua regra).
+
+A ficha individual mantém seu botão como ferramenta MANUAL/dev — ver
+seção 8.
+
+## 4. Como personagens da campanha são carregados
+
+Reaproveitado `listCharactersForNarratorCampaign(campaignId)`
+(já existente, `character/storage.ts`) — mesma função que o dashboard
+já usa para listar `personagensDaMesa`, então nenhuma consulta nova foi
+criada. Filtro aplicado: só personagens **não arquivados**
+(`!record.archived_at`), mesmo critério já usado no dashboard
+(`personagensAtivosDaMesa`, checkpoint v0.25) para decidir quem
+participa do ciclo de jogo. Personagens sem perfil vinculado também
+são processados (o motor não exige perfil, só existência do
+personagem na mesa).
+
+## 5. Como `endRoundConditions.ts` foi reutilizado
+
+Sem nenhuma duplicação de tipo ou regra: `resolveCampaignEndRoundForCharacters`
+(novo, `endRound.ts`) importa e chama diretamente
+`resolveEndRoundConditionsForCharacter`, `applyRoundScopedPaReductions`
+e `resetRoundReactionState` (v0.44/v0.43) para cada personagem, usando
+`round`/`scene` da CAMPANHA (não mais o `current_round` local do
+personagem, que passa a ser sobrescrito com o valor canônico após cada
+processamento — mantém a ficha consistente após reload). `getActiveConditionIds`,
+`normalizeConditionContent` também foram reaproveitados sem alteração.
+
+## 6. Ordem operacional
+
+Idêntica à do v0.44, agora aplicada por personagem dentro do loop da
+mesa:
+A. `resolveEndRoundConditionsForCharacter` (dano/testes/exposição da
+   rodada ATUAL da campanha).
+B. `pa_gastos = 0` (renova PA).
+C. `resetRoundReactionState` (renova Reações, zera penalidade de
+   defesa sem Reação, v0.43).
+D. `applyRoundScopedPaReductions` (Envenenado, já na rodada nova).
+E. `updateCharacter` (persiste o personagem inteiro).
+
+Só depois de processar TODOS os personagens, `campaigns.current_round`
+avança (via `endRound()` já existente).
+
+## 7. PA/Reações/reset defensivo e redução de PA
+
+Aplicados a CADA personagem, na mesma ordem do v0.44 (ver seção 6) —
+nenhuma regra nova, só passou a rodar para todos de uma vez em vez de
+um personagem por clique. Validado no script automatizado (cenário 2:
+personagem sem condição renova PA/Reações e zera penalidade; cenário
+3: Envenenado renova e reduz 1 PA).
+
+## 8. Ficha individual — decisão de produto
+
+Botão renomeado para **"Encerrar Rodada Manual"** (seção "Rodada
+(manual)", `ResourcesTab.tsx`) com aviso fixo em destaque: "Em
+campanha, a rodada OFICIAL é encerrada pela mesa (dashboard do
+narrador, 'Encerrar Rodada') — ela processa todos os personagens da
+campanha de uma vez. Use o botão abaixo só como ferramenta manual/dev
+para este personagem isoladamente." Optou-se pela via "manter visível
++ renomear + avisar" (opção aceitável do pedido) em vez de esconder
+condicionalmente em `/ficha` — mais simples e sem risco de quebrar o
+fluxo dev (`/dev/character-sheet` continua usando o mesmo componente
+compartilhado `CharacterSheetClient`/`ResourcesTab`, sem diferença de
+comportamento entre dev/produto neste checkpoint).
+
+## 9. Como pendências de condição chegam na ficha
+
+Sem mudança de arquitetura: `pending_condition_checks` já é campo do
+`Character` (v0.44), e `endCampaignRound` grava o personagem inteiro
+via `updateCharacter` (mesma tabela `characters` que a ficha lê). O
+fluxo continua: narrador encerra rodada na mesa → personagem recebe
+`pending_condition_checks` no banco → jogador/narrador recarrega a
+ficha (`getCharacter`/`getCharacterForProfileSession`) → aba Condições
+mostra a pendência (`PendingConditionChecks.tsx`, v0.44) → resolve
+sucesso/falha → persiste. **Sem realtime** — reload manual é esperado
+e documentado como pendência (entra no v0.46, conforme o pedido).
+
+## 10. Logs criados/reutilizados
+
+Reaproveitados sem alteração: `condition_end_round_damage`,
+`condition_end_round_check_created`, `condition_end_round_check_resolved`,
+`condition_applied`, `condition_removed`, `round_pa_reduced_by_condition`
+(todos v0.44) — agora emitidos com `characterId`/`characterNome`/
+`profileId` de CADA personagem processado pela mesa, gravados via
+`addLog` best-effort (mesmo padrão de v0.44/v0.44).
+
+Novo: `round_end_processed` — payload `campaignId`, `previousRound`,
+`nextRound`, `scene`, `processedCharacterIds`, `processedCharacterNames`,
+`damageCount`, `pendingCheckCount`, `appliedConditionCount`,
+`removedConditionCount`, `paReductionCount`, `warnings`,
+`source: "campaign_end_round"`.
+
+`round_ended` (v0.39) continua sendo gravado — reaproveitado via
+`endRound()`, agora recebendo como `attentionSummary` os nomes dos
+personagens que tiveram dano/pendência/condição de fim de rodada ainda
+ativa após o processamento (mesmo critério do `personagensComAtencaoFimDeRodada`
+removido, só que calculado dentro do motor).
+
+**UI**: `MesaDetailClient.tsx` ganhou `formatCampaignRoundLog` (nova
+função local) para não expor JSON cru no log simplificado do
+dashboard — cobre todos os tipos acima. `MesaTab.tsx` (usado pela
+ficha) já tinha formatação para os tipos v0.44 desde o checkpoint
+anterior; `round_end_processed` não aparece na ficha por enquanto
+(é um log agregado de mesa, mais relevante ao narrador) — não crítico,
+mas documentado como pequena lacuna cosmética.
+
+## 11. Idempotência
+
+- **Nível de personagem**: já garantida pelo v0.44
+  (`condition_effect_history`) — reaproveitada sem alteração; um
+  personagem processado duas vezes na MESMA rodada não duplica dano.
+- **Nível de mesa**: novo guard `expectedRound` em `endCampaignRound` —
+  o chamador (UI) passa o `current_round` que tinha no momento do
+  clique; se a campanha já avançou (outro clique, outra aba do
+  narrador, F5 no meio do processamento), a chamada falha com erro
+  claro ANTES de tocar em qualquer personagem. Botão desabilitado
+  (`endRoundProcessing`) enquanto a chamada está em voo, evitando
+  clique duplo na mesma aba.
+- **Limitação explícita**: isso é uma checagem OTIMISTA (lê, compara,
+  processa, depois escreve) — não é uma transação atômica no Postgres.
+  Duas requisições verdadeiramente concorrentes (ex.: dois narradores
+  na mesma mesa clicando no mesmo milissegundo) poderiam, em teoria,
+  passar ambas pela checagem antes de qualquer uma escrever. Implementar
+  isso com uma RPC/transação real exigiria migração — documentado como
+  pendência futura, não implementado aqui (cenário extremamente raro
+  para o modelo de "um narrador por mesa" atual do produto).
+
+## 12. Arquivos alterados
+
+- `src/lib/table/endRound.ts` (novo) — `resolveCampaignEndRoundForCharacters`,
+  `endCampaignRound`, tipos `ProcessedCharacterSummary`,
+  `SkippedCharacterSummary`, `CampaignEndRoundResult`.
+- `src/lib/table/endRoundSummary.ts` (novo) — `buildCampaignEndRoundSummary`
+  (função síncrona pura; extraída para arquivo separado porque um
+  módulo `"use server"` só pode exportar async functions — Next.js
+  rejeita exports síncronos em arquivos Server Action).
+- `src/app/mesas/[campaignId]/MesaDetailClient.tsx` — `handleEndRound`
+  agora chama `endCampaignRound`; novo estado `endRoundProcessing`/
+  `endRoundSummary`; botão desabilitado durante processamento com texto
+  "Processando…"; resumo pós-processamento; `formatCampaignRoundLog`
+  para o log simplificado do dashboard; removido `personagensComAtencaoFimDeRodada`
+  (lógica absorvida por `endCampaignRound`).
+- `src/app/dev/character-sheet/components/ResourcesTab.tsx` — seção
+  "Rodada" renomeada para "Rodada (manual)", botão renomeado para
+  "Encerrar Rodada Manual", aviso fixo sobre a mesa ser a fonte oficial.
+- `scripts/test-campaign-end-round.ts` (novo) — 6 cenários.
+- `package.json` — script `test:campaign-end-round`.
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.
+
+Nenhuma migração foi criada — `campaigns.current_round`/`current_scene`
+e `characters.payload` já suportavam tudo que este checkpoint precisa.
+
+## 13. Testes executados
+
+- `npx tsc --noEmit -p tsconfig.json`: sem erros.
+- `npm run build`: sucesso, todas as rotas presentes.
+- `npm run test:action-console`: passou (sem regressão v0.42).
+- `npm run test:reactions`: passou (sem regressão v0.43).
+- `npm run test:end-round-conditions`: passou — 11/11 cenários (sem
+  regressão v0.44).
+- `npm run test:campaign-end-round`: passou — 6 cenários (2 personagens
+  processados/Queimando+Sangrando; personagem sem condição; Envenenado
+  PA+pendência; idempotência de rodada já avançada; pendência aparece
+  no personagem; logs agregados). Ver nota técnica na seção 14 sobre
+  como o teste contorna a exigência de sessão de narrador logado.
+- `npm run test:character-storage`: passou.
+- `npm run test:content-read`: passou.
+
+## 14. Nota técnica — RLS de `campaigns` no script de teste
+
+`campaigns` restringe INSERT/UPDATE/DELETE a `authenticated`
+(policies `campaigns_owner_*`, migration 0006) — no produto real isso
+sempre funciona porque `/mesas/[campaignId]` exige narrador logado
+(cookie de sessão). Um script Node standalone não tem esse contexto de
+request (`getScopedTableClient()` cai em anon fora de uma request,
+documentado no próprio `scopedClient.ts`), então `createCampaign`/
+`endRound` (update em `campaigns`) falhariam com erro de RLS num script
+comum. Sem alterar NENHUMA policy, `test-campaign-end-round.ts`
+aponta `process.env.SUPABASE_ANON_KEY` para a service role key ANTES
+de qualquer chamada de storage — só dentro deste processo de teste
+isolado, nunca em runtime do app — para poder exercitar o caminho de
+produção real (`createCampaign`/`endCampaignRound`/`endRound` como
+estão) de ponta a ponta. RLS em si nunca foi tocado.
+
+## 15. Teste manual
+
+Executado parcialmente no preview (sem sessão de narrador disponível
+neste ambiente — sem credenciais de teste em `.env.local`):
+- `/dev/character-sheet`: aba Recursos mostra a seção renomeada
+  "Rodada (manual)" com o aviso fixo e o botão "Encerrar Rodada
+  Manual" — confirmado visualmente; clicado e confirmado que continua
+  funcionando (Rodada 1 → 2), sem regressão do fluxo v0.44.
+- `/mesas`: carrega normalmente (gate de login, sem regressão).
+- Sem erros no console em nenhum momento.
+- **Não executado neste ambiente**: o roteiro completo de
+  `/mesas/[campaignId]` com narrador logado (criar personagens A/B,
+  aplicar Queimando/Sangrando/Envenenado pela ficha, clicar "Encerrar
+  Rodada" no dashboard, confirmar PV/PA/pendências/logs) — sem
+  credenciais de narrador disponíveis neste ambiente de preview. Esse
+  exato roteiro, porém, é o que `test:campaign-end-round` valida de
+  ponta a ponta contra o Supabase real, usando as MESMAS funções de
+  produção (`endCampaignRound`, `updateCharacter`, `addLog`) — a
+  cobertura funcional equivalente existe, só não foi clicada num
+  navegador com narrador autenticado.
+
+## 16. Limitações
+
+- Checagem de idempotência de mesa é otimista (`expectedRound`), não
+  transacional — ver seção 11.
+- Sem realtime: pendências criadas pela mesa só aparecem na ficha após
+  reload manual (v0.46, conforme o pedido).
+- Sem preview/modal antes de "Encerrar Rodada" na mesa — efeitos
+  aplicados direto, com resumo textual depois.
+- `round_end_processed` não tem formatação dedicada na aba Mesa da
+  ficha (`MesaTab.tsx`) — só no log simplificado do dashboard da mesa;
+  lacuna cosmética pequena, não bloqueia nada.
+- Teste manual no dashboard da mesa com narrador logado não foi
+  executado neste ambiente por falta de credenciais — compensado pelo
+  script automatizado, que exercita as mesmas funções de produção.
+
+## 17. Pendências futuras
+
+- Realtime para atualizar a ficha do jogador sem reload quando a mesa
+  processa a rodada.
+- Preview/modal antes de "Encerrar Rodada" na mesa.
+- Transação/RPC atômica para o avanço de rodada da campanha (hoje
+  checagem otimista).
+- Iniciativa rápida/lenta completa, alternância PJ/PN.
+- Resolução de Ruptura no fim de cena.
+- Sufocando com cronômetro/morte.
+- Efeitos ambientais complexos (Saturado/Insaturado ligados a um motor
+  de magia real).

@@ -14,9 +14,10 @@ import {
   listLogsForViewer,
   addLog,
   expireStaleProfileSessions,
-  endRound,
   endScene,
 } from "../../../lib/table/storage";
+import { endCampaignRound } from "../../../lib/table/endRound";
+import { buildCampaignEndRoundSummary } from "../../../lib/table/endRoundSummary";
 import { computeProfileStatus } from "../../../lib/table/profileStatus";
 import {
   listCharactersForNarratorCampaign,
@@ -34,12 +35,55 @@ import type { Campaign, CampaignProfile, CampaignInvite, ProfileSession, TableLo
 import type { CharacterRecord } from "../../../lib/character";
 
 /**
- * Slugs de condição com gatilho de fim de rodada (checkpoint v0.39,
- * PRD 9.2/10.5) — mesmo piso mínimo usado em `ActiveStateStrip`
- * (v0.35), reaproveitado aqui só para o RESUMO de "Encerrar rodada"
- * (texto/lista, sem resolver dano recorrente automaticamente).
+ * Formatação mínima dos tipos de log criados/reaproveitados pelo motor
+ * de fim de rodada (checkpoint v0.44/v0.44.1) para o log simplificado
+ * do dashboard — nunca JSON cru. Tipos não cobertos aqui caem no
+ * fallback genérico já existente (text/mensagem/total/evento).
  */
-const FIM_DE_RODADA_SLUGS = new Set(["queimando", "sangrando", "envenenado", "insaturado", "saturado"]);
+function formatCampaignRoundLog(type: string, payload: Record<string, unknown>): string | null {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  if (type === "round_ended") {
+    const prev = typeof payload.previousRound === "number" ? payload.previousRound : "?";
+    const next = typeof payload.newRound === "number" ? payload.newRound : "?";
+    return `Rodada ${prev} → ${next}.`;
+  }
+  if (type === "round_end_processed") {
+    const names = Array.isArray(payload.processedCharacterNames)
+      ? payload.processedCharacterNames.filter((n): n is string => typeof n === "string")
+      : [];
+    const dano = typeof payload.damageCount === "number" ? payload.damageCount : 0;
+    const pendencias = typeof payload.pendingCheckCount === "number" ? payload.pendingCheckCount : 0;
+    return `Rodada da mesa processada — ${names.length} personagem(ns), ${dano} dano(s) de condição, ${pendencias} pendência(s).`;
+  }
+  if (type === "condition_end_round_damage") {
+    const conditionName = typeof payload.conditionName === "string" ? payload.conditionName : "Condição";
+    const damage = typeof payload.damage === "number" ? payload.damage : "?";
+    const damageType = typeof payload.damageType === "string" ? payload.damageType : "";
+    return `${characterNome}: ${conditionName} causou ${damage} de dano ${damageType}.`;
+  }
+  if (type === "condition_end_round_check_created") {
+    const conditionName = typeof payload.conditionName === "string" ? payload.conditionName : "Condição";
+    const resistance = payload.resistance as Record<string, unknown> | undefined;
+    const pericia = typeof resistance?.pericia === "string" ? resistance.pericia : "?";
+    const cd = typeof resistance?.cd === "number" ? resistance.cd : "?";
+    return `${characterNome}: ${conditionName} — teste de ${pericia} CD ${cd} pendente.`;
+  }
+  if (type === "condition_end_round_check_resolved") {
+    const conditionName = typeof payload.conditionName === "string" ? payload.conditionName : "Condição";
+    const result = payload.result === "success" ? "Sucesso" : "Falha";
+    return `${characterNome}: ${conditionName} — ${result}.`;
+  }
+  if (type === "round_pa_reduced_by_condition") {
+    const conditionName = typeof payload.conditionName === "string" ? payload.conditionName : "Condição";
+    const value = typeof payload.value === "number" ? payload.value : "?";
+    return `${characterNome}: ${conditionName} reduziu ${value} PA.`;
+  }
+  if (type === "condition_applied" || type === "condition_removed") {
+    const nome = typeof payload.nome === "string" ? payload.nome : typeof payload.conditionName === "string" ? payload.conditionName : "Condição";
+    return `${characterNome}: ${type === "condition_applied" ? "aplicada" : "removida"} "${nome}".`;
+  }
+  return null;
+}
 
 const btn: React.CSSProperties = { background: "#1d1e24", color: "inherit", border: "1px solid #333", borderRadius: 6, padding: "6px 12px", fontSize: 13, cursor: "pointer" };
 const input: React.CSSProperties = { background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "6px 8px", fontSize: 13 };
@@ -80,6 +124,11 @@ export default function MesaDetailClient({
   const [conviteLabel, setConviteLabel] = useState("");
   const [linkNovo, setLinkNovo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Checkpoint v0.44.1 — estado do processamento canônico de "Encerrar
+  // Rodada" (endCampaignRound): trava o botão contra clique duplo e
+  // mostra o resumo textual depois de concluído.
+  const [endRoundProcessing, setEndRoundProcessing] = useState(false);
+  const [endRoundSummary, setEndRoundSummary] = useState<string[] | null>(null);
 
   function fail(err: unknown, msg: string) {
     setError(err instanceof Error ? err.message : msg);
@@ -105,31 +154,34 @@ export default function MesaDetailClient({
   }
 
   /**
-   * Nomes de personagens com estado de fim de rodada pendente
-   * (checkpoint v0.39) — só um resumo textual para o narrador revisar
-   * manualmente; nenhum dano/teste é resolvido automaticamente aqui.
+   * Botão "Encerrar Rodada" CANÔNICO da mesa (checkpoint v0.44.1) —
+   * processa todos os personagens ativos da campanha através do motor
+   * data-driven de fim de rodada (`endCampaignRound`, reaproveita
+   * `endRoundConditions.ts` do v0.44 sem reimplementar regra nenhuma):
+   * dano/testes de condição, renovação de PA/Reações, reset de
+   * penalidade de defesa sem Reação e redução de PA por condição — para
+   * TODOS os personagens vinculados, não só um. `expectedRound` é a
+   * checagem otimista de idempotência: se a rodada já avançou entre o
+   * carregamento da página e o clique (outro clique, outra aba do
+   * narrador), a chamada falha com erro claro em vez de reprocessar a
+   * rodada errada.
    */
-  function personagensComAtencaoFimDeRodada(): string[] {
-    return personagensDaMesa
-      .filter((c) => {
-        const condicoes = c.payload.condicoes_ativas ?? [];
-        const temFimDeRodada = condicoes.some((cond) => cond.ativa && cond.conditionId && FIM_DE_RODADA_SLUGS.has(cond.conditionId));
-        const colapsoAtivo = c.payload.colapso?.ativo === true;
-        return temFimDeRodada || colapsoAtivo;
-      })
-      .map((c) => c.name);
-  }
-
-  /** Botão "Encerrar rodada" (checkpoint v0.39, PRD seção 5) — só incrementa e loga; não resolve dano recorrente. */
   async function handleEndRound() {
     setError(null);
+    setEndRoundSummary(null);
+    setEndRoundProcessing(true);
     try {
-      const atencao = personagensComAtencaoFimDeRodada();
-      const updated = await endRound(campaign.id, atencao);
-      setCampaignState(updated);
-      await reloadLogs();
+      const result = await endCampaignRound({
+        campaignId: campaign.id,
+        expectedRound: campaignState.current_round,
+      });
+      setCampaignState((prev) => ({ ...prev, current_round: result.nextRound }));
+      setEndRoundSummary(buildCampaignEndRoundSummary(result));
+      await Promise.all([reloadLogs(), reloadPersonagens()]);
     } catch (e) {
       fail(e, "Erro ao encerrar rodada.");
+    } finally {
+      setEndRoundProcessing(false);
     }
   }
 
@@ -303,21 +355,27 @@ export default function MesaDetailClient({
 
       {error && <p style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 16 }}>Erro: {error}</p>}
 
-      {/* Gatilhos mínimos de rodada/cena (checkpoint v0.39) */}
+      {/* Rodada e cena — fonte canônica da campanha (checkpoint v0.39; motor de condições ligado no v0.44.1) */}
       <section style={{ marginBottom: 32 }}>
         <h2 style={h2}>Rodada e cena</h2>
         <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
-          Contadores simples — sem trilha de iniciativa, sem alternância PJ/PN, sem resolução
-          automática de dano recorrente/Ruptura. "Encerrar rodada" só avisa quais personagens têm
-          estado de fim de rodada pendente (Queimando/Sangrando/Envenenado/Insaturado/Saturado/Colapso);
-          "Encerrar cena" só avisa sobre Ruptura pendente.
+          Esta mesa é a fonte OFICIAL da rodada/cena da campanha. "Encerrar Rodada" processa TODOS os
+          personagens vinculados (Queimando/Sangrando/Envenenado/Saturado/Insaturado): aplica dano de
+          fim de rodada, cria pendências de teste, renova PA/Reações, zera penalidade de defesa sem
+          Reação e aplica redução de PA por condição — sem trilha de iniciativa, sem alternância
+          PJ/PN, sem resolução de Ruptura. "Encerrar cena" continua só avisando sobre Ruptura pendente.
         </p>
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <span data-testid="det-rodada-atual" style={{ fontSize: 13 }}>
             Rodada <strong>{campaignState.current_round}</strong>
           </span>
-          <button data-testid="det-encerrar-rodada" onClick={handleEndRound} style={btn}>
-            Encerrar rodada
+          <button
+            data-testid="det-encerrar-rodada"
+            onClick={handleEndRound}
+            disabled={endRoundProcessing}
+            style={{ ...btn, opacity: endRoundProcessing ? 0.6 : 1, cursor: endRoundProcessing ? "not-allowed" : "pointer" }}
+          >
+            {endRoundProcessing ? "Processando…" : "Encerrar Rodada"}
           </button>
           <span data-testid="det-cena-atual" style={{ fontSize: 13 }}>
             Cena <strong>{campaignState.current_scene}</strong>
@@ -326,6 +384,20 @@ export default function MesaDetailClient({
             Encerrar cena
           </button>
         </div>
+        {endRoundProcessing && (
+          <p data-testid="det-encerrar-rodada-processando" style={{ fontSize: 12, opacity: 0.7, marginTop: 10 }}>
+            Processando efeitos de fim de rodada…
+          </p>
+        )}
+        {endRoundSummary && !endRoundProcessing && (
+          <div data-testid="det-encerrar-rodada-resumo" style={{ fontSize: 12, marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
+            {endRoundSummary.map((line, i) => (
+              <p key={i} style={{ opacity: 0.8, margin: 0 }}>
+                {line}
+              </p>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Personagens da mesa (checkpoint v0.23; ciclo de vida v0.25) */}
@@ -509,7 +581,8 @@ export default function MesaDetailClient({
           {logs.map((e) => (
             <div key={e.id} data-testid="det-log" style={{ ...card, fontSize: 12 }}>
               <span style={{ opacity: 0.5, fontSize: 11 }}>[{e.visibility}] {e.type}</span>{" "}
-              {typeof e.payload.text === "string" ? e.payload.text : typeof e.payload.mensagem === "string" ? e.payload.mensagem : typeof e.payload.total !== "undefined" ? `rolagem = ${String(e.payload.total)}` : typeof e.payload.evento === "string" ? `evento: ${e.payload.evento}` : ""}
+              {formatCampaignRoundLog(e.type, e.payload) ??
+                (typeof e.payload.text === "string" ? e.payload.text : typeof e.payload.mensagem === "string" ? e.payload.mensagem : typeof e.payload.total !== "undefined" ? `rolagem = ${String(e.payload.total)}` : typeof e.payload.evento === "string" ? `evento: ${e.payload.evento}` : "")}
             </div>
           ))}
         </div>

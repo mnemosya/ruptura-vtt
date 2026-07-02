@@ -336,19 +336,23 @@ export function ResourcesTab({
         />
       </Section>
 
-      <Section title="Rodada">
+      <Section title="Rodada (manual)">
+        <p data-testid="ficha-rodada-aviso-canonico" style={{ fontSize: 12, color: "#f5a623", marginBottom: 8 }}>
+          Em campanha, a rodada OFICIAL é encerrada pela mesa (dashboard do narrador, "Encerrar
+          Rodada") — ela processa todos os personagens da campanha de uma vez. Use o botão abaixo só
+          como ferramenta manual/dev para este personagem isoladamente.
+        </p>
         <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 8 }}>
-          "Encerrar Rodada" resolve dano/testes de fim de rodada das condições ativas (Queimando,
-          Sangrando, Envenenado, Saturado, Insaturado — checkpoint v0.44), depois renova PA/Reações e
-          aplica redução de PA por condição (Envenenado). Rodada local desta ficha — não é a rodada
-          da mesa (ver aba Mesa, "Encerrar rodada" do narrador, ainda não ligados automaticamente).
+          "Encerrar Rodada Manual" resolve dano/testes de fim de rodada das condições ativas
+          (Queimando, Sangrando, Envenenado, Saturado, Insaturado — checkpoint v0.44), depois renova
+          PA/Reações e aplica redução de PA por condição (Envenenado). Rodada local desta ficha.
         </p>
         <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12 }}>
           <span data-testid="ficha-rodada-atual" style={{ fontSize: 13 }}>
             Rodada <strong>{currentRound}</strong>
           </span>
           <button data-testid="ficha-encerrar-rodada" onClick={onEndRound} style={buttonStyle}>
-            Encerrar Rodada
+            Encerrar Rodada Manual
           </button>
         </div>
         {endRoundSummary && (
