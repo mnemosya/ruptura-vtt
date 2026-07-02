@@ -85,6 +85,14 @@ export interface ActiveCondition {
   removidaEm?: string | null;
   ativa: boolean;
   observacoes?: string;
+  /**
+   * Como a remoção aconteceu (checkpoint v0.34) — ausente/undefined
+   * para remoção manual (botão "Remover", v0.32). `"cura_pv"` marca
+   * remoção automática por ter recuperado 1+ PV (PRD 9.3), permitindo
+   * ao "Desfazer" reativar só as condições removidas pela cura mais
+   * recente, sem tocar em remoções manuais anteriores.
+   */
+  removidaOrigem?: "cura_pv";
 }
 
 export interface Character {

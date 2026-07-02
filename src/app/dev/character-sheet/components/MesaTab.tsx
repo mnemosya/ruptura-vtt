@@ -51,6 +51,10 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   rolagem_pericia: "Rolagem de Perícia",
   rolagem_expressao: "Rolagem de Expressão",
   profile_event: "Evento de Perfil",
+  condition_applied: "Condição Aplicada",
+  condition_removed: "Condição Removida",
+  condition_auto_removed: "Condição Removida (Cura)",
+  condition_auto_removal_undone: "Remoção por Cura Desfeita",
 };
 
 function entryKindLabel(type: string): string {
@@ -61,13 +65,25 @@ function entryIcon(type: string): string {
   if (type === "chat") return "💬";
   if (type === "rolagem_pericia" || type === "rolagem_expressao") return "🎲";
   if (type === "profile_event") return "🔑";
+  if (type === "condition_applied" || type === "condition_removed") return "⚠";
+  if (type === "condition_auto_removed" || type === "condition_auto_removal_undone") return "✚";
   return "•";
 }
 
 function entryBorderColor(type: string): string {
   if (type === "chat") return "#4f8cff";
   if (type === "profile_event") return "#ff6b9f";
+  if (type === "condition_auto_removed" || type === "condition_auto_removal_undone") return "#4caf50";
   return "#ffb84f";
+}
+
+/** Checkpoint v0.34: cartão de condition_auto_removed/condition_auto_removal_undone. */
+function formatAutoHeal(payload: Record<string, unknown>): string {
+  const nomes = Array.isArray(payload.nomes) ? payload.nomes.filter((n): n is string => typeof n === "string") : [];
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const pvAnterior = typeof payload.pvAnterior === "number" ? payload.pvAnterior : "?";
+  const pvNovo = typeof payload.pvNovo === "number" ? payload.pvNovo : "?";
+  return `${characterNome}: ${nomes.join(", ") || "(nenhuma)"} — PV ${pvAnterior} → ${pvNovo}`;
 }
 
 /** Texto da mensagem de chat — aceita `text` (ficha, v0.12) ou `mensagem` (formato antigo do /dev/table). */
@@ -351,7 +367,9 @@ export function MesaTab({
                   ? formatRolagem(entry.payload)
                   : entry.type === "profile_event"
                     ? formatProfileEvent(entry.payload)
-                    : JSON.stringify(entry.payload)}
+                    : entry.type === "condition_auto_removed" || entry.type === "condition_auto_removal_undone"
+                      ? formatAutoHeal(entry.payload)
+                      : JSON.stringify(entry.payload)}
             </span>
           </div>
         ))}

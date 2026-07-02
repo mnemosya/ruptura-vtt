@@ -25,6 +25,8 @@ import {
   computeDerivedStats,
   normalizeCharacter,
   deriveActiveEffectsFromConditions,
+  applyAutoHealRemoval,
+  undoAutoHealRemoval,
 } from "../../../lib/character";
 import {
   createCharacter,
@@ -74,6 +76,7 @@ import { MesaTab } from "./components/MesaTab";
 import { SavedCharactersTab } from "./components/SavedCharactersTab";
 import { DebugTab } from "./components/DebugTab";
 import type { SheetMode } from "./components/ModeToggle";
+import { buttonStyle } from "./components/styles";
 
 const LOG_MAX = 50;
 
@@ -204,6 +207,14 @@ export default function CharacterSheetClient({
   // reação abaixo. Limitado às últimas 50 entradas.
   const [log, setLog] = useState<LogEntry[]>([]);
   const logCounterRef = useRef(0);
+  // Aviso de remoção automática por cura (checkpoint v0.34, PRD 9.3) —
+  // guarda a última leva de condições removidas por ter recuperado 1+
+  // PV, para exibir o aviso e permitir "Desfazer" (reativa só essa
+  // leva, nunca remoções manuais). Estado só de UI desta aba — some ao
+  // recarregar a página, igual sessionExpiredWarning.
+  const [autoHealBanner, setAutoHealBanner] = useState<{ ids: string[]; nomes: string[]; pvAnterior: number; pvNovo: number } | null>(
+    null,
+  );
 
   function addLogEntry(tipo: LogTipo, resumo: string) {
     logCounterRef.current += 1;
@@ -638,13 +649,113 @@ export default function CharacterSheetClient({
   }
 
   /**
+   * Efeitos colaterais de uma leva de remoção automática por cura
+   * (checkpoint v0.34, PRD 9.3): Log local, aviso com "Desfazer"
+   * (`autoHealBanner`) e registro best-effort em `table_logs`
+   * (`condition_auto_removed`) — mesmo padrão de melhor-esforço já
+   * usado por `handleAddCondition`/`handleRemoveCondition` (v0.32):
+   * falha ao gravar no log persistente não desfaz a remoção já
+   * aplicada no estado local.
+   */
+  async function handleAutoHealRemovals(removidas: ActiveCondition[], pvAnterior: number, pvNovo: number) {
+    const nomes = removidas.map((c) => c.nome);
+    addLogEntry("condicao", `Removida(s) automaticamente por cura (PV ${pvAnterior} → ${pvNovo}): ${nomes.join(", ")}.`);
+    setAutoHealBanner({ ids: removidas.map((c) => c.id), nomes, pvAnterior, pvNovo });
+    if (selectedCampaignId) {
+      try {
+        await addLog({
+          campaignId: selectedCampaignId,
+          characterId: characterId ?? undefined,
+          profileId: selectedProfileId,
+          profileSessionId: profileSessionToken?.profileSessionId ?? null,
+          type: "condition_auto_removed",
+          visibility: "public",
+          payload: {
+            conditionLocalIds: removidas.map((c) => c.id),
+            conditionIds: removidas.map((c) => c.conditionId),
+            nomes,
+            origem: "cura_pv",
+            pvAnterior,
+            pvNovo,
+            characterId,
+            characterNome: character.nome,
+            profileId: selectedProfileId,
+          },
+        });
+      } catch {
+        // Best-effort — mesma justificativa de handleAddCondition.
+      }
+    }
+  }
+
+  /** Botão "Desfazer" do aviso de remoção automática — reativa só a última leva removida por cura. */
+  async function handleUndoAutoHeal() {
+    if (!autoHealBanner) return;
+    const banner = autoHealBanner;
+    setCharacter((prev) => ({
+      ...prev,
+      condicoes_ativas: undoAutoHealRemoval(prev.condicoes_ativas ?? [], banner.ids),
+    }));
+    addLogEntry("condicao", `Desfeita remoção automática por cura: ${banner.nomes.join(", ")} reativada(s).`);
+    setAutoHealBanner(null);
+    if (selectedCampaignId) {
+      try {
+        await addLog({
+          campaignId: selectedCampaignId,
+          characterId: characterId ?? undefined,
+          profileId: selectedProfileId,
+          profileSessionId: profileSessionToken?.profileSessionId ?? null,
+          type: "condition_auto_removal_undone",
+          visibility: "public",
+          payload: {
+            conditionLocalIds: banner.ids,
+            nomes: banner.nomes,
+            pvAnterior: banner.pvAnterior,
+            pvNovo: banner.pvNovo,
+            characterId,
+            characterNome: character.nome,
+            profileId: selectedProfileId,
+          },
+        });
+      } catch {
+        // Best-effort — mesma justificativa de handleAddCondition.
+      }
+    }
+  }
+
+  /**
    * Edição manual de recursos atuais (PV/PE/Mana/Integridade). Aceita
    * só inteiro >= 0; não trava no máximo de propósito — combate/dano
    * fica para depois, aqui é só edição livre com aviso visual.
+   *
+   * PV especificamente (checkpoint v0.34): um aumento (cura) dispara
+   * `applyAutoHealRemoval` sobre as condições ativas ANTES de aplicar
+   * o novo PV — os dois updates (`recursos_atuais.pv` e
+   * `condicoes_ativas`) entram no mesmo `setCharacter`, então nunca
+   * existe um estado intermediário com PV novo mas condição antiga.
    */
   function updateRecursoAtual(id: keyof CharacterResources, rawValue: number) {
     const anterior = character.recursos_atuais?.[id] ?? 0;
     const novo = parseRecursoAtual(rawValue);
+
+    if (id === "pv" && novo > anterior) {
+      const nowIso = new Date().toISOString();
+      const { condicoes: proximasCondicoes, removidas } = applyAutoHealRemoval(
+        character.condicoes_ativas ?? [],
+        anterior,
+        novo,
+        nowIso,
+      );
+      setCharacter((prev) => ({
+        ...prev,
+        recursos_atuais: { ...prev.recursos_atuais, pv: novo },
+        condicoes_ativas: proximasCondicoes,
+      }));
+      addLogEntry("recurso", `${RECURSO_LABELS.pv}: ${anterior} → ${novo}`);
+      if (removidas.length > 0) void handleAutoHealRemovals(removidas, anterior, novo);
+      return;
+    }
+
     setCharacter((prev) => ({
       ...prev,
       recursos_atuais: { ...prev.recursos_atuais, [id]: novo },
@@ -655,19 +766,29 @@ export default function CharacterSheetClient({
   }
 
   function handleRestoreRecursosMax() {
+    const pvAnterior = character.recursos_atuais?.pv ?? 0;
+    const pvNovo = derivados.pv_max;
+    const nowIso = new Date().toISOString();
+    const { condicoes: proximasCondicoes, removidas } =
+      pvNovo > pvAnterior
+        ? applyAutoHealRemoval(character.condicoes_ativas ?? [], pvAnterior, pvNovo, nowIso)
+        : { condicoes: character.condicoes_ativas ?? [], removidas: [] as ActiveCondition[] };
+
     setCharacter((prev) => ({
       ...prev,
       recursos_atuais: {
-        pv: derivados.pv_max,
+        pv: pvNovo,
         pe: derivados.pe_max,
         mana: derivados.mana_max,
         integridade: derivados.integridade_max,
       },
+      condicoes_ativas: proximasCondicoes,
     }));
     addLogEntry(
       "recurso",
       `Restaurados ao máximo — PV ${derivados.pv_max}, PE ${derivados.pe_max}, Mana ${derivados.mana_max}, Integridade ${derivados.integridade_max}`,
     );
+    if (removidas.length > 0) void handleAutoHealRemovals(removidas, pvAnterior, pvNovo);
   }
 
   /**
@@ -733,7 +854,7 @@ export default function CharacterSheetClient({
       ...prev,
       condicoes_ativas: [...(prev.condicoes_ativas ?? []), novaCondicao],
     }));
-    addLogEntry("perfil", `Condição aplicada: "${novaCondicao.nome}".`);
+    addLogEntry("condicao", `Condição aplicada: "${novaCondicao.nome}".`);
     if (selectedCampaignId) {
       try {
         await addLog({
@@ -778,7 +899,7 @@ export default function CharacterSheetClient({
         c.id === id ? { ...c, ativa: false, removidaEm } : c,
       ),
     }));
-    addLogEntry("perfil", `Condição removida: "${condicao.nome}".`);
+    addLogEntry("condicao", `Condição removida: "${condicao.nome}".`);
     if (selectedCampaignId) {
       try {
         await addLog({
@@ -882,6 +1003,38 @@ export default function CharacterSheetClient({
           assumido este perfil. Suas próximas ações podem não ser salvas como esperado; recarregue a
           página e entre novamente pelo convite se precisar.
         </p>
+      )}
+      {autoHealBanner && (
+        <div
+          data-testid="auto-heal-banner"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+            background: "#15251a",
+            border: "1px solid #4caf50",
+            borderRadius: 8,
+            padding: "10px 14px",
+            marginBottom: 16,
+            fontSize: 13,
+          }}
+        >
+          <span>
+            ✚ Removida(s) automaticamente por cura (PV {autoHealBanner.pvAnterior} → {autoHealBanner.pvNovo}):{" "}
+            <strong>{autoHealBanner.nomes.join(", ")}</strong>.
+          </span>
+          <button data-testid="auto-heal-desfazer-button" onClick={handleUndoAutoHeal} style={buttonStyle}>
+            Desfazer
+          </button>
+          <button
+            data-testid="auto-heal-dispensar-button"
+            onClick={() => setAutoHealBanner(null)}
+            style={{ ...buttonStyle, opacity: 0.7 }}
+          >
+            Dispensar
+          </button>
+        </div>
       )}
 
       <CharacterSheetTabs

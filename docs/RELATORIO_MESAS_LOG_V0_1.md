@@ -5540,3 +5540,190 @@ restam só os 2 personagens e as 2 campanhas legadas esperadas.
 - `affectedTags: ["deslocamento"]` nos avisos de movimento é só
   informativo — não existe nenhum controle de deslocamento na ficha
   ainda para a tag realmente afetar algo.
+
+# Checkpoint v0.34 — Remoção automática por cura
+
+## 1. Auditoria (antes de alterar)
+
+`git status --short` limpo, `next-env.d.ts` intocado. `updateRecursoAtual`
+(`CharacterSheetClient.tsx`) já era o único ponto de edição manual de
+PV — sem regra de dano/cura, edição livre com log. `handleRestoreRecursosMax`
+também altera PV (ao máximo) e precisava do mesmo tratamento. `ActiveCondition`
+(v0.32) já tinha `ativa`/`removidaEm`; faltava só um campo para
+distinguir remoção manual de remoção automática (para o "Desfazer" não
+reativar remoções manuais antigas por engano). `activeEffects.ts`
+(v0.33) já mapeava `contundido`/`sangrando` com `conditionId` — não
+precisou mudar; a remoção automática opera sobre `condicoes_ativas`
+diretamente, antes mesmo de `deriveActiveEffectsFromConditions` rodar
+de novo (que já ignora condições com `ativa:false` por design).
+
+## 2. Condições cobertas
+
+**Contundido, Envenenado, Sangrando** — exatamente as 3 do PRD 9.3
+("Contundido, Envenenado e Sangrando somem quando o personagem
+recupera pelo menos 1 PV"). Nenhuma outra condição é removida
+automaticamente.
+
+**Só condições vinculadas à Biblioteca são elegíveis**: a remoção
+compara `condition.conditionId` (slug) contra
+`["contundido", "envenenado", "sangrando"]` — uma condição manual
+digitada como "Sangrando" sem escolher da Biblioteca (`conditionId`
+ausente) NÃO é removida automaticamente. Decisão deliberada: não há
+como confirmar com segurança que o texto livre corresponde à regra
+real, e "não inventar automação" já era princípio dos checkpoints
+v0.33/v0.32.1.
+
+## 3. Como a detecção de cura funciona
+
+Novo módulo puro `src/lib/character/autoHeal.ts`:
+
+```ts
+applyAutoHealRemoval(condicoes, pvAnterior, pvNovo, nowIso): { condicoes, removidas }
+```
+
+Só age se `pvNovo > pvAnterior` (aumento estrito — reduzir ou manter
+PV nunca remove nada). Para cada condição `ativa:true` com
+`conditionId` na lista coberta, marca `ativa:false`,
+`removidaEm:nowIso`, `removidaOrigem:"cura_pv"` (novo campo em
+`ActiveCondition`, ausente/undefined em remoção manual). Função pura —
+não lê nem escreve estado React.
+
+**Onde é chamada**: `updateRecursoAtual` (edição manual do campo "PV
+atual") e `handleRestoreRecursosMax` (botão "Restaurar recursos ao
+máximo") — os dois únicos jeitos de aumentar PV hoje na ficha. Os dois
+combinam a atualização de `recursos_atuais.pv` e `condicoes_ativas`
+num único `setCharacter`, evitando qualquer estado intermediário
+inconsistente (PV novo com condição ainda ativa, ou vice-versa).
+
+## 4. Como o "Desfazer" funciona
+
+`undoAutoHealRemoval(condicoes, idsParaReativar)` (mesmo módulo):
+reativa (`ativa:true`, `removidaEm:null`, `removidaOrigem:undefined`)
+só as condições cujo `id` esteja na lista passada — nunca reativa
+remoção manual antiga (checagem extra: só reativa se
+`removidaOrigem === "cura_pv"`).
+
+**Rastreio da "última leva"**: `autoHealBanner` (estado local em
+`CharacterSheetClient`) guarda `{ ids, nomes, pvAnterior, pvNovo }` da
+chamada mais recente de `applyAutoHealRemoval` que removeu algo. O
+aviso (banner verde, topo da ficha, visível em qualquer aba) mostra os
+nomes removidos e dois botões: "Desfazer" (chama
+`undoAutoHealRemoval` com os `ids` guardados) e "Dispensar" (só limpa
+o aviso, sem reverter nada). Clicar em "Desfazer" limpa o banner ao
+final — não há "desfazer o desfazer" nesta versão (se precisar,
+reaplica a condição manualmente). O banner é puramente de UI: some ao
+recarregar a página, igual `sessionExpiredWarning` (v0.26) — não é
+persistido, então não interfere na leitura/gravação do personagem.
+
+## 5. Logs criados
+
+**Log local** (Log tab): reaproveita o `LogTipo` `"condicao"`, criado
+neste checkpoint (também usado para retrofitar
+`handleAddCondition`/`handleRemoveCondition`, que até então usavam
+`"perfil"` por decisão provisória do v0.32 — pendência já documentada
+no relatório daquele checkpoint, corrigida aqui de passagem por ser a
+mesma área de código).
+
+**`table_logs`** (persistente, aba Mesa): dois `type` novos,
+`visibility: "public"`, mesmo padrão best-effort dos demais eventos de
+condição:
+- `condition_auto_removed` — payload: `conditionLocalIds`,
+  `conditionIds` (slugs), `nomes`, `origem: "cura_pv"`, `pvAnterior`,
+  `pvNovo`, `characterId`, `characterNome`, `profileId`.
+- `condition_auto_removal_undone` — mesmo formato, sem `origem`
+  (já implícito pelo type) e sem `conditionIds` (não precisa do
+  slug para desfazer, só do id local).
+
+`MesaTab.tsx` ganhou rótulos e cor próprios para os dois tipos
+("Condição Removida (Cura)" / "Remoção por Cura Desfeita", borda
+verde) e um `formatAutoHeal()` que renderiza
+`"Personagem: Nome1, Nome2 — PV X → Y"` em vez do JSON cru.
+
+## 6. Funciona em /ficha e /dev/character-sheet
+
+Nenhum código específico de modo — `updateRecursoAtual`,
+`handleRestoreRecursosMax`, `handleAutoHealRemovals`,
+`handleUndoAutoHeal` e o banner vivem em `CharacterSheetClient.tsx`,
+compartilhado pelas duas rotas (`mode="product"`/`mode="dev"`) desde
+sempre. `selectedCampaignId`/`selectedProfileId`/`profileSessionToken`
+já eram unificados entre os dois modos — a gravação em `table_logs`
+funciona igual nos dois (silenciosamente pulada se não há mesa
+selecionada, mesmo padrão de `handleAddCondition`).
+
+## 7. Arquivos alterados
+
+- `src/lib/character/autoHeal.ts` (novo) — `applyAutoHealRemoval`,
+  `undoAutoHealRemoval`, `AUTO_HEAL_REMOVABLE_CONDITION_SLUGS`.
+- `src/lib/character/types.ts` — campo `removidaOrigem?: "cura_pv"` em
+  `ActiveCondition`.
+- `src/lib/character/index.ts` — export do novo módulo.
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` —
+  `autoHealBanner` (estado + banner de UI), `handleAutoHealRemovals`,
+  `handleUndoAutoHeal`, `updateRecursoAtual`/`handleRestoreRecursosMax`
+  reescritos para detectar cura, retrofit de `"perfil"` → `"condicao"`
+  nos handlers de condição existentes.
+- `src/app/dev/character-sheet/components/LogTab.tsx` — novo
+  `LogTipo` `"condicao"`.
+- `src/app/dev/character-sheet/components/MesaTab.tsx` — rótulos/cor/
+  formatação para `condition_auto_removed`/`condition_auto_removal_undone`.
+
+Nenhuma migration — `table_logs.payload` já era `jsonb` livre, nenhum
+schema de banco mudou.
+
+## 8. Build e testes
+
+```
+$ npx tsc --noEmit -p tsconfig.json → limpo na primeira tentativa
+$ npm run build → ✓ compilado, rotas inalteradas
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca do Sistema intacta
+```
+
+## 9. Teste manual (navegador, preview server)
+
+Fluxo completo: narrador criou mesa/personagem/perfil/convite → jogador
+entrou por `/join/[token]` → `/ficha` → aplicou "Sangrando" → definiu
+PV base em 5 (sem condição ativa nesse momento — não dispara nada) →
+reaplicou "Sangrando" → reduziu PV para 3 (**confirmado**: nenhum
+banner apareceu, remoção não dispara em redução) → aumentou PV para 4
+(+1) → **banner apareceu**: "Removida(s) automaticamente por cura (PV
+3 → 4): Sangrando." → aba Condições confirmou "Ativas (0)" e
+"Removidas (2)" → clicou "Desfazer" → **confirmado**: "Ativas (1)"
+(Sangrando reativada), banner sumiu → salvou personagem → confirmado
+via SQL direto que a condição persistiu com `ativa:true`,
+`removidaEm:null` (sem `removidaOrigem`, undo limpou o campo) →
+aplicou "Contundido" e "Envenenado" também → aumentou PV de 4 para 5
+→ **confirmado**: banner mostrou as 3 condições ("Sangrando,
+Contundido, Envenenado"), todas viraram `ativa:false` no estado →
+salvou → confirmado via SQL em `table_logs` os 3 registros esperados
+(`condition_auto_removed` da primeira cura, `condition_auto_removal_undone`
+do desfazer, `condition_auto_removed` da segunda cura com as 3
+condições) → aba Mesa confirmou os cartões formatados corretamente
+("Condição Removida (Cura)"/"Remoção por Cura Desfeita", conteúdo
+"Personagem v0.34: Sangrando, Contundido, Envenenado — PV 4 → 5") →
+`/dev/character-sheet` acessado diretamente e confirmado sem
+regressão ("Personagens salvos (3)", combobox de mesas correto, antes
+da limpeza).
+
+Dados de teste removidos ao final via SQL direto — confirmado que
+restam só os 2 personagens e as 2 campanhas legadas esperadas.
+
+## 10. Pendências
+
+- Só PV dispara remoção automática — PE/Mana/Integridade não têm
+  regra de remoção de condição associada no PRD, então não foi
+  implementado (não inventar regra).
+- Dano recorrente (Sangrando causa 1d6 no fim da rodada, Envenenado
+  1d4 tóxico) continua não implementado — permanece pendência do
+  v0.33, sem mudança aqui.
+- Fim de rodada / ações derivadas continuam fora de escopo (mesma
+  pendência do v0.33).
+- O "Desfazer" só cobre a leva mais recente — se o jogador aumentar PV
+  duas vezes seguidas (duas curas), só a segunda leva pode ser
+  desfeita pelo botão; a primeira já não tem mais banner ativo (fica
+  só no histórico "Removidas" da aba Condições, reversível manualmente
+  reaplicando a condição).
+- `removidaOrigem` não é exposto na UI da aba Condições (histórico
+  "Removidas" mostra só nome + timestamp) — poderia diferenciar
+  visualmente remoção manual de remoção por cura num checkpoint
+  futuro, se for útil para o narrador auditar.
