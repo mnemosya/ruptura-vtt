@@ -20,6 +20,7 @@ import { Section } from "./Section";
 import { buttonStyle } from "./styles";
 import { addLog, listLogsForViewer } from "../../../../lib/table/storage";
 import { TABLE_LOG_VISIBILITIES, type TableLogEntry, type TableLogVisibility } from "../../../../lib/table";
+import { MAX_COLLAPSE_SEGMENTS, MAX_OVERLOAD_SURGES_PER_DAY } from "../../../../lib/character";
 
 const inputStyle: React.CSSProperties = {
   background: "#0f1014",
@@ -132,7 +133,7 @@ function formatOverloadSurge(payload: Record<string, unknown>): string {
   const indice = typeof payload.indice === "number" ? payload.indice : "?";
   const dano = typeof payload.danoPsiquico === "number" ? payload.danoPsiquico : "?";
   const ruptura = payload.rupturaPendente === true ? " — Ruptura pendente!" : "";
-  return `${characterNome}: ${tipo} (${indice}/3) — ${dano} dano psíquico (1d4)${ruptura}`;
+  return `${characterNome}: ${tipo} (${indice}/${MAX_OVERLOAD_SURGES_PER_DAY}) — ${dano} dano psíquico (1d4)${ruptura}`;
 }
 
 /** Checkpoint v0.37: cartão de overload_will_roll. */
@@ -148,7 +149,7 @@ function formatOverloadWillRoll(payload: Record<string, unknown>): string {
 function formatCollapse(payload: Record<string, unknown>): string {
   const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
   const tipo = payload.tipo === "pv" ? "PV" : payload.tipo === "pe" ? "PE" : "?";
-  const segmentos = typeof payload.segmentos === "number" ? ` — segmento ${payload.segmentos}/3` : "";
+  const segmentos = typeof payload.segmentos === "number" ? ` — segmento ${payload.segmentos}/${MAX_COLLAPSE_SEGMENTS}` : "";
   const motivo = typeof payload.motivo === "string" ? ` (${payload.motivo})` : "";
   return `${characterNome}: ${tipo}${segmentos}${motivo}`;
 }

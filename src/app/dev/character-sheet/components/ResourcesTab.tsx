@@ -7,6 +7,7 @@ import { buttonStyle } from "./styles";
 import {
   OVERLOAD_SURGE_TYPES,
   MAX_OVERLOAD_SURGES_PER_DAY,
+  MAX_COLLAPSE_SEGMENTS,
   type CharacterAttributes,
   type CharacterGameState,
   type CharacterResources,
@@ -258,7 +259,7 @@ export function ResourcesTab({
             <>
               <p style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>
                 Tipo: <strong>{colapso.tipo === "pv" ? "PV" : "PE"}</strong> · Segmentos:{" "}
-                <strong data-testid="colapso-segmentos">{colapso.segmentos}/3</strong> ·{" "}
+                <strong data-testid="colapso-segmentos">{colapso.segmentos}/{MAX_COLLAPSE_SEGMENTS}</strong> ·{" "}
                 {colapso.estabilizado ? "Estabilizado" : "Não estabilizado"}
               </p>
               <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 10 }}>

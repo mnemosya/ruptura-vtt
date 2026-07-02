@@ -14,7 +14,13 @@
  * diferença de modo — ambos compartilham `character`/`activeEffects`).
  */
 
-import type { ActiveCondition, ActiveEffect, Character } from "../../../../lib/character";
+import {
+  MAX_OVERLOAD_SURGES_PER_DAY,
+  MAX_COLLAPSE_SEGMENTS,
+  type ActiveCondition,
+  type ActiveEffect,
+  type Character,
+} from "../../../../lib/character";
 import type { ConditionOption } from "./ConditionsTab";
 
 export type StateChipKind = "condicao" | "debuff" | "buff" | "aviso" | "fim_de_rodada" | "pendencia" | "placeholder";
@@ -173,7 +179,7 @@ export function ActiveStateStrip({
   if (sobrecargaUsadaDia > 0) {
     pendencias.push({
       id: "pendencia:sobrecarga",
-      nome: `Sobrecarga: ${sobrecargaUsadaDia}/3`,
+      nome: `Sobrecarga: ${sobrecargaUsadaDia}/${MAX_OVERLOAD_SURGES_PER_DAY}`,
       tipo: "pendencia",
       descricao: "Resetada automaticamente no próximo descanso longo.",
     });
@@ -189,7 +195,7 @@ export function ActiveStateStrip({
   if (colapso?.ativo) {
     pendencias.push({
       id: "pendencia:colapso",
-      nome: `Colapso (${colapso.tipo === "pv" ? "PV" : "PE"}) ${colapso.segmentos}/3${colapso.estabilizado ? " · estabilizado" : ""}`,
+      nome: `Colapso (${colapso.tipo === "pv" ? "PV" : "PE"}) ${colapso.segmentos}/${MAX_COLLAPSE_SEGMENTS}${colapso.estabilizado ? " · estabilizado" : ""}`,
       tipo: "pendencia",
       descricao: "Inconsciente. Ver aba Recursos para testes/estabilizar. Cura de 1+ do recurso colapsado encerra automaticamente.",
     });

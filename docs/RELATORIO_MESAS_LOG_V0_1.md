@@ -6119,6 +6119,8 @@ restam só os 2 personagens e as 2 campanhas legadas esperadas.
 
 # Checkpoint v0.37 — Sobrecarga diária e Ruptura pendente
 
+**Commit:** `fdb7fe5b9fc891e94cbfd9b186e32ad595353805`
+
 ## 1. Auditoria (antes de alterar)
 
 `git status --short` limpo. `Character.sobrecarga_usada_dia` já
@@ -6288,6 +6290,8 @@ duração "1 rodada", origem correta), e que o 4º surto é bloqueado
   existia antes deste checkpoint.
 
 # Checkpoint v0.38 — Colapso por PV/PE 0
+
+**Commit:** `6278c3630b73b11faaae98f8a20e705cbc531e59`
 
 ## 1. Auditoria (antes de alterar)
 
@@ -6469,6 +6473,8 @@ nunca salvo durante o teste) — sem necessidade de limpeza via SQL.
 
 # Checkpoint v0.39 — Gatilhos mínimos de rodada e cena
 
+**Commit:** `465242e1a45ca3806823133527c5555cf625e8b7`
+
 ## 1. Auditoria (antes de alterar)
 
 `git status --short` limpo. `campaigns` (migration 0003) é tabela
@@ -6607,6 +6613,8 @@ restam só os 2 personagens e as 2 campanhas legadas esperadas.
   documentada no v0.34 para a remoção automática por cura.
 
 # Checkpoint v0.40 — Modo Evolução e histórico de PM
+
+**Commit:** `4a4d96295c041ba7a5845e569ca00484b04f8a4d`
 
 ## 1. Auditoria (antes de alterar)
 
@@ -6779,6 +6787,8 @@ restam só os 2 personagens legados esperados.
 
 # Checkpoint v0.41 — Assistente de criação mínimo
 
+**Commit:** `2aabf8746851a3830d679a0b387f3c83a4499763`
+
 ## 1. Auditoria (antes de alterar)
 
 `git status --short` limpo. `createCharacterForCampaign(campaignId,
@@ -6933,3 +6943,115 @@ restam só os 2 personagens e as 2 campanhas legadas esperadas.
 - Custos de progressão (PM) continuam placeholder — o assistente não
   desconta PM na criação (criação é gratuita, como o PRD descreve —
   PM é só para evolução pós-criação, v0.40).
+
+# Checkpoint v0.41.1 — Auditoria pós-sequência
+
+## 1. Contexto
+
+Auditoria de consistência após a sequência v0.37 → v0.41 (5 commits
+grandes: Sobrecarga/Ruptura pendente, Colapso, gatilhos de
+rodada/cena, Modo Evolução/histórico de PM, assistente de criação).
+Sem feature nova, sem refator grande — só correção de bug factual
+pequeno, se encontrado.
+
+## 2. Auditoria realizada
+
+- **Payload/normalização**: `Character` (types.ts) e
+  `normalizeCharacter.ts` revisados campo a campo — Sobrecarga,
+  Ruptura pendente, Colapso, PM/histórico, recursos temporários e
+  condições ativas/removidas todos normalizados de forma consistente.
+  `character.colapso` não é normalizado/preenchido por padrão em
+  `normalizeCharacter.ts` — verificado que isso é intencional (não um
+  bug): todos os consumidores em `collapse.ts` já fazem null-check
+  defensivo (`if (!colapso || !colapso.ativo)`), e o relatório do
+  v0.38 nunca listou `normalizeCharacter.ts` como arquivo alterado.
+- **Relatórios**: as 5 seções v0.37–v0.41 já tinham todas as
+  subseções esperadas (Arquivos alterados, Build e testes/Teste
+  manual, Pendências); nenhuma tinha a linha `**Commit:**` — adicionada
+  retroativamente nas 5 (ver hashes abaixo).
+- **Rotas**: `/mesas`, `/mesas/[campaignId]`,
+  `/mesas/[campaignId]/personagens/novo`, `/join/[token]`, `/ficha`,
+  `/dev/character-sheet` — todas presentes e compiladas com sucesso em
+  `npm run build` (ver saída de rotas abaixo).
+- **Scripts/segredos**: nenhum script temporário encontrado no repo;
+  `git status --short` limpo antes de iniciar (nenhuma alteração
+  pendente, `next-env.d.ts` incluso); `.env.local` não tocado em
+  nenhum momento deste checkpoint.
+
+## 3. Inconsistência encontrada (bug pequeno)
+
+Números mágicos `3` duplicados como literais em vários pontos da UI,
+em vez de referenciar uma constante única exportada — mesmo padrão já
+usado em `overload.ts` (`MAX_OVERLOAD_SURGES_PER_DAY`), mas nunca
+aplicado ao limite de 3 segmentos do Colapso (PRD 10.7):
+
+- `collapse.ts`: `Math.min(3, ...)` e `segmentos >= 3` inline, sem
+  constante exportada equivalente.
+- `CharacterSheetClient.tsx`: log de Sobrecarga usava `${3}` literal
+  em vez de `MAX_OVERLOAD_SURGES_PER_DAY`; log de avanço manual de
+  Colapso usava `/3` literal.
+- `ActiveStateStrip.tsx`: chip de pendência de Sobrecarga e chip de
+  pendência de Colapso usavam `/3` literal.
+- `ResourcesTab.tsx`: exibição de segmentos do Colapso usava `/3`
+  literal.
+- `MesaTab.tsx`: `formatOverloadSurge` e `formatCollapse` (formatação
+  de cartões de log da mesa) usavam `/3` literal em ambos.
+
+Risco: se o limite de segmentos do Colapso mudasse no futuro (PRD),
+seria fácil atualizar `collapse.ts` e esquecer um dos 5 outros pontos,
+gerando inconsistência visual entre a lógica real e o texto exibido.
+
+## 4. Correção aplicada
+
+- `src/lib/character/collapse.ts`: adicionada constante exportada
+  `MAX_COLLAPSE_SEGMENTS = 3` (mesmo padrão de
+  `MAX_OVERLOAD_SURGES_PER_DAY`), usada em `advanceCollapseSegment`.
+- `CharacterSheetClient.tsx`, `ActiveStateStrip.tsx`,
+  `ResourcesTab.tsx`, `MesaTab.tsx`: todos os `/3` literais
+  relacionados a Colapso substituídos por
+  `${MAX_COLLAPSE_SEGMENTS}`/`{MAX_COLLAPSE_SEGMENTS}`; o `${3}`
+  literal de Sobrecarga em `CharacterSheetClient.tsx` e o `/3` de
+  Sobrecarga em `MesaTab.tsx` substituídos por
+  `${MAX_OVERLOAD_SURGES_PER_DAY}`.
+- Nenhuma mudança de comportamento/valor — os dois limites continuam
+  3, só deixaram de ser literais duplicados.
+
+## 5. Arquivos alterados
+
+- `src/lib/character/collapse.ts`
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx`
+- `src/app/dev/character-sheet/components/ActiveStateStrip.tsx`
+- `src/app/dev/character-sheet/components/ResourcesTab.tsx`
+- `src/app/dev/character-sheet/components/MesaTab.tsx`
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` (linhas `**Commit:**` retroativas
+  em v0.37–v0.41 + esta seção)
+
+## 6. Build e testes
+
+- `npx tsc --noEmit -p tsconfig.json`: sem erros.
+- `npm run build`: sucesso (`Compiled successfully`), todas as 6 rotas
+  auditadas presentes (`/mesas`, `/mesas/[campaignId]`,
+  `/mesas/[campaignId]/personagens/novo`, `/join/[token]`, `/ficha`,
+  `/dev/character-sheet`).
+- `npm run test:character-storage`: `TODOS OS PASSOS PASSARAM`.
+- `npm run test:content-read`: sucesso, sem erros.
+- Teste manual (smoke test no browser): **não executado neste
+  checkpoint** — a porta 3000 do preview estava ocupada por um
+  processo externo não rastreado pela ferramenta de preview; não foi
+  interrompido para evitar afetar outro trabalho em andamento.
+  Registrado como pendência abaixo. Risco considerado baixo: as
+  correções são substituições mecânicas de string/interpolação
+  (mesmo valor numérico antes e depois), sem mudança de lógica, e já
+  cobertas por `tsc --noEmit` + `npm run build` bem-sucedidos.
+
+## 7. Pendências
+
+- Teste manual de fluxo completo (criar mesa → assistente → vincular
+  perfil → convite → `/ficha` → Sangrando → cura/auto-heal →
+  descansos → Sobrecarga → Colapso → fim de rodada/cena) não foi
+  executado neste checkpoint por indisponibilidade do preview local;
+  recomenda-se rodar em um próximo checkpoint ou sessão com a porta
+  3000 livre.
+- Nenhum bug grande foi encontrado durante a auditoria de payload,
+  normalização ou relatórios — nenhuma pendência de bug grande a
+  documentar além do já listado nos relatórios de v0.37–v0.41.

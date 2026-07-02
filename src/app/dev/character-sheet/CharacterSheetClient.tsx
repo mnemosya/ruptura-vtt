@@ -32,9 +32,11 @@ import {
   useOverloadSurge,
   applyStunFromFailedWillTest,
   OVERLOAD_WILL_TEST_CD,
+  MAX_OVERLOAD_SURGES_PER_DAY,
   detectCollapseOnResourceChange,
   advanceCollapseSegment,
   stabilizeCollapse,
+  MAX_COLLAPSE_SEGMENTS,
   gainPm,
   spendPm,
   logPermanentAdjustment,
@@ -949,7 +951,7 @@ export default function CharacterSheetClient({
     setCharacter(result.character);
     addLogEntry(
       "recurso",
-      `Surto de Sobrecarga (${tipo}) — ${result.surge.indice}/${3}, dano psíquico ${result.surge.danoPsiquico} (1d4, não aplicado automaticamente).`,
+      `Surto de Sobrecarga (${tipo}) — ${result.surge.indice}/${MAX_OVERLOAD_SURGES_PER_DAY}, dano psíquico ${result.surge.danoPsiquico} (1d4, não aplicado automaticamente).`,
     );
     if (result.requiresWillRoll) {
       addLogEntry("condicao", "Ruptura pendente (3º surto) — role Vontade CD 7.");
@@ -1201,7 +1203,7 @@ export default function CharacterSheetClient({
     const nowIso = new Date().toISOString();
     const result = advanceCollapseSegment(character, "manual", nowIso);
     setCharacter(result.character);
-    addLogEntry("recurso", `Colapso — segmento avançado manualmente: ${result.segmentos}/3.`);
+    addLogEntry("recurso", `Colapso — segmento avançado manualmente: ${result.segmentos}/${MAX_COLLAPSE_SEGMENTS}.`);
     void persistCollapseEvent("collapse_advanced", { segmentos: result.segmentos, motivo: "manual", tipo: character.colapso?.tipo ?? null });
   }
 

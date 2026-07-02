@@ -12,6 +12,9 @@
 
 import type { ActiveCondition, Character } from "./types";
 
+/** Marcador de 3 segmentos do Colapso (PRD 10.7) — exportado para a UI nunca repetir o número mágico. */
+export const MAX_COLLAPSE_SEGMENTS = 3;
+
 const COLLAPSE_INCONSCIENTE_ORIGENS = ["Colapso (PV a 0)", "Colapso (PE a 0)"] as const;
 
 function buildCollapseInconsciente(nowIso: string, tipo: "pv" | "pe"): ActiveCondition {
@@ -128,8 +131,8 @@ export function advanceCollapseSegment(character: Character, reason: string, now
   if (!colapso || !colapso.ativo) {
     return { character, segmentos: colapso?.segmentos ?? 0, thirdSegmentReached: false, warnings: ["Nenhum colapso ativo — nada avançado."] };
   }
-  const segmentos = Math.min(3, colapso.segmentos + 1);
-  const thirdSegmentReached = segmentos >= 3;
+  const segmentos = Math.min(MAX_COLLAPSE_SEGMENTS, colapso.segmentos + 1);
+  const thirdSegmentReached = segmentos >= MAX_COLLAPSE_SEGMENTS;
   const warnings: string[] = [];
   if (thirdSegmentReached) {
     warnings.push(
