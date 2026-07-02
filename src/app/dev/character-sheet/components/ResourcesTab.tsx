@@ -1,15 +1,18 @@
+import { useState } from "react";
 import { Section } from "./Section";
 import { Stat } from "./Stat";
 import { ResourceField } from "./ResourceField";
 import { TurnCounters } from "./TurnCounters";
 import { buttonStyle } from "./styles";
-import type {
-  CharacterAttributes,
-  CharacterGameState,
-  CharacterResources,
-  CharacterRulesPayload,
-  DerivedDefinition,
-  DerivedStats,
+import {
+  OVERLOAD_SURGE_TYPES,
+  MAX_OVERLOAD_SURGES_PER_DAY,
+  type CharacterAttributes,
+  type CharacterGameState,
+  type CharacterResources,
+  type CharacterRulesPayload,
+  type DerivedDefinition,
+  type DerivedStats,
 } from "../../../../lib/character";
 
 const RECURSO_MAXIMO_IDS = ["pv_max", "pe_max", "mana_max", "integridade_max"] as const;
@@ -42,6 +45,11 @@ export function ResourcesTab({
   atributos,
   onApplyShortRest,
   onApplyLongRest,
+  sobrecargaUsadaDia,
+  rupturaPendente,
+  overloadWillRollPending,
+  onUseOverloadSurge,
+  onRollOverloadWillTest,
 }: {
   regras: CharacterRulesPayload | null;
   derivados: DerivedStats;
@@ -59,7 +67,14 @@ export function ResourcesTab({
   atributos: CharacterAttributes;
   onApplyShortRest: () => void;
   onApplyLongRest: () => void;
+  /** Checkpoint v0.37 — Sobrecarga/Ruptura pendente. */
+  sobrecargaUsadaDia: number;
+  rupturaPendente: boolean;
+  overloadWillRollPending: boolean;
+  onUseOverloadSurge: (tipo: string) => void;
+  onRollOverloadWillTest: () => void;
 }) {
+  const [tipoSurto, setTipoSurto] = useState<string>(OVERLOAD_SURGE_TYPES[0]);
   const pvAtual = recursosAtuais?.pv ?? 0;
   const peAtual = recursosAtuais?.pe ?? 0;
   const manaAtual = recursosAtuais?.mana ?? 0;
@@ -155,6 +170,75 @@ export function ResourcesTab({
               Aplicar descanso longo
             </button>
           </div>
+        </div>
+      </Section>
+
+      <Section title="Sobrecarga">
+        <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 8 }}>
+          Até {MAX_OVERLOAD_SURGES_PER_DAY} surtos por dia — só descanso longo recupera. Cada surto
+          causa 1d4 de dano psíquico (ajuste PE manualmente — sem regra automática ainda). O 3º surto
+          marca Ruptura pendente e exige teste de Vontade CD 7.
+        </p>
+        <div data-testid="sobrecarga-cargas" style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+          {Array.from({ length: MAX_OVERLOAD_SURGES_PER_DAY }, (_, i) => i < sobrecargaUsadaDia).map((usada, i) => (
+            <span
+              key={i}
+              data-testid={`sobrecarga-carga-${i}`}
+              data-usada={usada}
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: "50%",
+                border: `2px solid ${usada ? "#c0392b" : "#444"}`,
+                background: usada ? "#c0392b" : "transparent",
+              }}
+              title={usada ? "Surto usado" : "Surto disponível"}
+            />
+          ))}
+          <span style={{ fontSize: 12, opacity: 0.6, marginLeft: 8 }}>
+            {sobrecargaUsadaDia}/{MAX_OVERLOAD_SURGES_PER_DAY} usados
+          </span>
+        </div>
+        {rupturaPendente && (
+          <p data-testid="ruptura-pendente-aviso" style={{ fontSize: 12, color: "#c0392b", marginBottom: 10 }}>
+            ⚠ Ruptura pendente — resolvida no fim da cena (Marca/Traço, ainda não implementado).
+          </p>
+        )}
+        {overloadWillRollPending && (
+          <div style={{ marginBottom: 10 }}>
+            <button data-testid="overload-vontade-button" onClick={onRollOverloadWillTest} style={buttonStyle}>
+              Rolar Vontade CD 7 (3º surto)
+            </button>
+          </div>
+        )}
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <select
+            data-testid="sobrecarga-tipo-select"
+            value={tipoSurto}
+            onChange={(e) => setTipoSurto(e.target.value)}
+            style={{
+              background: "#0f1014",
+              color: "inherit",
+              border: "1px solid #333",
+              borderRadius: 4,
+              padding: "6px 8px",
+              fontSize: 13,
+            }}
+          >
+            {OVERLOAD_SURGE_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+          <button
+            data-testid="sobrecarga-usar-button"
+            onClick={() => onUseOverloadSurge(tipoSurto)}
+            disabled={sobrecargaUsadaDia >= MAX_OVERLOAD_SURGES_PER_DAY}
+            style={{ ...buttonStyle, opacity: sobrecargaUsadaDia >= MAX_OVERLOAD_SURGES_PER_DAY ? 0.5 : 1 }}
+          >
+            Usar surto
+          </button>
         </div>
       </Section>
 

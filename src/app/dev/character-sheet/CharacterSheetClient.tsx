@@ -29,6 +29,9 @@ import {
   undoAutoHealRemoval,
   applyShortRest,
   applyLongRest,
+  useOverloadSurge,
+  applyStunFromFailedWillTest,
+  OVERLOAD_WILL_TEST_CD,
 } from "../../../lib/character";
 import {
   createCharacter,
@@ -48,7 +51,7 @@ import type {
   CharacterResources,
   CharacterRulesPayload,
 } from "../../../lib/character";
-import type { PreparedRoll } from "../../../lib/dice";
+import { rollPericia, type PreparedRoll } from "../../../lib/dice";
 import {
   listCampaignProfiles,
   enterCampaignProfile,
@@ -220,6 +223,9 @@ export default function CharacterSheetClient({
   const [autoHealBanner, setAutoHealBanner] = useState<{ ids: string[]; nomes: string[]; pvAnterior: number; pvNovo: number } | null>(
     null,
   );
+  // 3º surto de Sobrecarga do dia exige teste de Vontade CD 7 (checkpoint
+  // v0.37) — true entre "usar o 3º surto" e "rolar o teste".
+  const [overloadWillRollPending, setOverloadWillRollPending] = useState(false);
 
   function addLogEntry(tipo: LogTipo, resumo: string) {
     logCounterRef.current += 1;
@@ -805,6 +811,116 @@ export default function CharacterSheetClient({
     if (removidas.length > 0) void handleAutoHealRemovals(removidas, result.before.pv, result.after.pv);
   }
 
+  /** Botão "Usar surto" (checkpoint v0.37, PRD 10.5) — 1d4 de dano psíquico, 3º surto marca Ruptura pendente + exige Vontade CD 7. */
+  async function handleUseOverloadSurge(tipo: string) {
+    const nowIso = new Date().toISOString();
+    const sobrecargaAntes = character.sobrecarga_usada_dia ?? 0;
+    const result = useOverloadSurge(character, tipo, nowIso);
+
+    if (!result.surge) {
+      addLogEntry("recurso", result.warnings[0] ?? "Limite de surtos de Sobrecarga atingido.");
+      return;
+    }
+
+    setCharacter(result.character);
+    addLogEntry(
+      "recurso",
+      `Surto de Sobrecarga (${tipo}) — ${result.surge.indice}/${3}, dano psíquico ${result.surge.danoPsiquico} (1d4, não aplicado automaticamente).`,
+    );
+    if (result.requiresWillRoll) {
+      addLogEntry("condicao", "Ruptura pendente (3º surto) — role Vontade CD 7.");
+      setOverloadWillRollPending(true);
+    }
+
+    if (selectedCampaignId) {
+      try {
+        await addLog({
+          campaignId: selectedCampaignId,
+          characterId: characterId ?? undefined,
+          profileId: selectedProfileId,
+          profileSessionId: profileSessionToken?.profileSessionId ?? null,
+          type: "overload_surge",
+          visibility: "public",
+          payload: {
+            characterId,
+            characterNome: character.nome,
+            profileId: selectedProfileId,
+            profileSessionId: profileSessionToken?.profileSessionId ?? null,
+            tipo,
+            indice: result.surge.indice,
+            danoPsiquico: result.surge.danoPsiquico,
+            sobrecargaAntes,
+            sobrecargaDepois: result.surge.indice,
+            rupturaPendente: result.rupturePending,
+            requiresWillRoll: result.requiresWillRoll,
+            source: "character_sheet",
+          },
+        });
+      } catch {
+        // Best-effort — mesma justificativa de handleAddCondition.
+      }
+    }
+  }
+
+  /** Rolagem de Vontade CD 7 exigida pelo 3º surto do dia — falha aplica Atordoado via sistema de condições. */
+  async function handleRollOverloadWillTest() {
+    const periciaDef = regras?.pericias.find((p) => p.id === "vontade");
+    const atributoId = (periciaDef?.atributo_primario as "corpo" | "mente" | "animo" | undefined) ?? "animo";
+    const atributoDef = regras?.atributos.find((a) => a.id === atributoId);
+
+    const resultado = rollPericia({
+      atributoId,
+      atributoNome: atributoDef?.nome ?? atributoId,
+      atributoValor: character.atributos[atributoId],
+      periciaId: "vontade",
+      periciaNome: periciaDef?.nome ?? "Vontade",
+      periciaValor: character.pericias["vontade"] ?? 0,
+      modificador: 0,
+      cd: OVERLOAD_WILL_TEST_CD,
+    });
+    const sucesso = resultado.sucesso ?? false;
+
+    addLogEntry(
+      "recurso",
+      `Teste de Vontade CD ${OVERLOAD_WILL_TEST_CD} (Sobrecarga): total ${resultado.total} — ${sucesso ? "Sucesso" : "Falha"}.`,
+    );
+    setOverloadWillRollPending(false);
+
+    if (!sucesso) {
+      const nowIso = new Date().toISOString();
+      setCharacter((prev) => ({
+        ...prev,
+        condicoes_ativas: applyStunFromFailedWillTest(prev.condicoes_ativas ?? [], nowIso),
+      }));
+      addLogEntry("condicao", "Atordoado aplicado (falha no teste de Vontade CD 7 da Sobrecarga).");
+    }
+
+    if (selectedCampaignId) {
+      try {
+        await addLog({
+          campaignId: selectedCampaignId,
+          characterId: characterId ?? undefined,
+          profileId: selectedProfileId,
+          profileSessionId: profileSessionToken?.profileSessionId ?? null,
+          type: "overload_will_roll",
+          visibility: "public",
+          payload: {
+            characterId,
+            characterNome: character.nome,
+            profileId: selectedProfileId,
+            profileSessionId: profileSessionToken?.profileSessionId ?? null,
+            total: resultado.total,
+            cd: OVERLOAD_WILL_TEST_CD,
+            sucesso,
+            source: "character_sheet",
+          },
+        });
+      } catch {
+        // Best-effort — mesma justificativa de handleAddCondition.
+      }
+    }
+  }
+
   /**
    * Edição manual de recursos atuais (PV/PE/Mana/Integridade). Aceita
    * só inteiro >= 0; não trava no máximo de propósito — combate/dano
@@ -1127,6 +1243,7 @@ export default function CharacterSheetClient({
         pvTemporario={character.recursos_atuais?.pv_temporario ?? 0}
         manaTemporaria={character.recursos_atuais?.mana_temporaria ?? 0}
         sobrecargaUsadaDia={character.sobrecarga_usada_dia ?? 0}
+        rupturaPendente={character.ruptura_pendente ?? false}
       />
 
       <CharacterSheetTabs
@@ -1202,6 +1319,11 @@ export default function CharacterSheetClient({
           atributos={character.atributos}
           onApplyShortRest={handleApplyShortRest}
           onApplyLongRest={handleApplyLongRest}
+          sobrecargaUsadaDia={character.sobrecarga_usada_dia ?? 0}
+          rupturaPendente={character.ruptura_pendente ?? false}
+          overloadWillRollPending={overloadWillRollPending}
+          onUseOverloadSurge={handleUseOverloadSurge}
+          onRollOverloadWillTest={handleRollOverloadWillTest}
         />
       )}
 

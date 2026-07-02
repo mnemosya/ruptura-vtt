@@ -22,6 +22,7 @@
  */
 
 import type { Character, CharacterResources, DerivedStats } from "./types";
+import { resetOverloadForLongRest } from "./overload";
 
 export interface RestResourceSnapshot {
   pv: number;
@@ -123,9 +124,8 @@ export function applyLongRest(character: Character, derived: DerivedStats, nowIs
   };
 
   const nextCharacter: Character = {
-    ...character,
+    ...resetOverloadForLongRest(character),
     recursos_atuais,
-    sobrecarga_usada_dia: 0,
     metadados: { ...character.metadados, schema_version: character.metadados?.schema_version ?? 1, atualizado_em: nowIso },
   };
 

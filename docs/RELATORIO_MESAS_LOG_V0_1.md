@@ -6116,3 +6116,173 @@ restam só os 2 personagens e as 2 campanhas legadas esperadas.
   na ficha (aplicam o efeito completo no clique), sem gating de tempo
   de jogo (PRD 9.5, "duração por tempo de jogo", ainda não existe como
   sistema geral).
+
+# Checkpoint v0.37 — Sobrecarga diária e Ruptura pendente
+
+## 1. Auditoria (antes de alterar)
+
+`git status --short` limpo. `Character.sobrecarga_usada_dia` já
+existia desde o v0.36, resetado por `applyLongRest` inline
+(`sobrecarga_usada_dia: 0`) — refatorado neste checkpoint para usar o
+novo `resetOverloadForLongRest()` (single source of truth, sem lógica
+duplicada). `ActiveCondition`/`handleAddCondition` (v0.32) já davam o
+modelo exato para aplicar Atordoado programaticamente. `rollPericia`
+(`lib/dice`, usado por `RollsTab`) já cobria "maior d8 + perícia + CD"
+— reaproveitado tal qual para o teste de Vontade CD 7, sem nova função
+de rolagem. Perícia "Vontade" já existe na Biblioteca com
+`atributo_primario: "animo"`, confirmado via inspeção do conteúdo.
+
+## 2. Modelo no personagem
+
+```ts
+Character.sobrecarga_usada_dia?: number;      // já existia (v0.36)
+Character.ruptura_pendente?: boolean;
+Character.ruptura_nivel_pendente?: number;     // placeholder documentado, sempre 1
+Character.ultimo_surto?: { tipo, indice, danoPsiquico, criadoEm };
+```
+
+## 3. Módulo `src/lib/character/overload.ts`
+
+- `useOverloadSurge(character, tipo, nowIso, rng?)` — pura. Recusa
+  (`surge: null`) se já há 3 surtos no dia. Rola 1d4
+  (`1 + Math.floor(rng() * 4)`, `rng` injetável para teste
+  determinístico — confirmado via script `tsx` direto, ver seção 9).
+  No 3º surto, marca `ruptura_pendente=true`,
+  `ruptura_nivel_pendente=1` e devolve `requiresWillRoll: true`.
+- `applyStunFromFailedWillTest(condicoes, nowIso)` — gera uma
+  `ActiveCondition` "Atordoado" (`conditionId: "atordoado"`,
+  duração "1 rodada", origem "Falha no teste de Vontade CD 7 (3º surto
+  de Sobrecarga)"), mesmo shape de `handleAddCondition`.
+- `resetOverloadForLongRest(character)` — zera só
+  `sobrecarga_usada_dia`; **nunca** toca `ruptura_pendente`/
+  `ruptura_nivel_pendente` (regra explícita do pedido).
+- `OVERLOAD_WILL_TEST_CD = 7`, `MAX_OVERLOAD_SURGES_PER_DAY = 3`,
+  `OVERLOAD_SURGE_TYPES` (5 rótulos provisórios, sem efeito mecânico
+  próprio: Energia, Foco, Desequilíbrio, Impacto, Outro).
+
+## 4. Dano psíquico — decisão documentada
+
+O PRD não amarra "dano psíquico" a nenhum recurso específico, e **não
+existe nenhuma regra codificada no app** que ligue "dano psíquico" a
+PE automaticamente (PE só é editado manualmente). Por isso
+`useOverloadSurge` **nunca desconta PE sozinho** — só devolve
+`surge.danoPsiquico` (o valor rolado) e um warning explícito pedindo
+ajuste manual. Registrado sempre no log (local e `table_logs`), mesmo
+sem aplicação automática — decisão deliberada para não inventar regra
+de dano que o PRD não especifica.
+
+## 5. UI
+
+Novo bloco "Sobrecarga" na aba Recursos (`ResourcesTab.tsx`): 3 cargas
+visuais (círculos preenchidos = usados), contador "X/3 usados",
+seletor de tipo de surto, botão "Usar surto" (desabilitado ao atingir
+3/3). Aviso "⚠ Ruptura pendente..." quando `ruptura_pendente`. Botão
+"Rolar Vontade CD 7 (3º surto)" aparece só enquanto
+`overloadWillRollPending` está true (entre usar o 3º surto e resolver
+o teste).
+
+## 6. Terceiro surto e teste de Vontade
+
+`handleUseOverloadSurge` (`CharacterSheetClient.tsx`) chama
+`useOverloadSurge`, atualiza o personagem, loga local + `table_logs`
+(`overload_surge`), e se `requiresWillRoll`, ativa o botão de teste.
+`handleRollOverloadWillTest` rola Vontade (Ânimo, perícia "vontade")
+contra CD 7 via `rollPericia` já existente; se falhar, chama
+`applyStunFromFailedWillTest` e aplica Atordoado via
+`condicoes_ativas` (sistema já existente, sem nova infraestrutura);
+loga local + `table_logs` (`overload_will_roll`). Confirmado via
+teste manual real (rolagem verdadeira: total 8 vs CD 7 = sucesso, sem
+Atordoado) e via script `tsx` direto simulando `rng` fixo para
+confirmar a leva completa (3 surtos → `ruptura_pendente=true` →
+`applyStunFromFailedWillTest` gera a condição correta) e o bloqueio do
+4º surto.
+
+## 7. ActiveStateStrip
+
+`sobrecargaUsadaDia` (já existia como prop desde v0.36, sem uso real
+até agora) e novo `rupturaPendente` — chips `tipo: "pendencia"`,
+`"Sobrecarga: X/3"` e `"Ruptura pendente"`, não clicáveis.
+
+## 8. Descanso longo
+
+Confirmado (via refactor + teste manual): `applyLongRest` chama
+`resetOverloadForLongRest` — cargas voltam a 0/3, mas `ruptura_pendente`
+permanece `true` e o aviso continua visível na UI. Nenhuma mudança na
+assinatura pública de `applyShortRest`/`applyLongRest` (v0.36).
+
+## 9. Logs criados
+
+**`table_logs`**: `type="overload_surge"` (payload: `characterId`,
+`characterNome`, `profileId`, `profileSessionId`, `tipo`, `indice`,
+`danoPsiquico`, `sobrecargaAntes`, `sobrecargaDepois`,
+`rupturaPendente`, `requiresWillRoll`, `source`) e
+`type="overload_will_roll"` (payload: `characterId`, `characterNome`,
+`profileId`, `profileSessionId`, `total`, `cd`, `sucesso`, `source`) —
+`visibility="public"`, gravação best-effort. `MesaTab.tsx` ganhou
+`formatOverloadSurge`/`formatOverloadWillRoll` + rótulos/ícone (⚡)/
+cor próprios.
+
+**Log local**: reaproveita os `LogTipo` `"recurso"`/`"condicao"` já
+existentes (sem novo tipo — os eventos de Sobrecarga se encaixam
+naturalmente nas categorias já criadas em checkpoints anteriores).
+
+## 10. Arquivos alterados
+
+- `src/lib/character/overload.ts` (novo).
+- `src/lib/character/types.ts` — `ruptura_pendente`/
+  `ruptura_nivel_pendente`/`ultimo_surto` em `Character`.
+- `src/lib/character/rest.ts` — usa `resetOverloadForLongRest`.
+- `src/lib/character/index.ts` — export do novo módulo.
+- `src/app/dev/character-sheet/components/ResourcesTab.tsx` — bloco
+  "Sobrecarga".
+- `src/app/dev/character-sheet/components/ActiveStateStrip.tsx` —
+  prop `rupturaPendente` + chip.
+- `src/app/dev/character-sheet/components/MesaTab.tsx` — formatação
+  dos 2 novos `type`.
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` —
+  `handleUseOverloadSurge`/`handleRollOverloadWillTest`, import de
+  `rollPericia`, estado `overloadWillRollPending`, wiring de props.
+
+Nenhuma migration — nada muda no schema do banco.
+
+## 11. Build e testes
+
+```
+$ npx tsc --noEmit -p tsconfig.json → limpo na primeira tentativa
+$ npm run build → ✓ compilado, rotas inalteradas
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca do Sistema intacta
+```
+
+## 12. Teste manual + script direto
+
+**Navegador (`/dev/character-sheet`, preview server)**: usado 1º surto
+(carga 1/3 preenchida) → 2º surto (2/3) → 3º surto (3/3, botão "Usar
+surto" desabilitado, aviso "Ruptura pendente" + botão "Rolar Vontade
+CD 7" apareceram) → rolagem real: total 8 vs CD 7 = Sucesso (log
+confirmado) → aplicado descanso longo → **confirmado**: cargas
+voltaram a 0/3, mas aviso "Ruptura pendente" permaneceu visível
+(regra "descanso nunca limpa Ruptura pendente" confirmada).
+
+**Script `tsx` direto** (para cobrir o caminho de falha, já que a
+rolagem real do teste manual deu sucesso): simulado `rng` fixo,
+confirmado que o 3º surto marca `ruptura_pendente=true`/
+`requiresWillRoll=true`, que `applyStunFromFailedWillTest` gera a
+condição "Atordoado" com os campos corretos (`conditionId:"atordoado"`,
+duração "1 rodada", origem correta), e que o 4º surto é bloqueado
+(`surge: null`, warning correto).
+
+## 13. Pendências
+
+- Tipos de surto (Energia/Foco/Desequilíbrio/Impacto/Outro) são só
+  rótulos — nenhum efeito mecânico próprio implementado (fora de
+  escopo explícito).
+- Dano psíquico nunca é aplicado automaticamente a PE — sempre manual,
+  por decisão documentada na seção 4.
+- Ruptura em si (Marca/Traço, redução de Integridade, ganho de Mana)
+  não é resolvida — só marcada como pendente. Resolução de Ruptura é
+  trabalho de um checkpoint futuro (Encerrar Cena).
+- Sem Encerrar Cena implementado ainda — não há gatilho automático que
+  force a resolução da Ruptura pendente.
+- Sem Colapso — dano psíquico/PE a 0 não dispara nada além do que já
+  existia antes deste checkpoint.

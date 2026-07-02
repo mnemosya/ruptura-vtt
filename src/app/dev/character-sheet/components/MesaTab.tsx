@@ -57,6 +57,8 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   condition_auto_removal_undone: "Remoção por Cura Desfeita",
   rest_short: "Descanso Curto",
   rest_long: "Descanso Longo",
+  overload_surge: "Surto de Sobrecarga",
+  overload_will_roll: "Teste de Vontade (Sobrecarga)",
 };
 
 function entryKindLabel(type: string): string {
@@ -70,6 +72,7 @@ function entryIcon(type: string): string {
   if (type === "condition_applied" || type === "condition_removed") return "⚠";
   if (type === "condition_auto_removed" || type === "condition_auto_removal_undone") return "✚";
   if (type === "rest_short" || type === "rest_long") return "💤";
+  if (type === "overload_surge" || type === "overload_will_roll") return "⚡";
   return "•";
 }
 
@@ -78,6 +81,7 @@ function entryBorderColor(type: string): string {
   if (type === "profile_event") return "#ff6b9f";
   if (type === "condition_auto_removed" || type === "condition_auto_removal_undone") return "#4caf50";
   if (type === "rest_short" || type === "rest_long") return "#5ec8ff";
+  if (type === "overload_surge" || type === "overload_will_roll") return "#c0392b";
   return "#ffb84f";
 }
 
@@ -105,6 +109,25 @@ function formatRest(payload: Record<string, unknown>): string {
     .filter(([key]) => before[key] !== after[key])
     .map(([key, label]) => `${label} ${before[key]} → ${after[key]}`);
   return `${characterNome}: ${partes.join(", ") || "sem mudança"}`;
+}
+
+/** Checkpoint v0.37: cartão de overload_surge. */
+function formatOverloadSurge(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const tipo = typeof payload.tipo === "string" ? payload.tipo : "?";
+  const indice = typeof payload.indice === "number" ? payload.indice : "?";
+  const dano = typeof payload.danoPsiquico === "number" ? payload.danoPsiquico : "?";
+  const ruptura = payload.rupturaPendente === true ? " — Ruptura pendente!" : "";
+  return `${characterNome}: ${tipo} (${indice}/3) — ${dano} dano psíquico (1d4)${ruptura}`;
+}
+
+/** Checkpoint v0.37: cartão de overload_will_roll. */
+function formatOverloadWillRoll(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const total = typeof payload.total === "number" ? payload.total : "?";
+  const cd = typeof payload.cd === "number" ? payload.cd : "?";
+  const sucesso = payload.sucesso === true;
+  return `${characterNome}: total ${total} vs CD ${cd} — ${sucesso ? "Sucesso" : "Falha (Atordoado 1 rodada)"}`;
 }
 
 /** Texto da mensagem de chat — aceita `text` (ficha, v0.12) ou `mensagem` (formato antigo do /dev/table). */
@@ -392,7 +415,11 @@ export function MesaTab({
                       ? formatAutoHeal(entry.payload)
                       : entry.type === "rest_short" || entry.type === "rest_long"
                         ? formatRest(entry.payload)
-                        : JSON.stringify(entry.payload)}
+                        : entry.type === "overload_surge"
+                          ? formatOverloadSurge(entry.payload)
+                          : entry.type === "overload_will_roll"
+                            ? formatOverloadWillRoll(entry.payload)
+                            : JSON.stringify(entry.payload)}
             </span>
           </div>
         ))}

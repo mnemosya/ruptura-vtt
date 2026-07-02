@@ -127,6 +127,7 @@ export function ActiveStateStrip({
   pvTemporario = 0,
   manaTemporaria = 0,
   sobrecargaUsadaDia = 0,
+  rupturaPendente = false,
 }: {
   /** `character.condicoes_ativas` completo (ativas e removidas) — o componente filtra `ativa:true` internamente. */
   condicoes: ActiveCondition[];
@@ -138,6 +139,8 @@ export function ActiveStateStrip({
   pvTemporario?: number;
   manaTemporaria?: number;
   sobrecargaUsadaDia?: number;
+  /** checkpoint v0.37 — Ruptura pendente (PRD 10.6), resolvida só no fim de cena (fora de escopo ainda). */
+  rupturaPendente?: boolean;
 }) {
   const condicoesAtivas = condicoes.filter((c) => c.ativa);
   const chips = buildChips(condicoesAtivas, activeEffects, condicoesDisponiveis);
@@ -167,9 +170,17 @@ export function ActiveStateStrip({
   if (sobrecargaUsadaDia > 0) {
     pendencias.push({
       id: "pendencia:sobrecarga",
-      nome: `Sobrecarga: ${sobrecargaUsadaDia}/dia`,
+      nome: `Sobrecarga: ${sobrecargaUsadaDia}/3`,
       tipo: "pendencia",
       descricao: "Resetada automaticamente no próximo descanso longo.",
+    });
+  }
+  if (rupturaPendente) {
+    pendencias.push({
+      id: "pendencia:ruptura",
+      nome: "Ruptura pendente",
+      tipo: "pendencia",
+      descricao: "Resolvida no fim da cena (Marca/Traço) — ainda não automatizado; descanso não limpa isso.",
     });
   }
   const todosChips = [...chips, ...pendencias];

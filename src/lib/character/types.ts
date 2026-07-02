@@ -135,6 +135,22 @@ export interface Character {
    * 0 (nenhum surto usado ainda).
    */
   sobrecarga_usada_dia?: number;
+  /**
+   * Ruptura pendente (checkpoint v0.37, PRD 10.6) — marcada quando o
+   * personagem atinge o 3º surto de Sobrecarga no dia. Resolvida
+   * separadamente no fim da cena (Marca/Traço — fora de escopo ainda).
+   * Descanso NUNCA limpa isso — só a resolução de Ruptura (futura).
+   */
+  ruptura_pendente?: boolean;
+  /** Placeholder documentado — sem modelo real de "nível de Ruptura" ainda; sempre 1 quando ruptura_pendente vira true. */
+  ruptura_nivel_pendente?: number;
+  /** Último surto de Sobrecarga usado — só para exibição/histórico simples, não é log persistente. */
+  ultimo_surto?: {
+    tipo: string;
+    indice: number;
+    danoPsiquico: number;
+    criadoEm: string;
+  };
 }
 
 // ---------------------------------------------------------------------
