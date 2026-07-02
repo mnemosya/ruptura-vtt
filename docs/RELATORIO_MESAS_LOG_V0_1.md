@@ -4940,3 +4940,79 @@ Para usar a rota em produção ou testes:
 - Sessões expiradas não são apagadas — ficam com `status='expired'` no
   banco indefinidamente (para auditoria). Cleanup de old records fica
   como trabalho futuro.
+
+# Checkpoint v0.31.1 — Validação HTTP da expiração interna
+
+## 1. Contexto
+
+O v0.31 criou `INTERNAL_CRON_SECRET`, a rota
+`POST /api/internal/expire-profile-sessions` e o modo `--route` do
+script `scripts/dev/expire-profile-sessions.ts`, mas o teste HTTP
+protegido por segredo não foi executado (bloqueado pelo classificador
+de auto-mode, que corretamente sinalizou que testes de infraestrutura
+de segurança sensível — validação de secret de cron — mereciam
+aprovação explícita antes de rodar). Este checkpoint só valida; **não
+alterou a arquitetura implementada em v0.31**.
+
+## 2. Preparação
+
+- `git status --short` limpo antes de começar; `next-env.d.ts`
+  intocado.
+- `INTERNAL_CRON_SECRET` configurada temporariamente em `.env.local`
+  (arquivo `.gitignore`d, nunca commitado) com um valor aleatório
+  gerado localmente (`openssl rand -hex 16`), usado só durante este
+  teste e removido ao final.
+- App local rodado via `preview_start` (`npm run dev`).
+- Fixture controlada criada via SQL direto: 1 campanha de teste
+  (`88888888-...`), 1 perfil travado (`is_locked=true`,
+  `lock_session_id='browser-session-test'`), 1 `profile_sessions` com
+  `session_token_hash` correspondente e `status='active'`, com
+  `last_seen_at` retroativo em 90s (bem além do default de 30s do
+  `PROFILE_HEARTBEAT_TIMEOUT_MS`).
+
+## 3. Resultados dos testes
+
+| Cenário | Esperado | Obtido |
+|---|---|---|
+| POST sem `Authorization` | 401 | **401** `{"error":"Unauthorized"}` |
+| POST com secret errado | 401 | **401** `{"error":"Unauthorized"}` |
+| POST com secret correto | 200 + resumo | **200** `{"sessionsExpired":1,"profilesReleased":1,"logsCreated":1}` |
+| `profile_sessions.status` após expiração | `'expired'` | **`'expired'`** (confirmado via SQL) |
+| `campaign_profiles.is_locked` após expiração | `false` | **`false`**, `lock_session_id=null` (confirmado via SQL) |
+| Chamada repetida (idempotência) | `sessionsExpired: 0` | **`{"sessionsExpired":0,"profilesReleased":0,"logsCreated":0}`** |
+| `scripts/dev/expire-profile-sessions.ts --route` | expira e reporta | **"Sessões expiradas: 1 (mesa 88888888-...)"** — fixture re-armada antes deste teste |
+
+Todos os 7 cenários pedidos passaram sem qualquer alteração de código
+— a implementação do v0.31 estava correta na primeira execução real.
+
+## 4. Build e testes automatizados
+
+```
+$ npm run build → ✓ compilado, rota /api/internal/expire-profile-sessions listada
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca do Sistema intacta
+```
+
+## 5. Limpeza
+
+- Fixture (`campaigns`/`campaign_profiles`/`profile_sessions` de
+  teste) removida via `DELETE FROM campaigns WHERE id = '88888888-...'`
+  (cascata limpa perfil e sessão) — confirmado que restam só as 2
+  campanhas legadas esperadas.
+- `INTERNAL_CRON_SECRET` removida de `.env.local` ao final (arquivo
+  nunca foi commitado; nenhum valor de segredo apareceu em nenhum
+  commit, log ou neste relatório).
+- Preview server parado.
+
+## 6. Arquivos alterados
+
+Nenhum arquivo de código foi alterado — este checkpoint é
+exclusivamente de validação. `docs/RELATORIO_MESAS_LOG_V0_1.md` é o
+único arquivo modificado (esta seção).
+
+## 7. Riscos remanescentes
+
+Inalterados em relação ao v0.31 (ver seção 6 daquele checkpoint) — a
+validação não revelou nenhum problema novo: segredo em texto plano na
+env, sem UI de aviso quando o cron não está configurado, sessões
+expiradas não são arquivadas/apagadas.
