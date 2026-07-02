@@ -78,11 +78,12 @@ export async function CharacterSheetView({
   try {
     const docs = await listConditions();
     condicoesDisponiveis = docs.map((doc) => {
-      const payload = doc.payload as { descricao_curta?: string } | null;
+      const payload = doc.payload as { descricao_curta?: string; tags?: string[] } | null;
       return {
         slug: doc.slug,
         nome: doc.nome ?? doc.slug,
         descricao_curta: payload?.descricao_curta,
+        tags: Array.isArray(payload?.tags) ? payload.tags : undefined,
       };
     });
   } catch {

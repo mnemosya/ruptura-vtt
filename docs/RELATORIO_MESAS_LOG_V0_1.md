@@ -5727,3 +5727,172 @@ restam só os 2 personagens e as 2 campanhas legadas esperadas.
   "Removidas" mostra só nome + timestamp) — poderia diferenciar
   visualmente remoção manual de remoção por cura num checkpoint
   futuro, se for útil para o narrador auditar.
+
+# Checkpoint v0.35 — Faixa de estados ativa
+
+## 1. Auditoria (antes de alterar)
+
+`git status --short` limpo, `next-env.d.ts` intocado. `CharacterSheetClient.tsx`
+já tinha o ponto certo de inserção: entre os avisos (`sessionExpiredWarning`,
+`autoHealBanner`) e `<CharacterSheetTabs>` — mesmo padrão visual dos
+banners existentes, sem precisar mexer em layout. `activeEffects.ts`
+(v0.33) e `autoHeal.ts` (v0.34) já expunham exatamente os dados
+necessários (`ActiveEffect[]`, `ActiveCondition[]` com `ativa`)
+via `deriveActiveEffectsFromConditions` já calculado como `useMemo` em
+`CharacterSheetClient` — a faixa não precisou de nenhuma lógica de
+efeito nova, só reformatação para chip. `ConditionOption` (v0.32) não
+carregava `tags` da Biblioteca — precisou de um campo novo para
+detectar "fim_de_rodada" sem lista hardcoded fechada.
+
+## 2. Estados exibidos
+
+- **Condições ativas** — um chip por `ActiveCondition` com `ativa:true`
+  (tipo `"condicao"`, ou `"fim_de_rodada"` se aplicável — ver seção 4).
+- **Efeitos derivados de condições** — um chip por `ActiveEffect`
+  (reaproveitado de `deriveActiveEffectsFromConditions`, v0.33): tipo
+  `"debuff"` (modificador negativo), `"buff"` (modificador positivo —
+  nenhuma condição mapeada gera isso hoje, mas o tipo já existe pronto)
+  ou `"aviso"` (kind `warning`/`lock`/`auto_fail` — cobre exatamente os
+  avisos de deslocamento 0/metade pedidos no item 2).
+- **Estados pendentes** — ponto de extensão criado (`StateChipKind`
+  `"pendencia"`), mas a lista fica **sempre vazia** neste checkpoint:
+  não existe nenhum sistema de Ruptura/Marca/Traço pendente
+  implementado ainda (PRD 10.6) — não foi inventado só para preencher
+  a faixa.
+- **Placeholders estruturados** — não aparecem como chips individuais
+  (evitaria "chips vazios" poluindo a faixa); aparecem como uma única
+  linha discreta e sempre presente: "Suporte preparado (ainda vazio):
+  Postura Ofensiva · Postura Defensiva · Mirar · Fintar · Talentos
+  ativos · Vertinas · Efeitos de item · Cooldowns."
+
+## 3. Marcação de fim de rodada
+
+Duas fontes combinadas, nenhuma delas hardcode fechado:
+
+1. **Piso mínimo garantido pelo PRD** (tabela 9.2): `FIM_DE_RODADA_SLUGS`
+   = `{queimando, sangrando, envenenado, insaturado, saturado}` — os 5
+   slugs pedidos explicitamente no checkpoint.
+2. **Detecção via Biblioteca**: qualquer condição cujo
+   `content_documents.payload.tags` inclua `"fim_de_rodada"` também é
+   marcada — hoje isso já cobre Sangrando/Queimando/Envenenado (que
+   têm a tag no conteúdo publicado, confirmado via SQL direto), sem
+   precisar adicionar o slug à lista fixa. Insaturado/Saturado usam
+   `"teste_unico_por_cena"` no conteúdo atual (não `"fim_de_rodada"`),
+   por isso continuam cobertos só pelo piso fixo — se a Biblioteca for
+   atualizada para marcá-los como `fim_de_rodada` no futuro, a
+   detecção automática já os pega sem mudança de código.
+
+Chips `fim_de_rodada` recebem `className="ruptura-pulse"` — animação
+CSS de opacidade (`@keyframes ruptura-pulse`, `globals.css`), texto
+"[Fim de rodada]" e ícone "⟳" próprios (nunca só a cor identifica o
+estado). Nenhuma resolução de fim de rodada acontece — é só marcação
+visual, como pedido.
+
+## 4. Como a faixa reaproveita `activeEffects`
+
+`ActiveStateStrip` recebe `activeEffects: ActiveEffect[]` já calculado
+(o mesmo array passado para `ConditionsTab`/`RollsTab`, computado uma
+única vez por `useMemo(() => deriveActiveEffectsFromConditions(character), [character.condicoes_ativas])`
+em `CharacterSheetClient`) — o componente só mapeia cada efeito para
+um `StateChip` (`buildChips`, função pura de apresentação, sem nenhum
+cálculo de regra). Isso garante que a faixa nunca diverge da aba
+Condições: qualquer condição/efeito/aviso que aparece em "Efeitos
+ativos gerados" aparece também na faixa, com a mesma explicação
+(`e.explanation`) no `title` do chip (tooltip).
+
+## 5. Interação e acessibilidade
+
+- Chips de condição (`"condicao"`/`"fim_de_rodada"`) são clicáveis —
+  `onClick={onVerCondicoes}` chama `setActiveTab("condicoes")`
+  diretamente (callback passado de `CharacterSheetClient`, que já
+  controla `activeTab`) — sem precisar de expansão inline, já que a
+  navegação direta de aba é trivial neste componente. Texto "· Ver"
+  no próprio chip deixa a ação explícita.
+- Chips de efeito (debuff/buff/aviso) não são clicáveis — são só
+  leitura, derivados automaticamente.
+- Nenhuma remoção de condição pela faixa (regra do pedido) — só
+  navegação para a aba onde o botão "Remover" já existe.
+- Acessibilidade: cada chip tem símbolo textual próprio por tipo
+  (◆ condição, ⟳ fim de rodada, ▼ debuff, ▲ buff, ⚠ aviso, ⏳ pendência),
+  rótulo `[Tipo]` por extenso ao lado do nome, borda colorida (nunca só
+  a cor sozinha) e `title` com origem/duração/explicação completos.
+
+## 6. Estado vazio
+
+Sem nenhum chip (condição + efeito + pendência), a faixa mostra só
+"Sem estados ativos." em texto discreto (opacidade baixa, uma linha) —
+a linha de placeholders continua aparecendo (é estrutural, não um
+"estado", conforme item 8 do pedido interpretado à risca: "se não
+houver condição/efeito/pendência" — placeholders não são nenhuma
+dessas três categorias).
+
+## 7. Arquivos alterados
+
+- `src/app/dev/character-sheet/components/ActiveStateStrip.tsx` (novo)
+  — componente + `buildChips`/`isFimDeRodada`.
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — renderiza
+  `<ActiveStateStrip>` entre os avisos e `<CharacterSheetTabs>`.
+- `src/app/dev/character-sheet/components/ConditionsTab.tsx` — campo
+  `tags?: string[]` em `ConditionOption`.
+- `src/app/CharacterSheetView.tsx` — mapeia `payload.tags` para
+  `condicoesDisponiveis`.
+- `src/app/globals.css` — `@keyframes ruptura-pulse` + classe
+  `.ruptura-pulse`.
+
+Nenhuma migration — nada persiste no banco por causa da faixa (é
+inteiramente derivada de dados já salvos).
+
+## 8. Build e testes
+
+```
+$ npx tsc --noEmit -p tsconfig.json → limpo na primeira tentativa
+$ npm run build → ✓ compilado, rotas inalteradas
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM
+$ npm run test:content-read → Biblioteca do Sistema intacta
+```
+
+## 9. Teste manual (navegador, preview server)
+
+Fluxo completo: narrador criou mesa/personagem/perfil/convite → jogador
+entrou por `/join/[token]` → `/ficha` → **confirmado**: faixa mostrou
+"Sem estados ativos." + linha de placeholders → aplicou "Ofuscado" →
+**confirmado**: 2 chips — "Ofuscado [Condição] · Ver" e "Ofuscado
+[visao] [Debuff]" → aplicou "Sangrando" → **confirmado**: chip
+"⟳Sangrando [Fim de rodada] · Ver" com `className="ruptura-pulse"` →
+aplicou "Contundido" → **confirmado**: 3 chips de debuff visíveis
+(luta/mobilidade/reflexos) → clicou num chip de condição → **confirmado**:
+`activeTab` mudou para "condicoes" (aba destacada) → curou PV (+1,
+disparando remoção automática de Sangrando/Contundido) → **confirmado**:
+faixa atualizou imediatamente, sobrando só os 2 chips de Ofuscado →
+clicou "Desfazer" → **confirmado**: faixa voltou a mostrar todos os 8
+chips (Ofuscado + Sangrando + Contundido, condições e efeitos) →
+removeu "Ofuscado" manualmente pela aba Condições → **confirmado**:
+faixa atualizou imediatamente, Ofuscado sumiu, restando só os chips de
+Sangrando/Contundido → `/dev/character-sheet` acessado diretamente e
+confirmado sem regressão (workaround `window.$RV(window.$RB)` usado
+para o hang de Suspense conhecido do preview headless, documentado
+desde v0.25 — não é bug desta feature): faixa mostrou "Sem estados
+ativos." para personagem novo, "Personagens salvos (3)" e combobox de
+mesas corretos.
+
+Dados de teste removidos ao final via SQL direto — confirmado que
+restam só os 2 personagens e as 2 campanhas legadas esperadas.
+
+## 10. Pendências
+
+- Postura Ofensiva/Defensiva, Mirar, Fintar, talentos ativos,
+  vertinas, efeitos de item e cooldowns continuam só como texto de
+  "suporte preparado" — nenhum deles tem mecânica implementada ainda
+  (fora de escopo explícito deste checkpoint).
+- "Estados pendentes" (Ruptura/Marca/Traço) não têm nenhum dado real
+  para exibir — o tipo `StateChipKind: "pendencia"` existe, mas
+  nenhuma condição no código atual o produz.
+- Fim de rodada continua sem resolução (só marcação visual/pulso) —
+  dano recorrente, testes de fim de rodada e remoção por gatilho de
+  rodada permanecem pendência dos checkpoints anteriores.
+- A faixa não é filtrável/collapsible — numa ficha com muitas
+  condições simultâneas (combate real, várias condições + vários
+  efeitos), pode ficar longa; agrupamento/colapso é melhoria de UX
+  futura, não funcional.
+- Chips de buff nunca aparecem hoje (nenhuma condição/efeito positivo
+  mapeado ainda) — o tipo existe pronto para quando houver.

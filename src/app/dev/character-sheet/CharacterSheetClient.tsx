@@ -72,6 +72,7 @@ import { ResourcesTab } from "./components/ResourcesTab";
 import { RollsTab } from "./components/RollsTab";
 import { LogTab, type LogEntry, type LogTipo } from "./components/LogTab";
 import { ConditionsTab, type ConditionOption } from "./components/ConditionsTab";
+import { ActiveStateStrip } from "./components/ActiveStateStrip";
 import { MesaTab } from "./components/MesaTab";
 import { SavedCharactersTab } from "./components/SavedCharactersTab";
 import { DebugTab } from "./components/DebugTab";
@@ -1036,6 +1037,13 @@ export default function CharacterSheetClient({
           </button>
         </div>
       )}
+
+      <ActiveStateStrip
+        condicoes={character.condicoes_ativas ?? []}
+        activeEffects={activeEffects}
+        condicoesDisponiveis={condicoesDisponiveis}
+        onVerCondicoes={() => setActiveTab("condicoes")}
+      />
 
       <CharacterSheetTabs
         activeTab={activeTab}

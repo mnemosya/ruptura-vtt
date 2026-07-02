@@ -10,3 +10,18 @@ body {
   background: #14151a;
   color: #e8e8ec;
 }
+
+/*
+ * Pulso simples para chips "Fim de rodada" na faixa de estados ativa
+ * (checkpoint v0.35) — só opacidade, não depende de cor para
+ * transmitir informação (o texto "Fim de rodada" e o ícone já
+ * carregam o significado; o pulso é reforço visual opcional).
+ */
+@keyframes ruptura-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.ruptura-pulse {
+  animation: ruptura-pulse 1.6s ease-in-out infinite;
+}

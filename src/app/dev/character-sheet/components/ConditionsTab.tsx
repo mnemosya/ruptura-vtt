@@ -45,6 +45,8 @@ export interface ConditionOption {
   slug: string;
   nome: string;
   descricao_curta?: string;
+  /** Tags da Biblioteca (checkpoint v0.35) — usado para detectar gatilho "fim_de_rodada" sem hardcode frágil (ver ActiveStateStrip). */
+  tags?: string[];
 }
 
 export function ConditionsTab({
