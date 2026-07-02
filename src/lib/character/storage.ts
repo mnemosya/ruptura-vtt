@@ -47,11 +47,28 @@
  *     comportamento. Não usar em rota de produto nova — usar as
  *     seções 1/2 acima.
  *
- * Isso só continua funcionando porque `characters` ainda tem as
- * policies dev_transition abertas (ver aviso completo na migration
- * 0002 e na auditoria da migration 0013/checkpoint v0.27) — NENHUMA
- * policy foi alterada neste checkpoint. Endurecer de verdade fica
- * para depois (ver blockers no final deste arquivo e no relatório).
+ * Checkpoint v0.29 — RLS controlada (parcial, não final):
+ *
+ *   - Adiciona policies `characters_owner_*` (authenticated,
+ *     owner_id = auth.uid()) — aditivas, coexistem com
+ *     `characters_dev_transition_*` sem mudar nada hoje (ver migration
+ *     0014). Preparam a base real para narrador autenticado.
+ *   - A SEÇÃO 2 (produto/jogador por sessão) deixa de acessar a tabela
+ *     `characters` diretamente: `getCharacterForProfileSession`/
+ *     `saveCharacterForProfileSession` agora chamam as funções SQL
+ *     `get_character_for_profile_session`/
+ *     `save_character_for_profile_session` (security definer,
+ *     migration 0014), que revalidam a sessão DENTRO do banco e
+ *     ignoram RLS — a operação mais sensível desta tabela (jogador
+ *     anônimo lendo/escrevendo um personagem) não depende mais de
+ *     `characters_dev_transition_select/update` continuarem abertas.
+ *   - `characters_dev_transition_*` continuam abertas mesmo assim —
+ *     removê-las quebraria `/dev/character-sheet` (edita QUALQUER
+ *     personagem da lista global, incluindo já vinculados a mesa/
+ *     perfil, por design de diagnóstico) e
+ *     `scripts/test-character-storage.ts` (roda sem login). Ver
+ *     comentário em cada policy (migration 0014) e blockers/relatório
+ *     do checkpoint v0.29 para a condição exata de remoção futura.
  */
 
 import { getContentClient } from "../content";
@@ -378,9 +395,16 @@ export interface CharacterForProfileSessionResult {
 
 /**
  * Busca o personagem ativo do perfil de uma sessão real e válida.
- * Reusa validateProductSession (table/storage.ts) — nunca confia num
- * characterId vindo do cliente; sempre resolve pelo
- * `active_character_id` do perfil já validado.
+ *
+ * Checkpoint v0.29: a leitura do personagem em si NÃO vai mais direto
+ * na tabela (`characters.dev_transition_select`) — usa a função SQL
+ * `get_character_for_profile_session` (security definer, migration
+ * 0014), que revalida a sessão DENTRO do banco (perfil pertence à
+ * mesa, está bloqueado, lock_session_id bate) e devolve o personagem
+ * ignorando RLS. `validateProductSession` (table/storage.ts) ainda é
+ * chamada aqui só para obter `campaign`/`profile` completos para a UI
+ * (perfis/mesas na tela) — a tabela `campaign_profiles` não faz parte
+ * do escopo de RLS deste checkpoint (é sobre `characters`).
  */
 export async function getCharacterForProfileSession(
   campaignId: string,
@@ -396,27 +420,33 @@ export async function getCharacterForProfileSession(
   }
 
   const client = await getScopedTableClient();
-  const { data, error } = await client
-    .from(TABLE)
-    .select()
-    .eq("id", validation.profile.active_character_id)
-    .maybeSingle();
+  const { data, error } = await client.rpc("get_character_for_profile_session", {
+    p_campaign_id: campaignId,
+    p_profile_id: profileId,
+    p_session_id: sessionId,
+  });
 
   if (error) {
     throw new CharacterStorageError(`Falha ao buscar personagem da sessão de perfil: ${error.message}`, error);
   }
-  if (!data) {
+  const record = ((data as CharacterRecord[] | null) ?? [])[0];
+  if (!record) {
     return { ok: false, reason: "no_character", campaign: validation.campaign, profile: validation.profile };
   }
-  return { ok: true, campaign: validation.campaign, profile: validation.profile, character: data as CharacterRecord };
+  return { ok: true, campaign: validation.campaign, profile: validation.profile, character: record };
 }
 
 /**
  * Salva (update) o personagem ativo de uma sessão real e válida.
- * Revalida a sessão E confere que `characterId` ainda é de fato o
- * personagem ativo do perfil — recusa salvar em qualquer outro id,
- * mesmo que a chamada tente forçar um id diferente (defesa em
- * profundidade contra um client comprometido/desatualizado).
+ *
+ * Checkpoint v0.29: a escrita vai via a função SQL
+ * `save_character_for_profile_session` (security definer, migration
+ * 0014) — ela mesma revalida a sessão E confere que `characterId`
+ * ainda é o ativo do perfil DENTRO do banco (atomicamente, sem
+ * depender de RLS aberta na tabela). A checagem em TypeScript abaixo
+ * fica como defesa em profundidade extra (falha cedo, com uma
+ * mensagem mais específica, antes de gastar uma chamada de rede) —
+ * mas quem realmente impede um id trocado é a função SQL.
  */
 export async function saveCharacterForProfileSession(
   campaignId: string,
@@ -437,17 +467,23 @@ export async function saveCharacterForProfileSession(
 
   const payload = buildPayloadForSave(character);
   const client = await getScopedTableClient();
-  const { data, error } = await client
-    .from(TABLE)
-    .update({ name: payload.nome, payload })
-    .eq("id", characterId)
-    .select()
-    .single();
+  const { data, error } = await client.rpc("save_character_for_profile_session", {
+    p_campaign_id: campaignId,
+    p_profile_id: profileId,
+    p_session_id: sessionId,
+    p_character_id: characterId,
+    p_name: payload.nome,
+    p_payload: payload,
+  });
 
   if (error) {
     throw new CharacterStorageError(`Falha ao salvar personagem "${characterId}" da sessão de perfil: ${error.message}`, error);
   }
-  return data as CharacterRecord;
+  const record = ((data as CharacterRecord[] | null) ?? [])[0];
+  if (!record) {
+    throw new CharacterStorageError(`Falha ao salvar personagem "${characterId}": nenhuma linha retornada.`);
+  }
+  return record;
 }
 
 // =====================================================================

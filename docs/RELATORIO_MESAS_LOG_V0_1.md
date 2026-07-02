@@ -4258,3 +4258,190 @@ $ npm run test:content-read → Biblioteca intacta
    as seções 3/4 deste arquivo — precisariam de uma policy dev
    separada (ou aceitar que dev/teste continuam com uma abertura
    controlada, documentada, mesmo depois do endurecimento do resto).
+
+# Checkpoint v0.29 — RLS controlada de characters
+
+Reduz a superfície aberta de `characters` sem quebrar produto, dev ou
+testes — e sem fingir que a RLS ficou "pronta". A operação mais
+sensível (jogador anônimo lendo/escrevendo o próprio personagem via
+`/ficha`) deixa de depender de `characters_dev_transition_*`
+continuarem abertas: passa a usar duas funções SQL `security definer`
+que revalidam a sessão dentro do banco. As 4 policies dev_transition
+continuam abertas — genuinamente necessárias para dev/teste/join, não
+por preguiça — cada uma com o motivo exato documentado na própria
+policy (`comment on policy`).
+
+## 1. Auditoria (antes de alterar)
+
+- `git status --short` limpo, `next-env.d.ts` sem modificação.
+- Policies de `characters` confirmadas via `pg_policies`: só as 4
+  `characters_dev_transition_*` (anon+authenticated, sem restrição) —
+  **nenhuma policy owner-scoped existia ainda** (diferente de
+  campaigns/campaign_invites, que já tinham desde 0006/0007).
+- Classificação de TODOS os acessos a `characters` (revisitando
+  `character/storage.ts` do v0.28):
+
+| Categoria | Funções | Client/identidade |
+|---|---|---|
+| Produto/narrador | `listCharactersForNarratorCampaign/Profile`, `listUnassignedCharactersForNarrator`, `listArchivedCharactersForNarratorCampaign`, `createCharacterForCampaign`, `assignCharacterToCampaign/Profile`, `renameCharacter`, `archiveCharacter`, `restoreCharacter`, `duplicateCharacter` | `getScopedTableClient()` — JWT do narrador quando logado (sempre, em `/mesas`) |
+| Produto/jogador por sessão | `getCharacterForProfileSession`, `saveCharacterForProfileSession` | `validateProductSession()` (perfil) + **agora** RPC security definer (personagem) |
+| Dev/diagnóstico | `listLegacyCharactersDev` | `getContentClient()` (anon) — lista global, por design |
+| Legado/teste | `createCharacter`, `updateCharacter`, `getCharacter`, `listCharacters`, `deleteCharacter` | `getContentClient()` (anon) — `scripts/test-character-storage.ts` + modo dev de `/dev/character-sheet` |
+| Compat direta | `listCharactersForCampaign` | `getContentClient()` (anon) — só `/join/[token]`, escopado à mesa do convite |
+
+- Confirmado (rule 2 do pedido): `/ficha` já usava
+  `getCharacterForProfileSession`/`saveCharacterForProfileSession`
+  (v0.28); `/mesas` já usava funções de narrador/campaign (v0.28);
+  `/join/[token]` já não lista personagens globalmente, só da própria
+  mesa (v0.28); `/dev/character-sheet` continua global por design. Ou
+  seja, a separação de CONSUMIDORES já estava pronta — faltava só a
+  RLS/validação de fato por trás da seção 2.
+
+## 2. Decisão: RPC/security definer, NÃO service role
+
+Avaliado explicitamente (rule 4 do pedido) antes de implementar:
+
+- **Service role**: rejeitada. Exigiria um client server-only novo
+  (import de `SUPABASE_SERVICE_ROLE_KEY`), criando uma superfície de
+  risco nova (importar sem querer num Client Component, vazar a chave
+  em log, etc.) — para um problema que uma função SQL escopada resolve
+  com risco muito menor.
+- **RPC/SQL security definer** (escolhida): duas funções —
+  `get_character_for_profile_session(campaign_id, profile_id,
+  session_id)` e `save_character_for_profile_session(campaign_id,
+  profile_id, session_id, character_id, name, payload)` — fazem a
+  MESMA validação que `validateProductSession()` (TypeScript) já
+  fazia (perfil pertence à mesa, `is_locked=true`,
+  `lock_session_id = session_id`), só que DENTRO do banco,
+  atomicamente, e devolvem/gravam o personagem ignorando RLS
+  (`security definer` roda com os privilégios de quem criou a
+  função). `revoke all ... from public` + `grant execute ... to anon,
+  authenticated` — só concede RODAR a função com os parâmetros
+  exatos que ela aceita, nunca acesso direto à tabela por trás.
+  Chamadas via `client.rpc(...)` com a MESMA anon key de sempre —
+  nenhuma chave nova, nenhum client novo.
+
+Esta é a alternativa mais simples e seguidora do escopo do checkpoint:
+sem novo client server-only, sem `import "server-only"`, sem qualquer
+manuseio de service role — só duas funções SQL pequenas e auditáveis.
+
+## 3. Migration `0014_characters_rls_controlled.sql`
+
+100% aditiva, sem risco de lockout (nada removido):
+
+```sql
+-- 4 policies novas, authenticated, owner_id = auth.uid()
+create policy characters_owner_select ... ;
+create policy characters_owner_insert ... ;
+create policy characters_owner_update ... ;
+create policy characters_owner_delete ... ;
+
+-- comment on policy em cada uma das 4 dev_transition existentes,
+-- explicando: quem ainda depende, por que continua aberta, condição
+-- de remoção futura.
+
+-- 2 funções security definer + grants restritos
+create function get_character_for_profile_session(...) ...;
+create function save_character_for_profile_session(...) ...;
+revoke all on function ... from public;
+grant execute on function ... to anon, authenticated;
+```
+
+## 4. `character/storage.ts` — o que mudou
+
+`getCharacterForProfileSession`/`saveCharacterForProfileSession`
+continuam chamando `validateProductSession()` (para montar
+`campaign`/`profile` na resposta, usados pela UI) — mas o acesso ao
+PERSONAGEM em si trocou de `client.from("characters").select()/
+.update()` para `client.rpc("get_character_for_profile_session", ...)`
+/`client.rpc("save_character_for_profile_session", ...)`. Nenhuma
+outra função do arquivo mudou de comportamento.
+
+## 5. Policies — o que ficou aberto e por quê
+
+| Policy | Estado | Motivo |
+|---|---|---|
+| `characters_owner_select/insert/update/delete` | **Novas** (authenticated, owner_id=auth.uid()) | Base real para narrador — hoje coexiste sem restringir nada (dev_transition ainda cobre tudo), mas já funciona sozinha quando dev_transition puder ser removida |
+| `characters_dev_transition_select` | Mantida | `/join/[token]`, `/dev/character-sheet`, `/dev/table`, `scripts/test-character-storage.ts` — todos leem sem login. Personagem ativo de sessão de jogador NÃO depende mais dela (usa a RPC) |
+| `characters_dev_transition_insert` | Mantida | `createCharacter()` legado — `/dev/character-sheet` (novo personagem sem login) e `test-character-storage.ts` |
+| `characters_dev_transition_update` | Mantida | `updateCharacter()` legado — `/dev/character-sheet` edita QUALQUER personagem (incl. já vinculado a mesa/perfil, por design de diagnóstico) e `test-character-storage.ts`. Salvar o personagem ativo de sessão de jogador NÃO depende mais dela (usa a RPC) |
+| `characters_dev_transition_delete` | Mantida | Só `test-character-storage.ts` (limpeza do próprio teste) e o botão "Apagar" de `/dev/character-sheet` — nenhuma rota de produto apaga personagem (arquivar é o mecanismo real desde v0.25) |
+
+Condição de remoção futura documentada em cada policy (via `comment on
+policy`, migration 0014): basicamente, `/dev/character-sheet` exigir
+narrador logado (ou restringir edição a personagens sem vínculo) E
+`scripts/test-character-storage.ts` autenticar antes de rodar.
+
+## 6. Testes atualizados
+
+`scripts/test-character-storage.ts` ganhou um comentário explícito
+(sem mudar comportamento) documentando que roda via `anon` e depende
+das policies dev_transition — não testa (nem pode testar) as novas
+policies `characters_owner_*` nem as funções `security definer`, que
+são verificadas pelo teste manual deste checkpoint.
+
+`SavedCharactersTab.tsx` (`/dev/character-sheet`) ganhou um aviso
+visível: "Lista global de diagnóstico (checkpoint v0.29) — mostra
+TODOS os personagens de TODAS as mesas/narradores [...] Nunca use esta
+aba como referência de produto."
+
+## 7. Build e testes
+
+```
+$ npm run build → ✓ (11 rotas, sem mudança de superfície)
+$ npm run test:character-storage → TODOS OS PASSOS PASSARAM (via policy dev_transition, documentado)
+$ npm run test:content-read → Biblioteca intacta
+```
+
+## 8. Teste manual (browser, ponta a ponta)
+
+1. Login → criei "Mesa v0.29" → "Personagem v0.29" na mesa → "Perfil
+   v0.29" → vinculei personagem ao perfil e defini como ativo → criei
+   convite ✓.
+2. **Fiz logout** → abri `/join/<token>` como visitante genuinamente
+   anônimo → "Personagem ativo: Personagem v0.29" apareceu
+   corretamente ✓.
+3. Entrei como perfil → "Abrir ficha" → `/ficha` carregou o
+   personagem certo automaticamente — via
+   `get_character_for_profile_session` (RPC), não mais acesso direto
+   à tabela ✓.
+4. Editei o nome → "Salvar personagem" → "✓ Salvo" — via
+   `save_character_for_profile_session` (RPC) ✓; confirmado via SQL
+   direto que o nome persistiu no banco ✓.
+5. Abri `/dev/character-sheet` → aba "Personagens salvos (3)" mostrou
+   o aviso de diagnóstico + os 3 personagens (o editado e os 2
+   legados) — lista global intacta ✓.
+6. Sem erros no console em nenhuma etapa. Limpeza: apaguei a mesa de
+   teste e o personagem criado nela via SQL direto; os 2 legados
+   permaneceram intactos. Biblioteca do Sistema confirmada intacta via
+   `test:content-read`.
+
+## 9. Escopo e riscos remanescentes
+
+- **`characters_dev_transition_*` continuam todas abertas** — este
+  checkpoint reduziu o RISCO PRÁTICO da operação mais exposta
+  (jogador anônimo editando personagem), mas não removeu nenhuma
+  policy da tabela. Alguém com só a anon key ainda pode, em teoria,
+  ler/escrever qualquer linha diretamente via REST, contornando as
+  funções de app — mesmo risco de sempre, não piorado nem
+  totalmente resolvido.
+- As duas funções `security definer` são o único caminho oficial para
+  o fluxo de jogador; qualquer novo código de produto para jogador
+  deve usá-las (ou equivalentes), nunca acessar `characters` direto
+  com client anon.
+- Nenhuma mudança na Biblioteca do Sistema (`content_documents`/
+  `content_packs`) — confirmado intocado.
+
+## 10. Blockers que ainda impedem RLS final de `characters`
+
+1. **`/dev/character-sheet` edita/apaga qualquer linha via anon, por
+   design de diagnóstico** — enquanto isso for verdade, `anon` precisa
+   continuar com INSERT/UPDATE/DELETE irrestritos nesta tabela.
+2. **`scripts/test-character-storage.ts` roda sem autenticação** —
+   precisaria logar (ou usar um client de teste dedicado) antes de
+   qualquer policy exigir `authenticated` para essas operações.
+3. **Sem autenticação real de jogador** — mesmo com a RPC resolvendo o
+   caminho de leitura/escrita do personagem ativo, ainda não há
+   `auth.uid()` de jogador para uma policy row-level tradicional; a
+   validação de sessão continua vivendo nas funções SQL, não em RLS
+   pura.

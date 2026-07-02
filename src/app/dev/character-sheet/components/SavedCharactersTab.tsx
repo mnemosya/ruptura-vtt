@@ -15,6 +15,12 @@ export function SavedCharactersTab({
 }) {
   return (
     <Section title={`Personagens salvos (${personagens.length})`}>
+      <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
+        Lista global de diagnóstico (checkpoint v0.29) — mostra TODOS os personagens de TODAS as
+        mesas/narradores, incluindo legados sem mesa. Carregar/Apagar aqui usa o caminho dev/anon
+        (não passa pela sessão de perfil validada de /ficha). Nunca use esta aba como referência de
+        produto — o jogador só vê o personagem ativo da própria sessão.
+      </p>
       {personagens.length === 0 && <p style={{ fontSize: 13, opacity: 0.6 }}>Nenhum personagem salvo ainda.</p>}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {personagens.map((p) => (

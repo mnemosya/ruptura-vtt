@@ -13,6 +13,18 @@
  *
  * Cria e apaga SOMENTE personagens com o nome exato
  * TEST_CHARACTER_NAME, para nunca arriscar apagar um personagem real.
+ *
+ * DEPENDÊNCIA EXPLÍCITA DE POLICY DEV (checkpoint v0.29): este teste
+ * roda sem login (createCharacter/updateCharacter/getCharacter/
+ * listCharacters/deleteCharacter usam client anon puro, seção "legado/
+ * compatibilidade" de storage.ts) — só passa porque
+ * `characters_dev_transition_select/insert/update/delete` ainda
+ * permitem CRUD irrestrito a `anon`. Não testa (nem pode testar) a
+ * policy real `characters_owner_*` (authenticated, owner_id =
+ * auth.uid()), nem as funções security definer
+ * get_character_for_profile_session/save_character_for_profile_session
+ * usadas por /ficha — essas são exercitadas pelo teste manual descrito
+ * no checkpoint v0.29 do relatório, não por este script.
  */
 
 import "dotenv/config";
