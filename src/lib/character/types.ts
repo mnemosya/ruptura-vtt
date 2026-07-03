@@ -336,18 +336,12 @@ export interface Character {
     precoPago?: number;
   }[];
   /**
-   * Vertentes de magia conhecidas (checkpoint v0.50, PRD 11.4) —
-   * slugs (ex.: "cinetica"), adicionadas em Modo Evolução. Só magias
-   * dessas vertentes aparecem na aba Magias em Modo Jogo. Ausente =
-   * nenhuma vertente conhecida ainda.
-   */
-  vertentes_conhecidas?: string[];
-  /**
-   * Magias aprendidas individualmente (checkpoint v0.50.1) — conhecer
-   * a vertente só define quais magias aparecem para aprender; cada
-   * magia precisa ser aprendida separadamente para poder ser
-   * conjurada (mesmo padrão de `talentos_adquiridos`, v0.48). Ausente
-   * = nenhuma magia aprendida ainda.
+   * Magias aprendidas individualmente (checkpoint v0.50.1/v0.50.2) —
+   * cada magia precisa ser aprendida separadamente para poder ser
+   * conjurada (mesmo padrão de `talentos_adquiridos`, v0.48). A
+   * vertente "conhecida" é DERIVADA daqui (`getKnownVertentes`, ver
+   * `spells.ts`) — não existe campo/passo separado de "conhecer
+   * vertente". Ausente = nenhuma magia aprendida ainda.
    */
   magias_aprendidas?: {
     id: string;

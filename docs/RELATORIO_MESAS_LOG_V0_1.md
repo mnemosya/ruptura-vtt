@@ -9456,3 +9456,76 @@ conhecida mas não aprendidas, ficam ocultas). Sem erros no console.
   livre, sem gasto de recurso) — mesmo critério pragmático de
   `acquireTalentLevel` (v0.48), que também não valida custo/requisito.
 - Sem limite de magias conhecidas por nível/vertente.
+
+# Checkpoint v0.50.2 — Vertente conhecida derivada + fix de hidratação
+
+## 1. Commit base
+
+`b877d9c feat: require learning individual spells before casting` (v0.50.1).
+
+## 2. Feedback do usuário
+
+Após o v0.50.1, dois pontos:
+1. Não deveria ser necessário clicar em "conhecer vertente" separado —
+   se o jogador aprende 1 magia da vertente, ele já conhece a vertente.
+2. Erro de hidratação no console (`cz-shortcut-listen` no `<body>`).
+
+## 3. Vertente conhecida — agora derivada, sem passo manual
+
+Removido o conceito de "conhecer vertente" como ação separada
+(`addKnownVertente`/`removeKnownVertente` e o campo
+`Character.vertentes_conhecidas` foram REMOVIDOS — não só descontinuados,
+apagados do código, já que ficaram genuinamente mortos). Nova função
+pura `getKnownVertentes(character, spells)` — deriva as vertentes
+conhecidas a partir de `magias_aprendidas`: uma vertente é "conhecida"
+assim que a PRIMEIRA magia dela é aprendida, sem toggle manual.
+
+Em Modo Evolução, a aba Magias agora mostra o catálogo INTEIRO (todas
+as 6 vertentes) direto para aprender/esquecer — sem etapa
+intermediária. Em Modo Jogo, só vertentes com pelo menos 1 magia
+aprendida aparecem (mesmo resultado de antes, só que sem exigir o
+clique extra).
+
+## 4. Fix de hidratação
+
+`src/app/layout.tsx` — `suppressHydrationWarning` adicionado ao
+`<body>`. Causa raiz: extensões de navegador (ColorZilla/Grammarly e
+similares) injetam atributos no `<body>` (ex.: `cz-shortcut-listen`)
+ANTES do React hidratar — um falso positivo de mismatch servidor/
+cliente que não reflete nenhum bug de renderização real (a própria
+mensagem de erro do React já lista "extensão de navegador" como causa
+possível). `suppressHydrationWarning` é a correção oficial recomendada
+pelo React para exatamente esse cenário (atributo de terceiro no
+`<html>`/`<body>`, fora do controle do app).
+
+## 5. Testes executados
+
+- `npx tsc --noEmit -p tsconfig.json`: sem erros.
+- `npm run build`: sucesso.
+- `npm run test:spells`: passou — 10 cenários atualizados (cenário 1:
+  vertentes conhecidas começam vazias; cenário 9: aprender a primeira
+  magia de uma vertente já a torna conhecida, derivado).
+- Toda a suíte anterior (12 scripts): sem regressão.
+
+## 6. Teste manual
+
+Confirmado no preview: Modo Evolução → aba Magias já mostra o
+catálogo inteiro (sem toggle de vertente) → aprendi "Controle"
+diretamente → Modo Jogo → só a vertente "cinetica" aparece (derivada),
+mostrando só "Controle". Nenhum erro de hidratação no console (antes
+do fix, o erro aparecia; depois, sumiu).
+
+## 7. Arquivos alterados
+
+- `src/lib/character/spells.ts` — removidas `addKnownVertente`/
+  `removeKnownVertente`; nova `getKnownVertentes`.
+- `src/lib/character/types.ts` — removido `Character.vertentes_conhecidas`.
+- `src/lib/character/normalizeCharacter.ts` — normalização do campo
+  removida.
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — handlers
+  `handleAddVertente`/`handleRemoveVertente` removidos.
+- `src/app/dev/character-sheet/components/SpellsTab.tsx` — UI sem
+  toggle de vertente; vertentes derivadas via `getKnownVertentes`.
+- `src/app/layout.tsx` — `suppressHydrationWarning` no `<body>`.
+- `scripts/test-spells.ts` — cenários 1 e 9 atualizados.
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.

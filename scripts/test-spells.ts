@@ -12,8 +12,7 @@ import {
   rollSpellDamage,
   getSpellDamageEffect,
   getSpellResistanceEffect,
-  addKnownVertente,
-  removeKnownVertente,
+  getKnownVertentes,
   learnSpell,
   forgetSpell,
   isSpellLearned,
@@ -37,16 +36,12 @@ assert.equal(controle!.estatisticas.custo_pa, 2);
 assert.equal(controle!.estatisticas.custo_mana, null, "custo_mana é placeholder (null) para esta magia no DB atual.");
 
 // -------------------------------------------------------------
-// 1. Vertentes conhecidas — adicionar/remover, idempotente.
+// 1. Vertentes conhecidas — DERIVADAS de magias aprendidas (checkpoint
+// v0.50.2: sem passo manual de "conhecer vertente").
 // -------------------------------------------------------------
 const personagem = createInitialCharacter(null, "Testador de Magias");
-const comCinetica = addKnownVertente(personagem, "cinetica");
-assert.deepEqual(comCinetica.vertentes_conhecidas, ["cinetica"]);
-const duplicado = addKnownVertente(comCinetica, "cinetica");
-assert.equal(duplicado, comCinetica, "Adicionar a mesma vertente de novo não deve mudar o personagem.");
-const semCinetica = removeKnownVertente(comCinetica, "cinetica");
-assert.deepEqual(semCinetica.vertentes_conhecidas, []);
-console.log("1. Vertentes conhecidas (adicionar/remover, idempotente) — OK");
+assert.deepEqual(getKnownVertentes(personagem, spells), [], "Personagem novo não conhece nenhuma vertente.");
+console.log("1. Vertentes conhecidas começam vazias (nenhuma magia aprendida ainda) — OK");
 
 // -------------------------------------------------------------
 // 2. Conjurar com PA suficiente — desconta PA; custo_mana ausente não bloqueia.
@@ -132,11 +127,12 @@ assert.equal(duplicadoAprendizado, comControleAprendido, "Aprender a mesma magia
 console.log("8. Aprender magia individual (idempotente) — OK");
 
 // -------------------------------------------------------------
-// 9. Conhecer a vertente NÃO ensina a magia sozinho — precisa aprender separadamente.
+// 9. Aprender a primeira magia de uma vertente já a torna "conhecida"
+// (derivada, checkpoint v0.50.2) — sem passo manual separado.
 // -------------------------------------------------------------
-const soComVertente = addKnownVertente(personagem, "cinetica");
-assert.equal(isSpellLearned(soComVertente, controle!.slug), false, "Conhecer a vertente não aprende as magias dela automaticamente.");
-console.log("9. Conhecer a vertente não ensina magia sozinho (precisa aprender individualmente) — OK");
+assert.ok(getKnownVertentes(comControleAprendido, spells).includes("cinetica"), "Aprender uma magia de 'cinetica' já deve tornar a vertente conhecida.");
+assert.equal(getKnownVertentes(personagem, spells).includes("cinetica"), false, "Sem nenhuma magia aprendida, a vertente não é conhecida.");
+console.log("9. Aprender a primeira magia de uma vertente já a torna conhecida (derivado, sem passo manual) — OK");
 
 // -------------------------------------------------------------
 // 10. Esquecer magia remove a entrada.

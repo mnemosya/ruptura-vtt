@@ -57,8 +57,6 @@ import {
   purchaseItem,
   setItemLoadoutState,
   removeItemFromInventory,
-  addKnownVertente,
-  removeKnownVertente,
   castSpell,
   rollSpellDamage,
   getSpellDamageEffect,
@@ -1704,25 +1702,6 @@ export default function CharacterSheetClient({
     addLogEntry("recurso", "Item removido do inventário.");
   }
 
-  /** Vertente conhecida (aba Magias, checkpoint v0.50, Modo Evolução) — mesmo padrão de talentos. */
-  function handleAddVertente(vertente: string) {
-    const current = characterRef.current;
-    const next = addKnownVertente(current, vertente);
-    if (next === current) return;
-    characterRef.current = next;
-    setCharacter(next);
-    addLogEntry("condicao", `Vertente conhecida: ${vertente}.`);
-  }
-
-  function handleRemoveVertente(vertente: string) {
-    const current = characterRef.current;
-    const next = removeKnownVertente(current, vertente);
-    if (next === current) return;
-    characterRef.current = next;
-    setCharacter(next);
-    addLogEntry("condicao", `Vertente removida: ${vertente}.`);
-  }
-
   /**
    * Aprender/esquecer magia individual (aba Magias, checkpoint
    * v0.50.1) — conhecer a vertente (Modo Evolução) só decide quais
@@ -2285,11 +2264,8 @@ export default function CharacterSheetClient({
         <SpellsTab
           spells={spellsIniciais}
           catalogError={spellsError}
-          vertentesConhecidas={character.vertentes_conhecidas ?? []}
           magiasAprendidas={character.magias_aprendidas ?? []}
           sheetMode={sheetMode}
-          onAddVertente={handleAddVertente}
-          onRemoveVertente={handleRemoveVertente}
           onLearn={handleLearnSpell}
           onForget={handleForgetSpell}
           onCast={handleCastSpell}

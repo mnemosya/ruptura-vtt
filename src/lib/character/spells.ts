@@ -1,10 +1,13 @@
 /**
- * Vertentes e magias — checkpoint v0.50 (PRD 11.4). Catálogo inteiro
- * (132 magias, 6 vertentes, especializações) vem de
+ * Vertentes e magias — checkpoint v0.50/v0.50.1/v0.50.2 (PRD 11.4).
+ * Catálogo inteiro (132 magias, 6 vertentes, especializações) vem de
  * `content_documents` (content_type="spell", `listSpells()`, já
- * existente) — nunca lista manual. A ficha só mostra as magias das
- * vertentes que o personagem CONHECE (`Character.vertentes_conhecidas`,
- * adicionada em Modo Evolução — mesmo espírito de talentos/atributos).
+ * existente) — nunca lista manual. Cada magia é aprendida
+ * INDIVIDUALMENTE (`Character.magias_aprendidas`, mesmo padrão de
+ * talentos, v0.48); a vertente "conhecida" é só uma DERIVAÇÃO de já
+ * ter aprendido pelo menos 1 magia dela (`getKnownVertentes`) — sem
+ * passo manual separado de "conhecer vertente" (removido no v0.50.2 a
+ * pedido do usuário, redundante com aprender magia individual).
  *
  * Escopo deliberadamente pequeno (mesmo critério de v0.47/v0.48/v0.49):
  * "Conjurar" desconta PA/Mana (custo_mana pode ser `null` no DB atual —
@@ -78,7 +81,6 @@ function asStringArray(v: unknown): string[] {
 /** Preserva o payload inteiro do registro — não achata nem descarta campos. */
 export function normalizeSpellContent(raw: Record<string, unknown>): SpellContent {
   const estatisticasRaw = asRecord(raw.estatisticas) ?? {};
-  const alcanceRaw = asRecord(estatisticasRaw.alcance);
   return {
     id: String(raw.id ?? raw.slug ?? ""),
     slug: String(raw.slug ?? raw.id ?? ""),
@@ -153,29 +155,12 @@ export function rollSpellDamage(spell: SpellContent, rng?: () => number): number
 }
 
 // ---------------------------------------------------------------------
-// Vertentes conhecidas — Modo Evolução (PRD 11.4 "permitir adicionar
-// vertente no Modo Evolução").
-// ---------------------------------------------------------------------
-
-export function addKnownVertente(character: Character, vertente: string): Character {
-  const atuais = character.vertentes_conhecidas ?? [];
-  if (atuais.includes(vertente)) return character;
-  return { ...character, vertentes_conhecidas: [...atuais, vertente] };
-}
-
-export function removeKnownVertente(character: Character, vertente: string): Character {
-  const atuais = character.vertentes_conhecidas ?? [];
-  const next = atuais.filter((v) => v !== vertente);
-  if (next.length === atuais.length) return character;
-  return { ...character, vertentes_conhecidas: next };
-}
-
-// ---------------------------------------------------------------------
-// Magias aprendidas — checkpoint v0.50.1. Conhecer a vertente só define
-// QUAIS magias aparecem para aprender (filtro de exibição, PRD 11.4);
-// aprender é por magia individual, mesmo padrão de
-// `acquireTalentLevel`/`removeTalentLevel` (v0.48) — idempotente, um
-// item por magia aprendida.
+// Magias aprendidas — checkpoint v0.50.1/v0.50.2. Não existe passo
+// separado de "conhecer a vertente": conhecer a vertente é só uma
+// CONSEQUÊNCIA de já ter aprendido pelo menos 1 magia dela
+// (`getKnownVertentes`). Aprender é por magia individual, mesmo padrão
+// de `acquireTalentLevel`/`removeTalentLevel` (v0.48) — idempotente,
+// um item por magia aprendida.
 // ---------------------------------------------------------------------
 
 export interface LearnedSpell {
@@ -200,6 +185,25 @@ export function forgetSpell(character: Character, learnedId: string): Character 
 
 export function isSpellLearned(character: Pick<Character, "magias_aprendidas">, spellSlug: string): boolean {
   return (character.magias_aprendidas ?? []).some((m) => m.spellSlug === spellSlug);
+}
+
+/**
+ * Vertentes "conhecidas" — derivadas, nunca um campo próprio: uma
+ * vertente é conhecida assim que o personagem aprende a PRIMEIRA magia
+ * dela. Sem passo manual de "marcar vertente conhecida" (removido no
+ * checkpoint v0.50.2 a pedido do usuário — redundante com aprender
+ * magia individual).
+ */
+export function getKnownVertentes(
+  character: Pick<Character, "magias_aprendidas">,
+  spells: SpellContent[],
+): string[] {
+  const aprendidas = new Set((character.magias_aprendidas ?? []).map((m) => m.spellSlug));
+  const vertentes = new Set<string>();
+  for (const spell of spells) {
+    if (aprendidas.has(spell.slug)) vertentes.add(spell.vertente);
+  }
+  return [...vertentes];
 }
 
 // ---------------------------------------------------------------------

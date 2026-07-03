@@ -193,11 +193,6 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     ? (raw.inventario as Character["inventario"])
     : [];
 
-  // vertentes_conhecidas (checkpoint v0.50): mesmo critério — ausência vira [], nunca undefined.
-  const vertentes_conhecidas: Character["vertentes_conhecidas"] = Array.isArray(raw.vertentes_conhecidas)
-    ? (raw.vertentes_conhecidas as string[])
-    : [];
-
   // magias_aprendidas (checkpoint v0.50.1): mesmo critério — ausência vira [], nunca undefined.
   const magias_aprendidas: Character["magias_aprendidas"] = Array.isArray(raw.magias_aprendidas)
     ? (raw.magias_aprendidas as Character["magias_aprendidas"])
@@ -227,7 +222,6 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     talentos_adquiridos,
     carteira,
     inventario,
-    vertentes_conhecidas,
     magias_aprendidas,
   } as Character;
 }
