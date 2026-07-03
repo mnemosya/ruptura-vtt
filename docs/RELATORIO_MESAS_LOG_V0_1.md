@@ -8405,3 +8405,134 @@ em `.env.local`):
 - Magia/conjuração (Saturado/Insaturado ligados a um motor de magia real).
 - Iniciativa rápida/lenta completa.
 - Suporte a múltiplas Rupturas pendentes acumuladas.
+
+# Checkpoint v0.45.1 — Corrigir fallback legado de Integridade
+
+## 1. Commit base
+
+`aacff5e feat: resolve campaign end-scene rupture effects` (v0.45).
+
+## 2. Por que este checkpoint existe
+
+O smoke test do v0.45 registrou que um personagem novo (nunca salvo)
+mostrava "Faixa de Integridade: Fim da ficha" ao abrir a aba Recursos
+— não por ter Integridade realmente zerada, mas porque
+`recursos_atuais.integridade` estava `undefined` e o call site
+(`getIntegrityBand(recursosAtuais?.integridade ?? 0)`) mascarava a
+ausência como 0. Isso é inaceitável: personagens legados/incompletos
+(payload salvo antes deste campo existir, ou nunca normalizados)
+apareceriam como se tivessem colapsado a ficha.
+
+## 3. Causa raiz
+
+Quatro pontos deixavam `recursos_atuais.{pv,pe,mana,integridade}`
+genuinamente `undefined`:
+1. `createInitialCharacter` (personagem novo) sempre devolvia
+   `recursos_atuais: {}` — só era preenchido no primeiro
+   `normalizeCharacter(character, derivados)`, chamado apenas no save
+   (`handleSave`).
+2. `normalizeCharacter(payload)` chamado SEM o 2º argumento `derived`
+   em vários pontos — `CharacterSheetClient.tsx` (linhas 394 e 649,
+   após carregar personagem salvo) e `endRound.ts`/`endScene.ts`
+   (processamento de mesa) — nesses casos o bloco de preenchimento
+   de recursos_atuais simplesmente não rodava (guardado por
+   `if (derived)`).
+3. `ResourcesTab.tsx` lia `recursosAtuais?.integridade ?? 0` para
+   `getIntegrityBand`, convertendo ausência em "0 real".
+
+## 4. Correção
+
+**`src/lib/character/normalizeCharacter.ts`** — o preenchimento de
+pv/pe/mana/integridade AUSENTES deixou de depender do chamador passar
+`derived`: agora `effectiveDerived = derived ?? computeDerivedStats(atributos, null, manaBonusRuptura)`
+é sempre calculado (o `computeDerivedStats(atributos, null, ...)` já
+cai nas fórmulas fixas de `derived.fallback.ts`, que são EXATAMENTE as
+do PRD — `integridade_max = 10 + Ânimo × 2` — quando não há payload de
+regras). Um valor JÁ presente no payload NUNCA é sobrescrito (mesmo
+critério de sempre); só ausência vira o máximo derivado, nunca 0.
+
+**`src/lib/character/createCharacter.ts`** — `createInitialCharacter`
+agora chama `computeDerivedStats` na criação e já nasce com
+`recursos_atuais.{pv,pe,mana,integridade}` preenchidos com os
+`_max` corretos, em vez de `{}` vazio até o primeiro save.
+
+**`src/app/dev/character-sheet/components/ResourcesTab.tsx`** —
+fallback defensivo do call site trocado de `?? 0` para
+`?? derivados.integridade_max` (última rede de segurança; na prática
+não deveria mais ser necessário após os dois pontos acima, mas evita
+reintroduzir "0 por ausência" se algum caminho futuro esquecer de
+normalizar).
+
+`getIntegrityBand` em si (`rupture.ts`) não precisou mudar — a função
+já era pura e correta; o problema era sempre no valor que chegava até
+ela.
+
+## 5. `ultima_vontade_pendente` — confirmado já correto
+
+`resolvePendingRupture` (`rupture.ts`) só marca `ultima_vontade_pendente`
+quando `integridadeDepois === 0` como resultado de uma SUBTRAÇÃO real
+(`integridadeAntes - nivelDaRuptura`), nunca por um campo ausente —
+como `integridadeAntes` agora sempre parte do valor real ou do máximo
+derivado (nunca 0 por ausência), este sinalizador nunca foi (e
+continua não sendo) disparado por artefato de campo faltando.
+
+## 6. Testes adicionados
+
+Novo script puro (sem Supabase) `scripts/test-integrity-fallback.ts`
+(`npm run test:integrity-fallback`):
+1. Personagem legado sem `integridade_atual`/`integridade_max` no
+   payload — normaliza para o máximo derivado (`10 + Ânimo×2`), nunca
+   0; faixa não é "fim_da_ficha".
+2. Personagem com `integridade_atual = 0` REAL — preservado como 0;
+   faixa continua "fim_da_ficha" (0 real nunca é escondido).
+3. `createInitialCharacter` (personagem novo) nasce com Integridade no
+   máximo derivado, não em "fim da ficha".
+4. Um valor real já salvo (ex.: 5) nunca é sobrescrito pelo fallback.
+
+## 7. Arquivos alterados
+
+- `src/lib/character/normalizeCharacter.ts` — fallback de derivados
+  sempre calculado (não mais condicionado a `derived` ser passado).
+- `src/lib/character/createCharacter.ts` — `createInitialCharacter`
+  preenche `recursos_atuais` com os `_max` na criação.
+- `src/app/dev/character-sheet/components/ResourcesTab.tsx` — fallback
+  defensivo de `getIntegrityBand` trocado de `0` para
+  `derivados.integridade_max`.
+- `scripts/test-integrity-fallback.ts` (novo) — 4 cenários.
+- `package.json` — script `test:integrity-fallback`.
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.
+
+Nenhuma mudança em Ruptura, logs, Cena ou Marca/Traço além do
+estritamente necessário para este fallback.
+
+## 8. Testes executados
+
+- `npx tsc --noEmit -p tsconfig.json`: sem erros.
+- `npm run build`: sucesso.
+- `npm run test:integrity-fallback`: passou — 4/4 cenários.
+- `npm run test:campaign-end-scene`: passou — 10/10 (sem regressão v0.45).
+- `npm run test:character-storage`: passou.
+- `npm run test:content-read`: passou.
+- Regressão adicional (módulos compartilhados `derived.ts`/
+  `normalizeCharacter.ts` tocados): `test:action-console`,
+  `test:reactions`, `test:end-round-conditions` (11/11),
+  `test:campaign-end-round` (6/6) — todos sem regressão.
+
+## 9. Teste manual
+
+Confirmado no preview: personagem novo em `/dev/character-sheet` →
+aba Recursos → "Faixa de Integridade: Íntegro" imediatamente (antes:
+"Fim da ficha"). Sem erros no console.
+
+## 10. Limitações
+
+- O fallback usa as fórmulas fixas de `derived.fallback.ts`, não as
+  reais de `regras_personagem`, nos pontos que chamam
+  `normalizeCharacter` sem `derived` (ex.: `endRound.ts`/`endScene.ts`).
+  Isso já era uma limitação documentada do próprio `derived.fallback.ts`
+  ("rede de segurança", não fonte de verdade) — hoje idêntica à fórmula
+  real da Biblioteca, mas divergiria silenciosamente se a Biblioteca
+  mudar essa fórmula sem atualizar o fallback. Fora de escopo corrigir
+  aqui (exigiria passar `regras_personagem` para dentro de
+  `endRound.ts`/`endScene.ts` e replumbar vários call sites — risco
+  maior que o bug que este checkpoint corrige).

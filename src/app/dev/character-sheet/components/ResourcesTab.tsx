@@ -392,7 +392,10 @@ export function ResourcesTab({
           Marca/Traço abaixo.
         </p>
         <p data-testid="integridade-banda" style={{ fontSize: 13, marginBottom: 10 }}>
-          Faixa de Integridade: <strong>{getIntegrityBand(recursosAtuais?.integridade ?? 0).texto}</strong>
+          {/* Checkpoint v0.45.1: ausência de `integridade` nunca deve virar 0/"fim da ficha" —
+              cai no máximo derivado (já deveria estar preenchido por normalizeCharacter/
+              createInitialCharacter; este é só um último fallback defensivo). */}
+          Faixa de Integridade: <strong>{getIntegrityBand(recursosAtuais?.integridade ?? derivados.integridade_max).texto}</strong>
         </p>
         {ultimaVontadePendente && (
           <p data-testid="ultima-vontade-pendente-aviso" style={{ fontSize: 12, color: "#c0392b", marginBottom: 10 }}>

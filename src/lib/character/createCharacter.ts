@@ -1,3 +1,4 @@
+import { computeDerivedStats } from "./derived";
 import type { Character, CharacterRulesPayload } from "./types";
 
 const DEFAULT_NOME = "Novo Personagem";
@@ -12,11 +13,12 @@ const FALLBACK_VALOR_INICIAL_ATRIBUTO = 1;
  * Não aplica o sistema de pontos de criação (point-buy) ainda; isso é
  * escopo de personagem completo, fora da ficha mínima.
  *
- * recursos_atuais começa vazio: nesta etapa createInitialCharacter não
- * tem acesso aos derivados calculados (depende de computeDerivedStats,
- * que roda na UI), então não inventa valores — quem preenche
- * recursos_atuais com os _max corretos é normalizeCharacter() na hora
- * de salvar (ver storage.ts/CharacterSheetClient).
+ * recursos_atuais já nasce preenchido com os _max calculados aqui
+ * (checkpoint v0.45.1 — antes ficava `{}` até o primeiro
+ * normalizeCharacter()/save, e a ficha mostrava "Integridade 0"/"fim
+ * da ficha" para um personagem novo por ausência de campo, não por
+ * estado real). `computeDerivedStats` já cai no fallback fixo do PRD
+ * (`derived.fallback.ts`) quando `regras` é null/incompleto.
  */
 export function createInitialCharacter(
   regras: CharacterRulesPayload | null,
@@ -30,15 +32,23 @@ export function createInitialCharacter(
     pericias[skill.id] = skill.valor_minimo ?? 0;
   }
 
+  const atributos = {
+    corpo: valorInicial,
+    mente: valorInicial,
+    animo: valorInicial,
+  };
+  const derived = computeDerivedStats(atributos, regras);
+
   return {
     nome,
-    atributos: {
-      corpo: valorInicial,
-      mente: valorInicial,
-      animo: valorInicial,
-    },
+    atributos,
     pericias,
-    recursos_atuais: {},
+    recursos_atuais: {
+      pv: derived.pv_max,
+      pe: derived.pe_max,
+      mana: derived.mana_max,
+      integridade: derived.integridade_max,
+    },
     estado_jogo: {
       pa_gastos: 0,
       reacoes_usadas: 0,

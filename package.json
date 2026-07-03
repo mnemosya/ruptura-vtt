@@ -17,6 +17,7 @@
     "test:end-round-conditions": "tsx scripts/test-end-round-conditions.ts",
     "test:campaign-end-round": "tsx scripts/test-campaign-end-round.ts",
     "test:campaign-end-scene": "tsx scripts/test-campaign-end-scene.ts",
+    "test:integrity-fallback": "tsx scripts/test-integrity-fallback.ts",
     "test:character-storage": "tsx scripts/test-character-storage.ts"
   },
   "dependencies": {
