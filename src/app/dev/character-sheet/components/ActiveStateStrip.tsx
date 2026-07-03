@@ -17,11 +17,13 @@
 import {
   MAX_OVERLOAD_SURGES_PER_DAY,
   MAX_COLLAPSE_SEGMENTS,
+  conditionHasEndRoundEffect,
+  normalizeConditionSlug,
   type ActiveCondition,
   type ActiveEffect,
   type Character,
+  type ConditionContent,
 } from "../../../../lib/character";
-import type { ConditionOption } from "./ConditionsTab";
 
 export type StateChipKind = "condicao" | "debuff" | "buff" | "aviso" | "fim_de_rodada" | "pendencia" | "placeholder";
 
@@ -35,22 +37,17 @@ export interface StateChip {
 }
 
 /**
- * Slugs com gatilho de fim de rodada garantido pelo PRD (tabela 9.2) —
- * piso mínimo, independente do que a Biblioteca tiver marcado hoje
- * (Insaturado/Saturado usam Vigor CD 7 "por cena" no conteúdo atual,
- * mas a mecânica do livro os resolve no mesmo ritmo de fim de rodada
- * das demais). Qualquer outra condição publicada com a tag
- * `"fim_de_rodada"` no payload da Biblioteca também é reconhecida
- * automaticamente (ver `isFimDeRodada`) — não é preciso adicionar
- * slug aqui para condições novas que já venham marcadas na Biblioteca.
+ * Gatilho de fim de rodada — data-driven via `payload_automacao.efeitos`
+ * (checkpoint v0.51, achado A2 da auditoria v0.50: substitui o antigo
+ * Set de slugs hardcoded, que duplicava a mesma lista em `endRound.ts`).
+ * Usa o mesmo `conditionHasEndRoundEffect` do motor real de fim de
+ * rodada (`endRoundConditions.ts`) — nenhuma lista de slugs mantida aqui.
  */
-const FIM_DE_RODADA_SLUGS = new Set(["queimando", "sangrando", "envenenado", "insaturado", "saturado"]);
-
-function isFimDeRodada(conditionId: string | null | undefined, condicoesDisponiveis: ConditionOption[]): boolean {
+function isFimDeRodada(conditionId: string | null | undefined, conditionContents: ConditionContent[]): boolean {
   if (!conditionId) return false;
-  if (FIM_DE_RODADA_SLUGS.has(conditionId)) return true;
-  const doc = condicoesDisponiveis.find((c) => c.slug === conditionId);
-  return doc?.tags?.includes("fim_de_rodada") ?? false;
+  const slug = normalizeConditionSlug(conditionId);
+  const content = conditionContents.find((c) => normalizeConditionSlug(c.slug) === slug);
+  return content ? conditionHasEndRoundEffect(content) : false;
 }
 
 const TIPO_LABELS: Record<StateChipKind, string> = {
@@ -104,12 +101,12 @@ const PLACEHOLDER_CATEGORIAS = [
 function buildChips(
   condicoesAtivas: ActiveCondition[],
   activeEffects: ActiveEffect[],
-  condicoesDisponiveis: ConditionOption[],
+  conditionContents: ConditionContent[],
 ): StateChip[] {
   const chipsCondicao: StateChip[] = condicoesAtivas.map((c) => ({
     id: `condicao:${c.id}`,
     nome: c.nome,
-    tipo: isFimDeRodada(c.conditionId, condicoesDisponiveis) ? "fim_de_rodada" : "condicao",
+    tipo: isFimDeRodada(c.conditionId, conditionContents) ? "fim_de_rodada" : "condicao",
     origem: c.origem,
     duracao: c.duracao,
     descricao: c.descricao,
@@ -128,7 +125,7 @@ function buildChips(
 export function ActiveStateStrip({
   condicoes,
   activeEffects,
-  condicoesDisponiveis,
+  conditionContents,
   onVerCondicoes,
   pvTemporario = 0,
   manaTemporaria = 0,
@@ -140,7 +137,8 @@ export function ActiveStateStrip({
   condicoes: ActiveCondition[];
   /** Efeitos já derivados (checkpoint v0.33) — reaproveitados como-são, nenhuma lógica de efeito é recalculada aqui. */
   activeEffects: ActiveEffect[];
-  condicoesDisponiveis: ConditionOption[];
+  /** Conteúdo completo das condições publicadas (checkpoint v0.44) — mesma fonte do motor de fim de rodada, usada só para o badge "fim de rodada" (checkpoint v0.51). */
+  conditionContents: ConditionContent[];
   onVerCondicoes: () => void;
   /** checkpoint v0.36 — exibidos como pendência quando > 0, sem refator de layout. */
   pvTemporario?: number;
@@ -152,7 +150,7 @@ export function ActiveStateStrip({
   colapso?: Character["colapso"];
 }) {
   const condicoesAtivas = condicoes.filter((c) => c.ativa);
-  const chips = buildChips(condicoesAtivas, activeEffects, condicoesDisponiveis);
+  const chips = buildChips(condicoesAtivas, activeEffects, conditionContents);
   // "Estados pendentes" (item 2 do pedido): sem sistema de Ruptura/Marca/Traço
   // pendente implementado ainda (PRD 10.6) — nunca inventado. Checkpoint
   // v0.36 populou este array pela primeira vez, mas só com os 3 campos

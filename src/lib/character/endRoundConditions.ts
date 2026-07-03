@@ -69,6 +69,35 @@ export function getConditionEndRoundEffects(condition: ConditionContent): Condit
   return Array.isArray(efeitos) ? (efeitos as ConditionEndRoundEffect[]) : [];
 }
 
+/**
+ * `tipo` de efeito que este motor efetivamente resolve no ciclo de fim
+ * de rodada (`resolveEndRoundConditionsForCharacter` acima e
+ * `applyRoundScopedPaReductions`, mais abaixo) — a MESMA lista, não uma
+ * cópia; se um novo `tipo` passar a ser tratado nessas funções, precisa
+ * ser adicionado aqui também para o indicador continuar correto.
+ */
+const END_ROUND_EFFECT_TYPES = new Set([
+  "dano_fim_de_rodada",
+  "teste_fim_de_rodada",
+  "teste_fim_de_rodada_para_remover_condicao",
+  "teste_apos_exposicao",
+  "reduzir_pa",
+]);
+
+/**
+ * Indica se a condição tem pelo menos um efeito resolvido no ciclo de
+ * fim de rodada — substitui o antigo `FIM_DE_RODADA_SLUGS` hardcoded
+ * (achado A2 da auditoria v0.50, duplicado em `ActiveStateStrip.tsx` e
+ * `endRound.ts`). Fonte única: `payload_automacao.efeitos`, não a tag
+ * `"fim_de_rodada"` do payload (que Insaturado/Saturado não têm, mesmo
+ * resolvendo no mesmo ritmo via `teste_apos_exposicao` — ver histórico
+ * do achado). Condição sem payload válido devolve `false` — nunca
+ * inventa um piso manual de slugs.
+ */
+export function conditionHasEndRoundEffect(condition: ConditionContent): boolean {
+  return getConditionEndRoundEffects(condition).some((efeito) => END_ROUND_EFFECT_TYPES.has(efeito.tipo));
+}
+
 /** Slugs canônicos das condições ATIVAS do personagem (conditionId com prioridade sobre nome manual). */
 export function getActiveConditionIds(character: Pick<Character, "condicoes_ativas">): string[] {
   const ids = new Set<string>();

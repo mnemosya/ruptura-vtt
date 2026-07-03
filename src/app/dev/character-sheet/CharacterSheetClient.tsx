@@ -2120,7 +2120,7 @@ export default function CharacterSheetClient({
       <ActiveStateStrip
         condicoes={character.condicoes_ativas ?? []}
         activeEffects={activeEffects}
-        condicoesDisponiveis={condicoesDisponiveis}
+        conditionContents={conditionContents}
         onVerCondicoes={() => setActiveTab("condicoes")}
         pvTemporario={character.recursos_atuais?.pv_temporario ?? 0}
         manaTemporaria={character.recursos_atuais?.mana_temporaria ?? 0}

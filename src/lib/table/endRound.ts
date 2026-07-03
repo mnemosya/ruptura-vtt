@@ -17,9 +17,11 @@
 
 import {
   computeDerivedStats,
+  conditionHasEndRoundEffect,
   getActiveConditionIds,
   normalizeCharacter,
   normalizeConditionContent,
+  normalizeConditionSlug,
   resetRoundReactionState,
   resolveEndRoundConditionsForCharacter,
   applyRoundScopedPaReductions,
@@ -30,9 +32,6 @@ import {
 import { listCharactersForNarratorCampaign, updateCharacter } from "../character/storage";
 import { getCharacterRules, listConditions } from "../content";
 import { getCampaign, endRound as advanceCampaignRound, addLog } from "./storage";
-
-/** Slugs de condição com gatilho de fim de rodada (mesmo piso mínimo de ActiveStateStrip/MesaDetailClient, v0.35/v0.39). */
-const FIM_DE_RODADA_SLUGS = new Set(["queimando", "sangrando", "envenenado", "insaturado", "saturado"]);
 
 export interface ProcessedCharacterSummary {
   characterId: string;
@@ -109,6 +108,10 @@ export async function resolveCampaignEndRoundForCharacters(params: {
   // Mesmo critério do dashboard (checkpoint v0.25): só personagens
   // ativos (não arquivados) participam do ciclo de jogo.
   const activeCharacters = allCharacters.filter((record) => !record.archived_at);
+  // Fonte única do gatilho de "atenção" por fim de rodada — mesmo
+  // `conditionHasEndRoundEffect` usado por ActiveStateStrip.tsx
+  // (checkpoint v0.51, achado A2): nenhuma lista de slugs mantida aqui.
+  const conditionBySlug = new Map(conditions.map((c) => [normalizeConditionSlug(c.slug), c]));
 
   const processedCharacters: ProcessedCharacterSummary[] = [];
   const skippedCharacters: SkippedCharacterSummary[] = [];
@@ -181,7 +184,10 @@ export async function resolveCampaignEndRoundForCharacters(params: {
       if (
         resolved.damageEvents.length > 0 ||
         resolved.pendingChecks.length > 0 ||
-        conditionsAfter.some((slug) => FIM_DE_RODADA_SLUGS.has(slug))
+        conditionsAfter.some((slug) => {
+          const content = conditionBySlug.get(slug);
+          return content ? conditionHasEndRoundEffect(content) : false;
+        })
       ) {
         attentionCharacterNames.push(character.nome);
       }
