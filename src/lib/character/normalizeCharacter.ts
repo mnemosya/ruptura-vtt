@@ -181,6 +181,18 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     ? (raw.talentos_adquiridos as Character["talentos_adquiridos"])
     : [];
 
+  // carteira/inventario (checkpoint v0.49): mesmo critério — ausência
+  // vira 0/[] , nunca undefined; valores já salvos nunca são sobrescritos.
+  const carteiraRaw = isPlainObject(raw.carteira) ? raw.carteira : {};
+  const carteira: Character["carteira"] = {
+    aretz_informal: typeof carteiraRaw.aretz_informal === "number" ? carteiraRaw.aretz_informal : 0,
+    cdi: typeof carteiraRaw.cdi === "number" ? carteiraRaw.cdi : 0,
+    cdi_craqueada: typeof carteiraRaw.cdi_craqueada === "number" ? carteiraRaw.cdi_craqueada : 0,
+  };
+  const inventario: Character["inventario"] = Array.isArray(raw.inventario)
+    ? (raw.inventario as Character["inventario"])
+    : [];
+
   return {
     ...raw,
     nome,
@@ -203,5 +215,7 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     ultima_vontade_pendente,
     historico_ruptura,
     talentos_adquiridos,
+    carteira,
+    inventario,
   } as Character;
 }

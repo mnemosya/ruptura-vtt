@@ -14,7 +14,7 @@
  * produto, mesmo que a UI não a exiba.
  */
 
-import { getCharacterRules, getCombatFlow, listConditions, listCombatActions, listTalents } from "../lib/content";
+import { getCharacterRules, getCombatFlow, listConditions, listCombatActions, listTalents, listItems } from "../lib/content";
 import { listLegacyCharactersDev } from "../lib/character/storage";
 import { listCampaigns } from "../lib/table/storage";
 import {
@@ -22,10 +22,12 @@ import {
   normalizeConditionContent,
   normalizeReactionRules,
   normalizeTalentContent,
+  normalizeItemContent,
   type CombatActionContent,
   type ConditionContent,
   type ReactionRules,
   type TalentContent,
+  type ItemContent,
 } from "../lib/character";
 import type { CharacterRecord, CharacterRulesPayload } from "../lib/character";
 import type { Campaign } from "../lib/table";
@@ -142,6 +144,17 @@ export async function CharacterSheetView({
     talentsError = error instanceof Error ? error.message : "Não foi possível carregar o catálogo de talentos.";
   }
 
+  // Itens publicados na Biblioteca (checkpoint v0.49) — fonte única do
+  // catálogo da loja/inventário; nunca uma lista manual aqui.
+  let items: ItemContent[] = [];
+  let itemsError: string | null = null;
+  try {
+    const docs = await listItems();
+    items = docs.map((doc) => normalizeItemContent(doc.payload as Record<string, unknown>));
+  } catch (error) {
+    itemsError = error instanceof Error ? error.message : "Não foi possível carregar o catálogo de itens.";
+  }
+
   return (
     <CharacterSheetClient
       regras={regras}
@@ -156,6 +169,8 @@ export async function CharacterSheetView({
       reactionRules={reactionRules}
       talentsIniciais={talents}
       talentsError={talentsError}
+      itemsIniciais={items}
+      itemsError={itemsError}
       initialCampaignId={campaignId}
       initialProfileId={profileId}
       mode={mode}

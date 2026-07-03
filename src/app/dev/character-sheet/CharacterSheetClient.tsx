@@ -54,6 +54,9 @@ import {
   deriveActiveEffectsFromTalents,
   acquireTalentLevel,
   removeTalentLevel,
+  purchaseItem,
+  setItemLoadoutState,
+  removeItemFromInventory,
 } from "../../../lib/character";
 import {
   createCharacter,
@@ -78,6 +81,9 @@ import type {
   ConditionContent,
   ConditionResistanceCheck,
   TalentContent,
+  ItemContent,
+  WalletId,
+  ItemLoadoutState,
 } from "../../../lib/character";
 import { rollPericia, type PreparedRoll } from "../../../lib/dice";
 import {
@@ -108,6 +114,7 @@ import { RollsTab } from "./components/RollsTab";
 import { LogTab, type LogEntry, type LogTipo } from "./components/LogTab";
 import { ConditionsTab, type ConditionOption } from "./components/ConditionsTab";
 import { TalentsTab } from "./components/TalentsTab";
+import { InventoryTab } from "./components/InventoryTab";
 import { ActionsTab } from "./components/ActionsTab";
 import { ActiveStateStrip } from "./components/ActiveStateStrip";
 import { MesaTab } from "./components/MesaTab";
@@ -148,6 +155,9 @@ interface Props {
   /** Talentos publicados na Biblioteca do Sistema (checkpoint v0.48) — fonte única da aba Talentos. */
   talentsIniciais: TalentContent[];
   talentsError: string | null;
+  /** Itens publicados na Biblioteca do Sistema (checkpoint v0.49) — fonte única da loja/inventário. */
+  itemsIniciais: ItemContent[];
+  itemsError: string | null;
   /**
    * Mesa/perfil pré-selecionados via query string (`?campaignId=...&
    * profileId=...`) — vindos de `/dev/join/[campaignId]` (checkpoint
@@ -207,6 +217,8 @@ export default function CharacterSheetClient({
   reactionRules,
   talentsIniciais,
   talentsError,
+  itemsIniciais,
+  itemsError,
   initialCampaignId,
   initialProfileId,
   mode,
@@ -1635,6 +1647,49 @@ export default function CharacterSheetClient({
   }
 
   /**
+   * Comprar item na loja (aba Inventário, checkpoint v0.49) — desconta
+   * a carteira escolhida e cria a instância no inventário
+   * (`purchaseItem`, `lib/character/inventory.ts`). Sem fundos
+   * suficientes, não muda nada e só avisa no log local.
+   */
+  function handleBuyItem(itemSlug: string, quantidade: number, walletId: WalletId, precoUnitario: number) {
+    const current = characterRef.current;
+    const item = itemsIniciais.find((i) => i.slug === itemSlug);
+    if (!item) return;
+    const result = purchaseItem({ character: current, item, quantidade, walletId, precoUnitario, nowIso: new Date().toISOString() });
+    if (!result.ok) {
+      addLogEntry("recurso", result.reason ?? "Compra não realizada.");
+      return;
+    }
+    characterRef.current = result.character;
+    setCharacter(result.character);
+    addLogEntry("recurso", `Comprado: ${item.nome} x${quantidade} — ${result.totalCost} (${result.walletBefore} → ${result.walletAfter}).`);
+  }
+
+  function handleChangeCarteira(walletId: WalletId, value: number) {
+    const current = characterRef.current;
+    const carteira = current.carteira ?? { aretz_informal: 0, cdi: 0, cdi_craqueada: 0 };
+    const next = { ...current, carteira: { ...carteira, [walletId]: Number.isFinite(value) ? value : 0 } };
+    characterRef.current = next;
+    setCharacter(next);
+  }
+
+  function handleSetItemEstado(instanceId: string, estado: ItemLoadoutState) {
+    const current = characterRef.current;
+    const next = setItemLoadoutState(current, instanceId, estado);
+    characterRef.current = next;
+    setCharacter(next);
+  }
+
+  function handleRemoveItem(instanceId: string) {
+    const current = characterRef.current;
+    const next = removeItemFromInventory(current, instanceId);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("recurso", "Item removido do inventário.");
+  }
+
+  /**
    * Adicionar condição (aba Condições, checkpoint v0.32) — atualiza o
    * estado local do personagem (persiste só ao "Salvar personagem",
    * igual atributos/perícias) e registra o evento tanto no Log local
@@ -2110,6 +2165,19 @@ export default function CharacterSheetClient({
           acquired={character.talentos_adquiridos ?? []}
           onAcquire={handleAcquireTalent}
           onRemove={handleRemoveTalent}
+        />
+      )}
+
+      {activeTab === "inventario" && (
+        <InventoryTab
+          items={itemsIniciais}
+          catalogError={itemsError}
+          carteira={character.carteira ?? { aretz_informal: 0, cdi: 0, cdi_craqueada: 0 }}
+          inventario={character.inventario ?? []}
+          onBuy={handleBuyItem}
+          onChangeCarteira={handleChangeCarteira}
+          onSetEstado={handleSetItemEstado}
+          onRemoveItem={handleRemoveItem}
         />
       )}
 

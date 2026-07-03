@@ -9141,3 +9141,114 @@ condição/defesa sem Reação (mesmo array, sem infraestrutura nova).
 - Validação de requisito de progressão (`talento_nivel_adquirido`).
 - UI de "Trama" (Tecelão) e "Companheiro" (Droneiro/Mecatrônico) —
   sistemas próprios, fora de escopo.
+
+# Checkpoint v0.49 — Inventário, carteira e loja do Mercado Noturno
+
+## 1. Commit base
+
+`6094708 feat: automate flat-modifier talent pattern` (v0.48).
+
+## 2. Objetivo e escopo
+
+PRD 13: inventário/loja/itens 100% data-driven a partir da Biblioteca
+(`content_type="item"`, `listItems()` — já existente, 119 itens
+publicados: armas, armaduras, escudos, explosivos, farmácia, vertinas,
+ferramentas, dispositivos, veículos, munição). Escopo deliberadamente
+pequeno (mesmo critério de v0.47/v0.48): carteira (3 saldos, PRD 13.1),
+loja simples (buscar/filtrar/comprar, preço editável, PRD 13.2),
+inventário com loadout simples (equipado/empunhado/acesso rápido/
+mochila, PRD 13.3). NADA de MIT/PD por região, munição/Rajada,
+propriedades em crítico, runas instaladas, kravita, ações de item
+automáticas (granadas/farmácia/vertinas aplicando efeito), desconto/
+fiado do Mercador, envio para inventário do bando — tudo documentado
+como pendência (PRD 13.4–13.9, nenhum checkpoint anterior cobriu).
+
+## 3. Módulo novo
+
+`src/lib/character/inventory.ts` (puro):
+- `normalizeItemContent(raw)` — preserva o payload inteiro (as
+  `estatisticas` completas de cada item ficam disponíveis para
+  checkpoints futuros de combate/dano de arma, mesmo sem uso aqui).
+- `Wallet`/`WalletId`/`WALLET_LABELS` — aretz informal, CDI, CDI
+  Craqueada, sempre 3 saldos separados.
+- `purchaseItem(...)` — desconta a carteira escolhida, cria instância
+  na mochila; sem fundos suficientes, devolve `ok:false` sem mutar
+  nada (mesmo padrão de falha segura de `canPayActionCost`, v0.42).
+- `setItemLoadoutState`/`adjustItemQuantity`/`removeItemFromInventory`
+  — loadout simples.
+
+## 4. UI
+
+Nova aba "Inventário" (`InventoryTab.tsx`): carteira editável, loja
+(busca + filtro de categoria + seleção de carteira + preço editável
+por linha + botão Comprar), lista de inventário com seletor de estado
+de loadout e remoção. `CharacterSheetView.tsx` busca `listItems()`
+(catálogo completo, sem filtro — PRD 13.2 "lista completa por
+padrão") uma vez, passado para baixo.
+
+## 5. Testes executados
+
+- `npx tsc --noEmit -p tsconfig.json`: sem erros.
+- `npm run build`: sucesso.
+- `npm run test:inventory` (novo, `scripts/test-inventory.ts`, contra
+  o DB real de itens): passou — 5 cenários (personagem novo sem
+  carteira definida ainda; compra com fundos desconta carteira e cria
+  instância na mochila; compra sem fundos não muda nada; preço
+  unitário editável + quantidade múltipla; loadout — mudar estado/
+  ajustar quantidade/remover).
+- Toda a suíte anterior (action-console, reactions,
+  end-round-conditions, campaign-end-round, campaign-end-scene,
+  integrity-fallback, realtime-minimal, realtime-publication,
+  attack-resolution, talents, character-storage, content-read): sem
+  regressão.
+
+## 6. Teste manual
+
+Confirmado no preview: aba Inventário mostra as 119 itens reais da
+Biblioteca; ajustei a carteira Aretz informal para 200, comprei
+"Adaga" (120) — saldo caiu para 80, item apareceu no inventário com
+estado "Mochila". Sem erros no console.
+
+## 7. Arquivos alterados
+
+- `src/lib/character/inventory.ts` (novo).
+- `src/lib/character/types.ts` — `Character.carteira`/`inventario`.
+- `src/lib/character/normalizeCharacter.ts` — defaults
+  retrocompatíveis.
+- `src/lib/character/index.ts` — export do novo módulo.
+- `src/app/CharacterSheetView.tsx` — fetch de `listItems()`.
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — props,
+  handlers (`handleBuyItem`, `handleChangeCarteira`,
+  `handleSetItemEstado`, `handleRemoveItem`), render da aba.
+- `src/app/dev/character-sheet/components/InventoryTab.tsx` (novo).
+- `src/app/dev/character-sheet/components/CharacterSheetTabs.tsx` —
+  nova aba "inventario".
+- `scripts/test-inventory.ts` (novo).
+- `package.json` — script `test:inventory`.
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.
+
+## 8. Limitações
+
+- Sem MIT/PD por região, munição/Rajada, propriedades em crítico,
+  runas instaladas, kravita.
+- Sem ações de item automáticas (granadas gastando PA/rolando
+  dano/aplicando condição; farmácia rolando cura/removendo condição;
+  vertinas aplicando buff) — tudo isso é ação manual do jogador fora
+  da ficha por enquanto.
+- Sem desconto/fiado do Mercador (talento, v0.48 não automatiza esse
+  padrão).
+- Sem envio para inventário do bando (conceito de campanha, não
+  personagem).
+- Loadout não altera atalhos de ação (PRD 13.3 "atalhos de ação seguem
+  o que está equipado" — não implementado).
+
+## 9. Pendências futuras
+
+- Dano de arma real consumindo `estatisticas.dado_dano` no ataque
+  contestado (v0.47) — hoje a fórmula ainda é manual.
+- MIT/PD/armadura/escudo (bloqueia dano, desconta PD, passa excesso).
+- Ações de item automáticas (explosivos, farmácia, vertinas,
+  ferramentas, dispositivos).
+- Runas instaladas e efeitos anexados.
+- Loadout ligado a atalhos de ação no console de ação.
+- Envio de item para inventário do bando (nível de campanha).

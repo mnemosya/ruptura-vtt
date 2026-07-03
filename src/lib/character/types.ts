@@ -311,6 +311,30 @@ export interface Character {
     nivel: number;
     adquiridoEm: string;
   }[];
+  /**
+   * Carteira (checkpoint v0.49, PRD 13.1) — três saldos separados,
+   * nunca uma soma única. Ausente = 0 em todos.
+   */
+  carteira?: {
+    aretz_informal: number;
+    cdi: number;
+    cdi_craqueada: number;
+  };
+  /**
+   * Inventário (checkpoint v0.49, PRD 13) — instâncias ligadas a
+   * modelos publicados da Biblioteca (content_type="item"), nunca uma
+   * lista hardcoded. Ausente = nenhum item ainda.
+   */
+  inventario?: {
+    id: string;
+    itemSlug: string;
+    itemNome: string;
+    categoria: string;
+    quantidade: number;
+    estado: "equipado" | "empunhado" | "acesso_rapido" | "mochila";
+    adquiridoEm: string;
+    precoPago?: number;
+  }[];
 }
 
 /**

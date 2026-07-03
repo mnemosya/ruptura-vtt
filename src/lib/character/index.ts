@@ -16,3 +16,4 @@ export * from "./endRoundConditions";
 export * from "./rupture";
 export * from "./attack";
 export * from "./talents";
+export * from "./inventory";

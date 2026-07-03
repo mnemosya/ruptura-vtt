@@ -22,6 +22,7 @@
     "test:realtime-publication": "tsx scripts/test-realtime-publication.ts",
     "test:attack-resolution": "tsx scripts/test-attack-resolution.ts",
     "test:talents": "tsx scripts/test-talents.ts",
+    "test:inventory": "tsx scripts/test-inventory.ts",
     "test:character-storage": "tsx scripts/test-character-storage.ts"
   },
   "dependencies": {

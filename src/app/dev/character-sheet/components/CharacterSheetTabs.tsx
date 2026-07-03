@@ -1,4 +1,4 @@
-export const TABS = ["geral", "atributos", "pericias", "recursos", "condicoes", "talentos", "acoes", "rolagens", "log", "mesa", "personagens", "debug"] as const;
+export const TABS = ["geral", "atributos", "pericias", "recursos", "condicoes", "talentos", "inventario", "acoes", "rolagens", "log", "mesa", "personagens", "debug"] as const;
 export type TabId = (typeof TABS)[number];
 
 export const TAB_LABELS: Record<TabId, string> = {
@@ -8,6 +8,7 @@ export const TAB_LABELS: Record<TabId, string> = {
   recursos: "Recursos",
   condicoes: "Condições",
   talentos: "Talentos",
+  inventario: "Inventário",
   acoes: "Ações",
   rolagens: "Rolagens",
   log: "Log",
