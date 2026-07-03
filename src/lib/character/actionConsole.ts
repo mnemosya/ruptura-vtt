@@ -411,7 +411,7 @@ const EFFECT_TYPE_LABELS: Record<string, string> = {
   sacar_ou_guardar: "Sacar/guardar equipamento (não automatizado)",
   recarregar_arma: "Recarrega arma (não automatizado)",
   modificador: "Modificador de rolagem (não automatizado)",
-  resolver_ataque: "Resolução de ataque (não automatizado)",
+  resolver_ataque: "Resolução de ataque contestado básico (ver \"Resolver Ataque\" na mesa, checkpoint v0.47)",
   controle_corpo_a_corpo: "Controle corpo a corpo (não automatizado)",
   estrangular_alvo: "Estrangular alvo (não automatizado)",
   aplicar_condicao: "Aplica condição no alvo (não automatizado)",

@@ -82,6 +82,7 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   rupture_choice_resolved: "Marca e Traço Registrados",
   integrity_zero_pending: "Integridade Zerada",
   scene_effect_expired: "Efeito de Cena Encerrado",
+  attack_resolved: "Ataque Resolvido",
 };
 
 function entryKindLabel(type: string): string {
@@ -108,6 +109,7 @@ function entryIcon(type: string): string {
   if (type === "rupture_choice_created" || type === "rupture_choice_resolved") return "📝";
   if (type === "integrity_zero_pending") return "☠";
   if (type === "scene_effect_expired") return "⏳";
+  if (type === "attack_resolved") return "🗡";
   return "•";
 }
 
@@ -129,6 +131,7 @@ function entryBorderColor(type: string): string {
   if (type === "rupture_choice_created" || type === "rupture_choice_resolved") return "#5ec8ff";
   if (type === "integrity_zero_pending") return "#c0392b";
   if (type === "scene_effect_expired") return "#888";
+  if (type === "attack_resolved") return "#ff6b6b";
   return "#ffb84f";
 }
 
@@ -360,6 +363,19 @@ function formatSceneEffectExpired(payload: Record<string, unknown>): string {
   const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
   const effectName = typeof payload.effectName === "string" ? payload.effectName : "Efeito";
   return `${characterNome}: ${effectName} encerrado (duração de cena).`;
+}
+
+/** Checkpoint v0.47: cartão de attack_resolved (ataque contestado básico). */
+function formatAttackResolved(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Alvo";
+  const attackerNome = typeof payload.attackerNome === "string" ? payload.attackerNome : "Atacante";
+  const margin = typeof payload.margin === "number" ? payload.margin : "?";
+  if (payload.attackerWins === true) {
+    const damageRoll = typeof payload.damageRoll === "number" ? payload.damageRoll : "?";
+    const damageType = typeof payload.damageType === "string" ? payload.damageType : "";
+    return `${attackerNome} atacou ${characterNome} (margem ${margin}) — ${damageRoll} de dano ${damageType}.`;
+  }
+  return `${attackerNome} atacou ${characterNome} (margem ${margin}) — defesa bem-sucedida, sem dano.`;
 }
 
 /** Texto da mensagem de chat — aceita `text` (ficha, v0.12) ou `mensagem` (formato antigo do /dev/table). */
@@ -694,7 +710,9 @@ export function MesaTab({
                                                             ? formatIntegrityZeroPending(entry.payload)
                                                             : entry.type === "scene_effect_expired"
                                                               ? formatSceneEffectExpired(entry.payload)
-                                                              : JSON.stringify(entry.payload)}
+                                                              : entry.type === "attack_resolved"
+                                                                ? formatAttackResolved(entry.payload)
+                                                                : JSON.stringify(entry.payload)}
             </span>
           </div>
         ))}

@@ -8914,3 +8914,115 @@ não uma correção implementada:
   checkpoint dedicado, caso o smoke real mostre eventos não chegando.
 - Demais pendências já listadas no v0.46 (merge/conflict, presença
   avançada, RPC/transação robusta, etc.) continuam válidas.
+
+# Checkpoint v0.47 — Ataque contestado básico
+
+## 1. Commit base
+
+`c67d2e8 chore: enable realtime publication checks` (v0.46.1).
+
+## 2. Objetivo e escopo
+
+Primeira resolução de combate real do produto: ataque contestado
+(atacante rola vs. defensor rola, maior total vence) + dano DIRETO ao
+PV do alvo. Deliberadamente pequeno — nenhum sistema de arma existe
+ainda (inventário é v0.49), então fórmula e tipo de dano são
+informados manualmente por quem resolve o ataque. Fora de escopo (PRD
+8.7/8.8, nenhum checkpoint anterior implementou): MIT, PD, região do
+corpo, propriedades críticas, cobertura, terreno, modificadores
+ambientais, aplicação automática de condição por tipo de dano.
+
+## 3. Módulo novo
+
+`src/lib/character/attack.ts` (puro):
+- `resolveContestedRoll(attackerTotal, defenderTotal)` — margem +
+  vencedor; decisão de produto documentada no próprio módulo: empate
+  favorece o DEFENSOR (o PRD não especifica desempate de ataque
+  contestado).
+- `rollDamageFormula(formula, rng?)` — parser mínimo "NdM[+/-X]" com
+  RNG injetável (mesmo padrão de `overload.ts`/`endRoundConditions.ts`
+  — não reaproveita `lib/dice/rollExpression` porque este não aceita
+  RNG injetável, necessário para teste determinístico).
+- `applyAttackDamage(...)` — dano direto ao PV, nunca abaixo de 0,
+  aciona `detectCollapseOnResourceChange` (v0.38) quando o PV chega a
+  0 — mesmo padrão de `applyConditionEndRoundDamage` (v0.44).
+
+## 4. Onde vive — mesa, não ficha
+
+"Resolver Ataque" foi implementado como ferramenta do NARRADOR na mesa
+(`MesaDetailClient.tsx`), não como fluxo automático do console de ação
+da ficha. Motivo: os dois personagens envolvidos (atacante e alvo)
+precisam ser lidos/atualizados juntos, e a mesa já tem a lista
+completa de personagens da campanha carregada (sem inventar
+alvo estruturado/mapa) — replicar isso na ficha exigiria buscar
+personagens de outros jogadores dentro do componente do próprio
+jogador, quebrando o isolamento de sessão já estabelecido desde o
+v0.24/v0.28.
+
+Fluxo: selecionar atacante + alvo (dropdowns da lista já carregada),
+informar total de ataque/defesa (já rolados pela aba Rolagens da ficha
+ou verbalmente — sem prompt de modificadores automático ainda, ver
+pendências), fórmula e tipo de dano. Ao resolver: se o ataque vence,
+`applyAttackDamage` roda sobre o alvo normalizado, persiste via
+`updateCharacter`, recarrega a lista de personagens (Realtime do v0.46
+também reflete isso automaticamente numa ficha aberta do alvo).
+
+## 5. Logs/formatação
+
+Novo tipo `attack_resolved` — payload com `attackerId`/`attackerNome`,
+`characterId`/`characterNome` (o alvo), `attackerTotal`,
+`defenderTotal`, `margin`, `attackerWins`, e quando há dano:
+`damageFormula`/`damageType`/`damageRoll`/`pvBefore`/`pvAfter`/
+`collapseStarted`. Formatado em `MesaDetailClient.tsx`
+(`formatCampaignRoundLog`) e `MesaTab.tsx` (`formatAttackResolved`) —
+nunca JSON cru, mesmo padrão dos tipos anteriores.
+
+`actionConsole.ts`: label de `resolver_ataque` (efeito pendente da
+ação "Atacar") atualizado para apontar para "Resolver Ataque" na mesa,
+em vez de "não automatizado" genérico.
+
+## 6. Testes executados
+
+- `npx tsc --noEmit -p tsconfig.json`: sem erros.
+- `npm run build`: sucesso.
+- `npm run test:attack-resolution` (novo, `scripts/test-attack-resolution.ts`):
+  passou — 5 cenários (contestado vitória/derrota/empate; fórmula de
+  dano determinística + fórmula inválida segura; dano direto ao PV;
+  Colapso acionado ao zerar PV; PV nunca negativo).
+- Toda a suíte anterior (action-console, reactions, end-round-conditions,
+  campaign-end-round, campaign-end-scene, integrity-fallback,
+  realtime-minimal, realtime-publication, character-storage): sem
+  regressão.
+
+## 7. Arquivos alterados
+
+- `src/lib/character/attack.ts` (novo).
+- `src/lib/character/index.ts` — export do novo módulo.
+- `src/lib/character/actionConsole.ts` — label de `resolver_ataque`.
+- `src/app/mesas/[campaignId]/MesaDetailClient.tsx` — seção "Resolver
+  Ataque", handler, formatação do novo tipo de log.
+- `src/app/dev/character-sheet/components/MesaTab.tsx` — formatação do
+  novo tipo de log.
+- `scripts/test-attack-resolution.ts` (novo).
+- `package.json` — script `test:attack-resolution`.
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.
+
+## 8. Limitações
+
+- Sem prompt de modificadores automático (PRD 8.2/8.3) — totais são
+  informados manualmente.
+- Sem sistema de arma — fórmula/tipo de dano manuais.
+- Sem MIT, PD, região do corpo, propriedades críticas, cobertura,
+  terreno, aplicação automática de condição por dano.
+- Sem alvo estruturado/mapa (deliberado, PRD "modo teatro da mente").
+- Teste manual de duas abas não executado (mesma limitação de
+  credenciais de narrador dos checkpoints anteriores).
+
+## 9. Pendências futuras
+
+- Prompt de rolagem com modificadores rastreados (PRD 8.2/8.3).
+- Dano de arma real (depende do inventário, v0.49).
+- MIT/PD/armadura/escudo.
+- Região do corpo e propriedades críticas.
+- Aplicação de condição por propriedade de arma/magia/item (PRD 8.8).
+- Cobertura/terreno/modificadores ambientais.

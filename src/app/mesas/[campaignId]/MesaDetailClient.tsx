@@ -33,8 +33,9 @@ import {
   archiveCharacter,
   restoreCharacter,
   duplicateCharacter,
+  updateCharacter,
 } from "../../../lib/character/storage";
-import { createInitialCharacter } from "../../../lib/character";
+import { createInitialCharacter, normalizeCharacter, resolveContestedRoll, applyAttackDamage } from "../../../lib/character";
 import type { Campaign, CampaignProfile, CampaignInvite, ProfileSession, TableLogEntry } from "../../../lib/table";
 import type { CharacterRecord } from "../../../lib/character";
 
@@ -127,6 +128,16 @@ export function formatCampaignRoundLog(type: string, payload: Record<string, unk
     const effectName = typeof payload.effectName === "string" ? payload.effectName : "Efeito";
     return `${characterNome}: ${effectName} encerrado (duração de cena).`;
   }
+  if (type === "attack_resolved") {
+    const attackerNome = typeof payload.attackerNome === "string" ? payload.attackerNome : "Atacante";
+    const margin = typeof payload.margin === "number" ? payload.margin : "?";
+    if (payload.attackerWins === true) {
+      const damageRoll = typeof payload.damageRoll === "number" ? payload.damageRoll : "?";
+      const damageType = typeof payload.damageType === "string" ? payload.damageType : "";
+      return `${attackerNome} atacou ${characterNome} (margem ${margin}) — ${damageRoll} de dano ${damageType}.`;
+    }
+    return `${attackerNome} atacou ${characterNome} (margem ${margin}) — defesa bem-sucedida, sem dano.`;
+  }
   return null;
 }
 
@@ -177,6 +188,15 @@ export default function MesaDetailClient({
   // Checkpoint v0.45 — mesmo padrão para "Encerrar Cena" (endCampaignScene).
   const [endSceneProcessing, setEndSceneProcessing] = useState(false);
   const [endSceneSummary, setEndSceneSummary] = useState<string[] | null>(null);
+  // Checkpoint v0.47 — "Resolver Ataque" (ataque contestado básico, PRD 8.1/8.6).
+  const [ataqueAtacanteId, setAtaqueAtacanteId] = useState("");
+  const [ataqueAlvoId, setAtaqueAlvoId] = useState("");
+  const [ataqueTotalAtaque, setAtaqueTotalAtaque] = useState("");
+  const [ataqueTotalDefesa, setAtaqueTotalDefesa] = useState("");
+  const [ataqueFormulaDano, setAtaqueFormulaDano] = useState("1d6");
+  const [ataqueTipoDano, setAtaqueTipoDano] = useState("fisico");
+  const [ataqueProcessing, setAtaqueProcessing] = useState(false);
+  const [ataqueResultado, setAtaqueResultado] = useState<string | null>(null);
 
   function fail(err: unknown, msg: string) {
     setError(err instanceof Error ? err.message : msg);
@@ -210,6 +230,110 @@ export default function MesaDetailClient({
   /** Botão "Recarregar mesa" (checkpoint v0.46) — fallback manual se Realtime estiver indisponível/com erro. */
   async function reloadAll() {
     await Promise.all([reloadCampaign(), reloadPersonagens(), reloadLogs(), reloadPerfis(), reloadConvites()]);
+  }
+
+  /**
+   * "Resolver Ataque" (checkpoint v0.47, PRD 8.1/8.6) — ataque
+   * contestado básico: compara os totais JÁ ROLADOS de atacante e
+   * defensor (narrador informa, pela ficha/Rolagens ou verbalmente —
+   * sem sistema de modificador/prompt automático ainda, ver
+   * pendências) via `resolveContestedRoll`; se o atacante vencer,
+   * aplica dano DIRETO ao PV do alvo (`applyAttackDamage`, sem MIT/PD/
+   * região do corpo/propriedades — fórmula e tipo de dano são
+   * informados manualmente, pois não existe sistema de arma ainda).
+   * Sem alvo estruturado/mapa: os dois personagens vêm da lista já
+   * carregada da mesa.
+   */
+  async function handleResolverAtaque() {
+    setError(null);
+    setAtaqueResultado(null);
+    const atacante = personagensDaMesa.find((c) => c.id === ataqueAtacanteId);
+    const alvo = personagensDaMesa.find((c) => c.id === ataqueAlvoId);
+    const totalAtaque = Number(ataqueTotalAtaque);
+    const totalDefesa = Number(ataqueTotalDefesa);
+    if (!atacante || !alvo || !Number.isFinite(totalAtaque) || !Number.isFinite(totalDefesa)) {
+      setError("Selecione atacante, alvo e informe os totais de ataque/defesa.");
+      return;
+    }
+
+    setAtaqueProcessing(true);
+    try {
+      const contested = resolveContestedRoll(totalAtaque, totalDefesa);
+      const nowIso = new Date().toISOString();
+      let resumo = `${atacante.name} (${totalAtaque}) vs ${alvo.name} (${totalDefesa}) — margem ${contested.margin}.`;
+
+      if (contested.attackerWins) {
+        const alvoNormalizado = normalizeCharacter(alvo.payload);
+        const dano = applyAttackDamage({
+          character: alvoNormalizado,
+          formula: ataqueFormulaDano,
+          damageType: ataqueTipoDano,
+          nowIso,
+        });
+        await updateCharacter(alvo.id, dano.character);
+        resumo += ` Acerto: ${dano.rollResult} de dano ${ataqueTipoDano} (PV ${dano.pvBefore} → ${dano.pvAfter}).`;
+        if (dano.collapseStarted) resumo += ` Colapso (${dano.collapseTipo}) iniciado.`;
+
+        try {
+          await addLog({
+            campaignId: campaign.id,
+            characterId: alvo.id,
+            type: "attack_resolved",
+            visibility: "public",
+            payload: {
+              attackerId: atacante.id,
+              attackerNome: atacante.name,
+              characterId: alvo.id,
+              characterNome: alvo.name,
+              attackerTotal: totalAtaque,
+              defenderTotal: totalDefesa,
+              margin: contested.margin,
+              attackerWins: true,
+              damageFormula: ataqueFormulaDano,
+              damageType: ataqueTipoDano,
+              damageRoll: dano.rollResult,
+              pvBefore: dano.pvBefore,
+              pvAfter: dano.pvAfter,
+              collapseStarted: dano.collapseStarted,
+              source: "mesa_dashboard",
+            },
+          });
+        } catch {
+          // Best-effort — o dano já foi persistido no personagem.
+        }
+        await reloadPersonagens();
+      } else {
+        resumo += " Defesa bem-sucedida — nenhum dano aplicado.";
+        try {
+          await addLog({
+            campaignId: campaign.id,
+            characterId: alvo.id,
+            type: "attack_resolved",
+            visibility: "public",
+            payload: {
+              attackerId: atacante.id,
+              attackerNome: atacante.name,
+              characterId: alvo.id,
+              characterNome: alvo.name,
+              attackerTotal: totalAtaque,
+              defenderTotal: totalDefesa,
+              margin: contested.margin,
+              attackerWins: false,
+              source: "mesa_dashboard",
+            },
+          });
+        } catch {
+          // Best-effort.
+        }
+      }
+
+      setAtaqueResultado(resumo);
+      await reloadLogs();
+    } catch (e) {
+      fail(e, "Erro ao resolver ataque.");
+    } finally {
+      setAtaqueProcessing(false);
+    }
   }
 
   // Checkpoint v0.46 — Realtime mínimo: assina campaigns/characters/
@@ -602,6 +726,46 @@ export default function MesaDetailClient({
               ))}
             </div>
           </div>
+        )}
+      </section>
+
+      {/* Resolver Ataque (checkpoint v0.47) — ataque contestado básico, sem arma/MIT/PD/região do corpo. */}
+      <section style={{ marginBottom: 32 }}>
+        <h2 style={h2}>Resolver Ataque</h2>
+        <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
+          Ataque contestado básico (PRD 8.1/8.6): informe os totais JÁ ROLADOS de ataque e defesa
+          (pela aba Rolagens da ficha, ou verbalmente) — maior total vence, empate favorece o
+          defensor. Se o ataque vencer, aplica dano direto ao PV do alvo (fórmula/tipo de dano
+          manuais, sem sistema de arma/MIT/PD/região do corpo ainda).
+        </p>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+          <select data-testid="det-ataque-atacante-select" value={ataqueAtacanteId} onChange={(e) => setAtaqueAtacanteId(e.target.value)} style={input}>
+            <option value="">— atacante —</option>
+            {personagensAtivosDaMesa.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <select data-testid="det-ataque-alvo-select" value={ataqueAlvoId} onChange={(e) => setAtaqueAlvoId(e.target.value)} style={input}>
+            <option value="">— alvo —</option>
+            {personagensAtivosDaMesa.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+          <input data-testid="det-ataque-total-ataque" type="number" placeholder="Total do ataque" value={ataqueTotalAtaque} onChange={(e) => setAtaqueTotalAtaque(e.target.value)} style={{ ...input, width: 140 }} />
+          <input data-testid="det-ataque-total-defesa" type="number" placeholder="Total da defesa" value={ataqueTotalDefesa} onChange={(e) => setAtaqueTotalDefesa(e.target.value)} style={{ ...input, width: 140 }} />
+          <input data-testid="det-ataque-formula-dano" type="text" placeholder="Fórmula de dano (ex.: 1d6+2)" value={ataqueFormulaDano} onChange={(e) => setAtaqueFormulaDano(e.target.value)} style={{ ...input, width: 180 }} />
+          <input data-testid="det-ataque-tipo-dano" type="text" placeholder="Tipo de dano" value={ataqueTipoDano} onChange={(e) => setAtaqueTipoDano(e.target.value)} style={{ ...input, width: 120 }} />
+        </div>
+        <button
+          data-testid="det-resolver-ataque"
+          onClick={handleResolverAtaque}
+          disabled={ataqueProcessing}
+          style={{ ...btn, opacity: ataqueProcessing ? 0.6 : 1 }}
+        >
+          {ataqueProcessing ? "Resolvendo…" : "Resolver Ataque"}
+        </button>
+        {ataqueResultado && (
+          <p data-testid="det-ataque-resultado" style={{ fontSize: 12, opacity: 0.85, marginTop: 10 }}>
+            {ataqueResultado}
+          </p>
         )}
       </section>
 

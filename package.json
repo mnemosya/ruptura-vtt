@@ -20,6 +20,7 @@
     "test:integrity-fallback": "tsx scripts/test-integrity-fallback.ts",
     "test:realtime-minimal": "tsx scripts/test-realtime-minimal.ts",
     "test:realtime-publication": "tsx scripts/test-realtime-publication.ts",
+    "test:attack-resolution": "tsx scripts/test-attack-resolution.ts",
     "test:character-storage": "tsx scripts/test-character-storage.ts"
   },
   "dependencies": {
