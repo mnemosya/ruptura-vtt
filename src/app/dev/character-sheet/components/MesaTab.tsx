@@ -19,6 +19,8 @@ import { useEffect, useState } from "react";
 import { Section } from "./Section";
 import { buttonStyle } from "./styles";
 import { addLog, listLogsForViewer } from "../../../../lib/table/storage";
+import { useTableLogsRealtime } from "../../../../lib/realtime/useTableLogsRealtime";
+import { describeRealtimeStatus } from "../../../../lib/realtime/tableRealtime";
 import { TABLE_LOG_VISIBILITIES, type TableLogEntry, type TableLogVisibility } from "../../../../lib/table";
 import { MAX_COLLAPSE_SEGMENTS, MAX_OVERLOAD_SURGES_PER_DAY } from "../../../../lib/character";
 
@@ -472,6 +474,12 @@ export function MesaTab({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaignId]);
 
+  // Checkpoint v0.46 — Realtime mínimo: INSERT novo em table_logs desta
+  // mesa agenda um refetch debounced de `refreshLogs` (mesmo refetch
+  // canônico do botão "Atualizar logs", nunca patch parcial). Continua
+  // funcionando manualmente (botão) se Realtime estiver indisponível.
+  const syncStatus = useTableLogsRealtime(campaignId, refreshLogs);
+
   async function handleEnviar() {
     if (!campaignId) return;
     const text = mensagemInput.trim();
@@ -590,6 +598,9 @@ export function MesaTab({
         <button data-testid="mesa-atualizar-button" onClick={refreshLogs} style={buttonStyle}>
           Atualizar logs
         </button>
+        <span data-testid="ficha-mesa-sync-status" style={{ fontSize: 11, color: describeRealtimeStatus(syncStatus, "ficha").cor }}>
+          ● {describeRealtimeStatus(syncStatus, "ficha").texto}
+        </span>
       </div>
       <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
         Filtro visual apenas; ainda sem segurança real (visibilidade é só um campo de dados, ver

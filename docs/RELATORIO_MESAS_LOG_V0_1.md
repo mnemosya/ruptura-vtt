@@ -8536,3 +8536,268 @@ aba Recursos → "Faixa de Integridade: Íntegro" imediatamente (antes:
   aqui (exigiria passar `regras_personagem` para dentro de
   `endRound.ts`/`endScene.ts` e replumbar vários call sites — risco
   maior que o bug que este checkpoint corrige).
+
+# Checkpoint v0.46 — Realtime mínimo
+
+## 1. Commit base
+
+`5aaefd9 fix: normalize missing integrity to derived maximum` (v0.45.1).
+
+## 2. Objetivo
+
+Sincronizar mesa e ficha via Realtime do Supabase (assinatura +
+refetch seguro, nunca patch parcial) para que "Encerrar Rodada"/
+"Encerrar Cena" pela mesa (v0.44.1/v0.45) e ações na ficha (v0.42/v0.43)
+reflitam no outro lado sem exigir reload manual. Checkpoint de
+sincronização, não de regra — nenhuma regra de jogo foi tocada.
+
+## 3. Tabelas assinadas
+
+- `characters` — UPDATE/INSERT/DELETE. Ficha assina o próprio
+  `characterId`; mesa assina por `campaign_id` (todos os personagens
+  da campanha).
+- `campaigns` — UPDATE. Mesa assina a própria campanha
+  (`current_round`/`current_scene`/demais campos).
+- `table_logs` — INSERT. Mesa e a aba Mesa da ficha assinam por
+  `campaign_id`.
+
+## 4. Módulo Realtime
+
+`src/lib/supabase/browserClient.ts` (novo) — único client Supabase de
+BROWSER do projeto, singleton, usa `NEXT_PUBLIC_SUPABASE_URL`/
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` (adicionadas a `.env.local` com os
+MESMOS valores de `SUPABASE_URL`/`SUPABASE_ANON_KEY` — nunca a service
+role key, que nunca sai do servidor). Devolve `null` se as env vars
+públicas não existirem — todo o resto do sistema trata isso como
+"Realtime indisponível", nunca lança.
+
+`src/lib/realtime/tableRealtime.ts` (novo) — módulo central, sem
+espalhar strings de canal pelos componentes:
+- `buildCampaignChannelName`/`buildCharacterChannelName`/`buildTableLogsChannelName`.
+- `makeRealtimeEventKey`/`dedupeRealtimeEvent` — chave por
+  tabela+tipo+id+`commit_timestamp`.
+- `routeRealtimePayload` — tabela+evento → ação (`refetch_character`/
+  `refetch_campaign`/`refetch_table_logs`/`ignore`).
+- `mergeTableLogsById` — dedupe por id preservando ordem (mais novo
+  primeiro).
+- `createDebouncedRefetcher` — debounce de 200ms por padrão.
+- `describeRealtimeStatus` — texto/cor únicos do indicador, reusado
+  por mesa e ficha.
+- `subscribeToCampaignRealtime`/`subscribeToCharacterRealtime`/
+  `subscribeToCampaignCharactersRealtime`/`subscribeToTableLogsRealtime`
+  — abrem o canal de verdade; devolvem cleanup; nunca lançam (client
+  ausente → `"disabled"` + cleanup no-op).
+
+Hooks (`src/lib/realtime/`, escolhido por consistência com a
+organização por domínio já usada em `lib/character`/`lib/table` — o
+repo não tinha pasta `hooks/`):
+- `useCharacterRealtime(characterId, onRefetch)` — ficha.
+- `useCampaignRealtime(campaignId, { onCampaignChange, onCharactersChange, onTableLogsChange })` — mesa (3 canais, status agregado).
+- `useTableLogsRealtime(campaignId, onRefetch)` — aba Mesa da ficha.
+
+Todas as hooks: `useRef` para a versão mais recente do callback (evita
+recriar a subscription a cada render), dedupe por evento antes de
+agendar o debounce, `mounted` guard para nunca disparar refetch após
+unmount, cleanup completo no `return` do `useEffect` (cancela debounce
++ desinscreve o canal).
+
+## 5. Como a ficha sincroniza
+
+`CharacterSheetClient.tsx`: `useCharacterRealtime(characterId, refetchCharacterFromRealtime)`
+— quando o próprio registro muda, `refetchCharacterFromRealtime` chama
+`getCharacter(characterId)` + `normalizeCharacter` (MESMA leitura de
+`handleLoad`) e substitui `character`/`characterRef` inteiros. Como
+`endCampaignRound`/`endCampaignScene` (v0.44.1/v0.45) já persistem
+PA/Reações/PV/Integridade/Mana/condições/pendências de teste/pendências
+de Marca-Traço diretamente no personagem, este único refetch já cobre
+TODOS os cenários pedidos (rodada e cena) sem precisar de uma
+assinatura separada em `campaigns` na ficha — a ficha não renderiza o
+`current_round`/`current_scene` da CAMPANHA diretamente (só o contador
+LOCAL do personagem, v0.44/v0.45), então essa assinatura extra não foi
+necessária; documentado como decisão de escopo, não pendência.
+
+A aba Mesa (`MesaTab.tsx`) ganhou `useTableLogsRealtime(campaignId, refreshLogs)`
+— INSERT novo em `table_logs` desta mesa agenda o MESMO `refreshLogs`
+que o botão "Atualizar logs" já usa.
+
+Indicador (`ficha-sync-status`, topo da ficha) + botão "Recarregar
+ficha" (fallback manual, chama o mesmo refetch) aparecem só quando há
+um personagem carregado.
+
+## 6. Como a mesa sincroniza
+
+`MesaDetailClient.tsx`: `useCampaignRealtime(campaign.id, { onCampaignChange: reloadCampaign, onCharactersChange: reloadPersonagens, onTableLogsChange: reloadLogs })`.
+- `reloadCampaign` (novo) — `getCampaign(campaign.id)` → `setCampaignState`.
+- `reloadPersonagens`/`reloadLogs` — já existiam (v0.23/v0.16), reaproveitados sem alteração.
+
+Indicador (`mesa-sync-status`, topo da página) + botão "Recarregar
+mesa" (`reloadAll` — dispara os 5 refetches da página de uma vez).
+
+## 7. Estratégia de refetch
+
+Sempre REFETCH CANÔNICO — nunca patch parcial. Cada evento só decide
+"que leitura já existente refazer" (`getCharacter`,
+`listCharactersForNarratorCampaign`, `getCampaign`, `listLogsForViewer`)
+— nenhuma leitura nova foi inventada, nenhum merge de campo foi
+implementado. Isso elimina a classe de bug "save local sobrescrito por
+patch parcial desatualizado" mencionada no pedido: o pior caso é um
+refetch a mais, nunca um estado inconsistente por merge.
+
+## 8. Estratégia de dedupe
+
+Duas camadas, testadas em `test-realtime-minimal.ts`:
+1. **Por evento** (`makeRealtimeEventKey`/`dedupeRealtimeEvent`) — um
+   `Set` por assinatura (recriado a cada nova subscription) descarta
+   eventos com a mesma chave tabela+tipo+id+`commit_timestamp` antes de
+   agendar o debounce.
+2. **Por log** (`mergeTableLogsById`) — disponível para quem quiser
+   anexar em vez de refazer a listagem inteira; não usado no fluxo
+   principal (que sempre refaz `listLogsForViewer`, já ordenado), mas
+   testado como utilitário puro para uso futuro.
+
+## 9. Cleanup/unsubscribe
+
+Cada hook devolve, no `return` do `useEffect`: `debounced.cancel()` +
+a função de unsubscribe (`client.removeChannel(channel)`). Um `mounted`
+flag local garante que nenhum refetch dispare depois do componente
+desmontar, mesmo se um timer de debounce já estivesse agendado.
+Testado indiretamente em `test-realtime-minimal.ts` (cenário 5:
+`cancel()` antes do disparo não chama o refetch).
+
+## 10. Status visual
+
+`describeRealtimeStatus(status, contexto)` — 4 estados
+(`connecting`/`subscribed`/`error`/`disabled`), texto e cor únicos:
+- Mesa: "Conectando…" / "Sincronizado" / "Erro de sincronização — use
+  recarregar" / "Realtime indisponível — use recarregar".
+- Ficha: mesmo texto de conectando/erro; "Sincronizado com a mesa" /
+  "Sem realtime".
+
+Indicador discreto (`● texto` colorido, sem modal) no topo da mesa e
+da ficha (só quando há personagem carregado).
+
+## 11. Fallback manual
+
+- Mesa: botão "Recarregar mesa" (novo, `mesa-recarregar`) — dispara
+  campanha + personagens + logs + perfis + convites de uma vez.
+- Ficha: botão "Recarregar ficha" (novo, `ficha-recarregar`) — mesmo
+  refetch usado pelo Realtime.
+- Aba Mesa da ficha: botão "Atualizar logs" já existia (v0.16),
+  preservado.
+
+Nenhuma regra depende exclusivamente de Realtime — todo o fluxo
+funciona hoje mesmo com Realtime "disabled"/"error" (ver seção 15).
+
+## 12. Logs/formatação
+
+Nenhum tipo de `table_log` novo foi criado neste checkpoint. A
+formatação de `MesaDetailClient.tsx` (`formatCampaignRoundLog`, agora
+`export`ada para ser testável) e de `MesaTab.tsx` já cobriam todos os
+tipos listados no pedido (v0.39 a v0.45) — confirmado por regressão
+automatizada (`test-realtime-minimal.ts`, cenário 7: 16 tipos
+formatados, nenhum cai no fallback JSON cru).
+
+## 13. Arquivos alterados
+
+- `src/lib/supabase/browserClient.ts` (novo).
+- `src/lib/realtime/tableRealtime.ts` (novo).
+- `src/lib/realtime/useCharacterRealtime.ts` (novo).
+- `src/lib/realtime/useCampaignRealtime.ts` (novo).
+- `src/lib/realtime/useTableLogsRealtime.ts` (novo).
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — hook +
+  indicador + botão "Recarregar ficha".
+- `src/app/dev/character-sheet/components/MesaTab.tsx` — hook +
+  indicador.
+- `src/app/mesas/[campaignId]/MesaDetailClient.tsx` — hook + indicador
+  + botão "Recarregar mesa" + `reloadCampaign` (novo) +
+  `formatCampaignRoundLog` exportada.
+- `scripts/test-realtime-minimal.ts` (novo) — 7 cenários + 1 extra.
+- `package.json` — script `test:realtime-minimal`.
+- `.env.local` — `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  adicionadas (mesmos valores de `SUPABASE_URL`/`SUPABASE_ANON_KEY`;
+  arquivo gitignored, não versionado).
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.
+
+Nenhuma migração/RLS/schema foi alterada.
+
+## 14. Testes executados
+
+- `npx tsc --noEmit -p tsconfig.json`: sem erros.
+- `npm run build`: sucesso.
+- `npm run test:realtime-minimal`: passou — 7 cenários + 1 extra
+  (nomes de canal, chave/dedupe de evento, dedupe de log, debounce em
+  rajada vs. separado, cleanup, roteamento, regressão de formatação de
+  16 tipos de log, `describeRealtimeStatus` sempre válido).
+- `npm run test:action-console`, `test:reactions`,
+  `test:end-round-conditions` (11/11), `test:campaign-end-round` (6/6),
+  `test:campaign-end-scene` (10/10), `test:integrity-fallback` (4/4),
+  `test:character-storage`, `test:content-read`: todos sem regressão.
+
+## 15. Teste manual
+
+Executado no preview:
+- `/dev/character-sheet`: após salvar um personagem novo, o indicador
+  `ficha-sync-status` mostrou "Sincronizado com a mesa" (canal
+  Realtime conectou com sucesso ao servidor da Supabase) — sem erros
+  no console.
+- `/mesas`: carrega normalmente (gate de login, sem regressão).
+
+**Limitação importante confirmada via SQL** (`pg_publication_tables`
+para `supabase_realtime`): NENHUMA tabela (`characters`, `campaigns`,
+`table_logs`) está publicada para Realtime neste projeto Supabase
+hoje. Isso significa que, embora o CLIENT conecte com sucesso ao canal
+(daí "Sincronizado" aparecer), nenhum evento `postgres_changes` chega
+de fato até essas tabelas serem adicionadas à publicação
+`supabase_realtime` — uma mudança de CONFIGURAÇÃO do projeto Supabase
+(`ALTER PUBLICATION supabase_realtime ADD TABLE ...` ou equivalente no
+painel), não uma migração de schema deste repo. Optei por NÃO
+executar isso sozinho neste checkpoint por ser uma alteração de
+infraestrutura fora do código (o pedido também instruiu "não mexer em
+... schema do banco", e habilitar publicação é adjacente a isso) —
+documentado aqui como PRÉ-REQUISITO para o Realtime funcionar de
+ponta a ponta em qualquer ambiente (local/staging/produção).
+
+Por causa disso, o smoke test completo com duas abas (cenários 1–4 do
+pedido, narrador encerrando rodada/cena e vendo refletir na ficha em
+tempo real, e vice-versa) NÃO PÔDE ser executado de ponta a ponta
+neste ambiente — nem por falta de credenciais de narrador (mesma
+limitação dos checkpoints anteriores), nem por Realtime não estar
+publicado para essas tabelas. A cobertura equivalente foi feita via
+`test-realtime-minimal.ts` (toda a lógica de roteamento/dedupe/
+debounce/cleanup) e pelos testes de ponta a ponta já existentes
+(`test-campaign-end-round`/`test-campaign-end-scene`, que provam que o
+REFETCH, quando disparado, mostra o estado correto — só falta o
+"disparo automático" real, que depende da publicação habilitada).
+
+## 16. Limitações
+
+- Realtime não está habilitado (publicado) para `characters`/
+  `campaigns`/`table_logs` neste projeto Supabase — precisa ser
+  habilitado manualmente (painel Supabase ou SQL de configuração, fora
+  deste repo) antes que os eventos cheguem de verdade. Ver seção 15.
+- Sem esse passo, o app continua funcionando exatamente como antes
+  (fallback manual via botões "Recarregar mesa"/"Recarregar ficha"/
+  "Atualizar logs") — nenhuma regra ficou dependente de Realtime.
+- Filtro de `characters` por `campaign_id` na mesa assume que a coluna
+  é filtrável por `postgres_changes` (é — UUID simples, não JSONB);
+  não testado contra Realtime real por causa da limitação acima.
+- Sem resolução de conflito/merge — dois clientes editando o mesmo
+  personagem ao mesmo tempo, o último refetch "ganha" (mesmo
+  comportamento de sempre, Realtime só acelera quando o outro lado vê
+  a mudança).
+- Sem teste manual de duas abas de ponta a ponta (ver seção 15).
+
+## 17. Pendências futuras
+
+- Habilitar a publicação `supabase_realtime` para `characters`/
+  `campaigns`/`table_logs` (configuração de infraestrutura, fora deste
+  checkpoint).
+- Realtime mais granular por campo.
+- Merge/conflict resolution.
+- Presença visual avançada (quem está editando).
+- Indicadores de usuário editando em tempo real.
+- Transações/RPC mais robustas para o processamento de rodada/cena
+  (já documentado como pendência desde v0.44.1/v0.45).
+- Atualização offline.
+- Retry/backoff elaborado na reconexão do canal.
+- Assinatura de tabelas futuras (inventário, magia, combate completo).

@@ -85,6 +85,8 @@ import {
 } from "../../../lib/table/storage";
 import { PROFILE_HEARTBEAT_INTERVAL_MS } from "../../../lib/table";
 import type { Campaign, CampaignProfile } from "../../../lib/table";
+import { useCharacterRealtime } from "../../../lib/realtime/useCharacterRealtime";
+import { describeRealtimeStatus } from "../../../lib/realtime/tableRealtime";
 import {
   getOrCreateBrowserSessionId,
   readProfileSessionToken,
@@ -653,6 +655,36 @@ export default function CharacterSheetClient({
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao carregar.");
     }
   }
+
+  /**
+   * Refetch canônico do PRÓPRIO personagem, disparado por Realtime
+   * (checkpoint v0.46) — mesma leitura de `handleLoad` (`getCharacter`
+   * + `normalizeCharacter`), nunca patch parcial. Cobre os cenários
+   * pedidos: a mesa encerra rodada/cena (v0.44.1/v0.45) e persiste
+   * PA/Reações/PV/Integridade/Mana/pendências direto no personagem —
+   * este refetch é só o que traz isso para a ficha sem reload manual.
+   * Não decide regra nenhuma; não roda se não houver personagem
+   * carregado ainda (`characterId` nulo).
+   */
+  async function refetchCharacterFromRealtime() {
+    if (!characterId) return;
+    try {
+      const record = await getCharacter(characterId);
+      if (!record) return;
+      const next = normalizeCharacter(record.payload);
+      characterRef.current = next;
+      setCharacter(next);
+    } catch {
+      // Best-effort — Realtime é só conveniência; reload manual continua funcionando.
+    }
+  }
+
+  // Checkpoint v0.46 — Realtime mínimo: assina o próprio `characterId`
+  // em `characters` e refaz a leitura canônica quando o registro muda
+  // (ex.: a mesa processou "Encerrar Rodada"/"Encerrar Cena"). Se
+  // Realtime não estiver disponível, `characterSyncStatus` vira
+  // "disabled"/"error" e a ficha continua funcionando só com reload.
+  const characterSyncStatus = useCharacterRealtime(characterId, refetchCharacterFromRealtime);
 
   async function handleDelete(id: string) {
     setErrorMessage(null);
@@ -1857,6 +1889,16 @@ export default function CharacterSheetClient({
           ? '/dev/character-sheet — ficha mínima (dev). Edição é local até clicar em "Salvar personagem".'
           : 'Ficha. Edição é local até clicar em "Salvar personagem".'}
       </p>
+      {characterId && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+          <span data-testid="ficha-sync-status" style={{ fontSize: 11, color: describeRealtimeStatus(characterSyncStatus, "ficha").cor }}>
+            ● {describeRealtimeStatus(characterSyncStatus, "ficha").texto}
+          </span>
+          <button data-testid="ficha-recarregar" onClick={refetchCharacterFromRealtime} style={{ ...buttonStyle, padding: "3px 10px", fontSize: 11 }}>
+            Recarregar ficha
+          </button>
+        </div>
+      )}
       {usandoFallback && (
         <p style={{ color: "#f5a623", fontSize: 13, marginBottom: 16 }}>
           ⚠ regras_personagem não veio do banco — usando fórmulas de fallback temporárias.

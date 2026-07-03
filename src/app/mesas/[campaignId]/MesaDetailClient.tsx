@@ -14,12 +14,15 @@ import {
   listLogsForViewer,
   addLog,
   expireStaleProfileSessions,
+  getCampaign,
 } from "../../../lib/table/storage";
 import { endCampaignRound } from "../../../lib/table/endRound";
 import { buildCampaignEndRoundSummary } from "../../../lib/table/endRoundSummary";
 import { endCampaignScene } from "../../../lib/table/endScene";
 import { buildCampaignEndSceneSummary } from "../../../lib/table/endSceneSummary";
 import { computeProfileStatus } from "../../../lib/table/profileStatus";
+import { useCampaignRealtime } from "../../../lib/realtime/useCampaignRealtime";
+import { describeRealtimeStatus, type RealtimeStatus } from "../../../lib/realtime/tableRealtime";
 import {
   listCharactersForNarratorCampaign,
   listUnassignedCharactersForNarrator,
@@ -41,7 +44,7 @@ import type { CharacterRecord } from "../../../lib/character";
  * do dashboard — nunca JSON cru. Tipos não cobertos aqui caem no
  * fallback genérico já existente (text/mensagem/total/evento).
  */
-function formatCampaignRoundLog(type: string, payload: Record<string, unknown>): string | null {
+export function formatCampaignRoundLog(type: string, payload: Record<string, unknown>): string | null {
   const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
   if (type === "round_ended") {
     const prev = typeof payload.previousRound === "number" ? payload.previousRound : "?";
@@ -197,6 +200,28 @@ export default function MesaDetailClient({
       setPersonagensDisponiveis(await listUnassignedCharactersForNarrator());
     } catch (e) { fail(e, "Erro ao recarregar personagens."); }
   }
+  /** Checkpoint v0.46 — refetch canônico da campanha (current_round/current_scene), disparado por Realtime. */
+  async function reloadCampaign() {
+    try {
+      const updated = await getCampaign(campaign.id);
+      if (updated) setCampaignState(updated);
+    } catch (e) { fail(e, "Erro ao recarregar mesa."); }
+  }
+  /** Botão "Recarregar mesa" (checkpoint v0.46) — fallback manual se Realtime estiver indisponível/com erro. */
+  async function reloadAll() {
+    await Promise.all([reloadCampaign(), reloadPersonagens(), reloadLogs(), reloadPerfis(), reloadConvites()]);
+  }
+
+  // Checkpoint v0.46 — Realtime mínimo: assina campaigns/characters/
+  // table_logs desta mesa e refaz a leitura canônica quando algo muda
+  // (nunca aplica patch parcial). Se Realtime não estiver disponível,
+  // `syncStatus` vira "disabled"/"error" e a mesa continua funcionando
+  // só com os botões de recarregar já existentes.
+  const syncStatus: RealtimeStatus = useCampaignRealtime(campaign.id, {
+    onCampaignChange: reloadCampaign,
+    onCharactersChange: reloadPersonagens,
+    onTableLogsChange: reloadLogs,
+  });
 
   /**
    * Botão "Encerrar Rodada" CANÔNICO da mesa (checkpoint v0.44.1) —
@@ -412,7 +437,16 @@ export default function MesaDetailClient({
     <main style={{ maxWidth: 760, margin: "0 auto", padding: "32px 20px 80px" }}>
       <Link href="/mesas" style={{ color: "#5ec8ff", fontSize: 12 }}>← Minhas mesas</Link>
       <h1 style={{ fontSize: 22, margin: "8px 0 4px" }}>{campaign.name}</h1>
-      <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 24, fontFamily: "monospace" }}>{campaign.id}</p>
+      <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 8, fontFamily: "monospace" }}>{campaign.id}</p>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
+        <span data-testid="mesa-sync-status" style={{ fontSize: 11, color: describeRealtimeStatus(syncStatus, "mesa").cor }}>
+          ● {describeRealtimeStatus(syncStatus, "mesa").texto}
+        </span>
+        <button data-testid="mesa-recarregar" onClick={reloadAll} style={{ ...btn, padding: "3px 10px", fontSize: 11 }}>
+          Recarregar mesa
+        </button>
+      </div>
 
       {error && <p style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 16 }}>Erro: {error}</p>}
 
