@@ -19,6 +19,7 @@
     "test:campaign-end-scene": "tsx scripts/test-campaign-end-scene.ts",
     "test:integrity-fallback": "tsx scripts/test-integrity-fallback.ts",
     "test:realtime-minimal": "tsx scripts/test-realtime-minimal.ts",
+    "test:realtime-publication": "tsx scripts/test-realtime-publication.ts",
     "test:character-storage": "tsx scripts/test-character-storage.ts"
   },
   "dependencies": {

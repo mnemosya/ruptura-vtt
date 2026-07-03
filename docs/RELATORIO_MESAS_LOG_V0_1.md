@@ -8801,3 +8801,116 @@ REFETCH, quando disparado, mostra o estado correto — só falta o
 - Atualização offline.
 - Retry/backoff elaborado na reconexão do canal.
 - Assinatura de tabelas futuras (inventário, magia, combate completo).
+
+# Checkpoint v0.46.1 — Habilitar e verificar Realtime no Supabase
+
+## 1. Commit base
+
+`6fcc239 feat: add minimal realtime sync` (v0.46) — a infraestrutura de
+client/hooks não foi alterada; este checkpoint só resolve a lacuna de
+configuração do projeto Supabase identificada no próprio relatório do
+v0.46 (nenhuma tabela publicada em `supabase_realtime`).
+
+## 2. O que foi feito
+
+**Migration** `supabase/migrations/0018_realtime_publication.sql` —
+adiciona `public.characters`, `public.campaigns`, `public.table_logs`
+à publicação `supabase_realtime`, dentro de um bloco `DO` que checa
+`pg_publication_tables` antes de cada `ALTER PUBLICATION ... ADD TABLE`
+(essa cláusula não aceita `IF NOT EXISTS` diretamente — só
+`CREATE PUBLICATION ... FOR TABLE` aceita). Idempotente: rodar de novo,
+ou contra um banco onde alguma tabela já foi adicionada manualmente
+pelo painel, não falha nem duplica. Aplicada com sucesso via MCP
+(`apply_migration`) e confirmada por `pg_publication_tables`:
+
+```
+public.campaigns
+public.characters
+public.table_logs
+```
+
+Não tocou RLS, auth, nem schema de tabelas — só a lista de tabelas
+replicadas via WAL para o Realtime, que é ortogonal a RLS (as policies
+continuam controlando o que cada client PODE ler; a publicação só
+decide que MUDANÇAS são replicadas aos assinantes autorizados).
+
+**Script de verificação** `scripts/test-realtime-publication.ts`
+(`npm run test:realtime-publication`) — conecta direto no Postgres
+(`pg` + `SUPABASE_DB_URL`, mesmo padrão de `apply-migration.ts`, já que
+`pg_publication_tables` é catálogo de sistema, não exposto via
+PostgREST) e falha com mensagem clara se qualquer uma das 3 tabelas
+estiver ausente da publicação.
+
+## 3. Testes executados
+
+- `npm run build`: sucesso.
+- `npm run test:realtime-minimal`: passou — 7 cenários + 1 extra (sem
+  regressão v0.46).
+- `npm run test:realtime-publication`: passou — as 3 tabelas
+  confirmadas publicadas.
+- `npm run test:character-storage`: passou.
+- `npm run test:content-read`: passou.
+
+## 4. Teste manual
+
+Confirmado no preview: ao carregar um personagem salvo em
+`/dev/character-sheet`, o indicador `ficha-sync-status` mostra
+"Sincronizado com a mesa" (canal conecta e assina com sucesso).
+
+**Smoke de duas abas completo (mesa + ficha, narrador encerrando
+rodada/cena) não foi executado** pelas mesmas duas limitações já
+documentadas em checkpoints anteriores (sem credenciais de narrador
+neste ambiente) — e, adicionalmente, uma tentativa de simular o evento
+via `UPDATE` direto por SQL num personagem já existente (para observar
+o refetch automático sem precisar de uma segunda aba autenticada) foi
+BLOQUEADA pelo classificador de segurança do ambiente ("Modify Shared
+Resources" — mutação direta de um registro pré-existente fora do fluxo
+normal do app, sem autorização explícita do usuário para esse registro
+específico). Respeitei o bloqueio e não tentei contornar.
+
+## 5. Se o evento não chegar mesmo com a publicação correta
+
+Não investigado neste checkpoint (não foi possível reproduzir um
+evento real para diagnosticar) — documentado como bloqueio provável,
+não uma correção implementada:
+- **RLS de `postgres_changes`**: o Realtime da Supabase respeita RLS
+  no papel `authenticated`/`anon` de quem assina — se uma policy de
+  SELECT não cobrir o filtro usado no canal (`id=eq.`/`campaign_id=eq.`),
+  o evento pode chegar filtrado/vazio mesmo com a tabela publicada.
+  `characters`/`campaigns`/`table_logs` usam as policies
+  `*_dev_transition_select`/`*_dev_anon_*` (abertas a anon+authenticated,
+  auditadas em checkpoints anteriores) — não deveriam bloquear, mas não
+  foi possível confirmar isso com um evento real.
+- **Replica identity**: tabelas sem chave primária simples ou com
+  `REPLICA IDENTITY` não padrão podem não enviar o `old` record
+  completo em UPDATE/DELETE — não verificado aqui (todas as 3 tabelas
+  usam `id uuid primary key`, então a replica identity padrão já cobre
+  o necessário para os filtros usados).
+- Por instrução explícita deste checkpoint, RLS não foi alterado para
+  investigar isso — fica documentado como próximo passo se o smoke
+  real (quando houver narrador logado) mostrar eventos não chegando.
+
+## 6. Arquivos alterados
+
+- `supabase/migrations/0018_realtime_publication.sql` (novo).
+- `scripts/test-realtime-publication.ts` (novo).
+- `package.json` — script `test:realtime-publication`.
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.
+
+## 7. Limitações
+
+- Smoke de duas abas de ponta a ponta ainda não executado (falta de
+  credenciais de narrador + bloqueio de segurança para simular eventos
+  via SQL direto).
+- Se RLS bloquear `postgres_changes` na prática, isso só será
+  descoberto no primeiro teste real com narrador logado — não
+  investigado preventivamente aqui (fora de escopo, "não mexer em RLS
+  neste checkpoint").
+
+## 8. Pendências futuras
+
+- Smoke test de duas abas com narrador logado.
+- Diagnosticar e, se necessário, ajustar RLS de `postgres_changes` em
+  checkpoint dedicado, caso o smoke real mostre eventos não chegando.
+- Demais pendências já listadas no v0.46 (merge/conflict, presença
+  avançada, RPC/transação robusta, etc.) continuam válidas.
