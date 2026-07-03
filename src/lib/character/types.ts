@@ -342,6 +342,18 @@ export interface Character {
    * nenhuma vertente conhecida ainda.
    */
   vertentes_conhecidas?: string[];
+  /**
+   * Magias aprendidas individualmente (checkpoint v0.50.1) — conhecer
+   * a vertente só define quais magias aparecem para aprender; cada
+   * magia precisa ser aprendida separadamente para poder ser
+   * conjurada (mesmo padrão de `talentos_adquiridos`, v0.48). Ausente
+   * = nenhuma magia aprendida ainda.
+   */
+  magias_aprendidas?: {
+    id: string;
+    spellSlug: string;
+    aprendidaEm: string;
+  }[];
 }
 
 /**

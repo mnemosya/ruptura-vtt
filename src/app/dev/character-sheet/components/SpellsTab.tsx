@@ -3,37 +3,44 @@
 import { useState } from "react";
 import { Section } from "./Section";
 import { buttonStyle } from "./styles";
-import { getSpellDamageEffect, getSpellResistanceEffect, type SpellContent } from "../../../../lib/character";
+import { getSpellDamageEffect, getSpellResistanceEffect, isSpellLearned, type SpellContent, type LearnedSpell } from "../../../../lib/character";
 
 const input: React.CSSProperties = { background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "6px 8px", fontSize: 13 };
 
 const VERTENTES_CONHECIDAS = ["cinetica", "cognitiva", "energetica", "material", "sinaptica", "somatica"] as const;
 
 /**
- * Aba "Magias" — checkpoint v0.50 (PRD 11.4). Catálogo inteiro vem da
- * Biblioteca (`spells` prop) — só as vertentes CONHECIDAS aparecem em
- * Modo Jogo (`sheetMode==="jogo"`); em Modo Evolução, o jogador também
- * pode adicionar/remover vertentes conhecidas. "Conjurar" desconta PA/
- * Mana; magias com dano ganham atalho de rolagem; magias com
- * resistência mostram a CD como texto (sem resolver o alvo — sem alvo
- * estruturado, mesmo critério do ataque contestado, v0.47).
+ * Aba "Magias" — checkpoint v0.50/v0.50.1 (PRD 11.4). Catálogo inteiro
+ * vem da Biblioteca (`spells` prop) — vertente conhecida (Modo
+ * Evolução) só decide QUAIS magias aparecem para aprender; cada magia
+ * precisa ser aprendida INDIVIDUALMENTE (mesmo padrão de Talentos,
+ * v0.48) antes de poder ser conjurada. Em Modo Jogo, só magias já
+ * aprendidas aparecem com "Conjurar"/"Rolar dano"; em Modo Evolução,
+ * todas as magias das vertentes conhecidas aparecem com
+ * "Aprender"/"Esquecer".
  */
 export function SpellsTab({
   spells,
   catalogError,
   vertentesConhecidas,
+  magiasAprendidas,
   sheetMode,
   onAddVertente,
   onRemoveVertente,
+  onLearn,
+  onForget,
   onCast,
   onRollDamage,
 }: {
   spells: SpellContent[];
   catalogError: string | null;
   vertentesConhecidas: string[];
+  magiasAprendidas: LearnedSpell[];
   sheetMode: "jogo" | "evolucao";
   onAddVertente: (vertente: string) => void;
   onRemoveVertente: (vertente: string) => void;
+  onLearn: (slug: string) => void;
+  onForget: (learnedId: string) => void;
   onCast: (slug: string) => void;
   onRollDamage: (slug: string) => void;
 }) {
@@ -50,8 +57,8 @@ export function SpellsTab({
       {sheetMode === "evolucao" && (
         <Section title="Vertentes conhecidas (Modo Evolução)">
           <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 10 }}>
-            Adicionar/remover vertente aqui — em Modo Jogo, a aba mostra só as magias das vertentes
-            já conhecidas.
+            Conhecer a vertente só libera as magias dela para aprender abaixo — ainda não conjura
+            nada sozinho.
           </p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {VERTENTES_CONHECIDAS.map((v) => {
@@ -75,10 +82,11 @@ export function SpellsTab({
         </Section>
       )}
 
-      <Section title={`Magias (${vertentesConhecidas.length} vertente(s) conhecida(s))`}>
+      <Section title={`Magias (${magiasAprendidas.length} aprendida(s))`}>
         <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 10 }}>
-          Catálogo inteiro vem da Biblioteca do Sistema (132 magias, 6 vertentes). Custo de Mana
-          pode ser placeholder (PRD 11.4) — quando ausente, "Conjurar" só desconta PA e avisa.
+          Catálogo inteiro vem da Biblioteca do Sistema (132 magias, 6 vertentes). Cada magia
+          precisa ser aprendida individualmente (Modo Evolução) antes de poder ser conjurada — só
+          conhecer a vertente não é suficiente. Custo de Mana pode ser placeholder (PRD 11.4).
         </p>
         {catalogError && (
           <p style={{ fontSize: 13, color: "#ff6b6b", background: "#2a1717", borderRadius: 8, padding: "10px 12px" }}>
@@ -92,6 +100,7 @@ export function SpellsTab({
           vertentesVisiveis.map((vertente) => {
             const magiasDaVertente = publicadas
               .filter((m) => m.vertente === vertente)
+              .filter((m) => sheetMode === "evolucao" || isSpellLearned({ magias_aprendidas: magiasAprendidas }, m.slug))
               .sort((a, b) => a.estatisticas.nivel - b.estatisticas.nivel);
             if (magiasDaVertente.length === 0) return null;
             return (
@@ -102,8 +111,13 @@ export function SpellsTab({
                     const dano = getSpellDamageEffect(spell);
                     const resistencia = getSpellResistanceEffect(spell);
                     const aberto = expandido[spell.slug] ?? false;
+                    const aprendida = magiasAprendidas.find((m) => m.spellSlug === spell.slug);
                     return (
-                      <div key={spell.id} data-testid={`magia-${spell.slug}`} style={{ background: "#1d1e24", borderRadius: 8, padding: "10px 12px", fontSize: 12 }}>
+                      <div
+                        key={spell.id}
+                        data-testid={`magia-${spell.slug}`}
+                        style={{ background: "#1d1e24", borderRadius: 8, padding: "10px 12px", fontSize: 12, borderLeft: aprendida ? "3px solid #4caf50" : "3px solid #555" }}
+                      >
                         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                           <button
                             data-testid={`magia-expandir-${spell.slug}`}
@@ -116,6 +130,7 @@ export function SpellsTab({
                             {spell.estatisticas.custo_pa} PA · Mana{" "}
                             {spell.estatisticas.custo_mana != null ? spell.estatisticas.custo_mana : "(placeholder)"}
                           </span>
+                          {aprendida && <span style={{ color: "#4caf50", fontSize: 11 }}>aprendida</span>}
                         </div>
                         {spell.descricao_curta && <p style={{ opacity: 0.7, margin: "4px 0" }}>{spell.descricao_curta}</p>}
                         {aberto && spell.descricao_longa && (
@@ -129,13 +144,27 @@ export function SpellsTab({
                           </p>
                         )}
                         <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-                          <button data-testid={`magia-conjurar-${spell.slug}`} onClick={() => onCast(spell.slug)} style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px" }}>
-                            Conjurar
-                          </button>
-                          {dano && (
-                            <button data-testid={`magia-rolar-dano-${spell.slug}`} onClick={() => onRollDamage(spell.slug)} style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px" }}>
-                              Rolar dano ({dano.dado})
-                            </button>
+                          {sheetMode === "evolucao" ? (
+                            aprendida ? (
+                              <button data-testid={`magia-esquecer-${spell.slug}`} onClick={() => onForget(aprendida.id)} style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px" }}>
+                                Esquecer
+                              </button>
+                            ) : (
+                              <button data-testid={`magia-aprender-${spell.slug}`} onClick={() => onLearn(spell.slug)} style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px" }}>
+                                Aprender
+                              </button>
+                            )
+                          ) : (
+                            <>
+                              <button data-testid={`magia-conjurar-${spell.slug}`} onClick={() => onCast(spell.slug)} style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px" }}>
+                                Conjurar
+                              </button>
+                              {dano && (
+                                <button data-testid={`magia-rolar-dano-${spell.slug}`} onClick={() => onRollDamage(spell.slug)} style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px" }}>
+                                  Rolar dano ({dano.dado})
+                                </button>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>

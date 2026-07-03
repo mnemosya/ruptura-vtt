@@ -171,6 +171,38 @@ export function removeKnownVertente(character: Character, vertente: string): Cha
 }
 
 // ---------------------------------------------------------------------
+// Magias aprendidas — checkpoint v0.50.1. Conhecer a vertente só define
+// QUAIS magias aparecem para aprender (filtro de exibição, PRD 11.4);
+// aprender é por magia individual, mesmo padrão de
+// `acquireTalentLevel`/`removeTalentLevel` (v0.48) — idempotente, um
+// item por magia aprendida.
+// ---------------------------------------------------------------------
+
+export interface LearnedSpell {
+  id: string;
+  spellSlug: string;
+  aprendidaEm: string;
+}
+
+export function learnSpell(character: Character, spellSlug: string, nowIso: string): Character {
+  const atuais = character.magias_aprendidas ?? [];
+  if (atuais.some((m) => m.spellSlug === spellSlug)) return character;
+  const nova: LearnedSpell = { id: crypto.randomUUID(), spellSlug, aprendidaEm: nowIso };
+  return { ...character, magias_aprendidas: [...atuais, nova] };
+}
+
+export function forgetSpell(character: Character, learnedId: string): Character {
+  const atuais = character.magias_aprendidas ?? [];
+  const next = atuais.filter((m) => m.id !== learnedId);
+  if (next.length === atuais.length) return character;
+  return { ...character, magias_aprendidas: next };
+}
+
+export function isSpellLearned(character: Pick<Character, "magias_aprendidas">, spellSlug: string): boolean {
+  return (character.magias_aprendidas ?? []).some((m) => m.spellSlug === spellSlug);
+}
+
+// ---------------------------------------------------------------------
 // Conjurar — desconta PA/Mana, nunca inventa custo_mana ausente.
 // ---------------------------------------------------------------------
 

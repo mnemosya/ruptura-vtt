@@ -9378,3 +9378,81 @@ custo de Mana ainda não definido (placeholder)". Sem erros no console.
   rastreado).
 - Fechar os valores reais de `custo_mana` quando o PRD/Biblioteca
   definir.
+
+# Checkpoint v0.50.1 — Aprendizado de magia individual
+
+## 1. Commit base
+
+`f74c1eb feat: add data-driven spell casting by known vertentes` (v0.50).
+
+## 2. Por que este checkpoint existe
+
+Feedback do usuário após o v0.50: não havia como "aprender" uma magia
+individualmente — conhecer a vertente (Modo Evolução) já liberava
+TODAS as magias dela para conjurar direto. O usuário pediu
+explicitamente aprendizado por magia, não por vertente inteira (opção
+escolhida via pergunta de esclarecimento, com 2 alternativas
+oferecidas).
+
+## 3. Mudança de desenho
+
+Conhecer a vertente (`vertentes_conhecidas`, v0.50) passa a significar
+SÓ "quais magias aparecem para aprender" — nunca mais habilita
+conjuração sozinho. Nova camada: `Character.magias_aprendidas` (um
+item por magia, mesmo padrão de `talentos_adquiridos`, v0.48) —
+"Conjurar"/"Rolar dano" só aparecem para magias já aprendidas
+individualmente.
+
+Em Modo Evolução: cada magia de uma vertente conhecida mostra
+"Aprender"/"Esquecer". Em Modo Jogo: só magias JÁ APRENDIDAS aparecem,
+com "Conjurar"/"Rolar dano" completos — magias não aprendidas ficam
+totalmente ocultas (não há como um jogador ver spoiler de magia que
+não tem).
+
+## 4. Módulo (`src/lib/character/spells.ts`)
+
+- `learnSpell(character, spellSlug, nowIso)` — idempotente, um item
+  por magia.
+- `forgetSpell(character, learnedId)`.
+- `isSpellLearned(character, spellSlug)`.
+- `castSpell` continua igual (não decide aprendizado) — o guard "só
+  conjura o que já aprendeu" fica no handler
+  (`handleCastSpell`/`CharacterSheetClient.tsx`), não no módulo puro
+  (mantém `castSpell` reutilizável para outros contextos futuros, ex.:
+  NPCs sem o conceito de "aprender").
+
+## 5. Testes executados
+
+- `npx tsc --noEmit -p tsconfig.json`: sem erros.
+- `npm run test:spells`: passou — 10 cenários (os 7 do v0.50 + 3
+  novos: aprender magia individual idempotente; conhecer a vertente
+  NÃO ensina a magia sozinho; esquecer remove a entrada).
+- Toda a suíte anterior (12 scripts): sem regressão.
+
+## 6. Teste manual
+
+Confirmado no preview: Modo Evolução → ativar vertente "cinetica" →
+botão "Aprender" em cada magia da vertente → cliquei em "Controle" →
+badge "aprendida" + botão vira "Esquecer". Voltei para Modo Jogo — só
+"Controle" aparece na aba Magias (as outras magias da vertente,
+conhecida mas não aprendidas, ficam ocultas). Sem erros no console.
+
+## 7. Arquivos alterados
+
+- `src/lib/character/spells.ts` — `learnSpell`/`forgetSpell`/`isSpellLearned`.
+- `src/lib/character/types.ts` — `Character.magias_aprendidas`.
+- `src/lib/character/normalizeCharacter.ts` — default retrocompatível.
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — handlers
+  `handleLearnSpell`/`handleForgetSpell`, guard em `handleCastSpell`.
+- `src/app/dev/character-sheet/components/SpellsTab.tsx` — UI
+  Aprender/Esquecer (Modo Evolução) vs. Conjurar/Rolar dano (Modo
+  Jogo, só magias aprendidas).
+- `scripts/test-spells.ts` — 3 cenários novos.
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.
+
+## 8. Limitações
+
+- Sem custo de PM/pré-requisito para aprender uma magia (aprender é
+  livre, sem gasto de recurso) — mesmo critério pragmático de
+  `acquireTalentLevel` (v0.48), que também não valida custo/requisito.
+- Sem limite de magias conhecidas por nível/vertente.

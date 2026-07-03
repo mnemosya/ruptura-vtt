@@ -198,6 +198,11 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     ? (raw.vertentes_conhecidas as string[])
     : [];
 
+  // magias_aprendidas (checkpoint v0.50.1): mesmo critério — ausência vira [], nunca undefined.
+  const magias_aprendidas: Character["magias_aprendidas"] = Array.isArray(raw.magias_aprendidas)
+    ? (raw.magias_aprendidas as Character["magias_aprendidas"])
+    : [];
+
   return {
     ...raw,
     nome,
@@ -223,5 +228,6 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     carteira,
     inventario,
     vertentes_conhecidas,
+    magias_aprendidas,
   } as Character;
 }

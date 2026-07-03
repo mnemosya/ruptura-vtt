@@ -14,6 +14,9 @@ import {
   getSpellResistanceEffect,
   addKnownVertente,
   removeKnownVertente,
+  learnSpell,
+  forgetSpell,
+  isSpellLearned,
   createInitialCharacter,
   type SpellContent,
 } from "../src/lib/character";
@@ -116,5 +119,32 @@ const semDano = spells.find((s) => getSpellDamageEffect(s) === null);
 assert.ok(semDano, "Deve haver pelo menos uma magia sem efeito de dano no DB real.");
 assert.equal(rollSpellDamage(semDano!), null);
 console.log("7. Magia sem efeito de dano não gera atalho de rolagem — OK");
+
+// -------------------------------------------------------------
+// 8. Aprender magia individual — idempotente (checkpoint v0.50.1).
+// -------------------------------------------------------------
+assert.equal(isSpellLearned(personagem, controle!.slug), false, "Personagem novo não aprendeu nenhuma magia.");
+const comControleAprendido = learnSpell(personagem, controle!.slug, "2026-07-03T10:00:00.000Z");
+assert.equal(isSpellLearned(comControleAprendido, controle!.slug), true);
+assert.equal(comControleAprendido.magias_aprendidas?.length, 1);
+const duplicadoAprendizado = learnSpell(comControleAprendido, controle!.slug, "2026-07-03T10:05:00.000Z");
+assert.equal(duplicadoAprendizado, comControleAprendido, "Aprender a mesma magia de novo não deve mudar o personagem.");
+console.log("8. Aprender magia individual (idempotente) — OK");
+
+// -------------------------------------------------------------
+// 9. Conhecer a vertente NÃO ensina a magia sozinho — precisa aprender separadamente.
+// -------------------------------------------------------------
+const soComVertente = addKnownVertente(personagem, "cinetica");
+assert.equal(isSpellLearned(soComVertente, controle!.slug), false, "Conhecer a vertente não aprende as magias dela automaticamente.");
+console.log("9. Conhecer a vertente não ensina magia sozinho (precisa aprender individualmente) — OK");
+
+// -------------------------------------------------------------
+// 10. Esquecer magia remove a entrada.
+// -------------------------------------------------------------
+const learnedId = comControleAprendido.magias_aprendidas![0].id;
+const semControle = forgetSpell(comControleAprendido, learnedId);
+assert.equal(isSpellLearned(semControle, controle!.slug), false);
+assert.equal(semControle.magias_aprendidas?.length, 0);
+console.log("10. Esquecer magia remove a entrada — OK");
 
 console.log("\ntest-spells — todos os cenários passaram.");

@@ -62,6 +62,9 @@ import {
   castSpell,
   rollSpellDamage,
   getSpellDamageEffect,
+  learnSpell,
+  forgetSpell,
+  isSpellLearned,
 } from "../../../lib/character";
 import {
   createCharacter,
@@ -1721,15 +1724,47 @@ export default function CharacterSheetClient({
   }
 
   /**
+   * Aprender/esquecer magia individual (aba Magias, checkpoint
+   * v0.50.1) — conhecer a vertente (Modo Evolução) só decide quais
+   * magias aparecem para aprender; cada uma precisa ser aprendida
+   * separadamente antes de poder ser conjurada (mesmo padrão de
+   * Talentos, v0.48).
+   */
+  function handleLearnSpell(slug: string) {
+    const current = characterRef.current;
+    const next = learnSpell(current, slug, new Date().toISOString());
+    if (next === current) return;
+    characterRef.current = next;
+    setCharacter(next);
+    const spell = spellsIniciais.find((s) => s.slug === slug);
+    addLogEntry("condicao", `Magia aprendida: ${spell?.nome ?? slug}.`);
+  }
+
+  function handleForgetSpell(learnedId: string) {
+    const current = characterRef.current;
+    const next = forgetSpell(current, learnedId);
+    if (next === current) return;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", "Magia esquecida.");
+  }
+
+  /**
    * Conjurar magia (aba Magias, checkpoint v0.50) — desconta PA/Mana
    * (`castSpell`, `lib/character/spells.ts`); registra o resumo no log
    * local (PRD 11.4 "resumo delas aparece no log/chat"). Sem PA/Mana
-   * suficiente, não muda nada e só avisa.
+   * suficiente, não muda nada e só avisa. Exige que a magia já tenha
+   * sido aprendida (checkpoint v0.50.1) — nunca conjura o que o
+   * personagem não aprendeu, mesmo que a vertente seja conhecida.
    */
   function handleCastSpell(slug: string) {
     const current = characterRef.current;
     const spell = spellsIniciais.find((s) => s.slug === slug);
     if (!spell) return;
+    if (!isSpellLearned(current, slug)) {
+      addLogEntry("recurso", `${spell.nome} ainda não foi aprendida.`);
+      return;
+    }
     const result = castSpell({ character: current, spell, paMax: derivados.pa_max, manaMax: derivados.mana_max });
     if (!result.ok) {
       addLogEntry("recurso", result.reason ?? "Conjuração não realizada.");
@@ -2251,9 +2286,12 @@ export default function CharacterSheetClient({
           spells={spellsIniciais}
           catalogError={spellsError}
           vertentesConhecidas={character.vertentes_conhecidas ?? []}
+          magiasAprendidas={character.magias_aprendidas ?? []}
           sheetMode={sheetMode}
           onAddVertente={handleAddVertente}
           onRemoveVertente={handleRemoveVertente}
+          onLearn={handleLearnSpell}
+          onForget={handleForgetSpell}
           onCast={handleCastSpell}
           onRollDamage={handleRollSpellDamage}
         />
