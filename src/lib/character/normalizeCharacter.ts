@@ -176,6 +176,11 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     ? (raw.historico_ruptura as RuptureResolvedEntry[])
     : [];
 
+  // talentos_adquiridos (checkpoint v0.48): mesmo critério — ausência vira [], nunca undefined.
+  const talentos_adquiridos: Character["talentos_adquiridos"] = Array.isArray(raw.talentos_adquiridos)
+    ? (raw.talentos_adquiridos as Character["talentos_adquiridos"])
+    : [];
+
   return {
     ...raw,
     nome,
@@ -197,5 +202,6 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     pending_rupture_choices,
     ultima_vontade_pendente,
     historico_ruptura,
+    talentos_adquiridos,
   } as Character;
 }

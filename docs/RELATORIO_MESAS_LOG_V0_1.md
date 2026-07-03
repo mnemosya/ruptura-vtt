@@ -9026,3 +9026,118 @@ em vez de "não automatizado" genérico.
 - Região do corpo e propriedades críticas.
 - Aplicação de condição por propriedade de arma/magia/item (PRD 8.8).
 - Cobertura/terreno/modificadores ambientais.
+
+# Checkpoint v0.48 — Talentos: automação por padrão
+
+## 1. Commit base
+
+`c1945ad feat: resolve basic contested attacks with direct damage` (v0.47).
+
+## 2. Objetivo e escopo
+
+PRD 12: 22 talentos publicados, ~60 níveis, 14 "padrões reutilizáveis"
+de automação. Catálogo inteiro consumido de `content_documents`
+(content_type="talent", `listTalents()`, já existente desde antes
+deste checkpoint) — nunca lista manual. Escopo deliberadamente
+pequeno: só o padrão **"+X em testes específicos"** foi automatizado
+(o único mapeável 1:1 no sistema de `ActiveEffect` já existente desde
+v0.33/v0.43). Os outros 13 padrões (promoção de margem, piso/override,
+dado extra com gatilho, buff empilhável, reação grátis, redução de PA,
+aplicar condição em margem menor, contadores por cadência, companheiro,
+trama, economia/loja, runas, troca de atributo) NÃO foram automatizados
+— são narrativamente variados demais para uma regra genérica segura,
+documentados como pendência (mesmo critério de "não inventar regra"
+seguido em todos os checkpoints anteriores).
+
+## 3. Achado de auditoria do DB real
+
+Ao testar contra `db_talentos_normalizado_v1_3.json`, descobri que a
+MAIORIA dos efeitos `tipo:"modificador"` usa `alvo_acoes` (slug de
+ação, ex.: "bloquear" em Guardião/Blindagem), não `alvo_tags` (só
+Artífice/Bricolagem usa `alvo_tags` no DB atual). Tratei os dois campos
+como a MESMA lista de alvos (`deriveActiveEffectsFromTalents` em
+`talents.ts`) — ambos são conceitualmente "o que este modificador
+afeta", e `RollsTab`/`ActionsTab` já usam slugs de ação e tags de
+perícia intercambiavelmente como `affectedTags`. Isso elevou a
+cobertura real de automação de 1 para 3 níveis no catálogo atual.
+
+## 4. Módulo novo
+
+`src/lib/character/talents.ts` (puro):
+- `normalizeTalentContent(raw)` — preserva o payload inteiro.
+- `getTalentLevelEffects(nivel)` — `payload_automacao.efeitos[]`.
+- `acquireTalentLevel`/`removeTalentLevel` — registro simples, um item
+  por NÍVEL adquirido (`Character.talentos_adquiridos`), idempotente
+  (adquirir o mesmo nível duas vezes não duplica).
+- `deriveActiveEffectsFromTalents(character, talents)` — mesmo formato
+  de `deriveActiveEffectsFromConditions`, plugável no MESMO array
+  `activeEffects` já consumido por `RollsTab`/`ConditionsTab`.
+- `describeNonAutomatedTalentEffects(nivel)` — texto para os demais
+  efeitos (nunca JSON cru, nunca silenciosamente perdidos).
+
+## 5. UI
+
+Nova aba "Talentos" (`TalentsTab.tsx`) — lista o catálogo inteiro
+(vindo da Biblioteca), agrupado por talento/nível, com botão
+Adquirir/Remover por nível e badge "automatizado" quando o nível tem
+modificador mapeável. `CharacterSheetClient.tsx`: `activeEffects`
+useMemo estendido para incluir os efeitos de talentos junto aos de
+condição/defesa sem Reação (mesmo array, sem infraestrutura nova).
+
+## 6. Testes executados
+
+- `npx tsc --noEmit -p tsconfig.json`: sem erros.
+- `npm run build`: sucesso.
+- `npm run test:talents` (novo, `scripts/test-talents.ts`, contra o DB
+  real de talentos): passou — 6 cenários (sem talento = sem efeito;
+  Bricolagem gera modificador automatizado; idempotência de aquisição;
+  remover talento remove o efeito; padrão funciona para outro talento
+  de outra classe sem hardcoding — achado de `alvo_acoes` incluído;
+  efeitos não automatizados viram texto manual).
+- Toda a suíte anterior (action-console, reactions,
+  end-round-conditions, campaign-end-round, campaign-end-scene,
+  integrity-fallback, realtime-minimal, realtime-publication,
+  attack-resolution, character-storage): sem regressão.
+
+## 7. Arquivos alterados
+
+- `src/lib/character/talents.ts` (novo).
+- `src/lib/character/activeEffects.ts` — `ActiveEffectSourceType`
+  ganhou `"talent"`.
+- `src/lib/character/types.ts` — `Character.talentos_adquiridos`.
+- `src/lib/character/normalizeCharacter.ts` — default retrocompatível.
+- `src/lib/character/index.ts` — export do novo módulo.
+- `src/app/CharacterSheetView.tsx` — fetch de `listTalents()`.
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — props,
+  handlers `handleAcquireTalent`/`handleRemoveTalent`, `activeEffects`
+  estendido, render da aba.
+- `src/app/dev/character-sheet/components/TalentsTab.tsx` (novo).
+- `src/app/dev/character-sheet/components/CharacterSheetTabs.tsx` —
+  nova aba "talentos".
+- `scripts/test-talents.ts` (novo).
+- `package.json` — script `test:talents`.
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.
+
+## 8. Limitações
+
+- Só 3 dos ~60 níveis do catálogo atual têm modificador automatizável
+  (os demais usam formas de efeito não mapeáveis genericamente:
+  reação/gatilho, contador de cadência, buff temporário de item,
+  companheiro, etc.) — a automação em si funciona corretamente para
+  qualquer talento futuro que declare o padrão certo, mas a cobertura
+  de conteúdo hoje é baixa.
+- Sem requisito de progressão automático (adquirir nível 3 sem ter o
+  nível 2 não é bloqueado — só um aviso visual/textual).
+- Sem contador de usos por cadência (cena/rodada/dia/sessão) — os
+  efeitos `regra_especial`/`habilidade_narrativa`/`reacao` aparecem
+  como texto, sem consumo rastreado.
+
+## 9. Pendências futuras
+
+- Automatizar os demais 13 padrões (PRD 12.1), um de cada vez,
+  priorizando os mais frequentes no catálogo real.
+- Contador de usos por cadência genérico (reaproveitável também por
+  itens/magias no futuro).
+- Validação de requisito de progressão (`talento_nivel_adquirido`).
+- UI de "Trama" (Tecelão) e "Companheiro" (Droneiro/Mecatrônico) —
+  sistemas próprios, fora de escopo.

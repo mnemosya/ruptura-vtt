@@ -298,6 +298,19 @@ export interface Character {
    * nunca reescrito/apagado, só para auditoria/exibição simples.
    */
   historico_ruptura?: RuptureResolvedEntry[];
+  /**
+   * Talentos adquiridos (checkpoint v0.48, PRD 12) — um item por NÍVEL
+   * adquirido (não uma pilha de "nível máximo"). Data-driven a partir
+   * de `content_documents` (content_type="talent") — nunca lista
+   * talentos manualmente. Ausente = nenhum talento adquirido ainda.
+   */
+  talentos_adquiridos?: {
+    id: string;
+    talentoId: string;
+    nivelId: string;
+    nivel: number;
+    adquiridoEm: string;
+  }[];
 }
 
 /**

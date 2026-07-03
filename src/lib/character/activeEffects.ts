@@ -17,8 +17,8 @@
 
 import type { ActiveCondition, Character } from "./types";
 
-/** Fonte do efeito — hoje só "condition" existe; outros tipos (item, talento...) são trabalho futuro. */
-export type ActiveEffectSourceType = "condition" | "reaction_overflow";
+/** Fonte do efeito — "talent" adicionado no checkpoint v0.48; outros tipos (item, magia...) são trabalho futuro. */
+export type ActiveEffectSourceType = "condition" | "reaction_overflow" | "talent";
 
 /**
  * Natureza do efeito:

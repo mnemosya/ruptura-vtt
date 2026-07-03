@@ -14,16 +14,18 @@
  * produto, mesmo que a UI não a exiba.
  */
 
-import { getCharacterRules, getCombatFlow, listConditions, listCombatActions } from "../lib/content";
+import { getCharacterRules, getCombatFlow, listConditions, listCombatActions, listTalents } from "../lib/content";
 import { listLegacyCharactersDev } from "../lib/character/storage";
 import { listCampaigns } from "../lib/table/storage";
 import {
   normalizeCombatActionContent,
   normalizeConditionContent,
   normalizeReactionRules,
+  normalizeTalentContent,
   type CombatActionContent,
   type ConditionContent,
   type ReactionRules,
+  type TalentContent,
 } from "../lib/character";
 import type { CharacterRecord, CharacterRulesPayload } from "../lib/character";
 import type { Campaign } from "../lib/table";
@@ -129,6 +131,17 @@ export async function CharacterSheetView({
     // ação, mas defesa sem Reação fica indisponível sem combat_flow.
   }
 
+  // Talentos publicados na Biblioteca (checkpoint v0.48) — fonte única
+  // do catálogo da aba Talentos; nunca uma lista manual aqui.
+  let talents: TalentContent[] = [];
+  let talentsError: string | null = null;
+  try {
+    const docs = await listTalents();
+    talents = docs.map((doc) => normalizeTalentContent(doc.payload as Record<string, unknown>));
+  } catch (error) {
+    talentsError = error instanceof Error ? error.message : "Não foi possível carregar o catálogo de talentos.";
+  }
+
   return (
     <CharacterSheetClient
       regras={regras}
@@ -141,6 +154,8 @@ export async function CharacterSheetView({
       combatActionsIniciais={combatActions}
       combatActionsError={combatActionsError}
       reactionRules={reactionRules}
+      talentsIniciais={talents}
+      talentsError={talentsError}
       initialCampaignId={campaignId}
       initialProfileId={profileId}
       mode={mode}

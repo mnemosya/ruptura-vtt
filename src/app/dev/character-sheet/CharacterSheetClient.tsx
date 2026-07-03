@@ -51,6 +51,9 @@ import {
   resolveConditionResistanceCheck,
   applyRoundScopedPaReductions,
   resolvePendingRuptureChoice,
+  deriveActiveEffectsFromTalents,
+  acquireTalentLevel,
+  removeTalentLevel,
 } from "../../../lib/character";
 import {
   createCharacter,
@@ -74,6 +77,7 @@ import type {
   ReactionRules,
   ConditionContent,
   ConditionResistanceCheck,
+  TalentContent,
 } from "../../../lib/character";
 import { rollPericia, type PreparedRoll } from "../../../lib/dice";
 import {
@@ -103,6 +107,7 @@ import { ResourcesTab } from "./components/ResourcesTab";
 import { RollsTab } from "./components/RollsTab";
 import { LogTab, type LogEntry, type LogTipo } from "./components/LogTab";
 import { ConditionsTab, type ConditionOption } from "./components/ConditionsTab";
+import { TalentsTab } from "./components/TalentsTab";
 import { ActionsTab } from "./components/ActionsTab";
 import { ActiveStateStrip } from "./components/ActiveStateStrip";
 import { MesaTab } from "./components/MesaTab";
@@ -140,6 +145,9 @@ interface Props {
   combatActionsError: string | null;
   /** Regras canônicas de Reação interpretadas do singleton combat_flow. */
   reactionRules: ReactionRules;
+  /** Talentos publicados na Biblioteca do Sistema (checkpoint v0.48) — fonte única da aba Talentos. */
+  talentsIniciais: TalentContent[];
+  talentsError: string | null;
   /**
    * Mesa/perfil pré-selecionados via query string (`?campaignId=...&
    * profileId=...`) — vindos de `/dev/join/[campaignId]` (checkpoint
@@ -197,6 +205,8 @@ export default function CharacterSheetClient({
   conditionContents,
   combatActionsError,
   reactionRules,
+  talentsIniciais,
+  talentsError,
   initialCampaignId,
   initialProfileId,
   mode,
@@ -540,10 +550,12 @@ export default function CharacterSheetClient({
   const activeEffects = useMemo(
     () => {
       const conditionEffects = deriveActiveEffectsFromConditions(character);
+      const talentEffects = deriveActiveEffectsFromTalents(character, talentsIniciais);
       const reactionEffect = deriveReactionDefenseEffect(character, reactionRules);
-      return reactionEffect ? [...conditionEffects, reactionEffect] : conditionEffects;
+      const base = [...conditionEffects, ...talentEffects];
+      return reactionEffect ? [...base, reactionEffect] : base;
     },
-    [character, reactionRules],
+    [character, reactionRules, talentsIniciais],
   );
 
   const derivados = useMemo(
@@ -1597,6 +1609,32 @@ export default function CharacterSheetClient({
   }
 
   /**
+   * Adquirir/remover nível de talento (aba Talentos, checkpoint v0.48)
+   * — atualiza o estado local (persiste só ao "Salvar personagem",
+   * igual atributos/perícias/condições); efeitos ativos recalculam via
+   * `activeEffects` (useMemo acima), sem passo extra aqui.
+   */
+  function handleAcquireTalent(talentoId: string, nivelId: string, nivel: number) {
+    const current = characterRef.current;
+    const next = acquireTalentLevel(current, { talentoId, nivelId, nivel, nowIso: new Date().toISOString() });
+    if (next === current) return;
+    characterRef.current = next;
+    setCharacter(next);
+    const talent = talentsIniciais.find((t) => t.id === talentoId);
+    const nivelNome = talent?.niveis.find((n) => n.id === nivelId)?.nome ?? nivelId;
+    addLogEntry("condicao", `Talento adquirido: ${talent?.nome ?? talentoId} — ${nivelNome}.`);
+  }
+
+  function handleRemoveTalent(acquiredId: string) {
+    const current = characterRef.current;
+    const next = removeTalentLevel(current, acquiredId);
+    if (next === current) return;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", "Nível de talento removido.");
+  }
+
+  /**
    * Adicionar condição (aba Condições, checkpoint v0.32) — atualiza o
    * estado local do personagem (persiste só ao "Salvar personagem",
    * igual atributos/perícias) e registra o evento tanto no Log local
@@ -2062,6 +2100,16 @@ export default function CharacterSheetClient({
           onResolveCheck={handleResolveConditionCheck}
           onAdd={handleAddCondition}
           onRemove={handleRemoveCondition}
+        />
+      )}
+
+      {activeTab === "talentos" && (
+        <TalentsTab
+          talents={talentsIniciais}
+          catalogError={talentsError}
+          acquired={character.talentos_adquiridos ?? []}
+          onAcquire={handleAcquireTalent}
+          onRemove={handleRemoveTalent}
         />
       )}
 
