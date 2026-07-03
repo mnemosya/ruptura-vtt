@@ -14,7 +14,7 @@
  * produto, mesmo que a UI não a exiba.
  */
 
-import { getCharacterRules, getCombatFlow, listConditions, listCombatActions, listTalents, listItems } from "../lib/content";
+import { getCharacterRules, getCombatFlow, listConditions, listCombatActions, listTalents, listItems, listSpells } from "../lib/content";
 import { listLegacyCharactersDev } from "../lib/character/storage";
 import { listCampaigns } from "../lib/table/storage";
 import {
@@ -23,11 +23,13 @@ import {
   normalizeReactionRules,
   normalizeTalentContent,
   normalizeItemContent,
+  normalizeSpellContent,
   type CombatActionContent,
   type ConditionContent,
   type ReactionRules,
   type TalentContent,
   type ItemContent,
+  type SpellContent,
 } from "../lib/character";
 import type { CharacterRecord, CharacterRulesPayload } from "../lib/character";
 import type { Campaign } from "../lib/table";
@@ -155,6 +157,17 @@ export async function CharacterSheetView({
     itemsError = error instanceof Error ? error.message : "Não foi possível carregar o catálogo de itens.";
   }
 
+  // Magias publicadas na Biblioteca (checkpoint v0.50) — fonte única do
+  // catálogo da aba Magias; nunca uma lista manual aqui.
+  let spells: SpellContent[] = [];
+  let spellsError: string | null = null;
+  try {
+    const docs = await listSpells();
+    spells = docs.map((doc) => normalizeSpellContent(doc.payload as Record<string, unknown>));
+  } catch (error) {
+    spellsError = error instanceof Error ? error.message : "Não foi possível carregar o catálogo de magias.";
+  }
+
   return (
     <CharacterSheetClient
       regras={regras}
@@ -171,6 +184,8 @@ export async function CharacterSheetView({
       talentsError={talentsError}
       itemsIniciais={items}
       itemsError={itemsError}
+      spellsIniciais={spells}
+      spellsError={spellsError}
       initialCampaignId={campaignId}
       initialProfileId={profileId}
       mode={mode}

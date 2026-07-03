@@ -335,6 +335,13 @@ export interface Character {
     adquiridoEm: string;
     precoPago?: number;
   }[];
+  /**
+   * Vertentes de magia conhecidas (checkpoint v0.50, PRD 11.4) —
+   * slugs (ex.: "cinetica"), adicionadas em Modo Evolução. Só magias
+   * dessas vertentes aparecem na aba Magias em Modo Jogo. Ausente =
+   * nenhuma vertente conhecida ainda.
+   */
+  vertentes_conhecidas?: string[];
 }
 
 /**

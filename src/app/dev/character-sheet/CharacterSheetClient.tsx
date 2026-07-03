@@ -57,6 +57,11 @@ import {
   purchaseItem,
   setItemLoadoutState,
   removeItemFromInventory,
+  addKnownVertente,
+  removeKnownVertente,
+  castSpell,
+  rollSpellDamage,
+  getSpellDamageEffect,
 } from "../../../lib/character";
 import {
   createCharacter,
@@ -84,6 +89,7 @@ import type {
   ItemContent,
   WalletId,
   ItemLoadoutState,
+  SpellContent,
 } from "../../../lib/character";
 import { rollPericia, type PreparedRoll } from "../../../lib/dice";
 import {
@@ -115,6 +121,7 @@ import { LogTab, type LogEntry, type LogTipo } from "./components/LogTab";
 import { ConditionsTab, type ConditionOption } from "./components/ConditionsTab";
 import { TalentsTab } from "./components/TalentsTab";
 import { InventoryTab } from "./components/InventoryTab";
+import { SpellsTab } from "./components/SpellsTab";
 import { ActionsTab } from "./components/ActionsTab";
 import { ActiveStateStrip } from "./components/ActiveStateStrip";
 import { MesaTab } from "./components/MesaTab";
@@ -158,6 +165,9 @@ interface Props {
   /** Itens publicados na Biblioteca do Sistema (checkpoint v0.49) — fonte única da loja/inventário. */
   itemsIniciais: ItemContent[];
   itemsError: string | null;
+  /** Magias publicadas na Biblioteca do Sistema (checkpoint v0.50) — fonte única da aba Magias. */
+  spellsIniciais: SpellContent[];
+  spellsError: string | null;
   /**
    * Mesa/perfil pré-selecionados via query string (`?campaignId=...&
    * profileId=...`) — vindos de `/dev/join/[campaignId]` (checkpoint
@@ -219,6 +229,8 @@ export default function CharacterSheetClient({
   talentsError,
   itemsIniciais,
   itemsError,
+  spellsIniciais,
+  spellsError,
   initialCampaignId,
   initialProfileId,
   mode,
@@ -1689,6 +1701,59 @@ export default function CharacterSheetClient({
     addLogEntry("recurso", "Item removido do inventário.");
   }
 
+  /** Vertente conhecida (aba Magias, checkpoint v0.50, Modo Evolução) — mesmo padrão de talentos. */
+  function handleAddVertente(vertente: string) {
+    const current = characterRef.current;
+    const next = addKnownVertente(current, vertente);
+    if (next === current) return;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Vertente conhecida: ${vertente}.`);
+  }
+
+  function handleRemoveVertente(vertente: string) {
+    const current = characterRef.current;
+    const next = removeKnownVertente(current, vertente);
+    if (next === current) return;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Vertente removida: ${vertente}.`);
+  }
+
+  /**
+   * Conjurar magia (aba Magias, checkpoint v0.50) — desconta PA/Mana
+   * (`castSpell`, `lib/character/spells.ts`); registra o resumo no log
+   * local (PRD 11.4 "resumo delas aparece no log/chat"). Sem PA/Mana
+   * suficiente, não muda nada e só avisa.
+   */
+  function handleCastSpell(slug: string) {
+    const current = characterRef.current;
+    const spell = spellsIniciais.find((s) => s.slug === slug);
+    if (!spell) return;
+    const result = castSpell({ character: current, spell, paMax: derivados.pa_max, manaMax: derivados.mana_max });
+    if (!result.ok) {
+      addLogEntry("recurso", result.reason ?? "Conjuração não realizada.");
+      return;
+    }
+    characterRef.current = result.character;
+    setCharacter(result.character);
+    const manaTexto = result.manaCostUnknown
+      ? "custo de Mana ainda não definido (placeholder)"
+      : `Mana ${result.manaBefore} → ${result.manaAfter}`;
+    addLogEntry("recurso", `Conjurado: ${spell.nome} — PA ${result.paBefore} → ${result.paAfter}; ${manaTexto}.`);
+  }
+
+  /** "Rolar dano" (aba Magias, checkpoint v0.50) — atalho de rolagem para magias com efeito de dano. */
+  function handleRollSpellDamage(slug: string) {
+    const spell = spellsIniciais.find((s) => s.slug === slug);
+    if (!spell) return;
+    const dano = getSpellDamageEffect(spell);
+    if (!dano) return;
+    const resultado = rollSpellDamage(spell);
+    if (resultado == null) return;
+    addLogEntry("recurso", `${spell.nome}: ${resultado} de dano ${dano.tipo_dano}${dano.subtipo_dano ? ` (${dano.subtipo_dano})` : ""} (${dano.dado}).`);
+  }
+
   /**
    * Adicionar condição (aba Condições, checkpoint v0.32) — atualiza o
    * estado local do personagem (persiste só ao "Salvar personagem",
@@ -2178,6 +2243,19 @@ export default function CharacterSheetClient({
           onChangeCarteira={handleChangeCarteira}
           onSetEstado={handleSetItemEstado}
           onRemoveItem={handleRemoveItem}
+        />
+      )}
+
+      {activeTab === "magias" && (
+        <SpellsTab
+          spells={spellsIniciais}
+          catalogError={spellsError}
+          vertentesConhecidas={character.vertentes_conhecidas ?? []}
+          sheetMode={sheetMode}
+          onAddVertente={handleAddVertente}
+          onRemoveVertente={handleRemoveVertente}
+          onCast={handleCastSpell}
+          onRollDamage={handleRollSpellDamage}
         />
       )}
 

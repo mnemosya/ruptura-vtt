@@ -9252,3 +9252,129 @@ estado "Mochila". Sem erros no console.
 - Runas instaladas e efeitos anexados.
 - Loadout ligado a atalhos de ação no console de ação.
 - Envio de item para inventário do bando (nível de campanha).
+
+# Checkpoint v0.50 — Vertentes e magias
+
+## 1. Commit base
+
+`6e69785 feat: add data-driven inventory, wallet, and Night Market shop` (v0.49).
+
+## 2. Objetivo e escopo
+
+PRD 11.4: 132 magias, 6 vertentes, especializações — catálogo inteiro
+de `content_documents` (`content_type="spell"`, `listSpells()`, já
+existente). Escopo deliberadamente pequeno (mesmo critério de
+v0.47/v0.48/v0.49): personagem só vê magias das vertentes que CONHECE
+(`Character.vertentes_conhecidas`, adicionada em Modo Evolução);
+"Conjurar" desconta PA/Mana (custo de Mana pode ser placeholder — PRD
+autoriza explicitamente, "custo de mana pode usar placeholder enquanto
+os valores finais não estiverem fechados"); magias com efeito de dano
+ganham atalho de rolagem (reaproveita o parser "NdM" de `attack.ts`,
+v0.47 — sem duplicar); magias com resistência mostram CD/ação como
+texto. NADA de resolução automática de resistência do ALVO (exigiria o
+mesmo motor de ataque contestado do v0.47, mas para magia — fora de
+escopo, documentado como pendência), sustentação de duração, efeitos
+de controle/movimento/suporte automatizados por tipo, especializações
+associadas (não há query/seed para elas ainda — achado de auditoria,
+ver seção 3), modal completo (a UI usa expandir/recolher).
+
+## 3. Achado de auditoria
+
+`especializacoes` existe no arquivo fonte
+(`db_magias_normalizado_v1_3.json`) mas NÃO tem `listEspecializacoes()`
+nem seed próprio em `content_documents` — não é um content_type
+importado, só metadado do arquivo de origem. `normalizeSpecializationContent`
+foi criado no módulo para uso futuro, mas a UI não busca nem exibe
+especializações neste checkpoint (documentado como pendência, não
+implementado por falta de fonte de dados real no banco).
+
+## 4. Módulo novo
+
+`src/lib/character/spells.ts` (puro):
+- `normalizeSpellContent(raw)` — preserva o payload inteiro.
+- `getSpellDamageEffect`/`getSpellResistanceEffect` — extraem efeito
+  de dano/resistência do `payload_automacao.efeitos[]`, nunca inventam
+  fórmula/CD.
+- `rollSpellDamage(spell, rng?)` — reaproveita `rollDamageFormula` de
+  `attack.ts` (mesmo parser "NdM", sem duplicar).
+- `addKnownVertente`/`removeKnownVertente` — idempotente.
+- `castSpell(...)` — desconta PA sempre; Mana só se `custo_mana` for
+  um número real (`manaCostUnknown: true` quando é placeholder `null`
+  — nunca inventa um custo). Sem PA suficiente, devolve `ok:false` sem
+  mutar nada.
+
+## 5. UI
+
+Nova aba "Magias" (`SpellsTab.tsx`): em Modo Evolução, toggles de
+vertente conhecida; em Modo Jogo, só mostra magias das vertentes
+conhecidas, agrupadas por vertente e ordenadas por nível. Cada magia:
+nome clicável expande/recolhe a descrição longa (em vez de modal de
+verdade — mais simples, mesmo padrão de `ActionsTab`/`TalentsTab`),
+custo PA/Mana (ou "(placeholder)"), aviso de resistência do alvo
+quando aplicável, botões "Conjurar" e "Rolar dano" (só quando a magia
+tem efeito de dano).
+
+## 6. Testes executados
+
+- `npx tsc --noEmit -p tsconfig.json`: sem erros.
+- `npm run build`: sucesso.
+- `npm run test:spells` (novo, `scripts/test-spells.ts`, contra o DB
+  real de magias): passou — 7 cenários (vertentes conhecidas
+  idempotentes; conjurar com PA suficiente e custo_mana placeholder
+  não bloqueia/não desconta; conjurar sem PA não muda nada; magia com
+  custo_mana REAL do DB desconta Mana de verdade — achado: "Ping"
+  tem custo real, maioria é placeholder; atalho de dano com fórmula
+  real e rolagem determinística; resistência do alvo extraída como
+  texto; magia sem dano não gera atalho).
+- Toda a suíte anterior (13 scripts): sem regressão.
+
+## 7. Teste manual
+
+Confirmado no preview: em Modo Jogo, aba Magias mostra "nenhuma
+vertente conhecida"; troquei para Modo Evolução, ativei "cinetica" —
+apareceram as magias da vertente (Arranque, Controle, Estase...)
+agrupadas e ordenadas por nível, com aviso de resistência e botão
+"Rolar dano (1d4)" só em Controle (a única com efeito de dano
+visível). Cliquei "Conjurar" em Controle — log mostrou "PA 3 → 1;
+custo de Mana ainda não definido (placeholder)". Sem erros no console.
+
+## 8. Arquivos alterados
+
+- `src/lib/character/spells.ts` (novo).
+- `src/lib/character/types.ts` — `Character.vertentes_conhecidas`.
+- `src/lib/character/normalizeCharacter.ts` — default retrocompatível.
+- `src/lib/character/index.ts` — export do novo módulo.
+- `src/app/CharacterSheetView.tsx` — fetch de `listSpells()`.
+- `src/app/dev/character-sheet/CharacterSheetClient.tsx` — props,
+  handlers (`handleAddVertente`, `handleRemoveVertente`,
+  `handleCastSpell`, `handleRollSpellDamage`), render da aba.
+- `src/app/dev/character-sheet/components/SpellsTab.tsx` (novo).
+- `src/app/dev/character-sheet/components/CharacterSheetTabs.tsx` —
+  nova aba "magias".
+- `scripts/test-spells.ts` (novo).
+- `package.json` — script `test:spells`.
+- `docs/RELATORIO_MESAS_LOG_V0_1.md` — esta seção.
+
+## 9. Limitações
+
+- Sem resolução automática de resistência do alvo (só texto de
+  CD/ação).
+- Sem especializações (fonte de dados não existe como content_type
+  importado — ver seção 3).
+- Sem sustentação de duração, efeitos de controle/movimento/suporte
+  automatizados por tipo.
+- Sem modal completo (expandir/recolher inline).
+- Custo de Mana continua placeholder para a maioria das magias — não
+  é bug, é decisão do próprio PRD até os valores finais fecharem.
+
+## 10. Pendências futuras
+
+- Resolução de resistência do alvo em magias (mesmo motor do ataque
+  contestado do v0.47, mas para conjuração).
+- Especializações associadas à vertente (precisa de content_type/seed
+  próprio na Biblioteca).
+- Efeitos de controle/movimento/suporte automatizados.
+- Sustentação de duração ("sustentável" já vem no payload, não
+  rastreado).
+- Fechar os valores reais de `custo_mana` quando o PRD/Biblioteca
+  definir.

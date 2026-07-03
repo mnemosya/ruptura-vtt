@@ -17,3 +17,4 @@ export * from "./rupture";
 export * from "./attack";
 export * from "./talents";
 export * from "./inventory";
+export * from "./spells";

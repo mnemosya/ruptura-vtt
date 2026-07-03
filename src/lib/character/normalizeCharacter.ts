@@ -193,6 +193,11 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     ? (raw.inventario as Character["inventario"])
     : [];
 
+  // vertentes_conhecidas (checkpoint v0.50): mesmo critério — ausência vira [], nunca undefined.
+  const vertentes_conhecidas: Character["vertentes_conhecidas"] = Array.isArray(raw.vertentes_conhecidas)
+    ? (raw.vertentes_conhecidas as string[])
+    : [];
+
   return {
     ...raw,
     nome,
@@ -217,5 +222,6 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     talentos_adquiridos,
     carteira,
     inventario,
+    vertentes_conhecidas,
   } as Character;
 }
