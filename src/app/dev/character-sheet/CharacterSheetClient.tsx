@@ -569,18 +569,19 @@ export default function CharacterSheetClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enteredProfile, profileSessionToken]);
 
-  // Efeitos ativos derivados das condições (checkpoint v0.33) — função
-  // pura, recalculada só quando condicoes_ativas muda. Fonte única
-  // compartilhada entre ConditionsTab (lista) e RollsTab (chips).
+  // Efeitos ativos derivados das condições (checkpoint v0.33, agora
+  // data-driven via payload_automacao — checkpoint v0.51) — função
+  // pura, recalculada só quando condicoes_ativas ou o catálogo mudam.
+  // Fonte única compartilhada entre ConditionsTab (lista) e RollsTab (chips).
   const activeEffects = useMemo(
     () => {
-      const conditionEffects = deriveActiveEffectsFromConditions(character);
+      const conditionEffects = deriveActiveEffectsFromConditions(character, conditionContents);
       const talentEffects = deriveActiveEffectsFromTalents(character, talentsIniciais);
       const reactionEffect = deriveReactionDefenseEffect(character, reactionRules);
       const base = [...conditionEffects, ...talentEffects];
       return reactionEffect ? [...base, reactionEffect] : base;
     },
-    [character, reactionRules, talentsIniciais],
+    [character, conditionContents, reactionRules, talentsIniciais],
   );
 
   const derivados = useMemo(
