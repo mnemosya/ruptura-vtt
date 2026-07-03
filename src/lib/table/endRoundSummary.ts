@@ -17,12 +17,16 @@ export function buildCampaignEndRoundSummary(result: CampaignEndRoundResult): st
   if (result.paReductionCount > 0) lines.push(`${result.paReductionCount} redução(ões) de PA por condição.`);
   if (result.appliedConditionCount > 0) lines.push(`${result.appliedConditionCount} condição(ões) aplicada(s).`);
   if (result.removedConditionCount > 0) lines.push(`${result.removedConditionCount} condição(ões) removida(s).`);
+  if (result.collapseTestCount > 0) lines.push(`${result.collapseTestCount} teste(s) de Colapso no fim de rodada.`);
+  if (result.collapseOutcomeCount > 0) lines.push(`${result.collapseOutcomeCount} desfecho(s) de Colapso (morte/coma).`);
   if (
     result.damageEventCount === 0 &&
     result.pendingCheckCount === 0 &&
     result.paReductionCount === 0 &&
     result.appliedConditionCount === 0 &&
-    result.removedConditionCount === 0
+    result.removedConditionCount === 0 &&
+    result.collapseTestCount === 0 &&
+    result.collapseOutcomeCount === 0
   ) {
     lines.push("Nenhum efeito de condição foi aplicado.");
   }

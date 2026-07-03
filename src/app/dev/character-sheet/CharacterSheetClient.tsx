@@ -36,6 +36,7 @@ import {
   detectCollapseOnResourceChange,
   advanceCollapseSegment,
   stabilizeCollapse,
+  resolveCollapseEndRound,
   MAX_COLLAPSE_SEGMENTS,
   gainPm,
   spendPm,
@@ -1499,8 +1500,20 @@ export default function CharacterSheetClient({
     const scene = current.current_scene ?? 1;
     const nowIso = new Date().toISOString();
 
-    const resolved = resolveEndRoundConditionsForCharacter({
+    // Colapso (checkpoint v0.51): teste/avanço/desfecho de fim de rodada
+    // ANTES das condições, a partir da regra canônica `regras.colapso`
+    // (mesma ordem de `endRound.ts` da mesa). Um colapso iniciado pelo
+    // dano de condição desta rodada só é testado na próxima.
+    const collapseResult = resolveCollapseEndRound({
       character: current,
+      rules: regras?.colapso,
+      round,
+      scene,
+      nowIso,
+    });
+
+    const resolved = resolveEndRoundConditionsForCharacter({
+      character: collapseResult.character,
       conditions: conditionContents,
       round,
       scene,
@@ -1523,14 +1536,14 @@ export default function CharacterSheetClient({
     characterRef.current = nextCharacter;
     setCharacter(nextCharacter);
 
-    const allLogs = [...resolved.logs, ...paReduction.logs];
-    setEndRoundSummary({ logs: allLogs, warnings: resolved.warnings });
+    const allLogs = [...collapseResult.logs, ...resolved.logs, ...paReduction.logs];
+    setEndRoundSummary({ logs: allLogs, warnings: [...collapseResult.warnings, ...resolved.warnings] });
     addLogEntry(
       "rodada",
       `Rodada ${round} encerrada → rodada ${round + 1} iniciada.${allLogs.length > 0 ? " " + allLogs.join(" ") : ""}`,
     );
 
-    const allTableLogs = [...resolved.tableLogs, ...paReduction.tableLogs];
+    const allTableLogs = [...collapseResult.tableLogs, ...resolved.tableLogs, ...paReduction.tableLogs];
     if (selectedCampaignId) {
       for (const entry of allTableLogs) {
         try {

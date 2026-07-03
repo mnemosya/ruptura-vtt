@@ -23,10 +23,12 @@ import {
   normalizeConditionContent,
   normalizeConditionSlug,
   resetRoundReactionState,
+  resolveCollapseEndRound,
   resolveEndRoundConditionsForCharacter,
   applyRoundScopedPaReductions,
   type Character,
   type CharacterRulesPayload,
+  type CollapseEndRoundOutcome,
   type ConditionContent,
 } from "../character";
 import { listCharactersForNarratorCampaign, updateCharacter } from "../character/storage";
@@ -48,6 +50,8 @@ export interface ProcessedCharacterSummary {
   damageEvents: number;
   pendingChecks: number;
   paReductions: number;
+  /** Desfecho do teste de Colapso de fim de rodada (checkpoint v0.51) — "no_collapse" quando não havia colapso ativo. */
+  collapseOutcome: CollapseEndRoundOutcome;
   warnings: string[];
 }
 
@@ -69,6 +73,10 @@ export interface CampaignEndRoundResult {
   appliedConditionCount: number;
   removedConditionCount: number;
   paReductionCount: number;
+  /** Nº de testes de Colapso rolados no fim de rodada (checkpoint v0.51). */
+  collapseTestCount: number;
+  /** Nº de desfechos terminais de Colapso (morte/coma) neste encerramento. */
+  collapseOutcomeCount: number;
   warnings: string[];
 }
 
@@ -129,9 +137,23 @@ export async function resolveCampaignEndRoundForCharacters(params: {
       const reactionsBefore = Math.max(0, derived.reacoes_por_rodada - (character.estado_jogo?.reacoes_usadas ?? 0));
       const conditionsBefore = getActiveConditionIds(character);
 
+      // A0. Colapso (checkpoint v0.51): teste/avanço/desfecho de fim de
+      // rodada ANTES das condições — um colapso INICIADO pelo dano de
+      // condição desta mesma rodada só é testado na próxima (a regra
+      // canônica testa no "fim de rodada", i.e. rodadas subsequentes ao
+      // início). `regras?.colapso` é a fonte única do teste/limiar.
+      const collapseResult = resolveCollapseEndRound({
+        character,
+        rules: regras?.colapso,
+        round,
+        scene,
+        nowIso,
+        rng: params.rng,
+      });
+
       // A. Resolve efeitos da rodada/cena ATUAIS da campanha.
       const resolved = resolveEndRoundConditionsForCharacter({
-        character,
+        character: collapseResult.character,
         conditions,
         round,
         scene,
@@ -178,12 +200,18 @@ export async function resolveCampaignEndRoundForCharacters(params: {
         damageEvents: resolved.damageEvents.length,
         pendingChecks: resolved.pendingChecks.length,
         paReductions: paReduction.reductions.length,
-        warnings: resolved.warnings,
+        collapseOutcome: collapseResult.outcome,
+        warnings: [...collapseResult.warnings, ...resolved.warnings],
       });
       processedCharacterNames.push(character.nome);
+      // Colapso que efetivamente rolou um teste (ou chegou a desfecho)
+      // sempre exige atenção do narrador; "no_collapse"/"no_rule" não.
+      const collapseNeedsAttention =
+        collapseResult.outcome !== "no_collapse" && collapseResult.outcome !== "no_rule" && collapseResult.outcome !== "stabilized";
       if (
         resolved.damageEvents.length > 0 ||
         resolved.pendingChecks.length > 0 ||
+        collapseNeedsAttention ||
         conditionsAfter.some((slug) => {
           const content = conditionBySlug.get(slug);
           return content ? conditionHasEndRoundEffect(content) : false;
@@ -192,7 +220,7 @@ export async function resolveCampaignEndRoundForCharacters(params: {
         attentionCharacterNames.push(character.nome);
       }
 
-      for (const entry of [...resolved.tableLogs, ...paReduction.tableLogs]) {
+      for (const entry of [...collapseResult.tableLogs, ...resolved.tableLogs, ...paReduction.tableLogs]) {
         tableLogs.push({
           type: entry.type,
           payload: { ...entry.payload, characterId: record.id, characterNome: character.nome, profileId: record.profile_id },
@@ -284,6 +312,8 @@ export async function endCampaignRound(params: {
   const paReductionCount = processedCharacters.reduce((sum, p) => sum + p.paReductions, 0);
   const appliedConditionCount = tableLogs.filter((l) => l.type === "condition_applied").length;
   const removedConditionCount = tableLogs.filter((l) => l.type === "condition_removed").length;
+  const collapseTestCount = tableLogs.filter((l) => l.type === "collapse_end_round_test" || l.type === "collapse_third_segment_test").length;
+  const collapseOutcomeCount = tableLogs.filter((l) => l.type === "collapse_outcome").length;
   const warnings = processedCharacters.flatMap((p) => p.warnings);
 
   // Grava, best-effort, cada table_log individual gerado pelo motor
@@ -322,6 +352,8 @@ export async function endCampaignRound(params: {
         appliedConditionCount,
         removedConditionCount,
         paReductionCount,
+        collapseTestCount,
+        collapseOutcomeCount,
         warnings,
         source: "campaign_end_round",
       },
@@ -342,6 +374,8 @@ export async function endCampaignRound(params: {
     appliedConditionCount,
     removedConditionCount,
     paReductionCount,
+    collapseTestCount,
+    collapseOutcomeCount,
     warnings,
   };
 }

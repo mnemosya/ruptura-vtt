@@ -203,15 +203,14 @@ export interface Character {
     criadoEm: string;
   };
   /**
-   * Colapso (checkpoint v0.38, PRD 10.7) — dispara quando PV ou PE
-   * chega a 0. Primeira versão jogável: sem morte/coma definitivos,
-   * sem cicatriz completa (só a pendência é marcada). Ausente =
-   * personagem nunca colapsou.
+   * Colapso (checkpoint v0.38, PRD 10.7; teste/avanço/desfecho
+   * automáticos de fim de rodada no v0.51) — dispara quando PV ou PE
+   * chega a 0. Ausente = personagem nunca colapsou.
    */
   colapso?: {
     ativo: boolean;
     tipo: "pv" | "pe" | null;
-    /** 0..3 — no 3º, risco de morte (PV) ou coma/fora de jogo (PE), resolução final não automatizada. */
+    /** 0..3 — no 3º, teste imediato: 8+ mantém, senão morte (PV) ou coma (PE). */
     segmentos: number;
     /** Estabilizar interrompe o avanço de segmento, mas NÃO cura nem remove Inconsciente. */
     estabilizado: boolean;
@@ -220,6 +219,14 @@ export interface Character {
     encerradoEm?: string | null;
     /** true após sobreviver a um colapso (cura) — campo de cicatriz pendente de preenchimento manual (fora de escopo ainda). */
     cicatrizPendente?: boolean;
+    /**
+     * Desfecho terminal do 3º segmento (checkpoint v0.51) — `"morte"`
+     * (colapso de PV/físico) ou `"coma"` (colapso de PE/mental).
+     * Ausente/null enquanto o personagem não atingiu o desfecho. A
+     * resolução narrativa final (remover da mesa, ficha de coma) fica a
+     * cargo do narrador — este campo só REGISTRA o desfecho mecânico.
+     */
+    desfecho?: "morte" | "coma" | null;
     ultimoEvento?: string;
   };
   /**
@@ -493,4 +500,51 @@ export interface CharacterRulesPayload {
     pa_base?: number;
     inventario?: { aretz_iniciais?: number };
   };
+  /**
+   * Regra canônica de Colapso (checkpoint v0.51, achado A3 da auditoria
+   * v0.50) — vem do payload real de `regras_personagem.colapso`
+   * (`db_regras_personagem_normalizado_v1_4.json`). Subconjunto mínimo
+   * lido por `resolveCollapseEndRound` (collapse.ts): qual atributo
+   * testar e o limiar de falha por recurso (`gatilhos`), e o desfecho
+   * do teste imediato do 3º segmento (`terceiro_segmento`). Ausente =
+   * `resolveCollapseEndRound` não inventa teste nem desfecho (fallback
+   * defensivo).
+   */
+  colapso?: CollapseRulesPayload;
+}
+
+/**
+ * `payload_automacao`-equivalente de Colapso — não vem de
+ * `content_documents` (não é uma condição da Biblioteca), mas do
+ * mesmo singleton `character_rule` acima. `falha_se_menor_que`: abaixo
+ * disso no teste de fim de rodada avança 1 segmento; 7+ mantém (PRD
+ * 10.7). `terceiro_segmento` é aberto (`[key: string]: unknown`)
+ * porque o limiar do teste imediato vem codificado no NOME da chave
+ * (ex.: `"resultado_8"` → 8, ver `parseTerceiroSegmentoThreshold` em
+ * collapse.ts) — evita hardcoded "8" no código.
+ */
+export interface CollapseGatilhoTeste {
+  atributo: string;
+  falha_se_menor_que: number;
+}
+
+export interface CollapseGatilho {
+  recurso: "pv" | "pe";
+  /** "fisico" | "mental" — chave usada em `terceiro_segmento.falha` para achar o desfecho certo. */
+  tipo: string;
+  condicao?: string;
+  teste_fim_rodada: CollapseGatilhoTeste;
+}
+
+export interface CollapseTerceiroSegmentoRules {
+  teste_imediato?: boolean;
+  /** ex.: `{ fisico: "morte", mental: "coma_profundo_fora_de_jogo" }`. */
+  falha?: Record<string, string>;
+  [key: string]: unknown;
+}
+
+export interface CollapseRulesPayload {
+  segmentos?: number;
+  gatilhos?: CollapseGatilho[];
+  terceiro_segmento?: CollapseTerceiroSegmentoRules;
 }
