@@ -68,7 +68,7 @@ export function InventoryTab({
   onStoreFletchas,
   onWithdrawFletchas,
   onReloadWeapon,
-  selectedFlechaSlugPerBow,
+  onSelectAljava,
   onSelectFlechaAtiva,
 }: {
   items: ItemContent[];
@@ -94,13 +94,17 @@ export function InventoryTab({
   onSetMitAtual: (instanceId: string, value: number) => void;
   onSetPdAtual: (instanceId: string, value: number) => void;
   onSetMunicaoAtual: (instanceId: string, value: number) => void;
-  onSetFlechaQuantidade: (contentSlug: string, value: number) => void;
-  onStoreFletchas: (ammoInstanceId: string, contentSlug: string, nome: string, quantidade: number) => void;
-  onWithdrawFletchas: (contentSlug: string, quantidade: number, nomeFlexa: string) => void;
+  /** Ajuste manual de um stack DENTRO de uma Aljava específica (`aljavaInstanceId`). */
+  onSetFlechaQuantidade: (aljavaInstanceId: string, contentSlug: string, value: number) => void;
+  /** Guarda flechas do estoque em UMA Aljava específica (`aljavaInstanceId`). */
+  onStoreFletchas: (aljavaInstanceId: string, ammoInstanceId: string, contentSlug: string, nome: string, quantidade: number) => void;
+  /** Retira flechas de UMA Aljava específica (`aljavaInstanceId`) de volta ao estoque. */
+  onWithdrawFletchas: (aljavaInstanceId: string, contentSlug: string, quantidade: number, nomeFlexa: string) => void;
   onReloadWeapon: (instanceId: string) => void;
-  /** Slug da flecha ativa escolhida POR ARCO (chave = instance.id do arco) — todos leem do mesmo estoque compartilhado. */
-  selectedFlechaSlugPerBow: Record<string, string>;
-  onSelectFlechaAtiva: (bowInstanceId: string, slug: string) => void;
+  /** Arco escolhe qual instância de Aljava usa para atacar (null = limpar seleção). */
+  onSelectAljava: (bowInstanceId: string, aljavaInstanceId: string | null) => void;
+  /** Arco escolhe qual tipo de flecha (dentro da Aljava selecionada) usa para atacar. */
+  onSelectFlechaAtiva: (bowInstanceId: string, flechaSlug: string | null) => void;
 }) {
   const [busca, setBusca] = useState("");
   const [categoria, setCategoria] = useState<(typeof CATEGORIA_FILTROS)[number]>("todos");
@@ -108,20 +112,24 @@ export function InventoryTab({
   const [quantidades, setQuantidades] = useState<Record<string, number>>({});
   const [precos, setPrecos] = useState<Record<string, number>>({});
   const [runaSelecionada, setRunaSelecionada] = useState<Record<string, string>>({});
-  // guardarQtd[ammoInstanceId] = quanto guardar na aljava compartilhada
+  // guardarQtd[`${aljavaInstanceId}:${ammoInstanceId}`] = quanto guardar nesta Aljava
   const [guardarQtd, setGuardarQtd] = useState<Record<string, number>>({});
-  // retirarQtd[contentSlug] = quanto retirar da aljava compartilhada
+  // retirarQtd[`${aljavaInstanceId}:${contentSlug}`] = quanto retirar desta Aljava
   const [retirarQtd, setRetirarQtd] = useState<Record<string, number>>({});
 
   const runasPublicadas = runes.filter((r) => r.status === "published");
   const runaBySlug = new Map(runasPublicadas.map((r) => [r.slug, r]));
   const itemBySlug = new Map(items.map((i) => [i.slug, i]));
 
+  // Todas as instâncias de Aljava do personagem, na ordem do inventário —
+  // um personagem pode ter várias; numeradas "Aljava 1", "Aljava 2"... para exibição.
+  const aljavaInstances = inventario.filter(
+    (i): i is InventoryItemInstance & { aljava: Aljava } => i.itemSlug === ALJAVA_ITEM_SLUG && i.aljava != null,
+  );
+  const aljavaIndexById = new Map(aljavaInstances.map((inst, idx) => [inst.id, idx + 1]));
+
   const filtrados = items
     .filter((i) => i.status === "published")
-    // Aljava é concedida automaticamente na compra do primeiro arco — não é
-    // um item comprável manualmente (evita criar uma segunda Aljava).
-    .filter((i) => i.slug !== ALJAVA_ITEM_SLUG)
     .filter((i) => categoria === "todos" || i.categoria === categoria)
     .filter((i) => !busca.trim() || i.nome.toLowerCase().includes(busca.trim().toLowerCase()));
 
@@ -217,14 +225,7 @@ export function InventoryTab({
       <Section title={`Inventário (${inventario.length})`}>
         {inventario.length === 0 && <p style={{ fontSize: 12, opacity: 0.6 }}>Nenhum item ainda.</p>}
         <div data-testid="inventario-lista" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {(() => {
-            // Aljava compartilhada — resolvida uma vez para uso tanto no
-            // próprio card da Aljava quanto no seletor de flecha ativa de
-            // cada arco (v0.59.1).
-            const sharedAljavaInst = inventario.find((i) => i.itemSlug === ALJAVA_ITEM_SLUG) as
-              | (InventoryItemInstance & { aljava?: Aljava })
-              | undefined;
-            return inventario.map((instance) => {
+          {inventario.map((instance) => {
             const itemModelo = itemBySlug.get(instance.itemSlug);
             const runasInstaladas = instance.runasInstaladas ?? [];
             const slotsMax = itemModelo?.slotsRunaMax ?? null;
@@ -355,57 +356,89 @@ export function InventoryTab({
                     </p>
                   </div>
                 ) : modoMunicao === "aljava" ? (() => {
-                  const aljava_ = sharedAljavaInst?.aljava;
-                  const capacidade = aljava_?.capacidade ?? 15;
-                  const totalFlechas = aljava_?.stacks.reduce((s, x) => s + x.quantidade, 0) ?? 0;
-                  const stacksComFlechas = (aljava_?.stacks ?? []).filter((s) => s.quantidade > 0);
-                  const flechaAtivaDesteArco = selectedFlechaSlugPerBow[instance.id] ?? "";
+                  const selectedAljavaId = instance.selectedAljavaInstanceId ?? "";
+                  const aljavaResolvida =
+                    aljavaInstances.find((a) => a.id === selectedAljavaId) ??
+                    (aljavaInstances.length === 1 ? aljavaInstances[0] : undefined);
+                  const capacidade = aljavaResolvida?.aljava.capacidade ?? 0;
+                  const totalFlechas = aljavaResolvida ? aljavaResolvida.aljava.stacks.reduce((s, x) => s + x.quantidade, 0) : 0;
+                  const stacksComFlechas = aljavaResolvida ? aljavaResolvida.aljava.stacks.filter((s) => s.quantidade > 0) : [];
+                  const flechaAtivaDesteArco = instance.selectedFlechaSlug ?? "";
                   return (
                     <div data-testid={`inventario-aljava-ref-${instance.id}`} style={{ borderTop: "1px solid #2a2b33", paddingTop: 6, marginTop: 2 }}>
-                      <p style={{ fontSize: 11, opacity: 0.6, margin: "0 0 6px" }}>
-                        Usa Aljava compartilhada ({totalFlechas} / {capacidade})
-                      </p>
-                      {stacksComFlechas.length > 0 ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                          <span style={{ fontSize: 10, opacity: 0.6 }}>Flecha ativa deste arco:</span>
-                          <select
-                            data-testid={`inventario-flecha-ativa-${instance.id}`}
-                            value={flechaAtivaDesteArco}
-                            onChange={(e) => onSelectFlechaAtiva(instance.id, e.target.value)}
-                            style={{ ...input, fontSize: 11 }}
-                          >
-                            {stacksComFlechas.length > 1 && <option value="">— selecionar —</option>}
-                            {stacksComFlechas.map((s) => (
-                              <option key={s.contentSlug} value={s.contentSlug}>{s.nome} (x{s.quantidade})</option>
-                            ))}
-                          </select>
-                          {stacksComFlechas.length === 1 && !flechaAtivaDesteArco && (
-                            <span style={{ fontSize: 10, opacity: 0.5 }}>(auto)</span>
-                          )}
-                        </div>
+                      {aljavaInstances.length === 0 ? (
+                        <p style={{ fontSize: 10, opacity: 0.4, margin: 0 }}>Nenhuma Aljava no inventário — compre uma na loja.</p>
                       ) : (
-                        <p style={{ fontSize: 10, opacity: 0.4, margin: 0 }}>Aljava vazia — recarregue ou guarde flechas nela.</p>
+                        <>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+                            <span style={{ fontSize: 10, opacity: 0.6 }}>Aljava usada:</span>
+                            {aljavaInstances.length > 1 ? (
+                              <select
+                                data-testid={`inventario-aljava-usada-${instance.id}`}
+                                value={selectedAljavaId}
+                                onChange={(e) => onSelectAljava(instance.id, e.target.value || null)}
+                                style={{ ...input, fontSize: 11 }}
+                              >
+                                <option value="">— selecionar —</option>
+                                {aljavaInstances.map((a) => (
+                                  <option key={a.id} value={a.id}>
+                                    Aljava {aljavaIndexById.get(a.id)} ({a.aljava.stacks.reduce((s, x) => s + x.quantidade, 0)}/{a.aljava.capacidade})
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <>
+                                <span style={{ fontSize: 11 }}>Aljava {aljavaIndexById.get(aljavaInstances[0].id)} ({totalFlechas} / {capacidade})</span>
+                                <span style={{ fontSize: 10, opacity: 0.5 }}>(auto)</span>
+                              </>
+                            )}
+                          </div>
+                          {!aljavaResolvida ? (
+                            <p style={{ fontSize: 10, opacity: 0.4, margin: 0 }}>Selecione qual Aljava este arco usa para atacar.</p>
+                          ) : stacksComFlechas.length > 0 ? (
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                              <span style={{ fontSize: 10, opacity: 0.6 }}>Flecha para ataque:</span>
+                              <select
+                                data-testid={`inventario-flecha-ativa-${instance.id}`}
+                                value={flechaAtivaDesteArco}
+                                onChange={(e) => onSelectFlechaAtiva(instance.id, e.target.value || null)}
+                                style={{ ...input, fontSize: 11 }}
+                              >
+                                {stacksComFlechas.length > 1 && <option value="">— selecionar —</option>}
+                                {stacksComFlechas.map((s) => (
+                                  <option key={s.contentSlug} value={s.contentSlug}>{s.nome} (x{s.quantidade})</option>
+                                ))}
+                              </select>
+                              {stacksComFlechas.length === 1 && !flechaAtivaDesteArco && (
+                                <span style={{ fontSize: 10, opacity: 0.5 }}>(auto)</span>
+                              )}
+                            </div>
+                          ) : (
+                            <p style={{ fontSize: 10, opacity: 0.4, margin: 0 }}>Aljava selecionada está vazia — recarregue ou guarde flechas nela.</p>
+                          )}
+                        </>
                       )}
                     </div>
                   );
                 })() : null}
 
-                {/* Aljava compartilhada — item especial do inventário */}
+                {/* Aljava — cada instância é sua PRÓPRIA Aljava (um personagem pode ter várias). */}
                 {instance.itemSlug === ALJAVA_ITEM_SLUG && (() => {
                   const aljava_ = (instance as InventoryItemInstance & { aljava?: Aljava }).aljava;
                   const capacidade = aljava_?.capacidade ?? 15;
                   const totalFlechas = aljava_?.stacks.reduce((s, x) => s + x.quantidade, 0) ?? 0;
                   const stacksComFlechas = (aljava_?.stacks ?? []).filter((s) => s.quantidade > 0);
                   const flechasEstoque = inventario.filter((inst) => {
-                    if (inst.id === instance.id) return false;
+                    if (inst.itemSlug === ALJAVA_ITEM_SLUG) return false;
                     const m = itemBySlug.get(inst.itemSlug);
                     return m?.categoria === "municao" && (m?.ammoFamilia?.startsWith("flecha") ?? false);
                   });
+                  const nsKey = (suffix: string) => `${instance.id}:${suffix}`;
                   return (
-                    <div data-testid="inventario-aljava-compartilhada" style={{ borderTop: "1px solid #2a2b33", paddingTop: 6, marginTop: 2 }}>
+                    <div data-testid={`inventario-aljava-${instance.id}`} style={{ borderTop: "1px solid #2a2b33", paddingTop: 6, marginTop: 2 }}>
                       <p style={{ fontSize: 11, opacity: 0.6, margin: "0 0 6px" }}>
-                        Aljava ({totalFlechas} / {capacidade}) — compartilhada por todos os arcos. A flecha usada em cada
-                        ataque é escolhida no próprio card do arco.
+                        Aljava {aljavaIndexById.get(instance.id)} ({totalFlechas} / {capacidade}). Cada arco escolhe, no
+                        próprio card, qual Aljava usa para atacar.
                       </p>
 
                       {stacksComFlechas.length > 0 && (
@@ -414,40 +447,40 @@ export function InventoryTab({
                           {stacksComFlechas.map((stack) => {
                             const totalOutras = stacksComFlechas.filter((s) => s.contentSlug !== stack.contentSlug).reduce((sum, s) => sum + s.quantidade, 0);
                             const maxEsta = Math.max(0, capacidade - totalOutras);
-                            const retirarVal = retirarQtd[stack.contentSlug] ?? 1;
+                            const retirarVal = retirarQtd[nsKey(stack.contentSlug)] ?? 1;
                             return (
                               <div key={stack.contentSlug} style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                                 <span style={{ fontSize: 11, opacity: 0.85, minWidth: 120 }}>◆ {stack.nome}</span>
                                 <input
-                                  data-testid={`inventario-flecha-qtd-${stack.contentSlug}`}
+                                  data-testid={`inventario-flecha-qtd-${instance.id}-${stack.contentSlug}`}
                                   type="number"
                                   min={0}
                                   max={maxEsta}
                                   value={stack.quantidade}
-                                  onChange={(e) => onSetFlechaQuantidade(stack.contentSlug, Number(e.target.value))}
+                                  onChange={(e) => onSetFlechaQuantidade(instance.id, stack.contentSlug, Number(e.target.value))}
                                   style={{ ...input, width: 52, fontSize: 11 }}
                                 />
                                 <span style={{ fontSize: 10, opacity: 0.4 }}>/ {maxEsta} máx</span>
                                 <span style={{ fontSize: 10, opacity: 0.35, marginLeft: 4 }}>|</span>
                                 <input
-                                  data-testid={`inventario-flecha-retirar-qtd-${stack.contentSlug}`}
+                                  data-testid={`inventario-flecha-retirar-qtd-${instance.id}-${stack.contentSlug}`}
                                   type="number"
                                   min={1}
                                   max={stack.quantidade}
                                   value={retirarVal}
-                                  onChange={(e) => setRetirarQtd((prev) => ({ ...prev, [stack.contentSlug]: Math.max(1, Number(e.target.value)) }))}
+                                  onChange={(e) => setRetirarQtd((prev) => ({ ...prev, [nsKey(stack.contentSlug)]: Math.max(1, Number(e.target.value)) }))}
                                   style={{ ...input, width: 48, fontSize: 11 }}
                                 />
                                 <button
-                                  data-testid={`inventario-flecha-retirar-${stack.contentSlug}`}
-                                  onClick={() => onWithdrawFletchas(stack.contentSlug, retirarVal, stack.nome)}
+                                  data-testid={`inventario-flecha-retirar-${instance.id}-${stack.contentSlug}`}
+                                  onClick={() => onWithdrawFletchas(instance.id, stack.contentSlug, retirarVal, stack.nome)}
                                   style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
                                 >
                                   Retirar
                                 </button>
                                 <button
-                                  data-testid={`inventario-retirar-tudo-${stack.contentSlug}`}
-                                  onClick={() => onWithdrawFletchas(stack.contentSlug, stack.quantidade, stack.nome)}
+                                  data-testid={`inventario-retirar-tudo-${instance.id}-${stack.contentSlug}`}
+                                  onClick={() => onWithdrawFletchas(instance.id, stack.contentSlug, stack.quantidade, stack.nome)}
                                   style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: 0.7 }}
                                 >
                                   Retirar tudo
@@ -467,31 +500,31 @@ export function InventoryTab({
                           <p style={{ fontSize: 10, opacity: 0.45, margin: "0 0 4px" }}>Guardar flechas (do inventário):</p>
                           {flechasEstoque.map((ammoInst) => {
                             const ammoModelo = itemBySlug.get(ammoInst.itemSlug);
-                            const guardarVal = guardarQtd[ammoInst.id] ?? 1;
+                            const guardarVal = guardarQtd[nsKey(ammoInst.id)] ?? 1;
                             const maxGuardavel = Math.min(ammoInst.quantidade, capacidade - totalFlechas);
                             return (
                               <div key={ammoInst.id} style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginBottom: 4, fontSize: 11 }}>
                                 <span style={{ minWidth: 120, opacity: 0.85 }}>{ammoModelo?.nome ?? ammoInst.itemNome}</span>
                                 <span style={{ opacity: 0.5 }}>estoque: {ammoInst.quantidade}</span>
                                 <input
-                                  data-testid={`inventario-guardar-qtd-${ammoInst.id}`}
+                                  data-testid={`inventario-guardar-qtd-${instance.id}-${ammoInst.id}`}
                                   type="number"
                                   min={1}
                                   max={maxGuardavel}
                                   value={guardarVal}
-                                  onChange={(e) => setGuardarQtd((prev) => ({ ...prev, [ammoInst.id]: Math.max(1, Number(e.target.value)) }))}
+                                  onChange={(e) => setGuardarQtd((prev) => ({ ...prev, [nsKey(ammoInst.id)]: Math.max(1, Number(e.target.value)) }))}
                                   style={{ ...input, width: 52, fontSize: 11 }}
                                 />
                                 <button
-                                  data-testid={`inventario-guardar-${ammoInst.id}`}
-                                  onClick={() => onStoreFletchas(ammoInst.id, ammoInst.itemSlug, ammoModelo?.nome ?? ammoInst.itemNome, guardarVal)}
+                                  data-testid={`inventario-guardar-${instance.id}-${ammoInst.id}`}
+                                  onClick={() => onStoreFletchas(instance.id, ammoInst.id, ammoInst.itemSlug, ammoModelo?.nome ?? ammoInst.itemNome, guardarVal)}
                                   style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
                                 >
                                   Guardar
                                 </button>
                                 <button
-                                  data-testid={`inventario-guardar-tudo-${ammoInst.id}`}
-                                  onClick={() => onStoreFletchas(ammoInst.id, ammoInst.itemSlug, ammoModelo?.nome ?? ammoInst.itemNome, maxGuardavel)}
+                                  data-testid={`inventario-guardar-tudo-${instance.id}-${ammoInst.id}`}
+                                  onClick={() => onStoreFletchas(instance.id, ammoInst.id, ammoInst.itemSlug, ammoModelo?.nome ?? ammoInst.itemNome, maxGuardavel)}
                                   style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: 0.7 }}
                                 >
                                   Guardar tudo
@@ -503,7 +536,7 @@ export function InventoryTab({
                       )}
 
                       <button
-                        data-testid="inventario-recarregar-aljava"
+                        data-testid={`inventario-recarregar-aljava-${instance.id}`}
                         onClick={() => onReloadWeapon(instance.id)}
                         style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
                       >
@@ -646,8 +679,7 @@ export function InventoryTab({
                 </div>
               </div>
             );
-            });
-          })()}
+          })}
         </div>
       </Section>
     </>

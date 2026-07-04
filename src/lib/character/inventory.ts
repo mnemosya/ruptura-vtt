@@ -48,11 +48,12 @@ import type { TechnicalContentItem } from "../content";
 import {
   deriveModoMunicao,
   hasExistingAljava,
-  createSharedAljavaInstance,
+  createAljavaInstance,
   parseKitQuantidade,
-  findSharedAljava,
+  getAljavaInstances,
   addFletchasToAljava,
   ALJAVA_ITEM_SLUG,
+  clearBowSelectionsForAljava,
 } from "./ammunition";
 
 // ---------------------------------------------------------------------
@@ -222,12 +223,24 @@ export interface InventoryItemInstance {
    */
   municaoAtual?: number;
   /**
-   * Aljava para arcos (checkpoint v0.59, PRD 13.4.1) — instância
-   * especial criada na compra de arco. Não existe no catálogo como
-   * item; é estrutura gerenciada pela plataforma. Ausente em tudo que
-   * não é arco ou em instâncias antigas.
+   * Conteúdo de flechas — presente SÓ em instâncias de Aljava
+   * (itemSlug === "aljava", checkpoint v0.60). Um personagem pode ter
+   * várias Aljavas; cada uma é uma instância própria com seu próprio
+   * `aljava`. Ausente em tudo que não é uma Aljava.
    */
   aljava?: import("./ammunition").Aljava;
+  /**
+   * Em instâncias de ARCO (checkpoint v0.60): id da instância de
+   * Aljava que este arco usa para atacar. Ausente = nenhuma
+   * selecionada explicitamente (auto-seleciona se só existir 1 Aljava).
+   */
+  selectedAljavaInstanceId?: string;
+  /**
+   * Em instâncias de ARCO (checkpoint v0.60): slug do tipo de flecha
+   * (dentro da Aljava selecionada) usado no próximo ataque. Ausente =
+   * auto-seleciona se a Aljava selecionada só tiver 1 tipo.
+   */
+  selectedFlechaSlug?: string;
 }
 
 export type ItemPropertyClassification =
@@ -649,9 +662,17 @@ export function setItemLoadoutState(character: Character, instanceId: string, es
 
 export function removeItemFromInventory(character: Character, instanceId: string): Character {
   const atual = character.inventario ?? [];
+  const removida = atual.find((item) => item.id === instanceId);
   const next = atual.filter((item) => item.id !== instanceId);
   if (next.length === atual.length) return character;
-  return { ...character, inventario: next };
+  const nextChar = { ...character, inventario: next };
+  // Se a instância removida era uma Aljava, limpar a referência em
+  // qualquer arco que a tivesse selecionada (evita apontar para uma
+  // Aljava inexistente).
+  if (removida?.itemSlug === ALJAVA_ITEM_SLUG) {
+    return clearBowSelectionsForAljava(nextChar, instanceId);
+  }
+  return nextChar;
 }
 
 /** Ajusta a quantidade de uma instância — nunca abaixo de 1 (para chegar a 0, use `removeItemFromInventory`). */
@@ -693,17 +714,6 @@ export function purchaseItem(params: {
 }): PurchaseItemResult {
   const { character, item, walletId, nowIso } = params;
 
-  // Aljava é concedida automaticamente na compra do primeiro arco — nunca
-  // comprável manualmente (mesmo que chamado diretamente, sem passar pela
-  // UI que já a esconde da loja). Evita criar uma segunda Aljava.
-  if (item.slug === ALJAVA_ITEM_SLUG) {
-    return {
-      character,
-      ok: false,
-      reason: "Aljava é concedida automaticamente ao comprar o primeiro arco — não é um item comprável.",
-    };
-  }
-
   const quantidadeKits = Math.max(1, Math.trunc(params.quantidade));
   const precoUnitario = params.precoUnitario ?? item.preco;
   // Para munições: desempacotar kit → quantidade em inventário = kits × kitQuantidade.
@@ -730,6 +740,30 @@ export function purchaseItem(params: {
   }
 
   const walletAfter = saldoAtual - totalCost;
+
+  // Aljava: item solo, não empilhável por quantidade (cada unidade
+  // comprada é uma Aljava PRÓPRIA e independente — nunca uma instância
+  // com quantidade > 1). Um personagem pode ter várias.
+  if (item.slug === ALJAVA_ITEM_SLUG) {
+    const novasInstancias: InventoryItemInstance[] = Array.from({ length: quantidadeKits }, () => ({
+      ...createAljavaInstance(nowIso),
+      precoPago: precoUnitario,
+    }));
+    const nextChar: Character = {
+      ...character,
+      carteira: { ...carteira, [walletId]: walletAfter },
+      inventario: [...(character.inventario ?? []), ...novasInstancias],
+    };
+    return {
+      character: nextChar,
+      ok: true,
+      totalCost,
+      walletBefore: saldoAtual,
+      walletAfter,
+      instance: novasInstancias[novasInstancias.length - 1],
+    };
+  }
+
   // Munição: derivar modo antes de criar instância.
   const modoMunicao = deriveModoMunicao(item.subtipo, item.municaoMax, item.municaoCompativelSlug);
   const isArco = modoMunicao === "aljava";
@@ -775,67 +809,68 @@ export function purchaseItem(params: {
   };
 
   if (isArco) {
-    // Criar Aljava se não existir
+    // Se o personagem não tem NENHUMA Aljava ainda, a compra do
+    // (primeiro) arco cria uma. Se já existe pelo menos uma, NÃO cria
+    // outra automaticamente — o kit vai para a primeira Aljava por
+    // padrão (documentado; usuário pode ter várias e mover flechas
+    // manualmente depois).
     if (!hasExistingAljava(nextCharacterBase)) {
       nextCharacterBase = {
         ...nextCharacterBase,
-        inventario: [...(nextCharacterBase.inventario ?? []), createSharedAljavaInstance(nowIso)],
+        inventario: [...(nextCharacterBase.inventario ?? []), createAljavaInstance(nowIso)],
       };
     }
+    const aljavaAlvo = getAljavaInstances(nextCharacterBase)[0];
 
-    // Adicionar kit inicial de flechas à Aljava
+    // Adicionar kit inicial de flechas à Aljava alvo
     const kitQtd = parseKitQuantidade(item.inclui_na_compra);
     const flechaSlug = item.municaoCompativelSlug || "flecha_simples";
-    if (kitQtd && kitQtd > 0) {
-      const sharedAljava = findSharedAljava(nextCharacterBase);
-      if (sharedAljava) {
-        const { aljava: novaAljava, excedente } = addFletchasToAljava(
-          sharedAljava.aljava,
-          flechaSlug,
-          "Flecha simples",
-          kitQtd
+    if (kitQtd && kitQtd > 0 && aljavaAlvo) {
+      const { aljava: novaAljava, excedente } = addFletchasToAljava(
+        aljavaAlvo.aljava,
+        flechaSlug,
+        "Flecha simples",
+        kitQtd
+      );
+
+      // Atualizar Aljava alvo no inventário
+      nextCharacterBase = {
+        ...nextCharacterBase,
+        inventario: (nextCharacterBase.inventario ?? []).map((i) =>
+          i.id === aljavaAlvo.id ? { ...i, aljava: novaAljava } : i
+        ),
+      };
+
+      // Se houver excedente (Aljava alvo cheia), adicionar ao estoque do inventário
+      if (excedente > 0) {
+        const existingAmmo = nextCharacterBase.inventario!.find(
+          (i) => i.itemSlug === flechaSlug && i.itemSlug !== ALJAVA_ITEM_SLUG
         );
-        const moved = kitQtd - excedente;
-
-        // Atualizar Aljava no inventário
-        nextCharacterBase = {
-          ...nextCharacterBase,
-          inventario: (nextCharacterBase.inventario ?? []).map((i) =>
-            i.id === sharedAljava.id ? { ...i, aljava: novaAljava } : i
-          ),
-        };
-
-        // Se houver excedente, adicionar ao inventário
-        if (excedente > 0) {
-          const existingAmmo = nextCharacterBase.inventario!.find(
-            (i) => i.itemSlug === flechaSlug && i.id !== sharedAljava.id
-          );
-          if (existingAmmo) {
-            nextCharacterBase = {
-              ...nextCharacterBase,
-              inventario: nextCharacterBase.inventario!.map((i) =>
-                i.id === existingAmmo.id ? { ...i, quantidade: i.quantidade + excedente } : i
-              ),
-            };
-          } else {
-            const ammoInst: InventoryItemInstance = {
-              id: crypto.randomUUID(),
-              itemSlug: flechaSlug,
-              itemNome: "Flecha simples",
-              categoria: "municao",
-              subtipo: "municao",
-              quantidade: excedente,
-              estado: "mochila",
-              adquiridoEm: nowIso,
-              precoPago: 0,
-              propriedadesTecnicas: [],
-              estadosTecnicos: [],
-            };
-            nextCharacterBase = {
-              ...nextCharacterBase,
-              inventario: [...nextCharacterBase.inventario!, ammoInst],
-            };
-          }
+        if (existingAmmo) {
+          nextCharacterBase = {
+            ...nextCharacterBase,
+            inventario: nextCharacterBase.inventario!.map((i) =>
+              i.id === existingAmmo.id ? { ...i, quantidade: i.quantidade + excedente } : i
+            ),
+          };
+        } else {
+          const ammoInst: InventoryItemInstance = {
+            id: crypto.randomUUID(),
+            itemSlug: flechaSlug,
+            itemNome: "Flecha simples",
+            categoria: "municao",
+            subtipo: "municao",
+            quantidade: excedente,
+            estado: "mochila",
+            adquiridoEm: nowIso,
+            precoPago: 0,
+            propriedadesTecnicas: [],
+            estadosTecnicos: [],
+          };
+          nextCharacterBase = {
+            ...nextCharacterBase,
+            inventario: [...nextCharacterBase.inventario!, ammoInst],
+          };
         }
       }
     }

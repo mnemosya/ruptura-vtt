@@ -607,13 +607,24 @@ assert.equal(estoqueFlechaSimplesApos2!.quantidade, 10 + 10 - aljavaApos2.aljava
 console.log("27. Segundo arco não duplica Aljava; kit inicial respeita capacidade e excedente vira estoque — OK");
 
 // -------------------------------------------------------------
-// 28. Aljava não é comprável manualmente (só concedida na compra de arco).
+// 28. Aljava PODE ser comprada manualmente — um personagem pode ter
+//     várias Aljavas independentes (não empilha por quantidade).
 // -------------------------------------------------------------
 const aljavaCatalogo = items.find((i) => i.slug === "aljava");
 assert.ok(aljavaCatalogo, "Item 'aljava' deve existir no catálogo (data-driven, não hardcoded).");
-const tentativaCompraAljava = purchaseItem({ character: semArco, item: aljavaCatalogo!, quantidade: 1, walletId: "aretz_informal", nowIso: "2026-07-04T10:02:00.000Z" });
-assert.equal(tentativaCompraAljava.ok, false, "Compra manual direta de Aljava deve ser recusada.");
-assert.equal(tentativaCompraAljava.character, semArco, "Personagem não é alterado quando a compra é recusada.");
-console.log("28. Aljava não pode ser comprada manualmente — OK");
+// compraArco1.character já tem 1 Aljava (criada na compra do arco_curto acima).
+const compraAljavaExtra = purchaseItem({ character: compraArco1.character, item: aljavaCatalogo!, quantidade: 1, walletId: "aretz_informal", nowIso: "2026-07-04T10:02:00.000Z" });
+assert.equal(compraAljavaExtra.ok, true, "Compra manual de Aljava é permitida.");
+const aljavasAposCompraExtra = compraAljavaExtra.character.inventario!.filter((i) => i.itemSlug === "aljava");
+assert.equal(aljavasAposCompraExtra.length, 2, "Personagem agora tem 2 Aljavas independentes.");
+const novaAljavaComprada = aljavasAposCompraExtra.find((a) => a.id !== aljavasApos1[0].id) as unknown as { aljava: { stacks: unknown[] } };
+assert.equal(novaAljavaComprada.aljava.stacks.length, 0, "Aljava recém-comprada nasce vazia (não herda o kit da primeira).");
+// Comprar 2 de uma vez cria 2 instâncias distintas, não uma com quantidade 2.
+const compraDuasAljavas = purchaseItem({ character: semArco, item: aljavaCatalogo!, quantidade: 2, walletId: "aretz_informal", nowIso: "2026-07-04T10:03:00.000Z" });
+assert.equal(compraDuasAljavas.ok, true);
+const instanciasDuasAljavas = compraDuasAljavas.character.inventario!.filter((i) => i.itemSlug === "aljava");
+assert.equal(instanciasDuasAljavas.length, 2, "Comprar quantidade 2 cria 2 instâncias de Aljava, não 1 com quantidade 2.");
+assert.ok(instanciasDuasAljavas.every((i) => i.quantidade === 1), "Cada Aljava tem quantidade 1 (item solo, não empilhável).");
+console.log("28. Aljava pode ser comprada manualmente; múltiplas Aljavas nunca colidem — OK");
 
 console.log("\ntest-inventory — todos os cenários passaram.");

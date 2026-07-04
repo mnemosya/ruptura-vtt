@@ -421,11 +421,19 @@ export interface Character {
     pdAtual?: number;
     /** Munição atual no carregador/câmara (checkpoint v0.59) — armas de fogo e bestas. */
     municaoAtual?: number;
-    /** Aljava para arcos (checkpoint v0.59, PRD 13.4.1) — stacks de flechas agrupadas por tipo. */
+    /**
+     * Presente só em instâncias de Aljava (checkpoint v0.60) — stacks
+     * de flechas agrupadas por tipo. Um personagem pode ter várias
+     * Aljavas; cada instância carrega seu próprio `aljava`.
+     */
     aljava?: {
       capacidade: number;
       stacks: { contentSlug: string; nome: string; quantidade: number }[];
     };
+    /** Em instâncias de ARCO (checkpoint v0.60): id da Aljava usada para atacar. */
+    selectedAljavaInstanceId?: string;
+    /** Em instâncias de ARCO (checkpoint v0.60): slug do tipo de flecha ativo. */
+    selectedFlechaSlug?: string;
   }[];
   /**
    * Magias aprendidas individualmente (checkpoint v0.50.1/v0.50.2) —
