@@ -17,6 +17,8 @@ import {
   forgetSpell,
   isSpellLearned,
   createInitialCharacter,
+  applyLongRest,
+  computeDerivedStats,
   type SpellContent,
 } from "../src/lib/character";
 
@@ -88,6 +90,55 @@ if (comCustoManaReal) {
 }
 
 // -------------------------------------------------------------
+// 4b. Mana insuficiente bloqueia a conjuração — não gasta PA, não muda nada.
+// -------------------------------------------------------------
+if (comCustoManaReal) {
+  const personagemSemMana = {
+    ...personagemComRecursos,
+    recursos_atuais: { pv: 10, pe: 10, mana: 0, integridade: 10, mana_temporaria: 0 },
+  };
+  const bloqueado = castSpell({ character: personagemSemMana, spell: comCustoManaReal, paMax: 10, manaMax: 10 });
+  assert.equal(bloqueado.ok, false, "Mana insuficiente deve bloquear a conjuração.");
+  assert.ok(bloqueado.reason?.includes("Mana insuficiente"));
+  assert.equal(bloqueado.character, personagemSemMana, "Nada deve mudar quando bloqueado por Mana insuficiente.");
+  assert.equal(bloqueado.character.estado_jogo?.pa_gastos, personagemSemMana.estado_jogo.pa_gastos, "PA não deve ser gasto quando Mana é insuficiente.");
+  console.log("4b. Mana insuficiente bloqueia a conjuração — PA não é gasto, nada muda — OK");
+} else {
+  console.log("4b. Sem magia de custo_mana real no DB atual — cenário pulado.");
+}
+
+// -------------------------------------------------------------
+// 4c. Mana temporária é consumida ANTES da mana normal (PRD 10.3).
+// -------------------------------------------------------------
+if (comCustoManaReal) {
+  const custo = comCustoManaReal.estatisticas.custo_mana!;
+  const personagemComTemporaria = {
+    ...personagemComRecursos,
+    recursos_atuais: { pv: 10, pe: 10, mana: 10, integridade: 10, mana_temporaria: 1 },
+  };
+  const comTemporaria = castSpell({ character: personagemComTemporaria, spell: comCustoManaReal, paMax: 10, manaMax: 10 });
+  assert.equal(comTemporaria.ok, true);
+  const consumidoDaTemporaria = Math.min(1, custo);
+  assert.equal(comTemporaria.manaTemporariaAfter, 1 - consumidoDaTemporaria, "Mana temporária deve ser drenada primeiro.");
+  assert.equal(comTemporaria.manaAfter, 10 - (custo - consumidoDaTemporaria), "Só o restante do custo (após a temporária) desconta a Mana normal.");
+  assert.equal(comTemporaria.character.recursos_atuais?.mana_temporaria, 1 - consumidoDaTemporaria);
+  console.log(`4c. Mana temporária consumida antes da Mana normal (custo ${custo}, temporária 1) — OK`);
+
+  // 4d. Insuficiência combinada: mana normal 0, mas temporária cobre o custo -> sucesso.
+  const personagemSoComTemporaria = {
+    ...personagemComRecursos,
+    recursos_atuais: { pv: 10, pe: 10, mana: 0, integridade: 10, mana_temporaria: custo },
+  };
+  const soComTemporaria = castSpell({ character: personagemSoComTemporaria, spell: comCustoManaReal, paMax: 10, manaMax: 10 });
+  assert.equal(soComTemporaria.ok, true, "Mana temporária suficiente por si só deve permitir a conjuração mesmo com Mana normal em 0.");
+  assert.equal(soComTemporaria.manaAfter, 0, "Mana normal não deve ser tocada quando a temporária cobre todo o custo.");
+  assert.equal(soComTemporaria.manaTemporariaAfter, 0);
+  console.log("4d. Mana temporária sozinha cobre o custo (Mana normal em 0) — Mana normal intocada — OK");
+} else {
+  console.log("4c/4d. Sem magia de custo_mana real no DB atual — cenários pulados.");
+}
+
+// -------------------------------------------------------------
 // 5. Atalho de dano — extrai fórmula real e rola determinística.
 // -------------------------------------------------------------
 const danoEfeito = getSpellDamageEffect(controle!);
@@ -142,5 +193,23 @@ const semControle = forgetSpell(comControleAprendido, learnedId);
 assert.equal(isSpellLearned(semControle, controle!.slug), false);
 assert.equal(semControle.magias_aprendidas?.length, 0);
 console.log("10. Esquecer magia remove a entrada — OK");
+
+// -------------------------------------------------------------
+// 11. Descanso longo ainda restaura Mana ao máximo (e zera mana_temporaria)
+//     mesmo depois de uma conjuração ter gastado Mana de verdade.
+// -------------------------------------------------------------
+if (comCustoManaReal) {
+  const derived = computeDerivedStats(personagemComRecursos.atributos, null);
+  const personagemGastouMana = {
+    ...personagemComRecursos,
+    recursos_atuais: { pv: 10, pe: 10, mana: 1, integridade: 10, mana_temporaria: 0 },
+  };
+  const descansado = applyLongRest(personagemGastouMana, derived, "2026-07-03T10:00:00.000Z");
+  assert.equal(descansado.character.recursos_atuais?.mana, derived.mana_max, "Descanso longo deve restaurar Mana ao máximo.");
+  assert.equal(descansado.character.recursos_atuais?.mana_temporaria, 0, "Descanso longo zera Mana temporária (PRD 10.3).");
+  console.log("11. Descanso longo ainda restaura Mana ao máximo após conjuração ter gastado Mana — OK");
+} else {
+  console.log("11. Sem magia de custo_mana real no DB atual — cenário pulado.");
+}
 
 console.log("\ntest-spells — todos os cenários passaram.");

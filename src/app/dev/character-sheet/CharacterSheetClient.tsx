@@ -1796,9 +1796,10 @@ export default function CharacterSheetClient({
     }
     characterRef.current = result.character;
     setCharacter(result.character);
+    const temporariaConsumida = (result.manaTemporariaBefore ?? 0) - (result.manaTemporariaAfter ?? 0);
     const manaTexto = result.manaCostUnknown
       ? "custo de Mana ainda não definido (placeholder)"
-      : `Mana ${result.manaBefore} → ${result.manaAfter}`;
+      : `Mana ${result.manaBefore} → ${result.manaAfter}${temporariaConsumida > 0 ? ` (${temporariaConsumida} da Mana temporária)` : ""}`;
     addLogEntry("recurso", `Conjurado: ${spell.nome} — PA ${result.paBefore} → ${result.paAfter}; ${manaTexto}.`);
   }
 

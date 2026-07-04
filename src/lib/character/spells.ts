@@ -1,24 +1,30 @@
 /**
- * Vertentes e magias — checkpoint v0.50/v0.50.1/v0.50.2 (PRD 11.4).
- * Catálogo inteiro (132 magias, 6 vertentes, especializações) vem de
- * `content_documents` (content_type="spell", `listSpells()`, já
- * existente) — nunca lista manual. Cada magia é aprendida
- * INDIVIDUALMENTE (`Character.magias_aprendidas`, mesmo padrão de
- * talentos, v0.48); a vertente "conhecida" é só uma DERIVAÇÃO de já
- * ter aprendido pelo menos 1 magia dela (`getKnownVertentes`) — sem
- * passo manual separado de "conhecer vertente" (removido no v0.50.2 a
- * pedido do usuário, redundante com aprender magia individual).
+ * Vertentes e magias — checkpoint v0.50/v0.50.1/v0.50.2 (PRD 11.4),
+ * consumo de Mana temporária no v0.53 (achado da auditoria v0.50 sobre
+ * `custo_mana`). Catálogo inteiro (132 magias, 6 vertentes,
+ * especializações) vem de `content_documents` (content_type="spell",
+ * `listSpells()`, já existente) — nunca lista manual. Cada magia é
+ * aprendida INDIVIDUALMENTE (`Character.magias_aprendidas`, mesmo
+ * padrão de talentos, v0.48); a vertente "conhecida" é só uma
+ * DERIVAÇÃO de já ter aprendido pelo menos 1 magia dela
+ * (`getKnownVertentes`) — sem passo manual separado de "conhecer
+ * vertente" (removido no v0.50.2 a pedido do usuário, redundante com
+ * aprender magia individual).
  *
  * Escopo deliberadamente pequeno (mesmo critério de v0.47/v0.48/v0.49):
- * "Conjurar" desconta PA/Mana (custo_mana pode ser `null` no DB atual —
- * PRD autoriza placeholder; nunca inventamos um número) e registra o
- * resumo no log. Magias com efeito `dano` ganham atalho de rolagem
- * (reaproveita `rollDamageFormula` de `attack.ts`, mesmo parser "NdM").
- * Magias com `resolucao:"resistencia"` mostram a CD e o aviso de teste
- * do alvo como TEXTO — nenhuma resolução automática de resistência do
- * alvo é implementada aqui (exigiria o mesmo motor de ataque
- * contestado do v0.47, mas para alvo de magia; documentado como
- * pendência, não inventado).
+ * "Conjurar" desconta PA (sempre) e Mana (só quando `custo_mana` é um
+ * número real no conteúdo — 13 das 132 magias publicadas, todas da
+ * vertente Sináptica; as outras 119 ficam `null` por decisão explícita
+ * do PRD §11.4/Fase 5 — "custo de mana pode usar placeholder enquanto
+ * os valores finais não estiverem fechados" — NUNCA inventamos um
+ * número para elas). Drena `mana_temporaria` ANTES da mana normal (PRD
+ * 10.3), registra o resumo no log. Magias com efeito `dano` ganham
+ * atalho de rolagem (reaproveita `rollDamageFormula` de `attack.ts`,
+ * mesmo parser "NdM"). Magias com `resolucao:"resistencia"` mostram a
+ * CD e o aviso de teste do alvo como TEXTO — nenhuma resolução
+ * automática de resistência do alvo é implementada aqui (exigiria o
+ * mesmo motor de ataque contestado do v0.47, mas para alvo de magia;
+ * documentado como pendência, não inventado).
  *
  * NÃO implementado (PRD 11.4, fora de escopo): efeitos de controle/
  * movimento/suporte automatizados por tipo, sustentação de duração,
@@ -218,6 +224,9 @@ export interface CastSpellResult {
   paAfter: number;
   manaBefore?: number;
   manaAfter?: number;
+  /** Mana temporária consumida ANTES da mana normal (PRD 10.3) — 0 quando não havia/não foi usada. */
+  manaTemporariaBefore?: number;
+  manaTemporariaAfter?: number;
   manaCostUnknown: boolean;
 }
 
@@ -227,6 +236,12 @@ export interface CastSpellResult {
  * `manaCostUnknown: true` para a UI avisar). Sem PA suficiente, devolve
  * `ok:false` sem mutar nada (mesmo padrão de `canPayActionCost`/
  * `purchaseItem`).
+ *
+ * Mana temporária (checkpoint v0.53, PRD 10.3: "Mana temporária é uma
+ * camada consumida antes da mana normal") é drenada PRIMEIRO — só o
+ * restante do custo (se houver) desconta a Mana normal. Insuficiência é
+ * checada contra a SOMA (mana + mana_temporaria); nunca deixa nenhuma
+ * das duas negativa.
  */
 export function castSpell(params: {
   character: Character;
@@ -252,26 +267,33 @@ export function castSpell(params: {
 
   const manaCostUnknown = spell.estatisticas.custo_mana == null;
   const manaAntes = character.recursos_atuais?.mana ?? manaMax;
+  const manaTemporariaAntes = character.recursos_atuais?.mana_temporaria ?? 0;
   const custoMana = spell.estatisticas.custo_mana ?? 0;
 
-  if (!manaCostUnknown && custoMana > manaAntes) {
+  if (!manaCostUnknown && custoMana > manaAntes + manaTemporariaAntes) {
     return {
       character,
       ok: false,
-      reason: `Mana insuficiente (atual: ${manaAntes}, necessário: ${custoMana}).`,
+      reason: `Mana insuficiente (atual: ${manaAntes}${manaTemporariaAntes > 0 ? ` + ${manaTemporariaAntes} temporária` : ""}, necessário: ${custoMana}).`,
       paBefore,
       paAfter: paBefore,
       manaBefore: manaAntes,
       manaAfter: manaAntes,
+      manaTemporariaBefore: manaTemporariaAntes,
+      manaTemporariaAfter: manaTemporariaAntes,
       manaCostUnknown,
     };
   }
 
-  const manaDepois = manaCostUnknown ? manaAntes : manaAntes - custoMana;
+  const consumidoDaTemporaria = manaCostUnknown ? 0 : Math.min(manaTemporariaAntes, custoMana);
+  const manaTemporariaDepois = manaTemporariaAntes - consumidoDaTemporaria;
+  const manaDepois = manaCostUnknown ? manaAntes : manaAntes - (custoMana - consumidoDaTemporaria);
   const nextCharacter: Character = {
     ...character,
     estado_jogo: { ...character.estado_jogo, pa_gastos: paGastosAntes + custoPa },
-    recursos_atuais: manaCostUnknown ? character.recursos_atuais : { ...character.recursos_atuais, mana: manaDepois },
+    recursos_atuais: manaCostUnknown
+      ? character.recursos_atuais
+      : { ...character.recursos_atuais, mana: manaDepois, mana_temporaria: manaTemporariaDepois },
   };
 
   return {
@@ -281,6 +303,8 @@ export function castSpell(params: {
     paAfter: paBefore - custoPa,
     manaBefore: manaAntes,
     manaAfter: manaDepois,
+    manaTemporariaBefore: manaTemporariaAntes,
+    manaTemporariaAfter: manaTemporariaDepois,
     manaCostUnknown,
   };
 }
