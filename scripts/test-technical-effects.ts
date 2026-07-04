@@ -10,9 +10,15 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   deriveInstalledTechnicalEffects,
+  deriveInstalledRuneEffects,
   installEscalpo,
   removeInstalledEscalpo,
   createInitialCharacter,
+  normalizeItemContent,
+  purchaseItem,
+  installRuneOnItem,
+  removeRuneFromItem,
+  type ItemContent,
 } from "../src/lib/character";
 import { normalizeTechnicalContentItem, type TechnicalContentItem } from "../src/lib/content";
 
@@ -111,5 +117,92 @@ const comApelido = installEscalpo(personagem, { contentId: comModificador!.slug,
 const efeitosApelido = deriveInstalledTechnicalEffects(comApelido, escalpos);
 assert.equal(efeitosApelido[0].sourceName, "Radar do Kael");
 console.log("8. Nome customizado da instância aparece como fonte do efeito — OK");
+
+// ===============================================================
+// Runas instaladas em item — automação passiva limitada (checkpoint v0.57).
+// ===============================================================
+
+const itemsDb = readJson<{ itens: Record<string, unknown>[] }>("content/db_equipamentos_normalizado_v1_2.json");
+const items: ItemContent[] = itemsDb.itens.map(normalizeItemContent);
+const runasDb = readJson<{ runas: Record<string, unknown>[] }>("content/db_runas_normalizado_v1_2.json");
+const runas: TechnicalContentItem[] = runasDb.runas.map(normalizeTechnicalContentItem);
+
+const rifleDeFogo = items.find((i) => i.categoria === "arma" && i.subtipo === "fogo");
+assert.ok(rifleDeFogo, "Deve haver uma arma de fogo no DB real.");
+const runaEstabilidade = runas.find((r) => r.slug === "runa_fogo_estabilidade");
+assert.ok(runaEstabilidade, "Runa 'runa_fogo_estabilidade' (bonus:1, alvo_tags:['ataque_distancia'], sem restrição) deve existir no DB real.");
+const runaGuarda = runas.find((r) => r.slug === "runa_escudo_guarda");
+assert.ok(runaGuarda, "Runa 'runa_escudo_guarda' (bonus + restrito_a:'bloquear') deve existir no DB real.");
+const runaRetratil = runas.find((r) => r.slug === "runa_cac_retratil");
+assert.ok(runaRetratil, "Runa 'runa_cac_retratil' (efeito textual, sem bonus numérico) deve existir no DB real.");
+
+const personagemComArma = createInitialCharacter(null, "Testador de Runas");
+const compra = purchaseItem({ character: personagemComArma, item: rifleDeFogo!, quantidade: 1, walletId: "aretz_informal", precoUnitario: 0, nowIso: "2026-07-03T10:00:00.000Z" });
+
+// -------------------------------------------------------------
+// 9. Runa instalada com modificador passivo (bonus + alvo_tags, sem restrição) gera ActiveEffect.
+// -------------------------------------------------------------
+const comRunaEstabilidade = installRuneOnItem({
+  character: compra.character,
+  instanceId: compra.instance!.id,
+  itemContent: rifleDeFogo,
+  rune: runaEstabilidade!,
+  nowIso: "2026-07-03T10:05:00.000Z",
+});
+assert.equal(comRunaEstabilidade.ok, true);
+const efeitosRuna = deriveInstalledRuneEffects(comRunaEstabilidade.character, runas);
+assert.equal(efeitosRuna.length, 1, "runa_fogo_estabilidade deve gerar exatamente 1 ActiveEffect.");
+assert.equal(efeitosRuna[0].sourceType, "rune");
+assert.equal(efeitosRuna[0].modifier, 1);
+assert.deepEqual(efeitosRuna[0].affectedTags, ["ataque_distancia"]);
+console.log("9. Runa instalada com modificador passivo (bonus+alvo_tags) gera ActiveEffect (fonte 'rune') — OK");
+
+// -------------------------------------------------------------
+// 10. Remover a instalação da runa remove o ActiveEffect.
+// -------------------------------------------------------------
+const runeInstallId = comRunaEstabilidade.installation!.id;
+const semRuna = removeRuneFromItem(comRunaEstabilidade.character, compra.instance!.id, runeInstallId);
+assert.deepEqual(deriveInstalledRuneEffects(semRuna, runas), [], "Remover a instalação deve remover o ActiveEffect.");
+console.log("10. Remover a instalação da runa remove o ActiveEffect — OK");
+
+// -------------------------------------------------------------
+// 11. Payload restrito (restrito_a) não é automatizado (mesmo tendo bonus+alvo_tags).
+// -------------------------------------------------------------
+const escudo = items.find((i) => i.categoria === "escudo");
+assert.ok(escudo, "Deve haver um escudo no DB real.");
+const compraEscudo = purchaseItem({ character: personagemComArma, item: escudo!, quantidade: 1, walletId: "aretz_informal", precoUnitario: 0, nowIso: "2026-07-03T10:00:00.000Z" });
+const comRunaGuarda = installRuneOnItem({
+  character: compraEscudo.character,
+  instanceId: compraEscudo.instance!.id,
+  itemContent: escudo,
+  rune: runaGuarda!,
+  nowIso: "2026-07-03T10:05:00.000Z",
+});
+assert.equal(comRunaGuarda.ok, true);
+assert.deepEqual(
+  deriveInstalledRuneEffects(comRunaGuarda.character, runas),
+  [],
+  "runa_escudo_guarda tem restrito_a:'bloquear' — não deve virar modificador incondicional.",
+);
+console.log("11. Runa com restrito_a (contexto que o motor não distingue) não gera efeito indevido — OK");
+
+// -------------------------------------------------------------
+// 12. Efeito textual sem número (a maioria das runas) não gera efeito, sem quebrar.
+// -------------------------------------------------------------
+const comRunaRetratil = installRuneOnItem({
+  character: compra.character,
+  instanceId: compra.instance!.id,
+  itemContent: rifleDeFogo,
+  rune: runaRetratil!,
+  nowIso: "2026-07-03T10:05:00.000Z",
+});
+assert.deepEqual(deriveInstalledRuneEffects(comRunaRetratil.character, runas), [], "Runa com 'efeito' textual (torna_ocultavel) não deve gerar ActiveEffect.");
+console.log("12. Runa com efeito textual (sem bonus numérico) não gera ActiveEffect, sem quebrar — OK");
+
+// -------------------------------------------------------------
+// 13. Nenhum efeito aparece para runa só consultada na Biblioteca (não instalada).
+// -------------------------------------------------------------
+assert.deepEqual(deriveInstalledRuneEffects(compra.character, runas), [], "Sem NENHUMA runa instalada, zero efeitos — catálogo consultado não conta.");
+console.log("13. Runa só consultada na Biblioteca (não instalada) nunca gera efeito — OK");
 
 console.log("\ntest-technical-effects — todos os cenários passaram.");

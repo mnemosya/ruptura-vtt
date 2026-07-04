@@ -48,6 +48,7 @@ export function InventoryTab({
   runesError,
   onInstallRune,
   onRemoveRune,
+  installedRuneIdsWithEffect,
 }: {
   items: ItemContent[];
   catalogError: string | null;
@@ -62,6 +63,8 @@ export function InventoryTab({
   runesError: string | null;
   onInstallRune: (instanceId: string, runeSlug: string) => void;
   onRemoveRune: (instanceId: string, runeInstallationId: string) => void;
+  /** runeInstallationIds com pelo menos 1 ActiveEffect derivado (checkpoint v0.57) — ver `deriveInstalledRuneEffects`. */
+  installedRuneIdsWithEffect: Set<string>;
 }) {
   const [busca, setBusca] = useState("");
   const [categoria, setCategoria] = useState<(typeof CATEGORIA_FILTROS)[number]>("todos");
@@ -215,10 +218,12 @@ export function InventoryTab({
                     <div data-testid={`inventario-runas-lista-${instance.id}`} style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
                       {runasInstaladas.map((runa) => {
                         const modelo = runaBySlug.get(runa.runeContentId);
+                        const automatizada = installedRuneIdsWithEffect.has(runa.id);
                         return (
-                          <div key={runa.id} data-testid={`inventario-runa-instalada-${runa.id}`} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <div key={runa.id} data-testid={`inventario-runa-instalada-${runa.id}`} style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                             <span style={{ opacity: 0.5 }}>◆</span>
                             <span>{modelo?.nome ?? `Conteúdo não encontrado (${runa.runeContentId})`}</span>
+                            {automatizada && <span style={{ fontSize: 10, color: "#4caf50" }}>modificador aplicado</span>}
                             <button
                               data-testid={`inventario-runa-remover-${runa.id}`}
                               onClick={() => onRemoveRune(instance.id, runa.id)}
@@ -266,7 +271,8 @@ export function InventoryTab({
                     </div>
                   )}
                   <p style={{ fontSize: 10, opacity: 0.4, margin: "4px 0 0" }}>
-                    Runa instalada como registro passivo; automação ainda não aplicada.
+                    Modificadores passivos claramente estruturados são aplicados automaticamente (ver
+                    chip acima); o restante do payload de cada runa continua só leitura na Biblioteca.
                   </p>
                 </div>
               </div>

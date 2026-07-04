@@ -55,6 +55,7 @@ import {
   resolvePendingRuptureChoice,
   deriveActiveEffectsFromTalents,
   deriveInstalledTechnicalEffects,
+  deriveInstalledRuneEffects,
   acquireTalentLevel,
   removeTalentLevel,
   purchaseItem,
@@ -600,11 +601,12 @@ export default function CharacterSheetClient({
       const conditionEffects = deriveActiveEffectsFromConditions(character, conditionContents);
       const talentEffects = deriveActiveEffectsFromTalents(character, talentsIniciais);
       const escalpoEffects = deriveInstalledTechnicalEffects(character, escalposIniciais);
+      const runeEffects = deriveInstalledRuneEffects(character, runesIniciais);
       const reactionEffect = deriveReactionDefenseEffect(character, reactionRules);
-      const base = [...conditionEffects, ...talentEffects, ...escalpoEffects];
+      const base = [...conditionEffects, ...talentEffects, ...escalpoEffects, ...runeEffects];
       return reactionEffect ? [...base, reactionEffect] : base;
     },
-    [character, conditionContents, reactionRules, talentsIniciais, escalposIniciais],
+    [character, conditionContents, reactionRules, talentsIniciais, escalposIniciais, runesIniciais],
   );
 
   // instanceIds de escalpos com pelo menos 1 ActiveEffect derivado (checkpoint v0.55, fase 2) —
@@ -615,6 +617,18 @@ export default function CharacterSheetClient({
       if (effect.sourceType !== "escalpo") continue;
       const instanceId = effect.id.split(":")[1];
       if (instanceId) ids.add(instanceId);
+    }
+    return ids;
+  }, [activeEffects]);
+
+  // runeInstallationIds com pelo menos 1 ActiveEffect derivado (checkpoint v0.57) —
+  // só para o aviso "modificador aplicado" na aba Inventário (InventoryTab).
+  const installedRuneIdsWithEffect = useMemo(() => {
+    const ids = new Set<string>();
+    for (const effect of activeEffects) {
+      if (effect.sourceType !== "rune") continue;
+      const installId = effect.id.split(":")[1];
+      if (installId) ids.add(installId);
     }
     return ids;
   }, [activeEffects]);
@@ -2404,6 +2418,7 @@ export default function CharacterSheetClient({
           runesError={runesError}
           onInstallRune={handleInstallRune}
           onRemoveRune={handleRemoveRune}
+          installedRuneIdsWithEffect={installedRuneIdsWithEffect}
         />
       )}
 
