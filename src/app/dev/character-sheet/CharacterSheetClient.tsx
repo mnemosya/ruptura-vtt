@@ -94,6 +94,7 @@ import type {
   ItemLoadoutState,
   SpellContent,
 } from "../../../lib/character";
+import type { TechnicalContentItem } from "../../../lib/content";
 import { rollPericia, type PreparedRoll } from "../../../lib/dice";
 import {
   listCampaignProfiles,
@@ -125,6 +126,7 @@ import { ConditionsTab, type ConditionOption } from "./components/ConditionsTab"
 import { TalentsTab } from "./components/TalentsTab";
 import { InventoryTab } from "./components/InventoryTab";
 import { SpellsTab } from "./components/SpellsTab";
+import { BibliotecaTab } from "./components/BibliotecaTab";
 import { ActionsTab } from "./components/ActionsTab";
 import { ActiveStateStrip } from "./components/ActiveStateStrip";
 import { MesaTab } from "./components/MesaTab";
@@ -171,6 +173,13 @@ interface Props {
   /** Magias publicadas na Biblioteca do Sistema (checkpoint v0.50) — fonte única da aba Magias. */
   spellsIniciais: SpellContent[];
   spellsError: string | null;
+  /** Propriedades/Runas/Escalpos publicados na Biblioteca (checkpoint v0.53) — fonte única da aba Biblioteca (consulta, sem instância/equipamento). */
+  propertiesIniciais: TechnicalContentItem[];
+  propertiesError: string | null;
+  runesIniciais: TechnicalContentItem[];
+  runesError: string | null;
+  escalposIniciais: TechnicalContentItem[];
+  escalposError: string | null;
   /**
    * Mesa/perfil pré-selecionados via query string (`?campaignId=...&
    * profileId=...`) — vindos de `/dev/join/[campaignId]` (checkpoint
@@ -234,6 +243,12 @@ export default function CharacterSheetClient({
   itemsError,
   spellsIniciais,
   spellsError,
+  propertiesIniciais,
+  propertiesError,
+  runesIniciais,
+  runesError,
+  escalposIniciais,
+  escalposError,
   initialCampaignId,
   initialProfileId,
   mode,
@@ -2316,6 +2331,17 @@ export default function CharacterSheetClient({
           onForget={handleForgetSpell}
           onCast={handleCastSpell}
           onRollDamage={handleRollSpellDamage}
+        />
+      )}
+
+      {activeTab === "biblioteca" && (
+        <BibliotecaTab
+          properties={propertiesIniciais}
+          propertiesError={propertiesError}
+          runes={runesIniciais}
+          runesError={runesError}
+          escalpos={escalposIniciais}
+          escalposError={escalposError}
         />
       )}
 

@@ -14,7 +14,20 @@
  * produto, mesmo que a UI não a exiba.
  */
 
-import { getCharacterRules, getCombatFlow, listConditions, listCombatActions, listTalents, listItems, listSpells } from "../lib/content";
+import {
+  getCharacterRules,
+  getCombatFlow,
+  listConditions,
+  listCombatActions,
+  listTalents,
+  listItems,
+  listSpells,
+  listProperties,
+  listRunes,
+  listEscalpos,
+  normalizeTechnicalContentItem,
+  type TechnicalContentItem,
+} from "../lib/content";
 import { listLegacyCharactersDev } from "../lib/character/storage";
 import { listCampaigns } from "../lib/table/storage";
 import {
@@ -168,6 +181,37 @@ export async function CharacterSheetView({
     spellsError = error instanceof Error ? error.message : "Não foi possível carregar o catálogo de magias.";
   }
 
+  // Biblioteca Técnica (checkpoint v0.53) — Propriedades/Runas/Escalpos,
+  // consulta de leitura pura (PRD §0/2.1/4/8/11). Cada catálogo falha
+  // isoladamente (mesmo padrão de talentos/itens/magias acima) — nunca
+  // um catálogo manual local no lugar.
+  let properties: TechnicalContentItem[] = [];
+  let propertiesError: string | null = null;
+  try {
+    const docs = await listProperties();
+    properties = docs.map((doc) => normalizeTechnicalContentItem(doc.payload as Record<string, unknown>));
+  } catch (error) {
+    propertiesError = error instanceof Error ? error.message : "Não foi possível carregar o catálogo de propriedades.";
+  }
+
+  let runes: TechnicalContentItem[] = [];
+  let runesError: string | null = null;
+  try {
+    const docs = await listRunes();
+    runes = docs.map((doc) => normalizeTechnicalContentItem(doc.payload as Record<string, unknown>));
+  } catch (error) {
+    runesError = error instanceof Error ? error.message : "Não foi possível carregar o catálogo de runas.";
+  }
+
+  let escalpos: TechnicalContentItem[] = [];
+  let escalposError: string | null = null;
+  try {
+    const docs = await listEscalpos();
+    escalpos = docs.map((doc) => normalizeTechnicalContentItem(doc.payload as Record<string, unknown>));
+  } catch (error) {
+    escalposError = error instanceof Error ? error.message : "Não foi possível carregar o catálogo de escalpos.";
+  }
+
   return (
     <CharacterSheetClient
       regras={regras}
@@ -186,6 +230,12 @@ export async function CharacterSheetView({
       itemsError={itemsError}
       spellsIniciais={spells}
       spellsError={spellsError}
+      propertiesIniciais={properties}
+      propertiesError={propertiesError}
+      runesIniciais={runes}
+      runesError={runesError}
+      escalposIniciais={escalpos}
+      escalposError={escalposError}
       initialCampaignId={campaignId}
       initialProfileId={profileId}
       mode={mode}

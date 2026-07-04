@@ -6,3 +6,4 @@
 export * from "./types";
 export { getContentClient } from "./client";
 export * from "./queries";
+export * from "./technicalLibrary";
