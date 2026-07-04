@@ -6,12 +6,15 @@ import { buttonStyle } from "./styles";
 import {
   WALLET_LABELS,
   ITEM_LOADOUT_STATES,
+  getRuneCompatibility,
+  countInstalledRunes,
   type ItemContent,
   type InventoryItemInstance,
   type Wallet,
   type WalletId,
   type ItemLoadoutState,
 } from "../../../../lib/character";
+import type { TechnicalContentItem } from "../../../../lib/content";
 
 const input: React.CSSProperties = { background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "6px 8px", fontSize: 13 };
 
@@ -41,6 +44,10 @@ export function InventoryTab({
   onChangeCarteira,
   onSetEstado,
   onRemoveItem,
+  runes,
+  runesError,
+  onInstallRune,
+  onRemoveRune,
 }: {
   items: ItemContent[];
   catalogError: string | null;
@@ -50,12 +57,22 @@ export function InventoryTab({
   onChangeCarteira: (walletId: WalletId, value: number) => void;
   onSetEstado: (instanceId: string, estado: ItemLoadoutState) => void;
   onRemoveItem: (instanceId: string) => void;
+  /** Runas publicadas na Biblioteca (checkpoint v0.56) — mesma fonte da aba Biblioteca. */
+  runes: TechnicalContentItem[];
+  runesError: string | null;
+  onInstallRune: (instanceId: string, runeSlug: string) => void;
+  onRemoveRune: (instanceId: string, runeInstallationId: string) => void;
 }) {
   const [busca, setBusca] = useState("");
   const [categoria, setCategoria] = useState<(typeof CATEGORIA_FILTROS)[number]>("todos");
   const [walletId, setWalletId] = useState<WalletId>("aretz_informal");
   const [quantidades, setQuantidades] = useState<Record<string, number>>({});
   const [precos, setPrecos] = useState<Record<string, number>>({});
+  const [runaSelecionada, setRunaSelecionada] = useState<Record<string, string>>({});
+
+  const runasPublicadas = runes.filter((r) => r.status === "published");
+  const runaBySlug = new Map(runasPublicadas.map((r) => [r.slug, r]));
+  const itemBySlug = new Map(items.map((i) => [i.slug, i]));
 
   const filtrados = items
     .filter((i) => i.status === "published")
@@ -154,29 +171,107 @@ export function InventoryTab({
       <Section title={`Inventário (${inventario.length})`}>
         {inventario.length === 0 && <p style={{ fontSize: 12, opacity: 0.6 }}>Nenhum item ainda.</p>}
         <div data-testid="inventario-lista" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {inventario.map((instance) => (
-            <div key={instance.id} data-testid={`inventario-item-${instance.id}`} style={{ background: "#1d1e24", borderRadius: 8, padding: "8px 12px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 12 }}>
-              <strong>{instance.itemNome}</strong>
-              <span style={{ opacity: 0.6 }}>x{instance.quantidade}</span>
-              <select
-                data-testid={`inventario-estado-${instance.id}`}
-                value={instance.estado}
-                onChange={(e) => onSetEstado(instance.id, e.target.value as ItemLoadoutState)}
-                style={input}
-              >
-                {ITEM_LOADOUT_STATES.map((estado) => (
-                  <option key={estado} value={estado}>{ESTADO_LABELS[estado]}</option>
-                ))}
-              </select>
-              <button
-                data-testid={`inventario-remover-${instance.id}`}
-                onClick={() => onRemoveItem(instance.id)}
-                style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px" }}
-              >
-                Remover
-              </button>
-            </div>
-          ))}
+          {inventario.map((instance) => {
+            const itemModelo = itemBySlug.get(instance.itemSlug);
+            const runasInstaladas = instance.runasInstaladas ?? [];
+            const slotsMax = itemModelo?.slotsRunaMax ?? null;
+            const slotsUsados = countInstalledRunes(instance);
+            const runaEscolhida = runaSelecionada[instance.id] ?? "";
+            const runaEscolhidaContent = runaEscolhida ? runaBySlug.get(runaEscolhida) : undefined;
+            const compatibilidade = runaEscolhidaContent
+              ? getRuneCompatibility({ categoria: instance.categoria, subtipo: instance.subtipo }, runaEscolhidaContent)
+              : null;
+            return (
+              <div key={instance.id} data-testid={`inventario-item-${instance.id}`} style={{ background: "#1d1e24", borderRadius: 8, padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6, fontSize: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <strong>{instance.itemNome}</strong>
+                  <span style={{ opacity: 0.6 }}>x{instance.quantidade}</span>
+                  <select
+                    data-testid={`inventario-estado-${instance.id}`}
+                    value={instance.estado}
+                    onChange={(e) => onSetEstado(instance.id, e.target.value as ItemLoadoutState)}
+                    style={input}
+                  >
+                    {ITEM_LOADOUT_STATES.map((estado) => (
+                      <option key={estado} value={estado}>{ESTADO_LABELS[estado]}</option>
+                    ))}
+                  </select>
+                  <button
+                    data-testid={`inventario-remover-${instance.id}`}
+                    onClick={() => onRemoveItem(instance.id)}
+                    style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px" }}
+                  >
+                    Remover
+                  </button>
+                </div>
+
+                {/* Runas instaladas (checkpoint v0.56) — referência passiva, sem efeito mecânico. */}
+                <div style={{ borderTop: "1px solid #2a2b33", paddingTop: 6, marginTop: 2 }}>
+                  <p style={{ fontSize: 11, opacity: 0.6, margin: "0 0 4px" }}>
+                    Runas instaladas ({slotsUsados}{slotsMax != null ? `/${slotsMax}` : ""})
+                    {slotsMax == null && " — limite de slots ainda não automatizado para este item"}
+                  </p>
+                  {runasInstaladas.length > 0 && (
+                    <div data-testid={`inventario-runas-lista-${instance.id}`} style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
+                      {runasInstaladas.map((runa) => {
+                        const modelo = runaBySlug.get(runa.runeContentId);
+                        return (
+                          <div key={runa.id} data-testid={`inventario-runa-instalada-${runa.id}`} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ opacity: 0.5 }}>◆</span>
+                            <span>{modelo?.nome ?? `Conteúdo não encontrado (${runa.runeContentId})`}</span>
+                            <button
+                              data-testid={`inventario-runa-remover-${runa.id}`}
+                              onClick={() => onRemoveRune(instance.id, runa.id)}
+                              style={{ ...buttonStyle, fontSize: 10, padding: "1px 6px", marginLeft: "auto" }}
+                            >
+                              Remover
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {runesError && <p style={{ fontSize: 11, color: "#ff6b6b" }}>Catálogo de runas indisponível.</p>}
+                  {!runesError && (
+                    <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                      <select
+                        data-testid={`inventario-runa-select-${instance.id}`}
+                        value={runaEscolhida}
+                        onChange={(e) => setRunaSelecionada((prev) => ({ ...prev, [instance.id]: e.target.value }))}
+                        style={{ ...input, fontSize: 11 }}
+                      >
+                        <option value="">— escolher runa —</option>
+                        {runasPublicadas.map((r) => (
+                          <option key={r.slug} value={r.slug}>{r.nome}</option>
+                        ))}
+                      </select>
+                      <button
+                        data-testid={`inventario-runa-instalar-${instance.id}`}
+                        disabled={!runaEscolhida}
+                        onClick={() => {
+                          if (!runaEscolhida) return;
+                          onInstallRune(instance.id, runaEscolhida);
+                          setRunaSelecionada((prev) => ({ ...prev, [instance.id]: "" }));
+                        }}
+                        style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: runaEscolhida ? 1 : 0.5 }}
+                      >
+                        Instalar
+                      </button>
+                      {compatibilidade === "incompatible" && (
+                        <span style={{ fontSize: 10, color: "#ff6b6b" }}>Incompatível com este item.</span>
+                      )}
+                      {compatibilidade === "unknown" && (
+                        <span style={{ fontSize: 10, color: "#f5a623" }}>Compatibilidade incerta — dado insuficiente na fonte.</span>
+                      )}
+                    </div>
+                  )}
+                  <p style={{ fontSize: 10, opacity: 0.4, margin: "4px 0 0" }}>
+                    Runa instalada como registro passivo; automação ainda não aplicada.
+                  </p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </Section>
     </>

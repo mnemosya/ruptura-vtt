@@ -60,6 +60,8 @@ import {
   purchaseItem,
   setItemLoadoutState,
   removeItemFromInventory,
+  installRuneOnItem,
+  removeRuneFromItem,
   castSpell,
   rollSpellDamage,
   getSpellDamageEffect,
@@ -1779,6 +1781,47 @@ export default function CharacterSheetClient({
   }
 
   /**
+   * Instalar runa em item (aba Inventário, checkpoint v0.56) — cria só
+   * uma referência passiva na instância do item (`installRuneOnItem`,
+   * `lib/character/inventory.ts`); nenhum efeito mecânico é aplicado.
+   * Bloqueia só em incompatibilidade INEQUÍVOCA ou limite de slots
+   * canônico atingido — compatibilidade incerta nunca bloqueia.
+   */
+  function handleInstallRune(instanceId: string, runeSlug: string) {
+    const current = characterRef.current;
+    const rune = runesIniciais.find((r) => r.slug === runeSlug);
+    if (!rune) {
+      addLogEntry("recurso", "Runa não encontrada na Biblioteca.");
+      return;
+    }
+    const instance = current.inventario?.find((i) => i.id === instanceId);
+    const itemContent = instance ? itemsIniciais.find((i) => i.slug === instance.itemSlug) : undefined;
+    const result = installRuneOnItem({
+      character: current,
+      instanceId,
+      itemContent,
+      rune,
+      nowIso: new Date().toISOString(),
+    });
+    if (!result.ok) {
+      addLogEntry("recurso", result.reason ?? "Runa não instalada.");
+      return;
+    }
+    characterRef.current = result.character;
+    setCharacter(result.character);
+    addLogEntry("recurso", `Runa instalada: ${rune.nome}${instance ? ` em ${instance.itemNome}` : ""}.`);
+  }
+
+  function handleRemoveRune(instanceId: string, runeInstallationId: string) {
+    const current = characterRef.current;
+    const next = removeRuneFromItem(current, instanceId, runeInstallationId);
+    if (next === current) return;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("recurso", "Runa removida do item.");
+  }
+
+  /**
    * Aprender/esquecer magia individual (aba Magias, checkpoint
    * v0.50.1) — conhecer a vertente (Modo Evolução) só decide quais
    * magias aparecem para aprender; cada uma precisa ser aprendida
@@ -2357,6 +2400,10 @@ export default function CharacterSheetClient({
           onChangeCarteira={handleChangeCarteira}
           onSetEstado={handleSetItemEstado}
           onRemoveItem={handleRemoveItem}
+          runes={runesIniciais}
+          runesError={runesError}
+          onInstallRune={handleInstallRune}
+          onRemoveRune={handleRemoveRune}
         />
       )}
 

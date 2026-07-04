@@ -16,6 +16,8 @@ import {
   normalizeCharacter,
   getRuneCompatibility,
   countInstalledRunes,
+  installRuneOnItem,
+  removeRuneFromItem,
   type ItemContent,
 } from "../src/lib/character";
 import { normalizeTechnicalContentItem, type TechnicalContentItem } from "../src/lib/content";
@@ -165,5 +167,144 @@ assert.equal(
   "Item antigo sem subtipo registrado, mas runa exige restricao_subtipo — deve ficar 'unknown', nunca bloquear nem liberar sem saber.",
 );
 console.log("9. Compatibilidade nunca inventa limite/regra quando falta dado — devolve 'unknown' — OK");
+
+// ===============================================================
+// Fase 2 — instalar/remover runas em itens (checkpoint v0.56).
+// ===============================================================
+
+const comprouFaca = purchaseItem({ character: comCarteira, item: faca!, quantidade: 1, walletId: "aretz_informal", nowIso: "2026-07-03T10:00:00.000Z" });
+const facaInstanceId = comprouFaca.instance!.id;
+
+// -------------------------------------------------------------
+// 10. Instalar runa compatível em item cria referência (nunca cópia do payload).
+// -------------------------------------------------------------
+const comRuna = installRuneOnItem({
+  character: comprouFaca.character,
+  instanceId: facaInstanceId,
+  itemContent: faca,
+  rune: runaRetratil!,
+  nowIso: "2026-07-03T10:05:00.000Z",
+});
+assert.equal(comRuna.ok, true);
+assert.equal(comRuna.compatibility, "compatible");
+const facaComRuna = comRuna.character.inventario!.find((i) => i.id === facaInstanceId)!;
+assert.equal(facaComRuna.runasInstaladas?.length, 1);
+assert.equal(facaComRuna.runasInstaladas![0].runeContentId, runaRetratil!.slug, "Deve referenciar o slug do modelo, nunca copiar o payload.");
+console.log("10. Instalar runa compatível cria referência ao modelo (slug) na instância — OK");
+
+// -------------------------------------------------------------
+// 11. Remover runa remove só a instalação (item e outras runas continuam).
+// -------------------------------------------------------------
+const runeInstallId = facaComRuna.runasInstaladas![0].id;
+const semRuna = removeRuneFromItem(comRuna.character, facaInstanceId, runeInstallId);
+const facaSemRuna = semRuna.inventario!.find((i) => i.id === facaInstanceId)!;
+assert.equal(facaSemRuna.runasInstaladas?.length, 0);
+assert.equal(semRuna.inventario!.length, 1, "O item continua no inventário — só a runa é removida.");
+const removerInexistente = removeRuneFromItem(comRuna.character, facaInstanceId, "id-que-nao-existe");
+assert.equal(removerInexistente, comRuna.character, "Remover um runeInstallationId inexistente não muda o personagem.");
+console.log("11. Remover runa remove só a instalação (item e demais runas preservados) — OK");
+
+// -------------------------------------------------------------
+// 12. Save/load (round-trip JSON) preserva a runa instalada no item.
+// -------------------------------------------------------------
+const payloadSalvo = JSON.parse(JSON.stringify(comRuna.character)) as Record<string, unknown>;
+const recarregado = normalizeCharacter(payloadSalvo);
+const facaRecarregada = recarregado.inventario!.find((i) => i.id === facaInstanceId)!;
+assert.equal(facaRecarregada.runasInstaladas?.length, 1, "Round-trip de save/load deve preservar a runa instalada.");
+assert.equal(facaRecarregada.runasInstaladas![0].runeContentId, runaRetratil!.slug);
+console.log("12. Save/load (round-trip) preserva a runa instalada no item — OK");
+
+// -------------------------------------------------------------
+// 13. Item sem modelo correspondente na Biblioteca (itemContent ausente)
+//     não quebra — só não valida o limite de slots (permissivo).
+// -------------------------------------------------------------
+const semModeloDeItem = installRuneOnItem({
+  character: comprouFaca.character,
+  instanceId: facaInstanceId,
+  itemContent: undefined, // catálogo de itens indisponível/modelo removido
+  rune: runaRetratil!,
+  nowIso: "2026-07-03T10:10:00.000Z",
+});
+assert.equal(semModeloDeItem.ok, true, "Sem o modelo do item, a instalação segue permissiva (compatibilidade já vem da própria instância).");
+console.log("13. Item sem modelo na Biblioteca não quebra a instalação (permissivo) — OK");
+
+// -------------------------------------------------------------
+// 14. Runa ausente da Biblioteca — o helper de instalação recebe o
+//     objeto já resolvido; quem NÃO encontra a runa (UI) mostra aviso
+//     "conteúdo não encontrado" sem chamar o helper — aqui confirmamos
+//     que uma runa instalada cujo modelo sumiu depois não quebra a leitura.
+// -------------------------------------------------------------
+const comRunaOrfa = {
+  ...comprouFaca.character,
+  inventario: [
+    { ...comprouFaca.character.inventario![0], runasInstaladas: [{ id: "r1", runeContentId: "runa-removida-da-biblioteca", installedAt: "2026-07-03T10:00:00.000Z" }] },
+  ],
+};
+const naoQuebra = normalizeCharacter(JSON.parse(JSON.stringify(comRunaOrfa)));
+assert.equal(naoQuebra.inventario![0].runasInstaladas?.length, 1, "Instância de runa órfã (modelo sumiu) continua carregando — UI que decide o texto 'não encontrado'.");
+console.log("14. Runa instalada cujo modelo sumiu da Biblioteca não quebra o carregamento — OK");
+
+// -------------------------------------------------------------
+// 15. Instalar runa NÃO gera nenhum modificador/efeito (fora de escopo
+//     desta fase) — confirmado pela ausência de qualquer campo de
+//     efeito nas estruturas envolvidas (InstalledRune só tem
+//     id/runeContentId/installedAt/notas).
+// -------------------------------------------------------------
+const chavesDaInstalacao = Object.keys(facaComRuna.runasInstaladas![0]).sort();
+const chavesDeEfeitoProibidas = ["modifier", "modificador", "valor", "affectedTags", "alvo_tags", "custo_pa", "cadencia"];
+assert.ok(
+  chavesDaInstalacao.every((k) => !chavesDeEfeitoProibidas.includes(k)),
+  "InstalledRune não deve ter nenhum campo de efeito/modificador — só referência (id/runeContentId/installedAt/notas).",
+);
+console.log("15. Instalar runa não gera modificador/efeito — estrutura só tem referência + metadados — OK");
+
+// -------------------------------------------------------------
+// 16. Compatibilidade inequívoca funciona (bloqueia incompatível de verdade).
+// -------------------------------------------------------------
+const armaDeFogo = items.find((i) => i.categoria === "arma" && i.subtipo === "fogo");
+assert.ok(armaDeFogo, "Deve haver ao menos uma arma de fogo no DB real.");
+const comprouArmaFogo = purchaseItem({ character: comCarteira, item: armaDeFogo!, quantidade: 1, walletId: "aretz_informal", precoUnitario: 0, nowIso: "2026-07-03T10:00:00.000Z" });
+const instalacaoIncompativel = installRuneOnItem({
+  character: comprouArmaFogo.character,
+  instanceId: comprouArmaFogo.instance!.id,
+  itemContent: armaDeFogo,
+  rune: runaRetratil!, // restricao_subtipo: corpo_a_corpo — incompatível com arma de fogo
+  nowIso: "2026-07-03T10:00:00.000Z",
+});
+assert.equal(instalacaoIncompativel.ok, false, "Runa Retrátil (corpo_a_corpo) deve ser bloqueada numa arma de fogo — incompatibilidade inequívoca.");
+assert.equal(instalacaoIncompativel.compatibility, "incompatible");
+console.log("16. Compatibilidade inequívoca bloqueia instalação incompatível de verdade — OK");
+
+// -------------------------------------------------------------
+// 17. Compatibilidade ambígua NÃO bloqueia (permissivo) — runa sem
+//     slots_possiveis no payload.
+// -------------------------------------------------------------
+const instalacaoAmbigua = installRuneOnItem({
+  character: comprouFaca.character,
+  instanceId: facaInstanceId,
+  itemContent: faca,
+  rune: runaSemSlots,
+  nowIso: "2026-07-03T10:00:00.000Z",
+});
+assert.equal(instalacaoAmbigua.ok, true, "Compatibilidade 'unknown' (dado ausente) nunca deve bloquear automaticamente.");
+assert.equal(instalacaoAmbigua.compatibility, "unknown");
+console.log("17. Compatibilidade ambígua ('unknown') não inventa bloqueio — instalação permitida com aviso — OK");
+
+// -------------------------------------------------------------
+// 18. Limite de slots canônico é respeitado quando já atingido.
+// -------------------------------------------------------------
+const facaComUmaRuna = comRuna.character; // já tem 1 runa, slots_runa_max da faca é 1.
+const segundaRuna = runas.find((r) => r.slug === "runa_cac_impeto");
+assert.ok(segundaRuna, "Runa 'runa_cac_impeto' (corpo_a_corpo, compatível com Faca) deve existir no DB real.");
+const excedeuLimite = installRuneOnItem({
+  character: facaComUmaRuna,
+  instanceId: facaInstanceId,
+  itemContent: faca,
+  rune: segundaRuna!,
+  nowIso: "2026-07-03T10:00:00.000Z",
+});
+assert.equal(excedeuLimite.ok, false, "Faca já tem 1/1 runas (slots_runa_max=1) — segunda instalação deve ser bloqueada.");
+assert.ok(excedeuLimite.reason?.includes("slots"));
+console.log("18. Limite de slots canônico (slots_runa_max) é respeitado quando já atingido — OK");
 
 console.log("\ntest-inventory — todos os cenários passaram.");
