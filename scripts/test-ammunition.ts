@@ -12,6 +12,7 @@ import {
   addFletchasToAljava,
   consumeFletchaFromAljava,
   hasExistingAljava,
+  findSharedAljava,
   getAljavaTotalFlechas,
   getAljavaEspacoLivre,
   isBowWeapon,
@@ -21,11 +22,15 @@ import {
   ALJAVA_CAPACIDADE_PADRAO,
   ALJAVA_FLECHAS_INICIAIS_QUANTIDADE,
   ALJAVA_FLECHAS_INICIAIS_SLUG,
+  ALJAVA_ITEM_SLUG,
   consumeAttackAmmo,
   checkAttackAmmoBlock,
   setFlechaQuantidadeInAljava,
+  setSharedAljavaFlechaQuantidade,
   storeFletchasInAljava,
   withdrawFletchasFromAljava,
+  createSharedAljavaInstance,
+  migrateEmbeddedAljavas,
 } from "../src/lib/character/ammunition";
 import type { Character } from "../src/lib/character/types";
 
@@ -199,11 +204,11 @@ assert.equal(semSlug, null, "Slug inexistente retorna null.");
 console.log("10. consumeFletchaFromAljava — OK");
 
 // -------------------------------------------------------------
-// 11. hasExistingAljava — detecta aljava em inventário
+// 11. hasExistingAljava — detecta aljava compartilhada no inventário
 // -------------------------------------------------------------
 const charComAljaava: Pick<Character, "inventario"> = {
   inventario: [
-    { id: "arco-1", itemSlug: "arco_curto", quantidade: 1, aljava: createDefaultAljava() } as any,
+    { id: "aljava-1", itemSlug: ALJAVA_ITEM_SLUG, quantidade: 1, aljava: createDefaultAljava() } as any,
   ],
 };
 const charSemAljava: Pick<Character, "inventario"> = {
@@ -211,10 +216,17 @@ const charSemAljava: Pick<Character, "inventario"> = {
     { id: "espada-1", itemSlug: "espada_curta", quantidade: 1 } as any,
   ],
 };
-assert.ok(hasExistingAljava(charComAljaava), "Personagem com aljava detectado.");
+assert.ok(hasExistingAljava(charComAljaava), "Personagem com aljava compartilhada detectado.");
 assert.ok(!hasExistingAljava(charSemAljava), "Personagem sem aljava não detectado erroneamente.");
 assert.ok(!hasExistingAljava({ inventario: [] }), "Inventário vazio retorna false.");
 assert.ok(!hasExistingAljava({ inventario: undefined as any }), "Inventário undefined retorna false.");
+// Arco com aljava embutida (legado) NÃO deve ser detectado como existente
+const charArcoCom_aljava_embutida: Pick<Character, "inventario"> = {
+  inventario: [
+    { id: "arco-leg", itemSlug: "arco_curto", quantidade: 1, aljava: createDefaultAljava() } as any,
+  ],
+};
+assert.ok(!hasExistingAljava(charArcoCom_aljava_embutida), "Arco com aljava embutida não conta como aljava compartilhada.");
 console.log("11. hasExistingAljava — OK");
 
 // -------------------------------------------------------------
@@ -262,33 +274,36 @@ assert.equal(bloqueioVazia.consumedFromInstanceId, null);
 assert.equal(checkAttackAmmoBlock(charPistolaVazia, [modeloPistola]), "sem_municao");
 assert.equal(checkAttackAmmoBlock(charPistolaCheia, [modeloPistola]), null);
 
-// Aljava com 1 tipo → auto-seleciona
-const aljavaSimples = { capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 5 }] };
+// Aljava compartilhada com 1 tipo → auto-seleciona
 const charArcoSimples: Character = {
-  inventario: [{ id: "a1", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado", aljava: aljavaSimples } as any],
+  inventario: [
+    { id: "a1", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado" } as any,
+    { id: "aljava-s1", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG, quantidade: 1, estado: "mochila",
+      aljava: { capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 5 }] } } as any,
+  ],
 } as any;
 const consumeArcoSimples = consumeAttackAmmo(charArcoSimples, [modeloArco]);
 assert.equal(consumeArcoSimples.motivoFalha, null, "Aljava com 1 tipo — auto-seleciona.");
 assert.equal(consumeArcoSimples.consumedFlechaSlug, "flecha_simples");
 assert.equal(consumeArcoSimples.isFlechaEspecial, false, "flecha_simples não é especial.");
-const aljavaTotalApos = getAljavaTotalFlechas((consumeArcoSimples.character.inventario?.[0] as any).aljava);
-assert.equal(aljavaTotalApos, 4, "Aljava passou de 5 para 4.");
+const aljajaApos = findSharedAljava(consumeArcoSimples.character);
+assert.equal(getAljavaTotalFlechas(aljajaApos!.aljava), 4, "Aljava compartilhada passou de 5 para 4.");
 
-console.log("13. consumeAttackAmmo (carregador + aljava 1 tipo) — OK");
+console.log("13. consumeAttackAmmo (carregador + aljava compartilhada 1 tipo) — OK");
 
 // -------------------------------------------------------------
 // 14. consumeAttackAmmo — aljava 2 tipos: exige seleção explícita;
 //     seleção errada → flecha_sem_estoque; flecha especial → isFlechaEspecial
 // -------------------------------------------------------------
-const aljava2Tipos = {
-  capacidade: 15,
-  stacks: [
-    { contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 5 },
-    { contentSlug: "flecha_flamejante", nome: "Flecha flamejante", quantidade: 3 },
-  ],
-};
 const charArco2: Character = {
-  inventario: [{ id: "a2", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado", aljava: aljava2Tipos } as any],
+  inventario: [
+    { id: "a2", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado" } as any,
+    { id: "aljava-s2", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG, quantidade: 1, estado: "mochila",
+      aljava: { capacidade: 15, stacks: [
+        { contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 5 },
+        { contentSlug: "flecha_flamejante", nome: "Flecha flamejante", quantidade: 3 },
+      ] } } as any,
+  ],
 } as any;
 
 // Sem seleção → flecha_nao_selecionada
@@ -302,10 +317,11 @@ const comSelecao = consumeAttackAmmo(charArco2, [modeloArco], { selectedFlechaSl
 assert.equal(comSelecao.motivoFalha, null, "Seleção explícita de flecha especial — sem falha.");
 assert.equal(comSelecao.consumedFlechaSlug, "flecha_flamejante");
 assert.equal(comSelecao.isFlechaEspecial, true, "Flecha especial → isFlechaEspecial.");
-const stackSimples = (comSelecao.character.inventario?.[0] as any).aljava.stacks.find((s: any) => s.contentSlug === "flecha_simples");
-const stackFlam = (comSelecao.character.inventario?.[0] as any).aljava.stacks.find((s: any) => s.contentSlug === "flecha_flamejante");
-assert.equal(stackSimples.quantidade, 5, "Flecha simples não foi consumida.");
-assert.equal(stackFlam.quantidade, 2, "Flecha flamejante decrementou de 3 para 2.");
+const aljavaApos2 = findSharedAljava(comSelecao.character);
+const stackSimples = aljavaApos2!.aljava.stacks.find((s) => s.contentSlug === "flecha_simples");
+const stackFlam = aljavaApos2!.aljava.stacks.find((s) => s.contentSlug === "flecha_flamejante");
+assert.equal(stackSimples!.quantidade, 5, "Flecha simples não foi consumida.");
+assert.equal(stackFlam!.quantidade, 2, "Flecha flamejante decrementou de 3 para 2.");
 
 // Slug inexistente → flecha_sem_estoque
 const slugErrado = consumeAttackAmmo(charArco2, [modeloArco], { selectedFlechaSlug: "flecha_toxica" });
@@ -315,7 +331,7 @@ assert.equal(slugErrado.motivoFalha, "flecha_sem_estoque");
 assert.equal(checkAttackAmmoBlock(charArco2, [modeloArco], { selectedFlechaSlug: "flecha_flamejante" }), null);
 assert.equal(checkAttackAmmoBlock(charArco2, [modeloArco], { selectedFlechaSlug: "flecha_toxica" }), "flecha_sem_estoque");
 
-console.log("14. consumeAttackAmmo (aljava 2 tipos + flecha especial) — OK");
+console.log("14. consumeAttackAmmo (aljava compartilhada 2 tipos + flecha especial) — OK");
 
 // -------------------------------------------------------------
 // 15. setFlechaQuantidadeInAljava — clamp considera todas as stacks
@@ -338,18 +354,19 @@ console.log("15. setFlechaQuantidadeInAljava — clamp multi-stack — OK");
 // -------------------------------------------------------------
 // 16. storeFletchasInAljava — respeita capacidade; excedente fica no estoque
 // -------------------------------------------------------------
-// Aljava 12/15, estoque de 10 flechas. Guardar 10 → só 3 cabem. Estoque fica 7.
+// Aljava compartilhada 12/15, estoque de 10 flechas. Guardar 10 → só 3 cabem. Estoque fica 7.
 const charParaGuardar: Character = {
   inventario: [
-    { id: "bow-1", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado",
+    { id: "bow-1", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado" } as any,
+    { id: "aljava-shared-1", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG, quantidade: 1, estado: "mochila",
       aljava: { capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 12 }] } } as any,
     { id: "ammo-1", itemSlug: "flecha_simples", itemNome: "Flecha simples", categoria: "municao", subtipo: "municao", quantidade: 10, estado: "mochila" } as any,
   ],
 } as any;
-const storeResult = storeFletchasInAljava(charParaGuardar, "bow-1", "ammo-1", "flecha_simples", "Flecha simples", 10);
+const storeResult = storeFletchasInAljava(charParaGuardar, "ammo-1", "flecha_simples", "Flecha simples", 10);
 assert.equal(storeResult.moved, 3, "Só 3 couberam na aljava (15 - 12 = 3 livres).");
 assert.equal(storeResult.excedente, 7, "Excedente 7 não guardado.");
-const aljavaAposGuardar = (storeResult.character.inventario?.find((i) => i.id === "bow-1") as any).aljava;
+const aljavaAposGuardar = (storeResult.character.inventario?.find((i) => i.id === "aljava-shared-1") as any).aljava;
 assert.equal(getAljavaTotalFlechas(aljavaAposGuardar), 15, "Aljava cheia 15/15.");
 const estoqueApos = storeResult.character.inventario?.find((i) => i.id === "ammo-1")?.quantidade;
 assert.equal(estoqueApos, 7, "Estoque ficou 7 (10 - 3 guardadas).");
@@ -358,35 +375,133 @@ console.log("16. storeFletchasInAljava — respeita capacidade — OK");
 // -------------------------------------------------------------
 // 17. withdrawFletchasFromAljava — devolve flechas ao estoque
 // -------------------------------------------------------------
-// Aljava com 10 flechas simples, nenhuma no estoque. Retirar 2 →
+// Aljava compartilhada com 10 flechas simples, nenhuma no estoque. Retirar 2 →
 // Aljava fica com 8, estoque ganha 2 (nova instância criada).
 const charParaRetirar: Character = {
   inventario: [
-    { id: "bow-2", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado",
+    { id: "bow-2", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado" } as any,
+    { id: "aljava-shared-2", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG, quantidade: 1, estado: "mochila",
       aljava: { capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 10 }] } } as any,
   ],
 } as any;
-const withdrawResult = withdrawFletchasFromAljava(charParaRetirar, "bow-2", "flecha_simples", 2, "Flecha simples", "2026-01-01T00:00:00.000Z");
+const withdrawResult = withdrawFletchasFromAljava(charParaRetirar, "flecha_simples", 2, "Flecha simples", "2026-01-01T00:00:00.000Z");
 assert.equal(withdrawResult.withdrawn, 2, "2 flechas retiradas.");
-const aljavaAposRetirar = (withdrawResult.character.inventario?.find((i) => i.id === "bow-2") as any).aljava;
+const aljavaAposRetirar = (withdrawResult.character.inventario?.find((i) => i.id === "aljava-shared-2") as any).aljava;
 assert.equal(getAljavaTotalFlechas(aljavaAposRetirar), 8, "Aljava ficou com 8.");
-const estoqueRetirado = withdrawResult.character.inventario?.find((i) => i.itemSlug === "flecha_simples" && i.id !== "bow-2");
+const estoqueRetirado = withdrawResult.character.inventario?.find((i) => i.itemSlug === "flecha_simples");
 assert.equal(estoqueRetirado?.quantidade, 2, "Nova instância de estoque com quantidade 2.");
 
 // Se já houver estoque, incrementa em vez de criar nova instância
 const charComEstoque: Character = {
   inventario: [
-    { id: "bow-3", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado",
+    { id: "bow-3", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado" } as any,
+    { id: "aljava-shared-3", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG, quantidade: 1, estado: "mochila",
       aljava: { capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 10 }] } } as any,
     { id: "ammo-2", itemSlug: "flecha_simples", itemNome: "Flecha simples", categoria: "municao", subtipo: "municao", quantidade: 5, estado: "mochila" } as any,
   ],
 } as any;
-const withdrawResult2 = withdrawFletchasFromAljava(charComEstoque, "bow-3", "flecha_simples", 3, "Flecha simples", "2026-01-01T00:00:00.000Z");
+const withdrawResult2 = withdrawFletchasFromAljava(charComEstoque, "flecha_simples", 3, "Flecha simples", "2026-01-01T00:00:00.000Z");
 const estoqueIncrementado = withdrawResult2.character.inventario?.find((i) => i.id === "ammo-2");
 assert.equal(estoqueIncrementado?.quantidade, 8, "Estoque existente incrementado de 5 para 8.");
 const inventarioFinal = withdrawResult2.character.inventario ?? [];
-const ammoInstances = inventarioFinal.filter((i) => i.itemSlug === "flecha_simples" && i.id !== "bow-3");
+const ammoInstances = inventarioFinal.filter((i) => i.itemSlug === "flecha_simples");
 assert.equal(ammoInstances.length, 1, "Nenhuma instância duplicada criada.");
 console.log("17. withdrawFletchasFromAljava — devolve ao estoque — OK");
+
+// -------------------------------------------------------------
+// 18. Aljava compartilhada — findSharedAljava e createSharedAljavaInstance
+// -------------------------------------------------------------
+const instShared = createSharedAljavaInstance("2026-01-01T00:00:00.000Z");
+assert.equal(instShared.itemSlug, ALJAVA_ITEM_SLUG, "itemSlug é ALJAVA_ITEM_SLUG.");
+assert.ok((instShared as any).aljava != null, "Aljava inicializada na criação.");
+assert.equal((instShared as any).aljava.stacks.length, 1, "1 stack inicial de flechas simples.");
+
+const charComShared: Pick<Character, "inventario"> = { inventario: [instShared as any] };
+const found = findSharedAljava(charComShared as Character);
+assert.ok(found != null, "findSharedAljava encontra a instância.");
+assert.equal(found!.id, instShared.id, "ID correto.");
+
+const charSemShared: Pick<Character, "inventario"> = { inventario: [] };
+assert.ok(findSharedAljava(charSemShared as Character) == null, "findSharedAljava retorna null sem aljava.");
+console.log("18. findSharedAljava e createSharedAljavaInstance — OK");
+
+// -------------------------------------------------------------
+// 19. Comprar primeiro arco cria Aljava compartilhada, segundo não duplica
+// -------------------------------------------------------------
+// Testamos hasExistingAljava antes e depois (via charComShared acima).
+// Aqui testamos que hasExistingAljava é false sem instância e true com.
+const baseChar: Pick<Character, "inventario"> = { inventario: [
+  { id: "arco-a", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "mochila" } as any,
+] };
+assert.ok(!hasExistingAljava(baseChar), "Sem aljava compartilhada → false.");
+const charComAljaCompartilhada: Pick<Character, "inventario"> = { inventario: [
+  ...baseChar.inventario!,
+  instShared as any,
+] };
+assert.ok(hasExistingAljava(charComAljaCompartilhada), "Com aljava compartilhada → true.");
+console.log("19. hasExistingAljava detecta aljava compartilhada — OK");
+
+// -------------------------------------------------------------
+// 20. Dois arcos consomem da mesma Aljava compartilhada
+// -------------------------------------------------------------
+const sharedAljavaInst = {
+  id: "aljava-com", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG,
+  quantidade: 1, estado: "mochila",
+  aljava: { capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 5 }] },
+};
+const charDoisArcos: Character = {
+  inventario: [
+    { id: "arco-x", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado" } as any,
+    { id: "arco-y", itemSlug: "arco_longo", itemNome: "Arco longo", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "mochila" } as any,
+    sharedAljavaInst as any,
+  ],
+} as any;
+const modeloArcoX = { slug: "arco_curto", subtipo: "arremesso_disparo", usesAmmunition: true, municaoMax: 1, municaoCompativelSlug: "flecha_simples" };
+const consume1 = consumeAttackAmmo(charDoisArcos, [modeloArcoX]);
+assert.ok(consume1.motivoFalha == null, "Ataque com arco empunhado sem erro.");
+const aljajaApos1 = findSharedAljava(consume1.character);
+assert.equal(getAljavaTotalFlechas(aljajaApos1!.aljava), 4, "Aljava compartilhada consumiu 1 flecha (5→4).");
+// A aljava não existe mais em nenhum arco individual
+assert.ok((consume1.character.inventario?.find((i) => i.id === "arco-x") as any).aljava == null, "Arco não tem aljava embutida.");
+console.log("20. Dois arcos consomem da Aljava compartilhada — OK");
+
+// -------------------------------------------------------------
+// 21. migrateEmbeddedAljavas — migra aljava embutida para instância compartilhada
+// -------------------------------------------------------------
+const charLegado: Character = {
+  inventario: [
+    { id: "arco-leg-1", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado",
+      aljava: { capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 8 }] } } as any,
+  ],
+} as any;
+const migrated = migrateEmbeddedAljavas(charLegado);
+const sharedAfterMigration = findSharedAljava(migrated);
+assert.ok(sharedAfterMigration != null, "Aljava compartilhada criada após migração.");
+assert.equal(getAljavaTotalFlechas(sharedAfterMigration!.aljava), 8, "Stacks migrados para aljava compartilhada.");
+const arcoAposMigracao = migrated.inventario?.find((i) => i.id === "arco-leg-1");
+assert.ok((arcoAposMigracao as any).aljava == null, "Campo aljava removido do arco após migração.");
+// Idempotente
+const migrated2 = migrateEmbeddedAljavas(migrated);
+assert.deepEqual(migrated2.inventario?.length, migrated.inventario?.length, "Migração idempotente — sem duplicatas.");
+console.log("21. migrateEmbeddedAljavas — OK");
+
+// -------------------------------------------------------------
+// 22. setSharedAljavaFlechaQuantidade — atualiza stack na aljava compartilhada
+// -------------------------------------------------------------
+const charParaAjuste: Character = {
+  inventario: [
+    { id: "aljava-aj", itemSlug: ALJAVA_ITEM_SLUG, itemNome: "Aljava", categoria: "ferramenta", subtipo: ALJAVA_ITEM_SLUG,
+      quantidade: 1, estado: "mochila",
+      aljava: { capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 10 }] } } as any,
+  ],
+} as any;
+const charAjustado = setSharedAljavaFlechaQuantidade(charParaAjuste, "flecha_simples", 5);
+const aljavaAjustada2 = findSharedAljava(charAjustado);
+assert.equal(getAljavaTotalFlechas(aljavaAjustada2!.aljava), 5, "Quantidade ajustada para 5.");
+// Total nunca excede capacidade (clamp)
+const charAjustadoMax = setSharedAljavaFlechaQuantidade(charParaAjuste, "flecha_simples", 999);
+const aljavaMax = findSharedAljava(charAjustadoMax);
+assert.equal(getAljavaTotalFlechas(aljavaMax!.aljava), 15, "Quantidade clampeada na capacidade (15).");
+console.log("22. setSharedAljavaFlechaQuantidade — OK");
 
 console.log("\ntest-ammunition — todos os cenários passaram.");

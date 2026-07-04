@@ -257,6 +257,113 @@ export const ALJAVA_FLECHAS_INICIAIS_SLUG = "flecha_simples";
 export const ALJAVA_FLECHAS_INICIAIS_NOME = "Flecha simples";
 export const ALJAVA_FLECHAS_INICIAIS_QUANTIDADE = 10;
 
+/**
+ * itemSlug da instância de Aljava compartilhada no inventário.
+ * Não é um item do catálogo — é criado automaticamente na compra do primeiro arco.
+ */
+export const ALJAVA_ITEM_SLUG = "aljava";
+
+/** Encontra a instância de Aljava compartilhada do personagem. */
+export function findSharedAljava(
+  character: Pick<Character, "inventario">,
+): (InventoryItemInstance & { aljava: Aljava }) | null {
+  const inst = (character.inventario ?? []).find((i) => i.itemSlug === ALJAVA_ITEM_SLUG);
+  if (!inst) return null;
+  const aljava = (inst as InventoryItemInstance & Partial<WeaponAmmoInstanceFields>).aljava;
+  if (!aljava) return null;
+  return inst as InventoryItemInstance & { aljava: Aljava };
+}
+
+/**
+ * Cria a instância de inventário da Aljava compartilhada.
+ * Não tem model no catálogo — é um item especial do personagem.
+ */
+export function createSharedAljavaInstance(nowIso: string): InventoryItemInstance {
+  const inst: InventoryItemInstance = {
+    id: crypto.randomUUID(),
+    itemSlug: ALJAVA_ITEM_SLUG,
+    itemNome: "Aljava",
+    categoria: "ferramenta",
+    subtipo: ALJAVA_ITEM_SLUG,
+    quantidade: 1,
+    estado: "mochila",
+    adquiridoEm: nowIso,
+    precoPago: 0,
+    propriedadesTecnicas: [],
+    estadosTecnicos: [],
+    aljava: createDefaultAljava(),
+  };
+  return inst;
+}
+
+/**
+ * Migra personagens com aljava embutida em arcos para o modelo de
+ * aljava compartilhada. Idempotente — seguro rodar múltiplas vezes.
+ *
+ * Algoritmo:
+ * 1. Coleta stacks de todos os arcos com `aljava` embutida.
+ * 2. Mescla com a aljava compartilhada existente (ou cria uma nova).
+ * 3. Remove o campo `aljava` dos arcos.
+ * 4. Excesso que não cabe na capacidade é descartado (sem duplicar flechas).
+ */
+export function migrateEmbeddedAljavas(character: Character): Character {
+  const inventario = character.inventario ?? [];
+  const jaTemShared = inventario.some((i) => i.itemSlug === ALJAVA_ITEM_SLUG);
+  const arcosComAljava = inventario.filter(
+    (i) => i.itemSlug !== ALJAVA_ITEM_SLUG && (i as InventoryItemInstance & Partial<WeaponAmmoInstanceFields>).aljava != null,
+  );
+  if (arcosComAljava.length === 0 && jaTemShared) return character; // nada a fazer
+
+  // Obter ou criar aljava compartilhada (vazia — stacks vêm dos arcos migrados)
+  const sharedInst = findSharedAljava(character);
+  let aljava: Aljava = sharedInst?.aljava ?? { capacidade: ALJAVA_CAPACIDADE_PADRAO, stacks: [] };
+
+  // Mesclar stacks dos arcos
+  for (const arco of arcosComAljava) {
+    const embutida = (arco as InventoryItemInstance & Partial<WeaponAmmoInstanceFields>).aljava!;
+    for (const stack of embutida.stacks) {
+      const { aljava: nova } = addFletchasToAljava(aljava, stack.contentSlug, stack.nome, stack.quantidade);
+      aljava = nova;
+    }
+  }
+
+  // Remover aljava dos arcos
+  const inventarioLimpo = inventario.map((i) => {
+    if ((i as InventoryItemInstance & Partial<WeaponAmmoInstanceFields>).aljava != null && i.itemSlug !== ALJAVA_ITEM_SLUG) {
+      const { aljava: _removed, ...rest } = i as InventoryItemInstance & { aljava: Aljava };
+      return rest as InventoryItemInstance;
+    }
+    return i;
+  });
+
+  // Atualizar ou criar instância compartilhada
+  let nextInventario: InventoryItemInstance[];
+  if (sharedInst) {
+    nextInventario = inventarioLimpo.map((i) =>
+      i.id === sharedInst.id ? { ...i, aljava } : i,
+    );
+  } else {
+    const novaInst = createSharedAljavaInstance(new Date().toISOString());
+    nextInventario = [...inventarioLimpo, { ...novaInst, aljava }];
+  }
+
+  return { ...character, inventario: nextInventario };
+}
+
+/**
+ * Atualiza a aljava na instância compartilhada.
+ */
+function updateSharedAljava(character: Character, novaAljava: Aljava): Character {
+  const shared = findSharedAljava(character);
+  if (!shared) return character;
+  return {
+    ...character,
+    inventario: (character.inventario ?? []).map((i) =>
+      i.id === shared.id ? { ...i, aljava: novaAljava } : i,
+    ),
+  };
+}
+
 /** Total de flechas em uma aljava. */
 export function getAljavaTotalFlechas(aljava: Aljava): number {
   return aljava.stacks.reduce((sum, s) => sum + s.quantidade, 0);
@@ -348,30 +455,26 @@ export interface StoreFletchasResult {
 }
 
 /**
- * Move flechas de um item de munição do inventário para a aljava de um
- * arco. Respeita a capacidade da aljava — o excedente permanece no
- * inventário. Remove o item de munição se ele zerar.
+ * Move flechas de um item de munição do inventário para a Aljava compartilhada.
+ * Respeita a capacidade — o excedente permanece no inventário.
+ * Remove o item de munição se ele zerar.
  */
 export function storeFletchasInAljava(
   character: Character,
-  weaponInstanceId: string,
   ammoInstanceId: string,
   contentSlug: string,
   nome: string,
   quantidade: number,
 ): StoreFletchasResult {
   const inventario = character.inventario ?? [];
-  const weaponInst = inventario.find((i) => i.id === weaponInstanceId) as
-    | (InventoryItemInstance & Partial<WeaponAmmoInstanceFields>)
-    | undefined;
+  const sharedAljava = findSharedAljava(character);
   const ammoInst = inventario.find((i) => i.id === ammoInstanceId);
-  if (!weaponInst || !ammoInst) return { character, moved: 0, excedente: quantidade };
+  if (!sharedAljava || !ammoInst) return { character, moved: 0, excedente: quantidade };
 
-  const aljava = weaponInst.aljava ?? createDefaultAljava();
   const disponivel = Math.min(quantidade, ammoInst.quantidade);
   if (disponivel <= 0) return { character, moved: 0, excedente: 0 };
 
-  const { aljava: novaAljava, excedente } = addFletchasToAljava(aljava, contentSlug, nome, disponivel);
+  const { aljava: novaAljava, excedente } = addFletchasToAljava(sharedAljava.aljava, contentSlug, nome, disponivel);
   const moved = disponivel - excedente;
   if (moved <= 0) return { character, moved: 0, excedente: disponivel };
 
@@ -379,7 +482,7 @@ export function storeFletchasInAljava(
   const nextInventario = inventario
     .filter((i) => i.id !== ammoInstanceId || novaQtdAmmo > 0)
     .map((i) => {
-      if (i.id === weaponInstanceId) return { ...i, aljava: novaAljava };
+      if (i.id === sharedAljava.id) return { ...i, aljava: novaAljava };
       if (i.id === ammoInstanceId && novaQtdAmmo > 0) return { ...i, quantidade: novaQtdAmmo };
       return i;
     });
@@ -394,37 +497,34 @@ export interface WithdrawFletchasResult {
 }
 
 /**
- * Retira flechas da aljava de um arco e devolve ao inventário.
+ * Retira flechas da Aljava compartilhada e devolve ao inventário.
  * Se já houver item do mesmo tipo no inventário, incrementa a quantidade.
  * Caso contrário, cria nova instância com precoPago: 0 (sem valor de venda).
  */
 export function withdrawFletchasFromAljava(
   character: Character,
-  weaponInstanceId: string,
   contentSlug: string,
   quantidade: number,
   nomeFlexa: string,
   nowIso: string,
 ): WithdrawFletchasResult {
   const inventario = character.inventario ?? [];
-  const weaponInst = inventario.find((i) => i.id === weaponInstanceId) as
-    | (InventoryItemInstance & Partial<WeaponAmmoInstanceFields>)
-    | undefined;
-  if (!weaponInst?.aljava) return { character, withdrawn: 0 };
+  const sharedAljava = findSharedAljava(character);
+  if (!sharedAljava) return { character, withdrawn: 0 };
 
-  const stack = weaponInst.aljava.stacks.find((s) => s.contentSlug === contentSlug);
+  const stack = sharedAljava.aljava.stacks.find((s) => s.contentSlug === contentSlug);
   if (!stack || stack.quantidade <= 0) return { character, withdrawn: 0 };
 
   const retiradas = Math.max(0, Math.min(quantidade, stack.quantidade));
   if (retiradas === 0) return { character, withdrawn: 0 };
 
-  const novaAljava = setFlechaQuantidadeInAljava(weaponInst.aljava, contentSlug, stack.quantidade - retiradas);
-  const existingAmmo = inventario.find((i) => i.itemSlug === contentSlug && i.id !== weaponInstanceId);
+  const novaAljava = setFlechaQuantidadeInAljava(sharedAljava.aljava, contentSlug, stack.quantidade - retiradas);
+  const existingAmmo = inventario.find((i) => i.itemSlug === contentSlug && i.id !== sharedAljava.id);
 
   let nextInventario: InventoryItemInstance[];
   if (existingAmmo) {
     nextInventario = inventario.map((i) => {
-      if (i.id === weaponInstanceId) return { ...i, aljava: novaAljava };
+      if (i.id === sharedAljava.id) return { ...i, aljava: novaAljava };
       if (i.id === existingAmmo.id) return { ...i, quantidade: i.quantidade + retiradas };
       return i;
     });
@@ -443,7 +543,7 @@ export function withdrawFletchasFromAljava(
       estadosTecnicos: [],
     };
     nextInventario = [
-      ...inventario.map((i) => (i.id === weaponInstanceId ? { ...i, aljava: novaAljava } : i)),
+      ...inventario.map((i) => (i.id === sharedAljava.id ? { ...i, aljava: novaAljava } : i)),
       novaInst,
     ];
   }
@@ -482,13 +582,11 @@ export function createDefaultAljava(): Aljava {
 }
 
 /**
- * Verificar se um personagem já tem um arco com aljava inicializada.
- * Usado para evitar criar aljava duplicada ao comprar segundo arco.
+ * Verificar se o personagem já tem a Aljava compartilhada no inventário.
+ * Usado para evitar criar duplicata ao comprar segundo arco.
  */
 export function hasExistingAljava(character: Pick<Character, "inventario">): boolean {
-  return (character.inventario ?? []).some(
-    (inst) => (inst as InventoryItemInstance & Partial<WeaponAmmoInstanceFields>).aljava != null,
-  );
+  return (character.inventario ?? []).some((inst) => inst.itemSlug === ALJAVA_ITEM_SLUG);
 }
 
 // ---------------------------------------------------------------------
@@ -600,36 +698,31 @@ export function reloadMagazineWeapon(
 }
 
 /**
- * Recarrega um arco movendo flechas de itens de munição do inventário
- * para a aljava da instância do arco, respeitando a capacidade.
+ * Recarrega a Aljava compartilhada movendo flechas do inventário para ela.
  * Cada item de munição de flecha no inventário é consumido em ordem
  * até a aljava ficar cheia ou o estoque acabar.
  */
 export function reloadAljava(
   character: Character,
-  weaponInstanceId: string,
   allAmmoProfiles: AmmoItemProfile[],
 ): ReloadResult {
   const inventario = character.inventario ?? [];
-  const weaponInst = inventario.find((i) => i.id === weaponInstanceId) as
-    | (InventoryItemInstance & Partial<WeaponAmmoInstanceFields>)
-    | undefined;
-  if (!weaponInst) return { character, carregada: 0, motivoFalha: "sem_estoque" };
+  const sharedAljava = findSharedAljava(character);
+  if (!sharedAljava) return { character, carregada: 0, motivoFalha: "sem_estoque" };
 
-  const aljavaAtual = weaponInst.aljava ?? createDefaultAljava();
-  const livre = getAljavaEspacoLivre(aljavaAtual);
+  const livre = getAljavaEspacoLivre(sharedAljava.aljava);
   if (livre === 0) return { character, carregada: 0, motivoFalha: "ja_cheio" };
 
-  // Itens de munição de flecha no inventário (excluindo a própria arma)
+  // Itens de munição de flecha no inventário (excluindo a própria aljava)
   const fletchaInsts = inventario.filter((inst) => {
-    if (inst.id === weaponInstanceId) return false;
+    if (inst.id === sharedAljava.id) return false;
     const profile = allAmmoProfiles.find((p) => p.slug === inst.itemSlug);
     return profile != null && (profile.familia === "flecha_simples" || profile.familia === "flecha_especial" || profile.familia?.startsWith("flecha"));
   });
 
   if (fletchaInsts.length === 0) return { character, carregada: 0, motivoFalha: "sem_estoque" };
 
-  let aljava = aljavaAtual;
+  let aljava = sharedAljava.aljava;
   let nextInventario = [...inventario];
   let totalCarregada = 0;
 
@@ -664,7 +757,7 @@ export function reloadAljava(
   const withAljava: Character = {
     ...character,
     inventario: nextInventario.map((inst) =>
-      inst.id === weaponInstanceId ? { ...inst, aljava } : inst,
+      inst.id === sharedAljava.id ? { ...inst, aljava } : inst,
     ),
   };
 
@@ -725,13 +818,13 @@ export function checkAttackAmmoBlock(
     }
 
     if (modoMunicao === "aljava") {
-      const aljava = (inst as InventoryItemInstance & Partial<WeaponAmmoInstanceFields>).aljava;
-      if (!aljava || getAljavaTotalFlechas(aljava) === 0) return "sem_municao";
-      const stacksComFlechas = aljava.stacks.filter((s) => s.quantidade > 0);
+      const sharedAljava = findSharedAljava(character);
+      if (!sharedAljava || getAljavaTotalFlechas(sharedAljava.aljava) === 0) return "sem_municao";
+      const stacksComFlechas = sharedAljava.aljava.stacks.filter((s) => s.quantidade > 0);
       if (stacksComFlechas.length === 0) return "sem_municao";
       if (stacksComFlechas.length > 1 && !opts?.selectedFlechaSlug) return "flecha_nao_selecionada";
       if (opts?.selectedFlechaSlug) {
-        const stackEscolhido = aljava.stacks.find((s) => s.contentSlug === opts.selectedFlechaSlug && s.quantidade > 0);
+        const stackEscolhido = sharedAljava.aljava.stacks.find((s) => s.contentSlug === opts.selectedFlechaSlug && s.quantidade > 0);
         if (!stackEscolhido) return "flecha_sem_estoque";
       }
       return null;
@@ -780,10 +873,10 @@ export function consumeAttackAmmo(
     }
 
     if (modoMunicao === "aljava") {
-      const aljava = (inst as InventoryItemInstance & Partial<WeaponAmmoInstanceFields>).aljava;
-      if (!aljava || getAljavaTotalFlechas(aljava) === 0) return { ...nenhuma, motivoFalha: "sem_municao" };
+      const sharedAljava = findSharedAljava(character);
+      if (!sharedAljava || getAljavaTotalFlechas(sharedAljava.aljava) === 0) return { ...nenhuma, motivoFalha: "sem_municao" };
 
-      const stacksComFlechas = aljava.stacks.filter((s) => s.quantidade > 0);
+      const stacksComFlechas = sharedAljava.aljava.stacks.filter((s) => s.quantidade > 0);
       if (stacksComFlechas.length === 0) return { ...nenhuma, motivoFalha: "sem_municao" };
 
       // Determinar qual flecha usar
@@ -800,19 +893,34 @@ export function consumeAttackAmmo(
         return { ...nenhuma, motivoFalha: "flecha_nao_selecionada" };
       }
 
-      const novaAljava = consumeFletchaFromAljava(aljava, slugAlvo);
+      const novaAljava = consumeFletchaFromAljava(sharedAljava.aljava, slugAlvo);
       if (!novaAljava) return { ...nenhuma, motivoFalha: "flecha_sem_estoque" };
 
       const novoChar: Character = {
         ...character,
         inventario: inventario.map((i) =>
-          i.id === inst.id ? { ...i, aljava: novaAljava } : i,
+          i.id === sharedAljava.id ? { ...i, aljava: novaAljava } : i,
         ),
       };
       const isFlechaEspecial = slugAlvo !== ALJAVA_FLECHAS_INICIAIS_SLUG;
-      return { character: novoChar, consumedFromInstanceId: inst.id, consumedFlechaSlug: slugAlvo, isFlechaEspecial, motivoFalha: null };
+      return { character: novoChar, consumedFromInstanceId: sharedAljava.id, consumedFlechaSlug: slugAlvo, isFlechaEspecial, motivoFalha: null };
     }
   }
 
   return nenhuma;
+}
+
+/**
+ * Ajusta a quantidade de um stack específico na Aljava compartilhada.
+ * Wrapper de conveniência sobre setFlechaQuantidadeInAljava + updateSharedAljava.
+ */
+export function setSharedAljavaFlechaQuantidade(
+  character: Character,
+  contentSlug: string,
+  quantidade: number,
+): Character {
+  const sharedAljava = findSharedAljava(character);
+  if (!sharedAljava) return character;
+  const novaAljava = setFlechaQuantidadeInAljava(sharedAljava.aljava, contentSlug, quantidade);
+  return updateSharedAljava(character, novaAljava);
 }

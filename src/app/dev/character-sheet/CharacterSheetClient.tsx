@@ -68,7 +68,7 @@ import {
   setItemMitAtual,
   setItemPdAtual,
   setWeaponAmmoAtual,
-  setFlechaQuantidadeInAljava,
+  setSharedAljavaFlechaQuantidade,
   storeFletchasInAljava,
   withdrawFletchasFromAljava,
   reloadMagazineWeapon,
@@ -76,6 +76,8 @@ import {
   consumeAttackAmmo,
   checkAttackAmmoBlock,
   deriveModoMunicao,
+  migrateEmbeddedAljavas,
+  findSharedAljava,
   castSpell,
   rollSpellDamage,
   getSpellDamageEffect,
@@ -331,9 +333,9 @@ export default function CharacterSheetClient({
   // reação abaixo. Limitado às últimas 50 entradas.
   const [log, setLog] = useState<LogEntry[]>([]);
   const logCounterRef = useRef(0);
-  // Flecha ativa selecionada por instância de arco (v0.59) — necessário para
+  // Flecha ativa selecionada na Aljava compartilhada (v0.59) — necessário para
   // bloquear ataque quando há múltiplos tipos e exigir seleção explícita.
-  const [selectedFlechaSlugPerBow, setSelectedFlechaSlugPerBow] = useState<Record<string, string>>({});
+  const [selectedFlechaSlug, setSelectedFlechaSlug] = useState<string | null>(null);
   // Trava síncrona contra clique duplo antes do próximo render.
   const actionExecutionLockRef = useRef(false);
   const lastActionExecutionRef = useRef<{ actionId: string; at: number } | null>(null);
@@ -755,7 +757,9 @@ export default function CharacterSheetClient({
       }
       // normalizeCharacter aceita payload antigo/incompleto sem quebrar
       // (personagens salvos antes do schema_version, por exemplo).
-      setCharacter(normalizeCharacter(record.payload));
+      // migrateEmbeddedAljavas garante que aljava embutida em arcos seja
+      // convertida para instância compartilhada (idempotente).
+      setCharacter(migrateEmbeddedAljavas(normalizeCharacter(record.payload)));
       setCharacterId(record.id);
     } catch (err) {
       setSaveState("error");
@@ -1913,42 +1917,27 @@ export default function CharacterSheetClient({
     setCharacter(next);
   }
 
-  function handleSetFlechaQuantidade(instanceId: string, contentSlug: string, value: number) {
-    const current = characterRef.current;
-    const inst = (current.inventario ?? []).find((i) => i.id === instanceId);
-    const aljava = (inst as Record<string, unknown> | undefined)?.aljava as Parameters<typeof setFlechaQuantidadeInAljava>[0] | undefined;
-    if (!aljava) return;
-    const novaAljava = setFlechaQuantidadeInAljava(aljava, contentSlug, value);
-    const next = {
-      ...current,
-      inventario: (current.inventario ?? []).map((i) => i.id === instanceId ? { ...i, aljava: novaAljava } : i),
-    };
+  function handleSetFlechaQuantidade(contentSlug: string, value: number) {
+    const next = setSharedAljavaFlechaQuantidade(characterRef.current, contentSlug, value);
     characterRef.current = next;
     setCharacter(next);
   }
 
-  function handleStoreFletchas(bowInstanceId: string, ammoInstanceId: string, contentSlug: string, nome: string, quantidade: number) {
-    const result = storeFletchasInAljava(characterRef.current, bowInstanceId, ammoInstanceId, contentSlug, nome, quantidade);
+  function handleStoreFletchas(ammoInstanceId: string, contentSlug: string, nome: string, quantidade: number) {
+    const result = storeFletchasInAljava(characterRef.current, ammoInstanceId, contentSlug, nome, quantidade);
     characterRef.current = result.character;
     setCharacter(result.character);
   }
 
-  function handleWithdrawFletchas(bowInstanceId: string, contentSlug: string, quantidade: number, nomeFlexa: string) {
-    const result = withdrawFletchasFromAljava(characterRef.current, bowInstanceId, contentSlug, quantidade, nomeFlexa, new Date().toISOString());
+  function handleWithdrawFletchas(contentSlug: string, quantidade: number, nomeFlexa: string) {
+    const result = withdrawFletchasFromAljava(characterRef.current, contentSlug, quantidade, nomeFlexa, new Date().toISOString());
     characterRef.current = result.character;
     setCharacter(result.character);
     // Limpar seleção ativa se o stack foi zerado
-    const aljavaApos = (result.character.inventario ?? []).find((i) => i.id === bowInstanceId);
-    const stackAindaExiste = (aljavaApos as Record<string, unknown> | undefined)?.aljava != null &&
-      ((aljavaApos as Record<string, unknown>).aljava as { stacks: { contentSlug: string }[] }).stacks.some(
-        (s) => s.contentSlug === contentSlug,
-      );
-    if (!stackAindaExiste && selectedFlechaSlugPerBow[bowInstanceId] === contentSlug) {
-      setSelectedFlechaSlugPerBow((prev) => {
-        const next = { ...prev };
-        delete next[bowInstanceId];
-        return next;
-      });
+    const sharedAljavaApos = findSharedAljava(result.character);
+    const stackAindaExiste = sharedAljavaApos?.aljava.stacks.some((s) => s.contentSlug === contentSlug) ?? false;
+    if (!stackAindaExiste && selectedFlechaSlug === contentSlug) {
+      setSelectedFlechaSlug(null);
     }
   }
 
@@ -1971,7 +1960,7 @@ export default function CharacterSheetClient({
       }));
     let result;
     if (modoMunicao === "aljava") {
-      result = reloadAljava(current, instanceId, allAmmoProfiles);
+      result = reloadAljava(current, allAmmoProfiles);
     } else if (modoMunicao === "carregador" || modoMunicao === "virote") {
       result = reloadMagazineWeapon(current, instanceId, weaponItem, allAmmoProfiles);
     } else {
@@ -2235,12 +2224,6 @@ export default function CharacterSheetClient({
       (e) => typeof e === "object" && e !== null && (e as Record<string, unknown>).tipo === "resolver_ataque",
     );
     if (temEfeitoAtaque) {
-      // Encontrar a arma empunhada para saber qual flecha está selecionada
-      const arcoEmpunhado = characterRef.current.inventario?.find(
-        (i) => i.estado === "empunhado" && itemsIniciais.find((m) => m.slug === i.itemSlug)?.usesAmmunition,
-      );
-      const selectedFlechaSlug = arcoEmpunhado ? (selectedFlechaSlugPerBow[arcoEmpunhado.id] ?? null) : null;
-
       // Verificar bloqueio ANTES de consumir
       const bloqueio = checkAttackAmmoBlock(characterRef.current, itemsIniciais, { selectedFlechaSlug });
       if (bloqueio === "sem_municao") {
@@ -2622,10 +2605,8 @@ export default function CharacterSheetClient({
           onStoreFletchas={handleStoreFletchas}
           onWithdrawFletchas={handleWithdrawFletchas}
           onReloadWeapon={handleReloadWeapon}
-          selectedFlechaSlugPerBow={selectedFlechaSlugPerBow}
-          onSelectFlechaAtiva={(instanceId, slug) =>
-            setSelectedFlechaSlugPerBow((prev) => ({ ...prev, [instanceId]: slug }))
-          }
+          selectedFlechaSlug={selectedFlechaSlug}
+          onSelectFlechaAtiva={(slug) => setSelectedFlechaSlug(slug)}
         />
       )}
 

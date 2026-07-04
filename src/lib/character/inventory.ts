@@ -47,10 +47,9 @@ import type {
 import type { TechnicalContentItem } from "../content";
 import {
   deriveModoMunicao,
-  createDefaultAljava,
   hasExistingAljava,
+  createSharedAljavaInstance,
   parseKitQuantidade,
-  type Aljava,
 } from "./ammunition";
 
 // ---------------------------------------------------------------------
@@ -718,18 +717,6 @@ export function purchaseItem(params: {
   const isArco = modoMunicao === "aljava";
   const isCarregador = modoMunicao === "carregador" || modoMunicao === "virote";
 
-  // Aljava: arcos ganham aljava padrão na primeira compra; se já houver
-  // aljava em outro arco do inventário, o segundo arco compartilha a
-  // mesma aljava (o jogador gerencia manualmente via UI). Não duplicar.
-  let aljajaInicial: Aljava | undefined = undefined;
-  if (isArco) {
-    if (!hasExistingAljava(character)) {
-      aljajaInicial = createDefaultAljava();
-    }
-    // Se já existir aljava, o novo arco não ganha uma segunda —
-    // documentado como pendência: gestão de múltiplos arcos.
-  }
-
   const instance: InventoryItemInstance = {
     id: crypto.randomUUID(),
     itemSlug: item.slug,
@@ -746,15 +733,20 @@ export function purchaseItem(params: {
     // — nunca inventado quando o campo está ausente (fica undefined).
     mitAtual: item.mitMax ?? undefined,
     pdAtual: item.pdMax ?? undefined,
-    // Munição atual: carregador/virote iniciam cheios; arcos usam aljava.
+    // Munição atual: carregador/virote iniciam cheios; arcos usam aljava compartilhada.
     municaoAtual: isCarregador && item.municaoMax != null ? item.municaoMax : undefined,
-    aljava: aljajaInicial,
   };
+
+  // Arcos: criar Aljava compartilhada na primeira compra — não embutir no arco.
+  const extraItems: InventoryItemInstance[] = [];
+  if (isArco && !hasExistingAljava(character)) {
+    extraItems.push(createSharedAljavaInstance(nowIso));
+  }
 
   const nextCharacter: Character = {
     ...character,
     carteira: { ...carteira, [walletId]: walletAfter },
-    inventario: [...(character.inventario ?? []), instance],
+    inventario: [...(character.inventario ?? []), instance, ...extraItems],
   };
 
   return { character: nextCharacter, ok: true, totalCost, walletBefore: saldoAtual, walletAfter, instance };
