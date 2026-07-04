@@ -65,6 +65,8 @@ import {
   learnSpell,
   forgetSpell,
   isSpellLearned,
+  installEscalpo,
+  removeInstalledEscalpo,
 } from "../../../lib/character";
 import {
   createCharacter,
@@ -1789,6 +1791,29 @@ export default function CharacterSheetClient({
   }
 
   /**
+   * Instalar escalpo (aba Biblioteca, checkpoint v0.54) — cria só uma
+   * referência passiva ao modelo (`installEscalpo`, `lib/character/
+   * escalpos.ts`); nenhum efeito mecânico é aplicado nesta fase.
+   */
+  function handleInstallEscalpo(contentId: string) {
+    const current = characterRef.current;
+    const next = installEscalpo(current, { contentId, nowIso: new Date().toISOString() });
+    characterRef.current = next;
+    setCharacter(next);
+    const escalpo = escalposIniciais.find((e) => e.slug === contentId);
+    addLogEntry("condicao", `Escalpo instalado: ${escalpo?.nome ?? contentId}.`);
+  }
+
+  function handleRemoveEscalpo(instanceId: string) {
+    const current = characterRef.current;
+    const next = removeInstalledEscalpo(current, instanceId);
+    if (next === current) return;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", "Escalpo removido.");
+  }
+
+  /**
    * Conjurar magia (aba Magias, checkpoint v0.50) — desconta PA/Mana
    * (`castSpell`, `lib/character/spells.ts`); registra o resumo no log
    * local (PRD 11.4 "resumo delas aparece no log/chat"). Sem PA/Mana
@@ -2342,6 +2367,9 @@ export default function CharacterSheetClient({
           runesError={runesError}
           escalpos={escalposIniciais}
           escalposError={escalposError}
+          escalposInstalados={character.escalpos_instalados ?? []}
+          onInstallEscalpo={handleInstallEscalpo}
+          onRemoveEscalpo={handleRemoveEscalpo}
         />
       )}
 

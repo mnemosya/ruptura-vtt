@@ -198,6 +198,11 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     ? (raw.magias_aprendidas as Character["magias_aprendidas"])
     : [];
 
+  // escalpos_instalados (checkpoint v0.54): mesmo critério — ausência vira [], nunca undefined; instâncias existentes nunca sobrescritas.
+  const escalpos_instalados: Character["escalpos_instalados"] = Array.isArray(raw.escalpos_instalados)
+    ? (raw.escalpos_instalados as Character["escalpos_instalados"])
+    : [];
+
   return {
     ...raw,
     nome,
@@ -223,5 +228,6 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     carteira,
     inventario,
     magias_aprendidas,
+    escalpos_instalados,
   } as Character;
 }

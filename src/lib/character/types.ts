@@ -355,6 +355,24 @@ export interface Character {
     spellSlug: string;
     aprendidaEm: string;
   }[];
+  /**
+   * Escalpos instalados (checkpoint v0.54, PRD §0/2.1/4/8/11 —
+   * instância passiva, sem efeito mecânico ainda) — referencia o
+   * MODELO publicado na Biblioteca (`content_type="escalpo"`,
+   * `listEscalpos()`) por slug, nunca uma cópia do payload. Ausente =
+   * nenhum escalpo instalado ainda. Runas em item ficaram fora deste
+   * checkpoint (Caso B — ver relatório): `InventoryItemInstance` ainda
+   * não tem um conceito de "slot" validável para runa, e forçar isso
+   * agora arriscaria inventar uma regra de compatibilidade.
+   */
+  escalpos_instalados?: {
+    id: string;
+    /** slug do content_documents (content_type="escalpo"). */
+    contentId: string;
+    nomeCustomizado?: string;
+    notas?: string;
+    instaladoEm: string;
+  }[];
 }
 
 /**

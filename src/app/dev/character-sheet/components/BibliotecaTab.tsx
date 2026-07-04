@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Section } from "./Section";
+import { buttonStyle } from "./styles";
 import {
   searchTechnicalContent,
   groupTechnicalContentByCategory,
@@ -9,20 +10,23 @@ import {
   describeTechnicalContentEffects,
   type TechnicalContentItem,
 } from "../../../../lib/content";
+import type { InstalledEscalpo } from "../../../../lib/character";
 
 /**
  * Aba "Biblioteca" (checkpoint v0.53, PRD §0/2.1/4/8/11 — achado
- * "conteúdo pronto mas não exposto" da auditoria v0.50): consulta de
- * LEITURA para Propriedades, Runas e Escalpos — os três catálogos já
- * publicados na Biblioteca do Sistema (`content_documents`) mas sem
- * nenhuma UI até este checkpoint.
+ * "conteúdo pronto mas não exposto" da auditoria v0.50; instalação
+ * passiva de Escalpos no v0.54, fase 1 do checkpoint seguinte):
+ * consulta de LEITURA para Propriedades, Runas e Escalpos, mais a
+ * instância passiva de Escalpos instalados no personagem.
  *
- * Deliberadamente só CONSULTA: lista/busca/filtra/expande. NÃO cria
- * estado de personagem (nenhuma "runa instalada"/"escalpo equipado"),
- * NÃO implementa compra/instalação/ativação/remoção, NÃO automatiza
- * `payload_automacao` (mostrado só como resumo legível de leitura). O
- * modelo (Biblioteca) e a instância em jogo continuam completamente
- * separados — isso é escopo de checkpoint futuro.
+ * Propriedades/Runas continuam só CONSULTA (lista/busca/filtra/
+ * expande, sem instância). Escalpos ganham "Instalar"/"Remover" —
+ * ainda assim só uma REFERÊNCIA ao modelo por slug em
+ * `character.escalpos_instalados`, sem nenhum efeito mecânico (isso
+ * fica para a Fase 2 deste checkpoint, se o payload permitir com
+ * segurança). Runas em item ficaram de fora deste checkpoint (Caso B
+ * — `InventoryItemInstance` ainda não tem um conceito de "slot"
+ * validável, ver relatório).
  */
 
 const inputStyle: React.CSSProperties = {
@@ -39,9 +43,11 @@ interface CatalogGroupProps {
   testIdPrefix: string;
   items: TechnicalContentItem[];
   catalogError: string | null;
+  /** Só passado para Escalpos (checkpoint v0.54) — instalar é uma referência passiva, sem efeito mecânico. */
+  onInstall?: (contentId: string) => void;
 }
 
-function CatalogGroup({ titulo, testIdPrefix, items, catalogError }: CatalogGroupProps) {
+function CatalogGroup({ titulo, testIdPrefix, items, catalogError, onInstall }: CatalogGroupProps) {
   const [busca, setBusca] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
   const [expandido, setExpandido] = useState<Set<string>>(new Set());
@@ -190,6 +196,15 @@ function CatalogGroup({ titulo, testIdPrefix, items, catalogError }: CatalogGrou
                           {JSON.stringify(item.raw, null, 2)}
                         </pre>
                       </details>
+                      {onInstall && (
+                        <button
+                          data-testid={`${testIdPrefix}-instalar-${item.slug}`}
+                          onClick={() => onInstall(item.slug)}
+                          style={{ ...buttonStyle, fontSize: 11, padding: "4px 10px", alignSelf: "flex-start" }}
+                        >
+                          Instalar
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -202,6 +217,62 @@ function CatalogGroup({ titulo, testIdPrefix, items, catalogError }: CatalogGrou
   );
 }
 
+function InstalledEscalpos({
+  installed,
+  escalpos,
+  onRemove,
+}: {
+  installed: InstalledEscalpo[];
+  escalpos: TechnicalContentItem[];
+  onRemove: (instanceId: string) => void;
+}) {
+  const bySlug = useMemo(() => new Map(escalpos.map((e) => [e.slug, e])), [escalpos]);
+
+  if (installed.length === 0) {
+    return <p style={{ fontSize: 13, opacity: 0.6, marginBottom: 20 }}>Nenhum escalpo instalado ainda.</p>;
+  }
+
+  return (
+    <div data-testid="escalpos-instalados-lista" style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+      {installed.map((instancia) => {
+        const modelo = bySlug.get(instancia.contentId);
+        return (
+          <div
+            key={instancia.id}
+            data-testid={`escalpo-instalado-${instancia.id}`}
+            style={{ background: "#1d1e24", borderRadius: 8, padding: "10px 14px", borderLeft: "3px solid #4caf50" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontWeight: 700, fontSize: 13 }}>
+                {instancia.nomeCustomizado || modelo?.nome || instancia.contentId}
+              </span>
+              {(modelo?.categoriaLabel ?? modelo?.categoria) && (
+                <span style={{ fontSize: 11, opacity: 0.6 }}>{modelo?.categoriaLabel ?? modelo?.categoria}</span>
+              )}
+              <button
+                data-testid={`escalpo-instalado-remover-${instancia.id}`}
+                onClick={() => onRemove(instancia.id)}
+                style={{ ...buttonStyle, fontSize: 11, padding: "2px 8px", marginLeft: "auto" }}
+              >
+                Remover
+              </button>
+            </div>
+            {modelo ? (
+              <p style={{ fontSize: 12, opacity: 0.7, margin: "6px 0 0" }}>{modelo.descricaoCurta ?? "Sem descrição cadastrada."}</p>
+            ) : (
+              <p style={{ fontSize: 12, opacity: 0.5, margin: "6px 0 0", fontStyle: "italic" }}>
+                Modelo "{instancia.contentId}" não encontrado na Biblioteca (removido/despublicado?).
+              </p>
+            )}
+            {instancia.notas && <p style={{ fontSize: 12, opacity: 0.6, margin: "4px 0 0" }}>Notas: {instancia.notas}</p>}
+            <p style={{ fontSize: 11, opacity: 0.4, margin: "6px 0 0" }}>Automação ainda não aplicada.</p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function BibliotecaTab({
   properties,
   propertiesError,
@@ -209,6 +280,9 @@ export function BibliotecaTab({
   runesError,
   escalpos,
   escalposError,
+  escalposInstalados,
+  onInstallEscalpo,
+  onRemoveEscalpo,
 }: {
   properties: TechnicalContentItem[];
   propertiesError: string | null;
@@ -216,19 +290,37 @@ export function BibliotecaTab({
   runesError: string | null;
   escalpos: TechnicalContentItem[];
   escalposError: string | null;
+  escalposInstalados: InstalledEscalpo[];
+  onInstallEscalpo: (contentId: string) => void;
+  onRemoveEscalpo: (instanceId: string) => void;
 }) {
   return (
     <Section title="Biblioteca (consulta técnica)">
       <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 20 }}>
         Catálogo de leitura da Biblioteca do Sistema — Propriedades, Runas e Escalpos. Estes são
-        MODELOS de conteúdo administrável, não itens equipados/instalados no personagem: esta aba
-        não altera a ficha, não permite comprar/instalar/ativar/remover nada, e não automatiza
-        nenhum efeito. Serve só para consulta rápida durante a mesa.
+        MODELOS de conteúdo administrável. Escalpos podem ser instalados no personagem (referência
+        passiva ao modelo, sem efeito mecânico ainda); Propriedades e Runas continuam só consulta —
+        instalar Runas em item ficou pendente (ver relatório do checkpoint). Esta aba nunca compra,
+        ativa ou automatiza nada sozinha.
       </p>
 
       <CatalogGroup titulo="Propriedades" testIdPrefix="biblioteca-propriedades" items={properties} catalogError={propertiesError} />
       <CatalogGroup titulo="Runas" testIdPrefix="biblioteca-runas" items={runes} catalogError={runesError} />
-      <CatalogGroup titulo="Escalpos" testIdPrefix="biblioteca-escalpos" items={escalpos} catalogError={escalposError} />
+
+      <div style={{ marginBottom: 8 }}>
+        <h3 style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
+          Escalpos instalados ({escalposInstalados.length})
+        </h3>
+        <InstalledEscalpos installed={escalposInstalados} escalpos={escalpos} onRemove={onRemoveEscalpo} />
+      </div>
+
+      <CatalogGroup
+        titulo="Escalpos (catálogo)"
+        testIdPrefix="biblioteca-escalpos"
+        items={escalpos}
+        catalogError={escalposError}
+        onInstall={onInstallEscalpo}
+      />
     </Section>
   );
 }
