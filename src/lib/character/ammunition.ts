@@ -534,3 +534,65 @@ export function reloadAljava(
 
   return { character: withAljava, carregada: totalCarregada, motivoFalha: null };
 }
+
+// ---------------------------------------------------------------------
+// Fase 4 — Consumo de munição ao atacar
+// ---------------------------------------------------------------------
+
+/**
+ * Consome 1 unidade de munição da primeira arma "empunhada" no
+ * inventário que tiver munição disponível.
+ *
+ * - Carregador/virote: decrementa `municaoAtual` em 1.
+ * - Aljava: remove 1 flecha do primeiro stack com quantidade > 0.
+ *
+ * Retorna o personagem atualizado e o instanceId da arma afetada,
+ * ou `null` se nenhuma arma empunhada com munição foi encontrada.
+ * Não-automatizado para Rajada/Dispersão — apenas 1 projétil por chamada.
+ */
+export function consumeAttackAmmo(
+  character: Character,
+  itemsModelo: (Pick<ItemContent, "slug" | "subtipo" | "usesAmmunition"> & { municaoMax?: number | null; municaoCompativelSlug?: string | null })[],
+): { character: Character; consumedFromInstanceId: string | null } {
+  const inventario = character.inventario ?? [];
+
+  // Procura a primeira arma "empunhado" com munição disponível
+  for (const inst of inventario) {
+    if (inst.estado !== "empunhado") continue;
+    const modelo = itemsModelo.find((m) => m.slug === inst.itemSlug);
+    if (!modelo?.usesAmmunition) continue;
+
+    const modoMunicao = deriveModoMunicao(modelo.subtipo, modelo.municaoMax ?? null, modelo.municaoCompativelSlug ?? null);
+
+    if (modoMunicao === "carregador" || modoMunicao === "virote") {
+      const atual = (inst as InventoryItemInstance & Partial<WeaponAmmoInstanceFields>).municaoAtual ?? 0;
+      if (atual <= 0) continue;
+      const novoChar: Character = {
+        ...character,
+        inventario: inventario.map((i) =>
+          i.id === inst.id ? { ...i, municaoAtual: atual - 1 } : i,
+        ),
+      };
+      return { character: novoChar, consumedFromInstanceId: inst.id };
+    }
+
+    if (modoMunicao === "aljava") {
+      const aljava = (inst as InventoryItemInstance & Partial<WeaponAmmoInstanceFields>).aljava;
+      if (!aljava || getAljavaTotalFlechas(aljava) === 0) continue;
+      // Consome do primeiro stack disponível (sem misturar tipos automaticamente)
+      const primeiroStack = aljava.stacks.find((s) => s.quantidade > 0);
+      if (!primeiroStack) continue;
+      const novaAljava = consumeFletchaFromAljava(aljava, primeiroStack.contentSlug);
+      if (!novaAljava) continue;
+      const novoChar: Character = {
+        ...character,
+        inventario: inventario.map((i) =>
+          i.id === inst.id ? { ...i, aljava: novaAljava } : i,
+        ),
+      };
+      return { character: novoChar, consumedFromInstanceId: inst.id };
+    }
+  }
+
+  return { character, consumedFromInstanceId: null };
+}

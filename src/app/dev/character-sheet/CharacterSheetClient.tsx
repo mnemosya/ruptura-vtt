@@ -70,6 +70,7 @@ import {
   setWeaponAmmoAtual,
   reloadMagazineWeapon,
   reloadAljava,
+  consumeAttackAmmo,
   deriveModoMunicao,
   castSpell,
   rollSpellDamage,
@@ -2179,6 +2180,21 @@ export default function CharacterSheetClient({
     );
     characterRef.current = result.character;
     setCharacter(result.character);
+
+    // Fase 4 (v0.59): consumir 1 munição ao executar ação de ataque (resolver_ataque).
+    // Detecta pelo efeito "resolver_ataque" no payload da ação — sem automatizar Rajada/Dispersão.
+    const temEfeitoAtaque = Array.isArray(
+      (actionContent.payload_automacao as Record<string, unknown> | undefined)?.efeitos,
+    ) && ((actionContent.payload_automacao as Record<string, unknown>).efeitos as unknown[]).some(
+      (e) => typeof e === "object" && e !== null && (e as Record<string, unknown>).tipo === "resolver_ataque",
+    );
+    if (temEfeitoAtaque) {
+      const afterAttack = consumeAttackAmmo(characterRef.current, itemsIniciais);
+      if (afterAttack.consumedFromInstanceId) {
+        characterRef.current = afterAttack.character;
+        setCharacter(afterAttack.character);
+      }
+    }
 
     const custoResumo = result.defenseWithoutReaction
       ? `defesa sem Reação ${result.defensesWithoutReactionBefore} → ${result.defensesWithoutReactionAfter}; penalidade ${result.reactionPenaltyApplied}`
