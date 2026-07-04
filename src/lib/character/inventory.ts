@@ -721,32 +721,44 @@ export function purchaseItem(params: {
   const modoMunicao = deriveModoMunicao(item.subtipo, item.municaoMax, item.municaoCompativelSlug);
   const isArco = modoMunicao === "aljava";
   const isCarregador = modoMunicao === "carregador" || modoMunicao === "virote";
+  const isMunicao = item.categoria === "municao";
 
-  const instance: InventoryItemInstance = {
-    id: crypto.randomUUID(),
-    itemSlug: item.slug,
-    itemNome: item.nome,
-    categoria: item.categoria,
-    subtipo: item.subtipo,
-    quantidade,
-    estado: "mochila",
-    adquiridoEm: nowIso,
-    precoPago: totalCost,
-    propriedadesTecnicas: [],
-    estadosTecnicos: [],
-    // MIT/PD atual iniciam no máximo canônico do modelo (checkpoint v0.58)
-    // — nunca inventado quando o campo está ausente (fica undefined).
-    mitAtual: item.mitMax ?? undefined,
-    pdAtual: item.pdMax ?? undefined,
-    // Munição atual: carregador/virote iniciam cheios; arcos usam aljava compartilhada.
-    municaoAtual: isCarregador && item.municaoMax != null ? item.municaoMax : undefined,
-  };
+  // Munição: unificar com stack existente do mesmo tipo em vez de criar
+  // instância duplicada (mesmo itemSlug, categoria "municao" → sempre
+  // empilha; munição não tem estado individual como armas/armaduras).
+  const existingStack = isMunicao
+    ? (character.inventario ?? []).find((i) => i.itemSlug === item.slug && i.categoria === "municao")
+    : undefined;
+
+  const instance: InventoryItemInstance = existingStack
+    ? { ...existingStack, quantidade: existingStack.quantidade + quantidade, precoPago: (existingStack.precoPago ?? 0) + totalCost }
+    : {
+        id: crypto.randomUUID(),
+        itemSlug: item.slug,
+        itemNome: item.nome,
+        categoria: item.categoria,
+        subtipo: item.subtipo,
+        quantidade,
+        estado: "mochila",
+        adquiridoEm: nowIso,
+        precoPago: totalCost,
+        propriedadesTecnicas: [],
+        estadosTecnicos: [],
+        // MIT/PD atual iniciam no máximo canônico do modelo (checkpoint v0.58)
+        // — nunca inventado quando o campo está ausente (fica undefined).
+        mitAtual: item.mitMax ?? undefined,
+        pdAtual: item.pdMax ?? undefined,
+        // Munição atual: carregador/virote iniciam cheios; arcos usam aljava compartilhada.
+        municaoAtual: isCarregador && item.municaoMax != null ? item.municaoMax : undefined,
+      };
 
   // Arcos: criar Aljava compartilhada na primeira compra; adicionar kit inicial à Aljava.
   let nextCharacterBase: Character = {
     ...character,
     carteira: { ...carteira, [walletId]: walletAfter },
-    inventario: [...(character.inventario ?? []), instance],
+    inventario: existingStack
+      ? (character.inventario ?? []).map((i) => (i.id === existingStack.id ? instance : i))
+      : [...(character.inventario ?? []), instance],
   };
 
   if (isArco) {
