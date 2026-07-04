@@ -275,8 +275,12 @@ export function findSharedAljava(
 }
 
 /**
- * Cria a instância de inventário da Aljava compartilhada.
- * Não tem model no catálogo — é um item especial do personagem.
+ * Cria a instância de inventário da Aljava compartilhada, vazia
+ * (capacidade padrão, sem flechas). Quem chama é responsável por
+ * popular o conteúdo inicial: `purchaseItem` adiciona o kit da arma
+ * comprada (`inclui_na_compra`); `migrateEmbeddedAljavas` mescla
+ * stacks legados. Não tem model no catálogo — é um item especial do
+ * personagem.
  */
 export function createSharedAljavaInstance(nowIso: string): InventoryItemInstance {
   const inst: InventoryItemInstance = {
@@ -291,7 +295,7 @@ export function createSharedAljavaInstance(nowIso: string): InventoryItemInstanc
     precoPago: 0,
     propriedadesTecnicas: [],
     estadosTecnicos: [],
-    aljava: createDefaultAljava(),
+    aljava: { capacidade: ALJAVA_CAPACIDADE_PADRAO, stacks: [] },
   };
   return inst;
 }

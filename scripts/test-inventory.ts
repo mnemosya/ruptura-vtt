@@ -562,4 +562,58 @@ assert.equal(perfilComArmadura.armadura?.mitAtual, 3);
 assert.equal(perfilComArmadura.escudo, undefined, "Escudo comprado mas não equipado não deve aparecer no perfil ativo.");
 console.log("25. getEquippedDefenseProfile só reflete equipamento ativo; nenhum dano é aplicado nesta fase — OK");
 
+// -------------------------------------------------------------
+// 26. Comprar a mesma munição duas vezes unifica em uma única instância.
+// -------------------------------------------------------------
+const flechaToxica = items.find((i) => i.slug === "flecha_toxica");
+assert.ok(flechaToxica, "Item 'flecha_toxica' deve existir no DB real.");
+const carteiraRicaMunicao = { aretz_informal: 100000, cdi: 0, cdi_craqueada: 0 };
+const semMunicao = { ...createInitialCharacter(null, "Arqueiro"), carteira: carteiraRicaMunicao };
+const primeiraCompraMunicao = purchaseItem({ character: semMunicao, item: flechaToxica!, quantidade: 1, walletId: "aretz_informal", nowIso: "2026-07-04T10:00:00.000Z" });
+assert.equal(primeiraCompraMunicao.ok, true);
+const segundaCompraMunicao = purchaseItem({ character: primeiraCompraMunicao.character, item: flechaToxica!, quantidade: 1, walletId: "aretz_informal", nowIso: "2026-07-04T10:01:00.000Z" });
+assert.equal(segundaCompraMunicao.ok, true);
+const instanciasFlechaToxica = segundaCompraMunicao.character.inventario!.filter((i) => i.itemSlug === "flecha_toxica");
+assert.equal(instanciasFlechaToxica.length, 1, "Duas compras da mesma munição não devem criar instâncias duplicadas.");
+assert.equal(instanciasFlechaToxica[0].quantidade, (flechaToxica!.ammoKitQuantidade ?? 0) * 2, "Quantidade das duas compras deve somar (kit x2).");
+console.log("26. Comprar a mesma munição duas vezes unifica em uma única instância — OK");
+
+// -------------------------------------------------------------
+// 27. Comprar primeiro arco cria a Aljava com o kit inicial; segundo
+//     arco não duplica a Aljava mas adiciona seu próprio kit.
+// -------------------------------------------------------------
+const arcoCurto = items.find((i) => i.slug === "arco_curto");
+const arcoLongo = items.find((i) => i.slug === "arco_longo");
+assert.ok(arcoCurto && arcoLongo, "arco_curto e arco_longo devem existir no DB real.");
+const semArco = { ...createInitialCharacter(null, "Arqueiro 2"), carteira: carteiraRicaMunicao };
+const compraArco1 = purchaseItem({ character: semArco, item: arcoCurto!, quantidade: 1, walletId: "aretz_informal", nowIso: "2026-07-04T10:00:00.000Z" });
+assert.equal(compraArco1.ok, true);
+const aljavasApos1 = compraArco1.character.inventario!.filter((i) => i.itemSlug === "aljava");
+assert.equal(aljavasApos1.length, 1, "Primeira compra de arco cria exatamente 1 Aljava.");
+const aljavaApos1 = aljavasApos1[0] as unknown as { aljava: { stacks: { quantidade: number }[] } };
+const totalApos1 = aljavaApos1.aljava.stacks.reduce((s, x) => s + x.quantidade, 0);
+assert.equal(totalApos1, 10, "Kit inicial do arco_curto (10 flechas) vai inteiro para a Aljava vazia.");
+
+const compraArco2 = purchaseItem({ character: compraArco1.character, item: arcoLongo!, quantidade: 1, walletId: "aretz_informal", nowIso: "2026-07-04T10:01:00.000Z" });
+assert.equal(compraArco2.ok, true);
+const aljavasApos2 = compraArco2.character.inventario!.filter((i) => i.itemSlug === "aljava");
+assert.equal(aljavasApos2.length, 1, "Segundo arco NÃO cria uma segunda Aljava.");
+const aljavaApos2 = aljavasApos2[0] as unknown as { aljava: { capacidade: number; stacks: { quantidade: number }[] } };
+const totalApos2 = aljavaApos2.aljava.stacks.reduce((s, x) => s + x.quantidade, 0);
+assert.equal(totalApos2, aljavaApos2.aljava.capacidade, "Aljava fica cheia (10 + 10 = 20 > capacidade 15).");
+const estoqueFlechaSimplesApos2 = compraArco2.character.inventario!.find((i) => i.itemSlug === "flecha_simples");
+assert.ok(estoqueFlechaSimplesApos2, "Excedente do segundo kit vira estoque no inventário.");
+assert.equal(estoqueFlechaSimplesApos2!.quantidade, 10 + 10 - aljavaApos2.aljava.capacidade, "Excedente exato (20 - 15 = 5).");
+console.log("27. Segundo arco não duplica Aljava; kit inicial respeita capacidade e excedente vira estoque — OK");
+
+// -------------------------------------------------------------
+// 28. Aljava não é comprável manualmente (só concedida na compra de arco).
+// -------------------------------------------------------------
+const aljavaCatalogo = items.find((i) => i.slug === "aljava");
+assert.ok(aljavaCatalogo, "Item 'aljava' deve existir no catálogo (data-driven, não hardcoded).");
+const tentativaCompraAljava = purchaseItem({ character: semArco, item: aljavaCatalogo!, quantidade: 1, walletId: "aretz_informal", nowIso: "2026-07-04T10:02:00.000Z" });
+assert.equal(tentativaCompraAljava.ok, false, "Compra manual direta de Aljava deve ser recusada.");
+assert.equal(tentativaCompraAljava.character, semArco, "Personagem não é alterado quando a compra é recusada.");
+console.log("28. Aljava não pode ser comprada manualmente — OK");
+
 console.log("\ntest-inventory — todos os cenários passaram.");

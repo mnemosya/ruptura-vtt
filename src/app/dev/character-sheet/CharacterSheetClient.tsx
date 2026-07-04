@@ -78,6 +78,7 @@ import {
   deriveModoMunicao,
   migrateEmbeddedAljavas,
   findSharedAljava,
+  ALJAVA_ITEM_SLUG,
   castSpell,
   rollSpellDamage,
   getSpellDamageEffect,
@@ -333,9 +334,11 @@ export default function CharacterSheetClient({
   // reação abaixo. Limitado às últimas 50 entradas.
   const [log, setLog] = useState<LogEntry[]>([]);
   const logCounterRef = useRef(0);
-  // Flecha ativa selecionada na Aljava compartilhada (v0.59) — necessário para
-  // bloquear ataque quando há múltiplos tipos e exigir seleção explícita.
-  const [selectedFlechaSlug, setSelectedFlechaSlug] = useState<string | null>(null);
+  // Flecha ativa selecionada POR ARCO (v0.59.1) — cada arco escolhe seu
+  // tipo preferido dentre o que existe na Aljava compartilhada; usado só
+  // no momento de atacar. O estoque em si continua sendo o mesmo para
+  // todos os arcos (ver findSharedAljava em lib/character/ammunition).
+  const [selectedFlechaSlugPerBow, setSelectedFlechaSlugPerBow] = useState<Record<string, string>>({});
   // Trava síncrona contra clique duplo antes do próximo render.
   const actionExecutionLockRef = useRef(false);
   const lastActionExecutionRef = useRef<{ actionId: string; at: number } | null>(null);
@@ -1933,11 +1936,17 @@ export default function CharacterSheetClient({
     const result = withdrawFletchasFromAljava(characterRef.current, contentSlug, quantidade, nomeFlexa, new Date().toISOString());
     characterRef.current = result.character;
     setCharacter(result.character);
-    // Limpar seleção ativa se o stack foi zerado
+    // Limpar seleção ativa (de qualquer arco) se o stack foi zerado
     const sharedAljavaApos = findSharedAljava(result.character);
     const stackAindaExiste = sharedAljavaApos?.aljava.stacks.some((s) => s.contentSlug === contentSlug) ?? false;
-    if (!stackAindaExiste && selectedFlechaSlug === contentSlug) {
-      setSelectedFlechaSlug(null);
+    if (!stackAindaExiste) {
+      setSelectedFlechaSlugPerBow((prev) => {
+        const next = { ...prev };
+        for (const bowId of Object.keys(next)) {
+          if (next[bowId] === contentSlug) delete next[bowId];
+        }
+        return next;
+      });
     }
   }
 
@@ -1945,9 +1954,6 @@ export default function CharacterSheetClient({
     const current = characterRef.current;
     const instance = current.inventario?.find((i) => i.id === instanceId);
     if (!instance) return;
-    const weaponItem = itemsIniciais.find((i) => i.slug === instance.itemSlug);
-    if (!weaponItem) return;
-    const modoMunicao = deriveModoMunicao(weaponItem.subtipo, weaponItem.municaoMax ?? null, weaponItem.municaoCompativelSlug ?? null);
     // allAmmoProfiles derivados dos itens do catálogo com categoria "municao"
     const allAmmoProfiles = itemsIniciais
       .filter((i) => i.categoria === "municao")
@@ -1959,12 +1965,21 @@ export default function CharacterSheetClient({
         kitQuantidade: null, // não necessário para recarga
       }));
     let result;
-    if (modoMunicao === "aljava") {
+    // A própria Aljava (item especial, sem municaoMax no catálogo) chama
+    // "Recarregar" diretamente pelo seu card — não passa pelo modelo de arma.
+    if (instance.itemSlug === ALJAVA_ITEM_SLUG) {
       result = reloadAljava(current, allAmmoProfiles);
-    } else if (modoMunicao === "carregador" || modoMunicao === "virote") {
-      result = reloadMagazineWeapon(current, instanceId, weaponItem, allAmmoProfiles);
     } else {
-      return;
+      const weaponItem = itemsIniciais.find((i) => i.slug === instance.itemSlug);
+      if (!weaponItem) return;
+      const modoMunicao = deriveModoMunicao(weaponItem.subtipo, weaponItem.municaoMax ?? null, weaponItem.municaoCompativelSlug ?? null);
+      if (modoMunicao === "aljava") {
+        result = reloadAljava(current, allAmmoProfiles);
+      } else if (modoMunicao === "carregador" || modoMunicao === "virote") {
+        result = reloadMagazineWeapon(current, instanceId, weaponItem, allAmmoProfiles);
+      } else {
+        return;
+      }
     }
     characterRef.current = result.character;
     setCharacter(result.character);
@@ -2224,6 +2239,14 @@ export default function CharacterSheetClient({
       (e) => typeof e === "object" && e !== null && (e as Record<string, unknown>).tipo === "resolver_ataque",
     );
     if (temEfeitoAtaque) {
+      // Encontrar a arma empunhada que usa munição — mesma regra usada
+      // internamente por checkAttackAmmoBlock/consumeAttackAmmo — para
+      // resolver a flecha ativa DESTE arco específico (v0.59.1).
+      const armaEmpunhada = characterRef.current.inventario?.find(
+        (i) => i.estado === "empunhado" && itemsIniciais.find((m) => m.slug === i.itemSlug)?.usesAmmunition,
+      );
+      const selectedFlechaSlug = armaEmpunhada ? (selectedFlechaSlugPerBow[armaEmpunhada.id] ?? null) : null;
+
       // Verificar bloqueio ANTES de consumir
       const bloqueio = checkAttackAmmoBlock(characterRef.current, itemsIniciais, { selectedFlechaSlug });
       if (bloqueio === "sem_municao") {
@@ -2605,8 +2628,10 @@ export default function CharacterSheetClient({
           onStoreFletchas={handleStoreFletchas}
           onWithdrawFletchas={handleWithdrawFletchas}
           onReloadWeapon={handleReloadWeapon}
-          selectedFlechaSlug={selectedFlechaSlug}
-          onSelectFlechaAtiva={(slug) => setSelectedFlechaSlug(slug)}
+          selectedFlechaSlugPerBow={selectedFlechaSlugPerBow}
+          onSelectFlechaAtiva={(bowInstanceId, slug) =>
+            setSelectedFlechaSlugPerBow((prev) => ({ ...prev, [bowInstanceId]: slug }))
+          }
         />
       )}
 

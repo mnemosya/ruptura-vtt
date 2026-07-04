@@ -52,6 +52,7 @@ import {
   parseKitQuantidade,
   findSharedAljava,
   addFletchasToAljava,
+  ALJAVA_ITEM_SLUG,
 } from "./ammunition";
 
 // ---------------------------------------------------------------------
@@ -691,6 +692,18 @@ export function purchaseItem(params: {
   nowIso: string;
 }): PurchaseItemResult {
   const { character, item, walletId, nowIso } = params;
+
+  // Aljava é concedida automaticamente na compra do primeiro arco — nunca
+  // comprável manualmente (mesmo que chamado diretamente, sem passar pela
+  // UI que já a esconde da loja). Evita criar uma segunda Aljava.
+  if (item.slug === ALJAVA_ITEM_SLUG) {
+    return {
+      character,
+      ok: false,
+      reason: "Aljava é concedida automaticamente ao comprar o primeiro arco — não é um item comprável.",
+    };
+  }
+
   const quantidadeKits = Math.max(1, Math.trunc(params.quantidade));
   const precoUnitario = params.precoUnitario ?? item.preco;
   // Para munições: desempacotar kit → quantidade em inventário = kits × kitQuantidade.

@@ -414,7 +414,8 @@ console.log("17. withdrawFletchasFromAljava — devolve ao estoque — OK");
 const instShared = createSharedAljavaInstance("2026-01-01T00:00:00.000Z");
 assert.equal(instShared.itemSlug, ALJAVA_ITEM_SLUG, "itemSlug é ALJAVA_ITEM_SLUG.");
 assert.ok((instShared as any).aljava != null, "Aljava inicializada na criação.");
-assert.equal((instShared as any).aljava.stacks.length, 1, "1 stack inicial de flechas simples.");
+assert.equal((instShared as any).aljava.capacidade, ALJAVA_CAPACIDADE_PADRAO, "Capacidade padrão.");
+assert.equal((instShared as any).aljava.stacks.length, 0, "Vazia na criação — quem chama popula o kit inicial.");
 
 const charComShared: Pick<Character, "inventario"> = { inventario: [instShared as any] };
 const found = findSharedAljava(charComShared as Character);
