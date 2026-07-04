@@ -249,6 +249,10 @@ Regra de atualização:
 - texto, descrição, regra base, raridade, preço e payload padrão vêm do modelo;
 - quantidade, munição, cargas, MIT atual, PD atual, runas instaladas, dano sofrido, customizações, apelidos e estado de uso ficam na instância.
 
+Para armas de munição, a instância da arma guarda a munição atual do carregador/capacidade, o tipo de munição aceito e, quando relevante, o tipo de munição carregada. O estoque total de munição fica em itens quantitativos separados no inventário, sempre com tipo próprio: pistola, fuzil, escopeta, precisão, flecha, virote ou outro tipo publicado na biblioteca. Recarregar transfere munição compatível do estoque para a arma, consumindo apenas a quantidade transferida.
+
+Arcos usam aljava. A aljava é uma instância de inventário com capacidade própria e pilhas de flechas agrupadas por tipo, como `Flecha simples (10)` e `Flecha flamejante (2)`. Ao atacar com arco, o jogador escolhe qual flecha da aljava será disparada. A flecha escolhida é consumida no ataque.
+
 Exemplo de instância:
 
 ```json
@@ -706,6 +710,8 @@ O deslocamento de uma mesma ação pode ser dividido ao longo do turno. O person
 - Armas de fogo: Balística.
 - Defensor escolhe Esquivar, Aparar ou Bloquear quando aplicável.
 - Margem define região do corpo, dano e efeitos críticos.
+- Armas de munição consomem munição ao atacar.
+- Arcos exigem flecha disponível em aljava; antes da rolagem, o jogador escolhe qual flecha será usada. A flecha escolhida é consumida no disparo, acertando ou errando.
 
 **Agarrar — 2 PA**
 
@@ -783,9 +789,16 @@ O deslocamento de uma mesma ação pode ser dividido ao longo do turno. O person
 
 **Recarregar — 1 PA**
 
-- Restaura munição da arma.
+- Exige arma que usa carregador/capacidade interna e estoque de munição compatível no inventário.
+- Restaura apenas a munição que falta na arma, até o máximo do carregador/capacidade.
+- Consome do estoque exatamente a quantidade carregada.
+- Se o estoque compatível for menor que o necessário, a recarga é parcial.
+- Se não houver estoque compatível, a ação é bloqueada.
+- Se a arma já estiver cheia, a ação avisa que não há o que recarregar e não consome munição.
 - Exige mão livre quando a regra exigir.
-- Deve aparecer ligada a armas de munição, com aviso se a arma já estiver cheia.
+- Deve aparecer ligada a armas de munição, mostrando munição atual/máxima, tipo aceito, estoque compatível disponível e custo de PA.
+- Quando automatizada, só gasta PA se pelo menos 1 munição for carregada.
+- Arcos não usam esta ação para escolher flecha: a escolha da flecha acontece no próprio ataque, a partir da aljava.
 
 **Acessar Trama — 2 PA**
 
@@ -1351,9 +1364,23 @@ Requisitos:
 - preço do livro como padrão editável;
 - compra múltipla;
 - quantidade;
+- munição como item quantitativo de estoque;
+- tipo de munição explícito em cada item de munição;
+- aljavas como itens de capacidade para flechas;
 - raridade bloqueada na criação;
 - aplicação de descontos/fiado do Mercador;
 - envio para personagem ou inventário do bando.
+
+Kits mínimos de munição publicados:
+
+| Munição | Compatibilidade | Kit | Raridade | Preço |
+| --- | --- | --- | --- | --- |
+| Flecha simples | Arcos | 10 flechas | Comum | 50 Ⱥ |
+| Virotes | Bestas | 5 virotes | Comum | 50 Ⱥ |
+| Flecha flamejante | Arcos | 5 flechas | Incomum | 200 Ⱥ |
+| Flecha tóxica | Arcos | 5 flechas | Incomum | 200 Ⱥ |
+| Flecha elétrica | Arcos | 5 flechas | Incomum | 300 Ⱥ |
+| Flecha explosiva | Arcos | 5 flechas | Raro | 350 Ⱥ |
 
 ### 13.3 Loadouts e mochila
 
@@ -1366,7 +1393,13 @@ Requisitos:
 
 Automação:
 
-- munição;
+- munição atual e máxima na instância da arma;
+- tipo de munição aceito pela arma;
+- estoque de munição compatível no inventário;
+- aljava para arcos, com capacidade e flechas agrupadas por tipo;
+- escolha de flecha da aljava ao atacar com arco;
+- Recarregar consumindo apenas a munição efetivamente carregada;
+- consumo de 1 munição por ataque padrão com arma de munição;
 - Rajada (X);
 - Corpo ao dano corpo a corpo e armas de arremesso/disparo;
 - Balística para armas de fogo;
@@ -1378,6 +1411,114 @@ Automação:
 - atalhos de ataque.
 
 Propriedades em crítico devem ser oferecidas apenas quando a arma/efeito possuir a propriedade.
+
+#### 13.4.1 Tipos de munição, estoque e recarga
+
+Munição não é genérica. Cada arma que usa munição deve possuir estado próprio na instância:
+
+- munição atual;
+- munição máxima/capacidade;
+- tipos de munição aceitos;
+- munição carregada, quando o tipo carregado for relevante;
+- custo de recarga em PA, quando aplicável.
+
+Cada item de munição no inventário deve possuir:
+
+- tipo de munição;
+- quantidade;
+- compatibilidade;
+- tamanho de kit;
+- payload de automação, se for munição especial.
+
+Tipos mínimos de munição:
+
+| Tipo | Uso |
+| --- | --- |
+| flecha | Arcos |
+| virote | Bestas |
+| pistola | Pistola de bolso, Revólver e Pistola pesada |
+| fuzil | Submetralhadora, Carabina, Rifle de assalto e Metralhadora |
+| escopeta | Escopeta curta e Espingarda |
+| precisao | Rifle de precisão |
+
+A munição comprada fica no inventário como item quantitativo de estoque. A arma não cria munição por conta própria.
+
+##### Armas de fogo e armas com carregador/capacidade
+
+Regra de recarga:
+
+1. Recarregar só pode ser executado se houver munição compatível no inventário.
+2. A plataforma calcula quanto falta na arma:
+
+```
+faltante = munição máxima - munição atual
+```
+
+3. A quantidade carregada é:
+
+```
+carregada = mínimo entre faltante e estoque compatível disponível
+```
+
+4. A arma aumenta sua munição atual em `carregada`.
+5. O estoque compatível diminui exatamente em `carregada`.
+6. Se `carregada` for 0, nada é consumido.
+7. Munição atual nunca passa do máximo.
+8. Estoque nunca fica negativo.
+9. Se o estoque compatível for insuficiente, a recarga é parcial.
+10. Se não houver estoque compatível, Recarregar é bloqueado.
+11. Se a arma já estiver cheia, Recarregar informa que não há o que recarregar e não consome PA nem munição.
+12. Quando automatizada, a ação só consome PA se pelo menos 1 munição for carregada.
+
+Exemplos:
+
+- Arma 2/6 e estoque 10: carrega 4; arma fica 6/6; estoque fica 6.
+- Arma 2/6 e estoque 3: carrega 3; arma fica 5/6; estoque fica 0.
+- Arma 6/6 e estoque 10: carrega 0; arma fica 6/6; estoque fica 10.
+- Arma 0/6 e estoque 0: Recarregar é bloqueado.
+
+Ataque com arma de munição:
+
+- Ataque padrão consome 1 munição atual da arma.
+- Se a arma estiver com munição atual 0, o ataque é bloqueado antes de aplicar dano, MIT, PD, Colapso ou log de sucesso.
+- Ataque sem arma selecionada preserva o comportamento manual atual.
+- Armas corpo a corpo não consomem munição.
+- Rajada, Dispersão, múltiplos tiros e munição especial ficam para automação própria, sem serem inferidos pela regra básica.
+
+##### Aljavas e flechas
+
+Arcos usam aljava. Ao comprar um arco, o personagem recebe automaticamente uma aljava e flechas simples iniciais conforme o modelo publicado do item. O padrão de produto, salvo definição diferente no modelo, é uma aljava com capacidade para 15 flechas e 1 kit inicial de 10 flechas simples.
+
+A aljava é uma instância de inventário com capacidade própria. Ela guarda flechas em pilhas por tipo, não como flechas individuais. Flechas simples e flechas especiais ocupam 1 espaço cada.
+
+Exemplo:
+
+```
+Aljava — 13/15
+- Flecha simples: 10
+- Flecha flamejante: 2
+- Flecha elétrica: 1
+```
+
+Ao atacar com arco, o jogador escolhe qual flecha da aljava será disparada. A flecha escolhida é consumida no disparo, acertando ou errando. Se não houver flecha compatível na aljava, o ataque com arco é bloqueado.
+
+Flechas especiais mantêm seu próprio modelo de conteúdo. O VTT deve exibir o efeito da flecha escolhida no resumo do ataque. A automação do efeito só deve ocorrer quando o payload for inequívoco. Quando o payload for textual ou incompleto, o efeito aparece como lembrete no log.
+
+Kits de flechas:
+
+| Flecha | Efeito | Kit | Raridade | Preço |
+| --- | --- | --- | --- | --- |
+| Flecha simples | Sem efeito especial | 10 flechas | Comum | 50 Ⱥ |
+| Flecha flamejante | +1d6 de dano ígneo; aplica Queimando em crítico | 5 flechas | Incomum | 200 Ⱥ |
+| Flecha tóxica | Aplica Envenenado | 5 flechas | Incomum | 200 Ⱥ |
+| Flecha elétrica | +1d6 de dano elétrico; aplica Atordoado em crítico | 5 flechas | Incomum | 300 Ⱥ |
+| Flecha explosiva | Explode em raio de 1 m, causando 2d6 de dano ígneo em área | 5 flechas | Raro | 350 Ⱥ |
+
+##### Virotes
+
+Bestas usam virotes. Virotes ficam no inventário como item quantitativo de estoque ou em estojo próprio quando o modelo de equipamento trouxer esse suporte. O kit padrão é 5 virotes por 50 Ⱥ.
+
+Se a besta possuir capacidade 1, Recarregar transfere 1 virote compatível do estoque para a besta. Se não houver virote compatível, Recarregar é bloqueado.
 
 ### 13.5 Armaduras
 
@@ -1663,6 +1804,7 @@ Não entra antes da ficha, chat, turnos, condições, inventário, talentos e ma
 - Loja.
 - Inventário.
 - Armas.
+- Munição atual, estoque, tipos de munição, aljavas, flechas especiais, virotes e Recarregar.
 - Armaduras.
 - Escudos.
 - Explosivos.
