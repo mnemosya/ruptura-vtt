@@ -9,6 +9,7 @@ import {
   getRuneCompatibility,
   countInstalledRunes,
   deriveItemTechnicalProperties,
+  deriveRuneItemProperties,
   type ItemContent,
   type InventoryItemInstance,
   type Wallet,
@@ -185,7 +186,10 @@ export function InventoryTab({
             const compatibilidade = runaEscolhidaContent
               ? getRuneCompatibility({ categoria: instance.categoria, subtipo: instance.subtipo }, runaEscolhidaContent)
               : null;
-            const propriedadesTecnicas = deriveItemTechnicalProperties(instance);
+            const propriedadesTecnicas = deriveItemTechnicalProperties(
+              instance,
+              deriveRuneItemProperties(instance, runasPublicadas),
+            );
             const estadosTecnicos = instance.estadosTecnicos ?? [];
             return (
               <div key={instance.id} data-testid={`inventario-item-${instance.id}`} style={{ background: "#1d1e24", borderRadius: 8, padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6, fontSize: 12 }}>

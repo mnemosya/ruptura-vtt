@@ -243,6 +243,48 @@ export function deriveItemTechnicalProperties(
   });
 }
 
+/**
+ * Traduz somente o efeito textual canônico e inequivocamente
+ * renderizável `torna_ocultavel` de runas INSTALADAS. É uma projeção
+ * passiva: não cria estado ligado/desligado, não consome PA e não entra
+ * em ActiveEffects. Remover a instalação remove a propriedade na próxima
+ * derivação, sem precisar mutar/corrigir o payload salvo.
+ */
+export function deriveRuneItemProperties(
+  instance: Pick<InventoryItemInstance, "runasInstaladas">,
+  runes: TechnicalContentItem[],
+): TechnicalItemPropertyInstance[] {
+  const bySlug = new Map(runes.map((rune) => [rune.slug, rune]));
+  const properties: TechnicalItemPropertyInstance[] = [];
+
+  for (const installation of instance.runasInstaladas ?? []) {
+    const rune = bySlug.get(installation.runeContentId);
+    if (!rune || rune.status !== "published") continue;
+    const payload = asRecord(rune.payloadAutomacao);
+    const effects = Array.isArray(payload?.efeitos) ? payload.efeitos : [];
+
+    effects.forEach((effectValue, index) => {
+      const effect = asRecord(effectValue);
+      if (!effect || effect.tipo !== "modificador" || effect.efeito !== "torna_ocultavel") return;
+      properties.push({
+        id: `rune-property:${installation.id}:${index}:ocultavel`,
+        sourceType: "rune",
+        sourceContentId: rune.slug,
+        sourceInstanceId: installation.id,
+        sourceLabel: `Runa: ${rune.nome}`,
+        key: "ocultavel",
+        label: "Ocultável",
+        value: true,
+        description: "O item pode ser recolhido ou ocultado conforme a descrição da runa.",
+        mechanicalEffectAutomated: false,
+        createdAt: installation.installedAt,
+      });
+    });
+  }
+
+  return deriveItemTechnicalProperties({ propriedadesTecnicas: [] }, properties);
+}
+
 /** Alterna somente um estado técnico já existente; nunca consome PA ou gera log/efeito. */
 export function setItemTechnicalState(
   character: Character,

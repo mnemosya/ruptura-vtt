@@ -18,6 +18,8 @@ import {
   purchaseItem,
   installRuneOnItem,
   removeRuneFromItem,
+  deriveItemTechnicalProperties,
+  deriveRuneItemProperties,
   type ItemContent,
 } from "../src/lib/character";
 import { normalizeTechnicalContentItem, type TechnicalContentItem } from "../src/lib/content";
@@ -135,6 +137,8 @@ const runaGuarda = runas.find((r) => r.slug === "runa_escudo_guarda");
 assert.ok(runaGuarda, "Runa 'runa_escudo_guarda' (bonus + restrito_a:'bloquear') deve existir no DB real.");
 const runaRetratil = runas.find((r) => r.slug === "runa_cac_retratil");
 assert.ok(runaRetratil, "Runa 'runa_cac_retratil' (efeito textual, sem bonus numérico) deve existir no DB real.");
+const runaEscudoRetratil = runas.find((r) => r.slug === "runa_escudo_retratil");
+assert.ok(runaEscudoRetratil, "Runa 'runa_escudo_retratil' deve existir no DB real, mesmo sem campo ativacao.");
 
 const personagemComArma = createInitialCharacter(null, "Testador de Runas");
 const compra = purchaseItem({ character: personagemComArma, item: rifleDeFogo!, quantidade: 1, walletId: "aretz_informal", precoUnitario: 0, nowIso: "2026-07-03T10:00:00.000Z" });
@@ -204,5 +208,100 @@ console.log("12. Runa com efeito textual (sem bonus numérico) não gera ActiveE
 // -------------------------------------------------------------
 assert.deepEqual(deriveInstalledRuneEffects(compra.character, runas), [], "Sem NENHUMA runa instalada, zero efeitos — catálogo consultado não conta.");
 console.log("13. Runa só consultada na Biblioteca (não instalada) nunca gera efeito — OK");
+
+// ===============================================================
+// Propriedades técnicas derivadas de runas — projeção passiva.
+// ===============================================================
+
+const faca = items.find((item) => item.slug === "faca");
+assert.ok(faca, "Faca deve existir para instalar a runa corpo a corpo Retrátil.");
+const compraFaca = purchaseItem({
+  character: personagemComArma,
+  item: faca!,
+  quantidade: 1,
+  walletId: "aretz_informal",
+  precoUnitario: 0,
+  nowIso,
+});
+const facaComRunaRetratil = installRuneOnItem({
+  character: compraFaca.character,
+  instanceId: compraFaca.instance!.id,
+  itemContent: faca,
+  rune: runaRetratil!,
+  nowIso,
+});
+assert.equal(facaComRunaRetratil.ok, true);
+const facaInstalada = facaComRunaRetratil.character.inventario!.find((item) => item.id === compraFaca.instance!.id)!;
+const propriedadesDaRuna = deriveRuneItemProperties(facaInstalada, runas);
+assert.equal(propriedadesDaRuna.length, 1);
+assert.equal(propriedadesDaRuna[0].key, "ocultavel");
+assert.equal(propriedadesDaRuna[0].label, "Ocultável");
+assert.equal(propriedadesDaRuna[0].sourceContentId, "runa_cac_retratil");
+assert.equal(propriedadesDaRuna[0].sourceInstanceId, facaComRunaRetratil.installation!.id);
+assert.equal(propriedadesDaRuna[0].mechanicalEffectAutomated, false);
+assert.deepEqual(
+  deriveInstalledRuneEffects(facaComRunaRetratil.character, runas),
+  [],
+  "Propriedade textual da runa não deve entrar em ActiveEffects.",
+);
+console.log("14. Runa Retrátil instalada deriva propriedade técnica Ocultável, sem ActiveEffect — OK");
+
+const facaSemRunaRetratil = removeRuneFromItem(
+  facaComRunaRetratil.character,
+  compraFaca.instance!.id,
+  facaComRunaRetratil.installation!.id,
+);
+const facaRemovida = facaSemRunaRetratil.inventario!.find((item) => item.id === compraFaca.instance!.id)!;
+assert.deepEqual(deriveRuneItemProperties(facaRemovida, runas), [], "Remover a runa remove a propriedade derivada.");
+assert.deepEqual(deriveRuneItemProperties(compraFaca.instance!, runas), [], "Item sem runa não tem propriedade derivada.");
+console.log("15. Remover a runa remove a propriedade; item sem runa permanece sem propriedade — OK");
+
+const instalacaoDuplicada = facaComRunaRetratil.installation!;
+const itemComFonteDuplicada = {
+  ...facaInstalada,
+  runasInstaladas: [
+    instalacaoDuplicada,
+    { ...instalacaoDuplicada, id: "outra-instalacao-da-mesma-runa" },
+  ],
+};
+assert.equal(
+  deriveItemTechnicalProperties(
+    itemComFonteDuplicada,
+    deriveRuneItemProperties(itemComFonteDuplicada, runas),
+  ).length,
+  1,
+  "A mesma propriedade da mesma fonte de conteúdo não deve aparecer duplicada de forma confusa.",
+);
+console.log("16. Duas instalações da mesma fonte não duplicam a propriedade técnica na apresentação — OK");
+
+const runaMalformada = normalizeTechnicalContentItem({
+  id: "runa-malformada",
+  slug: "runa-malformada",
+  nome: "Runa malformada",
+  status: "published",
+  payload_automacao: { efeitos: [null, "quebrado", { tipo: "modificador", efeito: 42 }] },
+});
+const itemComRunaMalformada = {
+  ...compraFaca.instance!,
+  runasInstaladas: [{ id: "mal-1", runeContentId: runaMalformada.slug, installedAt: nowIso }],
+};
+assert.deepEqual(deriveRuneItemProperties(itemComRunaMalformada, [runaMalformada]), []);
+console.log("17. Payload de runa inconsistente/malformado é ignorado sem quebrar — OK");
+
+const compraEscudoRetratil = installRuneOnItem({
+  character: compraEscudo.character,
+  instanceId: compraEscudo.instance!.id,
+  itemContent: escudo,
+  rune: runaEscudoRetratil!,
+  nowIso,
+});
+assert.equal(compraEscudoRetratil.ok, true);
+const escudoInstalado = compraEscudoRetratil.character.inventario!.find((item) => item.id === compraEscudo.instance!.id)!;
+assert.equal(
+  deriveRuneItemProperties(escudoInstalado, runas)[0]?.key,
+  "ocultavel",
+  "A ausência de ativacao não impede a propriedade passiva, mas não autoriza toggle.",
+);
+console.log("18. Runa de escudo sem ativacao deriva só a propriedade passiva Ocultável — OK");
 
 console.log("\ntest-technical-effects — todos os cenários passaram.");
