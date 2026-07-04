@@ -193,6 +193,15 @@ function ActionCard({
       {action.requisitoTexto && (
         <p style={{ fontSize: 11, opacity: 0.55, margin: 0 }}>Requisito: {action.requisitoTexto}</p>
       )}
+      {action.itemRequirements.map((requirement) => (
+        <p
+          key={`${requirement.type}:${requirement.key}`}
+          data-testid={`acao-requisito-item-${action.slug}-${requirement.key}`}
+          style={{ fontSize: 11, color: requirement.satisfied ? "#4caf50" : "#f5a623", margin: 0 }}
+        >
+          {requirement.explanation}
+        </p>
+      ))}
       {action.testeTexto && <p style={{ fontSize: 11, opacity: 0.55, margin: 0 }}>Teste: {action.testeTexto}</p>}
       {action.testeTexto && action.rollDisabledReason && (
         <p style={{ fontSize: 11, opacity: 0.55, margin: 0 }}>{action.rollDisabledReason}</p>

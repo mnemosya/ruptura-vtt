@@ -19,6 +19,12 @@
  */
 
 import type { ActiveCondition, Character } from "./types";
+import type { TechnicalContentItem } from "../content";
+import {
+  deriveItemProperties,
+  type InventoryItemInstance,
+  type ItemContent,
+} from "./inventory";
 import {
   canUseReactionAction,
   spendReactionForDefense,
@@ -68,6 +74,7 @@ export interface ActionConsoleItem {
   descricaoCurta?: string;
   descricaoLonga?: string;
   requisitoTexto?: string;
+  itemRequirements: ActionItemRequirement[];
   testeTexto?: string;
   efeitoTexto?: string;
   payloadAutomacao?: unknown;
@@ -84,6 +91,21 @@ export interface ActionConsoleItem {
   reactionPenalty: number;
   reactionWarning?: string;
   sortOrder: number;
+}
+
+export interface ActionItemRequirement {
+  type: "property" | "protection" | "ammunition";
+  key: string;
+  label: string;
+  satisfied: boolean;
+  matchingItems: { instanceId: string; itemName: string }[];
+  explanation: string;
+}
+
+export interface ActionItemContext {
+  items: ItemContent[];
+  properties: TechnicalContentItem[];
+  runes?: TechnicalContentItem[];
 }
 
 // ---------------------------------------------------------------------
@@ -436,12 +458,106 @@ function effectLabel(tipo: string): string {
 function requisitoTextoDe(action: CombatActionContent): string | undefined {
   const req = action.requisitos;
   if (!Array.isArray(req) || req.length === 0) return undefined;
-  return req
+  const labels = req
     .map((r) => {
-      if (r && typeof r === "object" && "tipo" in r) return String((r as Record<string, unknown>).tipo);
+      if (r && typeof r === "object" && "tipo" in r) {
+        const tipo = (r as Record<string, unknown>).tipo;
+        if (tipo === "arma_com_propriedade" || tipo === "protecao_empunhada") return null;
+        return String(tipo);
+      }
       return String(r);
     })
-    .join("; ");
+    .filter((label): label is string => label !== null);
+  return labels.length > 0 ? labels.join("; ") : undefined;
+}
+
+function readiedInventoryItems(character: Character): InventoryItemInstance[] {
+  return (character.inventario ?? []).filter(
+    (item): item is InventoryItemInstance => item.estado === "empunhado" || item.estado === "equipado",
+  );
+}
+
+/**
+ * Interpreta somente requisitos de item já declarados no conteúdo da
+ * ação. A ausência nunca desabilita a ação: vira explicação/aviso para
+ * teatro da mente.
+ */
+export function getActionItemRequirements(
+  character: Character,
+  action: CombatActionContent,
+  context?: ActionItemContext,
+): ActionItemRequirement[] {
+  if (!context) return [];
+  const modelBySlug = new Map(context.items.map((item) => [item.slug, item]));
+  const readied = readiedInventoryItems(character);
+  const requirements: ActionItemRequirement[] = [];
+  const rawRequirements = Array.isArray(action.requisitos) ? action.requisitos : [];
+
+  for (const rawRequirement of rawRequirements) {
+    if (!rawRequirement || typeof rawRequirement !== "object" || Array.isArray(rawRequirement)) continue;
+    const requirement = rawRequirement as Record<string, unknown>;
+    if (requirement.tipo === "arma_com_propriedade" && typeof requirement.propriedade === "string") {
+      const propertyKey = requirement.propriedade;
+      const matchingItems = readied
+        .filter((instance) => instance.categoria === "arma")
+        .filter((instance) =>
+          deriveItemProperties({
+            instance,
+            item: modelBySlug.get(instance.itemSlug),
+            properties: context.properties,
+            runes: context.runes,
+          }).some((property) => property.key === propertyKey),
+        )
+        .map((instance) => ({ instanceId: instance.id, itemName: instance.itemNome }));
+      const label = context.properties.find((property) => property.slug === propertyKey)?.nome ?? propertyKey;
+      requirements.push({
+        type: "property",
+        key: propertyKey,
+        label: `Requer ${label}`,
+        satisfied: matchingItems.length > 0,
+        matchingItems,
+        explanation:
+          matchingItems.length > 0
+            ? `Requer ${label} — encontrado em: ${matchingItems.map((item) => item.itemName).join(", ")}.`
+            : `Requer ${label} — requisito não encontrado na ficha.`,
+      });
+    } else if (requirement.tipo === "protecao_empunhada") {
+      const matchingItems = readied
+        .filter((instance) => instance.categoria === "escudo")
+        .map((instance) => ({ instanceId: instance.id, itemName: instance.itemNome }));
+      requirements.push({
+        type: "protection",
+        key: "protecao_empunhada",
+        label: "Requer escudo/proteção",
+        satisfied: matchingItems.length > 0,
+        matchingItems,
+        explanation:
+          matchingItems.length > 0
+            ? `Requer escudo/proteção — encontrado em: ${matchingItems.map((item) => item.itemName).join(", ")}.`
+            : "Requer escudo/proteção — requisito não encontrado na ficha.",
+      });
+    }
+  }
+
+  const hasReloadEffect = getPayloadEffects(action).some((effect) => effect.tipo === "recarregar_arma");
+  if (hasReloadEffect) {
+    const matchingItems = readied
+      .filter((instance) => modelBySlug.get(instance.itemSlug)?.usesAmmunition === true)
+      .map((instance) => ({ instanceId: instance.id, itemName: instance.itemNome }));
+    requirements.push({
+      type: "ammunition",
+      key: "arma_com_municao",
+      label: "Requer arma com munição",
+      satisfied: matchingItems.length > 0,
+      matchingItems,
+      explanation:
+        matchingItems.length > 0
+          ? `Requer arma com munição — encontrado em: ${matchingItems.map((item) => item.itemName).join(", ")}.`
+          : "Requer arma com munição — requisito não encontrado na ficha.",
+    });
+  }
+
+  return requirements;
 }
 
 function testeTextoDe(action: CombatActionContent): string | undefined {
@@ -481,6 +597,7 @@ export function buildActionConsoleItems(
   derivedReacaoMax: number | undefined,
   knownSkillIds: readonly string[] = [],
   reactionRules?: ReactionRules,
+  itemContext?: ActionItemContext,
 ): ActionConsoleItem[] {
   const activeConditions = character.condicoes_ativas ?? [];
   const enabledByConditionsMap = actionsEnabledByConditions(activeConditions, conditions);
@@ -527,6 +644,7 @@ export function buildActionConsoleItems(
 
       const enabledByConditions = enabledByConditionsMap.get(normalizeConditionSlug(action.slug)) ?? [];
       const roll = getSimpleActionRollSkill(action, knownSkillIds);
+      const itemRequirements = getActionItemRequirements(character, action, itemContext);
       const reactionUse =
         cost.reacao != null
           ? canUseReactionAction(
@@ -560,6 +678,7 @@ export function buildActionConsoleItems(
         descricaoCurta: action.descricao_curta,
         descricaoLonga: action.descricao_longa,
         requisitoTexto: requisitoTextoDe(action),
+        itemRequirements,
         testeTexto: testeTextoDe(action),
         efeitoTexto: pendingEffects.length > 0 ? pendingEffects.join(" · ") : undefined,
         payloadAutomacao: action.payload_automacao,

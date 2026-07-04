@@ -56,6 +56,8 @@ export interface ItemContent {
   propertySlugs: string[];
   /** Campo de modelo presente em armaduras/escudos; não representa o estado atual da instância. */
   ocultavel?: "sim" | "parcial" | "nao";
+  /** Verdadeiro somente quando `estatisticas.municao_max` existe como número no modelo. */
+  usesAmmunition: boolean;
   /** `estatisticas.slots_runa_max` do payload real — `null` quando o item não aceita runa ou o dado está ausente (nunca inventado). */
   slotsRunaMax: number | null;
   status: string;
@@ -88,6 +90,7 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
       raw.ocultavel === "sim" || raw.ocultavel === "parcial" || raw.ocultavel === "nao"
         ? raw.ocultavel
         : undefined,
+    usesAmmunition: typeof estatisticas?.municao_max === "number",
     slotsRunaMax: typeof estatisticas?.slots_runa_max === "number" ? estatisticas.slots_runa_max : null,
     status: String(raw.status ?? "published"),
   };

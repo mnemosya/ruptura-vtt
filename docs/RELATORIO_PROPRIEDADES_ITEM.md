@@ -30,3 +30,17 @@ Fonte auditada: `db_equipamentos_normalizado_v1_2.json`,
 | F — ambígua | nenhuma no catálogo publicado | Payload malformado/desconhecido cai neste grupo defensivamente |
 
 Nenhuma propriedade gera `ActiveEffect` ou altera combate nesta fase.
+
+## Fase 2 — requisitos de ação
+
+O Console de Ação interpreta somente contratos já presentes nas ações:
+
+- `arma_com_propriedade` resolve a propriedade pelo catálogo e procura
+  armas equipadas/empunhadas;
+- `protecao_empunhada` procura escudos equipados/empunhados;
+- `recarregar_arma` recebe o requisito informativo “arma com munição”
+  quando o modelo possui `estatisticas.municao_max`.
+
+O resultado é explicativo (“encontrado em…” ou “requisito não
+encontrado”). Ele não altera `enabled`, não gasta PA/Reação, não rola
+dados e não cria ações novas.

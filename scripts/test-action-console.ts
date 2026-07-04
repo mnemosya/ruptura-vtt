@@ -15,7 +15,9 @@ import {
   validateConditionalActionConsistency,
   type CombatActionContent,
 } from "../src/lib/character/actionConsole.js";
+import { normalizeItemContent } from "../src/lib/character/inventory.js";
 import type { ActiveCondition, Character } from "../src/lib/character/types.js";
+import { normalizeTechnicalContentItem } from "../src/lib/content/technicalLibrary.js";
 
 interface ConditionContent {
   slug: string;
@@ -43,6 +45,12 @@ const conditions = conditionDb.condicoes.map(({ slug, acoes_habilitadas }) => ({
   acoes_habilitadas,
 }));
 const knownSkillIds = characterRulesDb.pericias.map((skill) => skill.id);
+const itemDb = readJson<{ itens: Record<string, unknown>[] }>("content/db_equipamentos_normalizado_v1_2.json");
+const propertyDb = readJson<{ propriedades: Record<string, unknown>[] }>("content/db_propriedades_normalizado_v1.json");
+const runeDb = readJson<{ runas: Record<string, unknown>[] }>("content/db_runas_normalizado_v1_2.json");
+const items = itemDb.itens.map(normalizeItemContent);
+const properties = propertyDb.propriedades.map(normalizeTechnicalContentItem);
+const runes = runeDb.runas.map(normalizeTechnicalContentItem);
 
 function action(slug: string): CombatActionContent {
   const found = actionBySlug.get(slug);
@@ -82,6 +90,8 @@ function consoleItems(character: Character, sourceActions = actions, sourceCondi
     3,
     1,
     knownSkillIds,
+    undefined,
+    { items, properties, runes },
   );
 }
 
@@ -217,5 +227,78 @@ const escapar = consoleItems(characterWith([activeCondition("Agarrado", "agarrad
   (item) => item.slug === "escapar",
 );
 assert.equal(escapar?.rollSkillId, undefined, "Teste aninhado/contestado não pode ser preparado automaticamente.");
+
+function withInventoryItem(
+  itemSlug: string,
+  estado: "equipado" | "empunhado" | "acesso_rapido" | "mochila" = "empunhado",
+  propriedadesTecnicas?: Character["inventario"] extends (infer T)[] | undefined
+    ? T extends { propriedadesTecnicas?: infer P } ? P : never
+    : never,
+): Character {
+  const model = items.find((item) => item.slug === itemSlug);
+  return {
+    ...characterWith(),
+    inventario: [{
+      id: `instance-${itemSlug}`,
+      itemSlug,
+      itemNome: model?.nome ?? itemSlug,
+      categoria: model?.categoria ?? "arma",
+      subtipo: model?.subtipo,
+      quantidade: 1,
+      estado,
+      adquiridoEm: "2026-07-04T10:00:00.000Z",
+      propriedadesTecnicas,
+    }],
+  };
+}
+
+const apararComTonfa = consoleItems(withInventoryItem("tonfa")).find((item) => item.slug === "aparar");
+assert.equal(apararComTonfa?.itemRequirements[0]?.satisfied, true);
+assert.deepEqual(apararComTonfa?.itemRequirements[0]?.matchingItems.map((item) => item.itemName), ["Tonfa"]);
+assert.match(apararComTonfa?.itemRequirements[0]?.explanation ?? "", /encontrado em: Tonfa/);
+
+const apararSemArma = consoleItems(characterWith()).find((item) => item.slug === "aparar");
+assert.equal(apararSemArma?.itemRequirements[0]?.satisfied, false);
+assert.match(apararSemArma?.itemRequirements[0]?.explanation ?? "", /não encontrado/);
+assert.equal(
+  apararSemArma?.enabled,
+  apararComTonfa?.enabled,
+  "Requisito ausente é aviso, nunca bloqueio duro adicional.",
+);
+
+const bloquearComEscudo = consoleItems(withInventoryItem("escudo_balistico")).find((item) => item.slug === "bloquear");
+assert.equal(bloquearComEscudo?.itemRequirements[0]?.satisfied, true);
+assert.match(bloquearComEscudo?.itemRequirements[0]?.explanation ?? "", /Escudo balístico/);
+
+const bloquearSemEscudo = consoleItems(characterWith()).find((item) => item.slug === "bloquear");
+assert.equal(bloquearSemEscudo?.itemRequirements[0]?.satisfied, false);
+
+const recarregarComCarabina = consoleItems(withInventoryItem("carabina")).find((item) => item.slug === "recarregar");
+assert.equal(recarregarComCarabina?.itemRequirements[0]?.type, "ammunition");
+assert.equal(recarregarComCarabina?.itemRequirements[0]?.satisfied, true);
+assert.match(recarregarComCarabina?.itemRequirements[0]?.explanation ?? "", /Carabina/);
+
+const propriedadeManualAparar = [{
+  id: "manual-aparar",
+  sourceType: "manual" as const,
+  sourceContentId: "manual",
+  key: "aparar",
+  label: "Aparar",
+}];
+const apararDerivado = consoleItems(withInventoryItem("faca", "empunhado", propriedadeManualAparar))
+  .find((item) => item.slug === "aparar");
+assert.equal(
+  apararDerivado?.itemRequirements[0]?.satisfied,
+  true,
+  "Propriedade técnica permitida na instância também pode satisfazer requisito textual.",
+);
+
+const itemOrfao = withInventoryItem("modelo-inexistente");
+assert.doesNotThrow(() => consoleItems(itemOrfao));
+assert.equal(
+  consoleItems(itemOrfao).find((item) => item.slug === "aparar")?.itemRequirements[0]?.satisfied,
+  false,
+);
+assert.equal(consoleItems(characterWith()).length, 24, "Integração não cria nenhuma ação nova complexa.");
 
 console.log("test:action-console — todos os cenários passaram.");

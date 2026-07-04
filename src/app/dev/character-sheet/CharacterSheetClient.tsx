@@ -657,6 +657,7 @@ export default function CharacterSheetClient({
         derivados.reacoes_por_rodada,
         regras?.pericias.map((pericia) => pericia.id) ?? [],
         reactionRules,
+        { items: itemsIniciais, properties: propertiesIniciais, runes: runesIniciais },
       ),
     [
       character,
@@ -666,6 +667,9 @@ export default function CharacterSheetClient({
       derivados.reacoes_por_rodada,
       regras,
       reactionRules,
+      itemsIniciais,
+      propertiesIniciais,
+      runesIniciais,
     ],
   );
 
@@ -2060,6 +2064,7 @@ export default function CharacterSheetClient({
       derivados.reacoes_por_rodada,
       regras?.pericias.map((pericia) => pericia.id) ?? [],
       reactionRules,
+      { items: itemsIniciais, properties: propertiesIniciais, runes: runesIniciais },
     );
     const item = currentItems.find((candidate) => candidate.id === actionId);
     if (!actionContent || !item || !item.enabled) {
