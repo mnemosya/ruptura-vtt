@@ -1790,7 +1790,7 @@ export default function CharacterSheetClient({
     const current = characterRef.current;
     const item = itemsIniciais.find((i) => i.slug === itemSlug);
     if (!item) return;
-    const result = purchaseItem({ character: current, item, quantidade, walletId, precoUnitario, nowIso: new Date().toISOString() });
+    const result = purchaseItem({ character: current, item, quantidade, walletId, precoUnitario, nowIso: new Date().toISOString(), catalog: itemsIniciais });
     if (!result.ok) {
       addLogEntry("recurso", result.reason ?? "Compra não realizada.");
       return;

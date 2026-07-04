@@ -711,6 +711,13 @@ export function purchaseItem(params: {
   walletId: WalletId;
   precoUnitario?: number;
   nowIso: string;
+  /**
+   * Catálogo completo (opcional) — usado só para achar o nome exibível
+   * real da munição de fábrica (`inclui_na_compra` de arma de fogo/besta)
+   * quando o excedente cria uma instância nova de estoque. Sem isso,
+   * cai num fallback humanizado do slug (ex.: "mun_pistola" → "Mun pistola").
+   */
+  catalog?: ItemContent[];
 }): PurchaseItemResult {
   const { character, item, walletId, nowIso } = params;
 
@@ -795,8 +802,11 @@ export function purchaseItem(params: {
         // — nunca inventado quando o campo está ausente (fica undefined).
         mitAtual: item.mitMax ?? undefined,
         pdAtual: item.pdMax ?? undefined,
-        // Munição atual: carregador/virote iniciam cheios; arcos usam aljava compartilhada.
-        municaoAtual: isCarregador && item.municaoMax != null ? item.municaoMax : undefined,
+        // Munição atual (checkpoint v0.61): arma de fogo/besta nasce DESCARREGADA
+        // (0) por padrão — comprar a arma não cria munição do nada. Só carrega
+        // de fábrica se o modelo declarar `inclui_na_compra` (ver bloco abaixo,
+        // que também lida com o excedente indo para o estoque). Arcos usam Aljava.
+        municaoAtual: isCarregador && item.municaoMax != null ? 0 : undefined,
       };
 
   // Arcos: criar Aljava compartilhada na primeira compra; adicionar kit inicial à Aljava.
@@ -858,6 +868,60 @@ export function purchaseItem(params: {
             id: crypto.randomUUID(),
             itemSlug: flechaSlug,
             itemNome: "Flecha simples",
+            categoria: "municao",
+            subtipo: "municao",
+            quantidade: excedente,
+            estado: "mochila",
+            adquiridoEm: nowIso,
+            precoPago: 0,
+            propriedadesTecnicas: [],
+            estadosTecnicos: [],
+          };
+          nextCharacterBase = {
+            ...nextCharacterBase,
+            inventario: [...nextCharacterBase.inventario!, ammoInst],
+          };
+        }
+      }
+    }
+  }
+
+  // Arma de fogo/besta (checkpoint v0.61): só carrega de fábrica se o
+  // modelo declarar `inclui_na_compra` (ex.: besta_leve → "6 virotes").
+  // A munição inicial vai PRIMEIRO para a própria arma (até municaoMax);
+  // o excedente vira estoque comum — nunca cria munição além do declarado.
+  if (isCarregador && !existingStack) {
+    const kitInicial = parseKitQuantidade(item.inclui_na_compra);
+    const municaoSlug = item.municaoCompativelSlug;
+    if (kitInicial && kitInicial > 0 && municaoSlug) {
+      const municaoMax = item.municaoMax ?? 0;
+      const carregada = Math.min(kitInicial, municaoMax);
+      const excedente = kitInicial - carregada;
+
+      nextCharacterBase = {
+        ...nextCharacterBase,
+        inventario: (nextCharacterBase.inventario ?? []).map((i) =>
+          i.id === instance.id ? { ...i, municaoAtual: carregada } : i,
+        ),
+      };
+
+      if (excedente > 0) {
+        const municaoNome =
+          params.catalog?.find((i) => i.slug === municaoSlug)?.nome ??
+          municaoSlug.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+        const existingAmmo = nextCharacterBase.inventario!.find((i) => i.itemSlug === municaoSlug && i.categoria === "municao");
+        if (existingAmmo) {
+          nextCharacterBase = {
+            ...nextCharacterBase,
+            inventario: nextCharacterBase.inventario!.map((i) =>
+              i.id === existingAmmo.id ? { ...i, quantidade: i.quantidade + excedente } : i,
+            ),
+          };
+        } else {
+          const ammoInst: InventoryItemInstance = {
+            id: crypto.randomUUID(),
+            itemSlug: municaoSlug,
+            itemNome: municaoNome,
             categoria: "municao",
             subtipo: "municao",
             quantidade: excedente,
