@@ -50,6 +50,8 @@ import {
   hasExistingAljava,
   createSharedAljavaInstance,
   parseKitQuantidade,
+  findSharedAljava,
+  addFletchasToAljava,
 } from "./ammunition";
 
 // ---------------------------------------------------------------------
@@ -92,6 +94,8 @@ export interface ItemContent {
   ammoArmasCompativeis: string[];
   /** `estatisticas.kit` parsado como inteiro — quantidade de balas/flechas por kit comprado. `null` se ausente ou não é munição. */
   ammoKitQuantidade: number | null;
+  /** `estatisticas.inclui_na_compra` — descritivo (ex.: "10 flechas simples") do que vem incluído na compra da arma. `null` se ausente. */
+  inclui_na_compra?: string | null;
   status: string;
 }
 
@@ -138,6 +142,7 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
       return asStringArray(compat?.itens);
     })(),
     ammoKitQuantidade: parseKitQuantidade(estatisticas?.kit),
+    inclui_na_compra: typeof estatisticas?.inclui_na_compra === "string" ? estatisticas.inclui_na_compra : undefined,
     status: String(raw.status ?? "published"),
   };
 }
@@ -737,19 +742,81 @@ export function purchaseItem(params: {
     municaoAtual: isCarregador && item.municaoMax != null ? item.municaoMax : undefined,
   };
 
-  // Arcos: criar Aljava compartilhada na primeira compra — não embutir no arco.
-  const extraItems: InventoryItemInstance[] = [];
-  if (isArco && !hasExistingAljava(character)) {
-    extraItems.push(createSharedAljavaInstance(nowIso));
-  }
-
-  const nextCharacter: Character = {
+  // Arcos: criar Aljava compartilhada na primeira compra; adicionar kit inicial à Aljava.
+  let nextCharacterBase: Character = {
     ...character,
     carteira: { ...carteira, [walletId]: walletAfter },
-    inventario: [...(character.inventario ?? []), instance, ...extraItems],
+    inventario: [...(character.inventario ?? []), instance],
   };
 
-  return { character: nextCharacter, ok: true, totalCost, walletBefore: saldoAtual, walletAfter, instance };
+  if (isArco) {
+    // Criar Aljava se não existir
+    if (!hasExistingAljava(nextCharacterBase)) {
+      nextCharacterBase = {
+        ...nextCharacterBase,
+        inventario: [...(nextCharacterBase.inventario ?? []), createSharedAljavaInstance(nowIso)],
+      };
+    }
+
+    // Adicionar kit inicial de flechas à Aljava
+    const kitQtd = parseKitQuantidade(item.inclui_na_compra);
+    const flechaSlug = item.municaoCompativelSlug || "flecha_simples";
+    if (kitQtd && kitQtd > 0) {
+      const sharedAljava = findSharedAljava(nextCharacterBase);
+      if (sharedAljava) {
+        const { aljava: novaAljava, excedente } = addFletchasToAljava(
+          sharedAljava.aljava,
+          flechaSlug,
+          "Flecha simples",
+          kitQtd
+        );
+        const moved = kitQtd - excedente;
+
+        // Atualizar Aljava no inventário
+        nextCharacterBase = {
+          ...nextCharacterBase,
+          inventario: (nextCharacterBase.inventario ?? []).map((i) =>
+            i.id === sharedAljava.id ? { ...i, aljava: novaAljava } : i
+          ),
+        };
+
+        // Se houver excedente, adicionar ao inventário
+        if (excedente > 0) {
+          const existingAmmo = nextCharacterBase.inventario!.find(
+            (i) => i.itemSlug === flechaSlug && i.id !== sharedAljava.id
+          );
+          if (existingAmmo) {
+            nextCharacterBase = {
+              ...nextCharacterBase,
+              inventario: nextCharacterBase.inventario!.map((i) =>
+                i.id === existingAmmo.id ? { ...i, quantidade: i.quantidade + excedente } : i
+              ),
+            };
+          } else {
+            const ammoInst: InventoryItemInstance = {
+              id: crypto.randomUUID(),
+              itemSlug: flechaSlug,
+              itemNome: "Flecha simples",
+              categoria: "municao",
+              subtipo: "municao",
+              quantidade: excedente,
+              estado: "mochila",
+              adquiridoEm: nowIso,
+              precoPago: 0,
+              propriedadesTecnicas: [],
+              estadosTecnicos: [],
+            };
+            nextCharacterBase = {
+              ...nextCharacterBase,
+              inventario: [...nextCharacterBase.inventario!, ammoInst],
+            };
+          }
+        }
+      }
+    }
+  }
+
+  return { character: nextCharacterBase, ok: true, totalCost, walletBefore: saldoAtual, walletAfter, instance };
 }
 
 // ---------------------------------------------------------------------

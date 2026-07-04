@@ -5048,6 +5048,33 @@
       "versao": "1.2.0",
       "created_at": "2026-06-29",
       "updated_at": "2026-06-29"
+    },
+    {
+      "id": "aljava",
+      "slug": "aljava",
+      "nome": "Aljava",
+      "categoria": "ferramenta",
+      "categoria_label": "Ferramenta",
+      "raridade": "comum",
+      "raridade_label": "Comum",
+      "preco": 0,
+      "descricao_curta": "Receptáculo para armazenar e organizar projéteis de arco — capacidade 15.",
+      "descricao_longa": "Receptáculo para armazenar e organizar projéteis de arco (flechas, projéteis especiais). Criada automaticamente ao comprar o primeiro arco. Capacidade padrão: 15 unidades. Compartilhada entre todos os arcos do personagem.",
+      "tags": [
+        "equipamento",
+        "automatico"
+      ],
+      "estatisticas": {
+        "capacidade": 15,
+        "tipo_armazenamento": "flechas"
+      },
+      "payload_automacao": {
+        "efeitos": []
+      },
+      "status": "published",
+      "versao": "1.2.0",
+      "created_at": "2026-07-04",
+      "updated_at": "2026-07-04"
     }
   ]
 }
