@@ -68,6 +68,7 @@ import {
   setItemMitAtual,
   setItemPdAtual,
   setWeaponAmmoAtual,
+  setFlechaQuantidadeInAljava,
   reloadMagazineWeapon,
   reloadAljava,
   consumeAttackAmmo,
@@ -1910,6 +1911,20 @@ export default function CharacterSheetClient({
     setCharacter(next);
   }
 
+  function handleSetFlechaQuantidade(instanceId: string, contentSlug: string, value: number) {
+    const current = characterRef.current;
+    const inst = (current.inventario ?? []).find((i) => i.id === instanceId);
+    const aljava = (inst as Record<string, unknown> | undefined)?.aljava as Parameters<typeof setFlechaQuantidadeInAljava>[0] | undefined;
+    if (!aljava) return;
+    const novaAljava = setFlechaQuantidadeInAljava(aljava, contentSlug, value);
+    const next = {
+      ...current,
+      inventario: (current.inventario ?? []).map((i) => i.id === instanceId ? { ...i, aljava: novaAljava } : i),
+    };
+    characterRef.current = next;
+    setCharacter(next);
+  }
+
   function handleReloadWeapon(instanceId: string) {
     const current = characterRef.current;
     const instance = current.inventario?.find((i) => i.id === instanceId);
@@ -2576,6 +2591,7 @@ export default function CharacterSheetClient({
           onSetMitAtual={handleSetMitAtual}
           onSetPdAtual={handleSetPdAtual}
           onSetMunicaoAtual={handleSetMunicaoAtual}
+          onSetFlechaQuantidade={handleSetFlechaQuantidade}
           onReloadWeapon={handleReloadWeapon}
           selectedFlechaSlugPerBow={selectedFlechaSlugPerBow}
           onSelectFlechaAtiva={(instanceId, slug) =>

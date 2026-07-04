@@ -62,6 +62,7 @@ export function InventoryTab({
   onSetMitAtual,
   onSetPdAtual,
   onSetMunicaoAtual,
+  onSetFlechaQuantidade,
   onReloadWeapon,
   selectedFlechaSlugPerBow,
   onSelectFlechaAtiva,
@@ -89,6 +90,7 @@ export function InventoryTab({
   onSetMitAtual: (instanceId: string, value: number) => void;
   onSetPdAtual: (instanceId: string, value: number) => void;
   onSetMunicaoAtual: (instanceId: string, value: number) => void;
+  onSetFlechaQuantidade: (instanceId: string, contentSlug: string, value: number) => void;
   onReloadWeapon: (instanceId: string) => void;
   /** Slug da flecha ativa por instância de arco. */
   selectedFlechaSlugPerBow: Record<string, string>;
@@ -345,9 +347,17 @@ export function InventoryTab({
                         Aljava ({totalFlechas} / {aljava_?.capacidade ?? 15})
                       </p>
                       {stacksComFlechas.map((stack) => (
-                        <div key={stack.contentSlug} style={{ fontSize: 11, opacity: 0.8, paddingLeft: 8, display: "flex", gap: 6, alignItems: "center" }}>
-                          <span>◆ {stack.nome}</span>
-                          <span style={{ opacity: 0.6 }}>x{stack.quantidade}</span>
+                        <div key={stack.contentSlug} style={{ fontSize: 11, paddingLeft: 8, display: "flex", gap: 6, alignItems: "center" }}>
+                          <span style={{ opacity: 0.8 }}>◆ {stack.nome}</span>
+                          <input
+                            data-testid={`inventario-flecha-qtd-${instance.id}-${stack.contentSlug}`}
+                            type="number"
+                            min={0}
+                            max={aljava_?.capacidade ?? 15}
+                            value={stack.quantidade}
+                            onChange={(e) => onSetFlechaQuantidade(instance.id, stack.contentSlug, Number(e.target.value))}
+                            style={{ ...input, width: 52, fontSize: 11 }}
+                          />
                         </div>
                       ))}
                       {!aljava_ && (

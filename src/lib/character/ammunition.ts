@@ -316,6 +316,23 @@ export function consumeFletchaFromAljava(
 }
 
 /**
+ * Ajuste manual da quantidade de um stack na aljava.
+ * Remove o stack se a quantidade cair para 0.
+ * Clampeia em [0, capacidade] por stack para evitar estouros óbvios.
+ */
+export function setFlechaQuantidadeInAljava(
+  aljava: Aljava,
+  contentSlug: string,
+  quantidade: number,
+): Aljava {
+  const clamped = Math.max(0, Math.min(aljava.capacidade, Math.trunc(quantidade)));
+  const newStacks = aljava.stacks
+    .map((s) => (s.contentSlug === contentSlug ? { ...s, quantidade: clamped } : s))
+    .filter((s) => s.quantidade > 0);
+  return { ...aljava, stacks: newStacks };
+}
+
+/**
  * Atualiza a aljava de uma instância de arco no inventário.
  */
 export function setAljavaOnInstance(
