@@ -1093,7 +1093,7 @@
         "tipo_dano": "fisico",
         "subtipo_dano": "perfurante",
         "municao_max": 1,
-        "inclui_na_compra": "12 flechas simples",
+        "inclui_na_compra": "10 flechas simples",
         "municao_compativel": "flecha_simples"
       },
       "payload_automacao": {
@@ -1192,7 +1192,7 @@
         "tipo_dano": "fisico",
         "subtipo_dano": "perfurante",
         "municao_max": 1,
-        "inclui_na_compra": "12 flechas simples",
+        "inclui_na_compra": "10 flechas simples",
         "municao_compativel": "flecha_simples"
       },
       "payload_automacao": {
@@ -1752,7 +1752,7 @@
         "loja"
       ],
       "estatisticas": {
-        "kit": "12 flechas",
+        "kit": "10 flechas",
         "compatibilidade": {
           "subtipos_arma": [
             "arremesso_disparo"
@@ -1788,7 +1788,7 @@
         "loja"
       ],
       "estatisticas": {
-        "kit": "6 virotes",
+        "kit": "5 virotes",
         "compatibilidade": {
           "familia": "virotes",
           "itens": [
@@ -1821,7 +1821,7 @@
         "loja"
       ],
       "estatisticas": {
-        "kit": "12 flechas",
+        "kit": "5 flechas",
         "compatibilidade": {
           "familia": "flechas",
           "itens": [
@@ -1866,7 +1866,7 @@
         "loja"
       ],
       "estatisticas": {
-        "kit": "12 flechas",
+        "kit": "5 flechas",
         "compatibilidade": {
           "familia": "flechas",
           "itens": [
@@ -1904,7 +1904,7 @@
         "loja"
       ],
       "estatisticas": {
-        "kit": "12 flechas",
+        "kit": "5 flechas",
         "compatibilidade": {
           "familia": "flechas",
           "itens": [
@@ -1949,7 +1949,7 @@
         "loja"
       ],
       "estatisticas": {
-        "kit": "12 flechas",
+        "kit": "5 flechas",
         "compatibilidade": {
           "familia": "flechas",
           "itens": [
