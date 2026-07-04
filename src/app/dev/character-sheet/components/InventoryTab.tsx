@@ -8,8 +8,7 @@ import {
   ITEM_LOADOUT_STATES,
   getRuneCompatibility,
   countInstalledRunes,
-  deriveItemTechnicalProperties,
-  deriveRuneItemProperties,
+  deriveItemProperties,
   type ItemContent,
   type InventoryItemInstance,
   type Wallet,
@@ -51,6 +50,7 @@ export function InventoryTab({
   onInstallRune,
   onRemoveRune,
   installedRuneIdsWithEffect,
+  properties,
 }: {
   items: ItemContent[];
   catalogError: string | null;
@@ -67,6 +67,8 @@ export function InventoryTab({
   onRemoveRune: (instanceId: string, runeInstallationId: string) => void;
   /** runeInstallationIds com pelo menos 1 ActiveEffect derivado (checkpoint v0.57) — ver `deriveInstalledRuneEffects`. */
   installedRuneIdsWithEffect: Set<string>;
+  /** Catálogo publicado de propriedades; nunca substituído por lista local. */
+  properties: TechnicalContentItem[];
 }) {
   const [busca, setBusca] = useState("");
   const [categoria, setCategoria] = useState<(typeof CATEGORIA_FILTROS)[number]>("todos");
@@ -186,10 +188,12 @@ export function InventoryTab({
             const compatibilidade = runaEscolhidaContent
               ? getRuneCompatibility({ categoria: instance.categoria, subtipo: instance.subtipo }, runaEscolhidaContent)
               : null;
-            const propriedadesTecnicas = deriveItemTechnicalProperties(
+            const resolvedProperties = deriveItemProperties({
               instance,
-              deriveRuneItemProperties(instance, runasPublicadas),
-            );
+              item: itemModelo,
+              properties,
+              runes: runasPublicadas,
+            });
             const estadosTecnicos = instance.estadosTecnicos ?? [];
             return (
               <div key={instance.id} data-testid={`inventario-item-${instance.id}`} style={{ background: "#1d1e24", borderRadius: 8, padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6, fontSize: 12 }}>
@@ -215,25 +219,31 @@ export function InventoryTab({
                   </button>
                 </div>
 
-                {(propriedadesTecnicas.length > 0 || estadosTecnicos.length > 0) && (
+                {(resolvedProperties.length > 0 || estadosTecnicos.length > 0) && (
                   <div
                     data-testid={`inventario-propriedades-tecnicas-${instance.id}`}
                     style={{ borderTop: "1px solid #2a2b33", paddingTop: 6, marginTop: 2 }}
                   >
                     <p style={{ fontSize: 11, opacity: 0.7, margin: "0 0 4px" }}>Propriedades técnicas</p>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      {propriedadesTecnicas.map((property) => (
-                        <div key={property.id} style={{ display: "flex", gap: 6, alignItems: "baseline", flexWrap: "wrap" }}>
+                      {resolvedProperties.map((property) => (
+                        <div
+                          key={property.key}
+                          data-testid={`inventario-propriedade-${instance.id}-${property.key}`}
+                          style={{ display: "flex", gap: 6, alignItems: "baseline", flexWrap: "wrap" }}
+                        >
                           <strong>{property.label}</strong>
                           {property.value != null && property.value !== true && (
                             <span style={{ opacity: 0.7 }}>{String(property.value)}</span>
                           )}
-                          <span style={{ fontSize: 10, opacity: 0.55 }}>
-                            Origem: {property.sourceLabel ?? property.sourceContentId}
+                          <span style={{ fontSize: 10, color: property.critical ? "#5ec8ff" : "#b8b8c8" }}>
+                            {property.classificationLabel}
                           </span>
-                          {property.mechanicalEffectAutomated !== true && (
-                            <span style={{ fontSize: 10, color: "#f5a623" }}>sem efeito mecânico automatizado</span>
-                          )}
+                          <span style={{ fontSize: 10, opacity: 0.55 }}>
+                            {property.sources.length === 1 ? "Origem" : "Origens"}:{" "}
+                            {property.sources.map((source) => source.label).join(" · ")}
+                          </span>
+                          <span style={{ fontSize: 10, color: "#f5a623" }}>sem efeito mecânico automatizado</span>
                           {property.description && <span style={{ fontSize: 10, opacity: 0.6 }}>{property.description}</span>}
                         </div>
                       ))}

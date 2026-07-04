@@ -23,6 +23,9 @@ import {
   removeItemTechnicalPropertyBySource,
   setItemTechnicalState,
   deriveInstalledRuneEffects,
+  normalizeItemProperty,
+  getItemModelProperties,
+  deriveItemProperties,
   type ItemContent,
 } from "../src/lib/character";
 import { normalizeTechnicalContentItem, type TechnicalContentItem } from "../src/lib/content";
@@ -104,6 +107,8 @@ console.log("5. Loadout (mudar estado/ajustar quantidade/remover) — OK");
 
 const runasDb = readJson<{ runas: Record<string, unknown>[] }>("content/db_runas_normalizado_v1_2.json");
 const runas: TechnicalContentItem[] = runasDb.runas.map(normalizeTechnicalContentItem);
+const propriedadesDb = readJson<{ propriedades: Record<string, unknown>[] }>("content/db_propriedades_normalizado_v1.json");
+const propriedades: TechnicalContentItem[] = propriedadesDb.propriedades.map(normalizeTechnicalContentItem);
 const runaRetratil = runas.find((r) => r.slug === "runa_cac_retratil");
 assert.ok(runaRetratil, "Runa 'runa_cac_retratil' deve existir no DB real (slots_possiveis: ['arma'], restricao_subtipo: 'corpo_a_corpo').");
 
@@ -112,6 +117,7 @@ assert.ok(runaRetratil, "Runa 'runa_cac_retratil' deve existir no DB real (slots
 // -------------------------------------------------------------
 assert.equal(faca!.subtipo, "corpo_a_corpo");
 assert.equal(faca!.slotsRunaMax, 1, "Faca deve ter slots_runa_max real vindo do payload (não inventado).");
+assert.deepEqual(faca!.propertySlugs, ["arremesso", "silencioso"]);
 const municao = items.find((i) => i.categoria === "municao");
 assert.ok(municao, "Deve haver pelo menos um item de munição no DB real.");
 assert.equal(municao!.slotsRunaMax, null, "Categorias sem slots_runa_max no payload devem ficar null, nunca 0 inventado.");
@@ -221,6 +227,37 @@ assert.deepEqual(
 console.log("7d. Toggle técnico e remoção por fonte são puros, reversíveis e não consomem PA — OK");
 
 // -------------------------------------------------------------
+// 7e. Propriedades do modelo/catálogo/instância formam uma visão única.
+// -------------------------------------------------------------
+const tonfa = items.find((item) => item.slug === "tonfa");
+assert.ok(tonfa, "Tonfa deve existir no DB real.");
+const propriedadesTonfa = getItemModelProperties(tonfa!, propriedades);
+assert.deepEqual(propriedadesTonfa.map((property) => property.slug), ["contusao", "aparar"]);
+assert.equal(propriedadesTonfa.find((property) => property.slug === "aparar")?.classification, "action_requirement");
+assert.equal(propriedadesTonfa.find((property) => property.slug === "contusao")?.classification, "critical_suggestion");
+
+const itemSemPropriedades = items.find((item) => item.categoria === "municao");
+assert.ok(itemSemPropriedades);
+assert.deepEqual(getItemModelProperties(itemSemPropriedades!, propriedades), []);
+
+const propriedadeMalformada = normalizeTechnicalContentItem({
+  id: "malformada",
+  slug: "malformada",
+  nome: "Malformada",
+  status: "published",
+  payload_automacao: { efeitos: "não-array" },
+});
+assert.equal(normalizeItemProperty(propriedadeMalformada).classification, "ambiguous");
+
+const propriedadeAusente = getItemModelProperties(
+  { ...faca!, propertySlugs: ["nao_existe"] },
+  propriedades,
+);
+assert.equal(propriedadeAusente[0]?.missingCatalog, true);
+assert.equal(propriedadeAusente[0]?.classification, "ambiguous");
+console.log("7e. Propriedades base normalizam/classificam; ausentes e malformadas não quebram — OK");
+
+// -------------------------------------------------------------
 // 8. Compatibilidade respeita a fonte quando é clara (categoria + subtipo).
 // -------------------------------------------------------------
 assert.equal(
@@ -276,6 +313,36 @@ assert.equal(comRuna.compatibility, "compatible");
 const facaComRuna = comRuna.character.inventario!.find((i) => i.id === facaInstanceId)!;
 assert.equal(facaComRuna.runasInstaladas?.length, 1);
 assert.equal(facaComRuna.runasInstaladas![0].runeContentId, runaRetratil!.slug, "Deve referenciar o slug do modelo, nunca copiar o payload.");
+const propriedadesComRuna = deriveItemProperties({
+  instance: facaComRuna,
+  item: faca,
+  properties: propriedades,
+  runes: runas,
+});
+assert.deepEqual(
+  propriedadesComRuna.map((property) => property.key),
+  ["ocultavel", "arremesso", "silencioso"],
+  "A visão única deve combinar runa + propriedades base sem perder origem.",
+);
+const facaComOcultavelDuplicado = {
+  ...facaComRuna,
+  propriedadesTecnicas: [{
+    id: "manual-ocultavel",
+    sourceType: "manual" as const,
+    sourceContentId: "manual",
+    key: "ocultavel",
+    label: "Ocultável",
+    value: true,
+  }],
+};
+const ocultavelDeduplicado = deriveItemProperties({
+  instance: facaComOcultavelDuplicado,
+  item: faca,
+  properties: propriedades,
+  runes: runas,
+}).filter((property) => property.key === "ocultavel");
+assert.equal(ocultavelDeduplicado.length, 1);
+assert.equal(ocultavelDeduplicado[0].sources.length, 2, "Deduplicação preserva as duas origens.");
 console.log("10. Instalar runa compatível cria referência ao modelo (slug) na instância — OK");
 
 // -------------------------------------------------------------

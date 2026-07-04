@@ -2419,6 +2419,7 @@ export default function CharacterSheetClient({
           onInstallRune={handleInstallRune}
           onRemoveRune={handleRemoveRune}
           installedRuneIdsWithEffect={installedRuneIdsWithEffect}
+          properties={propertiesIniciais}
         />
       )}
 

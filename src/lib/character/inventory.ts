@@ -52,6 +52,10 @@ export interface ItemContent {
   preco: number;
   descricao_curta?: string;
   tags: string[];
+  /** Slugs canônicos de `estatisticas.propriedades` do modelo. */
+  propertySlugs: string[];
+  /** Campo de modelo presente em armaduras/escudos; não representa o estado atual da instância. */
+  ocultavel?: "sim" | "parcial" | "nao";
   /** `estatisticas.slots_runa_max` do payload real — `null` quando o item não aceita runa ou o dado está ausente (nunca inventado). */
   slotsRunaMax: number | null;
   status: string;
@@ -79,6 +83,11 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
     preco: typeof raw.preco === "number" && Number.isFinite(raw.preco) ? raw.preco : 0,
     descricao_curta: typeof raw.descricao_curta === "string" ? raw.descricao_curta : undefined,
     tags: asStringArray(raw.tags),
+    propertySlugs: asStringArray(estatisticas?.propriedades),
+    ocultavel:
+      raw.ocultavel === "sim" || raw.ocultavel === "parcial" || raw.ocultavel === "nao"
+        ? raw.ocultavel
+        : undefined,
     slotsRunaMax: typeof estatisticas?.slots_runa_max === "number" ? estatisticas.slots_runa_max : null,
     status: String(raw.status ?? "published"),
   };
@@ -135,6 +144,42 @@ export interface InventoryItemInstance {
   propriedadesTecnicas?: TechnicalItemPropertyInstance[];
   /** Estado manual da instância; qualquer custo guardado é apenas informativo. */
   estadosTecnicos?: TechnicalItemState[];
+}
+
+export type ItemPropertyClassification =
+  | "renderable_text"
+  | "action_requirement"
+  | "passive_modifier"
+  | "critical_suggestion"
+  | "requires_system"
+  | "ambiguous";
+
+export type ResolvedItemPropertySourceType = "item_base" | "rune" | "manual" | "technical";
+
+export interface NormalizedItemProperty {
+  id: string;
+  slug: string;
+  label: string;
+  description?: string;
+  classification: ItemPropertyClassification;
+  classificationLabel: string;
+  payloadAutomacao?: unknown;
+  triggers: string[];
+  critical: boolean;
+  status: string;
+}
+
+export interface ResolvedItemPropertySource {
+  type: ResolvedItemPropertySourceType;
+  id: string;
+  label: string;
+}
+
+export interface ResolvedItemProperty extends NormalizedItemProperty {
+  key: string;
+  value?: string | number | boolean | null;
+  sources: ResolvedItemPropertySource[];
+  missingCatalog?: boolean;
 }
 
 const TECHNICAL_ITEM_SOURCE_TYPES: readonly TechnicalItemSourceType[] = ["rune", "property", "manual"];
@@ -283,6 +328,188 @@ export function deriveRuneItemProperties(
   }
 
   return deriveItemTechnicalProperties({ propriedadesTecnicas: [] }, properties);
+}
+
+function propertyEffects(property: TechnicalContentItem): {
+  effects: Record<string, unknown>[];
+  malformed: boolean;
+} {
+  const payload = asRecord(property.payloadAutomacao);
+  if (property.payloadAutomacao == null) return { effects: [], malformed: false };
+  if (!payload || !Array.isArray(payload.efeitos)) return { effects: [], malformed: true };
+  const effects = payload.efeitos
+    .map(asRecord)
+    .filter((effect): effect is Record<string, unknown> => effect !== null);
+  return { effects, malformed: effects.length !== payload.efeitos.length };
+}
+
+const PROPERTY_CLASSIFICATION_LABELS: Record<ItemPropertyClassification, string> = {
+  renderable_text: "texto",
+  action_requirement: "pré-requisito",
+  passive_modifier: "passivo",
+  critical_suggestion: "crítico",
+  requires_system: "sistema futuro",
+  ambiguous: "ambígua",
+};
+
+/**
+ * Normaliza uma propriedade publicada sem catálogo paralelo por slug:
+ * a classificação nasce do próprio payload/gatilhos.
+ */
+export function normalizeItemProperty(property: TechnicalContentItem): NormalizedItemProperty {
+  const triggers = asStringArray(property.raw.gatilhos);
+  const margemMinima = property.raw.margem_minima;
+  const parsed = propertyEffects(property);
+  let classification: ItemPropertyClassification;
+
+  if (!property.slug || parsed.malformed) {
+    classification = "ambiguous";
+  } else if (margemMinima === "sucesso_critico" || triggers.includes("sucesso_critico")) {
+    classification = "critical_suggestion";
+  } else if (parsed.effects.some((effect) => effect.tipo === "habilitar_acao_defensiva")) {
+    classification = "action_requirement";
+  } else if (
+    parsed.effects.length > 0 &&
+    parsed.effects.every((effect) => {
+      const tags = asStringArray(effect.alvo_tags);
+      const value = effect.valor ?? effect.bonus;
+      return (
+        effect.tipo === "modificador" &&
+        typeof value === "number" &&
+        tags.length > 0 &&
+        effect.quando == null &&
+        effect.gatilho == null &&
+        effect.restrito_a == null
+      );
+    })
+  ) {
+    classification = "passive_modifier";
+  } else if (parsed.effects.length === 0) {
+    classification = "renderable_text";
+  } else {
+    classification = "requires_system";
+  }
+
+  return {
+    id: property.id,
+    slug: property.slug,
+    label: property.nome,
+    description: property.descricaoCurta,
+    classification,
+    classificationLabel: PROPERTY_CLASSIFICATION_LABELS[classification],
+    payloadAutomacao: property.payloadAutomacao,
+    triggers,
+    critical: classification === "critical_suggestion",
+    status: property.status,
+  };
+}
+
+/** Resolve os slugs do modelo contra o catálogo publicado, preservando referências órfãs como diagnóstico. */
+export function getItemModelProperties(
+  item: ItemContent,
+  properties: TechnicalContentItem[],
+): ResolvedItemProperty[] {
+  const bySlug = new Map(properties.map((property) => [property.slug, property]));
+  const resolved: ResolvedItemProperty[] = item.propertySlugs.map((slug) => {
+    const content = bySlug.get(slug);
+    const source: ResolvedItemPropertySource = {
+      type: "item_base",
+      id: item.slug,
+      label: `Item base: ${item.nome}`,
+    };
+    if (!content) {
+      return {
+        id: `missing-property:${item.slug}:${slug}`,
+        slug,
+        key: slug,
+        label: slug,
+        description: "Propriedade referenciada pelo item, mas ausente do catálogo carregado.",
+        classification: "ambiguous",
+        classificationLabel: PROPERTY_CLASSIFICATION_LABELS.ambiguous,
+        triggers: [],
+        critical: false,
+        status: "missing",
+        sources: [source],
+        missingCatalog: true,
+      };
+    }
+    const normalized = normalizeItemProperty(content);
+    return { ...normalized, key: normalized.slug, sources: [source] };
+  });
+
+  if (item.ocultavel) {
+    const valueLabel = item.ocultavel === "sim" ? "Sim" : item.ocultavel === "parcial" ? "Parcial" : "Não";
+    resolved.push({
+      id: `item-property:${item.slug}:ocultavel`,
+      slug: "ocultavel",
+      key: "ocultavel",
+      label: "Ocultável",
+      value: valueLabel,
+      description: `Ocultabilidade declarada no modelo do item: ${valueLabel.toLowerCase()}.`,
+      classification: "renderable_text",
+      classificationLabel: PROPERTY_CLASSIFICATION_LABELS.renderable_text,
+      triggers: [],
+      critical: false,
+      status: item.status,
+      sources: [{ type: "item_base", id: item.slug, label: `Item base: ${item.nome}` }],
+    });
+  }
+
+  return resolved;
+}
+
+function technicalPropertySource(property: TechnicalItemPropertyInstance): ResolvedItemPropertySource {
+  const type: ResolvedItemPropertySourceType =
+    property.sourceType === "rune" ? "rune" : property.sourceType === "manual" ? "manual" : "technical";
+  return {
+    type,
+    id: property.sourceInstanceId ?? property.sourceContentId,
+    label: property.sourceLabel ?? property.sourceContentId,
+  };
+}
+
+/**
+ * Visão única das propriedades do item: camadas da instância/runa têm
+ * precedência sobre o modelo; fontes duplicadas são agregadas por chave.
+ */
+export function deriveItemProperties(params: {
+  instance: InventoryItemInstance;
+  item?: ItemContent;
+  properties: TechnicalContentItem[];
+  runes?: TechnicalContentItem[];
+}): ResolvedItemProperty[] {
+  const technical = deriveItemTechnicalProperties(
+    params.instance,
+    deriveRuneItemProperties(params.instance, params.runes ?? []),
+  ).map((property): ResolvedItemProperty => ({
+    id: property.id,
+    slug: property.key,
+    key: property.key,
+    label: property.label,
+    value: property.value,
+    description: property.description,
+    classification: "renderable_text",
+    classificationLabel: PROPERTY_CLASSIFICATION_LABELS.renderable_text,
+    triggers: [],
+    critical: false,
+    status: "instance",
+    sources: [technicalPropertySource(property)],
+  }));
+  const fromModel = params.item ? getItemModelProperties(params.item, params.properties) : [];
+  const merged = new Map<string, ResolvedItemProperty>();
+
+  for (const property of [...technical, ...fromModel]) {
+    const existing = merged.get(property.key);
+    if (!existing) {
+      merged.set(property.key, property);
+      continue;
+    }
+    const sourceKeys = new Set(existing.sources.map((source) => `${source.type}:${source.id}`));
+    const newSources = property.sources.filter((source) => !sourceKeys.has(`${source.type}:${source.id}`));
+    merged.set(property.key, { ...existing, sources: [...existing.sources, ...newSources] });
+  }
+
+  return [...merged.values()];
 }
 
 /** Alterna somente um estado técnico já existente; nunca consome PA ou gera log/efeito. */
