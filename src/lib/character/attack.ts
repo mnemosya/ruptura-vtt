@@ -17,8 +17,8 @@
  * Módulo puro: nunca acessa Supabase, nunca decide UI.
  */
 
-import { detectCollapseOnResourceChange } from "./collapse";
-import type { Character } from "./types";
+import { detectCollapseOnResourceChange, resolveCollapseAdditionalDamage } from "./collapse";
+import type { Character, CollapseRulesPayload } from "./types";
 
 export interface ContestedRollResult {
   attackerTotal: number;
@@ -65,12 +65,20 @@ export interface AttackDamageResult {
   collapseStarted: boolean;
   collapseTipo: "pv" | "pe" | null;
   collapseWarnings: string[];
+  /** Logs/tableLogs do avanço de Colapso por "dano adicional da mesma dimensão" (checkpoint v0.52) — vazio quando não aplicável. */
+  collapseAdvanceLogs: string[];
+  collapseAdvanceTableLogs: { type: string; payload: Record<string, unknown> }[];
 }
 
 /**
  * Aplica dano de ataque DIRETO ao PV do alvo (nunca MIT/PD/armadura) e
  * aciona a lógica de Colapso já existente (`detectCollapseOnResourceChange`,
- * v0.38) quando o PV chega a 0.
+ * v0.38) quando o PV chega a 0. Se o alvo já estava em Colapso de PV
+ * ANTES deste ataque, o dano conta como "dano adicional da mesma
+ * dimensão" (checkpoint v0.52, `resolveCollapseAdditionalDamage`) e
+ * pode avançar o segmento — `collapseRules` (opcional) é a fonte
+ * canônica; sem ela, o avanço simplesmente não é aplicado (fallback
+ * defensivo, nunca inventa regra).
  */
 export function applyAttackDamage(params: {
   character: Character;
@@ -78,6 +86,9 @@ export function applyAttackDamage(params: {
   damageType: string;
   nowIso: string;
   rng?: () => number;
+  collapseRules?: CollapseRulesPayload | null;
+  round?: number;
+  scene?: number;
 }): AttackDamageResult {
   const rollResult = rollDamageFormula(params.formula, params.rng);
   const pvBefore = params.character.recursos_atuais?.pv ?? 0;
@@ -95,8 +106,27 @@ export function applyAttackDamage(params: {
     params.nowIso,
   );
 
+  let finalCharacter = collapse.character;
+  let collapseAdvanceLogs: string[] = [];
+  let collapseAdvanceTableLogs: { type: string; payload: Record<string, unknown> }[] = [];
+  if (!collapse.started && !collapse.ended && rollResult > 0) {
+    const additional = resolveCollapseAdditionalDamage({
+      character: finalCharacter,
+      resource: "pv",
+      damageAmount: rollResult,
+      rules: params.collapseRules,
+      round: params.round,
+      scene: params.scene,
+      nowIso: params.nowIso,
+      rng: params.rng,
+    });
+    finalCharacter = additional.character;
+    collapseAdvanceLogs = additional.logs;
+    collapseAdvanceTableLogs = additional.tableLogs;
+  }
+
   return {
-    character: collapse.character,
+    character: finalCharacter,
     rollResult,
     formula: params.formula,
     damageType: params.damageType,
@@ -105,5 +135,7 @@ export function applyAttackDamage(params: {
     collapseStarted: collapse.started,
     collapseTipo: collapse.tipo,
     collapseWarnings: collapse.warnings,
+    collapseAdvanceLogs,
+    collapseAdvanceTableLogs,
   };
 }

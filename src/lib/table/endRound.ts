@@ -151,7 +151,9 @@ export async function resolveCampaignEndRoundForCharacters(params: {
         rng: params.rng,
       });
 
-      // A. Resolve efeitos da rodada/cena ATUAIS da campanha.
+      // A. Resolve efeitos da rodada/cena ATUAIS da campanha. `collapseRules`
+      // (checkpoint v0.52) permite ao dano de condição desta rodada avançar
+      // o Colapso se o personagem já estava colapsado (dano adicional).
       const resolved = resolveEndRoundConditionsForCharacter({
         character: collapseResult.character,
         conditions,
@@ -159,6 +161,7 @@ export async function resolveCampaignEndRoundForCharacters(params: {
         scene,
         nowIso,
         rng: params.rng,
+        collapseRules: regras?.colapso,
       });
 
       // B/C. Renova PA e Reações; zera penalidade de defesa sem Reação.

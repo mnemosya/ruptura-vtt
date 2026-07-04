@@ -21,8 +21,8 @@
  */
 
 import { normalizeConditionSlug } from "./actionConsole";
-import { detectCollapseOnResourceChange } from "./collapse";
-import type { ActiveCondition, Character, ConditionEffectHistoryEntry, ConditionResistanceCheck } from "./types";
+import { detectCollapseOnResourceChange, resolveCollapseAdditionalDamage } from "./collapse";
+import type { ActiveCondition, Character, CollapseRulesPayload, ConditionEffectHistoryEntry, ConditionResistanceCheck } from "./types";
 
 // ---------------------------------------------------------------------
 // Conteúdo bruto de condição (subconjunto lido de content_documents.payload)
@@ -198,13 +198,19 @@ export interface ApplyConditionDamageResult {
   collapseStarted: boolean;
   collapseTipo: "pv" | "pe" | null;
   collapseWarnings: string[];
+  /** Logs/tableLogs do avanço de Colapso por "dano adicional da mesma dimensão" (checkpoint v0.52) — vazio quando não aplicável. */
+  collapseAdvanceLogs: string[];
+  collapseAdvanceTableLogs: EndRoundTableLog[];
 }
 
 /**
  * Aplica dano direto de condição ao PV (nunca MIT/PD/armadura/escudo,
  * nunca pede alvo) e aciona a lógica de Colapso já existente
  * (`detectCollapseOnResourceChange`, checkpoint v0.38) quando o PV
- * chega a 0.
+ * chega a 0. Se o personagem já estava em Colapso de PV ANTES deste
+ * dano (não foi este evento que iniciou nem que curou), o dano conta
+ * como "dano adicional da mesma dimensão" (checkpoint v0.52,
+ * `resolveCollapseAdditionalDamage`) e pode avançar o segmento.
  */
 export function applyConditionEndRoundDamage(params: {
   character: Character;
@@ -214,6 +220,9 @@ export function applyConditionEndRoundDamage(params: {
   damageType: string;
   nowIso: string;
   rng?: () => number;
+  collapseRules?: CollapseRulesPayload | null;
+  round?: number;
+  scene?: number;
 }): ApplyConditionDamageResult {
   const rng = params.rng ?? Math.random;
   const rollResult = rollConditionFormula(params.formula, rng);
@@ -232,8 +241,27 @@ export function applyConditionEndRoundDamage(params: {
     params.nowIso,
   );
 
+  let finalCharacter = collapse.character;
+  let collapseAdvanceLogs: string[] = [];
+  let collapseAdvanceTableLogs: EndRoundTableLog[] = [];
+  if (!collapse.started && !collapse.ended && rollResult > 0) {
+    const additional = resolveCollapseAdditionalDamage({
+      character: finalCharacter,
+      resource: "pv",
+      damageAmount: rollResult,
+      rules: params.collapseRules,
+      round: params.round,
+      scene: params.scene,
+      nowIso: params.nowIso,
+      rng,
+    });
+    finalCharacter = additional.character;
+    collapseAdvanceLogs = additional.logs;
+    collapseAdvanceTableLogs = additional.tableLogs;
+  }
+
   return {
-    character: collapse.character,
+    character: finalCharacter,
     event: {
       conditionId: params.conditionId,
       conditionName: params.conditionName,
@@ -246,6 +274,8 @@ export function applyConditionEndRoundDamage(params: {
     collapseStarted: collapse.started,
     collapseTipo: collapse.tipo,
     collapseWarnings: collapse.warnings,
+    collapseAdvanceLogs,
+    collapseAdvanceTableLogs,
   };
 }
 
@@ -318,6 +348,8 @@ export function resolveEndRoundConditionsForCharacter(params: {
   scene: number;
   nowIso: string;
   rng?: () => number;
+  /** Regra canônica de Colapso (checkpoint v0.52) — repassada a `applyConditionEndRoundDamage` para "dano adicional da mesma dimensão". */
+  collapseRules?: CollapseRulesPayload | null;
 }): EndRoundConditionResult {
   const { conditions, round, scene, nowIso } = params;
   let character = params.character;
@@ -357,6 +389,9 @@ export function resolveEndRoundConditionsForCharacter(params: {
           damageType,
           nowIso,
           rng: params.rng,
+          collapseRules: params.collapseRules,
+          round,
+          scene,
         });
         character = result.character;
         damageEvents.push(result.event);
@@ -382,6 +417,8 @@ export function resolveEndRoundConditionsForCharacter(params: {
         if (result.collapseStarted) {
           warnings.push(`Colapso (${result.collapseTipo}) iniciado por dano de condição (${content.nome}).`);
         }
+        logs.push(...result.collapseAdvanceLogs);
+        tableLogs.push(...result.collapseAdvanceTableLogs);
       } else if (efeito.tipo === "teste_fim_de_rodada") {
         const key = getEndRoundEffectKey({ conditionId: slug, effectType: "teste_fim_de_rodada", round, effectIndex });
         if (history[key]) return;
@@ -587,6 +624,8 @@ export function resolveConditionResistanceCheck(params: {
   conditions: ConditionContent[];
   nowIso: string;
   rng?: () => number;
+  /** Regra canônica de Colapso (checkpoint v0.52) — repassada a `applyConditionEndRoundDamage` para "dano adicional da mesma dimensão". */
+  collapseRules?: CollapseRulesPayload | null;
 }): ResolveConditionCheckResult {
   const { check, outcome, conditions, nowIso } = params;
   let character = params.character;
@@ -611,6 +650,9 @@ export function resolveConditionResistanceCheck(params: {
           damageType,
           nowIso,
           rng: params.rng,
+          collapseRules: params.collapseRules,
+          round: check.round,
+          scene: check.scene,
         });
         character = result.character;
         damageEvent = result.event;
@@ -634,6 +676,8 @@ export function resolveConditionResistanceCheck(params: {
             source: "end_round_condition_check",
           },
         });
+        logs.push(...result.collapseAdvanceLogs);
+        tableLogs.push(...result.collapseAdvanceTableLogs);
         if (result.collapseStarted) {
           warnings.push(`Colapso (${result.collapseTipo}) iniciado por falha em teste de condição (${check.conditionName}).`);
         }

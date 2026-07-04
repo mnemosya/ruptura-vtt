@@ -37,7 +37,7 @@ import {
 } from "../../../lib/character/storage";
 import { createInitialCharacter, normalizeCharacter, resolveContestedRoll, applyAttackDamage } from "../../../lib/character";
 import type { Campaign, CampaignProfile, CampaignInvite, ProfileSession, TableLogEntry } from "../../../lib/table";
-import type { CharacterRecord } from "../../../lib/character";
+import type { CharacterRecord, CharacterRulesPayload } from "../../../lib/character";
 
 /**
  * Formatação mínima dos tipos de log criados/reaproveitados pelo motor
@@ -156,6 +156,8 @@ interface Props {
   personagensDaMesaIniciais: CharacterRecord[];
   /** Personagens "legados" (sem mesa) disponíveis para vincular a esta mesa. */
   personagensDisponiveisIniciais: CharacterRecord[];
+  /** Regra canônica de `regras_personagem` (checkpoint v0.52) — usada só para `colapso` no "Resolver Ataque" (avanço por dano adicional). Null = segue sem avanço automático. */
+  regras: CharacterRulesPayload | null;
 }
 
 export default function MesaDetailClient({
@@ -166,6 +168,7 @@ export default function MesaDetailClient({
   logsIniciais,
   personagensDaMesaIniciais,
   personagensDisponiveisIniciais,
+  regras,
 }: Props) {
   const [campaignState, setCampaignState] = useState(campaign);
   const [perfis, setPerfis] = useState(perfisIniciais);
@@ -269,10 +272,14 @@ export default function MesaDetailClient({
           formula: ataqueFormulaDano,
           damageType: ataqueTipoDano,
           nowIso,
+          collapseRules: regras?.colapso,
+          round: alvoNormalizado.current_round,
+          scene: alvoNormalizado.current_scene,
         });
         await updateCharacter(alvo.id, dano.character);
         resumo += ` Acerto: ${dano.rollResult} de dano ${ataqueTipoDano} (PV ${dano.pvBefore} → ${dano.pvAfter}).`;
         if (dano.collapseStarted) resumo += ` Colapso (${dano.collapseTipo}) iniciado.`;
+        if (dano.collapseAdvanceLogs.length > 0) resumo += ` ${dano.collapseAdvanceLogs.join(" ")}`;
 
         try {
           await addLog({
@@ -295,9 +302,20 @@ export default function MesaDetailClient({
               pvBefore: dano.pvBefore,
               pvAfter: dano.pvAfter,
               collapseStarted: dano.collapseStarted,
+              collapseAdvanced: dano.collapseAdvanceLogs.length > 0,
               source: "mesa_dashboard",
             },
           });
+          // Log(s) do avanço de Colapso por dano adicional (checkpoint v0.52) — best-effort, mesmo padrão acima.
+          for (const entry of dano.collapseAdvanceTableLogs) {
+            await addLog({
+              campaignId: campaign.id,
+              characterId: alvo.id,
+              type: entry.type,
+              visibility: "public",
+              payload: { ...entry.payload, characterId: alvo.id, characterNome: alvo.name, source: "mesa_dashboard" },
+            });
+          }
         } catch {
           // Best-effort — o dano já foi persistido no personagem.
         }

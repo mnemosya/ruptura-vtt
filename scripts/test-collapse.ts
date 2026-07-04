@@ -1,7 +1,9 @@
 /**
- * Testes puros do ciclo de Colapso de fim de rodada (`resolveCollapseEndRound`,
- * checkpoint v0.51, achado A3 da auditoria v0.50). Lê a regra CANÔNICA
- * de `regras_personagem.colapso` do DB normalizado (sem Supabase) e
+ * Testes puros do ciclo de Colapso (`resolveCollapseEndRound` — teste
+ * de fim de rodada, checkpoint v0.51, achado A3 da auditoria v0.50; e
+ * `resolveCollapseAdditionalDamage` — avanço por "dano adicional da
+ * mesma dimensão", checkpoint v0.52). Lê a regra CANÔNICA de
+ * `regras_personagem.colapso` do DB normalizado (sem Supabase) e
  * confirma teste/avanço/desfecho derivados do payload — nunca de
  * limiares hardcoded no código.
  */
@@ -10,9 +12,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   resolveCollapseEndRound,
+  resolveCollapseAdditionalDamage,
   parseTerceiroSegmentoThreshold,
   detectCollapseOnResourceChange,
   endCollapseByHealing,
+  applyConditionEndRoundDamage,
+  applyAttackDamage,
   resolveEndRoundConditionsForCharacter,
   normalizeConditionContent,
   type Character,
@@ -208,5 +213,204 @@ const condStep = resolveEndRoundConditionsForCharacter({
 assert.equal(condStep.damageEvents.length, 1, "Sangrando ainda deve gerar 1 evento de dano após o passo de Colapso.");
 assert.equal(condStep.character.colapso?.segmentos, 1, "O estado de Colapso mantido persiste através do motor de condições.");
 console.log("10. Integração fim de rodada: Colapso + Sangrando compõem sem regressão — OK");
+
+// ===============================================================
+// Dano adicional da mesma dimensão (checkpoint v0.52, PRD 10.7 /
+// db_regras_personagem colapso.avanco: "dano_adicional_da_mesma_dimensao").
+// ===============================================================
+
+// -------------------------------------------------------------
+// 11. Dano físico adicional em Colapso físico (PV) avança o segmento.
+// -------------------------------------------------------------
+const advPv = resolveCollapseAdditionalDamage({
+  character: character(colapso("pv", 1)),
+  resource: "pv",
+  damageAmount: 3,
+  rules: collapseRules,
+  round, scene, nowIso,
+});
+assert.equal(advPv.outcome, "advanced");
+assert.equal(advPv.segmentosAfter, 2);
+assert.equal(advPv.character.colapso?.segmentos, 2);
+console.log("11. Dano físico adicional em Colapso de PV avança o segmento (1→2) — OK");
+
+// -------------------------------------------------------------
+// 12. Dano mental/estresse adicional em Colapso mental (PE) avança o segmento.
+// -------------------------------------------------------------
+const advPe = resolveCollapseAdditionalDamage({
+  character: character(colapso("pe", 0)),
+  resource: "pe",
+  damageAmount: 2,
+  rules: collapseRules,
+  round, scene, nowIso,
+});
+assert.equal(advPe.outcome, "advanced");
+assert.equal(advPe.segmentosAfter, 1);
+console.log("12. Dano mental/estresse adicional em Colapso de PE avança o segmento (0→1) — OK");
+
+// -------------------------------------------------------------
+// 13. Dano físico NÃO avança Colapso mental (dimensão errada).
+// -------------------------------------------------------------
+const danoErradoParaPe = resolveCollapseAdditionalDamage({
+  character: character(colapso("pe", 1)),
+  resource: "pv", // dano físico chegando, mas o colapso ativo é de PE
+  damageAmount: 5,
+  rules: collapseRules,
+  round, scene, nowIso,
+});
+assert.equal(danoErradoParaPe.outcome, "not_collapsed", "Dano de PV não deve avançar um Colapso de PE.");
+assert.equal(danoErradoParaPe.segmentosAfter, 1, "Segmento de Colapso de PE não deve mudar com dano de PV.");
+console.log("13. Dano físico não avança Colapso mental (dimensão errada) — OK");
+
+// -------------------------------------------------------------
+// 14. Dano mental NÃO avança Colapso físico (dimensão errada).
+// -------------------------------------------------------------
+const danoErradoParaPv = resolveCollapseAdditionalDamage({
+  character: character(colapso("pv", 1)),
+  resource: "pe", // dano mental chegando, mas o colapso ativo é de PV
+  damageAmount: 5,
+  rules: collapseRules,
+  round, scene, nowIso,
+});
+assert.equal(danoErradoParaPv.outcome, "not_collapsed", "Dano de PE não deve avançar um Colapso de PV.");
+assert.equal(danoErradoParaPv.segmentosAfter, 1);
+console.log("14. Dano mental não avança Colapso físico (dimensão errada) — OK");
+
+// -------------------------------------------------------------
+// 15. Avanço por dano adicional até o 3º segmento — mesmo procedimento do teste imediato.
+// -------------------------------------------------------------
+const ate3ComMorte = resolveCollapseAdditionalDamage({
+  character: character(colapso("pv", 2)),
+  resource: "pv",
+  damageAmount: 4,
+  rules: collapseRules,
+  round, scene, nowIso,
+  rng: rngD8_1, // falha o teste imediato do 3º segmento -> morte
+});
+assert.equal(ate3ComMorte.segmentosAfter, 3, "Deve atingir o 3º segmento.");
+assert.equal(ate3ComMorte.outcome, "death", "Falha no teste imediato do 3º segmento (via dano adicional) -> morte.");
+assert.equal(ate3ComMorte.character.colapso?.desfecho, "morte");
+
+const ate3ComSobrevivencia = resolveCollapseAdditionalDamage({
+  character: character(colapso("pv", 2)),
+  resource: "pv",
+  damageAmount: 4,
+  rules: collapseRules,
+  round, scene, nowIso,
+  rng: rngD8_8, // sobrevive ao teste imediato do 3º segmento
+});
+assert.equal(ate3ComSobrevivencia.outcome, "third_segment_survived");
+assert.equal(ate3ComSobrevivencia.character.colapso?.ativo, true);
+console.log("15. Avanço por dano adicional até o 3º segmento aplica o mesmo teste imediato (morte/sobrevive) — OK");
+
+// -------------------------------------------------------------
+// 16. Estabilizado: dano adicional NÃO avança o segmento.
+// -------------------------------------------------------------
+const advEstabilizado = resolveCollapseAdditionalDamage({
+  character: character(colapso("pv", 1, { estabilizado: true })),
+  resource: "pv",
+  damageAmount: 10,
+  rules: collapseRules,
+  round, scene, nowIso,
+});
+assert.equal(advEstabilizado.outcome, "stabilized");
+assert.equal(advEstabilizado.segmentosAfter, 1, "Estabilizado não avança mesmo com dano adicional grande.");
+console.log("16. Colapso estabilizado — dano adicional não avança o segmento — OK");
+
+// -------------------------------------------------------------
+// 17. Sem dano real (0) não avança; sem Colapso ativo não avança.
+// -------------------------------------------------------------
+assert.equal(
+  resolveCollapseAdditionalDamage({ character: character(colapso("pv", 1)), resource: "pv", damageAmount: 0, rules: collapseRules, nowIso }).outcome,
+  "no_damage",
+);
+assert.equal(
+  resolveCollapseAdditionalDamage({ character: character(undefined), resource: "pv", damageAmount: 5, rules: collapseRules, nowIso }).outcome,
+  "not_collapsed",
+);
+console.log("17. Dano zero ou sem Colapso ativo — não avança — OK");
+
+// -------------------------------------------------------------
+// 18. Integração com `applyAttackDamage`: dano que INICIA o Colapso não
+//     conta como "adicional" no mesmo evento — só o dano SUBSEQUENTE
+//     avança o segmento (via collapse.started/ended checados antes de
+//     chamar o helper, ver attack.ts).
+// -------------------------------------------------------------
+const alvoComPvBaixo = character(undefined, { recursos_atuais: { pv: 1, pe: 5 } });
+
+// 18a. Ataque que zera o PV (1 -> 0) inicia o Colapso — sem avanço no mesmo evento.
+const primeiroAtaque = applyAttackDamage({
+  character: alvoComPvBaixo,
+  formula: "1d1",
+  damageType: "fisico",
+  nowIso,
+  collapseRules,
+  round, scene,
+  rng: () => 0, // 1d1 -> 1 (zera o PV que estava em 1)
+});
+assert.equal(primeiroAtaque.collapseStarted, true, "Dano que zera o PV deve iniciar o Colapso.");
+assert.equal(primeiroAtaque.character.colapso?.segmentos, 0, "Colapso recém-iniciado começa no segmento 0.");
+assert.equal(primeiroAtaque.collapseAdvanceLogs.length, 0, "O evento que inicia o Colapso NÃO conta como dano adicional.");
+console.log("18a. Dano que inicia o Colapso não avança segmento no mesmo evento — OK");
+
+// 18b. Segundo ataque no MESMO alvo (já colapsado) — agora É dano adicional, avança segmento.
+const segundoAtaque = applyAttackDamage({
+  character: primeiroAtaque.character,
+  formula: "1d1",
+  damageType: "fisico",
+  nowIso,
+  collapseRules,
+  round, scene,
+  rng: () => 0,
+});
+assert.equal(segundoAtaque.collapseStarted, false, "O Colapso já estava ativo — este evento não 'inicia' de novo.");
+assert.equal(segundoAtaque.character.colapso?.segmentos, 1, "Dano adicional no personagem já colapsado avança o segmento.");
+assert.equal(segundoAtaque.collapseAdvanceLogs.length, 1, "Deve haver 1 log de avanço por dano adicional.");
+console.log("18b. Segundo ataque no mesmo alvo já colapsado avança o segmento (dano adicional) — OK");
+
+// -------------------------------------------------------------
+// 19. Integração com condição de fim de rodada que causa dano
+//     (Sangrando, dano_fim_de_rodada): personagem já colapsado por PV 0
+//     recebe o dano de Sangrando na MESMA dimensão -> avança segmento.
+// -------------------------------------------------------------
+const comColapsoESangrando = character(colapso("pv", 0), {
+  recursos_atuais: { pv: 0, pe: 5 },
+  condicoes_ativas: [
+    { id: "c2", conditionId: "sangrando", nome: "Sangrando", aplicadaEm: nowIso, removidaEm: null, ativa: true },
+  ],
+});
+const sangrandoDanoResult = applyConditionEndRoundDamage({
+  character: comColapsoESangrando,
+  conditionId: "sangrando",
+  conditionName: "Sangrando",
+  formula: "1d6",
+  damageType: "fisico",
+  nowIso,
+  collapseRules,
+  round, scene,
+  rng: () => 0.5, // 1d6 -> 4
+});
+assert.equal(sangrandoDanoResult.collapseStarted, false, "PV já estava em 0 — este evento não inicia o Colapso de novo.");
+assert.equal(sangrandoDanoResult.character.colapso?.segmentos, 1, "Dano de Sangrando em personagem já colapsado deve avançar o segmento.");
+assert.equal(sangrandoDanoResult.collapseAdvanceLogs.length, 1);
+console.log("19. Dano de condição de fim de rodada (Sangrando) em Colapso já ativo avança o segmento — OK");
+
+// -------------------------------------------------------------
+// 20. Regressão: `resolveEndRoundConditionsForCharacter` com
+//     `collapseRules` propaga corretamente o avanço por dano adicional
+//     quando chamado pela orquestração completa (não só a função direta).
+// -------------------------------------------------------------
+const orquestrado = resolveEndRoundConditionsForCharacter({
+  character: comColapsoESangrando,
+  conditions,
+  round,
+  scene,
+  nowIso,
+  collapseRules,
+  rng: () => 0.5,
+});
+assert.equal(orquestrado.character.colapso?.segmentos, 1, "Orquestração completa também aplica o avanço por dano adicional.");
+assert.ok(orquestrado.logs.some((l) => l.includes("dano") && l.includes("adicional")), "O log da orquestração deve mencionar o avanço por dano adicional.");
+console.log("20. resolveEndRoundConditionsForCharacter propaga o avanço por dano adicional (collapseRules) — OK");
 
 console.log("\ntest-collapse — todos os cenários passaram.");

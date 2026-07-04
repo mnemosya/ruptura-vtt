@@ -16,8 +16,9 @@ import {
   expireStaleProfileSessions,
 } from "../../../lib/table/storage";
 import { listCharactersForNarratorCampaign, listUnassignedCharactersForNarrator } from "../../../lib/character/storage";
+import { getCharacterRules } from "../../../lib/content";
 import type { Campaign, CampaignProfile, CampaignInvite, ProfileSession, TableLogEntry } from "../../../lib/table";
-import type { CharacterRecord } from "../../../lib/character";
+import type { CharacterRecord, CharacterRulesPayload } from "../../../lib/character";
 import MesaDetailClient from "./MesaDetailClient";
 
 export const dynamic = "force-dynamic";
@@ -65,6 +66,17 @@ export default async function MesaDetailPage({ params }: PageProps) {
   let logs: TableLogEntry[] = [];
   let personagensDaMesa: CharacterRecord[] = [];
   let personagensDisponiveis: CharacterRecord[] = [];
+  // Regra canônica (checkpoint v0.52) — só usada para `colapso` no
+  // "Resolver Ataque" (avanço por dano adicional da mesma dimensão);
+  // falha aqui não deve travar o dashboard (ataque cai em fallback sem
+  // avanço automático, ver `applyAttackDamage`).
+  let regras: CharacterRulesPayload | null = null;
+  try {
+    const doc = await getCharacterRules();
+    regras = (doc?.payload as CharacterRulesPayload | undefined) ?? null;
+  } catch {
+    // Segue sem regra — "Resolver Ataque" continua funcional, só sem avanço automático de Colapso.
+  }
   try {
     // v0.26: expira sessões velhas desta mesa antes de listar perfis/sessões — ver expireStaleProfileSessions.
     await expireStaleProfileSessions(campaignId).catch(() => {});
@@ -91,6 +103,7 @@ export default async function MesaDetailPage({ params }: PageProps) {
       logsIniciais={logs}
       personagensDaMesaIniciais={personagensDaMesa}
       personagensDisponiveisIniciais={personagensDisponiveis}
+      regras={regras}
     />
   );
 }

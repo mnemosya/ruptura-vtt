@@ -37,6 +37,7 @@ import {
   advanceCollapseSegment,
   stabilizeCollapse,
   resolveCollapseEndRound,
+  resolveCollapseAdditionalDamage,
   MAX_COLLAPSE_SEGMENTS,
   gainPm,
   spendPm,
@@ -1230,10 +1231,13 @@ export default function CharacterSheetClient({
 
   /**
    * Aplica os efeitos colaterais de uma mudança de PV/PE em conjunto —
-   * remoção automática por cura (v0.34, só PV) e detecção de Colapso
-   * (v0.38, PV e PE) — sobre um `Character` base, devolvendo o
-   * `Character` final e o que aconteceu, para o chamador decidir
-   * log/persistência. Não faz nenhum `setCharacter` sozinho.
+   * remoção automática por cura (v0.34, só PV), detecção de Colapso
+   * (v0.38, PV e PE) e avanço por "dano adicional da mesma dimensão"
+   * (checkpoint v0.52, quando a edição é uma REDUÇÃO e o personagem já
+   * estava em Colapso NAQUELE recurso ANTES desta mudança — nunca no
+   * mesmo evento que inicia o Colapso) — sobre um `Character` base,
+   * devolvendo o `Character` final e o que aconteceu, para o chamador
+   * decidir log/persistência. Não faz nenhum `setCharacter` sozinho.
    */
   function applyPvPeSideEffects(
     base: Character,
@@ -1249,7 +1253,28 @@ export default function CharacterSheetClient({
     );
     const baseAposCura: Character = { ...base, condicoes_ativas: condsAposCura };
     const colapso = detectCollapseOnResourceChange(baseAposCura, beforePvPe, afterPvPe, nowIso);
-    return { character: colapso.character, removidasPorCura: removidas, colapso };
+
+    let finalCharacter = colapso.character;
+    let collapseAdvance: ReturnType<typeof resolveCollapseAdditionalDamage> | null = null;
+    if (!colapso.started && !colapso.ended) {
+      const pvDelta = beforePvPe.pv - afterPvPe.pv;
+      const peDelta = beforePvPe.pe - afterPvPe.pe;
+      const resource: "pv" | "pe" | null = pvDelta > 0 ? "pv" : peDelta > 0 ? "pe" : null;
+      if (resource) {
+        collapseAdvance = resolveCollapseAdditionalDamage({
+          character: finalCharacter,
+          resource,
+          damageAmount: resource === "pv" ? pvDelta : peDelta,
+          rules: regras?.colapso,
+          round: finalCharacter.current_round,
+          scene: finalCharacter.current_scene,
+          nowIso,
+        });
+        finalCharacter = collapseAdvance.character;
+      }
+    }
+
+    return { character: finalCharacter, removidasPorCura: removidas, colapso, collapseAdvance };
   }
 
   /**
@@ -1271,7 +1296,7 @@ export default function CharacterSheetClient({
       const nowIso = new Date().toISOString();
       const beforePvPe = { pv: character.recursos_atuais?.pv ?? 0, pe: character.recursos_atuais?.pe ?? 0 };
       const afterPvPe = { ...beforePvPe, [id]: novo };
-      const { character: charComEfeitos, removidasPorCura, colapso } = applyPvPeSideEffects(
+      const { character: charComEfeitos, removidasPorCura, colapso, collapseAdvance } = applyPvPeSideEffects(
         character,
         beforePvPe,
         afterPvPe,
@@ -1293,6 +1318,10 @@ export default function CharacterSheetClient({
       if (colapso.ended) {
         addLogEntry("recurso", `Colapso encerrado por cura — cicatriz pendente.`);
         void persistCollapseEvent("collapse_ended", { tipo: colapso.tipo, motivo: "cura" });
+      }
+      if (collapseAdvance && collapseAdvance.logs.length > 0) {
+        for (const line of collapseAdvance.logs) addLogEntry("recurso", line);
+        void persistCollapseEvent("collapse_advanced", { tipo: id, motivo: "dano_adicional", outcome: collapseAdvance.outcome });
       }
       return;
     }
@@ -1518,6 +1547,7 @@ export default function CharacterSheetClient({
       round,
       scene,
       nowIso,
+      collapseRules: regras?.colapso,
     });
 
     let nextCharacter = resolved.character;
@@ -1580,6 +1610,7 @@ export default function CharacterSheetClient({
       outcome,
       conditions: conditionContents,
       nowIso,
+      collapseRules: regras?.colapso,
     });
     characterRef.current = result.character;
     setCharacter(result.character);

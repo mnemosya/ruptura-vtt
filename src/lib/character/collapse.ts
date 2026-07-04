@@ -346,7 +346,8 @@ function resolveThirdSegmentTest(params: {
  *     dispara o teste imediato na mesma resolução (`teste_imediato`).
  * Puro: não persiste nada, RNG injetável. NÃO inicia colapso novo (isso
  * é `detectCollapseOnResourceChange`) nem processa "dano adicional da
- * mesma dimensão" (ver pendência no relatório) — só o ciclo de teste.
+ * mesma dimensão" (isso é `resolveCollapseAdditionalDamage`, logo
+ * abaixo) — só o ciclo de teste de fim de rodada.
  */
 export function resolveCollapseEndRound(params: {
   character: Character;
@@ -455,5 +456,137 @@ export function resolveCollapseEndRound(params: {
     tableLogs: [
       { type: "collapse_end_round_test", payload: { tipo, atributo: atributoId, rollTotal: maior, threshold, result: "advanced", segmentos: segAfter, round, scene } },
     ],
+  };
+}
+
+// ---------------------------------------------------------------------
+// Dano adicional da mesma dimensão (checkpoint v0.52, PRD 10.7 /
+// db_regras_personagem `colapso.avanco`: "dano_adicional_da_mesma_
+// dimensao" avança 1 segmento — mesmo evento de `avanco` que o teste de
+// fim de rodada, só com gatilho diferente).
+// ---------------------------------------------------------------------
+
+export type CollapseAdditionalDamageOutcome =
+  | "not_collapsed" // recurso não está em Colapso (ou dimensão diferente) — dano não avança nada.
+  | "no_damage" // damageAmount <= 0 — nada a avançar.
+  | "stabilized" // estabilizado — intervencao.kit_estabilizacao interrompe o avanço.
+  | "no_rule" // regra canônica ausente/incompleta — fallback defensivo.
+  | "advanced" // avançou 1 segmento (ainda antes do 3º).
+  | "third_segment_survived" // avanço atingiu o 3º segmento; teste imediato ≥ limiar — sobrevive.
+  | "death"
+  | "coma";
+
+export interface CollapseAdditionalDamageResult {
+  character: Character;
+  outcome: CollapseAdditionalDamageOutcome;
+  segmentosBefore: number;
+  segmentosAfter: number;
+  logs: string[];
+  tableLogs: CollapseEndRoundTableLog[];
+  warnings: string[];
+}
+
+/**
+ * Resolve o avanço de Colapso por "dano adicional da mesma dimensão"
+ * (payload `colapso.avanco`) — chamado depois que dano físico (PV) ou
+ * mental/estresse (PE) já foi aplicado a um personagem que JÁ estava em
+ * Colapso NAQUELE recurso (`character.colapso.tipo === resource`).
+ *
+ * `damageAmount` é o dano bruto do evento atual (rolado ou editado
+ * manualmente) — NUNCA o delta antes/depois do recurso, que fica
+ * mascarado pelo clamp em 0 (`Math.max(0, pv - dano)`) assim que o
+ * personagem já colapsou. Por isso este helper não deriva de
+ * before/after como `detectCollapseOnResourceChange`: quem chama decide
+ * se este é o MESMO evento que iniciou o Colapso (não conta, ver
+ * `collapseJustStarted`) ou dano subsequente (conta).
+ *
+ * Sem Colapso ativo NESSA dimensão, sem dano real, estabilizado, ou sem
+ * regra/gatilho canônico → não avança nada (fallback defensivo, nunca
+ * inventa avanço). Se o avanço atingir o último segmento, dispara o
+ * MESMO teste imediato do 3º segmento que `resolveCollapseEndRound` já
+ * usa (`resolveThirdSegmentTest`) — sem duplicar lógica.
+ */
+export function resolveCollapseAdditionalDamage(params: {
+  character: Character;
+  resource: "pv" | "pe";
+  damageAmount: number;
+  /** true quando ESTE MESMO evento de dano foi o que levou o recurso a 0 (colapso recém-iniciado) — nesse caso não conta como "adicional". */
+  collapseJustStarted?: boolean;
+  rules: CollapseRulesPayload | null | undefined;
+  round?: number;
+  scene?: number;
+  nowIso: string;
+  rng?: () => number;
+}): CollapseAdditionalDamageResult {
+  const { character, resource, damageAmount, rules, nowIso } = params;
+  const rng = params.rng ?? Math.random;
+  const round = params.round ?? 0;
+  const scene = params.scene ?? 0;
+  const colapso = character.colapso;
+  const segBefore = colapso?.segmentos ?? 0;
+
+  const base = {
+    character,
+    segmentosBefore: segBefore,
+    segmentosAfter: segBefore,
+    logs: [] as string[],
+    tableLogs: [] as CollapseEndRoundTableLog[],
+    warnings: [] as string[],
+  };
+
+  if (damageAmount <= 0) return { ...base, outcome: "no_damage" };
+  if (!colapso || !colapso.ativo || colapso.tipo !== resource) return { ...base, outcome: "not_collapsed" };
+  if (params.collapseJustStarted) return { ...base, outcome: "not_collapsed" }; // mesmo evento que iniciou — não conta como "adicional".
+
+  const recursoLabel = resource === "pv" ? "PV" : "PE";
+  if (colapso.estabilizado) {
+    return { ...base, outcome: "stabilized", logs: [`Colapso (${recursoLabel}) estabilizado — dano adicional não avança o segmento.`] };
+  }
+
+  const gatilho = (rules?.gatilhos ?? []).find((g) => g.recurso === resource);
+  const teste = gatilho?.teste_fim_rodada;
+  if (!gatilho || !teste || typeof teste.atributo !== "string") {
+    return { ...base, outcome: "no_rule", warnings: [`Sem regra canônica de Colapso para o recurso "${resource}" — dano adicional não avançou o segmento.`] };
+  }
+
+  const maxSegments = typeof rules?.segmentos === "number" && rules.segmentos > 0 ? rules.segmentos : MAX_COLLAPSE_SEGMENTS;
+  const atributoId = teste.atributo;
+  const atributoValor = (character.atributos as unknown as Record<string, number>)[atributoId] ?? 0;
+  const dimensaoLabel = gatilho.tipo === "mental" ? "mental" : "físico";
+
+  const segAfter = Math.min(maxSegments, segBefore + 1);
+  const advancedColapso = { ...colapso, segmentos: segAfter, ultimoEvento: "dano_adicional_mesma_dimensao" };
+  const advancedCharacter: Character = { ...character, colapso: advancedColapso };
+
+  const logs = [`Colapso (${recursoLabel}): dano ${dimensaoLabel} adicional (${damageAmount}) avança o segmento (${segAfter}/${maxSegments}).`];
+  const tableLogs: CollapseEndRoundTableLog[] = [
+    { type: "collapse_additional_damage_advance", payload: { tipo: resource, dimensao: gatilho.tipo, damageAmount, segmentos: segAfter, round, scene } },
+  ];
+
+  if (segAfter >= maxSegments) {
+    const immediate = resolveThirdSegmentTest({
+      character: advancedCharacter, colapso: advancedColapso, rules: rules!, gatilho, atributoId, atributoValor, segmentos: segAfter, round, scene, nowIso, rng,
+    });
+    // `resolveThirdSegmentTest` só devolve "no_rule" | "third_segment_survived" | "death" | "coma" — subconjunto compatível com CollapseAdditionalDamageOutcome.
+    const outcome = immediate.outcome as "no_rule" | "third_segment_survived" | "death" | "coma";
+    return {
+      character: immediate.character,
+      outcome,
+      segmentosBefore: segBefore,
+      segmentosAfter: immediate.segmentosAfter,
+      logs: [...logs, ...immediate.logs],
+      tableLogs: [...tableLogs, ...immediate.tableLogs],
+      warnings: immediate.warnings,
+    };
+  }
+
+  return {
+    character: advancedCharacter,
+    outcome: "advanced",
+    segmentosBefore: segBefore,
+    segmentosAfter: segAfter,
+    logs,
+    tableLogs,
+    warnings: [],
   };
 }
