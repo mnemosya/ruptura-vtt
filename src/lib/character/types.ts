@@ -337,10 +337,24 @@ export interface Character {
     itemSlug: string;
     itemNome: string;
     categoria: string;
+    /** subtipo do modelo no momento da compra (ex.: "corpo_a_corpo") — checkpoint v0.56, usado só para checar compatibilidade de runa. */
+    subtipo?: string;
     quantidade: number;
     estado: "equipado" | "empunhado" | "acesso_rapido" | "mochila";
     adquiridoEm: string;
     precoPago?: number;
+    /**
+     * Runas instaladas nesta instância de item (checkpoint v0.56) —
+     * referência ao MODELO publicado (content_type="rune") por slug,
+     * nunca uma cópia do payload. Ausente = nenhuma runa instalada
+     * ainda. Sem efeito mecânico (isso é escopo futuro).
+     */
+    runasInstaladas?: {
+      id: string;
+      runeContentId: string;
+      installedAt: string;
+      notas?: string;
+    }[];
   }[];
   /**
    * Magias aprendidas individualmente (checkpoint v0.50.1/v0.50.2) —
