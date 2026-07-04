@@ -539,24 +539,91 @@ export function reloadAljava(
 // Fase 4 — Consumo de munição ao atacar
 // ---------------------------------------------------------------------
 
+export type ConsumeAmmoMotivoFalha =
+  | "sem_municao"
+  | "flecha_nao_selecionada"
+  | "flecha_sem_estoque"
+  | "nenhuma_arma_empunhada"
+  | null;
+
+export interface ConsumeAmmoResult {
+  character: Character;
+  consumedFromInstanceId: string | null;
+  /** Slug da flecha consumida (aljava) ou null para carregador/sem consumo. */
+  consumedFlechaSlug: string | null;
+  /** True se a flecha consumida não é flecha_simples (efeito especial a ser sugerido ao mestre). */
+  isFlechaEspecial: boolean;
+  motivoFalha: ConsumeAmmoMotivoFalha;
+}
+
+/**
+ * Verifica se a primeira arma empunhada com ammo pode atacar.
+ * Retorna a razão de bloqueio ou null se tudo ok.
+ *
+ * Regras:
+ * - Carregador/virote: bloqueia se `municaoAtual === 0`.
+ * - Aljava: bloqueia se vazia; exige `selectedFlechaSlug` quando há
+ *   múltiplos tipos (retorna "flecha_nao_selecionada" caso contrário).
+ */
+export function checkAttackAmmoBlock(
+  character: Character,
+  itemsModelo: (Pick<ItemContent, "slug" | "subtipo" | "usesAmmunition"> & { municaoMax?: number | null; municaoCompativelSlug?: string | null })[],
+  opts?: { selectedFlechaSlug?: string | null },
+): ConsumeAmmoMotivoFalha {
+  const inventario = character.inventario ?? [];
+  let foundWeaponWithAmmo = false;
+
+  for (const inst of inventario) {
+    if (inst.estado !== "empunhado") continue;
+    const modelo = itemsModelo.find((m) => m.slug === inst.itemSlug);
+    if (!modelo?.usesAmmunition) continue;
+
+    const modoMunicao = deriveModoMunicao(modelo.subtipo, modelo.municaoMax ?? null, modelo.municaoCompativelSlug ?? null);
+    if (!modoMunicao) continue;
+    foundWeaponWithAmmo = true;
+
+    if (modoMunicao === "carregador" || modoMunicao === "virote") {
+      const atual = (inst as InventoryItemInstance & Partial<WeaponAmmoInstanceFields>).municaoAtual ?? 0;
+      if (atual <= 0) return "sem_municao";
+      return null;
+    }
+
+    if (modoMunicao === "aljava") {
+      const aljava = (inst as InventoryItemInstance & Partial<WeaponAmmoInstanceFields>).aljava;
+      if (!aljava || getAljavaTotalFlechas(aljava) === 0) return "sem_municao";
+      const stacksComFlechas = aljava.stacks.filter((s) => s.quantidade > 0);
+      if (stacksComFlechas.length === 0) return "sem_municao";
+      if (stacksComFlechas.length > 1 && !opts?.selectedFlechaSlug) return "flecha_nao_selecionada";
+      if (opts?.selectedFlechaSlug) {
+        const stackEscolhido = aljava.stacks.find((s) => s.contentSlug === opts.selectedFlechaSlug && s.quantidade > 0);
+        if (!stackEscolhido) return "flecha_sem_estoque";
+      }
+      return null;
+    }
+  }
+
+  return foundWeaponWithAmmo ? null : null;
+}
+
 /**
  * Consome 1 unidade de munição da primeira arma "empunhada" no
- * inventário que tiver munição disponível.
+ * inventário que usa munição.
  *
- * - Carregador/virote: decrementa `municaoAtual` em 1.
- * - Aljava: remove 1 flecha do primeiro stack com quantidade > 0.
+ * - Carregador/virote: decrementa `municaoAtual` em 1. Bloqueia se === 0.
+ * - Aljava: consome da flecha em `opts.selectedFlechaSlug` quando fornecido;
+ *   auto-seleciona quando há apenas 1 tipo. Bloqueia se vazia ou se há
+ *   múltiplos tipos sem seleção.
  *
- * Retorna o personagem atualizado e o instanceId da arma afetada,
- * ou `null` se nenhuma arma empunhada com munição foi encontrada.
  * Não-automatizado para Rajada/Dispersão — apenas 1 projétil por chamada.
  */
 export function consumeAttackAmmo(
   character: Character,
   itemsModelo: (Pick<ItemContent, "slug" | "subtipo" | "usesAmmunition"> & { municaoMax?: number | null; municaoCompativelSlug?: string | null })[],
-): { character: Character; consumedFromInstanceId: string | null } {
+  opts?: { selectedFlechaSlug?: string | null },
+): ConsumeAmmoResult {
   const inventario = character.inventario ?? [];
+  const nenhuma: ConsumeAmmoResult = { character, consumedFromInstanceId: null, consumedFlechaSlug: null, isFlechaEspecial: false, motivoFalha: null };
 
-  // Procura a primeira arma "empunhado" com munição disponível
   for (const inst of inventario) {
     if (inst.estado !== "empunhado") continue;
     const modelo = itemsModelo.find((m) => m.slug === inst.itemSlug);
@@ -566,33 +633,50 @@ export function consumeAttackAmmo(
 
     if (modoMunicao === "carregador" || modoMunicao === "virote") {
       const atual = (inst as InventoryItemInstance & Partial<WeaponAmmoInstanceFields>).municaoAtual ?? 0;
-      if (atual <= 0) continue;
+      if (atual <= 0) return { ...nenhuma, motivoFalha: "sem_municao" };
       const novoChar: Character = {
         ...character,
         inventario: inventario.map((i) =>
           i.id === inst.id ? { ...i, municaoAtual: atual - 1 } : i,
         ),
       };
-      return { character: novoChar, consumedFromInstanceId: inst.id };
+      return { character: novoChar, consumedFromInstanceId: inst.id, consumedFlechaSlug: null, isFlechaEspecial: false, motivoFalha: null };
     }
 
     if (modoMunicao === "aljava") {
       const aljava = (inst as InventoryItemInstance & Partial<WeaponAmmoInstanceFields>).aljava;
-      if (!aljava || getAljavaTotalFlechas(aljava) === 0) continue;
-      // Consome do primeiro stack disponível (sem misturar tipos automaticamente)
-      const primeiroStack = aljava.stacks.find((s) => s.quantidade > 0);
-      if (!primeiroStack) continue;
-      const novaAljava = consumeFletchaFromAljava(aljava, primeiroStack.contentSlug);
-      if (!novaAljava) continue;
+      if (!aljava || getAljavaTotalFlechas(aljava) === 0) return { ...nenhuma, motivoFalha: "sem_municao" };
+
+      const stacksComFlechas = aljava.stacks.filter((s) => s.quantidade > 0);
+      if (stacksComFlechas.length === 0) return { ...nenhuma, motivoFalha: "sem_municao" };
+
+      // Determinar qual flecha usar
+      let slugAlvo: string;
+      if (opts?.selectedFlechaSlug) {
+        const stackEscolhido = stacksComFlechas.find((s) => s.contentSlug === opts.selectedFlechaSlug);
+        if (!stackEscolhido) return { ...nenhuma, motivoFalha: "flecha_sem_estoque" };
+        slugAlvo = stackEscolhido.contentSlug;
+      } else if (stacksComFlechas.length === 1) {
+        // Auto-seleciona quando há apenas 1 tipo
+        slugAlvo = stacksComFlechas[0].contentSlug;
+      } else {
+        // Múltiplos tipos sem seleção explícita — bloqueia
+        return { ...nenhuma, motivoFalha: "flecha_nao_selecionada" };
+      }
+
+      const novaAljava = consumeFletchaFromAljava(aljava, slugAlvo);
+      if (!novaAljava) return { ...nenhuma, motivoFalha: "flecha_sem_estoque" };
+
       const novoChar: Character = {
         ...character,
         inventario: inventario.map((i) =>
           i.id === inst.id ? { ...i, aljava: novaAljava } : i,
         ),
       };
-      return { character: novoChar, consumedFromInstanceId: inst.id };
+      const isFlechaEspecial = slugAlvo !== ALJAVA_FLECHAS_INICIAIS_SLUG;
+      return { character: novoChar, consumedFromInstanceId: inst.id, consumedFlechaSlug: slugAlvo, isFlechaEspecial, motivoFalha: null };
     }
   }
 
-  return { character, consumedFromInstanceId: null };
+  return nenhuma;
 }

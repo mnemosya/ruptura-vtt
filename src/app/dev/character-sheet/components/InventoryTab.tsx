@@ -63,6 +63,8 @@ export function InventoryTab({
   onSetPdAtual,
   onSetMunicaoAtual,
   onReloadWeapon,
+  selectedFlechaSlugPerBow,
+  onSelectFlechaAtiva,
 }: {
   items: ItemContent[];
   catalogError: string | null;
@@ -88,6 +90,9 @@ export function InventoryTab({
   onSetPdAtual: (instanceId: string, value: number) => void;
   onSetMunicaoAtual: (instanceId: string, value: number) => void;
   onReloadWeapon: (instanceId: string) => void;
+  /** Slug da flecha ativa por instância de arco. */
+  selectedFlechaSlugPerBow: Record<string, string>;
+  onSelectFlechaAtiva: (instanceId: string, slug: string) => void;
 }) {
   const [busca, setBusca] = useState("");
   const [categoria, setCategoria] = useState<(typeof CATEGORIA_FILTROS)[number]>("todos");
@@ -295,6 +300,16 @@ export function InventoryTab({
                         {modoMunicao === "virote" ? "Virote" : "Munição"}:{" "}
                         {getWeaponAmmoAtual(instance)} {itemModelo?.municaoMax != null ? `/ ${itemModelo.municaoMax}` : ""}
                       </p>
+                      <button
+                        data-testid={`inventario-recarregar-${instance.id}`}
+                        onClick={() => onReloadWeapon(instance.id)}
+                        style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+                      >
+                        Recarregar
+                      </button>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
+                      <span style={{ fontSize: 10, opacity: 0.5 }}>Ajuste manual:</span>
                       <input
                         data-testid={`inventario-municao-input-${instance.id}`}
                         type="number"
@@ -307,16 +322,9 @@ export function InventoryTab({
                       <button
                         data-testid={`inventario-municao-restaurar-${instance.id}`}
                         onClick={() => onSetMunicaoAtual(instance.id, itemModelo?.municaoMax ?? 0)}
-                        style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+                        style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: 0.7 }}
                       >
                         Restaurar ao máximo
-                      </button>
-                      <button
-                        data-testid={`inventario-recarregar-${instance.id}`}
-                        onClick={() => onReloadWeapon(instance.id)}
-                        style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
-                      >
-                        Recarregar
                       </button>
                     </div>
                     <p style={{ fontSize: 10, opacity: 0.4, margin: "4px 0 0" }}>
@@ -324,34 +332,60 @@ export function InventoryTab({
                       Recarregar consome estoque compatível do inventário.
                     </p>
                   </div>
-                ) : modoMunicao === "aljava" ? (
-                  <div data-testid={`inventario-aljava-${instance.id}`} style={{ borderTop: "1px solid #2a2b33", paddingTop: 6, marginTop: 2 }}>
-                    <p style={{ fontSize: 11, opacity: 0.6, margin: "0 0 4px" }}>
-                      Aljava ({(instance as InventoryItemInstance & { aljava?: { capacidade: number; stacks: { contentSlug: string; nome: string; quantidade: number }[] } }).aljava?.stacks.reduce((s, x) => s + x.quantidade, 0) ?? 0}
-                      {" / "}
-                      {(instance as InventoryItemInstance & { aljava?: { capacidade: number; stacks: { contentSlug: string; nome: string; quantidade: number }[] } }).aljava?.capacidade ?? 15})
-                    </p>
-                    {((instance as InventoryItemInstance & { aljava?: { capacidade: number; stacks: { contentSlug: string; nome: string; quantidade: number }[] } }).aljava?.stacks ?? []).map((stack) => (
-                      <div key={stack.contentSlug} style={{ fontSize: 11, opacity: 0.8, paddingLeft: 8, display: "flex", gap: 6 }}>
-                        <span>◆ {stack.nome}</span>
-                        <span style={{ opacity: 0.6 }}>x{stack.quantidade}</span>
-                      </div>
-                    ))}
-                    {!(instance as InventoryItemInstance & { aljava?: { capacidade: number; stacks: { contentSlug: string; nome: string; quantidade: number }[] } }).aljava && (
-                      <p style={{ fontSize: 10, opacity: 0.4, margin: 0 }}>Aljava não inicializada — recarregue o personagem.</p>
-                    )}
-                    <button
-                      data-testid={`inventario-recarregar-aljava-${instance.id}`}
-                      onClick={() => onReloadWeapon(instance.id)}
-                      style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", marginTop: 4 }}
-                    >
-                      Recarregar aljava
-                    </button>
-                    <p style={{ fontSize: 10, opacity: 0.4, margin: "4px 0 0" }}>
-                      Arco — flechas por tipo. "Recarregar aljava" move flechas do estoque para a aljava.
-                    </p>
-                  </div>
-                ) : null}
+                ) : modoMunicao === "aljava" ? (() => {
+                  type AljavaInst = InventoryItemInstance & { aljava?: { capacidade: number; stacks: { contentSlug: string; nome: string; quantidade: number }[] } };
+                  const inst_ = instance as AljavaInst;
+                  const aljava_ = inst_.aljava;
+                  const totalFlechas = aljava_?.stacks.reduce((s, x) => s + x.quantidade, 0) ?? 0;
+                  const stacksComFlechas = (aljava_?.stacks ?? []).filter((s) => s.quantidade > 0);
+                  const flechaAtiva = selectedFlechaSlugPerBow[instance.id] ?? "";
+                  return (
+                    <div data-testid={`inventario-aljava-${instance.id}`} style={{ borderTop: "1px solid #2a2b33", paddingTop: 6, marginTop: 2 }}>
+                      <p style={{ fontSize: 11, opacity: 0.6, margin: "0 0 4px" }}>
+                        Aljava ({totalFlechas} / {aljava_?.capacidade ?? 15})
+                      </p>
+                      {stacksComFlechas.map((stack) => (
+                        <div key={stack.contentSlug} style={{ fontSize: 11, opacity: 0.8, paddingLeft: 8, display: "flex", gap: 6, alignItems: "center" }}>
+                          <span>◆ {stack.nome}</span>
+                          <span style={{ opacity: 0.6 }}>x{stack.quantidade}</span>
+                        </div>
+                      ))}
+                      {!aljava_ && (
+                        <p style={{ fontSize: 10, opacity: 0.4, margin: 0 }}>Aljava não inicializada — recarregue o personagem.</p>
+                      )}
+                      {stacksComFlechas.length > 0 && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 10, opacity: 0.6 }}>Flecha ativa para ataque:</span>
+                          <select
+                            data-testid={`inventario-flecha-ativa-${instance.id}`}
+                            value={flechaAtiva}
+                            onChange={(e) => onSelectFlechaAtiva(instance.id, e.target.value)}
+                            style={{ ...input, fontSize: 11 }}
+                          >
+                            {stacksComFlechas.length > 1 && <option value="">— selecionar —</option>}
+                            {stacksComFlechas.map((s) => (
+                              <option key={s.contentSlug} value={s.contentSlug}>{s.nome} (x{s.quantidade})</option>
+                            ))}
+                          </select>
+                          {stacksComFlechas.length === 1 && !flechaAtiva && (
+                            <span style={{ fontSize: 10, opacity: 0.5 }}>(auto)</span>
+                          )}
+                        </div>
+                      )}
+                      <button
+                        data-testid={`inventario-recarregar-aljava-${instance.id}`}
+                        onClick={() => onReloadWeapon(instance.id)}
+                        style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", marginTop: 6 }}
+                      >
+                        Recarregar aljava
+                      </button>
+                      <p style={{ fontSize: 10, opacity: 0.4, margin: "4px 0 0" }}>
+                        Arco — flechas por tipo. Selecione a flecha ativa antes de atacar com múltiplos tipos.
+                        {" "}Efeitos especiais são sugestões ao mestre, não aplicados automaticamente.
+                      </p>
+                    </div>
+                  );
+                })() : null}
 
                 {/* Equipamento defensivo (checkpoint v0.58) — MIT/PD atual, sem aplicar dano ainda. */}
                 {slotDefensivo && (mitMax != null || pdMax != null) && (

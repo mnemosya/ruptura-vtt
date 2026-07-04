@@ -71,6 +71,7 @@ import {
   reloadMagazineWeapon,
   reloadAljava,
   consumeAttackAmmo,
+  checkAttackAmmoBlock,
   deriveModoMunicao,
   castSpell,
   rollSpellDamage,
@@ -327,6 +328,9 @@ export default function CharacterSheetClient({
   // reação abaixo. Limitado às últimas 50 entradas.
   const [log, setLog] = useState<LogEntry[]>([]);
   const logCounterRef = useRef(0);
+  // Flecha ativa selecionada por instância de arco (v0.59) — necessário para
+  // bloquear ataque quando há múltiplos tipos e exigir seleção explícita.
+  const [selectedFlechaSlugPerBow, setSelectedFlechaSlugPerBow] = useState<Record<string, string>>({});
   // Trava síncrona contra clique duplo antes do próximo render.
   const actionExecutionLockRef = useRef(false);
   const lastActionExecutionRef = useRef<{ actionId: string; at: number } | null>(null);
@@ -2189,10 +2193,41 @@ export default function CharacterSheetClient({
       (e) => typeof e === "object" && e !== null && (e as Record<string, unknown>).tipo === "resolver_ataque",
     );
     if (temEfeitoAtaque) {
-      const afterAttack = consumeAttackAmmo(characterRef.current, itemsIniciais);
+      // Encontrar a arma empunhada para saber qual flecha está selecionada
+      const arcoEmpunhado = characterRef.current.inventario?.find(
+        (i) => i.estado === "empunhado" && itemsIniciais.find((m) => m.slug === i.itemSlug)?.usesAmmunition,
+      );
+      const selectedFlechaSlug = arcoEmpunhado ? (selectedFlechaSlugPerBow[arcoEmpunhado.id] ?? null) : null;
+
+      // Verificar bloqueio ANTES de consumir
+      const bloqueio = checkAttackAmmoBlock(characterRef.current, itemsIniciais, { selectedFlechaSlug });
+      if (bloqueio === "sem_municao") {
+        addLogEntry("acao_combate", "Arma sem munição. Recarregue antes de atacar.");
+        actionExecutionLockRef.current = false;
+        setExecutingActionId(null);
+        return;
+      }
+      if (bloqueio === "flecha_nao_selecionada") {
+        addLogEntry("acao_combate", "Selecione o tipo de flecha na aljava antes de atacar.");
+        actionExecutionLockRef.current = false;
+        setExecutingActionId(null);
+        return;
+      }
+      if (bloqueio === "flecha_sem_estoque") {
+        addLogEntry("acao_combate", "Flecha selecionada sem estoque na aljava. Escolha outra ou recarregue.");
+        actionExecutionLockRef.current = false;
+        setExecutingActionId(null);
+        return;
+      }
+
+      const afterAttack = consumeAttackAmmo(characterRef.current, itemsIniciais, { selectedFlechaSlug });
       if (afterAttack.consumedFromInstanceId) {
         characterRef.current = afterAttack.character;
         setCharacter(afterAttack.character);
+        if (afterAttack.isFlechaEspecial && afterAttack.consumedFlechaSlug) {
+          const flechaNome = itemsIniciais.find((m) => m.slug === afterAttack.consumedFlechaSlug)?.nome ?? afterAttack.consumedFlechaSlug;
+          addLogEntry("acao_combate", `Sugestão: aplicar efeito especial de ${flechaNome} (resolução manual).`);
+        }
       }
     }
 
@@ -2542,6 +2577,10 @@ export default function CharacterSheetClient({
           onSetPdAtual={handleSetPdAtual}
           onSetMunicaoAtual={handleSetMunicaoAtual}
           onReloadWeapon={handleReloadWeapon}
+          selectedFlechaSlugPerBow={selectedFlechaSlugPerBow}
+          onSelectFlechaAtiva={(instanceId, slug) =>
+            setSelectedFlechaSlugPerBow((prev) => ({ ...prev, [instanceId]: slug }))
+          }
         />
       )}
 
