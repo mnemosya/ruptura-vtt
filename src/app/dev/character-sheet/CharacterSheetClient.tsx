@@ -67,6 +67,7 @@ import {
   unequipDefensiveItem,
   setItemMitAtual,
   setItemPdAtual,
+  setWeaponAmmoAtual,
   castSpell,
   rollSpellDamage,
   getSpellDamageEffect,
@@ -1892,6 +1893,15 @@ export default function CharacterSheetClient({
     setCharacter(next);
   }
 
+  function handleSetMunicaoAtual(instanceId: string, value: number) {
+    const current = characterRef.current;
+    const instance = current.inventario?.find((i) => i.id === instanceId);
+    const item = instance ? itemsIniciais.find((i) => i.slug === instance.itemSlug) : undefined;
+    const next = setWeaponAmmoAtual(current, instanceId, value, item?.municaoMax ?? null);
+    characterRef.current = next;
+    setCharacter(next);
+  }
+
   /**
    * Aprender/esquecer magia individual (aba Magias, checkpoint
    * v0.50.1) — conhecer a vertente (Modo Evolução) só decide quais
@@ -2482,6 +2492,7 @@ export default function CharacterSheetClient({
           onUnequipDefensive={handleUnequipDefensive}
           onSetMitAtual={handleSetMitAtual}
           onSetPdAtual={handleSetPdAtual}
+          onSetMunicaoAtual={handleSetMunicaoAtual}
         />
       )}
 

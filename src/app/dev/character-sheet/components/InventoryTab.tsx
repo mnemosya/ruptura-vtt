@@ -13,6 +13,8 @@ import {
   getItemPdMax,
   getItemMitAtual,
   getItemPdAtual,
+  deriveModoMunicao,
+  getWeaponAmmoAtual,
   type ItemContent,
   type InventoryItemInstance,
   type Wallet,
@@ -59,6 +61,7 @@ export function InventoryTab({
   onUnequipDefensive,
   onSetMitAtual,
   onSetPdAtual,
+  onSetMunicaoAtual,
 }: {
   items: ItemContent[];
   catalogError: string | null;
@@ -82,6 +85,7 @@ export function InventoryTab({
   onUnequipDefensive: (instanceId: string) => void;
   onSetMitAtual: (instanceId: string, value: number) => void;
   onSetPdAtual: (instanceId: string, value: number) => void;
+  onSetMunicaoAtual: (instanceId: string, value: number) => void;
 }) {
   const [busca, setBusca] = useState("");
   const [categoria, setCategoria] = useState<(typeof CATEGORIA_FILTROS)[number]>("todos");
@@ -208,6 +212,9 @@ export function InventoryTab({
               runes: runasPublicadas,
             });
             const estadosTecnicos = instance.estadosTecnicos ?? [];
+            const modoMunicao = itemModelo
+              ? deriveModoMunicao(itemModelo.subtipo, itemModelo.municaoMax ?? null, itemModelo.municaoCompativelSlug ?? null)
+              : null;
             const slotDefensivo: "armadura" | "escudo" | null =
               instance.categoria === "armadura" ? "armadura" : instance.categoria === "escudo" ? "escudo" : null;
             const mitMax = itemModelo ? getItemMit(itemModelo) : null;
@@ -277,6 +284,58 @@ export function InventoryTab({
                     </div>
                   </div>
                 )}
+
+                {/* Munição (checkpoint v0.59) — carregador/virote/aljava. */}
+                {modoMunicao === "carregador" || modoMunicao === "virote" ? (
+                  <div data-testid={`inventario-municao-${instance.id}`} style={{ borderTop: "1px solid #2a2b33", paddingTop: 6, marginTop: 2 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 11, opacity: 0.6, margin: 0 }}>
+                        {modoMunicao === "virote" ? "Virote" : "Munição"}:{" "}
+                        {getWeaponAmmoAtual(instance)} {itemModelo?.municaoMax != null ? `/ ${itemModelo.municaoMax}` : ""}
+                      </p>
+                      <input
+                        data-testid={`inventario-municao-input-${instance.id}`}
+                        type="number"
+                        min={0}
+                        max={itemModelo?.municaoMax ?? undefined}
+                        value={getWeaponAmmoAtual(instance)}
+                        onChange={(e) => onSetMunicaoAtual(instance.id, Number(e.target.value))}
+                        style={{ ...input, width: 60, fontSize: 11 }}
+                      />
+                      <button
+                        data-testid={`inventario-municao-restaurar-${instance.id}`}
+                        onClick={() => onSetMunicaoAtual(instance.id, itemModelo?.municaoMax ?? 0)}
+                        style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+                      >
+                        Restaurar ao máximo
+                      </button>
+                    </div>
+                    <p style={{ fontSize: 10, opacity: 0.4, margin: "4px 0 0" }}>
+                      {modoMunicao === "virote" ? "Besta — 1 virote por câmara." : "Arma de fogo — carregador."}{" "}
+                      Recarregar consome estoque do inventário (Fase 3).
+                    </p>
+                  </div>
+                ) : modoMunicao === "aljava" ? (
+                  <div data-testid={`inventario-aljava-${instance.id}`} style={{ borderTop: "1px solid #2a2b33", paddingTop: 6, marginTop: 2 }}>
+                    <p style={{ fontSize: 11, opacity: 0.6, margin: "0 0 4px" }}>
+                      Aljava ({(instance as InventoryItemInstance & { aljava?: { capacidade: number; stacks: { contentSlug: string; nome: string; quantidade: number }[] } }).aljava?.stacks.reduce((s, x) => s + x.quantidade, 0) ?? 0}
+                      {" / "}
+                      {(instance as InventoryItemInstance & { aljava?: { capacidade: number; stacks: { contentSlug: string; nome: string; quantidade: number }[] } }).aljava?.capacidade ?? 15})
+                    </p>
+                    {((instance as InventoryItemInstance & { aljava?: { capacidade: number; stacks: { contentSlug: string; nome: string; quantidade: number }[] } }).aljava?.stacks ?? []).map((stack) => (
+                      <div key={stack.contentSlug} style={{ fontSize: 11, opacity: 0.8, paddingLeft: 8, display: "flex", gap: 6 }}>
+                        <span>◆ {stack.nome}</span>
+                        <span style={{ opacity: 0.6 }}>x{stack.quantidade}</span>
+                      </div>
+                    ))}
+                    {!(instance as InventoryItemInstance & { aljava?: { capacidade: number; stacks: { contentSlug: string; nome: string; quantidade: number }[] } }).aljava && (
+                      <p style={{ fontSize: 10, opacity: 0.4, margin: 0 }}>Aljava não inicializada — recarregue o personagem.</p>
+                    )}
+                    <p style={{ fontSize: 10, opacity: 0.4, margin: "4px 0 0" }}>
+                      Arco — flechas por tipo. Adicionar flechas ao estoque as move para a aljava (Fase 3).
+                    </p>
+                  </div>
+                ) : null}
 
                 {/* Equipamento defensivo (checkpoint v0.58) — MIT/PD atual, sem aplicar dano ainda. */}
                 {slotDefensivo && (mitMax != null || pdMax != null) && (
