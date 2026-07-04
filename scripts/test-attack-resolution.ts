@@ -14,6 +14,9 @@ import {
   normalizeItemContent,
   deriveCriticalItemPropertySuggestions,
   formatCriticalItemPropertySuggestions,
+  purchaseItem,
+  equipDefensiveItem,
+  getEquippedDefenseProfile,
   type ItemContent,
 } from "../src/lib/character";
 import { normalizeTechnicalContentItem, type TechnicalContentItem } from "../src/lib/content";
@@ -198,5 +201,102 @@ assert.deepEqual(
   "Payload crítico ambíguo é ignorado, nunca aplicado.",
 );
 console.log("6. Crítico sugere somente propriedades do item usado, sem aplicação automática — OK");
+
+// -------------------------------------------------------------
+// 7. Integração MIT/PD (checkpoint v0.58, fase 3) — applyAttackDamage
+//    aplica mitigação quando o alvo tem armadura/escudo equipado, e
+//    preserva o comportamento antigo (dano integral) quando não tem.
+// -------------------------------------------------------------
+const armaduraModel = itemModels.find((item) => item.slug === "jaqueta_couro_reforcada");
+const escudoModel = itemModels.find((item) => item.slug === "escudo_compacto");
+assert.ok(armaduraModel, "Armadura 'jaqueta_couro_reforcada' deve existir no DB real (mit_base:3).");
+assert.ok(escudoModel, "Escudo 'escudo_compacto' deve existir no DB real (pd_max:5).");
+
+const alvoSemDefesa = { ...alvo, recursos_atuais: { ...alvo.recursos_atuais, pv: 10, pe: 10 } };
+const resultadoSemDefesa = applyAttackDamage({
+  character: alvoSemDefesa,
+  formula: "1d6",
+  damageType: "fisico",
+  wasBlocked: false,
+  defense: getEquippedDefenseProfile(alvoSemDefesa, itemModels),
+  nowIso: "2026-07-04T10:00:00.000Z",
+  rng: rngFixo,
+});
+assert.equal(resultadoSemDefesa.finalDamage, 4, "Alvo sem armadura/escudo equipado preserva o comportamento antigo (dano integral).");
+assert.equal(resultadoSemDefesa.mitigatedByMit, 0);
+assert.equal(resultadoSemDefesa.pvAfter, 6);
+
+let alvoComArmadura = createInitialCharacter(null, "Alvo com armadura");
+alvoComArmadura = { ...alvoComArmadura, recursos_atuais: { ...alvoComArmadura.recursos_atuais, pv: 10, pe: 10 }, carteira: { aretz_informal: 100000, cdi: 0, cdi_craqueada: 0 } };
+const compraArmadura = purchaseItem({ character: alvoComArmadura, item: armaduraModel!, quantidade: 1, walletId: "aretz_informal", nowIso: "2026-07-04T10:00:00.000Z" });
+assert.ok(compraArmadura.ok, "Compra da armadura deve ter sucesso (personagem inicial tem carteira suficiente).");
+alvoComArmadura = equipDefensiveItem(compraArmadura.character, compraArmadura.instance!.id, armaduraModel!);
+
+const resultadoComMit = applyAttackDamage({
+  character: alvoComArmadura,
+  formula: "1d6",
+  damageType: "fisico",
+  wasBlocked: false,
+  defense: getEquippedDefenseProfile(alvoComArmadura, itemModels),
+  nowIso: "2026-07-04T10:00:00.000Z",
+  rng: rngFixo, // 4 de dano
+});
+assert.equal(resultadoComMit.mitigatedByMit, 3, "MIT (3) da armadura equipada deve absorver o dano físico.");
+assert.equal(resultadoComMit.finalDamage, 1, "Excesso (4-3) passa ao PV.");
+assert.equal(resultadoComMit.pvAfter, 9);
+const mitApósGolpe = resultadoComMit.character.inventario?.find((i) => i.id === compraArmadura.instance!.id)?.mitAtual;
+assert.equal(mitApósGolpe, 0, "MIT atual do item deve persistir zerado no personagem devolvido.");
+assert.match(resultadoComMit.defenseSummary, /MIT absorveu/);
+console.log("7. Ataque sem defesa preserva comportamento antigo; armadura equipada aplica MIT e persiste no personagem — OK");
+
+// -------------------------------------------------------------
+// 8. Bloqueio com escudo equipado resolve contra PD (nunca MIT); PD atual persiste.
+// -------------------------------------------------------------
+let alvoComEscudo = createInitialCharacter(null, "Alvo com escudo");
+alvoComEscudo = { ...alvoComEscudo, recursos_atuais: { ...alvoComEscudo.recursos_atuais, pv: 10, pe: 10 }, carteira: { aretz_informal: 100000, cdi: 0, cdi_craqueada: 0 } };
+const compraEscudo = purchaseItem({ character: alvoComEscudo, item: escudoModel!, quantidade: 1, walletId: "aretz_informal", nowIso: "2026-07-04T10:00:00.000Z" });
+assert.ok(compraEscudo.ok, "Compra do escudo deve ter sucesso.");
+alvoComEscudo = equipDefensiveItem(compraEscudo.character, compraEscudo.instance!.id, escudoModel!);
+
+const resultadoComPd = applyAttackDamage({
+  character: alvoComEscudo,
+  formula: "1d6",
+  damageType: "fisico",
+  wasBlocked: true,
+  defense: getEquippedDefenseProfile(alvoComEscudo, itemModels),
+  nowIso: "2026-07-04T10:00:00.000Z",
+  rng: rngFixo, // 4 de dano
+});
+assert.equal(resultadoComPd.mitigatedByPd, 4, "PD (5) absorve o dano bloqueado.");
+assert.equal(resultadoComPd.mitigatedByMit, 0, "Bloqueio nunca resolve contra MIT.");
+assert.equal(resultadoComPd.finalDamage, 0);
+assert.equal(resultadoComPd.pvAfter, 10, "PV não muda quando o PD absorve tudo.");
+const pdApósGolpe = resultadoComPd.character.inventario?.find((i) => i.id === compraEscudo.instance!.id)?.pdAtual;
+assert.equal(pdApósGolpe, 1, "PD atual do escudo deve persistir reduzido (5-4=1) no personagem devolvido.");
+console.log("8. Bloqueio com escudo equipado resolve contra PD, nunca MIT; PD atual persiste no personagem — OK");
+
+// -------------------------------------------------------------
+// 9. Colapso continua funcionando com o dano final já mitigado (não com o dano bruto do dado).
+// -------------------------------------------------------------
+let alvoComArmaduraQuaseMorto = createInitialCharacter(null, "Alvo quase morto com armadura");
+alvoComArmaduraQuaseMorto = { ...alvoComArmaduraQuaseMorto, carteira: { aretz_informal: 100000, cdi: 0, cdi_craqueada: 0 } };
+const compraArmadura2 = purchaseItem({ character: alvoComArmaduraQuaseMorto, item: armaduraModel!, quantidade: 1, walletId: "aretz_informal", nowIso: "2026-07-04T10:00:00.000Z" });
+assert.ok(compraArmadura2.ok);
+alvoComArmaduraQuaseMorto = equipDefensiveItem(compraArmadura2.character, compraArmadura2.instance!.id, armaduraModel!);
+alvoComArmaduraQuaseMorto = { ...alvoComArmaduraQuaseMorto, recursos_atuais: { ...alvoComArmaduraQuaseMorto.recursos_atuais, pv: 1, pe: 10 } };
+
+const resultadoColapsoComMit = applyAttackDamage({
+  character: alvoComArmaduraQuaseMorto,
+  formula: "2d6",
+  damageType: "fisico",
+  wasBlocked: false,
+  defense: getEquippedDefenseProfile(alvoComArmaduraQuaseMorto, itemModels),
+  nowIso: "2026-07-04T10:00:00.000Z",
+  rng: rngFixo, // 8 de dano bruto, MIT(3) absorve -> 5 de dano final
+});
+assert.equal(resultadoColapsoComMit.finalDamage, 5, "Dano final já deve refletir a mitigação do MIT (8-3).");
+assert.equal(resultadoColapsoComMit.pvAfter, 0, "PV 1 - 5 de dano final nunca fica negativo.");
+assert.equal(resultadoColapsoComMit.collapseStarted, true, "PV chegando a 0 aciona Colapso mesmo com dano mitigado.");
+console.log("9. Colapso usa o dano final já mitigado pelo MIT/PD, não o dano bruto do dado — OK");
 
 console.log("\ntest-attack-resolution — todos os cenários passaram.");

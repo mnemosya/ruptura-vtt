@@ -21,10 +21,10 @@
  *     lado a lado com "cortante"/"contundente" — ambos SUBTIPOS de
  *     dano físico, não categorias de proteção próprias): "perfurante"
  *     ignora 1 MIT NESTE golpe (`Perfuração ignora 1 MIT`); "acido"
- *     deteriora 2 MIT A MAIS, além do absorvido normalmente
- *     (`Ácido reduz 2 MIT`) — só quando o tipo de proteção já
- *     absorveria o dano físico (não se aplica se a armadura for só
- *     "energetica").
+ *     dobra a redução de MIT (em vez de descer 1 ponto, desce 2)
+ *     (`Ácido corrói MIT com penalidade dobrada`) — só quando o tipo
+ *     de proteção já absorveria o dano físico (não se aplica se a
+ *     armadura for só "energetica").
  *   - Bloquear: PD absorve, excesso passa ao defensor (`PD atual/
  *     máximo`, `Bloquear desconta PD`, `Excesso passa ao defensor`).
  *   - MIT/PD nunca ficam negativos; dano 0 não altera nada.
@@ -157,13 +157,13 @@ export function resolveDamageWithMitPd(params: ResolveDamageWithMitPdParams): Re
   const acido = matches && damageSubtype === "acido";
   const mitEfetivo = matches ? Math.max(0, armor.atual - (perfurante ? 1 : 0)) : 0;
   const mitAbsorbed = matches ? Math.min(mitEfetivo, damageAmount) : 0;
-  const acidoExtra = acido ? 2 : 0;
-  const mitAfter = Math.max(0, armor.atual - mitAbsorbed - acidoExtra);
+  const acidoMultiplier = acido ? 2 : 1;
+  const mitAfter = Math.max(0, armor.atual - mitAbsorbed * acidoMultiplier);
   const finalDamage = damageAmount - mitAbsorbed;
 
   const detalhes = [
     perfurante && "perfuração ignora 1 MIT neste golpe",
-    acido && "ácido corrói 2 MIT extras",
+    acido && "ácido dobra a redução de MIT",
   ].filter((d): d is string => Boolean(d));
 
   return {

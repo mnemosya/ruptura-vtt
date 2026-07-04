@@ -42,6 +42,7 @@ import {
   applyAttackDamage,
   deriveCriticalItemPropertySuggestions,
   formatCriticalItemPropertySuggestions,
+  getEquippedDefenseProfile,
   type AttackCriticalRules,
   type CriticalItemPropertySuggestion,
   type ItemContent,
@@ -219,6 +220,9 @@ export default function MesaDetailClient({
   const [ataqueTotalDefesa, setAtaqueTotalDefesa] = useState("");
   const [ataqueFormulaDano, setAtaqueFormulaDano] = useState("1d6");
   const [ataqueTipoDano, setAtaqueTipoDano] = useState("fisico");
+  /** Checkpoint v0.58 (fase 3) — MIT/PD só resolvem com esses dados; ausentes preservam o comportamento antigo (dano bruto). */
+  const [ataqueSubtipoDano, setAtaqueSubtipoDano] = useState("");
+  const [ataqueBloqueou, setAtaqueBloqueou] = useState(false);
   const [ataqueProcessing, setAtaqueProcessing] = useState(false);
   const [ataqueResultado, setAtaqueResultado] = useState<string | null>(null);
   const [ataqueSugestoesCriticas, setAtaqueSugestoesCriticas] = useState<CriticalItemPropertySuggestion[]>([]);
@@ -306,10 +310,17 @@ export default function MesaDetailClient({
 
       if (contested.attackerWins) {
         const alvoNormalizado = normalizeCharacter(alvo.payload);
+        // MIT/PD (checkpoint v0.58, fase 3) — só resolve contra o equipamento
+        // defensivo ATIVO do alvo; sem nada equipado, `resolveDamageWithMitPd`
+        // preserva o dano bruto (comportamento anterior).
+        const defesaAlvo = getEquippedDefenseProfile(alvoNormalizado, items);
         const dano = applyAttackDamage({
           character: alvoNormalizado,
           formula: ataqueFormulaDano,
           damageType: ataqueTipoDano,
+          damageSubtype: ataqueSubtipoDano.trim() || undefined,
+          wasBlocked: ataqueBloqueou,
+          defense: defesaAlvo,
           nowIso,
           collapseRules: regras?.colapso,
           round: alvoNormalizado.current_round,
@@ -317,6 +328,9 @@ export default function MesaDetailClient({
         });
         await updateCharacter(alvo.id, dano.character);
         resumo += ` Acerto: ${dano.rollResult} de dano ${ataqueTipoDano} (PV ${dano.pvBefore} → ${dano.pvAfter}).`;
+        if (dano.mitigatedByMit > 0 || dano.mitigatedByPd > 0) {
+          resumo += ` ${dano.defenseSummary}`;
+        }
         if (criticalSuggestions.length > 0) {
           resumo += ` Propriedades críticas sugeridas: ${criticalSuggestions.map((suggestion) => suggestion.name).join(", ")} — aplicação manual.`;
           setAtaqueSugestoesCriticas(criticalSuggestions);
@@ -342,6 +356,11 @@ export default function MesaDetailClient({
               damageFormula: ataqueFormulaDano,
               damageType: ataqueTipoDano,
               damageRoll: dano.rollResult,
+              damageSubtype: ataqueSubtipoDano.trim() || null,
+              wasBlocked: ataqueBloqueou,
+              mitigatedByMit: dano.mitigatedByMit,
+              mitigatedByPd: dano.mitigatedByPd,
+              finalDamage: dano.finalDamage,
               pvBefore: dano.pvBefore,
               pvAfter: dano.pvAfter,
               collapseStarted: dano.collapseStarted,
@@ -835,6 +854,16 @@ export default function MesaDetailClient({
           <input data-testid="det-ataque-total-defesa" type="number" placeholder="Total da defesa" value={ataqueTotalDefesa} onChange={(e) => setAtaqueTotalDefesa(e.target.value)} style={{ ...input, width: 140 }} />
           <input data-testid="det-ataque-formula-dano" type="text" placeholder="Fórmula de dano (ex.: 1d6+2)" value={ataqueFormulaDano} onChange={(e) => setAtaqueFormulaDano(e.target.value)} style={{ ...input, width: 180 }} />
           <input data-testid="det-ataque-tipo-dano" type="text" placeholder="Tipo de dano" value={ataqueTipoDano} onChange={(e) => setAtaqueTipoDano(e.target.value)} style={{ ...input, width: 120 }} />
+          <input data-testid="det-ataque-subtipo-dano" type="text" placeholder="Subtipo de dano (opcional)" value={ataqueSubtipoDano} onChange={(e) => setAtaqueSubtipoDano(e.target.value)} style={{ ...input, width: 160 }} />
+          <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13 }}>
+            <input
+              data-testid="det-ataque-bloqueou"
+              type="checkbox"
+              checked={ataqueBloqueou}
+              onChange={(e) => setAtaqueBloqueou(e.target.checked)}
+            />
+            Bloqueou (usa PD)
+          </label>
         </div>
         <button
           data-testid="det-resolver-ataque"

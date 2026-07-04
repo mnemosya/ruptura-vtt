@@ -81,8 +81,8 @@ assert.equal(perfurante.mitAfter, 1, "MIT atual só reduz pelo absorvido (2), n�
 
 const acido = resolveDamageWithMitPd({ damageAmount: 1, damageType: "fisico", damageSubtype: "acido", wasBlocked: false, armor: armor({ atual: 3 }) });
 assert.equal(acido.mitigatedByMit, 1, "Ácido ainda absorve normalmente o dano deste golpe.");
-assert.equal(acido.mitAfter, 0, "Ácido corrói 2 MIT A MAIS além do absorvido (3 - 1 absorvido - 2 extra = 0).");
-console.log("7. Perfuração ignora 1 MIT; ácido corrói 2 MIT extras (regra canônica PRD 13.5) — OK");
+assert.equal(acido.mitAfter, 1, "Ácido dobra a redução de MIT (3 - 1*2 = 1).");
+console.log("7. Perfuração ignora 1 MIT; ácido dobra a redução de MIT (regra canônica PRD 13.5) — OK");
 
 // -------------------------------------------------------------
 // 8. Payload/tipo ausente não quebra — sem tipo de dano informado, MIT/PD não é aplicado (fallback seguro).

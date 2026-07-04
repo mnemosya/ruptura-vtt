@@ -1,15 +1,22 @@
 /**
- * Ataque contestado básico — checkpoint v0.47 (PRD 8.1/8.6).
+ * Ataque contestado básico — checkpoint v0.47 (PRD 8.1/8.6), MIT/PD
+ * integrados no v0.58 (fase 3).
  *
  * Escopo explícito e deliberadamente pequeno: resolve
  * "atacante rola vs. defensor rola, maior total vence" e aplica dano
- * DIRETO ao PV do alvo quando o atacante vence. A arma usada pode ser
- * identificada apenas para lembretes de propriedades críticas; fórmula
- * e tipo de dano continuam manuais e nunca são inferidos aqui.
+ * ao PV do alvo quando o atacante vence — passando primeiro pelo
+ * equipamento defensivo ATIVO do alvo (`resolveDamageWithMitPd`,
+ * `getEquippedDefenseProfile`, checkpoint v0.58) quando o chamador
+ * informa `defense`. Sem `defense` (ou sem armadura/escudo equipado),
+ * o comportamento é IDÊNTICO ao anterior — dano bruto direto ao PV. A
+ * arma usada pode ser identificada apenas para lembretes de
+ * propriedades críticas; fórmula e tipo/subtipo de dano continuam
+ * manuais e nunca são inferidos aqui.
  *
  * Fora de escopo, documentado no relatório (PRD 8.7/8.8, seções ainda
  * não implementadas por nenhum checkpoint anterior):
- * MIT, PD, região do corpo, resolução automática de propriedades críticas, cobertura, terreno,
+ * região do corpo, sobreposição de MIT por região, resolução
+ * automática de propriedades críticas, cobertura, terreno,
  * modificadores ambientais, aplicação de condição por propriedade de
  * arma/magia (dano ígneo crítico sozinho NUNCA aplica Queimando aqui).
  *
@@ -17,11 +24,15 @@
  */
 
 import { detectCollapseOnResourceChange, resolveCollapseAdditionalDamage } from "./collapse";
+import { resolveDamageWithMitPd, type DefenseSourceInput } from "./defense";
 import type { Character, CollapseRulesPayload } from "./types";
 import {
   deriveItemProperties,
+  setItemMitAtual,
+  setItemPdAtual,
   type InventoryItemInstance,
   type ItemContent,
+  type EquippedDefenseProfile,
 } from "./inventory";
 import type { TechnicalContentItem } from "../content";
 
@@ -169,22 +180,43 @@ export interface AttackDamageResult {
   /** Logs/tableLogs do avanço de Colapso por "dano adicional da mesma dimensão" (checkpoint v0.52) — vazio quando não aplicável. */
   collapseAdvanceLogs: string[];
   collapseAdvanceTableLogs: { type: string; payload: Record<string, unknown> }[];
+  /** Dano bruto absorvido por MIT/PD (checkpoint v0.58) — 0 quando não havia equipamento defensivo ativo compatível. */
+  mitigatedByMit: number;
+  mitigatedByPd: number;
+  mitBefore: number | null;
+  mitAfter: number | null;
+  pdBefore: number | null;
+  pdAfter: number | null;
+  /** Dano que efetivamente atingiu o PV — igual a `rollResult` quando não havia MIT/PD aplicável (comportamento anterior preservado). */
+  finalDamage: number;
+  /** Resumo textual pronto para log — nunca JSON cru. */
+  defenseSummary: string;
 }
 
 /**
- * Aplica dano de ataque DIRETO ao PV do alvo (nunca MIT/PD/armadura) e
- * aciona a lógica de Colapso já existente (`detectCollapseOnResourceChange`,
- * v0.38) quando o PV chega a 0. Se o alvo já estava em Colapso de PV
- * ANTES deste ataque, o dano conta como "dano adicional da mesma
- * dimensão" (checkpoint v0.52, `resolveCollapseAdditionalDamage`) e
- * pode avançar o segmento — `collapseRules` (opcional) é a fonte
- * canônica; sem ela, o avanço simplesmente não é aplicado (fallback
- * defensivo, nunca inventa regra).
+ * Aplica dano de ataque ao PV do alvo — passando primeiro pelo
+ * equipamento defensivo ATIVO (`defense`, opcional, checkpoint v0.58)
+ * via `resolveDamageWithMitPd`. Sem `defense` (ou sem MIT/PD
+ * aplicável), o comportamento é IDÊNTICO ao anterior: dano bruto
+ * direto ao PV. Aciona a lógica de Colapso já existente
+ * (`detectCollapseOnResourceChange`, v0.38) sobre o dano FINAL (já
+ * mitigado). Se o alvo já estava em Colapso de PV ANTES deste ataque,
+ * o dano final conta como "dano adicional da mesma dimensão"
+ * (checkpoint v0.52, `resolveCollapseAdditionalDamage`) e pode avançar
+ * o segmento — `collapseRules` (opcional) é a fonte canônica; sem ela,
+ * o avanço simplesmente não é aplicado (fallback defensivo, nunca
+ * inventa regra).
  */
 export function applyAttackDamage(params: {
   character: Character;
   formula: string;
   damageType: string;
+  /** `subtipo_dano` do golpe (ex.: "perfurante"/"acido") — usado só pelos modificadores de MIT do PRD 13.5. */
+  damageSubtype?: string;
+  /** true quando o defensor usou a reação Bloquear (PRD 8.6) — resolve contra PD em vez de MIT. */
+  wasBlocked?: boolean;
+  /** Perfil defensivo ATIVO do alvo (`getEquippedDefenseProfile`, `inventory.ts`) — ausente = sem MIT/PD, comportamento antigo. */
+  defense?: EquippedDefenseProfile;
   nowIso: string;
   rng?: () => number;
   collapseRules?: CollapseRulesPayload | null;
@@ -192,14 +224,40 @@ export function applyAttackDamage(params: {
   scene?: number;
 }): AttackDamageResult {
   const rollResult = rollDamageFormula(params.formula, params.rng);
+
+  const armorInput: DefenseSourceInput | undefined = params.defense?.armadura
+    ? { atual: params.defense.armadura.mitAtual, max: params.defense.armadura.mitMax, tipoProtecao: params.defense.armadura.tipoProtecao }
+    : undefined;
+  const shieldInput: DefenseSourceInput | undefined = params.defense?.escudo
+    ? { atual: params.defense.escudo.pdAtual, max: params.defense.escudo.pdMax, tipoProtecao: params.defense.escudo.tipoProtecao }
+    : undefined;
+
+  const resolved = resolveDamageWithMitPd({
+    damageAmount: rollResult,
+    damageType: params.damageType,
+    damageSubtype: params.damageSubtype,
+    wasBlocked: params.wasBlocked ?? false,
+    armor: armorInput,
+    shield: shieldInput,
+  });
+
   const pvBefore = params.character.recursos_atuais?.pv ?? 0;
   const peAtual = params.character.recursos_atuais?.pe ?? 0;
-  const pvAfter = Math.max(0, pvBefore - rollResult);
+  const pvAfter = Math.max(0, pvBefore - resolved.finalDamage);
 
-  const withDamage: Character = {
+  let withDamage: Character = {
     ...params.character,
     recursos_atuais: { ...params.character.recursos_atuais, pv: pvAfter },
   };
+
+  // Persiste o MIT/PD atualizado na instância equipada (checkpoint v0.58) — só quando algo foi de fato absorvido.
+  if (params.defense?.armadura && resolved.mitigatedByMit > 0) {
+    withDamage = setItemMitAtual(withDamage, params.defense.armadura.instance.id, resolved.mitAfter ?? params.defense.armadura.mitAtual, params.defense.armadura.mitMax);
+  }
+  if (params.defense?.escudo && resolved.mitigatedByPd > 0) {
+    withDamage = setItemPdAtual(withDamage, params.defense.escudo.instance.id, resolved.pdAfter ?? params.defense.escudo.pdAtual, params.defense.escudo.pdMax);
+  }
+
   const collapse = detectCollapseOnResourceChange(
     withDamage,
     { pv: pvBefore, pe: peAtual },
@@ -210,11 +268,11 @@ export function applyAttackDamage(params: {
   let finalCharacter = collapse.character;
   let collapseAdvanceLogs: string[] = [];
   let collapseAdvanceTableLogs: { type: string; payload: Record<string, unknown> }[] = [];
-  if (!collapse.started && !collapse.ended && rollResult > 0) {
+  if (!collapse.started && !collapse.ended && resolved.finalDamage > 0) {
     const additional = resolveCollapseAdditionalDamage({
       character: finalCharacter,
       resource: "pv",
-      damageAmount: rollResult,
+      damageAmount: resolved.finalDamage,
       rules: params.collapseRules,
       round: params.round,
       scene: params.scene,
@@ -238,5 +296,13 @@ export function applyAttackDamage(params: {
     collapseWarnings: collapse.warnings,
     collapseAdvanceLogs,
     collapseAdvanceTableLogs,
+    mitigatedByMit: resolved.mitigatedByMit,
+    mitigatedByPd: resolved.mitigatedByPd,
+    mitBefore: resolved.mitBefore,
+    mitAfter: resolved.mitAfter,
+    pdBefore: resolved.pdBefore,
+    pdAfter: resolved.pdAfter,
+    finalDamage: resolved.finalDamage,
+    defenseSummary: resolved.summary,
   };
 }
