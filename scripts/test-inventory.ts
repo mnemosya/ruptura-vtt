@@ -26,6 +26,15 @@ import {
   normalizeItemProperty,
   getItemModelProperties,
   deriveItemProperties,
+  getItemMit,
+  getItemPdMax,
+  getItemMitAtual,
+  getItemPdAtual,
+  equipDefensiveItem,
+  unequipDefensiveItem,
+  setItemMitAtual,
+  setItemPdAtual,
+  getEquippedDefenseProfile,
   type ItemContent,
 } from "../src/lib/character";
 import { normalizeTechnicalContentItem, type TechnicalContentItem } from "../src/lib/content";
@@ -459,5 +468,98 @@ const excedeuLimite = installRuneOnItem({
 assert.equal(excedeuLimite.ok, false, "Faca já tem 1/1 runas (slots_runa_max=1) — segunda instalação deve ser bloqueada.");
 assert.ok(excedeuLimite.reason?.includes("slots"));
 console.log("18. Limite de slots canônico (slots_runa_max) é respeitado quando já atingido — OK");
+
+// ===============================================================
+// Equipamento defensivo — MIT (armadura) / PD (escudo) (checkpoint v0.58, fase 1).
+// ===============================================================
+
+const armadura = items.find((i) => i.slug === "jaqueta_couro_reforcada");
+assert.ok(armadura, "Armadura 'jaqueta_couro_reforcada' deve existir no DB real (mit_base:3).");
+const escudo = items.find((i) => i.slug === "escudo_compacto");
+assert.ok(escudo, "Escudo 'escudo_compacto' deve existir no DB real (pd_max:5).");
+const outraArmadura = items.find((i) => i.categoria === "armadura" && i.slug !== armadura!.slug);
+assert.ok(outraArmadura, "Deve haver uma segunda armadura no DB real para testar troca de slot.");
+const comCarteiraRica = { ...personagem, carteira: { aretz_informal: 100000, cdi: 0, cdi_craqueada: 0 } };
+
+// -------------------------------------------------------------
+// 19. normalizeItemContent extrai mit_base/pd_max/tipo_protecao reais do payload.
+// -------------------------------------------------------------
+assert.equal(getItemMit(armadura!), 3);
+assert.equal(getItemPdMax(escudo!), 5);
+assert.equal(armadura!.tipoProtecao, "fisica");
+assert.equal(getItemMit(faca!), null, "Item que não é armadura não deve ter MIT inventado.");
+console.log("19. normalizeItemContent extrai mit_base/pd_max/tipo_protecao reais do payload — OK");
+
+// -------------------------------------------------------------
+// 20. Comprar escudo/armadura inicia PD/MIT atual = máximo canônico.
+// -------------------------------------------------------------
+const comprouEscudo = purchaseItem({ character: comCarteiraRica, item: escudo!, quantidade: 1, walletId: "aretz_informal", nowIso: "2026-07-03T10:00:00.000Z" });
+assert.equal(getItemPdAtual(comprouEscudo.instance!, escudo), 5, "PD atual deve iniciar no máximo canônico (5).");
+const comprouArmadura = purchaseItem({ character: comprouEscudo.character, item: armadura!, quantidade: 1, walletId: "aretz_informal", nowIso: "2026-07-03T10:00:00.000Z" });
+assert.equal(getItemMitAtual(comprouArmadura.instance!, armadura), 3, "MIT atual deve iniciar no máximo canônico (3).");
+console.log("20. Comprar escudo/armadura inicia PD/MIT atual no máximo canônico — OK");
+
+// -------------------------------------------------------------
+// 21. Personagem antigo (sem mitAtual/pdAtual/equipadoDefensivo) normaliza sem erro.
+// -------------------------------------------------------------
+const personagemAntigoDefensivo = normalizeCharacter({
+  nome: "Personagem Antigo Defensivo",
+  atributos: { corpo: 2, mente: 2, animo: 2 },
+  pericias: {},
+  inventario: [
+    { id: "old-armor-1", itemSlug: "jaqueta_couro_reforcada", itemNome: "Jaqueta de couro reforçada", categoria: "armadura", quantidade: 1, estado: "mochila", adquiridoEm: "2026-01-01T00:00:00.000Z" },
+  ],
+});
+assert.equal(personagemAntigoDefensivo.inventario?.length, 1, "Instância antiga sem campos de MIT/PD deve continuar carregando.");
+assert.equal(getItemMitAtual(personagemAntigoDefensivo.inventario![0], armadura), 3, "Sem mitAtual próprio, cai no máximo do modelo (nunca inventa um valor diferente).");
+console.log("21. Personagem/instância antiga (sem MIT/PD/equipadoDefensivo) normaliza sem erro — OK");
+
+// -------------------------------------------------------------
+// 22. Equipar armadura define armadura ativa; equipar outra do MESMO slot troca a anterior.
+// -------------------------------------------------------------
+const personagemComAmbos = comprouArmadura.character;
+const equipouArmadura = equipDefensiveItem(personagemComAmbos, comprouArmadura.instance!.id, armadura!);
+assert.equal(equipouArmadura.inventario!.find((i) => i.id === comprouArmadura.instance!.id)?.equipadoDefensivo, true);
+assert.equal(equipouArmadura.inventario!.find((i) => i.id === comprouArmadura.instance!.id)?.equipamentoSlot, "armadura");
+
+const comSegundaArmadura = purchaseItem({ character: equipouArmadura, item: outraArmadura!, quantidade: 1, walletId: "aretz_informal", nowIso: "2026-07-03T10:00:00.000Z" });
+const trocouArmadura = equipDefensiveItem(comSegundaArmadura.character, comSegundaArmadura.instance!.id, outraArmadura!);
+assert.equal(trocouArmadura.inventario!.find((i) => i.id === comprouArmadura.instance!.id)?.equipadoDefensivo, false, "Equipar a 2ª armadura deve desequipar a 1ª (sem somar MIT de duas armaduras).");
+assert.equal(trocouArmadura.inventario!.find((i) => i.id === comSegundaArmadura.instance!.id)?.equipadoDefensivo, true);
+console.log("22. Equipar armadura define ativa; equipar outra do mesmo slot troca a anterior (nunca soma) — OK");
+
+// -------------------------------------------------------------
+// 22b. Categoria que não é armadura/escudo não equipa como defensivo (fallback defensivo).
+// -------------------------------------------------------------
+const naoEquipavel = equipDefensiveItem(personagemComAmbos, compra.instance!.id, faca!);
+assert.equal(naoEquipavel, personagemComAmbos, "Categoria fora de armadura/escudo não deve virar equipamento defensivo.");
+console.log("22b. Item fora de armadura/escudo não equipa como defensivo — OK");
+
+// -------------------------------------------------------------
+// 23. Desequipar preserva MIT/PD atual (não apaga o histórico de dano).
+// -------------------------------------------------------------
+const desequipou = unequipDefensiveItem(equipouArmadura, comprouArmadura.instance!.id);
+assert.equal(desequipou.inventario!.find((i) => i.id === comprouArmadura.instance!.id)?.equipadoDefensivo, false);
+assert.equal(getItemMitAtual(desequipou.inventario!.find((i) => i.id === comprouArmadura.instance!.id)!, armadura), 3, "Desequipar não deve resetar o MIT atual.");
+console.log("23. Desequipar preserva MIT/PD atual (não reseta ao desequipar) — OK");
+
+// -------------------------------------------------------------
+// 24. PD/MIT atual edita sem passar negativo nem acima do máximo.
+// -------------------------------------------------------------
+const pdNegativo = setItemPdAtual(comprouEscudo.character, comprouEscudo.instance!.id, -10, escudo!.pdMax);
+assert.equal(getItemPdAtual(pdNegativo.inventario!.find((i) => i.id === comprouEscudo.instance!.id)!, escudo), 0, "PD atual nunca fica negativo.");
+const pdAcimaDoMax = setItemPdAtual(comprouEscudo.character, comprouEscudo.instance!.id, 999, escudo!.pdMax);
+assert.equal(getItemPdAtual(pdAcimaDoMax.inventario!.find((i) => i.id === comprouEscudo.instance!.id)!, escudo), 5, "PD atual nunca passa do máximo conhecido.");
+console.log("24. PD/MIT atual editado nunca fica negativo nem acima do máximo — OK");
+
+// -------------------------------------------------------------
+// 25. getEquippedDefenseProfile só reflete o que está EQUIPADO — nunca aplica dano (Fase 1 não tem resolução de dano).
+// -------------------------------------------------------------
+const perfilVazio = getEquippedDefenseProfile(personagemComAmbos, items);
+assert.equal(perfilVazio.armadura, undefined, "Sem nada equipado, o perfil defensivo deve estar vazio.");
+const perfilComArmadura = getEquippedDefenseProfile(equipouArmadura, items);
+assert.equal(perfilComArmadura.armadura?.mitAtual, 3);
+assert.equal(perfilComArmadura.escudo, undefined, "Escudo comprado mas não equipado não deve aparecer no perfil ativo.");
+console.log("25. getEquippedDefenseProfile só reflete equipamento ativo; nenhum dano é aplicado nesta fase — OK");
 
 console.log("\ntest-inventory — todos os cenários passaram.");

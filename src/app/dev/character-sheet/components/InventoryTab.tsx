@@ -9,6 +9,10 @@ import {
   getRuneCompatibility,
   countInstalledRunes,
   deriveItemProperties,
+  getItemMit,
+  getItemPdMax,
+  getItemMitAtual,
+  getItemPdAtual,
   type ItemContent,
   type InventoryItemInstance,
   type Wallet,
@@ -51,6 +55,10 @@ export function InventoryTab({
   onRemoveRune,
   installedRuneIdsWithEffect,
   properties,
+  onEquipDefensive,
+  onUnequipDefensive,
+  onSetMitAtual,
+  onSetPdAtual,
 }: {
   items: ItemContent[];
   catalogError: string | null;
@@ -69,6 +77,11 @@ export function InventoryTab({
   installedRuneIdsWithEffect: Set<string>;
   /** Catálogo publicado de propriedades; nunca substituído por lista local. */
   properties: TechnicalContentItem[];
+  /** Equipar/desequipar armadura/escudo ativo (checkpoint v0.58) — sem aplicar dano ainda. */
+  onEquipDefensive: (instanceId: string) => void;
+  onUnequipDefensive: (instanceId: string) => void;
+  onSetMitAtual: (instanceId: string, value: number) => void;
+  onSetPdAtual: (instanceId: string, value: number) => void;
 }) {
   const [busca, setBusca] = useState("");
   const [categoria, setCategoria] = useState<(typeof CATEGORIA_FILTROS)[number]>("todos");
@@ -195,6 +208,10 @@ export function InventoryTab({
               runes: runasPublicadas,
             });
             const estadosTecnicos = instance.estadosTecnicos ?? [];
+            const slotDefensivo: "armadura" | "escudo" | null =
+              instance.categoria === "armadura" ? "armadura" : instance.categoria === "escudo" ? "escudo" : null;
+            const mitMax = itemModelo ? getItemMit(itemModelo) : null;
+            const pdMax = itemModelo ? getItemPdMax(itemModelo) : null;
             return (
               <div key={instance.id} data-testid={`inventario-item-${instance.id}`} style={{ background: "#1d1e24", borderRadius: 8, padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6, fontSize: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -258,6 +275,65 @@ export function InventoryTab({
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Equipamento defensivo (checkpoint v0.58) — MIT/PD atual, sem aplicar dano ainda. */}
+                {slotDefensivo && (mitMax != null || pdMax != null) && (
+                  <div data-testid={`inventario-defensivo-${instance.id}`} style={{ borderTop: "1px solid #2a2b33", paddingTop: 6, marginTop: 2 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 11, opacity: 0.6, margin: 0 }}>
+                        {slotDefensivo === "armadura" ? "MIT" : "PD"}:{" "}
+                        {slotDefensivo === "armadura" ? getItemMitAtual(instance, itemModelo) : getItemPdAtual(instance, itemModelo)}
+                        {(slotDefensivo === "armadura" ? mitMax : pdMax) != null && ` / ${slotDefensivo === "armadura" ? mitMax : pdMax}`}
+                      </p>
+                      <input
+                        data-testid={`inventario-defensivo-valor-${instance.id}`}
+                        type="number"
+                        min={0}
+                        value={slotDefensivo === "armadura" ? getItemMitAtual(instance, itemModelo) : getItemPdAtual(instance, itemModelo)}
+                        onChange={(e) =>
+                          slotDefensivo === "armadura"
+                            ? onSetMitAtual(instance.id, Number(e.target.value))
+                            : onSetPdAtual(instance.id, Number(e.target.value))
+                        }
+                        style={{ ...input, width: 60, fontSize: 11 }}
+                      />
+                      <button
+                        data-testid={`inventario-defensivo-restaurar-${instance.id}`}
+                        onClick={() =>
+                          slotDefensivo === "armadura"
+                            ? onSetMitAtual(instance.id, mitMax ?? 0)
+                            : onSetPdAtual(instance.id, pdMax ?? 0)
+                        }
+                        style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+                      >
+                        Restaurar ao máximo
+                      </button>
+                      {instance.equipadoDefensivo ? (
+                        <button
+                          data-testid={`inventario-desequipar-${instance.id}`}
+                          onClick={() => onUnequipDefensive(instance.id)}
+                          style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", marginLeft: "auto" }}
+                        >
+                          Desequipar
+                        </button>
+                      ) : (
+                        <button
+                          data-testid={`inventario-equipar-${instance.id}`}
+                          onClick={() => onEquipDefensive(instance.id)}
+                          style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", marginLeft: "auto" }}
+                        >
+                          Equipar como {slotDefensivo === "armadura" ? "armadura ativa" : "escudo ativo"}
+                        </button>
+                      )}
+                    </div>
+                    <p style={{ fontSize: 10, opacity: 0.4, margin: "4px 0 0" }}>
+                      {instance.equipadoDefensivo
+                        ? `${slotDefensivo === "armadura" ? "Armadura" : "Escudo"} ativo — só 1 por vez (sem sobreposição por região ainda).`
+                        : "Não equipado — MIT/PD não conta na defesa enquanto não for equipado."}{" "}
+                      Ainda não aplica dano automaticamente.
+                    </p>
                   </div>
                 )}
 

@@ -63,6 +63,10 @@ import {
   removeItemFromInventory,
   installRuneOnItem,
   removeRuneFromItem,
+  equipDefensiveItem,
+  unequipDefensiveItem,
+  setItemMitAtual,
+  setItemPdAtual,
   castSpell,
   rollSpellDamage,
   getSpellDamageEffect,
@@ -1840,6 +1844,55 @@ export default function CharacterSheetClient({
   }
 
   /**
+   * Equipar/desequipar armadura/escudo ATIVO (aba Inventário,
+   * checkpoint v0.58) — só marca `equipadoDefensivo`/inicializa MIT/PD
+   * atual; nenhum dano é aplicado ainda (isso é escopo de checkpoint
+   * seguinte). Equipar outro item do mesmo slot troca o anterior
+   * automaticamente (`equipDefensiveItem`).
+   */
+  function handleEquipDefensive(instanceId: string) {
+    const current = characterRef.current;
+    const instance = current.inventario?.find((i) => i.id === instanceId);
+    const item = instance ? itemsIniciais.find((i) => i.slug === instance.itemSlug) : undefined;
+    if (!instance || !item) {
+      addLogEntry("recurso", "Item não encontrado na Biblioteca para equipar.");
+      return;
+    }
+    const next = equipDefensiveItem(current, instanceId, item);
+    if (next === current) return;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("recurso", `Equipado: ${instance.itemNome} (${item.categoria}).`);
+  }
+
+  function handleUnequipDefensive(instanceId: string) {
+    const current = characterRef.current;
+    const instance = current.inventario?.find((i) => i.id === instanceId);
+    const next = unequipDefensiveItem(current, instanceId);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("recurso", `Desequipado: ${instance?.itemNome ?? "item"}.`);
+  }
+
+  function handleSetMitAtual(instanceId: string, value: number) {
+    const current = characterRef.current;
+    const instance = current.inventario?.find((i) => i.id === instanceId);
+    const item = instance ? itemsIniciais.find((i) => i.slug === instance.itemSlug) : undefined;
+    const next = setItemMitAtual(current, instanceId, value, item?.mitMax ?? null);
+    characterRef.current = next;
+    setCharacter(next);
+  }
+
+  function handleSetPdAtual(instanceId: string, value: number) {
+    const current = characterRef.current;
+    const instance = current.inventario?.find((i) => i.id === instanceId);
+    const item = instance ? itemsIniciais.find((i) => i.slug === instance.itemSlug) : undefined;
+    const next = setItemPdAtual(current, instanceId, value, item?.pdMax ?? null);
+    characterRef.current = next;
+    setCharacter(next);
+  }
+
+  /**
    * Aprender/esquecer magia individual (aba Magias, checkpoint
    * v0.50.1) — conhecer a vertente (Modo Evolução) só decide quais
    * magias aparecem para aprender; cada uma precisa ser aprendida
@@ -2425,6 +2478,10 @@ export default function CharacterSheetClient({
           onRemoveRune={handleRemoveRune}
           installedRuneIdsWithEffect={installedRuneIdsWithEffect}
           properties={propertiesIniciais}
+          onEquipDefensive={handleEquipDefensive}
+          onUnequipDefensive={handleUnequipDefensive}
+          onSetMitAtual={handleSetMitAtual}
+          onSetPdAtual={handleSetPdAtual}
         />
       )}
 

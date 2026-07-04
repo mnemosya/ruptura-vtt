@@ -26,6 +26,16 @@
  * (limite real por item, presente em TODAS as armas/armaduras/escudos
  * do DB). `getRuneCompatibility`/`installRuneOnItem` implementam essa
  * validação completa — nunca inventam limite quando o dado existe.
+ *
+ * Equipamento defensivo/MIT/PD (v0.58): Caso B — `estatisticas.mit_base`
+ * (armaduras) e `estatisticas.pd_max` (escudos) existem em 100% dos
+ * respectivos itens do DB, mas o projeto ainda não tem um modelo de
+ * "slot equipado" nem região corporal (PRD 13.7 trata sobreposição por
+ * região, fora de escopo aqui). `equipDefensiveItem`/`getEquippedDefenseProfile`
+ * implementam o modelo MÍNIMO seguro: só uma armadura e um escudo ativos
+ * por vez, MIT/PD nunca somados entre itens. Aplicação de dano
+ * (resolução de MIT/PD contra dano recebido) é escopo de checkpoint
+ * seguinte — aqui só o estado (equipado, MIT/PD atual) é gerenciado.
  */
 
 import type {
@@ -60,6 +70,12 @@ export interface ItemContent {
   usesAmmunition: boolean;
   /** `estatisticas.slots_runa_max` do payload real — `null` quando o item não aceita runa ou o dado está ausente (nunca inventado). */
   slotsRunaMax: number | null;
+  /** `estatisticas.mit_base` (armaduras) — MIT máximo do modelo. `null` = item não é armadura ou o dado está ausente. */
+  mitMax: number | null;
+  /** `estatisticas.pd_max` (escudos) — PD máximo do modelo. `null` = item não é escudo ou o dado está ausente. */
+  pdMax: number | null;
+  /** `estatisticas.tipo_protecao` ("fisica"/"energetica"/"hibrida") — usado só para checar se o MIT/PD se aplica ao tipo de dano recebido. */
+  tipoProtecao: string | null;
   status: string;
 }
 
@@ -92,6 +108,9 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
         : undefined,
     usesAmmunition: typeof estatisticas?.municao_max === "number",
     slotsRunaMax: typeof estatisticas?.slots_runa_max === "number" ? estatisticas.slots_runa_max : null,
+    mitMax: typeof estatisticas?.mit_base === "number" ? estatisticas.mit_base : null,
+    pdMax: typeof estatisticas?.pd_max === "number" ? estatisticas.pd_max : null,
+    tipoProtecao: typeof estatisticas?.tipo_protecao === "string" ? estatisticas.tipo_protecao : null,
     status: String(raw.status ?? "published"),
   };
 }
@@ -147,6 +166,21 @@ export interface InventoryItemInstance {
   propriedadesTecnicas?: TechnicalItemPropertyInstance[];
   /** Estado manual da instância; qualquer custo guardado é apenas informativo. */
   estadosTecnicos?: TechnicalItemState[];
+  /**
+   * Equipamento defensivo (checkpoint v0.58, PRD 13.5/13.6) — `true`
+   * quando esta instância é a fonte ATIVA de MIT (armadura) ou PD
+   * (escudo) do personagem. Só uma instância por `equipamentoSlot` fica
+   * `true` por vez (a fonte não define regra de sobreposição sem
+   * região corporal — ver `equipDefensiveItem`). Ainda NÃO aplica dano
+   * automaticamente (isso é Fase 3 do checkpoint).
+   */
+  equipadoDefensivo?: boolean;
+  /** Slot ocupado quando `equipadoDefensivo` — espelha `categoria` no momento de equipar. */
+  equipamentoSlot?: "armadura" | "escudo";
+  /** MIT atual da armadura — ausente até equipar pela primeira vez; então editável manualmente. */
+  mitAtual?: number;
+  /** PD atual do escudo — ausente até equipar/comprar; então editável manualmente. */
+  pdAtual?: number;
 }
 
 export type ItemPropertyClassification =
@@ -642,6 +676,10 @@ export function purchaseItem(params: {
     precoPago: totalCost,
     propriedadesTecnicas: [],
     estadosTecnicos: [],
+    // MIT/PD atual iniciam no máximo canônico do modelo (checkpoint v0.58)
+    // — nunca inventado quando o campo está ausente (fica undefined).
+    mitAtual: item.mitMax ?? undefined,
+    pdAtual: item.pdMax ?? undefined,
   };
 
   const nextCharacter: Character = {
@@ -765,4 +803,132 @@ export function removeRuneFromItem(character: Character, instanceId: string, run
   });
   if (!changed) return character;
   return { ...character, inventario: nextInventario };
+}
+
+// ---------------------------------------------------------------------
+// Equipamento defensivo — MIT (armadura) / PD (escudo) — checkpoint v0.58
+// (PRD 13.5/13.6). Auditoria: `db_equipamentos_normalizado_v1_2.json`
+// tem `estatisticas.mit_base` em TODAS as 18 armaduras e
+// `estatisticas.pd_max` em TODOS os 6 escudos — dado canônico
+// suficiente para MIT/PD (Caso B: falta só a regra de slot/equipamento,
+// que este módulo implementa). O PRD (13.5 "sobreposição aplica maior
+// MIT plausível") pressupõe região corporal, que este checkpoint
+// explicitamente NÃO modela ainda — por isso a regra aqui é a mais
+// simples e segura: só UMA armadura e UM escudo ativos por vez (trocar
+// substitui o anterior), nunca somar MIT/PD de múltiplos itens.
+// ---------------------------------------------------------------------
+
+export type DefensiveEquipmentSlot = "armadura" | "escudo";
+
+/** MIT máximo do modelo — `null` quando não é armadura ou o dado está ausente. */
+export function getItemMit(item: Pick<ItemContent, "mitMax">): number | null {
+  return item.mitMax;
+}
+
+/** PD máximo do modelo — `null` quando não é escudo ou o dado está ausente. */
+export function getItemPdMax(item: Pick<ItemContent, "pdMax">): number | null {
+  return item.pdMax;
+}
+
+/** PD atual da instância — cai no máximo do modelo se a instância ainda não tiver um valor próprio, e em 0 se nem o modelo souber (nunca inventa um número maior). */
+export function getItemPdAtual(instance: Pick<InventoryItemInstance, "pdAtual">, item?: Pick<ItemContent, "pdMax">): number {
+  return instance.pdAtual ?? item?.pdMax ?? 0;
+}
+
+/** MIT atual da instância — mesmo critério de `getItemPdAtual`. */
+export function getItemMitAtual(instance: Pick<InventoryItemInstance, "mitAtual">, item?: Pick<ItemContent, "mitMax">): number {
+  return instance.mitAtual ?? item?.mitMax ?? 0;
+}
+
+/**
+ * Equipa uma instância como armadura/escudo ATIVO (fonte de MIT/PD).
+ * Categoria fora de "armadura"/"escudo" não faz nada (fallback
+ * defensivo — nunca inventa um slot). Qualquer OUTRA instância já
+ * equipada no MESMO slot é desequipada automaticamente (regra mínima
+ * segura — PRD 13.5 exige região corporal para "sobrepor", que este
+ * checkpoint não modela; nunca soma MIT/PD de dois itens). Inicializa
+ * `mitAtual`/`pdAtual` no máximo do modelo só se a instância ainda não
+ * tiver um valor próprio (preserva dano já registrado ao reequipar).
+ */
+export function equipDefensiveItem(character: Character, instanceId: string, item: ItemContent): Character {
+  const slot: DefensiveEquipmentSlot | null =
+    item.categoria === "armadura" ? "armadura" : item.categoria === "escudo" ? "escudo" : null;
+  if (!slot) return character;
+
+  const inventario = character.inventario ?? [];
+  if (!inventario.some((i) => i.id === instanceId)) return character;
+
+  const nextInventario = inventario.map((i) => {
+    if (i.id === instanceId) {
+      return {
+        ...i,
+        equipadoDefensivo: true,
+        equipamentoSlot: slot,
+        mitAtual: slot === "armadura" ? i.mitAtual ?? item.mitMax ?? undefined : i.mitAtual,
+        pdAtual: slot === "escudo" ? i.pdAtual ?? item.pdMax ?? undefined : i.pdAtual,
+      };
+    }
+    if (i.equipamentoSlot === slot && i.equipadoDefensivo) {
+      return { ...i, equipadoDefensivo: false };
+    }
+    return i;
+  });
+
+  return { ...character, inventario: nextInventario };
+}
+
+/** Desequipa uma instância — nunca apaga `mitAtual`/`pdAtual` (histórico de dano preservado até reequipar). */
+export function unequipDefensiveItem(character: Character, instanceId: string): Character {
+  const inventario = character.inventario ?? [];
+  const next = inventario.map((i) => (i.id === instanceId ? { ...i, equipadoDefensivo: false } : i));
+  return { ...character, inventario: next };
+}
+
+/** Ajusta MIT atual manualmente — nunca negativo, nunca acima do máximo conhecido (se houver). */
+export function setItemMitAtual(character: Character, instanceId: string, value: number, mitMax?: number | null): Character {
+  const clamped = Math.max(0, Math.trunc(Number.isFinite(value) ? value : 0));
+  const bounded = mitMax != null ? Math.min(clamped, mitMax) : clamped;
+  const inventario = character.inventario ?? [];
+  const next = inventario.map((i) => (i.id === instanceId ? { ...i, mitAtual: bounded } : i));
+  return { ...character, inventario: next };
+}
+
+/** Ajusta PD atual manualmente — mesmo critério de `setItemMitAtual`. */
+export function setItemPdAtual(character: Character, instanceId: string, value: number, pdMax?: number | null): Character {
+  const clamped = Math.max(0, Math.trunc(Number.isFinite(value) ? value : 0));
+  const bounded = pdMax != null ? Math.min(clamped, pdMax) : clamped;
+  const inventario = character.inventario ?? [];
+  const next = inventario.map((i) => (i.id === instanceId ? { ...i, pdAtual: bounded } : i));
+  return { ...character, inventario: next };
+}
+
+export interface EquippedDefenseProfile {
+  armadura?: { instance: InventoryItemInstance; item: ItemContent; mitMax: number; mitAtual: number; tipoProtecao: string | null };
+  escudo?: { instance: InventoryItemInstance; item: ItemContent; pdMax: number; pdAtual: number; tipoProtecao: string | null };
+}
+
+/**
+ * Perfil defensivo ATIVO do personagem — só instâncias com
+ * `equipadoDefensivo:true` e modelo publicado com MIT/PD conhecido.
+ * Usado pela Fase 2/3 (resolução de dano) e pela UI; nunca soma mais
+ * de uma armadura/escudo (ver `equipDefensiveItem`).
+ */
+export function getEquippedDefenseProfile(character: Pick<Character, "inventario">, items: ItemContent[]): EquippedDefenseProfile {
+  const bySlug = new Map(items.map((i) => [i.slug, i]));
+  const profile: EquippedDefenseProfile = {};
+
+  for (const instance of character.inventario ?? []) {
+    if (!instance.equipadoDefensivo) continue;
+    const item = bySlug.get(instance.itemSlug);
+    if (!item || item.status !== "published") continue;
+
+    if (instance.equipamentoSlot === "armadura" && item.mitMax != null) {
+      profile.armadura = { instance, item, mitMax: item.mitMax, mitAtual: getItemMitAtual(instance, item), tipoProtecao: item.tipoProtecao };
+    }
+    if (instance.equipamentoSlot === "escudo" && item.pdMax != null) {
+      profile.escudo = { instance, item, pdMax: item.pdMax, pdAtual: getItemPdAtual(instance, item), tipoProtecao: item.tipoProtecao };
+    }
+  }
+
+  return profile;
 }

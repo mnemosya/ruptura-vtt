@@ -410,6 +410,15 @@ export interface Character {
      */
     propriedadesTecnicas?: TechnicalItemPropertyInstance[];
     estadosTecnicos?: TechnicalItemState[];
+    /**
+     * Equipamento defensivo (checkpoint v0.58) — `true` quando esta
+     * instância é a fonte ATIVA de MIT/PD do personagem. Só uma
+     * instância por `equipamentoSlot` fica ativa por vez.
+     */
+    equipadoDefensivo?: boolean;
+    equipamentoSlot?: "armadura" | "escudo";
+    mitAtual?: number;
+    pdAtual?: number;
   }[];
   /**
    * Magias aprendidas individualmente (checkpoint v0.50.1/v0.50.2) —
