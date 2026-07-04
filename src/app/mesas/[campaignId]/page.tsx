@@ -16,9 +16,24 @@ import {
   expireStaleProfileSessions,
 } from "../../../lib/table/storage";
 import { listCharactersForNarratorCampaign, listUnassignedCharactersForNarrator } from "../../../lib/character/storage";
-import { getCharacterRules } from "../../../lib/content";
+import {
+  getCharacterRules,
+  getCombatField,
+  listItems,
+  listProperties,
+  listRunes,
+  normalizeTechnicalContentItem,
+  type TechnicalContentItem,
+} from "../../../lib/content";
 import type { Campaign, CampaignProfile, CampaignInvite, ProfileSession, TableLogEntry } from "../../../lib/table";
-import type { CharacterRecord, CharacterRulesPayload } from "../../../lib/character";
+import {
+  normalizeAttackCriticalRules,
+  normalizeItemContent,
+  type AttackCriticalRules,
+  type CharacterRecord,
+  type CharacterRulesPayload,
+  type ItemContent,
+} from "../../../lib/character";
 import MesaDetailClient from "./MesaDetailClient";
 
 export const dynamic = "force-dynamic";
@@ -71,11 +86,29 @@ export default async function MesaDetailPage({ params }: PageProps) {
   // falha aqui não deve travar o dashboard (ataque cai em fallback sem
   // avanço automático, ver `applyAttackDamage`).
   let regras: CharacterRulesPayload | null = null;
+  let criticalRules: AttackCriticalRules = normalizeAttackCriticalRules(null);
+  let items: ItemContent[] = [];
+  let properties: TechnicalContentItem[] = [];
+  let runes: TechnicalContentItem[] = [];
   try {
     const doc = await getCharacterRules();
     regras = (doc?.payload as CharacterRulesPayload | undefined) ?? null;
   } catch {
     // Segue sem regra — "Resolver Ataque" continua funcional, só sem avanço automático de Colapso.
+  }
+  try {
+    const [combatFieldDoc, itemDocs, propertyDocs, runeDocs] = await Promise.all([
+      getCombatField(),
+      listItems(),
+      listProperties(),
+      listRunes(),
+    ]);
+    criticalRules = normalizeAttackCriticalRules(combatFieldDoc?.payload);
+    items = itemDocs.map((doc) => normalizeItemContent(doc.payload as Record<string, unknown>));
+    properties = propertyDocs.map((doc) => normalizeTechnicalContentItem(doc.payload as Record<string, unknown>));
+    runes = runeDocs.map((doc) => normalizeTechnicalContentItem(doc.payload as Record<string, unknown>));
+  } catch {
+    // Sugestões críticas ficam indisponíveis; o ataque básico continua funcional.
   }
   try {
     // v0.26: expira sessões velhas desta mesa antes de listar perfis/sessões — ver expireStaleProfileSessions.
@@ -104,6 +137,10 @@ export default async function MesaDetailPage({ params }: PageProps) {
       personagensDaMesaIniciais={personagensDaMesa}
       personagensDisponiveisIniciais={personagensDisponiveis}
       regras={regras}
+      criticalRules={criticalRules}
+      items={items}
+      properties={properties}
+      runes={runes}
     />
   );
 }

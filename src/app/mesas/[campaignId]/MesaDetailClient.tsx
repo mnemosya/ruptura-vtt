@@ -35,7 +35,18 @@ import {
   duplicateCharacter,
   updateCharacter,
 } from "../../../lib/character/storage";
-import { createInitialCharacter, normalizeCharacter, resolveContestedRoll, applyAttackDamage } from "../../../lib/character";
+import {
+  createInitialCharacter,
+  normalizeCharacter,
+  resolveContestedRoll,
+  applyAttackDamage,
+  deriveCriticalItemPropertySuggestions,
+  formatCriticalItemPropertySuggestions,
+  type AttackCriticalRules,
+  type CriticalItemPropertySuggestion,
+  type ItemContent,
+} from "../../../lib/character";
+import type { TechnicalContentItem } from "../../../lib/content";
 import type { Campaign, CampaignProfile, CampaignInvite, ProfileSession, TableLogEntry } from "../../../lib/table";
 import type { CharacterRecord, CharacterRulesPayload } from "../../../lib/character";
 
@@ -134,7 +145,8 @@ export function formatCampaignRoundLog(type: string, payload: Record<string, unk
     if (payload.attackerWins === true) {
       const damageRoll = typeof payload.damageRoll === "number" ? payload.damageRoll : "?";
       const damageType = typeof payload.damageType === "string" ? payload.damageType : "";
-      return `${attackerNome} atacou ${characterNome} (margem ${margin}) — ${damageRoll} de dano ${damageType}.`;
+      const criticalText = formatCriticalItemPropertySuggestions(payload.criticalPropertySuggestions);
+      return `${attackerNome} atacou ${characterNome} (margem ${margin}) — ${damageRoll} de dano ${damageType}.${criticalText ? ` ${criticalText}` : ""}`;
     }
     return `${attackerNome} atacou ${characterNome} (margem ${margin}) — defesa bem-sucedida, sem dano.`;
   }
@@ -158,6 +170,10 @@ interface Props {
   personagensDisponiveisIniciais: CharacterRecord[];
   /** Regra canônica de `regras_personagem` (checkpoint v0.52) — usada só para `colapso` no "Resolver Ataque" (avanço por dano adicional). Null = segue sem avanço automático. */
   regras: CharacterRulesPayload | null;
+  criticalRules: AttackCriticalRules;
+  items: ItemContent[];
+  properties: TechnicalContentItem[];
+  runes: TechnicalContentItem[];
 }
 
 export default function MesaDetailClient({
@@ -169,6 +185,10 @@ export default function MesaDetailClient({
   personagensDaMesaIniciais,
   personagensDisponiveisIniciais,
   regras,
+  criticalRules,
+  items,
+  properties,
+  runes,
 }: Props) {
   const [campaignState, setCampaignState] = useState(campaign);
   const [perfis, setPerfis] = useState(perfisIniciais);
@@ -194,12 +214,18 @@ export default function MesaDetailClient({
   // Checkpoint v0.47 — "Resolver Ataque" (ataque contestado básico, PRD 8.1/8.6).
   const [ataqueAtacanteId, setAtaqueAtacanteId] = useState("");
   const [ataqueAlvoId, setAtaqueAlvoId] = useState("");
+  const [ataqueItemInstanceId, setAtaqueItemInstanceId] = useState("");
   const [ataqueTotalAtaque, setAtaqueTotalAtaque] = useState("");
   const [ataqueTotalDefesa, setAtaqueTotalDefesa] = useState("");
   const [ataqueFormulaDano, setAtaqueFormulaDano] = useState("1d6");
   const [ataqueTipoDano, setAtaqueTipoDano] = useState("fisico");
   const [ataqueProcessing, setAtaqueProcessing] = useState(false);
   const [ataqueResultado, setAtaqueResultado] = useState<string | null>(null);
+  const [ataqueSugestoesCriticas, setAtaqueSugestoesCriticas] = useState<CriticalItemPropertySuggestion[]>([]);
+  const ataqueAtacante = personagensDaMesa.find((character) => character.id === ataqueAtacanteId);
+  const ataqueArmas = ataqueAtacante
+    ? normalizeCharacter(ataqueAtacante.payload).inventario?.filter((item) => item.categoria === "arma") ?? []
+    : [];
 
   function fail(err: unknown, msg: string) {
     setError(err instanceof Error ? err.message : msg);
@@ -242,14 +268,16 @@ export default function MesaDetailClient({
    * sem sistema de modificador/prompt automático ainda, ver
    * pendências) via `resolveContestedRoll`; se o atacante vencer,
    * aplica dano DIRETO ao PV do alvo (`applyAttackDamage`, sem MIT/PD/
-   * região do corpo/propriedades — fórmula e tipo de dano são
-   * informados manualmente, pois não existe sistema de arma ainda).
+   * região do corpo/resolução automática de propriedades — fórmula e
+   * tipo de dano continuam informados manualmente). A arma opcional só
+   * alimenta lembretes críticos.
    * Sem alvo estruturado/mapa: os dois personagens vêm da lista já
    * carregada da mesa.
    */
   async function handleResolverAtaque() {
     setError(null);
     setAtaqueResultado(null);
+    setAtaqueSugestoesCriticas([]);
     const atacante = personagensDaMesa.find((c) => c.id === ataqueAtacanteId);
     const alvo = personagensDaMesa.find((c) => c.id === ataqueAlvoId);
     const totalAtaque = Number(ataqueTotalAtaque);
@@ -264,6 +292,17 @@ export default function MesaDetailClient({
       const contested = resolveContestedRoll(totalAtaque, totalDefesa);
       const nowIso = new Date().toISOString();
       let resumo = `${atacante.name} (${totalAtaque}) vs ${alvo.name} (${totalDefesa}) — margem ${contested.margin}.`;
+      const atacanteNormalizado = normalizeCharacter(atacante.payload);
+      const itemInstance = atacanteNormalizado.inventario?.find((item) => item.id === ataqueItemInstanceId);
+      const itemContent = itemInstance ? items.find((item) => item.slug === itemInstance.itemSlug) : undefined;
+      const criticalSuggestions = deriveCriticalItemPropertySuggestions({
+        margin: contested.margin,
+        rules: criticalRules,
+        itemInstance,
+        itemContent,
+        properties,
+        runes,
+      });
 
       if (contested.attackerWins) {
         const alvoNormalizado = normalizeCharacter(alvo.payload);
@@ -278,6 +317,10 @@ export default function MesaDetailClient({
         });
         await updateCharacter(alvo.id, dano.character);
         resumo += ` Acerto: ${dano.rollResult} de dano ${ataqueTipoDano} (PV ${dano.pvBefore} → ${dano.pvAfter}).`;
+        if (criticalSuggestions.length > 0) {
+          resumo += ` Propriedades críticas sugeridas: ${criticalSuggestions.map((suggestion) => suggestion.name).join(", ")} — aplicação manual.`;
+          setAtaqueSugestoesCriticas(criticalSuggestions);
+        }
         if (dano.collapseStarted) resumo += ` Colapso (${dano.collapseTipo}) iniciado.`;
         if (dano.collapseAdvanceLogs.length > 0) resumo += ` ${dano.collapseAdvanceLogs.join(" ")}`;
 
@@ -303,6 +346,9 @@ export default function MesaDetailClient({
               pvAfter: dano.pvAfter,
               collapseStarted: dano.collapseStarted,
               collapseAdvanced: dano.collapseAdvanceLogs.length > 0,
+              attackerItemInstanceId: itemInstance?.id ?? null,
+              attackerItemName: itemInstance?.itemNome ?? null,
+              criticalPropertySuggestions: criticalSuggestions,
               source: "mesa_dashboard",
             },
           });
@@ -747,19 +793,37 @@ export default function MesaDetailClient({
         )}
       </section>
 
-      {/* Resolver Ataque (checkpoint v0.47) — ataque contestado básico, sem arma/MIT/PD/região do corpo. */}
+      {/* Ataque básico: arma opcional só para lembretes críticos; sem MIT/PD/região do corpo. */}
       <section style={{ marginBottom: 32 }}>
         <h2 style={h2}>Resolver Ataque</h2>
         <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
           Ataque contestado básico (PRD 8.1/8.6): informe os totais JÁ ROLADOS de ataque e defesa
           (pela aba Rolagens da ficha, ou verbalmente) — maior total vence, empate favorece o
           defensor. Se o ataque vencer, aplica dano direto ao PV do alvo (fórmula/tipo de dano
-          manuais, sem sistema de arma/MIT/PD/região do corpo ainda).
+          manuais, sem MIT/PD/região do corpo. A arma usada é opcional e serve apenas para
+          sugerir propriedades críticas, nunca para aplicá-las automaticamente).
         </p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-          <select data-testid="det-ataque-atacante-select" value={ataqueAtacanteId} onChange={(e) => setAtaqueAtacanteId(e.target.value)} style={input}>
+          <select
+            data-testid="det-ataque-atacante-select"
+            value={ataqueAtacanteId}
+            onChange={(e) => {
+              setAtaqueAtacanteId(e.target.value);
+              setAtaqueItemInstanceId("");
+            }}
+            style={input}
+          >
             <option value="">— atacante —</option>
             {personagensAtivosDaMesa.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <select
+            data-testid="det-ataque-item-select"
+            value={ataqueItemInstanceId}
+            onChange={(e) => setAtaqueItemInstanceId(e.target.value)}
+            style={input}
+          >
+            <option value="">— arma usada (opcional) —</option>
+            {ataqueArmas.map((item) => <option key={item.id} value={item.id}>{item.itemNome}</option>)}
           </select>
           <select data-testid="det-ataque-alvo-select" value={ataqueAlvoId} onChange={(e) => setAtaqueAlvoId(e.target.value)} style={input}>
             <option value="">— alvo —</option>
@@ -784,6 +848,16 @@ export default function MesaDetailClient({
           <p data-testid="det-ataque-resultado" style={{ fontSize: 12, opacity: 0.85, marginTop: 10 }}>
             {ataqueResultado}
           </p>
+        )}
+        {ataqueSugestoesCriticas.length > 0 && (
+          <div data-testid="det-ataque-propriedades-criticas" style={{ ...card, marginTop: 8 }}>
+            <strong>Propriedades críticas — lembretes manuais</strong>
+            {ataqueSugestoesCriticas.map((suggestion) => (
+              <p key={suggestion.id} style={{ margin: "4px 0 0", fontSize: 12 }}>
+                {suggestion.name}: {suggestion.text} Origem: {suggestion.origins.join(", ")}.
+              </p>
+            ))}
+          </div>
         )}
       </section>
 

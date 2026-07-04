@@ -44,3 +44,16 @@ O Console de Ação interpreta somente contratos já presentes nas ações:
 O resultado é explicativo (“encontrado em…” ou “requisito não
 encontrado”). Ele não altera `enabled`, não gasta PA/Reação, não rola
 dados e não cria ações novas.
+
+## Fase 3 — propriedades críticas
+
+Classificação: **Caso B**. Atordoamento, Contusão, Desarme, Empurrão,
+Precisão, Queimadura e Sangramento têm gatilho/texto crítico claros,
+mas a resolução exige alvo, resistência, condição, deslocamento ou
+alteração de dano.
+
+O ataque contestado pode registrar explicitamente a instância de arma
+usada. Quando a margem alcança o limiar canônico lido de
+`combat_field.regiao_corpo_ataque` (sem fallback inventado), o resumo e
+o log recebem lembretes das propriedades críticas daquela arma.
+Nenhuma sugestão aplica dano, condição, resistência, MIT ou movimento.

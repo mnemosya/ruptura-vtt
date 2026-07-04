@@ -4,9 +4,35 @@
  */
 
 import assert from "node:assert/strict";
-import { resolveContestedRoll, rollDamageFormula, applyAttackDamage, createInitialCharacter } from "../src/lib/character";
+import { readFileSync } from "node:fs";
+import {
+  resolveContestedRoll,
+  rollDamageFormula,
+  applyAttackDamage,
+  createInitialCharacter,
+  normalizeAttackCriticalRules,
+  normalizeItemContent,
+  deriveCriticalItemPropertySuggestions,
+  formatCriticalItemPropertySuggestions,
+  type ItemContent,
+} from "../src/lib/character";
+import { normalizeTechnicalContentItem, type TechnicalContentItem } from "../src/lib/content";
 
 console.log("=== test-attack-resolution ===\n");
+
+function readJson<T>(path: string): T {
+  return JSON.parse(readFileSync(path, "utf8")) as T;
+}
+
+const combatField = readJson<Record<string, unknown>>("content/db_campo_combate_normalizado_v1_1.json");
+const itemDb = readJson<{ itens: Record<string, unknown>[] }>("content/db_equipamentos_normalizado_v1_2.json");
+const propertyDb = readJson<{ propriedades: Record<string, unknown>[] }>("content/db_propriedades_normalizado_v1.json");
+const runeDb = readJson<{ runas: Record<string, unknown>[] }>("content/db_runas_normalizado_v1_2.json");
+const itemModels: ItemContent[] = itemDb.itens.map(normalizeItemContent);
+const propertyModels: TechnicalContentItem[] = propertyDb.propriedades.map(normalizeTechnicalContentItem);
+const runeModels: TechnicalContentItem[] = runeDb.runas.map(normalizeTechnicalContentItem);
+const criticalRules = normalizeAttackCriticalRules(combatField);
+assert.equal(criticalRules.minMargin, 5);
 
 // -------------------------------------------------------------
 // 1. Ataque contestado — maior total vence, empate favorece defensor.
@@ -83,5 +109,94 @@ const resultadoNegativo = applyAttackDamage({
 });
 assert.equal(resultadoNegativo.pvAfter, 0, "PV nunca deve ficar negativo.");
 console.log("5. PV nunca fica negativo — OK");
+
+// -------------------------------------------------------------
+// 6. Propriedades críticas viram somente sugestões do item usado.
+// -------------------------------------------------------------
+const tonfa = itemModels.find((item) => item.slug === "tonfa");
+assert.ok(tonfa);
+const tonfaInstance = {
+  id: "tonfa-1",
+  itemSlug: tonfa!.slug,
+  itemNome: tonfa!.nome,
+  categoria: tonfa!.categoria,
+  subtipo: tonfa!.subtipo,
+  quantidade: 1,
+  estado: "empunhado" as const,
+  adquiridoEm: "2026-07-04T10:00:00.000Z",
+};
+const criticalSuggestions = deriveCriticalItemPropertySuggestions({
+  margin: 5,
+  rules: criticalRules,
+  itemInstance: tonfaInstance,
+  itemContent: tonfa,
+  properties: propertyModels,
+  runes: runeModels,
+});
+assert.deepEqual(criticalSuggestions.map((suggestion) => suggestion.slug), ["contusao"]);
+assert.equal(criticalSuggestions[0].automatic, false);
+assert.match(criticalSuggestions[0].text, /crítico/i);
+assert.match(
+  formatCriticalItemPropertySuggestions(criticalSuggestions) ?? "",
+  /Contusão: Em sucesso crítico, aplica Contundido.*aplicação manual/,
+);
+
+assert.deepEqual(
+  deriveCriticalItemPropertySuggestions({
+    margin: 4,
+    rules: criticalRules,
+    itemInstance: tonfaInstance,
+    itemContent: tonfa,
+    properties: propertyModels,
+  }),
+  [],
+  "Acerto normal não sugere propriedade crítica.",
+);
+
+const faca = itemModels.find((item) => item.slug === "faca");
+assert.ok(faca);
+assert.deepEqual(
+  deriveCriticalItemPropertySuggestions({
+    margin: 5,
+    rules: criticalRules,
+    itemInstance: { ...tonfaInstance, itemSlug: faca!.slug, itemNome: faca!.nome },
+    itemContent: faca,
+    properties: propertyModels,
+  }),
+  [],
+  "Item sem propriedade crítica não sugere nada.",
+);
+
+assert.doesNotThrow(() =>
+  deriveCriticalItemPropertySuggestions({
+    margin: 5,
+    rules: criticalRules,
+    itemInstance: tonfaInstance,
+    itemContent: { ...tonfa!, propertySlugs: ["ausente"] },
+    properties: propertyModels,
+  }),
+);
+
+const ambiguousCritical = normalizeTechnicalContentItem({
+  id: "critica_ambigua",
+  slug: "critica_ambigua",
+  nome: "Crítica ambígua",
+  status: "published",
+  gatilhos: ["sucesso_critico"],
+  margem_minima: "sucesso_critico",
+  payload_automacao: { efeitos: "malformado" },
+});
+assert.deepEqual(
+  deriveCriticalItemPropertySuggestions({
+    margin: 5,
+    rules: criticalRules,
+    itemInstance: tonfaInstance,
+    itemContent: { ...tonfa!, propertySlugs: [ambiguousCritical.slug] },
+    properties: [ambiguousCritical],
+  }),
+  [],
+  "Payload crítico ambíguo é ignorado, nunca aplicado.",
+);
+console.log("6. Crítico sugere somente propriedades do item usado, sem aplicação automática — OK");
 
 console.log("\ntest-attack-resolution — todos os cenários passaram.");

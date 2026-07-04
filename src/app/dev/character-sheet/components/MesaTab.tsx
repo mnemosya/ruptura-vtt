@@ -22,7 +22,11 @@ import { addLog, listLogsForViewer } from "../../../../lib/table/storage";
 import { useTableLogsRealtime } from "../../../../lib/realtime/useTableLogsRealtime";
 import { describeRealtimeStatus } from "../../../../lib/realtime/tableRealtime";
 import { TABLE_LOG_VISIBILITIES, type TableLogEntry, type TableLogVisibility } from "../../../../lib/table";
-import { MAX_COLLAPSE_SEGMENTS, MAX_OVERLOAD_SURGES_PER_DAY } from "../../../../lib/character";
+import {
+  MAX_COLLAPSE_SEGMENTS,
+  MAX_OVERLOAD_SURGES_PER_DAY,
+  formatCriticalItemPropertySuggestions,
+} from "../../../../lib/character";
 
 const inputStyle: React.CSSProperties = {
   background: "#0f1014",
@@ -373,7 +377,8 @@ function formatAttackResolved(payload: Record<string, unknown>): string {
   if (payload.attackerWins === true) {
     const damageRoll = typeof payload.damageRoll === "number" ? payload.damageRoll : "?";
     const damageType = typeof payload.damageType === "string" ? payload.damageType : "";
-    return `${attackerNome} atacou ${characterNome} (margem ${margin}) — ${damageRoll} de dano ${damageType}.`;
+    const criticalText = formatCriticalItemPropertySuggestions(payload.criticalPropertySuggestions);
+    return `${attackerNome} atacou ${characterNome} (margem ${margin}) — ${damageRoll} de dano ${damageType}.${criticalText ? ` ${criticalText}` : ""}`;
   }
   return `${attackerNome} atacou ${characterNome} (margem ${margin}) — defesa bem-sucedida, sem dano.`;
 }
