@@ -21,3 +21,4 @@ export * from "./spells";
 export * from "./escalpos";
 export * from "./technicalEffects";
 export * from "./defense";
+export * from "./ammunition";

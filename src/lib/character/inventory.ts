@@ -45,6 +45,12 @@ import type {
   TechnicalItemState,
 } from "./types";
 import type { TechnicalContentItem } from "../content";
+import {
+  deriveModoMunicao,
+  createDefaultAljava,
+  hasExistingAljava,
+  type Aljava,
+} from "./ammunition";
 
 // ---------------------------------------------------------------------
 // Conteúdo bruto (subconjunto lido de content_documents.payload)
@@ -68,6 +74,10 @@ export interface ItemContent {
   ocultavel?: "sim" | "parcial" | "nao";
   /** Verdadeiro somente quando `estatisticas.municao_max` existe como número no modelo. */
   usesAmmunition: boolean;
+  /** `estatisticas.municao_max` — capacidade do carregador/câmara. `null` = sem munição ou dado ausente. */
+  municaoMax: number | null;
+  /** `estatisticas.municao_compativel` — slug da família de munição aceita (ex.: "mun_pistola", "flecha_simples", "virotes"). `null` = ausente. */
+  municaoCompativelSlug: string | null;
   /** `estatisticas.slots_runa_max` do payload real — `null` quando o item não aceita runa ou o dado está ausente (nunca inventado). */
   slotsRunaMax: number | null;
   /** `estatisticas.mit_base` (armaduras) — MIT máximo do modelo. `null` = item não é armadura ou o dado está ausente. */
@@ -107,6 +117,8 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
         ? raw.ocultavel
         : undefined,
     usesAmmunition: typeof estatisticas?.municao_max === "number",
+    municaoMax: typeof estatisticas?.municao_max === "number" ? estatisticas.municao_max : null,
+    municaoCompativelSlug: typeof estatisticas?.municao_compativel === "string" ? estatisticas.municao_compativel : null,
     slotsRunaMax: typeof estatisticas?.slots_runa_max === "number" ? estatisticas.slots_runa_max : null,
     mitMax: typeof estatisticas?.mit_base === "number" ? estatisticas.mit_base : null,
     pdMax: typeof estatisticas?.pd_max === "number" ? estatisticas.pd_max : null,
@@ -181,6 +193,20 @@ export interface InventoryItemInstance {
   mitAtual?: number;
   /** PD atual do escudo — ausente até equipar/comprar; então editável manualmente. */
   pdAtual?: number;
+  /**
+   * Munição atual no carregador/câmara (checkpoint v0.59) — para armas
+   * com `municao_max` no modelo (subtipo "fogo" e bestas). Ausente =
+   * instância antiga ou arma sem munição. Para arcos, a munição fica
+   * na aljava (`aljava`), não aqui.
+   */
+  municaoAtual?: number;
+  /**
+   * Aljava para arcos (checkpoint v0.59, PRD 13.4.1) — instância
+   * especial criada na compra de arco. Não existe no catálogo como
+   * item; é estrutura gerenciada pela plataforma. Ausente em tudo que
+   * não é arco ou em instâncias antigas.
+   */
+  aljava?: import("./ammunition").Aljava;
 }
 
 export type ItemPropertyClassification =
@@ -664,6 +690,23 @@ export function purchaseItem(params: {
   }
 
   const walletAfter = saldoAtual - totalCost;
+  // Munição: derivar modo antes de criar instância.
+  const modoMunicao = deriveModoMunicao(item.subtipo, item.municaoMax, item.municaoCompativelSlug);
+  const isArco = modoMunicao === "aljava";
+  const isCarregador = modoMunicao === "carregador" || modoMunicao === "virote";
+
+  // Aljava: arcos ganham aljava padrão na primeira compra; se já houver
+  // aljava em outro arco do inventário, o segundo arco compartilha a
+  // mesma aljava (o jogador gerencia manualmente via UI). Não duplicar.
+  let aljajaInicial: Aljava | undefined = undefined;
+  if (isArco) {
+    if (!hasExistingAljava(character)) {
+      aljajaInicial = createDefaultAljava();
+    }
+    // Se já existir aljava, o novo arco não ganha uma segunda —
+    // documentado como pendência: gestão de múltiplos arcos.
+  }
+
   const instance: InventoryItemInstance = {
     id: crypto.randomUUID(),
     itemSlug: item.slug,
@@ -680,6 +723,9 @@ export function purchaseItem(params: {
     // — nunca inventado quando o campo está ausente (fica undefined).
     mitAtual: item.mitMax ?? undefined,
     pdAtual: item.pdMax ?? undefined,
+    // Munição atual: carregador/virote iniciam cheios; arcos usam aljava.
+    municaoAtual: isCarregador && item.municaoMax != null ? item.municaoMax : undefined,
+    aljava: aljajaInicial,
   };
 
   const nextCharacter: Character = {

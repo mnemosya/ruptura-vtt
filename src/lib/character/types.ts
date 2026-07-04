@@ -419,6 +419,13 @@ export interface Character {
     equipamentoSlot?: "armadura" | "escudo";
     mitAtual?: number;
     pdAtual?: number;
+    /** Munição atual no carregador/câmara (checkpoint v0.59) — armas de fogo e bestas. */
+    municaoAtual?: number;
+    /** Aljava para arcos (checkpoint v0.59, PRD 13.4.1) — stacks de flechas agrupadas por tipo. */
+    aljava?: {
+      capacidade: number;
+      stacks: { contentSlug: string; nome: string; quantidade: number }[];
+    };
   }[];
   /**
    * Magias aprendidas individualmente (checkpoint v0.50.1/v0.50.2) —

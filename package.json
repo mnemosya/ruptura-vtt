@@ -31,7 +31,8 @@
     "test:talents": "tsx scripts/test-talents.ts",
     "test:inventory": "tsx scripts/test-inventory.ts",
     "test:spells": "tsx scripts/test-spells.ts",
-    "test:character-storage": "tsx scripts/test-character-storage.ts"
+    "test:character-storage": "tsx scripts/test-character-storage.ts",
+    "test:ammunition": "tsx scripts/test-ammunition.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
