@@ -54,6 +54,7 @@ import {
   applyRoundScopedPaReductions,
   resolvePendingRuptureChoice,
   deriveActiveEffectsFromTalents,
+  deriveInstalledTechnicalEffects,
   acquireTalentLevel,
   removeTalentLevel,
   purchaseItem,
@@ -596,12 +597,25 @@ export default function CharacterSheetClient({
     () => {
       const conditionEffects = deriveActiveEffectsFromConditions(character, conditionContents);
       const talentEffects = deriveActiveEffectsFromTalents(character, talentsIniciais);
+      const escalpoEffects = deriveInstalledTechnicalEffects(character, escalposIniciais);
       const reactionEffect = deriveReactionDefenseEffect(character, reactionRules);
-      const base = [...conditionEffects, ...talentEffects];
+      const base = [...conditionEffects, ...talentEffects, ...escalpoEffects];
       return reactionEffect ? [...base, reactionEffect] : base;
     },
-    [character, conditionContents, reactionRules, talentsIniciais],
+    [character, conditionContents, reactionRules, talentsIniciais, escalposIniciais],
   );
+
+  // instanceIds de escalpos com pelo menos 1 ActiveEffect derivado (checkpoint v0.55, fase 2) —
+  // só para o aviso "modificador aplicado automaticamente" na aba Biblioteca (BibliotecaTab).
+  const installedEscalpoIdsWithEffect = useMemo(() => {
+    const ids = new Set<string>();
+    for (const effect of activeEffects) {
+      if (effect.sourceType !== "escalpo") continue;
+      const instanceId = effect.id.split(":")[1];
+      if (instanceId) ids.add(instanceId);
+    }
+    return ids;
+  }, [activeEffects]);
 
   const derivados = useMemo(
     () => computeDerivedStats(character.atributos, regras, character.mana_bonus_ruptura ?? 0),
@@ -2370,6 +2384,7 @@ export default function CharacterSheetClient({
           escalposInstalados={character.escalpos_instalados ?? []}
           onInstallEscalpo={handleInstallEscalpo}
           onRemoveEscalpo={handleRemoveEscalpo}
+          installedEscalpoIdsWithEffect={installedEscalpoIdsWithEffect}
         />
       )}
 

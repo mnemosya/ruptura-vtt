@@ -27,8 +27,8 @@ import { normalizeConditionSlug } from "./actionConsole";
 import { getConditionEndRoundEffects, type ConditionContent, type ConditionEndRoundEffect } from "./endRoundConditions";
 import type { ActiveCondition, Character } from "./types";
 
-/** Fonte do efeito — "talent" adicionado no checkpoint v0.48; outros tipos (item, magia...) são trabalho futuro. */
-export type ActiveEffectSourceType = "condition" | "reaction_overflow" | "talent";
+/** Fonte do efeito — "talent" adicionado no checkpoint v0.48, "escalpo" no v0.55; outros tipos (runa, magia...) são trabalho futuro. */
+export type ActiveEffectSourceType = "condition" | "reaction_overflow" | "talent" | "escalpo";
 
 /**
  * Natureza do efeito:

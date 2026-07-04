@@ -221,10 +221,13 @@ function InstalledEscalpos({
   installed,
   escalpos,
   onRemove,
+  hasAutomatedEffect,
 }: {
   installed: InstalledEscalpo[];
   escalpos: TechnicalContentItem[];
   onRemove: (instanceId: string) => void;
+  /** true se essa instância gerou pelo menos 1 ActiveEffect (checkpoint v0.55, fase 2) — ver `deriveInstalledTechnicalEffects`. */
+  hasAutomatedEffect: (instanceId: string) => boolean;
 }) {
   const bySlug = useMemo(() => new Map(escalpos.map((e) => [e.slug, e])), [escalpos]);
 
@@ -265,7 +268,11 @@ function InstalledEscalpos({
               </p>
             )}
             {instancia.notas && <p style={{ fontSize: 12, opacity: 0.6, margin: "4px 0 0" }}>Notas: {instancia.notas}</p>}
-            <p style={{ fontSize: 11, opacity: 0.4, margin: "6px 0 0" }}>Automação ainda não aplicada.</p>
+            <p style={{ fontSize: 11, opacity: 0.4, margin: "6px 0 0" }}>
+              {hasAutomatedEffect(instancia.id)
+                ? "Modificador passivo aplicado automaticamente — ver chip na ficha/Rolagens."
+                : "Sem modificador passivo automatizável neste registro (efeitos, se houver, são só leitura)."}
+            </p>
           </div>
         );
       })}
@@ -283,6 +290,7 @@ export function BibliotecaTab({
   escalposInstalados,
   onInstallEscalpo,
   onRemoveEscalpo,
+  installedEscalpoIdsWithEffect,
 }: {
   properties: TechnicalContentItem[];
   propertiesError: string | null;
@@ -293,15 +301,18 @@ export function BibliotecaTab({
   escalposInstalados: InstalledEscalpo[];
   onInstallEscalpo: (contentId: string) => void;
   onRemoveEscalpo: (instanceId: string) => void;
+  /** instanceIds com pelo menos 1 ActiveEffect derivado (checkpoint v0.55, fase 2) — ver `deriveInstalledTechnicalEffects`. */
+  installedEscalpoIdsWithEffect: Set<string>;
 }) {
   return (
     <Section title="Biblioteca (consulta técnica)">
       <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 20 }}>
         Catálogo de leitura da Biblioteca do Sistema — Propriedades, Runas e Escalpos. Estes são
         MODELOS de conteúdo administrável. Escalpos podem ser instalados no personagem (referência
-        passiva ao modelo, sem efeito mecânico ainda); Propriedades e Runas continuam só consulta —
-        instalar Runas em item ficou pendente (ver relatório do checkpoint). Esta aba nunca compra,
-        ativa ou automatiza nada sozinha.
+        ao modelo); modificadores passivos claramente estruturados no payload são aplicados
+        automaticamente (chip na ficha/Rolagens) — o restante do payload continua só leitura, nunca
+        ativação/dano/cadência. Propriedades e Runas continuam só consulta — instalar Runas em item
+        ficou pendente (ver relatório do checkpoint). Esta aba nunca compra nada sozinha.
       </p>
 
       <CatalogGroup titulo="Propriedades" testIdPrefix="biblioteca-propriedades" items={properties} catalogError={propertiesError} />
@@ -311,7 +322,12 @@ export function BibliotecaTab({
         <h3 style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
           Escalpos instalados ({escalposInstalados.length})
         </h3>
-        <InstalledEscalpos installed={escalposInstalados} escalpos={escalpos} onRemove={onRemoveEscalpo} />
+        <InstalledEscalpos
+          installed={escalposInstalados}
+          escalpos={escalpos}
+          onRemove={onRemoveEscalpo}
+          hasAutomatedEffect={(instanceId) => installedEscalpoIdsWithEffect.has(instanceId)}
+        />
       </div>
 
       <CatalogGroup

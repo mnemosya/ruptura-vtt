@@ -19,3 +19,4 @@ export * from "./talents";
 export * from "./inventory";
 export * from "./spells";
 export * from "./escalpos";
+export * from "./technicalEffects";
