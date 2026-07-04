@@ -21,6 +21,7 @@
     "test:technical-library": "tsx scripts/test-technical-library.ts",
     "test:escalpos": "tsx scripts/test-escalpos.ts",
     "test:technical-effects": "tsx scripts/test-technical-effects.ts",
+    "test:defense": "tsx scripts/test-defense.ts",
     "test:campaign-end-round": "tsx scripts/test-campaign-end-round.ts",
     "test:campaign-end-scene": "tsx scripts/test-campaign-end-scene.ts",
     "test:integrity-fallback": "tsx scripts/test-integrity-fallback.ts",

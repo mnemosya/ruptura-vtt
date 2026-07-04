@@ -20,3 +20,4 @@ export * from "./inventory";
 export * from "./spells";
 export * from "./escalpos";
 export * from "./technicalEffects";
+export * from "./defense";
