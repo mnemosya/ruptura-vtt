@@ -68,6 +68,9 @@ import {
   setItemMitAtual,
   setItemPdAtual,
   setWeaponAmmoAtual,
+  reloadMagazineWeapon,
+  reloadAljava,
+  deriveModoMunicao,
   castSpell,
   rollSpellDamage,
   getSpellDamageEffect,
@@ -1902,6 +1905,35 @@ export default function CharacterSheetClient({
     setCharacter(next);
   }
 
+  function handleReloadWeapon(instanceId: string) {
+    const current = characterRef.current;
+    const instance = current.inventario?.find((i) => i.id === instanceId);
+    if (!instance) return;
+    const weaponItem = itemsIniciais.find((i) => i.slug === instance.itemSlug);
+    if (!weaponItem) return;
+    const modoMunicao = deriveModoMunicao(weaponItem.subtipo, weaponItem.municaoMax ?? null, weaponItem.municaoCompativelSlug ?? null);
+    // allAmmoProfiles derivados dos itens do catálogo com categoria "municao"
+    const allAmmoProfiles = itemsIniciais
+      .filter((i) => i.categoria === "municao")
+      .map((i) => ({
+        slug: i.slug,
+        nome: i.nome,
+        familia: i.ammoFamilia,
+        armasCompativeis: i.ammoArmasCompativeis,
+        kitQuantidade: null, // não necessário para recarga
+      }));
+    let result;
+    if (modoMunicao === "aljava") {
+      result = reloadAljava(current, instanceId, allAmmoProfiles);
+    } else if (modoMunicao === "carregador" || modoMunicao === "virote") {
+      result = reloadMagazineWeapon(current, instanceId, weaponItem, allAmmoProfiles);
+    } else {
+      return;
+    }
+    characterRef.current = result.character;
+    setCharacter(result.character);
+  }
+
   /**
    * Aprender/esquecer magia individual (aba Magias, checkpoint
    * v0.50.1) — conhecer a vertente (Modo Evolução) só decide quais
@@ -2493,6 +2525,7 @@ export default function CharacterSheetClient({
           onSetMitAtual={handleSetMitAtual}
           onSetPdAtual={handleSetPdAtual}
           onSetMunicaoAtual={handleSetMunicaoAtual}
+          onReloadWeapon={handleReloadWeapon}
         />
       )}
 

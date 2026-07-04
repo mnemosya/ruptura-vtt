@@ -49,6 +49,7 @@ import {
   deriveModoMunicao,
   createDefaultAljava,
   hasExistingAljava,
+  parseKitQuantidade,
   type Aljava,
 } from "./ammunition";
 
@@ -86,6 +87,12 @@ export interface ItemContent {
   pdMax: number | null;
   /** `estatisticas.tipo_protecao` ("fisica"/"energetica"/"hibrida") — usado só para checar se o MIT/PD se aplica ao tipo de dano recebido. */
   tipoProtecao: string | null;
+  /** `estatisticas.compatibilidade.familia` — família da munição (ex.: "flecha_simples", "mun_pistola"). `null` para não-munições. */
+  ammoFamilia: string | null;
+  /** `estatisticas.compatibilidade.itens` — slugs de armas compatíveis com esta munição. Vazio para não-munições. */
+  ammoArmasCompativeis: string[];
+  /** `estatisticas.kit` parsado como inteiro — quantidade de balas/flechas por kit comprado. `null` se ausente ou não é munição. */
+  ammoKitQuantidade: number | null;
   status: string;
 }
 
@@ -123,6 +130,15 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
     mitMax: typeof estatisticas?.mit_base === "number" ? estatisticas.mit_base : null,
     pdMax: typeof estatisticas?.pd_max === "number" ? estatisticas.pd_max : null,
     tipoProtecao: typeof estatisticas?.tipo_protecao === "string" ? estatisticas.tipo_protecao : null,
+    ammoFamilia: (() => {
+      const compat = asRecord(estatisticas?.compatibilidade);
+      return typeof compat?.familia === "string" ? compat.familia : null;
+    })(),
+    ammoArmasCompativeis: (() => {
+      const compat = asRecord(estatisticas?.compatibilidade);
+      return asStringArray(compat?.itens);
+    })(),
+    ammoKitQuantidade: parseKitQuantidade(estatisticas?.kit),
     status: String(raw.status ?? "published"),
   };
 }
@@ -671,8 +687,15 @@ export function purchaseItem(params: {
   nowIso: string;
 }): PurchaseItemResult {
   const { character, item, walletId, nowIso } = params;
-  const quantidade = Math.max(1, Math.trunc(params.quantidade));
+  const quantidadeKits = Math.max(1, Math.trunc(params.quantidade));
   const precoUnitario = params.precoUnitario ?? item.preco;
+  // Para munições: desempacotar kit → quantidade em inventário = kits × kitQuantidade.
+  // Exemplo: comprar 1 "mun_pistola" (kit: "12 balas") → quantidade: 12 no inventário.
+  // Para outros itens: quantidade = kits comprados (sem desempacotar).
+  const quantidade =
+    item.categoria === "municao" && item.ammoKitQuantidade != null
+      ? quantidadeKits * item.ammoKitQuantidade
+      : quantidadeKits;
   const totalCost = precoUnitario * quantidade;
 
   const carteira: Wallet = character.carteira ?? { aretz_informal: 0, cdi: 0, cdi_craqueada: 0 };

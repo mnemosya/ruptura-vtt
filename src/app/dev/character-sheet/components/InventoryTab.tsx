@@ -62,6 +62,7 @@ export function InventoryTab({
   onSetMitAtual,
   onSetPdAtual,
   onSetMunicaoAtual,
+  onReloadWeapon,
 }: {
   items: ItemContent[];
   catalogError: string | null;
@@ -86,6 +87,7 @@ export function InventoryTab({
   onSetMitAtual: (instanceId: string, value: number) => void;
   onSetPdAtual: (instanceId: string, value: number) => void;
   onSetMunicaoAtual: (instanceId: string, value: number) => void;
+  onReloadWeapon: (instanceId: string) => void;
 }) {
   const [busca, setBusca] = useState("");
   const [categoria, setCategoria] = useState<(typeof CATEGORIA_FILTROS)[number]>("todos");
@@ -309,10 +311,17 @@ export function InventoryTab({
                       >
                         Restaurar ao máximo
                       </button>
+                      <button
+                        data-testid={`inventario-recarregar-${instance.id}`}
+                        onClick={() => onReloadWeapon(instance.id)}
+                        style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+                      >
+                        Recarregar
+                      </button>
                     </div>
                     <p style={{ fontSize: 10, opacity: 0.4, margin: "4px 0 0" }}>
                       {modoMunicao === "virote" ? "Besta — 1 virote por câmara." : "Arma de fogo — carregador."}{" "}
-                      Recarregar consome estoque do inventário (Fase 3).
+                      Recarregar consome estoque compatível do inventário.
                     </p>
                   </div>
                 ) : modoMunicao === "aljava" ? (
@@ -331,8 +340,15 @@ export function InventoryTab({
                     {!(instance as InventoryItemInstance & { aljava?: { capacidade: number; stacks: { contentSlug: string; nome: string; quantidade: number }[] } }).aljava && (
                       <p style={{ fontSize: 10, opacity: 0.4, margin: 0 }}>Aljava não inicializada — recarregue o personagem.</p>
                     )}
+                    <button
+                      data-testid={`inventario-recarregar-aljava-${instance.id}`}
+                      onClick={() => onReloadWeapon(instance.id)}
+                      style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", marginTop: 4 }}
+                    >
+                      Recarregar aljava
+                    </button>
                     <p style={{ fontSize: 10, opacity: 0.4, margin: "4px 0 0" }}>
-                      Arco — flechas por tipo. Adicionar flechas ao estoque as move para a aljava (Fase 3).
+                      Arco — flechas por tipo. "Recarregar aljava" move flechas do estoque para a aljava.
                     </p>
                   </div>
                 ) : null}

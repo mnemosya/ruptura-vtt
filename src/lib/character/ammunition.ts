@@ -378,3 +378,159 @@ export function isFirearmWeapon(item: Pick<ItemContent, "categoria" | "subtipo">
 export function isMagazineWeapon(item: Pick<ItemContent, "categoria" | "subtipo"> & { municaoCompativelSlug?: string | null }): boolean {
   return isFirearmWeapon(item) || isCrossbowWeapon(item);
 }
+
+// ---------------------------------------------------------------------
+// Fase 3 — Recarregar a partir do estoque do inventário
+// ---------------------------------------------------------------------
+
+export interface ReloadResult {
+  character: Character;
+  /** Quantidade realmente carregada nesta recarga. */
+  carregada: number;
+  /** Razão para não ter carregado nada, ou null se ok. */
+  motivoFalha: "sem_estoque" | "ja_cheio" | "modo_nao_suportado" | null;
+}
+
+/**
+ * Recarrega uma arma (carregador ou virote) a partir do primeiro item
+ * de munição compatível encontrado no inventário.
+ *
+ * Algoritmo PRD 13.4.1 (FPS):
+ *   faltante = municaoMax - municaoAtual
+ *   carregada = min(faltante, estoqueCompativel)
+ *   Consome exatamente `carregada` do estoque — remove instância se zerar.
+ */
+export function reloadMagazineWeapon(
+  character: Character,
+  weaponInstanceId: string,
+  weaponItem: Pick<ItemContent, "slug" | "subtipo" | "usesAmmunition"> & { municaoMax?: number | null; municaoCompativelSlug?: string | null },
+  allAmmoProfiles: AmmoItemProfile[],
+): ReloadResult {
+  const modoMunicao = deriveModoMunicao(weaponItem.subtipo, weaponItem.municaoMax ?? null, weaponItem.municaoCompativelSlug ?? null);
+  if (modoMunicao !== "carregador" && modoMunicao !== "virote") {
+    return { character, carregada: 0, motivoFalha: "modo_nao_suportado" };
+  }
+
+  const inventario = character.inventario ?? [];
+  const weaponInst = inventario.find((i) => i.id === weaponInstanceId);
+  if (!weaponInst) return { character, carregada: 0, motivoFalha: "sem_estoque" };
+
+  const municaoMax = weaponItem.municaoMax ?? 0;
+  const municaoAtual = (weaponInst as InventoryItemInstance & Partial<WeaponAmmoInstanceFields>).municaoAtual ?? 0;
+  const faltante = Math.max(0, municaoMax - municaoAtual);
+  if (faltante === 0) return { character, carregada: 0, motivoFalha: "ja_cheio" };
+
+  // Encontrar compatíveis no inventário (não é a própria arma)
+  const compativelSlug = weaponItem.municaoCompativelSlug;
+  const ammoInsts = inventario.filter((inst) => {
+    if (inst.id === weaponInstanceId) return false;
+    const profile = allAmmoProfiles.find((p) => p.slug === inst.itemSlug);
+    if (!profile) return false;
+    // Verifica compatibilidade por família (slug compatível da arma == familia da munição)
+    return profile.familia === compativelSlug || profile.armasCompativeis.includes(weaponItem.slug);
+  });
+
+  if (ammoInsts.length === 0) return { character, carregada: 0, motivoFalha: "sem_estoque" };
+
+  // Consome do primeiro disponível (mais simples)
+  let restanteCarregar = faltante;
+  let nextInventario = [...inventario];
+
+  for (const ammoInst of ammoInsts) {
+    if (restanteCarregar <= 0) break;
+    const idx = nextInventario.findIndex((i) => i.id === ammoInst.id);
+    if (idx === -1) continue;
+    const disponivelNeste = nextInventario[idx].quantidade;
+    const consumir = Math.min(restanteCarregar, disponivelNeste);
+    restanteCarregar -= consumir;
+    const novaQtd = disponivelNeste - consumir;
+    if (novaQtd <= 0) {
+      nextInventario.splice(idx, 1);
+    } else {
+      nextInventario[idx] = { ...nextInventario[idx], quantidade: novaQtd };
+    }
+  }
+
+  const carregada = faltante - restanteCarregar;
+  const novaMunicao = municaoAtual + carregada;
+  const withAmmo: Character = {
+    ...character,
+    inventario: nextInventario.map((inst) =>
+      inst.id === weaponInstanceId ? { ...inst, municaoAtual: novaMunicao } : inst,
+    ),
+  };
+
+  return { character: withAmmo, carregada, motivoFalha: null };
+}
+
+/**
+ * Recarrega um arco movendo flechas de itens de munição do inventário
+ * para a aljava da instância do arco, respeitando a capacidade.
+ * Cada item de munição de flecha no inventário é consumido em ordem
+ * até a aljava ficar cheia ou o estoque acabar.
+ */
+export function reloadAljava(
+  character: Character,
+  weaponInstanceId: string,
+  allAmmoProfiles: AmmoItemProfile[],
+): ReloadResult {
+  const inventario = character.inventario ?? [];
+  const weaponInst = inventario.find((i) => i.id === weaponInstanceId) as
+    | (InventoryItemInstance & Partial<WeaponAmmoInstanceFields>)
+    | undefined;
+  if (!weaponInst) return { character, carregada: 0, motivoFalha: "sem_estoque" };
+
+  const aljavaAtual = weaponInst.aljava ?? createDefaultAljava();
+  const livre = getAljavaEspacoLivre(aljavaAtual);
+  if (livre === 0) return { character, carregada: 0, motivoFalha: "ja_cheio" };
+
+  // Itens de munição de flecha no inventário (excluindo a própria arma)
+  const fletchaInsts = inventario.filter((inst) => {
+    if (inst.id === weaponInstanceId) return false;
+    const profile = allAmmoProfiles.find((p) => p.slug === inst.itemSlug);
+    return profile != null && (profile.familia === "flecha_simples" || profile.familia === "flecha_especial" || profile.familia?.startsWith("flecha"));
+  });
+
+  if (fletchaInsts.length === 0) return { character, carregada: 0, motivoFalha: "sem_estoque" };
+
+  let aljava = aljavaAtual;
+  let nextInventario = [...inventario];
+  let totalCarregada = 0;
+
+  for (const fletchaInst of fletchaInsts) {
+    if (getAljavaEspacoLivre(aljava) <= 0) break;
+    const profile = allAmmoProfiles.find((p) => p.slug === fletchaInst.itemSlug);
+    if (!profile) continue;
+    const idx = nextInventario.findIndex((i) => i.id === fletchaInst.id);
+    if (idx === -1) continue;
+
+    const disponivelNeste = nextInventario[idx].quantidade;
+    const livre2 = getAljavaEspacoLivre(aljava);
+    const mover = Math.min(disponivelNeste, livre2);
+
+    const { aljava: novaAljava, excedente } = addFletchasToAljava(aljava, profile.slug, profile.nome, mover);
+    const realmenterMovido = mover - excedente;
+    if (realmenterMovido <= 0) break;
+
+    aljava = novaAljava;
+    totalCarregada += realmenterMovido;
+
+    const novaQtd = disponivelNeste - realmenterMovido;
+    if (novaQtd <= 0) {
+      nextInventario.splice(idx, 1);
+    } else {
+      nextInventario[idx] = { ...nextInventario[idx], quantidade: novaQtd };
+    }
+  }
+
+  if (totalCarregada === 0) return { character, carregada: 0, motivoFalha: "sem_estoque" };
+
+  const withAljava: Character = {
+    ...character,
+    inventario: nextInventario.map((inst) =>
+      inst.id === weaponInstanceId ? { ...inst, aljava } : inst,
+    ),
+  };
+
+  return { character: withAljava, carregada: totalCarregada, motivoFalha: null };
+}
