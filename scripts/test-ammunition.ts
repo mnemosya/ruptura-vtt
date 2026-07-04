@@ -21,6 +21,8 @@ import {
   ALJAVA_CAPACIDADE_PADRAO,
   ALJAVA_FLECHAS_INICIAIS_QUANTIDADE,
   ALJAVA_FLECHAS_INICIAIS_SLUG,
+  consumeAttackAmmo,
+  checkAttackAmmoBlock,
 } from "../src/lib/character/ammunition";
 import type { Character } from "../src/lib/character/types";
 
@@ -227,5 +229,89 @@ assert.equal(instanciaAntiga.municaoAtual, undefined, "Campo municaoAtual ausent
 assert.equal(instanciaAntiga.aljava, undefined, "Campo aljava ausente em personagem antigo.");
 assert.ok(!hasExistingAljava(charAntigo), "hasExistingAljava não explode com personagem antigo.");
 console.log("12. Personagens antigos continuam carregando sem campos de munição — OK");
+
+// -------------------------------------------------------------
+// 13. consumeAttackAmmo — carregador: bloqueia com municaoAtual=0;
+//     consome quando > 0; aljava: auto-seleciona 1 tipo; requer seleção com 2+
+// -------------------------------------------------------------
+const modeloPistola = { slug: "pistola_de_bolso", subtipo: "fogo", usesAmmunition: true as const, municaoMax: 8, municaoCompativelSlug: "mun_pistola" };
+const modeloArco = { slug: "arco_curto", subtipo: "arremesso_disparo", usesAmmunition: true as const, municaoMax: 1, municaoCompativelSlug: "flecha_simples" };
+
+// Carregador cheio → consome 1
+const charPistolaCheia: Character = {
+  inventario: [{ id: "p1", itemSlug: "pistola_de_bolso", itemNome: "Pistola", categoria: "arma", subtipo: "fogo", quantidade: 1, estado: "empunhado", municaoAtual: 8 } as any],
+} as any;
+const consumePistola = consumeAttackAmmo(charPistolaCheia, [modeloPistola]);
+assert.equal(consumePistola.motivoFalha, null, "Carregador cheio — sem falha.");
+assert.equal(consumePistola.consumedFromInstanceId, "p1");
+const municaoApos = (consumePistola.character.inventario?.[0] as any).municaoAtual;
+assert.equal(municaoApos, 7, "municaoAtual decrementada de 8 para 7.");
+
+// Carregador vazio → bloqueia
+const charPistolaVazia: Character = {
+  inventario: [{ id: "p1", itemSlug: "pistola_de_bolso", itemNome: "Pistola", categoria: "arma", subtipo: "fogo", quantidade: 1, estado: "empunhado", municaoAtual: 0 } as any],
+} as any;
+const bloqueioVazia = consumeAttackAmmo(charPistolaVazia, [modeloPistola]);
+assert.equal(bloqueioVazia.motivoFalha, "sem_municao", "Carregador vazio → sem_municao.");
+assert.equal(bloqueioVazia.consumedFromInstanceId, null);
+
+// checkAttackAmmoBlock coerente com consumeAttackAmmo
+assert.equal(checkAttackAmmoBlock(charPistolaVazia, [modeloPistola]), "sem_municao");
+assert.equal(checkAttackAmmoBlock(charPistolaCheia, [modeloPistola]), null);
+
+// Aljava com 1 tipo → auto-seleciona
+const aljavaSimples = { capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 5 }] };
+const charArcoSimples: Character = {
+  inventario: [{ id: "a1", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado", aljava: aljavaSimples } as any],
+} as any;
+const consumeArcoSimples = consumeAttackAmmo(charArcoSimples, [modeloArco]);
+assert.equal(consumeArcoSimples.motivoFalha, null, "Aljava com 1 tipo — auto-seleciona.");
+assert.equal(consumeArcoSimples.consumedFlechaSlug, "flecha_simples");
+assert.equal(consumeArcoSimples.isFlechaEspecial, false, "flecha_simples não é especial.");
+const aljavaTotalApos = getAljavaTotalFlechas((consumeArcoSimples.character.inventario?.[0] as any).aljava);
+assert.equal(aljavaTotalApos, 4, "Aljava passou de 5 para 4.");
+
+console.log("13. consumeAttackAmmo (carregador + aljava 1 tipo) — OK");
+
+// -------------------------------------------------------------
+// 14. consumeAttackAmmo — aljava 2 tipos: exige seleção explícita;
+//     seleção errada → flecha_sem_estoque; flecha especial → isFlechaEspecial
+// -------------------------------------------------------------
+const aljava2Tipos = {
+  capacidade: 15,
+  stacks: [
+    { contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 5 },
+    { contentSlug: "flecha_flamejante", nome: "Flecha flamejante", quantidade: 3 },
+  ],
+};
+const charArco2: Character = {
+  inventario: [{ id: "a2", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado", aljava: aljava2Tipos } as any],
+} as any;
+
+// Sem seleção → flecha_nao_selecionada
+const semSelecao = consumeAttackAmmo(charArco2, [modeloArco]);
+assert.equal(semSelecao.motivoFalha, "flecha_nao_selecionada", "2 tipos sem seleção → bloqueado.");
+assert.equal(semSelecao.consumedFromInstanceId, null);
+assert.equal(checkAttackAmmoBlock(charArco2, [modeloArco]), "flecha_nao_selecionada");
+
+// Com seleção de flecha especial → consome correta e isFlechaEspecial=true
+const comSelecao = consumeAttackAmmo(charArco2, [modeloArco], { selectedFlechaSlug: "flecha_flamejante" });
+assert.equal(comSelecao.motivoFalha, null, "Seleção explícita de flecha especial — sem falha.");
+assert.equal(comSelecao.consumedFlechaSlug, "flecha_flamejante");
+assert.equal(comSelecao.isFlechaEspecial, true, "Flecha especial → isFlechaEspecial.");
+const stackSimples = (comSelecao.character.inventario?.[0] as any).aljava.stacks.find((s: any) => s.contentSlug === "flecha_simples");
+const stackFlam = (comSelecao.character.inventario?.[0] as any).aljava.stacks.find((s: any) => s.contentSlug === "flecha_flamejante");
+assert.equal(stackSimples.quantidade, 5, "Flecha simples não foi consumida.");
+assert.equal(stackFlam.quantidade, 2, "Flecha flamejante decrementou de 3 para 2.");
+
+// Slug inexistente → flecha_sem_estoque
+const slugErrado = consumeAttackAmmo(charArco2, [modeloArco], { selectedFlechaSlug: "flecha_toxica" });
+assert.equal(slugErrado.motivoFalha, "flecha_sem_estoque");
+
+// Seleção com checkAttackAmmoBlock coerente
+assert.equal(checkAttackAmmoBlock(charArco2, [modeloArco], { selectedFlechaSlug: "flecha_flamejante" }), null);
+assert.equal(checkAttackAmmoBlock(charArco2, [modeloArco], { selectedFlechaSlug: "flecha_toxica" }), "flecha_sem_estoque");
+
+console.log("14. consumeAttackAmmo (aljava 2 tipos + flecha especial) — OK");
 
 console.log("\ntest-ammunition — todos os cenários passaram.");
