@@ -69,6 +69,8 @@ import {
   setItemPdAtual,
   setWeaponAmmoAtual,
   setFlechaQuantidadeInAljava,
+  storeFletchasInAljava,
+  withdrawFletchasFromAljava,
   reloadMagazineWeapon,
   reloadAljava,
   consumeAttackAmmo,
@@ -1925,6 +1927,31 @@ export default function CharacterSheetClient({
     setCharacter(next);
   }
 
+  function handleStoreFletchas(bowInstanceId: string, ammoInstanceId: string, contentSlug: string, nome: string, quantidade: number) {
+    const result = storeFletchasInAljava(characterRef.current, bowInstanceId, ammoInstanceId, contentSlug, nome, quantidade);
+    characterRef.current = result.character;
+    setCharacter(result.character);
+  }
+
+  function handleWithdrawFletchas(bowInstanceId: string, contentSlug: string, quantidade: number, nomeFlexa: string) {
+    const result = withdrawFletchasFromAljava(characterRef.current, bowInstanceId, contentSlug, quantidade, nomeFlexa, new Date().toISOString());
+    characterRef.current = result.character;
+    setCharacter(result.character);
+    // Limpar seleção ativa se o stack foi zerado
+    const aljavaApos = (result.character.inventario ?? []).find((i) => i.id === bowInstanceId);
+    const stackAindaExiste = (aljavaApos as Record<string, unknown> | undefined)?.aljava != null &&
+      ((aljavaApos as Record<string, unknown>).aljava as { stacks: { contentSlug: string }[] }).stacks.some(
+        (s) => s.contentSlug === contentSlug,
+      );
+    if (!stackAindaExiste && selectedFlechaSlugPerBow[bowInstanceId] === contentSlug) {
+      setSelectedFlechaSlugPerBow((prev) => {
+        const next = { ...prev };
+        delete next[bowInstanceId];
+        return next;
+      });
+    }
+  }
+
   function handleReloadWeapon(instanceId: string) {
     const current = characterRef.current;
     const instance = current.inventario?.find((i) => i.id === instanceId);
@@ -2592,6 +2619,8 @@ export default function CharacterSheetClient({
           onSetPdAtual={handleSetPdAtual}
           onSetMunicaoAtual={handleSetMunicaoAtual}
           onSetFlechaQuantidade={handleSetFlechaQuantidade}
+          onStoreFletchas={handleStoreFletchas}
+          onWithdrawFletchas={handleWithdrawFletchas}
           onReloadWeapon={handleReloadWeapon}
           selectedFlechaSlugPerBow={selectedFlechaSlugPerBow}
           onSelectFlechaAtiva={(instanceId, slug) =>

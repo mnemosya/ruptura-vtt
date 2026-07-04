@@ -23,6 +23,9 @@ import {
   ALJAVA_FLECHAS_INICIAIS_SLUG,
   consumeAttackAmmo,
   checkAttackAmmoBlock,
+  setFlechaQuantidadeInAljava,
+  storeFletchasInAljava,
+  withdrawFletchasFromAljava,
 } from "../src/lib/character/ammunition";
 import type { Character } from "../src/lib/character/types";
 
@@ -313,5 +316,77 @@ assert.equal(checkAttackAmmoBlock(charArco2, [modeloArco], { selectedFlechaSlug:
 assert.equal(checkAttackAmmoBlock(charArco2, [modeloArco], { selectedFlechaSlug: "flecha_toxica" }), "flecha_sem_estoque");
 
 console.log("14. consumeAttackAmmo (aljava 2 tipos + flecha especial) — OK");
+
+// -------------------------------------------------------------
+// 15. setFlechaQuantidadeInAljava — clamp considera todas as stacks
+// -------------------------------------------------------------
+// Aljava 10 simples + 2 flamejantes (total 12/15). Ajustar simples para 15
+// → máximo permitido é 15 - 2 = 13. Simples vira 13, total 15/15.
+const aljava12 = {
+  capacidade: 15,
+  stacks: [
+    { contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 10 },
+    { contentSlug: "flecha_flamejante", nome: "Flecha flamejante", quantidade: 2 },
+  ],
+};
+const aljavaAjustada = setFlechaQuantidadeInAljava(aljava12, "flecha_simples", 15);
+const simplesAjustada = aljavaAjustada.stacks.find((s) => s.contentSlug === "flecha_simples");
+assert.equal(simplesAjustada?.quantidade, 13, "Simples clampeada a 13 (15 - 2 flamejantes).");
+assert.equal(getAljavaTotalFlechas(aljavaAjustada), 15, "Total exato 15/15.");
+console.log("15. setFlechaQuantidadeInAljava — clamp multi-stack — OK");
+
+// -------------------------------------------------------------
+// 16. storeFletchasInAljava — respeita capacidade; excedente fica no estoque
+// -------------------------------------------------------------
+// Aljava 12/15, estoque de 10 flechas. Guardar 10 → só 3 cabem. Estoque fica 7.
+const charParaGuardar: Character = {
+  inventario: [
+    { id: "bow-1", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado",
+      aljava: { capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 12 }] } } as any,
+    { id: "ammo-1", itemSlug: "flecha_simples", itemNome: "Flecha simples", categoria: "municao", subtipo: "municao", quantidade: 10, estado: "mochila" } as any,
+  ],
+} as any;
+const storeResult = storeFletchasInAljava(charParaGuardar, "bow-1", "ammo-1", "flecha_simples", "Flecha simples", 10);
+assert.equal(storeResult.moved, 3, "Só 3 couberam na aljava (15 - 12 = 3 livres).");
+assert.equal(storeResult.excedente, 7, "Excedente 7 não guardado.");
+const aljavaAposGuardar = (storeResult.character.inventario?.find((i) => i.id === "bow-1") as any).aljava;
+assert.equal(getAljavaTotalFlechas(aljavaAposGuardar), 15, "Aljava cheia 15/15.");
+const estoqueApos = storeResult.character.inventario?.find((i) => i.id === "ammo-1")?.quantidade;
+assert.equal(estoqueApos, 7, "Estoque ficou 7 (10 - 3 guardadas).");
+console.log("16. storeFletchasInAljava — respeita capacidade — OK");
+
+// -------------------------------------------------------------
+// 17. withdrawFletchasFromAljava — devolve flechas ao estoque
+// -------------------------------------------------------------
+// Aljava com 10 flechas simples, nenhuma no estoque. Retirar 2 →
+// Aljava fica com 8, estoque ganha 2 (nova instância criada).
+const charParaRetirar: Character = {
+  inventario: [
+    { id: "bow-2", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado",
+      aljava: { capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 10 }] } } as any,
+  ],
+} as any;
+const withdrawResult = withdrawFletchasFromAljava(charParaRetirar, "bow-2", "flecha_simples", 2, "Flecha simples", "2026-01-01T00:00:00.000Z");
+assert.equal(withdrawResult.withdrawn, 2, "2 flechas retiradas.");
+const aljavaAposRetirar = (withdrawResult.character.inventario?.find((i) => i.id === "bow-2") as any).aljava;
+assert.equal(getAljavaTotalFlechas(aljavaAposRetirar), 8, "Aljava ficou com 8.");
+const estoqueRetirado = withdrawResult.character.inventario?.find((i) => i.itemSlug === "flecha_simples" && i.id !== "bow-2");
+assert.equal(estoqueRetirado?.quantidade, 2, "Nova instância de estoque com quantidade 2.");
+
+// Se já houver estoque, incrementa em vez de criar nova instância
+const charComEstoque: Character = {
+  inventario: [
+    { id: "bow-3", itemSlug: "arco_curto", itemNome: "Arco curto", categoria: "arma", subtipo: "arremesso_disparo", quantidade: 1, estado: "empunhado",
+      aljava: { capacidade: 15, stacks: [{ contentSlug: "flecha_simples", nome: "Flecha simples", quantidade: 10 }] } } as any,
+    { id: "ammo-2", itemSlug: "flecha_simples", itemNome: "Flecha simples", categoria: "municao", subtipo: "municao", quantidade: 5, estado: "mochila" } as any,
+  ],
+} as any;
+const withdrawResult2 = withdrawFletchasFromAljava(charComEstoque, "bow-3", "flecha_simples", 3, "Flecha simples", "2026-01-01T00:00:00.000Z");
+const estoqueIncrementado = withdrawResult2.character.inventario?.find((i) => i.id === "ammo-2");
+assert.equal(estoqueIncrementado?.quantidade, 8, "Estoque existente incrementado de 5 para 8.");
+const inventarioFinal = withdrawResult2.character.inventario ?? [];
+const ammoInstances = inventarioFinal.filter((i) => i.itemSlug === "flecha_simples" && i.id !== "bow-3");
+assert.equal(ammoInstances.length, 1, "Nenhuma instância duplicada criada.");
+console.log("17. withdrawFletchasFromAljava — devolve ao estoque — OK");
 
 console.log("\ntest-ammunition — todos os cenários passaram.");

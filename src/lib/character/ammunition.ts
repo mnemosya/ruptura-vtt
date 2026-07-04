@@ -317,19 +317,138 @@ export function consumeFletchaFromAljava(
 
 /**
  * Ajuste manual da quantidade de um stack na aljava.
- * Remove o stack se a quantidade cair para 0.
- * Clampeia em [0, capacidade] por stack para evitar estouros óbvios.
+ * Clampeia levando em conta as OUTRAS stacks — o total nunca passa da
+ * capacidade. Remove o stack se a quantidade cair para 0.
  */
 export function setFlechaQuantidadeInAljava(
   aljava: Aljava,
   contentSlug: string,
   quantidade: number,
 ): Aljava {
-  const clamped = Math.max(0, Math.min(aljava.capacidade, Math.trunc(quantidade)));
-  const newStacks = aljava.stacks
-    .map((s) => (s.contentSlug === contentSlug ? { ...s, quantidade: clamped } : s))
-    .filter((s) => s.quantidade > 0);
-  return { ...aljava, stacks: newStacks };
+  const outrasStacks = aljava.stacks.filter((s) => s.contentSlug !== contentSlug);
+  const totalOutras = outrasStacks.reduce((sum, s) => sum + s.quantidade, 0);
+  const maxParaEsta = Math.max(0, aljava.capacidade - totalOutras);
+  const clamped = Math.max(0, Math.min(maxParaEsta, Math.trunc(quantidade)));
+  if (clamped === 0) return { ...aljava, stacks: outrasStacks };
+  const stackAtual = aljava.stacks.find((s) => s.contentSlug === contentSlug);
+  return {
+    ...aljava,
+    stacks: stackAtual
+      ? aljava.stacks.map((s) => (s.contentSlug === contentSlug ? { ...s, quantidade: clamped } : s))
+      : [...outrasStacks, { contentSlug, nome: contentSlug, quantidade: clamped }],
+  };
+}
+
+export interface StoreFletchasResult {
+  character: Character;
+  /** Flechas efetivamente guardadas na aljava. */
+  moved: number;
+  /** Flechas que não couberam (aljava cheia). */
+  excedente: number;
+}
+
+/**
+ * Move flechas de um item de munição do inventário para a aljava de um
+ * arco. Respeita a capacidade da aljava — o excedente permanece no
+ * inventário. Remove o item de munição se ele zerar.
+ */
+export function storeFletchasInAljava(
+  character: Character,
+  weaponInstanceId: string,
+  ammoInstanceId: string,
+  contentSlug: string,
+  nome: string,
+  quantidade: number,
+): StoreFletchasResult {
+  const inventario = character.inventario ?? [];
+  const weaponInst = inventario.find((i) => i.id === weaponInstanceId) as
+    | (InventoryItemInstance & Partial<WeaponAmmoInstanceFields>)
+    | undefined;
+  const ammoInst = inventario.find((i) => i.id === ammoInstanceId);
+  if (!weaponInst || !ammoInst) return { character, moved: 0, excedente: quantidade };
+
+  const aljava = weaponInst.aljava ?? createDefaultAljava();
+  const disponivel = Math.min(quantidade, ammoInst.quantidade);
+  if (disponivel <= 0) return { character, moved: 0, excedente: 0 };
+
+  const { aljava: novaAljava, excedente } = addFletchasToAljava(aljava, contentSlug, nome, disponivel);
+  const moved = disponivel - excedente;
+  if (moved <= 0) return { character, moved: 0, excedente: disponivel };
+
+  const novaQtdAmmo = ammoInst.quantidade - moved;
+  const nextInventario = inventario
+    .filter((i) => i.id !== ammoInstanceId || novaQtdAmmo > 0)
+    .map((i) => {
+      if (i.id === weaponInstanceId) return { ...i, aljava: novaAljava };
+      if (i.id === ammoInstanceId && novaQtdAmmo > 0) return { ...i, quantidade: novaQtdAmmo };
+      return i;
+    });
+
+  return { character: { ...character, inventario: nextInventario }, moved, excedente };
+}
+
+export interface WithdrawFletchasResult {
+  character: Character;
+  /** Flechas efetivamente retiradas da aljava e devolvidas ao inventário. */
+  withdrawn: number;
+}
+
+/**
+ * Retira flechas da aljava de um arco e devolve ao inventário.
+ * Se já houver item do mesmo tipo no inventário, incrementa a quantidade.
+ * Caso contrário, cria nova instância com precoPago: 0 (sem valor de venda).
+ */
+export function withdrawFletchasFromAljava(
+  character: Character,
+  weaponInstanceId: string,
+  contentSlug: string,
+  quantidade: number,
+  nomeFlexa: string,
+  nowIso: string,
+): WithdrawFletchasResult {
+  const inventario = character.inventario ?? [];
+  const weaponInst = inventario.find((i) => i.id === weaponInstanceId) as
+    | (InventoryItemInstance & Partial<WeaponAmmoInstanceFields>)
+    | undefined;
+  if (!weaponInst?.aljava) return { character, withdrawn: 0 };
+
+  const stack = weaponInst.aljava.stacks.find((s) => s.contentSlug === contentSlug);
+  if (!stack || stack.quantidade <= 0) return { character, withdrawn: 0 };
+
+  const retiradas = Math.max(0, Math.min(quantidade, stack.quantidade));
+  if (retiradas === 0) return { character, withdrawn: 0 };
+
+  const novaAljava = setFlechaQuantidadeInAljava(weaponInst.aljava, contentSlug, stack.quantidade - retiradas);
+  const existingAmmo = inventario.find((i) => i.itemSlug === contentSlug && i.id !== weaponInstanceId);
+
+  let nextInventario: InventoryItemInstance[];
+  if (existingAmmo) {
+    nextInventario = inventario.map((i) => {
+      if (i.id === weaponInstanceId) return { ...i, aljava: novaAljava };
+      if (i.id === existingAmmo.id) return { ...i, quantidade: i.quantidade + retiradas };
+      return i;
+    });
+  } else {
+    const novaInst: InventoryItemInstance = {
+      id: crypto.randomUUID(),
+      itemSlug: contentSlug,
+      itemNome: nomeFlexa,
+      categoria: "municao",
+      subtipo: "municao",
+      quantidade: retiradas,
+      estado: "mochila",
+      adquiridoEm: nowIso,
+      precoPago: 0,
+      propriedadesTecnicas: [],
+      estadosTecnicos: [],
+    };
+    nextInventario = [
+      ...inventario.map((i) => (i.id === weaponInstanceId ? { ...i, aljava: novaAljava } : i)),
+      novaInst,
+    ];
+  }
+
+  return { character: { ...character, inventario: nextInventario }, withdrawn: retiradas };
 }
 
 /**
