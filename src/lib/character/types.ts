@@ -77,6 +77,55 @@ export interface CharacterGameState {
   [key: string]: unknown;
 }
 
+export type TechnicalItemSourceType = "rune" | "property" | "manual";
+
+/**
+ * Propriedade textual/rastreável de uma instância de item. Ela descreve
+ * capacidade ou observação técnica; não é um ActiveEffect e não altera
+ * rolagens, dano, defesa ou recursos por conta própria.
+ */
+export interface TechnicalItemPropertyInstance {
+  id: string;
+  sourceType: TechnicalItemSourceType;
+  sourceContentId: string;
+  /** Identificador da instalação concreta quando a fonte também é uma instância (ex.: runa instalada). */
+  sourceInstanceId?: string;
+  sourceLabel?: string;
+  key: string;
+  label: string;
+  value?: string | number | boolean | null;
+  description?: string;
+  mechanicalEffectAutomated?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  /** Campos futuros/desconhecidos sobrevivem ao normalize/save. */
+  [key: string]: unknown;
+}
+
+/**
+ * Estado mutável e puramente informativo de uma instância de item.
+ * `active` pode ser alternado manualmente; qualquer custo exibido é
+ * apenas metadado e nunca é consumido por este modelo.
+ */
+export interface TechnicalItemState {
+  id: string;
+  sourceType: TechnicalItemSourceType;
+  sourceContentId: string;
+  sourceInstanceId?: string;
+  sourceLabel?: string;
+  key: string;
+  label: string;
+  active: boolean;
+  activeLabel?: string;
+  inactiveLabel?: string;
+  activationHint?: string;
+  actionPointCost?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  /** Campos futuros/desconhecidos sobrevivem ao normalize/save. */
+  [key: string]: unknown;
+}
+
 /**
  * Condição ativa (ou já removida, se `ativa: false`) registrada no
  * personagem — checkpoint v0.32. Ainda sem automação de modificadores:
@@ -355,6 +404,12 @@ export interface Character {
       installedAt: string;
       notas?: string;
     }[];
+    /**
+     * Propriedades/estados técnicos pertencem à INSTÂNCIA. Ausência em
+     * payload legado normaliza para arrays vazios; não geram ActiveEffect.
+     */
+    propriedadesTecnicas?: TechnicalItemPropertyInstance[];
+    estadosTecnicos?: TechnicalItemState[];
   }[];
   /**
    * Magias aprendidas individualmente (checkpoint v0.50.1/v0.50.2) —

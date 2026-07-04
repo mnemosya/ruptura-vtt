@@ -28,7 +28,12 @@
  * validação completa — nunca inventam limite quando o dado existe.
  */
 
-import type { Character } from "./types";
+import type {
+  Character,
+  TechnicalItemPropertyInstance,
+  TechnicalItemSourceType,
+  TechnicalItemState,
+} from "./types";
 import type { TechnicalContentItem } from "../content";
 
 // ---------------------------------------------------------------------
@@ -126,6 +131,161 @@ export interface InventoryItemInstance {
   precoPago?: number;
   /** Runas instaladas nesta instância (checkpoint v0.56) — ausente = nenhuma ainda. */
   runasInstaladas?: InstalledRune[];
+  /** Camada textual/rastreável da instância; nunca gera ActiveEffect por si só. */
+  propriedadesTecnicas?: TechnicalItemPropertyInstance[];
+  /** Estado manual da instância; qualquer custo guardado é apenas informativo. */
+  estadosTecnicos?: TechnicalItemState[];
+}
+
+const TECHNICAL_ITEM_SOURCE_TYPES: readonly TechnicalItemSourceType[] = ["rune", "property", "manual"];
+
+function normalizeTechnicalProperty(value: unknown): TechnicalItemPropertyInstance | null {
+  const raw = asRecord(value);
+  if (!raw) return null;
+  if (
+    typeof raw.id !== "string" ||
+    !TECHNICAL_ITEM_SOURCE_TYPES.includes(raw.sourceType as TechnicalItemSourceType) ||
+    typeof raw.sourceContentId !== "string" ||
+    typeof raw.key !== "string" ||
+    typeof raw.label !== "string"
+  ) {
+    return null;
+  }
+  return {
+    ...raw,
+    id: raw.id,
+    sourceType: raw.sourceType as TechnicalItemSourceType,
+    sourceContentId: raw.sourceContentId,
+    sourceInstanceId: typeof raw.sourceInstanceId === "string" ? raw.sourceInstanceId : undefined,
+    sourceLabel: typeof raw.sourceLabel === "string" ? raw.sourceLabel : undefined,
+    key: raw.key,
+    label: raw.label,
+    value:
+      raw.value === null || ["string", "number", "boolean"].includes(typeof raw.value)
+        ? (raw.value as string | number | boolean | null)
+        : undefined,
+    description: typeof raw.description === "string" ? raw.description : undefined,
+    mechanicalEffectAutomated: raw.mechanicalEffectAutomated === true,
+    createdAt: typeof raw.createdAt === "string" ? raw.createdAt : undefined,
+    updatedAt: typeof raw.updatedAt === "string" ? raw.updatedAt : undefined,
+  };
+}
+
+function normalizeTechnicalState(value: unknown): TechnicalItemState | null {
+  const raw = asRecord(value);
+  if (!raw) return null;
+  if (
+    typeof raw.id !== "string" ||
+    !TECHNICAL_ITEM_SOURCE_TYPES.includes(raw.sourceType as TechnicalItemSourceType) ||
+    typeof raw.sourceContentId !== "string" ||
+    typeof raw.key !== "string" ||
+    typeof raw.label !== "string" ||
+    typeof raw.active !== "boolean"
+  ) {
+    return null;
+  }
+  return {
+    ...raw,
+    id: raw.id,
+    sourceType: raw.sourceType as TechnicalItemSourceType,
+    sourceContentId: raw.sourceContentId,
+    sourceInstanceId: typeof raw.sourceInstanceId === "string" ? raw.sourceInstanceId : undefined,
+    sourceLabel: typeof raw.sourceLabel === "string" ? raw.sourceLabel : undefined,
+    key: raw.key,
+    label: raw.label,
+    active: raw.active,
+    activeLabel: typeof raw.activeLabel === "string" ? raw.activeLabel : undefined,
+    inactiveLabel: typeof raw.inactiveLabel === "string" ? raw.inactiveLabel : undefined,
+    activationHint: typeof raw.activationHint === "string" ? raw.activationHint : undefined,
+    actionPointCost:
+      typeof raw.actionPointCost === "number" && Number.isFinite(raw.actionPointCost)
+        ? raw.actionPointCost
+        : undefined,
+    createdAt: typeof raw.createdAt === "string" ? raw.createdAt : undefined,
+    updatedAt: typeof raw.updatedAt === "string" ? raw.updatedAt : undefined,
+  };
+}
+
+/**
+ * Normaliza apenas a camada técnica de uma instância. Payload legado,
+ * ausente ou malformado vira arrays vazios/filtrados; campos desconhecidos
+ * dentro de entradas válidas são preservados pelo spread.
+ */
+export function normalizeItemTechnicalState(rawItem: unknown): {
+  propriedadesTecnicas: TechnicalItemPropertyInstance[];
+  estadosTecnicos: TechnicalItemState[];
+} {
+  const raw = asRecord(rawItem);
+  const propriedadesTecnicas = Array.isArray(raw?.propriedadesTecnicas)
+    ? raw.propriedadesTecnicas.map(normalizeTechnicalProperty).filter((item): item is TechnicalItemPropertyInstance => item !== null)
+    : [];
+  const estadosTecnicos = Array.isArray(raw?.estadosTecnicos)
+    ? raw.estadosTecnicos.map(normalizeTechnicalState).filter((item): item is TechnicalItemState => item !== null)
+    : [];
+  return { propriedadesTecnicas, estadosTecnicos };
+}
+
+/**
+ * Combina propriedades persistidas e derivadas sem repetir a mesma
+ * chave da mesma fonte de conteúdo. A primeira ocorrência é preservada.
+ */
+export function deriveItemTechnicalProperties(
+  instance: Pick<InventoryItemInstance, "propriedadesTecnicas">,
+  derived: TechnicalItemPropertyInstance[] = [],
+): TechnicalItemPropertyInstance[] {
+  const all = [...normalizeItemTechnicalState(instance).propriedadesTecnicas, ...derived];
+  const seen = new Set<string>();
+  return all.filter((property) => {
+    const identity = `${property.sourceType}:${property.sourceContentId}:${property.key}`;
+    if (seen.has(identity)) return false;
+    seen.add(identity);
+    return true;
+  });
+}
+
+/** Alterna somente um estado técnico já existente; nunca consome PA ou gera log/efeito. */
+export function setItemTechnicalState(
+  character: Character,
+  instanceId: string,
+  stateId: string,
+  active: boolean,
+  updatedAt?: string,
+): Character {
+  const inventario = character.inventario ?? [];
+  let changed = false;
+  const next = inventario.map((item) => {
+    if (item.id !== instanceId) return item;
+    const technical = normalizeItemTechnicalState(item);
+    const estadosTecnicos = technical.estadosTecnicos.map((state) => {
+      if (state.id !== stateId || state.active === active) return state;
+      changed = true;
+      return { ...state, active, updatedAt: updatedAt ?? state.updatedAt };
+    });
+    return changed ? { ...item, estadosTecnicos } : item;
+  });
+  return changed ? { ...character, inventario: next } : character;
+}
+
+/** Remove propriedades derivadas de uma fonte sem tocar no restante do item. */
+export function removeItemTechnicalPropertyBySource(
+  character: Character,
+  instanceId: string,
+  sourceType: TechnicalItemSourceType,
+  sourceContentId: string,
+): Character {
+  const inventario = character.inventario ?? [];
+  let changed = false;
+  const next = inventario.map((item) => {
+    if (item.id !== instanceId) return item;
+    const technical = normalizeItemTechnicalState(item);
+    const propriedadesTecnicas = technical.propriedadesTecnicas.filter(
+      (property) => property.sourceType !== sourceType || property.sourceContentId !== sourceContentId,
+    );
+    if (propriedadesTecnicas.length === technical.propriedadesTecnicas.length) return item;
+    changed = true;
+    return { ...item, propriedadesTecnicas };
+  });
+  return changed ? { ...character, inventario: next } : character;
 }
 
 export function setItemLoadoutState(character: Character, instanceId: string, estado: ItemLoadoutState): Character {
@@ -208,6 +368,8 @@ export function purchaseItem(params: {
     estado: "mochila",
     adquiridoEm: nowIso,
     precoPago: totalCost,
+    propriedadesTecnicas: [],
+    estadosTecnicos: [],
   };
 
   const nextCharacter: Character = {

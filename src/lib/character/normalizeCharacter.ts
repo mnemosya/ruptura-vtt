@@ -1,4 +1,5 @@
 import { computeDerivedStats } from "./derived";
+import { normalizeItemTechnicalState } from "./inventory";
 import type {
   ActiveCondition,
   Character,
@@ -190,7 +191,9 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     cdi_craqueada: typeof carteiraRaw.cdi_craqueada === "number" ? carteiraRaw.cdi_craqueada : 0,
   };
   const inventario: Character["inventario"] = Array.isArray(raw.inventario)
-    ? (raw.inventario as Character["inventario"])
+    ? raw.inventario
+        .filter(isPlainObject)
+        .map((item) => ({ ...item, ...normalizeItemTechnicalState(item) })) as Character["inventario"]
     : [];
 
   // magias_aprendidas (checkpoint v0.50.1): mesmo critério — ausência vira [], nunca undefined.

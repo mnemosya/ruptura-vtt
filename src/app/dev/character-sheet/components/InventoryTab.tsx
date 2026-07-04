@@ -8,6 +8,7 @@ import {
   ITEM_LOADOUT_STATES,
   getRuneCompatibility,
   countInstalledRunes,
+  deriveItemTechnicalProperties,
   type ItemContent,
   type InventoryItemInstance,
   type Wallet,
@@ -184,6 +185,8 @@ export function InventoryTab({
             const compatibilidade = runaEscolhidaContent
               ? getRuneCompatibility({ categoria: instance.categoria, subtipo: instance.subtipo }, runaEscolhidaContent)
               : null;
+            const propriedadesTecnicas = deriveItemTechnicalProperties(instance);
+            const estadosTecnicos = instance.estadosTecnicos ?? [];
             return (
               <div key={instance.id} data-testid={`inventario-item-${instance.id}`} style={{ background: "#1d1e24", borderRadius: 8, padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6, fontSize: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -207,6 +210,42 @@ export function InventoryTab({
                     Remover
                   </button>
                 </div>
+
+                {(propriedadesTecnicas.length > 0 || estadosTecnicos.length > 0) && (
+                  <div
+                    data-testid={`inventario-propriedades-tecnicas-${instance.id}`}
+                    style={{ borderTop: "1px solid #2a2b33", paddingTop: 6, marginTop: 2 }}
+                  >
+                    <p style={{ fontSize: 11, opacity: 0.7, margin: "0 0 4px" }}>Propriedades técnicas</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      {propriedadesTecnicas.map((property) => (
+                        <div key={property.id} style={{ display: "flex", gap: 6, alignItems: "baseline", flexWrap: "wrap" }}>
+                          <strong>{property.label}</strong>
+                          {property.value != null && property.value !== true && (
+                            <span style={{ opacity: 0.7 }}>{String(property.value)}</span>
+                          )}
+                          <span style={{ fontSize: 10, opacity: 0.55 }}>
+                            Origem: {property.sourceLabel ?? property.sourceContentId}
+                          </span>
+                          {property.mechanicalEffectAutomated !== true && (
+                            <span style={{ fontSize: 10, color: "#f5a623" }}>sem efeito mecânico automatizado</span>
+                          )}
+                          {property.description && <span style={{ fontSize: 10, opacity: 0.6 }}>{property.description}</span>}
+                        </div>
+                      ))}
+                      {estadosTecnicos.map((state) => (
+                        <div key={state.id} style={{ display: "flex", gap: 6, alignItems: "baseline", flexWrap: "wrap" }}>
+                          <strong>{state.label}</strong>
+                          <span>{state.active ? (state.activeLabel ?? "Ativo") : (state.inactiveLabel ?? "Inativo")}</span>
+                          <span style={{ fontSize: 10, opacity: 0.55 }}>
+                            Origem: {state.sourceLabel ?? state.sourceContentId}
+                          </span>
+                          <span style={{ fontSize: 10, color: "#f5a623" }}>sem efeito mecânico automatizado</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Runas instaladas (checkpoint v0.56) — referência passiva, sem efeito mecânico. */}
                 <div style={{ borderTop: "1px solid #2a2b33", paddingTop: 6, marginTop: 2 }}>

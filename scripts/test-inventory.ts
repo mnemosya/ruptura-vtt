@@ -18,6 +18,11 @@ import {
   countInstalledRunes,
   installRuneOnItem,
   removeRuneFromItem,
+  deriveItemTechnicalProperties,
+  normalizeItemTechnicalState,
+  removeItemTechnicalPropertyBySource,
+  setItemTechnicalState,
+  deriveInstalledRuneEffects,
   type ItemContent,
 } from "../src/lib/character";
 import { normalizeTechnicalContentItem, type TechnicalContentItem } from "../src/lib/content";
@@ -125,7 +130,9 @@ const personagemAntigo = normalizeCharacter({
 });
 assert.equal(personagemAntigo.inventario?.length, 1, "Item antigo sem subtipo/runasInstaladas deve continuar carregando.");
 assert.equal(countInstalledRunes(personagemAntigo.inventario![0]), 0, "Instância antiga sem runasInstaladas conta 0, nunca undefined/erro.");
-console.log("7. Personagem/inventário antigo (sem subtipo/runasInstaladas) normaliza sem erro — OK");
+assert.deepEqual(personagemAntigo.inventario![0].propriedadesTecnicas, []);
+assert.deepEqual(personagemAntigo.inventario![0].estadosTecnicos, []);
+console.log("7. Personagem/inventário antigo normaliza propriedades/estados técnicos para arrays vazios — OK");
 
 // -------------------------------------------------------------
 // 7b. Inventário ausente inteiramente também normaliza para [].
@@ -133,6 +140,85 @@ console.log("7. Personagem/inventário antigo (sem subtipo/runasInstaladas) norm
 const semInventario = normalizeCharacter({ nome: "X", atributos: { corpo: 1, mente: 1, animo: 1 }, pericias: {} });
 assert.deepEqual(semInventario.inventario, []);
 console.log("7b. Ausência total de inventário normaliza para [] — OK");
+
+// -------------------------------------------------------------
+// 7c. Camada técnica normaliza defensivamente e preserva campos futuros.
+// -------------------------------------------------------------
+const personagemComTecnica = normalizeCharacter({
+  nome: "Técnico",
+  atributos: { corpo: 1, mente: 1, animo: 1 },
+  pericias: {},
+  inventario: [{
+    id: "tech-1",
+    itemSlug: "faca",
+    itemNome: "Faca",
+    categoria: "arma",
+    quantidade: 1,
+    estado: "mochila",
+    adquiridoEm: "2026-01-01T00:00:00.000Z",
+    campoFuturoDoItem: "preservado",
+    propriedadesTecnicas: [
+      {
+        id: "prop-1",
+        sourceType: "manual",
+        sourceContentId: "manual",
+        key: "inspecionado",
+        label: "Inspecionado",
+        value: true,
+        campoFuturo: "preservado",
+      },
+      null,
+      "inválido",
+      { id: 42 },
+    ],
+    estadosTecnicos: [
+      {
+        id: "state-1",
+        sourceType: "manual",
+        sourceContentId: "manual",
+        key: "ativo",
+        label: "Estado técnico",
+        active: false,
+      },
+      { id: "state-broken", sourceType: "manual" },
+    ],
+  }],
+});
+const itemTecnico = personagemComTecnica.inventario![0];
+assert.equal(itemTecnico.propriedadesTecnicas?.length, 1);
+assert.equal(itemTecnico.estadosTecnicos?.length, 1);
+assert.equal(itemTecnico.propriedadesTecnicas![0].campoFuturo, "preservado");
+assert.equal((itemTecnico as unknown as Record<string, unknown>).campoFuturoDoItem, "preservado");
+assert.deepEqual(normalizeItemTechnicalState({ propriedadesTecnicas: "quebrado", estadosTecnicos: 42 }), {
+  propriedadesTecnicas: [],
+  estadosTecnicos: [],
+});
+assert.equal(deriveItemTechnicalProperties(itemTecnico).length, 1);
+console.log("7c. Payload técnico malformado é filtrado e campos desconhecidos são preservados — OK");
+
+// -------------------------------------------------------------
+// 7d. Estado técnico alterna sem recurso/efeito; remoção por fonte é reversível.
+// -------------------------------------------------------------
+const paAntes = personagemComTecnica.estado_jogo?.pa_gastos;
+const comEstadoAtivo = setItemTechnicalState(
+  personagemComTecnica,
+  "tech-1",
+  "state-1",
+  true,
+  "2026-07-04T10:00:00.000Z",
+);
+assert.equal(comEstadoAtivo.inventario![0].estadosTecnicos![0].active, true);
+assert.equal(comEstadoAtivo.inventario![0].estadosTecnicos![0].updatedAt, "2026-07-04T10:00:00.000Z");
+assert.equal(comEstadoAtivo.estado_jogo?.pa_gastos, paAntes, "Toggle técnico nunca consome PA.");
+const semPropriedadeManual = removeItemTechnicalPropertyBySource(comEstadoAtivo, "tech-1", "manual", "manual");
+assert.deepEqual(semPropriedadeManual.inventario![0].propriedadesTecnicas, []);
+assert.equal(semPropriedadeManual.inventario![0].estadosTecnicos?.length, 1, "Remover propriedade não apaga estado.");
+assert.deepEqual(
+  deriveInstalledRuneEffects(personagemComTecnica, runas),
+  [],
+  "Propriedade/estado técnico nunca vira ActiveEffect por conta própria.",
+);
+console.log("7d. Toggle técnico e remoção por fonte são puros, reversíveis e não consomem PA — OK");
 
 // -------------------------------------------------------------
 // 8. Compatibilidade respeita a fonte quando é clara (categoria + subtipo).
