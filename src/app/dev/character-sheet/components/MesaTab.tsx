@@ -2,9 +2,12 @@
 
 /**
  * Aba "Mesa" da ficha — chat mínimo + log persistente da mesa
- * selecionada (table_logs), sem realtime (só atualização manual via
- * botão). Não substitui o Log local (aba "Log"), que continua sendo o
- * histórico volátil desta sessão de ficha.
+ * selecionada (table_logs). Atualiza automaticamente via Supabase
+ * Realtime (checkpoint v0.46, `useTableLogsRealtime`) quando a mesa
+ * ganha um novo log; o botão "Atualizar logs" continua funcionando
+ * como refetch manual (útil se Realtime estiver indisponível). Não
+ * substitui o Log local (aba "Log"), que continua sendo o histórico
+ * volátil desta sessão de ficha.
  *
  * Segue o padrão do RollsTab: é um Client Component com estado próprio
  * (logs/filtro/input) que chama Server Actions diretamente
@@ -466,6 +469,9 @@ export function MesaTab({
   const [filtro, setFiltro] = useState<VisibilityFilter>("todos");
   const [mensagemInput, setMensagemInput] = useState("");
   const [visibilidade, setVisibilidade] = useState<TableLogVisibility>("public");
+  // Só exibição ("Última atualização: HH:mm:ss") — nunca refeita a
+  // partir do servidor, não interfere no filtro nem nos logs em si.
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
 
   async function refreshLogs() {
     if (!campaignId) return;
@@ -476,6 +482,7 @@ export function MesaTab({
       // jogador vê public + private do próprio perfil, nunca gm; narrador
       // dono vê tudo. Não é mais só filtro visual.
       setLogs(await listLogsForViewer(campaignId, { profileId }));
+      setLastUpdatedAt(new Date());
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao carregar logs da mesa.");
     } finally {
@@ -484,8 +491,10 @@ export function MesaTab({
   }
 
   // Carrega os logs ao abrir a aba com uma mesa selecionada, e recarrega
-  // se a mesa mudar. Sem realtime — atualizações posteriores são manuais
-  // (botão "Atualizar logs") ou automáticas só uma vez após enviar.
+  // se a mesa mudar. `filtro` nunca é resetado aqui — só `logs` muda;
+  // atualizações automáticas (Realtime, abaixo) e manuais (botão
+  // "Atualizar logs") reusam este mesmo refetch, sempre substituindo a
+  // lista inteira (nunca duplica: é sempre a leitura canônica do servidor).
   useEffect(() => {
     if (!campaignId) {
       setLogs([]);
@@ -621,6 +630,10 @@ export function MesaTab({
         </button>
         <span data-testid="ficha-mesa-sync-status" style={{ fontSize: 11, color: describeRealtimeStatus(syncStatus, "ficha").cor }}>
           ● {describeRealtimeStatus(syncStatus, "ficha").texto}
+        </span>
+        <span data-testid="mesa-auto-update-status" style={{ fontSize: 11, opacity: 0.55 }}>
+          {syncStatus === "subscribed" ? "Atualização automática ligada" : "Atualização automática indisponível — use o botão"}
+          {lastUpdatedAt && ` · Última atualização: ${lastUpdatedAt.toLocaleTimeString("pt-BR")}`}
         </span>
       </div>
       <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>

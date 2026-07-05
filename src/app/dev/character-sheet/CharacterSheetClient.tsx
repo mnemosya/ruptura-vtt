@@ -162,6 +162,18 @@ import { buttonStyle } from "./components/styles";
 const LOG_MAX = 50;
 const ACTION_DOUBLE_CLICK_GUARD_MS = 500;
 
+/**
+ * Texto/cor do indicador discreto de sincronização de DADOS do
+ * personagem (checkpoint v0.62) — distinto do status do canal
+ * Realtime (`describeRealtimeStatus`, que fala da conexão em si).
+ */
+const CHARACTER_DATA_SYNC_LABEL: Record<"synced" | "updating" | "pending_remote" | "error", { texto: string; cor: string }> = {
+  synced: { texto: "Sincronizado", cor: "#4caf50" },
+  updating: { texto: "Atualizando…", cor: "#f5a623" },
+  pending_remote: { texto: "Mudança disponível no servidor", cor: "#f5a623" },
+  error: { texto: "Erro ao atualizar", cor: "#ff6b6b" },
+};
+
 const RECURSO_LABELS: Record<keyof CharacterResources, string> = {
   pv: "PV",
   pe: "PE",
@@ -280,6 +292,23 @@ export default function CharacterSheetClient({
   const [character, setCharacter] = useState<Character>(() => createInitialCharacter(regras));
   const characterRef = useRef(character);
   characterRef.current = character;
+  // Último payload conhecido como "igual ao banco" — atualizado sempre
+  // que `character` vem de uma leitura/gravação canônica (handleLoad,
+  // handleSave, loadProductSession, refetch por Realtime aceito). Serve
+  // só para detectar edição local pendente (checkpoint v0.62): se
+  // `character` divergir disto quando a mesa mudar o personagem no
+  // servidor, a ficha NUNCA sobrescreve silenciosamente — em vez disso
+  // oferece a escolha via `pendingRemoteCharacter` (ver
+  // refetchCharacterFromRealtime abaixo).
+  const lastSyncedCharacterRef = useRef(character);
+  // Versão do personagem vinda do servidor via Realtime enquanto havia
+  // edição local pendente — não nulo só quando a ficha está esperando o
+  // usuário decidir entre "Recarregar do servidor" e "Manter minha versão".
+  const [pendingRemoteCharacter, setPendingRemoteCharacter] = useState<Character | null>(null);
+  // Estado do ciclo de sincronização automática do PERSONAGEM (distinto
+  // do status do canal Realtime em si, `characterSyncStatus` abaixo) —
+  // só para o indicador discreto da UI.
+  const [characterDataSyncState, setCharacterDataSyncState] = useState<"synced" | "updating" | "pending_remote" | "error">("synced");
   const [characterId, setCharacterId] = useState<string | null>(null);
   const [personagens, setPersonagens] = useState<CharacterRecord[]>(personagensIniciais);
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -474,7 +503,9 @@ export default function CharacterSheetClient({
         setProductSessionState("no_character");
         return;
       }
-      setCharacter(normalizeCharacter(result.character.payload));
+      const loaded = normalizeCharacter(result.character.payload);
+      lastSyncedCharacterRef.current = loaded;
+      setCharacter(loaded);
       setCharacterId(result.character.id);
       setProductSessionState("valid");
     } catch (err) {
@@ -740,6 +771,7 @@ export default function CharacterSheetClient({
           : characterId
             ? await updateCharacter(characterId, toSave)
             : await createCharacter(toSave);
+      lastSyncedCharacterRef.current = record.payload;
       setCharacter(record.payload);
       setCharacterId(record.id);
       setSaveState("saved");
@@ -764,8 +796,12 @@ export default function CharacterSheetClient({
       // (personagens salvos antes do schema_version, por exemplo).
       // migrateEmbeddedAljavas garante que aljava embutida em arcos seja
       // convertida para instância compartilhada (idempotente).
-      setCharacter(migrateEmbeddedAljavas(normalizeCharacter(record.payload)));
+      const loaded = migrateEmbeddedAljavas(normalizeCharacter(record.payload));
+      lastSyncedCharacterRef.current = loaded;
+      setCharacter(loaded);
       setCharacterId(record.id);
+      setPendingRemoteCharacter(null);
+      setCharacterDataSyncState("synced");
     } catch (err) {
       setSaveState("error");
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao carregar.");
@@ -781,18 +817,58 @@ export default function CharacterSheetClient({
    * este refetch é só o que traz isso para a ficha sem reload manual.
    * Não decide regra nenhuma; não roda se não houver personagem
    * carregado ainda (`characterId` nulo).
+   *
+   * Checkpoint v0.62 — nunca sobrescreve edição local pendente em
+   * silêncio: se `character` já divergiu de `lastSyncedCharacterRef`
+   * (o jogador mexeu em algo antes de salvar), a versão do servidor
+   * fica em `pendingRemoteCharacter` e a UI oferece a escolha
+   * ("Recarregar do servidor" / "Manter minha versão") em vez de
+   * aplicar direto.
    */
   async function refetchCharacterFromRealtime() {
     if (!characterId) return;
+    setCharacterDataSyncState("updating");
     try {
       const record = await getCharacter(characterId);
-      if (!record) return;
+      if (!record) {
+        setCharacterDataSyncState("synced");
+        return;
+      }
       const next = normalizeCharacter(record.payload);
+      const temEdicaoLocalPendente = JSON.stringify(characterRef.current) !== JSON.stringify(lastSyncedCharacterRef.current);
+      if (temEdicaoLocalPendente) {
+        setPendingRemoteCharacter(next);
+        setCharacterDataSyncState("pending_remote");
+        return;
+      }
       characterRef.current = next;
+      lastSyncedCharacterRef.current = next;
       setCharacter(next);
+      setCharacterDataSyncState("synced");
     } catch {
       // Best-effort — Realtime é só conveniência; reload manual continua funcionando.
+      setCharacterDataSyncState("error");
     }
+  }
+
+  /** Jogador escolheu "Recarregar do servidor" — descarta a edição local pendente. */
+  function handleAcceptRemoteCharacter() {
+    if (!pendingRemoteCharacter) return;
+    characterRef.current = pendingRemoteCharacter;
+    lastSyncedCharacterRef.current = pendingRemoteCharacter;
+    setCharacter(pendingRemoteCharacter);
+    setPendingRemoteCharacter(null);
+    setCharacterDataSyncState("synced");
+  }
+
+  /**
+   * Jogador escolheu "Manter minha versão" — descarta o aviso; a edição
+   * local permanece até o jogador salvar (o que então sobrescreve o
+   * servidor com a versão local, de forma explícita e intencional).
+   */
+  function handleKeepLocalCharacter() {
+    setPendingRemoteCharacter(null);
+    setCharacterDataSyncState("synced");
   }
 
   // Checkpoint v0.46 — Realtime mínimo: assina o próprio `characterId`
@@ -2428,12 +2504,40 @@ export default function CharacterSheetClient({
           : 'Ficha. Edição é local até clicar em "Salvar personagem".'}
       </p>
       {characterId && (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
           <span data-testid="ficha-sync-status" style={{ fontSize: 11, color: describeRealtimeStatus(characterSyncStatus, "ficha").cor }}>
             ● {describeRealtimeStatus(characterSyncStatus, "ficha").texto}
           </span>
+          <span data-testid="ficha-data-sync-status" style={{ fontSize: 11, color: CHARACTER_DATA_SYNC_LABEL[characterDataSyncState].cor }}>
+            {CHARACTER_DATA_SYNC_LABEL[characterDataSyncState].texto}
+          </span>
           <button data-testid="ficha-recarregar" onClick={refetchCharacterFromRealtime} style={{ ...buttonStyle, padding: "3px 10px", fontSize: 11 }}>
-            Recarregar ficha
+            Atualizar agora
+          </button>
+        </div>
+      )}
+      {pendingRemoteCharacter && (
+        <div
+          data-testid="ficha-remoto-pendente-banner"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+            background: "#241d10",
+            border: "1px solid #f5a623",
+            borderRadius: 8,
+            padding: "10px 14px",
+            marginBottom: 16,
+            fontSize: 13,
+          }}
+        >
+          <span>⚠ Há uma versão mais recente no servidor. Recarregar estado?</span>
+          <button data-testid="ficha-remoto-recarregar" onClick={handleAcceptRemoteCharacter} style={{ ...buttonStyle, padding: "3px 10px", fontSize: 12 }}>
+            Recarregar do servidor
+          </button>
+          <button data-testid="ficha-remoto-manter-local" onClick={handleKeepLocalCharacter} style={{ ...buttonStyle, padding: "3px 10px", fontSize: 12, opacity: 0.8 }}>
+            Manter minha versão
           </button>
         </div>
       )}
