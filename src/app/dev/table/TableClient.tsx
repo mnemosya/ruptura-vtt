@@ -96,11 +96,56 @@ function formatProfileEvent(payload: Record<string, unknown>): string {
   return JSON.stringify(payload);
 }
 
+/** "postura_ofensiva" → "Postura Ofensiva" — só para exibir slugs de estado sem tabela nova. */
+function humanizeStateSlug(slug: string): string {
+  return slug
+    .split("_")
+    .map((w) => (w.length > 0 ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ");
+}
+
+/**
+ * Checkpoint v0.64 — mesmo formatador de `MesaTab.tsx` (duplicado aqui
+ * de propósito: `/dev/table` e a aba Mesa da ficha são duas árvores de
+ * componente distintas, sem import compartilhado hoje). Nunca cai em
+ * JSON cru: custo, condições/estados aplicados/removidos e lembretes.
+ */
+function formatActionUsed(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const actionName = typeof payload.actionName === "string" ? payload.actionName : "Ação";
+  const cost = payload.cost as Record<string, unknown> | undefined;
+  const custoLabel = typeof cost?.label === "string" ? cost.label : "—";
+  const removedConditions = Array.isArray(payload.removedConditions)
+    ? payload.removedConditions.filter((c): c is string => typeof c === "string")
+    : [];
+  const pendingEffects = Array.isArray(payload.pendingEffects)
+    ? payload.pendingEffects.filter((c): c is string => typeof c === "string")
+    : [];
+  const reminders = Array.isArray(payload.reminders) ? payload.reminders.filter((r): r is string => typeof r === "string") : [];
+  const appliedState = typeof payload.appliedState === "string" ? payload.appliedState : null;
+  const removedStates = Array.isArray(payload.removedStates) ? payload.removedStates.filter((s): s is string => typeof s === "string") : [];
+
+  const partes = [`custo ${custoLabel}`];
+  if (payload.defenseWithoutReaction === true) {
+    const penalty = typeof payload.reactionPenaltyApplied === "number" ? payload.reactionPenaltyApplied : null;
+    partes.push(`defesa sem Reação${penalty != null ? ` · penalidade ${penalty}` : ""}`);
+  } else if (payload.usedReaction === true) {
+    partes.push("usou 1 Reação");
+  }
+  if (removedConditions.length > 0) partes.push(`removeu ${removedConditions.join(", ")}`);
+  if (appliedState) partes.push(`ativou ${humanizeStateSlug(appliedState)}`);
+  if (removedStates.length > 0) partes.push(`desligou ${removedStates.map(humanizeStateSlug).join(", ")}`);
+  if (pendingEffects.length > 0) partes.push(`pendente: ${pendingEffects.join(", ")}`);
+  const base = `${characterNome}: ${actionName} (${partes.join(" · ")})`;
+  return reminders.length > 0 ? `${base} — Lembrete: ${reminders.join(" ")}` : base;
+}
+
 const ENTRY_KIND_LABELS: Record<string, string> = {
   chat: "Mensagem",
   rolagem_pericia: "Rolagem de Perícia",
   rolagem_expressao: "Rolagem de Expressão",
   profile_event: "Evento de Perfil",
+  action_used: "Ação Usada",
 };
 
 function entryKindLabel(type: string): string {
@@ -111,6 +156,7 @@ function entryIcon(type: string): string {
   if (type === "chat") return "💬";
   if (type === "rolagem_pericia" || type === "rolagem_expressao") return "🎲";
   if (type === "profile_event") return "🔑";
+  if (type === "action_used") return "⚔";
   return "•";
 }
 
@@ -1232,6 +1278,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                 const isChat = entry.type === "chat";
                 const isRolagem = entry.type === "rolagem_pericia" || entry.type === "rolagem_expressao";
                 const isProfileEvent = entry.type === "profile_event";
+                const isActionUsed = entry.type === "action_used";
                 // Chat aceita `text` (ficha, checkpoint v0.12) ou `mensagem` (formato antigo desta tela).
                 const chatTexto =
                   typeof entry.payload.text === "string"
@@ -1245,8 +1292,10 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                     ? formatRolagem(entry.payload)
                     : isProfileEvent
                       ? formatProfileEvent(entry.payload)
-                      : JSON.stringify(entry.payload);
-                const corBorda = isChat ? "#4f8cff" : isProfileEvent ? "#ff6b9f" : "#ffb84f";
+                      : isActionUsed
+                        ? formatActionUsed(entry.payload)
+                        : JSON.stringify(entry.payload);
+                const corBorda = isChat ? "#4f8cff" : isProfileEvent ? "#ff6b9f" : isActionUsed ? "#ff9f6b" : "#ffb84f";
 
                 return (
                   <div

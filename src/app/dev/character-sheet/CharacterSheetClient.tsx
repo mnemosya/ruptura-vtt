@@ -44,6 +44,7 @@ import {
   logPermanentAdjustment,
   buildActionConsoleItems,
   executeActionOnCharacter,
+  hasAplicarPosturaEffect,
   deriveReactionDefenseEffect,
   getReactionAvailability,
   spendReactionForDefense,
@@ -646,13 +647,36 @@ export default function CharacterSheetClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enteredProfile, profileSessionToken]);
 
+  // Posturas (checkpoint v0.64) como pseudo-"ConditionContent" — mesmo
+  // shape mínimo que `deriveActiveEffectsFromConditions` já espera
+  // (id/slug/nome/categoria/status/payload_automacao), montado a partir
+  // da própria ação de combate (nunca um catálogo hardcoded: qualquer
+  // ação publicada com efeito `aplicar_postura` entra aqui
+  // automaticamente). Isso é o que permite o +1/-1 de postura aparecer
+  // como chip real de modificador em RollsTab sem nenhuma infraestrutura
+  // paralela — reaproveita 100% o pipeline de condição já existente.
+  const postureConditionContents = useMemo(
+    () =>
+      combatActionsIniciais
+        .filter(hasAplicarPosturaEffect)
+        .map((a) => ({
+          id: a.id,
+          slug: a.slug,
+          nome: a.nome,
+          categoria: a.categoria,
+          status: a.status,
+          payload_automacao: a.payload_automacao,
+        })),
+    [combatActionsIniciais],
+  );
+
   // Efeitos ativos derivados das condições (checkpoint v0.33, agora
   // data-driven via payload_automacao — checkpoint v0.51) — função
   // pura, recalculada só quando condicoes_ativas ou o catálogo mudam.
   // Fonte única compartilhada entre ConditionsTab (lista) e RollsTab (chips).
   const activeEffects = useMemo(
     () => {
-      const conditionEffects = deriveActiveEffectsFromConditions(character, conditionContents);
+      const conditionEffects = deriveActiveEffectsFromConditions(character, [...conditionContents, ...postureConditionContents]);
       const talentEffects = deriveActiveEffectsFromTalents(character, talentsIniciais);
       const escalpoEffects = deriveInstalledTechnicalEffects(character, escalposIniciais);
       const runeEffects = deriveInstalledRuneEffects(character, runesIniciais);
@@ -660,7 +684,7 @@ export default function CharacterSheetClient({
       const base = [...conditionEffects, ...talentEffects, ...escalpoEffects, ...runeEffects];
       return reactionEffect ? [...base, reactionEffect] : base;
     },
-    [character, conditionContents, reactionRules, talentsIniciais, escalposIniciais, runesIniciais],
+    [character, conditionContents, postureConditionContents, reactionRules, talentsIniciais, escalposIniciais, runesIniciais],
   );
 
   // instanceIds de escalpos com pelo menos 1 ActiveEffect derivado (checkpoint v0.55, fase 2) —
@@ -2373,12 +2397,28 @@ export default function CharacterSheetClient({
           ? `Reação ${result.reactionBefore} → ${result.reactionAfter}`
           : "sem custo";
     const removidasResumo = result.removedConditions.length > 0 ? ` — removeu ${result.removedConditions.join(", ")}` : "";
+    const posturaResumo = result.postureChange
+      ? result.postureChange.direction === "ativar"
+        ? ` — ativou ${result.postureChange.conditionName}${result.postureChange.replacedConditionName ? ` (desligou ${result.postureChange.replacedConditionName})` : ""}`
+        : ` — encerrou ${result.postureChange.conditionName}`
+      : "";
     const pendenciasResumo =
       result.pendingEffects.length > 0 ? " Uso registrado; efeitos pendentes exigem resolução manual." : "";
-    addLogEntry("acao_combate", `${item.nome}: ${custoResumo}${removidasResumo}.${pendenciasResumo}`);
+    // item.nome já reflete "Encerrar X" quando a ação é uma postura já
+    // ativa (ver buildActionConsoleItems) — usar aqui em vez do nome
+    // bruto do conteúdo evita "Ativar Postura Ofensiva: ... — encerrou
+    // Postura Ofensiva" (confuso).
+    addLogEntry("acao_combate", `${item.nome}: ${custoResumo}${removidasResumo}${posturaResumo}.${pendenciasResumo}`);
+    for (const lembrete of result.reminders) {
+      addLogEntry("acao_combate", `Lembrete: ${lembrete}`);
+    }
 
     try {
       if (selectedCampaignId) {
+        // actionSlug distingue ativar/encerrar para posturas (mesma ação
+        // de conteúdo, direção diferente) — actionId/actionName
+        // continuam apontando pro conteúdo publicado em si.
+        const actionSlug = result.postureChange ? `${actionContent.slug}_${result.postureChange.direction}` : actionContent.slug;
         await addLog({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
@@ -2391,10 +2431,19 @@ export default function CharacterSheetClient({
             characterNome: currentCharacter.nome,
             profileId: selectedProfileId,
             actionId: actionContent.id,
-            actionName: actionContent.nome,
+            actionSlug,
+            actionName: item.nome,
             category: actionContent.categoria,
             actionType: actionContent.tipo,
             cost: { label: item.custoLabel, pa: item.custoPA, reacao: item.custoReacao },
+            reminders: result.reminders,
+            appliedState: result.postureChange?.direction === "ativar" ? result.postureChange.conditionSlug : undefined,
+            removedStates:
+              result.postureChange?.direction === "encerrar"
+                ? [result.postureChange.conditionSlug]
+                : result.postureChange?.replacedConditionSlug
+                  ? [result.postureChange.replacedConditionSlug]
+                  : undefined,
             paBefore: result.paBefore,
             paAfter: result.paAfter,
             reactionBefore: result.reactionBefore,

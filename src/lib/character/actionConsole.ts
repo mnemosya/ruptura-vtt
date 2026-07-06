@@ -394,11 +394,33 @@ export function canPayActionCost(
 // Efeitos automatizados (subconjunto simples deste checkpoint)
 // ---------------------------------------------------------------------
 
-const AUTOMATED_EFFECT_TYPES = ["remover_condicao", "remover_condicoes", "remover_restricao_movimento"] as const;
+const AUTOMATED_EFFECT_TYPES = [
+  "remover_condicao",
+  "remover_condicoes",
+  "remover_restricao_movimento",
+  // Checkpoint v0.64 — postura vira estado ativo real (ver aplicarOuEncerrarPostura).
+  "aplicar_postura",
+] as const;
 
 interface AutomacaoEfeito {
   tipo: string;
   [key: string]: unknown;
+}
+
+/** slug de condição para a postura (ex.: "ofensiva" → "postura_ofensiva"). */
+function posturaConditionSlug(postura: string): string {
+  return normalizeConditionSlug(`postura_${postura}`);
+}
+
+/** Verdadeiro se a ação tem um efeito `aplicar_postura` no payload — data-driven, nunca por slug fixo. */
+export function hasAplicarPosturaEffect(action: CombatActionContent): boolean {
+  return getPayloadEffects(action).some((e) => e.tipo === "aplicar_postura" && typeof e.postura === "string");
+}
+
+/** Slug da condição de postura desta ação, se ela tiver um efeito `aplicar_postura` (senão null). */
+export function getPosturaConditionSlug(action: CombatActionContent): string | null {
+  const efeito = getPayloadEffects(action).find((e) => e.tipo === "aplicar_postura" && typeof e.postura === "string");
+  return efeito ? posturaConditionSlug(String(efeito.postura)) : null;
 }
 
 function getPayloadEffects(action: CombatActionContent): AutomacaoEfeito[] {
@@ -425,7 +447,7 @@ const EFFECT_TYPE_LABELS: Record<string, string> = {
   remover_condicao: "Remove condição",
   remover_condicoes: "Remove condições",
   remover_restricao_movimento: "Remove restrição de movimento (Agarrado/Imobilizado)",
-  aplicar_postura: "Postura ainda não gera estado/modificador ativo (resolução manual)",
+  aplicar_postura: "Aplica/encerra postura como estado ativo (modificadores refletidos automaticamente nas rolagens)",
   habilitar_deslocamento_em_partes: "Deslocamento fracionável (não automatizado)",
   incrementar_custo_por_repeticao_no_turno: "Repetição no turno incrementa custo (não automatizado)",
   criar_abertura: "Cria abertura tática (não automatizado)",
@@ -449,6 +471,25 @@ const EFFECT_TYPE_LABELS: Record<string, string> = {
 
 function effectLabel(tipo: string): string {
   return EFFECT_TYPE_LABELS[tipo] ?? `${tipo} (não automatizado)`;
+}
+
+/**
+ * Rótulo de um efeito para exibição na UI/log — igual a `effectLabel`
+ * na maioria dos casos, mas com um texto específico para "modificador"
+ * quando a ação também tem `aplicar_postura` (nesse caso o modificador
+ * É automatizado, via postura virando estado ativo — o texto genérico
+ * "não automatizado" ficaria contraditório dentro do bloco "Automatizado:").
+ * Para "modificador" em qualquer OUTRA ação (sem postura), o texto
+ * genérico continua correto — não é uma regra geral para o tipo.
+ */
+function describeEffect(efeito: AutomacaoEfeito, isPosturaAction: boolean): string {
+  if (efeito.tipo === "modificador" && isPosturaAction) {
+    const valor = typeof efeito.valor === "number" ? efeito.valor : 0;
+    const tags = Array.isArray(efeito.alvo_tags) ? efeito.alvo_tags.filter((t): t is string => typeof t === "string") : [];
+    const sinal = valor >= 0 ? "+" : "";
+    return `${sinal}${valor} em ${tags.join(", ") || "?"} (aplicado automaticamente enquanto a postura estiver ativa)`;
+  }
+  return effectLabel(efeito.tipo);
 }
 
 // ---------------------------------------------------------------------
@@ -625,13 +666,30 @@ export function buildActionConsoleItems(
       const payloadEffects = getPayloadEffects(action);
       const contentIssues = [visibility.reason, consistencyIssue].filter((issue): issue is string => Boolean(issue));
 
+      // Postura (checkpoint v0.64): a ação em si tem UM slug de conteúdo,
+      // mas funciona como toggle — ativa se ainda não estiver ativa,
+      // encerra se já estiver. `posturaSlug` é derivado do payload
+      // (nunca hardcoded); `posturaJaAtiva` decide o rótulo exibido e é
+      // reaproveitado pelo cliente para montar o log (ver ExecuteActionResult.postureChange).
+      const posturaSlug = getPosturaConditionSlug(action);
+      const posturaJaAtiva = posturaSlug != null && activeConditionSlugs(activeConditions).has(posturaSlug);
+
       const automatedEffects: string[] = [];
       const pendingEffects: string[] = [];
       for (const efeito of payloadEffects) {
-        if ((AUTOMATED_EFFECT_TYPES as readonly string[]).includes(efeito.tipo)) {
-          automatedEffects.push(effectLabel(efeito.tipo));
+        // Os efeitos "modificador" de uma ação de postura viram
+        // modificador REAL de rolagem assim que a postura é um estado
+        // ativo (via deriveActiveEffectsFromConditions, ver relatório) —
+        // por isso contam como automatizados aqui também, mas só quando
+        // acompanham um efeito `aplicar_postura` na mesma ação (não é uma
+        // regra genérica para "modificador" em outras ações avulsas).
+        const tratadoComoAutomatico =
+          (AUTOMATED_EFFECT_TYPES as readonly string[]).includes(efeito.tipo) ||
+          (efeito.tipo === "modificador" && posturaSlug != null);
+        if (tratadoComoAutomatico) {
+          automatedEffects.push(describeEffect(efeito, posturaSlug != null));
         } else {
-          pendingEffects.push(effectLabel(efeito.tipo));
+          pendingEffects.push(describeEffect(efeito, posturaSlug != null));
         }
       }
       if (Array.isArray(action.sucesso)) {
@@ -665,7 +723,7 @@ export function buildActionConsoleItems(
       return {
         id: action.id,
         slug: action.slug,
-        nome: action.nome,
+        nome: posturaJaAtiva ? `Encerrar ${action.nome}` : action.nome,
         categoria: action.categoria,
         tipo: action.tipo,
         custoLabel: cost.label,
@@ -720,6 +778,28 @@ export interface ExecuteActionResult {
   defensesWithoutReactionAfter: number;
   reactionPenaltyApplied: number;
   warnings: string[];
+  /**
+   * Lembretes textuais para o narrador quando a remoção de uma condição
+   * no PRÓPRIO personagem provavelmente tem um vínculo do outro lado
+   * (ex.: Escapar remove Agarrado/Imobilizado de si, mas não há alvo
+   * estruturado para remover Agarrando de quem prendia — checkpoint
+   * v0.64). Nunca bloqueia a ação; é só texto para o log.
+   */
+  reminders: string[];
+  /**
+   * Presente só quando a ação tem um efeito `aplicar_postura` — diz
+   * exatamente o que aconteceu com a postura (ativar/encerrar,
+   * inclusive a outra postura desligada de brinde) para o chamador
+   * montar o log sem duplicar essa lógica.
+   */
+  postureChange: {
+    conditionSlug: string;
+    conditionName: string;
+    direction: "ativar" | "encerrar";
+    /** Slug/nome da OUTRA postura desligada automaticamente, se havia uma ativa (só ao ativar). */
+    replacedConditionSlug?: string;
+    replacedConditionName?: string;
+  } | null;
 }
 
 /** Remove (ativa: false) as condições cujo slug/conditionId/nome bate com algum de `slugs`, no próprio personagem. */
@@ -775,10 +855,34 @@ export function executeActionOnCharacter(
       defensesWithoutReactionAfter: character.estado_jogo?.defesas_sem_reacao ?? 0,
       reactionPenaltyApplied: 0,
       warnings: [canPay.reason ?? "Ação não pôde ser executada."],
+      reminders: [],
+      postureChange: null,
     };
   }
 
-  let nextCharacter: Character = character;
+  const payloadEffects = getPayloadEffects(action);
+
+  // Ações "puras de remoção" (checkpoint v0.64: Escapar/Soltar alvo/Apagar
+  // fogo) só cobram PA se a condição-alvo realmente existia e foi
+  // removida — nunca cobram por um clique que não fez nada. Isso NÃO
+  // muda o custo de nenhuma outra ação (postura, ataque, etc.), que
+  // continuam cobrando ao executar como já funcionava.
+  const isPureRemovalAction =
+    payloadEffects.length > 0 &&
+    payloadEffects.every((e) => e.tipo === "remover_condicao" || e.tipo === "remover_condicoes" || e.tipo === "remover_restricao_movimento");
+
+  const removal = getActionRemovalEffects(action);
+  let removedConditions: string[] = [];
+  let characterAposRemocao: Character = character;
+  if (removal.conditionsToRemove.length > 0) {
+    const result = removeConditionsBySlug(character.condicoes_ativas ?? [], removal.conditionsToRemove, nowIso);
+    characterAposRemocao = { ...character, condicoes_ativas: result.next };
+    removedConditions = result.removed;
+  }
+
+  const deveCobrarPA = !isPureRemovalAction || removedConditions.length > 0;
+
+  let nextCharacter: Character = characterAposRemocao;
   let paAfter = paBefore;
   let reactionAfter = reactionBefore;
   let usedReaction = false;
@@ -787,13 +891,13 @@ export function executeActionOnCharacter(
   let defensesWithoutReactionAfter = defensesWithoutReactionBefore;
   let reactionPenaltyApplied = 0;
 
-  if (cost.pa != null) {
-    const paGastosAntes = character.estado_jogo?.pa_gastos ?? 0;
+  if (cost.pa != null && deveCobrarPA) {
+    const paGastosAntes = nextCharacter.estado_jogo?.pa_gastos ?? 0;
     nextCharacter = { ...nextCharacter, estado_jogo: { ...nextCharacter.estado_jogo, pa_gastos: paGastosAntes + cost.pa } };
     paAfter = paBefore - cost.pa;
   } else if (cost.reacao != null) {
     const spend = spendReactionForDefense(
-      character,
+      nextCharacter,
       derivedReacaoMax,
       reactionRules ?? {
         actionsConsumeReaction: false,
@@ -814,25 +918,80 @@ export function executeActionOnCharacter(
     reactionPenaltyApplied = spend.penaltyApplied;
   }
 
-  const removal = getActionRemovalEffects(action);
-  let removedConditions: string[] = [];
-  if (removal.conditionsToRemove.length > 0) {
-    const result = removeConditionsBySlug(nextCharacter.condicoes_ativas ?? [], removal.conditionsToRemove, nowIso);
-    nextCharacter = { ...nextCharacter, condicoes_ativas: result.next };
-    removedConditions = result.removed;
+  // Postura (checkpoint v0.64): toggle sobre condicoes_ativas — ativa se
+  // ainda não estiver ativa (desligando a outra postura de brinde, sem
+  // custo extra), encerra se já estiver. Reaproveita o mesmo array/
+  // shape de ActiveCondition que qualquer outra condição — nada de
+  // estrutura paralela.
+  let postureChange: ExecuteActionResult["postureChange"] = null;
+  const posturaSlug = getPosturaConditionSlug(action);
+  if (posturaSlug) {
+    const atuais = nextCharacter.condicoes_ativas ?? [];
+    const posturaAtiva = atuais.find((c) => c.ativa && c.conditionId === posturaSlug);
+    if (posturaAtiva) {
+      nextCharacter = {
+        ...nextCharacter,
+        condicoes_ativas: atuais.map((c) =>
+          c.id === posturaAtiva.id ? { ...c, ativa: false, removidaEm: nowIso, removidaOrigem: "acao_combate" as const } : c,
+        ),
+      };
+      postureChange = { conditionSlug: posturaSlug, conditionName: posturaAtiva.nome, direction: "encerrar" };
+    } else {
+      const outroSlug = posturaSlug === "postura_ofensiva" ? "postura_defensiva" : "postura_ofensiva";
+      const outraAtiva = atuais.find((c) => c.ativa && c.conditionId === outroSlug);
+      let proximasCondicoes = atuais;
+      if (outraAtiva) {
+        proximasCondicoes = proximasCondicoes.map((c) =>
+          c.id === outraAtiva.id ? { ...c, ativa: false, removidaEm: nowIso, removidaOrigem: "acao_combate" as const } : c,
+        );
+      }
+      const novaCondicao: ActiveCondition = {
+        id: crypto.randomUUID(),
+        conditionId: posturaSlug,
+        nome: action.nome,
+        origem: "action_console",
+        aplicadaEm: nowIso,
+        removidaEm: null,
+        ativa: true,
+      };
+      nextCharacter = { ...nextCharacter, condicoes_ativas: [...proximasCondicoes, novaCondicao] };
+      postureChange = {
+        conditionSlug: posturaSlug,
+        conditionName: action.nome,
+        direction: "ativar",
+        replacedConditionSlug: outraAtiva ? outroSlug : undefined,
+        replacedConditionName: outraAtiva?.nome,
+      };
+    }
   }
 
   const automatedEffects: string[] = [];
   const pendingEffects: string[] = [];
   const warnings: string[] = [];
-  for (const efeito of getPayloadEffects(action)) {
-    if (efeito.tipo === "remover_condicao" || efeito.tipo === "remover_condicoes" || efeito.tipo === "remover_restricao_movimento") {
-      automatedEffects.push(effectLabel(efeito.tipo));
+  for (const efeito of payloadEffects) {
+    const tratadoComoAutomatico =
+      efeito.tipo === "remover_condicao" ||
+      efeito.tipo === "remover_condicoes" ||
+      efeito.tipo === "remover_restricao_movimento" ||
+      efeito.tipo === "aplicar_postura" ||
+      (efeito.tipo === "modificador" && posturaSlug != null);
+    if (tratadoComoAutomatico) {
+      automatedEffects.push(describeEffect(efeito, posturaSlug != null));
     } else {
-      pendingEffects.push(effectLabel(efeito.tipo));
-      if (efeito.tipo === "aplicar_postura") {
-        warnings.push("Posturas ainda não geram estado ou modificador ativo — resolução manual.");
-      }
+      pendingEffects.push(describeEffect(efeito, posturaSlug != null));
+    }
+  }
+
+  // Lembretes de vínculo com outra criatura (checkpoint v0.64) — a
+  // remoção acima só afeta o PRÓPRIO personagem; sem alvo estruturado,
+  // o narrador precisa resolver o lado do vínculo manualmente.
+  const reminders: string[] = [];
+  if (removedConditions.length > 0) {
+    if (removal.conditionsToRemove.includes("agarrado") || removal.conditionsToRemove.includes("imobilizado")) {
+      reminders.push("Se havia uma criatura mantendo o agarrão, remova Agarrando dela manualmente.");
+    }
+    if (removal.conditionsToRemove.includes("agarrando")) {
+      reminders.push("Se havia alvo vinculado, remova Agarrado/Imobilizado dele manualmente.");
     }
   }
 
@@ -851,5 +1010,7 @@ export function executeActionOnCharacter(
     defensesWithoutReactionAfter,
     reactionPenaltyApplied,
     warnings,
+    reminders,
+    postureChange,
   };
 }

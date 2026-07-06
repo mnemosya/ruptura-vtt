@@ -232,7 +232,20 @@ function formatEvolution(payload: Record<string, unknown>): string {
   return `${characterNome}: ${descricao}`;
 }
 
-/** Checkpoints v0.42/v0.43: ação, custo, uso normal ou excedente de Reação e efeitos. */
+/** "postura_ofensiva" → "Postura Ofensiva" — só para exibir slugs de estado sem digitar uma tabela nova. */
+function humanizeStateSlug(slug: string): string {
+  return slug
+    .split("_")
+    .map((w) => (w.length > 0 ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ");
+}
+
+/**
+ * Checkpoints v0.42/v0.43/v0.64: ação, custo, uso normal ou excedente de
+ * Reação, condições/estados aplicados/removidos e lembretes textuais
+ * (checkpoint v0.64 — Escapar/Soltar alvo não têm alvo estruturado para
+ * remover a condição do outro lado do vínculo automaticamente).
+ */
 function formatActionUsed(payload: Record<string, unknown>): string {
   const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
   const actionName = typeof payload.actionName === "string" ? payload.actionName : "Ação";
@@ -244,6 +257,10 @@ function formatActionUsed(payload: Record<string, unknown>): string {
   const pendingEffects = Array.isArray(payload.pendingEffects)
     ? payload.pendingEffects.filter((c): c is string => typeof c === "string")
     : [];
+  const reminders = Array.isArray(payload.reminders) ? payload.reminders.filter((r): r is string => typeof r === "string") : [];
+  const appliedState = typeof payload.appliedState === "string" ? payload.appliedState : null;
+  const removedStates = Array.isArray(payload.removedStates) ? payload.removedStates.filter((s): s is string => typeof s === "string") : [];
+
   const partes = [`custo ${custoLabel}`];
   if (payload.defenseWithoutReaction === true) {
     const penalty = typeof payload.reactionPenaltyApplied === "number" ? payload.reactionPenaltyApplied : null;
@@ -252,8 +269,11 @@ function formatActionUsed(payload: Record<string, unknown>): string {
     partes.push("usou 1 Reação");
   }
   if (removedConditions.length > 0) partes.push(`removeu ${removedConditions.join(", ")}`);
+  if (appliedState) partes.push(`ativou ${humanizeStateSlug(appliedState)}`);
+  if (removedStates.length > 0) partes.push(`desligou ${removedStates.map(humanizeStateSlug).join(", ")}`);
   if (pendingEffects.length > 0) partes.push(`pendente: ${pendingEffects.join(", ")}`);
-  return `${characterNome}: ${actionName} (${partes.join(" · ")})`;
+  const base = `${characterNome}: ${actionName} (${partes.join(" · ")})`;
+  return reminders.length > 0 ? `${base} — Lembrete: ${reminders.join(" ")}` : base;
 }
 
 /** Checkpoint v0.44: cartão de condition_end_round_damage. */
