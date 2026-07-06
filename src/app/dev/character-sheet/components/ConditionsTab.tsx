@@ -199,41 +199,55 @@ export function ConditionsTab({
         <p style={{ fontSize: 13, opacity: 0.6, marginBottom: 20 }}>Nenhuma condição ativa.</p>
       )}
       <div data-testid="condicoes-ativas-lista" style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
-        {ativas.map((c) => (
-          <div
-            key={c.id}
-            data-testid="condicao-ativa-item"
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 4,
-              background: "#1d1e24",
-              borderRadius: 8,
-              padding: "10px 14px",
-              fontSize: 13,
-              borderLeft: "3px solid #ff6b6b",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-              <span data-testid="condicao-ativa-nome" style={{ fontWeight: 700 }}>
-                {c.nome}
-              </span>
-              <button
-                data-testid={`condicao-remover-${c.id}`}
-                onClick={() => onRemove(c.id)}
-                style={{ ...buttonStyle, padding: "4px 10px", fontSize: 12 }}
-              >
-                Remover
-              </button>
+        {ativas.map((c) => {
+          // Postura (checkpoint v0.60/v0.65) é guardada no MESMO array de
+          // condições — "Remover" aqui é o mesmo botão genérico usado
+          // para qualquer condição, então NUNCA cobra PA nem passa pela
+          // lógica de "Encerrar Postura" do Console de Ação (que cobra 1
+          // PA e gera log próprio). Aviso discreto só para deixar isso
+          // explícito, sem bloquear o caminho.
+          const isPostura = typeof c.conditionId === "string" && c.conditionId.startsWith("postura_");
+          return (
+            <div
+              key={c.id}
+              data-testid="condicao-ativa-item"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 4,
+                background: "#1d1e24",
+                borderRadius: 8,
+                padding: "10px 14px",
+                fontSize: 13,
+                borderLeft: "3px solid #ff6b6b",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <span data-testid="condicao-ativa-nome" style={{ fontWeight: 700 }}>
+                  {c.nome}
+                </span>
+                <button
+                  data-testid={`condicao-remover-${c.id}`}
+                  onClick={() => onRemove(c.id)}
+                  style={{ ...buttonStyle, padding: "4px 10px", fontSize: 12 }}
+                >
+                  Remover
+                </button>
+              </div>
+              {c.descricao && <span style={{ opacity: 0.8 }}>{c.descricao}</span>}
+              {isPostura && (
+                <span data-testid={`condicao-postura-aviso-${c.id}`} style={{ fontSize: 10, opacity: 0.5 }}>
+                  Remoção manual — não executa o custo de PA nem o log de &quot;Encerrar Postura&quot; do Console de Ação.
+                </span>
+              )}
+              <div style={{ display: "flex", gap: 12, fontSize: 11, opacity: 0.6, flexWrap: "wrap" }}>
+                {c.origem && <span>Origem: {c.origem}</span>}
+                {c.duracao && <span>Duração: {c.duracao}</span>}
+                <span>Aplicada em: {new Date(c.aplicadaEm).toLocaleString("pt-BR")}</span>
+              </div>
             </div>
-            {c.descricao && <span style={{ opacity: 0.8 }}>{c.descricao}</span>}
-            <div style={{ display: "flex", gap: 12, fontSize: 11, opacity: 0.6, flexWrap: "wrap" }}>
-              {c.origem && <span>Origem: {c.origem}</span>}
-              {c.duracao && <span>Duração: {c.duracao}</span>}
-              <span>Aplicada em: {new Date(c.aplicadaEm).toLocaleString("pt-BR")}</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* --- Efeitos ativos gerados (checkpoint v0.33) --- */}

@@ -2295,6 +2295,61 @@ export default function CharacterSheetClient({
    * local e em table_logs (type="action_used", best-effort, mesmo
    * padrão de handleAddCondition/handleRemoveCondition).
    */
+  /**
+   * Persistência automática de ações do Console (checkpoint v0.65).
+   * Só dispara para ações que já automatizam algo REAL no personagem
+   * (remoção de condição própria — Escapar/Soltar alvo/Apagar fogo/
+   * Levantar — ou toggle de postura), detectado por
+   * `result.removedConditions.length > 0 || result.postureChange`
+   * (mesma condição usada por `actionConsole.ts` para contar como
+   * automatizado) — nunca por lista de slugs fixa. Outras ações do
+   * Console (Atacar, Mirar etc., que só gastam PA/Reação sem automação
+   * real) continuam no modelo "local até Salvar personagem" de antes;
+   * isto não é um auto-save geral do console.
+   *
+   * Reaproveita o MESMO par storage+log de `handleSave`
+   * (`saveCharacterForProfileSession`/`updateCharacter`) — nenhum
+   * caminho de persistência novo. Falha aqui NUNCA reverte a mudança
+   * local (ela já aconteceu antes desta chamada): só avisa via
+   * `saveState`/`errorMessage` e deixa "Salvar personagem" disponível
+   * como caminho manual, exatamente como pedido.
+   */
+  async function persistAutomatedActionExecution(nextCharacter: Character) {
+    const isConnected =
+      mode === "product"
+        ? Boolean(characterId && selectedCampaignId && selectedProfileId && profileSessionToken)
+        : Boolean(characterId && selectedCampaignId);
+    if (!isConnected) return; // Modo local (sem mesa/personagem salvo) — nada a persistir, sem erro.
+    try {
+      const toSave = normalizeCharacter(nextCharacter, derivados);
+      const record =
+        mode === "product"
+          ? await saveCharacterForProfileSession(
+              selectedCampaignId as string,
+              selectedProfileId as string,
+              (profileSessionToken as StoredProfileSessionToken).profileSessionId,
+              (profileSessionToken as StoredProfileSessionToken).rawSessionToken,
+              characterId as string,
+              toSave,
+            )
+          : await updateCharacter(characterId as string, toSave);
+      lastSyncedCharacterRef.current = record.payload;
+      characterRef.current = record.payload;
+      setCharacter(record.payload);
+      setSaveState("saved");
+    } catch (err) {
+      // Mantém a mudança local (já aplicada antes desta chamada) —
+      // nunca reverte em silêncio. "Salvar personagem" continua
+      // disponível para tentar de novo manualmente.
+      setSaveState("error");
+      setErrorMessage(
+        err instanceof Error
+          ? `Ação executada localmente, mas falhou ao salvar automaticamente: ${err.message}`
+          : "Ação executada localmente, mas falhou ao salvar automaticamente.",
+      );
+    }
+  }
+
   async function handleUseAction(actionId: string) {
     const nowMs = Date.now();
     const lastExecution = lastActionExecutionRef.current;
@@ -2387,6 +2442,13 @@ export default function CharacterSheetClient({
           addLogEntry("acao_combate", `Sugestão: aplicar efeito especial de ${flechaNome} (resolução manual).`);
         }
       }
+    }
+
+    // Checkpoint v0.65 — ações que automatizaram remoção de
+    // condição/toggle de postura persistem sozinhas quando conectado a
+    // mesa/personagem salvo (ver persistAutomatedActionExecution acima).
+    if (result.removedConditions.length > 0 || result.postureChange) {
+      await persistAutomatedActionExecution(characterRef.current);
     }
 
     const custoResumo = result.defenseWithoutReaction
@@ -2564,6 +2626,16 @@ export default function CharacterSheetClient({
             Atualizar agora
           </button>
         </div>
+      )}
+      {saveState === "error" && errorMessage && (
+        // Checkpoint v0.65 — visível em QUALQUER aba (não só Geral), já
+        // que a persistência automática de ações do Console pode falhar
+        // enquanto o jogador está na aba Ações. A mudança local já
+        // aconteceu e não é revertida; "Salvar personagem" (aba Geral)
+        // continua disponível para tentar de novo manualmente.
+        <p data-testid="ficha-erro-persistencia" style={{ fontSize: 11, color: "#ff6b6b", marginBottom: 8 }}>
+          ⚠ {errorMessage}
+        </p>
       )}
       {pendingRemoteCharacter && (
         <div
