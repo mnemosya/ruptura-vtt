@@ -22,3 +22,4 @@ export * from "./escalpos";
 export * from "./technicalEffects";
 export * from "./defense";
 export * from "./ammunition";
+export * from "./gmActions";

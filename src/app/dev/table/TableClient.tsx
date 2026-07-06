@@ -33,7 +33,22 @@ import {
   type TableLogEntry,
   type TableLogVisibility,
 } from "../../../lib/table";
-import type { CharacterRecord } from "../../../lib/character";
+import { getCharacter, updateCharacter } from "../../../lib/character/storage";
+import {
+  computeDerivedStats,
+  normalizeCharacter,
+  applyGmDamage,
+  applyGmHealing,
+  setGmResourceValue,
+  applyGmCondition,
+  removeGmCondition,
+  type GmResource,
+  type CharacterRecord,
+  type Character,
+  type CharacterRulesPayload,
+  type DerivedStats,
+} from "../../../lib/character";
+import type { NarratorConditionOption } from "./page";
 
 const buttonStyle: React.CSSProperties = {
   background: "#1d1e24",
@@ -138,9 +153,27 @@ interface Props {
   currentUserEmail: string | null;
   /** Id do narrador logado (checkpoint v0.16) — usado para comparar com campaigns.owner_id. */
   currentUserId: string | null;
+  /** regras_personagem (checkpoint v0.63) — só para computar PV/PE/Mana/Integridade MÁXIMOS na ferramenta de narrador, igual à ficha. */
+  regras: CharacterRulesPayload | null;
+  /** Condições publicadas na Biblioteca (checkpoint v0.63) — fonte única do select "Aplicar condição"; nunca lista hardcoded aqui. */
+  condicoesDisponiveis: NarratorConditionOption[];
 }
 
-export default function TableClient({ mesasIniciais, personagensIniciais, currentUserEmail, currentUserId }: Props) {
+const GM_RESOURCE_LABELS: Record<GmResource, string> = { pv: "PV", pe: "PE", mana: "Mana", integridade: "Integridade" };
+const GM_RESOURCE_MAX_KEY: Record<GmResource, keyof DerivedStats> = {
+  pv: "pv_max",
+  pe: "pe_max",
+  mana: "mana_max",
+  integridade: "integridade_max",
+};
+
+/** PV/PE/Mana/Integridade MÁXIMOS do personagem — mesma fórmula da ficha (computeDerivedStats), nunca reinventada aqui. */
+function gmDerivedMax(payload: Character, regras: CharacterRulesPayload | null, resource: GmResource): number {
+  const derivados = computeDerivedStats(payload.atributos, regras, payload.mana_bonus_ruptura ?? 0);
+  return derivados[GM_RESOURCE_MAX_KEY[resource]];
+}
+
+export default function TableClient({ mesasIniciais, personagensIniciais, currentUserEmail, currentUserId, regras, condicoesDisponiveis }: Props) {
   const [mesas, setMesas] = useState<Campaign[]>(mesasIniciais);
   const [personagens] = useState<CharacterRecord[]>(personagensIniciais);
   const [novaMesaNome, setNovaMesaNome] = useState("");
@@ -166,6 +199,191 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
   // last_seen_at já carregado com Date.now() — não busca nada novo do
   // servidor (ver mesmo padrão em CharacterSheetClient).
   const [nowTick, setNowTick] = useState(() => Date.now());
+
+  // ---------------------------------------------------------------
+  // "Estado dos personagens" — ferramenta de narrador (checkpoint
+  // v0.63). `personagens` (acima) é a lista global carregada uma vez
+  // no mount da página e nunca é uma fonte confiável do estado ATUAL
+  // de um personagem específico; por isso os personagens ativos dos
+  // perfis são buscados à parte (getCharacter) e mantidos aqui,
+  // atualizados após cada ação de narrador com o registro que
+  // `updateCharacter` devolve (sem precisar recarregar a lista toda).
+  // ---------------------------------------------------------------
+  const [personagensAtivos, setPersonagensAtivos] = useState<Record<string, CharacterRecord>>({});
+  const [gmErro, setGmErro] = useState<string | null>(null);
+  const [gmDanoForm, setGmDanoForm] = useState<Record<string, { recurso: "pv" | "pe"; valor: number; nota: string }>>({});
+  const [gmCuraForm, setGmCuraForm] = useState<Record<string, { recurso: "pv" | "pe" | "mana"; valor: number; nota: string }>>({});
+  const [gmSetForm, setGmSetForm] = useState<Record<string, { recurso: GmResource; valor: number; nota: string }>>({});
+  const [gmCondicaoForm, setGmCondicaoForm] = useState<Record<string, string>>({});
+
+  async function refreshPersonagensAtivos(perfisAtuais: CampaignProfile[]) {
+    const ids = Array.from(new Set(perfisAtuais.map((p) => p.active_character_id).filter((id): id is string => !!id)));
+    if (ids.length === 0) {
+      setPersonagensAtivos({});
+      return;
+    }
+    try {
+      const results = await Promise.all(ids.map((id) => getCharacter(id)));
+      const proximo: Record<string, CharacterRecord> = {};
+      results.forEach((rec) => {
+        if (rec) proximo[rec.id] = rec;
+      });
+      setPersonagensAtivos(proximo);
+    } catch {
+      // Best-effort — a seção mostra "carregando…" enquanto isso; sem mesa quebrar a página toda.
+    }
+  }
+
+  useEffect(() => {
+    refreshPersonagensAtivos(perfis);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [perfis]);
+
+  /**
+   * Salva o personagem mutado (`updateCharacter`, já normalizado) e
+   * registra a entrada em `table_logs` — mesmo par save+log usado por
+   * qualquer ação de mesa. A ficha do jogador aberta neste personagem
+   * recebe a mudança pelo Realtime já existente (checkpoint v0.62);
+   * se houver edição local pendente lá, o aviso de "versão mais
+   * recente no servidor" aparece exatamente como antes — esta
+   * ferramenta não sabe nada sobre isso, só salva o registro canônico.
+   */
+  async function persistGmMutation(params: { characterId: string; nextCharacter: Character; logPayload: Record<string, unknown> }) {
+    if (!selectedCampaignId) return;
+    setGmErro(null);
+    try {
+      const derivados = computeDerivedStats(params.nextCharacter.atributos, regras, params.nextCharacter.mana_bonus_ruptura ?? 0);
+      const toSave = normalizeCharacter(params.nextCharacter, derivados);
+      const record = await updateCharacter(params.characterId, toSave);
+      setPersonagensAtivos((prev) => ({ ...prev, [record.id]: record }));
+      await addLog({
+        campaignId: selectedCampaignId,
+        characterId: params.characterId,
+        type: "character_state_change",
+        visibility: "public",
+        payload: params.logPayload,
+      });
+    } catch (err) {
+      setGmErro(err instanceof Error ? err.message : "Erro desconhecido ao aplicar ação de narrador.");
+    }
+  }
+
+  async function handleGmDamage(characterId: string) {
+    const record = personagensAtivos[characterId];
+    const form = gmDanoForm[characterId];
+    if (!record || !form || !form.valor) return;
+    const nowIso = new Date().toISOString();
+    const result = applyGmDamage(record.payload, form.recurso, form.valor, nowIso);
+    await persistGmMutation({
+      characterId,
+      nextCharacter: result.character,
+      logPayload: {
+        action: "damage",
+        characterId,
+        characterNome: record.name,
+        resource: form.recurso,
+        amount: form.valor,
+        before: result.before,
+        after: result.after,
+        note: form.nota || undefined,
+        source: "dev_table_narrator_tool",
+      },
+    });
+    setGmDanoForm((prev) => ({ ...prev, [characterId]: { ...prev[characterId], valor: 0, nota: "" } }));
+  }
+
+  async function handleGmCura(characterId: string) {
+    const record = personagensAtivos[characterId];
+    const form = gmCuraForm[characterId];
+    if (!record || !form || !form.valor) return;
+    const nowIso = new Date().toISOString();
+    const max = gmDerivedMax(record.payload, regras, form.recurso);
+    const result = applyGmHealing(record.payload, form.recurso, form.valor, max, nowIso);
+    await persistGmMutation({
+      characterId,
+      nextCharacter: result.character,
+      logPayload: {
+        action: "healing",
+        characterId,
+        characterNome: record.name,
+        resource: form.recurso,
+        amount: form.valor,
+        before: result.before,
+        after: result.after,
+        note: form.nota || undefined,
+        source: "dev_table_narrator_tool",
+        removidasPorCura: result.removidasPorCura.map((c) => c.nome),
+      },
+    });
+    setGmCuraForm((prev) => ({ ...prev, [characterId]: { ...prev[characterId], valor: 0, nota: "" } }));
+  }
+
+  async function handleGmSetResource(characterId: string) {
+    const record = personagensAtivos[characterId];
+    const form = gmSetForm[characterId];
+    if (!record || !form) return;
+    const max = gmDerivedMax(record.payload, regras, form.recurso);
+    const result = setGmResourceValue(record.payload, form.recurso, form.valor, max);
+    await persistGmMutation({
+      characterId,
+      nextCharacter: result.character,
+      logPayload: {
+        action: "set_resource",
+        characterId,
+        characterNome: record.name,
+        resource: form.recurso,
+        before: result.before,
+        after: result.after,
+        note: form.nota || undefined,
+        source: "dev_table_narrator_tool",
+      },
+    });
+  }
+
+  async function handleGmApplyCondition(characterId: string) {
+    const record = personagensAtivos[characterId];
+    const slug = gmCondicaoForm[characterId];
+    const condicao = condicoesDisponiveis.find((c) => c.slug === slug);
+    if (!record || !condicao) return;
+    const nowIso = new Date().toISOString();
+    const result = applyGmCondition(record.payload, condicao, nowIso);
+    if (result.jaAtiva) {
+      setGmErro(`"${condicao.nome}" já está ativa em ${record.name}.`);
+      return;
+    }
+    await persistGmMutation({
+      characterId,
+      nextCharacter: result.character,
+      logPayload: {
+        action: "apply_condition",
+        characterId,
+        characterNome: record.name,
+        conditionId: condicao.slug,
+        conditionName: condicao.nome,
+        source: "dev_table_narrator_tool",
+      },
+    });
+  }
+
+  async function handleGmRemoveCondition(characterId: string, conditionInstanceId: string) {
+    const record = personagensAtivos[characterId];
+    if (!record) return;
+    const nowIso = new Date().toISOString();
+    const result = removeGmCondition(record.payload, conditionInstanceId, nowIso);
+    if (!result.condicao) return;
+    await persistGmMutation({
+      characterId,
+      nextCharacter: result.character,
+      logPayload: {
+        action: "remove_condition",
+        characterId,
+        characterNome: record.name,
+        conditionId: result.condicao.conditionId,
+        conditionName: result.condicao.nome,
+        source: "dev_table_narrator_tool",
+      },
+    });
+  }
 
   async function refreshMesas() {
     try {
@@ -621,6 +839,226 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                   </div>
                 );
               })}
+            </div>
+          </section>
+
+          <section style={{ marginBottom: 32 }} data-testid="estado-personagens-secao">
+            <h2 style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, opacity: 0.6, marginBottom: 12 }}>
+              Estado dos personagens — {mesaAtual?.name ?? selectedCampaignId}
+            </h2>
+            <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
+              Dano/cura/ajuste de recurso e condições aplicados aqui salvam direto em <code>characters</code> e
+              registram em <code>table_logs</code> (<code>type: "character_state_change"</code>). A ficha do
+              jogador aberta neste personagem recebe a mudança pelo Realtime já existente — sem reload manual.
+              Sem cálculo de MIT/PD/região corporal ainda: dano é redução direta do recurso escolhido.
+            </p>
+            {gmErro && <p style={{ color: "#ff6b6b", fontSize: 12, marginBottom: 12 }}>{gmErro}</p>}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {perfis.map((perfil) => {
+                if (!perfil.active_character_id) {
+                  return (
+                    <div
+                      key={perfil.id}
+                      data-testid={`estado-personagem-sem-ativo-${perfil.id}`}
+                      style={{ background: "#1d1e24", borderRadius: 8, padding: "8px 14px", fontSize: 12, opacity: 0.55 }}
+                    >
+                      {perfil.nickname}: sem personagem ativo vinculado.
+                    </div>
+                  );
+                }
+                const characterId = perfil.active_character_id;
+                const record = personagensAtivos[characterId];
+                if (!record) {
+                  return (
+                    <div key={perfil.id} style={{ background: "#1d1e24", borderRadius: 8, padding: "8px 14px", fontSize: 12, opacity: 0.6 }}>
+                      {perfil.nickname}: carregando personagem…
+                    </div>
+                  );
+                }
+                const payload = record.payload;
+                const recursos = payload.recursos_atuais ?? {};
+                const condicoesAtivas = (payload.condicoes_ativas ?? []).filter((c) => c.ativa);
+                const danoForm = gmDanoForm[characterId] ?? { recurso: "pv" as const, valor: 0, nota: "" };
+                const curaForm = gmCuraForm[characterId] ?? { recurso: "pv" as const, valor: 0, nota: "" };
+                const setForm = gmSetForm[characterId] ?? { recurso: "pv" as GmResource, valor: recursos.pv ?? 0, nota: "" };
+                const condicaoSelecionada = gmCondicaoForm[characterId] ?? "";
+
+                return (
+                  <div
+                    key={perfil.id}
+                    data-testid={`estado-personagem-${characterId}`}
+                    style={{ background: "#1d1e24", borderRadius: 8, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, fontSize: 13 }}
+                  >
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+                      <strong>{perfil.nickname}</strong>
+                      <span style={{ opacity: 0.7 }}>→ {record.name}</span>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12 }}>
+                      {(["pv", "pe", "mana", "integridade"] as const).map((r) => (
+                        <span key={r} data-testid={`estado-recurso-${characterId}-${r}`}>
+                          {GM_RESOURCE_LABELS[r]}: {recursos[r] ?? 0} / {gmDerivedMax(payload, regras, r)}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div style={{ fontSize: 12 }}>
+                      <span style={{ opacity: 0.6 }}>Condições ativas: </span>
+                      {condicoesAtivas.length === 0 ? (
+                        <span style={{ opacity: 0.5 }}>nenhuma</span>
+                      ) : (
+                        <div data-testid={`estado-condicoes-${characterId}`} style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+                          {condicoesAtivas.map((c) => (
+                            <span
+                              key={c.id}
+                              style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#0f1014", borderRadius: 4, padding: "2px 8px" }}
+                            >
+                              {c.nome}
+                              <button
+                                data-testid={`estado-remover-condicao-${characterId}-${c.id}`}
+                                onClick={() => handleGmRemoveCondition(characterId, c.id)}
+                                style={{ ...buttonStyle, padding: "1px 6px", fontSize: 11 }}
+                              >
+                                Remover
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Aplicar dano */}
+                    <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                      <select
+                        data-testid={`estado-dano-recurso-${characterId}`}
+                        value={danoForm.recurso}
+                        onChange={(e) => setGmDanoForm((prev) => ({ ...prev, [characterId]: { ...danoForm, recurso: e.target.value as "pv" | "pe" } }))}
+                        style={inputStyle}
+                      >
+                        <option value="pv">PV</option>
+                        <option value="pe">PE</option>
+                      </select>
+                      <input
+                        data-testid={`estado-dano-valor-${characterId}`}
+                        type="number"
+                        min={0}
+                        value={danoForm.valor}
+                        onChange={(e) => setGmDanoForm((prev) => ({ ...prev, [characterId]: { ...danoForm, valor: Math.max(0, Number(e.target.value)) } }))}
+                        style={{ ...inputStyle, width: 70 }}
+                      />
+                      <input
+                        data-testid={`estado-dano-nota-${characterId}`}
+                        type="text"
+                        placeholder="Nota (opcional)"
+                        value={danoForm.nota}
+                        onChange={(e) => setGmDanoForm((prev) => ({ ...prev, [characterId]: { ...danoForm, nota: e.target.value } }))}
+                        style={{ ...inputStyle, flex: 1, minWidth: 120 }}
+                      />
+                      <button data-testid={`estado-aplicar-dano-${characterId}`} onClick={() => handleGmDamage(characterId)} style={buttonStyle}>
+                        Aplicar dano
+                      </button>
+                    </div>
+
+                    {/* Aplicar cura */}
+                    <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                      <select
+                        data-testid={`estado-cura-recurso-${characterId}`}
+                        value={curaForm.recurso}
+                        onChange={(e) => setGmCuraForm((prev) => ({ ...prev, [characterId]: { ...curaForm, recurso: e.target.value as "pv" | "pe" | "mana" } }))}
+                        style={inputStyle}
+                      >
+                        <option value="pv">PV</option>
+                        <option value="pe">PE</option>
+                        <option value="mana">Mana</option>
+                      </select>
+                      <input
+                        data-testid={`estado-cura-valor-${characterId}`}
+                        type="number"
+                        min={0}
+                        value={curaForm.valor}
+                        onChange={(e) => setGmCuraForm((prev) => ({ ...prev, [characterId]: { ...curaForm, valor: Math.max(0, Number(e.target.value)) } }))}
+                        style={{ ...inputStyle, width: 70 }}
+                      />
+                      <input
+                        data-testid={`estado-cura-nota-${characterId}`}
+                        type="text"
+                        placeholder="Nota (opcional)"
+                        value={curaForm.nota}
+                        onChange={(e) => setGmCuraForm((prev) => ({ ...prev, [characterId]: { ...curaForm, nota: e.target.value } }))}
+                        style={{ ...inputStyle, flex: 1, minWidth: 120 }}
+                      />
+                      <button data-testid={`estado-aplicar-cura-${characterId}`} onClick={() => handleGmCura(characterId)} style={buttonStyle}>
+                        Aplicar cura
+                      </button>
+                    </div>
+
+                    {/* Ajuste direto de recurso (override manual) */}
+                    <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                      <select
+                        data-testid={`estado-set-recurso-${characterId}`}
+                        value={setForm.recurso}
+                        onChange={(e) => setGmSetForm((prev) => ({ ...prev, [characterId]: { ...setForm, recurso: e.target.value as GmResource } }))}
+                        style={inputStyle}
+                      >
+                        <option value="pv">PV</option>
+                        <option value="pe">PE</option>
+                        <option value="mana">Mana</option>
+                        <option value="integridade">Integridade</option>
+                      </select>
+                      <input
+                        data-testid={`estado-set-valor-${characterId}`}
+                        type="number"
+                        min={0}
+                        value={setForm.valor}
+                        onChange={(e) => setGmSetForm((prev) => ({ ...prev, [characterId]: { ...setForm, valor: Number(e.target.value) } }))}
+                        style={{ ...inputStyle, width: 70 }}
+                      />
+                      <input
+                        data-testid={`estado-set-nota-${characterId}`}
+                        type="text"
+                        placeholder="Nota (opcional)"
+                        value={setForm.nota}
+                        onChange={(e) => setGmSetForm((prev) => ({ ...prev, [characterId]: { ...setForm, nota: e.target.value } }))}
+                        style={{ ...inputStyle, flex: 1, minWidth: 120 }}
+                      />
+                      <button data-testid={`estado-definir-valor-${characterId}`} onClick={() => handleGmSetResource(characterId)} style={buttonStyle}>
+                        Definir valor
+                      </button>
+                      <span style={{ fontSize: 10, opacity: 0.5 }}>override manual — ignora regra de dano/cura</span>
+                    </div>
+
+                    {/* Aplicar condição */}
+                    <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                      <select
+                        data-testid={`estado-condicao-select-${characterId}`}
+                        value={condicaoSelecionada}
+                        onChange={(e) => setGmCondicaoForm((prev) => ({ ...prev, [characterId]: e.target.value }))}
+                        style={inputStyle}
+                        disabled={condicoesDisponiveis.length === 0}
+                      >
+                        <option value="">— escolher condição —</option>
+                        {condicoesDisponiveis.map((c) => (
+                          <option key={c.slug} value={c.slug}>
+                            {c.nome}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        data-testid={`estado-aplicar-condicao-${characterId}`}
+                        onClick={() => handleGmApplyCondition(characterId)}
+                        disabled={!condicaoSelecionada}
+                        style={{ ...buttonStyle, opacity: condicaoSelecionada ? 1 : 0.5 }}
+                      >
+                        Aplicar condição
+                      </button>
+                      {condicoesDisponiveis.length === 0 && (
+                        <span style={{ fontSize: 11, opacity: 0.5 }}>Biblioteca de condições indisponível.</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {perfis.length === 0 && <p style={{ fontSize: 12, opacity: 0.6 }}>Nenhum perfil nesta mesa ainda.</p>}
             </div>
           </section>
 
