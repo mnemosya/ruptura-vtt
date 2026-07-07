@@ -56,6 +56,8 @@ export interface CombatActionContent {
   sucesso?: unknown;
   falha?: unknown;
   efeitos_por_margem?: unknown;
+  /** Modos por tipo de arma (ex.: "corpo_a_corpo", "distancia_arma_fogo") — usado só por "Atacar" para achar o bloco `desarmado`. */
+  modos?: unknown;
 }
 
 export interface ActionConsoleItem {
@@ -141,6 +143,7 @@ export function normalizeCombatActionContent(raw: Record<string, unknown>): Comb
     sucesso: raw.sucesso,
     falha: raw.falha,
     efeitos_por_margem: raw.efeitos_por_margem,
+    modos: raw.modos,
   };
 }
 

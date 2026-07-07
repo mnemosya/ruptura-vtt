@@ -79,9 +79,13 @@ import {
   deriveModoMunicao,
   migrateEmbeddedAljavas,
   getAljavaInstances,
+  getAljavaTotalFlechas,
+  getWeaponAmmoAtual,
   setBowAljavaSelection,
   setBowFlechaSelection,
   ALJAVA_ITEM_SLUG,
+  getAttackWeaponCandidates,
+  resolveAttackDetails,
   castSpell,
   rollSpellDamage,
   getSpellDamageEffect,
@@ -118,6 +122,8 @@ import type {
   WalletId,
   ItemLoadoutState,
   SpellContent,
+  InventoryItemInstance,
+  AttackWeaponCandidate,
 } from "../../../lib/character";
 import type { TechnicalContentItem } from "../../../lib/content";
 import { rollPericia, type PreparedRoll } from "../../../lib/dice";
@@ -321,6 +327,10 @@ export default function CharacterSheetClient({
   // Atributos/Perícias e a aba Rolagens (ver RollsTab). Também é só
   // estado de UI, nunca persiste no payload.
   const [preparedRoll, setPreparedRoll] = useState<PreparedRoll | null>(null);
+  // Seleção de arma para "Atacar" (checkpoint pós-v0.50) — estado de UI
+  // local, não persistido na ficha (mesmo critério de preparedRoll):
+  // qual arma empunhada usar quando há mais de uma, ou "__desarmado__".
+  const [selectedAttackWeaponId, setSelectedAttackWeaponId] = useState<string | null>(null);
   // Mesa (campaign) selecionada — estado de UI local, não persiste no
   // payload do personagem. Quando presente, RollsTab também grava cada
   // rolagem em table_logs (ver checkpoint v0.2 do relatório de Mesas).
@@ -750,6 +760,32 @@ export default function CharacterSheetClient({
       runesIniciais,
     ],
   );
+
+  // Candidatos de arma para "Atacar" (checkpoint pós-v0.50): armas
+  // empunhadas + "Ataque desarmado" sempre disponível. Se a seleção
+  // guardada não existir mais na lista atual (arma desequipada/trocada),
+  // cai para: 1 candidato real -> auto-seleciona; 0 -> desarmado.
+  const attackWeaponCandidates: AttackWeaponCandidate[] = useMemo(
+    () => getAttackWeaponCandidates(character, itemsIniciais),
+    [character, itemsIniciais],
+  );
+  const effectiveSelectedAttackWeaponId: string | null = useMemo(() => {
+    if (selectedAttackWeaponId === "__desarmado__") return null;
+    const armas = attackWeaponCandidates.filter((c) => c.instanceId !== null);
+    if (selectedAttackWeaponId !== null && armas.some((c) => c.instanceId === selectedAttackWeaponId)) {
+      return selectedAttackWeaponId;
+    }
+    return armas.length > 0 ? armas[0].instanceId : null;
+  }, [attackWeaponCandidates, selectedAttackWeaponId]);
+  const attackActionContent = useMemo(() => combatActionsIniciais.find((a) => a.slug === "atacar") ?? null, [combatActionsIniciais]);
+  const attackPreview = useMemo(() => {
+    if (!attackActionContent) return null;
+    const weaponInstance = effectiveSelectedAttackWeaponId
+      ? (character.inventario ?? []).find((i) => i.id === effectiveSelectedAttackWeaponId) ?? null
+      : null;
+    const weaponModel = weaponInstance ? itemsIniciais.find((m) => m.slug === weaponInstance.itemSlug) ?? null : null;
+    return resolveAttackDetails(character, attackActionContent, weaponModel);
+  }, [attackActionContent, character, effectiveSelectedAttackWeaponId, itemsIniciais]);
 
   /**
    * Recarrega a lista de personagens salvos. No modo "product" (/ficha)
@@ -2383,6 +2419,42 @@ export default function CharacterSheetClient({
       return;
     }
 
+    // Fase 4 (v0.59) / checkpoint pós-v0.50 (Atacar ligado às armas):
+    // detecta pelo efeito "resolver_ataque" no payload da ação — sem
+    // automatizar Rajada/Dispersão, alvo, distância, MIT/PD ou crítico.
+    const temEfeitoAtaque = Array.isArray(
+      (actionContent.payload_automacao as Record<string, unknown> | undefined)?.efeitos,
+    ) && ((actionContent.payload_automacao as Record<string, unknown>).efeitos as unknown[]).some(
+      (e) => typeof e === "object" && e !== null && (e as Record<string, unknown>).tipo === "resolver_ataque",
+    );
+
+    // Resolve arma/perícia/dano ANTES de gastar PA: se a munição bloquear,
+    // o PA não pode ter sido gasto (regra do checkpoint).
+    const attackWeaponInstanceId = temEfeitoAtaque ? effectiveSelectedAttackWeaponId : null;
+    const attackWeaponInstance: InventoryItemInstance | null = attackWeaponInstanceId
+      ? (currentCharacter.inventario ?? []).find((i) => i.id === attackWeaponInstanceId) ?? null
+      : null;
+    const attackWeaponModel: ItemContent | null = attackWeaponInstance
+      ? itemsIniciais.find((m) => m.slug === attackWeaponInstance.itemSlug) ?? null
+      : null;
+
+    if (temEfeitoAtaque && attackWeaponModel?.usesAmmunition && attackWeaponInstanceId) {
+      const bloqueio = checkAttackAmmoBlock(currentCharacter, itemsIniciais, { weaponInstanceId: attackWeaponInstanceId });
+      const bloqueioMensagem: Record<string, string> = {
+        sem_municao: "Arma sem munição. Recarregue antes de atacar.",
+        aljava_nao_selecionada: "Selecione qual Aljava este arco usa antes de atacar.",
+        flecha_nao_selecionada: "Selecione o tipo de flecha na aljava antes de atacar.",
+        flecha_sem_estoque: "Flecha selecionada sem estoque na aljava. Escolha outra ou recarregue.",
+      };
+      if (bloqueio && bloqueioMensagem[bloqueio]) {
+        addLogEntry("acao_combate", bloqueioMensagem[bloqueio]);
+        actionExecutionLockRef.current = false;
+        setExecutingActionId(null);
+        return;
+      }
+    }
+
+    // Munição validada (ou ação não é ataque) — agora sim gasta PA/aplica efeitos automatizados.
     const nowIso = new Date().toISOString();
     const result = executeActionOnCharacter(
       currentCharacter,
@@ -2395,59 +2467,69 @@ export default function CharacterSheetClient({
     characterRef.current = result.character;
     setCharacter(result.character);
 
-    // Fase 4 (v0.59): consumir 1 munição ao executar ação de ataque (resolver_ataque).
-    // Detecta pelo efeito "resolver_ataque" no payload da ação — sem automatizar Rajada/Dispersão.
-    const temEfeitoAtaque = Array.isArray(
-      (actionContent.payload_automacao as Record<string, unknown> | undefined)?.efeitos,
-    ) && ((actionContent.payload_automacao as Record<string, unknown>).efeitos as unknown[]).some(
-      (e) => typeof e === "object" && e !== null && (e as Record<string, unknown>).tipo === "resolver_ataque",
-    );
+    let attackLogFields: Record<string, unknown> = {};
     if (temEfeitoAtaque) {
-      // A arma empunhada guarda sua PRÓPRIA seleção de Aljava/flecha
-      // (selectedAljavaInstanceId/selectedFlechaSlug, v0.60) —
-      // checkAttackAmmoBlock/consumeAttackAmmo leem isso diretamente
-      // da instância, sem precisar de estado externo aqui.
-      const bloqueio = checkAttackAmmoBlock(characterRef.current, itemsIniciais);
-      if (bloqueio === "sem_municao") {
-        addLogEntry("acao_combate", "Arma sem munição. Recarregue antes de atacar.");
-        actionExecutionLockRef.current = false;
-        setExecutingActionId(null);
-        return;
-      }
-      if (bloqueio === "aljava_nao_selecionada") {
-        addLogEntry("acao_combate", "Selecione qual Aljava este arco usa antes de atacar.");
-        actionExecutionLockRef.current = false;
-        setExecutingActionId(null);
-        return;
-      }
-      if (bloqueio === "flecha_nao_selecionada") {
-        addLogEntry("acao_combate", "Selecione o tipo de flecha na aljava antes de atacar.");
-        actionExecutionLockRef.current = false;
-        setExecutingActionId(null);
-        return;
-      }
-      if (bloqueio === "flecha_sem_estoque") {
-        addLogEntry("acao_combate", "Flecha selecionada sem estoque na aljava. Escolha outra ou recarregue.");
-        actionExecutionLockRef.current = false;
-        setExecutingActionId(null);
-        return;
-      }
+      const resolved = resolveAttackDetails(characterRef.current, actionContent, attackWeaponModel);
 
-      const afterAttack = consumeAttackAmmo(characterRef.current, itemsIniciais);
-      if (afterAttack.consumedFromInstanceId) {
-        characterRef.current = afterAttack.character;
-        setCharacter(afterAttack.character);
-        if (afterAttack.isFlechaEspecial && afterAttack.consumedFlechaSlug) {
-          const flechaNome = itemsIniciais.find((m) => m.slug === afterAttack.consumedFlechaSlug)?.nome ?? afterAttack.consumedFlechaSlug;
-          addLogEntry("acao_combate", `Sugestão: aplicar efeito especial de ${flechaNome} (resolução manual).`);
+      let ammoConsumed = false;
+      let ammoBefore: number | null = null;
+      let ammoAfter: number | null = null;
+      let quiverInstanceId: string | null = null;
+      let quiverName: string | null = null;
+      let arrowType: string | null = null;
+
+      if (attackWeaponModel?.usesAmmunition && attackWeaponInstanceId) {
+        const afterAttack = consumeAttackAmmo(characterRef.current, itemsIniciais, { weaponInstanceId: attackWeaponInstanceId });
+        if (afterAttack.consumedFromInstanceId) {
+          const beforeInst = (currentCharacter.inventario ?? []).find((i) => i.id === afterAttack.consumedFromInstanceId);
+          characterRef.current = afterAttack.character;
+          setCharacter(afterAttack.character);
+          const afterInst = (afterAttack.character.inventario ?? []).find((i) => i.id === afterAttack.consumedFromInstanceId);
+          ammoConsumed = true;
+          if (beforeInst?.aljava && afterInst?.aljava) {
+            ammoBefore = getAljavaTotalFlechas(beforeInst.aljava);
+            ammoAfter = getAljavaTotalFlechas(afterInst.aljava);
+            quiverInstanceId = beforeInst.id;
+            quiverName = beforeInst.itemNome;
+            arrowType = afterAttack.consumedFlechaSlug
+              ? itemsIniciais.find((m) => m.slug === afterAttack.consumedFlechaSlug)?.nome ?? afterAttack.consumedFlechaSlug
+              : null;
+            if (afterAttack.isFlechaEspecial && afterAttack.consumedFlechaSlug) {
+              addLogEntry("acao_combate", `Sugestão: aplicar efeito especial de ${arrowType} (resolução manual).`);
+            }
+          } else {
+            ammoBefore = beforeInst ? getWeaponAmmoAtual(beforeInst) : null;
+            ammoAfter = afterInst ? getWeaponAmmoAtual(afterInst) : null;
+          }
         }
       }
+
+      attackLogFields = {
+        weaponInstanceId: attackWeaponInstanceId,
+        weaponName: attackWeaponModel?.nome ?? "Ataque desarmado",
+        weaponCategory: attackWeaponModel?.categoria ?? null,
+        weaponSubtype: attackWeaponModel?.subtipo ?? null,
+        weaponTags: attackWeaponModel?.tags ?? [],
+        attackSkill: resolved.skill,
+        attackAttribute: resolved.attribute,
+        damageBase: resolved.danoBase,
+        damageType: resolved.tipoDano,
+        damageSubtype: resolved.subtipoDano,
+        damageStructured: resolved.danoEstruturado,
+        ammoConsumed,
+        ammoBefore,
+        ammoAfter,
+        quiverInstanceId,
+        quiverName,
+        arrowType,
+      };
     }
 
     // Checkpoint v0.65 — ações que automatizaram remoção de
     // condição/toggle de postura persistem sozinhas quando conectado a
     // mesa/personagem salvo (ver persistAutomatedActionExecution acima).
-    if (result.removedConditions.length > 0 || result.postureChange) {
+    // Atacar entra na mesma regra quando consome munição/flecha (inventário mudou).
+    if (result.removedConditions.length > 0 || result.postureChange || attackLogFields.ammoConsumed) {
       await persistAutomatedActionExecution(characterRef.current);
     }
 
@@ -2474,6 +2556,20 @@ export default function CharacterSheetClient({
     for (const lembrete of result.reminders) {
       addLogEntry("acao_combate", `Lembrete: ${lembrete}`);
     }
+    if (temEfeitoAtaque) {
+      const danoTexto = attackLogFields.damageStructured
+        ? `${attackLogFields.damageBase} (${attackLogFields.damageType}/${attackLogFields.damageSubtype})`
+        : "dano não estruturado";
+      const municaoTexto = attackLogFields.ammoConsumed
+        ? attackLogFields.quiverName
+          ? ` — ${attackLogFields.quiverName}: ${attackLogFields.arrowType} (${attackLogFields.ammoBefore} → ${attackLogFields.ammoAfter})`
+          : ` — munição ${attackLogFields.ammoBefore} → ${attackLogFields.ammoAfter}`
+        : "";
+      addLogEntry(
+        "acao_combate",
+        `Ataque: ${attackLogFields.weaponName} — perícia ${attackLogFields.attackSkill ?? "?"}, dano-base ${danoTexto}${municaoTexto}.`,
+      );
+    }
 
     try {
       if (selectedCampaignId) {
@@ -2492,6 +2588,7 @@ export default function CharacterSheetClient({
             characterId,
             characterNome: currentCharacter.nome,
             profileId: selectedProfileId,
+            profileNickname: perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null,
             actionId: actionContent.id,
             actionSlug,
             actionName: item.nome,
@@ -2499,6 +2596,7 @@ export default function CharacterSheetClient({
             actionType: actionContent.tipo,
             cost: { label: item.custoLabel, pa: item.custoPA, reacao: item.custoReacao },
             reminders: result.reminders,
+            ...attackLogFields,
             appliedState: result.postureChange?.direction === "ativar" ? result.postureChange.conditionSlug : undefined,
             removedStates:
               result.postureChange?.direction === "encerrar"
@@ -2542,8 +2640,30 @@ export default function CharacterSheetClient({
    */
   function handleRollAction(actionId: string) {
     const item = actionConsoleItems.find((action) => action.id === actionId);
-    if (!item?.rollSkillId) return;
+    if (!item) return;
+    // "Atacar" não tem `teste.pericias` simples (é contestado_ou_simples,
+    // ver getSimpleActionRollSkill) — a perícia correta depende da arma
+    // selecionada, resolvida em attackPreview (mesma lógica de handleUseAction).
+    if (actionContentHasResolverAtaque(item) && attackPreview?.skill) {
+      if (attackPreview.attribute) {
+        const weaponName = attackWeaponCandidates.find((c) => c.instanceId === effectiveSelectedAttackWeaponId)?.nome ?? "Ataque desarmado";
+        setPreparedRoll({ atributoId: attackPreview.attribute, periciaId: attackPreview.skill, origem: `Atacar: ${weaponName}` });
+        setActiveTab("rolagens");
+        return;
+      }
+      handleRollPericia(attackPreview.skill);
+      return;
+    }
+    if (!item.rollSkillId) return;
     handleRollPericia(item.rollSkillId);
+  }
+
+  function actionContentHasResolverAtaque(item: { payloadAutomacao?: unknown }): boolean {
+    const efeitos = (item.payloadAutomacao as Record<string, unknown> | undefined)?.efeitos;
+    return (
+      Array.isArray(efeitos) &&
+      efeitos.some((e) => typeof e === "object" && e !== null && (e as Record<string, unknown>).tipo === "resolver_ataque")
+    );
   }
 
   /**
@@ -2909,6 +3029,10 @@ export default function CharacterSheetClient({
           executingActionId={executingActionId}
           onExecute={handleUseAction}
           onRoll={handleRollAction}
+          attackWeaponOptions={attackWeaponCandidates.map((c) => ({ instanceId: c.instanceId, nome: c.nome }))}
+          selectedAttackWeaponId={effectiveSelectedAttackWeaponId}
+          onSelectAttackWeapon={(id) => setSelectedAttackWeaponId(id ?? "__desarmado__")}
+          attackPreview={attackPreview}
         />
       )}
 

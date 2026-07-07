@@ -136,6 +136,25 @@ function formatActionUsed(payload: Record<string, unknown>): string {
   if (appliedState) partes.push(`ativou ${humanizeStateSlug(appliedState)}`);
   if (removedStates.length > 0) partes.push(`desligou ${removedStates.map(humanizeStateSlug).join(", ")}`);
   if (pendingEffects.length > 0) partes.push(`pendente: ${pendingEffects.join(", ")}`);
+
+  const weaponName = typeof payload.weaponName === "string" ? payload.weaponName : null;
+  if (weaponName) {
+    const attackSkill = typeof payload.attackSkill === "string" ? payload.attackSkill : null;
+    partes.push(`arma: ${weaponName}${attackSkill ? ` (${attackSkill})` : ""}`);
+    const damageBase = typeof payload.damageBase === "string" ? payload.damageBase : null;
+    const damageType = typeof payload.damageType === "string" ? payload.damageType : null;
+    partes.push(`dano-base: ${damageBase ? `${damageBase}${damageType ? ` (${damageType})` : ""}` : "não estruturado"}`);
+    if (payload.ammoConsumed === true) {
+      const quiverName = typeof payload.quiverName === "string" ? payload.quiverName : null;
+      const arrowType = typeof payload.arrowType === "string" ? payload.arrowType : null;
+      const ammoBefore = typeof payload.ammoBefore === "number" ? payload.ammoBefore : "?";
+      const ammoAfter = typeof payload.ammoAfter === "number" ? payload.ammoAfter : "?";
+      partes.push(
+        quiverName ? `${quiverName}: ${arrowType ?? "flecha"} ${ammoBefore} → ${ammoAfter}` : `munição ${ammoBefore} → ${ammoAfter}`,
+      );
+    }
+  }
+
   const base = `${characterNome}: ${actionName} (${partes.join(" · ")})`;
   return reminders.length > 0 ? `${base} — Lembrete: ${reminders.join(" ")}` : base;
 }

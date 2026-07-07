@@ -98,6 +98,16 @@ export interface ItemContent {
   ammoKitQuantidade: number | null;
   /** `estatisticas.inclui_na_compra` — descritivo (ex.: "10 flechas simples") do que vem incluído na compra da arma. `null` se ausente. */
   inclui_na_compra?: string | null;
+  /** `estatisticas.dado_dano` (ex.: "1d6") — dano-base da arma, textual. `null` se ausente/não estruturado. */
+  danoBase: string | null;
+  /** `estatisticas.tipo_dano` (ex.: "fisico"). `null` se ausente. */
+  tipoDano: string | null;
+  /** `estatisticas.subtipo_dano` (ex.: "perfurante"). `null` se ausente. */
+  subtipoDano: string | null;
+  /** `estatisticas.pericia_teste` (ex.: "luta", "balistica", "precisao") — perícia declarada pelo conteúdo para o teste de ataque. `null` se ausente. */
+  periciaAtaque: string | null;
+  /** `estatisticas.soma_atributo` (ex.: "corpo") — atributo somado ao teste de ataque, se o conteúdo declarar. `null` se ausente/não aplicável. */
+  atributoAtaque: string | null;
   status: string;
 }
 
@@ -145,6 +155,11 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
     })(),
     ammoKitQuantidade: parseKitQuantidade(estatisticas?.kit),
     inclui_na_compra: typeof estatisticas?.inclui_na_compra === "string" ? estatisticas.inclui_na_compra : undefined,
+    danoBase: typeof estatisticas?.dado_dano === "string" ? estatisticas.dado_dano : null,
+    tipoDano: typeof estatisticas?.tipo_dano === "string" ? estatisticas.tipo_dano : null,
+    subtipoDano: typeof estatisticas?.subtipo_dano === "string" ? estatisticas.subtipo_dano : null,
+    periciaAtaque: typeof estatisticas?.pericia_teste === "string" ? estatisticas.pericia_teste : null,
+    atributoAtaque: typeof estatisticas?.soma_atributo === "string" ? estatisticas.soma_atributo : null,
     status: String(raw.status ?? "published"),
   };
 }

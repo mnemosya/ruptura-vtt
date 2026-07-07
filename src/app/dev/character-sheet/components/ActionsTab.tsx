@@ -27,6 +27,29 @@ const CATEGORIA_LABELS: Record<Categoria, string> = {
   livre: "Livre",
 };
 
+/** Detecta o efeito "resolver_ataque" no payload — mesmo critério usado em CharacterSheetClient. */
+function temEfeitoAtaque(action: ActionConsoleItem): boolean {
+  const efeitos = (action.payloadAutomacao as Record<string, unknown> | undefined)?.efeitos;
+  return (
+    Array.isArray(efeitos) &&
+    efeitos.some((e) => typeof e === "object" && e !== null && (e as Record<string, unknown>).tipo === "resolver_ataque")
+  );
+}
+
+export interface AttackWeaponOption {
+  instanceId: string | null;
+  nome: string;
+}
+
+export interface AttackPreview {
+  skill: string | null;
+  attribute: string | null;
+  danoBase: string | null;
+  tipoDano: string | null;
+  subtipoDano: string | null;
+  danoEstruturado: boolean;
+}
+
 export function ActionsTab({
   actions,
   paAtual,
@@ -39,6 +62,10 @@ export function ActionsTab({
   executingActionId,
   onExecute,
   onRoll,
+  attackWeaponOptions,
+  selectedAttackWeaponId,
+  onSelectAttackWeapon,
+  attackPreview,
 }: {
   actions: ActionConsoleItem[];
   paAtual: number;
@@ -52,6 +79,12 @@ export function ActionsTab({
   onExecute: (actionId: string) => void;
   /** undefined para uma ação = sem rolagem simples integrada disponível (sem `teste.pericias`). */
   onRoll: (actionId: string) => void;
+  /** Candidatos de arma para "Atacar" (armas empunhadas + "Ataque desarmado"). */
+  attackWeaponOptions: AttackWeaponOption[];
+  selectedAttackWeaponId: string | null;
+  onSelectAttackWeapon: (instanceId: string | null) => void;
+  /** Perícia/atributo/dano resolvidos da arma selecionada — só exibição, nunca aplica dano. */
+  attackPreview: AttackPreview | null;
 }) {
   const [categoria, setCategoria] = useState<Categoria>("todos");
 
@@ -120,6 +153,10 @@ export function ActionsTab({
             executing={executingActionId === action.id}
             onExecute={() => onExecute(action.id)}
             onRoll={() => onRoll(action.id)}
+            attackWeaponOptions={temEfeitoAtaque(action) ? attackWeaponOptions : null}
+            selectedAttackWeaponId={selectedAttackWeaponId}
+            onSelectAttackWeapon={onSelectAttackWeapon}
+            attackPreview={temEfeitoAtaque(action) ? attackPreview : null}
           />
         ))}
       </div>
@@ -145,13 +182,21 @@ function ActionCard({
   executing,
   onExecute,
   onRoll,
+  attackWeaponOptions,
+  selectedAttackWeaponId,
+  onSelectAttackWeapon,
+  attackPreview,
 }: {
   action: ActionConsoleItem;
   executing: boolean;
   onExecute: () => void;
   onRoll: () => void;
+  attackWeaponOptions: AttackWeaponOption[] | null;
+  selectedAttackWeaponId: string | null;
+  onSelectAttackWeapon: (instanceId: string | null) => void;
+  attackPreview: AttackPreview | null;
 }) {
-  const podeRolar = action.rollSkillId != null;
+  const podeRolar = action.rollSkillId != null || (attackWeaponOptions != null && attackPreview?.skill != null);
   const executeEnabled = action.enabled && !executing;
   return (
     <div
@@ -202,6 +247,32 @@ function ActionCard({
           {requirement.explanation}
         </p>
       ))}
+      {attackWeaponOptions && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <label style={{ fontSize: 11, opacity: 0.7 }}>Arma:</label>
+          <select
+            data-testid={`acao-arma-${action.slug}`}
+            value={selectedAttackWeaponId ?? "__desarmado__"}
+            onChange={(e) => onSelectAttackWeapon(e.target.value === "__desarmado__" ? null : e.target.value)}
+            style={{ fontSize: 12, background: "#111217", color: "#eee", border: "1px solid #333", borderRadius: 6, padding: "3px 6px" }}
+          >
+            {attackWeaponOptions.map((opt) => (
+              <option key={opt.instanceId ?? "__desarmado__"} value={opt.instanceId ?? "__desarmado__"}>
+                {opt.nome}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      {attackPreview && (
+        <p data-testid={`acao-ataque-resumo-${action.slug}`} style={{ fontSize: 11, opacity: 0.7, margin: 0 }}>
+          Perícia: {attackPreview.skill ?? "?"}
+          {attackPreview.attribute ? ` (+${attackPreview.attribute})` : ""} · Dano-base:{" "}
+          {attackPreview.danoEstruturado
+            ? `${attackPreview.danoBase} ${attackPreview.tipoDano ? `(${attackPreview.tipoDano}${attackPreview.subtipoDano ? `/${attackPreview.subtipoDano}` : ""})` : ""}`
+            : "dano não estruturado"}
+        </p>
+      )}
       {action.testeTexto && <p style={{ fontSize: 11, opacity: 0.55, margin: 0 }}>Teste: {action.testeTexto}</p>}
       {action.testeTexto && action.rollDisabledReason && (
         <p style={{ fontSize: 11, opacity: 0.55, margin: 0 }}>{action.rollDisabledReason}</p>

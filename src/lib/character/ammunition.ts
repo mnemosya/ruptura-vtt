@@ -890,12 +890,13 @@ function resolveAljavaParaArco(
 export function checkAttackAmmoBlock(
   character: Character,
   itemsModelo: (Pick<ItemContent, "slug" | "subtipo" | "usesAmmunition"> & { municaoMax?: number | null; municaoCompativelSlug?: string | null })[],
+  opts?: { weaponInstanceId?: string },
 ): ConsumeAmmoMotivoFalha {
   const inventario = character.inventario ?? [];
   let foundWeaponWithAmmo = false;
 
   for (const inst of inventario) {
-    if (inst.estado !== "empunhado") continue;
+    if (opts?.weaponInstanceId ? inst.id !== opts.weaponInstanceId : inst.estado !== "empunhado") continue;
     const modelo = itemsModelo.find((m) => m.slug === inst.itemSlug);
     if (!modelo?.usesAmmunition) continue;
 
@@ -945,12 +946,13 @@ export function checkAttackAmmoBlock(
 export function consumeAttackAmmo(
   character: Character,
   itemsModelo: (Pick<ItemContent, "slug" | "subtipo" | "usesAmmunition"> & { municaoMax?: number | null; municaoCompativelSlug?: string | null })[],
+  opts?: { weaponInstanceId?: string },
 ): ConsumeAmmoResult {
   const inventario = character.inventario ?? [];
   const nenhuma: ConsumeAmmoResult = { character, consumedFromInstanceId: null, consumedFlechaSlug: null, isFlechaEspecial: false, motivoFalha: null };
 
   for (const inst of inventario) {
-    if (inst.estado !== "empunhado") continue;
+    if (opts?.weaponInstanceId ? inst.id !== opts.weaponInstanceId : inst.estado !== "empunhado") continue;
     const modelo = itemsModelo.find((m) => m.slug === inst.itemSlug);
     if (!modelo?.usesAmmunition) continue;
 
