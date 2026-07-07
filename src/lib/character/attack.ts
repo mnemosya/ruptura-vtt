@@ -152,6 +152,166 @@ export function resolveContestedRoll(attackerTotal: number, defenderTotal: numbe
   return { attackerTotal, defenderTotal, margin, attackerWins: margin > 0 };
 }
 
+// ---------------------------------------------------------------------
+// Margem → região do corpo (checkpoint pós-v0.50, "Resolver Ataque" com
+// alvo/região manuais em /dev/table). Tabela fixa do capítulo de
+// Combate — nunca lida de conteúdo, é regra de sistema, não de item.
+// ---------------------------------------------------------------------
+
+export type MarginBand = "miss" | "limited" | "standard" | "critical";
+
+export interface MarginBandRules {
+  band: MarginBand;
+  /** Regiões liberadas para escolha nesta faixa de margem (vazio quando `miss`). */
+  allowedRegions: BodyRegion[];
+  /** "flat" = modificador fixo somado ao dano bruto; "extraDie" = +1 dado do mesmo tipo (regra da margem, não propriedade de arma); "none" = sem ajuste. */
+  modifierType: "flat" | "extraDie" | "none";
+  /** Valor do ajuste "flat" (ex.: -1 na faixa limitada). 0 nas demais faixas. */
+  flatModifier: number;
+}
+
+export type BodyRegion = "cabeca" | "tronco" | "bracos" | "pernas";
+
+export const BODY_REGIONS: readonly BodyRegion[] = ["cabeca", "tronco", "bracos", "pernas"];
+
+export const BODY_REGION_LABELS: Record<BodyRegion, string> = {
+  cabeca: "Cabeça",
+  tronco: "Tronco",
+  bracos: "Braços",
+  pernas: "Pernas",
+};
+
+/**
+ * Margem negativa: ataque errou, nenhuma região liberada (bloqueado, a
+ * menos que o narrador use override). Margem 0–1: só Tronco, -1 no
+ * dano. Margem 2–4: Tronco/Braços/Pernas, sem ajuste. Margem 5+: todas
+ * as regiões, +1 dado de dano (regra de margem crítica — não é
+ * propriedade de arma, não confundir com `deriveCriticalItemPropertySuggestions`).
+ */
+export function resolveMarginBand(margin: number): MarginBandRules {
+  if (margin < 0) {
+    return { band: "miss", allowedRegions: [], modifierType: "none", flatModifier: 0 };
+  }
+  if (margin <= 1) {
+    return { band: "limited", allowedRegions: ["tronco"], modifierType: "flat", flatModifier: -1 };
+  }
+  if (margin <= 4) {
+    return { band: "standard", allowedRegions: ["tronco", "bracos", "pernas"], modifierType: "none", flatModifier: 0 };
+  }
+  return { band: "critical", allowedRegions: [...BODY_REGIONS], modifierType: "extraDie", flatModifier: 0 };
+}
+
+/** Rola +1 dado do mesmo tipo da fórmula-base ("1d6" → +1d6) — null quando a fórmula não é um dado simples (ex.: dano não estruturado ou fixo). */
+export function rollExtraMarginDie(formula: string, rng: () => number = Math.random): number | null {
+  const match = /^(\d+)d(\d+)/.exec(formula.trim().replace(/\s+/g, ""));
+  if (!match) return null;
+  const lados = Number(match[2]);
+  return 1 + Math.floor(rng() * lados);
+}
+
+/** MIT lido do equipamento defensivo ATIVO do alvo (`getEquippedDefenseProfile`) — modelo atual não tem MIT por região (checkpoint v0.58 documentou isso como fora de escopo); o mesmo valor flat vale para qualquer região escolhida. `region` fica no parâmetro só para deixar a chamada explícita sobre qual região está sendo resolvida (uso futuro se o modelo evoluir para MIT por região). */
+export function getRegionMit(
+  defense: EquippedDefenseProfile | undefined,
+  _region: BodyRegion,
+): { mit: number; source: "structured" | "manual" | "none" } {
+  if (defense?.armadura) {
+    return { mit: defense.armadura.mitAtual, source: "structured" };
+  }
+  return { mit: 0, source: "none" };
+}
+
+export interface MarginDamageResolution {
+  character: Character;
+  rawDamage: number;
+  marginDamageModifier: number;
+  damageAfterMargin: number;
+  mitApplied: number;
+  finalDamage: number;
+  pvBefore: number;
+  pvAfter: number;
+  collapseStarted: boolean;
+  collapseTipo: "pv" | "pe" | null;
+  collapseWarnings: string[];
+  collapseAdvanceLogs: string[];
+  collapseAdvanceTableLogs: { type: string; payload: Record<string, unknown> }[];
+}
+
+/**
+ * Aplica dano final (já com ajuste de margem e MIT já decididos pelo
+ * chamador) ao PV do alvo — mesmo padrão de `applyAttackDamage`/
+ * `applyGmDamage`: clamp em 0, aciona `detectCollapseOnResourceChange`
+ * e, se aplicável, `resolveCollapseAdditionalDamage`. Não decide
+ * fórmula/MIT sozinho — quem chama já resolveu `rawDamage` (rolado ou
+ * manual) e `mit` (estruturado ou manual) antes de chegar aqui.
+ */
+export function applyMarginBasedAttackDamage(params: {
+  character: Character;
+  rawDamage: number;
+  marginDamageModifier: number;
+  mit: number;
+  nowIso: string;
+  collapseRules?: CollapseRulesPayload | null;
+  round?: number;
+  scene?: number;
+  rng?: () => number;
+}): MarginDamageResolution {
+  const rawDamage = Math.max(0, Math.trunc(params.rawDamage));
+  const mit = Math.max(0, Math.trunc(params.mit));
+  const damageAfterMargin = Math.max(0, rawDamage + params.marginDamageModifier);
+  const finalDamage = Math.max(0, damageAfterMargin - mit);
+
+  const pvBefore = params.character.recursos_atuais?.pv ?? 0;
+  const peAtual = params.character.recursos_atuais?.pe ?? 0;
+  const pvAfter = Math.max(0, pvBefore - finalDamage);
+
+  const withDamage: Character = {
+    ...params.character,
+    recursos_atuais: { ...params.character.recursos_atuais, pv: pvAfter },
+  };
+
+  const collapse = detectCollapseOnResourceChange(
+    withDamage,
+    { pv: pvBefore, pe: peAtual },
+    { pv: pvAfter, pe: peAtual },
+    params.nowIso,
+  );
+
+  let finalCharacter = collapse.character;
+  let collapseAdvanceLogs: string[] = [];
+  let collapseAdvanceTableLogs: { type: string; payload: Record<string, unknown> }[] = [];
+  if (!collapse.started && !collapse.ended && finalDamage > 0) {
+    const additional = resolveCollapseAdditionalDamage({
+      character: finalCharacter,
+      resource: "pv",
+      damageAmount: finalDamage,
+      rules: params.collapseRules,
+      round: params.round,
+      scene: params.scene,
+      nowIso: params.nowIso,
+      rng: params.rng,
+    });
+    finalCharacter = additional.character;
+    collapseAdvanceLogs = additional.logs;
+    collapseAdvanceTableLogs = additional.tableLogs;
+  }
+
+  return {
+    character: finalCharacter,
+    rawDamage,
+    marginDamageModifier: params.marginDamageModifier,
+    damageAfterMargin,
+    mitApplied: mit,
+    finalDamage,
+    pvBefore,
+    pvAfter,
+    collapseStarted: collapse.started,
+    collapseTipo: collapse.tipo,
+    collapseWarnings: collapse.warnings,
+    collapseAdvanceLogs,
+    collapseAdvanceTableLogs,
+  };
+}
+
 /** Rola "NdM" (ex.: "1d6+2") com RNG injetável — mesmo padrão de `endRoundConditions.ts`/`overload.ts` (sem acoplar ao parser genérico de `lib/dice`, que não aceita RNG injetável). */
 export function rollDamageFormula(formula: string, rng: () => number = Math.random): number {
   const cleaned = formula.trim().replace(/\s+/g, "");

@@ -29,6 +29,8 @@ import {
   MAX_COLLAPSE_SEGMENTS,
   MAX_OVERLOAD_SURGES_PER_DAY,
   formatCriticalItemPropertySuggestions,
+  BODY_REGION_LABELS,
+  type BodyRegion,
 } from "../../../../lib/character";
 
 const inputStyle: React.CSSProperties = {
@@ -412,7 +414,52 @@ function formatSceneEffectExpired(payload: Record<string, unknown>): string {
 }
 
 /** Checkpoint v0.47: cartão de attack_resolved (ataque contestado básico). */
+const MARGIN_BAND_LABELS: Record<string, string> = {
+  miss: "errou",
+  limited: "margem limitada",
+  standard: "margem padrão",
+  critical: "margem crítica",
+};
+
+/**
+ * `attack_resolved` cobre dois formatos: o antigo (mesa dashboard,
+ * `attackerWins`/`damageRoll`, checkpoint v0.47/v0.58) e o novo
+ * (`marginBand`/`selectedRegion`/`finalDamage`, "Resolver Ataque" a
+ * partir de `action_used` em /dev/table, checkpoint pós-v0.50). Nunca
+ * cai em JSON cru.
+ */
 function formatAttackResolved(payload: Record<string, unknown>): string {
+  if (typeof payload.marginBand === "string") {
+    const attackerName = typeof payload.attackerName === "string" ? payload.attackerName : "Atacante";
+    const targetName = typeof payload.targetName === "string" ? payload.targetName : "Alvo";
+    const weaponName = typeof payload.weaponName === "string" ? payload.weaponName : null;
+    const margin = typeof payload.margin === "number" ? payload.margin : null;
+    const bandLabel = MARGIN_BAND_LABELS[payload.marginBand as string] ?? (payload.marginBand as string);
+    const selectedRegion = typeof payload.selectedRegion === "string" ? payload.selectedRegion : null;
+    const regionLabel = selectedRegion ? BODY_REGION_LABELS[selectedRegion as BodyRegion] ?? selectedRegion : null;
+    const rawDamage = typeof payload.rawDamage === "number" ? payload.rawDamage : "?";
+    const mitApplied = typeof payload.mitApplied === "number" ? payload.mitApplied : 0;
+    const finalDamage = typeof payload.finalDamage === "number" ? payload.finalDamage : "?";
+    const pvBefore = typeof payload.targetPvBefore === "number" ? payload.targetPvBefore : "?";
+    const pvAfter = typeof payload.targetPvAfter === "number" ? payload.targetPvAfter : "?";
+    const damageType = typeof payload.damageType === "string" ? payload.damageType : null;
+    const override = payload.override === true;
+
+    const partes = [
+      `${attackerName} → ${targetName}`,
+      weaponName ? `arma: ${weaponName}` : null,
+      margin != null ? `margem ${margin} (${bandLabel})` : bandLabel,
+      regionLabel ? `região: ${regionLabel}` : null,
+      `dano bruto ${rawDamage}${damageType ? ` (${damageType})` : ""}`,
+      `MIT ${mitApplied}`,
+      `dano final ${finalDamage}`,
+      `PV ${pvBefore} → ${pvAfter}`,
+      override ? "override" : null,
+    ].filter((p): p is string => Boolean(p));
+
+    return `Ataque resolvido — ${partes.join(" · ")}.`;
+  }
+
   const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Alvo";
   const attackerNome = typeof payload.attackerNome === "string" ? payload.attackerNome : "Atacante";
   const margin = typeof payload.margin === "number" ? payload.margin : "?";

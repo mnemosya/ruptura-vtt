@@ -42,11 +42,21 @@ import {
   setGmResourceValue,
   applyGmCondition,
   removeGmCondition,
+  getEquippedDefenseProfile,
+  resolveMarginBand,
+  rollExtraMarginDie,
+  getRegionMit,
+  applyMarginBasedAttackDamage,
+  rollDamageFormula,
+  BODY_REGIONS,
+  BODY_REGION_LABELS,
   type GmResource,
   type CharacterRecord,
   type Character,
   type CharacterRulesPayload,
   type DerivedStats,
+  type ItemContent,
+  type BodyRegion,
 } from "../../../lib/character";
 import type { NarratorConditionOption } from "./page";
 
@@ -58,6 +68,30 @@ const buttonStyle: React.CSSProperties = {
   padding: "8px 14px",
   fontSize: 13,
   cursor: "pointer",
+};
+
+interface AttackPanelForm {
+  targetCharacterId: string;
+  attackTotal: string;
+  defenseTotal: string;
+  region: BodyRegion | "";
+  rawDamage: string;
+  mit: string;
+  mitSource: "structured" | "manual" | "none";
+  override: boolean;
+  overrideReason: string;
+}
+
+const DEFAULT_ATTACK_PANEL_FORM: AttackPanelForm = {
+  targetCharacterId: "",
+  attackTotal: "",
+  defenseTotal: "",
+  region: "",
+  rawDamage: "",
+  mit: "",
+  mitSource: "none",
+  override: false,
+  overrideReason: "",
 };
 
 const inputStyle: React.CSSProperties = {
@@ -159,12 +193,74 @@ function formatActionUsed(payload: Record<string, unknown>): string {
   return reminders.length > 0 ? `${base} — Lembrete: ${reminders.join(" ")}` : base;
 }
 
+const MARGIN_BAND_LABELS: Record<string, string> = {
+  miss: "errou",
+  limited: "margem limitada",
+  standard: "margem padrão",
+  critical: "margem crítica",
+};
+
+/**
+ * `attack_resolved` — tipo canônico já existente (mesa dashboard,
+ * checkpoint v0.47/v0.58, ver `formatAttackResolved` em MesaTab.tsx).
+ * Este formatador cobre AMBOS os formatos de payload: o antigo
+ * (`attackerWins`/`attackerTotal`/`damageRoll`, ataque contestado
+ * direto do dashboard) e o novo (`marginBand`/`selectedRegion`/
+ * `finalDamage`, "Resolver Ataque" a partir de um log `action_used` em
+ * /dev/table, checkpoint pós-v0.50). Nunca cai em JSON cru.
+ */
+function formatAttackResolved(payload: Record<string, unknown>): string {
+  // Formato novo (marginBand presente) — resolução por margem/região a partir de action_used.
+  if (typeof payload.marginBand === "string") {
+    const attackerName = typeof payload.attackerName === "string" ? payload.attackerName : "Atacante";
+    const targetName = typeof payload.targetName === "string" ? payload.targetName : "Alvo";
+    const weaponName = typeof payload.weaponName === "string" ? payload.weaponName : null;
+    const margin = typeof payload.margin === "number" ? payload.margin : null;
+    const bandLabel = MARGIN_BAND_LABELS[payload.marginBand as string] ?? (payload.marginBand as string);
+    const selectedRegion = typeof payload.selectedRegion === "string" ? payload.selectedRegion : null;
+    const regionLabel = selectedRegion ? BODY_REGION_LABELS[selectedRegion as BodyRegion] ?? selectedRegion : null;
+    const rawDamage = typeof payload.rawDamage === "number" ? payload.rawDamage : "?";
+    const mitApplied = typeof payload.mitApplied === "number" ? payload.mitApplied : 0;
+    const finalDamage = typeof payload.finalDamage === "number" ? payload.finalDamage : "?";
+    const pvBefore = typeof payload.targetPvBefore === "number" ? payload.targetPvBefore : "?";
+    const pvAfter = typeof payload.targetPvAfter === "number" ? payload.targetPvAfter : "?";
+    const damageType = typeof payload.damageType === "string" ? payload.damageType : null;
+    const override = payload.override === true;
+
+    const partes = [
+      `${attackerName} → ${targetName}`,
+      weaponName ? `arma: ${weaponName}` : null,
+      margin != null ? `margem ${margin} (${bandLabel})` : bandLabel,
+      regionLabel ? `região: ${regionLabel}` : null,
+      `dano bruto ${rawDamage}${damageType ? ` (${damageType})` : ""}`,
+      `MIT ${mitApplied}`,
+      `dano final ${finalDamage}`,
+      `PV ${pvBefore} → ${pvAfter}`,
+      override ? "override" : null,
+    ].filter((p): p is string => Boolean(p));
+
+    return `Ataque resolvido — ${partes.join(" · ")}.`;
+  }
+
+  // Formato antigo (mesa dashboard, checkpoint v0.47/v0.58) — mantido para logs anteriores.
+  const attackerNome = typeof payload.attackerNome === "string" ? payload.attackerNome : "Atacante";
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Alvo";
+  const margin = typeof payload.margin === "number" ? payload.margin : "?";
+  if (payload.attackerWins === true) {
+    const damageRoll = typeof payload.damageRoll === "number" ? payload.damageRoll : "?";
+    const damageType = typeof payload.damageType === "string" ? payload.damageType : "";
+    return `${attackerNome} atacou ${characterNome} (margem ${margin}) — ${damageRoll} de dano ${damageType}.`;
+  }
+  return `${attackerNome} atacou ${characterNome} (margem ${margin}) — defesa bem-sucedida, sem dano.`;
+}
+
 const ENTRY_KIND_LABELS: Record<string, string> = {
   chat: "Mensagem",
   rolagem_pericia: "Rolagem de Perícia",
   rolagem_expressao: "Rolagem de Expressão",
   profile_event: "Evento de Perfil",
   action_used: "Ação Usada",
+  attack_resolved: "Ataque Resolvido",
 };
 
 function entryKindLabel(type: string): string {
@@ -176,6 +272,7 @@ function entryIcon(type: string): string {
   if (type === "rolagem_pericia" || type === "rolagem_expressao") return "🎲";
   if (type === "profile_event") return "🔑";
   if (type === "action_used") return "⚔";
+  if (type === "attack_resolved") return "💥";
   return "•";
 }
 
@@ -222,6 +319,8 @@ interface Props {
   regras: CharacterRulesPayload | null;
   /** Condições publicadas na Biblioteca (checkpoint v0.63) — fonte única do select "Aplicar condição"; nunca lista hardcoded aqui. */
   condicoesDisponiveis: NarratorConditionOption[];
+  /** Itens publicados na Biblioteca (checkpoint pós-v0.50, "Resolver Ataque") — só para ler o MIT ATUAL do equipamento defensivo ativo do alvo. */
+  itemsIniciais: ItemContent[];
 }
 
 const GM_RESOURCE_LABELS: Record<GmResource, string> = { pv: "PV", pe: "PE", mana: "Mana", integridade: "Integridade" };
@@ -238,7 +337,7 @@ function gmDerivedMax(payload: Character, regras: CharacterRulesPayload | null, 
   return derivados[GM_RESOURCE_MAX_KEY[resource]];
 }
 
-export default function TableClient({ mesasIniciais, personagensIniciais, currentUserEmail, currentUserId, regras, condicoesDisponiveis }: Props) {
+export default function TableClient({ mesasIniciais, personagensIniciais, currentUserEmail, currentUserId, regras, condicoesDisponiveis, itemsIniciais }: Props) {
   const [mesas, setMesas] = useState<Campaign[]>(mesasIniciais);
   const [personagens] = useState<CharacterRecord[]>(personagensIniciais);
   const [novaMesaNome, setNovaMesaNome] = useState("");
@@ -280,6 +379,200 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
   const [gmCuraForm, setGmCuraForm] = useState<Record<string, { recurso: "pv" | "pe" | "mana"; valor: number; nota: string }>>({});
   const [gmSetForm, setGmSetForm] = useState<Record<string, { recurso: GmResource; valor: number; nota: string }>>({});
   const [gmCondicaoForm, setGmCondicaoForm] = useState<Record<string, string>>({});
+
+  // ---------------------------------------------------------------
+  // "Resolver Ataque" a partir de um log `action_used` de Atacar
+  // (checkpoint pós-v0.50). Teatro da mente: alvo é escolhido
+  // manualmente entre os personagens ativos da mesa (`personagensAtivos`,
+  // acima) — sem token/mapa/distância/adjacência/linha de visão
+  // automática. Defesa/CD, ataque total, dano bruto e MIT são
+  // informados ou conferidos manualmente pelo narrador; a margem e a
+  // região liberada são derivadas (`resolveMarginBand`). Um painel por
+  // log (`ataqueResolvendoLogId` guarda qual está aberto).
+  // ---------------------------------------------------------------
+  const [ataqueResolvendoLogId, setAtaqueResolvendoLogId] = useState<string | null>(null);
+  const [ataquePainelForm, setAtaquePainelForm] = useState<Record<string, AttackPanelForm>>({});
+  const [ataqueResolverErro, setAtaqueResolverErro] = useState<string | null>(null);
+  const [ataqueResolverProcessing, setAtaqueResolverProcessing] = useState<string | null>(null);
+
+  /** true quando `damageBase` é uma fórmula "NdM" simples (rolável automaticamente); false para dano fixo/não estruturado. */
+  function isDiceFormula(damageBase: string | null | undefined): boolean {
+    return typeof damageBase === "string" && /^\d+d\d+([+-]\d+)?$/.test(damageBase.trim().replace(/\s+/g, ""));
+  }
+
+  function handleOpenResolveAttack(log: TableLogEntry) {
+    setAtaqueResolverErro(null);
+    setAtaqueResolvendoLogId(log.id);
+    if (!ataquePainelForm[log.id]) {
+      const damageBase = typeof log.payload.damageBase === "string" ? log.payload.damageBase : null;
+      // Dano fixo (ex.: ataque desarmado "3", vindo de Corpo) já é um número pronto — pré-preenche;
+      // fórmula "NdM" fica para o botão "Rolar dano"; "dano não estruturado" fica vazio (exige preenchimento manual).
+      const rawDamagePrefill = damageBase && !isDiceFormula(damageBase) && /^\d+$/.test(damageBase.trim()) ? damageBase.trim() : "";
+      setAtaquePainelForm((prev) => ({ ...prev, [log.id]: { ...DEFAULT_ATTACK_PANEL_FORM, rawDamage: rawDamagePrefill } }));
+    }
+  }
+
+  function updateAttackPanelForm(logId: string, patch: Partial<AttackPanelForm>) {
+    setAtaquePainelForm((prev) => ({ ...prev, [logId]: { ...(prev[logId] ?? DEFAULT_ATTACK_PANEL_FORM), ...patch } }));
+  }
+
+  /** Ao escolher a região, tenta preencher o MIT automaticamente com o MIT ATUAL do equipamento defensivo ativo do alvo (flat — o modelo hoje não tem MIT por região, ver getRegionMit). Sempre editável depois. */
+  function handleSelectAttackRegion(logId: string, targetCharacterId: string, region: BodyRegion) {
+    const targetRecord = personagensAtivos[targetCharacterId];
+    if (!targetRecord) {
+      updateAttackPanelForm(logId, { region });
+      return;
+    }
+    const targetNormalizado = normalizeCharacter(targetRecord.payload);
+    const defesa = getEquippedDefenseProfile(targetNormalizado, itemsIniciais);
+    const { mit, source } = getRegionMit(defesa, region);
+    updateAttackPanelForm(logId, { region, mit: String(mit), mitSource: source });
+  }
+
+  function handleRollAttackDamage(logId: string, log: TableLogEntry) {
+    const damageBase = typeof log.payload.damageBase === "string" ? log.payload.damageBase : null;
+    if (!damageBase || !isDiceFormula(damageBase)) return;
+    const rolled = rollDamageFormula(damageBase);
+    updateAttackPanelForm(logId, { rawDamage: String(rolled) });
+  }
+
+  /** Botão "+1 dado de dano (margem crítica)" — soma +1 dado do mesmo tipo da fórmula-base ao dano bruto já informado; se a fórmula não for um dado simples, não faz nada (o lembrete textual aparece na UI). */
+  function handleRollExtraMarginDie(logId: string, log: TableLogEntry) {
+    const form = ataquePainelForm[logId] ?? DEFAULT_ATTACK_PANEL_FORM;
+    const damageBase = typeof log.payload.damageBase === "string" ? log.payload.damageBase : null;
+    if (!damageBase) return;
+    const extra = rollExtraMarginDie(damageBase);
+    if (extra == null) return;
+    const atual = Number(form.rawDamage) || 0;
+    updateAttackPanelForm(logId, { rawDamage: String(atual + extra) });
+  }
+
+  async function handleResolveAttackDamage(log: TableLogEntry) {
+    if (!selectedCampaignId) return;
+    const form = ataquePainelForm[log.id] ?? DEFAULT_ATTACK_PANEL_FORM;
+    setAtaqueResolverErro(null);
+
+    const targetRecord = form.targetCharacterId ? personagensAtivos[form.targetCharacterId] : null;
+    if (!targetRecord) {
+      setAtaqueResolverErro("Selecione o alvo antes de aplicar dano.");
+      return;
+    }
+    const rawDamage = Number(form.rawDamage);
+    if (!Number.isFinite(rawDamage)) {
+      setAtaqueResolverErro("Informe o dano bruto antes de aplicar.");
+      return;
+    }
+
+    const attackTotal = form.attackTotal.trim() ? Number(form.attackTotal) : null;
+    const defenseTotal = form.defenseTotal.trim() ? Number(form.defenseTotal) : null;
+    const hasMargin = attackTotal != null && Number.isFinite(attackTotal) && defenseTotal != null && Number.isFinite(defenseTotal);
+    const margin = hasMargin ? attackTotal! - defenseTotal! : null;
+    const bandRules = margin != null ? resolveMarginBand(margin) : null;
+    const marginBand: "limited" | "standard" | "critical" | "miss" | null = bandRules?.band ?? null;
+
+    if (margin != null && margin < 0 && !form.override) {
+      setAtaqueResolverErro('Ataque não acertou pela margem informada. Marque "Resolver mesmo assim" para aplicar dano por override.');
+      return;
+    }
+    if (!form.region && !form.override) {
+      setAtaqueResolverErro("Selecione a região atingida antes de aplicar dano.");
+      return;
+    }
+    if (bandRules && form.region && !bandRules.allowedRegions.includes(form.region as BodyRegion) && !form.override) {
+      setAtaqueResolverErro(`Região "${BODY_REGION_LABELS[form.region as BodyRegion]}" não é permitida para a margem ${margin} sem override.`);
+      return;
+    }
+
+    // Log já resolvido antes — permitir de novo só com override (segurança operacional, sem apagar o antigo).
+    const jaResolvido = logs.some((l) => l.type === "attack_resolved" && l.payload.sourceActionLogId === log.id);
+    if (jaResolvido && !form.override) {
+      setAtaqueResolverErro('Este ataque já tem resolução registrada. Marque "Resolver mesmo assim" para registrar de novo.');
+      return;
+    }
+
+    const mit = form.mit.trim() ? Number(form.mit) : 0;
+    const marginDamageModifier = bandRules?.modifierType === "flat" ? bandRules.flatModifier : 0;
+
+    setAtaqueResolverProcessing(log.id);
+    try {
+      const nowIso = new Date().toISOString();
+      const targetNormalizado = normalizeCharacter(targetRecord.payload);
+      const resolucao = applyMarginBasedAttackDamage({
+        character: targetNormalizado,
+        rawDamage,
+        marginDamageModifier,
+        mit,
+        nowIso,
+        collapseRules: regras?.colapso,
+        round: targetNormalizado.current_round,
+        scene: targetNormalizado.current_scene,
+      });
+
+      const record = await updateCharacter(form.targetCharacterId, resolucao.character);
+      setPersonagensAtivos((prev) => ({ ...prev, [record.id]: record }));
+
+      const reminders: string[] = [];
+      if (log.payload.reminders && Array.isArray(log.payload.reminders)) {
+        reminders.push(...(log.payload.reminders as unknown[]).filter((r): r is string => typeof r === "string"));
+      }
+      if (bandRules?.modifierType === "extraDie") {
+        const damageBase = typeof log.payload.damageBase === "string" ? log.payload.damageBase : null;
+        if (!damageBase || !isDiceFormula(damageBase)) {
+          reminders.push("+1 dado de dano pela margem crítica (fórmula não estruturada — inclua manualmente no dano bruto).");
+        }
+      }
+      const requisitosTexto = [
+        "Cobertura, alcance, linha de visão, linha de efeito e posição não são validados automaticamente.",
+      ];
+
+      const novoLog = await addLog({
+        campaignId: selectedCampaignId,
+        characterId: form.targetCharacterId,
+        type: "attack_resolved",
+        visibility: "public",
+        payload: {
+          sourceActionLogId: log.id,
+          attackerCharacterId: typeof log.payload.characterId === "string" ? log.payload.characterId : null,
+          attackerName: typeof log.payload.characterNome === "string" ? log.payload.characterNome : "Atacante",
+          targetCharacterId: form.targetCharacterId,
+          targetName: record.name,
+          weaponName: typeof log.payload.weaponName === "string" ? log.payload.weaponName : "Ataque desarmado",
+          attackTotal,
+          defenseTotal,
+          margin,
+          marginBand,
+          allowedRegions: bandRules?.allowedRegions ?? [],
+          selectedRegion: form.region || null,
+          rawDamage: resolucao.rawDamage,
+          marginDamageModifier: resolucao.marginDamageModifier,
+          damageAfterMargin: resolucao.damageAfterMargin,
+          mitApplied: resolucao.mitApplied,
+          mitSource: form.mitSource,
+          finalDamage: resolucao.finalDamage,
+          targetPvBefore: resolucao.pvBefore,
+          targetPvAfter: resolucao.pvAfter,
+          damageType: typeof log.payload.damageType === "string" ? log.payload.damageType : null,
+          override: form.override,
+          overrideReason: form.overrideReason.trim() || null,
+          reminders: [...requisitosTexto, ...reminders],
+          collapseStarted: resolucao.collapseStarted,
+          collapseAdvanced: resolucao.collapseAdvanceLogs.length > 0,
+          source: "attack_resolution",
+        },
+      });
+      setLogs((prev) => [novoLog, ...prev]);
+      setAtaqueResolvendoLogId(null);
+      setAtaquePainelForm((prev) => {
+        const next = { ...prev };
+        delete next[log.id];
+        return next;
+      });
+    } catch (err) {
+      setAtaqueResolverErro(err instanceof Error ? err.message : "Erro desconhecido ao aplicar dano — dados preenchidos foram mantidos.");
+    } finally {
+      setAtaqueResolverProcessing(null);
+    }
+  }
 
   async function refreshPersonagensAtivos(perfisAtuais: CampaignProfile[]) {
     const ids = Array.from(new Set(perfisAtuais.map((p) => p.active_character_id).filter((id): id is string => !!id)));
@@ -1298,6 +1591,10 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                 const isRolagem = entry.type === "rolagem_pericia" || entry.type === "rolagem_expressao";
                 const isProfileEvent = entry.type === "profile_event";
                 const isActionUsed = entry.type === "action_used";
+                const isAttackResolved = entry.type === "attack_resolved";
+                // "Resolver ataque" só faz sentido para action_used de Atacar (detectado pelo mesmo campo que a ficha grava — weaponName presente).
+                const isAttackAction = isActionUsed && typeof entry.payload.weaponName === "string";
+                const jaResolvido = isAttackAction && logs.some((l) => l.type === "attack_resolved" && l.payload.sourceActionLogId === entry.id);
                 // Chat aceita `text` (ficha, checkpoint v0.12) ou `mensagem` (formato antigo desta tela).
                 const chatTexto =
                   typeof entry.payload.text === "string"
@@ -1313,8 +1610,10 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                       ? formatProfileEvent(entry.payload)
                       : isActionUsed
                         ? formatActionUsed(entry.payload)
-                        : JSON.stringify(entry.payload);
-                const corBorda = isChat ? "#4f8cff" : isProfileEvent ? "#ff6b9f" : isActionUsed ? "#ff9f6b" : "#ffb84f";
+                        : isAttackResolved
+                          ? formatAttackResolved(entry.payload)
+                          : JSON.stringify(entry.payload);
+                const corBorda = isChat ? "#4f8cff" : isProfileEvent ? "#ff6b9f" : isActionUsed ? "#ff9f6b" : isAttackResolved ? "#ff5252" : "#ffb84f";
 
                 return (
                   <div
@@ -1340,6 +1639,33 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                       </span>
                     </div>
                     <span data-testid="log-entry-mensagem">{conteudo}</span>
+                    {isAttackAction && (
+                      <div style={{ marginTop: 4 }}>
+                        <button
+                          data-testid={`log-resolver-ataque-${entry.id}`}
+                          onClick={() => handleOpenResolveAttack(entry)}
+                          style={{ ...buttonStyle, fontSize: 11, padding: "4px 10px", opacity: 0.85 }}
+                        >
+                          Resolver ataque{jaResolvido ? " (já resolvido)" : ""}
+                        </button>
+                      </div>
+                    )}
+                    {isAttackAction && ataqueResolvendoLogId === entry.id && (
+                      <AttackResolutionPanel
+                        log={entry}
+                        form={ataquePainelForm[entry.id] ?? DEFAULT_ATTACK_PANEL_FORM}
+                        personagensAtivos={personagensAtivos}
+                        jaResolvido={jaResolvido}
+                        processing={ataqueResolverProcessing === entry.id}
+                        erro={ataqueResolverErro}
+                        onUpdateForm={(patch) => updateAttackPanelForm(entry.id, patch)}
+                        onSelectRegion={(region) => handleSelectAttackRegion(entry.id, ataquePainelForm[entry.id]?.targetCharacterId ?? "", region)}
+                        onRollDamage={() => handleRollAttackDamage(entry.id, entry)}
+                        onRollExtraMarginDie={() => handleRollExtraMarginDie(entry.id, entry)}
+                        onApply={() => handleResolveAttackDamage(entry)}
+                        onCancel={() => setAtaqueResolvendoLogId(null)}
+                      />
+                    )}
                   </div>
                 );
               })}
@@ -1348,5 +1674,230 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
         </>
       )}
     </main>
+  );
+}
+
+/**
+ * Painel inline "Resolver Ataque" (checkpoint pós-v0.50) — sem
+ * modal/mapa/token. Só apresentação + coleta de campos; toda a
+ * lógica (margem, região liberada, MIT, dano final) fica em
+ * `TableClient`/`lib/character/attack.ts`, chamada via os callbacks.
+ */
+function AttackResolutionPanel({
+  log,
+  form,
+  personagensAtivos,
+  jaResolvido,
+  processing,
+  erro,
+  onUpdateForm,
+  onSelectRegion,
+  onRollDamage,
+  onRollExtraMarginDie,
+  onApply,
+  onCancel,
+}: {
+  log: TableLogEntry;
+  form: AttackPanelForm;
+  personagensAtivos: Record<string, CharacterRecord>;
+  jaResolvido: boolean;
+  processing: boolean;
+  erro: string | null;
+  onUpdateForm: (patch: Partial<AttackPanelForm>) => void;
+  onSelectRegion: (region: BodyRegion) => void;
+  onRollDamage: () => void;
+  onRollExtraMarginDie: () => void;
+  onApply: () => void;
+  onCancel: () => void;
+}) {
+  const attackTotal = form.attackTotal.trim() ? Number(form.attackTotal) : null;
+  const defenseTotal = form.defenseTotal.trim() ? Number(form.defenseTotal) : null;
+  const hasMargin = attackTotal != null && Number.isFinite(attackTotal) && defenseTotal != null && Number.isFinite(defenseTotal);
+  const margin = hasMargin ? attackTotal! - defenseTotal! : null;
+  const bandRules = margin != null ? resolveMarginBand(margin) : null;
+  const rawDamage = Number(form.rawDamage) || 0;
+  const marginDamageModifier = bandRules?.modifierType === "flat" ? bandRules.flatModifier : 0;
+  const damageAfterMargin = Math.max(0, rawDamage + marginDamageModifier);
+  const mit = Number(form.mit) || 0;
+  const finalDamage = Math.max(0, damageAfterMargin - mit);
+  const damageBase = typeof log.payload.damageBase === "string" ? log.payload.damageBase : null;
+  const isDice = damageBase != null && /^\d+d\d+([+-]\d+)?$/.test(damageBase.trim().replace(/\s+/g, ""));
+
+  return (
+    <div
+      data-testid={`painel-resolver-ataque-${log.id}`}
+      style={{ marginTop: 8, background: "#0f1014", borderRadius: 8, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, fontSize: 12 }}
+    >
+      <p style={{ opacity: 0.6, margin: 0 }}>
+        Ataque: {typeof log.payload.characterNome === "string" ? log.payload.characterNome : "Atacante"} · arma:{" "}
+        {typeof log.payload.weaponName === "string" ? log.payload.weaponName : "Ataque desarmado"} · perícia:{" "}
+        {typeof log.payload.attackSkill === "string" ? log.payload.attackSkill : "?"} · dano-base: {damageBase ?? "não estruturado"}
+        {typeof log.payload.damageType === "string" ? ` (${log.payload.damageType})` : ""}
+      </p>
+      <p style={{ opacity: 0.5, margin: 0 }}>
+        Lembrete: cobertura, alcance, linha de visão, linha de efeito e posição não são validados automaticamente.
+      </p>
+      {jaResolvido && (
+        <p style={{ color: "#f5a623", margin: 0 }}>Este ataque já tem resolução registrada.</p>
+      )}
+
+      <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        Alvo
+        <select
+          data-testid={`ataque-alvo-${log.id}`}
+          value={form.targetCharacterId}
+          onChange={(e) => onUpdateForm({ targetCharacterId: e.target.value })}
+          style={inputStyle}
+        >
+          <option value="">— selecione —</option>
+          {Object.values(personagensAtivos).map((record) => (
+            <option key={record.id} value={record.id}>
+              {record.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          Ataque total
+          <input
+            data-testid={`ataque-total-${log.id}`}
+            type="number"
+            value={form.attackTotal}
+            onChange={(e) => onUpdateForm({ attackTotal: e.target.value })}
+            style={{ ...inputStyle, width: 90 }}
+          />
+        </label>
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          Defesa/CD
+          <input
+            data-testid={`ataque-defesa-cd-${log.id}`}
+            type="number"
+            value={form.defenseTotal}
+            onChange={(e) => onUpdateForm({ defenseTotal: e.target.value })}
+            style={{ ...inputStyle, width: 90 }}
+          />
+        </label>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          Margem
+          <span data-testid={`ataque-margem-${log.id}`} style={{ padding: "6px 0" }}>
+            {margin != null ? margin : "—"}
+            {bandRules ? ` (${bandRules.band})` : ""}
+          </span>
+        </div>
+      </div>
+
+      {margin != null && margin < 0 && (
+        <p data-testid={`ataque-aviso-margem-negativa-${log.id}`} style={{ color: "#ff6b6b", margin: 0 }}>
+          Ataque não acertou pela margem informada.
+        </p>
+      )}
+
+      <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        Região
+        <select
+          data-testid={`ataque-regiao-${log.id}`}
+          value={form.region}
+          onChange={(e) => onSelectRegion(e.target.value as BodyRegion)}
+          style={inputStyle}
+        >
+          <option value="">— selecione —</option>
+          {BODY_REGIONS.map((region) => {
+            const permitida = form.override || !bandRules || bandRules.allowedRegions.includes(region);
+            return (
+              <option key={region} value={region} disabled={!permitida}>
+                {BODY_REGION_LABELS[region]}
+                {!permitida ? " (fora da margem)" : ""}
+              </option>
+            );
+          })}
+        </select>
+      </label>
+
+      {bandRules?.modifierType === "extraDie" && (
+        <p style={{ opacity: 0.7, margin: 0 }}>
+          Margem crítica: +1 dado de dano.{" "}
+          {isDice ? (
+            <button data-testid={`ataque-rolar-dado-extra-${log.id}`} onClick={onRollExtraMarginDie} style={{ ...buttonStyle, fontSize: 11, padding: "2px 8px" }}>
+              Rolar +1 dado
+            </button>
+          ) : (
+            "Fórmula não estruturada — inclua manualmente no dano bruto."
+          )}
+        </p>
+      )}
+
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          Dano bruto
+          <input
+            data-testid={`ataque-dano-bruto-${log.id}`}
+            type="number"
+            value={form.rawDamage}
+            onChange={(e) => onUpdateForm({ rawDamage: e.target.value })}
+            style={{ ...inputStyle, width: 90 }}
+          />
+        </label>
+        {isDice && (
+          <button data-testid={`ataque-rolar-dano-${log.id}`} onClick={onRollDamage} style={{ ...buttonStyle, fontSize: 11 }}>
+            Rolar dano ({damageBase})
+          </button>
+        )}
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          MIT
+          <input
+            data-testid={`ataque-mit-${log.id}`}
+            type="number"
+            value={form.mit}
+            onChange={(e) => onUpdateForm({ mit: e.target.value, mitSource: "manual" })}
+            style={{ ...inputStyle, width: 70 }}
+          />
+        </label>
+        <span style={{ opacity: 0.5, fontSize: 11 }}>
+          {form.mitSource === "structured" ? "MIT do equipamento ativo" : form.mitSource === "manual" ? "MIT manual" : "sem MIT estruturado"}
+        </span>
+      </div>
+
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12 }}>
+        <span>
+          Dano após margem: <strong data-testid={`ataque-dano-apos-margem-${log.id}`}>{damageAfterMargin}</strong>
+        </span>
+        <span>
+          Dano final: <strong data-testid={`ataque-dano-final-${log.id}`}>{finalDamage}</strong>
+        </span>
+      </div>
+
+      <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <input
+          data-testid={`ataque-override-${log.id}`}
+          type="checkbox"
+          checked={form.override}
+          onChange={(e) => onUpdateForm({ override: e.target.checked })}
+        />
+        Resolver mesmo assim (override)
+      </label>
+      {form.override && (
+        <input
+          data-testid={`ataque-override-nota-${log.id}`}
+          type="text"
+          placeholder="Nota do override (opcional)"
+          value={form.overrideReason}
+          onChange={(e) => onUpdateForm({ overrideReason: e.target.value })}
+          style={inputStyle}
+        />
+      )}
+
+      {erro && <p style={{ color: "#ff6b6b", margin: 0 }}>{erro}</p>}
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <button data-testid={`ataque-aplicar-dano-${log.id}`} onClick={onApply} disabled={processing} style={{ ...buttonStyle, opacity: processing ? 0.5 : 1 }}>
+          {processing ? "Aplicando…" : "Aplicar dano"}
+        </button>
+        <button onClick={onCancel} style={{ ...buttonStyle, opacity: 0.7 }}>
+          Fechar
+        </button>
+      </div>
+    </div>
   );
 }

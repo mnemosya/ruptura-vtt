@@ -11,9 +11,9 @@
 import { listCampaigns } from "../../../lib/table/storage";
 import { listLegacyCharactersDev } from "../../../lib/character/storage";
 import { getCurrentUser } from "../../../lib/auth/session";
-import { getCharacterRules, listConditions } from "../../../lib/content";
+import { getCharacterRules, listConditions, listItems } from "../../../lib/content";
 import type { Campaign } from "../../../lib/table";
-import type { CharacterRecord, CharacterRulesPayload } from "../../../lib/character";
+import { normalizeItemContent, type CharacterRecord, type CharacterRulesPayload, type ItemContent } from "../../../lib/character";
 import TableClient from "./TableClient";
 
 export const dynamic = "force-dynamic";
@@ -63,6 +63,19 @@ export default async function TablePage() {
     // Lista vazia — a ferramenta de aplicar condição fica sem opções, mas não quebra a página.
   }
 
+  // Itens publicados na Biblioteca (checkpoint pós-v0.50, "Resolver
+  // Ataque" com região/MIT manuais) — só para ler o MIT ATUAL do
+  // equipamento defensivo ativo do alvo (getEquippedDefenseProfile);
+  // falha aqui não trava a página, o painel de resolução cai para MIT
+  // manual/0.
+  let itemsIniciais: ItemContent[] = [];
+  try {
+    const itemDocs = await listItems();
+    itemsIniciais = itemDocs.map((doc) => normalizeItemContent(doc.payload as Record<string, unknown>));
+  } catch {
+    // itemsIniciais vazio — painel de Resolver Ataque cai para MIT manual.
+  }
+
   if (errorMessage) {
     return (
       <main style={{ maxWidth: 640, margin: "60px auto", padding: "0 20px" }}>
@@ -84,6 +97,7 @@ export default async function TablePage() {
       currentUserId={currentUser?.id ?? null}
       regras={regras}
       condicoesDisponiveis={condicoesDisponiveis}
+      itemsIniciais={itemsIniciais}
     />
   );
 }
