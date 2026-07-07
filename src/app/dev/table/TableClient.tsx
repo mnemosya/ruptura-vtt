@@ -78,6 +78,8 @@ interface AttackPanelForm {
   rawDamage: string;
   mit: string;
   mitSource: "structured" | "manual" | "none";
+  /** true assim que o narrador edita o campo MIT à mão — trava o autopreenchimento até "Usar MIT da armadura" ser clicado (fix pós-v0.50: MIT não sobrescreve edição manual ao trocar alvo/região). */
+  mitTouched: boolean;
   override: boolean;
   overrideReason: string;
 }
@@ -90,6 +92,7 @@ const DEFAULT_ATTACK_PANEL_FORM: AttackPanelForm = {
   rawDamage: "",
   mit: "",
   mitSource: "none",
+  mitTouched: false,
   override: false,
   overrideReason: "",
 };
@@ -416,17 +419,50 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     setAtaquePainelForm((prev) => ({ ...prev, [logId]: { ...(prev[logId] ?? DEFAULT_ATTACK_PANEL_FORM), ...patch } }));
   }
 
-  /** Ao escolher a região, tenta preencher o MIT automaticamente com o MIT ATUAL do equipamento defensivo ativo do alvo (flat — o modelo hoje não tem MIT por região, ver getRegionMit). Sempre editável depois. */
-  function handleSelectAttackRegion(logId: string, targetCharacterId: string, region: BodyRegion) {
+  /** MIT ATUAL do equipamento defensivo ativo do alvo (flat — o modelo hoje não tem MIT por região, ver getRegionMit) — null quando não há alvo/região suficiente para calcular. */
+  function computeAutoMit(targetCharacterId: string, region: BodyRegion | ""): { mit: number; source: "structured" | "manual" | "none" } | null {
+    if (!targetCharacterId || !region) return null;
     const targetRecord = personagensAtivos[targetCharacterId];
-    if (!targetRecord) {
-      updateAttackPanelForm(logId, { region });
-      return;
-    }
+    if (!targetRecord) return null;
     const targetNormalizado = normalizeCharacter(targetRecord.payload);
     const defesa = getEquippedDefenseProfile(targetNormalizado, itemsIniciais);
-    const { mit, source } = getRegionMit(defesa, region);
-    updateAttackPanelForm(logId, { region, mit: String(mit), mitSource: source });
+    return getRegionMit(defesa, region);
+  }
+
+  /**
+   * Autopreenche o MIT sempre que alvo OU região mudam — independente
+   * da ordem de seleção (fix pós-v0.50: antes só recalculava no
+   * onChange da região, então escolher a região primeiro e o alvo
+   * depois deixava o MIT parado em "sem MIT estruturado" até a região
+   * ser reselecionada). Nunca sobrescreve um MIT editado manualmente
+   * (`mitTouched`) — o narrador troca de volta clicando "Usar MIT da
+   * armadura".
+   */
+  function handleAttackTargetOrRegionChange(logId: string, patch: { targetCharacterId?: string; region?: BodyRegion }) {
+    const current = ataquePainelForm[logId] ?? DEFAULT_ATTACK_PANEL_FORM;
+    const nextTargetCharacterId = patch.targetCharacterId ?? current.targetCharacterId;
+    const nextRegion = patch.region ?? current.region;
+    if (current.mitTouched) {
+      updateAttackPanelForm(logId, patch);
+      return;
+    }
+    const auto = computeAutoMit(nextTargetCharacterId, nextRegion);
+    updateAttackPanelForm(logId, {
+      ...patch,
+      mit: auto ? String(auto.mit) : current.mit,
+      mitSource: auto ? auto.source : current.mitSource,
+    });
+  }
+
+  /** Botão "Usar MIT da armadura" — descarta a edição manual e recalcula a partir do alvo/região atuais. */
+  function handleUseArmorMit(logId: string) {
+    const current = ataquePainelForm[logId] ?? DEFAULT_ATTACK_PANEL_FORM;
+    const auto = computeAutoMit(current.targetCharacterId, current.region);
+    updateAttackPanelForm(logId, {
+      mit: auto ? String(auto.mit) : "0",
+      mitSource: auto ? auto.source : "none",
+      mitTouched: false,
+    });
   }
 
   function handleRollAttackDamage(logId: string, log: TableLogEntry) {
@@ -1659,7 +1695,9 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                         processing={ataqueResolverProcessing === entry.id}
                         erro={ataqueResolverErro}
                         onUpdateForm={(patch) => updateAttackPanelForm(entry.id, patch)}
-                        onSelectRegion={(region) => handleSelectAttackRegion(entry.id, ataquePainelForm[entry.id]?.targetCharacterId ?? "", region)}
+                        onSelectTarget={(targetCharacterId) => handleAttackTargetOrRegionChange(entry.id, { targetCharacterId })}
+                        onSelectRegion={(region) => handleAttackTargetOrRegionChange(entry.id, { region })}
+                        onUseArmorMit={() => handleUseArmorMit(entry.id)}
                         onRollDamage={() => handleRollAttackDamage(entry.id, entry)}
                         onRollExtraMarginDie={() => handleRollExtraMarginDie(entry.id, entry)}
                         onApply={() => handleResolveAttackDamage(entry)}
@@ -1691,7 +1729,9 @@ function AttackResolutionPanel({
   processing,
   erro,
   onUpdateForm,
+  onSelectTarget,
   onSelectRegion,
+  onUseArmorMit,
   onRollDamage,
   onRollExtraMarginDie,
   onApply,
@@ -1704,7 +1744,9 @@ function AttackResolutionPanel({
   processing: boolean;
   erro: string | null;
   onUpdateForm: (patch: Partial<AttackPanelForm>) => void;
+  onSelectTarget: (targetCharacterId: string) => void;
   onSelectRegion: (region: BodyRegion) => void;
+  onUseArmorMit: () => void;
   onRollDamage: () => void;
   onRollExtraMarginDie: () => void;
   onApply: () => void;
@@ -1746,7 +1788,7 @@ function AttackResolutionPanel({
         <select
           data-testid={`ataque-alvo-${log.id}`}
           value={form.targetCharacterId}
-          onChange={(e) => onUpdateForm({ targetCharacterId: e.target.value })}
+          onChange={(e) => onSelectTarget(e.target.value)}
           style={inputStyle}
         >
           <option value="">— selecione —</option>
@@ -1850,13 +1892,21 @@ function AttackResolutionPanel({
             data-testid={`ataque-mit-${log.id}`}
             type="number"
             value={form.mit}
-            onChange={(e) => onUpdateForm({ mit: e.target.value, mitSource: "manual" })}
+            onChange={(e) => onUpdateForm({ mit: e.target.value, mitSource: "manual", mitTouched: true })}
             style={{ ...inputStyle, width: 70 }}
           />
         </label>
         <span style={{ opacity: 0.5, fontSize: 11 }}>
           {form.mitSource === "structured" ? "MIT do equipamento ativo" : form.mitSource === "manual" ? "MIT manual" : "sem MIT estruturado"}
         </span>
+        {form.mitTouched && (
+          <span data-testid={`ataque-mit-editado-manualmente-${log.id}`} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#f5a623" }}>
+            MIT foi editado manualmente.
+            <button data-testid={`ataque-usar-mit-armadura-${log.id}`} onClick={onUseArmorMit} style={{ ...buttonStyle, fontSize: 11, padding: "2px 8px" }}>
+              Usar MIT da armadura
+            </button>
+          </span>
+        )}
       </div>
 
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12 }}>
