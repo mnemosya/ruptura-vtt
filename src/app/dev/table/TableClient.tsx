@@ -33,7 +33,11 @@ import {
   type TableLogEntry,
   type TableLogVisibility,
 } from "../../../lib/table";
-import { getCharacter, updateCharacter } from "../../../lib/character/storage";
+import { getCharacter, updateCharacter, listCharactersForNarratorCampaign } from "../../../lib/character/storage";
+import { endCampaignRound } from "../../../lib/table/endRound";
+import { buildCampaignEndRoundSummary } from "../../../lib/table/endRoundSummary";
+import { endCampaignScene } from "../../../lib/table/endScene";
+import { buildCampaignEndSceneSummary } from "../../../lib/table/endSceneSummary";
 import {
   computeDerivedStats,
   normalizeCharacter,
@@ -50,6 +54,10 @@ import {
   rollDamageFormula,
   getReactionAvailability,
   spendReactionForDefense,
+  getActiveConditionIds,
+  getConditionEndRoundEffects,
+  normalizeConditionSlug,
+  resolvePendingRupture,
   BODY_REGIONS,
   BODY_REGION_LABELS,
   type GmResource,
@@ -60,6 +68,8 @@ import {
   type ItemContent,
   type BodyRegion,
   type ReactionRules,
+  type ConditionContent,
+  type ConditionEndRoundEffect,
 } from "../../../lib/character";
 import { rollPericia } from "../../../lib/dice";
 import type { NarratorConditionOption } from "./page";
@@ -338,6 +348,21 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   action_used: "Ação Usada",
   attack_resolved: "Ataque Resolvido",
   defense_reaction_used: "Defesa Usada",
+  round_end_processed: "Rodada Encerrada",
+  scene_end_processed: "Cena Encerrada",
+  condition_end_round_damage: "Dano de Condição",
+  condition_end_round_check_created: "Teste de Condição Pendente",
+  condition_end_round_check_resolved: "Teste de Condição Resolvido",
+  round_pa_reduced_by_condition: "PA Reduzido por Condição",
+  condition_applied: "Condição Aplicada",
+  condition_removed: "Condição Removida",
+  collapse_end_round_test: "Teste de Colapso",
+  collapse_third_segment_test: "Colapso — 3º Segmento",
+  collapse_outcome: "Desfecho de Colapso",
+  rupture_resolved: "Ruptura Resolvida",
+  rupture_choice_created: "Marca/Traço Pendentes",
+  integrity_zero_pending: "Integridade Zerada",
+  character_state_change: "Estado do Personagem",
 };
 
 function entryKindLabel(type: string): string {
@@ -351,7 +376,105 @@ function entryIcon(type: string): string {
   if (type === "action_used") return "⚔";
   if (type === "attack_resolved") return "💥";
   if (type === "defense_reaction_used") return "🛡";
+  if (type === "round_end_processed") return "🎬";
+  if (type === "scene_end_processed") return "🎬";
+  if (type === "condition_end_round_damage") return "🩸";
+  if (type === "condition_end_round_check_created" || type === "condition_end_round_check_resolved") return "🎯";
+  if (type.startsWith("collapse_")) return "💀";
+  if (type === "rupture_resolved" || type === "rupture_choice_created") return "💔";
+  if (type === "integrity_zero_pending") return "☠";
   return "•";
+}
+
+/**
+ * Formatador de logs de sistema (fim de rodada/cena, condições,
+ * colapso, ruptura) para /dev/table — checkpoint pós-v0.58. Espelha os
+ * formatadores da aba Mesa (`MesaTab.tsx`, duplicação intencional: as
+ * duas árvores de componente não compartilham import hoje, mesmo padrão
+ * de `formatActionUsed`). NUNCA cai em JSON cru: o último fallback é uma
+ * linha legível com o rótulo do tipo + nome do personagem.
+ */
+function formatSystemLog(type: string, payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const conditionName = typeof payload.conditionName === "string" ? payload.conditionName : "Condição";
+  const names = (v: unknown): string[] => (Array.isArray(v) ? v.filter((n): n is string => typeof n === "string") : []);
+
+  if (type === "round_end_processed") {
+    const nomes = names(payload.processedCharacterNames);
+    const prev = typeof payload.previousRound === "number" ? payload.previousRound : "?";
+    const next = typeof payload.nextRound === "number" ? payload.nextRound : "?";
+    const dano = typeof payload.damageCount === "number" ? payload.damageCount : 0;
+    const pend = typeof payload.pendingCheckCount === "number" ? payload.pendingCheckCount : 0;
+    return `Rodada ${prev} → ${next} processada — ${nomes.length} personagem(ns), ${dano} dano(s) de condição, ${pend} pendência(s).`;
+  }
+  if (type === "scene_end_processed") {
+    const nomes = names(payload.processedCharacterNames);
+    const prev = typeof payload.previousScene === "number" ? payload.previousScene : "?";
+    const next = typeof payload.nextScene === "number" ? payload.nextScene : "?";
+    const rup = typeof payload.ruptureResolvedCount === "number" ? payload.ruptureResolvedCount : 0;
+    const pend = typeof payload.pendingChoiceCount === "number" ? payload.pendingChoiceCount : 0;
+    return `Cena ${prev} → ${next} processada — ${nomes.length} personagem(ns), ${rup} Ruptura(s) resolvida(s), ${pend} pendência(s) de Marca/Traço.`;
+  }
+  if (type === "condition_end_round_damage") {
+    const damage = typeof payload.damage === "number" ? payload.damage : "?";
+    const damageType = typeof payload.damageType === "string" ? payload.damageType : "";
+    const before = typeof payload.before === "number" ? payload.before : "?";
+    const after = typeof payload.after === "number" ? payload.after : "?";
+    return `${characterNome}: ${conditionName} causou ${damage} de dano ${damageType} (PV ${before} → ${after}).`;
+  }
+  if (type === "condition_end_round_check_created") {
+    const resistance = payload.resistance as Record<string, unknown> | undefined;
+    const pericia = typeof resistance?.pericia === "string" ? resistance.pericia : "?";
+    const cd = typeof resistance?.cd === "number" ? resistance.cd : "?";
+    const target = typeof payload.targetConditionId === "string" ? ` (para remover ${payload.targetConditionId})` : "";
+    return `${characterNome}: ${conditionName} — teste de ${pericia} CD ${cd} pendente${target}.`;
+  }
+  if (type === "condition_end_round_check_resolved") {
+    const result = payload.result === "success" ? "Sucesso" : "Falha";
+    return `${characterNome}: ${conditionName} — ${result}.`;
+  }
+  if (type === "round_pa_reduced_by_condition") {
+    const value = typeof payload.value === "number" ? payload.value : "?";
+    const paBefore = typeof payload.paBefore === "number" ? payload.paBefore : "?";
+    const paAfter = typeof payload.paAfter === "number" ? payload.paAfter : "?";
+    return `${characterNome}: ${conditionName} reduziu ${value} PA (${paBefore} → ${paAfter}).`;
+  }
+  if (type === "condition_applied") {
+    const nome = typeof payload.nome === "string" ? payload.nome : conditionName;
+    return `${characterNome}: aplicada "${nome}".`;
+  }
+  if (type === "condition_removed") {
+    const nome = typeof payload.nome === "string" ? payload.nome : conditionName;
+    return `${characterNome}: removida "${nome}".`;
+  }
+  if (type === "collapse_end_round_test" || type === "collapse_third_segment_test" || type === "collapse_outcome") {
+    const tipo = payload.tipo === "pe" ? "PE" : payload.tipo === "pv" ? "PV" : "?";
+    const segmentos = typeof payload.segmentos === "number" ? ` — segmento ${payload.segmentos}/3` : "";
+    const desfecho = typeof payload.desfecho === "string" ? ` — desfecho: ${payload.desfecho}` : "";
+    return `${characterNome}: Colapso (${tipo})${segmentos}${desfecho}.`;
+  }
+  if (type === "rupture_resolved") {
+    const level = typeof payload.ruptureLevel === "number" ? payload.ruptureLevel : "?";
+    const iBefore = typeof payload.integrityBefore === "number" ? payload.integrityBefore : "?";
+    const iAfter = typeof payload.integrityAfter === "number" ? payload.integrityAfter : "?";
+    const mana = typeof payload.manaBonusApplied === "number" ? payload.manaBonusApplied : "?";
+    return `${characterNome}: Ruptura nível ${level} — Integridade ${iBefore} → ${iAfter}, Mana máxima +${mana}.`;
+  }
+  if (type === "rupture_choice_created") {
+    return `${characterNome}: Marca e Traço pendentes.`;
+  }
+  if (type === "integrity_zero_pending") {
+    return `${characterNome}: Integridade zerada — Última Vontade pendente.`;
+  }
+  if (type === "character_state_change") {
+    const action = typeof payload.action === "string" ? payload.action : "ajuste";
+    const resource = typeof payload.resource === "string" ? payload.resource : "";
+    const before = typeof payload.before === "number" ? payload.before : "?";
+    const after = typeof payload.after === "number" ? payload.after : "?";
+    return `${characterNome}: ${action}${resource ? ` ${resource.toUpperCase()}` : ""} (${before} → ${after}).`;
+  }
+  // Fallback legível — nunca JSON cru: rótulo do tipo + personagem quando houver.
+  return `${entryKindLabel(type)}${typeof payload.characterNome === "string" ? ` — ${payload.characterNome}` : ""}`;
 }
 
 function formatLastSeen(lastSeenAt: string | null): string {
@@ -397,6 +520,8 @@ interface Props {
   regras: CharacterRulesPayload | null;
   /** Condições publicadas na Biblioteca (checkpoint v0.63) — fonte única do select "Aplicar condição"; nunca lista hardcoded aqui. */
   condicoesDisponiveis: NarratorConditionOption[];
+  /** Conteúdo COMPLETO das condições publicadas (payload_automacao) — detecta data-driven os efeitos de fim de rodada no preview de "Encerrar Rodada" (mesma fonte que endRound.ts usa ao aplicar). */
+  conditionContents: ConditionContent[];
   /** Itens publicados na Biblioteca (checkpoint pós-v0.50, "Resolver Ataque") — só para ler o MIT ATUAL do equipamento defensivo ativo do alvo. */
   itemsIniciais: ItemContent[];
   /** Regra canônica de Reação interpretada do singleton combat_flow (checkpoint pós-v0.50, "Resolver Ataque" com defesa reativa) — mesmo fallback fail-closed da ficha. */
@@ -417,7 +542,205 @@ function gmDerivedMax(payload: Character, regras: CharacterRulesPayload | null, 
   return derivados[GM_RESOURCE_MAX_KEY[resource]];
 }
 
-export default function TableClient({ mesasIniciais, personagensIniciais, currentUserEmail, currentUserId, regras, condicoesDisponiveis, itemsIniciais, reactionRules }: Props) {
+// ---------------------------------------------------------------------
+// Preview de Encerrar Rodada / Encerrar Cena (checkpoint pós-v0.58)
+// ---------------------------------------------------------------------
+//
+// O preview é uma INSPEÇÃO read-only do estado atual de cada personagem
+// ativo — NUNCA rola dado, NUNCA persiste. Ao confirmar, o narrador
+// delega para os helpers canônicos idempotentes `endCampaignRound` /
+// `endCampaignScene` (os mesmos usados pelo dashboard da mesa), sem
+// reimplementar nenhuma regra aqui. Efeitos determinísticos (reset de
+// PA/Reações, perda de Integridade por Ruptura) são mostrados com
+// valores exatos; efeitos com dado (dano de condição, teste de Colapso)
+// são mostrados como "será rolado/processado ao confirmar", nunca com
+// um número falso pré-rolado que não bateria com a resolução real.
+
+interface EndRoundConditionPreview {
+  conditionName: string;
+  description: string;
+}
+
+interface EndRoundCharacterPreview {
+  characterId: string;
+  characterNome: string;
+  paGastos: number;
+  paMax: number;
+  reacoesUsadas: number;
+  reacoesMax: number;
+  defesasSemReacao: number;
+  conditionEffects: EndRoundConditionPreview[];
+  /** Condições ativas sem conteúdo/efeito estruturado detectado — resolução manual (fallback quando a Biblioteca está fora do ar). */
+  unstructuredConditions: string[];
+  emColapso: { tipo: string; segmentos: number; estabilizado: boolean } | null;
+  /** true quando NADA muda para este personagem (sem PA/Reação gastos, sem condição de fim de rodada, sem colapso). */
+  semEfeito: boolean;
+}
+
+interface EndRoundPreview {
+  kind: "round";
+  round: number;
+  scene: number;
+  characters: EndRoundCharacterPreview[];
+  manualPending: string[];
+}
+
+interface EndSceneCharacterPreview {
+  characterId: string;
+  characterNome: string;
+  rupturePending: boolean;
+  ruptureLevel: number;
+  integridadeAntes: number;
+  integridadeDepois: number;
+  manaBonusAntes: number;
+  manaBonusDepois: number;
+  ultimaVontade: boolean;
+}
+
+interface EndScenePreview {
+  kind: "scene";
+  round: number;
+  scene: number;
+  characters: EndSceneCharacterPreview[];
+  manualPending: string[];
+}
+
+/**
+ * Descreve, data-driven, UM efeito de condição do ponto de vista do
+ * fim de rodada — retorna `null` quando o `tipo` não é resolvido pelo
+ * motor de fim de rodada (o mesmo conjunto de `tipo`s que
+ * `endRoundConditions.ts` trata). Nunca inventa dano/valor: só
+ * descreve o que o payload declara.
+ */
+function describeEndRoundEffect(efeito: ConditionEndRoundEffect): string | null {
+  const asRec = (v: unknown): Record<string, unknown> | null =>
+    typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+  switch (efeito.tipo) {
+    case "dano_fim_de_rodada": {
+      const dano = typeof efeito.dano === "string" ? efeito.dano : "?";
+      const tipoDano = typeof efeito.tipo_dano === "string" ? ` ${efeito.tipo_dano}` : "";
+      return `dano de fim de rodada (${dano}${tipoDano}) — será rolado ao confirmar`;
+    }
+    case "teste_fim_de_rodada": {
+      const r = asRec(efeito.resistencia);
+      const pericia = typeof r?.pericia === "string" ? r.pericia : "?";
+      const cd = typeof r?.cd === "number" ? r.cd : "?";
+      const falha = asRec(efeito.falha);
+      const falhaTxt =
+        falha && typeof falha.dano === "string" ? ` (falha: ${falha.dano}${typeof falha.tipo_dano === "string" ? ` ${falha.tipo_dano}` : ""})` : "";
+      return `teste de ${pericia} CD ${cd} — pendência criada ao confirmar (rolagem manual depois)${falhaTxt}`;
+    }
+    case "teste_fim_de_rodada_para_remover_condicao": {
+      const r = asRec(efeito.resistencia);
+      const pericia = typeof r?.pericia === "string" ? r.pericia : "?";
+      const cd = typeof r?.cd === "number" ? r.cd : "?";
+      const alvo = typeof efeito.condicao === "string" ? efeito.condicao : "?";
+      return `teste de ${pericia} CD ${cd} para remover ${alvo} — pendência criada ao confirmar`;
+    }
+    case "teste_apos_exposicao": {
+      const apos = typeof efeito.apos_rodadas === "number" ? efeito.apos_rodadas : 1;
+      return `teste após exposição (após ${apos} rodada(s)) — processado ao confirmar`;
+    }
+    case "reduzir_pa": {
+      const valor = typeof efeito.valor === "number" ? efeito.valor : 1;
+      return `reduz ${valor} PA na próxima rodada`;
+    }
+    default:
+      return null;
+  }
+}
+
+/** Constrói o preview de Encerrar Rodada inspecionando o estado atual dos personagens ativos (read-only). */
+function buildEndRoundPreview(
+  records: CharacterRecord[],
+  regras: CharacterRulesPayload | null,
+  conditionContents: ConditionContent[],
+  round: number,
+  scene: number,
+): EndRoundPreview {
+  const conditionBySlug = new Map(conditionContents.map((c) => [normalizeConditionSlug(c.slug), c]));
+  const characters: EndRoundCharacterPreview[] = [];
+  let anyTestePendente = false;
+
+  for (const record of records) {
+    const character = normalizeCharacter(record.payload);
+    const derived = computeDerivedStats(character.atributos, regras, character.mana_bonus_ruptura ?? 0);
+    const paGastos = character.estado_jogo?.pa_gastos ?? 0;
+    const reacoesUsadas = character.estado_jogo?.reacoes_usadas ?? 0;
+    const defesasSemReacao = character.estado_jogo?.defesas_sem_reacao ?? 0;
+
+    const conditionEffects: EndRoundConditionPreview[] = [];
+    const unstructuredConditions: string[] = [];
+    for (const slug of getActiveConditionIds(character)) {
+      const content = conditionBySlug.get(slug);
+      if (!content) {
+        // Sem conteúdo (Biblioteca fora do ar) — não inventa efeito; marca como resolução manual.
+        unstructuredConditions.push(slug);
+        continue;
+      }
+      const descriptions = getConditionEndRoundEffects(content)
+        .map(describeEndRoundEffect)
+        .filter((d): d is string => d != null);
+      if (descriptions.length === 0) continue; // condição ativa sem efeito de fim de rodada — nada a processar.
+      if (descriptions.some((d) => d.includes("pendência criada"))) anyTestePendente = true;
+      conditionEffects.push({ conditionName: content.nome, description: descriptions.join("; ") });
+    }
+
+    const colapso = character.colapso;
+    const emColapso = colapso?.ativo ? { tipo: colapso.tipo === "pe" ? "PE" : "PV", segmentos: colapso.segmentos ?? 0, estabilizado: colapso.estabilizado === true } : null;
+
+    const semEfeito = paGastos === 0 && reacoesUsadas === 0 && defesasSemReacao === 0 && conditionEffects.length === 0 && unstructuredConditions.length === 0 && !emColapso;
+
+    characters.push({
+      characterId: record.id,
+      characterNome: character.nome,
+      paGastos,
+      paMax: derived.pa_max,
+      reacoesUsadas,
+      reacoesMax: derived.reacoes_por_rodada,
+      defesasSemReacao,
+      conditionEffects,
+      unstructuredConditions,
+      emColapso,
+      semEfeito,
+    });
+  }
+
+  const manualPending: string[] = [];
+  if (anyTestePendente) {
+    manualPending.push("Testes de resistência de condição são criados como pendência e exigem rolagem manual do narrador depois.");
+  }
+  manualPending.push("Efeitos com duração por rodada não têm expiração automática (sem metadado estruturado no schema) — resolução manual.");
+
+  return { kind: "round", round, scene, characters, manualPending };
+}
+
+/** Constrói o preview de Encerrar Cena. Ruptura é determinística — usa `resolvePendingRupture` (puro, sem persistir) para mostrar valores EXATOS de Integridade/Mana. */
+function buildEndScenePreview(records: CharacterRecord[], round: number, scene: number, nowIso: string): EndScenePreview {
+  const characters: EndSceneCharacterPreview[] = [];
+  for (const record of records) {
+    const character = normalizeCharacter(record.payload);
+    const result = resolvePendingRupture(character, { scene, nowIso });
+    characters.push({
+      characterId: record.id,
+      characterNome: character.nome,
+      rupturePending: result.resolved,
+      ruptureLevel: result.level,
+      integridadeAntes: result.integridadeAntes,
+      integridadeDepois: result.integridadeDepois,
+      manaBonusAntes: result.manaMaxBonusAntes,
+      manaBonusDepois: result.manaMaxBonusDepois,
+      ultimaVontade: result.ultimaVontadePendente,
+    });
+  }
+  const manualPending: string[] = [
+    "Efeitos com duração por cena não são expirados automaticamente (pendência estrutural — sem metadado de duração no schema).",
+    "A escolha de Marca/Traço de cada Ruptura fica pendente para resolução manual do jogador/narrador.",
+  ];
+  return { kind: "scene", round, scene, characters, manualPending };
+}
+
+export default function TableClient({ mesasIniciais, personagensIniciais, currentUserEmail, currentUserId, regras, condicoesDisponiveis, conditionContents, itemsIniciais, reactionRules }: Props) {
   const [mesas, setMesas] = useState<Campaign[]>(mesasIniciais);
   const [personagens] = useState<CharacterRecord[]>(personagensIniciais);
   const [novaMesaNome, setNovaMesaNome] = useState("");
@@ -459,6 +782,19 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
   const [gmCuraForm, setGmCuraForm] = useState<Record<string, { recurso: "pv" | "pe" | "mana"; valor: number; nota: string }>>({});
   const [gmSetForm, setGmSetForm] = useState<Record<string, { recurso: GmResource; valor: number; nota: string }>>({});
   const [gmCondicaoForm, setGmCondicaoForm] = useState<Record<string, string>>({});
+
+  // ---------------------------------------------------------------
+  // Preview de Encerrar Rodada / Encerrar Cena (checkpoint pós-v0.58).
+  // `endPreview` guarda o dry-run read-only aberto (ou null). `endBusy`
+  // trava os botões contra clique duplo (montagem do preview E confirm).
+  // `endSummary` mostra o resumo textual pós-confirmação (reaproveita
+  // buildCampaignEndRoundSummary/Scene). Nada é persistido até o
+  // "Confirmar" chamar o helper canônico idempotente.
+  // ---------------------------------------------------------------
+  const [endPreview, setEndPreview] = useState<EndRoundPreview | EndScenePreview | null>(null);
+  const [endBusy, setEndBusy] = useState(false);
+  const [endErro, setEndErro] = useState<string | null>(null);
+  const [endSummary, setEndSummary] = useState<string[] | null>(null);
 
   // ---------------------------------------------------------------
   // "Resolver Ataque" a partir de um log `action_used` de Atacar
@@ -1032,6 +1368,83 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     }
   }
 
+  // ---------------------------------------------------------------
+  // Encerrar Rodada / Encerrar Cena com preview (checkpoint pós-v0.58).
+  // ---------------------------------------------------------------
+
+  /** Personagens que o encerramento vai processar — MESMA fonte do helper canônico (listCharactersForNarratorCampaign, só ativos), não a lista de perfis. */
+  async function fetchActiveCampaignCharacters(campaignId: string): Promise<CharacterRecord[]> {
+    const all = await listCharactersForNarratorCampaign(campaignId);
+    return all.filter((record) => !record.archived_at);
+  }
+
+  async function handleOpenEndRoundPreview() {
+    if (!selectedCampaignId || !mesaAtual) return;
+    setEndErro(null);
+    setEndSummary(null);
+    setEndBusy(true);
+    try {
+      const records = await fetchActiveCampaignCharacters(selectedCampaignId);
+      setEndPreview(buildEndRoundPreview(records, regras, conditionContents, mesaAtual.current_round, mesaAtual.current_scene));
+    } catch (err) {
+      setEndErro(err instanceof Error ? err.message : "Erro ao montar o preview de fim de rodada.");
+    } finally {
+      setEndBusy(false);
+    }
+  }
+
+  async function handleOpenEndScenePreview() {
+    if (!selectedCampaignId || !mesaAtual) return;
+    setEndErro(null);
+    setEndSummary(null);
+    setEndBusy(true);
+    try {
+      const records = await fetchActiveCampaignCharacters(selectedCampaignId);
+      const nowIso = new Date().toISOString();
+      setEndPreview(buildEndScenePreview(records, mesaAtual.current_round, mesaAtual.current_scene, nowIso));
+    } catch (err) {
+      setEndErro(err instanceof Error ? err.message : "Erro ao montar o preview de fim de cena.");
+    } finally {
+      setEndBusy(false);
+    }
+  }
+
+  function handleCancelEndPreview() {
+    setEndPreview(null);
+    setEndErro(null);
+  }
+
+  async function handleConfirmEndResolution() {
+    if (!selectedCampaignId || !mesaAtual || !endPreview) return;
+    setEndErro(null);
+    setEndBusy(true);
+    try {
+      if (endPreview.kind === "round") {
+        const result = await endCampaignRound({ campaignId: selectedCampaignId, expectedRound: mesaAtual.current_round });
+        setEndSummary(buildCampaignEndRoundSummary(result));
+      } else {
+        const result = await endCampaignScene({ campaignId: selectedCampaignId, expectedScene: mesaAtual.current_scene });
+        setEndSummary(buildCampaignEndSceneSummary(result));
+      }
+      // Persistência concluída pelo helper canônico — recarrega mesa (round/scene avançados),
+      // logs e personagens ativos para refletir o novo estado. As fichas abertas recebem o
+      // update pelo Realtime já existente (updateCharacter foi chamado dentro do helper).
+      setEndPreview(null);
+      await refreshMesas();
+      try {
+        setLogs(await listLogs(selectedCampaignId));
+      } catch {
+        // Best-effort — o resumo já mostra o que foi processado.
+      }
+      await refreshPersonagensAtivos(perfis);
+    } catch (err) {
+      // Falha (ex.: rodada/cena já avançou) — mantém o preview aberto e os dados; nunca finge que processou.
+      setEndErro(err instanceof Error ? err.message : "Erro ao processar o encerramento.");
+    } finally {
+      setEndBusy(false);
+    }
+  }
+
   async function handleCreateMesa() {
     setErrorMessage(null);
     try {
@@ -1481,6 +1894,59 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
             </div>
           </section>
 
+          <section style={{ marginBottom: 32 }} data-testid="encerramento-secao">
+            <h2 style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, opacity: 0.6, marginBottom: 12 }}>
+              Encerrar Rodada / Cena — {mesaAtual?.name ?? selectedCampaignId}
+            </h2>
+            <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
+              Rodada atual <strong>{mesaAtual?.current_round ?? "?"}</strong> · Cena atual{" "}
+              <strong>{mesaAtual?.current_scene ?? "?"}</strong>. O encerramento mostra um <em>preview</em> do que será
+              processado ANTES de aplicar; só o botão "Confirmar" persiste (via helper canônico idempotente da mesa).
+            </p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+              <button
+                data-testid="encerrar-rodada-btn"
+                onClick={handleOpenEndRoundPreview}
+                disabled={endBusy || endPreview != null}
+                style={{ ...buttonStyle, opacity: endBusy || endPreview != null ? 0.5 : 1 }}
+              >
+                Encerrar Rodada
+              </button>
+              <button
+                data-testid="encerrar-cena-btn"
+                onClick={handleOpenEndScenePreview}
+                disabled={endBusy || endPreview != null}
+                style={{ ...buttonStyle, opacity: endBusy || endPreview != null ? 0.5 : 1 }}
+              >
+                Encerrar Cena
+              </button>
+            </div>
+            {endErro && (
+              <p data-testid="encerramento-erro" style={{ color: "#ff6b6b", fontSize: 12, marginBottom: 12 }}>
+                {endErro}
+              </p>
+            )}
+            {endSummary && !endPreview && (
+              <div
+                data-testid="encerramento-resumo"
+                style={{ background: "#151620", borderRadius: 8, padding: "10px 14px", fontSize: 12, marginBottom: 12, display: "flex", flexDirection: "column", gap: 4 }}
+              >
+                <strong style={{ opacity: 0.7 }}>Processado:</strong>
+                {endSummary.map((linha, i) => (
+                  <span key={i}>{linha}</span>
+                ))}
+              </div>
+            )}
+            {endPreview && (
+              <EndResolutionPreviewPanel
+                preview={endPreview}
+                processing={endBusy}
+                onConfirm={handleConfirmEndResolution}
+                onCancel={handleCancelEndPreview}
+              />
+            )}
+          </section>
+
           <section style={{ marginBottom: 32 }} data-testid="estado-personagens-secao">
             <h2 style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, opacity: 0.6, marginBottom: 12 }}>
               Estado dos personagens — {mesaAtual?.name ?? selectedCampaignId}
@@ -1896,7 +2362,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                           ? formatAttackResolved(entry.payload)
                           : isDefenseReactionUsed
                             ? formatDefenseReactionUsed(entry.payload)
-                            : JSON.stringify(entry.payload);
+                            : formatSystemLog(entry.type, entry.payload);
                 const corBorda = isChat
                   ? "#4f8cff"
                   : isProfileEvent
@@ -2294,6 +2760,124 @@ function AttackResolutionPanel({
         </button>
         <button onClick={onCancel} style={{ ...buttonStyle, opacity: 0.7 }}>
           Fechar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Painel inline de preview de Encerrar Rodada / Encerrar Cena
+ * (checkpoint pós-v0.58). Só apresentação read-only do dry-run — a
+ * lógica de inspeção fica em buildEndRoundPreview/buildEndScenePreview,
+ * o apply fica no helper canônico chamado por onConfirm.
+ */
+function EndResolutionPreviewPanel({
+  preview,
+  processing,
+  onConfirm,
+  onCancel,
+}: {
+  preview: EndRoundPreview | EndScenePreview;
+  processing: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const isRound = preview.kind === "round";
+  const titulo = isRound ? `Encerrar Rodada ${preview.round} (cena ${preview.scene})` : `Encerrar Cena ${preview.scene} (rodada ${preview.round})`;
+
+  return (
+    <div
+      data-testid="encerramento-preview"
+      style={{ background: "#0f1014", borderRadius: 8, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 12, fontSize: 12 }}
+    >
+      <strong style={{ fontSize: 13 }}>{titulo}</strong>
+      <p style={{ opacity: 0.6, margin: 0 }}>Será processado ao confirmar:</p>
+
+      {preview.kind === "round" ? (
+        <div data-testid="encerramento-preview-rodada" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {preview.characters.length === 0 && <p style={{ opacity: 0.6, margin: 0 }}>Nenhum personagem ativo na mesa.</p>}
+          {preview.characters.map((c) => (
+            <div key={c.characterId} data-testid={`encerramento-preview-char-${c.characterId}`} style={{ background: "#151620", borderRadius: 6, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
+              <strong>{c.characterNome}</strong>
+              {c.semEfeito ? (
+                <span style={{ opacity: 0.55 }}>Sem efeitos de fim de rodada (só renovação padrão).</span>
+              ) : (
+                <>
+                  {c.conditionEffects.map((ef, i) => (
+                    <span key={i}>
+                      • <strong>{ef.conditionName}</strong>: {ef.description}
+                    </span>
+                  ))}
+                  {c.unstructuredConditions.map((slug) => (
+                    <span key={slug} style={{ color: "#f5a623" }}>
+                      • {slug}: efeito não estruturado (Biblioteca indisponível) — resolução manual pendente.
+                    </span>
+                  ))}
+                  {c.emColapso && (
+                    <span style={{ color: "#ff6b6b" }}>
+                      • Em Colapso ({c.emColapso.tipo}), segmento {c.emColapso.segmentos}/3
+                      {c.emColapso.estabilizado ? " (estabilizado)" : ""} — teste de fim de rodada ao confirmar.
+                    </span>
+                  )}
+                  {c.paGastos > 0 && <span>• PA: {c.paGastos} gasto(s) → renovado ({c.paMax} máx).</span>}
+                  {c.reacoesUsadas > 0 && <span>• Reações: {c.reacoesUsadas} usada(s) → renovadas ({c.reacoesMax} máx).</span>}
+                  {c.defesasSemReacao > 0 && <span>• Defesas sem Reação: {c.defesasSemReacao} → 0 (penalidade zerada).</span>}
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div data-testid="encerramento-preview-cena" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {preview.characters.length === 0 && <p style={{ opacity: 0.6, margin: 0 }}>Nenhum personagem ativo na mesa.</p>}
+          {preview.characters.filter((c) => c.rupturePending).length === 0 && preview.characters.length > 0 && (
+            <p data-testid="encerramento-preview-sem-ruptura" style={{ opacity: 0.6, margin: 0 }}>
+              Nenhuma Ruptura pendente entre os personagens ativos.
+            </p>
+          )}
+          {preview.characters.map((c) => (
+            <div key={c.characterId} data-testid={`encerramento-preview-char-${c.characterId}`} style={{ background: "#151620", borderRadius: 6, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
+              <strong>{c.characterNome}</strong>
+              {c.rupturePending ? (
+                <>
+                  <span>
+                    • Ruptura pendente (nível {c.ruptureLevel}): Integridade {c.integridadeAntes} → {c.integridadeDepois}, bônus de Mana máx{" "}
+                    {c.manaBonusAntes} → {c.manaBonusDepois}.
+                  </span>
+                  <span style={{ opacity: 0.7 }}>• Criará escolha de Marca/Traço (pendente, resolução manual).</span>
+                  {c.ultimaVontade && <span style={{ color: "#ff6b6b" }}>• Integridade zerada → Última Vontade pendente.</span>}
+                </>
+              ) : (
+                <span style={{ opacity: 0.55 }}>Sem Ruptura pendente.</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {preview.manualPending.length > 0 && (
+        <div data-testid="encerramento-preview-pendencias" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <strong style={{ opacity: 0.7 }}>Pendências manuais:</strong>
+          {preview.manualPending.map((p, i) => (
+            <span key={i} style={{ opacity: 0.65 }}>
+              • {p}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          data-testid="encerramento-confirmar-btn"
+          onClick={onConfirm}
+          disabled={processing}
+          style={{ ...buttonStyle, opacity: processing ? 0.5 : 1 }}
+        >
+          {processing ? "Processando…" : isRound ? "Confirmar Encerrar Rodada" : "Confirmar Encerrar Cena"}
+        </button>
+        <button data-testid="encerramento-cancelar-btn" onClick={onCancel} disabled={processing} style={{ ...buttonStyle, opacity: 0.7 }}>
+          Cancelar
         </button>
       </div>
     </div>

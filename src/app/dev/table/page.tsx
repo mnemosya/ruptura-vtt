@@ -16,10 +16,12 @@ import type { Campaign } from "../../../lib/table";
 import {
   normalizeItemContent,
   normalizeReactionRules,
+  normalizeConditionContent,
   type CharacterRecord,
   type CharacterRulesPayload,
   type ItemContent,
   type ReactionRules,
+  type ConditionContent,
 } from "../../../lib/character";
 import TableClient from "./TableClient";
 
@@ -61,13 +63,19 @@ export default async function TablePage() {
 
   // Condições publicadas na Biblioteca (checkpoint v0.63) — fonte única
   // do select "Aplicar condição" da ferramenta de narrador; nunca uma
-  // lista hardcoded no componente.
+  // lista hardcoded no componente. O conteúdo COMPLETO (payload_automacao)
+  // também alimenta o preview de "Encerrar Rodada" (checkpoint pós-v0.58):
+  // detecta data-driven quais condições ativas têm efeito de fim de rodada
+  // (mesma fonte que endRound.ts usa ao aplicar), sem lista hardcoded.
   let condicoesDisponiveis: NarratorConditionOption[] = [];
+  let conditionContents: ConditionContent[] = [];
   try {
     const docs = await listConditions();
     condicoesDisponiveis = docs.map((doc) => ({ slug: doc.slug, nome: doc.nome ?? doc.slug }));
+    conditionContents = docs.map((doc) => normalizeConditionContent(doc.payload as Record<string, unknown>));
   } catch {
-    // Lista vazia — a ferramenta de aplicar condição fica sem opções, mas não quebra a página.
+    // Lista vazia — a ferramenta de aplicar condição fica sem opções e o preview de fim de rodada
+    // mostra condições ativas como "resolução manual pendente"; não quebra a página.
   }
 
   // Itens publicados na Biblioteca (checkpoint pós-v0.50, "Resolver
@@ -117,6 +125,7 @@ export default async function TablePage() {
       currentUserId={currentUser?.id ?? null}
       regras={regras}
       condicoesDisponiveis={condicoesDisponiveis}
+      conditionContents={conditionContents}
       itemsIniciais={itemsIniciais}
       reactionRules={reactionRules}
     />
