@@ -48,6 +48,8 @@ import {
   getRegionMit,
   applyMarginBasedAttackDamage,
   rollDamageFormula,
+  getReactionAvailability,
+  spendReactionForDefense,
   BODY_REGIONS,
   BODY_REGION_LABELS,
   type GmResource,
@@ -57,7 +59,9 @@ import {
   type DerivedStats,
   type ItemContent,
   type BodyRegion,
+  type ReactionRules,
 } from "../../../lib/character";
+import { rollPericia } from "../../../lib/dice";
 import type { NarratorConditionOption } from "./page";
 
 const buttonStyle: React.CSSProperties = {
@@ -82,6 +86,36 @@ interface AttackPanelForm {
   mitTouched: boolean;
   override: boolean;
   overrideReason: string;
+  /** Perícia usada por "Resistir" — Vigor por padrão, Mobilidade se o narrador escolher (regra de produto deste checkpoint). */
+  resistirSkill: "vigor" | "mobilidade";
+  /** Modificador manual simples somado à rolagem de defesa — chips automáticos de condição/postura ficam fora deste checkpoint (ver requirementReminder). */
+  defenseModifier: string;
+  /** Último resultado de defesa rolado neste painel — preenche Defesa/CD automaticamente e alimenta o attack_resolved final. */
+  lastDefense: DefenseRollResult | null;
+  /** Permite rolar defesa mesmo sem Reação disponível quando a regra canônica (combat_flow) não modela "defesa sem Reação" — narrador decide explicitamente (nunca automático). */
+  defenseOverride: boolean;
+}
+
+type DefenseType = "esquivar" | "aparar" | "bloquear" | "resistir";
+
+interface DefenseRollResult {
+  defenseReactionLogId: string;
+  defenseType: DefenseType;
+  defenseName: string;
+  attributeId: string;
+  attributeName: string;
+  skillId: string;
+  skillName: string;
+  dice: number[];
+  highestDie: number;
+  skillValue: number;
+  modifiersTotal: number;
+  total: number;
+  reactionCost: number;
+  reactionsBefore: number;
+  reactionsAfter: number;
+  requirementStatus: "met" | "not_detected" | "manual_override" | "not_applicable";
+  requirementReminder: string | null;
 }
 
 const DEFAULT_ATTACK_PANEL_FORM: AttackPanelForm = {
@@ -95,6 +129,24 @@ const DEFAULT_ATTACK_PANEL_FORM: AttackPanelForm = {
   mitTouched: false,
   override: false,
   overrideReason: "",
+  resistirSkill: "vigor",
+  defenseModifier: "",
+  lastDefense: null,
+  defenseOverride: false,
+};
+
+const DEFENSE_TYPE_LABELS: Record<DefenseType, string> = {
+  esquivar: "Esquivar",
+  aparar: "Aparar",
+  bloquear: "Bloquear",
+  resistir: "Resistir",
+};
+
+/** Perícia canônica de cada defesa (fallback do capítulo de Combate) — Resistir usa `form.resistirSkill` em vez de um valor fixo aqui. */
+const DEFENSE_SKILL_SLUG: Record<Exclude<DefenseType, "resistir">, string> = {
+  esquivar: "reflexos",
+  aparar: "luta",
+  bloquear: "reflexos",
 };
 
 const inputStyle: React.CSSProperties = {
@@ -257,6 +309,27 @@ function formatAttackResolved(payload: Record<string, unknown>): string {
   return `${attackerNome} atacou ${characterNome} (margem ${margin}) — defesa bem-sucedida, sem dano.`;
 }
 
+/**
+ * `defense_reaction_used` (checkpoint pós-v0.50, defesa reativa no
+ * painel "Resolver Ataque") — "Defesa usada — {defensor} usou {tipo}:
+ * {total} (Reações {antes} → {depois})." Nunca cai em JSON cru.
+ */
+function formatDefenseReactionUsed(payload: Record<string, unknown>): string {
+  const targetName = typeof payload.targetName === "string" ? payload.targetName : "Personagem";
+  const defenseName = typeof payload.defenseName === "string" ? payload.defenseName : "Defesa";
+  const total = typeof payload.total === "number" ? payload.total : "?";
+  const reactionsBefore = typeof payload.reactionsBefore === "number" ? payload.reactionsBefore : "?";
+  const reactionsAfter = typeof payload.reactionsAfter === "number" ? payload.reactionsAfter : "?";
+  const requirementReminder = typeof payload.requirementReminder === "string" ? payload.requirementReminder : null;
+  const requirementStatus = typeof payload.requirementStatus === "string" ? payload.requirementStatus : null;
+
+  let base = `Defesa usada — ${targetName} usou ${defenseName}: ${total} (Reações ${reactionsBefore} → ${reactionsAfter}).`;
+  if (requirementReminder && requirementStatus !== "met" && requirementStatus !== "not_applicable") {
+    base += ` ${requirementReminder}`;
+  }
+  return base;
+}
+
 const ENTRY_KIND_LABELS: Record<string, string> = {
   chat: "Mensagem",
   rolagem_pericia: "Rolagem de Perícia",
@@ -264,6 +337,7 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   profile_event: "Evento de Perfil",
   action_used: "Ação Usada",
   attack_resolved: "Ataque Resolvido",
+  defense_reaction_used: "Defesa Usada",
 };
 
 function entryKindLabel(type: string): string {
@@ -276,6 +350,7 @@ function entryIcon(type: string): string {
   if (type === "profile_event") return "🔑";
   if (type === "action_used") return "⚔";
   if (type === "attack_resolved") return "💥";
+  if (type === "defense_reaction_used") return "🛡";
   return "•";
 }
 
@@ -324,6 +399,8 @@ interface Props {
   condicoesDisponiveis: NarratorConditionOption[];
   /** Itens publicados na Biblioteca (checkpoint pós-v0.50, "Resolver Ataque") — só para ler o MIT ATUAL do equipamento defensivo ativo do alvo. */
   itemsIniciais: ItemContent[];
+  /** Regra canônica de Reação interpretada do singleton combat_flow (checkpoint pós-v0.50, "Resolver Ataque" com defesa reativa) — mesmo fallback fail-closed da ficha. */
+  reactionRules: ReactionRules;
 }
 
 const GM_RESOURCE_LABELS: Record<GmResource, string> = { pv: "PV", pe: "PE", mana: "Mana", integridade: "Integridade" };
@@ -340,7 +417,7 @@ function gmDerivedMax(payload: Character, regras: CharacterRulesPayload | null, 
   return derivados[GM_RESOURCE_MAX_KEY[resource]];
 }
 
-export default function TableClient({ mesasIniciais, personagensIniciais, currentUserEmail, currentUserId, regras, condicoesDisponiveis, itemsIniciais }: Props) {
+export default function TableClient({ mesasIniciais, personagensIniciais, currentUserEmail, currentUserId, regras, condicoesDisponiveis, itemsIniciais, reactionRules }: Props) {
   const [mesas, setMesas] = useState<Campaign[]>(mesasIniciais);
   const [personagens] = useState<CharacterRecord[]>(personagensIniciais);
   const [novaMesaNome, setNovaMesaNome] = useState("");
@@ -397,6 +474,8 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
   const [ataquePainelForm, setAtaquePainelForm] = useState<Record<string, AttackPanelForm>>({});
   const [ataqueResolverErro, setAtaqueResolverErro] = useState<string | null>(null);
   const [ataqueResolverProcessing, setAtaqueResolverProcessing] = useState<string | null>(null);
+  /** Chave `${logId}:${defenseType}` do botão de defesa em andamento — separado de ataqueResolverProcessing (que trava "Aplicar dano") para os dois não se bloquearem um ao outro. */
+  const [ataqueDefesaProcessing, setAtaqueDefesaProcessing] = useState<string | null>(null);
 
   /** true quando `damageBase` é uma fórmula "NdM" simples (rolável automaticamente); false para dano fixo/não estruturado. */
   function isDiceFormula(damageBase: string | null | undefined): boolean {
@@ -463,6 +542,165 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       mitSource: auto ? auto.source : "none",
       mitTouched: false,
     });
+  }
+
+  /** "Requer arma com propriedade Aparar" — detecta via `ItemContent.propertySlugs` das armas empunhadas do alvo (mesma fonte de propriedades usada em toda a ficha, nunca inventada aqui). Sem detecção clara, o requisito vira aviso (narrador decide via override do painel de Defesa/CD, não é trava absoluta neste checkpoint). */
+  function checkApararRequirement(target: Character): boolean {
+    return (target.inventario ?? []).some((inst) => {
+      if (inst.estado !== "empunhado") return false;
+      const item = itemsIniciais.find((m) => m.slug === inst.itemSlug);
+      return item?.propertySlugs?.includes("aparar") ?? false;
+    });
+  }
+
+  /** "Requer escudo ou proteção adequada" — reaproveita `getEquippedDefenseProfile` (mesmo helper de MIT/PD já usado no dano). Só detecta escudo equipado; não aplica/reduz PD neste checkpoint. */
+  function checkBloquearRequirement(target: Character): boolean {
+    return getEquippedDefenseProfile(target, itemsIniciais).escudo != null;
+  }
+
+  /**
+   * Rola uma defesa reativa (Esquivar/Aparar/Bloquear/Resistir) para o
+   * alvo selecionado — mesma regra central de rolagem da ficha
+   * (`rollPericia`, maior dado entre Atributo d8 + Perícia +
+   * modificadores), mesmo helper canônico de gasto de Reação
+   * (`spendReactionForDefense`, `lib/character/reactions.ts`) usado na
+   * ficha. Preenche Defesa/CD automaticamente e gera log persistente
+   * `defense_reaction_used`. Modificadores automáticos de
+   * condição/postura (chips da ficha) ficam fora de escopo — só o
+   * campo de modificador manual do painel entra na rolagem.
+   */
+  async function handleRollDefense(logId: string, log: TableLogEntry, defenseType: DefenseType) {
+    if (!selectedCampaignId) return;
+    const form = ataquePainelForm[logId] ?? DEFAULT_ATTACK_PANEL_FORM;
+    setAtaqueResolverErro(null);
+
+    const targetRecord = form.targetCharacterId ? personagensAtivos[form.targetCharacterId] : null;
+    if (!targetRecord) {
+      setAtaqueResolverErro("Selecione o alvo antes de rolar defesa.");
+      return;
+    }
+    const target = normalizeCharacter(targetRecord.payload);
+
+    const skillSlug = defenseType === "resistir" ? form.resistirSkill : DEFENSE_SKILL_SLUG[defenseType];
+    const skillDef = regras?.pericias.find((p) => p.id === skillSlug);
+    const attributeId = skillDef?.atributo_primario ?? "corpo";
+    const attributeDef = regras?.atributos.find((a) => a.id === attributeId);
+    const attributeName = attributeDef?.nome ?? attributeId;
+    const skillName = skillDef?.nome ?? skillSlug;
+    const attributeValue = (target.atributos as unknown as Record<string, number>)[attributeId] ?? 0;
+    const skillValue = target.pericias[skillSlug] ?? 0;
+
+    let requirementStatus: DefenseRollResult["requirementStatus"] = "not_applicable";
+    let requirementReminder: string | null = null;
+    if (defenseType === "aparar") {
+      const met = checkApararRequirement(target);
+      // Requisito nunca bloqueia a rolagem neste checkpoint — só avisa (regra de produto §4). "manual_override" fica
+      // reservado para quando o narrador rolar mesmo sem detecção (não há trava para acionar aqui, então o status
+      // reflete a detecção real: met/not_detected).
+      requirementStatus = met ? "met" : "not_detected";
+      requirementReminder =
+        "Requer arma com propriedade Aparar." +
+        (met ? "" : " Não detectada no equipamento empunhado do alvo — pode ser usada por decisão do narrador.");
+    } else if (defenseType === "bloquear") {
+      const met = checkBloquearRequirement(target);
+      requirementStatus = met ? "met" : "not_detected";
+      requirementReminder =
+        "Requer escudo ou proteção adequada." +
+        (met ? "" : " Não detectado no equipamento do alvo — pode ser usada por decisão do narrador.") +
+        " PD não é aplicado nem reduzido neste checkpoint.";
+    } else if (defenseType === "resistir") {
+      requirementReminder = "Usado contra movimento forçado, queda, imobilização, paralisia e efeitos similares.";
+    }
+
+    const maxReacoes = computeDerivedStats(target.atributos, regras, target.mana_bonus_ruptura ?? 0).reacoes_por_rodada;
+    const reactionResult = spendReactionForDefense(target, maxReacoes, reactionRules, 1);
+    const blocked = !reactionResult.usedReaction && !reactionResult.defenseWithoutReaction;
+    if (blocked && !form.defenseOverride) {
+      setAtaqueResolverErro(
+        `${reactionResult.warnings[0] ?? "Sem Reação disponível."} Marque "Rolar mesmo sem Reação (override)" para permitir.`,
+      );
+      return;
+    }
+
+    const modifiersTotal = form.defenseModifier.trim() ? Number(form.defenseModifier) : 0;
+    const rollResult = rollPericia({
+      atributoId: attributeId,
+      atributoNome: attributeName,
+      atributoValor: attributeValue,
+      periciaId: skillSlug,
+      periciaNome: skillName,
+      periciaValor: skillValue,
+      modificador: Number.isFinite(modifiersTotal) ? modifiersTotal : 0,
+    });
+
+    setAtaqueDefesaProcessing(`${logId}:${defenseType}`);
+    try {
+      const record = await updateCharacter(form.targetCharacterId, reactionResult.character);
+      setPersonagensAtivos((prev) => ({ ...prev, [record.id]: record }));
+
+      const novoLog = await addLog({
+        campaignId: selectedCampaignId,
+        characterId: form.targetCharacterId,
+        type: "defense_reaction_used",
+        visibility: "public",
+        payload: {
+          sourceActionLogId: log.id,
+          attackResolutionPanel: true,
+          targetCharacterId: form.targetCharacterId,
+          targetName: record.name,
+          defenseType,
+          defenseName: DEFENSE_TYPE_LABELS[defenseType],
+          attributeId,
+          attributeName,
+          skillId: skillSlug,
+          skillName,
+          dice: rollResult.dados,
+          highestDie: rollResult.maiorDado,
+          skillValue,
+          modifiersTotal: Number.isFinite(modifiersTotal) ? modifiersTotal : 0,
+          total: rollResult.total,
+          reactionCost: 1,
+          reactionsBefore: reactionResult.reactionBefore,
+          reactionsAfter: reactionResult.reactionAfter,
+          requirementStatus,
+          requirementReminder,
+          usedAsDefenseCd: true,
+          source: "attack_resolution",
+        },
+      });
+      setLogs((prev) => [novoLog, ...prev]);
+
+      const lastDefense: DefenseRollResult = {
+        defenseReactionLogId: novoLog.id,
+        defenseType,
+        defenseName: DEFENSE_TYPE_LABELS[defenseType],
+        attributeId,
+        attributeName,
+        skillId: skillSlug,
+        skillName,
+        dice: rollResult.dados,
+        highestDie: rollResult.maiorDado,
+        skillValue,
+        modifiersTotal: Number.isFinite(modifiersTotal) ? modifiersTotal : 0,
+        total: rollResult.total,
+        reactionCost: 1,
+        reactionsBefore: reactionResult.reactionBefore,
+        reactionsAfter: reactionResult.reactionAfter,
+        requirementStatus,
+        requirementReminder,
+      };
+      updateAttackPanelForm(logId, { defenseTotal: String(rollResult.total), lastDefense });
+    } catch (err) {
+      // Falha pode ter acontecido entre salvar o personagem e gravar o log — nunca preenche Defesa/CD
+      // como se a rolagem tivesse concluído; o erro deixa claro que o estado pode estar parcial.
+      setAtaqueResolverErro(
+        err instanceof Error
+          ? `Erro ao registrar defesa: ${err.message}`
+          : "Erro desconhecido ao rolar defesa — confira se a Reação do alvo foi consumida antes de tentar de novo.",
+      );
+    } finally {
+      setAtaqueDefesaProcessing(null);
+    }
   }
 
   function handleRollAttackDamage(logId: string, log: TableLogEntry) {
@@ -561,6 +799,10 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
         "Cobertura, alcance, linha de visão, linha de efeito e posição não são validados automaticamente.",
       ];
 
+      // Só referencia a defesa rolada se o total dela ainda bate com o Defesa/CD atual — se o narrador
+      // digitou por cima depois de rolar, o attack_resolved não deve alegar uma defesa que não foi usada de fato.
+      const defenseUsed = form.lastDefense && form.lastDefense.total === defenseTotal ? form.lastDefense : null;
+
       const novoLog = await addLog({
         campaignId: selectedCampaignId,
         characterId: form.targetCharacterId,
@@ -594,6 +836,9 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
           collapseStarted: resolucao.collapseStarted,
           collapseAdvanced: resolucao.collapseAdvanceLogs.length > 0,
           source: "attack_resolution",
+          defenseReactionLogId: defenseUsed?.defenseReactionLogId ?? null,
+          defenseType: defenseUsed?.defenseType ?? null,
+          reactionsAfterDefense: defenseUsed?.reactionsAfter ?? null,
         },
       });
       setLogs((prev) => [novoLog, ...prev]);
@@ -1628,6 +1873,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                 const isProfileEvent = entry.type === "profile_event";
                 const isActionUsed = entry.type === "action_used";
                 const isAttackResolved = entry.type === "attack_resolved";
+                const isDefenseReactionUsed = entry.type === "defense_reaction_used";
                 // "Resolver ataque" só faz sentido para action_used de Atacar (detectado pelo mesmo campo que a ficha grava — weaponName presente).
                 const isAttackAction = isActionUsed && typeof entry.payload.weaponName === "string";
                 const jaResolvido = isAttackAction && logs.some((l) => l.type === "attack_resolved" && l.payload.sourceActionLogId === entry.id);
@@ -1648,8 +1894,20 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                         ? formatActionUsed(entry.payload)
                         : isAttackResolved
                           ? formatAttackResolved(entry.payload)
-                          : JSON.stringify(entry.payload);
-                const corBorda = isChat ? "#4f8cff" : isProfileEvent ? "#ff6b9f" : isActionUsed ? "#ff9f6b" : isAttackResolved ? "#ff5252" : "#ffb84f";
+                          : isDefenseReactionUsed
+                            ? formatDefenseReactionUsed(entry.payload)
+                            : JSON.stringify(entry.payload);
+                const corBorda = isChat
+                  ? "#4f8cff"
+                  : isProfileEvent
+                    ? "#ff6b9f"
+                    : isActionUsed
+                      ? "#ff9f6b"
+                      : isAttackResolved
+                        ? "#ff5252"
+                        : isDefenseReactionUsed
+                          ? "#5ec8ff"
+                          : "#ffb84f";
 
                 return (
                   <div
@@ -1691,8 +1949,11 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                         log={entry}
                         form={ataquePainelForm[entry.id] ?? DEFAULT_ATTACK_PANEL_FORM}
                         personagensAtivos={personagensAtivos}
+                        regras={regras}
+                        reactionRules={reactionRules}
                         jaResolvido={jaResolvido}
                         processing={ataqueResolverProcessing === entry.id}
+                        defenseProcessing={ataqueDefesaProcessing}
                         erro={ataqueResolverErro}
                         onUpdateForm={(patch) => updateAttackPanelForm(entry.id, patch)}
                         onSelectTarget={(targetCharacterId) => handleAttackTargetOrRegionChange(entry.id, { targetCharacterId })}
@@ -1700,6 +1961,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                         onUseArmorMit={() => handleUseArmorMit(entry.id)}
                         onRollDamage={() => handleRollAttackDamage(entry.id, entry)}
                         onRollExtraMarginDie={() => handleRollExtraMarginDie(entry.id, entry)}
+                        onRollDefense={(defenseType) => handleRollDefense(entry.id, entry, defenseType)}
                         onApply={() => handleResolveAttackDamage(entry)}
                         onCancel={() => setAtaqueResolvendoLogId(null)}
                       />
@@ -1725,8 +1987,11 @@ function AttackResolutionPanel({
   log,
   form,
   personagensAtivos,
+  regras,
+  reactionRules,
   jaResolvido,
   processing,
+  defenseProcessing,
   erro,
   onUpdateForm,
   onSelectTarget,
@@ -1734,14 +1999,18 @@ function AttackResolutionPanel({
   onUseArmorMit,
   onRollDamage,
   onRollExtraMarginDie,
+  onRollDefense,
   onApply,
   onCancel,
 }: {
   log: TableLogEntry;
   form: AttackPanelForm;
   personagensAtivos: Record<string, CharacterRecord>;
+  regras: CharacterRulesPayload | null;
+  reactionRules: ReactionRules;
   jaResolvido: boolean;
   processing: boolean;
+  defenseProcessing: string | null;
   erro: string | null;
   onUpdateForm: (patch: Partial<AttackPanelForm>) => void;
   onSelectTarget: (targetCharacterId: string) => void;
@@ -1749,6 +2018,7 @@ function AttackResolutionPanel({
   onUseArmorMit: () => void;
   onRollDamage: () => void;
   onRollExtraMarginDie: () => void;
+  onRollDefense: (defenseType: DefenseType) => void;
   onApply: () => void;
   onCancel: () => void;
 }) {
@@ -1764,6 +2034,13 @@ function AttackResolutionPanel({
   const finalDamage = Math.max(0, damageAfterMargin - mit);
   const damageBase = typeof log.payload.damageBase === "string" ? log.payload.damageBase : null;
   const isDice = damageBase != null && /^\d+d\d+([+-]\d+)?$/.test(damageBase.trim().replace(/\s+/g, ""));
+
+  const targetRecord = form.targetCharacterId ? personagensAtivos[form.targetCharacterId] : null;
+  const targetNormalizado = targetRecord ? normalizeCharacter(targetRecord.payload) : null;
+  const reactionMax = targetNormalizado
+    ? computeDerivedStats(targetNormalizado.atributos, regras, targetNormalizado.mana_bonus_ruptura ?? 0).reacoes_por_rodada
+    : 0;
+  const reactionAvailability = targetNormalizado ? getReactionAvailability(targetNormalizado, reactionMax, reactionRules) : null;
 
   return (
     <div
@@ -1799,6 +2076,77 @@ function AttackResolutionPanel({
           ))}
         </select>
       </label>
+
+      {targetNormalizado && reactionAvailability && (
+        <div
+          data-testid={`ataque-defesa-alvo-${log.id}`}
+          style={{ display: "flex", flexDirection: "column", gap: 8, background: "#151620", borderRadius: 6, padding: "8px 10px" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <strong style={{ fontSize: 11, opacity: 0.7 }}>Defesa do alvo</strong>
+            <span data-testid={`ataque-defesa-reacoes-${log.id}`} style={{ fontSize: 11, opacity: 0.7 }}>
+              Reações: {reactionAvailability.remaining}/{reactionAvailability.max}
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {(["esquivar", "aparar", "bloquear", "resistir"] as DefenseType[]).map((defenseType) => (
+              <button
+                key={defenseType}
+                data-testid={`ataque-defesa-rolar-${defenseType}-${log.id}`}
+                onClick={() => onRollDefense(defenseType)}
+                disabled={defenseProcessing === `${log.id}:${defenseType}`}
+                style={{ ...buttonStyle, fontSize: 11, opacity: defenseProcessing === `${log.id}:${defenseType}` ? 0.5 : 1 }}
+              >
+                {defenseProcessing === `${log.id}:${defenseType}` ? "Rolando…" : DEFENSE_TYPE_LABELS[defenseType]}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              Perícia de Resistir
+              <select
+                data-testid={`ataque-defesa-resistir-pericia-${log.id}`}
+                value={form.resistirSkill}
+                onChange={(e) => onUpdateForm({ resistirSkill: e.target.value as "vigor" | "mobilidade" })}
+                style={inputStyle}
+              >
+                <option value="vigor">Vigor</option>
+                <option value="mobilidade">Mobilidade</option>
+              </select>
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              Modificador manual
+              <input
+                data-testid={`ataque-defesa-modificador-${log.id}`}
+                type="number"
+                value={form.defenseModifier}
+                onChange={(e) => onUpdateForm({ defenseModifier: e.target.value })}
+                style={{ ...inputStyle, width: 90 }}
+              />
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+              <input
+                data-testid={`ataque-defesa-override-${log.id}`}
+                type="checkbox"
+                checked={form.defenseOverride}
+                onChange={(e) => onUpdateForm({ defenseOverride: e.target.checked })}
+              />
+              Rolar mesmo sem Reação (override)
+            </label>
+          </div>
+          {form.lastDefense && (
+            <p data-testid={`ataque-defesa-ultimo-resultado-${log.id}`} style={{ fontSize: 11, opacity: 0.7, margin: 0 }}>
+              Última defesa: {form.lastDefense.defenseName} — {form.lastDefense.attributeName}d8 (maior {form.lastDefense.highestDie}) +{" "}
+              {form.lastDefense.skillName} {form.lastDefense.skillValue}
+              {form.lastDefense.modifiersTotal !== 0 ? ` + mod ${form.lastDefense.modifiersTotal}` : ""} = {form.lastDefense.total}
+              {form.lastDefense.requirementReminder && form.lastDefense.requirementStatus !== "met" ? ` — ${form.lastDefense.requirementReminder}` : ""}
+            </p>
+          )}
+          <p style={{ fontSize: 10, opacity: 0.5, margin: 0 }}>
+            Modificadores automáticos de condição/postura ainda são pendência nesta tela — só o modificador manual acima entra na rolagem.
+          </p>
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
         <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>

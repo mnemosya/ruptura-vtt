@@ -92,6 +92,7 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   integrity_zero_pending: "Integridade Zerada",
   scene_effect_expired: "Efeito de Cena Encerrado",
   attack_resolved: "Ataque Resolvido",
+  defense_reaction_used: "Defesa Usada",
 };
 
 function entryKindLabel(type: string): string {
@@ -119,6 +120,7 @@ function entryIcon(type: string): string {
   if (type === "integrity_zero_pending") return "☠";
   if (type === "scene_effect_expired") return "⏳";
   if (type === "attack_resolved") return "🗡";
+  if (type === "defense_reaction_used") return "🛡";
   return "•";
 }
 
@@ -141,6 +143,7 @@ function entryBorderColor(type: string): string {
   if (type === "integrity_zero_pending") return "#c0392b";
   if (type === "scene_effect_expired") return "#888";
   if (type === "attack_resolved") return "#ff6b6b";
+  if (type === "defense_reaction_used") return "#5ec8ff";
   return "#ffb84f";
 }
 
@@ -470,6 +473,28 @@ function formatAttackResolved(payload: Record<string, unknown>): string {
     return `${attackerNome} atacou ${characterNome} (margem ${margin}) — ${damageRoll} de dano ${damageType}.${criticalText ? ` ${criticalText}` : ""}`;
   }
   return `${attackerNome} atacou ${characterNome} (margem ${margin}) — defesa bem-sucedida, sem dano.`;
+}
+
+/**
+ * `defense_reaction_used` (checkpoint pós-v0.50, defesa reativa no
+ * painel "Resolver Ataque" de /dev/table) — "Defesa usada — {defensor}
+ * usou {tipo}: {total} (Reações {antes} → {depois})." Nunca cai em
+ * JSON cru.
+ */
+function formatDefenseReactionUsed(payload: Record<string, unknown>): string {
+  const targetName = typeof payload.targetName === "string" ? payload.targetName : "Personagem";
+  const defenseName = typeof payload.defenseName === "string" ? payload.defenseName : "Defesa";
+  const total = typeof payload.total === "number" ? payload.total : "?";
+  const reactionsBefore = typeof payload.reactionsBefore === "number" ? payload.reactionsBefore : "?";
+  const reactionsAfter = typeof payload.reactionsAfter === "number" ? payload.reactionsAfter : "?";
+  const requirementReminder = typeof payload.requirementReminder === "string" ? payload.requirementReminder : null;
+  const requirementStatus = typeof payload.requirementStatus === "string" ? payload.requirementStatus : null;
+
+  let base = `Defesa usada — ${targetName} usou ${defenseName}: ${total} (Reações ${reactionsBefore} → ${reactionsAfter}).`;
+  if (requirementReminder && requirementStatus !== "met" && requirementStatus !== "not_applicable") {
+    base += ` ${requirementReminder}`;
+  }
+  return base;
 }
 
 /** Texto da mensagem de chat — aceita `text` (ficha, v0.12) ou `mensagem` (formato antigo do /dev/table). */
@@ -816,7 +841,9 @@ export function MesaTab({
                                                               ? formatSceneEffectExpired(entry.payload)
                                                               : entry.type === "attack_resolved"
                                                                 ? formatAttackResolved(entry.payload)
-                                                                : JSON.stringify(entry.payload)}
+                                                                : entry.type === "defense_reaction_used"
+                                                                  ? formatDefenseReactionUsed(entry.payload)
+                                                                  : JSON.stringify(entry.payload)}
             </span>
           </div>
         ))}

@@ -11,9 +11,16 @@
 import { listCampaigns } from "../../../lib/table/storage";
 import { listLegacyCharactersDev } from "../../../lib/character/storage";
 import { getCurrentUser } from "../../../lib/auth/session";
-import { getCharacterRules, listConditions, listItems } from "../../../lib/content";
+import { getCharacterRules, getCombatFlow, listConditions, listItems } from "../../../lib/content";
 import type { Campaign } from "../../../lib/table";
-import { normalizeItemContent, type CharacterRecord, type CharacterRulesPayload, type ItemContent } from "../../../lib/character";
+import {
+  normalizeItemContent,
+  normalizeReactionRules,
+  type CharacterRecord,
+  type CharacterRulesPayload,
+  type ItemContent,
+  type ReactionRules,
+} from "../../../lib/character";
 import TableClient from "./TableClient";
 
 export const dynamic = "force-dynamic";
@@ -76,6 +83,19 @@ export default async function TablePage() {
     // itemsIniciais vazio — painel de Resolver Ataque cai para MIT manual.
   }
 
+  // Regras de Reação (combat_flow, checkpoint pós-v0.50 — "Resolver
+  // Ataque" com defesa reativa) — mesmo fallback fail-closed usado na
+  // ficha (normalizeReactionRules(null) quando indisponível): defesa
+  // sem Reação continua permitida na resolução, mas sem penalidade
+  // cumulativa automática.
+  let reactionRules: ReactionRules = normalizeReactionRules(null);
+  try {
+    const combatFlow = await getCombatFlow();
+    reactionRules = normalizeReactionRules(combatFlow?.payload);
+  } catch {
+    // Segue com reactionRules fail-closed — painel de defesa ainda funciona, sem penalidade automática.
+  }
+
   if (errorMessage) {
     return (
       <main style={{ maxWidth: 640, margin: "60px auto", padding: "0 20px" }}>
@@ -98,6 +118,7 @@ export default async function TablePage() {
       regras={regras}
       condicoesDisponiveis={condicoesDisponiveis}
       itemsIniciais={itemsIniciais}
+      reactionRules={reactionRules}
     />
   );
 }
