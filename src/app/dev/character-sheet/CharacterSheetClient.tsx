@@ -581,6 +581,7 @@ export default function CharacterSheetClient({
         },
       });
     } catch {
+      avisarFalhaLogMesa();
       // Best effort — o evento já foi registrado no Log local; falha
       // aqui não deve travar entrar/sair/expirar.
     }
@@ -1052,6 +1053,7 @@ export default function CharacterSheetClient({
         },
       });
     } catch {
+      avisarFalhaLogMesa();
       // Best-effort — mesma justificativa de handleAddCondition.
     }
   }
@@ -1191,6 +1193,7 @@ export default function CharacterSheetClient({
           },
         });
       } catch {
+        avisarFalhaLogMesa();
         // Best-effort — mesma justificativa de handleAddCondition.
       }
     }
@@ -1226,6 +1229,7 @@ export default function CharacterSheetClient({
           },
         });
       } catch {
+        avisarFalhaLogMesa();
         // Best-effort — mesma justificativa de handleAddCondition.
       }
     }
@@ -1262,6 +1266,7 @@ export default function CharacterSheetClient({
         },
       });
     } catch {
+      avisarFalhaLogMesa();
       // Best-effort — mesma justificativa de handleAddCondition.
     }
   }
@@ -1372,6 +1377,7 @@ export default function CharacterSheetClient({
           },
         });
       } catch {
+        avisarFalhaLogMesa();
         // Best-effort — mesma justificativa de handleAddCondition.
       }
     }
@@ -1432,6 +1438,7 @@ export default function CharacterSheetClient({
           },
         });
       } catch {
+        avisarFalhaLogMesa();
         // Best-effort — mesma justificativa de handleAddCondition.
       }
     }
@@ -1465,6 +1472,7 @@ export default function CharacterSheetClient({
         },
       });
     } catch {
+      avisarFalhaLogMesa();
       // Best-effort — mesma justificativa de handleAddCondition.
     }
   }
@@ -1829,6 +1837,7 @@ export default function CharacterSheetClient({
             payload: { ...entry.payload, characterId, characterNome: current.nome, profileId: selectedProfileId },
           });
         } catch {
+          avisarFalhaLogMesa();
           // Best-effort — os efeitos já foram aplicados no estado local.
         }
       }
@@ -1872,6 +1881,7 @@ export default function CharacterSheetClient({
             payload: { ...entry.payload, characterId, characterNome: current.nome, profileId: selectedProfileId },
           });
         } catch {
+          avisarFalhaLogMesa();
           // Best-effort — a resolução já foi aplicada no estado local.
         }
       }
@@ -1915,6 +1925,7 @@ export default function CharacterSheetClient({
           },
         });
       } catch {
+        avisarFalhaLogMesa();
         // Best-effort — a resolução já foi aplicada no estado local.
       }
     }
@@ -1967,6 +1978,7 @@ export default function CharacterSheetClient({
         },
       });
     } catch {
+      avisarFalhaLogMesa();
       // Best-effort — o uso já foi aplicado no estado local/persistido.
     }
   }
@@ -2212,6 +2224,7 @@ export default function CharacterSheetClient({
           },
         });
       } catch {
+        avisarFalhaLogMesa();
         // Best-effort — o item já foi usado no estado local/persistido; falha aqui não bloqueia o jogador.
       }
     }
@@ -2520,6 +2533,7 @@ export default function CharacterSheetClient({
           },
         });
       } catch {
+        avisarFalhaLogMesa();
         // Best-effort — a conjuração já foi aplicada no estado local/persistido.
       }
     }
@@ -2625,6 +2639,7 @@ export default function CharacterSheetClient({
           },
         });
       } catch {
+        avisarFalhaLogMesa();
         // Best-effort — a fusão já foi aplicada no estado local/persistido.
       }
     }
@@ -2695,6 +2710,7 @@ export default function CharacterSheetClient({
           },
         });
       } catch {
+        avisarFalhaLogMesa();
         // Best-effort — a condição já foi aplicada no estado local; falha
         // aqui não deve impedir o jogador de continuar.
       }
@@ -2737,6 +2753,7 @@ export default function CharacterSheetClient({
           },
         });
       } catch {
+        avisarFalhaLogMesa();
         // Best-effort — mesma justificativa de handleAddCondition.
       }
     }
@@ -2771,6 +2788,19 @@ export default function CharacterSheetClient({
    * `saveState`/`errorMessage` e deixa "Salvar personagem" disponível
    * como caminho manual, exatamente como pedido.
    */
+  /**
+   * Aviso de falha ao gravar `table_logs` (checkpoint pós-v0.68) —
+   * chamado pelos catches best-effort dos addLog: o EVENTO fica só no
+   * log local (o estado do personagem não é afetado nem revertido).
+   * Nunca finge sucesso em silêncio.
+   */
+  function avisarFalhaLogMesa() {
+    addLogEntry(
+      "recurso",
+      "⚠ Falha ao gravar o evento no log da mesa — o registro ficou só neste log local; o estado do personagem não foi afetado. Verifique a conexão e tente novamente se necessário.",
+    );
+  }
+
   async function persistAutomatedActionExecution(nextCharacter: Character) {
     const isConnected =
       mode === "product"
