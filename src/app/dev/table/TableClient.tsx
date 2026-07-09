@@ -366,6 +366,7 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   character_state_change: "Estado do Personagem",
   item_used: "Item Usado",
   talent_used: "Talento Usado",
+  spell_cast: "Magia Conjurada",
 };
 
 function entryKindLabel(type: string): string {
@@ -388,6 +389,7 @@ function entryIcon(type: string): string {
   if (type === "integrity_zero_pending") return "☠";
   if (type === "item_used") return "🎒";
   if (type === "talent_used") return "✨";
+  if (type === "spell_cast") return "🔮";
   return "•";
 }
 
@@ -482,6 +484,42 @@ function formatSystemLog(type: string, payload: Record<string, unknown>): string
     if (usesSpent != null && usesMax != null) partes.push(`usos ${usesSpent}/${usesMax}${cadencia ? ` por ${cadencia}` : ""}`);
     const base = `Talento usado — ${characterNome} usou ${nomeCompleto}${description ? ` (${description})` : ""}${partes.length > 0 ? `: ${partes.join(" · ")}` : ""}.`;
     return reminders.length > 0 ? `${base} — Lembrete: ${reminders.join(" ")}` : base;
+  }
+  if (type === "spell_cast") {
+    const spellNome = typeof payload.spellNome === "string" ? payload.spellNome : "Magia";
+    const vertente = typeof payload.vertente === "string" ? payload.vertente : null;
+    const nivel = typeof payload.nivel === "number" ? payload.nivel : null;
+    const partes: string[] = [];
+    const paBefore = typeof payload.paBefore === "number" ? payload.paBefore : null;
+    const paAfter = typeof payload.paAfter === "number" ? payload.paAfter : null;
+    if (paBefore != null && paAfter != null) partes.push(`PA ${paBefore} → ${paAfter}`);
+    if (payload.manaCostUnknown === true) {
+      partes.push("Mana: custo placeholder (não descontado)");
+    } else {
+      const manaBefore = typeof payload.manaBefore === "number" ? payload.manaBefore : null;
+      const manaAfter = typeof payload.manaAfter === "number" ? payload.manaAfter : null;
+      const temporaria = typeof payload.manaTemporariaConsumida === "number" ? payload.manaTemporariaConsumida : 0;
+      if (manaBefore != null && manaAfter != null) {
+        partes.push(`Mana ${manaBefore} → ${manaAfter}${temporaria > 0 ? ` (${temporaria} da temporária)` : ""}`);
+      }
+    }
+    const damage = typeof payload.damage === "object" && payload.damage !== null ? (payload.damage as Record<string, unknown>) : null;
+    if (damage) {
+      const result = typeof damage.result === "number" ? damage.result : "?";
+      const formula = typeof damage.formula === "string" ? damage.formula : "?";
+      const tipoDano = typeof damage.tipoDano === "string" ? damage.tipoDano : null;
+      partes.push(`dano ${damage.fixo === true ? "fixo" : "rolado"} ${result} (${formula}${tipoDano ? `/${tipoDano}` : ""})`);
+    }
+    const resistance = typeof payload.resistance === "object" && payload.resistance !== null ? (payload.resistance as Record<string, unknown>) : null;
+    if (resistance) {
+      const acoes = names(resistance.acoes);
+      const cd = typeof resistance.cdFormula === "string" ? resistance.cdFormula : "?";
+      partes.push(`resistência ${acoes.join("/") || "?"} CD ${cd}`);
+    }
+    const extras = [...names(payload.manualEffects), ...names(payload.reminders)];
+    const cabecalho = `${spellNome}${vertente ? ` (${vertente}${nivel != null ? `, nível ${nivel}` : ""})` : ""}`;
+    const base = `Magia conjurada — ${characterNome} conjurou ${cabecalho}${partes.length > 0 ? `: ${partes.join(" · ")}` : ""}.`;
+    return extras.length > 0 ? `${base} — ${extras.join(" ")}` : base;
   }
   if (type === "round_end_processed") {
     const nomes = names(payload.processedCharacterNames);

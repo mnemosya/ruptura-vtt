@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Section } from "./Section";
 import { buttonStyle } from "./styles";
-import { getSpellDamageEffect, getSpellResistanceEffect, isSpellLearned, getKnownVertentes, type SpellContent, type LearnedSpell } from "../../../../lib/character";
+import { getSpellDamageEffect, getSpellResistanceEffect, describeSpellManualEffects, isSpellLearned, getKnownVertentes, type SpellContent, type LearnedSpell } from "../../../../lib/character";
 
 /**
  * Aba "Magias" — checkpoint v0.50/v0.50.1/v0.50.2 (PRD 11.4). Catálogo
@@ -74,6 +74,7 @@ export function SpellsTab({
                 {magiasDaVertente.map((spell) => {
                   const dano = getSpellDamageEffect(spell);
                   const resistencia = getSpellResistanceEffect(spell);
+                  const efeitosManuais = describeSpellManualEffects(spell);
                   const aberto = expandido[spell.slug] ?? false;
                   const aprendida = magiasAprendidas.find((m) => m.spellSlug === spell.slug);
                   return (
@@ -92,7 +93,8 @@ export function SpellsTab({
                         </button>
                         <span style={{ opacity: 0.6 }}>
                           {spell.estatisticas.custo_pa} PA · Mana{" "}
-                          {spell.estatisticas.custo_mana != null ? spell.estatisticas.custo_mana : "(placeholder)"}
+                          {spell.estatisticas.custo_mana != null ? spell.estatisticas.custo_mana : "(placeholder)"} ·{" "}
+                          resolução {spell.estatisticas.resolucao || "?"}
                         </span>
                         {aprendida && <span style={{ color: "#4caf50", fontSize: 11 }}>aprendida</span>}
                       </div>
@@ -104,8 +106,16 @@ export function SpellsTab({
                       )}
                       {resistencia && (
                         <p style={{ color: "#f5a623", margin: "4px 0" }}>
-                          Resistência do alvo: {resistencia.acoes.join("/")} CD {resistencia.cdFormula} (resolução manual).
+                          Resistência do alvo: {resistencia.acoes.join("/")} CD {resistencia.cdFormula}
+                          {resistencia.condicional ? " (condicional)" : ""} (resolução manual — conjurar gera o cartão).
                         </p>
+                      )}
+                      {efeitosManuais.length > 0 && (
+                        <div data-testid={`magia-efeitos-manuais-${spell.slug}`} style={{ margin: "4px 0", display: "flex", flexDirection: "column", gap: 2 }}>
+                          {efeitosManuais.map((linha, i) => (
+                            <span key={i} style={{ fontSize: 11, color: "#f5a623" }}>Manual: {linha}</span>
+                          ))}
+                        </div>
                       )}
                       <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
                         {sheetMode === "evolucao" ? (
@@ -125,7 +135,7 @@ export function SpellsTab({
                             </button>
                             {dano && (
                               <button data-testid={`magia-rolar-dano-${spell.slug}`} onClick={() => onRollDamage(spell.slug)} style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px" }}>
-                                Rolar dano ({dano.dado})
+                                {dano.dado ? `Rolar dano (${dano.dado})` : `Dano fixo (${dano.valor})`}
                               </button>
                             )}
                           </>

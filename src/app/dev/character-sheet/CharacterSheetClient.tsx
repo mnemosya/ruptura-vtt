@@ -95,6 +95,7 @@ import {
   castSpell,
   rollSpellDamage,
   getSpellDamageEffect,
+  prepareSpellCastResolution,
   learnSpell,
   forgetSpell,
   isSpellLearned,
@@ -2418,14 +2419,16 @@ export default function CharacterSheetClient({
   }
 
   /**
-   * Conjurar magia (aba Magias, checkpoint v0.50) — desconta PA/Mana
-   * (`castSpell`, `lib/character/spells.ts`); registra o resumo no log
-   * local (PRD 11.4 "resumo delas aparece no log/chat"). Sem PA/Mana
-   * suficiente, não muda nada e só avisa. Exige que a magia já tenha
-   * sido aprendida (checkpoint v0.50.1) — nunca conjura o que o
-   * personagem não aprendeu, mesmo que a vertente seja conhecida.
+   * Conjurar magia (aba Magias, checkpoint v0.50; cartão de resolução e
+   * `spell_cast` persistido no pós-v0.64) — desconta PA/Mana
+   * (`castSpell`, `lib/character/spells.ts`), monta o cartão de
+   * resolução (`prepareSpellCastResolution`: dano rolado, CD/ações de
+   * resistência, efeitos manuais) e grava `table_logs.type="spell_cast"`
+   * quando conectado. NADA é aplicado em alvo automaticamente — teatro
+   * da mente; o narrador resolve pelas ferramentas de /dev/table. Sem
+   * PA/Mana suficiente, não muda nada e só avisa. Exige magia aprendida.
    */
-  function handleCastSpell(slug: string) {
+  async function handleCastSpell(slug: string) {
     const current = characterRef.current;
     const spell = spellsIniciais.find((s) => s.slug === slug);
     if (!spell) return;
@@ -2440,11 +2443,67 @@ export default function CharacterSheetClient({
     }
     characterRef.current = result.character;
     setCharacter(result.character);
+
+    const resolution = prepareSpellCastResolution(spell);
     const temporariaConsumida = (result.manaTemporariaBefore ?? 0) - (result.manaTemporariaAfter ?? 0);
     const manaTexto = result.manaCostUnknown
       ? "custo de Mana ainda não definido (placeholder)"
       : `Mana ${result.manaBefore} → ${result.manaAfter}${temporariaConsumida > 0 ? ` (${temporariaConsumida} da Mana temporária)` : ""}`;
-    addLogEntry("recurso", `Conjurado: ${spell.nome} — PA ${result.paBefore} → ${result.paAfter}; ${manaTexto}.`);
+    const partes: string[] = [`PA ${result.paBefore} → ${result.paAfter}`, manaTexto];
+    if (resolution.damage) {
+      partes.push(
+        `dano ${resolution.damage.fixo ? "fixo" : "rolado"} ${resolution.damage.result} (${resolution.damage.formula}/${resolution.damage.tipoDano}${resolution.damage.subtipoDano ? `/${resolution.damage.subtipoDano}` : ""})`,
+      );
+    }
+    const extras = [...resolution.manualEffects, ...resolution.reminders];
+    addLogEntry(
+      "recurso",
+      `Conjurado: ${spell.nome} — ${partes.join("; ")}.${extras.length > 0 ? ` — ${extras.join(" ")}` : ""}`,
+    );
+
+    // Conjurar muda estado real (PA/Mana) — persiste automaticamente quando conectado, mesmo padrão de item/talento.
+    await persistAutomatedActionExecution(result.character);
+
+    if (selectedCampaignId) {
+      try {
+        await addLog({
+          campaignId: selectedCampaignId,
+          characterId: characterId ?? undefined,
+          profileId: selectedProfileId,
+          profileSessionId: profileSessionToken?.profileSessionId ?? null,
+          type: "spell_cast",
+          visibility: "public",
+          payload: {
+            characterId,
+            characterNome: current.nome,
+            profileId: selectedProfileId,
+            profileNickname: perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null,
+            spellSlug: spell.slug,
+            spellNome: spell.nome,
+            vertente: spell.vertente,
+            nivel: spell.estatisticas.nivel,
+            tipoMagia: spell.estatisticas.tipo_magia,
+            resolucao: resolution.resolucao,
+            usaReacao: spell.estatisticas.usa_reacao,
+            paCost: spell.estatisticas.custo_pa,
+            paBefore: result.paBefore,
+            paAfter: result.paAfter,
+            manaCost: spell.estatisticas.custo_mana,
+            manaCostUnknown: result.manaCostUnknown,
+            manaBefore: result.manaBefore ?? null,
+            manaAfter: result.manaAfter ?? null,
+            manaTemporariaConsumida: temporariaConsumida,
+            resistance: resolution.resistance,
+            damage: resolution.damage,
+            manualEffects: resolution.manualEffects,
+            reminders: resolution.reminders,
+            source: "character_sheet_spells",
+          },
+        });
+      } catch {
+        // Best-effort — a conjuração já foi aplicada no estado local/persistido.
+      }
+    }
   }
 
   /** "Rolar dano" (aba Magias, checkpoint v0.50) — atalho de rolagem para magias com efeito de dano. */
@@ -2455,7 +2514,7 @@ export default function CharacterSheetClient({
     if (!dano) return;
     const resultado = rollSpellDamage(spell);
     if (resultado == null) return;
-    addLogEntry("recurso", `${spell.nome}: ${resultado} de dano ${dano.tipo_dano}${dano.subtipo_dano ? ` (${dano.subtipo_dano})` : ""} (${dano.dado}).`);
+    addLogEntry("recurso", `${spell.nome}: ${resultado} de dano ${dano.tipo_dano}${dano.subtipo_dano ? ` (${dano.subtipo_dano})` : ""} (${dano.dado ?? `fixo ${dano.valor}`}).`);
   }
 
   /**

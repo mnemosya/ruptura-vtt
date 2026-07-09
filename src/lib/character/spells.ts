@@ -126,21 +126,37 @@ function getSpellEffects(spell: SpellContent): SpellEffect[] {
 }
 
 export interface SpellDamageEffect {
-  dado: string;
+  /** Fórmula "NdM" quando o payload declara `dado` — ausente em dano fixo. */
+  dado?: string;
+  /** Dano FIXO quando o payload declara `valor` numérico (ex.: Arranque: 1) — ausente quando há dado. */
+  valor?: number;
   tipo_dano: string;
   subtipo_dano?: string;
+  /** O que acontece em sucesso do alvo (ex.: "metade") — texto do payload, resolução manual. */
+  sucesso?: string;
 }
 
-/** Efeito de dano da magia, se houver — nunca inventa fórmula. */
+/** Efeito de dano da magia, se houver — cobre `dado` (fórmula) E `valor` (fixo); nunca inventa fórmula. */
 export function getSpellDamageEffect(spell: SpellContent): SpellDamageEffect | null {
   const efeito = getSpellEffects(spell).find((e) => e.tipo === "dano");
-  if (!efeito || typeof efeito.dado !== "string" || typeof efeito.tipo_dano !== "string") return null;
-  return { dado: efeito.dado, tipo_dano: efeito.tipo_dano, subtipo_dano: typeof efeito.subtipo_dano === "string" ? efeito.subtipo_dano : undefined };
+  if (!efeito || typeof efeito.tipo_dano !== "string") return null;
+  const dado = typeof efeito.dado === "string" ? efeito.dado : undefined;
+  const valor = typeof efeito.valor === "number" ? efeito.valor : undefined;
+  if (!dado && valor == null) return null;
+  return {
+    dado,
+    valor,
+    tipo_dano: efeito.tipo_dano,
+    subtipo_dano: typeof efeito.subtipo_dano === "string" ? efeito.subtipo_dano : undefined,
+    sucesso: typeof efeito.sucesso === "string" ? efeito.sucesso : undefined,
+  };
 }
 
 export interface SpellResistanceEffect {
   cdFormula: string;
   acoes: string[];
+  /** `condicional: true` no payload — a resistência só se aplica em certas circunstâncias (texto da magia). */
+  condicional: boolean;
 }
 
 /** Efeito de resistência da magia, se houver — só texto/CD, nunca resolve o alvo automaticamente. */
@@ -150,14 +166,147 @@ export function getSpellResistanceEffect(spell: SpellContent): SpellResistanceEf
   const resistencia = asRecord(efeito.resistencia);
   const cdFormula = typeof resistencia?.cd_formula === "string" ? resistencia.cd_formula : "?";
   const acoes = asStringArray(resistencia?.acoes);
-  return { cdFormula, acoes };
+  return { cdFormula, acoes, condicional: efeito.condicional === true };
 }
 
-/** Rola o dado de dano da magia (reaproveita o parser "NdM" de `attack.ts` — mesmo mecanismo, sem duplicar). */
+/** Rola o dado de dano da magia (reaproveita o parser "NdM" de `attack.ts`); dano fixo (`valor`) devolve o próprio valor. */
 export function rollSpellDamage(spell: SpellContent, rng?: () => number): number | null {
   const efeito = getSpellDamageEffect(spell);
   if (!efeito) return null;
-  return rollDamageFormula(efeito.dado, rng);
+  if (efeito.dado) return rollDamageFormula(efeito.dado, rng);
+  return efeito.valor ?? null;
+}
+
+/**
+ * Efeitos da magia que NÃO são automatizados — descritos textualmente a
+ * partir do payload (aplicar/remover condição no alvo, cura em alvo,
+ * recurso temporário, teste colateral, modificador sem duração
+ * rastreada). Alvo é sempre teatro da mente: nada disso é aplicado
+ * automaticamente (checkpoint pós-v0.64).
+ */
+export function describeSpellManualEffects(spell: SpellContent): string[] {
+  const linhas: string[] = [];
+  for (const efeito of getSpellEffects(spell)) {
+    switch (efeito.tipo) {
+      case "dano":
+      case "efeito_com_resistencia":
+        break; // tratados pelo fluxo de dano/resistência.
+      case "aplicar_condicao":
+        linhas.push(
+          `Aplica a condição "${typeof efeito.condicao === "string" ? efeito.condicao : "?"}" no alvo${typeof efeito.duracao === "string" ? ` (${efeito.duracao.replace(/_/g, " ")})` : ""} — aplicação manual pelo narrador.`,
+        );
+        break;
+      case "remover_condicao":
+        linhas.push(`Remove a condição "${typeof efeito.condicao === "string" ? efeito.condicao : "?"}" do alvo — aplicação manual.`);
+        break;
+      case "cura":
+        linhas.push(
+          `Cura ${typeof efeito.dado === "string" ? efeito.dado : typeof efeito.valor === "number" ? efeito.valor : "?"} de ${efeito.recurso === "pe" ? "PE" : "PV"} no alvo — aplicação manual (alvo escolhido narrativamente).`,
+        );
+        break;
+      case "recurso_temporario":
+        linhas.push(
+          `Concede ${typeof efeito.valor === "number" ? efeito.valor : "?"} de ${efeito.recurso === "pe" ? "PE" : efeito.recurso === "mana" ? "Mana" : "PV"} temporário — aplicação manual (duração não rastreada).`,
+        );
+        break;
+      case "teste_colateral": {
+        const pericia = typeof efeito.pericia === "string" ? efeito.pericia : "?";
+        const cd = typeof efeito.cd === "number" ? `CD ${efeito.cd}` : "CD não estruturada";
+        const momento = typeof efeito.momento === "string" ? efeito.momento.replace(/_/g, " ") : null;
+        const falha = asRecord(efeito.falha);
+        const falhaTexto = typeof falha?.aplicar_condicao === "string" ? `; em falha aplica "${falha.aplicar_condicao}"` : "";
+        linhas.push(`Teste colateral do conjurador: ${pericia} (${cd})${momento ? ` — ${momento}` : ""}${falhaTexto} — rolar manualmente.`);
+        break;
+      }
+      case "modificador": {
+        const valor = typeof efeito.valor === "number" ? efeito.valor : null;
+        const tags = asStringArray(efeito.alvo_tags);
+        if (valor != null && tags.length > 0) {
+          linhas.push(`Modificador ${valor >= 0 ? "+" : ""}${valor} em ${tags.join("/")} — aplicar manualmente (duração/sustentação não rastreada).`);
+        } else {
+          linhas.push(`Modificador declarado no payload sem estrutura completa — resolução manual.`);
+        }
+        break;
+      }
+      default:
+        linhas.push(`Efeito "${efeito.tipo.replace(/_/g, " ")}" — resolução manual.`);
+    }
+  }
+  return linhas;
+}
+
+export interface SpellCastDamage {
+  formula: string;
+  result: number;
+  tipoDano: string;
+  subtipoDano: string | null;
+  /** "metade" etc. — em sucesso do alvo, ajustado manualmente. */
+  sucesso: string | null;
+  /** true quando o "dano" era `valor` fixo (não houve rolagem). */
+  fixo: boolean;
+}
+
+export interface SpellCastResolution {
+  /** `estatisticas.resolucao` — "automatica" | "resistencia" | "ataque". */
+  resolucao: string;
+  resistance: SpellResistanceEffect | null;
+  damage: SpellCastDamage | null;
+  manualEffects: string[];
+  reminders: string[];
+}
+
+/**
+ * Cartão de resolução da conjuração (checkpoint pós-v0.64) — rola o
+ * dano (quando estruturado), expõe CD/ações de resistência e lista os
+ * efeitos manuais. NUNCA aplica nada em alvo (teatro da mente); o
+ * narrador usa as ferramentas existentes de /dev/table.
+ *
+ * Sobrecarga: auditoria do catálogo (132 magias) não encontrou NENHUM
+ * campo estruturado de sobrecarga em payload de magia — não há o que
+ * automatizar aqui; registrado como pendência de conteúdo (o fluxo de
+ * Surto usa `sobrecarga_usada_dia`, ver overload.ts).
+ */
+export function prepareSpellCastResolution(spell: SpellContent, rng?: () => number): SpellCastResolution {
+  const resistance = getSpellResistanceEffect(spell);
+  const damageEffect = getSpellDamageEffect(spell);
+  const reminders: string[] = [];
+
+  let damage: SpellCastDamage | null = null;
+  if (damageEffect) {
+    const result = rollSpellDamage(spell, rng);
+    if (result != null) {
+      damage = {
+        formula: damageEffect.dado ?? String(damageEffect.valor),
+        result,
+        tipoDano: damageEffect.tipo_dano,
+        subtipoDano: damageEffect.subtipo_dano ?? null,
+        sucesso: damageEffect.sucesso ?? null,
+        fixo: !damageEffect.dado,
+      };
+      reminders.push("Dano rolado/preparado, nunca aplicado automaticamente — escolha alvos manualmente e resolva pelo painel do narrador.");
+      if (damage.sucesso) reminders.push(`Em sucesso do alvo: ${damage.sucesso.replace(/_/g, " ")} — ajuste manual.`);
+    }
+  }
+
+  if (resistance) {
+    reminders.push(
+      `Resistência do alvo: ${resistance.acoes.join("/") || "?"} (CD ${resistance.cdFormula})${resistance.condicional ? " — condicional, ver texto da magia" : ""}.`,
+    );
+    if (resistance.cdFormula.includes("nivel_vertente")) {
+      reminders.push("CD usa nível da vertente — não modelado na ficha ainda; calcule manualmente (pendência).");
+    }
+  }
+  if (spell.estatisticas.resolucao === "ataque") {
+    reminders.push("Resolução por ATAQUE mágico — role o teste pela aba Rolagens; sem motor de ataque mágico dedicado ainda.");
+  }
+
+  return {
+    resolucao: spell.estatisticas.resolucao,
+    resistance,
+    damage,
+    manualEffects: describeSpellManualEffects(spell),
+    reminders,
+  };
 }
 
 // ---------------------------------------------------------------------

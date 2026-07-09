@@ -95,6 +95,7 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   defense_reaction_used: "Defesa Usada",
   item_used: "Item Usado",
   talent_used: "Talento Usado",
+  spell_cast: "Magia Conjurada",
 };
 
 function entryKindLabel(type: string): string {
@@ -125,6 +126,7 @@ function entryIcon(type: string): string {
   if (type === "defense_reaction_used") return "🛡";
   if (type === "item_used") return "🎒";
   if (type === "talent_used") return "✨";
+  if (type === "spell_cast") return "🔮";
   return "•";
 }
 
@@ -150,6 +152,7 @@ function entryBorderColor(type: string): string {
   if (type === "defense_reaction_used") return "#5ec8ff";
   if (type === "item_used") return "#4caf50";
   if (type === "talent_used") return "#9b8cff";
+  if (type === "spell_cast") return "#5ec8ff";
   return "#ffb84f";
 }
 
@@ -611,6 +614,57 @@ function formatTalentUsed(payload: Record<string, unknown>): string {
   return reminders.length > 0 ? `${base} — Lembrete: ${reminders.join(" ")}` : base;
 }
 
+/**
+ * `spell_cast` (checkpoint pós-v0.64) — "Magia conjurada — {personagem}
+ * conjurou {magia} (vertente, nível): PA/Mana antes → depois, dano
+ * rolado, resistência esperada, efeitos manuais." Nunca cai em JSON cru.
+ */
+function formatSpellCast(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const spellNome = typeof payload.spellNome === "string" ? payload.spellNome : "Magia";
+  const vertente = typeof payload.vertente === "string" ? payload.vertente : null;
+  const nivel = typeof payload.nivel === "number" ? payload.nivel : null;
+  const partes: string[] = [];
+
+  const paBefore = typeof payload.paBefore === "number" ? payload.paBefore : null;
+  const paAfter = typeof payload.paAfter === "number" ? payload.paAfter : null;
+  if (paBefore != null && paAfter != null) partes.push(`PA ${paBefore} → ${paAfter}`);
+
+  if (payload.manaCostUnknown === true) {
+    partes.push("Mana: custo placeholder (não descontado)");
+  } else {
+    const manaBefore = typeof payload.manaBefore === "number" ? payload.manaBefore : null;
+    const manaAfter = typeof payload.manaAfter === "number" ? payload.manaAfter : null;
+    const temporaria = typeof payload.manaTemporariaConsumida === "number" ? payload.manaTemporariaConsumida : 0;
+    if (manaBefore != null && manaAfter != null) {
+      partes.push(`Mana ${manaBefore} → ${manaAfter}${temporaria > 0 ? ` (${temporaria} da temporária)` : ""}`);
+    }
+  }
+
+  const damage = typeof payload.damage === "object" && payload.damage !== null ? (payload.damage as Record<string, unknown>) : null;
+  if (damage) {
+    const result = typeof damage.result === "number" ? damage.result : "?";
+    const formula = typeof damage.formula === "string" ? damage.formula : "?";
+    const tipoDano = typeof damage.tipoDano === "string" ? damage.tipoDano : null;
+    partes.push(`dano ${damage.fixo === true ? "fixo" : "rolado"} ${result} (${formula}${tipoDano ? `/${tipoDano}` : ""})`);
+  }
+
+  const resistance = typeof payload.resistance === "object" && payload.resistance !== null ? (payload.resistance as Record<string, unknown>) : null;
+  if (resistance) {
+    const acoes = Array.isArray(resistance.acoes) ? resistance.acoes.filter((a): a is string => typeof a === "string") : [];
+    const cd = typeof resistance.cdFormula === "string" ? resistance.cdFormula : "?";
+    partes.push(`resistência ${acoes.join("/") || "?"} CD ${cd}`);
+  }
+
+  const manualEffects = Array.isArray(payload.manualEffects) ? payload.manualEffects.filter((m): m is string => typeof m === "string") : [];
+  const reminders = Array.isArray(payload.reminders) ? payload.reminders.filter((r): r is string => typeof r === "string") : [];
+  const extras = [...manualEffects, ...reminders];
+
+  const cabecalho = `${spellNome}${vertente ? ` (${vertente}${nivel != null ? `, nível ${nivel}` : ""})` : ""}`;
+  const base = `Magia conjurada — ${characterNome} conjurou ${cabecalho}${partes.length > 0 ? `: ${partes.join(" · ")}` : ""}.`;
+  return extras.length > 0 ? `${base} — ${extras.join(" ")}` : base;
+}
+
 /** Texto da mensagem de chat — aceita `text` (ficha, v0.12) ou `mensagem` (formato antigo do /dev/table). */
 function chatText(payload: Record<string, unknown>): string {
   if (typeof payload.text === "string") return payload.text;
@@ -961,7 +1015,9 @@ export function MesaTab({
                                                                     ? formatItemUsed(entry.payload)
                                                                     : entry.type === "talent_used"
                                                                       ? formatTalentUsed(entry.payload)
-                                                                      : JSON.stringify(entry.payload)}
+                                                                      : entry.type === "spell_cast"
+                                                                        ? formatSpellCast(entry.payload)
+                                                                        : JSON.stringify(entry.payload)}
             </span>
           </div>
         ))}
