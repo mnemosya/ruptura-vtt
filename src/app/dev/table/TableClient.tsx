@@ -367,6 +367,9 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   item_used: "Item Usado",
   talent_used: "Talento Usado",
   spell_cast: "Magia Conjurada",
+  overload_surge: "Surto de Sobrecarga",
+  overload_surge_used: "Surto de Sobrecarga",
+  overload_will_roll: "Teste de Vontade (Sobrecarga)",
 };
 
 function entryKindLabel(type: string): string {
@@ -390,6 +393,7 @@ function entryIcon(type: string): string {
   if (type === "item_used") return "🎒";
   if (type === "talent_used") return "✨";
   if (type === "spell_cast") return "🔮";
+  if (type === "overload_surge" || type === "overload_surge_used" || type === "overload_will_roll") return "⚡";
   return "•";
 }
 
@@ -520,6 +524,21 @@ function formatSystemLog(type: string, payload: Record<string, unknown>): string
     const cabecalho = `${spellNome}${vertente ? ` (${vertente}${nivel != null ? `, nível ${nivel}` : ""})` : ""}`;
     const base = `Magia conjurada — ${characterNome} conjurou ${cabecalho}${partes.length > 0 ? `: ${partes.join(" · ")}` : ""}.`;
     return extras.length > 0 ? `${base} — ${extras.join(" ")}` : base;
+  }
+  if (type === "overload_surge" || type === "overload_surge_used") {
+    const tipo = typeof payload.tipo === "string" ? payload.tipo : "?";
+    const indice = typeof payload.indice === "number" ? payload.indice : "?";
+    const max = typeof payload.maxSurtos === "number" ? payload.maxSurtos : 3;
+    const dado = typeof payload.danoDado === "string" ? payload.danoDado : "1d4";
+    const dano = typeof payload.danoPsiquico === "number" ? payload.danoPsiquico : "?";
+    const ruptura = payload.rupturaPendente === true ? " — Ruptura pendente!" : "";
+    return `Surto de Sobrecarga — ${characterNome}: ${tipo} (${indice}/${max}) — ${dano} dano psíquico (${dado}, aplicação manual)${ruptura}`;
+  }
+  if (type === "overload_will_roll") {
+    const total = typeof payload.total === "number" ? payload.total : "?";
+    const cd = typeof payload.cd === "number" ? payload.cd : "?";
+    const sucesso = payload.sucesso === true;
+    return `Teste de Vontade (Sobrecarga) — ${characterNome}: total ${total} vs CD ${cd} — ${sucesso ? "Sucesso" : "Falha (Atordoado 1 rodada)"}.`;
   }
   if (type === "round_end_processed") {
     const nomes = names(payload.processedCharacterNames);

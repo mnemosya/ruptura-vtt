@@ -30,9 +30,10 @@ import {
   applyShortRest,
   applyLongRest,
   useOverloadSurge,
+  getOverloadMaxPerDay,
+  getOverloadSurgeDamageDie,
+  getOverloadWillTestRule,
   applyStunFromFailedWillTest,
-  OVERLOAD_WILL_TEST_CD,
-  MAX_OVERLOAD_SURGES_PER_DAY,
   detectCollapseOnResourceChange,
   advanceCollapseSegment,
   stabilizeCollapse,
@@ -1308,26 +1309,39 @@ export default function CharacterSheetClient({
     if (removidas.length > 0) void handleAutoHealRemovals(removidas, result.before.pv, result.after.pv);
   }
 
-  /** Botão "Usar surto" (checkpoint v0.37, PRD 10.5) — 1d4 de dano psíquico, 3º surto marca Ruptura pendente + exige Vontade CD 7. */
+  /**
+   * Botão "Usar surto" (checkpoint v0.37; data-driven pela regra
+   * canônica `regras_personagem.sobrecarga` no pós-v0.65) — dado do dano
+   * psíquico, máximo de cargas/dia e teste do 3º surto vêm da regra
+   * (fallbacks idênticos ao PRD). Sem sobrecarga suficiente, bloqueia
+   * sem mudar nada. Loga `overload_surge_used` (canônico) na mesa.
+   */
   async function handleUseOverloadSurge(tipo: string) {
     const nowIso = new Date().toISOString();
     const sobrecargaAntes = character.sobrecarga_usada_dia ?? 0;
-    const result = useOverloadSurge(character, tipo, nowIso);
+    const overloadRules = regras?.sobrecarga;
+    const maxSurtos = getOverloadMaxPerDay(overloadRules);
+    const result = useOverloadSurge(character, tipo, nowIso, undefined, overloadRules);
 
     if (!result.surge) {
       addLogEntry("recurso", result.warnings[0] ?? "Limite de surtos de Sobrecarga atingido.");
       return;
     }
 
+    characterRef.current = result.character;
     setCharacter(result.character);
+    const dado = getOverloadSurgeDamageDie(overloadRules);
     addLogEntry(
       "recurso",
-      `Surto de Sobrecarga (${tipo}) — ${result.surge.indice}/${MAX_OVERLOAD_SURGES_PER_DAY}, dano psíquico ${result.surge.danoPsiquico} (1d4, não aplicado automaticamente).`,
+      `Surto de Sobrecarga (${tipo}) — ${result.surge.indice}/${maxSurtos}, dano psíquico ${result.surge.danoPsiquico} (${dado}, não aplicado automaticamente).`,
     );
     if (result.requiresWillRoll) {
-      addLogEntry("condicao", "Ruptura pendente (3º surto) — role Vontade CD 7.");
+      const willRule = getOverloadWillTestRule(overloadRules);
+      addLogEntry("condicao", `Ruptura pendente (${result.surge.indice}º surto) — role ${willRule.pericia} CD ${willRule.cd}.`);
       setOverloadWillRollPending(true);
     }
+
+    await persistAutomatedActionExecution(result.character);
 
     if (selectedCampaignId) {
       try {
@@ -1336,7 +1350,7 @@ export default function CharacterSheetClient({
           characterId: characterId ?? undefined,
           profileId: selectedProfileId,
           profileSessionId: profileSessionToken?.profileSessionId ?? null,
-          type: "overload_surge",
+          type: "overload_surge_used",
           visibility: "public",
           payload: {
             characterId,
@@ -1345,11 +1359,14 @@ export default function CharacterSheetClient({
             profileSessionId: profileSessionToken?.profileSessionId ?? null,
             tipo,
             indice: result.surge.indice,
+            maxSurtos,
             danoPsiquico: result.surge.danoPsiquico,
+            danoDado: dado,
             sobrecargaAntes,
             sobrecargaDepois: result.surge.indice,
             rupturaPendente: result.rupturePending,
             requiresWillRoll: result.requiresWillRoll,
+            reminders: result.warnings,
             source: "character_sheet",
           },
         });
@@ -1359,9 +1376,10 @@ export default function CharacterSheetClient({
     }
   }
 
-  /** Rolagem de Vontade CD 7 exigida pelo 3º surto do dia — falha aplica Atordoado via sistema de condições. */
+  /** Rolagem do teste do 3º surto (perícia/CD da regra canônica; fallback Vontade CD 7) — falha aplica Atordoado via sistema de condições. */
   async function handleRollOverloadWillTest() {
-    const periciaDef = regras?.pericias.find((p) => p.id === "vontade");
+    const willRule = getOverloadWillTestRule(regras?.sobrecarga);
+    const periciaDef = regras?.pericias.find((p) => p.id === willRule.pericia);
     const atributoId = (periciaDef?.atributo_primario as "corpo" | "mente" | "animo" | undefined) ?? "animo";
     const atributoDef = regras?.atributos.find((a) => a.id === atributoId);
 
@@ -1369,17 +1387,17 @@ export default function CharacterSheetClient({
       atributoId,
       atributoNome: atributoDef?.nome ?? atributoId,
       atributoValor: character.atributos[atributoId],
-      periciaId: "vontade",
-      periciaNome: periciaDef?.nome ?? "Vontade",
-      periciaValor: character.pericias["vontade"] ?? 0,
+      periciaId: willRule.pericia,
+      periciaNome: periciaDef?.nome ?? willRule.pericia,
+      periciaValor: character.pericias[willRule.pericia] ?? 0,
       modificador: 0,
-      cd: OVERLOAD_WILL_TEST_CD,
+      cd: willRule.cd,
     });
     const sucesso = resultado.sucesso ?? false;
 
     addLogEntry(
       "recurso",
-      `Teste de Vontade CD ${OVERLOAD_WILL_TEST_CD} (Sobrecarga): total ${resultado.total} — ${sucesso ? "Sucesso" : "Falha"}.`,
+      `Teste de ${periciaDef?.nome ?? willRule.pericia} CD ${willRule.cd} (Sobrecarga): total ${resultado.total} — ${sucesso ? "Sucesso" : "Falha"}.`,
     );
     setOverloadWillRollPending(false);
 
@@ -1407,7 +1425,7 @@ export default function CharacterSheetClient({
             profileId: selectedProfileId,
             profileSessionId: profileSessionToken?.profileSessionId ?? null,
             total: resultado.total,
-            cd: OVERLOAD_WILL_TEST_CD,
+            cd: getOverloadWillTestRule(regras?.sobrecarga).cd,
             sucesso,
             source: "character_sheet",
           },

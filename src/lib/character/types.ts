@@ -637,6 +637,33 @@ export interface CharacterRulesPayload {
    * defensivo).
    */
   colapso?: CollapseRulesPayload;
+  /**
+   * Regra canônica de Sobrecarga (checkpoint pós-v0.65) — vem do payload
+   * real de `regras_personagem.sobrecarga`. Subconjunto lido por
+   * `useOverloadSurge`/`getOverloadWillTestRule` (overload.ts): máximo
+   * de cargas por dia, dado do dano imediato do surto e o teste do 3º
+   * surto. Ausente = fallbacks defensivos idênticos aos valores atuais
+   * do PRD (3 cargas, 1d4, Vontade CD 7, Atordoado 1 rodada).
+   */
+  sobrecarga?: OverloadRulesPayload;
+}
+
+export interface OverloadRulesPayload {
+  cargas_maximas_por_dia?: number;
+  recupera_em?: string;
+  surto?: {
+    dano_imediato?: { dado?: string; tipo_dano?: string };
+    /** Declarado `true` no conteúdo, mas o RECURSO-alvo do dano psíquico não é estruturado — aplicação continua manual (pendência de conteúdo). */
+    aplicar_dano_na_hora?: boolean;
+    [key: string]: unknown;
+  };
+  terceiro_surto?: {
+    momento_teste?: string;
+    teste?: { pericia?: string; cd?: number };
+    falha?: { aplicar_condicao?: string; duracao?: string };
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
 }
 
 /**

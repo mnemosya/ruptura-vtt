@@ -70,6 +70,7 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   rest_short: "Descanso Curto",
   rest_long: "Descanso Longo",
   overload_surge: "Surto de Sobrecarga",
+  overload_surge_used: "Surto de Sobrecarga",
   overload_will_roll: "Teste de Vontade (Sobrecarga)",
   collapse_started: "Colapso Iniciado",
   collapse_advanced: "Colapso — Segmento Avançado",
@@ -109,7 +110,7 @@ function entryIcon(type: string): string {
   if (type === "condition_applied" || type === "condition_removed") return "⚠";
   if (type === "condition_auto_removed" || type === "condition_auto_removal_undone") return "✚";
   if (type === "rest_short" || type === "rest_long") return "💤";
-  if (type === "overload_surge" || type === "overload_will_roll") return "⚡";
+  if (type === "overload_surge" || type === "overload_surge_used" || type === "overload_will_roll") return "⚡";
   if (type.startsWith("collapse_")) return "💀";
   if (type === "round_ended" || type === "scene_ended" || type === "scene_rupture_pending") return "🎬";
   if (type === "character_evolution") return "📈";
@@ -135,7 +136,7 @@ function entryBorderColor(type: string): string {
   if (type === "profile_event") return "#ff6b9f";
   if (type === "condition_auto_removed" || type === "condition_auto_removal_undone") return "#4caf50";
   if (type === "rest_short" || type === "rest_long") return "#5ec8ff";
-  if (type === "overload_surge" || type === "overload_will_roll") return "#c0392b";
+  if (type === "overload_surge" || type === "overload_surge_used" || type === "overload_will_roll") return "#c0392b";
   if (type.startsWith("collapse_")) return "#8e44ad";
   if (type === "round_ended" || type === "scene_ended" || type === "scene_rupture_pending") return "#9b8cff";
   if (type === "character_evolution") return "#4caf50";
@@ -182,14 +183,16 @@ function formatRest(payload: Record<string, unknown>): string {
   return `${characterNome}: ${partes.join(", ") || "sem mudança"}`;
 }
 
-/** Checkpoint v0.37: cartão de overload_surge. */
+/** Checkpoint v0.37: cartão de overload_surge; cobre também o canônico overload_surge_used (pós-v0.65, com maxSurtos/dado da regra). */
 function formatOverloadSurge(payload: Record<string, unknown>): string {
   const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
   const tipo = typeof payload.tipo === "string" ? payload.tipo : "?";
   const indice = typeof payload.indice === "number" ? payload.indice : "?";
+  const max = typeof payload.maxSurtos === "number" ? payload.maxSurtos : MAX_OVERLOAD_SURGES_PER_DAY;
+  const dado = typeof payload.danoDado === "string" ? payload.danoDado : "1d4";
   const dano = typeof payload.danoPsiquico === "number" ? payload.danoPsiquico : "?";
   const ruptura = payload.rupturaPendente === true ? " — Ruptura pendente!" : "";
-  return `${characterNome}: ${tipo} (${indice}/${MAX_OVERLOAD_SURGES_PER_DAY}) — ${dano} dano psíquico (1d4)${ruptura}`;
+  return `Surto de Sobrecarga — ${characterNome}: ${tipo} (${indice}/${max}) — ${dano} dano psíquico (${dado}, aplicação manual)${ruptura}`;
 }
 
 /** Checkpoint v0.37: cartão de overload_will_roll. */
@@ -969,7 +972,7 @@ export function MesaTab({
                       ? formatAutoHeal(entry.payload)
                       : entry.type === "rest_short" || entry.type === "rest_long"
                         ? formatRest(entry.payload)
-                        : entry.type === "overload_surge"
+                        : entry.type === "overload_surge" || entry.type === "overload_surge_used"
                           ? formatOverloadSurge(entry.payload)
                           : entry.type === "overload_will_roll"
                             ? formatOverloadWillRoll(entry.payload)

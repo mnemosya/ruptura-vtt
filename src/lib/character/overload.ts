@@ -19,7 +19,8 @@
  * para o jogador aplicar manualmente, com um warning explícito.
  */
 
-import type { ActiveCondition, Character } from "./types";
+import { rollDamageFormula } from "./attack";
+import type { ActiveCondition, Character, OverloadRulesPayload } from "./types";
 
 export const OVERLOAD_SURGE_TYPES = [
   "Surto de Energia",
@@ -32,6 +33,36 @@ export type OverloadSurgeType = (typeof OVERLOAD_SURGE_TYPES)[number];
 
 export const MAX_OVERLOAD_SURGES_PER_DAY = 3;
 const WILL_TEST_CD = 7;
+const DEFAULT_SURGE_DAMAGE_DIE = "1d4";
+
+/** Máximo de cargas/dia da regra canônica `regras_personagem.sobrecarga` — fallback 3 (PRD 10.5) quando a regra não carregou. */
+export function getOverloadMaxPerDay(rules: OverloadRulesPayload | null | undefined): number {
+  const declarado = rules?.cargas_maximas_por_dia;
+  return typeof declarado === "number" && declarado > 0 ? declarado : MAX_OVERLOAD_SURGES_PER_DAY;
+}
+
+/** Dado do dano psíquico imediato do surto — da regra canônica; fallback "1d4". */
+export function getOverloadSurgeDamageDie(rules: OverloadRulesPayload | null | undefined): string {
+  const dado = rules?.surto?.dano_imediato?.dado;
+  return typeof dado === "string" && dado.trim() ? dado : DEFAULT_SURGE_DAMAGE_DIE;
+}
+
+/** Teste do 3º surto (perícia + CD) e condição de falha — da regra canônica; fallback Vontade CD 7 / Atordoado 1 rodada. */
+export function getOverloadWillTestRule(rules: OverloadRulesPayload | null | undefined): {
+  pericia: string;
+  cd: number;
+  falhaCondicao: string;
+  falhaDuracao: string;
+} {
+  const teste = rules?.terceiro_surto?.teste;
+  const falha = rules?.terceiro_surto?.falha;
+  return {
+    pericia: typeof teste?.pericia === "string" && teste.pericia ? teste.pericia : "vontade",
+    cd: typeof teste?.cd === "number" ? teste.cd : WILL_TEST_CD,
+    falhaCondicao: typeof falha?.aplicar_condicao === "string" && falha.aplicar_condicao ? falha.aplicar_condicao : "atordoado",
+    falhaDuracao: typeof falha?.duracao === "string" && falha.duracao ? falha.duracao : "1 rodada",
+  };
+}
 
 export interface OverloadSurgeSummary {
   tipo: string;
@@ -61,23 +92,26 @@ export function useOverloadSurge(
   tipo: string,
   nowIso: string,
   rng: () => number = Math.random,
+  rules?: OverloadRulesPayload | null,
 ): UseOverloadSurgeResult {
   const usadosAntes = character.sobrecarga_usada_dia ?? 0;
+  const maxPerDay = getOverloadMaxPerDay(rules);
 
-  if (usadosAntes >= MAX_OVERLOAD_SURGES_PER_DAY) {
+  if (usadosAntes >= maxPerDay) {
     return {
       character,
       surge: null,
-      warnings: [`Limite de ${MAX_OVERLOAD_SURGES_PER_DAY} surtos de Sobrecarga por dia já atingido.`],
+      warnings: [`Limite de ${maxPerDay} surtos de Sobrecarga por dia já atingido — sobrecarga insuficiente.`],
       requiresWillRoll: false,
       rupturePending: character.ruptura_pendente ?? false,
     };
   }
 
   const indice = usadosAntes + 1;
-  const danoPsiquico = 1 + Math.floor(rng() * 4); // 1d4
+  const dado = getOverloadSurgeDamageDie(rules);
+  const danoPsiquico = rollDamageFormula(dado, rng);
   const surge: OverloadSurgeSummary = { tipo, indice, danoPsiquico, criadoEm: nowIso };
-  const terceiro = indice >= MAX_OVERLOAD_SURGES_PER_DAY;
+  const terceiro = indice >= maxPerDay;
 
   const nextCharacter: Character = {
     ...character,
@@ -87,11 +121,17 @@ export function useOverloadSurge(
     ruptura_nivel_pendente: terceiro ? (character.ruptura_nivel_pendente ?? 1) : character.ruptura_nivel_pendente,
   };
 
+  // A regra canônica declara `surto.aplicar_dano_na_hora: true`, mas o RECURSO-alvo do dano
+  // psíquico não é estruturado em lugar nenhum do conteúdo — aplicar em PE seria regra
+  // inventada. Continua manual, com aviso explícito (pendência de conteúdo).
+  const willRule = getOverloadWillTestRule(rules);
   const warnings = [
-    `Dano psíquico de ${danoPsiquico} (1d4) não é aplicado automaticamente a nenhum recurso — sem regra codificada de dano psíquico ainda; ajuste PE manualmente se for o caso.`,
+    `Dano psíquico de ${danoPsiquico} (${dado}) não é aplicado automaticamente a nenhum recurso — o conteúdo não estrutura o recurso-alvo; ajuste PE manualmente se for o caso.`,
   ];
   if (terceiro) {
-    warnings.push("3º surto do dia — Ruptura pendente. Role Vontade CD 7; falha aplica Atordoado por 1 rodada.");
+    warnings.push(
+      `${indice}º surto do dia — Ruptura pendente. Role ${willRule.pericia} CD ${willRule.cd}; falha aplica ${willRule.falhaCondicao} por ${willRule.falhaDuracao}.`,
+    );
   }
 
   return {
