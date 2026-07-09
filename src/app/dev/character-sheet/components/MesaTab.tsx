@@ -557,6 +557,10 @@ function formatItemUsed(payload: Record<string, unknown>): string {
     : [];
   if (removedConditions.length > 0) partes.push(`removeu ${removedConditions.join(", ")}`);
 
+  if (payload.stabilizedCollapse === "pv" || payload.stabilizedCollapse === "pe") {
+    partes.push(`estabilizou colapso (${(payload.stabilizedCollapse as string).toUpperCase()})`);
+  }
+
   const area = typeof payload.area === "number" ? payload.area : null;
   const range = typeof payload.range === "number" ? payload.range : null;
   if (area != null || range != null) {

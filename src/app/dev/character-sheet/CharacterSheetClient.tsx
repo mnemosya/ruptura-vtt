@@ -2020,6 +2020,9 @@ export default function CharacterSheetClient({
     if (result.removedConditions.length > 0) {
       partesLog.push(`removeu ${result.removedConditions.join(", ")}`);
     }
+    if (result.stabilizedCollapse) {
+      partesLog.push(`estabilizou colapso (${result.stabilizedCollapse.toUpperCase()})`);
+    }
     addLogEntry(
       result.useKind === "grenade" || result.useKind === "explosive" ? "acao_combate" : "recurso",
       `Usou ${itemModelo.nome} (${partesLog.join(" · ")})${result.reminders.length > 0 ? ` — Lembrete: ${result.reminders.join(" ")}` : ""}.`,
@@ -2064,6 +2067,7 @@ export default function CharacterSheetClient({
             range: itemModelo.alcanceArremessoMetros,
             appliedConditions: [],
             removedConditions: result.removedConditions,
+            stabilizedCollapse: result.stabilizedCollapse,
             reminders: result.reminders,
             source: "inventory_item_use",
           },
@@ -3080,6 +3084,7 @@ export default function CharacterSheetClient({
           carteira={character.carteira ?? { aretz_informal: 0, cdi: 0, cdi_craqueada: 0 }}
           inventario={character.inventario ?? []}
           condicoesAtivas={character.condicoes_ativas ?? []}
+          colapso={character.colapso}
           onBuy={handleBuyItem}
           onChangeCarteira={handleChangeCarteira}
           onSetEstado={handleSetItemEstado}

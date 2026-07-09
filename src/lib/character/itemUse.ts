@@ -29,6 +29,7 @@
  */
 
 import { rollDamageFormula } from "./attack";
+import { stabilizeCollapse } from "./collapse";
 import { applyGmHealing, type GmHealResult } from "./gmActions";
 import { consumeItemCharge, getItemChargesAtual, type ItemContent, type InventoryItemInstance } from "./inventory";
 import type { ActiveCondition, Character } from "./types";
@@ -117,6 +118,51 @@ export function isConditionRemovalPrimaryItem(item: Pick<ItemContent, "payloadAu
   return effects.some(isConditionRemovalEffect) && !effects.some((e) => HEAL_EFFECT_TYPES.has(e.tipo));
 }
 
+/** Cura aplicável AGORA — `tipo: "cura"` sem `gatilho` textual (ex.: `descanso_curto`). Cura com gatilho nunca é aplicada no uso, vira lembrete (checkpoint pós-v0.62). */
+function isImmediateHealEffect(efeito: ItemUseEffect): boolean {
+  return HEAL_EFFECT_TYPES.has(efeito.tipo) && typeof efeito.gatilho !== "string";
+}
+
+/**
+ * Alvo do efeito `estabilizar` derivado de `pausa_marcador` — mesma
+ * correspondência físico→PV / mental→PE da regra canônica de Colapso
+ * (`regras_personagem.colapso.gatilhos[].tipo`/`recurso`). `null` quando
+ * o marcador não é reconhecido (nunca inventa o alvo).
+ */
+function parseStabilizeTarget(efeito: ItemUseEffect): "pv" | "pe" | null {
+  const marcador = typeof efeito.pausa_marcador === "string" ? efeito.pausa_marcador : "";
+  if (marcador.includes("fisico")) return "pv";
+  if (marcador.includes("mental")) return "pe";
+  return null;
+}
+
+/**
+ * Um efeito `estabilizar` é aplicável AGORA se o personagem tem colapso
+ * ATIVO do tipo declarado em `pausa_marcador` e ainda não estabilizado.
+ * Devolve o motivo textual quando não aplicável (para bloqueio/aviso).
+ */
+function getStabilizeApplicability(
+  efeito: ItemUseEffect,
+  character: Pick<Character, "colapso">,
+): { applicable: boolean; target: "pv" | "pe" | null; reason: string | null } {
+  const target = parseStabilizeTarget(efeito);
+  if (target == null) {
+    return { applicable: false, target, reason: "Efeito de estabilização sem marcador de colapso estruturado — resolução manual." };
+  }
+  const colapso = character.colapso;
+  const label = target === "pv" ? "físico (PV)" : "mental (PE)";
+  if (!colapso?.ativo) {
+    return { applicable: false, target, reason: `Nenhum colapso ${label} ativo — uso em outro personagem ainda não implementado.` };
+  }
+  if (colapso.tipo !== target) {
+    return { applicable: false, target, reason: `O colapso ativo é de outro tipo — este item estabiliza colapso ${label}.` };
+  }
+  if (colapso.estabilizado) {
+    return { applicable: false, target, reason: `Colapso ${label} já está estabilizado.` };
+  }
+  return { applicable: true, target, reason: null };
+}
+
 const HEAL_EFFECT_TYPES = new Set(["cura"]);
 const DAMAGE_EFFECT_TYPES = new Set(["efeito_com_resistencia", "dano_em_area"]);
 
@@ -173,6 +219,8 @@ export interface ItemUseResult {
   healingRolled: number | null;
   damageRolled: ItemUseDamageRoll[];
   removedConditions: string[];
+  /** Colapso estabilizado por este uso (checkpoint pós-v0.62, efeito `estabilizar` via `stabilizeCollapse`) — null quando nada foi estabilizado. */
+  stabilizedCollapse: "pv" | "pe" | null;
   reminders: string[];
 }
 
@@ -184,11 +232,31 @@ function describeUnhandledEffect(item: ItemContent, efeito: ItemUseEffect): stri
       return `${item.nome}: remover manualmente uma das condições — ${opcoes.join(", ") || "condição não estruturada"}.`;
     }
     case "estabilizar":
-      return `${item.nome}: estabilização (${typeof efeito.efeito === "string" ? efeito.efeito : "efeito não estruturado"}) — resolução manual.`;
-    case "buff_temporario":
-      return `${item.nome}: bônus temporário — resolução manual (${typeof efeito.nota === "string" ? efeito.nota : "ver payload"}).`;
-    case "aplicar_condicao":
-      return `${item.nome}: aplicaria a condição "${typeof efeito.condicao === "string" ? efeito.condicao : "?"}" — aplicação manual pelo narrador.`;
+      return `${item.nome}: estabilização (${typeof efeito.efeito === "string" ? efeito.efeito.replace(/_/g, " ") : "efeito não estruturado"}) — resolução manual.`;
+    case "buff_temporario": {
+      const partes: string[] = [];
+      if (typeof efeito.valor === "number") {
+        const tags = asStringArray(efeito.alvo_tags);
+        partes.push(`+${efeito.valor}${tags.length > 0 ? ` em ${tags.join("/")}` : ""}`);
+      }
+      const bonusPericia = asRecord(efeito.bonus_pericia);
+      if (bonusPericia && typeof bonusPericia.pericia === "string" && typeof bonusPericia.valor === "number") {
+        partes.push(`+${bonusPericia.valor} em ${bonusPericia.pericia}`);
+      }
+      if (typeof efeito.pa_bonus === "number") partes.push(`+${efeito.pa_bonus} PA`);
+      const duracao =
+        typeof efeito.duracao === "string"
+          ? efeito.duracao.replace(/_/g, " ")
+          : typeof efeito.cadencia === "string"
+            ? `cadência ${efeito.cadencia}`
+            : null;
+      return `${item.nome}: bônus temporário ${partes.join(", ") || "(ver payload)"}${duracao ? ` por ${duracao}` : ""} — aplicação MANUAL (sem modelo canônico de buff de item; duração não é rastreada).${typeof efeito.nota === "string" ? ` Nota: ${efeito.nota}.` : ""}`;
+    }
+    case "aplicar_condicao": {
+      const duracao = typeof efeito.duracao === "string" ? efeito.duracao.replace(/_/g, " ") : null;
+      const momento = typeof efeito.momento === "string" ? efeito.momento.replace(/_/g, " ") : null;
+      return `${item.nome}: aplicar a condição "${typeof efeito.condicao === "string" ? efeito.condicao : "?"}"${duracao ? ` (${duracao})` : ""}${momento ? ` — momento: ${momento}` : ""} — aplicação manual pelo narrador (timing não automatizado).${typeof efeito.nota === "string" ? ` Nota: ${efeito.nota}.` : ""}`;
+    }
     case "reduzir_pa":
       return `${item.nome}: reduz ${typeof efeito.valor === "number" ? efeito.valor : "?"} PA em gatilho (${typeof efeito.gatilho === "string" ? efeito.gatilho : "?"}) — resolução manual.`;
     case "ambiente":
@@ -233,11 +301,14 @@ export function useItemOnCharacter(params: {
   const paGastosAntes = character.estado_jogo?.pa_gastos ?? 0;
   const paBefore = Math.max(0, paMax - paGastosAntes);
 
+  const effects = getItemUseEffects(item);
   const removalPrimary = isConditionRemovalPrimaryItem(item);
-  // Fallback de 1 PA só para farmácia de cura (coerente com o custo de "Interagir", 1 PA no
-  // conteúdo canônico) — itens de remoção de condição e granadas/explosivos sem custo_pa
-  // estruturado NUNCA gastam PA automaticamente (checkpoint pós-v0.61).
-  const paCost = item.custoPaUso ?? (useKind === "pharmacy" && !removalPrimary ? 1 : null);
+  // Fallback de 1 PA só para farmácia com CURA imediata e sem custo textual declarado
+  // (coerente com o custo de "Interagir", 1 PA no conteúdo canônico) — itens de remoção de
+  // condição/estabilização/efeito manual e granadas/explosivos sem custo_pa estruturado
+  // NUNCA gastam PA automaticamente (checkpoints pós-v0.61/v0.62).
+  const hasImmediateHeal = useKind === "pharmacy" && effects.some(isImmediateHealEffect);
+  const paCost = item.custoPaUso ?? (hasImmediateHeal && item.custoPaUsoTexto == null ? 1 : null);
 
   const blocked = (reason: string): ItemUseResult => ({
     character,
@@ -256,6 +327,7 @@ export function useItemOnCharacter(params: {
     healingRolled: null,
     damageRolled: [],
     removedConditions: [],
+    stabilizedCollapse: null,
     reminders: [],
   });
 
@@ -291,6 +363,17 @@ export function useItemOnCharacter(params: {
     // Item misto (remoção + cura) sem condição compatível: segue para a cura; a remoção vira lembrete no loop abaixo.
   }
 
+  // Estabilização (checkpoint pós-v0.62) também é resolvida ANTES do consumo: item cujo
+  // único propósito é estabilizar colapso bloqueia (sem consumir) quando não há colapso
+  // aplicável — evita gastar o kit à toa. Item misto nunca bloqueia por isso.
+  const stabilizeEffects = useKind === "pharmacy" ? effects.filter((e) => e.tipo === "estabilizar") : [];
+  const stabilizeApplicabilities = stabilizeEffects.map((e) => getStabilizeApplicability(e, character));
+  const stabilizePrimary =
+    stabilizeEffects.length > 0 && effects.every((e) => e.tipo === "estabilizar");
+  if (stabilizePrimary && !stabilizeApplicabilities.some((a) => a.applicable)) {
+    return blocked(stabilizeApplicabilities[0]?.reason ?? "Nenhum colapso aplicável — item não consumido.");
+  }
+
   const consumed = consumeItemCharge(character, instance.id, item);
   if (!consumed) {
     // Corrida rara entre a checagem `available` acima e aqui (estado mudou) — nunca aplica efeito.
@@ -308,9 +391,37 @@ export function useItemOnCharacter(params: {
   let healingRolled: number | null = null;
   const damageRolled: ItemUseDamageRoll[] = [];
   let conditionRemovalApplied = false;
+  let stabilizedCollapse: "pv" | "pe" | null = null;
 
-  for (const efeito of getItemUseEffects(item)) {
-    if (isConditionRemovalEffect(efeito) && useKind === "pharmacy") {
+  for (const efeito of effects) {
+    if (efeito.tipo === "estabilizar" && useKind === "pharmacy") {
+      const applicability = getStabilizeApplicability(efeito, nextCharacter);
+      if (applicability.applicable && applicability.target != null && stabilizedCollapse == null) {
+        // Helper canônico (PRD 10.7): pausa o avanço de segmento — NÃO cura, NÃO remove Inconsciente.
+        nextCharacter = stabilizeCollapse(nextCharacter, nowIso);
+        stabilizedCollapse = applicability.target;
+        reminders.push(
+          `${item.nome}: colapso ${applicability.target === "pv" ? "físico" : "mental"} estabilizado — avanço de segmento pausado (não cura, não remove Inconsciente).`,
+        );
+        if (item.periciaUso) {
+          reminders.push(
+            `${item.nome}: o conteúdo declara teste de ${item.periciaUso} para o uso — role manualmente; se o narrador considerar falha, desfaça a estabilização no painel.`,
+          );
+        }
+      } else if (applicability.reason) {
+        // Item misto com estabilização não aplicável agora — documenta sem aplicar.
+        reminders.push(`${item.nome}: ${applicability.reason}`);
+      }
+    } else if (efeito.tipo === "cura" && useKind === "pharmacy" && typeof efeito.gatilho === "string") {
+      // Cura vinculada a gatilho (ex.: descanso_curto) NUNCA é aplicada no uso — o item é
+      // consumido agora e a cura fica como lembrete para o momento do gatilho (checkpoint
+      // pós-v0.62; sem modelo de "efeito pendente de descanso" ainda).
+      const dado = typeof efeito.dado === "string" ? efeito.dado : "?";
+      const recurso = efeito.recurso === "pe" ? "PE" : "PV";
+      reminders.push(
+        `${item.nome}: cura ${dado} de ${recurso} vinculada ao gatilho "${efeito.gatilho.replace(/_/g, " ")}" — aplicar manualmente quando o gatilho ocorrer (nada foi aplicado agora).`,
+      );
+    } else if (isConditionRemovalEffect(efeito) && useKind === "pharmacy") {
       const effectSlugs = getEffectRemovalSlugs(efeito);
       if (conditionToRemove && effectSlugs.includes(conditionToRemove.conditionId ?? "")) {
         if (!conditionRemovalApplied) {
@@ -403,6 +514,89 @@ export function useItemOnCharacter(params: {
     healingRolled,
     damageRolled,
     removedConditions,
+    stabilizedCollapse,
     reminders,
   };
+}
+
+// ---------------------------------------------------------------------
+// Preview de uso (checkpoint pós-v0.62) — o que será automático vs.
+// manual, calculado do payload + estado atual do personagem. Usado pelo
+// card do item na aba Inventário; nunca aplica nada.
+// ---------------------------------------------------------------------
+
+export interface ItemUsePreview {
+  /** Efeitos aplicados automaticamente ao usar (com o estado atual do personagem). */
+  automatic: string[];
+  /** Efeitos que ficam manuais (lembretes no log) — nunca aplicados sozinhos. */
+  manual: string[];
+  /** Preenchido quando o uso está BLOQUEADO agora (nada seria consumido) — null quando o uso é permitido. */
+  blockedReason: string | null;
+}
+
+/** Preview do que acontece ao usar o item AGORA — espelha a classificação de `useItemOnCharacter` sem aplicar nada. */
+export function getItemUsePreview(
+  item: ItemContent,
+  character: Pick<Character, "condicoes_ativas" | "colapso">,
+): ItemUsePreview {
+  const useKind = deriveItemUseKind(item) ?? "manual";
+  const effects = getItemUseEffects(item);
+  const automatic: string[] = [];
+  const manual: string[] = [];
+  let blockedReason: string | null = null;
+
+  const removal = getConditionRemovalOptions(item, character);
+  if (useKind === "pharmacy" && removal.possibleSlugs.length > 0) {
+    if (removal.compatibleActive.length > 0) {
+      automatic.push(
+        `Remove condição (uma por uso): ${removal.possibleSlugs.join(", ")} — ativa(s) compatível(is): ${removal.compatibleActive.map((c) => c.nome).join(", ")}.`,
+      );
+    } else if (isConditionRemovalPrimaryItem(item)) {
+      blockedReason = `Nenhuma condição compatível ativa (${removal.possibleSlugs.join(", ")}) — uso bloqueado, nada será consumido.`;
+    } else {
+      manual.push(`Remoção de condição (${removal.possibleSlugs.join(", ")}) sem alvo ativo — viraria lembrete.`);
+    }
+  }
+
+  const stabilizeEffects = useKind === "pharmacy" ? effects.filter((e) => e.tipo === "estabilizar") : [];
+  if (stabilizeEffects.length > 0) {
+    const applicabilities = stabilizeEffects.map((e) => getStabilizeApplicability(e, character));
+    const applicable = applicabilities.find((a) => a.applicable);
+    if (applicable) {
+      automatic.push(
+        `Estabiliza o colapso ${applicable.target === "pv" ? "físico (PV)" : "mental (PE)"} — pausa o avanço de segmento (não cura, não remove Inconsciente).`,
+      );
+      if (item.periciaUso) manual.push(`Teste de ${item.periciaUso} declarado pelo conteúdo — rolar manualmente.`);
+    } else if (effects.every((e) => e.tipo === "estabilizar")) {
+      blockedReason = applicabilities[0]?.reason ?? "Nenhum colapso aplicável — uso bloqueado.";
+    } else if (applicabilities[0]?.reason) {
+      manual.push(applicabilities[0].reason);
+    }
+  }
+
+  for (const efeito of effects) {
+    if (efeito.tipo === "estabilizar" || isConditionRemovalEffect(efeito)) continue; // já tratados acima
+    if (efeito.tipo === "cura" && useKind === "pharmacy") {
+      const dado = typeof efeito.dado === "string" ? efeito.dado : null;
+      const recurso = efeito.recurso === "pe" ? "PE" : efeito.recurso === "pv" ? "PV" : null;
+      if (typeof efeito.gatilho === "string") {
+        manual.push(
+          `Cura ${dado ?? "?"} de ${recurso ?? "?"} só no gatilho "${efeito.gatilho.replace(/_/g, " ")}" — não aplicada no uso.`,
+        );
+      } else if (dado && recurso) {
+        automatic.push(`Cura ${dado}${typeof efeito.bonus === "number" ? ` + ${efeito.bonus}` : ""} de ${recurso} aplicada automaticamente.`);
+        if (typeof efeito.falha === "string") manual.push(`Em falha no teste, cura vira "${efeito.falha}" — ajuste manual.`);
+      } else {
+        manual.push("Cura sem fórmula estruturada — aplicação manual.");
+      }
+    } else if ((efeito.tipo === "efeito_com_resistencia" || efeito.tipo === "dano_em_area") && useKind !== "pharmacy") {
+      const formula = typeof efeito.dano === "string" ? efeito.dano : typeof efeito.dado === "string" ? efeito.dado : null;
+      if (formula) automatic.push(`Rola dano ${formula} — NUNCA aplicado a alvo automaticamente.`);
+      manual.push("Alvos, resistência e condições resolvidos pelo narrador.");
+    } else {
+      manual.push(describeUnhandledEffect(item, efeito));
+    }
+  }
+
+  return { automatic, manual, blockedReason };
 }

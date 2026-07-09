@@ -20,7 +20,8 @@ import {
   getItemUseEffects,
   getItemChargesAtual,
   getConditionRemovalOptions,
-  isConditionRemovalPrimaryItem,
+  getItemUsePreview,
+  type Character,
   type ItemContent,
   type InventoryItemInstance,
   type Wallet,
@@ -56,6 +57,7 @@ export function InventoryTab({
   carteira,
   inventario,
   condicoesAtivas,
+  colapso,
   onBuy,
   onChangeCarteira,
   onSetEstado,
@@ -85,6 +87,8 @@ export function InventoryTab({
   inventario: InventoryItemInstance[];
   /** Condições do personagem (checkpoint pós-v0.61) — usadas pelo seletor/bloqueio de itens com `remover_condicao`. */
   condicoesAtivas: ActiveCondition[];
+  /** Colapso atual do personagem (checkpoint pós-v0.62) — usado pelo preview/bloqueio de itens de estabilização. */
+  colapso: Character["colapso"];
   onBuy: (itemSlug: string, quantidade: number, walletId: WalletId, precoUnitario: number) => void;
   onChangeCarteira: (walletId: WalletId, value: number) => void;
   onSetEstado: (instanceId: string, estado: ItemLoadoutState) => void;
@@ -273,11 +277,15 @@ export function InventoryTab({
               itemModelo && useKind === "pharmacy"
                 ? getConditionRemovalOptions(itemModelo, { condicoes_ativas: condicoesAtivas })
                 : { possibleSlugs: [], compatibleActive: [] };
-            const removalPrimary = itemModelo && useKind === "pharmacy" ? isConditionRemovalPrimaryItem(itemModelo) : false;
-            const removalBlocked = removalPrimary && removalOptions.compatibleActive.length === 0;
             const removalNeedsChoice = removalOptions.compatibleActive.length > 1;
             const condicaoEscolhida = condicaoRemocao[instance.id] ?? "";
             const condicaoEscolhidaValida = removalOptions.compatibleActive.some((c) => c.id === condicaoEscolhida);
+            // Preview automático/manual + bloqueio (checkpoint pós-v0.62) — espelha useItemOnCharacter sem aplicar nada.
+            const usePreview = itemModelo && useKind
+              ? getItemUsePreview(itemModelo, { condicoes_ativas: condicoesAtivas, colapso })
+              : null;
+            const useBlocked = usePreview?.blockedReason != null;
+            const temCuraImediata = useEffects.some((e) => e.tipo === "cura" && typeof e.gatilho !== "string");
             return (
               <div key={instance.id} data-testid={`inventario-item-${instance.id}`} style={{ background: "#1d1e24", borderRadius: 8, padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6, fontSize: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -311,42 +319,24 @@ export function InventoryTab({
                       {useKind === "pharmacy" ? "Uso (farmácia)" : useKind === "grenade" ? "Uso (granada)" : useKind === "explosive" ? "Uso (explosivo)" : "Uso"}
                     </p>
                     <div data-testid={`inventario-usar-preview-${instance.id}`} style={{ fontSize: 11, opacity: 0.75, display: "flex", flexDirection: "column", gap: 2 }}>
-                      {useEffects
-                        .filter((e) => e.tipo === "cura")
-                        .map((e, i) => (
-                          <span key={`cura-${i}`}>
-                            Cura prevista: {typeof e.dado === "string" ? e.dado : "?"}
-                            {typeof e.bonus === "number" ? ` + ${e.bonus}` : ""} de {e.recurso === "pe" ? "PE" : "PV"}.
-                          </span>
-                        ))}
-                      {useEffects
-                        .filter((e) => e.tipo === "efeito_com_resistencia" || e.tipo === "dano_em_area")
-                        .map((e, i) => {
-                          const formula = typeof e.dano === "string" ? e.dano : typeof e.dado === "string" ? e.dado : null;
-                          const tipoDano = typeof e.tipo_dano === "string" ? e.tipo_dano : null;
-                          return formula ? (
-                            <span key={`dano-${i}`}>
-                              Dano previsto: {formula}
-                              {tipoDano ? ` (${tipoDano}${typeof e.subtipo_dano === "string" ? `/${e.subtipo_dano}` : ""})` : ""}.
-                            </span>
-                          ) : null;
-                        })}
+                      {usePreview?.automatic.map((texto, i) => (
+                        <span key={`auto-${i}`} data-testid={`inventario-usar-auto-${instance.id}-${i}`} style={{ color: "#7bc67e" }}>
+                          Automático: {texto}
+                        </span>
+                      ))}
+                      {usePreview?.manual.map((texto, i) => (
+                        <span key={`manual-${i}`} data-testid={`inventario-usar-manual-${instance.id}-${i}`} style={{ color: "#f5a623" }}>
+                          Manual: {texto}
+                        </span>
+                      ))}
                       {(itemModelo.areaMetros != null || itemModelo.alcanceArremessoMetros != null) && (
                         <span>
                           {itemModelo.areaMetros != null ? `Área: ${itemModelo.areaMetros}m. ` : ""}
                           {itemModelo.alcanceArremessoMetros != null ? `Alcance de arremesso: ${itemModelo.alcanceArremessoMetros}m.` : ""}
                         </span>
                       )}
-                      {removalOptions.possibleSlugs.length > 0 && (
-                        <span data-testid={`inventario-usar-remocao-${instance.id}`}>
-                          Remove condição (uma por uso): {removalOptions.possibleSlugs.join(", ")}.
-                          {removalOptions.compatibleActive.length > 0
-                            ? ` Ativa(s) compatível(is): ${removalOptions.compatibleActive.map((c) => c.nome).join(", ")}.`
-                            : ""}
-                        </span>
-                      )}
                       <span>
-                        Custo: {itemModelo.custoPaUso != null ? `${itemModelo.custoPaUso} PA` : itemModelo.custoPaUsoTexto ? `não estruturado (${itemModelo.custoPaUsoTexto})` : useKind === "pharmacy" && !removalPrimary ? "1 PA (padrão de Interagir)" : "não estruturado — sem gasto automático de PA"}.
+                        Custo: {itemModelo.custoPaUso != null ? `${itemModelo.custoPaUso} PA` : itemModelo.custoPaUsoTexto ? `não estruturado (${itemModelo.custoPaUsoTexto.replace(/_/g, " ")}) — sem gasto automático de PA` : useKind === "pharmacy" && temCuraImediata ? "1 PA (padrão de Interagir)" : "não estruturado — sem gasto automático de PA"}.
                       </span>
                       <span data-testid={`inventario-usar-cargas-${instance.id}`}>
                         {itemModelo.cargasMax != null
@@ -364,10 +354,9 @@ export function InventoryTab({
                         Sem cargas/quantidade disponíveis.
                       </p>
                     )}
-                    {removalBlocked && (
+                    {useBlocked && (
                       <p data-testid={`inventario-usar-sem-condicao-${instance.id}`} style={{ fontSize: 11, color: "#ff6b6b", margin: 0 }}>
-                        Nenhuma condição compatível ativa ({removalOptions.possibleSlugs.join(", ")}) — uso bloqueado, nada
-                        será consumido.
+                        {usePreview?.blockedReason}
                       </p>
                     )}
                     {removalNeedsChoice && (
@@ -395,13 +384,13 @@ export function InventoryTab({
                         );
                         setCondicaoRemocao((prev) => ({ ...prev, [instance.id]: "" }));
                       }}
-                      disabled={!useAvailable || removalBlocked || (removalNeedsChoice && !condicaoEscolhidaValida)}
+                      disabled={!useAvailable || useBlocked || (removalNeedsChoice && !condicaoEscolhidaValida)}
                       style={{
                         ...buttonStyle,
                         fontSize: 11,
                         padding: "3px 10px",
                         alignSelf: "flex-start",
-                        opacity: !useAvailable || removalBlocked || (removalNeedsChoice && !condicaoEscolhidaValida) ? 0.5 : 1,
+                        opacity: !useAvailable || useBlocked || (removalNeedsChoice && !condicaoEscolhidaValida) ? 0.5 : 1,
                       }}
                     >
                       Usar item
