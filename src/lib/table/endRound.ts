@@ -33,7 +33,7 @@ import {
 } from "../character";
 import { listCharactersForNarratorCampaign, updateCharacter } from "../character/storage";
 import { getCharacterRules, listConditions } from "../content";
-import { getCampaign, endRound as advanceCampaignRound, addLog } from "./storage";
+import { getCampaign, canAdvanceCampaign, endRound as advanceCampaignRound, addLog } from "./storage";
 
 export interface ProcessedCharacterSummary {
   characterId: string;
@@ -271,6 +271,15 @@ export async function endCampaignRound(params: {
     throw new Error(
       `A rodada da mesa já avançou (esperada ${params.expectedRound}, atual ${campaign.current_round}) — recarregue a página e tente de novo.`,
     );
+  }
+  // Preflight (checkpoint pós-v0.58): aborta ANTES de processar qualquer
+  // personagem se esta sessão não puder avançar `campaigns` (RLS
+  // `campaigns_owner_update`, endurecida na migration 0013). Sem isso, os
+  // personagens seriam processados/persistidos e só então o UPDATE final
+  // falharia, deixando estado parcial (rodada não avança, log agregado
+  // não é gravado).
+  if (!(await canAdvanceCampaign(params.campaignId))) {
+    throw new Error("Esta sessão não pode avançar a campanha. Entre como narrador dono da mesa para confirmar.");
   }
 
   const round = campaign.current_round;

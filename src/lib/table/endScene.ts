@@ -29,7 +29,7 @@ import {
   type Character,
 } from "../character";
 import { listCharactersForNarratorCampaign, updateCharacter } from "../character/storage";
-import { getCampaign, endScene as advanceCampaignScene, addLog } from "./storage";
+import { getCampaign, canAdvanceCampaign, endScene as advanceCampaignScene, addLog } from "./storage";
 
 export interface RuptureResolvedSummary {
   characterId: string;
@@ -222,6 +222,13 @@ export async function endCampaignScene(params: {
     throw new Error(
       `A cena da mesa já avançou (esperada ${params.expectedScene}, atual ${campaign.current_scene}) — recarregue a página e tente de novo.`,
     );
+  }
+  // Preflight (checkpoint pós-v0.58): aborta ANTES de processar Ruptura de
+  // qualquer personagem se esta sessão não puder avançar `campaigns` (mesma
+  // RLS endurecida na migration 0013). Evita estado parcial (Ruptura
+  // resolvida em um personagem sem a cena avançar).
+  if (!(await canAdvanceCampaign(params.campaignId))) {
+    throw new Error("Esta sessão não pode avançar a campanha. Entre como narrador dono da mesa para confirmar.");
   }
 
   const scene = campaign.current_scene;

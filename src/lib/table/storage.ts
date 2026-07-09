@@ -304,6 +304,35 @@ export async function getCampaign(id: string): Promise<Campaign | null> {
 }
 
 /**
+ * Preflight de "posso avançar esta campanha?" (checkpoint pós-v0.58) —
+ * usado por `endCampaignRound`/`endCampaignScene` ANTES de processar
+ * qualquer personagem, para não deixar estado parcial quando a RLS
+ * bloqueia o UPDATE final em `campaigns` (endurecida na migration 0013:
+ * `campaigns_owner_update` só permite o dono AUTENTICADO). Faz um UPDATE
+ * NO-OP (grava `current_round` no próprio valor atual) sujeito à MESMA
+ * policy do avanço real: se 0 linhas voltarem, a sessão não pode
+ * avançar. Não reimplementa a regra da RLS em código — apenas a exercita
+ * de forma inofensiva. Nunca usa service role (segue `getScopedTableClient`).
+ */
+export async function canAdvanceCampaign(campaignId: string): Promise<boolean> {
+  const client = await getScopedTableClient();
+  const { data: campaignData, error: fetchError } = await client
+    .from(CAMPAIGNS_TABLE)
+    .select("current_round")
+    .eq("id", campaignId)
+    .maybeSingle();
+  if (fetchError || !campaignData) return false;
+  const currentRound = (campaignData as { current_round: number }).current_round;
+  const { data, error } = await client
+    .from(CAMPAIGNS_TABLE)
+    .update({ current_round: currentRound })
+    .eq("id", campaignId)
+    .select("id");
+  if (error) return false;
+  return Array.isArray(data) && data.length > 0;
+}
+
+/**
  * "Encerrar rodada" (checkpoint v0.39, PRD seção 5) — incrementa
  * `campaigns.current_round` e registra `table_logs.type="round_ended"`.
  * NÃO resolve dano recorrente/fim de rodada automaticamente — o

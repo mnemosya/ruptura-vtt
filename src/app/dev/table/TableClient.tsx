@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import {
   createCampaign,
   listCampaigns,
+  canAdvanceCampaign,
   addLog,
   listLogs,
   createCampaignProfile,
@@ -795,6 +796,10 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
   const [endBusy, setEndBusy] = useState(false);
   const [endErro, setEndErro] = useState<string | null>(null);
   const [endSummary, setEndSummary] = useState<string[] | null>(null);
+  // Preflight (checkpoint pós-v0.58): a sessão atual pode avançar a campanha?
+  // Calculado ao abrir o preview (mesma checagem que endCampaignRound/Scene
+  // fazem server-side). null = ainda não checado; false = Confirmar bloqueado.
+  const [endCanConfirm, setEndCanConfirm] = useState<boolean | null>(null);
 
   // ---------------------------------------------------------------
   // "Resolver Ataque" a partir de um log `action_used` de Atacar
@@ -1382,9 +1387,17 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     if (!selectedCampaignId || !mesaAtual) return;
     setEndErro(null);
     setEndSummary(null);
+    setEndCanConfirm(null);
     setEndBusy(true);
     try {
-      const records = await fetchActiveCampaignCharacters(selectedCampaignId);
+      // Preflight + preview em paralelo — o preview é read-only; canAdvanceCampaign
+      // exercita a MESMA RLS que o confirm, para desabilitar "Confirmar" quando a
+      // sessão não puder avançar a campanha (sem chegar a processar personagens).
+      const [records, canConfirm] = await Promise.all([
+        fetchActiveCampaignCharacters(selectedCampaignId),
+        canAdvanceCampaign(selectedCampaignId),
+      ]);
+      setEndCanConfirm(canConfirm);
       setEndPreview(buildEndRoundPreview(records, regras, conditionContents, mesaAtual.current_round, mesaAtual.current_scene));
     } catch (err) {
       setEndErro(err instanceof Error ? err.message : "Erro ao montar o preview de fim de rodada.");
@@ -1397,10 +1410,15 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     if (!selectedCampaignId || !mesaAtual) return;
     setEndErro(null);
     setEndSummary(null);
+    setEndCanConfirm(null);
     setEndBusy(true);
     try {
-      const records = await fetchActiveCampaignCharacters(selectedCampaignId);
       const nowIso = new Date().toISOString();
+      const [records, canConfirm] = await Promise.all([
+        fetchActiveCampaignCharacters(selectedCampaignId),
+        canAdvanceCampaign(selectedCampaignId),
+      ]);
+      setEndCanConfirm(canConfirm);
       setEndPreview(buildEndScenePreview(records, mesaAtual.current_round, mesaAtual.current_scene, nowIso));
     } catch (err) {
       setEndErro(err instanceof Error ? err.message : "Erro ao montar o preview de fim de cena.");
@@ -1941,6 +1959,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
               <EndResolutionPreviewPanel
                 preview={endPreview}
                 processing={endBusy}
+                canConfirm={endCanConfirm}
                 onConfirm={handleConfirmEndResolution}
                 onCancel={handleCancelEndPreview}
               />
@@ -2775,16 +2794,20 @@ function AttackResolutionPanel({
 function EndResolutionPreviewPanel({
   preview,
   processing,
+  canConfirm,
   onConfirm,
   onCancel,
 }: {
   preview: EndRoundPreview | EndScenePreview;
   processing: boolean;
+  /** null = ainda checando; false = sessão não pode avançar a campanha (Confirmar bloqueado). */
+  canConfirm: boolean | null;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
   const isRound = preview.kind === "round";
   const titulo = isRound ? `Encerrar Rodada ${preview.round} (cena ${preview.scene})` : `Encerrar Cena ${preview.scene} (rodada ${preview.round})`;
+  const bloqueado = canConfirm === false;
 
   return (
     <div
@@ -2792,6 +2815,11 @@ function EndResolutionPreviewPanel({
       style={{ background: "#0f1014", borderRadius: 8, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 12, fontSize: 12 }}
     >
       <strong style={{ fontSize: 13 }}>{titulo}</strong>
+      {bloqueado && (
+        <p data-testid="encerramento-permissao-aviso" style={{ color: "#f5a623", margin: 0 }}>
+          Esta sessão não pode avançar a campanha. Entre como narrador dono da mesa para confirmar.
+        </p>
+      )}
       <p style={{ opacity: 0.6, margin: 0 }}>Será processado ao confirmar:</p>
 
       {preview.kind === "round" ? (
@@ -2871,8 +2899,8 @@ function EndResolutionPreviewPanel({
         <button
           data-testid="encerramento-confirmar-btn"
           onClick={onConfirm}
-          disabled={processing}
-          style={{ ...buttonStyle, opacity: processing ? 0.5 : 1 }}
+          disabled={processing || bloqueado}
+          style={{ ...buttonStyle, opacity: processing || bloqueado ? 0.5 : 1, cursor: processing || bloqueado ? "not-allowed" : "pointer" }}
         >
           {processing ? "Processando…" : isRound ? "Confirmar Encerrar Rodada" : "Confirmar Encerrar Cena"}
         </button>
