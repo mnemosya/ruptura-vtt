@@ -1971,8 +1971,10 @@ export default function CharacterSheetClient({
    * automaticamente quando conectado à mesa (mesmo padrão de
    * `persistAutomatedActionExecution` já usado por ataque/compra), e
    * grava `table_logs` (`type: "item_used"`) quando há mesa selecionada.
+   * Remoção de condição (checkpoint pós-v0.61): `options.selectedConditionInstanceId`
+   * vem do seletor do card quando há várias condições compatíveis ativas.
    */
-  async function handleUseItem(instanceId: string) {
+  async function handleUseItem(instanceId: string, options?: { selectedConditionInstanceId?: string }) {
     const current = characterRef.current;
     const instance = (current.inventario ?? []).find((i) => i.id === instanceId);
     if (!instance) return;
@@ -1991,6 +1993,7 @@ export default function CharacterSheetClient({
       pvMax: derivados.pv_max,
       peMax: derivados.pe_max,
       nowIso,
+      selectedConditionInstanceId: options?.selectedConditionInstanceId ?? null,
     });
 
     if (!result.ok) {
@@ -3076,6 +3079,7 @@ export default function CharacterSheetClient({
           catalogError={itemsError}
           carteira={character.carteira ?? { aretz_informal: 0, cdi: 0, cdi_craqueada: 0 }}
           inventario={character.inventario ?? []}
+          condicoesAtivas={character.condicoes_ativas ?? []}
           onBuy={handleBuyItem}
           onChangeCarteira={handleChangeCarteira}
           onSetEstado={handleSetItemEstado}

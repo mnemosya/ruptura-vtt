@@ -158,9 +158,11 @@ export interface ActiveCondition {
    * ao "Desfazer" reativar só as condições removidas pela cura mais
    * recente, sem tocar em remoções manuais anteriores. `"acao_combate"`
    * (checkpoint v0.42) marca remoção por efeito simples automatizado do
-   * Console de Ação (ex.: Levantar removendo Caído).
+   * Console de Ação (ex.: Levantar removendo Caído). `"item_use"`
+   * (checkpoint pós-v0.61) marca remoção por item de farmácia com
+   * `remover_condicao` estruturado no payload (ver itemUse.ts).
    */
-  removidaOrigem?: "cura_pv" | "acao_combate" | "end_round_condition_check";
+  removidaOrigem?: "cura_pv" | "acao_combate" | "end_round_condition_check" | "item_use";
 }
 
 /**

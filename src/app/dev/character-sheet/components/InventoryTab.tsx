@@ -19,12 +19,15 @@ import {
   deriveItemUseKind,
   getItemUseEffects,
   getItemChargesAtual,
+  getConditionRemovalOptions,
+  isConditionRemovalPrimaryItem,
   type ItemContent,
   type InventoryItemInstance,
   type Wallet,
   type WalletId,
   type ItemLoadoutState,
   type Aljava,
+  type ActiveCondition,
 } from "../../../../lib/character";
 import type { TechnicalContentItem } from "../../../../lib/content";
 
@@ -52,6 +55,7 @@ export function InventoryTab({
   catalogError,
   carteira,
   inventario,
+  condicoesAtivas,
   onBuy,
   onChangeCarteira,
   onSetEstado,
@@ -79,12 +83,14 @@ export function InventoryTab({
   catalogError: string | null;
   carteira: Wallet;
   inventario: InventoryItemInstance[];
+  /** Condições do personagem (checkpoint pós-v0.61) — usadas pelo seletor/bloqueio de itens com `remover_condicao`. */
+  condicoesAtivas: ActiveCondition[];
   onBuy: (itemSlug: string, quantidade: number, walletId: WalletId, precoUnitario: number) => void;
   onChangeCarteira: (walletId: WalletId, value: number) => void;
   onSetEstado: (instanceId: string, estado: ItemLoadoutState) => void;
   onRemoveItem: (instanceId: string) => void;
   /** Usar item consumível (farmácia/granadas, checkpoint pós-v0.58) — só chamado quando `deriveItemUseKind` detecta uso possível. */
-  onUseItem: (instanceId: string) => void;
+  onUseItem: (instanceId: string, options?: { selectedConditionInstanceId?: string }) => void;
   /** Runas publicadas na Biblioteca (checkpoint v0.56) — mesma fonte da aba Biblioteca. */
   runes: TechnicalContentItem[];
   runesError: string | null;
@@ -122,6 +128,8 @@ export function InventoryTab({
   const [guardarQtd, setGuardarQtd] = useState<Record<string, number>>({});
   // retirarQtd[`${aljavaInstanceId}:${contentSlug}`] = quanto retirar desta Aljava
   const [retirarQtd, setRetirarQtd] = useState<Record<string, number>>({});
+  // condicaoRemocao[instanceId] = id da ActiveCondition escolhida no seletor de remover_condicao (checkpoint pós-v0.61)
+  const [condicaoRemocao, setCondicaoRemocao] = useState<Record<string, string>>({});
 
   const runasPublicadas = runes.filter((r) => r.status === "published");
   const runaBySlug = new Map(runasPublicadas.map((r) => [r.slug, r]));
@@ -260,6 +268,16 @@ export function InventoryTab({
             const useEffects = itemModelo ? getItemUseEffects(itemModelo) : [];
             const chargesAtual = itemModelo ? getItemChargesAtual(instance, itemModelo) : null;
             const useAvailable = itemModelo?.cargasMax != null ? (chargesAtual ?? 0) > 0 : instance.quantidade > 0;
+            // Remoção de condição (checkpoint pós-v0.61) — opções calculadas do payload + condições ativas, nunca por nome de item.
+            const removalOptions =
+              itemModelo && useKind === "pharmacy"
+                ? getConditionRemovalOptions(itemModelo, { condicoes_ativas: condicoesAtivas })
+                : { possibleSlugs: [], compatibleActive: [] };
+            const removalPrimary = itemModelo && useKind === "pharmacy" ? isConditionRemovalPrimaryItem(itemModelo) : false;
+            const removalBlocked = removalPrimary && removalOptions.compatibleActive.length === 0;
+            const removalNeedsChoice = removalOptions.compatibleActive.length > 1;
+            const condicaoEscolhida = condicaoRemocao[instance.id] ?? "";
+            const condicaoEscolhidaValida = removalOptions.compatibleActive.some((c) => c.id === condicaoEscolhida);
             return (
               <div key={instance.id} data-testid={`inventario-item-${instance.id}`} style={{ background: "#1d1e24", borderRadius: 8, padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6, fontSize: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -319,8 +337,16 @@ export function InventoryTab({
                           {itemModelo.alcanceArremessoMetros != null ? `Alcance de arremesso: ${itemModelo.alcanceArremessoMetros}m.` : ""}
                         </span>
                       )}
+                      {removalOptions.possibleSlugs.length > 0 && (
+                        <span data-testid={`inventario-usar-remocao-${instance.id}`}>
+                          Remove condição (uma por uso): {removalOptions.possibleSlugs.join(", ")}.
+                          {removalOptions.compatibleActive.length > 0
+                            ? ` Ativa(s) compatível(is): ${removalOptions.compatibleActive.map((c) => c.nome).join(", ")}.`
+                            : ""}
+                        </span>
+                      )}
                       <span>
-                        Custo: {itemModelo.custoPaUso != null ? `${itemModelo.custoPaUso} PA` : itemModelo.custoPaUsoTexto ? `não estruturado (${itemModelo.custoPaUsoTexto})` : useKind === "pharmacy" ? "1 PA (padrão de Interagir)" : "não estruturado — sem gasto automático de PA"}.
+                        Custo: {itemModelo.custoPaUso != null ? `${itemModelo.custoPaUso} PA` : itemModelo.custoPaUsoTexto ? `não estruturado (${itemModelo.custoPaUsoTexto})` : useKind === "pharmacy" && !removalPrimary ? "1 PA (padrão de Interagir)" : "não estruturado — sem gasto automático de PA"}.
                       </span>
                       <span data-testid={`inventario-usar-cargas-${instance.id}`}>
                         {itemModelo.cargasMax != null
@@ -338,11 +364,45 @@ export function InventoryTab({
                         Sem cargas/quantidade disponíveis.
                       </p>
                     )}
+                    {removalBlocked && (
+                      <p data-testid={`inventario-usar-sem-condicao-${instance.id}`} style={{ fontSize: 11, color: "#ff6b6b", margin: 0 }}>
+                        Nenhuma condição compatível ativa ({removalOptions.possibleSlugs.join(", ")}) — uso bloqueado, nada
+                        será consumido.
+                      </p>
+                    )}
+                    {removalNeedsChoice && (
+                      <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 11, opacity: 0.6 }}>Condição a remover:</span>
+                        <select
+                          data-testid={`inventario-usar-condicao-${instance.id}`}
+                          value={condicaoEscolhidaValida ? condicaoEscolhida : ""}
+                          onChange={(e) => setCondicaoRemocao((prev) => ({ ...prev, [instance.id]: e.target.value }))}
+                          style={{ ...input, fontSize: 11 }}
+                        >
+                          <option value="">— escolher —</option>
+                          {removalOptions.compatibleActive.map((c) => (
+                            <option key={c.id} value={c.id}>{c.nome}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                     <button
                       data-testid={`inventario-usar-${instance.id}`}
-                      onClick={() => onUseItem(instance.id)}
-                      disabled={!useAvailable}
-                      style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px", alignSelf: "flex-start", opacity: useAvailable ? 1 : 0.5 }}
+                      onClick={() => {
+                        onUseItem(
+                          instance.id,
+                          condicaoEscolhidaValida ? { selectedConditionInstanceId: condicaoEscolhida } : undefined,
+                        );
+                        setCondicaoRemocao((prev) => ({ ...prev, [instance.id]: "" }));
+                      }}
+                      disabled={!useAvailable || removalBlocked || (removalNeedsChoice && !condicaoEscolhidaValida)}
+                      style={{
+                        ...buttonStyle,
+                        fontSize: 11,
+                        padding: "3px 10px",
+                        alignSelf: "flex-start",
+                        opacity: !useAvailable || removalBlocked || (removalNeedsChoice && !condicaoEscolhidaValida) ? 0.5 : 1,
+                      }}
                     >
                       Usar item
                     </button>
