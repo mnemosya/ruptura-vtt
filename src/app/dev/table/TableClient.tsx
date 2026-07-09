@@ -520,8 +520,16 @@ function formatSystemLog(type: string, payload: Record<string, unknown>): string
       const cd = typeof resistance.cdFormula === "string" ? resistance.cdFormula : "?";
       partes.push(`resistência ${acoes.join("/") || "?"} CD ${cd}`);
     }
+    const fusion = typeof payload.fusion === "object" && payload.fusion !== null ? (payload.fusion as Record<string, unknown>) : null;
+    if (fusion) {
+      const sobrecargaBefore = typeof fusion.sobrecargaBefore === "number" ? fusion.sobrecargaBefore : "?";
+      const sobrecargaAfter = typeof fusion.sobrecargaAfter === "number" ? fusion.sobrecargaAfter : "?";
+      const sobrecargaMax = typeof fusion.sobrecargaMax === "number" ? fusion.sobrecargaMax : "?";
+      partes.push(`Sobrecarga ${sobrecargaBefore} → ${sobrecargaAfter}/${sobrecargaMax} (Fusão custa 1)`);
+    }
     const extras = [...names(payload.manualEffects), ...names(payload.reminders)];
-    const cabecalho = `${spellNome}${vertente ? ` (${vertente}${nivel != null ? `, nível ${nivel}` : ""})` : ""}`;
+    const fusedNome = fusion && typeof fusion.fusedSpellNome === "string" ? fusion.fusedSpellNome : null;
+    const cabecalho = `${spellNome}${fusedNome ? ` + ${fusedNome} (FUSÃO)` : ""}${vertente ? ` (${vertente}${nivel != null ? `, nível ${nivel}` : ""})` : ""}`;
     const base = `Magia conjurada — ${characterNome} conjurou ${cabecalho}${partes.length > 0 ? `: ${partes.join(" · ")}` : ""}.`;
     return extras.length > 0 ? `${base} — ${extras.join(" ")}` : base;
   }

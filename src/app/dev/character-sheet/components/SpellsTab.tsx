@@ -26,6 +26,7 @@ export function SpellsTab({
   onLearn,
   onForget,
   onCast,
+  onCastWithFusion,
   onRollDamage,
 }: {
   spells: SpellContent[];
@@ -35,9 +36,13 @@ export function SpellsTab({
   onLearn: (slug: string) => void;
   onForget: (learnedId: string) => void;
   onCast: (slug: string) => void;
+  /** Fusão (checkpoint pós-v0.66) — conjura `slug` fundida com `fusedSlug` (+1 Sobrecarga; ambas aprendidas). */
+  onCastWithFusion: (slug: string, fusedSlug: string) => void;
   onRollDamage: (slug: string) => void;
 }) {
   const [expandido, setExpandido] = useState<Record<string, boolean>>({});
+  // fusaoSelecionada[slug da principal] = slug da segunda magia a fundir
+  const [fusaoSelecionada, setFusaoSelecionada] = useState<Record<string, string>>({});
 
   const publicadas = spells.filter((s) => s.status === "published");
   const vertentesConhecidas = getKnownVertentes({ magias_aprendidas: magiasAprendidas }, publicadas);
@@ -138,6 +143,42 @@ export function SpellsTab({
                                 {dano.dado ? `Rolar dano (${dano.dado})` : `Dano fixo (${dano.valor})`}
                               </button>
                             )}
+                            {(() => {
+                              // Fusão (checkpoint pós-v0.66) — só entre magias APRENDIDAS; custa sempre 1 Sobrecarga.
+                              const outrasAprendidas = publicadas.filter(
+                                (m) => m.slug !== spell.slug && magiasAprendidas.some((a) => a.spellSlug === m.slug),
+                              );
+                              if (outrasAprendidas.length === 0) return null;
+                              const escolhida = fusaoSelecionada[spell.slug] ?? "";
+                              return (
+                                <span style={{ display: "inline-flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                                  <select
+                                    data-testid={`magia-fusao-select-${spell.slug}`}
+                                    value={escolhida}
+                                    onChange={(e) => setFusaoSelecionada((prev) => ({ ...prev, [spell.slug]: e.target.value }))}
+                                    style={{ background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", fontSize: 11 }}
+                                  >
+                                    <option value="">— fundir com… —</option>
+                                    {outrasAprendidas.map((m) => (
+                                      <option key={m.slug} value={m.slug}>{m.nome} ({m.vertente})</option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    data-testid={`magia-conjurar-fusao-${spell.slug}`}
+                                    disabled={!escolhida}
+                                    onClick={() => {
+                                      if (!escolhida) return;
+                                      onCastWithFusion(spell.slug, escolhida);
+                                      setFusaoSelecionada((prev) => ({ ...prev, [spell.slug]: "" }));
+                                    }}
+                                    style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px", opacity: escolhida ? 1 : 0.5 }}
+                                    title="Fusão custa sempre 1 Sobrecarga; efeitos combinados são resolvidos manualmente."
+                                  >
+                                    Conjurar com Fusão (+1 Sobrecarga)
+                                  </button>
+                                </span>
+                              );
+                            })()}
                           </>
                         )}
                       </div>

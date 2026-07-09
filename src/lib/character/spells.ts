@@ -33,7 +33,8 @@
  */
 
 import { rollDamageFormula } from "./attack";
-import type { Character } from "./types";
+import { getOverloadMaxPerDay } from "./overload";
+import type { Character, OverloadRulesPayload } from "./types";
 
 // ---------------------------------------------------------------------
 // Conteúdo bruto (subconjunto lido de content_documents.payload)
@@ -455,5 +456,123 @@ export function castSpell(params: {
     manaTemporariaBefore: manaTemporariaAntes,
     manaTemporariaAfter: manaTemporariaDepois,
     manaCostUnknown,
+  };
+}
+
+// ---------------------------------------------------------------------
+// Fusão de magias (checkpoint pós-v0.66) — fluxo manual seguro.
+//
+// Regra conhecida: Fusão custa SEMPRE 1 Sobrecarga (uma carga do
+// contador diário `sobrecarga_usada_dia` — mesma reserva dos surtos).
+// A fusão NÃO é um surto: o dano psíquico imediato (`surto.dano_imediato`)
+// é declarado para SURTOS no conteúdo, então não é rolado aqui.
+// Atingir o máximo de Sobrecargas do dia marca Ruptura pendente
+// (regra canônica: "marcar_ruptura_pendente_ao_chegar_a_3_sobrecargas").
+//
+// O que é automatizado: custos estruturados da magia PRINCIPAL
+// (PA/Mana via `castSpell`) + 1 Sobrecarga. A magia FUNDIDA nunca tem
+// custo/efeito somado automaticamente ("não combinar números
+// incompatíveis") — os efeitos dela viram lembretes no cartão.
+// ---------------------------------------------------------------------
+
+export interface CastSpellFusionResult {
+  character: Character;
+  ok: boolean;
+  reason?: string;
+  cast: CastSpellResult | null;
+  sobrecargaBefore: number;
+  sobrecargaAfter: number;
+  sobrecargaMax: number;
+  rupturaPendente: boolean;
+  /** Lembretes específicos da fusão (efeitos da magia fundida, mana não somada, ruptura). */
+  fusionReminders: string[];
+}
+
+/**
+ * Conjura `spell` com Fusão de `fusedSpell` — bloqueia sem mudar nada
+ * quando não há Sobrecarga disponível (custa 1), quando as magias são a
+ * mesma, ou quando os custos de PA/Mana da principal não podem ser
+ * pagos (mesma checagem de `castSpell`). O chamador é responsável por
+ * garantir que AMBAS as magias estão aprendidas (modelo atual).
+ */
+export function castSpellWithFusion(params: {
+  character: Character;
+  spell: SpellContent;
+  fusedSpell: SpellContent;
+  paMax: number;
+  manaMax: number;
+  overloadRules?: OverloadRulesPayload | null;
+}): CastSpellFusionResult {
+  const { character, spell, fusedSpell, paMax, manaMax, overloadRules } = params;
+  const sobrecargaBefore = character.sobrecarga_usada_dia ?? 0;
+  const sobrecargaMax = getOverloadMaxPerDay(overloadRules);
+
+  const blocked = (reason: string): CastSpellFusionResult => ({
+    character,
+    ok: false,
+    reason,
+    cast: null,
+    sobrecargaBefore,
+    sobrecargaAfter: sobrecargaBefore,
+    sobrecargaMax,
+    rupturaPendente: character.ruptura_pendente ?? false,
+    fusionReminders: [],
+  });
+
+  if (spell.slug === fusedSpell.slug) {
+    return blocked("Escolha uma SEGUNDA magia diferente para fundir.");
+  }
+  if (sobrecargaBefore >= sobrecargaMax) {
+    return blocked(`Sobrecarga insuficiente para Fusão (custa 1; ${sobrecargaBefore}/${sobrecargaMax} já usadas).`);
+  }
+
+  const cast = castSpell({ character, spell, paMax, manaMax });
+  if (!cast.ok) {
+    return blocked(cast.reason ?? "Conjuração não realizada.");
+  }
+
+  const sobrecargaAfter = sobrecargaBefore + 1;
+  const atingiuMax = sobrecargaAfter >= sobrecargaMax;
+  const nextCharacter: Character = {
+    ...cast.character,
+    sobrecarga_usada_dia: sobrecargaAfter,
+    ruptura_pendente: atingiuMax ? true : cast.character.ruptura_pendente,
+    ruptura_nivel_pendente: atingiuMax ? (cast.character.ruptura_nivel_pendente ?? 1) : cast.character.ruptura_nivel_pendente,
+  };
+
+  const fusionReminders: string[] = [
+    `Fusão com ${fusedSpell.nome}: efeitos combinados são resolvidos MANUALMENTE pelo narrador — números das duas magias nunca são somados automaticamente.`,
+  ];
+  if (fusedSpell.estatisticas.custo_mana != null) {
+    fusionReminders.push(
+      `${fusedSpell.nome} declara custo de Mana ${fusedSpell.estatisticas.custo_mana} — a Fusão não desconta a Mana da magia fundida automaticamente; ajuste se o narrador exigir.`,
+    );
+  }
+  const fusedResistance = getSpellResistanceEffect(fusedSpell);
+  if (fusedResistance) {
+    fusionReminders.push(`${fusedSpell.nome}: resistência ${fusedResistance.acoes.join("/") || "?"} (CD ${fusedResistance.cdFormula}) — resolver manualmente.`);
+  }
+  const fusedDamage = getSpellDamageEffect(fusedSpell);
+  if (fusedDamage) {
+    fusionReminders.push(
+      `${fusedSpell.nome}: dano ${fusedDamage.dado ?? fusedDamage.valor} (${fusedDamage.tipo_dano}) — rolar/aplicar manualmente conforme a fusão narrada.`,
+    );
+  }
+  fusionReminders.push(...describeSpellManualEffects(fusedSpell).map((linha) => `${fusedSpell.nome}: ${linha}`));
+  if (atingiuMax) {
+    fusionReminders.push(
+      `Sobrecarga chegou a ${sobrecargaAfter}/${sobrecargaMax} — Ruptura pendente (resolvida no fim da cena). O teste do 3º SURTO não foi rolado: a regra canônica o descreve para surtos, não para Fusão — narrador decide se aplica.`,
+    );
+  }
+
+  return {
+    character: nextCharacter,
+    ok: true,
+    cast,
+    sobrecargaBefore,
+    sobrecargaAfter,
+    sobrecargaMax,
+    rupturaPendente: nextCharacter.ruptura_pendente ?? false,
+    fusionReminders,
   };
 }

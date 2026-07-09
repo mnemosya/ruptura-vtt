@@ -97,6 +97,7 @@ import {
   rollSpellDamage,
   getSpellDamageEffect,
   prepareSpellCastResolution,
+  castSpellWithFusion,
   learnSpell,
   forgetSpell,
   isSpellLearned,
@@ -2524,6 +2525,111 @@ export default function CharacterSheetClient({
     }
   }
 
+  /**
+   * Conjurar com Fusão (checkpoint pós-v0.66) — regra conhecida: Fusão
+   * custa SEMPRE 1 Sobrecarga (do mesmo contador diário dos surtos).
+   * Custos estruturados da magia PRINCIPAL são pagos via castSpell; os
+   * efeitos/custos da magia FUNDIDA viram lembretes no cartão — nunca
+   * somados automaticamente. Bloqueia sem Sobrecarga disponível.
+   */
+  async function handleCastSpellWithFusion(slug: string, fusedSlug: string) {
+    const current = characterRef.current;
+    const spell = spellsIniciais.find((s) => s.slug === slug);
+    const fusedSpell = spellsIniciais.find((s) => s.slug === fusedSlug);
+    if (!spell || !fusedSpell) return;
+    if (!isSpellLearned(current, slug) || !isSpellLearned(current, fusedSlug)) {
+      addLogEntry("recurso", "Fusão exige que AMBAS as magias estejam aprendidas.");
+      return;
+    }
+    const result = castSpellWithFusion({
+      character: current,
+      spell,
+      fusedSpell,
+      paMax: derivados.pa_max,
+      manaMax: derivados.mana_max,
+      overloadRules: regras?.sobrecarga,
+    });
+    if (!result.ok || !result.cast) {
+      addLogEntry("recurso", result.reason ?? "Fusão não realizada.");
+      return;
+    }
+    characterRef.current = result.character;
+    setCharacter(result.character);
+
+    const cast = result.cast;
+    const resolution = prepareSpellCastResolution(spell);
+    const temporariaConsumida = (cast.manaTemporariaBefore ?? 0) - (cast.manaTemporariaAfter ?? 0);
+    const manaTexto = cast.manaCostUnknown
+      ? "custo de Mana ainda não definido (placeholder)"
+      : `Mana ${cast.manaBefore} → ${cast.manaAfter}${temporariaConsumida > 0 ? ` (${temporariaConsumida} da Mana temporária)` : ""}`;
+    const partes: string[] = [
+      `PA ${cast.paBefore} → ${cast.paAfter}`,
+      manaTexto,
+      `Sobrecarga ${result.sobrecargaBefore} → ${result.sobrecargaAfter}/${result.sobrecargaMax} (Fusão custa 1)`,
+    ];
+    if (resolution.damage) {
+      partes.push(`dano ${resolution.damage.fixo ? "fixo" : "rolado"} ${resolution.damage.result} (${resolution.damage.formula}/${resolution.damage.tipoDano})`);
+    }
+    const extras = [...resolution.manualEffects, ...resolution.reminders, ...result.fusionReminders];
+    addLogEntry(
+      "recurso",
+      `Conjurado com FUSÃO: ${spell.nome} + ${fusedSpell.nome} — ${partes.join("; ")}.${extras.length > 0 ? ` — ${extras.join(" ")}` : ""}`,
+    );
+
+    await persistAutomatedActionExecution(result.character);
+
+    if (selectedCampaignId) {
+      try {
+        await addLog({
+          campaignId: selectedCampaignId,
+          characterId: characterId ?? undefined,
+          profileId: selectedProfileId,
+          profileSessionId: profileSessionToken?.profileSessionId ?? null,
+          type: "spell_cast",
+          visibility: "public",
+          payload: {
+            characterId,
+            characterNome: current.nome,
+            profileId: selectedProfileId,
+            profileNickname: perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null,
+            spellSlug: spell.slug,
+            spellNome: spell.nome,
+            vertente: spell.vertente,
+            nivel: spell.estatisticas.nivel,
+            tipoMagia: spell.estatisticas.tipo_magia,
+            resolucao: resolution.resolucao,
+            usaReacao: spell.estatisticas.usa_reacao,
+            paCost: spell.estatisticas.custo_pa,
+            paBefore: cast.paBefore,
+            paAfter: cast.paAfter,
+            manaCost: spell.estatisticas.custo_mana,
+            manaCostUnknown: cast.manaCostUnknown,
+            manaBefore: cast.manaBefore ?? null,
+            manaAfter: cast.manaAfter ?? null,
+            manaTemporariaConsumida: temporariaConsumida,
+            resistance: resolution.resistance,
+            damage: resolution.damage,
+            manualEffects: resolution.manualEffects,
+            reminders: [...resolution.reminders, ...result.fusionReminders],
+            fusion: {
+              fusedSpellSlug: fusedSpell.slug,
+              fusedSpellNome: fusedSpell.nome,
+              fusedVertente: fusedSpell.vertente,
+              fusedManaCost: fusedSpell.estatisticas.custo_mana,
+              sobrecargaBefore: result.sobrecargaBefore,
+              sobrecargaAfter: result.sobrecargaAfter,
+              sobrecargaMax: result.sobrecargaMax,
+              rupturaPendente: result.rupturaPendente,
+            },
+            source: "character_sheet_spells",
+          },
+        });
+      } catch {
+        // Best-effort — a fusão já foi aplicada no estado local/persistido.
+      }
+    }
+  }
+
   /** "Rolar dano" (aba Magias, checkpoint v0.50) — atalho de rolagem para magias com efeito de dano. */
   function handleRollSpellDamage(slug: string) {
     const spell = spellsIniciais.find((s) => s.slug === slug);
@@ -3319,6 +3425,7 @@ export default function CharacterSheetClient({
           onLearn={handleLearnSpell}
           onForget={handleForgetSpell}
           onCast={handleCastSpell}
+          onCastWithFusion={handleCastSpellWithFusion}
           onRollDamage={handleRollSpellDamage}
         />
       )}
