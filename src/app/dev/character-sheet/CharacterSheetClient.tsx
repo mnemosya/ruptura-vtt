@@ -62,6 +62,7 @@ import {
   purchaseItem,
   setItemLoadoutState,
   removeItemFromInventory,
+  useItemOnCharacter,
   installRuneOnItem,
   removeRuneFromItem,
   equipDefensiveItem,
@@ -1960,6 +1961,117 @@ export default function CharacterSheetClient({
   }
 
   /**
+   * Usar item consumível (farmácia/granadas, checkpoint pós-v0.58) —
+   * checa PA/carga ANTES de mudar qualquer estado (`useItemOnCharacter`,
+   * `lib/character/itemUse.ts` — nunca gasta PA nem consome item se
+   * bloqueado). Cura aplicada via `applyGmHealing` (com remoção
+   * automática de condição por PV embutida); dano de granada/explosivo
+   * é só rolado, nunca aplicado a nenhum personagem — resolução de
+   * alvo fica para o painel do narrador em /dev/table. Persiste
+   * automaticamente quando conectado à mesa (mesmo padrão de
+   * `persistAutomatedActionExecution` já usado por ataque/compra), e
+   * grava `table_logs` (`type: "item_used"`) quando há mesa selecionada.
+   */
+  async function handleUseItem(instanceId: string) {
+    const current = characterRef.current;
+    const instance = (current.inventario ?? []).find((i) => i.id === instanceId);
+    if (!instance) return;
+    const itemModelo = itemsIniciais.find((m) => m.slug === instance.itemSlug);
+    if (!itemModelo) {
+      addLogEntry("recurso", "Item não encontrado na Biblioteca — não é possível usar.");
+      return;
+    }
+
+    const nowIso = new Date().toISOString();
+    const result = useItemOnCharacter({
+      character: current,
+      instance,
+      item: itemModelo,
+      paMax: derivados.pa_max,
+      pvMax: derivados.pv_max,
+      peMax: derivados.pe_max,
+      nowIso,
+    });
+
+    if (!result.ok) {
+      addLogEntry("recurso", result.reason ?? "Não foi possível usar o item.");
+      return;
+    }
+
+    characterRef.current = result.character;
+    setCharacter(result.character);
+
+    const partesLog: string[] = [];
+    if (result.paCost != null) partesLog.push(`PA ${result.paBefore} → ${result.paAfter}`);
+    for (const mudanca of result.resourceChanges) {
+      partesLog.push(`${mudanca.resource.toUpperCase()} ${mudanca.before} → ${mudanca.after}`);
+    }
+    if (result.chargesAfter != null) {
+      partesLog.push(`cargas ${result.chargesBefore} → ${result.chargesAfter}`);
+    } else {
+      partesLog.push(`quantidade ${result.quantityBefore} → ${result.quantityAfter}`);
+    }
+    if (result.damageRolled.length > 0) {
+      partesLog.push(`dano rolado ${result.damageRolled.map((d) => `${d.result} (${d.formula}${d.damageType ? `/${d.damageType}` : ""})`).join(", ")}`);
+    }
+    if (result.removedConditions.length > 0) {
+      partesLog.push(`removeu ${result.removedConditions.join(", ")}`);
+    }
+    addLogEntry(
+      result.useKind === "grenade" || result.useKind === "explosive" ? "acao_combate" : "recurso",
+      `Usou ${itemModelo.nome} (${partesLog.join(" · ")})${result.reminders.length > 0 ? ` — Lembrete: ${result.reminders.join(" ")}` : ""}.`,
+    );
+
+    // Sempre persiste automaticamente quando conectado (uso de item sempre muda estado real:
+    // PA/recurso/quantidade/carga) — mesmo padrão de isConnected já usado por persistAutomatedActionExecution.
+    await persistAutomatedActionExecution(result.character);
+
+    if (selectedCampaignId) {
+      try {
+        await addLog({
+          campaignId: selectedCampaignId,
+          characterId: characterId ?? undefined,
+          profileId: selectedProfileId,
+          profileSessionId: profileSessionToken?.profileSessionId ?? null,
+          type: "item_used",
+          visibility: "public",
+          payload: {
+            characterId,
+            characterNome: current.nome,
+            profileId: selectedProfileId,
+            profileNickname: perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null,
+            itemInstanceId: instanceId,
+            itemName: itemModelo.nome,
+            itemCategory: itemModelo.categoria,
+            itemSubtype: itemModelo.subtipo ?? null,
+            itemTags: itemModelo.tags,
+            useType: result.useKind,
+            paCost: result.paCost,
+            paBefore: result.paBefore,
+            paAfter: result.paAfter,
+            quantityBefore: result.quantityBefore,
+            quantityAfter: result.quantityAfter,
+            chargesBefore: result.chargesBefore,
+            chargesAfter: result.chargesAfter,
+            resourceChanges: result.resourceChanges,
+            healingRolled: result.healingRolled,
+            damageRolled: result.damageRolled,
+            damageType: result.damageRolled[0]?.damageType ?? null,
+            area: itemModelo.areaMetros,
+            range: itemModelo.alcanceArremessoMetros,
+            appliedConditions: [],
+            removedConditions: result.removedConditions,
+            reminders: result.reminders,
+            source: "inventory_item_use",
+          },
+        });
+      } catch {
+        // Best-effort — o item já foi usado no estado local/persistido; falha aqui não bloqueia o jogador.
+      }
+    }
+  }
+
+  /**
    * Instalar runa em item (aba Inventário, checkpoint v0.56) — cria só
    * uma referência passiva na instância do item (`installRuneOnItem`,
    * `lib/character/inventory.ts`); nenhum efeito mecânico é aplicado.
@@ -2968,6 +3080,7 @@ export default function CharacterSheetClient({
           onChangeCarteira={handleChangeCarteira}
           onSetEstado={handleSetItemEstado}
           onRemoveItem={handleRemoveItem}
+          onUseItem={handleUseItem}
           runes={runesIniciais}
           runesError={runesError}
           onInstallRune={handleInstallRune}

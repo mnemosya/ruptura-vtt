@@ -93,6 +93,7 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   scene_effect_expired: "Efeito de Cena Encerrado",
   attack_resolved: "Ataque Resolvido",
   defense_reaction_used: "Defesa Usada",
+  item_used: "Item Usado",
 };
 
 function entryKindLabel(type: string): string {
@@ -121,6 +122,7 @@ function entryIcon(type: string): string {
   if (type === "scene_effect_expired") return "⏳";
   if (type === "attack_resolved") return "🗡";
   if (type === "defense_reaction_used") return "🛡";
+  if (type === "item_used") return "🎒";
   return "•";
 }
 
@@ -144,6 +146,7 @@ function entryBorderColor(type: string): string {
   if (type === "scene_effect_expired") return "#888";
   if (type === "attack_resolved") return "#ff6b6b";
   if (type === "defense_reaction_used") return "#5ec8ff";
+  if (type === "item_used") return "#4caf50";
   return "#ffb84f";
 }
 
@@ -497,6 +500,76 @@ function formatDefenseReactionUsed(payload: Record<string, unknown>): string {
   return base;
 }
 
+/**
+ * `item_used` (checkpoint pós-v0.58, uso de itens de farmácia/granadas
+ * pelo Inventário) — "Item usado — {personagem} usou {item}: PA X → Y,
+ * PV/PE antes → depois, cargas/quantidade antes → depois, dano
+ * rolado, lembretes." Nunca cai em JSON cru.
+ */
+function formatItemUsed(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const itemName = typeof payload.itemName === "string" ? payload.itemName : "Item";
+  const useType = typeof payload.useType === "string" ? payload.useType : null;
+  const partes: string[] = [];
+
+  const paCost = typeof payload.paCost === "number" ? payload.paCost : null;
+  const paBefore = typeof payload.paBefore === "number" ? payload.paBefore : null;
+  const paAfter = typeof payload.paAfter === "number" ? payload.paAfter : null;
+  if (paCost != null && paBefore != null && paAfter != null) partes.push(`PA ${paBefore} → ${paAfter}`);
+
+  const resourceChanges = Array.isArray(payload.resourceChanges) ? payload.resourceChanges : [];
+  for (const mudanca of resourceChanges) {
+    if (typeof mudanca !== "object" || mudanca === null) continue;
+    const m = mudanca as Record<string, unknown>;
+    const resource = typeof m.resource === "string" ? m.resource.toUpperCase() : "?";
+    const before = typeof m.before === "number" ? m.before : "?";
+    const after = typeof m.after === "number" ? m.after : "?";
+    partes.push(`${resource} ${before} → ${after}`);
+  }
+
+  const chargesBefore = typeof payload.chargesBefore === "number" ? payload.chargesBefore : null;
+  const chargesAfter = typeof payload.chargesAfter === "number" ? payload.chargesAfter : null;
+  if (chargesBefore != null && chargesAfter != null) {
+    partes.push(`cargas ${chargesBefore} → ${chargesAfter}`);
+  } else {
+    const quantityBefore = typeof payload.quantityBefore === "number" ? payload.quantityBefore : null;
+    const quantityAfter = typeof payload.quantityAfter === "number" ? payload.quantityAfter : null;
+    if (quantityBefore != null && quantityAfter != null) partes.push(`quantidade ${quantityBefore} → ${quantityAfter}`);
+  }
+
+  const damageRolled = Array.isArray(payload.damageRolled) ? payload.damageRolled : [];
+  if (damageRolled.length > 0) {
+    const textoDano = damageRolled
+      .map((d) => {
+        if (typeof d !== "object" || d === null) return null;
+        const dr = d as Record<string, unknown>;
+        const result = typeof dr.result === "number" ? dr.result : "?";
+        const formula = typeof dr.formula === "string" ? dr.formula : "?";
+        const damageType = typeof dr.damageType === "string" ? dr.damageType : null;
+        return `${result} (${formula}${damageType ? `/${damageType}` : ""})`;
+      })
+      .filter((t): t is string => t != null);
+    if (textoDano.length > 0) partes.push(`dano rolado ${textoDano.join(", ")}`);
+  }
+
+  const removedConditions = Array.isArray(payload.removedConditions)
+    ? payload.removedConditions.filter((c): c is string => typeof c === "string")
+    : [];
+  if (removedConditions.length > 0) partes.push(`removeu ${removedConditions.join(", ")}`);
+
+  const area = typeof payload.area === "number" ? payload.area : null;
+  const range = typeof payload.range === "number" ? payload.range : null;
+  if (area != null || range != null) {
+    partes.push(`${area != null ? `área ${area}m` : ""}${area != null && range != null ? ", " : ""}${range != null ? `alcance ${range}m` : ""}`);
+  }
+
+  const reminders = Array.isArray(payload.reminders) ? payload.reminders.filter((r): r is string => typeof r === "string") : [];
+
+  const tipoLabel = useType === "pharmacy" ? " (farmácia)" : useType === "grenade" ? " (granada)" : useType === "explosive" ? " (explosivo)" : "";
+  const base = `Item usado — ${characterNome} usou ${itemName}${tipoLabel}${partes.length > 0 ? `: ${partes.join(" · ")}` : ""}.`;
+  return reminders.length > 0 ? `${base} — Lembrete: ${reminders.join(" ")}` : base;
+}
+
 /** Texto da mensagem de chat — aceita `text` (ficha, v0.12) ou `mensagem` (formato antigo do /dev/table). */
 function chatText(payload: Record<string, unknown>): string {
   if (typeof payload.text === "string") return payload.text;
@@ -843,7 +916,9 @@ export function MesaTab({
                                                                 ? formatAttackResolved(entry.payload)
                                                                 : entry.type === "defense_reaction_used"
                                                                   ? formatDefenseReactionUsed(entry.payload)
-                                                                  : JSON.stringify(entry.payload)}
+                                                                  : entry.type === "item_used"
+                                                                    ? formatItemUsed(entry.payload)
+                                                                    : JSON.stringify(entry.payload)}
             </span>
           </div>
         ))}

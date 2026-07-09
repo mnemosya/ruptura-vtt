@@ -434,6 +434,8 @@ export interface Character {
     selectedAljavaInstanceId?: string;
     /** Em instâncias de ARCO (checkpoint v0.60): slug do tipo de flecha ativo. */
     selectedFlechaSlug?: string;
+    /** Cargas restantes deste item físico (checkpoint pós-v0.58, uso de farmácia/granadas com `cargas_max`). Ausente = assume `item.cargasMax` na primeira leitura. */
+    cargasAtual?: number;
   }[];
   /**
    * Magias aprendidas individualmente (checkpoint v0.50.1/v0.50.2) —

@@ -16,6 +16,9 @@ import {
   deriveModoMunicao,
   getWeaponAmmoAtual,
   ALJAVA_ITEM_SLUG,
+  deriveItemUseKind,
+  getItemUseEffects,
+  getItemChargesAtual,
   type ItemContent,
   type InventoryItemInstance,
   type Wallet,
@@ -53,6 +56,7 @@ export function InventoryTab({
   onChangeCarteira,
   onSetEstado,
   onRemoveItem,
+  onUseItem,
   runes,
   runesError,
   onInstallRune,
@@ -79,6 +83,8 @@ export function InventoryTab({
   onChangeCarteira: (walletId: WalletId, value: number) => void;
   onSetEstado: (instanceId: string, estado: ItemLoadoutState) => void;
   onRemoveItem: (instanceId: string) => void;
+  /** Usar item consumível (farmácia/granadas, checkpoint pós-v0.58) — só chamado quando `deriveItemUseKind` detecta uso possível. */
+  onUseItem: (instanceId: string) => void;
   /** Runas publicadas na Biblioteca (checkpoint v0.56) — mesma fonte da aba Biblioteca. */
   runes: TechnicalContentItem[];
   runesError: string | null;
@@ -249,6 +255,11 @@ export function InventoryTab({
               instance.categoria === "armadura" ? "armadura" : instance.categoria === "escudo" ? "escudo" : null;
             const mitMax = itemModelo ? getItemMit(itemModelo) : null;
             const pdMax = itemModelo ? getItemPdMax(itemModelo) : null;
+            // Uso de item consumível (farmácia/granadas, checkpoint pós-v0.58) — data-driven via `deriveItemUseKind`; "Usar" só aparece com algum indício de uso no conteúdo publicado.
+            const useKind = itemModelo ? deriveItemUseKind(itemModelo) : null;
+            const useEffects = itemModelo ? getItemUseEffects(itemModelo) : [];
+            const chargesAtual = itemModelo ? getItemChargesAtual(instance, itemModelo) : null;
+            const useAvailable = itemModelo?.cargasMax != null ? (chargesAtual ?? 0) > 0 : instance.quantidade > 0;
             return (
               <div key={instance.id} data-testid={`inventario-item-${instance.id}`} style={{ background: "#1d1e24", borderRadius: 8, padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6, fontSize: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -272,6 +283,71 @@ export function InventoryTab({
                     Remover
                   </button>
                 </div>
+
+                {useKind && itemModelo && (
+                  <div
+                    data-testid={`inventario-usar-secao-${instance.id}`}
+                    style={{ borderTop: "1px solid #2a2b33", paddingTop: 6, marginTop: 2, display: "flex", flexDirection: "column", gap: 4 }}
+                  >
+                    <p style={{ fontSize: 11, opacity: 0.7, margin: 0 }}>
+                      {useKind === "pharmacy" ? "Uso (farmácia)" : useKind === "grenade" ? "Uso (granada)" : useKind === "explosive" ? "Uso (explosivo)" : "Uso"}
+                    </p>
+                    <div data-testid={`inventario-usar-preview-${instance.id}`} style={{ fontSize: 11, opacity: 0.75, display: "flex", flexDirection: "column", gap: 2 }}>
+                      {useEffects
+                        .filter((e) => e.tipo === "cura")
+                        .map((e, i) => (
+                          <span key={`cura-${i}`}>
+                            Cura prevista: {typeof e.dado === "string" ? e.dado : "?"}
+                            {typeof e.bonus === "number" ? ` + ${e.bonus}` : ""} de {e.recurso === "pe" ? "PE" : "PV"}.
+                          </span>
+                        ))}
+                      {useEffects
+                        .filter((e) => e.tipo === "efeito_com_resistencia" || e.tipo === "dano_em_area")
+                        .map((e, i) => {
+                          const formula = typeof e.dano === "string" ? e.dano : typeof e.dado === "string" ? e.dado : null;
+                          const tipoDano = typeof e.tipo_dano === "string" ? e.tipo_dano : null;
+                          return formula ? (
+                            <span key={`dano-${i}`}>
+                              Dano previsto: {formula}
+                              {tipoDano ? ` (${tipoDano}${typeof e.subtipo_dano === "string" ? `/${e.subtipo_dano}` : ""})` : ""}.
+                            </span>
+                          ) : null;
+                        })}
+                      {(itemModelo.areaMetros != null || itemModelo.alcanceArremessoMetros != null) && (
+                        <span>
+                          {itemModelo.areaMetros != null ? `Área: ${itemModelo.areaMetros}m. ` : ""}
+                          {itemModelo.alcanceArremessoMetros != null ? `Alcance de arremesso: ${itemModelo.alcanceArremessoMetros}m.` : ""}
+                        </span>
+                      )}
+                      <span>
+                        Custo: {itemModelo.custoPaUso != null ? `${itemModelo.custoPaUso} PA` : itemModelo.custoPaUsoTexto ? `não estruturado (${itemModelo.custoPaUsoTexto})` : useKind === "pharmacy" ? "1 PA (padrão de Interagir)" : "não estruturado — sem gasto automático de PA"}.
+                      </span>
+                      <span data-testid={`inventario-usar-cargas-${instance.id}`}>
+                        {itemModelo.cargasMax != null
+                          ? `Cargas: ${chargesAtual ?? itemModelo.cargasMax}/${itemModelo.cargasMax} (x${instance.quantidade} no inventário).`
+                          : `Quantidade: ${instance.quantidade}.`}
+                      </span>
+                      {(useKind === "grenade" || useKind === "explosive") && (
+                        <span style={{ color: "#f5a623" }}>
+                          Alvo, área e resolução de dano ficam a cargo do narrador em /dev/table — nenhum dano é aplicado automaticamente.
+                        </span>
+                      )}
+                    </div>
+                    {!useAvailable && (
+                      <p data-testid={`inventario-usar-indisponivel-${instance.id}`} style={{ fontSize: 11, color: "#ff6b6b", margin: 0 }}>
+                        Sem cargas/quantidade disponíveis.
+                      </p>
+                    )}
+                    <button
+                      data-testid={`inventario-usar-${instance.id}`}
+                      onClick={() => onUseItem(instance.id)}
+                      disabled={!useAvailable}
+                      style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px", alignSelf: "flex-start", opacity: useAvailable ? 1 : 0.5 }}
+                    >
+                      Usar item
+                    </button>
+                  </div>
+                )}
 
                 {(resolvedProperties.length > 0 || estadosTecnicos.length > 0) && (
                   <div

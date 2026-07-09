@@ -108,6 +108,22 @@ export interface ItemContent {
   periciaAtaque: string | null;
   /** `estatisticas.soma_atributo` (ex.: "corpo") — atributo somado ao teste de ataque, se o conteúdo declarar. `null` se ausente/não aplicável. */
   atributoAtaque: string | null;
+  /** `estatisticas.custo_pa` quando NÚMERO — custo estruturado de PA para usar o item (farmácia/granadas). `null` quando ausente OU não numérico (ver `custoPaUsoTexto`). */
+  custoPaUso: number | null;
+  /** `estatisticas.custo_pa` quando é TEXTO (ex.: "aplicado_no_inicio_do_descanso") — custo não estruturado, nunca convertido em número. `null` quando ausente ou já numérico. */
+  custoPaUsoTexto: string | null;
+  /** `estatisticas.area_m` (granadas/explosivos) — raio/área em metros, só para exibição/lembrete. `null` se ausente. */
+  areaMetros: number | null;
+  /** `estatisticas.alcance_arremesso_m` (granadas) — alcance de arremesso em metros, só para exibição. `null` se ausente. */
+  alcanceArremessoMetros: number | null;
+  /** `estatisticas.cargas_max` (consumíveis de farmácia/granadas com carga própria) — `null` = item usa `quantidade` da instância como consumo direto. */
+  cargasMax: number | null;
+  /** `estatisticas.pericia_teste` no contexto de USO do item (ex.: "biologia" em farmácia) — mesmo campo bruto de `periciaAtaque`, mas nomeado para o contexto de uso, nunca inferido. `null` se ausente. */
+  periciaUso: string | null;
+  /** `estatisticas.alvo` (ex.: "adjacente_ou_proprio") — texto do escopo de alvo declarado pelo conteúdo; nunca usado para alvo estruturado. `null` se ausente. */
+  alvoUso: string | null;
+  /** Payload bruto de automação (`payload_automacao`) — preservado sem achatar; `getItemUseEffects` (itemUse.ts) lê `efeitos` daqui, mesmo padrão de `getConditionEndRoundEffects`/`getSpellEffects`. */
+  payloadAutomacao: unknown;
   status: string;
 }
 
@@ -160,6 +176,14 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
     subtipoDano: typeof estatisticas?.subtipo_dano === "string" ? estatisticas.subtipo_dano : null,
     periciaAtaque: typeof estatisticas?.pericia_teste === "string" ? estatisticas.pericia_teste : null,
     atributoAtaque: typeof estatisticas?.soma_atributo === "string" ? estatisticas.soma_atributo : null,
+    custoPaUso: typeof estatisticas?.custo_pa === "number" ? estatisticas.custo_pa : null,
+    custoPaUsoTexto: typeof estatisticas?.custo_pa === "string" ? estatisticas.custo_pa : null,
+    areaMetros: typeof estatisticas?.area_m === "number" ? estatisticas.area_m : null,
+    alcanceArremessoMetros: typeof estatisticas?.alcance_arremesso_m === "number" ? estatisticas.alcance_arremesso_m : null,
+    cargasMax: typeof estatisticas?.cargas_max === "number" ? estatisticas.cargas_max : null,
+    periciaUso: typeof estatisticas?.pericia_teste === "string" ? estatisticas.pericia_teste : null,
+    alvoUso: typeof estatisticas?.alvo === "string" ? estatisticas.alvo : null,
+    payloadAutomacao: raw.payload_automacao,
     status: String(raw.status ?? "published"),
   };
 }
@@ -256,6 +280,17 @@ export interface InventoryItemInstance {
    * auto-seleciona se a Aljava selecionada só tiver 1 tipo.
    */
   selectedFlechaSlug?: string;
+  /**
+   * Cargas restantes NESTE item físico (checkpoint pós-v0.58, uso de
+   * itens de farmácia/granadas com `estatisticas.cargas_max`, ex.:
+   * medkit com 3 cargas). Ausente = ainda não usado (assume
+   * `item.cargasMax` na primeira leitura, ver `getItemChargesAtual`).
+   * Ao chegar a 0, o consumo seguinte reduz `quantidade` em 1 e reseta
+   * para `item.cargasMax` (ou remove a instância se `quantidade` também
+   * chegar a 0) — ver `consumeItemCharge`. Itens sem `cargas_max`
+   * estruturado nunca ganham este campo; usam `quantidade` diretamente.
+   */
+  cargasAtual?: number;
 }
 
 export type ItemPropertyClassification =
@@ -697,6 +732,70 @@ export function adjustItemQuantity(character: Character, instanceId: string, del
     item.id === instanceId ? { ...item, quantidade: Math.max(1, item.quantidade + delta) } : item,
   );
   return { ...character, inventario: next };
+}
+
+/** Cargas restantes de UMA instância — `cargasAtual` explícito ou, na primeira leitura, `item.cargasMax`. `null` quando o item não tem carga estruturada (consumo é por `quantidade` direta). */
+export function getItemChargesAtual(instance: Pick<InventoryItemInstance, "cargasAtual">, item: Pick<ItemContent, "cargasMax">): number | null {
+  if (item.cargasMax == null) return null;
+  return instance.cargasAtual ?? item.cargasMax;
+}
+
+export interface ConsumeItemChargeResult {
+  character: Character;
+  quantityBefore: number;
+  quantityAfter: number;
+  chargesBefore: number | null;
+  chargesAfter: number | null;
+  /** true quando a instância foi removida do inventário (última carga do último item da stack). */
+  removed: boolean;
+}
+
+/**
+ * Consome 1 uso de UM item consumível (checkpoint pós-v0.58, farmácia/
+ * granadas) — nunca cria quantidade/carga negativa. Duas fontes de
+ * consumo, nunca combinadas:
+ *   - item com `cargas_max` estruturado (ex.: medkit, 3 cargas): reduz
+ *     `cargasAtual` em 1; ao chegar a 0, reduz `quantidade` em 1 e
+ *     reseta `cargasAtual` para `cargasMax` (próxima unidade cheia) —
+ *     ou remove a instância se `quantidade` também chegar a 0.
+ *   - item sem `cargas_max` (consumo direto por `quantidade`): reduz
+ *     `quantidade` em 1; remove a instância ao chegar a 0 (mesmo padrão
+ *     de remoção já usado pelo inventário — `removeItemFromInventory`).
+ * Retorna `null` quando não há nada para consumir (instância inexistente
+ * ou já esgotada) — o chamador NUNCA deve chegar aqui sem checar
+ * disponibilidade antes (ver `getItemChargesAtual`/checagem de
+ * `quantidade` no handler de uso).
+ */
+export function consumeItemCharge(character: Character, instanceId: string, item: Pick<ItemContent, "cargasMax">): ConsumeItemChargeResult | null {
+  const atual = character.inventario ?? [];
+  const instance = atual.find((i) => i.id === instanceId);
+  if (!instance) return null;
+
+  const quantityBefore = instance.quantidade;
+  if (item.cargasMax == null) {
+    if (quantityBefore <= 0) return null;
+    const quantityAfter = quantityBefore - 1;
+    if (quantityAfter <= 0) {
+      return { character: removeItemFromInventory(character, instanceId), quantityBefore, quantityAfter: 0, chargesBefore: null, chargesAfter: null, removed: true };
+    }
+    const next = atual.map((i) => (i.id === instanceId ? { ...i, quantidade: quantityAfter } : i));
+    return { character: { ...character, inventario: next }, quantityBefore, quantityAfter, chargesBefore: null, chargesAfter: null, removed: false };
+  }
+
+  const chargesBefore = instance.cargasAtual ?? item.cargasMax;
+  if (chargesBefore <= 0) return null;
+  const chargesAfterRaw = chargesBefore - 1;
+  if (chargesAfterRaw > 0) {
+    const next = atual.map((i) => (i.id === instanceId ? { ...i, cargasAtual: chargesAfterRaw } : i));
+    return { character: { ...character, inventario: next }, quantityBefore, quantityAfter: quantityBefore, chargesBefore, chargesAfter: chargesAfterRaw, removed: false };
+  }
+  // Última carga desta unidade — consome 1 unidade de `quantidade` e reseta a carga para a próxima.
+  const quantityAfter = quantityBefore - 1;
+  if (quantityAfter <= 0) {
+    return { character: removeItemFromInventory(character, instanceId), quantityBefore, quantityAfter: 0, chargesBefore, chargesAfter: 0, removed: true };
+  }
+  const next = atual.map((i) => (i.id === instanceId ? { ...i, quantidade: quantityAfter, cargasAtual: item.cargasMax! } : i));
+  return { character: { ...character, inventario: next }, quantityBefore, quantityAfter, chargesBefore, chargesAfter: item.cargasMax!, removed: false };
 }
 
 // ---------------------------------------------------------------------

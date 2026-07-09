@@ -364,6 +364,7 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   rupture_choice_created: "Marca/Traço Pendentes",
   integrity_zero_pending: "Integridade Zerada",
   character_state_change: "Estado do Personagem",
+  item_used: "Item Usado",
 };
 
 function entryKindLabel(type: string): string {
@@ -384,6 +385,7 @@ function entryIcon(type: string): string {
   if (type.startsWith("collapse_")) return "💀";
   if (type === "rupture_resolved" || type === "rupture_choice_created") return "💔";
   if (type === "integrity_zero_pending") return "☠";
+  if (type === "item_used") return "🎒";
   return "•";
 }
 
@@ -400,6 +402,58 @@ function formatSystemLog(type: string, payload: Record<string, unknown>): string
   const conditionName = typeof payload.conditionName === "string" ? payload.conditionName : "Condição";
   const names = (v: unknown): string[] => (Array.isArray(v) ? v.filter((n): n is string => typeof n === "string") : []);
 
+  if (type === "item_used") {
+    const itemName = typeof payload.itemName === "string" ? payload.itemName : "Item";
+    const useType = typeof payload.useType === "string" ? payload.useType : null;
+    const partes: string[] = [];
+    const paCost = typeof payload.paCost === "number" ? payload.paCost : null;
+    const paBefore = typeof payload.paBefore === "number" ? payload.paBefore : null;
+    const paAfter = typeof payload.paAfter === "number" ? payload.paAfter : null;
+    if (paCost != null && paBefore != null && paAfter != null) partes.push(`PA ${paBefore} → ${paAfter}`);
+    const resourceChanges = Array.isArray(payload.resourceChanges) ? payload.resourceChanges : [];
+    for (const mudanca of resourceChanges) {
+      if (typeof mudanca !== "object" || mudanca === null) continue;
+      const m = mudanca as Record<string, unknown>;
+      const resource = typeof m.resource === "string" ? m.resource.toUpperCase() : "?";
+      const before = typeof m.before === "number" ? m.before : "?";
+      const after = typeof m.after === "number" ? m.after : "?";
+      partes.push(`${resource} ${before} → ${after}`);
+    }
+    const chargesBefore = typeof payload.chargesBefore === "number" ? payload.chargesBefore : null;
+    const chargesAfter = typeof payload.chargesAfter === "number" ? payload.chargesAfter : null;
+    if (chargesBefore != null && chargesAfter != null) {
+      partes.push(`cargas ${chargesBefore} → ${chargesAfter}`);
+    } else {
+      const quantityBefore = typeof payload.quantityBefore === "number" ? payload.quantityBefore : null;
+      const quantityAfter = typeof payload.quantityAfter === "number" ? payload.quantityAfter : null;
+      if (quantityBefore != null && quantityAfter != null) partes.push(`quantidade ${quantityBefore} → ${quantityAfter}`);
+    }
+    const damageRolled = Array.isArray(payload.damageRolled) ? payload.damageRolled : [];
+    if (damageRolled.length > 0) {
+      const textoDano = damageRolled
+        .map((d) => {
+          if (typeof d !== "object" || d === null) return null;
+          const dr = d as Record<string, unknown>;
+          const result = typeof dr.result === "number" ? dr.result : "?";
+          const formula = typeof dr.formula === "string" ? dr.formula : "?";
+          const damageType = typeof dr.damageType === "string" ? dr.damageType : null;
+          return `${result} (${formula}${damageType ? `/${damageType}` : ""})`;
+        })
+        .filter((t): t is string => t != null);
+      if (textoDano.length > 0) partes.push(`dano rolado ${textoDano.join(", ")}`);
+    }
+    const removedConditions = names(payload.removedConditions);
+    if (removedConditions.length > 0) partes.push(`removeu ${removedConditions.join(", ")}`);
+    const area = typeof payload.area === "number" ? payload.area : null;
+    const range = typeof payload.range === "number" ? payload.range : null;
+    if (area != null || range != null) {
+      partes.push(`${area != null ? `área ${area}m` : ""}${area != null && range != null ? ", " : ""}${range != null ? `alcance ${range}m` : ""}`);
+    }
+    const reminders = names(payload.reminders);
+    const tipoLabel = useType === "pharmacy" ? " (farmácia)" : useType === "grenade" ? " (granada)" : useType === "explosive" ? " (explosivo)" : "";
+    const base = `Item usado — ${characterNome} usou ${itemName}${tipoLabel}${partes.length > 0 ? `: ${partes.join(" · ")}` : ""}.`;
+    return reminders.length > 0 ? `${base} — Lembrete: ${reminders.join(" ")}` : base;
+  }
   if (type === "round_end_processed") {
     const nomes = names(payload.processedCharacterNames);
     const prev = typeof payload.previousRound === "number" ? payload.previousRound : "?";
