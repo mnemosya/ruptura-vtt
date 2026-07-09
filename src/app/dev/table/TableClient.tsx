@@ -365,6 +365,7 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   integrity_zero_pending: "Integridade Zerada",
   character_state_change: "Estado do Personagem",
   item_used: "Item Usado",
+  talent_used: "Talento Usado",
 };
 
 function entryKindLabel(type: string): string {
@@ -386,6 +387,7 @@ function entryIcon(type: string): string {
   if (type === "rupture_resolved" || type === "rupture_choice_created") return "💔";
   if (type === "integrity_zero_pending") return "☠";
   if (type === "item_used") return "🎒";
+  if (type === "talent_used") return "✨";
   return "•";
 }
 
@@ -455,6 +457,30 @@ function formatSystemLog(type: string, payload: Record<string, unknown>): string
     const reminders = names(payload.reminders);
     const tipoLabel = useType === "pharmacy" ? " (farmácia)" : useType === "grenade" ? " (granada)" : useType === "explosive" ? " (explosivo)" : "";
     const base = `Item usado — ${characterNome} usou ${itemName}${tipoLabel}${partes.length > 0 ? `: ${partes.join(" · ")}` : ""}.`;
+    return reminders.length > 0 ? `${base} — Lembrete: ${reminders.join(" ")}` : base;
+  }
+  if (type === "talent_used") {
+    const talentNome = typeof payload.talentNome === "string" ? payload.talentNome : "Talento";
+    const nivelNome = typeof payload.nivelNome === "string" ? payload.nivelNome : null;
+    const action = typeof payload.action === "string" ? payload.action : "use";
+    const description = typeof payload.description === "string" ? payload.description : null;
+    const reminders = names(payload.reminders);
+    const nomeCompleto = `${talentNome}${nivelNome ? ` — ${nivelNome}` : ""}`;
+    if (action === "toggle_on" || action === "toggle_off") {
+      const verbo = action === "toggle_on" ? "ativou" : "desativou";
+      const base = `Talento — ${characterNome} ${verbo} ${nomeCompleto}${description ? ` (${description})` : ""}.`;
+      return reminders.length > 0 ? `${base} — Lembrete: ${reminders.join(" ")}` : base;
+    }
+    const partes: string[] = [];
+    const paCost = typeof payload.paCost === "number" ? payload.paCost : null;
+    const paBefore = typeof payload.paBefore === "number" ? payload.paBefore : null;
+    const paAfter = typeof payload.paAfter === "number" ? payload.paAfter : null;
+    if (paCost != null && paBefore != null && paAfter != null) partes.push(`PA ${paBefore} → ${paAfter}`);
+    const usesSpent = typeof payload.usesSpent === "number" ? payload.usesSpent : null;
+    const usesMax = typeof payload.usesMax === "number" ? payload.usesMax : null;
+    const cadencia = typeof payload.cadencia === "string" ? payload.cadencia.replace(/_/g, " ") : null;
+    if (usesSpent != null && usesMax != null) partes.push(`usos ${usesSpent}/${usesMax}${cadencia ? ` por ${cadencia}` : ""}`);
+    const base = `Talento usado — ${characterNome} usou ${nomeCompleto}${description ? ` (${description})` : ""}${partes.length > 0 ? `: ${partes.join(" · ")}` : ""}.`;
     return reminders.length > 0 ? `${base} — Lembrete: ${reminders.join(" ")}` : base;
   }
   if (type === "round_end_processed") {

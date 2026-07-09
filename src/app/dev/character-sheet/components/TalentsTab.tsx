@@ -1,30 +1,47 @@
 import { Section } from "./Section";
 import { buttonStyle } from "./styles";
-import { describeNonAutomatedTalentEffects, getTalentLevelEffects } from "../../../../lib/character";
-import type { AcquiredTalentLevel, TalentContent } from "../../../../lib/character";
+import { describeNonAutomatedTalentEffects, getTalentLevelEffects, TALENT_CADENCE_AUTO_RESET } from "../../../../lib/character";
+import type { AcquiredTalentLevel, TalentContent, UsableTalentEffect } from "../../../../lib/character";
 
 /**
- * Aba "Talentos" — checkpoint v0.48 (PRD 12). Catálogo inteiro vem da
- * Biblioteca (`talents` prop, já normalizado por
- * `normalizeTalentContent`) — nunca uma lista manual aqui. Só o padrão
- * "+X em testes específicos" é automatizado (via `ActiveEffect`, ver
- * `deriveActiveEffectsFromTalents`); os demais efeitos de cada nível
- * aparecem como texto para resolução manual, nunca JSON cru.
+ * Aba "Talentos" — checkpoint v0.48 (PRD 12), segunda camada no
+ * checkpoint pós-v0.63. Catálogo inteiro vem da Biblioteca (`talents`
+ * prop, já normalizado por `normalizeTalentContent`) — nunca uma lista
+ * manual aqui. Automatizado: "+X em testes específicos" (ActiveEffect),
+ * contadores de uso por cadência (`usos`/`cadencia`) e toggles
+ * (`toggle_condicional`, modificadores estruturados valem enquanto
+ * ativo). O EFEITO dos usos limitados continua manual — o botão "Usar"
+ * gasta o uso/PA e loga com lembrete, nunca inventa mecânica.
  */
 export function TalentsTab({
   talents,
   catalogError,
   acquired,
+  usableEffects,
   onAcquire,
   onRemove,
+  onUseEffect,
+  onToggleEffect,
+  onResetEffect,
 }: {
   talents: TalentContent[];
   catalogError: string | null;
   acquired: AcquiredTalentLevel[];
+  /** Efeitos usáveis/toggle dos níveis adquiridos (checkpoint pós-v0.63) — ver `getUsableTalentEffects`. */
+  usableEffects: UsableTalentEffect[];
   onAcquire: (talentoId: string, nivelId: string, nivel: number) => void;
   onRemove: (acquiredId: string) => void;
+  onUseEffect: (key: string) => void;
+  onToggleEffect: (key: string) => void;
+  onResetEffect: (key: string) => void;
 }) {
   const acquiredByLevelId = new Map(acquired.map((a) => [a.nivelId, a]));
+  const usableByLevelId = new Map<string, UsableTalentEffect[]>();
+  for (const usable of usableEffects) {
+    const list = usableByLevelId.get(usable.nivelId) ?? [];
+    list.push(usable);
+    usableByLevelId.set(usable.nivelId, list);
+  }
 
   return (
     <Section title={`Talentos (${acquired.length} nível(is) adquirido(s))`}>
@@ -73,6 +90,65 @@ export function TalentsTab({
                         {nonAutomated.length > 0 && (
                           <p style={{ color: "#5ec8ff", margin: "2px 0" }}>Manual: {nonAutomated.join(" · ")}</p>
                         )}
+                        {/* Efeitos usáveis/toggle (checkpoint pós-v0.63) — só em níveis adquiridos. */}
+                        {acquiredEntry &&
+                          (usableByLevelId.get(nivel.id) ?? []).map((usable) => {
+                            const esgotado = usable.kind === "limited_use" && usable.usosMax != null && usable.usosGastos >= usable.usosMax;
+                            return (
+                              <div
+                                key={usable.key}
+                                data-testid={`talento-usavel-${usable.key}`}
+                                style={{ background: "#15161b", borderRadius: 6, padding: "6px 8px", margin: "6px 0", display: "flex", flexDirection: "column", gap: 4 }}
+                              >
+                                <span style={{ fontSize: 11, opacity: 0.8 }}>{usable.description}</span>
+                                {usable.kind === "limited_use" ? (
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                    <span data-testid={`talento-usos-${usable.key}`} style={{ fontSize: 11, opacity: 0.6 }}>
+                                      Usos: {usable.usosGastos}/{usable.usosMax}
+                                      {usable.cadencia ? ` por ${usable.cadencia.replace(/_/g, " ")}` : ""}
+                                      {usable.custoPa != null ? ` · custo ${usable.custoPa} PA` : " · sem custo de PA estruturado"}
+                                    </span>
+                                    <button
+                                      data-testid={`talento-usar-${usable.key}`}
+                                      onClick={() => onUseEffect(usable.key)}
+                                      disabled={esgotado}
+                                      style={{ ...buttonStyle, fontSize: 11, padding: "2px 8px", opacity: esgotado ? 0.5 : 1 }}
+                                    >
+                                      Usar talento
+                                    </button>
+                                    {usable.usosGastos > 0 && (
+                                      <button
+                                        data-testid={`talento-resetar-${usable.key}`}
+                                        onClick={() => onResetEffect(usable.key)}
+                                        style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: 0.7 }}
+                                        title={
+                                          usable.cadencia && TALENT_CADENCE_AUTO_RESET.has(usable.cadencia)
+                                            ? "Também reseta automaticamente na cadência"
+                                            : "Cadência sem gatilho automático — reset manual"
+                                        }
+                                      >
+                                        Resetar usos
+                                      </button>
+                                    )}
+                                    {esgotado && <span style={{ fontSize: 10, color: "#ff6b6b" }}>Sem usos restantes nesta cadência.</span>}
+                                  </div>
+                                ) : (
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                    <span style={{ fontSize: 11, opacity: 0.6 }}>
+                                      {usable.toggledOn ? "Ativo — modificadores estruturados aplicados nas rolagens." : "Inativo."}
+                                    </span>
+                                    <button
+                                      data-testid={`talento-toggle-${usable.key}`}
+                                      onClick={() => onToggleEffect(usable.key)}
+                                      style={{ ...buttonStyle, fontSize: 11, padding: "2px 8px", background: usable.toggledOn ? "#2e4b2e" : undefined }}
+                                    >
+                                      {usable.toggledOn ? "Desativar" : "Ativar"}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         <div style={{ marginTop: 4 }}>
                           {acquiredEntry ? (
                             <button

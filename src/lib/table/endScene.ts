@@ -26,6 +26,7 @@
 import {
   normalizeCharacter,
   resolvePendingRupture,
+  resetTalentUses,
   type Character,
 } from "../character";
 import { listCharactersForNarratorCampaign, updateCharacter } from "../character/storage";
@@ -118,6 +119,14 @@ export async function resolveCampaignEndSceneForCharacters(params: {
 
       const result = resolvePendingRupture(character, { scene, nowIso });
       let nextCharacter: Character = result.character;
+
+      // Talentos com cadência "cena" (checkpoint pós-v0.63) renovam os usos aqui —
+      // única mudança de estado além da Ruptura; persiste mesmo sem Ruptura resolvida.
+      const talentReset = resetTalentUses(nextCharacter, ["cena"]);
+      nextCharacter = talentReset.character;
+      if (talentReset.resetCount > 0 && !result.resolved) {
+        await updateCharacter(record.id, nextCharacter);
+      }
 
       if (result.resolved) {
         await updateCharacter(record.id, nextCharacter);

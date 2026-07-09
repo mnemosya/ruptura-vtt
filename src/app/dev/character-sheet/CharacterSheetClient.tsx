@@ -59,6 +59,11 @@ import {
   deriveInstalledRuneEffects,
   acquireTalentLevel,
   removeTalentLevel,
+  getUsableTalentEffects,
+  useTalentEffect,
+  toggleTalentEffect,
+  resetTalentUse,
+  resetTalentUses,
   purchaseItem,
   setItemLoadoutState,
   removeItemFromInventory,
@@ -1291,7 +1296,9 @@ export default function CharacterSheetClient({
       nowIso,
     );
 
-    setCharacter({ ...result.character, condicoes_ativas: proximasCondicoes });
+    // Talentos com cadência "dia" (checkpoint pós-v0.63) renovam no descanso longo — mesmo precedente de sobrecarga_usada_dia.
+    const talentReset = resetTalentUses({ ...result.character, condicoes_ativas: proximasCondicoes }, ["dia"]);
+    setCharacter(talentReset.character);
     addLogEntry(
       "descanso",
       `Descanso longo — PV ${result.before.pv} → ${result.after.pv}, PE ${result.before.pe} → ${result.after.pe}, Mana ${result.before.mana} → ${result.after.mana}.`,
@@ -1774,7 +1781,9 @@ export default function CharacterSheetClient({
       round: round + 1,
       scene,
     });
-    nextCharacter = { ...paReduction.character, current_round: round + 1 };
+    // Talentos com cadência "rodada" (checkpoint pós-v0.63) renovam os usos aqui.
+    const talentReset = resetTalentUses(paReduction.character, ["rodada"]);
+    nextCharacter = { ...talentReset.character, current_round: round + 1 };
 
     characterRef.current = nextCharacter;
     setCharacter(nextCharacter);
@@ -1915,6 +1924,116 @@ export default function CharacterSheetClient({
     characterRef.current = next;
     setCharacter(next);
     addLogEntry("condicao", "Nível de talento removido.");
+  }
+
+  /** Grava `table_logs.type = "talent_used"` (checkpoint pós-v0.63) — best-effort, mesmo padrão de item_used. */
+  async function persistTalentUsedLog(payload: Record<string, unknown>) {
+    if (!selectedCampaignId) return;
+    try {
+      await addLog({
+        campaignId: selectedCampaignId,
+        characterId: characterId ?? undefined,
+        profileId: selectedProfileId,
+        profileSessionId: profileSessionToken?.profileSessionId ?? null,
+        type: "talent_used",
+        visibility: "public",
+        payload: {
+          characterId,
+          characterNome: characterRef.current.nome,
+          profileId: selectedProfileId,
+          profileNickname: perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null,
+          source: "character_sheet_talents",
+          ...payload,
+        },
+      });
+    } catch {
+      // Best-effort — o uso já foi aplicado no estado local/persistido.
+    }
+  }
+
+  /**
+   * Usar efeito de talento com usos limitados (checkpoint pós-v0.63) —
+   * o contador/PA é automático; o EFEITO continua manual (lembretes).
+   * Checa uso restante/PA antes de mudar estado (`useTalentEffect`).
+   */
+  async function handleUseTalentEffect(key: string) {
+    const current = characterRef.current;
+    const nowIso = new Date().toISOString();
+    const result = useTalentEffect({ character: current, talents: talentsIniciais, key, paMax: derivados.pa_max, nowIso });
+    if (!result.ok || !result.usable) {
+      addLogEntry("recurso", result.reason ?? "Não foi possível usar o talento.");
+      return;
+    }
+    characterRef.current = result.character;
+    setCharacter(result.character);
+
+    const partes: string[] = [];
+    if (result.paCost != null) partes.push(`PA ${result.paBefore} → ${result.paAfter}`);
+    partes.push(
+      `usos ${result.usosGastosDepois}/${result.usable.usosMax}${result.usable.cadencia ? ` por ${result.usable.cadencia.replace(/_/g, " ")}` : ""}`,
+    );
+    addLogEntry(
+      "recurso",
+      `Usou talento ${result.usable.talentNome} — ${result.usable.nivelNome} (${partes.join(" · ")}) — Lembrete: ${result.reminders.join(" ")}`,
+    );
+
+    await persistAutomatedActionExecution(result.character);
+    await persistTalentUsedLog({
+      talentSlug: result.usable.talentSlug,
+      talentNome: result.usable.talentNome,
+      nivelNome: result.usable.nivelNome,
+      nivel: result.usable.nivel,
+      effectKey: result.usable.key,
+      effectType: result.usable.efeito.tipo,
+      action: "use",
+      usesSpent: result.usosGastosDepois,
+      usesMax: result.usable.usosMax,
+      cadencia: result.usable.cadencia,
+      paCost: result.paCost,
+      paBefore: result.paBefore,
+      paAfter: result.paAfter,
+      description: result.usable.description,
+      reminders: result.reminders,
+    });
+  }
+
+  /** Ativar/desativar um toggle de talento (ex.: Fúria do Berserker) — modificadores estruturados valem enquanto ativo. */
+  async function handleToggleTalentEffect(key: string) {
+    const current = characterRef.current;
+    const nowIso = new Date().toISOString();
+    const result = toggleTalentEffect({ character: current, talents: talentsIniciais, key, nowIso });
+    if (!result.ok || !result.usable) {
+      addLogEntry("recurso", result.reason ?? "Não foi possível alternar o talento.");
+      return;
+    }
+    characterRef.current = result.character;
+    setCharacter(result.character);
+    addLogEntry(
+      "recurso",
+      `${result.active ? "Ativou" : "Desativou"} talento ${result.usable.talentNome} — ${result.usable.nivelNome}.${result.reminders.length > 0 ? ` Lembrete: ${result.reminders.join(" ")}` : ""}`,
+    );
+    await persistAutomatedActionExecution(result.character);
+    await persistTalentUsedLog({
+      talentSlug: result.usable.talentSlug,
+      talentNome: result.usable.talentNome,
+      nivelNome: result.usable.nivelNome,
+      nivel: result.usable.nivel,
+      effectKey: result.usable.key,
+      effectType: result.usable.efeito.tipo,
+      action: result.active ? "toggle_on" : "toggle_off",
+      description: result.usable.description,
+      reminders: result.reminders,
+    });
+  }
+
+  /** Reset manual de um contador de uso (cadências sem gatilho canônico — combate/sessão/missão). */
+  function handleResetTalentUse(key: string) {
+    const current = characterRef.current;
+    const next = resetTalentUse(current, key);
+    if (next === current) return;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("recurso", "Usos de talento resetados manualmente.");
   }
 
   /**
@@ -3072,8 +3191,12 @@ export default function CharacterSheetClient({
           talents={talentsIniciais}
           catalogError={talentsError}
           acquired={character.talentos_adquiridos ?? []}
+          usableEffects={getUsableTalentEffects(character, talentsIniciais)}
           onAcquire={handleAcquireTalent}
           onRemove={handleRemoveTalent}
+          onUseEffect={handleUseTalentEffect}
+          onToggleEffect={handleToggleTalentEffect}
+          onResetEffect={handleResetTalentUse}
         />
       )}
 

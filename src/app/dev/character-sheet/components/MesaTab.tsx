@@ -94,6 +94,7 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   attack_resolved: "Ataque Resolvido",
   defense_reaction_used: "Defesa Usada",
   item_used: "Item Usado",
+  talent_used: "Talento Usado",
 };
 
 function entryKindLabel(type: string): string {
@@ -123,6 +124,7 @@ function entryIcon(type: string): string {
   if (type === "attack_resolved") return "🗡";
   if (type === "defense_reaction_used") return "🛡";
   if (type === "item_used") return "🎒";
+  if (type === "talent_used") return "✨";
   return "•";
 }
 
@@ -147,6 +149,7 @@ function entryBorderColor(type: string): string {
   if (type === "attack_resolved") return "#ff6b6b";
   if (type === "defense_reaction_used") return "#5ec8ff";
   if (type === "item_used") return "#4caf50";
+  if (type === "talent_used") return "#9b8cff";
   return "#ffb84f";
 }
 
@@ -574,6 +577,40 @@ function formatItemUsed(payload: Record<string, unknown>): string {
   return reminders.length > 0 ? `${base} — Lembrete: ${reminders.join(" ")}` : base;
 }
 
+/**
+ * `talent_used` (checkpoint pós-v0.63, segunda camada de talentos) —
+ * "Talento usado — {personagem} usou {talento} — {nível}: descrição,
+ * usos X/Y por cadência, PA antes → depois, lembretes." Cobre também
+ * toggles (action: toggle_on/toggle_off). Nunca cai em JSON cru.
+ */
+function formatTalentUsed(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const talentNome = typeof payload.talentNome === "string" ? payload.talentNome : "Talento";
+  const nivelNome = typeof payload.nivelNome === "string" ? payload.nivelNome : null;
+  const action = typeof payload.action === "string" ? payload.action : "use";
+  const description = typeof payload.description === "string" ? payload.description : null;
+  const reminders = Array.isArray(payload.reminders) ? payload.reminders.filter((r): r is string => typeof r === "string") : [];
+
+  const nomeCompleto = `${talentNome}${nivelNome ? ` — ${nivelNome}` : ""}`;
+  if (action === "toggle_on" || action === "toggle_off") {
+    const verbo = action === "toggle_on" ? "ativou" : "desativou";
+    const base = `Talento — ${characterNome} ${verbo} ${nomeCompleto}${description ? ` (${description})` : ""}.`;
+    return reminders.length > 0 ? `${base} — Lembrete: ${reminders.join(" ")}` : base;
+  }
+
+  const partes: string[] = [];
+  const paCost = typeof payload.paCost === "number" ? payload.paCost : null;
+  const paBefore = typeof payload.paBefore === "number" ? payload.paBefore : null;
+  const paAfter = typeof payload.paAfter === "number" ? payload.paAfter : null;
+  if (paCost != null && paBefore != null && paAfter != null) partes.push(`PA ${paBefore} → ${paAfter}`);
+  const usesSpent = typeof payload.usesSpent === "number" ? payload.usesSpent : null;
+  const usesMax = typeof payload.usesMax === "number" ? payload.usesMax : null;
+  const cadencia = typeof payload.cadencia === "string" ? payload.cadencia.replace(/_/g, " ") : null;
+  if (usesSpent != null && usesMax != null) partes.push(`usos ${usesSpent}/${usesMax}${cadencia ? ` por ${cadencia}` : ""}`);
+  const base = `Talento usado — ${characterNome} usou ${nomeCompleto}${description ? ` (${description})` : ""}${partes.length > 0 ? `: ${partes.join(" · ")}` : ""}.`;
+  return reminders.length > 0 ? `${base} — Lembrete: ${reminders.join(" ")}` : base;
+}
+
 /** Texto da mensagem de chat — aceita `text` (ficha, v0.12) ou `mensagem` (formato antigo do /dev/table). */
 function chatText(payload: Record<string, unknown>): string {
   if (typeof payload.text === "string") return payload.text;
@@ -922,7 +959,9 @@ export function MesaTab({
                                                                   ? formatDefenseReactionUsed(entry.payload)
                                                                   : entry.type === "item_used"
                                                                     ? formatItemUsed(entry.payload)
-                                                                    : JSON.stringify(entry.payload)}
+                                                                    : entry.type === "talent_used"
+                                                                      ? formatTalentUsed(entry.payload)
+                                                                      : JSON.stringify(entry.payload)}
             </span>
           </div>
         ))}

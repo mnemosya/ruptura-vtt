@@ -370,6 +370,17 @@ export interface Character {
     adquiridoEm: string;
   }[];
   /**
+   * Estado operacional de talentos (checkpoint pós-v0.63, "segunda
+   * camada") — contadores de uso por cadência e toggles ligados.
+   * Chave = `${nivelId}:${efeitoIndex}`. `usos[key].cadencia` é copiada
+   * do payload no momento do uso para o reset não depender do catálogo.
+   * NUNCA guarda regra — só contadores/flags de instância.
+   */
+  talentos_estado?: {
+    usos?: Record<string, { usados: number; cadencia: string | null; atualizadoEm: string }>;
+    toggles?: Record<string, boolean>;
+  };
+  /**
    * Carteira (checkpoint v0.49, PRD 13.1) — três saldos separados,
    * nunca uma soma única. Ausente = 0 em todos.
    */
