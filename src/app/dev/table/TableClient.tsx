@@ -185,7 +185,7 @@ function formatRolagem(payload: Record<string, unknown>): string {
       return `${payload.characterNome}: ${payload.expressao} = ${payload.total}`;
     }
   }
-  return JSON.stringify(payload);
+  return `Rolagem — total ${typeof payload.total === "number" ? payload.total : "?"}.`;
 }
 
 function formatProfileEvent(payload: Record<string, unknown>): string {
@@ -193,7 +193,7 @@ function formatProfileEvent(payload: Record<string, unknown>): string {
   if (payload.evento === "enter") return `${nickname}: entrou no perfil`;
   if (payload.evento === "leave") return `${nickname}: saiu do perfil`;
   if (payload.evento === "heartbeat_expirado") return `${nickname}: heartbeat expirado (perfil perdido)`;
-  return JSON.stringify(payload);
+  return `${nickname}: ${typeof payload.evento === "string" ? payload.evento.replace(/_/g, " ") : "evento de perfil"}`;
 }
 
 /** "postura_ofensiva" → "Postura Ofensiva" — só para exibir slugs de estado sem tabela nova. */

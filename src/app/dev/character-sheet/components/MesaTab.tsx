@@ -97,6 +97,9 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   item_used: "Item Usado",
   talent_used: "Talento Usado",
   spell_cast: "Magia Conjurada",
+  character_state_change: "Estado do Personagem",
+  character_created: "Personagem Criado",
+  ammunition: "Munição",
 };
 
 function entryKindLabel(type: string): string {
@@ -235,7 +238,7 @@ function formatRoundOrScene(type: string, payload: Record<string, unknown>): str
       : [];
     return `Ruptura pendente para: ${nomes.join(", ") || "(nenhum)"}`;
   }
-  return JSON.stringify(payload);
+  return formatGenericLog(type, payload);
 }
 
 /** Checkpoint v0.40: cartão de character_evolution (PM ganho/gasto ou ajuste de atributo/perícia). */
@@ -677,11 +680,63 @@ function formatSpellCast(payload: Record<string, unknown>): string {
   return extras.length > 0 ? `${base} — ${extras.join(" ")}` : base;
 }
 
+/** `character_state_change` (ferramentas de narrador do /dev/table) — dano/cura/ajuste com recurso e antes → depois. */
+function formatCharacterStateChange(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const action = typeof payload.action === "string" ? payload.action : "ajuste";
+  const resource = typeof payload.resource === "string" ? payload.resource : "";
+  const before = typeof payload.before === "number" ? payload.before : "?";
+  const after = typeof payload.after === "number" ? payload.after : "?";
+  return `${characterNome}: ${action}${resource ? ` ${resource.toUpperCase()}` : ""} (${before} → ${after}).`;
+}
+
+/** "usesSpent" → "uses spent"; "sobrecargaAntes" → "sobrecarga antes" — só para o fallback genérico. */
+function humanizePayloadKey(key: string): string {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/_/g, " ")
+    .toLowerCase();
+}
+
+/**
+ * Fallback genérico legível (checkpoint pós-v0.67) — para tipos de log
+ * ainda sem formatter dedicado: rótulo do tipo + personagem + campos
+ * escalares do payload em "chave: valor" (ids/fontes técnicas
+ * omitidos). NUNCA JSON cru; dados importantes continuam visíveis.
+ */
+function formatGenericLog(type: string, payload: Record<string, unknown>): string {
+  const skip = new Set([
+    "characterId",
+    "characterNome",
+    "profileId",
+    "profileNickname",
+    "profileSessionId",
+    "campaignId",
+    "source",
+    "itemInstanceId",
+    "checkId",
+    "pendingChoiceId",
+    "effectKey",
+  ]);
+  const partes: string[] = [];
+  for (const [key, value] of Object.entries(payload)) {
+    if (skip.has(key)) continue;
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      partes.push(`${humanizePayloadKey(key)}: ${value}`);
+    } else if (Array.isArray(value)) {
+      const strings = value.filter((v): v is string => typeof v === "string");
+      if (strings.length > 0) partes.push(`${humanizePayloadKey(key)}: ${strings.join(", ")}`);
+    }
+  }
+  const characterNome = typeof payload.characterNome === "string" ? ` — ${payload.characterNome}` : "";
+  return `${entryKindLabel(type)}${characterNome}${partes.length > 0 ? `: ${partes.join(" · ")}` : ""}`;
+}
+
 /** Texto da mensagem de chat — aceita `text` (ficha, v0.12) ou `mensagem` (formato antigo do /dev/table). */
 function chatText(payload: Record<string, unknown>): string {
   if (typeof payload.text === "string") return payload.text;
   if (typeof payload.mensagem === "string") return payload.mensagem;
-  return JSON.stringify(payload);
+  return "(mensagem sem texto)";
 }
 
 /**
@@ -725,7 +780,7 @@ function formatRolagem(payload: Record<string, unknown>): string {
       return `${payload.characterNome}: ${payload.expressao} = ${payload.total}`;
     }
   }
-  return JSON.stringify(payload);
+  return `Rolagem — total ${typeof payload.total === "number" ? payload.total : "?"}.`;
 }
 
 function formatProfileEvent(payload: Record<string, unknown>): string {
@@ -733,7 +788,7 @@ function formatProfileEvent(payload: Record<string, unknown>): string {
   if (payload.evento === "enter") return `${nickname}: entrou no perfil`;
   if (payload.evento === "leave") return `${nickname}: saiu do perfil`;
   if (payload.evento === "heartbeat_expirado") return `${nickname}: heartbeat expirado (perfil perdido)`;
-  return JSON.stringify(payload);
+  return `${nickname}: ${typeof payload.evento === "string" ? payload.evento.replace(/_/g, " ") : "evento de perfil"}`;
 }
 
 export function MesaTab({
@@ -1029,7 +1084,9 @@ export function MesaTab({
                                                                       ? formatTalentUsed(entry.payload)
                                                                       : entry.type === "spell_cast"
                                                                         ? formatSpellCast(entry.payload)
-                                                                        : JSON.stringify(entry.payload)}
+                                                                        : entry.type === "character_state_change"
+                                                                          ? formatCharacterStateChange(entry.payload)
+                                                                          : formatGenericLog(entry.type, entry.payload)}
             </span>
           </div>
         ))}
