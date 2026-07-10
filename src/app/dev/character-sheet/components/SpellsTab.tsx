@@ -3,7 +3,20 @@
 import { useState } from "react";
 import { Section } from "./Section";
 import { buttonStyle } from "./styles";
-import { getSpellDamageEffect, getSpellResistanceEffect, describeSpellManualEffects, isSpellLearned, getKnownVertentes, type SpellContent, type LearnedSpell } from "../../../../lib/character";
+import {
+  getSpellDamageEffect,
+  describeSpellManualEffects,
+  isSpellLearned,
+  getKnownVertentes,
+  getVertenteLevel,
+  getVertenteCd,
+  resolveSpellResistance,
+  checkSpellVertenteLevel,
+  type SpellContent,
+  type LearnedSpell,
+} from "../../../../lib/character";
+
+const input: React.CSSProperties = { background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 8px", fontSize: 12, width: 60 };
 
 /**
  * Aba "Magias" — checkpoint v0.50/v0.50.1/v0.50.2 (PRD 11.4). Catálogo
@@ -22,16 +35,20 @@ export function SpellsTab({
   spells,
   catalogError,
   magiasAprendidas,
+  niveisVertente,
   sheetMode,
   onLearn,
   onForget,
   onCast,
   onCastWithFusion,
   onRollDamage,
+  onSetVertenteLevel,
 }: {
   spells: SpellContent[];
   catalogError: string | null;
   magiasAprendidas: LearnedSpell[];
+  /** Nível investido por vertente (checkpoint pós-v0.69) — chave = slug da vertente, ausente = nível desconhecido (nunca 0 implícito). */
+  niveisVertente: Record<string, number>;
   sheetMode: "jogo" | "evolucao";
   onLearn: (slug: string) => void;
   onForget: (learnedId: string) => void;
@@ -39,6 +56,8 @@ export function SpellsTab({
   /** Fusão (checkpoint pós-v0.66) — conjura `slug` fundida com `fusedSlug` (+1 Sobrecarga; ambas aprendidas). */
   onCastWithFusion: (slug: string, fusedSlug: string) => void;
   onRollDamage: (slug: string) => void;
+  /** Define o nível investido numa vertente (checkpoint pós-v0.69) — só editável em Modo Evolução. */
+  onSetVertenteLevel: (vertente: string, value: number) => void;
 }) {
   const [expandido, setExpandido] = useState<Record<string, boolean>>({});
   // fusaoSelecionada[slug da principal] = slug da segunda magia a fundir
@@ -72,16 +91,43 @@ export function SpellsTab({
             .filter((m) => sheetMode === "evolucao" || isSpellLearned({ magias_aprendidas: magiasAprendidas }, m.slug))
             .sort((a, b) => a.estatisticas.nivel - b.estatisticas.nivel);
           if (magiasDaVertente.length === 0) return null;
+          const nivelVertente = getVertenteLevel({ niveis_vertente: niveisVertente }, vertente);
+          const cdVertente = nivelVertente != null ? getVertenteCd(nivelVertente) : null;
           return (
             <div key={vertente} style={{ marginBottom: 16 }}>
-              <h3 style={{ fontSize: 13, textTransform: "capitalize", opacity: 0.8, marginBottom: 8 }}>{vertente}</h3>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+                <h3 style={{ fontSize: 13, textTransform: "capitalize", opacity: 0.8, margin: 0 }}>{vertente}</h3>
+                {sheetMode === "evolucao" ? (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, opacity: 0.7 }}>
+                    Nível:
+                    <input
+                      data-testid={`vertente-nivel-${vertente}`}
+                      type="number"
+                      min={0}
+                      value={nivelVertente ?? ""}
+                      placeholder="—"
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        onSetVertenteLevel(vertente, raw === "" ? 0 : Math.max(0, Number(raw)));
+                      }}
+                      style={input}
+                    />
+                  </span>
+                ) : (
+                  nivelVertente != null && <span style={{ fontSize: 11, opacity: 0.6 }}>Nível {nivelVertente}</span>
+                )}
+                <span data-testid={`vertente-cd-${vertente}`} style={{ fontSize: 11, opacity: 0.6 }}>
+                  {cdVertente != null ? `CD da vertente: ${cdVertente} (6 + ${nivelVertente})` : "CD da vertente: nível não definido"}
+                </span>
+              </div>
               <div data-testid={`vertente-magias-${vertente}`} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {magiasDaVertente.map((spell) => {
                   const dano = getSpellDamageEffect(spell);
-                  const resistencia = getSpellResistanceEffect(spell);
+                  const resistencia = resolveSpellResistance(spell, nivelVertente);
                   const efeitosManuais = describeSpellManualEffects(spell);
                   const aberto = expandido[spell.slug] ?? false;
                   const aprendida = magiasAprendidas.find((m) => m.spellSlug === spell.slug);
+                  const nivelCheck = checkSpellVertenteLevel(spell, { niveis_vertente: niveisVertente });
                   return (
                     <div
                       key={spell.id}
@@ -102,6 +148,11 @@ export function SpellsTab({
                           resolução {spell.estatisticas.resolucao || "?"}
                         </span>
                         {aprendida && <span style={{ color: "#4caf50", fontSize: 11 }}>aprendida</span>}
+                        {nivelCheck.aboveLevel && (
+                          <span data-testid={`magia-nivel-aviso-${spell.slug}`} style={{ color: "#ff6b6b", fontSize: 11 }}>
+                            acima do nível da vertente ({spell.estatisticas.nivel} &gt; {nivelCheck.vertenteLevel})
+                          </span>
+                        )}
                       </div>
                       {spell.descricao_curta && <p style={{ opacity: 0.7, margin: "4px 0" }}>{spell.descricao_curta}</p>}
                       {aberto && spell.descricao_longa && (
@@ -110,8 +161,13 @@ export function SpellsTab({
                         </p>
                       )}
                       {resistencia && (
-                        <p style={{ color: "#f5a623", margin: "4px 0" }}>
-                          Resistência do alvo: {resistencia.acoes.join("/")} CD {resistencia.cdFormula}
+                        <p data-testid={`magia-resistencia-${spell.slug}`} style={{ color: "#f5a623", margin: "4px 0" }}>
+                          Resistência do alvo: {resistencia.acoes.join("/")}{" "}
+                          {resistencia.cd != null
+                            ? `CD ${resistencia.cd} (6 + nível ${nivelVertente})`
+                            : resistencia.usesVertenteLevel
+                              ? "CD depende do nível da vertente (6 + nível) — defina o nível acima"
+                              : "CD não estruturada"}
                           {resistencia.condicional ? " (condicional)" : ""} (resolução manual — conjurar gera o cartão).
                         </p>
                       )}

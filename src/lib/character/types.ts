@@ -464,6 +464,19 @@ export interface Character {
     aprendidaEm: string;
   }[];
   /**
+   * Nível investido por vertente (checkpoint pós-v0.69) — chave é o
+   * slug da vertente (ex.: "cinetica", "sinaptica"), valor é o nível
+   * (0 = nenhum investimento ainda). Usado para calcular a CD de
+   * resistência das magias da vertente (regra do VTT: CD = 6 + nível —
+   * NUNCA 5 + nível) e para sinalizar magias além do nível investido.
+   * Ausente/sem entrada para uma vertente = nível DESCONHECIDO (não
+   * 0!) — preserva compatibilidade com personagens antigos que já
+   * aprenderam magias antes deste campo existir (`getKnownVertentes`
+   * continua sendo a fonte de "vertente conhecida"; este campo é só o
+   * nível numérico, opcional e aditivo).
+   */
+  niveis_vertente?: Record<string, number>;
+  /**
    * Escalpos instalados (checkpoint v0.54, PRD §0/2.1/4/8/11 —
    * instância passiva, sem efeito mecânico ainda) — referencia o
    * MODELO publicado na Biblioteca (`content_type="escalpo"`,

@@ -12,6 +12,8 @@ import {
   rollSpellDamage,
   getSpellDamageEffect,
   getSpellResistanceEffect,
+  getVertenteCd,
+  resolveSpellResistance,
   getKnownVertentes,
   learnSpell,
   forgetSpell,
@@ -154,9 +156,28 @@ console.log("5. Atalho de dano (fórmula real do DB, rolagem determinística) �
 // -------------------------------------------------------------
 const resistencia = getSpellResistanceEffect(controle!);
 assert.ok(resistencia, "cinetica_controle deve ter efeito de resistência.");
-assert.equal(resistencia!.cdFormula, "5 + nivel_vertente");
+// `cdFormula` é a string BRUTA do conteúdo publicado (ainda não editada na
+// digitalização original) — só verificamos aqui que referencia
+// nivel_vertente, nunca o número que a precede. A CD NUMÉRICA de verdade
+// é sempre `6 + nível` (regra do VTT, ver getVertenteCd/resolveSpellResistance
+// abaixo) — nunca `5 + nível`, mesmo que o texto bruto do conteúdo ainda diga isso.
+assert.ok(resistencia!.cdFormula.includes("nivel_vertente"));
 assert.deepEqual(resistencia!.acoes, ["resistir"]);
 console.log("6. Resistência do alvo — CD/ação extraídas como texto (sem resolver automaticamente) — OK");
+
+// -------------------------------------------------------------
+// 6b. CD de vertente — regra do VTT é 6 + nível (NUNCA 5 + nível).
+// -------------------------------------------------------------
+assert.equal(getVertenteCd(1), 7, "nível 1 → CD 7");
+assert.equal(getVertenteCd(2), 8, "nível 2 → CD 8");
+assert.equal(getVertenteCd(3), 9, "nível 3 → CD 9");
+assert.equal(getVertenteCd(4), 10, "nível 4 → CD 10");
+assert.equal(getVertenteCd(5), 11, "nível 5 → CD 11");
+const semNivel = resolveSpellResistance(controle!, null);
+assert.equal(semNivel!.cd, null, "sem nível de vertente definido, CD fica null (nunca inventa número).");
+const comNivel2 = resolveSpellResistance(controle!, 2);
+assert.equal(comNivel2!.cd, 8, "cinetica_controle nível de vertente 2 → CD 8 (6 + 2).");
+console.log("6b. CD de vertente = 6 + nível (nunca 5 + nível) — OK");
 
 // -------------------------------------------------------------
 // 7. Magia sem efeito de dano não gera atalho (nunca inventa fórmula).

@@ -661,7 +661,8 @@ function formatSpellCast(payload: Record<string, unknown>): string {
   const resistance = typeof payload.resistance === "object" && payload.resistance !== null ? (payload.resistance as Record<string, unknown>) : null;
   if (resistance) {
     const acoes = Array.isArray(resistance.acoes) ? resistance.acoes.filter((a): a is string => typeof a === "string") : [];
-    const cd = typeof resistance.cdFormula === "string" ? resistance.cdFormula : "?";
+    // CD numérica calculada (regra do VTT: 6 + nível da vertente) — nunca a fórmula bruta do conteúdo.
+    const cd = typeof resistance.cd === "number" ? String(resistance.cd) : "nível da vertente não definido";
     partes.push(`resistência ${acoes.join("/") || "?"} CD ${cd}`);
   }
 

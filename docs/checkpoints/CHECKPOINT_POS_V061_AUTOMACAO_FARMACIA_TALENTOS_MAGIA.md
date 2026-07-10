@@ -104,9 +104,14 @@ aljava com log `inventory_transfer`.
 ## Pendências reais (registradas durante a rodada)
 
 1. **CP7** — inventário do bando (bloqueado por schema, acima).
-2. **`nivel_vertente`** — a CD de resistência de 54 magias é
-   `5 + nivel_vertente`, mas não existe nível de vertente modelado na ficha;
-   o cartão avisa e o cálculo é manual.
+2. **RESOLVIDA no checkpoint pós-v0.69**: `niveis_vertente` agora é
+   modelado no personagem e a CD de resistência de magias que referenciam
+   `nivel_vertente` no conteúdo é calculada automaticamente pela regra do
+   VTT — **CD = 6 + nível** (nunca 5 + nível; a string bruta do conteúdo
+   publicado, `"5 + nivel_vertente"`, é só um artefato da digitalização
+   original, nunca usada para calcular a CD exibida). Sem nível definido
+   para a vertente, a CD fica `null` e o cartão avisa para definir o nível
+   na aba Magias — nunca inventa um número.
 3. **Recurso-alvo do dano psíquico** de surto não estruturado no conteúdo.
 4. **Sobrecarga estruturada em magias**: nenhuma das 132 magias declara custo
    de sobrecarga em payload — nada a automatizar até o conteúdo existir.

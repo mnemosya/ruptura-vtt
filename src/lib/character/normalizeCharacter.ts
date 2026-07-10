@@ -201,6 +201,20 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     ? (raw.magias_aprendidas as Character["magias_aprendidas"])
     : [];
 
+  // niveis_vertente (checkpoint pós-v0.69): critério DIFERENTE dos demais
+  // campos acima — ausência de UMA vertente no objeto significa "nível
+  // desconhecido" (não 0), então nunca preenchemos vertentes que faltam.
+  // Só filtramos entradas malformadas (chave não numérica) de um payload
+  // vindo de fora; um objeto ausente vira {} (nenhuma vertente com nível
+  // definido ainda — personagem antigo, compatível por padrão).
+  const niveisVertenteRaw = isPlainObject(raw.niveis_vertente) ? raw.niveis_vertente : {};
+  const niveis_vertente: Record<string, number> = {};
+  for (const [slug, valor] of Object.entries(niveisVertenteRaw)) {
+    if (typeof valor === "number" && Number.isFinite(valor) && valor >= 0) {
+      niveis_vertente[slug] = Math.trunc(valor);
+    }
+  }
+
   // escalpos_instalados (checkpoint v0.54): mesmo critério — ausência vira [], nunca undefined; instâncias existentes nunca sobrescritas.
   const escalpos_instalados: Character["escalpos_instalados"] = Array.isArray(raw.escalpos_instalados)
     ? (raw.escalpos_instalados as Character["escalpos_instalados"])
@@ -232,5 +246,6 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     inventario,
     magias_aprendidas,
     escalpos_instalados,
+    niveis_vertente,
   } as Character;
 }

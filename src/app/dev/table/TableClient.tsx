@@ -530,7 +530,8 @@ function formatSystemLog(type: string, payload: Record<string, unknown>): string
     const resistance = typeof payload.resistance === "object" && payload.resistance !== null ? (payload.resistance as Record<string, unknown>) : null;
     if (resistance) {
       const acoes = names(resistance.acoes);
-      const cd = typeof resistance.cdFormula === "string" ? resistance.cdFormula : "?";
+      // CD numérica calculada (regra do VTT: 6 + nível da vertente) — nunca a fórmula bruta do conteúdo.
+      const cd = typeof resistance.cd === "number" ? String(resistance.cd) : "nível da vertente não definido";
       partes.push(`resistência ${acoes.join("/") || "?"} CD ${cd}`);
     }
     const fusion = typeof payload.fusion === "object" && payload.fusion !== null ? (payload.fusion as Record<string, unknown>) : null;

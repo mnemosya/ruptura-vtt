@@ -154,6 +154,16 @@ export function getSpellDamageEffect(spell: SpellContent): SpellDamageEffect | n
 }
 
 export interface SpellResistanceEffect {
+  /**
+   * Fórmula BRUTA do conteúdo (`resistencia.cd_formula`) — hoje sempre
+   * `"5 + nivel_vertente"` no payload publicado (achado desatualizado
+   * da digitalização original). NUNCA exibida ao usuário nem usada
+   * para calcular a CD — a regra do VTT é `6 + nível` (ver
+   * `getVertenteCd`/`resolveSpellResistance`); este campo existe só
+   * para diagnóstico interno (ex.: detectar que a fórmula referencia
+   * `nivel_vertente`) e é preservado como veio do conteúdo, igual a
+   * qualquer outro campo bruto deste módulo.
+   */
   cdFormula: string;
   acoes: string[];
   /** `condicional: true` no payload — a resistência só se aplica em certas circunstâncias (texto da magia). */
@@ -168,6 +178,84 @@ export function getSpellResistanceEffect(spell: SpellContent): SpellResistanceEf
   const cdFormula = typeof resistencia?.cd_formula === "string" ? resistencia.cd_formula : "?";
   const acoes = asStringArray(resistencia?.acoes);
   return { cdFormula, acoes, condicional: efeito.condicional === true };
+}
+
+// ---------------------------------------------------------------------
+// Nível de vertente e CD de resistência (checkpoint pós-v0.69).
+//
+// REGRA DO VTT (fonte: produto, não o conteúdo digitalizado):
+//   CD da vertente = 6 + nível da vertente.
+// Exemplos obrigatórios: nível 1 → CD 7, nível 2 → CD 8, nível 3 → CD 9,
+// nível 4 → CD 10, nível 5 → CD 11. NUNCA `5 + nível` — o payload
+// publicado (`resistencia.cd_formula`) ainda traz a string antiga
+// "5 + nivel_vertente" (conteúdo desatualizado que não editamos aqui,
+// ver `SpellResistanceEffect.cdFormula`), mas a CD numérica sempre é
+// calculada com esta constante, nunca com a fórmula bruta do conteúdo.
+// ---------------------------------------------------------------------
+
+/** Base da fórmula de CD de vertente — `6 + nível`. Nunca usar `5 +` em nenhum lugar do app. */
+export const VERTENTE_CD_BASE = 6;
+
+/** CD de resistência de uma vertente no nível dado — `6 + nível` (regra do VTT, nunca `5 + nível`). */
+export function getVertenteCd(nivelVertente: number): number {
+  const nivel = Number.isFinite(nivelVertente) ? Math.max(0, Math.trunc(nivelVertente)) : 0;
+  return VERTENTE_CD_BASE + nivel;
+}
+
+/**
+ * Nível investido pelo personagem numa vertente — `null` quando não há
+ * entrada em `niveis_vertente` (nível DESCONHECIDO, não zero;
+ * compatibilidade com personagens antigos que nunca tiveram este
+ * campo). `0` é um valor válido e diferente de "desconhecido".
+ */
+export function getVertenteLevel(character: Pick<Character, "niveis_vertente">, vertente: string): number | null {
+  const nivel = character.niveis_vertente?.[vertente];
+  return typeof nivel === "number" && Number.isFinite(nivel) ? Math.trunc(nivel) : null;
+}
+
+export interface SpellVertenteLevelCheck {
+  vertenteLevel: number | null;
+  /** `true` só quando o nível da vertente é CONHECIDO e é menor que `spell.estatisticas.nivel` — nunca sinaliza quando o nível está indefinido (compatibilidade com personagens antigos). */
+  aboveLevel: boolean;
+}
+
+/**
+ * Compara o nível da magia com o nível investido pelo personagem na
+ * vertente dela — usado para SINALIZAR (nunca bloquear; ver
+ * CharacterSheetClient) aprendizado/conjuração acima do nível
+ * investido. Sem nível definido para a vertente, `aboveLevel` é sempre
+ * `false` — não há validação rígida de pré-requisito aqui, só um aviso
+ * quando o dado existe e é claramente insuficiente.
+ */
+export function checkSpellVertenteLevel(spell: SpellContent, character: Pick<Character, "niveis_vertente">): SpellVertenteLevelCheck {
+  const vertenteLevel = getVertenteLevel(character, spell.vertente);
+  const aboveLevel = vertenteLevel != null && spell.estatisticas.nivel > vertenteLevel;
+  return { vertenteLevel, aboveLevel };
+}
+
+export interface ResolvedSpellResistance {
+  acoes: string[];
+  condicional: boolean;
+  /** CD numérica final (`6 + nível`) — `null` quando o nível da vertente não está definido no personagem (nunca inventa um nível). */
+  cd: number | null;
+  /** `true` quando a fórmula do conteúdo referencia `nivel_vertente` (cobre 100% do catálogo atual com resistência). */
+  usesVertenteLevel: boolean;
+}
+
+/**
+ * Resolve a CD de resistência de uma magia para EXIBIÇÃO/uso — nunca
+ * devolve a fórmula bruta do conteúdo (`cdFormula`, que ainda diz
+ * "5 +"). Quando a fórmula referencia `nivel_vertente` e o nível é
+ * conhecido, calcula `6 + nível`; senão devolve `cd: null` (o
+ * chamador mostra "nível da vertente não definido", nunca um número
+ * inventado).
+ */
+export function resolveSpellResistance(spell: SpellContent, vertenteLevel: number | null): ResolvedSpellResistance | null {
+  const efeito = getSpellResistanceEffect(spell);
+  if (!efeito) return null;
+  const usesVertenteLevel = efeito.cdFormula.includes("nivel_vertente");
+  const cd = usesVertenteLevel && vertenteLevel != null ? getVertenteCd(vertenteLevel) : null;
+  return { acoes: efeito.acoes, condicional: efeito.condicional, cd, usesVertenteLevel };
 }
 
 /** Rola o dado de dano da magia (reaproveita o parser "NdM" de `attack.ts`); dano fixo (`valor`) devolve o próprio valor. */
@@ -250,25 +338,30 @@ export interface SpellCastDamage {
 export interface SpellCastResolution {
   /** `estatisticas.resolucao` — "automatica" | "resistencia" | "ataque". */
   resolucao: string;
-  resistance: SpellResistanceEffect | null;
+  resistance: ResolvedSpellResistance | null;
   damage: SpellCastDamage | null;
   manualEffects: string[];
   reminders: string[];
 }
 
 /**
- * Cartão de resolução da conjuração (checkpoint pós-v0.64) — rola o
- * dano (quando estruturado), expõe CD/ações de resistência e lista os
- * efeitos manuais. NUNCA aplica nada em alvo (teatro da mente); o
- * narrador usa as ferramentas existentes de /dev/table.
+ * Cartão de resolução da conjuração (checkpoint pós-v0.64, CD de
+ * vertente no pós-v0.69) — rola o dano (quando estruturado), calcula a
+ * CD de resistência (`6 + nível da vertente`, `resolveSpellResistance`)
+ * e lista os efeitos manuais. NUNCA aplica nada em alvo (teatro da
+ * mente); o narrador usa as ferramentas existentes de /dev/table.
+ *
+ * `vertenteLevel` vem de `getVertenteLevel(character, spell.vertente)`
+ * — `null` quando o personagem não tem esse nível definido ainda; a CD
+ * fica `null` nesse caso (nunca inventa um nível/CD).
  *
  * Sobrecarga: auditoria do catálogo (132 magias) não encontrou NENHUM
  * campo estruturado de sobrecarga em payload de magia — não há o que
  * automatizar aqui; registrado como pendência de conteúdo (o fluxo de
  * Surto usa `sobrecarga_usada_dia`, ver overload.ts).
  */
-export function prepareSpellCastResolution(spell: SpellContent, rng?: () => number): SpellCastResolution {
-  const resistance = getSpellResistanceEffect(spell);
+export function prepareSpellCastResolution(spell: SpellContent, rng?: () => number, vertenteLevel: number | null = null): SpellCastResolution {
+  const resistance = resolveSpellResistance(spell, vertenteLevel);
   const damageEffect = getSpellDamageEffect(spell);
   const reminders: string[] = [];
 
@@ -290,11 +383,14 @@ export function prepareSpellCastResolution(spell: SpellContent, rng?: () => numb
   }
 
   if (resistance) {
-    reminders.push(
-      `Resistência do alvo: ${resistance.acoes.join("/") || "?"} (CD ${resistance.cdFormula})${resistance.condicional ? " — condicional, ver texto da magia" : ""}.`,
-    );
-    if (resistance.cdFormula.includes("nivel_vertente")) {
-      reminders.push("CD usa nível da vertente — não modelado na ficha ainda; calcule manualmente (pendência).");
+    if (resistance.cd != null) {
+      reminders.push(`Resistência do alvo: ${resistance.acoes.join("/") || "?"} (CD ${resistance.cd})${resistance.condicional ? " — condicional, ver texto da magia" : ""}.`);
+    } else if (resistance.usesVertenteLevel) {
+      reminders.push(
+        `Resistência do alvo: ${resistance.acoes.join("/") || "?"} — CD depende do nível da vertente (6 + nível), que ainda não está definido na ficha (aba Magias). Defina o nível para calcular a CD.`,
+      );
+    } else {
+      reminders.push(`Resistência do alvo: ${resistance.acoes.join("/") || "?"}${resistance.condicional ? " — condicional, ver texto da magia" : ""} — CD não estruturada.`);
     }
   }
   if (spell.estatisticas.resolucao === "ataque") {
@@ -502,8 +598,10 @@ export function castSpellWithFusion(params: {
   paMax: number;
   manaMax: number;
   overloadRules?: OverloadRulesPayload | null;
+  /** Nível de vertente da magia FUNDIDA (checkpoint pós-v0.69) — `null` quando não definido; usado só para o lembrete de CD, nunca para automatizar a fusão. */
+  fusedVertenteLevel?: number | null;
 }): CastSpellFusionResult {
-  const { character, spell, fusedSpell, paMax, manaMax, overloadRules } = params;
+  const { character, spell, fusedSpell, paMax, manaMax, overloadRules, fusedVertenteLevel = null } = params;
   const sobrecargaBefore = character.sobrecarga_usada_dia ?? 0;
   const sobrecargaMax = getOverloadMaxPerDay(overloadRules);
 
@@ -548,9 +646,10 @@ export function castSpellWithFusion(params: {
       `${fusedSpell.nome} declara custo de Mana ${fusedSpell.estatisticas.custo_mana} — a Fusão não desconta a Mana da magia fundida automaticamente; ajuste se o narrador exigir.`,
     );
   }
-  const fusedResistance = getSpellResistanceEffect(fusedSpell);
+  const fusedResistance = resolveSpellResistance(fusedSpell, fusedVertenteLevel);
   if (fusedResistance) {
-    fusionReminders.push(`${fusedSpell.nome}: resistência ${fusedResistance.acoes.join("/") || "?"} (CD ${fusedResistance.cdFormula}) — resolver manualmente.`);
+    const cdTexto = fusedResistance.cd != null ? `CD ${fusedResistance.cd}` : "CD depende do nível da vertente (6 + nível), ainda não definido";
+    fusionReminders.push(`${fusedSpell.nome}: resistência ${fusedResistance.acoes.join("/") || "?"} (${cdTexto}) — resolver manualmente.`);
   }
   const fusedDamage = getSpellDamageEffect(fusedSpell);
   if (fusedDamage) {

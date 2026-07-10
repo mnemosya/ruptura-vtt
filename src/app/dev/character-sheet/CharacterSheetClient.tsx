@@ -102,6 +102,9 @@ import {
   learnSpell,
   forgetSpell,
   isSpellLearned,
+  getVertenteLevel,
+  getVertenteCd,
+  checkSpellVertenteLevel,
   installEscalpo,
   removeInstalledEscalpo,
 } from "../../../lib/character";
@@ -2498,7 +2501,29 @@ export default function CharacterSheetClient({
     characterRef.current = next;
     setCharacter(next);
     const spell = spellsIniciais.find((s) => s.slug === slug);
-    addLogEntry("condicao", `Magia aprendida: ${spell?.nome ?? slug}.`);
+    const nivelCheck = spell ? checkSpellVertenteLevel(spell, current) : null;
+    addLogEntry(
+      "condicao",
+      `Magia aprendida: ${spell?.nome ?? slug}.${nivelCheck?.aboveLevel ? ` Aviso: nível ${spell!.estatisticas.nivel} está acima do nível ${nivelCheck.vertenteLevel} investido em ${spell!.vertente} — sinalizado, não bloqueado.` : ""}`,
+    );
+  }
+
+  /**
+   * Define o nível investido numa vertente (checkpoint pós-v0.69) —
+   * usado para calcular a CD de resistência das magias dessa vertente
+   * (regra do VTT: `6 + nível`, nunca `5 + nível`). Só editável em Modo
+   * Evolução (mesmo padrão de atributos/perícias).
+   */
+  function handleSetVertenteLevel(vertente: string, value: number) {
+    const current = characterRef.current;
+    const nivel = Math.max(0, Math.trunc(Number.isFinite(value) ? value : 0));
+    const next: Character = {
+      ...current,
+      niveis_vertente: { ...(current.niveis_vertente ?? {}), [vertente]: nivel },
+    };
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Nível de ${vertente} definido: ${nivel} (CD da vertente: ${getVertenteCd(nivel)}).`);
   }
 
   function handleForgetSpell(learnedId: string) {
@@ -2559,7 +2584,9 @@ export default function CharacterSheetClient({
     characterRef.current = result.character;
     setCharacter(result.character);
 
-    const resolution = prepareSpellCastResolution(spell);
+    const vertenteLevel = getVertenteLevel(current, spell.vertente);
+    const nivelCheck = checkSpellVertenteLevel(spell, current);
+    const resolution = prepareSpellCastResolution(spell, undefined, vertenteLevel);
     const temporariaConsumida = (result.manaTemporariaBefore ?? 0) - (result.manaTemporariaAfter ?? 0);
     const manaTexto = result.manaCostUnknown
       ? "custo de Mana ainda não definido (placeholder)"
@@ -2571,6 +2598,9 @@ export default function CharacterSheetClient({
       );
     }
     const extras = [...resolution.manualEffects, ...resolution.reminders];
+    if (nivelCheck.aboveLevel) {
+      extras.push(`Aviso: nível ${spell.estatisticas.nivel} está acima do nível ${nivelCheck.vertenteLevel} investido em ${spell.vertente} — sinalizado, não bloqueado.`);
+    }
     addLogEntry(
       "recurso",
       `Conjurado: ${spell.nome} — ${partes.join("; ")}.${extras.length > 0 ? ` — ${extras.join(" ")}` : ""}`,
@@ -2638,6 +2668,8 @@ export default function CharacterSheetClient({
       addLogEntry("recurso", "Fusão exige que AMBAS as magias estejam aprendidas.");
       return;
     }
+    const vertenteLevel = getVertenteLevel(current, spell.vertente);
+    const fusedVertenteLevel = getVertenteLevel(current, fusedSpell.vertente);
     const result = castSpellWithFusion({
       character: current,
       spell,
@@ -2645,6 +2677,7 @@ export default function CharacterSheetClient({
       paMax: derivados.pa_max,
       manaMax: derivados.mana_max,
       overloadRules: regras?.sobrecarga,
+      fusedVertenteLevel,
     });
     if (!result.ok || !result.cast) {
       addLogEntry("recurso", result.reason ?? "Fusão não realizada.");
@@ -2654,7 +2687,7 @@ export default function CharacterSheetClient({
     setCharacter(result.character);
 
     const cast = result.cast;
-    const resolution = prepareSpellCastResolution(spell);
+    const resolution = prepareSpellCastResolution(spell, undefined, vertenteLevel);
     const temporariaConsumida = (cast.manaTemporariaBefore ?? 0) - (cast.manaTemporariaAfter ?? 0);
     const manaTexto = cast.manaCostUnknown
       ? "custo de Mana ainda não definido (placeholder)"
@@ -2667,7 +2700,11 @@ export default function CharacterSheetClient({
     if (resolution.damage) {
       partes.push(`dano ${resolution.damage.fixo ? "fixo" : "rolado"} ${resolution.damage.result} (${resolution.damage.formula}/${resolution.damage.tipoDano})`);
     }
+    const nivelCheck = checkSpellVertenteLevel(spell, current);
     const extras = [...resolution.manualEffects, ...resolution.reminders, ...result.fusionReminders];
+    if (nivelCheck.aboveLevel) {
+      extras.push(`Aviso: nível ${spell.estatisticas.nivel} está acima do nível ${nivelCheck.vertenteLevel} investido em ${spell.vertente} — sinalizado, não bloqueado.`);
+    }
     addLogEntry(
       "recurso",
       `Conjurado com FUSÃO: ${spell.nome} + ${fusedSpell.nome} — ${partes.join("; ")}.${extras.length > 0 ? ` — ${extras.join(" ")}` : ""}`,
@@ -3536,12 +3573,14 @@ export default function CharacterSheetClient({
           spells={spellsIniciais}
           catalogError={spellsError}
           magiasAprendidas={character.magias_aprendidas ?? []}
+          niveisVertente={character.niveis_vertente ?? {}}
           sheetMode={sheetMode}
           onLearn={handleLearnSpell}
           onForget={handleForgetSpell}
           onCast={handleCastSpell}
           onCastWithFusion={handleCastSpellWithFusion}
           onRollDamage={handleRollSpellDamage}
+          onSetVertenteLevel={handleSetVertenteLevel}
         />
       )}
 
