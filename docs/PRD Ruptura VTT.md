@@ -464,7 +464,231 @@ updated_at
 Regra central:
 
 > Tudo que jogador consulta em jogo deve vir do banco. Tudo que altera cálculo deve passar por schema validado.
-> 
+
+### 2.1.9 Biblioteca do Livro e conteúdo arrastável
+
+A Biblioteca deve representar o livro completo de Ruptura dentro do VTT.
+
+Ela não é apenas um catálogo de itens, magias ou talentos. Ela é a versão navegável, pesquisável e operacional do livro inteiro, incluindo regras, criação de personagem, combate, magia, equipamentos, talentos, condições, cenário, facções, narrador, mercado, submundo, lore e qualquer outro capítulo publicado.
+
+A Biblioteca deve funcionar em duas camadas:
+
+1. **Camada editorial**
+   - o livro como texto completo;
+   - capítulos, seções, subseções, tabelas, exemplos, notas e referências;
+   - busca textual;
+   - navegação por sumário;
+   - links internos entre regras;
+   - leitura direta pelo narrador e pelos jogadores.
+
+2. **Camada operacional**
+   - conteúdos estruturados extraídos do livro;
+   - itens, armas, armaduras, munições, magias, talentos, condições, escalpos, runas, propriedades, ações e demais entidades de jogo;
+   - cards, payloads e modelos publicados;
+   - possibilidade de arrastar conteúdos estruturados para a ficha, inventário, mesa ou personagem.
+
+A camada operacional deve nascer do livro, não existir como catálogo paralelo desconectado.
+
+Exemplo:
+
+- O capítulo de Mercado Noturno contém o texto completo sobre compra, contrabando, disponibilidade e preço.
+- Dentro desse capítulo, uma Pistola Vastrana pode aparecer como referência estruturada.
+- Essa referência abre o card do item publicado.
+- O card pode ser arrastado para a ficha.
+- Ao soltar, o VTT cria uma instância da Pistola Vastrana no inventário do personagem.
+
+O texto continua sendo o livro. A automação vem do registro estruturado vinculado ao trecho do livro.
+
+#### Escopo da Biblioteca
+
+A Biblioteca deve conter o livro inteiro, incluindo, no mínimo:
+
+- introdução;
+- criação de personagem;
+- atributos;
+- perícias;
+- combate;
+- ações;
+- condições;
+- vida, estresse, mana, integridade, sobrecarga, ruptura e colapso;
+- magia;
+- vertentes;
+- magias;
+- talentos;
+- inventário;
+- armas;
+- armaduras;
+- escudos;
+- munições;
+- aljavas;
+- explosivos;
+- farmácia;
+- vertinas;
+- escalpos;
+- runas;
+- drones e robôs;
+- mercado;
+- submundo;
+- bando refratário;
+- Vosek;
+- Braxus;
+- Império Central;
+- Casas-Vertente;
+- facções;
+- narrando Ruptura;
+- construção de missões;
+- qualquer capítulo futuro do livro.
+
+Essa lista não deve ser tratada como limite. A regra é: se está no livro publicado de Ruptura, deve poder existir na Biblioteca.
+
+#### Sumário e leitura
+
+A Biblioteca deve ter uma navegação por sumário.
+
+Cada capítulo deve preservar:
+
+- título;
+- ordem;
+- hierarquia de seções;
+- texto completo;
+- tabelas;
+- exemplos;
+- caixas de regra;
+- notas de narrador;
+- referências internas;
+- versão;
+- status de publicação.
+
+A experiência mínima deve permitir:
+
+- abrir o livro;
+- navegar por capítulo;
+- pesquisar por termo;
+- copiar referência;
+- abrir cards estruturados vinculados ao texto;
+- voltar ao trecho original de onde um card veio.
+
+#### Conteúdo estruturado vinculado ao livro
+
+Sempre que um trecho do livro descrever uma entidade de jogo, essa entidade deve poder ser vinculada a um registro estruturado.
+
+Exemplos:
+
+- A ação **Atacar** no capítulo de Combate aponta para o modelo estruturado da ação Atacar.
+- A condição **Queimando** no capítulo de Condições aponta para o modelo estruturado da condição Queimando.
+- A **Pistola Vastrana** no capítulo de equipamentos aponta para o modelo estruturado do item.
+- Uma magia aponta para o modelo estruturado da magia.
+- Um talento aponta para o modelo estruturado do talento.
+
+O vínculo permite que o mesmo conteúdo seja lido como regra e usado como dado operacional pelo VTT.
+
+#### Arrastar conteúdo do livro para a ficha
+
+O usuário deve poder arrastar conteúdos estruturados diretamente a partir do livro.
+
+Exemplos:
+
+- arrastar uma arma do capítulo de equipamentos para o inventário da ficha;
+- arrastar uma munição para o inventário;
+- arrastar uma armadura para equipamentos defensivos;
+- arrastar uma condição para efeitos ativos;
+- arrastar uma magia para magias conhecidas, quando permitido;
+- arrastar um talento para a ficha em Modo Evolução, quando permitido.
+
+O drag não deve copiar texto bruto. Ele deve carregar uma referência segura ao modelo publicado.
+
+Exemplo de payload de drag:
+
+{
+"type": "book_entity",
+"contentId": "pistola_vastrana",
+"sourceDocumentId": "mercado_noturno",
+"sourceAnchor": "armas-de-fogo"
+}
+
+Ao soltar na ficha, o sistema deve:
+
+1. validar o conteúdo no servidor;
+2. buscar o modelo publicado;
+3. criar a instância adequada;
+4. aplicar os defaults do modelo;
+5. salvar o personagem;
+6. gerar log, se houver mesa conectada;
+7. atualizar outras telas via Realtime.
+
+#### Modelo e instância
+
+A Biblioteca guarda o modelo oficial. A ficha recebe uma instância.
+
+O texto, regra base, descrição, preço, dano, raridade, tags e payload padrão vêm do modelo publicado.
+
+Quantidade, munição atual, cargas, MIT/PD atual, runas instaladas, dano sofrido, apelido, customização e estado de uso ficam na instância.
+
+Arrastar um item do livro para a ficha nunca deve quebrar essa separação.
+
+#### Visões operacionais da Biblioteca
+
+Além da leitura por capítulos, a Biblioteca pode ter visões filtradas para facilitar uso em mesa.
+
+Exemplos:
+
+- Todos os Itens;
+- Todas as Armas;
+- Todas as Armaduras;
+- Todas as Magias;
+- Todos os Talentos;
+- Todas as Condições;
+- Todas as Ações.
+
+Essas visões são índices do livro, não bibliotecas separadas.
+
+Cada card operacional deve conseguir apontar de volta para o trecho do livro de onde veio.
+
+#### Importação do Notion
+
+Como o livro também existe no Notion, a plataforma deve futuramente aceitar importação a partir de exportações do Notion.
+
+A importação deve preservar o livro completo como documento editorial e, quando possível, extrair entidades estruturadas.
+
+Fluxo recomendado:
+
+1. exportar o Notion como Markdown/CSV;
+2. importar capítulos e seções como documentos do livro;
+3. preservar hierarquia, títulos, tabelas e texto;
+4. detectar ou mapear entidades estruturáveis;
+5. importar entidades como rascunho;
+6. validar schema;
+7. mostrar preview de mudanças;
+8. publicar na Biblioteca.
+
+Markdown deve ser usado para preservar o texto do livro. Conteúdos que afetam cálculo ou automação devem ser convertidos para registros estruturados com payload validado.
+
+#### Escopo da primeira entrega
+
+A primeira entrega da Biblioteca do Livro deve focar em:
+
+- importar ou cadastrar capítulos completos do livro;
+- exibir sumário;
+- permitir leitura por capítulo;
+- permitir busca textual;
+- exibir entidades estruturadas vinculadas ao texto;
+- permitir drag de itens para o inventário da ficha;
+- criar instâncias de itens a partir dos modelos publicados.
+
+Fora da primeira entrega:
+
+- importador completo do Notion;
+- edição visual completa do livro;
+- drag de todos os tipos de entidade;
+- homebrew por mesa;
+- versionamento avançado por campanha;
+- automação completa de todos os payloads.
+
+#### Prioridade
+
+Esta feature deve ser priorizada depois que a ficha principal estiver funcional e estável.
+
+A Biblioteca do Livro passa a ser uma das interfaces centrais do VTT: o lugar onde o usuário lê o sistema, consulta regras e transforma conteúdo publicado em elementos jogáveis na ficha.
 
 ## 3. Onboarding e criação de personagem
 
@@ -567,12 +791,12 @@ Registrar PM recebidos, PM gastos, data/sessão e alteração feita. Esse histó
 
 A plataforma precisa entender quatro gatilhos de tempo:
 
-| Gatilho | Quem aciona | Uso principal |
-| --- | --- | --- |
-| Encerrar turno | Jogador | Finaliza a participação ativa do personagem |
-| Encerrar rodada | Narrador | Resolve gatilhos de fim de rodada e reseta estruturas de rodada |
-| Encerrar cena | Narrador | Dispara Ruptura pendente, encerra efeitos por cena e zera cadências de cena |
-| Descanso | Jogador | Aplica descanso curto ou longo ao próprio personagem |
+| Gatilho         | Quem aciona | Uso principal                                                               |
+| --------------- | ----------- | --------------------------------------------------------------------------- |
+| Encerrar turno  | Jogador     | Finaliza a participação ativa do personagem                                 |
+| Encerrar rodada | Narrador    | Resolve gatilhos de fim de rodada e reseta estruturas de rodada             |
+| Encerrar cena   | Narrador    | Dispara Ruptura pendente, encerra efeitos por cena e zera cadências de cena |
+| Descanso        | Jogador     | Aplica descanso curto ou longo ao próprio personagem                        |
 
 O narrador deve ter override sobre esses gatilhos quando necessário.
 
@@ -627,9 +851,9 @@ Os PA aparecem como fichas. Cada ação consome suas fichas. Em Turnos Rápidos,
 - Ao esgotar reações, novas defesas acumulam -1 na rodada.
 - O contador de reações reseta ao encerrar rodada.
 - Reações podem ser configuradas como:
-    - **perguntar**;
-    - **automática**;
-    - **manual/desligada**.
+  - **perguntar**;
+  - **automática**;
+  - **manual/desligada**.
 
 ---
 
@@ -718,9 +942,9 @@ O deslocamento de uma mesma ação pode ser dividido ao longo do turno. O person
 - Luta contra Resistir ou Desviar.
 - Atacante ganha Agarrando.
 - Margem:
-    - limitado: aplica Agarrado e +1 para o alvo Escapar;
-    - padrão: aplica Agarrado;
-    - crítico: aplica Imobilizado.
+  - limitado: aplica Agarrado e +1 para o alvo Escapar;
+  - padrão: aplica Agarrado;
+  - crítico: aplica Imobilizado.
 
 **Estrangular — 2 PA**
 
@@ -909,9 +1133,9 @@ Após cada rolagem, a plataforma oferece o desdobramento correto no log/chat:
 - O prompt mostra apenas regiões permitidas pela margem.
 - Deve existir botão de destravar/override.
 - Padrão:
-    - limitado: tronco, –1 de dano;
-    - padrão: tronco, braços ou pernas;
-    - crítico: inclui cabeça, +1 dado de dano e efeitos críticos.
+  - limitado: tronco, –1 de dano;
+  - padrão: tronco, braços ou pernas;
+  - crítico: inclui cabeça, +1 dado de dano e efeitos críticos.
 
 ### 8.8 Propriedades, dano e condições
 
@@ -949,25 +1173,25 @@ A ficha precisa taguear rolagens para aplicar efeitos corretamente:
 
 ### 9.2 Tabela de condições
 
-| Condição | Efeito | Automação |
-| --- | --- | --- |
-| Agarrado | -1 em ofensivas e defensivas; Deslocar-se = 0; exige Escapar | Aplica -1 nas tags ofensiva/defensiva, zera deslocamento e habilita Escapar |
-| Agarrando | -1 em ofensivas e defensivas; deslocamento à metade | Aplica -1, reduz deslocamento e permite soltar como gesto rápido |
-| Atordoado | Sem ações ou reações | Trava console, exceto ações que removam a condição |
-| Caído | -1 nas próprias ofensivas; ataques contra o alvo recebem +1; deslocamento à metade | Aplica penalidades, marca alvo como vulnerável e habilita Levantar |
-| Cego | Falha testes de visão; -2 nas ofensivas; ataques contra o alvo recebem +2 | Falha automática em visão e aplica modificadores |
-| Contundido | -1 em Luta, Mobilidade e Reflexos; dura até recuperar PV | Aplica -1 e remove ao recuperar pelo menos 1 PV |
-| Envenenado | -1 PA; fim de rodada Vigor CD 7 ou 1d4 tóxico; dura até recuperar PV | Reduz PA, agenda teste de fim de rodada e remove com cura |
-| Imobilizado | Deslocamento 0; sem ofensivas nem defensivas; exige Escapar | Trava ofensivas/defensivas, zera deslocamento e habilita Escapar |
-| Inconsciente | Caído + sem ação ou reação | Trava console e aplica vulnerabilidade de Caído |
-| Insaturado | Vigor CD 7 ou Lento; magistas sofrem -1 em conjuração e +1 custo de mana | Agenda teste e aplica penalidades de conjuração |
-| Lento | Deslocamento à metade; -1 em Reflexos e Mobilidade | Reduz deslocamento e aplica -1 |
-| Ofuscado | -1 em testes de visão | Aplica -1 em rolagens com tag visão |
-| Queimando | 1d4 ígneo no fim da rodada; Interagir apaga | Agenda dano e habilita ação para apagar |
-| Sangrando | Fim de rodada Vigor CD 7; falha 1d4 físico, sucesso metade; dura até recuperar PV | Agenda teste/dano e remove com cura |
-| Saturado | Vigor CD 7 ou Envenenado; magistas recebem -1 custo de mana e +1 conjuração | Agenda teste e aplica bônus/efeito de conjuração |
-| Sufocando | -1 em testes de Corpo; 3 min Inconsciente; 5 min morte | Aplica -1 e rastreia cronômetro |
-| Surdo | Falha testes de audição | Falha automática em audição |
+| Condição     | Efeito                                                                             | Automação                                                                   |
+| ------------ | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Agarrado     | -1 em ofensivas e defensivas; Deslocar-se = 0; exige Escapar                       | Aplica -1 nas tags ofensiva/defensiva, zera deslocamento e habilita Escapar |
+| Agarrando    | -1 em ofensivas e defensivas; deslocamento à metade                                | Aplica -1, reduz deslocamento e permite soltar como gesto rápido            |
+| Atordoado    | Sem ações ou reações                                                               | Trava console, exceto ações que removam a condição                          |
+| Caído        | -1 nas próprias ofensivas; ataques contra o alvo recebem +1; deslocamento à metade | Aplica penalidades, marca alvo como vulnerável e habilita Levantar          |
+| Cego         | Falha testes de visão; -2 nas ofensivas; ataques contra o alvo recebem +2          | Falha automática em visão e aplica modificadores                            |
+| Contundido   | -1 em Luta, Mobilidade e Reflexos; dura até recuperar PV                           | Aplica -1 e remove ao recuperar pelo menos 1 PV                             |
+| Envenenado   | -1 PA; fim de rodada Vigor CD 7 ou 1d4 tóxico; dura até recuperar PV               | Reduz PA, agenda teste de fim de rodada e remove com cura                   |
+| Imobilizado  | Deslocamento 0; sem ofensivas nem defensivas; exige Escapar                        | Trava ofensivas/defensivas, zera deslocamento e habilita Escapar            |
+| Inconsciente | Caído + sem ação ou reação                                                         | Trava console e aplica vulnerabilidade de Caído                             |
+| Insaturado   | Vigor CD 7 ou Lento; magistas sofrem -1 em conjuração e +1 custo de mana           | Agenda teste e aplica penalidades de conjuração                             |
+| Lento        | Deslocamento à metade; -1 em Reflexos e Mobilidade                                 | Reduz deslocamento e aplica -1                                              |
+| Ofuscado     | -1 em testes de visão                                                              | Aplica -1 em rolagens com tag visão                                         |
+| Queimando    | 1d4 ígneo no fim da rodada; Interagir apaga                                        | Agenda dano e habilita ação para apagar                                     |
+| Sangrando    | Fim de rodada Vigor CD 7; falha 1d4 físico, sucesso metade; dura até recuperar PV  | Agenda teste/dano e remove com cura                                         |
+| Saturado     | Vigor CD 7 ou Envenenado; magistas recebem -1 custo de mana e +1 conjuração        | Agenda teste e aplica bônus/efeito de conjuração                            |
+| Sufocando    | -1 em testes de Corpo; 3 min Inconsciente; 5 min morte                             | Aplica -1 e rastreia cronômetro                                             |
+| Surdo        | Falha testes de audição                                                            | Falha automática em audição                                                 |
 
 ### 9.3 Remoção automática por cura
 
@@ -1079,14 +1303,14 @@ Marca e Traço podem ficar pendentes. A ficha registra o pendente e permite reso
 
 Faixas:
 
-| Integridade | Estado |
-| --- | --- |
-| 7+ | íntegro |
-| 5–6 | 1 distorção |
-| 3–4 | 2 distorções |
-| 2 | 3 distorções |
-| 1 | eu em dissolução |
-| 0 | fim da ficha |
+| Integridade | Estado           |
+| ----------- | ---------------- |
+| 7+          | íntegro          |
+| 5–6         | 1 distorção      |
+| 3–4         | 2 distorções     |
+| 2           | 3 distorções     |
+| 1           | eu em dissolução |
+| 0           | fim da ficha     |
 
 A 0, magista vira Vestígio. Casca fica registrada como regra para origem não-magista ou ficha de NPC, mas não é prioridade enquanto não houver criação de personagem não-magista.
 
@@ -1195,22 +1419,22 @@ Prioridade baixa. Devem entrar como registro simples de item/capacidade. Sem aut
 
 Implementar os padrões uma vez e reaplicar por talento.
 
-| Padrão | Uso |
-| --- | --- |
-| Promoção de margem | falha limitada vira sucesso limitado em rolagens específicas |
-| Piso/override de margem | sucesso vira crítico, falha limitada vira padrão, acerto conta como crítico |
-| Dado extra com gatilho | Pistoleiro |
-| Buff empilhável | Fúria do Berserker |
-| +X em testes específicos | Guardião, Espadachim, Bricolagem etc. |
-| Reação grátis/gatilho | Sentinela, Contra-medida, Ripostar, Protocolo de Emergência |
-| Redução de PA | Ritmo de Campo, Estocar |
-| Aplicar condição em margem menor | Hemorragia, Fincada |
-| Contadores por cadência | cena, rodada, combate, sessão, dia, descanso |
-| Companheiro | Droneiro, Mecatrônico |
-| Trama | Tecelão |
-| Economia/loja | Mercador |
-| Runas | Rúnico |
-| Troca de atributo | Golpe Cirúrgico |
+| Padrão                           | Uso                                                                         |
+| -------------------------------- | --------------------------------------------------------------------------- |
+| Promoção de margem               | falha limitada vira sucesso limitado em rolagens específicas                |
+| Piso/override de margem          | sucesso vira crítico, falha limitada vira padrão, acerto conta como crítico |
+| Dado extra com gatilho           | Pistoleiro                                                                  |
+| Buff empilhável                  | Fúria do Berserker                                                          |
+| +X em testes específicos         | Guardião, Espadachim, Bricolagem etc.                                       |
+| Reação grátis/gatilho            | Sentinela, Contra-medida, Ripostar, Protocolo de Emergência                 |
+| Redução de PA                    | Ritmo de Campo, Estocar                                                     |
+| Aplicar condição em margem menor | Hemorragia, Fincada                                                         |
+| Contadores por cadência          | cena, rodada, combate, sessão, dia, descanso                                |
+| Companheiro                      | Droneiro, Mecatrônico                                                       |
+| Trama                            | Tecelão                                                                     |
+| Economia/loja                    | Mercador                                                                    |
+| Runas                            | Rúnico                                                                      |
+| Troca de atributo                | Golpe Cirúrgico                                                             |
 
 ### 12.2 Catálogo de talentos
 
@@ -1373,14 +1597,14 @@ Requisitos:
 
 Kits mínimos de munição publicados:
 
-| Munição | Compatibilidade | Kit | Raridade | Preço |
-| --- | --- | --- | --- | --- |
-| Flecha simples | Arcos | 10 flechas | Comum | 50 Ⱥ |
-| Virotes | Bestas | 5 virotes | Comum | 50 Ⱥ |
-| Flecha flamejante | Arcos | 5 flechas | Incomum | 200 Ⱥ |
-| Flecha tóxica | Arcos | 5 flechas | Incomum | 200 Ⱥ |
-| Flecha elétrica | Arcos | 5 flechas | Incomum | 300 Ⱥ |
-| Flecha explosiva | Arcos | 5 flechas | Raro | 350 Ⱥ |
+| Munição           | Compatibilidade | Kit        | Raridade | Preço |
+| ----------------- | --------------- | ---------- | -------- | ----- |
+| Flecha simples    | Arcos           | 10 flechas | Comum    | 50 Ⱥ  |
+| Virotes           | Bestas          | 5 virotes  | Comum    | 50 Ⱥ  |
+| Flecha flamejante | Arcos           | 5 flechas  | Incomum  | 200 Ⱥ |
+| Flecha tóxica     | Arcos           | 5 flechas  | Incomum  | 200 Ⱥ |
+| Flecha elétrica   | Arcos           | 5 flechas  | Incomum  | 300 Ⱥ |
+| Flecha explosiva  | Arcos           | 5 flechas  | Raro     | 350 Ⱥ |
 
 ### 13.3 Loadouts e mochila
 
@@ -1432,14 +1656,14 @@ Cada item de munição no inventário deve possuir:
 
 Tipos mínimos de munição:
 
-| Tipo | Uso |
-| --- | --- |
-| flecha | Arcos |
-| virote | Bestas |
-| pistola | Pistola de bolso, Revólver e Pistola pesada |
-| fuzil | Submetralhadora, Carabina, Rifle de assalto e Metralhadora |
-| escopeta | Escopeta curta e Espingarda |
-| precisao | Rifle de precisão |
+| Tipo     | Uso                                                        |
+| -------- | ---------------------------------------------------------- |
+| flecha   | Arcos                                                      |
+| virote   | Bestas                                                     |
+| pistola  | Pistola de bolso, Revólver e Pistola pesada                |
+| fuzil    | Submetralhadora, Carabina, Rifle de assalto e Metralhadora |
+| escopeta | Escopeta curta e Espingarda                                |
+| precisao | Rifle de precisão                                          |
 
 A munição comprada fica no inventário como item quantitativo de estoque. A arma não cria munição por conta própria.
 
@@ -1506,13 +1730,13 @@ Flechas especiais mantêm seu próprio modelo de conteúdo. O VTT deve exibir o 
 
 Kits de flechas:
 
-| Flecha | Efeito | Kit | Raridade | Preço |
-| --- | --- | --- | --- | --- |
-| Flecha simples | Sem efeito especial | 10 flechas | Comum | 50 Ⱥ |
-| Flecha flamejante | +1d6 de dano ígneo; aplica Queimando em crítico | 5 flechas | Incomum | 200 Ⱥ |
-| Flecha tóxica | Aplica Envenenado | 5 flechas | Incomum | 200 Ⱥ |
-| Flecha elétrica | +1d6 de dano elétrico; aplica Atordoado em crítico | 5 flechas | Incomum | 300 Ⱥ |
-| Flecha explosiva | Explode em raio de 1 m, causando 2d6 de dano ígneo em área | 5 flechas | Raro | 350 Ⱥ |
+| Flecha            | Efeito                                                     | Kit        | Raridade | Preço |
+| ----------------- | ---------------------------------------------------------- | ---------- | -------- | ----- |
+| Flecha simples    | Sem efeito especial                                        | 10 flechas | Comum    | 50 Ⱥ  |
+| Flecha flamejante | +1d6 de dano ígneo; aplica Queimando em crítico            | 5 flechas  | Incomum  | 200 Ⱥ |
+| Flecha tóxica     | Aplica Envenenado                                          | 5 flechas  | Incomum  | 200 Ⱥ |
+| Flecha elétrica   | +1d6 de dano elétrico; aplica Atordoado em crítico         | 5 flechas  | Incomum  | 300 Ⱥ |
+| Flecha explosiva  | Explode em raio de 1 m, causando 2d6 de dano ígneo em área | 5 flechas  | Raro     | 350 Ⱥ |
 
 ##### Virotes
 
