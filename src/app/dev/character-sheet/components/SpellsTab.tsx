@@ -12,6 +12,7 @@ import {
   getVertenteCd,
   resolveSpellResistance,
   checkSpellVertenteLevel,
+  getSpellAttackProfile,
   type SpellContent,
   type LearnedSpell,
 } from "../../../../lib/character";
@@ -128,6 +129,7 @@ export function SpellsTab({
                   const aberto = expandido[spell.slug] ?? false;
                   const aprendida = magiasAprendidas.find((m) => m.spellSlug === spell.slug);
                   const nivelCheck = checkSpellVertenteLevel(spell, { niveis_vertente: niveisVertente });
+                  const attackProfile = getSpellAttackProfile(spell);
                   return (
                     <div
                       key={spell.id}
@@ -148,6 +150,14 @@ export function SpellsTab({
                           resolução {spell.estatisticas.resolucao || "?"}
                         </span>
                         {aprendida && <span style={{ color: "#4caf50", fontSize: 11 }}>aprendida</span>}
+                        {attackProfile.isAttack && (
+                          <span
+                            data-testid={`magia-ataque-magico-${spell.slug}`}
+                            style={{ color: "#ff8a5c", fontSize: 11, fontWeight: 700, border: "1px solid #ff8a5c", borderRadius: 4, padding: "1px 6px" }}
+                          >
+                            ⚔ Ataque mágico
+                          </span>
+                        )}
                         {nivelCheck.aboveLevel && (
                           <span data-testid={`magia-nivel-aviso-${spell.slug}`} style={{ color: "#ff6b6b", fontSize: 11, fontWeight: 700 }}>
                             Nível de vertente insuficiente ({spell.estatisticas.nivel} &gt; {nivelCheck.vertenteLevel}) — não pode ser conjurada
@@ -195,10 +205,18 @@ export function SpellsTab({
                               data-testid={`magia-conjurar-${spell.slug}`}
                               onClick={() => onCast(spell.slug)}
                               disabled={nivelCheck.aboveLevel}
-                              title={nivelCheck.aboveLevel ? "Nível de vertente insuficiente" : undefined}
+                              title={
+                                nivelCheck.aboveLevel
+                                  ? "Nível de vertente insuficiente"
+                                  : attackProfile.isAttack
+                                    ? attackProfile.rollable
+                                      ? "Conjurar gera ataque mágico — o teste de acerto é rolado automaticamente; dano/MIT/região são resolvidos pelo narrador em /dev/table."
+                                      : "Conjurar gera ataque mágico, mas o payload não estrutura perícia/atributo de acerto — o teste precisa ser rolado manualmente."
+                                    : undefined
+                              }
                               style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px", opacity: nivelCheck.aboveLevel ? 0.5 : 1, cursor: nivelCheck.aboveLevel ? "not-allowed" : "pointer" }}
                             >
-                              Conjurar
+                              {attackProfile.isAttack ? "Conjurar (ataque mágico)" : "Conjurar"}
                             </button>
                             {dano && (
                               <button data-testid={`magia-rolar-dano-${spell.slug}`} onClick={() => onRollDamage(spell.slug)} style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px" }}>

@@ -34,6 +34,7 @@
 
 import { rollDamageFormula } from "./attack";
 import { getOverloadMaxPerDay } from "./overload";
+import { rollPericia } from "../dice";
 import type { Character, OverloadRulesPayload } from "./types";
 
 // ---------------------------------------------------------------------
@@ -48,6 +49,16 @@ export interface SpellStatistics {
   /** `null` no DB atual para várias magias — PRD autoriza placeholder; nunca inventamos um valor. */
   custo_mana: number | null;
   resolucao: string;
+  /** `estatisticas.pericia_teste` (ex.: "precisao" em magias de ataque) — perícia do teste de acerto. `null` quando ausente. */
+  periciaTeste: string | null;
+  /** `estatisticas.atributo_ataque` (ex.: "vertente" em magias de ataque) — o que determina a quantidade de dados do teste de ataque mágico. `null` quando ausente. */
+  atributoAtaque: string | null;
+  /** `estatisticas.alcance.texto` (ex.: "10 metros (linha —)") — texto do alcance, só exibição/lembrete. `null` quando ausente. */
+  alcanceTexto: string | null;
+  /** `estatisticas.area.tipo` (ex.: "linha") — tipo da área quando a magia declara uma. `null` = alvo único / sem área estruturada. */
+  areaTipo: string | null;
+  /** `estatisticas.area.texto` — texto da área, só exibição/lembrete. `null` quando ausente. */
+  areaTexto: string | null;
 }
 
 export interface SpellEffect {
@@ -104,6 +115,20 @@ export function normalizeSpellContent(raw: Record<string, unknown>): SpellConten
       usa_reacao: estatisticasRaw.usa_reacao === true,
       custo_mana: typeof estatisticasRaw.custo_mana === "number" ? estatisticasRaw.custo_mana : null,
       resolucao: typeof estatisticasRaw.resolucao === "string" ? estatisticasRaw.resolucao : "",
+      periciaTeste: typeof estatisticasRaw.pericia_teste === "string" ? estatisticasRaw.pericia_teste : null,
+      atributoAtaque: typeof estatisticasRaw.atributo_ataque === "string" ? estatisticasRaw.atributo_ataque : null,
+      alcanceTexto: (() => {
+        const alcance = asRecord(estatisticasRaw.alcance);
+        return typeof alcance?.texto === "string" ? alcance.texto : null;
+      })(),
+      areaTipo: (() => {
+        const area = asRecord(estatisticasRaw.area);
+        return typeof area?.tipo === "string" ? area.tipo : null;
+      })(),
+      areaTexto: (() => {
+        const area = asRecord(estatisticasRaw.area);
+        return typeof area?.texto === "string" ? area.texto : null;
+      })(),
     },
     payload_automacao: raw.payload_automacao,
     status: String(raw.status ?? "published"),
@@ -266,6 +291,161 @@ export function rollSpellDamage(spell: SpellContent, rng?: () => number): number
   return efeito.valor ?? null;
 }
 
+// ---------------------------------------------------------------------
+// Ataque mágico (checkpoint pós-v0.70).
+//
+// Uma magia é "ataque mágico ESTRUTURADO" quando o conteúdo declara
+// `estatisticas.resolucao === "ataque"` OU `tipo_magia === "ataque"`
+// (detecção por payload, nunca por nome). O teste de acerto usa a
+// perícia de `pericia_teste` e a quantidade de dados vem de
+// `atributo_ataque`: no catálogo atual, `atributo_ataque: "vertente"`
+// significa "role (nível de vertente)d8 + perícia" — a MESMA rolagem
+// base do Ruptura (`rollPericia`), só que a quantidade de dados vem do
+// nível investido na vertente em vez de um atributo tradicional.
+//
+// Nunca inventa perícia/atributo/dado/CD: se o payload não declarar
+// `pericia_teste` ou `atributo_ataque`, a magia NÃO é rolada
+// automaticamente (`getSpellAttackProfile` devolve `rollable: false`,
+// e quem chama registra lembrete manual). Alvo, área, distância, MIT e
+// resistência ficam fora daqui — teatro da mente, resolvido pelo
+// narrador em /dev/table.
+// ---------------------------------------------------------------------
+
+export interface SpellDamageComponent {
+  /** Fórmula "NdM" quando estruturada — ausente em dano fixo. */
+  dado?: string;
+  /** Dano fixo quando o payload declara `valor`. */
+  valor?: number;
+  tipoDano: string;
+  subtipoDano: string | null;
+}
+
+/** Todos os efeitos de dano da magia (uma magia de ataque pode ter mais de um, ex.: Descarga Elétrica 1d8 + 1d6). */
+export function getSpellDamageComponents(spell: SpellContent): SpellDamageComponent[] {
+  const componentes: SpellDamageComponent[] = [];
+  for (const efeito of getSpellEffects(spell)) {
+    if (efeito.tipo !== "dano" || typeof efeito.tipo_dano !== "string") continue;
+    const dado = typeof efeito.dado === "string" ? efeito.dado : undefined;
+    const valor = typeof efeito.valor === "number" ? efeito.valor : undefined;
+    if (!dado && valor == null) continue;
+    componentes.push({
+      dado,
+      valor,
+      tipoDano: efeito.tipo_dano,
+      subtipoDano: typeof efeito.subtipo_dano === "string" ? efeito.subtipo_dano : null,
+    });
+  }
+  return componentes;
+}
+
+export interface SpellAttackProfile {
+  /** true quando a magia é ataque mágico ESTRUTURADO (resolucao/tipo_magia = "ataque"). */
+  isAttack: boolean;
+  /** Perícia do teste de acerto (`pericia_teste`) — null quando ausente. */
+  attackSkill: string | null;
+  /** O que determina a quantidade de dados (`atributo_ataque`, ex.: "vertente") — null quando ausente. */
+  attackAttribute: string | null;
+  /** true só quando dá para rolar o acerto sem inventar nada: é ataque estruturado E tem perícia E `atributo_ataque` reconhecido ("vertente"). */
+  rollable: boolean;
+  /** Motivo textual quando NÃO é rolável (ataque sem perícia/atributo estruturado) — null quando rolável ou quando nem é ataque. */
+  notRollableReason: string | null;
+}
+
+/** `true` quando a magia é ataque mágico estruturado (por payload, nunca por nome). */
+export function isSpellAttack(spell: SpellContent): boolean {
+  return spell.estatisticas.resolucao === "ataque" || spell.estatisticas.tipo_magia === "ataque";
+}
+
+/**
+ * Perfil de ataque mágico da magia — detecta se é ataque estruturado e
+ * se dá para rolar o acerto automaticamente sem inventar nada.
+ * `atributo_ataque` reconhecido hoje: "vertente" (quantidade de dados =
+ * nível de vertente). Qualquer outro valor não vira rolagem automática
+ * (fica `rollable: false` com motivo).
+ */
+export function getSpellAttackProfile(spell: SpellContent): SpellAttackProfile {
+  const isAttack = isSpellAttack(spell);
+  const attackSkill = spell.estatisticas.periciaTeste;
+  const attackAttribute = spell.estatisticas.atributoAtaque;
+  if (!isAttack) {
+    return { isAttack: false, attackSkill, attackAttribute, rollable: false, notRollableReason: null };
+  }
+  if (!attackSkill || !attackAttribute) {
+    return {
+      isAttack: true,
+      attackSkill,
+      attackAttribute,
+      rollable: false,
+      notRollableReason: "Ataque mágico sem perícia/atributo de acerto estruturado no conteúdo — role o teste manualmente pela aba Rolagens.",
+    };
+  }
+  if (attackAttribute !== "vertente") {
+    return {
+      isAttack: true,
+      attackSkill,
+      attackAttribute,
+      rollable: false,
+      notRollableReason: `Ataque mágico com atributo de acerto "${attackAttribute}" ainda não modelado — role o teste manualmente pela aba Rolagens.`,
+    };
+  }
+  return { isAttack: true, attackSkill, attackAttribute, rollable: true, notRollableReason: null };
+}
+
+export interface SpellAttackRoll {
+  attackSkill: string;
+  attackAttribute: string;
+  /** Quantidade de d8 rolados (= nível de vertente). */
+  diceCount: number;
+  dice: number[];
+  highestDie: number;
+  /** Valor da perícia do conjurador (0 se não tiver). */
+  skillValue: number;
+  modifiersTotal: number;
+  total: number;
+}
+
+/**
+ * Rola o teste de acerto do ataque mágico com o helper canônico
+ * (`rollPericia`) — (nível de vertente)d8 + perícia + modificador.
+ * `vertenteLevel` é a quantidade de dados. Devolve `null` quando a
+ * magia não é ataque rolável (ver `getSpellAttackProfile`) ou quando o
+ * nível de vertente é desconhecido (`null`) — nunca inventa dado/perícia.
+ */
+export function rollSpellAttack(params: {
+  spell: SpellContent;
+  character: Pick<Character, "pericias">;
+  vertenteLevel: number | null;
+  modifier?: number;
+}): SpellAttackRoll | null {
+  const { spell, character, vertenteLevel, modifier = 0 } = params;
+  const profile = getSpellAttackProfile(spell);
+  if (!profile.rollable || profile.attackSkill == null) return null;
+  if (vertenteLevel == null) return null;
+
+  const diceCount = Math.max(0, Math.trunc(vertenteLevel));
+  const skillValue = character.pericias?.[profile.attackSkill] ?? 0;
+  const resultado = rollPericia({
+    atributoId: profile.attackAttribute ?? "vertente",
+    atributoNome: "Vertente",
+    atributoValor: diceCount,
+    periciaId: profile.attackSkill,
+    periciaNome: profile.attackSkill,
+    periciaValor: skillValue,
+    modificador: modifier,
+  });
+
+  return {
+    attackSkill: profile.attackSkill,
+    attackAttribute: profile.attackAttribute ?? "vertente",
+    diceCount,
+    dice: resultado.dados,
+    highestDie: resultado.maiorDado,
+    skillValue,
+    modifiersTotal: modifier,
+    total: resultado.total,
+  };
+}
+
 /**
  * Efeitos da magia que NÃO são automatizados — descritos textualmente a
  * partir do payload (aplicar/remover condição no alvo, cura em alvo,
@@ -340,6 +520,8 @@ export interface SpellCastResolution {
   resolucao: string;
   resistance: ResolvedSpellResistance | null;
   damage: SpellCastDamage | null;
+  /** Perfil de ataque mágico (checkpoint pós-v0.70) — `isAttack: false` quando a magia não é ataque estruturado. */
+  attackProfile: SpellAttackProfile;
   manualEffects: string[];
   reminders: string[];
 }
@@ -393,14 +575,28 @@ export function prepareSpellCastResolution(spell: SpellContent, rng?: () => numb
       reminders.push(`Resistência do alvo: ${resistance.acoes.join("/") || "?"}${resistance.condicional ? " — condicional, ver texto da magia" : ""} — CD não estruturada.`);
     }
   }
-  if (spell.estatisticas.resolucao === "ataque") {
-    reminders.push("Resolução por ATAQUE mágico — role o teste pela aba Rolagens; sem motor de ataque mágico dedicado ainda.");
+  const attackProfile = getSpellAttackProfile(spell);
+  if (attackProfile.isAttack) {
+    if (attackProfile.rollable) {
+      reminders.push("Ataque mágico — o teste de acerto é rolado na conjuração; o narrador resolve dano/MIT/região em /dev/table (Resolver ataque mágico).");
+    } else if (attackProfile.notRollableReason) {
+      reminders.push(attackProfile.notRollableReason);
+    }
+    if (spell.estatisticas.areaTexto || spell.estatisticas.areaTipo) {
+      reminders.push(
+        `Área declarada (${spell.estatisticas.areaTexto ?? spell.estatisticas.areaTipo}) — sem automação de área/múltiplos alvos; região corporal não se aplica. Resolva alvos manualmente.`,
+      );
+    }
+    if (spell.estatisticas.alcanceTexto) {
+      reminders.push(`Alcance: ${spell.estatisticas.alcanceTexto} — não validado automaticamente.`);
+    }
   }
 
   return {
     resolucao: spell.estatisticas.resolucao,
     resistance,
     damage,
+    attackProfile,
     manualEffects: describeSpellManualEffects(spell),
     reminders,
   };

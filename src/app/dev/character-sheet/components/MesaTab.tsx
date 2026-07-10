@@ -101,6 +101,8 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   character_created: "Personagem Criado",
   ammunition: "Munição",
   inventory_transfer: "Transferência de Inventário",
+  spell_attack_used: "Ataque Mágico",
+  spell_attack_resolved: "Ataque Mágico Resolvido",
 };
 
 function entryKindLabel(type: string): string {
@@ -133,6 +135,7 @@ function entryIcon(type: string): string {
   if (type === "talent_used") return "✨";
   if (type === "spell_cast") return "🔮";
   if (type === "inventory_transfer") return "📦";
+  if (type === "spell_attack_used" || type === "spell_attack_resolved") return "⚔";
   return "•";
 }
 
@@ -160,6 +163,7 @@ function entryBorderColor(type: string): string {
   if (type === "talent_used") return "#9b8cff";
   if (type === "spell_cast") return "#5ec8ff";
   if (type === "inventory_transfer") return "#f5a623";
+  if (type === "spell_attack_used" || type === "spell_attack_resolved") return "#7c4dff";
   return "#ffb84f";
 }
 
@@ -685,6 +689,71 @@ function formatSpellCast(payload: Record<string, unknown>): string {
 }
 
 /**
+ * `spell_attack_used` (checkpoint pós-v0.70) — "Ataque mágico —
+ * {personagem} conjurou {magia}: total {X}, dano {Y}, tipo {Z}."
+ * (formato mínimo pedido). Total ausente quando o payload da magia não
+ * estruturou perícia/atributo de acerto — nunca inventa um número.
+ */
+function formatSpellAttackUsed(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const spellName = typeof payload.spellName === "string" ? payload.spellName : "Magia";
+  const total = typeof payload.total === "number" ? payload.total : null;
+  const damageFormula = typeof payload.damageFormula === "string" ? payload.damageFormula : null;
+  const damageRolled = typeof payload.damageRolled === "number" ? payload.damageRolled : null;
+  const damageType = typeof payload.damageType === "string" ? payload.damageType : null;
+  const area = payload.area != null ? String(payload.area) : null;
+  const range = payload.range != null ? String(payload.range) : null;
+  const fusion = typeof payload.fusion === "object" && payload.fusion !== null ? (payload.fusion as Record<string, unknown>) : null;
+
+  const partes = [
+    total != null ? `total ${total}` : "teste de acerto não rolado automaticamente",
+    damageRolled != null ? `dano ${damageRolled}${damageFormula ? ` (${damageFormula})` : ""}${damageType ? ` ${damageType}` : ""}` : damageFormula ? `dano ${damageFormula}${damageType ? ` ${damageType}` : ""}` : null,
+    area ? `área: ${area}` : null,
+    range ? `alcance: ${range}` : null,
+  ].filter((p): p is string => Boolean(p));
+
+  const fusedNome = fusion && typeof fusion.fusedSpellNome === "string" ? fusion.fusedSpellNome : null;
+  const nomeCompleto = `${spellName}${fusedNome ? ` + ${fusedNome} (FUSÃO)` : ""}`;
+  const reminders = Array.isArray(payload.reminders) ? payload.reminders.filter((r): r is string => typeof r === "string") : [];
+  const base = `Ataque mágico — ${characterNome} conjurou ${nomeCompleto}: ${partes.join(", ")}.`;
+  return reminders.length > 0 ? `${base} — ${reminders.join(" ")}` : base;
+}
+
+/**
+ * `spell_attack_resolved` (checkpoint pós-v0.70) — "Ataque mágico
+ * resolvido — {conjurador} → {alvo} · {magia} · margem {X} · dano
+ * final {Y} · PV {antes} → {depois}." (formato mínimo pedido).
+ */
+function formatSpellAttackResolved(payload: Record<string, unknown>): string {
+  const casterName = typeof payload.casterName === "string" ? payload.casterName : "Conjurador";
+  const targetName = typeof payload.targetName === "string" ? payload.targetName : "Alvo";
+  const spellName = typeof payload.spellName === "string" ? payload.spellName : "Magia";
+  const margin = typeof payload.margin === "number" ? payload.margin : null;
+  const finalDamage = typeof payload.finalDamage === "number" ? payload.finalDamage : "?";
+  const pvBefore = typeof payload.targetPvBefore === "number" ? payload.targetPvBefore : "?";
+  const pvAfter = typeof payload.targetPvAfter === "number" ? payload.targetPvAfter : "?";
+  const mitApplied = typeof payload.mitApplied === "number" ? payload.mitApplied : 0;
+  const damageType = typeof payload.damageType === "string" ? payload.damageType : null;
+  const selectedRegion = typeof payload.selectedRegion === "string" ? payload.selectedRegion : null;
+  const override = payload.override === true;
+  const resistanceReminder = typeof payload.resistanceReminder === "string" ? payload.resistanceReminder : null;
+  const areaReminder = typeof payload.areaReminder === "string" ? payload.areaReminder : null;
+
+  const partes = [
+    margin != null ? `margem ${margin}` : null,
+    selectedRegion ? `região: ${selectedRegion}` : null,
+    `MIT ${mitApplied}`,
+    `dano final ${finalDamage}${damageType ? ` (${damageType})` : ""}`,
+    `PV ${pvBefore} → ${pvAfter}`,
+    override ? "override" : null,
+  ].filter((p): p is string => Boolean(p));
+
+  const extras = [resistanceReminder, areaReminder].filter((r): r is string => Boolean(r));
+  const base = `Ataque mágico resolvido — ${casterName} → ${targetName} · ${spellName} · ${partes.join(" · ")}.`;
+  return extras.length > 0 ? `${base} — ${extras.join(" ")}` : base;
+}
+
+/**
  * `inventory_transfer` (checkpoint pós-v0.68, CP7) — transferência
  * entre personagem e inventário do bando/mesa, nos dois sentidos.
  * "Transferência — {origem} enviou/recebeu {item} x{quantidade} (bando)
@@ -1128,7 +1197,11 @@ export function MesaTab({
                                                                           ? formatCharacterStateChange(entry.payload)
                                                                           : entry.type === "inventory_transfer"
                                                                             ? formatInventoryTransfer(entry.payload)
-                                                                            : formatGenericLog(entry.type, entry.payload)}
+                                                                            : entry.type === "spell_attack_used"
+                                                                              ? formatSpellAttackUsed(entry.payload)
+                                                                              : entry.type === "spell_attack_resolved"
+                                                                                ? formatSpellAttackResolved(entry.payload)
+                                                                                : formatGenericLog(entry.type, entry.payload)}
             </span>
           </div>
         ))}

@@ -98,6 +98,7 @@ import {
   rollSpellDamage,
   getSpellDamageEffect,
   prepareSpellCastResolution,
+  rollSpellAttack,
   castSpellWithFusion,
   learnSpell,
   forgetSpell,
@@ -2604,6 +2605,22 @@ export default function CharacterSheetClient({
       `Conjurado: ${spell.nome} — ${partes.join("; ")}.${extras.length > 0 ? ` — ${extras.join(" ")}` : ""}`,
     );
 
+    // Ataque mágico (checkpoint pós-v0.70) — só rola quando o payload estrutura
+    // perícia+atributo de acerto (atributoAtaque "vertente"); nunca inventa fallback.
+    const attackRoll = resolution.attackProfile.isAttack
+      ? rollSpellAttack({ spell, character: current, vertenteLevel })
+      : null;
+    if (resolution.attackProfile.isAttack) {
+      if (attackRoll) {
+        addLogEntry(
+          "recurso",
+          `Ataque mágico — ${current.nome} conjurou ${spell.nome}: total ${attackRoll.total}${resolution.damage ? `, dano ${resolution.damage.result} (${resolution.damage.tipoDano})` : ""}. Resolva em /dev/table.`,
+        );
+      } else if (resolution.attackProfile.notRollableReason) {
+        addLogEntry("recurso", `Ataque mágico — ${resolution.attackProfile.notRollableReason}`);
+      }
+    }
+
     // Conjurar muda estado real (PA/Mana) — persiste automaticamente quando conectado, mesmo padrão de item/talento.
     await persistAutomatedActionExecution(result.character);
 
@@ -2646,6 +2663,50 @@ export default function CharacterSheetClient({
       } catch {
         avisarFalhaLogMesa();
         // Best-effort — a conjuração já foi aplicada no estado local/persistido.
+      }
+
+      if (resolution.attackProfile.isAttack) {
+        try {
+          await addLog({
+            campaignId: selectedCampaignId,
+            characterId: characterId ?? undefined,
+            profileId: selectedProfileId,
+            profileSessionId: profileSessionToken?.profileSessionId ?? null,
+            type: "spell_attack_used",
+            visibility: "public",
+            payload: {
+              characterId,
+              characterNome: current.nome,
+              profileId: selectedProfileId,
+              profileNickname: perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null,
+              spellSlug: spell.slug,
+              spellId: spell.slug,
+              spellName: spell.nome,
+              spellVertente: spell.vertente,
+              spellLevel: spell.estatisticas.nivel,
+              casterVertenteLevel: vertenteLevel,
+              vertenteCd: vertenteLevel != null ? getVertenteCd(vertenteLevel) : null,
+              attackAttribute: resolution.attackProfile.attackAttribute,
+              attackSkill: resolution.attackProfile.attackSkill,
+              dice: attackRoll?.dice ?? null,
+              highestDie: attackRoll?.highestDie ?? null,
+              skillValue: attackRoll?.skillValue ?? null,
+              modifiersTotal: attackRoll?.modifiersTotal ?? null,
+              total: attackRoll?.total ?? null,
+              damageFormula: resolution.damage?.formula ?? null,
+              damageRolled: resolution.damage?.result ?? null,
+              damageType: resolution.damage?.tipoDano ?? null,
+              range: spell.estatisticas.alcanceTexto ?? null,
+              area: spell.estatisticas.areaTexto ?? spell.estatisticas.areaTipo ?? null,
+              resistance: resolution.resistance,
+              reminders: resolution.reminders,
+              source: "spell_attack",
+            },
+          });
+        } catch {
+          avisarFalhaLogMesa();
+          // Best-effort — a conjuração/rolagem já foi aplicada no estado local/persistido.
+        }
       }
     }
   }
@@ -2706,6 +2767,22 @@ export default function CharacterSheetClient({
       `Conjurado com FUSÃO: ${spell.nome} + ${fusedSpell.nome} — ${partes.join("; ")}.${extras.length > 0 ? ` — ${extras.join(" ")}` : ""}`,
     );
 
+    // Ataque mágico (checkpoint pós-v0.70) — a magia PRINCIPAL é a que carrega o
+    // ataque estruturado; a fundida nunca soma/altera dano ou acerto automaticamente.
+    const attackRoll = resolution.attackProfile.isAttack
+      ? rollSpellAttack({ spell, character: current, vertenteLevel })
+      : null;
+    if (resolution.attackProfile.isAttack) {
+      if (attackRoll) {
+        addLogEntry(
+          "recurso",
+          `Ataque mágico — ${current.nome} conjurou ${spell.nome} (Fusão com ${fusedSpell.nome}): total ${attackRoll.total}${resolution.damage ? `, dano ${resolution.damage.result} (${resolution.damage.tipoDano})` : ""}. Resolva em /dev/table.`,
+        );
+      } else if (resolution.attackProfile.notRollableReason) {
+        addLogEntry("recurso", `Ataque mágico — ${resolution.attackProfile.notRollableReason}`);
+      }
+    }
+
     await persistAutomatedActionExecution(result.character);
 
     if (selectedCampaignId) {
@@ -2757,6 +2834,59 @@ export default function CharacterSheetClient({
       } catch {
         avisarFalhaLogMesa();
         // Best-effort — a fusão já foi aplicada no estado local/persistido.
+      }
+
+      if (resolution.attackProfile.isAttack) {
+        try {
+          await addLog({
+            campaignId: selectedCampaignId,
+            characterId: characterId ?? undefined,
+            profileId: selectedProfileId,
+            profileSessionId: profileSessionToken?.profileSessionId ?? null,
+            type: "spell_attack_used",
+            visibility: "public",
+            payload: {
+              characterId,
+              characterNome: current.nome,
+              profileId: selectedProfileId,
+              profileNickname: perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null,
+              spellSlug: spell.slug,
+              spellId: spell.slug,
+              spellName: spell.nome,
+              spellVertente: spell.vertente,
+              spellLevel: spell.estatisticas.nivel,
+              casterVertenteLevel: vertenteLevel,
+              vertenteCd: vertenteLevel != null ? getVertenteCd(vertenteLevel) : null,
+              attackAttribute: resolution.attackProfile.attackAttribute,
+              attackSkill: resolution.attackProfile.attackSkill,
+              dice: attackRoll?.dice ?? null,
+              highestDie: attackRoll?.highestDie ?? null,
+              skillValue: attackRoll?.skillValue ?? null,
+              modifiersTotal: attackRoll?.modifiersTotal ?? null,
+              total: attackRoll?.total ?? null,
+              damageFormula: resolution.damage?.formula ?? null,
+              damageRolled: resolution.damage?.result ?? null,
+              damageType: resolution.damage?.tipoDano ?? null,
+              range: spell.estatisticas.alcanceTexto ?? null,
+              area: spell.estatisticas.areaTexto ?? spell.estatisticas.areaTipo ?? null,
+              resistance: resolution.resistance,
+              reminders: [...resolution.reminders, ...result.fusionReminders],
+              fusion: {
+                fusedSpellSlug: fusedSpell.slug,
+                fusedSpellNome: fusedSpell.nome,
+                fusedVertente: fusedSpell.vertente,
+                sobrecargaBefore: result.sobrecargaBefore,
+                sobrecargaAfter: result.sobrecargaAfter,
+                sobrecargaMax: result.sobrecargaMax,
+                rupturaPendente: result.rupturaPendente,
+              },
+              source: "spell_attack",
+            },
+          });
+        } catch {
+          avisarFalhaLogMesa();
+          // Best-effort — a conjuração/rolagem já foi aplicada no estado local/persistido.
+        }
       }
     }
   }

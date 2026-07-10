@@ -157,6 +157,46 @@ const DEFAULT_ATTACK_PANEL_FORM: AttackPanelForm = {
   defenseOverride: false,
 };
 
+/**
+ * Painel "Resolver ataque mágico" (checkpoint pós-v0.70) — reaproveita
+ * boa parte do modelo do ataque físico (alvo, defesa/reação, margem,
+ * MIT, override), mas NUNCA assume região/MIT automáticos: a magia
+ * pode ser de área (sem região corporal aplicável) e nenhuma magia do
+ * catálogo hoje estrutura se MIT se aplica ao dano — MIT fica sempre
+ * manual aqui, com lembrete explícito.
+ */
+interface SpellAttackPanelForm {
+  targetCharacterId: string;
+  /** Total do ataque — pré-preenchido do log quando a magia foi rolável na conjuração; editável (nunca inventa quando ausente). */
+  attackTotal: string;
+  defenseTotal: string;
+  rawDamage: string;
+  mit: string;
+  /** Região só é oferecida quando a magia não declara área — nunca forçada em efeito de área/explosão/zona. */
+  region: BodyRegion | "";
+  override: boolean;
+  overrideReason: string;
+  resistirSkill: "vigor" | "mobilidade";
+  defenseModifier: string;
+  lastDefense: DefenseRollResult | null;
+  defenseOverride: boolean;
+}
+
+const DEFAULT_SPELL_ATTACK_PANEL_FORM: SpellAttackPanelForm = {
+  targetCharacterId: "",
+  attackTotal: "",
+  defenseTotal: "",
+  rawDamage: "",
+  mit: "",
+  region: "",
+  override: false,
+  overrideReason: "",
+  resistirSkill: "vigor",
+  defenseModifier: "",
+  lastDefense: null,
+  defenseOverride: false,
+};
+
 const DEFENSE_TYPE_LABELS: Record<DefenseType, string> = {
   esquivar: "Esquivar",
   aparar: "Aparar",
@@ -352,6 +392,73 @@ function formatDefenseReactionUsed(payload: Record<string, unknown>): string {
   return base;
 }
 
+/**
+ * `spell_attack_used` (checkpoint pós-v0.70) — "Ataque mágico —
+ * {personagem} conjurou {magia}: total {X}, dano {Y}, tipo {Z}."
+ * (formato mínimo pedido). Total ausente quando o payload da magia não
+ * estruturou perícia/atributo de acerto — nunca inventa um número.
+ */
+function formatSpellAttackUsed(payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const spellName = typeof payload.spellName === "string" ? payload.spellName : "Magia";
+  const total = typeof payload.total === "number" ? payload.total : null;
+  const damageFormula = typeof payload.damageFormula === "string" ? payload.damageFormula : null;
+  const damageRolled = typeof payload.damageRolled === "number" ? payload.damageRolled : null;
+  const damageType = typeof payload.damageType === "string" ? payload.damageType : null;
+  const area = payload.area != null ? String(payload.area) : null;
+  const range = payload.range != null ? String(payload.range) : null;
+  const fusion = typeof payload.fusion === "object" && payload.fusion !== null ? (payload.fusion as Record<string, unknown>) : null;
+
+  const partes = [
+    total != null ? `total ${total}` : "teste de acerto não rolado automaticamente",
+    damageRolled != null ? `dano ${damageRolled}${damageFormula ? ` (${damageFormula})` : ""}${damageType ? ` ${damageType}` : ""}` : damageFormula ? `dano ${damageFormula}${damageType ? ` ${damageType}` : ""}` : null,
+    area ? `área: ${area}` : null,
+    range ? `alcance: ${range}` : null,
+  ].filter((p): p is string => Boolean(p));
+
+  const fusedNome = fusion && typeof fusion.fusedSpellNome === "string" ? fusion.fusedSpellNome : null;
+  const nomeCompleto = `${spellName}${fusedNome ? ` + ${fusedNome} (FUSÃO)` : ""}`;
+  const reminders = Array.isArray(payload.reminders) ? payload.reminders.filter((r): r is string => typeof r === "string") : [];
+  const base = `Ataque mágico — ${characterNome} conjurou ${nomeCompleto}: ${partes.join(", ")}.`;
+  return reminders.length > 0 ? `${base} — ${reminders.join(" ")}` : base;
+}
+
+/**
+ * `spell_attack_resolved` (checkpoint pós-v0.70) — "Ataque mágico
+ * resolvido — {conjurador} → {alvo} · {magia} · margem {X} · dano
+ * final {Y} · PV {antes} → {depois}." (formato mínimo pedido).
+ */
+function formatSpellAttackResolved(payload: Record<string, unknown>): string {
+  const casterName = typeof payload.casterName === "string" ? payload.casterName : "Conjurador";
+  const targetName = typeof payload.targetName === "string" ? payload.targetName : "Alvo";
+  const spellName = typeof payload.spellName === "string" ? payload.spellName : "Magia";
+  const margin = typeof payload.margin === "number" ? payload.margin : null;
+  const marginBand = typeof payload.marginBand === "string" ? MARGIN_BAND_LABELS[payload.marginBand] ?? payload.marginBand : null;
+  const finalDamage = typeof payload.finalDamage === "number" ? payload.finalDamage : "?";
+  const pvBefore = typeof payload.targetPvBefore === "number" ? payload.targetPvBefore : "?";
+  const pvAfter = typeof payload.targetPvAfter === "number" ? payload.targetPvAfter : "?";
+  const mitApplied = typeof payload.mitApplied === "number" ? payload.mitApplied : 0;
+  const damageType = typeof payload.damageType === "string" ? payload.damageType : null;
+  const selectedRegion = typeof payload.selectedRegion === "string" ? payload.selectedRegion : null;
+  const regionLabel = selectedRegion ? BODY_REGION_LABELS[selectedRegion as BodyRegion] ?? selectedRegion : null;
+  const override = payload.override === true;
+  const resistanceReminder = typeof payload.resistanceReminder === "string" ? payload.resistanceReminder : null;
+  const areaReminder = typeof payload.areaReminder === "string" ? payload.areaReminder : null;
+
+  const partes = [
+    margin != null ? `margem ${margin}${marginBand ? ` (${marginBand})` : ""}` : null,
+    regionLabel ? `região: ${regionLabel}` : null,
+    `MIT ${mitApplied}`,
+    `dano final ${finalDamage}${damageType ? ` (${damageType})` : ""}`,
+    `PV ${pvBefore} → ${pvAfter}`,
+    override ? "override" : null,
+  ].filter((p): p is string => Boolean(p));
+
+  const extras = [resistanceReminder, areaReminder].filter((r): r is string => Boolean(r));
+  const base = `Ataque mágico resolvido — ${casterName} → ${targetName} · ${spellName} · ${partes.join(" · ")}.`;
+  return extras.length > 0 ? `${base} — ${extras.join(" ")}` : base;
+}
+
 const ENTRY_KIND_LABELS: Record<string, string> = {
   chat: "Mensagem",
   rolagem_pericia: "Rolagem de Perícia",
@@ -382,6 +489,8 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   overload_surge_used: "Surto de Sobrecarga",
   overload_will_roll: "Teste de Vontade (Sobrecarga)",
   inventory_transfer: "Transferência de Inventário",
+  spell_attack_used: "Ataque Mágico",
+  spell_attack_resolved: "Ataque Mágico Resolvido",
 };
 
 function entryKindLabel(type: string): string {
@@ -407,6 +516,7 @@ function entryIcon(type: string): string {
   if (type === "spell_cast") return "🔮";
   if (type === "overload_surge" || type === "overload_surge_used" || type === "overload_will_roll") return "⚡";
   if (type === "inventory_transfer") return "📦";
+  if (type === "spell_attack_used" || type === "spell_attack_resolved") return "⚔";
   return "•";
 }
 
@@ -1020,6 +1130,16 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
   /** Chave `${logId}:${defenseType}` do botão de defesa em andamento — separado de ataqueResolverProcessing (que trava "Aplicar dano") para os dois não se bloquearem um ao outro. */
   const [ataqueDefesaProcessing, setAtaqueDefesaProcessing] = useState<string | null>(null);
 
+  // ---------------------------------------------------------------
+  // "Resolver ataque mágico" (checkpoint pós-v0.70) — painel irmão do
+  // de ataque físico acima, aberto a partir de logs `spell_attack_used`.
+  // ---------------------------------------------------------------
+  const [magiaResolvendoLogId, setMagiaResolvendoLogId] = useState<string | null>(null);
+  const [magiaPainelForm, setMagiaPainelForm] = useState<Record<string, SpellAttackPanelForm>>({});
+  const [magiaResolverErro, setMagiaResolverErro] = useState<string | null>(null);
+  const [magiaResolverProcessing, setMagiaResolverProcessing] = useState<string | null>(null);
+  const [magiaDefesaProcessing, setMagiaDefesaProcessing] = useState<string | null>(null);
+
   /** true quando `damageBase` é uma fórmula "NdM" simples (rolável automaticamente); false para dano fixo/não estruturado. */
   function isDiceFormula(damageBase: string | null | undefined): boolean {
     return typeof damageBase === "string" && /^\d+d\d+([+-]\d+)?$/.test(damageBase.trim().replace(/\s+/g, ""));
@@ -1395,6 +1515,313 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       setAtaqueResolverErro(err instanceof Error ? err.message : "Erro desconhecido ao aplicar dano — dados preenchidos foram mantidos.");
     } finally {
       setAtaqueResolverProcessing(null);
+    }
+  }
+
+  function handleOpenResolveSpellAttack(log: TableLogEntry) {
+    setMagiaResolverErro(null);
+    setMagiaResolvendoLogId(log.id);
+    if (!magiaPainelForm[log.id]) {
+      const attackTotalPrefill = typeof log.payload.total === "number" ? String(log.payload.total) : "";
+      const rawDamagePrefill = typeof log.payload.damageRolled === "number" ? String(log.payload.damageRolled) : "";
+      setMagiaPainelForm((prev) => ({
+        ...prev,
+        [log.id]: { ...DEFAULT_SPELL_ATTACK_PANEL_FORM, attackTotal: attackTotalPrefill, rawDamage: rawDamagePrefill },
+      }));
+    }
+  }
+
+  function updateSpellAttackPanelForm(logId: string, patch: Partial<SpellAttackPanelForm>) {
+    setMagiaPainelForm((prev) => ({ ...prev, [logId]: { ...(prev[logId] ?? DEFAULT_SPELL_ATTACK_PANEL_FORM), ...patch } }));
+  }
+
+  /**
+   * Rola defesa/reação do alvo contra ataque mágico — mesma lógica de
+   * `handleRollDefense` (Esquivar/Aparar/Bloquear/Resistir, gasto de
+   * Reação canônico), só grava no painel de magia em vez do de arma.
+   */
+  async function handleRollSpellDefense(logId: string, log: TableLogEntry, defenseType: DefenseType) {
+    if (!selectedCampaignId) return;
+    const form = magiaPainelForm[logId] ?? DEFAULT_SPELL_ATTACK_PANEL_FORM;
+    setMagiaResolverErro(null);
+
+    const targetRecord = form.targetCharacterId ? personagensAtivos[form.targetCharacterId] : null;
+    if (!targetRecord) {
+      setMagiaResolverErro("Selecione o alvo antes de rolar defesa.");
+      return;
+    }
+    const target = normalizeCharacter(targetRecord.payload);
+
+    const skillSlug = defenseType === "resistir" ? form.resistirSkill : DEFENSE_SKILL_SLUG[defenseType];
+    const skillDef = regras?.pericias.find((p) => p.id === skillSlug);
+    const attributeId = skillDef?.atributo_primario ?? "corpo";
+    const attributeDef = regras?.atributos.find((a) => a.id === attributeId);
+    const attributeName = attributeDef?.nome ?? attributeId;
+    const skillName = skillDef?.nome ?? skillSlug;
+    const attributeValue = (target.atributos as unknown as Record<string, number>)[attributeId] ?? 0;
+    const skillValue = target.pericias[skillSlug] ?? 0;
+
+    let requirementStatus: DefenseRollResult["requirementStatus"] = "not_applicable";
+    let requirementReminder: string | null = null;
+    if (defenseType === "aparar") {
+      const met = checkApararRequirement(target);
+      requirementStatus = met ? "met" : "not_detected";
+      requirementReminder =
+        "Requer arma com propriedade Aparar." +
+        (met ? "" : " Não detectada no equipamento empunhado do alvo — pode ser usada por decisão do narrador.");
+    } else if (defenseType === "bloquear") {
+      const met = checkBloquearRequirement(target);
+      requirementStatus = met ? "met" : "not_detected";
+      requirementReminder =
+        "Requer escudo ou proteção adequada." +
+        (met ? "" : " Não detectado no equipamento do alvo — pode ser usada por decisão do narrador.") +
+        " PD não é aplicado nem reduzido neste checkpoint.";
+    } else if (defenseType === "resistir") {
+      requirementReminder = "Usado contra movimento forçado, queda, imobilização, paralisia e efeitos similares.";
+    }
+
+    const maxReacoes = computeDerivedStats(target.atributos, regras, target.mana_bonus_ruptura ?? 0).reacoes_por_rodada;
+    const reactionResult = spendReactionForDefense(target, maxReacoes, reactionRules, 1);
+    const blocked = !reactionResult.usedReaction && !reactionResult.defenseWithoutReaction;
+    if (blocked && !form.defenseOverride) {
+      setMagiaResolverErro(
+        `${reactionResult.warnings[0] ?? "Sem Reação disponível."} Marque "Rolar mesmo sem Reação (override)" para permitir.`,
+      );
+      return;
+    }
+
+    const modifiersTotal = form.defenseModifier.trim() ? Number(form.defenseModifier) : 0;
+    const rollResult = rollPericia({
+      atributoId: attributeId,
+      atributoNome: attributeName,
+      atributoValor: attributeValue,
+      periciaId: skillSlug,
+      periciaNome: skillName,
+      periciaValor: skillValue,
+      modificador: Number.isFinite(modifiersTotal) ? modifiersTotal : 0,
+    });
+
+    setMagiaDefesaProcessing(`${logId}:${defenseType}`);
+    try {
+      const record = await updateCharacter(form.targetCharacterId, reactionResult.character);
+      setPersonagensAtivos((prev) => ({ ...prev, [record.id]: record }));
+
+      const novoLog = await addLog({
+        campaignId: selectedCampaignId,
+        characterId: form.targetCharacterId,
+        type: "defense_reaction_used",
+        visibility: "public",
+        payload: {
+          sourceActionLogId: log.id,
+          spellAttackResolutionPanel: true,
+          targetCharacterId: form.targetCharacterId,
+          targetName: record.name,
+          defenseType,
+          defenseName: DEFENSE_TYPE_LABELS[defenseType],
+          attributeId,
+          attributeName,
+          skillId: skillSlug,
+          skillName,
+          dice: rollResult.dados,
+          highestDie: rollResult.maiorDado,
+          skillValue,
+          modifiersTotal: Number.isFinite(modifiersTotal) ? modifiersTotal : 0,
+          total: rollResult.total,
+          reactionCost: 1,
+          reactionsBefore: reactionResult.reactionBefore,
+          reactionsAfter: reactionResult.reactionAfter,
+          requirementStatus,
+          requirementReminder,
+          usedAsDefenseCd: true,
+          source: "spell_attack_resolution",
+        },
+      });
+      setLogs((prev) => [novoLog, ...prev]);
+
+      const lastDefense: DefenseRollResult = {
+        defenseReactionLogId: novoLog.id,
+        defenseType,
+        defenseName: DEFENSE_TYPE_LABELS[defenseType],
+        attributeId,
+        attributeName,
+        skillId: skillSlug,
+        skillName,
+        dice: rollResult.dados,
+        highestDie: rollResult.maiorDado,
+        skillValue,
+        modifiersTotal: Number.isFinite(modifiersTotal) ? modifiersTotal : 0,
+        total: rollResult.total,
+        reactionCost: 1,
+        reactionsBefore: reactionResult.reactionBefore,
+        reactionsAfter: reactionResult.reactionAfter,
+        requirementStatus,
+        requirementReminder,
+      };
+      updateSpellAttackPanelForm(logId, { defenseTotal: String(rollResult.total), lastDefense });
+    } catch (err) {
+      setMagiaResolverErro(
+        err instanceof Error
+          ? `Erro ao registrar defesa: ${err.message}`
+          : "Erro desconhecido ao rolar defesa — confira se a Reação do alvo foi consumida antes de tentar de novo.",
+      );
+    } finally {
+      setMagiaDefesaProcessing(null);
+    }
+  }
+
+  function handleRollSpellAttackDamage(logId: string, log: TableLogEntry) {
+    const damageFormula = typeof log.payload.damageFormula === "string" ? log.payload.damageFormula : null;
+    if (!damageFormula || !isDiceFormula(damageFormula)) return;
+    const rolled = rollDamageFormula(damageFormula);
+    updateSpellAttackPanelForm(logId, { rawDamage: String(rolled) });
+  }
+
+  function handleRollSpellExtraMarginDie(logId: string, log: TableLogEntry) {
+    const form = magiaPainelForm[logId] ?? DEFAULT_SPELL_ATTACK_PANEL_FORM;
+    const damageFormula = typeof log.payload.damageFormula === "string" ? log.payload.damageFormula : null;
+    if (!damageFormula) return;
+    const extra = rollExtraMarginDie(damageFormula);
+    if (extra == null) return;
+    const atual = Number(form.rawDamage) || 0;
+    updateSpellAttackPanelForm(logId, { rawDamage: String(atual + extra) });
+  }
+
+  /**
+   * Confirma a resolução de um ataque mágico — reaproveita
+   * `applyMarginBasedAttackDamage` (mesmo helper canônico do ataque
+   * físico), mas NUNCA exige região quando a magia declara área
+   * (`log.payload.area`) e NUNCA autopreenche MIT — o narrador decide
+   * se MIT se aplica a este dano mágico (regra de produto §6).
+   */
+  async function handleResolveSpellAttackDamage(log: TableLogEntry) {
+    if (!selectedCampaignId) return;
+    const form = magiaPainelForm[log.id] ?? DEFAULT_SPELL_ATTACK_PANEL_FORM;
+    setMagiaResolverErro(null);
+
+    const targetRecord = form.targetCharacterId ? personagensAtivos[form.targetCharacterId] : null;
+    if (!targetRecord) {
+      setMagiaResolverErro("Selecione o alvo antes de aplicar dano.");
+      return;
+    }
+    const rawDamage = Number(form.rawDamage);
+    if (!Number.isFinite(rawDamage)) {
+      setMagiaResolverErro("Informe o dano bruto antes de aplicar.");
+      return;
+    }
+
+    const hasArea = log.payload.area != null && log.payload.area !== "";
+    const regionApplicable = !hasArea;
+
+    const attackTotal = form.attackTotal.trim() ? Number(form.attackTotal) : null;
+    const defenseTotal = form.defenseTotal.trim() ? Number(form.defenseTotal) : null;
+    const hasMargin = attackTotal != null && Number.isFinite(attackTotal) && defenseTotal != null && Number.isFinite(defenseTotal);
+    const margin = hasMargin ? attackTotal! - defenseTotal! : null;
+    const bandRules = margin != null ? resolveMarginBand(margin) : null;
+    const marginBand: "limited" | "standard" | "critical" | "miss" | null = bandRules?.band ?? null;
+
+    if (margin != null && margin < 0 && !form.override) {
+      setMagiaResolverErro('Ataque mágico não acertou pela margem informada. Marque "Resolver mesmo assim" para aplicar dano por override.');
+      return;
+    }
+    if (regionApplicable && bandRules && form.region && !bandRules.allowedRegions.includes(form.region as BodyRegion) && !form.override) {
+      setMagiaResolverErro(`Região "${BODY_REGION_LABELS[form.region as BodyRegion]}" não é permitida para a margem ${margin} sem override.`);
+      return;
+    }
+
+    const jaResolvido = logs.some((l) => l.type === "spell_attack_resolved" && l.payload.sourceSpellAttackLogId === log.id);
+    if (jaResolvido && !form.override) {
+      setMagiaResolverErro('Este ataque mágico já tem resolução registrada. Marque "Resolver mesmo assim" para registrar de novo.');
+      return;
+    }
+
+    const mit = form.mit.trim() ? Number(form.mit) : 0;
+    const marginDamageModifier = bandRules?.modifierType === "flat" ? bandRules.flatModifier : 0;
+
+    setMagiaResolverProcessing(log.id);
+    try {
+      const nowIso = new Date().toISOString();
+      const targetNormalizado = normalizeCharacter(targetRecord.payload);
+      const resolucao = applyMarginBasedAttackDamage({
+        character: targetNormalizado,
+        rawDamage,
+        marginDamageModifier,
+        mit,
+        nowIso,
+        collapseRules: regras?.colapso,
+        round: targetNormalizado.current_round,
+        scene: targetNormalizado.current_scene,
+      });
+
+      const record = await updateCharacter(form.targetCharacterId, resolucao.character);
+      setPersonagensAtivos((prev) => ({ ...prev, [record.id]: record }));
+
+      const manualReminders: string[] = [
+        "Cobertura, alcance, linha de visão, linha de efeito e posição não são validados automaticamente.",
+        "Verifique se MIT se aplica a este dano mágico — não presumido automaticamente.",
+      ];
+      if (hasArea) {
+        manualReminders.push("Magia de área/linha — região corporal não se aplica; múltiplos alvos são resolvidos manualmente, um de cada vez.");
+      }
+      const resistanceReminder =
+        log.payload.resistance && typeof log.payload.resistance === "object"
+          ? "Magia também estrutura Resistência do alvo — resolva-a separadamente pelo cartão de conjuração; não é a mesma coisa que este ataque."
+          : null;
+
+      const defenseUsed = form.lastDefense && form.lastDefense.total === defenseTotal ? form.lastDefense : null;
+
+      const novoLog = await addLog({
+        campaignId: selectedCampaignId,
+        characterId: form.targetCharacterId,
+        type: "spell_attack_resolved",
+        visibility: "public",
+        payload: {
+          sourceSpellAttackLogId: log.id,
+          casterCharacterId: typeof log.payload.characterId === "string" ? log.payload.characterId : null,
+          casterName: typeof log.payload.characterNome === "string" ? log.payload.characterNome : "Conjurador",
+          targetCharacterId: form.targetCharacterId,
+          targetName: record.name,
+          spellId: typeof log.payload.spellId === "string" ? log.payload.spellId : null,
+          spellName: typeof log.payload.spellName === "string" ? log.payload.spellName : "Magia",
+          spellVertente: typeof log.payload.spellVertente === "string" ? log.payload.spellVertente : null,
+          spellLevel: typeof log.payload.spellLevel === "number" ? log.payload.spellLevel : null,
+          attackTotal,
+          defenseTotal,
+          margin,
+          marginBand,
+          selectedRegion: regionApplicable ? form.region || null : null,
+          regionApplicable,
+          rawDamage: resolucao.rawDamage,
+          damageAfterMargin: resolucao.damageAfterMargin,
+          mitApplied: resolucao.mitApplied,
+          mitSource: "manual",
+          finalDamage: resolucao.finalDamage,
+          targetPvBefore: resolucao.pvBefore,
+          targetPvAfter: resolucao.pvAfter,
+          damageType: typeof log.payload.damageType === "string" ? log.payload.damageType : null,
+          resistanceReminder,
+          areaReminder: hasArea ? (typeof log.payload.area === "string" ? log.payload.area : String(log.payload.area)) : null,
+          manualReminders,
+          override: form.override,
+          overrideReason: form.overrideReason.trim() || null,
+          collapseStarted: resolucao.collapseStarted,
+          collapseAdvanced: resolucao.collapseAdvanceLogs.length > 0,
+          defenseReactionLogId: defenseUsed?.defenseReactionLogId ?? null,
+          defenseType: defenseUsed?.defenseType ?? null,
+          reactionsAfterDefense: defenseUsed?.reactionsAfter ?? null,
+          source: "spell_attack_resolution",
+        },
+      });
+      setLogs((prev) => [novoLog, ...prev]);
+      setMagiaResolvendoLogId(null);
+      setMagiaPainelForm((prev) => {
+        const next = { ...prev };
+        delete next[log.id];
+        return next;
+      });
+    } catch (err) {
+      setMagiaResolverErro(err instanceof Error ? err.message : "Erro desconhecido ao aplicar dano — dados preenchidos foram mantidos.");
+    } finally {
+      setMagiaResolverProcessing(null);
     }
   }
 
@@ -2777,9 +3204,12 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                 const isActionUsed = entry.type === "action_used";
                 const isAttackResolved = entry.type === "attack_resolved";
                 const isDefenseReactionUsed = entry.type === "defense_reaction_used";
+                const isSpellAttackUsed = entry.type === "spell_attack_used";
+                const isSpellAttackResolved = entry.type === "spell_attack_resolved";
                 // "Resolver ataque" só faz sentido para action_used de Atacar (detectado pelo mesmo campo que a ficha grava — weaponName presente).
                 const isAttackAction = isActionUsed && typeof entry.payload.weaponName === "string";
                 const jaResolvido = isAttackAction && logs.some((l) => l.type === "attack_resolved" && l.payload.sourceActionLogId === entry.id);
+                const magiaJaResolvida = isSpellAttackUsed && logs.some((l) => l.type === "spell_attack_resolved" && l.payload.sourceSpellAttackLogId === entry.id);
                 // Chat aceita `text` (ficha, checkpoint v0.12) ou `mensagem` (formato antigo desta tela).
                 const chatTexto =
                   typeof entry.payload.text === "string"
@@ -2799,7 +3229,11 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                           ? formatAttackResolved(entry.payload)
                           : isDefenseReactionUsed
                             ? formatDefenseReactionUsed(entry.payload)
-                            : formatSystemLog(entry.type, entry.payload);
+                            : isSpellAttackUsed
+                              ? formatSpellAttackUsed(entry.payload)
+                              : isSpellAttackResolved
+                                ? formatSpellAttackResolved(entry.payload)
+                                : formatSystemLog(entry.type, entry.payload);
                 const corBorda = isChat
                   ? "#4f8cff"
                   : isProfileEvent
@@ -2810,7 +3244,9 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                         ? "#ff5252"
                         : isDefenseReactionUsed
                           ? "#5ec8ff"
-                          : "#ffb84f";
+                          : isSpellAttackUsed || isSpellAttackResolved
+                            ? "#7c4dff"
+                            : "#ffb84f";
 
                 return (
                   <div
@@ -2867,6 +3303,37 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                         onRollDefense={(defenseType) => handleRollDefense(entry.id, entry, defenseType)}
                         onApply={() => handleResolveAttackDamage(entry)}
                         onCancel={() => setAtaqueResolvendoLogId(null)}
+                      />
+                    )}
+                    {isSpellAttackUsed && (
+                      <div style={{ marginTop: 4 }}>
+                        <button
+                          data-testid={`log-resolver-ataque-magico-${entry.id}`}
+                          onClick={() => handleOpenResolveSpellAttack(entry)}
+                          style={{ ...buttonStyle, fontSize: 11, padding: "4px 10px", opacity: 0.85, borderColor: "#7c4dff", color: "#c9a6ff" }}
+                        >
+                          Resolver ataque mágico{magiaJaResolvida ? " (já resolvido)" : ""}
+                        </button>
+                      </div>
+                    )}
+                    {isSpellAttackUsed && magiaResolvendoLogId === entry.id && (
+                      <SpellAttackResolutionPanel
+                        log={entry}
+                        form={magiaPainelForm[entry.id] ?? DEFAULT_SPELL_ATTACK_PANEL_FORM}
+                        personagensAtivos={personagensAtivos}
+                        regras={regras}
+                        reactionRules={reactionRules}
+                        jaResolvido={magiaJaResolvida}
+                        processing={magiaResolverProcessing === entry.id}
+                        defenseProcessing={magiaDefesaProcessing}
+                        erro={magiaResolverErro}
+                        onUpdateForm={(patch) => updateSpellAttackPanelForm(entry.id, patch)}
+                        onSelectTarget={(targetCharacterId) => updateSpellAttackPanelForm(entry.id, { targetCharacterId })}
+                        onRollDamage={() => handleRollSpellAttackDamage(entry.id, entry)}
+                        onRollExtraMarginDie={() => handleRollSpellExtraMarginDie(entry.id, entry)}
+                        onRollDefense={(defenseType) => handleRollSpellDefense(entry.id, entry, defenseType)}
+                        onApply={() => handleResolveSpellAttackDamage(entry)}
+                        onCancel={() => setMagiaResolvendoLogId(null)}
                       />
                     )}
                   </div>
@@ -3193,6 +3660,327 @@ function AttackResolutionPanel({
 
       <div style={{ display: "flex", gap: 8 }}>
         <button data-testid={`ataque-aplicar-dano-${log.id}`} onClick={onApply} disabled={processing} style={{ ...buttonStyle, opacity: processing ? 0.5 : 1 }}>
+          {processing ? "Aplicando…" : "Aplicar dano"}
+        </button>
+        <button onClick={onCancel} style={{ ...buttonStyle, opacity: 0.7 }}>
+          Fechar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Painel inline "Resolver ataque mágico" (checkpoint pós-v0.70) — irmão
+ * do `AttackResolutionPanel` físico, aberto a partir de logs
+ * `spell_attack_used`. Visualmente distinto (borda/rótulo roxos) para
+ * nunca ser confundido com o painel de ataque físico. Nunca oferece
+ * região quando a magia declara área; MIT é sempre manual com
+ * lembrete — nenhuma magia do catálogo hoje estrutura se MIT se aplica.
+ */
+function SpellAttackResolutionPanel({
+  log,
+  form,
+  personagensAtivos,
+  regras,
+  reactionRules,
+  jaResolvido,
+  processing,
+  defenseProcessing,
+  erro,
+  onUpdateForm,
+  onSelectTarget,
+  onRollDamage,
+  onRollExtraMarginDie,
+  onRollDefense,
+  onApply,
+  onCancel,
+}: {
+  log: TableLogEntry;
+  form: SpellAttackPanelForm;
+  personagensAtivos: Record<string, CharacterRecord>;
+  regras: CharacterRulesPayload | null;
+  reactionRules: ReactionRules;
+  jaResolvido: boolean;
+  processing: boolean;
+  defenseProcessing: string | null;
+  erro: string | null;
+  onUpdateForm: (patch: Partial<SpellAttackPanelForm>) => void;
+  onSelectTarget: (targetCharacterId: string) => void;
+  onRollDamage: () => void;
+  onRollExtraMarginDie: () => void;
+  onRollDefense: (defenseType: DefenseType) => void;
+  onApply: () => void;
+  onCancel: () => void;
+}) {
+  const attackTotal = form.attackTotal.trim() ? Number(form.attackTotal) : null;
+  const defenseTotal = form.defenseTotal.trim() ? Number(form.defenseTotal) : null;
+  const hasMargin = attackTotal != null && Number.isFinite(attackTotal) && defenseTotal != null && Number.isFinite(defenseTotal);
+  const margin = hasMargin ? attackTotal! - defenseTotal! : null;
+  const bandRules = margin != null ? resolveMarginBand(margin) : null;
+  const rawDamage = Number(form.rawDamage) || 0;
+  const marginDamageModifier = bandRules?.modifierType === "flat" ? bandRules.flatModifier : 0;
+  const damageAfterMargin = Math.max(0, rawDamage + marginDamageModifier);
+  const mit = Number(form.mit) || 0;
+  const finalDamage = Math.max(0, damageAfterMargin - mit);
+  const damageFormula = typeof log.payload.damageFormula === "string" ? log.payload.damageFormula : null;
+  const isDice = damageFormula != null && /^\d+d\d+([+-]\d+)?$/.test(damageFormula.trim().replace(/\s+/g, ""));
+  const hasArea = log.payload.area != null && log.payload.area !== "";
+  const regionApplicable = !hasArea;
+  const resistance = typeof log.payload.resistance === "object" && log.payload.resistance !== null ? (log.payload.resistance as Record<string, unknown>) : null;
+  const rollableAttack = typeof log.payload.total === "number";
+
+  const targetRecord = form.targetCharacterId ? personagensAtivos[form.targetCharacterId] : null;
+  const targetNormalizado = targetRecord ? normalizeCharacter(targetRecord.payload) : null;
+  const reactionMax = targetNormalizado
+    ? computeDerivedStats(targetNormalizado.atributos, regras, targetNormalizado.mana_bonus_ruptura ?? 0).reacoes_por_rodada
+    : 0;
+  const reactionAvailability = targetNormalizado ? getReactionAvailability(targetNormalizado, reactionMax, reactionRules) : null;
+
+  return (
+    <div
+      data-testid={`painel-resolver-ataque-magico-${log.id}`}
+      style={{ marginTop: 8, background: "#17111f", border: "1px solid #7c4dff", borderRadius: 8, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, fontSize: 12 }}
+    >
+      <p style={{ color: "#c9a6ff", fontWeight: 700, margin: 0 }}>⚔ Ataque mágico</p>
+      <p style={{ opacity: 0.6, margin: 0 }}>
+        Conjurador: {typeof log.payload.characterNome === "string" ? log.payload.characterNome : "?"} · magia:{" "}
+        {typeof log.payload.spellName === "string" ? log.payload.spellName : "?"} · dano:{" "}
+        {damageFormula ?? "não estruturado"}
+        {typeof log.payload.damageType === "string" ? ` (${log.payload.damageType})` : ""}
+        {!rollableAttack && " — teste de acerto não foi rolado automaticamente na conjuração (role manualmente e preencha Ataque total)."}
+      </p>
+      <p style={{ opacity: 0.5, margin: 0 }}>
+        Lembrete: cobertura, alcance, linha de visão, linha de efeito e posição não são validados automaticamente.
+      </p>
+      {resistance && (
+        <p style={{ color: "#f5a623", margin: 0 }}>
+          Esta magia também estrutura Resistência do alvo — isso é diferente deste ataque; resolva a Resistência pelo cartão de conjuração, não aqui.
+        </p>
+      )}
+      {hasArea && (
+        <p style={{ color: "#f5a623", margin: 0 }}>
+          Área declarada ({String(log.payload.area)}) — sem automação de área/múltiplos alvos; região corporal não se aplica. Resolva cada alvo manualmente, um de cada vez.
+        </p>
+      )}
+      {jaResolvido && <p style={{ color: "#f5a623", margin: 0 }}>Este ataque mágico já tem resolução registrada.</p>}
+
+      <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        Alvo
+        <select
+          data-testid={`magia-ataque-alvo-${log.id}`}
+          value={form.targetCharacterId}
+          onChange={(e) => onSelectTarget(e.target.value)}
+          style={inputStyle}
+        >
+          <option value="">— selecione —</option>
+          {Object.values(personagensAtivos).map((record) => (
+            <option key={record.id} value={record.id}>
+              {record.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {targetNormalizado && reactionAvailability && (
+        <div
+          data-testid={`magia-ataque-defesa-alvo-${log.id}`}
+          style={{ display: "flex", flexDirection: "column", gap: 8, background: "#151620", borderRadius: 6, padding: "8px 10px" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <strong style={{ fontSize: 11, opacity: 0.7 }}>Defesa do alvo</strong>
+            <span style={{ fontSize: 11, opacity: 0.7 }}>
+              Reações: {reactionAvailability.remaining}/{reactionAvailability.max}
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {(["esquivar", "aparar", "bloquear", "resistir"] as DefenseType[]).map((defenseType) => (
+              <button
+                key={defenseType}
+                data-testid={`magia-ataque-defesa-rolar-${defenseType}-${log.id}`}
+                onClick={() => onRollDefense(defenseType)}
+                disabled={defenseProcessing === `${log.id}:${defenseType}`}
+                style={{ ...buttonStyle, fontSize: 11, opacity: defenseProcessing === `${log.id}:${defenseType}` ? 0.5 : 1 }}
+              >
+                {defenseProcessing === `${log.id}:${defenseType}` ? "Rolando…" : DEFENSE_TYPE_LABELS[defenseType]}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              Perícia de Resistir
+              <select
+                value={form.resistirSkill}
+                onChange={(e) => onUpdateForm({ resistirSkill: e.target.value as "vigor" | "mobilidade" })}
+                style={inputStyle}
+              >
+                <option value="vigor">Vigor</option>
+                <option value="mobilidade">Mobilidade</option>
+              </select>
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              Modificador manual
+              <input
+                type="number"
+                value={form.defenseModifier}
+                onChange={(e) => onUpdateForm({ defenseModifier: e.target.value })}
+                style={{ ...inputStyle, width: 90 }}
+              />
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+              <input
+                type="checkbox"
+                checked={form.defenseOverride}
+                onChange={(e) => onUpdateForm({ defenseOverride: e.target.checked })}
+              />
+              Rolar mesmo sem Reação (override)
+            </label>
+          </div>
+          {form.lastDefense && (
+            <p style={{ fontSize: 11, opacity: 0.7, margin: 0 }}>
+              Última defesa: {form.lastDefense.defenseName} — {form.lastDefense.attributeName}d8 (maior {form.lastDefense.highestDie}) +{" "}
+              {form.lastDefense.skillName} {form.lastDefense.skillValue}
+              {form.lastDefense.modifiersTotal !== 0 ? ` + mod ${form.lastDefense.modifiersTotal}` : ""} = {form.lastDefense.total}
+            </p>
+          )}
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          Ataque total
+          <input
+            data-testid={`magia-ataque-total-${log.id}`}
+            type="number"
+            value={form.attackTotal}
+            onChange={(e) => onUpdateForm({ attackTotal: e.target.value })}
+            style={{ ...inputStyle, width: 90 }}
+          />
+        </label>
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          Defesa/CD
+          <input
+            data-testid={`magia-ataque-defesa-cd-${log.id}`}
+            type="number"
+            value={form.defenseTotal}
+            onChange={(e) => onUpdateForm({ defenseTotal: e.target.value })}
+            style={{ ...inputStyle, width: 90 }}
+          />
+        </label>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          Margem
+          <span data-testid={`magia-ataque-margem-${log.id}`} style={{ padding: "6px 0" }}>
+            {margin != null ? margin : "—"}
+            {bandRules ? ` (${bandRules.band})` : ""}
+          </span>
+        </div>
+      </div>
+
+      {margin != null && margin < 0 && (
+        <p style={{ color: "#ff6b6b", margin: 0 }}>Ataque mágico não acertou pela margem informada.</p>
+      )}
+
+      {regionApplicable ? (
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          Região (opcional — alvo único, sem área declarada)
+          <select
+            data-testid={`magia-ataque-regiao-${log.id}`}
+            value={form.region}
+            onChange={(e) => onUpdateForm({ region: e.target.value as BodyRegion | "" })}
+            style={inputStyle}
+          >
+            <option value="">— não aplicável / manual —</option>
+            {BODY_REGIONS.map((region) => {
+              const permitida = form.override || !bandRules || bandRules.allowedRegions.includes(region);
+              return (
+                <option key={region} value={region} disabled={!permitida}>
+                  {BODY_REGION_LABELS[region]}
+                  {!permitida ? " (fora da margem)" : ""}
+                </option>
+              );
+            })}
+          </select>
+        </label>
+      ) : (
+        <p style={{ opacity: 0.5, margin: 0 }}>Região corporal: não aplicável (magia de área).</p>
+      )}
+
+      {bandRules?.modifierType === "extraDie" && (
+        <p style={{ opacity: 0.7, margin: 0 }}>
+          Margem crítica: +1 dado de dano.{" "}
+          {isDice ? (
+            <button onClick={onRollExtraMarginDie} style={{ ...buttonStyle, fontSize: 11, padding: "2px 8px" }}>
+              Rolar +1 dado
+            </button>
+          ) : (
+            "Fórmula não estruturada — inclua manualmente no dano bruto."
+          )}
+        </p>
+      )}
+
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          Dano bruto
+          <input
+            data-testid={`magia-ataque-dano-bruto-${log.id}`}
+            type="number"
+            value={form.rawDamage}
+            onChange={(e) => onUpdateForm({ rawDamage: e.target.value })}
+            style={{ ...inputStyle, width: 90 }}
+          />
+        </label>
+        {isDice && (
+          <button data-testid={`magia-ataque-rolar-dano-${log.id}`} onClick={onRollDamage} style={{ ...buttonStyle, fontSize: 11 }}>
+            Rolar dano ({damageFormula})
+          </button>
+        )}
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          MIT (manual)
+          <input
+            data-testid={`magia-ataque-mit-${log.id}`}
+            type="number"
+            value={form.mit}
+            onChange={(e) => onUpdateForm({ mit: e.target.value })}
+            style={{ ...inputStyle, width: 70 }}
+          />
+        </label>
+        <span style={{ opacity: 0.6, fontSize: 11, color: "#f5a623" }}>
+          Verifique se MIT se aplica a este dano mágico — nunca presumido automaticamente.
+        </span>
+      </div>
+
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12 }}>
+        <span>
+          Dano após margem: <strong data-testid={`magia-ataque-dano-apos-margem-${log.id}`}>{damageAfterMargin}</strong>
+        </span>
+        <span>
+          Dano final: <strong data-testid={`magia-ataque-dano-final-${log.id}`}>{finalDamage}</strong>
+        </span>
+      </div>
+
+      <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <input
+          data-testid={`magia-ataque-override-${log.id}`}
+          type="checkbox"
+          checked={form.override}
+          onChange={(e) => onUpdateForm({ override: e.target.checked })}
+        />
+        Resolver mesmo assim (override)
+      </label>
+      {form.override && (
+        <input
+          type="text"
+          placeholder="Nota do override (opcional)"
+          value={form.overrideReason}
+          onChange={(e) => onUpdateForm({ overrideReason: e.target.value })}
+          style={inputStyle}
+        />
+      )}
+
+      {erro && <p style={{ color: "#ff6b6b", margin: 0 }}>{erro}</p>}
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <button data-testid={`magia-ataque-aplicar-dano-${log.id}`} onClick={onApply} disabled={processing} style={{ ...buttonStyle, opacity: processing ? 0.5 : 1 }}>
           {processing ? "Aplicando…" : "Aplicar dano"}
         </button>
         <button onClick={onCancel} style={{ ...buttonStyle, opacity: 0.7 }}>
