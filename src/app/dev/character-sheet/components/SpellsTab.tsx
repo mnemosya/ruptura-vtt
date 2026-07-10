@@ -149,8 +149,8 @@ export function SpellsTab({
                         </span>
                         {aprendida && <span style={{ color: "#4caf50", fontSize: 11 }}>aprendida</span>}
                         {nivelCheck.aboveLevel && (
-                          <span data-testid={`magia-nivel-aviso-${spell.slug}`} style={{ color: "#ff6b6b", fontSize: 11 }}>
-                            acima do nível da vertente ({spell.estatisticas.nivel} &gt; {nivelCheck.vertenteLevel})
+                          <span data-testid={`magia-nivel-aviso-${spell.slug}`} style={{ color: "#ff6b6b", fontSize: 11, fontWeight: 700 }}>
+                            Nível de vertente insuficiente ({spell.estatisticas.nivel} &gt; {nivelCheck.vertenteLevel}) — não pode ser conjurada
                           </span>
                         )}
                       </div>
@@ -191,7 +191,13 @@ export function SpellsTab({
                           )
                         ) : (
                           <>
-                            <button data-testid={`magia-conjurar-${spell.slug}`} onClick={() => onCast(spell.slug)} style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px" }}>
+                            <button
+                              data-testid={`magia-conjurar-${spell.slug}`}
+                              onClick={() => onCast(spell.slug)}
+                              disabled={nivelCheck.aboveLevel}
+                              title={nivelCheck.aboveLevel ? "Nível de vertente insuficiente" : undefined}
+                              style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px", opacity: nivelCheck.aboveLevel ? 0.5 : 1, cursor: nivelCheck.aboveLevel ? "not-allowed" : "pointer" }}
+                            >
                               Conjurar
                             </button>
                             {dano && (
@@ -206,6 +212,11 @@ export function SpellsTab({
                               );
                               if (outrasAprendidas.length === 0) return null;
                               const escolhida = fusaoSelecionada[spell.slug] ?? "";
+                              const fusedSpell = escolhida ? outrasAprendidas.find((m) => m.slug === escolhida) : undefined;
+                              const fusedNivelCheck = fusedSpell ? checkSpellVertenteLevel(fusedSpell, { niveis_vertente: niveisVertente }) : null;
+                              // Fusão bloqueada se a PRINCIPAL ou a FUNDIDA estiver acima do nível da vertente (checkpoint pós-v0.70).
+                              const fusaoBloqueada = nivelCheck.aboveLevel || fusedNivelCheck?.aboveLevel === true;
+                              const fusaoDesabilitada = !escolhida || fusaoBloqueada;
                               return (
                                 <span style={{ display: "inline-flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                                   <select
@@ -221,17 +232,22 @@ export function SpellsTab({
                                   </select>
                                   <button
                                     data-testid={`magia-conjurar-fusao-${spell.slug}`}
-                                    disabled={!escolhida}
+                                    disabled={fusaoDesabilitada}
                                     onClick={() => {
-                                      if (!escolhida) return;
+                                      if (fusaoDesabilitada) return;
                                       onCastWithFusion(spell.slug, escolhida);
                                       setFusaoSelecionada((prev) => ({ ...prev, [spell.slug]: "" }));
                                     }}
-                                    style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px", opacity: escolhida ? 1 : 0.5 }}
-                                    title="Fusão custa sempre 1 Sobrecarga; efeitos combinados são resolvidos manualmente."
+                                    style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px", opacity: fusaoDesabilitada ? 0.5 : 1, cursor: fusaoDesabilitada ? "not-allowed" : "pointer" }}
+                                    title={fusaoBloqueada ? "Nível de vertente insuficiente" : "Fusão custa sempre 1 Sobrecarga; efeitos combinados são resolvidos manualmente."}
                                   >
                                     Conjurar com Fusão (+1 Sobrecarga)
                                   </button>
+                                  {fusedNivelCheck?.aboveLevel && (
+                                    <span data-testid={`magia-fusao-nivel-aviso-${spell.slug}`} style={{ color: "#ff6b6b", fontSize: 11 }}>
+                                      Nível de vertente insuficiente para {fusedSpell!.nome}
+                                    </span>
+                                  )}
                                 </span>
                               );
                             })()}

@@ -483,6 +483,17 @@ export interface CastSpellResult {
  * `ok:false` sem mutar nada (mesmo padrão de `canPayActionCost`/
  * `purchaseItem`).
  *
+ * Nível de vertente (checkpoint pós-v0.70) — PRIMEIRA checagem, antes
+ * de qualquer outra: magia com `estatisticas.nivel` acima do nível
+ * investido na vertente do personagem (`checkSpellVertenteLevel`) é
+ * BLOQUEADA aqui, não só sinalizada — devolve `ok:false` sem gastar PA,
+ * Mana, nem mutar o personagem. Sem nível definido para a vertente
+ * (`vertenteLevel === null`, personagem legado ou vertente ainda não
+ * configurada), a conjuração NÃO é bloqueada por este motivo — decisão
+ * deliberada de compatibilidade (documentada em `checkSpellVertenteLevel`
+ * e no relatório do checkpoint): travar todo personagem sem
+ * `niveis_vertente` quebraria fichas antigas sem nenhum aviso prévio.
+ *
  * Mana temporária (checkpoint v0.53, PRD 10.3: "Mana temporária é uma
  * camada consumida antes da mana normal") é drenada PRIMEIRO — só o
  * restante do custo (se houver) desconta a Mana normal. Insuficiência é
@@ -498,6 +509,19 @@ export function castSpell(params: {
   const { character, spell, paMax, manaMax } = params;
   const paGastosAntes = character.estado_jogo?.pa_gastos ?? 0;
   const paBefore = Math.max(0, paMax - paGastosAntes);
+
+  const nivelCheck = checkSpellVertenteLevel(spell, character);
+  if (nivelCheck.aboveLevel) {
+    return {
+      character,
+      ok: false,
+      reason: `Nível de vertente insuficiente para conjurar ${spell.nome} — exige nível ${spell.estatisticas.nivel} de ${spell.vertente}, personagem tem nível ${nivelCheck.vertenteLevel}.`,
+      paBefore,
+      paAfter: paBefore,
+      manaCostUnknown: spell.estatisticas.custo_mana == null,
+    };
+  }
+
   const custoPa = spell.estatisticas.custo_pa;
 
   if (custoPa > paBefore) {
@@ -620,6 +644,24 @@ export function castSpellWithFusion(params: {
   if (spell.slug === fusedSpell.slug) {
     return blocked("Escolha uma SEGUNDA magia diferente para fundir.");
   }
+
+  // Nível de vertente (checkpoint pós-v0.70) — valida AMBAS as magias
+  // (principal e fundida) ANTES de checar/gastar Sobrecarga ou PA/Mana.
+  // Mesma regra de compatibilidade de `castSpell`: sem nível definido
+  // para a vertente, não bloqueia por este motivo.
+  const mainLevelCheck = checkSpellVertenteLevel(spell, character);
+  if (mainLevelCheck.aboveLevel) {
+    return blocked(
+      `Nível de vertente insuficiente para conjurar ${spell.nome} — exige nível ${spell.estatisticas.nivel} de ${spell.vertente}, personagem tem nível ${mainLevelCheck.vertenteLevel}.`,
+    );
+  }
+  const fusedLevelCheck = checkSpellVertenteLevel(fusedSpell, character);
+  if (fusedLevelCheck.aboveLevel) {
+    return blocked(
+      `Nível de vertente insuficiente para fundir com ${fusedSpell.nome} — exige nível ${fusedSpell.estatisticas.nivel} de ${fusedSpell.vertente}, personagem tem nível ${fusedLevelCheck.vertenteLevel}.`,
+    );
+  }
+
   if (sobrecargaBefore >= sobrecargaMax) {
     return blocked(`Sobrecarga insuficiente para Fusão (custa 1; ${sobrecargaBefore}/${sobrecargaMax} já usadas).`);
   }

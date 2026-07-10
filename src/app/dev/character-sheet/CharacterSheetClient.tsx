@@ -2584,8 +2584,9 @@ export default function CharacterSheetClient({
     characterRef.current = result.character;
     setCharacter(result.character);
 
+    // Chegou aqui só se castSpell aprovou — nível de vertente já foi validado
+    // DENTRO de castSpell (checkpoint pós-v0.70, bloqueio real, não só aviso).
     const vertenteLevel = getVertenteLevel(current, spell.vertente);
-    const nivelCheck = checkSpellVertenteLevel(spell, current);
     const resolution = prepareSpellCastResolution(spell, undefined, vertenteLevel);
     const temporariaConsumida = (result.manaTemporariaBefore ?? 0) - (result.manaTemporariaAfter ?? 0);
     const manaTexto = result.manaCostUnknown
@@ -2598,9 +2599,6 @@ export default function CharacterSheetClient({
       );
     }
     const extras = [...resolution.manualEffects, ...resolution.reminders];
-    if (nivelCheck.aboveLevel) {
-      extras.push(`Aviso: nível ${spell.estatisticas.nivel} está acima do nível ${nivelCheck.vertenteLevel} investido em ${spell.vertente} — sinalizado, não bloqueado.`);
-    }
     addLogEntry(
       "recurso",
       `Conjurado: ${spell.nome} — ${partes.join("; ")}.${extras.length > 0 ? ` — ${extras.join(" ")}` : ""}`,
@@ -2700,11 +2698,9 @@ export default function CharacterSheetClient({
     if (resolution.damage) {
       partes.push(`dano ${resolution.damage.fixo ? "fixo" : "rolado"} ${resolution.damage.result} (${resolution.damage.formula}/${resolution.damage.tipoDano})`);
     }
-    const nivelCheck = checkSpellVertenteLevel(spell, current);
+    // Chegou aqui só se castSpellWithFusion aprovou — nível de vertente da
+    // principal E da fundida já foi validado DENTRO dela (bloqueio real).
     const extras = [...resolution.manualEffects, ...resolution.reminders, ...result.fusionReminders];
-    if (nivelCheck.aboveLevel) {
-      extras.push(`Aviso: nível ${spell.estatisticas.nivel} está acima do nível ${nivelCheck.vertenteLevel} investido em ${spell.vertente} — sinalizado, não bloqueado.`);
-    }
     addLogEntry(
       "recurso",
       `Conjurado com FUSÃO: ${spell.nome} + ${fusedSpell.nome} — ${partes.join("; ")}.${extras.length > 0 ? ` — ${extras.join(" ")}` : ""}`,
