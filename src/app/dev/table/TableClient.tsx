@@ -40,6 +40,13 @@ import { buildCampaignEndRoundSummary } from "../../../lib/table/endRoundSummary
 import { endCampaignScene } from "../../../lib/table/endScene";
 import { buildCampaignEndSceneSummary } from "../../../lib/table/endSceneSummary";
 import {
+  listCrewInventory,
+  upsertCrewInventoryItem,
+  removeCrewInventoryItem,
+  updateCrewInventoryItemInstance,
+  type CrewInventoryItem,
+} from "../../../lib/table/crewInventory";
+import {
   computeDerivedStats,
   normalizeCharacter,
   applyGmDamage,
@@ -61,6 +68,9 @@ import {
   resolvePendingRupture,
   BODY_REGIONS,
   BODY_REGION_LABELS,
+  splitInventoryInstance,
+  addInstanceToInventory,
+  canSplitInstanceQuantity,
   type GmResource,
   type CharacterRecord,
   type Character,
@@ -71,6 +81,7 @@ import {
   type ReactionRules,
   type ConditionContent,
   type ConditionEndRoundEffect,
+  type InventoryItemInstance,
 } from "../../../lib/character";
 import { rollPericia } from "../../../lib/dice";
 import type { NarratorConditionOption } from "./page";
@@ -370,6 +381,7 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   overload_surge: "Surto de Sobrecarga",
   overload_surge_used: "Surto de Sobrecarga",
   overload_will_roll: "Teste de Vontade (Sobrecarga)",
+  inventory_transfer: "Transferência de Inventário",
 };
 
 function entryKindLabel(type: string): string {
@@ -394,6 +406,7 @@ function entryIcon(type: string): string {
   if (type === "talent_used") return "✨";
   if (type === "spell_cast") return "🔮";
   if (type === "overload_surge" || type === "overload_surge_used" || type === "overload_will_roll") return "⚡";
+  if (type === "inventory_transfer") return "📦";
   return "•";
 }
 
@@ -547,6 +560,29 @@ function formatSystemLog(type: string, payload: Record<string, unknown>): string
     const cd = typeof payload.cd === "number" ? payload.cd : "?";
     const sucesso = payload.sucesso === true;
     return `Teste de Vontade (Sobrecarga) — ${characterNome}: total ${total} vs CD ${cd} — ${sucesso ? "Sucesso" : "Falha (Atordoado 1 rodada)"}.`;
+  }
+  if (type === "inventory_transfer") {
+    const direction = typeof payload.direction === "string" ? payload.direction : "?";
+    const itemName = typeof payload.itemName === "string" ? payload.itemName : "Item";
+    const quantityMoved = typeof payload.quantityMoved === "number" ? payload.quantityMoved : "?";
+    const quantityBeforeSource = typeof payload.quantityBeforeSource === "number" ? payload.quantityBeforeSource : null;
+    const quantityAfterSource = typeof payload.quantityAfterSource === "number" ? payload.quantityAfterSource : null;
+    const quantityBeforeTarget = typeof payload.quantityBeforeTarget === "number" ? payload.quantityBeforeTarget : null;
+    const quantityAfterTarget = typeof payload.quantityAfterTarget === "number" ? payload.quantityAfterTarget : null;
+    const chargesMoved = typeof payload.chargesMoved === "number" ? payload.chargesMoved : null;
+    const partes: string[] = [`x${quantityMoved}`];
+    if (quantityBeforeSource != null && quantityAfterSource != null) partes.push(`origem ${quantityBeforeSource} → ${quantityAfterSource}`);
+    if (quantityBeforeTarget != null && quantityAfterTarget != null) partes.push(`destino ${quantityBeforeTarget} → ${quantityAfterTarget}`);
+    if (chargesMoved != null) partes.push(`cargas ${chargesMoved}`);
+    if (direction === "character_to_crew") {
+      const sourceCharacterName = typeof payload.sourceCharacterName === "string" ? payload.sourceCharacterName : "Personagem";
+      return `Transferência — ${sourceCharacterName} enviou ${itemName} ao bando (${partes.join(" · ")}).`;
+    }
+    if (direction === "crew_to_character") {
+      const targetCharacterName = typeof payload.targetCharacterName === "string" ? payload.targetCharacterName : "Personagem";
+      return `Transferência — ${targetCharacterName} recebeu ${itemName} do bando (${partes.join(" · ")}).`;
+    }
+    return `Transferência de inventário — ${itemName} (${partes.join(" · ")}).`;
   }
   if (type === "round_end_processed") {
     const nomes = names(payload.processedCharacterNames);
@@ -927,6 +963,23 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
   // ---------------------------------------------------------------
   const [personagensAtivos, setPersonagensAtivos] = useState<Record<string, CharacterRecord>>({});
   const [gmErro, setGmErro] = useState<string | null>(null);
+
+  // ---------------------------------------------------------------
+  // Inventário do bando/mesa (checkpoint pós-v0.68, CP7). RLS estrita
+  // (migration 0019, só `authenticated` dono da mesa) — sem narrador
+  // logado, `listCrewInventory` lança e a seção mostra o erro em vez de
+  // fingir uma lista vazia. `campaignCharactersAtivos` é a MESMA fonte
+  // de `fetchActiveCampaignCharacters` (listCharactersForNarratorCampaign,
+  // só não-arquivados) — não a lista de perfis — para o seletor de
+  // personagem de destino incluir qualquer personagem ativo da mesa,
+  // não só os vinculados a um perfil.
+  // ---------------------------------------------------------------
+  const [crewInventory, setCrewInventory] = useState<CrewInventoryItem[]>([]);
+  const [crewInventoryError, setCrewInventoryError] = useState<string | null>(null);
+  const [crewInventoryLoading, setCrewInventoryLoading] = useState(false);
+  const [campaignCharactersAtivos, setCampaignCharactersAtivos] = useState<CharacterRecord[]>([]);
+  const [crewTransferForm, setCrewTransferForm] = useState<Record<string, { targetCharacterId: string; quantidade: number }>>({});
+  const [crewTransferBusyId, setCrewTransferBusyId] = useState<string | null>(null);
   const [gmDanoForm, setGmDanoForm] = useState<Record<string, { recurso: "pv" | "pe"; valor: number; nota: string }>>({});
   const [gmCuraForm, setGmCuraForm] = useState<Record<string, { recurso: "pv" | "pe" | "mana"; valor: number; nota: string }>>({});
   const [gmSetForm, setGmSetForm] = useState<Record<string, { recurso: GmResource; valor: number; nota: string }>>({});
@@ -1396,6 +1449,106 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     }
   }
 
+  function updateCrewTransferForm(rowId: string, patch: Partial<{ targetCharacterId: string; quantidade: number }>) {
+    setCrewTransferForm((prev) => ({
+      ...prev,
+      [rowId]: { targetCharacterId: prev[rowId]?.targetCharacterId ?? "", quantidade: prev[rowId]?.quantidade ?? 1, ...patch },
+    }));
+  }
+
+  /**
+   * Transfere um item do bando para um personagem (checkpoint pós-v0.68,
+   * CP7) — usa `splitInventoryInstance`/`addInstanceToInventory` (helpers
+   * puros, `lib/character/inventory.ts`) para preservar cargas/munição
+   * carregada/Aljava/propriedades. Ordem SEGURA sem transação real entre
+   * `characters` e `campaign_inventory_items` (tabelas separadas, sem
+   * função Postgres cruzando as duas — ver relatório do checkpoint):
+   * grava no PERSONAGEM primeiro; só then reduz/remove do bando. Se o
+   * passo 2 falhar, o pior caso é uma DUPLICATA (item em ambos os
+   * lugares, corrigível manualmente pelo narrador) — nunca uma perda
+   * silenciosa do item.
+   */
+  async function handleTransferCrewToCharacter(rowId: string) {
+    if (!selectedCampaignId) return;
+    setCrewInventoryError(null);
+    const row = crewInventory.find((r) => r.id === rowId);
+    if (!row) return;
+    const form = crewTransferForm[rowId];
+    if (!form?.targetCharacterId) {
+      setCrewInventoryError("Escolha um personagem de destino antes de transferir.");
+      return;
+    }
+    const quantidade = form.quantidade ?? row.payload.quantidade;
+    setCrewTransferBusyId(rowId);
+    try {
+      const targetRecordBefore = await getCharacter(form.targetCharacterId);
+      if (!targetRecordBefore) {
+        setCrewInventoryError("Personagem de destino não encontrado — pode ter sido removido.");
+        return;
+      }
+      const nowIso = new Date().toISOString();
+      const split = splitInventoryInstance(row.payload, quantidade, nowIso);
+      if (!split.ok || !split.movedInstance) {
+        setCrewInventoryError(split.reason ?? "Transferência não permitida.");
+        return;
+      }
+
+      const targetCharacter = normalizeCharacter(targetRecordBefore.payload);
+      const quantityBeforeTarget =
+        targetCharacter.inventario?.find((i) => i.itemSlug === split.movedInstance!.itemSlug && i.categoria === "municao")?.quantidade ?? 0;
+      const nextTargetCharacter = addInstanceToInventory(targetCharacter, split.movedInstance);
+      const quantityAfterTarget =
+        nextTargetCharacter.inventario?.find((i) =>
+          split.movedInstance!.categoria === "municao" ? i.itemSlug === split.movedInstance!.itemSlug && i.categoria === "municao" : i.id === split.movedInstance!.id,
+        )?.quantidade ?? split.movedInstance.quantidade;
+
+      const derivados = computeDerivedStats(nextTargetCharacter.atributos, regras, nextTargetCharacter.mana_bonus_ruptura ?? 0);
+      const toSave = normalizeCharacter(nextTargetCharacter, derivados);
+
+      // 1) personagem primeiro (ordem segura — ver docstring acima).
+      const savedRecord = await updateCharacter(form.targetCharacterId, toSave);
+      setPersonagensAtivos((prev) => ({ ...prev, [savedRecord.id]: savedRecord }));
+
+      // 2) só então reduz/remove do bando.
+      if (split.sourceRemainder == null) {
+        await removeCrewInventoryItem(selectedCampaignId, row.id);
+      } else {
+        await updateCrewInventoryItemInstance(selectedCampaignId, row.id, split.sourceRemainder);
+      }
+      await refreshCrewInventory(selectedCampaignId);
+
+      await addLog({
+        campaignId: selectedCampaignId,
+        characterId: savedRecord.id,
+        type: "inventory_transfer",
+        visibility: "public",
+        payload: {
+          campaignId: selectedCampaignId,
+          direction: "crew_to_character",
+          targetCharacterId: savedRecord.id,
+          targetCharacterName: savedRecord.name,
+          itemInstanceId: split.movedInstance.id,
+          itemName: split.movedInstance.itemNome,
+          itemSlug: split.movedInstance.itemSlug,
+          quantityMoved: split.movedInstance.quantidade,
+          quantityBeforeSource: row.payload.quantidade,
+          quantityAfterSource: split.sourceRemainder?.quantidade ?? 0,
+          quantityBeforeTarget,
+          quantityAfterTarget,
+          chargesMoved: split.movedInstance.cargasAtual ?? null,
+          payloadPreserved: true,
+          source: "crew_inventory_transfer",
+        },
+      });
+      setLogs(await listLogs(selectedCampaignId));
+      setCrewTransferForm((prev) => ({ ...prev, [rowId]: { targetCharacterId: "", quantidade: 1 } }));
+    } catch (err) {
+      setCrewInventoryError(err instanceof Error ? err.message : "Erro desconhecido ao transferir do bando para o personagem.");
+    } finally {
+      setCrewTransferBusyId(null);
+    }
+  }
+
   async function handleGmDamage(characterId: string) {
     const record = personagensAtivos[characterId];
     const form = gmDanoForm[characterId];
@@ -1531,6 +1684,35 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     return all.filter((record) => !record.archived_at);
   }
 
+  /**
+   * Inventário do bando (checkpoint pós-v0.68) — RLS estrita (migration
+   * 0019) exige narrador dono da mesa autenticado; sem sessão real, a
+   * chamada lança e a seção mostra o erro claro (nunca uma lista vazia
+   * fingida). `campaignCharactersAtivos` reusa a MESMA fonte de
+   * `fetchActiveCampaignCharacters` para o seletor de destino.
+   */
+  async function refreshCrewInventory(campaignId: string) {
+    setCrewInventoryLoading(true);
+    setCrewInventoryError(null);
+    try {
+      const [inventario, personagens] = await Promise.all([
+        listCrewInventory(campaignId),
+        fetchActiveCampaignCharacters(campaignId),
+      ]);
+      setCrewInventory(inventario);
+      setCampaignCharactersAtivos(personagens);
+    } catch (err) {
+      setCrewInventory([]);
+      setCrewInventoryError(
+        err instanceof Error
+          ? `Inventário do bando indisponível: ${err.message} (exige narrador dono da mesa autenticado — ver /dev/login).`
+          : "Inventário do bando indisponível — exige narrador dono da mesa autenticado (ver /dev/login).",
+      );
+    } finally {
+      setCrewInventoryLoading(false);
+    }
+  }
+
   async function handleOpenEndRoundPreview() {
     if (!selectedCampaignId || !mesaAtual) return;
     setEndErro(null);
@@ -1637,6 +1819,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     }
     await handleRefreshPerfis(id);
     await handleRefreshConvites(id);
+    await refreshCrewInventory(id);
     setConviteLinkNovo(null);
   }
 
@@ -2331,6 +2514,92 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                 );
               })}
               {perfis.length === 0 && <p style={{ fontSize: 12, opacity: 0.6 }}>Nenhum perfil nesta mesa ainda.</p>}
+            </div>
+          </section>
+
+          <section style={{ marginBottom: 32 }} data-testid="inventario-bando-secao">
+            <h2 style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, opacity: 0.6, marginBottom: 12 }}>
+              Inventário do bando ({crewInventory.length}) — {mesaAtual?.name ?? selectedCampaignId}
+            </h2>
+            <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
+              Itens guardados na mesa (tabela <code>campaign_inventory_items</code>), fora do inventário de
+              qualquer personagem. RLS estrita: exige narrador dono da mesa autenticado (
+              <a href="/dev/login" style={{ color: "#5ec8ff" }}>/dev/login</a>) — sem sessão, esta seção mostra o
+              erro abaixo em vez de fingir uma lista vazia.
+            </p>
+            {crewInventoryError && (
+              <p data-testid="inventario-bando-erro" style={{ color: "#ff6b6b", fontSize: 12, marginBottom: 12 }}>
+                ⚠ {crewInventoryError}
+              </p>
+            )}
+            {crewInventoryLoading && <p style={{ fontSize: 12, opacity: 0.6 }}>Carregando…</p>}
+            {!crewInventoryLoading && !crewInventoryError && crewInventory.length === 0 && (
+              <p style={{ fontSize: 12, opacity: 0.6 }}>Nenhum item no bando ainda.</p>
+            )}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {crewInventory.map((row) => {
+                const instance = row.payload;
+                const form = crewTransferForm[row.id] ?? { targetCharacterId: "", quantidade: instance.quantidade };
+                const splittable = canSplitInstanceQuantity(instance);
+                const busy = crewTransferBusyId === row.id;
+                return (
+                  <div
+                    key={row.id}
+                    data-testid={`inventario-bando-item-${row.id}`}
+                    style={{ background: "#1d1e24", borderRadius: 8, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6, fontSize: 12 }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <strong>{instance.itemNome}</strong>
+                      <span style={{ opacity: 0.6 }}>x{instance.quantidade}</span>
+                      {instance.cargasAtual != null && <span style={{ opacity: 0.6 }}>cargas: {instance.cargasAtual}</span>}
+                      {instance.municaoAtual != null && <span style={{ opacity: 0.6 }}>munição carregada: {instance.municaoAtual}</span>}
+                      {instance.aljava && (
+                        <span style={{ opacity: 0.6 }}>
+                          Aljava: {instance.aljava.stacks.reduce((s, x) => s + x.quantidade, 0)}/{instance.aljava.capacidade} flechas
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                      <select
+                        data-testid={`inventario-bando-destino-${row.id}`}
+                        value={form.targetCharacterId}
+                        onChange={(e) => updateCrewTransferForm(row.id, { targetCharacterId: e.target.value })}
+                        style={inputStyle}
+                      >
+                        <option value="">— personagem de destino —</option>
+                        {campaignCharactersAtivos.map((p) => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                      {splittable && (
+                        <input
+                          data-testid={`inventario-bando-quantidade-${row.id}`}
+                          type="number"
+                          min={1}
+                          max={instance.quantidade}
+                          value={form.quantidade}
+                          onChange={(e) => updateCrewTransferForm(row.id, { quantidade: Math.max(1, Math.min(instance.quantidade, Number(e.target.value))) })}
+                          style={{ ...inputStyle, width: 70 }}
+                        />
+                      )}
+                      <button
+                        data-testid={`inventario-bando-transferir-${row.id}`}
+                        onClick={() => handleTransferCrewToCharacter(row.id)}
+                        disabled={busy || !form.targetCharacterId}
+                        style={{ ...buttonStyle, opacity: busy || !form.targetCharacterId ? 0.5 : 1 }}
+                      >
+                        {busy ? "Transferindo…" : "Transferir para personagem"}
+                      </button>
+                    </div>
+                    {!splittable && instance.quantidade > 1 && (
+                      <span style={{ fontSize: 10, opacity: 0.45 }}>
+                        Cargas/munição/Aljava/propriedades pertencem a uma unidade específica — transferência sempre move a
+                        instância inteira ({instance.quantidade}).
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </section>
 

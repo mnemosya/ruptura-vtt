@@ -21,6 +21,7 @@ import {
   getItemChargesAtual,
   getConditionRemovalOptions,
   getItemUsePreview,
+  canSplitInstanceQuantity,
   type Character,
   type ItemContent,
   type InventoryItemInstance,
@@ -80,6 +81,8 @@ export function InventoryTab({
   onReloadWeapon,
   onSelectAljava,
   onSelectFlechaAtiva,
+  isConnectedToCampaign,
+  onSendToCrew,
 }: {
   items: ItemContent[];
   catalogError: string | null;
@@ -121,6 +124,10 @@ export function InventoryTab({
   onSelectAljava: (bowInstanceId: string, aljavaInstanceId: string | null) => void;
   /** Arco escolhe qual tipo de flecha (dentro da Aljava selecionada) usa para atacar. */
   onSelectFlechaAtiva: (bowInstanceId: string, flechaSlug: string | null) => void;
+  /** `true` só com personagem salvo + mesa conectada (checkpoint pós-v0.68) — "Enviar ao bando" exige as duas coisas. */
+  isConnectedToCampaign: boolean;
+  /** Envia `quantidade` unidades da instância ao inventário do bando da mesa (checkpoint pós-v0.68, CP7). */
+  onSendToCrew: (instanceId: string, quantidade: number) => void;
 }) {
   const [busca, setBusca] = useState("");
   const [categoria, setCategoria] = useState<(typeof CATEGORIA_FILTROS)[number]>("todos");
@@ -134,6 +141,8 @@ export function InventoryTab({
   const [retirarQtd, setRetirarQtd] = useState<Record<string, number>>({});
   // condicaoRemocao[instanceId] = id da ActiveCondition escolhida no seletor de remover_condicao (checkpoint pós-v0.61)
   const [condicaoRemocao, setCondicaoRemocao] = useState<Record<string, string>>({});
+  // enviarBandoQtd[instanceId] = quantidade a enviar ao bando (checkpoint pós-v0.68)
+  const [enviarBandoQtd, setEnviarBandoQtd] = useState<Record<string, number>>({});
 
   const runasPublicadas = runes.filter((r) => r.status === "published");
   const runaBySlug = new Map(runasPublicadas.map((r) => [r.slug, r]));
@@ -309,6 +318,35 @@ export function InventoryTab({
                     Remover
                   </button>
                 </div>
+
+                {/* Enviar ao bando (checkpoint pós-v0.68, CP7) — só com mesa conectada + personagem salvo. */}
+                {isConnectedToCampaign ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    {canSplitInstanceQuantity(instance) && (
+                      <input
+                        data-testid={`inventario-bando-enviar-qtd-${instance.id}`}
+                        type="number"
+                        min={1}
+                        max={instance.quantidade}
+                        value={enviarBandoQtd[instance.id] ?? instance.quantidade}
+                        onChange={(e) =>
+                          setEnviarBandoQtd((prev) => ({ ...prev, [instance.id]: Math.max(1, Math.min(instance.quantidade, Number(e.target.value))) }))
+                        }
+                        style={{ ...input, width: 60, fontSize: 11 }}
+                      />
+                    )}
+                    <button
+                      data-testid={`inventario-bando-enviar-${instance.id}`}
+                      onClick={() => onSendToCrew(instance.id, enviarBandoQtd[instance.id] ?? instance.quantidade)}
+                      style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: 0.85 }}
+                      title="Move para o inventário do bando da mesa (campaign_inventory_items)"
+                    >
+                      Enviar ao bando
+                    </button>
+                  </div>
+                ) : (
+                  <p style={{ fontSize: 10, opacity: 0.4, margin: 0 }}>Enviar ao bando: disponível apenas em mesa conectada.</p>
+                )}
 
                 {useKind && itemModelo && (
                   <div

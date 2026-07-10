@@ -100,6 +100,7 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   character_state_change: "Estado do Personagem",
   character_created: "Personagem Criado",
   ammunition: "Munição",
+  inventory_transfer: "Transferência de Inventário",
 };
 
 function entryKindLabel(type: string): string {
@@ -131,6 +132,7 @@ function entryIcon(type: string): string {
   if (type === "item_used") return "🎒";
   if (type === "talent_used") return "✨";
   if (type === "spell_cast") return "🔮";
+  if (type === "inventory_transfer") return "📦";
   return "•";
 }
 
@@ -157,6 +159,7 @@ function entryBorderColor(type: string): string {
   if (type === "item_used") return "#4caf50";
   if (type === "talent_used") return "#9b8cff";
   if (type === "spell_cast") return "#5ec8ff";
+  if (type === "inventory_transfer") return "#f5a623";
   return "#ffb84f";
 }
 
@@ -680,6 +683,42 @@ function formatSpellCast(payload: Record<string, unknown>): string {
   return extras.length > 0 ? `${base} — ${extras.join(" ")}` : base;
 }
 
+/**
+ * `inventory_transfer` (checkpoint pós-v0.68, CP7) — transferência
+ * entre personagem e inventário do bando/mesa, nos dois sentidos.
+ * "Transferência — {origem} enviou/recebeu {item} x{quantidade} (bando)
+ * — origem X → Y, destino X → Y." Nunca cai em JSON cru.
+ */
+function formatInventoryTransfer(payload: Record<string, unknown>): string {
+  const direction = typeof payload.direction === "string" ? payload.direction : "?";
+  const itemName = typeof payload.itemName === "string" ? payload.itemName : "Item";
+  const quantityMoved = typeof payload.quantityMoved === "number" ? payload.quantityMoved : "?";
+  const quantityBeforeSource = typeof payload.quantityBeforeSource === "number" ? payload.quantityBeforeSource : null;
+  const quantityAfterSource = typeof payload.quantityAfterSource === "number" ? payload.quantityAfterSource : null;
+  const quantityBeforeTarget = typeof payload.quantityBeforeTarget === "number" ? payload.quantityBeforeTarget : null;
+  const quantityAfterTarget = typeof payload.quantityAfterTarget === "number" ? payload.quantityAfterTarget : null;
+  const chargesMoved = typeof payload.chargesMoved === "number" ? payload.chargesMoved : null;
+
+  const partes: string[] = [`x${quantityMoved}`];
+  if (quantityBeforeSource != null && quantityAfterSource != null) {
+    partes.push(`origem ${quantityBeforeSource} → ${quantityAfterSource}`);
+  }
+  if (quantityBeforeTarget != null && quantityAfterTarget != null) {
+    partes.push(`destino ${quantityBeforeTarget} → ${quantityAfterTarget}`);
+  }
+  if (chargesMoved != null) partes.push(`cargas ${chargesMoved}`);
+
+  if (direction === "character_to_crew") {
+    const sourceCharacterName = typeof payload.sourceCharacterName === "string" ? payload.sourceCharacterName : "Personagem";
+    return `Transferência — ${sourceCharacterName} enviou ${itemName} ao bando (${partes.join(" · ")}).`;
+  }
+  if (direction === "crew_to_character") {
+    const targetCharacterName = typeof payload.targetCharacterName === "string" ? payload.targetCharacterName : "Personagem";
+    return `Transferência — ${targetCharacterName} recebeu ${itemName} do bando (${partes.join(" · ")}).`;
+  }
+  return `Transferência de inventário — ${itemName} (${partes.join(" · ")}).`;
+}
+
 /** `character_state_change` (ferramentas de narrador do /dev/table) — dano/cura/ajuste com recurso e antes → depois. */
 function formatCharacterStateChange(payload: Record<string, unknown>): string {
   const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
@@ -1086,7 +1125,9 @@ export function MesaTab({
                                                                         ? formatSpellCast(entry.payload)
                                                                         : entry.type === "character_state_change"
                                                                           ? formatCharacterStateChange(entry.payload)
-                                                                          : formatGenericLog(entry.type, entry.payload)}
+                                                                          : entry.type === "inventory_transfer"
+                                                                            ? formatInventoryTransfer(entry.payload)
+                                                                            : formatGenericLog(entry.type, entry.payload)}
             </span>
           </div>
         ))}

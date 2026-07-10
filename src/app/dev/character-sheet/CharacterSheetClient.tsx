@@ -68,6 +68,7 @@ import {
   purchaseItem,
   setItemLoadoutState,
   removeItemFromInventory,
+  removeQuantityFromInventory,
   useItemOnCharacter,
   installRuneOnItem,
   removeRuneFromItem,
@@ -143,6 +144,7 @@ import {
   leaveCampaignProfile,
   addLog,
 } from "../../../lib/table/storage";
+import { upsertCrewInventoryItem } from "../../../lib/table/crewInventory";
 import { PROFILE_HEARTBEAT_INTERVAL_MS } from "../../../lib/table";
 import type { Campaign, CampaignProfile } from "../../../lib/table";
 import { useCharacterRealtime } from "../../../lib/realtime/useCharacterRealtime";
@@ -2231,6 +2233,87 @@ export default function CharacterSheetClient({
   }
 
   /**
+   * Enviar item ao inventário do bando (aba Inventário, checkpoint
+   * pós-v0.68, CP7) — usa `removeQuantityFromInventory` (helper puro,
+   * `lib/character/inventory.ts`) para tirar a quantidade do
+   * personagem preservando cargas/munição/Aljava/propriedades, e
+   * `upsertCrewInventoryItem` (mescla só munição, mesmo critério de
+   * `purchaseItem`) para gravar no bando. Ordem SEGURA sem transação
+   * real entre `characters` e `campaign_inventory_items`: reduz o
+   * personagem só DEPOIS de confirmar a escrita no bando — se a escrita
+   * no bando falhar, nada muda no personagem (falha limpa, sem duplicar
+   * nem perder o item). RLS do bando é estrita (migration 0019): exige
+   * narrador dono da mesa autenticado — sem isso, o erro aparece aqui e
+   * o item NUNCA some do personagem.
+   */
+  async function handleSendItemToCrew(instanceId: string, quantidade: number) {
+    if (!selectedCampaignId) {
+      addLogEntry("recurso", "Enviar ao bando exige mesa conectada.");
+      return;
+    }
+    const current = characterRef.current;
+    const instance = (current.inventario ?? []).find((i) => i.id === instanceId);
+    if (!instance) return;
+    const nowIso = new Date().toISOString();
+
+    const removal = removeQuantityFromInventory(current, instanceId, quantidade, nowIso);
+    if (!removal.ok) {
+      addLogEntry("recurso", removal.reason);
+      return;
+    }
+
+    try {
+      // 1) grava no bando primeiro — falhar aqui (ex.: sem narrador autenticado) não tira nada do personagem.
+      await upsertCrewInventoryItem(selectedCampaignId, removal.removedInstance);
+
+      // 2) só então reduz/remove do personagem.
+      characterRef.current = removal.character;
+      setCharacter(removal.character);
+      const quantityAfterSource = removal.character.inventario?.find((i) => i.id === instanceId)?.quantidade ?? 0;
+      addLogEntry(
+        "recurso",
+        `Enviado ao bando: ${removal.removedInstance.itemNome} x${removal.removedInstance.quantidade}${quantityAfterSource > 0 ? ` (restam ${quantityAfterSource})` : ""}.`,
+      );
+      await persistAutomatedActionExecution(removal.character);
+
+      try {
+        await addLog({
+          campaignId: selectedCampaignId,
+          characterId: characterId ?? undefined,
+          profileId: selectedProfileId,
+          profileSessionId: profileSessionToken?.profileSessionId ?? null,
+          type: "inventory_transfer",
+          visibility: "public",
+          payload: {
+            campaignId: selectedCampaignId,
+            direction: "character_to_crew",
+            sourceCharacterId: characterId,
+            sourceCharacterName: current.nome,
+            itemInstanceId: removal.removedInstance.id,
+            itemName: removal.removedInstance.itemNome,
+            itemSlug: removal.removedInstance.itemSlug,
+            quantityMoved: removal.removedInstance.quantidade,
+            quantityBeforeSource: instance.quantidade,
+            quantityAfterSource,
+            chargesMoved: removal.removedInstance.cargasAtual ?? null,
+            payloadPreserved: true,
+            source: "crew_inventory_transfer",
+          },
+        });
+      } catch {
+        avisarFalhaLogMesa();
+      }
+    } catch (err) {
+      addLogEntry(
+        "recurso",
+        err instanceof Error
+          ? `Falha ao enviar ao bando: ${err.message} (exige narrador dono da mesa autenticado — ver /dev/login).`
+          : "Falha ao enviar ao bando — exige narrador dono da mesa autenticado.",
+      );
+    }
+  }
+
+  /**
    * Instalar runa em item (aba Inventário, checkpoint v0.56) — cria só
    * uma referência passiva na instância do item (`installRuneOnItem`,
    * `lib/character/inventory.ts`); nenhum efeito mecânico é aplicado.
@@ -3443,6 +3526,8 @@ export default function CharacterSheetClient({
           onReloadWeapon={handleReloadWeapon}
           onSelectAljava={handleSelectAljava}
           onSelectFlechaAtiva={handleSelectFlechaAtiva}
+          isConnectedToCampaign={Boolean(characterId && selectedCampaignId)}
+          onSendToCrew={handleSendItemToCrew}
         />
       )}
 

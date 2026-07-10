@@ -1298,3 +1298,153 @@ export function getEquippedDefenseProfile(character: Pick<Character, "inventario
 
   return profile;
 }
+
+// ---------------------------------------------------------------------
+// Split/merge de instância — inventário do bando/mesa (checkpoint
+// pós-v0.68, CP7). Puramente funcional: opera só em InventoryItemInstance,
+// nunca sabe de Supabase/campanha. Reusado pelos dois sentidos de
+// transferência (personagem→bando e bando→personagem) porque ambos os
+// lados guardam o MESMO formato de instância (payload JSONB-first).
+// ---------------------------------------------------------------------
+
+/**
+ * `true` quando a instância pode ser dividida por quantidade parcial
+ * SEM perder estado de instância que pertence a UMA unidade física
+ * específica (munição carregada, Aljava, runas, propriedades/estados
+ * técnicos, equipamento defensivo ativo/MIT/PD). `cargasAtual` é
+ * deliberadamente PERMITIDO aqui — ver `splitInventoryInstance` para a
+ * regra de como a fração movida nunca herda uma carga inventada.
+ */
+export function canSplitInstanceQuantity(instance: InventoryItemInstance): boolean {
+  if (instance.quantidade <= 1) return false;
+  if (instance.aljava != null) return false;
+  if (instance.municaoAtual != null) return false;
+  if ((instance.runasInstaladas?.length ?? 0) > 0) return false;
+  if ((instance.propriedadesTecnicas?.length ?? 0) > 0) return false;
+  if ((instance.estadosTecnicos?.length ?? 0) > 0) return false;
+  if (instance.equipadoDefensivo) return false;
+  if (instance.mitAtual != null) return false;
+  if (instance.pdAtual != null) return false;
+  return true;
+}
+
+export interface SplitInventoryInstanceResult {
+  ok: boolean;
+  reason?: string;
+  /** Instância a inserir no destino — sempre presente quando `ok`. */
+  movedInstance?: InventoryItemInstance;
+  /**
+   * Resto que fica na origem — `null` quando a instância INTEIRA foi
+   * movida (o chamador deve remover a instância da origem, não só
+   * atualizar quantidade). Presente (com `quantidade` reduzida) numa
+   * divisão parcial.
+   */
+  sourceRemainder?: InventoryItemInstance | null;
+}
+
+/**
+ * Divide/move uma instância — `quantityToMove` unidades saem da
+ * origem, o resto (se houver) fica. Mover a quantidade INTEIRA sempre
+ * é permitido (preserva cargas/munição/Aljava/propriedades tal como
+ * estão — "para item único com cargas, mover a instância inteira").
+ * Mover uma fração exige `canSplitInstanceQuantity` — quando permitido,
+ * a fração movida NUNCA herda `cargasAtual` da origem (o modelo atual
+ * só rastreia a carga da unidade "da frente" da pilha, ver
+ * `consumeItemCharge`; as demais unidades já são tratadas como cheias
+ * em todo o resto do código) — a fração sai com cargas cheias
+ * (`cargasAtual` ausente = `item.cargasMax` na primeira leitura), e a
+ * origem mantém sua `cargasAtual` atual intacta. Nunca inventa um valor
+ * de carga menor que o máximo para a fração movida.
+ */
+export function splitInventoryInstance(
+  instance: InventoryItemInstance,
+  quantityToMove: number,
+  nowIso: string,
+): SplitInventoryInstanceResult {
+  const qty = Math.trunc(quantityToMove);
+  if (!Number.isFinite(qty) || qty <= 0) {
+    return { ok: false, reason: "Quantidade a transferir precisa ser maior que zero." };
+  }
+  if (qty > instance.quantidade) {
+    return { ok: false, reason: `Quantidade insuficiente (disponível: ${instance.quantidade}, pedida: ${qty}).` };
+  }
+
+  if (qty === instance.quantidade) {
+    return { ok: true, movedInstance: { ...instance }, sourceRemainder: null };
+  }
+
+  if (!canSplitInstanceQuantity(instance)) {
+    return {
+      ok: false,
+      reason: `${instance.itemNome}: transferência parcial não permitida para esta instância (cargas/munição/Aljava/propriedades pertencem a uma unidade específica) — transfira a quantidade inteira (${instance.quantidade}).`,
+    };
+  }
+
+  const movedInstance: InventoryItemInstance = {
+    id: crypto.randomUUID(),
+    itemSlug: instance.itemSlug,
+    itemNome: instance.itemNome,
+    categoria: instance.categoria,
+    subtipo: instance.subtipo,
+    quantidade: qty,
+    estado: instance.estado,
+    adquiridoEm: nowIso,
+    precoPago: instance.precoPago,
+  };
+  const sourceRemainder: InventoryItemInstance = { ...instance, quantidade: instance.quantidade - qty };
+  return { ok: true, movedInstance, sourceRemainder };
+}
+
+/**
+ * Adiciona uma instância a um inventário de personagem — mescla com um
+ * stack existente SÓ quando `categoria === "municao"` (mesmo critério
+ * de `purchaseItem`: munição não tem estado individual, tudo o mais
+ * sempre vira uma instância nova, nunca mesclada, para não perder
+ * cargas/munição carregada/Aljava/propriedades diferentes).
+ */
+export function addInstanceToInventory(character: Character, instance: InventoryItemInstance): Character {
+  const atual = character.inventario ?? [];
+  if (instance.categoria === "municao") {
+    const existingIndex = atual.findIndex((i) => i.itemSlug === instance.itemSlug && i.categoria === "municao");
+    if (existingIndex >= 0) {
+      const next = atual.map((i, idx) =>
+        idx === existingIndex
+          ? { ...i, quantidade: i.quantidade + instance.quantidade, precoPago: (i.precoPago ?? 0) + (instance.precoPago ?? 0) }
+          : i,
+      );
+      return { ...character, inventario: next };
+    }
+  }
+  return { ...character, inventario: [...atual, instance] };
+}
+
+export type RemoveQuantityFromInventoryResult =
+  | { ok: true; character: Character; removedInstance: InventoryItemInstance }
+  | { ok: false; reason: string };
+
+/**
+ * Remove `quantityToMove` unidades da instância `instanceId` do
+ * inventário do personagem — usa `splitInventoryInstance` (mesma regra
+ * de cargas) e, se a instância inteira sair, reusa
+ * `removeItemFromInventory` (limpa seleção de Aljava em arcos).
+ * `ok: false` quando a instância não existe ou a divisão não é permitida.
+ */
+export function removeQuantityFromInventory(
+  character: Character,
+  instanceId: string,
+  quantityToMove: number,
+  nowIso: string,
+): RemoveQuantityFromInventoryResult {
+  const atual = character.inventario ?? [];
+  const instance = atual.find((i) => i.id === instanceId);
+  if (!instance) return { ok: false, reason: "Item não encontrado no inventário." };
+
+  const split = splitInventoryInstance(instance, quantityToMove, nowIso);
+  if (!split.ok || !split.movedInstance) return { ok: false, reason: split.reason ?? "Transferência não permitida." };
+
+  if (split.sourceRemainder == null) {
+    return { ok: true, character: removeItemFromInventory(character, instanceId), removedInstance: split.movedInstance };
+  }
+  const next = atual.map((i) => (i.id === instanceId ? split.sourceRemainder! : i));
+  return { ok: true, character: { ...character, inventario: next }, removedInstance: split.movedInstance };
+}
