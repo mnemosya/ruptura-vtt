@@ -220,6 +220,13 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     ? (raw.escalpos_instalados as Character["escalpos_instalados"])
     : [];
 
+  // efeitos_temporarios (checkpoint pós-v0.71): mesmo critério — ausência
+  // vira [], nunca undefined; efeitos já salvos (ativos e histórico) nunca
+  // sobrescritos. Campo aditivo/opcional, sem migration (payload JSON).
+  const efeitos_temporarios: Character["efeitos_temporarios"] = Array.isArray(raw.efeitos_temporarios)
+    ? (raw.efeitos_temporarios as Character["efeitos_temporarios"])
+    : [];
+
   return {
     ...raw,
     nome,
@@ -247,5 +254,6 @@ export function normalizeCharacter(character: unknown, derived?: DerivedStats): 
     magias_aprendidas,
     escalpos_instalados,
     niveis_vertente,
+    efeitos_temporarios,
   } as Character;
 }

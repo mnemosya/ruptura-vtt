@@ -32,7 +32,18 @@ import { rollDamageFormula } from "./attack";
 import { stabilizeCollapse } from "./collapse";
 import { applyGmHealing, type GmHealResult } from "./gmActions";
 import { consumeItemCharge, getItemChargesAtual, type ItemContent, type InventoryItemInstance } from "./inventory";
-import type { ActiveCondition, Character } from "./types";
+import {
+  addTemporaryEffect,
+  buildTemporaryEffectFromStructuredPayload,
+  canApplyTemporaryEffect,
+  formatTemporaryEffectSummary,
+} from "./temporaryEffects";
+import type { ActiveCondition, Character, TemporaryEffect } from "./types";
+
+/** Gera um uuid — injetável para testes; itemUse é chamado só no cliente onde crypto.randomUUID existe. */
+function defaultIdFactory(): string {
+  return crypto.randomUUID();
+}
 
 function asRecord(v: unknown): Record<string, unknown> | null {
   return typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
@@ -221,6 +232,8 @@ export interface ItemUseResult {
   removedConditions: string[];
   /** Colapso estabilizado por este uso (checkpoint pós-v0.62, efeito `estabilizar` via `stabilizeCollapse`) — null quando nada foi estabilizado. */
   stabilizedCollapse: "pv" | "pe" | null;
+  /** Efeitos temporários criados por este uso (checkpoint pós-v0.71, `buff_temporario` estruturado) — vazio quando nenhum foi criado. */
+  temporaryEffectsAdded: TemporaryEffect[];
   reminders: string[];
 }
 
@@ -291,8 +304,10 @@ export function useItemOnCharacter(params: {
   /** id (uuid da instância de ActiveCondition) escolhido no seletor do card quando há várias condições compatíveis ativas. */
   selectedConditionInstanceId?: string | null;
   rng?: () => number;
+  /** Gerador de uuid para efeitos temporários criados — injetável para teste; default crypto.randomUUID. */
+  idFactory?: () => string;
 }): ItemUseResult {
-  const { character, instance, item, paMax, pvMax, peMax, nowIso, selectedConditionInstanceId, rng } = params;
+  const { character, instance, item, paMax, pvMax, peMax, nowIso, selectedConditionInstanceId, rng, idFactory = defaultIdFactory } = params;
   const useKind = deriveItemUseKind(item) ?? "manual";
 
   const chargesMax = item.cargasMax;
@@ -328,6 +343,7 @@ export function useItemOnCharacter(params: {
     damageRolled: [],
     removedConditions: [],
     stabilizedCollapse: null,
+    temporaryEffectsAdded: [],
     reminders: [],
   });
 
@@ -388,13 +404,35 @@ export function useItemOnCharacter(params: {
   const resourceChanges: ItemUseResourceChange[] = [];
   const removedConditions: string[] = [];
   const reminders: string[] = [];
+  const temporaryEffectsAdded: TemporaryEffect[] = [];
   let healingRolled: number | null = null;
   const damageRolled: ItemUseDamageRoll[] = [];
   let conditionRemovalApplied = false;
   let stabilizedCollapse: "pv" | "pe" | null = null;
 
   for (const efeito of effects) {
-    if (efeito.tipo === "estabilizar" && useKind === "pharmacy") {
+    if (efeito.tipo === "buff_temporario" && useKind === "pharmacy") {
+      // Buff temporário estruturado (checkpoint pós-v0.71) — vira efeito
+      // temporário rastreado no PRÓPRIO usuário; sem estrutura suficiente
+      // (modificador + duração), continua lembrete como antes.
+      if (canApplyTemporaryEffect(efeito)) {
+        const built = buildTemporaryEffectFromStructuredPayload(
+          { sourceType: "item", sourceId: item.slug, sourceName: item.nome, round: nextCharacter.current_round, scene: nextCharacter.current_scene },
+          efeito,
+          nowIso,
+          idFactory,
+        );
+        if (built) {
+          nextCharacter = addTemporaryEffect(nextCharacter, built);
+          temporaryEffectsAdded.push(built);
+          reminders.push(`${item.nome}: efeito temporário aplicado — ${formatTemporaryEffectSummary(built)}.`);
+        } else {
+          reminders.push(describeUnhandledEffect(item, efeito));
+        }
+      } else {
+        reminders.push(describeUnhandledEffect(item, efeito));
+      }
+    } else if (efeito.tipo === "estabilizar" && useKind === "pharmacy") {
       const applicability = getStabilizeApplicability(efeito, nextCharacter);
       if (applicability.applicable && applicability.target != null && stabilizedCollapse == null) {
         // Helper canônico (PRD 10.7): pausa o avanço de segmento — NÃO cura, NÃO remove Inconsciente.
@@ -515,6 +553,7 @@ export function useItemOnCharacter(params: {
     damageRolled,
     removedConditions,
     stabilizedCollapse,
+    temporaryEffectsAdded,
     reminders,
   };
 }
@@ -540,6 +579,8 @@ export interface ItemUseOnAllyResult {
   targetRemovedConditions: string[];
   /** Colapso do ALVO estabilizado por este uso — null quando nada foi estabilizado. */
   stabilizedCollapse: "pv" | "pe" | null;
+  /** Efeitos temporários criados NO ALVO por este uso (checkpoint pós-v0.71) — vazio quando nenhum. */
+  targetTemporaryEffectsAdded: TemporaryEffect[];
   reminders: string[];
 }
 
@@ -567,8 +608,10 @@ export function useItemOnAlly(params: {
   /** id (uuid da instância de ActiveCondition) do ALVO escolhido no seletor quando há várias condições compatíveis ativas nele. */
   selectedConditionInstanceId?: string | null;
   rng?: () => number;
+  /** Gerador de uuid para efeitos temporários criados — injetável para teste; default crypto.randomUUID. */
+  idFactory?: () => string;
 }): ItemUseOnAllyResult {
-  const { source, target, instance, item, sourcePaMax, targetPvMax, targetPeMax, nowIso, selectedConditionInstanceId, rng } = params;
+  const { source, target, instance, item, sourcePaMax, targetPvMax, targetPeMax, nowIso, selectedConditionInstanceId, rng, idFactory = defaultIdFactory } = params;
   const useKind = deriveItemUseKind(item) ?? "manual";
 
   const chargesMax = item.cargasMax;
@@ -595,6 +638,7 @@ export function useItemOnAlly(params: {
     targetResourceChanges: [],
     targetRemovedConditions: [],
     stabilizedCollapse: null,
+    targetTemporaryEffectsAdded: [],
     reminders: [],
   });
 
@@ -661,13 +705,34 @@ export function useItemOnAlly(params: {
   let nextTarget = target;
   const targetResourceChanges: ItemUseResourceChange[] = [];
   const targetRemovedConditions: string[] = [];
+  const targetTemporaryEffectsAdded: TemporaryEffect[] = [];
   const reminders: string[] = [];
   let healingRolled: number | null = null;
   let conditionRemovalApplied = false;
   let stabilizedCollapse: "pv" | "pe" | null = null;
 
   for (const efeito of effects) {
-    if (efeito.tipo === "estabilizar") {
+    if (efeito.tipo === "buff_temporario") {
+      // Buff temporário estruturado usado em aliado (checkpoint pós-v0.71) —
+      // vira efeito temporário rastreado NO ALVO (quem recebe o efeito).
+      if (canApplyTemporaryEffect(efeito)) {
+        const built = buildTemporaryEffectFromStructuredPayload(
+          { sourceType: "item", sourceId: item.slug, sourceName: item.nome, round: nextTarget.current_round, scene: nextTarget.current_scene },
+          efeito,
+          nowIso,
+          idFactory,
+        );
+        if (built) {
+          nextTarget = addTemporaryEffect(nextTarget, built);
+          targetTemporaryEffectsAdded.push(built);
+          reminders.push(`${item.nome}: efeito temporário aplicado no alvo — ${formatTemporaryEffectSummary(built)}.`);
+        } else {
+          reminders.push(describeUnhandledEffect(item, efeito));
+        }
+      } else {
+        reminders.push(describeUnhandledEffect(item, efeito));
+      }
+    } else if (efeito.tipo === "estabilizar") {
       const applicability = getStabilizeApplicability(efeito, nextTarget);
       if (applicability.applicable && applicability.target != null && stabilizedCollapse == null) {
         nextTarget = stabilizeCollapse(nextTarget, nowIso);
@@ -751,6 +816,7 @@ export function useItemOnAlly(params: {
     targetResourceChanges,
     targetRemovedConditions,
     stabilizedCollapse,
+    targetTemporaryEffectsAdded,
     reminders,
   };
 }
@@ -824,6 +890,18 @@ export function getItemUsePreview(
         if (typeof efeito.falha === "string") manual.push(`Em falha no teste, cura vira "${efeito.falha}" — ajuste manual.`);
       } else {
         manual.push("Cura sem fórmula estruturada — aplicação manual.");
+      }
+    } else if (efeito.tipo === "buff_temporario" && useKind === "pharmacy") {
+      // Buff temporário estruturado (checkpoint pós-v0.71) vira efeito temporário rastreado.
+      if (canApplyTemporaryEffect(efeito)) {
+        const alvoTags = asStringArray(efeito.alvo_tags);
+        const bonusPericia = asRecord(efeito.bonus_pericia);
+        const partes: string[] = [];
+        if (typeof efeito.valor === "number" && alvoTags.length > 0) partes.push(`${efeito.valor >= 0 ? "+" : ""}${efeito.valor} em ${alvoTags.join("/")}`);
+        if (bonusPericia && typeof bonusPericia.pericia === "string" && typeof bonusPericia.valor === "number") partes.push(`${bonusPericia.valor >= 0 ? "+" : ""}${bonusPericia.valor} em ${bonusPericia.pericia}`);
+        automatic.push(`Cria efeito temporário rastreado${partes.length > 0 ? ` (${partes.join(", ")})` : ""} — só bônus de rolagem entram automaticamente; recurso/dano/defesa viram lembrete.`);
+      } else {
+        manual.push(describeUnhandledEffect(item, efeito));
       }
     } else if ((efeito.tipo === "efeito_com_resistencia" || efeito.tipo === "dano_em_area") && useKind !== "pharmacy") {
       const formula = typeof efeito.dano === "string" ? efeito.dano : typeof efeito.dado === "string" ? efeito.dado : null;

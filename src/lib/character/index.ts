@@ -25,3 +25,4 @@ export * from "./ammunition";
 export * from "./gmActions";
 export * from "./attackWeapon";
 export * from "./itemUse";
+export * from "./temporaryEffects";

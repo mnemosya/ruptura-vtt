@@ -212,6 +212,73 @@ export interface ConditionEffectHistoryEntry {
   resolvedAt?: string;
 }
 
+/**
+ * Um modificador estruturado de um efeito temporário (checkpoint
+ * pós-v0.71). Modelo canônico mínimo — nunca inventado a partir de
+ * texto: só é preenchido quando o payload da fonte declara o alvo/
+ * operação/valor de forma estruturada. `target: "roll"` com
+ * `appliesTo` (tags de rolagem, ex.: "resistir", "reflexos") é o ÚNICO
+ * caso aplicado automaticamente hoje — vira `ActiveEffect` e soma nas
+ * rolagens do RollsTab. Os demais (`damage`/`defense`/`resource`/`dc`)
+ * são exibidos e viram lembrete, sem aplicação automática (nenhum ponto
+ * de integração canônico existe para eles ainda — `computeDerivedStats`
+ * não lê efeitos temporários; dano/defesa são resolvidos manualmente em
+ * /dev/table). `manual` é sempre só lembrete.
+ */
+export interface TemporaryEffectModifier {
+  target: "roll" | "skill" | "attribute" | "damage" | "defense" | "resource" | "dc" | "manual";
+  /** Chave específica do alvo quando aplicável (ex.: recurso "pa", atributo "corpo"). */
+  targetKey?: string;
+  operation: "add" | "subtract" | "set" | "advantage" | "reroll" | "manual";
+  value?: number;
+  dice?: string;
+  label?: string;
+  /** Tags de rolagem afetadas (perícia/atributo/ação) — só usadas quando target é "roll"/"skill"/"attribute". */
+  appliesTo?: string[];
+  reminder?: string;
+}
+
+/**
+ * Efeito temporário/buff canônico no personagem (checkpoint pós-v0.71,
+ * PRD 9.4 "efeitos de item/talento ativos"). Resolve a pendência
+ * documentada de "buff temporário com duração rastreada". Campo novo
+ * e OPCIONAL (`Character.efeitos_temporarios`) — personagem antigo sem
+ * ele carrega como lista vazia (normalizeCharacter), sem migration
+ * (o personagem já é payload JSON). Preserva a FONTE do efeito e nunca
+ * apaga o histórico: expirar/remover marca `active: false` (mesmo
+ * padrão de `ActiveCondition`). Só é criado automaticamente quando o
+ * payload estruturado permite (`canApplyTemporaryEffect`); efeito
+ * textual vira lembrete, nunca automação falsa.
+ */
+export interface TemporaryEffect {
+  /** uuid gerado no cliente. */
+  id: string;
+  sourceType: "talent" | "item" | "spell" | "surge" | "manual";
+  /** slug/id da fonte na Biblioteca, quando houver. */
+  sourceId?: string;
+  sourceName: string;
+  name: string;
+  description?: string;
+  /** "rounds" decrementa a cada fim de rodada; "scene" expira no fim de cena; "rest" expira no descanso longo; "manual" só sai por remoção manual. */
+  durationType: "rounds" | "scene" | "rest" | "manual";
+  /** Rodadas restantes — só presente quando durationType="rounds". Expira ao chegar a 0. */
+  remainingRounds?: number;
+  createdRound?: number;
+  createdScene?: number;
+  /** Como lidar com um efeito duplicado da mesma fonte — "replace"/"ignore" evitam duplicata; "stack" soma pilhas; "manual" registra lembrete quando a regra de stack não é estruturada. */
+  stackingMode?: "replace" | "stack" | "ignore" | "manual";
+  stacks?: number;
+  maxStacks?: number;
+  modifiers?: TemporaryEffectModifier[];
+  reminders?: string[];
+  active: boolean;
+  createdAt: string;
+  /** ISO de quando expirou/foi removido — null enquanto ativo. */
+  endedAt?: string | null;
+  /** Como saiu — "manual" (botão Remover), "rounds" (chegou a 0), "scene"/"rest" (fim de cena/descanso). */
+  endedReason?: "manual" | "rounds" | "scene" | "rest";
+}
+
 export interface Character {
   nome: string;
   atributos: CharacterAttributes;
@@ -494,6 +561,14 @@ export interface Character {
     notas?: string;
     instaladoEm: string;
   }[];
+  /**
+   * Efeitos temporários/buffs ativos e histórico (checkpoint pós-v0.71)
+   * — modelo canônico com duração rastreada (ver `TemporaryEffect` e
+   * `temporaryEffects.ts`). Inclui entradas com `active: false` para
+   * manter histórico (mesmo padrão de `condicoes_ativas`). Ausente =
+   * lista vazia (personagem antigo compatível, sem migration).
+   */
+  efeitos_temporarios?: TemporaryEffect[];
 }
 
 /**
