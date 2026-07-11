@@ -66,6 +66,7 @@ import {
   acquireTalentLevel,
   removeTalentLevel,
   getUsableTalentEffects,
+  getTalentContextualOpportunities,
   useTalentEffect,
   toggleTalentEffect,
   resetTalentUse,
@@ -4004,6 +4005,7 @@ export default function CharacterSheetClient({
           catalogError={talentsError}
           acquired={character.talentos_adquiridos ?? []}
           usableEffects={getUsableTalentEffects(character, talentsIniciais)}
+          contextualOpportunities={getTalentContextualOpportunities(character, talentsIniciais)}
           onAcquire={handleAcquireTalent}
           onRemove={handleRemoveTalent}
           onUseEffect={handleUseTalentEffect}
