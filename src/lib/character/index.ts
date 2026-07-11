@@ -16,6 +16,7 @@ export * from "./endRoundConditions";
 export * from "./rupture";
 export * from "./attack";
 export * from "./talents";
+export * from "./talentEngine";
 export * from "./inventory";
 export * from "./spells";
 export * from "./escalpos";

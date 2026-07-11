@@ -446,6 +446,30 @@ export interface Character {
   talentos_estado?: {
     usos?: Record<string, { usados: number; cadencia: string | null; atualizadoEm: string }>;
     toggles?: Record<string, boolean>;
+    /**
+     * Reservas de recurso próprio de talento (checkpoint canônico —
+     * engine de operação). Chave = `${nivelId}:${efeitoIndex}` do efeito
+     * que define o recurso (ex.: dados de gatilho do Pistoleiro). Só
+     * contadores de instância — nunca regra. `disponivel` é derivado do
+     * `max` do payload quando ausente.
+     */
+    recursos?: Record<string, { disponivel: number; max: number; cadenciaRecuperacao: string | null; atualizadoEm: string }>;
+    /**
+     * Oportunidades contextuais pendentes que precisam SOBREVIVER a
+     * reload (checkpoint canônico — engine de operação). Oportunidades
+     * efêmeras derivadas do estado atual NÃO entram aqui (são
+     * recalculadas). Só o que o narrador precisa resolver depois. Nunca
+     * guarda regra — só o ponteiro para o talento + rótulo + contexto.
+     */
+    oportunidades?: {
+      id: string;
+      talentoNome: string;
+      nivelId: string;
+      efeitoIndex: number;
+      rotulo: string;
+      contexto?: string;
+      criadaEm: string;
+    }[];
   };
   /**
    * Carteira (checkpoint v0.49, PRD 13.1) — três saldos separados,
