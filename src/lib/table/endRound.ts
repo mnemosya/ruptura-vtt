@@ -26,6 +26,7 @@ import {
   resolveCollapseEndRound,
   resolveEndRoundConditionsForCharacter,
   applyRoundScopedPaReductions,
+  tickRoundTemporaryEffects,
   type Character,
   type CharacterRulesPayload,
   type CollapseEndRoundOutcome,
@@ -176,9 +177,12 @@ export async function resolveCampaignEndRoundForCharacters(params: {
         round: round + 1,
         scene,
       });
+      // D2. Efeitos temporários com duração por rodadas (checkpoint pós-v0.71):
+      // reduz 1 rodada e expira os que chegam a 0.
+      const tempTick = tickRoundTemporaryEffects(paReduction.character, nowIso);
       // A rodada CANÔNICA passa a ser a da campanha — sobrescreve o
       // contador local (`current_round`) que a ficha usa isoladamente.
-      nextCharacter = { ...paReduction.character, current_round: round + 1, current_scene: scene };
+      nextCharacter = { ...tempTick.character, current_round: round + 1, current_scene: scene };
 
       // E. Persiste.
       await updateCharacter(record.id, nextCharacter);
@@ -227,6 +231,27 @@ export async function resolveCampaignEndRoundForCharacters(params: {
         tableLogs.push({
           type: entry.type,
           payload: { ...entry.payload, characterId: record.id, characterNome: character.nome, profileId: record.profile_id },
+        });
+      }
+      // Efeitos temporários expirados por rodada (checkpoint pós-v0.71) geram log persistente.
+      for (const e of tempTick.expired) {
+        tableLogs.push({
+          type: "temporary_effect_expired",
+          payload: {
+            characterId: record.id,
+            characterNome: character.nome,
+            profileId: record.profile_id,
+            effectId: e.id,
+            effectName: e.name,
+            sourceType: e.sourceType,
+            sourceName: e.sourceName,
+            durationType: e.durationType,
+            remainingRounds: 0,
+            stacks: e.stacks ?? 1,
+            modifiers: e.modifiers ?? [],
+            reason: "Duração por rodadas chegou a 0 no fim da rodada.",
+            source: "temporary_effect",
+          },
         });
       }
     } catch (err) {

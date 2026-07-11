@@ -27,6 +27,7 @@ import {
   normalizeCharacter,
   resolvePendingRupture,
   resetTalentUses,
+  expireSceneTemporaryEffects,
   type Character,
 } from "../character";
 import { listCharactersForNarratorCampaign, updateCharacter } from "../character/storage";
@@ -121,11 +122,35 @@ export async function resolveCampaignEndSceneForCharacters(params: {
       let nextCharacter: Character = result.character;
 
       // Talentos com cadência "cena" (checkpoint pós-v0.63) renovam os usos aqui —
-      // única mudança de estado além da Ruptura; persiste mesmo sem Ruptura resolvida.
+      // mudança de estado além da Ruptura; persiste mesmo sem Ruptura resolvida.
       const talentReset = resetTalentUses(nextCharacter, ["cena"]);
       nextCharacter = talentReset.character;
-      if (talentReset.resetCount > 0 && !result.resolved) {
+      // Efeitos temporários com duração por cena (checkpoint pós-v0.71) expiram aqui.
+      const sceneExpiry = expireSceneTemporaryEffects(nextCharacter, nowIso);
+      nextCharacter = sceneExpiry.character;
+      const outroEstadoMudou = talentReset.resetCount > 0 || sceneExpiry.expired.length > 0;
+      if (outroEstadoMudou && !result.resolved) {
         await updateCharacter(record.id, nextCharacter);
+      }
+      // Log persistente por efeito temporário expirado na cena.
+      for (const e of sceneExpiry.expired) {
+        tableLogs.push({
+          type: "temporary_effect_expired",
+          payload: {
+            characterId: record.id,
+            characterNome: character.nome,
+            profileId: record.profile_id,
+            effectId: e.id,
+            effectName: e.name,
+            sourceType: e.sourceType,
+            sourceName: e.sourceName,
+            durationType: e.durationType,
+            stacks: e.stacks ?? 1,
+            modifiers: e.modifiers ?? [],
+            reason: "Duração por cena — expirou ao encerrar a cena.",
+            source: "temporary_effect",
+          },
+        });
       }
 
       if (result.resolved) {

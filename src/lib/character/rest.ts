@@ -21,8 +21,9 @@
  *     omissão deliberada, não esquecimento).
  */
 
-import type { Character, CharacterResources, DerivedStats } from "./types";
+import type { Character, CharacterResources, DerivedStats, TemporaryEffect } from "./types";
 import { resetOverloadForLongRest } from "./overload";
+import { expireRestTemporaryEffects } from "./temporaryEffects";
 
 export interface RestResourceSnapshot {
   pv: number;
@@ -41,6 +42,8 @@ export interface RestResult {
   /** `after - before` por campo — sempre presente, 0 quando o campo não mudou. */
   diff: RestResourceSnapshot;
   effectsApplied: string[];
+  /** Efeitos temporários com `durationType: "rest"` expirados neste descanso (checkpoint pós-v0.71) — só no descanso longo. */
+  expiredTemporaryEffects: TemporaryEffect[];
   warnings: string[];
 }
 
@@ -97,7 +100,8 @@ export function applyShortRest(character: Character, derived: DerivedStats, nowI
   const effectsApplied = [`Mana +${manaNova - before.mana} (floor(${manaMax}/2) = ${ganho}, sem ultrapassar ${manaMax})`];
   const warnings = [cadenciaWarning("curto")];
 
-  return { character: nextCharacter, before, after, diff: diffOf(before, after), effectsApplied, warnings };
+  // Descanso curto NÃO expira efeitos temporários "rest" (regra do PRD 10.4: só o longo reseta).
+  return { character: nextCharacter, before, after, diff: diffOf(before, after), effectsApplied, expiredTemporaryEffects: [], warnings };
 }
 
 export function applyLongRest(character: Character, derived: DerivedStats, nowIso: string): RestResult {
@@ -123,8 +127,10 @@ export function applyLongRest(character: Character, derived: DerivedStats, nowIs
     // integridade deliberadamente ausente daqui — nunca tocada.
   };
 
+  // Efeitos temporários "até o próximo descanso longo" expiram aqui (checkpoint pós-v0.71).
+  const restExpiry = expireRestTemporaryEffects(resetOverloadForLongRest(character), nowIso);
   const nextCharacter: Character = {
-    ...resetOverloadForLongRest(character),
+    ...restExpiry.character,
     recursos_atuais,
     metadados: { ...character.metadados, schema_version: character.metadados?.schema_version ?? 1, atualizado_em: nowIso },
   };
@@ -143,10 +149,22 @@ export function applyLongRest(character: Character, derived: DerivedStats, nowIs
       : "Sobrecarga já estava zerada",
   ];
 
+  if (restExpiry.expired.length > 0) {
+    effectsApplied.push(`Efeito(s) temporário(s) de descanso expirado(s): ${restExpiry.expired.map((e) => e.name).join(", ")}`);
+  }
+
   const warnings = [cadenciaWarning("longo")];
   if ((character.condicoes_ativas ?? []).some((c) => c.ativa)) {
     warnings.push(CONDITION_DURATION_WARNING);
   }
 
-  return { character: nextCharacter, before, after, diff: diffOf(before, after), effectsApplied, warnings };
+  return {
+    character: nextCharacter,
+    before,
+    after,
+    diff: diffOf(before, after),
+    effectsApplied,
+    expiredTemporaryEffects: restExpiry.expired,
+    warnings,
+  };
 }
