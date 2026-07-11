@@ -675,6 +675,8 @@ function formatSystemLog(type: string, payload: Record<string, unknown>): string
     const usesMax = typeof payload.usesMax === "number" ? payload.usesMax : null;
     const cadencia = typeof payload.cadencia === "string" ? payload.cadencia.replace(/_/g, " ") : null;
     if (usesSpent != null && usesMax != null) partes.push(`usos ${usesSpent}/${usesMax}${cadencia ? ` por ${cadencia}` : ""}`);
+    const temporaryEffectsAdded = names(payload.temporaryEffectsAdded);
+    if (temporaryEffectsAdded.length > 0) partes.push(`efeito temporário: ${temporaryEffectsAdded.join(", ")}`);
     const base = `Talento usado — ${characterNome} usou ${nomeCompleto}${description ? ` (${description})` : ""}${partes.length > 0 ? `: ${partes.join(" · ")}` : ""}.`;
     return reminders.length > 0 ? `${base} — Lembrete: ${reminders.join(" ")}` : base;
   }

@@ -1,6 +1,6 @@
 import { Section } from "./Section";
 import { buttonStyle } from "./styles";
-import { describeNonAutomatedTalentEffects, getTalentLevelEffects, TALENT_CADENCE_AUTO_RESET } from "../../../../lib/character";
+import { describeNonAutomatedTalentEffects, describeTalentTemporaryEffectPreview, getTalentLevelEffects, TALENT_CADENCE_AUTO_RESET } from "../../../../lib/character";
 import type { AcquiredTalentLevel, TalentContent, UsableTalentEffect } from "../../../../lib/character";
 
 /**
@@ -94,6 +94,7 @@ export function TalentsTab({
                         {acquiredEntry &&
                           (usableByLevelId.get(nivel.id) ?? []).map((usable) => {
                             const esgotado = usable.kind === "limited_use" && usable.usosMax != null && usable.usosGastos >= usable.usosMax;
+                            const tempPreview = describeTalentTemporaryEffectPreview(usable);
                             return (
                               <div
                                 key={usable.key}
@@ -101,6 +102,11 @@ export function TalentsTab({
                                 style={{ background: "#15161b", borderRadius: 6, padding: "6px 8px", margin: "6px 0", display: "flex", flexDirection: "column", gap: 4 }}
                               >
                                 <span style={{ fontSize: 11, opacity: 0.8 }}>{usable.description}</span>
+                                {tempPreview && (
+                                  <span data-testid={`talento-efeito-temp-preview-${usable.key}`} style={{ fontSize: 11, color: "#4caf50" }}>
+                                    Efeito temporário {usable.kind === "toggle" ? "ao ativar" : "ao usar"}: {tempPreview}
+                                  </span>
+                                )}
                                 {usable.kind === "limited_use" ? (
                                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                                     <span data-testid={`talento-usos-${usable.key}`} style={{ fontSize: 11, opacity: 0.6 }}>
@@ -135,7 +141,7 @@ export function TalentsTab({
                                 ) : (
                                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                                     <span style={{ fontSize: 11, opacity: 0.6 }}>
-                                      {usable.toggledOn ? "Ativo — modificadores estruturados aplicados nas rolagens." : "Inativo."}
+                                      {usable.toggledOn ? "Ativo — efeito temporário na aba Condições; modificadores valem nas rolagens." : "Inativo."}
                                     </span>
                                     <button
                                       data-testid={`talento-toggle-${usable.key}`}

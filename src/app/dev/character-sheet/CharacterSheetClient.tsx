@@ -2065,7 +2065,16 @@ export default function CharacterSheetClient({
   async function handleUseTalentEffect(key: string) {
     const current = characterRef.current;
     const nowIso = new Date().toISOString();
-    const result = useTalentEffect({ character: current, talents: talentsIniciais, key, paMax: derivados.pa_max, nowIso });
+    // round/scene do personagem alimentam createdRound/createdScene do efeito temporário (pós-v0.72).
+    const result = useTalentEffect({
+      character: current,
+      talents: talentsIniciais,
+      key,
+      paMax: derivados.pa_max,
+      nowIso,
+      round: current.current_round,
+      scene: current.current_scene,
+    });
     if (!result.ok || !result.usable) {
       addLogEntry("recurso", result.reason ?? "Não foi possível usar o talento.");
       return;
@@ -2078,6 +2087,9 @@ export default function CharacterSheetClient({
     partes.push(
       `usos ${result.usosGastosDepois}/${result.usable.usosMax}${result.usable.cadencia ? ` por ${result.usable.cadencia.replace(/_/g, " ")}` : ""}`,
     );
+    for (const efeito of result.temporaryEffectsAdded) {
+      partes.push(`efeito temporário: ${formatTemporaryEffectSummary(efeito)}`);
+    }
     addLogEntry(
       "recurso",
       `Usou talento ${result.usable.talentNome} — ${result.usable.nivelNome} (${partes.join(" · ")}) — Lembrete: ${result.reminders.join(" ")}`,
@@ -2099,24 +2111,40 @@ export default function CharacterSheetClient({
       paBefore: result.paBefore,
       paAfter: result.paAfter,
       description: result.usable.description,
+      temporaryEffectsAdded: result.temporaryEffectsAdded.map((e) => e.name),
       reminders: result.reminders,
     });
+    for (const efeito of result.temporaryEffectsAdded) {
+      await logTemporaryEffectAdded(efeito, characterId, current.nome);
+    }
   }
 
-  /** Ativar/desativar um toggle de talento (ex.: Fúria do Berserker) — modificadores estruturados valem enquanto ativo. */
+  /**
+   * Ativar/desativar um toggle de talento (ex.: Berserker "Sede de
+   * Sangue") — checkpoint pós-v0.72: ativar CRIA um efeito temporário
+   * (cujo modificador de rolagem vale enquanto ativo), desativar REMOVE.
+   */
   async function handleToggleTalentEffect(key: string) {
     const current = characterRef.current;
     const nowIso = new Date().toISOString();
-    const result = toggleTalentEffect({ character: current, talents: talentsIniciais, key, nowIso });
+    const result = toggleTalentEffect({
+      character: current,
+      talents: talentsIniciais,
+      key,
+      nowIso,
+      round: current.current_round,
+      scene: current.current_scene,
+    });
     if (!result.ok || !result.usable) {
       addLogEntry("recurso", result.reason ?? "Não foi possível alternar o talento.");
       return;
     }
     characterRef.current = result.character;
     setCharacter(result.character);
+    const efeitoTexto = result.temporaryEffect ? ` (${formatTemporaryEffectSummary(result.temporaryEffect)})` : "";
     addLogEntry(
       "recurso",
-      `${result.active ? "Ativou" : "Desativou"} talento ${result.usable.talentNome} — ${result.usable.nivelNome}.${result.reminders.length > 0 ? ` Lembrete: ${result.reminders.join(" ")}` : ""}`,
+      `${result.active ? "Ativou" : "Desativou"} talento ${result.usable.talentNome} — ${result.usable.nivelNome}${efeitoTexto}.${result.reminders.length > 0 ? ` Lembrete: ${result.reminders.join(" ")}` : ""}`,
     );
     await persistAutomatedActionExecution(result.character);
     await persistTalentUsedLog({
@@ -2130,6 +2158,12 @@ export default function CharacterSheetClient({
       description: result.usable.description,
       reminders: result.reminders,
     });
+    // Toggle liga → efeito temporário criado; desliga → removido (logs canônicos, pós-v0.72).
+    if (result.active && result.temporaryEffect) {
+      await logTemporaryEffectAdded(result.temporaryEffect, characterId, current.nome);
+    } else if (!result.active && result.removedEffect) {
+      await logTemporaryEffectRemoved(result.removedEffect, "Toggle de talento desativado.");
+    }
   }
 
   /** Reset manual de um contador de uso (cadências sem gatilho canônico — combate/sessão/missão). */
@@ -2237,33 +2271,37 @@ export default function CharacterSheetClient({
     setCharacter(next);
     addLogEntry("recurso", `Efeito temporário removido: ${effect.name} (${effect.sourceName}).`);
     await persistAutomatedActionExecution(next);
-    if (selectedCampaignId) {
-      try {
-        await addLog({
-          campaignId: selectedCampaignId,
-          characterId: characterId ?? undefined,
-          profileId: selectedProfileId,
-          profileSessionId: profileSessionToken?.profileSessionId ?? null,
-          type: "temporary_effect_removed",
-          visibility: "public",
-          payload: {
-            characterId,
-            characterNome: current.nome,
-            effectId: effect.id,
-            effectName: effect.name,
-            sourceType: effect.sourceType,
-            sourceName: effect.sourceName,
-            durationType: effect.durationType,
-            remainingRounds: effect.remainingRounds ?? null,
-            stacks: effect.stacks ?? 1,
-            modifiers: effect.modifiers ?? [],
-            reason: "Removido manualmente na ficha.",
-            source: "temporary_effect",
-          },
-        });
-      } catch {
-        avisarFalhaLogMesa();
-      }
+    await logTemporaryEffectRemoved(effect, "Removido manualmente na ficha.");
+  }
+
+  /** Grava um `table_log` `temporary_effect_removed` (checkpoint pós-v0.71/v0.72). Best-effort, mesmo padrão dos demais. */
+  async function logTemporaryEffectRemoved(effect: TemporaryEffect, reason: string) {
+    if (!selectedCampaignId) return;
+    try {
+      await addLog({
+        campaignId: selectedCampaignId,
+        characterId: characterId ?? undefined,
+        profileId: selectedProfileId,
+        profileSessionId: profileSessionToken?.profileSessionId ?? null,
+        type: "temporary_effect_removed",
+        visibility: "public",
+        payload: {
+          characterId,
+          characterNome: characterRef.current.nome,
+          effectId: effect.id,
+          effectName: effect.name,
+          sourceType: effect.sourceType,
+          sourceName: effect.sourceName,
+          durationType: effect.durationType,
+          remainingRounds: effect.remainingRounds ?? null,
+          stacks: effect.stacks ?? 1,
+          modifiers: effect.modifiers ?? [],
+          reason,
+          source: "temporary_effect",
+        },
+      });
+    } catch {
+      avisarFalhaLogMesa();
     }
   }
 

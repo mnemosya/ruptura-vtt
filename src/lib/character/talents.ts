@@ -23,7 +23,13 @@
  */
 
 import type { ActiveEffect } from "./activeEffects";
-import type { Character } from "./types";
+import { addTemporaryEffect, getActiveTemporaryEffects, removeTemporaryEffect } from "./temporaryEffects";
+import type { Character, TemporaryEffect, TemporaryEffectModifier } from "./types";
+
+/** Gera um uuid — injetável para testes; talents.ts é chamado só no cliente onde crypto.randomUUID existe (mesmo padrão de acquireTalentLevel). */
+function defaultIdFactory(): string {
+  return crypto.randomUUID();
+}
 
 // ---------------------------------------------------------------------
 // Conteúdo bruto (subconjunto lido de content_documents.payload)
@@ -136,17 +142,21 @@ export function removeTalentLevel(character: Character, acquiredId: string): Cha
 /**
  * Deriva os `ActiveEffect` dos talentos ADQUIRIDOS (mesmo formato de
  * `deriveActiveEffectsFromConditions`, plugável no mesmo prompt de
- * rolagem). Efeitos cuja `tipo` não é `"modificador"` com `alvo_tags`
- * válidos são ignorados aqui de propósito (não viram warning — a UI de
- * Talentos já lista o texto completo do nível para leitura manual,
- * ver `pendingEffects` em `TalentsTab.tsx`).
+ * rolagem). Cobre APENAS o padrão PASSIVO permanente "+X em testes
+ * específicos" (`tipo: "modificador"` com `alvo_tags`/`alvo_acoes`).
+ *
+ * Os TOGGLES deixaram de ser derivados aqui no checkpoint pós-v0.72:
+ * ativar um toggle agora cria um `TemporaryEffect` (ver
+ * `toggleTalentEffect`), cujo modificador de rolagem entra no MESMO
+ * pipeline via `deriveActiveEffectsFromTemporaryEffects` — mantê-los
+ * também aqui somaria o bônus DUAS vezes. Efeitos cujo `tipo` não é
+ * `"modificador"` continuam ignorados (texto manual na aba Talentos).
  */
 export function deriveActiveEffectsFromTalents(
-  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  character: Pick<Character, "talentos_adquiridos">,
   talents: TalentContent[],
 ): ActiveEffect[] {
   const acquiredByLevelId = new Map((character.talentos_adquiridos ?? []).map((t) => [t.nivelId, t]));
-  const togglesState = character.talentos_estado?.toggles ?? {};
   const effects: ActiveEffect[] = [];
 
   for (const talent of talents) {
@@ -156,40 +166,9 @@ export function deriveActiveEffectsFromTalents(
       if (!acquired) continue;
 
       getTalentLevelEffects(nivel).forEach((efeito, index) => {
-        // Toggle ligado (checkpoint pós-v0.63): itens estruturados de
-        // `beneficios`/`penalidades` (tipo "modificador" com valor +
-        // alvo_tags) viram ActiveEffect enquanto o toggle estiver ativo —
-        // mesmo formato dos modificadores passivos abaixo.
-        if (efeito.tipo === "toggle_condicional") {
-          const key = getTalentEffectKey(nivel.id, index);
-          if (togglesState[key] !== true) return;
-          (["beneficios", "penalidades"] as const).forEach((grupo) => {
-            const itens = Array.isArray(efeito[grupo]) ? (efeito[grupo] as unknown[]) : [];
-            itens.forEach((item, itemIndex) => {
-              const rec = asRecord(item);
-              if (!rec || rec.tipo !== "modificador" || typeof rec.valor !== "number") return;
-              const alvoTags = [
-                ...(Array.isArray(rec.alvo_tags) ? rec.alvo_tags : []),
-                ...(Array.isArray(rec.alvo_acoes) ? rec.alvo_acoes : []),
-              ].filter((t): t is string => typeof t === "string");
-              if (alvoTags.length === 0) return;
-              const alvoTexto = typeof rec.alvo_texto === "string" ? rec.alvo_texto : alvoTags.join(", ");
-              effects.push({
-                id: `talent-toggle:${acquired.id}:${index}:${grupo}:${itemIndex}`,
-                sourceType: "talent",
-                sourceId: nivel.id,
-                sourceName: `${talent.nome} — ${nivel.nome} (ativo)`,
-                affectedTags: alvoTags,
-                modifier: rec.valor,
-                explanation: `${talent.nome} (${nivel.nome}, ativo): ${rec.valor >= 0 ? "+" : ""}${rec.valor} em ${alvoTexto}.`,
-                enabledByDefault: true,
-                kind: "modifier",
-                reversible: true,
-              });
-            });
-          });
-          return;
-        }
+        // Toggles são tratados via efeito temporário (não aqui) — evita
+        // dupla contagem do mesmo modificador.
+        if (efeito.tipo === "toggle_condicional") return;
         if (efeito.tipo !== "modificador") return;
         const valor = efeito.valor;
         // Achado de auditoria do DB real (`db_talentos_normalizado_v1_3.json`):
@@ -290,6 +269,192 @@ export function describeTalentEffect(efeito: TalentLevelEffect): string {
   return `${tipoLabel}${partes.length > 0 ? ` (${partes.join("; ")})` : ""}`;
 }
 
+// ---------------------------------------------------------------------
+// Migração para o modelo canônico de efeitos temporários (checkpoint
+// pós-v0.72). SÓ padrões seguros e data-driven — nunca por nome de
+// talento. Toggles e usos limitados que carregam MODIFICADOR de rolagem
+// estruturado (+ duração reconhecível) passam a criar `TemporaryEffect`,
+// no lugar de chips paralelos/lembretes. Modificador de rolagem
+// (`alvo_tags`/`alvo_acoes`) é o ÚNICO aplicado automaticamente (vira
+// ActiveEffect via `deriveActiveEffectsFromTemporaryEffects`); dano/PA/
+// defesa/MIT/PD e efeitos não estruturados viram `reminders` do efeito,
+// nunca somados. Duração ausente: só vira efeito "manual" para
+// toggle/estado ativo; senão o chamador mantém lembrete.
+// ---------------------------------------------------------------------
+
+/** `true` se `rec` é um item de modificador de ROLAGEM estruturado (valor numérico + alvo de tags/ações). */
+function isStructuredRollModifier(rec: Record<string, unknown>): boolean {
+  if (rec.tipo !== "modificador" || typeof rec.valor !== "number") return false;
+  const alvo = [
+    ...(Array.isArray(rec.alvo_tags) ? rec.alvo_tags : []),
+    ...(Array.isArray(rec.alvo_acoes) ? rec.alvo_acoes : []),
+  ].filter((t): t is string => typeof t === "string");
+  return alvo.length > 0;
+}
+
+function rollModifierFromItem(rec: Record<string, unknown>): TemporaryEffectModifier {
+  const valor = rec.valor as number;
+  const alvo = [
+    ...(Array.isArray(rec.alvo_tags) ? rec.alvo_tags : []),
+    ...(Array.isArray(rec.alvo_acoes) ? rec.alvo_acoes : []),
+  ].filter((t): t is string => typeof t === "string");
+  const alvoTexto = typeof rec.alvo_texto === "string" ? rec.alvo_texto : alvo.join(", ");
+  return {
+    target: "roll",
+    operation: valor < 0 ? "subtract" : "add",
+    value: Math.abs(valor),
+    appliesTo: alvo,
+    label: `${valor >= 0 ? "+" : ""}${valor} em ${alvoTexto}`,
+  };
+}
+
+/**
+ * Reúne, de um efeito de talento, os modificadores de rolagem
+ * estruturados (aplicados automaticamente) e os lembretes textuais (o
+ * resto: dano/defesa/PA sem ponto de integração canônico, e efeitos não
+ * estruturados). Lê os grupos conhecidos do conteúdo real: nível-topo
+ * (`valor`+`alvo_tags`), `buffs[]`, `beneficios[]`, `penalidades[]`.
+ */
+function collectTalentModifiers(efeito: TalentLevelEffect): { modifiers: TemporaryEffectModifier[]; reminders: string[] } {
+  const modifiers: TemporaryEffectModifier[] = [];
+  const reminders: string[] = [];
+
+  // Modificador de rolagem declarado no próprio nível-topo (ex.: substituir_bonus_acao com alvo_tags).
+  if (isStructuredRollModifier(efeito as unknown as Record<string, unknown>)) {
+    modifiers.push(rollModifierFromItem(efeito as unknown as Record<string, unknown>));
+  }
+
+  for (const grupo of ["buffs", "beneficios", "penalidades"] as const) {
+    const itens = Array.isArray(efeito[grupo]) ? (efeito[grupo] as unknown[]) : [];
+    for (const item of itens) {
+      const rec = asRecord(item);
+      if (!rec) continue;
+      if (isStructuredRollModifier(rec)) {
+        modifiers.push(rollModifierFromItem(rec));
+      } else if (rec.tipo === "dano_extra" && (typeof rec.valor === "string" || typeof rec.valor === "number")) {
+        reminders.push(`Dano extra ${rec.valor}${typeof rec.contexto === "string" ? ` (${rec.contexto})` : ""} — aplique manualmente ao resolver o ataque.`);
+      } else {
+        reminders.push(`${grupo === "penalidades" ? "Penalidade" : "Efeito"} não somável automaticamente: ${describeTalentEffect(rec as TalentLevelEffect)} — resolução manual.`);
+      }
+    }
+  }
+
+  return { modifiers, reminders };
+}
+
+interface ParsedTalentDuration {
+  durationType: TemporaryEffect["durationType"];
+  remainingRounds?: number;
+}
+
+/**
+ * Interpreta a duração de um efeito de talento a partir de sinais
+ * estruturados: `duracao` textual, `cadencia`, e `consequencia_fim_cena`
+ * (o conteúdo usa isso para efeitos que resolvem no fim da cena, ex.:
+ * "Último Fôlego"). `allowManual=true` (toggles/estado ativo) devolve
+ * `manual` quando nada é reconhecido; senão devolve `null` (o chamador
+ * mantém lembrete — regra de migração §3: sem duração, não automatiza).
+ */
+function parseTalentDuration(efeito: TalentLevelEffect, allowManual: boolean): ParsedTalentDuration | null {
+  const duracao = typeof efeito.duracao === "string" ? efeito.duracao.toLowerCase() : "";
+  const cadencia = typeof efeito.cadencia === "string" ? efeito.cadencia.toLowerCase() : "";
+
+  const rodadasMatch = duracao.match(/(\d+)\s*[_ ]?rodada/);
+  if (rodadasMatch) return { durationType: "rounds", remainingRounds: Math.max(1, parseInt(rodadasMatch[1], 10)) };
+  if (duracao.includes("fim_da_rodada") || duracao.includes("fim da rodada") || duracao.includes("proximo_turno") || duracao.includes("rodada_atual")) {
+    return { durationType: "rounds", remainingRounds: 1 };
+  }
+  if (duracao.includes("cena") || cadencia === "cena" || asRecord(efeito.consequencia_fim_cena) != null) {
+    return { durationType: "scene" };
+  }
+  if (duracao.includes("descanso") || cadencia === "dia") return { durationType: "rest" };
+  return allowManual ? { durationType: "manual" } : null;
+}
+
+export interface TalentTemporaryEffectContext {
+  talentNome: string;
+  nivelNome: string;
+  nivelId: string;
+  efeitoIndex: number;
+  efeito: TalentLevelEffect;
+  isToggle: boolean;
+  round?: number;
+  scene?: number;
+  nowIso: string;
+  idFactory?: () => string;
+}
+
+/**
+ * Constrói um `TemporaryEffect` a partir de um efeito de talento —
+ * `null` quando não há estrutura suficiente para migrar (sem
+ * modificador nem lembrete, ou sem duração reconhecível em efeito que
+ * não é toggle). `sourceId = getTalentEffectKey(nivelId, index)` liga o
+ * efeito ao toggle/uso (para ligar/desligar e derivar `toggledOn`).
+ */
+export function buildTalentTemporaryEffect(ctx: TalentTemporaryEffectContext): TemporaryEffect | null {
+  const { modifiers, reminders } = collectTalentModifiers(ctx.efeito);
+  const dur = parseTalentDuration(ctx.efeito, ctx.isToggle);
+  if (!dur) return null; // sem duração reconhecível e não é toggle — mantém lembrete.
+  if (modifiers.length === 0 && reminders.length === 0) return null; // nada estruturado para representar.
+
+  // Condição de ativação declarada (ex.: pv_abaixo_metade) vira lembrete — nunca verificada automaticamente.
+  const condicaoAtivacao = asRecord(ctx.efeito.condicao_ativacao);
+  if (condicaoAtivacao && typeof condicaoAtivacao.tipo === "string") {
+    reminders.unshift(`Condição de ativação: ${condicaoAtivacao.tipo.replace(/_/g, " ")} — confirme manualmente.`);
+  }
+
+  const nome = `${ctx.talentNome} — ${ctx.nivelNome}`;
+  const effect: TemporaryEffect = {
+    id: (ctx.idFactory ?? defaultIdFactory)(),
+    sourceType: "talent",
+    sourceId: getTalentEffectKey(ctx.nivelId, ctx.efeitoIndex),
+    sourceName: nome,
+    name: nome,
+    durationType: dur.durationType,
+    // Toggle: "ignore" evita duplicar se reativar sem passar pelo estado; uso limitado: "manual" (o narrador resolve duplicatas).
+    stackingMode: ctx.isToggle ? "ignore" : "manual",
+    active: true,
+    createdAt: ctx.nowIso,
+    endedAt: null,
+    modifiers: modifiers.length > 0 ? modifiers : undefined,
+    reminders: reminders.length > 0 ? reminders : undefined,
+  };
+  if (dur.remainingRounds != null) effect.remainingRounds = dur.remainingRounds;
+  if (ctx.round != null) effect.createdRound = ctx.round;
+  if (ctx.scene != null) effect.createdScene = ctx.scene;
+  return effect;
+}
+
+/** Preview textual (para a aba Talentos) do que o talento CRIARIA como efeito temporário — null se não migraria. */
+export function describeTalentTemporaryEffectPreview(usable: UsableTalentEffect): string | null {
+  const effect = buildTalentTemporaryEffect({
+    talentNome: usable.talentNome,
+    nivelNome: usable.nivelNome,
+    nivelId: usable.nivelId,
+    efeitoIndex: usable.efeitoIndex,
+    efeito: usable.efeito,
+    isToggle: usable.kind === "toggle",
+    nowIso: "preview",
+    idFactory: () => "preview",
+  });
+  if (!effect) return null;
+  const dur =
+    effect.durationType === "rounds"
+      ? `${effect.remainingRounds ?? 1} rodada(s)`
+      : effect.durationType === "scene"
+        ? "até o fim da cena"
+        : effect.durationType === "rest"
+          ? "até o descanso longo"
+          : "controle manual";
+  const mods = (effect.modifiers ?? []).map((m) => m.label ?? `${m.value ?? ""} em ${(m.appliesTo ?? []).join("/")}`);
+  const partes = [`duração: ${dur}`];
+  if (mods.length > 0) partes.push(`bônus: ${mods.join(", ")}`);
+  if ((effect.reminders ?? []).length > 0) partes.push(`lembrete: ${(effect.reminders ?? []).join(" ")}`);
+  const stackTexto = effect.stackingMode === "ignore" ? "não duplica" : effect.stackingMode === "stack" ? "empilha" : "controle manual";
+  partes.push(stackTexto);
+  return partes.join(" · ");
+}
+
 export type UsableTalentEffectKind = "limited_use" | "toggle";
 
 export interface UsableTalentEffect {
@@ -320,12 +485,18 @@ export interface UsableTalentEffect {
  * são texto na aba).
  */
 export function getUsableTalentEffects(
-  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado" | "efeitos_temporarios">,
   talents: TalentContent[],
 ): UsableTalentEffect[] {
   const acquiredByLevelId = new Map((character.talentos_adquiridos ?? []).map((t) => [t.nivelId, t]));
   const usosState = character.talentos_estado?.usos ?? {};
-  const togglesState = character.talentos_estado?.toggles ?? {};
+  // `toggledOn` (pós-v0.72) é derivado da PRESENÇA de um efeito temporário ativo ligado ao toggle
+  // (mesmo `sourceId`), não mais de `talentos_estado.toggles` — fonte única, sem estado paralelo.
+  const activeToggleSources = new Set(
+    getActiveTemporaryEffects(character)
+      .filter((e) => e.sourceType === "talent" && typeof e.sourceId === "string")
+      .map((e) => e.sourceId as string),
+  );
   const result: UsableTalentEffect[] = [];
 
   for (const talent of talents) {
@@ -351,7 +522,7 @@ export function getUsableTalentEffects(
           usosGastos: usosState[key]?.usados ?? 0,
           cadencia: typeof efeito.cadencia === "string" ? efeito.cadencia : null,
           custoPa: typeof efeito.custo_pa === "number" && efeito.custo_pa > 0 ? efeito.custo_pa : null,
-          toggledOn: togglesState[key] === true,
+          toggledOn: activeToggleSources.has(key),
           description: describeTalentEffect(efeito),
         });
       });
@@ -372,6 +543,8 @@ export interface UseTalentEffectResult {
   paBefore: number;
   paAfter: number;
   usosGastosDepois: number;
+  /** Efeitos temporários criados por este uso (checkpoint pós-v0.72) — vazio quando o talento não tem buff estruturado + duração. */
+  temporaryEffectsAdded: TemporaryEffect[];
   reminders: string[];
 }
 
@@ -388,8 +561,11 @@ export function useTalentEffect(params: {
   key: string;
   paMax: number;
   nowIso: string;
+  round?: number;
+  scene?: number;
+  idFactory?: () => string;
 }): UseTalentEffectResult {
-  const { character, talents, key, paMax, nowIso } = params;
+  const { character, talents, key, paMax, nowIso, round, scene, idFactory } = params;
   const usable = getUsableTalentEffects(character, talents).find((u) => u.key === key) ?? null;
   const paGastosAntes = character.estado_jogo?.pa_gastos ?? 0;
   const paBefore = Math.max(0, paMax - paGastosAntes);
@@ -403,6 +579,7 @@ export function useTalentEffect(params: {
     paBefore,
     paAfter: paBefore,
     usosGastosDepois: usable?.usosGastos ?? 0,
+    temporaryEffectsAdded: [],
     reminders: [],
   });
 
@@ -437,6 +614,27 @@ export function useTalentEffect(params: {
     reminders.push(`Cadência "${usable.cadencia.replace(/_/g, " ")}" não tem reset automático — use "Resetar usos" quando a cadência renovar.`);
   }
 
+  // Migração pós-v0.72: se o uso carrega buff estruturado (modificador de rolagem) COM duração
+  // reconhecível (ex.: "Último Fôlego" → +2 Luta até o fim da cena), cria efeito temporário
+  // rastreado. Sem estrutura suficiente (allowManual=false para uso limitado), segue só lembrete.
+  const temporaryEffectsAdded: TemporaryEffect[] = [];
+  const built = buildTalentTemporaryEffect({
+    talentNome: usable.talentNome,
+    nivelNome: usable.nivelNome,
+    nivelId: usable.nivelId,
+    efeitoIndex: usable.efeitoIndex,
+    efeito: usable.efeito,
+    isToggle: false,
+    round,
+    scene,
+    nowIso,
+    idFactory,
+  });
+  if (built) {
+    nextCharacter = addTemporaryEffect(nextCharacter, built);
+    temporaryEffectsAdded.push(built);
+  }
+
   return {
     character: nextCharacter,
     ok: true,
@@ -445,6 +643,7 @@ export function useTalentEffect(params: {
     paBefore,
     paAfter: usable.custoPa != null ? paBefore - usable.custoPa : paBefore,
     usosGastosDepois,
+    temporaryEffectsAdded,
     reminders,
   };
 }
@@ -455,51 +654,63 @@ export interface ToggleTalentEffectResult {
   reason?: string;
   usable: UsableTalentEffect | null;
   active: boolean;
+  /** Efeito temporário criado ao ATIVAR — null ao desativar. */
+  temporaryEffect: TemporaryEffect | null;
+  /** Efeito temporário desativado ao DESLIGAR — null ao ativar. */
+  removedEffect: TemporaryEffect | null;
   reminders: string[];
 }
 
-/** Liga/desliga um `toggle_condicional` — os modificadores estruturados passam a valer via `deriveActiveEffectsFromTalents`; o resto vira lembrete. */
+/**
+ * Liga/desliga um `toggle_condicional` (checkpoint pós-v0.72 — migrado
+ * para o modelo canônico). Ativar CRIA um `TemporaryEffect` (ligado ao
+ * toggle por `sourceId`), cujos modificadores de rolagem entram nas
+ * rolagens via `deriveActiveEffectsFromTemporaryEffects`; desativar
+ * REMOVE esse efeito. O estado ligado/desligado é a presença do efeito
+ * ativo — sem `talentos_estado.toggles` paralelo. `idFactory` injetável.
+ */
 export function toggleTalentEffect(params: {
   character: Character;
   talents: TalentContent[];
   key: string;
   nowIso: string;
+  round?: number;
+  scene?: number;
+  idFactory?: () => string;
 }): ToggleTalentEffectResult {
-  const { character, talents, key } = params;
+  const { character, talents, key, nowIso, round, scene, idFactory } = params;
   const usable = getUsableTalentEffects(character, talents).find((u) => u.key === key) ?? null;
   if (!usable || usable.kind !== "toggle") {
-    return { character, ok: false, reason: "Efeito de talento não encontrado ou não é um toggle.", usable, active: false, reminders: [] };
+    return { character, ok: false, reason: "Efeito de talento não encontrado ou não é um toggle.", usable, active: false, temporaryEffect: null, removedEffect: null, reminders: [] };
   }
-  const toggles = character.talentos_estado?.toggles ?? {};
-  const active = !(toggles[key] === true);
-  const nextCharacter: Character = {
-    ...character,
-    talentos_estado: { ...character.talentos_estado, toggles: { ...toggles, [key]: active } },
-  };
-  const reminders: string[] = [];
-  if (active) {
-    const condicaoAtivacao = asRecord(usable.efeito.condicao_ativacao);
-    if (condicaoAtivacao && typeof condicaoAtivacao.tipo === "string") {
-      reminders.push(`Condição de ativação declarada: ${condicaoAtivacao.tipo.replace(/_/g, " ")} — confirme manualmente.`);
-    }
-    for (const grupo of ["beneficios", "penalidades"] as const) {
-      const itens = Array.isArray(usable.efeito[grupo]) ? (usable.efeito[grupo] as unknown[]) : [];
-      for (const item of itens) {
-        const rec = asRecord(item);
-        if (!rec) continue;
-        const structured = rec.tipo === "modificador" && typeof rec.valor === "number";
-        if (!structured) {
-          reminders.push(
-            `${grupo === "beneficios" ? "Benefício" : "Penalidade"} não automatizado: ${describeTalentEffect(rec as TalentLevelEffect)} — resolução manual.`,
-          );
-        }
-      }
-    }
-    if (typeof usable.efeito.duracao === "string") {
-      reminders.push(`Duração declarada: ${usable.efeito.duracao.replace(/_/g, " ")} — desligue manualmente quando expirar.`);
-    }
+
+  const existing = getActiveTemporaryEffects(character).find((e) => e.sourceType === "talent" && e.sourceId === key) ?? null;
+
+  // Já ativo → desligar (remove o efeito temporário).
+  if (existing) {
+    const nextCharacter = removeTemporaryEffect(character, existing.id, nowIso);
+    return { character: nextCharacter, ok: true, usable, active: false, temporaryEffect: null, removedEffect: existing, reminders: [] };
   }
-  return { character: nextCharacter, ok: true, usable, active, reminders };
+
+  // Inativo → ligar (cria o efeito temporário).
+  const built = buildTalentTemporaryEffect({
+    talentNome: usable.talentNome,
+    nivelNome: usable.nivelNome,
+    nivelId: usable.nivelId,
+    efeitoIndex: usable.efeitoIndex,
+    efeito: usable.efeito,
+    isToggle: true,
+    round,
+    scene,
+    nowIso,
+    idFactory,
+  });
+  if (!built) {
+    // Toggle sem estrutura suficiente (nem modificador nem lembrete) — não deveria ocorrer no catálogo real.
+    return { character, ok: false, reason: "Este toggle não tem efeito estruturado para ativar.", usable, active: false, temporaryEffect: null, removedEffect: null, reminders: [] };
+  }
+  const nextCharacter = addTemporaryEffect(character, built);
+  return { character: nextCharacter, ok: true, usable, active: true, temporaryEffect: built, removedEffect: null, reminders: built.reminders ?? [] };
 }
 
 /**
