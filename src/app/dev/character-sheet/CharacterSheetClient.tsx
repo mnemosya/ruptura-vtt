@@ -70,6 +70,7 @@ import {
   removeItemFromInventory,
   removeQuantityFromInventory,
   useItemOnCharacter,
+  useItemOnAlly,
   installRuneOnItem,
   removeRuneFromItem,
   equipDefensiveItem,
@@ -357,6 +358,8 @@ export default function CharacterSheetClient({
   // "Carregar personagem ativo" e para anotar profileId/profileNickname
   // no payload das rolagens gravadas em table_logs (ver RollsTab).
   const [perfis, setPerfis] = useState<CampaignProfile[]>([]);
+  /** Outros personagens ATIVOS na mesa (checkpoint pós-v0.71 — uso de item em aliado): um por perfil com `active_character_id` != o próprio personagem carregado. Recarregado ao trocar de mesa e ao abrir o painel "Usar em aliado" de um item. */
+  const [alliesAtivos, setAlliesAtivos] = useState<{ id: string; nome: string; character: Character }[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [profileWarning, setProfileWarning] = useState<string | null>(null);
   // Heartbeat dev de perfil (checkpoint v0.9) — sessionId é um id local
@@ -981,6 +984,7 @@ export default function CharacterSheetClient({
     setProfileWarning(null);
     if (!id) {
       setPerfis([]);
+      setAlliesAtivos([]);
       return;
     }
     try {
@@ -988,6 +992,39 @@ export default function CharacterSheetClient({
     } catch (err) {
       setPerfis([]);
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao carregar perfis da mesa.");
+    }
+    await refreshAlliesAtivos(id);
+  }
+
+  /**
+   * Outros personagens ATIVOS na mesa (checkpoint pós-v0.71 — uso de
+   * item em aliado) — mesmo critério de "ativo" usado em /dev/table
+   * (`personagensAtivos`): um por perfil com `active_character_id`
+   * preenchido, aqui excluindo o próprio personagem carregado. Usa
+   * `listCampaignProfiles`/`getCharacter`, ambos já anon-safe (mesmas
+   * chamadas que a ficha já faz para o próprio perfil/personagem — sem
+   * client narrador, sem service role). Falha silenciosa (lista vazia)
+   * — a UI trata "nenhum aliado ativo" e "erro" da mesma forma (opção
+   * escondida/indisponível), não há necessidade de um banner extra.
+   */
+  async function refreshAlliesAtivos(campaignId: string) {
+    try {
+      const perfisAtuais = await listCampaignProfiles(campaignId);
+      const ids = Array.from(
+        new Set(
+          perfisAtuais
+            .map((p) => p.active_character_id)
+            .filter((id): id is string => Boolean(id) && id !== characterId),
+        ),
+      );
+      const registros = await Promise.all(ids.map((id) => getCharacter(id)));
+      setAlliesAtivos(
+        registros
+          .filter((r): r is NonNullable<typeof r> => r != null)
+          .map((r) => ({ id: r.id, nome: r.name, character: normalizeCharacter(r.payload) })),
+      );
+    } catch {
+      setAlliesAtivos([]);
     }
   }
 
@@ -2233,6 +2270,153 @@ export default function CharacterSheetClient({
         avisarFalhaLogMesa();
         // Best-effort — o item já foi usado no estado local/persistido; falha aqui não bloqueia o jogador.
       }
+    }
+  }
+
+  /**
+   * Usar item de farmácia em OUTRO personagem ativo da mesa (checkpoint
+   * pós-v0.71) — `useItemOnAlly` (`lib/character/itemUse.ts`) valida
+   * PA/carga do usuário E aplicabilidade do efeito no alvo ANTES de
+   * mutar qualquer coisa (nunca gasta PA/carga se o efeito no alvo não
+   * puder ser aplicado). Sem transação real entre dois registros de
+   * `characters`: persiste o ALVO primeiro — se falhar, nada muda (item
+   * segue no inventário do usuário, nenhum estado local foi tocado);
+   * só depois do alvo confirmado é que o usuário perde PA/carga local e
+   * é persistido. Risco residual documentado: se a persistência do
+   * USUÁRIO falhar DEPOIS do alvo já ter sido salvo (rede caiu no meio),
+   * o alvo fica curado/sem-condição mas o consumo do item pode não ter
+   * sido salvo no servidor — mesmo padrão de erro do restante da ficha
+   * (`persistAutomatedActionExecution`: mantém o estado local aplicado,
+   * mostra erro, nunca finge sucesso; "Salvar personagem" resolve).
+   */
+  async function handleUseItemOnAlly(
+    instanceId: string,
+    targetCharacterId: string,
+    options?: { selectedConditionInstanceId?: string },
+  ) {
+    if (!selectedCampaignId) {
+      addLogEntry("recurso", "Uso em aliado exige mesa conectada.");
+      return;
+    }
+    const current = characterRef.current;
+    const instance = (current.inventario ?? []).find((i) => i.id === instanceId);
+    if (!instance) return;
+    const itemModelo = itemsIniciais.find((m) => m.slug === instance.itemSlug);
+    if (!itemModelo) {
+      addLogEntry("recurso", "Item não encontrado na Biblioteca — não é possível usar.");
+      return;
+    }
+    const ally = alliesAtivos.find((a) => a.id === targetCharacterId);
+    if (!ally) {
+      addLogEntry("recurso", "Alvo não encontrado entre os personagens ativos da mesa — atualize a lista de aliados.");
+      return;
+    }
+
+    const nowIso = new Date().toISOString();
+    const targetDerivados = computeDerivedStats(ally.character.atributos, regras, ally.character.mana_bonus_ruptura ?? 0);
+    const result = useItemOnAlly({
+      source: current,
+      target: ally.character,
+      instance,
+      item: itemModelo,
+      sourcePaMax: derivados.pa_max,
+      targetPvMax: targetDerivados.pv_max,
+      targetPeMax: targetDerivados.pe_max,
+      nowIso,
+      selectedConditionInstanceId: options?.selectedConditionInstanceId ?? null,
+    });
+
+    if (!result.ok) {
+      addLogEntry("recurso", result.reason ?? "Não foi possível usar o item no aliado.");
+      return;
+    }
+
+    // Persiste o ALVO primeiro (ver docstring acima) — só então o usuário perde PA/carga localmente.
+    let targetRecord;
+    try {
+      targetRecord = await updateCharacter(ally.id, result.target);
+    } catch (err) {
+      addLogEntry(
+        "recurso",
+        err instanceof Error
+          ? `Falha ao aplicar efeito em ${ally.nome}: ${err.message} — item NÃO foi consumido.`
+          : `Falha ao aplicar efeito em ${ally.nome} — item NÃO foi consumido.`,
+      );
+      return;
+    }
+    setAlliesAtivos((prev) => prev.map((a) => (a.id === ally.id ? { ...a, character: normalizeCharacter(targetRecord.payload) } : a)));
+
+    characterRef.current = result.source;
+    setCharacter(result.source);
+
+    const partesLog: string[] = [];
+    if (result.paCost != null) partesLog.push(`PA ${result.paBefore} → ${result.paAfter}`);
+    if (result.chargesAfter != null) {
+      partesLog.push(`cargas ${result.chargesBefore} → ${result.chargesAfter}`);
+    } else {
+      partesLog.push(`quantidade ${result.quantityBefore} → ${result.quantityAfter}`);
+    }
+    for (const mudanca of result.targetResourceChanges) {
+      partesLog.push(`${mudanca.resource.toUpperCase()} de ${ally.nome} ${mudanca.before} → ${mudanca.after}`);
+    }
+    if (result.targetRemovedConditions.length > 0) {
+      partesLog.push(`removeu de ${ally.nome}: ${result.targetRemovedConditions.join(", ")}`);
+    }
+    if (result.stabilizedCollapse) {
+      partesLog.push(`estabilizou colapso de ${ally.nome} (${result.stabilizedCollapse.toUpperCase()})`);
+    }
+    addLogEntry(
+      "recurso",
+      `Usou ${itemModelo.nome} em ${ally.nome} (${partesLog.join(" · ")})${result.reminders.length > 0 ? ` — Lembrete: ${result.reminders.join(" ")}` : ""}.`,
+    );
+
+    await persistAutomatedActionExecution(result.source);
+
+    try {
+      await addLog({
+        campaignId: selectedCampaignId,
+        characterId: characterId ?? undefined,
+        profileId: selectedProfileId,
+        profileSessionId: profileSessionToken?.profileSessionId ?? null,
+        type: "item_used",
+        visibility: "public",
+        payload: {
+          characterId,
+          characterNome: current.nome,
+          profileId: selectedProfileId,
+          profileNickname: perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null,
+          sourceCharacterId: characterId,
+          sourceCharacterName: current.nome,
+          targetCharacterId: ally.id,
+          targetCharacterName: ally.nome,
+          targetMode: "ally",
+          itemInstanceId: instanceId,
+          itemName: itemModelo.nome,
+          itemCategory: itemModelo.categoria,
+          itemSubtype: itemModelo.subtipo ?? null,
+          itemTags: itemModelo.tags,
+          useType: result.useKind,
+          paCost: result.paCost,
+          paBefore: result.paBefore,
+          paAfter: result.paAfter,
+          quantityBefore: result.quantityBefore,
+          quantityAfter: result.quantityAfter,
+          chargesBefore: result.chargesBefore,
+          chargesAfter: result.chargesAfter,
+          resourceChanges: [],
+          targetResourceChanges: result.targetResourceChanges,
+          healingRolled: result.healingRolled,
+          appliedConditions: [],
+          removedConditions: [],
+          targetRemovedConditions: result.targetRemovedConditions,
+          stabilizedCollapse: result.stabilizedCollapse,
+          reminders: result.reminders,
+          source: "inventory_item_use",
+        },
+      });
+    } catch {
+      avisarFalhaLogMesa();
+      // Best-effort — o item já foi usado (alvo e usuário já persistidos); falha aqui não bloqueia o jogador.
     }
   }
 
@@ -3691,6 +3875,9 @@ export default function CharacterSheetClient({
           onSelectFlechaAtiva={handleSelectFlechaAtiva}
           isConnectedToCampaign={Boolean(characterId && selectedCampaignId)}
           onSendToCrew={handleSendItemToCrew}
+          allies={alliesAtivos}
+          onUseItemOnAlly={handleUseItemOnAlly}
+          onRefreshAllies={() => selectedCampaignId && refreshAlliesAtivos(selectedCampaignId)}
         />
       )}
 

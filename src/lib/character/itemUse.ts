@@ -519,6 +519,242 @@ export function useItemOnCharacter(params: {
   };
 }
 
+export interface ItemUseOnAllyResult {
+  ok: boolean;
+  reason?: string;
+  useKind: ItemUseKind;
+  /** Personagem que USA o item — perde PA/carga/quantidade. */
+  source: Character;
+  /** Personagem que RECEBE o efeito — cura/remoção de condição. */
+  target: Character;
+  paCost: number | null;
+  paCostTexto: string | null;
+  paBefore: number;
+  paAfter: number;
+  quantityBefore: number;
+  quantityAfter: number;
+  chargesBefore: number | null;
+  chargesAfter: number | null;
+  healingRolled: number | null;
+  targetResourceChanges: ItemUseResourceChange[];
+  targetRemovedConditions: string[];
+  /** Colapso do ALVO estabilizado por este uso — null quando nada foi estabilizado. */
+  stabilizedCollapse: "pv" | "pe" | null;
+  reminders: string[];
+}
+
+/**
+ * Usa 1 unidade de um item de farmácia do `source` aplicando o efeito
+ * no `target` (checkpoint pós-v0.71 — uso em aliado). Espelha
+ * `useItemOnCharacter`, mas separa quem PAGA (PA/carga/quantidade,
+ * sempre do `source`) de quem RECEBE (cura/remoção de condição/
+ * estabilização, sempre do `target`). Só farmácia é suportada aqui —
+ * granadas/explosivos continuam sem alvo direto neste checkpoint
+ * (teatro da mente, resolução manual em /dev/table). Mesma ordem de
+ * validação ANTES de mutar: PA/carga do `source` e aplicabilidade do
+ * efeito no `target` são checados antes de consumir qualquer coisa —
+ * nunca gasta PA/carga se o efeito no alvo não puder ser aplicado.
+ */
+export function useItemOnAlly(params: {
+  source: Character;
+  target: Character;
+  instance: InventoryItemInstance;
+  item: ItemContent;
+  sourcePaMax: number;
+  targetPvMax: number;
+  targetPeMax: number;
+  nowIso: string;
+  /** id (uuid da instância de ActiveCondition) do ALVO escolhido no seletor quando há várias condições compatíveis ativas nele. */
+  selectedConditionInstanceId?: string | null;
+  rng?: () => number;
+}): ItemUseOnAllyResult {
+  const { source, target, instance, item, sourcePaMax, targetPvMax, targetPeMax, nowIso, selectedConditionInstanceId, rng } = params;
+  const useKind = deriveItemUseKind(item) ?? "manual";
+
+  const chargesMax = item.cargasMax;
+  const chargesBefore = getItemChargesAtual(instance, item);
+  const quantityBefore = instance.quantidade;
+  const paGastosAntes = source.estado_jogo?.pa_gastos ?? 0;
+  const paBefore = Math.max(0, sourcePaMax - paGastosAntes);
+
+  const blocked = (reason: string): ItemUseOnAllyResult => ({
+    source,
+    target,
+    ok: false,
+    reason,
+    useKind,
+    paCost: item.custoPaUso ?? null,
+    paCostTexto: item.custoPaUsoTexto,
+    paBefore,
+    paAfter: paBefore,
+    quantityBefore,
+    quantityAfter: quantityBefore,
+    chargesBefore,
+    chargesAfter: chargesBefore,
+    healingRolled: null,
+    targetResourceChanges: [],
+    targetRemovedConditions: [],
+    stabilizedCollapse: null,
+    reminders: [],
+  });
+
+  // Escopo deliberado deste checkpoint (regra de produto §6): granada/explosivo/manual não
+  // têm alvo direto — só farmácia. "Usar em aliado" nem deve aparecer para os outros tipos,
+  // mas o helper também bloqueia caso seja chamado de qualquer forma.
+  if (useKind !== "pharmacy") {
+    return blocked("Uso em aliado só é suportado para itens de farmácia neste checkpoint.");
+  }
+
+  const effects = getItemUseEffects(item);
+  const removalPrimary = isConditionRemovalPrimaryItem(item);
+  const hasImmediateHeal = effects.some(isImmediateHealEffect);
+  const paCost = item.custoPaUso ?? (hasImmediateHeal && item.custoPaUsoTexto == null ? 1 : null);
+
+  const available = chargesMax != null ? (chargesBefore ?? 0) > 0 : quantityBefore > 0;
+  if (!available) {
+    return blocked("Sem cargas/quantidade disponíveis para usar este item.");
+  }
+
+  if (paCost != null && paCost > paBefore) {
+    return blocked(`PA insuficiente (atual: ${paBefore}, necessário: ${paCost}).`);
+  }
+
+  // Remoção de condição resolvida contra o ALVO — nunca contra o usuário. Mesma regra do uso
+  // próprio: sem condição compatível ativa NO ALVO, item de remoção não é consumido.
+  let conditionToRemove: ActiveCondition | null = null;
+  const removal = getConditionRemovalOptions(item, target);
+  if (removal.possibleSlugs.length > 0) {
+    if (selectedConditionInstanceId) {
+      conditionToRemove = removal.compatibleActive.find((c) => c.id === selectedConditionInstanceId) ?? null;
+      if (!conditionToRemove) {
+        return blocked("A condição selecionada não está mais ativa/compatível no alvo — item não consumido.");
+      }
+    } else if (removal.compatibleActive.length === 1) {
+      conditionToRemove = removal.compatibleActive[0];
+    } else if (removal.compatibleActive.length > 1) {
+      return blocked("Escolha qual condição remover do alvo antes de usar o item.");
+    } else if (removalPrimary) {
+      return blocked(`Nenhuma condição compatível ativa no alvo (${removal.possibleSlugs.join(", ")}) — item não consumido.`);
+    }
+    // Item misto (remoção + cura) sem condição compatível no alvo: segue para a cura; a remoção vira lembrete abaixo.
+  }
+
+  // Estabilização resolvida contra o colapso do ALVO — mesma regra do uso próprio.
+  const stabilizeEffects = effects.filter((e) => e.tipo === "estabilizar");
+  const stabilizeApplicabilities = stabilizeEffects.map((e) => getStabilizeApplicability(e, target));
+  const stabilizePrimary = stabilizeEffects.length > 0 && effects.every((e) => e.tipo === "estabilizar");
+  if (stabilizePrimary && !stabilizeApplicabilities.some((a) => a.applicable)) {
+    return blocked(stabilizeApplicabilities[0]?.reason ?? "Nenhum colapso aplicável no alvo — item não consumido.");
+  }
+
+  // Só agora que todo o efeito no alvo foi validado como aplicável é que o item é consumido do usuário.
+  const consumed = consumeItemCharge(source, instance.id, item);
+  if (!consumed) {
+    return blocked("Sem cargas/quantidade disponíveis para usar este item.");
+  }
+
+  let nextSource = consumed.character;
+  if (paCost != null) {
+    nextSource = { ...nextSource, estado_jogo: { ...nextSource.estado_jogo, pa_gastos: paGastosAntes + paCost } };
+  }
+
+  let nextTarget = target;
+  const targetResourceChanges: ItemUseResourceChange[] = [];
+  const targetRemovedConditions: string[] = [];
+  const reminders: string[] = [];
+  let healingRolled: number | null = null;
+  let conditionRemovalApplied = false;
+  let stabilizedCollapse: "pv" | "pe" | null = null;
+
+  for (const efeito of effects) {
+    if (efeito.tipo === "estabilizar") {
+      const applicability = getStabilizeApplicability(efeito, nextTarget);
+      if (applicability.applicable && applicability.target != null && stabilizedCollapse == null) {
+        nextTarget = stabilizeCollapse(nextTarget, nowIso);
+        stabilizedCollapse = applicability.target;
+        reminders.push(
+          `${item.nome}: colapso ${applicability.target === "pv" ? "físico" : "mental"} do alvo estabilizado — avanço de segmento pausado (não cura, não remove Inconsciente).`,
+        );
+        if (item.periciaUso) {
+          reminders.push(
+            `${item.nome}: o conteúdo declara teste de ${item.periciaUso} para o uso — role manualmente; se o narrador considerar falha, desfaça a estabilização no painel.`,
+          );
+        }
+      } else if (applicability.reason) {
+        reminders.push(`${item.nome}: ${applicability.reason}`);
+      }
+    } else if (efeito.tipo === "cura" && typeof efeito.gatilho === "string") {
+      const dado = typeof efeito.dado === "string" ? efeito.dado : "?";
+      const recurso = efeito.recurso === "pe" ? "PE" : "PV";
+      reminders.push(
+        `${item.nome}: cura ${dado} de ${recurso} vinculada ao gatilho "${efeito.gatilho.replace(/_/g, " ")}" — aplicar manualmente quando o gatilho ocorrer (nada foi aplicado agora).`,
+      );
+    } else if (isConditionRemovalEffect(efeito)) {
+      const effectSlugs = getEffectRemovalSlugs(efeito);
+      if (conditionToRemove && effectSlugs.includes(conditionToRemove.conditionId ?? "")) {
+        if (!conditionRemovalApplied) {
+          const alvo = conditionToRemove;
+          nextTarget = {
+            ...nextTarget,
+            condicoes_ativas: (nextTarget.condicoes_ativas ?? []).map((c) =>
+              c.id === alvo.id ? { ...c, ativa: false, removidaEm: nowIso, removidaOrigem: "item_use" as const } : c,
+            ),
+          };
+          targetRemovedConditions.push(conditionToRemove.nome);
+          conditionRemovalApplied = true;
+        }
+        if (typeof efeito.efeito === "string") {
+          reminders.push(`${item.nome}: ${efeito.efeito.replace(/_/g, " ")} — resolução manual.`);
+        }
+      } else {
+        reminders.push(describeUnhandledEffect(item, { ...efeito, tipo: "remover_condicao" }));
+      }
+    } else if (efeito.tipo === "cura") {
+      const recurso = efeito.recurso === "pe" ? "pe" : efeito.recurso === "pv" ? "pv" : null;
+      const dado = typeof efeito.dado === "string" ? efeito.dado : null;
+      if (!recurso || !dado) {
+        reminders.push(`${item.nome}: cura sem fórmula estruturada — aplicar manualmente.`);
+        continue;
+      }
+      const bonus = typeof efeito.bonus === "number" ? efeito.bonus : 0;
+      const rolled = Math.max(0, rollDamageFormula(dado, rng) + bonus);
+      healingRolled = (healingRolled ?? 0) + rolled;
+      const max = recurso === "pv" ? targetPvMax : targetPeMax;
+      const healResult: GmHealResult = applyGmHealing(nextTarget, recurso, rolled, max, nowIso);
+      nextTarget = healResult.character;
+      targetResourceChanges.push({ resource: recurso, before: healResult.before, after: healResult.after });
+      if (healResult.removidasPorCura.length > 0) {
+        targetRemovedConditions.push(...healResult.removidasPorCura.map((c) => c.nome));
+      }
+      if (typeof efeito.falha === "string") {
+        reminders.push(`${item.nome}: em falha no teste, cura vira "${efeito.falha}" — ajuste manualmente se aplicável.`);
+      }
+    } else {
+      reminders.push(describeUnhandledEffect(item, efeito));
+    }
+  }
+
+  return {
+    source: nextSource,
+    target: nextTarget,
+    ok: true,
+    useKind,
+    paCost,
+    paCostTexto: item.custoPaUsoTexto,
+    paBefore,
+    paAfter: paCost != null ? paBefore - paCost : paBefore,
+    quantityBefore: consumed.quantityBefore,
+    quantityAfter: consumed.quantityAfter,
+    chargesBefore: consumed.chargesBefore,
+    chargesAfter: consumed.chargesAfter,
+    healingRolled,
+    targetResourceChanges,
+    targetRemovedConditions,
+    stabilizedCollapse,
+    reminders,
+  };
+}
+
 // ---------------------------------------------------------------------
 // Preview de uso (checkpoint pós-v0.62) — o que será automático vs.
 // manual, calculado do payload + estado atual do personagem. Usado pelo

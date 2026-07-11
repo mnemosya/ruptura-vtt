@@ -83,6 +83,9 @@ export function InventoryTab({
   onSelectFlechaAtiva,
   isConnectedToCampaign,
   onSendToCrew,
+  allies,
+  onUseItemOnAlly,
+  onRefreshAllies,
 }: {
   items: ItemContent[];
   catalogError: string | null;
@@ -128,6 +131,12 @@ export function InventoryTab({
   isConnectedToCampaign: boolean;
   /** Envia `quantidade` unidades da instância ao inventário do bando da mesa (checkpoint pós-v0.68, CP7). */
   onSendToCrew: (instanceId: string, quantidade: number) => void;
+  /** Outros personagens ATIVOS na mesa (checkpoint pós-v0.71 — uso de item em aliado) — vazio se não conectado ou sem outros ativos. */
+  allies: { id: string; nome: string; character: Character }[];
+  /** Usa 1 unidade do item do personagem atual aplicando o efeito no personagem `targetCharacterId`. */
+  onUseItemOnAlly: (instanceId: string, targetCharacterId: string, options?: { selectedConditionInstanceId?: string }) => void;
+  /** Recarrega `allies` sob demanda (ex.: ao abrir o painel "Usar em aliado") — mantém PV/condições do alvo atualizados no momento do uso. */
+  onRefreshAllies: () => void;
 }) {
   const [busca, setBusca] = useState("");
   const [categoria, setCategoria] = useState<(typeof CATEGORIA_FILTROS)[number]>("todos");
@@ -143,6 +152,12 @@ export function InventoryTab({
   const [condicaoRemocao, setCondicaoRemocao] = useState<Record<string, string>>({});
   // enviarBandoQtd[instanceId] = quantidade a enviar ao bando (checkpoint pós-v0.68)
   const [enviarBandoQtd, setEnviarBandoQtd] = useState<Record<string, number>>({});
+  // usarEmAliadoAberto[instanceId] = painel "Usar em aliado" expandido (checkpoint pós-v0.71)
+  const [usarEmAliadoAberto, setUsarEmAliadoAberto] = useState<Record<string, boolean>>({});
+  // aliadoAlvo[instanceId] = id do personagem alvo escolhido
+  const [aliadoAlvo, setAliadoAlvo] = useState<Record<string, string>>({});
+  // aliadoCondicaoRemocao[instanceId] = id da ActiveCondition do ALVO escolhida no seletor
+  const [aliadoCondicaoRemocao, setAliadoCondicaoRemocao] = useState<Record<string, string>>({});
 
   const runasPublicadas = runes.filter((r) => r.status === "published");
   const runaBySlug = new Map(runasPublicadas.map((r) => [r.slug, r]));
@@ -295,6 +310,23 @@ export function InventoryTab({
               : null;
             const useBlocked = usePreview?.blockedReason != null;
             const temCuraImediata = useEffects.some((e) => e.tipo === "cura" && typeof e.gatilho !== "string");
+            // Uso em aliado (checkpoint pós-v0.71) — só farmácia; preview/bloqueio calculados contra
+            // o ALVO escolhido (condições/colapso DELE, nunca do usuário). Nunca por nome de item.
+            const aliadoAlvoId = aliadoAlvo[instance.id] ?? "";
+            const aliadoSelecionado = allies.find((a) => a.id === aliadoAlvoId);
+            const allyRemovalOptions =
+              itemModelo && useKind === "pharmacy" && aliadoSelecionado
+                ? getConditionRemovalOptions(itemModelo, aliadoSelecionado.character)
+                : { possibleSlugs: [], compatibleActive: [] };
+            const allyRemovalNeedsChoice = allyRemovalOptions.compatibleActive.length > 1;
+            const allyCondicaoEscolhida = aliadoCondicaoRemocao[instance.id] ?? "";
+            const allyCondicaoEscolhidaValida = allyRemovalOptions.compatibleActive.some((c) => c.id === allyCondicaoEscolhida);
+            const allyPreview =
+              itemModelo && useKind === "pharmacy" && aliadoSelecionado
+                ? getItemUsePreview(itemModelo, { condicoes_ativas: aliadoSelecionado.character.condicoes_ativas ?? [], colapso: aliadoSelecionado.character.colapso })
+                : null;
+            const allyBlocked = allyPreview?.blockedReason != null;
+            const allyUseDisabled = !aliadoAlvoId || !useAvailable || allyBlocked || (allyRemovalNeedsChoice && !allyCondicaoEscolhidaValida);
             return (
               <div key={instance.id} data-testid={`inventario-item-${instance.id}`} style={{ background: "#1d1e24", borderRadius: 8, padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6, fontSize: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -433,6 +465,103 @@ export function InventoryTab({
                     >
                       Usar item
                     </button>
+
+                    {/* Usar em aliado (checkpoint pós-v0.71) — só farmácia; granadas/explosivos continuam sem alvo direto. */}
+                    {useKind === "pharmacy" && (
+                      <div
+                        data-testid={`inventario-usar-aliado-secao-${instance.id}`}
+                        style={{ borderTop: "1px solid #2a2b33", paddingTop: 6, marginTop: 4, display: "flex", flexDirection: "column", gap: 4 }}
+                      >
+                        {!isConnectedToCampaign ? (
+                          <p style={{ fontSize: 10, opacity: 0.4, margin: 0 }}>Usar em aliado: disponível apenas em mesa conectada.</p>
+                        ) : (
+                          <>
+                            <button
+                              data-testid={`inventario-usar-aliado-toggle-${instance.id}`}
+                              onClick={() => {
+                                const abrindo = !(usarEmAliadoAberto[instance.id] ?? false);
+                                setUsarEmAliadoAberto((prev) => ({ ...prev, [instance.id]: abrindo }));
+                                if (abrindo) onRefreshAllies();
+                              }}
+                              style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px", alignSelf: "flex-start" }}
+                            >
+                              {usarEmAliadoAberto[instance.id] ? "Usar em aliado ▲" : "Usar em aliado ▼"}
+                            </button>
+                            {usarEmAliadoAberto[instance.id] && (
+                              allies.length === 0 ? (
+                                <p data-testid={`inventario-usar-aliado-sem-alvo-${instance.id}`} style={{ fontSize: 11, color: "#f5a623", margin: 0 }}>
+                                  Nenhum outro personagem ativo na mesa.
+                                </p>
+                              ) : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                  <select
+                                    data-testid={`inventario-usar-aliado-select-${instance.id}`}
+                                    value={aliadoAlvoId}
+                                    onChange={(e) => setAliadoAlvo((prev) => ({ ...prev, [instance.id]: e.target.value }))}
+                                    style={{ ...input, fontSize: 11 }}
+                                  >
+                                    <option value="">— escolher alvo —</option>
+                                    {allies.map((a) => (
+                                      <option key={a.id} value={a.id}>{a.nome}</option>
+                                    ))}
+                                  </select>
+                                  {aliadoSelecionado && (
+                                    <div data-testid={`inventario-usar-aliado-preview-${instance.id}`} style={{ fontSize: 11, opacity: 0.75, display: "flex", flexDirection: "column", gap: 2 }}>
+                                      {allyPreview?.automatic.map((texto, i) => (
+                                        <span key={`aa-${i}`} data-testid={`inventario-usar-aliado-auto-${instance.id}-${i}`} style={{ color: "#7bc67e" }}>
+                                          Automático no alvo: {texto}
+                                        </span>
+                                      ))}
+                                      {allyPreview?.manual.map((texto, i) => (
+                                        <span key={`am-${i}`} data-testid={`inventario-usar-aliado-manual-${instance.id}-${i}`} style={{ color: "#f5a623" }}>
+                                          Manual: {texto}
+                                        </span>
+                                      ))}
+                                      {allyBlocked && (
+                                        <span data-testid={`inventario-usar-aliado-bloqueado-${instance.id}`} style={{ color: "#ff6b6b" }}>
+                                          {allyPreview?.blockedReason}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                  {allyRemovalNeedsChoice && (
+                                    <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                                      <span style={{ fontSize: 11, opacity: 0.6 }}>Condição do alvo a remover:</span>
+                                      <select
+                                        data-testid={`inventario-usar-aliado-condicao-${instance.id}`}
+                                        value={allyCondicaoEscolhidaValida ? allyCondicaoEscolhida : ""}
+                                        onChange={(e) => setAliadoCondicaoRemocao((prev) => ({ ...prev, [instance.id]: e.target.value }))}
+                                        style={{ ...input, fontSize: 11 }}
+                                      >
+                                        <option value="">— escolher —</option>
+                                        {allyRemovalOptions.compatibleActive.map((c) => (
+                                          <option key={c.id} value={c.id}>{c.nome}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  )}
+                                  <button
+                                    data-testid={`inventario-usar-aliado-${instance.id}`}
+                                    onClick={() => {
+                                      onUseItemOnAlly(
+                                        instance.id,
+                                        aliadoAlvoId,
+                                        allyCondicaoEscolhidaValida ? { selectedConditionInstanceId: allyCondicaoEscolhida } : undefined,
+                                      );
+                                      setAliadoCondicaoRemocao((prev) => ({ ...prev, [instance.id]: "" }));
+                                    }}
+                                    disabled={allyUseDisabled}
+                                    style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px", alignSelf: "flex-start", opacity: allyUseDisabled ? 0.5 : 1 }}
+                                  >
+                                    Usar em aliado
+                                  </button>
+                                </div>
+                              )
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 

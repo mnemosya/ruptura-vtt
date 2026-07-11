@@ -578,6 +578,20 @@ function formatSystemLog(type: string, payload: Record<string, unknown>): string
     if (payload.stabilizedCollapse === "pv" || payload.stabilizedCollapse === "pe") {
       partes.push(`estabilizou colapso (${(payload.stabilizedCollapse as string).toUpperCase()})`);
     }
+    // Uso em aliado (checkpoint pós-v0.71) — o efeito foi aplicado no ALVO, não no usuário; os
+    // campos `target*` são exclusivos desse fluxo (ausentes em logs de uso próprio antigos).
+    const targetCharacterName = typeof payload.targetCharacterName === "string" ? payload.targetCharacterName : null;
+    const targetResourceChanges = Array.isArray(payload.targetResourceChanges) ? payload.targetResourceChanges : [];
+    for (const mudanca of targetResourceChanges) {
+      if (typeof mudanca !== "object" || mudanca === null) continue;
+      const m = mudanca as Record<string, unknown>;
+      const resource = typeof m.resource === "string" ? m.resource.toUpperCase() : "?";
+      const before = typeof m.before === "number" ? m.before : null;
+      const after = typeof m.after === "number" ? m.after : null;
+      if (before != null && after != null) partes.push(`curou ${Math.max(0, after - before)} ${resource}`);
+    }
+    const targetRemovedConditions = names(payload.targetRemovedConditions);
+    if (targetRemovedConditions.length > 0) partes.push(`removeu ${targetRemovedConditions.join(", ")}`);
     const area = typeof payload.area === "number" ? payload.area : null;
     const range = typeof payload.range === "number" ? payload.range : null;
     if (area != null || range != null) {
@@ -585,7 +599,8 @@ function formatSystemLog(type: string, payload: Record<string, unknown>): string
     }
     const reminders = names(payload.reminders);
     const tipoLabel = useType === "pharmacy" ? " (farmácia)" : useType === "grenade" ? " (granada)" : useType === "explosive" ? " (explosivo)" : "";
-    const base = `Item usado — ${characterNome} usou ${itemName}${tipoLabel}${partes.length > 0 ? `: ${partes.join(" · ")}` : ""}.`;
+    const itemComAlvo = targetCharacterName ? `${itemName} em ${targetCharacterName}` : itemName;
+    const base = `Item usado — ${characterNome} usou ${itemComAlvo}${tipoLabel}${partes.length > 0 ? `: ${partes.join(" · ")}` : ""}.`;
     return reminders.length > 0 ? `${base} — Lembrete: ${reminders.join(" ")}` : base;
   }
   if (type === "talent_used") {
