@@ -20,6 +20,7 @@ consumi-los em runtime: a aplicação lê a Biblioteca do Sistema no Supabase
 | Fonte | Bancos relacionados |
 | --- | --- |
 | `9 ATRIBUTOS …`, `10 PERÍCIAS …`, `12 VIDA, ESTRESSE E MANA …` | `db_regras_personagem_normalizado_v1_4.json` |
+| `11 TALENTOS …` | `db_talentos_normalizado_v1_3.json` |
 | `16 COMBATE …` | `db_acoes_combate_normalizado_v1_1.json`, `db_fluxo_combate_normalizado_v1_1.json`, `db_campo_combate_normalizado_v1_1.json` |
 | `17 CONDIÇÕES …` | `db_condicoes_normalizado_v1_5.json` |
 | `18 TECENDO A MALHA …` | Referência editorial para regras e conteúdos ligados à Malha |
