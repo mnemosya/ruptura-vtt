@@ -56,6 +56,11 @@ import {
   applyRoundScopedPaReductions,
   resolvePendingRuptureChoice,
   deriveActiveEffectsFromTalents,
+  deriveActiveEffectsFromTemporaryEffects,
+  tickRoundTemporaryEffects,
+  removeTemporaryEffect,
+  getActiveTemporaryEffects,
+  formatTemporaryEffectSummary,
   deriveInstalledTechnicalEffects,
   deriveInstalledRuneEffects,
   acquireTalentLevel,
@@ -139,6 +144,7 @@ import type {
   SpellContent,
   InventoryItemInstance,
   AttackWeaponCandidate,
+  TemporaryEffect,
 } from "../../../lib/character";
 import type { TechnicalContentItem } from "../../../lib/content";
 import { rollPericia, type PreparedRoll } from "../../../lib/dice";
@@ -709,8 +715,11 @@ export default function CharacterSheetClient({
       const talentEffects = deriveActiveEffectsFromTalents(character, talentsIniciais);
       const escalpoEffects = deriveInstalledTechnicalEffects(character, escalposIniciais);
       const runeEffects = deriveInstalledRuneEffects(character, runesIniciais);
+      // Efeitos temporários/buffs rastreados (checkpoint pós-v0.71) — modificadores de rolagem
+      // entram no mesmo pipeline; recurso/dano/defesa viram aviso (nunca somados).
+      const temporaryEffects = deriveActiveEffectsFromTemporaryEffects(character);
       const reactionEffect = deriveReactionDefenseEffect(character, reactionRules);
-      const base = [...conditionEffects, ...talentEffects, ...escalpoEffects, ...runeEffects];
+      const base = [...conditionEffects, ...talentEffects, ...escalpoEffects, ...runeEffects, ...temporaryEffects];
       return reactionEffect ? [...base, reactionEffect] : base;
     },
     [character, conditionContents, postureConditionContents, reactionRules, talentsIniciais, escalposIniciais, runesIniciais],
@@ -1854,19 +1863,41 @@ export default function CharacterSheetClient({
     });
     // Talentos com cadência "rodada" (checkpoint pós-v0.63) renovam os usos aqui.
     const talentReset = resetTalentUses(paReduction.character, ["rodada"]);
-    nextCharacter = { ...talentReset.character, current_round: round + 1 };
+    // Efeitos temporários com duração por rodadas (checkpoint pós-v0.71) — reduz 1 rodada e expira os que zeram.
+    const tick = tickRoundTemporaryEffects(talentReset.character, nowIso);
+    nextCharacter = { ...tick.character, current_round: round + 1 };
 
     characterRef.current = nextCharacter;
     setCharacter(nextCharacter);
 
-    const allLogs = [...collapseResult.logs, ...resolved.logs, ...paReduction.logs];
+    const tempLogs: string[] = [
+      ...tick.ticked.map((e) => `Efeito temporário "${e.name}": ${e.remainingRounds} rodada(s) restante(s).`),
+      ...tick.expired.map((e) => `Efeito temporário "${e.name}" expirou (duração por rodadas).`),
+    ];
+    const allLogs = [...collapseResult.logs, ...resolved.logs, ...paReduction.logs, ...tempLogs];
     setEndRoundSummary({ logs: allLogs, warnings: [...collapseResult.warnings, ...resolved.warnings] });
     addLogEntry(
       "rodada",
       `Rodada ${round} encerrada → rodada ${round + 1} iniciada.${allLogs.length > 0 ? " " + allLogs.join(" ") : ""}`,
     );
 
-    const allTableLogs = [...collapseResult.tableLogs, ...resolved.tableLogs, ...paReduction.tableLogs];
+    // Efeitos temporários expirados por rodada geram log persistente (checkpoint pós-v0.71).
+    const tempExpiryTableLogs = tick.expired.map((e) => ({
+      type: "temporary_effect_expired",
+      payload: {
+        effectId: e.id,
+        effectName: e.name,
+        sourceType: e.sourceType,
+        sourceName: e.sourceName,
+        durationType: e.durationType,
+        remainingRounds: 0,
+        stacks: e.stacks ?? 1,
+        modifiers: e.modifiers ?? [],
+        reason: "Duração por rodadas chegou a 0 no fim da rodada.",
+        source: "temporary_effect",
+      },
+    }));
+    const allTableLogs = [...collapseResult.tableLogs, ...resolved.tableLogs, ...paReduction.tableLogs, ...tempExpiryTableLogs];
     if (selectedCampaignId) {
       for (const entry of allTableLogs) {
         try {
@@ -2155,6 +2186,88 @@ export default function CharacterSheetClient({
   }
 
   /**
+   * Grava um `table_log` `temporary_effect_added` para um efeito
+   * temporário criado (checkpoint pós-v0.71). `targetName`/`targetId`
+   * são de QUEM recebeu o efeito (o próprio personagem no uso próprio,
+   * o aliado no uso em aliado). Best-effort, mesmo padrão dos demais.
+   */
+  async function logTemporaryEffectAdded(effect: TemporaryEffect, targetId: string | null, targetName: string) {
+    if (!selectedCampaignId) return;
+    try {
+      await addLog({
+        campaignId: selectedCampaignId,
+        characterId: targetId ?? undefined,
+        profileId: selectedProfileId,
+        profileSessionId: profileSessionToken?.profileSessionId ?? null,
+        type: "temporary_effect_added",
+        visibility: "public",
+        payload: {
+          characterId: targetId,
+          characterNome: targetName,
+          effectId: effect.id,
+          effectName: effect.name,
+          sourceType: effect.sourceType,
+          sourceName: effect.sourceName,
+          durationType: effect.durationType,
+          remainingRounds: effect.remainingRounds ?? null,
+          stacks: effect.stacks ?? 1,
+          modifiers: effect.modifiers ?? [],
+          reason: formatTemporaryEffectSummary(effect),
+          source: "temporary_effect",
+        },
+      });
+    } catch {
+      avisarFalhaLogMesa();
+    }
+  }
+
+  /**
+   * Remove/encerra manualmente um efeito temporário (checkpoint
+   * pós-v0.71) — marca `active: false` (mantém histórico), persiste
+   * quando conectado e grava `temporary_effect_removed`.
+   */
+  async function handleRemoveTemporaryEffect(effectId: string) {
+    const current = characterRef.current;
+    const effect = (current.efeitos_temporarios ?? []).find((e) => e.id === effectId && e.active);
+    if (!effect) return;
+    const nowIso = new Date().toISOString();
+    const next = removeTemporaryEffect(current, effectId, nowIso);
+    if (next === current) return;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("recurso", `Efeito temporário removido: ${effect.name} (${effect.sourceName}).`);
+    await persistAutomatedActionExecution(next);
+    if (selectedCampaignId) {
+      try {
+        await addLog({
+          campaignId: selectedCampaignId,
+          characterId: characterId ?? undefined,
+          profileId: selectedProfileId,
+          profileSessionId: profileSessionToken?.profileSessionId ?? null,
+          type: "temporary_effect_removed",
+          visibility: "public",
+          payload: {
+            characterId,
+            characterNome: current.nome,
+            effectId: effect.id,
+            effectName: effect.name,
+            sourceType: effect.sourceType,
+            sourceName: effect.sourceName,
+            durationType: effect.durationType,
+            remainingRounds: effect.remainingRounds ?? null,
+            stacks: effect.stacks ?? 1,
+            modifiers: effect.modifiers ?? [],
+            reason: "Removido manualmente na ficha.",
+            source: "temporary_effect",
+          },
+        });
+      } catch {
+        avisarFalhaLogMesa();
+      }
+    }
+  }
+
+  /**
    * Usar item consumível (farmácia/granadas, checkpoint pós-v0.58) —
    * checa PA/carga ANTES de mudar qualquer estado (`useItemOnCharacter`,
    * `lib/character/itemUse.ts` — nunca gasta PA nem consome item se
@@ -2217,6 +2330,9 @@ export default function CharacterSheetClient({
     if (result.stabilizedCollapse) {
       partesLog.push(`estabilizou colapso (${result.stabilizedCollapse.toUpperCase()})`);
     }
+    for (const efeito of result.temporaryEffectsAdded) {
+      partesLog.push(`efeito temporário: ${formatTemporaryEffectSummary(efeito)}`);
+    }
     addLogEntry(
       result.useKind === "grenade" || result.useKind === "explosive" ? "acao_combate" : "recurso",
       `Usou ${itemModelo.nome} (${partesLog.join(" · ")})${result.reminders.length > 0 ? ` — Lembrete: ${result.reminders.join(" ")}` : ""}.`,
@@ -2262,6 +2378,7 @@ export default function CharacterSheetClient({
             appliedConditions: [],
             removedConditions: result.removedConditions,
             stabilizedCollapse: result.stabilizedCollapse,
+            temporaryEffectsAdded: result.temporaryEffectsAdded.map((e) => e.name),
             reminders: result.reminders,
             source: "inventory_item_use",
           },
@@ -2269,6 +2386,10 @@ export default function CharacterSheetClient({
       } catch {
         avisarFalhaLogMesa();
         // Best-effort — o item já foi usado no estado local/persistido; falha aqui não bloqueia o jogador.
+      }
+      // Log persistente por efeito temporário criado (checkpoint pós-v0.71).
+      for (const efeito of result.temporaryEffectsAdded) {
+        await logTemporaryEffectAdded(efeito, characterId, current.nome);
       }
     }
   }
@@ -2365,6 +2486,9 @@ export default function CharacterSheetClient({
     if (result.stabilizedCollapse) {
       partesLog.push(`estabilizou colapso de ${ally.nome} (${result.stabilizedCollapse.toUpperCase()})`);
     }
+    for (const efeito of result.targetTemporaryEffectsAdded) {
+      partesLog.push(`efeito temporário em ${ally.nome}: ${formatTemporaryEffectSummary(efeito)}`);
+    }
     addLogEntry(
       "recurso",
       `Usou ${itemModelo.nome} em ${ally.nome} (${partesLog.join(" · ")})${result.reminders.length > 0 ? ` — Lembrete: ${result.reminders.join(" ")}` : ""}.`,
@@ -2410,6 +2534,7 @@ export default function CharacterSheetClient({
           removedConditions: [],
           targetRemovedConditions: result.targetRemovedConditions,
           stabilizedCollapse: result.stabilizedCollapse,
+          targetTemporaryEffectsAdded: result.targetTemporaryEffectsAdded.map((e) => e.name),
           reminders: result.reminders,
           source: "inventory_item_use",
         },
@@ -2417,6 +2542,10 @@ export default function CharacterSheetClient({
     } catch {
       avisarFalhaLogMesa();
       // Best-effort — o item já foi usado (alvo e usuário já persistidos); falha aqui não bloqueia o jogador.
+    }
+    // Log persistente por efeito temporário criado NO ALVO (checkpoint pós-v0.71).
+    for (const efeito of result.targetTemporaryEffectsAdded) {
+      await logTemporaryEffectAdded(efeito, ally.id, ally.nome);
     }
   }
 
@@ -3823,6 +3952,8 @@ export default function CharacterSheetClient({
           condicoesDisponiveis={condicoesDisponiveis}
           activeEffects={activeEffects}
           pendingChecks={character.pending_condition_checks ?? []}
+          temporaryEffects={getActiveTemporaryEffects(character)}
+          onRemoveTemporaryEffect={handleRemoveTemporaryEffect}
           onResolveCheck={handleResolveConditionCheck}
           onAdd={handleAddCondition}
           onRemove={handleRemoveCondition}

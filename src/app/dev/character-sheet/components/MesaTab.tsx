@@ -103,6 +103,9 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   inventory_transfer: "Transferência de Inventário",
   spell_attack_used: "Ataque Mágico",
   spell_attack_resolved: "Ataque Mágico Resolvido",
+  temporary_effect_added: "Efeito Temporário Criado",
+  temporary_effect_removed: "Efeito Temporário Removido",
+  temporary_effect_expired: "Efeito Temporário Expirado",
 };
 
 function entryKindLabel(type: string): string {
@@ -136,6 +139,7 @@ function entryIcon(type: string): string {
   if (type === "spell_cast") return "🔮";
   if (type === "inventory_transfer") return "📦";
   if (type === "spell_attack_used" || type === "spell_attack_resolved") return "⚔";
+  if (type === "temporary_effect_added" || type === "temporary_effect_removed" || type === "temporary_effect_expired") return "⏱";
   return "•";
 }
 
@@ -164,6 +168,7 @@ function entryBorderColor(type: string): string {
   if (type === "spell_cast") return "#5ec8ff";
   if (type === "inventory_transfer") return "#f5a623";
   if (type === "spell_attack_used" || type === "spell_attack_resolved") return "#7c4dff";
+  if (type === "temporary_effect_added" || type === "temporary_effect_removed" || type === "temporary_effect_expired") return "#4caf50";
   return "#ffb84f";
 }
 
@@ -603,12 +608,53 @@ function formatItemUsed(payload: Record<string, unknown>): string {
     partes.push(`${area != null ? `área ${area}m` : ""}${area != null && range != null ? ", " : ""}${range != null ? `alcance ${range}m` : ""}`);
   }
 
+  const nomes = (v: unknown): string[] => (Array.isArray(v) ? v.filter((n): n is string => typeof n === "string") : []);
+  const temporaryEffectsAdded = nomes(payload.temporaryEffectsAdded).concat(nomes(payload.targetTemporaryEffectsAdded));
+  if (temporaryEffectsAdded.length > 0) partes.push(`efeito temporário: ${temporaryEffectsAdded.join(", ")}`);
+
   const reminders = Array.isArray(payload.reminders) ? payload.reminders.filter((r): r is string => typeof r === "string") : [];
 
   const tipoLabel = useType === "pharmacy" ? " (farmácia)" : useType === "grenade" ? " (granada)" : useType === "explosive" ? " (explosivo)" : "";
   const itemComAlvo = targetCharacterName ? `${itemName} em ${targetCharacterName}` : itemName;
   const base = `Item usado — ${characterNome} usou ${itemComAlvo}${tipoLabel}${partes.length > 0 ? `: ${partes.join(" · ")}` : ""}.`;
   return reminders.length > 0 ? `${base} — Lembrete: ${reminders.join(" ")}` : base;
+}
+
+/**
+ * `temporary_effect_added/removed/expired` (checkpoint pós-v0.71) —
+ * "Efeito temporário criado/removido/expirado — {personagem}: {efeito}
+ * (fonte {tipo}: {nome} · {duração/motivo})." Nunca cai em JSON cru.
+ */
+function formatTemporaryEffectLog(type: string, payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const effectName = typeof payload.effectName === "string" ? payload.effectName : "Efeito";
+  const sourceType = typeof payload.sourceType === "string" ? payload.sourceType : null;
+  const sourceName = typeof payload.sourceName === "string" ? payload.sourceName : null;
+  const durationType = typeof payload.durationType === "string" ? payload.durationType : null;
+  const remainingRounds = typeof payload.remainingRounds === "number" ? payload.remainingRounds : null;
+  const stacks = typeof payload.stacks === "number" && payload.stacks > 1 ? payload.stacks : null;
+  const reason = typeof payload.reason === "string" ? payload.reason : null;
+
+  const verbo = type === "temporary_effect_added" ? "criado" : type === "temporary_effect_removed" ? "removido" : "expirado";
+  const duracaoTxt =
+    durationType === "rounds"
+      ? remainingRounds != null && verbo === "criado"
+        ? `${remainingRounds} rodada(s)`
+        : "por rodadas"
+      : durationType === "scene"
+        ? "até o fim da cena"
+        : durationType === "rest"
+          ? "até o descanso longo"
+          : durationType === "manual"
+            ? "duração manual"
+            : null;
+  const partes = [
+    sourceType && sourceName ? `fonte ${sourceType}: ${sourceName}` : null,
+    duracaoTxt,
+    stacks ? `${stacks} pilhas` : null,
+    verbo !== "criado" && reason ? reason : null,
+  ].filter((p): p is string => Boolean(p));
+  return `Efeito temporário ${verbo} — ${characterNome}: ${effectName}${partes.length > 0 ? ` (${partes.join(" · ")})` : ""}.`;
 }
 
 /**
@@ -1219,7 +1265,9 @@ export function MesaTab({
                                                                               ? formatSpellAttackUsed(entry.payload)
                                                                               : entry.type === "spell_attack_resolved"
                                                                                 ? formatSpellAttackResolved(entry.payload)
-                                                                                : formatGenericLog(entry.type, entry.payload)}
+                                                                                : entry.type === "temporary_effect_added" || entry.type === "temporary_effect_removed" || entry.type === "temporary_effect_expired"
+                                                                                  ? formatTemporaryEffectLog(entry.type, entry.payload)
+                                                                                  : formatGenericLog(entry.type, entry.payload)}
             </span>
           </div>
         ))}

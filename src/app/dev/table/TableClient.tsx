@@ -63,6 +63,10 @@ import {
   getReactionAvailability,
   spendReactionForDefense,
   getActiveConditionIds,
+  getActiveTemporaryEffects,
+  removeTemporaryEffect,
+  formatTemporaryEffectSummary,
+  describeDuration,
   getConditionEndRoundEffects,
   normalizeConditionSlug,
   resolvePendingRupture,
@@ -491,6 +495,9 @@ const ENTRY_KIND_LABELS: Record<string, string> = {
   inventory_transfer: "Transferência de Inventário",
   spell_attack_used: "Ataque Mágico",
   spell_attack_resolved: "Ataque Mágico Resolvido",
+  temporary_effect_added: "Efeito Temporário Criado",
+  temporary_effect_removed: "Efeito Temporário Removido",
+  temporary_effect_expired: "Efeito Temporário Expirado",
 };
 
 function entryKindLabel(type: string): string {
@@ -517,6 +524,7 @@ function entryIcon(type: string): string {
   if (type === "overload_surge" || type === "overload_surge_used" || type === "overload_will_roll") return "⚡";
   if (type === "inventory_transfer") return "📦";
   if (type === "spell_attack_used" || type === "spell_attack_resolved") return "⚔";
+  if (type === "temporary_effect_added" || type === "temporary_effect_removed" || type === "temporary_effect_expired") return "⏱";
   return "•";
 }
 
@@ -528,6 +536,44 @@ function entryIcon(type: string): string {
  * de `formatActionUsed`). NUNCA cai em JSON cru: o último fallback é uma
  * linha legível com o rótulo do tipo + nome do personagem.
  */
+/**
+ * `temporary_effect_added` / `temporary_effect_removed` /
+ * `temporary_effect_expired` (checkpoint pós-v0.71) — nunca cai em JSON
+ * cru. "Efeito temporário criado/removido/expirado — {personagem}:
+ * {efeito} (fonte {tipo}: {nome}) · {duração/motivo}."
+ */
+function formatTemporaryEffectLog(type: string, payload: Record<string, unknown>): string {
+  const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
+  const effectName = typeof payload.effectName === "string" ? payload.effectName : "Efeito";
+  const sourceType = typeof payload.sourceType === "string" ? payload.sourceType : null;
+  const sourceName = typeof payload.sourceName === "string" ? payload.sourceName : null;
+  const durationType = typeof payload.durationType === "string" ? payload.durationType : null;
+  const remainingRounds = typeof payload.remainingRounds === "number" ? payload.remainingRounds : null;
+  const stacks = typeof payload.stacks === "number" && payload.stacks > 1 ? payload.stacks : null;
+  const reason = typeof payload.reason === "string" ? payload.reason : null;
+
+  const verbo = type === "temporary_effect_added" ? "criado" : type === "temporary_effect_removed" ? "removido" : "expirado";
+  const duracaoTxt =
+    durationType === "rounds"
+      ? remainingRounds != null && verbo === "criado"
+        ? `${remainingRounds} rodada(s)`
+        : "por rodadas"
+      : durationType === "scene"
+        ? "até o fim da cena"
+        : durationType === "rest"
+          ? "até o descanso longo"
+          : durationType === "manual"
+            ? "duração manual"
+            : null;
+  const partes = [
+    sourceType && sourceName ? `fonte ${sourceType}: ${sourceName}` : null,
+    duracaoTxt,
+    stacks ? `${stacks} pilhas` : null,
+    verbo !== "criado" && reason ? reason : null,
+  ].filter((p): p is string => Boolean(p));
+  return `Efeito temporário ${verbo} — ${characterNome}: ${effectName}${partes.length > 0 ? ` (${partes.join(" · ")})` : ""}.`;
+}
+
 function formatSystemLog(type: string, payload: Record<string, unknown>): string {
   const characterNome = typeof payload.characterNome === "string" ? payload.characterNome : "Personagem";
   const conditionName = typeof payload.conditionName === "string" ? payload.conditionName : "Condição";
@@ -597,11 +643,16 @@ function formatSystemLog(type: string, payload: Record<string, unknown>): string
     if (area != null || range != null) {
       partes.push(`${area != null ? `área ${area}m` : ""}${area != null && range != null ? ", " : ""}${range != null ? `alcance ${range}m` : ""}`);
     }
+    const temporaryEffectsAdded = names(payload.temporaryEffectsAdded).concat(names(payload.targetTemporaryEffectsAdded));
+    if (temporaryEffectsAdded.length > 0) partes.push(`efeito temporário: ${temporaryEffectsAdded.join(", ")}`);
     const reminders = names(payload.reminders);
     const tipoLabel = useType === "pharmacy" ? " (farmácia)" : useType === "grenade" ? " (granada)" : useType === "explosive" ? " (explosivo)" : "";
     const itemComAlvo = targetCharacterName ? `${itemName} em ${targetCharacterName}` : itemName;
     const base = `Item usado — ${characterNome} usou ${itemComAlvo}${tipoLabel}${partes.length > 0 ? `: ${partes.join(" · ")}` : ""}.`;
     return reminders.length > 0 ? `${base} — Lembrete: ${reminders.join(" ")}` : base;
+  }
+  if (type === "temporary_effect_added" || type === "temporary_effect_removed" || type === "temporary_effect_expired") {
+    return formatTemporaryEffectLog(type, payload);
   }
   if (type === "talent_used") {
     const talentNome = typeof payload.talentNome === "string" ? payload.talentNome : "Talento";
@@ -884,7 +935,9 @@ interface EndRoundCharacterPreview {
   /** Condições ativas sem conteúdo/efeito estruturado detectado — resolução manual (fallback quando a Biblioteca está fora do ar). */
   unstructuredConditions: string[];
   emColapso: { tipo: string; segmentos: number; estabilizado: boolean } | null;
-  /** true quando NADA muda para este personagem (sem PA/Reação gastos, sem condição de fim de rodada, sem colapso). */
+  /** Efeitos temporários por rodada que vão reduzir/expirar (checkpoint pós-v0.71). */
+  temporaryEffects: string[];
+  /** true quando NADA muda para este personagem (sem PA/Reação gastos, sem condição de fim de rodada, sem colapso, sem efeito temporário). */
   semEfeito: boolean;
 }
 
@@ -906,6 +959,8 @@ interface EndSceneCharacterPreview {
   manaBonusAntes: number;
   manaBonusDepois: number;
   ultimaVontade: boolean;
+  /** Efeitos temporários por cena que vão expirar ao confirmar (checkpoint pós-v0.71). */
+  temporaryEffects: string[];
 }
 
 interface EndScenePreview {
@@ -1000,7 +1055,16 @@ function buildEndRoundPreview(
     const colapso = character.colapso;
     const emColapso = colapso?.ativo ? { tipo: colapso.tipo === "pe" ? "PE" : "PV", segmentos: colapso.segmentos ?? 0, estabilizado: colapso.estabilizado === true } : null;
 
-    const semEfeito = paGastos === 0 && reacoesUsadas === 0 && defesasSemReacao === 0 && conditionEffects.length === 0 && unstructuredConditions.length === 0 && !emColapso;
+    // Efeitos temporários por rodada que vão reduzir/expirar ao confirmar (checkpoint pós-v0.71).
+    const temporaryEffects = getActiveTemporaryEffects(character)
+      .filter((e) => e.durationType === "rounds" && typeof e.remainingRounds === "number")
+      .map((e) => {
+        const restante = (e.remainingRounds as number) - 1;
+        return restante <= 0 ? `${e.name}: expira nesta rodada` : `${e.name}: ${e.remainingRounds} → ${restante} rodada(s)`;
+      });
+
+    const semEfeito =
+      paGastos === 0 && reacoesUsadas === 0 && defesasSemReacao === 0 && conditionEffects.length === 0 && unstructuredConditions.length === 0 && !emColapso && temporaryEffects.length === 0;
 
     characters.push({
       characterId: record.id,
@@ -1013,6 +1077,7 @@ function buildEndRoundPreview(
       conditionEffects,
       unstructuredConditions,
       emColapso,
+      temporaryEffects,
       semEfeito,
     });
   }
@@ -1021,7 +1086,7 @@ function buildEndRoundPreview(
   if (anyTestePendente) {
     manualPending.push("Testes de resistência de condição são criados como pendência e exigem rolagem manual do narrador depois.");
   }
-  manualPending.push("Efeitos com duração por rodada não têm expiração automática (sem metadado estruturado no schema) — resolução manual.");
+  manualPending.push("Efeitos temporários com stack não estruturado (ex.: Fúria do Berserker) continuam como lembrete — sem expiração/stack automático.");
 
   return { kind: "round", round, scene, characters, manualPending };
 }
@@ -1032,6 +1097,10 @@ function buildEndScenePreview(records: CharacterRecord[], round: number, scene: 
   for (const record of records) {
     const character = normalizeCharacter(record.payload);
     const result = resolvePendingRupture(character, { scene, nowIso });
+    // Efeitos temporários por cena que vão expirar ao confirmar (checkpoint pós-v0.71).
+    const temporaryEffects = getActiveTemporaryEffects(character)
+      .filter((e) => e.durationType === "scene")
+      .map((e) => `${e.name}: expira ao fim da cena`);
     characters.push({
       characterId: record.id,
       characterNome: character.nome,
@@ -1042,10 +1111,10 @@ function buildEndScenePreview(records: CharacterRecord[], round: number, scene: 
       manaBonusAntes: result.manaMaxBonusAntes,
       manaBonusDepois: result.manaMaxBonusDepois,
       ultimaVontade: result.ultimaVontadePendente,
+      temporaryEffects,
     });
   }
   const manualPending: string[] = [
-    "Efeitos com duração por cena não são expirados automaticamente (pendência estrutural — sem metadado de duração no schema).",
     "A escolha de Marca/Traço de cada Ruptura fica pendente para resolução manual do jogador/narrador.",
   ];
   return { kind: "scene", round, scene, characters, manualPending };
@@ -1872,7 +1941,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
    * recente no servidor" aparece exatamente como antes — esta
    * ferramenta não sabe nada sobre isso, só salva o registro canônico.
    */
-  async function persistGmMutation(params: { characterId: string; nextCharacter: Character; logPayload: Record<string, unknown> }) {
+  async function persistGmMutation(params: { characterId: string; nextCharacter: Character; logPayload: Record<string, unknown>; logType?: string }) {
     if (!selectedCampaignId) return;
     setGmErro(null);
     try {
@@ -1883,13 +1952,47 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       await addLog({
         campaignId: selectedCampaignId,
         characterId: params.characterId,
-        type: "character_state_change",
+        type: params.logType ?? "character_state_change",
         visibility: "public",
         payload: params.logPayload,
       });
     } catch (err) {
       setGmErro(err instanceof Error ? err.message : "Erro desconhecido ao aplicar ação de narrador.");
     }
+  }
+
+  /**
+   * Narrador remove/encerra manualmente um efeito temporário de um
+   * personagem ativo (checkpoint pós-v0.71) — marca `active: false`
+   * (mantém histórico), persiste e grava `temporary_effect_removed`.
+   */
+  async function handleGmRemoveTemporaryEffect(characterId: string, effectId: string) {
+    const record = personagensAtivos[characterId];
+    if (!record) return;
+    const character = normalizeCharacter(record.payload);
+    const effect = (character.efeitos_temporarios ?? []).find((e) => e.id === effectId && e.active);
+    if (!effect) return;
+    const nowIso = new Date().toISOString();
+    const next = removeTemporaryEffect(character, effectId, nowIso);
+    await persistGmMutation({
+      characterId,
+      nextCharacter: next,
+      logType: "temporary_effect_removed",
+      logPayload: {
+        characterId,
+        characterNome: record.name,
+        effectId: effect.id,
+        effectName: effect.name,
+        sourceType: effect.sourceType,
+        sourceName: effect.sourceName,
+        durationType: effect.durationType,
+        remainingRounds: effect.remainingRounds ?? null,
+        stacks: effect.stacks ?? 1,
+        modifiers: effect.modifiers ?? [],
+        reason: "Removido manualmente pelo narrador em /dev/table.",
+        source: "temporary_effect",
+      },
+    });
   }
 
   function updateCrewTransferForm(rowId: string, patch: Partial<{ targetCharacterId: string; quantidade: number }>) {
@@ -2776,6 +2879,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                 const payload = record.payload;
                 const recursos = payload.recursos_atuais ?? {};
                 const condicoesAtivas = (payload.condicoes_ativas ?? []).filter((c) => c.ativa);
+                const efeitosTemporarios = getActiveTemporaryEffects(normalizeCharacter(payload));
                 const danoForm = gmDanoForm[characterId] ?? { recurso: "pv" as const, valor: 0, nota: "" };
                 const curaForm = gmCuraForm[characterId] ?? { recurso: "pv" as const, valor: 0, nota: "" };
                 const setForm = gmSetForm[characterId] ?? { recurso: "pv" as GmResource, valor: recursos.pv ?? 0, nota: "" };
@@ -2824,6 +2928,30 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                         </div>
                       )}
                     </div>
+
+                    {efeitosTemporarios.length > 0 && (
+                      <div style={{ fontSize: 12 }}>
+                        <span style={{ opacity: 0.6 }}>Efeitos temporários: </span>
+                        <div data-testid={`estado-efeitos-temporarios-${characterId}`} style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+                          {efeitosTemporarios.map((e) => (
+                            <span
+                              key={e.id}
+                              title={formatTemporaryEffectSummary(e)}
+                              style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#0f1014", borderRadius: 4, padding: "2px 8px", color: "#7bc67e" }}
+                            >
+                              {e.name} · {describeDuration(e)}
+                              <button
+                                data-testid={`estado-remover-efeito-temp-${characterId}-${e.id}`}
+                                onClick={() => handleGmRemoveTemporaryEffect(characterId, e.id)}
+                                style={{ ...buttonStyle, padding: "1px 6px", fontSize: 11 }}
+                              >
+                                Encerrar
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Aplicar dano */}
                     <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
@@ -4072,6 +4200,11 @@ function EndResolutionPreviewPanel({
                   {c.paGastos > 0 && <span>• PA: {c.paGastos} gasto(s) → renovado ({c.paMax} máx).</span>}
                   {c.reacoesUsadas > 0 && <span>• Reações: {c.reacoesUsadas} usada(s) → renovadas ({c.reacoesMax} máx).</span>}
                   {c.defesasSemReacao > 0 && <span>• Defesas sem Reação: {c.defesasSemReacao} → 0 (penalidade zerada).</span>}
+                  {c.temporaryEffects.map((t, i) => (
+                    <span key={`te-${i}`} data-testid={`encerramento-preview-efeito-temp-${c.characterId}-${i}`} style={{ color: "#7bc67e" }}>
+                      • Efeito temporário — {t} (ao confirmar).
+                    </span>
+                  ))}
                 </>
               )}
             </div>
@@ -4097,9 +4230,14 @@ function EndResolutionPreviewPanel({
                   <span style={{ opacity: 0.7 }}>• Criará escolha de Marca/Traço (pendente, resolução manual).</span>
                   {c.ultimaVontade && <span style={{ color: "#ff6b6b" }}>• Integridade zerada → Última Vontade pendente.</span>}
                 </>
-              ) : (
+              ) : c.temporaryEffects.length === 0 ? (
                 <span style={{ opacity: 0.55 }}>Sem Ruptura pendente.</span>
-              )}
+              ) : null}
+              {c.temporaryEffects.map((t, i) => (
+                <span key={`te-${i}`} data-testid={`encerramento-preview-cena-efeito-temp-${c.characterId}-${i}`} style={{ color: "#7bc67e" }}>
+                  • Efeito temporário — {t} (ao confirmar).
+                </span>
+              ))}
             </div>
           ))}
         </div>

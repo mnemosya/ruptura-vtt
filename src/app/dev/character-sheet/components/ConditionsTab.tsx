@@ -17,7 +17,16 @@ import { useState } from "react";
 import { Section } from "./Section";
 import { buttonStyle } from "./styles";
 import { PendingConditionChecks } from "./PendingConditionChecks";
-import type { ActiveCondition, ActiveEffect, ConditionResistanceCheck } from "../../../../lib/character";
+import { describeDuration, describeModifier } from "../../../../lib/character";
+import type { ActiveCondition, ActiveEffect, ConditionResistanceCheck, TemporaryEffect } from "../../../../lib/character";
+
+const TEMP_SOURCE_LABELS: Record<TemporaryEffect["sourceType"], string> = {
+  talent: "Talento",
+  item: "Item",
+  spell: "Magia",
+  surge: "Surto",
+  manual: "Manual",
+};
 
 const EFFECT_KIND_LABELS: Record<ActiveEffect["kind"], string> = {
   modifier: "Modificador",
@@ -55,6 +64,8 @@ export function ConditionsTab({
   condicoesDisponiveis,
   activeEffects,
   pendingChecks,
+  temporaryEffects,
+  onRemoveTemporaryEffect,
   onResolveCheck,
   onAdd,
   onRemove,
@@ -65,6 +76,10 @@ export function ConditionsTab({
   activeEffects: ActiveEffect[];
   /** Pendências de teste de resistência de fim de rodada/exposição (checkpoint v0.44). */
   pendingChecks: ConditionResistanceCheck[];
+  /** Efeitos temporários/buffs ATIVOS (checkpoint pós-v0.71). */
+  temporaryEffects: TemporaryEffect[];
+  /** Remove/encerra manualmente um efeito temporário. */
+  onRemoveTemporaryEffect: (effectId: string) => void;
   onResolveCheck: (checkId: string, outcome: "success" | "failure") => void;
   onAdd: (input: { conditionId: string | null; nome: string; descricao: string; origem: string; duracao: string }) => void;
   onRemove: (id: string) => void;
@@ -108,6 +123,62 @@ export function ConditionsTab({
   return (
     <>
       <PendingConditionChecks checks={pendingChecks} onResolve={onResolveCheck} />
+
+      <Section title={`Efeitos temporários (${temporaryEffects.length})`}>
+        <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 10 }}>
+          Buffs/efeitos com duração rastreada (checkpoint pós-v0.71). Bônus de rolagem estruturados entram
+          automaticamente nas Rolagens; recurso/dano/defesa aparecem como lembrete. Duração por rodadas reduz no
+          Encerrar Rodada; por cena, no Encerrar Cena; por descanso, no descanso longo.
+        </p>
+        {temporaryEffects.length === 0 ? (
+          <p data-testid="efeitos-temporarios-vazio" style={{ fontSize: 12, opacity: 0.6, margin: 0 }}>
+            Nenhum efeito temporário ativo.
+          </p>
+        ) : (
+          <div data-testid="efeitos-temporarios-lista" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {temporaryEffects.map((effect) => (
+              <div
+                key={effect.id}
+                data-testid={`efeito-temporario-${effect.id}`}
+                style={{ background: "#1d1e24", borderRadius: 8, padding: "8px 12px", fontSize: 12, borderLeft: "3px solid #4caf50", display: "flex", flexDirection: "column", gap: 4 }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <strong>{effect.name}</strong>
+                  <span style={{ fontSize: 11, opacity: 0.6 }}>
+                    {TEMP_SOURCE_LABELS[effect.sourceType]}: {effect.sourceName}
+                  </span>
+                  <span style={{ fontSize: 11, color: "#5ec8ff" }}>{describeDuration(effect)}</span>
+                  {(effect.stacks ?? 1) > 1 && (
+                    <span style={{ fontSize: 11, opacity: 0.7 }}>
+                      {effect.stacks} pilhas{effect.maxStacks ? `/${effect.maxStacks}` : ""}
+                    </span>
+                  )}
+                  <button
+                    data-testid={`efeito-temporario-remover-${effect.id}`}
+                    onClick={() => onRemoveTemporaryEffect(effect.id)}
+                    style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px", marginLeft: "auto" }}
+                  >
+                    Encerrar
+                  </button>
+                </div>
+                {(effect.modifiers ?? []).length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    {(effect.modifiers ?? []).map((mod, i) => (
+                      <span key={i} style={{ fontSize: 11, color: mod.target === "roll" || mod.target === "skill" || mod.target === "attribute" ? "#7bc67e" : "#f5a623" }}>
+                        {mod.target === "roll" || mod.target === "skill" || mod.target === "attribute" ? "Automático" : "Manual"}: {describeModifier(mod)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {(effect.reminders ?? []).map((r, i) => (
+                  <span key={`r-${i}`} style={{ fontSize: 11, color: "#f5a623" }}>Lembrete: {r}</span>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+
       <Section title="Condições">
       <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 16 }}>
         Registro manual de condições/efeitos ativos — sem automação de bônus/penalidade ainda.
