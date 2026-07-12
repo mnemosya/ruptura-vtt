@@ -472,6 +472,25 @@ export interface Character {
     criadaEm: string;
   };
   /**
+   * Atirador de Elite › 1 Tiro, 1 Acerto — estado canônico de Mirar
+   * (checkpoint talentos). Criado quando o jogador CONFIRMA o resultado
+   * do teste de Mirar (sucesso/crítico); expira no fim da rodada
+   * (`criadaNaRodada` comparado à rodada atual — sem relógio de rodada
+   * canônico, `expirada` também pode ser marcada manualmente).
+   * `consumido: true` preserva o registro para a rolagem que o usou
+   * (mesmo critério de `bricolagem_vulnerabilidade` — nunca remove
+   * retroativamente o efeito da rolagem que acabou de consumi-lo).
+   */
+  mirar_ativo?: {
+    id: string;
+    nivelId: string;
+    resultado: "sucesso" | "critico";
+    bonus: number;
+    criadaNaRodada: number | null;
+    criadaEm: string;
+    consumido: boolean;
+  };
+  /**
    * Talentos adquiridos (checkpoint v0.48, PRD 12) — um item por NÍVEL
    * adquirido (não uma pilha de "nível máximo"). Data-driven a partir
    * de `content_documents` (content_type="talent") — nunca lista

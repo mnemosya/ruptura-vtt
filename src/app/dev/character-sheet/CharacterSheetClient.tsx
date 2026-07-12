@@ -93,6 +93,14 @@ import {
   getGambiarraAvailability,
   registerGambiarraExpressa,
   endGambiarraExpressa,
+  getMarginPromotions,
+  getMirarModifier,
+  confirmMirarResult,
+  isMirarActive,
+  getMirarActiveEffects,
+  consumeMirar,
+  endMirar,
+  MIRAR_TAG,
   getToqueDeMidasAvailability,
   getToqueDeMidasModifiersForTarget,
   markToqueDeMidasUsed,
@@ -755,7 +763,8 @@ export default function CharacterSheetClient({
       const reactionEffect = deriveReactionDefenseEffect(character, reactionRules);
       const itemTempEffects = deriveActiveEffectsFromItemTemporaryEffects(character, new Date().toISOString());
       const bricolagemEffects = getBricolagemActiveEffects(character, talentsIniciais);
-      const base = [...conditionEffects, ...talentEffects, ...escalpoEffects, ...runeEffects, ...temporaryEffects, ...itemTempEffects, ...bricolagemEffects];
+      const mirarEffects = getMirarActiveEffects(character, character.current_round ?? null);
+      const base = [...conditionEffects, ...talentEffects, ...escalpoEffects, ...runeEffects, ...temporaryEffects, ...itemTempEffects, ...bricolagemEffects, ...mirarEffects];
       return reactionEffect ? [...base, reactionEffect] : base;
     },
     [character, conditionContents, postureConditionContents, reactionRules, talentsIniciais, escalposIniciais, runesIniciais],
@@ -2399,6 +2408,29 @@ export default function CharacterSheetClient({
     addLogEntry("condicao", "Gambiarra Expressa: efeito narrativo encerrado.");
   }
 
+  /** Atirador de Elite › 1 Tiro, 1 Acerto — confirma o resultado do teste de Mirar e cria o estado real (bônus lido do payload). */
+  function handleConfirmMirar(resultado: "sucesso" | "critico") {
+    const current = characterRef.current;
+    const mod = getMirarModifier(current, talentsIniciais);
+    if (!mod) return;
+    const nowIso = new Date().toISOString();
+    const next = confirmMirarResult(current, talentsIniciais, resultado, current.current_round ?? null, crypto.randomUUID(), nowIso);
+    characterRef.current = next;
+    setCharacter(next);
+    const bonus = resultado === "critico" ? mod.bonusCritico : mod.bonusPadrao;
+    addLogEntry("condicao", `Mirar confirmado (${resultado}): +${bonus} no próximo disparo à distância, até o fim da rodada.`);
+    void persistTalentUsedLog({ talentNome: "1 Tiro, 1 Acerto", nivelNome: "Nível 1", resultado, bonus });
+  }
+
+  function handleEndMirar() {
+    const current = characterRef.current;
+    const next = endMirar(current);
+    if (next === current) return;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", "Mirar encerrado manualmente.");
+  }
+
   /** Rúnico › Gatilho Rúnico — ativa/desativa runa instalada sem PA. */
   function handleToggleRuneActive(instanceId: string, runeInstallationId: string) {
     const current = characterRef.current;
@@ -4001,18 +4033,53 @@ export default function CharacterSheetClient({
     // ver getSimpleActionRollSkill) — a perícia correta depende da arma
     // selecionada, resolvida em attackPreview (mesma lógica de handleUseAction).
     if (actionContentHasResolverAtaque(item) && attackPreview?.skill) {
+      // Toque de Midas (arma) e Mirar (1 Tiro, 1 Acerto) escopam um bônus só a ESTE
+      // ataque via tag sintética — vale nos dois ramos abaixo (com ou sem atributo
+      // resolvido; armas à distância sem `atributoAtaque` estruturado no catálogo
+      // caem no ramo sem atributo, mas o bônus de Mirar TEM que valer do mesmo jeito).
+      const mirarMod = getMirarModifier(characterRef.current, talentsIniciais);
+      const mirarAplicavel =
+        !!mirarMod &&
+        mirarMod.alvoTags.includes(attackPreview.skill) &&
+        isMirarActive(characterRef.current, characterRef.current.current_round ?? null);
+      const extraTags = [
+        ...(effectiveSelectedAttackWeaponId ? [`item:${effectiveSelectedAttackWeaponId}`] : []),
+        ...(mirarAplicavel ? [MIRAR_TAG] : []),
+      ];
+      const consumirMirarSeAplicavel = () => {
+        if (!mirarAplicavel) return;
+        const consumed = consumeMirar(characterRef.current, new Date().toISOString());
+        characterRef.current = consumed;
+        setCharacter(consumed);
+      };
+
       if (attackPreview.attribute) {
         const weaponName = attackWeaponCandidates.find((c) => c.instanceId === effectiveSelectedAttackWeaponId)?.nome ?? "Ataque desarmado";
         setPreparedRoll({
           atributoId: attackPreview.attribute,
           periciaId: attackPreview.skill,
           origem: `Atacar: ${weaponName}`,
-          extraTags: effectiveSelectedAttackWeaponId ? [`item:${effectiveSelectedAttackWeaponId}`] : [],
+          extraTags,
         });
+        consumirMirarSeAplicavel();
         setActiveTab("rolagens");
         return;
       }
-      handleRollPericia(attackPreview.skill);
+      // Sem atributo estruturado (arma à distância sem `atributoAtaque` no catálogo) —
+      // mesmo fallback de handleRollPericia, mas preservando as tags escopadas.
+      const periciaDef = regras?.pericias.find((p) => p.id === attackPreview.skill);
+      const atributoPadrao: keyof CharacterAttributes =
+        periciaDef?.atributo_primario === "corpo" || periciaDef?.atributo_primario === "mente" || periciaDef?.atributo_primario === "animo"
+          ? periciaDef.atributo_primario
+          : "corpo";
+      setPreparedRoll({
+        atributoId: atributoPadrao,
+        periciaId: attackPreview.skill,
+        origem: `Atacar: ${attackWeaponCandidates.find((c) => c.instanceId === effectiveSelectedAttackWeaponId)?.nome ?? "Ataque desarmado"}`,
+        extraTags,
+      });
+      consumirMirarSeAplicavel();
+      setActiveTab("rolagens");
       return;
     }
     if (!item.rollSkillId) return;
@@ -4333,6 +4400,9 @@ export default function CharacterSheetClient({
           gambiarraAvailable={getGambiarraAvailability(character, talentsIniciais).available}
           onRegisterGambiarra={handleRegisterGambiarra}
           onEndGambiarra={handleEndGambiarra}
+          mirarAtivo={character.mirar_ativo ? { resultado: character.mirar_ativo.resultado, bonus: character.mirar_ativo.bonus, consumido: character.mirar_ativo.consumido } : null}
+          onConfirmMirar={handleConfirmMirar}
+          onEndMirar={handleEndMirar}
         />
       )}
 
@@ -4458,6 +4528,7 @@ export default function CharacterSheetClient({
           profileNickname={perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null}
           profileSessionId={profileSessionToken?.profileSessionId ?? null}
           activeEffects={activeEffects}
+          marginPromotions={getMarginPromotions(character, talentsIniciais)}
         />
       )}
 

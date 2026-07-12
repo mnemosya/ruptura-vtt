@@ -132,6 +132,7 @@ export function RollsTab({
   profileNickname,
   profileSessionId,
   activeEffects,
+  marginPromotions = [],
 }: {
   atributos: CharacterAttributes;
   atributoDefinitions: AttributeDefinition[] | undefined;
@@ -152,6 +153,8 @@ export function RollsTab({
   profileSessionId?: string | null;
   /** Efeitos derivados das condições ativas do personagem (checkpoint v0.33) — ver deriveActiveEffectsFromConditions. */
   activeEffects: ActiveEffect[];
+  /** Promoções de margem data-driven por perícia (Passo Fantasma, Olhar Penetrante) — checkpoint talentos. */
+  marginPromotions?: { periciaId: string; de: string; para: string; origem: string }[];
 }) {
   const atributoIds = ["corpo", "mente", "animo"] as const;
   const [atributoId, setAtributoId] = useState<(typeof atributoIds)[number]>("corpo");
@@ -260,6 +263,7 @@ export function RollsTab({
     const cd = cdInput.trim() === "" ? undefined : parseIntOrDefault(cdInput, 0);
     const temPericia = periciaId !== SEM_PERICIA;
     const finalModifier = manualModifier + modificadorEfeitos;
+    const promocao = temPericia ? marginPromotions.find((p) => p.periciaId === periciaId) : undefined;
 
     const resultado = rollPericia({
       atributoId,
@@ -270,6 +274,7 @@ export function RollsTab({
       periciaValor: temPericia ? pericias[periciaId] ?? 0 : undefined,
       modificador: finalModifier,
       cd,
+      promocaoMargem: promocao ? { de: promocao.de as MargemClassificacao, para: promocao.para as MargemClassificacao, origem: promocao.origem } : undefined,
     });
 
     pushHistorico({ kind: "pericia", resultado, origem: origemAtual ?? undefined });
@@ -452,6 +457,12 @@ export function RollsTab({
           </button>
         </div>
 
+        {periciaId !== SEM_PERICIA && marginPromotions.some((p) => p.periciaId === periciaId) && (
+          <p data-testid="roll-promocao-disponivel" style={{ fontSize: 11, color: "#5ec8ff", marginTop: -6, marginBottom: 12 }}>
+            Promoção de margem ativa nesta perícia: {marginPromotions.find((p) => p.periciaId === periciaId)?.origem} — falha limitada conta como sucesso limitado (com CD informado).
+          </p>
+        )}
+
         {/* --- Tags extras (checkpoint v0.33) --- */}
         <div style={{ marginBottom: 12 }}>
           <p style={{ fontSize: 11, opacity: 0.6, marginBottom: 6 }}>
@@ -609,6 +620,11 @@ function PericiaResultado({ resultado, origem }: { resultado: RupturaRollResult;
               style={{ color: MARGEM_CORES[resultado.classificacaoMargem], fontWeight: 700 }}
             >
               {MARGEM_LABELS[resultado.classificacaoMargem]}
+            </div>
+          )}
+          {resultado.promocaoAplicada && (
+            <div data-testid="roll-historico-item-promocao" style={{ color: "#5ec8ff" }}>
+              Promoção de margem: {resultado.promocaoAplicada}
             </div>
           )}
         </>

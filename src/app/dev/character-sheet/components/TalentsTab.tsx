@@ -81,6 +81,9 @@ export function TalentsTab({
   gambiarraAvailable = false,
   onRegisterGambiarra,
   onEndGambiarra,
+  mirarAtivo,
+  onConfirmMirar,
+  onEndMirar,
 }: {
   talents: TalentContent[];
   catalogError: string | null;
@@ -102,6 +105,10 @@ export function TalentsTab({
   gambiarraAvailable?: boolean;
   onRegisterGambiarra?: (params: { alvo: "estrutura" | "equipamento" | "automato"; materialBase: string; criacaoOuModificacao: "criacao" | "modificacao"; efeitoObtido: string; duracao: string; observacoes?: string }) => void;
   onEndGambiarra?: () => void;
+  /** Atirador de Elite › 1 Tiro, 1 Acerto (checkpoint talentos). */
+  mirarAtivo?: MirarAtivo | null;
+  onConfirmMirar?: (resultado: "sucesso" | "critico") => void;
+  onEndMirar?: () => void;
 }) {
   const [filter, setFilter] = useState<FilterKey>("todos");
 
@@ -250,6 +257,10 @@ export function TalentsTab({
                             onRegister={onRegisterGambiarra}
                             onEnd={onEndGambiarra}
                           />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "atirador_de_elite_1_tiro_1_acerto" && (
+                          <MirarWidget mirarAtivo={mirarAtivo ?? null} onConfirm={onConfirmMirar} onEnd={onEndMirar} />
                         )}
 
                         {acquiredEntry &&
@@ -420,6 +431,47 @@ function BricolagemWidget({
           style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !falhaPrincipal.trim() || !alvoDescricao.trim() ? 0.5 : 1 }}
         >
           Registrar vulnerabilidade
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface MirarAtivo {
+  resultado: "sucesso" | "critico";
+  bonus: number;
+  consumido: boolean;
+}
+
+function MirarWidget({
+  mirarAtivo,
+  onConfirm,
+  onEnd,
+}: {
+  mirarAtivo: MirarAtivo | null;
+  onConfirm?: (resultado: "sucesso" | "critico") => void;
+  onEnd?: () => void;
+}) {
+  if (mirarAtivo) {
+    return (
+      <div data-testid="mirar-ativo" style={widgetBox}>
+        <span style={{ color: "#4caf50" }}>✦ Mirar ativo</span> — +{mirarAtivo.bonus} no próximo disparo à distância ({mirarAtivo.resultado}), até o fim da rodada.
+        {mirarAtivo.consumido && <span style={{ color: "#888" }}> Já usado nesta rodada.</span>}
+        <button data-testid="mirar-encerrar" onClick={onEnd} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", alignSelf: "flex-start" }}>
+          Encerrar
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div data-testid="mirar-formulario" style={widgetBox}>
+      <span style={{ opacity: 0.7 }}>Confirme o resultado do teste de Mirar:</span>
+      <div style={{ display: "flex", gap: 6 }}>
+        <button data-testid="mirar-confirmar-sucesso" onClick={() => onConfirm?.("sucesso")} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}>
+          Sucesso
+        </button>
+        <button data-testid="mirar-confirmar-critico" onClick={() => onConfirm?.("critico")} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}>
+          Crítico
         </button>
       </div>
     </div>

@@ -48,12 +48,24 @@ export function rollPericia(params: RupturaRollParams): RupturaRollResult {
 
   const sucesso = total >= params.cd;
   const margem = total - params.cd;
+  let classificacaoMargem = classificarMargem(margem);
+  let promocaoAplicada: string | undefined;
+
+  // Promoção de margem (ex.: Passo Fantasma, Olhar Penetrante) — data-driven,
+  // vem do payload canônico do talento (`promocao_margem.de/para`), nunca
+  // inventada aqui. "falha_limitada → sucesso_limitado" também promove
+  // `sucesso` para true (o capítulo trata como sucesso a partir daí).
+  if (params.promocaoMargem && classificacaoMargem === params.promocaoMargem.de) {
+    classificacaoMargem = params.promocaoMargem.para;
+    promocaoAplicada = params.promocaoMargem.origem;
+  }
 
   return {
     ...resultado,
     cd: params.cd,
-    sucesso,
+    sucesso: promocaoAplicada ? classificacaoMargem !== "falha" && classificacaoMargem !== "falha_critica" : sucesso,
     margem,
-    classificacaoMargem: classificarMargem(margem),
+    classificacaoMargem,
+    promocaoAplicada,
   };
 }

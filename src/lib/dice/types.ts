@@ -46,6 +46,8 @@ export interface RupturaRollParams {
   modificador: number;
   /** CD opcional — se ausente, não calcula sucesso/falha/margem. */
   cd?: number;
+  /** Promoção de margem data-driven (Passo Fantasma, Olhar Penetrante) — `origem` só rotula o resultado, nunca decide a promoção. */
+  promocaoMargem?: { de: MargemClassificacao; para: MargemClassificacao; origem: string };
 }
 
 /**
@@ -96,6 +98,8 @@ export interface RupturaRollResult {
   margem?: number;
   /** Classificação simples da margem (ver MargemClassificacao). Só presente se houver CD. */
   classificacaoMargem?: MargemClassificacao;
+  /** Rótulo do talento que promoveu a margem (ex.: "Passo Fantasma") — ausente = nenhuma promoção aplicada. */
+  promocaoAplicada?: string;
 }
 
 /**

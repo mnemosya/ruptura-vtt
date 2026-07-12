@@ -599,6 +599,121 @@ export function endGambiarraExpressa(character: Character): Character {
 }
 
 // ---------------------------------------------------------------------
+// Margem — promoção genérica de margem (Passo Fantasma, Olhar Penetrante)
+// data-driven a partir de `promocao_margem.pericias[]` do payload. Nunca
+// aplica sem a perícia explícita no payload (Totem › Benção não tem
+// `pericias`, então fica de fora — não inventa mapeamento).
+// ---------------------------------------------------------------------
+
+export interface MarginPromotion {
+  periciaId: string;
+  de: string;
+  para: string;
+  origem: string;
+}
+
+export function getMarginPromotions(
+  character: Pick<Character, "talentos_adquiridos">,
+  talents: TalentContent[],
+): MarginPromotion[] {
+  const out: MarginPromotion[] = [];
+  for (const { talent, nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "promocao_margem") continue;
+      const pericias = Array.isArray(efeito.pericias) ? efeito.pericias.filter((p): p is string => typeof p === "string") : [];
+      if (pericias.length === 0 || typeof efeito.de !== "string" || typeof efeito.para !== "string") continue;
+      for (const periciaId of pericias) {
+        out.push({ periciaId, de: efeito.de, para: efeito.para, origem: `${talent.nome} — ${nivel.nome}` });
+      }
+    }
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------
+// Atirador de Elite — 1 Tiro, 1 Acerto (N1): estado real de Mirar.
+// ---------------------------------------------------------------------
+
+export function getMirarModifier(
+  character: Pick<Character, "talentos_adquiridos">,
+  talents: TalentContent[],
+): { bonusPadrao: number; bonusCritico: number; alvoTags: string[]; nivelId: string } | null {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "substituir_bonus_acao" && efeito.acao === "mirar") {
+        const alvoTags = Array.isArray(efeito.alvo_tags) ? efeito.alvo_tags.filter((t): t is string => typeof t === "string") : [];
+        if (typeof efeito.bonus_padrao === "number" && typeof efeito.bonus_critico === "number") {
+          return { bonusPadrao: efeito.bonus_padrao, bonusCritico: efeito.bonus_critico, alvoTags, nivelId: nivel.id };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/** Confirma o resultado de Mirar (sucesso/crítico) — cria o estado real, bônus lido do payload. */
+export function confirmMirarResult(
+  character: Character,
+  talents: TalentContent[],
+  resultado: "sucesso" | "critico",
+  currentRound: number | null,
+  id: string,
+  nowIso: string,
+): Character {
+  const mod = getMirarModifier(character, talents);
+  if (!mod) return character;
+  const bonus = resultado === "critico" ? mod.bonusCritico : mod.bonusPadrao;
+  return {
+    ...character,
+    mirar_ativo: { id, nivelId: mod.nivelId, resultado, bonus, criadaNaRodada: currentRound, criadaEm: nowIso, consumido: false },
+  };
+}
+
+/** `true` se `mirar_ativo` ainda vale nesta rodada (nunca expira "aproximado" — só compara rodada de criação com a atual). */
+export function isMirarActive(character: Pick<Character, "mirar_ativo">, currentRound: number | null): boolean {
+  const m = character.mirar_ativo;
+  if (!m) return false;
+  if (m.criadaNaRodada == null || currentRound == null) return true; // sem rodada rastreada — nunca expira sozinho, só manual.
+  return m.criadaNaRodada === currentRound;
+}
+
+export const MIRAR_TAG = "mirar:ativo";
+
+/** ActiveEffect do bônus de Mirar — escopado à tag `mirar:ativo`, só quando ativo nesta rodada (consumido ou não — mesmo critério de Bricolagem). */
+export function getMirarActiveEffects(
+  character: Pick<Character, "mirar_ativo">,
+  currentRound: number | null,
+): ActiveEffect[] {
+  const m = character.mirar_ativo;
+  if (!m || !isMirarActive(character, currentRound)) return [];
+  return [
+    {
+      id: `mirar:${m.id}`,
+      sourceType: "talent",
+      sourceId: m.nivelId,
+      sourceName: `1 Tiro, 1 Acerto (${m.resultado === "critico" ? "crítico" : "sucesso"})`,
+      affectedTags: [MIRAR_TAG],
+      modifier: m.bonus,
+      explanation: `1 Tiro, 1 Acerto: +${m.bonus} no próximo disparo (Mirar ${m.resultado}), até o fim da rodada.`,
+      enabledByDefault: true,
+      kind: "modifier",
+      reversible: true,
+    },
+  ];
+}
+
+export function consumeMirar(character: Character, nowIso: string): Character {
+  if (!character.mirar_ativo || character.mirar_ativo.consumido) return character;
+  return { ...character, mirar_ativo: { ...character.mirar_ativo, consumido: true } };
+}
+
+export function endMirar(character: Character): Character {
+  if (!character.mirar_ativo) return character;
+  const { mirar_ativo: _drop, ...rest } = character;
+  return rest;
+}
+
+// ---------------------------------------------------------------------
 // Rúnico — Gatilho Rúnico (N1) / Entalhe Rápido (N2) / Sobregravação (N3).
 // ---------------------------------------------------------------------
 
