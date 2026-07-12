@@ -1310,6 +1310,37 @@ export function consumeGatilhoDado(character: Character, nowIso: string): Charac
 }
 
 // ---------------------------------------------------------------------
+// Mercador — Garimpo de Rua (N1): desconto real de -20% na Loja, 1/dia.
+// ---------------------------------------------------------------------
+
+export const GARIMPO_DE_RUA_USAGE_KEY = "garimpo_de_rua:dia";
+
+export function getGarimpoDeRuaAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; percentual: number; ativoHoje: boolean } {
+  let acquired = false;
+  let percentual = 0;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "desconto_loja" && typeof efeito.percentual === "number") {
+        acquired = true;
+        percentual = efeito.percentual;
+      }
+    }
+  }
+  const ativoHoje = (character.talentos_estado?.usos?.[GARIMPO_DE_RUA_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, percentual, ativoHoje };
+}
+
+/** Ativa o desconto para o resto do dia (cadência "dia" — reseta em Novo Dia/descanso longo, mesmo padrão de Toque de Midas). */
+export function activateGarimpoDeRua(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[GARIMPO_DE_RUA_USAGE_KEY] = { usados: 1, cadencia: "dia", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
 // Construtores de log (texto formatado — nunca JSON cru)
 // ---------------------------------------------------------------------
 

@@ -110,6 +110,8 @@ export function InventoryTab({
   sobregravacaoTestPending = {},
   onStartSobregravacaoTest,
   onConfirmSobregravacaoTest,
+  garimpoDeRuaStatus,
+  onActivateGarimpoDeRua,
 }: {
   items: ItemContent[];
   catalogError: string | null;
@@ -193,6 +195,9 @@ export function InventoryTab({
   /** Terceiro sem acesso inicia o teste CD 8 para acessar o espaço extra. */
   onStartSobregravacaoTest?: (instanceId: string) => void;
   onConfirmSobregravacaoTest?: (instanceId: string, resultado: number) => void;
+  /** Mercador › Garimpo de Rua (checkpoint talentos, Fase 8). */
+  garimpoDeRuaStatus?: { acquired: boolean; percentual: number; ativoHoje: boolean };
+  onActivateGarimpoDeRua?: () => void;
 }) {
   const [busca, setBusca] = useState("");
   const [categoria, setCategoria] = useState<(typeof CATEGORIA_FILTROS)[number]>("todos");
@@ -242,7 +247,11 @@ export function InventoryTab({
     return quantidades[slug] ?? 1;
   }
   function precoDe(item: ItemContent) {
-    return precos[item.slug] ?? item.preco;
+    const base = precos[item.slug] ?? item.preco;
+    if (garimpoDeRuaStatus?.ativoHoje && garimpoDeRuaStatus.percentual > 0) {
+      return Math.max(0, Math.round(base * (1 - garimpoDeRuaStatus.percentual / 100)));
+    }
+    return base;
   }
 
   return (
@@ -270,8 +279,28 @@ export function InventoryTab({
       <Section title="Loja do Mercado Noturno">
         <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 10 }}>
           Catálogo inteiro da Biblioteca do Sistema ({items.length} itens). Preço do livro editável
-          por compra (PRD 13.2). Sem desconto/fiado do Mercador, sem envio para o bando ainda.
+          por compra (PRD 13.2). Sem fiado do Mercador, sem envio para o bando ainda.
         </p>
+        {garimpoDeRuaStatus?.acquired && (
+          <div data-testid="garimpo-de-rua-widget" style={{ ...widgetBox2, marginBottom: 10 }}>
+            {garimpoDeRuaStatus.ativoHoje ? (
+              <span style={{ color: "#4caf50" }}>
+                Garimpo de Rua ativo hoje — preços da loja com -{garimpoDeRuaStatus.percentual}% (reseta em Novo Dia/descanso longo).
+              </span>
+            ) : (
+              <>
+                <span style={{ opacity: 0.7 }}>Garimpo de Rua: -{garimpoDeRuaStatus.percentual}% nas compras de hoje (1/dia).</span>
+                <button
+                  data-testid="garimpo-de-rua-ativar"
+                  onClick={onActivateGarimpoDeRua}
+                  style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", alignSelf: "flex-start" }}
+                >
+                  Ativar desconto de hoje
+                </button>
+              </>
+            )}
+          </div>
+        )}
         {catalogError && (
           <p style={{ fontSize: 13, color: "#ff6b6b", background: "#2a1717", borderRadius: 8, padding: "10px 12px" }}>
             Catálogo de itens indisponível. Nenhuma lista local foi usada.

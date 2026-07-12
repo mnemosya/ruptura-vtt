@@ -62,7 +62,7 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 19 · 🟡 7 · ⚙️ 39 · 📖 1.
+Contagem: ✅ 0 · 🔵 20 · 🟡 7 · ⚙️ 38 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -105,7 +105,7 @@ Contagem: ✅ 0 · 🔵 19 · 🟡 7 · ⚙️ 39 · 📖 1.
 | Mecatrônico | Chave de Arranque | 1 | ⚙️ Infra pendente |
 | Mecatrônico | Marcha Dupla | 2 | ⚙️ Infra pendente |
 | Mecatrônico | Overclock | 3 | ⚙️ Infra pendente |
-| Mercador | Garimpo de Rua | 1 | ⚙️ Infra pendente |
+| Mercador | Garimpo de Rua | 1 | 🔵 Implementado (aguardando validação manual) |
 | Mercador | Caderneta de Dívida | 2 | ⚙️ Infra pendente |
 | Mercador | Rede de Favores | 3 | ⚙️ Infra pendente |
 | Paramédico | Pronto-socorro | 1 | ⚙️ Infra pendente |
@@ -349,6 +349,24 @@ Contagem: ✅ 0 · 🔵 19 · 🟡 7 · ⚙️ 39 · 📖 1.
   +1 dado (`aumentar_recurso`) já soma na pool real; o "segundo disparo com +1 PA e −1"
   (`segundo_disparo`) não foi implementado — exigiria detectar "usar o dado de gatilho E
   escolher o resultado dele no teste" no meio da resolução de ataque, não construído.
+- **🔵 Garimpo de Rua (Mercador N1, Implementado, aguardando validação manual — Fase
+  8)** — desconto real de -20% na Loja: toggle "Ativar desconto de hoje" (1/dia, cadência
+  "dia" — mesma reset já usada por Toque de Midas/Novo Dia/descanso longo, nenhuma
+  infraestrutura nova) recalcula `precoDe()` em TODOS os itens da loja enquanto ativo
+  (percentual lido do payload `desconto_loja.percentual`, nunca hardcoded 20). "Sempre
+  sabe onde/quando será o próximo Mercado Noturno" e "avaliar mercadoria sem teste"
+  continuam sem gancho de automação (não há um sistema de "próximo mercado agendado" nem
+  "adulteração de item" no conteúdo hoje) — só a parte de preço, que é a única
+  estruturada com um valor numérico real, foi automatizada.
+- **⚙️ Mercador › Caderneta de Dívida / Rede de Favores, Rato de Rua (todos os 3
+  níveis) — não implementados nesta sessão.** Caderneta de Dívida exigiria um modelo de
+  dívida novo (saldo devido, quem cobra, quando) que não existe no personagem hoje.
+  Rede de Favores e as três habilidades de Rato de Rua (Zé da Esquina, Gato de Telhado,
+  Saída dos Fundos) já são classificadas como "Narrativo rastreado" pelo motor genérico
+  (`classifyTalentEffect`, têm botão + contador de uso automático), mas nenhuma ganhou o
+  formulário estruturado específico (like Gambiarra Expressa's alvo/material/efeito) que
+  o padrão desta sessão usa para contar como Implementado — permanecem no nível de
+  infraestrutura genérica, não uma mecânica desta sessão.
 - **Malabarista (todos os 3 níveis) — não implementados nesta sessão** (Fase 7). Saque
   Fantasma/Revoada/Espetáculo Mortal exigem detectar arma leve com propriedade
   "Arremesso" no ataque em curso e alterar o fluxo de ataque (saque sem PA, segundo

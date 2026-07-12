@@ -110,6 +110,8 @@ import {
   hasAtaqueFatal,
   getGatilhoQuenteAvailability,
   consumeGatilhoDado,
+  getGarimpoDeRuaAvailability,
+  activateGarimpoDeRua,
   getToqueDeMidasAvailability,
   getToqueDeMidasModifiersForTarget,
   markToqueDeMidasUsed,
@@ -2296,6 +2298,17 @@ export default function CharacterSheetClient({
     characterRef.current = result.character;
     setCharacter(result.character);
     addLogEntry("recurso", `Comprado: ${item.nome} x${quantidade} — ${result.totalCost} (${result.walletBefore} → ${result.walletAfter}).`);
+  }
+
+  /** Mercador › Garimpo de Rua — ativa o desconto de -20% para o resto do dia (1/dia). */
+  function handleActivateGarimpoDeRua() {
+    const current = characterRef.current;
+    const status = getGarimpoDeRuaAvailability(current, talentsIniciais);
+    if (!status.acquired || status.ativoHoje) return;
+    const next = activateGarimpoDeRua(current, new Date().toISOString());
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("recurso", `Garimpo de Rua: desconto de -${status.percentual}% ativado para o resto do dia.`);
   }
 
   function handleChangeCarteira(walletId: WalletId, value: number) {
@@ -4688,6 +4701,8 @@ export default function CharacterSheetClient({
           sobregravacaoTestPending={sobregravacaoTestPending}
           onStartSobregravacaoTest={handleStartSobregravacaoTest}
           onConfirmSobregravacaoTest={handleConfirmSobregravacaoTest}
+          garimpoDeRuaStatus={getGarimpoDeRuaAvailability(character, talentsIniciais)}
+          onActivateGarimpoDeRua={handleActivateGarimpoDeRua}
         />
       )}
 
