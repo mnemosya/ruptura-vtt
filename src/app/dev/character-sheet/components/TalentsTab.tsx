@@ -104,6 +104,13 @@ export function TalentsTab({
   puxarOsFiosStatus,
   entrelinhasAtivo,
   onRegisterPuxarOsFios,
+  prontoSocorroStatus,
+  onProntoSocorro,
+  ritmoDeCampoStatus,
+  ritmoDeCampoAtivo = false,
+  onToggleRitmoDeCampo,
+  protocoloDeEmergenciaStatus,
+  onProtocoloDeEmergencia,
 }: {
   talents: TalentContent[];
   catalogError: string | null;
@@ -157,6 +164,16 @@ export function TalentsTab({
   puxarOsFiosStatus?: { acquired: boolean; usedThisScene: boolean; opcoesSucesso: string[] };
   entrelinhasAtivo?: { alvoNome: string; descoberta: string; valor: number; concedidoEm: string } | null;
   onRegisterPuxarOsFios?: (abertura: string) => void;
+  /** Paramédico › Pronto-socorro (checkpoint talentos, Fase 7) — estabiliza aliado ativo da mesa a 0 PV, 1/cena. */
+  prontoSocorroStatus?: { acquired: boolean; usedThisScene: boolean };
+  onProntoSocorro?: (targetCharacterId: string, aindaNaoAgiu: boolean) => void;
+  /** Paramédico › Ritmo de Campo (checkpoint talentos, Fase 7) — arma -1 PA para a próxima ação/item/magia de cura confirmada. */
+  ritmoDeCampoStatus?: { acquired: boolean; reducao: number; minimo: number };
+  ritmoDeCampoAtivo?: boolean;
+  onToggleRitmoDeCampo?: (value: boolean) => void;
+  /** Paramédico › Protocolo de Emergência (checkpoint talentos, Fase 7) — Reação real, 1/cena. */
+  protocoloDeEmergenciaStatus?: { acquired: boolean; usedThisScene: boolean; alcanceM: number };
+  onProtocoloDeEmergencia?: (targetCharacterId: string) => void;
 }) {
   const [filter, setFilter] = useState<FilterKey>("todos");
 
@@ -333,6 +350,18 @@ export function TalentsTab({
 
                         {acquiredEntry && nivel.slug === "manipulador_puxar_os_fios" && puxarOsFiosStatus?.acquired && (
                           <PuxarOsFiosWidget status={puxarOsFiosStatus} entrelinhasAtivo={entrelinhasAtivo ?? null} onRegister={onRegisterPuxarOsFios} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "paramedico_pronto_socorro" && prontoSocorroStatus?.acquired && (
+                          <ProntoSocorroWidget status={prontoSocorroStatus} allies={bencaoAllies} onConfirm={onProntoSocorro} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "paramedico_ritmo_de_campo" && ritmoDeCampoStatus?.acquired && (
+                          <RitmoDeCampoWidget status={ritmoDeCampoStatus} ativo={ritmoDeCampoAtivo} onToggle={onToggleRitmoDeCampo} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "paramedico_protocolo_de_emergencia" && protocoloDeEmergenciaStatus?.acquired && (
+                          <ProtocoloDeEmergenciaWidget status={protocoloDeEmergenciaStatus} allies={bencaoAllies} onConfirm={onProtocoloDeEmergencia} />
                         )}
 
                         {acquiredEntry && nivel.slug === "totem_bencao" && totemBencaoTokenStatus?.acquired && (
@@ -942,6 +971,116 @@ function PuxarOsFiosWidget({
               Confirmar sucesso em Influência — registrar abertura (1/cena)
             </button>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProntoSocorroWidget({
+  status,
+  allies,
+  onConfirm,
+}: {
+  status: { acquired: boolean; usedThisScene: boolean };
+  allies: { id: string; nome: string }[];
+  onConfirm?: (targetCharacterId: string, aindaNaoAgiu: boolean) => void;
+}) {
+  const [alvo, setAlvo] = useState("");
+  const [aindaNaoAgiu, setAindaNaoAgiu] = useState(false);
+  return (
+    <div data-testid="pronto-socorro-widget" style={widgetBox}>
+      {status.usedThisScene ? (
+        <span style={{ opacity: 0.7 }}>Pronto-socorro já usado nesta cena.</span>
+      ) : allies.length === 0 ? (
+        <span style={{ opacity: 0.7 }}>Nenhum aliado ativo na mesa para estabilizar (1/cena).</span>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <select data-testid="pronto-socorro-alvo" value={alvo} onChange={(e) => setAlvo(e.target.value)} style={{ background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", fontSize: 12 }}>
+            <option value="">— aliado adjacente a 0 PV —</option>
+            {allies.map((a) => (
+              <option key={a.id} value={a.id}>{a.nome}</option>
+            ))}
+          </select>
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+            <input type="checkbox" checked={aindaNaoAgiu} onChange={(e) => setAindaNaoAgiu(e.target.checked)} />
+            Aliado ainda não agiu nesta rodada (concede +1 PA para agir)
+          </label>
+          <button
+            data-testid="pronto-socorro-confirmar"
+            disabled={!alvo}
+            onClick={() => {
+              if (!alvo) return;
+              onConfirm?.(alvo, aindaNaoAgiu);
+              setAlvo("");
+              setAindaNaoAgiu(false);
+            }}
+            style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", alignSelf: "flex-start" }}
+          >
+            Estabilizar (sem teste, sem custo — 1/cena)
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RitmoDeCampoWidget({
+  status,
+  ativo,
+  onToggle,
+}: {
+  status: { acquired: boolean; reducao: number; minimo: number };
+  ativo: boolean;
+  onToggle?: (value: boolean) => void;
+}) {
+  return (
+    <div data-testid="ritmo-de-campo-widget" style={widgetBox}>
+      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+        <input data-testid="ritmo-de-campo-ativo" type="checkbox" checked={ativo} onChange={(e) => onToggle?.(e.target.checked)} />
+        Armar Ritmo de Campo: -{status.reducao} PA (mín. {status.minimo}) na PRÓXIMA ação/item/magia de cura — sem tag
+        estruturada de "cura" no catálogo, confirme só quando a próxima ação for mesmo de cura.
+      </label>
+    </div>
+  );
+}
+
+function ProtocoloDeEmergenciaWidget({
+  status,
+  allies,
+  onConfirm,
+}: {
+  status: { acquired: boolean; usedThisScene: boolean; alcanceM: number };
+  allies: { id: string; nome: string }[];
+  onConfirm?: (targetCharacterId: string) => void;
+}) {
+  const [alvo, setAlvo] = useState("");
+  return (
+    <div data-testid="protocolo-de-emergencia-widget" style={widgetBox}>
+      {status.usedThisScene ? (
+        <span style={{ opacity: 0.7 }}>Protocolo de Emergência já usado nesta cena.</span>
+      ) : allies.length === 0 ? (
+        <span style={{ opacity: 0.7 }}>Nenhum aliado ativo na mesa a até {status.alcanceM}m para socorrer (1/cena).</span>
+      ) : (
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <select data-testid="protocolo-de-emergencia-alvo" value={alvo} onChange={(e) => setAlvo(e.target.value)} style={{ background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", fontSize: 12 }}>
+            <option value="">— aliado caiu a 0 PV (até {status.alcanceM}m) —</option>
+            {allies.map((a) => (
+              <option key={a.id} value={a.id}>{a.nome}</option>
+            ))}
+          </select>
+          <button
+            data-testid="protocolo-de-emergencia-confirmar"
+            disabled={!alvo}
+            onClick={() => {
+              if (!alvo) return;
+              onConfirm?.(alvo);
+              setAlvo("");
+            }}
+            style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+          >
+            Gastar Reação: aliado permanece de pé (1/cena)
+          </button>
         </div>
       )}
     </div>

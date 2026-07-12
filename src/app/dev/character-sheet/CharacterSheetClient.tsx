@@ -130,6 +130,14 @@ import {
   markEntrelinhasUsed,
   getPuxarOsFiosAvailability,
   markPuxarOsFiosUsed,
+  getProntoSocorroAvailability,
+  markProntoSocorroUsed,
+  applyProntoSocorroToAlly,
+  getRitmoDeCampoAvailability,
+  computeRitmoDeCampoReducao,
+  getProtocoloDeEmergenciaAvailability,
+  markProtocoloDeEmergenciaUsed,
+  applyProtocoloDeEmergenciaToAlly,
   getToqueDeMidasAvailability,
   getToqueDeMidasModifiersForTarget,
   markToqueDeMidasUsed,
@@ -427,6 +435,14 @@ export default function CharacterSheetClient({
   const [selectedAttackWeaponId, setSelectedAttackWeaponId] = useState<string | null>(null);
   /** Espadachim › Estocar (checkpoint talentos, Fase 4) — confirmação manual do jogador para o próximo Atacar (lâmina não é dado estruturado, mesmo critério de Aparar/Ripostar). */
   const [estocarAtivo, setEstocarAtivo] = useState(false);
+  /**
+   * Paramédico › Ritmo de Campo (checkpoint talentos, Fase 7) — "armado" para a PRÓXIMA
+   * ação/item/magia de cura (ação do Console, item, ou magia — sem tag "cura" estruturada
+   * no catálogo, então é confirmação manual do jogador em vez de detecção automática,
+   * conforme decisão do checkpoint). Consumido automaticamente pelo primeiro dos três
+   * fluxos que gastar PA depois de armado.
+   */
+  const [ritmoDeCampoAtivo, setRitmoDeCampoAtivo] = useState(false);
   /** Rúnico › Sobregravação — instância com teste de Tecnomagia/Arcanismo CD 8 pendente de confirmação (terceiro tentando acessar o espaço extra). */
   const [sobregravacaoTestPending, setSobregravacaoTestPending] = useState<Record<string, true>>({});
   // Mesa (campaign) selecionada — estado de UI local, não persiste no
@@ -2795,6 +2811,74 @@ export default function CharacterSheetClient({
     addLogEntry("condicao", `Puxar os Fios: abertura social contra ${current.entrelinhas_ativo.alvoNome} — ${abertura}.`);
   }
 
+  /** Paramédico › Pronto-socorro (N1, checkpoint talentos Fase 7) — estabiliza aliado a 0 PV real, 1/cena, sem teste/custo. */
+  async function handleProntoSocorro(targetCharacterId: string, aindaNaoAgiu: boolean) {
+    if (!selectedCampaignId) {
+      addLogEntry("recurso", "Pronto-socorro exige mesa conectada.");
+      return;
+    }
+    const current = characterRef.current;
+    const status = getProntoSocorroAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedThisScene) return;
+    const ally = alliesAtivos.find((a) => a.id === targetCharacterId);
+    if (!ally) {
+      addLogEntry("recurso", "Aliado não encontrado entre os personagens ativos da mesa — atualize a lista de aliados.");
+      return;
+    }
+    const nowIso = new Date().toISOString();
+    const targetNext = applyProntoSocorroToAlly(ally.character, talentsIniciais, nowIso, aindaNaoAgiu);
+    try {
+      const targetRecord = await updateCharacter(ally.id, targetNext);
+      setAlliesAtivos((prev) => prev.map((a) => (a.id === ally.id ? { ...a, character: normalizeCharacter(targetRecord.payload) } : a)));
+    } catch (err) {
+      addLogEntry("recurso", err instanceof Error ? `Falha ao estabilizar ${ally.nome}: ${err.message}` : `Falha ao estabilizar ${ally.nome}.`);
+      return;
+    }
+    const sourceNext = markProntoSocorroUsed(current, nowIso);
+    characterRef.current = sourceNext;
+    setCharacter(sourceNext);
+    addLogEntry("recurso", `Pronto-socorro: ${ally.nome} estabilizado com 1 PV${aindaNaoAgiu ? " e +1 PA para agir nesta rodada" : ""} (1/cena).`);
+  }
+
+  /** Paramédico › Protocolo de Emergência (N3, checkpoint talentos Fase 7) — gasta 1 Reação real, 1/cena, aliado a até 5m permanece de pé. */
+  async function handleProtocoloDeEmergencia(targetCharacterId: string) {
+    if (!selectedCampaignId) {
+      addLogEntry("recurso", "Protocolo de Emergência exige mesa conectada.");
+      return;
+    }
+    const current = characterRef.current;
+    const status = getProtocoloDeEmergenciaAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedThisScene) return;
+    if ((current.estado_jogo?.reacoes_usadas ?? 0) >= derivados.reacoes_por_rodada) {
+      addLogEntry("recurso", "Protocolo de Emergência: sem Reação disponível.");
+      return;
+    }
+    const ally = alliesAtivos.find((a) => a.id === targetCharacterId);
+    if (!ally) {
+      addLogEntry("recurso", "Aliado não encontrado entre os personagens ativos da mesa — atualize a lista de aliados.");
+      return;
+    }
+    const nowIso = new Date().toISOString();
+    const targetNext = applyProtocoloDeEmergenciaToAlly(ally.character, nowIso);
+    try {
+      const targetRecord = await updateCharacter(ally.id, targetNext);
+      setAlliesAtivos((prev) => prev.map((a) => (a.id === ally.id ? { ...a, character: normalizeCharacter(targetRecord.payload) } : a)));
+    } catch (err) {
+      addLogEntry("recurso", err instanceof Error ? `Falha ao aplicar Protocolo de Emergência em ${ally.nome}: ${err.message}` : `Falha ao aplicar Protocolo de Emergência em ${ally.nome}.`);
+      return;
+    }
+    const sourceNext = markProtocoloDeEmergenciaUsed(
+      { ...current, estado_jogo: { ...current.estado_jogo, reacoes_usadas: (current.estado_jogo?.reacoes_usadas ?? 0) + 1 } },
+      nowIso,
+    );
+    characterRef.current = sourceNext;
+    setCharacter(sourceNext);
+    addLogEntry(
+      "recurso",
+      `Protocolo de Emergência: Reação gasta — ${ally.nome} permanece de pé (confirme manualmente que está a até ${status.alcanceM}m; aplique Medkit/Injetor/magia de cura pelo fluxo normal).`,
+    );
+  }
+
   /** Rúnico › Gatilho Rúnico — ativa/desativa runa instalada sem PA. */
   function handleToggleRuneActive(instanceId: string, runeInstallationId: string) {
     const current = characterRef.current;
@@ -3055,10 +3139,28 @@ export default function CharacterSheetClient({
       return;
     }
 
+    // Paramédico › Ritmo de Campo (checkpoint talentos, Fase 7) — "armado" pelo jogador
+    // confirmando que este item é de cura; -1 PA real (mín. respeitado) no custo já pago.
+    let characterAposItem = result.character;
+    if (ritmoDeCampoAtivo && result.paCost != null) {
+      const ritmoStatus = getRitmoDeCampoAvailability(current, talentsIniciais);
+      if (ritmoStatus.acquired) {
+        const reducaoReal = computeRitmoDeCampoReducao(result.paCost, ritmoStatus.reducao, ritmoStatus.minimo);
+        if (reducaoReal > 0) {
+          characterAposItem = {
+            ...characterAposItem,
+            estado_jogo: { ...characterAposItem.estado_jogo, pa_gastos: Math.max(0, (characterAposItem.estado_jogo?.pa_gastos ?? 0) - reducaoReal) },
+          };
+          addLogEntry("recurso", `Ritmo de Campo: custo de PA deste item de cura reduzido em ${reducaoReal}.`);
+          setRitmoDeCampoAtivo(false);
+        }
+      }
+    }
+
     // Berserker › Sede de Sangue — item de cura também pode levar o PV de volta
     // acima da metade; mesma checagem genérica da edição manual de recursos.
     const pvGatedPorItem = enforcePvGatedToggleDeactivation(
-      result.character,
+      characterAposItem,
       talentsIniciais,
       result.character.recursos_atuais?.pv ?? 0,
       derivados.pv_max,
@@ -3226,8 +3328,26 @@ export default function CharacterSheetClient({
     }
     setAlliesAtivos((prev) => prev.map((a) => (a.id === ally.id ? { ...a, character: normalizeCharacter(targetRecord.payload) } : a)));
 
-    characterRef.current = result.source;
-    setCharacter(result.source);
+    // Paramédico › Ritmo de Campo (checkpoint talentos, Fase 7) — "armado" pelo jogador
+    // confirmando que este item usado no aliado é de cura; -1 PA real no CASTER (quem gasta o custo).
+    let characterAposItemAliado = result.source;
+    if (ritmoDeCampoAtivo && result.paCost != null) {
+      const ritmoStatus = getRitmoDeCampoAvailability(current, talentsIniciais);
+      if (ritmoStatus.acquired) {
+        const reducaoReal = computeRitmoDeCampoReducao(result.paCost, ritmoStatus.reducao, ritmoStatus.minimo);
+        if (reducaoReal > 0) {
+          characterAposItemAliado = {
+            ...characterAposItemAliado,
+            estado_jogo: { ...characterAposItemAliado.estado_jogo, pa_gastos: Math.max(0, (characterAposItemAliado.estado_jogo?.pa_gastos ?? 0) - reducaoReal) },
+          };
+          addLogEntry("recurso", `Ritmo de Campo: custo de PA deste item de cura em ${ally.nome} reduzido em ${reducaoReal}.`);
+          setRitmoDeCampoAtivo(false);
+        }
+      }
+    }
+
+    characterRef.current = characterAposItemAliado;
+    setCharacter(characterAposItemAliado);
 
     const partesLog: string[] = [];
     if (result.paCost != null) partesLog.push(`PA ${result.paBefore} → ${result.paAfter}`);
@@ -3734,8 +3854,26 @@ export default function CharacterSheetClient({
       addLogEntry("recurso", result.reason ?? "Conjuração não realizada.");
       return;
     }
-    characterRef.current = result.character;
-    setCharacter(result.character);
+    // Paramédico › Ritmo de Campo (checkpoint talentos, Fase 7) — "armado" pelo jogador
+    // confirmando que esta magia é de cura; -1 PA real (mín. respeitado) no custo já pago.
+    let characterAposMagia = result.character;
+    const custoPaMagiaPago = result.paBefore - result.paAfter;
+    if (ritmoDeCampoAtivo && custoPaMagiaPago > 0) {
+      const ritmoStatus = getRitmoDeCampoAvailability(current, talentsIniciais);
+      if (ritmoStatus.acquired) {
+        const reducaoReal = computeRitmoDeCampoReducao(custoPaMagiaPago, ritmoStatus.reducao, ritmoStatus.minimo);
+        if (reducaoReal > 0) {
+          characterAposMagia = {
+            ...characterAposMagia,
+            estado_jogo: { ...characterAposMagia.estado_jogo, pa_gastos: Math.max(0, (characterAposMagia.estado_jogo?.pa_gastos ?? 0) - reducaoReal) },
+          };
+          addLogEntry("recurso", `Ritmo de Campo: custo de PA desta magia de cura reduzido em ${reducaoReal}.`);
+          setRitmoDeCampoAtivo(false);
+        }
+      }
+    }
+    characterRef.current = characterAposMagia;
+    setCharacter(characterAposMagia);
 
     // Chegou aqui só se castSpell aprovou — nível de vertente já foi validado
     // DENTRO de castSpell (checkpoint pós-v0.70, bloqueio real, não só aviso).
@@ -4372,19 +4510,26 @@ export default function CharacterSheetClient({
       attackWeaponModel?.subtipo === "corpo_a_corpo";
     const custoPaPago = result.paBefore - result.paAfter;
     const estocarReducaoReal = estocarElegivel ? Math.max(0, Math.min(estocarStatus.reducao, custoPaPago - estocarStatus.minimo)) : 0;
-    const characterAposEstocar =
-      estocarReducaoReal > 0
-        ? markEstocarUsed(
-            {
-              ...result.character,
-              estado_jogo: { ...result.character.estado_jogo, pa_gastos: Math.max(0, (result.character.estado_jogo?.pa_gastos ?? 0) - estocarReducaoReal) },
-            },
-            nowIso,
-          )
+    // Paramédico › Ritmo de Campo (checkpoint talentos, Fase 7) — "armado" pelo jogador
+    // confirmando que esta ação do Console é de cura; combinado no MESMO update atômico.
+    const ritmoDeCampoStatus = getRitmoDeCampoAvailability(currentCharacter, talentsIniciais);
+    const ritmoDeCampoReducaoReal =
+      ritmoDeCampoAtivo && ritmoDeCampoStatus.acquired && custoPaPago > 0
+        ? computeRitmoDeCampoReducao(custoPaPago, ritmoDeCampoStatus.reducao, ritmoDeCampoStatus.minimo)
+        : 0;
+    const reducaoTotal = estocarReducaoReal + ritmoDeCampoReducaoReal;
+    let characterAposEstocar: Character =
+      reducaoTotal > 0
+        ? { ...result.character, estado_jogo: { ...result.character.estado_jogo, pa_gastos: Math.max(0, (result.character.estado_jogo?.pa_gastos ?? 0) - reducaoTotal) } }
         : result.character;
+    if (estocarReducaoReal > 0) characterAposEstocar = markEstocarUsed(characterAposEstocar, nowIso);
     if (estocarReducaoReal > 0) {
       addLogEntry("acao_combate", `Estocar: custo de PA deste ataque reduzido em ${estocarReducaoReal} (lâmina confirmada).`);
       setEstocarAtivo(false);
+    }
+    if (ritmoDeCampoReducaoReal > 0) {
+      addLogEntry("acao_combate", `Ritmo de Campo: custo de PA desta ação de cura reduzido em ${ritmoDeCampoReducaoReal}.`);
+      setRitmoDeCampoAtivo(false);
     }
     characterRef.current = characterAposEstocar;
     setCharacter(characterAposEstocar);
@@ -4970,6 +5115,13 @@ export default function CharacterSheetClient({
           puxarOsFiosStatus={getPuxarOsFiosAvailability(character, talentsIniciais)}
           entrelinhasAtivo={character.entrelinhas_ativo ?? null}
           onRegisterPuxarOsFios={handleRegisterPuxarOsFios}
+          prontoSocorroStatus={getProntoSocorroAvailability(character, talentsIniciais)}
+          onProntoSocorro={handleProntoSocorro}
+          ritmoDeCampoStatus={getRitmoDeCampoAvailability(character, talentsIniciais)}
+          ritmoDeCampoAtivo={ritmoDeCampoAtivo}
+          onToggleRitmoDeCampo={setRitmoDeCampoAtivo}
+          protocoloDeEmergenciaStatus={getProtocoloDeEmergenciaAvailability(character, talentsIniciais)}
+          onProtocoloDeEmergencia={handleProtocoloDeEmergencia}
         />
       )}
 

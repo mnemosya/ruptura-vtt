@@ -2093,6 +2093,124 @@ export function markPuxarOsFiosUsed(character: Character, nowIso: string): Chara
 }
 
 // ---------------------------------------------------------------------
+// Paramédico — aplica a estabilização real de Pronto-socorro (N1) no
+// ALIADO alvo: PV vira pv_resultante, encerra colapso pela cura
+// canônica (mesmo `detectCollapseOnResourceChange` usado em qualquer
+// outra cura de PV 0→1+, nunca um "PV volta sozinho" sem passar pelo
+// fluxo de colapso), e opcionalmente concede o PA real para agir nesta
+// rodada (confirmação manual de "ainda não agiu" — sem rastreador de
+// quem já agiu na rodada neste sistema).
+// ---------------------------------------------------------------------
+
+export function applyProntoSocorroToAlly(
+  ally: Character,
+  talents: TalentContent[],
+  nowIso: string,
+  aindaNaoAgiu: boolean,
+): Character {
+  const status = getProntoSocorroAvailability(ally, talents);
+  const pvAntes = ally.recursos_atuais?.pv ?? 0;
+  const peAtual = ally.recursos_atuais?.pe ?? 0;
+  const withPv: Character = { ...ally, recursos_atuais: { ...ally.recursos_atuais, pv: status.pvResultante } };
+  const collapse = detectCollapseOnResourceChange(withPv, { pv: pvAntes, pe: peAtual }, { pv: status.pvResultante, pe: peAtual }, nowIso);
+  let next = collapse.character;
+  if (aindaNaoAgiu) {
+    next = { ...next, estado_jogo: { ...next.estado_jogo, pa_gastos: Math.max(0, (next.estado_jogo?.pa_gastos ?? 0) - 1) } };
+  }
+  return next;
+}
+
+// ---------------------------------------------------------------------
+// Paramédico — Ritmo de Campo (N2): -1 PA real (mín. respeitado) em
+// ações de cura. Sem tag "cura" estruturada em `db_acoes_combate`
+// (blocker já documentado neste checkpoint) — decisão do checkpoint
+// talentos Fase 7: confirmação manual do jogador ("é uma ação de
+// cura?") em vez de detecção automática, aplicada nos 3 fluxos reais
+// que gastam PA por cura (ação do Console, item, magia).
+// ---------------------------------------------------------------------
+
+export function getRitmoDeCampoAvailability(
+  character: Pick<Character, "talentos_adquiridos">,
+  talents: TalentContent[],
+): { acquired: boolean; reducao: number; minimo: number } {
+  let acquired = false;
+  let reducao = 1;
+  let minimo = 1;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "reduzir_custo_pa") continue;
+      const tags = Array.isArray(efeito.acao_tags) ? efeito.acao_tags : [];
+      if (!tags.includes("cura")) continue;
+      acquired = true;
+      if (typeof efeito.reducao === "number") reducao = efeito.reducao;
+      if (typeof efeito.minimo === "number") minimo = efeito.minimo;
+    }
+  }
+  return { acquired, reducao, minimo };
+}
+
+/** PA a devolver de fato dado o custo real pago (nunca abaixo do mínimo do payload). */
+export function computeRitmoDeCampoReducao(paCostPago: number, reducao: number, minimo: number): number {
+  return Math.max(0, Math.min(reducao, paCostPago - minimo));
+}
+
+// ---------------------------------------------------------------------
+// Paramédico — Protocolo de Emergência (N3): 1/cena, Reação real do
+// CASTER quando um aliado a até 5m cai a 0 PV; aplica Medkit/Injetor/
+// magia de cura (fluxo real correspondente, escolhido pelo jogador) e
+// o aliado permanece de pé.
+// ---------------------------------------------------------------------
+
+export const PROTOCOLO_DE_EMERGENCIA_USAGE_KEY = "paramedico_protocolo_de_emergencia:cena";
+
+export function hasProtocoloDeEmergencia(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "reacao_cura_em_queda") return true;
+    }
+  }
+  return false;
+}
+
+export function getProtocoloDeEmergenciaAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisScene: boolean; alcanceM: number } {
+  let acquired = false;
+  let alcanceM = 5;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "reacao_cura_em_queda") continue;
+      acquired = true;
+    }
+  }
+  const usedThisScene = (character.talentos_estado?.usos?.[PROTOCOLO_DE_EMERGENCIA_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisScene, alcanceM };
+}
+
+export function markProtocoloDeEmergenciaUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[PROTOCOLO_DE_EMERGENCIA_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+/**
+ * "Aliado permanece de pé, ignorando o efeito de queda" — só faz sentido aplicar quando o
+ * aliado JÁ está a 0 PV no momento do clique (o gatilho real é "ao VER cair a 0 PV"; este
+ * sistema não intercepta o instante exato do dano numa reação cross-character sem replicar
+ * todo o pipeline de ataque, então a consequência é aplicada logo que confirmada, mesmo
+ * padrão honesto de Pronto-socorro: PV vira 1, colapso encerrado pela cura canônica).
+ */
+export function applyProtocoloDeEmergenciaToAlly(ally: Character, nowIso: string): Character {
+  const pvAntes = ally.recursos_atuais?.pv ?? 0;
+  if (pvAntes > 0) return ally;
+  const peAtual = ally.recursos_atuais?.pe ?? 0;
+  const withPv: Character = { ...ally, recursos_atuais: { ...ally.recursos_atuais, pv: 1 } };
+  const collapse = detectCollapseOnResourceChange(withPv, { pv: pvAntes, pe: peAtual }, { pv: 1, pe: peAtual }, nowIso);
+  return collapse.character;
+}
+
+// ---------------------------------------------------------------------
 // Construtores de log (texto formatado — nunca JSON cru)
 // ---------------------------------------------------------------------
 

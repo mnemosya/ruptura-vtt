@@ -62,7 +62,7 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 40 · 🟡 0 · ⚙️ 25 · 📖 1.
+Contagem: ✅ 0 · 🔵 43 · 🟡 0 · ⚙️ 22 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -108,9 +108,9 @@ Contagem: ✅ 0 · 🔵 40 · 🟡 0 · ⚙️ 25 · 📖 1.
 | Mercador | Garimpo de Rua | 1 | 🔵 Implementado (aguardando validação manual) |
 | Mercador | Caderneta de Dívida | 2 | ⚙️ Infra pendente |
 | Mercador | Rede de Favores | 3 | ⚙️ Infra pendente |
-| Paramédico | Pronto-socorro | 1 | ⚙️ Infra pendente |
-| Paramédico | Ritmo de Campo | 2 | ⚙️ Infra pendente |
-| Paramédico | Protocolo de Emergência | 3 | ⚙️ Infra pendente |
+| Paramédico | Pronto-socorro | 1 | 🔵 Implementado (aguardando validação manual) |
+| Paramédico | Ritmo de Campo | 2 | 🔵 Implementado (aguardando validação manual) |
+| Paramédico | Protocolo de Emergência | 3 | 🔵 Implementado (aguardando validação manual) |
 | Pistoleiro | Gatilho Quente | 1 | 🔵 Implementado (aguardando validação manual) |
 | Pistoleiro | Bang Bang | 2 | 🔵 Implementado (aguardando validação manual) |
 | Pistoleiro | Showdown | 3 | ⚙️ Infra pendente |
@@ -583,9 +583,9 @@ abaixo está **aguardando confirmação do usuário via teste manual** — nenhu
 | Mercador | Garimpo de Rua | 🔵 Implementado | −20% real em TODOS os preços da Loja enquanto ativo, 1/dia | `talentEngine.ts`, `InventoryTab.tsx` | `Character.talentos_estado` | Ativar desconto → confirmar preços da loja caem 20% → confirmar reset em Novo Dia/descanso longo | Aguardando usuário |
 | Mercador | Caderneta de Dívida | ⚙️ Infra pendente | Nenhum (sem modelo de dívida) | — | — | N/A | — |
 | Mercador | Rede de Favores | ⚙️ Infra pendente | Nenhum (infra genérica só) | — | — | N/A | — |
-| Paramédico | Pronto-socorro | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
-| Paramédico | Ritmo de Campo | ⚙️ Infra pendente | Nenhum (bloqueado por falta de tag "cura" no conteúdo) | — | — | N/A | — |
-| Paramédico | Protocolo de Emergência | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Paramédico | Pronto-socorro | 🔵 Implementado | Estabiliza aliado ativo a 1 PV real, sem teste/custo, encerra colapso pela cura canônica; +1 PA opcional se ainda não agiu; 1/cena | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.recursos_atuais`/`colapso` (aliado), `talentos_estado` (caster) | Aliado a 0 PV → estabilizar → confirmar PV=1, colapso/Inconsciente encerrados, PA opcional aplicado; repetir na mesma cena → confirmar bloqueado | Aguardando usuário |
+| Paramédico | Ritmo de Campo | 🔵 Implementado | -1 PA real (mín. respeitado) em ação do Console/item/magia de cura, "armado" por confirmação manual (sem tag "cura" estruturada no catálogo — blocker documentado resolvido por decisão do checkpoint) | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.estado_jogo.pa_gastos` | Armar Ritmo de Campo → usar item/ação/magia de cura → confirmar PA reduzido em 1 e armado desliga sozinho | Aguardando usuário |
+| Paramédico | Protocolo de Emergência | 🔵 Implementado | Gasta 1 Reação real do caster, 1/cena; se o aliado está a 0 PV no momento da confirmação, PV vira 1 e colapso é encerrado pela cura canônica | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.estado_jogo` (caster), `recursos_atuais`/`colapso` (aliado), `talentos_estado` | Aliado a 0 PV → confirmar Protocolo → confirmar Reação do caster consumida e aliado com PV=1; repetir na mesma cena → confirmar bloqueado | Aguardando usuário |
 | Pistoleiro | Gatilho Quente | 🔵 Implementado | Recurso real de dados de gatilho (d8), dano extra = Balística atual em resultado 8 | `talentEngine.ts`, `TalentsTab.tsx`, `CharacterSheetClient.tsx` | `Character.talentos_estado` | Usar dado de gatilho, informar resultado 8 → confirmar dano extra = Balística; usar outro resultado → confirmar só consome; usar os 3 → confirmar indisponível; descanso longo → confirmar reset | Aguardando usuário |
 | Pistoleiro | Bang Bang | 🔵 Implementado | +1 dado de gatilho (pool vira 4); segundo disparo real (+1 PA, −1, mesmas regras) | `RollsTab.tsx`, `talentEngine.ts` | `Character.talentos_estado`, `estado_jogo.pa_gastos` | Rolar com dado de gatilho escolhido (maior dado) → confirmar segundo disparo disponível → gastar PA → rolar de novo com −1 pré-preenchido | Aguardando usuário |
 | Pistoleiro | Showdown | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
