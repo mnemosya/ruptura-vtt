@@ -11,17 +11,19 @@
 import { listCampaigns } from "../../../lib/table/storage";
 import { listLegacyCharactersDev } from "../../../lib/character/storage";
 import { getCurrentUser } from "../../../lib/auth/session";
-import { getCharacterRules, getCombatFlow, listConditions, listItems } from "../../../lib/content";
+import { getCharacterRules, getCombatFlow, listConditions, listItems, listTalents } from "../../../lib/content";
 import type { Campaign } from "../../../lib/table";
 import {
   normalizeItemContent,
   normalizeReactionRules,
   normalizeConditionContent,
+  normalizeTalentContent,
   type CharacterRecord,
   type CharacterRulesPayload,
   type ItemContent,
   type ReactionRules,
   type ConditionContent,
+  type TalentContent,
 } from "../../../lib/character";
 import TableClient from "./TableClient";
 
@@ -104,6 +106,18 @@ export default async function TablePage() {
     // Segue com reactionRules fail-closed — painel de defesa ainda funciona, sem penalidade automática.
   }
 
+  // Talentos publicados na Biblioteca (checkpoint talentos, Fase E) — só
+  // para o narrador ler os talentos do ATACANTE ao resolver dano em
+  // /dev/table (Hemorragia, Executar, Fúria, etc.). Falha aqui não trava
+  // a página; o painel de Resolver Ataque cai para resolução 100% manual.
+  let talentsIniciais: TalentContent[] = [];
+  try {
+    const talentDocs = await listTalents();
+    talentsIniciais = talentDocs.map((doc) => normalizeTalentContent(doc.payload as Record<string, unknown>));
+  } catch {
+    // talentsIniciais vazio — painel de Resolver Ataque não mostra oportunidades de talento do atacante.
+  }
+
   if (errorMessage) {
     return (
       <main style={{ maxWidth: 640, margin: "60px auto", padding: "0 20px" }}>
@@ -128,6 +142,7 @@ export default async function TablePage() {
       conditionContents={conditionContents}
       itemsIniciais={itemsIniciais}
       reactionRules={reactionRules}
+      talentsIniciais={talentsIniciais}
     />
   );
 }

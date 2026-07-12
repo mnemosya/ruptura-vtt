@@ -75,6 +75,10 @@ import {
   splitInventoryInstance,
   addInstanceToInventory,
   canSplitInstanceQuantity,
+  hasHemorragia,
+  getHemorragiaCriticalDie,
+  getExecutarAvailability,
+  markExecutarUsed,
   type GmResource,
   type CharacterRecord,
   type Character,
@@ -86,6 +90,7 @@ import {
   type ConditionContent,
   type ConditionEndRoundEffect,
   type InventoryItemInstance,
+  type TalentContent,
 } from "../../../lib/character";
 import { rollPericia } from "../../../lib/dice";
 import type { NarratorConditionOption } from "./page";
@@ -120,6 +125,11 @@ interface AttackPanelForm {
   lastDefense: DefenseRollResult | null;
   /** Permite rolar defesa mesmo sem Reação disponível quando a regra canônica (combat_flow) não modela "defesa sem Reação" — narrador decide explicitamente (nunca automático). */
   defenseOverride: boolean;
+  /** Assassino › Hemorragia (checkpoint talentos, Fase E) — narrador confirma que quer aplicar (só habilitado quando atacante tem o talento + arma tem a propriedade Sangramento + margem ≥ sucesso padrão). */
+  aplicarHemorragia: boolean;
+  /** Assassino › Executar (checkpoint talentos, Fase E) — narrador confirma o requisito (alvo <50% PV, não percebe, Imobilizado ou Atordoado) manualmente antes de habilitar. */
+  executarRequisitoConfirmado: boolean;
+  executarAtivo: boolean;
 }
 
 type DefenseType = "esquivar" | "aparar" | "bloquear" | "resistir";
@@ -159,6 +169,9 @@ const DEFAULT_ATTACK_PANEL_FORM: AttackPanelForm = {
   defenseModifier: "",
   lastDefense: null,
   defenseOverride: false,
+  aplicarHemorragia: false,
+  executarRequisitoConfirmado: false,
+  executarAtivo: false,
 };
 
 /**
@@ -890,6 +903,8 @@ interface Props {
   itemsIniciais: ItemContent[];
   /** Regra canônica de Reação interpretada do singleton combat_flow (checkpoint pós-v0.50, "Resolver Ataque" com defesa reativa) — mesmo fallback fail-closed da ficha. */
   reactionRules: ReactionRules;
+  /** Talentos publicados na Biblioteca (checkpoint talentos, Fase E) — só para ler os talentos do ATACANTE ao resolver dano (Hemorragia, Executar, Fúria, etc.). */
+  talentsIniciais: TalentContent[];
 }
 
 const GM_RESOURCE_LABELS: Record<GmResource, string> = { pv: "PV", pe: "PE", mana: "Mana", integridade: "Integridade" };
@@ -1122,7 +1137,7 @@ function buildEndScenePreview(records: CharacterRecord[], round: number, scene: 
   return { kind: "scene", round, scene, characters, manualPending };
 }
 
-export default function TableClient({ mesasIniciais, personagensIniciais, currentUserEmail, currentUserId, regras, condicoesDisponiveis, conditionContents, itemsIniciais, reactionRules }: Props) {
+export default function TableClient({ mesasIniciais, personagensIniciais, currentUserEmail, currentUserId, regras, condicoesDisponiveis, conditionContents, itemsIniciais, reactionRules, talentsIniciais }: Props) {
   const [mesas, setMesas] = useState<Campaign[]>(mesasIniciais);
   const [personagens] = useState<CharacterRecord[]>(personagensIniciais);
   const [novaMesaNome, setNovaMesaNome] = useState("");
@@ -1490,10 +1505,16 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     const defenseTotal = form.defenseTotal.trim() ? Number(form.defenseTotal) : null;
     const hasMargin = attackTotal != null && Number.isFinite(attackTotal) && defenseTotal != null && Number.isFinite(defenseTotal);
     const margin = hasMargin ? attackTotal! - defenseTotal! : null;
-    const bandRules = margin != null ? resolveMarginBand(margin) : null;
+    let bandRules = margin != null ? resolveMarginBand(margin) : null;
+    // Assassino › Executar (Fase E): trata o acerto como crítico (mesma banda de dano/região
+    // que um sucesso crítico real) — a margem/attackTotal/defenseTotal digitados continuam
+    // sendo os REAIS no log, só a banda de resolução é forçada.
+    if (form.executarAtivo) {
+      bandRules = { band: "critical", allowedRegions: [...BODY_REGIONS], modifierType: "extraDie", flatModifier: 0 };
+    }
     const marginBand: "limited" | "standard" | "critical" | "miss" | null = bandRules?.band ?? null;
 
-    if (margin != null && margin < 0 && !form.override) {
+    if (margin != null && margin < 0 && !form.override && !form.executarAtivo) {
       setAtaqueResolverErro('Ataque não acertou pela margem informada. Marque "Resolver mesmo assim" para aplicar dano por override.');
       return;
     }
@@ -1505,6 +1526,10 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       setAtaqueResolverErro(`Região "${BODY_REGION_LABELS[form.region as BodyRegion]}" não é permitida para a margem ${margin} sem override.`);
       return;
     }
+    if (form.executarAtivo && !form.executarRequisitoConfirmado) {
+      setAtaqueResolverErro("Confirme o requisito de Executar (alvo abaixo de 50% PV, não percebe o atacante, Imobilizado ou Atordoado) antes de aplicar.");
+      return;
+    }
 
     // Log já resolvido antes — permitir de novo só com override (segurança operacional, sem apagar o antigo).
     const jaResolvido = logs.some((l) => l.type === "attack_resolved" && l.payload.sourceActionLogId === log.id);
@@ -1513,14 +1538,15 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       return;
     }
 
-    const mit = form.mit.trim() ? Number(form.mit) : 0;
+    // Executar: ignora MIT/armadura por completo (dano bruto passa direto).
+    const mit = form.executarAtivo ? 0 : form.mit.trim() ? Number(form.mit) : 0;
     const marginDamageModifier = bandRules?.modifierType === "flat" ? bandRules.flatModifier : 0;
 
     setAtaqueResolverProcessing(log.id);
     try {
       const nowIso = new Date().toISOString();
       const targetNormalizado = normalizeCharacter(targetRecord.payload);
-      const resolucao = applyMarginBasedAttackDamage({
+      let resolucao = applyMarginBasedAttackDamage({
         character: targetNormalizado,
         rawDamage,
         marginDamageModifier,
@@ -1531,8 +1557,34 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
         scene: targetNormalizado.current_scene,
       });
 
+      // Assassino › Hemorragia (Fase E): sucesso padrão ou melhor aplica Sangrando no
+      // alvo; crítico usa o dado alterado do payload (1d8) em vez do padrão da condição.
+      let hemorragiaAplicada = false;
+      if (form.aplicarHemorragia && bandRules && bandRules.band !== "miss" && bandRules.band !== "limited") {
+        const attackerCharacterIdForHemorragia = typeof log.payload.characterId === "string" ? log.payload.characterId : null;
+        const attackerRecordForHemorragia = attackerCharacterIdForHemorragia ? personagensAtivos[attackerCharacterIdForHemorragia] : null;
+        const attackerCharacterForHemorragia = attackerRecordForHemorragia ? normalizeCharacter(attackerRecordForHemorragia.payload) : null;
+        const dado = attackerCharacterForHemorragia ? getHemorragiaCriticalDie(attackerCharacterForHemorragia, talentsIniciais) : "1d8";
+        const nomeCondicao = bandRules.band === "critical" ? `Sangrando (crítico — ${dado}, Hemorragia)` : "Sangrando";
+        const condResult = applyGmCondition(resolucao.character, { slug: "sangrando", nome: nomeCondicao }, nowIso);
+        resolucao = { ...resolucao, character: condResult.character };
+        hemorragiaAplicada = !condResult.jaAtiva;
+      }
+
       const record = await updateCharacter(form.targetCharacterId, resolucao.character);
       setPersonagensAtivos((prev) => ({ ...prev, [record.id]: record }));
+
+      // Executar consome 1/cena no ATACANTE — persiste separadamente (registro diferente do alvo).
+      if (form.executarAtivo) {
+        const attackerCharacterId = typeof log.payload.characterId === "string" ? log.payload.characterId : null;
+        const attackerRecord = attackerCharacterId ? personagensAtivos[attackerCharacterId] : null;
+        if (attackerRecord) {
+          const attackerCharacter = normalizeCharacter(attackerRecord.payload);
+          const attackerNext = markExecutarUsed(attackerCharacter, nowIso);
+          const attackerSaved = await updateCharacter(attackerCharacterId!, attackerNext);
+          setPersonagensAtivos((prev) => ({ ...prev, [attackerSaved.id]: attackerSaved }));
+        }
+      }
 
       const reminders: string[] = [];
       if (log.payload.reminders && Array.isArray(log.payload.reminders)) {
@@ -1543,6 +1595,12 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
         if (!damageBase || !isDiceFormula(damageBase)) {
           reminders.push("+1 dado de dano pela margem crítica (fórmula não estruturada — inclua manualmente no dano bruto).");
         }
+      }
+      if (form.executarAtivo) {
+        reminders.push("Executar: MIT/armadura ignorados, acerto tratado como crítico.");
+      }
+      if (hemorragiaAplicada) {
+        reminders.push("Hemorragia: Sangrando aplicado ao alvo.");
       }
       const requisitosTexto = [
         "Cobertura, alcance, linha de visão, linha de efeito e posição não são validados automaticamente.",
@@ -3448,6 +3506,8 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                         onRollDefense={(defenseType) => handleRollDefense(entry.id, entry, defenseType)}
                         onApply={() => handleResolveAttackDamage(entry)}
                         onCancel={() => setAtaqueResolvendoLogId(null)}
+                        talentsIniciais={talentsIniciais}
+                        itemsIniciais={itemsIniciais}
                       />
                     )}
                     {isSpellAttackUsed && (
@@ -3517,6 +3577,8 @@ function AttackResolutionPanel({
   onRollDefense,
   onApply,
   onCancel,
+  talentsIniciais,
+  itemsIniciais,
 }: {
   log: TableLogEntry;
   form: AttackPanelForm;
@@ -3536,6 +3598,9 @@ function AttackResolutionPanel({
   onRollDefense: (defenseType: DefenseType) => void;
   onApply: () => void;
   onCancel: () => void;
+  /** Assassino › Hemorragia/Executar (checkpoint talentos, Fase E) — talentos do ATACANTE. */
+  talentsIniciais: TalentContent[];
+  itemsIniciais: ItemContent[];
 }) {
   const attackTotal = form.attackTotal.trim() ? Number(form.attackTotal) : null;
   const defenseTotal = form.defenseTotal.trim() ? Number(form.defenseTotal) : null;
@@ -3543,9 +3608,10 @@ function AttackResolutionPanel({
   const margin = hasMargin ? attackTotal! - defenseTotal! : null;
   const bandRules = margin != null ? resolveMarginBand(margin) : null;
   const rawDamage = Number(form.rawDamage) || 0;
-  const marginDamageModifier = bandRules?.modifierType === "flat" ? bandRules.flatModifier : 0;
+  const bandRulesEfetivo = form.executarAtivo ? { band: "critical" as const, allowedRegions: [...BODY_REGIONS], modifierType: "extraDie" as const, flatModifier: 0 } : bandRules;
+  const marginDamageModifier = bandRulesEfetivo?.modifierType === "flat" ? bandRulesEfetivo.flatModifier : 0;
   const damageAfterMargin = Math.max(0, rawDamage + marginDamageModifier);
-  const mit = Number(form.mit) || 0;
+  const mit = form.executarAtivo ? 0 : Number(form.mit) || 0;
   const finalDamage = Math.max(0, damageAfterMargin - mit);
   const damageBase = typeof log.payload.damageBase === "string" ? log.payload.damageBase : null;
   const isDice = damageBase != null && /^\d+d\d+([+-]\d+)?$/.test(damageBase.trim().replace(/\s+/g, ""));
@@ -3556,6 +3622,16 @@ function AttackResolutionPanel({
     ? computeDerivedStats(targetNormalizado.atributos, regras, targetNormalizado.mana_bonus_ruptura ?? 0).reacoes_por_rodada
     : 0;
   const reactionAvailability = targetNormalizado ? getReactionAvailability(targetNormalizado, reactionMax, reactionRules) : null;
+
+  // Assassino › Hemorragia/Executar (Fase E, cross-record) — lidos do ATACANTE, não do alvo.
+  const attackerCharacterId = typeof log.payload.characterId === "string" ? log.payload.characterId : null;
+  const attackerRecord = attackerCharacterId ? personagensAtivos[attackerCharacterId] : null;
+  const attackerCharacter = attackerRecord ? normalizeCharacter(attackerRecord.payload) : null;
+  const weaponInstanceId = typeof log.payload.weaponInstanceId === "string" ? log.payload.weaponInstanceId : null;
+  const weaponInstance = attackerCharacter && weaponInstanceId ? attackerCharacter.inventario?.find((i) => i.id === weaponInstanceId) : null;
+  const weaponModel = weaponInstance ? itemsIniciais.find((m) => m.slug === weaponInstance.itemSlug) : null;
+  const hemorragiaDisponivel = !!attackerCharacter && hasHemorragia(attackerCharacter, talentsIniciais) && !!weaponModel?.propertySlugs.includes("sangramento");
+  const executarStatus = attackerCharacter ? getExecutarAvailability(attackerCharacter, talentsIniciais) : { acquired: false, usedThisScene: false, available: false };
 
   return (
     <div
@@ -3754,13 +3830,14 @@ function AttackResolutionPanel({
           <input
             data-testid={`ataque-mit-${log.id}`}
             type="number"
-            value={form.mit}
+            value={form.executarAtivo ? "0" : form.mit}
+            disabled={form.executarAtivo}
             onChange={(e) => onUpdateForm({ mit: e.target.value, mitSource: "manual", mitTouched: true })}
-            style={{ ...inputStyle, width: 70 }}
+            style={{ ...inputStyle, width: 70, opacity: form.executarAtivo ? 0.5 : 1 }}
           />
         </label>
         <span style={{ opacity: 0.5, fontSize: 11 }}>
-          {form.mitSource === "structured" ? "MIT do equipamento ativo" : form.mitSource === "manual" ? "MIT manual" : "sem MIT estruturado"}
+          {form.executarAtivo ? "MIT ignorado (Executar)" : form.mitSource === "structured" ? "MIT do equipamento ativo" : form.mitSource === "manual" ? "MIT manual" : "sem MIT estruturado"}
         </span>
         {form.mitTouched && (
           <span data-testid={`ataque-mit-editado-manualmente-${log.id}`} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#f5a623" }}>
@@ -3771,6 +3848,49 @@ function AttackResolutionPanel({
           </span>
         )}
       </div>
+
+      {(hemorragiaDisponivel || executarStatus.acquired) && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "#1a1420", border: "1px solid #4a2e5c", borderRadius: 6, padding: "8px 10px" }}>
+          <span style={{ fontSize: 11, opacity: 0.7 }}>Talentos do atacante ({typeof log.payload.characterNome === "string" ? log.payload.characterNome : "atacante"}):</span>
+          {hemorragiaDisponivel && (
+            <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input
+                data-testid={`ataque-hemorragia-${log.id}`}
+                type="checkbox"
+                checked={form.aplicarHemorragia}
+                onChange={(e) => onUpdateForm({ aplicarHemorragia: e.target.checked })}
+              />
+              Aplicar Hemorragia (Sangrando no acerto — 1d8 em crítico)
+            </label>
+          )}
+          {executarStatus.acquired && (
+            <>
+              <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  data-testid={`ataque-executar-${log.id}`}
+                  type="checkbox"
+                  checked={form.executarAtivo}
+                  disabled={!executarStatus.available}
+                  onChange={(e) => onUpdateForm({ executarAtivo: e.target.checked })}
+                />
+                Executar (ignora MIT, trata como crítico) — 1/cena
+                {executarStatus.usedThisScene && <span style={{ color: "#888" }}> — já usado nesta cena</span>}
+              </label>
+              {form.executarAtivo && (
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+                  <input
+                    data-testid={`ataque-executar-requisito-${log.id}`}
+                    type="checkbox"
+                    checked={form.executarRequisitoConfirmado}
+                    onChange={(e) => onUpdateForm({ executarRequisitoConfirmado: e.target.checked })}
+                  />
+                  Confirmo o requisito: alvo abaixo de 50% PV, não percebe o atacante, Imobilizado ou Atordoado (confirmação manual)
+                </label>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12 }}>
         <span>

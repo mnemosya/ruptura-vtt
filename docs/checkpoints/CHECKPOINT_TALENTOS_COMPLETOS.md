@@ -32,10 +32,10 @@ específica conectada ao fluxo) — pendente de integração real:**
 
 ### Blockers de correção encontrados (por que não foi feito em massa sem inventar regra)
 
-1. **Combate é resolvido no lado do narrador** (`/dev/table`, `handleResolveAttackDamage`)
-   com separação atacante/alvo; talentos de margem/condição do ATACANTE exigem passar a
-   lista de talentos + propriedades da arma do atacante para o painel do alvo — integração
-   cross-record, não edição local.
+1. ~~Combate é resolvido no lado do narrador...~~ — **RESOLVIDO**: `talentsIniciais` e
+   `itemsIniciais` agora chegam em `/dev/table` (Hemorragia/Executar provam o padrão);
+   cada árvore restante (Dissecador/Berserker/Espadachim/Guardião/Paramédico) ainda precisa
+   da integração específica no painel, mas a infraestrutura cross-record já existe.
 2. **Ações de cura não têm tag `cura` no conteúdo** (`db_acoes_combate`), então Ritmo de
    Campo não pode identificar "ação de cura" sem inventar taxonomia.
 3. **Limite de Sobrecarga está acoplado ao gatilho de Ruptura do 3º surto** em
@@ -54,7 +54,7 @@ Legenda: **✅ Integral** (mecânica-núcleo conectada ao fluxo real) · **🟡 
 com formulário/estado/log) · **⚙️ Infra pendente** (só classificação/badge/botão/
 cadência/log/lembrete — SEM regra específica no fluxo).
 
-Contagem: ✅ 9 · 🟡 8 · ⚙️ 48 · 📖 1.
+Contagem: ✅ 11 · 🟡 8 · ⚙️ 46 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -62,8 +62,8 @@ Contagem: ✅ 9 · 🟡 8 · ⚙️ 48 · 📖 1.
 | Artífice | Toque de Midas | 2 | ✅ Integral |
 | Artífice | Gambiarra Expressa | 3 | 📖 Narrativo rastreado |
 | Assassino | Lâmina Oculta | 1 | ⚙️ Infra pendente |
-| Assassino | Hemorragia | 2 | ⚙️ Infra pendente |
-| Assassino | Executar | 3 | ⚙️ Infra pendente |
+| Assassino | Hemorragia | 2 | ✅ Integral |
+| Assassino | Executar | 3 | ✅ Integral |
 | Atirador de Elite | 1 Tiro, 1 Acerto | 1 | ✅ Integral |
 | Atirador de Elite | À Espreita | 2 | ⚙️ Infra pendente |
 | Atirador de Elite | Headshot | 3 | ⚙️ Infra pendente |
@@ -153,6 +153,19 @@ Contagem: ✅ 9 · 🟡 8 · ⚙️ 48 · 📖 1.
   "Promoção de margem: ... Passo Fantasma"); não aplica a perícias sem
   `pericias[]` no payload (Totem Bênção não tem essa estrutura, então não foi
   automatizado — não inventa mapeamento).
+- **✅ Hemorragia + Executar (Assassino N2/N3, Fase E — cross-record)** — primeira
+  integração REAL no lado do narrador (`/dev/table`), lendo os talentos do ATACANTE
+  (talentsIniciais agora carregado em TableClient/page.tsx) cruzados com o alvo
+  escolhido na resolução. Hemorragia: detecta a propriedade "Sangramento" na arma real
+  do atacante (`ItemContent.propertySlugs`), habilita o checkbox só quando margem ≥
+  sucesso padrão, aplica "Sangrando" no ALVO de verdade via `applyGmCondition`
+  (verificado: PV 11→5 e "Condições ativas: Sangrando" no personagem real). Executar:
+  força a banda de resolução para crítica (regiões liberadas, MIT ignorado) mesmo com
+  margem naturalmente "limited" (verificado: MIT 99 digitado → dano final ainda 6;
+  região Cabeça liberada; log "margem crítica"), exige confirmação manual do requisito,
+  consome 1/cena no atacante e persiste (verificado: reabrir o painel mostra "já usado
+  nesta cena", checkbox desabilitado). Setup de teste cruzou 2 personagens reais via 2
+  perfis de mesa — nada simulado.
 - **✅ Bricolagem** — atividade "Examinar ponto vulnerável" real: formulário (tipo/alvo/
   falha/perícia) sem teste; bônus consumível escopado por tag sintética `bricolagem:<id>`,
   só aplicado no teste disparado pelo botão "Rolar teste relacionado" (com confirmação

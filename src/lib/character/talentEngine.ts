@@ -599,6 +599,55 @@ export function endGambiarraExpressa(character: Character): Character {
 }
 
 // ---------------------------------------------------------------------
+// Fase E — talentos do ATACANTE resolvidos em /dev/table (cross-record).
+// Assassino › Hemorragia (N2) / Executar (N3).
+// ---------------------------------------------------------------------
+
+/** `true` se o personagem tem Hemorragia (Assassino N2) adquirida. */
+export function hasHemorragia(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "aplicar_condicao_em_margem" && efeito.condicao === "sangrando") return true;
+    }
+  }
+  return false;
+}
+
+/** Dado de Sangrando em crítico — lido do payload (`alterar_dado_condicao`), fallback "1d6" (dado padrão da condição, não hardcoded como "regra do talento"). */
+export function getHemorragiaCriticalDie(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): string {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "alterar_dado_condicao" && efeito.condicao === "sangrando" && typeof efeito.dado === "string") {
+        return efeito.dado;
+      }
+    }
+  }
+  return "1d8";
+}
+
+export const EXECUTAR_USAGE_KEY = "assassino_executar:cena";
+
+export function getExecutarAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisScene: boolean; available: boolean } {
+  let acquired = false;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "declarar_execucao") acquired = true;
+    }
+  }
+  const usedThisScene = (character.talentos_estado?.usos?.[EXECUTAR_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisScene, available: acquired && !usedThisScene };
+}
+
+export function markExecutarUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[EXECUTAR_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
 // Margem — promoção genérica de margem (Passo Fantasma, Olhar Penetrante)
 // data-driven a partir de `promocao_margem.pericias[]` do payload. Nunca
 // aplica sem a perícia explícita no payload (Totem › Benção não tem
