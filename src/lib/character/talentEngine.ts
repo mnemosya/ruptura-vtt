@@ -460,6 +460,53 @@ export function resolvePersistedOpportunity(character: Character, id: string): C
 }
 
 // ---------------------------------------------------------------------
+// Overrides mecânicos passivos derivados de talentos adquiridos
+// (integração real nos fluxos — nunca inventa valor, lê do payload)
+// ---------------------------------------------------------------------
+
+/**
+ * Multiplicador de alcance/área de magias de ATAQUE imposto por talento
+ * (Mago de Batalha › Domínio Territorial — `multiplicar_alcance_area_magia`).
+ * 1 quando nenhum talento aplica. Data-driven (1.5 = +50% vem do payload).
+ */
+export function getTalentSpellRangeAreaMultiplier(
+  character: Pick<Character, "talentos_adquiridos">,
+  talents: TalentContent[],
+  magiaTipo: string,
+): number {
+  let mult = 1;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "multiplicar_alcance_area_magia") continue;
+      const alvoTipo = typeof efeito.magia_tipo === "string" ? efeito.magia_tipo : null;
+      if (alvoTipo && alvoTipo !== magiaTipo) continue;
+      const m = efeito.multiplicador;
+      if (typeof m === "number" && m > 0) mult *= m;
+    }
+  }
+  return mult;
+}
+
+/**
+ * Aplica um multiplicador ao PRIMEIRO número de um texto de alcance/área
+ * (ex.: "10 metros (linha —)" × 1.5 → "15 metros (linha —)"). Quando o
+ * texto não tem número parseável, devolve `changed: false` e o texto
+ * original — o chamador mostra lembrete de confirmação manual (distância
+ * pode ser confirmada manualmente, conforme o capítulo). Sem inventar:
+ * só reescala o número presente.
+ */
+export function applyRangeAreaMultiplierToText(text: string, mult: number): { text: string; changed: boolean } {
+  if (mult === 1) return { text, changed: false };
+  const m = /(\d+(?:[.,]\d+)?)/.exec(text);
+  if (!m) return { text, changed: false };
+  const original = Number(m[1].replace(",", "."));
+  if (!Number.isFinite(original)) return { text, changed: false };
+  const escalado = Math.round(original * mult * 100) / 100;
+  const escaladoStr = Number.isInteger(escalado) ? String(escalado) : String(escalado);
+  return { text: text.slice(0, m.index) + escaladoStr + text.slice(m.index + m[1].length), changed: true };
+}
+
+// ---------------------------------------------------------------------
 // Construtores de log (texto formatado — nunca JSON cru)
 // ---------------------------------------------------------------------
 

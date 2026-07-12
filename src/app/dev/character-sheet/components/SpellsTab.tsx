@@ -13,6 +13,7 @@ import {
   resolveSpellResistance,
   checkSpellVertenteLevel,
   getSpellAttackProfile,
+  applyRangeAreaMultiplierToText,
   type SpellContent,
   type LearnedSpell,
 } from "../../../../lib/character";
@@ -44,10 +45,13 @@ export function SpellsTab({
   onCastWithFusion,
   onRollDamage,
   onSetVertenteLevel,
+  spellRangeAreaMultiplier = 1,
 }: {
   spells: SpellContent[];
   catalogError: string | null;
   magiasAprendidas: LearnedSpell[];
+  /** Multiplicador de alcance/área de magias de ATAQUE de talento (Domínio Territorial). 1 = nenhum. */
+  spellRangeAreaMultiplier?: number;
   /** Nível investido por vertente (checkpoint pós-v0.69) — chave = slug da vertente, ausente = nível desconhecido (nunca 0 implícito). */
   niveisVertente: Record<string, number>;
   sheetMode: "jogo" | "evolucao";
@@ -164,6 +168,30 @@ export function SpellsTab({
                           </span>
                         )}
                       </div>
+                      {(spell.estatisticas.alcanceTexto || spell.estatisticas.areaTexto) && (() => {
+                        const mult = attackProfile.isAttack ? spellRangeAreaMultiplier : 1;
+                        const alcance = spell.estatisticas.alcanceTexto
+                          ? applyRangeAreaMultiplierToText(spell.estatisticas.alcanceTexto, mult)
+                          : null;
+                        const area = spell.estatisticas.areaTexto
+                          ? applyRangeAreaMultiplierToText(spell.estatisticas.areaTexto, mult)
+                          : null;
+                        const dominioAtivo = mult !== 1;
+                        const naoEscalado = dominioAtivo && ((alcance && !alcance.changed) || (area && !area.changed));
+                        return (
+                          <p data-testid={`magia-alcance-area-${spell.slug}`} style={{ fontSize: 11, opacity: 0.75, margin: "2px 0" }}>
+                            {alcance && <span>Alcance: {alcance.text}</span>}
+                            {alcance && area && " · "}
+                            {area && <span>Área: {area.text}</span>}
+                            {dominioAtivo && (alcance?.changed || area?.changed) && (
+                              <span style={{ color: "#5ec8ff" }}> · Domínio Territorial (+50% em ataque)</span>
+                            )}
+                            {naoEscalado && (
+                              <span style={{ color: "#e0a03c" }}> · Domínio Territorial: +50% não aplicado ao texto — confirme a distância manualmente</span>
+                            )}
+                          </p>
+                        );
+                      })()}
                       {spell.descricao_curta && <p style={{ opacity: 0.7, margin: "4px 0" }}>{spell.descricao_curta}</p>}
                       {aberto && spell.descricao_longa && (
                         <p data-testid={`magia-descricao-longa-${spell.slug}`} style={{ opacity: 0.85, margin: "4px 0", whiteSpace: "pre-wrap" }}>

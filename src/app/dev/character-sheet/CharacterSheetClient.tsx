@@ -67,6 +67,7 @@ import {
   removeTalentLevel,
   getUsableTalentEffects,
   getTalentContextualOpportunities,
+  getTalentSpellRangeAreaMultiplier,
   useTalentEffect,
   toggleTalentEffect,
   resetTalentUse,
@@ -4065,6 +4066,7 @@ export default function CharacterSheetClient({
           onCastWithFusion={handleCastSpellWithFusion}
           onRollDamage={handleRollSpellDamage}
           onSetVertenteLevel={handleSetVertenteLevel}
+          spellRangeAreaMultiplier={getTalentSpellRangeAreaMultiplier(character, talentsIniciais, "ataque")}
         />
       )}
 
