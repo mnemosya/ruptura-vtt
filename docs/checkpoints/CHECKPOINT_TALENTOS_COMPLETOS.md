@@ -62,14 +62,14 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 13 · 🟡 10 · ⚙️ 42 · 📖 1.
+Contagem: ✅ 0 · 🔵 14 · 🟡 10 · ⚙️ 41 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
 | Artífice | Bricolagem | 1 | 🔵 Implementado (aguardando validação manual) |
 | Artífice | Toque de Midas | 2 | 🔵 Implementado (aguardando validação manual) |
 | Artífice | Gambiarra Expressa | 3 | 📖 Narrativo rastreado |
-| Assassino | Lâmina Oculta | 1 | ⚙️ Infra pendente |
+| Assassino | Lâmina Oculta | 1 | 🔵 Implementado (aguardando validação manual) |
 | Assassino | Hemorragia | 2 | 🔵 Implementado (aguardando validação manual) |
 | Assassino | Executar | 3 | 🔵 Implementado (aguardando validação manual) |
 | Atirador de Elite | 1 Tiro, 1 Acerto | 1 | 🔵 Implementado (aguardando validação manual) |
@@ -220,6 +220,18 @@ Contagem: ✅ 0 · 🔵 13 · 🟡 10 · ⚙️ 42 · 📖 1.
   cruzou 2 personagens reais via 2 perfis de mesa nesta sessão — nada simulado, mas
   ainda falta a confirmação do usuário de que o bloqueio SEM requisito atendido também
   funciona corretamente (não testado explicitamente) antes de virar ✅ Integral.
+- **🔵 Lâmina Oculta (Assassino N1, Implementado, aguardando validação manual — Fase 4,
+  cross-record)** — integrado no mesmo painel de resolução de `/dev/table`. Reposicionamento
+  (3m, sem custo de PA) em sucesso padrão+: reminder real no log quando o narrador confirma
+  "alvo não percebe a presença" e a banda resultante é standard/critical — mecânica bem
+  definida, sem ambiguidade. Promoção falha_limitada→sucesso_limitado: o sistema de bandas
+  de dano (`resolveMarginBand`) só distingue "miss" (margem negativa) de "limited" (margem
+  0–1) — não separa falha_limitada de falha_crítica dentro do miss (essa granularidade não
+  existe no capítulo de Combate codificado). Em vez de inventar um corte numérico não
+  confirmado, a segunda confirmação ("esta falha é limitada, não crítica") é um julgamento
+  explícito do narrador — mesmo critério já usado para "alvo não percebe presença" em
+  outros talentos — e só então promove a banda de miss para limited (Tronco liberado, -1
+  no dano). Nenhum limite de uso por cena/rodada foi inventado (o capítulo não declara um).
 - **🔵 Bricolagem (Implementado, aguardando validação manual)** — atividade "Examinar
   ponto vulnerável" real: formulário (tipo/alvo/
   falha/perícia) sem teste; bônus consumível escopado por tag sintética `bricolagem:<id>`,

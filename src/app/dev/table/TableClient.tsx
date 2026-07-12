@@ -82,6 +82,7 @@ import {
   hasAEspreita,
   hasHeadshot,
   hasAtaqueFatal,
+  hasLaminaOculta,
   endFurtividade,
   type GmResource,
   type CharacterRecord,
@@ -141,9 +142,23 @@ interface AttackPanelForm {
   headshotConfirmado: boolean;
   /** Sorrateiro › Ataque Fatal — narrador confirma que o atacante está saindo de Furtividade para este ataque; acerto vira crítico e encerra a Furtividade do atacante. */
   ataqueFatalConfirmado: boolean;
+  /** Assassino › Lâmina Oculta (checkpoint talentos, Fase 4) — narrador confirma que o alvo não percebe a presença do atacante. */
+  laminaOcultaAlvoConfirmado: boolean;
+  /**
+   * O sistema de bandas de dano (`resolveMarginBand`) só distingue "miss" (margem < 0)
+   * de "limited" (0–1) — não separa falha_limitada de falha_crítica dentro do miss, essa
+   * granularidade não existe no capítulo de Combate codificado aqui. Por isso, quando o
+   * atacante tem Lâmina Oculta e o ataque errou, o NARRADOR confirma manualmente se este
+   * miss específico conta como falha limitada (julgamento de mesa, mesmo critério de
+   * "alvo não percebe presença") — só então a banda é promovida para "limited". Nunca
+   * promove sozinho um número de margem específico (isso seria inventar um corte que o
+   * capítulo não define).
+   */
+  laminaOcultaFalhaLimitadaConfirmada: boolean;
 }
 
-/** Bandas fixas reaproveitadas por Executar/À Espreita/Headshot/Ataque Fatal — nunca inventadas ad-hoc em cada callsite. */
+/** Bandas fixas reaproveitadas por Executar/À Espreita/Headshot/Ataque Fatal/Lâmina Oculta — nunca inventadas ad-hoc em cada callsite. */
+const LIMITED_BAND_RULES: MarginBandRules = { band: "limited", allowedRegions: ["tronco"], modifierType: "flat", flatModifier: -1 };
 const STANDARD_BAND_RULES: MarginBandRules = { band: "standard", allowedRegions: ["tronco", "bracos", "pernas"], modifierType: "none", flatModifier: 0 };
 const CRITICAL_BAND_RULES: MarginBandRules = { band: "critical", allowedRegions: [...BODY_REGIONS], modifierType: "extraDie", flatModifier: 0 };
 
@@ -158,10 +173,16 @@ const CRITICAL_BAND_RULES: MarginBandRules = { band: "critical", allowedRegions:
  */
 function applyMarginBandOverrides(
   baseBandRules: MarginBandRules | null,
-  form: Pick<AttackPanelForm, "executarAtivo" | "aEspreitaConfirmado" | "headshotConfirmado" | "ataqueFatalConfirmado">,
+  form: Pick<
+    AttackPanelForm,
+    "executarAtivo" | "aEspreitaConfirmado" | "headshotConfirmado" | "ataqueFatalConfirmado" | "laminaOcultaAlvoConfirmado" | "laminaOcultaFalhaLimitadaConfirmada"
+  >,
 ): MarginBandRules | null {
   if (form.executarAtivo) return CRITICAL_BAND_RULES;
   let effective = baseBandRules;
+  if (form.laminaOcultaAlvoConfirmado && form.laminaOcultaFalhaLimitadaConfirmada && effective?.band === "miss") {
+    effective = LIMITED_BAND_RULES;
+  }
   if (form.aEspreitaConfirmado && effective?.band === "limited") {
     effective = STANDARD_BAND_RULES;
   }
@@ -214,6 +235,8 @@ const DEFAULT_ATTACK_PANEL_FORM: AttackPanelForm = {
   aEspreitaConfirmado: false,
   headshotConfirmado: false,
   ataqueFatalConfirmado: false,
+  laminaOcultaAlvoConfirmado: false,
+  laminaOcultaFalhaLimitadaConfirmada: false,
 };
 
 /**
@@ -1554,7 +1577,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     const bandRules = applyMarginBandOverrides(margin != null ? resolveMarginBand(margin) : null, form);
     const marginBand: "limited" | "standard" | "critical" | "miss" | null = bandRules?.band ?? null;
 
-    if (margin != null && margin < 0 && !form.override && !form.executarAtivo) {
+    if (margin != null && margin < 0 && !form.override && !form.executarAtivo && marginBand === "miss") {
       setAtaqueResolverErro('Ataque não acertou pela margem informada. Marque "Resolver mesmo assim" para aplicar dano por override.');
       return;
     }
@@ -1662,6 +1685,12 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       }
       if (form.ataqueFatalConfirmado) {
         reminders.push("Ataque Fatal: acerto tratado como crítico; Furtividade do atacante encerrada.");
+      }
+      if (form.laminaOcultaAlvoConfirmado && form.laminaOcultaFalhaLimitadaConfirmada && marginBand === "limited") {
+        reminders.push("Lâmina Oculta: falha limitada tratada como sucesso limitado (alvo não percebia a presença).");
+      }
+      if (form.laminaOcultaAlvoConfirmado && (marginBand === "standard" || marginBand === "critical")) {
+        reminders.push("Lâmina Oculta: pode reposicionar até 3m sem gastar PA (sucesso padrão ou superior).");
       }
       if (hemorragiaAplicada) {
         reminders.push("Hemorragia: Sangrando aplicado ao alvo.");
@@ -3702,6 +3731,7 @@ function AttackResolutionPanel({
   const aEspreitaDisponivel = !!attackerCharacter && hasAEspreita(attackerCharacter, talentsIniciais) && armaEhADistancia;
   const headshotDisponivel = !!attackerCharacter && hasHeadshot(attackerCharacter, talentsIniciais) && armaEhADistancia;
   const ataqueFatalDisponivel = !!attackerCharacter && hasAtaqueFatal(attackerCharacter, talentsIniciais) && !!attackerCharacter.furtividade_ativa?.active;
+  const laminaOcultaDisponivel = !!attackerCharacter && hasLaminaOculta(attackerCharacter, talentsIniciais);
 
   return (
     <div
@@ -3919,9 +3949,33 @@ function AttackResolutionPanel({
         )}
       </div>
 
-      {(hemorragiaDisponivel || executarStatus.acquired || aEspreitaDisponivel || headshotDisponivel || ataqueFatalDisponivel) && (
+      {(hemorragiaDisponivel || executarStatus.acquired || aEspreitaDisponivel || headshotDisponivel || ataqueFatalDisponivel || laminaOcultaDisponivel) && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "#1a1420", border: "1px solid #4a2e5c", borderRadius: 6, padding: "8px 10px" }}>
           <span style={{ fontSize: 11, opacity: 0.7 }}>Talentos do atacante ({typeof log.payload.characterNome === "string" ? log.payload.characterNome : "atacante"}):</span>
+          {laminaOcultaDisponivel && (
+            <>
+              <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  data-testid={`ataque-lamina-oculta-alvo-${log.id}`}
+                  type="checkbox"
+                  checked={form.laminaOcultaAlvoConfirmado}
+                  onChange={(e) => onUpdateForm({ laminaOcultaAlvoConfirmado: e.target.checked })}
+                />
+                Lâmina Oculta — confirmo que o alvo não percebe a presença do atacante
+              </label>
+              {form.laminaOcultaAlvoConfirmado && bandRulesEfetivo?.band === "miss" && (
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+                  <input
+                    data-testid={`ataque-lamina-oculta-falha-limitada-${log.id}`}
+                    type="checkbox"
+                    checked={form.laminaOcultaFalhaLimitadaConfirmada}
+                    onChange={(e) => onUpdateForm({ laminaOcultaFalhaLimitadaConfirmada: e.target.checked })}
+                  />
+                  Esta falha é limitada, não crítica (julgamento do narrador) — trata como sucesso limitado
+                </label>
+              )}
+            </>
+          )}
           {aEspreitaDisponivel && (
             <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <input

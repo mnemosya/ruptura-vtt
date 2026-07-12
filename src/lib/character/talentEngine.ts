@@ -604,6 +604,16 @@ export function endGambiarraExpressa(character: Character): Character {
 // ---------------------------------------------------------------------
 
 /** `true` se o personagem tem Hemorragia (Assassino N2) adquirida. */
+/** Assassino › Lâmina Oculta (N1) — assinatura única: `reposicionamento_pos_acerto` (só este talento declara esse tipo). */
+export function hasLaminaOculta(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "reposicionamento_pos_acerto") return true;
+    }
+  }
+  return false;
+}
+
 export function hasHemorragia(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
   for (const { nivel } of getLearnedTalentLevels(character, talents)) {
     for (const efeito of getTalentLevelEffects(nivel)) {
