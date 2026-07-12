@@ -1489,6 +1489,139 @@ export function activateGarimpoDeRua(character: Character, nowIso: string): Char
 }
 
 // ---------------------------------------------------------------------
+// Dissecador — Golpe Cirúrgico (N1): -2 na próxima ação ofensiva do alvo
+// após sucesso crítico com dano contundente corpo a corpo. A troca
+// Corpo→Mente do mesmo nível (`familia: "troca_atributo"`) não precisa de
+// gate próprio: o dropdown de atributo do RollsTab já é livre para
+// qualquer rolagem, então a troca já é real sem nenhum código adicional
+// (o requisito "desarmado ou arma contundente" fica só como lembrete
+// textual, mesmo padrão já usado para outros efeitos "automatico").
+// ---------------------------------------------------------------------
+
+export const GOLPE_CIRURGICO_USAGE_KEY = "dissecador_golpe_cirurgico:rodada";
+
+export function getGolpeCirurgicoPenalidadeAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisRound: boolean; valor: number } {
+  let acquired = false;
+  let valor = -2;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "aplicar_penalidade_pos_critico") continue;
+      acquired = true;
+      if (typeof efeito.valor === "number") valor = efeito.valor;
+    }
+  }
+  const usedThisRound = (character.talentos_estado?.usos?.[GOLPE_CIRURGICO_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisRound, valor };
+}
+
+export function markGolpeCirurgicoPenalidadeUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[GOLPE_CIRURGICO_USAGE_KEY] = { usados: 1, cadencia: "rodada", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+/**
+ * Constrói o `TemporaryEffect` real de penalidade na próxima ação
+ * ofensiva do ALVO. Este sistema não tem uma tag genérica "ofensiva" nas
+ * rolagens (RollsTab só tageia por atributoId/periciaId reais) — aplica
+ * ao conjunto fechado de perícias que a ação "Atacar" de fato resolve
+ * (luta/precisao/balistica, ver `attackWeapon.ts`), o único jeito de
+ * garantir que o modificador realmente entra na próxima rolagem
+ * ofensiva do alvo em vez de ficar preso a uma tag que nunca casa com
+ * nada. `durationType: "manual"` porque a duração é "1 ação", não uma
+ * janela de rodadas — o narrador remove pelo botão de efeito temporário
+ * já existente assim que a ação ofensiva seguinte do alvo ocorrer.
+ */
+export function buildGolpeCirurgicoPenalidadeEffect(
+  attackerNome: string,
+  valor: number,
+  idFactory: () => string,
+  nowIso: string,
+): TemporaryEffect {
+  return {
+    id: idFactory(),
+    sourceType: "talent",
+    sourceId: "dissecador_golpe_cirurgico_penalidade",
+    sourceName: `Golpe Cirúrgico (${attackerNome})`,
+    name: "Golpe Cirúrgico — próxima ação ofensiva",
+    durationType: "manual",
+    stackingMode: "manual",
+    modifiers: [
+      { target: "skill", operation: "add", value: valor, appliesTo: ["luta", "precisao", "balistica"], label: `${valor} próxima ação ofensiva` },
+    ],
+    active: true,
+    createdAt: nowIso,
+  };
+}
+
+// ---------------------------------------------------------------------
+// Dissecador — Fincada (N2): reduzir dano em 1 para aplicar Lento/Caído.
+// ---------------------------------------------------------------------
+
+export const FINCADA_USAGE_KEY = "dissecador_fincada:rodada";
+
+export interface FincadaCondicaoOpcao {
+  condicao: string;
+  duracao?: string;
+}
+
+export function getFincadaAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisRound: boolean; reducaoDano: number; opcoes: FincadaCondicaoOpcao[] } {
+  let acquired = false;
+  let reducaoDano = 1;
+  let opcoes: FincadaCondicaoOpcao[] = [];
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "trocar_dano_por_condicao") continue;
+      acquired = true;
+      if (typeof efeito.reducao_dano === "number") reducaoDano = efeito.reducao_dano;
+      if (Array.isArray(efeito.opcoes_condicao)) {
+        opcoes = efeito.opcoes_condicao
+          .filter((o): o is Record<string, unknown> => typeof o === "object" && o !== null)
+          .map((o) => ({
+            condicao: typeof o.condicao === "string" ? o.condicao : "",
+            duracao: typeof o.duracao === "string" ? o.duracao : undefined,
+          }))
+          .filter((o) => o.condicao);
+      }
+    }
+  }
+  const usedThisRound = (character.talentos_estado?.usos?.[FINCADA_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisRound, reducaoDano, opcoes };
+}
+
+export function markFincadaUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[FINCADA_USAGE_KEY] = { usados: 1, cadencia: "rodada", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
+// Dissecador — Contra-medida (N3): Reação de contra-ataque ao errar
+// corpo a corpo contra o dono do talento. `custo_pa: 0` no payload é só
+// o custo do CONTRA-ATAQUE em si (a Reação consumida é o recurso real
+// gasto aqui) — o contra-ataque continua sendo resolvido pelo fluxo
+// normal de "Atacar" (arma restrita a desarmado/contundente por
+// confirmação manual do narrador, sem dado estruturado de "lâmina"/
+// "contundente por empunhadura" para checar automaticamente além do
+// subtipo de dano já lido do item).
+// ---------------------------------------------------------------------
+
+export function hasContraMedida(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "reacao_gatilho" && efeito.gatilho === "inimigo_erra_ataque_corpo_a_corpo_contra_voce") return true;
+    }
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------
 // Construtores de log (texto formatado — nunca JSON cru)
 // ---------------------------------------------------------------------
 

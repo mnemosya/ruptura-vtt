@@ -95,6 +95,12 @@ import {
   getSedeDeSangueDobroCorpoBonus,
   getApararPromocaoAvailability,
   markApararPromocaoUsed,
+  getGolpeCirurgicoPenalidadeAvailability,
+  markGolpeCirurgicoPenalidadeUsed,
+  buildGolpeCirurgicoPenalidadeEffect,
+  getFincadaAvailability,
+  markFincadaUsed,
+  hasContraMedida,
   type GmResource,
   type CharacterRecord,
   type Character,
@@ -175,6 +181,10 @@ interface AttackPanelForm {
   amortecerManaGasta: string;
   /** Guardião › Blindagem (checkpoint talentos, Fase 5) — talento do ALVO: anula TODO o dano em sucesso de Bloquear, 1/cena, sem consumir PD/escudo. */
   blindagemAnularAtivo: boolean;
+  /** Dissecador › Golpe Cirúrgico (checkpoint talentos, Fase 2) — narrador confirma que quer impor a penalidade na próxima ação ofensiva do alvo (só habilitado em crítico + dano contundente corpo a corpo do ATACANTE, 1/rodada). */
+  golpeCirurgicoAtivo: boolean;
+  /** Dissecador › Fincada (checkpoint talentos, Fase 2) — condição escolhida para trocar por -1 no dano ("" = não usar), 1/rodada. Só habilitado em acerto com dano contundente corpo a corpo. */
+  fincadaCondicao: "" | "lento" | "caido";
 }
 
 /** Bandas fixas reaproveitadas por Executar/À Espreita/Headshot/Ataque Fatal/Lâmina Oculta — nunca inventadas ad-hoc em cada callsite. */
@@ -261,6 +271,8 @@ const DEFAULT_ATTACK_PANEL_FORM: AttackPanelForm = {
   laminaOcultaFalhaLimitadaConfirmada: false,
   amortecerManaGasta: "",
   blindagemAnularAtivo: false,
+  golpeCirurgicoAtivo: false,
+  fincadaCondicao: "",
 };
 
 /**
@@ -1583,6 +1595,59 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     }
   }
 
+  /**
+   * Dissecador › Contra-medida (N3, checkpoint talentos Fase 2) — o DEFENSOR consome 1
+   * Reação real quando um ataque corpo a corpo contra ele errou. `custo_pa: 0` no payload é
+   * só o custo do contra-ataque em si; o contra-ataque continua sendo resolvido pelo fluxo
+   * normal de "Atacar" na ficha do defensor (desarmado/arma contundente por confirmação
+   * manual do jogador, sem dado estruturado de "lâmina" para checar sozinho) — este handler
+   * só gasta o recurso real (Reação) e registra o gatilho, já que não há como disparar uma
+   * ação futura na ficha a partir daqui.
+   */
+  async function handleContraMedida(log: TableLogEntry) {
+    const form = ataquePainelForm[log.id] ?? DEFAULT_ATTACK_PANEL_FORM;
+    if (!form.targetCharacterId) return;
+    const targetRecord = personagensAtivos[form.targetCharacterId];
+    if (!targetRecord) return;
+    const target = normalizeCharacter(targetRecord.payload);
+    if (!hasContraMedida(target, talentsIniciais)) return;
+
+    const attackTotal = form.attackTotal.trim() ? Number(form.attackTotal) : null;
+    const defenseTotal = form.defenseTotal.trim() ? Number(form.defenseTotal) : null;
+    const hasMargin = attackTotal != null && Number.isFinite(attackTotal) && defenseTotal != null && Number.isFinite(defenseTotal);
+    const margin = hasMargin ? attackTotal! - defenseTotal! : null;
+    const bandRules = applyMarginBandOverrides(margin != null ? resolveMarginBand(margin) : null, form);
+    if (bandRules?.band !== "miss") return;
+
+    const weaponSubtype = typeof log.payload.weaponSubtype === "string" ? log.payload.weaponSubtype : null;
+    const weaponInstanceId = typeof log.payload.weaponInstanceId === "string" ? log.payload.weaponInstanceId : null;
+    if (weaponSubtype !== "corpo_a_corpo" && weaponInstanceId != null) return;
+
+    const reactionMax = computeDerivedStats(target.atributos, regras, target.mana_bonus_ruptura ?? 0).reacoes_por_rodada;
+    const availability = getReactionAvailability(target, reactionMax, reactionRules);
+    if (availability.remaining < 1) return;
+
+    const nextTarget: Character = {
+      ...target,
+      estado_jogo: { ...target.estado_jogo, reacoes_usadas: availability.used + 1 },
+    };
+    const attackerNome = typeof log.payload.characterNome === "string" ? log.payload.characterNome : "Atacante";
+    await persistGmMutation({
+      characterId: form.targetCharacterId,
+      nextCharacter: nextTarget,
+      logType: "talent_triggered",
+      logPayload: {
+        characterId: form.targetCharacterId,
+        characterNome: target.nome,
+        message: `Contra-medida: Reação consumida contra ${attackerNome} — pode contra-atacar imediatamente desarmado ou com arma contundente (0 PA, resolvido pelo Atacar normal).`,
+        sourceTalentId: "dissecador_contra_medida",
+        sourceActionLogId: log.id,
+        reactionBefore: availability.remaining,
+        reactionAfter: availability.remaining - 1,
+      },
+    });
+  }
+
   function handleRollAttackDamage(logId: string, log: TableLogEntry) {
     const damageBase = typeof log.payload.damageBase === "string" ? log.payload.damageBase : null;
     if (!damageBase || !isDiceFormula(damageBase)) return;
@@ -1684,7 +1749,29 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
           amortecerManaGastaReal = Math.min(amortecerPedida, manaAlvoAtual, rawDamage);
         }
       }
-      const rawDamageAmortecido = blindagemAplicada ? 0 : rawDamage - amortecerManaGastaReal;
+      // Dissecador › Fincada (checkpoint talentos, Fase 2) — o ATACANTE troca -1 no dano
+      // (reducao_dano do payload) por aplicar Lento/Caído no alvo, só em acerto (não miss)
+      // com dano contundente corpo a corpo; 1/rodada. Reduz o dano BRUTO no mesmo ponto que
+      // Amortecer, antes de MIT/PD.
+      const attackerCharacterIdFincada = typeof log.payload.characterId === "string" ? log.payload.characterId : null;
+      const attackerRecordFincada = attackerCharacterIdFincada ? personagensAtivos[attackerCharacterIdFincada] : null;
+      const attackerCharacterFincada = attackerRecordFincada ? normalizeCharacter(attackerRecordFincada.payload) : null;
+      const golpeContundenteCorpoACorpo =
+        log.payload.damageSubtype === "contundente" &&
+        (log.payload.weaponSubtype === "corpo_a_corpo" || log.payload.weaponInstanceId == null);
+      const fincadaStatus = attackerCharacterFincada
+        ? getFincadaAvailability(attackerCharacterFincada, talentsIniciais)
+        : { acquired: false, usedThisRound: false, reducaoDano: 1, opcoes: [] };
+      const fincadaElegivel =
+        form.fincadaCondicao !== "" &&
+        golpeContundenteCorpoACorpo &&
+        marginBand != null &&
+        marginBand !== "miss" &&
+        fincadaStatus.acquired &&
+        !fincadaStatus.usedThisRound;
+      const fincadaReducaoReal = fincadaElegivel ? Math.min(fincadaStatus.reducaoDano, rawDamage) : 0;
+
+      const rawDamageAmortecido = blindagemAplicada ? 0 : rawDamage - amortecerManaGastaReal - fincadaReducaoReal;
       if (amortecerManaGastaReal > 0) {
         targetNormalizado = markCanalizarUsed(
           {
@@ -1705,6 +1792,31 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
         round: targetNormalizado.current_round,
         scene: targetNormalizado.current_scene,
       });
+
+      // Aplica a condição escolhida (Lento/Caído) no ALVO quando Fincada foi usada de fato
+      // (dano reduzido com sucesso). Autoria do ATACANTE preservada; "Lento" dura até o fim
+      // do PRÓXIMO TURNO do alvo — este sistema só rastreia fim de RODADA global (não turno
+      // individual), então a duração fica como lembrete para remoção manual (mesmo critério
+      // já documentado em Fúria), não uma aproximação inventada.
+      let fincadaAplicada = false;
+      let fincadaDuracaoTexto: string | null = null;
+      if (fincadaElegivel) {
+        const opcao = fincadaStatus.opcoes.find((o) => o.condicao === form.fincadaCondicao);
+        fincadaDuracaoTexto = opcao?.duracao ?? null;
+        const nomeCondicao = form.fincadaCondicao === "lento" ? "Lento" : "Caído";
+        const condResultFincada = applyGmCondition(
+          resolucao.character,
+          { slug: form.fincadaCondicao, nome: nomeCondicao },
+          nowIso,
+          {
+            sourceCharacterId: attackerCharacterIdFincada,
+            sourceTalentId: "dissecador_fincada",
+            sourceType: "talent",
+          },
+        );
+        resolucao = { ...resolucao, character: condResultFincada.character };
+        fincadaAplicada = !condResultFincada.jaAtiva;
+      }
 
       // Berserker › Fúria (checkpoint talentos, Fase 5): sofrer dano real (finalDamage > 0)
       // empilha +1 em Luta (até o máximo do payload) no ALVO — TemporaryEffect real com
@@ -1742,6 +1854,29 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
         hemorragiaAplicada = !condResult.jaAtiva;
       }
 
+      // Dissecador › Golpe Cirúrgico (checkpoint talentos, Fase 2) — sucesso crítico com
+      // dano contundente corpo a corpo permite impor -2 na próxima ação ofensiva do ALVO,
+      // 1/rodada no ATACANTE (`attackerCharacterFincada` já resolvido acima pelo mesmo
+      // characterId — reaproveitado em vez de buscar de novo). TemporaryEffect real
+      // (luta/precisao/balistica, ver buildGolpeCirurgicoPenalidadeEffect), duração manual
+      // (narrador remove quando a próxima ação ofensiva do alvo ocorrer).
+      const golpeCirurgicoStatus = attackerCharacterFincada
+        ? getGolpeCirurgicoPenalidadeAvailability(attackerCharacterFincada, talentsIniciais)
+        : { acquired: false, usedThisRound: false, valor: -2 };
+      const golpeCirurgicoElegivel =
+        form.golpeCirurgicoAtivo &&
+        golpeContundenteCorpoACorpo &&
+        marginBand === "critical" &&
+        golpeCirurgicoStatus.acquired &&
+        !golpeCirurgicoStatus.usedThisRound;
+      let golpeCirurgicoAplicado = false;
+      if (golpeCirurgicoElegivel) {
+        const nomeAtacante = typeof log.payload.characterNome === "string" ? log.payload.characterNome : "Atacante";
+        const efeitoGolpeCirurgico = buildGolpeCirurgicoPenalidadeEffect(nomeAtacante, golpeCirurgicoStatus.valor, () => crypto.randomUUID(), nowIso);
+        resolucao = { ...resolucao, character: addTemporaryEffect(resolucao.character, efeitoGolpeCirurgico) };
+        golpeCirurgicoAplicado = true;
+      }
+
       const record = await updateCharacter(form.targetCharacterId, resolucao.character);
       setPersonagensAtivos((prev) => ({ ...prev, [record.id]: record }));
 
@@ -1769,6 +1904,22 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
             const attackerSaved = await updateCharacter(attackerCharacterId!, attackerNext);
             setPersonagensAtivos((prev) => ({ ...prev, [attackerSaved.id]: attackerSaved }));
           }
+        }
+      }
+
+      // Dissecador › Fincada/Golpe Cirúrgico consomem 1/rodada no ATACANTE — combinados num
+      // único fetch/save (mesmo characterId) para não perder a marcação de um por causa do
+      // outro (o padrão de blocos separados acima, se ambos disparassem no mesmo ataque,
+      // reescreveria por cima um do outro por lerem `personagensAtivos` desatualizado).
+      if (fincadaAplicada || golpeCirurgicoAplicado) {
+        const attackerCharacterId = typeof log.payload.characterId === "string" ? log.payload.characterId : null;
+        const attackerRecord = attackerCharacterId ? personagensAtivos[attackerCharacterId] : null;
+        if (attackerRecord) {
+          let attackerNext = normalizeCharacter(attackerRecord.payload);
+          if (fincadaAplicada) attackerNext = markFincadaUsed(attackerNext, nowIso);
+          if (golpeCirurgicoAplicado) attackerNext = markGolpeCirurgicoPenalidadeUsed(attackerNext, nowIso);
+          const attackerSaved = await updateCharacter(attackerCharacterId!, attackerNext);
+          setPersonagensAtivos((prev) => ({ ...prev, [attackerSaved.id]: attackerSaved }));
         }
       }
 
@@ -1813,6 +1964,18 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       }
       if (blindagemAplicada) {
         reminders.push("Blindagem: dano totalmente anulado (sucesso em Bloquear) — nada aplicado ao escudo/PD nem ao defensor.");
+      }
+      if (fincadaAplicada) {
+        const nomeCondicaoReminder = form.fincadaCondicao === "lento" ? "Lento" : "Caído";
+        reminders.push(
+          `Fincada: dano reduzido em ${fincadaReducaoReal} para aplicar ${nomeCondicaoReminder} no alvo` +
+            (fincadaDuracaoTexto ? ` (dura até ${fincadaDuracaoTexto.replace(/_/g, " ")} — remova manualmente quando passar).` : "."),
+        );
+      }
+      if (golpeCirurgicoAplicado) {
+        reminders.push(
+          `Golpe Cirúrgico: ${golpeCirurgicoStatus.valor} aplicado como efeito temporário no alvo para a próxima ação ofensiva dele (luta/precisão/balística) — remova manualmente pelo botão de efeito temporário assim que essa ação ocorrer.`,
+        );
       }
       // Berserker › Sede de Sangue (checkpoint talentos, Fase 1) — reminder com o valor
       // EXATO do bônus de Corpo extra a somar (dobra o bônus já incluído pelo narrador no
@@ -3734,6 +3897,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                         onRollExtraMarginDie={() => handleRollExtraMarginDie(entry.id, entry)}
                         onRollDefense={(defenseType) => handleRollDefense(entry.id, entry, defenseType)}
                         onPromoteAparar={() => handlePromoteApararCritico(entry.id)}
+                        onContraMedida={() => handleContraMedida(entry)}
                         onApply={() => handleResolveAttackDamage(entry)}
                         onCancel={() => setAtaqueResolvendoLogId(null)}
                         talentsIniciais={talentsIniciais}
@@ -3806,6 +3970,7 @@ function AttackResolutionPanel({
   onRollExtraMarginDie,
   onRollDefense,
   onPromoteAparar,
+  onContraMedida,
   onApply,
   onCancel,
   talentsIniciais,
@@ -3829,6 +3994,8 @@ function AttackResolutionPanel({
   onRollDefense: (defenseType: DefenseType) => void;
   /** Espadachim › Aparar (checkpoint talentos, Fase 1) — promove a última defesa de Aparar de sucesso padrão para crítico, 1/cena. */
   onPromoteAparar: () => void;
+  /** Dissecador › Contra-medida (checkpoint talentos, Fase 2) — consome 1 Reação do DEFENSOR quando o ataque errou corpo a corpo. */
+  onContraMedida: () => void;
   onApply: () => void;
   onCancel: () => void;
   /** Assassino › Hemorragia/Executar (checkpoint talentos, Fase E) — talentos do ATACANTE. */
@@ -3874,6 +4041,20 @@ function AttackResolutionPanel({
     apararPromocaoStatus.acquired &&
     !apararPromocaoStatus.usedThisScene;
 
+  // Dissecador › Contra-medida (checkpoint talentos, Fase 2) — lido do DEFENSOR (dono do
+  // talento): inimigo errou um ataque corpo a corpo contra ele + Reação disponível. Custo_pa
+  // 0 do payload é só o contra-ataque em si; a Reação É o recurso real gasto no clique.
+  const weaponSubtypeContraMedida = typeof log.payload.weaponSubtype === "string" ? log.payload.weaponSubtype : null;
+  const weaponInstanceIdContraMedida = typeof log.payload.weaponInstanceId === "string" ? log.payload.weaponInstanceId : null;
+  const ataqueOriginalCorpoACorpo = weaponSubtypeContraMedida === "corpo_a_corpo" || weaponInstanceIdContraMedida == null;
+  const podeContraMedida =
+    !!targetNormalizado &&
+    hasContraMedida(targetNormalizado, talentsIniciais) &&
+    bandRulesEfetivo?.band === "miss" &&
+    ataqueOriginalCorpoACorpo &&
+    !!reactionAvailability &&
+    reactionAvailability.remaining >= 1;
+
   // Assassino › Hemorragia/Executar (Fase E, cross-record) — lidos do ATACANTE, não do alvo.
   const attackerCharacterId = typeof log.payload.characterId === "string" ? log.payload.characterId : null;
   const attackerRecord = attackerCharacterId ? personagensAtivos[attackerCharacterId] : null;
@@ -3890,6 +4071,24 @@ function AttackResolutionPanel({
   const headshotDisponivel = !!attackerCharacter && hasHeadshot(attackerCharacter, talentsIniciais) && armaEhADistancia;
   const ataqueFatalDisponivel = !!attackerCharacter && hasAtaqueFatal(attackerCharacter, talentsIniciais) && !!attackerCharacter.furtividade_ativa?.active;
   const laminaOcultaDisponivel = !!attackerCharacter && hasLaminaOculta(attackerCharacter, talentsIniciais);
+
+  // Dissecador › Golpe Cirúrgico/Fincada (checkpoint talentos, Fase 2) — mesma detecção de
+  // "corpo a corpo com dano contundente" usada em handleResolveAttackDamage, lida direto do
+  // log da ação original (weaponSubtype/damageSubtype) para o botão só aparecer quando a
+  // condição real vai bater no apply.
+  const damageSubtypeAttack = typeof log.payload.damageSubtype === "string" ? log.payload.damageSubtype : null;
+  const weaponSubtypeAttack = typeof log.payload.weaponSubtype === "string" ? log.payload.weaponSubtype : null;
+  const golpeContundenteCorpoACorpoDisponivel = damageSubtypeAttack === "contundente" && (weaponSubtypeAttack === "corpo_a_corpo" || weaponInstanceId == null);
+  const golpeCirurgicoStatusPanel = attackerCharacter
+    ? getGolpeCirurgicoPenalidadeAvailability(attackerCharacter, talentsIniciais)
+    : { acquired: false, usedThisRound: false, valor: -2 };
+  const golpeCirurgicoDisponivel =
+    golpeCirurgicoStatusPanel.acquired && !golpeCirurgicoStatusPanel.usedThisRound && golpeContundenteCorpoACorpoDisponivel && bandRulesEfetivo?.band === "critical";
+  const fincadaStatusPanel = attackerCharacter
+    ? getFincadaAvailability(attackerCharacter, talentsIniciais)
+    : { acquired: false, usedThisRound: false, reducaoDano: 1, opcoes: [] as { condicao: string; duracao?: string }[] };
+  const fincadaDisponivel =
+    fincadaStatusPanel.acquired && !fincadaStatusPanel.usedThisRound && golpeContundenteCorpoACorpoDisponivel && !!bandRulesEfetivo && bandRulesEfetivo.band !== "miss";
 
   return (
     <div
@@ -3999,6 +4198,15 @@ function AttackResolutionPanel({
               style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px", alignSelf: "flex-start" }}
             >
               Aparar: tratar como sucesso crítico (confirma lâmina — 1/cena)
+            </button>
+          )}
+          {podeContraMedida && (
+            <button
+              data-testid={`ataque-contra-medida-${log.id}`}
+              onClick={onContraMedida}
+              style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px", alignSelf: "flex-start" }}
+            >
+              Contra-medida: usar Reação para contra-atacar (desarmado/arma contundente, 0 PA)
             </button>
           )}
           <p style={{ fontSize: 10, opacity: 0.5, margin: 0 }}>
@@ -4158,7 +4366,7 @@ function AttackResolutionPanel({
         </div>
       )}
 
-      {(hemorragiaDisponivel || executarStatus.acquired || aEspreitaDisponivel || headshotDisponivel || ataqueFatalDisponivel || laminaOcultaDisponivel) && (
+      {(hemorragiaDisponivel || executarStatus.acquired || aEspreitaDisponivel || headshotDisponivel || ataqueFatalDisponivel || laminaOcultaDisponivel || golpeCirurgicoDisponivel || fincadaDisponivel) && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "#1a1420", border: "1px solid #4a2e5c", borderRadius: 6, padding: "8px 10px" }}>
           <span style={{ fontSize: 11, opacity: 0.7 }}>Talentos do atacante ({typeof log.payload.characterNome === "string" ? log.payload.characterNome : "atacante"}):</span>
           {laminaOcultaDisponivel && (
@@ -4227,6 +4435,32 @@ function AttackResolutionPanel({
                 onChange={(e) => onUpdateForm({ aplicarHemorragia: e.target.checked })}
               />
               Aplicar Hemorragia (Sangrando no acerto — 1d8 em crítico)
+            </label>
+          )}
+          {golpeCirurgicoDisponivel && (
+            <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input
+                data-testid={`ataque-golpe-cirurgico-${log.id}`}
+                type="checkbox"
+                checked={form.golpeCirurgicoAtivo}
+                onChange={(e) => onUpdateForm({ golpeCirurgicoAtivo: e.target.checked })}
+              />
+              Golpe Cirúrgico — impor {golpeCirurgicoStatusPanel.valor} na próxima ação ofensiva do alvo (1/rodada)
+            </label>
+          )}
+          {fincadaDisponivel && (
+            <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              Fincada (1/rodada, -{fincadaStatusPanel.reducaoDano} no dano):
+              <select
+                data-testid={`ataque-fincada-${log.id}`}
+                value={form.fincadaCondicao}
+                onChange={(e) => onUpdateForm({ fincadaCondicao: e.target.value as "" | "lento" | "caido" })}
+                style={{ ...inputStyle, width: "auto" }}
+              >
+                <option value="">Não usar</option>
+                <option value="lento">Aplicar Lento</option>
+                <option value="caido">Aplicar Caído</option>
+              </select>
             </label>
           )}
           {executarStatus.acquired && (
