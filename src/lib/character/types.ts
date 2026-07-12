@@ -553,6 +553,15 @@ export interface Character {
     selectedFlechaSlug?: string;
     /** Cargas restantes deste item físico (checkpoint pós-v0.58, uso de farmácia/granadas com `cargas_max`). Ausente = assume `item.cargasMax` na primeira leitura. */
     cargasAtual?: number;
+    /** Toque de Midas (Artífice N2) — efeito temporário nesta instância (ver InventoryItemInstance.toqueDeMidas). Acompanha o item na transferência/reload. */
+    toqueDeMidas?: {
+      id: string;
+      alvo: "arma" | "armadura" | "escudo" | "ferramenta_dispositivo";
+      aplicadoEm: string;
+      expiraEm: string;
+      pericia?: string;
+      pdConsumido?: number;
+    };
   }[];
   /**
    * Magias aprendidas individualmente (checkpoint v0.50.1/v0.50.2) —

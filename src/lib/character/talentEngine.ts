@@ -491,6 +491,31 @@ export function getTalentOverloadLimitOverride(
 /** Chave sintética de uso 1/rodada de Canalizar (Potencializar/Amortecer compartilham). */
 export const CANALIZAR_USAGE_KEY = "canalizar:rodada";
 
+/** Chave sintética de uso 1/dia de Toque de Midas (Artífice N2). */
+export const TOQUE_DE_MIDAS_USAGE_KEY = "toque_de_midas:dia";
+
+/** Disponibilidade de Toque de Midas: adquirido (efeito `aprimorar_item_temporario`) e ainda não usado hoje. */
+export function getToqueDeMidasAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedToday: boolean; available: boolean } {
+  let acquired = false;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "aprimorar_item_temporario") acquired = true;
+    }
+  }
+  const usedToday = (character.talentos_estado?.usos?.[TOQUE_DE_MIDAS_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedToday, available: acquired && !usedToday };
+}
+
+/** Marca Toque de Midas como usado hoje (cadência "dia" → reseta no descanso longo). */
+export function markToqueDeMidasUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[TOQUE_DE_MIDAS_USAGE_KEY] = { usados: 1, cadencia: "dia", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
 /**
  * Estado de Canalizar (Mago de Batalha N2) — se adquirido e se ainda não
  * foi usado nesta rodada (o gate 1/rodada é compartilhado entre

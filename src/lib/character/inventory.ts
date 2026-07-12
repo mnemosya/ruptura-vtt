@@ -291,6 +291,26 @@ export interface InventoryItemInstance {
    * estruturado nunca ganham este campo; usam `quantidade` diretamente.
    */
   cargasAtual?: number;
+  /**
+   * Efeito de Artífice › Toque de Midas aplicado a ESTA instância
+   * (checkpoint talentos). Vive na instância, então acompanha o item ao
+   * equipar/desequipar/transferir para o bando e sobrevive a reload. Não
+   * altera o modelo-base da Biblioteca. `expiraEm` é 1 hora após
+   * `aplicadoEm`; sem relógio canônico de horas, também pode ser
+   * encerrado manualmente. `pdConsumido` rastreia quanto do PD temporário
+   * de escudo já foi gasto (só o PD temporário RESTANTE é removido ao
+   * expirar). Ausente = nenhum efeito ativo.
+   */
+  toqueDeMidas?: {
+    id: string;
+    alvo: "arma" | "armadura" | "escudo" | "ferramenta_dispositivo";
+    aplicadoEm: string;
+    expiraEm: string;
+    /** só para ferramenta/dispositivo: perícia/contexto do +1 escolhido. */
+    pericia?: string;
+    /** PD temporário de escudo já consumido (para não restaurar o já gasto ao expirar). */
+    pdConsumido?: number;
+  };
 }
 
 export type ItemPropertyClassification =
@@ -1288,15 +1308,102 @@ export function getEquippedDefenseProfile(character: Pick<Character, "inventario
     const item = bySlug.get(instance.itemSlug);
     if (!item || item.status !== "published") continue;
 
+    const midas = getToqueDeMidasBonus(instance);
     if (instance.equipamentoSlot === "armadura" && item.mitMax != null) {
-      profile.armadura = { instance, item, mitMax: item.mitMax, mitAtual: getItemMitAtual(instance, item), tipoProtecao: item.tipoProtecao };
+      // Toque de Midas: +2 MIT temporário na armadura — soma ao MIT efetivo (o máximo também sobe para não capar o bônus).
+      profile.armadura = {
+        instance,
+        item,
+        mitMax: item.mitMax + midas.mit,
+        mitAtual: getItemMitAtual(instance, item) + midas.mit,
+        tipoProtecao: item.tipoProtecao,
+      };
     }
     if (instance.equipamentoSlot === "escudo" && item.pdMax != null) {
-      profile.escudo = { instance, item, pdMax: item.pdMax, pdAtual: getItemPdAtual(instance, item), tipoProtecao: item.tipoProtecao };
+      // Toque de Midas: +3 PD temporário no escudo (menos o já consumido) — some ao PD efetivo.
+      const pdTempRestante = Math.max(0, midas.pd - (instance.toqueDeMidas?.pdConsumido ?? 0));
+      profile.escudo = {
+        instance,
+        item,
+        pdMax: item.pdMax + midas.pd,
+        pdAtual: getItemPdAtual(instance, item) + pdTempRestante,
+        tipoProtecao: item.tipoProtecao,
+      };
     }
   }
 
   return profile;
+}
+
+// ---------------------------------------------------------------------
+// Toque de Midas (Artífice N2) — efeito temporário na INSTÂNCIA real.
+// ---------------------------------------------------------------------
+
+/** true se o efeito de Toque de Midas da instância ainda está no prazo de 1h (ou sem `expiraEm` legível). */
+export function isToqueDeMidasActive(instance: InventoryItemInstance, nowIso?: string): boolean {
+  const m = instance.toqueDeMidas;
+  if (!m) return false;
+  if (!nowIso) return true;
+  return nowIso < m.expiraEm;
+}
+
+/** Bônus mecânico do Toque de Midas ativo desta instância, por alvo. Zero quando inativo. */
+export function getToqueDeMidasBonus(
+  instance: InventoryItemInstance,
+  nowIso?: string,
+): { ataque: number; dano: number; mit: number; pd: number; ferramenta: number } {
+  const zero = { ataque: 0, dano: 0, mit: 0, pd: 0, ferramenta: 0 };
+  if (!isToqueDeMidasActive(instance, nowIso)) return zero;
+  const alvo = instance.toqueDeMidas!.alvo;
+  if (alvo === "arma") return { ...zero, ataque: 1, dano: 1 };
+  if (alvo === "armadura") return { ...zero, mit: 2 };
+  if (alvo === "escudo") return { ...zero, pd: 3 };
+  if (alvo === "ferramenta_dispositivo") return { ...zero, ferramenta: 1 };
+  return zero;
+}
+
+/** Aplica Toque de Midas a uma instância (1h de duração). Não valida uso/dia (o chamador cuida via cadência do talento). */
+export function applyToqueDeMidas(
+  character: Character,
+  instanceId: string,
+  alvo: InventoryItemInstance["toqueDeMidas"] extends infer T ? (T extends { alvo: infer A } ? A : never) : never,
+  nowIso: string,
+  expiraEm: string,
+  id: string,
+  pericia?: string,
+): Character {
+  const inventario = character.inventario ?? [];
+  const next = inventario.map((i) =>
+    i.id === instanceId ? { ...i, toqueDeMidas: { id, alvo, aplicadoEm: nowIso, expiraEm, ...(pericia ? { pericia } : {}) } } : i,
+  );
+  return { ...character, inventario: next };
+}
+
+/** Encerra manualmente o Toque de Midas de uma instância (remove o efeito). */
+export function endToqueDeMidas(character: Character, instanceId: string): Character {
+  const inventario = character.inventario ?? [];
+  const next = inventario.map((i) => {
+    if (i.id !== instanceId || !i.toqueDeMidas) return i;
+    const { toqueDeMidas: _drop, ...rest } = i;
+    return rest;
+  });
+  return { ...character, inventario: next };
+}
+
+/** Expira efeitos de Toque de Midas vencidos (past `expiraEm`). Devolve o mesmo objeto quando nada muda. */
+export function expireToqueDeMidas(character: Character, nowIso: string): { character: Character; expiredInstanceIds: string[] } {
+  const inventario = character.inventario ?? [];
+  const expired: string[] = [];
+  const next = inventario.map((i) => {
+    if (i.toqueDeMidas && nowIso >= i.toqueDeMidas.expiraEm) {
+      expired.push(i.id);
+      const { toqueDeMidas: _drop, ...rest } = i;
+      return rest;
+    }
+    return i;
+  });
+  if (expired.length === 0) return { character, expiredInstanceIds: [] };
+  return { character: { ...character, inventario: next }, expiredInstanceIds: expired };
 }
 
 // ---------------------------------------------------------------------

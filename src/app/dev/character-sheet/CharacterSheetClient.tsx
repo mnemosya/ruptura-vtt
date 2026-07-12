@@ -79,6 +79,10 @@ import {
   resetTalentUses,
   purchaseItem,
   setItemLoadoutState,
+  applyToqueDeMidas,
+  endToqueDeMidas,
+  getToqueDeMidasAvailability,
+  markToqueDeMidasUsed,
   removeItemFromInventory,
   removeQuantityFromInventory,
   useItemOnCharacter,
@@ -2234,6 +2238,44 @@ export default function CharacterSheetClient({
     setCharacter(next);
   }
 
+  /** Artífice › Toque de Midas — aplica efeito temporário (1h) na instância real; 1/dia. */
+  function handleApplyToqueDeMidas(instanceId: string, pericia?: string) {
+    const current = characterRef.current;
+    const avail = getToqueDeMidasAvailability(current, talentsIniciais);
+    if (!avail.available) {
+      addLogEntry("condicao", avail.usedToday ? "Toque de Midas já foi usado hoje." : "Toque de Midas não adquirido.");
+      return;
+    }
+    const instance = (current.inventario ?? []).find((i) => i.id === instanceId);
+    if (!instance) return;
+    const alvo =
+      instance.categoria === "arma" ? "arma"
+      : instance.categoria === "armadura" ? "armadura"
+      : instance.categoria === "escudo" ? "escudo"
+      : "ferramenta_dispositivo";
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const expiraEm = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
+    let next = applyToqueDeMidas(current, instanceId, alvo, nowIso, expiraEm, crypto.randomUUID(), pericia);
+    next = markToqueDeMidasUsed(next, nowIso);
+    characterRef.current = next;
+    setCharacter(next);
+    const efeito =
+      alvo === "arma" ? "+1 ataque e +1 dano" : alvo === "armadura" ? "+2 MIT" : alvo === "escudo" ? "+3 PD" : `+1 no teste${pericia ? ` (${pericia})` : ""}`;
+    addLogEntry("condicao", `Toque de Midas aplicado em "${instance.itemNome}": ${efeito} por 1 hora.`);
+    void persistTalentUsedLog({ talentNome: "Toque de Midas", nivelNome: "Nível 2", instanceId, alvo, efeito });
+  }
+
+  function handleEndToqueDeMidas(instanceId: string) {
+    const current = characterRef.current;
+    const instance = (current.inventario ?? []).find((i) => i.id === instanceId);
+    const next = endToqueDeMidas(current, instanceId);
+    if (next === current) return;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Toque de Midas encerrado em "${instance?.itemNome ?? "item"}".`);
+  }
+
   function handleRemoveItem(instanceId: string) {
     const current = characterRef.current;
     const next = removeItemFromInventory(current, instanceId);
@@ -4098,6 +4140,9 @@ export default function CharacterSheetClient({
           allies={alliesAtivos}
           onUseItemOnAlly={handleUseItemOnAlly}
           onRefreshAllies={() => selectedCampaignId && refreshAlliesAtivos(selectedCampaignId)}
+          toqueDeMidasAvailable={getToqueDeMidasAvailability(character, talentsIniciais).available}
+          onApplyToqueDeMidas={handleApplyToqueDeMidas}
+          onEndToqueDeMidas={handleEndToqueDeMidas}
         />
       )}
 

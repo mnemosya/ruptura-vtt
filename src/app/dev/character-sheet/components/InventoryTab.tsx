@@ -86,6 +86,9 @@ export function InventoryTab({
   allies,
   onUseItemOnAlly,
   onRefreshAllies,
+  toqueDeMidasAvailable = false,
+  onApplyToqueDeMidas,
+  onEndToqueDeMidas,
 }: {
   items: ItemContent[];
   catalogError: string | null;
@@ -137,6 +140,12 @@ export function InventoryTab({
   onUseItemOnAlly: (instanceId: string, targetCharacterId: string, options?: { selectedConditionInstanceId?: string }) => void;
   /** Recarrega `allies` sob demanda (ex.: ao abrir o painel "Usar em aliado") — mantém PV/condições do alvo atualizados no momento do uso. */
   onRefreshAllies: () => void;
+  /** Artífice › Toque de Midas disponível (adquirido + 1/dia não usado). */
+  toqueDeMidasAvailable?: boolean;
+  /** Aplica Toque de Midas à instância (o alvo é derivado da categoria; `pericia` só p/ ferramenta/dispositivo). */
+  onApplyToqueDeMidas?: (instanceId: string, pericia?: string) => void;
+  /** Encerra manualmente o Toque de Midas da instância. */
+  onEndToqueDeMidas?: (instanceId: string) => void;
 }) {
   const [busca, setBusca] = useState("");
   const [categoria, setCategoria] = useState<(typeof CATEGORIA_FILTROS)[number]>("todos");
@@ -144,6 +153,7 @@ export function InventoryTab({
   const [quantidades, setQuantidades] = useState<Record<string, number>>({});
   const [precos, setPrecos] = useState<Record<string, number>>({});
   const [runaSelecionada, setRunaSelecionada] = useState<Record<string, string>>({});
+  const [toqueMidasPericia, setToqueMidasPericia] = useState<Record<string, string>>({});
   // guardarQtd[`${aljavaInstanceId}:${ammoInstanceId}`] = quanto guardar nesta Aljava
   const [guardarQtd, setGuardarQtd] = useState<Record<string, number>>({});
   // retirarQtd[`${aljavaInstanceId}:${contentSlug}`] = quanto retirar desta Aljava
@@ -350,6 +360,64 @@ export function InventoryTab({
                     Remover
                   </button>
                 </div>
+
+                {/* Toque de Midas (Artífice N2) — efeito temporário na instância real. */}
+                {(() => {
+                  const midas = instance.toqueDeMidas;
+                  const alvoDerivado =
+                    instance.categoria === "arma"
+                      ? "arma"
+                      : instance.categoria === "armadura"
+                        ? "armadura"
+                        : instance.categoria === "escudo"
+                          ? "escudo"
+                          : "ferramenta_dispositivo";
+                  const efeitoTexto =
+                    alvoDerivado === "arma"
+                      ? "+1 ataque e +1 dano"
+                      : alvoDerivado === "armadura"
+                        ? "+2 MIT"
+                        : alvoDerivado === "escudo"
+                          ? "+3 PD"
+                          : "+1 no teste relacionado";
+                  if (midas) {
+                    return (
+                      <div data-testid={`toque-de-midas-ativo-${instance.id}`} style={{ background: "#241f14", border: "1px solid #6b5a2a", borderRadius: 6, padding: "6px 8px", fontSize: 11 }}>
+                        <span style={{ color: "#e0a03c" }}>✦ Toque de Midas ativo</span> — {efeitoTexto}
+                        {midas.pericia ? ` (${midas.pericia})` : ""} · aplicado {new Date(midas.aplicadoEm).toLocaleTimeString()} · expira {new Date(midas.expiraEm).toLocaleTimeString()}
+                        <button
+                          data-testid={`toque-de-midas-encerrar-${instance.id}`}
+                          onClick={() => onEndToqueDeMidas?.(instance.id)}
+                          style={{ ...buttonStyle, fontSize: 10, padding: "1px 8px", marginLeft: 8 }}
+                        >
+                          Encerrar efeito
+                        </button>
+                      </div>
+                    );
+                  }
+                  if (!toqueDeMidasAvailable) return null;
+                  return (
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 11 }}>
+                      {alvoDerivado === "ferramenta_dispositivo" && (
+                        <input
+                          data-testid={`toque-de-midas-pericia-${instance.id}`}
+                          placeholder="perícia/contexto"
+                          value={toqueMidasPericia[instance.id] ?? ""}
+                          onChange={(e) => setToqueMidasPericia((prev) => ({ ...prev, [instance.id]: e.target.value }))}
+                          style={{ ...input, width: 130 }}
+                        />
+                      )}
+                      <button
+                        data-testid={`toque-de-midas-aplicar-${instance.id}`}
+                        onClick={() => onApplyToqueDeMidas?.(instance.id, toqueMidasPericia[instance.id] || undefined)}
+                        style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+                        title="1/dia · 1 hora · efeito na instância real"
+                      >
+                        Aplicar Toque de Midas ({efeitoTexto})
+                      </button>
+                    </div>
+                  );
+                })()}
 
                 {/* Enviar ao bando (checkpoint pós-v0.68, CP7) — só com mesa conectada + personagem salvo. */}
                 {isConnectedToCampaign ? (
