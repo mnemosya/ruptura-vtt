@@ -437,6 +437,41 @@ export interface Character {
     nota: string;
   };
   /**
+   * Artífice › Bricolagem (checkpoint talentos) — vulnerabilidade
+   * identificada em um mecanismo/estrutura/sistema, com bônus consumível
+   * de +1 no PRÓXIMO teste relacionado. `consumida: true` preserva
+   * histórico mínimo (nunca reaplica); uma nova vulnerabilidade
+   * substitui a anterior (sempre a última registrada conta).
+   */
+  bricolagem_vulnerabilidade?: {
+    id: string;
+    nivelId: string;
+    tipo: "mecanismo" | "estrutura" | "sistema_simples";
+    alvoDescricao: string;
+    falhaPrincipal: string;
+    periciaBeneficiada: "engenharia" | "robotica";
+    criadaEm: string;
+    consumida: boolean;
+    consumidaEm?: string;
+  };
+  /**
+   * Artífice › Gambiarra Expressa (checkpoint talentos) — atividade
+   * narrativa 1/sessão (5 minutos, sem teste estendido). Estado ativo
+   * até o narrador confirmar encerramento; `talentos_estado.usos` guarda
+   * a cadência "sessao" (reset manual, sem gatilho canônico de sessão).
+   */
+  gambiarra_expressa_ativa?: {
+    id: string;
+    nivelId: string;
+    alvo: "estrutura" | "equipamento" | "automato";
+    materialBase: string;
+    criacaoOuModificacao: "criacao" | "modificacao";
+    efeitoObtido: string;
+    duracao: string;
+    observacoes?: string;
+    criadaEm: string;
+  };
+  /**
    * Talentos adquiridos (checkpoint v0.48, PRD 12) — um item por NÍVEL
    * adquirido (não uma pilha de "nível máximo"). Data-driven a partir
    * de `content_documents` (content_type="talent") — nunca lista

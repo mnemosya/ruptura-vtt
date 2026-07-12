@@ -165,11 +165,19 @@ export function deriveActiveEffectsFromTalents(
       const acquired = acquiredByLevelId.get(nivel.id);
       if (!acquired) continue;
 
-      getTalentLevelEffects(nivel).forEach((efeito, index) => {
+      const efeitosDoNivel = getTalentLevelEffects(nivel);
+      // Achado: níveis que declaram `detectar_falha_sem_teste` (ex.: Bricolagem)
+      // têm um `modificador` IRMÃO que só vale no PRÓXIMO teste relacionado à
+      // falha identificada — nunca "sempre ligado". Excluído do pipeline
+      // incondicional aqui; vira efeito consumível/escopado em `talentEngine.ts`
+      // (`getBricolagemActiveEffects`), com tag sintética própria.
+      const temFalhaCondicional = efeitosDoNivel.some((e) => e.tipo === "detectar_falha_sem_teste");
+      efeitosDoNivel.forEach((efeito, index) => {
         // Toggles são tratados via efeito temporário (não aqui) — evita
         // dupla contagem do mesmo modificador.
         if (efeito.tipo === "toggle_condicional") return;
         if (efeito.tipo !== "modificador") return;
+        if (temFalhaCondicional) return;
         const valor = efeito.valor;
         // Achado de auditoria do DB real (`db_talentos_normalizado_v1_3.json`):
         // a maioria dos efeitos "modificador" usa `alvo_acoes` (slug de

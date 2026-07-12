@@ -84,6 +84,15 @@ import {
   applyShieldDamage,
   expireItemTemporaryEffects,
   deriveActiveEffectsFromItemTemporaryEffects,
+  getBricolagemModifier,
+  registerBricolagemVulnerabilidade,
+  consumeBricolagemUse,
+  endBricolagemVulnerabilidade,
+  getBricolagemTag,
+  getBricolagemActiveEffects,
+  getGambiarraAvailability,
+  registerGambiarraExpressa,
+  endGambiarraExpressa,
   getToqueDeMidasAvailability,
   getToqueDeMidasModifiersForTarget,
   markToqueDeMidasUsed,
@@ -739,7 +748,8 @@ export default function CharacterSheetClient({
       const temporaryEffects = deriveActiveEffectsFromTemporaryEffects(character);
       const reactionEffect = deriveReactionDefenseEffect(character, reactionRules);
       const itemTempEffects = deriveActiveEffectsFromItemTemporaryEffects(character, new Date().toISOString());
-      const base = [...conditionEffects, ...talentEffects, ...escalpoEffects, ...runeEffects, ...temporaryEffects, ...itemTempEffects];
+      const bricolagemEffects = getBricolagemActiveEffects(character, talentsIniciais);
+      const base = [...conditionEffects, ...talentEffects, ...escalpoEffects, ...runeEffects, ...temporaryEffects, ...itemTempEffects, ...bricolagemEffects];
       return reactionEffect ? [...base, reactionEffect] : base;
     },
     [character, conditionContents, postureConditionContents, reactionRules, talentsIniciais, escalposIniciais, runesIniciais],
@@ -2305,6 +2315,82 @@ export default function CharacterSheetClient({
     characterRef.current = next;
     setCharacter(next);
     addLogEntry("condicao", `Toque de Midas encerrado em "${instance?.itemNome ?? "item"}" — bônus/PD temporário restante removido; PD-base preservado.`);
+  }
+
+  /** Artífice › Bricolagem — registra a vulnerabilidade identificada (sem teste) e cria o bônus consumível. */
+  function handleRegisterBricolagem(params: { tipo: "mecanismo" | "estrutura" | "sistema_simples"; alvoDescricao: string; falhaPrincipal: string; periciaBeneficiada: "engenharia" | "robotica" }) {
+    const current = characterRef.current;
+    const mod = getBricolagemModifier(current, talentsIniciais);
+    if (!mod) return;
+    const nowIso = new Date().toISOString();
+    const next = registerBricolagemVulnerabilidade(current, { nivelId: mod.nivelId, ...params }, crypto.randomUUID(), nowIso);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Bricolagem: falha identificada em ${params.tipo} ("${params.falhaPrincipal}") — +${mod.valor} no próximo teste de ${params.periciaBeneficiada} relacionado.`);
+  }
+
+  /** Prepara na aba Rolagens o teste que explora/conserta a falha — CONSOME o bônus neste exato ato (nunca em outra rolagem). */
+  function handleRollBricolagemTest() {
+    const current = characterRef.current;
+    const v = current.bricolagem_vulnerabilidade;
+    const tag = getBricolagemTag(current);
+    if (!v || !tag) return;
+    const confirmado = window.confirm(`Este teste de ${v.periciaBeneficiada} explora ou conserta a falha "${v.falhaPrincipal}"? Confirmar consome o bônus.`);
+    if (!confirmado) return;
+    const nowIso = new Date().toISOString();
+    const next = consumeBricolagemUse(current, nowIso);
+    characterRef.current = next;
+    setCharacter(next);
+    const periciaDef = regras?.pericias.find((p) => p.id === v.periciaBeneficiada);
+    setPreparedRoll({
+      atributoId: periciaDef?.atributo_primario ?? "mente",
+      periciaId: v.periciaBeneficiada,
+      origem: `Bricolagem: ${v.falhaPrincipal}`,
+      extraTags: [tag],
+    });
+    setActiveTab("rolagens");
+    addLogEntry("condicao", `Bricolagem: bônus consumido no teste de ${v.periciaBeneficiada} relacionado à falha "${v.falhaPrincipal}".`);
+    void persistTalentUsedLog({ talentNome: "Bricolagem", nivelNome: "Nível 1", falha: v.falhaPrincipal, pericia: v.periciaBeneficiada });
+  }
+
+  function handleEndBricolagem() {
+    const current = characterRef.current;
+    const next = endBricolagemVulnerabilidade(current);
+    if (next === current) return;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", "Bricolagem: vulnerabilidade encerrada manualmente.");
+  }
+
+  /** Artífice › Gambiarra Expressa — atividade narrativa 1/sessão (5 min, sem teste estendido). */
+  function handleRegisterGambiarra(params: { alvo: "estrutura" | "equipamento" | "automato"; materialBase: string; criacaoOuModificacao: "criacao" | "modificacao"; efeitoObtido: string; duracao: string; observacoes?: string }) {
+    const current = characterRef.current;
+    const avail = getGambiarraAvailability(current, talentsIniciais);
+    if (!avail.available) {
+      addLogEntry("condicao", avail.usedThisSession ? "Gambiarra Expressa já foi usada nesta sessão." : "Gambiarra Expressa não adquirida.");
+      return;
+    }
+    let nivelId: string | null = null;
+    for (const a of current.talentos_adquiridos ?? []) {
+      const talent = talentsIniciais.find((t) => t.niveis.some((n) => n.id === a.nivelId && n.slug === "artifice_gambiarra_expressa"));
+      if (talent) nivelId = a.nivelId;
+    }
+    if (!nivelId) return;
+    const nowIso = new Date().toISOString();
+    const next = registerGambiarraExpressa(current, { nivelId, ...params }, crypto.randomUUID(), nowIso);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Gambiarra Expressa: ${params.criacaoOuModificacao === "criacao" ? "criou" : "modificou"} ${params.alvo} com ${params.materialBase} (5 min, sem teste estendido) — efeito: ${params.efeitoObtido}.`);
+    void persistTalentUsedLog({ talentNome: "Gambiarra Expressa", nivelNome: "Nível 3", ...params });
+  }
+
+  function handleEndGambiarra() {
+    const current = characterRef.current;
+    const next = endGambiarraExpressa(current);
+    if (next === current) return;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", "Gambiarra Expressa: efeito narrativo encerrado.");
   }
 
   /** Aplica dano a um escudo consumindo o PD temporário (Toque de Midas) antes do PD-base — fluxo real de teste. */
@@ -4168,6 +4254,14 @@ export default function CharacterSheetClient({
           onUseEffect={handleUseTalentEffect}
           onToggleEffect={handleToggleTalentEffect}
           onResetEffect={handleResetTalentUse}
+          bricolagemVulnerabilidade={character.bricolagem_vulnerabilidade ?? null}
+          onRegisterBricolagem={handleRegisterBricolagem}
+          onRollBricolagemTest={handleRollBricolagemTest}
+          onEndBricolagem={handleEndBricolagem}
+          gambiarraAtiva={character.gambiarra_expressa_ativa ?? null}
+          gambiarraAvailable={getGambiarraAvailability(character, talentsIniciais).available}
+          onRegisterGambiarra={handleRegisterGambiarra}
+          onEndGambiarra={handleEndGambiarra}
         />
       )}
 

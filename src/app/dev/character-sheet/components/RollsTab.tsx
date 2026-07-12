@@ -384,7 +384,10 @@ export function RollsTab({
             <select
               data-testid="roll-atributo-select"
               value={atributoId}
-              onChange={(e) => setAtributoId(e.target.value as (typeof atributoIds)[number])}
+              onChange={(e) => {
+                setAtributoId(e.target.value as (typeof atributoIds)[number]);
+                setAutoTagsPreparadas([]);
+              }}
               style={selectStyle}
             >
               {atributoIds.map((id) => {
@@ -406,6 +409,8 @@ export function RollsTab({
               onChange={(e) => {
                 setPericiaId(e.target.value);
                 setOrigemAtual(null);
+                // Trocar perícia manualmente invalida tags automáticas (item/bricolagem) da rolagem preparada anterior — nunca vazar bônus escopado para um teste diferente.
+                setAutoTagsPreparadas([]);
               }}
               style={{ ...selectStyle, minWidth: 160 }}
             >

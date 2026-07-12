@@ -54,13 +54,13 @@ Legenda: **✅ Integral** (mecânica-núcleo conectada ao fluxo real) · **🟡 
 com formulário/estado/log) · **⚙️ Infra pendente** (só classificação/badge/botão/
 cadência/log/lembrete — SEM regra específica no fluxo).
 
-Contagem: ✅ 2 · 🟡 8 · ⚙️ 56 · 📖 0.
+Contagem: ✅ 3 · 🟡 8 · ⚙️ 54 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
-| Artífice | Bricolagem | 1 | ⚙️ Infra pendente |
+| Artífice | Bricolagem | 1 | ✅ Integral |
 | Artífice | Toque de Midas | 2 | ✅ Integral |
-| Artífice | Gambiarra Expressa | 3 | ⚙️ Infra pendente |
+| Artífice | Gambiarra Expressa | 3 | 📖 Narrativo rastreado |
 | Assassino | Lâmina Oculta | 1 | ⚙️ Infra pendente |
 | Assassino | Hemorragia | 2 | ⚙️ Infra pendente |
 | Assassino | Executar | 3 | ⚙️ Infra pendente |
@@ -127,6 +127,20 @@ Contagem: ✅ 2 · 🟡 8 · ⚙️ 56 · 📖 0.
 
 ### Detalhe dos não-infra
 
+- **✅ Bricolagem** — atividade "Examinar ponto vulnerável" real: formulário (tipo/alvo/
+  falha/perícia) sem teste; bônus consumível escopado por tag sintética `bricolagem:<id>`,
+  só aplicado no teste disparado pelo botão "Rolar teste relacionado" (com confirmação
+  "este teste explora a falha?"), nunca em outra rolagem (verificado: chip some ao trocar
+  perícia manualmente; chip aparece e soma +1→9 no teste correto; some por completo após
+  consumido). **Correção de bug encontrada e corrigida**: o modificador +1 desse nível
+  seria pego pelo pipeline INCONDICIONAL de `deriveActiveEffectsFromTalents` (aplicaria
+  sempre, a qualquer teste de Engenharia/Robótica) — excluído explicitamente quando o
+  nível também declara `detectar_falha_sem_teste` (payload-driven, não hardcoded por nome).
+- **📖 Gambiarra Expressa** — atividade narrativa 1/sessão real: formulário completo
+  (alvo/material/criação-modificação/efeito/duração/observações), registra os 5 minutos e
+  ausência de teste estendido, cria estado ativo com Encerrar manual, gate 1/sessão
+  (reset manual do narrador — sem gatilho canônico de nova sessão) verificado bloqueando
+  reaquisição mesmo após encerrar o efeito ativo.
 - **🟡 Domínio Territorial** — multiplica alcance/área na aba Magias (+50%); **falta** usar o
   valor ajustado nos cartões operacionais e nos logs de conjuração para ser integral.
 - **✅ Toque de Midas** — efeito real na instância (1/dia — renova no descanso longo,

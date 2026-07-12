@@ -133,6 +133,9 @@ const ACTIVITY_FAMILIES = new Set(["dado_gatilho", "recurso", "economia_loja", "
 export function classifyTalentEffect(efeito: TalentLevelEffect): TalentOperationPattern {
   const familia = typeof efeito.familia === "string" ? efeito.familia : "";
   const tipo = efeito.tipo;
+  // Bricolagem: "identificar a falha" lança a atividade "Examinar ponto vulnerável"
+  // (nunca um modificador incondicional — ver exclusão em deriveActiveEffectsFromTalents).
+  if (tipo === "detectar_falha_sem_teste") return "atividade";
   // Modificador passivo de rolagem aplicado direto no fluxo.
   if (tipo === "modificador") return "automatico";
   if (NARRATIVE_TIPOS.has(tipo)) return "narrativo";
@@ -463,6 +466,137 @@ export function resolvePersistedOpportunity(character: Character, id: string): C
 // Overrides mecânicos passivos derivados de talentos adquiridos
 // (integração real nos fluxos — nunca inventa valor, lê do payload)
 // ---------------------------------------------------------------------
+
+// ---------------------------------------------------------------------
+// Artífice › Bricolagem (N1) — vulnerabilidade identificada, bônus
+// consumível escopado ao PRÓXIMO teste relacionado (nunca "sempre
+// ligado" — ver exclusão em `talents.ts:deriveActiveEffectsFromTalents`).
+// ---------------------------------------------------------------------
+
+/** Bônus (valor) declarado no payload canônico de Bricolagem — nunca hardcoded. */
+export function getBricolagemModifier(
+  character: Pick<Character, "talentos_adquiridos">,
+  talents: TalentContent[],
+): { valor: number; nivelId: string } | null {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "modificador" && typeof efeito.valor === "number" && Array.isArray(efeito.alvo_tags)) {
+        // Só considera o modificador IRMÃO de detectar_falha_sem_teste (mesmo nível).
+        const irmaoCondicional = getTalentLevelEffects(nivel).some((e) => e.tipo === "detectar_falha_sem_teste");
+        if (irmaoCondicional) return { valor: efeito.valor, nivelId: nivel.id };
+      }
+    }
+  }
+  return null;
+}
+
+/** Registra uma nova vulnerabilidade (substitui a anterior — sempre a última conta). */
+export function registerBricolagemVulnerabilidade(
+  character: Character,
+  params: { nivelId: string; tipo: "mecanismo" | "estrutura" | "sistema_simples"; alvoDescricao: string; falhaPrincipal: string; periciaBeneficiada: "engenharia" | "robotica" },
+  id: string,
+  nowIso: string,
+): Character {
+  return {
+    ...character,
+    bricolagem_vulnerabilidade: { id, ...params, criadaEm: nowIso, consumida: false },
+  };
+}
+
+/** Consome o bônus (marcado ao usar o botão "Rolar teste relacionado" — nunca em outra rolagem). */
+export function consumeBricolagemUse(character: Character, nowIso: string): Character {
+  if (!character.bricolagem_vulnerabilidade || character.bricolagem_vulnerabilidade.consumida) return character;
+  return { ...character, bricolagem_vulnerabilidade: { ...character.bricolagem_vulnerabilidade, consumida: true, consumidaEm: nowIso } };
+}
+
+/** Encerra manualmente (descarta) a vulnerabilidade ativa. */
+export function endBricolagemVulnerabilidade(character: Character): Character {
+  if (!character.bricolagem_vulnerabilidade) return character;
+  const { bricolagem_vulnerabilidade: _drop, ...rest } = character;
+  return rest;
+}
+
+/** Chave sintética de tag de rolagem para o bônus ativo de Bricolagem. */
+/**
+ * Tag sintética do registro ATUAL de Bricolagem, exista ele consumido ou
+ * não. `consumida` só controla a UI (esconde "Rolar teste relacionado",
+ * mostra "consumido") — NÃO esconde o `ActiveEffect` retroativamente,
+ * senão o +1 desaparece da rolagem que o consumiu no exato instante em
+ * que é aplicado (o registro só é removido de fato ao registrar uma
+ * NOVA vulnerabilidade ou encerrar manualmente).
+ */
+export function getBricolagemTag(character: Pick<Character, "bricolagem_vulnerabilidade">): string | null {
+  const v = character.bricolagem_vulnerabilidade;
+  return v ? `bricolagem:${v.id}` : null;
+}
+
+/** ActiveEffect do bônus de Bricolagem — escopado à tag sintética, só quando há vulnerabilidade ativa e não consumida. */
+export function getBricolagemActiveEffects(
+  character: Pick<Character, "talentos_adquiridos" | "bricolagem_vulnerabilidade">,
+  talents: TalentContent[],
+): ActiveEffect[] {
+  const tag = getBricolagemTag(character);
+  if (!tag) return [];
+  const mod = getBricolagemModifier(character, talents);
+  if (!mod) return [];
+  const v = character.bricolagem_vulnerabilidade!;
+  return [
+    {
+      id: `bricolagem:${v.id}`,
+      sourceType: "talent",
+      sourceId: mod.nivelId,
+      sourceName: `Bricolagem — ${v.falhaPrincipal}`,
+      affectedTags: [tag],
+      modifier: mod.valor,
+      explanation: `Bricolagem: +${mod.valor} no teste de ${v.periciaBeneficiada} relacionado à falha "${v.falhaPrincipal}".`,
+      enabledByDefault: true,
+      kind: "modifier",
+      reversible: true,
+    },
+  ];
+}
+
+// ---------------------------------------------------------------------
+// Artífice › Gambiarra Expressa (N3) — atividade narrativa 1/sessão.
+// ---------------------------------------------------------------------
+
+export const GAMBIARRA_USAGE_KEY = "gambiarra_expressa:sessao";
+
+export function getGambiarraAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisSession: boolean; available: boolean } {
+  let acquired = false;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "acao_narrativa" && Array.isArray(efeito.alvos)) acquired = true;
+    }
+  }
+  const usedThisSession = (character.talentos_estado?.usos?.[GAMBIARRA_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisSession, available: acquired && !usedThisSession };
+}
+
+export function registerGambiarraExpressa(
+  character: Character,
+  params: { nivelId: string; alvo: "estrutura" | "equipamento" | "automato"; materialBase: string; criacaoOuModificacao: "criacao" | "modificacao"; efeitoObtido: string; duracao: string; observacoes?: string },
+  id: string,
+  nowIso: string,
+): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[GAMBIARRA_USAGE_KEY] = { usados: 1, cadencia: "sessao", atualizadoEm: nowIso };
+  return {
+    ...character,
+    gambiarra_expressa_ativa: { id, ...params, criadaEm: nowIso },
+    talentos_estado: { ...character.talentos_estado, usos },
+  };
+}
+
+/** Encerra manualmente (o narrador confirma que o efeito narrativo terminou). */
+export function endGambiarraExpressa(character: Character): Character {
+  if (!character.gambiarra_expressa_ativa) return character;
+  const { gambiarra_expressa_ativa: _drop, ...rest } = character;
+  return rest;
+}
 
 /**
  * Novo limite diário de Surtos de Sobrecarga imposto por talento

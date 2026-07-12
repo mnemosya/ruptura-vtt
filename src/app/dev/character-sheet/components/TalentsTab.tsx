@@ -73,6 +73,14 @@ export function TalentsTab({
   onUseEffect,
   onToggleEffect,
   onResetEffect,
+  bricolagemVulnerabilidade,
+  onRegisterBricolagem,
+  onRollBricolagemTest,
+  onEndBricolagem,
+  gambiarraAtiva,
+  gambiarraAvailable = false,
+  onRegisterGambiarra,
+  onEndGambiarra,
 }: {
   talents: TalentContent[];
   catalogError: string | null;
@@ -84,6 +92,16 @@ export function TalentsTab({
   onUseEffect: (key: string) => void;
   onToggleEffect: (key: string) => void;
   onResetEffect: (key: string) => void;
+  /** Artífice › Bricolagem (checkpoint talentos). */
+  bricolagemVulnerabilidade?: BricolagemVuln | null;
+  onRegisterBricolagem?: (params: { tipo: "mecanismo" | "estrutura" | "sistema_simples"; alvoDescricao: string; falhaPrincipal: string; periciaBeneficiada: "engenharia" | "robotica" }) => void;
+  onRollBricolagemTest?: () => void;
+  onEndBricolagem?: () => void;
+  /** Artífice › Gambiarra Expressa (checkpoint talentos). */
+  gambiarraAtiva?: GambiarraAtiva | null;
+  gambiarraAvailable?: boolean;
+  onRegisterGambiarra?: (params: { alvo: "estrutura" | "equipamento" | "automato"; materialBase: string; criacaoOuModificacao: "criacao" | "modificacao"; efeitoObtido: string; duracao: string; observacoes?: string }) => void;
+  onEndGambiarra?: () => void;
 }) {
   const [filter, setFilter] = useState<FilterKey>("todos");
 
@@ -216,6 +234,24 @@ export function TalentsTab({
                           </p>
                         )}
 
+                        {acquiredEntry && nivel.slug === "artifice_bricolagem" && (
+                          <BricolagemWidget
+                            vulnerabilidade={bricolagemVulnerabilidade ?? null}
+                            onRegister={onRegisterBricolagem}
+                            onRollTest={onRollBricolagemTest}
+                            onEnd={onEndBricolagem}
+                          />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "artifice_gambiarra_expressa" && (
+                          <GambiarraWidget
+                            ativa={gambiarraAtiva ?? null}
+                            available={gambiarraAvailable}
+                            onRegister={onRegisterGambiarra}
+                            onEnd={onEndGambiarra}
+                          />
+                        )}
+
                         {acquiredEntry &&
                           (usableByLevelId.get(nivel.id) ?? []).map((usable) => {
                             const esgotado = usable.kind === "limited_use" && usable.usosMax != null && usable.usosGastos >= usable.usosMax;
@@ -309,5 +345,156 @@ export function TalentsTab({
         </div>
       )}
     </Section>
+  );
+}
+
+interface BricolagemVuln {
+  id: string;
+  tipo: "mecanismo" | "estrutura" | "sistema_simples";
+  alvoDescricao: string;
+  falhaPrincipal: string;
+  periciaBeneficiada: "engenharia" | "robotica";
+  consumida: boolean;
+}
+
+const widgetBox: React.CSSProperties = { background: "#15161b", borderRadius: 6, padding: "6px 8px", margin: "6px 0", display: "flex", flexDirection: "column", gap: 4, fontSize: 11 };
+const widgetInput: React.CSSProperties = { background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", fontSize: 11 };
+
+function BricolagemWidget({
+  vulnerabilidade,
+  onRegister,
+  onRollTest,
+  onEnd,
+}: {
+  vulnerabilidade: BricolagemVuln | null;
+  onRegister?: (params: { tipo: "mecanismo" | "estrutura" | "sistema_simples"; alvoDescricao: string; falhaPrincipal: string; periciaBeneficiada: "engenharia" | "robotica" }) => void;
+  onRollTest?: () => void;
+  onEnd?: () => void;
+}) {
+  const [tipo, setTipo] = useState<"mecanismo" | "estrutura" | "sistema_simples">("mecanismo");
+  const [alvoDescricao, setAlvoDescricao] = useState("");
+  const [falhaPrincipal, setFalhaPrincipal] = useState("");
+  const [pericia, setPericia] = useState<"engenharia" | "robotica">("engenharia");
+
+  if (vulnerabilidade && !vulnerabilidade.consumida) {
+    return (
+      <div data-testid="bricolagem-ativa" style={widgetBox}>
+        <span style={{ color: "#4caf50" }}>✦ Vulnerabilidade identificada</span> ({vulnerabilidade.tipo}): "{vulnerabilidade.falhaPrincipal}" — +1 no próximo teste de {vulnerabilidade.periciaBeneficiada}.
+        <div style={{ display: "flex", gap: 6 }}>
+          <button data-testid="bricolagem-rolar" onClick={onRollTest} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}>
+            Rolar teste relacionado
+          </button>
+          <button data-testid="bricolagem-encerrar" onClick={onEnd} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}>
+            Encerrar
+          </button>
+        </div>
+      </div>
+    );
+  }
+  if (vulnerabilidade?.consumida) {
+    return (
+      <div data-testid="bricolagem-consumida" style={{ ...widgetBox, opacity: 0.6 }}>
+        Bônus consumido em "{vulnerabilidade.falhaPrincipal}". Examine outro mecanismo para gerar um novo.
+      </div>
+    );
+  }
+  return (
+    <div data-testid="bricolagem-formulario" style={widgetBox}>
+      <span style={{ opacity: 0.7 }}>Examinar ponto vulnerável — sem teste:</span>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <select data-testid="bricolagem-tipo" value={tipo} onChange={(e) => setTipo(e.target.value as typeof tipo)} style={widgetInput}>
+          <option value="mecanismo">Mecanismo</option>
+          <option value="estrutura">Estrutura</option>
+          <option value="sistema_simples">Sistema simples</option>
+        </select>
+        <input data-testid="bricolagem-alvo" placeholder="alvo (ex.: fechadura)" value={alvoDescricao} onChange={(e) => setAlvoDescricao(e.target.value)} style={{ ...widgetInput, width: 140 }} />
+        <input data-testid="bricolagem-falha" placeholder="falha principal identificada" value={falhaPrincipal} onChange={(e) => setFalhaPrincipal(e.target.value)} style={{ ...widgetInput, width: 180 }} />
+        <select data-testid="bricolagem-pericia" value={pericia} onChange={(e) => setPericia(e.target.value as typeof pericia)} style={widgetInput}>
+          <option value="engenharia">Engenharia</option>
+          <option value="robotica">Robótica</option>
+        </select>
+        <button
+          data-testid="bricolagem-registrar"
+          disabled={!falhaPrincipal.trim() || !alvoDescricao.trim()}
+          onClick={() => onRegister?.({ tipo, alvoDescricao, falhaPrincipal, periciaBeneficiada: pericia })}
+          style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !falhaPrincipal.trim() || !alvoDescricao.trim() ? 0.5 : 1 }}
+        >
+          Registrar vulnerabilidade
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface GambiarraAtiva {
+  id: string;
+  alvo: "estrutura" | "equipamento" | "automato";
+  materialBase: string;
+  criacaoOuModificacao: "criacao" | "modificacao";
+  efeitoObtido: string;
+  duracao: string;
+  observacoes?: string;
+}
+
+function GambiarraWidget({
+  ativa,
+  available,
+  onRegister,
+  onEnd,
+}: {
+  ativa: GambiarraAtiva | null;
+  available: boolean;
+  onRegister?: (params: { alvo: "estrutura" | "equipamento" | "automato"; materialBase: string; criacaoOuModificacao: "criacao" | "modificacao"; efeitoObtido: string; duracao: string; observacoes?: string }) => void;
+  onEnd?: () => void;
+}) {
+  const [alvo, setAlvo] = useState<"estrutura" | "equipamento" | "automato">("equipamento");
+  const [materialBase, setMaterialBase] = useState("");
+  const [criacaoOuModificacao, setCriacaoOuModificacao] = useState<"criacao" | "modificacao">("modificacao");
+  const [efeitoObtido, setEfeitoObtido] = useState("");
+  const [duracao, setDuracao] = useState("");
+  const [observacoes, setObservacoes] = useState("");
+
+  if (ativa) {
+    return (
+      <div data-testid="gambiarra-ativa" style={widgetBox}>
+        <span style={{ color: "#4caf50" }}>✦ Gambiarra ativa</span> — {ativa.criacaoOuModificacao === "criacao" ? "criou" : "modificou"} {ativa.alvo} com {ativa.materialBase}: {ativa.efeitoObtido}
+        {ativa.duracao ? ` (duração: ${ativa.duracao})` : ""}
+        {ativa.observacoes ? ` — ${ativa.observacoes}` : ""}
+        <button data-testid="gambiarra-encerrar" onClick={onEnd} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", alignSelf: "flex-start" }}>
+          Encerrar
+        </button>
+      </div>
+    );
+  }
+  if (!available) {
+    return <div data-testid="gambiarra-indisponivel" style={{ ...widgetBox, opacity: 0.6 }}>Sem usos restantes nesta sessão — reset manual do narrador quando a sessão renovar.</div>;
+  }
+  return (
+    <div data-testid="gambiarra-formulario" style={widgetBox}>
+      <span style={{ opacity: 0.7 }}>1/sessão · 5 minutos · sem teste estendido:</span>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <select data-testid="gambiarra-alvo" value={alvo} onChange={(e) => setAlvo(e.target.value as typeof alvo)} style={widgetInput}>
+          <option value="estrutura">Estrutura</option>
+          <option value="equipamento">Equipamento</option>
+          <option value="automato">Autômato</option>
+        </select>
+        <select data-testid="gambiarra-tipo" value={criacaoOuModificacao} onChange={(e) => setCriacaoOuModificacao(e.target.value as typeof criacaoOuModificacao)} style={widgetInput}>
+          <option value="criacao">Criação</option>
+          <option value="modificacao">Modificação</option>
+        </select>
+        <input data-testid="gambiarra-material" placeholder="material de base" value={materialBase} onChange={(e) => setMaterialBase(e.target.value)} style={{ ...widgetInput, width: 130 }} />
+        <input data-testid="gambiarra-efeito" placeholder="efeito obtido" value={efeitoObtido} onChange={(e) => setEfeitoObtido(e.target.value)} style={{ ...widgetInput, width: 160 }} />
+        <input data-testid="gambiarra-duracao" placeholder="duração (opcional)" value={duracao} onChange={(e) => setDuracao(e.target.value)} style={{ ...widgetInput, width: 110 }} />
+        <input data-testid="gambiarra-observacoes" placeholder="observações do narrador" value={observacoes} onChange={(e) => setObservacoes(e.target.value)} style={{ ...widgetInput, width: 160 }} />
+        <button
+          data-testid="gambiarra-registrar"
+          disabled={!materialBase.trim() || !efeitoObtido.trim()}
+          onClick={() => onRegister?.({ alvo, materialBase, criacaoOuModificacao, efeitoObtido, duracao, observacoes: observacoes || undefined })}
+          style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !materialBase.trim() || !efeitoObtido.trim() ? 0.5 : 1 }}
+        >
+          Criar gambiarra
+        </button>
+      </div>
+    </div>
   );
 }
