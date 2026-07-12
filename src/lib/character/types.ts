@@ -633,6 +633,19 @@ export interface Character {
       /** Só ferramenta/dispositivo: perícia/contexto escolhido para o +1. */
       relatedSkill?: string;
     };
+    /**
+     * Rúnico › Sobregravação (N3) — autorização de acesso aos espaços
+     * extras desta instância (ver `InventoryItemInstance.sobregravacao`
+     * em inventory.ts para os helpers). Vive na instância, então
+     * acompanha transferência.
+     */
+    sobregravacao?: {
+      ownerCharacterId: string;
+      instructedAllyIds: string[];
+      multiplicador: number;
+      accessGrantedCharacterIds?: string[];
+      appliedAt: string;
+    };
   }[];
   /**
    * Magias aprendidas individualmente (checkpoint v0.50.1/v0.50.2) —

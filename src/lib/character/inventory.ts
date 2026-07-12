@@ -325,6 +325,25 @@ export interface InventoryItemInstance {
     temporaryPdConsumed?: number;
     relatedSkill?: string;
   };
+  /**
+   * Rúnico › Sobregravação (N3) — autorização de acesso aos ESPAÇOS
+   * EXTRAS desta instância (equipamento_proprio do dono). Vive na
+   * instância (acompanha transferência): o dono e a lista de aliados
+   * instruídos sempre acessam os slots dobrados; qualquer outro
+   * personagem precisa confirmar Tecnomagia/Arcanismo CD 8
+   * (`getSlotsRunaMaxEfetivo`) antes de instalar/usar os slots extras —
+   * não bloqueia o item nem as runas já instaladas, só o BENEFÍCIO do
+   * espaço adicional para quem não está autorizado.
+   */
+  sobregravacao?: {
+    ownerCharacterId: string;
+    instructedAllyIds: string[];
+    /** Lido do payload (`multiplicador_espacos_extra`) no momento da aplicação — nunca hardcoded. */
+    multiplicador: number;
+    /** Terceiros que já passaram no teste de Tecnomagia/Arcanismo CD 8 (`outros_usuarios_requerem_teste`) — acesso concedido permanece salvo, não precisa retestar. */
+    accessGrantedCharacterIds?: string[];
+    appliedAt: string;
+  };
 }
 
 export type ItemPropertyClassification =
@@ -1148,8 +1167,8 @@ export function installRuneOnItem(params: {
   rune: TechnicalContentItem;
   notas?: string;
   nowIso: string;
-  /** Rúnico › Sobregravação (checkpoint talentos) — multiplica `itemContent.slotsRunaMax` para o DONO do talento. 1 = sem alteração. */
-  slotsRunaMaxMultiplier?: number;
+  /** Rúnico › Sobregravação (checkpoint talentos) — quem está instalando AGORA, para checar `hasSobregravacaoAccess` via `getSlotsRunaMaxEfetivo`. Ausente = só limite base. */
+  currentCharacterId?: string | null;
 }): InstallRuneResult {
   const { character, instanceId, itemContent, rune, nowIso } = params;
   const inventario = character.inventario ?? [];
@@ -1163,8 +1182,7 @@ export function installRuneOnItem(params: {
     return { character, ok: false, reason: "Runa incompatível com este item.", compatibility };
   }
 
-  const slotsRunaMaxBase = itemContent?.slotsRunaMax ?? null;
-  const slotsRunaMax = slotsRunaMaxBase != null ? Math.floor(slotsRunaMaxBase * (params.slotsRunaMaxMultiplier ?? 1)) : null;
+  const slotsRunaMax = getSlotsRunaMaxEfetivo(instance, itemContent, params.currentCharacterId ?? null);
   if (slotsRunaMax != null && countInstalledRunes(instance) >= slotsRunaMax) {
     return {
       character,
@@ -1191,6 +1209,105 @@ export function installRuneOnItem(params: {
     compatibility,
     installation,
   };
+}
+
+/**
+ * Rúnico › Sobregravação (N3) — aplica a autorização à instância (dono do
+ * talento + aliados previamente instruídos), lendo o multiplicador do
+ * payload (nunca hardcoded). Sobrescreve uma aplicação anterior (reaplicar
+ * não empilha). Idempotente na lista de aliados: chamar de novo só troca
+ * quem está instruído, nunca duplica.
+ */
+export function applySobregravacao(params: {
+  character: Character;
+  instanceId: string;
+  ownerCharacterId: string;
+  multiplicador: number;
+  instructedAllyIds?: string[];
+  nowIso: string;
+}): Character {
+  const { character, instanceId, ownerCharacterId, multiplicador, nowIso } = params;
+  const inventario = character.inventario ?? [];
+  const next = inventario.map((i) =>
+    i.id === instanceId
+      ? {
+          ...i,
+          sobregravacao: {
+            ownerCharacterId,
+            instructedAllyIds: params.instructedAllyIds ?? [],
+            multiplicador,
+            accessGrantedCharacterIds: [],
+            appliedAt: nowIso,
+          },
+        }
+      : i,
+  );
+  return { ...character, inventario: next };
+}
+
+/** Rúnico › Sobregravação — dono atualiza a lista de aliados instruídos (substitui a lista inteira). */
+export function setSobregravacaoInstructedAllies(character: Character, instanceId: string, allyIds: string[]): Character {
+  const inventario = character.inventario ?? [];
+  const next = inventario.map((i) =>
+    i.id === instanceId && i.sobregravacao ? { ...i, sobregravacao: { ...i.sobregravacao, instructedAllyIds: allyIds } } : i,
+  );
+  return { ...character, inventario: next };
+}
+
+/**
+ * Rúnico › Sobregravação — concede acesso permanente a um terceiro após um
+ * teste de Tecnomagia/Arcanismo CD 8 bem-sucedido (`outros_usuarios_requerem_teste`
+ * do payload). Não reduz nem remove acesso — só adiciona.
+ */
+export function grantSobregravacaoAccess(character: Character, instanceId: string, granteeCharacterId: string): Character {
+  const inventario = character.inventario ?? [];
+  const next = inventario.map((i) => {
+    if (i.id !== instanceId || !i.sobregravacao) return i;
+    const already = i.sobregravacao.accessGrantedCharacterIds ?? [];
+    if (already.includes(granteeCharacterId)) return i;
+    return { ...i, sobregravacao: { ...i.sobregravacao, accessGrantedCharacterIds: [...already, granteeCharacterId] } };
+  });
+  return { ...character, inventario: next };
+}
+
+/**
+ * Rúnico › Sobregravação — o personagem `currentCharacterId` (quem está com
+ * o item nas mãos AGORA, independente de quem é o dono do talento) acessa o
+ * benefício do espaço extra? Verdadeiro para o dono, para aliados
+ * instruídos, e para quem já passou no teste CD 8. `currentCharacterId`
+ * nulo (personagem sem id de sessão, ex. dev sheet sem characterId) nunca
+ * tem acesso a espaço extra de terceiro — só ao base.
+ */
+export function hasSobregravacaoAccess(
+  instance: Pick<InventoryItemInstance, "sobregravacao">,
+  currentCharacterId: string | null,
+): boolean {
+  const sobregravacao = instance.sobregravacao;
+  if (!sobregravacao) return false;
+  if (!currentCharacterId) return false;
+  if (sobregravacao.ownerCharacterId === currentCharacterId) return true;
+  if (sobregravacao.instructedAllyIds.includes(currentCharacterId)) return true;
+  if ((sobregravacao.accessGrantedCharacterIds ?? []).includes(currentCharacterId)) return true;
+  return false;
+}
+
+/**
+ * Rúnico › Sobregravação — limite de slots de runa REAL para quem está
+ * segurando o item agora (`currentCharacterId`). Sem `sobregravacao` na
+ * instância, é sempre o base do item. Com `sobregravacao`, só multiplica
+ * para quem tem acesso (`hasSobregravacaoAccess`); quem não tem vê o
+ * limite base normalmente (a inscrição existe, mas não beneficia).
+ */
+export function getSlotsRunaMaxEfetivo(
+  instance: Pick<InventoryItemInstance, "sobregravacao">,
+  itemContent: Pick<ItemContent, "slotsRunaMax"> | undefined,
+  currentCharacterId: string | null,
+): number | null {
+  const base = itemContent?.slotsRunaMax ?? null;
+  if (base == null) return null;
+  if (!instance.sobregravacao) return base;
+  if (!hasSobregravacaoAccess(instance, currentCharacterId)) return base;
+  return Math.floor(base * instance.sobregravacao.multiplicador);
 }
 
 /** Remove só a instalação da runa (nunca o modelo da Biblioteca, nunca o item). */

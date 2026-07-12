@@ -784,6 +784,15 @@ export function hasEntalheRapido(character: Pick<Character, "talentos_adquiridos
   return false;
 }
 
+export function hasSobregravacao(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "aumentar_espacos_runa") return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Multiplicador de espaços de runa de Sobregravação — lido do payload
  * (`multiplicador_espacos_extra`), nunca hardcoded. O schema de

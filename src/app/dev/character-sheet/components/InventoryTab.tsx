@@ -25,6 +25,8 @@ import {
   getConditionRemovalOptions,
   getItemUsePreview,
   canSplitInstanceQuantity,
+  hasSobregravacaoAccess,
+  getSlotsRunaMaxEfetivo,
   type Character,
   type ItemContent,
   type InventoryItemInstance,
@@ -101,7 +103,13 @@ export function InventoryTab({
   entalheAttempts = {},
   onStartEntalheRapido,
   onConfirmEntalheRapido,
-  sobregravacaoMultiplier = 1,
+  sobregravacaoAvailable = false,
+  currentCharacterId = null,
+  onApplySobregravacao,
+  onSetSobregravacaoAllies,
+  sobregravacaoTestPending = {},
+  onStartSobregravacaoTest,
+  onConfirmSobregravacaoTest,
 }: {
   items: ItemContent[];
   catalogError: string | null;
@@ -172,8 +180,19 @@ export function InventoryTab({
   entalheAttempts?: Record<string, { mode: "instalar" | "remover"; alvo: string; cd: number }>;
   onStartEntalheRapido?: (instanceId: string, mode: "instalar" | "remover", alvo: string, cd: number) => void;
   onConfirmEntalheRapido?: (instanceId: string, resultado: number) => void;
-  /** Rúnico › Sobregravação — multiplica o limite de slots de runa exibido/aplicado para o DONO do talento. */
-  sobregravacaoMultiplier?: number;
+  /** Rúnico › Sobregravação — personagem tem o talento (pode aplicar a instâncias do próprio inventário). */
+  sobregravacaoAvailable?: boolean;
+  /** Id do personagem atualmente com a ficha aberta — usado para checar `hasSobregravacaoAccess` (dono/aliado/terceiro testado). */
+  currentCharacterId?: string | null;
+  /** Aplica Sobregravação a uma instância do próprio inventário (dono do talento). */
+  onApplySobregravacao?: (instanceId: string) => void;
+  /** Dono edita a lista de aliados instruídos (substitui a lista inteira). */
+  onSetSobregravacaoAllies?: (instanceId: string, allyIds: string[]) => void;
+  /** Instâncias com teste de Tecnomagia/Arcanismo CD 8 pendente de confirmação. */
+  sobregravacaoTestPending?: Record<string, true>;
+  /** Terceiro sem acesso inicia o teste CD 8 para acessar o espaço extra. */
+  onStartSobregravacaoTest?: (instanceId: string) => void;
+  onConfirmSobregravacaoTest?: (instanceId: string, resultado: number) => void;
 }) {
   const [busca, setBusca] = useState("");
   const [categoria, setCategoria] = useState<(typeof CATEGORIA_FILTROS)[number]>("todos");
@@ -186,6 +205,8 @@ export function InventoryTab({
   const [entalheCd, setEntalheCd] = useState<Record<string, string>>({});
   const [entalheRemoverAlvo, setEntalheRemoverAlvo] = useState<Record<string, string>>({});
   const [entalheResultado, setEntalheResultado] = useState<Record<string, string>>({});
+  const [sobregravacaoAliadosInput, setSobregravacaoAliadosInput] = useState<Record<string, string>>({});
+  const [sobregravacaoTestResultado, setSobregravacaoTestResultado] = useState<Record<string, string>>({});
   // guardarQtd[`${aljavaInstanceId}:${ammoInstanceId}`] = quanto guardar nesta Aljava
   const [guardarQtd, setGuardarQtd] = useState<Record<string, number>>({});
   // retirarQtd[`${aljavaInstanceId}:${contentSlug}`] = quanto retirar desta Aljava
@@ -312,8 +333,9 @@ export function InventoryTab({
           {inventario.map((instance) => {
             const itemModelo = itemBySlug.get(instance.itemSlug);
             const runasInstaladas = instance.runasInstaladas ?? [];
-            const slotsMax = itemModelo?.slotsRunaMax != null ? Math.floor(itemModelo.slotsRunaMax * sobregravacaoMultiplier) : null;
+            const slotsMax = getSlotsRunaMaxEfetivo(instance, itemModelo, currentCharacterId);
             const slotsUsados = countInstalledRunes(instance);
+            const sobregravacaoAcesso = hasSobregravacaoAccess(instance, currentCharacterId);
             const runaEscolhida = runaSelecionada[instance.id] ?? "";
             const runaEscolhidaContent = runaEscolhida ? runaBySlug.get(runaEscolhida) : undefined;
             const compatibilidade = runaEscolhidaContent
@@ -1070,12 +1092,86 @@ export function InventoryTab({
                   <p style={{ fontSize: 11, opacity: 0.6, margin: "0 0 4px" }}>
                     Runas instaladas ({slotsUsados}{slotsMax != null ? `/${slotsMax}` : ""})
                     {slotsMax == null && " — limite de slots ainda não automatizado para este item"}
-                    {sobregravacaoMultiplier !== 1 && itemModelo?.slotsRunaMax != null && (
-                      <span data-testid={`inventario-sobregravacao-${instance.id}`} style={{ color: "#5ec8ff" }}>
-                        {" "}— Sobregravação: {itemModelo.slotsRunaMax} base × {sobregravacaoMultiplier} = {slotsMax}
+                    {instance.sobregravacao && itemModelo?.slotsRunaMax != null && (
+                      <span data-testid={`inventario-sobregravacao-${instance.id}`} style={{ color: sobregravacaoAcesso ? "#5ec8ff" : "#f5a623" }}>
+                        {" "}— Sobregravação: {itemModelo.slotsRunaMax} base × {instance.sobregravacao.multiplicador}
+                        {sobregravacaoAcesso
+                          ? ` = ${Math.floor(itemModelo.slotsRunaMax * instance.sobregravacao.multiplicador)} (você tem acesso ao espaço extra)`
+                          : ` — inscrição visível, mas você NÃO tem acesso ao espaço extra (só ${itemModelo.slotsRunaMax} slots utilizáveis)`}
                       </span>
                     )}
                   </p>
+                  {/* Rúnico › Sobregravação — dono aplica/gerencia; terceiro sem acesso testa CD 8. */}
+                  {sobregravacaoAvailable && !instance.sobregravacao && (
+                    <button
+                      data-testid={`sobregravacao-aplicar-${instance.id}`}
+                      onClick={() => onApplySobregravacao?.(instance.id)}
+                      style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", marginBottom: 6 }}
+                    >
+                      Aplicar Sobregravação a este item
+                    </button>
+                  )}
+                  {instance.sobregravacao && currentCharacterId === instance.sobregravacao.ownerCharacterId && (
+                    <div style={{ ...widgetBox2, marginBottom: 6 }}>
+                      <span style={{ opacity: 0.7 }}>Aliados instruídos (acessam o espaço extra sem teste):</span>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        <input
+                          data-testid={`sobregravacao-aliados-${instance.id}`}
+                          placeholder="ids de personagem separados por vírgula"
+                          value={sobregravacaoAliadosInput[instance.id] ?? instance.sobregravacao.instructedAllyIds.join(",")}
+                          onChange={(e) => setSobregravacaoAliadosInput((prev) => ({ ...prev, [instance.id]: e.target.value }))}
+                          style={{ ...input, flex: 1, fontSize: 11 }}
+                        />
+                        <button
+                          data-testid={`sobregravacao-aliados-salvar-${instance.id}`}
+                          onClick={() =>
+                            onSetSobregravacaoAllies?.(
+                              instance.id,
+                              (sobregravacaoAliadosInput[instance.id] ?? "")
+                                .split(",")
+                                .map((s) => s.trim())
+                                .filter(Boolean),
+                            )
+                          }
+                          style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+                        >
+                          Salvar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {instance.sobregravacao && !sobregravacaoAcesso && (
+                    sobregravacaoTestPending[instance.id] ? (
+                      <div data-testid={`sobregravacao-teste-confirmar-${instance.id}`} style={{ ...widgetBox2, marginBottom: 6 }}>
+                        <span>Teste de Tecnomagia/Arcanismo rolado — CD 8. Informe o resultado:</span>
+                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                          <input
+                            data-testid={`sobregravacao-teste-resultado-${instance.id}`}
+                            type="number"
+                            placeholder="total rolado"
+                            value={sobregravacaoTestResultado[instance.id] ?? ""}
+                            onChange={(e) => setSobregravacaoTestResultado((prev) => ({ ...prev, [instance.id]: e.target.value }))}
+                            style={{ ...input, width: 80, fontSize: 11 }}
+                          />
+                          <button
+                            data-testid={`sobregravacao-teste-confirmar-btn-${instance.id}`}
+                            onClick={() => onConfirmSobregravacaoTest?.(instance.id, Number(sobregravacaoTestResultado[instance.id]) || 0)}
+                            style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+                          >
+                            Confirmar resultado
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        data-testid={`sobregravacao-testar-${instance.id}`}
+                        onClick={() => onStartSobregravacaoTest?.(instance.id)}
+                        style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", marginBottom: 6 }}
+                      >
+                        Testar acesso ao espaço extra (Tecnomagia/Arcanismo CD 8)
+                      </button>
+                    )
+                  )}
                   {runasInstaladas.length > 0 && (
                     <div data-testid={`inventario-runas-lista-${instance.id}`} style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
                       {runasInstaladas.map((runa) => {

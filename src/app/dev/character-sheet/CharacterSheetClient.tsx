@@ -113,7 +113,14 @@ import {
   toggleInstalledRune,
   hasGatilhoRunico,
   hasEntalheRapido,
+  hasSobregravacao,
   getSobregravacaoMultiplier,
+  applySobregravacao,
+  setSobregravacaoInstructedAllies,
+  grantSobregravacaoAccess,
+  hasSobregravacaoAccess,
+  getSlotsRunaMaxEfetivo,
+  countInstalledRunes,
   equipDefensiveItem,
   unequipDefensiveItem,
   setItemMitAtual,
@@ -391,6 +398,8 @@ export default function CharacterSheetClient({
   const [selectedAttackWeaponId, setSelectedAttackWeaponId] = useState<string | null>(null);
   /** Rúnico › Entalhe Rápido — tentativa pendente de confirmação por instância (checkpoint talentos). */
   const [entalheAttempts, setEntalheAttempts] = useState<Record<string, { mode: "instalar" | "remover"; alvo: string; cd: number }>>({});
+  /** Rúnico › Sobregravação — instância com teste de Tecnomagia/Arcanismo CD 8 pendente de confirmação (terceiro tentando acessar o espaço extra). */
+  const [sobregravacaoTestPending, setSobregravacaoTestPending] = useState<Record<string, true>>({});
   // Mesa (campaign) selecionada — estado de UI local, não persiste no
   // payload do personagem. Quando presente, RollsTab também grava cada
   // rolagem em table_logs (ver checkpoint v0.2 do relatório de Mesas).
@@ -2462,6 +2471,25 @@ export default function CharacterSheetClient({
   /** Rúnico › Entalhe Rápido — gasta 1 PA e prepara o teste real de Engenharia (CD do narrador). */
   function handleStartEntalheRapido(instanceId: string, mode: "instalar" | "remover", alvo: string, cd: number) {
     if (!alvo || !cd) return;
+    // Preflight: se já há uma tentativa pendente nesta instância, não inicia outra (evitaria perder o
+    // rastro do 1º PA já gasto). Para instalar, verifica o limite de slots ANTES de gastar o PA — sem
+    // isso, um jogador podia passar no teste de Engenharia e só descobrir depois que o slot estava cheio.
+    if (entalheAttempts[instanceId]) {
+      addLogEntry("condicao", "Entalhe Rápido: já há uma tentativa pendente para este item — confirme ou aguarde antes de iniciar outra.");
+      return;
+    }
+    if (mode === "instalar") {
+      const current = characterRef.current;
+      const instance = current.inventario?.find((i) => i.id === instanceId);
+      const itemContent = instance ? itemsIniciais.find((i) => i.slug === instance.itemSlug) : undefined;
+      if (instance) {
+        const slotsMax = getSlotsRunaMaxEfetivo(instance, itemContent, characterId);
+        if (slotsMax != null && countInstalledRunes(instance) >= slotsMax) {
+          addLogEntry("condicao", `Entalhe Rápido: limite de slots de runa já atingido (máx. ${slotsMax}) — PA não gasto.`);
+          return;
+        }
+      }
+    }
     adjustEstadoJogo("pa_gastos", 1);
     setEntalheAttempts((prev) => ({ ...prev, [instanceId]: { mode, alvo, cd } }));
     const periciaDef = regras?.pericias.find((p) => p.id === "engenharia");
@@ -2496,7 +2524,7 @@ export default function CharacterSheetClient({
         itemContent,
         rune,
         nowIso: new Date().toISOString(),
-        slotsRunaMaxMultiplier: getSobregravacaoMultiplier(current, talentsIniciais),
+        currentCharacterId: characterId,
       });
       if (!result.ok) {
         addLogEntry("condicao", `Entalhe Rápido: sucesso no teste, mas ${result.reason ?? "não instalada"}.`);
@@ -3022,7 +3050,7 @@ export default function CharacterSheetClient({
       itemContent,
       rune,
       nowIso: new Date().toISOString(),
-      slotsRunaMaxMultiplier: getSobregravacaoMultiplier(current, talentsIniciais),
+      currentCharacterId: characterId,
     });
     if (!result.ok) {
       addLogEntry("recurso", result.reason ?? "Runa não instalada.");
@@ -3040,6 +3068,85 @@ export default function CharacterSheetClient({
     characterRef.current = next;
     setCharacter(next);
     addLogEntry("recurso", "Runa removida do item.");
+  }
+
+  /**
+   * Rúnico › Sobregravação (N3) — o DONO do talento aplica a autorização a
+   * uma instância do próprio inventário (`equipamento_proprio`, payload).
+   * Persiste na instância (sobrevive a transferência): dono + aliados
+   * instruídos acessam o espaço extra automaticamente; qualquer outro
+   * personagem que fique com o item depois precisa do teste CD 8
+   * (`handleStartSobregravacaoTest`/`handleConfirmSobregravacaoTest`).
+   */
+  function handleApplySobregravacao(instanceId: string) {
+    const current = characterRef.current;
+    if (!hasSobregravacao(current, talentsIniciais)) return;
+    if (!characterId) {
+      addLogEntry("condicao", "Sobregravação: personagem sem id de sessão salvo — salve a ficha antes de aplicar.");
+      return;
+    }
+    const multiplicador = getSobregravacaoMultiplier(current, talentsIniciais);
+    const next = applySobregravacao({
+      character: current,
+      instanceId,
+      ownerCharacterId: characterId,
+      multiplicador,
+      nowIso: new Date().toISOString(),
+    });
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry(
+      "condicao",
+      `Sobregravação aplicada: espaços de runa deste item multiplicados por ${multiplicador} — só você e aliados instruídos se beneficiam do espaço extra; outros veem a inscrição, mas não acessam o efeito sem teste de Tecnomagia/Arcanismo CD 8.`,
+    );
+  }
+
+  /** Rúnico › Sobregravação — dono edita a lista de aliados previamente instruídos (substitui a lista inteira). */
+  function handleSetSobregravacaoAllies(instanceId: string, allyIds: string[]) {
+    const current = characterRef.current;
+    const next = setSobregravacaoInstructedAllies(current, instanceId, allyIds);
+    if (next === current) return;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Sobregravação: aliados instruídos atualizados (${allyIds.length}).`);
+  }
+
+  /** Rúnico › Sobregravação — terceiro (não dono, não aliado instruído) inicia o teste real de Tecnomagia/Arcanismo CD 8 para acessar o espaço extra. */
+  function handleStartSobregravacaoTest(instanceId: string) {
+    const periciaDef =
+      regras?.pericias.find((p) => p.id === "tecnomagia") ?? regras?.pericias.find((p) => p.id === "arcanismo");
+    setSobregravacaoTestPending((prev) => ({ ...prev, [instanceId]: true }));
+    setPreparedRoll({
+      atributoId: periciaDef?.atributo_primario ?? "mente",
+      periciaId: periciaDef?.id ?? "arcanismo",
+      origem: "Sobregravação: acesso de terceiro ao espaço extra (CD 8)",
+    });
+    setActiveTab("rolagens");
+    addLogEntry("condicao", "Sobregravação: teste de Tecnomagia ou Arcanismo CD 8 preparado para acessar o espaço extra deste item.");
+  }
+
+  /** Confirma o resultado do teste CD 8 — sucesso concede acesso permanente (persistido na instância); falha não bloqueia o item nem as runas já instaladas. */
+  function handleConfirmSobregravacaoTest(instanceId: string, resultado: number) {
+    if (!sobregravacaoTestPending[instanceId]) return;
+    setSobregravacaoTestPending((prev) => {
+      const next = { ...prev };
+      delete next[instanceId];
+      return next;
+    });
+    const sucesso = resultado >= 8;
+    if (!sucesso) {
+      addLogEntry("condicao", `Sobregravação: teste falhou (${resultado} < CD 8) — espaço extra continua inacessível para você.`);
+      return;
+    }
+    if (!characterId) {
+      addLogEntry("condicao", "Sobregravação: sucesso no teste, mas personagem sem id de sessão salvo — não foi possível persistir o acesso.");
+      return;
+    }
+    const current = characterRef.current;
+    const next = grantSobregravacaoAccess(current, instanceId, characterId);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Sobregravação: teste bem-sucedido (${resultado} ≥ CD 8) — acesso ao espaço extra concedido e persistido.`);
   }
 
   /**
@@ -4481,7 +4588,13 @@ export default function CharacterSheetClient({
           entalheAttempts={entalheAttempts}
           onStartEntalheRapido={handleStartEntalheRapido}
           onConfirmEntalheRapido={handleConfirmEntalheRapido}
-          sobregravacaoMultiplier={getSobregravacaoMultiplier(character, talentsIniciais)}
+          sobregravacaoAvailable={hasSobregravacao(character, talentsIniciais)}
+          currentCharacterId={characterId}
+          onApplySobregravacao={handleApplySobregravacao}
+          onSetSobregravacaoAllies={handleSetSobregravacaoAllies}
+          sobregravacaoTestPending={sobregravacaoTestPending}
+          onStartSobregravacaoTest={handleStartSobregravacaoTest}
+          onConfirmSobregravacaoTest={handleConfirmSobregravacaoTest}
         />
       )}
 
