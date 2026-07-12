@@ -1417,6 +1417,24 @@ export default function CharacterSheetClient({
   }
 
   /**
+   * Reset manual de "novo dia" SÓ para talentos cadência "dia" (ex.: Toque de Midas)
+   * — não aplica descanso longo, não mexe em PV/PE/Mana/Sobrecarga. Cobre o caso em
+   * que o narrador declara um novo dia narrativo sem um descanso completo de 8h
+   * (checkpoint talentos — "dia" não é forçosamente "descanso longo").
+   */
+  function handleMarkNewDayTalents() {
+    const current = characterRef.current;
+    const talentReset = resetTalentUses(current, ["dia"]);
+    if (talentReset.resetCount === 0) {
+      addLogEntry("condicao", "Novo dia (talentos): nenhum contador de cadência diária estava em uso.");
+      return;
+    }
+    characterRef.current = talentReset.character;
+    setCharacter(talentReset.character);
+    addLogEntry("condicao", `Novo dia (talentos): ${talentReset.resetCount} contador(es) de cadência diária resetado(s) manualmente.`);
+  }
+
+  /**
    * Botão "Usar surto" (checkpoint v0.37; data-driven pela regra
    * canônica `regras_personagem.sobrecarga` no pós-v0.65) — dado do dano
    * psíquico, máximo de cargas/dia e teste do 3º surto vêm da regra
@@ -4029,6 +4047,16 @@ export default function CharacterSheetClient({
   function handleRollAction(actionId: string) {
     const item = actionConsoleItems.find((action) => action.id === actionId);
     if (!item) return;
+    // Preparar ataque: expira (persiste) efeitos de item vencidos ANTES de computar
+    // bônus escopados — evita que um Toque de Midas vencido conte, mesmo que ninguém
+    // tenha recarregado a página desde então.
+    {
+      const expired = expireItemTemporaryEffects(characterRef.current, new Date().toISOString());
+      if (expired.expiredInstanceIds.length > 0) {
+        characterRef.current = expired.character;
+        setCharacter(expired.character);
+      }
+    }
     // "Atacar" não tem `teste.pericias` simples (é contestado_ou_simples,
     // ver getSimpleActionRollSkill) — a perícia correta depende da arma
     // selecionada, resolvida em attackPreview (mesma lógica de handleUseAction).
@@ -4346,6 +4374,7 @@ export default function CharacterSheetClient({
           atributos={character.atributos}
           onApplyShortRest={handleApplyShortRest}
           onApplyLongRest={handleApplyLongRest}
+          onMarkNewDayTalents={handleMarkNewDayTalents}
           sobrecargaUsadaDia={character.sobrecarga_usada_dia ?? 0}
           overloadMaxOverride={getTalentOverloadLimitOverride(character, talentsIniciais)}
           rupturaEspecialAscensao={character.ruptura_especial_ascensao ?? null}

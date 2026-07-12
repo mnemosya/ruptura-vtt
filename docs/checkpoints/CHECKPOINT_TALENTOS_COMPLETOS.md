@@ -49,22 +49,30 @@ canônico — não de uma engine genérica.
 
 ## Tabela 66/66 — status REAL de implementação mecânica
 
-Legenda: **✅ Integral** (mecânica-núcleo conectada ao fluxo real) · **🟡 Parcial**
-(parte da mecânica real feita, resto pendente) · **📖 Narrativo rastreado** (atividade
-com formulário/estado/log) · **⚙️ Infra pendente** (só classificação/badge/botão/
-cadência/log/lembrete — SEM regra específica no fluxo).
+Legenda: **✅ Integral** (validado pelo usuário — só aplicável após confirmação
+explícita de testes manuais, nunca autodeclarado) · **🔵 Implementado** (aguardando
+validação manual — mecânica-núcleo conectada ao fluxo real, mas ainda sem
+confirmação do usuário) · **🟡 Parcial** (parte da mecânica real feita, resto
+pendente) · **📖 Narrativo rastreado** (atividade com formulário/estado/log) ·
+**⚙️ Infra pendente** (só classificação/badge/botão/cadência/log/lembrete — SEM
+regra específica no fluxo).
 
-Contagem: ✅ 11 · 🟡 8 · ⚙️ 46 · 📖 1.
+> **Regra dura**: nenhum talento é marcado ✅ Integral sem confirmação explícita do
+> usuário sobre testes manuais realizados. Em 2026-07-12 esta tabela foi corrigida:
+> vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
+> rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
+
+Contagem: ✅ 0 · 🔵 8 · 🟡 11 · ⚙️ 46 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
-| Artífice | Bricolagem | 1 | ✅ Integral |
-| Artífice | Toque de Midas | 2 | ✅ Integral |
+| Artífice | Bricolagem | 1 | 🔵 Implementado (aguardando validação manual) |
+| Artífice | Toque de Midas | 2 | 🔵 Implementado (aguardando validação manual) |
 | Artífice | Gambiarra Expressa | 3 | 📖 Narrativo rastreado |
 | Assassino | Lâmina Oculta | 1 | ⚙️ Infra pendente |
-| Assassino | Hemorragia | 2 | ✅ Integral |
-| Assassino | Executar | 3 | ✅ Integral |
-| Atirador de Elite | 1 Tiro, 1 Acerto | 1 | ✅ Integral |
+| Assassino | Hemorragia | 2 | 🔵 Implementado (aguardando validação manual) |
+| Assassino | Executar | 3 | 🔵 Implementado (aguardando validação manual) |
+| Atirador de Elite | 1 Tiro, 1 Acerto | 1 | 🔵 Implementado (aguardando validação manual) |
 | Atirador de Elite | À Espreita | 2 | ⚙️ Infra pendente |
 | Atirador de Elite | Headshot | 3 | ⚙️ Infra pendente |
 | Berserker | Fúria | 1 | 🟡 Parcial |
@@ -87,11 +95,11 @@ Contagem: ✅ 11 · 🟡 8 · ⚙️ 46 · 📖 1.
 | Guardião | Muralha | 3 | ⚙️ Infra pendente |
 | Mago de Batalha | Domínio Territorial | 1 | 🟡 Parcial |
 | Mago de Batalha | Canalizar | 2 | 🟡 Parcial |
-| Mago de Batalha | Ascensão | 3 | ✅ Integral |
+| Mago de Batalha | Ascensão | 3 | 🔵 Implementado (aguardando validação manual) |
 | Malabarista | Saque Fantasma | 1 | 🟡 Parcial |
 | Malabarista | Revoada | 2 | ⚙️ Infra pendente |
 | Malabarista | Espetáculo Mortal | 3 | ⚙️ Infra pendente |
-| Manipulador | Olhar Penetrante | 1 | ✅ Integral |
+| Manipulador | Olhar Penetrante | 1 | 🟡 Parcial |
 | Manipulador | Entrelinhas | 2 | ⚙️ Infra pendente |
 | Manipulador | Puxar os Fios | 3 | ⚙️ Infra pendente |
 | Mecatrônico | Chave de Arranque | 1 | ⚙️ Infra pendente |
@@ -112,10 +120,10 @@ Contagem: ✅ 11 · 🟡 8 · ⚙️ 46 · 📖 1.
 | Rato de Rua | Zé da Esquina | 1 | ⚙️ Infra pendente |
 | Rato de Rua | Gato de Telhado | 2 | ⚙️ Infra pendente |
 | Rato de Rua | Saída dos Fundos | 3 | ⚙️ Infra pendente |
-| Rúnico | Gatilho Rúnico | 1 | ✅ Integral |
-| Rúnico | Entalhe Rápido | 2 | ✅ Integral |
-| Rúnico | Sobregravação | 3 | ✅ Integral |
-| Sorrateiro | Passo Fantasma | 1 | ✅ Integral |
+| Rúnico | Gatilho Rúnico | 1 | 🔵 Implementado (aguardando validação manual) |
+| Rúnico | Entalhe Rápido | 2 | 🟡 Parcial |
+| Rúnico | Sobregravação | 3 | 🟡 Parcial |
+| Sorrateiro | Passo Fantasma | 1 | 🔵 Implementado (aguardando validação manual) |
 | Sorrateiro | Camuflagem Óptica | 2 | ⚙️ Infra pendente |
 | Sorrateiro | Ataque Fatal | 3 | ⚙️ Infra pendente |
 | Tecelão | Olho de Botão | 1 | ⚙️ Infra pendente |
@@ -127,46 +135,67 @@ Contagem: ✅ 11 · 🟡 8 · ⚙️ 46 · 📖 1.
 
 ### Detalhe dos não-infra
 
-- **✅ Rúnico completo** — Gatilho Rúnico: ativar/desativar runa instalada sem PA,
-  refletido de fato no `ActiveEffect` (verificado: "modificador aplicado" some/volta,
-  ActiveStateStrip mostra "Sem estados ativos" ao desativar e o buff ao reativar).
-  Entalhe Rápido: 1 PA real gasto (verificado 0→1), prepara teste real de Engenharia,
-  só aplica a instalação/remoção em SUCESSO (verificado: resultado 3 < CD 5 não instala;
-  resultado 9 ≥ CD 5 instala — 0/4 → 1/4); falha preserva item/runa e não devolve o PA.
-  Sobregravação: multiplicador lido do payload (`multiplicador_espacos_extra`), dobra o
-  limite de slots real usado tanto no gate de instalação quanto no display (verificado:
-  "2 base × 2 = 4"). Autorização de terceiros (Tecnomagia/Arcanismo CD 8) documentada
-  como nota — não modelada por não haver UI de acesso cross-personagem no dev sheet.
-- **✅ 1 Tiro, 1 Acerto** — estado real de Mirar (Character.mirar_ativo), bônus lido
-  do payload (+2/+3, escopado a precisao/balistica). Confirmar sucesso/crítico cria o
-  estado; o próximo "Atacar" com arma à distância injeta a tag mirar:ativo na rolagem
-  real (verificado: chip "1 Tiro, 1 Acerto (sucesso) +2", Total 5+0+2=7) e marca
-  consumido (widget mostra "Já usado nesta rodada"). Corrige, no caminho, um bug real:
-  armas à distância sem `atributoAtaque` no catálogo caíam num ramo de fallback que
-  perdia TODAS as tags escopadas (inclusive o +1 de Toque de Midas em arma à
-  distância) — agora as duas ramificações preservam as tags.
-- **✅ Passo Fantasma + Olhar Penetrante (ambos os ramos)** — mecanismo genérico real
-  de promoção de margem (`rollPericia.promocaoMargem`, data-driven de
-  `promocao_margem.pericias[]` do payload — nunca hardcoded por talento). Ao rolar
-  Furtividade/Influência/Psicologia com CD, falha_limitada vira sucesso_limitado E
-  `sucesso` vira true (verificado: margem -1 exibida como "Sucesso limitado" +
-  "Promoção de margem: ... Passo Fantasma"); não aplica a perícias sem
-  `pericias[]` no payload (Totem Bênção não tem essa estrutura, então não foi
-  automatizado — não inventa mapeamento).
-- **✅ Hemorragia + Executar (Assassino N2/N3, Fase E — cross-record)** — primeira
-  integração REAL no lado do narrador (`/dev/table`), lendo os talentos do ATACANTE
-  (talentsIniciais agora carregado em TableClient/page.tsx) cruzados com o alvo
-  escolhido na resolução. Hemorragia: detecta a propriedade "Sangramento" na arma real
-  do atacante (`ItemContent.propertySlugs`), habilita o checkbox só quando margem ≥
-  sucesso padrão, aplica "Sangrando" no ALVO de verdade via `applyGmCondition`
-  (verificado: PV 11→5 e "Condições ativas: Sangrando" no personagem real). Executar:
-  força a banda de resolução para crítica (regiões liberadas, MIT ignorado) mesmo com
-  margem naturalmente "limited" (verificado: MIT 99 digitado → dano final ainda 6;
-  região Cabeça liberada; log "margem crítica"), exige confirmação manual do requisito,
-  consome 1/cena no atacante e persiste (verificado: reabrir o painel mostra "já usado
-  nesta cena", checkbox desabilitado). Setup de teste cruzou 2 personagens reais via 2
-  perfis de mesa — nada simulado.
-- **✅ Bricolagem** — atividade "Examinar ponto vulnerável" real: formulário (tipo/alvo/
+- **🔵 Gatilho Rúnico (Implementado, aguardando validação manual)** — ativar/desativar
+  runa instalada sem PA, refletido de fato no `ActiveEffect` (verificado nesta sessão:
+  "modificador aplicado" some/volta, ActiveStateStrip mostra "Sem estados ativos" ao
+  desativar e o buff ao reativar). Pendente: confirmação do usuário via teste manual
+  próprio antes de virar ✅ Integral.
+- **🟡 Entalhe Rápido (Parcial)** — 1 PA real gasto (verificado 0→1), prepara teste real
+  de Engenharia, só aplica a instalação em SUCESSO (verificado: resultado 3 < CD 5 não
+  instala; resultado 9 ≥ CD 5 instala — 0/4 → 1/4); falha preserva item/runa e não
+  devolve o PA. **Falta para ser integral**: fluxo de remoção de runa instalada, garantia
+  de que um reload após falha de persistência não deixa PA/item/runa divergentes
+  (preflight antes de gastar PA + mutar estado), e confirmação de que o reload da página
+  preserva corretamente o resultado em todos os casos (não só o caminho feliz testado).
+- **🟡 Sobregravação (Parcial)** — o modelo anterior calculava o multiplicador de slots
+  ao vivo a partir dos talentos do personagem ATUAL a cada render (`multiplicador_espacos_extra`
+  do payload), o que a validação manual rejeitou como implementação insuficiente: não
+  distinguia dono/aliado instruído/terceiro, não sobrevivia a transferência do item entre
+  personagens, e não exigia o teste de Tecnomagia/Arcanismo CD 8 para terceiros. Rework
+  em andamento: campo `InventoryItemInstance.sobregravacao` (`ownerCharacterId`,
+  `instructedAllyIds`, `appliedAt`) já adicionado ao tipo; falta a lógica de autorização
+  (`getSlotsRunaMaxEfetivo`/ação de aplicar Sobregravação/confirmação de teste CD 8 para
+  terceiro) e a atualização do display em `InventoryTab.tsx`.
+- **🔵 1 Tiro, 1 Acerto (Implementado, aguardando validação manual)** — estado real de
+  Mirar (Character.mirar_ativo), bônus lido do payload (+2/+3, escopado a
+  precisao/balistica). Confirmar sucesso/crítico cria o estado; o próximo "Atacar" com
+  arma à distância injeta a tag mirar:ativo na rolagem real (verificado: chip "1 Tiro, 1
+  Acerto (sucesso) +2", Total 5+0+2=7) e marca consumido (widget mostra "Já usado nesta
+  rodada"). Corrige, no caminho, um bug real: armas à distância sem `atributoAtaque` no
+  catálogo caíam num ramo de fallback que perdia TODAS as tags escopadas (inclusive o +1
+  de Toque de Midas em arma à distância) — agora as duas ramificações preservam as tags.
+  Pendente: confirmação do usuário; À Espreita/Headshot (níveis seguintes da mesma
+  árvore) ainda não implementados.
+- **🔵 Passo Fantasma (Implementado, aguardando validação manual) + 🟡 Olhar Penetrante
+  (Parcial)** — mecanismo genérico real de promoção de margem (`rollPericia.promocaoMargem`,
+  data-driven de `promocao_margem.pericias[]` do payload — nunca hardcoded por talento).
+  Ao rolar Furtividade/Influência/Psicologia com CD, falha_limitada vira sucesso_limitado
+  E `sucesso` vira true (verificado: margem -1 exibida como "Sucesso limitado" +
+  "Promoção de margem: ... Passo Fantasma"). Passo Fantasma: mecanismo completo, aguarda
+  só confirmação de teste manual do usuário. Olhar Penetrante permanece **Parcial**: a
+  promoção hoje dispara em QUALQUER teste de Influência/Psicologia com CD, mas o capítulo
+  exige seleção explícita de contexto (distorcer percepções/convencer/manipular via
+  Influência OU identificar vulnerabilidades/motivações exploráveis via Psicologia) ANTES
+  da rolagem — essa seleção de contexto obrigatória ainda não existe na UI, então o
+  talento não pode ser considerado integral nem "aguardando validação simples": falta
+  mecânica real, não só confirmação.
+- **🔵 Hemorragia + Executar (Assassino N2/N3, Implementado, aguardando validação
+  manual — cross-record)** — primeira integração REAL no lado do narrador
+  (`/dev/table`), lendo os talentos do ATACANTE (talentsIniciais agora carregado em
+  TableClient/page.tsx) cruzados com o alvo escolhido na resolução. Hemorragia: detecta a
+  propriedade "Sangramento" na arma real do atacante (`ItemContent.propertySlugs`),
+  habilita o checkbox só quando margem ≥ sucesso padrão, aplica "Sangrando" no ALVO de
+  verdade via `applyGmCondition` (verificado: PV 11→5 e "Condições ativas: Sangrando" no
+  personagem real). Executar: força a banda de resolução para crítica (regiões
+  liberadas, MIT ignorado) mesmo com margem naturalmente "limited" (verificado: MIT 99
+  digitado → dano final ainda 6; região Cabeça liberada; log "margem crítica"), exige
+  confirmação manual do requisito, consome 1/cena no atacante e persiste (verificado:
+  reabrir o painel mostra "já usado nesta cena", checkbox desabilitado). Setup de teste
+  cruzou 2 personagens reais via 2 perfis de mesa nesta sessão — nada simulado, mas
+  ainda falta a confirmação do usuário de que o bloqueio SEM requisito atendido também
+  funciona corretamente (não testado explicitamente) antes de virar ✅ Integral.
+- **🔵 Bricolagem (Implementado, aguardando validação manual)** — atividade "Examinar
+  ponto vulnerável" real: formulário (tipo/alvo/
   falha/perícia) sem teste; bônus consumível escopado por tag sintética `bricolagem:<id>`,
   só aplicado no teste disparado pelo botão "Rolar teste relacionado" (com confirmação
   "este teste explora a falha?"), nunca em outra rolagem (verificado: chip some ao trocar
@@ -182,26 +211,34 @@ Contagem: ✅ 11 · 🟡 8 · ⚙️ 46 · 📖 1.
   reaquisição mesmo após encerrar o efeito ativo.
 - **🟡 Domínio Territorial** — multiplica alcance/área na aba Magias (+50%); **falta** usar o
   valor ajustado nos cartões operacionais e nos logs de conjuração para ser integral.
-- **✅ Toque de Midas** — efeito real na instância (1/dia — renova no descanso longo,
-  equivalência confirmada pela regra canônica de Sobrecarga; 1h de duração). Arma: +1
-  ataque entra de fato na rolagem de "Atacar" via tag sintética `item:<instanceId>`
-  (verificado: chip "Toque de Midas — Adaga +1", total somado 8→9), escopado só a ESSA
-  arma (desarmado/outra arma não recebe). Armadura: MIT-base vs MIT ajustado exibidos e
-  usados (4→6). Escudo: PD-base e PD-temporário são POOLS SEPARADOS —
-  `applyShieldDamage` consome o temporário primeiro (verificado: dano 4 → 3 do
-  temporário + 1 do base). Ferramenta/dispositivo: perícia escolhida na aplicação, +1
-  entra na rolagem real via o mesmo mecanismo de tag (verificado: chip "+1", perícia
+- **🔵 Toque de Midas (Implementado, aguardando validação manual)** — efeito real na
+  instância (1/dia — controlado por timestamp de aplicação/ação manual "Novo dia (só
+  talentos)", **não** equiparado automaticamente a descanso longo — não há regra
+  canônica confirmada dessa equivalência para este talento especificamente; 1h de
+  duração). Arma: +1 ataque entra de fato na rolagem de "Atacar" via tag sintética
+  `item:<instanceId>` (verificado: chip "Toque de Midas — Adaga +1", total somado 8→9),
+  escopado só a ESSA arma (desarmado/outra arma não recebe). Armadura: MIT-base vs MIT
+  ajustado exibidos e usados (4→6). Escudo: PD-base e PD-temporário são POOLS
+  SEPARADOS — `applyShieldDamage` consome o temporário primeiro (verificado: dano 4 →
+  3 do temporário + 1 do base). Ferramenta/dispositivo: perícia escolhida na aplicação,
+  +1 entra na rolagem real via o mesmo mecanismo de tag (verificado: chip "+1", perícia
   auto-selecionada). `isItemTemporaryEffectActive` ignora o efeito IMEDIATAMENTE ao
   vencer (mesmo antes de `expireItemTemporaryEffects` rodar) — confirmado por script:
   MIT volta a 4 no instante do vencimento, `active:false` só depois da limpeza, PD/MIT-
-  base nunca tocados. Expira ao carregar personagem (handleLoad/product session) com log.
-  Transferência ao bando/retorno preserva o campo (spread completo da instância;
-  `canSplitInstanceQuantity` bloqueia split parcial com efeito ativo, força instância
-  inteira). Verificado: aplicar→salvar→reload de página real→"Carregar"→4 cards intactos.
-- **✅ Ascensão** — limite de Surtos 3→5 real + Ruptura especial idempotente ao adquirir
-  (não reduz Integridade, não conta em cálculos futuros), exibida à parte e logada.
+  base nunca tocados. Expiração agora também verificada ao preparar ataque
+  (`handleRollAction`), além de ao carregar personagem, com log. Transferência ao
+  bando/retorno preserva o campo (spread completo da instância; `canSplitInstanceQuantity`
+  bloqueia split parcial com efeito ativo, força instância inteira). Verificado nesta
+  sessão: aplicar→salvar→reload de página real→"Carregar"→4 cards intactos. Pendente:
+  confirmação do usuário via teste manual próprio antes de virar ✅ Integral.
+- **🔵 Ascensão (Implementado, aguardando validação manual)** — limite de Surtos 3→5
+  real + Ruptura especial idempotente ao adquirir (não reduz Integridade, não conta em
+  cálculos futuros), exibida à parte e logada. Pendente: confirmação do usuário.
 - **🟡 Canalizar** — Potencializar real (gasta Mana, +1 dano/Mana, 1/rodada); **falta
   Amortecer** (fluxo de dano recebido, lado narrador — Fase E).
+- **Árvore Mago de Batalha, em geral** — permanece **🟡 Parcial** enquanto Domínio
+  Territorial (cartões/logs) e Canalizar (Amortecer) não estiverem completos; Ascensão
+  isoladamente já está 🔵 Implementado, mas isso não eleva a árvore como um todo.
 - **🟡 Aparar** — +1 em Aparar real via ActiveEffect; **falta** a promoção 1/cena.
 - **🟡 Blindagem** — +1 em Bloquear real; **falta** anular todo o dano sem consumir PD.
 - **🟡 Sede de Sangue** — −1 defensivas real (toggle→efeito); **falta** dobrar bônus de
