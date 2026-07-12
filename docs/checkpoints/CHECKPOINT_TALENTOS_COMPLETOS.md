@@ -54,7 +54,7 @@ Legenda: **✅ Integral** (mecânica-núcleo conectada ao fluxo real) · **🟡 
 com formulário/estado/log) · **⚙️ Infra pendente** (só classificação/badge/botão/
 cadência/log/lembrete — SEM regra específica no fluxo).
 
-Contagem: ✅ 2 · 🟡 7 · ⚙️ 57 · 📖 0.
+Contagem: ✅ 1 · 🟡 8 · ⚙️ 57 · 📖 0.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -85,7 +85,7 @@ Contagem: ✅ 2 · 🟡 7 · ⚙️ 57 · 📖 0.
 | Guardião | Sentinela | 1 | ⚙️ Infra pendente |
 | Guardião | Blindagem | 2 | 🟡 Parcial |
 | Guardião | Muralha | 3 | ⚙️ Infra pendente |
-| Mago de Batalha | Domínio Territorial | 1 | ✅ Integral |
+| Mago de Batalha | Domínio Territorial | 1 | 🟡 Parcial |
 | Mago de Batalha | Canalizar | 2 | 🟡 Parcial |
 | Mago de Batalha | Ascensão | 3 | ✅ Integral |
 | Malabarista | Saque Fantasma | 1 | 🟡 Parcial |
@@ -127,7 +127,8 @@ Contagem: ✅ 2 · 🟡 7 · ⚙️ 57 · 📖 0.
 
 ### Detalhe dos não-infra
 
-- **✅ Domínio Territorial** — multiplica alcance/área real de magias de ataque (+50%).
+- **🟡 Domínio Territorial** — multiplica alcance/área na aba Magias (+50%); **falta** usar o
+  valor ajustado nos cartões operacionais e nos logs de conjuração para ser integral.
 - **✅ Ascensão** — limite de Surtos 3→5 real + Ruptura especial idempotente ao adquirir
   (não reduz Integridade, não conta em cálculos futuros), exibida à parte e logada.
 - **🟡 Canalizar** — Potencializar real (gasta Mana, +1 dano/Mana, 1/rodada); **falta
