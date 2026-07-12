@@ -499,3 +499,201 @@ marcados como operacionais e alteram o fluxo aplicável.
 | Totem | Benção | 1 | Contextual + Atividade própria |
 | Totem | Onda Solidária | 2 | Contextual |
 | Totem | Chama Redobrada | 3 | Contextual |
+
+
+---
+
+## Entrega final — tabela 66/66 com colunas completas + checklist de validação manual
+
+Gerada ao final das Fases 1–9 (2026-07-12). Todo talento marcado **🔵 Implementado**
+abaixo está **aguardando confirmação do usuário via teste manual** — nenhum vira
+✅ Integral sem essa confirmação explícita (regra dura do topo deste documento).
+"Resultado da validação" começa como "Aguardando usuário" em toda a tabela.
+
+| Árvore | Nível | Status | Fluxo real alterado | Arquivo principal | Estado persistido | Teste manual necessário | Validação |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Artífice | Bricolagem | 🔵 Implementado | Bônus +1 escopado ao teste de Engenharia/Robótica relacionado | `talentEngine.ts`, `RollsTab.tsx` | `Character.bricolagem_vulnerabilidade` | Registrar vulnerabilidade → rolar teste relacionado → confirmar chip +1 some após uso | Aguardando usuário |
+| Artífice | Toque de Midas | 🔵 Implementado | +1 ataque/dano/MIT/PD-temp/teste, escopado à instância do item | `inventory.ts`, `InventoryTab.tsx`, `CharacterSheetClient.tsx` | `InventoryItemInstance.toqueDeMidas` | Aplicar em arma/armadura/escudo/ferramenta → verificar bônus na rolagem/MIT/PD → esperar expirar (1h) → confirmar some | Aguardando usuário |
+| Artífice | Gambiarra Expressa | 📖 Narrativo rastreado | Atividade narrativa 1/sessão com formulário completo | `talentEngine.ts`, `TalentsTab.tsx` | `Character.gambiarra_expressa_ativa` | Registrar → encerrar → confirmar não pode reaquisitar na mesma sessão | Aguardando usuário |
+| Assassino | Lâmina Oculta | 🔵 Implementado | 3m reposicionamento (sucesso padrão+); falha→limitada por julgamento do narrador | `TableClient.tsx` | Nenhum (reminders/log só) | Resolver ataque com alvo "não percebe" confirmado, banda standard+ → conferir reminder de reposicionamento | Aguardando usuário |
+| Assassino | Hemorragia | 🔵 Implementado | Aplica Sangrando real no alvo (crítico usa 1d8) | `TableClient.tsx`, `gmActions.ts` | `ActiveCondition` no alvo (com autoria) | Atacar com arma com propriedade Sangramento, sucesso padrão+ → confirmar condição Sangrando aplicada | Aguardando usuário |
+| Assassino | Executar | 🔵 Implementado | Força banda crítica, ignora MIT, 1/cena | `TableClient.tsx`, `talentEngine.ts` | `Character.talentos_estado` (atacante) | Confirmar requisito → resolver → confirmar MIT ignorado e crítico forçado; tentar de novo na mesma cena → confirmar bloqueado | Aguardando usuário |
+| Atirador de Elite | 1 Tiro, 1 Acerto | 🔵 Implementado | +2/+3 no próximo disparo à distância após Mirar | `talentEngine.ts`, `RollsTab.tsx` | `Character.mirar_ativo` | Confirmar Mirar (sucesso/crítico) → atacar à distância → confirmar chip aplicado e consumido | Aguardando usuário |
+| Atirador de Elite | À Espreita | 🔵 Implementado | Sucesso/falha limitada → sucesso padrão (alvo não ciente + Mirar) | `TableClient.tsx` | Nenhum (banda de resolução só) | Resolver ataque à distância com margem "limited" + confirmação → banda vira standard | Aguardando usuário |
+| Atirador de Elite | Headshot | 🔵 Implementado | Acerto vira crítico (Mirar crítico confirmado) | `TableClient.tsx` | Nenhum | Resolver ataque à distância com acerto qualquer + confirmação de Mirar crítico → banda vira critical; testar um MISS → confirmar que NÃO vira acerto | Aguardando usuário |
+| Berserker | Fúria | 🔵 Implementado | +1 Luta empilhável (até 3) ao sofrer dano real | `TableClient.tsx`, `talentEngine.ts`, `temporaryEffects.ts` | `Character.efeitos_temporarios` (stack) | Aplicar dano ao personagem com Fúria 2-3x seguidas → confirmar pilha soma até 3, não duplica registro | Aguardando usuário |
+| Berserker | Sede de Sangue | 🟡 Parcial | −1 defensivas (toggle real); dobro de Corpo no dano NÃO calculado automaticamente | `talentEngine.ts`, `TalentsTab.tsx` | `Character` (toggle) | N/A — parcial, aguardando conclusão antes de testar | — |
+| Berserker | Último Fôlego | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Dissecador | Golpe Cirúrgico | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Dissecador | Fincada | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Dissecador | Contra-medida | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Droneiro | Sinal Limpo | ⚙️ Infra pendente | Nenhum (sem modelo de drone) | — | — | N/A | — |
+| Droneiro | Script | ⚙️ Infra pendente | Nenhum (sem modelo de drone) | — | — | N/A | — |
+| Droneiro | Enxame | ⚙️ Infra pendente | Nenhum (sem modelo de drone) | — | — | N/A | — |
+| Espadachim | Aparar | 🟡 Parcial | +1 em Aparar real; promoção 1/cena tem helpers não conectados | `talentEngine.ts` | `Character.talentos_estado` (não usado ainda) | N/A — parcial | — |
+| Espadachim | Estocar | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Espadachim | Ripostar | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Estrategista | Falcão | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Estrategista | Briefing de Campo | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Estrategista | Imposição de Ritmo | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Guardião | Sentinela | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Guardião | Blindagem | 🔵 Implementado | +1 Bloquear real; anula 100% do dano, 1/cena, sem tocar PD | `TableClient.tsx`, `talentEngine.ts` | `Character.talentos_estado` (alvo) | Resolver ataque contra alvo com Blindagem, marcar "anular dano" → confirmar PV intacto e PD/escudo intocados | Aguardando usuário |
+| Guardião | Muralha | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Mago de Batalha | Domínio Territorial | 🔵 Implementado | +50% alcance/área real no cartão E no log de conjuração | `talentEngine.ts`, `SpellsTab.tsx`, `CharacterSheetClient.tsx` | Nenhum (derivado do talento) | Conjurar magia de Ataque com o talento → confirmar alcance/área ajustados no cartão E no log | Aguardando usuário |
+| Mago de Batalha | Canalizar | 🔵 Implementado | Potencializar (+1 dano/Mana) e Amortecer (−1 dano/Mana antes de MIT) real, 1/rodada compartilhado | `CharacterSheetClient.tsx`, `TableClient.tsx`, `talentEngine.ts` | `Character.talentos_estado`, `recursos_atuais.mana` | Usar Potencializar numa rodada → confirmar Amortecer bloqueado na MESMA rodada (e vice-versa) | Aguardando usuário |
+| Mago de Batalha | Ascensão | 🔵 Implementado | Limite de Surtos 3→5 real + Ruptura especial idempotente | `talentEngine.ts`, `ResourcesTab.tsx` | `Character.ruptura_especial_ascensao` | Adquirir talento → confirmar Ruptura especial única → usar surtos até o 5º → confirmar limite | Aguardando usuário |
+| Malabarista | Saque Fantasma | 🟡 Parcial | Parte passiva real; promoção de margem pendente (payload sem `pericias[]`) | `talentEngine.ts` | Nenhum | N/A — parcial | — |
+| Malabarista | Revoada | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Malabarista | Espetáculo Mortal | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Manipulador | Olhar Penetrante | 🔵 Implementado | Falha limitada → sucesso limitado em Influência/Psicologia, com confirmação de contexto obrigatória | `talentEngine.ts`, `RollsTab.tsx` | Nenhum (promoção por rolagem) | Rolar Influência/Psicologia com CD, confirmar contexto certo → promoção aplica; testar SEM marcar a confirmação → promoção NÃO aplica | Aguardando usuário |
+| Manipulador | Entrelinhas | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Manipulador | Puxar os Fios | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Mecatrônico | Chave de Arranque | ⚙️ Infra pendente | Nenhum (sem modelo de robô) | — | — | N/A | — |
+| Mecatrônico | Marcha Dupla | ⚙️ Infra pendente | Nenhum (sem modelo de robô) | — | — | N/A | — |
+| Mecatrônico | Overclock | ⚙️ Infra pendente | Nenhum (sem modelo de robô) | — | — | N/A | — |
+| Mercador | Garimpo de Rua | 🔵 Implementado | −20% real em TODOS os preços da Loja enquanto ativo, 1/dia | `talentEngine.ts`, `InventoryTab.tsx` | `Character.talentos_estado` | Ativar desconto → confirmar preços da loja caem 20% → confirmar reset em Novo Dia/descanso longo | Aguardando usuário |
+| Mercador | Caderneta de Dívida | ⚙️ Infra pendente | Nenhum (sem modelo de dívida) | — | — | N/A | — |
+| Mercador | Rede de Favores | ⚙️ Infra pendente | Nenhum (infra genérica só) | — | — | N/A | — |
+| Paramédico | Pronto-socorro | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Paramédico | Ritmo de Campo | ⚙️ Infra pendente | Nenhum (bloqueado por falta de tag "cura" no conteúdo) | — | — | N/A | — |
+| Paramédico | Protocolo de Emergência | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Pistoleiro | Gatilho Quente | 🔵 Implementado | Recurso real de dados de gatilho (d8), dano extra = Balística atual em resultado 8 | `talentEngine.ts`, `TalentsTab.tsx`, `CharacterSheetClient.tsx` | `Character.talentos_estado` | Usar dado de gatilho, informar resultado 8 → confirmar dano extra = Balística; usar outro resultado → confirmar só consome; usar os 3 → confirmar indisponível; descanso longo → confirmar reset | Aguardando usuário |
+| Pistoleiro | Bang Bang | 🟡 Parcial | +1 dado de gatilho real (pool vira 4); segundo disparo não implementado | `talentEngine.ts` | `Character.talentos_estado` | N/A — parcial | — |
+| Pistoleiro | Showdown | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Praga | Marca da Dor | ⚙️ Infra pendente | Nenhum (exigiria leitura cross-character na rolagem de ataque) | — | — | N/A | — |
+| Praga | Sangria Lenta | ⚙️ Infra pendente | Nenhum (exigiria modelo de duração numérica em condições) | — | — | N/A | — |
+| Praga | Contágio | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Rato de Rua | Zé da Esquina | ⚙️ Infra pendente | Nenhum (infra genérica só) | — | — | N/A | — |
+| Rato de Rua | Gato de Telhado | ⚙️ Infra pendente | Nenhum (infra genérica só) | — | — | N/A | — |
+| Rato de Rua | Saída dos Fundos | ⚙️ Infra pendente | Nenhum (infra genérica só) | — | — | N/A | — |
+| Rúnico | Gatilho Rúnico | 🔵 Implementado | Ativa/desativa runa instalada sem PA, ActiveEffect real | `inventory.ts`, `InventoryTab.tsx` | `InventoryItemInstance.runasInstaladas[].ativa` | Ativar/desativar runa → confirmar chip de bônus aparece/some | Aguardando usuário |
+| Rúnico | Entalhe Rápido | 🟡 Parcial | Instalar/remover real com 1 PA + teste; falta reload/segurança total | `inventory.ts`, `CharacterSheetClient.tsx` | `InventoryItemInstance.runasInstaladas[]` | N/A — parcial | — |
+| Rúnico | Sobregravação | 🟡 Parcial | Autorização real (dono/aliado/CD8) persistida na instância; UI completa mas aguardando validação de todos os caminhos | `inventory.ts`, `InventoryTab.tsx`, `CharacterSheetClient.tsx` | `InventoryItemInstance.sobregravacao` | Aplicar → dono acessa slots extra → terceiro sem acesso vê limite base → terceiro testa CD8 e ganha acesso → transferir item e confirmar autorização preservada | Aguardando usuário (Parcial — testar mesmo assim para achar bugs, mas não conta como Integral) |
+| Sorrateiro | Passo Fantasma | 🔵 Implementado | Falha limitada → sucesso limitado em Furtividade | `talentEngine.ts`, `RollsTab.tsx` | Nenhum (promoção por rolagem) | Rolar Furtividade com CD, margem -1 → confirmar promovida para sucesso limitado | Aguardando usuário |
+| Sorrateiro | Camuflagem Óptica | 🔵 Implementado | Furtividade não encerra automaticamente em exposição; requer confirmação de cobertura plausível | `talentEngine.ts`, `TalentsTab.tsx` | `Character.furtividade_ativa` | Entrar em Furtividade → confirmar cobertura plausível → confirmar Furtividade continua ativa | Aguardando usuário |
+| Sorrateiro | Ataque Fatal | 🔵 Implementado | Acerto ao sair de Furtividade vira crítico; encerra Furtividade real | `TableClient.tsx`, `talentEngine.ts` | `Character.furtividade_ativa` | Entrar em Furtividade → atacar confirmando "saindo de Furtividade" → confirmar crítico forçado E Furtividade encerrada após | Aguardando usuário |
+| Tecelão | Olho de Botão | ⚙️ Infra pendente | Nenhum (sem modelo de Trama) | — | — | N/A | — |
+| Tecelão | Bypass | ⚙️ Infra pendente | Nenhum (sem modelo de Trama) | — | — | N/A | — |
+| Tecelão | Agulha Fina | ⚙️ Infra pendente | Nenhum (sem modelo de Trama) | — | — | N/A | — |
+| Totem | Benção | 🟡 Parcial | Parte passiva real; segundo efeito (token 1/cena) não automatizado | `talentEngine.ts` | Nenhum | N/A — parcial | — |
+| Totem | Onda Solidária | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Totem | Chama Redobrada | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+
+### Checklist numerado de validação manual (80 itens)
+
+Cobre os 20 talentos 🔵 Implementado (múltiplos itens cada, cenário completo) mais
+checagens transversais de reload, modo local, logs e `/dev/table`. Todo item começa
+"Implementado — aguardando validação manual"; marcar como fez ao testar (ex.: responder
+"12 ok", "13 falhou: <descrição>").
+
+**Artífice**
+1. Bricolagem: registrar vulnerabilidade sem teste, form completo salva.
+2. Bricolagem: bônus +1 aparece SÓ no teste relacionado, não em outros testes de Engenharia/Robótica.
+3. Bricolagem: chip some após consumido; reload preserva estado consumido.
+4. Toque de Midas: aplicar em arma → +1 ataque na rolagem real da arma certa (não em outra).
+5. Toque de Midas: aplicar em armadura → MIT-base vs ajustado corretos na defesa.
+6. Toque de Midas: aplicar em escudo → dano consome PD-temporário antes do PD-base.
+7. Toque de Midas: efeito expira sozinho após 1h (ou ao usar "Novo dia") sem precisar reload.
+8. Toque de Midas: transferir item ao bando e de volta preserva o efeito intacto.
+
+**Assassino**
+9. Lâmina Oculta: reminder de reposicionamento 3m aparece só em sucesso padrão+.
+10. Hemorragia: só habilita com arma com propriedade Sangramento.
+11. Hemorragia: crítico usa 1d8 no nome da condição corretamente.
+12. Executar: bloqueado de fato sem confirmar o requisito.
+13. Executar: MIT ignorado e crítico forçado mesmo com margem ruim digitada.
+14. Executar: 1/cena — tentar de novo na mesma cena mostra "já usado".
+
+**Atirador de Elite**
+15. 1 Tiro 1 Acerto: +2 em sucesso, +3 em crítico, some após consumido.
+16. À Espreita: só promove margem "limited"→"standard" com as duas confirmações marcadas.
+17. Headshot: acerto vira crítico com Mirar crítico confirmado.
+18. Headshot: miss NÃO vira acerto mesmo com a confirmação marcada.
+
+**Berserker**
+19. Fúria: sofrer dano real empilha +1 Luta.
+20. Fúria: pilha não passa de 3 mesmo tomando mais dano.
+21. Fúria: efeito expira ao fim da rodada seguinte (não antes, não nunca).
+
+**Guardião**
+22. Blindagem: dano zerado quando "anular" confirmado.
+23. Blindagem: PD/escudo intocados após anular (nunca consumido).
+24. Blindagem: 1/cena — segunda tentativa na mesma cena bloqueada.
+
+**Mago de Batalha**
+25. Domínio Territorial: alcance/área ajustados no cartão da aba Magias.
+26. Domínio Territorial: MESMO ajuste aparece no log real de "Conjurado: ...".
+27. Canalizar Potencializar: gasta Mana real, soma dano correto.
+28. Canalizar Amortecer: reduz dano ANTES do MIT (não depois).
+29. Canalizar: usar Potencializar bloqueia Amortecer na mesma rodada (e vice-versa).
+30. Ascensão: Ruptura especial não reduz Integridade nem duplica ao readquirir.
+31. Ascensão: limite de Surtos vai de 3 para 5 de fato.
+
+**Manipulador**
+32. Olhar Penetrante: promoção só aplica com a confirmação de contexto marcada.
+33. Olhar Penetrante: sem marcar a confirmação, falha limitada continua falha limitada.
+
+**Mercador**
+34. Garimpo de Rua: ativar → preços da loja caem exatamente o percentual do payload.
+35. Garimpo de Rua: reset ao usar "Novo dia" e também ao aplicar descanso longo.
+
+**Pistoleiro**
+36. Gatilho Quente: resultado 8 soma dano extra = Balística atual (não um valor fixo).
+37. Gatilho Quente: qualquer outro resultado só consome o dado, sem bônus.
+38. Gatilho Quente: pool esgota após usar todos os dados disponíveis.
+39. Gatilho Quente: reset completo só no descanso longo (não em Novo Dia nem Encerrar Cena).
+40. Bang Bang: pool vira 4 dados (não 3) quando os dois níveis estão adquiridos.
+
+**Rúnico**
+41. Gatilho Rúnico: ativar/desativar muda o ActiveEffect real (chip aparece/some).
+42. Sobregravação: dono aplica ao próprio item → multiplicador correto do payload.
+43. Sobregravação: aliado instruído acessa o espaço extra sem teste.
+44. Sobregravação: terceiro sem acesso vê só o limite base (item ainda funciona).
+45. Sobregravação: terceiro testa CD 8 e sucesso concede acesso persistido.
+46. Sobregravação: transferir item preserva dono/aliados/multiplicador.
+47. Entalhe Rápido: instalar só aplica em sucesso; falha preserva item/runa/PA.
+48. Entalhe Rápido: remover runa funciona e preserva o resultado após reload.
+49. Entalhe Rápido: tentar iniciar 2ª tentativa com uma pendente é bloqueado.
+
+**Sorrateiro**
+50. Passo Fantasma: falha limitada em Furtividade vira sucesso limitado.
+51. Camuflagem Óptica: confirmar cobertura plausível mantém Furtividade ativa.
+52. Ataque Fatal: acerto ao sair de Furtividade vira crítico.
+53. Ataque Fatal: Furtividade é encerrada de verdade após o ataque (não antes).
+
+**Transversais — reload/persistência**
+54. Recarregar a página e clicar "Carregar" preserva Toque de Midas ativo.
+55. Recarregar preserva Sobregravação (dono/aliados/multiplicador) na instância.
+56. Recarregar preserva Furtividade ativa (Camuflagem Óptica).
+57. Recarregar preserva Mirar ativo (1 Tiro 1 Acerto) dentro da rodada.
+58. Recarregar preserva pilhas de Fúria no personagem alvo.
+59. Recarregar preserva dados de gatilho usados (Pistoleiro).
+60. Recarregar preserva desconto Garimpo de Rua ativo do dia.
+
+**Transversais — modo local (sem mesa/Supabase)**
+61. Toque de Midas funciona sem mesa conectada (só log local).
+62. Sobregravação funciona sem mesa conectada.
+63. Gatilho Quente funciona sem mesa conectada.
+64. Garimpo de Rua funciona sem mesa conectada.
+
+**Transversais — logs**
+65. Cada ação acima gera uma linha de log local legível (não JSON cru).
+66. Ações com mesa conectada também gravam em `table_logs` (verificar em `/dev/table`).
+67. Reminders de talentos (À Espreita, Headshot, Lâmina Oculta, Ataque Fatal, Amortecer) aparecem no log de `attack_resolved`.
+
+**Transversais — /dev/table (narrador)**
+68. Checkbox de Hemorragia só aparece com arma com propriedade Sangramento.
+69. Checkbox de Executar exige confirmação de requisito antes de habilitar aplicar.
+70. Checkboxes de À Espreita/Headshot só aparecem para arma à distância (não corpo a corpo).
+71. Checkbox de Ataque Fatal só aparece com o atacante EM Furtividade.
+72. Painel de Blindagem/Amortecer lê o ALVO (não o atacante) corretamente.
+73. Dois ataques resolvidos em sequência não misturam estado de talentos entre personagens diferentes.
+74. Transferir item ao bando e depois para outro personagem preserva Sobregravação/Toque de Midas.
+
+**Cobertura geral**
+75. Todo talento marcado ⚙️ Infra pendente nesta tabela realmente não altera nenhum cálculo (conferir que não há bônus fantasma).
+76. Todo talento marcado 🟡 Parcial faz A PARTE que está documentada como real (não mais, não menos).
+77. Nenhum talento 🔵 aplica seu efeito a um personagem que NÃO tem o nível adquirido.
+78. Remover um talento adquirido remove o efeito correspondente do fluxo real.
+79. `npm run build` limpo e `git status` sem `next-env.d.ts` sujo (checagem final de higiene).
+80. Revisar esta tabela linha a linha contra o capítulo canônico "11. TALENTOS" — apontar qualquer divergência de regra encontrada durante os testes.
