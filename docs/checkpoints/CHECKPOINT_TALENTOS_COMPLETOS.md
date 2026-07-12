@@ -62,7 +62,7 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 35 · 🟡 0 · ⚙️ 30 · 📖 1.
+Contagem: ✅ 0 · 🔵 38 · 🟡 0 · ⚙️ 27 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -87,9 +87,9 @@ Contagem: ✅ 0 · 🔵 35 · 🟡 0 · ⚙️ 30 · 📖 1.
 | Espadachim | Aparar | 1 | 🔵 Implementado (aguardando validação manual) |
 | Espadachim | Estocar | 2 | 🔵 Implementado (aguardando validação manual) |
 | Espadachim | Ripostar | 3 | 🔵 Implementado (aguardando validação manual) |
-| Estrategista | Falcão | 1 | ⚙️ Infra pendente |
-| Estrategista | Briefing de Campo | 2 | ⚙️ Infra pendente |
-| Estrategista | Imposição de Ritmo | 3 | ⚙️ Infra pendente |
+| Estrategista | Falcão | 1 | 🔵 Implementado (aguardando validação manual) |
+| Estrategista | Briefing de Campo | 2 | 🔵 Implementado (aguardando validação manual) |
+| Estrategista | Imposição de Ritmo | 3 | 🔵 Implementado (aguardando validação manual) |
 | Guardião | Sentinela | 1 | 🔵 Implementado (aguardando validação manual) |
 | Guardião | Blindagem | 2 | 🔵 Implementado (aguardando validação manual) |
 | Guardião | Muralha | 3 | 🔵 Implementado (aguardando validação manual) |
@@ -562,9 +562,9 @@ abaixo está **aguardando confirmação do usuário via teste manual** — nenhu
 | Espadachim | Aparar | 🔵 Implementado | +1 em Aparar; promoção 1/cena a sucesso crítico (habilita gatilho de Ripostar) | `TableClient.tsx`, `talentEngine.ts` | `Character.talentos_estado` (defensor) | Aparar com margem "standard" contra o atacante → promover a crítico (confirmar lâmina) → conferir "promovida a sucesso crítico" no painel | Aguardando usuário |
 | Espadachim | Estocar | 🔵 Implementado | -1 PA real (mín. respeitado) num Atacar corpo a corpo com lâmina, 1/combate | `talentEngine.ts`, `CharacterSheetClient.tsx`, `ActionsTab.tsx` | `Character.talentos_estado` (cadência "combate" — reset manual, mesmo padrão já documentado no código para combate/sessão/missão) | Marcar Estocar, atacar com arma corpo a corpo → confirmar PA gasto 1 a menos que o normal; tentar de novo no mesmo combate → confirmar sem efeito | Aguardando usuário |
 | Espadachim | Ripostar | 🔵 Implementado | 1/rodada, marca uso real do DEFENSOR ao obter crítico em Aparar (natural ou promovido) — contra-ataque em si via Atacar normal | `talentEngine.ts`, `TableClient.tsx` | `Character.talentos_estado` (defensor) | Aparar com margem "critical" (ou promover via Aparar N1) → clicar Ripostar → confirmar uso marcado; repetir na mesma rodada → confirmar bloqueado | Aguardando usuário |
-| Estrategista | Falcão | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
-| Estrategista | Briefing de Campo | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
-| Estrategista | Imposição de Ritmo | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Estrategista | Falcão | 🔵 Implementado | +2 real (token) concedido pelo caster a um aliado ativo da mesa, 1/cena — aplicado por confirmação do recebedor no teste seguinte | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx`, `RollsTab.tsx` | `Character.falcao_token_ativo` (recebedor) | Conceder token a um aliado → aliado marca "confirmo" e rola → confirmar +2 somado e token consumido | Aguardando usuário |
+| Estrategista | Briefing de Campo | 🔵 Implementado | Registra perícia designada em até 3 (ou 6 com Imposição de Ritmo) aliados; rerroll real (+1) na perícia designada, 1 uso | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx`, `RollsTab.tsx` | `Character.briefing_campo_ativo` (por aliado) | Registrar briefing em 1 aliado → aliado rola a perícia designada → clicar "Rerrolar" → confirmar +1 aplicado e consumido | Aguardando usuário |
+| Estrategista | Imposição de Ritmo | 🔵 Implementado | Gasta 1 Reação real do caster; +1 PA real imediato a um aliado, 1/cena; eleva max_aliados do Briefing para 6 | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.estado_jogo` (caster e aliado), `talentos_estado` | Usar com aliado ativo → confirmar Reação do caster consumida e PA do aliado aumentado; repetir na mesma cena → confirmar bloqueado | Aguardando usuário |
 | Guardião | Sentinela | 🔵 Implementado | Bloquear como Reação real GRATUITA (não gasta Reação), 1/rodada | `talentEngine.ts`, `TableClient.tsx` | `Character.talentos_estado` (defensor) | Rolar Bloquear com Sentinela disponível → confirmar Reações não diminuem; repetir na mesma rodada → confirmar volta a gastar Reação normal | Aguardando usuário |
 | Guardião | Blindagem | 🔵 Implementado | +1 Bloquear real; anula 100% do dano, 1/cena, sem tocar PD | `TableClient.tsx`, `talentEngine.ts` | `Character.talentos_estado` (alvo) | Resolver ataque contra alvo com Blindagem, marcar "anular dano" → confirmar PV intacto e PD/escudo intocados | Aguardando usuário |
 | Guardião | Muralha | 🔵 Implementado | Condição real "Cobertura Parcial" aplicada ao defensor + aliado escolhido em sucesso de Bloquear confirmado, sem limite de uso | `talentEngine.ts`, `TableClient.tsx` | `ActiveCondition` no defensor e no aliado (com autoria) | Rolar Bloquear, resolver o ataque confirmando sucesso, escolher aliado protegido → confirmar condição aplicada nos dois | Aguardando usuário |

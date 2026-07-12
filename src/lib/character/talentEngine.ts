@@ -1897,6 +1897,124 @@ export function hasContraMedida(character: Pick<Character, "talentos_adquiridos"
 }
 
 // ---------------------------------------------------------------------
+// Estrategista — Falcão (N1): marca alvo/detalhe, +2 real na próxima
+// rolagem de UM aliado escolhido. O payload beneficia "o próximo
+// personagem do grupo que agir sobre o alvo" — este sistema não rastreia
+// ordem de ações do grupo nem tem conceito de "alvo" persistente e
+// compartilhado entre fichas, então o token é concedido diretamente ao
+// aliado que a mesa decide que vai agir (mesmo padrão já usado por Totem
+// Benção), não inventado como fila compartilhada nova.
+// ---------------------------------------------------------------------
+
+export const FALCAO_USAGE_KEY = "estrategista_falcao:cena";
+
+export function getFalcaoAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisScene: boolean; valor: number } {
+  let acquired = false;
+  let valor = 2;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "marcar_alvo_ou_detalhe") continue;
+      acquired = true;
+      const beneficio = efeito.beneficio as Record<string, unknown> | undefined;
+      if (typeof beneficio?.valor === "number") valor = beneficio.valor;
+    }
+  }
+  const usedThisScene = (character.talentos_estado?.usos?.[FALCAO_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisScene, valor };
+}
+
+export function markFalcaoUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[FALCAO_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
+// Estrategista — Briefing de Campo (N2): registra até N aliados com
+// perícia escolhida; próxima falha nessa perícia pode ser rerrolada
+// (+1). N = 3, ou 6 se o personagem também tiver Imposição de Ritmo
+// (meta_talento do próprio payload de Imposição de Ritmo, lido
+// genericamente, nunca hardcoded).
+// ---------------------------------------------------------------------
+
+export function getBriefingDeCampoAvailability(
+  character: Pick<Character, "talentos_adquiridos">,
+  talents: TalentContent[],
+): { acquired: boolean; maxAliados: number; periciasOpcoes: string[]; bonusReroll: number } {
+  let acquired = false;
+  let maxAliados = 3;
+  let periciasOpcoes: string[] = [];
+  let bonusReroll = 1;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "briefing_pre_cena") {
+        acquired = true;
+        if (typeof efeito.max_aliados === "number") maxAliados = efeito.max_aliados;
+        if (Array.isArray(efeito.pericias_opcoes)) {
+          periciasOpcoes = efeito.pericias_opcoes.filter((p): p is string => typeof p === "string");
+        }
+        const beneficio = efeito.beneficio as Record<string, unknown> | undefined;
+        if (typeof beneficio?.bonus === "number") bonusReroll = beneficio.bonus;
+      }
+      if (efeito.tipo === "modificar_talento_existente" && efeito.talento === "briefing_de_campo" && efeito.campo === "max_aliados" && typeof efeito.valor === "number") {
+        maxAliados = efeito.valor;
+      }
+    }
+  }
+  return { acquired, maxAliados, periciasOpcoes, bonusReroll };
+}
+
+// ---------------------------------------------------------------------
+// Estrategista — Imposição de Ritmo (N3): 1/cena, Reação, +1 PA real
+// para um aliado a até 10m. "Ignora alternância PJ/PN" e "age com 3+ PA
+// em turno rápido" referenciam um sistema de alternância/janela de
+// turno que este VTT não implementa em nenhum lugar (`janela` do
+// catálogo de ações é lido mas nunca aplicado como restrição — ver
+// `actionConsole.ts`) — não há restrição nenhuma para "ignorar", então
+// essas duas cláusulas ficam como lembrete narrativo em vez de código
+// que desativaria uma trava inexistente.
+// ---------------------------------------------------------------------
+
+export const IMPOSICAO_DE_RITMO_USAGE_KEY = "estrategista_imposicao_de_ritmo:cena";
+
+export function hasImposicaoDeRitmo(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "override_turno_aliado") return true;
+    }
+  }
+  return false;
+}
+
+export function getImposicaoDeRitmoAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisScene: boolean; paBonus: number; alcanceM: number } {
+  let acquired = false;
+  let paBonus = 1;
+  let alcanceM = 10;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "override_turno_aliado") continue;
+      acquired = true;
+      if (typeof efeito.pa_bonus === "number") paBonus = efeito.pa_bonus;
+      if (typeof efeito.alcance_m === "number") alcanceM = efeito.alcance_m;
+    }
+  }
+  const usedThisScene = (character.talentos_estado?.usos?.[IMPOSICAO_DE_RITMO_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisScene, paBonus, alcanceM };
+}
+
+export function markImposicaoDeRitmoUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[IMPOSICAO_DE_RITMO_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
 // Construtores de log (texto formatado — nunca JSON cru)
 // ---------------------------------------------------------------------
 

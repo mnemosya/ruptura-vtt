@@ -93,6 +93,12 @@ export function TalentsTab({
   totemBencaoTokenStatus,
   bencaoAllies = [],
   onGrantBencaoToken,
+  falcaoStatus,
+  onGrantFalcaoToken,
+  briefingDeCampoStatus,
+  onRegisterBriefing,
+  imposicaoDeRitmoStatus,
+  onUseImposicaoDeRitmo,
 }: {
   talents: TalentContent[];
   catalogError: string | null;
@@ -130,6 +136,15 @@ export function TalentsTab({
   totemBencaoTokenStatus?: { acquired: boolean; usedThisScene: boolean };
   bencaoAllies?: { id: string; nome: string }[];
   onGrantBencaoToken?: (targetCharacterId: string) => void;
+  /** Estrategista › Falcão (checkpoint talentos, Fase 5) — conceder +2 real 1/cena a um aliado ativo da mesa (mesma lista de bencaoAllies). */
+  falcaoStatus?: { acquired: boolean; usedThisScene: boolean; valor: number };
+  onGrantFalcaoToken?: (targetCharacterId: string, alvoDescricao: string) => void;
+  /** Estrategista › Briefing de Campo (checkpoint talentos, Fase 5) — registra até maxAliados aliados com perícia designada. */
+  briefingDeCampoStatus?: { acquired: boolean; maxAliados: number; periciasOpcoes: string[] };
+  onRegisterBriefing?: (entries: { targetCharacterId: string; periciaId: string }[]) => void;
+  /** Estrategista › Imposição de Ritmo (checkpoint talentos, Fase 5) — 1/cena, gasta Reação, +1 PA real a um aliado. */
+  imposicaoDeRitmoStatus?: { acquired: boolean; usedThisScene: boolean; paBonus: number; alcanceM: number };
+  onUseImposicaoDeRitmo?: (targetCharacterId: string) => void;
 }) {
   const [filter, setFilter] = useState<FilterKey>("todos");
 
@@ -286,6 +301,18 @@ export function TalentsTab({
 
                         {acquiredEntry && nivel.slug === "pistoleiro_gatilho_quente" && gatilhoQuenteStatus && (
                           <GatilhoQuenteWidget status={gatilhoQuenteStatus} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "estrategista_falcao" && falcaoStatus?.acquired && (
+                          <FalcaoWidget status={falcaoStatus} allies={bencaoAllies} onGrant={onGrantFalcaoToken} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "estrategista_briefing_de_campo" && briefingDeCampoStatus?.acquired && (
+                          <BriefingDeCampoWidget status={briefingDeCampoStatus} allies={bencaoAllies} onRegister={onRegisterBriefing} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "estrategista_imposicao_de_ritmo" && imposicaoDeRitmoStatus?.acquired && (
+                          <ImposicaoDeRitmoWidget status={imposicaoDeRitmoStatus} allies={bencaoAllies} onUse={onUseImposicaoDeRitmo} />
                         )}
 
                         {acquiredEntry && nivel.slug === "totem_bencao" && totemBencaoTokenStatus?.acquired && (
@@ -630,6 +657,171 @@ function TotemBencaoWidget({
             style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
           >
             Conceder token de Benção (1/cena)
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FalcaoWidget({
+  status,
+  allies,
+  onGrant,
+}: {
+  status: { acquired: boolean; usedThisScene: boolean; valor: number };
+  allies: { id: string; nome: string }[];
+  onGrant?: (targetCharacterId: string, alvoDescricao: string) => void;
+}) {
+  const [alvo, setAlvo] = useState("");
+  const [descricao, setDescricao] = useState("");
+  return (
+    <div data-testid="falcao-widget" style={widgetBox}>
+      {status.usedThisScene ? (
+        <span style={{ opacity: 0.7 }}>Falcão já usado nesta cena.</span>
+      ) : allies.length === 0 ? (
+        <span style={{ opacity: 0.7 }}>Nenhum aliado ativo na mesa para conceder o +{status.valor} de Falcão (1/cena).</span>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <input
+            data-testid="falcao-descricao"
+            type="text"
+            placeholder="Alvo/detalhe observado (narrativo)"
+            value={descricao}
+            onChange={(e) => setDescricao(e.target.value)}
+            style={{ background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", fontSize: 12 }}
+          />
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <select data-testid="falcao-alvo" value={alvo} onChange={(e) => setAlvo(e.target.value)} style={{ background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", fontSize: 12 }}>
+              <option value="">— escolher aliado que vai agir —</option>
+              {allies.map((a) => (
+                <option key={a.id} value={a.id}>{a.nome}</option>
+              ))}
+            </select>
+            <button
+              data-testid="falcao-conceder"
+              disabled={!alvo}
+              onClick={() => {
+                if (!alvo) return;
+                onGrant?.(alvo, descricao);
+                setAlvo("");
+                setDescricao("");
+              }}
+              style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+            >
+              Confirmar teste bem-sucedido — conceder +{status.valor} (1/cena)
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BriefingDeCampoWidget({
+  status,
+  allies,
+  onRegister,
+}: {
+  status: { acquired: boolean; maxAliados: number; periciasOpcoes: string[] };
+  allies: { id: string; nome: string }[];
+  onRegister?: (entries: { targetCharacterId: string; periciaId: string }[]) => void;
+}) {
+  const [entries, setEntries] = useState<{ targetCharacterId: string; periciaId: string }[]>([]);
+
+  function addEntry() {
+    if (entries.length >= status.maxAliados) return;
+    setEntries((prev) => [...prev, { targetCharacterId: "", periciaId: status.periciasOpcoes[0] ?? "" }]);
+  }
+
+  return (
+    <div data-testid="briefing-de-campo-widget" style={widgetBox}>
+      <p style={{ fontSize: 11, opacity: 0.7, margin: 0 }}>
+        5 minutos preparando o grupo — até {status.maxAliados} aliados, cada um com uma perícia designada.
+      </p>
+      {entries.map((entry, index) => (
+        <div key={index} style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 6 }}>
+          <select
+            data-testid={`briefing-aliado-${index}`}
+            value={entry.targetCharacterId}
+            onChange={(e) => setEntries((prev) => prev.map((it, i) => (i === index ? { ...it, targetCharacterId: e.target.value } : it)))}
+            style={{ background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", fontSize: 12 }}
+          >
+            <option value="">— aliado —</option>
+            {allies.map((a) => (
+              <option key={a.id} value={a.id}>{a.nome}</option>
+            ))}
+          </select>
+          <select
+            data-testid={`briefing-pericia-${index}`}
+            value={entry.periciaId}
+            onChange={(e) => setEntries((prev) => prev.map((it, i) => (i === index ? { ...it, periciaId: e.target.value } : it)))}
+            style={{ background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", fontSize: 12 }}
+          >
+            {status.periciasOpcoes.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+          <button onClick={() => setEntries((prev) => prev.filter((_, i) => i !== index))} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}>
+            remover
+          </button>
+        </div>
+      ))}
+      <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+        <button data-testid="briefing-adicionar" disabled={entries.length >= status.maxAliados || allies.length === 0} onClick={addEntry} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}>
+          + aliado
+        </button>
+        <button
+          data-testid="briefing-registrar"
+          disabled={entries.length === 0 || entries.some((e) => !e.targetCharacterId)}
+          onClick={() => {
+            onRegister?.(entries);
+            setEntries([]);
+          }}
+          style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+        >
+          Registrar Briefing de Campo
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ImposicaoDeRitmoWidget({
+  status,
+  allies,
+  onUse,
+}: {
+  status: { acquired: boolean; usedThisScene: boolean; paBonus: number; alcanceM: number };
+  allies: { id: string; nome: string }[];
+  onUse?: (targetCharacterId: string) => void;
+}) {
+  const [alvo, setAlvo] = useState("");
+  return (
+    <div data-testid="imposicao-de-ritmo-widget" style={widgetBox}>
+      {status.usedThisScene ? (
+        <span style={{ opacity: 0.7 }}>Imposição de Ritmo já usada nesta cena.</span>
+      ) : allies.length === 0 ? (
+        <span style={{ opacity: 0.7 }}>Nenhum aliado ativo na mesa para agir imediatamente (confirme manualmente que está a até {status.alcanceM}m).</span>
+      ) : (
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <select data-testid="imposicao-ritmo-alvo" value={alvo} onChange={(e) => setAlvo(e.target.value)} style={{ background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", fontSize: 12 }}>
+            <option value="">— escolher aliado (até {status.alcanceM}m) —</option>
+            {allies.map((a) => (
+              <option key={a.id} value={a.id}>{a.nome}</option>
+            ))}
+          </select>
+          <button
+            data-testid="imposicao-ritmo-usar"
+            disabled={!alvo}
+            onClick={() => {
+              if (!alvo) return;
+              onUse?.(alvo);
+              setAlvo("");
+            }}
+            style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+          >
+            Gastar Reação: +{status.paBonus} PA imediato ao aliado (1/cena)
           </button>
         </div>
       )}

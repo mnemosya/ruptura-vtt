@@ -121,6 +121,11 @@ import {
   hasSaqueFantasma,
   getEstocarAvailability,
   markEstocarUsed,
+  getFalcaoAvailability,
+  markFalcaoUsed,
+  getBriefingDeCampoAvailability,
+  getImposicaoDeRitmoAvailability,
+  markImposicaoDeRitmoUsed,
   getToqueDeMidasAvailability,
   getToqueDeMidasModifiersForTarget,
   markToqueDeMidasUsed,
@@ -2620,6 +2625,135 @@ export default function CharacterSheetClient({
     addLogEntry("condicao", `Benção: token concedido a ${ally.nome} (1/cena).`);
   }
 
+  /** Estrategista › Falcão (N1, checkpoint talentos Fase 5) — consome o token +2 recebido no próximo teste confirmado. */
+  function handleConsumeFalcaoToken() {
+    const current = characterRef.current;
+    if (!current.falcao_token_ativo) return;
+    const { falcao_token_ativo: _drop, ...next } = current;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", "Token de Falcão consumido neste teste.");
+  }
+
+  /** Estrategista › Falcão — concede +2 real 1/cena a um aliado ativo da mesa (mesmo padrão de Benção). */
+  async function handleGrantFalcaoToken(targetCharacterId: string, alvoDescricao: string) {
+    if (!selectedCampaignId) {
+      addLogEntry("recurso", "Conceder Falcão exige mesa conectada.");
+      return;
+    }
+    const current = characterRef.current;
+    const status = getFalcaoAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedThisScene) return;
+    const ally = alliesAtivos.find((a) => a.id === targetCharacterId);
+    if (!ally) {
+      addLogEntry("recurso", "Aliado não encontrado entre os personagens ativos da mesa — atualize a lista de aliados.");
+      return;
+    }
+    const nowIso = new Date().toISOString();
+    const targetNext: Character = {
+      ...ally.character,
+      falcao_token_ativo: { origem: current.nome, alvoDescricao: alvoDescricao || "(sem descrição)", valor: status.valor, concedidoEm: nowIso },
+    };
+    try {
+      const targetRecord = await updateCharacter(ally.id, targetNext);
+      setAlliesAtivos((prev) => prev.map((a) => (a.id === ally.id ? { ...a, character: normalizeCharacter(targetRecord.payload) } : a)));
+    } catch (err) {
+      addLogEntry("recurso", err instanceof Error ? `Falha ao conceder Falcão a ${ally.nome}: ${err.message}` : `Falha ao conceder Falcão a ${ally.nome}.`);
+      return;
+    }
+    const sourceNext = markFalcaoUsed(current, nowIso);
+    characterRef.current = sourceNext;
+    setCharacter(sourceNext);
+    addLogEntry("condicao", `Falcão: +${status.valor} concedido a ${ally.nome} (alvo: ${alvoDescricao || "—"}, 1/cena).`);
+  }
+
+  /**
+   * Estrategista › Briefing de Campo (N2, checkpoint talentos Fase 5) — registra a perícia
+   * designada em cada aliado escolhido (persistido em CADA aliado, sem gate de uso do
+   * próprio talento — a única cadência real é "5 minutos antes de uma cena", puramente
+   * narrativa, sem contador estruturado no payload).
+   */
+  async function handleRegisterBriefing(entries: { targetCharacterId: string; periciaId: string }[]) {
+    if (!selectedCampaignId) {
+      addLogEntry("recurso", "Registrar Briefing de Campo exige mesa conectada.");
+      return;
+    }
+    const current = characterRef.current;
+    const nowIso = new Date().toISOString();
+    const bonusReroll = getBriefingDeCampoAvailability(current, talentsIniciais).bonusReroll;
+    const nomes: string[] = [];
+    for (const entry of entries) {
+      const ally = alliesAtivos.find((a) => a.id === entry.targetCharacterId);
+      if (!ally) continue;
+      const targetNext: Character = {
+        ...ally.character,
+        briefing_campo_ativo: { periciaId: entry.periciaId, origem: current.nome, bonus: bonusReroll, concedidoEm: nowIso },
+      };
+      try {
+        const targetRecord = await updateCharacter(ally.id, targetNext);
+        setAlliesAtivos((prev) => prev.map((a) => (a.id === ally.id ? { ...a, character: normalizeCharacter(targetRecord.payload) } : a)));
+        nomes.push(`${ally.nome} (${entry.periciaId})`);
+      } catch (err) {
+        addLogEntry("recurso", err instanceof Error ? `Falha ao registrar Briefing para ${ally.nome}: ${err.message}` : `Falha ao registrar Briefing para ${ally.nome}.`);
+      }
+    }
+    if (nomes.length > 0) {
+      addLogEntry("condicao", `Briefing de Campo: ${nomes.join(", ")} registrados (5 minutos de preparação).`);
+    }
+  }
+
+  /** Estrategista › Imposição de Ritmo (N3, checkpoint talentos Fase 5) — gasta 1 Reação real do CASTER e concede +1 PA real ao aliado escolhido nesta rodada, 1/cena. Distância (10m) e alternância PJ/PN ficam como lembrete manual (sem modelo de posição/turno nesta base). */
+  async function handleUseImposicaoDeRitmo(targetCharacterId: string) {
+    if (!selectedCampaignId) {
+      addLogEntry("recurso", "Imposição de Ritmo exige mesa conectada.");
+      return;
+    }
+    const current = characterRef.current;
+    const status = getImposicaoDeRitmoAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedThisScene) return;
+    if ((current.estado_jogo?.reacoes_usadas ?? 0) >= derivados.reacoes_por_rodada) {
+      addLogEntry("recurso", "Imposição de Ritmo: sem Reação disponível.");
+      return;
+    }
+    const ally = alliesAtivos.find((a) => a.id === targetCharacterId);
+    if (!ally) {
+      addLogEntry("recurso", "Aliado não encontrado entre os personagens ativos da mesa — atualize a lista de aliados.");
+      return;
+    }
+    const nowIso = new Date().toISOString();
+    const targetNext: Character = {
+      ...ally.character,
+      estado_jogo: { ...ally.character.estado_jogo, pa_gastos: Math.max(0, (ally.character.estado_jogo?.pa_gastos ?? 0) - status.paBonus) },
+    };
+    try {
+      const targetRecord = await updateCharacter(ally.id, targetNext);
+      setAlliesAtivos((prev) => prev.map((a) => (a.id === ally.id ? { ...a, character: normalizeCharacter(targetRecord.payload) } : a)));
+    } catch (err) {
+      addLogEntry("recurso", err instanceof Error ? `Falha ao aplicar Imposição de Ritmo em ${ally.nome}: ${err.message}` : `Falha ao aplicar Imposição de Ritmo em ${ally.nome}.`);
+      return;
+    }
+    const sourceNext = markImposicaoDeRitmoUsed(
+      { ...current, estado_jogo: { ...current.estado_jogo, reacoes_usadas: (current.estado_jogo?.reacoes_usadas ?? 0) + 1 } },
+      nowIso,
+    );
+    characterRef.current = sourceNext;
+    setCharacter(sourceNext);
+    addLogEntry(
+      "condicao",
+      `Imposição de Ritmo: Reação gasta — ${ally.nome} recebe +${status.paBonus} PA imediato (confirme manualmente distância até ${status.alcanceM}m; alternância PJ/PN e janela rápida/lenta não são restrições existentes nesta base).`,
+    );
+  }
+
+  /** Estrategista › Briefing de Campo (N2, checkpoint talentos Fase 5) — consome a designação de perícia no rerroll. */
+  function handleConsumeBriefingCampo() {
+    const current = characterRef.current;
+    if (!current.briefing_campo_ativo) return;
+    const { briefing_campo_ativo: _drop, ...next } = current;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", "Briefing de Campo: rerroll consumido nesta perícia.");
+  }
+
   /** Rúnico › Gatilho Rúnico — ativa/desativa runa instalada sem PA. */
   function handleToggleRuneActive(instanceId: string, runeInstallationId: string) {
     const current = characterRef.current;
@@ -4784,6 +4918,12 @@ export default function CharacterSheetClient({
           totemBencaoTokenStatus={getTotemBencaoTokenAvailability(character, talentsIniciais)}
           bencaoAllies={alliesAtivos.map((a) => ({ id: a.id, nome: a.nome }))}
           onGrantBencaoToken={handleGrantBencaoToken}
+          falcaoStatus={getFalcaoAvailability(character, talentsIniciais)}
+          onGrantFalcaoToken={handleGrantFalcaoToken}
+          briefingDeCampoStatus={getBriefingDeCampoAvailability(character, talentsIniciais)}
+          onRegisterBriefing={handleRegisterBriefing}
+          imposicaoDeRitmoStatus={getImposicaoDeRitmoAvailability(character, talentsIniciais)}
+          onUseImposicaoDeRitmo={handleUseImposicaoDeRitmo}
         />
       )}
 
@@ -4931,6 +5071,10 @@ export default function CharacterSheetClient({
           totemBencaoAvailable={hasTotemBencao(character, talentsIniciais)}
           bencaoTokenAtivo={character.bencao_token_ativo ?? null}
           onConsumeBencaoToken={handleConsumeBencaoToken}
+          falcaoTokenAtivo={character.falcao_token_ativo ?? null}
+          onConsumeFalcaoToken={handleConsumeFalcaoToken}
+          briefingCampoAtivo={character.briefing_campo_ativo ?? null}
+          onConsumeBriefingCampo={handleConsumeBriefingCampo}
         />
       )}
 

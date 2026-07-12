@@ -142,6 +142,10 @@ export function RollsTab({
   totemBencaoAvailable = false,
   bencaoTokenAtivo,
   onConsumeBencaoToken,
+  falcaoTokenAtivo,
+  onConsumeFalcaoToken,
+  briefingCampoAtivo,
+  onConsumeBriefingCampo,
 }: {
   atributos: CharacterAttributes;
   atributoDefinitions: AttributeDefinition[] | undefined;
@@ -182,6 +186,12 @@ export function RollsTab({
   bencaoTokenAtivo?: { origem: string; concedidoEm: string } | null;
   /** Consome o token de Benção (chamado depois de QUALQUER rolagem, quando o token estava ativo — "o primeiro teste realizado" consome, com ou sem promoção). */
   onConsumeBencaoToken?: () => void;
+  /** Estrategista › Falcão (checkpoint talentos, Fase 5) — token +2 concedido por um aliado, aplicado ao PRÓXIMO teste que o recebedor confirmar (não é automático em qualquer rolagem — o jogador escolhe em qual teste usar). */
+  falcaoTokenAtivo?: { origem: string; alvoDescricao: string; valor: number; concedidoEm: string } | null;
+  onConsumeFalcaoToken?: () => void;
+  /** Estrategista › Briefing de Campo (checkpoint talentos, Fase 5) — perícia designada; oferece rerroll +1 na perícia correspondente quando o jogador confirma que o teste foi uma falha. */
+  briefingCampoAtivo?: { periciaId: string; origem: string; bonus: number; concedidoEm: string } | null;
+  onConsumeBriefingCampo?: () => void;
 }) {
   const atributoIds = ["corpo", "mente", "animo"] as const;
   const [atributoId, setAtributoId] = useState<(typeof atributoIds)[number]>("corpo");
@@ -221,6 +231,10 @@ export function RollsTab({
   // (cura/reforço/proteção); sem `pericias[]` no payload, não dá pra escopar por perícia
   // como Passo Fantasma/Olhar Penetrante, então é uma confirmação avulsa por rolagem.
   const [bencaoAtiva, setBencaoAtiva] = useState(false);
+  // Estrategista › Falcão — confirmação de que ESTE teste é o beneficiado pelo token (o
+  // jogador escolhe em qual rolagem aplicar o +2, já que o recebedor pode ter mais de um
+  // teste pendente antes de "agir sobre o alvo").
+  const [falcaoAtiva, setFalcaoAtiva] = useState(false);
 
   function toggleTagExtra(tag: ToggleTag) {
     setTagsExtras((prev) => {
@@ -314,7 +328,10 @@ export function RollsTab({
     const cd = cdInput.trim() === "" ? undefined : parseIntOrDefault(cdInput, 0);
     const temPericia = periciaId !== SEM_PERICIA;
     const rajadaPenalidade = rajadaAtiva && !(saqueFantasmaAvailable && saqueFantasmaConfirmado) ? -1 : 0;
-    const finalModifier = manualModifier + modificadorEfeitos + rajadaPenalidade;
+    // Estrategista › Falcão — +2 (ou o valor real do payload) só quando o jogador confirma
+    // que ESTE teste é "agir diretamente sobre o alvo/detalhe" marcado.
+    const falcaoBonus = falcaoTokenAtivo && falcaoAtiva ? falcaoTokenAtivo.valor : 0;
+    const finalModifier = manualModifier + modificadorEfeitos + rajadaPenalidade + falcaoBonus;
     const promocaoCandidata = temPericia ? marginPromotions.find((p) => p.periciaId === periciaId) : undefined;
     // Promoção com `contexto` (ex.: Olhar Penetrante) só aplica com confirmação explícita de que
     // o teste atual se encaixa nesse contexto estreito — sem contexto (ex.: Passo Fantasma, "testes
@@ -348,6 +365,10 @@ export function RollsTab({
     // (o texto canônico consome no teste, não condicionado ao resultado dar falha limitada).
     if (bencaoTokenAtivo) onConsumeBencaoToken?.();
     setBencaoAtiva(false);
+    if (falcaoTokenAtivo && falcaoAtiva) {
+      onConsumeFalcaoToken?.();
+      setFalcaoAtiva(false);
+    }
 
     if (usarDadoGatilho && resultado.dadoGatilhoResultado != null) {
       onGatilhoDadoResultado?.(resultado.dadoGatilhoResultado, resultado.dadoGatilhoEscolhido === true);
@@ -395,6 +416,52 @@ export function RollsTab({
         .map((e) => ({ id: e.id, sourceName: e.sourceName, modifier: e.modifier, explanation: e.explanation })),
       manualModifier,
       finalModifier,
+    });
+  }
+
+  /**
+   * Estrategista › Briefing de Campo — rerroll real (+bonus do payload) da última rolagem
+   * qualificada (mesma perícia designada), consumido no clique. "Se o aliado falhar" fica a
+   * critério do jogador confirmar (este sistema não computa falha genérica sem CD sempre
+   * presente) — o botão só aparece habilitado para a rolagem mais recente que casa a
+   * perícia, então o jogador decide se era mesmo uma falha antes de clicar.
+   */
+  async function handleRerollBriefing(original: RupturaRollResult) {
+    if (!briefingCampoAtivo) return;
+    const bonus = briefingCampoAtivo.bonus;
+    const resultado = rollPericia({
+      atributoId: original.atributoId,
+      atributoNome: original.atributoNome,
+      atributoValor: original.atributoValor,
+      periciaId: original.periciaId,
+      periciaNome: original.periciaNome,
+      periciaValor: original.periciaValor,
+      modificador: original.modificador + bonus,
+      cd: original.cd,
+    });
+    onConsumeBriefingCampo?.();
+    pushHistorico({ kind: "pericia", resultado, origem: `Rerroll — Briefing de Campo (${briefingCampoAtivo.origem}, +${bonus})` });
+    const periciaParte = resultado.periciaNome ? ` + ${resultado.periciaNome}` : " (sem perícia)";
+    const cdParte = resultado.cd != null ? ` vs CD ${resultado.cd} (${resultado.sucesso ? "Sucesso" : "Falha"})` : "";
+    onLog("rolagem_pericia", `Rerroll (Briefing de Campo): ${resultado.atributoNome}${periciaParte}: total ${resultado.total}${cdParte}`);
+    await persistirNaMesa("rolagem_pericia", {
+      profileId,
+      profileNickname,
+      characterId,
+      characterNome,
+      atributo: resultado.atributoNome,
+      atributoValor: resultado.atributoValor,
+      pericia: resultado.periciaNome ?? null,
+      periciaValor: resultado.periciaValor,
+      modificador: resultado.modificador,
+      dados: resultado.dados,
+      maiorDado: resultado.maiorDado,
+      total: resultado.total,
+      cd: resultado.cd ?? null,
+      sucesso: resultado.sucesso ?? null,
+      margem: resultado.margem ?? null,
+      classificacaoMargem: resultado.classificacaoMargem ?? null,
+      origem: `Rerroll — Briefing de Campo (${briefingCampoAtivo.origem}, +${bonus})`,
     });
   }
 
@@ -611,6 +678,24 @@ export function RollsTab({
               </label>
             )
           )}
+          {falcaoTokenAtivo && (
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+              <input
+                data-testid="roll-falcao-ativa"
+                type="checkbox"
+                checked={falcaoAtiva}
+                onChange={(e) => setFalcaoAtiva(e.target.checked)}
+              />
+              Falcão ativo (de {falcaoTokenAtivo.origem}, alvo: {falcaoTokenAtivo.alvoDescricao}) — confirmo que este teste
+              age diretamente sobre o alvo/detalhe: +{falcaoTokenAtivo.valor}. Consumido ao rolar.
+            </label>
+          )}
+          {briefingCampoAtivo && periciaId === briefingCampoAtivo.periciaId && (
+            <p data-testid="roll-briefing-campo-disponivel" style={{ fontSize: 11, color: "#5ec8ff", margin: 0 }}>
+              Briefing de Campo ativo em {periciaDefinitions?.find((p) => p.id === periciaId)?.nome ?? periciaId} (de{" "}
+              {briefingCampoAtivo.origem}) — se este teste falhar, use "Rerrolar (Briefing de Campo)" no histórico abaixo.
+            </p>
+          )}
         </div>
 
         {periciaId !== SEM_PERICIA && marginPromotions.some((p) => p.periciaId === periciaId) && (() => {
@@ -754,7 +839,7 @@ export function RollsTab({
         </button>
         {historico.length === 0 && <p style={{ fontSize: 13, opacity: 0.6 }}>Nenhuma rolagem ainda.</p>}
         <div data-testid="roll-historico" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {historico.map((entry) => (
+          {historico.map((entry, index) => (
             <div
               key={entry.id}
               data-testid="roll-historico-item"
@@ -764,6 +849,15 @@ export function RollsTab({
                 <PericiaResultado resultado={entry.resultado} origem={entry.origem} />
               ) : (
                 <ExpressaoResultado resultado={entry.resultado} />
+              )}
+              {index === 0 && entry.kind === "pericia" && briefingCampoAtivo && entry.resultado.periciaId === briefingCampoAtivo.periciaId && (
+                <button
+                  data-testid="roll-rerroll-briefing"
+                  onClick={() => handleRerollBriefing(entry.resultado)}
+                  style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", marginTop: 6 }}
+                >
+                  Rerrolar (Briefing de Campo, +{briefingCampoAtivo.bonus}) — só se foi falha
+                </button>
               )}
             </div>
           ))}

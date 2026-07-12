@@ -536,6 +536,18 @@ export interface Character {
    */
   ultimo_folego_ativo?: { ativadoEm: string; cena: number };
   /**
+   * Estrategista › Falcão (N1, checkpoint talentos, Fase 5) — token de +2 real
+   * concedido a um aliado (vive no RECEBEDOR, mesmo padrão de `bencao_token_ativo`),
+   * consumido na próxima rolagem que ele confirmar.
+   */
+  falcao_token_ativo?: { origem: string; alvoDescricao: string; valor: number; concedidoEm: string };
+  /**
+   * Estrategista › Briefing de Campo (N2, checkpoint talentos, Fase 5) — perícia
+   * designada para ESTE personagem (vive no RECEBEDOR); consumida no primeiro
+   * rerroll usado nessa perícia.
+   */
+  briefing_campo_ativo?: { periciaId: string; origem: string; bonus: number; concedidoEm: string };
+  /**
    * Sorrateiro › estado real de Furtividade (checkpoint talentos, Fase 3)
    * — entrada/saída manual (narrativa, sem teste estruturado próprio para
    * "entrar"; testes de Furtividade em si usam a perícia normalmente,
