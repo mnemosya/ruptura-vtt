@@ -62,7 +62,7 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 38 · 🟡 0 · ⚙️ 27 · 📖 1.
+Contagem: ✅ 0 · 🔵 40 · 🟡 0 · ⚙️ 25 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -100,8 +100,8 @@ Contagem: ✅ 0 · 🔵 38 · 🟡 0 · ⚙️ 27 · 📖 1.
 | Malabarista | Revoada | 2 | ⚙️ Infra pendente |
 | Malabarista | Espetáculo Mortal | 3 | ⚙️ Infra pendente |
 | Manipulador | Olhar Penetrante | 1 | 🔵 Implementado (aguardando validação manual) |
-| Manipulador | Entrelinhas | 2 | ⚙️ Infra pendente |
-| Manipulador | Puxar os Fios | 3 | ⚙️ Infra pendente |
+| Manipulador | Entrelinhas | 2 | 🔵 Implementado (aguardando validação manual) |
+| Manipulador | Puxar os Fios | 3 | 🔵 Implementado (aguardando validação manual) |
 | Mecatrônico | Chave de Arranque | 1 | ⚙️ Infra pendente |
 | Mecatrônico | Marcha Dupla | 2 | ⚙️ Infra pendente |
 | Mecatrônico | Overclock | 3 | ⚙️ Infra pendente |
@@ -575,8 +575,8 @@ abaixo está **aguardando confirmação do usuário via teste manual** — nenhu
 | Malabarista | Revoada | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
 | Malabarista | Espetáculo Mortal | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
 | Manipulador | Olhar Penetrante | 🔵 Implementado | Falha limitada → sucesso limitado em Influência/Psicologia, com confirmação de contexto obrigatória | `talentEngine.ts`, `RollsTab.tsx` | Nenhum (promoção por rolagem) | Rolar Influência/Psicologia com CD, confirmar contexto certo → promoção aplica; testar SEM marcar a confirmação → promoção NÃO aplica | Aguardando usuário |
-| Manipulador | Entrelinhas | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
-| Manipulador | Puxar os Fios | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Manipulador | Entrelinhas | 🔵 Implementado | +2 real no próximo teste de Influência do próprio caster contra a criatura marcada, 1/cena | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx`, `RollsTab.tsx` | `Character.entrelinhas_ativo` (caster) | Registrar descoberta contra uma criatura → rolar Influência confirmando o alvo → confirmar +2 somado e vulnerabilidade consumida | Aguardando usuário |
+| Manipulador | Puxar os Fios | 🔵 Implementado | Registra abertura social real (1 de 5), 1/cena, exige Entrelinhas ativo na mesma criatura | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.talentos_estado` (caster) | Sem Entrelinhas ativo → confirmar bloqueado; com Entrelinhas ativo → confirmar sucesso → escolher abertura → confirmar registrado | Aguardando usuário |
 | Mecatrônico | Chave de Arranque | ⚙️ Infra pendente | Nenhum (sem modelo de robô) | — | — | N/A | — |
 | Mecatrônico | Marcha Dupla | ⚙️ Infra pendente | Nenhum (sem modelo de robô) | — | — | N/A | — |
 | Mecatrônico | Overclock | ⚙️ Infra pendente | Nenhum (sem modelo de robô) | — | — | N/A | — |

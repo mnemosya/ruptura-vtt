@@ -548,6 +548,14 @@ export interface Character {
    */
   briefing_campo_ativo?: { periciaId: string; origem: string; bonus: number; concedidoEm: string };
   /**
+   * Manipulador › Entrelinhas (N2, checkpoint talentos, Fase 6) — vulnerabilidade
+   * descoberta contra UMA criatura (vive no CASTER, nunca em outro personagem — o
+   * benefício é sempre próprio); +valor no PRÓXIMO teste de Influência do caster
+   * contra essa criatura, consumido por confirmação em RollsTab. Também é o
+   * requisito de Puxar os Fios (mesma criatura).
+   */
+  entrelinhas_ativo?: { alvoNome: string; descoberta: string; valor: number; concedidoEm: string };
+  /**
    * Sorrateiro › estado real de Furtividade (checkpoint talentos, Fase 3)
    * — entrada/saída manual (narrativa, sem teste estruturado próprio para
    * "entrar"; testes de Furtividade em si usam a perícia normalmente,

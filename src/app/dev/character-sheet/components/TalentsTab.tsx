@@ -99,6 +99,11 @@ export function TalentsTab({
   onRegisterBriefing,
   imposicaoDeRitmoStatus,
   onUseImposicaoDeRitmo,
+  entrelinhasStatus,
+  onRegisterEntrelinhas,
+  puxarOsFiosStatus,
+  entrelinhasAtivo,
+  onRegisterPuxarOsFios,
 }: {
   talents: TalentContent[];
   catalogError: string | null;
@@ -145,6 +150,13 @@ export function TalentsTab({
   /** Estrategista › Imposição de Ritmo (checkpoint talentos, Fase 5) — 1/cena, gasta Reação, +1 PA real a um aliado. */
   imposicaoDeRitmoStatus?: { acquired: boolean; usedThisScene: boolean; paBonus: number; alcanceM: number };
   onUseImposicaoDeRitmo?: (targetCharacterId: string) => void;
+  /** Manipulador › Entrelinhas (checkpoint talentos, Fase 6) — descobre vulnerabilidade 1/cena, +2 real no próximo teste de Influência do próprio caster contra a criatura. */
+  entrelinhasStatus?: { acquired: boolean; usedThisScene: boolean; valor: number; opcoesDescoberta: string[] };
+  onRegisterEntrelinhas?: (params: { alvoNome: string; descoberta: string }) => void;
+  /** Manipulador › Puxar os Fios (checkpoint talentos, Fase 6) — exige vulnerabilidade ativa de Entrelinhas na mesma criatura. */
+  puxarOsFiosStatus?: { acquired: boolean; usedThisScene: boolean; opcoesSucesso: string[] };
+  entrelinhasAtivo?: { alvoNome: string; descoberta: string; valor: number; concedidoEm: string } | null;
+  onRegisterPuxarOsFios?: (abertura: string) => void;
 }) {
   const [filter, setFilter] = useState<FilterKey>("todos");
 
@@ -313,6 +325,14 @@ export function TalentsTab({
 
                         {acquiredEntry && nivel.slug === "estrategista_imposicao_de_ritmo" && imposicaoDeRitmoStatus?.acquired && (
                           <ImposicaoDeRitmoWidget status={imposicaoDeRitmoStatus} allies={bencaoAllies} onUse={onUseImposicaoDeRitmo} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "manipulador_entrelinhas" && entrelinhasStatus?.acquired && (
+                          <EntrelinhasWidget status={entrelinhasStatus} onRegister={onRegisterEntrelinhas} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "manipulador_puxar_os_fios" && puxarOsFiosStatus?.acquired && (
+                          <PuxarOsFiosWidget status={puxarOsFiosStatus} entrelinhasAtivo={entrelinhasAtivo ?? null} onRegister={onRegisterPuxarOsFios} />
                         )}
 
                         {acquiredEntry && nivel.slug === "totem_bencao" && totemBencaoTokenStatus?.acquired && (
@@ -823,6 +843,105 @@ function ImposicaoDeRitmoWidget({
           >
             Gastar Reação: +{status.paBonus} PA imediato ao aliado (1/cena)
           </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const DESCOBERTA_LABELS: Record<string, string> = {
+  desconforto: "Algo que parece deixá-la desconfortável",
+  desejo: "Algo que ela parece querer obter",
+  protecao: "Alguém/algo que ela demonstra proteger",
+  assunto_evitado: "Um assunto que ela tenta evitar",
+  contradicao: "Uma contradição na fala/postura/reação",
+};
+
+const ABERTURA_LABELS: Record<string, string> = {
+  informacao_relevante: "Alvo deixa escapar informação relevante",
+  contradicao_usavel: "Alvo entrega contradição usável até fim da cena",
+  concessao_menor: "Alvo aceita concessão menor",
+  hesitacao_hostil: "Alvo hesita antes de agir contra você",
+  terceiro_duvida_do_alvo: "Terceiro presente passa a duvidar do alvo",
+};
+
+function EntrelinhasWidget({
+  status,
+  onRegister,
+}: {
+  status: { acquired: boolean; usedThisScene: boolean; valor: number; opcoesDescoberta: string[] };
+  onRegister?: (params: { alvoNome: string; descoberta: string }) => void;
+}) {
+  const [alvoNome, setAlvoNome] = useState("");
+  const [descoberta, setDescoberta] = useState(status.opcoesDescoberta[0] ?? "");
+  return (
+    <div data-testid="entrelinhas-widget" style={widgetBox}>
+      {status.usedThisScene ? (
+        <span style={{ opacity: 0.7 }}>Entrelinhas já usado nesta cena.</span>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <input
+            data-testid="entrelinhas-alvo"
+            type="text"
+            placeholder="Nome da criatura (conversa breve)"
+            value={alvoNome}
+            onChange={(e) => setAlvoNome(e.target.value)}
+            style={{ background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", fontSize: 12 }}
+          />
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <select data-testid="entrelinhas-descoberta" value={descoberta} onChange={(e) => setDescoberta(e.target.value)} style={{ background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", fontSize: 12 }}>
+              {status.opcoesDescoberta.map((o) => (
+                <option key={o} value={o}>{DESCOBERTA_LABELS[o] ?? o}</option>
+              ))}
+            </select>
+            <button
+              data-testid="entrelinhas-registrar"
+              disabled={!alvoNome}
+              onClick={() => {
+                if (!alvoNome) return;
+                onRegister?.({ alvoNome, descoberta });
+                setAlvoNome("");
+              }}
+              style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+            >
+              Confirmar teste de Psicologia bem-sucedido (1/cena)
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PuxarOsFiosWidget({
+  status,
+  entrelinhasAtivo,
+  onRegister,
+}: {
+  status: { acquired: boolean; usedThisScene: boolean; opcoesSucesso: string[] };
+  entrelinhasAtivo: { alvoNome: string; descoberta: string; valor: number; concedidoEm: string } | null;
+  onRegister?: (abertura: string) => void;
+}) {
+  const [abertura, setAbertura] = useState(status.opcoesSucesso[0] ?? "");
+  return (
+    <div data-testid="puxar-os-fios-widget" style={widgetBox}>
+      {status.usedThisScene ? (
+        <span style={{ opacity: 0.7 }}>Puxar os Fios já usado nesta cena.</span>
+      ) : !entrelinhasAtivo ? (
+        <span style={{ opacity: 0.7 }}>Requer vulnerabilidade ativa de Entrelinhas contra a criatura (use Entrelinhas primeiro).</span>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <span style={{ fontSize: 11, opacity: 0.7 }}>Vulnerabilidade ativa contra: {entrelinhasAtivo.alvoNome}</span>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <select data-testid="puxar-os-fios-abertura" value={abertura} onChange={(e) => setAbertura(e.target.value)} style={{ background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", fontSize: 12 }}>
+              {status.opcoesSucesso.map((o) => (
+                <option key={o} value={o}>{ABERTURA_LABELS[o] ?? o}</option>
+              ))}
+            </select>
+            <button data-testid="puxar-os-fios-registrar" onClick={() => onRegister?.(abertura)} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}>
+              Confirmar sucesso em Influência — registrar abertura (1/cena)
+            </button>
+          </div>
         </div>
       )}
     </div>

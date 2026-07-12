@@ -126,6 +126,10 @@ import {
   getBriefingDeCampoAvailability,
   getImposicaoDeRitmoAvailability,
   markImposicaoDeRitmoUsed,
+  getEntrelinhasAvailability,
+  markEntrelinhasUsed,
+  getPuxarOsFiosAvailability,
+  markPuxarOsFiosUsed,
   getToqueDeMidasAvailability,
   getToqueDeMidasModifiersForTarget,
   markToqueDeMidasUsed,
@@ -2754,6 +2758,43 @@ export default function CharacterSheetClient({
     addLogEntry("condicao", "Briefing de Campo: rerroll consumido nesta perícia.");
   }
 
+  /** Manipulador › Entrelinhas (N2, checkpoint talentos Fase 6) — registra a vulnerabilidade descoberta contra uma criatura, 1/cena (sempre no próprio caster). */
+  function handleRegisterEntrelinhas(params: { alvoNome: string; descoberta: string }) {
+    const current = characterRef.current;
+    const status = getEntrelinhasAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedThisScene) return;
+    const nowIso = new Date().toISOString();
+    const next = markEntrelinhasUsed(
+      { ...current, entrelinhas_ativo: { alvoNome: params.alvoNome, descoberta: params.descoberta, valor: status.valor, concedidoEm: nowIso } },
+      nowIso,
+    );
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Entrelinhas: vulnerabilidade descoberta em ${params.alvoNome} (${params.descoberta}) — +${status.valor} no próximo teste de Influência contra ela.`);
+  }
+
+  /** Manipulador › Entrelinhas — consome a vulnerabilidade (chamado pelo RollsTab após um teste de Influência confirmado contra o alvo). */
+  function handleConsumeEntrelinhas() {
+    const current = characterRef.current;
+    if (!current.entrelinhas_ativo) return;
+    const { entrelinhas_ativo: _drop, ...next } = current;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", "Entrelinhas: vulnerabilidade consumida neste teste de Influência.");
+  }
+
+  /** Manipulador › Puxar os Fios (N3, checkpoint talentos Fase 6) — registra a abertura social forçada, 1/cena, exige Entrelinhas ativo. */
+  function handleRegisterPuxarOsFios(abertura: string) {
+    const current = characterRef.current;
+    const status = getPuxarOsFiosAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedThisScene || !current.entrelinhas_ativo) return;
+    const nowIso = new Date().toISOString();
+    const next = markPuxarOsFiosUsed(current, nowIso);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Puxar os Fios: abertura social contra ${current.entrelinhas_ativo.alvoNome} — ${abertura}.`);
+  }
+
   /** Rúnico › Gatilho Rúnico — ativa/desativa runa instalada sem PA. */
   function handleToggleRuneActive(instanceId: string, runeInstallationId: string) {
     const current = characterRef.current;
@@ -4924,6 +4965,11 @@ export default function CharacterSheetClient({
           onRegisterBriefing={handleRegisterBriefing}
           imposicaoDeRitmoStatus={getImposicaoDeRitmoAvailability(character, talentsIniciais)}
           onUseImposicaoDeRitmo={handleUseImposicaoDeRitmo}
+          entrelinhasStatus={getEntrelinhasAvailability(character, talentsIniciais)}
+          onRegisterEntrelinhas={handleRegisterEntrelinhas}
+          puxarOsFiosStatus={getPuxarOsFiosAvailability(character, talentsIniciais)}
+          entrelinhasAtivo={character.entrelinhas_ativo ?? null}
+          onRegisterPuxarOsFios={handleRegisterPuxarOsFios}
         />
       )}
 
@@ -5075,6 +5121,8 @@ export default function CharacterSheetClient({
           onConsumeFalcaoToken={handleConsumeFalcaoToken}
           briefingCampoAtivo={character.briefing_campo_ativo ?? null}
           onConsumeBriefingCampo={handleConsumeBriefingCampo}
+          entrelinhasAtivo={character.entrelinhas_ativo ?? null}
+          onConsumeEntrelinhas={handleConsumeEntrelinhas}
         />
       )}
 

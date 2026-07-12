@@ -2015,6 +2015,84 @@ export function markImposicaoDeRitmoUsed(character: Character, nowIso: string): 
 }
 
 // ---------------------------------------------------------------------
+// Manipulador — Entrelinhas (N2): 1/cena, +2 real no PRÓXIMO teste de
+// Influência do CASTER contra a criatura marcada (não é um token para
+// outro personagem — o benefício é sempre do próprio Manipulador).
+// ---------------------------------------------------------------------
+
+export const ENTRELINHAS_USAGE_KEY = "manipulador_entrelinhas:cena";
+
+export function getEntrelinhasAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisScene: boolean; valor: number; opcoesDescoberta: string[] } {
+  let acquired = false;
+  let valor = 2;
+  let opcoesDescoberta: string[] = [];
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "ler_vulnerabilidade_social") continue;
+      acquired = true;
+      const beneficio = efeito.beneficio as Record<string, unknown> | undefined;
+      if (typeof beneficio?.valor === "number") valor = beneficio.valor;
+      if (Array.isArray(efeito.opcoes_descoberta)) {
+        opcoesDescoberta = efeito.opcoes_descoberta.filter((o): o is string => typeof o === "string");
+      }
+    }
+  }
+  const usedThisScene = (character.talentos_estado?.usos?.[ENTRELINHAS_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisScene, valor, opcoesDescoberta };
+}
+
+export function markEntrelinhasUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[ENTRELINHAS_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
+// Manipulador — Puxar os Fios (N3): 1/cena, exige vulnerabilidade ativa
+// de Entrelinhas contra a MESMA criatura; em sucesso de Influência,
+// registra uma das 5 aberturas sociais canônicas.
+// ---------------------------------------------------------------------
+
+export const PUXAR_OS_FIOS_USAGE_KEY = "manipulador_puxar_os_fios:cena";
+
+export function hasPuxarOsFios(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "forcar_abertura_social") return true;
+    }
+  }
+  return false;
+}
+
+export function getPuxarOsFiosAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisScene: boolean; opcoesSucesso: string[] } {
+  let acquired = false;
+  let opcoesSucesso: string[] = [];
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "forcar_abertura_social") continue;
+      acquired = true;
+      if (Array.isArray(efeito.opcoes_sucesso)) {
+        opcoesSucesso = efeito.opcoes_sucesso.filter((o): o is string => typeof o === "string");
+      }
+    }
+  }
+  const usedThisScene = (character.talentos_estado?.usos?.[PUXAR_OS_FIOS_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisScene, opcoesSucesso };
+}
+
+export function markPuxarOsFiosUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[PUXAR_OS_FIOS_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
 // Construtores de log (texto formatado — nunca JSON cru)
 // ---------------------------------------------------------------------
 

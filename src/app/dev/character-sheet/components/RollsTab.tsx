@@ -146,6 +146,8 @@ export function RollsTab({
   onConsumeFalcaoToken,
   briefingCampoAtivo,
   onConsumeBriefingCampo,
+  entrelinhasAtivo,
+  onConsumeEntrelinhas,
 }: {
   atributos: CharacterAttributes;
   atributoDefinitions: AttributeDefinition[] | undefined;
@@ -192,6 +194,9 @@ export function RollsTab({
   /** Estrategista › Briefing de Campo (checkpoint talentos, Fase 5) — perícia designada; oferece rerroll +1 na perícia correspondente quando o jogador confirma que o teste foi uma falha. */
   briefingCampoAtivo?: { periciaId: string; origem: string; bonus: number; concedidoEm: string } | null;
   onConsumeBriefingCampo?: () => void;
+  /** Manipulador › Entrelinhas (checkpoint talentos, Fase 6) — +valor real no próximo teste de Influência do caster contra a criatura marcada, confirmado no clique. */
+  entrelinhasAtivo?: { alvoNome: string; descoberta: string; valor: number; concedidoEm: string } | null;
+  onConsumeEntrelinhas?: () => void;
 }) {
   const atributoIds = ["corpo", "mente", "animo"] as const;
   const [atributoId, setAtributoId] = useState<(typeof atributoIds)[number]>("corpo");
@@ -235,6 +240,10 @@ export function RollsTab({
   // jogador escolhe em qual rolagem aplicar o +2, já que o recebedor pode ter mais de um
   // teste pendente antes de "agir sobre o alvo").
   const [falcaoAtiva, setFalcaoAtiva] = useState(false);
+  // Manipulador › Entrelinhas — confirmação de que ESTE teste de Influência é contra a
+  // criatura marcada (o talento não tem como saber sozinho qual criatura o teste alvo sem
+  // um modelo de alvo estruturado nas rolagens).
+  const [entrelinhasAtivaCheckbox, setEntrelinhasAtivaCheckbox] = useState(false);
 
   function toggleTagExtra(tag: ToggleTag) {
     setTagsExtras((prev) => {
@@ -331,7 +340,8 @@ export function RollsTab({
     // Estrategista › Falcão — +2 (ou o valor real do payload) só quando o jogador confirma
     // que ESTE teste é "agir diretamente sobre o alvo/detalhe" marcado.
     const falcaoBonus = falcaoTokenAtivo && falcaoAtiva ? falcaoTokenAtivo.valor : 0;
-    const finalModifier = manualModifier + modificadorEfeitos + rajadaPenalidade + falcaoBonus;
+    const entrelinhasBonus = entrelinhasAtivo && entrelinhasAtivaCheckbox && periciaId === "influencia" ? entrelinhasAtivo.valor : 0;
+    const finalModifier = manualModifier + modificadorEfeitos + rajadaPenalidade + falcaoBonus + entrelinhasBonus;
     const promocaoCandidata = temPericia ? marginPromotions.find((p) => p.periciaId === periciaId) : undefined;
     // Promoção com `contexto` (ex.: Olhar Penetrante) só aplica com confirmação explícita de que
     // o teste atual se encaixa nesse contexto estreito — sem contexto (ex.: Passo Fantasma, "testes
@@ -368,6 +378,10 @@ export function RollsTab({
     if (falcaoTokenAtivo && falcaoAtiva) {
       onConsumeFalcaoToken?.();
       setFalcaoAtiva(false);
+    }
+    if (entrelinhasAtivo && entrelinhasAtivaCheckbox && periciaId === "influencia") {
+      onConsumeEntrelinhas?.();
+      setEntrelinhasAtivaCheckbox(false);
     }
 
     if (usarDadoGatilho && resultado.dadoGatilhoResultado != null) {
@@ -688,6 +702,18 @@ export function RollsTab({
               />
               Falcão ativo (de {falcaoTokenAtivo.origem}, alvo: {falcaoTokenAtivo.alvoDescricao}) — confirmo que este teste
               age diretamente sobre o alvo/detalhe: +{falcaoTokenAtivo.valor}. Consumido ao rolar.
+            </label>
+          )}
+          {entrelinhasAtivo && periciaId === "influencia" && (
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+              <input
+                data-testid="roll-entrelinhas-ativa"
+                type="checkbox"
+                checked={entrelinhasAtivaCheckbox}
+                onChange={(e) => setEntrelinhasAtivaCheckbox(e.target.checked)}
+              />
+              Entrelinhas ativo contra {entrelinhasAtivo.alvoNome} ({entrelinhasAtivo.descoberta}) — confirmo que uso essa
+              impressão na abordagem: +{entrelinhasAtivo.valor}. Consumido ao rolar.
             </label>
           )}
           {briefingCampoAtivo && periciaId === briefingCampoAtivo.periciaId && (
