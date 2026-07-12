@@ -54,6 +54,7 @@ export function ResourcesTab({
   onApplyShortRest,
   onApplyLongRest,
   sobrecargaUsadaDia,
+  overloadMaxOverride = null,
   rupturaPendente,
   overloadWillRollPending,
   onUseOverloadSurge,
@@ -88,6 +89,8 @@ export function ResourcesTab({
   onApplyLongRest: () => void;
   /** Checkpoint v0.37 — Sobrecarga/Ruptura pendente. */
   sobrecargaUsadaDia: number;
+  /** Limite diário de Surtos elevado por talento (Mago › Ascensão → 5). null = usa o limite canônico. */
+  overloadMaxOverride?: number | null;
   rupturaPendente: boolean;
   overloadWillRollPending: boolean;
   onUseOverloadSurge: (tipo: string) => void;
@@ -107,6 +110,9 @@ export function ResourcesTab({
   onResolveRuptureChoice: (choiceId: string, marca: string, traco: string) => void;
 }) {
   const [tipoSurto, setTipoSurto] = useState<string>(OVERLOAD_SURGE_TYPES[0]);
+  // Limite efetivo de Surtos: canônico, ou elevado por talento (Ascensão → 5).
+  const overloadMaxCanonico = getOverloadMaxPerDay(regras?.sobrecarga);
+  const overloadMax = overloadMaxOverride != null && overloadMaxOverride > overloadMaxCanonico ? overloadMaxOverride : overloadMaxCanonico;
   const pvAtual = recursosAtuais?.pv ?? 0;
   const peAtual = recursosAtuais?.pe ?? 0;
   const manaAtual = recursosAtuais?.mana ?? 0;
@@ -207,7 +213,7 @@ export function ResourcesTab({
 
       <Section title="Sobrecarga">
         <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 8 }}>
-          Até {getOverloadMaxPerDay(regras?.sobrecarga)} surtos por dia — só descanso longo recupera.
+          Até {overloadMax} surtos por dia — só descanso longo recupera.
           Cada surto causa {getOverloadSurgeDamageDie(regras?.sobrecarga)} de dano psíquico (ajuste PE
           manualmente — o conteúdo não estrutura o recurso-alvo). O último surto do dia marca Ruptura
           pendente e exige teste de {getOverloadWillTestRule(regras?.sobrecarga).pericia} CD{" "}
@@ -215,7 +221,7 @@ export function ResourcesTab({
           <code>regras_personagem.sobrecarga</code>.
         </p>
         <div data-testid="sobrecarga-cargas" style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-          {Array.from({ length: getOverloadMaxPerDay(regras?.sobrecarga) }, (_, i) => i < sobrecargaUsadaDia).map((usada, i) => (
+          {Array.from({ length: overloadMax }, (_, i) => i < sobrecargaUsadaDia).map((usada, i) => (
             <span
               key={i}
               data-testid={`sobrecarga-carga-${i}`}
@@ -231,7 +237,7 @@ export function ResourcesTab({
             />
           ))}
           <span style={{ fontSize: 12, opacity: 0.6, marginLeft: 8 }}>
-            {sobrecargaUsadaDia}/{getOverloadMaxPerDay(regras?.sobrecarga)} usados
+            {sobrecargaUsadaDia}/{overloadMax} usados
           </span>
         </div>
         {rupturaPendente && (
@@ -270,8 +276,8 @@ export function ResourcesTab({
           <button
             data-testid="sobrecarga-usar-button"
             onClick={() => onUseOverloadSurge(tipoSurto)}
-            disabled={sobrecargaUsadaDia >= getOverloadMaxPerDay(regras?.sobrecarga)}
-            style={{ ...buttonStyle, opacity: sobrecargaUsadaDia >= getOverloadMaxPerDay(regras?.sobrecarga) ? 0.5 : 1 }}
+            disabled={sobrecargaUsadaDia >= overloadMax}
+            style={{ ...buttonStyle, opacity: sobrecargaUsadaDia >= overloadMax ? 0.5 : 1 }}
           >
             Usar surto
           </button>

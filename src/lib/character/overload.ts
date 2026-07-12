@@ -93,9 +93,12 @@ export function useOverloadSurge(
   nowIso: string,
   rng: () => number = Math.random,
   rules?: OverloadRulesPayload | null,
+  /** Override do limite diário por talento (Mago › Ascensão → 5). Só vale quando > limite canônico. Ruptura acompanha o novo limite. */
+  maxPerDayOverride?: number | null,
 ): UseOverloadSurgeResult {
   const usadosAntes = character.sobrecarga_usada_dia ?? 0;
-  const maxPerDay = getOverloadMaxPerDay(rules);
+  const maxCanonico = getOverloadMaxPerDay(rules);
+  const maxPerDay = typeof maxPerDayOverride === "number" && maxPerDayOverride > maxCanonico ? maxPerDayOverride : maxCanonico;
 
   if (usadosAntes >= maxPerDay) {
     return {

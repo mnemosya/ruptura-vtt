@@ -68,6 +68,7 @@ import {
   getUsableTalentEffects,
   getTalentContextualOpportunities,
   getTalentSpellRangeAreaMultiplier,
+  getTalentOverloadLimitOverride,
   useTalentEffect,
   toggleTalentEffect,
   resetTalentUse,
@@ -1380,8 +1381,10 @@ export default function CharacterSheetClient({
     const nowIso = new Date().toISOString();
     const sobrecargaAntes = character.sobrecarga_usada_dia ?? 0;
     const overloadRules = regras?.sobrecarga;
-    const maxSurtos = getOverloadMaxPerDay(overloadRules);
-    const result = useOverloadSurge(character, tipo, nowIso, undefined, overloadRules);
+    const talentLimitOverride = getTalentOverloadLimitOverride(character, talentsIniciais);
+    const maxCanonico = getOverloadMaxPerDay(overloadRules);
+    const maxSurtos = talentLimitOverride != null && talentLimitOverride > maxCanonico ? talentLimitOverride : maxCanonico;
+    const result = useOverloadSurge(character, tipo, nowIso, undefined, overloadRules, talentLimitOverride);
 
     if (!result.surge) {
       addLogEntry("recurso", result.warnings[0] ?? "Limite de surtos de Sobrecarga atingido.");
@@ -3969,6 +3972,7 @@ export default function CharacterSheetClient({
           onApplyShortRest={handleApplyShortRest}
           onApplyLongRest={handleApplyLongRest}
           sobrecargaUsadaDia={character.sobrecarga_usada_dia ?? 0}
+          overloadMaxOverride={getTalentOverloadLimitOverride(character, talentsIniciais)}
           rupturaPendente={character.ruptura_pendente ?? false}
           overloadWillRollPending={overloadWillRollPending}
           onUseOverloadSurge={handleUseOverloadSurge}

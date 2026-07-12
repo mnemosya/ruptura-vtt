@@ -465,6 +465,30 @@ export function resolvePersistedOpportunity(character: Character, id: string): C
 // ---------------------------------------------------------------------
 
 /**
+ * Novo limite diário de Surtos de Sobrecarga imposto por talento
+ * adquirido (Mago de Batalha › Ascensão — `alterar_limite_sobrecarga`,
+ * `novo_limite_diario`). Devolve o MAIOR override, ou null quando nenhum
+ * talento adquirido altera o limite. Data-driven: o valor (5) vem do
+ * payload canônico. Decisão canônica confirmada: a Ruptura acompanha o
+ * novo limite (dispara no novo N-ésimo surto), então o override entra
+ * direto como `maxPerDay` em `useOverloadSurge`.
+ */
+export function getTalentOverloadLimitOverride(
+  character: Pick<Character, "talentos_adquiridos">,
+  talents: TalentContent[],
+): number | null {
+  let override: number | null = null;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "alterar_limite_sobrecarga") continue;
+      const novo = efeito.novo_limite_diario;
+      if (typeof novo === "number" && novo > 0) override = Math.max(override ?? 0, novo);
+    }
+  }
+  return override;
+}
+
+/**
  * Multiplicador de alcance/área de magias de ATAQUE imposto por talento
  * (Mago de Batalha › Domínio Territorial — `multiplicar_alcance_area_magia`).
  * 1 quando nenhum talento aplica. Data-driven (1.5 = +50% vem do payload).
