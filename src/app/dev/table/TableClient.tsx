@@ -109,6 +109,14 @@ import {
   markSentinelaUsed,
   hasMuralha,
   getMuralhaPenalidade,
+  getMarcaDaDorAvailability,
+  markMarcaDaDorUsed,
+  targetHasNegativeEffectAuthoredBy,
+  hasSangriaLenta,
+  getSangriaLentaExtraRounds,
+  extendSangriaLentaDuration,
+  getContagioAvailability,
+  markContagioUsed,
   type GmResource,
   type CharacterRecord,
   type Character,
@@ -197,6 +205,8 @@ interface AttackPanelForm {
   muralhaAliadoProtegidoId: string;
   /** Guardião › Muralha — narrador confirma que a última defesa (Bloquear) foi um sucesso (mesmo padrão de Blindagem: sem banda de margem estruturada para "sucesso em Bloquear" neste checkpoint, confirmação manual). Sem cadência/uso limitado no payload — sempre disponível. */
   muralhaConfirmado: boolean;
+  /** Praga › Marca da Dor (checkpoint talentos, Fase 8) — narrador confirma que o alvo tem efeito negativo autorado pelo ATACANTE, somando o bônus real na margem, 1/rodada. */
+  marcaDaDorAtivo: boolean;
 }
 
 /** Bandas fixas reaproveitadas por Executar/À Espreita/Headshot/Ataque Fatal/Lâmina Oculta — nunca inventadas ad-hoc em cada callsite. */
@@ -287,6 +297,7 @@ const DEFAULT_ATTACK_PANEL_FORM: AttackPanelForm = {
   fincadaCondicao: "",
   muralhaAliadoProtegidoId: "",
   muralhaConfirmado: false,
+  marcaDaDorAtivo: false,
 };
 
 /**
@@ -1311,6 +1322,10 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
   const [gmCuraForm, setGmCuraForm] = useState<Record<string, { recurso: "pv" | "pe" | "mana"; valor: number; nota: string }>>({});
   const [gmSetForm, setGmSetForm] = useState<Record<string, { recurso: GmResource; valor: number; nota: string }>>({});
   const [gmCondicaoForm, setGmCondicaoForm] = useState<Record<string, string>>({});
+  /** Praga › autoria (checkpoint talentos, Fase 8) — quem aplicou a condição pelo formulário genérico do narrador ("" = sem autor). */
+  const [gmCondicaoAutorForm, setGmCondicaoAutorForm] = useState<Record<string, string>>({});
+  /** Praga › Contágio — alvos adicionais selecionados por condição ativa (chave = conditionInstanceId). */
+  const [gmContagioAlvos, setGmContagioAlvos] = useState<Record<string, string[]>>({});
 
   // ---------------------------------------------------------------
   // Preview de Encerrar Rodada / Encerrar Cena (checkpoint pós-v0.58).
@@ -1751,7 +1766,21 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     const attackTotal = form.attackTotal.trim() ? Number(form.attackTotal) : null;
     const defenseTotal = form.defenseTotal.trim() ? Number(form.defenseTotal) : null;
     const hasMargin = attackTotal != null && Number.isFinite(attackTotal) && defenseTotal != null && Number.isFinite(defenseTotal);
-    const margin = hasMargin ? attackTotal! - defenseTotal! : null;
+    // Praga › Marca da Dor (checkpoint talentos, Fase 8) — o alvo tem efeito negativo
+    // autorado pelo PRÓPRIO atacante ativo: +valor real na margem deste ataque, 1/rodada.
+    // Detectável (diferente de Muralha) porque atacante e alvo já são conhecidos juntos
+    // neste ponto da resolução.
+    const attackerCharacterIdMarcaDaDor = typeof log.payload.characterId === "string" ? log.payload.characterId : null;
+    const attackerRecordMarcaDaDor = attackerCharacterIdMarcaDaDor ? personagensAtivos[attackerCharacterIdMarcaDaDor] : null;
+    const attackerCharacterMarcaDaDor = attackerRecordMarcaDaDor ? normalizeCharacter(attackerRecordMarcaDaDor.payload) : null;
+    const marcaDaDorStatus = attackerCharacterMarcaDaDor ? getMarcaDaDorAvailability(attackerCharacterMarcaDaDor, talentsIniciais) : { acquired: false, usedThisRound: false, valor: 1 };
+    const marcaDaDorElegivel =
+      form.marcaDaDorAtivo &&
+      marcaDaDorStatus.acquired &&
+      !marcaDaDorStatus.usedThisRound &&
+      attackerCharacterIdMarcaDaDor != null &&
+      targetHasNegativeEffectAuthoredBy(normalizeCharacter(targetRecord.payload), attackerCharacterIdMarcaDaDor);
+    const margin = hasMargin ? attackTotal! - defenseTotal! + (marcaDaDorElegivel ? marcaDaDorStatus.valor : 0) : null;
     // Assassino › Executar / Atirador de Elite › À Espreita, Headshot / Sorrateiro › Ataque
     // Fatal: sobrepõem a banda de dano/região (mesma banda que um sucesso crítico real ou
     // padrão, conforme o caso) — a margem/attackTotal/defenseTotal digitados continuam sendo
@@ -2045,13 +2074,14 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       // único fetch/save (mesmo characterId) para não perder a marcação de um por causa do
       // outro (o padrão de blocos separados acima, se ambos disparassem no mesmo ataque,
       // reescreveria por cima um do outro por lerem `personagensAtivos` desatualizado).
-      if (fincadaAplicada || golpeCirurgicoAplicado) {
+      if (fincadaAplicada || golpeCirurgicoAplicado || marcaDaDorElegivel) {
         const attackerCharacterId = typeof log.payload.characterId === "string" ? log.payload.characterId : null;
         const attackerRecord = attackerCharacterId ? personagensAtivos[attackerCharacterId] : null;
         if (attackerRecord) {
           let attackerNext = normalizeCharacter(attackerRecord.payload);
           if (fincadaAplicada) attackerNext = markFincadaUsed(attackerNext, nowIso);
           if (golpeCirurgicoAplicado) attackerNext = markGolpeCirurgicoPenalidadeUsed(attackerNext, nowIso);
+          if (marcaDaDorElegivel) attackerNext = markMarcaDaDorUsed(attackerNext, nowIso);
           const attackerSaved = await updateCharacter(attackerCharacterId!, attackerNext);
           setPersonagensAtivos((prev) => ({ ...prev, [attackerSaved.id]: attackerSaved }));
         }
@@ -2121,6 +2151,9 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
         reminders.push(
           `Muralha: Cobertura Parcial aplicada ao defensor${form.muralhaAliadoProtegidoId ? " e ao aliado protegido" : ""} — aplique ${muralhaPenalidadeReminder} manualmente em ataques direcionais contra eles até o fim da rodada, depois remova a condição.`,
         );
+      }
+      if (marcaDaDorElegivel) {
+        reminders.push(`Marca da Dor: +${marcaDaDorStatus.valor} já somado na margem deste ataque (alvo tinha efeito negativo autorado pelo atacante) — 1/rodada.`);
       }
       // Berserker › Sede de Sangue (checkpoint talentos, Fase 1) — reminder com o valor
       // EXATO do bônus de Corpo extra a somar (dobra o bônus já incluído pelo narrador no
@@ -2770,7 +2803,29 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     const condicao = condicoesDisponiveis.find((c) => c.slug === slug);
     if (!record || !condicao) return;
     const nowIso = new Date().toISOString();
-    const result = applyGmCondition(record.payload, condicao, nowIso);
+    // Praga › autoria (checkpoint talentos, Fase 8) — autor opcional selecionado no formulário;
+    // habilita Marca da Dor/Sangria Lenta/Contágio para o autor escolhido. Sem autor, aplica
+    // sem autoria (mesmo comportamento de sempre).
+    const autorId = gmCondicaoAutorForm[characterId] || null;
+    const autorRecord = autorId ? personagensAtivos[autorId] : null;
+    const autorCharacter = autorRecord ? normalizeCharacter(autorRecord.payload) : null;
+    // Sangria Lenta (checkpoint talentos, Fase 8) — só estende texto de duração já round-based
+    // ("N rodadas"); `NarratorConditionOption`/`ConditionContent` não carregam duração
+    // estruturada nenhuma hoje (nenhum lugar do catálogo popula isso), então esta chamada é
+    // infraestrutura real pronta — sem input round-based disponível ainda, nunca fica ativa
+    // à toa nem inventa uma duração que o conteúdo não declara.
+    let duracaoTexto: string | undefined = undefined;
+    if (autorCharacter && hasSangriaLenta(autorCharacter, talentsIniciais)) {
+      const extra = getSangriaLentaExtraRounds(autorCharacter, talentsIniciais);
+      const extended = extendSangriaLentaDuration(duracaoTexto, extra);
+      if (extended.changed) duracaoTexto = extended.text;
+    }
+    const result = applyGmCondition(
+      record.payload,
+      { slug: condicao.slug, nome: condicao.nome, duracao: duracaoTexto },
+      nowIso,
+      autorId ? { sourceCharacterId: autorId, sourceTalentId: null, sourceType: "manual" } : undefined,
+    );
     if (result.jaAtiva) {
       setGmErro(`"${condicao.nome}" já está ativa em ${record.name}.`);
       return;
@@ -2784,6 +2839,77 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
         characterNome: record.name,
         conditionId: condicao.slug,
         conditionName: condicao.nome,
+        sourceCharacterId: autorId,
+        duracao: duracaoTexto ?? null,
+        source: "dev_table_narrator_tool",
+      },
+    });
+  }
+
+  /**
+   * Praga › Contágio (N3, checkpoint talentos Fase 8) — propaga uma condição já autorada
+   * para até `maxAlvosMultiplicador` alvos adicionais escolhidos manualmente (3m confirmado
+   * pelo narrador), 1/cena no AUTOR. Preserva slug/nome/duração/autoria originais e usa os
+   * campos `originalTargetId`/`applicationEventId` (existentes, nunca preenchidos antes).
+   */
+  async function handleGmContagioPropagar(originalTargetCharacterId: string, conditionInstanceId: string) {
+    const originalRecord = personagensAtivos[originalTargetCharacterId];
+    if (!originalRecord) return;
+    const originalCharacter = normalizeCharacter(originalRecord.payload);
+    const condicao = (originalCharacter.condicoes_ativas ?? []).find((c) => c.id === conditionInstanceId && c.ativa);
+    if (!condicao || !condicao.sourceCharacterId) return;
+    const autorRecord = personagensAtivos[condicao.sourceCharacterId];
+    if (!autorRecord) return;
+    const autorCharacter = normalizeCharacter(autorRecord.payload);
+    const status = getContagioAvailability(autorCharacter, talentsIniciais);
+    if (!status.acquired || status.usedThisScene) return;
+    const alvos = (gmContagioAlvos[conditionInstanceId] ?? []).slice(0, status.maxAlvosMultiplicador);
+    if (alvos.length === 0) return;
+
+    const nowIso = new Date().toISOString();
+    const applicationEventId = crypto.randomUUID();
+    const nomesPropagados: string[] = [];
+    for (const targetId of alvos) {
+      const targetRecord = personagensAtivos[targetId];
+      if (!targetRecord) continue;
+      const targetCharacter = normalizeCharacter(targetRecord.payload);
+      const result = applyGmCondition(
+        targetCharacter,
+        { slug: condicao.conditionId ?? condicao.nome, nome: condicao.nome, duracao: condicao.duracao },
+        nowIso,
+        {
+          sourceCharacterId: condicao.sourceCharacterId,
+          sourceTalentId: condicao.sourceTalentId ?? "praga_contagio",
+          sourceType: condicao.sourceType ?? "manual",
+          originalTargetId: originalTargetCharacterId,
+          applicationEventId,
+        },
+      );
+      if (result.jaAtiva) continue;
+      try {
+        const saved = await updateCharacter(targetId, result.character);
+        setPersonagensAtivos((prev) => ({ ...prev, [saved.id]: saved }));
+        nomesPropagados.push(targetRecord.name);
+      } catch {
+        // Falha em UM alvo não deve travar os demais nem perder o uso já aplicado — segue.
+      }
+    }
+    if (nomesPropagados.length === 0) return;
+
+    const autorNext = markContagioUsed(autorCharacter, nowIso);
+    const autorSaved = await updateCharacter(condicao.sourceCharacterId, autorNext);
+    setPersonagensAtivos((prev) => ({ ...prev, [autorSaved.id]: autorSaved }));
+    setGmContagioAlvos((prev) => ({ ...prev, [conditionInstanceId]: [] }));
+    await addLog({
+      campaignId: selectedCampaignId!,
+      characterId: originalTargetCharacterId,
+      type: "talent_triggered",
+      visibility: "public",
+      payload: {
+        characterId: originalTargetCharacterId,
+        characterNome: originalRecord.name,
+        message: `Contágio: "${condicao.nome}" propagada de ${originalRecord.name} para ${nomesPropagados.join(", ")} (autor: ${autorRecord.name}).`,
+        sourceTalentId: "praga_contagio",
         source: "dev_table_narrator_tool",
       },
     });
@@ -3526,6 +3652,55 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                       )}
                     </div>
 
+                    {/* Praga › Contágio (checkpoint talentos, Fase 8) — propaga uma condição autorada
+                        para até maxAlvosMultiplicador alvos adicionais, 1/cena no AUTOR. */}
+                    {condicoesAtivas
+                      .filter((c) => c.sourceCharacterId)
+                      .map((c) => {
+                        const autorRecord = personagensAtivos[c.sourceCharacterId!];
+                        if (!autorRecord) return null;
+                        const autorCharacter = normalizeCharacter(autorRecord.payload);
+                        const contagioStatus = getContagioAvailability(autorCharacter, talentsIniciais);
+                        if (!contagioStatus.acquired || contagioStatus.usedThisScene) return null;
+                        const outrosPersonagens = Object.values(personagensAtivos).filter((r) => r.id !== characterId);
+                        const selecionados = gmContagioAlvos[c.id] ?? [];
+                        return (
+                          <div
+                            key={`contagio-${c.id}`}
+                            data-testid={`contagio-${characterId}-${c.id}`}
+                            style={{ display: "flex", flexDirection: "column", gap: 4, background: "#141a24", border: "1px solid #2e4a5c", borderRadius: 6, padding: "6px 8px", fontSize: 11 }}
+                          >
+                            <span style={{ opacity: 0.7 }}>
+                              Contágio ({autorRecord.name}) — propagar &quot;{c.nome}&quot; a até {contagioStatus.maxAlvosMultiplicador} alvo(s) a até {contagioStatus.alcanceM}m (confirme manualmente):
+                            </span>
+                            <select
+                              multiple
+                              data-testid={`contagio-alvos-${characterId}-${c.id}`}
+                              value={selecionados}
+                              onChange={(e) => {
+                                const values = Array.from(e.target.selectedOptions, (o) => o.value).slice(0, contagioStatus.maxAlvosMultiplicador);
+                                setGmContagioAlvos((prev) => ({ ...prev, [c.id]: values }));
+                              }}
+                              style={{ ...inputStyle, minHeight: 60 }}
+                            >
+                              {outrosPersonagens.map((r) => (
+                                <option key={r.id} value={r.id}>
+                                  {r.name}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              data-testid={`contagio-propagar-${characterId}-${c.id}`}
+                              disabled={selecionados.length === 0}
+                              onClick={() => handleGmContagioPropagar(characterId, c.id)}
+                              style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", alignSelf: "flex-start" }}
+                            >
+                              Propagar Contágio (1/cena)
+                            </button>
+                          </div>
+                        );
+                      })}
+
                     {efeitosTemporarios.length > 0 && (
                       <div style={{ fontSize: 12 }}>
                         <span style={{ opacity: 0.6 }}>Efeitos temporários: </span>
@@ -3665,6 +3840,22 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                             {c.nome}
                           </option>
                         ))}
+                      </select>
+                      <select
+                        data-testid={`estado-condicao-autor-${characterId}`}
+                        value={gmCondicaoAutorForm[characterId] ?? ""}
+                        onChange={(e) => setGmCondicaoAutorForm((prev) => ({ ...prev, [characterId]: e.target.value }))}
+                        style={inputStyle}
+                        title="Autor (opcional) — habilita Marca da Dor/Sangria Lenta/Contágio para quem aplicou"
+                      >
+                        <option value="">— sem autor —</option>
+                        {Object.values(personagensAtivos)
+                          .filter((r) => r.id !== characterId)
+                          .map((r) => (
+                            <option key={r.id} value={r.id}>
+                              autor: {r.name}
+                            </option>
+                          ))}
                       </select>
                       <button
                         data-testid={`estado-aplicar-condicao-${characterId}`}
@@ -4251,6 +4442,16 @@ function AttackResolutionPanel({
   const fincadaDisponivel =
     fincadaStatusPanel.acquired && !fincadaStatusPanel.usedThisRound && golpeContundenteCorpoACorpoDisponivel && !!bandRulesEfetivo && bandRulesEfetivo.band !== "miss";
 
+  // Praga › Marca da Dor (checkpoint talentos, Fase 8) — lido do ATACANTE; alvo precisa ter
+  // efeito negativo autorado por ele (checável direto em condicoes_ativas).
+  const marcaDaDorStatusPanel = attackerCharacter ? getMarcaDaDorAvailability(attackerCharacter, talentsIniciais) : { acquired: false, usedThisRound: false, valor: 1 };
+  const marcaDaDorDisponivel =
+    !!attackerCharacterId &&
+    marcaDaDorStatusPanel.acquired &&
+    !marcaDaDorStatusPanel.usedThisRound &&
+    !!targetNormalizado &&
+    targetHasNegativeEffectAuthoredBy(targetNormalizado, attackerCharacterId);
+
   return (
     <div
       data-testid={`painel-resolver-ataque-${log.id}`}
@@ -4666,6 +4867,17 @@ function AttackResolutionPanel({
                 <option value="lento">Aplicar Lento</option>
                 <option value="caido">Aplicar Caído</option>
               </select>
+            </label>
+          )}
+          {marcaDaDorDisponivel && (
+            <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input
+                data-testid={`ataque-marca-da-dor-${log.id}`}
+                type="checkbox"
+                checked={form.marcaDaDorAtivo}
+                onChange={(e) => onUpdateForm({ marcaDaDorAtivo: e.target.checked })}
+              />
+              Marca da Dor — alvo tem efeito negativo seu: +{marcaDaDorStatusPanel.valor} na margem deste ataque (1/rodada)
             </label>
           )}
           {executarStatus.acquired && (

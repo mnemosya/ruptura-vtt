@@ -2211,6 +2211,126 @@ export function applyProtocoloDeEmergenciaToAlly(ally: Character, nowIso: string
 }
 
 // ---------------------------------------------------------------------
+// Praga — Marca da Dor (N1): 1/rodada, quando o alvo de um ataque tem
+// um efeito negativo autorado por ESTE atacante ativo, +1 real na
+// margem do ataque (detectável no momento da resolução, diferente de
+// Muralha — aqui atacante e alvo já são conhecidos ao mesmo tempo).
+// ---------------------------------------------------------------------
+
+export const MARCA_DA_DOR_USAGE_KEY = "praga_marca_da_dor:rodada";
+
+export function getMarcaDaDorAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisRound: boolean; valor: number } {
+  let acquired = false;
+  let valor = 1;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "marcar_inimigo_afetado") continue;
+      acquired = true;
+      const beneficio = efeito.beneficio_atacante as Record<string, unknown> | undefined;
+      if (typeof beneficio?.valor === "number") valor = beneficio.valor;
+    }
+  }
+  const usedThisRound = (character.talentos_estado?.usos?.[MARCA_DA_DOR_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisRound, valor };
+}
+
+export function markMarcaDaDorUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[MARCA_DA_DOR_USAGE_KEY] = { usados: 1, cadencia: "rodada", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+/** O alvo tem algum efeito negativo (ActiveCondition) AUTORADO por este atacante especificamente? */
+export function targetHasNegativeEffectAuthoredBy(
+  target: Pick<Character, "condicoes_ativas">,
+  attackerCharacterId: string,
+): boolean {
+  return (target.condicoes_ativas ?? []).some((c) => c.ativa && c.sourceCharacterId === attackerCharacterId);
+}
+
+// ---------------------------------------------------------------------
+// Praga — Sangria Lenta (N2): efeito negativo autorado por este
+// personagem dura +1 rodada — só quando a duração já é um texto
+// round-based parseável (ex.: "3 rodadas"). Nenhuma condição do
+// catálogo hoje usa duração assim (`duracao_padrao` é sempre null ou
+// "enquanto_na_area" — nunca um contador de rodadas), então esta função
+// é infraestrutura real pronta para o primeiro conteúdo que a use,
+// nunca inventa um contador que o catálogo não declara.
+// ---------------------------------------------------------------------
+
+export function hasSangriaLenta(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "estender_duracao_efeito_negativo") return true;
+    }
+  }
+  return false;
+}
+
+export function getSangriaLentaExtraRounds(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): number {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "estender_duracao_efeito_negativo" && typeof efeito.rodadas_extra === "number") return efeito.rodadas_extra;
+    }
+  }
+  return 1;
+}
+
+/**
+ * Extensão real de um texto de duração round-based (ex.: "3 rodadas" → "4 rodadas").
+ * `changed: false` para qualquer texto que não seja reconhecidamente "N rodada(s)"
+ * (cena/manual/sem duração) — nunca reinterpreta duração narrativa como rodadas.
+ */
+export function extendSangriaLentaDuration(duracaoText: string | undefined, extraRounds: number): { text: string | undefined; changed: boolean } {
+  if (!duracaoText) return { text: duracaoText, changed: false };
+  const m = /^(\d+)\s*rodadas?$/i.exec(duracaoText.trim());
+  if (!m) return { text: duracaoText, changed: false };
+  const atual = Number(m[1]);
+  if (!Number.isFinite(atual)) return { text: duracaoText, changed: false };
+  const novo = atual + extraRounds;
+  return { text: `${novo} rodada${novo === 1 ? "" : "s"}`, changed: true };
+}
+
+// ---------------------------------------------------------------------
+// Praga — Contágio (N3): 1/cena, propaga o efeito negativo aplicado
+// para até `max_alvos_multiplicador` × alvos originais dentro de
+// `alcance_m`, preservando autoria/duração/origem — usa os campos de
+// autoria `originalTargetId`/`applicationEventId` já existentes em
+// `ActiveCondition` (antes declarados mas nunca preenchidos por
+// nenhum fluxo real).
+// ---------------------------------------------------------------------
+
+export const CONTAGIO_USAGE_KEY = "praga_contagio:cena";
+
+export function getContagioAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisScene: boolean; alcanceM: number; maxAlvosMultiplicador: number } {
+  let acquired = false;
+  let alcanceM = 3;
+  let maxAlvosMultiplicador = 2;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "propagar_efeito_negativo") continue;
+      acquired = true;
+      if (typeof efeito.alcance_m === "number") alcanceM = efeito.alcance_m;
+      if (typeof efeito.max_alvos_multiplicador === "number") maxAlvosMultiplicador = efeito.max_alvos_multiplicador;
+    }
+  }
+  const usedThisScene = (character.talentos_estado?.usos?.[CONTAGIO_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisScene, alcanceM, maxAlvosMultiplicador };
+}
+
+export function markContagioUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[CONTAGIO_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
 // Construtores de log (texto formatado — nunca JSON cru)
 // ---------------------------------------------------------------------
 

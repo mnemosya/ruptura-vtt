@@ -133,7 +133,7 @@ export interface GmApplyConditionResult {
  */
 export function applyGmCondition(
   character: Character,
-  condition: { slug: string; nome: string },
+  condition: { slug: string; nome: string; duracao?: string },
   nowIso: string,
   authorship?: {
     sourceCharacterId?: string | null;
@@ -152,6 +152,7 @@ export function applyGmCondition(
     id: crypto.randomUUID(),
     conditionId: condition.slug,
     nome: condition.nome,
+    duracao: condition.duracao,
     aplicadaEm: nowIso,
     removidaEm: null,
     ativa: true,

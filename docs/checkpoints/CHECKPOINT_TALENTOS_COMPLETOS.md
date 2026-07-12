@@ -62,7 +62,7 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 43 · 🟡 0 · ⚙️ 22 · 📖 1.
+Contagem: ✅ 0 · 🔵 46 · 🟡 0 · ⚙️ 19 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -114,9 +114,9 @@ Contagem: ✅ 0 · 🔵 43 · 🟡 0 · ⚙️ 22 · 📖 1.
 | Pistoleiro | Gatilho Quente | 1 | 🔵 Implementado (aguardando validação manual) |
 | Pistoleiro | Bang Bang | 2 | 🔵 Implementado (aguardando validação manual) |
 | Pistoleiro | Showdown | 3 | ⚙️ Infra pendente |
-| Praga | Marca da Dor | 1 | ⚙️ Infra pendente |
-| Praga | Sangria Lenta | 2 | ⚙️ Infra pendente |
-| Praga | Contágio | 3 | ⚙️ Infra pendente |
+| Praga | Marca da Dor | 1 | 🔵 Implementado (aguardando validação manual) |
+| Praga | Sangria Lenta | 2 | 🔵 Implementado (aguardando validação manual) |
+| Praga | Contágio | 3 | 🔵 Implementado (aguardando validação manual) |
 | Rato de Rua | Zé da Esquina | 1 | ⚙️ Infra pendente |
 | Rato de Rua | Gato de Telhado | 2 | ⚙️ Infra pendente |
 | Rato de Rua | Saída dos Fundos | 3 | ⚙️ Infra pendente |
@@ -589,9 +589,9 @@ abaixo está **aguardando confirmação do usuário via teste manual** — nenhu
 | Pistoleiro | Gatilho Quente | 🔵 Implementado | Recurso real de dados de gatilho (d8), dano extra = Balística atual em resultado 8 | `talentEngine.ts`, `TalentsTab.tsx`, `CharacterSheetClient.tsx` | `Character.talentos_estado` | Usar dado de gatilho, informar resultado 8 → confirmar dano extra = Balística; usar outro resultado → confirmar só consome; usar os 3 → confirmar indisponível; descanso longo → confirmar reset | Aguardando usuário |
 | Pistoleiro | Bang Bang | 🔵 Implementado | +1 dado de gatilho (pool vira 4); segundo disparo real (+1 PA, −1, mesmas regras) | `RollsTab.tsx`, `talentEngine.ts` | `Character.talentos_estado`, `estado_jogo.pa_gastos` | Rolar com dado de gatilho escolhido (maior dado) → confirmar segundo disparo disponível → gastar PA → rolar de novo com −1 pré-preenchido | Aguardando usuário |
 | Pistoleiro | Showdown | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
-| Praga | Marca da Dor | ⚙️ Infra pendente | Nenhum (exigiria leitura cross-character na rolagem de ataque) | — | — | N/A | — |
-| Praga | Sangria Lenta | ⚙️ Infra pendente | Nenhum (exigiria modelo de duração numérica em condições) | — | — | N/A | — |
-| Praga | Contágio | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Praga | Marca da Dor | 🔵 Implementado | +1 real na margem do ataque quando o alvo tem efeito negativo autorado pelo próprio atacante, 1/rodada — resolvido lendo atacante+alvo juntos no momento da resolução (diferente de Muralha, que precisaria do lado do ATACANTE saber antecipado) | `talentEngine.ts`, `TableClient.tsx` | `Character.talentos_estado` (atacante) | Aplicar condição autorada pelo atacante no alvo → resolver ataque marcando Marca da Dor → confirmar +1 na margem/banda; repetir na mesma rodada → confirmar bloqueado | Aguardando usuário |
+| Praga | Sangria Lenta | 🔵 Implementado (mecanismo real, sem dado hoje para agir) | Estende texto de duração round-based ("N rodadas") em +1 quando o autor tem o talento — `applyGmCondition` agora aceita e persiste `duracao`; NENHUMA condição do catálogo usa duração round-based hoje (`duracao_padrao` é sempre null/"enquanto_na_area"), então o mecanismo é real e testado mas não tem input para agir até o catálogo declarar uma duração assim — documentado explicitamente, não inventado | `talentEngine.ts`, `TableClient.tsx`, `gmActions.ts` | `ActiveCondition.duracao` | Sem teste manual possível hoje (nenhum conteúdo fornece duração "N rodadas") — validar quando/if o catálogo publicar uma condição com essa duração | Aguardando usuário |
+| Praga | Contágio | 🔵 Implementado | Propaga condição autorada para até `maxAlvosMultiplicador` alvos adicionais confirmados manualmente (3m), 1/cena no autor — usa pela primeira vez `originalTargetId`/`applicationEventId` (campos existentes, nunca preenchidos antes) | `talentEngine.ts`, `TableClient.tsx`, `gmActions.ts` | `ActiveCondition` nos alvos adicionais (com autoria/origem preservadas) | Aplicar condição com autor → selecionar até N alvos adicionais → propagar → confirmar condição aplicada nos alvos com mesma autoria/duração; repetir na mesma cena → confirmar bloqueado | Aguardando usuário |
 | Rato de Rua | Zé da Esquina | ⚙️ Infra pendente | Nenhum (infra genérica só) | — | — | N/A | — |
 | Rato de Rua | Gato de Telhado | ⚙️ Infra pendente | Nenhum (infra genérica só) | — | — | N/A | — |
 | Rato de Rua | Saída dos Fundos | ⚙️ Infra pendente | Nenhum (infra genérica só) | — | — | N/A | — |
