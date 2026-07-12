@@ -1267,6 +1267,49 @@ export function markApararPromocaoUsed(character: Character, nowIso: string): Ch
 }
 
 // ---------------------------------------------------------------------
+// Pistoleiro — Gatilho Quente (N1) / Bang Bang (N2, +1 dado de gatilho).
+// ---------------------------------------------------------------------
+
+export const GATILHO_DADOS_USAGE_KEY = "gatilho_dados:descanso_longo";
+
+/**
+ * Estado real do recurso "dados de gatilho" — `max` soma o total base
+ * (payload `dados`) com qualquer `aumentar_recurso` de nível superior
+ * (Bang Bang, +1), nunca hardcoded. `used` vem do contador genérico de
+ * usos (`talentos_estado.usos`), cadência "descanso_longo" (o payload
+ * declara `cadencia_recuperacao: "descanso_longo"` — reaproveita a
+ * cadência canônica já existente, resetada em `handleApplyLongRest`).
+ */
+export function getGatilhoQuenteAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; max: number; used: number; available: number } {
+  let acquired = false;
+  let max = 0;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "recurso_dado_gatilho" && typeof efeito.dados === "number") {
+        acquired = true;
+        max += efeito.dados;
+      }
+      if (efeito.tipo === "aumentar_recurso" && efeito.recurso === "dado_gatilho" && typeof efeito.valor === "number") {
+        max += efeito.valor;
+      }
+    }
+  }
+  const used = character.talentos_estado?.usos?.[GATILHO_DADOS_USAGE_KEY]?.usados ?? 0;
+  return { acquired, max, used, available: Math.max(0, max - used) };
+}
+
+/** Consome 1 dado de gatilho (o jogador rola o d8 físico/externo e informa o resultado na UI). */
+export function consumeGatilhoDado(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  const atual = usos[GATILHO_DADOS_USAGE_KEY]?.usados ?? 0;
+  usos[GATILHO_DADOS_USAGE_KEY] = { usados: atual + 1, cadencia: "descanso_longo", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
 // Construtores de log (texto formatado — nunca JSON cru)
 // ---------------------------------------------------------------------
 

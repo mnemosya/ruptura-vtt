@@ -62,7 +62,7 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 18 · 🟡 6 · ⚙️ 41 · 📖 1.
+Contagem: ✅ 0 · 🔵 19 · 🟡 7 · ⚙️ 39 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -111,8 +111,8 @@ Contagem: ✅ 0 · 🔵 18 · 🟡 6 · ⚙️ 41 · 📖 1.
 | Paramédico | Pronto-socorro | 1 | ⚙️ Infra pendente |
 | Paramédico | Ritmo de Campo | 2 | ⚙️ Infra pendente |
 | Paramédico | Protocolo de Emergência | 3 | ⚙️ Infra pendente |
-| Pistoleiro | Gatilho Quente | 1 | ⚙️ Infra pendente |
-| Pistoleiro | Bang Bang | 2 | ⚙️ Infra pendente |
+| Pistoleiro | Gatilho Quente | 1 | 🔵 Implementado (aguardando validação manual) |
+| Pistoleiro | Bang Bang | 2 | 🟡 Parcial |
 | Pistoleiro | Showdown | 3 | ⚙️ Infra pendente |
 | Praga | Marca da Dor | 1 | ⚙️ Infra pendente |
 | Praga | Sangria Lenta | 2 | ⚙️ Infra pendente |
@@ -337,6 +337,23 @@ Contagem: ✅ 0 · 🔵 18 · 🟡 6 · ⚙️ 41 · 📖 1.
   condições do ALVO antes de rolar o teste de ataque — a rolagem de ataque acontece na
   ficha do próprio jogador (`RollsTab`), que hoje não lê o estado de OUTROS personagens;
   automatizar isso exigiria um seletor de alvo na tela de rolagem, não construído.
+- **🔵 Gatilho Quente (Pistoleiro N1, Implementado, aguardando validação manual — Fase
+  7) + 🟡 Bang Bang (Parcial)** — recurso real de dados de gatilho:
+  `getGatilhoQuenteAvailability` soma o total base (payload `dados: 3`) com qualquer
+  `aumentar_recurso` de nível superior (Bang Bang, +1 → pool real vira 4, refletido
+  automaticamente sem hardcode), contador de uso via `talentos_estado.usos` cadência
+  "descanso_longo" (nova cadência canônica agora resetada em `handleApplyLongRest`, além
+  de "dia"). Widget na aba Talentos: jogador informa o d8 físico rolado junto com o teste
+  — resultado 8 soma dano extra igual à Balística ATUAL (lido de `character.pericias`,
+  nunca fixo); qualquer outro resultado só consome o dado. Bang Bang permanece Parcial: o
+  +1 dado (`aumentar_recurso`) já soma na pool real; o "segundo disparo com +1 PA e −1"
+  (`segundo_disparo`) não foi implementado — exigiria detectar "usar o dado de gatilho E
+  escolher o resultado dele no teste" no meio da resolução de ataque, não construído.
+- **Malabarista (todos os 3 níveis) — não implementados nesta sessão** (Fase 7). Saque
+  Fantasma/Revoada/Espetáculo Mortal exigem detectar arma leve com propriedade
+  "Arremesso" no ataque em curso e alterar o fluxo de ataque (saque sem PA, segundo
+  ataque, sequência contra até 3 alvos) — nenhum desses ganchos existe hoje no fluxo de
+  "Atacar" da ficha; permanecem ⚙️ Infra pendente.
 - **Manipulador › Entrelinhas/Puxar os Fios, Totem › Onda Solidária/Chama Redobrada,
   Estrategista (todos os 3 níveis) — não implementados nesta sessão.** Entrelinhas
   poderia reaproveitar o MESMO padrão de tag sintética de Bricolagem/Toque de Midas (bônus

@@ -89,6 +89,9 @@ export function TalentsTab({
   onStartFurtividade,
   onConfirmCamuflagemOptica,
   onEndFurtividade,
+  gatilhoQuenteStatus,
+  balisticaValor = 0,
+  onUseGatilhoDado,
 }: {
   talents: TalentContent[];
   catalogError: string | null;
@@ -120,6 +123,10 @@ export function TalentsTab({
   onStartFurtividade?: () => void;
   onConfirmCamuflagemOptica?: () => void;
   onEndFurtividade?: () => void;
+  /** Pistoleiro › Gatilho Quente (checkpoint talentos, Fase 7). */
+  gatilhoQuenteStatus?: { acquired: boolean; max: number; used: number; available: number };
+  balisticaValor?: number;
+  onUseGatilhoDado?: (resultadoD8: number) => void;
 }) {
   const [filter, setFilter] = useState<FilterKey>("todos");
 
@@ -272,6 +279,10 @@ export function TalentsTab({
 
                         {acquiredEntry && nivel.slug === "atirador_de_elite_1_tiro_1_acerto" && (
                           <MirarWidget mirarAtivo={mirarAtivo ?? null} onConfirm={onConfirmMirar} onEnd={onEndMirar} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "pistoleiro_gatilho_quente" && gatilhoQuenteStatus && (
+                          <GatilhoQuenteWidget status={gatilhoQuenteStatus} balisticaValor={balisticaValor} onUseDado={onUseGatilhoDado} />
                         )}
 
                         {acquiredEntry && nivel.slug === "sorrateiro_passo_fantasma" && (
@@ -554,6 +565,54 @@ function FurtividadeWidget({
       <button data-testid="furtividade-entrar" onClick={onStart} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", alignSelf: "flex-start" }}>
         Entrar em Furtividade
       </button>
+    </div>
+  );
+}
+
+/** Pistoleiro › Gatilho Quente (N1) — recurso real de dados de gatilho (d8, 1/ataque, resultado 8 = dano extra igual à Balística). */
+function GatilhoQuenteWidget({
+  status,
+  balisticaValor,
+  onUseDado,
+}: {
+  status: { acquired: boolean; max: number; used: number; available: number };
+  balisticaValor: number;
+  onUseDado?: (resultadoD8: number) => void;
+}) {
+  const [resultado, setResultado] = useState("");
+  return (
+    <div data-testid="gatilho-quente-widget" style={widgetBox}>
+      <span style={{ opacity: 0.7 }}>
+        Dados de gatilho: {status.available}/{status.max} disponíveis — 1 por ataque com pistola/revólver, recupera no
+        descanso longo.
+      </span>
+      {status.available > 0 && (
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <input
+            data-testid="gatilho-quente-resultado-input"
+            type="number"
+            min={1}
+            max={8}
+            placeholder="resultado do d8"
+            value={resultado}
+            onChange={(e) => setResultado(e.target.value)}
+            style={{ width: 90, background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", fontSize: 12 }}
+          />
+          <button
+            data-testid="gatilho-quente-usar"
+            onClick={() => {
+              const v = Number(resultado);
+              if (!Number.isFinite(v) || v < 1 || v > 8) return;
+              onUseDado?.(v);
+              setResultado("");
+            }}
+            style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+          >
+            Usar dado de gatilho neste ataque
+          </button>
+          {resultado === "8" && <span style={{ color: "#4caf50", fontSize: 11 }}>+{balisticaValor} de dano extra (Balística) se confirmar!</span>}
+        </div>
+      )}
     </div>
   );
 }

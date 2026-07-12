@@ -108,6 +108,8 @@ import {
   confirmCamuflagemOpticaMovement,
   hasCamuflagemOptica,
   hasAtaqueFatal,
+  getGatilhoQuenteAvailability,
+  consumeGatilhoDado,
   getToqueDeMidasAvailability,
   getToqueDeMidasModifiersForTarget,
   markToqueDeMidasUsed,
@@ -1422,7 +1424,8 @@ export default function CharacterSheetClient({
     );
 
     // Talentos com cadência "dia" (checkpoint pós-v0.63) renovam no descanso longo — mesmo precedente de sobrecarga_usada_dia.
-    const talentReset = resetTalentUses({ ...result.character, condicoes_ativas: proximasCondicoes }, ["dia"]);
+    // "descanso_longo" (checkpoint talentos, Fase 7) — cadência própria do payload (ex.: Pistoleiro › Gatilho Quente).
+    const talentReset = resetTalentUses({ ...result.character, condicoes_ativas: proximasCondicoes }, ["dia", "descanso_longo"]);
     setCharacter(talentReset.character);
     addLogEntry(
       "descanso",
@@ -2492,6 +2495,34 @@ export default function CharacterSheetClient({
     characterRef.current = next;
     setCharacter(next);
     addLogEntry("condicao", "Furtividade: encerrada manualmente.");
+  }
+
+  /**
+   * Pistoleiro › Gatilho Quente — consome 1 dado de gatilho real (jogador informa o d8
+   * físico rolado junto com o teste). Resultado 8 soma dano extra igual à Balística
+   * atual; qualquer outro resultado só consome o dado (conta como um dado normal do
+   * teste, sem bônus extra) — nunca inventa uma regra diferente da descrita no capítulo.
+   */
+  function handleUseGatilhoDado(resultadoD8: number) {
+    const current = characterRef.current;
+    const status = getGatilhoQuenteAvailability(current, talentsIniciais);
+    if (!status.acquired || status.available <= 0) return;
+    const nowIso = new Date().toISOString();
+    const next = consumeGatilhoDado(current, nowIso);
+    characterRef.current = next;
+    setCharacter(next);
+    if (resultadoD8 === 8) {
+      const bonus = current.pericias.balistica ?? 0;
+      addLogEntry(
+        "condicao",
+        `Gatilho Quente: dado de gatilho usado — resultado 8! +${bonus} de dano extra (Balística). Dados restantes: ${status.available - 1}/${status.max}.`,
+      );
+    } else {
+      addLogEntry(
+        "condicao",
+        `Gatilho Quente: dado de gatilho usado — resultado ${resultadoD8} (conta como dado normal do teste, sem dano extra). Dados restantes: ${status.available - 1}/${status.max}.`,
+      );
+    }
   }
 
   /** Rúnico › Gatilho Rúnico — ativa/desativa runa instalada sem PA. */
@@ -4598,6 +4629,9 @@ export default function CharacterSheetClient({
           onStartFurtividade={handleStartFurtividade}
           onConfirmCamuflagemOptica={handleConfirmCamuflagemOptica}
           onEndFurtividade={handleEndFurtividade}
+          gatilhoQuenteStatus={getGatilhoQuenteAvailability(character, talentsIniciais)}
+          balisticaValor={character.pericias.balistica ?? 0}
+          onUseGatilhoDado={handleUseGatilhoDado}
         />
       )}
 
