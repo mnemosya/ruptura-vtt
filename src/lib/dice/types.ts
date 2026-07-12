@@ -109,4 +109,6 @@ export interface PreparedRoll {
   atributoId: string;
   periciaId: string | null;
   origem: string;
+  /** Tags sintéticas somadas automaticamente (não togláveis) — ex.: `item:<instanceId>` para escopar bônus de item específico (Toque de Midas) só a ESTA arma. */
+  extraTags?: string[];
 }

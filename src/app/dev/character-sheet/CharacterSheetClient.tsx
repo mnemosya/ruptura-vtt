@@ -81,7 +81,11 @@ import {
   setItemLoadoutState,
   applyToqueDeMidas,
   endToqueDeMidas,
+  applyShieldDamage,
+  expireItemTemporaryEffects,
+  deriveActiveEffectsFromItemTemporaryEffects,
   getToqueDeMidasAvailability,
+  getToqueDeMidasModifiersForTarget,
   markToqueDeMidasUsed,
   removeItemFromInventory,
   removeQuantityFromInventory,
@@ -549,11 +553,15 @@ export default function CharacterSheetClient({
         setProductSessionState("no_character");
         return;
       }
-      const loaded = normalizeCharacter(result.character.payload);
+      const loadedRaw = normalizeCharacter(result.character.payload);
+      const { character: loaded, expiredInstanceIds } = expireItemTemporaryEffects(loadedRaw, new Date().toISOString());
       lastSyncedCharacterRef.current = loaded;
       setCharacter(loaded);
       setCharacterId(result.character.id);
       setProductSessionState("valid");
+      if (expiredInstanceIds.length > 0) {
+        addLogEntry("condicao", `Toque de Midas expirado ao carregar em ${expiredInstanceIds.length} item(ns) — bônus/PD temporário removidos.`);
+      }
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao validar sessão.");
       setProductSessionState("invalid");
@@ -730,7 +738,8 @@ export default function CharacterSheetClient({
       // entram no mesmo pipeline; recurso/dano/defesa viram aviso (nunca somados).
       const temporaryEffects = deriveActiveEffectsFromTemporaryEffects(character);
       const reactionEffect = deriveReactionDefenseEffect(character, reactionRules);
-      const base = [...conditionEffects, ...talentEffects, ...escalpoEffects, ...runeEffects, ...temporaryEffects];
+      const itemTempEffects = deriveActiveEffectsFromItemTemporaryEffects(character, new Date().toISOString());
+      const base = [...conditionEffects, ...talentEffects, ...escalpoEffects, ...runeEffects, ...temporaryEffects, ...itemTempEffects];
       return reactionEffect ? [...base, reactionEffect] : base;
     },
     [character, conditionContents, postureConditionContents, reactionRules, talentsIniciais, escalposIniciais, runesIniciais],
@@ -895,12 +904,16 @@ export default function CharacterSheetClient({
       // (personagens salvos antes do schema_version, por exemplo).
       // migrateEmbeddedAljavas garante que aljava embutida em arcos seja
       // convertida para instância compartilhada (idempotente).
-      const loaded = migrateEmbeddedAljavas(normalizeCharacter(record.payload));
+      const loadedRaw = migrateEmbeddedAljavas(normalizeCharacter(record.payload));
+      const { character: loaded, expiredInstanceIds } = expireItemTemporaryEffects(loadedRaw, new Date().toISOString());
       lastSyncedCharacterRef.current = loaded;
       setCharacter(loaded);
       setCharacterId(record.id);
       setPendingRemoteCharacter(null);
       setCharacterDataSyncState("synced");
+      if (expiredInstanceIds.length > 0) {
+        addLogEntry("condicao", `Toque de Midas expirado ao carregar em ${expiredInstanceIds.length} item(ns) — bônus/PD temporário removidos.`);
+      }
     } catch (err) {
       setSaveState("error");
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao carregar.");
@@ -2243,26 +2256,44 @@ export default function CharacterSheetClient({
     const current = characterRef.current;
     const avail = getToqueDeMidasAvailability(current, talentsIniciais);
     if (!avail.available) {
-      addLogEntry("condicao", avail.usedToday ? "Toque de Midas já foi usado hoje." : "Toque de Midas não adquirido.");
+      addLogEntry("condicao", avail.usedToday ? "Toque de Midas já foi usado hoje (renova no descanso longo, mesmo padrão de Sobrecarga)." : "Toque de Midas não adquirido.");
       return;
     }
     const instance = (current.inventario ?? []).find((i) => i.id === instanceId);
     if (!instance) return;
-    const alvo =
+    const alvo: "arma" | "armadura" | "escudo" | "ferramenta_dispositivo" =
       instance.categoria === "arma" ? "arma"
       : instance.categoria === "armadura" ? "armadura"
       : instance.categoria === "escudo" ? "escudo"
       : "ferramenta_dispositivo";
+    const mods = getToqueDeMidasModifiersForTarget(current, talentsIniciais, alvo);
+    if (!mods) {
+      addLogEntry("condicao", `Toque de Midas: payload não estrutura modificadores para "${alvo}" — não aplicado.`);
+      return;
+    }
     const now = new Date();
     const nowIso = now.toISOString();
-    const expiraEm = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
-    let next = applyToqueDeMidas(current, instanceId, alvo, nowIso, expiraEm, crypto.randomUUID(), pericia);
+    const expiresAt = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
+    let next = applyToqueDeMidas(current, instanceId, {
+      id: crypto.randomUUID(),
+      sourceTalentId: mods.nivelId,
+      sourceCharacterId: characterId ?? null,
+      itemCategory: alvo,
+      modifiers: { ataque: mods.ataque, dano: mods.dano, mit: mods.mit, testeRelacionado: mods.testeRelacionado },
+      temporaryPdGranted: mods.pd,
+      relatedSkill: alvo === "ferramenta_dispositivo" ? pericia : undefined,
+      nowIso,
+      expiresAt,
+    });
     next = markToqueDeMidasUsed(next, nowIso);
     characterRef.current = next;
     setCharacter(next);
     const efeito =
-      alvo === "arma" ? "+1 ataque e +1 dano" : alvo === "armadura" ? "+2 MIT" : alvo === "escudo" ? "+3 PD" : `+1 no teste${pericia ? ` (${pericia})` : ""}`;
-    addLogEntry("condicao", `Toque de Midas aplicado em "${instance.itemNome}": ${efeito} por 1 hora.`);
+      alvo === "arma" ? `+${mods.ataque ?? 0} ataque e +${mods.dano ?? 0} dano`
+      : alvo === "armadura" ? `+${mods.mit ?? 0} MIT`
+      : alvo === "escudo" ? `+${mods.pd ?? 0} PD temporário`
+      : `+${mods.testeRelacionado ?? 0} no teste${pericia ? ` (${pericia})` : ""}`;
+    addLogEntry("condicao", `Toque de Midas aplicado em "${instance.itemNome}": ${efeito} por 1 hora (expira ${new Date(expiresAt).toLocaleTimeString()}).`);
     void persistTalentUsedLog({ talentNome: "Toque de Midas", nivelNome: "Nível 2", instanceId, alvo, efeito });
   }
 
@@ -2273,7 +2304,37 @@ export default function CharacterSheetClient({
     if (next === current) return;
     characterRef.current = next;
     setCharacter(next);
-    addLogEntry("condicao", `Toque de Midas encerrado em "${instance?.itemNome ?? "item"}".`);
+    addLogEntry("condicao", `Toque de Midas encerrado em "${instance?.itemNome ?? "item"}" — bônus/PD temporário restante removido; PD-base preservado.`);
+  }
+
+  /** Aplica dano a um escudo consumindo o PD temporário (Toque de Midas) antes do PD-base — fluxo real de teste. */
+  function handleApplyShieldDamage(instanceId: string, amount: number) {
+    const current = characterRef.current;
+    const instance = (current.inventario ?? []).find((i) => i.id === instanceId);
+    const model = instance ? itemsIniciais.find((m) => m.slug === instance.itemSlug) : null;
+    if (!instance || !model || model.pdMax == null || amount <= 0) return;
+    const nowIso = new Date().toISOString();
+    const result = applyShieldDamage(current, instanceId, amount, model, nowIso);
+    characterRef.current = result.character;
+    setCharacter(result.character);
+    const partes: string[] = [];
+    if (result.fromTemp > 0) partes.push(`${result.fromTemp} do PD temporário`);
+    if (result.fromBase > 0) partes.push(`${result.fromBase} do PD-base`);
+    addLogEntry("condicao", `${instance.itemNome}: ${amount} de dano no escudo (${partes.join(" + ") || "nenhum PD disponível — dano não absorvido"}).`);
+  }
+
+  /** Prepara na aba Rolagens um teste "relacionado" à ferramenta/dispositivo com Toque de Midas — o +1 entra via item:<instanceId>, escopado só a esta instância. */
+  function handleRollToolTest(instanceId: string, relatedSkill: string) {
+    const instance = (characterRef.current.inventario ?? []).find((i) => i.id === instanceId);
+    if (!instance) return;
+    const periciaDef = regras?.pericias.find((p) => p.id === relatedSkill);
+    setPreparedRoll({
+      atributoId: periciaDef?.atributo_primario ?? "mente",
+      periciaId: periciaDef ? relatedSkill : null,
+      origem: `Teste relacionado: ${instance.itemNome}`,
+      extraTags: [`item:${instanceId}`],
+    });
+    setActiveTab("rolagens");
   }
 
   function handleRemoveItem(instanceId: string) {
@@ -3785,7 +3846,12 @@ export default function CharacterSheetClient({
     if (actionContentHasResolverAtaque(item) && attackPreview?.skill) {
       if (attackPreview.attribute) {
         const weaponName = attackWeaponCandidates.find((c) => c.instanceId === effectiveSelectedAttackWeaponId)?.nome ?? "Ataque desarmado";
-        setPreparedRoll({ atributoId: attackPreview.attribute, periciaId: attackPreview.skill, origem: `Atacar: ${weaponName}` });
+        setPreparedRoll({
+          atributoId: attackPreview.attribute,
+          periciaId: attackPreview.skill,
+          origem: `Atacar: ${weaponName}`,
+          extraTags: effectiveSelectedAttackWeaponId ? [`item:${effectiveSelectedAttackWeaponId}`] : [],
+        });
         setActiveTab("rolagens");
         return;
       }
@@ -4143,6 +4209,8 @@ export default function CharacterSheetClient({
           toqueDeMidasAvailable={getToqueDeMidasAvailability(character, talentsIniciais).available}
           onApplyToqueDeMidas={handleApplyToqueDeMidas}
           onEndToqueDeMidas={handleEndToqueDeMidas}
+          onApplyShieldDamage={handleApplyShieldDamage}
+          onRollToolTest={handleRollToolTest}
         />
       )}
 

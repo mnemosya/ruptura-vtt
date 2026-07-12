@@ -44,6 +44,7 @@ import type {
   TechnicalItemSourceType,
   TechnicalItemState,
 } from "./types";
+import type { ActiveEffect } from "./activeEffects";
 import type { TechnicalContentItem } from "../content";
 import {
   deriveModoMunicao,
@@ -292,24 +293,29 @@ export interface InventoryItemInstance {
    */
   cargasAtual?: number;
   /**
-   * Efeito de Artífice › Toque de Midas aplicado a ESTA instância
-   * (checkpoint talentos). Vive na instância, então acompanha o item ao
-   * equipar/desequipar/transferir para o bando e sobrevive a reload. Não
-   * altera o modelo-base da Biblioteca. `expiraEm` é 1 hora após
-   * `aplicadoEm`; sem relógio canônico de horas, também pode ser
-   * encerrado manualmente. `pdConsumido` rastreia quanto do PD temporário
-   * de escudo já foi gasto (só o PD temporário RESTANTE é removido ao
-   * expirar). Ausente = nenhum efeito ativo.
+   * Toque de Midas (Artífice N2) — efeito temporário nesta instância
+   * REAL do inventário. Vive na instância → acompanha equipar/
+   * desequipar/transferir para o bando/reload. Não altera o modelo-base
+   * da Biblioteca. `active: false` preserva histórico (nunca apaga) —
+   * todo cálculo usa `isItemTemporaryEffectActive` (active E dentro do
+   * prazo), nunca só a presença do campo, então um efeito vencido deixa
+   * de valer no cálculo mesmo antes de qualquer limpeza persistida.
+   * `temporaryPdGranted`/`temporaryPdConsumed` (só escudo) são um pool
+   * SEPARADO do PD-base da instância (`pdAtual`) — `applyShieldDamage`
+   * consome o temporário primeiro.
    */
   toqueDeMidas?: {
     id: string;
-    alvo: "arma" | "armadura" | "escudo" | "ferramenta_dispositivo";
-    aplicadoEm: string;
-    expiraEm: string;
-    /** só para ferramenta/dispositivo: perícia/contexto do +1 escolhido. */
-    pericia?: string;
-    /** PD temporário de escudo já consumido (para não restaurar o já gasto ao expirar). */
-    pdConsumido?: number;
+    sourceTalentId: string;
+    sourceCharacterId: string | null;
+    appliedAt: string;
+    expiresAt: string;
+    active: boolean;
+    itemCategory: "arma" | "armadura" | "escudo" | "ferramenta_dispositivo";
+    modifiers: { ataque?: number; dano?: number; mit?: number; testeRelacionado?: number };
+    temporaryPdGranted?: number;
+    temporaryPdConsumed?: number;
+    relatedSkill?: string;
   };
 }
 
@@ -1216,14 +1222,33 @@ export function getItemPdMax(item: Pick<ItemContent, "pdMax">): number | null {
   return item.pdMax;
 }
 
-/** PD atual da instância — cai no máximo do modelo se a instância ainda não tiver um valor próprio, e em 0 se nem o modelo souber (nunca inventa um número maior). */
-export function getItemPdAtual(instance: Pick<InventoryItemInstance, "pdAtual">, item?: Pick<ItemContent, "pdMax">): number {
+/** PD-BASE atual da instância (sem Toque de Midas) — cai no máximo do modelo se a instância ainda não tiver valor próprio, e em 0 se nem o modelo souber. */
+export function getItemPdBase(instance: Pick<InventoryItemInstance, "pdAtual">, item?: Pick<ItemContent, "pdMax">): number {
   return instance.pdAtual ?? item?.pdMax ?? 0;
 }
 
-/** MIT atual da instância — mesmo critério de `getItemPdAtual`. */
-export function getItemMitAtual(instance: Pick<InventoryItemInstance, "mitAtual">, item?: Pick<ItemContent, "mitMax">): number {
+/** MIT-BASE atual da instância (sem Toque de Midas) — mesmo critério de `getItemPdBase`. */
+export function getItemMitBase(instance: Pick<InventoryItemInstance, "mitAtual">, item?: Pick<ItemContent, "mitMax">): number {
   return instance.mitAtual ?? item?.mitMax ?? 0;
+}
+
+/** PD temporário RESTANTE de Toque de Midas (granted - consumed), 0 se inativo/expirado. Pool separado do PD-base. */
+export function getItemPdTemporaryRemaining(instance: InventoryItemInstance, nowIso?: string): number {
+  if (!isItemTemporaryEffectActive(instance, nowIso)) return 0;
+  const granted = instance.toqueDeMidas?.temporaryPdGranted ?? 0;
+  const consumed = instance.toqueDeMidas?.temporaryPdConsumed ?? 0;
+  return Math.max(0, granted - consumed);
+}
+
+/** PD-BASE + PD temporário restante — o total efetivamente disponível para absorver dano AGORA. */
+export function getItemPdAtual(instance: InventoryItemInstance, item?: Pick<ItemContent, "pdMax">, nowIso?: string): number {
+  return getItemPdBase(instance, item) + getItemPdTemporaryRemaining(instance, nowIso);
+}
+
+/** MIT-BASE + bônus de Toque de Midas ativo (mit) — o total efetivamente em vigor AGORA. */
+export function getItemMitAtual(instance: InventoryItemInstance, item?: Pick<ItemContent, "mitMax">, nowIso?: string): number {
+  const bonus = isItemTemporaryEffectActive(instance, nowIso) ? instance.toqueDeMidas?.modifiers.mit ?? 0 : 0;
+  return getItemMitBase(instance, item) + bonus;
 }
 
 /**
@@ -1308,27 +1333,11 @@ export function getEquippedDefenseProfile(character: Pick<Character, "inventario
     const item = bySlug.get(instance.itemSlug);
     if (!item || item.status !== "published") continue;
 
-    const midas = getToqueDeMidasBonus(instance);
     if (instance.equipamentoSlot === "armadura" && item.mitMax != null) {
-      // Toque de Midas: +2 MIT temporário na armadura — soma ao MIT efetivo (o máximo também sobe para não capar o bônus).
-      profile.armadura = {
-        instance,
-        item,
-        mitMax: item.mitMax + midas.mit,
-        mitAtual: getItemMitAtual(instance, item) + midas.mit,
-        tipoProtecao: item.tipoProtecao,
-      };
+      profile.armadura = { instance, item, mitMax: item.mitMax, mitAtual: getItemMitAtual(instance, item), tipoProtecao: item.tipoProtecao };
     }
     if (instance.equipamentoSlot === "escudo" && item.pdMax != null) {
-      // Toque de Midas: +3 PD temporário no escudo (menos o já consumido) — some ao PD efetivo.
-      const pdTempRestante = Math.max(0, midas.pd - (instance.toqueDeMidas?.pdConsumido ?? 0));
-      profile.escudo = {
-        instance,
-        item,
-        pdMax: item.pdMax + midas.pd,
-        pdAtual: getItemPdAtual(instance, item) + pdTempRestante,
-        tipoProtecao: item.tipoProtecao,
-      };
+      profile.escudo = { instance, item, pdMax: item.pdMax, pdAtual: getItemPdAtual(instance, item), tipoProtecao: item.tipoProtecao };
     }
   }
 
@@ -1336,74 +1345,190 @@ export function getEquippedDefenseProfile(character: Pick<Character, "inventario
 }
 
 // ---------------------------------------------------------------------
-// Toque de Midas (Artífice N2) — efeito temporário na INSTÂNCIA real.
+// Efeitos temporários de item (Artífice › Toque de Midas, N2) — modelo
+// canônico genérico por instância. Helpers nomeados equivalentes ao
+// modelo de `TemporaryEffect` do personagem, mas escopados ao item.
 // ---------------------------------------------------------------------
 
-/** true se o efeito de Toque de Midas da instância ainda está no prazo de 1h (ou sem `expiraEm` legível). */
-export function isToqueDeMidasActive(instance: InventoryItemInstance, nowIso?: string): boolean {
+/** `true` só quando o efeito está `active` E ainda dentro do prazo — ignora o efeito IMEDIATAMENTE ao vencer, mesmo antes de qualquer limpeza persistida (`expireItemTemporaryEffects`). */
+export function isItemTemporaryEffectActive(instance: Pick<InventoryItemInstance, "toqueDeMidas">, nowIso?: string): boolean {
   const m = instance.toqueDeMidas;
-  if (!m) return false;
+  if (!m || !m.active) return false;
   if (!nowIso) return true;
-  return nowIso < m.expiraEm;
+  return nowIso < m.expiresAt;
 }
 
-/** Bônus mecânico do Toque de Midas ativo desta instância, por alvo. Zero quando inativo. */
-export function getToqueDeMidasBonus(
-  instance: InventoryItemInstance,
-  nowIso?: string,
-): { ataque: number; dano: number; mit: number; pd: number; ferramenta: number } {
-  const zero = { ataque: 0, dano: 0, mit: 0, pd: 0, ferramenta: 0 };
-  if (!isToqueDeMidasActive(instance, nowIso)) return zero;
-  const alvo = instance.toqueDeMidas!.alvo;
-  if (alvo === "arma") return { ...zero, ataque: 1, dano: 1 };
-  if (alvo === "armadura") return { ...zero, mit: 2 };
-  if (alvo === "escudo") return { ...zero, pd: 3 };
-  if (alvo === "ferramenta_dispositivo") return { ...zero, ferramenta: 1 };
-  return zero;
-}
-
-/** Aplica Toque de Midas a uma instância (1h de duração). Não valida uso/dia (o chamador cuida via cadência do talento). */
-export function applyToqueDeMidas(
-  character: Character,
-  instanceId: string,
-  alvo: InventoryItemInstance["toqueDeMidas"] extends infer T ? (T extends { alvo: infer A } ? A : never) : never,
+/** Todos os efeitos de item ATIVOS (por instância) do personagem agora. */
+export function getActiveItemTemporaryEffects(
+  character: Pick<Character, "inventario">,
   nowIso: string,
-  expiraEm: string,
-  id: string,
-  pericia?: string,
-): Character {
-  const inventario = character.inventario ?? [];
-  const next = inventario.map((i) =>
-    i.id === instanceId ? { ...i, toqueDeMidas: { id, alvo, aplicadoEm: nowIso, expiraEm, ...(pericia ? { pericia } : {}) } } : i,
-  );
-  return { ...character, inventario: next };
+): { instanceId: string; effect: NonNullable<InventoryItemInstance["toqueDeMidas"]> }[] {
+  const out: { instanceId: string; effect: NonNullable<InventoryItemInstance["toqueDeMidas"]> }[] = [];
+  for (const instance of character.inventario ?? []) {
+    if (isItemTemporaryEffectActive(instance, nowIso)) out.push({ instanceId: instance.id, effect: instance.toqueDeMidas! });
+  }
+  return out;
 }
 
-/** Encerra manualmente o Toque de Midas de uma instância (remove o efeito). */
-export function endToqueDeMidas(character: Character, instanceId: string): Character {
-  const inventario = character.inventario ?? [];
-  const next = inventario.map((i) => {
-    if (i.id !== instanceId || !i.toqueDeMidas) return i;
-    const { toqueDeMidas: _drop, ...rest } = i;
-    return rest;
-  });
-  return { ...character, inventario: next };
+/** Modificadores em vigor AGORA para esta instância (objeto vazio se inativo/expirado). */
+export function getItemTemporaryModifiers(instance: Pick<InventoryItemInstance, "toqueDeMidas">, nowIso?: string): { ataque?: number; dano?: number; mit?: number; testeRelacionado?: number } {
+  return isItemTemporaryEffectActive(instance, nowIso) ? instance.toqueDeMidas!.modifiers : {};
 }
 
-/** Expira efeitos de Toque de Midas vencidos (past `expiraEm`). Devolve o mesmo objeto quando nada muda. */
-export function expireToqueDeMidas(character: Character, nowIso: string): { character: Character; expiredInstanceIds: string[] } {
+/**
+ * Inativa (nunca apaga) efeitos de item vencidos — `active: false`
+ * preserva o registro para histórico/log, mas o campo já não conta em
+ * NENHUM cálculo desde o instante em que passou de `expiresAt` (ver
+ * `isItemTemporaryEffectActive`). Chamado ao carregar personagem/
+ * inventário do bando (normalização) e disponível para qualquer fluxo
+ * que precise emitir um log de expiração. Devolve o mesmo objeto quando
+ * nada expira.
+ */
+export function expireItemTemporaryEffects(character: Character, nowIso: string): { character: Character; expiredInstanceIds: string[] } {
   const inventario = character.inventario ?? [];
   const expired: string[] = [];
   const next = inventario.map((i) => {
-    if (i.toqueDeMidas && nowIso >= i.toqueDeMidas.expiraEm) {
+    if (i.toqueDeMidas?.active && nowIso >= i.toqueDeMidas.expiresAt) {
       expired.push(i.id);
-      const { toqueDeMidas: _drop, ...rest } = i;
-      return rest;
+      return { ...i, toqueDeMidas: { ...i.toqueDeMidas, active: false } };
     }
     return i;
   });
   if (expired.length === 0) return { character, expiredInstanceIds: [] };
   return { character: { ...character, inventario: next }, expiredInstanceIds: expired };
+}
+
+/**
+ * Aplica Toque de Midas a uma instância — 1 hora de duração a partir de
+ * `nowIso`. Categoria e modificadores vêm do CHAMADOR (derivados do
+ * payload canônico, nunca hardcoded aqui). Não valida uso/dia — cadência
+ * é responsabilidade do chamador (`getToqueDeMidasAvailability`).
+ */
+export function applyToqueDeMidas(
+  character: Character,
+  instanceId: string,
+  params: {
+    id: string;
+    sourceTalentId: string;
+    sourceCharacterId: string | null;
+    itemCategory: NonNullable<InventoryItemInstance["toqueDeMidas"]>["itemCategory"];
+    modifiers: NonNullable<InventoryItemInstance["toqueDeMidas"]>["modifiers"];
+    temporaryPdGranted?: number;
+    relatedSkill?: string;
+    nowIso: string;
+    expiresAt: string;
+  },
+): Character {
+  const inventario = character.inventario ?? [];
+  const next = inventario.map((i) =>
+    i.id === instanceId
+      ? {
+          ...i,
+          toqueDeMidas: {
+            id: params.id,
+            sourceTalentId: params.sourceTalentId,
+            sourceCharacterId: params.sourceCharacterId,
+            appliedAt: params.nowIso,
+            expiresAt: params.expiresAt,
+            active: true,
+            itemCategory: params.itemCategory,
+            modifiers: params.modifiers,
+            ...(params.temporaryPdGranted != null ? { temporaryPdGranted: params.temporaryPdGranted, temporaryPdConsumed: 0 } : {}),
+            ...(params.relatedSkill ? { relatedSkill: params.relatedSkill } : {}),
+          },
+        }
+      : i,
+  );
+  return { ...character, inventario: next };
+}
+
+/** Encerra manualmente o Toque de Midas de uma instância — mesma semântica de expirar (inativa, preserva PD-base/histórico, nunca restaura PD temporário já consumido). */
+export function endToqueDeMidas(character: Character, instanceId: string): Character {
+  const inventario = character.inventario ?? [];
+  const next = inventario.map((i) => (i.id === instanceId && i.toqueDeMidas?.active ? { ...i, toqueDeMidas: { ...i.toqueDeMidas, active: false } } : i));
+  return { ...character, inventario: next };
+}
+
+/**
+ * Aplica dano a um escudo consumindo primeiro o PD TEMPORÁRIO restante
+ * (Toque de Midas), só passando ao PD-base depois de esgotado. Nunca
+ * deixa nenhum dos dois negativo. Devolve a repartição para log/preview.
+ */
+export function applyShieldDamage(
+  character: Character,
+  instanceId: string,
+  amount: number,
+  item: Pick<ItemContent, "pdMax">,
+  nowIso?: string,
+): { character: Character; fromTemp: number; fromBase: number } {
+  const instance = (character.inventario ?? []).find((i) => i.id === instanceId);
+  if (!instance || amount <= 0) return { character, fromTemp: 0, fromBase: 0 };
+
+  const tempRestante = getItemPdTemporaryRemaining(instance, nowIso);
+  const fromTemp = Math.min(tempRestante, amount);
+  const restanteAposTemp = amount - fromTemp;
+  const pdBase = getItemPdBase(instance, item);
+  const fromBase = Math.min(pdBase, restanteAposTemp);
+
+  let next = character;
+  if (fromTemp > 0 && instance.toqueDeMidas) {
+    const consumedAntes = instance.toqueDeMidas.temporaryPdConsumed ?? 0;
+    const inventario = next.inventario ?? [];
+    next = {
+      ...next,
+      inventario: inventario.map((i) => (i.id === instanceId && i.toqueDeMidas ? { ...i, toqueDeMidas: { ...i.toqueDeMidas, temporaryPdConsumed: consumedAntes + fromTemp } } : i)),
+    };
+  }
+  if (fromBase > 0) {
+    next = setItemPdAtual(next, instanceId, pdBase - fromBase, item.pdMax);
+  }
+  return { character: next, fromTemp, fromBase };
+}
+
+/**
+ * ActiveEffects de bônus de ATAQUE de Toque de Midas — escopados por
+ * `item:<instanceId>` (nunca pelo skill/atributo genérico), então só
+ * somam quando a rolagem preparada foi para ESTA arma específica (ver
+ * `PreparedRoll.extraTags`). Dano de arma não gera ActiveEffect aqui: o
+ * VTT não rola/computa dano de arma como número real no lado do
+ * personagem (é resolvido pelo narrador em /dev/table com `rawDamage`
+ * manual) — o bônus de dano fica só no log/preview até essa integração
+ * cross-record existir.
+ */
+export function deriveActiveEffectsFromItemTemporaryEffects(character: Pick<Character, "inventario">, nowIso?: string): ActiveEffect[] {
+  const effects: ActiveEffect[] = [];
+  for (const instance of character.inventario ?? []) {
+    const mods = getItemTemporaryModifiers(instance, nowIso);
+    if (mods.ataque != null) {
+      effects.push({
+        id: `item_temp:${instance.id}:ataque`,
+        sourceType: "talent",
+        sourceId: instance.toqueDeMidas!.sourceTalentId,
+        sourceName: `Toque de Midas — ${instance.itemNome}`,
+        affectedTags: [`item:${instance.id}`],
+        modifier: mods.ataque,
+        explanation: `Toque de Midas (${instance.itemNome}): +${mods.ataque} em ataque com esta arma.`,
+        enabledByDefault: true,
+        kind: "modifier",
+        reversible: true,
+      });
+    }
+    if (mods.testeRelacionado != null) {
+      effects.push({
+        id: `item_temp:${instance.id}:teste_relacionado`,
+        sourceType: "talent",
+        sourceId: instance.toqueDeMidas!.sourceTalentId,
+        sourceName: `Toque de Midas — ${instance.itemNome}`,
+        affectedTags: [`item:${instance.id}`],
+        modifier: mods.testeRelacionado,
+        explanation: `Toque de Midas (${instance.itemNome}): +${mods.testeRelacionado} no teste relacionado a esta ferramenta/dispositivo.`,
+        enabledByDefault: true,
+        kind: "modifier",
+        reversible: true,
+      });
+    }
+  }
+  return effects;
 }
 
 // ---------------------------------------------------------------------
@@ -1432,6 +1557,7 @@ export function canSplitInstanceQuantity(instance: InventoryItemInstance): boole
   if (instance.equipadoDefensivo) return false;
   if (instance.mitAtual != null) return false;
   if (instance.pdAtual != null) return false;
+  if (instance.toqueDeMidas != null) return false; // efeito de Toque de Midas pertence a UMA unidade física — força transferência da instância inteira.
   return true;
 }
 

@@ -162,6 +162,8 @@ export function RollsTab({
   // Tags extras ligadas manualmente pelo jogador (checkpoint v0.33) —
   // além de atributoId/periciaId, que sempre entram automaticamente.
   const [tagsExtras, setTagsExtras] = useState<Set<ToggleTag>>(new Set());
+  // Tags sintéticas somadas automaticamente pelo `preparedRoll` (ex.: `item:<instanceId>` de Toque de Midas) — não togláveis, sempre presentes enquanto a rolagem preparada durar.
+  const [autoTagsPreparadas, setAutoTagsPreparadas] = useState<string[]>([]);
   // Chips de efeito DESLIGADOS manualmente antes de rolar (por id de
   // ActiveEffect) — um chip ausente daqui está ligado (enabledByDefault
   // é sempre true neste checkpoint, ver activeEffects.ts).
@@ -185,7 +187,7 @@ export function RollsTab({
     });
   }
 
-  const rollTagsAtuais = [atributoId, ...(periciaId !== SEM_PERICIA ? [periciaId] : []), ...tagsExtras];
+  const rollTagsAtuais = [atributoId, ...(periciaId !== SEM_PERICIA ? [periciaId] : []), ...tagsExtras, ...autoTagsPreparadas];
 
   // Efeitos aplicáveis à seleção atual (kind="modifier" com pelo menos
   // uma tag em comum) — chips somáveis, ligados por padrão.
@@ -240,6 +242,7 @@ export function RollsTab({
     setAtributoId(preparedRoll.atributoId as (typeof atributoIds)[number]);
     setPericiaId(preparedRoll.periciaId ?? SEM_PERICIA);
     setOrigemAtual(preparedRoll.origem);
+    setAutoTagsPreparadas(preparedRoll.extraTags ?? []);
     onPreparedRollApplied();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preparedRoll]);

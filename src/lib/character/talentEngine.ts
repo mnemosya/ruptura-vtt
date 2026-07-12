@@ -516,6 +516,52 @@ export function markToqueDeMidasUsed(character: Character, nowIso: string): Char
   return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
 }
 
+export interface ToqueDeMidasTargetModifiers {
+  ataque?: number;
+  dano?: number;
+  mit?: number;
+  pd?: number;
+  testeRelacionado?: number;
+  nivelId: string;
+}
+
+/**
+ * Lê, do payload canônico (`aprimorar_item_temporario.opcoes[]`), os
+ * modificadores por alvo de Toque de Midas — nunca hardcoded aqui. Devolve
+ * null se o talento não foi adquirido ou o payload não estrutura o alvo.
+ */
+export function getToqueDeMidasModifiersForTarget(
+  character: Pick<Character, "talentos_adquiridos">,
+  talents: TalentContent[],
+  alvo: "arma" | "armadura" | "escudo" | "ferramenta_dispositivo",
+): ToqueDeMidasTargetModifiers | null {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "aprimorar_item_temporario") continue;
+      const opcoes = Array.isArray(efeito.opcoes) ? efeito.opcoes : [];
+      for (const opcaoRaw of opcoes) {
+        const opcao = opcaoRaw as Record<string, unknown>;
+        if (opcao.alvo !== alvo) continue;
+        const mods = Array.isArray(opcao.modificadores) ? (opcao.modificadores as Record<string, unknown>[]) : [];
+        const out: ToqueDeMidasTargetModifiers = { nivelId: nivel.id };
+        for (const m of mods) {
+          const valor = m.valor;
+          if (typeof valor !== "number") continue;
+          if (m.tipo === "modificador" && Array.isArray(m.alvo_tags)) {
+            if ((m.alvo_tags as unknown[]).includes("ataque")) out.ataque = valor;
+            if ((m.alvo_tags as unknown[]).includes("teste_relacionado")) out.testeRelacionado = valor;
+          }
+          if (m.tipo === "modificador_dano") out.dano = valor;
+          if (m.tipo === "mit_bonus") out.mit = valor;
+          if (m.tipo === "pd_bonus") out.pd = valor;
+        }
+        return out;
+      }
+    }
+  }
+  return null;
+}
+
 /**
  * Estado de Canalizar (Mago de Batalha N2) — se adquirido e se ainda não
  * foi usado nesta rodada (o gate 1/rodada é compartilhado entre

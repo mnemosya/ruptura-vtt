@@ -54,12 +54,12 @@ Legenda: **✅ Integral** (mecânica-núcleo conectada ao fluxo real) · **🟡 
 com formulário/estado/log) · **⚙️ Infra pendente** (só classificação/badge/botão/
 cadência/log/lembrete — SEM regra específica no fluxo).
 
-Contagem: ✅ 1 · 🟡 9 · ⚙️ 56 · 📖 0.
+Contagem: ✅ 2 · 🟡 8 · ⚙️ 56 · 📖 0.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
 | Artífice | Bricolagem | 1 | ⚙️ Infra pendente |
-| Artífice | Toque de Midas | 2 | 🟡 Parcial |
+| Artífice | Toque de Midas | 2 | ✅ Integral |
 | Artífice | Gambiarra Expressa | 3 | ⚙️ Infra pendente |
 | Assassino | Lâmina Oculta | 1 | ⚙️ Infra pendente |
 | Assassino | Hemorragia | 2 | ⚙️ Infra pendente |
@@ -129,10 +129,22 @@ Contagem: ✅ 1 · 🟡 9 · ⚙️ 56 · 📖 0.
 
 - **🟡 Domínio Territorial** — multiplica alcance/área na aba Magias (+50%); **falta** usar o
   valor ajustado nos cartões operacionais e nos logs de conjuração para ser integral.
-- **🟡 Toque de Midas** — efeito na instância real (1/dia, 1h, acompanha equipar/
-  transferir/reload); MIT +2 e PD +3 entram no cálculo real de defesa; card + Encerrar +
-  logs. **Falta**: somar +1 ataque/+1 dano no teste real de ataque com a arma e auto-
-  expiração por relógio ao carregar.
+- **✅ Toque de Midas** — efeito real na instância (1/dia — renova no descanso longo,
+  equivalência confirmada pela regra canônica de Sobrecarga; 1h de duração). Arma: +1
+  ataque entra de fato na rolagem de "Atacar" via tag sintética `item:<instanceId>`
+  (verificado: chip "Toque de Midas — Adaga +1", total somado 8→9), escopado só a ESSA
+  arma (desarmado/outra arma não recebe). Armadura: MIT-base vs MIT ajustado exibidos e
+  usados (4→6). Escudo: PD-base e PD-temporário são POOLS SEPARADOS —
+  `applyShieldDamage` consome o temporário primeiro (verificado: dano 4 → 3 do
+  temporário + 1 do base). Ferramenta/dispositivo: perícia escolhida na aplicação, +1
+  entra na rolagem real via o mesmo mecanismo de tag (verificado: chip "+1", perícia
+  auto-selecionada). `isItemTemporaryEffectActive` ignora o efeito IMEDIATAMENTE ao
+  vencer (mesmo antes de `expireItemTemporaryEffects` rodar) — confirmado por script:
+  MIT volta a 4 no instante do vencimento, `active:false` só depois da limpeza, PD/MIT-
+  base nunca tocados. Expira ao carregar personagem (handleLoad/product session) com log.
+  Transferência ao bando/retorno preserva o campo (spread completo da instância;
+  `canSplitInstanceQuantity` bloqueia split parcial com efeito ativo, força instância
+  inteira). Verificado: aplicar→salvar→reload de página real→"Carregar"→4 cards intactos.
 - **✅ Ascensão** — limite de Surtos 3→5 real + Ruptura especial idempotente ao adquirir
   (não reduz Integridade, não conta em cálculos futuros), exibida à parte e logada.
 - **🟡 Canalizar** — Potencializar real (gasta Mana, +1 dano/Mana, 1/rodada); **falta

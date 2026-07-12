@@ -553,14 +553,29 @@ export interface Character {
     selectedFlechaSlug?: string;
     /** Cargas restantes deste item físico (checkpoint pós-v0.58, uso de farmácia/granadas com `cargas_max`). Ausente = assume `item.cargasMax` na primeira leitura. */
     cargasAtual?: number;
-    /** Toque de Midas (Artífice N2) — efeito temporário nesta instância (ver InventoryItemInstance.toqueDeMidas). Acompanha o item na transferência/reload. */
+    /**
+     * Toque de Midas (Artífice N2) — efeito temporário nesta instância
+     * real do inventário (ver `InventoryItemInstance.toqueDeMidas` em
+     * inventory.ts para os helpers). Vive na instância, então acompanha
+     * o item ao equipar/transferir/recarregar a página. `active: false`
+     * preserva o histórico (nunca apaga) — todo cálculo real usa
+     * `isItemTemporaryEffectActive` (active E dentro do prazo), nunca só
+     * a presença do campo.
+     */
     toqueDeMidas?: {
       id: string;
-      alvo: "arma" | "armadura" | "escudo" | "ferramenta_dispositivo";
-      aplicadoEm: string;
-      expiraEm: string;
-      pericia?: string;
-      pdConsumido?: number;
+      sourceTalentId: string;
+      sourceCharacterId: string | null;
+      appliedAt: string;
+      expiresAt: string;
+      active: boolean;
+      itemCategory: "arma" | "armadura" | "escudo" | "ferramenta_dispositivo";
+      modifiers: { ataque?: number; dano?: number; mit?: number; testeRelacionado?: number };
+      /** Só escudo: PD temporário total concedido (3) e já consumido — nunca soma ao PD-base. */
+      temporaryPdGranted?: number;
+      temporaryPdConsumed?: number;
+      /** Só ferramenta/dispositivo: perícia/contexto escolhido para o +1. */
+      relatedSkill?: string;
     };
   }[];
   /**

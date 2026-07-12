@@ -12,7 +12,10 @@ import {
   getItemMit,
   getItemPdMax,
   getItemMitAtual,
+  getItemMitBase,
   getItemPdAtual,
+  getItemPdBase,
+  getItemPdTemporaryRemaining,
   deriveModoMunicao,
   getWeaponAmmoAtual,
   ALJAVA_ITEM_SLUG,
@@ -89,6 +92,8 @@ export function InventoryTab({
   toqueDeMidasAvailable = false,
   onApplyToqueDeMidas,
   onEndToqueDeMidas,
+  onApplyShieldDamage,
+  onRollToolTest,
 }: {
   items: ItemContent[];
   catalogError: string | null;
@@ -146,6 +151,10 @@ export function InventoryTab({
   onApplyToqueDeMidas?: (instanceId: string, pericia?: string) => void;
   /** Encerra manualmente o Toque de Midas da instância. */
   onEndToqueDeMidas?: (instanceId: string) => void;
+  /** Aplica dano ao escudo (consome PD temporário de Toque de Midas antes do PD-base). */
+  onApplyShieldDamage?: (instanceId: string, amount: number) => void;
+  /** Prepara na aba Rolagens um teste de ferramenta/dispositivo com o +1 de Toque de Midas escopado a esta instância. */
+  onRollToolTest?: (instanceId: string, relatedSkill: string) => void;
 }) {
   const [busca, setBusca] = useState("");
   const [categoria, setCategoria] = useState<(typeof CATEGORIA_FILTROS)[number]>("todos");
@@ -154,6 +163,7 @@ export function InventoryTab({
   const [precos, setPrecos] = useState<Record<string, number>>({});
   const [runaSelecionada, setRunaSelecionada] = useState<Record<string, string>>({});
   const [toqueMidasPericia, setToqueMidasPericia] = useState<Record<string, string>>({});
+  const [escudoDanoInput, setEscudoDanoInput] = useState<Record<string, string>>({});
   // guardarQtd[`${aljavaInstanceId}:${ammoInstanceId}`] = quanto guardar nesta Aljava
   const [guardarQtd, setGuardarQtd] = useState<Record<string, number>>({});
   // retirarQtd[`${aljavaInstanceId}:${contentSlug}`] = quanto retirar desta Aljava
@@ -363,7 +373,10 @@ export function InventoryTab({
 
                 {/* Toque de Midas (Artífice N2) — efeito temporário na instância real. */}
                 {(() => {
+                  const nowIso = new Date().toISOString();
                   const midas = instance.toqueDeMidas;
+                  const midasAtivo = midas?.active && nowIso < midas.expiresAt ? midas : null;
+                  const midasExpiradoNaoLimpo = midas?.active && nowIso >= midas.expiresAt;
                   const alvoDerivado =
                     instance.categoria === "arma"
                       ? "arma"
@@ -372,30 +385,65 @@ export function InventoryTab({
                         : instance.categoria === "escudo"
                           ? "escudo"
                           : "ferramenta_dispositivo";
-                  const efeitoTexto =
-                    alvoDerivado === "arma"
-                      ? "+1 ataque e +1 dano"
-                      : alvoDerivado === "armadura"
-                        ? "+2 MIT"
-                        : alvoDerivado === "escudo"
-                          ? "+3 PD"
-                          : "+1 no teste relacionado";
-                  if (midas) {
+                  if (midasAtivo) {
+                    const mods = midasAtivo.modifiers;
+                    const efeitoTexto =
+                      alvoDerivado === "arma"
+                        ? `+${mods.ataque ?? 0} ataque e +${mods.dano ?? 0} dano`
+                        : alvoDerivado === "armadura"
+                          ? `+${mods.mit ?? 0} MIT`
+                          : alvoDerivado === "escudo"
+                            ? `+${midasAtivo.temporaryPdGranted ?? 0} PD temporário`
+                            : `+${mods.testeRelacionado ?? 0} no teste${midasAtivo.relatedSkill ? ` (${midasAtivo.relatedSkill})` : ""}`;
                     return (
-                      <div data-testid={`toque-de-midas-ativo-${instance.id}`} style={{ background: "#241f14", border: "1px solid #6b5a2a", borderRadius: 6, padding: "6px 8px", fontSize: 11 }}>
-                        <span style={{ color: "#e0a03c" }}>✦ Toque de Midas ativo</span> — {efeitoTexto}
-                        {midas.pericia ? ` (${midas.pericia})` : ""} · aplicado {new Date(midas.aplicadoEm).toLocaleTimeString()} · expira {new Date(midas.expiraEm).toLocaleTimeString()}
-                        <button
-                          data-testid={`toque-de-midas-encerrar-${instance.id}`}
-                          onClick={() => onEndToqueDeMidas?.(instance.id)}
-                          style={{ ...buttonStyle, fontSize: 10, padding: "1px 8px", marginLeft: 8 }}
-                        >
-                          Encerrar efeito
-                        </button>
+                      <div data-testid={`toque-de-midas-ativo-${instance.id}`} style={{ background: "#241f14", border: "1px solid #6b5a2a", borderRadius: 6, padding: "6px 8px", fontSize: 11, display: "flex", flexDirection: "column", gap: 4 }}>
+                        <div>
+                          <span style={{ color: "#e0a03c" }}>✦ Toque de Midas ativo</span> — {efeitoTexto} · aplicado {new Date(midasAtivo.appliedAt).toLocaleTimeString()} · expira {new Date(midasAtivo.expiresAt).toLocaleTimeString()}
+                          <button
+                            data-testid={`toque-de-midas-encerrar-${instance.id}`}
+                            onClick={() => onEndToqueDeMidas?.(instance.id)}
+                            style={{ ...buttonStyle, fontSize: 10, padding: "1px 8px", marginLeft: 8 }}
+                          >
+                            Encerrar efeito
+                          </button>
+                        </div>
+                        {alvoDerivado === "arma" && (
+                          <span data-testid={`toque-de-midas-escopo-arma-${instance.id}`} style={{ opacity: 0.6 }}>
+                            Selecione esta arma em "Atacar" e clique "Rolar" — o +{mods.ataque ?? 0} entra como chip só nesse teste.
+                          </span>
+                        )}
+                        {alvoDerivado === "armadura" && (
+                          <span data-testid={`toque-de-midas-mit-comparacao-${instance.id}`} style={{ opacity: 0.6 }}>
+                            MIT-base {getItemMitBase(instance, itemModelo)} → MIT ajustado {getItemMitAtual(instance, itemModelo, nowIso)}
+                          </span>
+                        )}
+                        {alvoDerivado === "escudo" && (
+                          <span data-testid={`toque-de-midas-pd-detalhe-${instance.id}`} style={{ opacity: 0.6 }}>
+                            PD-base {getItemPdBase(instance, itemModelo)} + PD temporário {getItemPdTemporaryRemaining(instance, nowIso)}/{midasAtivo.temporaryPdGranted ?? 0} = PD total {getItemPdAtual(instance, itemModelo, nowIso)}
+                          </span>
+                        )}
+                        {alvoDerivado === "ferramenta_dispositivo" && (
+                          <button
+                            data-testid={`toque-de-midas-rolar-ferramenta-${instance.id}`}
+                            onClick={() => onRollToolTest?.(instance.id, midasAtivo.relatedSkill ?? "")}
+                            style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", alignSelf: "flex-start" }}
+                          >
+                            Rolar teste relacionado (+{mods.testeRelacionado ?? 0})
+                          </button>
+                        )}
+                      </div>
+                    );
+                  }
+                  if (midasExpiradoNaoLimpo) {
+                    return (
+                      <div data-testid={`toque-de-midas-expirado-${instance.id}`} style={{ fontSize: 11, color: "#888", background: "#1a1a1a", borderRadius: 6, padding: "4px 8px" }}>
+                        Toque de Midas expirou (bônus não conta mais no cálculo) — sincroniza ao recarregar/salvar.
                       </div>
                     );
                   }
                   if (!toqueDeMidasAvailable) return null;
+                  const efeitoLabel =
+                    alvoDerivado === "arma" ? "arma" : alvoDerivado === "armadura" ? "armadura" : alvoDerivado === "escudo" ? "escudo" : "ferramenta/dispositivo";
                   return (
                     <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 11 }}>
                       {alvoDerivado === "ferramenta_dispositivo" && (
@@ -411,13 +459,38 @@ export function InventoryTab({
                         data-testid={`toque-de-midas-aplicar-${instance.id}`}
                         onClick={() => onApplyToqueDeMidas?.(instance.id, toqueMidasPericia[instance.id] || undefined)}
                         style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
-                        title="1/dia · 1 hora · efeito na instância real"
+                        title="1/dia (renova no descanso longo) · 1 hora · efeito na instância real"
                       >
-                        Aplicar Toque de Midas ({efeitoTexto})
+                        Aplicar Toque de Midas ({efeitoLabel})
                       </button>
                     </div>
                   );
                 })()}
+
+                {/* Aplicar dano ao escudo (checkpoint talentos) — consome PD temporário (Toque de Midas) antes do PD-base. */}
+                {instance.categoria === "escudo" && instance.equipadoDefensivo && (getItemPdAtual(instance, itemModelo) > 0) && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+                    <input
+                      data-testid={`escudo-dano-valor-${instance.id}`}
+                      type="number"
+                      min={1}
+                      value={escudoDanoInput[instance.id] ?? ""}
+                      onChange={(e) => setEscudoDanoInput((prev) => ({ ...prev, [instance.id]: e.target.value }))}
+                      style={{ ...input, width: 60 }}
+                      placeholder="dano"
+                    />
+                    <button
+                      data-testid={`escudo-aplicar-dano-${instance.id}`}
+                      onClick={() => {
+                        const v = Math.max(0, Math.trunc(Number(escudoDanoInput[instance.id]) || 0));
+                        if (v > 0) onApplyShieldDamage?.(instance.id, v);
+                      }}
+                      style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+                    >
+                      Aplicar dano ao escudo (temporário primeiro)
+                    </button>
+                  </div>
+                )}
 
                 {/* Enviar ao bando (checkpoint pós-v0.68, CP7) — só com mesa conectada + personagem salvo. */}
                 {isConnectedToCampaign ? (
