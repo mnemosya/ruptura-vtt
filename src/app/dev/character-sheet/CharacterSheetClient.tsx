@@ -110,8 +110,15 @@ import {
   hasAtaqueFatal,
   getGatilhoQuenteAvailability,
   consumeGatilhoDado,
+  hasBangBangSegundoDisparo,
+  hasTotemBencao,
+  getTotemBencaoTokenAvailability,
+  markTotemBencaoTokenUsed,
   getGarimpoDeRuaAvailability,
   activateGarimpoDeRua,
+  isPvGatedToggleAllowedToActivate,
+  enforcePvGatedToggleDeactivation,
+  hasSaqueFantasma,
   getToqueDeMidasAvailability,
   getToqueDeMidasModifiersForTarget,
   markToqueDeMidasUsed,
@@ -407,8 +414,6 @@ export default function CharacterSheetClient({
   // local, não persistido na ficha (mesmo critério de preparedRoll):
   // qual arma empunhada usar quando há mais de uma, ou "__desarmado__".
   const [selectedAttackWeaponId, setSelectedAttackWeaponId] = useState<string | null>(null);
-  /** Rúnico › Entalhe Rápido — tentativa pendente de confirmação por instância (checkpoint talentos). */
-  const [entalheAttempts, setEntalheAttempts] = useState<Record<string, { mode: "instalar" | "remover"; alvo: string; cd: number }>>({});
   /** Rúnico › Sobregravação — instância com teste de Tecnomagia/Arcanismo CD 8 pendente de confirmação (terceiro tentando acessar o espaço extra). */
   const [sobregravacaoTestPending, setSobregravacaoTestPending] = useState<Record<string, true>>({});
   // Mesa (campaign) selecionada — estado de UI local, não persiste no
@@ -1664,7 +1669,12 @@ export default function CharacterSheetClient({
       }
     }
 
-    return { character: finalCharacter, removidasPorCura: removidas, colapso, collapseAdvance };
+    // Berserker › Sede de Sangue (checkpoint talentos, Fase 1) — encerra automaticamente
+    // qualquer toggle PV-condicionado assim que o PV volta a ficar >= metade do máximo.
+    const pvGated = enforcePvGatedToggleDeactivation(finalCharacter, talentsIniciais, afterPvPe.pv, derivados.pv_max, nowIso);
+    finalCharacter = pvGated.character;
+
+    return { character: finalCharacter, removidasPorCura: removidas, colapso, collapseAdvance, pvGatedDeactivated: pvGated.deactivated };
   }
 
   /**
@@ -1686,7 +1696,7 @@ export default function CharacterSheetClient({
       const nowIso = new Date().toISOString();
       const beforePvPe = { pv: character.recursos_atuais?.pv ?? 0, pe: character.recursos_atuais?.pe ?? 0 };
       const afterPvPe = { ...beforePvPe, [id]: novo };
-      const { character: charComEfeitos, removidasPorCura, colapso, collapseAdvance } = applyPvPeSideEffects(
+      const { character: charComEfeitos, removidasPorCura, colapso, collapseAdvance, pvGatedDeactivated } = applyPvPeSideEffects(
         character,
         beforePvPe,
         afterPvPe,
@@ -1701,6 +1711,9 @@ export default function CharacterSheetClient({
         addLogEntry("recurso", `${RECURSO_LABELS[id]}: ${anterior} → ${novo}`);
       }
       if (removidasPorCura.length > 0) void handleAutoHealRemovals(removidasPorCura, beforePvPe.pv, afterPvPe.pv);
+      for (const d of pvGatedDeactivated) {
+        addLogEntry("recurso", `${d.talentNome} — ${d.nivelNome}: encerrado automaticamente (PV voltou a ficar acima da metade).`);
+      }
       if (colapso.started) {
         addLogEntry("recurso", `Colapso iniciado (${colapso.tipo === "pv" ? "PV" : "PE"} a 0) — Inconsciente aplicado.`);
         void persistCollapseEvent("collapse_started", { tipo: colapso.tipo });
@@ -1731,7 +1744,7 @@ export default function CharacterSheetClient({
     const pvNovo = derivados.pv_max;
     const peNovo = derivados.pe_max;
     const nowIso = new Date().toISOString();
-    const { character: charComEfeitos, removidasPorCura: removidas, colapso } = applyPvPeSideEffects(
+    const { character: charComEfeitos, removidasPorCura: removidas, colapso, pvGatedDeactivated } = applyPvPeSideEffects(
       character,
       { pv: pvAnterior, pe: peAnterior },
       { pv: pvNovo, pe: peNovo },
@@ -1752,6 +1765,9 @@ export default function CharacterSheetClient({
       `Restaurados ao máximo — PV ${derivados.pv_max}, PE ${derivados.pe_max}, Mana ${derivados.mana_max}, Integridade ${derivados.integridade_max}`,
     );
     if (removidas.length > 0) void handleAutoHealRemovals(removidas, pvAnterior, pvNovo);
+    for (const d of pvGatedDeactivated) {
+      addLogEntry("recurso", `${d.talentNome} — ${d.nivelNome}: encerrado automaticamente (PV voltou a ficar acima da metade).`);
+    }
     if (colapso.ended) {
       addLogEntry("recurso", `Colapso encerrado por cura — cicatriz pendente.`);
       void persistCollapseEvent("collapse_ended", { tipo: colapso.tipo, motivo: "cura" });
@@ -2231,6 +2247,20 @@ export default function CharacterSheetClient({
   async function handleToggleTalentEffect(key: string) {
     const current = characterRef.current;
     const nowIso = new Date().toISOString();
+    // Berserker › Sede de Sangue (checkpoint talentos, Fase 1) — toggles com
+    // `condicao_ativacao: pv_abaixo_metade` só podem LIGAR com PV real abaixo da
+    // metade do máximo; desligar nunca é bloqueado.
+    const usableAlvo = getUsableTalentEffects(current, talentsIniciais).find((u) => u.key === key);
+    if (usableAlvo && usableAlvo.kind === "toggle" && !usableAlvo.toggledOn) {
+      const pvAtual = current.recursos_atuais?.pv ?? 0;
+      if (!isPvGatedToggleAllowedToActivate(usableAlvo.efeito, pvAtual, derivados.pv_max)) {
+        addLogEntry(
+          "recurso",
+          `${usableAlvo.talentNome} — ${usableAlvo.nivelNome}: só pode ser ativado com PV abaixo da metade (atual ${pvAtual}/${derivados.pv_max}).`,
+        );
+        return;
+      }
+    }
     const result = toggleTalentEffect({
       character: current,
       talents: talentsIniciais,
@@ -2538,6 +2568,54 @@ export default function CharacterSheetClient({
     }
   }
 
+  /** Pistoleiro › Bang Bang (N2, checkpoint talentos Fase 1) — gasta 1 PA para o segundo disparo (a rolagem em si é a próxima "Rolar" normal, com −1 já pré-preenchido pelo RollsTab). */
+  function handleSpendPaBangBang() {
+    adjustEstadoJogo("pa_gastos", 1);
+    addLogEntry("condicao", "Bang Bang: +1 PA gasto para segundo disparo imediato (−1 no teste).");
+  }
+
+  /** Totem › Benção (N1, checkpoint talentos Fase 1) — consome o token recebido (o primeiro teste desde a concessão, com ou sem promoção real). */
+  function handleConsumeBencaoToken() {
+    const current = characterRef.current;
+    if (!current.bencao_token_ativo) return;
+    const { bencao_token_ativo: _drop, ...next } = current;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", "Token de Benção consumido neste teste.");
+  }
+
+  /** Totem › Benção — concede o token 1/cena a um aliado ativo da mesa (persiste o ALVO primeiro, mesmo padrão de useItemOnAlly). */
+  async function handleGrantBencaoToken(targetCharacterId: string) {
+    if (!selectedCampaignId) {
+      addLogEntry("recurso", "Conceder token de Benção exige mesa conectada.");
+      return;
+    }
+    const current = characterRef.current;
+    const status = getTotemBencaoTokenAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedThisScene) return;
+    const ally = alliesAtivos.find((a) => a.id === targetCharacterId);
+    if (!ally) {
+      addLogEntry("recurso", "Aliado não encontrado entre os personagens ativos da mesa — atualize a lista de aliados.");
+      return;
+    }
+    const nowIso = new Date().toISOString();
+    const targetNext: Character = { ...ally.character, bencao_token_ativo: { origem: current.nome, concedidoEm: nowIso } };
+    try {
+      const targetRecord = await updateCharacter(ally.id, targetNext);
+      setAlliesAtivos((prev) => prev.map((a) => (a.id === ally.id ? { ...a, character: normalizeCharacter(targetRecord.payload) } : a)));
+    } catch (err) {
+      addLogEntry(
+        "recurso",
+        err instanceof Error ? `Falha ao conceder token de Benção a ${ally.nome}: ${err.message}` : `Falha ao conceder token de Benção a ${ally.nome}.`,
+      );
+      return;
+    }
+    const sourceNext = markTotemBencaoTokenUsed(current, nowIso);
+    characterRef.current = sourceNext;
+    setCharacter(sourceNext);
+    addLogEntry("condicao", `Benção: token concedido a ${ally.nome} (1/cena).`);
+  }
+
   /** Rúnico › Gatilho Rúnico — ativa/desativa runa instalada sem PA. */
   function handleToggleRuneActive(instanceId: string, runeInstallationId: string) {
     const current = characterRef.current;
@@ -2551,15 +2629,15 @@ export default function CharacterSheetClient({
   /** Rúnico › Entalhe Rápido — gasta 1 PA e prepara o teste real de Engenharia (CD do narrador). */
   function handleStartEntalheRapido(instanceId: string, mode: "instalar" | "remover", alvo: string, cd: number) {
     if (!alvo || !cd) return;
+    const current = characterRef.current;
     // Preflight: se já há uma tentativa pendente nesta instância, não inicia outra (evitaria perder o
     // rastro do 1º PA já gasto). Para instalar, verifica o limite de slots ANTES de gastar o PA — sem
     // isso, um jogador podia passar no teste de Engenharia e só descobrir depois que o slot estava cheio.
-    if (entalheAttempts[instanceId]) {
+    if (current.entalhe_rapido_tentativas?.[instanceId]) {
       addLogEntry("condicao", "Entalhe Rápido: já há uma tentativa pendente para este item — confirme ou aguarde antes de iniciar outra.");
       return;
     }
     if (mode === "instalar") {
-      const current = characterRef.current;
       const instance = current.inventario?.find((i) => i.id === instanceId);
       const itemContent = instance ? itemsIniciais.find((i) => i.slug === instance.itemSlug) : undefined;
       if (instance) {
@@ -2570,8 +2648,17 @@ export default function CharacterSheetClient({
         }
       }
     }
-    adjustEstadoJogo("pa_gastos", 1);
-    setEntalheAttempts((prev) => ({ ...prev, [instanceId]: { mode, alvo, cd } }));
+    // PA + tentativa pendente aplicados NUM SÓ update — persistidos juntos (sobrevive a
+    // reload/salvar; antes `entalheAttempts` era só estado local, perdido ao recarregar
+    // no meio do fluxo, deixando o PA gasto sem tentativa correspondente para confirmar).
+    const paGastosAntes = current.estado_jogo?.pa_gastos ?? 0;
+    const next: Character = {
+      ...current,
+      estado_jogo: { ...current.estado_jogo, pa_gastos: paGastosAntes + 1 },
+      entalhe_rapido_tentativas: { ...current.entalhe_rapido_tentativas, [instanceId]: { mode, alvo, cd } },
+    };
+    characterRef.current = next;
+    setCharacter(next);
     const periciaDef = regras?.pericias.find((p) => p.id === "engenharia");
     setPreparedRoll({ atributoId: periciaDef?.atributo_primario ?? "mente", periciaId: "engenharia", origem: `Entalhe Rápido: ${mode}` });
     setActiveTab("rolagens");
@@ -2580,41 +2667,44 @@ export default function CharacterSheetClient({
 
   /** Confirma o resultado do teste — só aplica a alteração (instalar/remover) em sucesso; falha preserva item/runa (PA já gasto). */
   function handleConfirmEntalheRapido(instanceId: string, resultado: number) {
-    const attempt = entalheAttempts[instanceId];
+    const current = characterRef.current;
+    const attempt = current.entalhe_rapido_tentativas?.[instanceId];
     if (!attempt) return;
     const sucesso = resultado >= attempt.cd;
-    setEntalheAttempts((prev) => {
-      const next = { ...prev };
-      delete next[instanceId];
-      return next;
-    });
+    const semTentativa: Character = {
+      ...current,
+      entalhe_rapido_tentativas: Object.fromEntries(Object.entries(current.entalhe_rapido_tentativas ?? {}).filter(([id]) => id !== instanceId)),
+    };
     if (!sucesso) {
+      characterRef.current = semTentativa;
+      setCharacter(semTentativa);
       addLogEntry("condicao", `Entalhe Rápido: falha (${resultado} < CD ${attempt.cd}) — item e runa preservados, PA não é devolvido.`);
       return;
     }
-    const current = characterRef.current;
     if (attempt.mode === "instalar") {
       const rune = runesIniciais.find((r) => r.slug === attempt.alvo);
       if (!rune) return;
-      const instance = current.inventario?.find((i) => i.id === instanceId);
+      const instance = semTentativa.inventario?.find((i) => i.id === instanceId);
       const itemContent = instance ? itemsIniciais.find((i) => i.slug === instance.itemSlug) : undefined;
       const result = installRuneOnItem({
-        character: current,
+        character: semTentativa,
         instanceId,
         itemContent,
         rune,
         nowIso: new Date().toISOString(),
         currentCharacterId: characterId,
       });
+      // Sucesso no teste, mas a instalação em si falhou (ex.: slot ocupado nesse meio-tempo) —
+      // ainda assim limpa a tentativa pendente (não fica travada) e preserva o PA já gasto.
+      characterRef.current = result.character;
+      setCharacter(result.character);
       if (!result.ok) {
         addLogEntry("condicao", `Entalhe Rápido: sucesso no teste, mas ${result.reason ?? "não instalada"}.`);
         return;
       }
-      characterRef.current = result.character;
-      setCharacter(result.character);
       addLogEntry("condicao", `Entalhe Rápido: sucesso (${resultado} ≥ CD ${attempt.cd}) — runa ${rune.nome} instalada.`);
     } else {
-      const next = removeRuneFromItem(current, instanceId, attempt.alvo);
+      const next = removeRuneFromItem(semTentativa, instanceId, attempt.alvo);
       characterRef.current = next;
       setCharacter(next);
       addLogEntry("condicao", `Entalhe Rápido: sucesso (${resultado} ≥ CD ${attempt.cd}) — runa removida.`);
@@ -2786,8 +2876,20 @@ export default function CharacterSheetClient({
       return;
     }
 
-    characterRef.current = result.character;
-    setCharacter(result.character);
+    // Berserker › Sede de Sangue — item de cura também pode levar o PV de volta
+    // acima da metade; mesma checagem genérica da edição manual de recursos.
+    const pvGatedPorItem = enforcePvGatedToggleDeactivation(
+      result.character,
+      talentsIniciais,
+      result.character.recursos_atuais?.pv ?? 0,
+      derivados.pv_max,
+      nowIso,
+    );
+    characterRef.current = pvGatedPorItem.character;
+    setCharacter(pvGatedPorItem.character);
+    for (const d of pvGatedPorItem.deactivated) {
+      addLogEntry("recurso", `${d.talentNome} — ${d.nivelNome}: encerrado automaticamente (PV voltou a ficar acima da metade).`);
+    }
 
     const partesLog: string[] = [];
     if (result.paCost != null) partesLog.push(`PA ${result.paBefore} → ${result.paAfter}`);
@@ -4643,8 +4745,9 @@ export default function CharacterSheetClient({
           onConfirmCamuflagemOptica={handleConfirmCamuflagemOptica}
           onEndFurtividade={handleEndFurtividade}
           gatilhoQuenteStatus={getGatilhoQuenteAvailability(character, talentsIniciais)}
-          balisticaValor={character.pericias.balistica ?? 0}
-          onUseGatilhoDado={handleUseGatilhoDado}
+          totemBencaoTokenStatus={getTotemBencaoTokenAvailability(character, talentsIniciais)}
+          bencaoAllies={alliesAtivos.map((a) => ({ id: a.id, nome: a.nome }))}
+          onGrantBencaoToken={handleGrantBencaoToken}
         />
       )}
 
@@ -4691,7 +4794,7 @@ export default function CharacterSheetClient({
           runicoGatilhoAvailable={hasGatilhoRunico(character, talentsIniciais)}
           onToggleRuneActive={handleToggleRuneActive}
           entalheRapidoAvailable={hasEntalheRapido(character, talentsIniciais)}
-          entalheAttempts={entalheAttempts}
+          entalheAttempts={character.entalhe_rapido_tentativas ?? {}}
           onStartEntalheRapido={handleStartEntalheRapido}
           onConfirmEntalheRapido={handleConfirmEntalheRapido}
           sobregravacaoAvailable={hasSobregravacao(character, talentsIniciais)}
@@ -4779,6 +4882,15 @@ export default function CharacterSheetClient({
           profileSessionId={profileSessionToken?.profileSessionId ?? null}
           activeEffects={activeEffects}
           marginPromotions={getMarginPromotions(character, talentsIniciais)}
+          saqueFantasmaAvailable={hasSaqueFantasma(character, talentsIniciais)}
+          gatilhoQuenteStatus={getGatilhoQuenteAvailability(character, talentsIniciais)}
+          onGatilhoDadoResultado={handleUseGatilhoDado}
+          bangBangAvailable={hasBangBangSegundoDisparo(character, talentsIniciais)}
+          paDisponivel={Math.max(0, derivados.pa_max - (character.estado_jogo?.pa_gastos ?? 0))}
+          onSpendPaBangBang={handleSpendPaBangBang}
+          totemBencaoAvailable={hasTotemBencao(character, talentsIniciais)}
+          bencaoTokenAtivo={character.bencao_token_ativo ?? null}
+          onConsumeBencaoToken={handleConsumeBencaoToken}
         />
       )}
 

@@ -509,6 +509,24 @@ export interface Character {
     consumido: boolean;
   };
   /**
+   * Rúnico › Entalhe Rápido — tentativa pendente de confirmação por
+   * instância de item (checkpoint talentos, Fase 1 — revisão). Antes
+   * vivia só em estado local do componente (`useState`), então um reload
+   * no meio do fluxo (1 PA já gasto, teste ainda não confirmado) perdia o
+   * registro sem devolver o PA nem permitir confirmar depois — persistido
+   * aqui para sobreviver a salvar/recarregar como qualquer outro estado
+   * de talento em andamento (mesmo critério de `mirar_ativo`).
+   */
+  entalhe_rapido_tentativas?: Record<string, { mode: "instalar" | "remover"; alvo: string; cd: number }>;
+  /**
+   * Totem › Benção (N1) — token concedido por um aliado com o talento
+   * (checkpoint talentos, Fase 1). "O primeiro teste realizado" DESDE a
+   * concessão consome o token (promove falha_limitada→sucesso_limitado
+   * se for o caso) — vive no personagem que RECEBE, não em quem concede,
+   * já que é o próximo teste do recebedor que importa.
+   */
+  bencao_token_ativo?: { origem: string; concedidoEm: string };
+  /**
    * Sorrateiro › estado real de Furtividade (checkpoint talentos, Fase 3)
    * — entrada/saída manual (narrativa, sem teste estruturado próprio para
    * "entrar"; testes de Furtividade em si usam a perícia normalmente,

@@ -48,6 +48,13 @@ export interface RupturaRollParams {
   cd?: number;
   /** Promoção de margem data-driven (Passo Fantasma, Olhar Penetrante) — `origem` só rotula o resultado, nunca decide a promoção. */
   promocaoMargem?: { de: MargemClassificacao; para: MargemClassificacao; origem: string };
+  /**
+   * Pistoleiro › Gatilho Quente — inclui um d8 EXTRA ("dado de gatilho", cor
+   * diferente) na MESMA rolagem, junto com os d8 do atributo, antes de
+   * escolher o maior. Sempre virtual/interno (mesmo gerador dos demais
+   * dados) — nunca pede ao jogador para rolar um d8 físico e digitar.
+   */
+  incluirDadoGatilho?: boolean;
 }
 
 /**
@@ -100,6 +107,10 @@ export interface RupturaRollResult {
   classificacaoMargem?: MargemClassificacao;
   /** Rótulo do talento que promoveu a margem (ex.: "Passo Fantasma") — ausente = nenhuma promoção aplicada. */
   promocaoAplicada?: string;
+  /** Resultado do d8 de gatilho, quando `incluirDadoGatilho` foi pedido — já incluído em `dados`/`maiorDado`. */
+  dadoGatilhoResultado?: number;
+  /** `true` quando o d8 de gatilho foi o MAIOR dado da rolagem (seu resultado "faz parte do teste" — condição de Bang Bang). */
+  dadoGatilhoEscolhido?: boolean;
 }
 
 /**

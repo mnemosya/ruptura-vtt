@@ -62,7 +62,7 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 20 · 🟡 7 · ⚙️ 38 · 📖 1.
+Contagem: ✅ 0 · 🔵 27 · 🟡 0 · ⚙️ 38 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -76,7 +76,7 @@ Contagem: ✅ 0 · 🔵 20 · 🟡 7 · ⚙️ 38 · 📖 1.
 | Atirador de Elite | À Espreita | 2 | 🔵 Implementado (aguardando validação manual) |
 | Atirador de Elite | Headshot | 3 | 🔵 Implementado (aguardando validação manual) |
 | Berserker | Fúria | 1 | 🔵 Implementado (aguardando validação manual) |
-| Berserker | Sede de Sangue | 2 | 🟡 Parcial |
+| Berserker | Sede de Sangue | 2 | 🔵 Implementado (aguardando validação manual) |
 | Berserker | Último Fôlego | 3 | ⚙️ Infra pendente |
 | Dissecador | Golpe Cirúrgico | 1 | ⚙️ Infra pendente |
 | Dissecador | Fincada | 2 | ⚙️ Infra pendente |
@@ -84,7 +84,7 @@ Contagem: ✅ 0 · 🔵 20 · 🟡 7 · ⚙️ 38 · 📖 1.
 | Droneiro | Sinal Limpo | 1 | ⚙️ Infra pendente |
 | Droneiro | Script | 2 | ⚙️ Infra pendente |
 | Droneiro | Enxame | 3 | ⚙️ Infra pendente |
-| Espadachim | Aparar | 1 | 🟡 Parcial |
+| Espadachim | Aparar | 1 | 🔵 Implementado (aguardando validação manual) |
 | Espadachim | Estocar | 2 | ⚙️ Infra pendente |
 | Espadachim | Ripostar | 3 | ⚙️ Infra pendente |
 | Estrategista | Falcão | 1 | ⚙️ Infra pendente |
@@ -96,7 +96,7 @@ Contagem: ✅ 0 · 🔵 20 · 🟡 7 · ⚙️ 38 · 📖 1.
 | Mago de Batalha | Domínio Territorial | 1 | 🔵 Implementado (aguardando validação manual) |
 | Mago de Batalha | Canalizar | 2 | 🔵 Implementado (aguardando validação manual) |
 | Mago de Batalha | Ascensão | 3 | 🔵 Implementado (aguardando validação manual) |
-| Malabarista | Saque Fantasma | 1 | 🟡 Parcial |
+| Malabarista | Saque Fantasma | 1 | 🔵 Implementado (aguardando validação manual) |
 | Malabarista | Revoada | 2 | ⚙️ Infra pendente |
 | Malabarista | Espetáculo Mortal | 3 | ⚙️ Infra pendente |
 | Manipulador | Olhar Penetrante | 1 | 🔵 Implementado (aguardando validação manual) |
@@ -112,7 +112,7 @@ Contagem: ✅ 0 · 🔵 20 · 🟡 7 · ⚙️ 38 · 📖 1.
 | Paramédico | Ritmo de Campo | 2 | ⚙️ Infra pendente |
 | Paramédico | Protocolo de Emergência | 3 | ⚙️ Infra pendente |
 | Pistoleiro | Gatilho Quente | 1 | 🔵 Implementado (aguardando validação manual) |
-| Pistoleiro | Bang Bang | 2 | 🟡 Parcial |
+| Pistoleiro | Bang Bang | 2 | 🔵 Implementado (aguardando validação manual) |
 | Pistoleiro | Showdown | 3 | ⚙️ Infra pendente |
 | Praga | Marca da Dor | 1 | ⚙️ Infra pendente |
 | Praga | Sangria Lenta | 2 | ⚙️ Infra pendente |
@@ -121,15 +121,15 @@ Contagem: ✅ 0 · 🔵 20 · 🟡 7 · ⚙️ 38 · 📖 1.
 | Rato de Rua | Gato de Telhado | 2 | ⚙️ Infra pendente |
 | Rato de Rua | Saída dos Fundos | 3 | ⚙️ Infra pendente |
 | Rúnico | Gatilho Rúnico | 1 | 🔵 Implementado (aguardando validação manual) |
-| Rúnico | Entalhe Rápido | 2 | 🟡 Parcial |
-| Rúnico | Sobregravação | 3 | 🟡 Parcial |
+| Rúnico | Entalhe Rápido | 2 | 🔵 Implementado (aguardando validação manual) |
+| Rúnico | Sobregravação | 3 | 🔵 Implementado (aguardando validação manual) |
 | Sorrateiro | Passo Fantasma | 1 | 🔵 Implementado (aguardando validação manual) |
 | Sorrateiro | Camuflagem Óptica | 2 | 🔵 Implementado (aguardando validação manual) |
 | Sorrateiro | Ataque Fatal | 3 | 🔵 Implementado (aguardando validação manual) |
 | Tecelão | Olho de Botão | 1 | ⚙️ Infra pendente |
 | Tecelão | Bypass | 2 | ⚙️ Infra pendente |
 | Tecelão | Agulha Fina | 3 | ⚙️ Infra pendente |
-| Totem | Benção | 1 | 🟡 Parcial |
+| Totem | Benção | 1 | 🔵 Implementado (aguardando validação manual) |
 | Totem | Onda Solidária | 2 | ⚙️ Infra pendente |
 | Totem | Chama Redobrada | 3 | ⚙️ Infra pendente |
 
@@ -140,22 +140,29 @@ Contagem: ✅ 0 · 🔵 20 · 🟡 7 · ⚙️ 38 · 📖 1.
   "modificador aplicado" some/volta, ActiveStateStrip mostra "Sem estados ativos" ao
   desativar e o buff ao reativar). Pendente: confirmação do usuário via teste manual
   próprio antes de virar ✅ Integral.
-- **🟡 Entalhe Rápido (Parcial)** — 1 PA real gasto (verificado 0→1), prepara teste real
-  de Engenharia, só aplica a instalação em SUCESSO (verificado: resultado 3 < CD 5 não
-  instala; resultado 9 ≥ CD 5 instala — 0/4 → 1/4); falha preserva item/runa e não
-  devolve o PA. **Falta para ser integral**: fluxo de remoção de runa instalada, garantia
-  de que um reload após falha de persistência não deixa PA/item/runa divergentes
-  (preflight antes de gastar PA + mutar estado), e confirmação de que o reload da página
-  preserva corretamente o resultado em todos os casos (não só o caminho feliz testado).
-- **🟡 Sobregravação (Parcial)** — o modelo anterior calculava o multiplicador de slots
-  ao vivo a partir dos talentos do personagem ATUAL a cada render (`multiplicador_espacos_extra`
-  do payload), o que a validação manual rejeitou como implementação insuficiente: não
-  distinguia dono/aliado instruído/terceiro, não sobrevivia a transferência do item entre
-  personagens, e não exigia o teste de Tecnomagia/Arcanismo CD 8 para terceiros. Rework
-  em andamento: campo `InventoryItemInstance.sobregravacao` (`ownerCharacterId`,
-  `instructedAllyIds`, `appliedAt`) já adicionado ao tipo; falta a lógica de autorização
-  (`getSlotsRunaMaxEfetivo`/ação de aplicar Sobregravação/confirmação de teste CD 8 para
-  terceiro) e a atualização do display em `InventoryTab.tsx`.
+- **🔵 Entalhe Rápido (Implementado, aguardando validação manual — Fase 1, 2ª rodada)** —
+  instalar E remover reais, 1 PA gasto, teste real de Engenharia, só aplica em SUCESSO
+  (verificado: resultado 3 < CD 5 não instala; resultado 9 ≥ CD 5 instala — 0/4 → 1/4);
+  falha preserva item/runa e não devolve o PA. **Corrigido nesta rodada**: a tentativa
+  pendente (`entalheAttempts`) vivia só em `useState` local — um reload no meio do fluxo
+  (PA já gasto, teste ainda não confirmado) perdia o registro sem devolver o PA e sem
+  permitir confirmar depois. Movido para `Character.entalhe_rapido_tentativas`
+  (persistido como qualquer outro estado de talento em andamento), com PA e tentativa
+  aplicados num ÚNICO update atômico (nunca diverge). Preflight (bloqueia 2ª tentativa
+  pendente + checa limite de slots antes de gastar PA) preservado.
+- **🔵 Sobregravação (Implementado, aguardando validação manual — Fase 1, 2ª rodada)** —
+  autorização real persistida na instância (`ownerCharacterId`/`instructedAllyIds`/
+  `multiplicador`/`accessGrantedCharacterIds`): dono e aliados instruídos acessam os
+  slots extra automaticamente; terceiro vê só o limite base até passar no teste de
+  Tecnomagia/Arcanismo CD 8 (`getSlotsRunaMaxEfetivo` recalcula para quem está segurando
+  o item AGORA); falha no teste bloqueia só o benefício, nunca as runas já instaladas.
+  **Bug real encontrado e corrigido nesta rodada**: `canSplitInstanceQuantity` não
+  incluía `sobregravacao` na lista de estados que forçam transferência da instância
+  INTEIRA (só verificava `toqueDeMidas`) — um item com Sobregravação aplicada mas ainda
+  sem runas instaladas podia ser dividido parcialmente, e a metade movida perdia a
+  autorização silenciosamente (o `movedInstance` da divisão parcial não copia
+  `sobregravacao`). Corrigido: Sobregravação agora bloqueia split parcial, mesmo
+  critério de Toque de Midas.
 - **🔵 1 Tiro, 1 Acerto (Implementado, aguardando validação manual)** — estado real de
   Mirar (Character.mirar_ativo), bônus lido do payload (+2/+3, escopado a
   precisao/balistica). Confirmar sucesso/crítico cria o estado; o próximo "Atacar" com
@@ -296,12 +303,17 @@ Contagem: ✅ 0 · 🔵 20 · 🟡 7 · ⚙️ 38 · 📖 1.
   qualquer outro cálculo (inclusive Amortecer, que fica irrelevante quando já não há
   dano), 1/cena, nunca toca PD/escudo nem consome Mana — exatamente "nada é aplicado ao
   escudo, ao defensor ou ao aliado" do capítulo.
-- **🟡 Sede de Sangue** — −1 defensivas real (toggle→efeito, já existia); **ainda falta**
-  dobrar o bônus de Corpo no dano corpo a corpo (o sistema não tem um cálculo automático
-  de "dano + bônus de Corpo" para dobrar — dano é sempre digitado manualmente pelo
-  narrador, então dobrar exigiria ou uma calculadora nova de dano corpo a corpo, ou um
-  lembrete com o valor exato a somar; nenhum dos dois foi feito ainda) e monitorar PV
-  (auto-desligar ao passar de 50%).
+- **🔵 Sede de Sangue (Implementado, aguardando validação manual — Fase 1, 2ª rodada)** —
+  −1 defensivas real (toggle→efeito, já existia). **Concluído nesta rodada**: ativação
+  agora exige de fato PV < metade do máximo (`isPvGatedToggleAllowedToActivate`, lido do
+  `condicao_ativacao.tipo === "pv_abaixo_metade"` do payload — genérico, não hardcoded
+  por talento); desliga sozinho quando o PV volta a ≥ metade, checado nos 3 pontos reais
+  de mudança de PV (edição manual em Recursos, uso de item de cura, "Restaurar ao
+  máximo" — `enforcePvGatedToggleDeactivation`); dobro de Corpo no dano corpo a corpo
+  exposto como reminder EXATO em `/dev/table` ao resolver o ataque (`+X extra`, X = Corpo
+  atual do personagem, lido ao vivo — nunca fixo), já que o sistema não tem uma
+  calculadora de dano automática para dobrar por dentro (dano é sempre digitado pelo
+  narrador). Fim de cena já herdado do `durationType: "scene"` genérico do toggle.
 - **🔵 Fúria (Implementado, aguardando validação manual — Fase 5)** — efeito temporário
   empilhável real agora GANHA pilha automaticamente ao sofrer dano de verdade
   (`handleResolveAttackDamage`, `finalDamage > 0` → `+1 Luta`, até o máximo do payload,
@@ -324,7 +336,24 @@ Contagem: ✅ 0 · 🔵 20 · 🟡 7 · ⚙️ 38 · 📖 1.
   conectados a uma ação real de estabilizar aliado a 0 PV — isso exigiria integrar com o
   sistema existente de colapso/estabilização (`character.colapso`, `regras?.colapso`) que
   não foi auditado nesta sessão. Não promovido.
-- **🟡 Saque Fantasma / Totem Benção** — parte passiva real; promoção de margem pendente.
+- **🔵 Saque Fantasma (Implementado, aguardando validação manual — Fase 1, 2ª rodada)** —
+  "saque sem PA" já era de graça nesta engine (trocar/equipar item nunca teve custo de PA
+  estruturado — nada a bypassar). A parte real que faltava era a penalidade de Rajada
+  (−1): adicionado um checkbox genérico "Usar Rajada" na aba Rolagens (novo mecanismo de
+  base, já que a propriedade Rajada não tinha NENHUM gancho no código antes) que aplica
+  −1 ao teste; com Saque Fantasma adquirido, um segundo checkbox de confirmação ("é uma
+  arma leve de Arremesso") cancela a penalidade — arma leve+Arremesso não é um booleano
+  consultável no catálogo, então a confirmação é manual, mesmo critério de outras
+  confirmações desta sessão.
+- **🔵 Totem Benção (Implementado, aguardando validação manual — Fase 1, 2ª rodada)** —
+  o payload não tem `pericias[]` (aplica a QUALQUER teste que aplique efeito positivo,
+  não uma perícia fixa), então a promoção usa um checkbox avulso na aba Rolagens
+  ("confirmo que este teste aplica um efeito positivo") em vez do mecanismo de
+  `marginPromotions` por perícia. Segundo efeito (token 1/cena a um aliado) implementado
+  de verdade: `Character.bencao_token_ativo` concedido a um aliado ATIVO da mesa (mesmo
+  padrão cross-character de `useItemOnAlly` — persiste o alvo primeiro), consumido no
+  PRIMEIRO teste do aliado depois da concessão (com ou sem promoção real, conforme o
+  texto canônico).
 - **Infraestrutura de autoria estruturada (Fase 6)** — `ActiveCondition` ganhou
   `sourceCharacterId`/`sourceTalentId`/`sourceType`/`originalTargetId`/`applicationEventId`
   (todos opcionais — condições antigas/manuais continuam válidas sem eles).
@@ -522,7 +551,7 @@ abaixo está **aguardando confirmação do usuário via teste manual** — nenhu
 | Atirador de Elite | À Espreita | 🔵 Implementado | Sucesso/falha limitada → sucesso padrão (alvo não ciente + Mirar) | `TableClient.tsx` | Nenhum (banda de resolução só) | Resolver ataque à distância com margem "limited" + confirmação → banda vira standard | Aguardando usuário |
 | Atirador de Elite | Headshot | 🔵 Implementado | Acerto vira crítico (Mirar crítico confirmado) | `TableClient.tsx` | Nenhum | Resolver ataque à distância com acerto qualquer + confirmação de Mirar crítico → banda vira critical; testar um MISS → confirmar que NÃO vira acerto | Aguardando usuário |
 | Berserker | Fúria | 🔵 Implementado | +1 Luta empilhável (até 3) ao sofrer dano real | `TableClient.tsx`, `talentEngine.ts`, `temporaryEffects.ts` | `Character.efeitos_temporarios` (stack) | Aplicar dano ao personagem com Fúria 2-3x seguidas → confirmar pilha soma até 3, não duplica registro | Aguardando usuário |
-| Berserker | Sede de Sangue | 🟡 Parcial | −1 defensivas (toggle real); dobro de Corpo no dano NÃO calculado automaticamente | `talentEngine.ts`, `TalentsTab.tsx` | `Character` (toggle) | N/A — parcial, aguardando conclusão antes de testar | — |
+| Berserker | Sede de Sangue | 🔵 Implementado | −1 defensivas; PV-gate real na ativação; auto-desliga com PV ≥ metade; reminder de +Corpo no dano | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TableClient.tsx` | `Character.efeitos_temporarios` (toggle) | Ativar só com PV<metade → confirmar bloqueado com PV≥metade; curar até metade → confirmar desliga sozinho; resolver ataque corpo a corpo → conferir reminder +Corpo | Aguardando usuário |
 | Berserker | Último Fôlego | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
 | Dissecador | Golpe Cirúrgico | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
 | Dissecador | Fincada | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
@@ -530,7 +559,7 @@ abaixo está **aguardando confirmação do usuário via teste manual** — nenhu
 | Droneiro | Sinal Limpo | ⚙️ Infra pendente | Nenhum (sem modelo de drone) | — | — | N/A | — |
 | Droneiro | Script | ⚙️ Infra pendente | Nenhum (sem modelo de drone) | — | — | N/A | — |
 | Droneiro | Enxame | ⚙️ Infra pendente | Nenhum (sem modelo de drone) | — | — | N/A | — |
-| Espadachim | Aparar | 🟡 Parcial | +1 em Aparar real; promoção 1/cena tem helpers não conectados | `talentEngine.ts` | `Character.talentos_estado` (não usado ainda) | N/A — parcial | — |
+| Espadachim | Aparar | 🔵 Implementado | +1 em Aparar; promoção 1/cena a sucesso crítico (habilita gatilho de Ripostar) | `TableClient.tsx`, `talentEngine.ts` | `Character.talentos_estado` (defensor) | Aparar com margem "standard" contra o atacante → promover a crítico (confirmar lâmina) → conferir "promovida a sucesso crítico" no painel | Aguardando usuário |
 | Espadachim | Estocar | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
 | Espadachim | Ripostar | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
 | Estrategista | Falcão | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
@@ -542,7 +571,7 @@ abaixo está **aguardando confirmação do usuário via teste manual** — nenhu
 | Mago de Batalha | Domínio Territorial | 🔵 Implementado | +50% alcance/área real no cartão E no log de conjuração | `talentEngine.ts`, `SpellsTab.tsx`, `CharacterSheetClient.tsx` | Nenhum (derivado do talento) | Conjurar magia de Ataque com o talento → confirmar alcance/área ajustados no cartão E no log | Aguardando usuário |
 | Mago de Batalha | Canalizar | 🔵 Implementado | Potencializar (+1 dano/Mana) e Amortecer (−1 dano/Mana antes de MIT) real, 1/rodada compartilhado | `CharacterSheetClient.tsx`, `TableClient.tsx`, `talentEngine.ts` | `Character.talentos_estado`, `recursos_atuais.mana` | Usar Potencializar numa rodada → confirmar Amortecer bloqueado na MESMA rodada (e vice-versa) | Aguardando usuário |
 | Mago de Batalha | Ascensão | 🔵 Implementado | Limite de Surtos 3→5 real + Ruptura especial idempotente | `talentEngine.ts`, `ResourcesTab.tsx` | `Character.ruptura_especial_ascensao` | Adquirir talento → confirmar Ruptura especial única → usar surtos até o 5º → confirmar limite | Aguardando usuário |
-| Malabarista | Saque Fantasma | 🟡 Parcial | Parte passiva real; promoção de margem pendente (payload sem `pericias[]`) | `talentEngine.ts` | Nenhum | N/A — parcial | — |
+| Malabarista | Saque Fantasma | 🔵 Implementado | Ignora penalidade de Rajada (−1) com arma leve de Arremesso confirmada; saque já era de graça | `RollsTab.tsx`, `talentEngine.ts` | Nenhum (checkbox por rolagem) | Marcar "Usar Rajada" sem Saque Fantasma → −1 aplicado; marcar com confirmação de arma leve+Arremesso → −1 cancelado | Aguardando usuário |
 | Malabarista | Revoada | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
 | Malabarista | Espetáculo Mortal | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
 | Manipulador | Olhar Penetrante | 🔵 Implementado | Falha limitada → sucesso limitado em Influência/Psicologia, com confirmação de contexto obrigatória | `talentEngine.ts`, `RollsTab.tsx` | Nenhum (promoção por rolagem) | Rolar Influência/Psicologia com CD, confirmar contexto certo → promoção aplica; testar SEM marcar a confirmação → promoção NÃO aplica | Aguardando usuário |
@@ -558,7 +587,7 @@ abaixo está **aguardando confirmação do usuário via teste manual** — nenhu
 | Paramédico | Ritmo de Campo | ⚙️ Infra pendente | Nenhum (bloqueado por falta de tag "cura" no conteúdo) | — | — | N/A | — |
 | Paramédico | Protocolo de Emergência | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
 | Pistoleiro | Gatilho Quente | 🔵 Implementado | Recurso real de dados de gatilho (d8), dano extra = Balística atual em resultado 8 | `talentEngine.ts`, `TalentsTab.tsx`, `CharacterSheetClient.tsx` | `Character.talentos_estado` | Usar dado de gatilho, informar resultado 8 → confirmar dano extra = Balística; usar outro resultado → confirmar só consome; usar os 3 → confirmar indisponível; descanso longo → confirmar reset | Aguardando usuário |
-| Pistoleiro | Bang Bang | 🟡 Parcial | +1 dado de gatilho real (pool vira 4); segundo disparo não implementado | `talentEngine.ts` | `Character.talentos_estado` | N/A — parcial | — |
+| Pistoleiro | Bang Bang | 🔵 Implementado | +1 dado de gatilho (pool vira 4); segundo disparo real (+1 PA, −1, mesmas regras) | `RollsTab.tsx`, `talentEngine.ts` | `Character.talentos_estado`, `estado_jogo.pa_gastos` | Rolar com dado de gatilho escolhido (maior dado) → confirmar segundo disparo disponível → gastar PA → rolar de novo com −1 pré-preenchido | Aguardando usuário |
 | Pistoleiro | Showdown | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
 | Praga | Marca da Dor | ⚙️ Infra pendente | Nenhum (exigiria leitura cross-character na rolagem de ataque) | — | — | N/A | — |
 | Praga | Sangria Lenta | ⚙️ Infra pendente | Nenhum (exigiria modelo de duração numérica em condições) | — | — | N/A | — |
@@ -567,15 +596,15 @@ abaixo está **aguardando confirmação do usuário via teste manual** — nenhu
 | Rato de Rua | Gato de Telhado | ⚙️ Infra pendente | Nenhum (infra genérica só) | — | — | N/A | — |
 | Rato de Rua | Saída dos Fundos | ⚙️ Infra pendente | Nenhum (infra genérica só) | — | — | N/A | — |
 | Rúnico | Gatilho Rúnico | 🔵 Implementado | Ativa/desativa runa instalada sem PA, ActiveEffect real | `inventory.ts`, `InventoryTab.tsx` | `InventoryItemInstance.runasInstaladas[].ativa` | Ativar/desativar runa → confirmar chip de bônus aparece/some | Aguardando usuário |
-| Rúnico | Entalhe Rápido | 🟡 Parcial | Instalar/remover real com 1 PA + teste; falta reload/segurança total | `inventory.ts`, `CharacterSheetClient.tsx` | `InventoryItemInstance.runasInstaladas[]` | N/A — parcial | — |
-| Rúnico | Sobregravação | 🟡 Parcial | Autorização real (dono/aliado/CD8) persistida na instância; UI completa mas aguardando validação de todos os caminhos | `inventory.ts`, `InventoryTab.tsx`, `CharacterSheetClient.tsx` | `InventoryItemInstance.sobregravacao` | Aplicar → dono acessa slots extra → terceiro sem acesso vê limite base → terceiro testa CD8 e ganha acesso → transferir item e confirmar autorização preservada | Aguardando usuário (Parcial — testar mesmo assim para achar bugs, mas não conta como Integral) |
+| Rúnico | Entalhe Rápido | 🔵 Implementado | Instalar/remover real com 1 PA + teste; tentativa pendente agora persistida (sobrevive a reload) | `inventory.ts`, `CharacterSheetClient.tsx`, `types.ts` | `Character.entalhe_rapido_tentativas`, `InventoryItemInstance.runasInstaladas[]` | Iniciar tentativa → recarregar a página → "Carregar" personagem → confirmar tentativa pendente ainda aparece para confirmar | Aguardando usuário |
+| Rúnico | Sobregravação | 🔵 Implementado | Autorização real (dono/aliado/CD8) persistida na instância; split parcial agora bloqueado (bug corrigido) | `inventory.ts`, `InventoryTab.tsx`, `CharacterSheetClient.tsx` | `InventoryItemInstance.sobregravacao` | Aplicar → dono acessa slots extra → terceiro sem acesso vê limite base → terceiro testa CD8 e ganha acesso → transferir item e confirmar autorização preservada → tentar split parcial e confirmar bloqueado | Aguardando usuário |
 | Sorrateiro | Passo Fantasma | 🔵 Implementado | Falha limitada → sucesso limitado em Furtividade | `talentEngine.ts`, `RollsTab.tsx` | Nenhum (promoção por rolagem) | Rolar Furtividade com CD, margem -1 → confirmar promovida para sucesso limitado | Aguardando usuário |
 | Sorrateiro | Camuflagem Óptica | 🔵 Implementado | Furtividade não encerra automaticamente em exposição; requer confirmação de cobertura plausível | `talentEngine.ts`, `TalentsTab.tsx` | `Character.furtividade_ativa` | Entrar em Furtividade → confirmar cobertura plausível → confirmar Furtividade continua ativa | Aguardando usuário |
 | Sorrateiro | Ataque Fatal | 🔵 Implementado | Acerto ao sair de Furtividade vira crítico; encerra Furtividade real | `TableClient.tsx`, `talentEngine.ts` | `Character.furtividade_ativa` | Entrar em Furtividade → atacar confirmando "saindo de Furtividade" → confirmar crítico forçado E Furtividade encerrada após | Aguardando usuário |
 | Tecelão | Olho de Botão | ⚙️ Infra pendente | Nenhum (sem modelo de Trama) | — | — | N/A | — |
 | Tecelão | Bypass | ⚙️ Infra pendente | Nenhum (sem modelo de Trama) | — | — | N/A | — |
 | Tecelão | Agulha Fina | ⚙️ Infra pendente | Nenhum (sem modelo de Trama) | — | — | N/A | — |
-| Totem | Benção | 🟡 Parcial | Parte passiva real; segundo efeito (token 1/cena) não automatizado | `talentEngine.ts` | Nenhum | N/A — parcial | — |
+| Totem | Benção | 🔵 Implementado | Promoção no próprio teste (checkbox avulso); token 1/cena a um aliado, consumido no primeiro teste dele | `RollsTab.tsx`, `TalentsTab.tsx`, `CharacterSheetClient.tsx` | `Character.bencao_token_ativo` (no aliado), `talentos_estado` (no concedente) | Marcar "efeito positivo" → falha limitada vira sucesso limitado; conceder token a aliado → aliado rola primeiro teste → confirmar token consumido | Aguardando usuário |
 | Totem | Onda Solidária | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
 | Totem | Chama Redobrada | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
 

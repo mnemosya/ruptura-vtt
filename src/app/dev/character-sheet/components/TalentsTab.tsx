@@ -90,8 +90,9 @@ export function TalentsTab({
   onConfirmCamuflagemOptica,
   onEndFurtividade,
   gatilhoQuenteStatus,
-  balisticaValor = 0,
-  onUseGatilhoDado,
+  totemBencaoTokenStatus,
+  bencaoAllies = [],
+  onGrantBencaoToken,
 }: {
   talents: TalentContent[];
   catalogError: string | null;
@@ -123,10 +124,12 @@ export function TalentsTab({
   onStartFurtividade?: () => void;
   onConfirmCamuflagemOptica?: () => void;
   onEndFurtividade?: () => void;
-  /** Pistoleiro › Gatilho Quente (checkpoint talentos, Fase 7). */
+  /** Pistoleiro › Gatilho Quente (checkpoint talentos, Fase 7) — status só; uso real na aba Rolagens (Fase 1). */
   gatilhoQuenteStatus?: { acquired: boolean; max: number; used: number; available: number };
-  balisticaValor?: number;
-  onUseGatilhoDado?: (resultadoD8: number) => void;
+  /** Totem › Benção (checkpoint talentos, Fase 1) — conceder token 1/cena a um aliado ativo da mesa. */
+  totemBencaoTokenStatus?: { acquired: boolean; usedThisScene: boolean };
+  bencaoAllies?: { id: string; nome: string }[];
+  onGrantBencaoToken?: (targetCharacterId: string) => void;
 }) {
   const [filter, setFilter] = useState<FilterKey>("todos");
 
@@ -282,7 +285,11 @@ export function TalentsTab({
                         )}
 
                         {acquiredEntry && nivel.slug === "pistoleiro_gatilho_quente" && gatilhoQuenteStatus && (
-                          <GatilhoQuenteWidget status={gatilhoQuenteStatus} balisticaValor={balisticaValor} onUseDado={onUseGatilhoDado} />
+                          <GatilhoQuenteWidget status={gatilhoQuenteStatus} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "totem_bencao" && totemBencaoTokenStatus?.acquired && (
+                          <TotemBencaoWidget status={totemBencaoTokenStatus} allies={bencaoAllies} onGrant={onGrantBencaoToken} />
                         )}
 
                         {acquiredEntry && nivel.slug === "sorrateiro_passo_fantasma" && (
@@ -569,48 +576,61 @@ function FurtividadeWidget({
   );
 }
 
-/** Pistoleiro › Gatilho Quente (N1) — recurso real de dados de gatilho (d8, 1/ataque, resultado 8 = dano extra igual à Balística). */
-function GatilhoQuenteWidget({
-  status,
-  balisticaValor,
-  onUseDado,
-}: {
-  status: { acquired: boolean; max: number; used: number; available: number };
-  balisticaValor: number;
-  onUseDado?: (resultadoD8: number) => void;
-}) {
-  const [resultado, setResultado] = useState("");
+/**
+ * Pistoleiro › Gatilho Quente (N1) — status do recurso real de dados de
+ * gatilho. O USO em si (checkpoint talentos, Fase 1 — revisão) acontece na
+ * aba Rolagens, integrado na MESMA rolagem do ataque (d8 real no pool de
+ * dados, nunca digitado à parte) — este card só mostra o saldo disponível
+ * para não duplicar o ponto de consumo do recurso.
+ */
+function GatilhoQuenteWidget({ status }: { status: { acquired: boolean; max: number; used: number; available: number } }) {
   return (
     <div data-testid="gatilho-quente-widget" style={widgetBox}>
       <span style={{ opacity: 0.7 }}>
-        Dados de gatilho: {status.available}/{status.max} disponíveis — 1 por ataque com pistola/revólver, recupera no
-        descanso longo.
+        Dados de gatilho: {status.available}/{status.max} disponíveis — recupera no descanso longo. Use o checkbox
+        &quot;Usar dado de gatilho&quot; na aba Rolagens ao atacar com pistola/revólver.
       </span>
-      {status.available > 0 && (
+    </div>
+  );
+}
+
+/** Totem › Benção (N1) — concede o token 1/cena a um aliado ativo da mesa (o USO real acontece na aba Rolagens do aliado). */
+function TotemBencaoWidget({
+  status,
+  allies,
+  onGrant,
+}: {
+  status: { acquired: boolean; usedThisScene: boolean };
+  allies: { id: string; nome: string }[];
+  onGrant?: (targetCharacterId: string) => void;
+}) {
+  const [alvo, setAlvo] = useState("");
+  return (
+    <div data-testid="totem-bencao-widget" style={widgetBox}>
+      {status.usedThisScene ? (
+        <span style={{ opacity: 0.7 }}>Token de Benção já concedido nesta cena.</span>
+      ) : allies.length === 0 ? (
+        <span style={{ opacity: 0.7 }}>Nenhum aliado ativo na mesa para conceder o token de Benção (1/cena).</span>
+      ) : (
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <input
-            data-testid="gatilho-quente-resultado-input"
-            type="number"
-            min={1}
-            max={8}
-            placeholder="resultado do d8"
-            value={resultado}
-            onChange={(e) => setResultado(e.target.value)}
-            style={{ width: 90, background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", fontSize: 12 }}
-          />
+          <select data-testid="totem-bencao-alvo" value={alvo} onChange={(e) => setAlvo(e.target.value)} style={{ background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", fontSize: 12 }}>
+            <option value="">— escolher aliado —</option>
+            {allies.map((a) => (
+              <option key={a.id} value={a.id}>{a.nome}</option>
+            ))}
+          </select>
           <button
-            data-testid="gatilho-quente-usar"
+            data-testid="totem-bencao-conceder"
+            disabled={!alvo}
             onClick={() => {
-              const v = Number(resultado);
-              if (!Number.isFinite(v) || v < 1 || v > 8) return;
-              onUseDado?.(v);
-              setResultado("");
+              if (!alvo) return;
+              onGrant?.(alvo);
+              setAlvo("");
             }}
             style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
           >
-            Usar dado de gatilho neste ataque
+            Conceder token de Benção (1/cena)
           </button>
-          {resultado === "8" && <span style={{ color: "#4caf50", fontSize: 11 }}>+{balisticaValor} de dano extra (Balística) se confirmar!</span>}
         </div>
       )}
     </div>

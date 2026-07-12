@@ -133,6 +133,15 @@ export function RollsTab({
   profileSessionId,
   activeEffects,
   marginPromotions = [],
+  saqueFantasmaAvailable = false,
+  gatilhoQuenteStatus,
+  onGatilhoDadoResultado,
+  bangBangAvailable = false,
+  paDisponivel = 0,
+  onSpendPaBangBang,
+  totemBencaoAvailable = false,
+  bencaoTokenAtivo,
+  onConsumeBencaoToken,
 }: {
   atributos: CharacterAttributes;
   atributoDefinitions: AttributeDefinition[] | undefined;
@@ -155,6 +164,24 @@ export function RollsTab({
   activeEffects: ActiveEffect[];
   /** Promoções de margem data-driven por perícia (Passo Fantasma, Olhar Penetrante) — checkpoint talentos. */
   marginPromotions?: { periciaId: string; de: string; para: string; origem: string; contexto: string | null }[];
+  /** Malabarista › Saque Fantasma (checkpoint talentos, Fase 1) — personagem adquiriu o talento (ignora a penalidade de Rajada com arma leve de Arremesso, confirmada manualmente). */
+  saqueFantasmaAvailable?: boolean;
+  /** Pistoleiro › Gatilho Quente (checkpoint talentos, Fase 1 — revisão) — recurso real de dados de gatilho. */
+  gatilhoQuenteStatus?: { acquired: boolean; max: number; used: number; available: number };
+  /** Chamado logo após uma rolagem com o d8 de gatilho incluído — consome o recurso real e aplica dano extra se resultado 8. */
+  onGatilhoDadoResultado?: (resultado: number, foiEscolhido: boolean) => void;
+  /** Pistoleiro › Bang Bang (N2) — segundo disparo disponível quando o d8 de gatilho foi escolhido como parte do teste. */
+  bangBangAvailable?: boolean;
+  /** PA disponível atual — só habilita "Segundo disparo" com PA suficiente. */
+  paDisponivel?: number;
+  /** Gasta 1 PA para o segundo disparo do Bang Bang (a rolagem em si é a próxima "Rolar" normal, com −1 pré-preenchido). */
+  onSpendPaBangBang?: () => void;
+  /** Totem › Benção (checkpoint talentos, Fase 1) — personagem adquiriu o talento (promoção no PRÓPRIO teste ao aplicar efeito positivo, confirmada manualmente). */
+  totemBencaoAvailable?: boolean;
+  /** Token de Benção concedido por um aliado — consumido no PRIMEIRO teste após a concessão (promove se resultar em falha limitada). */
+  bencaoTokenAtivo?: { origem: string; concedidoEm: string } | null;
+  /** Consome o token de Benção (chamado depois de QUALQUER rolagem, quando o token estava ativo — "o primeiro teste realizado" consome, com ou sem promoção). */
+  onConsumeBencaoToken?: () => void;
 }) {
   const atributoIds = ["corpo", "mente", "animo"] as const;
   const [atributoId, setAtributoId] = useState<(typeof atributoIds)[number]>("corpo");
@@ -177,6 +204,23 @@ export function RollsTab({
   // qualquer teste de Influência) — nunca aplica sem essa confirmação
   // explícita quando a promoção tem `contexto`. Reseta ao trocar de perícia.
   const [contextoConfirmado, setContextoConfirmado] = useState(false);
+  // Propriedade Rajada (arma de fogo/arremesso_disparo) — dispara múltiplas vezes numa
+  // ação em troca de −1 no teste. Malabarista › Saque Fantasma ignora essa penalidade
+  // especificamente com arma LEVE de propriedade Arremesso — como o catálogo não
+  // estrutura "leve + Arremesso" como um único booleano consultável a partir daqui, o
+  // jogador confirma explicitamente (mesmo critério de outras confirmações desta sessão).
+  const [rajadaAtiva, setRajadaAtiva] = useState(false);
+  const [saqueFantasmaConfirmado, setSaqueFantasmaConfirmado] = useState(false);
+  // Pistoleiro › Gatilho Quente — inclui o d8 de gatilho na próxima rolagem; reseta
+  // depois de cada "Rolar" (1 dado por ataque, nunca acumula pedido).
+  const [usarDadoGatilho, setUsarDadoGatilho] = useState(false);
+  // Bang Bang — true logo após uma rolagem onde o d8 de gatilho foi o maior dado
+  // (condição real do payload: "escolher o resultado dele como parte do teste").
+  const [bangBangDisponivelAgora, setBangBangDisponivelAgora] = useState(false);
+  // Totem › Benção — confirmação de que ESTE teste aplica um efeito positivo em alguém
+  // (cura/reforço/proteção); sem `pericias[]` no payload, não dá pra escopar por perícia
+  // como Passo Fantasma/Olhar Penetrante, então é uma confirmação avulsa por rolagem.
+  const [bencaoAtiva, setBencaoAtiva] = useState(false);
 
   function toggleTagExtra(tag: ToggleTag) {
     setTagsExtras((prev) => {
@@ -269,12 +313,23 @@ export function RollsTab({
     const manualModifier = parseIntOrDefault(modificadorInput, 0);
     const cd = cdInput.trim() === "" ? undefined : parseIntOrDefault(cdInput, 0);
     const temPericia = periciaId !== SEM_PERICIA;
-    const finalModifier = manualModifier + modificadorEfeitos;
+    const rajadaPenalidade = rajadaAtiva && !(saqueFantasmaAvailable && saqueFantasmaConfirmado) ? -1 : 0;
+    const finalModifier = manualModifier + modificadorEfeitos + rajadaPenalidade;
     const promocaoCandidata = temPericia ? marginPromotions.find((p) => p.periciaId === periciaId) : undefined;
     // Promoção com `contexto` (ex.: Olhar Penetrante) só aplica com confirmação explícita de que
     // o teste atual se encaixa nesse contexto estreito — sem contexto (ex.: Passo Fantasma, "testes
     // de Furtividade") aplica direto, já que a própria perícia já delimita o uso.
-    const promocao = promocaoCandidata && (!promocaoCandidata.contexto || contextoConfirmado) ? promocaoCandidata : undefined;
+    const promocaoPericia = promocaoCandidata && (!promocaoCandidata.contexto || contextoConfirmado) ? promocaoCandidata : undefined;
+    // Totem › Benção — sem `pericias[]` no payload (aplica a QUALQUER teste que aplique um
+    // efeito positivo), então a confirmação avulsa (checkbox) ou o token de um aliado tomam
+    // precedência sobre a promoção por perícia quando ambos poderiam se aplicar (mesma faixa
+    // de margem — nunca empilham, só uma promoção por rolagem).
+    const bencaoOrigem = bencaoTokenAtivo ? `Token de Benção (${bencaoTokenAtivo.origem})` : bencaoAtiva ? "Totem — Benção" : null;
+    const promocao = bencaoOrigem
+      ? { de: "falha_limitada" as MargemClassificacao, para: "sucesso_limitado" as MargemClassificacao, origem: bencaoOrigem }
+      : promocaoPericia
+        ? { de: promocaoPericia.de as MargemClassificacao, para: promocaoPericia.para as MargemClassificacao, origem: promocaoPericia.origem }
+        : undefined;
 
     const resultado = rollPericia({
       atributoId,
@@ -285,8 +340,22 @@ export function RollsTab({
       periciaValor: temPericia ? pericias[periciaId] ?? 0 : undefined,
       modificador: finalModifier,
       cd,
-      promocaoMargem: promocao ? { de: promocao.de as MargemClassificacao, para: promocao.para as MargemClassificacao, origem: promocao.origem } : undefined,
+      promocaoMargem: promocao,
+      incluirDadoGatilho: usarDadoGatilho,
     });
+
+    // Token consumido pelo PRIMEIRO teste após a concessão, com ou sem promoção real
+    // (o texto canônico consome no teste, não condicionado ao resultado dar falha limitada).
+    if (bencaoTokenAtivo) onConsumeBencaoToken?.();
+    setBencaoAtiva(false);
+
+    if (usarDadoGatilho && resultado.dadoGatilhoResultado != null) {
+      onGatilhoDadoResultado?.(resultado.dadoGatilhoResultado, resultado.dadoGatilhoEscolhido === true);
+      setBangBangDisponivelAgora(bangBangAvailable && resultado.dadoGatilhoEscolhido === true);
+      setUsarDadoGatilho(false);
+    } else {
+      setBangBangDisponivelAgora(false);
+    }
 
     pushHistorico({ kind: "pericia", resultado, origem: origemAtual ?? undefined });
 
@@ -468,6 +537,80 @@ export function RollsTab({
           <button data-testid="roll-pericia-button" onClick={handleRolarPericia} style={buttonStyle}>
             Rolar
           </button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: -6, marginBottom: 12 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+            <input
+              data-testid="roll-rajada-ativa"
+              type="checkbox"
+              checked={rajadaAtiva}
+              onChange={(e) => setRajadaAtiva(e.target.checked)}
+            />
+            Usar Rajada (arma de fogo/arremesso com propriedade Rajada — −1 no teste)
+          </label>
+          {rajadaAtiva && saqueFantasmaAvailable && (
+            <label
+              data-testid="roll-saque-fantasma-confirmar"
+              style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 11, color: "#5ec8ff", marginLeft: 20 }}
+            >
+              <input
+                type="checkbox"
+                checked={saqueFantasmaConfirmado}
+                onChange={(e) => setSaqueFantasmaConfirmado(e.target.checked)}
+                style={{ marginTop: 2 }}
+              />
+              <span>Saque Fantasma: confirmo que é uma arma LEVE com propriedade Arremesso — ignora a penalidade de Rajada.</span>
+            </label>
+          )}
+          {gatilhoQuenteStatus?.acquired && (
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+              <input
+                data-testid="roll-gatilho-quente-usar"
+                type="checkbox"
+                checked={usarDadoGatilho}
+                disabled={gatilhoQuenteStatus.available <= 0}
+                onChange={(e) => setUsarDadoGatilho(e.target.checked)}
+              />
+              Usar dado de gatilho (d8 real na rolagem — {gatilhoQuenteStatus.available}/{gatilhoQuenteStatus.max} disponíveis)
+            </label>
+          )}
+          {bangBangDisponivelAgora && (
+            <div data-testid="roll-bang-bang-disponivel" style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 11, color: "#5ec8ff" }}>
+              <span>Bang Bang: dado de gatilho fez parte do teste — pode gastar +1 PA para um segundo disparo (−1).</span>
+              <button
+                data-testid="roll-bang-bang-confirmar"
+                disabled={paDisponivel < 1}
+                onClick={() => {
+                  onSpendPaBangBang?.();
+                  setModificadorInput(String(parseIntOrDefault(modificadorInput, 0) - 1));
+                  setBangBangDisponivelAgora(false);
+                }}
+                style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+              >
+                Confirmar segundo disparo (−1 pré-preenchido — role novamente)
+              </button>
+            </div>
+          )}
+          {bencaoTokenAtivo ? (
+            <p data-testid="roll-bencao-token-ativo" style={{ fontSize: 11, color: "#5ec8ff", margin: 0 }}>
+              Token de Benção ativo (de {bencaoTokenAtivo.origem}) — este é o primeiro teste desde a concessão: falha
+              limitada vira sucesso limitado. Consumido ao rolar.
+            </p>
+          ) : (
+            totemBencaoAvailable && (
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+                <input
+                  data-testid="roll-bencao-ativa"
+                  type="checkbox"
+                  checked={bencaoAtiva}
+                  onChange={(e) => setBencaoAtiva(e.target.checked)}
+                />
+                Benção: confirmo que este teste aplica um efeito positivo em alguém (cura/reforço/proteção) — falha
+                limitada vira sucesso limitado.
+              </label>
+            )
+          )}
         </div>
 
         {periciaId !== SEM_PERICIA && marginPromotions.some((p) => p.periciaId === periciaId) && (() => {

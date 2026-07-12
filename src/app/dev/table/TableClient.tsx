@@ -91,6 +91,10 @@ import {
   buildFuriaTemporaryEffect,
   getBlindagemAvailability,
   markBlindagemUsed,
+  isSedeDeSangueActive,
+  getSedeDeSangueDobroCorpoBonus,
+  getApararPromocaoAvailability,
+  markApararPromocaoUsed,
   type GmResource,
   type CharacterRecord,
   type Character,
@@ -228,6 +232,8 @@ interface DefenseRollResult {
   reactionsAfter: number;
   requirementStatus: "met" | "not_detected" | "manual_override" | "not_applicable";
   requirementReminder: string | null;
+  /** Espadachim › Aparar (checkpoint talentos, Fase 1) — sucesso padrão promovido a crítico manualmente, 1/cena. Habilita o gatilho de Ripostar (N3). */
+  promovidaCritico?: boolean;
 }
 
 const DEFAULT_ATTACK_PANEL_FORM: AttackPanelForm = {
@@ -1550,6 +1556,33 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     }
   }
 
+  /**
+   * Espadachim › Aparar (N1, checkpoint talentos Fase 1) — promove manualmente a última
+   * defesa de Aparar de sucesso padrão para sucesso crítico, 1/cena. "Lâmina" não é um
+   * dado estruturado no catálogo (sem subtipo/propriedade "lâmina"), então o narrador
+   * confirma explicitamente em vez de o sistema adivinhar. Consome o uso no DEFENSOR
+   * (dono do Aparar), não no atacante.
+   */
+  async function handlePromoteApararCritico(logId: string) {
+    const form = ataquePainelForm[logId] ?? DEFAULT_ATTACK_PANEL_FORM;
+    if (!form.lastDefense || form.lastDefense.defenseType !== "aparar" || form.lastDefense.promovidaCritico) return;
+    if (!form.targetCharacterId) return;
+    const targetRecord = personagensAtivos[form.targetCharacterId];
+    if (!targetRecord) return;
+    const target = normalizeCharacter(targetRecord.payload);
+    const status = getApararPromocaoAvailability(target, talentsIniciais);
+    if (!status.acquired || status.usedThisScene) return;
+    const nowIso = new Date().toISOString();
+    const nextTarget = markApararPromocaoUsed(target, nowIso);
+    try {
+      const record = await updateCharacter(form.targetCharacterId, nextTarget);
+      setPersonagensAtivos((prev) => ({ ...prev, [record.id]: record }));
+      updateAttackPanelForm(logId, { lastDefense: { ...form.lastDefense, promovidaCritico: true } });
+    } catch (err) {
+      setAtaqueResolverErro(err instanceof Error ? `Erro ao promover Aparar: ${err.message}` : "Erro desconhecido ao promover Aparar.");
+    }
+  }
+
   function handleRollAttackDamage(logId: string, log: TableLogEntry) {
     const damageBase = typeof log.payload.damageBase === "string" ? log.payload.damageBase : null;
     if (!damageBase || !isDiceFormula(damageBase)) return;
@@ -1780,6 +1813,23 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       }
       if (blindagemAplicada) {
         reminders.push("Blindagem: dano totalmente anulado (sucesso em Bloquear) — nada aplicado ao escudo/PD nem ao defensor.");
+      }
+      // Berserker › Sede de Sangue (checkpoint talentos, Fase 1) — reminder com o valor
+      // EXATO do bônus de Corpo extra a somar (dobra o bônus já incluído pelo narrador no
+      // dano bruto); nunca soma sozinho porque não há campo estruturado de "dano corpo a
+      // corpo" separado do dano bruto digitado.
+      {
+        const attackerCharacterIdSds = typeof log.payload.characterId === "string" ? log.payload.characterId : null;
+        const attackerRecordSds = attackerCharacterIdSds ? personagensAtivos[attackerCharacterIdSds] : null;
+        const attackerCharacterSds = attackerRecordSds ? normalizeCharacter(attackerRecordSds.payload) : null;
+        const weaponInstanceIdSds = typeof log.payload.weaponInstanceId === "string" ? log.payload.weaponInstanceId : null;
+        const weaponInstanceSds = attackerCharacterSds && weaponInstanceIdSds ? attackerCharacterSds.inventario?.find((i) => i.id === weaponInstanceIdSds) : null;
+        const weaponModelSds = weaponInstanceSds ? itemsIniciais.find((m) => m.slug === weaponInstanceSds.itemSlug) : null;
+        const armaCorpoACorpo = !weaponModelSds?.periciaAtaque || weaponModelSds.periciaAtaque === "luta";
+        const bonusDobro = attackerCharacterSds && armaCorpoACorpo ? getSedeDeSangueDobroCorpoBonus(attackerCharacterSds, talentsIniciais) : null;
+        if (bonusDobro != null) {
+          reminders.push(`Sede de Sangue: some +${bonusDobro} extra ao dano corpo a corpo (dobra o bônus de Corpo já incluso no dano bruto).`);
+        }
       }
       const requisitosTexto = [
         "Cobertura, alcance, linha de visão, linha de efeito e posição não são validados automaticamente.",
@@ -3683,6 +3733,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                         onRollDamage={() => handleRollAttackDamage(entry.id, entry)}
                         onRollExtraMarginDie={() => handleRollExtraMarginDie(entry.id, entry)}
                         onRollDefense={(defenseType) => handleRollDefense(entry.id, entry, defenseType)}
+                        onPromoteAparar={() => handlePromoteApararCritico(entry.id)}
                         onApply={() => handleResolveAttackDamage(entry)}
                         onCancel={() => setAtaqueResolvendoLogId(null)}
                         talentsIniciais={talentsIniciais}
@@ -3754,6 +3805,7 @@ function AttackResolutionPanel({
   onRollDamage,
   onRollExtraMarginDie,
   onRollDefense,
+  onPromoteAparar,
   onApply,
   onCancel,
   talentsIniciais,
@@ -3775,6 +3827,8 @@ function AttackResolutionPanel({
   onRollDamage: () => void;
   onRollExtraMarginDie: () => void;
   onRollDefense: (defenseType: DefenseType) => void;
+  /** Espadachim › Aparar (checkpoint talentos, Fase 1) — promove a última defesa de Aparar de sucesso padrão para crítico, 1/cena. */
+  onPromoteAparar: () => void;
   onApply: () => void;
   onCancel: () => void;
   /** Assassino › Hemorragia/Executar (checkpoint talentos, Fase E) — talentos do ATACANTE. */
@@ -3806,6 +3860,19 @@ function AttackResolutionPanel({
   const manaAlvoAtual = targetNormalizado?.recursos_atuais?.mana ?? 0;
   // Guardião › Blindagem (checkpoint talentos, Fase 5) — lido do ALVO.
   const blindagemStatus = targetNormalizado ? getBlindagemAvailability(targetNormalizado, talentsIniciais) : { acquired: false, usedThisScene: false };
+  // Espadachim › Aparar (checkpoint talentos, Fase 1) — lido do DEFENSOR (dono do Aparar).
+  const apararPromocaoStatus = targetNormalizado ? getApararPromocaoAvailability(targetNormalizado, talentsIniciais) : { acquired: false, usedThisScene: false };
+  const apararBandaAtual =
+    form.lastDefense?.defenseType === "aparar" && attackTotal != null
+      ? resolveMarginBand(form.lastDefense.total - attackTotal).band
+      : null;
+  const podePromoverAparar =
+    !!form.lastDefense &&
+    form.lastDefense.defenseType === "aparar" &&
+    !form.lastDefense.promovidaCritico &&
+    apararBandaAtual === "standard" &&
+    apararPromocaoStatus.acquired &&
+    !apararPromocaoStatus.usedThisScene;
 
   // Assassino › Hemorragia/Executar (Fase E, cross-record) — lidos do ATACANTE, não do alvo.
   const attackerCharacterId = typeof log.payload.characterId === "string" ? log.payload.characterId : null;
@@ -3922,7 +3989,17 @@ function AttackResolutionPanel({
               {form.lastDefense.skillName} {form.lastDefense.skillValue}
               {form.lastDefense.modifiersTotal !== 0 ? ` + mod ${form.lastDefense.modifiersTotal}` : ""} = {form.lastDefense.total}
               {form.lastDefense.requirementReminder && form.lastDefense.requirementStatus !== "met" ? ` — ${form.lastDefense.requirementReminder}` : ""}
+              {form.lastDefense.promovidaCritico ? " — promovida a sucesso crítico (Aparar)" : ""}
             </p>
+          )}
+          {podePromoverAparar && (
+            <button
+              data-testid={`ataque-aparar-promover-${log.id}`}
+              onClick={onPromoteAparar}
+              style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px", alignSelf: "flex-start" }}
+            >
+              Aparar: tratar como sucesso crítico (confirma lâmina — 1/cena)
+            </button>
           )}
           <p style={{ fontSize: 10, opacity: 0.5, margin: 0 }}>
             Modificadores automáticos de condição/postura ainda são pendência nesta tela — só o modificador manual acima entra na rolagem.

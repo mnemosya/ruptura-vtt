@@ -29,7 +29,7 @@
 
 import type { ActiveEffect } from "./activeEffects";
 import type { Character, TemporaryEffect } from "./types";
-import { addTemporaryEffect } from "./temporaryEffects";
+import { addTemporaryEffect, getActiveTemporaryEffects, removeTemporaryEffect } from "./temporaryEffects";
 import {
   deriveActiveEffectsFromTalents,
   getTalentEffectKey,
@@ -1184,6 +1184,97 @@ export function hasSedeDeSangue(character: Pick<Character, "talentos_adquiridos"
   return false;
 }
 
+/**
+ * Localiza o efeito de nível a partir do `sourceId` de um TemporaryEffect
+ * (`"<nivelId>:<efeitoIndex>"`, ver `getTalentEffectKey`). Usado para
+ * checar `condicao_ativacao` de um toggle já ativo sem duplicar a busca
+ * em `talents`/`niveis` em cada chamador.
+ */
+function findEffectBySourceId(talents: TalentContent[], sourceId: string | undefined): TalentLevelEffect | null {
+  if (!sourceId) return null;
+  const [nivelId, efeitoIndexStr] = sourceId.split(":");
+  const efeitoIndex = Number(efeitoIndexStr);
+  if (!nivelId || !Number.isFinite(efeitoIndex)) return null;
+  for (const talent of talents) {
+    const nivel = talent.niveis.find((n) => n.id === nivelId);
+    if (!nivel) continue;
+    return getTalentLevelEffects(nivel)[efeitoIndex] ?? null;
+  }
+  return null;
+}
+
+/**
+ * Berserker › Sede de Sangue — só pode ATIVAR com PV abaixo da metade do
+ * máximo (`condicao_ativacao.tipo === "pv_abaixo_metade"`, lido do
+ * payload — genérico para qualquer talento futuro com a mesma condição,
+ * não hardcoded por nome). `pvMax <= 0` nunca bloqueia (dado ausente).
+ */
+export function isPvGatedToggleAllowedToActivate(efeito: TalentLevelEffect, pvAtual: number, pvMax: number): boolean {
+  const condicao = efeito.condicao_ativacao as Record<string, unknown> | undefined;
+  if (condicao?.tipo !== "pv_abaixo_metade") return true;
+  if (pvMax <= 0) return true;
+  return pvAtual < pvMax / 2;
+}
+
+/**
+ * Desativa automaticamente qualquer toggle ativo cuja `condicao_ativacao`
+ * (`pv_abaixo_metade`) deixou de valer — chamado nos pontos reais de
+ * mudança de PV (edição manual, item de cura, descanso). Nunca ativa
+ * sozinho (ativação continua manual, com PA/confirmação do jogador).
+ */
+export function enforcePvGatedToggleDeactivation(
+  character: Character,
+  talents: TalentContent[],
+  pvAtual: number,
+  pvMax: number,
+  nowIso: string,
+): { character: Character; deactivated: { nivelNome: string; talentNome: string; effectId: string }[] } {
+  if (pvMax <= 0 || pvAtual < pvMax / 2) return { character, deactivated: [] };
+  const ativos = getActiveTemporaryEffects(character).filter((e) => e.sourceType === "talent");
+  const deactivated: { nivelNome: string; talentNome: string; effectId: string }[] = [];
+  let next = character;
+  for (const effect of ativos) {
+    const efeito = findEffectBySourceId(talents, effect.sourceId);
+    const condicao = efeito?.condicao_ativacao as Record<string, unknown> | undefined;
+    if (condicao?.tipo !== "pv_abaixo_metade") continue;
+    next = removeTemporaryEffect(next, effect.id, nowIso);
+    deactivated.push({ nivelNome: effect.name, talentNome: effect.sourceName, effectId: effect.id });
+  }
+  return { character: next, deactivated };
+}
+
+/**
+ * Berserker › Sede de Sangue — toggle ativo AGORA? (mesma fonte usada por
+ * `getUsableTalentEffects.toggledOn`, mas exposta standalone para o
+ * lembrete de dano dobrado em `/dev/table`/ficha, sem precisar montar a
+ * lista inteira de efeitos usáveis.)
+ */
+export function isSedeDeSangueActive(character: Pick<Character, "efeitos_temporarios" | "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const effect of getActiveTemporaryEffects(character)) {
+    if (effect.sourceType !== "talent") continue;
+    const efeito = findEffectBySourceId(talents, effect.sourceId);
+    if ((efeito?.condicao_ativacao as Record<string, unknown> | undefined)?.tipo === "pv_abaixo_metade") return true;
+  }
+  return false;
+}
+
+/**
+ * Berserker › Sede de Sangue — bônus de Corpo DOBRADO a somar no dano
+ * corpo a corpo, além do bônus normal já incluído pelo narrador (o
+ * capítulo de Combate soma Corpo ao dano corpo a corpo como regra-base;
+ * este sistema não tem uma calculadora de dano automática que já inclua
+ * esse bônus, então o valor exato do bônus EXTRA — igual a Corpo de
+ * novo — é exposto aqui para o narrador somar ao dano bruto). `null`
+ * quando o toggle não está ativo.
+ */
+export function getSedeDeSangueDobroCorpoBonus(
+  character: Pick<Character, "efeitos_temporarios" | "talentos_adquiridos" | "atributos">,
+  talents: TalentContent[],
+): number | null {
+  if (!isSedeDeSangueActive(character, talents)) return null;
+  return character.atributos?.corpo ?? 0;
+}
+
 // ---------------------------------------------------------------------
 // Guardião — Blindagem (N2): anular dano bloqueado sem consumir PD.
 // ---------------------------------------------------------------------
@@ -1267,6 +1358,21 @@ export function markApararPromocaoUsed(character: Character, nowIso: string): Ch
 }
 
 // ---------------------------------------------------------------------
+// Malabarista — Saque Fantasma (N1): saque sem PA (já não custava PA
+// nesta base — equipar/trocar de item nunca teve custo estruturado) +
+// ignora a penalidade de Rajada (−1) com arma leve de Arremesso.
+// ---------------------------------------------------------------------
+
+export function hasSaqueFantasma(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "saque_sem_pa") return true;
+    }
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------
 // Pistoleiro — Gatilho Quente (N1) / Bang Bang (N2, +1 dado de gatilho).
 // ---------------------------------------------------------------------
 
@@ -1301,11 +1407,53 @@ export function getGatilhoQuenteAvailability(
   return { acquired, max, used, available: Math.max(0, max - used) };
 }
 
-/** Consome 1 dado de gatilho (o jogador rola o d8 físico/externo e informa o resultado na UI). */
+/** Consome 1 dado de gatilho — o d8 é rolado virtualmente na MESMA rolagem (`rollPericia.incluirDadoGatilho`), nunca digitado à parte. */
 export function consumeGatilhoDado(character: Character, nowIso: string): Character {
   const usos = { ...(character.talentos_estado?.usos ?? {}) };
   const atual = usos[GATILHO_DADOS_USAGE_KEY]?.usados ?? 0;
   usos[GATILHO_DADOS_USAGE_KEY] = { usados: atual + 1, cadencia: "descanso_longo", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+/** Pistoleiro › Bang Bang (N2) — segundo disparo (assinatura única: `segundo_disparo`, distinta de `aumentar_recurso`). */
+export function hasBangBangSegundoDisparo(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "segundo_disparo") return true;
+    }
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------
+// Totem — Benção (N1): promoção de margem sem `pericias[]` (aplica em
+// QUALQUER teste que aplique um efeito positivo, confirmado manualmente,
+// mesmo critério de Lâmina Oculta) + token 1/cena concedido a um aliado.
+// ---------------------------------------------------------------------
+
+export const TOTEM_BENCAO_TOKEN_USAGE_KEY = "totem_bencao_token:cena";
+
+export function hasTotemBencao(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "token_sucesso_limitado") return true;
+    }
+  }
+  return false;
+}
+
+export function getTotemBencaoTokenAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisScene: boolean } {
+  const acquired = hasTotemBencao(character, talents);
+  const usedThisScene = (character.talentos_estado?.usos?.[TOTEM_BENCAO_TOKEN_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisScene };
+}
+
+export function markTotemBencaoTokenUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[TOTEM_BENCAO_TOKEN_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
   return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
 }
 

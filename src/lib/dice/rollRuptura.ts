@@ -27,7 +27,13 @@ function classificarMargem(margem: number): MargemClassificacao {
 export function rollPericia(params: RupturaRollParams): RupturaRollResult {
   const quantidadeDados = Math.max(0, Math.trunc(params.atributoValor));
   const dados = Array.from({ length: quantidadeDados }, () => rollDie(8));
-  const maiorDado = dados.length > 0 ? Math.max(...dados) : 0;
+  // Pistoleiro › Gatilho Quente — o d8 de gatilho é rolado JUNTO com os demais
+  // (mesma rolagem, cor diferente só narrativamente) e entra no pool de "maior
+  // dado" — nunca um bônus separado somado depois.
+  const dadoGatilhoResultado = params.incluirDadoGatilho ? rollDie(8) : undefined;
+  const poolCompleto = dadoGatilhoResultado != null ? [...dados, dadoGatilhoResultado] : dados;
+  const maiorDado = poolCompleto.length > 0 ? Math.max(...poolCompleto) : 0;
+  const dadoGatilhoEscolhido = dadoGatilhoResultado != null ? dadoGatilhoResultado === maiorDado : undefined;
   const periciaValor = params.periciaValor ?? 0;
   const total = maiorDado + periciaValor + params.modificador;
 
@@ -39,9 +45,11 @@ export function rollPericia(params: RupturaRollParams): RupturaRollResult {
     periciaNome: params.periciaNome,
     periciaValor,
     modificador: params.modificador,
-    dados,
+    dados: poolCompleto,
     maiorDado,
     total,
+    dadoGatilhoResultado,
+    dadoGatilhoEscolhido,
   };
 
   if (params.cd == null) return resultado;

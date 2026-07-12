@@ -1703,6 +1703,7 @@ export function canSplitInstanceQuantity(instance: InventoryItemInstance): boole
   if (instance.mitAtual != null) return false;
   if (instance.pdAtual != null) return false;
   if (instance.toqueDeMidas != null) return false; // efeito de Toque de Midas pertence a UMA unidade física — força transferência da instância inteira.
+  if (instance.sobregravacao != null) return false; // Sobregravação (autoria/aliados/multiplicador) pertence a UMA unidade física — mesma regra do Toque de Midas, nunca perder a autorização num split parcial.
   return true;
 }
 
