@@ -367,6 +367,23 @@ Contagem: ✅ 0 · 🔵 20 · 🟡 7 · ⚙️ 38 · 📖 1.
   formulário estruturado específico (like Gambiarra Expressa's alvo/material/efeito) que
   o padrão desta sessão usa para contar como Implementado — permanecem no nível de
   infraestrutura genérica, não uma mecânica desta sessão.
+- **⚙️ Droneiro, Mecatrônico, Tecelão (todos os 9 níveis) — auditados nesta sessão
+  (Fase 9), não implementados.** Auditoria real de subsistema existente (não conclusão
+  por botão genérico): buscado por qualquer traço de modelo de drone, robô ou Trama em
+  `src/lib/character/types.ts` e em todo o motor de talentos — **não existe nenhum**.
+  Droneiro/Mecatrônico inteiros dependem de um roster de drones/robôs (identidade, PV/PA
+  próprios, estado de ativação, alvo de comandos) que simplesmente não tem campo nenhum
+  no personagem hoje; Tecelão depende de um sistema de Trama/hacking (grid de Nós/
+  Bloqueios, RAM, protocolos Sondar/Avançar/Apagar Rastros, estado de Detecção) igualmente
+  inexistente. `classifyTalentEffect` já rotula os efeitos `familia: "companheiro"`/
+  `"trama"` como "atividade" — isso é só a CATEGORIA de UI, não uma implementação; conectar
+  de verdade exigiria primeiro construir o modelo de dados do zero (schema de
+  drone/robô/Trama, CRUD, persistência, UI própria em `/dev/character-sheet` e
+  possivelmente `/dev/table` para o narrador ver os companheiros) — um recurso novo do
+  tamanho de um checkpoint próprio, não uma automação de talento sobre infraestrutura já
+  existente como as demais 57 árvores desta sessão. Marcar qualquer um desses 9 níveis
+  como Implementado sem esse modelo seria exatamente o tipo de "botão genérico" que a
+  instrução desta sessão proibiu explicitamente.
 - **Malabarista (todos os 3 níveis) — não implementados nesta sessão** (Fase 7). Saque
   Fantasma/Revoada/Espetáculo Mortal exigem detectar arma leve com propriedade
   "Arremesso" no ataque em curso e alterar o fluxo de ataque (saque sem PA, segundo
