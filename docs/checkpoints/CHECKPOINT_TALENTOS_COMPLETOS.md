@@ -54,12 +54,12 @@ Legenda: **✅ Integral** (mecânica-núcleo conectada ao fluxo real) · **🟡 
 com formulário/estado/log) · **⚙️ Infra pendente** (só classificação/badge/botão/
 cadência/log/lembrete — SEM regra específica no fluxo).
 
-Contagem: ✅ 1 · 🟡 8 · ⚙️ 57 · 📖 0.
+Contagem: ✅ 1 · 🟡 9 · ⚙️ 56 · 📖 0.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
 | Artífice | Bricolagem | 1 | ⚙️ Infra pendente |
-| Artífice | Toque de Midas | 2 | ⚙️ Infra pendente |
+| Artífice | Toque de Midas | 2 | 🟡 Parcial |
 | Artífice | Gambiarra Expressa | 3 | ⚙️ Infra pendente |
 | Assassino | Lâmina Oculta | 1 | ⚙️ Infra pendente |
 | Assassino | Hemorragia | 2 | ⚙️ Infra pendente |
@@ -129,6 +129,10 @@ Contagem: ✅ 1 · 🟡 8 · ⚙️ 57 · 📖 0.
 
 - **🟡 Domínio Territorial** — multiplica alcance/área na aba Magias (+50%); **falta** usar o
   valor ajustado nos cartões operacionais e nos logs de conjuração para ser integral.
+- **🟡 Toque de Midas** — efeito na instância real (1/dia, 1h, acompanha equipar/
+  transferir/reload); MIT +2 e PD +3 entram no cálculo real de defesa; card + Encerrar +
+  logs. **Falta**: somar +1 ataque/+1 dano no teste real de ataque com a arma e auto-
+  expiração por relógio ao carregar.
 - **✅ Ascensão** — limite de Surtos 3→5 real + Ruptura especial idempotente ao adquirir
   (não reduz Integridade, não conta em cálculos futuros), exibida à parte e logada.
 - **🟡 Canalizar** — Potencializar real (gasta Mana, +1 dano/Mana, 1/rodada); **falta
