@@ -62,7 +62,7 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 14 · 🟡 10 · ⚙️ 41 · 📖 1.
+Contagem: ✅ 0 · 🔵 18 · 🟡 6 · ⚙️ 41 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -75,7 +75,7 @@ Contagem: ✅ 0 · 🔵 14 · 🟡 10 · ⚙️ 41 · 📖 1.
 | Atirador de Elite | 1 Tiro, 1 Acerto | 1 | 🔵 Implementado (aguardando validação manual) |
 | Atirador de Elite | À Espreita | 2 | 🔵 Implementado (aguardando validação manual) |
 | Atirador de Elite | Headshot | 3 | 🔵 Implementado (aguardando validação manual) |
-| Berserker | Fúria | 1 | 🟡 Parcial |
+| Berserker | Fúria | 1 | 🔵 Implementado (aguardando validação manual) |
 | Berserker | Sede de Sangue | 2 | 🟡 Parcial |
 | Berserker | Último Fôlego | 3 | ⚙️ Infra pendente |
 | Dissecador | Golpe Cirúrgico | 1 | ⚙️ Infra pendente |
@@ -91,10 +91,10 @@ Contagem: ✅ 0 · 🔵 14 · 🟡 10 · ⚙️ 41 · 📖 1.
 | Estrategista | Briefing de Campo | 2 | ⚙️ Infra pendente |
 | Estrategista | Imposição de Ritmo | 3 | ⚙️ Infra pendente |
 | Guardião | Sentinela | 1 | ⚙️ Infra pendente |
-| Guardião | Blindagem | 2 | 🟡 Parcial |
+| Guardião | Blindagem | 2 | 🔵 Implementado (aguardando validação manual) |
 | Guardião | Muralha | 3 | ⚙️ Infra pendente |
-| Mago de Batalha | Domínio Territorial | 1 | 🟡 Parcial |
-| Mago de Batalha | Canalizar | 2 | 🟡 Parcial |
+| Mago de Batalha | Domínio Territorial | 1 | 🔵 Implementado (aguardando validação manual) |
+| Mago de Batalha | Canalizar | 2 | 🔵 Implementado (aguardando validação manual) |
 | Mago de Batalha | Ascensão | 3 | 🔵 Implementado (aguardando validação manual) |
 | Malabarista | Saque Fantasma | 1 | 🟡 Parcial |
 | Malabarista | Revoada | 2 | ⚙️ Infra pendente |
@@ -247,8 +247,13 @@ Contagem: ✅ 0 · 🔵 14 · 🟡 10 · ⚙️ 41 · 📖 1.
   ausência de teste estendido, cria estado ativo com Encerrar manual, gate 1/sessão
   (reset manual do narrador — sem gatilho canônico de nova sessão) verificado bloqueando
   reaquisição mesmo após encerrar o efeito ativo.
-- **🟡 Domínio Territorial** — multiplica alcance/área na aba Magias (+50%); **falta** usar o
-  valor ajustado nos cartões operacionais e nos logs de conjuração para ser integral.
+- **🔵 Domínio Territorial (Implementado, aguardando validação manual — Fase 5)** —
+  multiplica alcance/área na aba Magias (+50%, já existia) E agora também no LOG real de
+  conjuração (`handleCastSpell`/`handleCastSpellWithFusion`): quando o multiplicador do
+  talento ≠ 1, o log mostra "alcance X (Domínio Territorial, base Y)" — fecha o gap
+  anterior ("falta usar o valor ajustado... nos logs de conjuração"). Reaproveita
+  `applyRangeAreaMultiplierToText` (mesma função já usada no cartão da aba Magias) — nunca
+  duplica a lógica de reescala.
 - **🔵 Toque de Midas (Implementado, aguardando validação manual)** — efeito real na
   instância (1/dia — controlado por timestamp de aplicação/ação manual "Novo dia (só
   talentos)", **não** equiparado automaticamente a descanso longo — não há regra
@@ -272,17 +277,53 @@ Contagem: ✅ 0 · 🔵 14 · 🟡 10 · ⚙️ 41 · 📖 1.
 - **🔵 Ascensão (Implementado, aguardando validação manual)** — limite de Surtos 3→5
   real + Ruptura especial idempotente ao adquirir (não reduz Integridade, não conta em
   cálculos futuros), exibida à parte e logada. Pendente: confirmação do usuário.
-- **🟡 Canalizar** — Potencializar real (gasta Mana, +1 dano/Mana, 1/rodada); **falta
-  Amortecer** (fluxo de dano recebido, lado narrador — Fase E).
-- **Árvore Mago de Batalha, em geral** — permanece **🟡 Parcial** enquanto Domínio
-  Territorial (cartões/logs) e Canalizar (Amortecer) não estiverem completos; Ascensão
-  isoladamente já está 🔵 Implementado, mas isso não eleva a árvore como um todo.
-- **🟡 Aparar** — +1 em Aparar real via ActiveEffect; **falta** a promoção 1/cena.
-- **🟡 Blindagem** — +1 em Bloquear real; **falta** anular todo o dano sem consumir PD.
-- **🟡 Sede de Sangue** — −1 defensivas real (toggle→efeito); **falta** dobrar bônus de
-  Corpo no dano e monitorar PV.
-- **🟡 Fúria** — efeito temporário empilhável existe; **falta** ganhar pilha automática
-  ao sofrer dano (lado narrador).
+- **🔵 Canalizar (Implementado, aguardando validação manual — Fase 5)** — Potencializar
+  real (gasta Mana, +1 dano/Mana, 1/rodada, já existia). Amortecer agora também real,
+  integrado em `/dev/table` (`handleResolveAttackDamage`, cross-record): o narrador
+  digita quanto Mana o ALVO gasta, reduz o dano BRUTO 1:1 ANTES de MIT/PD (nunca depois),
+  respeita o gate 1/rodada COMPARTILHADO com Potencializar (`CANALIZAR_USAGE_KEY` —
+  usar um bloqueia o outro na mesma rodada, como o payload descreve "1 das opções
+  abaixo"), clampa ao Mana real disponível do alvo e persiste a dedução no MESMO
+  `updateCharacter` que aplica o dano. **Limitação conhecida**: só integrado no painel de
+  ataque FÍSICO; o painel de resolução de dano MÁGICO (`SpellAttackResolutionPanel`) tem
+  handler próprio e ainda não recebeu o mesmo Amortecer — dano mágico contra um alvo com
+  Canalizar não amortece ainda.
+- **Árvore Mago de Batalha, em geral** — as 3 níveis (Domínio Territorial, Canalizar,
+  Ascensão) estão agora 🔵 Implementado (aguardando validação manual).
+- **🔵 Blindagem (Implementado, aguardando validação manual — Fase 5)** — +1 em Bloquear
+  real (já existia). "Anular todo o dano" agora real, integrado em `/dev/table`
+  (`handleResolveAttackDamage`): checkbox do lado do ALVO zera o dano bruto ANTES de
+  qualquer outro cálculo (inclusive Amortecer, que fica irrelevante quando já não há
+  dano), 1/cena, nunca toca PD/escudo nem consome Mana — exatamente "nada é aplicado ao
+  escudo, ao defensor ou ao aliado" do capítulo.
+- **🟡 Sede de Sangue** — −1 defensivas real (toggle→efeito, já existia); **ainda falta**
+  dobrar o bônus de Corpo no dano corpo a corpo (o sistema não tem um cálculo automático
+  de "dano + bônus de Corpo" para dobrar — dano é sempre digitado manualmente pelo
+  narrador, então dobrar exigiria ou uma calculadora nova de dano corpo a corpo, ou um
+  lembrete com o valor exato a somar; nenhum dos dois foi feito ainda) e monitorar PV
+  (auto-desligar ao passar de 50%).
+- **🔵 Fúria (Implementado, aguardando validação manual — Fase 5)** — efeito temporário
+  empilhável real agora GANHA pilha automaticamente ao sofrer dano de verdade
+  (`handleResolveAttackDamage`, `finalDamage > 0` → `+1 Luta`, até o máximo do payload,
+  `stackingMode: "stack"` nunca duplica registro). Duração usa `durationType: "rounds"`
+  com 1 rodada restante como a aproximação mais fiel disponível a "até o fim do PRÓXIMO
+  turno" — o sistema só rastreia duração por RODADA (fim de rodada global), não por turno
+  individual por personagem; não foi inventado um rastreador de turno novo só para este
+  talento.
+- **⚙️ Espadachim › Aparar (parte manual pendente)** — +1 em Aparar continua real via
+  ActiveEffect (já existia). A promoção manual 1/cena (sucesso padrão em Aparar → sucesso
+  crítico) tem os helpers prontos (`getApararPromocaoAvailability`/
+  `markApararPromocaoUsed`, `lib/character/talentEngine.ts`) mas AINDA NÃO estão
+  conectados a nenhuma UI — Aparar é resolvido como `DefenseType` dentro do fluxo de
+  defesa de `/dev/table` (`handleRollDefense`), um caminho de código diferente do usado
+  pelas outras promoções de margem desta sessão; conectar exige entender esse fluxo
+  específico, não feito ainda por tempo. Infra pronta, não é implementação real ainda —
+  status intencionalmente não elevado.
+- **⚙️ Paramédico › Pronto-socorro (parte manual pendente)** — mesma situação do Aparar:
+  helpers prontos (`getProntoSocorroAvailability`/`markProntoSocorroUsed`) mas não
+  conectados a uma ação real de estabilizar aliado a 0 PV — isso exigiria integrar com o
+  sistema existente de colapso/estabilização (`character.colapso`, `regras?.colapso`) que
+  não foi auditado nesta sessão. Não promovido.
 - **🟡 Saque Fantasma / Totem Benção** — parte passiva real; promoção de margem pendente.
 
 

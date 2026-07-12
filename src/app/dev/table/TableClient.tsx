@@ -65,6 +65,7 @@ import {
   getActiveConditionIds,
   getActiveTemporaryEffects,
   removeTemporaryEffect,
+  addTemporaryEffect,
   formatTemporaryEffectSummary,
   describeDuration,
   getConditionEndRoundEffects,
@@ -84,6 +85,12 @@ import {
   hasAtaqueFatal,
   hasLaminaOculta,
   endFurtividade,
+  getCanalizarState,
+  markCanalizarUsed,
+  hasFuria,
+  buildFuriaTemporaryEffect,
+  getBlindagemAvailability,
+  markBlindagemUsed,
   type GmResource,
   type CharacterRecord,
   type Character,
@@ -155,6 +162,15 @@ interface AttackPanelForm {
    * capítulo não define).
    */
   laminaOcultaFalhaLimitadaConfirmada: boolean;
+  /**
+   * Mago de Batalha › Canalizar — Amortecer (checkpoint talentos, Fase 5) — mana que o
+   * ALVO (não o atacante) gasta para reduzir o dano ANTES de MIT/PD, 1/rodada (gate
+   * compartilhado com Potencializar, `CANALIZAR_USAGE_KEY`). Texto porque é digitado
+   * pelo narrador (o alvo geralmente está numa sessão separada).
+   */
+  amortecerManaGasta: string;
+  /** Guardião › Blindagem (checkpoint talentos, Fase 5) — talento do ALVO: anula TODO o dano em sucesso de Bloquear, 1/cena, sem consumir PD/escudo. */
+  blindagemAnularAtivo: boolean;
 }
 
 /** Bandas fixas reaproveitadas por Executar/À Espreita/Headshot/Ataque Fatal/Lâmina Oculta — nunca inventadas ad-hoc em cada callsite. */
@@ -237,6 +253,8 @@ const DEFAULT_ATTACK_PANEL_FORM: AttackPanelForm = {
   ataqueFatalConfirmado: false,
   laminaOcultaAlvoConfirmado: false,
   laminaOcultaFalhaLimitadaConfirmada: false,
+  amortecerManaGasta: "",
+  blindagemAnularAtivo: false,
 };
 
 /**
@@ -1608,10 +1626,45 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     setAtaqueResolverProcessing(log.id);
     try {
       const nowIso = new Date().toISOString();
-      const targetNormalizado = normalizeCharacter(targetRecord.payload);
+      let targetNormalizado = normalizeCharacter(targetRecord.payload);
+
+      // Guardião › Blindagem (checkpoint talentos, Fase 5) — o ALVO anula TODO o dano em
+      // sucesso de Bloquear, 1/cena; nada é aplicado ao escudo/PD nem ao defensor/aliado
+      // (dano bruto vira 0 antes de qualquer outro cálculo, inclusive Amortecer).
+      const blindagemStatus = getBlindagemAvailability(targetNormalizado, talentsIniciais);
+      const blindagemAplicada = form.blindagemAnularAtivo && blindagemStatus.acquired && !blindagemStatus.usedThisScene;
+      if (blindagemAplicada) {
+        targetNormalizado = markBlindagemUsed(targetNormalizado, nowIso);
+      }
+
+      // Mago de Batalha › Canalizar Amortecer (checkpoint talentos, Fase 5) — o ALVO
+      // gasta Mana para reduzir o dano ANTES de MIT/PD (1 ponto de dano por 1 de Mana),
+      // 1/rodada (mesmo gate de Potencializar). Reduz o dano BRUTO diretamente, então o
+      // resto do pipeline (margem/MIT) roda normalmente sobre o valor já amortecido.
+      // Irrelevante quando Blindagem já zerou o dano.
+      let amortecerManaGastaReal = 0;
+      const amortecerPedida = blindagemAplicada ? 0 : Math.max(0, Math.trunc(Number(form.amortecerManaGasta) || 0));
+      if (amortecerPedida > 0) {
+        const canalizarAlvoState = getCanalizarState(targetNormalizado, talentsIniciais);
+        const manaAlvoAtual = targetNormalizado.recursos_atuais?.mana ?? 0;
+        if (canalizarAlvoState.acquired && !canalizarAlvoState.usedThisRound) {
+          amortecerManaGastaReal = Math.min(amortecerPedida, manaAlvoAtual, rawDamage);
+        }
+      }
+      const rawDamageAmortecido = blindagemAplicada ? 0 : rawDamage - amortecerManaGastaReal;
+      if (amortecerManaGastaReal > 0) {
+        targetNormalizado = markCanalizarUsed(
+          {
+            ...targetNormalizado,
+            recursos_atuais: { ...targetNormalizado.recursos_atuais, mana: (targetNormalizado.recursos_atuais?.mana ?? 0) - amortecerManaGastaReal },
+          },
+          nowIso,
+        );
+      }
+
       let resolucao = applyMarginBasedAttackDamage({
         character: targetNormalizado,
-        rawDamage,
+        rawDamage: rawDamageAmortecido,
         marginDamageModifier,
         mit,
         nowIso,
@@ -1619,6 +1672,24 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
         round: targetNormalizado.current_round,
         scene: targetNormalizado.current_scene,
       });
+
+      // Berserker › Fúria (checkpoint talentos, Fase 5): sofrer dano real (finalDamage > 0)
+      // empilha +1 em Luta (até o máximo do payload) no ALVO — TemporaryEffect real com
+      // stackingMode "stack" (nunca duplica registro, incrementa a pilha existente).
+      let furiaAplicada = false;
+      if (resolucao.finalDamage > 0 && hasFuria(resolucao.character, talentsIniciais)) {
+        const furiaEffect = buildFuriaTemporaryEffect(
+          resolucao.character,
+          talentsIniciais,
+          () => crypto.randomUUID(),
+          nowIso,
+          resolucao.character.current_round ?? null,
+        );
+        if (furiaEffect) {
+          resolucao = { ...resolucao, character: addTemporaryEffect(resolucao.character, furiaEffect) };
+          furiaAplicada = true;
+        }
+      }
 
       // Assassino › Hemorragia (Fase E): sucesso padrão ou melhor aplica Sangrando no
       // alvo; crítico usa o dado alterado do payload (1d8) em vez do padrão da condição.
@@ -1692,8 +1763,19 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       if (form.laminaOcultaAlvoConfirmado && (marginBand === "standard" || marginBand === "critical")) {
         reminders.push("Lâmina Oculta: pode reposicionar até 3m sem gastar PA (sucesso padrão ou superior).");
       }
+      if (amortecerManaGastaReal > 0) {
+        reminders.push(`Canalizar Amortecer: ${amortecerManaGastaReal} de dano reduzido ANTES do MIT/PD (${amortecerManaGastaReal} Mana gasta pelo alvo).`);
+      } else if (amortecerPedida > 0) {
+        reminders.push("Canalizar Amortecer: pedido não aplicado (talento não adquirido, já usado nesta rodada, ou Mana insuficiente).");
+      }
       if (hemorragiaAplicada) {
         reminders.push("Hemorragia: Sangrando aplicado ao alvo.");
+      }
+      if (furiaAplicada) {
+        reminders.push("Fúria: +1 em Luta empilhado no alvo (até o fim do próximo turno/rodada).");
+      }
+      if (blindagemAplicada) {
+        reminders.push("Blindagem: dano totalmente anulado (sucesso em Bloquear) — nada aplicado ao escudo/PD nem ao defensor.");
       }
       const requisitosTexto = [
         "Cobertura, alcance, linha de visão, linha de efeito e posição não são validados automaticamente.",
@@ -3715,6 +3797,11 @@ function AttackResolutionPanel({
     ? computeDerivedStats(targetNormalizado.atributos, regras, targetNormalizado.mana_bonus_ruptura ?? 0).reacoes_por_rodada
     : 0;
   const reactionAvailability = targetNormalizado ? getReactionAvailability(targetNormalizado, reactionMax, reactionRules) : null;
+  // Mago de Batalha › Canalizar Amortecer (checkpoint talentos, Fase 5) — lido do ALVO (quem sofre o dano), não do atacante.
+  const canalizarAmortecerStatus = targetNormalizado ? getCanalizarState(targetNormalizado, talentsIniciais) : { acquired: false, usedThisRound: false };
+  const manaAlvoAtual = targetNormalizado?.recursos_atuais?.mana ?? 0;
+  // Guardião › Blindagem (checkpoint talentos, Fase 5) — lido do ALVO.
+  const blindagemStatus = targetNormalizado ? getBlindagemAvailability(targetNormalizado, talentsIniciais) : { acquired: false, usedThisScene: false };
 
   // Assassino › Hemorragia/Executar (Fase E, cross-record) — lidos do ATACANTE, não do alvo.
   const attackerCharacterId = typeof log.payload.characterId === "string" ? log.payload.characterId : null;
@@ -3948,6 +4035,47 @@ function AttackResolutionPanel({
           </span>
         )}
       </div>
+
+      {blindagemStatus.acquired && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "#141a24", border: "1px solid #2e4a5c", borderRadius: 6, padding: "8px 10px" }}>
+          <span style={{ fontSize: 11, opacity: 0.7 }}>Blindagem (talento do ALVO):</span>
+          {blindagemStatus.usedThisScene ? (
+            <span style={{ fontSize: 11, color: "#888" }}>Blindagem já foi usada pelo alvo nesta cena.</span>
+          ) : (
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+              <input
+                data-testid={`ataque-blindagem-${log.id}`}
+                type="checkbox"
+                checked={form.blindagemAnularAtivo}
+                onChange={(e) => onUpdateForm({ blindagemAnularAtivo: e.target.checked })}
+              />
+              Anular todo o dano (sucesso em Bloquear) — 1/cena, não consome PD/escudo
+            </label>
+          )}
+        </div>
+      )}
+
+      {canalizarAmortecerStatus.acquired && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "#141a24", border: "1px solid #2e4a5c", borderRadius: 6, padding: "8px 10px" }}>
+          <span style={{ fontSize: 11, opacity: 0.7 }}>Canalizar Amortecer (talento do ALVO — reduz dano antes de MIT/PD, 1/rodada):</span>
+          {canalizarAmortecerStatus.usedThisRound ? (
+            <span style={{ fontSize: 11, color: "#888" }}>Canalizar já foi usado pelo alvo nesta rodada (Potencializar ou Amortecer).</span>
+          ) : (
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+              Mana a gastar (alvo tem {manaAlvoAtual}):
+              <input
+                data-testid={`ataque-amortecer-mana-${log.id}`}
+                type="number"
+                min={0}
+                max={manaAlvoAtual}
+                value={form.amortecerManaGasta}
+                onChange={(e) => onUpdateForm({ amortecerManaGasta: e.target.value })}
+                style={{ ...inputStyle, width: 70 }}
+              />
+            </label>
+          )}
+        </div>
+      )}
 
       {(hemorragiaDisponivel || executarStatus.acquired || aEspreitaDisponivel || headshotDisponivel || ataqueFatalDisponivel || laminaOcultaDisponivel) && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "#1a1420", border: "1px solid #4a2e5c", borderRadius: 6, padding: "8px 10px" }}>

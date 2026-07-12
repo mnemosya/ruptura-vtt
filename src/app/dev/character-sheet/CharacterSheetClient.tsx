@@ -68,6 +68,7 @@ import {
   getUsableTalentEffects,
   getTalentContextualOpportunities,
   getTalentSpellRangeAreaMultiplier,
+  applyRangeAreaMultiplierToText,
   getTalentOverloadLimitOverride,
   applyAscensaoSpecialRupture,
   getSpellAttackProfile,
@@ -3425,6 +3426,15 @@ export default function CharacterSheetClient({
         `dano ${resolution.damage.fixo ? "fixo" : "rolado"} ${resolution.damage.result} (${resolution.damage.formula}/${resolution.damage.tipoDano}${resolution.damage.subtipoDano ? `/${resolution.damage.subtipoDano}` : ""})`,
       );
     }
+    // Mago de Batalha › Domínio Territorial: alcance/área REAL ajustados entram no
+    // log de conjuração de verdade (não só na aba Magias) — checkpoint talentos.
+    const rangeAreaMult = getTalentSpellRangeAreaMultiplier(current, talentsIniciais, spell.estatisticas.tipo_magia);
+    if (rangeAreaMult !== 1) {
+      const alcanceAjustado = spell.estatisticas.alcanceTexto ? applyRangeAreaMultiplierToText(spell.estatisticas.alcanceTexto, rangeAreaMult) : null;
+      const areaAjustada = spell.estatisticas.areaTexto ? applyRangeAreaMultiplierToText(spell.estatisticas.areaTexto, rangeAreaMult) : null;
+      if (alcanceAjustado?.changed) partes.push(`alcance ${alcanceAjustado.text} (Domínio Territorial, base ${spell.estatisticas.alcanceTexto})`);
+      if (areaAjustada?.changed) partes.push(`área ${areaAjustada.text} (Domínio Territorial, base ${spell.estatisticas.areaTexto})`);
+    }
     const extras = [...resolution.manualEffects, ...resolution.reminders];
     addLogEntry(
       "recurso",
@@ -3584,6 +3594,15 @@ export default function CharacterSheetClient({
     ];
     if (resolution.damage) {
       partes.push(`dano ${resolution.damage.fixo ? "fixo" : "rolado"} ${resolution.damage.result} (${resolution.damage.formula}/${resolution.damage.tipoDano})`);
+    }
+    // Mago de Batalha › Domínio Territorial — mesmo ajuste real de handleCastSpell,
+    // aplicado à magia PRINCIPAL da fusão (a fundida não carrega alcance/área próprios aqui).
+    const rangeAreaMultFusao = getTalentSpellRangeAreaMultiplier(current, talentsIniciais, spell.estatisticas.tipo_magia);
+    if (rangeAreaMultFusao !== 1) {
+      const alcanceAjustado = spell.estatisticas.alcanceTexto ? applyRangeAreaMultiplierToText(spell.estatisticas.alcanceTexto, rangeAreaMultFusao) : null;
+      const areaAjustada = spell.estatisticas.areaTexto ? applyRangeAreaMultiplierToText(spell.estatisticas.areaTexto, rangeAreaMultFusao) : null;
+      if (alcanceAjustado?.changed) partes.push(`alcance ${alcanceAjustado.text} (Domínio Territorial, base ${spell.estatisticas.alcanceTexto})`);
+      if (areaAjustada?.changed) partes.push(`área ${areaAjustada.text} (Domínio Territorial, base ${spell.estatisticas.areaTexto})`);
     }
     // Chegou aqui só se castSpellWithFusion aprovou — nível de vertente da
     // principal E da fundida já foi validado DENTRO dela (bloqueio real).

@@ -28,7 +28,8 @@
  */
 
 import type { ActiveEffect } from "./activeEffects";
-import type { Character } from "./types";
+import type { Character, TemporaryEffect } from "./types";
+import { addTemporaryEffect } from "./temporaryEffects";
 import {
   deriveActiveEffectsFromTalents,
   getTalentEffectKey,
@@ -1115,6 +1116,154 @@ export function applyRangeAreaMultiplierToText(text: string, mult: number): { te
   const escalado = Math.round(original * mult * 100) / 100;
   const escaladoStr = Number.isInteger(escalado) ? String(escalado) : String(escalado);
   return { text: text.slice(0, m.index) + escaladoStr + text.slice(m.index + m[1].length), changed: true };
+}
+
+// ---------------------------------------------------------------------
+// Berserker — Fúria (N1) / Sede de Sangue (N2).
+// ---------------------------------------------------------------------
+
+export function hasFuria(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "buff_empilhavel" && efeito.gatilho === "sofrer_dano") return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Berserker › Fúria — constrói o efeito temporário empilhável real (+1 em
+ * Luta por pilha, até `max_pilhas` do payload) para aplicar no personagem
+ * que ACABOU de sofrer dano. `stackingMode: "stack"` (`addTemporaryEffect`)
+ * incrementa a pilha existente em vez de duplicar. `durationType: "rounds"`
+ * com `remainingRounds: 1` é a aproximação mais fiel disponível a "até o
+ * fim do PRÓXIMO turno" — este sistema só rastreia duração por RODADA
+ * (fim de rodada global), não por turno individual; não inventa um
+ * rastreador de turno novo só para este talento.
+ */
+export function buildFuriaTemporaryEffect(
+  character: Pick<Character, "talentos_adquiridos">,
+  talents: TalentContent[],
+  idFactory: () => string,
+  nowIso: string,
+  currentRound: number | null,
+): TemporaryEffect | null {
+  for (const { talent, nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "buff_empilhavel" || efeito.gatilho !== "sofrer_dano") continue;
+      const valorPorPilha = typeof efeito.valor_por_pilha === "number" ? efeito.valor_por_pilha : 1;
+      const maxPilhas = typeof efeito.max_pilhas === "number" ? efeito.max_pilhas : undefined;
+      const alvoTags = Array.isArray(efeito.alvo_tags) ? efeito.alvo_tags.filter((t): t is string => typeof t === "string") : [];
+      return {
+        id: idFactory(),
+        sourceType: "talent",
+        sourceId: nivel.id,
+        sourceName: `${talent.nome} — ${nivel.nome}`,
+        name: nivel.nome,
+        durationType: "rounds",
+        remainingRounds: 1,
+        createdRound: currentRound ?? undefined,
+        stackingMode: "stack",
+        stacks: 1,
+        maxStacks: maxPilhas,
+        modifiers: alvoTags.length > 0 ? [{ target: "skill", operation: "add", value: valorPorPilha, appliesTo: alvoTags, label: `+${valorPorPilha}/pilha` }] : [],
+        active: true,
+        createdAt: nowIso,
+      };
+    }
+  }
+  return null;
+}
+
+export function hasSedeDeSangue(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "toggle_condicional" && efeito.condicao_ativacao != null) return true;
+    }
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------
+// Guardião — Blindagem (N2): anular dano bloqueado sem consumir PD.
+// ---------------------------------------------------------------------
+
+export const BLINDAGEM_USAGE_KEY = "blindagem:cena";
+
+export function getBlindagemAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisScene: boolean } {
+  let acquired = false;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "anular_dano_bloqueado") acquired = true;
+    }
+  }
+  const usedThisScene = (character.talentos_estado?.usos?.[BLINDAGEM_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisScene };
+}
+
+export function markBlindagemUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[BLINDAGEM_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
+// Paramédico — Pronto-socorro (N1): estabiliza aliado adjacente a 0 PV.
+// ---------------------------------------------------------------------
+
+export const PRONTO_SOCORRO_USAGE_KEY = "pronto_socorro:cena";
+
+export function getProntoSocorroAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisScene: boolean; pvResultante: number } {
+  let acquired = false;
+  let pvResultante = 1;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "estabilizar_aliado") {
+        acquired = true;
+        if (typeof efeito.pv_resultante === "number") pvResultante = efeito.pv_resultante;
+      }
+    }
+  }
+  const usedThisScene = (character.talentos_estado?.usos?.[PRONTO_SOCORRO_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisScene, pvResultante };
+}
+
+export function markProntoSocorroUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[PRONTO_SOCORRO_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
+// Espadachim — Aparar (N1): promoção manual 1/cena (sucesso padrão → crítico).
+// ---------------------------------------------------------------------
+
+export const APARAR_PROMOCAO_USAGE_KEY = "aparar_promocao:cena";
+
+export function getApararPromocaoAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisScene: boolean } {
+  let acquired = false;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "promocao_margem_manual") acquired = true;
+    }
+  }
+  const usedThisScene = (character.talentos_estado?.usos?.[APARAR_PROMOCAO_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisScene };
+}
+
+export function markApararPromocaoUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[APARAR_PROMOCAO_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
 }
 
 // ---------------------------------------------------------------------
