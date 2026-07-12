@@ -325,6 +325,24 @@ Contagem: ✅ 0 · 🔵 18 · 🟡 6 · ⚙️ 41 · 📖 1.
   sistema existente de colapso/estabilização (`character.colapso`, `regras?.colapso`) que
   não foi auditado nesta sessão. Não promovido.
 - **🟡 Saque Fantasma / Totem Benção** — parte passiva real; promoção de margem pendente.
+- **Infraestrutura de autoria estruturada (Fase 6)** — `ActiveCondition` ganhou
+  `sourceCharacterId`/`sourceTalentId`/`sourceType`/`originalTargetId`/`applicationEventId`
+  (todos opcionais — condições antigas/manuais continuam válidas sem eles).
+  `applyGmCondition` aceita um 4º parâmetro `authorship` opcional para gravar essa
+  autoria; Hemorragia (`/dev/table`) já foi migrada para usá-lo. **Ainda não usado por**
+  Praga (Sangria Lenta/Contágio) — ambos exigiriam também um MODELO DE DURAÇÃO numérico
+  em `ActiveCondition` (hoje `duracao` é texto livre, "não é contador automático" por
+  design — não há campo para "+1 rodada" incrementar), que é uma mudança de schema maior
+  do que esta sessão cobriu. Marca da Dor (Praga N1) exigiria o ATACANTE consultar as
+  condições do ALVO antes de rolar o teste de ataque — a rolagem de ataque acontece na
+  ficha do próprio jogador (`RollsTab`), que hoje não lê o estado de OUTROS personagens;
+  automatizar isso exigiria um seletor de alvo na tela de rolagem, não construído.
+- **Manipulador › Entrelinhas/Puxar os Fios, Totem › Onda Solidária/Chama Redobrada,
+  Estrategista (todos os 3 níveis) — não implementados nesta sessão.** Entrelinhas
+  poderia reaproveitar o MESMO padrão de tag sintética de Bricolagem/Toque de Midas (bônus
+  +2 escopado ao próximo teste de Influência contra o alvo descoberto), mas não houve
+  tempo nesta sessão para construir o formulário/estado/wiring completo — permanece
+  ⚙️ Infra pendente, não Parcial (nada foi de fato conectado ao fluxo real ainda).
 
 
 

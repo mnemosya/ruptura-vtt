@@ -163,6 +163,24 @@ export interface ActiveCondition {
    * `remover_condicao` estruturado no payload (ver itemUse.ts).
    */
   removidaOrigem?: "cura_pv" | "acao_combate" | "end_round_condition_check" | "item_use";
+  /**
+   * Autoria estruturada (checkpoint talentos, Fase 6) — além do `origem`
+   * livre em texto, campos programáticos para talentos que precisam
+   * identificar "efeitos aplicados por VOCÊ" entre vários ativos no
+   * mesmo alvo (ex.: Praga › Sangria Lenta estende a duração só dos
+   * efeitos negativos QUE VOCÊ aplicou; Contágio propaga o efeito que
+   * você acabou de aplicar). Todos opcionais — ausência não quebra nada
+   * já existente, condições antigas/manuais simplesmente não têm autoria
+   * estruturada (só o `origem` textual).
+   */
+  sourceCharacterId?: string | null;
+  /** slug do nível de talento que aplicou (ex.: "praga_marca_da_dor"). */
+  sourceTalentId?: string | null;
+  sourceType?: "talent" | "item" | "spell" | "condition" | "manual";
+  /** Alvo ORIGINAL antes de qualquer propagação/redirecionamento (ex.: Contágio propagando a partir do alvo original) — igual a `null` quando não houve propagação. */
+  originalTargetId?: string | null;
+  /** Agrupa condições nascidas do MESMO evento de aplicação (ex.: Contágio aplica a mesma condição em vários alvos de uma vez — todos compartilham este id). */
+  applicationEventId?: string | null;
 }
 
 /**

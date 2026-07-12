@@ -1700,7 +1700,11 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
         const attackerCharacterForHemorragia = attackerRecordForHemorragia ? normalizeCharacter(attackerRecordForHemorragia.payload) : null;
         const dado = attackerCharacterForHemorragia ? getHemorragiaCriticalDie(attackerCharacterForHemorragia, talentsIniciais) : "1d8";
         const nomeCondicao = bandRules.band === "critical" ? `Sangrando (crítico — ${dado}, Hemorragia)` : "Sangrando";
-        const condResult = applyGmCondition(resolucao.character, { slug: "sangrando", nome: nomeCondicao }, nowIso);
+        const condResult = applyGmCondition(resolucao.character, { slug: "sangrando", nome: nomeCondicao }, nowIso, {
+          sourceCharacterId: attackerCharacterIdForHemorragia,
+          sourceTalentId: "assassino_hemorragia",
+          sourceType: "talent",
+        });
         resolucao = { ...resolucao, character: condResult.character };
         hemorragiaAplicada = !condResult.jaAtiva;
       }

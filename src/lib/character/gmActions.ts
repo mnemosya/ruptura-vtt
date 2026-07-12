@@ -125,9 +125,24 @@ export interface GmApplyConditionResult {
  * Aplica uma condição publicada da Biblioteca. Não duplica a mesma
  * condição (`conditionId`) enquanto já houver uma ativa — `ActiveCondition`
  * não tem campo de stacks hoje, então duas entradas ativas com o mesmo
- * slug seriam indistinguíveis na UI.
+ * slug seriam indistinguíveis na UI. `authorship` (checkpoint talentos,
+ * Fase 6) é opcional — quando presente, grava a autoria estruturada
+ * (`sourceCharacterId`/`sourceTalentId`/etc.) usada por talentos como
+ * Praga › Sangria Lenta/Contágio, que precisam identificar "efeitos que
+ * EU apliquei" entre vários ativos no mesmo alvo.
  */
-export function applyGmCondition(character: Character, condition: { slug: string; nome: string }, nowIso: string): GmApplyConditionResult {
+export function applyGmCondition(
+  character: Character,
+  condition: { slug: string; nome: string },
+  nowIso: string,
+  authorship?: {
+    sourceCharacterId?: string | null;
+    sourceTalentId?: string | null;
+    sourceType?: ActiveCondition["sourceType"];
+    originalTargetId?: string | null;
+    applicationEventId?: string | null;
+  },
+): GmApplyConditionResult {
   const atuais = character.condicoes_ativas ?? [];
   const jaAtiva = atuais.some((c) => c.ativa && c.conditionId === condition.slug);
   if (jaAtiva) {
@@ -141,6 +156,7 @@ export function applyGmCondition(character: Character, condition: { slug: string
     removidaEm: null,
     ativa: true,
     origem: "dev_table_narrator_tool",
+    ...(authorship ?? {}),
   };
   return { character: { ...character, condicoes_ativas: [...atuais, novaCondicao] }, condicao: novaCondicao, jaAtiva: false };
 }
