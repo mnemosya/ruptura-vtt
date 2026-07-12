@@ -424,6 +424,19 @@ export interface Character {
    */
   historico_ruptura?: RuptureResolvedEntry[];
   /**
+   * Ruptura especial concedida por Mago de Batalha › Ascensão ao adquirir
+   * o nível pela primeira vez (checkpoint talentos). Esta Ruptura NÃO
+   * reduz Integridade e NÃO entra em cálculos futuros de Integridade — é
+   * puramente narrativa/marcadora. Presença = já aplicada (idempotente:
+   * nunca reaplicar ao carregar/remover/readquirir estado legado).
+   */
+  ruptura_especial_ascensao?: {
+    id: string;
+    nivelId: string;
+    aplicadaEm: string;
+    nota: string;
+  };
+  /**
    * Talentos adquiridos (checkpoint v0.48, PRD 12) — um item por NÍVEL
    * adquirido (não uma pilha de "nível máximo"). Data-driven a partir
    * de `content_documents` (content_type="talent") — nunca lista

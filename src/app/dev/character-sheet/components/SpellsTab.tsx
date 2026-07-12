@@ -46,6 +46,7 @@ export function SpellsTab({
   onRollDamage,
   onSetVertenteLevel,
   spellRangeAreaMultiplier = 1,
+  canalizar = null,
 }: {
   spells: SpellContent[];
   catalogError: string | null;
@@ -60,13 +61,17 @@ export function SpellsTab({
   onCast: (slug: string) => void;
   /** Fusão (checkpoint pós-v0.66) — conjura `slug` fundida com `fusedSlug` (+1 Sobrecarga; ambas aprendidas). */
   onCastWithFusion: (slug: string, fusedSlug: string) => void;
-  onRollDamage: (slug: string) => void;
+  onRollDamage: (slug: string, canalizarMana?: number) => void;
+  /** Canalizar Potencializar (Mago N2): disponível (adquirido + não usado nesta rodada) e Mana atual. null = talento ausente. */
+  canalizar?: { available: boolean; manaAtual: number } | null;
   /** Define o nível investido numa vertente (checkpoint pós-v0.69) — só editável em Modo Evolução. */
   onSetVertenteLevel: (vertente: string, value: number) => void;
 }) {
   const [expandido, setExpandido] = useState<Record<string, boolean>>({});
   // fusaoSelecionada[slug da principal] = slug da segunda magia a fundir
   const [fusaoSelecionada, setFusaoSelecionada] = useState<Record<string, string>>({});
+  // Mana escolhida para Canalizar Potencializar por magia (checkpoint talentos).
+  const [canalizarMana, setCanalizarMana] = useState<Record<string, number>>({});
 
   const publicadas = spells.filter((s) => s.status === "published");
   const vertentesConhecidas = getKnownVertentes({ magias_aprendidas: magiasAprendidas }, publicadas);
@@ -246,11 +251,40 @@ export function SpellsTab({
                             >
                               {attackProfile.isAttack ? "Conjurar (ataque mágico)" : "Conjurar"}
                             </button>
-                            {dano && (
-                              <button data-testid={`magia-rolar-dano-${spell.slug}`} onClick={() => onRollDamage(spell.slug)} style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px" }}>
-                                {dano.dado ? `Rolar dano (${dano.dado})` : `Dano fixo (${dano.valor})`}
-                              </button>
-                            )}
+                            {dano && (() => {
+                              const podeCanalizar = attackProfile.isAttack && canalizar?.available;
+                              const manaCanalizar = canalizarMana[spell.slug] ?? 0;
+                              return (
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                                  {podeCanalizar && (
+                                    <span data-testid={`magia-canalizar-${spell.slug}`} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: "#5ec8ff" }}>
+                                      Canalizar Potencializar (Mana):
+                                      <input
+                                        data-testid={`magia-canalizar-mana-${spell.slug}`}
+                                        type="number"
+                                        min={0}
+                                        max={canalizar?.manaAtual ?? 0}
+                                        value={manaCanalizar}
+                                        onChange={(e) => {
+                                          const v = Math.max(0, Math.min(canalizar?.manaAtual ?? 0, Math.trunc(Number(e.target.value) || 0)));
+                                          setCanalizarMana((prev) => ({ ...prev, [spell.slug]: v }));
+                                        }}
+                                        style={{ ...input, width: 48 }}
+                                      />
+                                      {manaCanalizar > 0 && <span>= +{manaCanalizar} dano</span>}
+                                    </span>
+                                  )}
+                                  <button
+                                    data-testid={`magia-rolar-dano-${spell.slug}`}
+                                    onClick={() => onRollDamage(spell.slug, podeCanalizar ? manaCanalizar : 0)}
+                                    style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px" }}
+                                  >
+                                    {dano.dado ? `Rolar dano (${dano.dado})` : `Dano fixo (${dano.valor})`}
+                                    {podeCanalizar && manaCanalizar > 0 ? ` +${manaCanalizar}` : ""}
+                                  </button>
+                                </span>
+                              );
+                            })()}
                             {(() => {
                               // Fusão (checkpoint pós-v0.66) — só entre magias APRENDIDAS; custa sempre 1 Sobrecarga.
                               const outrasAprendidas = publicadas.filter(

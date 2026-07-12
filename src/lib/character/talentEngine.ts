@@ -488,6 +488,81 @@ export function getTalentOverloadLimitOverride(
   return override;
 }
 
+/** Chave sintética de uso 1/rodada de Canalizar (Potencializar/Amortecer compartilham). */
+export const CANALIZAR_USAGE_KEY = "canalizar:rodada";
+
+/**
+ * Estado de Canalizar (Mago de Batalha N2) — se adquirido e se ainda não
+ * foi usado nesta rodada (o gate 1/rodada é compartilhado entre
+ * Potencializar e Amortecer, via `talentos_estado.usos[CANALIZAR_USAGE_KEY]`).
+ */
+export function getCanalizarState(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisRound: boolean } {
+  let acquired = false;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "canalizar_mana") acquired = true;
+    }
+  }
+  const usedThisRound = (character.talentos_estado?.usos?.[CANALIZAR_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisRound };
+}
+
+/** Marca Canalizar como usado nesta rodada (cadência "rodada" → reseta no Encerrar Rodada). */
+export function markCanalizarUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[CANALIZAR_USAGE_KEY] = { usados: 1, cadencia: "rodada", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+/**
+ * `true` se algum nível ADQUIRIDO concede a Ruptura especial de Ascensão
+ * (`ruptura_imediata_sem_perda_integridade`).
+ */
+export function hasAscensaoImmediateRupture(
+  character: Pick<Character, "talentos_adquiridos">,
+  talents: TalentContent[],
+): { has: boolean; nivelId: string | null } {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "ruptura_imediata_sem_perda_integridade") return { has: true, nivelId: nivel.id };
+    }
+  }
+  return { has: false, nivelId: null };
+}
+
+/**
+ * Aplica, de forma IDEMPOTENTE, a Ruptura especial de Ascensão — só na
+ * primeira vez que o nível é adquirido. Não toca Integridade e não entra
+ * em cálculos futuros (é só o marcador `ruptura_especial_ascensao`).
+ * Devolve o MESMO objeto quando já aplicada ou quando o talento não está
+ * adquirido (seguro para chamar em acquire/load/reacquire).
+ */
+export function applyAscensaoSpecialRupture(
+  character: Character,
+  talents: TalentContent[],
+  idFactory: () => string,
+  nowIso: string,
+): { character: Character; applied: boolean } {
+  if (character.ruptura_especial_ascensao) return { character, applied: false };
+  const { has, nivelId } = hasAscensaoImmediateRupture(character, talents);
+  if (!has || !nivelId) return { character, applied: false };
+  return {
+    character: {
+      ...character,
+      ruptura_especial_ascensao: {
+        id: idFactory(),
+        nivelId,
+        aplicadaEm: nowIso,
+        nota: "Ruptura especial de Ascensão — não reduz Integridade e não conta para cálculos futuros.",
+      },
+    },
+    applied: true,
+  };
+}
+
 /**
  * Multiplicador de alcance/área de magias de ATAQUE imposto por talento
  * (Mago de Batalha › Domínio Territorial — `multiplicar_alcance_area_magia`).

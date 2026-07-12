@@ -69,6 +69,10 @@ import {
   getTalentContextualOpportunities,
   getTalentSpellRangeAreaMultiplier,
   getTalentOverloadLimitOverride,
+  applyAscensaoSpecialRupture,
+  getSpellAttackProfile,
+  getCanalizarState,
+  markCanalizarUsed,
   useTalentEffect,
   toggleTalentEffect,
   resetTalentUse,
@@ -2018,13 +2022,27 @@ export default function CharacterSheetClient({
    */
   function handleAcquireTalent(talentoId: string, nivelId: string, nivel: number) {
     const current = characterRef.current;
-    const next = acquireTalentLevel(current, { talentoId, nivelId, nivel, nowIso: new Date().toISOString() });
-    if (next === current) return;
+    const nowIso = new Date().toISOString();
+    const acquired = acquireTalentLevel(current, { talentoId, nivelId, nivel, nowIso });
+    if (acquired === current) return;
+    // Ascensão: ao adquirir pela primeira vez, aplica a Ruptura especial (idempotente).
+    const { character: next, applied: ascensaoApplied } = applyAscensaoSpecialRupture(
+      acquired,
+      talentsIniciais,
+      () => crypto.randomUUID(),
+      nowIso,
+    );
     characterRef.current = next;
     setCharacter(next);
     const talent = talentsIniciais.find((t) => t.id === talentoId);
     const nivelNome = talent?.niveis.find((n) => n.id === nivelId)?.nome ?? nivelId;
     addLogEntry("condicao", `Talento adquirido: ${talent?.nome ?? talentoId} — ${nivelNome}.`);
+    if (ascensaoApplied) {
+      addLogEntry(
+        "condicao",
+        "Ascensão: Ruptura especial concedida — não reduz Integridade nem conta para cálculos futuros.",
+      );
+    }
   }
 
   function handleRemoveTalent(acquiredId: string) {
@@ -3248,13 +3266,38 @@ export default function CharacterSheetClient({
   }
 
   /** "Rolar dano" (aba Magias, checkpoint v0.50) — atalho de rolagem para magias com efeito de dano. */
-  function handleRollSpellDamage(slug: string) {
+  function handleRollSpellDamage(slug: string, canalizarMana = 0) {
     const spell = spellsIniciais.find((s) => s.slug === slug);
     if (!spell) return;
     const dano = getSpellDamageEffect(spell);
     if (!dano) return;
     const resultado = rollSpellDamage(spell);
     if (resultado == null) return;
+
+    // Canalizar Potencializar (Mago N2): só em magia de ataque, 1/rodada, gasta Mana real → +1 dano/Mana.
+    const attack = getSpellAttackProfile(spell);
+    const canalizarState = getCanalizarState(characterRef.current, talentsIniciais);
+    const manaAtual = characterRef.current.recursos_atuais?.mana ?? 0;
+    let mana = Math.max(0, Math.trunc(canalizarMana));
+    if (mana > 0) {
+      if (!attack.isAttack) { addLogEntry("recurso", "Canalizar Potencializar só se aplica a magias de ataque."); mana = 0; }
+      else if (!canalizarState.acquired) { addLogEntry("recurso", "Canalizar não adquirido."); mana = 0; }
+      else if (canalizarState.usedThisRound) { addLogEntry("recurso", "Canalizar já foi usado nesta rodada."); mana = 0; }
+      else if (mana > manaAtual) { addLogEntry("recurso", `Mana insuficiente para Canalizar (atual ${manaAtual}, pedido ${mana}).`); mana = 0; }
+    }
+
+    if (mana > 0) {
+      const nowIso = new Date().toISOString();
+      let next: Character = { ...characterRef.current, recursos_atuais: { ...characterRef.current.recursos_atuais, mana: manaAtual - mana } };
+      next = markCanalizarUsed(next, nowIso);
+      characterRef.current = next;
+      setCharacter(next);
+      addLogEntry(
+        "recurso",
+        `${spell.nome}: ${resultado} + ${mana} (Canalizar Potencializar, ${mana} Mana gasta) = ${resultado + mana} de dano ${dano.tipo_dano}${dano.subtipo_dano ? ` (${dano.subtipo_dano})` : ""} (${dano.dado ?? `fixo ${dano.valor}`}). Mana ${manaAtual} → ${manaAtual - mana}.`,
+      );
+      return;
+    }
     addLogEntry("recurso", `${spell.nome}: ${resultado} de dano ${dano.tipo_dano}${dano.subtipo_dano ? ` (${dano.subtipo_dano})` : ""} (${dano.dado ?? `fixo ${dano.valor}`}).`);
   }
 
@@ -3973,6 +4016,7 @@ export default function CharacterSheetClient({
           onApplyLongRest={handleApplyLongRest}
           sobrecargaUsadaDia={character.sobrecarga_usada_dia ?? 0}
           overloadMaxOverride={getTalentOverloadLimitOverride(character, talentsIniciais)}
+          rupturaEspecialAscensao={character.ruptura_especial_ascensao ?? null}
           rupturaPendente={character.ruptura_pendente ?? false}
           overloadWillRollPending={overloadWillRollPending}
           onUseOverloadSurge={handleUseOverloadSurge}
@@ -4071,6 +4115,10 @@ export default function CharacterSheetClient({
           onRollDamage={handleRollSpellDamage}
           onSetVertenteLevel={handleSetVertenteLevel}
           spellRangeAreaMultiplier={getTalentSpellRangeAreaMultiplier(character, talentsIniciais, "ataque")}
+          canalizar={(() => {
+            const st = getCanalizarState(character, talentsIniciais);
+            return st.acquired ? { available: !st.usedThisRound, manaAtual: character.recursos_atuais?.mana ?? 0 } : null;
+          })()}
         />
       )}
 

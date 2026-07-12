@@ -55,6 +55,7 @@ export function ResourcesTab({
   onApplyLongRest,
   sobrecargaUsadaDia,
   overloadMaxOverride = null,
+  rupturaEspecialAscensao = null,
   rupturaPendente,
   overloadWillRollPending,
   onUseOverloadSurge,
@@ -91,6 +92,8 @@ export function ResourcesTab({
   sobrecargaUsadaDia: number;
   /** Limite diário de Surtos elevado por talento (Mago › Ascensão → 5). null = usa o limite canônico. */
   overloadMaxOverride?: number | null;
+  /** Ruptura especial de Ascensão (Mago N3) — exibida à parte, não reduz Integridade. null = nenhuma. */
+  rupturaEspecialAscensao?: Character["ruptura_especial_ascensao"] | null;
   rupturaPendente: boolean;
   overloadWillRollPending: boolean;
   onUseOverloadSurge: (tipo: string) => void;
@@ -212,6 +215,14 @@ export function ResourcesTab({
       </Section>
 
       <Section title="Sobrecarga">
+        {rupturaEspecialAscensao && (
+          <p
+            data-testid="ruptura-especial-ascensao"
+            style={{ fontSize: 12, color: "#c78bff", background: "#221a2e", borderRadius: 8, padding: "8px 10px", marginBottom: 8 }}
+          >
+            ✦ Ruptura especial de Ascensão ativa — {rupturaEspecialAscensao.nota}
+          </p>
+        )}
         <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 8 }}>
           Até {overloadMax} surtos por dia — só descanso longo recupera.
           Cada surto causa {getOverloadSurgeDamageDie(regras?.sobrecarga)} de dano psíquico (ajuste PE
