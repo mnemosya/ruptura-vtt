@@ -1422,6 +1422,34 @@ export function resolveUltimoFolegoSceneEnd(character: Character, nowIso: string
 }
 
 // ---------------------------------------------------------------------
+// Guardião — Sentinela (N1): Bloquear como Reação GRATUITA, 1/rodada.
+// ---------------------------------------------------------------------
+
+export const SENTINELA_USAGE_KEY = "guardiao_sentinela:rodada";
+
+export function getSentinelaAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisRound: boolean; alcanceM: number } {
+  let acquired = false;
+  let alcanceM = 1;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "reacao_gratuita" && efeito.acao === "bloquear") acquired = true;
+      if (efeito.tipo === "alterar_alcance_protecao" && typeof efeito.alcance_m === "number") alcanceM = efeito.alcance_m;
+    }
+  }
+  const usedThisRound = (character.talentos_estado?.usos?.[SENTINELA_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisRound, alcanceM };
+}
+
+export function markSentinelaUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[SENTINELA_USAGE_KEY] = { usados: 1, cadencia: "rodada", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
 // Guardião — Blindagem (N2): anular dano bloqueado sem consumir PD.
 // ---------------------------------------------------------------------
 
@@ -1445,6 +1473,40 @@ export function markBlindagemUsed(character: Character, nowIso: string): Charact
   const usos = { ...(character.talentos_estado?.usos ?? {}) };
   usos[BLINDAGEM_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
   return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
+// Guardião — Muralha (N3): sempre que obtiver sucesso em Bloquear,
+// cobertura parcial (-1 em ataques direcionais) para si + aliado
+// protegido, até fim de rodada. Sem "modificador aplicado ao ATACANTE"
+// neste sistema (`activeEffects.ts` documenta `modificador_recebido`
+// como fora do escopo automatizável — mesmo limite já documentado para
+// "cobertura" em geral em todo o app, ver reminder fixo "Cobertura...
+// não são validados automaticamente" no painel de resolução de ataque).
+// Aplica uma condição real ("Cobertura Parcial") com autoria/alvo
+// persistidos nos dois protegidos — o valor -1 fica como lembrete
+// textual para o narrador aplicar manualmente em ataques direcionais
+// contra eles, mesmo critério já usado para toda cobertura no app.
+// ---------------------------------------------------------------------
+
+export function hasMuralha(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "conceder_cobertura_pos_bloqueio") return true;
+    }
+  }
+  return false;
+}
+
+export function getMuralhaPenalidade(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): number {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "conceder_cobertura_pos_bloqueio" && typeof efeito.penalidade_ofensiva_direcional === "number") {
+        return efeito.penalidade_ofensiva_direcional;
+      }
+    }
+  }
+  return -1;
 }
 
 // ---------------------------------------------------------------------
@@ -1500,6 +1562,73 @@ export function getApararPromocaoAvailability(
 export function markApararPromocaoUsed(character: Character, nowIso: string): Character {
   const usos = { ...(character.talentos_estado?.usos ?? {}) };
   usos[APARAR_PROMOCAO_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
+// Espadachim — Estocar (N2): -1 PA (mínimo respeitado) 1/combate num
+// ataque corpo a corpo com lâmina. Cadência "combate" NÃO está em
+// `TALENT_CADENCE_AUTO_RESET` (só rodada/cena/dia) — reset manual do
+// narrador via `resetTalentUse` já existente (mesmo critério documentado
+// no próprio `talents.ts` para combate/sessão/missão, não uma pendência
+// nova deste talento).
+// ---------------------------------------------------------------------
+
+export const ESTOCAR_USAGE_KEY = "espadachim_estocar:combate";
+
+export function getEstocarAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisCombat: boolean; reducao: number; minimo: number } {
+  let acquired = false;
+  let reducao = 1;
+  let minimo = 1;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "reduzir_custo_pa") continue;
+      acquired = true;
+      if (typeof efeito.reducao === "number") reducao = efeito.reducao;
+      if (typeof efeito.minimo === "number") minimo = efeito.minimo;
+    }
+  }
+  const usedThisCombat = (character.talentos_estado?.usos?.[ESTOCAR_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisCombat, reducao, minimo };
+}
+
+export function markEstocarUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[ESTOCAR_USAGE_KEY] = { usados: 1, cadencia: "combate", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
+// Espadachim — Ripostar (N3): 1/rodada, contra-ataque grátis (0 PA) ao
+// obter sucesso crítico em Aparar com lâmina.
+// ---------------------------------------------------------------------
+
+export const RIPOSTAR_USAGE_KEY = "espadachim_ripostar:rodada";
+
+export function hasRipostar(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "contra_ataque_sem_pa" && efeito.gatilho === "sucesso_critico_em_aparar") return true;
+    }
+  }
+  return false;
+}
+
+export function getRipostarAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisRound: boolean } {
+  const acquired = hasRipostar(character, talents);
+  const usedThisRound = (character.talentos_estado?.usos?.[RIPOSTAR_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisRound };
+}
+
+export function markRipostarUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[RIPOSTAR_USAGE_KEY] = { usados: 1, cadencia: "rodada", atualizadoEm: nowIso };
   return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
 }
 

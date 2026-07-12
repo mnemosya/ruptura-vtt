@@ -119,6 +119,8 @@ import {
   isPvGatedToggleAllowedToActivate,
   enforcePvGatedToggleDeactivation,
   hasSaqueFantasma,
+  getEstocarAvailability,
+  markEstocarUsed,
   getToqueDeMidasAvailability,
   getToqueDeMidasModifiersForTarget,
   markToqueDeMidasUsed,
@@ -414,6 +416,8 @@ export default function CharacterSheetClient({
   // local, não persistido na ficha (mesmo critério de preparedRoll):
   // qual arma empunhada usar quando há mais de uma, ou "__desarmado__".
   const [selectedAttackWeaponId, setSelectedAttackWeaponId] = useState<string | null>(null);
+  /** Espadachim › Estocar (checkpoint talentos, Fase 4) — confirmação manual do jogador para o próximo Atacar (lâmina não é dado estruturado, mesmo critério de Aparar/Ripostar). */
+  const [estocarAtivo, setEstocarAtivo] = useState(false);
   /** Rúnico › Sobregravação — instância com teste de Tecnomagia/Arcanismo CD 8 pendente de confirmação (terceiro tentando acessar o espaço extra). */
   const [sobregravacaoTestPending, setSobregravacaoTestPending] = useState<Record<string, true>>({});
   // Mesa (campaign) selecionada — estado de UI local, não persiste no
@@ -4177,8 +4181,38 @@ export default function CharacterSheetClient({
       nowIso,
       reactionRules,
     );
-    characterRef.current = result.character;
-    setCharacter(result.character);
+    // Espadachim › Estocar (checkpoint talentos, Fase 4) — reduz o custo REAL de PA deste
+    // Atacar em 1 (respeitando o mínimo do payload), 1/combate. Exige arma corpo a corpo
+    // empunhada (não desarmado) — "lâmina" fica confirmada pelo próprio checkbox marcado
+    // pelo jogador, mesmo critério já usado para Aparar/Ripostar (sem dado estruturado de
+    // lâmina no catálogo). Combinado num ÚNICO update atômico com o resultado da ação para
+    // não arriscar characterRef.current desatualizado entre duas chamadas de setCharacter.
+    const estocarStatus = temEfeitoAtaque ? getEstocarAvailability(currentCharacter, talentsIniciais) : { acquired: false, usedThisCombat: false, reducao: 1, minimo: 1 };
+    const estocarElegivel =
+      temEfeitoAtaque &&
+      estocarAtivo &&
+      estocarStatus.acquired &&
+      !estocarStatus.usedThisCombat &&
+      attackWeaponInstanceId != null &&
+      attackWeaponModel?.subtipo === "corpo_a_corpo";
+    const custoPaPago = result.paBefore - result.paAfter;
+    const estocarReducaoReal = estocarElegivel ? Math.max(0, Math.min(estocarStatus.reducao, custoPaPago - estocarStatus.minimo)) : 0;
+    const characterAposEstocar =
+      estocarReducaoReal > 0
+        ? markEstocarUsed(
+            {
+              ...result.character,
+              estado_jogo: { ...result.character.estado_jogo, pa_gastos: Math.max(0, (result.character.estado_jogo?.pa_gastos ?? 0) - estocarReducaoReal) },
+            },
+            nowIso,
+          )
+        : result.character;
+    if (estocarReducaoReal > 0) {
+      addLogEntry("acao_combate", `Estocar: custo de PA deste ataque reduzido em ${estocarReducaoReal} (lâmina confirmada).`);
+      setEstocarAtivo(false);
+    }
+    characterRef.current = characterAposEstocar;
+    setCharacter(characterAposEstocar);
 
     let attackLogFields: Record<string, unknown> = {};
     if (temEfeitoAtaque) {
@@ -4489,6 +4523,8 @@ export default function CharacterSheetClient({
       </main>
     );
   }
+
+  const estocarStatusFicha = getEstocarAvailability(character, talentsIniciais);
 
   return (
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
@@ -4862,6 +4898,10 @@ export default function CharacterSheetClient({
           selectedAttackWeaponId={effectiveSelectedAttackWeaponId}
           onSelectAttackWeapon={(id) => setSelectedAttackWeaponId(id ?? "__desarmado__")}
           attackPreview={attackPreview}
+          estocarAvailable={estocarStatusFicha.acquired && !estocarStatusFicha.usedThisCombat}
+          estocarUsedThisCombat={estocarStatusFicha.usedThisCombat}
+          estocarAtivo={estocarAtivo}
+          onToggleEstocar={setEstocarAtivo}
         />
       )}
 

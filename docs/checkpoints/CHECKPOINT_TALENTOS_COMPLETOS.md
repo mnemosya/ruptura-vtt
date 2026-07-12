@@ -62,7 +62,7 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 31 · 🟡 0 · ⚙️ 34 · 📖 1.
+Contagem: ✅ 0 · 🔵 35 · 🟡 0 · ⚙️ 30 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -85,14 +85,14 @@ Contagem: ✅ 0 · 🔵 31 · 🟡 0 · ⚙️ 34 · 📖 1.
 | Droneiro | Script | 2 | ⚙️ Infra pendente |
 | Droneiro | Enxame | 3 | ⚙️ Infra pendente |
 | Espadachim | Aparar | 1 | 🔵 Implementado (aguardando validação manual) |
-| Espadachim | Estocar | 2 | ⚙️ Infra pendente |
-| Espadachim | Ripostar | 3 | ⚙️ Infra pendente |
+| Espadachim | Estocar | 2 | 🔵 Implementado (aguardando validação manual) |
+| Espadachim | Ripostar | 3 | 🔵 Implementado (aguardando validação manual) |
 | Estrategista | Falcão | 1 | ⚙️ Infra pendente |
 | Estrategista | Briefing de Campo | 2 | ⚙️ Infra pendente |
 | Estrategista | Imposição de Ritmo | 3 | ⚙️ Infra pendente |
-| Guardião | Sentinela | 1 | ⚙️ Infra pendente |
+| Guardião | Sentinela | 1 | 🔵 Implementado (aguardando validação manual) |
 | Guardião | Blindagem | 2 | 🔵 Implementado (aguardando validação manual) |
-| Guardião | Muralha | 3 | ⚙️ Infra pendente |
+| Guardião | Muralha | 3 | 🔵 Implementado (aguardando validação manual) |
 | Mago de Batalha | Domínio Territorial | 1 | 🔵 Implementado (aguardando validação manual) |
 | Mago de Batalha | Canalizar | 2 | 🔵 Implementado (aguardando validação manual) |
 | Mago de Batalha | Ascensão | 3 | 🔵 Implementado (aguardando validação manual) |
@@ -560,14 +560,14 @@ abaixo está **aguardando confirmação do usuário via teste manual** — nenhu
 | Droneiro | Script | ⚙️ Infra pendente | Nenhum (sem modelo de drone) | — | — | N/A | — |
 | Droneiro | Enxame | ⚙️ Infra pendente | Nenhum (sem modelo de drone) | — | — | N/A | — |
 | Espadachim | Aparar | 🔵 Implementado | +1 em Aparar; promoção 1/cena a sucesso crítico (habilita gatilho de Ripostar) | `TableClient.tsx`, `talentEngine.ts` | `Character.talentos_estado` (defensor) | Aparar com margem "standard" contra o atacante → promover a crítico (confirmar lâmina) → conferir "promovida a sucesso crítico" no painel | Aguardando usuário |
-| Espadachim | Estocar | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
-| Espadachim | Ripostar | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Espadachim | Estocar | 🔵 Implementado | -1 PA real (mín. respeitado) num Atacar corpo a corpo com lâmina, 1/combate | `talentEngine.ts`, `CharacterSheetClient.tsx`, `ActionsTab.tsx` | `Character.talentos_estado` (cadência "combate" — reset manual, mesmo padrão já documentado no código para combate/sessão/missão) | Marcar Estocar, atacar com arma corpo a corpo → confirmar PA gasto 1 a menos que o normal; tentar de novo no mesmo combate → confirmar sem efeito | Aguardando usuário |
+| Espadachim | Ripostar | 🔵 Implementado | 1/rodada, marca uso real do DEFENSOR ao obter crítico em Aparar (natural ou promovido) — contra-ataque em si via Atacar normal | `talentEngine.ts`, `TableClient.tsx` | `Character.talentos_estado` (defensor) | Aparar com margem "critical" (ou promover via Aparar N1) → clicar Ripostar → confirmar uso marcado; repetir na mesma rodada → confirmar bloqueado | Aguardando usuário |
 | Estrategista | Falcão | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
 | Estrategista | Briefing de Campo | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
 | Estrategista | Imposição de Ritmo | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
-| Guardião | Sentinela | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Guardião | Sentinela | 🔵 Implementado | Bloquear como Reação real GRATUITA (não gasta Reação), 1/rodada | `talentEngine.ts`, `TableClient.tsx` | `Character.talentos_estado` (defensor) | Rolar Bloquear com Sentinela disponível → confirmar Reações não diminuem; repetir na mesma rodada → confirmar volta a gastar Reação normal | Aguardando usuário |
 | Guardião | Blindagem | 🔵 Implementado | +1 Bloquear real; anula 100% do dano, 1/cena, sem tocar PD | `TableClient.tsx`, `talentEngine.ts` | `Character.talentos_estado` (alvo) | Resolver ataque contra alvo com Blindagem, marcar "anular dano" → confirmar PV intacto e PD/escudo intocados | Aguardando usuário |
-| Guardião | Muralha | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Guardião | Muralha | 🔵 Implementado | Condição real "Cobertura Parcial" aplicada ao defensor + aliado escolhido em sucesso de Bloquear confirmado, sem limite de uso | `talentEngine.ts`, `TableClient.tsx` | `ActiveCondition` no defensor e no aliado (com autoria) | Rolar Bloquear, resolver o ataque confirmando sucesso, escolher aliado protegido → confirmar condição aplicada nos dois | Aguardando usuário |
 | Mago de Batalha | Domínio Territorial | 🔵 Implementado | +50% alcance/área real no cartão E no log de conjuração | `talentEngine.ts`, `SpellsTab.tsx`, `CharacterSheetClient.tsx` | Nenhum (derivado do talento) | Conjurar magia de Ataque com o talento → confirmar alcance/área ajustados no cartão E no log | Aguardando usuário |
 | Mago de Batalha | Canalizar | 🔵 Implementado | Potencializar (+1 dano/Mana) e Amortecer (−1 dano/Mana antes de MIT) real, 1/rodada compartilhado | `CharacterSheetClient.tsx`, `TableClient.tsx`, `talentEngine.ts` | `Character.talentos_estado`, `recursos_atuais.mana` | Usar Potencializar numa rodada → confirmar Amortecer bloqueado na MESMA rodada (e vice-versa) | Aguardando usuário |
 | Mago de Batalha | Ascensão | 🔵 Implementado | Limite de Surtos 3→5 real + Ruptura especial idempotente | `talentEngine.ts`, `ResourcesTab.tsx` | `Character.ruptura_especial_ascensao` | Adquirir talento → confirmar Ruptura especial única → usar surtos até o 5º → confirmar limite | Aguardando usuário |

@@ -103,6 +103,12 @@ import {
   hasContraMedida,
   getUltimoFolegoAvailability,
   applyUltimoFolegoPrevention,
+  getRipostarAvailability,
+  markRipostarUsed,
+  getSentinelaAvailability,
+  markSentinelaUsed,
+  hasMuralha,
+  getMuralhaPenalidade,
   type GmResource,
   type CharacterRecord,
   type Character,
@@ -187,6 +193,10 @@ interface AttackPanelForm {
   golpeCirurgicoAtivo: boolean;
   /** Dissecador › Fincada (checkpoint talentos, Fase 2) — condição escolhida para trocar por -1 no dano ("" = não usar), 1/rodada. Só habilitado em acerto com dano contundente corpo a corpo. */
   fincadaCondicao: "" | "lento" | "caido";
+  /** Guardião › Muralha (checkpoint talentos, Fase 4) — aliado protegido opcional (além do próprio defensor) escolhido manualmente pelo narrador para receber Cobertura Parcial junto do defensor em sucesso de Bloquear. "" = só o defensor. */
+  muralhaAliadoProtegidoId: string;
+  /** Guardião › Muralha — narrador confirma que a última defesa (Bloquear) foi um sucesso (mesmo padrão de Blindagem: sem banda de margem estruturada para "sucesso em Bloquear" neste checkpoint, confirmação manual). Sem cadência/uso limitado no payload — sempre disponível. */
+  muralhaConfirmado: boolean;
 }
 
 /** Bandas fixas reaproveitadas por Executar/À Espreita/Headshot/Ataque Fatal/Lâmina Oculta — nunca inventadas ad-hoc em cada callsite. */
@@ -275,6 +285,8 @@ const DEFAULT_ATTACK_PANEL_FORM: AttackPanelForm = {
   blindagemAnularAtivo: false,
   golpeCirurgicoAtivo: false,
   fincadaCondicao: "",
+  muralhaAliadoProtegidoId: "",
+  muralhaConfirmado: false,
 };
 
 /**
@@ -1479,15 +1491,36 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       requirementReminder = "Usado contra movimento forçado, queda, imobilização, paralisia e efeitos similares.";
     }
 
+    const nowIso = new Date().toISOString();
     const maxReacoes = computeDerivedStats(target.atributos, regras, target.mana_bonus_ruptura ?? 0).reacoes_por_rodada;
-    const reactionResult = spendReactionForDefense(target, maxReacoes, reactionRules, 1);
-    const blocked = !reactionResult.usedReaction && !reactionResult.defenseWithoutReaction;
+    // Guardião › Sentinela (checkpoint talentos, Fase 4) — Bloquear como Reação GRATUITA,
+    // 1/rodada: não gasta o recurso real de Reação nem conta como "defesa sem Reação".
+    const sentinelaStatus = getSentinelaAvailability(target, talentsIniciais);
+    const sentinelaGratuita = defenseType === "bloquear" && sentinelaStatus.acquired && !sentinelaStatus.usedThisRound;
+    const reactionResult = sentinelaGratuita
+      ? (() => {
+          const disponibilidade = getReactionAvailability(target, maxReacoes, reactionRules);
+          return {
+            character: target,
+            reactionBefore: disponibilidade.remaining,
+            reactionAfter: disponibilidade.remaining,
+            usedReaction: false,
+            defenseWithoutReaction: false,
+            defensesWithoutReactionBefore: disponibilidade.defensesWithoutReaction,
+            defensesWithoutReactionAfter: disponibilidade.defensesWithoutReaction,
+            penaltyApplied: 0,
+            warnings: [] as string[],
+          };
+        })()
+      : spendReactionForDefense(target, maxReacoes, reactionRules, 1);
+    const blocked = !sentinelaGratuita && !reactionResult.usedReaction && !reactionResult.defenseWithoutReaction;
     if (blocked && !form.defenseOverride) {
       setAtaqueResolverErro(
         `${reactionResult.warnings[0] ?? "Sem Reação disponível."} Marque "Rolar mesmo sem Reação (override)" para permitir.`,
       );
       return;
     }
+    const characterParaSalvarDefesa = sentinelaGratuita ? markSentinelaUsed(reactionResult.character, nowIso) : reactionResult.character;
 
     const modifiersTotal = form.defenseModifier.trim() ? Number(form.defenseModifier) : 0;
     const rollResult = rollPericia({
@@ -1502,7 +1535,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
 
     setAtaqueDefesaProcessing(`${logId}:${defenseType}`);
     try {
-      const record = await updateCharacter(form.targetCharacterId, reactionResult.character);
+      const record = await updateCharacter(form.targetCharacterId, characterParaSalvarDefesa);
       setPersonagensAtivos((prev) => ({ ...prev, [record.id]: record }));
 
       const novoLog = await addLog({
@@ -1517,6 +1550,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
           targetName: record.name,
           defenseType,
           defenseName: DEFENSE_TYPE_LABELS[defenseType],
+          sentinelaGratuita,
           attributeId,
           attributeName,
           skillId: skillSlug,
@@ -1526,7 +1560,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
           skillValue,
           modifiersTotal: Number.isFinite(modifiersTotal) ? modifiersTotal : 0,
           total: rollResult.total,
-          reactionCost: 1,
+          reactionCost: sentinelaGratuita ? 0 : 1,
           reactionsBefore: reactionResult.reactionBefore,
           reactionsAfter: reactionResult.reactionAfter,
           requirementStatus,
@@ -1550,7 +1584,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
         skillValue,
         modifiersTotal: Number.isFinite(modifiersTotal) ? modifiersTotal : 0,
         total: rollResult.total,
-        reactionCost: 1,
+        reactionCost: sentinelaGratuita ? 0 : 1,
         reactionsBefore: reactionResult.reactionBefore,
         reactionsAfter: reactionResult.reactionAfter,
         requirementStatus,
@@ -1646,6 +1680,36 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
         sourceActionLogId: log.id,
         reactionBefore: availability.remaining,
         reactionAfter: availability.remaining - 1,
+      },
+    });
+  }
+
+  /**
+   * Espadachim › Ripostar (N3, checkpoint talentos Fase 4) — o DEFENSOR marca 1/rodada ao
+   * obter sucesso crítico em Aparar com lâmina. Mesma limitação de Contra-medida: o
+   * contra-ataque em si (0 PA) é resolvido pelo fluxo normal de "Atacar" na ficha do
+   * defensor (lâmina confirmada pelo próprio clique) — este handler só marca o uso real.
+   */
+  async function handleRipostar(logId: string) {
+    const form = ataquePainelForm[logId] ?? DEFAULT_ATTACK_PANEL_FORM;
+    if (!form.targetCharacterId) return;
+    const targetRecord = personagensAtivos[form.targetCharacterId];
+    if (!targetRecord) return;
+    const target = normalizeCharacter(targetRecord.payload);
+    const status = getRipostarAvailability(target, talentsIniciais);
+    if (!status.acquired || status.usedThisRound) return;
+    const nowIso = new Date().toISOString();
+    const nextTarget = markRipostarUsed(target, nowIso);
+    await persistGmMutation({
+      characterId: form.targetCharacterId,
+      nextCharacter: nextTarget,
+      logType: "talent_triggered",
+      logPayload: {
+        characterId: form.targetCharacterId,
+        characterNome: target.nome,
+        message: `Ripostar: sucesso crítico em Aparar — ${target.nome} pode contra-atacar imediatamente com lâmina, sem custo de PA (resolvido pelo Atacar normal).`,
+        sourceTalentId: "espadachim_ripostar",
+        sourceActionLogId: logId,
       },
     });
   }
@@ -1907,8 +1971,48 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
         golpeCirurgicoAplicado = true;
       }
 
+      // Guardião › Muralha (checkpoint talentos, Fase 4) — sempre que o DEFENSOR obtiver
+      // sucesso em Bloquear (sem uso limitado no payload), concede Cobertura Parcial a si
+      // mesmo e a um aliado protegido (escolhido manualmente — sem dado estruturado de
+      // "quem estava sendo protegido"). Mesmo padrão de Blindagem: sem banda de margem
+      // própria para "sucesso em Bloquear" neste checkpoint, então é confirmação manual do
+      // narrador, não um card cravado no crítico/margem do ataque. O valor -1 real fica como
+      // lembrete textual para aplicar manualmente nos ataques direcionais contra os
+      // protegidos (mesmo limite já documentado para "cobertura" em todo o app).
+      let muralhaAplicada = false;
+      if (form.muralhaConfirmado && form.lastDefense?.defenseType === "bloquear" && hasMuralha(resolucao.character, talentsIniciais)) {
+        const muralhaPenalidade = getMuralhaPenalidade(resolucao.character, talentsIniciais);
+        const condResultMuralha = applyGmCondition(
+          resolucao.character,
+          { slug: "cobertura_parcial", nome: "Cobertura Parcial (Muralha)" },
+          nowIso,
+          { sourceCharacterId: form.targetCharacterId, sourceTalentId: "guardiao_muralha", sourceType: "talent" },
+        );
+        resolucao = { ...resolucao, character: condResultMuralha.character };
+        muralhaAplicada = !condResultMuralha.jaAtiva;
+      }
+
       const record = await updateCharacter(form.targetCharacterId, resolucao.character);
       setPersonagensAtivos((prev) => ({ ...prev, [record.id]: record }));
+
+      // Muralha também protege o aliado escolhido (registro separado do alvo) — mesma
+      // condição/autoria, persistido à parte como Executar/Ataque Fatal do atacante abaixo.
+      if (muralhaAplicada && form.muralhaAliadoProtegidoId) {
+        const aliadoRecord = personagensAtivos[form.muralhaAliadoProtegidoId];
+        if (aliadoRecord) {
+          const aliadoCharacter = normalizeCharacter(aliadoRecord.payload);
+          const condResultAliado = applyGmCondition(
+            aliadoCharacter,
+            { slug: "cobertura_parcial", nome: "Cobertura Parcial (Muralha)" },
+            nowIso,
+            { sourceCharacterId: form.targetCharacterId, sourceTalentId: "guardiao_muralha", sourceType: "talent" },
+          );
+          if (!condResultAliado.jaAtiva) {
+            const aliadoSaved = await updateCharacter(form.muralhaAliadoProtegidoId, condResultAliado.character);
+            setPersonagensAtivos((prev) => ({ ...prev, [aliadoSaved.id]: aliadoSaved }));
+          }
+        }
+      }
 
       // Executar consome 1/cena no ATACANTE — persiste separadamente (registro diferente do alvo).
       if (form.executarAtivo) {
@@ -2010,6 +2114,12 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       if (ultimoFolegoAplicado) {
         reminders.push(
           `Último Fôlego: dano reduzido para o alvo parar em ${ultimoFolegoStatus.pvResultante} PV em vez de cair a 0 — +${ultimoFolegoStatus.buffLuta} em Luta e +${ultimoFolegoStatus.danoExtra} de dano corpo a corpo aplicados até o fim da cena. Se ainda estiver de pé quando a cena terminar, cai a 0 PV automaticamente mesmo que tenha se curado (resolvido em "Encerrar Cena").`,
+        );
+      }
+      if (muralhaAplicada) {
+        const muralhaPenalidadeReminder = getMuralhaPenalidade(resolucao.character, talentsIniciais);
+        reminders.push(
+          `Muralha: Cobertura Parcial aplicada ao defensor${form.muralhaAliadoProtegidoId ? " e ao aliado protegido" : ""} — aplique ${muralhaPenalidadeReminder} manualmente em ataques direcionais contra eles até o fim da rodada, depois remova a condição.`,
         );
       }
       // Berserker › Sede de Sangue (checkpoint talentos, Fase 1) — reminder com o valor
@@ -3933,6 +4043,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                         onRollDefense={(defenseType) => handleRollDefense(entry.id, entry, defenseType)}
                         onPromoteAparar={() => handlePromoteApararCritico(entry.id)}
                         onContraMedida={() => handleContraMedida(entry)}
+                        onRipostar={() => handleRipostar(entry.id)}
                         onApply={() => handleResolveAttackDamage(entry)}
                         onCancel={() => setAtaqueResolvendoLogId(null)}
                         talentsIniciais={talentsIniciais}
@@ -4006,6 +4117,7 @@ function AttackResolutionPanel({
   onRollDefense,
   onPromoteAparar,
   onContraMedida,
+  onRipostar,
   onApply,
   onCancel,
   talentsIniciais,
@@ -4031,6 +4143,8 @@ function AttackResolutionPanel({
   onPromoteAparar: () => void;
   /** Dissecador › Contra-medida (checkpoint talentos, Fase 2) — consome 1 Reação do DEFENSOR quando o ataque errou corpo a corpo. */
   onContraMedida: () => void;
+  /** Espadachim › Ripostar (checkpoint talentos, Fase 4) — marca 1/rodada no DEFENSOR ao obter sucesso crítico em Aparar. */
+  onRipostar: () => void;
   onApply: () => void;
   onCancel: () => void;
   /** Assassino › Hemorragia/Executar (checkpoint talentos, Fase E) — talentos do ATACANTE. */
@@ -4089,6 +4203,18 @@ function AttackResolutionPanel({
     ataqueOriginalCorpoACorpo &&
     !!reactionAvailability &&
     reactionAvailability.remaining >= 1;
+
+  // Espadachim › Ripostar (checkpoint talentos, Fase 4) — lido do DEFENSOR: sucesso CRÍTICO
+  // em Aparar (natural ou promovido por Aparar N1), 1/rodada, contra-ataque grátis (0 PA).
+  // "Lâmina" confirmada pelo próprio clique (mesmo padrão de Aparar/Estocar — sem dado
+  // estruturado de lâmina no catálogo).
+  const ripostarStatus = targetNormalizado ? getRipostarAvailability(targetNormalizado, talentsIniciais) : { acquired: false, usedThisRound: false };
+  const podeRipostar =
+    !!form.lastDefense &&
+    form.lastDefense.defenseType === "aparar" &&
+    (apararBandaAtual === "critical" || form.lastDefense.promovidaCritico === true) &&
+    ripostarStatus.acquired &&
+    !ripostarStatus.usedThisRound;
 
   // Assassino › Hemorragia/Executar (Fase E, cross-record) — lidos do ATACANTE, não do alvo.
   const attackerCharacterId = typeof log.payload.characterId === "string" ? log.payload.characterId : null;
@@ -4244,6 +4370,15 @@ function AttackResolutionPanel({
               Contra-medida: usar Reação para contra-atacar (desarmado/arma contundente, 0 PA)
             </button>
           )}
+          {podeRipostar && (
+            <button
+              data-testid={`ataque-ripostar-${log.id}`}
+              onClick={onRipostar}
+              style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px", alignSelf: "flex-start" }}
+            >
+              Ripostar: contra-atacar agora (crítico em Aparar, lâmina, 0 PA — 1/rodada)
+            </button>
+          )}
           <p style={{ fontSize: 10, opacity: 0.5, margin: 0 }}>
             Modificadores automáticos de condição/postura ainda são pendência nesta tela — só o modificador manual acima entra na rolagem.
           </p>
@@ -4374,6 +4509,41 @@ function AttackResolutionPanel({
                 onChange={(e) => onUpdateForm({ blindagemAnularAtivo: e.target.checked })}
               />
               Anular todo o dano (sucesso em Bloquear) — 1/cena, não consome PD/escudo
+            </label>
+          )}
+        </div>
+      )}
+
+      {!!targetNormalizado && hasMuralha(targetNormalizado, talentsIniciais) && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "#141a24", border: "1px solid #2e4a5c", borderRadius: 6, padding: "8px 10px" }}>
+          <span style={{ fontSize: 11, opacity: 0.7 }}>Muralha (talento do ALVO — sem limite de uso):</span>
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+            <input
+              data-testid={`ataque-muralha-${log.id}`}
+              type="checkbox"
+              checked={form.muralhaConfirmado}
+              onChange={(e) => onUpdateForm({ muralhaConfirmado: e.target.checked })}
+            />
+            Confirmo sucesso em Bloquear — conceder Cobertura Parcial (-1 em ataques direcionais até fim da rodada, aplicação manual)
+          </label>
+          {form.muralhaConfirmado && (
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11 }}>
+              Aliado também protegido (opcional)
+              <select
+                data-testid={`ataque-muralha-aliado-${log.id}`}
+                value={form.muralhaAliadoProtegidoId}
+                onChange={(e) => onUpdateForm({ muralhaAliadoProtegidoId: e.target.value })}
+                style={inputStyle}
+              >
+                <option value="">— só o defensor —</option>
+                {Object.values(personagensAtivos)
+                  .filter((r) => r.id !== form.targetCharacterId)
+                  .map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name}
+                    </option>
+                  ))}
+              </select>
             </label>
           )}
         </div>
