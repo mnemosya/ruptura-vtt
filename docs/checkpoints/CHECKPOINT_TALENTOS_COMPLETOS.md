@@ -47,6 +47,100 @@ canônico — não de uma engine genérica.
 
 ---
 
+## Tabela 66/66 — status REAL de implementação mecânica
+
+Legenda: **✅ Integral** (mecânica-núcleo conectada ao fluxo real) · **🟡 Parcial**
+(parte da mecânica real feita, resto pendente) · **📖 Narrativo rastreado** (atividade
+com formulário/estado/log) · **⚙️ Infra pendente** (só classificação/badge/botão/
+cadência/log/lembrete — SEM regra específica no fluxo).
+
+Contagem: ✅ 2 · 🟡 7 · ⚙️ 57 · 📖 0.
+
+| Árvore | Nível | Nº | Status real |
+| --- | --- | --- | --- |
+| Artífice | Bricolagem | 1 | ⚙️ Infra pendente |
+| Artífice | Toque de Midas | 2 | ⚙️ Infra pendente |
+| Artífice | Gambiarra Expressa | 3 | ⚙️ Infra pendente |
+| Assassino | Lâmina Oculta | 1 | ⚙️ Infra pendente |
+| Assassino | Hemorragia | 2 | ⚙️ Infra pendente |
+| Assassino | Executar | 3 | ⚙️ Infra pendente |
+| Atirador de Elite | 1 Tiro, 1 Acerto | 1 | ⚙️ Infra pendente |
+| Atirador de Elite | À Espreita | 2 | ⚙️ Infra pendente |
+| Atirador de Elite | Headshot | 3 | ⚙️ Infra pendente |
+| Berserker | Fúria | 1 | 🟡 Parcial |
+| Berserker | Sede de Sangue | 2 | 🟡 Parcial |
+| Berserker | Último Fôlego | 3 | ⚙️ Infra pendente |
+| Dissecador | Golpe Cirúrgico | 1 | ⚙️ Infra pendente |
+| Dissecador | Fincada | 2 | ⚙️ Infra pendente |
+| Dissecador | Contra-medida | 3 | ⚙️ Infra pendente |
+| Droneiro | Sinal Limpo | 1 | ⚙️ Infra pendente |
+| Droneiro | Script | 2 | ⚙️ Infra pendente |
+| Droneiro | Enxame | 3 | ⚙️ Infra pendente |
+| Espadachim | Aparar | 1 | 🟡 Parcial |
+| Espadachim | Estocar | 2 | ⚙️ Infra pendente |
+| Espadachim | Ripostar | 3 | ⚙️ Infra pendente |
+| Estrategista | Falcão | 1 | ⚙️ Infra pendente |
+| Estrategista | Briefing de Campo | 2 | ⚙️ Infra pendente |
+| Estrategista | Imposição de Ritmo | 3 | ⚙️ Infra pendente |
+| Guardião | Sentinela | 1 | ⚙️ Infra pendente |
+| Guardião | Blindagem | 2 | 🟡 Parcial |
+| Guardião | Muralha | 3 | ⚙️ Infra pendente |
+| Mago de Batalha | Domínio Territorial | 1 | ✅ Integral |
+| Mago de Batalha | Canalizar | 2 | 🟡 Parcial |
+| Mago de Batalha | Ascensão | 3 | ✅ Integral |
+| Malabarista | Saque Fantasma | 1 | 🟡 Parcial |
+| Malabarista | Revoada | 2 | ⚙️ Infra pendente |
+| Malabarista | Espetáculo Mortal | 3 | ⚙️ Infra pendente |
+| Manipulador | Olhar Penetrante | 1 | ⚙️ Infra pendente |
+| Manipulador | Entrelinhas | 2 | ⚙️ Infra pendente |
+| Manipulador | Puxar os Fios | 3 | ⚙️ Infra pendente |
+| Mecatrônico | Chave de Arranque | 1 | ⚙️ Infra pendente |
+| Mecatrônico | Marcha Dupla | 2 | ⚙️ Infra pendente |
+| Mecatrônico | Overclock | 3 | ⚙️ Infra pendente |
+| Mercador | Garimpo de Rua | 1 | ⚙️ Infra pendente |
+| Mercador | Caderneta de Dívida | 2 | ⚙️ Infra pendente |
+| Mercador | Rede de Favores | 3 | ⚙️ Infra pendente |
+| Paramédico | Pronto-socorro | 1 | ⚙️ Infra pendente |
+| Paramédico | Ritmo de Campo | 2 | ⚙️ Infra pendente |
+| Paramédico | Protocolo de Emergência | 3 | ⚙️ Infra pendente |
+| Pistoleiro | Gatilho Quente | 1 | ⚙️ Infra pendente |
+| Pistoleiro | Bang Bang | 2 | ⚙️ Infra pendente |
+| Pistoleiro | Showdown | 3 | ⚙️ Infra pendente |
+| Praga | Marca da Dor | 1 | ⚙️ Infra pendente |
+| Praga | Sangria Lenta | 2 | ⚙️ Infra pendente |
+| Praga | Contágio | 3 | ⚙️ Infra pendente |
+| Rato de Rua | Zé da Esquina | 1 | ⚙️ Infra pendente |
+| Rato de Rua | Gato de Telhado | 2 | ⚙️ Infra pendente |
+| Rato de Rua | Saída dos Fundos | 3 | ⚙️ Infra pendente |
+| Rúnico | Gatilho Rúnico | 1 | ⚙️ Infra pendente |
+| Rúnico | Entalhe Rápido | 2 | ⚙️ Infra pendente |
+| Rúnico | Sobregravação | 3 | ⚙️ Infra pendente |
+| Sorrateiro | Passo Fantasma | 1 | ⚙️ Infra pendente |
+| Sorrateiro | Camuflagem Óptica | 2 | ⚙️ Infra pendente |
+| Sorrateiro | Ataque Fatal | 3 | ⚙️ Infra pendente |
+| Tecelão | Olho de Botão | 1 | ⚙️ Infra pendente |
+| Tecelão | Bypass | 2 | ⚙️ Infra pendente |
+| Tecelão | Agulha Fina | 3 | ⚙️ Infra pendente |
+| Totem | Benção | 1 | 🟡 Parcial |
+| Totem | Onda Solidária | 2 | ⚙️ Infra pendente |
+| Totem | Chama Redobrada | 3 | ⚙️ Infra pendente |
+
+### Detalhe dos não-infra
+
+- **✅ Domínio Territorial** — multiplica alcance/área real de magias de ataque (+50%).
+- **✅ Ascensão** — limite de Surtos 3→5 real + Ruptura especial idempotente ao adquirir
+  (não reduz Integridade, não conta em cálculos futuros), exibida à parte e logada.
+- **🟡 Canalizar** — Potencializar real (gasta Mana, +1 dano/Mana, 1/rodada); **falta
+  Amortecer** (fluxo de dano recebido, lado narrador — Fase E).
+- **🟡 Aparar** — +1 em Aparar real via ActiveEffect; **falta** a promoção 1/cena.
+- **🟡 Blindagem** — +1 em Bloquear real; **falta** anular todo o dano sem consumir PD.
+- **🟡 Sede de Sangue** — −1 defensivas real (toggle→efeito); **falta** dobrar bônus de
+  Corpo no dano e monitorar PV.
+- **🟡 Fúria** — efeito temporário empilhável existe; **falta** ganhar pilha automática
+  ao sofrer dano (lado narrador).
+- **🟡 Saque Fantasma / Totem Benção** — parte passiva real; promoção de margem pendente.
+
+
 
 ## Como cada talento opera
 
