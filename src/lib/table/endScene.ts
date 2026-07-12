@@ -28,6 +28,7 @@ import {
   resolvePendingRupture,
   resetTalentUses,
   expireSceneTemporaryEffects,
+  resolveUltimoFolegoSceneEnd,
   type Character,
 } from "../character";
 import { listCharactersForNarratorCampaign, updateCharacter } from "../character/storage";
@@ -128,9 +129,27 @@ export async function resolveCampaignEndSceneForCharacters(params: {
       // Efeitos temporários com duração por cena (checkpoint pós-v0.71) expiram aqui.
       const sceneExpiry = expireSceneTemporaryEffects(nextCharacter, nowIso);
       nextCharacter = sceneExpiry.character;
-      const outroEstadoMudou = talentReset.resetCount > 0 || sceneExpiry.expired.length > 0;
+      // Berserker › Último Fôlego (checkpoint talentos, Fase 3) — consequência de fim de
+      // cena: se a prevenção estava ativa e o personagem ainda está de pé, cai a 0 PV
+      // (dispara colapso normalmente, mesmo padrão de qualquer outro PV chegando a 0).
+      const ultimoFolego = resolveUltimoFolegoSceneEnd(nextCharacter, nowIso);
+      nextCharacter = ultimoFolego.character;
+      const outroEstadoMudou = talentReset.resetCount > 0 || sceneExpiry.expired.length > 0 || ultimoFolego.forcedToZero;
       if (outroEstadoMudou && !result.resolved) {
         await updateCharacter(record.id, nextCharacter);
+      }
+      if (ultimoFolego.forcedToZero) {
+        tableLogs.push({
+          type: "talent_triggered",
+          payload: {
+            characterId: record.id,
+            characterNome: character.nome,
+            profileId: record.profile_id,
+            message: `Último Fôlego: ${character.nome} ainda estava de pé ao fim da cena — caiu a 0 PV automaticamente (consequência do payload, cura não impede).`,
+            sourceTalentId: "berserker_ultimo_folego",
+            source: "campaign_end_scene",
+          },
+        });
       }
       // Log persistente por efeito temporário expirado na cena.
       for (const e of sceneExpiry.expired) {

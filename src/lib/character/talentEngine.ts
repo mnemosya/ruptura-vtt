@@ -30,6 +30,7 @@
 import type { ActiveEffect } from "./activeEffects";
 import type { Character, TemporaryEffect } from "./types";
 import { addTemporaryEffect, getActiveTemporaryEffects, removeTemporaryEffect } from "./temporaryEffects";
+import { detectCollapseOnResourceChange } from "./collapse";
 import {
   deriveActiveEffectsFromTalents,
   getTalentEffectKey,
@@ -1135,11 +1136,21 @@ export function hasFuria(character: Pick<Character, "talentos_adquiridos">, tale
  * Berserker › Fúria — constrói o efeito temporário empilhável real (+1 em
  * Luta por pilha, até `max_pilhas` do payload) para aplicar no personagem
  * que ACABOU de sofrer dano. `stackingMode: "stack"` (`addTemporaryEffect`)
- * incrementa a pilha existente em vez de duplicar. `durationType: "rounds"`
- * com `remainingRounds: 1` é a aproximação mais fiel disponível a "até o
- * fim do PRÓXIMO turno" — este sistema só rastreia duração por RODADA
- * (fim de rodada global), não por turno individual; não inventa um
- * rastreador de turno novo só para este talento.
+ * incrementa a pilha existente em vez de duplicar.
+ *
+ * Duração real do payload é "até o fim do PRÓXIMO TURNO" do alvo — este
+ * sistema só rastreia `current_round`/"Encerrar Rodada" (fim de RODADA
+ * global), sem noção de turno individual dentro da ordem de iniciativa.
+ * Um stack marcado `durationType: "rounds", remainingRounds: 1` expiraria
+ * no PRÓXIMO "Encerrar Rodada" — na prática, quase sempre o fim da rodada
+ * ATUAL, cortando o turno do alvo cedo demais sempre que ele já agiu antes
+ * de sofrer o dano (checkpoint talentos, Fase 3 — corrigido: nunca
+ * aproximar para fim de rodada). Por isso usa `durationType: "manual"`
+ * (mesmo padrão já adotado para Golpe Cirúrgico/Fincada): nunca expira
+ * sozinho no fim de rodada, e o narrador remove pelo botão de efeito
+ * temporário já existente quando o turno do alvo de fato terminar.
+ * `createdRound` é preservado só como metadado informativo (não dirige
+ * expiração).
  */
 export function buildFuriaTemporaryEffect(
   character: Pick<Character, "talentos_adquiridos">,
@@ -1160,8 +1171,7 @@ export function buildFuriaTemporaryEffect(
         sourceId: nivel.id,
         sourceName: `${talent.nome} — ${nivel.nome}`,
         name: nivel.nome,
-        durationType: "rounds",
-        remainingRounds: 1,
+        durationType: "manual",
         createdRound: currentRound ?? undefined,
         stackingMode: "stack",
         stacks: 1,
@@ -1273,6 +1283,142 @@ export function getSedeDeSangueDobroCorpoBonus(
 ): number | null {
   if (!isSedeDeSangueActive(character, talents)) return null;
   return character.atributos?.corpo ?? 0;
+}
+
+// ---------------------------------------------------------------------
+// Berserker — Último Fôlego (N3): previne queda a 0 PV, 1/cena.
+// ---------------------------------------------------------------------
+
+export function hasUltimoFolego(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "gatilho_prevenir_zero_pv") return true;
+    }
+  }
+  return false;
+}
+
+export const ULTIMO_FOLEGO_USAGE_KEY = "berserker_ultimo_folego:cena";
+
+export function getUltimoFolegoAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisScene: boolean; pvResultante: number; buffLuta: number; danoExtra: string } {
+  let acquired = false;
+  let pvResultante = 1;
+  let buffLuta = 0;
+  let danoExtra = "";
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "gatilho_prevenir_zero_pv") continue;
+      acquired = true;
+      if (typeof efeito.pv_resultante === "number") pvResultante = efeito.pv_resultante;
+      const buffs = Array.isArray(efeito.buffs) ? efeito.buffs : [];
+      for (const buff of buffs) {
+        if (typeof buff !== "object" || buff === null) continue;
+        const b = buff as Record<string, unknown>;
+        if (b.tipo === "modificador" && typeof b.valor === "number") buffLuta = b.valor;
+        if (b.tipo === "dano_extra" && typeof b.valor === "string") danoExtra = b.valor;
+      }
+    }
+  }
+  const usedThisScene = (character.talentos_estado?.usos?.[ULTIMO_FOLEGO_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisScene, pvResultante, buffLuta, danoExtra };
+}
+
+export function markUltimoFolegoUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[ULTIMO_FOLEGO_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+/**
+ * Aplica a prevenção real: força PV para `pv_resultante` (rede de segurança —
+ * o chamador já deve ter evitado o dano de tocar 0 de verdade, ver
+ * TableClient.tsx), cria os dois efeitos temporários reais do payload
+ * (+Luta até fim de cena; +dano corpo a corpo é um lembrete estruturado, já
+ * que não existe calculadora de dano automática neste sistema), marca o
+ * uso de cena e grava `ultimo_folego_ativo` — consumido em "Encerrar Cena"
+ * (`resolveUltimoFolegoSceneEnd`) para a queda automática se ainda de pé.
+ */
+export function applyUltimoFolegoPrevention(
+  character: Character,
+  talents: TalentContent[],
+  idFactory: () => string,
+  nowIso: string,
+  currentScene: number | null,
+): Character {
+  const status = getUltimoFolegoAvailability(character, talents);
+  if (!status.acquired) return character;
+  let next: Character = {
+    ...character,
+    recursos_atuais: { ...character.recursos_atuais, pv: status.pvResultante },
+    ultimo_folego_ativo: { ativadoEm: nowIso, cena: currentScene ?? character.current_scene ?? 1 },
+  };
+  next = markUltimoFolegoUsed(next, nowIso);
+  if (status.buffLuta !== 0) {
+    next = addTemporaryEffect(next, {
+      id: idFactory(),
+      sourceType: "talent",
+      sourceId: "berserker_ultimo_folego_luta",
+      sourceName: "Último Fôlego",
+      name: "Último Fôlego — Luta",
+      durationType: "scene",
+      createdScene: currentScene ?? undefined,
+      stackingMode: "ignore",
+      modifiers: [{ target: "skill", operation: "add", value: status.buffLuta, appliesTo: ["luta"], label: `+${status.buffLuta} Luta` }],
+      active: true,
+      createdAt: nowIso,
+    });
+  }
+  if (status.danoExtra) {
+    next = addTemporaryEffect(next, {
+      id: idFactory(),
+      sourceType: "talent",
+      sourceId: "berserker_ultimo_folego_dano",
+      sourceName: "Último Fôlego",
+      name: "Último Fôlego — dano extra corpo a corpo",
+      description: `+${status.danoExtra} de dano corpo a corpo até o fim da cena — sem calculadora de dano automática neste sistema, somar manualmente ao dano bruto.`,
+      durationType: "scene",
+      createdScene: currentScene ?? undefined,
+      stackingMode: "ignore",
+      modifiers: [
+        { target: "damage", operation: "manual", reminder: `+${status.danoExtra} de dano corpo a corpo (Último Fôlego, até o fim da cena)` },
+      ],
+      active: true,
+      createdAt: nowIso,
+    });
+  }
+  return next;
+}
+
+/**
+ * Resolve a consequência de fim de cena do payload (`consequencia_fim_cena.tipo ===
+ * "cair_a_zero_pv"`): se `ultimo_folego_ativo` está marcado e o personagem ainda
+ * está de pé (PV > 0), força PV a 0 — cura recebida durante a cena NÃO impede
+ * essa queda (regra explícita do capítulo). PV chegando a 0 por qualquer via dispara
+ * colapso normalmente neste sistema (`detectCollapseOnResourceChange`), então esta
+ * queda também dispara (mesmo padrão de qualquer outro dano que zera o PV — nunca um
+ * "0 PV silencioso" fora do fluxo de colapso já existente). Sempre limpa o marcador
+ * ao final da cena, independentemente do resultado. Chamado por `endScene.ts`
+ * (Encerrar Cena canônico), o único lugar que já processa TODOS os personagens
+ * ativos no fim de cena.
+ */
+export function resolveUltimoFolegoSceneEnd(character: Character, nowIso: string): { character: Character; forcedToZero: boolean } {
+  if (!character.ultimo_folego_ativo) return { character, forcedToZero: false };
+  const pvAntes = character.recursos_atuais?.pv ?? 0;
+  const forcedToZero = pvAntes > 0;
+  if (!forcedToZero) {
+    return { character: { ...character, ultimo_folego_ativo: undefined }, forcedToZero: false };
+  }
+  const peAtual = character.recursos_atuais?.pe ?? 0;
+  const withZeroPv: Character = {
+    ...character,
+    recursos_atuais: { ...character.recursos_atuais, pv: 0 },
+    ultimo_folego_ativo: undefined,
+  };
+  const collapse = detectCollapseOnResourceChange(withZeroPv, { pv: pvAntes, pe: peAtual }, { pv: 0, pe: peAtual }, nowIso);
+  return { character: collapse.character, forcedToZero: true };
 }
 
 // ---------------------------------------------------------------------

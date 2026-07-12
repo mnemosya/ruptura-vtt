@@ -527,6 +527,15 @@ export interface Character {
    */
   bencao_token_ativo?: { origem: string; concedidoEm: string };
   /**
+   * Berserker › Último Fôlego (N3, checkpoint talentos, Fase 3) — marca que a
+   * prevenção de queda a 0 PV está ativa nesta cena. Consumido em "Encerrar
+   * Cena" (`resolveCampaignEndSceneForCharacters`, `endScene.ts`): se o
+   * personagem ainda estiver de pé (PV > 0) quando a cena terminar, o PV é
+   * forçado a 0 mesmo que tenha se curado — a cura NÃO impede essa queda
+   * final (regra explícita do payload).
+   */
+  ultimo_folego_ativo?: { ativadoEm: string; cena: number };
+  /**
    * Sorrateiro › estado real de Furtividade (checkpoint talentos, Fase 3)
    * — entrada/saída manual (narrativa, sem teste estruturado próprio para
    * "entrar"; testes de Furtividade em si usam a perícia normalmente,

@@ -101,6 +101,8 @@ import {
   getFincadaAvailability,
   markFincadaUsed,
   hasContraMedida,
+  getUltimoFolegoAvailability,
+  applyUltimoFolegoPrevention,
   type GmResource,
   type CharacterRecord,
   type Character,
@@ -1782,9 +1784,27 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
         );
       }
 
+      // Berserker › Último Fôlego (checkpoint talentos, Fase 3) — 1/cena, primeira vez que o
+      // dano faria o ALVO chegar a 0 PV: reduz o dano BRUTO (mesmo estágio de Fincada/
+      // Amortecer, antes de MIT/PD) só o suficiente para o PV parar em pv_resultante — nunca
+      // deixa o PV tocar 0 de fato, então o colapso normal nunca dispara e não precisa ser
+      // desfeito depois (mais seguro que deixar colapso iniciar e tentar reverter estado).
+      const pvBeforeUltimoFolego = targetNormalizado.recursos_atuais?.pv ?? 0;
+      const ultimoFolegoStatus = getUltimoFolegoAvailability(targetNormalizado, talentsIniciais);
+      const danoPrevistoAntesUltimoFolego = Math.max(0, Math.max(0, rawDamageAmortecido + marginDamageModifier) - mit);
+      const ultimoFolegoElegivel =
+        ultimoFolegoStatus.acquired &&
+        !ultimoFolegoStatus.usedThisScene &&
+        pvBeforeUltimoFolego > 0 &&
+        danoPrevistoAntesUltimoFolego >= pvBeforeUltimoFolego;
+      const danoAlvoFinalUltimoFolego = Math.max(0, pvBeforeUltimoFolego - ultimoFolegoStatus.pvResultante);
+      const rawDamageParaAplicar = ultimoFolegoElegivel
+        ? Math.max(0, rawDamageAmortecido - (danoPrevistoAntesUltimoFolego - danoAlvoFinalUltimoFolego))
+        : rawDamageAmortecido;
+
       let resolucao = applyMarginBasedAttackDamage({
         character: targetNormalizado,
-        rawDamage: rawDamageAmortecido,
+        rawDamage: rawDamageParaAplicar,
         marginDamageModifier,
         mit,
         nowIso,
@@ -1792,6 +1812,16 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
         round: targetNormalizado.current_round,
         scene: targetNormalizado.current_scene,
       });
+
+      let ultimoFolegoAplicado = false;
+      if (ultimoFolegoElegivel) {
+        resolucao = {
+          ...resolucao,
+          character: applyUltimoFolegoPrevention(resolucao.character, talentsIniciais, () => crypto.randomUUID(), nowIso, resolucao.character.current_scene ?? null),
+          pvAfter: ultimoFolegoStatus.pvResultante,
+        };
+        ultimoFolegoAplicado = true;
+      }
 
       // Aplica a condição escolhida (Lento/Caído) no ALVO quando Fincada foi usada de fato
       // (dano reduzido com sucesso). Autoria do ATACANTE preservada; "Lento" dura até o fim
@@ -1960,7 +1990,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
         reminders.push("Hemorragia: Sangrando aplicado ao alvo.");
       }
       if (furiaAplicada) {
-        reminders.push("Fúria: +1 em Luta empilhado no alvo (até o fim do próximo turno/rodada).");
+        reminders.push("Fúria: +1 em Luta empilhado no alvo — dura até o fim do PRÓXIMO TURNO dele (remova manualmente pelo efeito temporário quando esse turno passar; nunca expira sozinho no fim de rodada).");
       }
       if (blindagemAplicada) {
         reminders.push("Blindagem: dano totalmente anulado (sucesso em Bloquear) — nada aplicado ao escudo/PD nem ao defensor.");
@@ -1975,6 +2005,11 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       if (golpeCirurgicoAplicado) {
         reminders.push(
           `Golpe Cirúrgico: ${golpeCirurgicoStatus.valor} aplicado como efeito temporário no alvo para a próxima ação ofensiva dele (luta/precisão/balística) — remova manualmente pelo botão de efeito temporário assim que essa ação ocorrer.`,
+        );
+      }
+      if (ultimoFolegoAplicado) {
+        reminders.push(
+          `Último Fôlego: dano reduzido para o alvo parar em ${ultimoFolegoStatus.pvResultante} PV em vez de cair a 0 — +${ultimoFolegoStatus.buffLuta} em Luta e +${ultimoFolegoStatus.danoExtra} de dano corpo a corpo aplicados até o fim da cena. Se ainda estiver de pé quando a cena terminar, cai a 0 PV automaticamente mesmo que tenha se curado (resolvido em "Encerrar Cena").`,
         );
       }
       // Berserker › Sede de Sangue (checkpoint talentos, Fase 1) — reminder com o valor

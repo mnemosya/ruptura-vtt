@@ -62,7 +62,7 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 30 · 🟡 0 · ⚙️ 35 · 📖 1.
+Contagem: ✅ 0 · 🔵 31 · 🟡 0 · ⚙️ 34 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -77,7 +77,7 @@ Contagem: ✅ 0 · 🔵 30 · 🟡 0 · ⚙️ 35 · 📖 1.
 | Atirador de Elite | Headshot | 3 | 🔵 Implementado (aguardando validação manual) |
 | Berserker | Fúria | 1 | 🔵 Implementado (aguardando validação manual) |
 | Berserker | Sede de Sangue | 2 | 🔵 Implementado (aguardando validação manual) |
-| Berserker | Último Fôlego | 3 | ⚙️ Infra pendente |
+| Berserker | Último Fôlego | 3 | 🔵 Implementado (aguardando validação manual) |
 | Dissecador | Golpe Cirúrgico | 1 | 🔵 Implementado (aguardando validação manual) |
 | Dissecador | Fincada | 2 | 🔵 Implementado (aguardando validação manual) |
 | Dissecador | Contra-medida | 3 | 🔵 Implementado (aguardando validação manual) |
@@ -550,9 +550,9 @@ abaixo está **aguardando confirmação do usuário via teste manual** — nenhu
 | Atirador de Elite | 1 Tiro, 1 Acerto | 🔵 Implementado | +2/+3 no próximo disparo à distância após Mirar | `talentEngine.ts`, `RollsTab.tsx` | `Character.mirar_ativo` | Confirmar Mirar (sucesso/crítico) → atacar à distância → confirmar chip aplicado e consumido | Aguardando usuário |
 | Atirador de Elite | À Espreita | 🔵 Implementado | Sucesso/falha limitada → sucesso padrão (alvo não ciente + Mirar) | `TableClient.tsx` | Nenhum (banda de resolução só) | Resolver ataque à distância com margem "limited" + confirmação → banda vira standard | Aguardando usuário |
 | Atirador de Elite | Headshot | 🔵 Implementado | Acerto vira crítico (Mirar crítico confirmado) | `TableClient.tsx` | Nenhum | Resolver ataque à distância com acerto qualquer + confirmação de Mirar crítico → banda vira critical; testar um MISS → confirmar que NÃO vira acerto | Aguardando usuário |
-| Berserker | Fúria | 🔵 Implementado | +1 Luta empilhável (até 3) ao sofrer dano real | `TableClient.tsx`, `talentEngine.ts`, `temporaryEffects.ts` | `Character.efeitos_temporarios` (stack) | Aplicar dano ao personagem com Fúria 2-3x seguidas → confirmar pilha soma até 3, não duplica registro | Aguardando usuário |
+| Berserker | Fúria | 🔵 Implementado | +1 Luta empilhável (até 3) ao sofrer dano real; duração corrigida (Fase 3) para manual — nunca mais aproxima para fim de rodada | `TableClient.tsx`, `talentEngine.ts`, `temporaryEffects.ts` | `Character.efeitos_temporarios` (stack) | Aplicar dano ao personagem com Fúria 2-3x seguidas → confirmar pilha soma até 3, não duplica registro; confirmar que "Encerrar Rodada" NÃO remove o stack sozinho | Aguardando usuário |
 | Berserker | Sede de Sangue | 🔵 Implementado | −1 defensivas; PV-gate real na ativação; auto-desliga com PV ≥ metade; reminder de +Corpo no dano | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TableClient.tsx` | `Character.efeitos_temporarios` (toggle) | Ativar só com PV<metade → confirmar bloqueado com PV≥metade; curar até metade → confirmar desliga sozinho; resolver ataque corpo a corpo → conferir reminder +Corpo | Aguardando usuário |
-| Berserker | Último Fôlego | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Berserker | Último Fôlego | 🔵 Implementado | 1/cena, dano reduzido para parar em 1 PV em vez de cair a 0; +2 Luta e +1d6 dano corpo a corpo até fim de cena; força PV a 0 em "Encerrar Cena" se ainda de pé (cura não impede) | `talentEngine.ts`, `TableClient.tsx`, `endScene.ts` | `Character.ultimo_folego_ativo`, `efeitos_temporarios`, `talentos_estado` | Resolver ataque que zeraria o PV do alvo com Último Fôlego → confirmar PV para em 1, buffs aplicados; repetir na mesma cena → confirmar bloqueado; encerrar a cena sem curar → confirmar PV cai a 0 automaticamente | Aguardando usuário |
 | Dissecador | Golpe Cirúrgico | 🔵 Implementado | Troca Corpo→Mente livre (dropdown já sem gate); −2 real no alvo (efeito temporário luta/precisão/balística) em crítico + dano contundente corpo a corpo, 1/rodada | `talentEngine.ts`, `TableClient.tsx` | `Character.efeitos_temporarios` (alvo) | Resolver ataque corpo a corpo contundente com margem crítica → marcar checkbox → confirmar efeito -2 no alvo; repetir na mesma rodada → confirmar bloqueado (1/rodada) | Aguardando usuário |
 | Dissecador | Fincada | 🔵 Implementado | Reduz dano real em 1 (payload) para aplicar Lento/Caído no alvo, 1/rodada, só em acerto contundente corpo a corpo | `talentEngine.ts`, `TableClient.tsx` | `ActiveCondition` no alvo (com autoria) | Resolver ataque corpo a corpo contundente com acerto → escolher Lento ou Caído → confirmar dano reduzido em 1 e condição aplicada; repetir na mesma rodada → confirmar bloqueado | Aguardando usuário |
 | Dissecador | Contra-medida | 🔵 Implementado | Consome 1 Reação real do defensor quando ataque corpo a corpo contra ele erra; contra-ataque em si resolvido pelo Atacar normal (desarmado/contundente por confirmação) | `talentEngine.ts`, `TableClient.tsx` | `Character.estado_jogo.reacoes_usadas` (defensor) | Resolver ataque corpo a corpo com margem "miss" contra personagem com Contra-medida → clicar botão → confirmar Reação consumida no defensor | Aguardando usuário |
