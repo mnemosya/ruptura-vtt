@@ -79,6 +79,10 @@ import {
   getHemorragiaCriticalDie,
   getExecutarAvailability,
   markExecutarUsed,
+  hasAEspreita,
+  hasHeadshot,
+  hasAtaqueFatal,
+  endFurtividade,
   type GmResource,
   type CharacterRecord,
   type Character,
@@ -91,6 +95,7 @@ import {
   type ConditionEndRoundEffect,
   type InventoryItemInstance,
   type TalentContent,
+  type MarginBandRules,
 } from "../../../lib/character";
 import { rollPericia } from "../../../lib/dice";
 import type { NarratorConditionOption } from "./page";
@@ -130,6 +135,40 @@ interface AttackPanelForm {
   /** Assassino › Executar (checkpoint talentos, Fase E) — narrador confirma o requisito (alvo <50% PV, não percebe, Imobilizado ou Atordoado) manualmente antes de habilitar. */
   executarRequisitoConfirmado: boolean;
   executarAtivo: boolean;
+  /** Atirador de Elite › À Espreita (checkpoint talentos, Fase 3) — narrador confirma alvo não ciente + ataque após sucesso em Mirar; sucesso/falha limitada viram sucesso padrão. */
+  aEspreitaConfirmado: boolean;
+  /** Atirador de Elite › Headshot — narrador confirma Mirar crítico; acerto (não miss) vira crítico. */
+  headshotConfirmado: boolean;
+  /** Sorrateiro › Ataque Fatal — narrador confirma que o atacante está saindo de Furtividade para este ataque; acerto vira crítico e encerra a Furtividade do atacante. */
+  ataqueFatalConfirmado: boolean;
+}
+
+/** Bandas fixas reaproveitadas por Executar/À Espreita/Headshot/Ataque Fatal — nunca inventadas ad-hoc em cada callsite. */
+const STANDARD_BAND_RULES: MarginBandRules = { band: "standard", allowedRegions: ["tronco", "bracos", "pernas"], modifierType: "none", flatModifier: 0 };
+const CRITICAL_BAND_RULES: MarginBandRules = { band: "critical", allowedRegions: [...BODY_REGIONS], modifierType: "extraDie", flatModifier: 0 };
+
+/**
+ * Aplica as sobreposições de banda de margem dos talentos de combate
+ * (Executar > À Espreita > Headshot/Ataque Fatal, nessa ordem — Executar
+ * já força crítico incondicional, então os demais não têm efeito quando
+ * ele está ativo). À Espreita só eleva "limited" (sucesso limitado ou
+ * falha limitada tratada como sucesso, ver resolveMarginBand) para
+ * "standard"; Headshot/Ataque Fatal só forçam crítico quando já é um
+ * ACERTO (nunca transformam miss em acerto).
+ */
+function applyMarginBandOverrides(
+  baseBandRules: MarginBandRules | null,
+  form: Pick<AttackPanelForm, "executarAtivo" | "aEspreitaConfirmado" | "headshotConfirmado" | "ataqueFatalConfirmado">,
+): MarginBandRules | null {
+  if (form.executarAtivo) return CRITICAL_BAND_RULES;
+  let effective = baseBandRules;
+  if (form.aEspreitaConfirmado && effective?.band === "limited") {
+    effective = STANDARD_BAND_RULES;
+  }
+  if ((form.headshotConfirmado || form.ataqueFatalConfirmado) && effective && effective.band !== "miss") {
+    effective = CRITICAL_BAND_RULES;
+  }
+  return effective;
 }
 
 type DefenseType = "esquivar" | "aparar" | "bloquear" | "resistir";
@@ -172,6 +211,9 @@ const DEFAULT_ATTACK_PANEL_FORM: AttackPanelForm = {
   aplicarHemorragia: false,
   executarRequisitoConfirmado: false,
   executarAtivo: false,
+  aEspreitaConfirmado: false,
+  headshotConfirmado: false,
+  ataqueFatalConfirmado: false,
 };
 
 /**
@@ -1505,13 +1547,11 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     const defenseTotal = form.defenseTotal.trim() ? Number(form.defenseTotal) : null;
     const hasMargin = attackTotal != null && Number.isFinite(attackTotal) && defenseTotal != null && Number.isFinite(defenseTotal);
     const margin = hasMargin ? attackTotal! - defenseTotal! : null;
-    let bandRules = margin != null ? resolveMarginBand(margin) : null;
-    // Assassino › Executar (Fase E): trata o acerto como crítico (mesma banda de dano/região
-    // que um sucesso crítico real) — a margem/attackTotal/defenseTotal digitados continuam
-    // sendo os REAIS no log, só a banda de resolução é forçada.
-    if (form.executarAtivo) {
-      bandRules = { band: "critical", allowedRegions: [...BODY_REGIONS], modifierType: "extraDie", flatModifier: 0 };
-    }
+    // Assassino › Executar / Atirador de Elite › À Espreita, Headshot / Sorrateiro › Ataque
+    // Fatal: sobrepõem a banda de dano/região (mesma banda que um sucesso crítico real ou
+    // padrão, conforme o caso) — a margem/attackTotal/defenseTotal digitados continuam sendo
+    // os REAIS no log, só a banda de resolução é forçada por essas overrides.
+    const bandRules = applyMarginBandOverrides(margin != null ? resolveMarginBand(margin) : null, form);
     const marginBand: "limited" | "standard" | "critical" | "miss" | null = bandRules?.band ?? null;
 
     if (margin != null && margin < 0 && !form.override && !form.executarAtivo) {
@@ -1586,6 +1626,21 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
         }
       }
 
+      // Sorrateiro › Ataque Fatal: encerra a Furtividade do ATACANTE ao sair dela para
+      // atacar (persistido separadamente, mesmo padrão de Executar acima).
+      if (form.ataqueFatalConfirmado) {
+        const attackerCharacterId = typeof log.payload.characterId === "string" ? log.payload.characterId : null;
+        const attackerRecord = attackerCharacterId ? personagensAtivos[attackerCharacterId] : null;
+        if (attackerRecord) {
+          const attackerCharacter = normalizeCharacter(attackerRecord.payload);
+          const attackerNext = endFurtividade(attackerCharacter, "ataque_fatal");
+          if (attackerNext !== attackerCharacter) {
+            const attackerSaved = await updateCharacter(attackerCharacterId!, attackerNext);
+            setPersonagensAtivos((prev) => ({ ...prev, [attackerSaved.id]: attackerSaved }));
+          }
+        }
+      }
+
       const reminders: string[] = [];
       if (log.payload.reminders && Array.isArray(log.payload.reminders)) {
         reminders.push(...(log.payload.reminders as unknown[]).filter((r): r is string => typeof r === "string"));
@@ -1598,6 +1653,15 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       }
       if (form.executarAtivo) {
         reminders.push("Executar: MIT/armadura ignorados, acerto tratado como crítico.");
+      }
+      if (form.aEspreitaConfirmado) {
+        reminders.push("À Espreita: sucesso limitado/falha limitada tratados como sucesso padrão (alvo não ciente após Mirar).");
+      }
+      if (form.headshotConfirmado) {
+        reminders.push("Headshot: acerto tratado como crítico (Mirar crítico confirmado).");
+      }
+      if (form.ataqueFatalConfirmado) {
+        reminders.push("Ataque Fatal: acerto tratado como crítico; Furtividade do atacante encerrada.");
       }
       if (hemorragiaAplicada) {
         reminders.push("Hemorragia: Sangrando aplicado ao alvo.");
@@ -3608,7 +3672,7 @@ function AttackResolutionPanel({
   const margin = hasMargin ? attackTotal! - defenseTotal! : null;
   const bandRules = margin != null ? resolveMarginBand(margin) : null;
   const rawDamage = Number(form.rawDamage) || 0;
-  const bandRulesEfetivo = form.executarAtivo ? { band: "critical" as const, allowedRegions: [...BODY_REGIONS], modifierType: "extraDie" as const, flatModifier: 0 } : bandRules;
+  const bandRulesEfetivo = applyMarginBandOverrides(bandRules, form);
   const marginDamageModifier = bandRulesEfetivo?.modifierType === "flat" ? bandRulesEfetivo.flatModifier : 0;
   const damageAfterMargin = Math.max(0, rawDamage + marginDamageModifier);
   const mit = form.executarAtivo ? 0 : Number(form.mit) || 0;
@@ -3632,6 +3696,12 @@ function AttackResolutionPanel({
   const weaponModel = weaponInstance ? itemsIniciais.find((m) => m.slug === weaponInstance.itemSlug) : null;
   const hemorragiaDisponivel = !!attackerCharacter && hasHemorragia(attackerCharacter, talentsIniciais) && !!weaponModel?.propertySlugs.includes("sangramento");
   const executarStatus = attackerCharacter ? getExecutarAvailability(attackerCharacter, talentsIniciais) : { acquired: false, usedThisScene: false, available: false };
+  // Atirador de Elite › À Espreita/Headshot / Sorrateiro › Ataque Fatal (checkpoint talentos, Fase 3) — lidos do ATACANTE, mesmo padrão de Hemorragia/Executar acima.
+  // À Espreita/Headshot exigem Mirar (só à distância) — mesma tag precisao/balistica de 1 Tiro, 1 Acerto; arma desconhecida nunca bloqueia (compatibilidade incerta permissiva, mesmo critério de runas).
+  const armaEhADistancia = !weaponModel?.periciaAtaque || weaponModel.periciaAtaque === "precisao" || weaponModel.periciaAtaque === "balistica";
+  const aEspreitaDisponivel = !!attackerCharacter && hasAEspreita(attackerCharacter, talentsIniciais) && armaEhADistancia;
+  const headshotDisponivel = !!attackerCharacter && hasHeadshot(attackerCharacter, talentsIniciais) && armaEhADistancia;
+  const ataqueFatalDisponivel = !!attackerCharacter && hasAtaqueFatal(attackerCharacter, talentsIniciais) && !!attackerCharacter.furtividade_ativa?.active;
 
   return (
     <div
@@ -3849,9 +3919,42 @@ function AttackResolutionPanel({
         )}
       </div>
 
-      {(hemorragiaDisponivel || executarStatus.acquired) && (
+      {(hemorragiaDisponivel || executarStatus.acquired || aEspreitaDisponivel || headshotDisponivel || ataqueFatalDisponivel) && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6, background: "#1a1420", border: "1px solid #4a2e5c", borderRadius: 6, padding: "8px 10px" }}>
           <span style={{ fontSize: 11, opacity: 0.7 }}>Talentos do atacante ({typeof log.payload.characterNome === "string" ? log.payload.characterNome : "atacante"}):</span>
+          {aEspreitaDisponivel && (
+            <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input
+                data-testid={`ataque-a-espreita-${log.id}`}
+                type="checkbox"
+                checked={form.aEspreitaConfirmado}
+                onChange={(e) => onUpdateForm({ aEspreitaConfirmado: e.target.checked })}
+              />
+              À Espreita — confirmo alvo não ciente + ataque após sucesso em Mirar (sucesso/falha limitada viram sucesso padrão)
+            </label>
+          )}
+          {headshotDisponivel && (
+            <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input
+                data-testid={`ataque-headshot-${log.id}`}
+                type="checkbox"
+                checked={form.headshotConfirmado}
+                onChange={(e) => onUpdateForm({ headshotConfirmado: e.target.checked })}
+              />
+              Headshot — confirmo Mirar crítico (acerto vira crítico; miss continua miss)
+            </label>
+          )}
+          {ataqueFatalDisponivel && (
+            <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input
+                data-testid={`ataque-ataque-fatal-${log.id}`}
+                type="checkbox"
+                checked={form.ataqueFatalConfirmado}
+                onChange={(e) => onUpdateForm({ ataqueFatalConfirmado: e.target.checked })}
+              />
+              Ataque Fatal — atacante está saindo de Furtividade neste ataque (acerto vira crítico; encerra a Furtividade dele)
+            </label>
+          )}
           {hemorragiaDisponivel && (
             <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <input

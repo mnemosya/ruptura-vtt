@@ -62,7 +62,7 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 8 · 🟡 11 · ⚙️ 46 · 📖 1.
+Contagem: ✅ 0 · 🔵 13 · 🟡 10 · ⚙️ 42 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -73,8 +73,8 @@ Contagem: ✅ 0 · 🔵 8 · 🟡 11 · ⚙️ 46 · 📖 1.
 | Assassino | Hemorragia | 2 | 🔵 Implementado (aguardando validação manual) |
 | Assassino | Executar | 3 | 🔵 Implementado (aguardando validação manual) |
 | Atirador de Elite | 1 Tiro, 1 Acerto | 1 | 🔵 Implementado (aguardando validação manual) |
-| Atirador de Elite | À Espreita | 2 | ⚙️ Infra pendente |
-| Atirador de Elite | Headshot | 3 | ⚙️ Infra pendente |
+| Atirador de Elite | À Espreita | 2 | 🔵 Implementado (aguardando validação manual) |
+| Atirador de Elite | Headshot | 3 | 🔵 Implementado (aguardando validação manual) |
 | Berserker | Fúria | 1 | 🟡 Parcial |
 | Berserker | Sede de Sangue | 2 | 🟡 Parcial |
 | Berserker | Último Fôlego | 3 | ⚙️ Infra pendente |
@@ -99,7 +99,7 @@ Contagem: ✅ 0 · 🔵 8 · 🟡 11 · ⚙️ 46 · 📖 1.
 | Malabarista | Saque Fantasma | 1 | 🟡 Parcial |
 | Malabarista | Revoada | 2 | ⚙️ Infra pendente |
 | Malabarista | Espetáculo Mortal | 3 | ⚙️ Infra pendente |
-| Manipulador | Olhar Penetrante | 1 | 🟡 Parcial |
+| Manipulador | Olhar Penetrante | 1 | 🔵 Implementado (aguardando validação manual) |
 | Manipulador | Entrelinhas | 2 | ⚙️ Infra pendente |
 | Manipulador | Puxar os Fios | 3 | ⚙️ Infra pendente |
 | Mecatrônico | Chave de Arranque | 1 | ⚙️ Infra pendente |
@@ -124,8 +124,8 @@ Contagem: ✅ 0 · 🔵 8 · 🟡 11 · ⚙️ 46 · 📖 1.
 | Rúnico | Entalhe Rápido | 2 | 🟡 Parcial |
 | Rúnico | Sobregravação | 3 | 🟡 Parcial |
 | Sorrateiro | Passo Fantasma | 1 | 🔵 Implementado (aguardando validação manual) |
-| Sorrateiro | Camuflagem Óptica | 2 | ⚙️ Infra pendente |
-| Sorrateiro | Ataque Fatal | 3 | ⚙️ Infra pendente |
+| Sorrateiro | Camuflagem Óptica | 2 | 🔵 Implementado (aguardando validação manual) |
+| Sorrateiro | Ataque Fatal | 3 | 🔵 Implementado (aguardando validação manual) |
 | Tecelão | Olho de Botão | 1 | ⚙️ Infra pendente |
 | Tecelão | Bypass | 2 | ⚙️ Infra pendente |
 | Tecelão | Agulha Fina | 3 | ⚙️ Infra pendente |
@@ -166,19 +166,45 @@ Contagem: ✅ 0 · 🔵 8 · 🟡 11 · ⚙️ 46 · 📖 1.
   de Toque de Midas em arma à distância) — agora as duas ramificações preservam as tags.
   Pendente: confirmação do usuário; À Espreita/Headshot (níveis seguintes da mesma
   árvore) ainda não implementados.
-- **🔵 Passo Fantasma (Implementado, aguardando validação manual) + 🟡 Olhar Penetrante
-  (Parcial)** — mecanismo genérico real de promoção de margem (`rollPericia.promocaoMargem`,
-  data-driven de `promocao_margem.pericias[]` do payload — nunca hardcoded por talento).
-  Ao rolar Furtividade/Influência/Psicologia com CD, falha_limitada vira sucesso_limitado
-  E `sucesso` vira true (verificado: margem -1 exibida como "Sucesso limitado" +
-  "Promoção de margem: ... Passo Fantasma"). Passo Fantasma: mecanismo completo, aguarda
-  só confirmação de teste manual do usuário. Olhar Penetrante permanece **Parcial**: a
-  promoção hoje dispara em QUALQUER teste de Influência/Psicologia com CD, mas o capítulo
-  exige seleção explícita de contexto (distorcer percepções/convencer/manipular via
-  Influência OU identificar vulnerabilidades/motivações exploráveis via Psicologia) ANTES
-  da rolagem — essa seleção de contexto obrigatória ainda não existe na UI, então o
-  talento não pode ser considerado integral nem "aguardando validação simples": falta
-  mecânica real, não só confirmação.
+- **🔵 Passo Fantasma + Olhar Penetrante (ambos Implementado, aguardando validação
+  manual — Fase 3)** — mecanismo genérico real de promoção de margem
+  (`rollPericia.promocaoMargem`, data-driven de `promocao_margem.pericias[]` do payload).
+  Passo Fantasma aplica direto (contexto "testes de Furtividade" já delimitado pela
+  própria perícia). Olhar Penetrante agora exige confirmação EXPLÍCITA do contexto antes
+  de aplicar: `getMarginPromotions` passa a expor o texto literal de `efeito.contexto`
+  do payload ("Influência para distorcer percepções, convencer ou manipular" /
+  "Psicologia para identificar vulnerabilidades e motivações exploráveis") e a aba
+  Rolagens só soma a promoção quando o jogador marca um checkbox confirmando que O TESTE
+  ATUAL se encaixa nesse contexto — não mais automática em qualquer teste de
+  Influência/Psicologia. Resolve o gap identificado ("falta contexto canônico
+  obrigatório"): agora é mecânica real data-driven, não hardcoded por talento (o mesmo
+  checkbox de confirmação também aparece para Passo Fantasma, sem custo prático já que
+  "testes de Furtividade" é sempre verdadeiro quando a perícia rolada é Furtividade).
+- **🔵 À Espreita + Headshot (Atirador de Elite N2/N3, Implementado, aguardando
+  validação manual — Fase 3, cross-record)** — integrados em `/dev/table`
+  (`AttackResolutionPanel`), mesmo padrão de Hemorragia/Executar: leem os talentos do
+  ATACANTE, checkbox só aparece quando a arma do log é à distância (`periciaAtaque`
+  precisao/balistica ou desconhecida — nunca bloqueia por incerteza). À Espreita: com
+  confirmação do narrador (alvo não ciente + após sucesso em Mirar), sucesso/falha
+  limitada (banda "limited" do sistema de resolução de dano) sobe para banda "standard"
+  (Tronco/Braços/Pernas liberados, sem modificador). Headshot: com confirmação de Mirar
+  crítico, qualquer ACERTO (banda ≠ miss) vira banda "critical" (todas as regiões, +1
+  dado); miss continua miss, nunca vira acerto. Compostas com Executar via
+  `applyMarginBandOverrides` (função única reaproveitada nos dois pontos de cálculo —
+  preview do painel e persistência real — para nunca divergir entre o que o narrador vê
+  e o que é salvo).
+- **🔵 Camuflagem Óptica + Ataque Fatal (Sorrateiro N2/N3, Implementado, aguardando
+  validação manual — Fase 3)** — novo estado real `Character.furtividade_ativa` (active/
+  source/enteredAt/plausibleCoverConfirmed/detected/exitReason), com widget na aba
+  Talentos (Entrar/Encerrar Furtividade) ancorado em Passo Fantasma (N1). Camuflagem
+  Óptica: botão "Confirmar ponto de cobertura plausível" marca
+  `plausibleCoverConfirmed` SEM encerrar Furtividade — a linha de visão/movimento
+  exposto nunca encerra automaticamente (fiel ao capítulo, que não define isso como
+  gatilho de encerramento). Ataque Fatal: integrado em `/dev/table` junto com À
+  Espreita/Headshot — checkbox "atacante saindo de Furtividade" força banda crítica no
+  acerto (miss continua miss) e, ao aplicar o dano, encerra a Furtividade do ATACANTE de
+  verdade (`endFurtividade`, persistido separadamente do alvo, mesmo padrão do consumo
+  de Executar). Sem limite por cena inventado (o capítulo não declara um).
 - **🔵 Hemorragia + Executar (Assassino N2/N3, Implementado, aguardando validação
   manual — cross-record)** — primeira integração REAL no lado do narrador
   (`/dev/table`), lendo os talentos do ATACANTE (talentsIniciais agora carregado em

@@ -101,6 +101,12 @@ import {
   consumeMirar,
   endMirar,
   MIRAR_TAG,
+  startFurtividade,
+  isFurtividadeActive,
+  endFurtividade,
+  confirmCamuflagemOpticaMovement,
+  hasCamuflagemOptica,
+  hasAtaqueFatal,
   getToqueDeMidasAvailability,
   getToqueDeMidasModifiersForTarget,
   markToqueDeMidasUsed,
@@ -2458,6 +2464,35 @@ export default function CharacterSheetClient({
     addLogEntry("condicao", "Mirar encerrado manualmente.");
   }
 
+  /** Sorrateiro › entra em Furtividade manualmente (ação narrativa, sem teste estruturado próprio). */
+  function handleStartFurtividade() {
+    const current = characterRef.current;
+    if (isFurtividadeActive(current)) return;
+    const next = startFurtividade(current, "Sorrateiro", new Date().toISOString());
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", "Furtividade: iniciada.");
+  }
+
+  /** Sorrateiro › Camuflagem Óptica — confirma que o deslocamento exposto terminou num ponto plausível, mantendo Furtividade ativa. */
+  function handleConfirmCamuflagemOptica() {
+    const current = characterRef.current;
+    const next = confirmCamuflagemOpticaMovement(current);
+    if (next === current) return;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", "Camuflagem Óptica: deslocamento exposto confirmado como plausível — Furtividade mantida.");
+  }
+
+  function handleEndFurtividade() {
+    const current = characterRef.current;
+    const next = endFurtividade(current, "manual");
+    if (next === current) return;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", "Furtividade: encerrada manualmente.");
+  }
+
   /** Rúnico › Gatilho Rúnico — ativa/desativa runa instalada sem PA. */
   function handleToggleRuneActive(instanceId: string, runeInstallationId: string) {
     const current = characterRef.current;
@@ -4539,6 +4574,11 @@ export default function CharacterSheetClient({
           mirarAtivo={character.mirar_ativo ? { resultado: character.mirar_ativo.resultado, bonus: character.mirar_ativo.bonus, consumido: character.mirar_ativo.consumido } : null}
           onConfirmMirar={handleConfirmMirar}
           onEndMirar={handleEndMirar}
+          furtividadeAtiva={character.furtividade_ativa ?? null}
+          camuflagemOpticaAvailable={hasCamuflagemOptica(character, talentsIniciais)}
+          onStartFurtividade={handleStartFurtividade}
+          onConfirmCamuflagemOptica={handleConfirmCamuflagemOptica}
+          onEndFurtividade={handleEndFurtividade}
         />
       )}
 

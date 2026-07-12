@@ -84,6 +84,11 @@ export function TalentsTab({
   mirarAtivo,
   onConfirmMirar,
   onEndMirar,
+  furtividadeAtiva,
+  camuflagemOpticaAvailable = false,
+  onStartFurtividade,
+  onConfirmCamuflagemOptica,
+  onEndFurtividade,
 }: {
   talents: TalentContent[];
   catalogError: string | null;
@@ -109,6 +114,12 @@ export function TalentsTab({
   mirarAtivo?: MirarAtivo | null;
   onConfirmMirar?: (resultado: "sucesso" | "critico") => void;
   onEndMirar?: () => void;
+  /** Sorrateiro › Furtividade (checkpoint talentos, Fase 3). */
+  furtividadeAtiva?: FurtividadeAtiva | null;
+  camuflagemOpticaAvailable?: boolean;
+  onStartFurtividade?: () => void;
+  onConfirmCamuflagemOptica?: () => void;
+  onEndFurtividade?: () => void;
 }) {
   const [filter, setFilter] = useState<FilterKey>("todos");
 
@@ -261,6 +272,16 @@ export function TalentsTab({
 
                         {acquiredEntry && nivel.slug === "atirador_de_elite_1_tiro_1_acerto" && (
                           <MirarWidget mirarAtivo={mirarAtivo ?? null} onConfirm={onConfirmMirar} onEnd={onEndMirar} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "sorrateiro_passo_fantasma" && (
+                          <FurtividadeWidget
+                            furtividadeAtiva={furtividadeAtiva ?? null}
+                            camuflagemOpticaAvailable={camuflagemOpticaAvailable}
+                            onStart={onStartFurtividade}
+                            onConfirmCover={onConfirmCamuflagemOptica}
+                            onEnd={onEndFurtividade}
+                          />
                         )}
 
                         {acquiredEntry &&
@@ -474,6 +495,65 @@ function MirarWidget({
           Crítico
         </button>
       </div>
+    </div>
+  );
+}
+
+interface FurtividadeAtiva {
+  active: boolean;
+  source: string;
+  plausibleCoverConfirmed: boolean;
+  detected: boolean;
+  exitReason: string | null;
+}
+
+/**
+ * Sorrateiro — estado de Furtividade (N1 Passo Fantasma âncora a entrada
+ * manual; Camuflagem Óptica N2 usa `onConfirmCover` para permitir
+ * continuar escondido após um deslocamento exposto; Ataque Fatal N3
+ * encerra via o fluxo de resolução de ataque em /dev/table, não aqui).
+ */
+function FurtividadeWidget({
+  furtividadeAtiva,
+  camuflagemOpticaAvailable,
+  onStart,
+  onConfirmCover,
+  onEnd,
+}: {
+  furtividadeAtiva: FurtividadeAtiva | null;
+  camuflagemOpticaAvailable: boolean;
+  onStart?: () => void;
+  onConfirmCover?: () => void;
+  onEnd?: () => void;
+}) {
+  if (furtividadeAtiva?.active) {
+    return (
+      <div data-testid="furtividade-ativa" style={widgetBox}>
+        <span style={{ color: "#4caf50" }}>✦ Furtividade ativa</span> — não deixa rastros/pegadas/sinais físicos (Passo Fantasma).
+        {camuflagemOpticaAvailable && (
+          <>
+            <span style={{ opacity: 0.7 }}>
+              Camuflagem Óptica: entrar em linha de visão ou se mover fora de cobertura não encerra a Furtividade — confirme que o
+              deslocamento terminou num ponto plausível para continuar escondido.
+            </span>
+            <button data-testid="furtividade-confirmar-cobertura" onClick={onConfirmCover} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", alignSelf: "flex-start" }}>
+              Confirmar ponto de cobertura plausível
+            </button>
+            {furtividadeAtiva.plausibleCoverConfirmed && <span style={{ color: "#4caf50" }}>Último deslocamento confirmado como plausível.</span>}
+          </>
+        )}
+        <button data-testid="furtividade-encerrar" onClick={onEnd} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", alignSelf: "flex-start" }}>
+          Encerrar Furtividade
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div data-testid="furtividade-formulario" style={widgetBox}>
+      <span style={{ opacity: 0.7 }}>Não está em Furtividade agora.</span>
+      <button data-testid="furtividade-entrar" onClick={onStart} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", alignSelf: "flex-start" }}>
+        Entrar em Furtividade
+      </button>
     </div>
   );
 }

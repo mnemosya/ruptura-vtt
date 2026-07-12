@@ -491,6 +491,23 @@ export interface Character {
     consumido: boolean;
   };
   /**
+   * Sorrateiro › estado real de Furtividade (checkpoint talentos, Fase 3)
+   * — entrada/saída manual (narrativa, sem teste estruturado próprio para
+   * "entrar"; testes de Furtividade em si usam a perícia normalmente,
+   * ver `getMarginPromotions` para Passo Fantasma). Camuflagem Óptica
+   * (N2) usa `plausibleCoverConfirmed` para permitir manter o estado após
+   * um movimento exposto; Ataque Fatal (N3) consome/encerra ao declarar
+   * o ataque de saída.
+   */
+  furtividade_ativa?: {
+    active: boolean;
+    source: string;
+    enteredAt: string;
+    plausibleCoverConfirmed: boolean;
+    detected: boolean;
+    exitReason: string | null;
+  };
+  /**
    * Talentos adquiridos (checkpoint v0.48, PRD 12) — um item por NÍVEL
    * adquirido (não uma pilha de "nível máximo"). Data-driven a partir
    * de `content_documents` (content_type="talent") — nunca lista

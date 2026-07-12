@@ -659,6 +659,17 @@ export interface MarginPromotion {
   de: string;
   para: string;
   origem: string;
+  /**
+   * Texto EXATO de `efeito.contexto` do payload (ex.: "Influência para
+   * distorcer percepções, convencer ou manipular"). Alguns talentos
+   * (Olhar Penetrante) descrevem um contexto mais estreito que "qualquer
+   * teste desta perícia" — o payload não estrutura essa distinção além do
+   * texto livre, então a UI (RollsTab) exige que o jogador CONFIRME que o
+   * teste atual se encaixa no contexto antes de aplicar a promoção, em vez
+   * de aplicar automaticamente a qualquer teste da perícia (o que seria
+   * inventar uma regra mais ampla do que o capítulo descreve).
+   */
+  contexto: string | null;
 }
 
 export function getMarginPromotions(
@@ -671,8 +682,9 @@ export function getMarginPromotions(
       if (efeito.tipo !== "promocao_margem") continue;
       const pericias = Array.isArray(efeito.pericias) ? efeito.pericias.filter((p): p is string => typeof p === "string") : [];
       if (pericias.length === 0 || typeof efeito.de !== "string" || typeof efeito.para !== "string") continue;
+      const contexto = typeof efeito.contexto === "string" ? efeito.contexto : null;
       for (const periciaId of pericias) {
-        out.push({ periciaId, de: efeito.de, para: efeito.para, origem: `${talent.nome} — ${nivel.nome}` });
+        out.push({ periciaId, de: efeito.de, para: efeito.para, origem: `${talent.nome} — ${nivel.nome}`, contexto });
       }
     }
   }
@@ -681,7 +693,23 @@ export function getMarginPromotions(
 
 // ---------------------------------------------------------------------
 // Atirador de Elite — 1 Tiro, 1 Acerto (N1): estado real de Mirar.
+// À Espreita (N2) / Headshot (N3): forçam a banda de margem do ataque à
+// distância no lado do narrador (mesmo mecanismo de Assassino › Executar).
 // ---------------------------------------------------------------------
+
+export function hasAEspreita(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    if (nivel.slug === "atirador_de_elite_a_espreita") return true;
+  }
+  return false;
+}
+
+export function hasHeadshot(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    if (nivel.slug === "atirador_de_elite_headshot") return true;
+  }
+  return false;
+}
 
 export function getMirarModifier(
   character: Pick<Character, "talentos_adquiridos">,
@@ -760,6 +788,62 @@ export function endMirar(character: Character): Character {
   if (!character.mirar_ativo) return character;
   const { mirar_ativo: _drop, ...rest } = character;
   return rest;
+}
+
+// ---------------------------------------------------------------------
+// Sorrateiro — Passo Fantasma (N1, promoção de margem genérica, ver
+// getMarginPromotions) / Camuflagem Óptica (N2) / Ataque Fatal (N3).
+// ---------------------------------------------------------------------
+
+export function hasCamuflagemOptica(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    if (nivel.slug === "sorrateiro_camuflagem_optica") return true;
+  }
+  return false;
+}
+
+export function hasAtaqueFatal(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    if (nivel.slug === "sorrateiro_ataque_fatal") return true;
+  }
+  return false;
+}
+
+/** Entra em Furtividade manualmente (ação narrativa, sem teste estruturado próprio) — substitui um estado anterior. */
+export function startFurtividade(character: Character, source: string, nowIso: string): Character {
+  return {
+    ...character,
+    furtividade_ativa: { active: true, source, enteredAt: nowIso, plausibleCoverConfirmed: false, detected: false, exitReason: null },
+  };
+}
+
+export function isFurtividadeActive(character: Pick<Character, "furtividade_ativa">): boolean {
+  return character.furtividade_ativa?.active === true;
+}
+
+/** Encerra Furtividade manualmente — `reason` fica registrado no log (ver formatters), estado não é reaproveitado depois. */
+export function endFurtividade(character: Character, reason: string | null = null): Character {
+  if (!character.furtividade_ativa?.active) return character;
+  return { ...character, furtividade_ativa: { ...character.furtividade_ativa, active: false, exitReason: reason } };
+}
+
+/**
+ * Sorrateiro › Camuflagem Óptica (N2) — confirma que o deslocamento
+ * exposto (linha de visão/fora de cobertura) terminou num ponto
+ * plausível para continuar escondido; mantém Furtividade ativa em vez de
+ * encerrá-la automaticamente (o capítulo não define encerramento
+ * automático por linha de visão — só CONDICIONA continuar a essa
+ * confirmação).
+ */
+export function confirmCamuflagemOpticaMovement(character: Character): Character {
+  if (!character.furtividade_ativa?.active) return character;
+  return { ...character, furtividade_ativa: { ...character.furtividade_ativa, plausibleCoverConfirmed: true } };
+}
+
+/** Narrador marca Furtividade como detectada (exposta à força) — encerra o estado com motivo fixo. */
+export function markFurtividadeDetected(character: Character): Character {
+  if (!character.furtividade_ativa?.active) return character;
+  return { ...character, furtividade_ativa: { ...character.furtividade_ativa, active: false, detected: true, exitReason: "detectado" } };
 }
 
 // ---------------------------------------------------------------------

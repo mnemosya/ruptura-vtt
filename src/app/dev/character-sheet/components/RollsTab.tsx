@@ -154,7 +154,7 @@ export function RollsTab({
   /** Efeitos derivados das condições ativas do personagem (checkpoint v0.33) — ver deriveActiveEffectsFromConditions. */
   activeEffects: ActiveEffect[];
   /** Promoções de margem data-driven por perícia (Passo Fantasma, Olhar Penetrante) — checkpoint talentos. */
-  marginPromotions?: { periciaId: string; de: string; para: string; origem: string }[];
+  marginPromotions?: { periciaId: string; de: string; para: string; origem: string; contexto: string | null }[];
 }) {
   const atributoIds = ["corpo", "mente", "animo"] as const;
   const [atributoId, setAtributoId] = useState<(typeof atributoIds)[number]>("corpo");
@@ -171,6 +171,12 @@ export function RollsTab({
   // ActiveEffect) — um chip ausente daqui está ligado (enabledByDefault
   // é sempre true neste checkpoint, ver activeEffects.ts).
   const [chipsDesligados, setChipsDesligados] = useState<Set<string>>(new Set());
+  // Confirmação manual de que o teste atual se encaixa no `contexto` estreito
+  // de uma promoção de margem (ex.: Olhar Penetrante exige Influência
+  // ESPECIFICAMENTE para distorcer percepções/convencer/manipular, não
+  // qualquer teste de Influência) — nunca aplica sem essa confirmação
+  // explícita quando a promoção tem `contexto`. Reseta ao trocar de perícia.
+  const [contextoConfirmado, setContextoConfirmado] = useState(false);
 
   function toggleTagExtra(tag: ToggleTag) {
     setTagsExtras((prev) => {
@@ -246,6 +252,7 @@ export function RollsTab({
     setPericiaId(preparedRoll.periciaId ?? SEM_PERICIA);
     setOrigemAtual(preparedRoll.origem);
     setAutoTagsPreparadas(preparedRoll.extraTags ?? []);
+    setContextoConfirmado(false);
     onPreparedRollApplied();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preparedRoll]);
@@ -263,7 +270,11 @@ export function RollsTab({
     const cd = cdInput.trim() === "" ? undefined : parseIntOrDefault(cdInput, 0);
     const temPericia = periciaId !== SEM_PERICIA;
     const finalModifier = manualModifier + modificadorEfeitos;
-    const promocao = temPericia ? marginPromotions.find((p) => p.periciaId === periciaId) : undefined;
+    const promocaoCandidata = temPericia ? marginPromotions.find((p) => p.periciaId === periciaId) : undefined;
+    // Promoção com `contexto` (ex.: Olhar Penetrante) só aplica com confirmação explícita de que
+    // o teste atual se encaixa nesse contexto estreito — sem contexto (ex.: Passo Fantasma, "testes
+    // de Furtividade") aplica direto, já que a própria perícia já delimita o uso.
+    const promocao = promocaoCandidata && (!promocaoCandidata.contexto || contextoConfirmado) ? promocaoCandidata : undefined;
 
     const resultado = rollPericia({
       atributoId,
@@ -416,6 +427,8 @@ export function RollsTab({
                 setOrigemAtual(null);
                 // Trocar perícia manualmente invalida tags automáticas (item/bricolagem) da rolagem preparada anterior — nunca vazar bônus escopado para um teste diferente.
                 setAutoTagsPreparadas([]);
+                // Trocar perícia invalida a confirmação de contexto de uma promoção de margem anterior.
+                setContextoConfirmado(false);
               }}
               style={{ ...selectStyle, minWidth: 160 }}
             >
@@ -457,11 +470,33 @@ export function RollsTab({
           </button>
         </div>
 
-        {periciaId !== SEM_PERICIA && marginPromotions.some((p) => p.periciaId === periciaId) && (
-          <p data-testid="roll-promocao-disponivel" style={{ fontSize: 11, color: "#5ec8ff", marginTop: -6, marginBottom: 12 }}>
-            Promoção de margem ativa nesta perícia: {marginPromotions.find((p) => p.periciaId === periciaId)?.origem} — falha limitada conta como sucesso limitado (com CD informado).
-          </p>
-        )}
+        {periciaId !== SEM_PERICIA && marginPromotions.some((p) => p.periciaId === periciaId) && (() => {
+          const promo = marginPromotions.find((p) => p.periciaId === periciaId)!;
+          if (!promo.contexto) {
+            return (
+              <p data-testid="roll-promocao-disponivel" style={{ fontSize: 11, color: "#5ec8ff", marginTop: -6, marginBottom: 12 }}>
+                Promoção de margem ativa nesta perícia: {promo.origem} — falha limitada conta como sucesso limitado (com CD informado).
+              </p>
+            );
+          }
+          return (
+            <label
+              data-testid="roll-promocao-contexto-confirmar"
+              style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 11, color: "#5ec8ff", marginTop: -6, marginBottom: 12 }}
+            >
+              <input
+                type="checkbox"
+                checked={contextoConfirmado}
+                onChange={(e) => setContextoConfirmado(e.target.checked)}
+                style={{ marginTop: 2 }}
+              />
+              <span>
+                {promo.origem} — só se aplica se este teste for especificamente <strong>{promo.contexto}</strong>.
+                Confirme que este teste se encaixa nesse contexto para ativar a promoção (falha limitada → sucesso limitado).
+              </span>
+            </label>
+          );
+        })()}
 
         {/* --- Tags extras (checkpoint v0.33) --- */}
         <div style={{ marginBottom: 12 }}>
