@@ -1,7 +1,49 @@
-# Checkpoint — Talentos operacionais completos (66/66)
+# Checkpoint — Talentos operacionais (status real de integração)
 
-Fecha o trabalho de operacionalização dos 66 talentos (22 árvores × 3 níveis)
-sobre o capítulo canônico `docs/fontes/11 TALENTOS 7610a1363552827da5f001dccc05111e.md`.
+Trabalho de operacionalização dos 66 talentos (22 árvores × 3 níveis) sobre o
+capítulo canônico `docs/fontes/11 TALENTOS 7610a1363552827da5f001dccc05111e.md`.
+
+## Status REAL de integração mecânica (honesto — não confundir categoria de UI com implementação)
+
+A classificação por padrão (abaixo) é infraestrutura de UI. O que segue é o estado
+de integração MECÂNICA REAL nos fluxos do VTT, apurado por auditoria dos fluxos
+(`applyMarginBasedAttackDamage`/`/dev/table`, `resolveDamageWithMitPd`, `getActionCost`,
+`useOverloadSurge`, `castSpell`, `inventario[]`):
+
+**Mecânica real já integrada (altera valor/estado real):**
+- **12 talentos "Automático" com `modificador`** — o bônus numérico já entra na
+  rolagem real via `deriveActiveEffectsFromTalents` → `ActiveEffect` (mesmo pipeline
+  de condições). Ex.: Aparar +1 em Aparar, Blindagem +1 em Bloquear, Olhar Penetrante,
+  Passo Fantasma, Sede de Sangue (toggle → efeito temporário com modificador). Estes
+  alteram o prompt de rolagem de verdade.
+- **Domínio Territorial (Mago N1)** — multiplica de fato o alcance/área exibido das
+  magias de ataque (+50%), verificado no browser (10 → 15 metros).
+
+**Ainda infraestrutura (categoria + botão + cadência + log/oportunidade, SEM regra
+específica conectada ao fluxo) — pendente de integração real:**
+- Assassino (Hemorragia/Executar/Lâmina Oculta), Dissecador, Berserker (Fúria auto-stack,
+  Último Fôlego intercept), Guardião (anular dano/cobertura), Paramédico (Pronto-socorro,
+  Protocolo), Espadachim (Estocar/Ripostar), Mago (Canalizar mana↔dano), Artífice
+  (Toque de Midas na instância), Rúnico, e todos os subsistemas (Mirar/Furtividade,
+  dados de gatilho, drone/robô/Trama, Mercado).
+
+### Blockers de correção encontrados (por que não foi feito em massa sem inventar regra)
+
+1. **Combate é resolvido no lado do narrador** (`/dev/table`, `handleResolveAttackDamage`)
+   com separação atacante/alvo; talentos de margem/condição do ATACANTE exigem passar a
+   lista de talentos + propriedades da arma do atacante para o painel do alvo — integração
+   cross-record, não edição local.
+2. **Ações de cura não têm tag `cura` no conteúdo** (`db_acoes_combate`), então Ritmo de
+   Campo não pode identificar "ação de cura" sem inventar taxonomia.
+3. **Limite de Sobrecarga está acoplado ao gatilho de Ruptura do 3º surto** em
+   `useOverloadSurge` (`terceiro = indice >= maxPerDay`); Ascensão elevar o limite a 5
+   moveria a Ruptura do 3º para o 5º surto — alteração de regra não confirmada pelo capítulo.
+
+Esses pontos precisam ou de desacoplamento cuidadoso por fluxo ou de esclarecimento
+canônico — não de uma engine genérica.
+
+---
+
 
 ## Como cada talento opera
 
