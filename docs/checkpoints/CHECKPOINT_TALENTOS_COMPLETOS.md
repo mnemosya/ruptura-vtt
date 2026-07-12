@@ -18,6 +18,9 @@ de integração MECÂNICA REAL nos fluxos do VTT, apurado por auditoria dos flux
   alteram o prompt de rolagem de verdade.
 - **Domínio Territorial (Mago N1)** — multiplica de fato o alcance/área exibido das
   magias de ataque (+50%), verificado no browser (10 → 15 metros).
+- **Ascensão (Mago N3)** — eleva de fato o limite diário de Surtos de Sobrecarga de 3
+  para 5 (data-driven), no gate real de uso e no display; verificado no browser (3 → 5).
+  Decisão canônica: a Ruptura acompanha o novo limite (5º surto).
 
 **Ainda infraestrutura (categoria + botão + cadência + log/oportunidade, SEM regra
 específica conectada ao fluxo) — pendente de integração real:**
