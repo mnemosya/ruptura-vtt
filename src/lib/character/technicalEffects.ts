@@ -117,6 +117,8 @@ export function deriveInstalledRuneEffects(
 
   for (const instance of character.inventario ?? []) {
     for (const instalacao of instance.runasInstaladas ?? []) {
+      // Rúnico › Gatilho Rúnico (checkpoint talentos): runa desativada não gera efeito, mesmo com modificador estruturado.
+      if (instalacao.ativa === false) continue;
       const modelo = bySlug.get(instalacao.runeContentId);
       if (!modelo || modelo.status !== "published") continue;
 

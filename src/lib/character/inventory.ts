@@ -221,6 +221,14 @@ export interface InstalledRune {
   runeContentId: string;
   installedAt: string;
   notas?: string;
+  /**
+   * Rúnico › Gatilho Rúnico (checkpoint talentos) — ativa/inativa sem
+   * PA para personagem com o talento. Ausente = ativa (compat. com
+   * instalações antigas). Runa inativa NÃO gera `ActiveEffect` (ver
+   * `deriveInstalledRuneEffects`) mesmo que o modificador seja
+   * estruturado — desligar de verdade some o efeito.
+   */
+  ativa?: boolean;
 }
 
 export interface InventoryItemInstance {
@@ -1140,6 +1148,8 @@ export function installRuneOnItem(params: {
   rune: TechnicalContentItem;
   notas?: string;
   nowIso: string;
+  /** Rúnico › Sobregravação (checkpoint talentos) — multiplica `itemContent.slotsRunaMax` para o DONO do talento. 1 = sem alteração. */
+  slotsRunaMaxMultiplier?: number;
 }): InstallRuneResult {
   const { character, instanceId, itemContent, rune, nowIso } = params;
   const inventario = character.inventario ?? [];
@@ -1153,7 +1163,8 @@ export function installRuneOnItem(params: {
     return { character, ok: false, reason: "Runa incompatível com este item.", compatibility };
   }
 
-  const slotsRunaMax = itemContent?.slotsRunaMax ?? null;
+  const slotsRunaMaxBase = itemContent?.slotsRunaMax ?? null;
+  const slotsRunaMax = slotsRunaMaxBase != null ? Math.floor(slotsRunaMaxBase * (params.slotsRunaMaxMultiplier ?? 1)) : null;
   if (slotsRunaMax != null && countInstalledRunes(instance) >= slotsRunaMax) {
     return {
       character,
@@ -1195,6 +1206,23 @@ export function removeRuneFromItem(character: Character, instanceId: string, run
   });
   if (!changed) return character;
   return { ...character, inventario: nextInventario };
+}
+
+/** Ativa/desativa uma runa instalada — sem PA, sem teste (Rúnico › Gatilho Rúnico). */
+export function toggleInstalledRune(character: Character, instanceId: string, runeInstallationId: string): { character: Character; ativa: boolean } | null {
+  const inventario = character.inventario ?? [];
+  let novoEstado: boolean | null = null;
+  const nextInventario = inventario.map((i) => {
+    if (i.id !== instanceId) return i;
+    const runas = (i.runasInstaladas ?? []).map((r) => {
+      if (r.id !== runeInstallationId) return r;
+      novoEstado = !(r.ativa ?? true);
+      return { ...r, ativa: novoEstado };
+    });
+    return { ...i, runasInstaladas: runas };
+  });
+  if (novoEstado == null) return null;
+  return { character: { ...character, inventario: nextInventario }, ativa: novoEstado };
 }
 
 // ---------------------------------------------------------------------

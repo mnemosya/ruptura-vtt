@@ -37,6 +37,7 @@ import {
 import type { TechnicalContentItem } from "../../../../lib/content";
 
 const input: React.CSSProperties = { background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "6px 8px", fontSize: 13 };
+const widgetBox2: React.CSSProperties = { background: "#15161b", borderRadius: 6, padding: "6px 8px", display: "flex", flexDirection: "column", gap: 4, fontSize: 11 };
 
 const CATEGORIA_FILTROS = ["todos", "arma", "armadura", "escudo", "explosivo", "farmacia", "vertina", "ferramenta", "dispositivo", "veiculo", "municao"] as const;
 
@@ -94,6 +95,13 @@ export function InventoryTab({
   onEndToqueDeMidas,
   onApplyShieldDamage,
   onRollToolTest,
+  runicoGatilhoAvailable = false,
+  onToggleRuneActive,
+  entalheRapidoAvailable = false,
+  entalheAttempts = {},
+  onStartEntalheRapido,
+  onConfirmEntalheRapido,
+  sobregravacaoMultiplier = 1,
 }: {
   items: ItemContent[];
   catalogError: string | null;
@@ -155,6 +163,17 @@ export function InventoryTab({
   onApplyShieldDamage?: (instanceId: string, amount: number) => void;
   /** Prepara na aba Rolagens um teste de ferramenta/dispositivo com o +1 de Toque de Midas escopado a esta instância. */
   onRollToolTest?: (instanceId: string, relatedSkill: string) => void;
+  /** Rúnico › Gatilho Rúnico — mostra o botão Ativar/Desativar por runa instalada (sem PA). */
+  runicoGatilhoAvailable?: boolean;
+  onToggleRuneActive?: (instanceId: string, runeInstallationId: string) => void;
+  /** Rúnico › Entalhe Rápido — mostra o fluxo de instalar/remover com 1 PA + teste real de Engenharia. */
+  entalheRapidoAvailable?: boolean;
+  /** Tentativa pendente de confirmação por instância (após gastar PA e preparar a rolagem). */
+  entalheAttempts?: Record<string, { mode: "instalar" | "remover"; alvo: string; cd: number }>;
+  onStartEntalheRapido?: (instanceId: string, mode: "instalar" | "remover", alvo: string, cd: number) => void;
+  onConfirmEntalheRapido?: (instanceId: string, resultado: number) => void;
+  /** Rúnico › Sobregravação — multiplica o limite de slots de runa exibido/aplicado para o DONO do talento. */
+  sobregravacaoMultiplier?: number;
 }) {
   const [busca, setBusca] = useState("");
   const [categoria, setCategoria] = useState<(typeof CATEGORIA_FILTROS)[number]>("todos");
@@ -164,6 +183,9 @@ export function InventoryTab({
   const [runaSelecionada, setRunaSelecionada] = useState<Record<string, string>>({});
   const [toqueMidasPericia, setToqueMidasPericia] = useState<Record<string, string>>({});
   const [escudoDanoInput, setEscudoDanoInput] = useState<Record<string, string>>({});
+  const [entalheCd, setEntalheCd] = useState<Record<string, string>>({});
+  const [entalheRemoverAlvo, setEntalheRemoverAlvo] = useState<Record<string, string>>({});
+  const [entalheResultado, setEntalheResultado] = useState<Record<string, string>>({});
   // guardarQtd[`${aljavaInstanceId}:${ammoInstanceId}`] = quanto guardar nesta Aljava
   const [guardarQtd, setGuardarQtd] = useState<Record<string, number>>({});
   // retirarQtd[`${aljavaInstanceId}:${contentSlug}`] = quanto retirar desta Aljava
@@ -290,7 +312,7 @@ export function InventoryTab({
           {inventario.map((instance) => {
             const itemModelo = itemBySlug.get(instance.itemSlug);
             const runasInstaladas = instance.runasInstaladas ?? [];
-            const slotsMax = itemModelo?.slotsRunaMax ?? null;
+            const slotsMax = itemModelo?.slotsRunaMax != null ? Math.floor(itemModelo.slotsRunaMax * sobregravacaoMultiplier) : null;
             const slotsUsados = countInstalledRunes(instance);
             const runaEscolhida = runaSelecionada[instance.id] ?? "";
             const runaEscolhidaContent = runaEscolhida ? runaBySlug.get(runaEscolhida) : undefined;
@@ -1048,21 +1070,38 @@ export function InventoryTab({
                   <p style={{ fontSize: 11, opacity: 0.6, margin: "0 0 4px" }}>
                     Runas instaladas ({slotsUsados}{slotsMax != null ? `/${slotsMax}` : ""})
                     {slotsMax == null && " — limite de slots ainda não automatizado para este item"}
+                    {sobregravacaoMultiplier !== 1 && itemModelo?.slotsRunaMax != null && (
+                      <span data-testid={`inventario-sobregravacao-${instance.id}`} style={{ color: "#5ec8ff" }}>
+                        {" "}— Sobregravação: {itemModelo.slotsRunaMax} base × {sobregravacaoMultiplier} = {slotsMax}
+                      </span>
+                    )}
                   </p>
                   {runasInstaladas.length > 0 && (
                     <div data-testid={`inventario-runas-lista-${instance.id}`} style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
                       {runasInstaladas.map((runa) => {
                         const modelo = runaBySlug.get(runa.runeContentId);
                         const automatizada = installedRuneIdsWithEffect.has(runa.id);
+                        const ativa = runa.ativa ?? true;
                         return (
                           <div key={runa.id} data-testid={`inventario-runa-instalada-${runa.id}`} style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                            <span style={{ opacity: 0.5 }}>◆</span>
-                            <span>{modelo?.nome ?? `Conteúdo não encontrado (${runa.runeContentId})`}</span>
-                            {automatizada && <span style={{ fontSize: 10, color: "#4caf50" }}>modificador aplicado</span>}
+                            <span style={{ opacity: ativa ? 0.5 : 0.25 }}>◆</span>
+                            <span style={{ opacity: ativa ? 1 : 0.5 }}>{modelo?.nome ?? `Conteúdo não encontrado (${runa.runeContentId})`}</span>
+                            {automatizada && ativa && <span style={{ fontSize: 10, color: "#4caf50" }}>modificador aplicado</span>}
+                            {!ativa && <span style={{ fontSize: 10, color: "#888" }}>inativa — sem efeito</span>}
+                            {runicoGatilhoAvailable && (
+                              <button
+                                data-testid={`inventario-runa-toggle-${runa.id}`}
+                                onClick={() => onToggleRuneActive?.(instance.id, runa.id)}
+                                style={{ ...buttonStyle, fontSize: 10, padding: "1px 6px" }}
+                                title="Ativar/desativar sem PA (Gatilho Rúnico)"
+                              >
+                                {ativa ? "Desativar" : "Ativar"}
+                              </button>
+                            )}
                             <button
                               data-testid={`inventario-runa-remover-${runa.id}`}
                               onClick={() => onRemoveRune(instance.id, runa.id)}
-                              style={{ ...buttonStyle, fontSize: 10, padding: "1px 6px", marginLeft: "auto" }}
+                              style={{ ...buttonStyle, fontSize: 10, padding: "1px 6px", marginLeft: runicoGatilhoAvailable ? undefined : "auto" }}
                             >
                               Remover
                             </button>
@@ -1105,6 +1144,81 @@ export function InventoryTab({
                       )}
                     </div>
                   )}
+
+                  {/* Entalhe Rápido (Rúnico N2) — 1 PA + teste real de Engenharia, aplica só em sucesso. */}
+                  {entalheRapidoAvailable && !runesError && (() => {
+                    const attempt = entalheAttempts[instance.id];
+                    if (attempt) {
+                      return (
+                        <div data-testid={`entalhe-rapido-confirmar-${instance.id}`} style={{ ...widgetBox2, marginTop: 6 }}>
+                          <span>Teste de Engenharia rolado — CD {attempt.cd}. Informe o resultado:</span>
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            <input
+                              data-testid={`entalhe-rapido-resultado-${instance.id}`}
+                              type="number"
+                              placeholder="total rolado"
+                              value={entalheResultado[instance.id] ?? ""}
+                              onChange={(e) => setEntalheResultado((prev) => ({ ...prev, [instance.id]: e.target.value }))}
+                              style={{ ...input, width: 80, fontSize: 11 }}
+                            />
+                            <button
+                              data-testid={`entalhe-rapido-confirmar-sucesso-${instance.id}`}
+                              onClick={() => onConfirmEntalheRapido?.(instance.id, Number(entalheResultado[instance.id]) || 0)}
+                              style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+                            >
+                              Confirmar resultado
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div data-testid={`entalhe-rapido-form-${instance.id}`} style={{ ...widgetBox2, marginTop: 6 }}>
+                        <span style={{ opacity: 0.7 }}>Entalhe Rápido — 1 PA + teste de Engenharia (CD do narrador):</span>
+                        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                          <input
+                            data-testid={`entalhe-rapido-cd-${instance.id}`}
+                            type="number"
+                            placeholder="CD"
+                            value={entalheCd[instance.id] ?? ""}
+                            onChange={(e) => setEntalheCd((prev) => ({ ...prev, [instance.id]: e.target.value }))}
+                            style={{ ...input, width: 60, fontSize: 11 }}
+                          />
+                          <button
+                            data-testid={`entalhe-rapido-instalar-${instance.id}`}
+                            disabled={!runaEscolhida || !entalheCd[instance.id]}
+                            onClick={() => onStartEntalheRapido?.(instance.id, "instalar", runaEscolhida, Number(entalheCd[instance.id]) || 0)}
+                            style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !runaEscolhida || !entalheCd[instance.id] ? 0.5 : 1 }}
+                          >
+                            Instalar (selecionada acima)
+                          </button>
+                          {runasInstaladas.length > 0 && (
+                            <select
+                              data-testid={`entalhe-rapido-remover-select-${instance.id}`}
+                              value={entalheRemoverAlvo[instance.id] ?? ""}
+                              onChange={(e) => setEntalheRemoverAlvo((prev) => ({ ...prev, [instance.id]: e.target.value }))}
+                              style={{ ...input, fontSize: 11 }}
+                            >
+                              <option value="">— runa a remover —</option>
+                              {runasInstaladas.map((r) => (
+                                <option key={r.id} value={r.id}>{runaBySlug.get(r.runeContentId)?.nome ?? r.runeContentId}</option>
+                              ))}
+                            </select>
+                          )}
+                          {runasInstaladas.length > 0 && (
+                            <button
+                              data-testid={`entalhe-rapido-remover-${instance.id}`}
+                              disabled={!entalheRemoverAlvo[instance.id] || !entalheCd[instance.id]}
+                              onClick={() => onStartEntalheRapido?.(instance.id, "remover", entalheRemoverAlvo[instance.id], Number(entalheCd[instance.id]) || 0)}
+                              style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !entalheRemoverAlvo[instance.id] || !entalheCd[instance.id] ? 0.5 : 1 }}
+                            >
+                              Remover (selecionada)
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
                   <p style={{ fontSize: 10, opacity: 0.4, margin: "4px 0 0" }}>
                     Modificadores passivos claramente estruturados são aplicados automaticamente (ver
                     chip acima); o restante do payload de cada runa continua só leitura na Biblioteca.

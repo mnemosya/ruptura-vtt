@@ -598,6 +598,46 @@ export function endGambiarraExpressa(character: Character): Character {
   return rest;
 }
 
+// ---------------------------------------------------------------------
+// Rúnico — Gatilho Rúnico (N1) / Entalhe Rápido (N2) / Sobregravação (N3).
+// ---------------------------------------------------------------------
+
+export function hasGatilhoRunico(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "ativar_desativar_runa_sem_pa") return true;
+    }
+  }
+  return false;
+}
+
+export function hasEntalheRapido(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "instalar_remover_runa") return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Multiplicador de espaços de runa de Sobregravação — lido do payload
+ * (`multiplicador_espacos_extra`), nunca hardcoded. O schema de
+ * equipamento só declara UM número total de slots (`slots_runa_max`,
+ * sem separar "base" de "extra"); dobrar o total é a única leitura
+ * possível sem inventar uma divisão que o conteúdo não estrutura.
+ */
+export function getSobregravacaoMultiplier(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): number {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "aumentar_espacos_runa" && typeof efeito.multiplicador_espacos_extra === "number") {
+        return efeito.multiplicador_espacos_extra;
+      }
+    }
+  }
+  return 1;
+}
+
 /**
  * Novo limite diário de Surtos de Sobrecarga imposto por talento
  * adquirido (Mago de Batalha › Ascensão — `alterar_limite_sobrecarga`,

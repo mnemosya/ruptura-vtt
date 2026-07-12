@@ -102,6 +102,10 @@ import {
   useItemOnAlly,
   installRuneOnItem,
   removeRuneFromItem,
+  toggleInstalledRune,
+  hasGatilhoRunico,
+  hasEntalheRapido,
+  getSobregravacaoMultiplier,
   equipDefensiveItem,
   unequipDefensiveItem,
   setItemMitAtual,
@@ -377,6 +381,8 @@ export default function CharacterSheetClient({
   // local, não persistido na ficha (mesmo critério de preparedRoll):
   // qual arma empunhada usar quando há mais de uma, ou "__desarmado__".
   const [selectedAttackWeaponId, setSelectedAttackWeaponId] = useState<string | null>(null);
+  /** Rúnico › Entalhe Rápido — tentativa pendente de confirmação por instância (checkpoint talentos). */
+  const [entalheAttempts, setEntalheAttempts] = useState<Record<string, { mode: "instalar" | "remover"; alvo: string; cd: number }>>({});
   // Mesa (campaign) selecionada — estado de UI local, não persiste no
   // payload do personagem. Quando presente, RollsTab também grava cada
   // rolagem em table_logs (ver checkpoint v0.2 do relatório de Mesas).
@@ -2393,6 +2399,70 @@ export default function CharacterSheetClient({
     addLogEntry("condicao", "Gambiarra Expressa: efeito narrativo encerrado.");
   }
 
+  /** Rúnico › Gatilho Rúnico — ativa/desativa runa instalada sem PA. */
+  function handleToggleRuneActive(instanceId: string, runeInstallationId: string) {
+    const current = characterRef.current;
+    const result = toggleInstalledRune(current, instanceId, runeInstallationId);
+    if (!result) return;
+    characterRef.current = result.character;
+    setCharacter(result.character);
+    addLogEntry("condicao", `Gatilho Rúnico: runa ${result.ativa ? "ativada" : "desativada"} — 0 PA.`);
+  }
+
+  /** Rúnico › Entalhe Rápido — gasta 1 PA e prepara o teste real de Engenharia (CD do narrador). */
+  function handleStartEntalheRapido(instanceId: string, mode: "instalar" | "remover", alvo: string, cd: number) {
+    if (!alvo || !cd) return;
+    adjustEstadoJogo("pa_gastos", 1);
+    setEntalheAttempts((prev) => ({ ...prev, [instanceId]: { mode, alvo, cd } }));
+    const periciaDef = regras?.pericias.find((p) => p.id === "engenharia");
+    setPreparedRoll({ atributoId: periciaDef?.atributo_primario ?? "mente", periciaId: "engenharia", origem: `Entalhe Rápido: ${mode}` });
+    setActiveTab("rolagens");
+    addLogEntry("condicao", `Entalhe Rápido: 1 PA gasto — teste de Engenharia CD ${cd} para ${mode === "instalar" ? "instalar" : "remover"} a runa.`);
+  }
+
+  /** Confirma o resultado do teste — só aplica a alteração (instalar/remover) em sucesso; falha preserva item/runa (PA já gasto). */
+  function handleConfirmEntalheRapido(instanceId: string, resultado: number) {
+    const attempt = entalheAttempts[instanceId];
+    if (!attempt) return;
+    const sucesso = resultado >= attempt.cd;
+    setEntalheAttempts((prev) => {
+      const next = { ...prev };
+      delete next[instanceId];
+      return next;
+    });
+    if (!sucesso) {
+      addLogEntry("condicao", `Entalhe Rápido: falha (${resultado} < CD ${attempt.cd}) — item e runa preservados, PA não é devolvido.`);
+      return;
+    }
+    const current = characterRef.current;
+    if (attempt.mode === "instalar") {
+      const rune = runesIniciais.find((r) => r.slug === attempt.alvo);
+      if (!rune) return;
+      const instance = current.inventario?.find((i) => i.id === instanceId);
+      const itemContent = instance ? itemsIniciais.find((i) => i.slug === instance.itemSlug) : undefined;
+      const result = installRuneOnItem({
+        character: current,
+        instanceId,
+        itemContent,
+        rune,
+        nowIso: new Date().toISOString(),
+        slotsRunaMaxMultiplier: getSobregravacaoMultiplier(current, talentsIniciais),
+      });
+      if (!result.ok) {
+        addLogEntry("condicao", `Entalhe Rápido: sucesso no teste, mas ${result.reason ?? "não instalada"}.`);
+        return;
+      }
+      characterRef.current = result.character;
+      setCharacter(result.character);
+      addLogEntry("condicao", `Entalhe Rápido: sucesso (${resultado} ≥ CD ${attempt.cd}) — runa ${rune.nome} instalada.`);
+    } else {
+      const next = removeRuneFromItem(current, instanceId, attempt.alvo);
+      characterRef.current = next;
+      setCharacter(next);
+      addLogEntry("condicao", `Entalhe Rápido: sucesso (${resultado} ≥ CD ${attempt.cd}) — runa removida.`);
+    }
+  }
+
   /** Aplica dano a um escudo consumindo o PD temporário (Toque de Midas) antes do PD-base — fluxo real de teste. */
   function handleApplyShieldDamage(instanceId: string, amount: number) {
     const current = characterRef.current;
@@ -2902,6 +2972,7 @@ export default function CharacterSheetClient({
       itemContent,
       rune,
       nowIso: new Date().toISOString(),
+      slotsRunaMaxMultiplier: getSobregravacaoMultiplier(current, talentsIniciais),
     });
     if (!result.ok) {
       addLogEntry("recurso", result.reason ?? "Runa não instalada.");
@@ -4305,6 +4376,13 @@ export default function CharacterSheetClient({
           onEndToqueDeMidas={handleEndToqueDeMidas}
           onApplyShieldDamage={handleApplyShieldDamage}
           onRollToolTest={handleRollToolTest}
+          runicoGatilhoAvailable={hasGatilhoRunico(character, talentsIniciais)}
+          onToggleRuneActive={handleToggleRuneActive}
+          entalheRapidoAvailable={hasEntalheRapido(character, talentsIniciais)}
+          entalheAttempts={entalheAttempts}
+          onStartEntalheRapido={handleStartEntalheRapido}
+          onConfirmEntalheRapido={handleConfirmEntalheRapido}
+          sobregravacaoMultiplier={getSobregravacaoMultiplier(character, talentsIniciais)}
         />
       )}
 

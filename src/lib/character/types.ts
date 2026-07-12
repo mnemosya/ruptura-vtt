@@ -555,6 +555,8 @@ export interface Character {
       runeContentId: string;
       installedAt: string;
       notas?: string;
+      /** Rúnico › Gatilho Rúnico — ativa/inativa sem PA. Ausente = ativa. */
+      ativa?: boolean;
     }[];
     /**
      * Propriedades/estados técnicos pertencem à INSTÂNCIA. Ausência em

@@ -54,7 +54,7 @@ Legenda: **✅ Integral** (mecânica-núcleo conectada ao fluxo real) · **🟡 
 com formulário/estado/log) · **⚙️ Infra pendente** (só classificação/badge/botão/
 cadência/log/lembrete — SEM regra específica no fluxo).
 
-Contagem: ✅ 3 · 🟡 8 · ⚙️ 54 · 📖 1.
+Contagem: ✅ 6 · 🟡 8 · ⚙️ 51 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -112,9 +112,9 @@ Contagem: ✅ 3 · 🟡 8 · ⚙️ 54 · 📖 1.
 | Rato de Rua | Zé da Esquina | 1 | ⚙️ Infra pendente |
 | Rato de Rua | Gato de Telhado | 2 | ⚙️ Infra pendente |
 | Rato de Rua | Saída dos Fundos | 3 | ⚙️ Infra pendente |
-| Rúnico | Gatilho Rúnico | 1 | ⚙️ Infra pendente |
-| Rúnico | Entalhe Rápido | 2 | ⚙️ Infra pendente |
-| Rúnico | Sobregravação | 3 | ⚙️ Infra pendente |
+| Rúnico | Gatilho Rúnico | 1 | ✅ Integral |
+| Rúnico | Entalhe Rápido | 2 | ✅ Integral |
+| Rúnico | Sobregravação | 3 | ✅ Integral |
 | Sorrateiro | Passo Fantasma | 1 | ⚙️ Infra pendente |
 | Sorrateiro | Camuflagem Óptica | 2 | ⚙️ Infra pendente |
 | Sorrateiro | Ataque Fatal | 3 | ⚙️ Infra pendente |
@@ -127,6 +127,16 @@ Contagem: ✅ 3 · 🟡 8 · ⚙️ 54 · 📖 1.
 
 ### Detalhe dos não-infra
 
+- **✅ Rúnico completo** — Gatilho Rúnico: ativar/desativar runa instalada sem PA,
+  refletido de fato no `ActiveEffect` (verificado: "modificador aplicado" some/volta,
+  ActiveStateStrip mostra "Sem estados ativos" ao desativar e o buff ao reativar).
+  Entalhe Rápido: 1 PA real gasto (verificado 0→1), prepara teste real de Engenharia,
+  só aplica a instalação/remoção em SUCESSO (verificado: resultado 3 < CD 5 não instala;
+  resultado 9 ≥ CD 5 instala — 0/4 → 1/4); falha preserva item/runa e não devolve o PA.
+  Sobregravação: multiplicador lido do payload (`multiplicador_espacos_extra`), dobra o
+  limite de slots real usado tanto no gate de instalação quanto no display (verificado:
+  "2 base × 2 = 4"). Autorização de terceiros (Tecnomagia/Arcanismo CD 8) documentada
+  como nota — não modelada por não haver UI de acesso cross-personagem no dev sheet.
 - **✅ Bricolagem** — atividade "Examinar ponto vulnerável" real: formulário (tipo/alvo/
   falha/perícia) sem teste; bônus consumível escopado por tag sintética `bricolagem:<id>`,
   só aplicado no teste disparado pelo botão "Rolar teste relacionado" (com confirmação
