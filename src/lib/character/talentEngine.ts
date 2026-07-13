@@ -2305,6 +2305,161 @@ export function resetRoboSceneState(character: Character): { character: Characte
 }
 
 // ---------------------------------------------------------------------
+// Tecelão — modelo mínimo de Trama + Olho de Botão (N1), Bypass (N2),
+// Agulha Fina (N3). Ver comentário de `Character["trama_ativa"]`
+// (types.ts) para o escopo (sem automação do minijogo completo).
+// ---------------------------------------------------------------------
+
+/** Limite de Detecção por classificação canônica ("18. TECENDO A MALHA" › CLASSIFICAÇÕES). Desconhecida/customizada → null (nunca inventa um número). */
+const CLASSIFICACAO_DETECCAO_LIMITE: Record<string, number> = { civil: 8, corporativa: 6, imperial: 4 };
+
+export function getLimiteDeteccaoPorClassificacao(classificacao: string): number | null {
+  return CLASSIFICACAO_DETECCAO_LIMITE[classificacao.trim().toLowerCase()] ?? null;
+}
+
+export function hasOlhoDeBotao(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "sondar_automatico") return true;
+    }
+  }
+  return false;
+}
+
+/** Níveis revelados automaticamente por Olho de Botão (payload `niveis_revelados`, default 2 se ausente). */
+export function getOlhoDeBotaoNiveisRevelados(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): number {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "sondar_automatico" && typeof efeito.niveis_revelados === "number") return efeito.niveis_revelados;
+    }
+  }
+  return 2;
+}
+
+/** Inicia uma Trama (1 por vez — encerre a atual antes de iniciar outra). Olho de Botão revela `niveisRevelados` automaticamente, "como em um uso do protocolo Sondar". */
+export function iniciarTrama(
+  character: Character,
+  params: { nome: string; classificacao: string; ramMaximo: number },
+  talents: TalentContent[],
+  nowIso: string,
+): Character {
+  const temOlhoDeBotao = hasOlhoDeBotao(character, talents);
+  const trama: NonNullable<Character["trama_ativa"]> = {
+    id: crypto.randomUUID(),
+    nome: params.nome,
+    classificacao: params.classificacao,
+    limiteDeteccao: getLimiteDeteccaoPorClassificacao(params.classificacao),
+    niveisRevelados: temOlhoDeBotao ? getOlhoDeBotaoNiveisRevelados(character, talents) : 0,
+    posicaoAtual: "ponto de acesso",
+    bloqueios: [],
+    nos: [],
+    presencasHostis: [],
+    ramAtual: params.ramMaximo,
+    ramMaximo: params.ramMaximo,
+    paGastosNaTrama: 0,
+    deteccaoAtual: 0,
+    detecaoAcionada: false,
+    rastro: 0,
+    protocolosUsados: temOlhoDeBotao ? ["Sondar automático (Olho de Botão) — 2 níveis revelados"] : [],
+    iniciadaEm: nowIso,
+    ativa: true,
+  };
+  return { ...character, trama_ativa: trama };
+}
+
+export function encerrarTrama(character: Character, nowIso: string): Character {
+  if (!character.trama_ativa?.ativa) return character;
+  return { ...character, trama_ativa: { ...character.trama_ativa, ativa: false, encerradaEm: nowIso } };
+}
+
+function updateTrama(character: Character, updater: (t: NonNullable<Character["trama_ativa"]>) => NonNullable<Character["trama_ativa"]>): Character {
+  if (!character.trama_ativa) return character;
+  return { ...character, trama_ativa: updater(character.trama_ativa) };
+}
+
+export function adicionarElementoTrama(character: Character, campo: "bloqueios" | "nos" | "presencasHostis", nome: string): Character {
+  return updateTrama(character, (t) => ({ ...t, [campo]: [...t[campo], nome] }));
+}
+
+export function removerElementoTrama(character: Character, campo: "bloqueios" | "nos" | "presencasHostis", index: number): Character {
+  return updateTrama(character, (t) => ({ ...t, [campo]: t[campo].filter((_, i) => i !== index) }));
+}
+
+export function ajustarRamTrama(character: Character, delta: number): Character {
+  return updateTrama(character, (t) => ({ ...t, ramAtual: Math.max(0, Math.min(t.ramMaximo, t.ramAtual + delta)) }));
+}
+
+export function ajustarDeteccaoTrama(character: Character, delta: number): Character {
+  return updateTrama(character, (t) => {
+    const deteccaoAtual = Math.max(0, t.deteccaoAtual + delta);
+    const detecaoAcionada = t.detecaoAcionada || (t.limiteDeteccao != null && deteccaoAtual >= t.limiteDeteccao);
+    return { ...t, deteccaoAtual, detecaoAcionada };
+  });
+}
+
+export function registrarProtocoloTrama(character: Character, descricao: string, custoPa: number): Character {
+  return updateTrama(character, (t) => ({ ...t, protocolosUsados: [...t.protocolosUsados, descricao], paGastosNaTrama: t.paGastosNaTrama + custoPa }));
+}
+
+export const BYPASS_USAGE_KEY = "tecelao_bypass:sessao_malha";
+
+export function getBypassAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisSession: boolean } {
+  let acquired = false;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "comando_sem_teste") acquired = true;
+    }
+  }
+  const usedThisSession = (character.talentos_estado?.usos?.[BYPASS_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisSession };
+}
+
+/** Executa 1 Comando à escolha SEM teste — ainda consome PA e RAM reais (1x/sessão de Malha). */
+export function executarBypass(character: Character, comando: string, custoPa: number, custoRam: number, nowIso: string): Character {
+  if (!character.trama_ativa?.ativa) return character;
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[BYPASS_USAGE_KEY] = { usados: 1, cadencia: "sessao_malha", atualizadoEm: nowIso };
+  let next: Character = { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+  next = registrarProtocoloTrama(next, `${comando} (sem teste, via Bypass)`, custoPa);
+  next = ajustarRamTrama(next, -custoRam);
+  return next;
+}
+
+export const AGULHA_FINA_USAGE_KEY = "tecelao_agulha_fina:sessao_malha";
+
+export function getAgulhaFinaAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado" | "trama_ativa">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisSession: boolean; bloqueadoPorDeteccao: boolean } {
+  let acquired = false;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "comando_livre_sem_custo") acquired = true;
+    }
+  }
+  const usedThisSession = (character.talentos_estado?.usos?.[AGULHA_FINA_USAGE_KEY]?.usados ?? 0) >= 1;
+  const bloqueadoPorDeteccao = character.trama_ativa?.detecaoAcionada === true;
+  return { acquired, usedThisSession, bloqueadoPorDeteccao };
+}
+
+/** Executa Apagar Rastros ou Modificar Assinatura como ação livre — sem custo de PA/RAM, bloqueado se Detecção já acionada (1x/sessão de Malha). */
+export function executarAgulhaFina(character: Character, comando: "Apagar Rastros" | "Modificar Assinatura", nowIso: string): Character {
+  if (!character.trama_ativa?.ativa || character.trama_ativa.detecaoAcionada) return character;
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[AGULHA_FINA_USAGE_KEY] = { usados: 1, cadencia: "sessao_malha", atualizadoEm: nowIso };
+  let next: Character = { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+  next = updateTrama(next, (t) => ({
+    ...t,
+    protocolosUsados: [...t.protocolosUsados, `${comando} (ação livre, via Agulha Fina — 0 PA/0 RAM)`],
+    rastro: comando === "Apagar Rastros" ? 0 : t.rastro,
+  }));
+  return next;
+}
+
+// ---------------------------------------------------------------------
 // Dissecador — Golpe Cirúrgico (N1): -2 na próxima ação ofensiva do alvo
 // após sucesso crítico com dano contundente corpo a corpo. A troca
 // Corpo→Mente do mesmo nível (`familia: "troca_atributo"`) não precisa de

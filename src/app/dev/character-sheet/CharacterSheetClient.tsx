@@ -155,6 +155,16 @@ import {
   getOverclockAvailability,
   activateOverclock,
   resetRoboSceneState,
+  iniciarTrama,
+  encerrarTrama,
+  adicionarElementoTrama,
+  removerElementoTrama,
+  ajustarRamTrama,
+  ajustarDeteccaoTrama,
+  getBypassAvailability,
+  executarBypass,
+  getAgulhaFinaAvailability,
+  executarAgulhaFina,
   isPvGatedToggleAllowedToActivate,
   enforcePvGatedToggleDeactivation,
   hasSaqueFantasma,
@@ -3447,6 +3457,89 @@ export default function CharacterSheetClient({
     addLogEntry("recurso", `Overclock: ${robo.nome} recebe +1 PA por rodada durante esta cena.`);
   }
 
+  /** Tecelão › inicia uma Trama real — Olho de Botão revela automaticamente os níveis (payload) se adquirido. */
+  function handleIniciarTrama(params: { nome: string; classificacao: string; ramMaximo: number }) {
+    const current = characterRef.current;
+    if (current.trama_ativa?.ativa) {
+      addLogEntry("condicao", "Já há uma Trama ativa — desligue antes de conectar em outra.");
+      return;
+    }
+    const nowIso = new Date().toISOString();
+    const next = iniciarTrama(current, params, talentsIniciais, nowIso);
+    characterRef.current = next;
+    setCharacter(next);
+    const temOlhoDeBotao = next.trama_ativa!.niveisRevelados > 0;
+    addLogEntry(
+      "condicao",
+      `Trama conectada: ${params.nome} (${params.classificacao}).${temOlhoDeBotao ? ` Olho de Botão revelou ${next.trama_ativa!.niveisRevelados} nível(is) automaticamente.` : ""}`,
+    );
+  }
+
+  function handleEncerrarTrama() {
+    const current = characterRef.current;
+    if (!current.trama_ativa?.ativa) return;
+    const nowIso = new Date().toISOString();
+    const next = encerrarTrama(current, nowIso);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Trama desconectada: ${current.trama_ativa.nome}.`);
+  }
+
+  function handleAdicionarElementoTrama(campo: "bloqueios" | "nos" | "presencasHostis", nome: string) {
+    const current = characterRef.current;
+    const next = adicionarElementoTrama(current, campo, nome);
+    characterRef.current = next;
+    setCharacter(next);
+  }
+
+  function handleRemoverElementoTrama(campo: "bloqueios" | "nos" | "presencasHostis", index: number) {
+    const current = characterRef.current;
+    const next = removerElementoTrama(current, campo, index);
+    characterRef.current = next;
+    setCharacter(next);
+  }
+
+  function handleAjustarRamTrama(delta: number) {
+    const current = characterRef.current;
+    const next = ajustarRamTrama(current, delta);
+    characterRef.current = next;
+    setCharacter(next);
+  }
+
+  function handleAjustarDeteccaoTrama(delta: number) {
+    const current = characterRef.current;
+    const next = ajustarDeteccaoTrama(current, delta);
+    characterRef.current = next;
+    setCharacter(next);
+    if (!current.trama_ativa?.detecaoAcionada && next.trama_ativa?.detecaoAcionada) {
+      addLogEntry("condicao", `Detecção acionada na Trama "${next.trama_ativa.nome}"!`);
+    }
+  }
+
+  /** Tecelão › Bypass — executa 1 Comando à escolha sem teste (ainda consome PA/RAM reais), 1x/sessão de Malha. */
+  function handleExecutarBypass(comando: string, custoPa: number, custoRam: number) {
+    const current = characterRef.current;
+    const status = getBypassAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedThisSession || !current.trama_ativa?.ativa) return;
+    const nowIso = new Date().toISOString();
+    const next = executarBypass(current, comando, custoPa, custoRam, nowIso);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("recurso", `Bypass: "${comando}" executado sem teste — ${custoPa} PA, ${custoRam} RAM.`);
+  }
+
+  /** Tecelão › Agulha Fina — Apagar Rastros/Modificar Assinatura como ação livre, sem PA/RAM, 1x/sessão de Malha. */
+  function handleExecutarAgulhaFina(comando: "Apagar Rastros" | "Modificar Assinatura") {
+    const current = characterRef.current;
+    const status = getAgulhaFinaAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedThisSession || status.bloqueadoPorDeteccao || !current.trama_ativa?.ativa) return;
+    const nowIso = new Date().toISOString();
+    const next = executarAgulhaFina(current, comando, nowIso);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("recurso", `Agulha Fina: "${comando}" executado como ação livre — 0 PA, 0 RAM.`);
+  }
+
   /** Rúnico › Gatilho Rúnico — ativa/desativa runa instalada sem PA. */
   function handleToggleRuneActive(instanceId: string, runeInstallationId: string) {
     const current = characterRef.current;
@@ -5751,6 +5844,17 @@ export default function CharacterSheetClient({
           onApplyMarchaDupla={handleApplyMarchaDupla}
           overclockStatus={getOverclockAvailability(character, talentsIniciais)}
           onApplyOverclock={handleApplyOverclock}
+          trama={character.trama_ativa}
+          onIniciarTrama={handleIniciarTrama}
+          onEncerrarTrama={handleEncerrarTrama}
+          onAdicionarElementoTrama={handleAdicionarElementoTrama}
+          onRemoverElementoTrama={handleRemoverElementoTrama}
+          onAjustarRamTrama={handleAjustarRamTrama}
+          onAjustarDeteccaoTrama={handleAjustarDeteccaoTrama}
+          bypassStatus={getBypassAvailability(character, talentsIniciais)}
+          onExecutarBypass={handleExecutarBypass}
+          agulhaFinaStatus={getAgulhaFinaAvailability(character, talentsIniciais)}
+          onExecutarAgulhaFina={handleExecutarAgulhaFina}
         />
       )}
 

@@ -157,6 +157,17 @@ export function TalentsTab({
   onApplyMarchaDupla,
   overclockStatus,
   onApplyOverclock,
+  trama,
+  onIniciarTrama,
+  onEncerrarTrama,
+  onAdicionarElementoTrama,
+  onRemoverElementoTrama,
+  onAjustarRamTrama,
+  onAjustarDeteccaoTrama,
+  bypassStatus,
+  onExecutarBypass,
+  agulhaFinaStatus,
+  onExecutarAgulhaFina,
 }: {
   talents: TalentContent[];
   catalogError: string | null;
@@ -273,6 +284,18 @@ export function TalentsTab({
   onApplyMarchaDupla?: (roboId: string) => void;
   overclockStatus?: { acquired: boolean; usedToday: boolean };
   onApplyOverclock?: (roboId: string) => void;
+  /** Tecelão › modelo mínimo de Trama + Olho de Botão/Bypass/Agulha Fina (checkpoint talentos, Fase 16). */
+  trama?: Character["trama_ativa"] | null;
+  onIniciarTrama?: (params: { nome: string; classificacao: string; ramMaximo: number }) => void;
+  onEncerrarTrama?: () => void;
+  onAdicionarElementoTrama?: (campo: "bloqueios" | "nos" | "presencasHostis", nome: string) => void;
+  onRemoverElementoTrama?: (campo: "bloqueios" | "nos" | "presencasHostis", index: number) => void;
+  onAjustarRamTrama?: (delta: number) => void;
+  onAjustarDeteccaoTrama?: (delta: number) => void;
+  bypassStatus?: { acquired: boolean; usedThisSession: boolean };
+  onExecutarBypass?: (comando: string, custoPa: number, custoRam: number) => void;
+  agulhaFinaStatus?: { acquired: boolean; usedThisSession: boolean; bloqueadoPorDeteccao: boolean };
+  onExecutarAgulhaFina?: (comando: "Apagar Rastros" | "Modificar Assinatura") => void;
 }) {
   const [filter, setFilter] = useState<FilterKey>("todos");
 
@@ -550,6 +573,26 @@ export function TalentsTab({
 
                         {acquiredEntry && nivel.slug === "mecatronico_overclock" && overclockStatus?.acquired && (
                           <OverclockWidget robosProgramados={robos.filter((r) => r.estado === "programado")} status={overclockStatus} onApply={onApplyOverclock} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "tecelao_olho_de_botao" && (
+                          <TramaWidget
+                            trama={trama ?? null}
+                            onIniciar={onIniciarTrama}
+                            onEncerrar={onEncerrarTrama}
+                            onAdicionarElemento={onAdicionarElementoTrama}
+                            onRemoverElemento={onRemoverElementoTrama}
+                            onAjustarRam={onAjustarRamTrama}
+                            onAjustarDeteccao={onAjustarDeteccaoTrama}
+                          />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "tecelao_bypass" && bypassStatus?.acquired && (
+                          <BypassWidget status={bypassStatus} onExecutar={onExecutarBypass} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "tecelao_agulha_fina" && agulhaFinaStatus?.acquired && (
+                          <AgulhaFinaWidget status={agulhaFinaStatus} onExecutar={onExecutarAgulhaFina} />
                         )}
 
                         {acquiredEntry && nivel.slug === "sorrateiro_passo_fantasma" && (
@@ -2028,6 +2071,183 @@ function OverclockWidget({
           style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !roboId ? 0.5 : 1 }}
         >
           Ativar Overclock
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TramaWidget({
+  trama,
+  onIniciar,
+  onEncerrar,
+  onAdicionarElemento,
+  onRemoverElemento,
+  onAjustarRam,
+  onAjustarDeteccao,
+}: {
+  trama: Character["trama_ativa"] | null;
+  onIniciar?: (params: { nome: string; classificacao: string; ramMaximo: number }) => void;
+  onEncerrar?: () => void;
+  onAdicionarElemento?: (campo: "bloqueios" | "nos" | "presencasHostis", nome: string) => void;
+  onRemoverElemento?: (campo: "bloqueios" | "nos" | "presencasHostis", index: number) => void;
+  onAjustarRam?: (delta: number) => void;
+  onAjustarDeteccao?: (delta: number) => void;
+}) {
+  const [nome, setNome] = useState("");
+  const [classificacao, setClassificacao] = useState("civil");
+  const [ramMaximo, setRamMaximo] = useState(10);
+  const [novoElemento, setNovoElemento] = useState<Record<string, string>>({});
+
+  if (!trama?.ativa) {
+    return (
+      <div data-testid="trama-widget" style={widgetBox}>
+        <span style={{ opacity: 0.7 }}>Nenhuma Trama ativa. Olho de Botão revela automaticamente 2 níveis ao iniciar:</span>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <input data-testid="trama-nome" placeholder="nome da trama" value={nome} onChange={(e) => setNome(e.target.value)} style={{ ...widgetInput, width: 140 }} />
+          <select data-testid="trama-classificacao" value={classificacao} onChange={(e) => setClassificacao(e.target.value)} style={widgetInput}>
+            <option value="civil">Civil (Detecção 8)</option>
+            <option value="corporativa">Corporativa (Detecção 6)</option>
+            <option value="imperial">Imperial (Detecção 4)</option>
+          </select>
+          <input data-testid="trama-ram-maximo" type="number" min={1} placeholder="RAM máx." value={ramMaximo} onChange={(e) => setRamMaximo(Math.max(1, Number(e.target.value)))} style={{ ...widgetInput, width: 80 }} />
+          <button
+            data-testid="trama-iniciar"
+            disabled={!nome.trim()}
+            onClick={() => {
+              onIniciar?.({ nome: nome.trim(), classificacao, ramMaximo });
+              setNome("");
+            }}
+            style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !nome.trim() ? 0.5 : 1 }}
+          >
+            Conectar (iniciar Trama)
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const campos: { key: "bloqueios" | "nos" | "presencasHostis"; label: string }[] = [
+    { key: "bloqueios", label: "Bloqueios" },
+    { key: "nos", label: "Nós" },
+    { key: "presencasHostis", label: "Presenças hostis" },
+  ];
+
+  return (
+    <div data-testid="trama-ativa-widget" style={widgetBox}>
+      <span style={{ color: "#4caf50" }}>✦ Trama ativa: {trama.nome}</span> ({trama.classificacao}) — {trama.niveisRevelados} nível(is) revelado(s)
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <span>RAM: {trama.ramAtual}/{trama.ramMaximo}</span>
+        <button data-testid="trama-ram-menos" onClick={() => onAjustarRam?.(-1)} style={{ ...buttonStyle, fontSize: 10, padding: "1px 6px" }}>-1</button>
+        <button data-testid="trama-ram-mais" onClick={() => onAjustarRam?.(1)} style={{ ...buttonStyle, fontSize: 10, padding: "1px 6px" }}>+1</button>
+        <span>Detecção: {trama.deteccaoAtual}{trama.limiteDeteccao != null ? `/${trama.limiteDeteccao}` : ""}{trama.detecaoAcionada ? " — ACIONADA" : ""}</span>
+        <button data-testid="trama-deteccao-menos" onClick={() => onAjustarDeteccao?.(-1)} style={{ ...buttonStyle, fontSize: 10, padding: "1px 6px" }}>-1</button>
+        <button data-testid="trama-deteccao-mais" onClick={() => onAjustarDeteccao?.(1)} style={{ ...buttonStyle, fontSize: 10, padding: "1px 6px" }}>+1</button>
+        <span>Rastro: {trama.rastro}</span>
+        <span>PA gastos na Trama: {trama.paGastosNaTrama}</span>
+      </div>
+      {campos.map(({ key, label }) => (
+        <div key={key} style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+          <strong style={{ fontSize: 10 }}>{label}:</strong>
+          {trama[key].map((nomeEl, i) => (
+            <span key={i} data-testid={`trama-${key}-${i}`} style={{ background: "#22232a", borderRadius: 4, padding: "1px 6px" }}>
+              {nomeEl}
+              <button data-testid={`trama-${key}-remover-${i}`} onClick={() => onRemoverElemento?.(key, i)} style={{ ...buttonStyle, fontSize: 9, padding: "0 4px", marginLeft: 4 }}>×</button>
+            </span>
+          ))}
+          <input
+            data-testid={`trama-${key}-novo`}
+            placeholder={`novo ${label.toLowerCase()}`}
+            value={novoElemento[key] ?? ""}
+            onChange={(e) => setNovoElemento((p) => ({ ...p, [key]: e.target.value }))}
+            style={{ ...widgetInput, width: 110 }}
+          />
+          <button
+            data-testid={`trama-${key}-adicionar`}
+            disabled={!novoElemento[key]?.trim()}
+            onClick={() => {
+              onAdicionarElemento?.(key, novoElemento[key]!.trim());
+              setNovoElemento((p) => ({ ...p, [key]: "" }));
+            }}
+            style={{ ...buttonStyle, fontSize: 9, padding: "1px 6px" }}
+          >
+            +
+          </button>
+        </div>
+      ))}
+      {trama.protocolosUsados.length > 0 && (
+        <div style={{ fontSize: 10, opacity: 0.7 }}>Log: {trama.protocolosUsados.join(" · ")}</div>
+      )}
+      <button data-testid="trama-encerrar" onClick={onEncerrar} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", alignSelf: "flex-start" }}>
+        Desligar (encerrar Trama)
+      </button>
+    </div>
+  );
+}
+
+function BypassWidget({
+  status,
+  onExecutar,
+}: {
+  status: { acquired: boolean; usedThisSession: boolean };
+  onExecutar?: (comando: string, custoPa: number, custoRam: number) => void;
+}) {
+  const [comando, setComando] = useState("");
+  const [custoPa, setCustoPa] = useState(2);
+  const [custoRam, setCustoRam] = useState(2);
+
+  return (
+    <div data-testid="bypass-widget" style={widgetBox}>
+      <span style={{ opacity: 0.7 }}>Avançar percorre 15 espaços em vez de 10 (sempre, com este talento). Comando à escolha SEM teste (ainda consome PA/RAM):</span>
+      {status.usedThisSession ? (
+        <span style={{ opacity: 0.6 }}>Bypass já usado nesta sessão de Malha.</span>
+      ) : (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <input data-testid="bypass-comando" placeholder="comando" value={comando} onChange={(e) => setComando(e.target.value)} style={{ ...widgetInput, width: 140 }} />
+          <input data-testid="bypass-custo-pa" type="number" min={0} placeholder="PA" value={custoPa} onChange={(e) => setCustoPa(Math.max(0, Number(e.target.value)))} style={{ ...widgetInput, width: 60 }} />
+          <input data-testid="bypass-custo-ram" type="number" min={0} placeholder="RAM" value={custoRam} onChange={(e) => setCustoRam(Math.max(0, Number(e.target.value)))} style={{ ...widgetInput, width: 60 }} />
+          <button
+            data-testid="bypass-executar"
+            disabled={!comando.trim()}
+            onClick={() => {
+              onExecutar?.(comando.trim(), custoPa, custoRam);
+              setComando("");
+            }}
+            style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !comando.trim() ? 0.5 : 1 }}
+          >
+            Executar sem teste (1/sessão)
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AgulhaFinaWidget({
+  status,
+  onExecutar,
+}: {
+  status: { acquired: boolean; usedThisSession: boolean; bloqueadoPorDeteccao: boolean };
+  onExecutar?: (comando: "Apagar Rastros" | "Modificar Assinatura") => void;
+}) {
+  const [comando, setComando] = useState<"Apagar Rastros" | "Modificar Assinatura">("Apagar Rastros");
+
+  if (status.usedThisSession) {
+    return <div data-testid="agulha-fina-widget" style={{ ...widgetBox, opacity: 0.6 }}>Agulha Fina já usada nesta sessão de Malha.</div>;
+  }
+  if (status.bloqueadoPorDeteccao) {
+    return <div data-testid="agulha-fina-widget" style={{ ...widgetBox, opacity: 0.6 }}>Bloqueado: Detecção já acionada nesta Trama.</div>;
+  }
+  return (
+    <div data-testid="agulha-fina-widget" style={widgetBox}>
+      <span style={{ opacity: 0.7 }}>Apagar Rastros ou Modificar Assinatura como ação livre, sem PA/RAM (1/sessão):</span>
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <select data-testid="agulha-fina-comando" value={comando} onChange={(e) => setComando(e.target.value as typeof comando)} style={widgetInput}>
+          <option value="Apagar Rastros">Apagar Rastros</option>
+          <option value="Modificar Assinatura">Modificar Assinatura</option>
+        </select>
+        <button data-testid="agulha-fina-executar" onClick={() => onExecutar?.(comando)} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}>
+          Executar de graça
         </button>
       </div>
     </div>

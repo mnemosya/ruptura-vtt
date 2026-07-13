@@ -62,7 +62,7 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 62 · 🟡 0 · ⚙️ 3 · 📖 1.
+Contagem: ✅ 0 · 🔵 65 · 🟡 0 · ⚙️ 0 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -126,9 +126,9 @@ Contagem: ✅ 0 · 🔵 62 · 🟡 0 · ⚙️ 3 · 📖 1.
 | Sorrateiro | Passo Fantasma | 1 | 🔵 Implementado (aguardando validação manual) |
 | Sorrateiro | Camuflagem Óptica | 2 | 🔵 Implementado (aguardando validação manual) |
 | Sorrateiro | Ataque Fatal | 3 | 🔵 Implementado (aguardando validação manual) |
-| Tecelão | Olho de Botão | 1 | ⚙️ Infra pendente |
-| Tecelão | Bypass | 2 | ⚙️ Infra pendente |
-| Tecelão | Agulha Fina | 3 | ⚙️ Infra pendente |
+| Tecelão | Olho de Botão | 1 | 🔵 Implementado (aguardando validação manual) |
+| Tecelão | Bypass | 2 | 🔵 Implementado (aguardando validação manual) |
+| Tecelão | Agulha Fina | 3 | 🔵 Implementado (aguardando validação manual) |
 | Totem | Benção | 1 | 🔵 Implementado (aguardando validação manual) |
 | Totem | Onda Solidária | 2 | 🔵 Implementado (aguardando validação manual) |
 | Totem | Chama Redobrada | 3 | 🔵 Implementado (aguardando validação manual) |
@@ -601,9 +601,9 @@ abaixo está **aguardando confirmação do usuário via teste manual** — nenhu
 | Sorrateiro | Passo Fantasma | 🔵 Implementado | Falha limitada → sucesso limitado em Furtividade | `talentEngine.ts`, `RollsTab.tsx` | Nenhum (promoção por rolagem) | Rolar Furtividade com CD, margem -1 → confirmar promovida para sucesso limitado | Aguardando usuário |
 | Sorrateiro | Camuflagem Óptica | 🔵 Implementado | Furtividade não encerra automaticamente em exposição; requer confirmação de cobertura plausível | `talentEngine.ts`, `TalentsTab.tsx` | `Character.furtividade_ativa` | Entrar em Furtividade → confirmar cobertura plausível → confirmar Furtividade continua ativa | Aguardando usuário |
 | Sorrateiro | Ataque Fatal | 🔵 Implementado | Acerto ao sair de Furtividade vira crítico; encerra Furtividade real | `TableClient.tsx`, `talentEngine.ts` | `Character.furtividade_ativa` | Entrar em Furtividade → atacar confirmando "saindo de Furtividade" → confirmar crítico forçado E Furtividade encerrada após | Aguardando usuário |
-| Tecelão | Olho de Botão | ⚙️ Infra pendente | Nenhum (sem modelo de Trama) | — | — | N/A | — |
-| Tecelão | Bypass | ⚙️ Infra pendente | Nenhum (sem modelo de Trama) | — | — | N/A | — |
-| Tecelão | Agulha Fina | ⚙️ Infra pendente | Nenhum (sem modelo de Trama) | — | — | N/A | — |
+| Tecelão | Olho de Botão | 🔵 Implementado | Ao conectar em uma nova Trama, revela automaticamente os níveis do payload (2), registrado no log da Trama; modelo mínimo de Trama (Bloqueios/Nós/presenças hostis/RAM/Detecção/Rastro/log de protocolos) criado do zero — sem automação do minijogo completo de hacking | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.trama_ativa` | Conectar em uma Trama → confirmar 2 níveis revelados automaticamente no log; adicionar/remover Bloqueios/Nós/presenças hostis → confirmar listas atualizadas; ajustar RAM/Detecção → confirmar valores mudam e Detecção acionada dispara ao atingir o limite da classificação | Aguardando usuário |
+| Tecelão | Bypass | 🔵 Implementado | Executa 1 Comando à escolha SEM teste, ainda consumindo PA/RAM reais informados, 1x/sessão de Malha (cadência `sessao_malha`, reset manual, mesmo padrão de Estocar/Rede de Favores) | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.trama_ativa`, `talentos_estado` | Com Trama ativa, executar Bypass com um comando/custo → confirmar RAM reduzido e log registrado sem pedir teste; repetir na mesma sessão de Malha → confirmar bloqueado | Aguardando usuário |
+| Tecelão | Agulha Fina | 🔵 Implementado | Executa Apagar Rastros (zera o Rastro real) ou Modificar Assinatura como ação livre, sem PA/RAM, bloqueado se Detecção já acionada, 1x/sessão de Malha | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.trama_ativa`, `talentos_estado` | Com Trama ativa e Detecção não acionada, executar Apagar Rastros → confirmar Rastro zera e log sem custo; com Detecção acionada → confirmar bloqueado; repetir na mesma sessão de Malha → confirmar bloqueado | Aguardando usuário |
 | Totem | Benção | 🔵 Implementado | Promoção no próprio teste (checkbox avulso); token 1/cena a um aliado, consumido no primeiro teste dele | `RollsTab.tsx`, `TalentsTab.tsx`, `CharacterSheetClient.tsx` | `Character.bencao_token_ativo` (no aliado), `talentos_estado` (no concedente) | Marcar "efeito positivo" → falha limitada vira sucesso limitado; conceder token a aliado → aliado rola primeiro teste → confirmar token consumido | Aguardando usuário |
 | Totem | Onda Solidária | 🔵 Implementado | Copia o último efeito positivo real (deltas de PV/PE + efeitos temporários) de um item usado em aliado para um segundo aliado, sem custo extra; escopo: só fluxo de item em aliado (item cura/reforço), não conjuração/ação narrativa — sem choke point único equivalente | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.recursos_atuais`/`efeitos_temporarios` (2º aliado) | Usar item de cura num aliado → estender para um segundo aliado → confirmar mesmo efeito aplicado sem novo custo de item | Aguardando usuário |
 | Totem | Chama Redobrada | 🔵 Implementado | Dobra o último efeito positivo real no MESMO alvo (numérico: reaplica o delta; duração: dobra `remainingRounds`), 1/cena; mesmo escopo de Onda Solidária (fluxo de item em aliado) | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.recursos_atuais`/`efeitos_temporarios`/`talentos_estado` | Usar item de cura num aliado → dobrar valor numérico → confirmar efeito dobrado; repetir na mesma cena → confirmar bloqueado | Aguardando usuário |

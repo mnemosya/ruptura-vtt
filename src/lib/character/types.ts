@@ -691,6 +691,39 @@ export interface Character {
     overclockAtiva: boolean;
   }[];
   /**
+   * Tecelão › modelo mínimo de Trama (checkpoint talentos, Fase 16) — sem
+   * automação do minijogo completo de hacking ("18. TECENDO A MALHA": grid de
+   * espaços/níveis, protocolos, comandos, CD por classificação); só o estado
+   * real necessário para as 3 habilidades do talento. Bloqueios/Nós/presenças
+   * hostis são texto livre (nomes descritivos, sem ficha própria estruturada
+   * no conteúdo canônico). `limiteDeteccao` é capturado da classificação
+   * canônica quando reconhecida (Civil=8, Corporativa=6, Imperial=4);
+   * `null` para trama customizada/não classificada — nesse caso
+   * `detecaoAcionada` só muda por confirmação manual do narrador, nunca por
+   * comparação automática contra um limite inventado.
+   */
+  trama_ativa?: {
+    id: string;
+    nome: string;
+    classificacao: string;
+    limiteDeteccao: number | null;
+    niveisRevelados: number;
+    posicaoAtual: string;
+    bloqueios: string[];
+    nos: string[];
+    presencasHostis: string[];
+    ramAtual: number;
+    ramMaximo: number;
+    paGastosNaTrama: number;
+    deteccaoAtual: number;
+    detecaoAcionada: boolean;
+    rastro: number;
+    protocolosUsados: string[];
+    iniciadaEm: string;
+    ativa: boolean;
+    encerradaEm?: string;
+  };
+  /**
    * Sorrateiro › estado real de Furtividade (checkpoint talentos, Fase 3)
    * — entrada/saída manual (narrativa, sem teste estruturado próprio para
    * "entrar"; testes de Furtividade em si usam a perícia normalmente,
