@@ -726,3 +726,110 @@ checagens transversais de reload, modo local, logs e `/dev/table`. Todo item com
 78. Remover um talento adquirido remove o efeito correspondente do fluxo real.
 79. `npm run build` limpo e `git status` sem `next-env.d.ts` sujo (checagem final de higiene).
 80. Revisar esta tabela linha a linha contra o capítulo canônico "11. TALENTOS" — apontar qualquer divergência de regra encontrada durante os testes.
+
+---
+
+## Checklist manual — sessão de continuação (Fase 1 a 16, 2026-07-13)
+
+Escopo **exclusivo** desta sessão de continuação (16 commits, `feat: complete remaining partial talent mechanics` até `feat: integrate weaver talent operations`). Não repete os 80 itens acima (sessão anterior) nem os 20 talentos já "Implementado" antes desta sessão. Cada item: preparação, painel, ações, resultado esperado, antes→depois, estado persistido, log esperado, sinal de falha.
+
+### Fase 1 — 7 talentos parciais concluídos (commit `86f72e7`)
+
+1. **Sede de Sangue (Berserker N?)** — Prep: personagem com o talento e PV baixo. Painel: Recursos/Ações (`/dev/character-sheet`). Ações: tentar ativar o toggle com PV abaixo do gatilho; depois tentar com PV suficiente; então reduzir PV manualmente até abaixo do limite. Esperado: ativação bloqueada no primeiro caso, permitida no segundo, desativação automática no terceiro. Antes→depois: toggle `false→bloqueado`, `false→true`, `true→false`. Persistido: `Character` toggle de talento + `pa`/`pv`. Log: "Sede de Sangue desativada automaticamente (PV abaixo do limite)." Falha: toggle permanece ativo com PV insuficiente.
+2. **Aparar (Espadachim)** — Prep: personagem com Aparar, num ataque em `/dev/table`. Painel: TableClient, painel de resolução de ataque. Ações: defensor rola Bloquear/Aparar, narrador clica "Aparar: tratar como crítico" (1/cena). Esperado: margem tratada como sucesso crítico real. Antes→depois: `usadoNestaCena: false→true`. Persistido: `talentos_estado.usos`. Log: menção a "Aparar" no `attack_resolved`. Falha: botão reaparece disponível na mesma cena.
+3. **Saque Fantasma (Malabarista)** — Prep: personagem com arma leve de Arremesso equipada. Painel: RollsTab, checkbox "Usar Rajada". Ações: marcar Rajada sem confirmar Saque Fantasma → -1; marcar com confirmação de arma leve+Arremesso → -1 cancelado. Esperado: penalidade de Rajada anulada só com a confirmação. Persistido: nenhum (checkbox por rolagem). Log: rolagem reflete o ajuste. Falha: -1 aplicado mesmo com a arma correta confirmada.
+4. **Bang Bang (Pistoleiro)** — Prep: personagem com o talento, dado de gatilho disponível. Painel: RollsTab. Ações: rolar com dado de gatilho escolhido como maior dado, gastar +1 PA para o segundo disparo a -1. Esperado: segundo disparo real resolvido a -1, reserva de gatilho +1 confirmada. Persistido: `talentos_estado`. Log: menção ao segundo disparo. Falha: segundo disparo não consome PA ou não aplica -1.
+5. **Entalhe Rápido (Rúnico)** — Prep: personagem com o talento, item de runa. Painel: InventoryTab. Ações: iniciar instalar/remover (gasta 1 PA), recarregar a página antes de confirmar. Esperado: tentativa pendente sobrevive ao reload. Persistido: `Character.entalhe_rapido_tentativas`. Log: nenhum até confirmar. Falha: tentativa perdida após reload (PA já gasto, sem rastro).
+6. **Sobregravação (Rúnico)** — Prep: item com Sobregravação aplicada, pilha com quantidade > 1. Painel: InventoryTab. Ações: fazer split parcial da pilha. Esperado: autorização de Sobregravação preservada em ambas as partes (bug corrigido). Persistido: `InventoryItemInstance.sobregravacao`. Falha: autorização desaparece após o split.
+7. **Totem Benção (Totem)** — Prep: personagem com Benção, aliado ativo na mesa. Painel: TalentsTab (conceder token) + RollsTab (aliado). Ações: conceder token ao aliado, aliado rola primeiro teste da cena. Esperado: falha limitada do aliado vira sucesso limitado, token consumido. Persistido: `Character.bencao_token_ativo` no aliado. Log: consumo do token. Falha: token não é consumido ou aplica a um teste que não é o primeiro da cena.
+
+### Fase 2 — Dissecador (commit `8708a0d`)
+
+8. **Golpe Cirúrgico (N1)** — Prep: ataque corpo a corpo com dano contundente e sucesso crítico. Painel: TableClient. Ações: confirmar crítico contundente, aplicar -2. Esperado: `TemporaryEffect` real de -2 na próxima ação ofensiva do alvo. Persistido: `efeitos_temporarios` do alvo. Log: `talent_effect_applied`. Falha: penalidade não aparece na próxima rolagem ofensiva do alvo.
+9. **Fincada (N2)** — Prep: ataque corpo a corpo bem-sucedido. Painel: TableClient. Ações: reduzir 1 de dano para aplicar Lento/Caído (1/rodada). Esperado: dano reduzido em 1, condição real aplicada. Persistido: `ActiveCondition` no alvo. Falha: condição aplicada sem reduzir o dano, ou reutilizável na mesma rodada.
+10. **Contra-medida (N3)** — Prep: personagem sofrendo efeito que a Reação cobre. Painel: TableClient. Ações: gastar 1 Reação. Esperado: efeito real cancelado/mitigado, Reação consumida. Persistido: `estado_jogo` (Reação). Falha: Reação não é descontada.
+
+### Fase 3 — Berserker restante (commit `3676471`)
+
+11. **Fúria (N1) — correção** — Prep: ativar Fúria. Painel: TalentsTab. Ações: verificar duração. Esperado: `durationType: "manual"`, não mais aproximação por rodadas. Persistido: `efeitos_temporarios`. Falha: efeito expira sozinho por contagem de rodadas.
+12. **Último Fôlego (N3)** — Prep: personagem com o talento, ainda de pé ao fim da cena mesmo tendo sido curado. Painel: TableClient "Encerrar Cena". Ações: encerrar a cena com Último Fôlego ativo. Esperado: PV forçado a 0 mesmo com cura recebida, colapso dispara normalmente. Persistido: `Character.ultimo_folego_ativo`, colapso. Log: `talent_triggered` em `table_logs`. Falha: personagem permanece de pé ao fim da cena.
+
+### Fase 4 — Espadachim/Guardião restante (commit `5f32772`)
+
+13. **Estocar (N2)** — Prep: personagem com o talento. Painel: ActionsTab. Ações: marcar checkbox Estocar antes de Atacar. Esperado: -1 PA real na ação (respeitando mínimo). Persistido: `estado_jogo.pa_gastos`. Falha: PA não reduzido ou reduzido abaixo do mínimo.
+14. **Ripostar (N3)** — Prep: defensor sofre ataque corpo a corpo e bloqueia/apara com sucesso. Painel: TableClient. Ações: confirmar Ripostar. Esperado: contra-ataque real resolvido. Persistido: log de `attack_resolved`. Falha: sem ataque real gerado.
+15. **Sentinela (Guardião N2)** — Prep: aliado adjacente sofre ataque. Painel: TableClient. Ações: interpor-se, gastar Reação. Esperado: dano real redirecionado ao Guardião. Falha: dano permanece no aliado original.
+16. **Muralha (Guardião N3)** — Prep: sucesso em Bloquear confirmado. Painel: TableClient. Ações: escolher aliado protegido. Esperado: condição real "Cobertura Parcial" aplicada ao defensor E ao aliado, com autoria. Persistido: `ActiveCondition` (2x). Falha: condição aplicada só a um dos dois.
+
+### Fase 5 — Estrategista (commit `9ffeb25`)
+
+17. **Falcão (N1)** — Prep: aliado ativo na mesa. Painel: TalentsTab (conceder) + RollsTab (aliado). Ações: conceder +2, aliado confirma no próximo teste. Esperado: +2 real somado, token consumido. Persistido: `Character.falcao_token_ativo` no aliado. Falha: +2 aplicado a mais de um teste.
+18. **Briefing de Campo (N2)** — Prep: aliado ativo. Painel: TalentsTab + RollsTab. Ações: designar perícia, aliado usa o primeiro rerroll nela. Esperado: bônus real consumido no rerroll. Persistido: `Character.briefing_campo_ativo`. Falha: bônus disponível após o rerroll.
+19. **Imposição de Ritmo (N3)** — Prep: cena de combate. Painel: TableClient/CharacterSheetClient. Ações: usar 1/cena. Esperado: efeito real aplicado (conforme payload). Persistido: `talentos_estado`. Falha: reutilizável na mesma cena.
+
+### Fase 6 — Manipulador restante (commit `cfeca77`)
+
+20. **Entrelinhas (N2)** — Prep: interação social com uma criatura específica. Painel: TalentsTab + RollsTab. Ações: registrar descoberta contra a criatura, rolar Influência confirmando o alvo. Esperado: +2 real somado, vulnerabilidade consumida. Persistido: `Character.entrelinhas_ativo` (caster). Falha: +2 aplicado contra criatura diferente da registrada.
+21. **Puxar os Fios (N3)** — Prep: Entrelinhas ativo contra a MESMA criatura. Painel: TalentsTab. Ações: tentar sem Entrelinhas ativo (deve bloquear); com Entrelinhas ativo, registrar abertura social (1 de 5). Esperado: bloqueado sem Entrelinhas; registra corretamente com Entrelinhas. Persistido: `talentos_estado`. Falha: permite registrar sem Entrelinhas ativo na mesma criatura.
+
+### Fase 7 — Paramédico (commit `fa75c84`)
+
+22. **Pronto-Socorro (N1)** — Prep: aliado a 0 PV, em colapso. Painel: TalentsTab. Ações: estabilizar (1/cena). Esperado: PV do aliado = 1, colapso/Inconsciente encerrados pela cura canônica; +1 PA opcional se o caster ainda não agiu. Persistido: `recursos_atuais`/`colapso` do aliado. Falha: colapso não encerra ou PV não vira 1.
+23. **Ritmo de Campo (N2)** — Prep: talento adquirido. Painel: TalentsTab (armar) + ActionsTab/InventoryTab (ação de cura). Ações: armar, usar item/ação/magia de cura. Esperado: -1 PA real (respeitando mínimo), desarma sozinho após o uso. Persistido: `estado_jogo.pa_gastos`. Falha: desconto aplicado a uma ação que não é de cura.
+24. **Protocolo de Emergência (N3)** — Prep: aliado a 0 PV. Painel: TalentsTab. Ações: usar Protocolo (1/cena, gasta 1 Reação do caster). Esperado: PV do aliado = 1, Reação do caster consumida. Persistido: `estado_jogo` (caster), `recursos_atuais`/`colapso` (aliado). Falha: Reação não descontada.
+
+### Fase 8 — Praga (commit `2475e4e`)
+
+25. **Marca da Dor** — Prep: alvo com efeito negativo AUTORADO pelo praga-caster. Painel: TableClient (ataque). Ações: resolver ataque contra o alvo marcado. Esperado: bônus real somado à margem ANTES de `resolveMarginBand`. Persistido: bônus aplicado no cálculo do próprio ataque (sem estado extra). Falha: bônus aplica mesmo sem autoria confirmada do praga-caster.
+26. **Sangria Lenta** — Prep: condição com duração baseada em texto do payload. Painel: TableClient (autor). Ações: aplicar condição, estender duração via `extendSangriaLentaDuration`. Esperado: texto de duração real estendido (infraestrutura honestamente inerte se nenhum conteúdo qualificar). Falha: N/A se nenhum conteúdo do catálogo hoje aciona esta extensão (documentado).
+27. **Contágio** — Prep: condição ativa autorada pelo caster em um alvo. Painel: TableClient. Ações: propagar para um segundo alvo (`handleGmContagioPropagar`). Esperado: condição real replicada, com autoria preservada. Persistido: `ActiveCondition` no segundo alvo. Falha: autoria se perde na propagação.
+
+### Fase 9 — Totem restante (commit `023eece`)
+
+28. **Onda Solidária (N2)** — Prep: item de cura/reforço usado em um aliado. Painel: InventoryTab (usar em aliado) + TalentsTab (estender). Ações: estender o mesmo efeito para um segundo aliado. Esperado: deltas de PV/PE + efeitos temporários copiados, sem novo custo de item. Persistido: `recursos_atuais`/`efeitos_temporarios` do 2º aliado. Falha: consome um item extra ou não replica o efeito exato.
+29. **Chama Redobrada (N3)** — Prep: mesmo cenário. Painel: TalentsTab. Ações: dobrar o efeito no MESMO alvo (numérico ou duração), 1/cena. Esperado: valor numérico dobrado (reaplica o delta) OU `remainingRounds` dobrado. Persistido: `talentos_estado` (1/cena). Falha: reutilizável na mesma cena.
+
+### Fase 10 — Malabarista restante (commit `a551603`)
+
+30. **Revoada (N2)** — Prep: acertar com arma de Arremesso tendo outra arma de Arremesso disponível. Painel: TableClient. Ações: clicar Revoada após o acerto (1/rodada). Esperado: uso marcado no atacante; ataque extra resolvido via Atacar normal (0 PA). Persistido: `talentos_estado` (atacante). Falha: reutilizável na mesma rodada.
+31. **Espetáculo Mortal (N3)** — Prep: 3 armas leves de Arremesso no inventário. Painel: TalentsTab. Ações: selecionar 3 armas, escolher Convergência/Dispersão (1/cena). Esperado: as 3 armas consumidas do inventário real; falha_limitada→sucesso_limitado no próximo teste de Precisão. Persistido: `Character.inventario`, `espetaculo_mortal_ativo`. Falha: armas não são removidas do inventário.
+
+### Fase 11 — Pistoleiro restante (commit `b9342e2`)
+
+32. **Showdown (N3)** — Prep: cena de combate, múltiplos dados de gatilho. Painel: RollsTab. Ações: rolar com `quantidadeDadosGatilho` > 1. Esperado: todos os dados de gatilho entram no mesmo `Math.max()` da rolagem (`dadosGatilhoResultados[]`); reserva de gatilho aumenta via `getGatilhoQuenteAvailability` genérico (sem código novo). Falha: dados extras não entram no cálculo do maior dado.
+
+### Fase 12 — Mercador restante (commit `983451a`)
+
+33. **Caderneta de Dívida (N2)** — Prep: item até raridade Raro, saldo insuficiente na carteira. Painel: InventoryTab (Loja). Ações: preencher fornecedor, clicar "Comprar fiado" (1/sessão). Esperado: item recebido, carteira cai a 0 (nunca negativa), dívida registrada com `saldoDevido` correto. Persistido: `Character.dividas_mercador`. Log: "Comprado fiado: ... — pago X de Y, devendo Z a [fornecedor]." Falha: item Muito Raro consegue comprar fiado, ou dívida não é registrada.
+34. **Rede de Favores (N3)** — Prep: talento adquirido. Painel: TalentsTab. Ações: preencher PN/papel/pagamento/duração/notas, recrutar (1/sessão). Esperado: aliado temporário real registrado; "Encerrar vínculo" não reembolsa o uso. Persistido: `Character.rede_de_favores_ativa`. Falha: uso reembolsado ao encerrar, ou recruta 2x na mesma sessão.
+
+### Fase 13 — Rato de Rua (commit `880e3b8`)
+
+35. **Zé da Esquina (N1)** — Prep: talento adquirido. Painel: TalentsTab. Ações: invocar contato (nome, tipo, complicação resolvida), 1/missão. Esperado: registro real salvo no histórico. Persistido: `Character.ze_da_esquina_registros`. Falha: reutilizável na mesma missão (reset é manual, então só falha se permitir 2x sem reset).
+36. **Gato de Telhado (N2)** — Prep: ambiente urbano. Painel: TalentsTab. Ações: registrar local seguro + personagens protegidos, 1/dia. Esperado: estado ativo real; "Deixar o local" encerra. Persistido: `Character.gato_de_telhado_ativo`. Falha: não reseta em Novo Dia/descanso longo.
+37. **Saída dos Fundos (N3)** — Prep: situação de risco iminente. Painel: TalentsTab. Ações: registrar situação/rota/consequência, 1/dia. Esperado: proteção real registrada (impede captura/morte/rendição na cena); "Encerrar proteção" disponível. Persistido: `Character.saida_dos_fundos_ativa`. Falha: não reseta em Novo Dia/descanso longo.
+
+### Fase 14 — Droneiro (commit `99d5820`)
+
+38. **Sinal Limpo (N1)** — Prep: registrar um drone, assumir controle. Painel: TalentsTab (roster) + RollsTab (promoção). Ações: rolar Robótica ao assumir controle confirmando contexto; aplicar +1 PA a um drone ativo (1/cena). Esperado: falha limitada→sucesso limitado (automático via `getMarginPromotions`); PA do drone +1 só nesta rodada. Persistido: `Character.drones`. Ações extras: Encerrar Rodada. Esperado: PA do drone volta ao normal. Falha: bônus de PA sobrevive à troca de rodada.
+39. **Script (N2)** — Prep: drone ativado pela 1ª vez na cena. Painel: TalentsTab. Ações: definir gatilho (descrição + ação), depois "gatilho ocorreu". Esperado: ação executada sem custo de PA; reseta em Encerrar Cena. Persistido: `Character.drones[].gatilho`/`ativadoNestaCena`. Falha: gatilho sobrevive à troca de cena.
+40. **Enxame (N3)** — Prep: 2+ drones do MESMO modelo registrados. Painel: TalentsTab. Ações: parear (1/dia), tentar parear modelos diferentes. Esperado: pareamento real com modelos iguais; bloqueado com modelos diferentes. Persistido: `Character.drones[].pareamento`. Falha: permite parear modelos diferentes.
+
+### Fase 15 — Mecatrônico (commit `cee8f3b`)
+
+41. **Chave de Arranque (N1)** — Prep: registrar um robô, programar. Painel: TalentsTab + RollsTab. Ações: rolar Robótica ao programar confirmando contexto; consumir o +1 do primeiro teste. Esperado: falha limitada→sucesso limitado automático; +1 real disponível até consumido manualmente. Persistido: `Character.robos`. Falha: +1 permanece disponível após consumido.
+42. **Marcha Dupla (N2)** — Prep: robô programado. Painel: TalentsTab. Ações: ativar Marcha Dupla (1/cena). Esperado: flag real ativa; some em Encerrar Rodada. Persistido: `Character.robos[].marchaDuplaAtivaNestaRodada`. Falha: flag sobrevive à troca de rodada.
+43. **Overclock (N3)** — Prep: robô programado. Painel: TalentsTab. Ações: ativar Overclock (1/dia). Esperado: flag real ativa durante a cena; some em Encerrar Cena. Persistido: `Character.robos[].overclockAtiva`. Falha: flag sobrevive à troca de cena.
+
+### Fase 16 — Tecelão (commit `0d58325`)
+
+44. **Olho de Botão (N1)** — Prep: talento adquirido. Painel: TalentsTab. Ações: "Conectar" (iniciar Trama). Esperado: 2 níveis revelados automaticamente, registrado no log da Trama. Persistido: `Character.trama_ativa`. Falha: níveis revelados = 0 apesar do talento adquirido.
+45. **Bypass (N2)** — Prep: Trama ativa. Painel: TalentsTab. Ações: executar 1 Comando à escolha sem teste (1/sessão de Malha), informando custo de PA/RAM. Esperado: RAM reduzido de verdade, log sem pedir teste. Persistido: `Character.trama_ativa.ramAtual`, `talentos_estado`. Falha: reutilizável na mesma sessão de Malha.
+46. **Agulha Fina (N3)** — Prep: Trama ativa, Detecção NÃO acionada. Painel: TalentsTab. Ações: executar Apagar Rastros como ação livre (1/sessão de Malha); repetir com Detecção acionada. Esperado: Rastro zera sem custo de PA/RAM no primeiro caso; bloqueado no segundo. Persistido: `Character.trama_ativa.rastro`. Falha: executa mesmo com Detecção já acionada.
+
+### Transversais desta sessão
+
+47. `npm run build` limpo após cada uma das 16 fases (verificado a cada commit).
+48. `git status` sem `next-env.d.ts` sujo em nenhuma das 16 fases.
+49. Nenhum talento desta sessão foi marcado ✅ Integral — todos ficaram 🔵 "Implementado (aguardando validação manual)", exceto Sangria Lenta (infraestrutura real mas atualmente inerte, documentado) e Gambiarra Expressa (📖 Narrativo rastreado, de sessão anterior, sem mudança nesta).
+50. Checkpoint (`Contagem:` no topo deste arquivo) passou de `🔵 51 · ⚙️ 14` (início desta sessão) para `🔵 65 · ⚙️ 0` (fim da Fase 16) — todos os 66 talentos cobertos.
