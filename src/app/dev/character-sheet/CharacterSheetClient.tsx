@@ -144,6 +144,17 @@ import {
   getEnxameAvailability,
   pairDronesEnxame,
   unpairDrones,
+  hasChaveDeArranque,
+  registerRobo,
+  removeRobo,
+  programRobo,
+  consumeRoboPrimeiroTesteBonus,
+  getMarchaDuplaAvailability,
+  applyMarchaDupla,
+  expireMarchaDuplaRoundState,
+  getOverclockAvailability,
+  activateOverclock,
+  resetRoboSceneState,
   isPvGatedToggleAllowedToActivate,
   enforcePvGatedToggleDeactivation,
   hasSaqueFantasma,
@@ -2052,7 +2063,9 @@ export default function CharacterSheetClient({
     const tick = tickRoundTemporaryEffects(talentReset.character, nowIso);
     // Droneiro › Sinal Limpo (checkpoint talentos, Fase 14) — o +1 PA concedido a um drone vale só a rodada em que foi dado.
     const droneBonusExpiry = expireDroneRoundBonuses(tick.character);
-    nextCharacter = { ...droneBonusExpiry.character, current_round: round + 1 };
+    // Mecatrônico › Marcha Dupla (checkpoint talentos, Fase 15) — a ação dupla vale só a rodada em que foi ativada.
+    const marchaDuplaExpiry = expireMarchaDuplaRoundState(droneBonusExpiry.character);
+    nextCharacter = { ...marchaDuplaExpiry.character, current_round: round + 1 };
 
     characterRef.current = nextCharacter;
     setCharacter(nextCharacter);
@@ -2061,6 +2074,7 @@ export default function CharacterSheetClient({
       ...tick.ticked.map((e) => `Efeito temporário "${e.name}": ${e.remainingRounds} rodada(s) restante(s).`),
       ...tick.expired.map((e) => `Efeito temporário "${e.name}" expirou (duração por rodadas).`),
       ...droneBonusExpiry.expired.map((d) => `Sinal Limpo: +1 PA de ${d.nome} expirou no fim da rodada.`),
+      ...marchaDuplaExpiry.expired.map((r) => `Marcha Dupla: ${r.nome} volta ao normal nesta rodada.`),
     ];
     const allLogs = [...collapseResult.logs, ...resolved.logs, ...paReduction.logs, ...tempLogs];
     setEndRoundSummary({ logs: allLogs, warnings: [...collapseResult.warnings, ...resolved.warnings] });
@@ -3359,6 +3373,78 @@ export default function CharacterSheetClient({
     characterRef.current = next;
     setCharacter(next);
     addLogEntry("condicao", "Enxame: pareamento desfeito.");
+  }
+
+  /** Mecatrônico › registra um robô real sob programação (sem catálogo estruturado de robôs no conteúdo). */
+  function handleRegisterRobo(params: { nome: string; modelo: string; paMaximo: number; acaoAutonoma: string }) {
+    const current = characterRef.current;
+    const next = registerRobo(current, params);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Robô registrado: ${params.nome} (${params.modelo}).`);
+  }
+
+  function handleRemoveRobo(roboId: string) {
+    const current = characterRef.current;
+    const robo = current.robos?.find((r) => r.id === roboId);
+    if (!robo) return;
+    const next = removeRobo(current, roboId);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Robô removido: ${robo.nome}.`);
+  }
+
+  /** Mecatrônico › Chave de Arranque — programa o robô (teste de Robótica é manual, com a promoção de margem já automática). */
+  function handleProgramRobo(roboId: string, acaoAutonoma: string) {
+    const current = characterRef.current;
+    const robo = current.robos?.find((r) => r.id === roboId);
+    if (!robo) return;
+    const temChaveDeArranque = hasChaveDeArranque(current, talentsIniciais);
+    const next = programRobo(current, roboId, acaoAutonoma, temChaveDeArranque);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry(
+      "condicao",
+      `Robô programado: ${robo.nome} — autônomo: "${acaoAutonoma}".${temChaveDeArranque ? " Chave de Arranque: +1 no primeiro teste da cena disponível." : ""}`,
+    );
+  }
+
+  function handleConsumeRoboPrimeiroTesteBonus(roboId: string) {
+    const current = characterRef.current;
+    const robo = current.robos?.find((r) => r.id === roboId);
+    if (!robo?.primeiroTesteBonusDisponivel) return;
+    const next = consumeRoboPrimeiroTesteBonus(current, roboId);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("recurso", `Chave de Arranque: +1 consumido no primeiro teste de ${robo.nome} nesta cena.`);
+  }
+
+  /** Mecatrônico › Marcha Dupla — o robô mantém a ação autônoma E age duas vezes na rodada, 1x/cena. */
+  function handleApplyMarchaDupla(roboId: string) {
+    const current = characterRef.current;
+    const status = getMarchaDuplaAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedThisScene) return;
+    const robo = current.robos?.find((r) => r.id === roboId);
+    if (!robo) return;
+    const nowIso = new Date().toISOString();
+    const next = applyMarchaDupla(current, roboId, nowIso);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Marcha Dupla: ${robo.nome} mantém a ação autônoma e age duas vezes nesta rodada.`);
+  }
+
+  /** Mecatrônico › Overclock — +1 PA por rodada real no robô escolhido durante toda a cena, 1x/dia. */
+  function handleApplyOverclock(roboId: string) {
+    const current = characterRef.current;
+    const status = getOverclockAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedToday) return;
+    const robo = current.robos?.find((r) => r.id === roboId);
+    if (!robo) return;
+    const nowIso = new Date().toISOString();
+    const next = activateOverclock(current, roboId, nowIso);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("recurso", `Overclock: ${robo.nome} recebe +1 PA por rodada durante esta cena.`);
   }
 
   /** Rúnico › Gatilho Rúnico — ativa/desativa runa instalada sem PA. */
@@ -5655,6 +5741,16 @@ export default function CharacterSheetClient({
           enxameStatus={getEnxameAvailability(character, talentsIniciais)}
           onPairEnxame={handlePairEnxame}
           onUnpairEnxame={handleUnpairEnxame}
+          robos={character.robos}
+          chaveDeArranqueStatus={{ acquired: hasChaveDeArranque(character, talentsIniciais) }}
+          onRegisterRobo={handleRegisterRobo}
+          onRemoveRobo={handleRemoveRobo}
+          onProgramRobo={handleProgramRobo}
+          onConsumeRoboPrimeiroTesteBonus={handleConsumeRoboPrimeiroTesteBonus}
+          marchaDuplaStatus={getMarchaDuplaAvailability(character, talentsIniciais)}
+          onApplyMarchaDupla={handleApplyMarchaDupla}
+          overclockStatus={getOverclockAvailability(character, talentsIniciais)}
+          onApplyOverclock={handleApplyOverclock}
         />
       )}
 

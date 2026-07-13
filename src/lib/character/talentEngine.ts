@@ -2169,6 +2169,141 @@ export function resetDroneSceneState(character: Character): { character: Charact
   return { character: { ...character, drones: nextDrones }, resetCount };
 }
 
+export type RoboInstance = NonNullable<Character["robos"]>[number];
+
+// ---------------------------------------------------------------------
+// Mecatrônico — modelo mínimo de robô + Chave de Arranque (N1), Marcha
+// Dupla (N2), Overclock (N3).
+// ---------------------------------------------------------------------
+
+export function hasChaveDeArranque(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "companheiro_bonus_primeiro_teste") return true;
+    }
+  }
+  return false;
+}
+
+export function registerRobo(
+  character: Character,
+  params: { nome: string; modelo: string; paMaximo: number; acaoAutonoma: string },
+): Character {
+  const robo: RoboInstance = {
+    id: crypto.randomUUID(),
+    nome: params.nome,
+    modelo: params.modelo,
+    programador: character.nome,
+    estado: "nao_programado",
+    paAtual: params.paMaximo,
+    paMaximo: params.paMaximo,
+    acaoAutonoma: params.acaoAutonoma,
+    ordens: "",
+    primeiroTesteBonusDisponivel: false,
+    marchaDuplaAtivaNestaRodada: false,
+    overclockAtiva: false,
+  };
+  return { ...character, robos: [...(character.robos ?? []), robo] };
+}
+
+export function removeRobo(character: Character, roboId: string): Character {
+  return { ...character, robos: (character.robos ?? []).filter((r) => r.id !== roboId) };
+}
+
+/**
+ * Programa o robô (teste real de Robótica é manual — RollsTab, com a
+ * promoção de margem de Chave de Arranque já automática via
+ * `getMarginPromotions`). Concede o +1 no primeiro teste da cena real
+ * (`primeiroTesteBonusDisponivel`) quando o personagem tem o talento.
+ */
+export function programRobo(character: Character, roboId: string, acaoAutonoma: string, temChaveDeArranque: boolean): Character {
+  const robos = (character.robos ?? []).map((r) =>
+    r.id === roboId
+      ? { ...r, estado: "programado" as const, acaoAutonoma, primeiroTesteBonusDisponivel: temChaveDeArranque }
+      : r,
+  );
+  return { ...character, robos };
+}
+
+/** Consome o +1 do primeiro teste da cena (Chave de Arranque) — chamado quando o robô realmente testa algo. */
+export function consumeRoboPrimeiroTesteBonus(character: Character, roboId: string): Character {
+  const robos = (character.robos ?? []).map((r) => (r.id === roboId ? { ...r, primeiroTesteBonusDisponivel: false } : r));
+  return { ...character, robos };
+}
+
+export const MARCHA_DUPLA_USAGE_KEY = "mecatronico_marcha_dupla:cena";
+
+export function getMarchaDuplaAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisScene: boolean } {
+  let acquired = false;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "companheiro_acao_extra") acquired = true;
+    }
+  }
+  const usedThisScene = (character.talentos_estado?.usos?.[MARCHA_DUPLA_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisScene };
+}
+
+/** Ao gastar PA para ordem em tempo real: o robô mantém a ação autônoma E age duas vezes na rodada (1x/cena). */
+export function applyMarchaDupla(character: Character, roboId: string, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[MARCHA_DUPLA_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
+  const robos = (character.robos ?? []).map((r) => (r.id === roboId ? { ...r, marchaDuplaAtivaNestaRodada: true } : r));
+  return { ...character, robos, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+/** Chamado em "Encerrar Rodada" — Marcha Dupla vale só a rodada em que foi usada. */
+export function expireMarchaDuplaRoundState(character: Character): { character: Character; expired: RoboInstance[] } {
+  const expired: RoboInstance[] = [];
+  const robos = (character.robos ?? []).map((r) => {
+    if (!r.marchaDuplaAtivaNestaRodada) return r;
+    expired.push(r);
+    return { ...r, marchaDuplaAtivaNestaRodada: false };
+  });
+  if (expired.length === 0) return { character, expired };
+  return { character: { ...character, robos }, expired };
+}
+
+export const OVERCLOCK_USAGE_KEY = "mecatronico_overclock:dia";
+
+export function getOverclockAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedToday: boolean } {
+  let acquired = false;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "companheiro_pa_por_rodada") acquired = true;
+    }
+  }
+  const usedToday = (character.talentos_estado?.usos?.[OVERCLOCK_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedToday };
+}
+
+/** +1 PA por rodada real no robô escolhido durante toda a cena (1x/dia) — expira em Encerrar Cena. */
+export function activateOverclock(character: Character, roboId: string, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[OVERCLOCK_USAGE_KEY] = { usados: 1, cadencia: "dia", atualizadoEm: nowIso };
+  const robos = (character.robos ?? []).map((r) => (r.id === roboId ? { ...r, overclockAtiva: true } : r));
+  return { ...character, robos, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+/** Fim de cena — Overclock some junto com a cena que o ativou. Reaproveita `resetDroneSceneState`'s padrão. */
+export function resetRoboSceneState(character: Character): { character: Character; resetCount: number } {
+  const robos = character.robos ?? [];
+  let resetCount = 0;
+  const nextRobos = robos.map((r) => {
+    if (!r.overclockAtiva) return r;
+    resetCount += 1;
+    return { ...r, overclockAtiva: false };
+  });
+  if (resetCount === 0) return { character, resetCount };
+  return { character: { ...character, robos: nextRobos }, resetCount };
+}
+
 // ---------------------------------------------------------------------
 // Dissecador — Golpe Cirúrgico (N1): -2 na próxima ação ofensiva do alvo
 // após sucesso crítico com dano contundente corpo a corpo. A troca

@@ -30,6 +30,7 @@ import {
   expireSceneTemporaryEffects,
   resolveUltimoFolegoSceneEnd,
   resetDroneSceneState,
+  resetRoboSceneState,
   type Character,
 } from "../character";
 import { listCharactersForNarratorCampaign, updateCharacter } from "../character/storage";
@@ -139,8 +140,15 @@ export async function resolveCampaignEndSceneForCharacters(params: {
       // cena" e o gatilho definido, que são escopados à cena que está encerrando.
       const droneSceneReset = resetDroneSceneState(nextCharacter);
       nextCharacter = droneSceneReset.character;
+      // Mecatrônico › Overclock (checkpoint talentos, Fase 15) — dura "a cena", some ao encerrar.
+      const roboSceneReset = resetRoboSceneState(nextCharacter);
+      nextCharacter = roboSceneReset.character;
       const outroEstadoMudou =
-        talentReset.resetCount > 0 || sceneExpiry.expired.length > 0 || ultimoFolego.forcedToZero || droneSceneReset.resetCount > 0;
+        talentReset.resetCount > 0 ||
+        sceneExpiry.expired.length > 0 ||
+        ultimoFolego.forcedToZero ||
+        droneSceneReset.resetCount > 0 ||
+        roboSceneReset.resetCount > 0;
       if (outroEstadoMudou && !result.resolved) {
         await updateCharacter(record.id, nextCharacter);
       }

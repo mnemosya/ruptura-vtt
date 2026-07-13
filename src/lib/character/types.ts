@@ -666,6 +666,31 @@ export interface Character {
     paBonusRodadaAtiva: boolean;
   }[];
   /**
+   * Mecatrônico › modelo mínimo de robô (checkpoint talentos, Fase 15) — mesmo
+   * caso do drone: sem catálogo estruturado de robôs no conteúdo canônico (só a
+   * ficha textual de "19 MERCADO NOTURNO › DRONES E ROBÔS"), então `modelo` é
+   * texto livre. Robôs agem por iniciativa própria quando `estado="programado"`
+   * (autonomia real, diferente do drone que sempre depende de comando direto).
+   * `primeiroTesteBonusDisponivel` é o +1 de Chave de Arranque no PRIMEIRO teste
+   * da cena (consumido manualmente — não há pipeline de rolagem para robôs
+   * autônomos neste app). `marchaDuplaAtivaNestaRodada` expira em Encerrar
+   * Rodada; `overclockAtiva` expira em Encerrar Cena.
+   */
+  robos?: {
+    id: string;
+    nome: string;
+    modelo: string;
+    programador: string;
+    estado: "programado" | "nao_programado";
+    paAtual: number;
+    paMaximo: number;
+    acaoAutonoma: string;
+    ordens: string;
+    primeiroTesteBonusDisponivel: boolean;
+    marchaDuplaAtivaNestaRodada: boolean;
+    overclockAtiva: boolean;
+  }[];
+  /**
    * Sorrateiro › estado real de Furtividade (checkpoint talentos, Fase 3)
    * — entrada/saída manual (narrativa, sem teste estruturado próprio para
    * "entrar"; testes de Furtividade em si usam a perícia normalmente,

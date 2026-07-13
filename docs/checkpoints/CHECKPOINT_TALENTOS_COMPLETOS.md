@@ -62,7 +62,7 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 59 · 🟡 0 · ⚙️ 6 · 📖 1.
+Contagem: ✅ 0 · 🔵 62 · 🟡 0 · ⚙️ 3 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -102,9 +102,9 @@ Contagem: ✅ 0 · 🔵 59 · 🟡 0 · ⚙️ 6 · 📖 1.
 | Manipulador | Olhar Penetrante | 1 | 🔵 Implementado (aguardando validação manual) |
 | Manipulador | Entrelinhas | 2 | 🔵 Implementado (aguardando validação manual) |
 | Manipulador | Puxar os Fios | 3 | 🔵 Implementado (aguardando validação manual) |
-| Mecatrônico | Chave de Arranque | 1 | ⚙️ Infra pendente |
-| Mecatrônico | Marcha Dupla | 2 | ⚙️ Infra pendente |
-| Mecatrônico | Overclock | 3 | ⚙️ Infra pendente |
+| Mecatrônico | Chave de Arranque | 1 | 🔵 Implementado (aguardando validação manual) |
+| Mecatrônico | Marcha Dupla | 2 | 🔵 Implementado (aguardando validação manual) |
+| Mecatrônico | Overclock | 3 | 🔵 Implementado (aguardando validação manual) |
 | Mercador | Garimpo de Rua | 1 | 🔵 Implementado (aguardando validação manual) |
 | Mercador | Caderneta de Dívida | 2 | 🔵 Implementado (aguardando validação manual) |
 | Mercador | Rede de Favores | 3 | 🔵 Implementado (aguardando validação manual) |
@@ -577,9 +577,9 @@ abaixo está **aguardando confirmação do usuário via teste manual** — nenhu
 | Manipulador | Olhar Penetrante | 🔵 Implementado | Falha limitada → sucesso limitado em Influência/Psicologia, com confirmação de contexto obrigatória | `talentEngine.ts`, `RollsTab.tsx` | Nenhum (promoção por rolagem) | Rolar Influência/Psicologia com CD, confirmar contexto certo → promoção aplica; testar SEM marcar a confirmação → promoção NÃO aplica | Aguardando usuário |
 | Manipulador | Entrelinhas | 🔵 Implementado | +2 real no próximo teste de Influência do próprio caster contra a criatura marcada, 1/cena | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx`, `RollsTab.tsx` | `Character.entrelinhas_ativo` (caster) | Registrar descoberta contra uma criatura → rolar Influência confirmando o alvo → confirmar +2 somado e vulnerabilidade consumida | Aguardando usuário |
 | Manipulador | Puxar os Fios | 🔵 Implementado | Registra abertura social real (1 de 5), 1/cena, exige Entrelinhas ativo na mesma criatura | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.talentos_estado` (caster) | Sem Entrelinhas ativo → confirmar bloqueado; com Entrelinhas ativo → confirmar sucesso → escolher abertura → confirmar registrado | Aguardando usuário |
-| Mecatrônico | Chave de Arranque | ⚙️ Infra pendente | Nenhum (sem modelo de robô) | — | — | N/A | — |
-| Mecatrônico | Marcha Dupla | ⚙️ Infra pendente | Nenhum (sem modelo de robô) | — | — | N/A | — |
-| Mecatrônico | Overclock | ⚙️ Infra pendente | Nenhum (sem modelo de robô) | — | — | N/A | — |
+| Mecatrônico | Chave de Arranque | 🔵 Implementado | Promoção de margem falha_limitada→sucesso_limitado em Robótica ao programar (já automática via `getMarginPromotions`); robô programado ganha +1 real no primeiro teste da cena, consumido manualmente (sem pipeline de rolagem para robôs autônomos) | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx`, `RollsTab.tsx` | `Character.robos` | Rolar Robótica ao programar, confirmar contexto → falha limitada vira sucesso limitado; programar um robô → confirmar +1 disponível; "Consumir +1" → confirmar flag desliga | Aguardando usuário |
+| Mecatrônico | Marcha Dupla | 🔵 Implementado | Ativa real no robô programado escolhido: mantém a ação autônoma E age duas vezes na rodada, 1x/cena; expira em Encerrar Rodada | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.robos[].marchaDuplaAtivaNestaRodada`, `talentos_estado` | Programar um robô → ativar Marcha Dupla → confirmar flag ativa; Encerrar Rodada → confirmar flag desliga; repetir na mesma cena → confirmar bloqueado | Aguardando usuário |
+| Mecatrônico | Overclock | 🔵 Implementado | +1 PA por rodada real no robô programado escolhido durante toda a cena, 1x/dia; expira em Encerrar Cena | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx`, `endScene.ts` | `Character.robos[].overclockAtiva`, `talentos_estado` | Programar um robô → ativar Overclock → confirmar flag ativa; Encerrar Cena → confirmar flag desliga; repetir no mesmo dia → confirmar bloqueado | Aguardando usuário |
 | Mercador | Garimpo de Rua | 🔵 Implementado | −20% real em TODOS os preços da Loja enquanto ativo, 1/dia | `talentEngine.ts`, `InventoryTab.tsx` | `Character.talentos_estado` | Ativar desconto → confirmar preços da loja caem 20% → confirmar reset em Novo Dia/descanso longo | Aguardando usuário |
 | Mercador | Caderneta de Dívida | 🔵 Implementado | Compra fiada real (`purchaseItem` com `permitirSaldoInsuficiente`) até raridade "raro"; saldo insuficiente vira dívida persistida (fornecedor, item, pago, devido), 1/sessão | `inventory.ts`, `talentEngine.ts`, `CharacterSheetClient.tsx`, `InventoryTab.tsx` | `Character.dividas_mercador`, `talentos_estado` | Escolher item até raridade Raro, informar fornecedor, "Comprar fiado" com saldo insuficiente → confirmar item recebido, carteira a 0, dívida registrada com saldo devido correto; item Muito Raro → confirmar botão não aparece; repetir na mesma sessão → confirmar bloqueado; "Marcar quitada" → confirmar dívida marcada | Aguardando usuário |
 | Mercador | Rede de Favores | 🔵 Implementado | Recruta PN aliado temporário real (nome, papel, pagamento, duração, notas), 1/sessão; uso não é reembolsado ao encerrar | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.rede_de_favores_ativa`, `talentos_estado` | Preencher formulário e recrutar → confirmar vínculo ativo exibido; "Encerrar vínculo" → confirmar `ativo=false`; tentar recrutar de novo na mesma sessão → confirmar bloqueado (mesmo já encerrado) | Aguardando usuário |

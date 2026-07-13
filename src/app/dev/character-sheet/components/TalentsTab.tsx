@@ -147,6 +147,16 @@ export function TalentsTab({
   enxameStatus,
   onPairEnxame,
   onUnpairEnxame,
+  robos = [],
+  chaveDeArranqueStatus,
+  onRegisterRobo,
+  onRemoveRobo,
+  onProgramRobo,
+  onConsumeRoboPrimeiroTesteBonus,
+  marchaDuplaStatus,
+  onApplyMarchaDupla,
+  overclockStatus,
+  onApplyOverclock,
 }: {
   talents: TalentContent[];
   catalogError: string | null;
@@ -252,6 +262,17 @@ export function TalentsTab({
   enxameStatus?: { acquired: boolean; usedToday: boolean; maxUnidades: number };
   onPairEnxame?: (droneIds: string[], modo: "pareada" | "independente") => void;
   onUnpairEnxame?: (grupoId: string) => void;
+  /** Mecatrônico › modelo mínimo de robô + Chave de Arranque/Marcha Dupla/Overclock (checkpoint talentos, Fase 15). */
+  robos?: NonNullable<Character["robos"]>;
+  chaveDeArranqueStatus?: { acquired: boolean };
+  onRegisterRobo?: (params: { nome: string; modelo: string; paMaximo: number; acaoAutonoma: string }) => void;
+  onRemoveRobo?: (roboId: string) => void;
+  onProgramRobo?: (roboId: string, acaoAutonoma: string) => void;
+  onConsumeRoboPrimeiroTesteBonus?: (roboId: string) => void;
+  marchaDuplaStatus?: { acquired: boolean; usedThisScene: boolean };
+  onApplyMarchaDupla?: (roboId: string) => void;
+  overclockStatus?: { acquired: boolean; usedToday: boolean };
+  onApplyOverclock?: (roboId: string) => void;
 }) {
   const [filter, setFilter] = useState<FilterKey>("todos");
 
@@ -511,6 +532,24 @@ export function TalentsTab({
 
                         {acquiredEntry && nivel.slug === "droneiro_enxame" && enxameStatus?.acquired && (
                           <EnxameWidget drones={drones} status={enxameStatus} onPair={onPairEnxame} onUnpair={onUnpairEnxame} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "mecatronico_chave_de_arranque" && chaveDeArranqueStatus?.acquired && (
+                          <RoboRosterWidget
+                            robos={robos}
+                            onRegisterRobo={onRegisterRobo}
+                            onRemoveRobo={onRemoveRobo}
+                            onProgramRobo={onProgramRobo}
+                            onConsumePrimeiroTesteBonus={onConsumeRoboPrimeiroTesteBonus}
+                          />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "mecatronico_marcha_dupla" && marchaDuplaStatus?.acquired && (
+                          <MarchaDuplaWidget robosProgramados={robos.filter((r) => r.estado === "programado")} status={marchaDuplaStatus} onApply={onApplyMarchaDupla} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "mecatronico_overclock" && overclockStatus?.acquired && (
+                          <OverclockWidget robosProgramados={robos.filter((r) => r.estado === "programado")} status={overclockStatus} onApply={onApplyOverclock} />
                         )}
 
                         {acquiredEntry && nivel.slug === "sorrateiro_passo_fantasma" && (
@@ -1826,6 +1865,171 @@ function EnxameWidget({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+type RoboInstance = NonNullable<Character["robos"]>[number];
+
+function RoboRosterWidget({
+  robos,
+  onRegisterRobo,
+  onRemoveRobo,
+  onProgramRobo,
+  onConsumePrimeiroTesteBonus,
+}: {
+  robos: RoboInstance[];
+  onRegisterRobo?: (params: { nome: string; modelo: string; paMaximo: number; acaoAutonoma: string }) => void;
+  onRemoveRobo?: (roboId: string) => void;
+  onProgramRobo?: (roboId: string, acaoAutonoma: string) => void;
+  onConsumePrimeiroTesteBonus?: (roboId: string) => void;
+}) {
+  const [nome, setNome] = useState("");
+  const [modelo, setModelo] = useState("");
+  const [paMaximo, setPaMaximo] = useState(3);
+  const [acaoAutonoma, setAcaoAutonoma] = useState<Record<string, string>>({});
+
+  return (
+    <div data-testid="robo-roster-widget" style={widgetBox}>
+      <span style={{ opacity: 0.7 }}>
+        Robôs sob programação (registro manual — sem catálogo estruturado de robôs no conteúdo; use a ficha do modelo em "Drones e Robôs" para PA/atributos):
+      </span>
+      {robos.length === 0 && <span style={{ opacity: 0.5 }}>Nenhum robô registrado.</span>}
+      {robos.map((r) => (
+        <div key={r.id} data-testid={`robo-${r.id}`} style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ color: r.estado === "programado" ? "#4caf50" : undefined }}>
+            {r.nome} ({r.modelo}) — {r.estado} — PA {r.paAtual}/{r.paMaximo}
+            {r.overclockAtiva ? " — Overclock ativo (+1 PA/rodada)" : ""}
+            {r.primeiroTesteBonusDisponivel ? " — +1 no 1º teste disponível" : ""}
+          </span>
+          {r.estado !== "programado" ? (
+            <>
+              <input data-testid={`robo-acao-autonoma-${r.id}`} placeholder="ação autônoma programada" value={acaoAutonoma[r.id] ?? ""} onChange={(e) => setAcaoAutonoma((p) => ({ ...p, [r.id]: e.target.value }))} style={{ ...widgetInput, width: 160 }} />
+              <button
+                data-testid={`robo-programar-${r.id}`}
+                disabled={!acaoAutonoma[r.id]?.trim()}
+                onClick={() => onProgramRobo?.(r.id, acaoAutonoma[r.id]!.trim())}
+                style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !acaoAutonoma[r.id]?.trim() ? 0.5 : 1 }}
+              >
+                Programar
+              </button>
+            </>
+          ) : (
+            <span style={{ opacity: 0.6 }}>autônomo: {r.acaoAutonoma}</span>
+          )}
+          {r.primeiroTesteBonusDisponivel && (
+            <button data-testid={`robo-consumir-bonus-${r.id}`} onClick={() => onConsumePrimeiroTesteBonus?.(r.id)} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}>
+              Consumir +1 (1º teste da cena)
+            </button>
+          )}
+          <button data-testid={`robo-remover-${r.id}`} onClick={() => onRemoveRobo?.(r.id)} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}>
+            Remover
+          </button>
+        </div>
+      ))}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <input data-testid="robo-nome" placeholder="nome do robô" value={nome} onChange={(e) => setNome(e.target.value)} style={{ ...widgetInput, width: 110 }} />
+        <input data-testid="robo-modelo" placeholder="modelo (ex.: Combate)" value={modelo} onChange={(e) => setModelo(e.target.value)} style={{ ...widgetInput, width: 110 }} />
+        <input data-testid="robo-pa-maximo" type="number" min={1} placeholder="PA máx." value={paMaximo} onChange={(e) => setPaMaximo(Math.max(1, Number(e.target.value)))} style={{ ...widgetInput, width: 70 }} />
+        <button
+          data-testid="robo-registrar"
+          disabled={!nome.trim() || !modelo.trim()}
+          onClick={() => {
+            onRegisterRobo?.({ nome: nome.trim(), modelo: modelo.trim(), paMaximo, acaoAutonoma: "" });
+            setNome("");
+            setModelo("");
+          }}
+          style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !nome.trim() || !modelo.trim() ? 0.5 : 1 }}
+        >
+          Registrar robô
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MarchaDuplaWidget({
+  robosProgramados,
+  status,
+  onApply,
+}: {
+  robosProgramados: RoboInstance[];
+  status: { acquired: boolean; usedThisScene: boolean };
+  onApply?: (roboId: string) => void;
+}) {
+  const [roboId, setRoboId] = useState("");
+
+  if (status.usedThisScene) {
+    return <div data-testid="marcha-dupla-widget" style={{ ...widgetBox, opacity: 0.6 }}>Marcha Dupla já usada nesta cena.</div>;
+  }
+  if (robosProgramados.length === 0) {
+    return <div data-testid="marcha-dupla-widget" style={{ ...widgetBox, opacity: 0.6 }}>Programe um robô para usar Marcha Dupla.</div>;
+  }
+  return (
+    <div data-testid="marcha-dupla-widget" style={widgetBox}>
+      <span style={{ opacity: 0.7 }}>Ao gastar PA para ordem em tempo real: o robô mantém a ação autônoma E age duas vezes na rodada (1/cena):</span>
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <select data-testid="marcha-dupla-robo-select" value={roboId} onChange={(e) => setRoboId(e.target.value)} style={widgetInput}>
+          <option value="">Escolha um robô programado</option>
+          {robosProgramados.map((r) => (
+            <option key={r.id} value={r.id}>{r.nome}</option>
+          ))}
+        </select>
+        <button
+          data-testid="marcha-dupla-aplicar"
+          disabled={!roboId}
+          onClick={() => {
+            onApply?.(roboId);
+            setRoboId("");
+          }}
+          style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !roboId ? 0.5 : 1 }}
+        >
+          Ativar Marcha Dupla nesta rodada
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function OverclockWidget({
+  robosProgramados,
+  status,
+  onApply,
+}: {
+  robosProgramados: RoboInstance[];
+  status: { acquired: boolean; usedToday: boolean };
+  onApply?: (roboId: string) => void;
+}) {
+  const [roboId, setRoboId] = useState("");
+
+  if (status.usedToday) {
+    return <div data-testid="overclock-widget" style={{ ...widgetBox, opacity: 0.6 }}>Overclock já usado hoje (reseta em Novo Dia/descanso longo).</div>;
+  }
+  if (robosProgramados.length === 0) {
+    return <div data-testid="overclock-widget" style={{ ...widgetBox, opacity: 0.6 }}>Programe um robô para usar Overclock.</div>;
+  }
+  return (
+    <div data-testid="overclock-widget" style={widgetBox}>
+      <span style={{ opacity: 0.7 }}>Escolha um robô programado: +1 PA por rodada durante toda a cena (1/dia):</span>
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <select data-testid="overclock-robo-select" value={roboId} onChange={(e) => setRoboId(e.target.value)} style={widgetInput}>
+          <option value="">Escolha um robô programado</option>
+          {robosProgramados.map((r) => (
+            <option key={r.id} value={r.id}>{r.nome}</option>
+          ))}
+        </select>
+        <button
+          data-testid="overclock-aplicar"
+          disabled={!roboId}
+          onClick={() => {
+            onApply?.(roboId);
+            setRoboId("");
+          }}
+          style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !roboId ? 0.5 : 1 }}
+        >
+          Ativar Overclock
+        </button>
+      </div>
     </div>
   );
 }
