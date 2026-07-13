@@ -1830,6 +1830,82 @@ export function activateGarimpoDeRua(character: Character, nowIso: string): Char
 }
 
 // ---------------------------------------------------------------------
+// Mercador — Caderneta de Dívida (N2): 1x/sessão, garante a compra de um
+// item até raridade Raro mesmo com saldo insuficiente; o restante vira
+// dívida com o fornecedor (`Character.dividas_mercador`). Ordem canônica
+// de raridade (docs/fontes "19 MERCADO NOTURNO" › RARIDADE, do mais ao
+// menos comum): muito_comum < comum < incomum < raro < muito_raro —
+// "raridade_maxima: raro" do payload bloqueia apenas muito_raro.
+// ---------------------------------------------------------------------
+
+export const CADERNETA_DE_DIVIDA_USAGE_KEY = "mercador_caderneta_de_divida:sessao";
+
+const RARIDADE_ORDEM = ["muito_comum", "comum", "incomum", "raro", "muito_raro"] as const;
+
+/** true se `raridade` está dentro do limite `raridadeMaxima` na escala canônica; raridade desconhecida/ausente nunca é bloqueada (sem dado suficiente para negar). */
+export function isRaridadeDentroDoLimite(raridade: string | undefined, raridadeMaxima: string): boolean {
+  if (!raridade) return true;
+  const idxAtual = RARIDADE_ORDEM.indexOf(raridade as (typeof RARIDADE_ORDEM)[number]);
+  const idxMax = RARIDADE_ORDEM.indexOf(raridadeMaxima as (typeof RARIDADE_ORDEM)[number]);
+  if (idxAtual === -1 || idxMax === -1) return true;
+  return idxAtual <= idxMax;
+}
+
+export function getCadernetaDeDividaAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisSession: boolean; raridadeMaxima: string } {
+  let acquired = false;
+  let raridadeMaxima = "raro";
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "compra_fiada") continue;
+      acquired = true;
+      if (typeof efeito.raridade_maxima === "string") raridadeMaxima = efeito.raridade_maxima;
+    }
+  }
+  const usedThisSession = (character.talentos_estado?.usos?.[CADERNETA_DE_DIVIDA_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisSession, raridadeMaxima };
+}
+
+export function markCadernetaDeDividaUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[CADERNETA_DE_DIVIDA_USAGE_KEY] = { usados: 1, cadencia: "sessao", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
+// Mercador — Rede de Favores (N3): 1x/sessão, recruta um PN como aliado
+// temporário em troca de favor/promessa/pagamento simbólico. O uso NÃO é
+// reembolsado ao encerrar o vínculo (regra explícita do payload).
+// ---------------------------------------------------------------------
+
+export const REDE_DE_FAVORES_USAGE_KEY = "mercador_rede_de_favores:sessao";
+
+export function getRedeDeFavoresAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisSession: boolean; opcoesPagamento: string[] } {
+  let acquired = false;
+  let opcoesPagamento: string[] = [];
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "recrutar_pn_aliado_temporario") continue;
+      acquired = true;
+      if (Array.isArray(efeito.pagamento)) opcoesPagamento = efeito.pagamento.filter((p): p is string => typeof p === "string");
+    }
+  }
+  const usedThisSession = (character.talentos_estado?.usos?.[REDE_DE_FAVORES_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisSession, opcoesPagamento };
+}
+
+export function markRedeDeFavoresUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[REDE_DE_FAVORES_USAGE_KEY] = { usados: 1, cadencia: "sessao", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
 // Dissecador — Golpe Cirúrgico (N1): -2 na próxima ação ofensiva do alvo
 // após sucesso crítico com dano contundente corpo a corpo. A troca
 // Corpo→Mente do mesmo nível (`familia: "troca_atributo"`) não precisa de

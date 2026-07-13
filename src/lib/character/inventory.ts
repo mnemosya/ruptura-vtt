@@ -863,6 +863,9 @@ export interface PurchaseItemResult {
   walletBefore?: number;
   walletAfter?: number;
   instance?: InventoryItemInstance;
+  /** Mercador › Caderneta de Dívida (checkpoint talentos, Fase 12) — quanto foi pago de fato e quanto ficou devendo, só presente quando `permitirSaldoInsuficiente` foi usado. */
+  valorPago?: number;
+  saldoDevido?: number;
 }
 
 /**
@@ -885,6 +888,8 @@ export function purchaseItem(params: {
    * cai num fallback humanizado do slug (ex.: "mun_pistola" → "Mun pistola").
    */
   catalog?: ItemContent[];
+  /** Mercador › Caderneta de Dívida (checkpoint talentos, Fase 12) — permite concluir a compra mesmo com saldo insuficiente; a carteira cai a 0 e o restante vira `saldoDevido` no resultado (o CHAMADOR persiste a dívida — esta função só resolve a compra em si). */
+  permitirSaldoInsuficiente?: boolean;
 }): PurchaseItemResult {
   const { character, item, walletId, nowIso } = params;
 
@@ -902,7 +907,7 @@ export function purchaseItem(params: {
   const carteira: Wallet = character.carteira ?? { aretz_informal: 0, cdi: 0, cdi_craqueada: 0 };
   const saldoAtual = carteira[walletId];
 
-  if (totalCost > saldoAtual) {
+  if (totalCost > saldoAtual && !params.permitirSaldoInsuficiente) {
     return {
       character,
       ok: false,
@@ -913,7 +918,9 @@ export function purchaseItem(params: {
     };
   }
 
-  const walletAfter = saldoAtual - totalCost;
+  const walletAfter = params.permitirSaldoInsuficiente ? Math.max(0, saldoAtual - totalCost) : saldoAtual - totalCost;
+  const valorPago = params.permitirSaldoInsuficiente ? Math.min(saldoAtual, totalCost) : totalCost;
+  const saldoDevido = params.permitirSaldoInsuficiente ? Math.max(0, totalCost - saldoAtual) : 0;
 
   // Aljava: item solo, não empilhável por quantidade (cada unidade
   // comprada é uma Aljava PRÓPRIA e independente — nunca uma instância
@@ -935,6 +942,8 @@ export function purchaseItem(params: {
       walletBefore: saldoAtual,
       walletAfter,
       instance: novasInstancias[novasInstancias.length - 1],
+      valorPago,
+      saldoDevido,
     };
   }
 
@@ -1107,7 +1116,7 @@ export function purchaseItem(params: {
     }
   }
 
-  return { character: nextCharacterBase, ok: true, totalCost, walletBefore: saldoAtual, walletAfter, instance };
+  return { character: nextCharacterBase, ok: true, totalCost, walletBefore: saldoAtual, walletAfter, instance, valorPago, saldoDevido };
 }
 
 // ---------------------------------------------------------------------

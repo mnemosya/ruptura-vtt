@@ -17,6 +17,7 @@ import type {
   TalentLevelContent,
   UsableTalentEffect,
   TalentContextualOpportunity,
+  Character,
 } from "../../../../lib/character";
 
 /**
@@ -119,6 +120,10 @@ export function TalentsTab({
   espetaculoMortalStatus,
   espetaculoMortalArmasDisponiveis = [],
   onEspetaculoMortal,
+  redeDeFavoresAtiva,
+  redeDeFavoresStatus,
+  onRegisterRedeDeFavores,
+  onEndRedeDeFavores,
 }: {
   talents: TalentContent[];
   catalogError: string | null;
@@ -192,6 +197,11 @@ export function TalentsTab({
   espetaculoMortalStatus?: { acquired: boolean; usedThisScene: boolean; armasNecessarias: number };
   espetaculoMortalArmasDisponiveis?: { id: string; nome: string }[];
   onEspetaculoMortal?: (selectedInstanceIds: string[], opcao: "convergencia" | "dispersao") => void;
+  /** Mercador › Rede de Favores (checkpoint talentos, Fase 12) — PN aliado temporário recrutado, 1/sessão. */
+  redeDeFavoresAtiva?: Character["rede_de_favores_ativa"] | null;
+  redeDeFavoresStatus?: { acquired: boolean; usedThisSession: boolean; opcoesPagamento: string[] };
+  onRegisterRedeDeFavores?: (params: { nomePn: string; papel: string; tipoPagamento: "favor" | "promessa" | "pagamento_simbolico"; duracao: string; notas: string }) => void;
+  onEndRedeDeFavores?: () => void;
 }) {
   const [filter, setFilter] = useState<FilterKey>("todos");
 
@@ -399,6 +409,15 @@ export function TalentsTab({
                             status={espetaculoMortalStatus}
                             armasDisponiveis={espetaculoMortalArmasDisponiveis}
                             onConfirm={onEspetaculoMortal}
+                          />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "mercador_rede_de_favores" && redeDeFavoresStatus?.acquired && (
+                          <RedeDeFavoresWidget
+                            ativa={redeDeFavoresAtiva ?? null}
+                            status={redeDeFavoresStatus}
+                            onRegister={onRegisterRedeDeFavores}
+                            onEnd={onEndRedeDeFavores}
                           />
                         )}
 
@@ -1261,6 +1280,74 @@ function EspetaculoMortalWidget({
           style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
         >
           Ativar sequência (consome as armas, 1/cena)
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const PAGAMENTO_LABEL: Record<string, string> = {
+  favores: "Favor",
+  promessas: "Promessa",
+  pagamento_simbolico: "Pagamento simbólico",
+};
+
+function RedeDeFavoresWidget({
+  ativa,
+  status,
+  onRegister,
+  onEnd,
+}: {
+  ativa: Character["rede_de_favores_ativa"] | null;
+  status: { acquired: boolean; usedThisSession: boolean; opcoesPagamento: string[] };
+  onRegister?: (params: { nomePn: string; papel: string; tipoPagamento: "favor" | "promessa" | "pagamento_simbolico"; duracao: string; notas: string }) => void;
+  onEnd?: () => void;
+}) {
+  const [nomePn, setNomePn] = useState("");
+  const [papel, setPapel] = useState("");
+  const [tipoPagamento, setTipoPagamento] = useState<"favor" | "promessa" | "pagamento_simbolico">("favor");
+  const [duracao, setDuracao] = useState("");
+  const [notas, setNotas] = useState("");
+
+  if (ativa?.ativo) {
+    return (
+      <div data-testid="rede-de-favores-ativa" style={widgetBox}>
+        <span style={{ color: "#4caf50" }}>✦ Aliado recrutado</span> — {ativa.nomePn} ({ativa.papel}), pago com {PAGAMENTO_LABEL[ativa.tipoPagamento] ?? ativa.tipoPagamento}
+        {ativa.duracao ? ` (duração: ${ativa.duracao})` : ""}
+        {ativa.notas ? ` — ${ativa.notas}` : ""}
+        <button data-testid="rede-de-favores-encerrar" onClick={onEnd} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", alignSelf: "flex-start" }}>
+          Encerrar vínculo
+        </button>
+      </div>
+    );
+  }
+  if (status.usedThisSession) {
+    return (
+      <div data-testid="rede-de-favores-indisponivel" style={{ ...widgetBox, opacity: 0.6 }}>
+        Rede de Favores já usada nesta sessão — o uso não é reembolsado ao encerrar (reset manual do narrador na próxima sessão).
+      </div>
+    );
+  }
+  return (
+    <div data-testid="rede-de-favores-formulario" style={widgetBox}>
+      <span style={{ opacity: 0.7 }}>1/sessão · recruta um PN como aliado temporário:</span>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <input data-testid="rede-de-favores-nome" placeholder="nome do PN" value={nomePn} onChange={(e) => setNomePn(e.target.value)} style={{ ...widgetInput, width: 130 }} />
+        <input data-testid="rede-de-favores-papel" placeholder="papel/função" value={papel} onChange={(e) => setPapel(e.target.value)} style={{ ...widgetInput, width: 130 }} />
+        <select data-testid="rede-de-favores-pagamento" value={tipoPagamento} onChange={(e) => setTipoPagamento(e.target.value as typeof tipoPagamento)} style={widgetInput}>
+          <option value="favor">Favor</option>
+          <option value="promessa">Promessa</option>
+          <option value="pagamento_simbolico">Pagamento simbólico</option>
+        </select>
+        <input data-testid="rede-de-favores-duracao" placeholder="duração (opcional)" value={duracao} onChange={(e) => setDuracao(e.target.value)} style={{ ...widgetInput, width: 110 }} />
+        <input data-testid="rede-de-favores-notas" placeholder="notas" value={notas} onChange={(e) => setNotas(e.target.value)} style={{ ...widgetInput, width: 160 }} />
+        <button
+          data-testid="rede-de-favores-registrar"
+          disabled={!nomePn.trim() || !papel.trim()}
+          onClick={() => onRegister?.({ nomePn: nomePn.trim(), papel: papel.trim(), tipoPagamento, duracao, notas })}
+          style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !nomePn.trim() || !papel.trim() ? 0.5 : 1 }}
+        >
+          Recrutar aliado
         </button>
       </div>
     </div>

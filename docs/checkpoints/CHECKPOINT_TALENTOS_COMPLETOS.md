@@ -62,7 +62,7 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 51 · 🟡 0 · ⚙️ 14 · 📖 1.
+Contagem: ✅ 0 · 🔵 53 · 🟡 0 · ⚙️ 12 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -106,8 +106,8 @@ Contagem: ✅ 0 · 🔵 51 · 🟡 0 · ⚙️ 14 · 📖 1.
 | Mecatrônico | Marcha Dupla | 2 | ⚙️ Infra pendente |
 | Mecatrônico | Overclock | 3 | ⚙️ Infra pendente |
 | Mercador | Garimpo de Rua | 1 | 🔵 Implementado (aguardando validação manual) |
-| Mercador | Caderneta de Dívida | 2 | ⚙️ Infra pendente |
-| Mercador | Rede de Favores | 3 | ⚙️ Infra pendente |
+| Mercador | Caderneta de Dívida | 2 | 🔵 Implementado (aguardando validação manual) |
+| Mercador | Rede de Favores | 3 | 🔵 Implementado (aguardando validação manual) |
 | Paramédico | Pronto-socorro | 1 | 🔵 Implementado (aguardando validação manual) |
 | Paramédico | Ritmo de Campo | 2 | 🔵 Implementado (aguardando validação manual) |
 | Paramédico | Protocolo de Emergência | 3 | 🔵 Implementado (aguardando validação manual) |
@@ -502,8 +502,8 @@ marcados como operacionais e alteram o fluxo aplicável.
 | Mecatrônico | Marcha Dupla | 2 | Atividade própria |
 | Mecatrônico | Overclock | 3 | Atividade própria |
 | Mercador | Garimpo de Rua | 1 | Atividade própria |
-| Mercador | Caderneta de Dívida | 2 | Narrativo rastreado |
-| Mercador | Rede de Favores | 3 | Narrativo rastreado |
+| Mercador | Caderneta de Dívida | 2 | Atividade própria |
+| Mercador | Rede de Favores | 3 | Atividade própria |
 | Paramédico | Pronto-socorro | 1 | Atividade própria |
 | Paramédico | Ritmo de Campo | 2 | Automático |
 | Paramédico | Protocolo de Emergência | 3 | Contextual |
@@ -581,8 +581,8 @@ abaixo está **aguardando confirmação do usuário via teste manual** — nenhu
 | Mecatrônico | Marcha Dupla | ⚙️ Infra pendente | Nenhum (sem modelo de robô) | — | — | N/A | — |
 | Mecatrônico | Overclock | ⚙️ Infra pendente | Nenhum (sem modelo de robô) | — | — | N/A | — |
 | Mercador | Garimpo de Rua | 🔵 Implementado | −20% real em TODOS os preços da Loja enquanto ativo, 1/dia | `talentEngine.ts`, `InventoryTab.tsx` | `Character.talentos_estado` | Ativar desconto → confirmar preços da loja caem 20% → confirmar reset em Novo Dia/descanso longo | Aguardando usuário |
-| Mercador | Caderneta de Dívida | ⚙️ Infra pendente | Nenhum (sem modelo de dívida) | — | — | N/A | — |
-| Mercador | Rede de Favores | ⚙️ Infra pendente | Nenhum (infra genérica só) | — | — | N/A | — |
+| Mercador | Caderneta de Dívida | 🔵 Implementado | Compra fiada real (`purchaseItem` com `permitirSaldoInsuficiente`) até raridade "raro"; saldo insuficiente vira dívida persistida (fornecedor, item, pago, devido), 1/sessão | `inventory.ts`, `talentEngine.ts`, `CharacterSheetClient.tsx`, `InventoryTab.tsx` | `Character.dividas_mercador`, `talentos_estado` | Escolher item até raridade Raro, informar fornecedor, "Comprar fiado" com saldo insuficiente → confirmar item recebido, carteira a 0, dívida registrada com saldo devido correto; item Muito Raro → confirmar botão não aparece; repetir na mesma sessão → confirmar bloqueado; "Marcar quitada" → confirmar dívida marcada | Aguardando usuário |
+| Mercador | Rede de Favores | 🔵 Implementado | Recruta PN aliado temporário real (nome, papel, pagamento, duração, notas), 1/sessão; uso não é reembolsado ao encerrar | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.rede_de_favores_ativa`, `talentos_estado` | Preencher formulário e recrutar → confirmar vínculo ativo exibido; "Encerrar vínculo" → confirmar `ativo=false`; tentar recrutar de novo na mesma sessão → confirmar bloqueado (mesmo já encerrado) | Aguardando usuário |
 | Paramédico | Pronto-socorro | 🔵 Implementado | Estabiliza aliado ativo a 1 PV real, sem teste/custo, encerra colapso pela cura canônica; +1 PA opcional se ainda não agiu; 1/cena | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.recursos_atuais`/`colapso` (aliado), `talentos_estado` (caster) | Aliado a 0 PV → estabilizar → confirmar PV=1, colapso/Inconsciente encerrados, PA opcional aplicado; repetir na mesma cena → confirmar bloqueado | Aguardando usuário |
 | Paramédico | Ritmo de Campo | 🔵 Implementado | -1 PA real (mín. respeitado) em ação do Console/item/magia de cura, "armado" por confirmação manual (sem tag "cura" estruturada no catálogo — blocker documentado resolvido por decisão do checkpoint) | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.estado_jogo.pa_gastos` | Armar Ritmo de Campo → usar item/ação/magia de cura → confirmar PA reduzido em 1 e armado desliga sozinho | Aguardando usuário |
 | Paramédico | Protocolo de Emergência | 🔵 Implementado | Gasta 1 Reação real do caster, 1/cena; se o aliado está a 0 PV no momento da confirmação, PV vira 1 e colapso é encerrado pela cura canônica | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.estado_jogo` (caster), `recursos_atuais`/`colapso` (aliado), `talentos_estado` | Aliado a 0 PV → confirmar Protocolo → confirmar Reação do caster consumida e aliado com PV=1; repetir na mesma cena → confirmar bloqueado | Aguardando usuário |

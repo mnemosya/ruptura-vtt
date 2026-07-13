@@ -27,6 +27,7 @@ import {
   canSplitInstanceQuantity,
   hasSobregravacaoAccess,
   getSlotsRunaMaxEfetivo,
+  isRaridadeDentroDoLimite,
   type Character,
   type ItemContent,
   type InventoryItemInstance,
@@ -112,6 +113,10 @@ export function InventoryTab({
   onConfirmSobregravacaoTest,
   garimpoDeRuaStatus,
   onActivateGarimpoDeRua,
+  cadernetaDeDividaStatus,
+  onBuyFiado,
+  dividasMercador = [],
+  onQuitarDivida,
 }: {
   items: ItemContent[];
   catalogError: string | null;
@@ -198,12 +203,22 @@ export function InventoryTab({
   /** Mercador › Garimpo de Rua (checkpoint talentos, Fase 8). */
   garimpoDeRuaStatus?: { acquired: boolean; percentual: number; ativoHoje: boolean };
   onActivateGarimpoDeRua?: () => void;
+  /** Mercador › Caderneta de Dívida (checkpoint talentos, Fase 12). */
+  cadernetaDeDividaStatus?: { acquired: boolean; usedThisSession: boolean; raridadeMaxima: string };
+  /** Confirma a compra fiada — saldo insuficiente vira dívida real (`fornecedor` é texto livre do jogador/narrador). */
+  onBuyFiado?: (itemSlug: string, quantidade: number, walletId: WalletId, precoUnitario: number, fornecedor: string) => void;
+  /** Dívidas registradas por Caderneta de Dívida — persistidas no personagem. */
+  dividasMercador?: Character["dividas_mercador"];
+  /** Marca uma dívida como quitada manualmente. */
+  onQuitarDivida?: (dividaId: string) => void;
 }) {
   const [busca, setBusca] = useState("");
   const [categoria, setCategoria] = useState<(typeof CATEGORIA_FILTROS)[number]>("todos");
   const [walletId, setWalletId] = useState<WalletId>("aretz_informal");
   const [quantidades, setQuantidades] = useState<Record<string, number>>({});
   const [precos, setPrecos] = useState<Record<string, number>>({});
+  // fornecedorFiado[slug] = nome do fornecedor digitado para a compra fiada (Caderneta de Dívida)
+  const [fornecedorFiado, setFornecedorFiado] = useState<Record<string, string>>({});
   const [runaSelecionada, setRunaSelecionada] = useState<Record<string, string>>({});
   const [toqueMidasPericia, setToqueMidasPericia] = useState<Record<string, string>>({});
   const [escudoDanoInput, setEscudoDanoInput] = useState<Record<string, string>>({});
@@ -301,6 +316,39 @@ export function InventoryTab({
             )}
           </div>
         )}
+        {cadernetaDeDividaStatus?.acquired && (
+          <div data-testid="caderneta-de-divida-widget" style={{ ...widgetBox2, marginBottom: 10 }}>
+            {cadernetaDeDividaStatus.usedThisSession ? (
+              <span style={{ opacity: 0.6 }}>Caderneta de Dívida já usada nesta sessão (reseta na próxima sessão).</span>
+            ) : (
+              <span style={{ opacity: 0.7 }}>
+                Caderneta de Dívida: 1x/sessão, garante um item até raridade "{cadernetaDeDividaStatus.raridadeMaxima}" mesmo sem saldo — preencha o
+                fornecedor e use "Comprar fiado".
+              </span>
+            )}
+          </div>
+        )}
+        {dividasMercador.length > 0 && (
+          <div data-testid="dividas-mercador-lista" style={{ ...widgetBox2, marginBottom: 10 }}>
+            <strong style={{ fontSize: 11 }}>Dívidas com fornecedores</strong>
+            {dividasMercador.map((d) => (
+              <div key={d.id} data-testid={`divida-${d.id}`} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <span style={{ opacity: d.quitada ? 0.5 : 1 }}>
+                  {d.itemNome} — devendo {d.saldoDevido} a {d.fornecedor} (pago {d.valorPago}/{d.precoTotal}){d.quitada ? " — quitada" : ""}
+                </span>
+                {!d.quitada && (
+                  <button
+                    data-testid={`divida-quitar-${d.id}`}
+                    onClick={() => onQuitarDivida?.(d.id)}
+                    style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+                  >
+                    Marcar quitada
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
         {catalogError && (
           <p style={{ fontSize: 13, color: "#ff6b6b", background: "#2a1717", borderRadius: 8, padding: "10px 12px" }}>
             Catálogo de itens indisponível. Nenhuma lista local foi usada.
@@ -348,6 +396,31 @@ export function InventoryTab({
                   >
                     Comprar
                   </button>
+                  {cadernetaDeDividaStatus?.acquired &&
+                    !cadernetaDeDividaStatus.usedThisSession &&
+                    isRaridadeDentroDoLimite(item.raridade, cadernetaDeDividaStatus.raridadeMaxima) && (
+                      <>
+                        <input
+                          data-testid={`loja-fiado-fornecedor-${item.slug}`}
+                          type="text"
+                          placeholder="Fornecedor"
+                          value={fornecedorFiado[item.slug] ?? ""}
+                          onChange={(e) => setFornecedorFiado((prev) => ({ ...prev, [item.slug]: e.target.value }))}
+                          style={{ ...input, width: 100 }}
+                        />
+                        <button
+                          data-testid={`loja-comprar-fiado-${item.slug}`}
+                          disabled={!fornecedorFiado[item.slug]?.trim()}
+                          onClick={() =>
+                            onBuyFiado?.(item.slug, quantidadeDe(item.slug), walletId, precoDe(item), fornecedorFiado[item.slug]!.trim())
+                          }
+                          style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px", opacity: fornecedorFiado[item.slug]?.trim() ? 1 : 0.5 }}
+                          title="Caderneta de Dívida — 1x/sessão, item até raridade limite; o saldo devido vira dívida com o fornecedor."
+                        >
+                          Comprar fiado
+                        </button>
+                      </>
+                    )}
                 </div>
               ))}
               {filtrados.length === 0 && <p style={{ fontSize: 12, opacity: 0.6 }}>Nenhum item nesta busca/categoria.</p>}

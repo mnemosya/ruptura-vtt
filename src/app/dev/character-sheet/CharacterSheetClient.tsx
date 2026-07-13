@@ -120,6 +120,11 @@ import {
   markTotemBencaoTokenUsed,
   getGarimpoDeRuaAvailability,
   activateGarimpoDeRua,
+  getCadernetaDeDividaAvailability,
+  markCadernetaDeDividaUsed,
+  isRaridadeDentroDoLimite,
+  getRedeDeFavoresAvailability,
+  markRedeDeFavoresUsed,
   isPvGatedToggleAllowedToActivate,
   enforcePvGatedToggleDeactivation,
   hasSaqueFantasma,
@@ -2396,6 +2401,86 @@ export default function CharacterSheetClient({
     addLogEntry("recurso", `Garimpo de Rua: desconto de -${status.percentual}% ativado para o resto do dia.`);
   }
 
+  /**
+   * Mercador › Caderneta de Dívida — compra fiada real (1x/sessão): usa
+   * `purchaseItem` com `permitirSaldoInsuficiente`, registra a instância
+   * normalmente e persiste o saldo devido em `dividas_mercador`. Nunca
+   * permite item acima da raridade limite do payload.
+   */
+  function handleBuyItemFiado(itemSlug: string, quantidade: number, walletId: WalletId, precoUnitario: number, fornecedor: string) {
+    const current = characterRef.current;
+    const status = getCadernetaDeDividaAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedThisSession) {
+      addLogEntry("recurso", "Caderneta de Dívida já foi usada nesta sessão.");
+      return;
+    }
+    const item = itemsIniciais.find((i) => i.slug === itemSlug);
+    if (!item) return;
+    if (!isRaridadeDentroDoLimite(item.raridade, status.raridadeMaxima)) {
+      addLogEntry("recurso", `Caderneta de Dívida não cobre itens acima da raridade "${status.raridadeMaxima}".`);
+      return;
+    }
+    const nowIso = new Date().toISOString();
+    const result = purchaseItem({
+      character: current,
+      item,
+      quantidade,
+      walletId,
+      precoUnitario,
+      nowIso,
+      catalog: itemsIniciais,
+      permitirSaldoInsuficiente: true,
+    });
+    if (!result.ok) {
+      addLogEntry("recurso", result.reason ?? "Compra fiada não realizada.");
+      return;
+    }
+    let next = markCadernetaDeDividaUsed(result.character, nowIso);
+    const saldoDevido = result.saldoDevido ?? 0;
+    if (saldoDevido > 0) {
+      const divida = {
+        id: crypto.randomUUID(),
+        fornecedor,
+        itemSlug: item.slug,
+        itemNome: item.nome,
+        precoTotal: result.totalCost ?? 0,
+        valorPago: result.valorPago ?? 0,
+        saldoDevido,
+        // Sem numeração canônica de sessão de jogo em nenhum lugar do app (mesmo
+        // motivo de "sessao"/"missao" não terem reset automático) — usa a data
+        // como rótulo honesto em vez de inventar um contador de sessão.
+        sessao: nowIso.slice(0, 10),
+        criadaEm: nowIso,
+        quitada: false,
+      };
+      next = { ...next, dividas_mercador: [...(next.dividas_mercador ?? []), divida] };
+    }
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry(
+      "recurso",
+      saldoDevido > 0
+        ? `Comprado fiado: ${item.nome} x${quantidade} — pago ${result.valorPago} de ${result.totalCost}, devendo ${saldoDevido} a ${fornecedor}.`
+        : `Comprado fiado: ${item.nome} x${quantidade} — ${result.totalCost} (sem saldo devido).`,
+    );
+  }
+
+  /** Mercador › Caderneta de Dívida — marca uma dívida como quitada manualmente (o pagamento em si é narrativo). */
+  function handleQuitarDivida(dividaId: string) {
+    const current = characterRef.current;
+    const dividas = current.dividas_mercador ?? [];
+    const divida = dividas.find((d) => d.id === dividaId);
+    if (!divida || divida.quitada) return;
+    const nowIso = new Date().toISOString();
+    const next = {
+      ...current,
+      dividas_mercador: dividas.map((d) => (d.id === dividaId ? { ...d, quitada: true, quitadaEm: nowIso } : d)),
+    };
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("recurso", `Dívida quitada: ${divida.itemNome} (${divida.saldoDevido} a ${divida.fornecedor}).`);
+  }
+
   function handleChangeCarteira(walletId: WalletId, value: number) {
     const current = characterRef.current;
     const carteira = current.carteira ?? { aretz_informal: 0, cdi: 0, cdi_craqueada: 0 };
@@ -3037,6 +3122,43 @@ export default function CharacterSheetClient({
       "acao_combate",
       `Espetáculo Mortal: ${status.armasNecessarias} armas de Arremesso consumidas — ${opcao === "convergencia" ? "Convergência (1 alvo, dano das 3 armas)" : "Dispersão (até 3 alvos, 1 arremesso cada)"}. Resolva o(s) ataque(s) manualmente em /dev/table; falha limitada conta como sucesso limitado no teste de Precisão.`,
     );
+  }
+
+  /** Mercador › Rede de Favores — recruta um PN como aliado temporário (1x/sessão, uso não reembolsado ao encerrar). */
+  function handleRegisterRedeDeFavores(params: { nomePn: string; papel: string; tipoPagamento: "favor" | "promessa" | "pagamento_simbolico"; duracao: string; notas: string }) {
+    const current = characterRef.current;
+    const status = getRedeDeFavoresAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedThisSession) return;
+    const nowIso = new Date().toISOString();
+    let next = markRedeDeFavoresUsed(current, nowIso);
+    next = {
+      ...next,
+      rede_de_favores_ativa: {
+        id: crypto.randomUUID(),
+        nomePn: params.nomePn,
+        papel: params.papel,
+        tipoPagamento: params.tipoPagamento,
+        duracao: params.duracao,
+        notas: params.notas,
+        sessao: nowIso.slice(0, 10),
+        criadaEm: nowIso,
+        ativo: true,
+      },
+    };
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Rede de Favores: ${params.nomePn} (${params.papel}) recrutado como aliado temporário — pago com ${params.tipoPagamento}.`);
+  }
+
+  /** Mercador › Rede de Favores — encerra o vínculo manualmente (o uso já gasto não é reembolsado). */
+  function handleEndRedeDeFavores() {
+    const current = characterRef.current;
+    if (!current.rede_de_favores_ativa?.ativo) return;
+    const nowIso = new Date().toISOString();
+    const next = { ...current, rede_de_favores_ativa: { ...current.rede_de_favores_ativa, ativo: false, encerradaEm: nowIso } };
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Rede de Favores: vínculo com ${current.rede_de_favores_ativa.nomePn} encerrado.`);
   }
 
   /** Rúnico › Gatilho Rúnico — ativa/desativa runa instalada sem PA. */
@@ -5306,6 +5428,10 @@ export default function CharacterSheetClient({
             })
             .map((inst) => ({ id: inst.id, nome: inst.itemNome }))}
           onEspetaculoMortal={handleEspetaculoMortal}
+          redeDeFavoresAtiva={character.rede_de_favores_ativa}
+          redeDeFavoresStatus={getRedeDeFavoresAvailability(character, talentsIniciais)}
+          onRegisterRedeDeFavores={handleRegisterRedeDeFavores}
+          onEndRedeDeFavores={handleEndRedeDeFavores}
         />
       )}
 
@@ -5364,6 +5490,10 @@ export default function CharacterSheetClient({
           onConfirmSobregravacaoTest={handleConfirmSobregravacaoTest}
           garimpoDeRuaStatus={getGarimpoDeRuaAvailability(character, talentsIniciais)}
           onActivateGarimpoDeRua={handleActivateGarimpoDeRua}
+          cadernetaDeDividaStatus={getCadernetaDeDividaAvailability(character, talentsIniciais)}
+          onBuyFiado={handleBuyItemFiado}
+          dividasMercador={character.dividas_mercador}
+          onQuitarDivida={handleQuitarDivida}
         />
       )}
 

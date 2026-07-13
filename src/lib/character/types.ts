@@ -563,6 +563,44 @@ export interface Character {
    */
   espetaculo_mortal_ativo?: { opcao: "convergencia" | "dispersao"; concedidoEm: string };
   /**
+   * Mercador › Caderneta de Dívida (N2, checkpoint talentos, Fase 12) — registro
+   * real de compras fiadas (1x/sessão, item até raridade Rara, saldo pode ficar
+   * negativo/insuficiente). Cada entrada é uma dívida persistida com fornecedor,
+   * item, preço total, valor efetivamente pago no ato e saldo devido; `quitada`
+   * marca quando o jogador/narrador registra o pagamento do restante.
+   */
+  dividas_mercador?: {
+    id: string;
+    fornecedor: string;
+    itemSlug: string;
+    itemNome: string;
+    precoTotal: number;
+    valorPago: number;
+    saldoDevido: number;
+    sessao: string;
+    criadaEm: string;
+    quitada: boolean;
+    quitadaEm?: string;
+  }[];
+  /**
+   * Mercador › Rede de Favores (N3, checkpoint talentos, Fase 12) — PN aliado
+   * temporário recrutado (1x/sessão); o uso NÃO é reembolsado ao encerrar (regra
+   * explícita do payload). `ativo=false` marca que o vínculo foi encerrado
+   * manualmente pelo jogador/narrador.
+   */
+  rede_de_favores_ativa?: {
+    id: string;
+    nomePn: string;
+    papel: string;
+    tipoPagamento: "favor" | "promessa" | "pagamento_simbolico";
+    duracao: string;
+    notas: string;
+    sessao: string;
+    criadaEm: string;
+    ativo: boolean;
+    encerradaEm?: string;
+  };
+  /**
    * Sorrateiro › estado real de Furtividade (checkpoint talentos, Fase 3)
    * — entrada/saída manual (narrativa, sem teste estruturado próprio para
    * "entrar"; testes de Furtividade em si usam a perícia normalmente,
