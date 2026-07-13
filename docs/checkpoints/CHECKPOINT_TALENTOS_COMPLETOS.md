@@ -62,7 +62,7 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 48 · 🟡 0 · ⚙️ 17 · 📖 1.
+Contagem: ✅ 0 · 🔵 50 · 🟡 0 · ⚙️ 15 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -97,8 +97,8 @@ Contagem: ✅ 0 · 🔵 48 · 🟡 0 · ⚙️ 17 · 📖 1.
 | Mago de Batalha | Canalizar | 2 | 🔵 Implementado (aguardando validação manual) |
 | Mago de Batalha | Ascensão | 3 | 🔵 Implementado (aguardando validação manual) |
 | Malabarista | Saque Fantasma | 1 | 🔵 Implementado (aguardando validação manual) |
-| Malabarista | Revoada | 2 | ⚙️ Infra pendente |
-| Malabarista | Espetáculo Mortal | 3 | ⚙️ Infra pendente |
+| Malabarista | Revoada | 2 | 🔵 Implementado (aguardando validação manual) |
+| Malabarista | Espetáculo Mortal | 3 | 🔵 Implementado (aguardando validação manual) |
 | Manipulador | Olhar Penetrante | 1 | 🔵 Implementado (aguardando validação manual) |
 | Manipulador | Entrelinhas | 2 | 🔵 Implementado (aguardando validação manual) |
 | Manipulador | Puxar os Fios | 3 | 🔵 Implementado (aguardando validação manual) |
@@ -572,8 +572,8 @@ abaixo está **aguardando confirmação do usuário via teste manual** — nenhu
 | Mago de Batalha | Canalizar | 🔵 Implementado | Potencializar (+1 dano/Mana) e Amortecer (−1 dano/Mana antes de MIT) real, 1/rodada compartilhado | `CharacterSheetClient.tsx`, `TableClient.tsx`, `talentEngine.ts` | `Character.talentos_estado`, `recursos_atuais.mana` | Usar Potencializar numa rodada → confirmar Amortecer bloqueado na MESMA rodada (e vice-versa) | Aguardando usuário |
 | Mago de Batalha | Ascensão | 🔵 Implementado | Limite de Surtos 3→5 real + Ruptura especial idempotente | `talentEngine.ts`, `ResourcesTab.tsx` | `Character.ruptura_especial_ascensao` | Adquirir talento → confirmar Ruptura especial única → usar surtos até o 5º → confirmar limite | Aguardando usuário |
 | Malabarista | Saque Fantasma | 🔵 Implementado | Ignora penalidade de Rajada (−1) com arma leve de Arremesso confirmada; saque já era de graça | `RollsTab.tsx`, `talentEngine.ts` | Nenhum (checkbox por rolagem) | Marcar "Usar Rajada" sem Saque Fantasma → −1 aplicado; marcar com confirmação de arma leve+Arremesso → −1 cancelado | Aguardando usuário |
-| Malabarista | Revoada | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
-| Malabarista | Espetáculo Mortal | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Malabarista | Revoada | 🔵 Implementado | 1/rodada real no atacante ao acertar com arma de Arremesso (≥2 disponíveis); ataque extra em si via Atacar normal (0 PA) | `talentEngine.ts`, `TableClient.tsx` | `Character.talentos_estado` (atacante) | Acertar com arma de Arremesso tendo outra disponível → clicar Revoada → confirmar uso marcado; repetir na mesma rodada → confirmar bloqueado | Aguardando usuário |
+| Malabarista | Espetáculo Mortal | 🔵 Implementado | Consome 3 armas leves de Arremesso reais do inventário, 1/cena; ativa falha_limitada→sucesso_limitado no próximo teste de Precisão; resolução de dano contra 1-3 alvos fica manual (fora do escopo — pipeline de attack_resolved é single-target) | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx`, `RollsTab.tsx` | `Character.inventario`, `espetaculo_mortal_ativo`, `talentos_estado` | Selecionar 3 armas de Arremesso → escolher Convergência/Dispersão → confirmar armas consumidas → rolar Precisão confirmando → confirmar falha limitada virou sucesso limitado | Aguardando usuário |
 | Manipulador | Olhar Penetrante | 🔵 Implementado | Falha limitada → sucesso limitado em Influência/Psicologia, com confirmação de contexto obrigatória | `talentEngine.ts`, `RollsTab.tsx` | Nenhum (promoção por rolagem) | Rolar Influência/Psicologia com CD, confirmar contexto certo → promoção aplica; testar SEM marcar a confirmação → promoção NÃO aplica | Aguardando usuário |
 | Manipulador | Entrelinhas | 🔵 Implementado | +2 real no próximo teste de Influência do próprio caster contra a criatura marcada, 1/cena | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx`, `RollsTab.tsx` | `Character.entrelinhas_ativo` (caster) | Registrar descoberta contra uma criatura → rolar Influência confirmando o alvo → confirmar +2 somado e vulnerabilidade consumida | Aguardando usuário |
 | Manipulador | Puxar os Fios | 🔵 Implementado | Registra abertura social real (1 de 5), 1/cena, exige Entrelinhas ativo na mesma criatura | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.talentos_estado` (caster) | Sem Entrelinhas ativo → confirmar bloqueado; com Entrelinhas ativo → confirmar sucesso → escolher abertura → confirmar registrado | Aguardando usuário |

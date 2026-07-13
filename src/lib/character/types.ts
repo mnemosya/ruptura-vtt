@@ -556,6 +556,13 @@ export interface Character {
    */
   entrelinhas_ativo?: { alvoNome: string; descoberta: string; valor: number; concedidoEm: string };
   /**
+   * Malabarista › Espetáculo Mortal (N3, checkpoint talentos, Fase 10) — sequência
+   * armada (3 armas leves de Arremesso já consumidas do inventário); promove
+   * falha_limitada→sucesso_limitado no PRÓXIMO teste de Precisão, consumido por
+   * confirmação em RollsTab.
+   */
+  espetaculo_mortal_ativo?: { opcao: "convergencia" | "dispersao"; concedidoEm: string };
+  /**
    * Sorrateiro › estado real de Furtividade (checkpoint talentos, Fase 3)
    * — entrada/saída manual (narrativa, sem teste estruturado próprio para
    * "entrar"; testes de Furtividade em si usam a perícia normalmente,

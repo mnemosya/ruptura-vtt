@@ -116,6 +116,9 @@ export function TalentsTab({
   ultimoEfeitoPositivoAliado,
   onOndaSolidariaExtend,
   onChamaRedobrada,
+  espetaculoMortalStatus,
+  espetaculoMortalArmasDisponiveis = [],
+  onEspetaculoMortal,
 }: {
   talents: TalentContent[];
   catalogError: string | null;
@@ -185,6 +188,10 @@ export function TalentsTab({
   ultimoEfeitoPositivoAliado?: { targetCharacterId: string; targetNome: string } | null;
   onOndaSolidariaExtend?: (secondAllyId: string) => void;
   onChamaRedobrada?: (opcao: "numerico" | "duracao") => void;
+  /** Malabarista › Espetáculo Mortal (checkpoint talentos, Fase 10) — consome 3 armas leves de Arremesso reais do inventário, 1/cena. */
+  espetaculoMortalStatus?: { acquired: boolean; usedThisScene: boolean; armasNecessarias: number };
+  espetaculoMortalArmasDisponiveis?: { id: string; nome: string }[];
+  onEspetaculoMortal?: (selectedInstanceIds: string[], opcao: "convergencia" | "dispersao") => void;
 }) {
   const [filter, setFilter] = useState<FilterKey>("todos");
 
@@ -385,6 +392,14 @@ export function TalentsTab({
 
                         {acquiredEntry && nivel.slug === "totem_chama_redobrada" && chamaRedobradaStatus?.acquired && (
                           <ChamaRedobradaWidget status={chamaRedobradaStatus} ultimoEfeito={ultimoEfeitoPositivoAliado ?? null} onConfirm={onChamaRedobrada} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "malabarista_espetaculo_mortal" && espetaculoMortalStatus?.acquired && (
+                          <EspetaculoMortalWidget
+                            status={espetaculoMortalStatus}
+                            armasDisponiveis={espetaculoMortalArmasDisponiveis}
+                            onConfirm={onEspetaculoMortal}
+                          />
                         )}
 
                         {acquiredEntry && nivel.slug === "sorrateiro_passo_fantasma" && (
@@ -1180,6 +1195,74 @@ function ChamaRedobradaWidget({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function EspetaculoMortalWidget({
+  status,
+  armasDisponiveis,
+  onConfirm,
+}: {
+  status: { acquired: boolean; usedThisScene: boolean; armasNecessarias: number };
+  armasDisponiveis: { id: string; nome: string }[];
+  onConfirm?: (selectedInstanceIds: string[], opcao: "convergencia" | "dispersao") => void;
+}) {
+  const [selecionadas, setSelecionadas] = useState<string[]>([]);
+  const [opcao, setOpcao] = useState<"convergencia" | "dispersao">("convergencia");
+
+  if (status.usedThisScene) {
+    return (
+      <div data-testid="espetaculo-mortal-widget" style={widgetBox}>
+        <span style={{ opacity: 0.7 }}>Espetáculo Mortal já usado nesta cena.</span>
+      </div>
+    );
+  }
+  if (armasDisponiveis.length < status.armasNecessarias) {
+    return (
+      <div data-testid="espetaculo-mortal-widget" style={widgetBox}>
+        <span style={{ opacity: 0.7 }}>
+          Requer {status.armasNecessarias} armas leves de Arremesso disponíveis (tem {armasDisponiveis.length}).
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div data-testid="espetaculo-mortal-widget" style={widgetBox}>
+      <span style={{ fontSize: 11, opacity: 0.7 }}>Escolha {status.armasNecessarias} armas leves de Arremesso:</span>
+      <select
+        multiple
+        data-testid="espetaculo-mortal-armas"
+        value={selecionadas}
+        onChange={(e) => setSelecionadas(Array.from(e.target.selectedOptions, (o) => o.value).slice(0, status.armasNecessarias))}
+        style={{ background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", fontSize: 12, minHeight: 70, marginTop: 4 }}
+      >
+        {armasDisponiveis.map((a) => (
+          <option key={a.id} value={a.id}>{a.nome}</option>
+        ))}
+      </select>
+      <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 6 }}>
+        <select
+          data-testid="espetaculo-mortal-opcao"
+          value={opcao}
+          onChange={(e) => setOpcao(e.target.value as "convergencia" | "dispersao")}
+          style={{ background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", fontSize: 12 }}
+        >
+          <option value="convergencia">Convergência (1 alvo, dano das 3 armas)</option>
+          <option value="dispersao">Dispersão (até 3 alvos, 1 arremesso cada)</option>
+        </select>
+        <button
+          data-testid="espetaculo-mortal-confirmar"
+          disabled={selecionadas.length !== status.armasNecessarias}
+          onClick={() => {
+            onConfirm?.(selecionadas, opcao);
+            setSelecionadas([]);
+          }}
+          style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+        >
+          Ativar sequência (consome as armas, 1/cena)
+        </button>
+      </div>
     </div>
   );
 }

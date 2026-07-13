@@ -148,6 +148,8 @@ export function RollsTab({
   onConsumeBriefingCampo,
   entrelinhasAtivo,
   onConsumeEntrelinhas,
+  espetaculoMortalAtivo,
+  onConsumeEspetaculoMortal,
 }: {
   atributos: CharacterAttributes;
   atributoDefinitions: AttributeDefinition[] | undefined;
@@ -197,6 +199,9 @@ export function RollsTab({
   /** Manipulador › Entrelinhas (checkpoint talentos, Fase 6) — +valor real no próximo teste de Influência do caster contra a criatura marcada, confirmado no clique. */
   entrelinhasAtivo?: { alvoNome: string; descoberta: string; valor: number; concedidoEm: string } | null;
   onConsumeEntrelinhas?: () => void;
+  /** Malabarista › Espetáculo Mortal (checkpoint talentos, Fase 10) — falha_limitada→sucesso_limitado no próximo teste de Precisão da sequência. */
+  espetaculoMortalAtivo?: { opcao: "convergencia" | "dispersao"; concedidoEm: string } | null;
+  onConsumeEspetaculoMortal?: () => void;
 }) {
   const atributoIds = ["corpo", "mente", "animo"] as const;
   const [atributoId, setAtributoId] = useState<(typeof atributoIds)[number]>("corpo");
@@ -244,6 +249,9 @@ export function RollsTab({
   // criatura marcada (o talento não tem como saber sozinho qual criatura o teste alvo sem
   // um modelo de alvo estruturado nas rolagens).
   const [entrelinhasAtivaCheckbox, setEntrelinhasAtivaCheckbox] = useState(false);
+  // Malabarista › Espetáculo Mortal — confirmação de que ESTE teste de Precisão é o da
+  // sequência de arremessos (o talento não sabe sozinho qual rolagem é "a" ação da sequência).
+  const [espetaculoMortalConfirmado, setEspetaculoMortalConfirmado] = useState(false);
 
   function toggleTagExtra(tag: ToggleTag) {
     setTagsExtras((prev) => {
@@ -352,11 +360,16 @@ export function RollsTab({
     // precedência sobre a promoção por perícia quando ambos poderiam se aplicar (mesma faixa
     // de margem — nunca empilham, só uma promoção por rolagem).
     const bencaoOrigem = bencaoTokenAtivo ? `Token de Benção (${bencaoTokenAtivo.origem})` : bencaoAtiva ? "Totem — Benção" : null;
+    // Malabarista › Espetáculo Mortal — mesma precedência de Benção, escopado à Precisão.
+    const espetaculoMortalOrigem =
+      espetaculoMortalAtivo && espetaculoMortalConfirmado && periciaId === "precisao" ? `Espetáculo Mortal (${espetaculoMortalAtivo.opcao})` : null;
     const promocao = bencaoOrigem
       ? { de: "falha_limitada" as MargemClassificacao, para: "sucesso_limitado" as MargemClassificacao, origem: bencaoOrigem }
-      : promocaoPericia
-        ? { de: promocaoPericia.de as MargemClassificacao, para: promocaoPericia.para as MargemClassificacao, origem: promocaoPericia.origem }
-        : undefined;
+      : espetaculoMortalOrigem
+        ? { de: "falha_limitada" as MargemClassificacao, para: "sucesso_limitado" as MargemClassificacao, origem: espetaculoMortalOrigem }
+        : promocaoPericia
+          ? { de: promocaoPericia.de as MargemClassificacao, para: promocaoPericia.para as MargemClassificacao, origem: promocaoPericia.origem }
+          : undefined;
 
     const resultado = rollPericia({
       atributoId,
@@ -382,6 +395,10 @@ export function RollsTab({
     if (entrelinhasAtivo && entrelinhasAtivaCheckbox && periciaId === "influencia") {
       onConsumeEntrelinhas?.();
       setEntrelinhasAtivaCheckbox(false);
+    }
+    if (espetaculoMortalOrigem) {
+      onConsumeEspetaculoMortal?.();
+      setEspetaculoMortalConfirmado(false);
     }
 
     if (usarDadoGatilho && resultado.dadoGatilhoResultado != null) {
@@ -714,6 +731,18 @@ export function RollsTab({
               />
               Entrelinhas ativo contra {entrelinhasAtivo.alvoNome} ({entrelinhasAtivo.descoberta}) — confirmo que uso essa
               impressão na abordagem: +{entrelinhasAtivo.valor}. Consumido ao rolar.
+            </label>
+          )}
+          {espetaculoMortalAtivo && periciaId === "precisao" && (
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+              <input
+                data-testid="roll-espetaculo-mortal-ativa"
+                type="checkbox"
+                checked={espetaculoMortalConfirmado}
+                onChange={(e) => setEspetaculoMortalConfirmado(e.target.checked)}
+              />
+              Espetáculo Mortal ativo ({espetaculoMortalAtivo.opcao}) — confirmo que este é o teste de Precisão da sequência: falha
+              limitada vira sucesso limitado. Consumido ao rolar.
             </label>
           )}
           {briefingCampoAtivo && periciaId === briefingCampoAtivo.periciaId && (

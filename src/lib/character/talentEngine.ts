@@ -2416,6 +2416,86 @@ export function doubleTemporaryEffectDuration(effect: TemporaryEffect, idFactory
 }
 
 // ---------------------------------------------------------------------
+// Malabarista — Revoada (N2): 1/rodada, ao acertar com arma leve de
+// Arremesso, ataque extra (0 custo) contra o mesmo alvo ou adjacente
+// com outra arma leve de Arremesso. "Leve" não é dado estruturado
+// (catálogo não tem peso/tamanho em armas) — confirmação manual, mesmo
+// critério de Saque Fantasma; "Arremesso" é a propriedade real
+// (`propertySlugs`).
+// ---------------------------------------------------------------------
+
+export const REVOADA_USAGE_KEY = "malabarista_revoada:rodada";
+
+export function hasRevoada(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "ataque_extra" && efeito.gatilho === "atingir_alvo_com_ataque_distancia_arma_leve_arremesso") return true;
+    }
+  }
+  return false;
+}
+
+export function getRevoadaAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisRound: boolean } {
+  const acquired = hasRevoada(character, talents);
+  const usedThisRound = (character.talentos_estado?.usos?.[REVOADA_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisRound };
+}
+
+export function markRevoadaUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[REVOADA_USAGE_KEY] = { usados: 1, cadencia: "rodada", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
+// Malabarista — Espetáculo Mortal (N3): 1/cena, exige 3 armas leves de
+// Arremesso disponíveis (consumidas de verdade do inventário),
+// Convergência ou Dispersão, falha_limitada→sucesso_limitado no teste
+// de Precisão desta ação. A resolução do dano das 3 armas contra 1 ou
+// até 3 alvos fica manual — este sistema resolve `attack_resolved`
+// para UM alvo por vez, multi-alvo simultâneo exigiria reestruturar
+// esse pipeline inteiro, fora do escopo desta fase (mesmo critério já
+// usado para MIT/PD/região, sempre manuais no narrador).
+// ---------------------------------------------------------------------
+
+export const ESPETACULO_MORTAL_USAGE_KEY = "malabarista_espetaculo_mortal:cena";
+
+export function hasEspetaculoMortal(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "sequencia_arremessos") return true;
+    }
+  }
+  return false;
+}
+
+export function getEspetaculoMortalAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisScene: boolean; armasNecessarias: number } {
+  let acquired = false;
+  let armasNecessarias = 3;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "sequencia_arremessos") continue;
+      acquired = true;
+      if (typeof efeito.quantidade_armas_leves_arremesso === "number") armasNecessarias = efeito.quantidade_armas_leves_arremesso;
+    }
+  }
+  const usedThisScene = (character.talentos_estado?.usos?.[ESPETACULO_MORTAL_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisScene, armasNecessarias };
+}
+
+export function markEspetaculoMortalUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[ESPETACULO_MORTAL_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
 // Construtores de log (texto formatado — nunca JSON cru)
 // ---------------------------------------------------------------------
 

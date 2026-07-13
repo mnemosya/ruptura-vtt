@@ -146,6 +146,8 @@ import {
   copyTemporaryEffect,
   doubleTemporaryEffectValue,
   doubleTemporaryEffectDuration,
+  getEspetaculoMortalAvailability,
+  markEspetaculoMortalUsed,
   getToqueDeMidasAvailability,
   getToqueDeMidasModifiersForTarget,
   markToqueDeMidasUsed,
@@ -2820,6 +2822,16 @@ export default function CharacterSheetClient({
     addLogEntry("condicao", "Entrelinhas: vulnerabilidade consumida neste teste de Influência.");
   }
 
+  /** Malabarista › Espetáculo Mortal — consome a promoção ativa (chamado pelo RollsTab após o teste de Precisão da sequência). */
+  function handleConsumeEspetaculoMortal() {
+    const current = characterRef.current;
+    if (!current.espetaculo_mortal_ativo) return;
+    const { espetaculo_mortal_ativo: _drop, ...next } = current;
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", "Espetáculo Mortal: promoção consumida neste teste de Precisão.");
+  }
+
   /** Manipulador › Puxar os Fios (N3, checkpoint talentos Fase 6) — registra a abertura social forçada, 1/cena, exige Entrelinhas ativo. */
   function handleRegisterPuxarOsFios(abertura: string) {
     const current = characterRef.current;
@@ -2973,6 +2985,39 @@ export default function CharacterSheetClient({
     } catch (err) {
       addLogEntry("recurso", err instanceof Error ? `Falha ao aplicar Chama Redobrada em ${alvo.nome}: ${err.message}` : `Falha ao aplicar Chama Redobrada em ${alvo.nome}.`);
     }
+  }
+
+  /**
+   * Malabarista › Espetáculo Mortal (N3, checkpoint talentos Fase 10) — consome 3 armas
+   * leves de Arremesso reais do inventário (1 unidade cada), 1/cena, e ativa a promoção
+   * falha_limitada→sucesso_limitado no PRÓXIMO teste de Precisão (RollsTab). A resolução do
+   * dano das 3 armas contra 1 ou até 3 alvos continua manual — este sistema resolve
+   * `attack_resolved` para um alvo por vez; multi-alvo simultâneo exigiria reestruturar todo
+   * o pipeline de resolução de ataque, fora do escopo desta fase.
+   */
+  function handleEspetaculoMortal(selectedInstanceIds: string[], opcao: "convergencia" | "dispersao") {
+    const current = characterRef.current;
+    const status = getEspetaculoMortalAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedThisScene) return;
+    if (selectedInstanceIds.length !== status.armasNecessarias) return;
+    const nowIso = new Date().toISOString();
+    let next = current;
+    for (const instanceId of selectedInstanceIds) {
+      const result = removeQuantityFromInventory(next, instanceId, 1, nowIso);
+      if (!result.ok) {
+        addLogEntry("recurso", `Espetáculo Mortal: falha ao consumir arma (${result.reason}) — nada foi aplicado.`);
+        return;
+      }
+      next = result.character;
+    }
+    next = markEspetaculoMortalUsed(next, nowIso);
+    next = { ...next, espetaculo_mortal_ativo: { opcao, concedidoEm: nowIso } };
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry(
+      "acao_combate",
+      `Espetáculo Mortal: ${status.armasNecessarias} armas de Arremesso consumidas — ${opcao === "convergencia" ? "Convergência (1 alvo, dano das 3 armas)" : "Dispersão (até 3 alvos, 1 arremesso cada)"}. Resolva o(s) ataque(s) manualmente em /dev/table; falha limitada conta como sucesso limitado no teste de Precisão.`,
+    );
   }
 
   /** Rúnico › Gatilho Rúnico — ativa/desativa runa instalada sem PA. */
@@ -5234,6 +5279,14 @@ export default function CharacterSheetClient({
           ultimoEfeitoPositivoAliado={ultimoEfeitoPositivoAliado ? { targetCharacterId: ultimoEfeitoPositivoAliado.targetCharacterId, targetNome: ultimoEfeitoPositivoAliado.targetNome } : null}
           onOndaSolidariaExtend={handleOndaSolidariaExtend}
           onChamaRedobrada={handleChamaRedobrada}
+          espetaculoMortalStatus={getEspetaculoMortalAvailability(character, talentsIniciais)}
+          espetaculoMortalArmasDisponiveis={(character.inventario ?? [])
+            .filter((inst) => {
+              const modelo = itemsIniciais.find((m) => m.slug === inst.itemSlug);
+              return !!modelo?.propertySlugs.includes("arremesso");
+            })
+            .map((inst) => ({ id: inst.id, nome: inst.itemNome }))}
+          onEspetaculoMortal={handleEspetaculoMortal}
         />
       )}
 
@@ -5387,6 +5440,8 @@ export default function CharacterSheetClient({
           onConsumeBriefingCampo={handleConsumeBriefingCampo}
           entrelinhasAtivo={character.entrelinhas_ativo ?? null}
           onConsumeEntrelinhas={handleConsumeEntrelinhas}
+          espetaculoMortalAtivo={character.espetaculo_mortal_ativo ?? null}
+          onConsumeEspetaculoMortal={handleConsumeEspetaculoMortal}
         />
       )}
 

@@ -117,6 +117,8 @@ import {
   extendSangriaLentaDuration,
   getContagioAvailability,
   markContagioUsed,
+  getRevoadaAvailability,
+  markRevoadaUsed,
   type GmResource,
   type CharacterRecord,
   type Character,
@@ -1724,6 +1726,36 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
         characterNome: target.nome,
         message: `Ripostar: sucesso crítico em Aparar — ${target.nome} pode contra-atacar imediatamente com lâmina, sem custo de PA (resolvido pelo Atacar normal).`,
         sourceTalentId: "espadachim_ripostar",
+        sourceActionLogId: logId,
+      },
+    });
+  }
+
+  /**
+   * Malabarista › Revoada (N2, checkpoint talentos Fase 10) — o ATACANTE marca 1/rodada ao
+   * acertar com arma de Arremesso. O ataque extra em si (0 PA) é resolvido pelo Atacar
+   * normal contra o mesmo alvo ou um adjacente, mesma limitação de Contra-medida/Ripostar.
+   */
+  async function handleRevoada(logId: string) {
+    const log = logs.find((l) => l.id === logId);
+    const attackerCharacterId = typeof log?.payload.characterId === "string" ? log.payload.characterId : null;
+    if (!attackerCharacterId) return;
+    const attackerRecord = personagensAtivos[attackerCharacterId];
+    if (!attackerRecord) return;
+    const attacker = normalizeCharacter(attackerRecord.payload);
+    const status = getRevoadaAvailability(attacker, talentsIniciais);
+    if (!status.acquired || status.usedThisRound) return;
+    const nowIso = new Date().toISOString();
+    const nextAttacker = markRevoadaUsed(attacker, nowIso);
+    await persistGmMutation({
+      characterId: attackerCharacterId,
+      nextCharacter: nextAttacker,
+      logType: "talent_triggered",
+      logPayload: {
+        characterId: attackerCharacterId,
+        characterNome: attacker.nome,
+        message: `Revoada: ${attacker.nome} acertou com arma de Arremesso — pode atacar de novo (mesmo alvo ou adjacente) com outra arma leve de Arremesso, sem custo de PA (resolvido pelo Atacar normal).`,
+        sourceTalentId: "malabarista_revoada",
         sourceActionLogId: logId,
       },
     });
@@ -4235,6 +4267,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                         onPromoteAparar={() => handlePromoteApararCritico(entry.id)}
                         onContraMedida={() => handleContraMedida(entry)}
                         onRipostar={() => handleRipostar(entry.id)}
+                        onRevoada={() => handleRevoada(entry.id)}
                         onApply={() => handleResolveAttackDamage(entry)}
                         onCancel={() => setAtaqueResolvendoLogId(null)}
                         talentsIniciais={talentsIniciais}
@@ -4309,6 +4342,7 @@ function AttackResolutionPanel({
   onPromoteAparar,
   onContraMedida,
   onRipostar,
+  onRevoada,
   onApply,
   onCancel,
   talentsIniciais,
@@ -4336,6 +4370,8 @@ function AttackResolutionPanel({
   onContraMedida: () => void;
   /** Espadachim › Ripostar (checkpoint talentos, Fase 4) — marca 1/rodada no DEFENSOR ao obter sucesso crítico em Aparar. */
   onRipostar: () => void;
+  /** Malabarista › Revoada (checkpoint talentos, Fase 10) — marca 1/rodada no ATACANTE ao acertar com arma de Arremesso. */
+  onRevoada: () => void;
   onApply: () => void;
   onCancel: () => void;
   /** Assassino › Hemorragia/Executar (checkpoint talentos, Fase E) — talentos do ATACANTE. */
@@ -4423,6 +4459,26 @@ function AttackResolutionPanel({
   const headshotDisponivel = !!attackerCharacter && hasHeadshot(attackerCharacter, talentsIniciais) && armaEhADistancia;
   const ataqueFatalDisponivel = !!attackerCharacter && hasAtaqueFatal(attackerCharacter, talentsIniciais) && !!attackerCharacter.furtividade_ativa?.active;
   const laminaOcultaDisponivel = !!attackerCharacter && hasLaminaOculta(attackerCharacter, talentsIniciais);
+
+  // Malabarista › Revoada (checkpoint talentos, Fase 10) — lido do ATACANTE: acertou com
+  // arma com a propriedade Arremesso ("leve" confirmado pelo próprio clique — sem dado
+  // estruturado de peso/tamanho no catálogo), tem outra arma de Arremesso disponível
+  // (≥2 instâncias com a propriedade — proxy real, já que "leve" não é checável sozinho).
+  const revoadaStatus = attackerCharacter ? getRevoadaAvailability(attackerCharacter, talentsIniciais) : { acquired: false, usedThisRound: false };
+  const armaArremessoOriginal = !!weaponModel?.propertySlugs.includes("arremesso");
+  const outrasArmasArremesso = attackerCharacter
+    ? (attackerCharacter.inventario ?? []).filter((inst) => {
+        const modelo = itemsIniciais.find((m) => m.slug === inst.itemSlug);
+        return !!modelo?.propertySlugs.includes("arremesso");
+      }).length
+    : 0;
+  const podeRevoada =
+    revoadaStatus.acquired &&
+    !revoadaStatus.usedThisRound &&
+    armaArremessoOriginal &&
+    outrasArmasArremesso >= 2 &&
+    bandRulesEfetivo != null &&
+    bandRulesEfetivo.band !== "miss";
 
   // Dissecador › Golpe Cirúrgico/Fincada (checkpoint talentos, Fase 2) — mesma detecção de
   // "corpo a corpo com dano contundente" usada em handleResolveAttackDamage, lida direto do
@@ -4879,6 +4935,15 @@ function AttackResolutionPanel({
               />
               Marca da Dor — alvo tem efeito negativo seu: +{marcaDaDorStatusPanel.valor} na margem deste ataque (1/rodada)
             </label>
+          )}
+          {podeRevoada && (
+            <button
+              data-testid={`ataque-revoada-${log.id}`}
+              onClick={() => onRevoada()}
+              style={{ ...buttonStyle, fontSize: 11, padding: "3px 10px", alignSelf: "flex-start" }}
+            >
+              Revoada: atacar de novo com outra arma leve de Arremesso (0 PA — 1/rodada)
+            </button>
           )}
           {executarStatus.acquired && (
             <>
