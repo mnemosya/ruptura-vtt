@@ -62,7 +62,7 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 56 · 🟡 0 · ⚙️ 9 · 📖 1.
+Contagem: ✅ 0 · 🔵 59 · 🟡 0 · ⚙️ 6 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -81,9 +81,9 @@ Contagem: ✅ 0 · 🔵 56 · 🟡 0 · ⚙️ 9 · 📖 1.
 | Dissecador | Golpe Cirúrgico | 1 | 🔵 Implementado (aguardando validação manual) |
 | Dissecador | Fincada | 2 | 🔵 Implementado (aguardando validação manual) |
 | Dissecador | Contra-medida | 3 | 🔵 Implementado (aguardando validação manual) |
-| Droneiro | Sinal Limpo | 1 | ⚙️ Infra pendente |
-| Droneiro | Script | 2 | ⚙️ Infra pendente |
-| Droneiro | Enxame | 3 | ⚙️ Infra pendente |
+| Droneiro | Sinal Limpo | 1 | 🔵 Implementado (aguardando validação manual) |
+| Droneiro | Script | 2 | 🔵 Implementado (aguardando validação manual) |
+| Droneiro | Enxame | 3 | 🔵 Implementado (aguardando validação manual) |
 | Espadachim | Aparar | 1 | 🔵 Implementado (aguardando validação manual) |
 | Espadachim | Estocar | 2 | 🔵 Implementado (aguardando validação manual) |
 | Espadachim | Ripostar | 3 | 🔵 Implementado (aguardando validação manual) |
@@ -556,9 +556,9 @@ abaixo está **aguardando confirmação do usuário via teste manual** — nenhu
 | Dissecador | Golpe Cirúrgico | 🔵 Implementado | Troca Corpo→Mente livre (dropdown já sem gate); −2 real no alvo (efeito temporário luta/precisão/balística) em crítico + dano contundente corpo a corpo, 1/rodada | `talentEngine.ts`, `TableClient.tsx` | `Character.efeitos_temporarios` (alvo) | Resolver ataque corpo a corpo contundente com margem crítica → marcar checkbox → confirmar efeito -2 no alvo; repetir na mesma rodada → confirmar bloqueado (1/rodada) | Aguardando usuário |
 | Dissecador | Fincada | 🔵 Implementado | Reduz dano real em 1 (payload) para aplicar Lento/Caído no alvo, 1/rodada, só em acerto contundente corpo a corpo | `talentEngine.ts`, `TableClient.tsx` | `ActiveCondition` no alvo (com autoria) | Resolver ataque corpo a corpo contundente com acerto → escolher Lento ou Caído → confirmar dano reduzido em 1 e condição aplicada; repetir na mesma rodada → confirmar bloqueado | Aguardando usuário |
 | Dissecador | Contra-medida | 🔵 Implementado | Consome 1 Reação real do defensor quando ataque corpo a corpo contra ele erra; contra-ataque em si resolvido pelo Atacar normal (desarmado/contundente por confirmação) | `talentEngine.ts`, `TableClient.tsx` | `Character.estado_jogo.reacoes_usadas` (defensor) | Resolver ataque corpo a corpo com margem "miss" contra personagem com Contra-medida → clicar botão → confirmar Reação consumida no defensor | Aguardando usuário |
-| Droneiro | Sinal Limpo | ⚙️ Infra pendente | Nenhum (sem modelo de drone) | — | — | N/A | — |
-| Droneiro | Script | ⚙️ Infra pendente | Nenhum (sem modelo de drone) | — | — | N/A | — |
-| Droneiro | Enxame | ⚙️ Infra pendente | Nenhum (sem modelo de drone) | — | — | N/A | — |
+| Droneiro | Sinal Limpo | 🔵 Implementado | Promoção de margem falha_limitada→sucesso_limitado em Robótica ao assumir controle (já automática via `getMarginPromotions`, mesmo mecanismo de Olhar Penetrante); +1 PA real no drone escolhido, só na rodada atual, 1x/cena (expira em Encerrar Rodada) | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx`, `RollsTab.tsx` | `Character.drones`, `talentos_estado` | Rolar Robótica ao assumir controle, confirmar contexto → falha limitada vira sucesso limitado; aplicar +1 PA a um drone ativo → confirmar PA somado; Encerrar Rodada → confirmar PA volta ao normal; repetir bonus na mesma cena → confirmar bloqueado | Aguardando usuário |
+| Droneiro | Script | 🔵 Implementado | Define 1 gatilho real (descrição + ação associada) na 1ª ativação do drone na cena; "gatilho ocorreu" executa a ação sem custo de PA; reseta em Encerrar Cena | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx`, `endScene.ts` | `Character.drones[].gatilho`/`ativadoNestaCena` | Assumir controle de um drone pela 1ª vez na cena → definir gatilho → confirmar registrado; "gatilho ocorreu" → confirmar log de execução sem PA; Encerrar Cena → confirmar gatilho/flag resetados | Aguardando usuário |
+| Droneiro | Enxame | 🔵 Implementado | Pareia até 3 drones de MESMO modelo real (bloqueado se os modelos não baterem), modo pareada/independente, 1x/dia | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.drones[].pareamento` | Registrar 2+ drones do mesmo modelo → parear → confirmar grupo exibido; tentar parear modelos diferentes → confirmar bloqueado; "Desfazer" → confirmar pareamento removido; repetir no mesmo dia → confirmar bloqueado | Aguardando usuário |
 | Espadachim | Aparar | 🔵 Implementado | +1 em Aparar; promoção 1/cena a sucesso crítico (habilita gatilho de Ripostar) | `TableClient.tsx`, `talentEngine.ts` | `Character.talentos_estado` (defensor) | Aparar com margem "standard" contra o atacante → promover a crítico (confirmar lâmina) → conferir "promovida a sucesso crítico" no painel | Aguardando usuário |
 | Espadachim | Estocar | 🔵 Implementado | -1 PA real (mín. respeitado) num Atacar corpo a corpo com lâmina, 1/combate | `talentEngine.ts`, `CharacterSheetClient.tsx`, `ActionsTab.tsx` | `Character.talentos_estado` (cadência "combate" — reset manual, mesmo padrão já documentado no código para combate/sessão/missão) | Marcar Estocar, atacar com arma corpo a corpo → confirmar PA gasto 1 a menos que o normal; tentar de novo no mesmo combate → confirmar sem efeito | Aguardando usuário |
 | Espadachim | Ripostar | 🔵 Implementado | 1/rodada, marca uso real do DEFENSOR ao obter crítico em Aparar (natural ou promovido) — contra-ataque em si via Atacar normal | `talentEngine.ts`, `TableClient.tsx` | `Character.talentos_estado` (defensor) | Aparar com margem "critical" (ou promover via Aparar N1) → clicar Ripostar → confirmar uso marcado; repetir na mesma rodada → confirmar bloqueado | Aguardando usuário |

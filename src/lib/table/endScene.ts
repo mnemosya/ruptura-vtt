@@ -29,6 +29,7 @@ import {
   resetTalentUses,
   expireSceneTemporaryEffects,
   resolveUltimoFolegoSceneEnd,
+  resetDroneSceneState,
   type Character,
 } from "../character";
 import { listCharactersForNarratorCampaign, updateCharacter } from "../character/storage";
@@ -134,7 +135,12 @@ export async function resolveCampaignEndSceneForCharacters(params: {
       // (dispara colapso normalmente, mesmo padrão de qualquer outro PV chegando a 0).
       const ultimoFolego = resolveUltimoFolegoSceneEnd(nextCharacter, nowIso);
       nextCharacter = ultimoFolego.character;
-      const outroEstadoMudou = talentReset.resetCount > 0 || sceneExpiry.expired.length > 0 || ultimoFolego.forcedToZero;
+      // Droneiro › Script (checkpoint talentos, Fase 14) — reseta a "1ª ativação na
+      // cena" e o gatilho definido, que são escopados à cena que está encerrando.
+      const droneSceneReset = resetDroneSceneState(nextCharacter);
+      nextCharacter = droneSceneReset.character;
+      const outroEstadoMudou =
+        talentReset.resetCount > 0 || sceneExpiry.expired.length > 0 || ultimoFolego.forcedToZero || droneSceneReset.resetCount > 0;
       if (outroEstadoMudou && !result.resolved) {
         await updateCharacter(record.id, nextCharacter);
       }

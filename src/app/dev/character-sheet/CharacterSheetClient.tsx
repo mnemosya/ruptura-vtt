@@ -131,6 +131,19 @@ import {
   markGatoDeTelhadoUsed,
   getSaidaDosFundosAvailability,
   markSaidaDosFundosUsed,
+  registerDrone,
+  removeDrone,
+  activateDrone,
+  deactivateDrone,
+  getSinalLimpoAvailability,
+  applySinalLimpoBonus,
+  expireDroneRoundBonuses,
+  hasScript,
+  setDroneGatilho,
+  markDroneGatilhoOcorrido,
+  getEnxameAvailability,
+  pairDronesEnxame,
+  unpairDrones,
   isPvGatedToggleAllowedToActivate,
   enforcePvGatedToggleDeactivation,
   hasSaqueFantasma,
@@ -2037,7 +2050,9 @@ export default function CharacterSheetClient({
     const talentReset = resetTalentUses(paReduction.character, ["rodada"]);
     // Efeitos temporários com duração por rodadas (checkpoint pós-v0.71) — reduz 1 rodada e expira os que zeram.
     const tick = tickRoundTemporaryEffects(talentReset.character, nowIso);
-    nextCharacter = { ...tick.character, current_round: round + 1 };
+    // Droneiro › Sinal Limpo (checkpoint talentos, Fase 14) — o +1 PA concedido a um drone vale só a rodada em que foi dado.
+    const droneBonusExpiry = expireDroneRoundBonuses(tick.character);
+    nextCharacter = { ...droneBonusExpiry.character, current_round: round + 1 };
 
     characterRef.current = nextCharacter;
     setCharacter(nextCharacter);
@@ -2045,6 +2060,7 @@ export default function CharacterSheetClient({
     const tempLogs: string[] = [
       ...tick.ticked.map((e) => `Efeito temporário "${e.name}": ${e.remainingRounds} rodada(s) restante(s).`),
       ...tick.expired.map((e) => `Efeito temporário "${e.name}" expirou (duração por rodadas).`),
+      ...droneBonusExpiry.expired.map((d) => `Sinal Limpo: +1 PA de ${d.nome} expirou no fim da rodada.`),
     ];
     const allLogs = [...collapseResult.logs, ...resolved.logs, ...paReduction.logs, ...tempLogs];
     setEndRoundSummary({ logs: allLogs, warnings: [...collapseResult.warnings, ...resolved.warnings] });
@@ -3240,6 +3256,109 @@ export default function CharacterSheetClient({
     characterRef.current = next;
     setCharacter(next);
     addLogEntry("condicao", "Saída dos Fundos: proteção da cena encerrada.");
+  }
+
+  /** Droneiro › registra um drone real sob comando (sem catálogo estruturado de drones no conteúdo). */
+  function handleRegisterDrone(params: { nome: string; modelo: string; paMaximo: number; acoes: string }) {
+    const current = characterRef.current;
+    const nowIso = new Date().toISOString();
+    const next = registerDrone(current, params, nowIso);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Drone registrado: ${params.nome} (${params.modelo}).`);
+  }
+
+  function handleRemoveDrone(droneId: string) {
+    const current = characterRef.current;
+    const drone = current.drones?.find((d) => d.id === droneId);
+    if (!drone) return;
+    const next = removeDrone(current, droneId);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Drone removido: ${drone.nome}.`);
+  }
+
+  /** Droneiro › assume o controle do drone (teste de Robótica é manual — RollsTab, com a promoção de margem de Sinal Limpo já automática). */
+  function handleActivateDrone(droneId: string) {
+    const current = characterRef.current;
+    const drone = current.drones?.find((d) => d.id === droneId);
+    if (!drone) return;
+    const next = activateDrone(current, droneId);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Controle assumido: ${drone.nome}.`);
+  }
+
+  function handleDeactivateDrone(droneId: string) {
+    const current = characterRef.current;
+    const drone = current.drones?.find((d) => d.id === droneId);
+    if (!drone) return;
+    const next = deactivateDrone(current, droneId);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Controle encerrado: ${drone.nome}.`);
+  }
+
+  /** Droneiro › Sinal Limpo — +1 PA real no drone escolhido, só nesta rodada (1x/cena; expira em Encerrar Rodada). */
+  function handleApplySinalLimpoBonus(droneId: string) {
+    const current = characterRef.current;
+    const status = getSinalLimpoAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedThisScene) return;
+    const drone = current.drones?.find((d) => d.id === droneId);
+    if (!drone) return;
+    const nowIso = new Date().toISOString();
+    const next = applySinalLimpoBonus(current, droneId, nowIso);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("recurso", `Sinal Limpo: +1 PA em ${drone.nome} nesta rodada.`);
+  }
+
+  /** Droneiro › Script — define o gatilho simples do drone na 1ª ativação da cena. */
+  function handleSetDroneGatilho(droneId: string, descricao: string, acaoAssociada: string) {
+    const current = characterRef.current;
+    if (!hasScript(current, talentsIniciais)) return;
+    const drone = current.drones?.find((d) => d.id === droneId);
+    if (!drone) return;
+    const next = setDroneGatilho(current, droneId, descricao, acaoAssociada);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Script: gatilho definido em ${drone.nome} — "${descricao}" → ${acaoAssociada}.`);
+  }
+
+  /** Droneiro › Script — marca o gatilho como ocorrido: o drone executa a ação automaticamente, sem custo de PA. */
+  function handleMarkDroneGatilhoOcorrido(droneId: string) {
+    const current = characterRef.current;
+    const drone = current.drones?.find((d) => d.id === droneId);
+    if (!drone?.gatilho) return;
+    const next = markDroneGatilhoOcorrido(current, droneId);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Script: gatilho ocorreu em ${drone.nome} — executando "${drone.gatilho.acaoAssociada}" automaticamente (0 PA).`);
+  }
+
+  /** Droneiro › Enxame — pareia até 3 drones de mesmo modelo, 1x/dia. */
+  function handlePairEnxame(droneIds: string[], modo: "pareada" | "independente") {
+    const current = characterRef.current;
+    const status = getEnxameAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedToday) return;
+    if (droneIds.length < 2 || droneIds.length > status.maxUnidades) return;
+    const nowIso = new Date().toISOString();
+    const next = pairDronesEnxame(current, droneIds, modo, nowIso);
+    if (next === current) {
+      addLogEntry("condicao", "Enxame: os drones escolhidos não são do mesmo modelo — pareamento não aplicado.");
+      return;
+    }
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Enxame: ${droneIds.length} drones pareados (${modo}).`);
+  }
+
+  function handleUnpairEnxame(grupoId: string) {
+    const current = characterRef.current;
+    const next = unpairDrones(current, grupoId);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", "Enxame: pareamento desfeito.");
   }
 
   /** Rúnico › Gatilho Rúnico — ativa/desativa runa instalada sem PA. */
@@ -5524,6 +5643,18 @@ export default function CharacterSheetClient({
           saidaDosFundosStatus={getSaidaDosFundosAvailability(character, talentsIniciais)}
           onRegisterSaidaDosFundos={handleRegisterSaidaDosFundos}
           onEndSaidaDosFundos={handleEndSaidaDosFundos}
+          drones={character.drones}
+          sinalLimpoStatus={getSinalLimpoAvailability(character, talentsIniciais)}
+          onRegisterDrone={handleRegisterDrone}
+          onRemoveDrone={handleRemoveDrone}
+          onActivateDrone={handleActivateDrone}
+          onDeactivateDrone={handleDeactivateDrone}
+          onApplySinalLimpoBonus={handleApplySinalLimpoBonus}
+          onSetDroneGatilho={handleSetDroneGatilho}
+          onMarkDroneGatilhoOcorrido={handleMarkDroneGatilhoOcorrido}
+          enxameStatus={getEnxameAvailability(character, talentsIniciais)}
+          onPairEnxame={handlePairEnxame}
+          onUnpairEnxame={handleUnpairEnxame}
         />
       )}
 

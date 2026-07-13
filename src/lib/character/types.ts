@@ -643,6 +643,29 @@ export interface Character {
     encerradoEm?: string;
   };
   /**
+   * Droneiro › modelo mínimo de drone (checkpoint talentos, Fase 14) — sem
+   * catálogo estruturado de drones no conteúdo canônico (só a ficha textual
+   * de "19 MERCADO NOTURNO › DRONES E ROBÔS"), então `modelo`/`acoes` são
+   * texto livre registrado pelo jogador/narrador a partir da ficha do drone
+   * escolhido; `paAtual`/`paMaximo` são os únicos campos numéricos reais.
+   * `paBonusRodadaAtiva` marca o +1 PA de Sinal Limpo pendente de expirar no
+   * fim da rodada atual (ver `handleEndRoundForCharacter`).
+   */
+  drones?: {
+    id: string;
+    nome: string;
+    modelo: string;
+    controlador: string;
+    estado: "ativo" | "inativo";
+    paAtual: number;
+    paMaximo: number;
+    acoes: string;
+    ativadoNestaCena: boolean;
+    gatilho: { descricao: string; acaoAssociada: string; ocorrido: boolean } | null;
+    pareamento: { grupoId: string; modo: "pareada" | "independente" } | null;
+    paBonusRodadaAtiva: boolean;
+  }[];
+  /**
    * Sorrateiro › estado real de Furtividade (checkpoint talentos, Fase 3)
    * — entrada/saída manual (narrativa, sem teste estruturado próprio para
    * "entrar"; testes de Furtividade em si usam a perícia normalmente,

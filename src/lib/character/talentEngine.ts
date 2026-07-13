@@ -1990,6 +1990,185 @@ export function markSaidaDosFundosUsed(character: Character, nowIso: string): Ch
   return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
 }
 
+export type DroneInstance = NonNullable<Character["drones"]>[number];
+
+// ---------------------------------------------------------------------
+// Droneiro — modelo mínimo de drone (registro manual: sem catálogo
+// estruturado de drones no conteúdo canônico) + Sinal Limpo (N1), Script
+// (N2), Enxame (N3).
+// ---------------------------------------------------------------------
+
+export function registerDrone(
+  character: Character,
+  params: { nome: string; modelo: string; paMaximo: number; acoes: string },
+  nowIso: string,
+): Character {
+  const drone: DroneInstance = {
+    id: crypto.randomUUID(),
+    nome: params.nome,
+    modelo: params.modelo,
+    controlador: character.nome,
+    estado: "inativo",
+    paAtual: params.paMaximo,
+    paMaximo: params.paMaximo,
+    acoes: params.acoes,
+    ativadoNestaCena: false,
+    gatilho: null,
+    pareamento: null,
+    paBonusRodadaAtiva: false,
+  };
+  return { ...character, drones: [...(character.drones ?? []), drone] };
+}
+
+export function removeDrone(character: Character, droneId: string): Character {
+  return { ...character, drones: (character.drones ?? []).filter((d) => d.id !== droneId) };
+}
+
+/**
+ * Ativa o drone (assume o controle). Se for a 1ª ativação NESTA cena e o
+ * personagem tem Script, o chamador (`CharacterSheetClient`) decide se
+ * abre o formulário de gatilho — esta função só muda `estado`/
+ * `ativadoNestaCena`, nunca decide sozinha sobre o talento.
+ */
+export function activateDrone(character: Character, droneId: string): Character {
+  const drones = (character.drones ?? []).map((d) => (d.id === droneId ? { ...d, estado: "ativo" as const, ativadoNestaCena: true } : d));
+  return { ...character, drones };
+}
+
+export function deactivateDrone(character: Character, droneId: string): Character {
+  const drones = (character.drones ?? []).map((d) => (d.id === droneId ? { ...d, estado: "inativo" as const } : d));
+  return { ...character, drones };
+}
+
+export function hasSinalLimpo(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "companheiro_pa_bonus") return true;
+    }
+  }
+  return false;
+}
+
+export const SINAL_LIMPO_USAGE_KEY = "droneiro_sinal_limpo:cena";
+
+export function getSinalLimpoAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisScene: boolean } {
+  const acquired = hasSinalLimpo(character, talents);
+  const usedThisScene = (character.talentos_estado?.usos?.[SINAL_LIMPO_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisScene };
+}
+
+/** +1 PA real no drone escolhido, só nesta rodada — expira em "Encerrar Rodada" (ver `expireDroneRoundBonuses`). */
+export function applySinalLimpoBonus(character: Character, droneId: string, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[SINAL_LIMPO_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
+  const drones = (character.drones ?? []).map((d) =>
+    d.id === droneId ? { ...d, paAtual: d.paAtual + 1, paBonusRodadaAtiva: true } : d,
+  );
+  return { ...character, drones, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+/** Chamado em "Encerrar Rodada" — remove o +1 PA pendente de Sinal Limpo dos drones que o receberam. */
+export function expireDroneRoundBonuses(character: Character): { character: Character; expired: DroneInstance[] } {
+  const expired: DroneInstance[] = [];
+  const drones = (character.drones ?? []).map((d) => {
+    if (!d.paBonusRodadaAtiva) return d;
+    expired.push(d);
+    return { ...d, paAtual: Math.max(0, d.paAtual - 1), paBonusRodadaAtiva: false };
+  });
+  if (expired.length === 0) return { character, expired };
+  return { character: { ...character, drones }, expired };
+}
+
+export function hasScript(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "companheiro_script") return true;
+    }
+  }
+  return false;
+}
+
+/** Define o gatilho do drone (só válido na 1ª ativação da cena — `ativadoNestaCena` acabou de virar true e ainda sem gatilho). */
+export function setDroneGatilho(character: Character, droneId: string, descricao: string, acaoAssociada: string): Character {
+  const drones = (character.drones ?? []).map((d) =>
+    d.id === droneId ? { ...d, gatilho: { descricao, acaoAssociada, ocorrido: false } } : d,
+  );
+  return { ...character, drones };
+}
+
+/** Marca o gatilho como ocorrido — o drone executa a ação associada automaticamente, sem custo de PA. */
+export function markDroneGatilhoOcorrido(character: Character, droneId: string): Character {
+  const drones = (character.drones ?? []).map((d) =>
+    d.id === droneId && d.gatilho ? { ...d, gatilho: { ...d.gatilho, ocorrido: true } } : d,
+  );
+  return { ...character, drones };
+}
+
+export const ENXAME_USAGE_KEY = "droneiro_enxame:dia";
+
+export function getEnxameAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedToday: boolean; maxUnidades: number } {
+  let acquired = false;
+  let maxUnidades = 3;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "companheiro_grupo_coordenado") continue;
+      acquired = true;
+      if (typeof efeito.max_unidades === "number") maxUnidades = efeito.max_unidades;
+    }
+  }
+  const usedToday = (character.talentos_estado?.usos?.[ENXAME_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedToday, maxUnidades };
+}
+
+/** Pareia até `maxUnidades` drones de MESMO modelo real (checado aqui, não confiado ao chamador). */
+export function pairDronesEnxame(
+  character: Character,
+  droneIds: string[],
+  modo: "pareada" | "independente",
+  nowIso: string,
+): Character {
+  const drones = character.drones ?? [];
+  const selecionados = drones.filter((d) => droneIds.includes(d.id));
+  if (selecionados.length < 2) return character;
+  const modeloBase = selecionados[0].modelo;
+  if (!selecionados.every((d) => d.modelo === modeloBase)) return character;
+  const grupoId = crypto.randomUUID();
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[ENXAME_USAGE_KEY] = { usados: 1, cadencia: "dia", atualizadoEm: nowIso };
+  const nextDrones = drones.map((d) => (droneIds.includes(d.id) ? { ...d, pareamento: { grupoId, modo } } : d));
+  return { ...character, drones: nextDrones, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+export function unpairDrones(character: Character, grupoId: string): Character {
+  const drones = (character.drones ?? []).map((d) => (d.pareamento?.grupoId === grupoId ? { ...d, pareamento: null } : d));
+  return { ...character, drones };
+}
+
+/**
+ * Fim de cena (checkpoint talentos, Fase 14) — Script reseta a "1ª ativação
+ * na cena" (`ativadoNestaCena`) e o gatilho definido (o gatilho do payload é
+ * escopado à cena em que foi definido; uma nova cena permite um novo
+ * gatilho). Chamado por `resolveCampaignEndSceneForCharacters`
+ * (`endScene.ts`), mesmo padrão de Último Fôlego.
+ */
+export function resetDroneSceneState(character: Character): { character: Character; resetCount: number } {
+  const drones = character.drones ?? [];
+  let resetCount = 0;
+  const nextDrones = drones.map((d) => {
+    if (!d.ativadoNestaCena && !d.gatilho) return d;
+    resetCount += 1;
+    return { ...d, ativadoNestaCena: false, gatilho: null };
+  });
+  if (resetCount === 0) return { character, resetCount };
+  return { character: { ...character, drones: nextDrones }, resetCount };
+}
+
 // ---------------------------------------------------------------------
 // Dissecador — Golpe Cirúrgico (N1): -2 na próxima ação ofensiva do alvo
 // após sucesso crítico com dano contundente corpo a corpo. A troca

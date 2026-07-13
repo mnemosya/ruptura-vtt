@@ -135,6 +135,18 @@ export function TalentsTab({
   saidaDosFundosStatus,
   onRegisterSaidaDosFundos,
   onEndSaidaDosFundos,
+  drones = [],
+  sinalLimpoStatus,
+  onRegisterDrone,
+  onRemoveDrone,
+  onActivateDrone,
+  onDeactivateDrone,
+  onApplySinalLimpoBonus,
+  onSetDroneGatilho,
+  onMarkDroneGatilhoOcorrido,
+  enxameStatus,
+  onPairEnxame,
+  onUnpairEnxame,
 }: {
   talents: TalentContent[];
   catalogError: string | null;
@@ -227,6 +239,19 @@ export function TalentsTab({
   saidaDosFundosStatus?: { acquired: boolean; usedToday: boolean };
   onRegisterSaidaDosFundos?: (params: { situacaoDeRisco: string; rotaOuMetodo: string; consequenciaMenor: string }) => void;
   onEndSaidaDosFundos?: () => void;
+  /** Droneiro › modelo mínimo de drone + Sinal Limpo/Script/Enxame (checkpoint talentos, Fase 14). */
+  drones?: NonNullable<Character["drones"]>;
+  sinalLimpoStatus?: { acquired: boolean; usedThisScene: boolean };
+  onRegisterDrone?: (params: { nome: string; modelo: string; paMaximo: number; acoes: string }) => void;
+  onRemoveDrone?: (droneId: string) => void;
+  onActivateDrone?: (droneId: string) => void;
+  onDeactivateDrone?: (droneId: string) => void;
+  onApplySinalLimpoBonus?: (droneId: string) => void;
+  onSetDroneGatilho?: (droneId: string, descricao: string, acaoAssociada: string) => void;
+  onMarkDroneGatilhoOcorrido?: (droneId: string) => void;
+  enxameStatus?: { acquired: boolean; usedToday: boolean; maxUnidades: number };
+  onPairEnxame?: (droneIds: string[], modo: "pareada" | "independente") => void;
+  onUnpairEnxame?: (grupoId: string) => void;
 }) {
   const [filter, setFilter] = useState<FilterKey>("todos");
 
@@ -466,6 +491,26 @@ export function TalentsTab({
                             onRegister={onRegisterSaidaDosFundos}
                             onEnd={onEndSaidaDosFundos}
                           />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "droneiro_sinal_limpo" && sinalLimpoStatus?.acquired && (
+                          <DroneRosterWidget
+                            drones={drones}
+                            sinalLimpoStatus={sinalLimpoStatus}
+                            onRegisterDrone={onRegisterDrone}
+                            onRemoveDrone={onRemoveDrone}
+                            onActivateDrone={onActivateDrone}
+                            onDeactivateDrone={onDeactivateDrone}
+                            onApplySinalLimpoBonus={onApplySinalLimpoBonus}
+                          />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "droneiro_script" && (
+                          <ScriptWidget drones={drones} onSetGatilho={onSetDroneGatilho} onMarkOcorrido={onMarkDroneGatilhoOcorrido} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "droneiro_enxame" && enxameStatus?.acquired && (
+                          <EnxameWidget drones={drones} status={enxameStatus} onPair={onPairEnxame} onUnpair={onUnpairEnxame} />
                         )}
 
                         {acquiredEntry && nivel.slug === "sorrateiro_passo_fantasma" && (
@@ -1556,6 +1601,231 @@ function SaidaDosFundosWidget({
           Escapar agora
         </button>
       </div>
+    </div>
+  );
+}
+
+type DroneInstance = NonNullable<Character["drones"]>[number];
+
+function DroneRosterWidget({
+  drones,
+  sinalLimpoStatus,
+  onRegisterDrone,
+  onRemoveDrone,
+  onActivateDrone,
+  onDeactivateDrone,
+  onApplySinalLimpoBonus,
+}: {
+  drones: DroneInstance[];
+  sinalLimpoStatus: { acquired: boolean; usedThisScene: boolean };
+  onRegisterDrone?: (params: { nome: string; modelo: string; paMaximo: number; acoes: string }) => void;
+  onRemoveDrone?: (droneId: string) => void;
+  onActivateDrone?: (droneId: string) => void;
+  onDeactivateDrone?: (droneId: string) => void;
+  onApplySinalLimpoBonus?: (droneId: string) => void;
+}) {
+  const [nome, setNome] = useState("");
+  const [modelo, setModelo] = useState("");
+  const [paMaximo, setPaMaximo] = useState(3);
+  const [acoes, setAcoes] = useState("");
+  const [droneBonus, setDroneBonus] = useState("");
+
+  const ativos = drones.filter((d) => d.estado === "ativo");
+
+  return (
+    <div data-testid="drone-roster-widget" style={widgetBox}>
+      <span style={{ opacity: 0.7 }}>
+        Drones sob comando (registro manual — sem catálogo estruturado de drones no conteúdo; use a ficha do modelo em "Drones e Robôs" para PA/ações):
+      </span>
+      {drones.length === 0 && <span style={{ opacity: 0.5 }}>Nenhum drone registrado.</span>}
+      {drones.map((d) => (
+        <div key={d.id} data-testid={`drone-${d.id}`} style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ color: d.estado === "ativo" ? "#4caf50" : undefined }}>
+            {d.nome} ({d.modelo}) — {d.estado} — PA {d.paAtual}/{d.paMaximo}
+            {d.pareamento ? ` — pareado (${d.pareamento.modo})` : ""}
+          </span>
+          {d.estado === "ativo" ? (
+            <button data-testid={`drone-desativar-${d.id}`} onClick={() => onDeactivateDrone?.(d.id)} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}>
+              Desativar
+            </button>
+          ) : (
+            <button data-testid={`drone-ativar-${d.id}`} onClick={() => onActivateDrone?.(d.id)} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}>
+              Assumir controle
+            </button>
+          )}
+          <button data-testid={`drone-remover-${d.id}`} onClick={() => onRemoveDrone?.(d.id)} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}>
+            Remover
+          </button>
+        </div>
+      ))}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <input data-testid="drone-nome" placeholder="nome do drone" value={nome} onChange={(e) => setNome(e.target.value)} style={{ ...widgetInput, width: 110 }} />
+        <input data-testid="drone-modelo" placeholder="modelo (ex.: Mosca)" value={modelo} onChange={(e) => setModelo(e.target.value)} style={{ ...widgetInput, width: 110 }} />
+        <input data-testid="drone-pa-maximo" type="number" min={1} placeholder="PA máx." value={paMaximo} onChange={(e) => setPaMaximo(Math.max(1, Number(e.target.value)))} style={{ ...widgetInput, width: 70 }} />
+        <input data-testid="drone-acoes" placeholder="ações (texto livre)" value={acoes} onChange={(e) => setAcoes(e.target.value)} style={{ ...widgetInput, width: 160 }} />
+        <button
+          data-testid="drone-registrar"
+          disabled={!nome.trim() || !modelo.trim()}
+          onClick={() => {
+            onRegisterDrone?.({ nome: nome.trim(), modelo: modelo.trim(), paMaximo, acoes });
+            setNome("");
+            setModelo("");
+            setAcoes("");
+          }}
+          style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !nome.trim() || !modelo.trim() ? 0.5 : 1 }}
+        >
+          Registrar drone
+        </button>
+      </div>
+      {sinalLimpoStatus.acquired && (
+        <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 4, borderTop: "1px solid #333", paddingTop: 4 }}>
+          {sinalLimpoStatus.usedThisScene ? (
+            <span style={{ opacity: 0.6 }}>Sinal Limpo já usado nesta cena (+1 PA).</span>
+          ) : ativos.length === 0 ? (
+            <span style={{ opacity: 0.6 }}>Sinal Limpo: assuma o controle de um drone para conceder +1 PA nesta rodada.</span>
+          ) : (
+            <>
+              <select data-testid="sinal-limpo-drone-select" value={droneBonus} onChange={(e) => setDroneBonus(e.target.value)} style={widgetInput}>
+                <option value="">Escolha um drone ativo</option>
+                {ativos.map((d) => (
+                  <option key={d.id} value={d.id}>{d.nome}</option>
+                ))}
+              </select>
+              <button
+                data-testid="sinal-limpo-aplicar"
+                disabled={!droneBonus}
+                onClick={() => {
+                  onApplySinalLimpoBonus?.(droneBonus);
+                  setDroneBonus("");
+                }}
+                style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !droneBonus ? 0.5 : 1 }}
+              >
+                Sinal Limpo: +1 PA nesta rodada (1/cena)
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ScriptWidget({
+  drones,
+  onSetGatilho,
+  onMarkOcorrido,
+}: {
+  drones: DroneInstance[];
+  onSetGatilho?: (droneId: string, descricao: string, acaoAssociada: string) => void;
+  onMarkOcorrido?: (droneId: string) => void;
+}) {
+  const [descricao, setDescricao] = useState<Record<string, string>>({});
+  const [acao, setAcao] = useState<Record<string, string>>({});
+  const pendentesDeGatilho = drones.filter((d) => d.ativadoNestaCena && !d.gatilho);
+  const comGatilho = drones.filter((d) => d.gatilho);
+
+  if (pendentesDeGatilho.length === 0 && comGatilho.length === 0) {
+    return <div data-testid="script-widget" style={{ ...widgetBox, opacity: 0.6 }}>Assuma o controle de um drone nesta cena para definir um gatilho.</div>;
+  }
+
+  return (
+    <div data-testid="script-widget" style={widgetBox}>
+      <span style={{ opacity: 0.7 }}>Gatilho simples: o drone executa a ação automaticamente na próxima ocorrência, sem custo de PA.</span>
+      {pendentesDeGatilho.map((d) => (
+        <div key={d.id} data-testid={`script-form-${d.id}`} style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <span>{d.nome}:</span>
+          <input data-testid={`script-gatilho-${d.id}`} placeholder="gatilho (ex.: detectar movimento)" value={descricao[d.id] ?? ""} onChange={(e) => setDescricao((p) => ({ ...p, [d.id]: e.target.value }))} style={{ ...widgetInput, width: 160 }} />
+          <input data-testid={`script-acao-${d.id}`} placeholder="ação associada" value={acao[d.id] ?? ""} onChange={(e) => setAcao((p) => ({ ...p, [d.id]: e.target.value }))} style={{ ...widgetInput, width: 130 }} />
+          <button
+            data-testid={`script-definir-${d.id}`}
+            disabled={!descricao[d.id]?.trim() || !acao[d.id]?.trim()}
+            onClick={() => onSetGatilho?.(d.id, descricao[d.id]!.trim(), acao[d.id]!.trim())}
+            style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !descricao[d.id]?.trim() || !acao[d.id]?.trim() ? 0.5 : 1 }}
+          >
+            Definir gatilho
+          </button>
+        </div>
+      ))}
+      {comGatilho.map((d) => (
+        <div key={d.id} data-testid={`script-ativo-${d.id}`} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <span style={{ color: d.gatilho!.ocorrido ? undefined : "#4caf50", opacity: d.gatilho!.ocorrido ? 0.6 : 1 }}>
+            {d.nome}: "{d.gatilho!.descricao}" → {d.gatilho!.acaoAssociada}{d.gatilho!.ocorrido ? " (já ocorreu)" : ""}
+          </span>
+          {!d.gatilho!.ocorrido && (
+            <button data-testid={`script-ocorrido-${d.id}`} onClick={() => onMarkOcorrido?.(d.id)} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}>
+              Gatilho ocorreu — executar
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EnxameWidget({
+  drones,
+  status,
+  onPair,
+  onUnpair,
+}: {
+  drones: DroneInstance[];
+  status: { acquired: boolean; usedToday: boolean; maxUnidades: number };
+  onPair?: (droneIds: string[], modo: "pareada" | "independente") => void;
+  onUnpair?: (grupoId: string) => void;
+}) {
+  const [selecionados, setSelecionados] = useState<string[]>([]);
+  const [modo, setModo] = useState<"pareada" | "independente">("pareada");
+  const pareamentos = new Map<string, DroneInstance[]>();
+  for (const d of drones) {
+    if (!d.pareamento) continue;
+    const grupo = pareamentos.get(d.pareamento.grupoId) ?? [];
+    grupo.push(d);
+    pareamentos.set(d.pareamento.grupoId, grupo);
+  }
+
+  return (
+    <div data-testid="enxame-widget" style={widgetBox}>
+      {[...pareamentos.entries()].map(([grupoId, membros]) => (
+        <div key={grupoId} data-testid={`enxame-grupo-${grupoId}`} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <span style={{ color: "#4caf50" }}>✦ Pareados ({membros[0].pareamento!.modo})</span> — {membros.map((m) => m.nome).join(", ")}
+          <button data-testid={`enxame-desfazer-${grupoId}`} onClick={() => onUnpair?.(grupoId)} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}>
+            Desfazer
+          </button>
+        </div>
+      ))}
+      {status.usedToday ? (
+        <span style={{ opacity: 0.6 }}>Enxame já usado hoje (reseta em Novo Dia/descanso longo).</span>
+      ) : (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+          <span style={{ opacity: 0.7 }}>Escolha até {status.maxUnidades} drones de MESMO modelo:</span>
+          <select
+            multiple
+            data-testid="enxame-drones"
+            value={selecionados}
+            onChange={(e) => setSelecionados(Array.from(e.target.selectedOptions, (o) => o.value).slice(0, status.maxUnidades))}
+            style={{ ...widgetInput, minHeight: 60 }}
+          >
+            {drones.map((d) => (
+              <option key={d.id} value={d.id}>{d.nome} ({d.modelo})</option>
+            ))}
+          </select>
+          <select data-testid="enxame-modo" value={modo} onChange={(e) => setModo(e.target.value as typeof modo)} style={widgetInput}>
+            <option value="pareada">Pareada (ação simultânea, sem PA extra)</option>
+            <option value="independente">Independente (ações separadas, PA normal)</option>
+          </select>
+          <button
+            data-testid="enxame-parear"
+            disabled={selecionados.length < 2}
+            onClick={() => {
+              onPair?.(selecionados, modo);
+              setSelecionados([]);
+            }}
+            style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: selecionados.length < 2 ? 0.5 : 1 }}
+          >
+            Parear
+          </button>
+        </div>
+      )}
     </div>
   );
 }
