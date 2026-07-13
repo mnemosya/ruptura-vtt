@@ -62,7 +62,7 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 50 · 🟡 0 · ⚙️ 15 · 📖 1.
+Contagem: ✅ 0 · 🔵 51 · 🟡 0 · ⚙️ 14 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -113,7 +113,7 @@ Contagem: ✅ 0 · 🔵 50 · 🟡 0 · ⚙️ 15 · 📖 1.
 | Paramédico | Protocolo de Emergência | 3 | 🔵 Implementado (aguardando validação manual) |
 | Pistoleiro | Gatilho Quente | 1 | 🔵 Implementado (aguardando validação manual) |
 | Pistoleiro | Bang Bang | 2 | 🔵 Implementado (aguardando validação manual) |
-| Pistoleiro | Showdown | 3 | ⚙️ Infra pendente |
+| Pistoleiro | Showdown | 3 | 🔵 Implementado (aguardando validação manual) |
 | Praga | Marca da Dor | 1 | 🔵 Implementado (aguardando validação manual) |
 | Praga | Sangria Lenta | 2 | 🔵 Implementado (aguardando validação manual) |
 | Praga | Contágio | 3 | 🔵 Implementado (aguardando validação manual) |
@@ -588,7 +588,7 @@ abaixo está **aguardando confirmação do usuário via teste manual** — nenhu
 | Paramédico | Protocolo de Emergência | 🔵 Implementado | Gasta 1 Reação real do caster, 1/cena; se o aliado está a 0 PV no momento da confirmação, PV vira 1 e colapso é encerrado pela cura canônica | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.estado_jogo` (caster), `recursos_atuais`/`colapso` (aliado), `talentos_estado` | Aliado a 0 PV → confirmar Protocolo → confirmar Reação do caster consumida e aliado com PV=1; repetir na mesma cena → confirmar bloqueado | Aguardando usuário |
 | Pistoleiro | Gatilho Quente | 🔵 Implementado | Recurso real de dados de gatilho (d8), dano extra = Balística atual em resultado 8 | `talentEngine.ts`, `TalentsTab.tsx`, `CharacterSheetClient.tsx` | `Character.talentos_estado` | Usar dado de gatilho, informar resultado 8 → confirmar dano extra = Balística; usar outro resultado → confirmar só consome; usar os 3 → confirmar indisponível; descanso longo → confirmar reset | Aguardando usuário |
 | Pistoleiro | Bang Bang | 🔵 Implementado | +1 dado de gatilho (pool vira 4); segundo disparo real (+1 PA, −1, mesmas regras) | `RollsTab.tsx`, `talentEngine.ts` | `Character.talentos_estado`, `estado_jogo.pa_gastos` | Rolar com dado de gatilho escolhido (maior dado) → confirmar segundo disparo disponível → gastar PA → rolar de novo com −1 pré-preenchido | Aguardando usuário |
-| Pistoleiro | Showdown | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Pistoleiro | Showdown | 🔵 Implementado | Gasta até 3 dados de gatilho reais na MESMA pool, 1/cena; reserva máxima já soma +1 automaticamente (`aumentar_recurso` genérico); lembrete EXATO por dado 6-8 qualificado (dano 2×Balística, PA, -1, desarmar) — efeitos cross-character sem vínculo estruturado entre a rolagem e o attack_resolved, aplicação manual pelo narrador | `talentEngine.ts`, `rollRuptura.ts`, `CharacterSheetClient.tsx`, `RollsTab.tsx` | `Character.talentos_estado` | Rolar com 2-3 dados de gatilho → confirmar todos entram na mesma pool e são consumidos de uma vez; confirmar lembrete lista exatamente os dados 6-8 | Aguardando usuário |
 | Praga | Marca da Dor | 🔵 Implementado | +1 real na margem do ataque quando o alvo tem efeito negativo autorado pelo próprio atacante, 1/rodada — resolvido lendo atacante+alvo juntos no momento da resolução (diferente de Muralha, que precisaria do lado do ATACANTE saber antecipado) | `talentEngine.ts`, `TableClient.tsx` | `Character.talentos_estado` (atacante) | Aplicar condição autorada pelo atacante no alvo → resolver ataque marcando Marca da Dor → confirmar +1 na margem/banda; repetir na mesma rodada → confirmar bloqueado | Aguardando usuário |
 | Praga | Sangria Lenta | 🔵 Implementado (mecanismo real, sem dado hoje para agir) | Estende texto de duração round-based ("N rodadas") em +1 quando o autor tem o talento — `applyGmCondition` agora aceita e persiste `duracao`; NENHUMA condição do catálogo usa duração round-based hoje (`duracao_padrao` é sempre null/"enquanto_na_area"), então o mecanismo é real e testado mas não tem input para agir até o catálogo declarar uma duração assim — documentado explicitamente, não inventado | `talentEngine.ts`, `TableClient.tsx`, `gmActions.ts` | `ActiveCondition.duracao` | Sem teste manual possível hoje (nenhum conteúdo fornece duração "N rodadas") — validar quando/if o catálogo publicar uma condição com essa duração | Aguardando usuário |
 | Praga | Contágio | 🔵 Implementado | Propaga condição autorada para até `maxAlvosMultiplicador` alvos adicionais confirmados manualmente (3m), 1/cena no autor — usa pela primeira vez `originalTargetId`/`applicationEventId` (campos existentes, nunca preenchidos antes) | `talentEngine.ts`, `TableClient.tsx`, `gmActions.ts` | `ActiveCondition` nos alvos adicionais (com autoria/origem preservadas) | Aplicar condição com autor → selecionar até N alvos adicionais → propagar → confirmar condição aplicada nos alvos com mesma autoria/duração; repetir na mesma cena → confirmar bloqueado | Aguardando usuário |

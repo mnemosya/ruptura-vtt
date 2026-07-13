@@ -111,7 +111,10 @@ import {
   hasAtaqueFatal,
   getGatilhoQuenteAvailability,
   consumeGatilhoDado,
+  consumeGatilhoDados,
   hasBangBangSegundoDisparo,
+  getShowdownAvailability,
+  markShowdownUsed,
   hasTotemBencao,
   getTotemBencaoTokenAvailability,
   markTotemBencaoTokenUsed,
@@ -2618,6 +2621,22 @@ export default function CharacterSheetClient({
         `Gatilho Quente: dado de gatilho usado — resultado ${resultadoD8} (conta como dado normal do teste, sem dano extra). Dados restantes: ${status.available - 1}/${status.max}.`,
       );
     }
+  }
+
+  /** Pistoleiro › Showdown (N3, checkpoint talentos Fase 11) — consome os dados de gatilho gastos de uma vez, 1/cena. */
+  function handleShowdownUsado(dadosGastos: number, qualificados: number) {
+    const current = characterRef.current;
+    const status = getShowdownAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedThisScene) return;
+    const nowIso = new Date().toISOString();
+    let next = consumeGatilhoDados(current, dadosGastos, nowIso);
+    next = markShowdownUsed(next, nowIso);
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry(
+      "condicao",
+      `Showdown: ${dadosGastos} dado(s) de gatilho gastos de uma vez — ${qualificados} qualificaram (6-8). Efeitos por dado a aplicar manualmente no alvo.`,
+    );
   }
 
   /** Pistoleiro › Bang Bang (N2, checkpoint talentos Fase 1) — gasta 1 PA para o segundo disparo (a rolagem em si é a próxima "Rolar" normal, com −1 já pré-preenchido pelo RollsTab). */
@@ -5442,6 +5461,8 @@ export default function CharacterSheetClient({
           onConsumeEntrelinhas={handleConsumeEntrelinhas}
           espetaculoMortalAtivo={character.espetaculo_mortal_ativo ?? null}
           onConsumeEspetaculoMortal={handleConsumeEspetaculoMortal}
+          showdownStatus={getShowdownAvailability(character, talentsIniciais)}
+          onShowdownUsado={handleShowdownUsado}
         />
       )}
 

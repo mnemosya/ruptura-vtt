@@ -150,6 +150,8 @@ export function RollsTab({
   onConsumeEntrelinhas,
   espetaculoMortalAtivo,
   onConsumeEspetaculoMortal,
+  showdownStatus,
+  onShowdownUsado,
 }: {
   atributos: CharacterAttributes;
   atributoDefinitions: AttributeDefinition[] | undefined;
@@ -202,6 +204,10 @@ export function RollsTab({
   /** Malabarista › Espetáculo Mortal (checkpoint talentos, Fase 10) — falha_limitada→sucesso_limitado no próximo teste de Precisão da sequência. */
   espetaculoMortalAtivo?: { opcao: "convergencia" | "dispersao"; concedidoEm: string } | null;
   onConsumeEspetaculoMortal?: () => void;
+  /** Pistoleiro › Showdown (checkpoint talentos, Fase 11) — 1/cena, gasta até maxDados dados de gatilho de uma vez. */
+  showdownStatus?: { acquired: boolean; usedThisScene: boolean; maxDados: number; intervaloAtiva: number[] };
+  /** Consome os dados gastos + marca 1/cena — chamado após a rolagem com o total gasto e a contagem de qualificados. */
+  onShowdownUsado?: (dadosGastos: number, qualificados: number) => void;
 }) {
   const atributoIds = ["corpo", "mente", "animo"] as const;
   const [atributoId, setAtributoId] = useState<(typeof atributoIds)[number]>("corpo");
@@ -234,6 +240,10 @@ export function RollsTab({
   // Pistoleiro › Gatilho Quente — inclui o d8 de gatilho na próxima rolagem; reseta
   // depois de cada "Rolar" (1 dado por ataque, nunca acumula pedido).
   const [usarDadoGatilho, setUsarDadoGatilho] = useState(false);
+  // Pistoleiro › Showdown — quantidade de dados de gatilho a gastar de uma vez (0 = não
+  // usar), capada por reserva disponível e pelo máximo do payload; reseta após "Rolar".
+  const [showdownQuantidade, setShowdownQuantidade] = useState(0);
+  const [showdownResumo, setShowdownResumo] = useState<string | null>(null);
   // Bang Bang — true logo após uma rolagem onde o d8 de gatilho foi o maior dado
   // (condição real do payload: "escolher o resultado dele como parte do teste").
   const [bangBangDisponivelAgora, setBangBangDisponivelAgora] = useState(false);
@@ -382,6 +392,7 @@ export function RollsTab({
       cd,
       promocaoMargem: promocao,
       incluirDadoGatilho: usarDadoGatilho,
+      quantidadeDadosGatilho: showdownQuantidade > 0 ? showdownQuantidade : undefined,
     });
 
     // Token consumido pelo PRIMEIRO teste após a concessão, com ou sem promoção real
@@ -407,6 +418,25 @@ export function RollsTab({
       setUsarDadoGatilho(false);
     } else {
       setBangBangDisponivelAgora(false);
+    }
+
+    // Pistoleiro › Showdown — consome os dados gastos (independente do resultado) e lista
+    // um lembrete EXATO por dado qualificado (6-8), já que os 4 efeitos afetam o ALVO
+    // (cross-character) e nem RollsTab nem TableClient conseguem aplicá-los sozinhos aqui
+    // (ver docstring de getShowdownAvailability em talentEngine.ts).
+    if (showdownQuantidade > 0 && resultado.dadosGatilhoResultados) {
+      const intervalo = showdownStatus?.intervaloAtiva ?? [6, 7, 8];
+      const qualificados = resultado.dadosGatilhoResultados.filter((d) => intervalo.includes(d));
+      const danoExtra = 2 * (pericias["balistica"] ?? 0);
+      if (qualificados.length > 0) {
+        setShowdownResumo(
+          `Showdown: ${qualificados.length} dado(s) qualificado(s) (${qualificados.join(", ")}) — para cada um, escolha 1: dano extra +${danoExtra} (2× Balística) · alvo perde 1 PA (rodada atual ou próxima) · -1 ofensivo e defensivo até fim da rodada · Desarmar (mova a arma do alvo para fora de "empunhado"). Aplique manualmente no alvo.`,
+        );
+      } else {
+        setShowdownResumo("Showdown: nenhum dado qualificado (6-8) nesta rolagem.");
+      }
+      onShowdownUsado?.(showdownQuantidade, qualificados.length);
+      setShowdownQuantidade(0);
     }
 
     pushHistorico({ kind: "pericia", resultado, origem: origemAtual ?? undefined });
@@ -672,6 +702,30 @@ export function RollsTab({
               />
               Usar dado de gatilho (d8 real na rolagem — {gatilhoQuenteStatus.available}/{gatilhoQuenteStatus.max} disponíveis)
             </label>
+          )}
+          {showdownStatus?.acquired && !showdownStatus.usedThisScene && gatilhoQuenteStatus && gatilhoQuenteStatus.available > 0 && (
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+              <span>Showdown (1/cena) — gastar</span>
+              <select
+                data-testid="roll-showdown-quantidade"
+                value={showdownQuantidade}
+                onChange={(e) => {
+                  setShowdownQuantidade(Number(e.target.value));
+                  if (Number(e.target.value) > 0) setUsarDadoGatilho(false);
+                }}
+                style={{ background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "2px 6px", fontSize: 11 }}
+              >
+                {Array.from({ length: Math.min(showdownStatus.maxDados, gatilhoQuenteStatus.available) + 1 }, (_, n) => n).map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+              <span>dado(s) de gatilho de uma vez nesta rolagem</span>
+            </label>
+          )}
+          {showdownResumo && (
+            <p data-testid="roll-showdown-resumo" style={{ fontSize: 11, color: "#5ec8ff", margin: 0 }}>
+              {showdownResumo}
+            </p>
           )}
           {bangBangDisponivelAgora && (
             <div data-testid="roll-bang-bang-disponivel" style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 11, color: "#5ec8ff" }}>

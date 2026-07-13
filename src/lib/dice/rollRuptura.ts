@@ -27,12 +27,15 @@ function classificarMargem(margem: number): MargemClassificacao {
 export function rollPericia(params: RupturaRollParams): RupturaRollResult {
   const quantidadeDados = Math.max(0, Math.trunc(params.atributoValor));
   const dados = Array.from({ length: quantidadeDados }, () => rollDie(8));
-  // Pistoleiro › Gatilho Quente — o d8 de gatilho é rolado JUNTO com os demais
-  // (mesma rolagem, cor diferente só narrativamente) e entra no pool de "maior
-  // dado" — nunca um bônus separado somado depois.
-  const dadoGatilhoResultado = params.incluirDadoGatilho ? rollDie(8) : undefined;
-  const poolCompleto = dadoGatilhoResultado != null ? [...dados, dadoGatilhoResultado] : dados;
+  // Pistoleiro › Gatilho Quente/Showdown — o(s) d8 de gatilho são rolados JUNTO com os
+  // demais (mesma rolagem, cor diferente só narrativamente) e entram no pool de "maior
+  // dado" — nunca um bônus separado somado depois. Showdown (`quantidadeDadosGatilho`)
+  // tem precedência sobre o modo de 1 dado (`incluirDadoGatilho`).
+  const quantidadeGatilho = Math.max(0, Math.trunc(params.quantidadeDadosGatilho ?? (params.incluirDadoGatilho ? 1 : 0)));
+  const dadosGatilhoResultados = quantidadeGatilho > 0 ? Array.from({ length: quantidadeGatilho }, () => rollDie(8)) : undefined;
+  const poolCompleto = dadosGatilhoResultados ? [...dados, ...dadosGatilhoResultados] : dados;
   const maiorDado = poolCompleto.length > 0 ? Math.max(...poolCompleto) : 0;
+  const dadoGatilhoResultado = dadosGatilhoResultados && dadosGatilhoResultados.length === 1 ? dadosGatilhoResultados[0] : undefined;
   const dadoGatilhoEscolhido = dadoGatilhoResultado != null ? dadoGatilhoResultado === maiorDado : undefined;
   const periciaValor = params.periciaValor ?? 0;
   const total = maiorDado + periciaValor + params.modificador;
@@ -50,6 +53,7 @@ export function rollPericia(params: RupturaRollParams): RupturaRollResult {
     total,
     dadoGatilhoResultado,
     dadoGatilhoEscolhido,
+    dadosGatilhoResultados,
   };
 
   if (params.cd == null) return resultado;

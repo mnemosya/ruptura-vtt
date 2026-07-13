@@ -1700,6 +1700,72 @@ export function hasBangBangSegundoDisparo(character: Pick<Character, "talentos_a
   return false;
 }
 
+/** Consome VÁRIOS dados de gatilho de uma vez (Showdown) — mesmo contador de `consumeGatilhoDado`, update atômico único. */
+export function consumeGatilhoDados(character: Character, quantidade: number, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  const atual = usos[GATILHO_DADOS_USAGE_KEY]?.usados ?? 0;
+  usos[GATILHO_DADOS_USAGE_KEY] = { usados: atual + Math.max(0, quantidade), cadencia: "descanso_longo", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
+// Pistoleiro — Showdown (N3): 1/cena, gasta até 3 dados de gatilho de
+// uma vez, rolados na MESMA pool do ataque. O +1 de reserva já entra
+// automaticamente em `getGatilhoQuenteAvailability` (soma genérica de
+// `aumentar_recurso` de TODOS os níveis aprendidos — sem mudança
+// nenhuma nessa função). Os 4 efeitos por dado 6-8 (dano extra,
+// perda de PA, -1 ofensivo/defensivo, desarmar) são cross-character
+// (afetam o ALVO do ataque) e a rolagem acontece em RollsTab, que não
+// tem acesso a personagens arbitrários da mesa (só ao próprio
+// personagem) — nem TableClient consegue ler os resultados dos dados,
+// já que o total do ataque é digitado manualmente pelo narrador, sem
+// vínculo estruturado com a rolagem de origem (confirmado: nenhum
+// ponto do app persiste `dadosGatilhoResultados` no log de ataque).
+// Por isso os 4 efeitos ficam como lembrete EXATO (valores reais
+// computados, incluindo o de dano) para o narrador aplicar pelas
+// ferramentas genéricas já existentes (editar PA, aplicar condição,
+// mover item para fora de "empunhado") — mesmo padrão honesto já
+// usado para o bônus de Corpo de Sede de Sangue.
+// ---------------------------------------------------------------------
+
+export function hasShowdown(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "showdown") return true;
+    }
+  }
+  return false;
+}
+
+export const SHOWDOWN_USAGE_KEY = "pistoleiro_showdown:cena";
+
+export function getShowdownAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisScene: boolean; maxDados: number; intervaloAtiva: number[] } {
+  let acquired = false;
+  let maxDados = 3;
+  let intervaloAtiva: number[] = [6, 7, 8];
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "showdown") continue;
+      acquired = true;
+      if (typeof efeito.max_dados_gatilho === "number") maxDados = efeito.max_dados_gatilho;
+      if (Array.isArray(efeito.intervalo_ativa)) {
+        intervaloAtiva = efeito.intervalo_ativa.filter((n): n is number => typeof n === "number");
+      }
+    }
+  }
+  const usedThisScene = (character.talentos_estado?.usos?.[SHOWDOWN_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisScene, maxDados, intervaloAtiva };
+}
+
+export function markShowdownUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[SHOWDOWN_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
 // ---------------------------------------------------------------------
 // Totem — Benção (N1): promoção de margem sem `pericias[]` (aplica em
 // QUALQUER teste que aplique um efeito positivo, confirmado manualmente,

@@ -55,6 +55,14 @@ export interface RupturaRollParams {
    * dados) — nunca pede ao jogador para rolar um d8 físico e digitar.
    */
   incluirDadoGatilho?: boolean;
+  /**
+   * Pistoleiro › Showdown — inclui VÁRIOS d8 de gatilho (até 3) na MESMA
+   * rolagem, todos entrando no pool antes de escolher o maior (nunca dados
+   * separados/bônus depois). Quando presente, tem precedência sobre
+   * `incluirDadoGatilho` (que continua servindo Gatilho Quente/Bang Bang,
+   * sempre 1 dado).
+   */
+  quantidadeDadosGatilho?: number;
 }
 
 /**
@@ -111,6 +119,8 @@ export interface RupturaRollResult {
   dadoGatilhoResultado?: number;
   /** `true` quando o d8 de gatilho foi o MAIOR dado da rolagem (seu resultado "faz parte do teste" — condição de Bang Bang). */
   dadoGatilhoEscolhido?: boolean;
+  /** Pistoleiro › Showdown — resultado de CADA d8 de gatilho pedido via `quantidadeDadosGatilho`, na ordem em que saíram — já incluídos em `dados`/`maiorDado`. */
+  dadosGatilhoResultados?: number[];
 }
 
 /**
