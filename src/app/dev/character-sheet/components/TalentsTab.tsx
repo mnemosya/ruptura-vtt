@@ -124,6 +124,17 @@ export function TalentsTab({
   redeDeFavoresStatus,
   onRegisterRedeDeFavores,
   onEndRedeDeFavores,
+  zeDaEsquinaStatus,
+  zeDaEsquinaRegistros = [],
+  onRegisterZeDaEsquina,
+  gatoDeTelhadoAtiva,
+  gatoDeTelhadoStatus,
+  onRegisterGatoDeTelhado,
+  onEndGatoDeTelhado,
+  saidaDosFundosAtiva,
+  saidaDosFundosStatus,
+  onRegisterSaidaDosFundos,
+  onEndSaidaDosFundos,
 }: {
   talents: TalentContent[];
   catalogError: string | null;
@@ -202,6 +213,20 @@ export function TalentsTab({
   redeDeFavoresStatus?: { acquired: boolean; usedThisSession: boolean; opcoesPagamento: string[] };
   onRegisterRedeDeFavores?: (params: { nomePn: string; papel: string; tipoPagamento: "favor" | "promessa" | "pagamento_simbolico"; duracao: string; notas: string }) => void;
   onEndRedeDeFavores?: () => void;
+  /** Rato de Rua › Zé da Esquina (checkpoint talentos, Fase 13). */
+  zeDaEsquinaStatus?: { acquired: boolean; usedThisMission: boolean; opcoes: string[] };
+  zeDaEsquinaRegistros?: NonNullable<Character["ze_da_esquina_registros"]>;
+  onRegisterZeDaEsquina?: (params: { contato: string; tipo: "informacao" | "abrigo" | "recurso_imediato"; complicacaoResolvida: string; notas: string }) => void;
+  /** Rato de Rua › Gato de Telhado (checkpoint talentos, Fase 13). */
+  gatoDeTelhadoAtiva?: Character["gato_de_telhado_ativo"] | null;
+  gatoDeTelhadoStatus?: { acquired: boolean; usedToday: boolean };
+  onRegisterGatoDeTelhado?: (params: { local: string; personagensProtegidos: string[] }) => void;
+  onEndGatoDeTelhado?: () => void;
+  /** Rato de Rua › Saída dos Fundos (checkpoint talentos, Fase 13). */
+  saidaDosFundosAtiva?: Character["saida_dos_fundos_ativa"] | null;
+  saidaDosFundosStatus?: { acquired: boolean; usedToday: boolean };
+  onRegisterSaidaDosFundos?: (params: { situacaoDeRisco: string; rotaOuMetodo: string; consequenciaMenor: string }) => void;
+  onEndSaidaDosFundos?: () => void;
 }) {
   const [filter, setFilter] = useState<FilterKey>("todos");
 
@@ -418,6 +443,28 @@ export function TalentsTab({
                             status={redeDeFavoresStatus}
                             onRegister={onRegisterRedeDeFavores}
                             onEnd={onEndRedeDeFavores}
+                          />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "rato_de_rua_ze_da_esquina" && zeDaEsquinaStatus?.acquired && (
+                          <ZeDaEsquinaWidget status={zeDaEsquinaStatus} registros={zeDaEsquinaRegistros} onRegister={onRegisterZeDaEsquina} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "rato_de_rua_gato_de_telhado" && gatoDeTelhadoStatus?.acquired && (
+                          <GatoDeTelhadoWidget
+                            ativa={gatoDeTelhadoAtiva ?? null}
+                            status={gatoDeTelhadoStatus}
+                            onRegister={onRegisterGatoDeTelhado}
+                            onEnd={onEndGatoDeTelhado}
+                          />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "rato_de_rua_saida_dos_fundos" && saidaDosFundosStatus?.acquired && (
+                          <SaidaDosFundosWidget
+                            ativa={saidaDosFundosAtiva ?? null}
+                            status={saidaDosFundosStatus}
+                            onRegister={onRegisterSaidaDosFundos}
+                            onEnd={onEndSaidaDosFundos}
                           />
                         )}
 
@@ -1348,6 +1395,165 @@ function RedeDeFavoresWidget({
           style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !nomePn.trim() || !papel.trim() ? 0.5 : 1 }}
         >
           Recrutar aliado
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const ZE_DA_ESQUINA_OPCAO_LABEL: Record<string, string> = {
+  informacao: "Informação",
+  abrigo: "Abrigo",
+  recurso_imediato: "Recurso imediato",
+};
+
+function ZeDaEsquinaWidget({
+  status,
+  registros,
+  onRegister,
+}: {
+  status: { acquired: boolean; usedThisMission: boolean; opcoes: string[] };
+  registros: NonNullable<Character["ze_da_esquina_registros"]>;
+  onRegister?: (params: { contato: string; tipo: "informacao" | "abrigo" | "recurso_imediato"; complicacaoResolvida: string; notas: string }) => void;
+}) {
+  const [contato, setContato] = useState("");
+  const [tipo, setTipo] = useState<"informacao" | "abrigo" | "recurso_imediato">("informacao");
+  const [complicacaoResolvida, setComplicacaoResolvida] = useState("");
+  const [notas, setNotas] = useState("");
+  const ultimo = registros[registros.length - 1];
+
+  return (
+    <div data-testid="ze-da-esquina-widget" style={widgetBox}>
+      {ultimo && (
+        <span style={{ opacity: 0.7 }}>
+          Último contato: {ultimo.contato} ({ZE_DA_ESQUINA_OPCAO_LABEL[ultimo.tipo] ?? ultimo.tipo}) — resolveu: {ultimo.complicacaoResolvida}
+        </span>
+      )}
+      {status.usedThisMission ? (
+        <span style={{ opacity: 0.6 }}>Zé da Esquina já usado nesta missão (reset manual do narrador na próxima missão).</span>
+      ) : (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <input data-testid="ze-da-esquina-contato" placeholder="nome do contato" value={contato} onChange={(e) => setContato(e.target.value)} style={{ ...widgetInput, width: 130 }} />
+          <select data-testid="ze-da-esquina-tipo" value={tipo} onChange={(e) => setTipo(e.target.value as typeof tipo)} style={widgetInput}>
+            {(status.opcoes.length > 0 ? status.opcoes : ["informacao", "abrigo", "recurso_imediato"]).map((o) => (
+              <option key={o} value={o}>{ZE_DA_ESQUINA_OPCAO_LABEL[o] ?? o}</option>
+            ))}
+          </select>
+          <input data-testid="ze-da-esquina-complicacao" placeholder="complicação menor resolvida" value={complicacaoResolvida} onChange={(e) => setComplicacaoResolvida(e.target.value)} style={{ ...widgetInput, width: 160 }} />
+          <input data-testid="ze-da-esquina-notas" placeholder="notas" value={notas} onChange={(e) => setNotas(e.target.value)} style={{ ...widgetInput, width: 130 }} />
+          <button
+            data-testid="ze-da-esquina-invocar"
+            disabled={!contato.trim() || !complicacaoResolvida.trim()}
+            onClick={() => {
+              onRegister?.({ contato: contato.trim(), tipo, complicacaoResolvida: complicacaoResolvida.trim(), notas });
+              setContato("");
+              setComplicacaoResolvida("");
+              setNotas("");
+            }}
+            style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !contato.trim() || !complicacaoResolvida.trim() ? 0.5 : 1 }}
+          >
+            Invocar contato
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GatoDeTelhadoWidget({
+  ativa,
+  status,
+  onRegister,
+  onEnd,
+}: {
+  ativa: Character["gato_de_telhado_ativo"] | null;
+  status: { acquired: boolean; usedToday: boolean };
+  onRegister?: (params: { local: string; personagensProtegidos: string[] }) => void;
+  onEnd?: () => void;
+}) {
+  const [local, setLocal] = useState("");
+  const [personagens, setPersonagens] = useState("");
+
+  if (ativa?.ativo) {
+    return (
+      <div data-testid="gato-de-telhado-ativo" style={widgetBox}>
+        <span style={{ color: "#4caf50" }}>✦ Local seguro ativo</span> — {ativa.local}
+        {ativa.personagensProtegidos.length > 0 ? ` (protegendo: ${ativa.personagensProtegidos.join(", ")})` : ""} — inimigos não rastreiam sem pista direta.
+        <button data-testid="gato-de-telhado-encerrar" onClick={onEnd} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", alignSelf: "flex-start" }}>
+          Deixar o local
+        </button>
+      </div>
+    );
+  }
+  if (status.usedToday) {
+    return <div data-testid="gato-de-telhado-indisponivel" style={{ ...widgetBox, opacity: 0.6 }}>Gato de Telhado já usado hoje (reseta em Novo Dia/descanso longo).</div>;
+  }
+  return (
+    <div data-testid="gato-de-telhado-formulario" style={widgetBox}>
+      <span style={{ opacity: 0.7 }}>1/dia · ambiente urbano · conduz o grupo a um local seguro:</span>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <input data-testid="gato-de-telhado-local" placeholder="local seguro" value={local} onChange={(e) => setLocal(e.target.value)} style={{ ...widgetInput, width: 160 }} />
+        <input data-testid="gato-de-telhado-personagens" placeholder="personagens protegidos (vírgula)" value={personagens} onChange={(e) => setPersonagens(e.target.value)} style={{ ...widgetInput, width: 200 }} />
+        <button
+          data-testid="gato-de-telhado-conduzir"
+          disabled={!local.trim()}
+          onClick={() =>
+            onRegister?.({
+              local: local.trim(),
+              personagensProtegidos: personagens.split(",").map((p) => p.trim()).filter(Boolean),
+            })
+          }
+          style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !local.trim() ? 0.5 : 1 }}
+        >
+          Conduzir ao local seguro
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SaidaDosFundosWidget({
+  ativa,
+  status,
+  onRegister,
+  onEnd,
+}: {
+  ativa: Character["saida_dos_fundos_ativa"] | null;
+  status: { acquired: boolean; usedToday: boolean };
+  onRegister?: (params: { situacaoDeRisco: string; rotaOuMetodo: string; consequenciaMenor: string }) => void;
+  onEnd?: () => void;
+}) {
+  const [situacaoDeRisco, setSituacaoDeRisco] = useState("");
+  const [rotaOuMetodo, setRotaOuMetodo] = useState("");
+  const [consequenciaMenor, setConsequenciaMenor] = useState("");
+
+  if (ativa?.ativo) {
+    return (
+      <div data-testid="saida-dos-fundos-ativa" style={widgetBox}>
+        <span style={{ color: "#4caf50" }}>✦ Escape ativo</span> — fugiu de "{ativa.situacaoDeRisco}" via {ativa.rotaOuMetodo}; consequência: {ativa.consequenciaMenor}. Não pode ser capturado, morto ou rendido nesta cena.
+        <button data-testid="saida-dos-fundos-encerrar" onClick={onEnd} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", alignSelf: "flex-start" }}>
+          Encerrar proteção da cena
+        </button>
+      </div>
+    );
+  }
+  if (status.usedToday) {
+    return <div data-testid="saida-dos-fundos-indisponivel" style={{ ...widgetBox, opacity: 0.6 }}>Saída dos Fundos já usada hoje (reseta em Novo Dia/descanso longo).</div>;
+  }
+  return (
+    <div data-testid="saida-dos-fundos-formulario" style={widgetBox}>
+      <span style={{ opacity: 0.7 }}>1/dia · escapa instantaneamente de emboscada/perseguição/prisão/risco iminente:</span>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <input data-testid="saida-dos-fundos-situacao" placeholder="situação de risco" value={situacaoDeRisco} onChange={(e) => setSituacaoDeRisco(e.target.value)} style={{ ...widgetInput, width: 160 }} />
+        <input data-testid="saida-dos-fundos-rota" placeholder="rota/método de fuga" value={rotaOuMetodo} onChange={(e) => setRotaOuMetodo(e.target.value)} style={{ ...widgetInput, width: 150 }} />
+        <input data-testid="saida-dos-fundos-consequencia" placeholder="consequência menor" value={consequenciaMenor} onChange={(e) => setConsequenciaMenor(e.target.value)} style={{ ...widgetInput, width: 150 }} />
+        <button
+          data-testid="saida-dos-fundos-escapar"
+          disabled={!situacaoDeRisco.trim() || !rotaOuMetodo.trim()}
+          onClick={() => onRegister?.({ situacaoDeRisco: situacaoDeRisco.trim(), rotaOuMetodo: rotaOuMetodo.trim(), consequenciaMenor: consequenciaMenor.trim() })}
+          style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !situacaoDeRisco.trim() || !rotaOuMetodo.trim() ? 0.5 : 1 }}
+        >
+          Escapar agora
         </button>
       </div>
     </div>

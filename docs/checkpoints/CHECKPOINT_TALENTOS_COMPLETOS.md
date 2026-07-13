@@ -62,7 +62,7 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 53 · 🟡 0 · ⚙️ 12 · 📖 1.
+Contagem: ✅ 0 · 🔵 56 · 🟡 0 · ⚙️ 9 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -117,9 +117,9 @@ Contagem: ✅ 0 · 🔵 53 · 🟡 0 · ⚙️ 12 · 📖 1.
 | Praga | Marca da Dor | 1 | 🔵 Implementado (aguardando validação manual) |
 | Praga | Sangria Lenta | 2 | 🔵 Implementado (aguardando validação manual) |
 | Praga | Contágio | 3 | 🔵 Implementado (aguardando validação manual) |
-| Rato de Rua | Zé da Esquina | 1 | ⚙️ Infra pendente |
-| Rato de Rua | Gato de Telhado | 2 | ⚙️ Infra pendente |
-| Rato de Rua | Saída dos Fundos | 3 | ⚙️ Infra pendente |
+| Rato de Rua | Zé da Esquina | 1 | 🔵 Implementado (aguardando validação manual) |
+| Rato de Rua | Gato de Telhado | 2 | 🔵 Implementado (aguardando validação manual) |
+| Rato de Rua | Saída dos Fundos | 3 | 🔵 Implementado (aguardando validação manual) |
 | Rúnico | Gatilho Rúnico | 1 | 🔵 Implementado (aguardando validação manual) |
 | Rúnico | Entalhe Rápido | 2 | 🔵 Implementado (aguardando validação manual) |
 | Rúnico | Sobregravação | 3 | 🔵 Implementado (aguardando validação manual) |
@@ -513,9 +513,9 @@ marcados como operacionais e alteram o fluxo aplicável.
 | Praga | Marca da Dor | 1 | Contextual |
 | Praga | Sangria Lenta | 2 | Contextual |
 | Praga | Contágio | 3 | Contextual |
-| Rato de Rua | Zé da Esquina | 1 | Narrativo rastreado |
-| Rato de Rua | Gato de Telhado | 2 | Narrativo rastreado |
-| Rato de Rua | Saída dos Fundos | 3 | Narrativo rastreado |
+| Rato de Rua | Zé da Esquina | 1 | Atividade própria |
+| Rato de Rua | Gato de Telhado | 2 | Atividade própria |
+| Rato de Rua | Saída dos Fundos | 3 | Atividade própria |
 | Rúnico | Gatilho Rúnico | 1 | Atividade própria |
 | Rúnico | Entalhe Rápido | 2 | Atividade própria |
 | Rúnico | Sobregravação | 3 | Atividade própria |
@@ -592,9 +592,9 @@ abaixo está **aguardando confirmação do usuário via teste manual** — nenhu
 | Praga | Marca da Dor | 🔵 Implementado | +1 real na margem do ataque quando o alvo tem efeito negativo autorado pelo próprio atacante, 1/rodada — resolvido lendo atacante+alvo juntos no momento da resolução (diferente de Muralha, que precisaria do lado do ATACANTE saber antecipado) | `talentEngine.ts`, `TableClient.tsx` | `Character.talentos_estado` (atacante) | Aplicar condição autorada pelo atacante no alvo → resolver ataque marcando Marca da Dor → confirmar +1 na margem/banda; repetir na mesma rodada → confirmar bloqueado | Aguardando usuário |
 | Praga | Sangria Lenta | 🔵 Implementado (mecanismo real, sem dado hoje para agir) | Estende texto de duração round-based ("N rodadas") em +1 quando o autor tem o talento — `applyGmCondition` agora aceita e persiste `duracao`; NENHUMA condição do catálogo usa duração round-based hoje (`duracao_padrao` é sempre null/"enquanto_na_area"), então o mecanismo é real e testado mas não tem input para agir até o catálogo declarar uma duração assim — documentado explicitamente, não inventado | `talentEngine.ts`, `TableClient.tsx`, `gmActions.ts` | `ActiveCondition.duracao` | Sem teste manual possível hoje (nenhum conteúdo fornece duração "N rodadas") — validar quando/if o catálogo publicar uma condição com essa duração | Aguardando usuário |
 | Praga | Contágio | 🔵 Implementado | Propaga condição autorada para até `maxAlvosMultiplicador` alvos adicionais confirmados manualmente (3m), 1/cena no autor — usa pela primeira vez `originalTargetId`/`applicationEventId` (campos existentes, nunca preenchidos antes) | `talentEngine.ts`, `TableClient.tsx`, `gmActions.ts` | `ActiveCondition` nos alvos adicionais (com autoria/origem preservadas) | Aplicar condição com autor → selecionar até N alvos adicionais → propagar → confirmar condição aplicada nos alvos com mesma autoria/duração; repetir na mesma cena → confirmar bloqueado | Aguardando usuário |
-| Rato de Rua | Zé da Esquina | ⚙️ Infra pendente | Nenhum (infra genérica só) | — | — | N/A | — |
-| Rato de Rua | Gato de Telhado | ⚙️ Infra pendente | Nenhum (infra genérica só) | — | — | N/A | — |
-| Rato de Rua | Saída dos Fundos | ⚙️ Infra pendente | Nenhum (infra genérica só) | — | — | N/A | — |
+| Rato de Rua | Zé da Esquina | 🔵 Implementado | Invoca contato real que resolve uma complicação menor registrada, 1x/missão (cadência sem reset automático, mesmo caso de "sessao"/"combate") | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.ze_da_esquina_registros` | Invocar contato preenchendo tipo/complicação → confirmar registro salvo e exibido; repetir na mesma missão → confirmar bloqueado | Aguardando usuário |
+| Rato de Rua | Gato de Telhado | 🔵 Implementado | Conduz o grupo a um local seguro real, 1x/dia, com personagens protegidos registrados; permanece ativo até encerrado manualmente | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.gato_de_telhado_ativo`, `talentos_estado` | Registrar local seguro → confirmar estado ativo exibido; "Deixar o local" → confirmar `ativo=false`; repetir no mesmo dia → confirmar bloqueado; Novo Dia/descanso longo → confirmar reset | Aguardando usuário |
+| Rato de Rua | Saída dos Fundos | 🔵 Implementado | Escape narrativo real de risco iminente, 1x/dia, registra situação/rota/consequência; protege contra captura/morte/rendição até encerrado manualmente | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.saida_dos_fundos_ativa`, `talentos_estado` | Registrar escape → confirmar proteção ativa exibida; "Encerrar proteção da cena" → confirmar `ativo=false`; repetir no mesmo dia → confirmar bloqueado; Novo Dia/descanso longo → confirmar reset | Aguardando usuário |
 | Rúnico | Gatilho Rúnico | 🔵 Implementado | Ativa/desativa runa instalada sem PA, ActiveEffect real | `inventory.ts`, `InventoryTab.tsx` | `InventoryItemInstance.runasInstaladas[].ativa` | Ativar/desativar runa → confirmar chip de bônus aparece/some | Aguardando usuário |
 | Rúnico | Entalhe Rápido | 🔵 Implementado | Instalar/remover real com 1 PA + teste; tentativa pendente agora persistida (sobrevive a reload) | `inventory.ts`, `CharacterSheetClient.tsx`, `types.ts` | `Character.entalhe_rapido_tentativas`, `InventoryItemInstance.runasInstaladas[]` | Iniciar tentativa → recarregar a página → "Carregar" personagem → confirmar tentativa pendente ainda aparece para confirmar | Aguardando usuário |
 | Rúnico | Sobregravação | 🔵 Implementado | Autorização real (dono/aliado/CD8) persistida na instância; split parcial agora bloqueado (bug corrigido) | `inventory.ts`, `InventoryTab.tsx`, `CharacterSheetClient.tsx` | `InventoryItemInstance.sobregravacao` | Aplicar → dono acessa slots extra → terceiro sem acesso vê limite base → terceiro testa CD8 e ganha acesso → transferir item e confirmar autorização preservada → tentar split parcial e confirmar bloqueado | Aguardando usuário |

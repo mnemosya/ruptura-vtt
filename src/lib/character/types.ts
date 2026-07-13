@@ -601,6 +601,48 @@ export interface Character {
     encerradaEm?: string;
   };
   /**
+   * Rato de Rua › Zé da Esquina (N1, checkpoint talentos, Fase 13) — histórico de
+   * contatos invocados (1x/missão, cadência sem reset automático — mesmo caso de
+   * "sessao"/"combate", reset manual do narrador). Resolução é pontual (não tem
+   * "ativo" — o contato resolve a complicação menor no ato e a cena segue).
+   */
+  ze_da_esquina_registros?: {
+    id: string;
+    contato: string;
+    tipo: "informacao" | "abrigo" | "recurso_imediato";
+    complicacaoResolvida: string;
+    notas: string;
+    criadoEm: string;
+  }[];
+  /**
+   * Rato de Rua › Gato de Telhado (N2, checkpoint talentos, Fase 13) — local seguro
+   * ativo (1x/dia, reset automático em Novo Dia/descanso longo). `ativo=false` marca
+   * que o grupo deixou o local (encerrado manualmente).
+   */
+  gato_de_telhado_ativo?: {
+    id: string;
+    local: string;
+    personagensProtegidos: string[];
+    criadoEm: string;
+    ativo: boolean;
+    encerradoEm?: string;
+  };
+  /**
+   * Rato de Rua › Saída dos Fundos (N3, checkpoint talentos, Fase 13) — escape
+   * narrativo real (1x/dia, reset automático em Novo Dia/descanso longo). Protege
+   * contra captura/morte/rendição NA CENA do escape; `ativo=false` marca que a
+   * proteção foi encerrada manualmente (a cena de risco passou).
+   */
+  saida_dos_fundos_ativa?: {
+    id: string;
+    situacaoDeRisco: string;
+    rotaOuMetodo: string;
+    consequenciaMenor: string;
+    criadoEm: string;
+    ativo: boolean;
+    encerradoEm?: string;
+  };
+  /**
    * Sorrateiro › estado real de Furtividade (checkpoint talentos, Fase 3)
    * — entrada/saída manual (narrativa, sem teste estruturado próprio para
    * "entrar"; testes de Furtividade em si usam a perícia normalmente,

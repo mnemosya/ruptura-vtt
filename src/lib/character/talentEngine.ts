@@ -1906,6 +1906,91 @@ export function markRedeDeFavoresUsed(character: Character, nowIso: string): Cha
 }
 
 // ---------------------------------------------------------------------
+// Rato de Rua — Zé da Esquina (N1): 1x/missão, invoca contato que resolve
+// uma complicação menor real (histórico persistido em
+// `ze_da_esquina_registros`, sem "ativo" — resolução é pontual).
+// ---------------------------------------------------------------------
+
+export const ZE_DA_ESQUINA_USAGE_KEY = "rato_de_rua_ze_da_esquina:missao";
+
+export function getZeDaEsquinaAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisMission: boolean; opcoes: string[] } {
+  let acquired = false;
+  let opcoes: string[] = [];
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo !== "invocar_contato") continue;
+      acquired = true;
+      if (Array.isArray(efeito.opcoes)) opcoes = efeito.opcoes.filter((o): o is string => typeof o === "string");
+    }
+  }
+  const usedThisMission = (character.talentos_estado?.usos?.[ZE_DA_ESQUINA_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisMission, opcoes };
+}
+
+export function markZeDaEsquinaUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[ZE_DA_ESQUINA_USAGE_KEY] = { usados: 1, cadencia: "missao", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
+// Rato de Rua — Gato de Telhado (N2): 1x/dia, encontra local seguro
+// urbano real; enquanto ativo protege contra rastreamento sem pista.
+// ---------------------------------------------------------------------
+
+export const GATO_DE_TELHADO_USAGE_KEY = "rato_de_rua_gato_de_telhado:dia";
+
+export function getGatoDeTelhadoAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedToday: boolean } {
+  let acquired = false;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "encontrar_local_seguro") acquired = true;
+    }
+  }
+  const usedToday = (character.talentos_estado?.usos?.[GATO_DE_TELHADO_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedToday };
+}
+
+export function markGatoDeTelhadoUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[GATO_DE_TELHADO_USAGE_KEY] = { usados: 1, cadencia: "dia", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
+// Rato de Rua — Saída dos Fundos (N3): 1x/dia, escape narrativo real de
+// risco iminente; enquanto ativa impede captura/morte/rendição na cena.
+// ---------------------------------------------------------------------
+
+export const SAIDA_DOS_FUNDOS_USAGE_KEY = "rato_de_rua_saida_dos_fundos:dia";
+
+export function getSaidaDosFundosAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedToday: boolean } {
+  let acquired = false;
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "escape_narrativo") acquired = true;
+    }
+  }
+  const usedToday = (character.talentos_estado?.usos?.[SAIDA_DOS_FUNDOS_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedToday };
+}
+
+export function markSaidaDosFundosUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[SAIDA_DOS_FUNDOS_USAGE_KEY] = { usados: 1, cadencia: "dia", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+// ---------------------------------------------------------------------
 // Dissecador — Golpe Cirúrgico (N1): -2 na próxima ação ofensiva do alvo
 // após sucesso crítico com dano contundente corpo a corpo. A troca
 // Corpo→Mente do mesmo nível (`familia: "troca_atributo"`) não precisa de

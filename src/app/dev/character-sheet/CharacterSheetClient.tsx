@@ -125,6 +125,12 @@ import {
   isRaridadeDentroDoLimite,
   getRedeDeFavoresAvailability,
   markRedeDeFavoresUsed,
+  getZeDaEsquinaAvailability,
+  markZeDaEsquinaUsed,
+  getGatoDeTelhadoAvailability,
+  markGatoDeTelhadoUsed,
+  getSaidaDosFundosAvailability,
+  markSaidaDosFundosUsed,
   isPvGatedToggleAllowedToActivate,
   enforcePvGatedToggleDeactivation,
   hasSaqueFantasma,
@@ -3161,6 +3167,81 @@ export default function CharacterSheetClient({
     addLogEntry("condicao", `Rede de Favores: vínculo com ${current.rede_de_favores_ativa.nomePn} encerrado.`);
   }
 
+  /** Rato de Rua › Zé da Esquina — invoca contato real que resolve uma complicação menor (1x/missão). */
+  function handleRegisterZeDaEsquina(params: { contato: string; tipo: "informacao" | "abrigo" | "recurso_imediato"; complicacaoResolvida: string; notas: string }) {
+    const current = characterRef.current;
+    const status = getZeDaEsquinaAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedThisMission) return;
+    const nowIso = new Date().toISOString();
+    let next = markZeDaEsquinaUsed(current, nowIso);
+    const registro = { id: crypto.randomUUID(), contato: params.contato, tipo: params.tipo, complicacaoResolvida: params.complicacaoResolvida, notas: params.notas, criadoEm: nowIso };
+    next = { ...next, ze_da_esquina_registros: [...(next.ze_da_esquina_registros ?? []), registro] };
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Zé da Esquina: contato ${params.contato} resolveu — ${params.complicacaoResolvida}.`);
+  }
+
+  /** Rato de Rua › Gato de Telhado — conduz o grupo a um local seguro real, 1x/dia. */
+  function handleRegisterGatoDeTelhado(params: { local: string; personagensProtegidos: string[] }) {
+    const current = characterRef.current;
+    const status = getGatoDeTelhadoAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedToday) return;
+    const nowIso = new Date().toISOString();
+    let next = markGatoDeTelhadoUsed(current, nowIso);
+    next = {
+      ...next,
+      gato_de_telhado_ativo: { id: crypto.randomUUID(), local: params.local, personagensProtegidos: params.personagensProtegidos, criadoEm: nowIso, ativo: true },
+    };
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Gato de Telhado: grupo conduzido a local seguro — ${params.local}.`);
+  }
+
+  /** Rato de Rua › Gato de Telhado — encerra manualmente o local seguro (o grupo deixou o esconderijo). */
+  function handleEndGatoDeTelhado() {
+    const current = characterRef.current;
+    if (!current.gato_de_telhado_ativo?.ativo) return;
+    const nowIso = new Date().toISOString();
+    const next = { ...current, gato_de_telhado_ativo: { ...current.gato_de_telhado_ativo, ativo: false, encerradoEm: nowIso } };
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Gato de Telhado: grupo deixou o local seguro (${current.gato_de_telhado_ativo.local}).`);
+  }
+
+  /** Rato de Rua › Saída dos Fundos — escape narrativo instantâneo real, 1x/dia. */
+  function handleRegisterSaidaDosFundos(params: { situacaoDeRisco: string; rotaOuMetodo: string; consequenciaMenor: string }) {
+    const current = characterRef.current;
+    const status = getSaidaDosFundosAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedToday) return;
+    const nowIso = new Date().toISOString();
+    let next = markSaidaDosFundosUsed(current, nowIso);
+    next = {
+      ...next,
+      saida_dos_fundos_ativa: {
+        id: crypto.randomUUID(),
+        situacaoDeRisco: params.situacaoDeRisco,
+        rotaOuMetodo: params.rotaOuMetodo,
+        consequenciaMenor: params.consequenciaMenor,
+        criadoEm: nowIso,
+        ativo: true,
+      },
+    };
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", `Saída dos Fundos: escapou de "${params.situacaoDeRisco}" via ${params.rotaOuMetodo} — não pode ser capturado, morto ou rendido nesta cena.`);
+  }
+
+  /** Rato de Rua › Saída dos Fundos — encerra manualmente a proteção da cena. */
+  function handleEndSaidaDosFundos() {
+    const current = characterRef.current;
+    if (!current.saida_dos_fundos_ativa?.ativo) return;
+    const nowIso = new Date().toISOString();
+    const next = { ...current, saida_dos_fundos_ativa: { ...current.saida_dos_fundos_ativa, ativo: false, encerradoEm: nowIso } };
+    characterRef.current = next;
+    setCharacter(next);
+    addLogEntry("condicao", "Saída dos Fundos: proteção da cena encerrada.");
+  }
+
   /** Rúnico › Gatilho Rúnico — ativa/desativa runa instalada sem PA. */
   function handleToggleRuneActive(instanceId: string, runeInstallationId: string) {
     const current = characterRef.current;
@@ -5432,6 +5513,17 @@ export default function CharacterSheetClient({
           redeDeFavoresStatus={getRedeDeFavoresAvailability(character, talentsIniciais)}
           onRegisterRedeDeFavores={handleRegisterRedeDeFavores}
           onEndRedeDeFavores={handleEndRedeDeFavores}
+          zeDaEsquinaStatus={getZeDaEsquinaAvailability(character, talentsIniciais)}
+          zeDaEsquinaRegistros={character.ze_da_esquina_registros}
+          onRegisterZeDaEsquina={handleRegisterZeDaEsquina}
+          gatoDeTelhadoAtiva={character.gato_de_telhado_ativo}
+          gatoDeTelhadoStatus={getGatoDeTelhadoAvailability(character, talentsIniciais)}
+          onRegisterGatoDeTelhado={handleRegisterGatoDeTelhado}
+          onEndGatoDeTelhado={handleEndGatoDeTelhado}
+          saidaDosFundosAtiva={character.saida_dos_fundos_ativa}
+          saidaDosFundosStatus={getSaidaDosFundosAvailability(character, talentsIniciais)}
+          onRegisterSaidaDosFundos={handleRegisterSaidaDosFundos}
+          onEndSaidaDosFundos={handleEndSaidaDosFundos}
         />
       )}
 
