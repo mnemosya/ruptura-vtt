@@ -58,6 +58,7 @@ import {
   deriveActiveEffectsFromTalents,
   deriveActiveEffectsFromTemporaryEffects,
   tickRoundTemporaryEffects,
+  addTemporaryEffect,
   removeTemporaryEffect,
   getActiveTemporaryEffects,
   formatTemporaryEffectSummary,
@@ -138,6 +139,13 @@ import {
   getProtocoloDeEmergenciaAvailability,
   markProtocoloDeEmergenciaUsed,
   applyProtocoloDeEmergenciaToAlly,
+  hasOndaSolidaria,
+  getChamaRedobradaAvailability,
+  markChamaRedobradaUsed,
+  applyResourceDeltas,
+  copyTemporaryEffect,
+  doubleTemporaryEffectValue,
+  doubleTemporaryEffectDuration,
   getToqueDeMidasAvailability,
   getToqueDeMidasModifiersForTarget,
   markToqueDeMidasUsed,
@@ -443,6 +451,19 @@ export default function CharacterSheetClient({
    * fluxos que gastar PA depois de armado.
    */
   const [ritmoDeCampoAtivo, setRitmoDeCampoAtivo] = useState(false);
+  /**
+   * Totem › Onda Solidária/Chama Redobrada (checkpoint talentos, Fase 9) — snapshot do
+   * ÚLTIMO efeito positivo real aplicado via item em UM aliado (o fluxo mais geral de
+   * "aplicar efeito positivo em alguém" já construído nesta base). Onda Solidária copia
+   * para um segundo aliado; Chama Redobrada dobra no mesmo alvo. `null` até o primeiro
+   * uso de item em aliado nesta sessão.
+   */
+  const [ultimoEfeitoPositivoAliado, setUltimoEfeitoPositivoAliado] = useState<{
+    targetCharacterId: string;
+    targetNome: string;
+    resourceDeltas: { resource: "pv" | "pe"; delta: number }[];
+    temporaryEffects: TemporaryEffect[];
+  } | null>(null);
   /** Rúnico › Sobregravação — instância com teste de Tecnomagia/Arcanismo CD 8 pendente de confirmação (terceiro tentando acessar o espaço extra). */
   const [sobregravacaoTestPending, setSobregravacaoTestPending] = useState<Record<string, true>>({});
   // Mesa (campaign) selecionada — estado de UI local, não persiste no
@@ -2879,6 +2900,81 @@ export default function CharacterSheetClient({
     );
   }
 
+  /**
+   * Totem › Onda Solidária (N2, checkpoint talentos Fase 9) — copia o ÚLTIMO efeito positivo
+   * real (deltas de PV/PE + efeitos temporários) para um SEGUNDO aliado adjacente, sem
+   * cobrar/consumir o item de novo (nunca chama useItemOnAlly outra vez). Sem cadência no
+   * payload — sempre disponível; "faz sentido na ficção" confirmado pelo próprio clique.
+   */
+  async function handleOndaSolidariaExtend(secondAllyId: string) {
+    if (!selectedCampaignId || !ultimoEfeitoPositivoAliado) return;
+    const current = characterRef.current;
+    if (!hasOndaSolidaria(current, talentsIniciais)) return;
+    const ally2 = alliesAtivos.find((a) => a.id === secondAllyId);
+    if (!ally2) {
+      addLogEntry("recurso", "Aliado não encontrado entre os personagens ativos da mesa — atualize a lista de aliados.");
+      return;
+    }
+    const targetDerivados = computeDerivedStats(ally2.character.atributos, regras, ally2.character.mana_bonus_ruptura ?? 0);
+    let ally2Next = applyResourceDeltas(ally2.character, ultimoEfeitoPositivoAliado.resourceDeltas, {
+      pv: targetDerivados.pv_max,
+      pe: targetDerivados.pe_max,
+    });
+    for (const efeito of ultimoEfeitoPositivoAliado.temporaryEffects) {
+      ally2Next = addTemporaryEffect(ally2Next, copyTemporaryEffect(efeito, () => crypto.randomUUID()));
+    }
+    try {
+      const saved = await updateCharacter(ally2.id, ally2Next);
+      setAlliesAtivos((prev) => prev.map((a) => (a.id === ally2.id ? { ...a, character: normalizeCharacter(saved.payload) } : a)));
+      addLogEntry("recurso", `Onda Solidária: efeito de ${ultimoEfeitoPositivoAliado.targetNome} estendido para ${ally2.nome} (mesmo efeito, sem custo extra).`);
+    } catch (err) {
+      addLogEntry("recurso", err instanceof Error ? `Falha ao estender Onda Solidária para ${ally2.nome}: ${err.message}` : `Falha ao estender Onda Solidária para ${ally2.nome}.`);
+    }
+  }
+
+  /**
+   * Totem › Chama Redobrada (N3, checkpoint talentos Fase 9) — dobra o ÚLTIMO efeito
+   * positivo real aplicado (numérico: reaplica o MESMO delta de novo; duração: dobra
+   * `remainingRounds` dos efeitos temporários round-based), 1/cena, no MESMO alvo original.
+   */
+  async function handleChamaRedobrada(opcao: "numerico" | "duracao") {
+    if (!selectedCampaignId || !ultimoEfeitoPositivoAliado) return;
+    const current = characterRef.current;
+    const status = getChamaRedobradaAvailability(current, talentsIniciais);
+    if (!status.acquired || status.usedThisScene) return;
+    const alvo = alliesAtivos.find((a) => a.id === ultimoEfeitoPositivoAliado.targetCharacterId);
+    if (!alvo) {
+      addLogEntry("recurso", "Aliado original não encontrado entre os personagens ativos da mesa — atualize a lista de aliados.");
+      return;
+    }
+    const targetDerivados = computeDerivedStats(alvo.character.atributos, regras, alvo.character.mana_bonus_ruptura ?? 0);
+    let alvoNext = alvo.character;
+    if (opcao === "numerico") {
+      alvoNext = applyResourceDeltas(alvoNext, ultimoEfeitoPositivoAliado.resourceDeltas, { pv: targetDerivados.pv_max, pe: targetDerivados.pe_max });
+      for (const efeito of ultimoEfeitoPositivoAliado.temporaryEffects) {
+        const dobrado = doubleTemporaryEffectValue(efeito, () => crypto.randomUUID());
+        alvoNext = addTemporaryEffect(alvoNext, dobrado);
+      }
+    } else {
+      const ativos = getActiveTemporaryEffects(alvoNext);
+      for (const efeito of ultimoEfeitoPositivoAliado.temporaryEffects) {
+        const atual = ativos.find((e) => e.id === efeito.id) ?? efeito;
+        alvoNext = removeTemporaryEffect(alvoNext, atual.id, new Date().toISOString());
+        alvoNext = addTemporaryEffect(alvoNext, doubleTemporaryEffectDuration(atual, () => crypto.randomUUID()));
+      }
+    }
+    try {
+      const saved = await updateCharacter(alvo.id, alvoNext);
+      setAlliesAtivos((prev) => prev.map((a) => (a.id === alvo.id ? { ...a, character: normalizeCharacter(saved.payload) } : a)));
+      const sourceNext = markChamaRedobradaUsed(current, new Date().toISOString());
+      characterRef.current = sourceNext;
+      setCharacter(sourceNext);
+      addLogEntry("recurso", `Chama Redobrada: efeito em ${alvo.nome} dobrado (${opcao === "numerico" ? "valor numérico" : "duração"}), 1/cena.`);
+    } catch (err) {
+      addLogEntry("recurso", err instanceof Error ? `Falha ao aplicar Chama Redobrada em ${alvo.nome}: ${err.message}` : `Falha ao aplicar Chama Redobrada em ${alvo.nome}.`);
+    }
+  }
+
   /** Rúnico › Gatilho Rúnico — ativa/desativa runa instalada sem PA. */
   function handleToggleRuneActive(instanceId: string, runeInstallationId: string) {
     const current = characterRef.current;
@@ -3367,6 +3463,17 @@ export default function CharacterSheetClient({
     }
     for (const efeito of result.targetTemporaryEffectsAdded) {
       partesLog.push(`efeito temporário em ${ally.nome}: ${formatTemporaryEffectSummary(efeito)}`);
+    }
+    // Totem › Onda Solidária/Chama Redobrada (checkpoint talentos, Fase 9) — guarda o
+    // snapshot deste efeito positivo (deltas reais + efeitos temporários) para copiar num
+    // segundo aliado ou dobrar no mesmo alvo, via widgets dedicados na aba Talentos.
+    if (result.targetResourceChanges.length > 0 || result.targetTemporaryEffectsAdded.length > 0) {
+      setUltimoEfeitoPositivoAliado({
+        targetCharacterId: ally.id,
+        targetNome: ally.nome,
+        resourceDeltas: result.targetResourceChanges.map((m) => ({ resource: m.resource, delta: m.after - m.before })),
+        temporaryEffects: result.targetTemporaryEffectsAdded,
+      });
     }
     addLogEntry(
       "recurso",
@@ -5122,6 +5229,11 @@ export default function CharacterSheetClient({
           onToggleRitmoDeCampo={setRitmoDeCampoAtivo}
           protocoloDeEmergenciaStatus={getProtocoloDeEmergenciaAvailability(character, talentsIniciais)}
           onProtocoloDeEmergencia={handleProtocoloDeEmergencia}
+          ondaSolidariaStatus={{ acquired: hasOndaSolidaria(character, talentsIniciais) }}
+          chamaRedobradaStatus={getChamaRedobradaAvailability(character, talentsIniciais)}
+          ultimoEfeitoPositivoAliado={ultimoEfeitoPositivoAliado ? { targetCharacterId: ultimoEfeitoPositivoAliado.targetCharacterId, targetNome: ultimoEfeitoPositivoAliado.targetNome } : null}
+          onOndaSolidariaExtend={handleOndaSolidariaExtend}
+          onChamaRedobrada={handleChamaRedobrada}
         />
       )}
 

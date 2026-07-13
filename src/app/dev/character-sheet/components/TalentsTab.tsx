@@ -111,6 +111,11 @@ export function TalentsTab({
   onToggleRitmoDeCampo,
   protocoloDeEmergenciaStatus,
   onProtocoloDeEmergencia,
+  ondaSolidariaStatus,
+  chamaRedobradaStatus,
+  ultimoEfeitoPositivoAliado,
+  onOndaSolidariaExtend,
+  onChamaRedobrada,
 }: {
   talents: TalentContent[];
   catalogError: string | null;
@@ -174,6 +179,12 @@ export function TalentsTab({
   /** Paramédico › Protocolo de Emergência (checkpoint talentos, Fase 7) — Reação real, 1/cena. */
   protocoloDeEmergenciaStatus?: { acquired: boolean; usedThisScene: boolean; alcanceM: number };
   onProtocoloDeEmergencia?: (targetCharacterId: string) => void;
+  /** Totem › Onda Solidária/Chama Redobrada (checkpoint talentos, Fase 9) — operam sobre o último efeito positivo real aplicado via item em aliado. */
+  ondaSolidariaStatus?: { acquired: boolean };
+  chamaRedobradaStatus?: { acquired: boolean; usedThisScene: boolean };
+  ultimoEfeitoPositivoAliado?: { targetCharacterId: string; targetNome: string } | null;
+  onOndaSolidariaExtend?: (secondAllyId: string) => void;
+  onChamaRedobrada?: (opcao: "numerico" | "duracao") => void;
 }) {
   const [filter, setFilter] = useState<FilterKey>("todos");
 
@@ -366,6 +377,14 @@ export function TalentsTab({
 
                         {acquiredEntry && nivel.slug === "totem_bencao" && totemBencaoTokenStatus?.acquired && (
                           <TotemBencaoWidget status={totemBencaoTokenStatus} allies={bencaoAllies} onGrant={onGrantBencaoToken} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "totem_onda_solidaria" && ondaSolidariaStatus?.acquired && (
+                          <OndaSolidariaWidget allies={bencaoAllies} ultimoEfeito={ultimoEfeitoPositivoAliado ?? null} onExtend={onOndaSolidariaExtend} />
+                        )}
+
+                        {acquiredEntry && nivel.slug === "totem_chama_redobrada" && chamaRedobradaStatus?.acquired && (
+                          <ChamaRedobradaWidget status={chamaRedobradaStatus} ultimoEfeito={ultimoEfeitoPositivoAliado ?? null} onConfirm={onChamaRedobrada} />
                         )}
 
                         {acquiredEntry && nivel.slug === "sorrateiro_passo_fantasma" && (
@@ -1080,6 +1099,84 @@ function ProtocoloDeEmergenciaWidget({
             style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
           >
             Gastar Reação: aliado permanece de pé (1/cena)
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OndaSolidariaWidget({
+  allies,
+  ultimoEfeito,
+  onExtend,
+}: {
+  allies: { id: string; nome: string }[];
+  ultimoEfeito: { targetCharacterId: string; targetNome: string } | null;
+  onExtend?: (secondAllyId: string) => void;
+}) {
+  const [alvo, setAlvo] = useState("");
+  if (!ultimoEfeito) {
+    return (
+      <div data-testid="onda-solidaria-widget" style={widgetBox}>
+        <span style={{ opacity: 0.7 }}>Use um item de cura/reforço em um aliado primeiro — Onda Solidária estende esse efeito para um segundo aliado adjacente.</span>
+      </div>
+    );
+  }
+  const outrosAliados = allies.filter((a) => a.id !== ultimoEfeito.targetCharacterId);
+  return (
+    <div data-testid="onda-solidaria-widget" style={widgetBox}>
+      {outrosAliados.length === 0 ? (
+        <span style={{ opacity: 0.7 }}>Nenhum outro aliado ativo na mesa para estender o efeito em {ultimoEfeito.targetNome}.</span>
+      ) : (
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <select data-testid="onda-solidaria-alvo" value={alvo} onChange={(e) => setAlvo(e.target.value)} style={{ background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "4px 6px", fontSize: 12 }}>
+            <option value="">— segundo aliado adjacente —</option>
+            {outrosAliados.map((a) => (
+              <option key={a.id} value={a.id}>{a.nome}</option>
+            ))}
+          </select>
+          <button
+            data-testid="onda-solidaria-estender"
+            disabled={!alvo}
+            onClick={() => {
+              if (!alvo) return;
+              onExtend?.(alvo);
+              setAlvo("");
+            }}
+            style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}
+          >
+            Estender efeito de {ultimoEfeito.targetNome} (confirma faz sentido na ficção)
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ChamaRedobradaWidget({
+  status,
+  ultimoEfeito,
+  onConfirm,
+}: {
+  status: { acquired: boolean; usedThisScene: boolean };
+  ultimoEfeito: { targetCharacterId: string; targetNome: string } | null;
+  onConfirm?: (opcao: "numerico" | "duracao") => void;
+}) {
+  return (
+    <div data-testid="chama-redobrada-widget" style={widgetBox}>
+      {status.usedThisScene ? (
+        <span style={{ opacity: 0.7 }}>Chama Redobrada já usada nesta cena.</span>
+      ) : !ultimoEfeito ? (
+        <span style={{ opacity: 0.7 }}>Use um item de cura/reforço em um aliado primeiro — Chama Redobrada dobra esse efeito.</span>
+      ) : (
+        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ fontSize: 11, opacity: 0.7 }}>Dobrar efeito em {ultimoEfeito.targetNome}:</span>
+          <button data-testid="chama-redobrada-numerico" onClick={() => onConfirm?.("numerico")} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}>
+            Dobrar valor numérico
+          </button>
+          <button data-testid="chama-redobrada-duracao" onClick={() => onConfirm?.("duracao")} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}>
+            Dobrar duração
           </button>
         </div>
       )}

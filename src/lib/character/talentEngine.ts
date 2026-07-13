@@ -2331,6 +2331,91 @@ export function markContagioUsed(character: Character, nowIso: string): Characte
 }
 
 // ---------------------------------------------------------------------
+// Totem — Onda Solidária (N2) / Chama Redobrada (N3): operam sobre o
+// ÚLTIMO efeito positivo real aplicado a um aliado via item (a fonte
+// mais geral de "aplicar efeito positivo em alguém" já construída
+// neste app) — copiar para um segundo aliado ou dobrar no mesmo alvo.
+// Escopo deliberado: cura/reforço narrativos fora do fluxo de item
+// (conjuração em aliado, ação de suporte) não têm um choke point único
+// equivalente nesta base para reaproveitar sem duplicar toda a lógica
+// de cada fluxo — documentado, não inventado.
+// ---------------------------------------------------------------------
+
+export function hasOndaSolidaria(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "estender_efeito_positivo") return true;
+    }
+  }
+  return false;
+}
+
+export function hasChamaRedobrada(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
+  for (const { nivel } of getLearnedTalentLevels(character, talents)) {
+    for (const efeito of getTalentLevelEffects(nivel)) {
+      if (efeito.tipo === "dobrar_efeito_positivo") return true;
+    }
+  }
+  return false;
+}
+
+export const CHAMA_REDOBRADA_USAGE_KEY = "totem_chama_redobrada:cena";
+
+export function getChamaRedobradaAvailability(
+  character: Pick<Character, "talentos_adquiridos" | "talentos_estado">,
+  talents: TalentContent[],
+): { acquired: boolean; usedThisScene: boolean } {
+  const acquired = hasChamaRedobrada(character, talents);
+  const usedThisScene = (character.talentos_estado?.usos?.[CHAMA_REDOBRADA_USAGE_KEY]?.usados ?? 0) >= 1;
+  return { acquired, usedThisScene };
+}
+
+export function markChamaRedobradaUsed(character: Character, nowIso: string): Character {
+  const usos = { ...(character.talentos_estado?.usos ?? {}) };
+  usos[CHAMA_REDOBRADA_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
+  return { ...character, talentos_estado: { ...character.talentos_estado, usos } };
+}
+
+/** Aplica deltas de recurso (PV/PE) reais a um personagem, sempre clampado a [0, max]. */
+export function applyResourceDeltas(
+  character: Character,
+  deltas: { resource: "pv" | "pe"; delta: number }[],
+  max: { pv?: number; pe?: number },
+): Character {
+  let recursos = { ...character.recursos_atuais };
+  for (const d of deltas) {
+    const atual = recursos[d.resource] ?? 0;
+    const teto = d.resource === "pv" ? max.pv : max.pe;
+    const somado = atual + d.delta;
+    const novo = Math.max(0, teto != null ? Math.min(teto, somado) : somado);
+    recursos = { ...recursos, [d.resource]: novo };
+  }
+  return { ...character, recursos_atuais: recursos };
+}
+
+/** Cópia real de um efeito temporário (novo id) — usada por Onda Solidária para o segundo aliado. */
+export function copyTemporaryEffect(effect: TemporaryEffect, idFactory: () => string): TemporaryEffect {
+  return { ...effect, id: idFactory() };
+}
+
+/** Dobra o valor numérico dos modificadores de um efeito temporário (Chama Redobrada — opção "numérico"). */
+export function doubleTemporaryEffectValue(effect: TemporaryEffect, idFactory: () => string): TemporaryEffect {
+  return {
+    ...effect,
+    id: idFactory(),
+    modifiers: (effect.modifiers ?? []).map((m) => (typeof m.value === "number" ? { ...m, value: m.value * 2 } : m)),
+  };
+}
+
+/** Dobra a duração em rodadas de um efeito temporário (Chama Redobrada — opção "duração"); sem contador numérico (scene/rest/manual), devolve inalterado. */
+export function doubleTemporaryEffectDuration(effect: TemporaryEffect, idFactory: () => string): TemporaryEffect {
+  if (effect.durationType === "rounds" && typeof effect.remainingRounds === "number") {
+    return { ...effect, id: idFactory(), remainingRounds: effect.remainingRounds * 2 };
+  }
+  return { ...effect, id: idFactory() };
+}
+
+// ---------------------------------------------------------------------
 // Construtores de log (texto formatado — nunca JSON cru)
 // ---------------------------------------------------------------------
 

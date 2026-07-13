@@ -62,7 +62,7 @@ regra específica no fluxo).
 > vários itens antes marcados ✅ Integral por autodeclaração do assistente foram
 > rebaixados para 🔵 Implementado ou 🟡 Parcial, conforme o caso.
 
-Contagem: ✅ 0 · 🔵 46 · 🟡 0 · ⚙️ 19 · 📖 1.
+Contagem: ✅ 0 · 🔵 48 · 🟡 0 · ⚙️ 17 · 📖 1.
 
 | Árvore | Nível | Nº | Status real |
 | --- | --- | --- | --- |
@@ -130,8 +130,8 @@ Contagem: ✅ 0 · 🔵 46 · 🟡 0 · ⚙️ 19 · 📖 1.
 | Tecelão | Bypass | 2 | ⚙️ Infra pendente |
 | Tecelão | Agulha Fina | 3 | ⚙️ Infra pendente |
 | Totem | Benção | 1 | 🔵 Implementado (aguardando validação manual) |
-| Totem | Onda Solidária | 2 | ⚙️ Infra pendente |
-| Totem | Chama Redobrada | 3 | ⚙️ Infra pendente |
+| Totem | Onda Solidária | 2 | 🔵 Implementado (aguardando validação manual) |
+| Totem | Chama Redobrada | 3 | 🔵 Implementado (aguardando validação manual) |
 
 ### Detalhe dos não-infra
 
@@ -605,8 +605,8 @@ abaixo está **aguardando confirmação do usuário via teste manual** — nenhu
 | Tecelão | Bypass | ⚙️ Infra pendente | Nenhum (sem modelo de Trama) | — | — | N/A | — |
 | Tecelão | Agulha Fina | ⚙️ Infra pendente | Nenhum (sem modelo de Trama) | — | — | N/A | — |
 | Totem | Benção | 🔵 Implementado | Promoção no próprio teste (checkbox avulso); token 1/cena a um aliado, consumido no primeiro teste dele | `RollsTab.tsx`, `TalentsTab.tsx`, `CharacterSheetClient.tsx` | `Character.bencao_token_ativo` (no aliado), `talentos_estado` (no concedente) | Marcar "efeito positivo" → falha limitada vira sucesso limitado; conceder token a aliado → aliado rola primeiro teste → confirmar token consumido | Aguardando usuário |
-| Totem | Onda Solidária | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
-| Totem | Chama Redobrada | ⚙️ Infra pendente | Nenhum | — | — | N/A | — |
+| Totem | Onda Solidária | 🔵 Implementado | Copia o último efeito positivo real (deltas de PV/PE + efeitos temporários) de um item usado em aliado para um segundo aliado, sem custo extra; escopo: só fluxo de item em aliado (item cura/reforço), não conjuração/ação narrativa — sem choke point único equivalente | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.recursos_atuais`/`efeitos_temporarios` (2º aliado) | Usar item de cura num aliado → estender para um segundo aliado → confirmar mesmo efeito aplicado sem novo custo de item | Aguardando usuário |
+| Totem | Chama Redobrada | 🔵 Implementado | Dobra o último efeito positivo real no MESMO alvo (numérico: reaplica o delta; duração: dobra `remainingRounds`), 1/cena; mesmo escopo de Onda Solidária (fluxo de item em aliado) | `talentEngine.ts`, `CharacterSheetClient.tsx`, `TalentsTab.tsx` | `Character.recursos_atuais`/`efeitos_temporarios`/`talentos_estado` | Usar item de cura num aliado → dobrar valor numérico → confirmar efeito dobrado; repetir na mesma cena → confirmar bloqueado | Aguardando usuário |
 
 ### Checklist numerado de validação manual (80 itens)
 
