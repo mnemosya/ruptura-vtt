@@ -39,9 +39,10 @@ O aditivo já define 13 etapas (0 a 12) com objetivo/critério de aceite própri
 - Diagnóstico técnico já tem um caso real para mostrar: a divergência de contagem de itens (120 real vs. 119 no manifesto) — bom teste de aceite orgânico, não fabricado.
 - Implementado: migration `0020_content_admin_roles.sql` (tabela `admin_users` + função `is_content_admin()` SECURITY DEFINER, sem policy nova em `content_documents`), rota `/admin/biblioteca` (lista) e `/admin/biblioteca/[contentType]/[slug]` (detalhe), gate único em `src/app/admin/layout.tsx`. Detalhes completos, incluindo browser check confirmado, em `docs/CHECKPOINT_ETAPA2_ADMIN_BIBLIOTECA_READONLY.md`.
 
-### Etapa 3 — Editor universal de campos básicos
+### Etapa 3 — Editor universal de campos básicos — **CONCLUÍDA**
 - Já compatível com o recorte real: magia/talento/item são os três com `identificacao`/`classificacao`/`texto` mais uniformes (ver matriz §2 do schema canônico).
 - Atenção: `estatisticas` de item é campo livre no schema atual — a Etapa 3 deve tratá-lo como somente leitura/técnico neste momento (não gerar formulário para um campo sem contrato), conforme decisão em aberto §7.3 do schema canônico.
+- Implementado: rascunhos em tabela separada `content_drafts` (migration `0021_content_drafts.sql`, RLS admin-only via `is_content_admin()`), editor universal em `/admin/biblioteca/rascunhos/*`, Server Actions em `src/lib/contentSchema/draftServerActions.ts` (criar/editar/duplicar/atualizar/excluir), controle de concorrência otimista (coluna `version`). Detalhes completos e browser check confirmado em `docs/CHECKPOINT_ETAPA3_EDITOR_CAMPOS_BASICOS.md`. Ajuste incidental: corrigido um bug latente da Etapa 1 (spell adapter não copiava `pericia_teste`/`atributo_ataque` para `classificacao`).
 
 ### Etapa 4 — Construtor de efeitos MVP
 - `cura` e `remover_condicao` — caminho mais seguro para o primeiro efeito ponta a ponta (executor já existe).
