@@ -34,9 +34,10 @@ O aditivo já define 13 etapas (0 a 12) com objetivo/critério de aceite própri
 - Adaptadores de leitura precisam ser **um por content_type**, não genéricos — confirmado pela heterogeneidade real dos payloads (duração em 4 formatos, resistência em 2 formatos).
 - Implementado em `src/lib/contentSchema/` — registro de tipos de conteúdo, catálogo de efeitos, normalizadores de duração/resistência/referência, validação, diagnóstico de automação, adapters para spell/talent/item/condition + fallback genérico para os 8 content_types restantes, e os 5 exemplos canônicos obrigatórios. Detalhes completos em `docs/CHECKPOINT_ETAPA1_SCHEMA_CANONICO.md`. Ajustes em relação a esta proposta estão documentados em `docs/SCHEMA_CANONICO_CONTEUDO_V1.md` §8.
 
-### Etapa 2 — Lista administrativa e inspeção
+### Etapa 2 — Lista administrativa e inspeção — **CONCLUÍDA**
 - Pré-requisito de segurança descoberto na auditoria: **não existe hoje nenhum admin role**. Esta etapa precisa entregar, além da lista read-only, a própria noção de "quem é admin" (tabela/coluna de role, ou allowlist de e-mails autenticados via Supabase Auth) — sem isso, "acesso indevido é bloqueado" (critério de aceite do aditivo) não tem como ser verdadeiro.
 - Diagnóstico técnico já tem um caso real para mostrar: a divergência de contagem de itens (120 real vs. 119 no manifesto) — bom teste de aceite orgânico, não fabricado.
+- Implementado: migration `0020_content_admin_roles.sql` (tabela `admin_users` + função `is_content_admin()` SECURITY DEFINER, sem policy nova em `content_documents`), rota `/admin/biblioteca` (lista) e `/admin/biblioteca/[contentType]/[slug]` (detalhe), gate único em `src/app/admin/layout.tsx`. Detalhes completos, incluindo browser check confirmado, em `docs/CHECKPOINT_ETAPA2_ADMIN_BIBLIOTECA_READONLY.md`.
 
 ### Etapa 3 — Editor universal de campos básicos
 - Já compatível com o recorte real: magia/talento/item são os três com `identificacao`/`classificacao`/`texto` mais uniformes (ver matriz §2 do schema canônico).
