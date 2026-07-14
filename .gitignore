@@ -9,3 +9,7 @@ dist/
 build/
 *.tsbuildinfo
 .claude/
+
+# Sessão local do Playwright para browser checks autenticados (nunca commitar —
+# contém cookies de sessão). Ver scripts/dev/save-admin-session.ts.
+.auth/
