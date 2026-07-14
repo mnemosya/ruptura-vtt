@@ -1,0 +1,203 @@
+# CHECKPOINT — ETAPA 4: CONSTRUTOR DE EFEITOS MVP
+
+**Projeto:** Ruptura VTT
+**Data:** 14 de julho de 2026
+**Checkpoint anterior:** `d12be18` — docs: document basic content editor checkpoint (Etapa 3)
+**Escopo desta etapa:** permitir montar/editar/organizar os 6 efeitos do MVP (dano, cura, aplicar condição, remover condição, modificar teste, alterar recurso) dentro dos rascunhos de magia/talento/item — sem publicação, sem efeitos compostos, sem construtor de JSON.
+
+---
+
+## 1. Arquitetura
+
+### 1.1 Camada compartilhada (`src/lib/contentSchema/`)
+
+Os 6 efeitos **não são 6 sistemas isolados** — compartilham um único envelope, um único mecanismo de diagnóstico e uma única validação:
+
+```
+src/lib/contentSchema/
+├── effectDraftTypes.ts        # EfeitoEditavel (union discriminada sobre `tipo`) + CamposEfeitoComuns
+│                               # (id estável, habilitado, ordem, gatilho, alvo, duração, textos de log/lembrete)
+├── effectDraftMapping.ts        # canônico (Etapa 1) → editável, uma única vez (na criação do rascunho)
+├── effectDiagnostics.ts          # deriva modoAutomacao — nunca escolhido pela pessoa administradora
+├── effectDraftValidation.ts       # validação dos 6 tipos, reaproveitada por magia/item/talento
+└── characterRuleOptions.ts         # tipos de dano/perícias/atributos reais da Biblioteca (nunca hardcoded)
+```
+
+`EfeitoEditavel` é uma união discriminada por `tipo`:
+
+```ts
+type EfeitoEditavel =
+  | (CamposEfeitoComuns & { tipo: "dano"; campos: CamposDano })
+  | (CamposEfeitoComuns & { tipo: "cura"; campos: CamposCura })
+  | (CamposEfeitoComuns & { tipo: "aplicar_condicao"; campos: CamposAplicarCondicao })
+  | (CamposEfeitoComuns & { tipo: "remover_condicao"; campos: CamposRemoverCondicao })
+  | (CamposEfeitoComuns & { tipo: "modificar_teste"; campos: CamposModificarTeste })
+  | (CamposEfeitoComuns & { tipo: "alterar_recurso"; campos: CamposAlterarRecurso });
+```
+
+`CamposEfeitoComuns` (id, habilitado, ordem, nomeOpcional, gatilho, alvo, duração, textoLog, textoLembrete) é a estrutura-base pedida no checkpoint — só `campos` varia por tipo. `GATILHOS_INICIAIS`/`ALVOS_INICIAIS` (também em `effectDraftTypes.ts`) são as listas únicas de gatilho/alvo — nenhum efeito redefine sua própria lista.
+
+### 1.2 UI (`src/app/admin/biblioteca/rascunhos/_shared/`)
+
+```
+EffectsEditorSection.tsx   # lista: adicionar/duplicar/remover/reordenar/habilitar — um componente, não seis
+EfeitoCamposPorTipo.tsx     # UM switch (nunca duplicado em outro arquivo) delegando a 6 funções de campo curtas
+DuracaoEditor.tsx            # editor de duração compartilhado pelos 6 tipos
+EffectsPreviewList.tsx        # preview compacto, em ordem, reaproveitado no bloco "Preview"
+```
+
+`EffectsEditorSection` é usada exatamente da mesma forma para magia, item (`DraftEditorClient.tsx`) e cada nível de talento (`CamposTalentoSection.tsx`) — não há três implementações.
+
+### 1.3 Onde os efeitos vivem em cada tipo de conteúdo
+
+- **Magia/Item**: `camposEditaveis.campos.efeitos: EfeitoEditavel[]` — direto no documento.
+- **Talento**: `camposEditaveis.campos.niveis[i].efeitos: EfeitoEditavel[]` — por nível, nunca a árvore inteira vira 3 documentos (arquitetura da Etapa 3 mantida).
+- `estatisticas` de item continua exatamente como preservado/somente-leitura era na Etapa 3 — o Construtor de Efeitos nunca grava nela.
+
+---
+
+## 2. Decisão de arquitetura: por que não precisou de migration
+
+`content_drafts.payload` (JSONB, Etapa 3) já comporta o construtor sem alteração de schema — os 6 tipos de efeito só adicionam mais uma chave (`efeitos: EfeitoEditavel[]`) dentro do `DraftEnvelope` já existente, que é JSONB livre. **Nenhuma migration foi criada nesta etapa.**
+
+## 3. Modelo de conversão: promoção de efeito, nunca reescrita do legado
+
+Ao criar um rascunho de edição (ou duplicar), os efeitos canônicos (Etapa 1) do `rawOriginal` são classificados **uma única vez**:
+
+- Se `tipo` ∈ {dano, cura, aplicar_condicao, remover_condicao, modificar_teste, alterar_recurso} → **promovido a editável** (`extrairEfeitosEditaveis`, `effectDraftMapping.ts`) — vira a fonte de verdade em `camposEditaveis.campos.efeitos`.
+- Qualquer outro tipo (`teste_resistencia`, `outro`/bespoke) → **permanece somente leitura**, sempre re-derivado de `rawOriginal` pelos adapters da Etapa 1 (`filtrarEfeitosSomenteLeitura`) — nunca duplicado na tela (a seção "Efeitos ainda não editáveis" só mostra o que sobrou fora do MVP).
+
+`rawOriginal` **nunca é reescrito** — a mesma garantia estrutural da Etapa 3. Isso significa que salvar edições no Construtor de Efeitos não tem como apagar `estatisticas`, campos bespoke ou efeitos fora do MVP: eles simplesmente não são tocados, sempre lidos direto do payload original.
+
+**Identidade de efeito**: o `id` de um efeito editável nasce uma única vez (na promoção inicial, herdado do `id` gerado pelos adapters da Etapa 1, ou via `crypto.randomUUID()` para efeitos novos/duplicados) e nunca é recriado ao reordenar, habilitar/desabilitar ou salvar — reordenar é só um swap de posição no array, seguido de recomputar `ordem = índice` (a ordem persistida é sempre a ordem mostrada).
+
+---
+
+## 4. Modo de automação — derivado, nunca escolhido
+
+`effectDiagnostics.ts::diagnosticarEfeitoEditavel` roda a cada render (client-side, síncrono, sem rede) e nunca deixa o resultado passar do teto estático do catálogo (`effectTypeRegistry.ts`, Etapa 1) para aquele `tipo`. Exemplos reais implementados:
+
+| Situação | Resultado |
+|---|---|
+| Cura com fórmula + recurso + alvo definidos | **Automático** (`itemUse.ts::applyGmHealing` já existe) |
+| Dano com fórmula/tipo completos | **Assistido** (rola, mas resolução em magia/item ainda depende de confirmação) |
+| Aplicar condição com condição real + alvo resolvido, sem exigir confirmação | **Automático** (novo executor genérico, ver §5) |
+| Aplicar condição com `confirmacaoManual` marcado ou alvo "selecionado manualmente" | **Assistido** |
+| Aplicar condição sem `condicaoSlug` | **Sem executor** |
+| Modificar teste "bônus"/"penalidade" sem valor numérico | **Sem executor** (configuração incompleta nunca aparece como automática) |
+| Alterar recurso PA em "ao encerrar rodada" com operação "reduzir" | **Automático** (único caso real hoje, `endRoundConditions.ts`) |
+| Alterar recurso em qualquer outro caso | **Assistido** (recurso reconhecido, sem executor automático genérico ainda) |
+
+Dupla trava contra automação inventada: `EffectsEditorSection`/`EfeitoCamposPorTipo` nunca oferecem um controle de "modo de automação" editável — é sempre texto derivado; e `effectDraftValidation.ts` reconfirma, por efeito, que o modo mostrado bate com o que o catálogo permite, virando aviso quando incompleto.
+
+### 4.1 Catálogo atualizado (`effectTypeRegistry.ts`)
+
+`aplicar_condicao` teve seu teto elevado de **lembrete** (Etapa 1 — nenhum executor existia) para **assistido** (Etapa 4 — o executor genérico agora existe e está conectado a um fluxo real). O texto da entrada no catálogo documenta o porquê. Isso é uma mudança de dado partilhado — o mesmo campo já usado pela lista/detalhe administrativos (Etapa 2) e pelos exemplos permanentes (Etapa 1) — então o script `test-canonical-content-schema.ts` foi atualizado de acordo (rodado e confirmado passando, ver §9).
+
+---
+
+## 5. Executor genérico de `aplicar_condicao`
+
+**`src/lib/character/conditionEffectExecutor.ts`** (`executarAplicarCondicao`, `"use server"`) — não exclusivo de nenhuma magia/talento/item. Passos, sempre nesta ordem:
+
+1. valida que a condição existe e está **publicada** na Biblioteca (`getContentDocument("condition", slug)`) — nunca aceita texto livre;
+2. resolve a duração (override do efeito > duração padrão da condição);
+3. delega a mutação para `applyGmCondition` (já existente, usado por `/dev/table`) — que já trata "acúmulo": no modelo atual de `ActiveCondition` (sem campo de pilhas), a mesma condição não duplica enquanto ativa;
+4. gera texto de log legível;
+5. **nunca aplica parcialmente** — qualquer falha de validação retorna `{ ok: false }` sem tocar o personagem; a função é pura (não persiste sozinha), então nenhum recurso é consumido antes da validação rodar.
+
+### 5.1 Fluxo operacional conectado
+
+Escolhido após auditoria do código: `src/app/dev/table/TableClient.tsx::handleGmApplyCondition` — a ferramenta manual "Aplicar condição" do narrador em `/dev/table`, que já existia, já tinha seleção explícita de alvo (dropdown de personagem) e já persistia via `persistGmMutation` + log em `table_logs`. A troca foi cirúrgica: a chamada direta a `applyGmCondition` virou uma chamada a `executarAplicarCondicao` (validação primeiro), preservando toda a lógica de autoria (Praga) e duração estendida (Sangria Lenta) já existente. As dezenas de outras chamadas a `applyGmCondition` no mesmo arquivo (mecânica bespoke de talentos — Fincada, Muralha, etc.) **não foram tocadas** — não é um executor exclusivo por conteúdo, mas também não substitui mecânica bespoke já funcionando.
+
+Isso satisfaz literalmente o requisito de não aplicar automaticamente as 51 ocorrências legadas de `aplicar_condicao` sem avaliar compatibilidade: o executor só é alcançável hoje por essa única ação manual do narrador, nunca disparado a partir de conteúdo publicado sem confirmação humana.
+
+---
+
+## 6. Campos por efeito (resumo)
+
+Todos compartilham gatilho/alvo/duração/texto de log (estrutura comum, §1.1). Campos específicos:
+
+- **Dano**: controle amigável (tipo de fórmula fixo/dados/dados+modificador, quantidade, seletor de dado d4–d100, modificador) que gera a fórmula internamente (`formatarFormulaDano`); tipo/subtipo de dano vindos **dinamicamente** da Biblioteca (`character_rule.tipos_dano`, nunca hardcoded); dano principal/adicional; ignora MIT/PD; metade em sucesso.
+- **Cura**: mesmo controle amigável; recurso (PV/PE/Mana/Integridade/PD); limitar ao máximo; permitir valor temporário.
+- **Aplicar condição**: `condicaoSlug` é uma referência estruturada (`<select>` populado com condições reais publicadas, nunca texto livre); intensidade/pilhas; acumulável + máximo de pilhas; autoria; confirmação manual.
+- **Remover condição**: condição específica OU lista de condições possíveis OU seleção manual OU remover todas; quantidade removida; bloquear sem condição compatível (reaproveita a mesma detecção/remoção de `itemUse.ts`/`actionConsole.ts` — nenhuma lógica duplicada, o Construtor só monta os dados que esses executores já entendem).
+- **Modificar teste**: modo (bônus/penalidade exigem valor numérico; vantagem/desvantagem não); atributo e perícia **vindos dinamicamente** de `character_rule` (nunca só "Luta" hardcoded); ação; defesa; tags; acumulável + máximo; consumir no próximo teste; confirmação de contexto.
+- **Alterar recurso**: recurso (lista fechada aos recursos já reconhecidos pela auditoria — PV/PE/Mana/Integridade/PA/Reações/Sobrecarga/RAM/cargas/munição/dados de gatilho, nunca generalizado); operação (somar/reduzir/definir/conceder temporariamente); valor fixo ou fórmula; mínimo/máximo; bloquear por insuficiência.
+
+---
+
+## 7. Compatibilidade com legados — classificação real
+
+Ao abrir um rascunho de edição, cada efeito do payload original é classificado exatamente uma vez:
+
+- **editável**: tipo ∈ MVP, convertido para `EfeitoEditavel` (ex.: `dano`, `cura`, `aplicar_condicao`, `remover_condicao`, `modificar_teste`, `alterar_recurso` da magia/item/talento de origem).
+- **somente leitura**: `teste_resistencia`, `outro`/bespoke — mostrados na seção "Efeitos ainda não editáveis", sempre re-derivados de `rawOriginal`, nunca convertidos nem perdidos.
+
+Confirmado com conteúdo real: `energetica_bola_de_fogo` (spell publicada) tem `efeito_com_resistencia` (permanece somente leitura), `dano` e `aplicar_condicao` (ambos promovidos a editáveis) — o rascunho de edição mostra os três corretamente separados.
+
+**Conversão só acontece dentro do rascunho** — `content_documents` nunca é escrito por esta etapa (mesma regra da Etapa 3).
+
+---
+
+## 8. Validação
+
+`effectDraftValidation.ts::validarEfeitosEditaveis` (chamada por `validarCamposMagia`/`Item`/`Talento`, Etapa 3, com prefixo "Efeitos"/"Nível N — Efeitos"):
+
+**Bloqueantes**: tipo fora do MVP; ID ou ordem duplicados; ordem inválida; gatilho/alvo ausentes; fórmula inválida (quantidade/faces não-positivos, valor fixo ausente/negativo); tipo de dano ausente; recurso de cura/alterar-recurso inválido; condição referenciada inexistente na Biblioteca (`aplicar_condicao`, `remover_condicao` — verificado via `getContentDocument`); modo "bônus"/"penalidade" sem valor numérico; nem tag/perícia/ação definidos em "modificar teste"; mínimo > máximo em "alterar recurso".
+
+**Avisos**: modo vantagem/desvantagem com valor numérico definido (será ignorado); flags MIT+PD simultâneas; valor negativo com operação incompatível; efeito com configuração incompleta (diagnosticado como "sem executor"); efeito habilitado mas classificado como "lembrete".
+
+"Perda de campo preservado" e "divergência entre modo de automação e executor" são estruturalmente impossíveis nesta arquitetura (rawOriginal nunca tocado; modoAutomacao sempre derivado, nunca lido de um campo editável) — não exigem checagem de runtime além da já existente.
+
+---
+
+## 9. Validação técnica
+
+- `npx tsc --noEmit` — sem erros.
+- `npm run build` — sucesso; rotas inalteradas desde a Etapa 3 (o Construtor de Efeitos vive dentro das rotas já existentes de rascunho).
+- `npm run test:canonical-schema` (round-trip da Etapa 1, reexecutado por afetar o catálogo compartilhado) — **todos os testes passaram**, incluindo a asserção atualizada de `aplicar_condicao` (modoAutomacao agora "assistido").
+- `next-env.d.ts` — inalterado.
+- Um conflito de arquitetura do esbuild reapareceu durante o desenvolvimento (mesmo padrão das etapas anteriores) — resolvido sem reinstalar dependências, rodando os comandos `tsx`/Playwright exclusivamente no terminal onde já funcionavam.
+
+### 9.1 Browser check (`scripts/dev/check-admin-effect-builder.ts`, `npm run check:admin-effect-builder`)
+
+Reaproveita integralmente `scripts/dev/authSession.ts` (`withAuthenticatedPage`, `.auth/admin-session.json`, `npm run auth:save-session`) — nenhuma estrutura de sessão recriada.
+
+**Confirmado passando, em execução real no terminal da proprietária da conta** (após diversas correções de seletores frágeis do PRÓPRIO script de teste — não do editor):
+
+```
+1. Acesso sem login bloqueado — OK
+2. Admin abre rascunho de magia — OK
+3. Dano 1d8 (energético/ígneo) adicionado — OK
+4/5. Salva e recarrega — efeito mantém ordem e campos (1 único card) — OK
+6/7/8. Aplicar condição com condição real ('atordoado') — diagnóstico exibido — OK
+9. Reordena os efeitos — OK
+10. Duplica um efeito — OK
+11. Remove um efeito — OK
+12. Cancelar alterações não salva — OK
+18. Efeito legado (teste_resistencia) permanece preservado — OK
+19. Nenhum JSON bruto vazando no fluxo principal — OK
+20. Preview reflete os efeitos configurados — OK
+```
+
+**Não confirmado em execução completa até o fim** (parado a pedido, após a última correção de seletor — item "Quantidade" colidindo com "Quantidade padrão" do item): itens 13–17 (item com cura/remover condição, talento com +1 Luta e alterar recurso), 21–23 (fluxo real em `/dev/table`) e 24–25 (console limpo / limpeza final) **ainda não rodaram até o fim numa mesma execução sem erro**. O script cobre esses passos no código (revisado, com `tsc` limpo), mas a última rodada confirmada parou no item 13 por uma ambiguidade de seletor que já foi corrigida no código — só não houve tempo de confirmar a execução completa depois dessa última correção.
+
+**Limitação assumida por decisão explícita da proprietária da conta**: as iterações de correção de seletores do script de browser check foram interrompidas antes de uma execução 100% verde ponta a ponta. O editor em si (código de produto) não tem nenhuma falha conhecida associada aos itens não confirmados — as falhas encontradas até aqui foram todas no script de teste (nomes de acessibilidade ambíguos do Playwright), nunca no comportamento do Construtor de Efeitos. Recomendação de próximo passo: rodar `npm run check:admin-effect-builder` mais uma vez antes de iniciar a Etapa 5, para fechar essa lacuna de confirmação.
+
+---
+
+## 10. Limitações
+
+- Browser check não confirmado 100% ponta a ponta nesta sessão (ver §9.1) — parado por decisão explícita, não por bug conhecido do editor.
+- Item 2 do checkpoint anterior ("usuário sem admin bloqueado") continua sem cobertura automatizada (mesma decisão da Etapa 2/3 — exigiria criar uma segunda credencial de teste).
+- `aplicar_condicao` só tem execução real automática através do fluxo manual de `/dev/table` — magia/item/runa continuam sem aplicação automática de condição (exigiria resolver alvo/distância, fora do teatro da mente de Ruptura).
+- `alterar_recurso` só tem um caso realmente automático hoje (PA em fim de rodada) — os demais recursos ficam "assistido" mesmo bem configurados, refletindo a auditoria real do motor.
+- Efeitos compostos, teste/resistência com ramificação, grupos lógicos, modificação de margem, ação/reação adicional, inventário/runas, mercado avançado, drones/robôs/Trama, importação/exportação, homebrew — todos fora de escopo, como definido.
+- Publicação continua bloqueada (rascunho permanece "não disponível no jogo") — Etapa 5.
+
+---
+
+## 11. Próximos passos (não iniciados nesta etapa)
+
+Conforme `docs/PLANO_IMPLEMENTACAO_EDITOR_UNIVERSAL.md`, a **Etapa 5 — Publicação, versões e changelog** é o próximo passo natural. Antes disso, recomenda-se fechar a lacuna de confirmação do browser check (§9.1).
