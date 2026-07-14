@@ -16,3 +16,6 @@ export * from "./fields/resistencia";
 export * from "./fields/referencia";
 export * from "./adapters";
 export * from "./examples/canonicalExamples";
+export * from "./adminQueries";
+export * from "./adminDiagnostics";
+export * from "./manifestDiagnostics";
