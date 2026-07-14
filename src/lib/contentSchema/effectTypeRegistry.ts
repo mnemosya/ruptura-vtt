@@ -91,9 +91,10 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
       { nome: "duracaoOverride", tipo: "unknown", obrigatorio: false, descricao: "Duração específica deste efeito, se substituir a padrão da condição." },
     ],
     executor: {
-      modo: "lembrete",
+      modo: "assistido",
+      modulo: "src/lib/character/conditionEffectExecutor.ts (executarAplicarCondicao) + gmActions.ts (applyGmCondition)",
       observacao:
-        "É o efeito mais comum de todo o conteúdo (51 ocorrências na auditoria) e ainda não tem executor genérico que aplique a condição ao alvo automaticamente — decisão de produto é tratá-lo como lembrete nesta etapa; o executor genérico fica para a Etapa 4 (aditivo §Etapa 4).",
+        "Era o maior gap de automação do conteúdo (51 ocorrências na auditoria, sem executor). Etapa 4 conectou um executor genérico (valida a condição publicada, a duração e o acúmulo antes de mutar, preserva autoria e gera log) ao fluxo manual de aplicar condição em /dev/table — por isso o teto sobe para \"assistido\" (o narrador ainda seleciona alvo/confirma). Continua sem execução totalmente automática a partir de magia/item/runa (isso exigiria também resolver alvo/distância, fora do teatro da mente de Ruptura). O diagnóstico por instância (effectDiagnostics.ts) pode refinar para \"automático\" quando o efeito editável já resolve alvo e condição sem exigir confirmação adicional.",
     },
     aliasesLegado: {
       spell: ["aplicar_condicao"],

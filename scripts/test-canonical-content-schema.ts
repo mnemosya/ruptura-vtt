@@ -76,9 +76,9 @@ assert.equal(magiaResistencia.canonico.resistencia?.cdFormula, "5 + nivel_verten
 const efeitoAplicarCondicao = magiaResistencia.canonico.efeitos.find((e) => e.tipo === "aplicar_condicao");
 assert.ok(efeitoAplicarCondicao, "Deve existir um efeito 'aplicar_condicao'.");
 assert.equal((efeitoAplicarCondicao!.payloadEspecifico.condicao as { slug: string }).slug, "atordoado");
-assert.equal(efeitoAplicarCondicao!.modoAutomacao, "lembrete");
+assert.equal(efeitoAplicarCondicao!.modoAutomacao, "assistido"); // Etapa 4 conectou o executor genérico — teto do catálogo subiu de "lembrete" para "assistido"
 assert.ok(magiaResistencia.canonico.referencias.some((r) => r.slug === "atordoado" && r.tipoConteudo === "condition"));
-console.log("✓ Magia com resistência — aplicar_condicao referencia 'atordoado' (modoAutomacao=lembrete, referência registrada)");
+console.log("✓ Magia com resistência — aplicar_condicao referencia 'atordoado' (modoAutomacao=assistido, referência registrada)");
 
 console.log("\n--- 3. Round-trip com conteúdo real (content/db_*.json) — prova de compatibilidade com legado ---\n");
 

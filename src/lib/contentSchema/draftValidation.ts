@@ -9,8 +9,15 @@ import { getContentDocument } from "../content/queries";
 import type { ContentType } from "../content/types";
 import { findDraftBySlug } from "./draftQueries";
 import type { CamposComuns, CamposItem, CamposMagia, CamposTalento, ContentDraftRow, DraftContentType } from "./draftTypes";
+import { validarEfeitosEditaveis } from "./effectDraftValidation";
 import { isValidSlug } from "./slug";
 import type { ResultadoValidacao } from "./types";
+
+function mesclarValidacao(erros: string[], avisos: string[], infos: string[], origem: ResultadoValidacao, prefixo: string): void {
+  erros.push(...origem.erros.map((e) => `${prefixo}: ${e}`));
+  avisos.push(...origem.avisos.map((a) => `${prefixo}: ${a}`));
+  infos.push(...origem.infos.map((i) => `${prefixo}: ${i}`));
+}
 
 async function existeSlugColidindo(contentType: DraftContentType, slug: string, ignorarDraftId?: string): Promise<boolean> {
   const publicado = await getContentDocument(contentType as ContentType, slug);
@@ -62,6 +69,8 @@ export async function validarCamposMagia(campos: CamposMagia, draftId?: string):
   if (!campos.nivel) avisos.push("Sem nível definido.");
   await validarRequisitos(campos.requisitos, erros);
 
+  mesclarValidacao(erros, avisos, infos, await validarEfeitosEditaveis(campos.efeitos), "Efeitos");
+
   return { valido: erros.length === 0, erros, avisos, infos };
 }
 
@@ -84,6 +93,8 @@ export async function validarCamposItem(campos: CamposItem, draftId?: string): P
     if (!encontrada) erros.push(`Propriedade referenciada não encontrada: "${propriedadeSlug}".`);
   }
 
+  mesclarValidacao(erros, avisos, infos, await validarEfeitosEditaveis(campos.efeitos), "Efeitos");
+
   return { valido: erros.length === 0, erros, avisos, infos };
 }
 
@@ -101,8 +112,9 @@ export async function validarCamposTalento(campos: CamposTalento, draftId?: stri
     if (!nivel.nomeNivel || nivel.nomeNivel.trim() === "") avisos.push(`Nível ${indice + 1}: sem nome ainda.`);
   });
 
-  for (const nivel of campos.niveis) {
+  for (const [indice, nivel] of campos.niveis.entries()) {
     await validarRequisitos(nivel.requisitos, erros);
+    mesclarValidacao(erros, avisos, infos, await validarEfeitosEditaveis(nivel.efeitos), `Nível ${indice + 1} — Efeitos`);
   }
 
   return { valido: erros.length === 0, erros, avisos, infos };

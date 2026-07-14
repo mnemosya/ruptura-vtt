@@ -9,6 +9,7 @@
 import { adaptItem } from "./adapters/item";
 import { adaptSpell } from "./adapters/spell";
 import { adaptTalentLevel } from "./adapters/talent";
+import { extrairEfeitosEditaveis } from "./effectDraftMapping";
 import type { ConteudoCanonico, Referencia } from "./types";
 import type { CamposItem, CamposMagia, CamposTalento, CamposTalentoNivel, RequisitoSimples } from "./draftTypes";
 
@@ -58,11 +59,12 @@ export function extrairCamposMagia(canonico: ConteudoCanonico): CamposMagia {
     resistenciaPericia: canonico.resistencia?.pericia,
     resistenciaCdFormula: canonico.resistencia?.cdFormula,
     requisitos: referenciasParaRequisitos(canonico.referencias, "requisito"),
+    efeitos: extrairEfeitosEditaveis(canonico.efeitos),
   };
 }
 
 export function vazioCamposMagia(): CamposMagia {
-  return { nome: "", slug: "", tags: [], requisitos: [] };
+  return { nome: "", slug: "", tags: [], requisitos: [], efeitos: [] };
 }
 
 export function rawOriginalSpellVazio(): Record<string, unknown> {
@@ -90,11 +92,12 @@ export function extrairCamposItem(canonico: ConteudoCanonico): CamposItem {
     raridade: asString(classificacao.raridade),
     preco: asNumber(classificacao.preco),
     propriedades: [],
+    efeitos: extrairEfeitosEditaveis(canonico.efeitos),
   };
 }
 
 export function vazioCamposItem(): CamposItem {
-  return { nome: "", slug: "", tags: [], propriedades: [] };
+  return { nome: "", slug: "", tags: [], propriedades: [], efeitos: [] };
 }
 
 export function rawOriginalItemVazio(): Record<string, unknown> {
@@ -118,13 +121,14 @@ function extrairCamposTalentoNivel(canonico: ConteudoCanonico): CamposTalentoNiv
     descricaoCurta: canonico.descricaoCurta,
     descricaoLonga: canonico.descricaoLonga,
     requisitos: referenciasParaRequisitos(canonico.referencias, "requisito"),
+    efeitos: extrairEfeitosEditaveis(canonico.efeitos),
   };
 }
 
 export function extrairCamposTalento(talentoSlug: string, talentoNome: string, talentoRaw: Record<string, unknown>, niveisCanonicos: ConteudoCanonico[]): CamposTalento {
   const niveis = [1, 2, 3].map((nivelAlvo) => {
     const canonico = niveisCanonicos.find((c) => asNumber(c.classificacao.nivel) === nivelAlvo);
-    return canonico ? extrairCamposTalentoNivel(canonico) : { nivel: nivelAlvo, nomeNivel: "", requisitos: [] };
+    return canonico ? extrairCamposTalentoNivel(canonico) : { nivel: nivelAlvo, nomeNivel: "", requisitos: [], efeitos: [] };
   }) as [CamposTalentoNivel, CamposTalentoNivel, CamposTalentoNivel];
 
   return {
@@ -143,9 +147,9 @@ export function vazioCamposTalento(): CamposTalento {
     slug: "",
     tags: [],
     niveis: [
-      { nivel: 1, nomeNivel: "", requisitos: [] },
-      { nivel: 2, nomeNivel: "", requisitos: [] },
-      { nivel: 3, nomeNivel: "", requisitos: [] },
+      { nivel: 1, nomeNivel: "", requisitos: [], efeitos: [] },
+      { nivel: 2, nomeNivel: "", requisitos: [], efeitos: [] },
+      { nivel: 3, nomeNivel: "", requisitos: [], efeitos: [] },
     ],
   };
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { OpcoesDeRegras } from "../../../../../lib/contentSchema/characterRuleOptions";
 import type { CamposItem, CamposMagia, CamposTalento, ContentDraftRow } from "../../../../../lib/contentSchema/draftTypes";
 import { CONTENT_TYPE_REGISTRY } from "../../../../../lib/contentSchema/contentTypeRegistry";
 import { atualizarRascunho, excluirRascunho } from "../../../../../lib/contentSchema/draftServerActions";
@@ -10,6 +11,8 @@ import { CamposComunsSection } from "../_shared/CamposComunsSection";
 import { CamposItemSection } from "../_shared/CamposItemSection";
 import { CamposMagiaSection } from "../_shared/CamposMagiaSection";
 import { CamposTalentoSection } from "../_shared/CamposTalentoSection";
+import { EffectsEditorSection } from "../_shared/EffectsEditorSection";
+import { EffectsPreviewList } from "../_shared/EffectsPreviewList";
 import { dangerTextStyle, primaryButtonStyle, sectionStyle, warnTextStyle, buttonStyle } from "../_shared/formStyles";
 import { PreviewPreservado } from "../_shared/PreviewPreservado";
 
@@ -19,10 +22,14 @@ export function DraftEditorClient({
   draft,
   efeitosPreservados,
   baseDocumentoStatus,
+  opcoes,
+  condicoesDisponiveis,
 }: {
   draft: ContentDraftRow;
   efeitosPreservados: DraftEfeitosPreservados[];
   baseDocumentoStatus: BaseDocumentoStatus;
+  opcoes: OpcoesDeRegras;
+  condicoesDisponiveis: { slug: string; nome: string }[];
 }) {
   const router = useRouter();
   const [campos, setCampos] = useState<CamposUniao>(draft.payload.camposEditaveis.campos);
@@ -127,8 +134,22 @@ export function DraftEditorClient({
         <h3 style={{ marginTop: 0, fontSize: 15 }}>Classificação e campos específicos</h3>
         {draft.content_type === "spell" && <CamposMagiaSection campos={campos as CamposMagia} onChange={atualizarCampos} />}
         {draft.content_type === "item" && <CamposItemSection campos={campos as CamposItem} onChange={atualizarCampos} />}
-        {draft.content_type === "talent" && <CamposTalentoSection campos={campos as CamposTalento} onChange={atualizarCampos} />}
+        {draft.content_type === "talent" && (
+          <CamposTalentoSection campos={campos as CamposTalento} onChange={atualizarCampos} opcoes={opcoes} condicoesDisponiveis={condicoesDisponiveis} />
+        )}
       </div>
+
+      {(draft.content_type === "spell" || draft.content_type === "item") && (
+        <div style={sectionStyle}>
+          <h3 style={{ marginTop: 0, fontSize: 15 }}>Efeitos</h3>
+          <EffectsEditorSection
+            efeitos={(campos as CamposMagia | CamposItem).efeitos}
+            onChange={(efeitos) => atualizarCampos({ efeitos } as Partial<CamposUniao>)}
+            opcoes={opcoes}
+            condicoesDisponiveis={condicoesDisponiveis}
+          />
+        </div>
+      )}
 
       {(erros.length > 0 || avisos.length > 0) && (
         <div style={{ ...sectionStyle, borderColor: erros.length > 0 ? "#5a2424" : "#5a4a24", background: erros.length > 0 ? "#241414" : "#241f14" }}>
@@ -166,6 +187,18 @@ export function DraftEditorClient({
           {campos.categoria ? ` — ${campos.categoria}` : ""}
         </p>
         {campos.descricaoCurta && <p style={{ fontSize: 13, color: "#c9c9d1" }}>{campos.descricaoCurta}</p>}
+
+        {draft.content_type === "talent" ? (
+          (campos as CamposTalento).niveis.map((nivel, i) => (
+            <div key={i} style={{ marginBottom: 10 }}>
+              <h4 style={{ fontSize: 13, color: "#a8a8b3", margin: "8px 0 4px" }}>Nível {nivel.nivel} — {nivel.nomeNivel || "(sem nome)"}</h4>
+              <EffectsPreviewList efeitos={nivel.efeitos} />
+            </div>
+          ))
+        ) : (
+          <EffectsPreviewList efeitos={(campos as CamposMagia | CamposItem).efeitos} />
+        )}
+
         <PreviewPreservado resultados={efeitosPreservados} />
       </div>
     </div>

@@ -133,6 +133,7 @@ import {
   type TalentContent,
   type MarginBandRules,
 } from "../../../lib/character";
+import { executarAplicarCondicao } from "../../../lib/character/conditionEffectExecutor";
 import { rollPericia } from "../../../lib/dice";
 import type { NarratorConditionOption } from "./page";
 
@@ -2852,14 +2853,18 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       const extended = extendSangriaLentaDuration(duracaoTexto, extra);
       if (extended.changed) duracaoTexto = extended.text;
     }
-    const result = applyGmCondition(
+    // Executor genérico do efeito "aplicar_condicao" (Etapa 4 — reusa
+    // applyGmCondition por baixo, mas valida a condição publicada na
+    // Biblioteca antes de mutar; nunca aplica parcialmente).
+    const result = await executarAplicarCondicao(
       record.payload,
-      { slug: condicao.slug, nome: condicao.nome, duracao: duracaoTexto },
+      condicao.slug,
       nowIso,
+      duracaoTexto,
       autorId ? { sourceCharacterId: autorId, sourceTalentId: null, sourceType: "manual" } : undefined,
     );
-    if (result.jaAtiva) {
-      setGmErro(`"${condicao.nome}" já está ativa em ${record.name}.`);
+    if (!result.ok || !result.character) {
+      setGmErro(result.motivo ?? `Não foi possível aplicar "${condicao.nome}" em ${record.name}.`);
       return;
     }
     await persistGmMutation({
@@ -2873,6 +2878,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
         conditionName: condicao.nome,
         sourceCharacterId: autorId,
         duracao: duracaoTexto ?? null,
+        logTexto: result.logTexto,
         source: "dev_table_narrator_tool",
       },
     });

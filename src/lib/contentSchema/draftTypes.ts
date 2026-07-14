@@ -22,6 +22,7 @@
  * — cada metade tem sua própria fonte de verdade, sempre.
  */
 
+import type { EfeitoEditavel } from "./effectDraftTypes";
 import type { CampoDesconhecido, ContentTypeId } from "./types";
 
 export interface RequisitoSimples {
@@ -59,6 +60,8 @@ export interface CamposMagia extends CamposComuns {
   resistenciaPericia?: string;
   resistenciaCdFormula?: string;
   requisitos: RequisitoSimples[];
+  /** Construtor de Efeitos (Etapa 4) — só os 6 tipos do MVP; o resto continua em `preservado`. */
+  efeitos: EfeitoEditavel[];
 }
 
 /**
@@ -78,6 +81,8 @@ export interface CamposTalentoNivel {
   descricaoCurta?: string;
   descricaoLonga?: string;
   requisitos: RequisitoSimples[];
+  /** Construtor de Efeitos (Etapa 4) — efeitos deste nível específico, nunca dos outros 2. */
+  efeitos: EfeitoEditavel[];
 }
 
 export interface CamposTalento extends CamposComuns {
@@ -95,6 +100,8 @@ export interface CamposItem extends CamposComuns {
   disponibilidade?: string;
   aquisicao?: string;
   propriedades: string[];
+  /** Construtor de Efeitos (Etapa 4) — vive em `payload_automacao`, nunca em `estatisticas`. */
+  efeitos: EfeitoEditavel[];
 }
 
 export type CamposEditaveisMagia = { contentType: "spell"; campos: CamposMagia };

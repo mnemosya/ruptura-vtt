@@ -30,3 +30,10 @@ export * from "./draftMapping";
 export * from "./draftValidation";
 export * from "./draftQueries";
 export * from "./draftView";
+
+// --- Etapa 4 — Construtor de Efeitos MVP ---
+export * from "./effectDraftTypes";
+export * from "./effectDraftMapping";
+export * from "./effectDiagnostics";
+export * from "./effectDraftValidation";
+export * from "./characterRuleOptions";

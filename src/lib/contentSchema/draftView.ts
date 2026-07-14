@@ -9,14 +9,21 @@
 import { getContentDocument } from "../content/queries";
 import type { ContentType } from "../content/types";
 import { adaptarRawItem, adaptarRawSpell, adaptarRawTalento } from "./draftMapping";
+import { filtrarEfeitosSomenteLeitura } from "./effectDraftMapping";
 import { validarConteudo } from "./validation";
 import type { ContentDraftRow } from "./draftTypes";
-import type { CampoDesconhecido, ConteudoCanonico, ResultadoValidacao } from "./types";
+import type { CampoDesconhecido, ConteudoCanonico, EfeitoCanonico, ResultadoValidacao } from "./types";
 
 export interface DraftEfeitosPreservados {
   nivel?: number;
   nomeNivel?: string;
   canonico: ConteudoCanonico;
+  /**
+   * Só os efeitos FORA dos 6 tipos do MVP (teste_resistencia, outro, ...)
+   * — os 6 tipos do MVP agora são editáveis (`camposEditaveis.efeitos`,
+   * Etapa 4) e não aparecem duplicados aqui.
+   */
+  efeitosSomenteLeitura: EfeitoCanonico[];
   validacao: ResultadoValidacao;
   camposDesconhecidos: CampoDesconhecido[];
 }
@@ -38,6 +45,7 @@ export async function construirDraftViewModel(draft: ContentDraftRow): Promise<D
     efeitosPreservados = [
       {
         canonico: adaptado.canonico,
+        efeitosSomenteLeitura: filtrarEfeitosSomenteLeitura(adaptado.canonico.efeitos),
         validacao: validarConteudo(adaptado.canonico, adaptado.camposDesconhecidos),
         camposDesconhecidos: adaptado.camposDesconhecidos,
       },
@@ -47,6 +55,7 @@ export async function construirDraftViewModel(draft: ContentDraftRow): Promise<D
     efeitosPreservados = [
       {
         canonico: adaptado.canonico,
+        efeitosSomenteLeitura: filtrarEfeitosSomenteLeitura(adaptado.canonico.efeitos),
         validacao: validarConteudo(adaptado.canonico, adaptado.camposDesconhecidos),
         camposDesconhecidos: adaptado.camposDesconhecidos,
       },
@@ -57,6 +66,7 @@ export async function construirDraftViewModel(draft: ContentDraftRow): Promise<D
       nivel: typeof r.canonico.classificacao.nivel === "number" ? (r.canonico.classificacao.nivel as number) : undefined,
       nomeNivel: r.canonico.nome,
       canonico: r.canonico,
+      efeitosSomenteLeitura: filtrarEfeitosSomenteLeitura(r.canonico.efeitos),
       validacao: validarConteudo(r.canonico, r.camposDesconhecidos),
       camposDesconhecidos: r.camposDesconhecidos,
     }));
