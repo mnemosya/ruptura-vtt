@@ -19,3 +19,14 @@ export * from "./examples/canonicalExamples";
 export * from "./adminQueries";
 export * from "./adminDiagnostics";
 export * from "./manifestDiagnostics";
+
+// --- Etapa 3 — Editor Universal de campos básicos (rascunhos) ---
+// draftServerActions.ts ("use server") não é reexportado por este barrel
+// de propósito — importe diretamente de "./draftServerActions" onde for
+// usar as Server Actions, para manter a fronteira "use server" explícita.
+export * from "./slug";
+export * from "./draftTypes";
+export * from "./draftMapping";
+export * from "./draftValidation";
+export * from "./draftQueries";
+export * from "./draftView";

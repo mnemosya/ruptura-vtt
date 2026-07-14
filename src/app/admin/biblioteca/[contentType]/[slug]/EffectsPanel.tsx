@@ -1,4 +1,5 @@
-import { getEfeitoTipoDefinition, type EfeitoCanonico } from "../../../../../lib/contentSchema";
+import { getEfeitoTipoDefinition } from "../../../../../lib/contentSchema/effectTypeRegistry";
+import type { EfeitoCanonico } from "../../../../../lib/contentSchema/types";
 import { formatarValor, MODO_AUTOMACAO_COR, MODO_AUTOMACAO_LABEL, MODO_AUTOMACAO_SIMBOLO } from "../../labels";
 
 function EffectCard({ efeito }: { efeito: EfeitoCanonico }) {

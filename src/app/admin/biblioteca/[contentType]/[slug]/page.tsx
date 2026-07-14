@@ -7,8 +7,9 @@
 
 import { notFound } from "next/navigation";
 import { getContentDocument, type ContentType } from "../../../../../lib/content";
-import { adaptarParaAdmin, CONTENT_TYPE_REGISTRY } from "../../../../../lib/contentSchema";
+import { adaptarParaAdmin, CONTENT_TYPE_REGISTRY, isDraftContentType } from "../../../../../lib/contentSchema";
 import { CLASSIFICACAO_LEGADO_LABEL, formatarValor } from "../../labels";
+import { DraftActionsBar } from "./DraftActionsBar";
 import { DiagnosticsPanel } from "./DiagnosticsPanel";
 import { EffectsPanel } from "./EffectsPanel";
 
@@ -51,6 +52,7 @@ export default async function ContentDetailPage({ params }: PageProps) {
           <span>atualizado em: {new Date(documento.updated_at).toLocaleString("pt-BR")}</span>
           <span>legado: {CLASSIFICACAO_LEGADO_LABEL[admin.resultados[0]?.adaptacao.classificacaoLegado ?? "somente_leitura"]}</span>
         </div>
+        {isDraftContentType(contentType) && <DraftActionsBar contentType={contentType} slug={documento.slug} nomeAtual={documento.nome ?? documento.slug} />}
       </header>
 
       {admin.resultados.map((resultado, indice) => {

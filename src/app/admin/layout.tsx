@@ -40,6 +40,14 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         <div>
           <div style={{ fontSize: 12, color: "#7d7d8a", textTransform: "uppercase", letterSpacing: 0.6 }}>Ruptura VTT — Admin</div>
           <h1 style={{ fontSize: 24, margin: "4px 0 0" }}>Biblioteca (leitura e diagnóstico)</h1>
+          <nav style={{ marginTop: 8, display: "flex", gap: 14, fontSize: 13 }}>
+            <a href="/admin/biblioteca" style={{ color: "#a8a8b3" }}>
+              Lista
+            </a>
+            <a href="/admin/biblioteca/rascunhos" style={{ color: "#a8a8b3" }}>
+              Rascunhos
+            </a>
+          </nav>
         </div>
         <div style={{ fontSize: 13, color: "#a8a8b3", textAlign: "right" }}>
           <div>{user.email ?? user.id}</div>

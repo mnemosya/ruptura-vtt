@@ -37,7 +37,8 @@
     "db:migrate:generic": "tsx scripts/dev/apply-migration-generic.ts",
     "grant:content-admin": "tsx scripts/grant-content-admin.ts",
     "auth:save-session": "tsx scripts/dev/save-admin-session.ts",
-    "check:admin-biblioteca": "tsx scripts/dev/check-admin-biblioteca.ts"
+    "check:admin-biblioteca": "tsx scripts/dev/check-admin-biblioteca.ts",
+    "check:admin-content-drafts": "tsx scripts/dev/check-admin-content-drafts.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

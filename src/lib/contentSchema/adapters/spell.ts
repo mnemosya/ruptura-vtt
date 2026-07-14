@@ -119,6 +119,8 @@ export function adaptSpell(raw: Record<string, unknown>): ResultadoAdaptacao {
       alcance: estatisticas.alcance,
       area: estatisticas.area,
       resolucao: estatisticas.resolucao,
+      periciaTeste: estatisticas.pericia_teste,
+      atributoAtaque: estatisticas.atributo_ataque,
     },
     duracao: normalizarDuracao(estatisticas.duracao),
     resistencia,

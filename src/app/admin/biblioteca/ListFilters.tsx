@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { CONTENT_TYPE_REGISTRY } from "../../../lib/contentSchema";
+import { CONTENT_TYPE_REGISTRY } from "../../../lib/contentSchema/contentTypeRegistry";
 
 const inputStyle: CSSProperties = {
   background: "#1b1c22",
