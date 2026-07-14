@@ -32,7 +32,8 @@
     "test:inventory": "tsx scripts/test-inventory.ts",
     "test:spells": "tsx scripts/test-spells.ts",
     "test:character-storage": "tsx scripts/test-character-storage.ts",
-    "test:ammunition": "tsx scripts/test-ammunition.ts"
+    "test:ammunition": "tsx scripts/test-ammunition.ts",
+    "test:canonical-schema": "tsx scripts/test-canonical-content-schema.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

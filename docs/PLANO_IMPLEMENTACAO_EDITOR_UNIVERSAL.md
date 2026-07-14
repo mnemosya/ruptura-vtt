@@ -29,9 +29,10 @@ Confirmando e detalhando as decisões já consolidadas no aditivo §24, ajustada
 
 O aditivo já define 13 etapas (0 a 12) com objetivo/critério de aceite próprios. Este plano não as reescreve — só anota, por etapa, o que a auditoria revelou que **muda o esforço esperado** em relação ao texto genérico do aditivo.
 
-### Etapa 1 — Camada canônica de definições e validação
+### Etapa 1 — Camada canônica de definições e validação — **CONCLUÍDA**
 - Trabalho adicional revelado pela auditoria: como não existe hoje nenhuma taxonomia de efeito compartilhada (150 valores de `tipo` distintos, cada content_type com vocabulário próprio), a Etapa 1 precisa necessariamente incluir a criação do catálogo de efeitos (`docs/SCHEMA_CANONICO_CONTEUDO_V1.md` §3) como artefato de primeira classe, não como detalhe de implementação.
 - Adaptadores de leitura precisam ser **um por content_type**, não genéricos — confirmado pela heterogeneidade real dos payloads (duração em 4 formatos, resistência em 2 formatos).
+- Implementado em `src/lib/contentSchema/` — registro de tipos de conteúdo, catálogo de efeitos, normalizadores de duração/resistência/referência, validação, diagnóstico de automação, adapters para spell/talent/item/condition + fallback genérico para os 8 content_types restantes, e os 5 exemplos canônicos obrigatórios. Detalhes completos em `docs/CHECKPOINT_ETAPA1_SCHEMA_CANONICO.md`. Ajustes em relação a esta proposta estão documentados em `docs/SCHEMA_CANONICO_CONTEUDO_V1.md` §8.
 
 ### Etapa 2 — Lista administrativa e inspeção
 - Pré-requisito de segurança descoberto na auditoria: **não existe hoje nenhum admin role**. Esta etapa precisa entregar, além da lista read-only, a própria noção de "quem é admin" (tabela/coluna de role, ou allowlist de e-mails autenticados via Supabase Auth) — sem isso, "acesso indevido é bloqueado" (critério de aceite do aditivo) não tem como ser verdadeiro.

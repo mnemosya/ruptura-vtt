@@ -2,7 +2,7 @@
 
 **Projeto:** Ruptura VTT
 **Data:** 14 de julho de 2026
-**Status:** Proposta técnica (não implementada). Depende de aprovação antes da Etapa 1.
+**Status:** Implementado parcialmente na Etapa 1 (`src/lib/contentSchema/`) — ver `docs/CHECKPOINT_ETAPA1_SCHEMA_CANONICO.md` para o que foi construído de fato e os ajustes descritos em "Ajustes feitos durante a Etapa 1" ao final deste documento.
 **Base:** achados de `docs/AUDITORIA_EDITOR_UNIVERSAL_CONTEUDO.md` e requisitos de `docs/ADITIVO_PRD_EDITOR_UNIVERSAL_CONTEUDO.md` §8–13.
 
 Este documento propõe a estrutura canônica para o editor. Ele **não fixa nomes finais de tabela/coluna TypeScript** — define o formato conceitual, como pedido no aditivo §13.1, deixando a implementação concreta para a Etapa 1.
@@ -176,3 +176,15 @@ Segue o fluxo já pedido no aditivo §13.2, aplicado aos dados reais:
 1. Perícia/atributo/vertente/especialização viram `content_type` próprio (nova migration) ou continuam como sub-editor dentro do singleton `character_rule`? Recomendação técnica (não decisão): virar `content_type` próprio, pois o aditivo trata perícia como conteúdo administrável de primeira classe (§1) — ver proposta de migration no plano de implementação.
 2. `master_table` — decompor os 50 registros em documentos individuais ou manter singleton com editor de lista embutida? Recomendação: manter singleton no MVP (baixo uso de automação, alto custo de migration) e revisitar se o volume de edição justificar.
 3. `estatisticas` livre de item — vale a pena fixar um sub-schema por `categoria` (arma/armadura/consumível/...) agora, ou deixar como "somente leitura" no MVP e resolver na Etapa 3? Recomendação: Etapa 3, junto com item/equipamento entrando no editor básico.
+
+---
+
+## 8. Ajustes feitos durante a Etapa 1 (implementação real)
+
+A implementação em `src/lib/contentSchema/` seguiu esta proposta com os ajustes abaixo, todos motivados por decisões concretas de código:
+
+1. **`modo_automacao` ganhou um quinto estado.** A proposta original (e o aditivo) descrevem 4 modos (automático/assistido/lembrete/narrativo rastreado). A implementação distingue **`lembrete`** (efeito já canonicalizado e triado, sem executor por decisão de produto documentada — ex.: `aplicar_condicao`) de **`sem_executor`** (o `tipo` legado nem chegou a ser canonicalizado nesta etapa — cai no efeito-catálogo `outro`). Isso evita que os ~140 tipos legados ainda não analisados sejam confundidos com decisões de design já tomadas. Ver `src/lib/contentSchema/types.ts` (`ModoAutomacao`).
+2. **`condition` entrou no escopo de adapters da Etapa 1**, além de magia/talento/item. Foi necessário porque o caso obrigatório 4 (dano no fim da rodada) e o caso 5 (referência a "Atordoado" em falha de resistência) exigem que `condition` seja pelo menos legível como alvo de referência e como origem de `dano_fim_de_rodada`. O MVP do editor (Etapa 3/4) continua magia/talento/item — `condition` tem adapter, mas não faz parte do recorte de UI ainda.
+3. **Efeito canônico `outro`** foi adicionado como balde de escape explícito (não estava nomeado assim na proposta original) — cobre qualquer `tipo`/`familia` legado sem alias registrado no catálogo, preservando o efeito bruto inteiro em `payloadEspecifico.tipoLegado` em vez de lançar erro ou descartar.
+4. **Talento é adaptado por nível**, não pelo documento inteiro — `adaptTalentLevel(talentoSlug, talentoNome, nivelRaw)` — porque `payload_automacao` vive em `talento.niveis[i]`, não no talento como um todo. `adaptarNiveisDeTalento` no dispatcher itera os níveis.
+5. **Referências (`Referencia`) usam `tipoConteudo` do enum `ContentTypeId` real do banco** (importado de `src/lib/content/types.ts`), não um enum próprio duplicado — evita duas fontes de verdade para "quais content_types existem".
