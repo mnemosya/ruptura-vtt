@@ -39,7 +39,8 @@
     "auth:save-session": "tsx scripts/dev/save-admin-session.ts",
     "check:admin-biblioteca": "tsx scripts/dev/check-admin-biblioteca.ts",
     "check:admin-content-drafts": "tsx scripts/dev/check-admin-content-drafts.ts",
-    "check:admin-effect-builder": "tsx scripts/dev/check-admin-effect-builder.ts"
+    "check:admin-effect-builder": "tsx scripts/dev/check-admin-effect-builder.ts",
+    "check:admin-publication": "tsx scripts/dev/check-admin-publication.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

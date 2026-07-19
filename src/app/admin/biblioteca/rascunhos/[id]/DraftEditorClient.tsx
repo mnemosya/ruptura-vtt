@@ -175,6 +175,14 @@ export function DraftEditorClient({
         <button data-testid="rascunho-cancelar" onClick={cancelar} style={buttonStyle}>
           Cancelar
         </button>
+        <button
+          data-testid="rascunho-publicar"
+          onClick={() => router.push(`/admin/biblioteca/rascunhos/${draft.id}/publicar`)}
+          style={primaryButtonStyle}
+          title="Salve o rascunho antes de revisar — a revisão lê a versão persistida."
+        >
+          Revisar e publicar
+        </button>
         <button data-testid="rascunho-excluir" onClick={excluirEVoltar} disabled={excluindo} style={{ ...buttonStyle, marginLeft: "auto", color: "#e08a8a" }}>
           {excluindo ? "Excluindo..." : "Excluir rascunho"}
         </button>
@@ -182,7 +190,7 @@ export function DraftEditorClient({
 
       <div style={sectionStyle}>
         <h3 style={{ marginTop: 0, fontSize: 15 }}>Preview</h3>
-        <p style={{ fontSize: 13, color: "#e0c56b" }}>Rascunho — não disponível no jogo até publicação (publicação ainda não implementada).</p>
+        <p style={{ fontSize: 13, color: "#e0c56b" }}>Rascunho — não disponível no jogo até ser publicado. Use “Revisar e publicar” para revisar as mudanças e publicar.</p>
         <p style={{ fontSize: 14 }}>
           <strong>{campos.nome || "(sem nome)"}</strong> — {definicaoTipo.label}
           {campos.categoria ? ` — ${campos.categoria}` : ""}

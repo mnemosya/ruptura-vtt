@@ -6,9 +6,10 @@
  */
 
 import { notFound } from "next/navigation";
-import { getContentDocument, type ContentType } from "../../../../../lib/content";
-import { adaptarParaAdmin, CONTENT_TYPE_REGISTRY, isDraftContentType } from "../../../../../lib/contentSchema";
+import type { ContentType } from "../../../../../lib/content";
+import { adaptarParaAdmin, CONTENT_TYPE_REGISTRY, getContentDocumentForAdmin, isDraftContentType } from "../../../../../lib/contentSchema";
 import { CLASSIFICACAO_LEGADO_LABEL, formatarValor } from "../../labels";
+import { ArchiveBar } from "./ArchiveBar";
 import { DraftActionsBar } from "./DraftActionsBar";
 import { DiagnosticsPanel } from "./DiagnosticsPanel";
 import { EffectsPanel } from "./EffectsPanel";
@@ -26,9 +27,11 @@ export default async function ContentDetailPage({ params }: PageProps) {
   if (!CONTENT_TYPES_VALIDOS.has(contentTypeParam)) notFound();
   const contentType = contentTypeParam as ContentType;
 
-  const documento = await getContentDocument(contentType, slug);
+  const documento = await getContentDocumentForAdmin(contentType, slug);
   if (!documento) notFound();
 
+  const arquivado = documento.status === "archived";
+  const motivoArquivo = (documento as { archive_reason?: string | null }).archive_reason ?? null;
   const payload = (documento.payload as Record<string, unknown>) ?? {};
   const admin = adaptarParaAdmin(contentType, slug, payload);
   const definicao = CONTENT_TYPE_REGISTRY[contentType];
@@ -52,7 +55,20 @@ export default async function ContentDetailPage({ params }: PageProps) {
           <span>atualizado em: {new Date(documento.updated_at).toLocaleString("pt-BR")}</span>
           <span>legado: {CLASSIFICACAO_LEGADO_LABEL[admin.resultados[0]?.adaptacao.classificacaoLegado ?? "somente_leitura"]}</span>
         </div>
+        {arquivado && (
+          <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 8, background: "#2a2018", border: "1px solid #5c4326", fontSize: 13, color: "#e0a06b" }}>
+            Arquivado — não aparece no jogo nem em novas aquisições. {motivoArquivo ? `Motivo: ${motivoArquivo}` : ""}
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap", marginTop: 10 }}>
+          <a href={`/admin/biblioteca/${contentType}/${documento.slug}/historico`} style={{ color: "#8fd6a0", fontSize: 13 }}>
+            Histórico de versões →
+          </a>
+        </div>
+
         {isDraftContentType(contentType) && <DraftActionsBar contentType={contentType} slug={documento.slug} nomeAtual={documento.nome ?? documento.slug} />}
+        {!arquivado && <ArchiveBar documentId={documento.id} nome={documento.nome ?? documento.slug} />}
       </header>
 
       {admin.resultados.map((resultado, indice) => {

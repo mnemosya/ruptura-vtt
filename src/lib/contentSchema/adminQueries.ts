@@ -11,15 +11,20 @@
  * que a camada pública não precisa, mas a lista administrativa sim.
  */
 
+import { getScopedTableClient } from "../auth/scopedClient";
 import { getContentClient } from "../content/client";
 import type { ContentDocument, ContentType } from "../content/types";
 
 const PUBLISHED = "published";
 
+export type AdminStatusFiltro = "published" | "archived";
+
 export interface AdminListFilters {
   contentType?: ContentType;
   categoria?: string;
   search?: string;
+  /** Filtra por status (Etapa 5). Ausente = só publicado (comportamento padrão da Etapa 2). */
+  status?: AdminStatusFiltro;
 }
 
 export interface AdminListOptions extends AdminListFilters {
@@ -40,13 +45,16 @@ function sanitizeParaFiltro(valor: string): string {
 }
 
 export async function listContentDocumentsForAdmin(options: AdminListOptions): Promise<AdminListResult> {
-  const supabase = getContentClient();
+  // Client scoped (sessão do admin) — enxerga 'archived' pela policy
+  // content_documents_admin_read (migration 0022). O client anon só veria
+  // 'published'. Filtro de status: ausente = só publicado (padrão Etapa 2).
+  const supabase = await getScopedTableClient();
   const page = Math.max(1, options.page);
   const pageSize = Math.min(Math.max(1, options.pageSize), 200);
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  let query = supabase.from("content_documents").select("*", { count: "exact" }).eq("status", PUBLISHED);
+  let query = supabase.from("content_documents").select("*", { count: "exact" }).eq("status", options.status ?? PUBLISHED);
 
   if (options.contentType) query = query.eq("content_type", options.contentType);
   if (options.categoria) query = query.eq("categoria", options.categoria);
@@ -64,6 +72,19 @@ export async function listContentDocumentsForAdmin(options: AdminListOptions): P
   }
 
   return { items: (data ?? []) as ContentDocument[], total: count ?? 0, page, pageSize };
+}
+
+/**
+ * Lê UM documento por (tipo, slug) para o admin — qualquer status,
+ * inclusive 'archived' (via client scoped + policy admin_read). A
+ * página pública/consumo continua usando `getContentDocument` (só
+ * published). Retorna null se não existir.
+ */
+export async function getContentDocumentForAdmin(contentType: ContentType, slug: string): Promise<ContentDocument | null> {
+  const supabase = await getScopedTableClient();
+  const { data, error } = await supabase.from("content_documents").select("*").eq("id", `${contentType}:${slug}`).maybeSingle();
+  if (error) throw new Error(`Falha ao carregar conteúdo administrativo: ${error.message}`);
+  return (data as ContentDocument | null) ?? null;
 }
 
 const CONTENT_TYPES: ContentType[] = [
