@@ -164,10 +164,19 @@ Confirmado com conteúdo real: `energetica_bola_de_fogo` (spell publicada) tem `
 
 Reaproveita integralmente `scripts/dev/authSession.ts` (`withAuthenticatedPage`, `.auth/admin-session.json`, `npm run auth:save-session`) — nenhuma estrutura de sessão recriada.
 
-**Confirmado passando, em execução real no terminal da proprietária da conta** (após diversas correções de seletores frágeis do PRÓPRIO script de teste — não do editor):
+**Rodada corretiva (julho/2026)** — revisão completa dos seletores do script, feita de uma vez (não um de cada vez), corrigindo 3 problemas reais encontrados em execuções ao vivo:
+
+1. Colisão de prefixo `talento-nivel-N` vs `talento-nivel-N-nome` sob `[data-testid^="talento-nivel-"]` — renomeado o wrapper de seção para `talento-nivel-secao-N`.
+2. `.filter({ hasText })` no painel de personagem de `/dev/table` resolvia para 2 elementos: o `<select>` de autoria de cada personagem lista o nome de **todos os outros** personagens como opção (`estado-condicao-autor-${characterId}`, `TableClient.tsx`), então o texto de "Personagem A" aparece dentro do painel de "Personagem B" e vice-versa. Trocado por localização exclusivamente pelo `id` real do personagem na fixture (`estado-personagem-<uuid>`) — nunca mais por nome.
+3. **Bug real de comportamento, não só de seletor**: `page.reload()` zera `selectedCampaignId` (estado React puro, sem URL nem `localStorage`) — a seção "Estado dos personagens" fica condicionada a esse estado (`{selectedCampaignId && (...)}`), então qualquer reload precisa reselecionar a mesa antes de continuar. O script tinha um reload (para confirmar que a condição persiste no banco, não só na memória do client) sem essa reseleção — corrigido com um helper único (`selecionarMesaFixture`) usado nos 3 pontos que fazem `goto`/`reload`.
+
+Também adicionada uma melhoria de diagnóstico: os erros de console coletados agora são sempre impressos ao final da execução, mesmo quando o script quebra antes do item 24 — antes, uma falha anterior ao ponto onde esse log era emitido escondia qualquer erro de JS real que pudesse explicar a falha.
+
+**Confirmado passando, em execuções reais no terminal da proprietária da conta, após essas correções:**
 
 ```
 1. Acesso sem login bloqueado — OK
+0/0b. Limpeza prévia de resíduos (rascunhos + condição de teste na mesa compartilhada) — OK
 2. Admin abre rascunho de magia — OK
 3. Dano 1d8 (energético/ígneo) adicionado — OK
 4/5. Salva e recarrega — efeito mantém ordem e campos (1 único card) — OK
@@ -179,17 +188,18 @@ Reaproveita integralmente `scripts/dev/authSession.ts` (`withAuthenticatedPage`,
 18. Efeito legado (teste_resistencia) permanece preservado — OK
 19. Nenhum JSON bruto vazando no fluxo principal — OK
 20. Preview reflete os efeitos configurados — OK
+25. Limpeza final dos rascunhos criados — OK (confirmado em toda execução, inclusive as que falharam depois)
 ```
 
-**Não confirmado em execução completa até o fim** (parado a pedido, após a última correção de seletor — item "Quantidade" colidindo com "Quantidade padrão" do item): itens 13–17 (item com cura/remover condição, talento com +1 Luta e alterar recurso), 21–23 (fluxo real em `/dev/table`) e 24–25 (console limpo / limpeza final) **ainda não rodaram até o fim numa mesma execução sem erro**. O script cobre esses passos no código (revisado, com `tsc` limpo), mas a última rodada confirmada parou no item 13 por uma ambiguidade de seletor que já foi corrigida no código — só não houve tempo de confirmar a execução completa depois dessa última correção.
+**Não confirmado em uma única execução limpa até o fim**: itens 13–17 (item com cura/remover condição, talento com +1 Luta e alterar recurso), 21–23 (fluxo operacional real em `/dev/table` — aplicar condição, persistência, segunda tentativa bloqueada) e 24 (console sem erros) nunca rodaram juntos sem interrupção na mesma execução. A última tentativa parou no item 13 (aguardando o controle de adicionar efeito no rascunho de item) sem nenhum defeito de código correspondente identificado — o wiring de `escopoId="item"` em `DraftEditorClient.tsx` está correto e esse mesmo trecho já havia passado antes na mesma sessão, então a leitura mais provável é uma instabilidade pontual do ambiente local (servidor/Supabase), não um bug do editor ou do script.
 
-**Limitação assumida por decisão explícita da proprietária da conta**: as iterações de correção de seletores do script de browser check foram interrompidas antes de uma execução 100% verde ponta a ponta. O editor em si (código de produto) não tem nenhuma falha conhecida associada aos itens não confirmados — as falhas encontradas até aqui foram todas no script de teste (nomes de acessibilidade ambíguos do Playwright), nunca no comportamento do Construtor de Efeitos. Recomendação de próximo passo: rodar `npm run check:admin-effect-builder` mais uma vez antes de iniciar a Etapa 5, para fechar essa lacuna de confirmação.
+**Decisão explícita da proprietária da conta**: encerrar as tentativas de confirmação automatizada nesta sessão e verificar o fluxo real com jogadores depois, em vez de continuar iterando o browser check. Por isso o status desta etapa permanece **"Implementação concluída — aceite de browser pendente"** — nenhuma execução única confirmou os 25 itens de uma vez, incluindo especificamente os itens 13–17 e 21–25 e a confirmação de console limpo. Nada aqui indica um defeito conhecido do Construtor de Efeitos em si: todos os problemas reais encontrados nesta rodada estavam no script de teste ou em uma lacuna de reseleção de mesa após reload, ambos corrigidos. O executor genérico de `aplicar_condicao` (§5) permanece confirmado apenas a nível de código nesta sessão — a confirmação via browser do fluxo real (itens 21–23) fica para a verificação manual com jogadores.
 
 ---
 
 ## 10. Limitações
 
-- Browser check não confirmado 100% ponta a ponta nesta sessão (ver §9.1) — parado por decisão explícita, não por bug conhecido do editor.
+- Browser check não confirmado 100% ponta a ponta em nenhuma sessão até agora (ver §9.1) — encerrado por decisão explícita da proprietária da conta (verificação real fica para o teste com jogadores), não por bug conhecido do editor. Itens 13–17 e 21–25 (incluindo a confirmação de console limpo e do executor genérico de condição em fluxo real) seguem sem confirmação de browser em uma execução única.
 - Item 2 do checkpoint anterior ("usuário sem admin bloqueado") continua sem cobertura automatizada (mesma decisão da Etapa 2/3 — exigiria criar uma segunda credencial de teste).
 - `aplicar_condicao` só tem execução real automática através do fluxo manual de `/dev/table` — magia/item/runa continuam sem aplicação automática de condição (exigiria resolver alvo/distância, fora do teatro da mente de Ruptura).
 - `alterar_recurso` só tem um caso realmente automático hoje (PA em fim de rodada) — os demais recursos ficam "assistido" mesmo bem configurados, refletindo a auditoria real do motor.
