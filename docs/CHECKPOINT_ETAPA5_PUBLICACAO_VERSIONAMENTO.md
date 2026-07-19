@@ -6,6 +6,8 @@
 
 **Status:** **Implementação concluída — aceite de browser pendente.** O núcleo transacional foi verificado por SQL direto contra o banco; TypeScript e build passam. O browser check está bloqueado pelo conflito de arquitetura do esbuild (mesmo das etapas anteriores) — script criado, não executado.
 
+> **Nota de correção posterior (mesma etapa, sem alterar o acima retroativamente):** a estratégia de serialização de efeitos descrita neste documento (§4) foi corrigida logo depois — o blob `_editor` embutido em cada efeito publicado se mostrou inválido contra `additionalProperties: false` dos schemas oficiais de magia e talento. A correção completa (auditoria, nova tabela `content_editor_metadata`, serialização reescrita, validação de schema) está documentada em `docs/CHECKPOINT_CORRECAO_METADATA_EDITOR_PUBLICACAO.md`. Nenhum conteúdo real foi contaminado. As seções abaixo (§4, exemplos de payload) refletem a implementação ORIGINAL desta etapa — a versão corrigida é a que está em produção.
+
 ---
 
 ## 1. Auditoria inicial (antes de implementar)
