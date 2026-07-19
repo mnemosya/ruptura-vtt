@@ -32,6 +32,8 @@ import {
 } from "./draftMapping";
 import { findDraftBySlug, getDraftById } from "./draftQueries";
 import type { CamposEditaveis, CamposItem, CamposMagia, CamposTalento, DraftContentType, DraftEnvelope } from "./draftTypes";
+import { getEditorMetadataAtual } from "./editorMetadataQueries";
+import type { EfeitoEditavel } from "./effectDraftTypes";
 import { validarCamposItem, validarCamposMagia, validarCamposTalento } from "./draftValidation";
 import { isValidSlug, slugDuplicadoSugerido, slugify } from "./slug";
 
@@ -78,6 +80,38 @@ function montarCamposECamposDesconhecidosIniciais(
     camposEditaveis: { contentType: "talent", campos: { ...campos, nome, slug } },
     camposDesconhecidos: resultados.flatMap((r) => r.camposDesconhecidos),
   };
+}
+
+/**
+ * Sobrepõe os efeitos re-derivados dos adapters legados pela metadata
+ * editorial COMPLETA (`content_editor_metadata`, migration 0023),
+ * quando existir para a versão publicada atual — recupera com
+ * fidelidade total (id estável, habilitado, gatilho, alvo, duração,
+ * campos por tipo) o que os adapters legados não conseguem reconstituir
+ * sozinhos (ex.: `ignoraMit`, autoria de condição, flags de acúmulo).
+ * Sem metadata (conteúdo nunca publicado por esta via, ou seedado antes
+ * da correção), mantém o resultado dos adapters — fallback seguro, sem
+ * inventar dado ausente.
+ */
+function sobreporMetadataEditorial(camposEditaveis: CamposEditaveis, metadata: unknown[] | null): CamposEditaveis {
+  if (!metadata) return camposEditaveis;
+  if (camposEditaveis.contentType === "talent") {
+    const porNivel = new Map<number, EfeitoEditavel[]>();
+    for (const entrada of metadata) {
+      const item = entrada as { nivel?: unknown; efeitos?: unknown };
+      if (entrada && typeof entrada === "object" && typeof item.nivel === "number" && Array.isArray(item.efeitos)) {
+        porNivel.set(item.nivel, item.efeitos as EfeitoEditavel[]);
+      }
+    }
+    return {
+      ...camposEditaveis,
+      campos: {
+        ...camposEditaveis.campos,
+        niveis: camposEditaveis.campos.niveis.map((n) => ({ ...n, efeitos: porNivel.get(n.nivel) ?? n.efeitos })) as CamposTalento["niveis"],
+      },
+    };
+  }
+  return { ...camposEditaveis, campos: { ...camposEditaveis.campos, efeitos: metadata as EfeitoEditavel[] } } as CamposEditaveis;
 }
 
 // ---------------------------------------------------------------------
@@ -145,7 +179,9 @@ export async function criarRascunhoDeEdicao(contentType: DraftContentType, slugP
     if (!publicado) return { ok: false, erro: "Conteúdo publicado não encontrado." };
 
     const rawOriginal = (publicado.payload as Record<string, unknown>) ?? {};
-    const { camposEditaveis, camposDesconhecidos } = montarCamposECamposDesconhecidosIniciais(contentType, rawOriginal);
+    const { camposEditaveis: camposDosAdapters, camposDesconhecidos } = montarCamposECamposDesconhecidosIniciais(contentType, rawOriginal);
+    const metadataAtual = publicado.version ? await getEditorMetadataAtual(publicado.id, publicado.version).catch(() => null) : null;
+    const camposEditaveis = sobreporMetadataEditorial(camposDosAdapters, metadataAtual);
 
     const envelope: DraftEnvelope = {
       schemaVersion: "draft.v1",

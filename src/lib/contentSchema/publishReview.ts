@@ -14,6 +14,7 @@ import type { ContentType } from "../content/types";
 import type { ContentDraftRow, DraftContentType } from "./draftTypes";
 import { diagnosticarEfeitoEditavel } from "./effectDiagnostics";
 import type { EfeitoEditavel } from "./effectDraftTypes";
+import { validarEfeitoParaPublicacao } from "./effectLegacySerialization";
 import { classificarImpacto, type ImpactoInstancias } from "./publishImpact";
 import { compararPublicado, type ResultadoDiff } from "./publishDiff";
 import { serializarRascunhoParaPublicacao } from "./publishSerialization";
@@ -48,7 +49,22 @@ export interface RevisaoPublicacao {
   efeitos: EfeitoResumoRevisao[];
   /** Corpo legado serializado — passado ao RPC no momento de confirmar. */
   corpo: Record<string, unknown>;
+  /**
+   * Metadata editorial completa (EfeitoEditavel[], ou por nível para
+   * talento) — vai para `content_editor_metadata` (migration 0023),
+   * NUNCA para o payload público. Ver correção pós-Etapa 5.
+   */
+  metadataEfeitos: unknown;
   podePublicar: boolean;
+}
+
+/** Estrutura gravada em `content_editor_metadata.efeitos` — nunca no payload público. */
+function montarMetadataEfeitos(draft: ContentDraftRow): unknown {
+  const ed = draft.payload.camposEditaveis;
+  if (ed.contentType === "talent") {
+    return ed.campos.niveis.map((n) => ({ nivel: n.nivel, efeitos: n.efeitos }));
+  }
+  return ed.campos.efeitos;
 }
 
 /** Bump de patch para EXIBIÇÃO (o SQL recomputa de verdade). '1.0.0' para conteúdo novo. */
@@ -65,10 +81,17 @@ function coletarEfeitos(draft: ContentDraftRow): EfeitoEditavel[] {
   return ed.campos.efeitos;
 }
 
-function resumirEfeitos(draft: ContentDraftRow, avisos: string[]): EfeitoResumoRevisao[] {
+function resumirEfeitos(draft: ContentDraftRow, avisos: string[], erros: string[]): EfeitoResumoRevisao[] {
   const efeitos = coletarEfeitos(draft);
   return efeitos.map((e) => {
     const diag = diagnosticarEfeitoEditavel(e);
+    if (e.habilitado) {
+      // Bloqueante: o efeito não pode ser publicado se não for representável
+      // no vocabulário legado real daquele content_type (ver auditoria de
+      // schemas em effectLegacySerialization.ts) — nunca publica algo
+      // inválido contra o contrato oficial silenciosamente.
+      erros.push(...validarEfeitoParaPublicacao(draft.content_type, e));
+    }
     if (e.habilitado && diag.modoAutomacao !== "automatico") {
       const rotuloAviso =
         diag.modoAutomacao === "assistido"
@@ -130,7 +153,7 @@ export async function montarRevisaoPublicacao(draft: ContentDraftRow): Promise<R
     erros.push(`Já existe conteúdo publicado com este tipo e slug ("${draft.slug}"). Escolha outro slug antes de publicar.`);
   }
 
-  const efeitos = resumirEfeitos(draft, avisos);
+  const efeitos = resumirEfeitos(draft, avisos, erros);
   const diff = compararPublicado((publicado?.payload as Record<string, unknown>) ?? null, corpo);
   const efeitosMudaram = diff.efeitos.adicionados > 0 || diff.efeitos.removidos > 0 || diff.efeitos.alterados > 0 || diff.efeitos.ordemMudou;
   const impacto: ImpactoInstancias = classificarImpacto(diff.campos, efeitosMudaram, isNovo);
@@ -158,6 +181,7 @@ export async function montarRevisaoPublicacao(draft: ContentDraftRow): Promise<R
     impacto,
     efeitos,
     corpo,
+    metadataEfeitos: montarMetadataEfeitos(draft),
     podePublicar: erros.length === 0,
   };
 }

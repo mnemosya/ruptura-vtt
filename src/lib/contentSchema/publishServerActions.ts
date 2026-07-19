@@ -69,6 +69,10 @@ export async function publicarRascunho(draftId: string, expectedDraftVersion: nu
       p_changed_paths: revisao.diff.campos,
       p_impact: revisao.impacto,
       p_author_email: admin.email,
+      // Metadata editorial completa (EfeitoEditavel[]) — grava em
+      // content_editor_metadata na mesma transação, NUNCA no payload
+      // público (ver correção pós-Etapa 5).
+      p_efeitos_editaveis: revisao.metadataEfeitos,
     });
 
     if (error) {

@@ -9,7 +9,7 @@ import { MODO_AUTOMACAO_COR, MODO_AUTOMACAO_LABEL } from "../../../labels";
 import { buttonStyle, dangerTextStyle, inputStyle, primaryButtonStyle, sectionStyle, warnTextStyle } from "../../_shared/formStyles";
 import { DiffView } from "../../_shared/DiffView";
 
-type RevisaoCliente = Omit<RevisaoPublicacao, "corpo">;
+type RevisaoCliente = Omit<RevisaoPublicacao, "corpo" | "metadataEfeitos">;
 
 const BASE_STATUS_LABEL: Record<RevisaoCliente["baseStatus"], string> = {
   sem_origem: "conteúdo novo (sem base publicada)",

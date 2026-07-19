@@ -24,9 +24,11 @@ export default async function PublicarPage({ params }: PageProps) {
   if (!draft) notFound();
 
   const revisao = await montarRevisaoPublicacao(draft);
-  // Não envia `corpo` ao cliente — a publicação re-serializa no servidor.
-  const { corpo, ...revisaoParaCliente } = revisao;
+  // Não envia `corpo`/`metadataEfeitos` ao cliente — a publicação re-serializa
+  // e remonta a metadata editorial no servidor (nunca confia no client).
+  const { corpo, metadataEfeitos, ...revisaoParaCliente } = revisao;
   void corpo;
+  void metadataEfeitos;
 
   return <PublicarClient revisao={revisaoParaCliente} />;
 }
