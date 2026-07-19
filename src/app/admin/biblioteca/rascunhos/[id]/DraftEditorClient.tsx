@@ -147,6 +147,7 @@ export function DraftEditorClient({
             onChange={(efeitos) => atualizarCampos({ efeitos } as Partial<CamposUniao>)}
             opcoes={opcoes}
             condicoesDisponiveis={condicoesDisponiveis}
+            escopoId={draft.content_type}
           />
         </div>
       )}
@@ -168,13 +169,13 @@ export function DraftEditorClient({
       )}
 
       <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
-        <button onClick={salvar} disabled={salvando} style={primaryButtonStyle}>
+        <button data-testid="rascunho-salvar" onClick={salvar} disabled={salvando} style={primaryButtonStyle}>
           {salvando ? "Salvando..." : "Salvar rascunho"}
         </button>
-        <button onClick={cancelar} style={buttonStyle}>
+        <button data-testid="rascunho-cancelar" onClick={cancelar} style={buttonStyle}>
           Cancelar
         </button>
-        <button onClick={excluirEVoltar} disabled={excluindo} style={{ ...buttonStyle, marginLeft: "auto", color: "#e08a8a" }}>
+        <button data-testid="rascunho-excluir" onClick={excluirEVoltar} disabled={excluindo} style={{ ...buttonStyle, marginLeft: "auto", color: "#e08a8a" }}>
           {excluindo ? "Excluindo..." : "Excluir rascunho"}
         </button>
       </div>

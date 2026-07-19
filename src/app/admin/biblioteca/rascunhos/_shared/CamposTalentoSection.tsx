@@ -35,11 +35,11 @@ export function CamposTalentoSection({
   return (
     <div>
       {campos.niveis.map((nivel, indice) => (
-        <div key={nivel.nivel} style={sectionStyle}>
+        <div key={nivel.nivel} data-testid={`talento-nivel-secao-${nivel.nivel}`} style={sectionStyle}>
           <h4 style={{ marginTop: 0, fontSize: 14, color: "#a8a8b3" }}>Nível {nivel.nivel}</h4>
           <label style={{ ...labelStyle, marginBottom: 10 }}>
             Nome do nível
-            <input value={nivel.nomeNivel} onChange={(e) => atualizarNivel(indice, { nomeNivel: e.target.value })} style={inputStyle} />
+            <input data-testid={`talento-nivel-nome-${nivel.nivel}`} value={nivel.nomeNivel} onChange={(e) => atualizarNivel(indice, { nomeNivel: e.target.value })} style={inputStyle} />
           </label>
           <label style={{ ...labelStyle, marginBottom: 10 }}>
             Descrição curta
@@ -67,6 +67,7 @@ export function CamposTalentoSection({
             onChange={(efeitos) => atualizarNivel(indice, { efeitos })}
             opcoes={opcoes}
             condicoesDisponiveis={condicoesDisponiveis}
+            escopoId={`nivel-${nivel.nivel}`}
           />
         </div>
       ))}

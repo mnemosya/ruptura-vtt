@@ -8,11 +8,14 @@ export function StringListEditor({
   valores,
   onChange,
   placeholder,
+  testId,
 }: {
   label: string;
   valores: string[];
   onChange: (valores: string[]) => void;
   placeholder?: string;
+  /** Prefixo estável para o input/botão de adicionar (ex.: "modificar-teste-tags"). */
+  testId?: string;
 }) {
   const [novo, setNovo] = useState("");
 
@@ -44,6 +47,7 @@ export function StringListEditor({
       </div>
       <div style={{ display: "flex", gap: 6 }}>
         <input
+          data-testid={testId ? `${testId}-input` : undefined}
           value={novo}
           onChange={(e) => setNovo(e.target.value)}
           onKeyDown={(e) => {
@@ -55,7 +59,7 @@ export function StringListEditor({
           placeholder={placeholder}
           style={{ ...inputStyle, maxWidth: 240 }}
         />
-        <button type="button" onClick={adicionar} style={buttonStyle}>
+        <button type="button" data-testid={testId ? `${testId}-adicionar` : undefined} onClick={adicionar} style={buttonStyle}>
           Adicionar
         </button>
       </div>

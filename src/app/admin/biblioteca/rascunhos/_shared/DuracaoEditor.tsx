@@ -21,6 +21,7 @@ export function DuracaoEditor({ duracao, onChange }: { duracao?: DuracaoCanonica
       <label style={labelStyle}>
         Duração
         <select
+          data-testid="efeito-duracao-tipo"
           value={tipo}
           onChange={(e) => {
             const novoTipo = e.target.value as TipoDuracao;
@@ -39,6 +40,7 @@ export function DuracaoEditor({ duracao, onChange }: { duracao?: DuracaoCanonica
         <label style={labelStyle}>
           Valor
           <input
+            data-testid="efeito-duracao-valor"
             type="number"
             min={1}
             value={duracao?.valor ?? ""}

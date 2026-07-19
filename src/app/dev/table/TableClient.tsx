@@ -3394,6 +3394,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
             return (
               <div
                 key={mesa.id}
+                data-testid={`mesa-linha-${mesa.id}`}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -3614,7 +3615,11 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
               jogador aberta neste personagem recebe a mudança pelo Realtime já existente — sem reload manual.
               Sem cálculo de MIT/PD/região corporal ainda: dano é redução direta do recurso escolhido.
             </p>
-            {gmErro && <p style={{ color: "#ff6b6b", fontSize: 12, marginBottom: 12 }}>{gmErro}</p>}
+            {gmErro && (
+              <p data-testid="estado-personagens-erro" style={{ color: "#ff6b6b", fontSize: 12, marginBottom: 12 }}>
+                {gmErro}
+              </p>
+            )}
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {perfis.map((perfil) => {
                 if (!perfil.active_character_id) {

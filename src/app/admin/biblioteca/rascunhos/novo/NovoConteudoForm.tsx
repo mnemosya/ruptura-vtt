@@ -39,7 +39,7 @@ export function NovoConteudoForm() {
       <div style={fieldGridStyle}>
         <label style={labelStyle}>
           Tipo de conteúdo
-          <select value={contentType} onChange={(e) => setContentType(e.target.value as DraftContentType)} style={inputStyle}>
+          <select data-testid="novo-conteudo-tipo" value={contentType} onChange={(e) => setContentType(e.target.value as DraftContentType)} style={inputStyle}>
             {TIPOS.map((t) => (
               <option key={t.value} value={t.value}>
                 {t.label}
@@ -50,6 +50,7 @@ export function NovoConteudoForm() {
         <label style={labelStyle}>
           Nome
           <input
+            data-testid="novo-conteudo-nome"
             value={nome}
             onChange={(e) => {
               setNome(e.target.value);
@@ -61,6 +62,7 @@ export function NovoConteudoForm() {
         <label style={labelStyle}>
           Slug
           <input
+            data-testid="novo-conteudo-slug"
             value={slug}
             onChange={(e) => {
               setSlug(e.target.value.toLowerCase());
@@ -73,7 +75,7 @@ export function NovoConteudoForm() {
 
       {erro && <p style={{ color: "#e08a8a", fontSize: 13 }}>{erro}</p>}
 
-      <button onClick={criar} disabled={criando || !nome.trim()} style={primaryButtonStyle}>
+      <button data-testid="novo-conteudo-criar" onClick={criar} disabled={criando || !nome.trim()} style={primaryButtonStyle}>
         {criando ? "Criando..." : "Criar rascunho"}
       </button>
     </div>

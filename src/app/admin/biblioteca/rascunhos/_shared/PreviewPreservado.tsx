@@ -17,7 +17,7 @@ export function PreviewPreservado({ resultados }: { resultados: DraftEfeitosPres
   }
 
   return (
-    <div>
+    <div data-testid="efeitos-preservados-container">
       {resultados.map((r, i) => {
         if (r.efeitosSomenteLeitura.length === 0) return null;
         const porModo: Record<string, number> = {};

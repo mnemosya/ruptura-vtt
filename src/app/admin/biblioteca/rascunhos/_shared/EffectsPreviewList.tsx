@@ -33,13 +33,13 @@ export function EffectsPreviewList({ efeitos }: { efeitos: EfeitoEditavel[] }) {
   if (efeitos.length === 0) return <p style={{ fontSize: 12, color: "#7d7d8a" }}>Nenhum efeito configurado.</p>;
 
   return (
-    <ol style={{ margin: "4px 0 8px", paddingLeft: 18, fontSize: 13 }}>
+    <ol data-testid="efeitos-preview-lista" style={{ margin: "4px 0 8px", paddingLeft: 18, fontSize: 13 }}>
       {[...efeitos]
         .sort((a, b) => a.ordem - b.ordem)
         .map((efeito) => {
           const diagnostico = diagnosticarEfeitoEditavel(efeito);
           return (
-            <li key={efeito.id} style={{ marginBottom: 4, opacity: efeito.habilitado ? 1 : 0.5 }}>
+            <li key={efeito.id} data-testid="efeito-preview-item" data-effect-id={efeito.id} style={{ marginBottom: 4, opacity: efeito.habilitado ? 1 : 0.5 }}>
               <strong>{LABEL_TIPO[efeito.tipo]}</strong> — {resumoEfeito(efeito)}
               {efeito.gatilho ? ` · ${efeito.gatilho}` : ""}
               {efeito.alvo ? ` · ${efeito.alvo}` : ""}
