@@ -35,7 +35,7 @@
  */
 
 import type { DraftContentType } from "./draftTypes";
-import type { EfeitoEditavel } from "./effectDraftTypes";
+import type { EfeitoEditavel, ModificadorSimplesEfeitoTemporario } from "./effectDraftTypes";
 
 // ---------------------------------------------------------------------
 // Enums confirmados por leitura direta dos schemas oficiais (auditoria).
@@ -131,6 +131,48 @@ function validarArvoreTesteResistencia(contentType: DraftContentType, efeito: Ex
   return erros;
 }
 
+/**
+ * Valida se um `efeito_temporario` é representável no `buff_temporario`
+ * REAL já lido por `extractModifiers`/`parseDuration`
+ * (character/temporaryEffects.ts): esse leitor só reconhece UM modificador
+ * de rolagem (`valor`+`alvo_tags`) e UM modificador de perícia
+ * (`bonus_pericia`), nunca uma lista. Mais que isso não é um limite
+ * arbitrário desta etapa — é o que o executor real consegue interpretar
+ * hoje; excedente é bloqueado (nunca truncado silenciosamente).
+ */
+function validarEfeitoTemporarioParaPublicacao(contentType: DraftContentType, efeito: Extract<EfeitoEditavel, { tipo: "efeito_temporario" }>): string[] {
+  const erros: string[] = [];
+  const rotulo = efeito.nomeOpcional || "efeito temporário";
+  const { modificadores, duracao } = efeito.campos;
+
+  if (!duracao || (duracao.tipo === "rounds" && !(duracao.rodadas! > 0))) {
+    erros.push(`Efeito "${rotulo}": duração ausente ou inválida.`);
+  }
+
+  const porTags = modificadores.filter((m) => (m.campos.tags?.length ?? 0) > 0 && !m.campos.pericia);
+  const porPericia = modificadores.filter((m) => !!m.campos.pericia);
+  const outros = modificadores.filter((m) => !porTags.includes(m) && !porPericia.includes(m));
+
+  if (porTags.length > 1 || porPericia.length > 1) {
+    erros.push(`Efeito "${rotulo}": o executor real (buff_temporario) só reconhece 1 modificador por tags e 1 por perícia — reduza os modificadores.`);
+  }
+  if (outros.length > 0) {
+    erros.push(`Efeito "${rotulo}": modificador sem tags nem perícia definidas não é serializável (o executor real não sabe a que aplicar).`);
+  }
+  for (const m of modificadores) {
+    const exigeValor = m.campos.modo === "bonus" || m.campos.modo === "penalidade";
+    if (exigeValor && m.campos.valor == null) {
+      erros.push(`Efeito "${rotulo}": modificador sem valor numérico — o executor real só soma/subtrai valores fixos (sem vantagem/desvantagem em buff temporário).`);
+    }
+  }
+  if (contentType === "talent") {
+    // Talento preserva a estrutura (duracao/max_pilhas/buffs no schema livre), mas não há
+    // leitor genérico equivalente a extractModifiers — sem bloqueio adicional aqui, só
+    // classificado como "lembrete" pelo diagnóstico (ver effectDiagnostics.ts).
+  }
+  return erros;
+}
+
 export function validarEfeitoParaPublicacao(contentType: DraftContentType, efeito: EfeitoEditavel): string[] {
   const erros: string[] = [];
   const rotulo = efeito.nomeOpcional || efeito.tipo;
@@ -151,6 +193,26 @@ export function validarEfeitoParaPublicacao(contentType: DraftContentType, efeit
   }
   if (efeito.tipo === "alterar_dano_recebido" && efeito.campos.operacao === "multiplicar" && (efeito.campos.multiplicador == null || efeito.campos.multiplicador < 0)) {
     erros.push(`Efeito "${rotulo}": operação "multiplicar" exige um multiplicador válido (>= 0).`);
+  }
+
+  if (efeito.tipo === "efeito_temporario") {
+    if (contentType === "spell") {
+      erros.push(`Efeito "${rotulo}": efeito temporário não tem representação segura no contrato de magias (schema fechado, sem campo de duração/buff) — mantenha só no rascunho.`);
+    } else {
+      erros.push(...validarEfeitoTemporarioParaPublicacao(contentType, efeito));
+    }
+  }
+  if (efeito.tipo === "acao_reacao_adicional" && contentType === "spell") {
+    erros.push(`Efeito "${rotulo}": ação/reação adicional não tem representação segura no contrato de magias (schema fechado, sem tipo ataque_adicional/reacao) — mantenha só no rascunho.`);
+  }
+  if (efeito.tipo === "acao_reacao_adicional" && contentType === "item" && efeito.campos.tipo !== "ataque") {
+    erros.push(`Efeito "${rotulo}": o contrato de itens só reconhece concessão de ATAQUE adicional (tipo "ataque_adicional" no enum real) — ação/reação adicional em item mantenha só no rascunho.`);
+  }
+  if (efeito.usoLimitado && contentType !== "talent") {
+    erros.push(`Efeito "${rotulo}": uso/cadência limitados só têm representação segura no contrato de talentos (mesmo formato lido por getTalentUsageState) — para magia/item, mantenha só no rascunho.`);
+  }
+  if (efeito.usoLimitado && !(efeito.usoLimitado.usosMax > 0)) {
+    erros.push(`Efeito "${rotulo}": quantidade máxima de usos precisa ser maior que zero.`);
   }
 
   if (contentType === "spell") {
@@ -239,6 +301,9 @@ const FAMILIA_TALENTO: Record<EfeitoEditavel["tipo"], string> = {
   modificar_margem: "margem",
   alterar_dano_recebido: "protecao",
   teste_resistencia: "regra_especial", // nunca serializado de fato — validarArvoreTesteResistencia bloqueia talento.
+  efeito_temporario: "buff_empilhavel",
+  // Valor default; camposLegadoPorTipo sobrescreve `familia` real (ataque_adicional | reacao) conforme campos.tipo.
+  acao_reacao_adicional: "reacao",
 };
 
 /** `tipo` legado a emitir, por content_type — só valores confirmados no enum real (spell/item) ou livres (talent). */
@@ -249,12 +314,17 @@ const TIPO_LEGADO: Record<DraftContentType, Partial<Record<EfeitoEditavel["tipo"
   item: {
     dano: "dano_em_area", cura: "cura", aplicar_condicao: "aplicar_condicao", remover_condicao: "remover_condicao", modificar_teste: "modificador", alterar_recurso: "recurso",
     teste_resistencia: "efeito_com_resistencia", alterar_dano_recebido: "utilitario",
+    // "buff_temporario" e "ataque_adicional" são valores REAIS do enum tipo_efeito de item (auditoria) — mesmo shape já lido por buildTemporaryEffectFromStructuredPayload (itemUse.ts).
+    efeito_temporario: "buff_temporario", acao_reacao_adicional: "ataque_adicional",
   },
   // "promocao_margem" é o tipo real já lido por getMarginPromotions (talentEngine.ts); "reduzir_dano_recebido" é
   // string livre (schema de talento não restringe `tipo`) com família "protecao" (enum real, mesmo conceito das runas reais).
   talent: {
     dano: "dano", cura: "cura", aplicar_condicao: "aplicar_condicao", remover_condicao: "remover_condicao", modificar_teste: "modificador", alterar_recurso: "recurso",
     modificar_margem: "promocao_margem", alterar_dano_recebido: "reduzir_dano_recebido",
+    // "buff_temporario" tipo livre com família "buff_empilhavel" (enum real); acao_reacao_adicional tem `tipo`/`familia`
+    // reais recalculados em camposLegadoPorTipo (ataque_adicional/reacao) conforme campos.tipo.
+    efeito_temporario: "buff_temporario", acao_reacao_adicional: "ataque_adicional",
   },
 };
 
@@ -313,6 +383,35 @@ function camposLegadoPorTipo(contentType: DraftContentType, efeito: EfeitoEditav
       // talent: só chaves confirmadas livres do schema (valor/momento) — "reducao_dano" é o rótulo real mais próximo.
       return { reducao_dano: cp.valorFixo, momento: cp.momento };
     }
+    case "efeito_temporario": {
+      const cp = efeito.campos;
+      const duracaoTexto =
+        cp.duracao.tipo === "rounds" ? `${cp.duracao.rodadas ?? 1}_rodadas` : cp.duracao.tipo === "scene" ? "cena" : cp.duracao.tipo === "rest" ? "descanso_longo" : undefined;
+      const porTags = cp.modificadores.find((m) => (m.campos.tags?.length ?? 0) > 0 && !m.campos.pericia);
+      const porPericia = cp.modificadores.find((m) => !!m.campos.pericia);
+      const valorComSinal = (m: ModificadorSimplesEfeitoTemporario) => (m.campos.valor == null ? undefined : m.campos.modo === "penalidade" ? -Math.abs(m.campos.valor) : m.campos.valor);
+      return {
+        duracao: duracaoTexto,
+        max_pilhas: cp.acumulavel ? cp.maximoPilhas : undefined,
+        valor: porTags ? valorComSinal(porTags) : undefined,
+        alvo_tags: porTags && (porTags.campos.tags?.length ?? 0) > 0 ? porTags.campos.tags : undefined,
+        bonus_pericia: porPericia ? { pericia: porPericia.campos.pericia, valor: valorComSinal(porPericia) } : undefined,
+        nota: efeito.textoLembrete,
+      };
+    }
+    case "acao_reacao_adicional": {
+      const cp = efeito.campos;
+      const familiaReal = cp.tipo === "ataque" ? "ataque_adicional" : "reacao";
+      return {
+        familia: contentType === "talent" ? familiaReal : undefined,
+        tipo: contentType === "item" ? "ataque_adicional" : undefined,
+        acao: cp.acaoPermitida,
+        rodadas_extra: cp.limite,
+        custo_pa_extra: cp.consomePa,
+        penalidade: cp.penalidade,
+        gatilho: cp.janela,
+      };
+    }
     case "teste_resistencia":
       // Nunca serializado por aqui — é uma árvore (vira múltiplos objetos
       // legados irmãos), tratada só em `serializarArvoreTesteResistencia`
@@ -345,6 +444,11 @@ export function serializarEfeitoLegado(contentType: DraftContentType, efeito: Ef
     ...(familia ? { familia } : {}),
     ...camposTransversaisLegado(contentType, efeito),
     ...camposLegadoPorTipo(contentType, efeito),
+    // Uso/cadência (Etapa 8) só tem leitor real para talento
+    // (getTalentUsageState/TALENT_CADENCES) — mesmos campos `usos`/`cadencia`
+    // já lidos por talents.ts em QUALQUER efeito, não um tipo à parte.
+    // Bloqueado para spell/item em validarEfeitoParaPublicacao.
+    ...(contentType === "talent" && efeito.usoLimitado ? { usos: efeito.usoLimitado.usosMax, cadencia: efeito.usoLimitado.cadencia } : {}),
   });
 }
 

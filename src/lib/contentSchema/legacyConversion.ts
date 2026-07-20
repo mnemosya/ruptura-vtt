@@ -233,7 +233,20 @@ function classificarEfeito(contentType: DraftContentType, efeito: EfeitoCanonico
           // Preservado como está; pode ser reconstruído manualmente como um novo
           // "Teste ou resistência" no Construtor, se desejado.
           "Teste de resistência legado — preservado, somente leitura. Pode ser reconstruído manualmente como um novo efeito \"Teste ou resistência\" no Construtor (a conversão automática não é oferecida: a estrutura real varia entre magia/item/runa/propriedade)."
-        : `Efeito "${tipoLegado}" fora dos 6 tipos do MVP — preservado e somente leitura nesta etapa.`,
+        : efeito.tipo === "efeito_temporario"
+          ? // Etapa 8: buff_temporario (item)/buff_empilhavel (talento) legado agora TEM um
+            // tipo editável equivalente no Construtor ("Efeito temporário") — mas continua
+            // sem conversão automática em massa: cada instância legada preserva campos
+            // próprios (nota, dano_extra, mit_bonus/pd_bonus) que o editor novo não replica
+            // 1:1 sem revisão humana. Pode ser reconstruído manualmente, se desejado.
+            "Efeito temporário legado — preservado, somente leitura. Pode ser reconstruído manualmente como um novo \"Efeito temporário\" no Construtor (sem conversão automática em massa)."
+          : efeito.tipo === "acao_reacao_adicional"
+            ? // Etapa 8: ataque_adicional/reacao legado (inclusive quando bespoke de um talento
+              // específico, ex.: Assassino > Executar) NÃO é promovido automaticamente a efeito
+              // universal — "não transformar automaticamente funções específicas de
+              // talentEngine.ts em efeitos universais" é regra explícita desta etapa.
+              "Ação/reação adicional legada — preservada, somente leitura. Pode ser reconstruída manualmente como um novo \"Ação ou reação adicional\" no Construtor quando genuinamente genérica (mecânicas específicas de um talento, como as resolvidas em talentEngine.ts, continuam bespoke)."
+            : `Efeito "${tipoLegado}" fora dos 6 tipos do MVP — preservado e somente leitura nesta etapa.`,
   };
 }
 

@@ -97,6 +97,13 @@ function descreverEfeitoFilho(efeito: EfeitoFilho): string {
       return `Modificar margem (${efeito.campos.operacao}, ${efeito.campos.pericias.join(", ") || "sem perícia"}) — a pessoa jogadora confirma o contexto antes de aplicar na rolagem.`;
     case "alterar_dano_recebido":
       return `Alterar dano recebido: ${efeito.campos.operacao} ${efeito.campos.valorFixo ?? efeito.campos.multiplicador ?? "?"} (${efeito.campos.momento}) — sem executor automático ainda, aplicar manualmente.`;
+    case "efeito_temporario": {
+      const d = efeito.campos.duracao;
+      const duracaoTexto = d.tipo === "rounds" ? `${d.rodadas ?? 1} rodada(s)` : d.tipo === "scene" ? "cena" : d.tipo === "rest" ? "descanso longo" : "manual";
+      return `Aplicar efeito temporário (${efeito.campos.modificadores.length} modificador(es), ${duracaoTexto}) — criar via fluxo existente de efeito temporário (buff_temporario).`;
+    }
+    case "acao_reacao_adicional":
+      return `Conceder ${efeito.campos.tipo} adicional (× ${efeito.campos.quantidade}) — sem executor automático ainda, aplicar manualmente.`;
   }
 }
 

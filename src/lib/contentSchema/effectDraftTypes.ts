@@ -55,6 +55,45 @@ export const ALVOS_INICIAIS = [
 ] as const;
 export type AlvoInicial = (typeof ALVOS_INICIAIS)[number];
 
+/**
+ * Cadências de uso/cadência (Etapa 8) — mesmo vocabulário de
+ * `TALENT_CADENCES` (talentEngine.ts). Só espelhado aqui (não importado)
+ * para não acoplar o pacote de tipos do editor ao runtime do personagem —
+ * mesmo padrão de `FAIXAS_RESULTADO_TESTE` espelhando `MARGEM_CLASSIFICACOES`.
+ * "sessao"/"sessao_malha"/"missao" resetam manualmente (sem gatilho
+ * automático no app); "permanente"/"ao_adquirir" nunca resetam.
+ */
+export const CADENCIAS_USO_TALENTO = [
+  "turno",
+  "rodada",
+  "cena",
+  "combate",
+  "dia",
+  "descanso_longo",
+  "sessao",
+  "sessao_malha",
+  "missao",
+  "permanente",
+  "ao_adquirir",
+] as const;
+export type CadenciaUsoTalento = (typeof CADENCIAS_USO_TALENTO)[number];
+
+/**
+ * Limite de usos/cadência reutilizável em QUALQUER tipo de efeito (Etapa 8)
+ * — mesma representação já lida por `talentEngine.ts`
+ * (`getTalentUsageState`/`canUseTalent`/`resetTalentCadence`) via
+ * `efeito.usos`/`efeito.cadencia` no payload de talento. Só tem executor
+ * real hoje para talento; magia/item ainda não têm leitor genérico de
+ * usos/cadência (ficam lembrete quando configurado). `chaveUso` é
+ * derivada no servidor (nunca livremente editável no fluxo principal).
+ */
+export interface UsoLimitado {
+  usosMax: number;
+  cadencia: CadenciaUsoTalento;
+  chaveUso?: string;
+  compartilhado?: boolean;
+}
+
 export interface CamposEfeitoComuns {
   id: string;
   habilitado: boolean;
@@ -65,6 +104,7 @@ export interface CamposEfeitoComuns {
   duracao?: DuracaoCanonica;
   textoLog?: string;
   textoLembrete?: string;
+  usoLimitado?: UsoLimitado;
 }
 
 export type TipoFormula = "fixo" | "dados" | "dados_com_modificador";
@@ -136,6 +176,18 @@ export type RecursoAlterar = (typeof RECURSOS_ALTERAR)[number];
 
 export type OperacaoRecurso = "somar" | "reduzir" | "definir" | "conceder_temporariamente";
 
+/**
+ * Momento do consumo (Etapa 8) — só relevante quando `operacao === "reduzir"`
+ * (isto é, quando o efeito representa um CONSUMO, não um ganho de recurso).
+ * "consumo não pode ocorrer antes da validação quando a regra exige
+ * confirmação ou alvo" — por isso "antes_ativacao" só é seguro para
+ * recursos sem alvo/confirmação associados; o diagnóstico não bloqueia a
+ * escolha (é a pessoa administradora que declara a regra real), mas o
+ * texto de log deixa isso explícito.
+ */
+export const MOMENTOS_CONSUMO = ["antes_ativacao", "apos_validacao", "ao_confirmar", "ao_resolver", "ao_acertar", "ao_concluir", "manual"] as const;
+export type MomentoConsumo = (typeof MOMENTOS_CONSUMO)[number];
+
 export interface CamposAlterarRecurso {
   recurso: RecursoAlterar;
   operacao: OperacaoRecurso;
@@ -144,6 +196,9 @@ export interface CamposAlterarRecurso {
   minimo?: number;
   maximo?: number;
   bloquearPorInsuficiencia: boolean;
+  /** Consumo (Etapa 8) — reaproveita o mesmo campo/executor de `alterar_recurso`; nunca um tipo novo duplicado. */
+  momentoConsumo?: MomentoConsumo;
+  refundEmCancelamento?: boolean;
 }
 
 /**
@@ -231,6 +286,80 @@ export interface CamposAlterarDanoRecebido {
   confirmacaoManual: boolean;
 }
 
+/**
+ * Duração de um efeito temporário (Etapa 8) — mesmo vocabulário de
+ * `TemporaryEffect.durationType` (character/types.ts): "rounds" decrementa
+ * a cada fim de rodada, "scene" expira no fim de cena, "rest" no descanso
+ * longo, "manual" só sai por remoção manual. Nunca converte turno↔rodada,
+ * dia↔descanso longo ou cena↔combate — cada unidade é distinta.
+ */
+export const DURACOES_EFEITO_TEMPORARIO = ["rounds", "scene", "rest", "manual"] as const;
+export type TipoDuracaoTemporario = (typeof DURACOES_EFEITO_TEMPORARIO)[number];
+
+export interface DuracaoEfeitoTemporario {
+  tipo: TipoDuracaoTemporario;
+  /** Só quando `tipo === "rounds"` — quantidade de rodadas restantes ao criar o efeito. */
+  rodadas?: number;
+}
+
+/**
+ * Política de reaplicação — mapeia 1:1 para `TemporaryEffect.stackingMode`
+ * (character/temporaryEffects.ts::addTemporaryEffect). "Renovar duração" e
+ * "manter o mais forte" (citados no capítulo como comportamentos
+ * possíveis) NÃO têm representação determinística no runtime hoje — não
+ * oferecidos, só os 4 que o executor real sabe aplicar.
+ */
+export const POLITICAS_REAPLICACAO = ["substituir", "acumular_pilha", "ignorar", "manual"] as const;
+export type PoliticaReaplicacao = (typeof POLITICAS_REAPLICACAO)[number];
+
+/**
+ * Modificador filho de um efeito temporário — reaproveita `modificar_teste`
+ * (campos e executor) sem duplicar. Tipo estruturalmente restrito a esta
+ * ÚNICA variante (nunca `EfeitoFilho` completo): impede por construção que
+ * um efeito temporário contenha outro efeito temporário, um teste/
+ * resistência, ou qualquer outro tipo — mesma técnica de exclusão de
+ * profundidade usada em `ResultadoTeste.efeitos` (Etapa 7).
+ */
+export type ModificadorSimplesEfeitoTemporario = CamposEfeitoComuns & { tipo: "modificar_teste"; campos: CamposModificarTeste };
+
+/** Limite explícito de filhos de um efeito temporário — documentado (Etapa 8, ver checkpoint). */
+export const MAX_MODIFICADORES_EFEITO_TEMPORARIO = 4;
+
+export interface CamposEfeitoTemporario {
+  duracao: DuracaoEfeitoTemporario;
+  politicaReaplicacao: PoliticaReaplicacao;
+  acumulavel: boolean;
+  maximoPilhas?: number;
+  pilhasIniciais?: number;
+  /** Reaproveita `modificar_teste` — ver `ModificadorSimplesEfeitoTemporario`. Máximo `MAX_MODIFICADORES_EFEITO_TEMPORARIO`. */
+  modificadores: ModificadorSimplesEfeitoTemporario[];
+  confirmacaoManual: boolean;
+}
+
+export const TIPOS_ACAO_ADICIONAL = ["acao", "reacao", "ataque"] as const;
+export type TipoAcaoAdicional = (typeof TIPOS_ACAO_ADICIONAL)[number];
+
+/**
+ * Concede/permite uma ação, reação ou ataque adicional (Etapa 8). Auditoria
+ * não encontrou executor genérico real para isto — sempre `lembrete`
+ * (ver effectTypeRegistry.ts), preservado e representável, nunca fingido
+ * como automação.
+ */
+export interface CamposAcaoReacaoAdicional {
+  tipo: TipoAcaoAdicional;
+  acaoPermitida?: string;
+  quantidade: number;
+  custoSubstituido?: string;
+  gratuito: boolean;
+  consomeReacao: boolean;
+  consomePa?: number;
+  janela?: string;
+  penalidade?: string;
+  /** Limite de ações adicionais encadeadas a partir desta — nunca permite loop (ver validação). */
+  limite?: number;
+  confirmacaoManual: boolean;
+}
+
 /** Tipos aceitos como filho de um resultado de teste/resistência — todo o catálogo universal, exceto o próprio teste/resistência (sem recursão, sem ciclo possível). */
 export type EfeitoFilho =
   | (CamposEfeitoComuns & { tipo: "dano"; campos: CamposDano })
@@ -240,7 +369,9 @@ export type EfeitoFilho =
   | (CamposEfeitoComuns & { tipo: "modificar_teste"; campos: CamposModificarTeste })
   | (CamposEfeitoComuns & { tipo: "alterar_recurso"; campos: CamposAlterarRecurso })
   | (CamposEfeitoComuns & { tipo: "modificar_margem"; campos: CamposModificarMargem })
-  | (CamposEfeitoComuns & { tipo: "alterar_dano_recebido"; campos: CamposAlterarDanoRecebido });
+  | (CamposEfeitoComuns & { tipo: "alterar_dano_recebido"; campos: CamposAlterarDanoRecebido })
+  | (CamposEfeitoComuns & { tipo: "efeito_temporario"; campos: CamposEfeitoTemporario })
+  | (CamposEfeitoComuns & { tipo: "acao_reacao_adicional"; campos: CamposAcaoReacaoAdicional });
 
 export type EfeitoEditavel =
   | EfeitoFilho
@@ -255,18 +386,37 @@ export function isTipoEfeitoMvp(tipo: string): tipo is TipoEfeitoMvp {
   return (TIPOS_EFEITO_MVP as readonly string[]).includes(tipo);
 }
 
-/** Tipo de qualquer efeito editável, incluindo os 3 novos da Etapa 7 (`teste_resistencia`/`modificar_margem`/`alterar_dano_recebido`). */
+/** Tipo de qualquer efeito editável, incluindo os 3 da Etapa 7 e os 2 novos da Etapa 8 (`efeito_temporario`/`acao_reacao_adicional`). */
 export type TipoEfeitoEditavel = EfeitoEditavel["tipo"];
 
-/** Todos os tipos que o Construtor sabe criar/serializar nesta etapa — os 6 originais + os 3 da Etapa 7. Usado pelo seletor de tipo da UI e por qualquer checagem "este tipo existe no catálogo editável". */
-export const TIPOS_EFEITO_EDITAVEL: readonly TipoEfeitoEditavel[] = [...TIPOS_EFEITO_MVP, "modificar_margem", "alterar_dano_recebido", "teste_resistencia"];
+/** Todos os tipos que o Construtor sabe criar/serializar nesta etapa — os 6 originais + os 3 da Etapa 7 + os 2 da Etapa 8. Usado pelo seletor de tipo da UI e por qualquer checagem "este tipo existe no catálogo editável". */
+export const TIPOS_EFEITO_EDITAVEL: readonly TipoEfeitoEditavel[] = [
+  ...TIPOS_EFEITO_MVP,
+  "modificar_margem",
+  "alterar_dano_recebido",
+  "teste_resistencia",
+  "efeito_temporario",
+  "acao_reacao_adicional",
+];
 
 export function isTipoEfeitoEditavel(tipo: string): tipo is TipoEfeitoEditavel {
   return (TIPOS_EFEITO_EDITAVEL as readonly string[]).includes(tipo);
 }
 
-/** Tipos válidos como filho de um resultado — os 6 originais + margem/dano recebido, nunca `teste_resistencia` (profundidade limitada por construção). */
-export const TIPOS_EFEITO_FILHO: readonly EfeitoFilho["tipo"][] = [...TIPOS_EFEITO_MVP, "modificar_margem", "alterar_dano_recebido"];
+/**
+ * Tipos válidos como filho de um resultado — todo o catálogo universal
+ * exceto `teste_resistencia` (profundidade limitada por construção).
+ * `efeito_temporario`/`acao_reacao_adicional` são seguros como filhos:
+ * nenhum dos dois contém uma árvore de teste/resistência (sem recursão,
+ * sem ciclo possível).
+ */
+export const TIPOS_EFEITO_FILHO: readonly EfeitoFilho["tipo"][] = [
+  ...TIPOS_EFEITO_MVP,
+  "modificar_margem",
+  "alterar_dano_recebido",
+  "efeito_temporario",
+  "acao_reacao_adicional",
+];
 
 export function isTipoEfeitoFilho(tipo: string): tipo is EfeitoFilho["tipo"] {
   return (TIPOS_EFEITO_FILHO as readonly string[]).includes(tipo);
@@ -321,5 +471,9 @@ export function novoEfeitoEditavel(tipo: TipoEfeitoEditavel, ordem: number): Efe
       return { ...comuns, tipo, campos: { operacao: "reduzir", momento: "antes_mit", confirmacaoManual: true } };
     case "teste_resistencia":
       return { ...comuns, tipo, campos: { modo: "resistencia", confirmacaoManual: true, resultados: [] } };
+    case "efeito_temporario":
+      return { ...comuns, tipo, campos: { duracao: { tipo: "rounds", rodadas: 1 }, politicaReaplicacao: "substituir", acumulavel: false, modificadores: [], confirmacaoManual: true } };
+    case "acao_reacao_adicional":
+      return { ...comuns, tipo, campos: { tipo: "acao", quantidade: 1, gratuito: true, consomeReacao: false, confirmacaoManual: true } };
   }
 }

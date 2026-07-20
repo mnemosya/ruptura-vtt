@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { diagnosticarEfeitoEditavel } from "../../../../../lib/contentSchema/effectDiagnostics";
 import { getEfeitoTipoDefinition } from "../../../../../lib/contentSchema/effectTypeRegistry";
-import { novoEfeitoEditavel, TIPOS_EFEITO_EDITAVEL, type EfeitoEditavel, type TipoEfeitoEditavel } from "../../../../../lib/contentSchema/effectDraftTypes";
+import { novoEfeitoEditavel, TIPOS_EFEITO_EDITAVEL, CADENCIAS_USO_TALENTO, type EfeitoEditavel, type TipoEfeitoEditavel } from "../../../../../lib/contentSchema/effectDraftTypes";
 import type { OpcoesDeRegras } from "../../../../../lib/contentSchema/characterRuleOptions";
 import { buttonStyle, inputStyle, labelStyle, sectionStyle } from "./formStyles";
 import { DuracaoEditor } from "./DuracaoEditor";
@@ -21,6 +21,8 @@ export const LABEL_TIPO: Record<TipoEfeitoEditavel, string> = {
   teste_resistencia: "Teste ou resistência",
   modificar_margem: "Modificar margem",
   alterar_dano_recebido: "Alterar dano recebido",
+  efeito_temporario: "Efeito temporário",
+  acao_reacao_adicional: "Ação ou reação adicional",
 };
 
 function renormalizarOrdem(efeitos: EfeitoEditavel[]): EfeitoEditavel[] {
@@ -192,6 +194,61 @@ export function EffectsEditorSection({
               Texto de log
               <input data-testid="efeito-texto-log" value={efeito.textoLog ?? ""} onChange={(e) => atualizar(efeito.id, { textoLog: e.target.value || undefined })} style={inputStyle} />
             </label>
+
+            <div style={{ marginTop: 10, padding: 8, border: "1px dashed #3a3a46", borderRadius: 6 }}>
+              <label style={{ ...labelStyle, flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <input
+                  type="checkbox"
+                  data-testid="efeito-uso-limitado-ativo"
+                  checked={efeito.usoLimitado != null}
+                  onChange={(e) =>
+                    atualizar(efeito.id, {
+                      usoLimitado: e.target.checked ? { usosMax: 1, cadencia: "cena", chaveUso: efeito.id, compartilhado: false } : undefined,
+                    })
+                  }
+                />
+                Uso/cadência limitados (só automatizado hoje para talento)
+              </label>
+              {efeito.usoLimitado && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginTop: 6 }}>
+                  <label style={labelStyle}>
+                    Usos máximos
+                    <input
+                      type="number"
+                      min={1}
+                      data-testid="efeito-uso-limitado-max"
+                      value={efeito.usoLimitado.usosMax}
+                      onChange={(e) => atualizar(efeito.id, { usoLimitado: { ...efeito.usoLimitado!, usosMax: Math.max(1, Number(e.target.value) || 1) } })}
+                      style={inputStyle}
+                    />
+                  </label>
+                  <label style={labelStyle}>
+                    Cadência
+                    <select
+                      data-testid="efeito-uso-limitado-cadencia"
+                      value={efeito.usoLimitado.cadencia}
+                      onChange={(e) => atualizar(efeito.id, { usoLimitado: { ...efeito.usoLimitado!, cadencia: e.target.value as (typeof CADENCIAS_USO_TALENTO)[number] } })}
+                      style={inputStyle}
+                    >
+                      {CADENCIAS_USO_TALENTO.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label style={{ ...labelStyle, flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <input
+                      type="checkbox"
+                      checked={efeito.usoLimitado.compartilhado ?? false}
+                      onChange={(e) => atualizar(efeito.id, { usoLimitado: { ...efeito.usoLimitado!, compartilhado: e.target.checked } })}
+                    />
+                    Compartilha contador com outra opção (mesma chave/cadência/escopo)
+                  </label>
+                  <div style={{ fontSize: 11, color: "#7d7d8a", alignSelf: "end" }}>Chave de uso (técnica, somente leitura): {efeito.usoLimitado.chaveUso ?? efeito.id}</div>
+                </div>
+              )}
+            </div>
 
             <p style={{ fontSize: 12, color: "#7d7d8a", fontStyle: "italic", marginTop: 8 }}>{diagnostico.motivo}</p>
             {diagnostico.executor && <p style={{ fontSize: 12, color: "#5f6070", marginTop: 2 }}>Executor: {diagnostico.executor}</p>}

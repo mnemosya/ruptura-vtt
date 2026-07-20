@@ -5,20 +5,28 @@ import {
   FAIXAS_RESULTADO_TESTE,
   RECURSOS_ALTERAR,
   TIPOS_EFEITO_FILHO,
+  MOMENTOS_CONSUMO,
+  DURACOES_EFEITO_TEMPORARIO,
+  POLITICAS_REAPLICACAO,
+  TIPOS_ACAO_ADICIONAL,
+  MAX_MODIFICADORES_EFEITO_TEMPORARIO,
   formatarFormulaCura,
   formatarFormulaDano,
   novoResultadoTeste,
+  type CamposAcaoReacaoAdicional,
   type CamposAlterarDanoRecebido,
   type CamposAlterarRecurso,
   type CamposAplicarCondicao,
   type CamposCura,
   type CamposDano,
+  type CamposEfeitoTemporario,
   type CamposModificarMargem,
   type CamposModificarTeste,
   type CamposRemoverCondicao,
   type CamposTesteResistencia,
   type EfeitoEditavel,
   type FaixaResultadoTeste,
+  type ModificadorSimplesEfeitoTemporario,
   type ResultadoTeste,
 } from "../../../../../lib/contentSchema/effectDraftTypes";
 import { inputStyle, labelStyle } from "./formStyles";
@@ -74,6 +82,10 @@ export function EfeitoCamposPorTipo({
       return <CamposAlterarDanoRecebidoFields campos={efeito.campos} onChange={onChangeCampos} opcoes={opcoes} />;
     case "teste_resistencia":
       return <CamposTesteResistenciaFields campos={efeito.campos} onChange={onChangeCampos} opcoes={opcoes} condicoesDisponiveis={condicoesDisponiveis} />;
+    case "efeito_temporario":
+      return <CamposEfeitoTemporarioFields campos={efeito.campos} onChange={onChangeCampos} opcoes={opcoes} />;
+    case "acao_reacao_adicional":
+      return <CamposAcaoReacaoAdicionalFields campos={efeito.campos} onChange={onChangeCampos} />;
   }
 }
 
@@ -588,6 +600,35 @@ function CamposAlterarRecursoFields({ campos, onChange }: { campos: CamposAltera
         />{" "}
         Bloquear por insuficiência
       </label>
+      {campos.operacao === "reduzir" && (
+        <>
+          <label style={labelStyle}>
+            Momento do consumo
+            <select
+              data-testid="alterar-recurso-momento-consumo"
+              value={campos.momentoConsumo ?? ""}
+              onChange={(e) => onChange({ momentoConsumo: (e.target.value || undefined) as CamposAlterarRecurso["momentoConsumo"] })}
+              style={inputStyle}
+            >
+              <option value="">—</option>
+              {MOMENTOS_CONSUMO.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+            <input
+              data-testid="alterar-recurso-refund"
+              type="checkbox"
+              checked={campos.refundEmCancelamento ?? false}
+              onChange={(e) => onChange({ refundEmCancelamento: e.target.checked })}
+            />{" "}
+            Refund se a operação for cancelada depois do consumo
+          </label>
+        </>
+      )}
     </div>
   );
 }
@@ -936,6 +977,198 @@ function CamposTesteResistenciaFields({
         </button>
         {faixasDisponiveis.length === 0 && <span style={{ fontSize: 12, color: "#7d7d8a" }}>Todas as faixas já têm um resultado.</span>}
       </div>
+    </div>
+  );
+}
+
+const TIPOS_MODIFICADOR_SIMPLES = ["modificar_teste"] as const;
+
+function CamposEfeitoTemporarioFields({ campos, onChange, opcoes }: { campos: CamposEfeitoTemporario; onChange: (p: Partial<CamposEfeitoTemporario>) => void; opcoes: OpcoesDeRegras }) {
+  const atingiuLimite = campos.modificadores.length >= MAX_MODIFICADORES_EFEITO_TEMPORARIO;
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap", marginBottom: 10 }}>
+        <label style={labelStyle}>
+          Duração
+          <select
+            data-testid="efeito-temporario-duracao-tipo"
+            value={campos.duracao.tipo}
+            onChange={(e) => onChange({ duracao: { tipo: e.target.value as CamposEfeitoTemporario["duracao"]["tipo"], rodadas: campos.duracao.rodadas } })}
+            style={inputStyle}
+          >
+            {DURACOES_EFEITO_TEMPORARIO.map((d) => (
+              <option key={d} value={d}>
+                {d === "rounds" ? "rodadas" : d === "scene" ? "cena" : d === "rest" ? "descanso longo" : "manual"}
+              </option>
+            ))}
+          </select>
+        </label>
+        {campos.duracao.tipo === "rounds" && (
+          <label style={labelStyle}>
+            Rodadas
+            <input
+              data-testid="efeito-temporario-duracao-rodadas"
+              type="number"
+              min={1}
+              value={campos.duracao.rodadas ?? 1}
+              onChange={(e) => onChange({ duracao: { tipo: "rounds", rodadas: Math.max(1, Number(e.target.value) || 1) } })}
+              style={{ ...inputStyle, width: 80 }}
+            />
+          </label>
+        )}
+        <label style={labelStyle}>
+          Ao reaplicar
+          <select
+            data-testid="efeito-temporario-politica-reaplicacao"
+            value={campos.politicaReaplicacao}
+            onChange={(e) => onChange({ politicaReaplicacao: e.target.value as CamposEfeitoTemporario["politicaReaplicacao"] })}
+            style={inputStyle}
+          >
+            {POLITICAS_REAPLICACAO.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+          <input
+            data-testid="efeito-temporario-acumulavel"
+            type="checkbox"
+            checked={campos.acumulavel}
+            onChange={(e) => onChange({ acumulavel: e.target.checked, maximoPilhas: e.target.checked ? (campos.maximoPilhas ?? 1) : undefined })}
+          />{" "}
+          Acumulável (pilhas)
+        </label>
+        {campos.acumulavel && (
+          <>
+            <label style={labelStyle}>
+              Máximo de pilhas
+              <input
+                data-testid="efeito-temporario-max-pilhas"
+                type="number"
+                min={1}
+                value={campos.maximoPilhas ?? 1}
+                onChange={(e) => onChange({ maximoPilhas: Math.max(1, Number(e.target.value) || 1) })}
+                style={{ ...inputStyle, width: 80 }}
+              />
+            </label>
+            <label style={labelStyle}>
+              Pilhas iniciais
+              <input
+                data-testid="efeito-temporario-pilhas-iniciais"
+                type="number"
+                min={1}
+                value={campos.pilhasIniciais ?? 1}
+                onChange={(e) => onChange({ pilhasIniciais: Math.max(1, Number(e.target.value) || 1) })}
+                style={{ ...inputStyle, width: 80 }}
+              />
+            </label>
+          </>
+        )}
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+          <input data-testid="efeito-temporario-confirmacao" type="checkbox" checked={campos.confirmacaoManual} onChange={(e) => onChange({ confirmacaoManual: e.target.checked })} /> Exige
+          confirmação manual
+        </label>
+      </div>
+
+      <h5 style={{ fontSize: 13, color: "#a8a8b3", marginBottom: 6 }} data-testid="efeito-temporario-modificadores-titulo">
+        Modificadores ({campos.modificadores.length}/{MAX_MODIFICADORES_EFEITO_TEMPORARIO})
+      </h5>
+      {/* `tiposPermitidos={TIPOS_MODIFICADOR_SIMPLES}` garante que esta instância só cria `modificar_teste`
+          (nunca outro efeito temporário nem teste/resistência) — mesma técnica de exclusão por construção
+          usada pelos filhos de resultado (ver ModificadorSimplesEfeitoTemporario). */}
+      <EffectsEditorSection
+        efeitos={campos.modificadores}
+        onChange={(efeitos) => {
+          const limitados = (efeitos as ModificadorSimplesEfeitoTemporario[]).slice(0, MAX_MODIFICADORES_EFEITO_TEMPORARIO);
+          onChange({ modificadores: limitados });
+        }}
+        opcoes={opcoes}
+        condicoesDisponiveis={[]}
+        escopoId={`efeito-temporario-modificadores`}
+        tiposPermitidos={TIPOS_MODIFICADOR_SIMPLES}
+      />
+      {atingiuLimite && <p style={{ fontSize: 12, color: "#7d7d8a" }}>Limite de {MAX_MODIFICADORES_EFEITO_TEMPORARIO} modificadores atingido.</p>}
+    </div>
+  );
+}
+
+function CamposAcaoReacaoAdicionalFields({ campos, onChange }: { campos: CamposAcaoReacaoAdicional; onChange: (p: Partial<CamposAcaoReacaoAdicional>) => void }) {
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+      <p style={{ width: "100%", fontSize: 12, color: "#a8a8b3", margin: "0 0 4px" }}>Nenhum executor real concede isto automaticamente ainda — sempre lembrete para o narrador.</p>
+      <label style={labelStyle}>
+        Tipo
+        <select data-testid="acao-adicional-tipo" value={campos.tipo} onChange={(e) => onChange({ tipo: e.target.value as CamposAcaoReacaoAdicional["tipo"] })} style={inputStyle}>
+          {TIPOS_ACAO_ADICIONAL.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label style={labelStyle}>
+        Ação permitida
+        <input data-testid="acao-adicional-acao-permitida" value={campos.acaoPermitida ?? ""} onChange={(e) => onChange({ acaoPermitida: e.target.value || undefined })} style={inputStyle} />
+      </label>
+      <label style={labelStyle}>
+        Quantidade
+        <input
+          data-testid="acao-adicional-quantidade"
+          type="number"
+          min={1}
+          value={campos.quantidade}
+          onChange={(e) => onChange({ quantidade: Math.max(1, Number(e.target.value) || 1) })}
+          style={{ ...inputStyle, width: 80 }}
+        />
+      </label>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input data-testid="acao-adicional-gratuito" type="checkbox" checked={campos.gratuito} onChange={(e) => onChange({ gratuito: e.target.checked })} /> Gratuito
+      </label>
+      {!campos.gratuito && (
+        <label style={labelStyle}>
+          Custo substituído
+          <input data-testid="acao-adicional-custo-substituido" value={campos.custoSubstituido ?? ""} onChange={(e) => onChange({ custoSubstituido: e.target.value || undefined })} style={inputStyle} />
+        </label>
+      )}
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input data-testid="acao-adicional-consome-reacao" type="checkbox" checked={campos.consomeReacao} onChange={(e) => onChange({ consomeReacao: e.target.checked })} /> Consome uma Reação
+      </label>
+      <label style={labelStyle}>
+        Consome PA
+        <input
+          data-testid="acao-adicional-consome-pa"
+          type="number"
+          min={0}
+          value={campos.consomePa ?? ""}
+          onChange={(e) => onChange({ consomePa: numeroOuIndefinido(e.target.value) })}
+          style={{ ...inputStyle, width: 80 }}
+        />
+      </label>
+      <label style={labelStyle}>
+        Janela
+        <input data-testid="acao-adicional-janela" value={campos.janela ?? ""} onChange={(e) => onChange({ janela: e.target.value || undefined })} style={inputStyle} />
+      </label>
+      <label style={labelStyle}>
+        Penalidade
+        <input data-testid="acao-adicional-penalidade" value={campos.penalidade ?? ""} onChange={(e) => onChange({ penalidade: e.target.value || undefined })} style={inputStyle} />
+      </label>
+      <label style={labelStyle}>
+        Limite de ações encadeadas
+        <input
+          data-testid="acao-adicional-limite"
+          type="number"
+          min={1}
+          value={campos.limite ?? ""}
+          onChange={(e) => onChange({ limite: numeroOuIndefinido(e.target.value) })}
+          style={{ ...inputStyle, width: 80 }}
+        />
+      </label>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input data-testid="acao-adicional-confirmacao" type="checkbox" checked={campos.confirmacaoManual} onChange={(e) => onChange({ confirmacaoManual: e.target.checked })} /> Exige confirmação
+        manual
+      </label>
     </div>
   );
 }

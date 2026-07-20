@@ -10,7 +10,7 @@
  */
 
 import { getEfeitoTipoDefinition } from "./effectTypeRegistry";
-import type { EfeitoEditavel } from "./effectDraftTypes";
+import { MAX_MODIFICADORES_EFEITO_TEMPORARIO, type EfeitoEditavel } from "./effectDraftTypes";
 import type { ModoAutomacao } from "./types";
 
 export interface DiagnosticoEfeitoEditavel {
@@ -175,6 +175,47 @@ export function diagnosticarEfeitoEditavel(efeito: EfeitoEditavel): DiagnosticoE
         modoAutomacao: limitarAoTeto(modoFinal, teto),
         executor: "src/lib/character/testResistanceTreeExecutor.ts",
         motivo: `Modo agregado da árvore (pior caso entre ${resultados.length} resultado(s) e seus efeitos filhos) — nunca acima do ramo menos automatizado.`,
+      };
+    }
+    case "efeito_temporario": {
+      const { duracao, modificadores, acumulavel, maximoPilhas, pilhasIniciais } = efeito.campos;
+      if (!duracao || (duracao.tipo === "rounds" && !(duracao.rodadas! > 0))) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Duração ausente ou inválida (rodadas deve ser > 0 quando tipo = rounds)." };
+      }
+      if (modificadores.length === 0 && !efeito.textoLembrete) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Efeito temporário sem conteúdo — precisa de ao menos um modificador ou um texto de lembrete." };
+      }
+      if (modificadores.length > MAX_MODIFICADORES_EFEITO_TEMPORARIO) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: `Efeito temporário com mais de ${MAX_MODIFICADORES_EFEITO_TEMPORARIO} modificadores — acima do limite documentado.` };
+      }
+      if (acumulavel && maximoPilhas != null && pilhasIniciais != null && pilhasIniciais > maximoPilhas) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Pilhas iniciais não podem superar o máximo de pilhas." };
+      }
+      if (!acumulavel && maximoPilhas != null && maximoPilhas > 1) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Efeito não acumulável não pode ter máximo de pilhas maior que 1." };
+      }
+      const piorModificador = modificadores.reduce<ModoAutomacao>(
+        (acc, m) => pior(acc, diagnosticarEfeitoEditavel(m).modoAutomacao),
+        "automatico",
+      );
+      const modoFinal = pior("assistido", piorModificador);
+      return {
+        modoAutomacao: limitarAoTeto(modoFinal, teto),
+        executor: "src/lib/character/temporaryEffects.ts",
+        motivo: "Criação sempre exige uma ação (usar item/lançar magia/ativar talento) — nunca automático puro; expiração e modificadores de rolagem já aplicam sozinhos depois de criado, quando o executor real reconhece o payload (item).",
+      };
+    }
+    case "acao_reacao_adicional": {
+      const { quantidade, tipo: tipoConcedido, limite } = efeito.campos;
+      if (!(quantidade > 0)) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Quantidade concedida precisa ser maior que zero." };
+      }
+      if (limite != null && limite <= 0) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Limite de ações encadeadas, quando definido, precisa ser maior que zero (evita loop)." };
+      }
+      return {
+        modoAutomacao: limitarAoTeto("lembrete", teto),
+        motivo: `Concede ${tipoConcedido} adicional — nenhum executor real aplica isso automaticamente ainda, sempre lembrete para o narrador.`,
       };
     }
   }

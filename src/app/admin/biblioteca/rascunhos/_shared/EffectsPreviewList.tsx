@@ -23,6 +23,13 @@ function resumoEfeito(efeito: EfeitoEditavel): string {
       return `${efeito.campos.operacao} ${efeito.campos.valorFixo ?? efeito.campos.multiplicador ?? "?"} · ${efeito.campos.momento}`;
     case "teste_resistencia":
       return `${efeito.campos.modo} (${efeito.campos.pericia ?? efeito.campos.atributo ?? "?"}) — ${efeito.campos.resultados.length} resultado(s)`;
+    case "efeito_temporario": {
+      const d = efeito.campos.duracao;
+      const duracaoTexto = d.tipo === "rounds" ? `${d.rodadas ?? 1} rodada(s)` : d.tipo === "scene" ? "cena" : d.tipo === "rest" ? "descanso longo" : "manual";
+      return `${efeito.campos.modificadores.length} modificador(es) · ${duracaoTexto}${efeito.campos.acumulavel ? ` · até ${efeito.campos.maximoPilhas ?? "?"} pilha(s)` : ""}`;
+    }
+    case "acao_reacao_adicional":
+      return `${efeito.campos.tipo} adicional × ${efeito.campos.quantidade}${efeito.campos.gratuito ? " · gratuito" : ""}`;
   }
 }
 

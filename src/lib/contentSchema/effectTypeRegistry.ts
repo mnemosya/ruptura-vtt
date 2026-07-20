@@ -227,6 +227,47 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
     },
     aliasesLegado: {},
   },
+  efeito_temporario: {
+    id: "efeito_temporario",
+    label: "Efeito temporário",
+    camposEspecificos: [
+      { nome: "duracao", tipo: "unknown", obrigatorio: true, descricao: "rounds (com quantidade) | scene | rest | manual — mesmo vocabulário de TemporaryEffect.durationType." },
+      { nome: "politicaReaplicacao", tipo: "string", obrigatorio: true, descricao: "substituir | acumular_pilha | ignorar | manual — mapeia 1:1 para TemporaryEffect.stackingMode." },
+      { nome: "maximoPilhas", tipo: "number", obrigatorio: false, descricao: "Só quando acumulável." },
+      { nome: "modificadores", tipo: "array", obrigatorio: false, descricao: "Filhos do tipo modificar_teste (máx. 4) — reaproveita campos/executor, não duplica." },
+    ],
+    executor: {
+      modo: "assistido",
+      modulo: "src/lib/character/temporaryEffects.ts (addTemporaryEffect, tickRoundTemporaryEffects, expireSceneTemporaryEffects, expireRestTemporaryEffects, deriveActiveEffectsFromTemporaryEffects)",
+      observacao:
+        "Executor real e genérico já existe e roda hoje a partir do payload `buff_temporario` de itens (itemUse.ts). A CRIAÇÃO do efeito continua exigindo uma ação (usar item/lançar magia/ativar talento) — nunca 'automático' puro — mas expiração por rodada/cena/descanso e modificadores de rolagem (target roll/skill/attribute) já aplicam sozinhos depois de criado. Para talento, o payload é preservado mas não há leitor genérico equivalente ainda — o diagnóstico por instância cai para 'lembrete' nesse caso.",
+    },
+    aliasesLegado: {
+      item: ["buff_temporario"],
+      talent: ["buff_empilhavel"],
+    },
+  },
+  acao_reacao_adicional: {
+    id: "acao_reacao_adicional",
+    label: "Ação ou reação adicional",
+    camposEspecificos: [
+      { nome: "tipo", tipo: "string", obrigatorio: true, descricao: "acao | reacao | ataque." },
+      { nome: "quantidade", tipo: "number", obrigatorio: true, descricao: "Quantidade concedida." },
+      { nome: "gratuito", tipo: "boolean", obrigatorio: true, descricao: "Se não substitui nenhum custo." },
+      { nome: "consomeReacao", tipo: "boolean", obrigatorio: false, descricao: "Se o USO desta concessão consome uma Reação do próprio personagem." },
+    ],
+    executor: {
+      // Auditoria (talentEngine.ts, actionConsole.ts) não encontrou executor
+      // genérico que conceda ação/reação/ataque adicional automaticamente —
+      // sempre lembrete, nunca fingir automação.
+      modo: "lembrete",
+      observacao: "Nenhum executor real concede ação/reação/ataque adicional automaticamente ainda — sempre lembrete para o narrador aplicar manualmente (o console de ação já rastreia PA/Reações gastos, mas não CONCEDE novos).",
+    },
+    aliasesLegado: {
+      talent: ["ataque_adicional", "reacao"],
+      item: ["ataque_adicional"],
+    },
+  },
   outro: {
     id: "outro",
     label: "Efeito ainda não canonicalizado",
