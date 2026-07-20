@@ -122,11 +122,35 @@ export interface DraftPreservado {
   camposDesconhecidos: CampoDesconhecido[];
 }
 
+/**
+ * Registro de uma conversão de conteúdo legado sem `content_editor_metadata`
+ * (Etapa 6) — só existe quando o rascunho nasceu de "Criar rascunho de
+ * edição" sobre conteúdo publicado antes do Editor Universal. Guarda o
+ * que foi decidido no momento da conversão; nunca recalculado
+ * silenciosamente depois (uma mudança futura no adapter não altera um
+ * rascunho já iniciado).
+ */
+export interface DraftOrigemLegado {
+  adapterId: DraftContentType;
+  adapterVersion: string;
+  classificacaoLegado: string;
+  /** Caminho → valor confirmado pela pessoa administradora, para cada campo `conversao_com_confirmacao`. */
+  decisoesConfirmadas: Record<string, unknown>;
+  camposSomenteLeitura: string[];
+  camposDesconhecidos: string[];
+  efeitosPreservados: string[];
+  avisos: string[];
+  convertidoEm: string;
+  convertidoPor: string;
+}
+
 export interface DraftEnvelope {
   schemaVersion: "draft.v1";
   contentType: DraftContentType;
   camposEditaveis: CamposEditaveis;
   preservado: DraftPreservado;
+  /** Só presente quando o rascunho nasceu de uma conversão de legado (Etapa 6). */
+  origemLegado?: DraftOrigemLegado;
 }
 
 /** Linha de `content_drafts` como lida do banco. */

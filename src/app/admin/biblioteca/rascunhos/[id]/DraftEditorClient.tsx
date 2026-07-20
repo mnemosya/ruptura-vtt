@@ -123,6 +123,14 @@ export function DraftEditorClient({
           </p>
         )}
         {draft.duplicated_from && <p style={{ fontSize: 13, color: "#a8a8b3", marginTop: 6 }}>Duplicado de: <code>{draft.duplicated_from}</code></p>}
+        {draft.payload.origemLegado && (
+          <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 8, background: "#151a24", border: "1px solid #2a3a52", fontSize: 12, color: "#8fb0d6" }}>
+            <strong>Conteúdo legado</strong> — convertido de conteúdo publicado antes do Editor Universal. Adapter: {draft.payload.origemLegado.adapterVersion} · convertido em{" "}
+            {new Date(draft.payload.origemLegado.convertidoEm).toLocaleString("pt-BR")} por {draft.payload.origemLegado.convertidoPor}.
+            {draft.payload.origemLegado.camposSomenteLeitura.length > 0 && <> {draft.payload.origemLegado.camposSomenteLeitura.length} campo(s) somente leitura preservado(s).</>}
+            {draft.payload.origemLegado.efeitosPreservados.length > 0 && <> {draft.payload.origemLegado.efeitosPreservados.length} efeito(s) preservado(s) sem edição.</>}
+          </div>
+        )}
       </header>
 
       <div style={sectionStyle}>

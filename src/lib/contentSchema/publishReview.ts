@@ -11,10 +11,11 @@
 
 import { getContentDocument } from "../content/queries";
 import type { ContentType } from "../content/types";
-import type { ContentDraftRow, DraftContentType } from "./draftTypes";
+import type { ContentDraftRow, DraftContentType, DraftOrigemLegado } from "./draftTypes";
 import { diagnosticarEfeitoEditavel } from "./effectDiagnostics";
 import type { EfeitoEditavel } from "./effectDraftTypes";
 import { validarEfeitoParaPublicacao } from "./effectLegacySerialization";
+import { validarPerdaConversaoLegado } from "./legacyLossValidation";
 import { classificarImpacto, type ImpactoInstancias } from "./publishImpact";
 import { compararPublicado, type ResultadoDiff } from "./publishDiff";
 import { serializarRascunhoParaPublicacao } from "./publishSerialization";
@@ -55,6 +56,8 @@ export interface RevisaoPublicacao {
    * NUNCA para o payload público. Ver correção pós-Etapa 5.
    */
   metadataEfeitos: unknown;
+  /** Presente quando o rascunho veio de uma conversão de legado (Etapa 6) — vai para o changelog (impact), nunca para o payload público. */
+  origemLegado?: DraftOrigemLegado;
   podePublicar: boolean;
 }
 
@@ -136,6 +139,14 @@ export async function montarRevisaoPublicacao(draft: ContentDraftRow): Promise<R
     erros.push(`Falha ao serializar para publicação: ${e instanceof Error ? e.message : "erro desconhecido"}.`);
   }
 
+  // Conteúdo convertido de legado (Etapa 6): verifica que nada preservado
+  // (campos somente leitura, estatisticas, níveis de talento, efeitos
+  // preservados, campos desconhecidos) foi perdido pela republicação.
+  if (draft.payload.origemLegado && corpo && typeof corpo === "object") {
+    const errosDePerda = validarPerdaConversaoLegado(draft.content_type, draft.payload.preservado.rawOriginal, corpo, draft.payload.origemLegado);
+    erros.push(...errosDePerda);
+  }
+
   // Conflito de base / concorrência (espelha o bloqueio do RPC, mais cedo na UI).
   let baseStatus: RevisaoPublicacao["baseStatus"] = "sem_origem";
   if (draft.base_document_id) {
@@ -162,6 +173,13 @@ export async function montarRevisaoPublicacao(draft: ContentDraftRow): Promise<R
     avisos.push("Nenhuma diferença detectada em relação ao conteúdo publicado — publicar só incrementa a versão.");
   }
 
+  if (draft.payload.origemLegado) {
+    const ol = draft.payload.origemLegado;
+    avisos.push(
+      `Conteúdo convertido de legado (adapter ${ol.adapterVersion}, em ${new Date(ol.convertidoEm).toLocaleDateString("pt-BR")}) — ${ol.camposSomenteLeitura.length} campo(s) e ${ol.efeitosPreservados.length} efeito(s) permanecem preservados/somente leitura.`,
+    );
+  }
+
   return {
     draftId: draft.id,
     draftVersion: draft.version,
@@ -181,6 +199,7 @@ export async function montarRevisaoPublicacao(draft: ContentDraftRow): Promise<R
     impacto,
     efeitos,
     corpo,
+    origemLegado: draft.payload.origemLegado,
     metadataEfeitos: montarMetadataEfeitos(draft),
     podePublicar: erros.length === 0,
   };

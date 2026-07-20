@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { DraftContentType } from "../../../../../lib/contentSchema/draftTypes";
 import { slugDuplicadoSugerido, slugify } from "../../../../../lib/contentSchema/slug";
 import { criarRascunhoDeEdicao, duplicarConteudo } from "../../../../../lib/contentSchema/draftServerActions";
+import { diagnosticarConversaoLegado } from "../../../../../lib/contentSchema/legacyConversionServerActions";
 import { buttonStyle, inputStyle, primaryButtonStyle } from "../../rascunhos/_shared/formStyles";
 
 /** Ações de rascunho no detalhe de conteúdo publicado (Etapa 3) — só para os 3 content_types do MVP. */
@@ -20,10 +21,24 @@ export function DraftActionsBar({ contentType, slug, nomeAtual }: { contentType:
   async function criarEdicao() {
     setCriandoEdicao(true);
     setErro(null);
-    const resultado = await criarRascunhoDeEdicao(contentType, slug);
+    // Conteúdo com content_editor_metadata (Etapa 5) segue o caminho rápido de
+    // sempre; sem metadata (conteúdo legado, Etapa 6), passa pelo diagnóstico
+    // de conversão antes de criar qualquer rascunho.
+    const diagnostico = await diagnosticarConversaoLegado(contentType, slug);
+    if (!diagnostico.ok) {
+      setCriandoEdicao(false);
+      setErro(diagnostico.erro ?? "Erro ao diagnosticar conversão.");
+      return;
+    }
+    if (diagnostico.temMetadataEditorial) {
+      const resultado = await criarRascunhoDeEdicao(contentType, slug);
+      setCriandoEdicao(false);
+      if (resultado.ok && resultado.draftId) router.push(`/admin/biblioteca/rascunhos/${resultado.draftId}`);
+      else setErro(resultado.erro ?? "Erro ao criar rascunho de edição.");
+      return;
+    }
     setCriandoEdicao(false);
-    if (resultado.ok && resultado.draftId) router.push(`/admin/biblioteca/rascunhos/${resultado.draftId}`);
-    else setErro(resultado.erro ?? "Erro ao criar rascunho de edição.");
+    router.push(`/admin/biblioteca/rascunhos/legado/${contentType}/${slug}`);
   }
 
   async function duplicar() {

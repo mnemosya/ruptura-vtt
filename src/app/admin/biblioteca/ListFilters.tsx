@@ -11,9 +11,22 @@ const inputStyle: CSSProperties = {
 };
 
 /** Formulário GET simples — sem JS, sem "use client". Cada submit navega para /admin/biblioteca?... */
-export function ListFilters({ contentType, search, categoria }: { contentType?: string; search?: string; categoria?: string }) {
+export function ListFilters({
+  contentType,
+  search,
+  categoria,
+  status,
+  metadata,
+}: {
+  contentType?: string;
+  search?: string;
+  categoria?: string;
+  status?: string;
+  metadata?: string;
+}) {
   return (
     <form method="GET" action="/admin/biblioteca" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end", marginBottom: 20 }}>
+      {status === "archived" && <input type="hidden" name="status" value="archived" />}
       <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "#a8a8b3" }}>
         Tipo de conteúdo
         <select name="contentType" defaultValue={contentType ?? ""} style={inputStyle}>
@@ -36,13 +49,22 @@ export function ListFilters({ contentType, search, categoria }: { contentType?: 
         <input type="text" name="categoria" defaultValue={categoria ?? ""} placeholder="ex.: farmacia" style={inputStyle} />
       </label>
 
+      <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "#a8a8b3" }}>
+        Metadata editorial (Etapa 6)
+        <select name="metadata" defaultValue={metadata ?? ""} style={inputStyle}>
+          <option value="">Todos</option>
+          <option value="com">Com metadata editorial (já editado)</option>
+          <option value="sem">Sem metadata editorial (conteúdo legado)</option>
+        </select>
+      </label>
+
       <button
         type="submit"
         style={{ background: "#22301f", border: "1px solid #3a5231", color: "#e8e8ec", borderRadius: 6, padding: "9px 16px", cursor: "pointer" }}
       >
         Filtrar
       </button>
-      {(contentType || search || categoria) && (
+      {(contentType || search || categoria || metadata) && (
         <a href="/admin/biblioteca" style={{ fontSize: 13, color: "#a8a8b3", marginLeft: 4 }}>
           Limpar filtros
         </a>

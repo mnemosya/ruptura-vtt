@@ -14,6 +14,8 @@ export function Pagination({
   contentType,
   search,
   categoria,
+  status,
+  metadata,
 }: {
   page: number;
   pageSize: number;
@@ -21,9 +23,11 @@ export function Pagination({
   contentType?: string;
   search?: string;
   categoria?: string;
+  status?: string;
+  metadata?: string;
 }) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const params = { contentType, q: search, categoria };
+  const params = { contentType, q: search, categoria, status, metadata };
 
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, fontSize: 13, color: "#a8a8b3" }}>

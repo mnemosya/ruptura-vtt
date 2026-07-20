@@ -25,6 +25,13 @@ export interface AdminListFilters {
   search?: string;
   /** Filtra por status (Etapa 5). Ausente = só publicado (comportamento padrão da Etapa 2). */
   status?: AdminStatusFiltro;
+  /**
+   * Filtra por presença de `content_editor_metadata` (Etapa 6) — "com"
+   * = já foi editado pelo Editor Universal pelo menos uma vez (qualquer
+   * versão); "sem" = ainda só existe pelo payload legado importado.
+   * Ausente = sem filtro.
+   */
+  comMetadataEditorial?: boolean;
 }
 
 export interface AdminListOptions extends AdminListFilters {
@@ -62,6 +69,18 @@ export async function listContentDocumentsForAdmin(options: AdminListOptions): P
   const termo = options.search ? sanitizeParaFiltro(options.search) : "";
   if (termo) {
     query = query.or(`nome.ilike.%${termo}%,slug.ilike.%${termo}%,categoria.ilike.%${termo}%,subtipo.ilike.%${termo}%`);
+  }
+
+  if (options.comMetadataEditorial !== undefined) {
+    // PostgREST não faz subquery arbitrária — busca os document_id com
+    // metadata numa consulta separada (tabela pequena) e filtra por `.in`/`.not.in`.
+    const { data: comMetadata } = await supabase.from("content_editor_metadata").select("document_id");
+    const idsComMetadata = Array.from(new Set((comMetadata ?? []).map((r) => (r as { document_id: string }).document_id)));
+    if (options.comMetadataEditorial) {
+      query = idsComMetadata.length > 0 ? query.in("id", idsComMetadata) : query.eq("id", "__nenhum__");
+    } else if (idsComMetadata.length > 0) {
+      query = query.not("id", "in", `(${idsComMetadata.map((id) => `"${id}"`).join(",")})`);
+    }
   }
 
   query = query.order("content_type", { ascending: true }).order("slug", { ascending: true }).range(from, to);

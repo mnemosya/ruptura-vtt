@@ -60,6 +60,11 @@ export async function publicarRascunho(draftId: string, expectedDraftVersion: nu
       return { ok: false, erros: revisao.erros, conflito: revisao.baseStatus === "mudou" || revisao.baseStatus === "removido" };
     }
 
+    // Conteúdo convertido de legado (Etapa 6): registra origem no
+    // changelog dentro do próprio `impact` (jsonb já existente da Etapa
+    // 5 — reusado, sem migration nova) — nunca no payload público.
+    const impactoComOrigemLegado = revisao.origemLegado ? { ...revisao.impacto, origemLegado: revisao.origemLegado } : revisao.impacto;
+
     const client = await getScopedTableClient();
     const { data, error } = await client.rpc("publish_content_draft", {
       p_draft_id: draftId,
@@ -67,7 +72,7 @@ export async function publicarRascunho(draftId: string, expectedDraftVersion: nu
       p_body: revisao.corpo,
       p_summary: resumo.trim(),
       p_changed_paths: revisao.diff.campos,
-      p_impact: revisao.impacto,
+      p_impact: impactoComOrigemLegado,
       p_author_email: admin.email,
       // Metadata editorial completa (EfeitoEditavel[]) — grava em
       // content_editor_metadata na mesma transação, NUNCA no payload
