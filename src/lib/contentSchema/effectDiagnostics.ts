@@ -31,6 +31,11 @@ function limitarAoTeto(modo: ModoAutomacao, teto: ModoAutomacao): ModoAutomacao 
   return RANK[modo] <= RANK[teto] ? modo : teto;
 }
 
+/** Pior caso entre dois modos — usado para agregar a árvore de teste/resistência (Etapa 7): nunca fica melhor que o ramo menos automatizado. */
+function pior(a: ModoAutomacao, b: ModoAutomacao): ModoAutomacao {
+  return RANK[a] <= RANK[b] ? a : b;
+}
+
 export function diagnosticarEfeitoEditavel(efeito: EfeitoEditavel): DiagnosticoEfeitoEditavel {
   const definicaoCatalogo = getEfeitoTipoDefinition(efeito.tipo);
   const teto = definicaoCatalogo.executor.modo;
@@ -121,6 +126,55 @@ export function diagnosticarEfeitoEditavel(efeito: EfeitoEditavel): DiagnosticoE
       return {
         modoAutomacao: limitarAoTeto("assistido", teto),
         motivo: `Recurso "${recurso}" reconhecido, mas ainda sem executor automático genérico fora do caso de PA em fim de rodada — depende de ação manual do narrador ou de outro fluxo específico.`,
+      };
+    }
+    case "modificar_margem": {
+      const { pericias, contexto, faixaOrigem, faixaDestino, operacao } = efeito.campos;
+      if (pericias.length === 0 || (operacao !== "definir" && (!faixaOrigem || !faixaDestino))) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Faltam perícias afetadas ou faixas de origem/destino." };
+      }
+      return {
+        modoAutomacao: limitarAoTeto("assistido", teto),
+        executor: "src/lib/character/talentEngine.ts (getMarginPromotions)",
+        motivo: `Reconhecido para "${contexto}" — a pessoa jogadora ainda confirma que o contexto da rolagem bate antes de aplicar (nunca automático).`,
+      };
+    }
+    case "alterar_dano_recebido": {
+      const { operacao } = efeito.campos;
+      if (operacao === "reduzir" && efeito.campos.valorFixo == null) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Operação \"reduzir\" exige um valor fixo." };
+      }
+      if (operacao === "multiplicar" && efeito.campos.multiplicador == null) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Operação \"multiplicar\" exige um multiplicador." };
+      }
+      return { modoAutomacao: limitarAoTeto("lembrete", teto), motivo: "Nenhum executor real aplica alteração de dano recebido automaticamente ainda — sempre lembrete para o narrador aplicar manualmente." };
+    }
+    case "teste_resistencia": {
+      const { pericia, cd, resultados, quemTesta } = efeito.campos;
+      if (!pericia && !efeito.campos.atributo) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Sem perícia/atributo — não há quem testa contra o quê." };
+      }
+      if (!cd) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Sem CD definida (fixa ou derivada)." };
+      }
+      if (resultados.length === 0) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Sem nenhum resultado configurado — árvore vazia." };
+      }
+      // Agrega o pior caso entre TODOS os efeitos filhos de TODOS os resultados —
+      // a árvore nunca é classificada acima do seu ramo menos automatizado.
+      let piorFilho: ModoAutomacao = "automatico";
+      for (const r of resultados) {
+        if (r.faixa === "manual") piorFilho = pior(piorFilho, "assistido");
+        for (const filho of r.efeitos) {
+          piorFilho = pior(piorFilho, diagnosticarEfeitoEditavel(filho).modoAutomacao);
+        }
+      }
+      const baseAssistida = quemTesta === "selecionado_manualmente" || efeito.campos.confirmacaoManual;
+      const modoFinal = pior(baseAssistida ? "assistido" : "automatico", piorFilho);
+      return {
+        modoAutomacao: limitarAoTeto(modoFinal, teto),
+        executor: "src/lib/character/testResistanceTreeExecutor.ts",
+        motivo: `Modo agregado da árvore (pior caso entre ${resultados.length} resultado(s) e seus efeitos filhos) — nunca acima do ramo menos automatizado.`,
       };
     }
   }

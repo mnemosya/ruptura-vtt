@@ -41,7 +41,8 @@
     "check:admin-content-drafts": "tsx scripts/dev/check-admin-content-drafts.ts",
     "check:admin-effect-builder": "tsx scripts/dev/check-admin-effect-builder.ts",
     "check:admin-publication": "tsx scripts/dev/check-admin-publication.ts",
-    "check:admin-legacy-conversion": "tsx scripts/dev/check-admin-legacy-conversion.ts"
+    "check:admin-legacy-conversion": "tsx scripts/dev/check-admin-legacy-conversion.ts",
+    "check:admin-composite-effects": "tsx scripts/dev/check-admin-composite-effects.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

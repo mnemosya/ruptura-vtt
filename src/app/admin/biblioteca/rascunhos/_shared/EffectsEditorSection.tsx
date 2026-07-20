@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { diagnosticarEfeitoEditavel } from "../../../../../lib/contentSchema/effectDiagnostics";
 import { getEfeitoTipoDefinition } from "../../../../../lib/contentSchema/effectTypeRegistry";
-import { novoEfeitoEditavel, TIPOS_EFEITO_MVP, type EfeitoEditavel, type TipoEfeitoMvp } from "../../../../../lib/contentSchema/effectDraftTypes";
+import { novoEfeitoEditavel, TIPOS_EFEITO_EDITAVEL, type EfeitoEditavel, type TipoEfeitoEditavel } from "../../../../../lib/contentSchema/effectDraftTypes";
 import type { OpcoesDeRegras } from "../../../../../lib/contentSchema/characterRuleOptions";
 import { buttonStyle, inputStyle, labelStyle, sectionStyle } from "./formStyles";
 import { DuracaoEditor } from "./DuracaoEditor";
@@ -11,13 +11,16 @@ import { EfeitoCamposPorTipo } from "./EfeitoCamposPorTipo";
 import { MODO_AUTOMACAO_COR, MODO_AUTOMACAO_LABEL, MODO_AUTOMACAO_SIMBOLO } from "../../labels";
 import { GATILHOS_INICIAIS, ALVOS_INICIAIS } from "../../../../../lib/contentSchema/effectDraftTypes";
 
-const LABEL_TIPO: Record<TipoEfeitoMvp, string> = {
+export const LABEL_TIPO: Record<TipoEfeitoEditavel, string> = {
   dano: "Dano",
   cura: "Cura",
   aplicar_condicao: "Aplicar condição",
   remover_condicao: "Remover condição",
   modificar_teste: "Modificar teste",
   alterar_recurso: "Alterar recurso",
+  teste_resistencia: "Teste ou resistência",
+  modificar_margem: "Modificar margem",
+  alterar_dano_recebido: "Alterar dano recebido",
 };
 
 function renormalizarOrdem(efeitos: EfeitoEditavel[]): EfeitoEditavel[] {
@@ -42,14 +45,17 @@ export function EffectsEditorSection({
   opcoes,
   condicoesDisponiveis,
   escopoId,
+  tiposPermitidos = TIPOS_EFEITO_EDITAVEL,
 }: {
   efeitos: EfeitoEditavel[];
   onChange: (efeitos: EfeitoEditavel[]) => void;
   opcoes: OpcoesDeRegras;
   condicoesDisponiveis: { slug: string; nome: string }[];
   escopoId: string;
+  /** Restringe o seletor "adicionar efeito" — usado dentro de um resultado de teste/resistência (Etapa 7), que nunca oferece "Teste ou resistência" como filho (sem recursão). */
+  tiposPermitidos?: readonly TipoEfeitoEditavel[];
 }) {
-  const [tipoParaAdicionar, setTipoParaAdicionar] = useState<TipoEfeitoMvp>("dano");
+  const [tipoParaAdicionar, setTipoParaAdicionar] = useState<TipoEfeitoEditavel>(tiposPermitidos[0] ?? "dano");
 
   function adicionar() {
     onChange(renormalizarOrdem([...efeitos, novoEfeitoEditavel(tipoParaAdicionar, efeitos.length)]));
@@ -200,10 +206,10 @@ export function EffectsEditorSection({
           <select
             data-testid={`novo-efeito-tipo-${escopoId}`}
             value={tipoParaAdicionar}
-            onChange={(e) => setTipoParaAdicionar(e.target.value as TipoEfeitoMvp)}
+            onChange={(e) => setTipoParaAdicionar(e.target.value as TipoEfeitoEditavel)}
             style={inputStyle}
           >
-            {TIPOS_EFEITO_MVP.map((t) => (
+            {tiposPermitidos.map((t) => (
               <option key={t} value={t}>
                 {LABEL_TIPO[t]}
               </option>

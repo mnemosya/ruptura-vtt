@@ -224,7 +224,15 @@ function classificarEfeito(contentType: DraftContentType, efeito: EfeitoCanonico
     modoAutomacao: efeito.modoAutomacao,
     motivo:
       efeito.tipo === "teste_resistencia"
-        ? "Teste de resistência com ramificação — preservado e somente leitura até a Etapa 7."
+        ? // A Etapa 7 adicionou "teste_resistencia" como tipo EDITÁVEL (novo, criado do
+          // zero pelo Construtor) — mas este efeito LEGADO específico não é convertido
+          // automaticamente: a auditoria real confirmou pelo menos 3 formatos distintos
+          // de `efeito_com_resistencia` (magia: efeitos irmãos soltos; runa:
+          // `condicao_falha` embutida; propriedade: `margem_minima`), e inferir a árvore
+          // de resultados a partir de qualquer um deles sem ambiguidade não é seguro.
+          // Preservado como está; pode ser reconstruído manualmente como um novo
+          // "Teste ou resistência" no Construtor, se desejado.
+          "Teste de resistência legado — preservado, somente leitura. Pode ser reconstruído manualmente como um novo efeito \"Teste ou resistência\" no Construtor (a conversão automática não é oferecida: a estrutura real varia entre magia/item/runa/propriedade)."
         : `Efeito "${tipoLegado}" fora dos 6 tipos do MVP — preservado e somente leitura nesta etapa.`,
   };
 }

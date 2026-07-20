@@ -80,9 +80,78 @@ function formula(quantidadeDados: number | undefined, faces: number | undefined)
  * representável). Chamado pela revisão de publicação — nunca a
  * publicação em si tenta "salvar o que der" silenciosamente.
  */
+/** Máximo de resultados/efeitos-filho que a serialização legada (siblings no formato existente) consegue representar sem ambiguidade — ver `serializarArvoreTesteResistencia`. */
+const MAX_RESULTADOS_SERIALIZAVEIS = 2;
+const MAX_EFEITOS_POR_RESULTADO_SERIALIZAVEL = 2;
+const FAMILIA_SUCESSO = new Set(["sucesso_padrao", "sucesso_limitado", "sucesso_critico"]);
+const FAMILIA_FALHA = new Set(["falha", "falha_limitada", "falha_critica"]);
+
+function validarArvoreTesteResistencia(contentType: DraftContentType, efeito: Extract<EfeitoEditavel, { tipo: "teste_resistencia" }>): string[] {
+  const erros: string[] = [];
+  const rotulo = efeito.nomeOpcional || "teste ou resistência";
+
+  if (contentType === "talent") {
+    erros.push(`Efeito "${rotulo}": árvores de teste/resistência ainda não têm representação segura no contrato de talentos — mantenha este efeito só no rascunho.`);
+    return erros;
+  }
+
+  const { cd, resultados, pericia, atributo } = efeito.campos;
+  if (!pericia && !atributo) erros.push(`Efeito "${rotulo}": falta perícia ou atributo.`);
+  if (!cd) erros.push(`Efeito "${rotulo}": falta CD (fixa ou derivada).`);
+  if (cd?.tipo === "derivada" && contentType === "item") {
+    erros.push(`Efeito "${rotulo}": CD derivada (vertente) não é representável no contrato de itens, que exige um valor numérico literal — use CD fixa.`);
+  }
+  if (resultados.length === 0) erros.push(`Efeito "${rotulo}": nenhum resultado configurado.`);
+  if (resultados.length > MAX_RESULTADOS_SERIALIZAVEIS) {
+    erros.push(`Efeito "${rotulo}": o contrato de ${contentType === "spell" ? "magias" : "itens"} só representa até ${MAX_RESULTADOS_SERIALIZAVEIS} resultados (um de sucesso, um de falha) sem ambiguidade — simplifique a árvore.`);
+  }
+  const faixasVistas = new Set<string>();
+  for (const r of resultados) {
+    if (faixasVistas.has(r.faixa)) erros.push(`Efeito "${rotulo}": faixa "${r.faixa}" duplicada entre resultados.`);
+    faixasVistas.add(r.faixa);
+    if (!FAMILIA_SUCESSO.has(r.faixa) && !FAMILIA_FALHA.has(r.faixa)) {
+      erros.push(`Efeito "${rotulo}": resultado de faixa "${r.faixa}" só é representável no contrato de ${contentType === "spell" ? "magias" : "itens"} quando é sucesso ou falha (sem crítico/faixa específica/manual separados) — simplifique ou mantenha só no rascunho.`);
+    }
+    if (r.efeitos.length > MAX_EFEITOS_POR_RESULTADO_SERIALIZAVEL) {
+      erros.push(`Efeito "${rotulo}": resultado "${r.faixa}" tem mais efeitos filhos do que o contrato consegue representar sem ambiguidade (máximo ${MAX_EFEITOS_POR_RESULTADO_SERIALIZAVEL}).`);
+    }
+    const danos = r.efeitos.filter((f) => f.tipo === "dano");
+    const naoDanos = r.efeitos.filter((f) => f.tipo !== "dano");
+    if (danos.length > 1) erros.push(`Efeito "${rotulo}": resultado "${r.faixa}" tem mais de um efeito de dano — não representável.`);
+    if (naoDanos.length > 1) erros.push(`Efeito "${rotulo}": resultado "${r.faixa}" tem mais de um efeito não-dano — o contrato só representa 1 dano + 1 outro efeito por resultado.`);
+    // Nenhum filho pode ser "teste_resistencia" — impossível pelo próprio
+    // tipo (`EfeitoFilho` exclui esse tipo), não só validado em runtime.
+    for (const filho of r.efeitos) {
+      if (filho.tipo === "modificar_margem" || filho.tipo === "alterar_dano_recebido" || filho.tipo === "modificar_teste" || filho.tipo === "alterar_recurso") {
+        erros.push(`Efeito "${rotulo}": resultado "${r.faixa}" tem um efeito filho do tipo "${filho.tipo}" que o contrato de ${contentType === "spell" ? "magias" : "itens"} não representa dentro de um teste/resistência — só dano/aplicar_condicao/remover_condicao/cura são serializáveis aqui.`);
+      }
+      erros.push(...validarEfeitoParaPublicacao(contentType, filho));
+    }
+  }
+  return erros;
+}
+
 export function validarEfeitoParaPublicacao(contentType: DraftContentType, efeito: EfeitoEditavel): string[] {
   const erros: string[] = [];
   const rotulo = efeito.nomeOpcional || efeito.tipo;
+
+  if (efeito.tipo === "teste_resistencia") return validarArvoreTesteResistencia(contentType, efeito);
+
+  if (efeito.tipo === "modificar_margem" && contentType !== "talent") {
+    erros.push(`Efeito "${rotulo}": modificar margem só tem representação segura no contrato de talentos (mesmo formato lido por getMarginPromotions) — para magia/item, mantenha só no rascunho.`);
+  }
+  if (efeito.tipo === "modificar_margem" && contentType === "talent" && efeito.campos.pericias.length === 0) {
+    erros.push(`Efeito "${rotulo}": modificar margem precisa de ao menos uma perícia afetada.`);
+  }
+  if (efeito.tipo === "alterar_dano_recebido" && contentType === "spell") {
+    erros.push(`Efeito "${rotulo}": alterar dano recebido não tem representação segura no contrato de magias (schema fechado, sem categoria genérica) — mantenha só no rascunho, ou aplique como item/talento.`);
+  }
+  if (efeito.tipo === "alterar_dano_recebido" && efeito.campos.operacao === "reduzir" && efeito.campos.valorFixo == null) {
+    erros.push(`Efeito "${rotulo}": operação "reduzir" exige um valor fixo.`);
+  }
+  if (efeito.tipo === "alterar_dano_recebido" && efeito.campos.operacao === "multiplicar" && (efeito.campos.multiplicador == null || efeito.campos.multiplicador < 0)) {
+    erros.push(`Efeito "${rotulo}": operação "multiplicar" exige um multiplicador válido (>= 0).`);
+  }
 
   if (contentType === "spell") {
     switch (efeito.tipo) {
@@ -167,14 +236,26 @@ const FAMILIA_TALENTO: Record<EfeitoEditavel["tipo"], string> = {
   remover_condicao: "regra_especial",
   modificar_teste: "modificador",
   alterar_recurso: "recurso",
+  modificar_margem: "margem",
+  alterar_dano_recebido: "protecao",
+  teste_resistencia: "regra_especial", // nunca serializado de fato — validarArvoreTesteResistencia bloqueia talento.
 };
 
 /** `tipo` legado a emitir, por content_type — só valores confirmados no enum real (spell/item) ou livres (talent). */
 const TIPO_LEGADO: Record<DraftContentType, Partial<Record<EfeitoEditavel["tipo"], string>>> = {
-  spell: { dano: "dano", cura: "cura", aplicar_condicao: "aplicar_condicao", remover_condicao: "remover_condicao", modificar_teste: "modificador", alterar_recurso: "recurso" },
-  // "dano" não existe no enum de tipo do schema de equipamentos — só "dano_em_area".
-  item: { dano: "dano_em_area", cura: "cura", aplicar_condicao: "aplicar_condicao", remover_condicao: "remover_condicao", modificar_teste: "modificador", alterar_recurso: "recurso" },
-  talent: { dano: "dano", cura: "cura", aplicar_condicao: "aplicar_condicao", remover_condicao: "remover_condicao", modificar_teste: "modificador", alterar_recurso: "recurso" },
+  spell: { dano: "dano", cura: "cura", aplicar_condicao: "aplicar_condicao", remover_condicao: "remover_condicao", modificar_teste: "modificador", alterar_recurso: "recurso", teste_resistencia: "efeito_com_resistencia" },
+  // "dano" não existe no enum de tipo do schema de equipamentos — só "dano_em_area". Sem entrada boa para
+  // modificar_margem/alterar_dano_recebido no enum fechado — "utilitario" é o catch-all genérico real usado como fallback.
+  item: {
+    dano: "dano_em_area", cura: "cura", aplicar_condicao: "aplicar_condicao", remover_condicao: "remover_condicao", modificar_teste: "modificador", alterar_recurso: "recurso",
+    teste_resistencia: "efeito_com_resistencia", alterar_dano_recebido: "utilitario",
+  },
+  // "promocao_margem" é o tipo real já lido por getMarginPromotions (talentEngine.ts); "reduzir_dano_recebido" é
+  // string livre (schema de talento não restringe `tipo`) com família "protecao" (enum real, mesmo conceito das runas reais).
+  talent: {
+    dano: "dano", cura: "cura", aplicar_condicao: "aplicar_condicao", remover_condicao: "remover_condicao", modificar_teste: "modificador", alterar_recurso: "recurso",
+    modificar_margem: "promocao_margem", alterar_dano_recebido: "reduzir_dano_recebido",
+  },
 };
 
 /** Campos específicos por (content_type, tipo) — só chaves confirmadas pelos schemas reais. Nunca gatilho/alvo/duracao/habilitado/nome/_editor para spell/item; talento permite gatilho/alvo/duracao (tipado livre) mas não habilitado/nome/texto_log. */
@@ -219,6 +300,24 @@ function camposLegadoPorTipo(contentType: DraftContentType, efeito: EfeitoEditav
       const cp = efeito.campos;
       return { recurso: cp.recurso, valor: cp.valorFixo };
     }
+    case "modificar_margem": {
+      const cp = efeito.campos;
+      // Só talento tem representação segura (validado em validarEfeitoParaPublicacao) — mesmo formato lido por getMarginPromotions.
+      return { pericias: cp.pericias.length > 0 ? cp.pericias : undefined, de: cp.faixaOrigem, para: cp.faixaDestino, contexto: cp.contextoTexto };
+    }
+    case "alterar_dano_recebido": {
+      const cp = efeito.campos;
+      if (contentType === "item") {
+        return { operacao: cp.operacao, valor_fixo: cp.valorFixo, multiplicador: cp.multiplicador, tipo_dano: cp.tipoDano, subtipo_dano: cp.subtipoDano, momento: cp.momento };
+      }
+      // talent: só chaves confirmadas livres do schema (valor/momento) — "reducao_dano" é o rótulo real mais próximo.
+      return { reducao_dano: cp.valorFixo, momento: cp.momento };
+    }
+    case "teste_resistencia":
+      // Nunca serializado por aqui — é uma árvore (vira múltiplos objetos
+      // legados irmãos), tratada só em `serializarArvoreTesteResistencia`
+      // dentro de `reconstruirEfeitosLegado`. Chegar aqui é bug de chamador.
+      throw new Error('serializarEfeitoLegado não serializa "teste_resistencia" diretamente — use reconstruirEfeitosLegado.');
   }
 }
 
@@ -250,9 +349,56 @@ export function serializarEfeitoLegado(contentType: DraftContentType, efeito: Ef
 }
 
 /**
+ * Serializa a árvore de `teste_resistencia` para o formato legado —
+ * SEMPRE um array (o efeito-raiz de resistência + até um efeito irmão
+ * por resultado sucesso/falha), nunca um único objeto. Regra de
+ * combinação (documentada e limitada por `validarArvoreTesteResistencia`,
+ * que já bloqueia qualquer árvore fora deste formato antes de chegar
+ * aqui): quando existe um resultado de dano tanto no ramo de sucesso
+ * quanto no de falha, o dano do ramo de falha ganha `sucesso: "metade"`
+ * (mesma convenção real já usada em conteúdo publicado, ex.:
+ * `energetica_bola_de_fogo`) — quando só existe no ramo de falha, o
+ * efeito nunca é reduzido no sucesso (nenhuma consequência = campo
+ * ausente, nunca inventado).
+ */
+export function serializarArvoreTesteResistencia(contentType: "spell" | "item", efeito: Extract<EfeitoEditavel, { tipo: "teste_resistencia" }>): Record<string, unknown>[] {
+  const cp = efeito.campos;
+  const cdFormula = cp.cd?.tipo === "derivada" ? "6 + nivel_vertente" : undefined;
+  const cdValor = cp.cd?.tipo === "fixa" ? cp.cd.valor : undefined;
+
+  const raiz =
+    contentType === "spell"
+      ? limpar({ tipo: "efeito_com_resistencia", resistencia: limpar({ cd_formula: cdFormula ?? String(cdValor ?? ""), pericias: cp.pericia ? [cp.pericia] : undefined }) })
+      : limpar({ tipo: "efeito_com_resistencia", resistencia: limpar({ pericia: cp.pericia, cd: cdValor }) });
+
+  const sucesso = cp.resultados.find((r) => FAMILIA_SUCESSO.has(r.faixa));
+  const falha = cp.resultados.find((r) => FAMILIA_FALHA.has(r.faixa));
+  const irmaos: Record<string, unknown>[] = [];
+
+  const danoFalha = falha?.efeitos.find((f) => f.tipo === "dano");
+  const naoDanoFalha = falha?.efeitos.find((f) => f.tipo !== "dano");
+  const danoSucesso = sucesso?.efeitos.find((f) => f.tipo === "dano");
+  const naoDanoSucesso = sucesso?.efeitos.find((f) => f.tipo !== "dano");
+
+  if (danoFalha) {
+    const objDano = serializarEfeitoLegado(contentType, danoFalha);
+    if (danoSucesso) objDano.sucesso = "metade";
+    irmaos.push(objDano);
+  } else if (danoSucesso) {
+    // Dano só no ramo de sucesso (raro, mas representável) — serializado como está, sem campo "sucesso" (não há falha equivalente para reduzir).
+    irmaos.push(serializarEfeitoLegado(contentType, danoSucesso));
+  }
+  if (naoDanoFalha) irmaos.push(serializarEfeitoLegado(contentType, naoDanoFalha));
+  if (naoDanoSucesso) irmaos.push(serializarEfeitoLegado(contentType, naoDanoSucesso));
+
+  return [raiz, ...irmaos];
+}
+
+/**
  * Reconstrói `payload_automacao.efeitos[]` para publicação: efeitos
  * PRESERVADOS (não-MVP) na ordem original, seguidos dos efeitos
- * EDITÁVEIS na ordem do editor.
+ * EDITÁVEIS na ordem do editor. `teste_resistencia` expande para vários
+ * objetos irmãos (nunca um único) — ver `serializarArvoreTesteResistencia`.
  */
 export function reconstruirEfeitosLegado(
   contentType: DraftContentType,
@@ -267,7 +413,7 @@ export function reconstruirEfeitosLegado(
 
   const editaveisSerializados = [...efeitosEditaveis]
     .sort((a, b) => a.ordem - b.ordem)
-    .map((e) => serializarEfeitoLegado(contentType, e));
+    .flatMap((e) => (e.tipo === "teste_resistencia" && contentType !== "talent" ? serializarArvoreTesteResistencia(contentType, e) : [serializarEfeitoLegado(contentType, e)]));
 
   return [...preservados, ...editaveisSerializados];
 }

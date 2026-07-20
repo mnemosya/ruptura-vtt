@@ -1,15 +1,7 @@
 import { diagnosticarEfeitoEditavel } from "../../../../../lib/contentSchema/effectDiagnostics";
 import { formatarFormulaCura, formatarFormulaDano, type EfeitoEditavel } from "../../../../../lib/contentSchema/effectDraftTypes";
 import { MODO_AUTOMACAO_COR, MODO_AUTOMACAO_SIMBOLO } from "../../labels";
-
-const LABEL_TIPO: Record<EfeitoEditavel["tipo"], string> = {
-  dano: "Dano",
-  cura: "Cura",
-  aplicar_condicao: "Aplicar condição",
-  remover_condicao: "Remover condição",
-  modificar_teste: "Modificar teste",
-  alterar_recurso: "Alterar recurso",
-};
+import { LABEL_TIPO } from "./EffectsEditorSection";
 
 function resumoEfeito(efeito: EfeitoEditavel): string {
   switch (efeito.tipo) {
@@ -25,6 +17,12 @@ function resumoEfeito(efeito: EfeitoEditavel): string {
       return `${efeito.campos.modo}${efeito.campos.valor != null ? ` ${efeito.campos.valor > 0 ? "+" : ""}${efeito.campos.valor}` : ""} — ${efeito.campos.pericia ?? (efeito.campos.tags.join(", ") || "(sem alvo de teste)")}`;
     case "alterar_recurso":
       return `${efeito.campos.operacao} ${efeito.campos.valorFixo ?? efeito.campos.formula ?? "?"} ${efeito.campos.recurso}`;
+    case "modificar_margem":
+      return `${efeito.campos.operacao} ${efeito.campos.faixaOrigem ?? "?"} → ${efeito.campos.faixaDestino ?? "?"} (${efeito.campos.pericias.join(", ") || "sem perícia"})`;
+    case "alterar_dano_recebido":
+      return `${efeito.campos.operacao} ${efeito.campos.valorFixo ?? efeito.campos.multiplicador ?? "?"} · ${efeito.campos.momento}`;
+    case "teste_resistencia":
+      return `${efeito.campos.modo} (${efeito.campos.pericia ?? efeito.campos.atributo ?? "?"}) — ${efeito.campos.resultados.length} resultado(s)`;
   }
 }
 

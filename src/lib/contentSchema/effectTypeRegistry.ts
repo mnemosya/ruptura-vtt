@@ -167,21 +167,65 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
     id: "teste_resistencia",
     label: "Teste ou resistência",
     camposEspecificos: [
-      { nome: "pericia", tipo: "string", obrigatorio: false, descricao: "Perícia do teste/resistência." },
-      { nome: "cdFormula", tipo: "string", obrigatorio: false, descricao: "Fórmula textual de CD, ex.: '5 + nivel_vertente' (ver nota de defasagem na auditoria §5.3)." },
-      { nome: "cdValor", tipo: "number", obrigatorio: false, descricao: "CD literal, quando não há fórmula." },
-      { nome: "acoes", tipo: "array", obrigatorio: false, descricao: "Ações de reação permitidas (resistir, esquivar, ...)." },
+      { nome: "modo", tipo: "string", obrigatorio: true, descricao: "teste | resistencia." },
+      { nome: "quemTesta", tipo: "string", obrigatorio: false, descricao: "usuario | alvo | atacante | defensor | portador | selecionado_manualmente." },
+      { nome: "pericia", tipo: "string", obrigatorio: false, descricao: "Perícia do teste/resistência, vinda da Biblioteca/regras carregadas." },
+      { nome: "cd", tipo: "unknown", obrigatorio: false, descricao: "CD fixa (número validado) ou derivada (só \"vertente\", 6 + nível — nunca fórmula livre nem a fórmula legada '5 + nivel_vertente')." },
+      { nome: "resultados", tipo: "array", obrigatorio: true, descricao: "Árvore de resultados (sucesso/falha/crítico/faixa/manual), cada um com seus efeitos filhos do catálogo universal." },
     ],
     executor: {
+      // Teto explícito: nunca "automatico" nesta etapa — não existe resolvedor
+      // genérico conectado a um fluxo real que dispense confirmação do
+      // narrador (alvo, resultado do teste e aplicação continuam assistidos).
       modo: "assistido",
-      modulo: "src/lib/character/spells.ts (getSpellDamageEffect / describeSpellManualEffects)",
-      observacao: "Gera o texto de CD e a mecânica de dano condicionada a sucesso/falha, mas não resolve a rolagem do alvo nem aplica o efeito de falha automaticamente — a ramificação sucesso/falha em si é lembrete.",
+      modulo: "src/lib/character/testResistanceTreeExecutor.ts (Etapa 7) + spells.ts (getVertenteCd)",
+      observacao:
+        "Etapa 7 adiciona um resolvedor genérico (valida ator/alvo/árvore, identifica o ramo pelo resultado informado pela mesa, prepara e aplica os efeitos filhos de forma atômica) conectado à mesa do narrador — mas a rolagem do alvo e a escolha de alvo continuam manuais (teatro da mente). Nunca sobe a automático nesta etapa.",
     },
     aliasesLegado: {
       spell: ["efeito_com_resistencia"],
       item: ["efeito_com_resistencia"],
       rune: ["efeito_com_resistencia"],
     },
+  },
+  modificar_margem: {
+    id: "modificar_margem",
+    label: "Modificar margem",
+    camposEspecificos: [
+      { nome: "operacao", tipo: "string", obrigatorio: true, descricao: "promover | rebaixar | definir." },
+      { nome: "faixaOrigem", tipo: "string", obrigatorio: false, descricao: "Faixa de margem de origem (mesmo enum de MARGEM_CLASSIFICACOES)." },
+      { nome: "faixaDestino", tipo: "string", obrigatorio: false, descricao: "Faixa de margem de destino." },
+      { nome: "pericias", tipo: "array", obrigatorio: false, descricao: "Perícias afetadas — mesmo formato usado por getMarginPromotions (talentEngine.ts)." },
+      { nome: "contexto", tipo: "string", obrigatorio: true, descricao: "teste | ataque | defesa | pericia | acao." },
+    ],
+    executor: {
+      modo: "assistido",
+      modulo: "src/lib/character/talentEngine.ts (getMarginPromotions) + rollRuptura.ts (promocaoMargem)",
+      observacao:
+        "Para talento, serializa exatamente no formato que getMarginPromotions já lê hoje (tipo \"promocao_margem\", família \"margem\") — mecanismo real e funcionando, mas sempre assistido: a pessoa jogadora confirma que o contexto da rolagem bate antes de aplicar. Para magia/item não há leitor equivalente ainda — fica lembrete.",
+    },
+    aliasesLegado: {
+      talent: ["promocao_margem"],
+    },
+  },
+  alterar_dano_recebido: {
+    id: "alterar_dano_recebido",
+    label: "Alterar dano recebido",
+    camposEspecificos: [
+      { nome: "operacao", tipo: "string", obrigatorio: true, descricao: "reduzir | anular | multiplicar." },
+      { nome: "valorFixo", tipo: "number", obrigatorio: false, descricao: "Valor fixo de redução." },
+      { nome: "multiplicador", tipo: "number", obrigatorio: false, descricao: "Multiplicador (>= 0)." },
+      { nome: "tipoDano", tipo: "string", obrigatorio: false, descricao: "Restringe a um tipo de dano específico." },
+      { nome: "momento", tipo: "string", obrigatorio: true, descricao: "antes_mit | depois_mit | antes_pd | depois_pd | apos_defesas — ordem real de defense.ts::resolveDamageWithMitPd." },
+    ],
+    executor: {
+      // Sem integração real hoje (auditoria: temporaryEffects.ts documenta
+      // explicitamente a ausência desse ponto de integração) — nunca subir
+      // sozinho por decisão de UI.
+      modo: "lembrete",
+      observacao: "Nenhum executor real aplica isso automaticamente ainda — mesmo conceito real existe em conteúdo legado (rune \"protecao\"/\"reduz_dano_recebido\"), mas sem ponto de integração no motor. Sempre lembrete nesta etapa.",
+    },
+    aliasesLegado: {},
   },
   outro: {
     id: "outro",

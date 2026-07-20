@@ -71,61 +71,34 @@ function efeitosDe(payload: Record<string, unknown>): Record<string, unknown>[] 
   return Array.isArray(efeitos) ? efeitos.map((e) => (e && typeof e === "object" ? (e as Record<string, unknown>) : {})) : [];
 }
 
-/** Assinatura de um efeito para comparação (ignora o blob `_editor`). */
+/** Assinatura estrutural de um efeito legado — o payload público (desde a correção pós-Etapa 5) nunca embute um id do editor, então a única comparação possível aqui é por conteúdo. */
 function assinaturaEfeito(efeito: Record<string, unknown>): string {
-  const { _editor, ...resto } = efeito;
-  void _editor;
-  return JSON.stringify(resto);
+  return JSON.stringify(efeito);
 }
 
-function idEfeito(efeito: Record<string, unknown>): string | undefined {
-  const ed = efeito._editor;
-  if (ed && typeof ed === "object" && "id" in ed) return String((ed as Record<string, unknown>).id);
-  return undefined;
-}
-
+/**
+ * Compara dois arrays de efeitos legados por ASSINATURA ESTRUTURAL
+ * (multiset — cada assinatura só "casa" uma vez, mesmo se repetida).
+ * Um efeito que mudou qualquer campo aparece como 1 removido + 1
+ * adicionado (não há id estável no payload público para detectar
+ * "alteração" com mais precisão — a metadata editorial completa, com
+ * id estável, vive em `content_editor_metadata`, fora deste payload).
+ */
 function compararEfeitos(antes: Record<string, unknown>[], depois: Record<string, unknown>[]): MudancaEfeitos {
-  // Compara por id do editor quando disponível; senão por assinatura.
-  const antesPorId = new Map<string, Record<string, unknown>>();
-  const antesSemId: Record<string, unknown>[] = [];
-  for (const e of antes) {
-    const id = idEfeito(e);
-    if (id) antesPorId.set(id, e);
-    else antesSemId.push(e);
-  }
-
-  let adicionados = 0;
-  let alterados = 0;
-  const idsDepois: string[] = [];
-  const idsAntes: string[] = [];
-  for (const e of antes) {
-    const id = idEfeito(e);
-    if (id) idsAntes.push(id);
-  }
-
-  for (const e of depois) {
-    const id = idEfeito(e);
-    if (id) {
-      idsDepois.push(id);
-      const original = antesPorId.get(id);
-      if (!original) adicionados++;
-      else if (assinaturaEfeito(original) !== assinaturaEfeito(e)) alterados++;
-    } else {
-      // Sem id (efeito preservado/legado): conta como adicionado se assinatura nova.
-      const existe = antesSemId.some((a) => assinaturaEfeito(a) === assinaturaEfeito(e));
-      if (!existe) adicionados++;
-    }
-  }
+  const restantesAntes = antes.map(assinaturaEfeito);
+  const restantesDepois = [...depois.map(assinaturaEfeito)];
 
   let removidos = 0;
-  const idsDepoisSet = new Set(idsDepois);
-  for (const id of idsAntes) {
-    if (!idsDepoisSet.has(id)) removidos++;
+  for (const assinatura of restantesAntes) {
+    const indice = restantesDepois.indexOf(assinatura);
+    if (indice === -1) removidos++;
+    else restantesDepois.splice(indice, 1); // consome o casamento — não conta a mesma cópia duas vezes.
   }
+  const adicionados = restantesDepois.length;
 
-  const ordemMudou = idsAntes.length === idsDepois.length && idsAntes.some((id, i) => idsDepois[i] !== id);
+  const ordemMudou = antes.length === depois.length && antes.some((e, i) => assinaturaEfeito(e) !== assinaturaEfeito(depois[i]));
 
-  return { adicionados, removidos, alterados, ordemMudou };
+  return { adicionados, removidos, alterados: 0, ordemMudou };
 }
 
 /** Compara o payload publicado atual (ou null, para conteúdo novo) com o corpo a publicar. */
