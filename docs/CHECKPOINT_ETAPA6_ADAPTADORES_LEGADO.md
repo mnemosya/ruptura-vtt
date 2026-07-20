@@ -6,6 +6,8 @@
 
 **Status:** **Implementação concluída — aceite de browser pendente.** Núcleo de classificação/relatório e validação de perda verificados diretamente com `node` sobre código real compilado por `tsc`, usando cópias de registros reais. Núcleo transacional (rascunho de legado → publicação → metadata → changelog) verificado por SQL direto com rollback, zero resíduo. Browser check bloqueado pelo mesmo conflito de arquitetura do esbuild das etapas anteriores — script criado, não executado.
 
+> **Nota de referência (Etapa 7, sem alterar o status acima):** a Etapa 7 (`docs/CHECKPOINT_ETAPA7_EFEITOS_COMPOSTOS.md`) promoveu `teste_resistencia` (classificado aqui como somente leitura, §"Compatibilidade com legado") a um tipo EDITÁVEL do Construtor — mas só para árvores construídas do zero; `efeito_com_resistencia` legado continua sempre preservado e nunca é auto-convertido (a Etapa 7 confirmou pelo menos 3 estruturas reais incompatíveis entre spell/rune/property, reforçando a decisão desta etapa de nunca converter em massa). O restante da classificação por campo/efeito descrita aqui não foi alterado.
+
 ---
 
 ## 1. Auditoria inicial (dados reais)
