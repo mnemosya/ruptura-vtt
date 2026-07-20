@@ -114,3 +114,10 @@ Toda validação roda no servidor (a UI só espelha `diagnosticarEfeitoEditavel`
 ## 10. Não incluído nesta etapa
 
 Etapa 8 não iniciada. Nenhuma migração em massa de conteúdo legado. Nenhuma refatoração do motor de combate.
+
+> **Nota de referência (Etapa 8, sem alterar o status acima)**: a Etapa 8
+> foi executada depois desta e adicionou `efeito_temporario`/
+> `acao_reacao_adicional`/`usoLimitado` ao mesmo catálogo `EfeitoFilho`
+> desta etapa — ver `docs/CHECKPOINT_ETAPA8_TEMPORARIOS_CADENCIAS_CONSUMOS.md`.
+> O status "Implementação concluída — aceite de browser pendente" acima
+> permanece exatamente como registrado nesta etapa.
