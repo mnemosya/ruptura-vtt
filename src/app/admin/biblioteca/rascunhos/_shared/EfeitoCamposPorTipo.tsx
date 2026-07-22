@@ -15,26 +15,39 @@ import {
   COMPORTAMENTOS_PILHA_CONSUMIR,
   OPERACOES_ALTERAR_PRECO,
   OPERACOES_DISPONIBILIDADE,
+  TIPOS_COMPANHEIRO,
+  DESTINOS_COMPANHEIRO,
+  OPERACOES_MODIFICAR_COMPANHEIRO,
+  MAX_EFEITOS_CONSEQUENCIA_ACAO_COMPANHEIRO,
+  TIPOS_COMPARTILHAMENTO_PAREAMENTO,
+  ACOES_TRAMA,
   formatarFormulaCura,
   formatarFormulaDano,
   novoResultadoTeste,
+  type CamposAcaoCompanheiro,
   type CamposAcaoReacaoAdicional,
+  type CamposAcaoTrama,
   type CamposAlterarDanoRecebido,
   type CamposAlterarDisponibilidade,
   type CamposAlterarPreco,
   type CamposAlterarRecurso,
   type CamposAplicarCondicao,
+  type CamposCompanheiro,
   type CamposConcederItem,
   type CamposConsumirItem,
   type CamposCura,
   type CamposDano,
   type CamposEfeitoTemporario,
+  type CamposModificarCompanheiro,
   type CamposModificarInstancia,
   type CamposModificarMargem,
   type CamposModificarTeste,
+  type CamposParear,
+  type CamposProgramarGatilho,
   type CamposRemoverCondicao,
   type CamposTesteResistencia,
   type EfeitoEditavel,
+  type EfeitoFilho,
   type FaixaResultadoTeste,
   type ModificadorSimplesEfeitoTemporario,
   type ResultadoTeste,
@@ -106,6 +119,18 @@ export function EfeitoCamposPorTipo({
       return <CamposAlterarPrecoFields campos={efeito.campos} onChange={onChangeCampos} />;
     case "alterar_disponibilidade":
       return <CamposAlterarDisponibilidadeFields campos={efeito.campos} onChange={onChangeCampos} />;
+    case "companheiro":
+      return <CamposCompanheiroFields campos={efeito.campos} onChange={onChangeCampos} />;
+    case "modificar_companheiro":
+      return <CamposModificarCompanheiroFields campos={efeito.campos} onChange={onChangeCampos} />;
+    case "acao_companheiro":
+      return <CamposAcaoCompanheiroFields campos={efeito.campos} onChange={onChangeCampos} opcoes={opcoes} condicoesDisponiveis={condicoesDisponiveis} />;
+    case "programar_gatilho":
+      return <CamposProgramarGatilhoFields campos={efeito.campos} onChange={onChangeCampos} />;
+    case "parear":
+      return <CamposParearFields campos={efeito.campos} onChange={onChangeCampos} />;
+    case "acao_trama":
+      return <CamposAcaoTramaFields campos={efeito.campos} onChange={onChangeCampos} opcoes={opcoes} />;
   }
 }
 
@@ -1398,6 +1423,318 @@ function CamposAlterarDisponibilidadeFields({ campos, onChange }: { campos: Camp
       </label>
       <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
         <input data-testid="alterar-disponibilidade-confirmacao" type="checkbox" checked={campos.confirmacaoManual} onChange={(e) => onChange({ confirmacaoManual: e.target.checked })} /> Exige confirmação manual
+      </label>
+    </div>
+  );
+}
+
+/** Tipos permitidos como consequência de uma ação de companheiro — todo TIPOS_EFEITO_FILHO exceto o próprio acao_companheiro (nunca se auto-contém; ver validação em effectLegacySerialization.ts). */
+const TIPOS_CONSEQUENCIA_ACAO_COMPANHEIRO = TIPOS_EFEITO_FILHO.filter((t) => t !== "acao_companheiro");
+
+function CamposCompanheiroFields({ campos, onChange }: { campos: CamposCompanheiro; onChange: (p: Partial<CamposCompanheiro>) => void }) {
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+      <p style={{ width: "100%", fontSize: 12, color: "#a8a8b3", margin: "0 0 4px" }}>
+        Sem executor real conectado nesta etapa (Droneiro/Mecatrônico/Tecelão continuam bespoke) — sempre lembrete.
+      </p>
+      <label style={labelStyle}>
+        Tipo
+        <select data-testid="companheiro-tipo" value={campos.tipo} onChange={(e) => onChange({ tipo: e.target.value as CamposCompanheiro["tipo"] })} style={inputStyle}>
+          {TIPOS_COMPANHEIRO.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label style={labelStyle}>
+        Modelo (texto — sem catálogo na Biblioteca)
+        <input data-testid="companheiro-modelo" value={campos.modeloReferencia ?? ""} onChange={(e) => onChange({ modeloReferencia: e.target.value || undefined })} style={inputStyle} />
+      </label>
+      <label style={labelStyle}>
+        Destino
+        <select data-testid="companheiro-destino" value={campos.destino} onChange={(e) => onChange({ destino: e.target.value as CamposCompanheiro["destino"] })} style={inputStyle}>
+          {DESTINOS_COMPANHEIRO.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label style={labelStyle}>
+        Controlador
+        <input value={campos.controlador ?? ""} onChange={(e) => onChange({ controlador: e.target.value || undefined })} style={inputStyle} />
+      </label>
+      <label style={labelStyle}>
+        Quantidade
+        <input data-testid="companheiro-quantidade" type="number" min={1} value={campos.quantidade} onChange={(e) => onChange({ quantidade: Math.max(1, Number(e.target.value) || 1) })} style={{ ...inputStyle, width: 80 }} />
+      </label>
+      <label style={labelStyle}>
+        PA inicial
+        <input type="number" min={0} value={campos.paInicial ?? ""} onChange={(e) => onChange({ paInicial: numeroOuIndefinido(e.target.value) })} style={{ ...inputStyle, width: 80 }} />
+      </label>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input type="checkbox" checked={campos.persistente} onChange={(e) => onChange({ persistente: e.target.checked })} /> Persistente (não temporário)
+      </label>
+      {!campos.persistente && (
+        <label style={labelStyle}>
+          Duração
+          <input value={campos.duracao ?? ""} onChange={(e) => onChange({ duracao: e.target.value || undefined })} style={inputStyle} />
+        </label>
+      )}
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input data-testid="companheiro-confirmacao" type="checkbox" checked={campos.confirmacaoManual} onChange={(e) => onChange({ confirmacaoManual: e.target.checked })} /> Exige confirmação manual
+      </label>
+    </div>
+  );
+}
+
+function CamposModificarCompanheiroFields({ campos, onChange }: { campos: CamposModificarCompanheiro; onChange: (p: Partial<CamposModificarCompanheiro>) => void }) {
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+      <p style={{ width: "100%", fontSize: 12, color: "#a8a8b3", margin: "0 0 4px" }}>Nenhum executor genérico existe ainda — sempre lembrete.</p>
+      <label style={labelStyle}>
+        Operação
+        <select data-testid="modificar-companheiro-operacao" value={campos.operacao} onChange={(e) => onChange({ operacao: e.target.value as CamposModificarCompanheiro["operacao"] })} style={inputStyle}>
+          {OPERACOES_MODIFICAR_COMPANHEIRO.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label style={labelStyle}>
+        Alvo
+        <input value={campos.alvo ?? ""} onChange={(e) => onChange({ alvo: e.target.value || undefined })} style={inputStyle} />
+      </label>
+      <label style={labelStyle}>
+        Valor
+        <input data-testid="modificar-companheiro-valor" type="number" value={campos.valor ?? ""} onChange={(e) => onChange({ valor: numeroOuIndefinido(e.target.value) })} style={{ ...inputStyle, width: 90 }} />
+      </label>
+      <label style={labelStyle}>
+        Duração
+        <input value={campos.duracao ?? ""} onChange={(e) => onChange({ duracao: e.target.value || undefined })} style={inputStyle} />
+      </label>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input type="checkbox" checked={campos.confirmacaoManual} onChange={(e) => onChange({ confirmacaoManual: e.target.checked })} /> Exige confirmação manual
+      </label>
+    </div>
+  );
+}
+
+function CamposAcaoCompanheiroFields({
+  campos,
+  onChange,
+  opcoes,
+  condicoesDisponiveis,
+}: {
+  campos: CamposAcaoCompanheiro;
+  onChange: (p: Partial<CamposAcaoCompanheiro>) => void;
+  opcoes: OpcoesDeRegras;
+  condicoesDisponiveis: { slug: string; nome: string }[];
+}) {
+  const atingiuLimite = campos.efeitosConsequencia.length >= MAX_EFEITOS_CONSEQUENCIA_ACAO_COMPANHEIRO;
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap", marginBottom: 10 }}>
+        <p style={{ width: "100%", fontSize: 12, color: "#a8a8b3", margin: "0 0 4px" }}>Nenhum executor real resolve isto automaticamente — sempre lembrete. Distância/linha de visão nunca automatizadas.</p>
+        <label style={labelStyle}>
+          Ação (texto — sem catálogo estruturado)
+          <input data-testid="acao-companheiro-referencia" value={campos.acaoReferencia ?? ""} onChange={(e) => onChange({ acaoReferencia: e.target.value || undefined })} style={inputStyle} />
+        </label>
+        <label style={labelStyle}>
+          Custo PA (companheiro)
+          <input type="number" min={0} value={campos.custoPaCompanheiro ?? ""} onChange={(e) => onChange({ custoPaCompanheiro: numeroOuIndefinido(e.target.value) })} style={{ ...inputStyle, width: 90 }} />
+        </label>
+        <label style={labelStyle}>
+          Custo PA (controlador)
+          <input type="number" min={0} value={campos.custoControlador ?? ""} onChange={(e) => onChange({ custoControlador: numeroOuIndefinido(e.target.value) })} style={{ ...inputStyle, width: 90 }} />
+        </label>
+        <label style={labelStyle}>
+          Alvo
+          <input value={campos.alvo ?? ""} onChange={(e) => onChange({ alvo: e.target.value || undefined })} style={inputStyle} />
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+          <input type="checkbox" checked={campos.exigeTeste} onChange={(e) => onChange({ exigeTeste: e.target.checked })} /> Exige teste
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+          <input type="checkbox" checked={campos.independente} onChange={(e) => onChange({ independente: e.target.checked })} /> Independente do controlador
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+          <input data-testid="acao-companheiro-confirmacao" type="checkbox" checked={campos.confirmacaoManual} onChange={(e) => onChange({ confirmacaoManual: e.target.checked })} /> Exige confirmação
+          manual
+        </label>
+      </div>
+
+      <h5 style={{ fontSize: 13, color: "#a8a8b3", marginBottom: 6 }}>
+        Consequências ({campos.efeitosConsequencia.length}/{MAX_EFEITOS_CONSEQUENCIA_ACAO_COMPANHEIRO})
+      </h5>
+      {/* `tiposPermitidos` exclui acao_companheiro — nunca se auto-contém (ver validação em effectLegacySerialization.ts). */}
+      <EffectsEditorSection
+        efeitos={campos.efeitosConsequencia}
+        onChange={(efeitos) => onChange({ efeitosConsequencia: (efeitos as EfeitoFilho[]).slice(0, MAX_EFEITOS_CONSEQUENCIA_ACAO_COMPANHEIRO) })}
+        opcoes={opcoes}
+        condicoesDisponiveis={condicoesDisponiveis}
+        escopoId="acao-companheiro-consequencias"
+        tiposPermitidos={TIPOS_CONSEQUENCIA_ACAO_COMPANHEIRO}
+      />
+      {atingiuLimite && <p style={{ fontSize: 12, color: "#7d7d8a" }}>Limite de {MAX_EFEITOS_CONSEQUENCIA_ACAO_COMPANHEIRO} consequências atingido.</p>}
+    </div>
+  );
+}
+
+function CamposProgramarGatilhoFields({ campos, onChange }: { campos: CamposProgramarGatilho; onChange: (p: Partial<CamposProgramarGatilho>) => void }) {
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+      <p style={{ width: "100%", fontSize: 12, color: "#a8a8b3", margin: "0 0 4px" }}>
+        Reaproveita o campo comum "Gatilho" acima — nenhum executor genérico existe ainda, sempre lembrete.
+      </p>
+      <label style={labelStyle}>
+        Companheiro alvo
+        <input value={campos.companheiroAlvo ?? ""} onChange={(e) => onChange({ companheiroAlvo: e.target.value || undefined })} style={inputStyle} />
+      </label>
+      <label style={labelStyle}>
+        Ação (texto)
+        <input data-testid="programar-gatilho-acao" value={campos.acaoReferencia ?? ""} onChange={(e) => onChange({ acaoReferencia: e.target.value || undefined })} style={inputStyle} />
+      </label>
+      <label style={labelStyle}>
+        Prioridade
+        <input type="number" value={campos.prioridade ?? ""} onChange={(e) => onChange({ prioridade: numeroOuIndefinido(e.target.value) })} style={{ ...inputStyle, width: 80 }} />
+      </label>
+      <label style={labelStyle}>
+        Condição (texto)
+        <input value={campos.condicaoTexto ?? ""} onChange={(e) => onChange({ condicaoTexto: e.target.value || undefined })} style={inputStyle} />
+      </label>
+      <label style={labelStyle}>
+        Limite
+        <input type="number" min={1} value={campos.limite ?? ""} onChange={(e) => onChange({ limite: numeroOuIndefinido(e.target.value) })} style={{ ...inputStyle, width: 80 }} />
+      </label>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input type="checkbox" checked={campos.substituiProgramaAnterior} onChange={(e) => onChange({ substituiProgramaAnterior: e.target.checked })} /> Substitui programa anterior
+      </label>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input type="checkbox" checked={campos.confirmacaoManual} onChange={(e) => onChange({ confirmacaoManual: e.target.checked })} /> Exige confirmação manual
+      </label>
+    </div>
+  );
+}
+
+function CamposParearFields({ campos, onChange }: { campos: CamposParear; onChange: (p: Partial<CamposParear>) => void }) {
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+      <p style={{ width: "100%", fontSize: 12, color: "#a8a8b3", margin: "0 0 4px" }}>Nenhum executor genérico de pareamento existe ainda — sempre lembrete.</p>
+      <label style={labelStyle}>
+        Origem
+        <input value={campos.origem ?? ""} onChange={(e) => onChange({ origem: e.target.value || undefined })} style={inputStyle} />
+      </label>
+      <label style={labelStyle}>
+        Destino
+        <input value={campos.destino ?? ""} onChange={(e) => onChange({ destino: e.target.value || undefined })} style={inputStyle} />
+      </label>
+      <div style={{ minWidth: 220 }}>
+        <StringListEditor label="Tipos compatíveis" valores={campos.tiposCompativeis} onChange={(tiposCompativeis) => onChange({ tiposCompativeis })} placeholder="ex.: drone" />
+      </div>
+      <fieldset style={{ border: "1px solid #2a2b33", borderRadius: 8, padding: 8 }}>
+        <legend style={{ fontSize: 12, color: "#a8a8b3" }}>Compartilhamentos</legend>
+        {TIPOS_COMPARTILHAMENTO_PAREAMENTO.map((c) => (
+          <label key={c} style={{ display: "inline-flex", alignItems: "center", gap: 4, marginRight: 12, fontSize: 12 }}>
+            <input
+              type="checkbox"
+              data-testid={`parear-compartilhamento-${c}`}
+              checked={campos.compartilhamentos.includes(c)}
+              onChange={() => onChange({ compartilhamentos: campos.compartilhamentos.includes(c) ? campos.compartilhamentos.filter((x) => x !== c) : [...campos.compartilhamentos, c] })}
+            />
+            {c}
+          </label>
+        ))}
+      </fieldset>
+      <label style={labelStyle}>
+        Duração
+        <input value={campos.duracao ?? ""} onChange={(e) => onChange({ duracao: e.target.value || undefined })} style={inputStyle} />
+      </label>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input type="checkbox" checked={campos.confirmacaoManual} onChange={(e) => onChange({ confirmacaoManual: e.target.checked })} /> Exige confirmação manual
+      </label>
+    </div>
+  );
+}
+
+function CamposAcaoTramaFields({ campos, onChange, opcoes }: { campos: CamposAcaoTrama; onChange: (p: Partial<CamposAcaoTrama>) => void; opcoes: OpcoesDeRegras }) {
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+      <p style={{ width: "100%", fontSize: 12, color: "#a8a8b3", margin: "0 0 4px" }}>
+        Nó/Bloqueio/Presença permanecem texto livre (sem catálogo estruturado no runtime real) — sempre lembrete.
+      </p>
+      <label style={labelStyle}>
+        Ação
+        <select data-testid="acao-trama-acao" value={campos.acao} onChange={(e) => onChange({ acao: e.target.value as CamposAcaoTrama["acao"] })} style={inputStyle}>
+          {ACOES_TRAMA.map((a) => (
+            <option key={a} value={a}>
+              {a}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label style={labelStyle}>
+        Custo PA
+        <input type="number" min={0} value={campos.custoPa ?? ""} onChange={(e) => onChange({ custoPa: numeroOuIndefinido(e.target.value) })} style={{ ...inputStyle, width: 80 }} />
+      </label>
+      <label style={labelStyle}>
+        Custo RAM
+        <input data-testid="acao-trama-custo-ram" type="number" min={0} value={campos.custoRam ?? ""} onChange={(e) => onChange({ custoRam: numeroOuIndefinido(e.target.value) })} style={{ ...inputStyle, width: 80 }} />
+      </label>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input type="checkbox" checked={campos.exigeTeste} onChange={(e) => onChange({ exigeTeste: e.target.checked })} /> Exige teste
+      </label>
+      {campos.exigeTeste && (
+        <>
+          <label style={labelStyle}>
+            Atributo
+            <select value={campos.atributo ?? ""} onChange={(e) => onChange({ atributo: e.target.value || undefined })} style={inputStyle}>
+              <option value="">—</option>
+              {opcoes.atributos.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.nome}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={labelStyle}>
+            Perícia
+            <select value={campos.pericia ?? ""} onChange={(e) => onChange({ pericia: e.target.value || undefined })} style={inputStyle}>
+              <option value="">—</option>
+              {opcoes.pericias.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nome}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={labelStyle}>
+            CD (fixa)
+            <input type="number" min={0} value={campos.cdFixa ?? ""} onChange={(e) => onChange({ cdFixa: numeroOuIndefinido(e.target.value) })} style={{ ...inputStyle, width: 80 }} />
+          </label>
+        </>
+      )}
+      <label style={labelStyle}>
+        Alvo (texto — Nó/Bloqueio/Presença)
+        <input data-testid="acao-trama-alvo" value={campos.alvoTexto ?? ""} onChange={(e) => onChange({ alvoTexto: e.target.value || undefined })} style={inputStyle} />
+      </label>
+      {campos.acao === "avancar" && (
+        <label style={labelStyle}>
+          Alcance de Avançar (espaços)
+          <input
+            data-testid="acao-trama-alcance-avancar"
+            type="number"
+            min={1}
+            value={campos.alcanceAvancarEspacos ?? ""}
+            onChange={(e) => onChange({ alcanceAvancarEspacos: numeroOuIndefinido(e.target.value) })}
+            style={{ ...inputStyle, width: 90 }}
+          />
+        </label>
+      )}
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input type="checkbox" checked={campos.confirmacaoManual} onChange={(e) => onChange({ confirmacaoManual: e.target.checked })} /> Exige confirmação manual
       </label>
     </div>
   );

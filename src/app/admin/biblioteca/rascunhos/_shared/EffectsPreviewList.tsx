@@ -40,6 +40,18 @@ function resumoEfeito(efeito: EfeitoEditavel): string {
       return `${efeito.campos.operacao}${efeito.campos.percentual != null ? ` ${efeito.campos.percentual}%` : ""}`;
     case "alterar_disponibilidade":
       return `${efeito.campos.operacao}${efeito.campos.quantidade != null ? ` (${efeito.campos.quantidade})` : ""}`;
+    case "companheiro":
+      return `${efeito.campos.tipo} × ${efeito.campos.quantidade} → ${efeito.campos.destino}`;
+    case "modificar_companheiro":
+      return `${efeito.campos.operacao}${efeito.campos.valor != null ? ` ${efeito.campos.valor}` : ""}`;
+    case "acao_companheiro":
+      return `${efeito.campos.acaoReferencia || "(ação não definida)"} — ${efeito.campos.efeitosConsequencia.length} consequência(s)`;
+    case "programar_gatilho":
+      return `${efeito.gatilho ?? "(sem gatilho)"} → ${efeito.campos.acaoReferencia || "(sem ação)"}`;
+    case "parear":
+      return `${efeito.campos.compartilhamentos.join(", ") || "(sem compartilhamento)"}`;
+    case "acao_trama":
+      return `${efeito.campos.acao}${efeito.campos.custoRam != null ? ` · ${efeito.campos.custoRam} RAM` : ""}`;
   }
 }
 

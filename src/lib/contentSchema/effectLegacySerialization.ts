@@ -35,7 +35,7 @@
  */
 
 import type { DraftContentType } from "./draftTypes";
-import type { EfeitoEditavel, ModificadorSimplesEfeitoTemporario } from "./effectDraftTypes";
+import { MAX_EFEITOS_CONSEQUENCIA_ACAO_COMPANHEIRO, type EfeitoEditavel, type ModificadorSimplesEfeitoTemporario } from "./effectDraftTypes";
 
 // ---------------------------------------------------------------------
 // Enums confirmados por leitura direta dos schemas oficiais (auditoria).
@@ -348,6 +348,43 @@ export function validarEfeitoParaPublicacao(contentType: DraftContentType, efeit
   // e a Etapa 4 não expõe alvo_acoes com esses valores específicos, então
   // não há combinação bloqueante conhecida para talento hoje.
 
+  // Etapa 10 — companheiro/Trama. `familia:"companheiro"`/`"trama"` só
+  // existem no enum real de talento (auditoria: FAMILIAS_INCOMPATIVEIS em
+  // legacyConversion.ts já reconhece essas 2 famílias) — sem bucket real
+  // em magia/item/runa, então bloqueados fora de talento.
+  const TIPOS_COMPANHEIRO_TRAMA = new Set(["companheiro", "modificar_companheiro", "acao_companheiro", "programar_gatilho", "parear", "acao_trama"]);
+  if (TIPOS_COMPANHEIRO_TRAMA.has(efeito.tipo) && contentType !== "talent") {
+    erros.push(`Efeito "${rotulo}": companheiro/Trama só têm representação (sem automação) no contrato de talentos — para magia/item/runa, mantenha só no rascunho.`);
+  }
+  if (efeito.tipo === "companheiro" && !(efeito.campos.quantidade > 0)) {
+    erros.push(`Efeito "${rotulo}": quantidade de companheiro precisa ser maior que zero.`);
+  }
+  if (efeito.tipo === "acao_companheiro") {
+    if (efeito.campos.efeitosConsequencia.length > MAX_EFEITOS_CONSEQUENCIA_ACAO_COMPANHEIRO) {
+      erros.push(`Efeito "${rotulo}": mais de ${MAX_EFEITOS_CONSEQUENCIA_ACAO_COMPANHEIRO} consequências — acima do limite documentado.`);
+    }
+    if (efeito.campos.efeitosConsequencia.some((f) => f.tipo === "acao_companheiro")) {
+      erros.push(`Efeito "${rotulo}": uma ação de companheiro não pode conter outra ação de companheiro como consequência.`);
+    }
+    for (const filho of efeito.campos.efeitosConsequencia) {
+      erros.push(...validarEfeitoParaPublicacao(contentType, filho));
+    }
+  }
+  if (efeito.tipo === "programar_gatilho" && (!efeito.gatilho || !efeito.campos.acaoReferencia)) {
+    erros.push(`Efeito "${rotulo}": programação precisa de gatilho e ação associada.`);
+  }
+  if (efeito.tipo === "parear" && efeito.campos.compartilhamentos.length === 0) {
+    erros.push(`Efeito "${rotulo}": pareamento precisa de ao menos um compartilhamento definido.`);
+  }
+  if (efeito.tipo === "acao_trama") {
+    if (!efeito.campos.acao) {
+      erros.push(`Efeito "${rotulo}": ação de Trama sem ação definida.`);
+    }
+    if (efeito.campos.acao === "avancar" && efeito.campos.alcanceAvancarEspacos != null && efeito.campos.alcanceAvancarEspacos <= 0) {
+      erros.push(`Efeito "${rotulo}": alcance de Avançar precisa ser positivo.`);
+    }
+  }
+
   return erros;
 }
 
@@ -371,6 +408,14 @@ const FAMILIA_TALENTO: Record<EfeitoEditavel["tipo"], string> = {
   // Valor default; camposLegadoPorTipo sobrescreve conforme necessário (sempre "economia_loja" na prática — enum real).
   alterar_preco: "economia_loja",
   alterar_disponibilidade: "economia_loja",
+  // "companheiro"/"trama" (Etapa 10) são valores REAIS do enum de família de talento —
+  // já reconhecidos por legacyConversion.ts::FAMILIAS_INCOMPATIVEIS para conteúdo legado.
+  companheiro: "companheiro",
+  modificar_companheiro: "companheiro",
+  acao_companheiro: "companheiro",
+  programar_gatilho: "companheiro",
+  parear: "companheiro",
+  acao_trama: "trama",
 };
 
 /**
@@ -408,6 +453,12 @@ const TIPO_LEGADO: Record<DraftContentType, Partial<Record<EfeitoEditavel["tipo"
     // "desconto_loja"/"compra_fiada" são os tipos REAIS já lidos por getGarimpoDeRuaAvailability/getCadernetaDeDividaAvailability;
     // camposLegadoPorTipo escolhe entre os dois conforme campos.operacao. Sem bucket real para alterar_disponibilidade — tipo livre.
     alterar_preco: "desconto_loja", alterar_disponibilidade: "alterar_disponibilidade",
+    // Etapa 10 — companheiro/Trama: tipo livre (schema de talento não restringe `tipo`),
+    // família real "companheiro"/"trama" (FAMILIA_TALENTO acima). Nenhum destes tem
+    // executor real — preservados/representáveis, sempre lembrete (ver effectDiagnostics.ts).
+    companheiro: "conceder_companheiro", modificar_companheiro: "modificar_companheiro",
+    acao_companheiro: "acao_companheiro", programar_gatilho: "programar_gatilho", parear: "parear",
+    acao_trama: "acao_trama",
   },
   // Vocabulário real de runa (schema_runas_v1_2.json) — sem `cura`/`remover_condicao`/`modificar_margem`/
   // `efeito_temporario`/`conceder_item`/`consumir_item`/`alterar_preco`/`alterar_disponibilidade` (bloqueados em validarEfeitoParaPublicacao).
@@ -481,6 +532,20 @@ function camposLegadoPorTipo(contentType: DraftContentType, efeito: EfeitoEditav
       const porTags = cp.modificadores.find((m) => (m.campos.tags?.length ?? 0) > 0 && !m.campos.pericia);
       const porPericia = cp.modificadores.find((m) => !!m.campos.pericia);
       const valorComSinal = (m: ModificadorSimplesEfeitoTemporario) => (m.campos.valor == null ? undefined : m.campos.modo === "penalidade" ? -Math.abs(m.campos.valor) : m.campos.valor);
+      if (contentType === "talent") {
+        // Correção (Etapa 10): "bonus_pericia"/"nota" não existem no schema fechado de
+        // talento — só "pericias" (array) é real. Como só há UM slot genérico de "valor"
+        // no schema, prioriza o modificador por-tags quando ambos existem (o outro
+        // permanece só na metadata editorial, nunca perdido, só não no payload público).
+        const escolhido = porTags ?? porPericia;
+        return {
+          duracao: duracaoTexto,
+          max_pilhas: cp.acumulavel ? cp.maximoPilhas : undefined,
+          valor: escolhido ? valorComSinal(escolhido) : undefined,
+          alvo_tags: escolhido === porTags && (porTags?.campos.tags?.length ?? 0) > 0 ? porTags!.campos.tags : undefined,
+          pericias: escolhido === porPericia && porPericia?.campos.pericia ? [porPericia.campos.pericia] : undefined,
+        };
+      }
       return {
         duracao: duracaoTexto,
         max_pilhas: cp.acumulavel ? cp.maximoPilhas : undefined,
@@ -510,14 +575,31 @@ function camposLegadoPorTipo(contentType: DraftContentType, efeito: EfeitoEditav
         const efeitoTexto = cp.operacao === "reparar_mit" || cp.operacao === "alterar_mit_atual" ? "recupera_mit_total" : cp.operacao === "reparar_pd" || cp.operacao === "alterar_pd_atual" ? "recupera_pd_total" : cp.operacao;
         return { gatilho: efeito.gatilho, efeito: efeitoTexto };
       }
+      if (contentType === "talent") {
+        // Correção (Etapa 10): schema de talento é FECHADO (additionalProperties:false,
+        // ~90 chaves fixas) — "operacao"/"limite" não existem no enum real. Reaproveita
+        // "acao" (chave real, slot de texto livre para nome de ação) para a operação.
+        return { acao: cp.operacao, valor: cp.valor };
+      }
+      // item: additionalProperties:true — nomes descritivos livres são schema-legais.
       return { operacao: cp.operacao, valor: cp.valor, limite: cp.limite };
     }
     case "conceder_item": {
       const cp = efeito.campos;
+      if (contentType === "talent") {
+        // Correção (Etapa 10): "item_slug"/"destino"/"estado_inicial"/etc. não existem
+        // no schema fechado de talento — reaproveita "identifica"/"max_unidades"/"escopo"/
+        // "requisito" (chaves reais; "escopo"/"identifica" só aceitam array). Campos sem
+        // contraparte real ficam só na metadata.
+        return { identifica: cp.itemSlug ? [cp.itemSlug] : undefined, max_unidades: cp.quantidade, escopo: cp.destino ? [cp.destino] : undefined, requisito: cp.motivo };
+      }
       return { item_slug: cp.itemSlug || undefined, quantidade: cp.quantidade, destino: cp.destino, estado_inicial: cp.estadoInicial, cargas_iniciais: cp.cargasIniciais, quantidade_inicial: cp.quantidadeInicial, motivo: cp.motivo };
     }
     case "consumir_item": {
       const cp = efeito.campos;
+      if (contentType === "talent") {
+        return { identifica: cp.itemSlug ? [cp.itemSlug] : undefined, max_unidades: cp.quantidade, condicao: cp.condicao, para: cp.destinoTransferencia };
+      }
       return { item_slug: cp.itemSlug, quantidade: cp.quantidade, comportamento_pilha: cp.comportamentoPilha, condicao: cp.condicao, refund: cp.refund || undefined, destino: cp.destinoTransferencia };
     }
     case "alterar_preco": {
@@ -530,8 +612,66 @@ function camposLegadoPorTipo(contentType: DraftContentType, efeito: EfeitoEditav
       return { percentual: cp.percentual, contexto: cp.contextoTexto };
     }
     case "alterar_disponibilidade": {
+      // Só talento (bloqueado para spell/item/rune em validarEfeitoParaPublicacao) —
+      // correção (Etapa 10): "operacao"/"quantidade"/"fornecedor" não existem no schema
+      // fechado de talento. Reaproveita "acao"/"max_unidades"/"identifica" (chaves reais;
+      // "identifica" só aceita array).
       const cp = efeito.campos;
-      return { operacao: cp.operacao, quantidade: cp.quantidade, fornecedor: cp.fornecedor, contexto: cp.contextoTexto };
+      return { acao: cp.operacao, max_unidades: cp.quantidade, identifica: cp.fornecedor ? [cp.fornecedor] : undefined, contexto: cp.contextoTexto };
+    }
+    // Etapa 10 — companheiro/Trama, sempre talento (bloqueado para os demais em
+    // validarEfeitoParaPublicacao). O schema de talento é FECHADO
+    // (additionalProperties:false, ~90 chaves fixas, nenhuma pensada para estes
+    // conceitos) — cada case abaixo usa SÓ chaves reais confirmadas por leitura
+    // direta do schema (`content/schema_talentos_v1_3.json`, `$defs.efeito`).
+    // Campos sem contraparte real ficam só em `content_editor_metadata` (nunca
+    // perdidos, só ausentes do payload público) — nunca uma chave nova inventada.
+    case "companheiro": {
+      // "escopo"/"identifica" só aceitam array no schema real — nunca string solta.
+      const cp = efeito.campos;
+      return {
+        contexto: cp.tipo, identifica: cp.modeloReferencia ? [cp.modeloReferencia] : undefined, escopo: [cp.destino],
+        max_unidades: cp.quantidade, pa_bonus: cp.paInicial,
+        duracao: cp.persistente ? undefined : cp.duracao, requisito: cp.vinculo,
+      };
+    }
+    case "modificar_companheiro": {
+      const cp = efeito.campos;
+      return { acao: cp.operacao, alvo: cp.alvo, valor: cp.valor, duracao: cp.duracao, requisito: cp.requisito };
+    }
+    case "acao_companheiro": {
+      const cp = efeito.campos;
+      const resumoConsequencias = cp.efeitosConsequencia.length > 0 ? `${cp.efeitosConsequencia.length} consequência(s): ${cp.efeitosConsequencia.map((f) => f.tipo).join(", ")}` : undefined;
+      return {
+        acao: cp.acaoReferencia, custo_pa: cp.custoPaCompanheiro, custo_pa_extra: cp.custoControlador,
+        // "teste" só aceita object/string/array no schema real — nunca boolean solto.
+        alvo: cp.alvo, teste: cp.exigeTeste ? "sim" : undefined,
+        // Consequências completas vivem só na metadata editorial — sem chave real
+        // para uma lista aninhada de efeitos no schema de talento; "resultado" (texto)
+        // guarda só um resumo legível, nunca a árvore inteira.
+        resultado: resumoConsequencias,
+      };
+    }
+    case "programar_gatilho": {
+      const cp = efeito.campos;
+      return { acao: cp.acaoReferencia, condicao_ativacao: cp.condicaoTexto };
+    }
+    case "parear": {
+      const cp = efeito.campos;
+      return {
+        de: cp.origem, para: cp.destino,
+        comandos: cp.compartilhamentos.length > 0 ? cp.compartilhamentos : undefined,
+        duracao: cp.duracao, custo: cp.custo, requisito: cp.requisito,
+      };
+    }
+    case "acao_trama": {
+      const cp = efeito.campos;
+      // "teste" só aceita object/string/array — guarda a perícia exigida (nunca boolean solto).
+      return {
+        acao: cp.acao, custo_pa: cp.custoPa, custo_ram: cp.custoRam, teste: cp.exigeTeste ? cp.pericia ?? "sim" : undefined,
+        minimo: cp.cdFixa, alvo_texto: cp.alvoTexto,
+        distancia_espacos: cp.acao === "avancar" ? cp.alcanceAvancarEspacos : undefined, requisito: cp.requisito,
+      };
     }
     case "teste_resistencia":
       // Nunca serializado por aqui — é uma árvore (vira múltiplos objetos

@@ -354,6 +354,101 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
     },
     aliasesLegado: {},
   },
+  companheiro: {
+    id: "companheiro",
+    label: "Companheiro (conceder/registrar)",
+    camposEspecificos: [
+      { nome: "tipo", tipo: "string", obrigatorio: true, descricao: "drone | robo | companheiro_tecnico | outro." },
+      { nome: "modeloReferencia", tipo: "string", obrigatorio: false, descricao: "Texto livre — sem catálogo de modelos de drone/robô na Biblioteca hoje." },
+      { nome: "destino", tipo: "string", obrigatorio: true, descricao: "personagem | aliado_selecionado | bando." },
+    ],
+    executor: {
+      // Auditoria (talentEngine.ts): registerDrone/registerRobo são
+      // invocados por clique manual na ficha, nunca por um efeito de
+      // conteúdo lido genericamente — não há executor real conectado.
+      modo: "lembrete",
+      observacao: "Nenhum executor real cria instância de companheiro a partir de um efeito de conteúdo — sempre lembrete. Droneiro/Mecatrônico/Tecelão continuam bespoke em talentEngine.ts (registerDrone/registerRobo), não generalizados.",
+    },
+    aliasesLegado: {},
+  },
+  modificar_companheiro: {
+    id: "modificar_companheiro",
+    label: "Modificar companheiro",
+    camposEspecificos: [
+      { nome: "operacao", tipo: "string", obrigatorio: true, descricao: "conceder_pa | reduzir_pa | definir_pa | reparar | causar_dano | aplicar_estado | equipar | parear | desligar | etc. (enumeradas, nunca caminho JSON arbitrário)." },
+    ],
+    executor: {
+      modo: "lembrete",
+      observacao: "Nenhum executor genérico existe — as funções reais equivalentes (applySinalLimpoBonus, activateOverclock, ajustarRamTrama etc.) são hiper-específicas por talento, não reutilizáveis por um efeito genérico.",
+    },
+    aliasesLegado: {
+      talent: ["companheiro_pa_bonus"],
+    },
+  },
+  acao_companheiro: {
+    id: "acao_companheiro",
+    label: "Ação de companheiro",
+    camposEspecificos: [
+      { nome: "acaoReferencia", tipo: "string", obrigatorio: false, descricao: "Ação do modelo (texto livre — sem catálogo estruturado)." },
+      { nome: "efeitosConsequencia", tipo: "array", obrigatorio: false, descricao: "Reaproveita o catálogo universal (EfeitoFilho) como consequência — nunca duplicado." },
+    ],
+    executor: {
+      modo: "lembrete",
+      observacao: "Nenhum executor real resolve ação de companheiro a partir de conteúdo — sempre lembrete. Distância/linha de visão nunca automatizadas (teatro da mente).",
+    },
+    aliasesLegado: {},
+  },
+  programar_gatilho: {
+    id: "programar_gatilho",
+    label: "Programação de gatilho",
+    camposEspecificos: [
+      { nome: "companheiroAlvo", tipo: "string", obrigatorio: false, descricao: "Texto livre." },
+      { nome: "acaoReferencia", tipo: "string", obrigatorio: false, descricao: "Ação disparada." },
+    ],
+    executor: {
+      // Auditoria: Droneiro/Script já tem um gatilho real (Character.drones[].gatilho:
+      // {descricao, acaoAssociada, ocorrido}, texto livre) — mas é lido/escrito só pela
+      // UI da ficha, não por um efeito de conteúdo genérico.
+      modo: "lembrete",
+      observacao: "Reaproveita o campo comum `gatilho` (mesmo vocabulário de GATILHOS_INICIAIS) em vez de inventar um segundo conceito — mas sem executor genérico conectado. Sempre lembrete.",
+    },
+    aliasesLegado: {},
+  },
+  parear: {
+    id: "parear",
+    label: "Pareamento",
+    camposEspecificos: [
+      { nome: "compartilhamentos", tipo: "array", obrigatorio: false, descricao: "comando | percepcao | acao | estado | pa | sinal | acao_coordenada." },
+    ],
+    executor: {
+      // Auditoria: pairDronesEnxame já existe (Droneiro Enxame), mas
+      // hiper-específico (só drones do MESMO modelo string, máx. 3,
+      // hardcoded pelo payload daquele talento) — não generalizável.
+      modo: "lembrete",
+      observacao: "Nenhum executor genérico de pareamento existe — pairDronesEnxame (talentEngine.ts) é bespoke ao talento Enxame, não reutilizável por conteúdo genérico.",
+    },
+    aliasesLegado: {},
+  },
+  acao_trama: {
+    id: "acao_trama",
+    label: "Ação de Trama",
+    camposEspecificos: [
+      { nome: "acao", tipo: "string", obrigatorio: true, descricao: "avancar | revelar_no | revelar_bloqueio | criar_presenca | modificar_assinatura | reduzir/aumentar_deteccao | reduzir/aumentar_rastro | isolar | atravessar | expulsar_presenca | assumir_controle." },
+      { nome: "custoRam", tipo: "number", obrigatorio: false, descricao: "RAM reaproveita alterar_recurso (recurso 'ram', já no enum) — nunca um segundo sistema de recurso." },
+    ],
+    executor: {
+      // Auditoria: iniciarTrama/ajustarRamTrama/ajustarDeteccaoTrama/
+      // executarBypass/executarAgulhaFina são reais, mas bespoke ao
+      // Tecelão (Character.trama_ativa é um objeto único, não um
+      // catálogo/efeito genérico). Nó/Bloqueio/Presença são
+      // string[] livres, sem catálogo estruturado.
+      modo: "lembrete",
+      observacao: "Nenhum executor genérico resolve ação de Trama a partir de conteúdo — sempre lembrete. Nó/Bloqueio/Presença permanecem texto livre (sem catálogo estruturado no runtime real).",
+    },
+    aliasesLegado: {
+      talent: ["comando_sem_teste", "comando_livre_sem_custo", "alterar_protocolo"],
+    },
+  },
   outro: {
     id: "outro",
     label: "Efeito ainda não canonicalizado",

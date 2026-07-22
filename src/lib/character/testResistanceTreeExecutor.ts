@@ -114,6 +114,18 @@ function descreverEfeitoFilho(efeito: EfeitoFilho): string {
       return `Alterar preço (${efeito.campos.operacao}) — sem executor automático ainda, aplicar manualmente.`;
     case "alterar_disponibilidade":
       return `Alterar disponibilidade (${efeito.campos.operacao}) — sem estado real de estoque, aplicar manualmente.`;
+    case "companheiro":
+      return `Conceder companheiro (${efeito.campos.tipo} × ${efeito.campos.quantidade}) — sem executor automático ainda, aplicar manualmente.`;
+    case "modificar_companheiro":
+      return `Modificar companheiro: ${efeito.campos.operacao} — sem executor automático ainda, aplicar manualmente.`;
+    case "acao_companheiro":
+      return `Ação de companheiro (${efeito.campos.acaoReferencia ?? "?"}) — sem executor automático ainda, aplicar manualmente.`;
+    case "programar_gatilho":
+      return `Programar gatilho (${efeito.gatilho ?? "?"} → ${efeito.campos.acaoReferencia ?? "?"}) — sem executor automático ainda, aplicar manualmente.`;
+    case "parear":
+      return `Parear (${efeito.campos.compartilhamentos.join(", ") || "?"}) — sem executor automático ainda, aplicar manualmente.`;
+    case "acao_trama":
+      return `Ação de Trama (${efeito.campos.acao}) — sem executor automático ainda, aplicar manualmente.`;
   }
 }
 

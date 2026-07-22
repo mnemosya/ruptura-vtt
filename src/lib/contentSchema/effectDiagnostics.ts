@@ -10,7 +10,7 @@
  */
 
 import { getEfeitoTipoDefinition } from "./effectTypeRegistry";
-import { MAX_MODIFICADORES_EFEITO_TEMPORARIO, type EfeitoEditavel } from "./effectDraftTypes";
+import { MAX_EFEITOS_CONSEQUENCIA_ACAO_COMPANHEIRO, MAX_MODIFICADORES_EFEITO_TEMPORARIO, type EfeitoEditavel } from "./effectDraftTypes";
 import type { ModoAutomacao } from "./types";
 
 export interface DiagnosticoEfeitoEditavel {
@@ -276,6 +276,59 @@ export function diagnosticarEfeitoEditavel(efeito: EfeitoEditavel): DiagnosticoE
         return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Estoque não pode ser negativo." };
       }
       return { modoAutomacao: limitarAoTeto("lembrete", teto), motivo: "Nenhum estado real de estoque/disponibilidade de campanha existe hoje — sempre lembrete." };
+    }
+    case "companheiro": {
+      const { tipo: tipoCompanheiro, quantidade } = efeito.campos;
+      if (!tipoCompanheiro) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Sem tipo de companheiro definido." };
+      }
+      if (!(quantidade > 0)) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Quantidade precisa ser maior que zero." };
+      }
+      return { modoAutomacao: limitarAoTeto("lembrete", teto), motivo: "Nenhum executor real cria instância de companheiro a partir de conteúdo — sempre lembrete (Droneiro/Mecatrônico/Tecelão continuam bespoke)." };
+    }
+    case "modificar_companheiro": {
+      const { operacao } = efeito.campos;
+      if (!operacao) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Sem operação definida." };
+      }
+      return { modoAutomacao: limitarAoTeto("lembrete", teto), motivo: `Operação "${operacao}" reconhecida — nenhum executor genérico existe ainda, sempre lembrete.` };
+    }
+    case "acao_companheiro": {
+      const { efeitosConsequencia } = efeito.campos;
+      if (efeitosConsequencia.length > MAX_EFEITOS_CONSEQUENCIA_ACAO_COMPANHEIRO) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: `Mais de ${MAX_EFEITOS_CONSEQUENCIA_ACAO_COMPANHEIRO} consequências — acima do limite documentado.` };
+      }
+      if (efeitosConsequencia.some((f) => f.tipo === "acao_companheiro")) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Uma ação de companheiro não pode conter outra ação de companheiro como consequência." };
+      }
+      return { modoAutomacao: limitarAoTeto("lembrete", teto), motivo: "Nenhum executor real resolve ação de companheiro a partir de conteúdo — sempre lembrete." };
+    }
+    case "programar_gatilho": {
+      if (!efeito.gatilho) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Programa sem gatilho definido." };
+      }
+      if (!efeito.campos.acaoReferencia) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Programa sem ação associada." };
+      }
+      return { modoAutomacao: limitarAoTeto("lembrete", teto), motivo: "Nenhum executor genérico de programação existe ainda — sempre lembrete." };
+    }
+    case "parear": {
+      const { compartilhamentos } = efeito.campos;
+      if (compartilhamentos.length === 0) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Pareamento sem nenhum compartilhamento definido." };
+      }
+      return { modoAutomacao: limitarAoTeto("lembrete", teto), motivo: "Nenhum executor genérico de pareamento existe ainda — sempre lembrete." };
+    }
+    case "acao_trama": {
+      const { acao, alcanceAvancarEspacos } = efeito.campos;
+      if (!acao) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Sem ação de Trama definida." };
+      }
+      if (acao === "avancar" && alcanceAvancarEspacos != null && alcanceAvancarEspacos <= 0) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Alcance de Avançar precisa ser positivo." };
+      }
+      return { modoAutomacao: limitarAoTeto("lembrete", teto), motivo: "Nenhum executor genérico de ação de Trama existe ainda — sempre lembrete (Nó/Bloqueio/Presença permanecem texto livre)." };
     }
   }
 }

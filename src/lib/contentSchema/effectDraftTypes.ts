@@ -489,6 +489,177 @@ export interface CamposAlterarDisponibilidade {
   confirmacaoManual: boolean;
 }
 
+/**
+ * Companheiro/Trama (Etapa 10) — auditoria de `talentEngine.ts` confirmou
+ * que Droneiro/Mecatrônico/Tecelão são ~15 funções bespoke, hiper-
+ * específicas por nível de talento (`registerDrone`, `iniciarTrama`,
+ * `executarBypass`, etc.), disparadas por clique manual na ficha — não
+ * por um efeito de conteúdo lido genericamente. NENHUMA delas é reusável
+ * por natureza (nomes parecidos não implicam mecanismo genérico). Os 6
+ * tipos abaixo são portanto sempre `lembrete` (nenhum executor real
+ * conectado) e só representáveis em TALENTO — `familia:"companheiro"`/
+ * `"trama"` já são valores REAIS do enum de família do schema de talento
+ * (usados hoje só para classificar conteúdo legado como incompatível,
+ * `legacyConversion.ts::FAMILIAS_INCOMPATIVEIS`). Não há catálogo de
+ * modelos de drone/robô na Biblioteca (nenhum `db_drones.json`/schema —
+ * `modelo`/`acoes`/`ordens` são texto livre até em `Character.drones[]`)
+ * — por isso nenhum novo `content_type` foi criado nesta etapa; ver
+ * checkpoint §2 "Decisão sobre tipos de conteúdo".
+ *
+ * RAM já é representável sem nenhum código novo: `RECURSOS_ALTERAR`
+ * (acima) já inclui `"ram"` — reaproveita `alterar_recurso` tal como
+ * está, nunca um segundo sistema de recurso.
+ */
+export const TIPOS_COMPANHEIRO = ["drone", "robo", "companheiro_tecnico", "outro"] as const;
+export type TipoCompanheiro = (typeof TIPOS_COMPANHEIRO)[number];
+
+export const DESTINOS_COMPANHEIRO = ["personagem", "aliado_selecionado", "bando"] as const;
+export type DestinoCompanheiro = (typeof DESTINOS_COMPANHEIRO)[number];
+
+/** Concede/registra uma instância de companheiro (drone/robô/etc.). Sem executor real — sempre lembrete. */
+export interface CamposCompanheiro {
+  tipo: TipoCompanheiro;
+  /** Texto livre — não há catálogo de modelos de drone/robô na Biblioteca hoje (auditoria confirmada). */
+  modeloReferencia?: string;
+  destino: DestinoCompanheiro;
+  controlador?: string;
+  quantidade: number;
+  estadoInicial?: string;
+  paInicial?: number;
+  persistente: boolean;
+  duracao?: string;
+  vinculo?: string;
+  confirmacaoManual: boolean;
+}
+
+export const OPERACOES_MODIFICAR_COMPANHEIRO = [
+  "conceder_pa",
+  "reduzir_pa",
+  "definir_pa",
+  "alterar_pa_maximo_temporario",
+  "reparar",
+  "causar_dano",
+  "aplicar_estado",
+  "remover_estado",
+  "equipar",
+  "desequipar",
+  "conceder_acao",
+  "remover_acao",
+  "alterar_programacao",
+  "parear",
+  "desemparelhar",
+  "alterar_controlador",
+  "compartilhar_comando",
+  "desligar",
+  "reativar",
+] as const;
+export type OperacaoModificarCompanheiro = (typeof OPERACOES_MODIFICAR_COMPANHEIRO)[number];
+
+/** Operação enumerada sobre um companheiro — nunca caminho JSON arbitrário. Sem executor real — sempre lembrete. */
+export interface CamposModificarCompanheiro {
+  operacao: OperacaoModificarCompanheiro;
+  alvo?: string;
+  valor?: number;
+  duracao?: string;
+  requisito?: string;
+  confirmacaoManual: boolean;
+}
+
+/** Limite explícito de consequências de uma ação de companheiro (Etapa 10, ver checkpoint). */
+export const MAX_EFEITOS_CONSEQUENCIA_ACAO_COMPANHEIRO = 3;
+
+/**
+ * Ação de companheiro, com consequências reaproveitando o catálogo
+ * universal (`EfeitoFilho` — já exclui `teste_resistencia`). Um
+ * `acao_companheiro` NÃO pode aparecer entre suas próprias
+ * `efeitosConsequencia` — validado em runtime (não estruturalmente,
+ * diferente do padrão usual desde a Etapa 7): o teto de automação é
+ * sempre `lembrete` aqui, então o risco de execução é nulo; a validação
+ * ainda impede profundidade além de 1 nível extra.
+ */
+export interface CamposAcaoCompanheiro {
+  acaoReferencia?: string;
+  custoPaCompanheiro?: number;
+  custoControlador?: number;
+  alvo?: string;
+  exigeTeste: boolean;
+  janela?: string;
+  independente: boolean;
+  efeitosConsequencia: EfeitoFilho[];
+  confirmacaoManual: boolean;
+}
+
+/**
+ * Programação de gatilho — reaproveita o campo comum `gatilho`
+ * (`CamposEfeitoComuns`, mesmo vocabulário de `GATILHOS_INICIAIS` já
+ * usado por todo o catálogo) em vez de inventar um segundo conceito de
+ * gatilho. Sem executor real — sempre lembrete.
+ */
+export interface CamposProgramarGatilho {
+  companheiroAlvo?: string;
+  acaoReferencia?: string;
+  prioridade?: number;
+  condicaoTexto?: string;
+  limite?: number;
+  substituiProgramaAnterior: boolean;
+  confirmacaoManual: boolean;
+}
+
+export const TIPOS_COMPARTILHAMENTO_PAREAMENTO = ["comando", "percepcao", "acao", "estado", "pa", "sinal", "acao_coordenada"] as const;
+export type TipoCompartilhamentoPareamento = (typeof TIPOS_COMPARTILHAMENTO_PAREAMENTO)[number];
+
+/** Pareamento entre entidades. Sem executor real — sempre lembrete. */
+export interface CamposParear {
+  origem?: string;
+  destino?: string;
+  tiposCompativeis: string[];
+  compartilhamentos: TipoCompartilhamentoPareamento[];
+  duracao?: string;
+  custo?: string;
+  requisito?: string;
+  confirmacaoManual: boolean;
+}
+
+/**
+ * Ação de Trama. Cobre RAM (via `alterar_recurso` já existente, nunca
+ * duplicado), Detecção/Rastro/Nó/Bloqueio/Presença/assinatura/Avançar
+ * — todos texto livre hoje no runtime real (`Character.trama_ativa`:
+ * `bloqueios`/`nos`/`presencasHostis` são `string[]`, sem catálogo
+ * estruturado) — por isso `alvoTexto` é texto livre, não referência.
+ * Sem executor real — sempre lembrete.
+ */
+export const ACOES_TRAMA = [
+  "avancar",
+  "revelar_no",
+  "revelar_bloqueio",
+  "criar_presenca",
+  "modificar_assinatura",
+  "reduzir_deteccao",
+  "aumentar_deteccao",
+  "reduzir_rastro",
+  "aumentar_rastro",
+  "isolar",
+  "atravessar",
+  "expulsar_presenca",
+  "assumir_controle",
+] as const;
+export type AcaoTrama = (typeof ACOES_TRAMA)[number];
+
+export interface CamposAcaoTrama {
+  acao: AcaoTrama;
+  custoPa?: number;
+  custoRam?: number;
+  exigeTeste: boolean;
+  atributo?: string;
+  pericia?: string;
+  cdFixa?: number;
+  alvoTexto?: string;
+  /** Só relevante quando `acao === "avancar"` — unidade abstrata real (espaços), nunca metros/tokens. */
+  alcanceAvancarEspacos?: number;
+  requisito?: string;
+  confirmacaoManual: boolean;
+}
+
 /** Tipos aceitos como filho de um resultado de teste/resistência — todo o catálogo universal, exceto o próprio teste/resistência (sem recursão, sem ciclo possível). */
 export type EfeitoFilho =
   | (CamposEfeitoComuns & { tipo: "dano"; campos: CamposDano })
@@ -505,7 +676,13 @@ export type EfeitoFilho =
   | (CamposEfeitoComuns & { tipo: "conceder_item"; campos: CamposConcederItem })
   | (CamposEfeitoComuns & { tipo: "consumir_item"; campos: CamposConsumirItem })
   | (CamposEfeitoComuns & { tipo: "alterar_preco"; campos: CamposAlterarPreco })
-  | (CamposEfeitoComuns & { tipo: "alterar_disponibilidade"; campos: CamposAlterarDisponibilidade });
+  | (CamposEfeitoComuns & { tipo: "alterar_disponibilidade"; campos: CamposAlterarDisponibilidade })
+  | (CamposEfeitoComuns & { tipo: "companheiro"; campos: CamposCompanheiro })
+  | (CamposEfeitoComuns & { tipo: "modificar_companheiro"; campos: CamposModificarCompanheiro })
+  | (CamposEfeitoComuns & { tipo: "acao_companheiro"; campos: CamposAcaoCompanheiro })
+  | (CamposEfeitoComuns & { tipo: "programar_gatilho"; campos: CamposProgramarGatilho })
+  | (CamposEfeitoComuns & { tipo: "parear"; campos: CamposParear })
+  | (CamposEfeitoComuns & { tipo: "acao_trama"; campos: CamposAcaoTrama });
 
 export type EfeitoEditavel =
   | EfeitoFilho
@@ -520,10 +697,10 @@ export function isTipoEfeitoMvp(tipo: string): tipo is TipoEfeitoMvp {
   return (TIPOS_EFEITO_MVP as readonly string[]).includes(tipo);
 }
 
-/** Tipo de qualquer efeito editável, incluindo os 3 da Etapa 7, os 2 da Etapa 8 e os 5 novos da Etapa 9 (inventário/mercado). */
+/** Tipo de qualquer efeito editável, incluindo os 3 da Etapa 7, os 2 da Etapa 8, os 5 da Etapa 9 e os 6 novos da Etapa 10 (companheiro/Trama). */
 export type TipoEfeitoEditavel = EfeitoEditavel["tipo"];
 
-/** Todos os tipos que o Construtor sabe criar/serializar nesta etapa — os 6 originais + 3 (Etapa 7) + 2 (Etapa 8) + 5 (Etapa 9). Usado pelo seletor de tipo da UI e por qualquer checagem "este tipo existe no catálogo editável". */
+/** Todos os tipos que o Construtor sabe criar/serializar nesta etapa — os 6 originais + 3 (Etapa 7) + 2 (Etapa 8) + 5 (Etapa 9) + 6 (Etapa 10). Usado pelo seletor de tipo da UI e por qualquer checagem "este tipo existe no catálogo editável". */
 export const TIPOS_EFEITO_EDITAVEL: readonly TipoEfeitoEditavel[] = [
   ...TIPOS_EFEITO_MVP,
   "modificar_margem",
@@ -536,6 +713,12 @@ export const TIPOS_EFEITO_EDITAVEL: readonly TipoEfeitoEditavel[] = [
   "consumir_item",
   "alterar_preco",
   "alterar_disponibilidade",
+  "companheiro",
+  "modificar_companheiro",
+  "acao_companheiro",
+  "programar_gatilho",
+  "parear",
+  "acao_trama",
 ];
 
 export function isTipoEfeitoEditavel(tipo: string): tipo is TipoEfeitoEditavel {
@@ -545,9 +728,12 @@ export function isTipoEfeitoEditavel(tipo: string): tipo is TipoEfeitoEditavel {
 /**
  * Tipos válidos como filho de um resultado — todo o catálogo universal
  * exceto `teste_resistencia` (profundidade limitada por construção).
- * Os 5 novos tipos da Etapa 9 são seguros como filhos pela mesma razão
+ * Os 6 novos tipos da Etapa 10 são seguros como filhos pela mesma razão
  * de `efeito_temporario`/`acao_reacao_adicional`: nenhum contém uma
- * árvore de teste/resistência aninhada.
+ * árvore de teste/resistência aninhada. `acao_companheiro` contém
+ * `EfeitoFilho[]` (sem `teste_resistencia`) como consequência — validado
+ * em runtime para nunca conter outro `acao_companheiro` (ver
+ * `effectLegacySerialization.ts`).
  */
 export const TIPOS_EFEITO_FILHO: readonly EfeitoFilho["tipo"][] = [
   ...TIPOS_EFEITO_MVP,
@@ -560,6 +746,12 @@ export const TIPOS_EFEITO_FILHO: readonly EfeitoFilho["tipo"][] = [
   "consumir_item",
   "alterar_preco",
   "alterar_disponibilidade",
+  "companheiro",
+  "modificar_companheiro",
+  "acao_companheiro",
+  "programar_gatilho",
+  "parear",
+  "acao_trama",
 ];
 
 export function isTipoEfeitoFilho(tipo: string): tipo is EfeitoFilho["tipo"] {
@@ -629,5 +821,17 @@ export function novoEfeitoEditavel(tipo: TipoEfeitoEditavel, ordem: number): Efe
       return { ...comuns, tipo, campos: { operacao: "desconto_percentual", confirmacaoManual: true } };
     case "alterar_disponibilidade":
       return { ...comuns, tipo, campos: { operacao: "marcar_disponivel", confirmacaoManual: true } };
+    case "companheiro":
+      return { ...comuns, tipo, campos: { tipo: "drone", destino: "personagem", quantidade: 1, persistente: true, confirmacaoManual: true } };
+    case "modificar_companheiro":
+      return { ...comuns, tipo, campos: { operacao: "conceder_pa", confirmacaoManual: true } };
+    case "acao_companheiro":
+      return { ...comuns, tipo, campos: { exigeTeste: false, independente: false, efeitosConsequencia: [], confirmacaoManual: true } };
+    case "programar_gatilho":
+      return { ...comuns, tipo, campos: { substituiProgramaAnterior: true, confirmacaoManual: true } };
+    case "parear":
+      return { ...comuns, tipo, campos: { tiposCompativeis: [], compartilhamentos: [], confirmacaoManual: true } };
+    case "acao_trama":
+      return { ...comuns, tipo, campos: { acao: "avancar", exigeTeste: false, confirmacaoManual: true } };
   }
 }

@@ -44,7 +44,8 @@
     "check:admin-legacy-conversion": "tsx scripts/dev/check-admin-legacy-conversion.ts",
     "check:admin-composite-effects": "tsx scripts/dev/check-admin-composite-effects.ts",
     "check:admin-temporary-effects": "tsx scripts/dev/check-admin-temporary-effects.ts",
-    "check:admin-inventory-runes-market": "tsx scripts/dev/check-admin-inventory-runes-market.ts"
+    "check:admin-inventory-runes-market": "tsx scripts/dev/check-admin-inventory-runes-market.ts",
+    "check:admin-companions-trama": "tsx scripts/dev/check-admin-companions-trama.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
