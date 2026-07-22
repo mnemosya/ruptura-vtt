@@ -268,3 +268,15 @@ com executor real; serialização/schemas válidos; round-trip por
 metadata comprovado (node + SQL); modelo e instância permanecem
 separados; TypeScript e build passam; nenhuma perda de payload conhecida.
 **Não avancei para a Etapa 10.**
+
+> **Nota de referência (Etapa 10, sem alterar o status acima)**: a
+> Etapa 10 encontrou e corrigiu 5 bugs reais nesta etapa — `efeito_temporario`/
+> `modificar_instancia`/`conceder_item`/`consumir_item`/`alterar_disponibilidade`
+> emitiam, quando serializados para TALENTO, chaves inexistentes no
+> schema fechado de talento (só detectável validando contra
+> `schema_talentos_v1_3.json`, nunca testado aqui). Corrigido em
+> `effectLegacySerialization.ts` — ver
+> `docs/CHECKPOINT_ETAPA10_COMPANHEIROS_TRAMA.md` §5. O status
+> "Implementação concluída — aceite de browser pendente" acima permanece
+> exatamente como registrado nesta etapa (a correção não afeta item/rune,
+> onde esses tipos já validavam corretamente).
