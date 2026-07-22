@@ -84,8 +84,15 @@ O aditivo já define 13 etapas (0 a 12) com objetivo/critério de aceite própri
 - **Achado importante**: ao validar contra o schema real de talento (fechado, ~90 chaves fixas), descobri e corrigi 5 bugs reais de etapas anteriores (Etapa 8/9) que emitiam chaves inexistentes nesse enum para talento (`efeito_temporario`, `modificar_instancia`, `conceder_item`, `consumir_item`, `alterar_disponibilidade`) — nunca detectados porque os harnesses anteriores só validaram esses tipos contra item/rune (schema aberto, mascarava o problema).
 - **Verificado**: TypeScript, build, serialização/bloqueio dos 6 tipos novos + as 5 correções, validados contra `schema_talentos_v1_3.json` real (23 casos), núcleo transacional por SQL com rollback. **Pendente**: browser check (esbuild). Detalhes completos em `docs/CHECKPOINT_ETAPA10_COMPANHEIROS_TRAMA.md`.
 
-### Etapa 11/12 (importação/exportação, homebrew de mesa)
-- Sem achados novos da auditoria que mudem o texto do aditivo — permanece como está.
+### Etapa 11 — Importação, exportação e Biblioteca do Livro — **Implementação concluída — aceite de browser pendente (drag parcial, ver checkpoint)**
+- Auditoria confirmou: `content_packs` é registro de linhagem (pipeline que produziu um `content_document`), nunca reaproveitado como contrato de arquivo; nenhum sistema de capítulo/Livro existe em runtime (`docs/fontes/*.md` é explicitamente fora de consumo em runtime); nenhum código de drag-and-drop existe em lugar nenhum do projeto; o PRD (§2.1.9) já lista "drag de todos os tipos de entidade" fora da primeira entrega.
+- Contrato novo e isolado `ruptura-content-package` v1 (`contentPackage.ts`), hash canônico próprio (`canonicalHash.ts`, nunca comparado direto ao `payload_hash` divergente entre seed/RPC), exportação unitária/em lote admin-only (`packageExport.ts`), importação draft-only com as 11 classificações exigidas + validação de schema oficial rodando em produção pela primeira vez (`officialSchemaValidator.ts`) + dependências estruturadas (`contentDependencies.ts`) + preview recalculado 100% no servidor (`importPreview.ts`, `packageImport.ts`).
+- Migration 0024: `content_import_sessions` (histórico), `content_book_links` (vínculo Biblioteca↔Livro, capítulo/seção/âncora como texto livre — não existe tabela de capítulos real), RPC transacional `import_content_drafts` (1 rascunho por documento, nunca sobrescreve, nunca publica).
+- Drag-and-drop: **não implementado** — bloqueio estrutural formalmente aceito (ausência real de um editor de capítulo para servir de destino, já previsto pelo próprio PRD como fora da primeira entrega). Infraestrutura de vínculo e criação via UI admin cobrem o round-trip entidade↔capítulo na forma estrutural possível hoje.
+- **Verificado**: TypeScript, build (rotas `/admin/biblioteca/exportar|importar|importacoes` presentes), 19 verificações focadas em Node puro (hash/manifest/dependências/11 classificações). **Pendente**: browser check (esbuild) e round-trip SQL real (sem projeto Supabase conectado nesta sessão). Detalhes completos em `docs/CHECKPOINT_ETAPA11_IMPORTACAO_EXPORTACAO_BIBLIOTECA_LIVRO.md`.
+
+### Etapa 12 (homebrew de mesa)
+- Sem achados novos da auditoria que mudem o texto do aditivo — permanece como está. Não iniciada.
 
 ---
 

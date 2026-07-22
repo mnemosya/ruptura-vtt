@@ -244,3 +244,9 @@ descobertas e corrigidas nesta etapa); round-trip por metadata
 comprovado (node + SQL); funções bespoke permanecem 100% preservadas;
 modelo e instância permanecem separados; TypeScript e build passam;
 nenhuma perda de payload conhecida. **Não avancei para a Etapa 11.**
+
+> **Nota de referência futura (adicionada durante a Etapa 11, sem
+> alterar o status acima):** a Etapa 11 (importação/exportação +
+> Biblioteca do Livro) foi implementada depois desta e não depende de
+> nenhuma mudança neste checkpoint — ver
+> `docs/CHECKPOINT_ETAPA11_IMPORTACAO_EXPORTACAO_BIBLIOTECA_LIVRO.md`.
