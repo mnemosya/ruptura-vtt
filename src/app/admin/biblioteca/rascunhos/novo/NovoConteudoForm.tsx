@@ -11,6 +11,7 @@ const TIPOS: { value: DraftContentType; label: string }[] = [
   { value: "spell", label: "Magia" },
   { value: "talent", label: "Talento" },
   { value: "item", label: "Item / Equipamento" },
+  { value: "rune", label: "Runa" },
 ];
 
 export function NovoConteudoForm() {

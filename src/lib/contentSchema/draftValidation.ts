@@ -8,7 +8,7 @@
 import { getContentDocument } from "../content/queries";
 import type { ContentType } from "../content/types";
 import { findDraftBySlug } from "./draftQueries";
-import type { CamposComuns, CamposItem, CamposMagia, CamposTalento, ContentDraftRow, DraftContentType } from "./draftTypes";
+import type { CamposComuns, CamposItem, CamposMagia, CamposRuna, CamposTalento, ContentDraftRow, DraftContentType } from "./draftTypes";
 import { validarEfeitosEditaveis } from "./effectDraftValidation";
 import { isValidSlug } from "./slug";
 import type { ResultadoValidacao } from "./types";
@@ -91,6 +91,34 @@ export async function validarCamposItem(campos: CamposItem, draftId?: string): P
   for (const propriedadeSlug of campos.propriedades) {
     const encontrada = await getContentDocument("property", propriedadeSlug).catch(() => null);
     if (!encontrada) erros.push(`Propriedade referenciada não encontrada: "${propriedadeSlug}".`);
+  }
+
+  mesclarValidacao(erros, avisos, infos, await validarEfeitosEditaveis(campos.efeitos), "Efeitos");
+
+  return { valido: erros.length === 0, erros, avisos, infos };
+}
+
+const SLOTS_POSSIVEIS_VALIDOS = new Set(["arma", "armadura", "escudo"]);
+
+export async function validarCamposRuna(campos: CamposRuna, draftId?: string): Promise<ValidacaoCamposResultado> {
+  const erros: string[] = [];
+  const avisos: string[] = [];
+  const infos: string[] = [];
+
+  validarCamposComuns(campos, erros, avisos);
+  if (campos.slug && isValidSlug(campos.slug) && (await existeSlugColidindo("rune", campos.slug, draftId))) {
+    erros.push(`Já existe conteúdo publicado ou outro rascunho com o slug "${campos.slug}".`);
+  }
+  validarCustoNaoNegativo(campos.preco, "Preço", erros);
+
+  if (campos.slotsPossiveis.length === 0) {
+    erros.push("Runa precisa de ao menos um slot possível (arma, armadura ou escudo).");
+  }
+  for (const s of campos.slotsPossiveis) {
+    if (!SLOTS_POSSIVEIS_VALIDOS.has(s)) erros.push(`Slot possível "${s}" não é reconhecido (use arma, armadura ou escudo).`);
+  }
+  if (campos.restricaoSubtipo && !campos.slotsPossiveis.includes("arma")) {
+    avisos.push("Restrição de subtipo só faz sentido quando \"arma\" está entre os slots possíveis.");
   }
 
   mesclarValidacao(erros, avisos, infos, await validarEfeitosEditaveis(campos.efeitos), "Efeitos");

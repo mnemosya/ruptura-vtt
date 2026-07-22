@@ -218,5 +218,64 @@ export function diagnosticarEfeitoEditavel(efeito: EfeitoEditavel): DiagnosticoE
         motivo: `Concede ${tipoConcedido} adicional — nenhum executor real aplica isso automaticamente ainda, sempre lembrete para o narrador.`,
       };
     }
+    case "modificar_instancia": {
+      const { operacao, valor } = efeito.campos;
+      const exigeValor = operacao !== "reparar_mit" && operacao !== "reparar_pd";
+      if (exigeValor && valor == null) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: `Operação "${operacao}" exige um valor.` };
+      }
+      if (!exigeValor && valor != null && valor <= 0) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: `Operação "${operacao}" exige um valor positivo (reparo nunca reduz).` };
+      }
+      return {
+        modoAutomacao: limitarAoTeto("assistido", teto),
+        executor: "src/lib/character/inventory.ts",
+        motivo: `Operação "${operacao}" reconhecida — executor real existe, mas a seleção da instância-alvo e a confirmação continuam manuais.`,
+      };
+    }
+    case "conceder_item": {
+      const { itemSlug, quantidade } = efeito.campos;
+      if (!itemSlug) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Sem item referenciado da Biblioteca." };
+      }
+      if (!(quantidade > 0)) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Quantidade precisa ser maior que zero." };
+      }
+      return { modoAutomacao: limitarAoTeto("lembrete", teto), motivo: "Nenhum executor real cria a instância automaticamente ainda — sempre lembrete." };
+    }
+    case "consumir_item": {
+      const { quantidade } = efeito.campos;
+      if (!(quantidade > 0)) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Quantidade precisa ser maior que zero." };
+      }
+      return { modoAutomacao: limitarAoTeto("lembrete", teto), motivo: "Nenhum executor real consome/remove automaticamente ainda — sempre lembrete." };
+    }
+    case "alterar_preco": {
+      const { operacao, percentual, multiplicador, valorFixo } = efeito.campos;
+      if (operacao === "desconto_percentual" && (percentual == null || percentual < 0 || percentual > 100)) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Desconto percentual precisa estar entre 0 e 100." };
+      }
+      if (operacao === "multiplicador" && (multiplicador == null || multiplicador < 0)) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Multiplicador precisa ser >= 0." };
+      }
+      if (operacao === "desconto_fixo" && (valorFixo == null || valorFixo < 0)) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Desconto fixo precisa ser >= 0." };
+      }
+      const temLeitorReal = operacao === "desconto_percentual" || operacao === "permitir_compra_fiada";
+      return {
+        modoAutomacao: limitarAoTeto(temLeitorReal ? "assistido" : "lembrete", teto),
+        executor: temLeitorReal ? "src/lib/character/talentEngine.ts" : undefined,
+        motivo: temLeitorReal
+          ? "Operação com leitor real genérico (talento) — ainda assistida (a mesa confirma o contexto da compra)."
+          : `Operação "${operacao}" não tem leitor real no conteúdo hoje — sempre lembrete.`,
+      };
+    }
+    case "alterar_disponibilidade": {
+      const { operacao, quantidade } = efeito.campos;
+      if (operacao === "definir_estoque" && (quantidade == null || quantidade < 0)) {
+        return { modoAutomacao: limitarAoTeto("sem_executor", teto), motivo: "Estoque não pode ser negativo." };
+      }
+      return { modoAutomacao: limitarAoTeto("lembrete", teto), motivo: "Nenhum estado real de estoque/disponibilidade de campanha existe hoje — sempre lembrete." };
+    }
   }
 }

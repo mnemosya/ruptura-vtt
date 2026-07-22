@@ -7,11 +7,12 @@
  */
 
 import { adaptItem } from "./adapters/item";
+import { adaptRune } from "./adapters/rune";
 import { adaptSpell } from "./adapters/spell";
 import { adaptTalentLevel } from "./adapters/talent";
 import { extrairEfeitosEditaveis } from "./effectDraftMapping";
 import type { ConteudoCanonico, Referencia } from "./types";
-import type { CamposItem, CamposMagia, CamposTalento, CamposTalentoNivel, RequisitoSimples } from "./draftTypes";
+import type { CamposItem, CamposMagia, CamposRuna, CamposTalento, CamposTalentoNivel, RequisitoSimples } from "./draftTypes";
 
 function asNumber(valor: unknown): number | undefined {
   return typeof valor === "number" ? valor : undefined;
@@ -106,6 +107,44 @@ export function rawOriginalItemVazio(): Record<string, unknown> {
 
 export function adaptarRawItem(raw: Record<string, unknown>) {
   return adaptItem(raw);
+}
+
+// ---------------------------------------------------------------------
+// Runa (Etapa 9)
+// ---------------------------------------------------------------------
+
+function asStringArrayLocal(valor: unknown): string[] {
+  return Array.isArray(valor) ? valor.filter((v): v is string => typeof v === "string") : [];
+}
+
+export function extrairCamposRuna(canonico: ConteudoCanonico): CamposRuna {
+  const classificacao = canonico.classificacao;
+  return {
+    nome: canonico.nome,
+    slug: canonico.slug,
+    categoria: canonico.categoria,
+    descricaoCurta: canonico.descricaoCurta,
+    descricaoLonga: canonico.descricaoLonga,
+    tags: canonico.tags,
+    raridade: asString(classificacao.raridade),
+    preco: asNumber(classificacao.preco),
+    slotsPossiveis: asStringArrayLocal(classificacao.slotsPossiveis),
+    restricaoSubtipo: asString(classificacao.restricaoSubtipo),
+    requisitoPericia: asString(classificacao.requisitoPericia),
+    efeitos: extrairEfeitosEditaveis(canonico.efeitos),
+  };
+}
+
+export function vazioCamposRuna(): CamposRuna {
+  return { nome: "", slug: "", tags: [], slotsPossiveis: [], efeitos: [] };
+}
+
+export function rawOriginalRunaVazio(): Record<string, unknown> {
+  return { categoria: "runa", categoria_label: "Runa", custo_integridade: 0, slots_possiveis: [], payload_automacao: { efeitos: [] } };
+}
+
+export function adaptarRawRune(raw: Record<string, unknown>) {
+  return adaptRune(raw);
 }
 
 // ---------------------------------------------------------------------

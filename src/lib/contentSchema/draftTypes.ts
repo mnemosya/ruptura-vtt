@@ -93,6 +93,15 @@ export interface CamposTalento extends CamposComuns {
 export interface CamposItem extends CamposComuns {
   raridade?: string;
   preco?: number;
+  /**
+   * `moeda`/`quantidadePadrao`/`cargasPadrao`/`custoPa`/`disponibilidade`/
+   * `aquisicao` (abaixo): campos existentes desde a Etapa 3, mas SEM
+   * qualquer leitor real (auditoria da Etapa 9 — não há campo `moeda`,
+   * `disponibilidade` ou `aquisicao` no schema/conteúdo real de
+   * equipamento, nem em `normalizeItemContent`/`serializarItem`).
+   * Mantidos como estavam (não é escopo desta etapa inventar uma
+   * economia/semântica para eles) — ver checkpoint da Etapa 9 §limitações.
+   */
   moeda?: string;
   quantidadePadrao?: number;
   cargasPadrao?: number;
@@ -100,20 +109,63 @@ export interface CamposItem extends CamposComuns {
   disponibilidade?: string;
   aquisicao?: string;
   propriedades: string[];
+  /**
+   * Defaults de modelo (Etapa 9) — mesmas chaves REAIS de
+   * `estatisticas.*` já lidas por `normalizeItemContent`
+   * (character/inventory.ts): `mit_base`, `pd_max`, `slots_runa_max`,
+   * `cargas_max`, `municao_max`, `municao_compativel`, `tipo_protecao`.
+   * `regioes` é exposto (existe em conteúdo real, ex.: `["tronco"]`) mas
+   * SEM leitor real ainda — preservado/editável, nunca automatizado.
+   * Nenhum destes é lido de `Character`/instância — só do MODELO
+   * publicado (nunca sobrescreve MIT/PD/carga/munição atuais de uma
+   * instância já existente).
+   */
+  mitBase?: number;
+  pdBase?: number;
+  tipoProtecao?: string;
+  regioes?: string[];
+  slotsRunaMax?: number;
+  cargasMax?: number;
+  municaoMax?: number;
+  municaoCompativelSlug?: string;
   /** Construtor de Efeitos (Etapa 4) — vive em `payload_automacao`, nunca em `estatisticas`. */
+  efeitos: EfeitoEditavel[];
+}
+
+/**
+ * Runa (Etapa 9) — 4º content type editável. Campos mapeados 1:1 ao
+ * schema real (`content/schema_runas_v1_2.json`): `categoria`/
+ * `categoria_label` são `const` no schema (sempre "runa"/"Runa", nunca
+ * editáveis); `custoIntegridade` idem — o schema exige o campo, mas
+ * `_meta.observacoes` do conteúdo real confirma que runas NUNCA custam
+ * Integridade (exclusivo de escalpo) — as 40 runas reais têm
+ * `custo_integridade: 0`; por isso este campo é sempre fixado em 0 na
+ * serialização, nunca exposto como editável (evita reintroduzir uma
+ * regra que o próprio conteúdo real já eliminou).
+ */
+export interface CamposRuna extends CamposComuns {
+  raridade?: string;
+  preco?: number;
+  /** `slots_possiveis` real: subconjunto de "arma"|"armadura"|"escudo". */
+  slotsPossiveis: string[];
+  /** `restricao_subtipo` real — só existe em runas de arma: "corpo_a_corpo"|"arremesso_disparo"|"fogo". */
+  restricaoSubtipo?: string;
+  requisitoPericia?: string;
+  /** Reaproveita o mesmo catálogo universal — mapeado para o vocabulário real de `payload_automacao.efeitos[].tipo` de runa (ver effectLegacySerialization.ts). */
   efeitos: EfeitoEditavel[];
 }
 
 export type CamposEditaveisMagia = { contentType: "spell"; campos: CamposMagia };
 export type CamposEditaveisTalento = { contentType: "talent"; campos: CamposTalento };
 export type CamposEditaveisItem = { contentType: "item"; campos: CamposItem };
+export type CamposEditaveisRuna = { contentType: "rune"; campos: CamposRuna };
 
-export type CamposEditaveis = CamposEditaveisMagia | CamposEditaveisTalento | CamposEditaveisItem;
+export type CamposEditaveis = CamposEditaveisMagia | CamposEditaveisTalento | CamposEditaveisItem | CamposEditaveisRuna;
 
 export type DraftContentType = CamposEditaveis["contentType"];
 
 export function isDraftContentType(value: string): value is DraftContentType {
-  return value === "spell" || value === "talent" || value === "item";
+  return value === "spell" || value === "talent" || value === "item" || value === "rune";
 }
 
 export interface DraftPreservado {

@@ -10,16 +10,26 @@ import {
   POLITICAS_REAPLICACAO,
   TIPOS_ACAO_ADICIONAL,
   MAX_MODIFICADORES_EFEITO_TEMPORARIO,
+  OPERACOES_MODIFICAR_INSTANCIA,
+  DESTINOS_CONCEDER_ITEM,
+  COMPORTAMENTOS_PILHA_CONSUMIR,
+  OPERACOES_ALTERAR_PRECO,
+  OPERACOES_DISPONIBILIDADE,
   formatarFormulaCura,
   formatarFormulaDano,
   novoResultadoTeste,
   type CamposAcaoReacaoAdicional,
   type CamposAlterarDanoRecebido,
+  type CamposAlterarDisponibilidade,
+  type CamposAlterarPreco,
   type CamposAlterarRecurso,
   type CamposAplicarCondicao,
+  type CamposConcederItem,
+  type CamposConsumirItem,
   type CamposCura,
   type CamposDano,
   type CamposEfeitoTemporario,
+  type CamposModificarInstancia,
   type CamposModificarMargem,
   type CamposModificarTeste,
   type CamposRemoverCondicao,
@@ -86,6 +96,16 @@ export function EfeitoCamposPorTipo({
       return <CamposEfeitoTemporarioFields campos={efeito.campos} onChange={onChangeCampos} opcoes={opcoes} />;
     case "acao_reacao_adicional":
       return <CamposAcaoReacaoAdicionalFields campos={efeito.campos} onChange={onChangeCampos} />;
+    case "modificar_instancia":
+      return <CamposModificarInstanciaFields campos={efeito.campos} onChange={onChangeCampos} />;
+    case "conceder_item":
+      return <CamposConcederItemFields campos={efeito.campos} onChange={onChangeCampos} />;
+    case "consumir_item":
+      return <CamposConsumirItemFields campos={efeito.campos} onChange={onChangeCampos} />;
+    case "alterar_preco":
+      return <CamposAlterarPrecoFields campos={efeito.campos} onChange={onChangeCampos} />;
+    case "alterar_disponibilidade":
+      return <CamposAlterarDisponibilidadeFields campos={efeito.campos} onChange={onChangeCampos} />;
   }
 }
 
@@ -1168,6 +1188,216 @@ function CamposAcaoReacaoAdicionalFields({ campos, onChange }: { campos: CamposA
       <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
         <input data-testid="acao-adicional-confirmacao" type="checkbox" checked={campos.confirmacaoManual} onChange={(e) => onChange({ confirmacaoManual: e.target.checked })} /> Exige confirmação
         manual
+      </label>
+    </div>
+  );
+}
+
+function CamposModificarInstanciaFields({ campos, onChange }: { campos: CamposModificarInstancia; onChange: (p: Partial<CamposModificarInstancia>) => void }) {
+  const exigeValor = campos.operacao !== "reparar_mit" && campos.operacao !== "reparar_pd";
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+      <label style={labelStyle}>
+        Operação
+        <select data-testid="modificar-instancia-operacao" value={campos.operacao} onChange={(e) => onChange({ operacao: e.target.value as CamposModificarInstancia["operacao"] })} style={inputStyle}>
+          {OPERACOES_MODIFICAR_INSTANCIA.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label style={labelStyle}>
+        {exigeValor ? "Valor (delta)" : "Valor a reparar (sempre positivo)"}
+        <input
+          data-testid="modificar-instancia-valor"
+          type="number"
+          min={exigeValor ? undefined : 1}
+          value={campos.valor ?? ""}
+          onChange={(e) => onChange({ valor: numeroOuIndefinido(e.target.value) })}
+          style={{ ...inputStyle, width: 90 }}
+        />
+      </label>
+      <label style={labelStyle}>
+        Limite
+        <input data-testid="modificar-instancia-limite" type="number" min={0} value={campos.limite ?? ""} onChange={(e) => onChange({ limite: numeroOuIndefinido(e.target.value) })} style={{ ...inputStyle, width: 80 }} />
+      </label>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input data-testid="modificar-instancia-confirmacao" type="checkbox" checked={campos.confirmacaoManual} onChange={(e) => onChange({ confirmacaoManual: e.target.checked })} /> Exige confirmação
+        manual
+      </label>
+      <p style={{ width: "100%", fontSize: 12, color: "#a8a8b3", margin: "4px 0 0" }}>
+        Executor real (setItemMitAtual/PdAtual/CargaAtual/MunicaoAtual) — a seleção da instância-alvo continua manual.
+      </p>
+    </div>
+  );
+}
+
+function CamposConcederItemFields({ campos, onChange }: { campos: CamposConcederItem; onChange: (p: Partial<CamposConcederItem>) => void }) {
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+      <p style={{ width: "100%", fontSize: 12, color: "#a8a8b3", margin: "0 0 4px" }}>Sem executor real conectado nesta etapa — sempre lembrete.</p>
+      <label style={labelStyle}>
+        Item (slug da Biblioteca)
+        <input data-testid="conceder-item-slug" value={campos.itemSlug} onChange={(e) => onChange({ itemSlug: e.target.value })} style={inputStyle} />
+      </label>
+      <label style={labelStyle}>
+        Quantidade
+        <input data-testid="conceder-item-quantidade" type="number" min={1} value={campos.quantidade} onChange={(e) => onChange({ quantidade: Math.max(1, Number(e.target.value) || 1) })} style={{ ...inputStyle, width: 80 }} />
+      </label>
+      <label style={labelStyle}>
+        Destino
+        <select data-testid="conceder-item-destino" value={campos.destino} onChange={(e) => onChange({ destino: e.target.value as CamposConcederItem["destino"] })} style={inputStyle}>
+          {DESTINOS_CONCEDER_ITEM.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label style={labelStyle}>
+        Estado inicial
+        <input value={campos.estadoInicial ?? ""} onChange={(e) => onChange({ estadoInicial: e.target.value || undefined })} style={inputStyle} placeholder="equipado | empunhado | acesso_rapido | mochila" />
+      </label>
+      <label style={labelStyle}>
+        Cargas iniciais
+        <input type="number" min={0} value={campos.cargasIniciais ?? ""} onChange={(e) => onChange({ cargasIniciais: numeroOuIndefinido(e.target.value) })} style={{ ...inputStyle, width: 90 }} />
+      </label>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input type="checkbox" checked={campos.permitirDuplicata} onChange={(e) => onChange({ permitirDuplicata: e.target.checked })} /> Permitir duplicata
+      </label>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input type="checkbox" checked={campos.empilharQuandoCompativel} onChange={(e) => onChange({ empilharQuandoCompativel: e.target.checked })} /> Empilhar quando compatível
+      </label>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input data-testid="conceder-item-confirmacao" type="checkbox" checked={campos.confirmacaoManual} onChange={(e) => onChange({ confirmacaoManual: e.target.checked })} /> Exige confirmação manual
+      </label>
+    </div>
+  );
+}
+
+function CamposConsumirItemFields({ campos, onChange }: { campos: CamposConsumirItem; onChange: (p: Partial<CamposConsumirItem>) => void }) {
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+      <p style={{ width: "100%", fontSize: 12, color: "#a8a8b3", margin: "0 0 4px" }}>Sem executor real conectado nesta etapa — sempre lembrete.</p>
+      <label style={labelStyle}>
+        Item (slug — vazio = própria instância)
+        <input data-testid="consumir-item-slug" value={campos.itemSlug ?? ""} onChange={(e) => onChange({ itemSlug: e.target.value || undefined })} style={inputStyle} />
+      </label>
+      <label style={labelStyle}>
+        Quantidade
+        <input data-testid="consumir-item-quantidade" type="number" min={1} value={campos.quantidade} onChange={(e) => onChange({ quantidade: Math.max(1, Number(e.target.value) || 1) })} style={{ ...inputStyle, width: 80 }} />
+      </label>
+      <label style={labelStyle}>
+        Comportamento com pilha
+        <select value={campos.comportamentoPilha} onChange={(e) => onChange({ comportamentoPilha: e.target.value as CamposConsumirItem["comportamentoPilha"] })} style={inputStyle}>
+          {COMPORTAMENTOS_PILHA_CONSUMIR.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input type="checkbox" checked={campos.refund} onChange={(e) => onChange({ refund: e.target.checked })} /> Refund em cancelamento
+      </label>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input data-testid="consumir-item-confirmacao" type="checkbox" checked={campos.confirmacaoManual} onChange={(e) => onChange({ confirmacaoManual: e.target.checked })} /> Exige confirmação manual
+      </label>
+    </div>
+  );
+}
+
+function CamposAlterarPrecoFields({ campos, onChange }: { campos: CamposAlterarPreco; onChange: (p: Partial<CamposAlterarPreco>) => void }) {
+  const temLeitorReal = campos.operacao === "desconto_percentual" || campos.operacao === "permitir_compra_fiada";
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+      <label style={labelStyle}>
+        Operação
+        <select data-testid="alterar-preco-operacao" value={campos.operacao} onChange={(e) => onChange({ operacao: e.target.value as CamposAlterarPreco["operacao"] })} style={inputStyle}>
+          {OPERACOES_ALTERAR_PRECO.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+      </label>
+      {campos.operacao === "desconto_percentual" && (
+        <label style={labelStyle}>
+          Percentual
+          <input data-testid="alterar-preco-percentual" type="number" min={0} max={100} value={campos.percentual ?? ""} onChange={(e) => onChange({ percentual: numeroOuIndefinido(e.target.value) })} style={{ ...inputStyle, width: 80 }} />
+        </label>
+      )}
+      {campos.operacao === "desconto_fixo" && (
+        <label style={labelStyle}>
+          Valor fixo
+          <input type="number" min={0} value={campos.valorFixo ?? ""} onChange={(e) => onChange({ valorFixo: numeroOuIndefinido(e.target.value) })} style={{ ...inputStyle, width: 90 }} />
+        </label>
+      )}
+      {campos.operacao === "multiplicador" && (
+        <label style={labelStyle}>
+          Multiplicador
+          <input type="number" min={0} value={campos.multiplicador ?? ""} onChange={(e) => onChange({ multiplicador: numeroOuIndefinido(e.target.value) })} style={{ ...inputStyle, width: 90 }} />
+        </label>
+      )}
+      {campos.operacao === "preco_minimo" && (
+        <label style={labelStyle}>
+          Preço mínimo
+          <input type="number" min={0} value={campos.precoMinimo ?? ""} onChange={(e) => onChange({ precoMinimo: numeroOuIndefinido(e.target.value) })} style={{ ...inputStyle, width: 90 }} />
+        </label>
+      )}
+      {campos.operacao === "permitir_compra_fiada" && (
+        <label style={labelStyle}>
+          Raridade máxima
+          <input data-testid="alterar-preco-raridade-maxima" value={campos.raridadeMaxima ?? "raro"} onChange={(e) => onChange({ raridadeMaxima: e.target.value || undefined })} style={inputStyle} />
+        </label>
+      )}
+      <label style={labelStyle}>
+        Limite por compra
+        <input type="number" min={1} value={campos.limitePorCompra ?? ""} onChange={(e) => onChange({ limitePorCompra: numeroOuIndefinido(e.target.value) })} style={{ ...inputStyle, width: 90 }} />
+      </label>
+      <label style={labelStyle}>
+        Contexto (texto)
+        <input value={campos.contextoTexto ?? ""} onChange={(e) => onChange({ contextoTexto: e.target.value || undefined })} style={inputStyle} placeholder="ex.: Mercados Noturnos" />
+      </label>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input data-testid="alterar-preco-confirmacao" type="checkbox" checked={campos.confirmacaoManual} onChange={(e) => onChange({ confirmacaoManual: e.target.checked })} /> Exige confirmação manual
+      </label>
+      {!temLeitorReal && <p style={{ width: "100%", fontSize: 12, color: "#a8a8b3", margin: "4px 0 0" }}>Esta operação não tem leitor real no conteúdo hoje — só representável no rascunho, bloqueada na publicação.</p>}
+    </div>
+  );
+}
+
+function CamposAlterarDisponibilidadeFields({ campos, onChange }: { campos: CamposAlterarDisponibilidade; onChange: (p: Partial<CamposAlterarDisponibilidade>) => void }) {
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+      <p style={{ width: "100%", fontSize: 12, color: "#a8a8b3", margin: "0 0 4px" }}>Nenhum estado real de estoque de campanha existe hoje — sempre lembrete.</p>
+      <label style={labelStyle}>
+        Operação
+        <select data-testid="alterar-disponibilidade-operacao" value={campos.operacao} onChange={(e) => onChange({ operacao: e.target.value as CamposAlterarDisponibilidade["operacao"] })} style={inputStyle}>
+          {OPERACOES_DISPONIBILIDADE.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+      </label>
+      {campos.operacao === "definir_estoque" && (
+        <label style={labelStyle}>
+          Quantidade
+          <input data-testid="alterar-disponibilidade-quantidade" type="number" min={0} value={campos.quantidade ?? ""} onChange={(e) => onChange({ quantidade: numeroOuIndefinido(e.target.value) })} style={{ ...inputStyle, width: 90 }} />
+        </label>
+      )}
+      <label style={labelStyle}>
+        Fornecedor
+        <input value={campos.fornecedor ?? ""} onChange={(e) => onChange({ fornecedor: e.target.value || undefined })} style={inputStyle} />
+      </label>
+      <label style={labelStyle}>
+        Contexto (texto)
+        <input value={campos.contextoTexto ?? ""} onChange={(e) => onChange({ contextoTexto: e.target.value || undefined })} style={inputStyle} />
+      </label>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+        <input data-testid="alterar-disponibilidade-confirmacao" type="checkbox" checked={campos.confirmacaoManual} onChange={(e) => onChange({ confirmacaoManual: e.target.checked })} /> Exige confirmação manual
       </label>
     </div>
   );

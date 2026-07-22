@@ -16,7 +16,7 @@
  * setamos aqui (a versão/estado são autoridade do servidor SQL).
  */
 
-import type { CamposItem, CamposMagia, CamposTalento, ContentDraftRow, DraftContentType } from "./draftTypes";
+import type { CamposItem, CamposMagia, CamposRuna, CamposTalento, ContentDraftRow, DraftContentType } from "./draftTypes";
 import { isTipoEfeitoMvp, type EfeitoEditavel } from "./effectDraftTypes";
 import { resolverTipoCanonico } from "./effectTypeRegistry";
 import { reconstruirEfeitosLegado } from "./effectLegacySerialization";
@@ -116,13 +116,47 @@ function serializarItem(base: Record<string, unknown>, campos: CamposItem): Reco
   setOpcional(base, "descricao_longa", campos.descricaoLonga);
   base.tags = [...campos.tags];
 
-  if (campos.propriedades.length > 0) {
-    const est = asRecord(base.estatisticas);
-    est.propriedades = [...campos.propriedades];
-    base.estatisticas = est;
-  }
+  const est = asRecord(base.estatisticas);
+  if (campos.propriedades.length > 0) est.propriedades = [...campos.propriedades];
+  // Defaults de modelo (Etapa 9) — mesmas chaves reais lidas por
+  // normalizeItemContent (character/inventory.ts). Nunca tocam em
+  // instância (mitAtual/pdAtual/cargasAtual/municaoAtual vivem só no
+  // personagem, nunca neste payload de conteúdo).
+  setOpcional(est, "mit_base", campos.mitBase);
+  setOpcional(est, "pd_max", campos.pdBase);
+  setOpcional(est, "tipo_protecao", campos.tipoProtecao);
+  if (campos.regioes && campos.regioes.length > 0) est.regioes = [...campos.regioes];
+  setOpcional(est, "slots_runa_max", campos.slotsRunaMax);
+  setOpcional(est, "cargas_max", campos.cargasMax);
+  setOpcional(est, "municao_max", campos.municaoMax);
+  setOpcional(est, "municao_compativel", campos.municaoCompativelSlug);
+  base.estatisticas = est;
 
   aplicarEfeitos(base, "item", campos.efeitos);
+  return base;
+}
+
+// ---------------------------------------------------------------------
+// Runa (Etapa 9) — schema `schema_runas_v1_2.json`, additionalProperties
+// aberto no efeito, mas campos de topo fechados (`categoria`/
+// `categoria_label` const "runa"/"Runa", `custo_integridade` sempre 0 —
+// nunca escrito a partir do editor, nunca uma regra reintroduzida).
+// ---------------------------------------------------------------------
+function serializarRuna(base: Record<string, unknown>, campos: CamposRuna): Record<string, unknown> {
+  setOpcional(base, "nome", campos.nome);
+  base.categoria = "runa";
+  base.categoria_label = "Runa";
+  setOpcional(base, "raridade", campos.raridade);
+  setOpcional(base, "preco", campos.preco);
+  setOpcional(base, "descricao_curta", campos.descricaoCurta);
+  setOpcional(base, "descricao_longa", campos.descricaoLonga);
+  base.tags = [...campos.tags];
+  base.custo_integridade = 0;
+  base.slots_possiveis = [...campos.slotsPossiveis];
+  setOpcional(base, "restricao_subtipo", campos.restricaoSubtipo);
+  base.requisito_pericia = campos.requisitoPericia ?? null;
+
+  aplicarEfeitos(base, "rune", campos.efeitos);
   return base;
 }
 
@@ -188,5 +222,6 @@ export function serializarRascunhoParaPublicacao(draft: ContentDraftRow): Record
 
   if (editaveis.contentType === "spell") return serializarMagia(base, editaveis.campos);
   if (editaveis.contentType === "item") return serializarItem(base, editaveis.campos);
+  if (editaveis.contentType === "rune") return serializarRuna(base, editaveis.campos);
   return serializarTalento(base, editaveis.campos);
 }

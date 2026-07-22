@@ -23,6 +23,11 @@ export const LABEL_TIPO: Record<TipoEfeitoEditavel, string> = {
   alterar_dano_recebido: "Alterar dano recebido",
   efeito_temporario: "Efeito temporário",
   acao_reacao_adicional: "Ação ou reação adicional",
+  modificar_instancia: "Modificar instância",
+  conceder_item: "Conceder item ou criar instância",
+  consumir_item: "Consumir ou remover item",
+  alterar_preco: "Alterar preço ou conceder desconto",
+  alterar_disponibilidade: "Alterar disponibilidade ou estoque",
 };
 
 function renormalizarOrdem(efeitos: EfeitoEditavel[]): EfeitoEditavel[] {

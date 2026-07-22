@@ -12,10 +12,11 @@ import type { ContentTypeId, ResultadoAdaptacao } from "../types";
 import { adaptCondition } from "./condition";
 import { adaptGenerico } from "./generic";
 import { adaptItem } from "./item";
+import { adaptRune } from "./rune";
 import { adaptSpell } from "./spell";
 import { adaptTalentLevel } from "./talent";
 
-export { adaptCondition, adaptGenerico, adaptItem, adaptSpell, adaptTalentLevel };
+export { adaptCondition, adaptGenerico, adaptItem, adaptRune, adaptSpell, adaptTalentLevel };
 
 export function adaptarDocumento(contentType: ContentTypeId, raw: Record<string, unknown>): ResultadoAdaptacao {
   switch (contentType) {
@@ -23,6 +24,8 @@ export function adaptarDocumento(contentType: ContentTypeId, raw: Record<string,
       return adaptSpell(raw);
     case "item":
       return adaptItem(raw);
+    case "rune":
+      return adaptRune(raw);
     case "condition":
       return adaptCondition(raw);
     case "talent":

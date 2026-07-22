@@ -18,23 +18,27 @@ import { getContentDocument } from "../content/queries";
 import type { ContentType } from "../content/types";
 import {
   adaptarRawItem,
+  adaptarRawRune,
   adaptarRawSpell,
   adaptarRawTalento,
   extrairCamposItem,
   extrairCamposMagia,
+  extrairCamposRuna,
   extrairCamposTalento,
   rawOriginalItemVazio,
+  rawOriginalRunaVazio,
   rawOriginalSpellVazio,
   rawOriginalTalentoVazio,
   vazioCamposItem,
   vazioCamposMagia,
+  vazioCamposRuna,
   vazioCamposTalento,
 } from "./draftMapping";
 import { findDraftBySlug, getDraftById } from "./draftQueries";
-import type { CamposEditaveis, CamposItem, CamposMagia, CamposTalento, DraftContentType, DraftEnvelope } from "./draftTypes";
+import type { CamposEditaveis, CamposItem, CamposMagia, CamposRuna, CamposTalento, DraftContentType, DraftEnvelope } from "./draftTypes";
 import { getEditorMetadataAtual } from "./editorMetadataQueries";
 import type { EfeitoEditavel } from "./effectDraftTypes";
-import { validarCamposItem, validarCamposMagia, validarCamposTalento } from "./draftValidation";
+import { validarCamposItem, validarCamposMagia, validarCamposRuna, validarCamposTalento } from "./draftValidation";
 import { isValidSlug, slugDuplicadoSugerido, slugify } from "./slug";
 
 async function requireAdmin(): Promise<{ id: string; email: string | null }> {
@@ -69,6 +73,14 @@ function montarCamposECamposDesconhecidosIniciais(
     const campos = extrairCamposItem(adaptado.canonico);
     return {
       camposEditaveis: { contentType: "item", campos: { ...campos, nome: overrideNome ?? campos.nome, slug: overrideSlug ?? campos.slug } },
+      camposDesconhecidos: adaptado.camposDesconhecidos,
+    };
+  }
+  if (contentType === "rune") {
+    const adaptado = adaptarRawRune(rawOriginal);
+    const campos = extrairCamposRuna(adaptado.canonico);
+    return {
+      camposEditaveis: { contentType: "rune", campos: { ...campos, nome: overrideNome ?? campos.nome, slug: overrideSlug ?? campos.slug } },
       camposDesconhecidos: adaptado.camposDesconhecidos,
     };
   }
@@ -138,6 +150,9 @@ export async function criarRascunhoNovo(contentType: DraftContentType, nome: str
     } else if (contentType === "item") {
       camposEditaveis = { contentType: "item", campos: { ...vazioCamposItem(), nome, slug } };
       rawOriginal = rawOriginalItemVazio();
+    } else if (contentType === "rune") {
+      camposEditaveis = { contentType: "rune", campos: { ...vazioCamposRuna(), nome, slug } };
+      rawOriginal = rawOriginalRunaVazio();
     } else {
       camposEditaveis = { contentType: "talent", campos: { ...vazioCamposTalento(), nome, slug } };
       rawOriginal = rawOriginalTalentoVazio(slug, nome);
@@ -303,7 +318,7 @@ export interface AtualizarRascunhoResultado {
 
 export async function atualizarRascunho(
   draftId: string,
-  campos: CamposMagia | CamposItem | CamposTalento,
+  campos: CamposMagia | CamposItem | CamposRuna | CamposTalento,
   expectedVersion: number,
 ): Promise<AtualizarRascunhoResultado> {
   try {
@@ -324,7 +339,9 @@ export async function atualizarRascunho(
         ? await validarCamposMagia(campos as CamposMagia, draftId)
         : draft.content_type === "item"
           ? await validarCamposItem(campos as CamposItem, draftId)
-          : await validarCamposTalento(campos as CamposTalento, draftId);
+          : draft.content_type === "rune"
+            ? await validarCamposRuna(campos as CamposRuna, draftId)
+            : await validarCamposTalento(campos as CamposTalento, draftId);
 
     if (!validacao.valido) return { ok: false, erros: validacao.erros, avisos: validacao.avisos };
 

@@ -104,6 +104,16 @@ function descreverEfeitoFilho(efeito: EfeitoFilho): string {
     }
     case "acao_reacao_adicional":
       return `Conceder ${efeito.campos.tipo} adicional (× ${efeito.campos.quantidade}) — sem executor automático ainda, aplicar manualmente.`;
+    case "modificar_instancia":
+      return `Modificar instância: ${efeito.campos.operacao}${efeito.campos.valor != null ? ` ${efeito.campos.valor}` : ""} — aplicar via ferramentas existentes (setItemMitAtual/PdAtual/CargaAtual/MunicaoAtual).`;
+    case "conceder_item":
+      return `Conceder item ${efeito.campos.itemSlug || "(sem item)"} × ${efeito.campos.quantidade} — sem executor automático ainda, aplicar manualmente.`;
+    case "consumir_item":
+      return `Consumir/remover item ${efeito.campos.itemSlug ?? "(própria instância)"} × ${efeito.campos.quantidade} — sem executor automático ainda, aplicar manualmente.`;
+    case "alterar_preco":
+      return `Alterar preço (${efeito.campos.operacao}) — sem executor automático ainda, aplicar manualmente.`;
+    case "alterar_disponibilidade":
+      return `Alterar disponibilidade (${efeito.campos.operacao}) — sem estado real de estoque, aplicar manualmente.`;
   }
 }
 

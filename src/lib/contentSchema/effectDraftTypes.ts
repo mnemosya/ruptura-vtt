@@ -360,6 +360,135 @@ export interface CamposAcaoReacaoAdicional {
   confirmacaoManual: boolean;
 }
 
+/**
+ * Modifica uma INSTÂNCIA existente por operação enumerada (Etapa 9) —
+ * nunca um caminho JSON arbitrário. Cada operação mapeia 1:1 a um
+ * executor real e específico já existente ou adicionado nesta etapa
+ * (`character/inventory.ts`): `alterar_carga_atual` →
+ * `setItemCargaAtual`; `alterar_municao_carregada`/`recarregar` →
+ * `setItemMunicaoAtual`; `alterar_mit_atual`/`reparar_mit` →
+ * `setItemMitAtual`; `alterar_pd_atual`/`reparar_pd` → `setItemPdAtual`.
+ * `reparar_*` é a mesma operação que `alterar_*_atual` com `valor`
+ * positivo — mantidas como rótulos distintos porque o conteúdo real
+ * (`runa_armadura_autorreparo`, tipo "autorreparo") já usa esse conceito
+ * separadamente. Instalar/remover/ativar/desativar runa NÃO entram
+ * aqui — já são um fluxo real e genérico próprio (`installRuneOnItem`/
+ * `removeRuneFromItem`/`toggleInstalledRune`, ver checkpoint §runas).
+ */
+export const OPERACOES_MODIFICAR_INSTANCIA = [
+  "alterar_carga_atual",
+  "alterar_municao_carregada",
+  "recarregar",
+  "alterar_mit_atual",
+  "alterar_pd_atual",
+  "reparar_mit",
+  "reparar_pd",
+] as const;
+export type OperacaoModificarInstancia = (typeof OPERACOES_MODIFICAR_INSTANCIA)[number];
+
+export interface CamposModificarInstancia {
+  operacao: OperacaoModificarInstancia;
+  /** Delta (operações "alterar_") ou valor a somar (operações "reparar_"/"recarregar") — nunca um valor absoluto arbitrário fora do clamp do executor real. */
+  valor?: number;
+  limite?: number;
+  confirmacaoManual: boolean;
+}
+
+/**
+ * Concede conteúdo/cria instância de item (Etapa 9). Sem executor real
+ * conectado nesta etapa (auditoria: nenhum schema tem um `tipo` legado
+ * para "conceder item"; construir o fluxo completo de destino/bando/
+ * aliado é fora de escopo — "não transformar esta etapa em um editor
+ * geral de inventário"). Representável e preservável; sempre `lembrete`.
+ */
+export const DESTINOS_CONCEDER_ITEM = ["personagem", "aliado_selecionado", "bando"] as const;
+export type DestinoConcederItem = (typeof DESTINOS_CONCEDER_ITEM)[number];
+
+export interface CamposConcederItem {
+  /** Slug do item publicado na Biblioteca — nunca texto livre. */
+  itemSlug: string;
+  quantidade: number;
+  destino: DestinoConcederItem;
+  /** Mesmo vocabulário real de `ItemLoadoutState` (inventory.ts): equipado|empunhado|acesso_rapido|mochila. */
+  estadoInicial?: string;
+  cargasIniciais?: number;
+  quantidadeInicial?: number;
+  origem?: string;
+  motivo?: string;
+  permitirDuplicata: boolean;
+  empilharQuandoCompativel: boolean;
+  confirmacaoManual: boolean;
+}
+
+/**
+ * Consome/remove item ou instância (Etapa 9). Mesmo status de
+ * `conceder_item`: sem executor real conectado nesta etapa — sempre
+ * `lembrete`, representável e preservável.
+ */
+export const COMPORTAMENTOS_PILHA_CONSUMIR = ["reduzir_quantidade", "remover_instancia"] as const;
+export type ComportamentoPilhaConsumir = (typeof COMPORTAMENTOS_PILHA_CONSUMIR)[number];
+
+export interface CamposConsumirItem {
+  itemSlug?: string;
+  quantidade: number;
+  comportamentoPilha: ComportamentoPilhaConsumir;
+  condicao?: string;
+  refund: boolean;
+  destinoTransferencia?: string;
+  confirmacaoManual: boolean;
+}
+
+/**
+ * Altera preço/concede desconto (Etapa 9). Serializável hoje só para
+ * talento — reaproveita EXATAMENTE o formato real já lido por
+ * `getGarimpoDeRuaAvailability`/`getCadernetaDeDividaAvailability`
+ * (talentEngine.ts): `desconto_percentual` → `tipo: "desconto_loja"`,
+ * `permitir_compra_fiada` → `tipo: "compra_fiada"`. As demais operações
+ * (desconto_fixo/multiplicador/sobretaxa/preco_minimo) não têm análogo
+ * real no conteúdo hoje — representáveis, mas bloqueadas na publicação
+ * (ver effectLegacySerialization.ts).
+ */
+export const OPERACOES_ALTERAR_PRECO = [
+  "desconto_percentual",
+  "desconto_fixo",
+  "multiplicador",
+  "sobretaxa",
+  "preco_minimo",
+  "permitir_compra_fiada",
+] as const;
+export type OperacaoAlterarPreco = (typeof OPERACOES_ALTERAR_PRECO)[number];
+
+export interface CamposAlterarPreco {
+  operacao: OperacaoAlterarPreco;
+  percentual?: number;
+  valorFixo?: number;
+  multiplicador?: number;
+  precoMinimo?: number;
+  limitePorCompra?: number;
+  /** Só relevante para `permitir_compra_fiada` — mesma escala real de `isRaridadeDentroDoLimite` (talentEngine.ts). */
+  raridadeMaxima?: string;
+  contextoTexto?: string;
+  confirmacaoManual: boolean;
+}
+
+/**
+ * Altera disponibilidade/estoque (Etapa 9). Auditoria: NENHUM estado de
+ * estoque de campanha existe hoje (catálogo tratado como
+ * infinitamente disponível) — sempre `lembrete`/`narrativo_rastreado`,
+ * nunca automático. Representável para documentação/preview, nunca
+ * fingido como sistema de estoque funcional.
+ */
+export const OPERACOES_DISPONIBILIDADE = ["marcar_disponivel", "marcar_indisponivel", "definir_estoque"] as const;
+export type OperacaoDisponibilidade = (typeof OPERACOES_DISPONIBILIDADE)[number];
+
+export interface CamposAlterarDisponibilidade {
+  operacao: OperacaoDisponibilidade;
+  quantidade?: number;
+  fornecedor?: string;
+  contextoTexto?: string;
+  confirmacaoManual: boolean;
+}
+
 /** Tipos aceitos como filho de um resultado de teste/resistência — todo o catálogo universal, exceto o próprio teste/resistência (sem recursão, sem ciclo possível). */
 export type EfeitoFilho =
   | (CamposEfeitoComuns & { tipo: "dano"; campos: CamposDano })
@@ -371,7 +500,12 @@ export type EfeitoFilho =
   | (CamposEfeitoComuns & { tipo: "modificar_margem"; campos: CamposModificarMargem })
   | (CamposEfeitoComuns & { tipo: "alterar_dano_recebido"; campos: CamposAlterarDanoRecebido })
   | (CamposEfeitoComuns & { tipo: "efeito_temporario"; campos: CamposEfeitoTemporario })
-  | (CamposEfeitoComuns & { tipo: "acao_reacao_adicional"; campos: CamposAcaoReacaoAdicional });
+  | (CamposEfeitoComuns & { tipo: "acao_reacao_adicional"; campos: CamposAcaoReacaoAdicional })
+  | (CamposEfeitoComuns & { tipo: "modificar_instancia"; campos: CamposModificarInstancia })
+  | (CamposEfeitoComuns & { tipo: "conceder_item"; campos: CamposConcederItem })
+  | (CamposEfeitoComuns & { tipo: "consumir_item"; campos: CamposConsumirItem })
+  | (CamposEfeitoComuns & { tipo: "alterar_preco"; campos: CamposAlterarPreco })
+  | (CamposEfeitoComuns & { tipo: "alterar_disponibilidade"; campos: CamposAlterarDisponibilidade });
 
 export type EfeitoEditavel =
   | EfeitoFilho
@@ -386,10 +520,10 @@ export function isTipoEfeitoMvp(tipo: string): tipo is TipoEfeitoMvp {
   return (TIPOS_EFEITO_MVP as readonly string[]).includes(tipo);
 }
 
-/** Tipo de qualquer efeito editável, incluindo os 3 da Etapa 7 e os 2 novos da Etapa 8 (`efeito_temporario`/`acao_reacao_adicional`). */
+/** Tipo de qualquer efeito editável, incluindo os 3 da Etapa 7, os 2 da Etapa 8 e os 5 novos da Etapa 9 (inventário/mercado). */
 export type TipoEfeitoEditavel = EfeitoEditavel["tipo"];
 
-/** Todos os tipos que o Construtor sabe criar/serializar nesta etapa — os 6 originais + os 3 da Etapa 7 + os 2 da Etapa 8. Usado pelo seletor de tipo da UI e por qualquer checagem "este tipo existe no catálogo editável". */
+/** Todos os tipos que o Construtor sabe criar/serializar nesta etapa — os 6 originais + 3 (Etapa 7) + 2 (Etapa 8) + 5 (Etapa 9). Usado pelo seletor de tipo da UI e por qualquer checagem "este tipo existe no catálogo editável". */
 export const TIPOS_EFEITO_EDITAVEL: readonly TipoEfeitoEditavel[] = [
   ...TIPOS_EFEITO_MVP,
   "modificar_margem",
@@ -397,6 +531,11 @@ export const TIPOS_EFEITO_EDITAVEL: readonly TipoEfeitoEditavel[] = [
   "teste_resistencia",
   "efeito_temporario",
   "acao_reacao_adicional",
+  "modificar_instancia",
+  "conceder_item",
+  "consumir_item",
+  "alterar_preco",
+  "alterar_disponibilidade",
 ];
 
 export function isTipoEfeitoEditavel(tipo: string): tipo is TipoEfeitoEditavel {
@@ -406,9 +545,9 @@ export function isTipoEfeitoEditavel(tipo: string): tipo is TipoEfeitoEditavel {
 /**
  * Tipos válidos como filho de um resultado — todo o catálogo universal
  * exceto `teste_resistencia` (profundidade limitada por construção).
- * `efeito_temporario`/`acao_reacao_adicional` são seguros como filhos:
- * nenhum dos dois contém uma árvore de teste/resistência (sem recursão,
- * sem ciclo possível).
+ * Os 5 novos tipos da Etapa 9 são seguros como filhos pela mesma razão
+ * de `efeito_temporario`/`acao_reacao_adicional`: nenhum contém uma
+ * árvore de teste/resistência aninhada.
  */
 export const TIPOS_EFEITO_FILHO: readonly EfeitoFilho["tipo"][] = [
   ...TIPOS_EFEITO_MVP,
@@ -416,6 +555,11 @@ export const TIPOS_EFEITO_FILHO: readonly EfeitoFilho["tipo"][] = [
   "alterar_dano_recebido",
   "efeito_temporario",
   "acao_reacao_adicional",
+  "modificar_instancia",
+  "conceder_item",
+  "consumir_item",
+  "alterar_preco",
+  "alterar_disponibilidade",
 ];
 
 export function isTipoEfeitoFilho(tipo: string): tipo is EfeitoFilho["tipo"] {
@@ -475,5 +619,15 @@ export function novoEfeitoEditavel(tipo: TipoEfeitoEditavel, ordem: number): Efe
       return { ...comuns, tipo, campos: { duracao: { tipo: "rounds", rodadas: 1 }, politicaReaplicacao: "substituir", acumulavel: false, modificadores: [], confirmacaoManual: true } };
     case "acao_reacao_adicional":
       return { ...comuns, tipo, campos: { tipo: "acao", quantidade: 1, gratuito: true, consomeReacao: false, confirmacaoManual: true } };
+    case "modificar_instancia":
+      return { ...comuns, tipo, campos: { operacao: "reparar_mit", confirmacaoManual: true } };
+    case "conceder_item":
+      return { ...comuns, tipo, campos: { itemSlug: "", quantidade: 1, destino: "personagem", permitirDuplicata: false, empilharQuandoCompativel: true, confirmacaoManual: true } };
+    case "consumir_item":
+      return { ...comuns, tipo, campos: { quantidade: 1, comportamentoPilha: "reduzir_quantidade", refund: false, confirmacaoManual: true } };
+    case "alterar_preco":
+      return { ...comuns, tipo, campos: { operacao: "desconto_percentual", confirmacaoManual: true } };
+    case "alterar_disponibilidade":
+      return { ...comuns, tipo, campos: { operacao: "marcar_disponivel", confirmacaoManual: true } };
   }
 }

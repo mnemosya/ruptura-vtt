@@ -110,8 +110,8 @@ export const CONTENT_TYPE_REGISTRY: Record<ContentTypeId, ContentTypeDefinition>
     modoArmazenamento: "collection",
     colecaoChave: "runas",
     secoesAplicaveis: ["identificacao", "texto", "efeitos", "mercado"],
-    statusAdapter: "planejado",
-    observacao: "Schema legado aceita additionalProperties — adapter genérico preserva tudo como campo desconhecido até Etapa 9.",
+    statusAdapter: "implementado",
+    observacao: "Etapa 9: adapter dedicado (adapters/rune.ts) + 4º content type editável no Editor Universal (slots_possiveis/restricao_subtipo/requisito_pericia + catálogo universal de efeitos).",
   },
   escalpo: {
     id: "escalpo",

@@ -3,20 +3,21 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { OpcoesDeRegras } from "../../../../../lib/contentSchema/characterRuleOptions";
-import type { CamposItem, CamposMagia, CamposTalento, ContentDraftRow } from "../../../../../lib/contentSchema/draftTypes";
+import type { CamposItem, CamposMagia, CamposRuna, CamposTalento, ContentDraftRow } from "../../../../../lib/contentSchema/draftTypes";
 import { CONTENT_TYPE_REGISTRY } from "../../../../../lib/contentSchema/contentTypeRegistry";
 import { atualizarRascunho, excluirRascunho } from "../../../../../lib/contentSchema/draftServerActions";
 import type { BaseDocumentoStatus, DraftEfeitosPreservados } from "../../../../../lib/contentSchema/draftView";
 import { CamposComunsSection } from "../_shared/CamposComunsSection";
 import { CamposItemSection } from "../_shared/CamposItemSection";
 import { CamposMagiaSection } from "../_shared/CamposMagiaSection";
+import { CamposRunaSection } from "../_shared/CamposRunaSection";
 import { CamposTalentoSection } from "../_shared/CamposTalentoSection";
 import { EffectsEditorSection } from "../_shared/EffectsEditorSection";
 import { EffectsPreviewList } from "../_shared/EffectsPreviewList";
 import { dangerTextStyle, primaryButtonStyle, sectionStyle, warnTextStyle, buttonStyle } from "../_shared/formStyles";
 import { PreviewPreservado } from "../_shared/PreviewPreservado";
 
-type CamposUniao = CamposMagia | CamposItem | CamposTalento;
+type CamposUniao = CamposMagia | CamposItem | CamposRuna | CamposTalento;
 
 export function DraftEditorClient({
   draft,
@@ -142,16 +143,17 @@ export function DraftEditorClient({
         <h3 style={{ marginTop: 0, fontSize: 15 }}>Classificação e campos específicos</h3>
         {draft.content_type === "spell" && <CamposMagiaSection campos={campos as CamposMagia} onChange={atualizarCampos} />}
         {draft.content_type === "item" && <CamposItemSection campos={campos as CamposItem} onChange={atualizarCampos} />}
+        {draft.content_type === "rune" && <CamposRunaSection campos={campos as CamposRuna} onChange={atualizarCampos} />}
         {draft.content_type === "talent" && (
           <CamposTalentoSection campos={campos as CamposTalento} onChange={atualizarCampos} opcoes={opcoes} condicoesDisponiveis={condicoesDisponiveis} />
         )}
       </div>
 
-      {(draft.content_type === "spell" || draft.content_type === "item") && (
+      {(draft.content_type === "spell" || draft.content_type === "item" || draft.content_type === "rune") && (
         <div style={sectionStyle}>
           <h3 style={{ marginTop: 0, fontSize: 15 }}>Efeitos</h3>
           <EffectsEditorSection
-            efeitos={(campos as CamposMagia | CamposItem).efeitos}
+            efeitos={(campos as CamposMagia | CamposItem | CamposRuna).efeitos}
             onChange={(efeitos) => atualizarCampos({ efeitos } as Partial<CamposUniao>)}
             opcoes={opcoes}
             condicoesDisponiveis={condicoesDisponiveis}
@@ -213,7 +215,7 @@ export function DraftEditorClient({
             </div>
           ))
         ) : (
-          <EffectsPreviewList efeitos={(campos as CamposMagia | CamposItem).efeitos} />
+          <EffectsPreviewList efeitos={(campos as CamposMagia | CamposItem | CamposRuna).efeitos} />
         )}
 
         <PreviewPreservado resultados={efeitosPreservados} />

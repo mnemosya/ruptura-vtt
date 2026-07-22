@@ -74,6 +74,14 @@ function formula(quantidadeDados: number | undefined, faces: number | undefined)
   return `${quantidadeDados}d${faces}`;
 }
 
+/** Rótulo plural para mensagens de bloqueio — nunca hardcoded inline em cada mensagem. */
+function rotuloContentType(contentType: DraftContentType): string {
+  if (contentType === "spell") return "magias";
+  if (contentType === "talent") return "talentos";
+  if (contentType === "rune") return "runas";
+  return "itens";
+}
+
 /**
  * Valida se um efeito editável é representável no vocabulário legado
  * daquele content_type. Retorna mensagens de erro BLOQUEANTES (vazio =
@@ -98,19 +106,19 @@ function validarArvoreTesteResistencia(contentType: DraftContentType, efeito: Ex
   const { cd, resultados, pericia, atributo } = efeito.campos;
   if (!pericia && !atributo) erros.push(`Efeito "${rotulo}": falta perícia ou atributo.`);
   if (!cd) erros.push(`Efeito "${rotulo}": falta CD (fixa ou derivada).`);
-  if (cd?.tipo === "derivada" && contentType === "item") {
-    erros.push(`Efeito "${rotulo}": CD derivada (vertente) não é representável no contrato de itens, que exige um valor numérico literal — use CD fixa.`);
+  if (cd?.tipo === "derivada" && (contentType === "item" || contentType === "rune")) {
+    erros.push(`Efeito "${rotulo}": CD derivada (vertente) não é representável no contrato de ${rotuloContentType(contentType)}, que exige um valor numérico literal — use CD fixa.`);
   }
   if (resultados.length === 0) erros.push(`Efeito "${rotulo}": nenhum resultado configurado.`);
   if (resultados.length > MAX_RESULTADOS_SERIALIZAVEIS) {
-    erros.push(`Efeito "${rotulo}": o contrato de ${contentType === "spell" ? "magias" : "itens"} só representa até ${MAX_RESULTADOS_SERIALIZAVEIS} resultados (um de sucesso, um de falha) sem ambiguidade — simplifique a árvore.`);
+    erros.push(`Efeito "${rotulo}": o contrato de ${rotuloContentType(contentType)} só representa até ${MAX_RESULTADOS_SERIALIZAVEIS} resultados (um de sucesso, um de falha) sem ambiguidade — simplifique a árvore.`);
   }
   const faixasVistas = new Set<string>();
   for (const r of resultados) {
     if (faixasVistas.has(r.faixa)) erros.push(`Efeito "${rotulo}": faixa "${r.faixa}" duplicada entre resultados.`);
     faixasVistas.add(r.faixa);
     if (!FAMILIA_SUCESSO.has(r.faixa) && !FAMILIA_FALHA.has(r.faixa)) {
-      erros.push(`Efeito "${rotulo}": resultado de faixa "${r.faixa}" só é representável no contrato de ${contentType === "spell" ? "magias" : "itens"} quando é sucesso ou falha (sem crítico/faixa específica/manual separados) — simplifique ou mantenha só no rascunho.`);
+      erros.push(`Efeito "${rotulo}": resultado de faixa "${r.faixa}" só é representável no contrato de ${rotuloContentType(contentType)} quando é sucesso ou falha (sem crítico/faixa específica/manual separados) — simplifique ou mantenha só no rascunho.`);
     }
     if (r.efeitos.length > MAX_EFEITOS_POR_RESULTADO_SERIALIZAVEL) {
       erros.push(`Efeito "${rotulo}": resultado "${r.faixa}" tem mais efeitos filhos do que o contrato consegue representar sem ambiguidade (máximo ${MAX_EFEITOS_POR_RESULTADO_SERIALIZAVEL}).`);
@@ -123,7 +131,7 @@ function validarArvoreTesteResistencia(contentType: DraftContentType, efeito: Ex
     // tipo (`EfeitoFilho` exclui esse tipo), não só validado em runtime.
     for (const filho of r.efeitos) {
       if (filho.tipo === "modificar_margem" || filho.tipo === "alterar_dano_recebido" || filho.tipo === "modificar_teste" || filho.tipo === "alterar_recurso") {
-        erros.push(`Efeito "${rotulo}": resultado "${r.faixa}" tem um efeito filho do tipo "${filho.tipo}" que o contrato de ${contentType === "spell" ? "magias" : "itens"} não representa dentro de um teste/resistência — só dano/aplicar_condicao/remover_condicao/cura são serializáveis aqui.`);
+        erros.push(`Efeito "${rotulo}": resultado "${r.faixa}" tem um efeito filho do tipo "${filho.tipo}" que o contrato de ${rotuloContentType(contentType)} não representa dentro de um teste/resistência — só dano/aplicar_condicao/remover_condicao/cura são serializáveis aqui.`);
       }
       erros.push(...validarEfeitoParaPublicacao(contentType, filho));
     }
@@ -196,8 +204,8 @@ export function validarEfeitoParaPublicacao(contentType: DraftContentType, efeit
   }
 
   if (efeito.tipo === "efeito_temporario") {
-    if (contentType === "spell") {
-      erros.push(`Efeito "${rotulo}": efeito temporário não tem representação segura no contrato de magias (schema fechado, sem campo de duração/buff) — mantenha só no rascunho.`);
+    if (contentType === "spell" || contentType === "rune") {
+      erros.push(`Efeito "${rotulo}": efeito temporário não tem representação segura no contrato de ${rotuloContentType(contentType)} (sem campo de duração/buff no vocabulário real) — mantenha só no rascunho.`);
     } else {
       erros.push(...validarEfeitoTemporarioParaPublicacao(contentType, efeito));
     }
@@ -208,11 +216,46 @@ export function validarEfeitoParaPublicacao(contentType: DraftContentType, efeit
   if (efeito.tipo === "acao_reacao_adicional" && contentType === "item" && efeito.campos.tipo !== "ataque") {
     erros.push(`Efeito "${rotulo}": o contrato de itens só reconhece concessão de ATAQUE adicional (tipo "ataque_adicional" no enum real) — ação/reação adicional em item mantenha só no rascunho.`);
   }
-  if (efeito.usoLimitado && contentType !== "talent") {
-    erros.push(`Efeito "${rotulo}": uso/cadência limitados só têm representação segura no contrato de talentos (mesmo formato lido por getTalentUsageState) — para magia/item, mantenha só no rascunho.`);
+  if (efeito.usoLimitado && (contentType === "spell" || contentType === "item")) {
+    erros.push(`Efeito "${rotulo}": uso/cadência limitados só têm representação segura no contrato de talentos/runas (mesmo formato real usos/cadencia) — para magia/item, mantenha só no rascunho.`);
   }
   if (efeito.usoLimitado && !(efeito.usoLimitado.usosMax > 0)) {
     erros.push(`Efeito "${rotulo}": quantidade máxima de usos precisa ser maior que zero.`);
+  }
+
+  // Etapa 9 — inventário/mercado. Vocabulário real por content_type (ver TIPO_LEGADO):
+  // cura/remover_condicao NÃO existem no enum real de runa; conceder_item/consumir_item/
+  // alterar_disponibilidade só têm bucket real em talento (tipo livre); alterar_preco só
+  // tem leitor real em talento; modificar_instancia não tem bucket real em magia.
+  if ((efeito.tipo === "cura" || efeito.tipo === "remover_condicao") && contentType === "rune") {
+    erros.push(`Efeito "${rotulo}": "${efeito.tipo}" não existe no vocabulário real de runa (schema_runas_v1_2.json) — mantenha só no rascunho.`);
+  }
+  if (efeito.tipo === "modificar_instancia" && contentType === "spell") {
+    erros.push(`Efeito "${rotulo}": modificar instância não tem representação segura no contrato de magias (schema fechado, sem categoria genérica) — mantenha só no rascunho.`);
+  }
+  if (efeito.tipo === "modificar_instancia") {
+    const exigeValor = efeito.campos.operacao !== "reparar_mit" && efeito.campos.operacao !== "reparar_pd";
+    if (exigeValor && efeito.campos.valor == null) {
+      erros.push(`Efeito "${rotulo}": operação "${efeito.campos.operacao}" exige um valor.`);
+    }
+    if (!exigeValor && (efeito.campos.valor == null || efeito.campos.valor <= 0)) {
+      erros.push(`Efeito "${rotulo}": operação "${efeito.campos.operacao}" exige um valor positivo (reparo nunca reduz).`);
+    }
+  }
+  if ((efeito.tipo === "conceder_item" || efeito.tipo === "consumir_item" || efeito.tipo === "alterar_disponibilidade") && contentType !== "talent") {
+    erros.push(`Efeito "${rotulo}": "${efeito.tipo}" só tem representação (sem automação) no contrato de talentos — para magia/item/runa, mantenha só no rascunho.`);
+  }
+  if (efeito.tipo === "conceder_item" && !efeito.campos.itemSlug) {
+    erros.push(`Efeito "${rotulo}": falta o item referenciado da Biblioteca.`);
+  }
+  if (efeito.tipo === "alterar_preco") {
+    if (contentType !== "talent") {
+      erros.push(`Efeito "${rotulo}": alterar preço/desconto só tem representação segura no contrato de talentos (mesmo formato lido por getGarimpoDeRuaAvailability/getCadernetaDeDividaAvailability) — para magia/item/runa, mantenha só no rascunho.`);
+    } else if (efeito.campos.operacao !== "desconto_percentual" && efeito.campos.operacao !== "permitir_compra_fiada") {
+      erros.push(`Efeito "${rotulo}": operação "${efeito.campos.operacao}" não tem leitor real no conteúdo hoje (só desconto_percentual/permitir_compra_fiada) — mantenha só no rascunho.`);
+    } else if (efeito.campos.operacao === "desconto_percentual" && (efeito.campos.percentual == null || efeito.campos.percentual < 0 || efeito.campos.percentual > 100)) {
+      erros.push(`Efeito "${rotulo}": desconto percentual precisa estar entre 0 e 100.`);
+    }
   }
 
   if (contentType === "spell") {
@@ -282,6 +325,24 @@ export function validarEfeitoParaPublicacao(contentType: DraftContentType, efeit
     }
   }
 
+  if (contentType === "rune") {
+    switch (efeito.tipo) {
+      case "dano":
+        if (!efeito.campos.tipoDano) {
+          erros.push(`Efeito "${rotulo}": dano em runa exige um tipo de dano.`);
+        }
+        if (efeito.campos.tipoDano && !TIPO_DANO_ITEM_ENUM.has(efeito.campos.tipoDano)) {
+          erros.push(`Efeito "${rotulo}": tipo de dano "${efeito.campos.tipoDano}" não é reconhecido pelo contrato de runas.`);
+        }
+        break;
+      case "aplicar_condicao":
+        if (!efeito.campos.condicaoSlug || !CONDICOES_ENUM.has(efeito.campos.condicaoSlug)) {
+          erros.push(`Efeito "${rotulo}": condição "${efeito.campos.condicaoSlug || "(vazia)"}" não é reconhecida pelo contrato de runas.`);
+        }
+        break;
+    }
+  }
+
   // Talento: gatilho/alvo/duracao/condicao/recurso/valor são tipados livremente
   // no schema (qualquer JSON) — só alvo_tags/alvo_acoes têm enum próprio,
   // e a Etapa 4 não expõe alvo_acoes com esses valores específicos, então
@@ -304,9 +365,24 @@ const FAMILIA_TALENTO: Record<EfeitoEditavel["tipo"], string> = {
   efeito_temporario: "buff_empilhavel",
   // Valor default; camposLegadoPorTipo sobrescreve `familia` real (ataque_adicional | reacao) conforme campos.tipo.
   acao_reacao_adicional: "reacao",
+  modificar_instancia: "regra_especial",
+  conceder_item: "regra_especial",
+  consumir_item: "regra_especial",
+  // Valor default; camposLegadoPorTipo sobrescreve conforme necessário (sempre "economia_loja" na prática — enum real).
+  alterar_preco: "economia_loja",
+  alterar_disponibilidade: "economia_loja",
 };
 
-/** `tipo` legado a emitir, por content_type — só valores confirmados no enum real (spell/item) ou livres (talent). */
+/**
+ * `tipo` legado a emitir, por content_type — só valores confirmados no
+ * enum real (spell/item/rune) ou livres (talent). Etapa 9: `rune` usa o
+ * vocabulário real do próprio schema de runa (`aplicar_condicao |
+ * ataque_adicional | autorreparo | dano_modificador | economia_pa |
+ * efeito_com_resistencia | modificador | narrativo | protecao | reacao |
+ * recurso | revelar | utilitario`) — NÃO tem `cura`/`remover_condicao`
+ * no enum real, por isso ausentes aqui (bloqueados em
+ * validarEfeitoParaPublicacao).
+ */
 const TIPO_LEGADO: Record<DraftContentType, Partial<Record<EfeitoEditavel["tipo"], string>>> = {
   spell: { dano: "dano", cura: "cura", aplicar_condicao: "aplicar_condicao", remover_condicao: "remover_condicao", modificar_teste: "modificador", alterar_recurso: "recurso", teste_resistencia: "efeito_com_resistencia" },
   // "dano" não existe no enum de tipo do schema de equipamentos — só "dano_em_area". Sem entrada boa para
@@ -316,6 +392,8 @@ const TIPO_LEGADO: Record<DraftContentType, Partial<Record<EfeitoEditavel["tipo"
     teste_resistencia: "efeito_com_resistencia", alterar_dano_recebido: "utilitario",
     // "buff_temporario" e "ataque_adicional" são valores REAIS do enum tipo_efeito de item (auditoria) — mesmo shape já lido por buildTemporaryEffectFromStructuredPayload (itemUse.ts).
     efeito_temporario: "buff_temporario", acao_reacao_adicional: "ataque_adicional",
+    // Sem bucket real específico ("autorreparo" só existe no enum de runa) — reaproveita "utilitario" (mesmo catch-all já usado por alterar_dano_recebido).
+    modificar_instancia: "utilitario",
   },
   // "promocao_margem" é o tipo real já lido por getMarginPromotions (talentEngine.ts); "reduzir_dano_recebido" é
   // string livre (schema de talento não restringe `tipo`) com família "protecao" (enum real, mesmo conceito das runas reais).
@@ -325,6 +403,18 @@ const TIPO_LEGADO: Record<DraftContentType, Partial<Record<EfeitoEditavel["tipo"
     // "buff_temporario" tipo livre com família "buff_empilhavel" (enum real); acao_reacao_adicional tem `tipo`/`familia`
     // reais recalculados em camposLegadoPorTipo (ataque_adicional/reacao) conforme campos.tipo.
     efeito_temporario: "buff_temporario", acao_reacao_adicional: "ataque_adicional",
+    // Sem bucket real específico para talento — tipo livre, família "regra_especial" (catch-all).
+    modificar_instancia: "modificar_instancia", conceder_item: "conceder_item", consumir_item: "consumir_item",
+    // "desconto_loja"/"compra_fiada" são os tipos REAIS já lidos por getGarimpoDeRuaAvailability/getCadernetaDeDividaAvailability;
+    // camposLegadoPorTipo escolhe entre os dois conforme campos.operacao. Sem bucket real para alterar_disponibilidade — tipo livre.
+    alterar_preco: "desconto_loja", alterar_disponibilidade: "alterar_disponibilidade",
+  },
+  // Vocabulário real de runa (schema_runas_v1_2.json) — sem `cura`/`remover_condicao`/`modificar_margem`/
+  // `efeito_temporario`/`conceder_item`/`consumir_item`/`alterar_preco`/`alterar_disponibilidade` (bloqueados em validarEfeitoParaPublicacao).
+  rune: {
+    dano: "dano_modificador", aplicar_condicao: "aplicar_condicao", modificar_teste: "modificador", alterar_recurso: "recurso",
+    teste_resistencia: "efeito_com_resistencia", alterar_dano_recebido: "protecao", acao_reacao_adicional: "ataque_adicional",
+    modificar_instancia: "autorreparo",
   },
 };
 
@@ -334,11 +424,12 @@ function camposLegadoPorTipo(contentType: DraftContentType, efeito: EfeitoEditav
     case "dano": {
       const cp = efeito.campos;
       const dado = cp.tipoFormula === "fixo" ? undefined : formula(cp.quantidadeDados, cp.faces);
-      if (contentType === "spell") {
+      if (contentType === "spell" || contentType === "item") {
         return { dado, valor: cp.tipoFormula === "fixo" ? cp.valorFixo : undefined, tipo_dano: cp.tipoDano, subtipo_dano: cp.subtipoDano, sucesso: cp.metadeEmSucesso ? "metade" : undefined };
       }
-      if (contentType === "item") {
-        return { dado, valor: cp.tipoFormula === "fixo" ? cp.valorFixo : undefined, tipo_dano: cp.tipoDano, subtipo_dano: cp.subtipoDano, sucesso: cp.metadeEmSucesso ? "metade" : undefined };
+      if (contentType === "rune") {
+        // "dano_modificador" real (ex.: runa_cac_flamejante) usa usos/cadencia (ver usoLimitado, mesclado em serializarEfeitoLegado) — nunca o campo "sucesso" (conceito de resistência de dano/cura, não de bônus consumível).
+        return { dado, tipo_dano: cp.tipoDano, subtipo_dano: cp.subtipoDano };
       }
       // talent: dado/valor tipados livremente; sem tipo_dano/subtipo_dano no schema.
       return { dado, valor: cp.tipoFormula === "fixo" ? cp.valorFixo : undefined };
@@ -377,7 +468,7 @@ function camposLegadoPorTipo(contentType: DraftContentType, efeito: EfeitoEditav
     }
     case "alterar_dano_recebido": {
       const cp = efeito.campos;
-      if (contentType === "item") {
+      if (contentType === "item" || contentType === "rune") {
         return { operacao: cp.operacao, valor_fixo: cp.valorFixo, multiplicador: cp.multiplicador, tipo_dano: cp.tipoDano, subtipo_dano: cp.subtipoDano, momento: cp.momento };
       }
       // talent: só chaves confirmadas livres do schema (valor/momento) — "reducao_dano" é o rótulo real mais próximo.
@@ -404,13 +495,43 @@ function camposLegadoPorTipo(contentType: DraftContentType, efeito: EfeitoEditav
       const familiaReal = cp.tipo === "ataque" ? "ataque_adicional" : "reacao";
       return {
         familia: contentType === "talent" ? familiaReal : undefined,
-        tipo: contentType === "item" ? "ataque_adicional" : undefined,
+        tipo: contentType === "item" ? "ataque_adicional" : contentType === "rune" ? familiaReal : undefined,
         acao: cp.acaoPermitida,
         rodadas_extra: cp.limite,
         custo_pa_extra: cp.consomePa,
         penalidade: cp.penalidade,
         gatilho: cp.janela,
       };
+    }
+    case "modificar_instancia": {
+      const cp = efeito.campos;
+      if (contentType === "rune") {
+        // "autorreparo" real (ex.: runa_armadura_autorreparo) usa gatilho/efeito, não operacao/valor.
+        const efeitoTexto = cp.operacao === "reparar_mit" || cp.operacao === "alterar_mit_atual" ? "recupera_mit_total" : cp.operacao === "reparar_pd" || cp.operacao === "alterar_pd_atual" ? "recupera_pd_total" : cp.operacao;
+        return { gatilho: efeito.gatilho, efeito: efeitoTexto };
+      }
+      return { operacao: cp.operacao, valor: cp.valor, limite: cp.limite };
+    }
+    case "conceder_item": {
+      const cp = efeito.campos;
+      return { item_slug: cp.itemSlug || undefined, quantidade: cp.quantidade, destino: cp.destino, estado_inicial: cp.estadoInicial, cargas_iniciais: cp.cargasIniciais, quantidade_inicial: cp.quantidadeInicial, motivo: cp.motivo };
+    }
+    case "consumir_item": {
+      const cp = efeito.campos;
+      return { item_slug: cp.itemSlug, quantidade: cp.quantidade, comportamento_pilha: cp.comportamentoPilha, condicao: cp.condicao, refund: cp.refund || undefined, destino: cp.destinoTransferencia };
+    }
+    case "alterar_preco": {
+      const cp = efeito.campos;
+      if (cp.operacao === "permitir_compra_fiada") {
+        // "compra_fiada" real (mermo formato lido por getCadernetaDeDividaAvailability) — sobrescreve o default "desconto_loja" de TIPO_LEGADO.
+        return { tipo: "compra_fiada", raridade_maxima: cp.raridadeMaxima ?? "raro", gera_divida: true, contexto: cp.contextoTexto };
+      }
+      // desconto_percentual — único outro caminho que chega aqui (demais operações são bloqueadas em validarEfeitoParaPublicacao).
+      return { percentual: cp.percentual, contexto: cp.contextoTexto };
+    }
+    case "alterar_disponibilidade": {
+      const cp = efeito.campos;
+      return { operacao: cp.operacao, quantidade: cp.quantidade, fornecedor: cp.fornecedor, contexto: cp.contextoTexto };
     }
     case "teste_resistencia":
       // Nunca serializado por aqui — é uma árvore (vira múltiplos objetos
@@ -444,11 +565,14 @@ export function serializarEfeitoLegado(contentType: DraftContentType, efeito: Ef
     ...(familia ? { familia } : {}),
     ...camposTransversaisLegado(contentType, efeito),
     ...camposLegadoPorTipo(contentType, efeito),
-    // Uso/cadência (Etapa 8) só tem leitor real para talento
+    // Uso/cadência (Etapa 8) só tem leitor real GENÉRICO para talento
     // (getTalentUsageState/TALENT_CADENCES) — mesmos campos `usos`/`cadencia`
     // já lidos por talents.ts em QUALQUER efeito, não um tipo à parte.
-    // Bloqueado para spell/item em validarEfeitoParaPublicacao.
-    ...(contentType === "talent" && efeito.usoLimitado ? { usos: efeito.usoLimitado.usosMax, cadencia: efeito.usoLimitado.cadencia } : {}),
+    // Runa (Etapa 9) preserva os mesmos campos (conteúdo real já usa
+    // usos/cadencia, ex.: runa_cac_flamejante) mas SEM leitor genérico —
+    // representável, classificado lembrete no diagnóstico. Bloqueado
+    // para spell/item em validarEfeitoParaPublicacao.
+    ...((contentType === "talent" || contentType === "rune") && efeito.usoLimitado ? { usos: efeito.usoLimitado.usosMax, cadencia: efeito.usoLimitado.cadencia } : {}),
   });
 }
 
@@ -465,7 +589,7 @@ export function serializarEfeitoLegado(contentType: DraftContentType, efeito: Ef
  * efeito nunca é reduzido no sucesso (nenhuma consequência = campo
  * ausente, nunca inventado).
  */
-export function serializarArvoreTesteResistencia(contentType: "spell" | "item", efeito: Extract<EfeitoEditavel, { tipo: "teste_resistencia" }>): Record<string, unknown>[] {
+export function serializarArvoreTesteResistencia(contentType: "spell" | "item" | "rune", efeito: Extract<EfeitoEditavel, { tipo: "teste_resistencia" }>): Record<string, unknown>[] {
   const cp = efeito.campos;
   const cdFormula = cp.cd?.tipo === "derivada" ? "6 + nivel_vertente" : undefined;
   const cdValor = cp.cd?.tipo === "fixa" ? cp.cd.valor : undefined;

@@ -40,8 +40,28 @@ function efeitosDeTalento(payload: Record<string, unknown>): unknown[] {
  * Compara original vs republicado para um rascunho com `origemLegado`.
  * Retorna mensagens de erro BLOQUEANTES — vazio quando não há perda indevida.
  */
+/**
+ * Chaves de `estatisticas` de item que a Etapa 9 passou a editar de
+ * verdade (defaults de modelo: MIT/PD/carga/munição/slots de runa) —
+ * únicas que podem legitimamente divergir do original nesta checagem.
+ * Qualquer OUTRA chave de `estatisticas` continua estritamente
+ * somente-leitura (invariante da Etapa 6).
+ */
+const CHAVES_ESTATISTICAS_EDITAVEIS_ITEM = new Set(["mit_base", "pd_max", "tipo_protecao", "regioes", "slots_runa_max", "cargas_max", "municao_max", "municao_compativel"]);
+
+function estatisticasMudouForaDoEditavel(antes: unknown, depois: unknown): boolean {
+  const a = antes && typeof antes === "object" ? (antes as Record<string, unknown>) : {};
+  const d = depois && typeof depois === "object" ? (depois as Record<string, unknown>) : {};
+  const chaves = new Set([...Object.keys(a), ...Object.keys(d)]);
+  for (const chave of chaves) {
+    if (CHAVES_ESTATISTICAS_EDITAVEIS_ITEM.has(chave)) continue;
+    if (JSON.stringify(a[chave]) !== JSON.stringify(d[chave])) return true;
+  }
+  return false;
+}
+
 export function validarPerdaConversaoLegado(
-  contentType: "spell" | "item" | "talent",
+  contentType: "spell" | "item" | "talent" | "rune",
   rawOriginal: Record<string, unknown>,
   corpoRepublicado: Record<string, unknown>,
   origemLegado: DraftOrigemLegado,
@@ -57,10 +77,11 @@ export function validarPerdaConversaoLegado(
     }
   }
 
-  // 2. estatisticas de item nunca é reescrito por esta etapa.
+  // 2. estatisticas de item: só as chaves de defaults de modelo da Etapa 9
+  // podem divergir do original — qualquer outra chave continua somente leitura.
   if (contentType === "item" && rawOriginal.estatisticas !== undefined) {
-    if (JSON.stringify(rawOriginal.estatisticas) !== JSON.stringify(corpoRepublicado.estatisticas)) {
-      erros.push('Campo "estatisticas" do item foi reescrito pela publicação — deveria permanecer somente leitura.');
+    if (estatisticasMudouForaDoEditavel(rawOriginal.estatisticas, corpoRepublicado.estatisticas)) {
+      erros.push('Campo "estatisticas" do item foi reescrito pela publicação fora dos defaults editáveis (MIT/PD/carga/munição/slots de runa) — as demais chaves deveriam permanecer somente leitura.');
     }
   }
 

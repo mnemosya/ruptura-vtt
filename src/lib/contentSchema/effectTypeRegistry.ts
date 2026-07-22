@@ -63,6 +63,7 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
       spell: ["dano"],
       item: ["dano", "dano_em_area"],
       condition: ["dano_fim_de_rodada"],
+      rune: ["dano_modificador"],
     },
   },
   cura: {
@@ -161,6 +162,7 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
       condition: ["reduzir_pa"],
       spell: ["recurso", "recurso_temporario"],
       item: ["recurso"],
+      rune: ["recurso"],
     },
   },
   teste_resistencia: {
@@ -225,7 +227,9 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
       modo: "lembrete",
       observacao: "Nenhum executor real aplica isso automaticamente ainda — mesmo conceito real existe em conteúdo legado (rune \"protecao\"/\"reduz_dano_recebido\"), mas sem ponto de integração no motor. Sempre lembrete nesta etapa.",
     },
-    aliasesLegado: {},
+    aliasesLegado: {
+      rune: ["protecao"],
+    },
   },
   efeito_temporario: {
     id: "efeito_temporario",
@@ -266,7 +270,89 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
     aliasesLegado: {
       talent: ["ataque_adicional", "reacao"],
       item: ["ataque_adicional"],
+      rune: ["ataque_adicional", "reacao"],
     },
+  },
+  modificar_instancia: {
+    id: "modificar_instancia",
+    label: "Modificar instância",
+    camposEspecificos: [
+      { nome: "operacao", tipo: "string", obrigatorio: true, descricao: "alterar_carga_atual | alterar_municao_carregada | recarregar | alterar_mit_atual | alterar_pd_atual | reparar_mit | reparar_pd." },
+      { nome: "valor", tipo: "number", obrigatorio: false, descricao: "Delta ou valor a somar, conforme a operação." },
+    ],
+    executor: {
+      modo: "assistido",
+      modulo: "src/lib/character/inventory.ts (setItemCargaAtual, setItemMunicaoAtual, setItemMitAtual, setItemPdAtual)",
+      observacao:
+        "Cada operação mapeia 1:1 a um executor real e genérico já existente (MIT/PD) ou adicionado nesta etapa espelhando o mesmo padrão (carga/munição) — nunca um caminho JSON arbitrário. Sempre assistido: a seleção da instância-alvo e a confirmação continuam manuais.",
+    },
+    aliasesLegado: {
+      rune: ["autorreparo"],
+    },
+  },
+  conceder_item: {
+    id: "conceder_item",
+    label: "Conceder item ou criar instância",
+    camposEspecificos: [
+      { nome: "itemSlug", tipo: "referencia", obrigatorio: true, descricao: "Item publicado na Biblioteca." },
+      { nome: "quantidade", tipo: "number", obrigatorio: true, descricao: "Quantidade de instâncias a criar." },
+      { nome: "destino", tipo: "string", obrigatorio: true, descricao: "personagem | aliado_selecionado | bando." },
+    ],
+    executor: {
+      // Auditoria: nenhum schema tem um `tipo` legado para "conceder item";
+      // construir o fluxo completo (resolver destino/bando/aliado em
+      // runtime) é fora do escopo desta etapa ("foco é o catálogo de
+      // efeitos e defaults administráveis", não um editor geral de
+      // inventário). Sempre lembrete.
+      modo: "lembrete",
+      observacao: "Sem executor conectado nesta etapa — representável e preservável, sempre lembrete para o narrador aplicar manualmente.",
+    },
+    aliasesLegado: {},
+  },
+  consumir_item: {
+    id: "consumir_item",
+    label: "Consumir ou remover item",
+    camposEspecificos: [
+      { nome: "quantidade", tipo: "number", obrigatorio: true, descricao: "Quantidade a consumir/remover." },
+      { nome: "comportamentoPilha", tipo: "string", obrigatorio: true, descricao: "reduzir_quantidade | remover_instancia." },
+    ],
+    executor: {
+      modo: "lembrete",
+      observacao: "Mesmo status de conceder_item — sem executor conectado nesta etapa, sempre lembrete.",
+    },
+    aliasesLegado: {},
+  },
+  alterar_preco: {
+    id: "alterar_preco",
+    label: "Alterar preço ou conceder desconto",
+    camposEspecificos: [
+      { nome: "operacao", tipo: "string", obrigatorio: true, descricao: "desconto_percentual | desconto_fixo | multiplicador | sobretaxa | preco_minimo | permitir_compra_fiada." },
+      { nome: "percentual", tipo: "number", obrigatorio: false, descricao: "Só para desconto_percentual." },
+    ],
+    executor: {
+      modo: "assistido",
+      modulo: "src/lib/character/talentEngine.ts (getGarimpoDeRuaAvailability, getCadernetaDeDividaAvailability)",
+      observacao:
+        "Para talento, \"desconto_percentual\" e \"permitir_compra_fiada\" serializam exatamente no formato real já lido por essas funções (tipo \"desconto_loja\"/\"compra_fiada\", família \"economia_loja\") — genuinamente genéricas (leem QUALQUER efeito com esse tipo, não hardcoded por talento). As demais operações não têm leitor real — ficam bloqueadas na publicação (nunca fingidas).",
+    },
+    aliasesLegado: {
+      talent: ["desconto_loja", "compra_fiada"],
+    },
+  },
+  alterar_disponibilidade: {
+    id: "alterar_disponibilidade",
+    label: "Alterar disponibilidade ou estoque",
+    camposEspecificos: [
+      { nome: "operacao", tipo: "string", obrigatorio: true, descricao: "marcar_disponivel | marcar_indisponivel | definir_estoque." },
+      { nome: "quantidade", tipo: "number", obrigatorio: false, descricao: "Só para definir_estoque." },
+    ],
+    executor: {
+      // Auditoria: nenhum estado de estoque de campanha existe hoje — o
+      // catálogo é tratado como infinitamente disponível. Nunca automático.
+      modo: "lembrete",
+      observacao: "Nenhum estado real de estoque/disponibilidade de campanha existe hoje — sempre lembrete, nunca um sistema de estoque fingido.",
+    },
+    aliasesLegado: {},
   },
   outro: {
     id: "outro",

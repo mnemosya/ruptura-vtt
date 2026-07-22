@@ -79,9 +79,53 @@ export function CamposItemSection({ campos, onChange }: { campos: CamposItem; on
         placeholder="ex.: arremesso"
       />
 
+      <h4 style={{ fontSize: 13, color: "#a8a8b3", margin: "14px 0 6px" }}>Defaults de equipamento (Etapa 9)</h4>
+      <div style={fieldGridStyle}>
+        <label style={labelStyle}>
+          MIT-base (armadura)
+          <input data-testid="item-mit-base" type="number" min={0} value={campos.mitBase ?? ""} onChange={(e) => onChange({ mitBase: numeroOuIndefinido(e.target.value) })} style={inputStyle} />
+        </label>
+        <label style={labelStyle}>
+          PD-base (escudo)
+          <input data-testid="item-pd-base" type="number" min={0} value={campos.pdBase ?? ""} onChange={(e) => onChange({ pdBase: numeroOuIndefinido(e.target.value) })} style={inputStyle} />
+        </label>
+        <label style={labelStyle}>
+          Tipo de proteção
+          <input value={campos.tipoProtecao ?? ""} onChange={(e) => onChange({ tipoProtecao: e.target.value || undefined })} style={inputStyle} placeholder="ex.: fisica" />
+        </label>
+        <label style={labelStyle}>
+          Slots de runa (máx.)
+          <input data-testid="item-slots-runa-max" type="number" min={0} value={campos.slotsRunaMax ?? ""} onChange={(e) => onChange({ slotsRunaMax: numeroOuIndefinido(e.target.value) })} style={inputStyle} />
+        </label>
+      </div>
+      <div style={fieldGridStyle}>
+        <label style={labelStyle}>
+          Cargas máximas
+          <input data-testid="item-cargas-max" type="number" min={0} value={campos.cargasMax ?? ""} onChange={(e) => onChange({ cargasMax: numeroOuIndefinido(e.target.value) })} style={inputStyle} />
+        </label>
+        <label style={labelStyle}>
+          Munição máxima (carregador)
+          <input data-testid="item-municao-max" type="number" min={0} value={campos.municaoMax ?? ""} onChange={(e) => onChange({ municaoMax: numeroOuIndefinido(e.target.value) })} style={inputStyle} />
+        </label>
+        <label style={labelStyle}>
+          Munição compatível (slug)
+          <input value={campos.municaoCompativelSlug ?? ""} onChange={(e) => onChange({ municaoCompativelSlug: e.target.value || undefined })} style={inputStyle} placeholder="ex.: flecha_simples" />
+        </label>
+      </div>
+      <StringListEditor
+        label="Regiões protegidas (informativo — sem leitor real ainda)"
+        valores={campos.regioes ?? []}
+        onChange={(regioes) => onChange({ regioes })}
+        placeholder="ex.: tronco"
+      />
+      {campos.municaoCompativelSlug === "flecha_simples" && (
+        <p data-testid="item-usa-aljava-info" style={{ fontSize: 12, color: "#8fb0d6", marginTop: 4 }}>
+          Este item usa a Aljava compartilhada do personagem (detectado automaticamente — nunca cria uma Aljava por arma).
+        </p>
+      )}
+
       <p style={{ fontSize: 12, color: "#7d7d8a", marginTop: 8 }}>
-        O campo legado <code>estatisticas</code> (dano-base, munição, slots de runa etc.) continua somente leitura nesta etapa — ainda não tem
-        sub-schema fixo por categoria (ver diagnóstico técnico abaixo). O sub-schema por categoria é tratado em etapa posterior.
+        Demais chaves de <code>estatisticas</code> (dano-base, perícia de ataque etc.) continuam somente leitura nesta etapa — ver diagnóstico técnico abaixo.
       </p>
     </div>
   );

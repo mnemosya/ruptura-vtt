@@ -30,6 +30,16 @@ function resumoEfeito(efeito: EfeitoEditavel): string {
     }
     case "acao_reacao_adicional":
       return `${efeito.campos.tipo} adicional × ${efeito.campos.quantidade}${efeito.campos.gratuito ? " · gratuito" : ""}`;
+    case "modificar_instancia":
+      return `${efeito.campos.operacao}${efeito.campos.valor != null ? ` ${efeito.campos.valor}` : ""}`;
+    case "conceder_item":
+      return `${efeito.campos.itemSlug || "(sem item)"} × ${efeito.campos.quantidade} → ${efeito.campos.destino}`;
+    case "consumir_item":
+      return `${efeito.campos.itemSlug || "(própria instância)"} × ${efeito.campos.quantidade} (${efeito.campos.comportamentoPilha})`;
+    case "alterar_preco":
+      return `${efeito.campos.operacao}${efeito.campos.percentual != null ? ` ${efeito.campos.percentual}%` : ""}`;
+    case "alterar_disponibilidade":
+      return `${efeito.campos.operacao}${efeito.campos.quantidade != null ? ` (${efeito.campos.quantidade})` : ""}`;
   }
 }
 

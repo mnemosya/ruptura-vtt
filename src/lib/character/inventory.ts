@@ -1467,6 +1467,38 @@ export function setItemPdAtual(character: Character, instanceId: string, value: 
   return { ...character, inventario: next };
 }
 
+/**
+ * Ajusta carga atual de UMA instância manualmente (Etapa 9,
+ * `modificar_instancia`) — mesmo critério de `setItemMitAtual`/
+ * `setItemPdAtual` (absoluto, clamp em [0, cargasMax]). Complementa
+ * `consumeItemCharge` (que só decrementa 1 e rola para a próxima
+ * unidade da pilha): este setter cobre "recarregar"/"repor carga" sem
+ * inventar um segundo sistema de cargas.
+ */
+export function setItemCargaAtual(character: Character, instanceId: string, value: number, cargasMax?: number | null): Character {
+  const clamped = Math.max(0, Math.trunc(Number.isFinite(value) ? value : 0));
+  const bounded = cargasMax != null ? Math.min(clamped, cargasMax) : clamped;
+  const inventario = character.inventario ?? [];
+  const next = inventario.map((i) => (i.id === instanceId ? { ...i, cargasAtual: bounded } : i));
+  return { ...character, inventario: next };
+}
+
+/**
+ * Ajusta munição carregada (carregador/virote) de UMA instância
+ * manualmente (Etapa 9, `modificar_instancia` operação "recarregar"/
+ * "alterar_municao_carregada") — mesmo critério de clamp absoluto.
+ * Nunca usado para o fluxo de Aljava (flechas vivem em
+ * `instance.aljava`, ver `ammunition.ts::consumeFletchaFromAljava` —
+ * fluxo distinto, nunca fundido com este).
+ */
+export function setItemMunicaoAtual(character: Character, instanceId: string, value: number, municaoMax?: number | null): Character {
+  const clamped = Math.max(0, Math.trunc(Number.isFinite(value) ? value : 0));
+  const bounded = municaoMax != null ? Math.min(clamped, municaoMax) : clamped;
+  const inventario = character.inventario ?? [];
+  const next = inventario.map((i) => (i.id === instanceId ? { ...i, municaoAtual: bounded } : i));
+  return { ...character, inventario: next };
+}
+
 export interface EquippedDefenseProfile {
   armadura?: { instance: InventoryItemInstance; item: ItemContent; mitMax: number; mitAtual: number; tipoProtecao: string | null };
   escudo?: { instance: InventoryItemInstance; item: ItemContent; pdMax: number; pdAtual: number; tipoProtecao: string | null };

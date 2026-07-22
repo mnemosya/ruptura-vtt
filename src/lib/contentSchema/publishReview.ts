@@ -19,7 +19,7 @@ import { validarPerdaConversaoLegado } from "./legacyLossValidation";
 import { classificarImpacto, type ImpactoInstancias } from "./publishImpact";
 import { compararPublicado, type ResultadoDiff } from "./publishDiff";
 import { serializarRascunhoParaPublicacao } from "./publishSerialization";
-import { validarCamposItem, validarCamposMagia, validarCamposTalento } from "./draftValidation";
+import { validarCamposItem, validarCamposMagia, validarCamposRuna, validarCamposTalento } from "./draftValidation";
 import type { ModoAutomacao } from "./types";
 
 export interface EfeitoResumoRevisao {
@@ -120,7 +120,9 @@ async function validarCampos(draft: ContentDraftRow): Promise<{ erros: string[];
       ? await validarCamposMagia(ed.campos, draft.id)
       : ed.contentType === "item"
         ? await validarCamposItem(ed.campos, draft.id)
-        : await validarCamposTalento(ed.campos, draft.id);
+        : ed.contentType === "rune"
+          ? await validarCamposRuna(ed.campos, draft.id)
+          : await validarCamposTalento(ed.campos, draft.id);
   return { erros: [...r.erros], avisos: [...r.avisos], infos: [...r.infos] };
 }
 

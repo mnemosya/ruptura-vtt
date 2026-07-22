@@ -15,7 +15,7 @@
  * módulo, em `legacyConversionServer.ts` — só ela tem I/O.
  */
 
-import { adaptItem, adaptSpell, adaptTalentLevel } from "./adapters";
+import { adaptItem, adaptRune, adaptSpell, adaptTalentLevel } from "./adapters";
 import { isTipoEfeitoMvp } from "./effectDraftTypes";
 import type { CampoDesconhecido, ClassificacaoLegado, EfeitoCanonico, ModoAutomacao, Referencia, ResultadoAdaptacao } from "./types";
 import type { DraftContentType } from "./draftTypes";
@@ -31,6 +31,7 @@ export const ADAPTER_VERSIONS: Record<DraftContentType, string> = {
   spell: "spell.legacy.v1",
   item: "item.legacy.v1",
   talent: "talent.legacy.v1",
+  rune: "rune.legacy.v1",
 };
 
 /** Famílias de talento que sinalizam a necessidade de um sistema/etapa futura (não simplesmente "não reconhecido ainda"). */
@@ -355,6 +356,12 @@ export function gerarRelatorioSpell(slug: string, raw: Record<string, unknown>):
 export function gerarRelatorioItem(slug: string, raw: Record<string, unknown>): RelatorioConversaoLegado {
   const adaptado = adaptItem(raw);
   return montarRelatorioConversao("item", slug, adaptado.canonico.versao, adaptado, efeitosBrutosDe(raw), []);
+}
+
+/** Relatório de conversão para uma runa publicada (Etapa 9). */
+export function gerarRelatorioRune(slug: string, raw: Record<string, unknown>): RelatorioConversaoLegado {
+  const adaptado = adaptRune(raw);
+  return montarRelatorioConversao("rune", slug, adaptado.canonico.versao, adaptado, efeitosBrutosDe(raw), []);
 }
 
 /**
