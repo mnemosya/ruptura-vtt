@@ -37,3 +37,15 @@ export * from "./effectDraftMapping";
 export * from "./effectDiagnostics";
 export * from "./effectDraftValidation";
 export * from "./characterRuleOptions";
+
+// --- Etapa 11 — Importação/exportação de pacotes + Biblioteca do Livro ---
+// packageExport.ts e packageImport.ts ("use server") não são reexportados
+// por este barrel, mesmo critério das Server Actions anteriores.
+export * from "./contentPackage";
+export * from "./contentDependencies";
+export * from "./canonicalHash";
+export * from "./importPreview";
+export * from "./officialSchemaValidator";
+export * from "./bookLinksQueries";
+export * from "./importSessionQueries";
+export * from "./draftBuilders";

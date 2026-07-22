@@ -47,6 +47,12 @@ export default async function AdminLayout({ children }: { children: ReactNode })
             <a href="/admin/biblioteca/rascunhos" style={{ color: "#a8a8b3" }}>
               Rascunhos
             </a>
+            <a href="/admin/biblioteca/exportar" style={{ color: "#a8a8b3" }}>
+              Exportar
+            </a>
+            <a href="/admin/biblioteca/importar" style={{ color: "#a8a8b3" }}>
+              Importar
+            </a>
           </nav>
         </div>
         <div style={{ fontSize: 13, color: "#a8a8b3", textAlign: "right" }}>
