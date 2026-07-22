@@ -7,12 +7,13 @@
 
 import { notFound } from "next/navigation";
 import type { ContentType } from "../../../../../lib/content";
-import { adaptarParaAdmin, CONTENT_TYPE_REGISTRY, getContentDocumentForAdmin, isDraftContentType } from "../../../../../lib/contentSchema";
+import { adaptarParaAdmin, CONTENT_TYPE_REGISTRY, getContentDocumentForAdmin, isDraftContentType, listBookLinksForDocument } from "../../../../../lib/contentSchema";
 import { CLASSIFICACAO_LEGADO_LABEL, formatarValor } from "../../labels";
 import { ArchiveBar } from "./ArchiveBar";
 import { DraftActionsBar } from "./DraftActionsBar";
 import { DiagnosticsPanel } from "./DiagnosticsPanel";
 import { EffectsPanel } from "./EffectsPanel";
+import { VinculosEditoriaisPanel } from "./VinculosEditoriaisPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,7 @@ export default async function ContentDetailPage({ params }: PageProps) {
   const payload = (documento.payload as Record<string, unknown>) ?? {};
   const admin = adaptarParaAdmin(contentType, slug, payload);
   const definicao = CONTENT_TYPE_REGISTRY[contentType];
+  const vinculosEditoriais = await listBookLinksForDocument(documento.id).catch(() => []);
 
   return (
     <div>
@@ -65,6 +67,11 @@ export default async function ContentDetailPage({ params }: PageProps) {
           <a href={`/admin/biblioteca/${contentType}/${documento.slug}/historico`} style={{ color: "#8fd6a0", fontSize: 13 }}>
             Histórico de versões →
           </a>
+          {!arquivado && (
+            <a href={`/admin/biblioteca/exportar?contentType=${contentType}&slug=${documento.slug}`} style={{ color: "#8fd6a0", fontSize: 13 }}>
+              Exportar este conteúdo →
+            </a>
+          )}
         </div>
 
         {isDraftContentType(contentType) && <DraftActionsBar contentType={contentType} slug={documento.slug} nomeAtual={documento.nome ?? documento.slug} />}
@@ -131,6 +138,12 @@ export default async function ContentDetailPage({ params }: PageProps) {
           </section>
         );
       })}
+
+      <VinculosEditoriaisPanel
+        documentId={documento.id}
+        vinculosIniciais={vinculosEditoriais}
+        caminhoRevalidar={`/admin/biblioteca/${contentType}/${documento.slug}`}
+      />
 
       <details>
         <summary style={{ cursor: "pointer", fontSize: 12, color: "#7d7d8a" }}>Modo avançado — payload bruto (JSON)</summary>
