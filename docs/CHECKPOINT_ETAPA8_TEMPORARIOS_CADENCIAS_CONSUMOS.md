@@ -275,3 +275,12 @@ disponível para quando o ambiente permitir.
 build passam, nenhuma perda de payload conhecida, round-trip por
 metadata comprovado (node + SQL), modelo e instância permanecem
 separados. **Não avancei para a Etapa 9.**
+
+> **Nota de referência (Etapa 9, sem alterar o status acima)**: a
+> Etapa 9 foi executada depois desta e adicionou `modificar_instancia`/
+> `conceder_item`/`consumir_item`/`alterar_preco`/`alterar_disponibilidade`
+> ao mesmo catálogo `EfeitoFilho` desta etapa, além de promover `rune` a
+> content type editável — ver
+> `docs/CHECKPOINT_ETAPA9_INVENTARIO_RUNAS_MERCADO.md`. O status
+> "Implementação concluída — aceite de browser pendente" acima permanece
+> exatamente como registrado nesta etapa.
