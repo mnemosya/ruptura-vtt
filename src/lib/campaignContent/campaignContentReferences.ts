@@ -1,26 +1,52 @@
 /**
  * Índice estruturado de referências de conteúdo de campanha (Etapa 12,
- * correções 2/3 — `campaign_content_references`, migrations 0027/0028).
+ * correções 2/3/4 — `campaign_content_references`, migrations
+ * 0027/0028/0029).
  *
  * Reaproveita `coletarReferenciasBrutas` (Etapa 11,
  * `contentSchema/contentDependencies.ts`) — a MESMA extração já usada
  * para pacotes de importação/exportação — para nunca duplicar a lógica
  * de "quais campos são referência real" (requisitos de topo/nível,
  * `condicao`/`condicoes_possiveis` em efeitos, `estatisticas.propriedades`
- * de item). A correção 3 ADICIONA (aqui, não em `contentDependencies.ts`
+ * de item). A correção 3 ADICIONOU (aqui, não em `contentDependencies.ts`
  * — módulo compartilhado com a Etapa 11, não alterado): `item_slug` de
  * `conceder_item`/`consumir_item` (campo real confirmado em
  * `effectLegacySerialization.ts`).
  *
- * Cobertura HONESTA — auditada e CONFIRMADA AUSENTE, não uma lacuna por
- * falta de tempo: runa referenciada por slug (não existe — runas são
- * instaladas via operação de inventário, nunca um efeito que referencia
- * outra runa por slug); `modeloReferencia` de companheiro/Trama é TEXTO
- * LIVRE por design (auditoria da Etapa 10 confirmou: não há catálogo de
- * modelos de drone/robô na Biblioteca) — não é uma referência de
- * conteúdo a extrair, é ausência real de referência. Efeitos compostos
- * (resultados/filhos aninhados) e `modificar_instancia` ainda NÃO são
- * varridos — documentado como pendente real.
+ * AUDITORIA DA CORREÇÃO 4 (famílias que o pedido listava como
+ * pendentes — cada uma investigada no código real, não presumida):
+ *
+ *   - **Efeitos compostos/filhos (`teste_resistencia`/
+ *     `efeito_com_resistencia`)**: `serializarArvoreTesteResistencia`
+ *     (`effectLegacySerialization.ts`) achata a árvore em OBJETOS
+ *     IRMÃOS no MESMO array `payload_automacao.efeitos[]` (nunca um
+ *     `resultados[].efeitos[]` aninhado no payload público final — a
+ *     árvore só existe no modelo em memória do editor). Ou seja: um
+ *     `aplicar_condicao`/`conceder_item` dentro de um resultado JÁ é
+ *     escaneado pelo loop de topo existente — **não era uma lacuna de
+ *     extração, era uma suposição incorreta sobre o formato**. Nenhum
+ *     código novo foi necessário.
+ *   - **`modificar_instancia`**: auditado (`CamposModificarInstancia`)
+ *     — só tem `operacao`/`valor`/`limite`, sempre modifica a PRÓPRIA
+ *     instância do item que carrega o efeito (MIT/PD/munição atual),
+ *     nunca um slug de outro conteúdo. Confirmado: não é uma
+ *     referência de conteúdo, é auto-referência implícita.
+ *   - **Instalar/remover/ativar runa como efeito**: auditado — não
+ *     existe esse tipo no catálogo de efeitos; runas são instaladas
+ *     via operação de inventário (`installRuneOnItem`/
+ *     `removeRuneFromItem`/`toggleInstalledRune`, `inventory.ts`),
+ *     nunca por um efeito com slug de outra runa.
+ *   - **`efeito_temporario`**: auditado (`CamposEfeitoTemporario`) — só
+ *     duração/acúmulo/modificadores simples, nenhum campo de slug.
+ *   - Runa referenciada por slug fora de `estatisticas.propriedades`,
+ *     `modeloReferencia` de companheiro/Trama (texto livre por design,
+ *     auditoria da Etapa 10): confirmados ausentes, não uma lacuna.
+ *
+ * Cobertura real e completa no escopo que o schema atual comporta:
+ * requisitos, condição em efeitos (incluindo dentro de árvores de
+ * teste/resistência, por já estarem achatadas), propriedades de item,
+ * item concedido/consumido. Nenhuma família adicional de referência
+ * real foi encontrada nesta auditoria.
  */
 
 import { getContentDocument } from "../content/queries";
