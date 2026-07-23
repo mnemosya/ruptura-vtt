@@ -19,6 +19,7 @@ import { isValidSlug } from "../contentSchema/slug";
 import type { ResultadoValidacao } from "../contentSchema/types";
 import { findCampaignDraftBySlug, listCampaignContentDocumentsForOwner } from "./campaignContentQueries";
 import type { CampaignContentOperation } from "./campaignContentTypes";
+import { validarQuantidadeEfeitos, validarQuantidadeReferencias, validarTamanhoPayload, validarTamanhoTexto } from "./campaignContentLimits";
 
 async function slugColideNaCampanha(campaignId: string, contentType: DraftContentType, slug: string, ignorarDraftId?: string): Promise<boolean> {
   const publicados = await listCampaignContentDocumentsForOwner(campaignId, contentType);
@@ -26,6 +27,26 @@ async function slugColideNaCampanha(campaignId: string, contentType: DraftConten
   const draftExistente = await findCampaignDraftBySlug(campaignId, contentType, slug);
   if (draftExistente && draftExistente.id !== ignorarDraftId) return true;
   return false;
+}
+
+/**
+ * Resolve uma referência (`requisitos[]`) contra o catálogo OFICIAL
+ * primeiro; quando ausente lá, contra o conteúdo PUBLICADO da MESMA
+ * campanha (homebrew local pode ser dependência válida de outro
+ * homebrew/override da mesma mesa) — nunca contra outra campanha (a
+ * consulta só busca `campaign_id = campaignId`, então uma referência
+ * para outra campanha estruturalmente não tem como resolver aqui).
+ * Conteúdo arquivado nunca satisfaz uma referência nova.
+ */
+async function resolverReferenciaCampanha(
+  campaignId: string,
+  tipoConteudo: string,
+  slug: string,
+  publicadosCampanha: { content_type: string; slug: string; status: string }[],
+): Promise<boolean> {
+  const oficial = await getContentDocument(tipoConteudo as ContentType, slug).catch(() => null);
+  if (oficial) return true;
+  return publicadosCampanha.some((p) => p.content_type === tipoConteudo && p.slug === slug && p.status === "published");
 }
 
 /**
@@ -74,13 +95,30 @@ export async function validarCamposCampanha(
   }
 
   const requisitos = (campos as { requisitos?: { tipoConteudo: string; slug: string }[] }).requisitos ?? [];
-  for (const req of requisitos) {
-    if (req.tipoConteudo === "desconhecido") continue;
-    const encontrado = await getContentDocument(req.tipoConteudo as ContentType, req.slug).catch(() => null);
-    if (!encontrado) erros.push(`Referência inexistente: ${req.tipoConteudo}:${req.slug}.`);
+  const limiteRefs = validarQuantidadeReferencias(requisitos);
+  if (!limiteRefs.ok) erros.push(limiteRefs.erro!);
+
+  if (requisitos.length > 0) {
+    const publicadosCampanha = await listCampaignContentDocumentsForOwner(campaignId).catch(() => []);
+    for (const req of requisitos) {
+      if (req.tipoConteudo === "desconhecido") continue;
+      const resolvida = await resolverReferenciaCampanha(campaignId, req.tipoConteudo, req.slug, publicadosCampanha);
+      if (!resolvida) erros.push(`Referência inexistente (nem no oficial, nem na campanha): ${req.tipoConteudo}:${req.slug}.`);
+    }
   }
 
   const efeitos = "efeitos" in campos ? (campos as { efeitos: unknown[] }).efeitos : ("niveis" in campos ? (campos as { niveis: { efeitos: unknown[] }[] }).niveis.flatMap((n) => n.efeitos) : []);
+  const limiteEfeitos = validarQuantidadeEfeitos(efeitos);
+  if (!limiteEfeitos.ok) erros.push(limiteEfeitos.erro!);
+
+  const limiteTextoCurto = validarTamanhoTexto(comuns.descricaoCurta, "Descrição curta");
+  if (!limiteTextoCurto.ok) erros.push(limiteTextoCurto.erro!);
+  const limiteTextoLongo = validarTamanhoTexto(comuns.descricaoLonga, "Descrição longa");
+  if (!limiteTextoLongo.ok) erros.push(limiteTextoLongo.erro!);
+
+  const limitePayload = validarTamanhoPayload(campos);
+  if (!limitePayload.ok) erros.push(limitePayload.erro!);
+
   const resultadoEfeitos = await validarEfeitosEditaveis(efeitos as Parameters<typeof validarEfeitosEditaveis>[0]);
   erros.push(...resultadoEfeitos.erros.map((e) => `Efeitos: ${e}`));
   avisos.push(...resultadoEfeitos.avisos.map((a) => `Efeitos: ${a}`));

@@ -9,12 +9,17 @@ import {
   criarRascunhoCopiaHomebrew,
   criarRascunhoHomebrewNovo,
   criarRascunhoOverride,
-  criarRascunhoReconciliacao,
   excluirRascunhoCampanha,
-  adotarOficialAtual,
-  manterOverrideAposRevisao,
+  previewImpactoRemocao,
   removerOverrideCampanha,
 } from "../../../../lib/campaignContent/campaignContentServerActions";
+
+const IMPACTO_LABEL: Record<string, string> = {
+  sem_impacto_detectado: "Sem impacto detectado",
+  impacto_informativo: "Impacto informativo — possíveis referências detectadas",
+  remocao_bloqueada: "Remoção bloqueada — referência obrigatória ativa",
+  impacto_nao_determinavel: "Impacto não determinável — não foi possível varrer todas as fontes",
+};
 
 const ORIGEM_LABEL: Record<ConteudoEfetivo["origem"], string> = {
   oficial: "Oficial",
@@ -160,29 +165,9 @@ export function BibliotecaCampanhaClient({ campaignId, tipos, efetivos, rascunho
                   {e.origem === "modificado_pela_mesa" && e.campaignContentDocumentId && (
                     <>
                       {e.estadoAtualizacao && e.estadoAtualizacao !== "atualizado" && (
-                        <>
-                          <button disabled={carregando !== null} onClick={() => rodar(chave, () => manterOverrideAposRevisao(e.campaignContentDocumentId!))} style={linkButtonStyle}>
-                            Manter override
-                          </button>
-                          <button
-                            disabled={carregando !== null}
-                            onClick={() => rodar(chave, () => criarRascunhoReconciliacao(e.campaignContentDocumentId!))}
-                            style={linkButtonStyle}
-                          >
-                            Criar rascunho de reconciliação
-                          </button>
-                          <button
-                            disabled={carregando !== null}
-                            onClick={() => {
-                              if (confirm("Adotar o oficial atual e remover o override desta mesa?")) {
-                                rodar(chave, () => adotarOficialAtual(e.campaignContentDocumentId!, e.localVersion ?? 1));
-                              }
-                            }}
-                            style={linkButtonStyle}
-                          >
-                            Adotar oficial atual
-                          </button>
-                        </>
+                        <a href={`/mesas/${campaignId}/biblioteca/comparar/${e.campaignContentDocumentId}`} style={linkButtonStyle}>
+                          Comparar com oficial
+                        </a>
                       )}
                       <button
                         disabled={carregando !== null}
@@ -199,7 +184,18 @@ export function BibliotecaCampanhaClient({ campaignId, tipos, efetivos, rascunho
                   {e.origem === "homebrew_da_mesa" && e.campaignContentDocumentId && (
                     <button
                       disabled={carregando !== null}
-                      onClick={() => {
+                      onClick={async () => {
+                        setCarregando(chave);
+                        const preview = await previewImpactoRemocao(e.campaignContentDocumentId!);
+                        setCarregando(null);
+                        const diagnostico = preview.diagnostico;
+                        const rotulo = diagnostico ? (IMPACTO_LABEL[diagnostico.classificacao] ?? diagnostico.classificacao) : "diagnóstico indisponível";
+                        const detalhes = diagnostico && diagnostico.motivos.length > 0 ? `\n\n${diagnostico.motivos.join("\n")}` : "";
+                        if (diagnostico?.classificacao === "remocao_bloqueada") {
+                          alert(`${rotulo}${detalhes}\n\nArquivamento bloqueado — resolva as referências antes.`);
+                          return;
+                        }
+                        if (!confirm(`Diagnóstico de impacto: ${rotulo}${detalhes}\n\nConfirmar arquivamento?`)) return;
                         const motivo = prompt("Motivo do arquivamento:", "") ?? "";
                         rodar(chave, () => arquivarHomebrewCampanha(e.campaignContentDocumentId!, e.localVersion ?? 1, motivo));
                       }}

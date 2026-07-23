@@ -1,15 +1,22 @@
 "use server";
 
 /**
- * Ações administrativas de conteúdo de campanha/homebrew (Etapa 12).
+ * Ações administrativas de conteúdo de campanha/homebrew (Etapa 12,
+ * CORRIGIDO na migration 0026 — ver checkpoint).
+ *
  * Toda função:
- *   - reverifica "narrador desta campanha" no servidor
- *     (`campaigns.owner_id = auth.uid()` — mesma autoridade já usada em
- *     `table/storage.ts`, nenhum papel novo inventado);
+ *   - obtém o usuário autenticado no PRÓPRIO servidor (nunca confia em
+ *     `user_id`/autoridade vinda do client) e recarrega a campanha do
+ *     banco antes de checar `owner_id` — a mesma autoridade real já
+ *     usada em `table/storage.ts` (nenhum papel novo inventado; "admin
+ *     global" da Biblioteca oficial NUNCA é tratado como narrador de
+ *     campanha aqui — são checagens completamente separadas);
  *   - a escrita passa pelo client "scoped" + pelas funções SECURITY
- *     DEFINER da migration 0025, que reforçam a MESMA checagem no banco;
+ *     DEFINER da migration 0025/0026 (`can_manage_campaign_content`),
+ *     que reforçam a MESMA checagem no banco — nunca só no client;
  *   - nunca toca `content_documents`/`content_drafts` oficiais;
- *   - nunca altera estado de instância (personagem/inventário).
+ *   - nunca altera estado de instância (personagem/inventário);
+ *   - recalcula hash/conflito/limites no servidor antes de qualquer RPC.
  */
 
 import { revalidatePath } from "next/cache";
@@ -34,7 +41,15 @@ import type { CamposEditaveis, CamposItem, CamposMagia, CamposRuna, CamposTalent
 import { serializarRascunhoParaPublicacao } from "../contentSchema/publishSerialization";
 import { isValidSlug, slugify } from "../contentSchema/slug";
 import { validarCamposCampanha } from "./campaignContentValidation";
-import { findCampaignDraftBySlug, getCampaignContentDocumentById, getCampaignDraftById } from "./campaignContentQueries";
+import { avaliarImpactoRemocao, type DiagnosticoImpacto } from "./campaignContentImpact";
+import { validarQuantidadePublicados, validarQuantidadeRascunhos, validarTamanhoPayload } from "./campaignContentLimits";
+import {
+  findCampaignDraftBySlug,
+  getCampaignContentDocumentById,
+  getCampaignDraftById,
+  listCampaignContentDocumentsForOwner,
+  listCampaignDrafts,
+} from "./campaignContentQueries";
 import type { CampaignContentDraftRow, CampaignDraftEnvelope, CampaignContentOperation } from "./campaignContentTypes";
 
 async function requireCampaignNarrator(campaignId: string): Promise<{ id: string; email: string | null }> {
@@ -68,6 +83,10 @@ async function inserirRascunho(
   admin: { id: string },
   extras: { baseCampaignDocumentId?: string; baseOfficialDocumentId?: string; basePayloadHash?: string; baseOfficialVersion?: string } = {},
 ): Promise<AcaoCampanhaResultado> {
+  const rascunhosAtuais = await listCampaignDrafts(campaignId).catch(() => []);
+  const limiteRascunhos = validarQuantidadeRascunhos(rascunhosAtuais.length);
+  if (!limiteRascunhos.ok) return { ok: false, erro: limiteRascunhos.erro };
+
   const client = await getScopedTableClient();
   const { data, error } = await client
     .from("campaign_content_drafts")
@@ -270,6 +289,15 @@ export async function publicarRascunhoCampanha(draftId: string, expectedDraftVer
     // mesmo formato de `payload.camposEditaveis`/`payload.preservado`.
     const payloadFinal = serializarRascunhoParaPublicacao(draft as unknown as ContentDraftRow);
 
+    const limitePayload = validarTamanhoPayload(payloadFinal);
+    if (!limitePayload.ok) return { ok: false, erro: limitePayload.erro };
+
+    if (draft.operation === "novo_homebrew" || draft.operation === "copia_homebrew" || draft.operation === "novo_override") {
+      const publicadosAtuais = await listCampaignContentDocumentsForOwner(draft.campaign_id).catch(() => []);
+      const limitePublicados = validarQuantidadePublicados(publicadosAtuais.filter((d) => d.status === "published").length);
+      if (!limitePublicados.ok) return { ok: false, erro: limitePublicados.erro };
+    }
+
     const efeitos = draft.payload.camposEditaveis.contentType === "talent"
       ? (draft.payload.camposEditaveis.campos as CamposTalento).niveis.map((n) => ({ nivel: n.nivel, efeitos: n.efeitos }))
       : (draft.payload.camposEditaveis.campos as { efeitos: unknown[] }).efeitos;
@@ -301,6 +329,30 @@ export async function publicarRascunhoCampanha(draftId: string, expectedDraftVer
 }
 
 // ---------------------------------------------------------------------
+// 5.5. Preview de impacto — chamado pela UI ANTES de confirmar remoção/
+//      arquivamento. Nunca é a única barreira: removerOverrideCampanha/
+//      arquivarHomebrewCampanha recalculam e BLOQUEIAM de novo no
+//      servidor, mesmo que o client não tenha chamado este preview.
+// ---------------------------------------------------------------------
+export interface PreviewImpactoResultado {
+  ok: boolean;
+  erro?: string;
+  diagnostico?: DiagnosticoImpacto;
+}
+
+export async function previewImpactoRemocao(campaignContentDocumentId: string): Promise<PreviewImpactoResultado> {
+  try {
+    const doc = await getCampaignContentDocumentById(campaignContentDocumentId);
+    if (!doc) return { ok: false, erro: "Conteúdo de campanha não encontrado." };
+    await requireCampaignNarrator(doc.campaign_id);
+    const diagnostico = await avaliarImpactoRemocao(doc.campaign_id, doc.content_type, doc.slug);
+    return { ok: true, diagnostico };
+  } catch (err) {
+    return { ok: false, erro: err instanceof Error ? err.message : "Erro desconhecido." };
+  }
+}
+
+// ---------------------------------------------------------------------
 // 6. Remover override (restaura fallback oficial)
 // ---------------------------------------------------------------------
 export async function removerOverrideCampanha(campaignContentDocumentId: string, expectedLocalVersion: number, motivo: string): Promise<AcaoCampanhaResultado> {
@@ -308,6 +360,11 @@ export async function removerOverrideCampanha(campaignContentDocumentId: string,
     const doc = await getCampaignContentDocumentById(campaignContentDocumentId);
     if (!doc) return { ok: false, erro: "Conteúdo de campanha não encontrado." };
     await requireCampaignNarrator(doc.campaign_id);
+    // Nota: remover um OVERRIDE nunca é bloqueado por referência estruturada —
+    // o slug continua existindo (volta a resolver para o oficial), então
+    // nenhuma referência quebra. O bloqueio de impacto (ver avaliarImpactoRemocao)
+    // só se aplica a homebrew independente (arquivarHomebrewCampanha), cuja
+    // remoção não tem fallback — o slug deixa de existir.
 
     const client = await getScopedTableClient();
     const { error } = await client.rpc("remove_campaign_content_override", {
@@ -332,6 +389,15 @@ export async function arquivarHomebrewCampanha(campaignContentDocumentId: string
     const doc = await getCampaignContentDocumentById(campaignContentDocumentId);
     if (!doc) return { ok: false, erro: "Conteúdo de campanha não encontrado." };
     await requireCampaignNarrator(doc.campaign_id);
+
+    // Homebrew independente não tem fallback — remover apaga a identidade
+    // do slug. Referência estruturada obrigatória ativa BLOQUEIA (nunca só
+    // avisa); impacto heurístico em personagens exige confirmação forte,
+    // mas não bloqueia sozinho (pode ser falso positivo — ver módulo).
+    const diagnostico = await avaliarImpactoRemocao(doc.campaign_id, doc.content_type, doc.slug);
+    if (diagnostico.classificacao === "remocao_bloqueada") {
+      return { ok: false, erro: `Arquivamento bloqueado — referência(s) obrigatória(s) ativa(s): ${diagnostico.motivos.join(" | ")}` };
+    }
 
     const client = await getScopedTableClient();
     const { error } = await client.rpc("archive_campaign_homebrew", {
