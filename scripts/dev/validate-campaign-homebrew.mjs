@@ -46,6 +46,7 @@ if (!compiledDir) {
 
 const { classificarEstadoAtualizacao } = require(path.join(compiledDir, "campaignContent/resolveEffectiveContent.js"));
 const { diffEstrutural, compararTresVias } = require(path.join(compiledDir, "campaignContent/campaignContentDiff.js"));
+const { coletarItemSlugsDoPayload } = require(path.join(compiledDir, "campaignContent/campaignContentReferences.js"));
 const {
   validarTamanhoPayload,
   validarQuantidadeEfeitos,
@@ -148,6 +149,34 @@ check("validarQuantidadePublicados bloqueia no teto por campanha", () => {
 check("validarQuantidadeRascunhos bloqueia no teto por campanha", () => {
   assert.strictEqual(validarQuantidadeRascunhos(LIMITE_RASCUNHOS_ATIVOS_POR_CAMPANHA - 1).ok, true);
   assert.strictEqual(validarQuantidadeRascunhos(LIMITE_RASCUNHOS_ATIVOS_POR_CAMPANHA).ok, false);
+});
+
+// --- coletarItemSlugsDoPayload (correção 3 — item concedido/consumido, pura) ---
+check("coletarItemSlugsDoPayload extrai item_slug de conceder_item/consumir_item", () => {
+  const payload = {
+    payload_automacao: {
+      efeitos: [
+        { tipo: "conceder_item", item_slug: "adaga_simples" },
+        { tipo: "consumir_item", item_slug: "pocao_cura" },
+        { tipo: "dano", valor: 5 },
+      ],
+    },
+  };
+  const refs = coletarItemSlugsDoPayload(payload);
+  assert.strictEqual(refs.length, 2);
+  assert.ok(refs.every((r) => r.tipo === "item" && r.obrigatoria === false));
+  assert.ok(refs.some((r) => r.slugOuId === "adaga_simples"));
+  assert.ok(refs.some((r) => r.slugOuId === "pocao_cura"));
+});
+check("coletarItemSlugsDoPayload varre efeitos por nível de talento também", () => {
+  const payload = { niveis: [{ payload_automacao: { efeitos: [{ tipo: "conceder_item", item_slug: "escudo_leve" }] } }] };
+  const refs = coletarItemSlugsDoPayload(payload);
+  assert.strictEqual(refs.length, 1);
+  assert.strictEqual(refs[0].slugOuId, "escudo_leve");
+});
+check("coletarItemSlugsDoPayload nunca inventa referência de efeitos sem item_slug", () => {
+  const payload = { payload_automacao: { efeitos: [{ tipo: "conceder_item" }] } };
+  assert.strictEqual(coletarItemSlugsDoPayload(payload).length, 0);
 });
 
 console.log(`\n${passed} verificações passaram.`);
