@@ -172,3 +172,12 @@ A Etapa 11 só poderá ser marcada como concluída quando **todos** os itens aba
 TypeScript e build passam; 19 verificações focadas em Node passam; nenhuma publicação automática existe em nenhum caminho de código novo; nenhuma escrita direta em `content_documents`; a importação continua exclusivamente criando rascunhos; nenhuma tabela de homebrew/override/marketplace foi criada. **Não avancei para a Etapa 12.**
 
 **Status geral da Etapa 11: Implementação parcial — integração editorial de drag pendente.**
+
+> **Nota de referência futura (adicionada durante a Etapa 12, sem
+> alterar o status acima):** a Etapa 12 (conteúdo de mesa e homebrew)
+> foi implementada depois desta e não depende de nenhuma mudança neste
+> checkpoint. Ela criou tabelas e Server Actions próprias e isoladas
+> (`campaign_content_documents`/`campaign_content_drafts`/etc., migration
+> 0025) — nenhuma delas reaproveita `content_import_sessions`/
+> `content_book_links` ou qualquer estrutura desta etapa. Ver
+> `docs/CHECKPOINT_ETAPA12_CONTEUDO_MESA_HOMEBREW.md`.
