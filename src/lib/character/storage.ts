@@ -70,9 +70,20 @@
  *     `scripts/test-character-storage.ts` (roda sem login). Ver
  *     comentário em cada policy (migration 0014) e blockers/relatório
  *     do checkpoint v0.29 para a condição exata de remoção futura.
+ *
+ * Etapa 12 (correção 6) — os parágrafos acima ("DEV/DIAGNÓSTICO" e
+ * "LEGADO/COMPATIBILIDADE" usando `getContentClient()`/anon) estão
+ * DESATUALIZADOS e preservados aqui só como histórico: a auditoria
+ * desta correção encontrou que `updateCharacter` e
+ * `listCharactersForCampaign` são usadas por rota de PRODUTO real
+ * (`MesaDetailClient.tsx`, `table/endRound.ts`, `table/endScene.ts`,
+ * `/join/[token]/page.tsx`), não só por dev/scripts — e que "função de
+ * desenvolvimento não justifica policy anon aberta em produção" (não
+ * há mais policy `anon` nenhuma depois da migration 0031). Todas as
+ * funções das seções 3 e 4 agora usam `getScopedTableClient()`; ver
+ * nota completa no início da SEÇÃO 3, abaixo.
  */
 
-import { getContentClient } from "../content";
 import { getScopedTableClient } from "../auth/scopedClient";
 import { getCurrentUser } from "../auth/session";
 import { validateProfileSessionToken } from "../table/storage";
@@ -496,13 +507,36 @@ export async function saveCharacterForProfileSession(
 // =====================================================================
 // SEÇÃO 3 — DEV / DIAGNÓSTICO
 //
-// Client anon puro (getContentClient), como sempre foi. Usadas só por
-// /dev/character-sheet, /dev/table e /dev/join/[campaignId] — rotas
-// de diagnóstico que mostram a lista global de propósito. Não usar em
-// rota de produto nova (usar as seções 1/2 acima).
+// Etapa 12 (correção 6): a auditoria desta correção reabriu a
+// premissa "usadas só por dev/scripts" função a função (não por
+// nome) e encontrou uma exceção real: `updateCharacter` (seção 4
+// abaixo) também é chamada por `MesaDetailClient.tsx`,
+// `table/endRound.ts` e `table/endScene.ts` — fluxo de PRODUTO real
+// (dashboard do narrador, "Encerrar Rodada"/"Encerrar Cena"), e
+// `listCharactersForCampaign` também é chamada por
+// `/join/[token]/page.tsx` — fluxo de produto real (pós-login,
+// pós-aceite de convite). Preservar `getContentClient()` (anon puro)
+// nessas duas para "não quebrar dev" deixaria de fazer sentido no
+// momento em que a RLS de `anon` é removida por completo (ver
+// migration 0031): função de desenvolvimento não justifica policy
+// aberta, mas função de PRODUTO também não pode depender de client
+// anon. Por isso todas as funções desta seção e da seção 4 abaixo
+// foram migradas para `getScopedTableClient()` (mesmo helper das
+// seções 1/2) — anexam o JWT de quem estiver logado (narrador ou
+// jogador com sessão real) e, sem sessão, se comportam como anon sem
+// nenhuma policy — ou seja, dev/diagnóstico sem login passa a ver
+// listas vazias / falhar por RLS, em vez de acessar a tabela sem
+// restrição. Consequência aceita e documentada (não é regressão de
+// produto): `scripts/test-character-storage.ts`,
+// `scripts/test-campaign-end-scene.ts` e
+// `scripts/test-campaign-end-round.ts` (rodam sem login, fora de um
+// contexto de request) deixam de funcionar sem uma sessão real — nunca
+// fizeram parte da verificação executável automatizada
+// (`validate-campaign-homebrew.mjs`) e já exigiam um Supabase real
+// para rodar.
 // =====================================================================
 
-/** Lista TODOS os personagens (global, sem filtro de mesa/dono) — só para telas dev/diagnóstico. */
+/** Lista TODOS os personagens (global, sem filtro de mesa/dono) — só para telas dev/diagnóstico. Requer sessão (narrador logado) desde a correção 6; sem sessão, RLS devolve lista vazia. */
 export async function listLegacyCharactersDev(): Promise<CharacterRecord[]> {
   return listCharacters();
 }
@@ -510,12 +544,12 @@ export async function listLegacyCharactersDev(): Promise<CharacterRecord[]> {
 // =====================================================================
 // SEÇÃO 4 — LEGADO / COMPATIBILIDADE
 //
-// Mantidas com o MESMO nome e client anon (getContentClient) porque
-// scripts/test-character-storage.ts e o modo dev de
-// /dev/character-sheet (CharacterSheetClient, handleSave/handleLoad/
-// handleDelete/handleNew) já dependem exatamente deste comportamento.
-// NÃO usar em rota de produto nova — usar createCharacterForCampaign/
-// saveCharacterForProfileSession/etc. (seções 1/2).
+// Mantidas com o MESMO nome (compatibilidade de assinatura com
+// scripts/dev existentes), mas migradas de `getContentClient()` para
+// `getScopedTableClient()` na correção 6 — ver nota da seção 3 acima.
+// `updateCharacter` e `listCharactersForCampaign`, especificamente,
+// SÃO usadas por rota de produto real (auditado nesta correção) — não
+// são apenas legado.
 // =====================================================================
 
 /**
@@ -530,7 +564,7 @@ export async function createCharacter(
   options: SaveCharacterOptions = {},
 ): Promise<CharacterRecord> {
   const payload = buildPayloadForSave(character);
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const ownerId = await currentOwnerId();
   const { data, error } = await client
     .from(TABLE)
@@ -564,7 +598,7 @@ export async function updateCharacter(
   options: SaveCharacterOptions = {},
 ): Promise<CharacterRecord> {
   const payload = buildPayloadForSave(character);
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const update: Record<string, unknown> = {
     name: payload.nome,
     payload,
@@ -589,7 +623,7 @@ export async function updateCharacter(
 
 /** Busca um personagem por id. Retorna null se não existir. */
 export async function getCharacter(id: string): Promise<CharacterRecord | null> {
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const { data, error } = await client.from(TABLE).select().eq("id", id).maybeSingle();
 
   if (error) {
@@ -600,7 +634,7 @@ export async function getCharacter(id: string): Promise<CharacterRecord | null> 
 
 /** Lista personagens, mais recentemente atualizados primeiro. */
 export async function listCharacters(): Promise<CharacterRecord[]> {
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const { data, error } = await client.from(TABLE).select().order("updated_at", { ascending: false });
 
   if (error) {
@@ -611,7 +645,7 @@ export async function listCharacters(): Promise<CharacterRecord[]> {
 
 /** Apaga um personagem por id. */
 export async function deleteCharacter(id: string): Promise<void> {
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const { error } = await client.from(TABLE).delete().eq("id", id);
 
   if (error) {
@@ -620,17 +654,17 @@ export async function deleteCharacter(id: string): Promise<void> {
 }
 
 // =====================================================================
-// Compat direta (checkpoint v0.23) — mantidas com o nome antigo porque
-// /join/[token] já as usa hoje para mostrar só os personagens da MESMA
-// mesa do convite (nunca a lista global) a um visitante anônimo, sem
-// exigir login. Usam client anon (mesmo comportamento de sempre) — a
-// diferença para a seção 1 é só quem chama (visitante anônimo vs.
-// narrador logado no dashboard), não o escopo dos dados.
+// Compat direta (checkpoint v0.23) — mantida com o nome antigo, mas
+// migrada para `getScopedTableClient()` na correção 6: a auditoria
+// confirmou que `/join/[token]/page.tsx` chama esta função DEPOIS de
+// exigir `getCurrentUser()` e aceitar o convite (`campaign_members`
+// ativo) — nunca antes de login, ao contrário do que este comentário
+// afirmava. Não é mais "acesso anônimo real", é produto autenticado.
 // =====================================================================
 
-/** Lista os personagens ligados a uma mesa (campaign_id), mais recentemente atualizados primeiro. Uso: /join/[token] (anônimo, campanha-escopado, nunca global). */
+/** Lista os personagens ligados a uma mesa (campaign_id), mais recentemente atualizados primeiro. Uso: /join/[token] (pós-login, campanha-escopado, nunca global). */
 export async function listCharactersForCampaign(campaignId: string): Promise<CharacterRecord[]> {
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const { data, error } = await client
     .from(TABLE)
     .select()
