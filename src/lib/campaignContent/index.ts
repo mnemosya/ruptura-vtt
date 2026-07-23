@@ -11,3 +11,4 @@ export * from "./campaignContentValidation";
 export * from "./campaignContentDiff";
 export * from "./campaignContentLimits";
 export * from "./campaignContentImpact";
+export * from "./campaignContentReferences";

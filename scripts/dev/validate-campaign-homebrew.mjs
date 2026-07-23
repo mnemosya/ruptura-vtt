@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
  * Verificação focada da Etapa 12 (conteúdo de mesa e homebrew),
- * ATUALIZADA na correção (migration 0026). Mesmo padrão das etapas
- * anteriores: compila os módulos reais com `tsc`, roda com `node`
- * puro, nunca duplica lógica.
+ * ATUALIZADA nas correções (migrations 0026/0027). Mesmo padrão das
+ * etapas anteriores: compila os módulos reais com `tsc`, roda com
+ * `node` puro, nunca duplica lógica.
  *
  * Uso:
  *   npx tsc src/lib/campaignContent/campaignContentDiff.ts \
@@ -20,12 +20,14 @@
  * Cobre: `classificarEstadoAtualizacao`, `diffEstrutural`/`compararTresVias`
  * (três vias e conflito), constantes/validadores de limite (puros). NÃO
  * substitui teste de banco — a autorização real (RLS/`campaign_members`/
- * `can_read_campaign_content`/`can_manage_campaign_content`), as funções
- * SECURITY DEFINER (0025/0026), o gatilho de limite e o isolamento real
- * entre campanhas só podem ser comprovados contra um Supabase real
- * (não conectado nesta sessão — ver checkpoint §Verificações não
- * executadas). `avaliarImpactoRemocao`/`campaignContentServerActions`
- * fazem I/O real e não são cobertos aqui pelo mesmo motivo.
+ * `can_read_campaign_content`/`can_manage_campaign_content`), o fluxo de
+ * aceite de convite (`accept_campaign_invite`, 0027), o índice de
+ * referências (`campaign_content_references`), o gatilho de limite e o
+ * isolamento real entre campanhas só podem ser comprovados contra um
+ * Supabase real (não conectado nesta sessão — ver checkpoint
+ * §Verificações não executadas). `avaliarImpactoRemocao`/
+ * `campaignContentReferences`/`campaignContentServerActions` fazem I/O
+ * real e não são cobertos aqui pelo mesmo motivo.
  */
 import { createRequire } from "node:module";
 import path from "node:path";
