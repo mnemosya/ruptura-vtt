@@ -2,150 +2,135 @@
 
 ## Status
 
-**Status geral da Etapa 12: Implementação parcial — validação transacional e de RLS em Supabase pendente.**
+**Status geral da Etapa 12: Implementação parcial — autorização de leitura, referências de campanha e validação transacional/RLS pendentes.**
 
-A implementação (migration, resolvedor, Server Actions, validação, UI de narrador, integração com os 4 catálogos consumidos pelos jogadores) está completa e `tsc`/`build` passam. O que falta para "concluída" é exclusivamente a verificação contra um projeto Supabase real: não há projeto conectado disponível nesta sessão, então a migration `0025`, as 4 funções `SECURITY DEFINER` e as policies de RLS novas seguem o mesmo padrão já testado das migrations 0020-0024, mas **nunca foram executadas** (nenhum INSERT, nenhum rollback, nenhuma prova de isolamento entre campanhas em banco real).
+Esta é uma correção sobre a implementação anterior (commits `953612d`/`693aafd`). A auditoria desta correção encontrou uma **falha estrutural real**, não apenas uma validação ainda não executada: a leitura de `campaign_content_documents` publicado estava protegida só por `campaign_id` + a mesma policy permissiva (`anon, authenticated`) já usada por `characters`/`campaign_profiles`/`table_logs` — **conhecer o `campaign_id` nunca comprovou pertencimento à campanha**. Isso foi corrigido (migration `0026`): a leitura agora exige `can_read_campaign_content()` (membership real via `campaign_members`/`campaigns.owner_id`), nunca mais aberta por só conhecer o ID.
 
-A Etapa 11 **permanece exatamente como estava**: "Implementação parcial — integração editorial de drag pendente" — nada nesta etapa altera esse status (ver nota factual em `docs/CHECKPOINT_ETAPA11_IMPORTACAO_EXPORTACAO_BIBLIOTECA_LIVRO.md`).
+A Etapa 11 **permanece exatamente**: "Implementação parcial — integração editorial de drag pendente" — nada nesta correção altera esse status.
 
-## 1. Auditoria inicial (resumo — matriz completa)
+## 1. Auditoria de autorização (matriz completa desta correção)
 
-| Componente | Estrutura atual | Tabela/arquivo | Comportamento | Contexto de campanha | Consumidor | Risco | Adaptação | Decisão desta etapa |
+| Tabela | Operação | Usuário esperado | Vínculo de autorização disponível | Policy ANTERIOR (0025) | Falha | Correção proposta (0026) | Compatibilidade | Risco de regressão |
 |---|---|---|---|---|---|---|---|---|
-| Campanhas | `campaigns.owner_id` (uuid, FK auth.users) = autoridade real de "narrador" | migration 0006/0013 | RLS owner-scoped ENDURECIDA (0013) | — | `table/storage.ts` | Baixo | Nenhuma — reaproveitada como está | `is_campaign_owner()` reusa exatamente essa autoridade, nenhum papel novo |
-| Membership/papéis | **Não existe** tabela de membros/papéis de campanha | — | — | — | — | Alto (ambiguidade de "quem é jogador") | — | Documentado como limitação herdada (ver §Segurança) |
-| `characters` | RLS `characters_dev_transition_*` — **anon+authenticated, USING(true)**, nunca endurecida (nota F da 0013: exige refactor de storage/auth de jogador) | migration 0002/0011/0013 | Aberta | `campaign_id`/`profile_id`/`owner_id` existem (0011) mas RLS não os usa | `character/storage.ts` | Alto (pré-existente, não desta etapa) | Nenhuma nesta etapa (fora de escopo — auth real de jogador) | Herdado; conteúdo de campanha usa o MESMO piso de confiança |
-| `campaign_profiles`/`table_logs` | Anon-aberta, jogador identificado só por sessão/token, não Supabase Auth | 0004/0009/0013 | Aberta | Sim (`campaign_id`) | `enterCampaignProfile`, etc. | Alto (pré-existente) | Nenhuma | Mesmo modelo de confiança reaproveitado para leitura pública de conteúdo de campanha |
-| `content_documents`/`content_drafts`/`content_editor_metadata`/`content_changelog` | Globais, admin-only (Etapas 1-11) | 0001/0021/0023/0022 | Sem `campaign_id` | Nenhum | Editor Universal | Médio se reaproveitado incorretamente | **Não reaproveitados** — tabelas novas isoladas | Ver §3 |
-| `content_import_sessions`/`content_book_links` | Globais, admin-only/público (Etapa 11) | 0024 | Sem `campaign_id` | Nenhum | Import/export | Baixo | Nenhuma | Fora de escopo desta etapa (ver §Importação/exportação) |
-| Consumidores reais de conteúdo | Só 4 pontos de chamada em toda a app: `CharacterSheetView.tsx` (spell/talent/item/rune), `mesas/[campaignId]/page.tsx` (item/rune), `mesas/[campaignId]/personagens/novo/page.tsx` (talent), `dev/table/page.tsx` (dev, sem campanha) | — | `listX()` direto, sem escopo | 3 dos 4 JÁ têm `campaignId` em escopo | ver acima | Baixo (poucos pontos, bem isolados) | Trocar por `listXEffective(campaignId)` | Feito nos 3 com campanha real; `dev/table` mantido oficial (não tem campanha) |
-| Conceito de homebrew/override/fork | **Zero ocorrências** em código/banco (grep completo) | — | — | — | — | — | — | Contrato novo, isolado (esta etapa) |
+| `campaign_content_documents` | SELECT `published` | Membro da campanha (hoje só o narrador dono, já que não há player real) | `campaigns.owner_id = auth.uid()` (único vínculo real) | `anon, authenticated USING(status='published')` — qualquer um com o ID | **Conhecer `campaign_id` ≠ autorização** | `can_read_campaign_content(campaign_id)` — membership real | Narrador continua lendo tudo (é membro `owner`) | Jogador anônimo deixa de ver override/homebrew — DEGRADAÇÃO INTENCIONAL, documentada |
+| `campaign_content_documents` | SELECT `archived` | Só narrador/gestor | `owner_id` | `is_campaign_owner` (já correta) | Nenhuma | `can_manage_campaign_content` (mesma semântica, nome correto) | Sem mudança de comportamento | Nenhum |
+| `campaign_content_drafts`/`_editor_metadata`/`_changelog` | SELECT/INSERT/UPDATE/DELETE | Só narrador/gestor | `owner_id` | `is_campaign_owner` (já correta) | Nenhuma | `can_manage_campaign_content` | Sem mudança | Nenhum |
+| `campaign_members` (nova) | SELECT | O próprio usuário, ou o dono da campanha (todas as linhas) | `auth.uid()` | Não existia | — | `campaign_members_self_read`/`_owner_read_all` | Nova tabela, sem consumidor anterior | Nenhum |
+| `campaign_members` | INSERT/UPDATE/DELETE | Fluxo de aceite de convite real (NÃO EXISTE hoje) | Nenhum vínculo real de jogador | — | Não há como autorizar com segurança sem auth real de jogador | **Nenhuma policy de escrita** — só backfill do owner via migration | — | Nenhum (recurso fica inerte até auth real existir) |
+| `characters`/`campaign_profiles`/`table_logs` | (referência, não alteradas) | — | Nenhum (identidade por sessão opaca) | `*_dev_transition_*` aberta | Falha pré-existente, fora de escopo desta correção | Nenhuma nesta correção | — | — |
 
-## 2. Decisões arquiteturais (15)
+**Confirmação por auditoria de código** (não presumida): `resolveCampaignInvite` (`src/lib/table/storage.ts`) resolve um token e devolve a campanha para um visitante — nunca cria linha vinculada a `auth.uid()`. `campaign_profiles`/`characters` são identificados por `profile_sessions` (token opaco), nunca por `auth.users`. **Não existe autenticação real de jogador no projeto.**
 
-1. **Onde vivem conteúdos de campanha**: tabela nova `campaign_content_documents` (nunca `content_documents` + `campaign_id`).
-2. **Onde vivem rascunhos**: tabela nova `campaign_content_drafts` (nunca `content_drafts`).
-3. **Onde vive metadata editorial**: tabela nova `campaign_content_editor_metadata`, separada do payload (nunca `_editor` no payload).
-4. **Onde vive histórico**: tabela nova `campaign_content_changelog`, separado de `content_changelog` oficial (evita confundir escopo/autoridade).
-5. **Como um override referencia o oficial**: `official_document_id` + `official_version_base` + `official_hash_base` + `official_snapshot` (payload completo no momento da base) em `campaign_content_documents`.
-6. **Como homebrew independente é identificado**: `origin_type = 'homebrew'`, sem `official_document_id` obrigatório; identidade = `(campaign_id, content_type, slug)`.
-7. **Slugs locais**: únicos por `(campaign_id, content_type)`; para operações não-override, bloqueados contra colisão com slug oficial OU outro conteúdo da mesma campanha (nunca contra o catálogo global de outra campanha).
-8. **Referências internas**: requisitos continuam resolvidos contra o catálogo OFICIAL (`getContentDocument`) — esta etapa não introduz um segundo grafo de referências internas ao homebrew (ver limitações).
-9. **Conteúdo efetivo**: `resolveEffectiveList`/`resolveEffectiveOne` (`resolveEffectiveContent.ts`) — override > oficial, homebrew como entradas adicionais.
-10. **Jogadores leem a versão correta**: os mesmos 4 catálogos já consumidos pela ficha/mesa passam a chamar `listXEffective(campaignId)` em vez de `listX()` quando há campanha em escopo.
-11. **Detecção de atualização**: comparação de versão E hash da base contra o oficial atual (`classificarEstadoAtualizacao`) — nunca só por número de versão.
-12. **Conflitos**: nunca merge automático; 3 decisões explícitas implementadas (manter override, adotar oficial, criar rascunho de reconciliação).
-13. **Remoção de override restaura oficial**: arquivamento (nunca DELETE), fallback automático porque a resolução efetiva simplesmente para de encontrar uma linha `published` para aquele slug.
-14. **Preservação de instâncias**: nenhuma função desta etapa toca `characters`/inventário/personagem — só `campaign_content_*` (ver §Modelo×instância).
-15. **Tipos editáveis**: spell/talent/item/rune (os mesmos 4 do Editor Universal) — os demais tipos não têm homebrew/override nesta etapa (nem inspeção dedicada, já que não há UI de biblioteca de campanha para tipos somente-leitura — ver limitações).
+## 2. Decisão de autorização (ordem de preferência aplicada)
 
-## 3. Tabelas e migration (`0025_campaign_content_homebrew.sql`)
+1. **Reaproveitar membership real existente** — não há nenhuma para jogador.
+2. **Reforçar relação existente que já vincula `auth.uid()` à campanha** — `campaigns.owner_id`, já usada.
+3. **Criar estrutura mínima de membership** — feito: `campaign_members` (migration `0026`), mas **populada só com o dono** (backfill `insert ... select owner_id ... where owner_id is not null`). Nenhuma linha de jogador é inventada — não haveria `auth.uid()` de jogador para vincular.
 
-- `campaign_content_documents`: conteúdo efetivo publicado (override ou homebrew), `unique(campaign_id, content_type, slug)`, `status published|archived`.
-- `campaign_content_drafts`: rascunhos, `unique(campaign_id, content_type, slug)`, gatilho de versão reaproveitado de `content_drafts_bump_version()` (função genérica já existente, não duplicada).
-- `campaign_content_editor_metadata`: efeitos completos por `(campaign_content_document_id, local_version)`.
-- `campaign_content_changelog`: histórico, nunca misturado com `content_changelog` oficial.
-- Função `is_campaign_owner(campaign_id, uid)`: reaproveita `campaigns.owner_id` — nenhum papel novo.
-- Funções `SECURITY DEFINER`: `publish_campaign_content_draft`, `remove_campaign_content_override`, `archive_campaign_homebrew` — cada uma valida narrador + versão otimista + hash de base antes de escrever, tudo em transação única (Postgres garante atomicidade da função).
+Consequência assumida e documentada: **a leitura de conteúdo efetivo de campanha pelo jogador anônimo fica bloqueada** até existir autenticação real de jogador. `listCampaignContentDocumentsPublic`/`getCampaignContentDocumentPublic` passaram a usar `getScopedTableClient()` (antes usavam o client anon puro); sem sessão, a RLS devolve zero linhas — o resolvedor cai silenciosamente para o oficial puro (nunca lança, nunca vaza dado de campanha para quem não é membro). O narrador (sessão real) continua vendo/publicando tudo normalmente, porque é membro (`owner`) por backfill.
 
-**Não verificado em banco real** — ver §Verificações não executadas.
+## 3. Funções de autorização (migration `0026`)
 
-## 4. RLS
+- `is_campaign_member(campaign_id, uid default auth.uid())`: owner OU linha ativa em `campaign_members`. `SECURITY DEFINER`, `search_path` explícito, nunca confia em argumento de uid vindo do client (default sempre `auth.uid()`).
+- `can_manage_campaign_content(campaign_id, uid)`: hoje idêntica a `is_campaign_owner` (único papel de gestão real é o dono — nenhum papel "narrador convidado" existe no projeto).
+- `can_read_campaign_content(campaign_id, uid)`: hoje idêntica a `is_campaign_member`.
+- Todas revogadas de `public`, concedidas só a `authenticated` — `anon` não consegue nem executar a checagem.
 
-- `campaign_content_documents`: leitura de `status='published'` aberta a `anon, authenticated` — **mesmo modelo de confiança já usado por `characters`/`campaign_profiles`/`table_logs`** (conhecer o `campaign_id` é o que protege a mesa hoje; não há autenticação real de jogador no projeto — ver auditoria). Leitura de `archived` só para o narrador dono. **Nenhuma policy de insert/update/delete** — toda escrita passa pelas funções `SECURITY DEFINER`.
-- `campaign_content_drafts`/`campaign_content_editor_metadata`/`campaign_content_changelog`: só o narrador dono (`is_campaign_owner`) lê ou escreve — nunca `anon`.
-- Catálogo oficial (`content_documents` etc.): policies das Etapas 1-11 **preservadas**, nenhuma alteração.
+## 4. RLS corrigida
 
-## 5. Homebrew, cópia, override, rascunho, publicação
+- `campaign_content_documents_member_read`: SELECT `published` para `authenticated`, exige `can_read_campaign_content`. A policy anterior (`anon, authenticated` sem checagem) foi **removida** (`drop policy`).
+- `campaign_content_documents_manager_read_all`: SELECT tudo (incl. `archived`) para quem gerencia a campanha.
+- `campaign_content_drafts`/`_editor_metadata`/`_changelog`: realinhadas para `can_manage_campaign_content` (mesmo efeito de antes, nome semântico correto).
+- Nenhuma policy de escrita ampla em nenhuma tabela — toda mutação continua só pelas funções `SECURITY DEFINER`.
+- Catálogo oficial: **inalterado**.
 
-- `criarRascunhoOverride`: carrega oficial + metadata editorial (quando existe, via `getEditorMetadataAtual`/`sobreporMetadataEditorial` — reaproveitados, nunca duplicados) → rascunho `novo_override`, slug = slug oficial.
-- `criarRascunhoCopiaHomebrew`: carrega oficial, gera novo slug/nome, reaproveita `montarCamposECamposDesconhecidosIniciais` (Etapa 3/11) → rascunho `copia_homebrew`; `official_document_id` só como proveniência, nunca vínculo de substituição.
-- `criarRascunhoHomebrewNovo`: campos vazios (reaproveita `vazioCamposX`/`rawOriginalXVazio` da Etapa 3).
-- `atualizarRascunhoCampanha`: valida via `validarCamposCampanha` (módulo NOVO — ver §8) + optimistic lock.
-- `publicarRascunhoCampanha`: reaproveita `serializarRascunhoParaPublicacao` (Etapa 3/5, mesmo formato de envelope) para gerar o payload público final, depois chama o RPC transacional. Nunca publica no catálogo oficial; nunca escreve em `content_documents`/`content_changelog`.
-- Botão da UI diz explicitamente **"Publicar na campanha"** (nunca só "Publicar").
+## 5. Server Actions — autorização revisada
 
-## 6. Resolução efetiva (`resolveEffectiveContent.ts`)
+Todas (`criarRascunhoOverride`, `criarRascunhoCopiaHomebrew`, `criarRascunhoHomebrewNovo`, `atualizarRascunhoCampanha`, `publicarRascunhoCampanha`, `manterOverrideAposRevisao`, `criarRascunhoReconciliacao`, `adotarOficialAtual`, `removerOverrideCampanha`, `arquivarHomebrewCampanha`, `previewImpactoRemocao` novo) passam por `requireCampaignNarrator`: obtém o usuário no servidor (`getCurrentUser`), recarrega a campanha do banco (`getCampaign`), compara `owner_id` — nunca confia em `user_id`/autoridade vinda do client. A escrita real (RPC) reforça a MESMA checagem via `can_manage_campaign_content`. `publicarRascunhoCampanha` agora também recalcula limite de payload e de quantidade publicada antes de chamar o RPC (nunca só no client).
 
-`resolveEffectiveList(campaignId, contentType)`: busca oficiais publicados + `campaign_content_documents` publicados da campanha; overrides substituem pelo slug oficial correspondente; homebrews viram entradas adicionais. `resolveEffectiveOne` idem, unitário. Nunca deixa um homebrew substituir um oficial por coincidência de slug (só overrides, vinculados explicitamente por `official_document_id`).
+## 6. Resolução efetiva — corrigida
 
-`listSpellsEffective`/`listTalentsEffective`/`listItemsEffective`/`listRunesEffective`: wrappers usados pelos consumidores reais — quando `campaignId` é `null`, caem para o catálogo oficial puro (comportamento idêntico ao anterior a esta etapa).
+`resolveEffectiveContent.ts` não mudou sua lógica de composição (override > oficial, homebrew adicional), mas a fonte de dados (`campaignContentQueries.ts`) agora só devolve linhas de campanha para quem tem sessão autorizada — documentado explicitamente no cabeçalho do módulo. Nenhum cache/memoização existe no projeto para precisar de escopo adicional (ver §14).
 
-## 7. Integração com consumidores reais
+## 7. Referências oficiais, locais e efetivas
 
-Só os 3 pontos que já tinham `campaignId` real em escopo foram alterados:
-- `CharacterSheetView.tsx` (a ficha de produto `/ficha` e a dev) — talentos, itens, magias, runas.
-- `mesas/[campaignId]/page.tsx` (dashboard do narrador) — itens, runas.
-- `mesas/[campaignId]/personagens/novo/page.tsx` (assistente de criação) — talento inicial.
+- `validarCamposCampanha` (em `campaignContentValidation.ts`) ganhou `resolverReferenciaCampanha`: um requisito agora resolve primeiro contra o **oficial** (`content_documents`), e se ausente lá, contra o **conteúdo PUBLICADO da MESMA campanha** (`campaign_content_documents` filtrado por `campaign_id`) — homebrew pode ser dependência válida de outro homebrew/override da mesma mesa.
+- **Bloqueio estrutural de referência cruzada entre campanhas**: a consulta de resolução só busca `campaign_id = <esta campanha>` — não existe caminho de código para resolver contra o conteúdo de OUTRA campanha, então uma referência para outra campanha nunca resolve (fica `referência inexistente`, bloqueando a publicação).
+- Referência obrigatória ausente continua bloqueando (`erros.push`); referências continuam serializadas no formato legado (`{tipo_conteudo, slug}`) — **nenhuma mudança no contrato de schema canônico** (por isso `docs/SCHEMA_CANONICO_CONTEUDO_V1.md` não precisou de alteração de contrato, só uma nota factual).
+- Conteúdo arquivado nunca satisfaz uma referência nova (as consultas de resolução filtram `status='published'`).
+- **Limitação que permanece**: a resolução de referência efetiva (override substituindo o oficial na hora de resolver um requisito de OUTRO documento) não foi implementada — hoje um requisito resolve contra o payload oficial OU contra homebrew local, mas não troca automaticamente para o override quando um existir. Documentado como gap.
 
-`dev/table/page.tsx` (dev, sem campanha real) **não foi alterado** — continua 100% oficial, por decisão explícita (nunca escolher campanha por inferência).
+## 8. Comparação de três vias — implementada
 
-## 8. Validação de campanha (`campaignContentValidation.ts`)
+Nova rota `/mesas/[campaignId]/biblioteca/comparar/[docId]` (`campaignContentDiff.ts`: `diffEstrutural`/`compararTresVias`, verificado por 5 casos em Node — ver §Verificações). Mostra:
+- versão/hash de cada lado (oficial-base, oficial atual, versão local);
+- mudanças do oficial (base → atual) e da campanha (base → override atual), caminho a caminho;
+- conflitos reais (mesmo caminho alterado nos dois lados) destacados separadamente;
+- as 3 ações: **manter override** (registra revisão no changelog, nunca muda o payload), **adotar oficial** (arquiva o override, nunca copia o oficial para uma linha nova), **criar rascunho de reconciliação** (reabre edição com o override atual como base, publica pelo fluxo normal). Nenhuma marca "revisado" só por abrir a tela — cada ação precisa ser clicada explicitamente. Nenhum merge automático.
+- Não é um diff visual complexo (não pedido) — é um diff estrutural raso (profundidade 4), suficiente para decisão humana.
 
-Não reaproveita `validarCamposMagia`/etc. da Etapa 3 diretamente — a checagem de colisão de slug delas rejeitaria incorretamente um override (que precisa ter o MESMO slug do oficial, por design). `validarCamposCampanha` reimplementa a checagem estrutural (nome/slug/custos/requisitos) com uma regra de slug própria de escopo de campanha, e reaproveita `validarEfeitosEditaveis` (Etapa 4) sem duplicar.
+## 9. Diagnóstico de impacto ao remover homebrew — implementado
 
-## 9. Jogadores leem a versão correta / permissões
+`campaignContentImpact.ts::avaliarImpactoRemocao`: verifica (1) outros conteúdos PUBLICADOS da mesma campanha que referenciam o slug em `requisitos` (estruturado, preciso) e (2) personagens da campanha — **heurística por substring** no `payload` serializado de `characters` (não há coluna/estrutura indexável de "quem conhece este modelo" — documentado como limitação real, não escondida). Classificação: `sem_impacto_detectado` / `impacto_informativo` / `remocao_bloqueada` / `impacto_nao_determinavel`.
 
-- UI de narrador (`/mesas/[campaignId]/biblioteca`): exige login + `owner_id = auth.uid()` (mesmo guard de `/mesas/[campaignId]`).
-- Jogadores: nunca acessam esta rota (não há link nem policy que permita insert/update/delete); leem o conteúdo efetivo através dos MESMOS catálogos que já consumiam antes (ficha), agora servidos por `listXEffective`.
-- Indicador de origem implementado na UI do narrador (texto, não só cor): "Oficial" / "Modificado pela mesa" / "Homebrew da mesa". **Não implementado no lado do jogador** (a ficha em si não expõe essa distinção visualmente ainda — ver limitações).
+- **`arquivarHomebrewCampanha` agora BLOQUEIA de verdade** quando há referência estruturada obrigatória ativa (nunca só avisa nesse caso) — recalculado no servidor, nunca confia em o client já ter mostrado o diagnóstico.
+- **`removerOverrideCampanha` NÃO bloqueia por este diagnóstico** — remover um override nunca quebra uma referência (o slug volta a resolver contra o oficial), então o diagnóstico ali seria irrelevante; a UI ainda pede confirmação com motivo.
+- `previewImpactoRemocao` (nova Server Action) expõe o diagnóstico para a UI mostrar ANTES do usuário confirmar.
+- Nenhuma instância é apagada; nenhum modelo é substituído automaticamente por oficial.
 
-## 10. Atualização do oficial / comparação de três vias / conflitos
+## 10. Limites de segurança — implementados
 
-- `classificarEstadoAtualizacao`: `atualizado` (versão E hash batem) / `oficial_alterado` (versão ou hash diferem) / `oficial_arquivado` (oficial não existe mais) / `base_ausente`. Nunca depende só do número de versão (verificado — ver §Verificações executadas).
-- Badge exibido na tabela da Biblioteca da campanha.
-- Resolução: **manter override** (`manterOverrideAposRevisao`, só registra changelog), **adotar oficial** (`adotarOficialAtual`, remove/arquiva o override), **criar rascunho de reconciliação** (`criarRascunhoReconciliacao`, reabre edição com o override atual como base). Nenhum merge automático de caminhos conflitantes.
-- **Comparação de três vias real (diff estruturado lado a lado oficial-base/oficial-atual/campanha-atual) não tem UI dedicada** — os dados (payload, `official_snapshot`, oficial atual) já existem e são suficientes para construir essa tela, mas a tela em si não foi construída nesta sessão (ver limitações). A UI atual mostra só o estado (badge) e as 3 ações.
+`campaignContentLimits.ts` (constantes + validadores puros, verificados em Node): tamanho de payload (200 000 bytes), quantidade de efeitos (40), quantidade de referências (40), tamanho de texto longo (20 000 caracteres), quantidade de conteúdo publicado por campanha (300), quantidade de rascunhos ativos por campanha (50). Validados no SERVIDOR antes de persistir (`validarCamposCampanha`, `inserirRascunho`, `publicarRascunhoCampanha`) — nunca só na UI. Reforçados também no banco por um gatilho (`enforce_campaign_content_limits`, migration `0026`) como defesa em profundidade (nunca a única barreira).
 
-## 11. Remoção e restauração
+## 11. Tabelas e migrations
 
-- `removerOverrideCampanha`: exige `origin_type='override'`, exige oficial ainda existir (bloqueia se ausente/arquivado, nunca deixa conteúdo efetivo inexistente silenciosamente), arquiva (nunca apaga), registra changelog `restauracao_oficial`.
-- `arquivarHomebrewCampanha`: arquiva homebrew independente (nunca apaga), registra changelog `arquivamento`.
-- **Detecção de impacto/referências antes de remover não foi implementada** — o aditivo pede "detectar personagens que conhecem a magia/talento, itens/runas em instâncias" antes de bloquear a remoção; esta etapa NÃO construiu esse detector (ver limitações — é um gap real, documentado, não fingido).
+- `0025_campaign_content_homebrew.sql` (não reescrita — commitada anteriormente): `campaign_content_documents`/`_drafts`/`_editor_metadata`/`_changelog` + RPCs de publicação/remoção/arquivamento.
+- `0026_campaign_membership_authorization.sql` (nova, corretiva): `campaign_members` + backfill do owner; `is_campaign_member`/`can_manage_campaign_content`/`can_read_campaign_content`; RLS corrigida das 4 tabelas da Etapa 12; gatilho de limites.
+- Nenhuma migration em massa do catálogo oficial; `content_documents.payload` inalterado; nenhum usuário migrado para campanha sem vínculo comprovável (só o `owner_id` já existente).
 
 ## 12. Modelo × instância
 
-Nenhuma função desta etapa (rascunho, publicação, remoção, arquivamento) toca `characters`, inventário, ou qualquer estado mutável — todas operam exclusivamente sobre `campaign_content_*`. Não há código nesta etapa que leia ou escreva PV/PE/Mana/cargas/MIT/PD/munição/condições/efeitos ativos. Isso é garantido por construção (as funções SQL/TS novas simplesmente não têm acesso a essas tabelas), não apenas por convenção.
+Inalterado desde a versão anterior — nenhuma função nova toca `characters`/inventário. O diagnóstico de impacto (§9) LÊ `characters.payload` (só leitura, heurística), mas nenhuma escrita.
 
-## 13. Segurança
+## 13. Segurança (resumo)
 
-- Toda escrita reverifica `is_campaign_owner`/`campaigns.owner_id = auth.uid()` no servidor (Server Action) E no banco (RLS + checagem redundante dentro das funções `SECURITY DEFINER`).
-- **Limitação herdada, não introduzida por esta etapa**: não existe autenticação real de jogador nem tabela de membership no projeto — a leitura pública de conteúdo de campanha usa o MESMO piso de confiança que já protege (ou não) `characters`/`campaign_profiles`/`table_logs` desde sempre (conhecer o `campaign_id`). Corrigir isso de verdade exigiria autenticação real de jogador, fora de escopo desta etapa (ver auditoria §1).
-- Nenhum service role no client; nenhuma policy genérica para `authenticated`; nenhum `eval`/fórmula arbitrária; nenhum editor de JSON.
+- Autorização de leitura e escrita agora passa por relação real (`campaign_members`/`owner_id`), nunca por conhecimento do ID.
+- Nenhuma policy genérica para `authenticated`; nenhum service role no client; nenhum `eval`/fórmula arbitrária.
+- Admin global da Biblioteca oficial (`is_content_admin`) **nunca** é tratado como narrador de campanha — são checagens (`is_content_admin` vs. `is_campaign_owner`/`can_manage_campaign_content`) completamente separadas, confirmado por auditoria de código (nenhuma função de campanha chama `is_content_admin`).
+- Limitação herdada e não resolvida por esta correção (fora de escopo): `characters`/`campaign_profiles`/`table_logs` continuam com RLS aberta — autenticação real de jogador não existe no projeto.
 
-## 14. Limites
+## 14. Cache
 
-- Reaproveita os mesmos limites de efeitos/campos já vigentes no Editor Universal (Etapas 4/7/8/9/10) — nenhum limite numérico novo de "quantidade de homebrews/overrides por campanha" foi implementado nesta sessão (não há enforcement de teto — ver limitações).
+Confirmado (mesma auditoria da versão anterior): não existe camada de cache de conteúdo no projeto (leituras diretas ao Supabase, sem `fetch()`/`unstable_cache`) — "cache por campanha" não se aplica; nada para invalidar além do `revalidatePath` já usado.
 
 ## 15. Importação/exportação
 
-Não ampliada. O contrato v1 da Etapa 11 não foi alterado; conteúdo de campanha não pode ser exportado/importado por aquele fluxo nesta etapa (documentado como futuro, não implementado).
+Inalterado — fora de escopo desta correção.
 
 ## Verificações executadas
 
-- `git status --short` — só os arquivos desta etapa.
+- `git status --short` — só os arquivos desta correção.
+- `git diff --check` — sem problemas de espaço em branco.
 - `npx tsc --noEmit` — sem erros.
-- `npm run build` (Next.js/Turbopack) — sucesso; rotas novas (`/mesas/[campaignId]/biblioteca`, `/mesas/[campaignId]/biblioteca/rascunho/[draftId]`) presentes na árvore.
-- Verificação focada em Node puro (mesmo padrão das etapas anteriores): `scripts/dev/validate-campaign-homebrew.mjs` — **5/5 verificações passaram**, cobrindo `classificarEstadoAtualizacao` (atualizado/oficial_alterado por versão/oficial_alterado por hash/oficial_arquivado/base_ausente).
+- `npm run build` (Next.js/Turbopack) — sucesso; nova rota `/mesas/[campaignId]/biblioteca/comparar/[docId]` presente.
+- `scripts/dev/validate-campaign-homebrew.mjs` (atualizado) — **15/15 verificações**: `classificarEstadoAtualizacao` (5, já existentes), `diffEstrutural`/`compararTresVias` (5, incluindo detecção de conflito real e não-detecção de reordenação de chaves), validadores de limite (5, incluindo os tetos de publicados/rascunhos).
+- Validação estática da migration `0026`: contagem balanceada de blocos `$$` (8 = 4 funções), `begin`/`commit` únicos, revisão manual de cada `drop policy`/`create policy` contra a tabela-alvo.
 
-## Verificações não executadas
+## Verificações não executadas (SQL real)
 
-- **Nenhuma verificação SQL contra Supabase real** (INSERT/UPDATE/rollback das 4 funções `SECURITY DEFINER`, das policies de RLS novas, do isolamento real entre duas campanhas) — sem projeto conectado nesta sessão. É por isso que o status geral é parcial.
-- **Browser check** (26 itens equivalentes ao pedido: narrador cria homebrew/override, jogador vê versão efetiva, outra campanha isolada, etc.) — não executado (mesmo bloqueio de `tsx`/esbuild já registrado nos checkpoints anteriores).
-- **`resolveEffectiveList`/`resolveEffectiveOne`/Server Actions** não têm verificação executável nesta sessão além do `tsc`/build — dependem de dados reais em `content_documents`/`campaign_content_documents`, que exigem banco conectado.
+- **Nenhuma verificação transacional contra Supabase real** — sem projeto conectado nesta sessão. Isso inclui, especificamente, os 15 cenários pedidos (owner lê próprio publicado; owner cria/publica; membro ativo lê publicado; membro NÃO lê rascunho/metadata; externo NÃO lê publicado; usuário de outra campanha NÃO lê; externo NÃO publica; override afeta só a campanha correta; fallback oficial funciona; remoção restaura oficial; conflito otimista bloqueia; referência cruzada bloqueia; falha não deixa histórico falso; zero resíduo). **Nenhum destes foi executado** — a lógica foi projetada e revisada estaticamente para satisfazê-los, mas isso não é o mesmo que prova de banco real. Não alego que a RLS "passou" — ela nunca rodou.
+- **Browser check** — não executado (esbuild/`tsx` bloqueados neste ambiente, mesmo problema já registrado nos checkpoints anteriores).
 
-## Limitações reais (gaps honestos, não escondidos)
+## Limitações reais (gaps honestos que permanecem)
 
-- **Detecção de impacto/referências antes de remover homebrew não implementada** — pedido explicitamente no aditivo, não construído nesta sessão.
-- **Comparação de três vias com diff estruturado lado a lado não tem UI dedicada** — os dados existem (`official_snapshot`), a tela não foi construída.
-- **Indicador de origem (Oficial/Modificado/Homebrew) só existe na UI do narrador**, não na ficha do jogador.
-- **Sem teto de quantidade de homebrews/overrides/rascunhos por campanha** — nenhum limite numérico novo aplicado nesta etapa.
-- **Sem observabilidade dedicada** (log estruturado de falhas de acesso negado/schema inválido/conflito) além dos erros já retornados pelas Server Actions.
-- **Referências internas do homebrew continuam resolvidas só contra o catálogo oficial** — um homebrew que quisesse referenciar outro homebrew da mesma campanha não é suportado nesta etapa (o campo `requisitos` só resolve contra `content_documents`).
-- **Cache**: o projeto não tem uma camada de cache de conteúdo dedicada (leituras são diretas ao Supabase, sem `fetch()`/`unstable_cache`), então "invalidação por campanha" não se aplica — não há nada para invalidar além do `revalidatePath` do Next, já usado nas Server Actions.
+- Autorização de jogador real: arquitetura preparada (`campaign_members`), mas **inerte** até existir autenticação real de jogador — nenhuma leitura de conteúdo efetivo de campanha funciona hoje para um jogador anônimo (comportamento ANTES desta correção era inseguro, não "funcional"; agora é seguro e claramente bloqueado).
+- Referência efetiva (override substituindo o oficial na resolução de dependência de outro documento) não implementada — só oficial-ou-homebrew-local.
+- Detecção de impacto em personagens é heurística (substring), não uma varredura estruturada e exaustiva — documentado no próprio módulo.
+- Diff de três vias é estrutural raso (profundidade 4), não um merge visual completo — atende ao pedido ("não precisa criar merge visual complexo"), mas não é uma comparação exaustiva de arrays item-a-item.
+- Sem observabilidade dedicada (log estruturado) além dos erros já retornados.
 
 ## Encerramento
 
-TypeScript e build passam; 5 verificações focadas em Node passam; nenhuma publicação automática no catálogo oficial existe em nenhum caminho novo; nenhuma escrita em `content_documents`/`content_drafts` oficiais; nenhuma tabela de marketplace/homebrew público criada; nenhuma instância de personagem é tocada por nenhuma função nova. A Etapa 11 permanece "Implementação parcial — integração editorial de drag pendente", inalterada. **Não avancei para nenhuma etapa adicional** (não existe Etapa 13 neste aditivo).
+TypeScript e build passam; 15 verificações focadas em Node passam; nenhuma publicação automática no catálogo oficial; nenhuma escrita em `content_documents`/`content_drafts` oficiais; nenhuma tabela de marketplace criada; nenhuma instância de personagem é tocada ou apagada por nenhuma função. A Etapa 11 permanece "Implementação parcial — integração editorial de drag pendente", inalterada. **Não avancei para nenhuma etapa adicional.**
 
-**Status geral da Etapa 12: Implementação parcial — validação transacional e de RLS em Supabase pendente.**
+**Status geral da Etapa 12: Implementação parcial — autorização de leitura, referências de campanha e validação transacional/RLS pendentes.**
