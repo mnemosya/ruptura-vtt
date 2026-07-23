@@ -63,6 +63,10 @@ export interface CampaignProfile {
   locked_at: string | null;
   /** Último heartbeat recebido — usado para decidir se o bloqueio expirou (ver PROFILE_HEARTBEAT_TIMEOUT_MS). */
   last_seen_at: string | null;
+  /** Usuário Supabase Auth que reivindicou este perfil (Etapa 12, correção 3, migration 0028) — null = não reivindicado. */
+  user_id: string | null;
+  /** Quando o perfil foi reivindicado. */
+  claimed_at: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -19,6 +19,14 @@
  * conteúdo efetivo (override/homebrew) da campanha — sem essa sessão,
  * a leitura de conteúdo de campanha continua caindo no fallback oficial
  * (ver `resolveEffectiveContent.ts`), nunca vazando dado privado.
+ *
+ * ETAPA 12 (correção 3): `campaign_members` só prova pertencimento à
+ * CAMPANHA, nunca a um `campaign_profile`/`character` específico. Esta
+ * rota agora também exige reivindicar (ou criar) um perfil
+ * (`ClaimProfileClient` → `claim_campaign_profile`/
+ * `create_and_claim_campaign_profile`, migration 0028) antes de liberar
+ * o `JoinClient` — vínculo explícito, nunca inferido por nome ou pelo
+ * primeiro perfil livre.
  */
 
 import { resolveCampaignInvite, listCampaignProfiles, expireStaleProfileSessions } from "../../../lib/table/storage";
@@ -29,6 +37,7 @@ import { getCurrentUser } from "../../../lib/auth/session";
 import { LoginForm } from "../../LoginForm";
 import { acceptCampaignInvite } from "../../../lib/campaignContent/campaignContentServerActions";
 import JoinClient from "../../dev/join/[campaignId]/JoinClient";
+import { ClaimProfileClient } from "./ClaimProfileClient";
 
 export const dynamic = "force-dynamic";
 
@@ -118,13 +127,22 @@ export default async function InviteJoinPage({ params }: PageProps) {
     // JoinClient lida com lista vazia.
   }
 
+  const perfilProprio = perfisIniciais.some((p) => p.user_id === user.id);
+
   return (
-    <JoinClient
-      campaign={campaign}
-      perfisIniciais={perfisIniciais}
-      personagens={personagens}
-      variant="invite"
-      inviteId={resolved.inviteId ?? null}
-    />
+    <main style={{ maxWidth: 560, margin: "40px auto", padding: "0 20px" }}>
+      <ClaimProfileClient campaignId={campaign.id} perfis={perfisIniciais} userId={user.id} />
+      {perfilProprio ? (
+        <JoinClient
+          campaign={campaign}
+          perfisIniciais={perfisIniciais}
+          personagens={personagens}
+          variant="invite"
+          inviteId={resolved.inviteId ?? null}
+        />
+      ) : (
+        <p style={{ fontSize: 13, color: "#7d7d8a" }}>Reivindique ou crie um perfil acima para continuar.</p>
+      )}
+    </main>
   );
 }
