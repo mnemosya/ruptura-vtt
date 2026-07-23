@@ -30,6 +30,7 @@ import {
 } from "../lib/content";
 import { listLegacyCharactersDev } from "../lib/character/storage";
 import { listCampaigns } from "../lib/table/storage";
+import { listItemsEffective, listRunesEffective, listSpellsEffective, listTalentsEffective } from "../lib/campaignContent";
 import {
   normalizeCombatActionContent,
   normalizeConditionContent,
@@ -153,7 +154,7 @@ export async function CharacterSheetView({
   let talents: TalentContent[] = [];
   let talentsError: string | null = null;
   try {
-    const docs = await listTalents();
+    const docs = await listTalentsEffective(campaignId);
     talents = docs.map((doc) => normalizeTalentContent(doc.payload as Record<string, unknown>));
   } catch (error) {
     talentsError = error instanceof Error ? error.message : "Não foi possível carregar o catálogo de talentos.";
@@ -164,7 +165,7 @@ export async function CharacterSheetView({
   let items: ItemContent[] = [];
   let itemsError: string | null = null;
   try {
-    const docs = await listItems();
+    const docs = await listItemsEffective(campaignId);
     items = docs.map((doc) => normalizeItemContent(doc.payload as Record<string, unknown>));
   } catch (error) {
     itemsError = error instanceof Error ? error.message : "Não foi possível carregar o catálogo de itens.";
@@ -175,7 +176,7 @@ export async function CharacterSheetView({
   let spells: SpellContent[] = [];
   let spellsError: string | null = null;
   try {
-    const docs = await listSpells();
+    const docs = await listSpellsEffective(campaignId);
     spells = docs.map((doc) => normalizeSpellContent(doc.payload as Record<string, unknown>));
   } catch (error) {
     spellsError = error instanceof Error ? error.message : "Não foi possível carregar o catálogo de magias.";
@@ -197,7 +198,7 @@ export async function CharacterSheetView({
   let runes: TechnicalContentItem[] = [];
   let runesError: string | null = null;
   try {
-    const docs = await listRunes();
+    const docs = await listRunesEffective(campaignId);
     runes = docs.map((doc) => normalizeTechnicalContentItem(doc.payload as Record<string, unknown>));
   } catch (error) {
     runesError = error instanceof Error ? error.message : "Não foi possível carregar o catálogo de runas.";

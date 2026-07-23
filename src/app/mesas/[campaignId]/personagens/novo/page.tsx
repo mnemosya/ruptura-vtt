@@ -9,7 +9,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "../../../../../lib/auth/session";
 import { getCampaign, listCampaignProfiles } from "../../../../../lib/table/storage";
-import { getCharacterRules, listTalents } from "../../../../../lib/content";
+import { getCharacterRules } from "../../../../../lib/content";
+import { listTalentsEffective } from "../../../../../lib/campaignContent";
 import type { Campaign, CampaignProfile } from "../../../../../lib/table";
 import type { CharacterRulesPayload } from "../../../../../lib/character";
 import CreateCharacterWizardClient, { type TalentoNivel1Option } from "./CreateCharacterWizardClient";
@@ -71,7 +72,7 @@ export default async function NovoPersonagemPage({ params }: PageProps) {
   // pedido). Achata cada talento nos níveis "nivel 1" publicados.
   let talentosNivel1: TalentoNivel1Option[] = [];
   try {
-    const docs = await listTalents();
+    const docs = await listTalentsEffective(campaignId);
     talentosNivel1 = docs.flatMap((doc) => {
       const payload = doc.payload as { niveis?: { nivel?: number; slug?: string; nome?: string; descricao_curta?: string }[] } | null;
       const niveis = payload?.niveis ?? [];

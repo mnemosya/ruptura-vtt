@@ -19,12 +19,11 @@ import { listCharactersForNarratorCampaign, listUnassignedCharactersForNarrator 
 import {
   getCharacterRules,
   getCombatField,
-  listItems,
   listProperties,
-  listRunes,
   normalizeTechnicalContentItem,
   type TechnicalContentItem,
 } from "../../../lib/content";
+import { listItemsEffective, listRunesEffective } from "../../../lib/campaignContent";
 import type { Campaign, CampaignProfile, CampaignInvite, ProfileSession, TableLogEntry } from "../../../lib/table";
 import {
   normalizeAttackCriticalRules,
@@ -99,9 +98,9 @@ export default async function MesaDetailPage({ params }: PageProps) {
   try {
     const [combatFieldDoc, itemDocs, propertyDocs, runeDocs] = await Promise.all([
       getCombatField(),
-      listItems(),
+      listItemsEffective(campaignId),
       listProperties(),
-      listRunes(),
+      listRunesEffective(campaignId),
     ]);
     criticalRules = normalizeAttackCriticalRules(combatFieldDoc?.payload);
     items = itemDocs.map((doc) => normalizeItemContent(doc.payload as Record<string, unknown>));
@@ -128,19 +127,26 @@ export default async function MesaDetailPage({ params }: PageProps) {
   }
 
   return (
-    <MesaDetailClient
-      campaign={campaign}
-      perfisIniciais={perfis}
-      convitesIniciais={convites}
-      sessoesIniciais={sessoes}
-      logsIniciais={logs}
-      personagensDaMesaIniciais={personagensDaMesa}
-      personagensDisponiveisIniciais={personagensDisponiveis}
-      regras={regras}
-      criticalRules={criticalRules}
-      items={items}
-      properties={properties}
-      runes={runes}
-    />
+    <div>
+      <p style={{ maxWidth: 1180, margin: "12px auto 0", padding: "0 20px" }}>
+        <Link href={`/mesas/${campaignId}/biblioteca`} style={{ color: "#5ec8ff", fontSize: 13 }}>
+          Biblioteca da campanha (homebrew e overrides) →
+        </Link>
+      </p>
+      <MesaDetailClient
+        campaign={campaign}
+        perfisIniciais={perfis}
+        convitesIniciais={convites}
+        sessoesIniciais={sessoes}
+        logsIniciais={logs}
+        personagensDaMesaIniciais={personagensDaMesa}
+        personagensDisponiveisIniciais={personagensDisponiveis}
+        regras={regras}
+        criticalRules={criticalRules}
+        items={items}
+        properties={properties}
+        runes={runes}
+      />
+    </div>
   );
 }
