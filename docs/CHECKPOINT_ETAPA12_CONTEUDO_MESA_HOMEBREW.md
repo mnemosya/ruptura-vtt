@@ -2,18 +2,62 @@
 
 ## Status
 
-**Status geral da Etapa 12: Implementação parcial — integração de jogadores, referências completas e validação transacional/RLS em Supabase pendentes.**
+**Status geral da Etapa 12: Implementação parcial — validação transacional e de RLS em Supabase pendente.**
 
-Este checkpoint acumula QUATRO correções sobre a implementação original (commits `953612d`/`693aafd`):
+Esta correção (5) é a que permite subir de nível em relação ao checkpoint anterior: a policy permissiva de `authenticated` em `campaign_profiles`/`characters` foi removida (não só narrowed para preservar `anon`) e substituída por policies restritivas reais, baseadas nos helpers de autorização, cobrindo owner e jogador. O que resta agora é exclusivamente **aplicar e comprovar a migration contra um Supabase real e executar o aceite de browser** — nenhuma policy permissiva relevante continua no código desta correção.
+
+Este checkpoint acumula CINCO correções sobre a implementação original (commits `953612d`/`693aafd`):
 
 - **Correção 1** (`4ff8081`/`e37495a`, migration `0026`): a leitura de `campaign_content_documents` publicado estava protegida só por `campaign_id` + a mesma policy permissiva (`anon, authenticated`) já usada por `characters`/`campaign_profiles`/`table_logs` — **conhecer o `campaign_id` nunca comprovou pertencimento à campanha**. Corrigida: leitura passou a exigir `can_read_campaign_content()` (membership real), mas só o DONO tinha um `auth.uid()` real para virar membro — não existia NENHUM caminho para um JOGADOR se tornar membro de verdade.
 - **Correção 2** (`0840898`/`48413b3`, migration `0027`): fecha esse caminho. `/join/[token]` passou a exigir uma sessão real do Supabase Auth e aceitar o convite via `accept_campaign_invite` (RPC transacional), criando/ativando `campaign_members` com `role='player'`. Também adicionou o índice estruturado `campaign_content_references`.
 - **Correção 3** (`93746d1`/`f7c3ac8`, migration `0028`): `campaign_members` prova pertencimento à CAMPANHA, mas nunca provou qual `campaign_profile`/`character` é do jogador. Adiciona `campaign_profiles.user_id` + RPCs de reivindicação transacional + funções de autorização (aditivas) + `item_slug` de `conceder_item`/`consumir_item` no índice.
 - **Correção 4** (esta sessão, migration `0029`): auditoria completa de `character/storage.ts` (~15 funções) e das famílias de referência que restavam. Achado central sobre autorização: os dois caminhos REAIS de leitura/escrita de personagem pelo jogador (`get_character_for_profile_session`/`save_character_for_profile_session`) já eram `SECURITY DEFINER` protegidos por token de sessão real — nunca acesso anônimo aberto; a lacuna real era esse token não ter nenhum vínculo com `auth.uid()`. Corrigido: quando o perfil já foi reivindicado, as duas funções agora TAMBÉM exigem `auth.uid() = campaign_profiles.user_id`. Achado central sobre referências: "efeitos compostos/filhos", `modificar_instancia`, instalar/remover/ativar runa como efeito e `efeito_temporario` foram auditados um a um no código real — quase todos são AUSÊNCIAS REAIS de referência (nunca uma lacuna de extração), exceto os compostos, que JÁ eram cobertos (a árvore é achatada em irmãos no mesmo array antes de chegar ao payload público).
 
-**Por que o status NÃO desce ainda para "só falta validar banco e browser"**: (1) a RLS de `campaign_profiles`/`characters` continua a mesma policy aberta herdada desde a migration 0013 — o reforço desta correção vive DENTRO das duas RPCs de sessão, nunca na tabela; um acesso direto via REST com a anon key ainda contorna qualquer coisa que dependa só de RLS de tabela (documentado, ver §0-4.4); (2) `profile_sessions` não foi estruturalmente subordinada ao Auth — só ganhou uma checagem adicional dentro das 2 RPCs que já a liam; (3) nada foi verificado contra Supabase real.
+- **Correção 5** (esta sessão, migration `0030`): fecha a lacuna central que a correção 4 deixou explícita — a RLS de TABELA de `campaign_profiles`/`characters` continuava aberta (`anon, authenticated USING(true))`. Revalidada a auditoria de `character/storage.ts`/`table/storage.ts` no código atual (não presumida): confirmado que TODAS as 5 funções legado/dev (`createCharacter`/`updateCharacter`/`getCharacter`/`listCharacters`/`deleteCharacter`) usam `getContentClient()` — ANON PURO, SEMPRE, mesmo com sessão ativa — e que TODAS as funções de produto (narrador em `character/storage.ts` Seção 1; TODAS as funções de `campaign_profiles` em `table/storage.ts`) já usam `getScopedTableClient()`. Isso tornou seguro remover o papel `authenticated` das policies antigas (mantendo `anon` intacto — zero impacto em dev/legado) e substituí-lo por policies restritivas reais baseadas em `is_campaign_owner`/`is_campaign_member`/`can_access_campaign_profile`/`can_manage_character`. Dois helpers (`can_read_character`/`can_manage_character`/`can_access_campaign_profile`) foram CORRIGIDOS no mesmo passo: não confirmavam que a membership ainda estava `active` antes de aceitar `profile.user_id = auth.uid()` — um jogador `removed` que já tinha perfil reivindicado continuaria passando; corrigido.
+
+**Por que o status não sobe além disto**: a RLS de tabela agora está restritiva NO CÓDIGO da migration, mas **nada disto foi executado contra um Supabase real** — nenhuma prova de que owner/player/outsider se comportam como desenhado, nenhuma prova de que o dashboard do narrador não regrediu, nenhum browser check. É exatamente o critério de "Implementação parcial — validação transacional e de RLS em Supabase pendente": policies restritivas escritas e helpers obrigatórios no código, faltando só aplicar/comprovar em banco real e o aceite de browser.
 
 A Etapa 11 **permanece exatamente**: "Implementação parcial — integração editorial de drag pendente" — nada nesta correção altera esse status.
+
+## 0-5. Correção 5 — RLS restritiva de perfis e personagens (migration 0030)
+
+### 0-5.1 Auditoria revalidada (matriz de acessos reais)
+
+| Arquivo/função | Client | Role resultante | Rotas | Classificação |
+|---|---|---|---|---|
+| `character/storage.ts` Seção 1 (`createCharacterForCampaign`, `listCharactersForNarratorCampaign`, `assignCharacterToCampaign`, `assignCharacterToProfile`, `archiveCharacter`, `restoreCharacter`, `duplicateCharacter`, `renameCharacter`, `listCharactersForNarratorProfile`, `listUnassignedCharactersForNarrator`, `listArchivedCharactersForNarratorCampaign`) | `getScopedTableClient()` | `authenticated` (narrador logado) | `/mesas/[campaignId]` | Legítimo — coberto pela nova policy owner |
+| `character/storage.ts` Seção 2 (`getCharacterForProfileSession`/`saveCharacterForProfileSession`) | RPC `SECURITY DEFINER` (bypassa RLS de tabela como dono da função) | Indiferente à RLS de tabela | `/ficha` | Legítimo — já reforçado na correção 4, RLS de tabela não afeta |
+| `character/storage.ts` Seção 3/4 (`createCharacter`, `updateCharacter`, `getCharacter`, `listCharacters`, `deleteCharacter`, `listLegacyCharactersDev`) | `getContentClient()` (**anon puro, sempre**, confirmado por leitura direta do código) | `anon` (nunca muda, mesmo com sessão) | `/dev/character-sheet`, `scripts/test-character-storage.ts` | Só dev — preservado via policy `anon`, inalterada |
+| `table/storage.ts` (todas as funções de `campaign_profiles`: `createCampaignProfile`, `listCampaignProfiles`, `setCampaignProfileLocked`, `setCampaignProfileActiveCharacter`, `enterCampaignProfile`, `heartbeatCampaignProfile`, `leaveCampaignProfile`, `forceReleaseCampaignProfile`) | `getScopedTableClient()` | `authenticated` quando há sessão (narrador OU jogador autenticado); `anon` quando não há (ex.: `/dev/join`) | `/mesas/[campaignId]`, `/join/[token]`, `/dev/join/[campaignId]` | Legítimo — coberto pelas novas policies `authenticated`; fluxo `/dev/join` sem sessão continua coberto por `anon` |
+
+**Conclusão**: nenhuma função de produto legítima usa `getContentClient()` para estas duas tabelas — a restrição de `authenticated` é segura no nível de código. O que falta é a prova em banco real (ver §Verificações não executadas).
+
+### 0-5.2 Estratégia de policies
+
+Narrow (não remoção total): as policies antigas (`campaign_profiles_dev_anon_*`, `characters_dev_transition_*`) tiveram o papel `authenticated` REMOVIDO da lista de roles (`to anon, authenticated` → `to anon`), preservando 100% do comportamento para `anon` (dev/legado). As policies aditivas antigas para `authenticated` (`campaign_profiles_owner_all`, `characters_owner_*`) foram removidas e substituídas por um conjunto explícito de 4 policies por tabela (`select`/`insert`/`update`/`delete`), cada uma usando os helpers de autorização.
+
+### 0-5.3 Semântica final das policies `authenticated`
+
+**`campaign_profiles`**:
+- SELECT: owner da campanha OU qualquer membro ATIVO da própria campanha (ver desvio documentado abaixo).
+- INSERT: só owner (jogador cria/reivindica só via RPC, que bypassa RLS).
+- UPDATE: owner administra qualquer perfil da campanha; o próprio jogador atualiza seu perfil reivindicado.
+- DELETE: só owner.
+
+**`characters`**:
+- SELECT/UPDATE: owner da campanha, OU `owner_id = auth.uid()` (personagem narrador-autorado legado), OU personagem vinculado ao perfil do próprio jogador (membership ativa + `profile.user_id = auth.uid()`).
+- INSERT: mesma regra — jogador só pode inserir vinculado ao PRÓPRIO perfil.
+- DELETE: só owner.
+
+**Desvio documentado do pedido original**: o pedido especificava "player ativo lê o próprio perfil" (não todos). A tela de reivindicação já entregue (`ClaimProfileClient`, correção 3) precisa listar TODOS os perfis da campanha (inclusive os de outros jogadores, para marcá-los "indisponíveis") ANTES de qualquer reivindicação — restringir a SELECT a "só o próprio" quebraria essa tela já em produção. `campaign_profiles` não guarda nenhum segredo (o segredo de sessão vive em `profile_sessions.session_token_hash`, tabela separada, não tocada) — por isso a decisão foi permitir leitura por qualquer membro ativo da própria campanha, nunca de outra.
+
+### 0-5.4 Helpers corrigidos
+
+`can_read_character`/`can_manage_character`/`can_access_campaign_profile` (originalmente da correção 3) tinham uma falha: aceitavam `profile.user_id = auth.uid()` sem confirmar que a membership da campanha ainda estava `active`. Um jogador removido (`campaign_members.status = 'removed'`) que já tivesse um perfil reivindicado continuaria passando nesses helpers. Corrigido: agora todos exigem `is_campaign_member()` (que já checa `status='active'`) também.
+
+### 0-5.5 `profile_sessions` — inalterada nesta correção
+
+Não foi tocada — o mecanismo de autoridade real (token + `auth.uid()` quando reivindicado) já foi fechado na correção 4, dentro das 2 RPCs. Esta correção trata do isolamento de TABELA para acesso direto (fora da aplicação), que é um problema diferente e complementar.
 
 ## 0-4. Correção 4 — auditoria de storage + reforço de autorização + referências (migration 0029)
 
@@ -199,21 +243,24 @@ Nova rota `/mesas/[campaignId]/biblioteca/comparar/[docId]` (`campaignContentDif
 - `0026_campaign_membership_authorization.sql` (não reescrita): `campaign_members` + backfill do owner; `is_campaign_member`/`can_manage_campaign_content`/`can_read_campaign_content`; RLS corrigida das 4 tabelas da Etapa 12; gatilho de limites.
 - `0027_campaign_invite_authentication.sql` (não reescrita): `campaign_members` ganha `invite_id`/`invited_by`/`joined_at`; RPC `accept_campaign_invite`; tabela `campaign_content_references`; `publish_campaign_content_draft` substituída para recalcular o índice na mesma transação.
 - `0028_campaign_profile_ownership.sql` (não reescrita): `campaign_profiles.user_id`/`claimed_at`; índice único parcial `(campaign_id, user_id) where user_id is not null`; RPCs `claim_campaign_profile`/`create_and_claim_campaign_profile`; funções `can_access_campaign_profile`/`can_manage_campaign_profile`/`can_read_character`/`can_manage_character` (aditivas).
-- `0029_campaign_authorization_enforcement.sql` (nova, desta sessão): `can_read_campaign`/`can_manage_campaign` (aliases de `is_campaign_member`/`is_campaign_owner`); `get_character_for_profile_session`/`save_character_for_profile_session` substituídas (mesma assinatura) para também exigir `auth.uid() = campaign_profiles.user_id` quando o perfil já foi reivindicado.
+- `0029_campaign_authorization_enforcement.sql` (não reescrita): `can_read_campaign`/`can_manage_campaign` (aliases); `get_character_for_profile_session`/`save_character_for_profile_session` substituídas (mesma assinatura) para também exigir `auth.uid() = campaign_profiles.user_id` quando o perfil já foi reivindicado.
+- `0030_campaign_profile_character_rls.sql` (nova, desta sessão): `can_read_character`/`can_manage_character`/`can_access_campaign_profile` corrigidas (exigem membership `active`, não só `user_id` batendo); policies antigas de `campaign_profiles`/`characters` narrowed para `anon` (dev/legado preservado) + policies novas restritivas para `authenticated` (owner + jogador via ownership real).
 - Nenhuma migration em massa do catálogo oficial; `content_documents.payload` inalterado; nenhum backfill especulativo de jogador, perfil ou personagem.
 
 ## 12. Modelo × instância
 
-Inalterado — nenhuma função nova toca estado mutável de personagem. O reforço desta correção (§0-4) só ADICIONA uma condição de rejeição às duas RPCs existentes — a lógica de leitura/escrita do `payload` do personagem em si é byte-a-byte a mesma da migration 0016.
+Inalterado — nenhuma função nova toca estado mutável de personagem. Esta correção só altera QUEM pode fazer SELECT/INSERT/UPDATE/DELETE nas linhas de `campaign_profiles`/`characters` — nunca a lógica de leitura/escrita do `payload` em si.
 
 ## 13. Segurança (resumo)
 
 - Autorização de leitura/escrita de conteúdo de campanha passa por relação real (`campaign_members`/`owner_id`), nunca por conhecimento do ID.
-- Reivindicação de perfil exige `auth.uid()` real + membership ativa, nunca inferida por nome/primeiro-perfil-livre; corrida de reivindicação dupla fechada por `for update` + índice único.
-- **Leitura/escrita de personagem pelo jogador** (as 2 RPCs da Seção 2 de `character/storage.ts`) exige token de sessão real E (quando o perfil foi reivindicado) `auth.uid()` correspondente — dupla camada, nenhuma delas sozinha basta mais quando o perfil está reivindicado.
-- Nenhuma policy genérica para `authenticated`; nenhum service role no client; nenhum `eval`/fórmula arbitrária.
+- Reivindicação de perfil exige `auth.uid()` real + membership ativa; corrida de reivindicação dupla fechada por `for update` + índice único.
+- **Leitura/escrita de personagem pelo jogador via RPC** exige token de sessão real E (quando reivindicado) `auth.uid()` correspondente (correção 4).
+- **RLS de tabela de `campaign_profiles`/`characters` agora restritiva** (correção 5): a policy `anon, authenticated USING(true)` foi substituída — `anon` preservado (dev/legado), `authenticated` agora exige ownership real (owner da campanha, ou jogador para seu próprio perfil/personagem, com membership `active` confirmada).
+- Nenhuma policy genérica para `authenticated` restante; nenhum service role no client; nenhum `eval`/fórmula arbitrária.
 - Admin global da Biblioteca oficial (`is_content_admin`) **nunca** é tratado como narrador/membro de campanha.
-- **Limitação real e explícita, repetida por ser a que mantém o status parcial**: a RLS de tabela de `campaign_profiles`/`characters` continua aberta (`*_dev_transition_*`). O reforço desta correção protege os 2 RPCs que a aplicação realmente usa para essas operações — mas um acesso DIRETO via REST com a anon key (fora da aplicação) ainda não é bloqueado por RLS de tabela. Documentado em detalhe em §0-4.4.
+- **Desvio documentado**: SELECT de `campaign_profiles` para `authenticated` permite qualquer MEMBRO ATIVO ler todos os perfis da própria campanha (não só o próprio) — necessário para a tela de reivindicação já entregue (`ClaimProfileClient`) funcionar; tabela não guarda segredos (token vive em `profile_sessions`, separada).
+- **Limitação real que mantém o status parcial**: nada disto foi aplicado nem comprovado contra um Supabase real.
 
 ## 14. Cache
 
@@ -227,27 +274,28 @@ Inalterado — fora de escopo.
 
 - `git status --short` / `git diff --check` — limpos.
 - `npx tsc --noEmit` — sem erros.
-- `npm run build` (Next.js/Turbopack) — sucesso; nenhuma rota nova nesta correção (só migration SQL + comentário/docstring em TS).
-- `scripts/dev/validate-campaign-homebrew.mjs` — **18/18 verificações** (inalteradas desde a correção 3 — o reforço desta correção vive inteiramente em SQL/RPC, não testável sem banco real).
-- Validação estática da migration `0029`: contagem balanceada de blocos `$$` (8 = 4 funções), `begin`/`commit` únicos; as duas funções de sessão foram comparadas linha a linha com a versão original (migration 0016) para confirmar que a ÚNICA mudança de comportamento é a nova checagem de `auth.uid()` — nenhuma regra de sessão/token/lock preexistente foi alterada.
-- Auditoria de código de `character/storage.ts` (~15 funções, matriz completa em §0-4.1) — achado: a superfície de risco real era muito menor do que presumido (só 2 funções, já protegidas por token, precisavam do reforço de `auth.uid()`; o resto já era autenticado ou explicitamente dev-only).
+- `npm run build` (Next.js/Turbopack) — sucesso; nenhuma rota nova nesta correção (só migration SQL).
+- `scripts/dev/validate-campaign-homebrew.mjs` — **18/18 verificações** (inalteradas — o reforço desta correção vive inteiramente em RLS/SQL, não testável sem banco real).
+- Validação estática da migration `0030`: 21 `drop policy` / 16 `create policy` contabilizados e conferidos manualmente contra a tabela-alvo; 6 blocos `$$` (3 funções corrigidas); confirmado que TODA policy antiga que concedia `authenticated` foi removida ou narrowed — nenhuma policy permissiva remanescente para esse papel nas duas tabelas.
+- Revalidação de auditoria (não presumida): releitura linha a linha de `character/storage.ts` e `table/storage.ts` confirmando o client usado por cada função exportada (matriz em §0-5.1) — confirma que restringir `authenticated` não afeta nenhum caminho dev/legado (sempre `getContentClient()`, nunca muda de role).
 
 ## Verificações não executadas (SQL real)
 
-- **Nenhuma verificação transacional contra Supabase real** — sem projeto conectado nesta sessão. Isso inclui todos os cenários com identidades distintas (owner; player A aceita convite, reivindica perfil A, não acessa perfil/personagem B; player B não consegue reivindicar o perfil de A; sessão adulterada rejeitada; invited/removed perdem acesso; outsider nunca lê nada). **Nenhum foi executado.**
+- **Nenhuma verificação transacional contra Supabase real** — sem projeto conectado nesta sessão. Isso inclui TODOS os cenários pedidos com identidades distintas: owner (lê/administra tudo); Player A (lê só perfil/personagem A, não B); Player B (simétrico); invited (sem acesso antes do aceite); removed (perde acesso); outsider (nenhum acesso); acesso DIRETO via SELECT/UPDATE em perfil/personagem alheio (deve retornar zero linhas ou falhar). **Nenhum destes foi executado** — a migration foi escrita e revisada estaticamente, nunca aplicada.
 - **Browser check** — não executado (esbuild/`tsx` bloqueados neste ambiente).
 
 ## Limitações reais (gaps honestos que permanecem)
 
-- **RLS de tabela de `campaign_profiles`/`characters` continua aberta** — o reforço desta correção vive nas 2 RPCs de sessão (aplicação real), não na tabela; acesso direto via REST fora da aplicação ainda não é bloqueado por RLS. Flipar isso com segurança exige confirmar, com ambiente real, que a policy restritiva cobre 100% do acesso legítimo do narrador — não verificável nesta sessão.
-- **Referências**: cobertura confirmada completa no escopo real do schema atual (requisitos, condição em efeitos, propriedades de item, item concedido/consumido) — nenhuma família adicional real foi encontrada nesta auditoria. "Referência efetiva" (override substituindo o oficial na resolução de dependência de OUTRO documento) continua não implementada.
+- **RLS restritiva escrita, não comprovada** — é a única coisa que falta para o próximo nível de status; sem Supabase conectado, não há como aplicar a migration nem rodar os 15+ cenários de identidade distinta pedidos.
+- **Referências**: cobertura confirmada completa no escopo real do schema atual (requisitos, condição em efeitos, propriedades de item, item concedido/consumido) — nenhuma família adicional real foi encontrada em nenhuma das correções anteriores. Não reaberto nesta correção (nenhuma lacuna concreta nova foi encontrada). "Referência efetiva" (override substituindo o oficial na resolução de dependência de OUTRO documento) continua não implementada.
 - Detecção de impacto em personagens continua heurística (substring) como sinal SECUNDÁRIO.
 - Diff de três vias é estrutural raso (profundidade 4), não um merge visual completo.
 - Sem observabilidade dedicada (log estruturado) além dos erros já retornados.
+- Sem projeção pública dedicada para "informações resumidas de outros personagens" — não foi encontrado nenhum consumidor real que precise disso hoje (mesa/dashboard não exibem ficha resumida de personagens alheios); documentado como não implementado por ausência de necessidade real, não esquecido.
 - **Nada disto foi comprovado contra Supabase real.**
 
 ## Encerramento
 
-TypeScript e build passam; 18 verificações focadas em Node passam; nenhuma publicação automática no catálogo oficial; nenhuma escrita em `content_documents`/`content_drafts` oficiais; nenhuma tabela de marketplace criada; nenhuma instância de personagem é tocada ou apagada por nenhuma função; nenhum backfill especulativo de jogador, perfil ou personagem; nenhuma regra mecânica (Aljava, MIT/PD, capacidade 15, etc.) foi alterada. A Etapa 11 permanece "Implementação parcial — integração editorial de drag pendente", inalterada. **Não avancei para nenhuma etapa adicional.**
+TypeScript e build passam; 18 verificações focadas em Node passam; nenhuma publicação automática no catálogo oficial; nenhuma escrita em `content_documents`/`content_drafts` oficiais; nenhuma tabela de marketplace criada; nenhuma instância de personagem é tocada ou apagada por nenhuma função; nenhum backfill especulativo de jogador, perfil ou personagem; nenhuma regra mecânica (Aljava, MIT/PD, capacidade 15, etc.) foi alterada; nenhuma policy permissiva relevante para `authenticated` permanece em `campaign_profiles`/`characters`. A Etapa 11 permanece "Implementação parcial — integração editorial de drag pendente", inalterada. **Não avancei para nenhuma etapa adicional.**
 
-**Status geral da Etapa 12: Implementação parcial — integração de jogadores, referências completas e validação transacional/RLS em Supabase pendentes.**
+**Status geral da Etapa 12: Implementação parcial — validação transacional e de RLS em Supabase pendente.**
