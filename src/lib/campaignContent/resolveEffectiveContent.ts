@@ -1,16 +1,30 @@
 /**
- * Resolução de conteúdo EFETIVO por campanha (Etapa 12) — o único lugar
- * que decide "qual payload vale para esta campanha": override
- * publicado > conteúdo oficial publicado, mais homebrew publicado como
- * entradas adicionais. Nunca deixa um homebrew independente substituir
- * um oficial só por coincidência de slug — só um `override` (vinculado
- * explicitamente a um `official_document_id`) substitui.
+ * Resolução de conteúdo EFETIVO por campanha (Etapa 12, CORRIGIDO na
+ * migration 0026) — o único lugar que decide "qual payload vale para
+ * esta campanha": override publicado > conteúdo oficial publicado, mais
+ * homebrew publicado como entradas adicionais. Nunca deixa um homebrew
+ * independente substituir um oficial só por coincidência de slug — só
+ * um `override` (vinculado explicitamente a um `official_document_id`)
+ * substitui.
  *
  * Entrada mínima: `campaignId` + `content_type` (+ slug para resolução
  * unitária). Quem chama é responsável por já ter validado que
- * `campaignId` é legítimo para o contexto atual (ver nota de
- * "não aceitar campaign_id arbitrário" no checkpoint) — este módulo
- * não faz autenticação, só resolve dados já escopados.
+ * `campaignId` é legítimo para o contexto atual (nunca aceito cru do
+ * client quando a campanha puder ser derivada de sessão/personagem) —
+ * este módulo não faz autenticação, só resolve dados já escopados.
+ *
+ * IMPORTANTE (correção da falha estrutural): a leitura de
+ * `campaign_content_documents` (via `listCampaignContentDocumentsPublic`/
+ * `getCampaignContentDocumentPublic`) agora exige sessão autenticada
+ * membro da campanha (RLS `can_read_campaign_content`, migration 0026)
+ * — nunca mais aberta por só conhecer o `campaign_id`. Sem sessão (ex.:
+ * jogador anônimo, que não tem `auth.uid()` — ver auditoria), essas
+ * funções devolvem lista vazia/`null`, e este resolvedor cai
+ * SILENCIOSAMENTE para o conteúdo oficial puro — nunca lança, nunca
+ * expõe override/homebrew a quem não tem autorização real. É por isso
+ * que a leitura de conteúdo efetivo pelo jogador continua uma limitação
+ * documentada (não uma feature "que funciona") até existir autenticação
+ * real de jogador.
  */
 
 import { getContentDocument, listContentDocuments } from "../content/queries";

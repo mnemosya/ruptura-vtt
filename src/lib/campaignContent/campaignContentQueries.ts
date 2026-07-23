@@ -1,31 +1,35 @@
 /**
- * Leitura de conteúdo de campanha (Etapa 12). Duas famílias de função:
- *   - `*Public`: client anon puro (`getContentClient`) — mesmo modelo de
- *     confiança já usado por characters/campaign_profiles/table_logs
- *     (conhecer o `campaign_id` é o que "protege" a mesa hoje, não uma
- *     checagem de identidade real de jogador — ver migration 0025).
- *     Só enxerga `status = 'published'`.
- *   - `*ForOwner`: client scoped (sessão do narrador) — enxerga
- *     published + archived, reforçado pela RLS
- *     `campaign_content_documents_owner_read_all`.
+ * Leitura de conteúdo de campanha (Etapa 12, CORRIGIDO na migration
+ * 0026). `*Public` deixou de usar o client anon puro — a RLS de
+ * `campaign_content_documents` agora exige `can_read_campaign_content()`
+ * (membership real via `campaign_members`/`campaigns.owner_id`), nunca
+ * mais "conhecer o campaign_id". Por isso estas funções passaram a usar
+ * `getScopedTableClient()` também: SEM sessão autenticada (o caso do
+ * jogador anônimo, que não tem `auth.uid()` — ver auditoria da correção),
+ * a RLS bloqueia e a função retorna lista vazia/`null` — nunca lança,
+ * mas também nunca mais devolve conteúdo de campanha para quem não é
+ * membro autenticado. Isso é uma restrição DELIBERADA e documentada: a
+ * leitura de conteúdo efetivo de campanha pelo jogador (anônimo) fica
+ * bloqueada até existir autenticação real de jogador — o oficial puro
+ * continua disponível normalmente (fallback do resolvedor).
+ *   - `*ForOwner`: idem, mas para o narrador (published + archived).
  */
 
-import { getContentClient } from "../content/client";
 import { getScopedTableClient } from "../auth/scopedClient";
 import type { DraftContentType } from "../contentSchema/draftTypes";
 import type { CampaignContentChangelogRow, CampaignContentDocumentRow, CampaignContentDraftRow } from "./campaignContentTypes";
 
 export async function listCampaignContentDocumentsPublic(campaignId: string, contentType?: DraftContentType): Promise<CampaignContentDocumentRow[]> {
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   let query = client.from("campaign_content_documents").select("*").eq("campaign_id", campaignId).eq("status", "published");
   if (contentType) query = query.eq("content_type", contentType);
   const { data, error } = await query;
-  if (error) throw new Error(`Falha ao listar conteúdo efetivo da campanha: ${error.message}`);
+  if (error) return [];
   return (data ?? []) as CampaignContentDocumentRow[];
 }
 
 export async function getCampaignContentDocumentPublic(campaignId: string, contentType: DraftContentType, slug: string): Promise<CampaignContentDocumentRow | null> {
-  const client = getContentClient();
+  const client = await getScopedTableClient();
   const { data, error } = await client
     .from("campaign_content_documents")
     .select("*")
