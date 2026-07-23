@@ -60,3 +60,30 @@ export async function createAndClaimCampaignProfile(campaignId: string, nickname
     return { ok: false, erro: err instanceof Error ? err.message : "Erro desconhecido." };
   }
 }
+
+export interface PerfilReivindicavel {
+  id: string;
+  nickname: string;
+}
+
+/**
+ * Lista perfis NÃO reivindicados de uma campanha (Etapa 12, correção 6
+ * — migration 0031). Chama a RPC `list_claimable_campaign_profiles`
+ * (`SECURITY DEFINER`, exige `auth.uid()` + membership ativa) em vez
+ * de depender do SELECT amplo de `campaign_profiles`, que agora
+ * restringe o jogador a ler só o próprio perfil. Retorna só
+ * id+nickname — nunca `user_id` de terceiros, nunca payload completo.
+ */
+export async function listClaimableCampaignProfiles(campaignId: string): Promise<PerfilReivindicavel[]> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return [];
+
+    const client = await getScopedTableClient();
+    const { data, error } = await client.rpc("list_claimable_campaign_profiles", { p_campaign_id: campaignId });
+    if (error) return [];
+    return (data as PerfilReivindicavel[]) ?? [];
+  } catch {
+    return [];
+  }
+}

@@ -1,32 +1,49 @@
 "use client";
 
 /**
- * Reivindicação de perfil (Etapa 12, correção 3) — passo exigido antes
- * de liberar o `JoinClient` existente. Estabelece o vínculo REAL
- * usuário↔perfil (`campaign_profiles.user_id`), nunca inferido por nome
- * ou pelo primeiro perfil livre — a pessoa escolhe explicitamente.
+ * Reivindicação de perfil (Etapa 12, correção 3, revisado na correção
+ * 6) — passo exigido antes de liberar o `JoinClient` existente.
+ * Estabelece o vínculo REAL usuário↔perfil
+ * (`campaign_profiles.user_id`), nunca inferido por nome ou pelo
+ * primeiro perfil livre — a pessoa escolhe explicitamente.
+ *
+ * Correção 6 (migration 0031): antes, este componente recebia TODOS os
+ * perfis da campanha (inclusive os já reivindicados por outros
+ * jogadores), o que exigia uma policy de SELECT ampla em
+ * `campaign_profiles`. Agora recebe só o que precisa, já resolvido
+ * pelo servidor: `perfilProprio` (o próprio perfil, se já reivindicado
+ * — permitido pela nova policy "owner ou próprio user_id") e
+ * `perfisReivindicaveis` (id+nickname dos perfis NÃO reivindicados,
+ * via RPC `list_claimable_campaign_profiles`/
+ * `listClaimableCampaignProfiles`, nunca um SELECT direto). O contador
+ * de "perfis de outros jogadores" foi removido — exigiria expor
+ * contagem/identidade de terceiros, o que o contrato mínimo da RPC não
+ * permite.
  */
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CampaignProfile } from "../../../lib/table";
-import { claimCampaignProfile, createAndClaimCampaignProfile } from "../../../lib/campaignContent/campaignProfileServerActions";
+import {
+  claimCampaignProfile,
+  createAndClaimCampaignProfile,
+  type PerfilReivindicavel,
+} from "../../../lib/campaignContent/campaignProfileServerActions";
 
 interface Props {
   campaignId: string;
-  perfis: CampaignProfile[];
-  userId: string;
+  perfilProprio: CampaignProfile | null;
+  perfisReivindicaveis: PerfilReivindicavel[];
 }
 
-export function ClaimProfileClient({ campaignId, perfis, userId }: Props) {
+export function ClaimProfileClient({ campaignId, perfilProprio, perfisReivindicaveis }: Props) {
   const router = useRouter();
   const [novoNome, setNovoNome] = useState("");
   const [carregando, setCarregando] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
-  const jaReivindicado = perfis.find((p) => p.user_id === userId);
-  const disponiveis = perfis.filter((p) => !p.user_id);
-  const deOutros = perfis.filter((p) => p.user_id && p.user_id !== userId);
+  const jaReivindicado = perfilProprio;
+  const disponiveis = perfisReivindicaveis;
 
   async function reivindicar(profileId: string) {
     setErro(null);
@@ -77,11 +94,9 @@ export function ClaimProfileClient({ campaignId, perfis, userId }: Props) {
         </ul>
       )}
 
-      {deOutros.length > 0 && (
-        <p style={{ fontSize: 12, color: "#7d7d8a", marginBottom: 12 }}>
-          {deOutros.length} perfil(is) já pertencem a outros jogadores desta mesa (não selecionáveis).
-        </p>
-      )}
+      <p style={{ fontSize: 12, color: "#7d7d8a", marginBottom: 12 }}>
+        Perfis já reivindicados por outros jogadores não aparecem aqui.
+      </p>
 
       <div style={{ display: "flex", gap: 8 }}>
         <input

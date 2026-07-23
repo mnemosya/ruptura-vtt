@@ -36,6 +36,7 @@ import type { CharacterRecord } from "../../../lib/character";
 import { getCurrentUser } from "../../../lib/auth/session";
 import { LoginForm } from "../../LoginForm";
 import { acceptCampaignInvite } from "../../../lib/campaignContent/campaignContentServerActions";
+import { listClaimableCampaignProfiles } from "../../../lib/campaignContent/campaignProfileServerActions";
 import JoinClient from "../../dev/join/[campaignId]/JoinClient";
 import { ClaimProfileClient } from "./ClaimProfileClient";
 
@@ -114,12 +115,23 @@ export default async function InviteJoinPage({ params }: PageProps) {
     );
   }
 
+  // Etapa 12 (correção 6): `listCampaignProfiles` continua sendo a
+  // função de produto (getScopedTableClient), mas desde a migration
+  // 0031 a policy de SELECT restringe o jogador a ler SOMENTE o
+  // próprio perfil (nunca mais todos os perfis da campanha) — por
+  // isso `perfisIniciais`, para quem ainda não é dono da mesa, já vem
+  // naturalmente limitada a 0 ou 1 linha (a própria). A listagem dos
+  // perfis AINDA disponíveis para reivindicar vem de uma RPC mínima
+  // dedicada (`listClaimableCampaignProfiles`), nunca de um SELECT
+  // amplo.
   let perfisIniciais: CampaignProfile[] = [];
+  let perfisReivindicaveis: { id: string; nickname: string }[] = [];
   let personagens: CharacterRecord[] = [];
   try {
     // v0.26: expira sessões velhas desta mesa antes de listar perfis — perfil expirado aparece como disponível.
     await expireStaleProfileSessions(campaign.id).catch(() => {});
     perfisIniciais = await listCampaignProfiles(campaign.id);
+    perfisReivindicaveis = await listClaimableCampaignProfiles(campaign.id);
     // v0.28: escopado à mesa do convite — nunca a lista global de personagens de outras mesas.
     personagens = await listCharactersForCampaign(campaign.id);
   } catch {
@@ -127,11 +139,15 @@ export default async function InviteJoinPage({ params }: PageProps) {
     // JoinClient lida com lista vazia.
   }
 
-  const perfilProprio = perfisIniciais.some((p) => p.user_id === user.id);
+  const perfilProprio = perfisIniciais.find((p) => p.user_id === user.id) ?? null;
 
   return (
     <main style={{ maxWidth: 560, margin: "40px auto", padding: "0 20px" }}>
-      <ClaimProfileClient campaignId={campaign.id} perfis={perfisIniciais} userId={user.id} />
+      <ClaimProfileClient
+        campaignId={campaign.id}
+        perfilProprio={perfilProprio}
+        perfisReivindicaveis={perfisReivindicaveis}
+      />
       {perfilProprio ? (
         <JoinClient
           campaign={campaign}
