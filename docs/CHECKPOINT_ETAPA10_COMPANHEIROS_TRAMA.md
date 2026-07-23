@@ -247,6 +247,11 @@ nenhuma perda de payload conhecida. **Não avancei para a Etapa 11.**
 
 > **Nota de referência futura (adicionada durante a Etapa 11, sem
 > alterar o status acima):** a Etapa 11 (importação/exportação +
-> Biblioteca do Livro) foi implementada depois desta e não depende de
-> nenhuma mudança neste checkpoint — ver
+> Biblioteca do Livro) avançou parcialmente depois desta — pacote,
+> exportação, importação draft-only e vínculos editoriais estão com
+> implementação concluída (aceite de browser pendente), mas a etapa como
+> um todo permanece **"Implementação parcial — integração editorial de
+> drag pendente"**, por não existir ainda um renderizador do Livro nem
+> um editor estruturado de capítulos para servir de destino do drag.
+> Nenhuma dependência disto altera o status desta Etapa 10 — ver
 > `docs/CHECKPOINT_ETAPA11_IMPORTACAO_EXPORTACAO_BIBLIOTECA_LIVRO.md`.

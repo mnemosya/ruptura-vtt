@@ -231,4 +231,12 @@ A implementação em `src/lib/contentSchema/` seguiu esta proposta com os ajuste
 
 ## 14. Ajustes feitos durante a Etapa 11 (importação, exportação e Biblioteca do Livro)
 
-Nenhum ajuste ao envelope canônico em si (`CamposEditaveis`/`EfeitoEditavel` inalterados) — a Etapa 11 opera uma camada ACIMA do schema canônico (contrato de transporte de pacote), reaproveitando os mesmos builders/adapters/validadores já existentes (`draftBuilders.ts`, `officialSchemaValidator.ts` contra os schemas oficiais reais) para reconstruir um rascunho a partir de um payload público importado. Ver `docs/CHECKPOINT_ETAPA11_IMPORTACAO_EXPORTACAO_BIBLIOTECA_LIVRO.md` para o contrato do pacote (`ruptura-content-package` v1), hash canônico e classificação de preview.
+Nenhum ajuste ao envelope canônico em si (`CamposEditaveis`/`EfeitoEditavel` inalterados) — a Etapa 11 opera uma camada ACIMA do schema canônico (contrato de transporte de pacote), reaproveitando os mesmos builders/adapters/validadores já existentes (`draftBuilders.ts`, `officialSchemaValidator.ts` contra os schemas oficiais reais) para reconstruir um rascunho a partir de um payload público importado.
+
+Fatos relevantes desta etapa, estritamente factuais (status completo em `docs/CHECKPOINT_ETAPA11_IMPORTACAO_EXPORTACAO_BIBLIOTECA_LIVRO.md`):
+
+- o contrato de pacote (`ruptura-content-package` v1) e os vínculos editoriais (`content_book_links`) foram adicionados como estruturas novas, sem alterar o contrato mecânico dos efeitos;
+- a importação continua estritamente separada da publicação — cria somente rascunho (`content_drafts`), nunca escreve em `content_documents`;
+- a metadata editorial (`content_editor_metadata`) continua fora do payload público em todo caminho de código desta etapa, inclusive no pacote exportado;
+- o drag-and-drop editorial permanece pendente — não implementado, por não existir renderizador do Livro nem editor estruturado de capítulos;
+- status geral da Etapa 11: **Implementação parcial — integração editorial de drag pendente.**

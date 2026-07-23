@@ -1,5 +1,23 @@
 # Checkpoint — Etapa 11: Importação, exportação e Biblioteca do Livro
 
+## Status
+
+**Status geral da Etapa 11: Implementação parcial — integração editorial de drag pendente.**
+
+Este é o status ÚNICO e final da etapa como um todo — não "concluída com pendências menores". O motivo é estrutural, não uma questão de tempo: o drag-and-drop editorial exigido pelo aditivo não pôde ser implementado porque não existe (e não foi criado nesta etapa, por estar fora de escopo) nenhum renderizador do Livro nem editor estruturado de capítulos para servir de destino real de um drop. O aditivo da própria Etapa 11 previa exatamente este cenário e determinava que, nele, a etapa não poderia ser marcada como totalmente concluída.
+
+Os blocos internos abaixo têm estados DIFERENTES entre si — o status geral acima nunca deve ser lido como se cada bloco individualmente estivesse "parcial": a maior parte do trabalho está de fato pronta, só falta aceite de browser; um bloco específico (drag) está bloqueado por infraestrutura ausente; e a verificação transacional contra um banco real não foi executada.
+
+| Bloco | Estado |
+|---|---|
+| Pacote JSON (contrato, hash, manifest) | Implementação concluída — aceite de browser pendente |
+| Exportação (unitária e em lote) | Implementação concluída — aceite de browser pendente |
+| Importação (draft-only, preview, conflitos, idempotência) | Implementação concluída — aceite de browser pendente |
+| Vínculos editoriais (Biblioteca↔Livro, sem navegação clicável) | Implementação concluída — aceite de browser pendente |
+| Drag-and-drop editorial | Não implementado — bloqueado pela ausência de renderizador do Livro e de editor estruturado de capítulos |
+| Round-trip e atomicidade em Supabase real | Não verificados — migration e RPC implementadas, nenhuma execução contra projeto Supabase conectado |
+| Verificações puras (TypeScript, build, harness Node) | TypeScript aprovado; build aprovado; harness Node 19/19 aprovado |
+
 ## 1. Auditoria (resumo)
 
 | Recurso | Estrutura atual | Tabela/arquivo | Função atual | Estado | Contrato existente | Lacuna | Risco | Decisão desta etapa |
@@ -80,19 +98,19 @@ Auditoria: zero código de drag-and-drop em qualquer parte do projeto (`draggabl
 - Import valida extensão (`.json`) e MIME como sinal (nunca única defesa) — o conteúdo real é sempre reparseado e validado estruturalmente, nunca executado (nenhum `eval`).
 - Nenhuma policy nova de escrita direta — toda mutação nova passa por função SECURITY DEFINER (`import_content_drafts`) ou por Server Action que reverifica admin.
 
-## 11. Verificações executadas vs. bloqueadas
+## 11. Verificações não executadas
 
-**Executadas nesta sessão:**
+Nomeado deliberadamente "não executadas" em vez de "bloqueadas vs. executadas" — a seção a seguir é a lista do que NÃO foi verificado, para que a lacuna fique impossível de perder.
+
+- **Browser check real** (os 26 itens do aditivo: export/import reais na UI, criação de vínculo, drag, "Ver no livro"): não executado. `tsx`/esbuild continuam bloqueados neste ambiente (mesmo problema já registrado em checkpoints anteriores) — os scripts `check-admin-*.ts` (sessão de browser real) não puderam rodar. Nenhum teste manual foi pedido ao usuário.
+- **Round-trip e atomicidade transacional em Supabase real**: não executado. Não há projeto Supabase provisionado e conectado a este repositório disponível para uso nesta sessão. A migration 0024 e o RPC `import_content_drafts` seguem exatamente o padrão transacional já testado das migrations 0021-0023 (mesmo estilo de SECURITY DEFINER + RLS + índice único) — mas isso é similaridade de padrão, não verificação: nenhum INSERT, nenhum rollback, nenhum teste de concorrência ou de falha-no-meio foi exercitado contra um Postgres real.
+- **Drag-and-drop editorial**: não implementado, portanto não há nada para verificar (ver §9 e a seção dedicada abaixo).
+
+### O que FOI verificado nesta sessão
+
 - `npx tsc --noEmit` — sem erros.
 - `npm run build` (Next.js/Turbopack) — sucesso, todas as rotas novas (`/admin/biblioteca/exportar`, `/admin/biblioteca/importar`, `/admin/biblioteca/importacoes`, `/admin/biblioteca/importacoes/[id]`) aparecem na árvore de rotas.
-- Verificação focada em Node puro (mesmo padrão das etapas anteriores: compila os módulos reais com `tsc --module commonjs`, roda com `node`, nunca duplica lógica): `scripts/dev/validate-import-export-book.mjs` — **19/19 verificações passaram**, cobrindo hash determinístico (ordem de chave irrelevante, ordem de array significativa, detecção de alteração), validação de manifest (aceito, formato desconhecido rejeitado, versão futura rejeitada), `ehContentTypeEditavel`, coleta real de dependências (requisitos/condição/propriedades), resolução de dependência (nunca assume resolvida fora do pacote) e as 11 classificações de preview nos casos centrais.
-
-**Bloqueadas nesta sessão (ambiente, não solicitado ao usuário):**
-- `tsx`/esbuild continuam bloqueados neste ambiente (mesmo problema já registrado em checkpoints anteriores) — os scripts `check-admin-*.ts` (sessão de browser real) não puderam ser executados.
-- Nenhuma verificação de round-trip completo via SQL real (INSERT/rollback do RPC `import_content_drafts` contra um Postgres de verdade) foi executada nesta sessão — não há acesso a um projeto Supabase provisionado e conectado a este repositório disponível para uso seguro nesta sessão. A migration 0024 segue exatamente o padrão transacional já testado das migrations 0021-0023 (mesmo estilo de SECURITY DEFINER + RLS + índice único), mas não foi exercitada em banco real aqui.
-- Os 26 itens de checagem via browser (export/import reais na UI, drag, "Ver no livro") não foram executados — nenhum teste manual foi pedido ao usuário, conforme instrução.
-
-**Status honesto**: "Implementação concluída — aceite de browser pendente" para import/export/vínculos; "Implementação parcial — integração editorial de drag pendente" para a peça de drag-and-drop especificamente (ver §9).
+- Verificação focada em Node puro (mesmo padrão das etapas anteriores: compila os módulos reais com `tsc --module commonjs`, roda com `node`, nunca duplica lógica): `scripts/dev/validate-import-export-book.mjs` — **19/19 verificações passaram**, cobrindo hash determinístico (ordem de chave irrelevante, ordem de array significativa, detecção de alteração), validação de manifest (aceito, formato desconhecido rejeitado, versão futura rejeitada), `ehContentTypeEditavel`, coleta real de dependências (requisitos/condição/propriedades), resolução de dependência (nunca assume resolvida fora do pacote) e as 11 classificações de preview nos casos centrais. Esta verificação cobre exclusivamente lógica pura (sem I/O) — não substitui nem o browser check nem a verificação transacional contra banco real.
 
 ## 12. Limitações reais (resumo)
 
@@ -102,10 +120,55 @@ Auditoria: zero código de drag-and-drop em qualquer parte do projeto (`draggabl
 - `origemLegado` (conversão de conteúdo legado, Etapa 6) não é recuperado no pacote de exportação — essa informação vive só no `content_drafts.payload.origemLegado` de quando o conteúdo foi convertido, e não é persistida em `content_documents` após a publicação; portanto o pacote nunca a fabrica (campo permanece ausente, nunca inventado).
 - Tipos somente-leitura (condition, property, master_table etc.) podem ser incluídos num pacote para fins de dependência/preview, mas nunca geram rascunho — comportamento intencional, documentado como `tipo_nao_editavel`.
 
-## Status final
+## Entregas concluídas
 
-**Implementação concluída — aceite de browser pendente** para o contrato de pacote, exportação unitária/em lote, importação draft-only, preview com as 11 classificações reais, detecção de conflito, idempotência por hash, preservação de metadata/campos desconhecidos/efeitos bespoke (reaproveitando os builders reais da Etapa 3/6, nunca duplicados), dependências estruturadas, vínculos editoriais (Biblioteca↔Livro) e histórico de importação.
+Implementação concluída — aceite de browser pendente — para:
 
-**Implementação parcial — integração editorial de drag pendente**, formalmente aceita pelo próprio PRD (§2.1.9 já lista essa peça fora da primeira entrega) e pela ausência real de um editor de capítulo para servir de destino.
+- contrato de pacote versionado `ruptura-content-package` v1, com manifest, versionamento e rejeição de versão futura desconhecida;
+- hash canônico determinístico (`canonicalHash.ts`), verificado por Node puro;
+- exportação administrativa unitária e em lote (`packageExport.ts`), sempre por seleção explícita, nunca "exportar tudo" implicitamente;
+- importação **exclusivamente como rascunho** (`packageImport.ts` + RPC `import_content_drafts`) — nenhum caminho de código criado nesta etapa publica automaticamente, nenhum escreve direto em `content_documents`, nenhum sobrescreve um rascunho existente silenciosamente;
+- preview com as 11 classificações reais, sempre recalculado no servidor (nunca confia em hash/classificação vindos do client);
+- detecção de conflito (publicado mudou, rascunho já existe) e idempotência por hash (reimportar o mesmo pacote não duplica);
+- preservação de metadata editorial, campos desconhecidos e efeitos bespoke, reaproveitando os builders reais da Etapa 3/6 (nunca duplicados);
+- dependências estruturadas e vínculos editoriais Biblioteca↔Livro (`content_book_links`), com histórico de importação (`content_import_sessions`).
 
-TypeScript e build passam; 19 verificações focadas em Node passam; nenhuma publicação automática existe em nenhum caminho de código novo; nenhuma escrita direta em `content_documents`; nenhuma tabela de homebrew/override/marketplace criada. **Não avancei para a Etapa 12.**
+## Pendências de aceite
+
+- **Browser check**: nenhum dos 26 itens do aditivo foi verificado na UI real (esbuild/`tsx` bloqueados neste ambiente).
+- **Round-trip e atomicidade em Supabase real**: migration 0024 e RPC `import_content_drafts` foram implementadas seguindo o mesmo padrão transacional já testado nas migrations 0021-0023, mas **não foram executadas contra um projeto Supabase conectado** nesta sessão — nenhuma prova de rollback correto, nenhuma prova de que a transação é realmente atômica em produção.
+
+## Bloqueio estrutural do drag-and-drop
+
+O drag-and-drop editorial **não foi implementado**. Isto não é uma lacuna de tempo ou de esforço: não existe, em nenhuma parte do código deste projeto, um renderizador do Livro nem um editor estruturado de capítulos que possa servir de destino real para um drop. O PRD (`docs/PRD Ruptura VTT.md` §2.1.9) já classifica "drag de todos os tipos de entidade" como fora da primeira entrega, e a própria Biblioteca do Livro é adiada para depois da ficha de personagem estabilizar.
+
+Construir esse destino (um editor/renderizador de capítulos) está fora do escopo desta etapa e não foi tentado nesta correção — fazê-lo exigiria uma etapa própria, com sua própria auditoria e decisão de produto. O que foi entregue (`content_book_links`, criação de vínculo via UI admin) cobre o registro estrutural do vínculo entidade↔capítulo, mas sem drag e sem navegação clicável real ("Ver no livro" mostra a citação, não abre nada).
+
+**É este bloqueio, sozinho, que impede a Etapa 11 de ser marcada como concluída.**
+
+## Verificações não executadas
+
+Ver §11 para a lista completa e o detalhamento de cada item. Resumo:
+
+- Browser check real (26 itens do aditivo) — não executado (ambiente).
+- Round-trip/atomicidade transacional contra Supabase real — não executado (sem projeto conectado).
+- Nada relacionado a drag foi verificado, por não ter sido implementado.
+
+## Critérios para conclusão futura
+
+A Etapa 11 só poderá ser marcada como concluída quando **todos** os itens abaixo forem satisfeitos — nenhum prazo ou próxima etapa é assumido aqui, esta lista não implica agenda:
+
+- existir um renderizador ou editor estruturado de capítulos real, capaz de receber uma referência de conteúdo da Biblioteca;
+- o drag-and-drop seguro (transportando só uma referência — tipo, slug estável, versão de protocolo — nunca o payload completo) puder ser integrado a esse destino editorial real;
+- o drop for validado no servidor (admin, documento, tipo, destino, duplicidade) antes de persistir qualquer vínculo;
+- o vínculo criado pelo drop puder abrir corretamente tanto a entidade quanto o trecho do livro correspondente (round-trip de navegação real, não citação textual);
+- esse comportamento for verificado operacionalmente (browser check real, não simulado);
+- a migration 0024 e a RPC `import_content_drafts` forem verificadas contra um projeto Supabase real (não apenas por semelhança de padrão com migrations anteriores);
+- o round-trip transacional completo de importação (incluindo atomicidade e ausência de resíduo em caso de falha no meio) for comprovado contra esse banco real;
+- o browser check aplicável a export/import/vínculos for executado, ou formalmente substituído por um aceite equivalente documentado.
+
+## Encerramento
+
+TypeScript e build passam; 19 verificações focadas em Node passam; nenhuma publicação automática existe em nenhum caminho de código novo; nenhuma escrita direta em `content_documents`; a importação continua exclusivamente criando rascunhos; nenhuma tabela de homebrew/override/marketplace foi criada. **Não avancei para a Etapa 12.**
+
+**Status geral da Etapa 11: Implementação parcial — integração editorial de drag pendente.**
