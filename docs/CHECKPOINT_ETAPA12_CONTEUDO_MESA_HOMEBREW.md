@@ -4,14 +4,47 @@
 
 **Status geral da Etapa 12: Implementação parcial — integração de jogadores, referências completas e validação transacional/RLS em Supabase pendentes.**
 
-Este checkpoint acumula DUAS correções sobre a implementação original (commits `953612d`/`693aafd`):
+Este checkpoint acumula TRÊS correções sobre a implementação original (commits `953612d`/`693aafd`):
 
 - **Correção 1** (`4ff8081`/`e37495a`, migration `0026`): a leitura de `campaign_content_documents` publicado estava protegida só por `campaign_id` + a mesma policy permissiva (`anon, authenticated`) já usada por `characters`/`campaign_profiles`/`table_logs` — **conhecer o `campaign_id` nunca comprovou pertencimento à campanha**. Corrigida: leitura passou a exigir `can_read_campaign_content()` (membership real), mas só o DONO tinha um `auth.uid()` real para virar membro — não existia NENHUM caminho para um JOGADOR se tornar membro de verdade.
-- **Correção 2** (esta sessão, migration `0027`): fecha esse caminho. `/join/[token]` agora exige uma sessão real do Supabase Auth (reaproveitando `LoginForm`/`signInWithPassword`/`signUpDevNarrator`, a MESMA infraestrutura já usada pelo narrador) e aceita o convite via `accept_campaign_invite` (RPC transacional), criando/ativando `campaign_members` com `role='player'`. Também adiciona o índice estruturado `campaign_content_references` (recalculado a cada publicação) e substitui a checagem ad-hoc de impacto por uma consulta a esse índice.
+- **Correção 2** (`0840898`/`48413b3`, migration `0027`): fecha esse caminho. `/join/[token]` passou a exigir uma sessão real do Supabase Auth e aceitar o convite via `accept_campaign_invite` (RPC transacional), criando/ativando `campaign_members` com `role='player'`. Também adicionou o índice estruturado `campaign_content_references`.
+- **Correção 3** (esta sessão, migration `0028`): `campaign_members` prova pertencimento à CAMPANHA, mas nunca provou qual `campaign_profile`/`character` é do jogador — um membro ativo ainda não tinha como comprovar "este é o MEU perfil". Adiciona `campaign_profiles.user_id` (nullable) + RPCs `claim_campaign_profile`/`create_and_claim_campaign_profile` (reivindicação transacional, nunca inferida por nome ou pelo primeiro perfil livre) + funções de autorização (`can_access_campaign_profile`, `can_manage_campaign_profile`, `can_read_character`, `can_manage_character`) + extração de mais uma família de referência (`item_slug` de `conceder_item`/`consumir_item`).
 
-**Por que o status NÃO desce ainda para "só falta validar banco e browser"**: as referências estruturadas continuam PARCIAIS (cobrem requisitos/condição/propriedades — o que `coletarReferenciasBrutas`, Etapa 11, já extraía — mas não item concedido, runa referenciada explicitamente, efeitos compostos ou dependências companheiro/Trama), e NADA do fluxo de autenticação/membership/RLS/índice foi verificado contra um Supabase real nesta sessão. Os critérios do próprio pedido para baixar de status exigem referências completas E jogador lendo conteúdo efetivo comprovadamente — nenhum dos dois está satisfeito o bastante ainda.
+**Por que o status NÃO desce ainda para "só falta validar banco e browser"**: (1) referências estruturadas continuam PARCIAIS — a correção 3 soma "item concedido/consumido" à cobertura, mas efeitos compostos, `modificar_instancia` e dependências indiretas continuam de fora; (2) as funções de autorização de perfil/personagem desta correção são ADITIVAS — a RLS de `campaign_profiles`/`characters` continua a mesma policy aberta herdada (flipá-la com segurança exige um refactor de storage maior, fora de escopo seguro desta sessão — ver §0-3.6); (3) nada foi verificado contra Supabase real.
 
 A Etapa 11 **permanece exatamente**: "Implementação parcial — integração editorial de drag pendente" — nada nesta correção altera esse status.
+
+## 0-3. Correção 3 — vínculo usuário↔perfil↔personagem (migration 0028)
+
+### 0-3.1 Auditoria (resumo)
+
+| Item | Estado |
+|---|---|
+| `campaign_profiles` | Sem `user_id` antes desta correção — perfil identificado só por ID/sessão opaca (`profile_sessions`), nunca por `auth.uid()`. |
+| `characters.profile_id`/`owner_id` | Já existiam (migration 0011) — `profile_id` já é a fonte de verdade real de "personagem pertence a qual perfil"; `owner_id` é carimbado com o NARRADOR logado quando criado via dashboard, não com o jogador (fluxo de jogador usa `getCharacterForProfileSession`/`saveCharacterForProfileSession`, por `profile_id` + token de sessão, nunca `auth.uid()`). |
+| RLS de `campaign_profiles`/`characters` | `*_dev_transition_*`, `anon+authenticated`, `USING(true)` — aberta desde sempre; já sinalizada como pendente de refactor desde a migration 0013 (v0.27). **Não alterada nesta correção** (ver §0-3.6). |
+
+### 0-3.2 Estratégia adotada
+
+Seguindo a preferência explícita do pedido: `campaign_profiles.user_id` NULLABLE (não uma tabela associativa nova — o perfil já é a entidade 1:1 certa). Propriedade de personagem é DERIVADA do perfil via `characters.profile_id` (já existente) — `characters` não ganhou coluna nova.
+
+### 0-3.3 Reivindicação transacional
+
+- `claim_campaign_profile(profile_id)`: exige `auth.uid()`, exige membership ativa na campanha do perfil, bloqueia se o perfil já pertence a OUTRO usuário (nunca sobrescreve — fecha a corrida de duas reivindicações simultâneas via `for update` + índice único parcial `(campaign_id, user_id) where user_id is not null`), idempotente para o mesmo usuário.
+- `create_and_claim_campaign_profile(campaign_id, nickname)`: cria perfil NOVO já com `user_id` do requisitante.
+- UI: `ClaimProfileClient.tsx`, inserida em `/join/[token]` ENTRE o aceite de convite e o `JoinClient` existente — lista perfis não reivindicados (reivindicáveis) e oculta os de outros jogadores; jogador escolhe explicitamente (nunca automático).
+
+### 0-3.4 Funções de autorização (aditivas)
+
+`can_access_campaign_profile`, `can_manage_campaign_profile` (só dono da campanha), `can_read_character`, `can_manage_character` — todas `SECURITY DEFINER`, `search_path` explícito, nunca confiam em `user_id` do client. **Não usadas em nenhuma policy de RLS ainda** — ver §0-3.6.
+
+### 0-3.5 Referências — família adicional
+
+`item_slug` de `conceder_item`/`consumir_item` (campo real confirmado em `effectLegacySerialization.ts`) passa a entrar no índice `campaign_content_references` como referência OPCIONAL a `item` (nunca bloqueia publicação sozinha — mesmo critério de propriedades de item). Runa referenciada por slug e `modeloReferencia` de companheiro/Trama foram auditados e CONFIRMADOS AUSENTES no runtime real (runas são instaladas via operação de inventário, nunca por um efeito com slug de outra runa; `modeloReferencia` é texto livre por design, auditoria da Etapa 10) — não são uma lacuna, são ausência real de referência a extrair. Efeitos compostos (filhos aninhados) e `modificar_instancia` continuam NÃO varridos — pendente real.
+
+### 0-3.6 Por que a RLS de `campaign_profiles`/`characters` NÃO foi flipada
+
+Fazer isso com segurança exige migrar as ~15 funções de `character/storage.ts` do client anon para o client "scoped" e provar que nenhum fluxo anônimo existente (mesas sem convite autenticado, `/dev/join`, testes) quebra — um refactor de storage inteiro, já sinalizado como fora de escopo desde a migration 0013 (v0.27), e arriscado demais para fazer sem essa auditoria completa dentro desta correção. As funções de autorização (§0-3.4) ficam prontas para quando esse refactor acontecer. Documentado como limitação real, não escondida.
 
 ## 0. Correção 2 — autenticação real de jogador (migration 0027)
 
@@ -125,20 +158,21 @@ Nova rota `/mesas/[campaignId]/biblioteca/comparar/[docId]` (`campaignContentDif
 
 - `0025_campaign_content_homebrew.sql` (não reescrita): `campaign_content_documents`/`_drafts`/`_editor_metadata`/`_changelog` + RPCs de publicação/remoção/arquivamento.
 - `0026_campaign_membership_authorization.sql` (não reescrita): `campaign_members` + backfill do owner; `is_campaign_member`/`can_manage_campaign_content`/`can_read_campaign_content`; RLS corrigida das 4 tabelas da Etapa 12; gatilho de limites.
-- `0027_campaign_invite_authentication.sql` (nova, desta sessão): `campaign_members` ganha `invite_id`/`invited_by`/`joined_at`; RPC `accept_campaign_invite`; tabela `campaign_content_references`; `publish_campaign_content_draft` substituída (assinatura antiga removida explicitamente com `drop function` — nunca deixada órfã) para recalcular o índice de referências na mesma transação.
-- Nenhuma migration em massa do catálogo oficial; `content_documents.payload` inalterado; nenhum backfill especulativo de jogador (só o owner, que já tinha `auth.uid()` real).
+- `0027_campaign_invite_authentication.sql` (não reescrita): `campaign_members` ganha `invite_id`/`invited_by`/`joined_at`; RPC `accept_campaign_invite`; tabela `campaign_content_references`; `publish_campaign_content_draft` substituída para recalcular o índice na mesma transação.
+- `0028_campaign_profile_ownership.sql` (nova, desta sessão): `campaign_profiles.user_id`/`claimed_at`; índice único parcial `(campaign_id, user_id) where user_id is not null`; RPCs `claim_campaign_profile`/`create_and_claim_campaign_profile`; funções `can_access_campaign_profile`/`can_manage_campaign_profile`/`can_read_character`/`can_manage_character` (aditivas).
+- Nenhuma migration em massa do catálogo oficial; `content_documents.payload` inalterado; nenhum backfill especulativo de jogador ou de perfil/personagem (só o owner, que já tinha `auth.uid()` real).
 
 ## 12. Modelo × instância
 
-Inalterado — nenhuma função nova toca `characters`/inventário. O diagnóstico de impacto (§9/§0.5) LÊ `characters.payload` e `campaign_content_references` (só leitura), nunca escreve.
+Inalterado — nenhuma função nova toca estado mutável de personagem. `claim_campaign_profile` só grava `user_id`/`claimed_at` em `campaign_profiles`, nunca em `characters` nem em qualquer campo de instância.
 
 ## 13. Segurança (resumo)
 
-- Autorização de leitura e escrita passa por relação real (`campaign_members`/`owner_id`), nunca por conhecimento do ID.
-- Aceite de convite exige `auth.uid()` real no servidor (RPC `SECURITY DEFINER`) — nunca aceita identidade vinda do client.
+- Autorização de leitura/escrita de conteúdo de campanha passa por relação real (`campaign_members`/`owner_id`), nunca por conhecimento do ID.
+- Reivindicação de perfil exige `auth.uid()` real + membership ativa, nunca inferida por nome/primeiro-perfil-livre; corrida de reivindicação dupla fechada por `for update` + índice único.
 - Nenhuma policy genérica para `authenticated`; nenhum service role no client; nenhum `eval`/fórmula arbitrária.
-- Admin global da Biblioteca oficial (`is_content_admin`) **nunca** é tratado como narrador/membro de campanha — checagens completamente separadas.
-- Limitação herdada e ainda não resolvida (fora de escopo): `characters`/`campaign_profiles`/`table_logs` continuam com RLS aberta; nenhuma associação seleção de perfil/personagem ↔ usuário autenticado existe (ver §0.4).
+- Admin global da Biblioteca oficial (`is_content_admin`) **nunca** é tratado como narrador/membro de campanha.
+- **Limitação real e explícita**: `campaign_profiles`/`characters`/`table_logs` continuam com RLS aberta (`*_dev_transition_*`) — o vínculo `user_id`/`profile_id` agora EXISTE e é verificável via as novas funções, mas nenhuma policy de RLS o usa ainda (ver §0-3.6). Até a RLS ser corrigida, um usuário autenticado com a anon key ainda pode, em teoria, ler/escrever perfis/personagens de outra pessoa via REST direto — o mesmo risco pré-existente desde a migration 0013, não introduzido nem resolvido por esta correção.
 
 ## 14. Cache
 
@@ -152,27 +186,27 @@ Inalterado — fora de escopo.
 
 - `git status --short` / `git diff --check` — limpos.
 - `npx tsc --noEmit` — sem erros.
-- `npm run build` (Next.js/Turbopack) — sucesso; rotas `/join/[token]` (com o novo gate de autenticação) e `/mesas/[campaignId]/biblioteca/comparar/[docId]` presentes. Um erro real de bundling foi encontrado e corrigido durante esta sessão: um `export type` residual em `campaignContentServerActions.ts` ("use server") quebrava o build assim que o módulo passou a ser importado diretamente por um Server Component (`/join/[token]/page.tsx`) pela primeira vez — removido (o tipo já era acessível via o barrel `campaignContentTypes.ts`).
-- `scripts/dev/validate-campaign-homebrew.mjs` — **15/15 verificações** (inalteradas desde a Correção 1: `classificarEstadoAtualizacao`, `diffEstrutural`/`compararTresVias`, validadores de limite — nenhuma delas cobre autenticação/RLS/índice de referências, que exigem banco real).
-- Validação estática da migration `0027`: contagem balanceada de blocos `$$` (4 = 2 funções), `begin`/`commit` únicos, `drop function` explícito da assinatura antiga de `publish_campaign_content_draft` conferido (evita função órfã por mudança de assinatura).
+- `npm run build` (Next.js/Turbopack) — sucesso; rotas `/join/[token]` (com o gate de autenticação + reivindicação de perfil) e `/mesas/[campaignId]/biblioteca/comparar/[docId]` presentes.
+- `scripts/dev/validate-campaign-homebrew.mjs` — **18/18 verificações** (15 herdadas + 3 novas: `coletarItemSlugsDoPayload` extrai `item_slug` de `conceder_item`/`consumir_item` no payload de topo e por nível de talento, e nunca inventa referência quando o campo está ausente). Nenhuma delas cobre autenticação/RLS/reivindicação/índice de referências — todos exigem banco real.
+- Validação estática da migration `0028`: contagem balanceada de blocos `$$` (12 = 6 funções), `begin`/`commit` únicos, índice único parcial revisado manualmente contra a regra "um usuário, um perfil reivindicado por campanha".
 
 ## Verificações não executadas (SQL real)
 
-- **Nenhuma verificação transacional contra Supabase real** — sem projeto conectado nesta sessão. Isso inclui todos os cenários pedidos com identidades distintas (owner, membro ativo, invited, removed, outsider, outra campanha) e o fluxo completo de aceite de convite (aceite cria membership; convite inválido bloqueia; reaceite pelo mesmo usuário é idempotente). **Nenhum foi executado** — não alego que a autenticação/RLS/índice de referências "passaram"; nunca rodaram contra um banco real.
+- **Nenhuma verificação transacional contra Supabase real** — sem projeto conectado nesta sessão. Isso inclui todos os cenários com identidades distintas (owner; player A aceita convite, reivindica perfil A, não acessa perfil/personagem B; player B não consegue reivindicar o perfil de A; invited/removed perdem acesso; outsider nunca lê nada). **Nenhum foi executado.**
 - **Browser check** — não executado (esbuild/`tsx` bloqueados neste ambiente).
 
 ## Limitações reais (gaps honestos que permanecem)
 
-- **Referências ainda parciais**: cobertura real = requisitos (talento/magia/item) + condição em efeitos + propriedades de item (herdado de `coletarReferenciasBrutas`, Etapa 11). NÃO cobertos: item concedido, runa referenciada explicitamente, efeitos compostos filhos, companheiro/Trama.
-- **Sem associação perfil/personagem ↔ usuário autenticado** — decisão deliberada (§0.4), documentada, não uma omissão silenciosa.
-- **Referência efetiva** (override substituindo o oficial na resolução de dependência de OUTRO documento) continua não implementada — só oficial-ou-homebrew-local.
-- Detecção de impacto em personagens continua heurística (substring) como sinal SECUNDÁRIO — o índice estruturado (§0.5) é a fonte primária agora, mas ele próprio só cobre as famílias de referência já listadas acima.
+- **RLS de `campaign_profiles`/`characters` continua aberta** — as funções de autorização (§0-3.4) existem, mas nenhuma RLS as usa ainda; flipar isso com segurança exige o refactor de storage sinalizado desde a migration 0013, fora de escopo seguro desta correção.
+- **Referências ainda parciais**: cobertura real = requisitos + condição em efeitos + propriedades de item + item concedido/consumido (`item_slug`). NÃO cobertos: efeitos compostos filhos, `modificar_instancia`, dependências indiretas entre homebrews. Runa referenciada por slug e modelo de companheiro/Trama são CONFIRMADAMENTE ausentes no runtime real (não uma lacuna de extração).
+- **Referência efetiva** (override substituindo o oficial na resolução de dependência de OUTRO documento) continua não implementada.
+- Detecção de impacto em personagens continua heurística (substring) como sinal SECUNDÁRIO.
 - Diff de três vias é estrutural raso (profundidade 4), não um merge visual completo.
 - Sem observabilidade dedicada (log estruturado) além dos erros já retornados.
-- **Nada disto foi comprovado contra Supabase real** — toda a autorização/aceite de convite/índice de referências existe só como código revisado estaticamente.
+- **Nada disto foi comprovado contra Supabase real.**
 
 ## Encerramento
 
-TypeScript e build passam; 15 verificações focadas em Node passam (inalteradas — nenhuma cobre o que há de novo nesta correção, que é inerentemente dependente de banco); nenhuma publicação automática no catálogo oficial; nenhuma escrita em `content_documents`/`content_drafts` oficiais; nenhuma tabela de marketplace criada; nenhuma instância de personagem é tocada ou apagada por nenhuma função; nenhum backfill especulativo de jogador. A Etapa 11 permanece "Implementação parcial — integração editorial de drag pendente", inalterada. **Não avancei para nenhuma etapa adicional.**
+TypeScript e build passam; 18 verificações focadas em Node passam; nenhuma publicação automática no catálogo oficial; nenhuma escrita em `content_documents`/`content_drafts` oficiais; nenhuma tabela de marketplace criada; nenhuma instância de personagem é tocada ou apagada por nenhuma função; nenhum backfill especulativo de jogador, perfil ou personagem. A Etapa 11 permanece "Implementação parcial — integração editorial de drag pendente", inalterada. **Não avancei para nenhuma etapa adicional.**
 
 **Status geral da Etapa 12: Implementação parcial — integração de jogadores, referências completas e validação transacional/RLS em Supabase pendentes.**
