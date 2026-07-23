@@ -8,12 +8,26 @@
  *
  * Diferente de /dev/join/[campaignId] (legado dev, id cru), aqui o id da
  * mesa nunca aparece na URL — só o token opaco.
+ *
+ * ETAPA 12 (correção 2): antes de mostrar o JoinClient (escolha de
+ * perfil/personagem, sempre anônimo por sessão opaca), esta rota agora
+ * EXIGE uma sessão real do Supabase Auth (mesmo fluxo de login/cadastro
+ * já usado pelo narrador — `LoginForm`/`signInWithPassword`/
+ * `signUpDevNarrator`, nenhuma auth nova) e aceita o convite
+ * (`accept_campaign_invite`, migration 0027), criando/ativando uma linha
+ * real em `campaign_members`. É isso que agora autoriza o jogador a ler
+ * conteúdo efetivo (override/homebrew) da campanha — sem essa sessão,
+ * a leitura de conteúdo de campanha continua caindo no fallback oficial
+ * (ver `resolveEffectiveContent.ts`), nunca vazando dado privado.
  */
 
 import { resolveCampaignInvite, listCampaignProfiles, expireStaleProfileSessions } from "../../../lib/table/storage";
 import { listCharactersForCampaign } from "../../../lib/character/storage";
 import type { CampaignProfile } from "../../../lib/table";
 import type { CharacterRecord } from "../../../lib/character";
+import { getCurrentUser } from "../../../lib/auth/session";
+import { LoginForm } from "../../LoginForm";
+import { acceptCampaignInvite } from "../../../lib/campaignContent/campaignContentServerActions";
 import JoinClient from "../../dev/join/[campaignId]/JoinClient";
 
 export const dynamic = "force-dynamic";
@@ -63,6 +77,34 @@ export default async function InviteJoinPage({ params }: PageProps) {
   }
 
   const campaign = resolved.campaign;
+
+  // Etapa 12 (correção 2): exige sessão real do Supabase Auth antes de
+  // liberar a escolha de perfil/personagem — é essa sessão que autoriza
+  // a leitura de conteúdo efetivo (override/homebrew) da campanha.
+  const user = await getCurrentUser();
+  if (!user) {
+    return (
+      <main style={{ maxWidth: 420, margin: "60px auto", padding: "0 20px" }}>
+        <h1 style={{ fontSize: 20, marginBottom: 8 }}>Entrar em &ldquo;{campaign.name}&rdquo;</h1>
+        <p style={{ fontSize: 13, opacity: 0.8, marginBottom: 20 }}>
+          Entre ou crie uma conta para acessar o conteúdo desta mesa (inclusive homebrew e ajustes feitos pelo narrador). Depois de
+          entrar, você volta automaticamente para este convite.
+        </p>
+        <LoginForm redirectTo={`/join/${token}`} context="prod" />
+      </main>
+    );
+  }
+
+  const aceite = await acceptCampaignInvite(token);
+  if (!aceite.ok) {
+    return (
+      <main style={{ maxWidth: 560, margin: "60px auto", padding: "0 20px" }}>
+        <h1 style={{ fontSize: 20, marginBottom: 8 }}>Não foi possível entrar nesta mesa</h1>
+        <p style={{ color: "#ff6b6b", fontSize: 13 }}>{aceite.erro}</p>
+      </main>
+    );
+  }
+
   let perfisIniciais: CampaignProfile[] = [];
   let personagens: CharacterRecord[] = [];
   try {

@@ -43,6 +43,7 @@ import { isValidSlug, slugify } from "../contentSchema/slug";
 import { validarCamposCampanha } from "./campaignContentValidation";
 import { avaliarImpactoRemocao, type DiagnosticoImpacto } from "./campaignContentImpact";
 import { validarQuantidadePublicados, validarQuantidadeRascunhos, validarTamanhoPayload } from "./campaignContentLimits";
+import { coletarReferenciasParaIndice } from "./campaignContentReferences";
 import {
   findCampaignDraftBySlug,
   getCampaignContentDocumentById,
@@ -50,7 +51,7 @@ import {
   listCampaignContentDocumentsForOwner,
   listCampaignDrafts,
 } from "./campaignContentQueries";
-import type { CampaignContentDraftRow, CampaignDraftEnvelope, CampaignContentOperation } from "./campaignContentTypes";
+import type { CampaignDraftEnvelope, CampaignContentOperation } from "./campaignContentTypes";
 
 async function requireCampaignNarrator(campaignId: string): Promise<{ id: string; email: string | null }> {
   const user = await getCurrentUser();
@@ -308,6 +309,10 @@ export async function publicarRascunhoCampanha(draftId: string, expectedDraftVer
       if (oficialAtual) officialSnapshot = oficialAtual.payload as Record<string, unknown>;
     }
 
+    // Índice estruturado de referências (Etapa 12, correção 2) —
+    // recalculado a cada publicação, nunca confiado do client.
+    const referencias = await coletarReferenciasParaIndice(draft.campaign_id, payloadFinal);
+
     const client = await getScopedTableClient();
     const { data, error } = await client.rpc("publish_campaign_content_draft", {
       p_draft_id: draftId,
@@ -317,6 +322,7 @@ export async function publicarRascunhoCampanha(draftId: string, expectedDraftVer
       p_official_snapshot: officialSnapshot,
       p_summary: resumo,
       p_impact: { avisos: validacao.avisos },
+      p_referencias: referencias,
     });
     if (error) return { ok: false, erro: `Falha ao publicar na campanha: ${error.message}` };
 
@@ -512,4 +518,32 @@ export async function criarRascunhoReconciliacao(campaignContentDocumentId: stri
   }
 }
 
-export type { CampaignContentDraftRow };
+// ---------------------------------------------------------------------
+// 10. Aceitar convite de campanha — cria/ativa membership real (Etapa 12,
+//     correção 2). Exige sessão Supabase Auth real (a MESMA já usada
+//     pelo narrador) — nunca aceita user_id vindo do client, nunca
+//     confia em token sem revalidar no servidor. Idempotente para o
+//     MESMO usuário (RPC usa upsert).
+// ---------------------------------------------------------------------
+export interface AceitarConviteResultado {
+  ok: boolean;
+  erro?: string;
+  campaignId?: string;
+}
+
+export async function acceptCampaignInvite(rawToken: string): Promise<AceitarConviteResultado> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return { ok: false, erro: "É necessário estar autenticado para aceitar um convite." };
+
+    const client = await getScopedTableClient();
+    const { data, error } = await client.rpc("accept_campaign_invite", { p_token: rawToken });
+    if (error) return { ok: false, erro: error.message };
+
+    const resultado = data as { campaignId: string; memberId: string };
+    revalidatePath(`/mesas/${resultado.campaignId}`);
+    return { ok: true, campaignId: resultado.campaignId };
+  } catch (err) {
+    return { ok: false, erro: err instanceof Error ? err.message : "Erro desconhecido." };
+  }
+}
