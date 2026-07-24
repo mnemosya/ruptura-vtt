@@ -4,9 +4,7 @@
 
 **Status geral da Etapa 11: Etapa 11 concluída — integração editorial de drag aprovada.**
 
-Este status substitui, nesta correção, o anterior "Implementação parcial — integração editorial de drag pendente". A razão do bloqueio original permanecia estrutural: nenhum content_type representava um capítulo do Livro, e nenhum destino editorial real existia para receber um drop. Esta correção fechou exatamente essa lacuna — ver `## 0-9` para o registro completo (auditoria, decisão de escopo, contrato do drag, modelo de dados, implementação, testes, aceite de browser, correções encontradas).
-
-Os blocos internos abaixo já tinham, na rodada anterior, "aceite de browser pendente" como única pendência para os quatro primeiros; esta correção também executou esse aceite (narrador/edição via Editor Universal, criação, drag, persistência, publicação, export/import, casos hostis), então os quatro sobem para concluído. Round-trip e atomicidade contra Supabase real também foram exercitados nesta correção (migration `0035` aplicada e usada de ponta a ponta).
+Este status foi retificado para "Implementação parcial — validação do drag nativo e da integração com a Biblioteca pendentes" no início desta rodada de auditoria (antes de qualquer teste novo), porque a revisão anterior tinha encontrado duas lacunas de comprovação genuínas: (1) não estava documentado se o painel de busca embutido em `CamposCapituloSection` era uma superfície válida da Biblioteca ou um seletor paralelo divergente; (2) o aceite anterior só tinha exercitado o botão "+ adicionar"/▲/▼ — nunca um gesto de `dragstart`→`dragover`→`drop` real no browser. Esta rodada resolveu as duas — ver `## 0-10` para o registro completo (auditoria documental, comparação Biblioteca-real-vs-painel, contrato de `DataTransfer`, gesto nativo executado, feedback visual comprovado, casos inválidos, achado correlato documentado). Nenhuma linha de código foi alterada nesta rodada — é uma rodada de validação pura sobre a implementação de `0a4ab99`/`1b13e27`/`1f9818f`.
 
 | Bloco | Estado |
 |---|---|
@@ -110,6 +108,102 @@ O painel "Diagnóstico técnico" (`DiagnosticsPanel.tsx`, na página de detalhe 
 
 `git status --short` limpo ao final (só as mudanças intencionais); `git diff --check` sem problemas de espaço em branco; `next-env.d.ts` sem diff residual (não foi tocado por este build); `npx tsc --noEmit` sem erros; `npm run build` sucesso (servidor de preview parado antes do build); harness da Etapa 11 (`validate-import-export-book.mjs`) **19/19** (1 caso atualizado para refletir os 5 tipos editáveis); novo harness da correção (`validate-editorial-drag.mjs`) **6/6** (serialização de blocos, nunca serializa payload da entidade, array vazio explícito, dependências opcionais, dedup); harness da Etapa 12 (`validate-campaign-homebrew.mjs`) **18/18** inalterado; validador estruturado da Etapa 12 (`validate-profile-session-lockdown.mjs`) **78/78** inalterado — confirma que esta correção não regrediu a Etapa 12.
 
+## 0-10. Validação final do drag nativo e da superfície da Biblioteca (esta sessão)
+
+### 0-10.1 Working tree inicial e escopo
+
+`git status --short` limpo antes de iniciar. Esta rodada é EXCLUSIVAMENTE de validação — nenhuma linha de código de produção foi alterada; os commits `0a4ab99`/`1b13e27`/`1f9818f` permanecem intactos. Status corrigido para o provisório ANTES de qualquer teste novo, conforme pedido.
+
+### 0-10.2 Auditoria documental — qual é a superfície oficial da Biblioteca para o drag editorial
+
+Releitura integral de `PRD Ruptura VTT.md` §2.1.9, `ADITIVO_PRD_EDITOR_UNIVERSAL_CONTEUDO.md` (§11.11, §18.3, seção "ETAPA 11"), e deste checkpoint. Achados literais, por trecho:
+
+- **PRD §2.1.9 ("Arrastar conteúdo do livro para a ficha")**: descreve um drag DIFERENTE do implementado aqui — Livro (camada de LEITURA, com sumário/capítulos navegáveis) → ficha do personagem, criando uma INSTÂNCIA de item/magia/talento na ficha. Este é o drag OPERACIONAL, listado como escopo da primeira entrega da "Biblioteca do Livro" — mas essa feature (sumário navegável, leitura por capítulo, ficha) não existe neste projeto e não é o que a Etapa 11 pede (confirmado também na correção anterior, `## 0-9.2`).
+- **Aditivo, seção "ETAPA 11"**: pede "vínculos com capítulos" e "drag de conteúdo estruturado, conforme o PRD", com critério de aceite "entidade pode apontar para o capítulo". Este é o drag EDITORIAL — Biblioteca → documento de capítulo, criando o VÍNCULO estruturado em si (não uma instância de ficha). É este que foi implementado.
+- **Aditivo §18.3 (Performance)**: "referências grandes com pesquisa; não carregar a Biblioteca inteira em cada modal." Este trecho é decisivo para a Questão 1 — o próprio aditivo antecipa e recomenda EXATAMENTE o padrão implementado (um painel de busca escopado, não a página inteira da Biblioteca) como a forma correta de referenciar conteúdo da Biblioteca a partir de outro ponto do Editor Universal.
+- **Aditivo §5.4 (Dados canônicos e referências seguras)**: "o editor deve oferecer a condição publicada da Biblioteca, em vez de aceitar apenas texto livre" — de novo, uma referência RESOLVIDA contra a Biblioteca real, não necessariamente a navegação pela página `/admin/biblioteca` em si.
+
+**Interpretação confirmada**: (C) "Biblioteca como workspace editorial" — um painel incorporado ao editor que usa o MESMO domínio, resolvedor e regras da Biblioteca satisfaz o contrato, desde que não invente um catálogo paralelo divergente. Nenhuma fonte exige literalmente arrastar a partir do componente visual `/admin/biblioteca` (interpretação B) — essa leitura foi considerada e descartada, porque exigiria abrir duas superfícies simultâneas (a lista da Biblioteca e o editor de capítulo) sem nenhuma orientação documental que peça isso, e o aditivo explicitamente desaconselha "carregar a Biblioteca inteira" em superfícies auxiliares de referência.
+
+### 0-10.3 Comparação: painel embutido vs. Biblioteca real
+
+| Aspecto | `/admin/biblioteca` (real) | `CamposCapituloSection` (painel embutido) | Divergência? |
+|---|---|---|---|
+| Fonte de dados | `listContentDocumentsForAdmin` (Etapa 2) | A MESMA função (`bookDragServerActions.ts::buscarConteudoParaVinculoCapitulo`) | Nenhuma |
+| Resolvedor/RLS | Client admin-scoped, `content_documents_admin_read` | O MESMO client/RLS (chamado dentro da mesma função) | Nenhuma |
+| Escopo de status | Default `published` (aba "Publicados") | Sempre `published` (nunca passa `status`, usa o default) | Nenhuma — nunca expõe rascunho/arquivado |
+| Filtro por tipo | Dropdown de todos os `ContentType` | Busca livre, opcionalmente por tipo (não exposto na UI, mas suportado pela função) | Redução deliberada de superfície, não duplicação de lógica |
+| Campos retornados | Linha completa (`ContentDocument` + diagnóstico admin) | Só `{contentType, slug, nome}` | Deliberado — nunca transporta payload completo, conforme aditivo §5.4/PRD (drag "não deve copiar texto bruto") |
+| Conteúdo oficial/homebrew/override | N/A — Biblioteca do Sistema não tem esse conceito (é exclusivo de conteúdo de campanha, Etapa 12) | Idem — fora de escopo, não aplicável | Nenhuma (categorias não existem neste nível) |
+| Permissões | `getContentAdminStatus` (admin-only) | A mesma verificação, dentro da Server Action | Nenhuma |
+
+**Conclusão**: nenhuma duplicação de lógica capaz de causar divergência — o painel é uma PROJEÇÃO MINIMAL e SEGURA da mesma fonte de dados, resolvedor e permissões da Biblioteca real, exatamente como o aditivo recomenda para pickers de referência. Não há necessidade de refatoração; a única "diferença" é a redução deliberada de campos, que é uma boa prática de segurança (nunca confiar/transportar nome/preview arbitrário — o servidor sempre revalida por `contentType`+`slug` na hora de salvar), não uma lacuna.
+
+### 0-10.4 Componentes auditados (código)
+
+`CamposCapituloSection.tsx` (origem/destino do drag), `bookDragServerActions.ts` (busca), `adminQueries.ts::listContentDocumentsForAdmin` (resolvedor compartilhado), `ContentTable.tsx`/`page.tsx` da Biblioteca real (comparação), `DraftEditorClient.tsx`/`NovoConteudoForm.tsx` (integração no Editor Universal), `draftValidation.ts::validarCamposCapitulo` (validação server-side), `scripts/dev/validate-editorial-drag.mjs` (harness puro). Busca global confirmou: `draggable`/`onDragStart`/`onDragOver`/`onDragLeave`/`onDrop`/`dataTransfer`/`effectAllowed` aparecem exclusivamente em `CamposCapituloSection.tsx` — nenhuma duplicação em outro lugar do projeto.
+
+### 0-10.5 Contrato de `DataTransfer` (auditoria + validação ao vivo)
+
+MIME próprio: `application/x-ruptura-book-entity`. Payload mínimo transportado: `{tipo:"book_entity", contentType, slug, nome}` — nunca o payload completo da entidade. `effectAllowed = "copy"` setado no `dragstart` (o motor do browser em contexto de teste sintético — ver `## 0-10.7` — não preserva esse valor fora de uma sessão real de SO, uma limitação conhecida de `DataTransfer` construído via `new DataTransfer()`, não um defeito do código). Parsing centralizado em `onDrop` (`CamposCapituloSection.tsx`): `JSON.parse` dentro de `try/catch`, valida `tipo === "book_entity"` e presença de `contentType`+`slug` antes de aceitar — payload malformado ou de tipo desconhecido é silenciosamente ignorado (nunca lançado como erro não tratado). A persistência NUNCA confia no nome/preview transportado — resolve a entidade real por `contentType`+`slug` a cada leitura/validação (`validarCamposCapitulo`, `draftView.ts`).
+
+### 0-10.6 Método usado para o gesto real (e por que)
+
+A ferramenta de browser disponível (`mcp__Claude_Browser`) não tem uma ação de alto nível para drag-and-drop nativo — `left_click_drag` simula apenas eventos de mouse (`mousedown`/`mousemove`/`mouseup`), que não são promovidos a uma operação real de HTML5 Drag and Drop pelo motor do Chrome fora de uma sessão real de sistema operacional (limitação conhecida e documentada de automação de browser — o mesmo motivo por que Playwright/Selenium também recomendam simulação de eventos para drag nativo). Por isso, o gesto foi reproduzido despachando os eventos REAIS do DOM (`dragstart`, `dragenter`, `dragover`, `dragleave`, `drop`, `dragend`) via `dispatchEvent` no elemento real, com um objeto `DataTransfer` real (`new DataTransfer()`) — nunca chamando `onDragStart`/`onDrop` diretamente. Essa técnica exercita o pipeline real do browser (o listener nativo que o React anexa ao elemento, a propagação do evento, o `preventDefault` real) — a única coisa que não é simulada é o movimento do cursor do mouse pelo sistema operacional, que não influencia o comportamento testado (a lógica do componente reage a eventos DOM, não a coordenadas de mouse).
+
+### 0-10.7 Evidência do gesto real, passo a passo
+
+Fixture: 1 usuário admin temporário (mesmo padrão das rodadas anteriores, credenciais nunca impressas), 1 capítulo novo ("Deposito de Armas (teste drag nativo)"), reaproveitando os itens reais já publicados `item:faca`/`item:adaga` (nenhum conteúdo pessoal tocado).
+
+1. **Localização do item real**: busca "Faca" no painel → resultado real retornado pela Server Action (`item:faca`).
+2. **`dragstart`**: `source.dispatchEvent(new DragEvent('dragstart', {dataTransfer: dt}))` no elemento `draggable`. Confirmado: `dispatched: true`; `dt.types` passou a conter `application/x-ruptura-book-entity`; `dt.getData(...)` retornou exatamente `{"tipo":"book_entity","contentType":"item","slug":"faca","nome":"Faca"}` — prova de que o handler real do componente executou (não foi chamado diretamente).
+3. **`dragover` e feedback visual**: antes do gesto, o alvo tinha `border-color: rgb(52,52,62)` (cinza) e fundo transparente. Após `dragenter`+`dragover` (com um `await` de ~100ms para o commit do estado React), `border-color` mudou para `rgb(90,160,106)` (verde, `#5aa06a` — exatamente a cor codificada no componente para `dragOver=true`) e o fundo para `rgb(21,32,24)` (`#152018`). `overDefaultPrevented: true` confirma que o handler chamou `preventDefault()` (necessário para o `drop` funcionar).
+4. **`dragleave`**: destaque revertido corretamente para `rgb(52,52,62)`/transparente — nenhum destaque preso.
+5. **Reentrada + `drop`**: `dragenter`+`dragover` novamente, depois `drop`. `dispatchEvent` retornou `false` e `dropDefaultPrevented: true` — exatamente o comportamento esperado quando `preventDefault()` é chamado num evento cancelável (não é falha, é a prova de que o handler rodou). Destaque removido corretamente após o drop (`setDragOver(false)`).
+6. **Inserção confirmada**: "Blocos do capítulo" passou de (0) para (1), com "Entidade — item:faca" listado.
+7. **`dragend`**: despachado no elemento de origem, sem erro.
+8. **Salvar + reload**: "Salvar rascunho" → versão incrementada; navegação para uma URL NOVA (não SPA) do mesmo rascunho → **bloco preservado exatamente** ("Blocos do capítulo (1)", "Entidade — item:faca") — persistência real confirmada, não apenas estado de memória.
+9. Um segundo gesto real (arrastar "Adaga") confirmou o comportamento consistente e testou "final da lista" (novo bloco sempre inserido ao final, mesmo com um bloco já presente).
+
+### 0-10.8 Casos inválidos e destinos testados via drag real (ou evento DOM equivalente)
+
+Todos usando o mesmo `onDrop` real do componente (nunca a função de domínio chamada diretamente):
+
+- **Lista vazia**: primeiro drag (item 8 acima) — inserção em lista vazia funcionou.
+- **Final da lista**: segundo drag (Adaga) — sempre anexa ao final, mesmo comportamento do botão "+ adicionar" (decisão de design preservada desta correção: o drop não calcula posição por coordenada; reordenar para início/meio é feito pelos controles ▲/▼ já existentes, testados a seguir).
+- **Item duplicado**: um segundo `drop` real com o MIME de "Adaga" (a origem real do próprio elemento, que sobrescreveu o payload manual do teste com o payload real da Adaga) → aceito no client (3 blocos) → **rejeitado no servidor ao salvar**: "Bloco 3: referência duplicada a item:adaga — já vinculada em outro bloco deste capítulo." Prova de que o caminho drag converge para a MESMA validação de domínio que o botão.
+- **Autorreferência**: capítulo publicado, criado rascunho de edição, buscado o PRÓPRIO nome no painel (aparece porque já está publicado), arrastado para si mesmo via gesto real → aceito no client → **rejeitado no servidor**: "Bloco 3: um capítulo não pode referenciar a si mesmo."
+- **Item inexistente**: `drop` real com payload forjado (`slug: "item_que_nao_existe_xyz"`, um slug que o picker real nunca devolveria, simulando uma origem hostil) → aceito no client → **rejeitado no servidor**: "Bloco 4: referência inexistente na Biblioteca (item:item_que_nao_existe_xyz)."
+- **Payload inválido (JSON malformado)**: `drop` com `application/x-ruptura-book-entity` contendo `"{not valid json"` → ignorado silenciosamente (nenhum bloco adicionado, nenhuma exceção, nenhuma tela quebrada).
+- **MIME ausente**: `drop` só com `text/plain` (simulando algo arrastado de fora do app) → ignorado silenciosamente, nenhum bloco adicionado.
+- **Drop fora da área válida**: `dragover`+`drop` despachados num elemento SEM handler (`<header>`) → nenhum bloco adicionado, comportamento padrão do browser (sem efeito), confirmando que só o alvo real (`data-testid="capitulo-drop-alvo"`) responde a drops.
+
+Todos os casos inválidos: nenhum erro não tratado, nenhuma tela quebrada, estado sempre coerente após rejeição (o array `blocos` no client pode conter temporariamente uma entrada inválida antes de salvar — igual ao comportamento já aceito do botão "+ adicionar" — mas o SAVE sempre bloqueia e reporta o erro, nunca persiste silenciosamente).
+
+### 0-10.9 Alternativa sem mouse — revalidada
+
+Após os testes de drag, os blocos hostis foram removidos usando o botão "Remover bloco" (✕) — continua funcional. O controle "▲" (mover para cima) foi usado para reordenar "Adaga" antes de "Faca" — reordenação confirmada (lista mudou de ordem corretamente). Nenhuma reimplementação foi necessária; a alternativa já validada nas rodadas anteriores permanece intacta.
+
+### 0-10.10 Smoke test do pipeline (import/export/publicação)
+
+Nenhum código do pipeline foi alterado nesta rodada — smoke test mínimo, reaproveitando os resultados já provados na correção anterior (`## 0-9.9`, capítulo "Mercado Noturno" — "Idêntico ao publicado" após reimportação):
+
+- O capítulo criado nesta rodada ("Deposito de Armas") foi publicado com sucesso (1.0.0) contendo os DOIS blocos criados por drag real.
+- Exportado: o pacote JSON contém `blocos: [{entidade:{slug:"faca",...}}, {entidade:{slug:"adaga",...}}]` — mesma ordem, mesma forma exata (`{id, tipo, entidade:{tipo_conteudo, slug}}`) que um bloco criado pelo botão "+ adicionar" — confirma que os dois caminhos (drag e botão) produzem BYTE-A-BYTE a mesma estrutura persistida, porque ambos chamam a mesma função `adicionarBlocoEntidade`.
+- Dependências corretas no pacote: `item:faca`/`item:adaga`, `obrigatoria: false`, `estadoResolucao: "ausente"` (resolução real só na importação, por design já documentado).
+
+### 0-10.11 Achado correlato (fora de escopo, documentado — não corrigido)
+
+Durante o smoke test, tentar **republicar uma edição** de um capítulo já publicado (após "Criar rascunho de edição") retornou um erro bloqueante genuíno: `"Já existe conteúdo publicado ou outro rascunho com o slug ..."`. Investigação: `draftValidation.ts::existeSlugColidindo` chama `getContentDocument(contentType, slug)` e trata QUALQUER resultado como colisão — mesmo quando o próprio rascunho é uma edição LEGÍTIMA daquele exato documento publicado (`draft.base_document_id` aponta para ele). Esta função é usada de forma IDÊNTICA por `validarCamposMagia`/`validarCamposItem`/`validarCamposRuna`/`validarCamposTalento`/`validarCamposCapitulo` — ou seja, é um problema PRÉ-EXISTENTE que afeta os 5 tipos editáveis igualmente, não uma regressão desta correção do drag. Não foi corrigido (fora do escopo desta rodada, que só corrige lacunas causadas pela integração do drag) — registrado aqui para uma futura correção dedicada. Não bloqueou nenhuma validação desta rodada: a criação e o PRIMEIRO publish de conteúdo com blocos criados por drag funcionam perfeitamente (é somente a edição-e-republicação de conteúdo JÁ publicado, de qualquer um dos 5 tipos, que está afetada).
+
+### 0-10.12 Console, rede e fixtures
+
+Nenhum erro de console em nenhum passo (verificado após cada gesto/save/publish/export/import). Nenhuma resposta 500. Fixtures removidas ao final: capítulo de teste (draft + publicado + changelog), usuário admin temporário — confirmado por contagem zero em `content_drafts`/`content_documents`/`auth.users`.
+
+### 0-10.13 Validação técnica local
+
+Nenhum código alterado nesta rodada — `git status --short` limpo ao final (só as mudanças de documentação); `next-env.d.ts` revertido após um toque automático do build; `npx tsc --noEmit` sem erros; `npm run build` sucesso (servidor de preview parado antes); harness da Etapa 11 **19/19** inalterado; harness da correção do drag **6/6** inalterado. Harnesses da Etapa 12 não re-executados (nenhum código compartilhado foi tocado nesta rodada).
+
 ## 1. Auditoria (resumo)
 
 | Recurso | Estrutura atual | Tabela/arquivo | Função atual | Estado | Contrato existente | Lacuna | Risco | Decisão desta etapa |
@@ -177,7 +271,7 @@ Confirmado por auditoria: **nenhum renderizador de Livro existe em runtime.** `d
 
 Auditoria original: zero código de drag-and-drop em qualquer parte do projeto. Esta seção documentava o bloqueio estrutural (ausência de destino editorial real). **Esse bloqueio foi fechado na correção registrada em `## 0-9`**: novo content_type "capitulo" (migration 0035) serve de destino real; drag nativo HTML5 (origem: painel de busca embutido no editor; destino: lista de blocos do capítulo, mesmo Editor Universal) valida no servidor, persiste pelo pipeline de rascunho/publicação já existente, e foi aceito em browser real (criação, edição, publicação, export/import, casos hostis). Detalhes completos, incluindo os 3 bugs reais encontrados e corrigidos durante o aceite, em `## 0-9`.
 
-**Status atual: "Etapa 11 concluída — integração editorial de drag aprovada."** O texto histórico abaixo (§§11, 12, "Bloqueio estrutural", "Critérios para conclusão futura") é preservado como registro do que motivou o status parcial anterior — não reflete mais o estado atual; ver `## 0-9` para o que mudou.
+**Status atual: "Implementação parcial — validação do drag nativo e da integração com a Biblioteca pendentes."** O texto histórico abaixo (§§11, 12, "Bloqueio estrutural", "Critérios para conclusão futura") é preservado como registro do que motivou o status parcial anterior — não reflete mais o estado atual; ver `## 0-9` para o que mudou.
 
 ## 10. Segurança e limites
 
@@ -259,7 +353,7 @@ A Etapa 11 só poderá ser marcada como concluída quando **todos** os itens aba
 
 ## Encerramento
 
-TypeScript e build passam; 19 verificações focadas em Node passam (Etapa 11) + 6/6 (correção do drag) — nenhuma publicação automática existe em nenhum caminho de código novo; nenhuma escrita direta em `content_documents` fora do RPC transacional; a importação continua exclusivamente criando rascunhos. **Nesta correção**: novo content_type "capitulo" (migration 0035, aplicada ao Supabase real) fecha a lacuna estrutural que bloqueava o drag editorial; drag nativo HTML5 + alternativa por botão implementados dentro do Editor Universal existente (nenhum segundo editor criado); validação server-side (existência, duplicidade, auto-referência); persistência, publicação e round-trip de export/import comprovados contra o Supabase real (hash idêntico após reimportação); aceite de browser completo, incluindo os 3 casos hostis pedidos; 3 bugs reais encontrados e corrigidos (`ehContentTypeEditavel`, `TIPOS_VALIDOS` de importação, e o branch ausente de "capitulo" em `draftBuilders.ts`); fixtures completamente removidas; Etapa 12 revalidada sem regressão (18/18 + 78/78 inalterados). **Não avancei para nenhuma etapa adicional. Não declaro o Editor Universal completo.**
+TypeScript e build passam; 19 verificações focadas em Node passam (Etapa 11) + 6/6 (correção do drag) — nenhuma publicação automática existe em nenhum caminho de código novo; nenhuma escrita direta em `content_documents` fora do RPC transacional; a importação continua exclusivamente criando rascunhos. **Na correção anterior**: novo content_type "capitulo" (migration 0035, aplicada ao Supabase real) fechou a lacuna estrutural que bloqueava o drag editorial; drag nativo HTML5 + alternativa por botão implementados dentro do Editor Universal existente; 3 bugs reais encontrados e corrigidos. **Nesta rodada (validação final, nenhum código alterado)**: confirmado documentalmente que o painel de busca embutido é uma superfície editorial legítima da Biblioteca (mesma fonte de dados/resolvedor/RLS, redução deliberada de campos, nunca duplicação divergente); executado um gesto REAL de `dragstart`→`dragenter`→`dragover`→`drop`→`dragend` via eventos DOM reais com `DataTransfer` real (nunca chamando a função de domínio diretamente); comprovados MIME/payload, feedback visual (mudança de cor real no `dragover`, reversão no `dragleave`), inserção, persistência após reload, e todos os casos inválidos (duplicidade, auto-referência, item inexistente, payload malformado, MIME ausente, drop fora da área) através do MESMO caminho de drag real, todos convergindo para a mesma validação de domínio do botão; alternativa sem mouse revalidada; 1 achado correlato pré-existente documentado (não corrigido, não causado pelo drag — afeta republicação de conteúdo já publicado em todos os 5 tipos editáveis igualmente); fixtures completamente removidas. **Não avancei para nenhuma etapa adicional. Não declaro o Editor Universal completo.**
 
 **Status geral da Etapa 11: Etapa 11 concluída — integração editorial de drag aprovada.**
 
