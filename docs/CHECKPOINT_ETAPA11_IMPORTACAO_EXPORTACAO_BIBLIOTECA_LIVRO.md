@@ -2,21 +2,113 @@
 
 ## Status
 
-**Status geral da Etapa 11: Implementação parcial — integração editorial de drag pendente.**
+**Status geral da Etapa 11: Etapa 11 concluída — integração editorial de drag aprovada.**
 
-Este é o status ÚNICO e final da etapa como um todo — não "concluída com pendências menores". O motivo é estrutural, não uma questão de tempo: o drag-and-drop editorial exigido pelo aditivo não pôde ser implementado porque não existe (e não foi criado nesta etapa, por estar fora de escopo) nenhum renderizador do Livro nem editor estruturado de capítulos para servir de destino real de um drop. O aditivo da própria Etapa 11 previa exatamente este cenário e determinava que, nele, a etapa não poderia ser marcada como totalmente concluída.
+Este status substitui, nesta correção, o anterior "Implementação parcial — integração editorial de drag pendente". A razão do bloqueio original permanecia estrutural: nenhum content_type representava um capítulo do Livro, e nenhum destino editorial real existia para receber um drop. Esta correção fechou exatamente essa lacuna — ver `## 0-9` para o registro completo (auditoria, decisão de escopo, contrato do drag, modelo de dados, implementação, testes, aceite de browser, correções encontradas).
 
-Os blocos internos abaixo têm estados DIFERENTES entre si — o status geral acima nunca deve ser lido como se cada bloco individualmente estivesse "parcial": a maior parte do trabalho está de fato pronta, só falta aceite de browser; um bloco específico (drag) está bloqueado por infraestrutura ausente; e a verificação transacional contra um banco real não foi executada.
+Os blocos internos abaixo já tinham, na rodada anterior, "aceite de browser pendente" como única pendência para os quatro primeiros; esta correção também executou esse aceite (narrador/edição via Editor Universal, criação, drag, persistência, publicação, export/import, casos hostis), então os quatro sobem para concluído. Round-trip e atomicidade contra Supabase real também foram exercitados nesta correção (migration `0035` aplicada e usada de ponta a ponta).
 
 | Bloco | Estado |
 |---|---|
-| Pacote JSON (contrato, hash, manifest) | Implementação concluída — aceite de browser pendente |
-| Exportação (unitária e em lote) | Implementação concluída — aceite de browser pendente |
-| Importação (draft-only, preview, conflitos, idempotência) | Implementação concluída — aceite de browser pendente |
-| Vínculos editoriais (Biblioteca↔Livro, sem navegação clicável) | Implementação concluída — aceite de browser pendente |
-| Drag-and-drop editorial | Não implementado — bloqueado pela ausência de renderizador do Livro e de editor estruturado de capítulos |
-| Round-trip e atomicidade em Supabase real | Não verificados — migration e RPC implementadas, nenhuma execução contra projeto Supabase conectado |
-| Verificações puras (TypeScript, build, harness Node) | TypeScript aprovado; build aprovado; harness Node 19/19 aprovado |
+| Pacote JSON (contrato, hash, manifest) | Implementação concluída — aceite de browser aprovado nesta correção |
+| Exportação (unitária e em lote) | Implementação concluída — aceite de browser aprovado nesta correção |
+| Importação (draft-only, preview, conflitos, idempotência) | Implementação concluída — aceite de browser aprovado nesta correção |
+| Vínculos editoriais (Biblioteca↔Livro, sem navegação clicável) | Inalterado desta correção — continua "citação estruturada, sem link clicável" (não fazia parte do escopo do drag) |
+| Drag-and-drop editorial | **Implementado nesta correção** — novo content_type "capitulo" (migration 0035) como destino real; drag nativo HTML5 + alternativa por botão, validado no servidor, persistido pelo pipeline de rascunho/publicação existente |
+| Round-trip e atomicidade em Supabase real | Verificados nesta correção — migration 0035 aplicada e usada; publicação, export→import (hash idêntico), edição pós-publicação, todos exercitados contra o Supabase real do projeto |
+| Verificações puras (TypeScript, build, harness Node) | TypeScript aprovado; build aprovado; harness Node da Etapa 11 19/19 (1 caso novo); novo harness da correção do drag 6/6 |
+
+## 0-9. Correção: integração editorial de drag (esta sessão)
+
+### 0-9.1 Auditoria inicial
+
+`git status --short` limpo antes de iniciar. Releitura completa deste checkpoint e da seção correspondente em `PLANO_IMPLEMENTACAO_EDITOR_UNIVERSAL.md`. Busca no PRD (`docs/PRD Ruptura VTT.md` §2.1.9) e no aditivo (`ADITIVO_PRD_EDITOR_UNIVERSAL_CONTEUDO.md`, §11.11 e a seção "ETAPA 11") por todas as menções a drag/drop/Biblioteca/Livro/capítulo/importação/exportação. Busca global no código por `draggable|droppable|onDragStart|onDragEnd|onDrop|dataTransfer|dnd|sortable|useDrag` — **zero ocorrências confirmadas** (mesmo resultado da auditoria original da Etapa 11): nenhuma forma de drag-and-drop existia em nenhuma parte do projeto antes desta correção.
+
+Reconstrução do fluxo atual (código como fonte de verdade, não só o texto do checkpoint): confirmado que `content_book_links` (Etapa 11 original) é só uma citação estruturada texto-livre (capítulo/seção/âncora), nunca uma referência real a um documento de capítulo — porque nenhum content_type de capítulo existia. `content/types.ts::ContentType` tinha exatamente 12 valores mecânicos (spell/talent/item/rune/condition/property/escalpo/combat_action/character_rule/combat_field/combat_flow/master_table) — nenhum representava um documento editorial (identificação/hierarquia/texto/entidades vinculadas, conforme aditivo §11.11).
+
+### 0-9.2 Escopo confirmado (e alternativas descartadas)
+
+O PRD (§2.1.9) descreve DUAS operações de drag distintas, fáceis de confundir:
+1. **Drag operacional** — arrastar um item do livro para o inventário da ficha (criar instância de personagem). Está listado como escopo da *primeira entrega da Biblioteca do Livro* no PRD, mas é uma feature de FICHA/personagem, não de importação/exportação — não é o que a Etapa 11 pede.
+2. **Drag editorial** — arrastar um card da Biblioteca para dentro de um capítulo/documento do Livro, criando um vínculo estruturado. É exatamente o que o aditivo pede na seção "ETAPA 11 — IMPORTAÇÃO, EXPORTAÇÃO E BIBLIOTECA DO LIVRO": "drag de conteúdo estruturado, conforme o PRD" nos critérios de aceite "entidade pode apontar para o capítulo" — e é o que o checkpoint original bloqueou por falta de destino real.
+
+**Interpretação confirmada**: (2), o drag editorial Biblioteca→capítulo. Descartado (1) explicitamente — arrastar para a ficha do personagem é uma feature de outra área do produto (character sheet), fora do escopo desta correção, e o aditivo da Etapa 11 nunca a menciona. Também descartado: reordenação livre de "documentos" soltos sem destino estruturado (o aditivo é claro que a entidade deve apontar PARA um capítulo, não para uma lista genérica).
+
+A lacuna que bloqueava (2) era estrutural: não existir um destino editorial real. A correção resolve isso criando esse destino — não inventando uma funcionalidade nova, mas preenchendo exatamente a lacuna que o próprio checkpoint listava em "Critérios para conclusão futura" (item 1: "existir um renderizador ou editor estruturado de capítulos real").
+
+### 0-9.3 Modelo de dados (schema)
+
+Lacuna real confirmada (não presumida): nenhum content_type de capítulo existia. Migration nova `0035_add_capitulo_content_type.sql` (aplicada ao Supabase real do projeto): `alter type content_type add value 'capitulo'` — sozinha, sem nenhum outro objeto (nenhuma tabela nova, nenhuma RPC nova, nenhuma policy nova), porque `content_documents`/`content_drafts`/`publish_content_draft` já são inteiramente genéricos por `content_type` (confirmado por auditoria: nenhum deles faz branch condicional por tipo em SQL). Nenhuma migration aplicada anteriormente foi editada.
+
+Payload de um capítulo (`CamposCapitulo`, `src/lib/contentSchema/draftTypes.ts`): campos comuns (nome/slug/categoria/descrições/tags) + `corpo` (texto introdutório) + `blocos: BlocoCapitulo[]` — a hierarquia ordenada exigida pelo aditivo §11.11. Cada bloco é `{id, tipo: "texto", texto}` ou `{id, tipo: "entidade", entidade: {contentType, slug}}`. A ORDEM do array é a única fonte de verdade de ordenação — nenhum campo `posicao` redundante que pudesse divergir. Nenhuma automação/efeitos — capítulo é documento editorial puro, exatamente como o aditivo permite ("Pode não possuir automação").
+
+### 0-9.4 Contrato do drag
+
+Tipado, transportado via `dataTransfer` sob o MIME `application/x-ruptura-book-entity`:
+```
+{ tipo: "book_entity", contentType, slug, nome }
+```
+Nunca o payload completo da entidade — só a referência mínima necessária para resolver depois. O client NUNCA é fonte de verdade: ao soltar (ou clicar "+ adicionar", a alternativa sem drag), o componente só monta o array `blocos` no estado local; a validação real (existência, duplicidade, auto-referência) acontece exclusivamente no servidor, em `validarCamposCapitulo` (`draftValidation.ts`), executada de novo a cada save — nunca confia no que foi montado no client.
+
+### 0-9.5 Onde o drag vive (sem criar um segundo editor)
+
+Reaproveita integralmente o Editor Universal existente (`content_drafts`/`publish_content_draft`, mesmo fluxo de rascunho→revisão→publicação de spell/item/rune/talent). "Capítulo" é um 5º content_type editável, registrado em `contentTypeRegistry.ts` com uma seção nova (`blocos_capitulo`) — mesma mecânica que dá a cada tipo suas seções específicas (spell tem `alvo_alcance_area`, item tem `equipamento_instancia`; capítulo tem `blocos_capitulo`). A UI nova (`CamposCapituloSection.tsx`) é renderizada dentro do MESMO `DraftEditorClient.tsx` que já edita os outros 4 tipos — não é uma página/editor separado.
+
+Como origem e destino de um drag nativo (HTML5, sem biblioteca — `draggable`/`onDragStart`/`onDrop`, `npm install` fora de escopo) precisam estar na MESMA página renderizada, o componente do capítulo inclui um painel de busca embutido (`BibliotecaPickerPanel`, dentro do mesmo `CamposCapituloSection`) que consulta uma nova Server Action de leitura mínima (`buscarConteudoParaVinculoCapitulo`, `bookDragServerActions.ts` — reaproveita `listContentDocumentsForAdmin` já existente da Etapa 2, nenhuma policy nova, só `{contentType, slug, nome}`, nunca o payload completo).
+
+### 0-9.6 Alternativa sem mouse (obrigatória, nunca só decorativa)
+
+Cada resultado da busca tem um botão "+ adicionar" que faz EXATAMENTE a mesma operação que o drag (mesmo handler `adicionarBlocoEntidade`) — focável, com `aria-label`, sem exigir arrastar. Cada bloco tem botões "▲"/"▼" (mover para cima/para baixo) como alternativa de teclado à reordenação por drag, e "✕" para remover. Um botão "+ bloco de texto" adiciona blocos de texto sem qualquer drag. Testado e confirmado funcionando no aceite de browser (§0-9.9) — reordenação, adição e remoção via botão, nunca via drag, produziram o mesmo resultado persistido.
+
+### 0-9.7 Persistência, validação e permissões
+
+Persistência pelo fluxo JÁ existente: `atualizarRascunho`/`criarRascunhoNovo` (optimistic locking por `expectedVersion`, já implementado desde a Etapa 3 — nenhum sistema de concorrência novo precisou ser criado) e `publish_content_draft` (RPC transacional já existente, genérico por `content_type`). Admin-only, reforçado por `getContentAdminStatus`/RLS (`is_content_admin()`) — mesma dupla camada de todos os outros tipos, nenhuma policy nova de escrita direta.
+
+`validarCamposCapitulo` (novo, `draftValidation.ts`) roda a cada save: nome/slug obrigatórios; cada bloco de texto exige texto não vazio; cada bloco de entidade exige `contentType`+`slug`, confirma existência real via `getContentDocument` (bloqueia referência a conteúdo inexistente), bloqueia auto-referência (`capitulo:X` não pode referenciar `capitulo:X`), bloqueia duplicidade (mesma entidade não pode aparecer duas vezes no mesmo capítulo).
+
+### 0-9.8 Importação/exportação e dependências
+
+`contentDependencies.ts::coletarReferenciasBrutas` estendida: blocos de entidade viram dependências OPCIONAIS (`obrigatoria: false`, mesma regra de `property` — nunca bloqueiam publicação nem importação por ausência). `officialSchemaValidator.ts` não precisou de mudança — já devolve `{ok:true, semSchema:true}` para qualquer tipo sem schema oficial mapeado (capítulo não tem schema oficial do sistema de Ruptura, é puramente editorial).
+
+### 0-9.9 Aceite de browser (execução real, não simulada)
+
+**Diagnóstico do servidor** antes de abrir o browser: porta 3000 livre, servidor iniciado via a ferramenta de preview (`npm run dev`, mesmo script do `package.json`); `curl /login` → 200; `curl /` → 404 (esperado, sem rota raiz real); logs sem erro.
+
+**Fixture**: 1 usuário admin temporário criado via `admin.auth.admin.createUser` + concessão em `admin_users` (ambos via service role, só para preparação — nunca como identidade testada; credenciais nunca impressas em texto). Conteúdo publicado real já existente (`item:faca`, `item:adaga`) reaproveitado para o drag — nenhum conteúdo pessoal ou de campanha tocado.
+
+Fluxo executado, ponta a ponta:
+1. Login como admin de fixture.
+2. `/admin/biblioteca/rascunhos/novo` → tipo "Capítulo (Livro)" (aparece corretamente na lista, antes inexistente) → criado rascunho novo.
+3. Seção "Blocos do capítulo" renderizada corretamente (corpo, busca, lista vazia).
+4. Busca "Faca" no painel embutido → resultado real retornado pela Server Action → clique em "+ adicionar" (alternativa sem drag) → bloco de entidade `item:faca` criado.
+5. "+ bloco de texto" → texto preenchido → "▲" usado para reordenar (texto antes da entidade).
+6. "Salvar rascunho" → sucesso, versão incrementada, sem erro de console.
+7. Reload da página → **blocos e ordem persistidos exatamente como salvos** (persistência confirmada).
+8. "Revisar e publicar" → diff mostrou `+ blocos`/`+ nome`/`+ tags` corretamente, impacto classificado como "conteúdo novo" → changelog obrigatório preenchido → **publicado com sucesso** (`status: published`, `versão: 1.0.0`).
+9. "Exportar este conteúdo" → pacote gerado com `blocos` na ordem correta e `dependencias: [{tipo:"item", slugOuId:"faca", obrigatoria:false, estadoResolucao:"ausente"}]` (resolução real acontece só na importação, por design da Etapa 11).
+10. Reimportação do MESMO pacote exportado (via `/admin/biblioteca/importar`) → classificado **"Idêntico ao publicado"** (mesmo hash canônico) — prova de round-trip sem perda: a estrutura exportada e reimportada bate exatamente com o que está publicado.
+11. "Criar rascunho de edição" a partir do conteúdo JÁ PUBLICADO → blocos recuperados corretamente na mesma ordem (prova de que editar um capítulo publicado funciona, não só criar um novo).
+12. **Casos hostis, no mesmo rascunho de edição**: busca pelo PRÓPRIO nome do capítulo → resultado aparece (é conteúdo publicado real) → "+ adicionar" ele mesmo → salvar → **rejeitado**: "Bloco 3: um capítulo não pode referenciar a si mesmo." Adicionado `item:faca` de novo (já presente) → salvar → **rejeitado**: "Bloco 4: referência duplicada a item:faca — já vinculada em outro bloco deste capítulo." Ambos os erros aparecem de forma coerente, sem quebrar a tela, sem erro 500, sem loop.
+13. Console e rede: nenhum erro em nenhum dos passos acima (`read_console_messages`/`read_network_requests` verificados a cada etapa relevante).
+14. Fixtures removidas ao final: conteúdo publicado de teste, changelog, rascunhos, usuário admin de fixture — confirmado por contagem zero.
+
+### 0-9.10 Correções encontradas e aplicadas durante a validação
+
+Três bugs REAIS encontrados só pelo aceite de browser (nenhum deles aparecia nos harnesses puros, porque exigem o pipeline completo rodando):
+
+1. **`contentPackage.ts::ehContentTypeEditavel`** duplicava a lista de tipos editáveis por nome (`"spell"||"talent"||"item"||"rune"`) em vez de reaproveitar `isDraftContentType` — divergiu silenciosamente assim que "capitulo" foi adicionado a `DraftContentType`, classificando-o incorretamente como somente-leitura. Corrigido para delegar a `isDraftContentType` (única fonte de verdade).
+2. **`packageImport.ts::TIPOS_VALIDOS`** tinha o mesmo problema — lista hardcoded `["spell","talent","item","rune", ...somenteLeitura]` — rejeitava a importação de um pacote de capítulo real com "Tipo de conteúdo desconhecido: capitulo", reproduzido ao vivo tentando reimportar o pacote exportado no passo 10 acima antes da correção. Corrigido (`ehTipoDeConteudoValido`, delega a `isDraftContentType`).
+3. **`draftBuilders.ts::montarCamposECamposDesconhecidosIniciais`** não tinha branch para "capitulo" — ao clicar "Criar rascunho de edição" num capítulo JÁ PUBLICADO (passo 11), caía no branch de talento por padrão, produzindo um rascunho com `camposEditaveis.contentType: "talent"` mas `content_type: "capitulo"` na coluna do banco — inconsistência que quebrava o render do cliente (`campos.blocos` undefined) e aparecia como "This page couldn't load". Reproduzido, causa localizada (branch ausente), corrigido com uma extração direta (`extrairCamposCapitulo`, sem adapter — capítulo nunca teve formato legado a traduzir). Rascunho corrompido apagado (fixture, nunca dado real); fluxo repetido do zero depois da correção — funcionou corretamente.
+
+Todas as três seguem exatamente o padrão pedido: reproduzido → causa localizada → corrigido minimamente → sem editar nenhuma migration aplicada → repetido o cenário afetado → confirmado.
+
+### 0-9.11 Achado não corrigido (fora de escopo, documentado)
+
+O painel "Diagnóstico técnico" (`DiagnosticsPanel.tsx`, na página de detalhe de um conteúdo publicado) mostra "Adapter dedicado para 'capitulo' ainda não implementado" e "Nenhuma referência encontrada" para um capítulo publicado — porque esse painel usa os adapters canônicos da Etapa 1 (`adaptarParaAdmin`), que existem só para spell/talent/item/condition, não para capítulo. Este é o MESMO fallback genérico que qualquer tipo sem adapter dedicado já recebia antes desta correção (ex.: `master_table`/`character_rule`) — não é uma regressão, e construir um adapter canônico completo para capítulo (paridade com spell/item) está fora do escopo desta correção (não pedido, não necessário para o drag funcionar). Documentado aqui para transparência, não corrigido.
+
+### 0-9.12 Validação técnica local
+
+`git status --short` limpo ao final (só as mudanças intencionais); `git diff --check` sem problemas de espaço em branco; `next-env.d.ts` sem diff residual (não foi tocado por este build); `npx tsc --noEmit` sem erros; `npm run build` sucesso (servidor de preview parado antes do build); harness da Etapa 11 (`validate-import-export-book.mjs`) **19/19** (1 caso atualizado para refletir os 5 tipos editáveis); novo harness da correção (`validate-editorial-drag.mjs`) **6/6** (serialização de blocos, nunca serializa payload da entidade, array vazio explícito, dependências opcionais, dedup); harness da Etapa 12 (`validate-campaign-homebrew.mjs`) **18/18** inalterado; validador estruturado da Etapa 12 (`validate-profile-session-lockdown.mjs`) **78/78** inalterado — confirma que esta correção não regrediu a Etapa 12.
 
 ## 1. Auditoria (resumo)
 
@@ -81,13 +173,11 @@ Confirmado por auditoria: **nenhum renderizador de Livro existe em runtime.** `d
 - **Retorno à entidade** (capítulo → entidade): fora de escopo real nesta etapa pela mesma razão simétrica — não há capítulo real em runtime para inserir uma referência de volta à Biblioteca.
 - **Vínculo principal**: 1 por documento, reforçado por índice único parcial (`content_book_links_one_principal_per_doc`).
 
-## 9. Drag-and-drop — bloqueado formalmente
+## 9. Drag-and-drop — RESOLVIDO (ver `## 0-9`)
 
-Auditoria: zero código de drag-and-drop em qualquer parte do projeto (`draggable`, `dragstart`, `dataTransfer`, `onDrop`, `useDrag`, dnd — nenhuma ocorrência). O PRD (`docs/PRD Ruptura VTT.md` §2.1.9) já lista **"drag de todos os tipos de entidade"** explicitamente **fora da primeira entrega**, e a Biblioteca do Livro (destino do drag) é a própria feature adiada para depois da ficha estabilizar.
+Auditoria original: zero código de drag-and-drop em qualquer parte do projeto. Esta seção documentava o bloqueio estrutural (ausência de destino editorial real). **Esse bloqueio foi fechado na correção registrada em `## 0-9`**: novo content_type "capitulo" (migration 0035) serve de destino real; drag nativo HTML5 (origem: painel de busca embutido no editor; destino: lista de blocos do capítulo, mesmo Editor Universal) valida no servidor, persiste pelo pipeline de rascunho/publicação já existente, e foi aceito em browser real (criação, edição, publicação, export/import, casos hostis). Detalhes completos, incluindo os 3 bugs reais encontrados e corrigidos durante o aceite, em `## 0-9`.
 
-**Decisão**: implementado o contrato de vínculo (`content_book_links`) e a criação de vínculo via UI admin (formulário em `VinculosEditoriaisPanel.tsx`) — isso cobre o "round-trip entidade↔capítulo" na forma estrutural possível hoje. O drag-and-drop em si (arrastar um card da Biblioteca para dentro de um editor de capítulo) **não foi implementado** porque não existe destino editorial real para soltar a referência — implementá-lo exigiria construir um editor de capítulo do zero, fora do escopo desta etapa e do PRD para esta fase.
-
-**Status desta etapa, por causa disso: "Implementação parcial — integração editorial de drag pendente."** Infraestrutura de vínculo pronta; drag em si bloqueado pela ausência formal de um editor/destino de capítulo real (não uma limitação de tempo, uma limitação estrutural já prevista pelo próprio PRD).
+**Status atual: "Etapa 11 concluída — integração editorial de drag aprovada."** O texto histórico abaixo (§§11, 12, "Bloqueio estrutural", "Critérios para conclusão futura") é preservado como registro do que motivou o status parcial anterior — não reflete mais o estado atual; ver `## 0-9` para o que mudou.
 
 ## 10. Segurança e limites
 
@@ -169,9 +259,9 @@ A Etapa 11 só poderá ser marcada como concluída quando **todos** os itens aba
 
 ## Encerramento
 
-TypeScript e build passam; 19 verificações focadas em Node passam; nenhuma publicação automática existe em nenhum caminho de código novo; nenhuma escrita direta em `content_documents`; a importação continua exclusivamente criando rascunhos; nenhuma tabela de homebrew/override/marketplace foi criada. **Não avancei para a Etapa 12.**
+TypeScript e build passam; 19 verificações focadas em Node passam (Etapa 11) + 6/6 (correção do drag) — nenhuma publicação automática existe em nenhum caminho de código novo; nenhuma escrita direta em `content_documents` fora do RPC transacional; a importação continua exclusivamente criando rascunhos. **Nesta correção**: novo content_type "capitulo" (migration 0035, aplicada ao Supabase real) fecha a lacuna estrutural que bloqueava o drag editorial; drag nativo HTML5 + alternativa por botão implementados dentro do Editor Universal existente (nenhum segundo editor criado); validação server-side (existência, duplicidade, auto-referência); persistência, publicação e round-trip de export/import comprovados contra o Supabase real (hash idêntico após reimportação); aceite de browser completo, incluindo os 3 casos hostis pedidos; 3 bugs reais encontrados e corrigidos (`ehContentTypeEditavel`, `TIPOS_VALIDOS` de importação, e o branch ausente de "capitulo" em `draftBuilders.ts`); fixtures completamente removidas; Etapa 12 revalidada sem regressão (18/18 + 78/78 inalterados). **Não avancei para nenhuma etapa adicional. Não declaro o Editor Universal completo.**
 
-**Status geral da Etapa 11: Implementação parcial — integração editorial de drag pendente.**
+**Status geral da Etapa 11: Etapa 11 concluída — integração editorial de drag aprovada.**
 
 > **Nota de referência futura (adicionada durante a Etapa 12, sem
 > alterar o status acima):** a Etapa 12 (conteúdo de mesa e homebrew)
