@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
  * Verificação ESTÁTICA (não substitui prova em Supabase real) da Etapa
- * 12, correção 7 — migration 0032. Lê o texto das migrations 0004,
- * 0007, 0009, 0030, 0031, 0032 e confirma, por análise estrutural (não
- * por execução de SQL), que:
+ * 12, correções 7 e da validação integrada subsequente — migrations
+ * 0032, 0033, 0034. Lê o texto das migrations 0004, 0007, 0009, 0030,
+ * 0031, 0032, 0033, 0034 e confirma, por análise estrutural (não por
+ * execução de SQL), que:
  *
  *   - as policies REALMENTE ativas de `campaign_profiles`/
  *     `profile_sessions` para `anon`/`authenticated` genérico
@@ -22,7 +23,17 @@
  *   - `get_character_for_profile_session`/
  *     `save_character_for_profile_session` (versão 0032) checam
  *     `profile_id = p_profile_id` na consulta/UPDATE de `characters`
- *     (não confiam só em `active_character_id`).
+ *     (não confiam só em `active_character_id`);
+ *   - migration 0033 revoga EXECUTE de `anon` das RPCs authenticated-only
+ *     (achado da validação integrada: `revoke all on function X from
+ *     public` NUNCA bastou para bloquear `anon` neste projeto — uma
+ *     default privilege de schema concede EXECUTE a `anon` em toda
+ *     função nova, precisando de `revoke execute ... from anon`
+ *     explícito, função a função);
+ *   - migration 0034 exige `is_campaign_member` (membership ATIVA) nas
+ *     4 RPCs de sessão/personagem quando o perfil já foi reivindicado
+ *     (achado da validação integrada: um membro `removed` com sessão já
+ *     emitida continuava lendo/escrevendo o próprio personagem).
  *
  * NÃO prova comportamento de RLS/transação real — isso exige um
  * Supabase conectado (ver checkpoint, seção "Verificações não
@@ -53,6 +64,8 @@ function check(label, condition) {
 const m0007 = read("0007_rls_controlled.sql");
 const m0009 = read("0009_profile_sessions.sql");
 const m0032 = read("0032_lockdown_profile_sessions_and_active_character.sql");
+const m0033 = read("0033_revoke_anon_execute_on_authenticated_rpcs.sql");
+const m0034 = read("0034_enforce_active_membership_for_claimed_sessions.sql");
 
 // --- Confirma o nome REAL das policies (pós-rename 0007) ---
 check(
@@ -160,6 +173,75 @@ for (const [name] of novasRpcs) {
   check(
     "save_character_for_profile_session (0032) exige characters.profile_id = p_profile_id no WHERE do UPDATE",
     /where id = p_character_id[\s\S]*?and profile_id = p_profile_id/.test(saveBlock),
+  );
+}
+
+// --- 0033: revoke execute de anon nas RPCs authenticated-only ---
+{
+  const authenticatedOnlyRpcs = [
+    ["is_campaign_owner", "uuid, uuid"],
+    ["is_campaign_member", "uuid, uuid"],
+    ["can_manage_campaign_content", "uuid, uuid"],
+    ["can_read_campaign_content", "uuid, uuid"],
+    ["can_access_campaign_profile", "uuid, uuid"],
+    ["can_manage_campaign_profile", "uuid, uuid"],
+    ["can_read_character", "uuid, uuid"],
+    ["can_manage_character", "uuid, uuid"],
+    ["can_read_campaign", "uuid, uuid"],
+    ["can_manage_campaign", "uuid, uuid"],
+    ["claim_campaign_profile", "uuid"],
+    ["create_and_claim_campaign_profile", "uuid, text"],
+    ["list_claimable_campaign_profiles", "uuid"],
+    ["accept_campaign_invite", "text"],
+    ["force_release_campaign_profile", "uuid"],
+    ["set_campaign_profile_active_character", "uuid, uuid"],
+    ["publish_campaign_content_draft", "uuid, integer, jsonb, jsonb, jsonb, text, jsonb, jsonb"],
+    ["remove_campaign_content_override", "text, integer, text"],
+    ["archive_campaign_homebrew", "text, integer, text"],
+  ];
+  for (const [name, args] of authenticatedOnlyRpcs) {
+    const escapedArgs = args.replace(/,/g, ",\\s*");
+    check(
+      `0033 revoga execute de anon em ${name}(${args})`,
+      new RegExp(`revoke execute on function ${name}\\(${escapedArgs}\\) from anon;`).test(m0033),
+    );
+  }
+  // As RPCs de sessão de jogador (Opção B) NÃO devem ser revogadas de anon.
+  const stillAnonCallable = [
+    "enter_campaign_profile",
+    "heartbeat_profile_session",
+    "leave_campaign_profile",
+    "validate_profile_session_token",
+    "expire_stale_profile_sessions",
+    "get_character_for_profile_session",
+    "save_character_for_profile_session",
+  ];
+  for (const name of stillAnonCallable) {
+    check(
+      `0033 NÃO revoga execute de anon em ${name} (permanece chamável por design, Opção B)`,
+      !new RegExp(`revoke execute on function ${name}\\(`).test(m0033),
+    );
+  }
+}
+
+// --- 0034: membership ativa exigida quando o perfil já foi reivindicado ---
+{
+  for (const name of ["enter_campaign_profile", "heartbeat_profile_session"]) {
+    const block = m0034.match(new RegExp(`create or replace function ${name}\\([\\s\\S]*?\\$\\$;`))?.[0] ?? "";
+    check(
+      `0034 ${name} exige is_campaign_member quando profile.user_id não é nulo`,
+      /v_profile\.user_id is not null and not is_campaign_member\(v_profile\.campaign_id, v_profile\.user_id\)/.test(block),
+    );
+  }
+  const getBlock034 = m0034.match(/create or replace function get_character_for_profile_session[\s\S]*?\$\$;/)?.[0] ?? "";
+  check(
+    "0034 get_character_for_profile_session exige is_campaign_member quando profile.user_id não é nulo",
+    /v_profile\.user_id is not null and not public\.is_campaign_member\(p_campaign_id, v_profile\.user_id\)/.test(getBlock034),
+  );
+  const saveBlock034 = m0034.match(/create or replace function save_character_for_profile_session[\s\S]*?\$\$;/)?.[0] ?? "";
+  check(
+    "0034 save_character_for_profile_session exige is_campaign_member quando profile.user_id não é nulo",
+    /v_profile\.user_id is not null and not public\.is_campaign_member\(p_campaign_id, v_profile\.user_id\)/.test(saveBlock034),
   );
 }
 
