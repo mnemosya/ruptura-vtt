@@ -541,7 +541,14 @@ export async function acceptCampaignInvite(rawToken: string): Promise<AceitarCon
     if (error) return { ok: false, erro: error.message };
 
     const resultado = data as { campaignId: string; memberId: string };
-    revalidatePath(`/mesas/${resultado.campaignId}`);
+    // Etapa 12 (validação integrada): `revalidatePath` removido — esta
+    // função é chamada diretamente do corpo de render de
+    // `/join/[token]/page.tsx` (Server Component), onde `revalidatePath`
+    // não é permitido (só dentro de Server Actions/Route Handlers reais).
+    // Reproduzido em browser: quebrava o aceite de convite com
+    // "Route ... used revalidatePath ... during render". Desnecessário de
+    // qualquer forma — `/mesas/[campaignId]` já é `force-dynamic`, nunca
+    // cacheado estaticamente.
     return { ok: true, campaignId: resultado.campaignId };
   } catch (err) {
     return { ok: false, erro: err instanceof Error ? err.message : "Erro desconhecido." };
