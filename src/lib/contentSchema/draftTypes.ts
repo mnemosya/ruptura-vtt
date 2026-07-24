@@ -155,17 +155,54 @@ export interface CamposRuna extends CamposComuns {
   efeitos: EfeitoEditavel[];
 }
 
+/**
+ * Bloco editorial de um capítulo (Etapa 11, correção do drag) — unidade
+ * ordenada de "hierarquia" (aditivo §11.11). Só duas formas:
+ *   - `texto`: prosa livre do próprio capítulo (o "livro" continua sendo
+ *     o texto — aditivo §2.1.9).
+ *   - `entidade`: referência estruturada e segura a um conteúdo real da
+ *     Biblioteca (NUNCA o payload inteiro — só tipo+slug, resolvido no
+ *     servidor a cada leitura/validação). É este bloco que o
+ *     drag-and-drop cria ao soltar um card da Biblioteca no capítulo.
+ * `id` é estável (gerado uma vez, nunca recalculado por posição) — a
+ * ORDEM do array é a única fonte de verdade de ordenação/hierarquia,
+ * nunca um campo `posicao` redundante que poderia divergir do array.
+ */
+export interface BlocoCapituloTexto {
+  id: string;
+  tipo: "texto";
+  texto: string;
+}
+export interface BlocoCapituloEntidade {
+  id: string;
+  tipo: "entidade";
+  entidade: { contentType: ContentTypeId; slug: string };
+}
+export type BlocoCapitulo = BlocoCapituloTexto | BlocoCapituloEntidade;
+
+export interface CamposCapitulo extends CamposComuns {
+  /** Texto introdutório opcional antes dos blocos — mesmo papel de `descricaoLonga`, mantido separado por clareza editorial. */
+  corpo?: string;
+  blocos: BlocoCapitulo[];
+}
+
 export type CamposEditaveisMagia = { contentType: "spell"; campos: CamposMagia };
 export type CamposEditaveisTalento = { contentType: "talent"; campos: CamposTalento };
 export type CamposEditaveisItem = { contentType: "item"; campos: CamposItem };
 export type CamposEditaveisRuna = { contentType: "rune"; campos: CamposRuna };
+export type CamposEditaveisCapitulo = { contentType: "capitulo"; campos: CamposCapitulo };
 
-export type CamposEditaveis = CamposEditaveisMagia | CamposEditaveisTalento | CamposEditaveisItem | CamposEditaveisRuna;
+export type CamposEditaveis =
+  | CamposEditaveisMagia
+  | CamposEditaveisTalento
+  | CamposEditaveisItem
+  | CamposEditaveisRuna
+  | CamposEditaveisCapitulo;
 
 export type DraftContentType = CamposEditaveis["contentType"];
 
 export function isDraftContentType(value: string): value is DraftContentType {
-  return value === "spell" || value === "talent" || value === "item" || value === "rune";
+  return value === "spell" || value === "talent" || value === "item" || value === "rune" || value === "capitulo";
 }
 
 export interface DraftPreservado {

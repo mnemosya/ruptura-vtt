@@ -8,7 +8,7 @@
 import { getContentDocument } from "../content/queries";
 import type { ContentType } from "../content/types";
 import { findDraftBySlug } from "./draftQueries";
-import type { CamposComuns, CamposItem, CamposMagia, CamposRuna, CamposTalento, ContentDraftRow, DraftContentType } from "./draftTypes";
+import type { CamposCapitulo, CamposComuns, CamposItem, CamposMagia, CamposRuna, CamposTalento, ContentDraftRow, DraftContentType } from "./draftTypes";
 import { validarEfeitosEditaveis } from "./effectDraftValidation";
 import { isValidSlug } from "./slug";
 import type { ResultadoValidacao } from "./types";
@@ -143,6 +143,61 @@ export async function validarCamposTalento(campos: CamposTalento, draftId?: stri
   for (const [indice, nivel] of campos.niveis.entries()) {
     await validarRequisitos(nivel.requisitos, erros);
     mesclarValidacao(erros, avisos, infos, await validarEfeitosEditaveis(nivel.efeitos), `Nível ${indice + 1} — Efeitos`);
+  }
+
+  return { valido: erros.length === 0, erros, avisos, infos };
+}
+
+/**
+ * Valida os blocos editoriais de um capítulo (Etapa 11, correção do
+ * drag) — é AQUI, no servidor, que o drop é validado de verdade, nunca
+ * confiando no que o client arrastou:
+ *   - bloco de texto precisa de texto não vazio;
+ *   - bloco de entidade precisa existir de verdade na Biblioteca
+ *     publicada (nunca aceita uma referência a conteúdo inexistente);
+ *   - um capítulo não pode referenciar A SI MESMO (referência circular
+ *     mínima real: capitulo:slug apontando para capitulo:slug);
+ *   - a mesma entidade não pode aparecer duas vezes no mesmo capítulo
+ *     (duplicação proibida, pedido explicitamente pelo escopo do drag).
+ */
+export async function validarCamposCapitulo(campos: CamposCapitulo, draftId?: string): Promise<ValidacaoCamposResultado> {
+  const erros: string[] = [];
+  const avisos: string[] = [];
+  const infos: string[] = [];
+
+  validarCamposComuns(campos, erros, avisos);
+  if (campos.slug && isValidSlug(campos.slug) && (await existeSlugColidindo("capitulo", campos.slug, draftId))) {
+    erros.push(`Já existe conteúdo publicado ou outro rascunho com o slug "${campos.slug}".`);
+  }
+
+  const chavesVistas = new Set<string>();
+  for (const [indice, bloco] of campos.blocos.entries()) {
+    const rotulo = `Bloco ${indice + 1}`;
+    if (bloco.tipo === "texto") {
+      if (!bloco.texto || bloco.texto.trim() === "") erros.push(`${rotulo}: texto vazio.`);
+      continue;
+    }
+    if (bloco.tipo === "entidade") {
+      const { contentType, slug } = bloco.entidade;
+      if (!contentType || !slug) {
+        erros.push(`${rotulo}: referência incompleta.`);
+        continue;
+      }
+      if (contentType === "capitulo" && slug === campos.slug) {
+        erros.push(`${rotulo}: um capítulo não pode referenciar a si mesmo.`);
+        continue;
+      }
+      const chave = `${contentType}:${slug}`;
+      if (chavesVistas.has(chave)) {
+        erros.push(`${rotulo}: referência duplicada a ${chave} — já vinculada em outro bloco deste capítulo.`);
+        continue;
+      }
+      chavesVistas.add(chave);
+      const encontrada = await getContentDocument(contentType as ContentType, slug).catch(() => null);
+      if (!encontrada) erros.push(`${rotulo}: referência inexistente na Biblioteca (${chave}).`);
+      continue;
+    }
+    erros.push(`${rotulo}: tipo de bloco desconhecido.`);
   }
 
   return { valido: erros.length === 0, erros, avisos, infos };

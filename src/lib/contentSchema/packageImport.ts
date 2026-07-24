@@ -30,7 +30,7 @@ import {
 import { coletarReferenciasBrutas, resolverDependencias } from "./contentDependencies";
 import { montarCamposECamposDesconhecidosIniciais, sobreporMetadataEditorial } from "./draftBuilders";
 import { findDraftBySlug } from "./draftQueries";
-import type { DraftEnvelope } from "./draftTypes";
+import { isDraftContentType, type DraftEnvelope } from "./draftTypes";
 import { findConfirmedSessionByHash } from "./importSessionQueries";
 import { classificarDocumentoImportado, type EstadoAtualDocumento, type PreviewDocumentoImportado } from "./importPreview";
 import { validarContraSchemaOficial } from "./officialSchemaValidator";
@@ -46,7 +46,17 @@ async function requireAdmin(): Promise<{ id: string; email: string | null }> {
 const LIMITE_TAMANHO_ARQUIVO_BYTES = 5 * 1024 * 1024; // 5 MB
 const LIMITE_DOCUMENTOS_POR_PACOTE = 200;
 
-const TIPOS_VALIDOS = new Set<string>(["spell", "talent", "item", "rune", ...CONTENT_TYPES_SOMENTE_LEITURA]);
+const TIPOS_SOMENTE_LEITURA_SET = new Set<string>(CONTENT_TYPES_SOMENTE_LEITURA);
+
+// Antes da correção do drag editorial (Etapa 11), a checagem aqui
+// duplicava os 4 tipos editáveis por nome (`["spell","talent","item","rune"]`)
+// em vez de reaproveitar `isDraftContentType` — divergiu silenciosamente
+// assim que "capitulo" foi adicionado a `DraftContentType`, rejeitando a
+// importação de um capítulo real com "Tipo de conteúdo desconhecido"
+// (mesma classe de bug já corrigida em `contentPackage.ts::ehContentTypeEditavel`).
+function ehTipoDeConteudoValido(tipo: string): tipo is ContentTypePacote {
+  return isDraftContentType(tipo) || TIPOS_SOMENTE_LEITURA_SET.has(tipo);
+}
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
@@ -90,7 +100,7 @@ export async function validarPacoteBruto(
     const slug = docBruto.slug;
     const payloadPublico = docBruto.payloadPublico;
     const hashPayload = docBruto.hashPayload;
-    if (typeof contentType !== "string" || !TIPOS_VALIDOS.has(contentType)) {
+    if (typeof contentType !== "string" || !ehTipoDeConteudoValido(contentType)) {
       erros.push({ caminho: `documentos[${i}].contentType`, mensagem: `Tipo de conteúdo desconhecido: "${String(contentType)}".` });
       return;
     }
@@ -167,7 +177,7 @@ export async function gerarPreviewImportacao(pacote: ContentPackage): Promise<Re
       for (const ref of brutas) {
         const chave = `${ref.tipo}:${ref.slugOuId}`;
         if (slugsNoPacote.has(chave) || resolvidasContraBiblioteca.has(chave)) continue;
-        if (TIPOS_VALIDOS.has(ref.tipo)) {
+        if (ehTipoDeConteudoValido(ref.tipo)) {
           const encontrado = await getContentDocumentForAdmin(ref.tipo as ContentType, ref.slugOuId).catch(() => null);
           resolvidasContraBiblioteca.set(chave, encontrado ? "resolvida_na_biblioteca" : "ausente");
         } else {

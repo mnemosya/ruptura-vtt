@@ -19,7 +19,7 @@ import { validarPerdaConversaoLegado } from "./legacyLossValidation";
 import { classificarImpacto, type ImpactoInstancias } from "./publishImpact";
 import { compararPublicado, type ResultadoDiff } from "./publishDiff";
 import { serializarRascunhoParaPublicacao } from "./publishSerialization";
-import { validarCamposItem, validarCamposMagia, validarCamposRuna, validarCamposTalento } from "./draftValidation";
+import { validarCamposCapitulo, validarCamposItem, validarCamposMagia, validarCamposRuna, validarCamposTalento } from "./draftValidation";
 import type { ModoAutomacao } from "./types";
 
 export interface EfeitoResumoRevisao {
@@ -67,6 +67,7 @@ function montarMetadataEfeitos(draft: ContentDraftRow): unknown {
   if (ed.contentType === "talent") {
     return ed.campos.niveis.map((n) => ({ nivel: n.nivel, efeitos: n.efeitos }));
   }
+  if (ed.contentType === "capitulo") return [];
   return ed.campos.efeitos;
 }
 
@@ -81,6 +82,7 @@ function proximaVersaoExibicao(versaoAtual: string | null): string {
 function coletarEfeitos(draft: ContentDraftRow): EfeitoEditavel[] {
   const ed = draft.payload.camposEditaveis;
   if (ed.contentType === "talent") return ed.campos.niveis.flatMap((n) => n.efeitos);
+  if (ed.contentType === "capitulo") return [];
   return ed.campos.efeitos;
 }
 
@@ -122,7 +124,9 @@ async function validarCampos(draft: ContentDraftRow): Promise<{ erros: string[];
         ? await validarCamposItem(ed.campos, draft.id)
         : ed.contentType === "rune"
           ? await validarCamposRuna(ed.campos, draft.id)
-          : await validarCamposTalento(ed.campos, draft.id);
+          : ed.contentType === "capitulo"
+            ? await validarCamposCapitulo(ed.campos, draft.id)
+            : await validarCamposTalento(ed.campos, draft.id);
   return { erros: [...r.erros], avisos: [...r.avisos], infos: [...r.infos] };
 }
 
@@ -144,7 +148,7 @@ export async function montarRevisaoPublicacao(draft: ContentDraftRow): Promise<R
   // Conteúdo convertido de legado (Etapa 6): verifica que nada preservado
   // (campos somente leitura, estatisticas, níveis de talento, efeitos
   // preservados, campos desconhecidos) foi perdido pela republicação.
-  if (draft.payload.origemLegado && corpo && typeof corpo === "object") {
+  if (draft.payload.origemLegado && corpo && typeof corpo === "object" && draft.content_type !== "capitulo") {
     const errosDePerda = validarPerdaConversaoLegado(draft.content_type, draft.payload.preservado.rawOriginal, corpo, draft.payload.origemLegado);
     erros.push(...errosDePerda);
   }

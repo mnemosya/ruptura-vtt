@@ -12,7 +12,7 @@ import { adaptSpell } from "./adapters/spell";
 import { adaptTalentLevel } from "./adapters/talent";
 import { extrairEfeitosEditaveis } from "./effectDraftMapping";
 import type { ConteudoCanonico, Referencia } from "./types";
-import type { CamposItem, CamposMagia, CamposRuna, CamposTalento, CamposTalentoNivel, RequisitoSimples } from "./draftTypes";
+import type { CamposCapitulo, CamposItem, CamposMagia, CamposRuna, CamposTalento, CamposTalentoNivel, RequisitoSimples } from "./draftTypes";
 
 function asNumber(valor: unknown): number | undefined {
   return typeof valor === "number" ? valor : undefined;
@@ -219,4 +219,19 @@ export function adaptarRawTalento(talentoRaw: Record<string, unknown>) {
     .filter((n): n is Record<string, unknown> => n !== undefined)
     .map((n) => adaptTalentLevel(slug, nome, n));
   return resultados;
+}
+
+// ---------------------------------------------------------------------
+// Capítulo (Etapa 11, correção do drag) — documento editorial puro, sem
+// automação/efeitos e sem conteúdo legado prévio (5º content type
+// editável, nunca existiu antes desta correção — por isso não há
+// `extrairCamposCapitulo`/`adaptarRawCapitulo`: nenhum capítulo publicado
+// jamais existiu fora do Editor Universal para "adaptar de legado").
+// ---------------------------------------------------------------------
+export function vazioCamposCapitulo(): CamposCapitulo {
+  return { nome: "", slug: "", tags: [], corpo: "", blocos: [] };
+}
+
+export function rawOriginalCapituloVazio(): Record<string, unknown> {
+  return { blocos: [] };
 }

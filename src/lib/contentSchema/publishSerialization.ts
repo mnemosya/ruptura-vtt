@@ -16,7 +16,7 @@
  * setamos aqui (a versão/estado são autoridade do servidor SQL).
  */
 
-import type { CamposItem, CamposMagia, CamposRuna, CamposTalento, ContentDraftRow, DraftContentType } from "./draftTypes";
+import type { CamposCapitulo, CamposItem, CamposMagia, CamposRuna, CamposTalento, ContentDraftRow, DraftContentType } from "./draftTypes";
 import { isTipoEfeitoMvp, type EfeitoEditavel } from "./effectDraftTypes";
 import { resolverTipoCanonico } from "./effectTypeRegistry";
 import { reconstruirEfeitosLegado } from "./effectLegacySerialization";
@@ -186,6 +186,28 @@ function serializarTalento(base: Record<string, unknown>, campos: CamposTalento)
 }
 
 // ---------------------------------------------------------------------
+// Capítulo (Etapa 11, correção do drag) — documento editorial puro, sem
+// `estatisticas`/`payload_automacao` (não tem automação — aditivo
+// §11.11). `blocos` é a hierarquia ordenada; cada bloco de entidade
+// serializa só `tipo_conteudo`/`slug` (nunca o payload da entidade
+// referenciada — sempre resolvido de novo na leitura).
+// ---------------------------------------------------------------------
+function serializarCapitulo(base: Record<string, unknown>, campos: CamposCapitulo): Record<string, unknown> {
+  setOpcional(base, "nome", campos.nome);
+  setOpcional(base, "categoria", campos.categoria);
+  setOpcional(base, "descricao_curta", campos.descricaoCurta);
+  setOpcional(base, "descricao_longa", campos.descricaoLonga);
+  setOpcional(base, "corpo", campos.corpo);
+  base.tags = [...campos.tags];
+  base.blocos = campos.blocos.map((bloco) =>
+    bloco.tipo === "texto"
+      ? { id: bloco.id, tipo: "texto", texto: bloco.texto }
+      : { id: bloco.id, tipo: "entidade", entidade: { tipo_conteudo: bloco.entidade.contentType, slug: bloco.entidade.slug } },
+  );
+  return base;
+}
+
+// ---------------------------------------------------------------------
 // Auxiliares compartilhados
 // ---------------------------------------------------------------------
 function aplicarEfeitos(alvo: Record<string, unknown>, contentType: DraftContentType, efeitosEditaveis: EfeitoEditavel[]): void {
@@ -223,5 +245,6 @@ export function serializarRascunhoParaPublicacao(draft: ContentDraftRow): Record
   if (editaveis.contentType === "spell") return serializarMagia(base, editaveis.campos);
   if (editaveis.contentType === "item") return serializarItem(base, editaveis.campos);
   if (editaveis.contentType === "rune") return serializarRuna(base, editaveis.campos);
+  if (editaveis.contentType === "capitulo") return serializarCapitulo(base, editaveis.campos);
   return serializarTalento(base, editaveis.campos);
 }

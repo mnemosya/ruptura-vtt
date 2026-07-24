@@ -32,6 +32,11 @@ export const ADAPTER_VERSIONS: Record<DraftContentType, string> = {
   item: "item.legacy.v1",
   talent: "talent.legacy.v1",
   rune: "rune.legacy.v1",
+  // Capítulo (Etapa 11, correção do drag) nunca tem conteúdo legado para
+  // converter — 5º content type editável, sem nenhuma versão anterior ao
+  // Editor Universal. Versão simbólica só para satisfazer o Record
+  // (nunca lida de fato — não há caminho de UI que gere esta conversão).
+  capitulo: "capitulo.legacy.v1",
 };
 
 /** Famílias de talento que sinalizam a necessidade de um sistema/etapa futura (não simplesmente "não reconhecido ainda"). */

@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { OpcoesDeRegras } from "../../../../../lib/contentSchema/characterRuleOptions";
-import type { CamposItem, CamposMagia, CamposRuna, CamposTalento, ContentDraftRow } from "../../../../../lib/contentSchema/draftTypes";
+import type { CamposCapitulo, CamposItem, CamposMagia, CamposRuna, CamposTalento, ContentDraftRow } from "../../../../../lib/contentSchema/draftTypes";
 import { CONTENT_TYPE_REGISTRY } from "../../../../../lib/contentSchema/contentTypeRegistry";
 import { atualizarRascunho, excluirRascunho } from "../../../../../lib/contentSchema/draftServerActions";
 import type { BaseDocumentoStatus, DraftEfeitosPreservados } from "../../../../../lib/contentSchema/draftView";
+import { CamposCapituloSection } from "../_shared/CamposCapituloSection";
 import { CamposComunsSection } from "../_shared/CamposComunsSection";
 import { CamposItemSection } from "../_shared/CamposItemSection";
 import { CamposMagiaSection } from "../_shared/CamposMagiaSection";
@@ -17,7 +18,7 @@ import { EffectsPreviewList } from "../_shared/EffectsPreviewList";
 import { dangerTextStyle, primaryButtonStyle, sectionStyle, warnTextStyle, buttonStyle } from "../_shared/formStyles";
 import { PreviewPreservado } from "../_shared/PreviewPreservado";
 
-type CamposUniao = CamposMagia | CamposItem | CamposRuna | CamposTalento;
+type CamposUniao = CamposMagia | CamposItem | CamposRuna | CamposTalento | CamposCapitulo;
 
 export function DraftEditorClient({
   draft,
@@ -147,6 +148,7 @@ export function DraftEditorClient({
         {draft.content_type === "talent" && (
           <CamposTalentoSection campos={campos as CamposTalento} onChange={atualizarCampos} opcoes={opcoes} condicoesDisponiveis={condicoesDisponiveis} />
         )}
+        {draft.content_type === "capitulo" && <CamposCapituloSection campos={campos as CamposCapitulo} onChange={atualizarCampos} />}
       </div>
 
       {(draft.content_type === "spell" || draft.content_type === "item" || draft.content_type === "rune") && (
@@ -214,6 +216,8 @@ export function DraftEditorClient({
               <EffectsPreviewList efeitos={nivel.efeitos} />
             </div>
           ))
+        ) : draft.content_type === "capitulo" ? (
+          <p style={{ fontSize: 13, color: "#a8a8b3" }}>{(campos as CamposCapitulo).blocos.length} bloco(s) — sem automação (capítulo é documento editorial puro).</p>
         ) : (
           <EffectsPreviewList efeitos={(campos as CamposMagia | CamposItem | CamposRuna).efeitos} />
         )}

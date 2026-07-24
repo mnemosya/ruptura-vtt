@@ -467,6 +467,11 @@ const TIPO_LEGADO: Record<DraftContentType, Partial<Record<EfeitoEditavel["tipo"
     teste_resistencia: "efeito_com_resistencia", alterar_dano_recebido: "protecao", acao_reacao_adicional: "ataque_adicional",
     modificar_instancia: "autorreparo",
   },
+  // Capítulo (Etapa 11, correção do drag) nunca tem efeitos/automação —
+  // documento editorial puro (aditivo §11.11). Mapa vazio: nenhuma chave
+  // é um `tipo` legado válido para este content_type; `aplicarEfeitos`
+  // nunca é chamado para capitulo (ver publishSerialization.ts).
+  capitulo: {},
 };
 
 /** Campos específicos por (content_type, tipo) — só chaves confirmadas pelos schemas reais. Nunca gatilho/alvo/duracao/habilitado/nome/_editor para spell/item; talento permite gatilho/alvo/duracao (tipado livre) mas não habilitado/nome/texto_log. */
@@ -781,7 +786,11 @@ export function reconstruirEfeitosLegado(
 
   const editaveisSerializados = [...efeitosEditaveis]
     .sort((a, b) => a.ordem - b.ordem)
-    .flatMap((e) => (e.tipo === "teste_resistencia" && contentType !== "talent" ? serializarArvoreTesteResistencia(contentType, e) : [serializarEfeitoLegado(contentType, e)]));
+    .flatMap((e) =>
+      e.tipo === "teste_resistencia" && contentType !== "talent" && contentType !== "capitulo"
+        ? serializarArvoreTesteResistencia(contentType, e)
+        : [serializarEfeitoLegado(contentType, e)],
+    );
 
   return [...preservados, ...editaveisSerializados];
 }

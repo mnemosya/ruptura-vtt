@@ -1,0 +1,19 @@
+-- Etapa 11 (correção): adiciona o content_type "capitulo" — a lacuna de
+-- schema real que bloqueava a integração editorial de drag (ver
+-- CHECKPOINT_ETAPA11_IMPORTACAO_EXPORTACAO_BIBLIOTECA_LIVRO.md, "Critérios
+-- para conclusão futura": "existir um renderizador ou editor estruturado de
+-- capítulos real, capaz de receber uma referência de conteúdo da
+-- Biblioteca"). Antes desta migration, NENHUM valor de `content_type`
+-- representava um capítulo do Livro — só existiam os tipos mecânicos
+-- (spell/talent/item/rune/condition/...), nenhum deles um documento
+-- editorial com hierarquia/texto/entidades vinculadas (aditivo §11.11).
+--
+-- Só adiciona o valor ao enum. Nenhum outro objeto (tabela, RPC, policy)
+-- muda aqui — `content_documents`/`content_drafts`/`publish_content_draft`
+-- já são inteiramente genéricos por `content_type` (confirmado por
+-- auditoria: nenhuma delas faz branch condicional por tipo em SQL).
+--
+-- ALTER TYPE ... ADD VALUE não pode ser usado na mesma transação que já
+-- consome o valor novo — por isso esta migration fica sozinha, sem
+-- nenhum INSERT/seed que referencie 'capitulo'.
+alter type content_type add value if not exists 'capitulo';

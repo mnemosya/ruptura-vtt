@@ -21,7 +21,8 @@ export type ContentType =
   | "rune"
   | "escalpo"
   | "talent"
-  | "spell";
+  | "spell"
+  | "capitulo";
 
 /** Linha completa de content_documents, com o payload tipado genericamente. */
 export interface ContentDocument<TPayload = unknown> {

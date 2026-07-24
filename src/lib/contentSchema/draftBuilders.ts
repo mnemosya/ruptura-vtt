@@ -10,8 +10,53 @@
  */
 
 import { adaptarRawItem, adaptarRawRune, adaptarRawSpell, adaptarRawTalento, extrairCamposItem, extrairCamposMagia, extrairCamposRuna, extrairCamposTalento } from "./draftMapping";
-import type { CamposEditaveis, CamposTalento, DraftContentType, DraftEnvelope } from "./draftTypes";
+import type { BlocoCapitulo, CamposCapitulo, CamposEditaveis, CamposTalento, DraftContentType, DraftEnvelope } from "./draftTypes";
+import type { ContentTypeId } from "./types";
 import type { EfeitoEditavel } from "./effectDraftTypes";
+
+function asArray(v: unknown): unknown[] {
+  return Array.isArray(v) ? v : [];
+}
+function asRecord(v: unknown): Record<string, unknown> | undefined {
+  return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : undefined;
+}
+function asString(v: unknown): string | undefined {
+  return typeof v === "string" ? v : undefined;
+}
+
+/**
+ * Extrai `CamposCapitulo` diretamente do payload público — sem adapter
+ * dedicado, porque não há formato legado a traduzir (capítulo é 5º tipo
+ * editável, sem conteúdo anterior ao Editor Universal; ver correção do
+ * drag editorial, Etapa 11). Payload público já é quase 1:1 com
+ * `CamposCapitulo` (mesmo shape escrito por `publishSerialization.ts::serializarCapitulo`).
+ */
+function extrairCamposCapitulo(raw: Record<string, unknown>): CamposCapitulo {
+  const blocos: BlocoCapitulo[] = asArray(raw.blocos).flatMap((bruto): BlocoCapitulo[] => {
+    const bloco = asRecord(bruto);
+    if (!bloco) return [];
+    const id = asString(bloco.id) ?? "";
+    if (bloco.tipo === "texto") return [{ id, tipo: "texto", texto: asString(bloco.texto) ?? "" }];
+    if (bloco.tipo === "entidade") {
+      const entidade = asRecord(bloco.entidade);
+      const contentType = asString(entidade?.tipo_conteudo);
+      const slug = asString(entidade?.slug);
+      if (!contentType || !slug) return [];
+      return [{ id, tipo: "entidade", entidade: { contentType: contentType as ContentTypeId, slug } }];
+    }
+    return [];
+  });
+  return {
+    nome: asString(raw.nome) ?? "",
+    slug: asString(raw.slug) ?? "",
+    categoria: asString(raw.categoria),
+    descricaoCurta: asString(raw.descricao_curta),
+    descricaoLonga: asString(raw.descricao_longa),
+    tags: asArray(raw.tags).filter((t): t is string => typeof t === "string"),
+    corpo: asString(raw.corpo),
+    blocos,
+  };
+}
 
 export function montarCamposECamposDesconhecidosIniciais(
   contentType: DraftContentType,
@@ -43,6 +88,13 @@ export function montarCamposECamposDesconhecidosIniciais(
       camposDesconhecidos: adaptado.camposDesconhecidos,
     };
   }
+  if (contentType === "capitulo") {
+    const campos = extrairCamposCapitulo(rawOriginal);
+    return {
+      camposEditaveis: { contentType: "capitulo", campos: { ...campos, nome: overrideNome ?? campos.nome, slug: overrideSlug ?? campos.slug } },
+      camposDesconhecidos: [],
+    };
+  }
   const resultados = adaptarRawTalento(rawOriginal);
   const nome = overrideNome ?? String(rawOriginal.nome ?? overrideSlug ?? "");
   const slug = overrideSlug ?? String(rawOriginal.slug ?? "");
@@ -66,6 +118,10 @@ export function montarCamposECamposDesconhecidosIniciais(
  */
 export function sobreporMetadataEditorial(camposEditaveis: CamposEditaveis, metadata: unknown[] | null): CamposEditaveis {
   if (!metadata) return camposEditaveis;
+  // Capítulo nunca grava `content_editor_metadata` (não tem efeitos) —
+  // `metadata` chega null na prática para este tipo, mas o guard é
+  // explícito para nunca tentar setar `.efeitos` num CamposCapitulo.
+  if (camposEditaveis.contentType === "capitulo") return camposEditaveis;
   if (camposEditaveis.contentType === "talent") {
     const porNivel = new Map<number, EfeitoEditavel[]>();
     for (const entrada of metadata) {

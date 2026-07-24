@@ -17,10 +17,12 @@ import { getScopedTableClient } from "../auth/scopedClient";
 import { getContentDocument } from "../content/queries";
 import type { ContentType } from "../content/types";
 import {
+  rawOriginalCapituloVazio,
   rawOriginalItemVazio,
   rawOriginalRunaVazio,
   rawOriginalSpellVazio,
   rawOriginalTalentoVazio,
+  vazioCamposCapitulo,
   vazioCamposItem,
   vazioCamposMagia,
   vazioCamposRuna,
@@ -28,10 +30,10 @@ import {
 } from "./draftMapping";
 import { montarCamposECamposDesconhecidosIniciais, sobreporMetadataEditorial } from "./draftBuilders";
 import { findDraftBySlug, getDraftById } from "./draftQueries";
-import type { CamposEditaveis, CamposItem, CamposMagia, CamposRuna, CamposTalento, DraftContentType, DraftEnvelope } from "./draftTypes";
+import type { CamposCapitulo, CamposEditaveis, CamposItem, CamposMagia, CamposRuna, CamposTalento, DraftContentType, DraftEnvelope } from "./draftTypes";
 import { getEditorMetadataAtual } from "./editorMetadataQueries";
 import type { EfeitoEditavel } from "./effectDraftTypes";
-import { validarCamposItem, validarCamposMagia, validarCamposRuna, validarCamposTalento } from "./draftValidation";
+import { validarCamposCapitulo, validarCamposItem, validarCamposMagia, validarCamposRuna, validarCamposTalento } from "./draftValidation";
 import { isValidSlug, slugDuplicadoSugerido, slugify } from "./slug";
 
 async function requireAdmin(): Promise<{ id: string; email: string | null }> {
@@ -74,6 +76,9 @@ export async function criarRascunhoNovo(contentType: DraftContentType, nome: str
     } else if (contentType === "rune") {
       camposEditaveis = { contentType: "rune", campos: { ...vazioCamposRuna(), nome, slug } };
       rawOriginal = rawOriginalRunaVazio();
+    } else if (contentType === "capitulo") {
+      camposEditaveis = { contentType: "capitulo", campos: { ...vazioCamposCapitulo(), nome, slug } };
+      rawOriginal = rawOriginalCapituloVazio();
     } else {
       camposEditaveis = { contentType: "talent", campos: { ...vazioCamposTalento(), nome, slug } };
       rawOriginal = rawOriginalTalentoVazio(slug, nome);
@@ -239,7 +244,7 @@ export interface AtualizarRascunhoResultado {
 
 export async function atualizarRascunho(
   draftId: string,
-  campos: CamposMagia | CamposItem | CamposRuna | CamposTalento,
+  campos: CamposMagia | CamposItem | CamposRuna | CamposTalento | CamposCapitulo,
   expectedVersion: number,
 ): Promise<AtualizarRascunhoResultado> {
   try {
@@ -262,7 +267,9 @@ export async function atualizarRascunho(
           ? await validarCamposItem(campos as CamposItem, draftId)
           : draft.content_type === "rune"
             ? await validarCamposRuna(campos as CamposRuna, draftId)
-            : await validarCamposTalento(campos as CamposTalento, draftId);
+            : draft.content_type === "capitulo"
+              ? await validarCamposCapitulo(campos as CamposCapitulo, draftId)
+              : await validarCamposTalento(campos as CamposTalento, draftId);
 
     if (!validacao.valido) return { ok: false, erros: validacao.erros, avisos: validacao.avisos };
 

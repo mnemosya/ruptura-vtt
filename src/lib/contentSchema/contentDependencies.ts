@@ -81,6 +81,19 @@ export function coletarReferenciasBrutas(payload: Record<string, unknown>): RefB
     if (typeof slug === "string") refs.push({ tipo: "property", slugOuId: slug, obrigatoria: false });
   }
 
+  // Capítulo (Etapa 11, correção do drag): blocos de entidade são a
+  // hierarquia/vínculo editorial do capítulo — sempre OPCIONAL (um
+  // capítulo continua legível como texto mesmo se uma entidade vinculada
+  // for removida depois; nunca bloqueia publicação, igual a `property`).
+  for (const bloco of asArray(payload.blocos)) {
+    const b = asRecord(bloco);
+    if (!b || b.tipo !== "entidade") continue;
+    const entidade = asRecord(b.entidade);
+    if (entidade && typeof entidade.tipo_conteudo === "string" && typeof entidade.slug === "string") {
+      refs.push({ tipo: entidade.tipo_conteudo, slugOuId: entidade.slug, obrigatoria: false });
+    }
+  }
+
   // Dedup por (tipo, slugOuId) — mantém a obrigatoriedade mais forte (obrigatória vence).
   const porChave = new Map<string, RefBruta>();
   for (const r of refs) {

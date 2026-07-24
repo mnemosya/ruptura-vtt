@@ -45,7 +45,12 @@ export function CampaignDraftEditorClient({
   condicoesDisponiveis: { slug: string; nome: string }[];
 }) {
   const router = useRouter();
-  const [campos, setCampos] = useState<CamposUniao>(draft.payload.camposEditaveis.campos);
+  // "capitulo" (Etapa 11, correção do drag) nunca é um content_type de
+  // homebrew de campanha — a UI de criação (`/mesas/[campaignId]/biblioteca`)
+  // nunca oferece essa opção (é um conceito editorial da Biblioteca do
+  // Sistema, não de mesa). O cast documenta essa garantia sem reabrir a
+  // Etapa 12: `CamposEditaveis` só ficou mais larga por ser compartilhada.
+  const [campos, setCampos] = useState<CamposUniao>(draft.payload.camposEditaveis.campos as CamposUniao);
   const [version, setVersion] = useState(draft.version);
   const [sujo, setSujo] = useState(false);
   const [salvando, setSalvando] = useState(false);

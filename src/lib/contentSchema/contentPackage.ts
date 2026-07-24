@@ -12,7 +12,7 @@
  * necessidade de semver para um contrato de transporte único).
  */
 
-import type { DraftContentType, DraftOrigemLegado } from "./draftTypes";
+import { isDraftContentType, type DraftContentType, type DraftOrigemLegado } from "./draftTypes";
 
 export const CONTENT_PACKAGE_FORMATO = "ruptura-content-package" as const;
 export const CONTENT_PACKAGE_VERSAO_ATUAL = 1;
@@ -101,9 +101,16 @@ export interface ContentPackage {
   documentos: DocumentoPacote[];
 }
 
-/** Editável pelo Editor Universal hoje — os 4 tipos reais (`DraftContentType`). */
+/**
+ * Editável pelo Editor Universal hoje — reaproveita `isDraftContentType`
+ * (única fonte de verdade, `draftTypes.ts`) em vez de duplicar a lista
+ * aqui. Antes da correção do drag editorial (Etapa 11), esta função
+ * duplicava a lista como `spell|talent|item|rune` — divergiu
+ * silenciosamente de `DraftContentType` assim que "capitulo" foi
+ * adicionado, classificando um 5º tipo editável como somente-leitura.
+ */
 export function ehContentTypeEditavel(tipo: ContentTypePacote): tipo is DraftContentType {
-  return tipo === "spell" || tipo === "talent" || tipo === "item" || tipo === "rune";
+  return isDraftContentType(tipo);
 }
 
 export interface ErroValidacaoPacote {

@@ -60,6 +60,11 @@ export async function construirDraftViewModel(draft: ContentDraftRow): Promise<D
         camposDesconhecidos: adaptado.camposDesconhecidos,
       },
     ];
+  } else if (draft.content_type === "capitulo") {
+    // Capítulo não tem efeitos/campos legados a preservar (5º content
+    // type, sem conteúdo prévio fora do Editor Universal) — nunca passa
+    // pelos adapters de spell/item/talento, que assumem outra forma.
+    efeitosPreservados = [];
   } else {
     const resultados = adaptarRawTalento(rawOriginal);
     efeitosPreservados = resultados.map((r) => ({

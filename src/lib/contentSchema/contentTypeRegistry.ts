@@ -22,7 +22,8 @@ export type SecaoEditor =
   | "efeitos"
   | "relacoes"
   | "mercado"
-  | "equipamento_instancia";
+  | "equipamento_instancia"
+  | "blocos_capitulo";
 
 export type StatusAdapter = "implementado" | "planejado";
 
@@ -159,6 +160,16 @@ export const CONTENT_TYPE_REGISTRY: Record<ContentTypeId, ContentTypeDefinition>
     modoArmazenamento: "singleton",
     secoesAplicaveis: ["identificacao", "texto"],
     statusAdapter: "planejado",
+  },
+  capitulo: {
+    id: "capitulo",
+    label: "Capítulo (Livro)",
+    modoArmazenamento: "collection",
+    colecaoChave: "capitulos",
+    secoesAplicaveis: ["identificacao", "texto", "blocos_capitulo"],
+    statusAdapter: "implementado",
+    observacao:
+      "Etapa 11 (correção): documento editorial puro — sem automação/efeitos (aditivo §11.11). `blocos_capitulo` guarda a hierarquia ordenada (texto livre + referências estruturadas à Biblioteca), destino real do drag-and-drop editorial.",
   },
   master_table: {
     id: "master_table",
