@@ -92,11 +92,12 @@ check("manifest com versão futura desconhecida é rejeitado (nunca interpretado
   assert.strictEqual(resultado.ok, false);
 });
 
-check("ehContentTypeEditavel reconhece só os 4 tipos editáveis", () => {
+check("ehContentTypeEditavel reconhece os 5 tipos editáveis (4 mecânicos + capítulo, Etapa 11 correção)", () => {
   assert.strictEqual(ehContentTypeEditavel("spell"), true);
   assert.strictEqual(ehContentTypeEditavel("talent"), true);
   assert.strictEqual(ehContentTypeEditavel("item"), true);
   assert.strictEqual(ehContentTypeEditavel("rune"), true);
+  assert.strictEqual(ehContentTypeEditavel("capitulo"), true);
   assert.strictEqual(ehContentTypeEditavel("condition"), false);
   assert.strictEqual(ehContentTypeEditavel("master_table"), false);
 });
