@@ -442,6 +442,29 @@ export function canApplyTemporaryEffect(payload: unknown): boolean {
 }
 
 /**
+ * Mapeia `politica_reaplicacao` (vocabulário do Editor Universal — Etapa 8,
+ * `PoliticaReaplicacao` em contentSchema/effectDraftTypes.ts) para
+ * `TemporaryEffect.stackingMode` (vocabulário do motor). Correção real:
+ * antes desta função, `buildTemporaryEffectFromStructuredPayload`
+ * ignorava esse campo por completo e hardcodava sempre "replace" —
+ * qualquer política configurada no editor (incl. "acumular_pilha") não
+ * tinha nenhum efeito real no jogo. Ausente/desconhecido → "replace",
+ * preservando o comportamento de sempre para conteúdo legado real
+ * (`buff_temporario` histórico nunca teve este campo).
+ */
+const POLITICA_REAPLICACAO_PARA_STACKING_MODE: Record<string, NonNullable<TemporaryEffect["stackingMode"]>> = {
+  substituir: "replace",
+  acumular_pilha: "stack",
+  ignorar: "ignore",
+  manual: "manual",
+};
+
+function resolverStackingMode(rec: Record<string, unknown>): NonNullable<TemporaryEffect["stackingMode"]> {
+  const politica = typeof rec.politica_reaplicacao === "string" ? rec.politica_reaplicacao : "";
+  return POLITICA_REAPLICACAO_PARA_STACKING_MODE[politica] ?? "replace";
+}
+
+/**
  * Constrói um `TemporaryEffect` a partir de uma fonte + payload
  * estruturado. Retorna `null` quando `canApplyTemporaryEffect` é falso
  * (o chamador então registra lembrete como hoje). `idFactory` injeta o
@@ -461,6 +484,12 @@ export function buildTemporaryEffectFromStructuredPayload(
   const reminders = collectReminders(rec);
   const nome =
     typeof rec.nome === "string" ? rec.nome : source.sourceName;
+  const stackingMode = resolverStackingMode(rec);
+  // `max_pilhas`/`pilhas_iniciais` só fazem sentido junto de "acumular_pilha"
+  // — para as demais políticas, nunca gravamos `stacks`/`maxStacks`
+  // (evita sugerir uma contagem de pilhas que a política não usa).
+  const maxPilhas = typeof rec.max_pilhas === "number" && rec.max_pilhas >= 1 ? rec.max_pilhas : undefined;
+  const pilhasIniciais = typeof rec.pilhas_iniciais === "number" && rec.pilhas_iniciais >= 1 ? rec.pilhas_iniciais : 1;
 
   const effect: TemporaryEffect = {
     id: idFactory(),
@@ -469,7 +498,7 @@ export function buildTemporaryEffectFromStructuredPayload(
     sourceName: source.sourceName,
     name: nome,
     durationType: duration.durationType,
-    stackingMode: "replace",
+    stackingMode,
     active: true,
     createdAt: nowIso,
     endedAt: null,
@@ -479,5 +508,9 @@ export function buildTemporaryEffectFromStructuredPayload(
   if (duration.remainingRounds != null) effect.remainingRounds = duration.remainingRounds;
   if (source.round != null) effect.createdRound = source.round;
   if (source.scene != null) effect.createdScene = source.scene;
+  if (stackingMode === "stack") {
+    effect.stacks = pilhasIniciais;
+    if (maxPilhas != null) effect.maxStacks = maxPilhas;
+  }
   return effect;
 }

@@ -178,6 +178,20 @@ function validarEfeitoTemporarioParaPublicacao(contentType: DraftContentType, ef
     // leitor genérico equivalente a extractModifiers — sem bloqueio adicional aqui, só
     // classificado como "lembrete" pelo diagnóstico (ver effectDiagnostics.ts).
   }
+  // Correção da Etapa 8: bloqueia combinações de pilhas que o executor real
+  // (buildTemporaryEffectFromStructuredPayload) não consegue interpretar de
+  // forma segura — nunca grava um `maxStacks`/`stacks` inválido na instância.
+  if (efeito.campos.acumulavel) {
+    const max = efeito.campos.maximoPilhas;
+    const iniciais = efeito.campos.pilhasIniciais ?? 1;
+    if (max == null || max < 1) {
+      erros.push(`Efeito "${rotulo}": acumulável exige um máximo de pilhas válido (>= 1).`);
+    } else if (iniciais < 1) {
+      erros.push(`Efeito "${rotulo}": pilhas iniciais precisam ser ao menos 1.`);
+    } else if (iniciais > max) {
+      erros.push(`Efeito "${rotulo}": pilhas iniciais (${iniciais}) não pode exceder o máximo de pilhas (${max}).`);
+    }
+  }
   return erros;
 }
 
@@ -553,7 +567,17 @@ function camposLegadoPorTipo(contentType: DraftContentType, efeito: EfeitoEditav
       }
       return {
         duracao: duracaoTexto,
+        // `politica_reaplicacao`/`pilhas_iniciais` (correção da Etapa 8):
+        // até esta correção, o executor real (buildTemporaryEffectFromStructuredPayload)
+        // nunca recebia esses dois campos — a reaplicação sempre virava
+        // "replace" na prática, mesmo quando a pessoa administradora
+        // configurava "acumular_pilha" no editor. Chaves novas, sem
+        // precedente em conteúdo legado real — seguras porque o efeito de
+        // item tem `additionalProperties:true` (nunca adicionar isto para
+        // talento, cujo schema é fechado).
+        politica_reaplicacao: cp.politicaReaplicacao,
         max_pilhas: cp.acumulavel ? cp.maximoPilhas : undefined,
+        pilhas_iniciais: cp.acumulavel ? cp.pilhasIniciais : undefined,
         valor: porTags ? valorComSinal(porTags) : undefined,
         alvo_tags: porTags && (porTags.campos.tags?.length ?? 0) > 0 ? porTags.campos.tags : undefined,
         bonus_pericia: porPericia ? { pericia: porPericia.campos.pericia, valor: valorComSinal(porPericia) } : undefined,

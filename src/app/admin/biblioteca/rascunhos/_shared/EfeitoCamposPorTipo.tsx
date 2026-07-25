@@ -1081,7 +1081,17 @@ function CamposEfeitoTemporarioFields({ campos, onChange, opcoes }: { campos: Ca
             data-testid="efeito-temporario-acumulavel"
             type="checkbox"
             checked={campos.acumulavel}
-            onChange={(e) => onChange({ acumulavel: e.target.checked, maximoPilhas: e.target.checked ? (campos.maximoPilhas ?? 1) : undefined })}
+            onChange={(e) =>
+              onChange({
+                acumulavel: e.target.checked,
+                maximoPilhas: e.target.checked ? (campos.maximoPilhas ?? 1) : undefined,
+                // Correção (Etapa 8, round final): faltava inicializar `pilhasIniciais`
+                // aqui — o campo abaixo só MOSTRA "1" como fallback visual
+                // (`campos.pilhasIniciais ?? 1`), sem nunca gravar isso no estado real
+                // se a pessoa administradora aceitar o valor padrão sem editá-lo.
+                pilhasIniciais: e.target.checked ? (campos.pilhasIniciais ?? 1) : undefined,
+              })
+            }
           />{" "}
           Acumulável (pilhas)
         </label>
