@@ -20,6 +20,7 @@ import { classificarImpacto, type ImpactoInstancias } from "./publishImpact";
 import { compararPublicado, type ResultadoDiff } from "./publishDiff";
 import { serializarRascunhoParaPublicacao } from "./publishSerialization";
 import { validarCamposCapitulo, validarCamposItem, validarCamposMagia, validarCamposRuna, validarCamposTalento } from "./draftValidation";
+import { validarContraSchemaOficial } from "./officialSchemaValidator";
 import type { ModoAutomacao } from "./types";
 
 export interface EfeitoResumoRevisao {
@@ -143,6 +144,38 @@ export async function montarRevisaoPublicacao(draft: ContentDraftRow): Promise<R
     if (!corpo || typeof corpo !== "object") erros.push("Serialização não produziu um payload publicável.");
   } catch (e) {
     erros.push(`Falha ao serializar para publicação: ${e instanceof Error ? e.message : "erro desconhecido"}.`);
+  }
+
+  // Item deve satisfazer o MESMO schema oficial que a importação usa
+  // (achado da auditoria formal: um item publicado sem essa checagem
+  // podia exportar um payload que a própria importação rejeitava —
+  // "categoria_label"/"raridade_label" ausentes, categoria fora do
+  // enum, etc. Reaproveita o validador já usado em `packageImport.ts`,
+  // nunca uma cópia divergente). Bloqueante — nunca publica um item que
+  // não seria reimportável sem edição manual do payload.
+  //
+  // `corpo` ainda não tem id/slug/status/versao/created_at/updated_at —
+  // esses são injetados só pelo RPC `publish_content_draft` (autoridade
+  // do SQL, nunca duplicada aqui como valor real). Simula exatamente os
+  // MESMOS campos, com os MESMOS valores-formato (id/slug = o próprio
+  // slug, versao = a mesma "próxima versão" já calculada para exibição),
+  // só para esta checagem de forma — nunca escritos no payload de
+  // verdade, nunca confiados como a versão final.
+  if (draft.content_type === "item" && corpo && typeof corpo === "object") {
+    const versaoSimulada = proximaVersaoExibicao(publicado?.version ?? null);
+    const corpoSimulado = {
+      ...corpo,
+      id: draft.slug,
+      slug: draft.slug,
+      status: "published",
+      versao: versaoSimulada,
+      created_at: (corpo as Record<string, unknown>).created_at ?? "2026-01-01",
+      updated_at: "2026-01-01",
+    };
+    const resultadoSchema = validarContraSchemaOficial("item", corpoSimulado);
+    if (!resultadoSchema.ok) {
+      erros.push(...resultadoSchema.erros.map((e) => `Schema oficial de item: ${e}`));
+    }
   }
 
   // Conteúdo convertido de legado (Etapa 6): verifica que nada preservado

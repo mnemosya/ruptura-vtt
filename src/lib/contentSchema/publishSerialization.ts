@@ -20,6 +20,7 @@ import type { CamposCapitulo, CamposItem, CamposMagia, CamposRuna, CamposTalento
 import { isTipoEfeitoMvp, type EfeitoEditavel } from "./effectDraftTypes";
 import { resolverTipoCanonico } from "./effectTypeRegistry";
 import { reconstruirEfeitosLegado } from "./effectLegacySerialization";
+import { categoriaItemLabel, raridadeItemLabel } from "./itemLabels";
 
 /** Clone profundo simples (payloads são JSON puro). */
 function clonar<T>(v: T): T {
@@ -109,8 +110,17 @@ function serializarMagia(base: Record<string, unknown>, campos: CamposMagia): Re
 function serializarItem(base: Record<string, unknown>, campos: CamposItem): Record<string, unknown> {
   setOpcional(base, "nome", campos.nome);
   setOpcional(base, "categoria", campos.categoria);
+  // `categoria_label`/`raridade_label` nunca vêm do client — sempre
+  // derivados no servidor a partir do valor canônico (ver itemLabels.ts),
+  // impedindo a combinação inconsistente "categoria válida com label de
+  // outra categoria". `setOpcional` já remove a chave quando o resultado
+  // é `undefined` (categoria ausente ou não reconhecida) — a checagem de
+  // "reconhecida" em si é bloqueante em `validarItemParaPublicacao`
+  // (publishReview.ts), não aqui (serialização não decide se publica).
+  setOpcional(base, "categoria_label", categoriaItemLabel(campos.categoria));
   setOpcional(base, "subtipo", campos.subtipo);
   setOpcional(base, "raridade", campos.raridade);
+  setOpcional(base, "raridade_label", raridadeItemLabel(campos.raridade));
   setOpcional(base, "preco", campos.preco);
   setOpcional(base, "descricao_curta", campos.descricaoCurta);
   setOpcional(base, "descricao_longa", campos.descricaoLonga);
