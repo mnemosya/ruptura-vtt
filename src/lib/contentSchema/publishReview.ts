@@ -119,14 +119,14 @@ async function validarCampos(draft: ContentDraftRow): Promise<{ erros: string[];
   const ed = draft.payload.camposEditaveis;
   const r =
     ed.contentType === "spell"
-      ? await validarCamposMagia(ed.campos, draft.id)
+      ? await validarCamposMagia(ed.campos, draft.id, draft.base_document_id)
       : ed.contentType === "item"
-        ? await validarCamposItem(ed.campos, draft.id)
+        ? await validarCamposItem(ed.campos, draft.id, draft.base_document_id)
         : ed.contentType === "rune"
-          ? await validarCamposRuna(ed.campos, draft.id)
+          ? await validarCamposRuna(ed.campos, draft.id, draft.base_document_id)
           : ed.contentType === "capitulo"
-            ? await validarCamposCapitulo(ed.campos, draft.id)
-            : await validarCamposTalento(ed.campos, draft.id);
+            ? await validarCamposCapitulo(ed.campos, draft.id, draft.base_document_id)
+            : await validarCamposTalento(ed.campos, draft.id, draft.base_document_id);
   return { erros: [...r.erros], avisos: [...r.avisos], infos: [...r.infos] };
 }
 

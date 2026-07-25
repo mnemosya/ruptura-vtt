@@ -19,9 +19,22 @@ function mesclarValidacao(erros: string[], avisos: string[], infos: string[], or
   infos.push(...origem.infos.map((i) => `${prefixo}: ${i}`));
 }
 
-async function existeSlugColidindo(contentType: DraftContentType, slug: string, ignorarDraftId?: string): Promise<boolean> {
+/**
+ * Regra única de colisão de slug — usada tanto no salvamento (`atualizarRascunho`)
+ * quanto na revisão de publicação (`montarRevisaoPublicacao`/`validarCampos`),
+ * nunca duplicada entre os dois.
+ *
+ * `baseDocumentId`, quando presente, é o `content_documents.id` (formato
+ * `content_type:slug`) do documento publicado que ESTE rascunho está
+ * editando (`ContentDraftRow.base_document_id`, sempre lido do servidor —
+ * nunca aceito de um valor livre vindo do client). Um documento publicado
+ * encontrado com esse MESMO id não é colisão — é o próprio documento-base
+ * do rascunho, mantendo o slug original. Qualquer outro documento
+ * publicado com o slug (base ausente, ou id diferente) continua colisão.
+ */
+async function existeSlugColidindo(contentType: DraftContentType, slug: string, ignorarDraftId?: string, baseDocumentId?: string | null): Promise<boolean> {
   const publicado = await getContentDocument(contentType as ContentType, slug);
-  if (publicado) return true;
+  if (publicado && publicado.id !== baseDocumentId) return true;
 
   const draftExistente = await findDraftBySlug(contentType, slug);
   if (draftExistente && draftExistente.id !== ignorarDraftId) return true;
@@ -53,13 +66,13 @@ async function validarRequisitos(requisitos: { tipoConteudo: string; slug: strin
 
 export interface ValidacaoCamposResultado extends ResultadoValidacao {}
 
-export async function validarCamposMagia(campos: CamposMagia, draftId?: string): Promise<ValidacaoCamposResultado> {
+export async function validarCamposMagia(campos: CamposMagia, draftId?: string, baseDocumentId?: string | null): Promise<ValidacaoCamposResultado> {
   const erros: string[] = [];
   const avisos: string[] = [];
   const infos: string[] = [];
 
   validarCamposComuns(campos, erros, avisos);
-  if (campos.slug && isValidSlug(campos.slug) && (await existeSlugColidindo("spell", campos.slug, draftId))) {
+  if (campos.slug && isValidSlug(campos.slug) && (await existeSlugColidindo("spell", campos.slug, draftId, baseDocumentId))) {
     erros.push(`Já existe conteúdo publicado ou outro rascunho com o slug "${campos.slug}".`);
   }
   validarCustoNaoNegativo(campos.custoPa, "Custo de PA", erros);
@@ -74,13 +87,13 @@ export async function validarCamposMagia(campos: CamposMagia, draftId?: string):
   return { valido: erros.length === 0, erros, avisos, infos };
 }
 
-export async function validarCamposItem(campos: CamposItem, draftId?: string): Promise<ValidacaoCamposResultado> {
+export async function validarCamposItem(campos: CamposItem, draftId?: string, baseDocumentId?: string | null): Promise<ValidacaoCamposResultado> {
   const erros: string[] = [];
   const avisos: string[] = [];
   const infos: string[] = [];
 
   validarCamposComuns(campos, erros, avisos);
-  if (campos.slug && isValidSlug(campos.slug) && (await existeSlugColidindo("item", campos.slug, draftId))) {
+  if (campos.slug && isValidSlug(campos.slug) && (await existeSlugColidindo("item", campos.slug, draftId, baseDocumentId))) {
     erros.push(`Já existe conteúdo publicado ou outro rascunho com o slug "${campos.slug}".`);
   }
   validarCustoNaoNegativo(campos.preco, "Preço", erros);
@@ -100,13 +113,13 @@ export async function validarCamposItem(campos: CamposItem, draftId?: string): P
 
 const SLOTS_POSSIVEIS_VALIDOS = new Set(["arma", "armadura", "escudo"]);
 
-export async function validarCamposRuna(campos: CamposRuna, draftId?: string): Promise<ValidacaoCamposResultado> {
+export async function validarCamposRuna(campos: CamposRuna, draftId?: string, baseDocumentId?: string | null): Promise<ValidacaoCamposResultado> {
   const erros: string[] = [];
   const avisos: string[] = [];
   const infos: string[] = [];
 
   validarCamposComuns(campos, erros, avisos);
-  if (campos.slug && isValidSlug(campos.slug) && (await existeSlugColidindo("rune", campos.slug, draftId))) {
+  if (campos.slug && isValidSlug(campos.slug) && (await existeSlugColidindo("rune", campos.slug, draftId, baseDocumentId))) {
     erros.push(`Já existe conteúdo publicado ou outro rascunho com o slug "${campos.slug}".`);
   }
   validarCustoNaoNegativo(campos.preco, "Preço", erros);
@@ -126,13 +139,13 @@ export async function validarCamposRuna(campos: CamposRuna, draftId?: string): P
   return { valido: erros.length === 0, erros, avisos, infos };
 }
 
-export async function validarCamposTalento(campos: CamposTalento, draftId?: string): Promise<ValidacaoCamposResultado> {
+export async function validarCamposTalento(campos: CamposTalento, draftId?: string, baseDocumentId?: string | null): Promise<ValidacaoCamposResultado> {
   const erros: string[] = [];
   const avisos: string[] = [];
   const infos: string[] = [];
 
   validarCamposComuns(campos, erros, avisos);
-  if (campos.slug && isValidSlug(campos.slug) && (await existeSlugColidindo("talent", campos.slug, draftId))) {
+  if (campos.slug && isValidSlug(campos.slug) && (await existeSlugColidindo("talent", campos.slug, draftId, baseDocumentId))) {
     erros.push(`Já existe conteúdo publicado ou outro rascunho com o slug "${campos.slug}".`);
   }
 
@@ -160,13 +173,13 @@ export async function validarCamposTalento(campos: CamposTalento, draftId?: stri
  *   - a mesma entidade não pode aparecer duas vezes no mesmo capítulo
  *     (duplicação proibida, pedido explicitamente pelo escopo do drag).
  */
-export async function validarCamposCapitulo(campos: CamposCapitulo, draftId?: string): Promise<ValidacaoCamposResultado> {
+export async function validarCamposCapitulo(campos: CamposCapitulo, draftId?: string, baseDocumentId?: string | null): Promise<ValidacaoCamposResultado> {
   const erros: string[] = [];
   const avisos: string[] = [];
   const infos: string[] = [];
 
   validarCamposComuns(campos, erros, avisos);
-  if (campos.slug && isValidSlug(campos.slug) && (await existeSlugColidindo("capitulo", campos.slug, draftId))) {
+  if (campos.slug && isValidSlug(campos.slug) && (await existeSlugColidindo("capitulo", campos.slug, draftId, baseDocumentId))) {
     erros.push(`Já existe conteúdo publicado ou outro rascunho com o slug "${campos.slug}".`);
   }
 

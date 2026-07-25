@@ -262,14 +262,14 @@ export async function atualizarRascunho(
 
     const validacao =
       draft.content_type === "spell"
-        ? await validarCamposMagia(campos as CamposMagia, draftId)
+        ? await validarCamposMagia(campos as CamposMagia, draftId, draft.base_document_id)
         : draft.content_type === "item"
-          ? await validarCamposItem(campos as CamposItem, draftId)
+          ? await validarCamposItem(campos as CamposItem, draftId, draft.base_document_id)
           : draft.content_type === "rune"
-            ? await validarCamposRuna(campos as CamposRuna, draftId)
+            ? await validarCamposRuna(campos as CamposRuna, draftId, draft.base_document_id)
             : draft.content_type === "capitulo"
-              ? await validarCamposCapitulo(campos as CamposCapitulo, draftId)
-              : await validarCamposTalento(campos as CamposTalento, draftId);
+              ? await validarCamposCapitulo(campos as CamposCapitulo, draftId, draft.base_document_id)
+              : await validarCamposTalento(campos as CamposTalento, draftId, draft.base_document_id);
 
     if (!validacao.valido) return { ok: false, erros: validacao.erros, avisos: validacao.avisos };
 
