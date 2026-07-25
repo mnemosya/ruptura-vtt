@@ -238,5 +238,5 @@ Fatos relevantes desta etapa, estritamente factuais (status completo em `docs/CH
 - o contrato de pacote (`ruptura-content-package` v1) e os vínculos editoriais (`content_book_links`) foram adicionados como estruturas novas, sem alterar o contrato mecânico dos efeitos;
 - a importação continua estritamente separada da publicação — cria somente rascunho (`content_drafts`), nunca escreve em `content_documents`;
 - a metadata editorial (`content_editor_metadata`) continua fora do payload público em todo caminho de código desta etapa, inclusive no pacote exportado;
-- o drag-and-drop editorial permanece pendente — não implementado, por não existir renderizador do Livro nem editor estruturado de capítulos;
-- status geral da Etapa 11: **Implementação parcial — integração editorial de drag pendente.**
+- o drag-and-drop editorial foi implementado numa correção posterior (novo content_type `capitulo`, migration 0035) e validado por aceite de browser real, incluindo reconfirmação independente numa auditoria posterior — detalhes em `docs/CHECKPOINT_ETAPA11_IMPORTACAO_EXPORTACAO_BIBLIOTECA_LIVRO.md` (`## 0-9`, `## 0-10`, `## 0-11`);
+- status geral da Etapa 11: **Etapa 11 concluída — integração editorial de drag aprovada.** (Esta linha estava desatualizada até a auditoria formal do Editor Universal identificar a divergência — corrigida sem reabrir a etapa; ver `docs/CHECKPOINT_CORRECAO_COLISAO_SLUG_PUBLICACAO.md`.)
