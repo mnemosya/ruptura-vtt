@@ -20,6 +20,53 @@ Console e rede: nenhum erro. Fixture removida ao final.
 
 **Status: "Implementação concluída — aceite de browser parcial."** Promovido de "pendente" — criação, configuração (incluindo resultado + efeito filho), salvamento, persistência e publicação de `teste_resistencia` confirmados ao vivo contra o Supabase real, incluindo a correção de um bug real que bloqueava esse fluxo por completo. Não promovido a "concluída — aceite de browser aprovado" porque o resolvedor operacional na mesa do narrador continua sem gatilho de UI (limitação já conhecida, não corrigida nesta rodada) e o checklist original completo do script (`check-admin-composite-effects.ts`) não foi reexecutado item a item.
 
+## Rodada de conclusão do aceite (25/07/2026) — rodada acelerada, compartilhada com a Etapa 6
+
+**Objetivo desta rodada**: fechar as pendências reais desta etapa — reedição de conteúdo publicado com `teste_resistencia` (nunca exercitada), validações negativas ao vivo (só verificadas por harness até agora), e diversidade de efeitos filhos (só `dano` tinha sido testado ao vivo). Mesmo servidor/admin/fixtures da rodada da Etapa 6 (ver seção equivalente naquele checkpoint).
+
+### Matriz residual (Etapa 7)
+
+| # | Cenário do checkpoint original | Evidência anterior | Motivo de estar pendente | Ação nesta rodada | Status |
+|---|---|---|---|---|---|
+| 1 | Construção inicial (catálogo, campos, selects, validação, automação, sem JSON bruto) | §"Aceite de browser" (magia real, `teste_resistencia` básico) | — | Reconfirmado com árvore mais rica (CD derivada, `quemTesta: alvo`, `pericia: vontade`) | Aprovado anteriormente + reconfirmado |
+| 2 | Modalidades de teste/resistência (CD fixa/derivada, atributo/perícia) | Harness (14/14) | CD derivada nunca exercitada ao vivo (só fixa, na rodada anterior) | CD **derivada** (`6 + nivel_vertente`) configurada e publicada ao vivo — texto explicativo canônico confirmado na UI | **Aprovado nesta rodada** |
+| 3 | Resultados compostos (≥2 resultados, ordem, faixas, labels, preview) | §"Aceite de browser" (2 resultados) | — | Reconfirmado: `falha` + `sucesso_padrao`, sem faixa duplicada disponível na segunda (UI já esgota opções usadas — confirmado ao vivo, não só por leitura de código) | Aprovado anteriormente + reconfirmado |
+| 4 | Efeitos filhos — diversidade de tipos | Só `dano` testado ao vivo antes | `aplicar_condicao` como filho nunca visto ao vivo | `aplicar_condicao` (condição real "atordoado") no resultado de falha, `dano` (1d4 energético) no de sucesso — 2 tipos distintos de filho na mesma árvore, serializados corretamente como siblings | **Aprovado nesta rodada** |
+| 5 | Validações negativas (efeito filho incompleto → bloqueio) | Só harness (`validarEfeitoParaPublicacao`) | Nunca visto bloquear ao vivo na tela de revisão | `tipoDano` removido do filho `dano` → "Revisar e publicar" mostrou **erro bloqueante real**: `"Efeito 'dano': dano em magia exige um tipo de dano."`; salvar (rascunho incompleto) continuou permitido — confirma a separação save-flexível/publish-estrito já documentada para item (Etapa 5); corrigido o campo e republicado com sucesso | **Aprovado nesta rodada** |
+| 6 | Persistência (salvar, recarregar, confirmar teste/resultados/ordem/filhos/gatilho/automação) | Não exercitado com árvore completa | — | Salvo, recarregado — árvore inteira (2 resultados, 2 filhos, CD derivada, modo Assistido) intacta no DOM após reload | **Aprovado nesta rodada** |
+| 7 | Publicação (preview, warnings vs erros, versão, changelog, payload real) | §"Aceite de browser" (1 resultado + 1 filho) | Não com árvore de 2 resultados/2 filhos | Publicado 1.0.0; payload real consultado via SQL: `efeito_com_resistencia` (CD `"6 + nivel_vertente"`) + `dano` + `aplicar_condicao` como siblings — exatamente a convenção documentada em §4 | **Aprovado nesta rodada** |
+| 8 | Reedição (draft de edição do publicado, alterar resultado, reordenar/trocar filho, salvar, revisar, republicar, nada perdido) | **Nunca exercitada** | Nunca chegou a ser tentada em nenhuma rodada anterior | Ver "Bug crítico encontrado" abaixo — a primeira tentativa **duplicou** o `efeito_com_resistencia` a cada republicação; corrigido; reexecutado 2x (texto de um resultado alterado + resultados reordenados) sem duplicar mais nenhuma vez | **Aprovado nesta rodada** (após correção) |
+| 9 | Consumo operacional | §6 do corpo do checkpoint | — | **Decisão formal, não execução**: o checkpoint já define esta etapa como aceite EDITORIAL, não operacional — `testResistanceTreeExecutor.ts` é real e testado (harness), mas sem gatilho de UI em `/dev/table` por decisão explícita de tempo/risco desde a implementação original. Nesta rodada, mantido — não construído executor novo, não marcado como falha (item explicitamente fora do critério de aceite desta etapa) | Não aplicável (decisão formal preexistente, reconfirmada) |
+
+### Bug crítico encontrado, corrigido e testado (reedição duplicava efeitos compostos)
+
+Ao reeditar a magia composta publicada (recuperando a árvore de `content_editor_metadata`, alterando só o texto de um resultado, sem tocar em mais nada) e republicar, o payload real passou a ter **dois** `efeito_com_resistencia` — a segunda tentativa de reedição (uma terceira publicação) teria produzido três. Causa raiz: `ehEfeitoMvpLegado` (`publishSerialization.ts`), a função que decide se uma entrada de `payload_automacao.efeitos` do `rawOriginal` deve ser SUBSTITUÍDA pela versão serializada a partir de `campos.efeitos` (nunca somada), checava só `isTipoEfeitoMvp` — os 6 tipos originais da Etapa 4. **Mesma classe de bug já corrigida uma vez em `effectDraftValidation.ts` (commit `e584abb`)**, agora encontrada num segundo arquivo: um `teste_resistencia`/`modificar_margem`/`alterar_dano_recebido` (ou qualquer tipo das Etapas 8–10 com serialização legado-compatível) recuperado para reedição nunca tinha sua PRÓPRIA entrada legada substituída — cada ciclo de edição→publicação acumulava mais uma cópia.
+
+**Correção, com uma nuance importante** (não é só trocar `isTipoEfeitoMvp` por `isTipoEfeitoEditavel` — isso quebraria um caso genuinamente diferente, capturado pelo teste #5 já existente no harness, que verifica que um `efeito_com_resistencia` legado NUNCA auto-convertido continua coexistindo com uma árvore nova construída do zero durante uma conversão de legado — ver `docs/CHECKPOINT_ETAPA6_ADAPTADORES_LEGADO.md`): a regra correta depende de o rascunho ter nascido de `criarRascunhoDeEdicaoLegado` (`origemLegado` presente no envelope) ou não.
+
+- `origemLegado` **presente** (conversão de legado, Etapa 6): `efeito_com_resistencia`/`promocao_margem`/etc. legados **nunca** são auto-convertidos — mantém-se a regra antiga (`isTipoEfeitoMvp`), preservando a coexistência documentada em §5 desta etapa.
+- `origemLegado` **ausente** (edição normal — incl. reedição de conteúdo já publicado pelo próprio Editor, recuperada de `content_editor_metadata`): a entrada legada É a própria saída anterior do editor para aquele efeito — precisa ser substituída (`isTipoEfeitoEditavel`), nunca somada.
+
+`origemLegado` foi propagado de `serializarRascunhoParaPublicacao` até `aplicarEfeitos` (novo parâmetro `origemLegado: boolean`, presente em `serializarMagia`/`Item`/`Runa`/`Talento` — `serializarCapitulo` não recebe, pois capítulo não tem efeitos). Arquivo alterado: `src/lib/contentSchema/publishSerialization.ts`.
+
+**Teste regressivo**: `scripts/dev/validate-composite-effects.mjs`, caso novo #15 — simula `rawOriginal` já contendo a saída de uma publicação anterior da MESMA árvore (`efeito_com_resistencia` + `dano` + `aplicar_condicao`) e confirma que republicar produz exatamente 1 de cada, nunca 2. **Reproduzido rigorosamente contra o código pré-fix real** (arquivo restaurado via backup local, nunca via `git checkout` destrutivo): caso #15 falha (`esperado 1 efeito_com_resistencia, encontrado 2`), os outros 14 continuam passando (nenhuma regressão introduzida pela investigação); código corrigido restaurado, 15/15 voltam a passar. Também ajustado o caso #5 preexistente (adicionado `origemLegadoStub` explícito) — ele testa exatamente o cenário OPOSTO (coexistência durante conversão de legado) e continua passando com a regra antiga preservada para esse caso.
+
+**Provado ao vivo, não só por harness**: republicação real (1.0.0→1.0.1) confirmou a duplicata real no Supabase (`jsonb_array_length` = 4, dois `efeito_com_resistencia`); após a correção, uma nova reedição (1.0.1→1.0.2) colapsou de volta a 3 entradas corretas; uma SEGUNDA reedição consecutiva (1.0.2→1.0.3, resultados reordenados) confirmou que a correção é estável — não duplica de novo em nenhum ciclo adicional.
+
+### Fixtures, console e rede
+
+Ver seção equivalente em `docs/CHECKPOINT_ETAPA6_ADAPTADORES_LEGADO.md` (mesmo admin, mesmo servidor). Magia de teste (`spell:zz_e2e_editor_etapas6_7_magia_composta`) removida ao final — documento, changelog, `content_editor_metadata` — confirmado por contagem zero. Console/rede sem erros em nenhum passo.
+
+### Verificação técnica
+
+`npx tsc --noEmit` sem erros; `npm run build` sucesso (servidor parado antes); `next-env.d.ts` revertido após toque automático. Harnesses reexecutados sem regressão: `validate-composite-effects.mjs` (15/15, novo caso), `validate-item-schema-roundtrip.mjs` (12/12), `validate-post-mvp-effects.mjs` (17/17), `validate-slug-collision.mjs` (46/46), `validate-import-export-book.mjs` (19/19) — todos afetados por `publishSerialization.ts` ser código compartilhado. Nenhuma migration.
+
+**Status desta etapa, promovido**: **"Etapa 7 concluída — testes, resistências e efeitos compostos aprovados."** Construção, modalidades (CD fixa E derivada), resultados compostos, diversidade de efeitos filhos, validações negativas bloqueando de verdade na revisão, persistência, publicação, reedição (incluindo a correção de um bug real de duplicação, com teste de regressão provado contra o código anterior) e automação declarada (Assistido/sem-executor coerentes com diagnostics/executor real) — todos confirmados ao vivo contra o Supabase real. Consumo operacional continua fora do critério de aceite desta etapa por decisão formal preexistente (resolvedor real, sem gatilho de UI — não é uma falha, é escopo).
+
+**Etapas 4/5/8–12: não reabertas.** Etapa 4 permanece exatamente "Etapa 4 concluída — aceite operacional e de browser aprovado."; Etapa 5 permanece "Implementada — aceite de browser parcial."; Etapas 8–10 permanecem com implementação concluída e aceite de browser parcial/pendente conforme seus próprios checkpoints; Etapa 11 permanece exatamente "Etapa 11 concluída — integração editorial de drag aprovada."; Etapa 12 permanece exatamente "Etapa 12 concluída — validação integrada aprovada." — nenhum desses documentos foi alterado por esta rodada.
+
+**Status global do Editor Universal, atualizado**: com Etapa 6 E Etapa 7 concluídas nesta mesma rodada, **"Editor Universal parcialmente concluído — validações de browser das Etapas 5 e 8–10 pendentes."** Não declarado concluído.
+
 ---
 
 ## 1. Auditoria inicial
@@ -118,10 +165,9 @@ Toda validação roda no servidor (a UI só espelha `diagnosticarEfeitoEditavel`
 - `alterar_dano_recebido` nunca é automático (sem executor real no motor hoje) — sempre `lembrete`.
 - `modificar_margem` só é automatizável (via `getMarginPromotions`) em talento.
 - `teste_resistencia` só é publicável para magia/item, e só até 2 resultados (sucesso/falha) com no máximo 1 dano + 1 outro efeito cada — árvores mais ricas ficam bloqueadas (mensagem clara) ou só no rascunho.
-- Resolvedor genérico real, mas sem gatilho de UI ao vivo nesta sessão.
+- Resolvedor genérico real, mas sem gatilho de UI ao vivo — decisão formal, fora do critério de aceite desta etapa (§"Rodada de conclusão", item 9 da matriz residual), reconfirmada na rodada que concluiu esta etapa.
 - Dois pipelines de dano/MIT/PD do motor continuam não-unificados (achado da auditoria, fora do escopo — nenhum refactor de combate foi feito).
-- Aceite de browser pendente (mesma limitação estrutural desde a Etapa 4).
-- Etapas 4/5/6 permanecem com seus status registrados — não alterados retroativamente.
+- Etapas 4/5/6 permanecem com seus status próprios (ver `docs/PLANO_IMPLEMENTACAO_EDITOR_UNIVERSAL.md`) — não alterados retroativamente por esta etapa.
 
 ---
 

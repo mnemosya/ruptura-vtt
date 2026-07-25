@@ -24,6 +24,38 @@ Console e rede: nenhum erro. Fixture (usuário admin) removida ao final.
 
 **Status: "Implementação concluída — aceite de browser parcial."** Promovido de "pendente" — diagnóstico, classificação e criação de rascunho de edição com preservação de campos confirmados ao vivo contra conteúdo oficial real. Não promovido a "concluída — aceite de browser aprovado" porque o ciclo de salvar/publicar/republicar sobre um documento genuinamente legado não foi exercitado (por decisão deliberada de não tocar conteúdo oficial real).
 
+## Rodada de conclusão do aceite (25/07/2026) — rodada acelerada, compartilhada com a Etapa 7
+
+**Objetivo desta rodada**: fechar exatamente a lacuna registrada acima — o ciclo completo salvar→revisar→publicar→republicar sobre conteúdo genuinamente legado nunca havia sido exercitado, porque a rodada anterior decidiu não tocar `item:faca` (conteúdo oficial real) além do diagnóstico. Nesta rodada, o usuário autorizou explicitamente a técnica que resolve essa tensão: ler `item:faca` como referência (nunca alterado) e criar uma CÓPIA temporária com outro slug, inserida diretamente em `content_documents` via SQL (service role, sem passar pelo pipeline do Editor) — sem `content_editor_metadata`, portanto genuinamente legada do ponto de vista da classificação do app, mas isolada do conteúdo real.
+
+### Matriz residual (Etapa 6)
+
+| # | Cenário do checkpoint original | Evidência anterior | Motivo de estar pendente | Ação nesta rodada | Status |
+|---|---|---|---|---|---|
+| 1 | Diagnóstico de legado (adapter, classificação, campos desconhecidos) | §"Aceite de browser" (item:faca, só leitura) | — | Reconfirmado com a cópia `item:zz_e2e_editor_etapas6_7_item_legado`; `estatisticas` com 5 campos desconhecidos sintéticos (objeto aninhado, array, número, string, boolean) todos exibidos corretamente no diagnóstico | Aprovado anteriormente + reconfirmado nesta rodada |
+| 2 | Criar rascunho de edição a partir de legado | §"Aceite de browser" (item:faca, descartado sem salvar) | — | Reconfirmado — indicador "Conteúdo legado — convertido..." visível, adapter `item.legacy.v1`, campos conhecidos (raridade, preço, tags) corretamente preenchidos | Aprovado anteriormente + reconfirmado |
+| 3 | Alterar campo conhecido, salvar, recarregar, confirmar persistência | Nunca exercitado ao vivo | Decisão de não tocar conteúdo oficial real | `preco` 15→22 alterado, salvo (v2), recarregado, persistência confirmada via DOM | **Aprovado nesta rodada** |
+| 4 | Revisar (diff), publicar, confirmar versão/changelog | Nunca exercitado ao vivo sobre legado genuíno | idem | Revisão mostrou diff correto (`~ preco 15→22`, sem falsa remoção de `estatisticas`); publicado 1.0.0→1.0.1; changelog `updated` confirmado via SQL | **Aprovado nesta rodada** |
+| 5 | Consultar payload publicado — campo alterado mudou, desconhecidos idênticos | idem | idem | SQL: `preco=22`, `raridade_label` derivado corretamente, e os 5 campos desconhecidos sintéticos (incl. boolean `true`, array `["a","b","c"]`, objeto `{chave,numero}`) preservados **byte a byte** | **Aprovado nesta rodada** |
+| 6 | Reedição do legado convertido — adapter ainda reconhece, campo diferente, republicar, sem acúmulo de metadata | Nunca exercitado | idem | Segunda edição (agora via fast-path, sem `origemLegado` — `content_editor_metadata` já existe) alterou `descricao_curta`, republicou (1.0.2); `content_editor_metadata` tem exatamente 2 linhas (uma por versão publicada, não acumulação indevida) | **Aprovado nesta rodada** |
+| 7 | Conteúdo sem adapter semântico (fallback genérico) | Nunca verificado ao vivo | Não fazia parte do escopo anterior | `combat_action:deslocar` (real, publicado) — diagnóstico mostra payload inteiro sob `$` com motivo claro ("Adapter dedicado... ainda não implementado"), nenhum botão de criar rascunho, nenhum crash | **Aprovado nesta rodada** |
+| 8 | Tipo somente leitura — UI e servidor coerentes | Nunca verificado ao vivo | idem | `condition:atordoado` (real) — só botão "Arquivar", sem "Criar rascunho de edição"; navegação direta a `/admin/biblioteca/rascunhos/legado/condition/atordoado` → **404 real** (gate server-side `isDraftContentType`, não só ocultação de botão) | **Aprovado nesta rodada** |
+| 9 | Segundo/terceiro adapter (spell, talent) — não só item | Harness puro (`validate-legacy-conversion.mjs`) | Nunca visto ao vivo em browser | Diagnóstico ao vivo (somente leitura, sem tocar conteúdo real) de `spell:energetica_bola_de_fogo` (`spell.legacy.v1`, classificação mista: `dano`/`aplicar_condicao` editáveis + `efeito_com_resistencia` preservado) e `talent:pistoleiro` (`talent.legacy.v1`, 100% somente leitura — os 5 efeitos reais, nenhum MVP) | **Aprovado nesta rodada** (smoke — ciclo completo de escrita já provado para `item`, que compartilha exatamente `legacyConversion.ts`/`publishSerialization.ts`/`legacyLossValidation.ts` com spell/talent — ver equivalência abaixo) |
+
+### Equivalência entre adapters (por que um ciclo completo + 2 smoke checks é suficiente)
+
+`item`, `spell` e `talent` usam exatamente os mesmos arquivos de infraestrutura partilhada: `legacyConversion.ts` (classificação por campo/efeito), `criarRascunhoDeEdicaoLegado`/`legacyConversionServerActions.ts` (fluxo de criação de rascunho), `publishSerialization.ts` (serialização "overlay sobre clone"), `legacyLossValidation.ts` (bloqueio de perda). A única coisa que difere por tipo é o *adapter* de leitura (`adapters/item.ts` vs `spell.ts` vs `talent.ts`) — cada um só produz `CamposEditaveis`/`camposDesconhecidos`/`classificacaoLegado` a partir do payload real daquele tipo. O ciclo completo (criar→editar→salvar→revisar→publicar→reeditar→republicar) foi provado ponta a ponta para `item`; os smoke checks de `spell`/`talent` confirmam que os OUTROS dois adapters reconhecem corretamente conteúdo real e produzem a classificação esperada (inclusive a divergência real entre eles — `spell` tem efeitos mistos editáveis/preservados, `talent` é quase inteiramente bespoke, exatamente como a auditoria original documentou em §1.2) — o resto do pipeline (serialização/publicação/perda) é código 100% compartilhado, já provado pelo ciclo completo de `item`.
+
+### Fixtures desta rodada (compartilhadas com a Etapa 7 — ver seção equivalente no checkpoint da Etapa 7)
+
+Prefixo `zz_e2e_editor_etapas6_7_*`. Um narrador/admin único (`etapa67-aceite@ruptura-test.local`), um servidor único, uma cópia de item legado (`item:zz_e2e_editor_etapas6_7_item_legado`, clonada de `item:faca` só como referência de forma — nunca escreve em `item:faca`). Removidas ao final: documento, changelog, `content_editor_metadata`, usuário de fixture — confirmado por contagem zero. `item:faca`/`spell:energetica_bola_de_fogo`/`talent:pistoleiro`/`condition:atordoado`/`combat_action:deslocar` (conteúdo oficial real, usado só para leitura) confirmados com `payload_hash` inalterado.
+
+### Console e rede
+
+Sem erros em nenhum fluxo desta rodada (`read_console_messages`/`read_network_requests` verificados após cada ação de escrita).
+
+**Status desta etapa, promovido**: **"Etapa 6 concluída — adaptadores e edição de legados aprovados."** Os 3 adapters editáveis (item/spell/talent) confirmados reconhecendo conteúdo real; fallback genérico confirmado sem crash e sem falsa promessa; tipo somente leitura confirmado coerente na UI e no servidor (404 real, não só botão oculto); campos desconhecidos preservados com igualdade profunda para objeto/array/número/string/boolean; publicação e reedição completas (incl. segunda reedição, sem acúmulo indevido de metadata); nenhuma perda de payload; fixtures removidas; console/rede limpos.
+
 ---
 
 ## 1. Auditoria inicial (dados reais)
@@ -168,11 +200,11 @@ Não exige igualdade byte a byte (versão/status/timestamps mudam legitimamente 
 - `estatisticas` de item continua inteiramente somente leitura (nenhum sub-campo promovido).
 - Classificação `incompativel` para talento usa a `familia` real do schema (`companheiro`/`trama`/`propagacao_efeito`/`meta_talento`) como sinal — é uma heurística honesta baseada em vocabulário real, não uma extração perfeita de "precisa de novo motor".
 - Filtro de classificação por documento na lista administrativa não foi implementado (só "com/sem metadata editorial") — calcular a classificação completa para o catálogo inteiro a cada listagem exigiria computar o relatório para todas as linhas a cada página, o que degradaria a busca/paginação existente; a classificação detalhada fica no diagnóstico por documento (Etapa 6), não na lista.
-- Aceite de browser pendente (§7.2) — mesma limitação estrutural do ambiente desde a Etapa 4.
-- Etapa 4 permanece com aceite operacional parcial — não alterado retroativamente. Etapa 5 permanece "aceite de browser pendente" — não alterado retroativamente.
+- **Histórico (superado pela rodada de conclusão acima)**: até 25/07/2026, o ciclo salvar→publicar→republicar sobre conteúdo genuinamente legado nunca tinha sido exercitado ao vivo (decisão anterior de não tocar conteúdo oficial real). Fechado usando uma cópia temporária isolada, nunca conteúdo oficial real.
+- Etapa 4 e Etapa 5 permanecem com seus status próprios (ver `docs/PLANO_IMPLEMENTACAO_EDITOR_UNIVERSAL.md`) — não alterados retroativamente por esta etapa.
 
 ---
 
 ## 11. Não incluído nesta etapa
 
-Etapa 7 não iniciada. Nenhuma migração em massa de conteúdo legado (cada conversão continua sendo uma ação explícita, um documento por vez). Nenhuma funcionalidade de importação/exportação/homebrew. Nenhum novo `content_type`. Nenhum editor novo para condição/runa/escalpo/propriedade/ação de combate/regras de personagem/campo e fluxo de combate/tabelas mestras.
+Nenhuma migração em massa de conteúdo legado (cada conversão continua sendo uma ação explícita, um documento por vez). Nenhuma funcionalidade de importação/exportação/homebrew. Nenhum novo `content_type`. Nenhum editor novo para condição/runa/escalpo/propriedade/ação de combate/regras de personagem/campo e fluxo de combate/tabelas mestras.
