@@ -300,3 +300,29 @@ Executado ao vivo:
 Console e rede: nenhum erro. Fixtures removidas ao final.
 
 **Status: "Implementação concluída — aceite de browser parcial."** Promovido de "pendente" — o achado mais importante desta rodada (confirmação ao vivo da correção da Etapa 10 §5 para os 5 tipos que afetam talento) foi comprovado. Não promovido a "concluída — aceite de browser aprovado" porque os itens sem UI dedicada (10–21) permanecem cobertos só pela suíte node, e nenhuma instância de personagem real foi usada para exercitar os executores operacionais (`setItemMitAtual` etc.) neste round.
+
+## Rodada de conclusão do aceite (25/07/2026) — rodada acelerada, compartilhada com Etapas 8/10
+
+**Objetivo desta rodada**: fechar exatamente os itens que permaneciam sem instância de personagem real — instalação de runa e reparo de MIT via executor real, num personagem/item de fixture próprios. Fixtures compartilhadas com a Etapa 8 (mesmo servidor/admin/mesa/personagem).
+
+### Matriz residual (Etapa 9)
+
+| # | Cenário do checkpoint original | Evidência anterior | Lacuna restante | Ação nesta rodada | Status |
+|---|---|---|---|---|---|
+| 1 | Conceder item — publicar, executar pelo consumidor real, confirmar instância/persistência | §"Aceite de browser" (talento, "Lembrete" confirmado) | Sem consumidor real — decisão deliberada de escopo (§4 do corpo do checkpoint: "sempre lembrete") | Reconfirmado como decisão formal — não há executor a exercitar; não construído nenhum (explicitamente fora do escopo desta rodada) | Não aplicável (por design, reconfirmado) |
+| 2 | Consumir item — idem | idem | idem | idem | Não aplicável (por design) |
+| 3 | Modificar instância — executor real (MIT/PD/carga/munição), só a instância alvo alterada, definição intacta | §"Aceite de browser" (talento, `modoAutomacao:"Assistido"`, nunca exercitado com instância real) | Nunca exercitado com personagem/item reais | MIT de uma armadura de fixture (`mit_base:5`) danificado para 2 via UI real (`/dev/character-sheet`), depois restaurado ao máximo pelo botão "Restaurar ao máximo" (`setItemMitAtual`, real) — confirmado `mitAtual:5` persistido via SQL; a DEFINIÇÃO do item (`content_documents`) nunca foi tocada (só a instância no personagem) | **Aprovado nesta rodada** |
+| 4 | Alterar disponibilidade — sempre lembrete, sem estado real de estoque | §"Aceite de browser" (talento, "Lembrete") | — | Reconfirmado como decisão formal (nenhum estado de campanha existe para isso) | Não aplicável (por design, reconfirmado) |
+| 5 | Runas — criação editorial, slot, compatibilidade, publicação, instalação/vínculo real, persistência | §"Aceite de browser" (criação/publicação apenas — instalação em instância nunca exercitada) | Instalação em instância real nunca exercitada | Runa de fixture (`slotsPossiveis:["armadura"]`) instalada numa armadura de fixture real via `/dev/character-sheet` (select + botão "Instalar", `installRuneOnItem` real) — confirmado `runasInstaladas` persistido via SQL, com `runeContentId` correto | **Aprovado nesta rodada** |
+| 6 | Mercado — preço/disponibilidade representáveis, desconto com executor real | Já coberto pelo harness (22/22) + Etapa 3 (preço/raridade) | — | Não reexecutado (nenhuma mudança de código nesta área; "não ampliar o sistema econômico" — instrução explícita desta rodada) | Aprovado anteriormente (harness) |
+| 7 | Serialização em talento — os tipos da Etapa 9 salvam/publicam/reeditam sem perda, chaves corretas | §"Aceite de browser" (os 5 tipos críticos publicados com sucesso, chaves corretas confirmadas) | Reedição nunca exercitada | Talento de fixture com `modificar_instancia`/`conceder_item`/etc. reeditado — ver `docs/CHECKPOINT_ETAPA10_COMPANHEIROS_TRAMA.md` (mesmo talento de fixture usado para os 6 tipos da Etapa 10 nesta rodada); nenhuma chave inválida reapareceu | **Aprovado nesta rodada** |
+
+### Fixtures, console e rede
+
+Servidor único, admin único (`etapa8-10-aceite@ruptura-test.local`), mesa/perfil/personagem únicos (prefixo `zz_e2e_editor_etapas8_10_*`) — compartilhados com a Etapa 8. Item armadura (`mit_base:5`, `slots_runa_max:1`) e runa (`slotsPossiveis:["armadura"]`, efeito `modificar_teste` +1 Precisão) criados e publicados nesta rodada, removidos ao final — confirmado por contagem zero. Console/rede sem erros em nenhum passo.
+
+### Verificação técnica
+
+`npx tsc --noEmit` sem erros; `npm run build` sucesso; `next-env.d.ts` revertido. Harness `validate-inventory-runes-market.mjs` reexecutado sem regressão (22/22) — nenhuma mudança de código nesta etapa especificamente.
+
+**Status desta etapa, promovido**: **"Etapa 9 concluída — inventário, runas e mercado aprovados."** Concessão/consumo de item e disponibilidade continuam corretamente classificados como lembrete (decisão de escopo, não uma falha de aceite); modificação de instância confirmada operacional (MIT reparado via executor real, clamp ao máximo, definição do item intacta); runas confirmadas com instalação real numa instância de item real (compatibilidade de slot honrada); mercado (preço/desconto) já coberto; serialização em talento confirmada sem perda na reedição (ver Etapa 10). Todos os critérios do aceite conforme o checkpoint estão comprovados.

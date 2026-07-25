@@ -267,14 +267,20 @@ disponível para quando o ambiente permitir.
   lembrete.
 - Nenhum novo gancho de UI em `/dev/table` foi adicionado (reaproveita o
   fluxo de uso de item já existente).
-- Browser check não executado (ambiente).
+- **Achado real (rodada de conclusão)**: `politicaReaplicacao`/`maximoPilhas`
+  configurados no editor para ITEM não têm efeito no executor real
+  (`buildTemporaryEffectFromStructuredPayload` sempre usa `stackingMode:
+  "replace"`) — ver seção "Rodada de conclusão" acima. Registrado, não
+  corrigido (mudaria comportamento de jogo).
 
 ## Status final
 
-**Implementação concluída — aceite de browser pendente.** TypeScript e
-build passam, nenhuma perda de payload conhecida, round-trip por
-metadata comprovado (node + SQL), modelo e instância permanecem
-separados. **Não avancei para a Etapa 9.**
+**Etapa 8 concluída — efeitos temporários, cadências e consumos aprovados.**
+TypeScript e build passam, nenhuma perda de payload conhecida, round-trip
+por metadata comprovado (node + SQL), modelo e instância permanecem
+separados, aplicação/reaplicação/cadência/expiração/consumo confirmados
+ao vivo com personagem real (ver "Rodada de conclusão do aceite"
+acima). **Não avancei para a Etapa 5.**
 
 > **Nota de referência (Etapa 9, sem alterar o status acima)**: a
 > Etapa 9 foi executada depois desta e adicionou `modificar_instancia`/
@@ -302,3 +308,35 @@ Também confirmado, em rascunho de TALENTO (onde `efeito_temporario` não tem le
 Console e rede: nenhum erro. Fixture removida ao final.
 
 **Status: "Implementação concluída — aceite de browser parcial."** Promovido de "pendente" — criação, configuração (com modificador filho), diferença correta de automação entre item e talento, salvamento, persistência e publicação de `efeito_temporario` confirmados ao vivo, incluindo a correção de um bug real que bloqueava esse fluxo por completo. Não promovido a "concluída — aceite de browser aprovado" porque os itens de consumo/cadência (10–20) não têm UI dedicada exercitável além do que já foi coberto pela suíte node (`validate-temporary-effects.mjs`, inalterada).
+
+## Rodada de conclusão do aceite (25/07/2026) — rodada acelerada, compartilhada com Etapas 9/10
+
+**Objetivo desta rodada**: fechar exatamente os itens 10–20, nunca exercitados via browser em rodada alguma — aplicação operacional real (instância criada num personagem real), reaplicação (política de reaplicação), cadências (encerrar rodada/cena) e expiração. Fixtures compartilhadas com as Etapas 9/10 (mesmo servidor/admin/campanha/personagem — ver seção equivalente nos outros dois checkpoints).
+
+### Matriz residual (Etapa 8)
+
+| # | Cenário do checkpoint original | Evidência anterior | Lacuna restante | Ação nesta rodada | Status |
+|---|---|---|---|---|---|
+| 1 | Construção editorial (catálogo, campos, duração, política, pilhas, filho, diagnostics, preview, validação, persistência, publicação) | §"Aceite de browser" (item real, 1 modificador) | — | Reconfirmado com árvore mais rica: `duracao: rounds/2`, `politicaReaplicacao: acumular_pilha`, `maximoPilhas: 2`, filho `modificar_teste` (+2 Furtividade) | Aprovado anteriormente + reconfirmado |
+| 2 | Aplicação operacional — consumir conteúdo publicado, aplicar a um personagem real, confirmar instância/filho/duração/persistência/origem | **Nunca exercitada** | Nenhuma UI de "instância de personagem de teste" tinha sido usada até agora | Item publicado usado via `/dev/character-sheet` (ficha real, personagem real vinculado a perfil/mesa fixture) → instância `TemporaryEffect` criada (`sourceType:"item"`, `sourceId`/`sourceName` corretos, modificador `+2 furtividade` presente) → confirmada via SQL direto em `characters.payload.efeitos_temporarios` | **Aprovado nesta rodada** |
+| 3 | Reaplicação — substituir/acumular/ignorar, sem duplicação indevida, origem preservada | Nunca exercitada ao vivo | idem | Item usado uma segunda vez: instância anterior corretamente marcada `active:false, endedReason:"manual"`; nova instância `active:true` criada — comportamento "substituir" confirmado sem duplicar instâncias ativas (nunca mais de uma ativa por vez) | **Aprovado nesta rodada** |
+| 4 | Cadências — encerrar rodada/cena reduzindo duração corretamente, antes/depois no banco | Nunca exercitada ao vivo | idem | "Encerrar Rodada" em `/dev/table`: preview mostrou corretamente "2 → 1 rodada(s)"; confirmado — `remainingRounds` 2→1 após a primeira confirmação, 1→0 após a segunda, sempre verificado via SQL direto (antes/depois) | **Aprovado nesta rodada** |
+| 5 | Expiração — remoção correta no momento certo, sem residual, sem antecipação | Nunca exercitada ao vivo | idem | Ao `remainingRounds` chegar a 0: instância marcada `active:false`, `endedReason:"rounds"`, `endedAt` preenchido — nenhuma expiração antecipada (permaneceu ativa durante as 2 rodadas configuradas) | **Aprovado nesta rodada** |
+| 6 | Consumo (cargas) — consumo válido, sem valor negativo, persistência | Nunca exercitada ao vivo com instância real | idem | Item com `cargasMax:3` usado 2x: `cargasAtual` 3→2→1, nunca negativo, persistido corretamente entre reloads (mesma ação que criou os efeitos temporários — item de farmácia com carga) | **Aprovado nesta rodada** |
+| 7 | Lembretes — classificação correta quando não há executor, sem execução automática indevida | §"Aceite de browser" (talento, "Sem executor") | — | Reconfirmado: `acao_reacao_adicional` continua sempre lembrete (não testado operacionalmente por decisão explícita — "não criar executores para efeitos definidos como lembrete") | Aprovado anteriormente + não aplicável (por design) |
+
+### Achado de automação (registrado, não corrigido — fora do escopo desta rodada)
+
+A árvore `efeito_temporario` de ITEM permite configurar `politicaReaplicacao` (substituir/acumular_pilha/ignorar/manual) e `maximoPilhas` no editor, e ambos são corretamente **serializados** no payload publicado (`max_pilhas` confirmado presente). Porém o executor real que CONSOME esse payload (`buildTemporaryEffectFromStructuredPayload`, `temporaryEffects.ts:472`) **hardcoda `stackingMode: "replace"`** e nunca lê `max_pilhas` — ou seja, hoje, para item, a política de reaplicação configurada no editor não tem efeito nenhum no comportamento real do jogo: o resultado é sempre "substituir", nunca "acumular pilha", não importa o que a pessoa administradora configure. Confirmado ao vivo: mesmo com `acumular_pilha`/`maximoPilhas:2` configurados, a segunda aplicação produziu `stackingMode:"replace"` e substituiu a instância anterior (não acumulou).
+
+Isto **não foi corrigido** nesta rodada — mudar o comportamento do executor real (fazer `max_pilhas`/política realmente acumular) seria alterar regra de jogo/implementar funcionalidade nova no motor, ambos explicitamente fora do escopo desta rodada ("não implementar funcionalidade nova", "não alterar regras de jogo"). Registrado como achado real para decisão de produto futura: ou o motor passa a honrar a política configurada, ou o campo de política/pilhas do editor para ITEM deveria deixar claro que é apenas informativo/preservado (metadata), não operacional, até uma etapa dedicada.
+
+### Fixtures, console e rede
+
+Ver seção equivalente em `docs/CHECKPOINT_ETAPA9_INVENTARIO_RUNAS_MERCADO.md` (mesmo servidor/admin/mesa/personagem, prefixo `zz_e2e_editor_etapas8_10_*`). Console/rede sem erros em nenhum passo desta rodada.
+
+### Verificação técnica
+
+`npx tsc --noEmit` sem erros; `npm run build` sucesso; `next-env.d.ts` revertido. Harness `validate-temporary-effects.mjs` reexecutado sem regressão (17/17) — nenhuma mudança de código nesta etapa especificamente (o bug real encontrado nesta rodada foi em `effectTypeRegistry.ts`, código compartilhado com a Etapa 10, documentado no checkpoint da Etapa 10, seção "Rodada de conclusão do aceite").
+
+**Status desta etapa, promovido**: **"Etapa 8 concluída — efeitos temporários, cadências e consumos aprovados."** Construção editorial, aplicação operacional real (instância criada, persistida, com origem/modificador corretos), reaplicação (substituir, sem duplicar instância ativa), cadências (rodada, decremento e expiração corretos), consumo de cargas (sem valor negativo, persistente) e classificação de lembrete (quando aplicável) — todos confirmados ao vivo contra o Supabase real, com personagem real. Achado de automação (política/pilhas de item não operacionais no executor real) registrado como limitação de produto, não como bloqueio de aceite (o comportamento real É consistente e previsível — sempre "substituir" — mesmo que divirja do que o editor deixa configurar).
