@@ -43,13 +43,23 @@ import {
   deriveCriticalItemPropertySuggestions,
   formatCriticalItemPropertySuggestions,
   getEquippedDefenseProfile,
+  resolveMarginBand,
+  rollDamageFormula,
+  rollExtraMarginDie,
+  computeDerivedStats,
+  spendReactionForDefense,
+  BODY_REGION_LABELS,
   type AttackCriticalRules,
   type CriticalItemPropertySuggestion,
   type ItemContent,
+  type BodyRegion,
+  type MarginBandRules,
+  type ReactionRules,
 } from "../../../lib/character";
 import type { TechnicalContentItem } from "../../../lib/content";
 import type { Campaign, CampaignProfile, CampaignInvite, ProfileSession, TableLogEntry } from "../../../lib/table";
 import type { CharacterRecord, CharacterRulesPayload } from "../../../lib/character";
+import { formatTableLogEntry } from "../../dev/character-sheet/components/MesaTab";
 
 /**
  * Formatação mínima dos tipos de log criados/reaproveitados pelo motor
@@ -175,7 +185,18 @@ interface Props {
   items: ItemContent[];
   properties: TechnicalContentItem[];
   runes: TechnicalContentItem[];
+  /** Regra canônica de Reações (`combat_flow`, PRD 6.4) — mesma fonte usada por `/dev/table`. Inválida/ausente = defesa sem Reação fica indisponível (fail-closed), ver `reactions.ts`. */
+  reactionRules: ReactionRules;
 }
+
+/** Tipos de defesa reativa (PRD 7.2/8.6) — mesmo conjunto de `/dev/table`, sem os bônus de talento específicos daquele console (fora de escopo desta promoção). */
+type DefenseType = "esquivar" | "aparar" | "bloquear" | "resistir";
+const DEFENSE_TYPE_LABELS: Record<DefenseType, string> = {
+  esquivar: "Esquivar",
+  aparar: "Aparar",
+  bloquear: "Bloquear",
+  resistir: "Resistir",
+};
 
 export default function MesaDetailClient({
   campaign,
@@ -190,6 +211,7 @@ export default function MesaDetailClient({
   items,
   properties,
   runes,
+  reactionRules,
 }: Props) {
   const [campaignState, setCampaignState] = useState(campaign);
   const [perfis, setPerfis] = useState(perfisIniciais);
@@ -213,6 +235,11 @@ export default function MesaDetailClient({
   const [endSceneProcessing, setEndSceneProcessing] = useState(false);
   const [endSceneSummary, setEndSceneSummary] = useState<string[] | null>(null);
   // Checkpoint v0.47 — "Resolver Ataque" (ataque contestado básico, PRD 8.1/8.6).
+  // Promoção pós-auditoria: reação defensiva (PRD 6.4/8.6), margem→região
+  // (PRD 8.7) e MIT/PD (já existente, agora ligado à reação Bloquear) —
+  // reusa exatamente os mesmos módulos de `/dev/table`
+  // (`resolveMarginBand`, `spendReactionForDefense`, `applyAttackDamage`),
+  // sem os ganchos de talento daquele console (fora de escopo).
   const [ataqueAtacanteId, setAtaqueAtacanteId] = useState("");
   const [ataqueAlvoId, setAtaqueAlvoId] = useState("");
   const [ataqueItemInstanceId, setAtaqueItemInstanceId] = useState("");
@@ -222,10 +249,19 @@ export default function MesaDetailClient({
   const [ataqueTipoDano, setAtaqueTipoDano] = useState("fisico");
   /** Checkpoint v0.58 (fase 3) — MIT/PD só resolvem com esses dados; ausentes preservam o comportamento antigo (dano bruto). */
   const [ataqueSubtipoDano, setAtaqueSubtipoDano] = useState("");
-  const [ataqueBloqueou, setAtaqueBloqueou] = useState(false);
+  /** "nenhuma" = sem reação declarada (comportamento anterior); demais valores consomem 1 Reação do alvo via `spendReactionForDefense` e, se "bloquear", resolvem contra PD em vez de MIT. */
+  const [ataqueDefesaTipo, setAtaqueDefesaTipo] = useState<DefenseType | "nenhuma">("nenhuma");
+  const [ataqueReacaoAviso, setAtaqueReacaoAviso] = useState<string | null>(null);
   const [ataqueProcessing, setAtaqueProcessing] = useState(false);
   const [ataqueResultado, setAtaqueResultado] = useState<string | null>(null);
   const [ataqueSugestoesCriticas, setAtaqueSugestoesCriticas] = useState<CriticalItemPropertySuggestion[]>([]);
+  /** Margem já calculada (acerto), aguardando escolha de região antes de aplicar dano — PRD 8.7 ("a escolha de região é travada por margem"). */
+  const [ataqueMargemPendente, setAtaqueMargemPendente] = useState<{
+    margin: number;
+    band: MarginBandRules;
+    alvoId: string;
+  } | null>(null);
+  const [ataqueRegiaoEscolhida, setAtaqueRegiaoEscolhida] = useState<BodyRegion | "">("");
   const ataqueAtacante = personagensDaMesa.find((character) => character.id === ataqueAtacanteId);
   const ataqueArmas = ataqueAtacante
     ? normalizeCharacter(ataqueAtacante.payload).inventario?.filter((item) => item.categoria === "arma") ?? []
@@ -266,22 +302,26 @@ export default function MesaDetailClient({
   }
 
   /**
-   * "Resolver Ataque" (checkpoint v0.47, PRD 8.1/8.6) — ataque
-   * contestado básico: compara os totais JÁ ROLADOS de atacante e
-   * defensor (narrador informa, pela ficha/Rolagens ou verbalmente —
-   * sem sistema de modificador/prompt automático ainda, ver
-   * pendências) via `resolveContestedRoll`; se o atacante vencer,
-   * aplica dano DIRETO ao PV do alvo (`applyAttackDamage`, sem MIT/PD/
-   * região do corpo/resolução automática de propriedades — fórmula e
-   * tipo de dano continuam informados manualmente). A arma opcional só
-   * alimenta lembretes críticos.
-   * Sem alvo estruturado/mapa: os dois personagens vêm da lista já
+   * "Resolver Ataque" — passo 1: reação defensiva + margem (promoção
+   * pós-auditoria, PRD 6.4/8.1/8.6/8.7). Compara os totais JÁ ROLADOS
+   * de atacante e defensor (narrador informa, mesmo padrão desde
+   * v0.47) via `resolveContestedRoll`; se uma reação de defesa foi
+   * escolhida, consome 1 Reação do ALVO (`spendReactionForDefense`,
+   * `lib/character/reactions.ts` — mesmo motor de `/dev/table`) ANTES
+   * de saber o resultado (a reação é gasta pelo uso, não pelo
+   * sucesso). Se o atacante vencer, calcula a banda de margem
+   * (`resolveMarginBand`) e aguarda o narrador escolher a região
+   * liberada antes de aplicar dano (`handleAplicarDano`, passo 2). Sem
+   * alvo estruturado/mapa: os dois personagens vêm da lista já
    * carregada da mesa.
    */
-  async function handleResolverAtaque() {
+  async function handleCalcularMargem() {
     setError(null);
     setAtaqueResultado(null);
     setAtaqueSugestoesCriticas([]);
+    setAtaqueReacaoAviso(null);
+    setAtaqueMargemPendente(null);
+    setAtaqueRegiaoEscolhida("");
     const atacante = personagensDaMesa.find((c) => c.id === ataqueAtacanteId);
     const alvo = personagensDaMesa.find((c) => c.id === ataqueAlvoId);
     const totalAtaque = Number(ataqueTotalAtaque);
@@ -293,8 +333,41 @@ export default function MesaDetailClient({
 
     setAtaqueProcessing(true);
     try {
+      let alvoNormalizado = normalizeCharacter(alvo.payload);
+
+      // Reação defensiva (PRD 6.4/8.6) — consumida pelo uso, independente do resultado.
+      if (ataqueDefesaTipo !== "nenhuma") {
+        const reactionMax = computeDerivedStats(alvoNormalizado.atributos, regras, alvoNormalizado.mana_bonus_ruptura ?? 0).reacoes_por_rodada;
+        const reactionResult = spendReactionForDefense(alvoNormalizado, reactionMax, reactionRules, 1);
+        alvoNormalizado = reactionResult.character;
+        await updateCharacter(alvo.id, alvoNormalizado);
+        const avisos: string[] = [...reactionResult.warnings];
+        if (reactionResult.defenseWithoutReaction) {
+          avisos.push(`Defesa sem Reação disponível — penalidade cumulativa de ${reactionResult.penaltyApplied} nesta rodada.`);
+        }
+        setAtaqueReacaoAviso(avisos.length > 0 ? avisos.join(" ") : null);
+        try {
+          await addLog({
+            campaignId: campaign.id,
+            characterId: alvo.id,
+            type: "defense_reaction_used",
+            visibility: "public",
+            payload: {
+              targetName: alvo.name,
+              defenseName: DEFENSE_TYPE_LABELS[ataqueDefesaTipo],
+              total: totalDefesa,
+              reactionsBefore: reactionResult.reactionBefore,
+              reactionsAfter: reactionResult.reactionAfter,
+              source: "mesa_dashboard",
+            },
+          });
+        } catch {
+          // Best-effort — a Reação já foi persistida no personagem.
+        }
+        await reloadPersonagens();
+      }
+
       const contested = resolveContestedRoll(totalAtaque, totalDefesa);
-      const nowIso = new Date().toISOString();
       let resumo = `${atacante.name} (${totalAtaque}) vs ${alvo.name} (${totalDefesa}) — margem ${contested.margin}.`;
       const atacanteNormalizado = normalizeCharacter(atacante.payload);
       const itemInstance = atacanteNormalizado.inventario?.find((item) => item.id === ataqueItemInstanceId);
@@ -307,84 +380,13 @@ export default function MesaDetailClient({
         properties,
         runes,
       });
+      if (criticalSuggestions.length > 0) setAtaqueSugestoesCriticas(criticalSuggestions);
 
       if (contested.attackerWins) {
-        const alvoNormalizado = normalizeCharacter(alvo.payload);
-        // MIT/PD (checkpoint v0.58, fase 3) — só resolve contra o equipamento
-        // defensivo ATIVO do alvo; sem nada equipado, `resolveDamageWithMitPd`
-        // preserva o dano bruto (comportamento anterior).
-        const defesaAlvo = getEquippedDefenseProfile(alvoNormalizado, items);
-        const dano = applyAttackDamage({
-          character: alvoNormalizado,
-          formula: ataqueFormulaDano,
-          damageType: ataqueTipoDano,
-          damageSubtype: ataqueSubtipoDano.trim() || undefined,
-          wasBlocked: ataqueBloqueou,
-          defense: defesaAlvo,
-          nowIso,
-          collapseRules: regras?.colapso,
-          round: alvoNormalizado.current_round,
-          scene: alvoNormalizado.current_scene,
-        });
-        await updateCharacter(alvo.id, dano.character);
-        resumo += ` Acerto: ${dano.rollResult} de dano ${ataqueTipoDano} (PV ${dano.pvBefore} → ${dano.pvAfter}).`;
-        if (dano.mitigatedByMit > 0 || dano.mitigatedByPd > 0) {
-          resumo += ` ${dano.defenseSummary}`;
-        }
-        if (criticalSuggestions.length > 0) {
-          resumo += ` Propriedades críticas sugeridas: ${criticalSuggestions.map((suggestion) => suggestion.name).join(", ")} — aplicação manual.`;
-          setAtaqueSugestoesCriticas(criticalSuggestions);
-        }
-        if (dano.collapseStarted) resumo += ` Colapso (${dano.collapseTipo}) iniciado.`;
-        if (dano.collapseAdvanceLogs.length > 0) resumo += ` ${dano.collapseAdvanceLogs.join(" ")}`;
-
-        try {
-          await addLog({
-            campaignId: campaign.id,
-            characterId: alvo.id,
-            type: "attack_resolved",
-            visibility: "public",
-            payload: {
-              attackerId: atacante.id,
-              attackerNome: atacante.name,
-              characterId: alvo.id,
-              characterNome: alvo.name,
-              attackerTotal: totalAtaque,
-              defenderTotal: totalDefesa,
-              margin: contested.margin,
-              attackerWins: true,
-              damageFormula: ataqueFormulaDano,
-              damageType: ataqueTipoDano,
-              damageRoll: dano.rollResult,
-              damageSubtype: ataqueSubtipoDano.trim() || null,
-              wasBlocked: ataqueBloqueou,
-              mitigatedByMit: dano.mitigatedByMit,
-              mitigatedByPd: dano.mitigatedByPd,
-              finalDamage: dano.finalDamage,
-              pvBefore: dano.pvBefore,
-              pvAfter: dano.pvAfter,
-              collapseStarted: dano.collapseStarted,
-              collapseAdvanced: dano.collapseAdvanceLogs.length > 0,
-              attackerItemInstanceId: itemInstance?.id ?? null,
-              attackerItemName: itemInstance?.itemNome ?? null,
-              criticalPropertySuggestions: criticalSuggestions,
-              source: "mesa_dashboard",
-            },
-          });
-          // Log(s) do avanço de Colapso por dano adicional (checkpoint v0.52) — best-effort, mesmo padrão acima.
-          for (const entry of dano.collapseAdvanceTableLogs) {
-            await addLog({
-              campaignId: campaign.id,
-              characterId: alvo.id,
-              type: entry.type,
-              visibility: "public",
-              payload: { ...entry.payload, characterId: alvo.id, characterNome: alvo.name, source: "mesa_dashboard" },
-            });
-          }
-        } catch {
-          // Best-effort — o dano já foi persistido no personagem.
-        }
-        await reloadPersonagens();
+        const band = resolveMarginBand(contested.margin);
+        resumo += ` Acerto — região liberada: ${band.allowedRegions.map((r) => BODY_REGION_LABELS[r]).join(", ")}. Escolha a região para aplicar o dano.`;
+        setAtaqueMargemPendente({ margin: contested.margin, band, alvoId: alvo.id });
+        if (band.allowedRegions.length === 1) setAtaqueRegiaoEscolhida(band.allowedRegions[0]);
       } else {
         resumo += " Defesa bem-sucedida — nenhum dano aplicado.";
         try {
@@ -402,21 +404,140 @@ export default function MesaDetailClient({
               defenderTotal: totalDefesa,
               margin: contested.margin,
               attackerWins: false,
+              defenseType: ataqueDefesaTipo !== "nenhuma" ? ataqueDefesaTipo : null,
               source: "mesa_dashboard",
             },
           });
         } catch {
           // Best-effort.
         }
+        await reloadLogs();
       }
 
       setAtaqueResultado(resumo);
-      await reloadLogs();
     } catch (e) {
-      fail(e, "Erro ao resolver ataque.");
+      fail(e, "Erro ao calcular margem do ataque.");
     } finally {
       setAtaqueProcessing(false);
     }
+  }
+
+  /**
+   * "Resolver Ataque" — passo 2: aplica dano (PRD 8.7/13.5/13.6). Rola
+   * a fórmula de dano (`rollDamageFormula`) e ajusta pela banda de
+   * margem já calculada (`-1` flat na banda limitada, `+1 dado`
+   * — `rollExtraMarginDie` — na crítica; mesma regra de
+   * `/dev/table`); o valor final vira uma fórmula fixa
+   * (`0d4+N`, 0 dados rolados = sem novo sorteio) só para reaproveitar
+   * `applyAttackDamage`/`resolveDamageWithMitPd` sem duplicar o
+   * cálculo de MIT/PD. "Bloquear" (reação escolhida no passo 1) resolve
+   * contra PD; qualquer outra reação ou nenhuma resolve contra MIT.
+   */
+  async function handleAplicarDano() {
+    if (!ataqueMargemPendente || !ataqueRegiaoEscolhida) {
+      setError("Escolha a região atingida antes de aplicar o dano.");
+      return;
+    }
+    setError(null);
+    const atacante = personagensDaMesa.find((c) => c.id === ataqueAtacanteId);
+    const alvo = personagensDaMesa.find((c) => c.id === ataqueMargemPendente.alvoId);
+    if (!atacante || !alvo) {
+      setError("Atacante ou alvo não encontrado — recarregue os personagens da mesa.");
+      return;
+    }
+
+    setAtaqueProcessing(true);
+    try {
+      const nowIso = new Date().toISOString();
+      const { margin, band } = ataqueMargemPendente;
+      const atacanteNormalizado = normalizeCharacter(atacante.payload);
+      const itemInstance = atacanteNormalizado.inventario?.find((item) => item.id === ataqueItemInstanceId);
+      const alvoNormalizado = normalizeCharacter(alvo.payload);
+      const defesaAlvo = getEquippedDefenseProfile(alvoNormalizado, items);
+      const wasBlocked = ataqueDefesaTipo === "bloquear";
+
+      const rawRoll = rollDamageFormula(ataqueFormulaDano);
+      const adjustedRaw =
+        band.modifierType === "flat"
+          ? Math.max(0, rawRoll + band.flatModifier)
+          : band.modifierType === "extraDie"
+            ? rawRoll + (rollExtraMarginDie(ataqueFormulaDano) ?? 0)
+            : rawRoll;
+
+      const dano = applyAttackDamage({
+        character: alvoNormalizado,
+        // Fórmula fixa: 0 dados (sem novo sorteio) + o valor já ajustado pela margem — reaproveita `applyAttackDamage`/MIT/PD sem duplicar o parser de dados.
+        formula: `0d4+${adjustedRaw}`,
+        damageType: ataqueTipoDano,
+        damageSubtype: ataqueSubtipoDano.trim() || undefined,
+        wasBlocked,
+        defense: defesaAlvo,
+        nowIso,
+        collapseRules: regras?.colapso,
+        round: alvoNormalizado.current_round,
+        scene: alvoNormalizado.current_scene,
+      });
+      await updateCharacter(alvo.id, dano.character);
+
+      let resumo = `${atacante.name} → ${alvo.name} — margem ${margin} (${band.band}), região ${BODY_REGION_LABELS[ataqueRegiaoEscolhida]}: ${dano.rollResult} de dano ${ataqueTipoDano} (PV ${dano.pvBefore} → ${dano.pvAfter}).`;
+      if (dano.mitigatedByMit > 0 || dano.mitigatedByPd > 0) resumo += ` ${dano.defenseSummary}`;
+      if (dano.collapseStarted) resumo += ` Colapso (${dano.collapseTipo}) iniciado.`;
+      if (dano.collapseAdvanceLogs.length > 0) resumo += ` ${dano.collapseAdvanceLogs.join(" ")}`;
+
+      try {
+        await addLog({
+          campaignId: campaign.id,
+          characterId: alvo.id,
+          type: "attack_resolved",
+          visibility: "public",
+          payload: {
+            attackerName: atacante.name,
+            targetName: alvo.name,
+            weaponName: itemInstance?.itemNome ?? null,
+            margin,
+            marginBand: band.band,
+            selectedRegion: ataqueRegiaoEscolhida,
+            rawDamage: adjustedRaw,
+            damageType: ataqueTipoDano,
+            mitApplied: dano.mitigatedByMit + dano.mitigatedByPd,
+            finalDamage: dano.finalDamage,
+            targetPvBefore: dano.pvBefore,
+            targetPvAfter: dano.pvAfter,
+            defenseType: ataqueDefesaTipo !== "nenhuma" ? ataqueDefesaTipo : null,
+            wasBlocked,
+            override: false,
+            criticalPropertySuggestions: ataqueSugestoesCriticas,
+            source: "mesa_dashboard",
+          },
+        });
+        for (const entry of dano.collapseAdvanceTableLogs) {
+          await addLog({
+            campaignId: campaign.id,
+            characterId: alvo.id,
+            type: entry.type,
+            visibility: "public",
+            payload: { ...entry.payload, characterId: alvo.id, characterNome: alvo.name, source: "mesa_dashboard" },
+          });
+        }
+      } catch {
+        // Best-effort — o dano já foi persistido no personagem.
+      }
+
+      setAtaqueResultado(resumo);
+      setAtaqueMargemPendente(null);
+      setAtaqueRegiaoEscolhida("");
+      await Promise.all([reloadPersonagens(), reloadLogs()]);
+    } catch (e) {
+      fail(e, "Erro ao aplicar dano do ataque.");
+    } finally {
+      setAtaqueProcessing(false);
+    }
+  }
+
+  function handleCancelarAtaquePendente() {
+    setAtaqueMargemPendente(null);
+    setAtaqueRegiaoEscolhida("");
+    setAtaqueResultado(null);
   }
 
   // Checkpoint v0.46 — Realtime mínimo: assina campaigns/characters/
@@ -812,15 +933,16 @@ export default function MesaDetailClient({
         )}
       </section>
 
-      {/* Ataque básico: arma opcional só para lembretes críticos; sem MIT/PD/região do corpo. */}
+      {/* Resolução completa de ataque: reação defensiva, margem→região, MIT/PD e dano (PRD 6.4/8.1/8.6/8.7). */}
       <section style={{ marginBottom: 32 }}>
         <h2 style={h2}>Resolver Ataque</h2>
         <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
-          Ataque contestado básico (PRD 8.1/8.6): informe os totais JÁ ROLADOS de ataque e defesa
-          (pela aba Rolagens da ficha, ou verbalmente) — maior total vence, empate favorece o
-          defensor. Se o ataque vencer, aplica dano direto ao PV do alvo (fórmula/tipo de dano
-          manuais, sem MIT/PD/região do corpo. A arma usada é opcional e serve apenas para
-          sugerir propriedades críticas, nunca para aplicá-las automaticamente).
+          Informe os totais JÁ ROLADOS de ataque e defesa (pela aba Rolagens da ficha, ou
+          verbalmente) — maior total vence, empate favorece o defensor. Se uma reação defensiva
+          for escolhida, o sistema consome 1 Reação do alvo ao calcular a margem (mesmo se a
+          defesa falhar). Em caso de acerto, escolha a região liberada pela margem para aplicar
+          MIT/PD e dano. A arma usada é opcional e serve apenas para sugerir propriedades
+          críticas, nunca para aplicá-las automaticamente.
         </p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
           <select
@@ -852,31 +974,67 @@ export default function MesaDetailClient({
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
           <input data-testid="det-ataque-total-ataque" type="number" placeholder="Total do ataque" value={ataqueTotalAtaque} onChange={(e) => setAtaqueTotalAtaque(e.target.value)} style={{ ...input, width: 140 }} />
           <input data-testid="det-ataque-total-defesa" type="number" placeholder="Total da defesa" value={ataqueTotalDefesa} onChange={(e) => setAtaqueTotalDefesa(e.target.value)} style={{ ...input, width: 140 }} />
+          <select
+            data-testid="det-ataque-defesa-tipo"
+            value={ataqueDefesaTipo}
+            onChange={(e) => setAtaqueDefesaTipo(e.target.value as DefenseType | "nenhuma")}
+            style={input}
+          >
+            <option value="nenhuma">Sem reação declarada</option>
+            {(["esquivar", "aparar", "bloquear", "resistir"] as DefenseType[]).map((tipo) => (
+              <option key={tipo} value={tipo}>{DEFENSE_TYPE_LABELS[tipo]}</option>
+            ))}
+          </select>
           <input data-testid="det-ataque-formula-dano" type="text" placeholder="Fórmula de dano (ex.: 1d6+2)" value={ataqueFormulaDano} onChange={(e) => setAtaqueFormulaDano(e.target.value)} style={{ ...input, width: 180 }} />
           <input data-testid="det-ataque-tipo-dano" type="text" placeholder="Tipo de dano" value={ataqueTipoDano} onChange={(e) => setAtaqueTipoDano(e.target.value)} style={{ ...input, width: 120 }} />
-          <input data-testid="det-ataque-subtipo-dano" type="text" placeholder="Subtipo de dano (opcional)" value={ataqueSubtipoDano} onChange={(e) => setAtaqueSubtipoDano(e.target.value)} style={{ ...input, width: 160 }} />
-          <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13 }}>
-            <input
-              data-testid="det-ataque-bloqueou"
-              type="checkbox"
-              checked={ataqueBloqueou}
-              onChange={(e) => setAtaqueBloqueou(e.target.checked)}
-            />
-            Bloqueou (usa PD)
-          </label>
+          <input data-testid="det-ataque-subtipo-dano" type="text" placeholder="Subtipo de dano (opcional: perfurante, acido...)" value={ataqueSubtipoDano} onChange={(e) => setAtaqueSubtipoDano(e.target.value)} style={{ ...input, width: 220 }} />
         </div>
         <button
-          data-testid="det-resolver-ataque"
-          onClick={handleResolverAtaque}
+          data-testid="det-calcular-margem"
+          onClick={handleCalcularMargem}
           disabled={ataqueProcessing}
           style={{ ...btn, opacity: ataqueProcessing ? 0.6 : 1 }}
         >
-          {ataqueProcessing ? "Resolvendo…" : "Resolver Ataque"}
+          {ataqueProcessing ? "Calculando…" : "Calcular Margem"}
         </button>
+        {ataqueReacaoAviso && (
+          <p data-testid="det-ataque-reacao-aviso" style={{ fontSize: 12, color: "#e0b95c", marginTop: 8 }}>
+            {ataqueReacaoAviso}
+          </p>
+        )}
         {ataqueResultado && (
           <p data-testid="det-ataque-resultado" style={{ fontSize: 12, opacity: 0.85, marginTop: 10 }}>
             {ataqueResultado}
           </p>
+        )}
+        {ataqueMargemPendente && (
+          <div data-testid="det-ataque-margem-pendente" style={{ ...card, marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+            <strong>Margem {ataqueMargemPendente.margin} ({ataqueMargemPendente.band.band}) — escolha a região atingida</strong>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <select
+                data-testid="det-ataque-regiao-select"
+                value={ataqueRegiaoEscolhida}
+                onChange={(e) => setAtaqueRegiaoEscolhida(e.target.value as BodyRegion)}
+                style={input}
+              >
+                <option value="">— região —</option>
+                {ataqueMargemPendente.band.allowedRegions.map((regiao) => (
+                  <option key={regiao} value={regiao}>{BODY_REGION_LABELS[regiao]}</option>
+                ))}
+              </select>
+              <button
+                data-testid="det-aplicar-dano"
+                onClick={handleAplicarDano}
+                disabled={ataqueProcessing || !ataqueRegiaoEscolhida}
+                style={{ ...btn, opacity: ataqueProcessing || !ataqueRegiaoEscolhida ? 0.6 : 1 }}
+              >
+                {ataqueProcessing ? "Aplicando…" : "Aplicar Dano"}
+              </button>
+              <button data-testid="det-cancelar-ataque-pendente" onClick={handleCancelarAtaquePendente} disabled={ataqueProcessing} style={btn}>
+                Cancelar
+              </button>
+            </div>
+          </div>
         )}
         {ataqueSugestoesCriticas.length > 0 && (
           <div data-testid="det-ataque-propriedades-criticas" style={{ ...card, marginTop: 8 }}>
@@ -982,8 +1140,7 @@ export default function MesaDetailClient({
           {logs.map((e) => (
             <div key={e.id} data-testid="det-log" style={{ ...card, fontSize: 12 }}>
               <span style={{ opacity: 0.5, fontSize: 11 }}>[{e.visibility}] {e.type}</span>{" "}
-              {formatCampaignRoundLog(e.type, e.payload) ??
-                (typeof e.payload.text === "string" ? e.payload.text : typeof e.payload.mensagem === "string" ? e.payload.mensagem : typeof e.payload.total !== "undefined" ? `rolagem = ${String(e.payload.total)}` : typeof e.payload.evento === "string" ? `evento: ${e.payload.evento}` : "")}
+              {formatTableLogEntry(e)}
             </div>
           ))}
         </div>

@@ -19,6 +19,7 @@ import { listCharactersForNarratorCampaign, listUnassignedCharactersForNarrator 
 import {
   getCharacterRules,
   getCombatField,
+  getCombatFlow,
   listProperties,
   normalizeTechnicalContentItem,
   type TechnicalContentItem,
@@ -28,10 +29,12 @@ import type { Campaign, CampaignProfile, CampaignInvite, ProfileSession, TableLo
 import {
   normalizeAttackCriticalRules,
   normalizeItemContent,
+  normalizeReactionRules,
   type AttackCriticalRules,
   type CharacterRecord,
   type CharacterRulesPayload,
   type ItemContent,
+  type ReactionRules,
 } from "../../../lib/character";
 import MesaDetailClient from "./MesaDetailClient";
 
@@ -89,11 +92,23 @@ export default async function MesaDetailPage({ params }: PageProps) {
   let items: ItemContent[] = [];
   let properties: TechnicalContentItem[] = [];
   let runes: TechnicalContentItem[] = [];
+  // Regra de Reações (`combat_flow`, PRD 6.4) — mesma fonte usada por
+  // `/dev/table` e pela ficha (`CharacterSheetView.tsx`). Fail-closed:
+  // sem `combat_flow` válido, `normalizeReactionRules(null)` já
+  // devolve `valid: false` e a defesa sem Reação fica indisponível,
+  // sem travar o "Resolver Ataque" (a reação normal continua).
+  let reactionRules: ReactionRules = normalizeReactionRules(null);
   try {
     const doc = await getCharacterRules();
     regras = (doc?.payload as CharacterRulesPayload | undefined) ?? null;
   } catch {
     // Segue sem regra — "Resolver Ataque" continua funcional, só sem avanço automático de Colapso.
+  }
+  try {
+    const combatFlow = await getCombatFlow();
+    reactionRules = normalizeReactionRules(combatFlow?.payload);
+  } catch {
+    // Fail-closed — Reação segue disponível pelo custo normal, só sem "defesa sem Reação".
   }
   try {
     const [combatFieldDoc, itemDocs, propertyDocs, runeDocs] = await Promise.all([
@@ -146,6 +161,7 @@ export default async function MesaDetailPage({ params }: PageProps) {
         items={items}
         properties={properties}
         runes={runes}
+        reactionRules={reactionRules}
       />
     </div>
   );

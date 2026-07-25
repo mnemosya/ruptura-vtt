@@ -968,6 +968,55 @@ function formatProfileEvent(payload: Record<string, unknown>): string {
   return `${nickname}: ${typeof payload.evento === "string" ? payload.evento.replace(/_/g, " ") : "evento de perfil"}`;
 }
 
+/**
+ * Formata o conteúdo de uma entrada de `table_logs` para exibição —
+ * dispatcher único por `entry.type`, extraído da lista de mensagens
+ * desta aba (checkpoint de promoção de mesa/log para produção) para
+ * ser reaproveitado por qualquer outra tela que precise exibir o
+ * mesmo log (ex.: `/mesas/[campaignId]`), sem duplicar os
+ * formatadores acima. Nunca cai em JSON cru — tipos não reconhecidos
+ * usam `formatGenericLog`.
+ */
+export function formatTableLogEntry(entry: TableLogEntry): string {
+  if (entry.type === "chat") return chatText(entry.payload);
+  if (entry.type === "rolagem_pericia" || entry.type === "rolagem_expressao") return formatRolagem(entry.payload);
+  if (entry.type === "profile_event") return formatProfileEvent(entry.payload);
+  if (entry.type === "condition_auto_removed" || entry.type === "condition_auto_removal_undone") return formatAutoHeal(entry.payload);
+  if (entry.type === "rest_short" || entry.type === "rest_long") return formatRest(entry.payload);
+  if (entry.type === "overload_surge" || entry.type === "overload_surge_used") return formatOverloadSurge(entry.payload);
+  if (entry.type === "overload_will_roll") return formatOverloadWillRoll(entry.payload);
+  if (entry.type.startsWith("collapse_")) return formatCollapse(entry.payload);
+  if (entry.type === "round_ended" || entry.type === "scene_ended" || entry.type === "scene_rupture_pending") return formatRoundOrScene(entry.type, entry.payload);
+  if (entry.type === "character_evolution") return formatEvolution(entry.payload);
+  if (entry.type === "action_used") return formatActionUsed(entry.payload);
+  if (entry.type === "condition_end_round_damage") return formatConditionEndRoundDamage(entry.payload);
+  if (entry.type === "condition_end_round_check_created") return formatConditionCheckCreated(entry.payload);
+  if (entry.type === "condition_end_round_check_resolved") return formatConditionCheckResolved(entry.payload);
+  if (entry.type === "round_pa_reduced_by_condition") return formatRoundPaReduced(entry.payload);
+  if (entry.type === "condition_applied") return formatConditionApplied(entry.payload);
+  if (entry.type === "condition_removed") return formatConditionRemoved(entry.payload);
+  if (entry.type === "round_end_processed") return formatRoundEndProcessed(entry.payload);
+  if (entry.type === "scene_end_processed") return formatSceneEndProcessed(entry.payload);
+  if (entry.type === "rupture_resolved") return formatRuptureResolved(entry.payload);
+  if (entry.type === "rupture_choice_created") return formatRuptureChoiceCreated(entry.payload);
+  if (entry.type === "rupture_choice_resolved") return formatRuptureChoiceResolved(entry.payload);
+  if (entry.type === "integrity_zero_pending") return formatIntegrityZeroPending(entry.payload);
+  if (entry.type === "scene_effect_expired") return formatSceneEffectExpired(entry.payload);
+  if (entry.type === "attack_resolved") return formatAttackResolved(entry.payload);
+  if (entry.type === "defense_reaction_used") return formatDefenseReactionUsed(entry.payload);
+  if (entry.type === "item_used") return formatItemUsed(entry.payload);
+  if (entry.type === "talent_used") return formatTalentUsed(entry.payload);
+  if (entry.type === "spell_cast") return formatSpellCast(entry.payload);
+  if (entry.type === "character_state_change") return formatCharacterStateChange(entry.payload);
+  if (entry.type === "inventory_transfer") return formatInventoryTransfer(entry.payload);
+  if (entry.type === "spell_attack_used") return formatSpellAttackUsed(entry.payload);
+  if (entry.type === "spell_attack_resolved") return formatSpellAttackResolved(entry.payload);
+  if (entry.type === "temporary_effect_added" || entry.type === "temporary_effect_removed" || entry.type === "temporary_effect_expired") {
+    return formatTemporaryEffectLog(entry.type, entry.payload);
+  }
+  return formatGenericLog(entry.type, entry.payload);
+}
+
 export function MesaTab({
   campaignId,
   mesaNome,
@@ -1203,75 +1252,7 @@ export function MesaTab({
               </span>
             </div>
             <span data-testid="mesa-log-entry-conteudo">
-              {entry.type === "chat"
-                ? chatText(entry.payload)
-                : entry.type === "rolagem_pericia" || entry.type === "rolagem_expressao"
-                  ? formatRolagem(entry.payload)
-                  : entry.type === "profile_event"
-                    ? formatProfileEvent(entry.payload)
-                    : entry.type === "condition_auto_removed" || entry.type === "condition_auto_removal_undone"
-                      ? formatAutoHeal(entry.payload)
-                      : entry.type === "rest_short" || entry.type === "rest_long"
-                        ? formatRest(entry.payload)
-                        : entry.type === "overload_surge" || entry.type === "overload_surge_used"
-                          ? formatOverloadSurge(entry.payload)
-                          : entry.type === "overload_will_roll"
-                            ? formatOverloadWillRoll(entry.payload)
-                            : entry.type.startsWith("collapse_")
-                              ? formatCollapse(entry.payload)
-                              : entry.type === "round_ended" || entry.type === "scene_ended" || entry.type === "scene_rupture_pending"
-                                ? formatRoundOrScene(entry.type, entry.payload)
-                                : entry.type === "character_evolution"
-                                  ? formatEvolution(entry.payload)
-                                  : entry.type === "action_used"
-                                    ? formatActionUsed(entry.payload)
-                                    : entry.type === "condition_end_round_damage"
-                                      ? formatConditionEndRoundDamage(entry.payload)
-                                      : entry.type === "condition_end_round_check_created"
-                                        ? formatConditionCheckCreated(entry.payload)
-                                        : entry.type === "condition_end_round_check_resolved"
-                                          ? formatConditionCheckResolved(entry.payload)
-                                          : entry.type === "round_pa_reduced_by_condition"
-                                            ? formatRoundPaReduced(entry.payload)
-                                            : entry.type === "condition_applied"
-                                              ? formatConditionApplied(entry.payload)
-                                              : entry.type === "condition_removed"
-                                                ? formatConditionRemoved(entry.payload)
-                                                : entry.type === "round_end_processed"
-                                                  ? formatRoundEndProcessed(entry.payload)
-                                                  : entry.type === "scene_end_processed"
-                                                    ? formatSceneEndProcessed(entry.payload)
-                                                    : entry.type === "rupture_resolved"
-                                                      ? formatRuptureResolved(entry.payload)
-                                                      : entry.type === "rupture_choice_created"
-                                                        ? formatRuptureChoiceCreated(entry.payload)
-                                                        : entry.type === "rupture_choice_resolved"
-                                                          ? formatRuptureChoiceResolved(entry.payload)
-                                                          : entry.type === "integrity_zero_pending"
-                                                            ? formatIntegrityZeroPending(entry.payload)
-                                                            : entry.type === "scene_effect_expired"
-                                                              ? formatSceneEffectExpired(entry.payload)
-                                                              : entry.type === "attack_resolved"
-                                                                ? formatAttackResolved(entry.payload)
-                                                                : entry.type === "defense_reaction_used"
-                                                                  ? formatDefenseReactionUsed(entry.payload)
-                                                                  : entry.type === "item_used"
-                                                                    ? formatItemUsed(entry.payload)
-                                                                    : entry.type === "talent_used"
-                                                                      ? formatTalentUsed(entry.payload)
-                                                                      : entry.type === "spell_cast"
-                                                                        ? formatSpellCast(entry.payload)
-                                                                        : entry.type === "character_state_change"
-                                                                          ? formatCharacterStateChange(entry.payload)
-                                                                          : entry.type === "inventory_transfer"
-                                                                            ? formatInventoryTransfer(entry.payload)
-                                                                            : entry.type === "spell_attack_used"
-                                                                              ? formatSpellAttackUsed(entry.payload)
-                                                                              : entry.type === "spell_attack_resolved"
-                                                                                ? formatSpellAttackResolved(entry.payload)
-                                                                                : entry.type === "temporary_effect_added" || entry.type === "temporary_effect_removed" || entry.type === "temporary_effect_expired"
-                                                                                  ? formatTemporaryEffectLog(entry.type, entry.payload)
-                                                                                  : formatGenericLog(entry.type, entry.payload)}
+              {entry.type === "chat" ? chatText(entry.payload) : formatTableLogEntry(entry)}
             </span>
           </div>
         ))}
