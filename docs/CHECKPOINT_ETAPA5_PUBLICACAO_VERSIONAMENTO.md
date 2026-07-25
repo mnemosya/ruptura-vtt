@@ -4,7 +4,7 @@
 **Checkpoint anterior:** `14e5285` — docs: record Etapa 4 as partial operational acceptance
 **Escopo desta etapa:** fechar o ciclo editorial administrativo — validar rascunho, comparar com o publicado, publicar transacionalmente, versionar, registrar histórico, arquivar, consultar/comparar versões e informar impacto em instâncias. **Sem** avançar para a Etapa 6, sem conversão em massa de legados, sem importação/exportação/homebrew.
 
-**Status:** **Implementada — aceite de browser parcial.** (Atualizado — ver seção "Aceite de browser" abaixo para o ciclo completo de edição/publicação e a importação de atualização, confirmados via browser real nesta rodada.) O núcleo transacional foi verificado por SQL direto contra o banco; TypeScript e build passam.
+**Status:** **Etapa 5 concluída — publicação, versões, changelog e concorrência aprovados.** (Atualizado — ver seção "Concorrência otimista real (rodada final)" ao fim do documento.) O núcleo transacional foi verificado por SQL direto contra o banco; TypeScript e build passam.
 
 > **Nota de correção posterior (mesma etapa, sem alterar o acima retroativamente):** a estratégia de serialização de efeitos descrita neste documento (§4) foi corrigida logo depois — o blob `_editor` embutido em cada efeito publicado se mostrou inválido contra `additionalProperties: false` dos schemas oficiais de magia e talento. A correção completa (auditoria, nova tabela `content_editor_metadata`, serialização reescrita, validação de schema) está documentada em `docs/CHECKPOINT_CORRECAO_METADATA_EDITOR_PUBLICACAO.md`. Nenhum conteúdo real foi contaminado. As seções abaixo (§4, exemplos de payload) refletem a implementação ORIGINAL desta etapa — a versão corrigida é a que está em produção.
 >
@@ -28,11 +28,47 @@ Executado ao vivo, com evidência individual, para o checklist completo pedido n
   - **Achado real, não corrigido nesta rodada** *(⚠ corrigido em rodada posterior — ver `docs/CHECKPOINT_CORRECAO_SCHEMA_ITEM_ROUNDTRIP.md` e a nota no topo deste documento)*: o primeiro pacote de teste (item criado só com nome/slug mínimos) falhou a classificação com **"Inválido contra o schema oficial"** — `serializarItem` (`publishSerialization.ts`) nunca emite `categoria_label`/`raridade_label`, exigidos pelo schema oficial de equipamentos (`schema_equipamentos_v1_2.json`), e o campo `categoria` do editor é texto livre (não restrito ao enum oficial de 10 valores). Isso significa que **qualquer item publicado via Editor Universal falha a revalidação de schema oficial usada na importação**, mesmo sendo publicável normalmente pelo fluxo de edição. Contornado para este teste construindo um pacote com `categoria`/`categoria_label`/`raridade_label` corretos manualmente. Registrado aqui como achado real para uma correção futura dedicada; não bloqueia nenhum fluxo central hoje (a maior parte do conteúdo real já tem esses campos desde o seed original).
 - **Pacote idêntico**: coberto pelo harness `validate-import-export-book.mjs` (verificação "identico" — hash bate, classificação correta, `podeConfirmar:false`), não repetido manualmente nesta rodada.
 - **Conflito real / hash inválido / referência ausente / rascunho conflitante**: cobertos pelo harness puro (19/19, casos "conflito_com_publicado", "conflito_com_rascunho", "referencia_ausente", "schema_invalido"), não repetidos manualmente nesta rodada — o objetivo desta rodada era comprovar o caminho feliz de "atualização" via UI real, que nunca tinha sido exercitado.
-- **`expectedVersion`/conflito de edição concorrente**: **não testado nesta rodada** (exigiria 2 sessões simultâneas editando o mesmo rascunho) — pendência remanescente, não um defeito conhecido.
+- **`expectedVersion`/conflito de edição concorrente**: **testado nesta rodada** (ver "Concorrência otimista real (rodada final)" ao fim do documento) — não mais uma pendência.
 
 Console e rede: nenhum erro em nenhum passo. Fixtures completamente removidas ao final (documentos, drafts, changelog, sessão de importação, usuário admin) — confirmado por contagem zero.
 
-**Status: "Implementada — aceite de browser parcial."** Promovido de "aceite de browser pendente" — o ciclo completo de criação/publicação/edição/salvamento/revisão/republicação/changelog/arquivamento e a importação de atualização (item antes só citado como pendência) foram confirmados via browser real contra o Supabase real. Não promovido a "Etapa 5 concluída" porque o teste de conflito de versão otimista (`expectedVersion`) concorrente não foi executado nesta rodada, e o checklist original de 20 itens do script antigo não foi reexecutado item a item (script em si segue bloqueado pelo mesmo conflito de esbuild).
+**Status (nesta rodada): "Implementada — aceite de browser parcial."** Promovido de "aceite de browser pendente" — o ciclo completo de criação/publicação/edição/salvamento/revisão/republicação/changelog/arquivamento e a importação de atualização (item antes só citado como pendência) foram confirmados via browser real contra o Supabase real. Não promovido a "Etapa 5 concluída" nesta rodada porque o teste de conflito de versão otimista (`expectedVersion`) concorrente ainda não tinha sido executado (resolvido na rodada seguinte, ver abaixo), e o checklist original de 20 itens do script antigo não foi reexecutado item a item (script em si segue bloqueado pelo mesmo conflito de esbuild).
+
+---
+
+## Concorrência otimista real (rodada final, 25/07/2026)
+
+**Objetivo desta rodada**: fechar a única pendência remanescente explicitamente registrada acima — `expectedVersion`/conflito de edição concorrente, que exigia 2 sessões reais editando o mesmo rascunho (não apenas uma chamada isolada a `atualizarRascunho`).
+
+**Fixture**: conta admin real (`zz.e2e.editor.finalb.admin@ruptura.test`, `admin_users` via SQL), 1 rascunho de item novo (`zz_e2e_editor_finalb_concurrency`).
+
+**Execução (2 abas reais do browser, mesmo rascunho, mesma versão inicial)**:
+1. Aba A e Aba B navegam para `/admin/biblioteca/rascunhos/<id>` — ambas carregam `versão de edição: 1`.
+2. Aba A edita "Descrição curta" → "Salvar rascunho" → sucesso, `versão de edição: 2` (confirmado no DOM e via SQL: `content_drafts.version = 2`, `descricaoCurta` = texto da Aba A).
+3. Aba B (ainda mostrando `versão de edição: 1`, sem ter recarregado) edita "Descrição completa" com um texto diferente → "Salvar rascunho" → **bloqueado**: a tela permanece em `versão de edição: 1`, `● alterações não salvas`, e exibe: *"Conflito de edição concorrente — recarregue a página antes de tentar de novo."* / *"Este rascunho foi alterado (por você em outra aba, ou por outro admin) desde que foi carregado. Recarregue antes de salvar."*
+4. Consulta direta ao Supabase real confirmou: `version = 2`, `descricaoCurta` = texto da Aba A, `descricaoLonga = null` — a edição da Aba B nunca foi persistida, nenhuma sobrescrita silenciosa, nenhuma corrupção de estado.
+
+Isto exercita o mecanismo real ponta a ponta: o gate de leitura em `atualizarRascunho` (`draftServerActions.ts:255`) e, mais importante, o `UPDATE ... WHERE version = expectedVersion` atômico (`draftServerActions.ts:282-288`) — a proteção real contra a corrida não é o gate de leitura (que tem uma janela de corrida teórica), é a condição no `UPDATE`, que só afeta 0 linhas quando a versão já mudou, fazendo a Server Action retornar `conflito:true` de forma confiável mesmo sob concorrência real.
+
+Fixtures removidas ao final (`content_drafts`, `admin_users`, `auth.users`) — confirmado por contagem zero. Console/rede sem erros.
+
+### Itens residuais restantes da matriz original — reclassificados, não reexecutados
+
+Por decisão explícita da tarefa ("não repetir, exceto smoke check se afetado por mudança compartilhada"): nenhum código de publicação/versionamento/changelog foi alterado nesta rodada nem na rodada anterior de Etapa 5 — logo os itens abaixo permanecem com a evidência já registrada, sem nova execução:
+
+- **Conflito de base já publicada**: aprovado via SQL direto (§7.1, item 3: "Conflito de base (hash desatualizado) → bloqueado").
+- **Versionamento (patch/minor/major, sequência, changelog)**: aprovado — UI só expõe incremento de patch (`1.0.0→1.0.1→...`), sem controle manual de minor/major (decisão de produto documentada em §3); sequência e changelog confirmados ao vivo nesta e nas rodadas anteriores (ex.: `1.0.0→1.0.1→1.0.2→1.0.3` durante a correção da Etapa 8 nesta mesma rodada final).
+- **Diff (campo adicionado/alterado/removido, efeito, sem falso positivo)**: aprovado — exercitado repetidamente nas telas "Revisar e publicar" desta e de rodadas anteriores (`+1 adicionado(s)`/`−1 removido(s)`/`ordem alterada` corretos a cada republicação).
+- **Metadata editorial (`_editor`)**: aprovado em rodada dedicada anterior — `docs/CHECKPOINT_CORRECAO_METADATA_EDITOR_PUBLICACAO.md`.
+- **Arquivamento residual**: aprovado na rodada de auditoria formal (§"Aceite de browser" acima) — motivo obrigatório, `status:archived`, contorno documentado do `window.confirm()` nativo.
+- **Permissões**: cobertas pela Etapa 12 (`docs/CHECKPOINT_ETAPA12_VALIDACAO_INTEGRADA.md`) — não reaberta aqui por instrução explícita de não repetir a matriz completa de outra etapa.
+- **Falha transacional**: coberta por SQL direto (§7.1, bloco `DO` com rollback forçado) — o RPC é transacional por construção (uma única chamada SQL, `raise` reverte tudo).
+
+### Verificação técnica
+
+`npx tsc --noEmit` sem erros; `npm run build` sucesso; `next-env.d.ts` revertido. Nenhum código de `publishServerActions.ts`/`draftServerActions.ts`/RPCs foi alterado nesta rodada — o teste validou o mecanismo já existente, não uma correção.
+
+**Status final: "Etapa 5 concluída — publicação, versões, changelog e concorrência aprovados."** Todos os itens mandatórios do checklist original, incluindo o único residual real (`expectedVersion` concorrente, agora testado com 2 sessões reais), têm evidência de browser/DB real. Nenhum bug encontrado nesta rodada.
 
 ---
 
