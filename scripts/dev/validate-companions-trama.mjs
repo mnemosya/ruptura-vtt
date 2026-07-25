@@ -101,7 +101,7 @@ function efeitoBase(overrides) {
   return { id: "efeito-1", habilitado: true, ordem: 0, ...overrides };
 }
 
-function draftTalento(efeitosNivel1) {
+function draftTalento(efeitosNivel1, efeitosOriginaisNivel1 = []) {
   return {
     id: "draft-1", content_type: "talent", slug: "zz_talento_companheiro", version: 1,
     payload: {
@@ -114,7 +114,7 @@ function draftTalento(efeitosNivel1) {
       preservado: {
         rawOriginal: {
           id: "zz_talento_companheiro", slug: "zz_talento_companheiro", nome: "ZZ", tags: [], descricao_curta: "d", descricao_longa: "d", status: "published", versao: "1.0.0", created_at: "2026-01-01", updated_at: "2026-01-01",
-          niveis: [1, 2, 3].map((n) => ({ id: `zz_n${n}`, slug: `zz_n${n}`, talento_id: "zz_talento_companheiro", nivel: n, nome: `N${n}`, requisitos: [], tags: [], descricao_curta: "d", descricao_longa: "d", status: "published", versao: "1.0.0", created_at: "2026-01-01", updated_at: "2026-01-01", payload_automacao: { efeitos: n === 1 ? [] : [{ tipo: "regra_especial_de_teste", familia: "regra_especial" }] } })),
+          niveis: [1, 2, 3].map((n) => ({ id: `zz_n${n}`, slug: `zz_n${n}`, talento_id: "zz_talento_companheiro", nivel: n, nome: `N${n}`, requisitos: [], tags: [], descricao_curta: "d", descricao_longa: "d", status: "published", versao: "1.0.0", created_at: "2026-01-01", updated_at: "2026-01-01", payload_automacao: { efeitos: n === 1 ? efeitosOriginaisNivel1 : [{ tipo: "regra_especial_de_teste", familia: "regra_especial" }] } })),
         },
         camposDesconhecidos: [],
       },
@@ -274,6 +274,46 @@ const acaoTramaComTeste = efeitoBase({ tipo: "acao_trama", gatilho: "manualmente
 const draft9 = draftTalento([acaoTramaComTeste]);
 const corpo9 = serializarRascunhoParaPublicacao(draft9);
 checar("23. Correção: acao_trama com exigeTeste=true nunca emite boolean na chave 'teste' e valida contra o schema", validarPayload(talentoSchema, corpo9, schemaTalentos).length === 0, JSON.stringify(validarPayload(talentoSchema, corpo9, schemaTalentos)));
+
+// ---------------------------------------------------------------------
+// 24. REGRESSÃO (achado ao vivo na rodada de aceite das Etapas 8-10):
+//     reeditar/republicar um talento cujos níveis já têm `companheiro`/
+//     `modificar_companheiro`/`acao_companheiro`/`programar_gatilho`/
+//     `parear`/`acao_trama` publicados (rawOriginal já contém a saída de
+//     uma publicação anterior — mesmo cenário do caso #15 de
+//     validate-composite-effects.mjs, mas para os 6 tipos desta etapa)
+//     NÃO pode duplicar essas entradas. Causa raiz: `aliasesLegado.talent`
+//     de cada tipo não incluía o próprio `tipo` legado real que ele
+//     produz (TIPO_LEGADO.talent em effectLegacySerialization.ts) — sem
+//     isso, `resolverTipoCanonico` nunca reconhecia a entrada antiga como
+//     pertencente a um tipo editável, então ela nunca era substituída,
+//     só somada a cada republicação (reproduzido ao vivo: 6 → 11 → ainda
+//     mais entradas ao reeditar 2x um talento real).
+// ---------------------------------------------------------------------
+const efeitosJaPublicadosAntesNivel1 = [
+  { tipo: "conceder_companheiro", familia: "companheiro", gatilho: "manualmente", alvo: "proprio", contexto: "drone", identifica: ["drone_teste"], max_unidades: 1, escopo: ["personagem"] },
+  { tipo: "modificar_companheiro", familia: "companheiro", gatilho: "manualmente", acao: "conceder_pa" },
+  { tipo: "acao_companheiro", familia: "companheiro", gatilho: "manualmente", acao: "Ataque do drone", resultado: "1 consequência(s): dano" },
+  { tipo: "programar_gatilho", familia: "companheiro", gatilho: "ao_iniciar_rodada", alvo: "proprio", acao: "Ativar sensor" },
+  { tipo: "parear", familia: "companheiro", gatilho: "manualmente", alvo: "proprio", comandos: ["comando"] },
+  { tipo: "acao_trama", familia: "trama", gatilho: "manualmente", alvo: "proprio", acao: "avancar", distancia_espacos: 15 },
+];
+const modificarCompanheiroReparar = efeitoBase({ tipo: "modificar_companheiro", gatilho: "manualmente", campos: { operacao: "reparar", confirmacaoManual: true } });
+const efeitosReedicaoNivel1 = [concederCompanheiro, modificarCompanheiroReparar, acaoCompanheiro, programarGatilho, acaoTramaAvancar];
+const draftReedicao = draftTalento(efeitosReedicaoNivel1, efeitosJaPublicadosAntesNivel1);
+const corpoReedicao = serializarRascunhoParaPublicacao(draftReedicao);
+const efeitosNivel1Reedicao = corpoReedicao.niveis[0].payload_automacao.efeitos;
+const contagemPorTipo = (tipo) => efeitosNivel1Reedicao.filter((e) => e.tipo === tipo).length;
+checar(
+  "24. Reedição: republicar um talento com companheiro/modificar_companheiro/acao_companheiro/programar_gatilho/acao_trama recuperados de metadata NÃO duplica nenhuma entrada (parear removido também não reaparece)",
+  contagemPorTipo("conceder_companheiro") === 1 &&
+    contagemPorTipo("modificar_companheiro") === 1 &&
+    contagemPorTipo("acao_companheiro") === 1 &&
+    contagemPorTipo("programar_gatilho") === 1 &&
+    contagemPorTipo("acao_trama") === 1 &&
+    contagemPorTipo("parear") === 0,
+  `contagens: ${JSON.stringify({ conceder_companheiro: contagemPorTipo("conceder_companheiro"), modificar_companheiro: contagemPorTipo("modificar_companheiro"), acao_companheiro: contagemPorTipo("acao_companheiro"), programar_gatilho: contagemPorTipo("programar_gatilho"), acao_trama: contagemPorTipo("acao_trama"), parear: contagemPorTipo("parear") })}`,
+);
 
 console.log(`\n${falhas === 0 ? "=== TODOS OS CASOS PASSARAM ===" : `=== ${falhas} FALHA(S) ===`}`);
 process.exit(falhas === 0 ? 0 : 1);

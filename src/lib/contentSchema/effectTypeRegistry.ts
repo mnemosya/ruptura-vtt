@@ -227,8 +227,12 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
       modo: "lembrete",
       observacao: "Nenhum executor real aplica isso automaticamente ainda — mesmo conceito real existe em conteúdo legado (rune \"protecao\"/\"reduz_dano_recebido\"), mas sem ponto de integração no motor. Sempre lembrete nesta etapa.",
     },
+    // "reduzir_dano_recebido" é o `tipo` legado real produzido para
+    // TALENTO (TIPO_LEGADO.talent) — sem isso, reeditar duplicava a
+    // entrada a cada republicação (mesmo achado desta rodada).
     aliasesLegado: {
       rune: ["protecao"],
+      talent: ["reduzir_dano_recebido"],
     },
   },
   efeito_temporario: {
@@ -246,9 +250,12 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
       observacao:
         "Executor real e genérico já existe e roda hoje a partir do payload `buff_temporario` de itens (itemUse.ts). A CRIAÇÃO do efeito continua exigindo uma ação (usar item/lançar magia/ativar talento) — nunca 'automático' puro — mas expiração por rodada/cena/descanso e modificadores de rolagem (target roll/skill/attribute) já aplicam sozinhos depois de criado. Para talento, o payload é preservado mas não há leitor genérico equivalente ainda — o diagnóstico por instância cai para 'lembrete' nesse caso.",
     },
+    // "buff_temporario" também é o `tipo` legado real produzido para
+    // TALENTO (não só item) — "buff_empilhavel" é um alias legado
+    // diferente, pré-existente, preservado à parte.
     aliasesLegado: {
       item: ["buff_temporario"],
-      talent: ["buff_empilhavel"],
+      talent: ["buff_empilhavel", "buff_temporario"],
     },
   },
   acao_reacao_adicional: {
@@ -286,8 +293,12 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
       observacao:
         "Cada operação mapeia 1:1 a um executor real e genérico já existente (MIT/PD) ou adicionado nesta etapa espelhando o mesmo padrão (carga/munição) — nunca um caminho JSON arbitrário. Sempre assistido: a seleção da instância-alvo e a confirmação continuam manuais.",
     },
+    // "modificar_instancia" também é o `tipo` legado real produzido para
+    // TALENTO (TIPO_LEGADO.talent) — sem isso, reeditar duplicava a
+    // entrada a cada republicação (achado real desta rodada).
     aliasesLegado: {
       rune: ["autorreparo"],
+      talent: ["modificar_instancia"],
     },
   },
   conceder_item: {
@@ -307,7 +318,11 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
       modo: "lembrete",
       observacao: "Sem executor conectado nesta etapa — representável e preservável, sempre lembrete para o narrador aplicar manualmente.",
     },
-    aliasesLegado: {},
+    // "conceder_item" é o próprio `tipo` legado que este efeito serializa
+    // para talento (TIPO_LEGADO.talent em effectLegacySerialization.ts) —
+    // precisa constar aqui para que a reedição substitua a entrada
+    // anterior em vez de duplicá-la (achado: republicar acumulava cópias).
+    aliasesLegado: { talent: ["conceder_item"] },
   },
   consumir_item: {
     id: "consumir_item",
@@ -320,7 +335,7 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
       modo: "lembrete",
       observacao: "Mesmo status de conceder_item — sem executor conectado nesta etapa, sempre lembrete.",
     },
-    aliasesLegado: {},
+    aliasesLegado: { talent: ["consumir_item"] },
   },
   alterar_preco: {
     id: "alterar_preco",
@@ -352,7 +367,7 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
       modo: "lembrete",
       observacao: "Nenhum estado real de estoque/disponibilidade de campanha existe hoje — sempre lembrete, nunca um sistema de estoque fingido.",
     },
-    aliasesLegado: {},
+    aliasesLegado: { talent: ["alterar_disponibilidade"] },
   },
   companheiro: {
     id: "companheiro",
@@ -369,7 +384,11 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
       modo: "lembrete",
       observacao: "Nenhum executor real cria instância de companheiro a partir de um efeito de conteúdo — sempre lembrete. Droneiro/Mecatrônico/Tecelão continuam bespoke em talentEngine.ts (registerDrone/registerRobo), não generalizados.",
     },
-    aliasesLegado: {},
+    // "conceder_companheiro" é o `tipo` legado real que este efeito
+    // serializa para talento (TIPO_LEGADO.talent) — precisa constar aqui,
+    // senão reeditar/republicar duplica a entrada a cada ciclo (achado
+    // real, ver docs/CHECKPOINT_ETAPA10_COMPANHEIROS_TRAMA.md).
+    aliasesLegado: { talent: ["conceder_companheiro"] },
   },
   modificar_companheiro: {
     id: "modificar_companheiro",
@@ -381,8 +400,11 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
       modo: "lembrete",
       observacao: "Nenhum executor genérico existe — as funções reais equivalentes (applySinalLimpoBonus, activateOverclock, ajustarRamTrama etc.) são hiper-específicas por talento, não reutilizáveis por um efeito genérico.",
     },
+    // "modificar_companheiro" é o próprio `tipo` legado real (TIPO_LEGADO.talent)
+    // — "companheiro_pa_bonus" é um alias GENUINAMENTE legado diferente
+    // (pré-existente, real), preservado à parte.
     aliasesLegado: {
-      talent: ["companheiro_pa_bonus"],
+      talent: ["companheiro_pa_bonus", "modificar_companheiro"],
     },
   },
   acao_companheiro: {
@@ -396,7 +418,7 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
       modo: "lembrete",
       observacao: "Nenhum executor real resolve ação de companheiro a partir de conteúdo — sempre lembrete. Distância/linha de visão nunca automatizadas (teatro da mente).",
     },
-    aliasesLegado: {},
+    aliasesLegado: { talent: ["acao_companheiro"] },
   },
   programar_gatilho: {
     id: "programar_gatilho",
@@ -412,7 +434,7 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
       modo: "lembrete",
       observacao: "Reaproveita o campo comum `gatilho` (mesmo vocabulário de GATILHOS_INICIAIS) em vez de inventar um segundo conceito — mas sem executor genérico conectado. Sempre lembrete.",
     },
-    aliasesLegado: {},
+    aliasesLegado: { talent: ["programar_gatilho"] },
   },
   parear: {
     id: "parear",
@@ -427,7 +449,7 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
       modo: "lembrete",
       observacao: "Nenhum executor genérico de pareamento existe — pairDronesEnxame (talentEngine.ts) é bespoke ao talento Enxame, não reutilizável por conteúdo genérico.",
     },
-    aliasesLegado: {},
+    aliasesLegado: { talent: ["parear"] },
   },
   acao_trama: {
     id: "acao_trama",
@@ -445,8 +467,11 @@ export const EFFECT_TYPE_REGISTRY: Record<string, EfeitoTipoDefinition> = {
       modo: "lembrete",
       observacao: "Nenhum executor genérico resolve ação de Trama a partir de conteúdo — sempre lembrete. Nó/Bloqueio/Presença permanecem texto livre (sem catálogo estruturado no runtime real).",
     },
+    // "acao_trama" é o próprio `tipo` legado real (TIPO_LEGADO.talent) —
+    // os outros 3 são aliases GENUINAMENTE legados (Bypass/Agulha Fina do
+    // Tecelão, pré-existentes), preservados à parte.
     aliasesLegado: {
-      talent: ["comando_sem_teste", "comando_livre_sem_custo", "alterar_protocolo"],
+      talent: ["comando_sem_teste", "comando_livre_sem_custo", "alterar_protocolo", "acao_trama"],
     },
   },
   outro: {
