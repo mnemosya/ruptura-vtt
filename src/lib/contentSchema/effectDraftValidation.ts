@@ -7,7 +7,7 @@
 
 import { getContentDocument } from "../content/queries";
 import { diagnosticarEfeitoEditavel } from "./effectDiagnostics";
-import { RECURSOS_ALTERAR, isTipoEfeitoMvp, type EfeitoEditavel } from "./effectDraftTypes";
+import { RECURSOS_ALTERAR, isTipoEfeitoEditavel, type EfeitoEditavel } from "./effectDraftTypes";
 import type { ResultadoValidacao } from "./types";
 
 const RECURSOS_CURA_VALIDOS = new Set(["pv", "pe", "mana", "integridade", "pd"]);
@@ -35,8 +35,8 @@ export async function validarEfeitosEditaveis(efeitos: EfeitoEditavel[]): Promis
   for (const [indice, efeito] of efeitos.entries()) {
     const rotulo = `Efeito #${indice + 1} (${efeito.tipo}${efeito.nomeOpcional ? `, "${efeito.nomeOpcional}"` : ""})`;
 
-    if (!isTipoEfeitoMvp(efeito.tipo)) {
-      erros.push(`${rotulo}: tipo de efeito inválido para o Construtor de Efeitos (só os 6 tipos do MVP são suportados).`);
+    if (!isTipoEfeitoEditavel(efeito.tipo)) {
+      erros.push(`${rotulo}: tipo de efeito inválido para o Construtor de Efeitos (tipo não reconhecido no catálogo editável).`);
       continue;
     }
     if (idsVistos.has(efeito.id)) erros.push(`${rotulo}: ID de efeito duplicado ("${efeito.id}") — reordenar/duplicar não deveria repetir IDs.`);
