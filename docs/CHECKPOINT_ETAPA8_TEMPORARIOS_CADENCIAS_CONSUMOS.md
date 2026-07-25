@@ -1,6 +1,6 @@
 # Checkpoint — Etapa 8: efeitos temporários, cadências, usos e consumos
 
-**Status: Implementação concluída — aceite de browser pendente.**
+**Status: Implementação concluída — aceite de browser parcial.** (Atualizado — ver "Aceite de browser" ao final do documento.)
 
 Não afirmo automação operacional completa além do que o motor real
 executa hoje. A criação de um efeito temporário, o gasto de uma Reação e
@@ -284,3 +284,21 @@ separados. **Não avancei para a Etapa 9.**
 > `docs/CHECKPOINT_ETAPA9_INVENTARIO_RUNAS_MERCADO.md`. O status
 > "Implementação concluída — aceite de browser pendente" acima permanece
 > exatamente como registrado nesta etapa.
+
+---
+
+## Aceite de browser — rodada de auditoria formal do Editor Universal
+
+**Data**: 24-25/07/2026. **Ambiente**: `next dev` local + Supabase real, ferramenta de browser. **Fixtures**: usuário admin temporário + `admin_users` via SQL.
+
+**Bug crítico encontrado e corrigido nesta rodada**: `efeito_temporario` (e todo tipo pós-MVP) era rejeitado incondicionalmente ao salvar rascunho por um gate de validação desatualizado (`effectDraftValidation.ts::isTipoEfeitoMvp`). Corrigido; detalhes completos em `docs/CHECKPOINT_CORRECAO_VALIDACAO_TIPOS_EFEITO_POS_MVP.md`.
+
+Executado ao vivo, após a correção, em conteúdo ITEM (onde `efeito_temporario` tem executor real, per §9 desta etapa): rascunho de edição de um item real → adicionado `efeito_temporario` (`duracao: rounds/3`, `politica_reaplicacao: substituir`) → adicionado modificador filho `modificar_teste` (+2 Furtividade) → `modoAutomacao` do filho = "Automático" quando gatilho/alvo do próprio filho preenchidos (achado de UX, não bug: o modificador filho precisa de gatilho/alvo próprios, distintos dos do efeito pai) → `modoAutomacao` do efeito pai = "Assistido" (teto documentado: "Criação sempre exige uma ação — nunca automático puro", confirmado correto, não um bug) → salvo sem erro → publicado com sucesso (`1.0.1`).
+
+Também confirmado, em rascunho de TALENTO (onde `efeito_temporario` não tem leitor genérico, per achado já documentado): `modoAutomacao` = "Sem executor" mesmo com modificador preenchido — comportamento correto e já esperado, não um bug.
+
+**Não executado nesta rodada**: itens 10–20 do checklist original do script (consumo de carga/munição/flecha da Aljava, gasto de Reação, ação/reação adicional, bloqueio de ciclo) — o próprio script original nunca os implementou como passos de browser (ficam só como comentário "cobertos pela suíte node"), ou seja, não há UI dedicada para exercitá-los isoladamente além do que já foi testado (efeito temporário em si).
+
+Console e rede: nenhum erro. Fixture removida ao final.
+
+**Status: "Implementação concluída — aceite de browser parcial."** Promovido de "pendente" — criação, configuração (com modificador filho), diferença correta de automação entre item e talento, salvamento, persistência e publicação de `efeito_temporario` confirmados ao vivo, incluindo a correção de um bug real que bloqueava esse fluxo por completo. Não promovido a "concluída — aceite de browser aprovado" porque os itens de consumo/cadência (10–20) não têm UI dedicada exercitável além do que já foi coberto pela suíte node (`validate-temporary-effects.mjs`, inalterada).

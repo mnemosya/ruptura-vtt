@@ -4,9 +4,25 @@
 **Checkpoint anterior:** `911b9d8` — docs: document published payload compatibility fix (correção pós-Etapa 5)
 **Escopo:** permitir que conteúdo publicado ANTES do Editor Universal (sem `content_editor_metadata`) seja convertido gradualmente para edição segura — magia, talento e item editáveis; condição/runa/escalpo/propriedade/ação de combate/regras de personagem/campo e fluxo de combate/tabelas mestras continuam **somente leitura e diagnóstico** (nenhum editor novo criado para eles).
 
-**Status:** **Implementação concluída — aceite de browser pendente.** Núcleo de classificação/relatório e validação de perda verificados diretamente com `node` sobre código real compilado por `tsc`, usando cópias de registros reais. Núcleo transacional (rascunho de legado → publicação → metadata → changelog) verificado por SQL direto com rollback, zero resíduo. Browser check bloqueado pelo mesmo conflito de arquitetura do esbuild das etapas anteriores — script criado, não executado.
+**Status:** **Implementação concluída — aceite de browser parcial.** (Atualizado — ver seção "Aceite de browser" abaixo.) Núcleo de classificação/relatório e validação de perda verificados diretamente com `node` sobre código real compilado por `tsc`, usando cópias de registros reais. Núcleo transacional (rascunho de legado → publicação → metadata → changelog) verificado por SQL direto com rollback, zero resíduo.
 
 > **Nota de referência (Etapa 7, sem alterar o status acima):** a Etapa 7 (`docs/CHECKPOINT_ETAPA7_EFEITOS_COMPOSTOS.md`) promoveu `teste_resistencia` (classificado aqui como somente leitura, §"Compatibilidade com legado") a um tipo EDITÁVEL do Construtor — mas só para árvores construídas do zero; `efeito_com_resistencia` legado continua sempre preservado e nunca é auto-convertido (a Etapa 7 confirmou pelo menos 3 estruturas reais incompatíveis entre spell/rune/property, reforçando a decisão desta etapa de nunca converter em massa). O restante da classificação por campo/efeito descrita aqui não foi alterado.
+
+## Aceite de browser — rodada de auditoria formal do Editor Universal
+
+**Data**: 24-25/07/2026. **Ambiente**: `next dev` local + Supabase real, ferramenta de browser. **Fixtures**: usuário admin temporário via cadastro real + `admin_users` via SQL.
+
+Executado ao vivo contra `item:faca` (conteúdo oficial real, publicado antes do Editor Universal — nunca alterado, apenas lido e usado para criar um rascunho descartável):
+
+- `/admin/biblioteca/rascunhos/legado/item/faca` (diagnóstico) → mostrou corretamente: `adapter: item.legacy.v1`, `classificação geral: Conversão com confirmação`, campos desconhecidos preservados (`estatisticas`, "Continuam associados ao caminho original — nunca descartados nem achatados").
+- "Iniciar rascunho de edição" → rascunho de edição criado com o indicador "Conteúdo legado — convertido de conteúdo publicado antes do Editor Universal. Adapter: item.legacy.v1..." visível na UI; `nome`/`tags` (`arma`, ...) corretamente populados a partir do payload real; nota "Demais chaves de estatisticas (dano-base, perícia de ataque etc.) continuam somente leitura nesta etapa — ver diagnóstico técnico abaixo." confirmada.
+- Rascunho **excluído sem salvar nem publicar** (para não tocar o conteúdo oficial real) — confirmado por consulta direta ao Supabase que `item:faca` manteve seu `payload_hash` original, intacto.
+
+**Não executado nesta rodada** (por não haver como sem tocar conteúdo oficial real ou fabricar um cenário artificial): o ciclo completo salvar→revisar→publicar→republicar sobre um documento genuinamente legado. Criar um item de teste "fingindo" ser legado exigiria manipular `content_editor_metadata`/ausência dela de forma não realista — decidido não fazer. A classificação, o diagnóstico e a criação do rascunho de edição (com preservação confirmada) são o que foi exercitado ao vivo; o núcleo de salvar/publicar em si já foi confirmado em outras etapas (Etapa 5) para os mesmos content_types.
+
+Console e rede: nenhum erro. Fixture (usuário admin) removida ao final.
+
+**Status: "Implementação concluída — aceite de browser parcial."** Promovido de "pendente" — diagnóstico, classificação e criação de rascunho de edição com preservação de campos confirmados ao vivo contra conteúdo oficial real. Não promovido a "concluída — aceite de browser aprovado" porque o ciclo de salvar/publicar/republicar sobre um documento genuinamente legado não foi exercitado (por decisão deliberada de não tocar conteúdo oficial real).
 
 ---
 

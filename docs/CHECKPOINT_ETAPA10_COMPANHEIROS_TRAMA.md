@@ -1,6 +1,6 @@
 # Checkpoint — Etapa 10: drones, robôs, companheiros e Trama
 
-**Status: Implementação concluída — aceite de browser pendente.**
+**Status: Implementação concluída — aceite de browser parcial.** (Atualizado — ver "Aceite de browser" ao final do documento.)
 
 Não afirmo automação operacional além do que o motor real executa hoje.
 Os 6 tipos novos desta etapa são sempre `lembrete` — nenhum executor
@@ -255,3 +255,26 @@ nenhuma perda de payload conhecida. **Não avancei para a Etapa 11.**
 > um editor estruturado de capítulos para servir de destino do drag.
 > Nenhuma dependência disto altera o status desta Etapa 10 — ver
 > `docs/CHECKPOINT_ETAPA11_IMPORTACAO_EXPORTACAO_BIBLIOTECA_LIVRO.md`.
+
+---
+
+## Aceite de browser — rodada de auditoria formal do Editor Universal
+
+**Data**: 24-25/07/2026. **Ambiente**: `next dev` local + Supabase real, ferramenta de browser. **Fixtures**: usuário admin temporário + `admin_users` via SQL.
+
+**Bug crítico encontrado e corrigido nesta rodada**: `companheiro`, `acao_trama` (e todo tipo pós-MVP, incluindo os 4 demais tipos revisados desta etapa via §5) eram rejeitados incondicionalmente ao salvar rascunho por um gate de validação desatualizado (`effectDraftValidation.ts::isTipoEfeitoMvp`) — nunca detectado porque o browser check nunca foi executado desde a Etapa 7. Corrigido; detalhes completos em `docs/CHECKPOINT_CORRECAO_VALIDACAO_TIPOS_EFEITO_POS_MVP.md`.
+
+Executado ao vivo, em um único rascunho de talento (3 níveis) contendo TODOS os 5 tipos corrigidos pela §5 desta etapa MAIS os 2 tipos novos aqui, no mesmo nível: `efeito_temporario`, `modificar_instancia`, `conceder_item`, `consumir_item`, `alterar_disponibilidade`, `companheiro` (`tipo: drone`, `modelo: drone_padrao`, `quantidade: 1`), `acao_trama` (`acao: avancar`, `alcance: 15`) — todos preenchidos com campos reais, `modoAutomacao` = "Lembrete" para os 6 sem executor (confirmado correto) e "Assistido" para `modificar_instancia` (tem executor real). Salvo **sem erro de tipo inválido** (confirmando a correção) → publicado com sucesso (`1.0.0`) → payload consultado diretamente no Supabase real:
+
+```json
+{"tipo":"conceder_companheiro","contexto":"drone","identifica":["drone_padrao"],"max_unidades":1,"familia":"companheiro",...}
+{"tipo":"acao_trama","acao":"avancar","distancia_espacos":15,"familia":"trama",...}
+```
+
+Confirma exatamente as chaves REAIS documentadas em §6 desta etapa (`familia:"companheiro"`/`"trama"`, nunca chaves inventadas) — este é o primeiro aceite ao vivo de que os 6 tipos desta etapa são serializáveis e publicáveis de ponta a ponta pelo Editor Universal real, não apenas pelo harness `validate-companions-trama.mjs` (inalterado, 23/23).
+
+**Não executado nesta rodada**: gatilho de UI ao vivo para qualquer um dos 6 tipos em `/dev/table` ou numa ficha de personagem real — inalterado, a própria etapa já define esses tipos como sempre `lembrete`, sem executor a ser exercitado. Inspeção de que `talentEngine.ts` (Droneiro/Mecatrônico/Tecelão) permanece intacto não foi refeita nesta rodada (nenhum código desse arquivo foi tocado por esta correção).
+
+Console e rede: nenhum erro. Fixtures removidas ao final.
+
+**Status: "Implementação concluída — aceite de browser parcial."** Promovido de "pendente" — os 6 tipos novos desta etapa, incluindo os 4 tipos herdados da Etapa 9 que a correção §5 mudou, foram confirmados salvando, publicando e serializando corretamente com as chaves reais, ao vivo, contra o Supabase real — fechando a lacuna que tanto este checkpoint quanto o da Etapa 9 já apontavam como "nunca verificado ao vivo". Não promovido a "concluída — aceite de browser aprovado" porque o checklist original completo do script (`check-admin-companions-trama.ts`, itens de programação/pareamento/Detecção/Rastro/Nó/Bloqueio separados) não foi reexecutado item a item.

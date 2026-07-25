@@ -4,7 +4,21 @@
 **Checkpoint anterior:** `99bca16` — docs: document legacy adapter checkpoint (Etapa 6)
 **Escopo:** suporte reutilizável (não exclusivo de nenhuma magia/talento/item) para teste/resistência com resultados condicionais e efeitos filhos, modificação de margem e alteração de dano recebido.
 
-**Status:** **Implementação concluída — aceite de browser pendente.** Classificação, serialização, validação de schema e o núcleo transacional foram verificados diretamente com `node` sobre código real compilado por `tsc`, e por SQL direto com rollback (zero resíduo). Browser check bloqueado pelo mesmo conflito de arquitetura do esbuild das etapas anteriores — script criado, não executado. **Não afirmo automação operacional completa**: a árvore de teste/resistência tem um resolvedor genérico real, mas sem gatilho de UI ao vivo na mesa do narrador nesta sessão (ver §6 e limitações).
+**Status:** **Implementação concluída — aceite de browser parcial.** (Atualizado — ver "Aceite de browser" abaixo.) Classificação, serialização, validação de schema e o núcleo transacional foram verificados diretamente com `node` sobre código real compilado por `tsc`, e por SQL direto com rollback (zero resíduo). **Não afirmo automação operacional completa**: a árvore de teste/resistência tem um resolvedor genérico real, mas sem gatilho de UI ao vivo na mesa do narrador (ver §6 e limitações) — inalterado por esta rodada.
+
+## Aceite de browser — rodada de auditoria formal do Editor Universal
+
+**Data**: 24-25/07/2026. **Ambiente**: `next dev` local + Supabase real, ferramenta de browser. **Fixtures**: usuário admin temporário + `admin_users` via SQL.
+
+**Bug crítico encontrado e corrigido nesta rodada**: `teste_resistencia` (e todo tipo pós-MVP) era rejeitado incondicionalmente ao salvar rascunho por um gate de validação desatualizado (`effectDraftValidation.ts::isTipoEfeitoMvp`) — nunca detectado porque o browser check nunca tinha sido executado desde a Etapa 7. Corrigido; detalhes completos em `docs/CHECKPOINT_CORRECAO_VALIDACAO_TIPOS_EFEITO_POS_MVP.md`.
+
+Executado ao vivo, após a correção: rascunho de edição de uma magia real → adicionado efeito `teste_resistencia` (`quem_testa: usuario`, `pericia: vontade`, `cd_tipo: fixa`, `cd_valor: 14`) → 2 resultados adicionados (`falha_limitada`, `sucesso_padrao`) → efeito filho `dano` (1d4 ácido) adicionado ao resultado de falha → salvo com sucesso (sem erro de tipo inválido, confirmando a correção) → publicado com sucesso (`1.0.1`) → payload consultado diretamente no Supabase real: serializado corretamente como `efeito_com_resistencia` com `resistencia.pericias`/`cd_formula`, seguido do efeito-filho `dano` como sibling no mesmo array — exatamente a convenção documentada em §"Serialização legada" desta etapa.
+
+**Não executado nesta rodada** (mantendo a limitação já documentada): gatilho de UI ao vivo do resolvedor em `/dev/table`/mesa do narrador — segue fora do escopo desta rodada (a própria etapa já define a aceitação como editorial, não operacional).
+
+Console e rede: nenhum erro. Fixture removida ao final.
+
+**Status: "Implementação concluída — aceite de browser parcial."** Promovido de "pendente" — criação, configuração (incluindo resultado + efeito filho), salvamento, persistência e publicação de `teste_resistencia` confirmados ao vivo contra o Supabase real, incluindo a correção de um bug real que bloqueava esse fluxo por completo. Não promovido a "concluída — aceite de browser aprovado" porque o resolvedor operacional na mesa do narrador continua sem gatilho de UI (limitação já conhecida, não corrigida nesta rodada) e o checklist original completo do script (`check-admin-composite-effects.ts`) não foi reexecutado item a item.
 
 ---
 

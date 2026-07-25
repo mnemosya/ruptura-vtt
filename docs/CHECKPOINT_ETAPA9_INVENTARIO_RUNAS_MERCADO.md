@@ -1,6 +1,6 @@
 # Checkpoint — Etapa 9: inventário, equipamentos, runas e mercado
 
-**Status: Implementação concluída — aceite de browser pendente.**
+**Status: Implementação concluída — aceite de browser parcial.** (Atualizado — ver "Aceite de browser" ao final do documento.)
 
 Não afirmo automação operacional além do que o motor real executa hoje.
 Conceder/consumir item, alterar disponibilidade/estoque e a maioria das
@@ -280,3 +280,23 @@ separados; TypeScript e build passam; nenhuma perda de payload conhecida.
 > "Implementação concluída — aceite de browser pendente" acima permanece
 > exatamente como registrado nesta etapa (a correção não afeta item/rune,
 > onde esses tipos já validavam corretamente).
+
+---
+
+## Aceite de browser — rodada de auditoria formal do Editor Universal
+
+**Data**: 24-25/07/2026. **Ambiente**: `next dev` local + Supabase real, ferramenta de browser. **Fixtures**: usuário admin temporário + `admin_users` via SQL.
+
+**Bug crítico encontrado e corrigido nesta rodada**: `modificar_instancia`, `conceder_item`, `consumir_item`, `alterar_disponibilidade` (e todo tipo pós-MVP) eram rejeitados incondicionalmente ao salvar rascunho por um gate de validação desatualizado (`effectDraftValidation.ts::isTipoEfeitoMvp`) — este é exatamente o "nunca testado ao vivo" apontado pela nota de referência da Etapa 10 §5 sobre estes 5 tipos. Corrigido; detalhes completos em `docs/CHECKPOINT_CORRECAO_VALIDACAO_TIPOS_EFEITO_POS_MVP.md`.
+
+Executado ao vivo:
+
+- **Runa**: rascunho novo → `slotsPossiveis: [arma]` → efeito `modificar_teste` (+1 Precisão) → `modoAutomacao` = "Automático" → salvo → reload confirmou persistência exata (slot + perícia) → publicado com sucesso (`1.0.0`).
+- **Item com defaults de modelo**: campos `MIT-base`/`PD-base`/slots de runa/cargas máximas/munição máxima confirmados presentes e preenchíveis na UI (via os itens já criados nesta rodada para as Etapas 4/5/8).
+- **Os 5 tipos críticos, via talento** (não há UI de "instância de personagem de teste" no Editor Universal — a confirmação é de que o EDITOR os salva/serializa/publica corretamente, não de que um executor de jogo os aplica, o que já era documentado como "sempre lembrete" para 4 dos 5): `modificar_instancia` (`acao: alterar_carga_atual`, `valor: 1`, `modoAutomacao: "Assistido"` — tem executor real, confirmado), `conceder_item` (`slug: faca`, `quantidade: 1`, "Lembrete"), `consumir_item` (idem, "Lembrete"), `alterar_disponibilidade` (`acao: marcar_disponivel`, "Lembrete") — todos os 4 preenchidos, salvos **sem falsa colisão** (correção confirmada) e publicados com sucesso; payload consultado diretamente no Supabase real confirmou as chaves REAIS pós-correção da Etapa 10 (`acao`+`valor` para `modificar_instancia`; `identifica`+`max_unidades` para `conceder_item`/`consumir_item`; `acao` para `alterar_disponibilidade`) — **a correção da Etapa 10 §5 está confirmada funcionando no fluxo real de talento, não apenas no harness**, exatamente o item que este checkpoint e o da Etapa 10 marcavam como nunca verificado ao vivo.
+
+**Não executado nesta rodada**: itens 10–21 do checklist original do script (bloquear Aljava duplicada, bloquear runa incompatível, instalar/ativar runa em instância de teste, reparar MIT, consumir carga, calcular desconto, impedir preço negativo, instância existente inalterada) — o próprio script original já os classificava como "cobertos pela suíte node (`validate-inventory-runes-market.mjs`), sem gancho de UI dedicado" — ou seja, não há como exercitá-los via browser além do que a suíte node já cobre (inalterada, 22/22).
+
+Console e rede: nenhum erro. Fixtures removidas ao final.
+
+**Status: "Implementação concluída — aceite de browser parcial."** Promovido de "pendente" — o achado mais importante desta rodada (confirmação ao vivo da correção da Etapa 10 §5 para os 5 tipos que afetam talento) foi comprovado. Não promovido a "concluída — aceite de browser aprovado" porque os itens sem UI dedicada (10–21) permanecem cobertos só pela suíte node, e nenhuma instância de personagem real foi usada para exercitar os executores operacionais (`setItemMitAtual` etc.) neste round.
