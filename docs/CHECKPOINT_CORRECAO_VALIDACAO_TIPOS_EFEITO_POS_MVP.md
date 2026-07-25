@@ -50,6 +50,12 @@ Bloqueava, desde a Etapa 7, o salvamento de rascunho de QUALQUER conteúdo (spel
 
 `npx tsc --noEmit` sem erros; `npm run build` sucesso; harnesses puros preexistentes reexecutados sem alteração de código e sem regressão: `validate-slug-collision.mjs` (46/46), `validate-editorial-drag.mjs` (6/6), `validate-import-export-book.mjs` (19/19). Nenhuma migration criada ou alterada.
 
+## Teste de regressão (rodada posterior)
+
+Esta correção não tinha cobertura de teste automatizado até uma rodada de auditoria posterior (a mesma que corrigiu o round-trip de item — ver `docs/CHECKPOINT_CORRECAO_SCHEMA_ITEM_ROUNDTRIP.md`). Adicionado `scripts/dev/validate-post-mvp-effects.mjs` — 17 verificações rodando a REGRA REAL de produção (`validarCamposTalento`, chamada por "Salvar rascunho" e pela revisão de publicação), cobrindo os 16 tipos pós-MVP das Etapas 7–10 individualmente, mais validação genérica (gatilho/alvo), tipo desconhecido, tipos MVP (regressão negativa e positiva) e um talento com múltiplos tipos pós-MVP no mesmo rascunho. **Reproduzido rigorosamente contra o código pré-fix real** (`git show e584abb~1:src/lib/contentSchema/effectDraftValidation.ts`): 14/17 falham exatamente como esperado (mensagem antiga `"só os 6 tipos do MVP são suportados"`); restaurado o arquivo corrigido, 17/17 voltam a passar.
+
+Também confirmado ao vivo via browser real (Supabase real): smoke check em talento contendo um efeito pós-MVP (`acao_trama`) — "Salvar rascunho" sem erro de tipo inválido (versão de edição incrementada 1→2), reload confirmando persistência do efeito, e tela de "Revisar e publicar" abrindo sem erros bloqueantes (só avisos informativos esperados, incluindo o aviso de que `acao_trama` é lembrete por não ter executor genérico). Fixture removida ao final (rascunho, sem publicação).
+
 ## Status por etapa após esta correção
 
 Ver as seções "Aceite de browser" adicionadas a cada checkpoint de Etapa 4–10 para o detalhamento item a item. Resumo:

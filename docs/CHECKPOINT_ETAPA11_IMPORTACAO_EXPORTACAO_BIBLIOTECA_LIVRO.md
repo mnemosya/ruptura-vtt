@@ -396,3 +396,22 @@ Rodada dedicada a **re-verificar de forma independente** as duas lacunas que a r
 > 0025) — nenhuma delas reaproveita `content_import_sessions`/
 > `content_book_links` ou qualquer estrutura desta etapa. Ver
 > `docs/CHECKPOINT_ETAPA12_CONTEUDO_MESA_HOMEBREW.md`.
+
+> **Nota de registro transversal (rodada de correção do round-trip de
+> item, sem alterar o status acima e sem reabrir a validação do drag
+> editorial):** o defeito "item publicado via Editor Universal falha a
+> revalidação de schema oficial usada por esta etapa na importação"
+> (`categoria_label`/`raridade_label` ausentes em `serializarItem`,
+> registrado como achado não corrigido em
+> `docs/CHECKPOINT_ETAPA5_PUBLICACAO_VERSIONAMENTO.md`) foi corrigido e
+> o round-trip de item (exportar → reimportar sem edição manual do JSON
+> → classificado "Idêntico ao publicado"; e exportar → alterar um campo
+> com a função de hash real → reimportar → "Atualização de conteúdo
+> publicado" → salvar/revisar/republicar) foi provado ao vivo contra o
+> Supabase real. **O defeito transversal deixou de existir.** Nenhuma
+> tabela, Server Action ou lógica desta etapa (pacote/manifest/hash/
+> classificação de importação/vínculos editoriais/drag) foi alterada —
+> a correção ficou inteira em `serializarItem`
+> (`publishSerialization.ts`) e em uma nova checagem de schema em
+> `montarRevisaoPublicacao` (`publishReview.ts`), ambos fora desta
+> etapa. Ver `docs/CHECKPOINT_CORRECAO_SCHEMA_ITEM_ROUNDTRIP.md`.
