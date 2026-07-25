@@ -211,19 +211,103 @@ Console e rede: nenhum erro em nenhum passo verificado. Fixtures completamente r
 
 **Status permanece**: **"Implementação concluída — aceite operacional parcial."** Não promovido a "concluída — aceite de browser aprovado" porque os itens 21–23 (fluxo operacional real, não apenas editorial) continuam sem execução — critério explícito do aditivo para essa etapa. A correção do bug de validação de tipos pós-MVP é o achado principal desta rodada; não altera o status desta etapa especificamente (o bug não afetava os 6 tipos MVP), mas foi decisivo para destravar o aceite das Etapas 7–10.
 
+## 9.3 Rodada de conclusão do aceite operacional (25/07/2026)
+
+**Objetivo exclusivo desta rodada**: reconstruir o checklist original de 25 itens do browser check (`scripts/dev/check-admin-effect-builder.ts`), separar aprovado de pendente com evidência concreta, e executar especificamente os itens 21–23 — os únicos que nunca tinham sido concluídos em execução alguma (nem na sessão original, nem na auditoria formal §9.2). Não reabre Etapas 5–12, não repete importação/exportação, drag editorial, RLS, concorrência ou conteúdo de campanha, não implementa efeito novo.
+
+### Checklist reconstruído (25 itens, fonte: `check-admin-effect-builder.ts`)
+
+| # | Descrição original | Rota/componente | Classificação | Evidência |
+|---|---|---|---|---|
+| 1 | Acesso sem login bloqueado (`/admin/biblioteca/rascunhos/novo`) | `admin/layout.tsx` | Aprovado anteriormente | §9.1 (execução real do script) |
+| 2 | Admin abre rascunho de magia | `rascunhos/novo` | Aprovado anteriormente | §9.1, reconfirmado nesta rodada (smoke, ver abaixo) |
+| 3 | Dano 1d8 (energético/ígneo) adicionado | `EfeitoCamposPorTipo.tsx` (dano) | Aprovado anteriormente | §9.1, §9.2; reconfirmado nesta rodada |
+| 4/5 | Salva e recarrega — mesmo ID/ordem/campos | `rascunho-salvar` + reload | Aprovado anteriormente | §9.1, §9.2; reconfirmado nesta rodada |
+| 6/7/8 | Aplicar condição com condição real ("atordoado"); diagnóstico de automação exibido | `EfeitoCamposPorTipo.tsx` (aplicar_condicao) | Aprovado anteriormente | §9.1, §9.2 (modoAutomacao="Assistido" confirmado ao vivo) |
+| 9 | Reordena os efeitos | `efeito-mover-baixo` | Aprovado anteriormente | §9.1, §9.2 |
+| 10 | Duplica um efeito | `efeito-duplicar` | Aprovado anteriormente | §9.1, §9.2 |
+| 11 | Remove um efeito | `efeito-remover` | Aprovado anteriormente | §9.1, §9.2 |
+| 12 | Cancelar alteração não salva | `rascunho-cancelar` | Aprovado anteriormente | §9.1, §9.2 |
+| 13 | Item com cura 2d6 PV, modo automático confirmado | `EfeitoCamposPorTipo.tsx` (cura) | Aprovado anteriormente | §9.1 (ao menos 1 execução); §9.2 confirmou cura "Automático" ao vivo (2d6→1d4 no teste) |
+| 14 | Item que remove condição | `EfeitoCamposPorTipo.tsx` (remover_condicao) | Aprovado anteriormente | §9.1 (ao menos 1 execução); §9.2 confirmou "Automático" ao vivo (envenenado) |
+| 15/16 | Talento com +1 Luta no nível 1; 3 níveis mantidos, sem vazamento entre níveis | `CamposTalentoSection.tsx` | Aprovado anteriormente | §9.1 (ao menos 1 execução com o código atual) |
+| 17 | Alterar recurso no nível 2; nível 1 permanece intacto | `CamposTalentoSection.tsx` | Aprovado anteriormente | §9.1 (ao menos 1 execução com o código atual) |
+| 18 | Efeito legado (`teste_resistencia`) permanece preservado | `efeitos-preservados-container` | Aprovado anteriormente | §9.1, §9.2 |
+| 19 | Nenhum JSON bruto vazando no fluxo principal | — | Aprovado anteriormente | §9.1, §9.2 |
+| 20 | Preview reflete os efeitos configurados, na mesma ordem | `EffectsPreviewList.tsx` | Aprovado anteriormente | §9.1, §9.2 |
+| **21** | **Executor genérico aplica condição real em alvo real** | `/dev/table`, `executarAplicarCondicao` | **Aprovado nesta rodada** | Ver abaixo |
+| **22** | **Condição aplicada persiste após reload (não é só estado de memória do client)** | `/dev/table` | **Aprovado nesta rodada** | Ver abaixo |
+| **23** | **Segunda tentativa (já ativa) falha com erro visível, sem duplicar nem persistir** | `/dev/table` | **Aprovado nesta rodada** | Ver abaixo |
+| 24 | Console sem erros | — | Aprovado nesta rodada (reconfirmado) | `read_console_messages` limpo em todos os fluxos desta rodada |
+| 25 | Limpeza dos dados de teste | — | Aprovado nesta rodada | Fixtures removidas, contagem zero (ver abaixo) |
+
+Nenhum item foi "substituído por fluxo equivalente" ou "removido do escopo por decisão formal" — a UI e a arquitetura descritas no checkpoint original (§1–§8) permanecem exatamente as mesmas; os `data-testid` usados pelo script de 2026-07 (`estado-personagem-`, `estado-condicao-select-`, `estado-aplicar-condicao-`, `estado-condicoes-`, `estado-remover-condicao-`, `estado-personagens-erro`) foram conferidos linha a linha contra `TableClient.tsx` antes de qualquer execução e **continuam presentes e idênticos** — não houve deriva de seletor desde a última tentativa.
+
+### Significado exato dos itens 21–23
+
+Não é só `aplicar_condicao` "em geral" — é especificamente o **consumo operacional real** do executor genérico (`src/lib/character/conditionEffectExecutor.ts::executarAplicarCondicao`, §5 deste checkpoint) através do único fluxo ao qual ele está conectado hoje: o botão "Aplicar condição" do narrador em `/dev/table` (`TableClient.tsx::handleGmApplyCondition`). Mapeia diretamente ao critério de aceite do aditivo "consumidores compatíveis interpretam o conteúdo" (`docs/ADITIVO_PRD_EDITOR_UNIVERSAL_CONTEUDO.md`, ETAPA 4). Não exige publicação de conteúdo novo — a condição consumida (`condition:atordoado`) já está publicada na Biblioteca desde antes desta etapa; o efeito `aplicar_condicao` em si não precisa ser criado/publicado em nenhuma magia/item/talento para este teste, porque o executor é chamado diretamente pela ferramenta manual do narrador, não por um efeito de conteúdo publicado. Exige, sim: uma mesa real, um personagem real vinculado a um perfil da mesa, e mutação persistida em `characters.payload` (não um objeto local do editor).
+
+Nenhum documento posterior removeu esses itens do escopo — o próprio checkpoint original (§9.1) e a auditoria formal (§9.2) já registravam que eles continuavam pendentes, nunca que haviam sido descartados.
+
+### Achado de ambiente (não é bug de código): `/dev/table` deixou de ser acessível sem login
+
+Antes de qualquer execução, `/dev/table` sem sessão autenticada retornou **"Falha ao listar personagens: permission denied for table characters"** — investigado diretamente via SQL contra o Supabase real: a tabela `characters` só tem grants para as roles `authenticated`/`service_role`/`postgres` (nenhum grant para `anon`), e suas policies de RLS (`characters_authenticated_select` etc.) exigem `owner_id = auth.uid()` ou posse/membership da mesa — não existe mais nenhuma policy `USING (true)` tipo "dev-anon" nesta tabela especificamente (diferente de `campaigns`, que ainda tem `campaigns_dev_transition_select` aberta). Isso significa que o comentário "Sem autenticação" no cabeçalho de `TableClient.tsx`/`page.tsx` e no script original ("Não exige login") está **desatualizado** — em algum ponto posterior (mais provável: o trabalho de RLS real da Etapa 12) as policies de `characters` foram fechadas para exigir autenticação, sem atualizar essa documentação inline. Não é um bug funcional (a mutação em si funciona corretamente, corretamente autenticada) e não foi corrigido nesta rodada (comentário desatualizado é dívida cosmética, fora do escopo "corrigir apenas bugs concretos reproduzidos" — nenhuma correção de comentário foi feita). Contornado criando um narrador autenticado real (fluxo de cadastro `/login`, mesma técnica já usada nas rodadas anteriores) e atribuindo `owner_id` às fixtures.
+
+### Execução real dos itens 21–23
+
+**Fixtures preparadas** (prefixo `zz_e2e_etapa4_aceite_`, nunca reaproveitando a mesa/personagem compartilhados "Mesa CP7 Bando"/"Personagem A (CP7)" usados pelas rodadas anteriores — mesa e personagem próprios, criados e removidos integralmente nesta rodada):
+- narrador autenticado (`etapa4-aceite@ruptura-test.local`, cadastro real via `/login`, `admin_users` concedido via SQL para a parte de smoke check editorial);
+- mesa `zz_e2e_etapa4_aceite_mesa` (`owner_id` = narrador);
+- personagem `zz_e2e_etapa4_aceite_personagem` (`owner_id` = narrador, vinculado à mesa);
+- perfil de mesa `zz_e2e_etapa4_aceite_perfil`, com o personagem vinculado (`profile_id`) e definido como personagem ativo do perfil — passo necessário porque `characters_authenticated_select` só libera leitura por posse OU por `profile_id` + membership, e a seção "Estado dos personagens" de `/dev/table` só renderiza personagens com `active_character_id` de algum perfil da mesa (não todo personagem com `campaign_id` setado — achado de arquitetura confirmado lendo `refreshPersonagensAtivos` em `TableClient.tsx`, não um bug);
+- condição real já publicada na Biblioteca (`condition:atordoado`) — nenhuma condição nova criada.
+
+**Item 21** — selecionada "Atordoado" no `<select>` do painel do personagem (`estado-condicao-select-<characterId>`) e clicado "Aplicar condição" (`estado-aplicar-condicao-<characterId>`): painel passou de "Condições ativas: nenhuma" para exibir a tag "Atordoado" com botão "Remover" — confirmado por leitura do DOM (`estado-condicoes-<characterId>`), não por inspeção de código.
+
+**Item 22** — página recarregada de fato (`navigate` com `force: true`, não só re-render client) e a mesa reselecionada (o estado de mesa selecionada é só React, some em qualquer reload — comportamento já documentado em §9.1, item 3 da lista de correções de seletor): "Atordoado" continuou presente no painel após o reload, confirmando persistência real em `characters.payload` via Supabase, não memória de client. Um log `character_state_change`/`apply_condition` também apareceu em "Log da mesa" (1/1).
+
+**Item 23** — selecionada "Atordoado" de novo no mesmo personagem e clicado "Aplicar condição" outra vez: mensagem de erro exibida no painel — `"Atordoado" já está ativa neste alvo — o modelo atual não empilha a mesma condição.` (texto vindo diretamente de `executarAplicarCondicao`, §5) — nenhuma tag duplicada apareceu (continuou exatamente 1 "Atordoado"), e o contador de log da mesa permaneceu em 1/1 (a segunda tentativa não gerou nenhum novo log — confirma que a validação bloqueou ANTES de qualquer persistência, exatamente como `executarAplicarCondicao` documenta: "nunca aplica parcialmente").
+
+**Remoção da condição** (parte do fluxo de `remover_condicao` operacional, verificado en passant): clicado "Remover" no chip da condição — a seção "Condições ativas" voltou a ficar vazia, sem crash, sem erro.
+
+Console (`read_console_messages`) e rede (`read_network_requests`) verificados após cada ação: **nenhum erro, nenhuma resposta fora de 200/304/OK esperada**.
+
+### Smoke check dos itens já aprovados
+
+Um único fluxo completo reexecutado para reconfirmar a saúde do ambiente hoje (não os 20 itens individualmente, já fartamente evidenciados em §9.1/§9.2 no mesmo dia): magia nova → efeito `dano` 1d8 energético/`ao_acertar`/`alvo_principal` → salvar (v2) → reload → card preservado com mesmo ID/campos, modo "Assistido" — sem erros de console/rede.
+
+### Nenhum bug encontrado
+
+Nenhum defeito concreto foi reproduzido nesta rodada — nem nos itens 21–23 (o executor e o fluxo manual do narrador funcionaram exatamente como `docs/CHECKPOINT_ETAPA4...md` §5 já descrevia), nem no smoke check. Por isso, nenhuma correção de código e nenhum teste regressivo novo foram criados — só o achado de ambiente (RLS de `characters` exige login, comentário desatualizado) foi registrado como fato, sem alteração de código.
+
+### Fixtures removidas
+
+Confirmado por contagem zero contra o Supabase real ao final: rascunho de magia do smoke check (`content_drafts`), personagem `zz_e2e_etapa4_aceite_personagem` (`characters`), perfil `zz_e2e_etapa4_aceite_perfil` (`campaign_profiles`), mesa `zz_e2e_etapa4_aceite_mesa` (`campaigns`), logs da mesa (`table_logs`), narrador de fixture (`admin_users` + `auth.users`). Nenhuma mesa/personagem/conteúdo real ou de outra rodada (incluindo "Mesa CP7 Bando"/"Personagem A (CP7)", que não foram tocados nesta rodada) foi alterado ou removido.
+
+### Verificação técnica
+
+`git status --short` limpo antes de iniciar; `next-env.d.ts` revertido após um toque automático do `next dev`/`next build`; `npx tsc --noEmit` sem erros; `npm run build` sucesso (servidor parado antes). Nenhum arquivo de produção foi alterado nesta rodada (nenhum bug real encontrado) — logo nenhum harness precisou ser reexecutado por afetação direta (`effectDraftValidation.ts`, serializers e `publishReview.ts` não foram tocados); os harnesses de Etapa 11/12 também não se aplicam (nenhum código compartilhado alterado).
+
+**Status desta etapa, promovido**: **"Etapa 4 concluída — aceite operacional e de browser aprovado."** Todos os 25 itens do checklist original têm evidência concreta de aprovação (itens 1–20 e 24 já documentados em §9.1/§9.2 mais os itens 21–23 e a limpeza fechados nesta rodada); nenhum item obrigatório permanece pendente; nenhuma falha crítica ou média foi encontrada.
+
+**Etapas 5–12: não reabertas.** Etapa 5 permanece exatamente "Implementada — aceite de browser parcial."; Etapas 6–10 permanecem com implementação concluída e aceite de browser parcial/pendente conforme seus próprios checkpoints; Etapa 11 permanece exatamente "Etapa 11 concluída — integração editorial de drag aprovada."; Etapa 12 permanece exatamente "Etapa 12 concluída — validação integrada aprovada." — nenhum desses documentos foi alterado por esta rodada.
+
+**Status global do Editor Universal**: **"Editor Universal parcialmente concluído — validações de browser das Etapas 5–10 pendentes."** Não declarado concluído.
+
 ---
 
 ## 10. Limitações
 
-- Browser check não concluído 100% ponta a ponta em nenhuma sessão até agora (ver §9.1). Itens 1–12 e 18–20 confirmados de forma consistente; itens 13–17 confirmados em ao menos uma execução com o código atual (não na última); itens 21–23 (executor operacional de `aplicar_condicao` via `/dev/table`, incluindo persistência e bloqueio de segunda tentativa) nunca concluídos em execução alguma — os problemas de seletor que os bloqueavam foram corrigidos, mas isso não foi reverificado em uma execução completa. Testes encerrados por decisão explícita da proprietária da conta; verificação restante fica para o teste manual com jogadores, não para outra rodada de browser check.
+- **Histórico (superado pela §9.3)**: até 25/07/2026, o browser check nunca havia sido concluído 100% ponta a ponta numa única execução — itens 21–23 (executor operacional de `aplicar_condicao` via `/dev/table`) nunca tinham sido exercitados com sucesso. Ver §9.3 para a execução que fechou especificamente esses itens.
 - Item 2 do checkpoint anterior ("usuário sem admin bloqueado") continua sem cobertura automatizada (mesma decisão da Etapa 2/3 — exigiria criar uma segunda credencial de teste).
-- `aplicar_condicao` só tem execução real automática através do fluxo manual de `/dev/table` — magia/item/runa continuam sem aplicação automática de condição (exigiria resolver alvo/distância, fora do teatro da mente de Ruptura).
+- `aplicar_condicao` só tem execução real automática através do fluxo manual de `/dev/table` — magia/item/runa continuam sem aplicação automática de condição (exigiria resolver alvo/distância, fora do teatro da mente de Ruptura). Isso é uma limitação de PRODUTO conhecida e aceita, não uma pendência de aceite — o critério de aceite exige que o executor genérico funcione operacionalmente através de ALGUM consumidor real (§9.3), não que todo tipo de conteúdo o dispare automaticamente.
 - `alterar_recurso` só tem um caso realmente automático hoje (PA em fim de rodada) — os demais recursos ficam "assistido" mesmo bem configurados, refletindo a auditoria real do motor.
+- `/dev/table` exige narrador autenticado (achado de ambiente registrado em §9.3) — o comentário "sem autenticação" no cabeçalho de `TableClient.tsx`/`page.tsx` está desatualizado desde que as policies de RLS de `characters` deixaram de ter uma regra `USING (true)` para leitura anônima; não corrigido nesta rodada (dívida cosmética, fora do escopo desta correção pontual).
 - Efeitos compostos, teste/resistência com ramificação, grupos lógicos, modificação de margem, ação/reação adicional, inventário/runas, mercado avançado, drones/robôs/Trama, importação/exportação, homebrew — todos fora de escopo, como definido.
-- Publicação continua bloqueada (rascunho permanece "não disponível no jogo") — Etapa 5.
+- Publicação de conteúdo com `aplicar_condicao` continua exigindo revisão manual como qualquer outro efeito (Etapa 5) — o executor testado em §9.3 é a ferramenta MANUAL do narrador, não uma automação disparada por publicação.
 
 ---
 
-## 11. Próximos passos (não iniciados nesta etapa)
+## 11. Próximos passos
 
-Conforme `docs/PLANO_IMPLEMENTACAO_EDITOR_UNIVERSAL.md`, a **Etapa 5 — Publicação, versões e changelog** é o próximo passo natural. Antes disso, recomenda-se fechar a lacuna de confirmação do browser check (§9.1).
+Etapa 4 concluída (§9.3). Conforme `docs/PLANO_IMPLEMENTACAO_EDITOR_UNIVERSAL.md`, as Etapas 5–10 seguem em "aceite de browser parcial" (não reabertas nesta rodada) e a Etapa 11/12 seguem concluídas — nenhuma dessas etapas foi tocada por esta rodada, cujo escopo foi exclusivamente fechar o aceite operacional da Etapa 4.
