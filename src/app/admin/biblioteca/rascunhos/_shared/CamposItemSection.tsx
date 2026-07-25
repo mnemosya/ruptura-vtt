@@ -1,10 +1,15 @@
 "use client";
 
 import type { CamposItem } from "../../../../../lib/contentSchema/draftTypes";
+import { RARIDADE_ITEM_LABELS } from "../../../../../lib/contentSchema/itemLabels";
 import { fieldGridStyle, inputStyle, labelStyle } from "./formStyles";
 import { StringListEditor } from "./StringListEditor";
 
-const RARIDADES = ["comum", "incomum", "raro", "muito_raro", "lendario"];
+// Mesmo enum fechado do schema oficial de equipamentos — nunca uma lista
+// própria (ver itemLabels.ts, única fonte de verdade). A lista anterior
+// aqui tinha "lendario" (nunca existiu no schema/conteúdo real) e
+// nunca tinha "muito_comum" (usado por conteúdo real, incl. legado).
+const RARIDADES = Object.keys(RARIDADE_ITEM_LABELS);
 
 function numeroOuIndefinido(valor: string): number | undefined {
   if (valor.trim() === "") return undefined;

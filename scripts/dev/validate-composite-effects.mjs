@@ -120,13 +120,14 @@ function rawItemBase(slug, efeitosOriginais = []) {
     estatisticas: {}, payload_automacao: { efeitos: efeitosOriginais },
   };
 }
-function draftSpell(efeitos, efeitosOriginais = []) {
+function draftSpell(efeitos, efeitosOriginais = [], origemLegado = undefined) {
   return {
     id: "draft-1", content_type: "spell", slug: "zz_teste_composto", version: 1,
     payload: {
       schemaVersion: "draft.v1", contentType: "spell",
       camposEditaveis: { contentType: "spell", campos: { nome: "ZZ Teste Composto", slug: "zz_teste_composto", categoria: "magia", tags: ["magia"], vertente: "energetica", requisitos: [], efeitos } },
       preservado: { rawOriginal: rawSpellBase("zz_teste_composto", efeitosOriginais), camposDesconhecidos: [] },
+      ...(origemLegado ? { origemLegado } : {}),
     },
   };
 }
@@ -168,13 +169,23 @@ checar("3. Magia: payload publicado válido contra schema_magias_v1_3", validarP
 checar("4. Magia: nenhuma chave _editor no payload", !JSON.stringify(corpo1).includes("_editor"));
 
 // ---------------------------------------------------------------------
-// 5. Efeito legado preservado (spell): efeito_com_resistencia ANTIGO
-//    convive intacto ao lado da NOVA árvore (não é apagado nem confundido).
+// 5. Efeito legado preservado (spell): rascunho de CONVERSÃO DE LEGADO
+//    (origemLegado presente, Etapa 6) constrói uma árvore NOVA do zero
+//    ao lado de um efeito_com_resistencia legado nunca auto-convertido —
+//    os dois devem coexistir (o antigo intacto/somente leitura, o novo
+//    editável), nunca um apagar o outro. Só se aplica quando o rascunho
+//    É de conversão de legado — ver caso 15 para o contraste (reedição
+//    de conteúdo já publicado pelo Editor, onde a regra é a oposta).
 // ---------------------------------------------------------------------
 const efeitoLegadoAntigo = { tipo: "efeito_com_resistencia", resistencia: { cd_formula: "5 + nivel_vertente", acoes: ["esquivar"] } };
-const draft1b = draftSpell([arvoreSpell], [efeitoLegadoAntigo]);
+const origemLegadoStub = {
+  adapterId: "spell", adapterVersion: "spell.legacy.v1", classificacaoLegado: "conversao_com_confirmacao",
+  decisoesConfirmadas: {}, camposSomenteLeitura: [], camposDesconhecidos: [], efeitosPreservados: [], avisos: [],
+  convertidoEm: "2026-01-01T00:00:00.000Z", convertidoPor: "zz_e2e_test",
+};
+const draft1b = draftSpell([arvoreSpell], [efeitoLegadoAntigo], origemLegadoStub);
 const corpo1b = serializarRascunhoParaPublicacao(draft1b);
-checar("5. Legado: efeito_com_resistencia antigo (mesmo com fórmula desatualizada) permanece preservado intacto", corpo1b.payload_automacao.efeitos.some((e) => e.tipo === "efeito_com_resistencia" && e.resistencia?.cd_formula === "5 + nivel_vertente"));
+checar("5. Legado (origemLegado presente): efeito_com_resistencia antigo nunca auto-convertido convive intacto ao lado da árvore nova", corpo1b.payload_automacao.efeitos.some((e) => e.tipo === "efeito_com_resistencia" && e.resistencia?.cd_formula === "5 + nivel_vertente"));
 
 // ---------------------------------------------------------------------
 // 6. Bloqueio: CD legada '5 + nivel_vertente' nunca é produzida pela
@@ -246,6 +257,39 @@ checar("13. Bloqueio: teste_resistencia em talento é rejeitado", validarEfeitoP
 // ---------------------------------------------------------------------
 const arvoreItemDerivada = { ...arvoreSpell, campos: { ...arvoreSpell.campos, cd: { tipo: "derivada", origem: "vertente" } } };
 checar("14. Bloqueio: CD derivada em item é rejeitada (exige valor literal)", validarEfeitoParaPublicacao("item", arvoreItemDerivada).length > 0);
+
+// ---------------------------------------------------------------------
+// 15. REGRESSÃO (achado ao vivo na rodada de aceite das Etapas 6/7):
+//     reeditar um `teste_resistencia` já publicado pelo PRÓPRIO Editor
+//     (origemLegado AUSENTE — draft normal, recuperado de
+//     content_editor_metadata; rawOriginal JÁ contém o
+//     `efeito_com_resistencia`+siblings da publicação anterior) não pode
+//     DUPLICAR essas entradas — a serialização deve SUBSTITUIR, nunca
+//     acumular a cada republicação. Contraste direto com o caso 5 acima
+//     (origemLegado PRESENTE → coexistência é o comportamento certo).
+//     `ehEfeitoMvpLegado` (publishSerialization.ts) checava só os 6 tipos
+//     originais do MVP em QUALQUER caso (mesma classe de bug do
+//     e584abb, em outro arquivo) — um `teste_resistencia`/
+//     `modificar_margem`/`alterar_dano_recebido` reeditado nunca
+//     substituía sua própria entrada legada, duplicando a cada ciclo de
+//     edição→publicação. Reproduzido ao vivo: republicar 3x seguidas
+//     acumulava 1→2→3 cópias de `efeito_com_resistencia` no payload real.
+// ---------------------------------------------------------------------
+const efeitosJaPublicadosAntes = [
+  { tipo: "efeito_com_resistencia", resistencia: { pericias: ["vigor"], cd_formula: "6 + nivel_vertente" } },
+  { dado: "3d6", tipo: "dano", tipo_dano: "energetico", subtipo_dano: "igneo", sucesso: "metade" },
+  { tipo: "dano", dado: "3d6", tipo_dano: "energetico", subtipo_dano: "igneo" },
+  { tipo: "aplicar_condicao", condicao: "atordoado" },
+];
+const draftReedicao = draftSpell([arvoreSpell], efeitosJaPublicadosAntes);
+const corpoReedicao = serializarRascunhoParaPublicacao(draftReedicao);
+const efeitosReedicao = corpoReedicao.payload_automacao.efeitos;
+const qtdResistenciaReedicao = efeitosReedicao.filter((e) => e.tipo === "efeito_com_resistencia").length;
+checar(
+  "15. Reedição: republicar uma árvore teste_resistencia recuperada de metadata NÃO duplica efeito_com_resistencia (rawOriginal já continha a publicação anterior)",
+  qtdResistenciaReedicao === 1,
+  `esperado 1 efeito_com_resistencia, encontrado ${qtdResistenciaReedicao}: ${JSON.stringify(efeitosReedicao)}`,
+);
 
 console.log(`\n${falhas === 0 ? "=== TODOS OS CASOS PASSARAM ===" : `=== ${falhas} FALHA(S) ===`}`);
 process.exit(falhas === 0 ? 0 : 1);

@@ -17,7 +17,7 @@
  */
 
 import type { CamposCapitulo, CamposItem, CamposMagia, CamposRuna, CamposTalento, ContentDraftRow, DraftContentType } from "./draftTypes";
-import { isTipoEfeitoMvp, type EfeitoEditavel } from "./effectDraftTypes";
+import { isTipoEfeitoEditavel, isTipoEfeitoMvp, type EfeitoEditavel } from "./effectDraftTypes";
 import { resolverTipoCanonico } from "./effectTypeRegistry";
 import { reconstruirEfeitosLegado } from "./effectLegacySerialization";
 import { categoriaItemLabel, raridadeItemLabel } from "./itemLabels";
@@ -41,15 +41,42 @@ function setOpcional(obj: Record<string, unknown>, chave: string, valor: unknown
   obj[chave] = valor;
 }
 
-/** True quando o efeito legado é um dos 6 tipos do MVP para aquele content_type (será substituído pelos editáveis). */
-function ehEfeitoMvpLegado(contentType: DraftContentType, tipoLegado: string | undefined): boolean {
-  return isTipoEfeitoMvp(resolverTipoCanonico(contentType, tipoLegado));
+/**
+ * True quando o efeito legado deve ser SUBSTITUÍDO pelos editáveis
+ * (nunca duplicado ao lado deles) na hora de reconstruir
+ * `payload_automacao.efeitos`.
+ *
+ * Dois casos, com regras DIFERENTES por design (ver docs/CHECKPOINT_
+ * ETAPA6_ADAPTADORES_LEGADO.md §5 e CHECKPOINT_ETAPA7_..md §5):
+ *
+ * - `origemLegado` presente (rascunho nasceu de `criarRascunhoDeEdicaoLegado`,
+ *   Etapa 6): só os 6 tipos originais do MVP são auto-promovidos ao editar
+ *   legado — um `efeito_com_resistencia`/`promocao_margem`/etc. legado
+ *   NUNCA é auto-convertido (decisão deliberada, estrutura real varia
+ *   demais entre spell/item/rune/property), mesmo que a pessoa
+ *   administradora construa uma árvore NOVA do zero ao lado dele — os
+ *   dois devem coexistir (o antigo preservado, somente leitura; o novo
+ *   editável). Aqui `isTipoEfeitoMvp` é o predicado certo.
+ * - `origemLegado` ausente (edição normal, incl. reedição de conteúdo já
+ *   publicado pelo próprio Editor, recuperada de `content_editor_metadata`):
+ *   qualquer entrada legada de um tipo que o Construtor sabe
+ *   criar/serializar é a PRÓPRIA saída anterior do editor para esse
+ *   mesmo efeito — precisa ser substituída, nunca somada. Usar aqui só
+ *   `isTipoEfeitoMvp` (bug real, mesma classe do e584abb): um
+ *   `teste_resistencia`/`modificar_margem`/`alterar_dano_recebido`
+ *   reeditado nunca substituía sua própria entrada legada já presente em
+ *   `rawOriginal` — cada republicação ACUMULAVA mais uma cópia duplicada.
+ *   `isTipoEfeitoEditavel` é o predicado certo aqui.
+ */
+function ehEfeitoLegadoSubstituivel(contentType: DraftContentType, tipoLegado: string | undefined, origemLegado: boolean): boolean {
+  const tipoCanonico = resolverTipoCanonico(contentType, tipoLegado);
+  return origemLegado ? isTipoEfeitoMvp(tipoCanonico) : isTipoEfeitoEditavel(tipoCanonico);
 }
 
 // ---------------------------------------------------------------------
 // Magia
 // ---------------------------------------------------------------------
-function serializarMagia(base: Record<string, unknown>, campos: CamposMagia): Record<string, unknown> {
+function serializarMagia(base: Record<string, unknown>, campos: CamposMagia, origemLegado: boolean): Record<string, unknown> {
   setOpcional(base, "nome", campos.nome);
   setOpcional(base, "categoria", campos.categoria);
   setOpcional(base, "vertente", campos.vertente);
@@ -99,7 +126,7 @@ function serializarMagia(base: Record<string, unknown>, campos: CamposMagia): Re
     }
   }
 
-  aplicarEfeitos(base, "spell", campos.efeitos);
+  aplicarEfeitos(base, "spell", campos.efeitos, origemLegado);
   aplicarRequisitosTopo(base, campos.requisitos);
   return base;
 }
@@ -107,7 +134,7 @@ function serializarMagia(base: Record<string, unknown>, campos: CamposMagia): Re
 // ---------------------------------------------------------------------
 // Item
 // ---------------------------------------------------------------------
-function serializarItem(base: Record<string, unknown>, campos: CamposItem): Record<string, unknown> {
+function serializarItem(base: Record<string, unknown>, campos: CamposItem, origemLegado: boolean): Record<string, unknown> {
   setOpcional(base, "nome", campos.nome);
   setOpcional(base, "categoria", campos.categoria);
   // `categoria_label`/`raridade_label` nunca vêm do client — sempre
@@ -142,7 +169,7 @@ function serializarItem(base: Record<string, unknown>, campos: CamposItem): Reco
   setOpcional(est, "municao_compativel", campos.municaoCompativelSlug);
   base.estatisticas = est;
 
-  aplicarEfeitos(base, "item", campos.efeitos);
+  aplicarEfeitos(base, "item", campos.efeitos, origemLegado);
   return base;
 }
 
@@ -152,7 +179,7 @@ function serializarItem(base: Record<string, unknown>, campos: CamposItem): Reco
 // `categoria_label` const "runa"/"Runa", `custo_integridade` sempre 0 —
 // nunca escrito a partir do editor, nunca uma regra reintroduzida).
 // ---------------------------------------------------------------------
-function serializarRuna(base: Record<string, unknown>, campos: CamposRuna): Record<string, unknown> {
+function serializarRuna(base: Record<string, unknown>, campos: CamposRuna, origemLegado: boolean): Record<string, unknown> {
   setOpcional(base, "nome", campos.nome);
   base.categoria = "runa";
   base.categoria_label = "Runa";
@@ -166,14 +193,14 @@ function serializarRuna(base: Record<string, unknown>, campos: CamposRuna): Reco
   setOpcional(base, "restricao_subtipo", campos.restricaoSubtipo);
   base.requisito_pericia = campos.requisitoPericia ?? null;
 
-  aplicarEfeitos(base, "rune", campos.efeitos);
+  aplicarEfeitos(base, "rune", campos.efeitos, origemLegado);
   return base;
 }
 
 // ---------------------------------------------------------------------
 // Talento (árvore com 3 níveis, um único documento)
 // ---------------------------------------------------------------------
-function serializarTalento(base: Record<string, unknown>, campos: CamposTalento): Record<string, unknown> {
+function serializarTalento(base: Record<string, unknown>, campos: CamposTalento, origemLegado: boolean): Record<string, unknown> {
   setOpcional(base, "nome", campos.nome);
   setOpcional(base, "descricao_curta", campos.descricaoCurta);
   setOpcional(base, "descricao_longa", campos.descricaoLonga);
@@ -187,7 +214,7 @@ function serializarTalento(base: Record<string, unknown>, campos: CamposTalento)
     setOpcional(nivelBase, "descricao_curta", nivelEditavel.descricaoCurta);
     setOpcional(nivelBase, "descricao_longa", nivelEditavel.descricaoLonga);
     nivelBase.nivel = nivelEditavel.nivel;
-    aplicarEfeitos(nivelBase, "talent", nivelEditavel.efeitos);
+    aplicarEfeitos(nivelBase, "talent", nivelEditavel.efeitos, origemLegado);
     aplicarRequisitosNivel(nivelBase, nivelEditavel.requisitos);
     return nivelBase;
   });
@@ -220,14 +247,14 @@ function serializarCapitulo(base: Record<string, unknown>, campos: CamposCapitul
 // ---------------------------------------------------------------------
 // Auxiliares compartilhados
 // ---------------------------------------------------------------------
-function aplicarEfeitos(alvo: Record<string, unknown>, contentType: DraftContentType, efeitosEditaveis: EfeitoEditavel[]): void {
+function aplicarEfeitos(alvo: Record<string, unknown>, contentType: DraftContentType, efeitosEditaveis: EfeitoEditavel[], origemLegado: boolean): void {
   const automacao = asRecord(alvo.payload_automacao);
   const efeitosOriginais = Array.isArray(automacao.efeitos) ? automacao.efeitos : [];
   automacao.efeitos = reconstruirEfeitosLegado(
     contentType,
     efeitosOriginais,
     efeitosEditaveis,
-    (tipoLegado) => ehEfeitoMvpLegado(contentType, tipoLegado),
+    (tipoLegado) => ehEfeitoLegadoSubstituivel(contentType, tipoLegado, origemLegado),
   );
   alvo.payload_automacao = automacao;
 }
@@ -251,10 +278,11 @@ function aplicarRequisitosNivel(nivelBase: Record<string, unknown>, requisitos: 
 export function serializarRascunhoParaPublicacao(draft: ContentDraftRow): Record<string, unknown> {
   const base = clonar(asRecord(draft.payload.preservado.rawOriginal));
   const editaveis = draft.payload.camposEditaveis;
+  const origemLegado = draft.payload.origemLegado !== undefined;
 
-  if (editaveis.contentType === "spell") return serializarMagia(base, editaveis.campos);
-  if (editaveis.contentType === "item") return serializarItem(base, editaveis.campos);
-  if (editaveis.contentType === "rune") return serializarRuna(base, editaveis.campos);
+  if (editaveis.contentType === "spell") return serializarMagia(base, editaveis.campos, origemLegado);
+  if (editaveis.contentType === "item") return serializarItem(base, editaveis.campos, origemLegado);
+  if (editaveis.contentType === "rune") return serializarRuna(base, editaveis.campos, origemLegado);
   if (editaveis.contentType === "capitulo") return serializarCapitulo(base, editaveis.campos);
-  return serializarTalento(base, editaveis.campos);
+  return serializarTalento(base, editaveis.campos, origemLegado);
 }
