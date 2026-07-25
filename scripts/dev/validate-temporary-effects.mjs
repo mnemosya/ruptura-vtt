@@ -184,23 +184,125 @@ const construido = buildTemporaryEffectFromStructuredPayload({ sourceType: "item
 checar("4. Executor real constrói TemporaryEffect a partir do payload publicado (round-trip completo)", construido?.durationType === "rounds" && construido.remainingRounds === 1 && construido.modifiers?.some((m) => m.target === "roll" && m.value === 1 && m.appliesTo?.includes("luta")));
 
 // ---------------------------------------------------------------------
+// 4b. REGRESSÃO (achado real, rodada final): o payload publicado
+//     configura "acumular_pilha" com max=3/iniciais=1 — o TemporaryEffect
+//     CONSTRUÍDO pelo executor real precisa refletir isso (stackingMode
+//     "stack", stacks=1, maxStacks=3), não hardcodar "replace" ignorando
+//     a política/pilhas publicadas. Antes da correção, `construido`
+//     sempre saía com stackingMode:"replace" e sem stacks/maxStacks,
+//     não importa o que o payload dissesse.
+// ---------------------------------------------------------------------
+checar(
+  "4b. Executor real honra a política publicada (stackingMode/stacks/maxStacks derivados do payload, não hardcoded)",
+  construido?.stackingMode === "stack" && construido.stacks === 1 && construido.maxStacks === 3,
+  `construido: ${JSON.stringify({ stackingMode: construido?.stackingMode, stacks: construido?.stacks, maxStacks: construido?.maxStacks })}`,
+);
+
+// ---------------------------------------------------------------------
 // 5. Expiração real: tickRoundTemporaryEffects expira ao chegar a 0.
 // ---------------------------------------------------------------------
 let personagem = { efeitos_temporarios: [construido] };
 const tick1 = tickRoundTemporaryEffects(personagem, "2026-01-01T00:01:00.000Z");
 checar("5. Expiração real: efeito de 1 rodada expira no primeiro tick (tickRoundTemporaryEffects)", tick1.expired.length === 1 && tick1.expired[0].active === false);
+checar("5b. Expiração real: nenhum modificador residual — a instância expirada continua marcando active:false (nenhum efeito filho 'solto')", tick1.expired[0].active === false && tick1.character.efeitos_temporarios.every((e) => e.active === false));
 
 // ---------------------------------------------------------------------
-// 6. Pilhas: addTemporaryEffect com stackingMode "stack" incrementa pilhas
-//    até maxStacks (nunca ultrapassa).
+// 6. Pilhas: aplicar o MESMO payload publicado 3x via o fluxo real
+//    completo (buildTemporaryEffectFromStructuredPayload + addTemporaryEffect,
+//    nunca objeto construído/patchado à mão) incrementa pilhas até
+//    maxStacks (nunca ultrapassa), sem duplicar instância ativa.
 // ---------------------------------------------------------------------
-const efeitoStackBase = { ...construido, stackingMode: "stack", stacks: 1, maxStacks: 3 };
-let personagemStack = { efeitos_temporarios: [efeitoStackBase] };
-personagemStack = addTemporaryEffect(personagemStack, { ...efeitoStackBase, id: "novo-id" });
-personagemStack = addTemporaryEffect(personagemStack, { ...efeitoStackBase, id: "novo-id-2" });
-personagemStack = addTemporaryEffect(personagemStack, { ...efeitoStackBase, id: "novo-id-3" });
-const pilhasFinais = personagemStack.efeitos_temporarios.find((e) => e.active).stacks;
-checar("6. Pilhas: acumula até o máximo (3) e nunca ultrapassa mesmo com aplicações extras", pilhasFinais === 3);
+function aplicarViaFluxoReal(personagemAtual, contador) {
+  const efeito = buildTemporaryEffectFromStructuredPayload(
+    { sourceType: "item", sourceId: "zz_item_temporario", sourceName: "ZZ Item Temporario" },
+    efeitoPublicado1,
+    "2026-01-01T00:00:00.000Z",
+    () => `uuid-stack-${contador}`,
+  );
+  return addTemporaryEffect(personagemAtual, efeito);
+}
+let personagemStack = { efeitos_temporarios: [] };
+personagemStack = aplicarViaFluxoReal(personagemStack, 1);
+personagemStack = aplicarViaFluxoReal(personagemStack, 2);
+personagemStack = aplicarViaFluxoReal(personagemStack, 3);
+personagemStack = aplicarViaFluxoReal(personagemStack, 4); // 4ª aplicação — não pode ultrapassar o máximo (3)
+const ativosStack = personagemStack.efeitos_temporarios.filter((e) => e.active);
+checar("6. Pilhas (fluxo real completo): acumula até o máximo (3), nunca ultrapassa mesmo com 4 aplicações, e nunca mais de 1 instância ATIVA", ativosStack.length === 1 && ativosStack[0].stacks === 3);
+
+// ---------------------------------------------------------------------
+// 6b. Política "substituir" (replace): reaplicar não duplica instância
+//     ativa — a antiga vira active:false, só a nova fica ativa.
+// ---------------------------------------------------------------------
+const efeitoReplaceItem = { ...efeitoTemporarioItem, campos: { ...efeitoTemporarioItem.campos, politicaReaplicacao: "substituir", acumulavel: false, maximoPilhas: undefined, pilhasIniciais: undefined } };
+const draftReplace = draftItem([efeitoReplaceItem]);
+const corpoReplace = serializarRascunhoParaPublicacao(draftReplace);
+const publicadoReplace = corpoReplace.payload_automacao.efeitos.find((e) => e.tipo === "buff_temporario");
+function aplicarReplace(personagemAtual, contador) {
+  const efeito = buildTemporaryEffectFromStructuredPayload({ sourceType: "item", sourceId: "zz_item_temporario", sourceName: "ZZ Item Temporario" }, publicadoReplace, `2026-01-01T00:0${contador}:00.000Z`, () => `uuid-replace-${contador}`);
+  return addTemporaryEffect(personagemAtual, efeito);
+}
+let personagemReplace = { efeitos_temporarios: [] };
+personagemReplace = aplicarReplace(personagemReplace, 1);
+personagemReplace = aplicarReplace(personagemReplace, 2);
+const ativosReplace = personagemReplace.efeitos_temporarios.filter((e) => e.active);
+const inativosReplace = personagemReplace.efeitos_temporarios.filter((e) => !e.active);
+checar("6b. Política 'substituir': reaplicar mantém no máximo 1 instância ATIVA (a anterior vira active:false, nunca duplicada)", ativosReplace.length === 1 && inativosReplace.length === 1 && inativosReplace[0].id === "uuid-replace-1");
+
+// ---------------------------------------------------------------------
+// 6c. Política "ignorar": reaplicar quando já existe efeito ativo da
+//     mesma fonte NÃO altera o estado (nem duração, nem pilhas, nem
+//     instância nova).
+// ---------------------------------------------------------------------
+const efeitoIgnorarItem = { ...efeitoTemporarioItem, campos: { ...efeitoTemporarioItem.campos, politicaReaplicacao: "ignorar", acumulavel: false, maximoPilhas: undefined, pilhasIniciais: undefined } };
+const draftIgnorar = draftItem([efeitoIgnorarItem]);
+const corpoIgnorar = serializarRascunhoParaPublicacao(draftIgnorar);
+const publicadoIgnorar = corpoIgnorar.payload_automacao.efeitos.find((e) => e.tipo === "buff_temporario");
+function aplicarIgnorar(personagemAtual, contador) {
+  const efeito = buildTemporaryEffectFromStructuredPayload({ sourceType: "item", sourceId: "zz_item_temporario", sourceName: "ZZ Item Temporario" }, publicadoIgnorar, "2026-01-01T00:00:00.000Z", () => `uuid-ignorar-${contador}`);
+  return addTemporaryEffect(personagemAtual, efeito);
+}
+let personagemIgnorar = { efeitos_temporarios: [] };
+personagemIgnorar = aplicarIgnorar(personagemIgnorar, 1);
+const idOriginalIgnorar = personagemIgnorar.efeitos_temporarios[0].id;
+personagemIgnorar = aplicarIgnorar(personagemIgnorar, 2);
+checar("6d. Política 'ignorar': reaplicar não cria segunda instância nem altera a existente (mesmo id, mesmo array)", personagemIgnorar.efeitos_temporarios.length === 1 && personagemIgnorar.efeitos_temporarios[0].id === idOriginalIgnorar);
+
+// ---------------------------------------------------------------------
+// 6e. Identidade: mesma origem (sourceId) mas rótulo/nome diferente NÃO é
+//     mesclada (addTemporaryEffect exige sourceType+sourceId+name iguais).
+// ---------------------------------------------------------------------
+let personagemIdentidade = { efeitos_temporarios: [] };
+personagemIdentidade = aplicarViaFluxoReal(personagemIdentidade, "id-1");
+const efeitoOutroNome = { ...construido, id: "uuid-outro-nome", name: "Nome Diferente" };
+personagemIdentidade = addTemporaryEffect(personagemIdentidade, efeitoOutroNome);
+checar("6f. Identidade: mesma origem com nome diferente não é mesclada — 2 instâncias distintas coexistem", personagemIdentidade.efeitos_temporarios.filter((e) => e.active).length === 2);
+
+// ---------------------------------------------------------------------
+// 6g. Identidade: origem (sourceId) diferente com o MESMO nome não é
+//     mesclada (nunca funde efeitos de fontes diferentes só pelo rótulo).
+// ---------------------------------------------------------------------
+let personagemOrigem = { efeitos_temporarios: [] };
+personagemOrigem = aplicarViaFluxoReal(personagemOrigem, "origem-1");
+const efeitoOutraOrigem = { ...construido, id: "uuid-outra-origem", sourceId: "zz_item_temporario_outro" };
+personagemOrigem = addTemporaryEffect(personagemOrigem, efeitoOutraOrigem);
+checar("6h. Identidade: origem (sourceId) diferente com o mesmo nome não é mesclada — 2 instâncias distintas coexistem", personagemOrigem.efeitos_temporarios.filter((e) => e.active).length === 2);
+
+// ---------------------------------------------------------------------
+// 6i. Payload sem `politica_reaplicacao` (conteúdo legado real, anterior
+//     a esta correção) continua construindo "replace" — nunca quebra
+//     conteúdo já publicado.
+// ---------------------------------------------------------------------
+const payloadLegadoSemPolitica = { ...efeitoPublicado1 };
+delete payloadLegadoSemPolitica.politica_reaplicacao;
+delete payloadLegadoSemPolitica.pilhas_iniciais;
+const construidoLegado = buildTemporaryEffectFromStructuredPayload({ sourceType: "item", sourceId: "zz_item_temporario", sourceName: "ZZ Item Temporario" }, payloadLegadoSemPolitica, "2026-01-01T00:00:00.000Z", () => "uuid-legado");
+checar("6j. Compatibilidade: payload sem 'politica_reaplicacao' (legado real) constrói stackingMode 'replace' por padrão — nunca quebra", construidoLegado?.stackingMode === "replace" && construidoLegado.stacks === undefined);
+
+// ---------------------------------------------------------------------
+// 6k. Validação: pilhas_iniciais > max_pilhas é bloqueado na publicação.
+// ---------------------------------------------------------------------
+const efeitoPilhasInvalidas = { ...efeitoTemporarioItem, campos: { ...efeitoTemporarioItem.campos, maximoPilhas: 2, pilhasIniciais: 5 } };
+checar("6l. Bloqueio: pilhas_iniciais (5) maior que max_pilhas (2) é rejeitado na publicação", validarEfeitoParaPublicacao("item", efeitoPilhasInvalidas).length > 0);
 
 // ---------------------------------------------------------------------
 // 7. Bloqueio: efeito_temporario numa MAGIA (schema fechado, sem duração/buff).
