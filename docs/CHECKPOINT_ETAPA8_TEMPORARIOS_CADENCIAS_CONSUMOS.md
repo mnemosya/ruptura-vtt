@@ -1,6 +1,6 @@
 # Checkpoint — Etapa 8: efeitos temporários, cadências, usos e consumos
 
-**Status: Implementação concluída — aceite de browser parcial.** (Atualizado — ver "Aceite de browser" ao final do documento.)
+**Status: Etapa 8 concluída — efeitos temporários, cadências, reaplicação e consumos aprovados.** (Atualizado — ver "Correção da divergência de reaplicação/pilhas" ao final do documento.)
 
 Não afirmo automação operacional completa além do que o motor real
 executa hoje. A criação de um efeito temporário, o gasto de uma Reação e
@@ -338,5 +338,60 @@ Ver seção equivalente em `docs/CHECKPOINT_ETAPA9_INVENTARIO_RUNAS_MERCADO.md` 
 ### Verificação técnica
 
 `npx tsc --noEmit` sem erros; `npm run build` sucesso; `next-env.d.ts` revertido. Harness `validate-temporary-effects.mjs` reexecutado sem regressão (17/17) — nenhuma mudança de código nesta etapa especificamente (o bug real encontrado nesta rodada foi em `effectTypeRegistry.ts`, código compartilhado com a Etapa 10, documentado no checkpoint da Etapa 10, seção "Rodada de conclusão do aceite").
+
+---
+
+## Correção da divergência de reaplicação/pilhas (rodada final, 25/07/2026)
+
+**Motivação**: a rodada anterior (seção "Rodada de conclusão do aceite") havia registrado, como "achado de automação... não corrigido nesta rodada", que o executor real (`buildTemporaryEffectFromStructuredPayload`) hardcodava `stackingMode:"replace"` e nunca lia `politica_reaplicacao`/pilhas do payload publicado — a política configurada no editor (incl. "acumular_pilha") não tinha nenhum efeito real no jogo. Esta rodada corrigiu esse achado, promovendo Etapa 8 de "aceite operacional parcial" para "concluída".
+
+### Auditoria da cadeia completa
+
+Contrato canônico já existia e estava correto — `POLITICAS_REAPLICACAO = ["substituir", "acumular_pilha", "ignorar", "manual"]` (`effectDraftTypes.ts`), com doc-comment explícito mapeando 1:1 para `TemporaryEffect.stackingMode` (`replace|stack|ignore|manual`) em `addTemporaryEffect` (`temporaryEffects.ts`) — essa função de merge já estava correta e não foi tocada. O bug era puramente de **plumbing**, em dois pontos:
+
+1. **Serializador** (`effectLegacySerialization.ts::camposLegadoPorTipo`, caso `efeito_temporario`, ramo item): nunca emitia `politica_reaplicacao`; emitia `max_pilhas` só condicionalmente; nunca emitia `pilhas_iniciais`. Corrigido — os três campos agora são emitidos para item (schema `additionalProperties:true`; **não** estendido para talento, cujo schema é fechado e não tem esses campos).
+2. **Executor** (`temporaryEffects.ts::buildTemporaryEffectFromStructuredPayload`): hardcodava `stackingMode:"replace"` e nunca lia `max_pilhas`/`pilhas_iniciais`/`politica_reaplicacao`. Corrigido — nova função `resolverStackingMode` mapeia `politica_reaplicacao` → `stackingMode` (ausente/desconhecido → `"replace"`, preservando o comportamento de todo conteúdo legado real, que nunca teve esse campo); `stacks`/`maxStacks` só são gravados quando `stackingMode === "stack"`.
+
+Nenhuma política nova foi inventada — as 4 já existentes no contrato (`substituir`/`acumular_pilha`/`ignorar`/`manual`) foram apenas conectadas corretamente ao executor que já sabia aplicá-las (`addTemporaryEffect`, inalterado).
+
+### Validação de pilhas (publish-time)
+
+Adicionado bloqueio em `validarEfeitoTemporarioParaPublicacao`: quando `acumulavel`, exige `maximoPilhas >= 1`, `pilhasIniciais >= 1` e `pilhasIniciais <= maximoPilhas` — publicação é bloqueada caso contrário. `pilhas_iniciais` nunca é gravado como `NaN`/0/negativo (o executor usa `Math.max(1, ...)` e um fallback de `1`).
+
+### Bug real adicional encontrado durante a correção (achado, não apenas suposto)
+
+Ao testar ao vivo, `pilhas_iniciais` não persistiu na primeira tentativa mesmo com o campo mostrando "1" na UI — rastreado até `EfeitoCamposPorTipo.tsx`: o `onChange` do checkbox "Acumulável" inicializava `maximoPilhas` mas **não** `pilhasIniciais`; o campo só *exibia* `campos.pilhasIniciais ?? 1` como fallback visual, sem nunca gravar esse valor no estado real se a pessoa administradora aceitasse o padrão sem editá-lo manualmente. Corrigido: o `onChange` do checkbox agora inicializa ambos os campos. Confirmado via teste ao vivo (republicação com `pilhas_iniciais` explicitamente mudado para 2 → persistiu corretamente após a correção).
+
+### Regressão automatizada
+
+`scripts/dev/validate-temporary-effects.mjs` estendido com 8 novos casos (checks 4b, 6, 6b, 6d, 6f, 6h, 6j, 6l — total 25), todos passando pelo código REAL (`serializarRascunhoParaPublicacao` → `buildTemporaryEffectFromStructuredPayload` → `addTemporaryEffect`, nunca reimplementado):
+- 4b: payload publicado com `acumular_pilha`/`max=3`/`iniciais=1` produz `stackingMode:"stack"`, `stacks:1`, `maxStacks:3` (a regressão em si).
+- 6: aplicar o mesmo payload publicado 4x via fluxo real acumula até o máximo (3), nunca ultrapassa, nunca mais de 1 instância ativa.
+- 6b: política "substituir" — reaplicar mantém no máximo 1 instância ativa (a anterior vira `active:false`, nunca duplicada).
+- 6d: política "ignorar" — reaplicar não cria segunda instância nem altera a existente.
+- 6f/6h: identidade — mesma origem com nome diferente, e origem diferente com mesmo nome, nunca são mescladas (2 instâncias distintas coexistem em ambos os casos).
+- 6j: payload sem `politica_reaplicacao` (legado real) constrói `stackingMode:"replace"` por padrão — compatibilidade preservada.
+- 6l: `pilhas_iniciais > max_pilhas` é bloqueado na publicação.
+
+**Regressão comprovada**: revertendo temporariamente `temporaryEffects.ts`/`effectLegacySerialization.ts` ao estado pré-correção e reexecutando o harness, os 4 casos que testam o comportamento novo (4b, 6, 6d, 6l) falharam exatamente como esperado, enquanto os demais 21 (incluindo os 17 pré-existentes) continuaram passando — prova de que o teste cobre exatamente a regressão, sem reimplementar a lógica do executor dentro do harness. Corte restaurado; harness volta a passar 25/25.
+
+Harnesses de código compartilhado reexecutados sem regressão: `validate-inventory-runes-market.mjs` (22/22), `validate-companions-trama.mjs` (24/24), `validate-post-mvp-effects.mjs` (17/17).
+
+### Aceite de browser — proof operacional completo (todas as 3 políticas testáveis)
+
+**Fixtures** (`zz_e2e_editor_final_*`, todas removidas ao final — confirmado por contagem zero): conta admin real via `/dev/login` (cadastro real + `admin_users` via SQL), campanha, perfil, personagem (via assistente completo `/mesas/.../personagens/novo`), item publicado com `efeito_temporario` (reeditado entre cenários, conforme permitido pela tarefa).
+
+- **`acumular_pilha`** (publicado 1.0.0/1.0.1, `max_pilhas:3`, `pilhas_iniciais:2`): usado no personagem real via `/dev/character-sheet` → primeira aplicação já cria a instância com `stacks:2` (confirmando `pilhas_iniciais` honrado desde a criação); reaplicado 2x mais → `stacks` sobe para 3 e permanece em 3 mesmo com uma 4ª aplicação (nunca ultrapassa `maxStacks`); sempre 1 única instância ativa. "Encerrar Rodada" em `/dev/table` (3x): `remainingRounds` 3→2→1→expira (`active:false`, `endedReason:"rounds"`, `remainingRounds:0`) — tudo confirmado por consulta direta a `characters.payload.efeitos_temporarios` no Supabase real entre cada passo.
+- **`substituir`** (republicado 1.0.2): usado 2x — a primeira instância vira `active:false, endedReason:"manual"` na segunda aplicação; nunca mais de 1 instância ativa simultânea.
+- **`ignorar`** (republicado 1.0.3): usado 2x com uma instância já ativa da mesma origem — nenhuma nova instância criada, nenhuma alteração de estado (contagem de `efeitos_temporarios` permanece igual antes/depois de cada uso).
+- **`manual`**: não testado ao vivo nesta rodada (política explicitamente "sem dedup automático — narrador resolve manualmente", comportamento trivial de sempre-anexar já coberto pelo código inalterado de `addTemporaryEffect` e implicitamente pelos harnesses de identidade 6f/6h). Registrado aqui como limitação factual desta rodada, não como pendência bloqueante — o código que implementa essa política não foi alterado nesta correção.
+
+Console/rede sem erros em nenhum passo.
+
+### Verificação técnica final
+
+`npx tsc --noEmit` sem erros; `npm run build` sucesso; `next-env.d.ts` revertido (auto-tocado pelo dev server, revertido antes do commit). Todos os harnesses afetados reexecutados sem regressão (ver acima).
+
+**Status final: "Etapa 8 concluída — efeitos temporários, cadências, reaplicação e consumos aprovados."** As 4 políticas expostas pelo editor têm contrato coerente e verificável; pilhas funcionam conforme o contrato (nunca abaixo de 1 enquanto ativas, nunca acima do máximo, `pilhas_iniciais` não pode exceder `max_pilhas` — bloqueado na publicação); aplicação/reaplicação/cadência/expiração/persistência real confirmadas ao vivo para 3 das 4 políticas (a 4ª, "manual", é trivial e não foi alterada); testes de regressão passam; console/rede limpos.
 
 **Status desta etapa, promovido**: **"Etapa 8 concluída — efeitos temporários, cadências e consumos aprovados."** Construção editorial, aplicação operacional real (instância criada, persistida, com origem/modificador corretos), reaplicação (substituir, sem duplicar instância ativa), cadências (rodada, decremento e expiração corretos), consumo de cargas (sem valor negativo, persistente) e classificação de lembrete (quando aplicável) — todos confirmados ao vivo contra o Supabase real, com personagem real. Achado de automação (política/pilhas de item não operacionais no executor real) registrado como limitação de produto, não como bloqueio de aceite (o comportamento real É consistente e previsível — sempre "substituir" — mesmo que divirja do que o editor deixa configurar).
