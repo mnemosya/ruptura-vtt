@@ -5,7 +5,9 @@
  */
 
 import { LoginForm } from "../../LoginForm";
+import { assertDevRouteAllowed } from "../../../lib/dev/guard";
 
 export default function DevLoginPage() {
+  assertDevRouteAllowed();
   return <LoginForm redirectTo="/dev/auth/status" context="dev" />;
 }

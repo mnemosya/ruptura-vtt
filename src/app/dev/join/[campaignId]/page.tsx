@@ -19,6 +19,7 @@
 
 import { getCampaign, listCampaignProfiles } from "../../../../lib/table/storage";
 import { listLegacyCharactersDev } from "../../../../lib/character/storage";
+import { assertDevRouteAllowed } from "../../../../lib/dev/guard";
 import type { Campaign, CampaignProfile } from "../../../../lib/table";
 import type { CharacterRecord } from "../../../../lib/character";
 import JoinClient from "./JoinClient";
@@ -30,6 +31,7 @@ interface PageProps {
 }
 
 export default async function JoinPage({ params }: PageProps) {
+  assertDevRouteAllowed();
   const { campaignId } = await params;
 
   let campaign: Campaign | null = null;

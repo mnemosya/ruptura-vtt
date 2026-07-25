@@ -6,11 +6,13 @@
 
 import Link from "next/link";
 import { getCurrentUser } from "../../../../lib/auth/session";
+import { assertDevRouteAllowed } from "../../../../lib/dev/guard";
 import { SignOutButton } from "./SignOutButton";
 
 export const dynamic = "force-dynamic";
 
 export default async function AuthStatusPage() {
+  assertDevRouteAllowed();
   const user = await getCurrentUser();
 
   return (

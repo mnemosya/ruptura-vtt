@@ -11,6 +11,7 @@
 import { listCampaigns } from "../../../lib/table/storage";
 import { listLegacyCharactersDev } from "../../../lib/character/storage";
 import { getCurrentUser } from "../../../lib/auth/session";
+import { assertDevRouteAllowed } from "../../../lib/dev/guard";
 import { getCharacterRules, getCombatFlow, listConditions, listItems, listTalents } from "../../../lib/content";
 import type { Campaign } from "../../../lib/table";
 import {
@@ -35,6 +36,7 @@ export interface NarratorConditionOption {
 }
 
 export default async function TablePage() {
+  assertDevRouteAllowed();
   let mesasIniciais: Campaign[] = [];
   let personagensIniciais: CharacterRecord[] = [];
   let errorMessage: string | null = null;

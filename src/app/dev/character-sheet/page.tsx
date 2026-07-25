@@ -5,6 +5,7 @@
  */
 
 import { CharacterSheetView } from "../../CharacterSheetView";
+import { assertDevRouteAllowed } from "../../../lib/dev/guard";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,7 @@ interface PageProps {
 }
 
 export default async function DevCharacterSheetPage({ searchParams }: PageProps) {
+  assertDevRouteAllowed();
   const params = await searchParams;
   return (
     <CharacterSheetView campaignId={params.campaignId ?? null} profileId={params.profileId ?? null} mode="dev" />
