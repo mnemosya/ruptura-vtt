@@ -945,6 +945,9 @@ export default function CharacterSheetClient({
         regras?.pericias.map((pericia) => pericia.id) ?? [],
         reactionRules,
         { items: itemsIniciais, properties: propertiesIniciais, runes: runesIniciais },
+        undefined,
+        false,
+        activeEffects,
       ),
     [
       character,
@@ -957,6 +960,7 @@ export default function CharacterSheetClient({
       itemsIniciais,
       propertiesIniciais,
       runesIniciais,
+      activeEffects,
     ],
   );
 
@@ -5117,6 +5121,9 @@ export default function CharacterSheetClient({
       regras?.pericias.map((pericia) => pericia.id) ?? [],
       reactionRules,
       { items: itemsIniciais, properties: propertiesIniciais, runes: runesIniciais },
+      undefined,
+      false,
+      activeEffects,
     );
     const item = currentItems.find((candidate) => candidate.id === actionId);
     if (!actionContent || !item || !item.enabled) {
@@ -5169,6 +5176,9 @@ export default function CharacterSheetClient({
       derivados.reacoes_por_rodada,
       nowIso,
       reactionRules,
+      undefined,
+      false,
+      activeEffects,
     );
     // Espadachim › Estocar (checkpoint talentos, Fase 4) — reduz o custo REAL de PA deste
     // Atacar em 1 (respeitando o mínimo do payload), 1/combate. Exige arma corpo a corpo

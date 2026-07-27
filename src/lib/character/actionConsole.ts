@@ -31,6 +31,7 @@ import {
   type ReactionRules,
 } from "./reactions";
 import { isActionAllowedInWindow, type TurnWindow } from "../table/turnTrack";
+import type { ActiveEffect } from "./activeEffects";
 
 // ---------------------------------------------------------------------
 // Tipos de conteúdo bruto (subconjunto lido de content_documents.payload)
@@ -350,6 +351,41 @@ export interface CanPayResult {
   reason?: string;
 }
 
+/**
+ * Enforcement das 17 condições (checkpoint pós-v0.94, fase 7) — a
+ * ÚNICA fonte de verdade é `deriveActiveEffectsFromConditions`
+ * (activeEffects.ts), que já interpreta `payload_automacao.efeitos`
+ * das condições publicadas em `kind: "lock"` (`bloquear_acoes`/
+ * `bloquear_reacoes`). Este módulo não reimplementa a leitura do
+ * payload — só decide, dado esse resultado já computado, se ELE
+ * bloqueia ESTA ação.
+ *
+ * `affectedTags` vazio = `bloquear_reacoes` (bloqueia qualquer ação
+ * com custo de Reação). `affectedTags` contendo "acao" = wildcard de
+ * "bloqueia toda e qualquer ação" (Atordoado/Inconsciente) — "acao"
+ * não é uma tag real de nenhuma ação do catálogo (só "ofensiva",
+ * "defensiva", "movimento", "reacao", etc.), então é tratada como
+ * curinga. Fora isso, bloqueia só quando a própria ação carrega uma
+ * das tags listadas (ex.: Imobilizado bloqueia "ofensiva"/"defensiva",
+ * não "movimento" — que é travado à parte por `definir_deslocamento`,
+ * ainda sem tag de ação real para "movimento" ser bloqueada aqui além
+ * do que já está mapeado nas 28 ações publicadas).
+ */
+export function getConditionLockReason(action: CombatActionContent, activeEffects: ActiveEffect[]): string | undefined {
+  const cost = getActionCost(action);
+  const actionTags = new Set(action.tags ?? []);
+  for (const effect of activeEffects) {
+    if (effect.kind !== "lock") continue;
+    if (effect.affectedTags.length === 0) {
+      if (cost.reacao != null || actionTags.has("reacao")) return effect.explanation;
+      continue;
+    }
+    if (effect.affectedTags.includes("acao")) return effect.explanation;
+    if (effect.affectedTags.some((tag) => actionTags.has(tag))) return effect.explanation;
+  }
+  return undefined;
+}
+
 export function canPayActionCost(
   character: Character,
   cost: ActionCost,
@@ -653,6 +689,7 @@ export function buildActionConsoleItems(
   itemContext?: ActionItemContext,
   turnWindow?: TurnWindow | null,
   narratorOverride = false,
+  activeEffects: ActiveEffect[] = [],
 ): ActionConsoleItem[] {
   const activeConditions = character.condicoes_ativas ?? [];
   const enabledByConditionsMap = actionsEnabledByConditions(activeConditions, conditions);
@@ -681,6 +718,7 @@ export function buildActionConsoleItems(
       );
       const payloadEffects = getPayloadEffects(action);
       const contentIssues = [visibility.reason, consistencyIssue].filter((issue): issue is string => Boolean(issue));
+      const conditionLockReason = getConditionLockReason(action, activeEffects);
 
       // Postura (checkpoint v0.64): a ação em si tem UM slug de conteúdo,
       // mas funciona como toggle — ativa se ainda não estiver ativa,
@@ -756,8 +794,8 @@ export function buildActionConsoleItems(
         testeTexto: testeTextoDe(action),
         efeitoTexto: pendingEffects.length > 0 ? pendingEffects.join(" · ") : undefined,
         payloadAutomacao: action.payload_automacao,
-        enabled: contentIssues.length === 0 && canPay.ok,
-        disabledReason: contentIssues[0] ?? canPay.reason,
+        enabled: contentIssues.length === 0 && canPay.ok && conditionLockReason == null,
+        disabledReason: contentIssues[0] ?? conditionLockReason ?? canPay.reason,
         contentIssues,
         isConditionEnabled: enabledByConditions.length > 0,
         enabledByConditions,
@@ -845,6 +883,7 @@ export function executeActionOnCharacter(
   reactionRules?: ReactionRules,
   turnWindow?: TurnWindow | null,
   narratorOverride = false,
+  activeEffects: ActiveEffect[] = [],
 ): ExecuteActionResult {
   const cost = getActionCost(action);
   const paBefore = Math.max(0, (derivedPaMax ?? 0) - (character.estado_jogo?.pa_gastos ?? 0));
@@ -859,7 +898,11 @@ export function executeActionOnCharacter(
     turnWindow,
     narratorOverride,
   );
-  if (!canPay.ok) {
+  // Enforcement de condições (fase 7): bloqueia AQUI, não só no botão
+  // desabilitado do Console — mesma garantia de defesa em profundidade
+  // já usada para o limite de PA em Turnos Rápidos.
+  const conditionLockReason = getConditionLockReason(action, activeEffects);
+  if (!canPay.ok || conditionLockReason != null) {
     return {
       character,
       paBefore,
@@ -874,7 +917,7 @@ export function executeActionOnCharacter(
       defensesWithoutReactionBefore: character.estado_jogo?.defesas_sem_reacao ?? 0,
       defensesWithoutReactionAfter: character.estado_jogo?.defesas_sem_reacao ?? 0,
       reactionPenaltyApplied: 0,
-      warnings: [canPay.reason ?? "Ação não pôde ser executada."],
+      warnings: [conditionLockReason ?? canPay.reason ?? "Ação não pôde ser executada."],
       reminders: [],
       postureChange: null,
     };
