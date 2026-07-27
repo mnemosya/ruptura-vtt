@@ -15,6 +15,8 @@ import {
   removeTalentLevel,
   describeNonAutomatedTalentEffects,
   createInitialCharacter,
+  getBricolagemActiveEffects,
+  registerBricolagemVulnerabilidade,
   type TalentContent,
 } from "../src/lib/character";
 
@@ -41,7 +43,38 @@ assert.equal(deriveActiveEffectsFromTalents(personagem, talents).length, 0);
 console.log("1. Sem talento adquirido — nenhum efeito ativo — OK");
 
 // -------------------------------------------------------------
-// 2. Adquirir Bricolagem gera o modificador "+1 Engenharia/Robótica" automaticamente.
+// 2. Padrão genérico "+X em testes específicos" — exemplo com um talento
+// SEM efeito condicional irmão (Aparar, Espadachim: +1 na ação "aparar",
+// sempre ligado). Bricolagem NÃO serve mais de exemplo aqui desde o
+// checkpoint pós-v0.72 (ver bloco 2b abaixo) — seu modificador é
+// deliberadamente excluído deste pipeline incondicional por ter um
+// efeito irmão `detectar_falha_sem_teste` no mesmo nível (talents.ts).
+// -------------------------------------------------------------
+const espadachim = talents.find((t) => t.slug === "espadachim");
+assert.ok(espadachim, "Talento 'espadachim' deve existir no DB real.");
+const aparar = espadachim!.niveis.find((n) => n.nome === "Aparar");
+assert.ok(aparar, "Nível 'Aparar' deve existir.");
+
+const comAparar = acquireTalentLevel(personagem, {
+  talentoId: espadachim!.id,
+  nivelId: aparar!.id,
+  nivel: aparar!.nivel,
+  nowIso: "2026-07-03T10:00:00.000Z",
+});
+assert.equal(comAparar.talentos_adquiridos?.length, 1);
+
+const efeitos = deriveActiveEffectsFromTalents(comAparar, talents);
+assert.ok(efeitos.length >= 1, "Aparar deve gerar pelo menos 1 ActiveEffect (o modificador +1, sempre ligado).");
+const modificador = efeitos.find((e) => e.modifier === 1 && e.affectedTags.includes("aparar"));
+assert.ok(modificador, "Deve existir um ActiveEffect de +1 com tag/ação 'aparar'.");
+assert.equal(modificador!.sourceType, "talent");
+console.log("2. Padrão genérico de modificador incondicional (Aparar, +1) — OK");
+
+// -------------------------------------------------------------
+// 2b. Bricolagem: o modificador é CONDICIONAL/CONSUMÍVEL (nunca "sempre
+// ligado") — adquirir o talento sozinho não gera nenhum ActiveEffect no
+// pipeline genérico; só depois de "identificar a falha" (registrar uma
+// vulnerabilidade) o bônus aparece, via getBricolagemActiveEffects.
 // -------------------------------------------------------------
 const comBricolagem = acquireTalentLevel(personagem, {
   talentoId: artifice!.id,
@@ -50,14 +83,29 @@ const comBricolagem = acquireTalentLevel(personagem, {
   nowIso: "2026-07-03T10:00:00.000Z",
 });
 assert.equal(comBricolagem.talentos_adquiridos?.length, 1);
+assert.equal(
+  deriveActiveEffectsFromTalents(comBricolagem, talents).length,
+  0,
+  "Bricolagem sozinha (sem vulnerabilidade identificada) não gera ActiveEffect incondicional.",
+);
 
-const efeitos = deriveActiveEffectsFromTalents(comBricolagem, talents);
-assert.ok(efeitos.length >= 1, "Bricolagem deve gerar pelo menos 1 ActiveEffect (o modificador +1).");
-const modificador = efeitos.find((e) => e.modifier === 1 && e.affectedTags.includes("engenharia"));
-assert.ok(modificador, "Deve existir um ActiveEffect de +1 com tag 'engenharia'.");
-assert.equal(modificador!.sourceType, "talent");
-assert.ok(modificador!.affectedTags.includes("robotica"), "Deve afetar também a tag 'robotica'.");
-console.log("2. Bricolagem gera modificador automatizado (+1 Engenharia/Robótica) — OK");
+const comVulnerabilidade = registerBricolagemVulnerabilidade(
+  comBricolagem,
+  {
+    nivelId: bricolagem!.id,
+    tipo: "mecanismo",
+    alvoDescricao: "fechadura eletrônica",
+    falhaPrincipal: "trava emperrada",
+    periciaBeneficiada: "engenharia",
+  },
+  "bricolagem-teste-1",
+  "2026-07-03T10:05:00.000Z",
+);
+const bricolagemEfeitos = getBricolagemActiveEffects(comVulnerabilidade, talents);
+assert.equal(bricolagemEfeitos.length, 1, "Vulnerabilidade identificada deve gerar exatamente 1 ActiveEffect consumível.");
+assert.equal(bricolagemEfeitos[0].modifier, 1, "Bônus de Bricolagem deve ser o valor declarado no payload canônico (+1).");
+assert.ok(bricolagemEfeitos[0].id.startsWith("bricolagem:"), "ActiveEffect de Bricolagem usa tag sintética própria.");
+console.log("2b. Bricolagem gera modificador consumível só após identificar a falha — OK");
 
 // -------------------------------------------------------------
 // 3. Adquirir o mesmo nível duas vezes não duplica.

@@ -190,9 +190,18 @@ assert.equal(invalidVisibilityItem?.enabled, false);
 assert.match(invalidVisibilityItem?.disabledReason ?? "", /visibilidade não suportado/);
 
 for (const postureSlug of ["postura_ofensiva", "postura_defensiva"]) {
+  // Checkpoint v0.64 (comportamento intencional, confirmado pelo
+  // conteúdo real de ações — `payload_automacao.efeitos` de postura só
+  // tem `aplicar_postura`/`modificador`, ambos em AUTOMATED_EFFECT_TYPES):
+  // postura vira estado ativo real, refletido nas rolagens automaticamente
+  // — por isso os efeitos caem em `automatedEffects`, nunca em
+  // `pendingEffects`. A asserção anterior esperava "Postura" (capitalizado)
+  // em `pendingEffects`, string que nenhum caminho do código gera (rótulo
+  // real é "postura", minúsculo, em EFFECT_TYPE_LABELS/describeEffect) —
+  // expectativa obsoleta, não um bug do motor.
   const postureItem = consoleItems(characterWith()).find((item) => item.slug === postureSlug);
-  assert.ok(postureItem?.pendingEffects.some((effect) => effect.includes("Postura")));
-  assert.ok(!postureItem?.automatedEffects.some((effect) => effect.includes("Postura")));
+  assert.ok(postureItem?.automatedEffects.some((effect) => effect.toLowerCase().includes("postura")));
+  assert.ok(!postureItem?.pendingEffects.some((effect) => effect.toLowerCase().includes("postura")));
 }
 
 const compoundItem = consoleItems(characterWith()).find((item) => item.slug === "preparar_turno");
