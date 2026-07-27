@@ -78,3 +78,12 @@ Verificado contra o conteúdo publicado
   essas tags), Cego não produz nenhum `lock` (só penaliza rolagem),
   personagem sem condição não é bloqueado.
 - Não verificado em navegador nesta sessão.
+
+## Atualização — Inconsciente e Imobilizado (rodada de fechamento)
+
+Reconstruídos e confirmados corretos contra o conteúdo REAL publicado
+(`db_condicoes_normalizado_v1_5.json`, v1.1.0) — nenhuma mudança de
+código necessária, `getConditionLockReason` já implementava exatamente
+o payload real de ambas. Ver
+`CHECKPOINT_FECHAMENTO_CONCORRENCIA_ISOLAMENTO.md` para a matriz
+completa. Não declaro as 17 condições concluídas.

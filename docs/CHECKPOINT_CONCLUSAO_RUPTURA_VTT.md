@@ -103,3 +103,14 @@ Não uso a frase de conclusão total ("fluxo completo... disponível em
 produção") porque isso exigiria o cenário integrado de 45 passos do
 pedido rodando de ponta a ponta num navegador real, com fixtures
 limpas ao final — não executado aqui.
+
+## Atualização — rodada de fechamento (concorrência/isolamento)
+
+Ver `CHECKPOINT_FECHAMENTO_CONCORRENCIA_ISOLAMENTO.md`: concorrência da
+trilha e da criação endurecidas e provadas ao vivo; 2 vazamentos
+cross-campanha reais e pré-existentes confirmados (leitura aberta de
+`campaigns`/`table_logs`), registrados como prioridade para rodada
+dedicada; Postura/Bricolagem eram testes obsoletos, corrigidos. VTT
+continua **não concluído** — status global inalterado quanto a Modo
+Evolução completo, draft persistente, drag operacional, runas/escalpos
+avançados e companheiros/drones/Trama.

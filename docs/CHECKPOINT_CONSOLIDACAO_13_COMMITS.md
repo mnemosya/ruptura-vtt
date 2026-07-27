@@ -231,3 +231,12 @@ concorrência literal e isolamento entre duas campanhas distintas não
 exercidos ao vivo); drag operacional, runas/escalpos avançados e
 integração de companheiros/drones/Trama permanecem pendentes, fora do
 escopo desta rodada."**
+
+## Atualização — rodada de fechamento seguinte
+
+Concorrência literal e isolamento entre campanhas (pendências listadas
+acima) foram exercidos ao vivo contra o Supabase real na rodada
+seguinte, incluindo 2 vazamentos cross-campanha REAIS confirmados
+(pré-existentes, não desta consolidação) e 3 bugs de concorrência
+corrigidos (fim de rodada duplicado, munição do bando, personagem
+duplicado). Ver `CHECKPOINT_FECHAMENTO_CONCORRENCIA_ISOLAMENTO.md`.

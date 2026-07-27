@@ -54,3 +54,11 @@ o que é consistente com "retirar é decisão do narrador" acima.
 - `get_advisors` (security): nenhum novo achado para
   `campaign_inventory_items`.
 - Não verificado em navegador nesta sessão.
+
+## Atualização — concorrência de munição (rodada de fechamento)
+
+Bug real de "lost update" encontrado no depósito de munição
+(SELECT+UPDATE em dois passos, sem lock) — corrigido com RPC atômica
+(`upsert_crew_inventory_munition`, migration 0040). Retirada continua
+não implementada em produção (fora do escopo desta rodada). Ver
+`CHECKPOINT_FECHAMENTO_CONCORRENCIA_ISOLAMENTO.md`.

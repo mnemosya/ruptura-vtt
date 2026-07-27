@@ -74,3 +74,14 @@ janela Rápida/Lenta e ações não estavam implementadas.
   (`ruptura-vtt`, `yvxoijexyhjjipjktfuu`); advisories de segurança
   revisados (só o aviso informativo esperado de SECURITY DEFINER
   exposto a `authenticated`, mesmo padrão de funções já existentes).
+
+## Atualização — fechamento de concorrência (rodada seguinte)
+
+Concorrência literal (dois cliques simultâneos, contra o Supabase
+real) provada ao vivo para "encerrar próprio turno" e para "fim de
+rodada" (bug real de duplicação encontrado e corrigido); as demais
+combinações (narrador×narrador, jogador×override, transição de
+janela) confirmaram o invariante central ao vivo mas tiveram
+asserções secundárias poluídas por um artefato do harness de teste.
+Ver `CHECKPOINT_FECHAMENTO_CONCORRENCIA_ISOLAMENTO.md` para o relato
+completo.

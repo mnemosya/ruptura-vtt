@@ -63,3 +63,11 @@ não oferece esse caminho hoje). Não foi alterado nesta sessão — mudar
 essa policy tem risco de quebrar fluxos legados que dependem dela
 (personagens sem mesa, migração de personagens antigos). Recomendo
 auditoria dedicada antes de mexer.
+
+## Atualização — idempotência (rodada de fechamento)
+
+"Personagem duplicado" (pendência acima) fechado: índice único parcial
+(`profile_id`, `campaign_id`) para personagens não arquivados
+(migration 0041) — duplo-clique/retry-de-rede agora recebe erro
+controlado em vez de criar um segundo personagem órfão. Ver
+`CHECKPOINT_FECHAMENTO_CONCORRENCIA_ISOLAMENTO.md`.
