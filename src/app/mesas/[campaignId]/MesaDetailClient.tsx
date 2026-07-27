@@ -60,6 +60,7 @@ import type { TechnicalContentItem } from "../../../lib/content";
 import type { Campaign, CampaignProfile, CampaignInvite, ProfileSession, TableLogEntry } from "../../../lib/table";
 import type { CharacterRecord, CharacterRulesPayload } from "../../../lib/character";
 import { formatTableLogEntry } from "../../dev/character-sheet/components/MesaTab";
+import TurnTrackPanel from "../../components/TurnTrackPanel";
 
 /**
  * Formatação mínima dos tipos de log criados/reaproveitados pelo motor
@@ -843,6 +844,8 @@ export default function MesaDetailClient({
           </div>
         )}
       </section>
+
+      <TurnTrackPanel campaign={campaignState} onCampaignChange={setCampaignState} isNarrator />
 
       {/* Personagens da mesa (checkpoint v0.23; ciclo de vida v0.25) */}
       <section style={{ marginBottom: 32 }}>

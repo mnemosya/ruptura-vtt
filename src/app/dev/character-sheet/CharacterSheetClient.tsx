@@ -321,6 +321,7 @@ import { BibliotecaTab } from "./components/BibliotecaTab";
 import { ActionsTab } from "./components/ActionsTab";
 import { ActiveStateStrip } from "./components/ActiveStateStrip";
 import { MesaTab } from "./components/MesaTab";
+import TurnTrackPanel from "../../components/TurnTrackPanel";
 import { SavedCharactersTab } from "./components/SavedCharactersTab";
 import { DebugTab } from "./components/DebugTab";
 import type { SheetMode } from "./components/ModeToggle";
@@ -6022,15 +6023,25 @@ export default function CharacterSheetClient({
       {activeTab === "log" && <LogTab log={log} onClear={() => setLog([])} />}
 
       {activeTab === "mesa" && (
-        <MesaTab
-          campaignId={selectedCampaignId}
-          mesaNome={mesas.find((m) => m.id === selectedCampaignId)?.name ?? null}
-          profileId={selectedProfileId}
-          profileNickname={perfilEmFoco?.nickname ?? null}
-          characterId={characterId}
-          characterNome={character.nome}
-          profileSessionId={profileSessionToken?.profileSessionId ?? null}
-        />
+        <>
+          {selectedCampaignId && mesas.find((m) => m.id === selectedCampaignId) && (
+            <TurnTrackPanel
+              campaign={mesas.find((m) => m.id === selectedCampaignId)!}
+              onCampaignChange={(next) => setMesas((prev) => prev.map((m) => (m.id === next.id ? next : m)))}
+              isNarrator={false}
+              viewerCharacterId={characterId}
+            />
+          )}
+          <MesaTab
+            campaignId={selectedCampaignId}
+            mesaNome={mesas.find((m) => m.id === selectedCampaignId)?.name ?? null}
+            profileId={selectedProfileId}
+            profileNickname={perfilEmFoco?.nickname ?? null}
+            characterId={characterId}
+            characterNome={character.nome}
+            profileSessionId={profileSessionToken?.profileSessionId ?? null}
+          />
+        </>
       )}
 
       {mode === "dev" && activeTab === "personagens" && (

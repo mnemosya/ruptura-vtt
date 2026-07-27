@@ -30,6 +30,7 @@ import {
   spendReactionForDefense,
   type ReactionRules,
 } from "./reactions";
+import { isActionAllowedInWindow, type TurnWindow } from "../table/turnTrack";
 
 // ---------------------------------------------------------------------
 // Tipos de conteúdo bruto (subconjunto lido de content_documents.payload)
@@ -355,6 +356,8 @@ export function canPayActionCost(
   derivedPaMax: number | undefined,
   derivedReacaoMax: number | undefined,
   reactionRules?: ReactionRules,
+  turnWindow?: TurnWindow | null,
+  narratorOverride = false,
 ): CanPayResult {
   if (!cost.valid) {
     return { ok: false, reason: cost.invalidReason ?? "Custo inválido." };
@@ -365,6 +368,12 @@ export function canPayActionCost(
   if (cost.livre) return { ok: true };
 
   if (cost.pa != null) {
+    // Enforcement da janela (PRD 6.1/6.2) ANTES do saldo de PA — bloqueia
+    // aqui, não só no botão, e vale tanto para preview quanto execução.
+    const windowCheck = isActionAllowedInWindow(turnWindow ?? null, cost.pa, narratorOverride);
+    if (!windowCheck.ok) {
+      return { ok: false, reason: windowCheck.reason };
+    }
     const paMax = derivedPaMax ?? 0;
     const paGastos = character.estado_jogo?.pa_gastos ?? 0;
     const paAtual = Math.max(0, paMax - paGastos);
@@ -642,6 +651,8 @@ export function buildActionConsoleItems(
   knownSkillIds: readonly string[] = [],
   reactionRules?: ReactionRules,
   itemContext?: ActionItemContext,
+  turnWindow?: TurnWindow | null,
+  narratorOverride = false,
 ): ActionConsoleItem[] {
   const activeConditions = character.condicoes_ativas ?? [];
   const enabledByConditionsMap = actionsEnabledByConditions(activeConditions, conditions);
@@ -665,6 +676,8 @@ export function buildActionConsoleItems(
         derivedPaMax,
         derivedReacaoMax,
         reactionRules,
+        turnWindow,
+        narratorOverride,
       );
       const payloadEffects = getPayloadEffects(action);
       const contentIssues = [visibility.reason, consistencyIssue].filter((issue): issue is string => Boolean(issue));
@@ -830,6 +843,8 @@ export function executeActionOnCharacter(
   derivedReacaoMax: number | undefined,
   nowIso: string,
   reactionRules?: ReactionRules,
+  turnWindow?: TurnWindow | null,
+  narratorOverride = false,
 ): ExecuteActionResult {
   const cost = getActionCost(action);
   const paBefore = Math.max(0, (derivedPaMax ?? 0) - (character.estado_jogo?.pa_gastos ?? 0));
@@ -841,6 +856,8 @@ export function executeActionOnCharacter(
     derivedPaMax,
     derivedReacaoMax,
     reactionRules,
+    turnWindow,
+    narratorOverride,
   );
   if (!canPay.ok) {
     return {

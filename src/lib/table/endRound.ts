@@ -35,6 +35,8 @@ import {
 import { listCharactersForNarratorCampaign, updateCharacter } from "../character/storage";
 import { getCharacterRules, listConditions } from "../content";
 import { getCampaign, canAdvanceCampaign, endRound as advanceCampaignRound, addLog } from "./storage";
+import { emptyTurnTrackState } from "./turnTrack";
+import { getScopedTableClient } from "../auth/scopedClient";
 
 export interface ProcessedCharacterSummary {
   characterId: string;
@@ -343,6 +345,22 @@ export async function endCampaignRound(params: {
   // sua regra; attentionSummary reusa o mesmo critério de antes.
   const updatedCampaign = await advanceCampaignRound(params.campaignId, attentionCharacterNames);
   const nextRound = updatedCampaign.current_round;
+
+  // Reseta a trilha de turnos para a rodada nova (checkpoint pós-v0.94):
+  // "Encerrar rodada" já é uma ação exclusiva do narrador (canAdvanceCampaign
+  // acima), então usa a mesma RPC narrator_set_turn_track — sem trilha
+  // aberta até o narrador clicar "Iniciar rodada" de novo. Best-effort:
+  // uma falha aqui não desfaz o avanço de rodada já persistido.
+  try {
+    const client = await getScopedTableClient();
+    await client.rpc("narrator_set_turn_track", {
+      p_campaign_id: params.campaignId,
+      p_expected_version: updatedCampaign.turn_track_version,
+      p_next_turn_track: emptyTurnTrackState(nextRound),
+    });
+  } catch {
+    // Best-effort — ver comentário acima.
+  }
 
   const damageEventCount = processedCharacters.reduce((sum, p) => sum + p.damageEvents, 0);
   const pendingCheckCount = processedCharacters.reduce((sum, p) => sum + p.pendingChecks, 0);
