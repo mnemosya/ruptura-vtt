@@ -878,9 +878,16 @@ export default function MesaDetailClient({
         <Link
           href={`/mesas/${campaign.id}/personagens/novo`}
           data-testid="det-abrir-assistente-criacao"
-          style={{ ...btn, textDecoration: "none", display: "inline-block", marginBottom: 12 }}
+          style={{ ...btn, textDecoration: "none", display: "inline-block", marginBottom: 12, marginRight: 8 }}
         >
           Assistente de criação completo
+        </Link>
+        <Link
+          href={`/mesas/${campaign.id}/livro`}
+          data-testid="det-abrir-livro"
+          style={{ ...btn, textDecoration: "none", display: "inline-block", marginBottom: 12 }}
+        >
+          Livro
         </Link>
         {personagensAtivosDaMesa.length === 0 && (
           <p style={{ fontSize: 13, opacity: 0.6 }}>Nenhum personagem vinculado a esta mesa ainda.</p>

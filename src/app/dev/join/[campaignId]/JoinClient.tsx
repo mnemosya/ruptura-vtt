@@ -182,13 +182,24 @@ export default function JoinClient({ campaign, perfisIniciais, personagens, vari
                 </Link>
               )}
               {jaEntrei && (
-                <Link
-                  href={`${variant === "invite" ? "/ficha" : "/dev/character-sheet"}?campaignId=${campaign.id}&profileId=${perfil.id}`}
-                  data-testid={`join-abrir-ficha-${perfil.id}`}
-                  style={{ ...buttonStyle, textDecoration: "none", display: "inline-block", width: "fit-content" }}
-                >
-                  Abrir ficha
-                </Link>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Link
+                    href={`${variant === "invite" ? "/ficha" : "/dev/character-sheet"}?campaignId=${campaign.id}&profileId=${perfil.id}`}
+                    data-testid={`join-abrir-ficha-${perfil.id}`}
+                    style={{ ...buttonStyle, textDecoration: "none", display: "inline-block", width: "fit-content" }}
+                  >
+                    Abrir ficha
+                  </Link>
+                  {variant === "invite" && (
+                    <Link
+                      href={`/mesas/${campaign.id}/livro`}
+                      data-testid={`join-abrir-livro-${perfil.id}`}
+                      style={{ ...buttonStyle, textDecoration: "none", display: "inline-block", width: "fit-content" }}
+                    >
+                      Livro
+                    </Link>
+                  )}
+                </div>
               )}
             </div>
           );

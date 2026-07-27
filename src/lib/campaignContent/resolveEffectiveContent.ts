@@ -115,3 +115,5 @@ export const listSpellsEffective = (campaignId: string | null) => listEffectiveO
 export const listTalentsEffective = (campaignId: string | null) => listEffectiveOrOfficial("talent", campaignId);
 export const listItemsEffective = (campaignId: string | null) => listEffectiveOrOfficial("item", campaignId);
 export const listRunesEffective = (campaignId: string | null) => listEffectiveOrOfficial("rune", campaignId);
+/** Checkpoint pós-v0.94 (fase 10) — capítulos publicados para a Biblioteca do Livro (leitura). */
+export const listCapitulosEffective = (campaignId: string | null) => listEffectiveOrOfficial("capitulo", campaignId);
