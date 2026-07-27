@@ -89,7 +89,8 @@ import { getCurrentUser } from "../auth/session";
 import { validateProfileSessionToken } from "../table/storage";
 import type { Campaign, CampaignProfile } from "../table";
 import { CharacterStorageError } from "./storage.errors";
-import type { Character, CharacterRecord } from "./types";
+import { validateCreationBudget } from "./createCharacterValidation";
+import type { Character, CharacterRecord, CharacterRulesPayload } from "./types";
 
 const TABLE = "characters";
 
@@ -260,6 +261,29 @@ export async function createCharacterForCampaign(
   character: Character,
   options: { profileId?: string | null; ownerLabel?: string } = {},
 ): Promise<CharacterRecord> {
+  const client = await getScopedTableClient();
+  return insertCharacterScoped(client, character, { ...options, campaignId });
+}
+
+/**
+ * Criação PELO PRÓPRIO JOGADOR (checkpoint pós-v0.94, fase 2/3; rodada
+ * de consolidação, achado do Cenário 3 "payload hostil") — mesmo
+ * caminho de `createCharacterForCampaign`, mas valida o orçamento de
+ * criação (atributos/perícias/vertentes) server-side ANTES de inserir.
+ * `createCharacterForCampaign` continua sem essa checagem de propósito
+ * (uso do narrador, já confiável); esta função existe só para o
+ * caminho do wizard, onde o chamador pode não ser o narrador.
+ */
+export async function createCharacterFromWizard(
+  campaignId: string,
+  character: Character,
+  regras: CharacterRulesPayload,
+  options: { profileId?: string | null; ownerLabel?: string } = {},
+): Promise<CharacterRecord> {
+  const validation = validateCreationBudget(character, regras);
+  if (!validation.ok) {
+    throw new CharacterStorageError(validation.reason ?? "Orçamento de criação inválido.");
+  }
   const client = await getScopedTableClient();
   return insertCharacterScoped(client, character, { ...options, campaignId });
 }

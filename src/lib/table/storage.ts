@@ -528,6 +528,35 @@ export async function setCampaignProfileActiveCharacter(
   return data as CampaignProfile;
 }
 
+/**
+ * Jogador define o personagem ATIVO do PRÓPRIO perfil (checkpoint
+ * pós-v0.94, correção da rodada de consolidação — achado ao vivo no
+ * navegador: `setCampaignProfileActiveCharacter` é travada a narrador
+ * dono desde a migration 0032, e o wizard de criação pelo jogador
+ * (fase 2/3) chamava exatamente essa função ao concluir, deixando o
+ * personagem recém-criado órfão — criado, mas nunca ativo no perfil).
+ * Usa `claim_own_active_character` (migration 0039), que só aceita
+ * quando o chamador é o dono do PRÓPRIO perfil (ou o narrador) e o
+ * personagem já aponta de volta para este mesmo perfil.
+ */
+export async function claimOwnActiveCharacter(
+  profileId: string,
+  characterId: string | null,
+): Promise<CampaignProfile> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("claim_own_active_character", {
+    p_profile_id: profileId,
+    p_character_id: characterId,
+  });
+
+  if (error) {
+    throw new TableStorageError(
+      `Falha ao definir personagem ativo do próprio perfil "${profileId}": ${error.message}`,
+      error,
+    );
+  }
+  return data as CampaignProfile;
+}
 
 // =====================================================================
 // Expiração automática de sessões (checkpoint v0.26)

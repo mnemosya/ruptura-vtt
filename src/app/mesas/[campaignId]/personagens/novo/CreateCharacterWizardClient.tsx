@@ -10,8 +10,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createCharacterForCampaign } from "../../../../../lib/character/storage";
-import { setCampaignProfileActiveCharacter } from "../../../../../lib/table/storage";
+import { createCharacterFromWizard } from "../../../../../lib/character/storage";
+import { claimOwnActiveCharacter } from "../../../../../lib/table/storage";
 import type { Campaign, CampaignProfile } from "../../../../../lib/table";
 import {
   learnSpell,
@@ -24,9 +24,7 @@ import {
   type SpellContent,
   type ItemContent,
 } from "../../../../../lib/character";
-
-/** PRD 3.2, Etapa 4 — "3 pontos entre as 6 vertentes" (literal do texto, sem contrato em `regras.criacao_personagem` ainda). */
-const PONTOS_VERTENTE_CRIACAO = 3;
+import { PONTOS_VERTENTE_CRIACAO } from "../../../../../lib/character/createCharacterValidation";
 
 const btn: React.CSSProperties = { background: "#1d1e24", color: "inherit", border: "1px solid #333", borderRadius: 6, padding: "8px 14px", fontSize: 13, cursor: "pointer" };
 const btnAtivo: React.CSSProperties = { ...btn, background: "#2d4a2f", border: "1px solid #4caf50", fontWeight: 700 };
@@ -283,13 +281,22 @@ export default function CreateCharacterWizardClient({
         });
       }
 
-      const record = await createCharacterForCampaign(campaign.id, character, {
+      const record = await createCharacterFromWizard(campaign.id, character, regras, {
         profileId: profileIdSelecionado || null,
       });
       if (profileIdSelecionado) {
-        await setCampaignProfileActiveCharacter(profileIdSelecionado, record.id);
+        await claimOwnActiveCharacter(profileIdSelecionado, record.id);
       }
-      router.push(`/mesas/${campaign.id}`);
+      // Achado da rodada de consolidação (browser real): `/mesas/[campaignId]`
+      // é a mesa do NARRADOR (guard owner-only) — um jogador que acabou de
+      // criar o próprio personagem caía direto em "Acesso negado". Jogador
+      // vai para a própria ficha (mesmo padrão de link usado em JoinClient);
+      // narrador continua indo para a mesa, como já era aceito.
+      if (travarSelecaoDePerfil && profileIdSelecionado) {
+        router.push(`/ficha?campaignId=${campaign.id}&profileId=${profileIdSelecionado}`);
+      } else {
+        router.push(`/mesas/${campaign.id}`);
+      }
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao criar personagem.");
       setCriando(false);

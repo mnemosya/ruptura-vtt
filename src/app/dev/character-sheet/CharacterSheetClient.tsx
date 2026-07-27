@@ -924,6 +924,14 @@ export default function CharacterSheetClient({
     () => computeDerivedStats(character.atributos, regras, character.mana_bonus_ruptura ?? 0),
     [character.atributos, regras, character.mana_bonus_ruptura],
   );
+  // Janela atual da trilha de turnos (checkpoint pós-v0.94, fase 1;
+  // achado da rodada de consolidação — sem isto, `buildActionConsoleItems`/
+  // `executeActionOnCharacter` nunca recebiam a janela real, então o
+  // bloqueio de PA>2 em Rápidos nunca disparava de verdade na ficha).
+  const currentTurnWindow = useMemo(
+    () => mesas.find((m) => m.id === selectedCampaignId)?.turn_track?.window ?? null,
+    [mesas, selectedCampaignId],
+  );
   const reactionAvailability = useMemo(
     () => getReactionAvailability(character, derivados.reacoes_por_rodada, reactionRules),
     [character, derivados.reacoes_por_rodada, reactionRules],
@@ -945,7 +953,7 @@ export default function CharacterSheetClient({
         regras?.pericias.map((pericia) => pericia.id) ?? [],
         reactionRules,
         { items: itemsIniciais, properties: propertiesIniciais, runes: runesIniciais },
-        undefined,
+        currentTurnWindow,
         false,
         activeEffects,
       ),
@@ -961,6 +969,7 @@ export default function CharacterSheetClient({
       propertiesIniciais,
       runesIniciais,
       activeEffects,
+      currentTurnWindow,
     ],
   );
 
@@ -5121,7 +5130,7 @@ export default function CharacterSheetClient({
       regras?.pericias.map((pericia) => pericia.id) ?? [],
       reactionRules,
       { items: itemsIniciais, properties: propertiesIniciais, runes: runesIniciais },
-      undefined,
+      currentTurnWindow,
       false,
       activeEffects,
     );
@@ -5176,7 +5185,7 @@ export default function CharacterSheetClient({
       derivados.reacoes_por_rodada,
       nowIso,
       reactionRules,
-      undefined,
+      currentTurnWindow,
       false,
       activeEffects,
     );
