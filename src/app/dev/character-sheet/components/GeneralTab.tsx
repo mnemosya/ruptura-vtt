@@ -3,7 +3,7 @@ import { Section } from "./Section";
 import { buttonStyle } from "./styles";
 import { ModeToggle, type SheetMode } from "./ModeToggle";
 import type { Campaign, CampaignProfile } from "../../../../lib/table";
-import type { CharacterRecord, EvolutionHistoryEntry } from "../../../../lib/character";
+import type { Character, CharacterRecord, EvolutionHistoryEntry } from "../../../../lib/character";
 
 const inputStyle: React.CSSProperties = {
   background: "#0f1014",
@@ -32,6 +32,7 @@ const selectStyle = {
 export function GeneralTab({
   mode = "dev",
   nome,
+  metadados,
   characterId,
   schemaVersion,
   saveState,
@@ -63,6 +64,8 @@ export function GeneralTab({
   /** "dev" (padrão) mantém os seletores de mesa/perfil; "product" (/ficha, v0.24) mostra mesa/perfil fixos como texto, sem seletor. */
   mode?: "dev" | "product";
   nome: string;
+  /** Dados capturados no wizard de criação (checkpoint pós-v0.94, fase 4) — só leitura aqui. */
+  metadados?: Character["metadados"];
   characterId: string | null;
   schemaVersion: number | undefined;
   saveState: SaveState;
@@ -219,6 +222,25 @@ export function GeneralTab({
           width: "100%",
         }}
       />
+
+      {(() => {
+        const asString = (v: unknown) => (typeof v === "string" && v.trim().length > 0 ? v : null);
+        const alcunha = asString(metadados?.alcunha);
+        const conceito = asString(metadados?.conceito);
+        const origem = asString(metadados?.origem);
+        const idioma = asString(metadados?.idioma);
+        const afiliacao = asString(metadados?.afiliacao);
+        if (!alcunha && !conceito && !origem && !idioma && !afiliacao) return null;
+        return (
+          <div data-testid="ficha-identidade" style={{ fontSize: 12, opacity: 0.75, marginBottom: 16, display: "flex", flexDirection: "column", gap: 2 }}>
+            {alcunha && <span><strong>Alcunha:</strong> {alcunha}</span>}
+            {conceito && <span><strong>Conceito:</strong> {conceito}</span>}
+            {origem && <span><strong>Origem:</strong> {origem}</span>}
+            {idioma && <span><strong>Idioma:</strong> {idioma}</span>}
+            {afiliacao && <span><strong>Afiliação:</strong> {afiliacao}</span>}
+          </div>
+        );
+      })()}
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
         <button onClick={onSave} disabled={saveState === "saving"} style={buttonStyle}>

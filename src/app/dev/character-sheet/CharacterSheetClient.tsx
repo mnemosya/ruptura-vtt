@@ -5642,6 +5642,7 @@ export default function CharacterSheetClient({
         <GeneralTab
           mode={mode}
           nome={character.nome}
+          metadados={character.metadados}
           characterId={characterId}
           schemaVersion={character.metadados?.schema_version}
           saveState={saveState}
