@@ -285,7 +285,24 @@ export async function createCharacterFromWizard(
     throw new CharacterStorageError(validation.reason ?? "Orçamento de criação inválido.");
   }
   const client = await getScopedTableClient();
-  return insertCharacterScoped(client, character, { ...options, campaignId });
+  try {
+    return await insertCharacterScoped(client, character, { ...options, campaignId });
+  } catch (err) {
+    // Concorrência (migration 0041): dois cliques quase simultâneos ou
+    // um retry de rede após sucesso batem no índice único
+    // (profile_id, campaign_id) para personagens não arquivados — erro
+    // controlado em vez de um segundo personagem órfão disputando o
+    // mesmo `active_character_id`.
+    if (
+      options.profileId &&
+      err instanceof CharacterStorageError &&
+      typeof (err.cause as { code?: string } | undefined)?.code === "string" &&
+      (err.cause as { code?: string }).code === "23505"
+    ) {
+      throw new CharacterStorageError("Este perfil já possui um personagem ativo nesta mesa.", err.cause);
+    }
+    throw err;
+  }
 }
 
 /**

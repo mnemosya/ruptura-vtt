@@ -309,42 +309,64 @@ export async function endCampaignRound(params: {
     throw new Error("Esta sessão não pode avançar a campanha. Entre como narrador dono da mesa para confirmar.");
   }
 
-  const round = campaign.current_round;
-  const scene = campaign.current_scene;
-  const nowIso = params.nowIso ?? new Date().toISOString();
-
-  let regras: CharacterRulesPayload | null = null;
-  try {
-    const doc = await getCharacterRules();
-    regras = (doc?.payload as CharacterRulesPayload | undefined) ?? null;
-  } catch {
-    // computeDerivedStats já tem fallback interno — segue sem travar o encerramento.
+  // Concorrência (migration 0042): trava atômica de UMA linha antes de
+  // processar qualquer personagem. Um UPDATE...WHERE round_processing=false
+  // é serializado pelo Postgres — só uma das duas chamadas concorrentes
+  // recebe a linha de volta; a outra recebe `lockRow == null` e falha
+  // AGORA, antes de duplicar PA/Reações/condições/logs (ver comentário
+  // da migration para o porquê de não ser uma transação única maior).
+  const lockClient = await getScopedTableClient();
+  const { data: lockRow, error: lockError } = await lockClient
+    .from("campaigns")
+    .update({ round_processing: true })
+    .eq("id", params.campaignId)
+    .eq("round_processing", false)
+    .select()
+    .maybeSingle();
+  if (lockError) {
+    throw new Error(`Falha ao travar o encerramento de rodada: ${lockError.message}`);
+  }
+  if (!lockRow) {
+    throw new Error("Esta rodada já está sendo encerrada por outra chamada — aguarde e recarregue a página.");
   }
 
-  let conditions: ConditionContent[] = [];
   try {
-    const docs = await listConditions();
-    conditions = docs.map((doc) => normalizeConditionContent(doc.payload as Record<string, unknown>));
-  } catch {
-    // Biblioteca fora do ar — motor não encontra nenhum efeito, mas PA/Reações ainda renovam.
-  }
+    const round = campaign.current_round;
+    const scene = campaign.current_scene;
+    const nowIso = params.nowIso ?? new Date().toISOString();
 
-  const { processedCharacters, skippedCharacters, tableLogs, processedCharacterNames, attentionCharacterNames } =
-    await resolveCampaignEndRoundForCharacters({
-      campaignId: params.campaignId,
-      round,
-      scene,
-      regras,
-      conditions,
-      nowIso,
-      rng: params.rng,
-    });
+    let regras: CharacterRulesPayload | null = null;
+    try {
+      const doc = await getCharacterRules();
+      regras = (doc?.payload as CharacterRulesPayload | undefined) ?? null;
+    } catch {
+      // computeDerivedStats já tem fallback interno — segue sem travar o encerramento.
+    }
 
-  // Avança a rodada da campanha SÓ DEPOIS de processar os personagens
-  // (ordem operacional A→E) — reaproveita endRound (v0.39) sem alterar
-  // sua regra; attentionSummary reusa o mesmo critério de antes.
-  const updatedCampaign = await advanceCampaignRound(params.campaignId, attentionCharacterNames);
-  const nextRound = updatedCampaign.current_round;
+    let conditions: ConditionContent[] = [];
+    try {
+      const docs = await listConditions();
+      conditions = docs.map((doc) => normalizeConditionContent(doc.payload as Record<string, unknown>));
+    } catch {
+      // Biblioteca fora do ar — motor não encontra nenhum efeito, mas PA/Reações ainda renovam.
+    }
+
+    const { processedCharacters, skippedCharacters, tableLogs, processedCharacterNames, attentionCharacterNames } =
+      await resolveCampaignEndRoundForCharacters({
+        campaignId: params.campaignId,
+        round,
+        scene,
+        regras,
+        conditions,
+        nowIso,
+        rng: params.rng,
+      });
+
+    // Avança a rodada da campanha SÓ DEPOIS de processar os personagens
+    // (ordem operacional A→E) — reaproveita endRound (v0.39) sem alterar
+    // sua regra; attentionSummary reusa o mesmo critério de antes.
+    const updatedCampaign = await advanceCampaignRound(params.campaignId, attentionCharacterNames);
+    const nextRound = updatedCampaign.current_round;
 
   // Reseta a trilha de turnos para a rodada nova (checkpoint pós-v0.94):
   // "Encerrar rodada" já é uma ação exclusiva do narrador (canAdvanceCampaign
@@ -417,20 +439,27 @@ export async function endCampaignRound(params: {
     // Best-effort — o processamento já foi concluído e persistido.
   }
 
-  return {
-    campaignId: params.campaignId,
-    previousRound: round,
-    nextRound,
-    scene,
-    processedCharacters,
-    skippedCharacters,
-    damageEventCount,
-    pendingCheckCount,
-    appliedConditionCount,
-    removedConditionCount,
-    paReductionCount,
-    collapseTestCount,
-    collapseOutcomeCount,
-    warnings,
-  };
+    return {
+      campaignId: params.campaignId,
+      previousRound: round,
+      nextRound,
+      scene,
+      processedCharacters,
+      skippedCharacters,
+      damageEventCount,
+      pendingCheckCount,
+      appliedConditionCount,
+      removedConditionCount,
+      paReductionCount,
+      collapseTestCount,
+      collapseOutcomeCount,
+      warnings,
+    };
+  } finally {
+    // Libera a trava sempre — sucesso ou erro no meio do processamento
+    // (best-effort: se isto falhar, a linha fica presa em
+    // round_processing=true até correção manual, preferível a nunca
+    // travar e voltar a permitir duplicidade).
+    await lockClient.from("campaigns").update({ round_processing: false }).eq("id", params.campaignId);
+  }
 }
