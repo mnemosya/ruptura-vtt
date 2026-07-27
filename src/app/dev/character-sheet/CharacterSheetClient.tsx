@@ -2225,6 +2225,8 @@ export default function CharacterSheetClient({
    * `activeEffects` (useMemo acima), sem passo extra aqui.
    */
   function handleAcquireTalent(talentoId: string, nivelId: string, nivel: number) {
+    // Defesa em profundidade: o botão já some em Modo Jogo (PRD 4.1/4.2), mas o handler recusa por garantia.
+    if (sheetMode === "jogo") return;
     const current = characterRef.current;
     const nowIso = new Date().toISOString();
     const acquired = acquireTalentLevel(current, { talentoId, nivelId, nivel, nowIso });
@@ -2250,6 +2252,7 @@ export default function CharacterSheetClient({
   }
 
   function handleRemoveTalent(acquiredId: string) {
+    if (sheetMode === "jogo") return;
     const current = characterRef.current;
     const next = removeTalentLevel(current, acquiredId);
     if (next === current) return;
@@ -5750,6 +5753,7 @@ export default function CharacterSheetClient({
         <TalentsTab
           talents={talentsIniciais}
           catalogError={talentsError}
+          sheetMode={sheetMode}
           acquired={character.talentos_adquiridos ?? []}
           usableEffects={getUsableTalentEffects(character, talentsIniciais)}
           contextualOpportunities={getTalentContextualOpportunities(character, talentsIniciais)}

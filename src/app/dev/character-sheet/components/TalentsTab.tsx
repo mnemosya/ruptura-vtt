@@ -67,6 +67,7 @@ export function TalentsTab({
   talents,
   catalogError,
   acquired,
+  sheetMode,
   usableEffects,
   contextualOpportunities,
   onAcquire,
@@ -172,6 +173,8 @@ export function TalentsTab({
   talents: TalentContent[];
   catalogError: string | null;
   acquired: AcquiredTalentLevel[];
+  /** PRD 4.1/4.2 — aquisição/remoção de talento é travada em Modo Jogo, só permitida em Modo Evolução (usar o talento já adquirido continua liberado nos dois). */
+  sheetMode: "jogo" | "evolucao";
   usableEffects: UsableTalentEffect[];
   contextualOpportunities: TalentContextualOpportunity[];
   onAcquire: (talentoId: string, nivelId: string, nivel: number) => void;
@@ -670,7 +673,11 @@ export function TalentsTab({
                             );
                           })}
                         <div style={{ marginTop: 4 }}>
-                          {acquiredEntry ? (
+                          {sheetMode === "jogo" ? (
+                            <span style={{ fontSize: 11, opacity: 0.5 }}>
+                              {acquiredEntry ? "Adquirido — edite no Modo Evolução." : "Disponível no Modo Evolução."}
+                            </span>
+                          ) : acquiredEntry ? (
                             <button
                               data-testid={`talento-remover-${nivel.id}`}
                               onClick={() => onRemove(acquiredEntry.id)}
