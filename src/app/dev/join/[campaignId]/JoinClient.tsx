@@ -172,6 +172,15 @@ export default function JoinClient({ campaign, perfisIniciais, personagens, vari
               <span style={{ fontSize: 11, opacity: 0.7 }}>
                 Personagem ativo: {personagemAtivo ? personagemAtivo.name : "nenhum"}
               </span>
+              {variant === "invite" && !personagemAtivo && (
+                <Link
+                  href={`/mesas/${campaign.id}/personagens/novo`}
+                  data-testid={`join-criar-personagem-${perfil.id}`}
+                  style={{ ...buttonStyle, textDecoration: "none", display: "inline-block", width: "fit-content" }}
+                >
+                  Criar personagem
+                </Link>
+              )}
               {jaEntrei && (
                 <Link
                   href={`${variant === "invite" ? "/ficha" : "/dev/character-sheet"}?campaignId=${campaign.id}&profileId=${perfil.id}`}

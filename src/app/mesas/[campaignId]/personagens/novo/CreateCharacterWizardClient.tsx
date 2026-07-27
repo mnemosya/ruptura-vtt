@@ -56,11 +56,14 @@ export default function CreateCharacterWizardClient({
   regras,
   perfisIniciais,
   talentosNivel1,
+  travarSelecaoDePerfil = false,
 }: {
   campaign: Campaign;
   regras: CharacterRulesPayload;
   perfisIniciais: CampaignProfile[];
   talentosNivel1: TalentoNivel1Option[];
+  /** Jogador (não-narrador): só tem o próprio perfil na lista e não pode trocar (checkpoint pós-v0.94, fase 2). */
+  travarSelecaoDePerfil?: boolean;
 }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -89,7 +92,9 @@ export default function CreateCharacterWizardClient({
   );
   const [talentoEscolhidoSlug, setTalentoEscolhidoSlug] = useState<string>("");
   const [perfisState] = useState(perfisIniciais);
-  const [profileIdSelecionado, setProfileIdSelecionado] = useState<string>("");
+  const [profileIdSelecionado, setProfileIdSelecionado] = useState<string>(
+    travarSelecaoDePerfil ? (perfisIniciais[0]?.id ?? "") : "",
+  );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [criando, setCriando] = useState(false);
 
@@ -102,7 +107,11 @@ export default function CreateCharacterWizardClient({
   const pontosPericiaRestantes = periciaPontosTotais - pontosPericiaGastos;
   const periciasValidas = pontosPericiaRestantes >= 0 && regras.pericias.every((p) => (pericias[p.id] ?? 0) <= periciaTeto && (pericias[p.id] ?? 0) >= 0);
 
-  const podeFinalizar = atributosValidos && periciasValidas && identidade.nome.trim().length > 0;
+  const podeFinalizar =
+    atributosValidos &&
+    periciasValidas &&
+    identidade.nome.trim().length > 0 &&
+    (!travarSelecaoDePerfil || Boolean(profileIdSelecionado));
 
   function ajustarAtributo(id: string, delta: number) {
     setAtributos((prev) => {
@@ -328,21 +337,27 @@ export default function CreateCharacterWizardClient({
             <span><strong>Aretz inicial:</strong> {aretzIniciais}</span>
           </div>
 
-          {perfisState.length > 0 && (
-            <label style={{ fontSize: 12, display: "block", marginBottom: 16 }}>
-              Vincular a um perfil desta mesa (opcional — define como personagem ativo)
-              <select
-                data-testid="wizard-perfil-select"
-                value={profileIdSelecionado}
-                onChange={(e) => setProfileIdSelecionado(e.target.value)}
-                style={{ ...input, marginTop: 4, maxWidth: 320 }}
-              >
-                <option value="">— nenhum —</option>
-                {perfisState.map((p) => (
-                  <option key={p.id} value={p.id}>{p.nickname}</option>
-                ))}
-              </select>
-            </label>
+          {travarSelecaoDePerfil ? (
+            <p style={{ fontSize: 12, marginBottom: 16 }}>
+              <strong>Perfil:</strong> {perfisState[0]?.nickname ?? "(nenhum perfil reivindicado — não é possível criar)"}
+            </p>
+          ) : (
+            perfisState.length > 0 && (
+              <label style={{ fontSize: 12, display: "block", marginBottom: 16 }}>
+                Vincular a um perfil desta mesa (opcional — define como personagem ativo)
+                <select
+                  data-testid="wizard-perfil-select"
+                  value={profileIdSelecionado}
+                  onChange={(e) => setProfileIdSelecionado(e.target.value)}
+                  style={{ ...input, marginTop: 4, maxWidth: 320 }}
+                >
+                  <option value="">— nenhum —</option>
+                  {perfisState.map((p) => (
+                    <option key={p.id} value={p.id}>{p.nickname}</option>
+                  ))}
+                </select>
+              </label>
+            )
           )}
 
           {!atributosValidos && (
@@ -357,6 +372,11 @@ export default function CreateCharacterWizardClient({
           )}
           {!identidade.nome.trim() && (
             <p style={{ color: "#ff6b6b", fontSize: 12, marginBottom: 8 }}>Nome é obrigatório (Etapa 1).</p>
+          )}
+          {travarSelecaoDePerfil && !profileIdSelecionado && (
+            <p style={{ color: "#ff6b6b", fontSize: 12, marginBottom: 8 }}>
+              Nenhum perfil reivindicado nesta mesa — entre por um convite antes de criar seu personagem.
+            </p>
           )}
 
           <button data-testid="wizard-finalizar-button" onClick={finalizar} disabled={!podeFinalizar || criando} style={{ ...btn, opacity: podeFinalizar && !criando ? 1 : 0.5 }}>

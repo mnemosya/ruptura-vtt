@@ -1,8 +1,13 @@
 /**
- * Assistente de criação de personagem (checkpoint v0.41, PRD 3.2) —
- * rota própria em vez de inflar o dashboard da mesa. Exige login E que
- * o narrador seja o dono da mesa (mesmo guard de
- * `/mesas/[campaignId]`).
+ * Assistente de criação de personagem (checkpoint v0.41, PRD 3.2;
+ * autorização de jogador — checkpoint pós-v0.94, fase 2 "criação
+ * autônoma"). Exige login E que o usuário seja OU o narrador dono da
+ * mesa OU um jogador com perfil já reivindicado nesta mesa
+ * (`campaign_profiles.user_id`, migration 0028) — a RLS de
+ * `characters` (migration 0030) já permite o INSERT vinculado ao
+ * PRÓPRIO perfil; antes desta correção só o guard desta página negava
+ * acesso a quem não fosse o dono, deixando a criação pelo jogador
+ * inacessível apesar de já autorizada no banco.
  */
 
 import { redirect } from "next/navigation";
@@ -42,15 +47,37 @@ export default async function NovoPersonagemPage({ params }: PageProps) {
     );
   }
 
-  if (campaign.owner_id !== user.id) {
+  const isOwner = campaign.owner_id === user.id;
+
+  let perfis: CampaignProfile[] = [];
+  try {
+    perfis = await listCampaignProfiles(campaignId);
+  } catch {
+    perfis = [];
+  }
+
+  // Jogador (não-narrador): só pode entrar se já tiver um perfil
+  // reivindicado NESTA mesa (migration 0028 — `claim_campaign_profile`,
+  // fluxo de convite). Sem perfil reivindicado, não há a quem vincular
+  // o personagem novo, então o acesso é negado (não é "mesa alheia" —
+  // é "ainda não entrou nesta mesa por convite").
+  const perfilProprio = perfis.find((p) => p.user_id === user.id) ?? null;
+  if (!isOwner && !perfilProprio) {
     return (
       <main style={{ maxWidth: 640, margin: "60px auto", padding: "0 20px" }}>
         <h1 style={{ fontSize: 20 }}>Acesso negado</h1>
-        <p style={{ fontSize: 13, opacity: 0.8 }}>Esta mesa não pertence à sua conta.</p>
+        <p style={{ fontSize: 13, opacity: 0.8 }}>
+          Você precisa entrar nesta mesa por um convite e reivindicar um perfil antes de criar um personagem.
+        </p>
         <Link href="/mesas" style={{ color: "#5ec8ff", fontSize: 13 }}>← Minhas mesas</Link>
       </main>
     );
   }
+
+  // Jogador só vê/vincula ao PRÓPRIO perfil (nunca a lista inteira da
+  // mesa) — a RLS de `campaign_profiles`/`characters` já bloqueia
+  // vincular a perfil alheio, mas a UI não deve nem oferecer a opção.
+  const perfisParaWizard = isOwner ? perfis : perfilProprio ? [perfilProprio] : [];
 
   let regras: CharacterRulesPayload | null = null;
   try {
@@ -58,13 +85,6 @@ export default async function NovoPersonagemPage({ params }: PageProps) {
     regras = (doc?.payload as CharacterRulesPayload | undefined) ?? null;
   } catch {
     regras = null;
-  }
-
-  let perfis: CampaignProfile[] = [];
-  try {
-    perfis = await listCampaignProfiles(campaignId);
-  } catch {
-    perfis = [];
   }
 
   // Etapa 5 (Talento inicial): só oferece escolha se a Biblioteca de
@@ -105,8 +125,9 @@ export default async function NovoPersonagemPage({ params }: PageProps) {
     <CreateCharacterWizardClient
       campaign={campaign}
       regras={regras}
-      perfisIniciais={perfis}
+      perfisIniciais={perfisParaWizard}
       talentosNivel1={talentosNivel1}
+      travarSelecaoDePerfil={!isOwner}
     />
   );
 }
