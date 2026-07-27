@@ -22,6 +22,7 @@ import { useEffect, useState } from "react";
 import { Section } from "./Section";
 import { buttonStyle } from "./styles";
 import { addLog, listLogsForViewer } from "../../../../lib/table/storage";
+import { listCrewInventory, type CrewInventoryItem } from "../../../../lib/table/crewInventory";
 import { useTableLogsRealtime } from "../../../../lib/realtime/useTableLogsRealtime";
 import { describeRealtimeStatus } from "../../../../lib/realtime/tableRealtime";
 import { TABLE_LOG_VISIBILITIES, type TableLogEntry, type TableLogVisibility } from "../../../../lib/table";
@@ -1044,6 +1045,27 @@ export function MesaTab({
   // Só exibição ("Última atualização: HH:mm:ss") — nunca refeita a
   // partir do servidor, não interfere no filtro nem nos logs em si.
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
+  // Checkpoint pós-v0.94 (fase 6) — leitura do inventário do bando pelo
+  // jogador (migration 0038 liberou SELECT para membro da campanha);
+  // retirar/editar continua exclusivo do narrador em /dev/table.
+  const [crewInventory, setCrewInventory] = useState<CrewInventoryItem[]>([]);
+  const [crewInventoryError, setCrewInventoryError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!campaignId) {
+      setCrewInventory([]);
+      return;
+    }
+    listCrewInventory(campaignId)
+      .then((items) => {
+        setCrewInventory(items);
+        setCrewInventoryError(null);
+      })
+      .catch((err) => {
+        setCrewInventory([]);
+        setCrewInventoryError(err instanceof Error ? err.message : "Erro ao carregar inventário do bando.");
+      });
+  }, [campaignId]);
 
   async function refreshLogs() {
     if (!campaignId) return;
@@ -1130,6 +1152,28 @@ export function MesaTab({
       {errorMessage && (
         <p style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 12 }}>Erro: {errorMessage}</p>
       )}
+
+      <div data-testid="mesa-tab-inventario-bando" style={{ marginBottom: 20 }}>
+        <p style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 1, opacity: 0.6, marginBottom: 8 }}>
+          Inventário do bando ({crewInventory.length})
+        </p>
+        {crewInventoryError && (
+          <p style={{ color: "#ff6b6b", fontSize: 12, marginBottom: 8 }}>⚠ {crewInventoryError}</p>
+        )}
+        {!crewInventoryError && crewInventory.length === 0 && (
+          <p style={{ fontSize: 12, opacity: 0.6 }}>Nenhum item no bando ainda.</p>
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {crewInventory.map((row) => (
+            <span key={row.id} data-testid={`mesa-tab-bando-item-${row.id}`} style={{ fontSize: 12 }}>
+              {row.itemName ?? row.payload.itemNome} × {row.quantity ?? row.payload.quantidade}
+            </span>
+          ))}
+        </div>
+        <p style={{ fontSize: 11, opacity: 0.5, marginTop: 6 }}>
+          Retirar do bando é feito pelo narrador. Envie itens para o bando na aba Inventário.
+        </p>
+      </div>
 
       {/* --- Área de envio --- */}
       <div
