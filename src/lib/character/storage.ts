@@ -267,34 +267,69 @@ export async function createCharacterForCampaign(
 
 /**
  * Criação PELO PRÓPRIO JOGADOR (checkpoint pós-v0.94, fase 2/3; rodada
- * de consolidação, achado do Cenário 3 "payload hostil") — mesmo
- * caminho de `createCharacterForCampaign`, mas valida o orçamento de
- * criação (atributos/perícias/vertentes) server-side ANTES de inserir.
- * `createCharacterForCampaign` continua sem essa checagem de propósito
- * (uso do narrador, já confiável); esta função existe só para o
- * caminho do wizard, onde o chamador pode não ser o narrador.
+ * de consolidação, achado do Cenário 3 "payload hostil"; rodada de
+ * segurança/atomicidade — migration 0044) — valida o orçamento de
+ * criação (atributos/perícias/vertentes) server-side ANTES de
+ * persistir. `createCharacterForCampaign` continua sem essa checagem
+ * de propósito (uso do narrador, já confiável); esta função existe só
+ * para o caminho do wizard, onde o chamador pode não ser o narrador.
+ *
+ * Com `options.profileId`: usa a RPC transacional
+ * `complete_character_creation` (migration 0044) — insere o
+ * personagem E reivindica o perfil como ativo em UMA transação só.
+ * Antes desta migration eram duas chamadas separadas (insert aqui +
+ * `claimOwnActiveCharacter` no componente do wizard); uma falha de
+ * rede exatamente entre as duas deixava o personagem criado mas nunca
+ * reivindicado — gap fechado agora (rollback nativo do Postgres se
+ * qualquer parte falhar). `options.creationRequestId`, quando
+ * informado, torna a conclusão idempotente: retry após sucesso ou
+ * duplo clique devolvem o MESMO personagem, nunca duplicam.
+ *
+ * Sem `options.profileId` (narrador criando personagem solto/PNJ pelo
+ * wizard, sem vincular a nenhum perfil): não há segunda operação para
+ * tornar atômica com o insert — mantém o caminho simples direto.
  */
 export async function createCharacterFromWizard(
   campaignId: string,
   character: Character,
   regras: CharacterRulesPayload,
-  options: { profileId?: string | null; ownerLabel?: string } = {},
+  options: { profileId?: string | null; ownerLabel?: string; creationRequestId?: string } = {},
 ): Promise<CharacterRecord> {
   const validation = validateCreationBudget(character, regras);
   if (!validation.ok) {
     throw new CharacterStorageError(validation.reason ?? "Orçamento de criação inválido.");
   }
+
+  const payload = buildPayloadForSave(character);
+  if (options.creationRequestId) {
+    payload.metadados = { ...payload.metadados, schema_version: payload.metadados!.schema_version, creationRequestId: options.creationRequestId };
+  }
+
   const client = await getScopedTableClient();
+
+  if (options.profileId) {
+    const { data, error } = await client.rpc("complete_character_creation", {
+      p_campaign_id: campaignId,
+      p_profile_id: options.profileId,
+      p_character_payload: payload,
+      p_owner_label: options.ownerLabel ?? null,
+      p_creation_request_id: options.creationRequestId ?? null,
+    });
+    if (error) {
+      throw new CharacterStorageError(`Falha ao concluir a criação do personagem: ${error.message}`, error);
+    }
+    const result = data as { character: CharacterRecord; idempotentReplay: boolean };
+    return result.character;
+  }
+
   try {
     return await insertCharacterScoped(client, character, { ...options, campaignId });
   } catch (err) {
-    // Concorrência (migration 0041): dois cliques quase simultâneos ou
-    // um retry de rede após sucesso batem no índice único
-    // (profile_id, campaign_id) para personagens não arquivados — erro
-    // controlado em vez de um segundo personagem órfão disputando o
-    // mesmo `active_character_id`.
+    // Concorrência (migration 0041): índice único (profile_id,
+    // campaign_id) — só alcançável aqui se `options.profileId` vier
+    // preenchido sem passar pelo branch acima (não deveria acontecer
+    // no caminho real, mas mantido como cinto-e-suspensório).
     if (
-      options.profileId &&
       err instanceof CharacterStorageError &&
       typeof (err.cause as { code?: string } | undefined)?.code === "string" &&
       (err.cause as { code?: string }).code === "23505"

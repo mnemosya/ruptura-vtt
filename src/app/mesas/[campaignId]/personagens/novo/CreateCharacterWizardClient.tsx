@@ -11,7 +11,6 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createCharacterFromWizard } from "../../../../../lib/character/storage";
-import { claimOwnActiveCharacter } from "../../../../../lib/table/storage";
 import type { Campaign, CampaignProfile } from "../../../../../lib/table";
 import {
   learnSpell,
@@ -106,6 +105,13 @@ export default function CreateCharacterWizardClient({
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [criando, setCriando] = useState(false);
+  // Chave estável de idempotência (migration 0044) — gerada UMA vez por
+  // montagem do wizard (nunca por clique): um duplo clique ou retry de
+  // rede reenvia a MESMA chave, então `complete_character_creation`
+  // devolve o personagem já criado em vez de duplicar. Recarregar a
+  // página gera uma chave nova — não é (nem pretende ser) um draft
+  // persistente, só o suficiente para a conclusão ser idempotente.
+  const [creationRequestId] = useState(() => crypto.randomUUID());
 
   const pontosAtributoGastos = regras.atributos.reduce((soma, a) => soma + ((atributos[a.id] ?? atributoValorInicial) - atributoValorInicial), 0);
   const pontosAtributoRestantes = atributoPontosAdicionais - pontosAtributoGastos;
@@ -239,7 +245,12 @@ export default function CreateCharacterWizardClient({
   }
 
   async function finalizar() {
-    if (!podeFinalizar) return;
+    // Guard client-side (defesa em profundidade — a proteção real é a
+    // RPC transacional/idempotente, migration 0044): dois cliques
+    // disparados no MESMO tick veem `criando` ainda `false` (setState
+    // é assíncrono), então isso sozinho não bastaria sem o backend
+    // idempotente.
+    if (!podeFinalizar || criando) return;
     setCriando(true);
     setErrorMessage(null);
     try {
@@ -281,12 +292,16 @@ export default function CreateCharacterWizardClient({
         });
       }
 
-      const record = await createCharacterFromWizard(campaign.id, character, regras, {
+      // Migration 0044: uma única RPC transacional insere o personagem
+      // E reivindica o perfil como ativo (quando há perfil selecionado)
+      // — nunca mais duas chamadas separadas que podiam deixar o
+      // personagem criado sem reivindicação em caso de falha de rede
+      // entre elas. `creationRequestId` torna a chamada idempotente
+      // (duplo clique/retry devolvem o mesmo personagem).
+      await createCharacterFromWizard(campaign.id, character, regras, {
         profileId: profileIdSelecionado || null,
+        creationRequestId,
       });
-      if (profileIdSelecionado) {
-        await claimOwnActiveCharacter(profileIdSelecionado, record.id);
-      }
       // Achado da rodada de consolidação (browser real): `/mesas/[campaignId]`
       // é a mesa do NARRADOR (guard owner-only) — um jogador que acabou de
       // criar o próprio personagem caía direto em "Acesso negado". Jogador
