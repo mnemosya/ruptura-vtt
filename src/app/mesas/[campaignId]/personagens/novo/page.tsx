@@ -15,10 +15,26 @@ import Link from "next/link";
 import { getCurrentUser } from "../../../../../lib/auth/session";
 import { getCampaign, listCampaignProfiles } from "../../../../../lib/table/storage";
 import { getCharacterRules } from "../../../../../lib/content";
-import { listTalentsEffective } from "../../../../../lib/campaignContent";
+import { listTalentsEffective, listSpellsEffective, listItemsEffective } from "../../../../../lib/campaignContent";
 import type { Campaign, CampaignProfile } from "../../../../../lib/table";
-import type { CharacterRulesPayload } from "../../../../../lib/character";
-import CreateCharacterWizardClient, { type TalentoNivel1Option } from "./CreateCharacterWizardClient";
+import {
+  normalizeTalentContent,
+  normalizeSpellContent,
+  normalizeItemContent,
+  type CharacterRulesPayload,
+  type TalentContent,
+  type SpellContent,
+  type ItemContent,
+} from "../../../../../lib/character";
+import CreateCharacterWizardClient from "./CreateCharacterWizardClient";
+
+/**
+ * Loja restrita a raridade até incomum na criação (PRD 3.2, Etapa 6) —
+ * "até incomum" inclui tudo IGUAL OU MAIS COMUM que incomum, não só o
+ * rótulo "comum" — o enum real (`db_equipamentos_normalizado_v1_2.json`)
+ * tem "muito_comum" abaixo de "comum". Raros e muito raros bloqueados.
+ */
+const RARIDADES_PERMITIDAS_NA_CRIACAO = new Set(["muito_comum", "comum", "incomum"]);
 
 export const dynamic = "force-dynamic";
 
@@ -87,25 +103,38 @@ export default async function NovoPersonagemPage({ params }: PageProps) {
     regras = null;
   }
 
-  // Etapa 5 (Talento inicial): só oferece escolha se a Biblioteca de
-  // talentos responder de verdade — nunca lista hardcoded (item 6 do
-  // pedido). Achata cada talento nos níveis "nivel 1" publicados.
-  let talentosNivel1: TalentoNivel1Option[] = [];
+  // Etapas 4-6 (Vertentes/Magias, Talento inicial, Inventário): nunca
+  // lista hardcoded — sempre a partir do que a Biblioteca/Editor
+  // Universal publicou de verdade para esta mesa (oficial + override +
+  // homebrew, via listXEffective).
+  let talentos: TalentContent[] = [];
   try {
     const docs = await listTalentsEffective(campaignId);
-    talentosNivel1 = docs.flatMap((doc) => {
-      const payload = doc.payload as { niveis?: { nivel?: number; slug?: string; nome?: string; descricao_curta?: string }[] } | null;
-      const niveis = payload?.niveis ?? [];
-      return niveis
-        .filter((n) => n.nivel === 1 && n.slug && n.nome)
-        .map((n) => ({
-          slug: n.slug as string,
-          nome: `${doc.nome ?? doc.slug} — ${n.nome}`,
-          descricao_curta: n.descricao_curta,
-        }));
-    });
+    talentos = docs
+      .map((doc) => normalizeTalentContent(doc.payload))
+      .filter((t) => t.status === "published");
   } catch {
-    talentosNivel1 = [];
+    talentos = [];
+  }
+
+  let magias: SpellContent[] = [];
+  try {
+    const docs = await listSpellsEffective(campaignId);
+    magias = docs
+      .map((doc) => normalizeSpellContent(doc.payload))
+      .filter((m) => m.status === "published");
+  } catch {
+    magias = [];
+  }
+
+  let itensLoja: ItemContent[] = [];
+  try {
+    const docs = await listItemsEffective(campaignId);
+    itensLoja = docs
+      .map((doc) => normalizeItemContent(doc.payload))
+      .filter((item) => item.raridade != null && RARIDADES_PERMITIDAS_NA_CRIACAO.has(item.raridade));
+  } catch {
+    itensLoja = [];
   }
 
   if (!regras) {
@@ -126,7 +155,9 @@ export default async function NovoPersonagemPage({ params }: PageProps) {
       campaign={campaign}
       regras={regras}
       perfisIniciais={perfisParaWizard}
-      talentosNivel1={talentosNivel1}
+      talentos={talentos}
+      magias={magias}
+      itensLoja={itensLoja}
       travarSelecaoDePerfil={!isOwner}
     />
   );

@@ -1,23 +1,32 @@
 "use client";
 
 /**
- * Assistente de criação de personagem — checkpoint v0.41 (PRD 3.2).
- *
- * Núcleo validado: identidade, atributos, perícias, revisão. Vertentes
- * (etapa 4) e talento inicial (etapa 5, só quando a Biblioteca de
- * talentos responde de verdade) e inventário (etapa 6, só o saldo
- * inicial de aretz) entram como placeholders estruturados — nenhuma
- * mecânica de magia/talento/loja é inventada ou gravada além do que já
- * existe no schema atual de `Character` (ver `logPermanentAdjustment`/
- * `metadados` livre, v0.32-v0.40).
+ * Assistente de criação de personagem — checkpoint v0.41 (PRD 3.2),
+ * concluído no checkpoint pós-v0.94 (fase 3): vertentes/magias, talento
+ * inicial e inventário agora usam os motores reais já existentes
+ * (`learnSpell`, `acquireTalentLevel`, `purchaseItem` — nenhum
+ * reimplementado), não mais placeholders de texto.
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createCharacterForCampaign } from "../../../../../lib/character/storage";
 import { setCampaignProfileActiveCharacter } from "../../../../../lib/table/storage";
 import type { Campaign, CampaignProfile } from "../../../../../lib/table";
-import type { Character, CharacterRulesPayload } from "../../../../../lib/character";
+import {
+  learnSpell,
+  acquireTalentLevel,
+  purchaseItem,
+  removeItemFromInventory,
+  type Character,
+  type CharacterRulesPayload,
+  type TalentContent,
+  type SpellContent,
+  type ItemContent,
+} from "../../../../../lib/character";
+
+/** PRD 3.2, Etapa 4 — "3 pontos entre as 6 vertentes" (literal do texto, sem contrato em `regras.criacao_personagem` ainda). */
+const PONTOS_VERTENTE_CRIACAO = 3;
 
 const btn: React.CSSProperties = { background: "#1d1e24", color: "inherit", border: "1px solid #333", borderRadius: 6, padding: "8px 14px", fontSize: 13, cursor: "pointer" };
 const btnAtivo: React.CSSProperties = { ...btn, background: "#2d4a2f", border: "1px solid #4caf50", fontWeight: 700 };
@@ -36,12 +45,6 @@ const ETAPAS = [
 
 const ORIGENS = ["Vastra", "Beldran", "Talesh", "Kravus", "Torvash"] as const;
 
-export interface TalentoNivel1Option {
-  slug: string;
-  nome: string;
-  descricao_curta?: string;
-}
-
 interface Identidade {
   nome: string;
   alcunha: string;
@@ -55,13 +58,17 @@ export default function CreateCharacterWizardClient({
   campaign,
   regras,
   perfisIniciais,
-  talentosNivel1,
+  talentos,
+  magias,
+  itensLoja,
   travarSelecaoDePerfil = false,
 }: {
   campaign: Campaign;
   regras: CharacterRulesPayload;
   perfisIniciais: CampaignProfile[];
-  talentosNivel1: TalentoNivel1Option[];
+  talentos: TalentContent[];
+  magias: SpellContent[];
+  itensLoja: ItemContent[];
   /** Jogador (não-narrador): só tem o próprio perfil na lista e não pode trocar (checkpoint pós-v0.94, fase 2). */
   travarSelecaoDePerfil?: boolean;
 }) {
@@ -90,7 +97,11 @@ export default function CreateCharacterWizardClient({
   const [pericias, setPericias] = useState<Record<string, number>>(() =>
     Object.fromEntries(regras.pericias.map((p) => [p.id, 0])),
   );
-  const [talentoEscolhidoSlug, setTalentoEscolhidoSlug] = useState<string>("");
+  const [niveisVertente, setNiveisVertente] = useState<Record<string, number>>({});
+  const [magiasEscolhidas, setMagiasEscolhidas] = useState<Set<string>>(new Set());
+  const [talentoNivelIdEscolhido, setTalentoNivelIdEscolhido] = useState<string>("");
+  const [carteira, setCarteira] = useState({ aretz_informal: aretzIniciais, cdi: 0, cdi_craqueada: 0 });
+  const [inventario, setInventario] = useState<NonNullable<Character["inventario"]>>([]);
   const [perfisState] = useState(perfisIniciais);
   const [profileIdSelecionado, setProfileIdSelecionado] = useState<string>(
     travarSelecaoDePerfil ? (perfisIniciais[0]?.id ?? "") : "",
@@ -107,9 +118,50 @@ export default function CreateCharacterWizardClient({
   const pontosPericiaRestantes = periciaPontosTotais - pontosPericiaGastos;
   const periciasValidas = pontosPericiaRestantes >= 0 && regras.pericias.every((p) => (pericias[p.id] ?? 0) <= periciaTeto && (pericias[p.id] ?? 0) >= 0);
 
+  // Etapa 4 (Vertentes) — nunca lista hardcoded: as 6 (ou quantas a
+  // Biblioteca tiver publicado) vertentes vêm dos slugs distintos das
+  // magias publicadas para esta mesa.
+  const vertentesDisponiveis = useMemo(() => {
+    const porSlug = new Map<string, string>();
+    for (const magia of magias) {
+      if (!porSlug.has(magia.vertente)) porSlug.set(magia.vertente, magia.vertente_label ?? magia.vertente);
+    }
+    return [...porSlug.entries()].map(([slug, label]) => ({ slug, label })).sort((a, b) => a.label.localeCompare(b.label));
+  }, [magias]);
+  const pontosVertenteGastos = Object.values(niveisVertente).reduce((soma, v) => soma + v, 0);
+  const pontosVertenteRestantes = PONTOS_VERTENTE_CRIACAO - pontosVertenteGastos;
+  const vertentesValidas = pontosVertenteRestantes === 0;
+
+  // Etapa 4b (Magias) — só elegível magia de uma vertente com nível
+  // investido >0 e cujo `estatisticas.nivel` não ultrapasse o nível
+  // investido (PRD 3.2: "libera magias daquele nível"; nunca permite
+  // magia acima do nível).
+  function magiaElegivel(magia: SpellContent): boolean {
+    const nivelInvestido = niveisVertente[magia.vertente] ?? 0;
+    return nivelInvestido > 0 && magia.estatisticas.nivel <= nivelInvestido;
+  }
+  const magiasElegiveis = useMemo(() => magias.filter(magiaElegivel), [magias, niveisVertente]);
+  // Uma magia escolhida deixa de ser elegível se o jogador reduzir o
+  // nível da vertente depois — nunca contada na revisão/gravação.
+  const magiasEscolhidasValidas = [...magiasEscolhidas].filter((slug) => magiasElegiveis.some((m) => m.slug === slug));
+
+  // Etapa 5 (Talento inicial) — só nível 1, achatado a partir do
+  // conteúdo publicado (nunca lista hardcoded).
+  const talentoOptions = useMemo(
+    () =>
+      talentos.flatMap((talento) =>
+        talento.niveis
+          .filter((n) => n.nivel === 1)
+          .map((n) => ({ nivelId: n.id, talentoId: talento.id, nome: `${talento.nome} — ${n.nome}`, descricaoCurta: n.descricao_curta })),
+      ),
+    [talentos],
+  );
+  const talentoSelecionado = talentoOptions.find((t) => t.nivelId === talentoNivelIdEscolhido) ?? null;
+
   const podeFinalizar =
     atributosValidos &&
     periciasValidas &&
+    vertentesValidas &&
     identidade.nome.trim().length > 0 &&
     (!travarSelecaoDePerfil || Boolean(profileIdSelecionado));
 
@@ -129,13 +181,72 @@ export default function CreateCharacterWizardClient({
     });
   }
 
+  function ajustarVertente(slug: string, delta: number) {
+    setNiveisVertente((prev) => {
+      const atual = prev[slug] ?? 0;
+      const novo = Math.max(0, atual + delta);
+      if (delta > 0 && pontosVertenteRestantes <= 0) return prev;
+      return { ...prev, [slug]: novo };
+    });
+  }
+
+  function toggleMagia(slug: string) {
+    setMagiasEscolhidas((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      return next;
+    });
+  }
+
+  /** Monta o personagem-em-construção com o que já foi escolhido até aqui — usado só para alimentar os motores reais (purchaseItem/learnSpell/acquireTalentLevel), nunca gravado como está. */
+  function personagemParcial(): Character {
+    return {
+      nome: identidade.nome.trim() || "(sem nome)",
+      atributos: { corpo: atributos.corpo ?? 1, mente: atributos.mente ?? 1, animo: atributos.animo ?? 1 },
+      pericias,
+      metadados: { schema_version: 1, criado_em: new Date().toISOString(), atualizado_em: new Date().toISOString() },
+      estado_jogo: { pa_gastos: 0, reacoes_usadas: 0 },
+      carteira,
+      inventario,
+    };
+  }
+
+  function handleComprarItem(item: ItemContent) {
+    setErrorMessage(null);
+    const nowIso = new Date().toISOString();
+    const resultado = purchaseItem({
+      character: personagemParcial(),
+      item,
+      quantidade: 1,
+      walletId: "aretz_informal",
+      nowIso,
+    });
+    if (!resultado.ok) {
+      setErrorMessage(resultado.reason ?? "Não foi possível comprar este item.");
+      return;
+    }
+    setCarteira(resultado.character.carteira ?? carteira);
+    setInventario(resultado.character.inventario ?? []);
+  }
+
+  function handleRemoverItem(instanceId: string) {
+    const instancia = inventario.find((i) => i.id === instanceId);
+    const reembolso = instancia?.precoPago ?? 0;
+    const proximo = removeItemFromInventory(personagemParcial(), instanceId);
+    setInventario(proximo.inventario ?? []);
+    if (reembolso > 0) {
+      setCarteira((prev) => ({ ...prev, aretz_informal: prev.aretz_informal + reembolso }));
+    }
+  }
+
   async function finalizar() {
     if (!podeFinalizar) return;
     setCriando(true);
     setErrorMessage(null);
     try {
       const nowIso = new Date().toISOString();
-      const character: Character = {
+      let character: Character = {
         nome: identidade.nome.trim(),
         atributos: { corpo: atributos.corpo ?? 1, mente: atributos.mente ?? 1, animo: atributos.animo ?? 1 },
         pericias,
@@ -148,15 +259,29 @@ export default function CreateCharacterWizardClient({
           origem: identidade.origem || undefined,
           idioma: identidade.idioma || undefined,
           afiliacao: identidade.afiliacao || undefined,
-          // Etapa 5 (checkpoint v0.41): só um rótulo de escolha, sem
-          // nenhum efeito mecânico — não existe sistema de talentos
-          // ainda (fora de escopo explícito).
-          talento_inicial_escolhido: talentoEscolhidoSlug || undefined,
-          // Etapa 6 — saldo inicial de aretz, sem inventário/loja implementados.
-          aretz: aretzIniciais,
         },
         estado_jogo: { pa_gastos: 0, reacoes_usadas: 0 },
+        niveis_vertente: niveisVertente,
+        carteira,
+        inventario,
       };
+
+      // Etapa 4b — cada magia elegível escolhida é APRENDIDA de verdade
+      // (learnSpell, não um rótulo) — a vertente "conhecida" é derivada
+      // disso, nunca gravada à parte.
+      for (const spellSlug of magiasEscolhidasValidas) {
+        character = learnSpell(character, spellSlug, nowIso);
+      }
+
+      // Etapa 5 — talento inicial aplicado pelo motor real (acquireTalentLevel).
+      if (talentoSelecionado) {
+        character = acquireTalentLevel(character, {
+          talentoId: talentoSelecionado.talentoId,
+          nivelId: talentoSelecionado.nivelId,
+          nivel: 1,
+          nowIso,
+        });
+      }
 
       const record = await createCharacterForCampaign(campaign.id, character, {
         profileId: profileIdSelecionado || null,
@@ -262,41 +387,74 @@ export default function CreateCharacterWizardClient({
 
       {step === 4 && (
         <section>
-          <h2 style={h2}>Etapa 4 — Vertentes</h2>
-          <p style={{ fontSize: 13, opacity: 0.7 }}>
-            Etapa pendente — não existe modelo de vertentes/magias implementado na ficha ainda
-            (fora de escopo deste checkpoint). Avance sem preencher nada; nenhuma mecânica de
-            magia é gravada.
-          </p>
+          <h2 style={h2}>Etapa 4 — Vertentes e magias</h2>
+          {vertentesDisponiveis.length === 0 ? (
+            <p style={{ fontSize: 13, opacity: 0.7 }}>
+              Nenhuma magia publicada nesta mesa ainda — não há vertentes para investir. Avance sem preencher nada.
+            </p>
+          ) : (
+            <>
+              <p data-testid="wizard-vertentes-pontos-restantes" style={{ fontSize: 13, marginBottom: 12, color: pontosVertenteRestantes === 0 ? "#4caf50" : "#f5a623" }}>
+                Pontos restantes: {pontosVertenteRestantes} / {PONTOS_VERTENTE_CRIACAO}
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+                {vertentesDisponiveis.map((v) => (
+                  <div key={v.slug} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ width: 140, fontSize: 13 }}>{v.label}</span>
+                    <button data-testid={`wizard-vertente-${v.slug}-menos`} onClick={() => ajustarVertente(v.slug, -1)} style={btn}>-</button>
+                    <span data-testid={`wizard-vertente-${v.slug}-valor`} style={{ width: 24, textAlign: "center" }}>{niveisVertente[v.slug] ?? 0}</span>
+                    <button data-testid={`wizard-vertente-${v.slug}-mais`} onClick={() => ajustarVertente(v.slug, 1)} style={btn}>+</button>
+                    {(niveisVertente[v.slug] ?? 0) > 0 && (
+                      <span style={{ fontSize: 11, opacity: 0.6 }}>CD de resistência: {6 + (niveisVertente[v.slug] ?? 0)}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <h3 style={{ fontSize: 13, marginBottom: 8, opacity: 0.8 }}>Magias liberadas pelo nível investido</h3>
+              {magiasElegiveis.length === 0 ? (
+                <p style={{ fontSize: 12, opacity: 0.6 }}>Invista pontos numa vertente para liberar magias.</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {magiasElegiveis.map((magia) => (
+                    <label key={magia.slug} style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                      <input
+                        type="checkbox"
+                        data-testid={`wizard-magia-${magia.slug}`}
+                        checked={magiasEscolhidas.has(magia.slug)}
+                        onChange={() => toggleMagia(magia.slug)}
+                      />
+                      {magia.nome} <span style={{ opacity: 0.5 }}>({magia.vertente_label ?? magia.vertente}, nível {magia.estatisticas.nivel})</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </section>
       )}
 
       {step === 5 && (
         <section>
           <h2 style={h2}>Etapa 5 — Talento inicial</h2>
-          {talentosNivel1.length > 0 ? (
+          {talentoOptions.length > 0 ? (
             <>
-              <p style={{ fontSize: 12, opacity: 0.6, marginBottom: 8 }}>
-                Escolha 1 talento de nível 1 (da Biblioteca) — registrado só como rótulo de
-                escolha (`metadados.talento_inicial_escolhido`), sem nenhum efeito mecânico ainda
-                (sistema de talentos completo fora de escopo).
-              </p>
+              <p style={{ fontSize: 12, opacity: 0.6, marginBottom: 8 }}>Escolha 1 talento de nível 1 (da Biblioteca).</p>
               <select
                 data-testid="wizard-talento-select"
-                value={talentoEscolhidoSlug}
-                onChange={(e) => setTalentoEscolhidoSlug(e.target.value)}
+                value={talentoNivelIdEscolhido}
+                onChange={(e) => setTalentoNivelIdEscolhido(e.target.value)}
                 style={{ ...input, maxWidth: 420 }}
               >
                 <option value="">— nenhum —</option>
-                {talentosNivel1.map((t) => (
-                  <option key={t.slug} value={t.slug}>{t.nome}</option>
+                {talentoOptions.map((t) => (
+                  <option key={t.nivelId} value={t.nivelId}>{t.nome}</option>
                 ))}
               </select>
             </>
           ) : (
             <p style={{ fontSize: 13, opacity: 0.7 }}>
-              Etapa pendente — a Biblioteca de talentos não retornou nenhum talento de nível 1.
-              Avance sem escolher.
+              Nenhum talento de nível 1 publicado nesta mesa ainda. Avance sem escolher.
             </p>
           )}
         </section>
@@ -305,13 +463,34 @@ export default function CreateCharacterWizardClient({
       {step === 6 && (
         <section>
           <h2 style={h2}>Etapa 6 — Inventário</h2>
-          <p style={{ fontSize: 13, marginBottom: 8 }}>
-            Aretz inicial: <strong>{aretzIniciais}</strong>
+          <p style={{ fontSize: 13, marginBottom: 12 }}>
+            Aretz: <strong data-testid="wizard-aretz-restante">{carteira.aretz_informal}</strong> / {aretzIniciais}
           </p>
-          <p style={{ fontSize: 12, opacity: 0.6 }}>
-            Loja e inventário completo não implementados ainda (fora de escopo deste checkpoint)
-            — o saldo inicial é só registrado em `metadados.aretz`, sem itens.
+          <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
+            Loja restrita a itens de raridade até incomum na criação (PRD 3.2) — raros e muito raros liberados só em jogo.
           </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 8, marginBottom: 20 }}>
+            {itensLoja.map((item) => (
+              <div key={item.slug} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, background: "#1d1e24", borderRadius: 6, padding: "6px 10px" }}>
+                <span style={{ fontSize: 12 }}>{item.nome} — {item.preco} aretz</span>
+                <button data-testid={`wizard-comprar-${item.slug}`} onClick={() => handleComprarItem(item)} style={btn}>Comprar</button>
+              </div>
+            ))}
+          </div>
+
+          <h3 style={{ fontSize: 13, marginBottom: 8, opacity: 0.8 }}>Inventário inicial ({inventario.length})</h3>
+          {inventario.length === 0 ? (
+            <p style={{ fontSize: 12, opacity: 0.6 }}>Nenhum item comprado ainda.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {inventario.map((instancia) => (
+                <div key={instancia.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12 }}>
+                  <span>{instancia.itemNome} × {instancia.quantidade}</span>
+                  <button data-testid={`wizard-remover-${instancia.id}`} onClick={() => handleRemoverItem(instancia.id)} style={{ ...btn, fontSize: 11 }}>Remover</button>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       )}
 
@@ -333,9 +512,27 @@ export default function CreateCharacterWizardClient({
               <strong>Perícias investidas:</strong>{" "}
               {regras.pericias.filter((p) => (pericias[p.id] ?? 0) > 0).map((p) => `${p.nome} ${pericias[p.id]}`).join(" · ") || "nenhuma"}
             </span>
-            <span><strong>Talento inicial:</strong> {talentosNivel1.find((t) => t.slug === talentoEscolhidoSlug)?.nome ?? "nenhum"}</span>
-            <span><strong>Aretz inicial:</strong> {aretzIniciais}</span>
+            <span>
+              <strong>Vertentes:</strong>{" "}
+              {vertentesDisponiveis
+                .filter((v) => (niveisVertente[v.slug] ?? 0) > 0)
+                .map((v) => `${v.label} ${niveisVertente[v.slug]}`)
+                .join(" · ") || "nenhuma"}
+            </span>
+            <span>
+              <strong>Magias conhecidas:</strong>{" "}
+              {magiasEscolhidasValidas.map((slug) => magiasElegiveis.find((m) => m.slug === slug)?.nome ?? slug).join(" · ") || "nenhuma"}
+            </span>
+            <span><strong>Talento inicial:</strong> {talentoSelecionado?.nome ?? "nenhum"}</span>
+            <span><strong>Inventário:</strong> {inventario.map((i) => `${i.itemNome} ×${i.quantidade}`).join(" · ") || "nenhum item"}</span>
+            <span><strong>Aretz restante:</strong> {carteira.aretz_informal} / {aretzIniciais}</span>
           </div>
+
+          {!vertentesValidas && vertentesDisponiveis.length > 0 && (
+            <p style={{ color: "#ff6b6b", fontSize: 12, marginBottom: 8 }}>
+              Vertentes inválidas — volte à Etapa 4 e distribua exatamente {PONTOS_VERTENTE_CRIACAO} pontos.
+            </p>
+          )}
 
           {travarSelecaoDePerfil ? (
             <p style={{ fontSize: 12, marginBottom: 16 }}>
