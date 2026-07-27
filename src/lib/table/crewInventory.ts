@@ -82,38 +82,21 @@ export async function listCrewInventory(campaignId: string): Promise<CrewInvento
 export async function upsertCrewInventoryItem(campaignId: string, instance: InventoryItemInstance): Promise<CrewInventoryItem> {
   const client = await getScopedTableClient();
 
-  if (instance.categoria === "municao") {
-    const { data: existing, error: findError } = await client
-      .from(CAMPAIGN_INVENTORY_TABLE)
-      .select()
-      .eq("campaign_id", campaignId)
-      .eq("item_slug", instance.itemSlug)
-      .contains("payload", { categoria: "municao" })
-      .limit(1)
-      .maybeSingle();
-
-    if (findError) {
-      throw new TableStorageError(`Falha ao buscar stack existente no bando: ${findError.message}`, findError);
+  // Concorrência (migration 0040): busca+merge+update de uma stack de
+  // munição precisa acontecer dentro de UMA transação com lock de linha
+  // — feito na RPC `upsert_crew_inventory_munition`, nunca mais como
+  // dois passos separados aqui (SELECT então UPDATE), que permitia
+  // "lost update" com dois depósitos concorrentes na mesma stack.
+  if (instance.categoria === "municao" && instance.itemSlug) {
+    const { data, error } = await client.rpc("upsert_crew_inventory_munition", {
+      p_campaign_id: campaignId,
+      p_item_slug: instance.itemSlug,
+      p_instance: instance,
+    });
+    if (error) {
+      throw new TableStorageError(`Falha ao mesclar item no bando: ${error.message}`, error);
     }
-
-    if (existing) {
-      const existingPayload = existing.payload as InventoryItemInstance;
-      const mergedPayload: InventoryItemInstance = {
-        ...existingPayload,
-        quantidade: existingPayload.quantidade + instance.quantidade,
-        precoPago: (existingPayload.precoPago ?? 0) + (instance.precoPago ?? 0),
-      };
-      const { data, error } = await client
-        .from(CAMPAIGN_INVENTORY_TABLE)
-        .update({ quantity: mergedPayload.quantidade, payload: mergedPayload })
-        .eq("id", existing.id)
-        .select()
-        .single();
-      if (error) {
-        throw new TableStorageError(`Falha ao mesclar item no bando: ${error.message}`, error);
-      }
-      return normalizeCrewInventoryRow(data);
-    }
+    return normalizeCrewInventoryRow(data as Record<string, unknown>);
   }
 
   const { data, error } = await client
