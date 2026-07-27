@@ -762,7 +762,15 @@ export interface ResolvedInvite {
   ok: boolean;
   /** Motivo da recusa quando ok=false. */
   reason?: "not_found" | "revoked" | "inactive" | "expired";
-  campaign?: Campaign;
+  /**
+   * Só `id`/`name` (migration 0043) — nunca a linha inteira de
+   * `campaigns`. Antes do login, o visitante é 100% anônimo; a RPC
+   * `resolve_campaign_invite_public` (SECURITY DEFINER) é o único
+   * caminho seguro para mostrar o nome da mesa sem depender de SELECT
+   * amplo na tabela.
+   */
+  campaignId?: string;
+  campaignName?: string;
   inviteId?: string;
 }
 
@@ -845,31 +853,32 @@ export async function revokeCampaignInvite(inviteId: string): Promise<CampaignIn
 }
 
 /**
- * Resolve um token bruto de convite: hasheia, busca por token_hash e
- * valida estado (revogado/inativo/expirado). Retorna a mesma-mesa
- * quando válido. Nunca lança por convite inválido — só por falha real
- * de rede/RLS.
+ * Resolve um token bruto de convite pela RPC pública mínima
+ * `resolve_campaign_invite_public` (migration 0043, SECURITY DEFINER)
+ * — nunca mais um SELECT direto em `campaign_invites`/`campaigns`, que
+ * dependia de policies abertas a `anon` (fechadas nesta migration: o
+ * visitante de `/join/[token]` ainda é 100% anônimo neste ponto,
+ * antes do login exigido pela Etapa 12). A RPC já valida hash/
+ * revogação/ativo/expiração e devolve só `id`/`name` da mesa — nunca a
+ * linha inteira. Nunca lança por convite inválido — só por falha real
+ * de rede.
  */
 export async function resolveCampaignInvite(rawToken: string): Promise<ResolvedInvite> {
   const client = await getScopedTableClient();
-  const tokenHash = hashInviteToken(rawToken);
-  const { data, error } = await client
-    .from(CAMPAIGN_INVITES_TABLE)
-    .select("id, campaign_id, is_active, expires_at, revoked_at")
-    .eq("token_hash", tokenHash)
-    .maybeSingle();
+  const { data, error } = await client.rpc("resolve_campaign_invite_public", { p_token: rawToken });
 
   if (error) {
     throw new TableStorageError(`Falha ao resolver convite: ${error.message}`, error);
   }
-  if (!data) return { ok: false, reason: "not_found" };
 
-  const row = data as { id: string; campaign_id: string; is_active: boolean; expires_at: string | null; revoked_at: string | null };
-  if (row.revoked_at) return { ok: false, reason: "revoked" };
-  if (!row.is_active) return { ok: false, reason: "inactive" };
-  if (row.expires_at && new Date(row.expires_at).getTime() < Date.now()) return { ok: false, reason: "expired" };
+  const result = data as {
+    ok: boolean;
+    reason?: ResolvedInvite["reason"];
+    inviteId?: string;
+    campaignId?: string;
+    campaignName?: string;
+  };
 
-  const campaign = await getCampaign(row.campaign_id);
-  if (!campaign) return { ok: false, reason: "not_found" };
-  return { ok: true, campaign, inviteId: row.id };
+  if (!result.ok) return { ok: false, reason: result.reason };
+  return { ok: true, inviteId: result.inviteId, campaignId: result.campaignId, campaignName: result.campaignName };
 }

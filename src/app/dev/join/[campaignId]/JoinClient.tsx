@@ -105,9 +105,10 @@ export default function JoinClient({ campaign, perfisIniciais, personagens, vari
         <>
           <p style={{ opacity: 0.6, fontSize: 13, marginBottom: 4 }}>Convite de mesa</p>
           <p style={{ opacity: 0.5, fontSize: 11, marginBottom: 16 }}>
-            Você entrou por um link de convite com token (revogável). A RLS ainda está em modo de
-            transição — a validação do token é feita server-side, mas o banco ainda tem policies
-            dev abertas (ver checkpoint v0.17/v0.18).
+            Você entrou por um link de convite com token (revogável), validado por uma RPC segura
+            (`resolve_campaign_invite_public`, migration 0043) — nunca por leitura ampla da tabela.
+            Depois de aceito, a leitura da mesa/logs já é escopada a membership real (RLS,
+            migrations 0043).
           </p>
         </>
       )}

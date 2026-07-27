@@ -29,7 +29,7 @@
  * primeiro perfil livre.
  */
 
-import { resolveCampaignInvite, listCampaignProfiles, expireStaleProfileSessions } from "../../../lib/table/storage";
+import { resolveCampaignInvite, listCampaignProfiles, expireStaleProfileSessions, getCampaign } from "../../../lib/table/storage";
 import { listCharactersForCampaign } from "../../../lib/character/storage";
 import type { CampaignProfile } from "../../../lib/table";
 import type { CharacterRecord } from "../../../lib/character";
@@ -73,7 +73,7 @@ export default async function InviteJoinPage({ params }: PageProps) {
     );
   }
 
-  if (!resolved || !resolved.ok || !resolved.campaign) {
+  if (!resolved || !resolved.ok || !resolved.campaignId || !resolved.campaignName) {
     const label = resolved?.reason ? REASON_LABELS[resolved.reason] ?? "Convite inválido." : "Convite inválido.";
     return (
       <main style={{ maxWidth: 560, margin: "60px auto", padding: "0 20px" }}>
@@ -86,7 +86,11 @@ export default async function InviteJoinPage({ params }: PageProps) {
     );
   }
 
-  const campaign = resolved.campaign;
+  // Migration 0043: antes do login, `resolved` só traz `campaignId`/
+  // `campaignName` (RPC pública mínima) — nunca a linha inteira de
+  // `campaigns`, que agora exige membership real (`campaigns_member_select`).
+  const campaignId = resolved.campaignId!;
+  const campaignName = resolved.campaignName!;
 
   // Etapa 12 (correção 2): exige sessão real do Supabase Auth antes de
   // liberar a escolha de perfil/personagem — é essa sessão que autoriza
@@ -95,7 +99,7 @@ export default async function InviteJoinPage({ params }: PageProps) {
   if (!user) {
     return (
       <main style={{ maxWidth: 420, margin: "60px auto", padding: "0 20px" }}>
-        <h1 style={{ fontSize: 20, marginBottom: 8 }}>Entrar em &ldquo;{campaign.name}&rdquo;</h1>
+        <h1 style={{ fontSize: 20, marginBottom: 8 }}>Entrar em &ldquo;{campaignName}&rdquo;</h1>
         <p style={{ fontSize: 13, opacity: 0.8, marginBottom: 20 }}>
           Entre ou crie uma conta para acessar o conteúdo desta mesa (inclusive homebrew e ajustes feitos pelo narrador). Depois de
           entrar, você volta automaticamente para este convite.
@@ -111,6 +115,19 @@ export default async function InviteJoinPage({ params }: PageProps) {
       <main style={{ maxWidth: 560, margin: "60px auto", padding: "0 20px" }}>
         <h1 style={{ fontSize: 20, marginBottom: 8 }}>Não foi possível entrar nesta mesa</h1>
         <p style={{ color: "#ff6b6b", fontSize: 13 }}>{aceite.erro}</p>
+      </main>
+    );
+  }
+
+  // Membership real criada por `acceptCampaignInvite` (campaign_members) —
+  // a partir daqui `getCampaign` funciona normalmente sob
+  // `campaigns_member_select` (migration 0043), autenticado e escopado.
+  const campaign = await getCampaign(campaignId);
+  if (!campaign) {
+    return (
+      <main style={{ maxWidth: 560, margin: "60px auto", padding: "0 20px" }}>
+        <h1 style={{ fontSize: 20, marginBottom: 8 }}>Mesa não encontrada</h1>
+        <p style={{ fontSize: 13, opacity: 0.8 }}>A mesa deste convite não está mais disponível.</p>
       </main>
     );
   }

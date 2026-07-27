@@ -1253,8 +1253,9 @@ export function MesaTab({
         </span>
       </div>
       <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
-        Filtro visual apenas; ainda sem segurança real (visibilidade é só um campo de dados, ver
-        migration 0003).
+        Isolamento entre campanhas é real (RLS, migration 0043) — só membros desta mesa leem esta
+        lista. O filtro Pública/Privada/Narrador abaixo continua só visual, aplicado no cliente
+        sobre o campo de dados `visibility` (sem RLS por nível dentro da MESMA campanha).
       </p>
 
       {loading && <p style={{ fontSize: 13, opacity: 0.6 }}>Carregando…</p>}
