@@ -71,3 +71,11 @@ auditoria dedicada antes de mexer.
 (migration 0041) — duplo-clique/retry-de-rede agora recebe erro
 controlado em vez de criar um segundo personagem órfão. Ver
 `CHECKPOINT_FECHAMENTO_CONCORRENCIA_ISOLAMENTO.md`.
+
+## Atualização — atomicidade transacional (rodada de segurança/atomicidade)
+
+Criação+vínculo ativo agora é UMA transação SQL só
+(`complete_character_creation`, migration 0044) — nunca mais duas
+chamadas separadas. Idempotência real via chave de requisição
+opcional. Provado ao vivo (SQL + navegador real). Ver
+`CHECKPOINT_SEGURANCA_ATOMICIDADE.md`.

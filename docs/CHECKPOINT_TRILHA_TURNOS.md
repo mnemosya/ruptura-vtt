@@ -85,3 +85,11 @@ janela) confirmaram o invariante central ao vivo mas tiveram
 asserções secundárias poluídas por um artefato do harness de teste.
 Ver `CHECKPOINT_FECHAMENTO_CONCORRENCIA_ISOLAMENTO.md` para o relato
 completo.
+
+## Atualização — trilha concluída e aprovada (rodada de segurança/atomicidade)
+
+Os 3 cenários pendentes acima foram reexecutados com um harness
+determinístico (fixture isolada por cenário) — invariante central
+("exatamente uma operação vence") confirmado ao vivo nos 4 cenários,
+incluindo narrador×narrador, jogador×override e transição Rápida→Lenta.
+Ver `CHECKPOINT_SEGURANCA_ATOMICIDADE.md`.

@@ -329,3 +329,14 @@ avançados e integração de companheiros/drones/Trama continuam
 pendentes, fora do escopo desta rodada."
 
 Nenhuma fase nova foi iniciada.
+
+## Atualização — rodada de segurança/atomicidade seguinte
+
+Os 2 vazamentos cross-campanha (`campaigns`, `table_logs`) registrados
+acima como "achado confirmado, prioritário, para rodada dedicada"
+foram CORRIGIDOS e provados ao vivo (28/29 checagens) na rodada
+seguinte. Os 3 cenários de concorrência da trilha marcados como
+"execução ao vivo bloqueada por rate-limit" foram reexecutados com um
+harness determinístico e confirmaram o invariante central ao vivo. A
+criação de personagem passou a ser transacional (RPC única). Ver
+`CHECKPOINT_SEGURANCA_ATOMICIDADE.md` para o relato completo.

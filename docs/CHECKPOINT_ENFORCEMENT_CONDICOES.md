@@ -87,3 +87,15 @@ código necessária, `getConditionLockReason` já implementava exatamente
 o payload real de ambas. Ver
 `CHECKPOINT_FECHAMENTO_CONCORRENCIA_ISOLAMENTO.md` para a matriz
 completa. Não declaro as 17 condições concluídas.
+
+## Atualização — Inconsciente e Imobilizado validados em navegador (rodada de segurança/atomicidade)
+
+Pendência de browser fechada: ambas aplicadas/removidas em ficha real
+via fixture de sessão, ação por ação na aba Ações — Inconsciente
+bloqueia os 24 botões "Executar" (ações e reações); Imobilizado
+bloqueia só ofensiva/defensiva, permite movimento/diversa/livre e
+habilita "Escapar", exatamente como o conteúdo oficial publicado
+exige. Ver `CHECKPOINT_SEGURANCA_ATOMICIDADE.md` para a matriz
+atualizada. Enforcement central de Atordoado/Inconsciente/Imobilizado
+agora "concluído e aprovado"; as demais condições continuam fora do
+escopo.

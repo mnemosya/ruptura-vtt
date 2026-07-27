@@ -63,3 +63,12 @@ existentes — **nenhum motor foi reimplementado**, só conectado:
   limpando a instância.
 - **Não verificado em navegador** nesta sessão (wizard completo ponta
   a ponta com um usuário real) — pendência explícita.
+
+## Atualização — atomicidade e verificação em navegador (rodada de segurança/atomicidade)
+
+Pendência acima fechada: fluxo completo do wizard (identidade,
+atributos, vertente) verificado ponta a ponta em navegador real,
+incluindo a criação efetiva do personagem via a nova RPC transacional
+`complete_character_creation` (migration 0044) — "Personagem ativo"
+confirmado imediatamente após "Criar personagem", sem passo
+intermediário separado. Ver `CHECKPOINT_SEGURANCA_ATOMICIDADE.md`.

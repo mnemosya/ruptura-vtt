@@ -114,3 +114,17 @@ dedicada; Postura/Bricolagem eram testes obsoletos, corrigidos. VTT
 continua **não concluído** — status global inalterado quanto a Modo
 Evolução completo, draft persistente, drag operacional, runas/escalpos
 avançados e companheiros/drones/Trama.
+
+## Atualização — rodada de segurança/atomicidade
+
+Ver `CHECKPOINT_SEGURANCA_ATOMICIDADE.md`: os 2 vazamentos de
+`campaigns`/`table_logs` foram corrigidos e provados ao vivo (RLS
+real, migration 0043); concorrência da trilha e atomicidade/
+idempotência da criação de personagem concluídas e aprovadas
+(transação real, migration 0044, provada em SQL e em navegador real);
+Inconsciente/Imobilizado validados em navegador real. Dois achados
+adjacentes (SELECT aberto em `campaign_invites`, INSERT aberto em
+`table_logs`) ficam para rodada dedicada. VTT continua **não
+concluído** — Modo Evolução completo, inventário do bando completo,
+drag operacional, runas/escalpos avançados e integração de
+companheiros/drones/Trama permanecem pendentes.
