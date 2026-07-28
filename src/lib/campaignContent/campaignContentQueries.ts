@@ -16,10 +16,11 @@
  */
 
 import { getScopedTableClient } from "../auth/scopedClient";
+import type { ContentType } from "../content/types";
 import type { DraftContentType } from "../contentSchema/draftTypes";
 import type { CampaignContentChangelogRow, CampaignContentDocumentRow, CampaignContentDraftRow } from "./campaignContentTypes";
 
-export async function listCampaignContentDocumentsPublic(campaignId: string, contentType?: DraftContentType): Promise<CampaignContentDocumentRow[]> {
+export async function listCampaignContentDocumentsPublic(campaignId: string, contentType?: ContentType): Promise<CampaignContentDocumentRow[]> {
   const client = await getScopedTableClient();
   let query = client.from("campaign_content_documents").select("*").eq("campaign_id", campaignId).eq("status", "published");
   if (contentType) query = query.eq("content_type", contentType);
@@ -28,7 +29,7 @@ export async function listCampaignContentDocumentsPublic(campaignId: string, con
   return (data ?? []) as CampaignContentDocumentRow[];
 }
 
-export async function getCampaignContentDocumentPublic(campaignId: string, contentType: DraftContentType, slug: string): Promise<CampaignContentDocumentRow | null> {
+export async function getCampaignContentDocumentPublic(campaignId: string, contentType: ContentType, slug: string): Promise<CampaignContentDocumentRow | null> {
   const client = await getScopedTableClient();
   const { data, error } = await client
     .from("campaign_content_documents")
@@ -42,7 +43,7 @@ export async function getCampaignContentDocumentPublic(campaignId: string, conte
   return (data as CampaignContentDocumentRow | null) ?? null;
 }
 
-export async function listCampaignContentDocumentsForOwner(campaignId: string, contentType?: DraftContentType): Promise<CampaignContentDocumentRow[]> {
+export async function listCampaignContentDocumentsForOwner(campaignId: string, contentType?: ContentType): Promise<CampaignContentDocumentRow[]> {
   const client = await getScopedTableClient();
   let query = client.from("campaign_content_documents").select("*").eq("campaign_id", campaignId).order("updated_at", { ascending: false });
   if (contentType) query = query.eq("content_type", contentType);
@@ -85,7 +86,7 @@ export async function findCampaignDraftBySlug(campaignId: string, contentType: D
   return (data as CampaignContentDraftRow | null) ?? null;
 }
 
-export async function listCampaignChangelog(campaignId: string, contentType?: DraftContentType, slug?: string): Promise<CampaignContentChangelogRow[]> {
+export async function listCampaignChangelog(campaignId: string, contentType?: ContentType, slug?: string): Promise<CampaignContentChangelogRow[]> {
   const client = await getScopedTableClient();
   let query = client.from("campaign_content_changelog").select("*").eq("campaign_id", campaignId).order("created_at", { ascending: false });
   if (contentType) query = query.eq("content_type", contentType);

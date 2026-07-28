@@ -29,7 +29,6 @@
 
 import { getContentDocument, listContentDocuments } from "../content/queries";
 import type { ContentDocument, ContentType } from "../content/types";
-import type { DraftContentType } from "../contentSchema/draftTypes";
 import { listCampaignContentDocumentsPublic, getCampaignContentDocumentPublic } from "./campaignContentQueries";
 import type { CampaignContentDocumentRow, ConteudoEfetivo, EstadoAtualizacaoOficial } from "./campaignContentTypes";
 
@@ -40,7 +39,7 @@ export function classificarEstadoAtualizacao(officialCurrent: ContentDocument | 
   return "oficial_alterado";
 }
 
-function paraConteudoEfetivoOficial(contentType: DraftContentType, doc: ContentDocument): ConteudoEfetivo {
+function paraConteudoEfetivoOficial(contentType: ContentType, doc: ContentDocument): ConteudoEfetivo {
   return { contentType, slug: doc.slug, nome: doc.nome, payload: (doc.payload as Record<string, unknown>) ?? {}, origem: "oficial", officialDocumentId: doc.id, officialVersionAtual: doc.version ?? undefined };
 }
 
@@ -64,7 +63,7 @@ function paraConteudoEfetivoCampanha(row: CampaignContentDocumentRow, officialCu
  * publicado, substituído por override quando existir, mais os
  * homebrews publicados da campanha como entradas adicionais.
  */
-export async function resolveEffectiveList(campaignId: string, contentType: DraftContentType): Promise<ConteudoEfetivo[]> {
+export async function resolveEffectiveList(campaignId: string, contentType: ContentType): Promise<ConteudoEfetivo[]> {
   const [oficiais, campanhaRows] = await Promise.all([
     listContentDocuments(contentType as ContentType),
     listCampaignContentDocumentsPublic(campaignId, contentType),
@@ -86,7 +85,7 @@ export async function resolveEffectiveList(campaignId: string, contentType: Draf
 }
 
 /** Resolução unitária: override da campanha > homebrew local com esse slug > oficial. */
-export async function resolveEffectiveOne(campaignId: string, contentType: DraftContentType, slug: string): Promise<ConteudoEfetivo | null> {
+export async function resolveEffectiveOne(campaignId: string, contentType: ContentType, slug: string): Promise<ConteudoEfetivo | null> {
   const campanhaRow = await getCampaignContentDocumentPublic(campaignId, contentType, slug);
   if (campanhaRow) {
     const officialCurrent = campanhaRow.official_document_id ? await getContentDocument(contentType as ContentType, slug).catch(() => null) : null;
@@ -103,9 +102,9 @@ export async function resolveEffectiveOne(campaignId: string, contentType: Draft
  * catálogo oficial puro, comportamento IDÊNTICO ao que já existia antes
  * desta etapa. Nunca escolhe uma campanha por inferência.
  */
-async function listEffectiveOrOfficial(contentType: DraftContentType, campaignId: string | null): Promise<ConteudoEfetivo[]> {
+async function listEffectiveOrOfficial(contentType: ContentType, campaignId: string | null): Promise<ConteudoEfetivo[]> {
   if (!campaignId) {
-    const oficiais = await listContentDocuments(contentType as ContentType);
+    const oficiais = await listContentDocuments(contentType);
     return oficiais.map((doc) => paraConteudoEfetivoOficial(contentType, doc));
   }
   return resolveEffectiveList(campaignId, contentType);
@@ -117,3 +116,5 @@ export const listItemsEffective = (campaignId: string | null) => listEffectiveOr
 export const listRunesEffective = (campaignId: string | null) => listEffectiveOrOfficial("rune", campaignId);
 /** Checkpoint pós-v0.94 (fase 10) — capítulos publicados para a Biblioteca do Livro (leitura). */
 export const listCapitulosEffective = (campaignId: string | null) => listEffectiveOrOfficial("capitulo", campaignId);
+/** Catálogo de modelos de drone/robô (fonte: docs/fontes/DRONES E ROBÔS....md) consumido pela ficha. */
+export const listCompanionModelsEffective = (campaignId: string | null) => listEffectiveOrOfficial("companion_model", campaignId);

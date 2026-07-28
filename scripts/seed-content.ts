@@ -72,7 +72,8 @@ type ContentType =
   | "rune"
   | "escalpo"
   | "talent"
-  | "spell";
+  | "spell"
+  | "companion_model";
 
 type Mode = "singleton" | "collection";
 
@@ -178,6 +179,21 @@ const SOURCES: SourceSpec[] = [
     mode: "collection",
     file: "db_runas_normalizado_v1_2.json",
     collectionKey: "runas",
+  },
+  // Catálogo "Catálogo oficial de drones e robôs consumido pela ficha" —
+  // fora do manifesto do core (sem manifestId), fonte:
+  // docs/fontes/DRONES E ROBÔS....md.
+  {
+    contentType: "companion_model",
+    mode: "collection",
+    file: "db_companion_models_v1.json",
+    collectionKey: "modelos_companheiros",
+  },
+  {
+    contentType: "rune",
+    mode: "collection",
+    file: "db_runas_drones_robos_v1.json",
+    collectionKey: "runas_drones_robos",
   },
   {
     manifestId: "escalpos",

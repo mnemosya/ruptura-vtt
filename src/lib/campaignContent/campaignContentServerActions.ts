@@ -351,7 +351,7 @@ export async function previewImpactoRemocao(campaignContentDocumentId: string): 
     const doc = await getCampaignContentDocumentById(campaignContentDocumentId);
     if (!doc) return { ok: false, erro: "Conteúdo de campanha não encontrado." };
     await requireCampaignNarrator(doc.campaign_id);
-    const diagnostico = await avaliarImpactoRemocao(doc.campaign_id, doc.content_type, doc.slug);
+    const diagnostico = await avaliarImpactoRemocao(doc.campaign_id, doc.content_type as DraftContentType, doc.slug);
     return { ok: true, diagnostico };
   } catch (err) {
     return { ok: false, erro: err instanceof Error ? err.message : "Erro desconhecido." };
@@ -400,7 +400,7 @@ export async function arquivarHomebrewCampanha(campaignContentDocumentId: string
     // do slug. Referência estruturada obrigatória ativa BLOQUEIA (nunca só
     // avisa); impacto heurístico em personagens exige confirmação forte,
     // mas não bloqueia sozinho (pode ser falso positivo — ver módulo).
-    const diagnostico = await avaliarImpactoRemocao(doc.campaign_id, doc.content_type, doc.slug);
+    const diagnostico = await avaliarImpactoRemocao(doc.campaign_id, doc.content_type as DraftContentType, doc.slug);
     if (diagnostico.classificacao === "remocao_bloqueada") {
       return { ok: false, erro: `Arquivamento bloqueado — referência(s) obrigatória(s) ativa(s): ${diagnostico.motivos.join(" | ")}` };
     }
@@ -492,22 +492,22 @@ export async function criarRascunhoReconciliacao(campaignContentDocumentId: stri
     const admin = await requireCampaignNarrator(doc.campaign_id);
     if (doc.origin_type !== "override") return { ok: false, erro: "Reconciliação só se aplica a overrides." };
 
-    const existente = await findCampaignDraftBySlug(doc.campaign_id, doc.content_type, doc.slug);
+    const existente = await findCampaignDraftBySlug(doc.campaign_id, doc.content_type as DraftContentType, doc.slug);
     if (existente) return { ok: true, draftId: existente.id };
 
-    const { camposEditaveis: camposDosAdapters, camposDesconhecidos } = montarCamposECamposDesconhecidosIniciais(doc.content_type, doc.payload);
+    const { camposEditaveis: camposDosAdapters, camposDesconhecidos } = montarCamposECamposDesconhecidosIniciais(doc.content_type as DraftContentType, doc.payload);
     const metadataAtual = await getEditorMetadataAtual(doc.id, String(doc.local_version)).catch(() => null);
     const camposEditaveis = sobreporMetadataEditorial(camposDosAdapters, metadataAtual);
 
     const envelope: CampaignDraftEnvelope = {
       schemaVersion: "campaign-draft.v1",
-      contentType: doc.content_type,
+      contentType: doc.content_type as DraftContentType,
       operation: "resolucao_atualizacao",
       camposEditaveis,
       preservado: { rawOriginal: doc.payload, camposDesconhecidos },
     };
 
-    return inserirRascunho(doc.campaign_id, doc.content_type, doc.slug, "resolucao_atualizacao", envelope, admin, {
+    return inserirRascunho(doc.campaign_id, doc.content_type as DraftContentType, doc.slug, "resolucao_atualizacao", envelope, admin, {
       baseCampaignDocumentId: doc.id,
       baseOfficialDocumentId: doc.official_document_id ?? undefined,
       basePayloadHash: doc.payload_hash,

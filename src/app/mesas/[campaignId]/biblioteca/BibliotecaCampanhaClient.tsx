@@ -146,7 +146,7 @@ export function BibliotecaCampanhaClient({ campaignId, tipos, efetivos, rascunho
                 <td style={{ padding: "6px 8px", display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {e.origem === "oficial" && (
                     <>
-                      <button disabled={carregando !== null} onClick={() => rodar(chave, () => criarRascunhoOverride(campaignId, e.contentType, e.slug))} style={linkButtonStyle}>
+                      <button disabled={carregando !== null} onClick={() => rodar(chave, () => criarRascunhoOverride(campaignId, e.contentType as DraftContentType, e.slug))} style={linkButtonStyle}>
                         Criar override
                       </button>
                       <button
@@ -154,7 +154,7 @@ export function BibliotecaCampanhaClient({ campaignId, tipos, efetivos, rascunho
                         onClick={() => {
                           const novoSlug = prompt("Slug local para a cópia homebrew:", `${e.slug}_mesa`);
                           const novoNomeCopia = prompt("Nome da cópia:", e.nome ?? e.slug);
-                          if (novoSlug && novoNomeCopia) rodar(chave, () => criarRascunhoCopiaHomebrew(campaignId, e.contentType, e.slug, novoSlug, novoNomeCopia));
+                          if (novoSlug && novoNomeCopia) rodar(chave, () => criarRascunhoCopiaHomebrew(campaignId, e.contentType as DraftContentType, e.slug, novoSlug, novoNomeCopia));
                         }}
                         style={linkButtonStyle}
                       >

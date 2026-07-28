@@ -22,7 +22,8 @@ export type ContentType =
   | "escalpo"
   | "talent"
   | "spell"
-  | "capitulo";
+  | "capitulo"
+  | "companion_model";
 
 /** Linha completa de content_documents, com o payload tipado genericamente. */
 export interface ContentDocument<TPayload = unknown> {

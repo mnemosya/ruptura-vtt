@@ -1,0 +1,485 @@
+{
+  "_meta": {
+    "conteudo": "modelos_companheiros",
+    "fonte": "docs/fontes/DRONES E ROBÔS 7a00a13635528396b33501c34c719d2a.md",
+    "versao_schema": "1.0.0",
+    "status_padrao": "published",
+    "gerado_em": "2026-07-28",
+    "total_registros": 10,
+    "observacoes": [
+      "Catálogo oficial de drones (5) e robôs (5), consumido pela ficha para registrar instâncias de companheiro (talentos Droneiro/Mecatrônico) — execução bespoke em talentEngine.ts não muda, só recebe dados melhores.",
+      "Drones NÃO têm PA próprio na fonte (pa_maximo ausente, não zerado) — quem paga as ações do drone é o operador. Só os 5 robôs têm pa_maximo (autônomos).",
+      "cd_ser_percebido só existe no Drone Mosca; habilidade_especial só existe no Robô Ceifador — ambos ausentes (não inventados) nos demais 9 modelos.",
+      "Ações do tipo Esquivar (Reação) não têm custoPA na fonte (reação, não ação por PA) — campo custoPA omitido nesses itens, nunca inventado como 0 ou 1.",
+      "descricao_curta é transcrição literal do parágrafo descritivo de cada modelo na fonte, não resumo editorial novo.",
+      "PV e MIT do drone/robô não existem na fonte — não fazem parte do schema."
+    ]
+  },
+  "modelos_companheiros": [
+    {
+      "slug": "drone_mosca",
+      "nome": "Drone Mosca",
+      "categoria": "drone",
+      "raridade": "incomum",
+      "preco": 500,
+      "alcance_controle": "500 m",
+      "cd_operar": 5,
+      "atributos": {
+        "mente": 2
+      },
+      "pd_maximo": 3,
+      "acoes": [
+        {
+          "nome": "Deslocar-se",
+          "custoPA": 1,
+          "descricao": "12 m, caminhada e voo"
+        },
+        {
+          "nome": "Transmitir",
+          "custoPA": 1,
+          "descricao": "imagem e som"
+        }
+      ],
+      "cd_ser_percebido": 10,
+      "descricao_curta": "Drone minúsculo, inspirado em insetos voadores. Movimenta-se por dutos e frestas, transmitindo imagens e sons sem ser percebido. Ideal para infiltração, vigilância de ambientes fechados ou espionagem.",
+      "tags": [
+        "companheiro",
+        "drone",
+        "loja"
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-07-28",
+      "updated_at": "2026-07-28"
+    },
+    {
+      "slug": "drone_reconhecimento",
+      "nome": "Drone de Reconhecimento",
+      "categoria": "drone",
+      "raridade": "incomum",
+      "preco": 500,
+      "alcance_controle": "2 km",
+      "cd_operar": 5,
+      "atributos": {
+        "mente": 2
+      },
+      "pd_maximo": 8,
+      "acoes": [
+        {
+          "nome": "Deslocar-se",
+          "custoPA": 1,
+          "descricao": "16 m, voo"
+        },
+        {
+          "nome": "Transmitir",
+          "custoPA": 1,
+          "descricao": "imagem e som"
+        }
+      ],
+      "descricao_curta": "Equipamento aéreo leve, opera em altitudes médias e transmite imagens, sinais de calor e áudio em tempo real para o operador. Usado para mapeamento de zonas, monitoramento de alvos à distância e cobertura tática de áreas perigosas.",
+      "tags": [
+        "companheiro",
+        "drone",
+        "loja"
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-07-28",
+      "updated_at": "2026-07-28"
+    },
+    {
+      "slug": "drone_reparador",
+      "nome": "Drone Reparador",
+      "categoria": "drone",
+      "raridade": "incomum",
+      "preco": 1000,
+      "alcance_controle": "500 m",
+      "cd_operar": 6,
+      "atributos": {
+        "mente": 2
+      },
+      "pd_maximo": 8,
+      "acoes": [
+        {
+          "nome": "Deslocar-se",
+          "custoPA": 1,
+          "descricao": "16 m, caminhada ou voo"
+        },
+        {
+          "nome": "Transmitir",
+          "custoPA": 1,
+          "descricao": "status de reparo ou imagem"
+        },
+        {
+          "nome": "Reparar",
+          "custoPA": 2,
+          "descricao": "3x/dia, alvo adjacente. Faça Mente + 2. Em sucesso, restaura 1d4 PD/MIT do objeto."
+        }
+      ],
+      "descricao_curta": "Unidade compacta com ferramentas tecnomágicas integradas. Executa reparos de emergência em armas, portas, veículos ou equipamentos danificados, acessando locais de difícil alcance para humanos.",
+      "tags": [
+        "companheiro",
+        "drone",
+        "loja"
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-07-28",
+      "updated_at": "2026-07-28"
+    },
+    {
+      "slug": "drone_assalto_leve",
+      "nome": "Drone de Assalto Leve",
+      "categoria": "drone",
+      "raridade": "incomum",
+      "preco": 1200,
+      "alcance_controle": "200 m",
+      "cd_operar": 7,
+      "atributos": {
+        "mente": 2
+      },
+      "pd_maximo": 8,
+      "acoes": [
+        {
+          "nome": "Deslocar-se",
+          "custoPA": 1,
+          "descricao": "16 m, voo"
+        },
+        {
+          "nome": "Transmitir",
+          "custoPA": 1,
+          "descricao": "imagem"
+        },
+        {
+          "nome": "Atacar",
+          "custoPA": 2,
+          "descricao": "Projétil de borracha: alcance 8 m, propriedade: Atordoante. Faça Mente + 2. O alvo faz teste de Desviar ou Bloquear. Em falha, sofre 1d6 de dano contundente (não letal)."
+        },
+        {
+          "nome": "Atacar",
+          "custoPA": 2,
+          "descricao": "Gás lacrimogênio: alcance 8 m, raio de 2 m. Faça Mente + 2. Criaturas na área fazem teste de Corpo + Vigor. Em falha, o alvo fica Cego por 1 rodada."
+        },
+        {
+          "nome": "Esquivar (Reação)",
+          "descricao": "Em resposta a um ataque corpo a corpo ou à distância, faça Mente + 2. Em sucesso, o drone desvia do ataque."
+        }
+      ],
+      "descricao_curta": "Modelo ágil, equipado com munição não-letal: gás lacrimogêneo ou projéteis de borracha para dispersar, conter ou incapacitar alvos sem causar morte.",
+      "tags": [
+        "companheiro",
+        "drone",
+        "loja"
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-07-28",
+      "updated_at": "2026-07-28"
+    },
+    {
+      "slug": "drone_assalto_pesado",
+      "nome": "Drone de Assalto Pesado",
+      "categoria": "drone",
+      "raridade": "raro",
+      "preco": 1800,
+      "alcance_controle": "200 m",
+      "cd_operar": 8,
+      "atributos": {
+        "mente": 3
+      },
+      "pd_maximo": 12,
+      "acoes": [
+        {
+          "nome": "Deslocar-se",
+          "custoPA": 1,
+          "descricao": "16 m, voo"
+        },
+        {
+          "nome": "Transmitir",
+          "custoPA": 1,
+          "descricao": "imagem"
+        },
+        {
+          "nome": "Atacar",
+          "custoPA": 2,
+          "descricao": "Atirar: alcance 12 m, propriedade: Sangramento. Faça Mente + 3. O alvo faz teste de Desviar ou Bloquear. Em falha, sofre 2d8 de dano perfurante."
+        },
+        {
+          "nome": "Atacar",
+          "custoPA": 2,
+          "descricao": "Lançar Granada: alcance 12 m, raio de 2 m. Faça Mente + 3. Todos na área fazem teste de Desviar. Em falha, sofrem 1d6 de dano contundente + 1d4 de dano ígneo. Em sucesso, metade do dano."
+        },
+        {
+          "nome": "Esquivar (Reação)",
+          "descricao": "Em resposta a um ataque corpo a corpo ou à distância, faça Mente + 3. Em sucesso, o drone desvia do ataque."
+        }
+      ],
+      "descricao_curta": "Plataforma robusta de combate, armada com projéteis letais e microgranadas. Usado em confrontos abertos, apoio tático ou missões de destruição.",
+      "tags": [
+        "companheiro",
+        "drone",
+        "loja"
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-07-28",
+      "updated_at": "2026-07-28"
+    },
+    {
+      "slug": "robo_carga",
+      "nome": "Robô de Carga",
+      "categoria": "robo",
+      "raridade": "incomum",
+      "preco": 1000,
+      "alcance_controle": "100 m",
+      "cd_operar": 4,
+      "atributos": {
+        "corpo": 3,
+        "mente": 0
+      },
+      "pd_maximo": 10,
+      "pa_maximo": 3,
+      "acoes": [
+        {
+          "nome": "Deslocar-se",
+          "custoPA": 1,
+          "descricao": "13 m caminhada, transportando até 1.000 kg"
+        },
+        {
+          "nome": "Transmitir",
+          "custoPA": 1,
+          "descricao": "imagem ou status"
+        },
+        {
+          "nome": "Destravar/Forçar",
+          "custoPA": 2,
+          "descricao": "porta, obstáculo ou veículo adjacente. Faça Corpo + 2 contra uma CD definida pelo narrador."
+        }
+      ],
+      "descricao_curta": "Modelo robusto, não-humanóide, usado para transporte de materiais pesados, apoio em obras, barricadas ou resgates.",
+      "tags": [
+        "companheiro",
+        "robo",
+        "loja"
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-07-28",
+      "updated_at": "2026-07-28"
+    },
+    {
+      "slug": "robo_patrulha",
+      "nome": "Robô de Patrulha",
+      "categoria": "robo",
+      "raridade": "incomum",
+      "preco": 1000,
+      "alcance_controle": "500 m",
+      "cd_operar": 5,
+      "atributos": {
+        "corpo": 2,
+        "mente": 2
+      },
+      "pd_maximo": 10,
+      "pa_maximo": 3,
+      "acoes": [
+        {
+          "nome": "Deslocar-se",
+          "custoPA": 1,
+          "descricao": "12 m, caminhada. 24 m, corrida"
+        },
+        {
+          "nome": "Vasculhar",
+          "custoPA": 1,
+          "descricao": "detecta criaturas, dispositivos eletrônicos, armadilhas e sinais rúnicos em raio de 10 m; revela posição, número e natureza básica dos alvos detectados. Faça Mente + 2 contra uma CD definida pelo narrador ou teste contestado."
+        },
+        {
+          "nome": "Transmitir",
+          "custoPA": 1,
+          "descricao": "imagem e som"
+        },
+        {
+          "nome": "Emitir Alerta",
+          "custoPA": 1,
+          "descricao": "sirene audível a 15 m"
+        },
+        {
+          "nome": "Esquivar (Reação)",
+          "descricao": "Em resposta a um ataque, faça Corpo + 2. Em sucesso, desvia do ataque."
+        }
+      ],
+      "descricao_curta": "Unidade humanóide compacta, programada para rondas em áreas urbanas ou industriais, identificação de suspeitos, resposta rápida e emissão de alerta.",
+      "tags": [
+        "companheiro",
+        "robo",
+        "loja"
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-07-28",
+      "updated_at": "2026-07-28"
+    },
+    {
+      "slug": "robo_suporte",
+      "nome": "Robô de Suporte",
+      "categoria": "robo",
+      "raridade": "raro",
+      "preco": 1500,
+      "alcance_controle": "200 m",
+      "cd_operar": 7,
+      "atributos": {
+        "corpo": 1,
+        "mente": 3
+      },
+      "pd_maximo": 10,
+      "pa_maximo": 3,
+      "acoes": [
+        {
+          "nome": "Deslocar-se",
+          "custoPA": 1,
+          "descricao": "11 m, caminhada. 22 m, corrida"
+        },
+        {
+          "nome": "Transmitir",
+          "custoPA": 1,
+          "descricao": "imagem e som"
+        },
+        {
+          "nome": "Emitir Alerta",
+          "custoPA": 1,
+          "descricao": "sirene audível a 15 m"
+        },
+        {
+          "nome": "Reparar",
+          "custoPA": 2,
+          "descricao": "2x/dia, alvo adjacente. Faça Mente + 3. Em sucesso, recupera 1d4 PD/MIT do objeto."
+        },
+        {
+          "nome": "Primeiros Socorros",
+          "custoPA": 2,
+          "descricao": "alvo adjacente. Faça Mente + 3. Em sucesso, recupera 1d6 PV do alvo. Requer 1 Medkit; o robô pode armazenar até 3 Kits. O robô também pode aplicar um kit de estabilização — nesse caso, o alvo não recupera vida, mas o marcador de colapso é finalizado."
+        },
+        {
+          "nome": "Esquivar (Reação)",
+          "descricao": "Em resposta a um ataque, faça Corpo + 3. Em sucesso, desvia do ataque."
+        }
+      ],
+      "descricao_curta": "Unidade multifunção, equipada para primeiros socorros, conserto rápido de equipamentos ou suporte logístico no campo.",
+      "tags": [
+        "companheiro",
+        "robo",
+        "loja"
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-07-28",
+      "updated_at": "2026-07-28"
+    },
+    {
+      "slug": "robo_combate",
+      "nome": "Robô de Combate",
+      "categoria": "robo",
+      "raridade": "raro",
+      "preco": 2000,
+      "alcance_controle": "200 m",
+      "cd_operar": 8,
+      "atributos": {
+        "corpo": 3,
+        "mente": 1
+      },
+      "pd_maximo": 16,
+      "pa_maximo": 3,
+      "acoes": [
+        {
+          "nome": "Deslocar-se",
+          "custoPA": 1,
+          "descricao": "13 m, caminhada. 26 m, corrida"
+        },
+        {
+          "nome": "Transmitir",
+          "custoPA": 1,
+          "descricao": "imagem e status"
+        },
+        {
+          "nome": "Atacar",
+          "custoPA": 2,
+          "descricao": "alcance 8 m. Propriedades: Sangramento e Perfuração. Faça Corpo + 3. O alvo faz teste de Desviar ou Bloquear. Em falha, sofre 2d6 de dano perfurante."
+        },
+        {
+          "nome": "Imobilizar",
+          "custoPA": 2,
+          "descricao": "alvo adjacente. Faça Corpo + 3. O alvo faz teste de Desviar ou Resistir. Em falha, fica Agarrado."
+        },
+        {
+          "nome": "Esquivar (Reação)",
+          "descricao": "Em resposta a um ataque, faça Corpo + 3. Em sucesso, desvia do ataque."
+        }
+      ],
+      "descricao_curta": "Humanóide blindado, equipado para repressão em zonas de conflito, contenção violenta ou defesa de instalações críticas.",
+      "tags": [
+        "companheiro",
+        "robo",
+        "loja"
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-07-28",
+      "updated_at": "2026-07-28"
+    },
+    {
+      "slug": "robo_ceifador",
+      "nome": "Robô Ceifador",
+      "categoria": "robo",
+      "raridade": "muito_raro",
+      "preco": 10000,
+      "alcance_controle": "200 m",
+      "cd_operar": 10,
+      "atributos": {
+        "corpo": 4,
+        "mente": 2
+      },
+      "pd_maximo": 30,
+      "pa_maximo": 5,
+      "acoes": [
+        {
+          "nome": "Deslocar-se",
+          "custoPA": 1,
+          "descricao": "14 m, caminhada. 28 m, corrida"
+        },
+        {
+          "nome": "Transmitir",
+          "custoPA": 1,
+          "descricao": "imagem e status"
+        },
+        {
+          "nome": "Atacar",
+          "custoPA": 2,
+          "descricao": "Lâmina: adjacente, propriedade: Sangramento. Faça Corpo + 4. O alvo faz teste de Desviar, Aparar ou Bloquear. Em falha, sofre 1d10 de dano cortante."
+        },
+        {
+          "nome": "Atacar",
+          "custoPA": 2,
+          "descricao": "Cauda: alcance 2 m, propriedade: Perfurante. Faça Corpo + 4. O alvo faz teste de Desviar ou Bloquear. Em falha, sofre 1d6 de dano perfurante e deve testar Vigor CD 8. Em falha, fica Envenenado."
+        },
+        {
+          "nome": "Esquivar (Reação)",
+          "descricao": "Em resposta a um ataque, faça Corpo + 4. Em sucesso, desvia do ataque."
+        }
+      ],
+      "habilidade_especial": {
+        "nome": "Frenesi das Lâminas",
+        "frequencia": "1x por cena",
+        "descricao": "Durante uma rodada, o Ceifador pode realizar até dois ataques de lâmina por ação de Atacar."
+      },
+      "descricao_curta": "Unidade de guerra especializada em combate próximo. Estrutura humanóide reforçada, equipada com quatro braços-lâmina e uma cauda perfurante, projetada para dizimar múltiplos inimigos de uma vez só. Sua presença nas ruas é sinônimo de massacre iminente.",
+      "tags": [
+        "companheiro",
+        "robo",
+        "loja"
+      ],
+      "status": "published",
+      "versao": "1.0.0",
+      "created_at": "2026-07-28",
+      "updated_at": "2026-07-28"
+    }
+  ]
+}

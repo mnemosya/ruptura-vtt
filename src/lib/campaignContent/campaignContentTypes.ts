@@ -6,6 +6,7 @@
  * publicá-lo. Nunca duplica a estrutura de campos.
  */
 
+import type { ContentType } from "../content/types";
 import type { CamposEditaveis, DraftContentType, DraftPreservado } from "../contentSchema/draftTypes";
 
 export type CampaignContentOriginType = "homebrew" | "override";
@@ -18,11 +19,18 @@ export type CampaignContentOperation =
   | "edicao_override"
   | "resolucao_atualizacao";
 
-/** Linha de `campaign_content_documents` — conteúdo EFETIVO publicado da campanha. */
+/**
+ * Linha de `campaign_content_documents` — conteúdo EFETIVO publicado da
+ * campanha. `content_type` usa o `ContentType` amplo (não só
+ * `DraftContentType`) porque este é o lado de LEITURA — cobre também
+ * tipos sem formulário de rascunho dedicado ainda (ex.: `companion_model`,
+ * cujo override/homebrew, se existir, ainda precisa ser lido
+ * corretamente pelo resolvedor efetivo).
+ */
 export interface CampaignContentDocumentRow {
   id: string;
   campaign_id: string;
-  content_type: DraftContentType;
+  content_type: ContentType;
   slug: string;
   nome: string | null;
   origin_type: CampaignContentOriginType;
@@ -76,7 +84,7 @@ export interface CampaignContentDraftRow {
 export interface CampaignContentChangelogRow {
   id: string;
   campaign_id: string;
-  content_type: DraftContentType;
+  content_type: ContentType;
   slug: string;
   operation: string;
   local_version: number | null;
@@ -99,7 +107,7 @@ export type OrigemConteudoEfetivo = "oficial" | "modificado_pela_mesa" | "homebr
 
 /** Um item da listagem/resolução efetiva — o que consumidores (ficha, mesa) realmente leem. */
 export interface ConteudoEfetivo {
-  contentType: DraftContentType;
+  contentType: ContentType;
   slug: string;
   nome: string | null;
   payload: Record<string, unknown>;

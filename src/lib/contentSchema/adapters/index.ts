@@ -9,6 +9,7 @@
  */
 
 import type { ContentTypeId, ResultadoAdaptacao } from "../types";
+import { adaptCompanionModel } from "./companionModel";
 import { adaptCondition } from "./condition";
 import { adaptGenerico } from "./generic";
 import { adaptItem } from "./item";
@@ -16,7 +17,7 @@ import { adaptRune } from "./rune";
 import { adaptSpell } from "./spell";
 import { adaptTalentLevel } from "./talent";
 
-export { adaptCondition, adaptGenerico, adaptItem, adaptRune, adaptSpell, adaptTalentLevel };
+export { adaptCompanionModel, adaptCondition, adaptGenerico, adaptItem, adaptRune, adaptSpell, adaptTalentLevel };
 
 export function adaptarDocumento(contentType: ContentTypeId, raw: Record<string, unknown>): ResultadoAdaptacao {
   switch (contentType) {
@@ -28,6 +29,8 @@ export function adaptarDocumento(contentType: ContentTypeId, raw: Record<string,
       return adaptRune(raw);
     case "condition":
       return adaptCondition(raw);
+    case "companion_model":
+      return adaptCompanionModel(raw);
     case "talent":
       throw new Error('content_type "talent" usa adaptTalentLevel(talentoSlug, talentoNome, nivelRaw) — ele opera por nível, não pelo documento inteiro.');
     default:

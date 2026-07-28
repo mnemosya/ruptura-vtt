@@ -161,6 +161,16 @@ export const CONTENT_TYPE_REGISTRY: Record<ContentTypeId, ContentTypeDefinition>
     secoesAplicaveis: ["identificacao", "texto"],
     statusAdapter: "planejado",
   },
+  companion_model: {
+    id: "companion_model",
+    label: "Modelo de Companheiro (Drone/Robô)",
+    modoArmazenamento: "collection",
+    colecaoChave: "modelos_companheiros",
+    secoesAplicaveis: ["identificacao", "classificacao", "texto", "mercado"],
+    statusAdapter: "implementado",
+    observacao:
+      "Catálogo de modelos oficiais de drone/robô (fonte: docs/fontes/DRONES E ROBÔS....md), consumido pela ficha para preencher registro de drone/robô. Ainda sem formulário dedicado de criação/edição no admin (CamposCompanionModelSection.tsx) — fase posterior; edição via draft genérico continua disponível.",
+  },
   capitulo: {
     id: "capitulo",
     label: "Capítulo (Livro)",
