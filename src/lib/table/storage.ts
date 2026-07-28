@@ -338,29 +338,28 @@ export interface AddLogParams {
   profileSessionId?: string | null;
 }
 
-/** Registra uma entrada no log persistente de uma mesa. Append-only. */
+/**
+ * Registra uma entrada no log persistente de uma mesa. Append-only.
+ *
+ * Migration 0045: chama a RPC `append_table_log` (SECURITY DEFINER)
+ * em vez de um INSERT direto — o INSERT direto dependia inteiramente
+ * da policy `table_logs_dev_transition_insert` (`using(true)` para
+ * `anon,authenticated`, removida nesta migration), que permitia
+ * falsificar campanha/personagem/perfil/autor. A RPC deriva o autor de
+ * `auth.uid()` no servidor e valida membership + posse real de
+ * `character_id`/`profile_id` — nunca confia no que o cliente informa.
+ */
 export async function addLog(params: AddLogParams): Promise<TableLogEntry> {
   const client = await getScopedTableClient();
-  let user: Awaited<ReturnType<typeof getCurrentUser>> = null;
-  try {
-    user = await getCurrentUser();
-  } catch {
-    user = null;
-  }
-  const { data, error } = await client
-    .from(TABLE_LOGS_TABLE)
-    .insert({
-      campaign_id: params.campaignId,
-      character_id: params.characterId ?? null,
-      type: params.type,
-      visibility: params.visibility,
-      payload: params.payload,
-      profile_id: params.profileId ?? null,
-      created_by_user_id: user?.id ?? null,
-      profile_session_id: params.profileSessionId ?? null,
-    })
-    .select()
-    .single();
+  const { data, error } = await client.rpc("append_table_log", {
+    p_campaign_id: params.campaignId,
+    p_type: params.type,
+    p_visibility: params.visibility,
+    p_payload: params.payload,
+    p_character_id: params.characterId ?? null,
+    p_profile_id: params.profileId ?? null,
+    p_profile_session_id: params.profileSessionId ?? null,
+  });
 
   if (error) {
     throw new TableStorageError(`Falha ao registrar log na mesa "${params.campaignId}": ${error.message}`, error);
