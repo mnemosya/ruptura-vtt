@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   deriveActiveEffectsFromConditions,
+  getAutoFailReason,
   normalizeConditionContent,
   createInitialCharacter,
   type ActiveCondition,
@@ -123,6 +124,21 @@ assert.equal(modOfensivaCego!.modifier, -2);
 const recebidoIndevido = efeitosCego.find((e) => e.modifier === 2);
 assert.equal(recebidoIndevido, undefined, "Cego não deve gerar um modificador +2 (isso é 'modificador_recebido', sobre quem ataca o alvo).");
 console.log("5. Cego: falha automática + modificador próprio, sem vazar modificador_recebido (alvo) — OK");
+
+// -------------------------------------------------------------
+// 5b. getAutoFailReason (checkpoint falha_automatica bloqueia rolagem,
+//     RollsTab.tsx) — tags cruzando com um efeito auto_fail devolvem o
+//     motivo (explanation); sem cruzamento, ou sem nenhum efeito
+//     auto_fail, devolvem undefined (liberado).
+// -------------------------------------------------------------
+const motivoComVisao = getAutoFailReason(["visao"], efeitosCego);
+assert.ok(motivoComVisao, "Tag 'visao' com Cego ativo deve devolver motivo de bloqueio.");
+assert.equal(motivoComVisao, autoFailVisao!.explanation, "Motivo devolvido deve ser a MESMA explanation do efeito, não uma mensagem inventada.");
+const motivoSemCruzamento = getAutoFailReason(["ofensiva"], efeitosCego);
+assert.equal(motivoSemCruzamento, undefined, "Tag 'ofensiva' (sem cruzar com o auto_fail de visão) não deve bloquear — só o modifier -2 se aplica.");
+const motivoSemEfeitos = getAutoFailReason(["visao"], []);
+assert.equal(motivoSemEfeitos, undefined, "Sem nenhum ActiveEffect, nunca deve bloquear.");
+console.log("5b. getAutoFailReason: bloqueia só com tag cruzando um auto_fail real, libera nos demais casos — OK");
 
 // -------------------------------------------------------------
 // 6. Valores já aplicados hoje não regridem (paridade com a tabela hardcoded anterior).

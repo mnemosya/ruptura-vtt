@@ -20,12 +20,13 @@ import {
   type PreparedRoll,
   type RupturaRollResult,
 } from "../../../../lib/dice";
-import type {
-  ActiveEffect,
-  CharacterAttributes,
-  CharacterSkills,
-  AttributeDefinition,
-  SkillDefinition,
+import {
+  getAutoFailReason,
+  type ActiveEffect,
+  type CharacterAttributes,
+  type CharacterSkills,
+  type AttributeDefinition,
+  type SkillDefinition,
 } from "../../../../lib/character";
 import { addLog } from "../../../../lib/table/storage";
 import { TABLE_LOG_VISIBILITIES, type TableLogVisibility } from "../../../../lib/table";
@@ -288,12 +289,19 @@ export function RollsTab({
   const chipsAplicaveis = activeEffects.filter(
     (e) => e.kind === "modifier" && e.affectedTags.some((tag) => rollTagsAtuais.includes(tag)),
   );
-  // Avisos/falhas automáticas aplicáveis — só informativos, nunca somados.
+  // Avisos/bloqueios/falhas automáticas aplicáveis — chips nunca somados
+  // (kind="auto_fail" além do chip informativo TAMBÉM bloqueia a
+  // rolagem de verdade, ver `autoFailReason` abaixo).
   const avisosAplicaveis = activeEffects.filter(
     (e) => e.kind !== "modifier" && e.affectedTags.some((tag) => rollTagsAtuais.includes(tag)),
   );
   const chipsLigados = chipsAplicaveis.filter((e) => !chipsDesligados.has(e.id));
   const modificadorEfeitos = chipsLigados.reduce((sum, e) => sum + e.modifier, 0);
+  // Enforcement real (checkpoint falha_automatica) — mesmo padrão de
+  // `getConditionLockReason` (actionConsole.ts): função pura, motivo ou
+  // liberado. Usada para desabilitar o botão "Rolar" E como guard
+  // dentro do handler (defesa em profundidade).
+  const autoFailReason = getAutoFailReason(rollTagsAtuais, activeEffects);
 
   const [expressaoInput, setExpressaoInput] = useState("");
   const [expressaoErro, setExpressaoErro] = useState<string | null>(null);
@@ -307,6 +315,17 @@ export function RollsTab({
   // Erro discreto de gravação no log persistente — nunca bloqueia a
   // rolagem nem o Log local, que já aconteceram antes desta chamada.
   const [persistError, setPersistError] = useState<string | null>(null);
+
+  // Mensagem exibida quando o guard interno de `handleRolarPericia`
+  // recusa a rolagem (defesa em profundidade — só é alcançável se o
+  // botão "Rolar" for acionado apesar do `disabled`). Some sozinha
+  // assim que o bloqueio deixar de existir (tag desmarcada ou condição
+  // removida) — nunca fica "presa" mostrando um motivo que não se
+  // aplica mais.
+  const [autoFailBlockedMessage, setAutoFailBlockedMessage] = useState<string | null>(null);
+  useEffect(() => {
+    if (!autoFailReason) setAutoFailBlockedMessage(null);
+  }, [autoFailReason]);
 
   async function persistirNaMesa(tipo: "rolagem_pericia" | "rolagem_expressao", payload: Record<string, unknown>) {
     if (!campaignId) return;
@@ -349,6 +368,13 @@ export function RollsTab({
   }
 
   async function handleRolarPericia() {
+    // Defesa em profundidade (mesmo padrão de `executeActionOnCharacter`,
+    // actionConsole.ts) — o botão já vem `disabled` quando `autoFailReason`
+    // existe; este guard cobre qualquer acionamento que contorne a UI.
+    if (autoFailReason) {
+      setAutoFailBlockedMessage(autoFailReason);
+      return;
+    }
     const atributoDef = atributoDefinitions?.find((a) => a.id === atributoId);
     const periciaDef = periciaDefinitions?.find((p) => p.id === periciaId);
     const manualModifier = parseIntOrDefault(modificadorInput, 0);
@@ -662,10 +688,22 @@ export function RollsTab({
             />
           </label>
 
-          <button data-testid="roll-pericia-button" onClick={handleRolarPericia} style={buttonStyle}>
+          <button
+            data-testid="roll-pericia-button"
+            onClick={handleRolarPericia}
+            disabled={Boolean(autoFailReason)}
+            title={autoFailReason}
+            style={{ ...buttonStyle, opacity: autoFailReason ? 0.5 : 1, cursor: autoFailReason ? "not-allowed" : "pointer" }}
+          >
             Rolar
           </button>
         </div>
+
+        {autoFailBlockedMessage && (
+          <p data-testid="roll-auto-fail-bloqueado" style={{ color: "#ff6b6b", fontSize: 12, marginTop: -6, marginBottom: 12 }}>
+            Falha automática: {autoFailBlockedMessage}
+          </p>
+        )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: -6, marginBottom: 12 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>

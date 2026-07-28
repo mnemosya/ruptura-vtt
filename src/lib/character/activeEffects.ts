@@ -41,8 +41,8 @@ export type ActiveEffectSourceType = "condition" | "reaction_overflow" | "talent
  *     `bloquear_reacoes` do payload) — hoje só informativo na UI, o
  *     Console de Ação não impede a ação sozinho por causa disto.
  *   - "auto_fail": a categoria de teste falha automaticamente (ex.:
- *     Cego em testes de visão) — hoje só informativo na UI; o
- *     RollsTab não impede a rolagem sozinho (ver pendências).
+ *     Cego em testes de visão) — bloqueia a rolagem de verdade via
+ *     `getAutoFailReason` (RollsTab.tsx), não só um aviso.
  */
 export type ActiveEffectKind = "modifier" | "warning" | "lock" | "auto_fail";
 
@@ -236,4 +236,20 @@ export function deriveActiveEffectsFromConditions(
   const conditionBySlug = new Map(conditions.map((c) => [normalizeConditionSlug(c.slug), c]));
   const condicoesAtivas = (character.condicoes_ativas ?? []).filter((c) => c.ativa);
   return condicoesAtivas.flatMap((c) => effectsForCondition(c, conditionBySlug));
+}
+
+/**
+ * Motivo de bloqueio "falha automática" para um teste com estas tags —
+ * `undefined` = liberado. Espelha `getConditionLockReason`
+ * (`actionConsole.ts`) para o mesmo padrão de enforcement real: função
+ * pura, chamada tanto para desabilitar o botão "Rolar" na UI quanto
+ * como guard dentro do handler que executa a rolagem (defesa em
+ * profundidade — RollsTab.tsx).
+ */
+export function getAutoFailReason(rollTags: string[], activeEffects: ActiveEffect[]): string | undefined {
+  for (const effect of activeEffects) {
+    if (effect.kind !== "auto_fail") continue;
+    if (effect.affectedTags.some((tag) => rollTags.includes(tag))) return effect.explanation;
+  }
+  return undefined;
 }
