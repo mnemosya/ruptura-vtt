@@ -340,3 +340,7 @@ seguinte. Os 3 cenários de concorrência da trilha marcados como
 harness determinístico e confirmaram o invariante central ao vivo. A
 criação de personagem passou a ser transacional (RPC única). Ver
 `CHECKPOINT_SEGURANCA_ATOMICIDADE.md` para o relato completo.
+
+Dois achados adjacentes daquela rodada (`campaign_invites` SELECT,
+`table_logs` INSERT) foram corrigidos e provados ao vivo (30/30) numa
+rodada posterior — ver `CHECKPOINT_FECHAMENTO_CONVITES_LOGS_ATOMICIDADE.md`.

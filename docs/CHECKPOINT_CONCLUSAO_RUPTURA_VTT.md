@@ -128,3 +128,15 @@ adjacentes (SELECT aberto em `campaign_invites`, INSERT aberto em
 concluído** — Modo Evolução completo, inventário do bando completo,
 drag operacional, runas/escalpos avançados e integração de
 companheiros/drones/Trama permanecem pendentes.
+
+## Atualização — convites, logs e atomicidade integral
+
+Ver `CHECKPOINT_FECHAMENTO_CONVITES_LOGS_ATOMICIDADE.md`: os 2
+achados adjacentes acima foram corrigidos e provados ao vivo (30/30);
+`complete_character_creation` confirmada como já transacional para
+TODO o estado do personagem (arquitetura de payload único); validação
+de legitimidade de conteúdo publicado (magia/talento/item/preço)
+permanece um gap real e preciso, registrado para rodada dedicada. VTT
+continua **não concluído** — Modo Evolução completo, inventário do
+bando completo, drag operacional, runas/escalpos avançados e
+integração de companheiros/drones/Trama permanecem pendentes.

@@ -354,3 +354,16 @@ avançados e integração de companheiros/drones/Trama permanecem
 pendentes."
 
 Nenhuma fase nova foi iniciada.
+
+## Atualização — rodada seguinte (convites, logs, atomicidade integral)
+
+Os 2 achados adjacentes acima (`campaign_invites` SELECT,
+`table_logs` INSERT) foram corrigidos e provados ao vivo (30/30
+checagens, incluindo Realtime agora determinístico). A checagem 15/16
+foi identificada com precisão (expectativa de teste incorreta, não
+bug). `complete_character_creation` foi auditada e confirmada como já
+materializando TUDO que a arquitetura exige numa única transação;
+validação de legitimidade de conteúdo (magia/talento/item/preço)
+permanece um gap real, agora preciso e documentado. A contagem de
+commits desta rodada (2 código + 1 doc, não "3+1") foi corrigida. Ver
+`CHECKPOINT_FECHAMENTO_CONVITES_LOGS_ATOMICIDADE.md`.

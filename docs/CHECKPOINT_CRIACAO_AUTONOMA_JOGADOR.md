@@ -79,3 +79,15 @@ Criação+vínculo ativo agora é UMA transação SQL só
 chamadas separadas. Idempotência real via chave de requisição
 opcional. Provado ao vivo (SQL + navegador real). Ver
 `CHECKPOINT_SEGURANCA_ATOMICIDADE.md`.
+
+## Atualização — auditoria de materialização (rodada de fechamento seguinte)
+
+Confirmado por leitura do schema real (sem tabelas relacionais para
+itens/magias/talentos/carteira — tudo em `characters.payload` jsonb):
+a RPC `complete_character_creation` já materializa 100% do estado do
+personagem numa única transação; nenhuma gravação acontece depois.
+`regras` (orçamento) agora é buscado no servidor, não mais confiado ao
+argumento do cliente. Gap real e distinto, não fechado: validação de
+LEGITIMIDADE de conteúdo (magia/talento/item/preço publicados) — a RPC
+aceita slugs inexistentes e saldo fabricado, confirmado ao vivo. Ver
+`CHECKPOINT_FECHAMENTO_CONVITES_LOGS_ATOMICIDADE.md`.
