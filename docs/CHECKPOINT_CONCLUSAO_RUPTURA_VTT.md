@@ -140,3 +140,15 @@ permanece um gap real e preciso, registrado para rodada dedicada. VTT
 continua **não concluído** — Modo Evolução completo, inventário do
 bando completo, drag operacional, runas/escalpos avançados e
 integração de companheiros/drones/Trama permanecem pendentes.
+
+## Atualização — validação canônica da criação (rodada seguinte)
+
+Ver `CHECKPOINT_VALIDACAO_CANONICA_CRIACAO.md`: o gap de legitimidade
+de conteúdo acima foi fechado — `complete_character_creation` agora
+valida vertentes/magias/talentos/itens/carteira contra o conteúdo
+efetivo real (oficial/homebrew/override, mesmo resolvedor do
+wizard/ficha) dentro da mesma transação; 48/48 checagens hostis e
+fluxo legítimo confirmados ao vivo, incluindo em navegador real. VTT
+continua **não concluído** — Modo Evolução completo, inventário do
+bando completo, drag operacional, runas/escalpos avançados e
+integração de companheiros/drones/Trama permanecem pendentes.

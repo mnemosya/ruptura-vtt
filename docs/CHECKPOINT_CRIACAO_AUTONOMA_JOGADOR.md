@@ -91,3 +91,12 @@ argumento do cliente. Gap real e distinto, não fechado: validação de
 LEGITIMIDADE de conteúdo (magia/talento/item/preço publicados) — a RPC
 aceita slugs inexistentes e saldo fabricado, confirmado ao vivo. Ver
 `CHECKPOINT_FECHAMENTO_CONVITES_LOGS_ATOMICIDADE.md`.
+
+## Atualização — validação canônica fechada (rodada seguinte)
+
+O gap acima foi fechado: `complete_character_creation` (migration
+0046) resolve cada magia/talento/item pelo MESMO resolvedor efetivo já
+usado pelo wizard/ficha (`resolveEffectiveOne`, réplica SQL fiel) e
+rejeita qualquer referência inexistente, arquivada, de outra campanha,
+com preço/saldo adulterados. Provado ao vivo (48/48 checagens hostis +
+browser real). Ver `CHECKPOINT_VALIDACAO_CANONICA_CRIACAO.md`.

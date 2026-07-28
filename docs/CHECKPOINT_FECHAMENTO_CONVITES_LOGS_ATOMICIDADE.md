@@ -313,3 +313,12 @@ escalpos avançados e integração de companheiros/drones/Trama
 permanecem pendentes."
 
 Nenhuma fase nova foi iniciada.
+
+## Atualização — validação canônica de conteúdo (rodada seguinte)
+
+O bloqueador do item 6 (RPC aceitava magia/talento/item inexistente,
+saldo fabricado) foi fechado — `complete_character_creation` agora
+valida vertentes/magias/talentos/itens/carteira contra o conteúdo
+efetivo real (oficial/homebrew/override) dentro da mesma transação,
+provado ao vivo com 48/48 checagens hostis. Ver
+`CHECKPOINT_VALIDACAO_CANONICA_CRIACAO.md`.
