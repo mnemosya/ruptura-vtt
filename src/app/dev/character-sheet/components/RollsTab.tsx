@@ -607,7 +607,7 @@ export function RollsTab({
           </select>
         </label>
         {persistError && (
-          <p data-testid="roll-persist-erro" style={{ fontSize: 12, color: "#ff6b6b", marginTop: 8 }}>
+          <p role="alert" data-testid="roll-persist-erro" style={{ fontSize: 12, color: "#ff6b6b", marginTop: 8 }}>
             Não foi possível gravar no log persistente da mesa: {persistError}
           </p>
         )}
@@ -700,7 +700,7 @@ export function RollsTab({
         </div>
 
         {autoFailBlockedMessage && (
-          <p data-testid="roll-auto-fail-bloqueado" style={{ color: "#ff6b6b", fontSize: 12, marginTop: -6, marginBottom: 12 }}>
+          <p role="alert" data-testid="roll-auto-fail-bloqueado" style={{ color: "#ff6b6b", fontSize: 12, marginTop: -6, marginBottom: 12 }}>
             Falha automática: {autoFailBlockedMessage}
           </p>
         )}
@@ -974,7 +974,7 @@ export function RollsTab({
           </button>
         </div>
         {expressaoErro && (
-          <p data-testid="roll-expressao-erro" style={{ fontSize: 12, color: "#ff6b6b", marginTop: 8 }}>
+          <p role="alert" data-testid="roll-expressao-erro" style={{ fontSize: 12, color: "#ff6b6b", marginTop: 8 }}>
             {expressaoErro}
           </p>
         )}

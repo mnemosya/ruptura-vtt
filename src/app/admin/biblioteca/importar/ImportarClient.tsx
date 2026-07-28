@@ -128,8 +128,8 @@ export function ImportarClient() {
   return (
     <div>
       <div style={{ border: "1px solid #26262e", borderRadius: 10, padding: 18, marginBottom: 16 }}>
-        <label style={{ fontSize: 13, color: "#a8a8b3", display: "block", marginBottom: 8 }}>Selecione o arquivo .json exportado</label>
-        <input type="file" accept="application/json,.json" onChange={onArquivoSelecionado} disabled={carregando} />
+        <label htmlFor="importar-arquivo-json" style={{ fontSize: 13, color: "#a8a8b3", display: "block", marginBottom: 8 }}>Selecione o arquivo .json exportado</label>
+        <input id="importar-arquivo-json" type="file" accept="application/json,.json" onChange={onArquivoSelecionado} disabled={carregando} />
       </div>
 
       {erro && (

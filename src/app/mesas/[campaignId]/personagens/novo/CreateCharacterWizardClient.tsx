@@ -644,7 +644,7 @@ export default function CreateCharacterWizardClient({
       <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
         <a href={`/mesas/${campaign.id}`} style={{ color: "#5ec8ff", fontSize: 12 }}>← {campaign.name}</a>
         <h1 style={{ fontSize: 22, margin: "8px 0 16px" }}>Novo personagem</h1>
-        <p style={{ fontSize: 13, opacity: 0.7 }}>Restaurando rascunho…</p>
+        <p role="status" style={{ fontSize: 13, opacity: 0.7 }}>Restaurando rascunho…</p>
       </main>
     );
   }
@@ -654,7 +654,7 @@ export default function CreateCharacterWizardClient({
       <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
         <a href={`/mesas/${campaign.id}`} style={{ color: "#5ec8ff", fontSize: 12 }}>← {campaign.name}</a>
         <h1 style={{ fontSize: 22, margin: "8px 0 16px" }}>Novo personagem</h1>
-        <p style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 12 }}>
+        <p role="alert" style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 12 }}>
           Não foi possível verificar se você tem um rascunho salvo: {loadMessage}
         </p>
         <button onClick={handleTentarCarregarNovamente} style={btn}>Tentar novamente</button>
@@ -667,7 +667,7 @@ export default function CreateCharacterWizardClient({
       <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
         <a href={`/mesas/${campaign.id}`} style={{ color: "#5ec8ff", fontSize: 12 }}>← {campaign.name}</a>
         <h1 style={{ fontSize: 22, margin: "8px 0 16px" }}>Novo personagem</h1>
-        <p style={{ color: "#f5a623", fontSize: 13, marginBottom: 12 }}>
+        <p role="alert" style={{ color: "#f5a623", fontSize: 13, marginBottom: 12 }}>
           Não foi possível restaurar seu rascunho anterior (formato incompatível). Deseja descartá-lo e começar do zero?
         </p>
         <div style={{ display: "flex", gap: 8 }}>
@@ -683,7 +683,7 @@ export default function CreateCharacterWizardClient({
       <a href={`/mesas/${campaign.id}`} style={{ color: "#5ec8ff", fontSize: 12 }}>← {campaign.name}</a>
       <h1 style={{ fontSize: 22, margin: "8px 0 16px" }}>Novo personagem</h1>
 
-      {errorMessage && <p style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 16 }}>Erro: {errorMessage}</p>}
+      {errorMessage && <p role="alert" style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 16 }}>Erro: {errorMessage}</p>}
       {itensRemovidosAoRestaurar > 0 && (
         <p style={{ color: "#f5a623", fontSize: 12, marginBottom: 16 }}>
           {itensRemovidosAoRestaurar} item(ns) do rascunho não estão mais disponíveis e foram removidos do inventário restaurado.

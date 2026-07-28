@@ -5532,7 +5532,7 @@ export default function CharacterSheetClient({
     };
     return (
       <main style={{ maxWidth: 640, margin: "60px auto", padding: "0 20px" }}>
-        <p data-testid="ficha-bloqueio" style={{ fontSize: 14, opacity: 0.85 }}>
+        <p data-testid="ficha-bloqueio" role={productSessionState === "pending" ? "status" : "alert"} style={{ fontSize: 14, opacity: 0.85 }}>
           {bloqueio[productSessionState]}
         </p>
       </main>

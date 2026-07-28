@@ -270,8 +270,9 @@ function ActionCard({
       ))}
       {attackWeaponOptions && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <label style={{ fontSize: 11, opacity: 0.7 }}>Arma:</label>
+          <label htmlFor={`acao-arma-${action.slug}`} style={{ fontSize: 11, opacity: 0.7 }}>Arma:</label>
           <select
+            id={`acao-arma-${action.slug}`}
             data-testid={`acao-arma-${action.slug}`}
             value={selectedAttackWeaponId ?? "__desarmado__"}
             onChange={(e) => onSelectAttackWeapon(e.target.value === "__desarmado__" ? null : e.target.value)}
