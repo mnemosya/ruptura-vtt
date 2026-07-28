@@ -236,6 +236,60 @@ em cada etapa.
   SELECT, `table_logs` INSERT) já haviam sido fechados nas migrations
   `0045`/`0043` e não foram tocados nesta rodada.
 
+## Paridade SQL × TypeScript (rodada de fechamento)
+
+Único item pendente após o Status global anterior: confirmar por harness
+dedicado (não só inferência de leitura de código) que
+`resolve_effective_content_payload` (SQL, `0046`) e `resolveEffectiveOne`
+(`src/lib/campaignContent/resolveEffectiveContent.ts`) retornam resultados
+EQUIVALENTES para os mesmos cenários — sem criar um terceiro resolvedor,
+sem alterar regra de resolução alguma.
+
+**Precedência mapeada em ambos** (idêntica): linha publicada de
+`campaign_content_documents` (override OU homebrew — a constraint
+`campaign_content_documents_unique` garante no máximo 1 por
+campanha+tipo+slug) > `content_documents` oficial publicado > ausente.
+Draft nunca sai de `content_drafts`/`campaign_content_drafts`; arquivado
+(`status <> 'published'`) nunca é considerado por nenhum dos dois lados.
+
+**Harness**: fixtures `zz_e2e_resolver_parity_*` (2 campanhas, 1 usuário
+de teste dev, itens oficiais/homebrew/override cobrindo os 11 cenários
+mínimos exigidos) criadas via Supabase real (service role só para seed,
+nunca para o teste em si). Lado SQL chamado direto via
+`resolve_effective_content_payload`. Lado TypeScript chamado através de
+uma rota de API temporária que só invoca `resolveEffectiveOne` (sem
+lógica própria), acessada por uma sessão real autenticada (login real via
+`/login`, mesma RLS `can_read_campaign_content` de produção) — necessário
+porque `resolveEffectiveOne` depende de `getScopedTableClient`/
+`next/headers`, que só resolve sessão dentro de uma request Next real
+(fora disso cai em anon puro, comportamento documentado, não um bug).
+
+**12 comparações executadas, 12 iguais, nenhuma divergência**:
+oficial puro; homebrew da campanha; homebrew de outra campanha (não
+vaza, resolve `null`); homebrew de outra campanha lido pela própria
+campanha (retorna o homebrew dela); override substituindo oficial;
+campanha sem override (usa oficial); draft (nunca aparece); oficial
+arquivado (`null`); override ARQUIVADO com oficial ainda publicado
+(cai corretamente para o oficial, não para `null` nem para o override
+arquivado); slug inexistente (`null`); mesmo slug com overrides
+distintos em campanha A e campanha B (cada uma vê só o próprio, sem
+vazamento cruzado). Múltiplas versões: estruturalmente garantido por
+`content_documents_type_slug_unique` — só existe UM registro "vivo" por
+slug, versão testada (`v7`) confirmada idêntica nos dois lados.
+
+**Nenhuma correção de código foi necessária** — os dois resolvedores já
+eram equivalentes (esperado, já que a migration `0046` foi escrita como
+réplica fiel desde a origem). Nenhum commit `fix:` desta rodada.
+
+**Limpeza**: rota de API temporária removida; fixtures (2 campanhas, 5
+`content_documents`, 6 `campaign_content_documents`, 1 `content_draft`)
+e o usuário de teste dev removidos — contagem zero confirmada por query
+direta ao Supabase real. Nenhum script temporário permanece no
+repositório (mesmo padrão de descarte já usado nas rodadas anteriores,
+ex.: `canonical-creation-harness.mjs`). Nenhuma migration nova foi
+necessária (fixtures foram DML, não DDL) — `list_migrations` confirma
+local e remoto ainda sincronizados até `0046`.
+
 ## Status por bloco
 
 "Validação canônica da criação concluída e aprovada — wizard rejeita
@@ -253,6 +307,10 @@ cenário de arco real no catálogo desta amostra — não exercida com um
 arco real ao vivo nesta rodada específica, apesar de a regra estar
 implementada e coberta pelo mesmo teste que teria rodado se o catálogo
 tivesse um item com esse subtipo).
+
+## Status da paridade de resolvedores
+
+"Paridade entre os resolvedores SQL e TypeScript concluída e aprovada."
 
 ## Status global
 
