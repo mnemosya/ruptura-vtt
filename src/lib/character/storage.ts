@@ -92,6 +92,17 @@ import { CharacterStorageError } from "./storage.errors";
 import { validateCreationBudget } from "./createCharacterValidation";
 import type { Character, CharacterRecord, CharacterRulesPayload } from "./types";
 import { getCharacterRules } from "../content";
+import { parseDraftPayload, type DraftPayload } from "./draftValidation";
+
+const CHARACTER_CREATION_DRAFTS_TABLE = "character_creation_drafts";
+
+export type LoadDraftResult =
+  | { kind: "none" }
+  | { kind: "found"; payload: DraftPayload; creationRequestId: string; revision: number }
+  | { kind: "network_error"; message: string }
+  | { kind: "invalid"; message: string };
+
+export type SaveDraftResult = { revision: number } | { conflict: true };
 
 const TABLE = "characters";
 
@@ -359,6 +370,103 @@ export async function createCharacterFromWizard(
       throw new CharacterStorageError("Este perfil já possui um personagem ativo nesta mesa.", err.cause);
     }
     throw err;
+  }
+}
+
+/**
+ * Draft persistente do wizard de criação de personagem (checkpoint
+ * draft persistente, migration 0047) — só fluxo do jogador (perfil já
+ * reivindicado, `auth.uid()` conhecido). `select`/`delete` são
+ * protegidos por RLS (owner_id + posse real do perfil); a gravação
+ * passa inteira pela RPC `save_character_creation_draft` (ver
+ * `saveCharacterCreationDraft` abaixo) — nunca um insert/update direto
+ * nesta tabela.
+ *
+ * Devolve um resultado discriminado — "erro de rede" e "payload
+ * inválido" NUNCA colapsam no mesmo resultado que "nenhum draft": um
+ * carregamento que falhar não pode fazer o wizard começar vazio e
+ * depois o autosave sobrescrever um rascunho existente com um
+ * formulário em branco.
+ */
+export async function loadCharacterCreationDraft(campaignId: string, profileId: string): Promise<LoadDraftResult> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from(CHARACTER_CREATION_DRAFTS_TABLE)
+    .select("payload, creation_request_id, revision")
+    .eq("campaign_id", campaignId)
+    .eq("profile_id", profileId)
+    .maybeSingle();
+
+  if (error) {
+    return { kind: "network_error", message: error.message };
+  }
+  if (!data) {
+    return { kind: "none" };
+  }
+
+  const payload = parseDraftPayload(data.payload);
+  if (!payload) {
+    return { kind: "invalid", message: "O rascunho salvo está num formato que esta versão não reconhece." };
+  }
+
+  return { kind: "found", payload, creationRequestId: data.creation_request_id as string, revision: data.revision as number };
+}
+
+/**
+ * Grava o draft via RPC atômica `save_character_creation_draft`
+ * (migration 0047) — a RPC valida posse de campanha+perfil, rejeita se
+ * o perfil já tiver personagem não arquivado, e faz compare-and-swap
+ * por `expectedRevision` (protege contra duas abas/saves fora de ordem
+ * sobrescrevendo um ao outro). Um conflito de revisão é um resultado
+ * ESPERADO (outra aba/sessão já salvou algo mais novo), não uma falha —
+ * devolvido como `{ conflict: true }`, nunca lançado.
+ */
+export async function saveCharacterCreationDraft(
+  campaignId: string,
+  profileId: string,
+  payload: DraftPayload,
+  creationRequestId: string,
+  expectedRevision: number,
+): Promise<SaveDraftResult> {
+  if (!parseDraftPayload(payload)) {
+    throw new CharacterStorageError("Payload de rascunho em formato inválido — não gravado.");
+  }
+
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("save_character_creation_draft", {
+    p_campaign_id: campaignId,
+    p_profile_id: profileId,
+    p_creation_request_id: creationRequestId,
+    p_payload: payload,
+    p_expected_revision: expectedRevision,
+  });
+
+  if (error) {
+    if (error.message?.includes("revision_conflict")) {
+      return { conflict: true };
+    }
+    throw new CharacterStorageError(`Falha ao salvar rascunho de criação: ${error.message}`, error);
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  return { revision: row.revision as number };
+}
+
+/**
+ * Apaga o draft — usado pelo botão "Cancelar criação" e como reforço
+ * best-effort redundante pós-conclusão (a exclusão AUTORITATIVA
+ * acontece dentro da própria transação de `complete_character_creation`,
+ * migration 0048; apagar uma linha que já não existe não é erro).
+ */
+export async function deleteCharacterCreationDraft(campaignId: string, profileId: string): Promise<void> {
+  const client = await getScopedTableClient();
+  const { error } = await client
+    .from(CHARACTER_CREATION_DRAFTS_TABLE)
+    .delete()
+    .eq("campaign_id", campaignId)
+    .eq("profile_id", profileId);
+  if (error) {
+    throw new CharacterStorageError(`Falha ao apagar rascunho de criação: ${error.message}`, error);
   }
 }
 

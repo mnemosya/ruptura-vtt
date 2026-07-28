@@ -8,9 +8,15 @@
  * reimplementado), não mais placeholders de texto.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createCharacterFromWizard } from "../../../../../lib/character/storage";
+import {
+  createCharacterFromWizard,
+  loadCharacterCreationDraft,
+  saveCharacterCreationDraft,
+  deleteCharacterCreationDraft,
+  type LoadDraftResult,
+} from "../../../../../lib/character/storage";
 import type { Campaign, CampaignProfile } from "../../../../../lib/table";
 import {
   learnSpell,
@@ -24,6 +30,10 @@ import {
   type ItemContent,
 } from "../../../../../lib/character";
 import { PONTOS_VERTENTE_CRIACAO } from "../../../../../lib/character/createCharacterValidation";
+import type { DraftPayload, DraftItemEscolhido } from "../../../../../lib/character/draftValidation";
+
+/** ~800ms — janela do autosave por debounce (rede de segurança; troca de etapa e "Salvar e sair" salvam imediatamente). */
+const AUTOSAVE_DEBOUNCE_MS = 800;
 
 const btn: React.CSSProperties = { background: "#1d1e24", color: "inherit", border: "1px solid #333", borderRadius: 6, padding: "8px 14px", fontSize: 13, cursor: "pointer" };
 const btnAtivo: React.CSSProperties = { ...btn, background: "#2d4a2f", border: "1px solid #4caf50", fontWeight: 700 };
@@ -105,13 +115,35 @@ export default function CreateCharacterWizardClient({
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [criando, setCriando] = useState(false);
-  // Chave estável de idempotência (migration 0044) — gerada UMA vez por
-  // montagem do wizard (nunca por clique): um duplo clique ou retry de
-  // rede reenvia a MESMA chave, então `complete_character_creation`
-  // devolve o personagem já criado em vez de duplicar. Recarregar a
-  // página gera uma chave nova — não é (nem pretende ser) um draft
-  // persistente, só o suficiente para a conclusão ser idempotente.
-  const [creationRequestId] = useState(() => crypto.randomUUID());
+  // Chave estável de idempotência (migration 0044) — gerada por
+  // montagem do wizard OU recuperada de um draft persistente existente
+  // (checkpoint draft persistente): se um draft for restaurado, reusa a
+  // MESMA chave gravada nele, para que um retry de finalização após
+  // fechar/reabrir a aba continue idempotente (nunca duplica).
+  const [creationRequestId, setCreationRequestId] = useState(() => crypto.randomUUID());
+
+  // ---------------------------------------------------------------
+  // Draft persistente (checkpoint draft persistente, migration 0047/
+  // 0048) — só para o fluxo do JOGADOR (`travarSelecaoDePerfil`, perfil
+  // conhecido desde o mount). Fluxo do narrador não persiste.
+  // ---------------------------------------------------------------
+  const draftProfileId = travarSelecaoDePerfil ? profileIdSelecionado : "";
+  const [itensEscolhidos, setItensEscolhidos] = useState<DraftItemEscolhido[]>([]);
+  const [draftHydrated, setDraftHydrated] = useState(false);
+  const [loadState, setLoadState] = useState<"loading" | "error" | "confirm_discard" | "ready">(
+    draftProfileId ? "loading" : "ready",
+  );
+  const [loadMessage, setLoadMessage] = useState<string | null>(null);
+  const [itensRemovidosAoRestaurar, setItensRemovidosAoRestaurar] = useState(0);
+  const [salvandoESaindo, setSalvandoESaindo] = useState(false);
+
+  const revisionRef = useRef(0);
+  const savingRef = useRef(false);
+  const savingPromiseRef = useRef<Promise<void> | null>(null);
+  const pendingRef = useRef(false);
+  const finalizingRef = useRef(false);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestSnapshotRef = useRef<DraftPayload | null>(null);
 
   const pontosAtributoGastos = regras.atributos.reduce((soma, a) => soma + ((atributos[a.id] ?? atributoValorInicial) - atributoValorInicial), 0);
   const pontosAtributoRestantes = atributoPontosAdicionais - pontosAtributoGastos;
@@ -168,6 +200,252 @@ export default function CreateCharacterWizardClient({
     vertentesValidas &&
     identidade.nome.trim().length > 0 &&
     (!travarSelecaoDePerfil || Boolean(profileIdSelecionado));
+
+  // ---------------------------------------------------------------
+  // Draft persistente — montagem do payload mínimo (nunca carteira/
+  // inventário derivados, ver draftValidation.ts) e ciclo de save.
+  // ---------------------------------------------------------------
+  function buildDraftPayload(stepOverride?: number): DraftPayload {
+    return {
+      schema_version: 1,
+      step: stepOverride ?? step,
+      identidade,
+      atributos,
+      pericias,
+      niveisVertente,
+      magiasEscolhidas: [...magiasEscolhidas],
+      talentoNivelIdEscolhido,
+      itensEscolhidos,
+    };
+  }
+
+  // Mantém `latestSnapshotRef` sempre atualizado com o estado do
+  // render mais recente — é o que permite ao autosave por debounce (e
+  // à cadeia de saves encadeados dentro de `triggerSave`) nunca enviar
+  // um payload de uma etapa/estado já superado.
+  useEffect(() => {
+    latestSnapshotRef.current = buildDraftPayload();
+  });
+
+  /** Reconstrói `carteira`/`inventario` a partir de escolhas mínimas — nunca lidos direto do draft (podem estar desatualizados: item arquivado/preço mudado). */
+  async function replayItensEscolhidos(itens: DraftItemEscolhido[]): Promise<void> {
+    const nowIso = new Date().toISOString();
+    let charAcc: Character = {
+      nome: "",
+      atributos: { corpo: 1, mente: 1, animo: 1 },
+      pericias: {},
+      metadados: { schema_version: 1, criado_em: nowIso, atualizado_em: nowIso },
+      estado_jogo: { pa_gastos: 0, reacoes_usadas: 0 },
+      carteira: { aretz_informal: aretzIniciais, cdi: 0, cdi_craqueada: 0 },
+      inventario: [],
+    };
+    let removidos = 0;
+    const validos: DraftItemEscolhido[] = [];
+    for (const escolha of itens) {
+      const item = itensLoja.find((i) => i.slug === escolha.itemSlug);
+      if (!item) {
+        removidos += 1;
+        continue;
+      }
+      const resultado = purchaseItem({ character: charAcc, item, quantidade: escolha.quantidade, walletId: "aretz_informal", nowIso });
+      if (!resultado.ok) {
+        removidos += 1;
+        continue;
+      }
+      charAcc = resultado.character;
+      validos.push(escolha);
+    }
+    setCarteira(charAcc.carteira ?? { aretz_informal: aretzIniciais, cdi: 0, cdi_craqueada: 0 });
+    setInventario(charAcc.inventario ?? []);
+    setItensEscolhidos(validos);
+    setItensRemovidosAoRestaurar(removidos);
+  }
+
+  async function applyLoadResult(result: LoadDraftResult): Promise<void> {
+    if (result.kind === "none") {
+      revisionRef.current = 0;
+      setLoadState("ready");
+      setDraftHydrated(true);
+      return;
+    }
+    if (result.kind === "network_error") {
+      setLoadMessage(result.message);
+      setLoadState("error");
+      return;
+    }
+    if (result.kind === "invalid") {
+      setLoadMessage(result.message);
+      setLoadState("confirm_discard");
+      return;
+    }
+    // "found"
+    const { payload } = result;
+    setCreationRequestId(result.creationRequestId);
+    revisionRef.current = result.revision;
+    setStep(payload.step);
+    setIdentidade(payload.identidade);
+    setAtributos(Object.fromEntries(regras.atributos.map((a) => [a.id, payload.atributos[a.id] ?? atributoValorInicial])));
+    setPericias(Object.fromEntries(regras.pericias.map((p) => [p.id, payload.pericias[p.id] ?? 0])));
+    setNiveisVertente(
+      Object.fromEntries(Object.entries(payload.niveisVertente).filter(([slug]) => vertentesDisponiveis.some((v) => v.slug === slug))),
+    );
+    setMagiasEscolhidas(new Set(payload.magiasEscolhidas));
+    setTalentoNivelIdEscolhido(payload.talentoNivelIdEscolhido);
+    await replayItensEscolhidos(payload.itensEscolhidos);
+    setLoadState("ready");
+    setDraftHydrated(true);
+  }
+
+  /** Descarta o draft inválido explicitamente confirmado pelo jogador e começa do zero. */
+  async function handleDescartarDraftInvalido() {
+    if (draftProfileId) {
+      try {
+        await deleteCharacterCreationDraft(campaign.id, draftProfileId);
+      } catch (err) {
+        console.error("Falha ao apagar rascunho inválido:", err);
+      }
+    }
+    revisionRef.current = 0;
+    setLoadState("ready");
+    setDraftHydrated(true);
+  }
+
+  async function handleTentarCarregarNovamente() {
+    if (!draftProfileId) return;
+    setLoadState("loading");
+    const result = await loadCharacterCreationDraft(campaign.id, draftProfileId);
+    await applyLoadResult(result);
+  }
+
+  // Carregamento inicial — uma vez, só no fluxo do jogador com perfil
+  // conhecido. Narrador (sem perfil travado) nunca tenta carregar.
+  useEffect(() => {
+    if (!draftProfileId) {
+      setLoadState("ready");
+      setDraftHydrated(true);
+      return;
+    }
+    let cancelado = false;
+    (async () => {
+      const result = await loadCharacterCreationDraft(campaign.id, draftProfileId);
+      if (!cancelado) await applyLoadResult(result);
+    })();
+    return () => {
+      cancelado = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * Única função que grava o draft — autosave por debounce, troca de
+   * etapa e "Salvar e sair" chamam esta mesma função. Fila
+   * single-flight: nunca dispara duas gravações concorrentes; uma
+   * mudança que chegue enquanto uma gravação está em voo é marcada em
+   * `pendingRef` e reenviada (com o estado MAIS recente) assim que a
+   * gravação em voo terminar. Devolve a MESMA promise em voo para quem
+   * chamar durante uma gravação já em andamento — permite que "Salvar e
+   * sair" espere a cadeia inteira (não só a próxima gravação) antes de
+   * navegar.
+   */
+  function triggerSave(overridePayload?: DraftPayload): Promise<void> {
+    if (finalizingRef.current || !draftProfileId || loadState !== "ready") return Promise.resolve();
+    if (savingRef.current) {
+      pendingRef.current = true;
+      return savingPromiseRef.current ?? Promise.resolve();
+    }
+    savingRef.current = true;
+    const promise = (async () => {
+      try {
+        const payloadToSave = overridePayload ?? latestSnapshotRef.current;
+        if (payloadToSave) {
+          const result = await saveCharacterCreationDraft(campaign.id, draftProfileId, payloadToSave, creationRequestId, revisionRef.current);
+          if ("conflict" in result) {
+            await handleConflitoDeRevisao();
+          } else {
+            revisionRef.current = result.revision;
+          }
+        }
+      } catch (err) {
+        // Autosave nunca deve travar o wizard — falha de rede aqui é
+        // best-effort; "Salvar e sair" mostra erro explícito ao jogador
+        // se a gravação final falhar (ver handleSalvarESair).
+        console.error("Falha ao salvar rascunho de criação:", err);
+      } finally {
+        savingRef.current = false;
+      }
+      if (pendingRef.current) {
+        pendingRef.current = false;
+        await triggerSave();
+      }
+    })();
+    savingPromiseRef.current = promise;
+    return promise;
+  }
+
+  /** Outra aba/sessão já salvou uma revisão mais nova — resincroniza a partir do servidor (aceita perder a edição local não salva desta aba). */
+  async function handleConflitoDeRevisao() {
+    setErrorMessage("Este rascunho foi atualizado em outra aba ou sessão — recarregando o estado salvo mais recente.");
+    if (!draftProfileId) return;
+    const result = await loadCharacterCreationDraft(campaign.id, draftProfileId);
+    await applyLoadResult(result);
+  }
+
+  // Autosave por debounce — rede de segurança para o caso comum.
+  useEffect(() => {
+    if (!draftHydrated || loadState !== "ready") return;
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      void triggerSave();
+    }, AUTOSAVE_DEBOUNCE_MS);
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftHydrated, loadState, identidade, atributos, pericias, niveisVertente, magiasEscolhidas, talentoNivelIdEscolhido, itensEscolhidos]);
+
+  /** Troca de etapa salva IMEDIATAMENTE (sem esperar o debounce) — cobre o caso de o jogador fechar a aba logo depois de mudar de etapa. */
+  function irParaEtapa(novaEtapa: number) {
+    setStep(novaEtapa);
+    void triggerSave(buildDraftPayload(novaEtapa));
+  }
+
+  async function handleSalvarESair() {
+    // `/mesas/[campaignId]` é a mesa do NARRADOR (guard owner-only, mesmo
+    // achado documentado em `finalizar()`) — um jogador sem personagem
+    // ainda não tem uma "própria ficha" para onde ir, então volta para o
+    // dashboard geral (`/mesas`, acessível a qualquer autenticado),
+    // nunca para a mesa do narrador.
+    const destino = draftProfileId ? "/mesas" : `/mesas/${campaign.id}`;
+    if (!draftProfileId) {
+      router.push(destino);
+      return;
+    }
+    setSalvandoESaindo(true);
+    setErrorMessage(null);
+    try {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      await triggerSave();
+      router.push(destino);
+    } catch {
+      setErrorMessage("Não foi possível salvar o rascunho agora — tente novamente antes de sair.");
+    } finally {
+      setSalvandoESaindo(false);
+    }
+  }
+
+  async function handleCancelarCriacao() {
+    if (!window.confirm("Cancelar a criação e apagar o rascunho salvo? Esta ação não pode ser desfeita.")) return;
+    finalizingRef.current = true;
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    try {
+      if (draftProfileId) await deleteCharacterCreationDraft(campaign.id, draftProfileId);
+    } catch (err) {
+      console.error("Falha ao apagar rascunho ao cancelar:", err);
+    }
+    // Mesmo raciocínio de `handleSalvarESair`: `/mesas/[campaignId]` é
+    // owner-only — jogador sem personagem vai para o dashboard geral.
+    router.push(draftProfileId ? "/mesas" : `/mesas/${campaign.id}`);
+  }
 
   function ajustarAtributo(id: string, delta: number) {
     setAtributos((prev) => {
@@ -232,6 +510,8 @@ export default function CreateCharacterWizardClient({
     }
     setCarteira(resultado.character.carteira ?? carteira);
     setInventario(resultado.character.inventario ?? []);
+    // Escolha mínima para o draft persistente (nunca preço/nome derivado, ver draftValidation.ts).
+    setItensEscolhidos((prev) => [...prev, { itemSlug: item.slug, quantidade: 1 }]);
   }
 
   function handleRemoverItem(instanceId: string) {
@@ -242,6 +522,20 @@ export default function CreateCharacterWizardClient({
     if (reembolso > 0) {
       setCarteira((prev) => ({ ...prev, aretz_informal: prev.aretz_informal + reembolso }));
     }
+    // Best-effort: remove a escolha mais recente do mesmo item do
+    // registro do draft — não há mapeamento 1:1 perfeito entre
+    // instância removida e clique de compra original quando o motor
+    // empilha/desempilha (munição, aljava); a validação canônica em
+    // `complete_character_creation` continua sendo a autoridade real,
+    // esta escolha só afeta a conveniência da restauração do rascunho.
+    if (instancia) {
+      setItensEscolhidos((prev) => {
+        const idxInverso = [...prev].reverse().findIndex((e) => e.itemSlug === instancia.itemSlug);
+        if (idxInverso === -1) return prev;
+        const idx = prev.length - 1 - idxInverso;
+        return [...prev.slice(0, idx), ...prev.slice(idx + 1)];
+      });
+    }
   }
 
   async function finalizar() {
@@ -251,6 +545,20 @@ export default function CreateCharacterWizardClient({
     // é assíncrono), então isso sozinho não bastaria sem o backend
     // idempotente.
     if (!podeFinalizar || criando) return;
+    // Fecha a corrida "autosave atrasado recria o draft depois da
+    // conclusão" do lado do client (a RPC de save também rejeita se já
+    // existir personagem — defesa autoritativa, ver migration 0047):
+    // trava novos autosaves, cancela o debounce pendente e espera
+    // qualquer gravação já em voo terminar antes de prosseguir.
+    finalizingRef.current = true;
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    if (savingPromiseRef.current) {
+      try {
+        await savingPromiseRef.current;
+      } catch {
+        // ignorado — só precisamos que a gravação em voo termine antes de continuar
+      }
+    }
     setCriando(true);
     setErrorMessage(null);
     try {
@@ -302,6 +610,15 @@ export default function CreateCharacterWizardClient({
         profileId: profileIdSelecionado || null,
         creationRequestId,
       });
+      // Reforço best-effort — a exclusão AUTORITATIVA já aconteceu
+      // dentro da mesma transação de `complete_character_creation`
+      // (migration 0048); se esta chamada falhar (aba fechando, rede),
+      // não há problema — não bloqueia a navegação.
+      if (draftProfileId) {
+        deleteCharacterCreationDraft(campaign.id, draftProfileId).catch((err) => {
+          console.error("Falha no reforço best-effort de limpeza do rascunho:", err);
+        });
+      }
       // Achado da rodada de consolidação (browser real): `/mesas/[campaignId]`
       // é a mesa do NARRADOR (guard owner-only) — um jogador que acabou de
       // criar o próprio personagem caía direto em "Acesso negado". Jogador
@@ -315,7 +632,49 @@ export default function CreateCharacterWizardClient({
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao criar personagem.");
       setCriando(false);
+      // Criação falhou — libera o autosave de novo (o jogador pode
+      // corrigir e tentar de novo sem perder a persistência do draft).
+      finalizingRef.current = false;
     }
+  }
+
+  if (loadState === "loading") {
+    return (
+      <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
+        <a href={`/mesas/${campaign.id}`} style={{ color: "#5ec8ff", fontSize: 12 }}>← {campaign.name}</a>
+        <h1 style={{ fontSize: 22, margin: "8px 0 16px" }}>Novo personagem</h1>
+        <p style={{ fontSize: 13, opacity: 0.7 }}>Restaurando rascunho…</p>
+      </main>
+    );
+  }
+
+  if (loadState === "error") {
+    return (
+      <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
+        <a href={`/mesas/${campaign.id}`} style={{ color: "#5ec8ff", fontSize: 12 }}>← {campaign.name}</a>
+        <h1 style={{ fontSize: 22, margin: "8px 0 16px" }}>Novo personagem</h1>
+        <p style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 12 }}>
+          Não foi possível verificar se você tem um rascunho salvo: {loadMessage}
+        </p>
+        <button onClick={handleTentarCarregarNovamente} style={btn}>Tentar novamente</button>
+      </main>
+    );
+  }
+
+  if (loadState === "confirm_discard") {
+    return (
+      <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
+        <a href={`/mesas/${campaign.id}`} style={{ color: "#5ec8ff", fontSize: 12 }}>← {campaign.name}</a>
+        <h1 style={{ fontSize: 22, margin: "8px 0 16px" }}>Novo personagem</h1>
+        <p style={{ color: "#f5a623", fontSize: 13, marginBottom: 12 }}>
+          Não foi possível restaurar seu rascunho anterior (formato incompatível). Deseja descartá-lo e começar do zero?
+        </p>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={handleDescartarDraftInvalido} style={btn}>Descartar e começar do zero</button>
+          <button onClick={handleTentarCarregarNovamente} style={btn}>Tentar carregar de novo</button>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -324,10 +683,24 @@ export default function CreateCharacterWizardClient({
       <h1 style={{ fontSize: 22, margin: "8px 0 16px" }}>Novo personagem</h1>
 
       {errorMessage && <p style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 16 }}>Erro: {errorMessage}</p>}
+      {itensRemovidosAoRestaurar > 0 && (
+        <p style={{ color: "#f5a623", fontSize: 12, marginBottom: 16 }}>
+          {itensRemovidosAoRestaurar} item(ns) do rascunho não estão mais disponíveis e foram removidos do inventário restaurado.
+        </p>
+      )}
+
+      {draftProfileId && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+          <button onClick={handleSalvarESair} disabled={salvandoESaindo} style={{ ...btn, opacity: salvandoESaindo ? 0.6 : 1 }}>
+            {salvandoESaindo ? "Salvando…" : "Salvar e sair"}
+          </button>
+          <button onClick={handleCancelarCriacao} style={btn}>Cancelar criação</button>
+        </div>
+      )}
 
       <nav style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 24 }}>
         {ETAPAS.map((e) => (
-          <button key={e.id} onClick={() => setStep(e.id)} style={step === e.id ? btnAtivo : btn}>
+          <button key={e.id} onClick={() => irParaEtapa(e.id)} style={step === e.id ? btnAtivo : btn}>
             {e.id}. {e.nome}
           </button>
         ))}
