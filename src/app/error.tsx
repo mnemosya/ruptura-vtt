@@ -4,16 +4,19 @@
  * Boundary de erro raiz do App Router (checkpoint pós-v0.94, fase 12/13) —
  * antes desta sessão não existia NENHUM error.tsx/loading.tsx em
  * `src/app`, então uma exceção não tratada numa Server Component
- * derrubava a página inteira sem nenhuma UI de recuperação. Loga só a
- * mensagem (nunca stack/dados sensíveis) via console.error — sem
- * serviço externo (fora de escopo, PRD "observabilidade mínima").
+ * derrubava a página inteira sem nenhuma UI de recuperação. Loga via
+ * `logError` (checkpoint fechamento de produção) — nunca stack/dados
+ * sensíveis, sem serviço externo (fora de escopo, PRD "observabilidade
+ * mínima"). Boundaries por rota (`_boundaries/SectionError.tsx`) usam
+ * o mesmo logger; este continua sendo o fallback de último recurso.
  */
 
 import { useEffect } from "react";
+import { logError } from "../lib/logger";
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
-    console.error("[ruptura-vtt] Erro não tratado:", error.message, error.digest ? `(digest: ${error.digest})` : "");
+    logError("root", error);
   }, [error]);
 
   return (

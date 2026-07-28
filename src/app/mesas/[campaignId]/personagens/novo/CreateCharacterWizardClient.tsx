@@ -31,6 +31,7 @@ import {
 } from "../../../../../lib/character";
 import { PONTOS_VERTENTE_CRIACAO } from "../../../../../lib/character/createCharacterValidation";
 import type { DraftPayload, DraftItemEscolhido } from "../../../../../lib/character/draftValidation";
+import { logError } from "../../../../../lib/logger";
 
 /** ~800ms — janela do autosave por debounce (rede de segurança; troca de etapa e "Salvar e sair" salvam imediatamente). */
 const AUTOSAVE_DEBOUNCE_MS = 800;
@@ -302,7 +303,7 @@ export default function CreateCharacterWizardClient({
       try {
         await deleteCharacterCreationDraft(campaign.id, draftProfileId);
       } catch (err) {
-        console.error("Falha ao apagar rascunho inválido:", err);
+        logError("wizard.draft.discardInvalid", err);
       }
     }
     revisionRef.current = 0;
@@ -369,7 +370,7 @@ export default function CreateCharacterWizardClient({
         // Autosave nunca deve travar o wizard — falha de rede aqui é
         // best-effort; "Salvar e sair" mostra erro explícito ao jogador
         // se a gravação final falhar (ver handleSalvarESair).
-        console.error("Falha ao salvar rascunho de criação:", err);
+        logError("wizard.draft.save", err);
       } finally {
         savingRef.current = false;
       }
@@ -440,7 +441,7 @@ export default function CreateCharacterWizardClient({
     try {
       if (draftProfileId) await deleteCharacterCreationDraft(campaign.id, draftProfileId);
     } catch (err) {
-      console.error("Falha ao apagar rascunho ao cancelar:", err);
+      logError("wizard.draft.cancel", err);
     }
     // Mesmo raciocínio de `handleSalvarESair`: `/mesas/[campaignId]` é
     // owner-only — jogador sem personagem vai para o dashboard geral.
@@ -616,7 +617,7 @@ export default function CreateCharacterWizardClient({
       // não há problema — não bloqueia a navegação.
       if (draftProfileId) {
         deleteCharacterCreationDraft(campaign.id, draftProfileId).catch((err) => {
-          console.error("Falha no reforço best-effort de limpeza do rascunho:", err);
+          logError("wizard.draft.cleanupBestEffort", err);
         });
       }
       // Achado da rodada de consolidação (browser real): `/mesas/[campaignId]`
