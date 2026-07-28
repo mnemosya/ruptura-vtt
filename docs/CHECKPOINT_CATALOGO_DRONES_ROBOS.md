@@ -237,13 +237,80 @@ talentos **Sinal Limpo** (Droneiro N1) e **Chave de Arranque**
   confirmado visualmente; o fluxo completo de `onRegisterRobo` já
   segue o mesmo caminho testado do drone, sem lógica nova além do
   `modeloSlug`/`paMaximo` vindos do catálogo).
-- Pareamento de Enxame por `modeloSlug` com 2+ drones reais (exige
-  registrar múltiplos drones do mesmo modelo) e resolução de
-  override/homebrew de campanha (exige fixture de campanha com
-  narrador e draft — infraestrutura mais pesada) — verificados por
-  leitura de código (comparação `d.modeloSlug ?? d.modelo` nos dois
-  lados; resolvedor efetivo genérico já testado para os outros 4
-  tipos), não por interação real em navegador nesta rodada.
+
+## 9. Três confirmações finais de fechamento
+
+Fechamento da fase — três pontos que ainda dependiam de verificação
+real (não só leitura de código), sem repetir Sinal Limpo/registro de
+drone/seed/ficha completa (já cobertos e aprovados em §8).
+
+### 9.1 `pairDronesEnxame` — harness unitário real (sem Supabase)
+
+`scripts/test-companion-models.ts` (novo, `npx tsx
+scripts/test-companion-models.ts`) — 4 casos, todos passando:
+
+1. Mesmo `modeloSlug` (2 drones "Drone Mosca") permite parear —
+   `grupoId` idêntico nos dois.
+2. `modeloSlug` diferentes (`drone_mosca` vs. `drone_reparador`)
+   impedem o pareamento **mesmo com `.modelo` textual igual**
+   ("Drone Mosca (renomeado igual)") — `pairDronesEnxame` devolve o
+   `character` inalterado (mesma referência), nenhum dos dois fica
+   pareado.
+3. Editar manualmente o texto de `.modelo` de uma instância já
+   registrada (simulando snapshot desatualizado) não interfere na
+   comparação — o pareamento continua decidido por `modeloSlug`.
+4. Instâncias sem `modeloSlug` (registradas só com `.modelo`, caminho
+   legado) usam o fallback textual: mesmo `.modelo` pareia, `.modelo`
+   diferente não pareia.
+
+### 9.2 Resolvedor efetivo com 2 campanhas reais — harness focado contra o Supabase real
+
+`scripts/dev/validate-companion-model-resolver.mjs` (novo, `npx tsx
+scripts/dev/validate-companion-model-resolver.mjs`) — mesmo padrão de
+`validate-campaign-session-concurrency.mjs`: 2 campanhas reais + 1
+narrador real (Admin API), JWT real via `signInWithPassword`, RLS real
+(`can_read_campaign_content`). 5 verificações, todas aprovadas:
+
+- Override de `drone_mosca` publicado só na Campanha A substitui o
+  oficial **apenas nela** (nome do override, `origem:
+  "modificado_pela_mesa"`).
+- Campanha B continua vendo `drone_mosca` **oficial**, inalterada pelo
+  override de A.
+- Homebrew publicado só na Campanha A aparece na lista efetiva de A.
+- O mesmo homebrew **não aparece** na lista efetiva de B.
+- As 10 entradas oficiais continuam presentes nas duas campanhas (só
+  `drone_mosca` muda de conteúdo em A: 11 itens em A — 10 oficiais + 1
+  homebrew —, 10 em B).
+
+**Nota de fidelidade metodológica**: o wrapper TS
+`resolveEffectiveList`/`listCampaignContentDocumentsPublic` lê a sessão
+via cookies (`next/headers`), indisponíveis fora de uma request Next
+real — por isso o script não chama esses wrappers diretamente (sempre
+cairiam no modo anônimo fora do Next), e sim replica FIELMENTE o mesmo
+algoritmo (oficial → override por slug → + homebrews, mesmos nomes de
+campo) usando um client autenticado com o JWT real, exercitando a MESMA
+RLS (`can_read_campaign_content`) que o app usa em produção. Isso testa
+a resolução e a RLS de verdade; não é uma chamada literal à função
+exportada — limitação estrutural pré-existente do design de
+`getScopedTableClient` (cookie-based), não introduzida nesta fase.
+Fixtures (2 campanhas, 1 usuário, 2 `campaign_content_documents`)
+removidas ao final do script — confirmado por contagem
+(`campanhas remanescentes: 0`) e reconfirmado depois por SQL direto no
+projeto (`select count(*) from campaigns where name like 'VALIDACAO
+COMPANION MODEL%'` → `0`).
+
+### 9.3 Runas informativas na Biblioteca — sessão real de navegador
+
+`/dev/character-sheet` → aba Biblioteca → "Runas (45)" (40 originais +
+5 novas). As 5 runas de drone/robô aparecem na lista com raridade/preço
+corretos (`Runa de Alcance` Incomum/700, `Runa de Autorreparo` (versão
+drone/robô) Incomum/500, `Runa de Camuflagem` Incomum/700, `Runa de
+Energia` Raro/1500, `Runa de Interferência` Incomum/1000). Aberta
+"Runa de Interferência" via busca + "▼ detalhes": mostra
+descrição curta/longa, tags (`runa, drone_robo, loja`) e "Payload bruto
+(debug)" — **nenhum controle de instalação/ativação/automação em lugar
+nenhum**, confirmando que são puramente informativas nesta fase (mesmo
+tratamento de leitura das demais 40 runas do catálogo).
 
 ## Commits desta fase
 
@@ -255,14 +322,22 @@ talentos **Sinal Limpo** (Droneiro N1) e **Chave de Arranque**
   widgets.
 - Documental: versiona `docs/fontes/DRONES E ROBÔS....md` (fonte dos
   10 modelos + 5 runas) e este checkpoint.
+- Fechamento: harnesses de teste (`test-companion-models.ts`,
+  `validate-companion-model-resolver.mjs`) + atualização deste
+  checkpoint com as 3 confirmações finais (§9).
 
 ## Status
 
-Catálogo oficial de drones e robôs publicado e consumido pela ficha —
-execução bespoke dos talentos inalterada, Sinal Limpo redesenhado para
-viver no operador (nunca no drone), `modeloSlug` como identidade
-estável para pareamento. Limitações explícitas: sem formulário
-admin dedicado para este tipo; enforcement mecânico do gasto de Sinal
-Limpo continua assistido/manual (depende de um futuro executor de
-ações de controle de drone); Enxame/override não exercitados em
-navegador nesta rodada (só por leitura de código).
+**Catálogo oficial de drones e robôs consumido pela ficha concluído e
+aprovado.**
+
+Execução bespoke dos talentos inalterada; Sinal Limpo redesenhado para
+viver no operador (nunca no drone) — enforcement do gasto continua
+assistido/manual nesta fase, sem executor de ações de controle de
+drone; `modeloSlug` confirmado como identidade estável de pareamento
+(harness unitário, §9.1); override/homebrew confirmados isolados por
+campanha contra o Supabase real (harness focado, §9.2); as 5 runas
+confirmadas puramente informativas em sessão real de navegador (§9.3).
+Única limitação restante: sem formulário admin dedicado para este
+`content_type` (fase futura, fora de escopo desta fase por decisão
+explícita).
