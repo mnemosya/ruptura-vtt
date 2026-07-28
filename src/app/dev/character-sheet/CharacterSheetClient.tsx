@@ -137,7 +137,7 @@ import {
   deactivateDrone,
   getSinalLimpoAvailability,
   applySinalLimpoBonus,
-  expireDroneRoundBonuses,
+  expireSinalLimpoBonus,
   hasScript,
   setDroneGatilho,
   markDroneGatilhoOcorrido,
@@ -283,6 +283,7 @@ import type {
   InventoryItemInstance,
   AttackWeaponCandidate,
   TemporaryEffect,
+  CompanionModelSummary,
 } from "../../../lib/character";
 import type { TechnicalContentItem } from "../../../lib/content";
 import { rollPericia, type PreparedRoll } from "../../../lib/dice";
@@ -384,6 +385,9 @@ interface Props {
   runesError: string | null;
   escalposIniciais: TechnicalContentItem[];
   escalposError: string | null;
+  /** Catálogo de modelos de drone/robô (checkpoint "Catálogo oficial de drones e robôs consumido pela ficha") — preenche registerDrone/registerRobo. */
+  companionModelsIniciais: CompanionModelSummary[];
+  companionModelsError: string | null;
   /**
    * Mesa/perfil pré-selecionados via query string (`?campaignId=...&
    * profileId=...`) — vindos de `/dev/join/[campaignId]` (checkpoint
@@ -453,6 +457,8 @@ export default function CharacterSheetClient({
   runesError,
   escalposIniciais,
   escalposError,
+  companionModelsIniciais,
+  companionModelsError,
   initialCampaignId,
   initialProfileId,
   mode,
@@ -2085,10 +2091,10 @@ export default function CharacterSheetClient({
     const talentReset = resetTalentUses(paReduction.character, ["rodada"]);
     // Efeitos temporários com duração por rodadas (checkpoint pós-v0.71) — reduz 1 rodada e expira os que zeram.
     const tick = tickRoundTemporaryEffects(talentReset.character, nowIso);
-    // Droneiro › Sinal Limpo (checkpoint talentos, Fase 14) — o +1 PA concedido a um drone vale só a rodada em que foi dado.
-    const droneBonusExpiry = expireDroneRoundBonuses(tick.character);
+    // Droneiro › Sinal Limpo (checkpoint "Catálogo oficial de drones e robôs") — o +1 PA concedido ao operador vale só a rodada em que foi dado.
+    const sinalLimpoExpiry = expireSinalLimpoBonus(tick.character);
     // Mecatrônico › Marcha Dupla (checkpoint talentos, Fase 15) — a ação dupla vale só a rodada em que foi ativada.
-    const marchaDuplaExpiry = expireMarchaDuplaRoundState(droneBonusExpiry.character);
+    const marchaDuplaExpiry = expireMarchaDuplaRoundState(sinalLimpoExpiry.character);
     nextCharacter = { ...marchaDuplaExpiry.character, current_round: round + 1 };
 
     characterRef.current = nextCharacter;
@@ -2097,7 +2103,7 @@ export default function CharacterSheetClient({
     const tempLogs: string[] = [
       ...tick.ticked.map((e) => `Efeito temporário "${e.name}": ${e.remainingRounds} rodada(s) restante(s).`),
       ...tick.expired.map((e) => `Efeito temporário "${e.name}" expirou (duração por rodadas).`),
-      ...droneBonusExpiry.expired.map((d) => `Sinal Limpo: +1 PA de ${d.nome} expirou no fim da rodada.`),
+      ...(sinalLimpoExpiry.expiredDroneNome ? [`Sinal Limpo: +1 PA de ${sinalLimpoExpiry.expiredDroneNome} expirou no fim da rodada.`] : []),
       ...marchaDuplaExpiry.expired.map((r) => `Marcha Dupla: ${r.nome} volta ao normal nesta rodada.`),
     ];
     const allLogs = [...collapseResult.logs, ...resolved.logs, ...paReduction.logs, ...tempLogs];
@@ -3300,7 +3306,7 @@ export default function CharacterSheetClient({
   }
 
   /** Droneiro › registra um drone real sob comando (sem catálogo estruturado de drones no conteúdo). */
-  function handleRegisterDrone(params: { nome: string; modelo: string; paMaximo: number; acoes: string }) {
+  function handleRegisterDrone(params: { nome: string; modeloSlug?: string; modelo: string; acoes: string }) {
     const current = characterRef.current;
     const nowIso = new Date().toISOString();
     const next = registerDrone(current, params, nowIso);
@@ -3403,7 +3409,7 @@ export default function CharacterSheetClient({
   }
 
   /** Mecatrônico › registra um robô real sob programação (sem catálogo estruturado de robôs no conteúdo). */
-  function handleRegisterRobo(params: { nome: string; modelo: string; paMaximo: number; acaoAutonoma: string }) {
+  function handleRegisterRobo(params: { nome: string; modeloSlug?: string; modelo: string; paMaximo: number; acaoAutonoma: string }) {
     const current = characterRef.current;
     const next = registerRobo(current, params);
     characterRef.current = next;
@@ -5847,8 +5853,11 @@ export default function CharacterSheetClient({
           saidaDosFundosStatus={getSaidaDosFundosAvailability(character, talentsIniciais)}
           onRegisterSaidaDosFundos={handleRegisterSaidaDosFundos}
           onEndSaidaDosFundos={handleEndSaidaDosFundos}
+          companionModels={companionModelsIniciais}
+          companionModelsError={companionModelsError}
           drones={character.drones}
           sinalLimpoStatus={getSinalLimpoAvailability(character, talentsIniciais)}
+          sinalLimpoBonusAtivo={character.sinal_limpo_bonus_ativo ?? null}
           onRegisterDrone={handleRegisterDrone}
           onRemoveDrone={handleRemoveDrone}
           onActivateDrone={handleActivateDrone}

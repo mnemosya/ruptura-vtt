@@ -18,7 +18,9 @@ import type {
   UsableTalentEffect,
   TalentContextualOpportunity,
   Character,
+  CompanionModelSummary,
 } from "../../../../lib/character";
+import { formatCompanionModelAcoesText } from "../../../../lib/character";
 
 /**
  * Aba "Talentos" — checkpoint CP14 (engine de operação canônica). Todo
@@ -136,8 +138,11 @@ export function TalentsTab({
   saidaDosFundosStatus,
   onRegisterSaidaDosFundos,
   onEndSaidaDosFundos,
+  companionModels = [],
+  companionModelsError,
   drones = [],
   sinalLimpoStatus,
+  sinalLimpoBonusAtivo,
   onRegisterDrone,
   onRemoveDrone,
   onActivateDrone,
@@ -263,10 +268,15 @@ export function TalentsTab({
   saidaDosFundosStatus?: { acquired: boolean; usedToday: boolean };
   onRegisterSaidaDosFundos?: (params: { situacaoDeRisco: string; rotaOuMetodo: string; consequenciaMenor: string }) => void;
   onEndSaidaDosFundos?: () => void;
-  /** Droneiro › modelo mínimo de drone + Sinal Limpo/Script/Enxame (checkpoint talentos, Fase 14). */
+  /** Catálogo oficial de drones/robôs (checkpoint "Catálogo oficial de drones e robôs consumido pela ficha") — preenche o registro abaixo. */
+  companionModels?: CompanionModelSummary[];
+  companionModelsError?: string | null;
+  /** Droneiro › drones registrados + Sinal Limpo/Script/Enxame (checkpoint "Catálogo oficial de drones e robôs consumido pela ficha"). */
   drones?: NonNullable<Character["drones"]>;
   sinalLimpoStatus?: { acquired: boolean; usedThisScene: boolean };
-  onRegisterDrone?: (params: { nome: string; modelo: string; paMaximo: number; acoes: string }) => void;
+  /** Vive no personagem operador, nunca no drone (ver `Character.sinal_limpo_bonus_ativo`). */
+  sinalLimpoBonusAtivo?: { droneId: string } | null;
+  onRegisterDrone?: (params: { nome: string; modeloSlug?: string; modelo: string; acoes: string }) => void;
   onRemoveDrone?: (droneId: string) => void;
   onActivateDrone?: (droneId: string) => void;
   onDeactivateDrone?: (droneId: string) => void;
@@ -276,10 +286,10 @@ export function TalentsTab({
   enxameStatus?: { acquired: boolean; usedToday: boolean; maxUnidades: number };
   onPairEnxame?: (droneIds: string[], modo: "pareada" | "independente") => void;
   onUnpairEnxame?: (grupoId: string) => void;
-  /** Mecatrônico › modelo mínimo de robô + Chave de Arranque/Marcha Dupla/Overclock (checkpoint talentos, Fase 15). */
+  /** Mecatrônico › robôs registrados + Chave de Arranque/Marcha Dupla/Overclock (checkpoint "Catálogo oficial de drones e robôs consumido pela ficha"). */
   robos?: NonNullable<Character["robos"]>;
   chaveDeArranqueStatus?: { acquired: boolean };
-  onRegisterRobo?: (params: { nome: string; modelo: string; paMaximo: number; acaoAutonoma: string }) => void;
+  onRegisterRobo?: (params: { nome: string; modeloSlug?: string; modelo: string; paMaximo: number; acaoAutonoma: string }) => void;
   onRemoveRobo?: (roboId: string) => void;
   onProgramRobo?: (roboId: string, acaoAutonoma: string) => void;
   onConsumeRoboPrimeiroTesteBonus?: (roboId: string) => void;
@@ -543,7 +553,10 @@ export function TalentsTab({
                         {acquiredEntry && nivel.slug === "droneiro_sinal_limpo" && sinalLimpoStatus?.acquired && (
                           <DroneRosterWidget
                             drones={drones}
+                            companionModels={companionModels.filter((m) => m.categoria === "drone")}
+                            companionModelsError={companionModelsError}
                             sinalLimpoStatus={sinalLimpoStatus}
+                            sinalLimpoBonusAtivo={sinalLimpoBonusAtivo ?? null}
                             onRegisterDrone={onRegisterDrone}
                             onRemoveDrone={onRemoveDrone}
                             onActivateDrone={onActivateDrone}
@@ -563,6 +576,8 @@ export function TalentsTab({
                         {acquiredEntry && nivel.slug === "mecatronico_chave_de_arranque" && chaveDeArranqueStatus?.acquired && (
                           <RoboRosterWidget
                             robos={robos}
+                            companionModels={companionModels.filter((m) => m.categoria === "robo")}
+                            companionModelsError={companionModelsError}
                             onRegisterRobo={onRegisterRobo}
                             onRemoveRobo={onRemoveRobo}
                             onProgramRobo={onProgramRobo}
@@ -1698,7 +1713,10 @@ type DroneInstance = NonNullable<Character["drones"]>[number];
 
 function DroneRosterWidget({
   drones,
+  companionModels,
+  companionModelsError,
   sinalLimpoStatus,
+  sinalLimpoBonusAtivo,
   onRegisterDrone,
   onRemoveDrone,
   onActivateDrone,
@@ -1706,33 +1724,40 @@ function DroneRosterWidget({
   onApplySinalLimpoBonus,
 }: {
   drones: DroneInstance[];
+  companionModels: CompanionModelSummary[];
+  companionModelsError?: string | null;
   sinalLimpoStatus: { acquired: boolean; usedThisScene: boolean };
-  onRegisterDrone?: (params: { nome: string; modelo: string; paMaximo: number; acoes: string }) => void;
+  sinalLimpoBonusAtivo?: { droneId: string } | null;
+  onRegisterDrone?: (params: { nome: string; modeloSlug?: string; modelo: string; acoes: string }) => void;
   onRemoveDrone?: (droneId: string) => void;
   onActivateDrone?: (droneId: string) => void;
   onDeactivateDrone?: (droneId: string) => void;
   onApplySinalLimpoBonus?: (droneId: string) => void;
 }) {
   const [nome, setNome] = useState("");
-  const [modelo, setModelo] = useState("");
-  const [paMaximo, setPaMaximo] = useState(3);
+  const [modeloSlug, setModeloSlug] = useState("");
   const [acoes, setAcoes] = useState("");
   const [droneBonus, setDroneBonus] = useState("");
 
   const ativos = drones.filter((d) => d.estado === "ativo");
+  const modeloEscolhido = companionModels.find((m) => m.slug === modeloSlug);
 
   return (
     <div data-testid="drone-roster-widget" style={widgetBox}>
       <span style={{ opacity: 0.7 }}>
-        Drones sob comando (registro manual — sem catálogo estruturado de drones no conteúdo; use a ficha do modelo em "Drones e Robôs" para PA/ações):
+        Drones sob comando — modelo vem do catálogo oficial (docs/fontes/DRONES E ROBÔS....md); drone não tem PA próprio, quem paga as ações é o operador.
       </span>
+      {companionModelsError && <span role="alert" style={{ color: "#ff6b6b" }}>{companionModelsError}</span>}
       {drones.length === 0 && <span style={{ opacity: 0.5 }}>Nenhum drone registrado.</span>}
       {drones.map((d) => (
         <div key={d.id} data-testid={`drone-${d.id}`} style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
           <span style={{ color: d.estado === "ativo" ? "#4caf50" : undefined }}>
-            {d.nome} ({d.modelo}) — {d.estado} — PA {d.paAtual}/{d.paMaximo}
+            {d.nome} ({d.modelo}) — {d.estado}
             {d.pareamento ? ` — pareado (${d.pareamento.modo})` : ""}
           </span>
+          {sinalLimpoBonusAtivo?.droneId === d.id && (
+            <span role="status" style={{ color: "#f5a623" }}>⚡ Sinal Limpo ativo — +1 PA do operador disponível para controlar este drone nesta rodada.</span>
+          )}
           {d.estado === "ativo" ? (
             <button data-testid={`drone-desativar-${d.id}`} onClick={() => onDeactivateDrone?.(d.id)} style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px" }}>
               Desativar
@@ -1749,19 +1774,34 @@ function DroneRosterWidget({
       ))}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         <input data-testid="drone-nome" placeholder="nome do drone" value={nome} onChange={(e) => setNome(e.target.value)} style={{ ...widgetInput, width: 110 }} />
-        <input data-testid="drone-modelo" placeholder="modelo (ex.: Mosca)" value={modelo} onChange={(e) => setModelo(e.target.value)} style={{ ...widgetInput, width: 110 }} />
-        <input data-testid="drone-pa-maximo" type="number" min={1} placeholder="PA máx." value={paMaximo} onChange={(e) => setPaMaximo(Math.max(1, Number(e.target.value)))} style={{ ...widgetInput, width: 70 }} />
-        <input data-testid="drone-acoes" placeholder="ações (texto livre)" value={acoes} onChange={(e) => setAcoes(e.target.value)} style={{ ...widgetInput, width: 160 }} />
+        <select
+          data-testid="drone-modelo"
+          value={modeloSlug}
+          onChange={(e) => {
+            const slug = e.target.value;
+            setModeloSlug(slug);
+            const modelo = companionModels.find((m) => m.slug === slug);
+            if (modelo) setAcoes(formatCompanionModelAcoesText(modelo.acoes));
+          }}
+          style={{ ...widgetInput, width: 160 }}
+        >
+          <option value="">Escolha um modelo</option>
+          {companionModels.map((m) => (
+            <option key={m.slug} value={m.slug}>{m.nome}</option>
+          ))}
+        </select>
+        <input data-testid="drone-acoes" placeholder="ações (texto livre, editável)" value={acoes} onChange={(e) => setAcoes(e.target.value)} style={{ ...widgetInput, width: 220 }} />
         <button
           data-testid="drone-registrar"
-          disabled={!nome.trim() || !modelo.trim()}
+          disabled={!nome.trim() || !modeloEscolhido}
           onClick={() => {
-            onRegisterDrone?.({ nome: nome.trim(), modelo: modelo.trim(), paMaximo, acoes });
+            if (!modeloEscolhido) return;
+            onRegisterDrone?.({ nome: nome.trim(), modeloSlug: modeloEscolhido.slug, modelo: modeloEscolhido.nome, acoes });
             setNome("");
-            setModelo("");
+            setModeloSlug("");
             setAcoes("");
           }}
-          style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !nome.trim() || !modelo.trim() ? 0.5 : 1 }}
+          style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !nome.trim() || !modeloEscolhido ? 0.5 : 1 }}
         >
           Registrar drone
         </button>
@@ -1789,7 +1829,7 @@ function DroneRosterWidget({
                 }}
                 style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !droneBonus ? 0.5 : 1 }}
               >
-                Sinal Limpo: +1 PA nesta rodada (1/cena)
+                Sinal Limpo: +1 PA no operador nesta rodada (1/cena)
               </button>
             </>
           )}
@@ -1923,27 +1963,33 @@ type RoboInstance = NonNullable<Character["robos"]>[number];
 
 function RoboRosterWidget({
   robos,
+  companionModels,
+  companionModelsError,
   onRegisterRobo,
   onRemoveRobo,
   onProgramRobo,
   onConsumePrimeiroTesteBonus,
 }: {
   robos: RoboInstance[];
-  onRegisterRobo?: (params: { nome: string; modelo: string; paMaximo: number; acaoAutonoma: string }) => void;
+  companionModels: CompanionModelSummary[];
+  companionModelsError?: string | null;
+  onRegisterRobo?: (params: { nome: string; modeloSlug?: string; modelo: string; paMaximo: number; acaoAutonoma: string }) => void;
   onRemoveRobo?: (roboId: string) => void;
   onProgramRobo?: (roboId: string, acaoAutonoma: string) => void;
   onConsumePrimeiroTesteBonus?: (roboId: string) => void;
 }) {
   const [nome, setNome] = useState("");
-  const [modelo, setModelo] = useState("");
-  const [paMaximo, setPaMaximo] = useState(3);
+  const [modeloSlug, setModeloSlug] = useState("");
   const [acaoAutonoma, setAcaoAutonoma] = useState<Record<string, string>>({});
+
+  const modeloEscolhido = companionModels.find((m) => m.slug === modeloSlug);
 
   return (
     <div data-testid="robo-roster-widget" style={widgetBox}>
       <span style={{ opacity: 0.7 }}>
-        Robôs sob programação (registro manual — sem catálogo estruturado de robôs no conteúdo; use a ficha do modelo em "Drones e Robôs" para PA/atributos):
+        Robôs sob programação — modelo vem do catálogo oficial (docs/fontes/DRONES E ROBÔS....md), PA máximo preenchido a partir do catálogo:
       </span>
+      {companionModelsError && <span role="alert" style={{ color: "#ff6b6b" }}>{companionModelsError}</span>}
       {robos.length === 0 && <span style={{ opacity: 0.5 }}>Nenhum robô registrado.</span>}
       {robos.map((r) => (
         <div key={r.id} data-testid={`robo-${r.id}`} style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
@@ -1979,17 +2025,22 @@ function RoboRosterWidget({
       ))}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         <input data-testid="robo-nome" placeholder="nome do robô" value={nome} onChange={(e) => setNome(e.target.value)} style={{ ...widgetInput, width: 110 }} />
-        <input data-testid="robo-modelo" placeholder="modelo (ex.: Combate)" value={modelo} onChange={(e) => setModelo(e.target.value)} style={{ ...widgetInput, width: 110 }} />
-        <input data-testid="robo-pa-maximo" type="number" min={1} placeholder="PA máx." value={paMaximo} onChange={(e) => setPaMaximo(Math.max(1, Number(e.target.value)))} style={{ ...widgetInput, width: 70 }} />
+        <select data-testid="robo-modelo" value={modeloSlug} onChange={(e) => setModeloSlug(e.target.value)} style={{ ...widgetInput, width: 160 }}>
+          <option value="">Escolha um modelo</option>
+          {companionModels.map((m) => (
+            <option key={m.slug} value={m.slug}>{m.nome}{m.paMaximo != null ? ` (PA ${m.paMaximo})` : ""}</option>
+          ))}
+        </select>
         <button
           data-testid="robo-registrar"
-          disabled={!nome.trim() || !modelo.trim()}
+          disabled={!nome.trim() || !modeloEscolhido}
           onClick={() => {
-            onRegisterRobo?.({ nome: nome.trim(), modelo: modelo.trim(), paMaximo, acaoAutonoma: "" });
+            if (!modeloEscolhido) return;
+            onRegisterRobo?.({ nome: nome.trim(), modeloSlug: modeloEscolhido.slug, modelo: modeloEscolhido.nome, paMaximo: modeloEscolhido.paMaximo ?? 3, acaoAutonoma: "" });
             setNome("");
-            setModelo("");
+            setModeloSlug("");
           }}
-          style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !nome.trim() || !modelo.trim() ? 0.5 : 1 }}
+          style={{ ...buttonStyle, fontSize: 10, padding: "2px 8px", opacity: !nome.trim() || !modeloEscolhido ? 0.5 : 1 }}
         >
           Registrar robô
         </button>

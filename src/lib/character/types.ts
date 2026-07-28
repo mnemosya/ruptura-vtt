@@ -643,42 +643,50 @@ export interface Character {
     encerradoEm?: string;
   };
   /**
-   * Droneiro › modelo mínimo de drone (checkpoint talentos, Fase 14) — sem
-   * catálogo estruturado de drones no conteúdo canônico (só a ficha textual
-   * de "19 MERCADO NOTURNO › DRONES E ROBÔS"), então `modelo`/`acoes` são
-   * texto livre registrado pelo jogador/narrador a partir da ficha do drone
-   * escolhido; `paAtual`/`paMaximo` são os únicos campos numéricos reais.
-   * `paBonusRodadaAtiva` marca o +1 PA de Sinal Limpo pendente de expirar no
-   * fim da rodada atual (ver `handleEndRoundForCharacter`).
+   * Droneiro › drone registrado (checkpoint "Catálogo oficial de drones e
+   * robôs consumido pela ficha") — `modeloSlug` referencia o modelo
+   * publicado na Biblioteca (`content_type: "companion_model"`, categoria
+   * "drone"); `modelo`/`acoes` continuam sendo um SNAPSHOT materializado no
+   * momento do registro (texto editável, preenchido a partir do catálogo
+   * quando `modeloSlug` é informado, mas não sincronizado automaticamente
+   * se o modelo publicado mudar depois). Drone NÃO tem PA próprio — a fonte
+   * (docs/fontes/DRONES E ROBÔS....md) não define esse stat: quem paga as
+   * ações do drone é sempre o operador, usando o PA do PRÓPRIO personagem
+   * (`estado_jogo.pa_gastos`). O bônus de +1 PA de Sinal Limpo (Droneiro N1)
+   * vive no personagem operador — ver `Character.sinal_limpo_bonus_ativo`,
+   * nunca nesta instância.
    */
   drones?: {
     id: string;
     nome: string;
+    modeloSlug?: string;
     modelo: string;
     controlador: string;
     estado: "ativo" | "inativo";
-    paAtual: number;
-    paMaximo: number;
     acoes: string;
     ativadoNestaCena: boolean;
     gatilho: { descricao: string; acaoAssociada: string; ocorrido: boolean } | null;
     pareamento: { grupoId: string; modo: "pareada" | "independente" } | null;
-    paBonusRodadaAtiva: boolean;
   }[];
   /**
-   * Mecatrônico › modelo mínimo de robô (checkpoint talentos, Fase 15) — mesmo
-   * caso do drone: sem catálogo estruturado de robôs no conteúdo canônico (só a
-   * ficha textual de "19 MERCADO NOTURNO › DRONES E ROBÔS"), então `modelo` é
-   * texto livre. Robôs agem por iniciativa própria quando `estado="programado"`
-   * (autonomia real, diferente do drone que sempre depende de comando direto).
-   * `primeiroTesteBonusDisponivel` é o +1 de Chave de Arranque no PRIMEIRO teste
-   * da cena (consumido manualmente — não há pipeline de rolagem para robôs
-   * autônomos neste app). `marchaDuplaAtivaNestaRodada` expira em Encerrar
-   * Rodada; `overclockAtiva` expira em Encerrar Cena.
+   * Mecatrônico › robô registrado (checkpoint "Catálogo oficial de drones e
+   * robôs consumido pela ficha") — `modeloSlug` referencia o modelo
+   * publicado na Biblioteca (categoria "robo"); `modelo`/`acaoAutonoma`
+   * continuam um SNAPSHOT materializado no registro, mesmo critério do
+   * drone acima. Robôs SÃO autônomos e têm PA próprio real
+   * (`paAtual`/`paMaximo`, definidos pela fonte — 3 na maioria, 5 no
+   * Ceifador) — isso não muda. Robôs agem por iniciativa própria quando
+   * `estado="programado"` (autonomia real, diferente do drone que sempre
+   * depende de comando direto). `primeiroTesteBonusDisponivel` é o +1 de
+   * Chave de Arranque no PRIMEIRO teste da cena (consumido manualmente —
+   * não há pipeline de rolagem para robôs autônomos neste app).
+   * `marchaDuplaAtivaNestaRodada` expira em Encerrar Rodada; `overclockAtiva`
+   * expira em Encerrar Cena.
    */
   robos?: {
     id: string;
     nome: string;
+    modeloSlug?: string;
     modelo: string;
     programador: string;
     estado: "programado" | "nao_programado";
@@ -690,6 +698,20 @@ export interface Character {
     marchaDuplaAtivaNestaRodada: boolean;
     overclockAtiva: boolean;
   }[];
+  /**
+   * Droneiro › Sinal Limpo (N1, checkpoint "Catálogo oficial de drones e
+   * robôs consumido pela ficha") — token de uso único no OPERADOR (mesmo
+   * padrão de `bencao_token_ativo`/`falcao_token_ativo`), nunca no drone.
+   * Concede +1 PA ao personagem, utilizável SÓ para controlar o drone
+   * `droneId` nesta rodada — não acumula, não vira PA do drone, não paga
+   * ações comuns do personagem nem de outro drone. Expira (`null`) ao fim
+   * da rodada (`expireSinalLimpoBonus`). O gasto em si é assistido/manual
+   * nesta fase: não existe executor de ações de controle de drone que
+   * bloqueie mecanicamente o uso indevido — a restrição é só exibida na UI.
+   * Utilizável 1x/cena (controlado por `talentos_estado.usos`, chave própria
+   * do talento, inalterado por este campo).
+   */
+  sinal_limpo_bonus_ativo?: { droneId: string } | null;
   /**
    * Tecelão › modelo mínimo de Trama (checkpoint talentos, Fase 16) — sem
    * automação do minijogo completo de hacking ("18. TECENDO A MALHA": grid de

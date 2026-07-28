@@ -2000,22 +2000,20 @@ export type DroneInstance = NonNullable<Character["drones"]>[number];
 
 export function registerDrone(
   character: Character,
-  params: { nome: string; modelo: string; paMaximo: number; acoes: string },
+  params: { nome: string; modeloSlug?: string; modelo: string; acoes: string },
   nowIso: string,
 ): Character {
   const drone: DroneInstance = {
     id: crypto.randomUUID(),
     nome: params.nome,
+    modeloSlug: params.modeloSlug,
     modelo: params.modelo,
     controlador: character.nome,
     estado: "inativo",
-    paAtual: params.paMaximo,
-    paMaximo: params.paMaximo,
     acoes: params.acoes,
     ativadoNestaCena: false,
     gatilho: null,
     pareamento: null,
-    paBonusRodadaAtiva: false,
   };
   return { ...character, drones: [...(character.drones ?? []), drone] };
 }
@@ -2060,26 +2058,26 @@ export function getSinalLimpoAvailability(
   return { acquired, usedThisScene };
 }
 
-/** +1 PA real no drone escolhido, só nesta rodada — expira em "Encerrar Rodada" (ver `expireDroneRoundBonuses`). */
+/**
+ * Ativa o token de Sinal Limpo no OPERADOR (personagem), nunca no drone —
+ * drone não tem PA próprio (ver `DroneInstance`). Marca o uso 1x/cena
+ * (`SINAL_LIMPO_USAGE_KEY`, inalterado) e registra qual drone foi
+ * escolhido em `character.sinal_limpo_bonus_ativo`. Nunca toca em
+ * `character.drones` — o +1 PA é do personagem, restrito a controlar
+ * este drone, expira em "Encerrar Rodada" (`expireSinalLimpoBonus`).
+ */
 export function applySinalLimpoBonus(character: Character, droneId: string, nowIso: string): Character {
   const usos = { ...(character.talentos_estado?.usos ?? {}) };
   usos[SINAL_LIMPO_USAGE_KEY] = { usados: 1, cadencia: "cena", atualizadoEm: nowIso };
-  const drones = (character.drones ?? []).map((d) =>
-    d.id === droneId ? { ...d, paAtual: d.paAtual + 1, paBonusRodadaAtiva: true } : d,
-  );
-  return { ...character, drones, talentos_estado: { ...character.talentos_estado, usos } };
+  return { ...character, sinal_limpo_bonus_ativo: { droneId }, talentos_estado: { ...character.talentos_estado, usos } };
 }
 
-/** Chamado em "Encerrar Rodada" — remove o +1 PA pendente de Sinal Limpo dos drones que o receberam. */
-export function expireDroneRoundBonuses(character: Character): { character: Character; expired: DroneInstance[] } {
-  const expired: DroneInstance[] = [];
-  const drones = (character.drones ?? []).map((d) => {
-    if (!d.paBonusRodadaAtiva) return d;
-    expired.push(d);
-    return { ...d, paAtual: Math.max(0, d.paAtual - 1), paBonusRodadaAtiva: false };
-  });
-  if (expired.length === 0) return { character, expired };
-  return { character: { ...character, drones }, expired };
+/** Chamado em "Encerrar Rodada" — limpa o bônus de Sinal Limpo pendente do personagem, se houver. */
+export function expireSinalLimpoBonus(character: Character): { character: Character; expiredDroneNome: string | null } {
+  const ativo = character.sinal_limpo_bonus_ativo;
+  if (!ativo) return { character, expiredDroneNome: null };
+  const drone = (character.drones ?? []).find((d) => d.id === ativo.droneId);
+  return { character: { ...character, sinal_limpo_bonus_ativo: null }, expiredDroneNome: drone?.nome ?? null };
 }
 
 export function hasScript(character: Pick<Character, "talentos_adquiridos">, talents: TalentContent[]): boolean {
@@ -2136,8 +2134,9 @@ export function pairDronesEnxame(
   const drones = character.drones ?? [];
   const selecionados = drones.filter((d) => droneIds.includes(d.id));
   if (selecionados.length < 2) return character;
-  const modeloBase = selecionados[0].modelo;
-  if (!selecionados.every((d) => d.modelo === modeloBase)) return character;
+  const identidade = (d: DroneInstance) => d.modeloSlug ?? d.modelo;
+  const modeloBase = identidade(selecionados[0]);
+  if (!selecionados.every((d) => identidade(d) === modeloBase)) return character;
   const grupoId = crypto.randomUUID();
   const usos = { ...(character.talentos_estado?.usos ?? {}) };
   usos[ENXAME_USAGE_KEY] = { usados: 1, cadencia: "dia", atualizadoEm: nowIso };
@@ -2187,11 +2186,12 @@ export function hasChaveDeArranque(character: Pick<Character, "talentos_adquirid
 
 export function registerRobo(
   character: Character,
-  params: { nome: string; modelo: string; paMaximo: number; acaoAutonoma: string },
+  params: { nome: string; modeloSlug?: string; modelo: string; paMaximo: number; acaoAutonoma: string },
 ): Character {
   const robo: RoboInstance = {
     id: crypto.randomUUID(),
     nome: params.nome,
+    modeloSlug: params.modeloSlug,
     modelo: params.modelo,
     programador: character.nome,
     estado: "nao_programado",

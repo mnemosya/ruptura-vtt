@@ -30,7 +30,7 @@ import {
 } from "../lib/content";
 import { listLegacyCharactersDev } from "../lib/character/storage";
 import { listCampaigns } from "../lib/table/storage";
-import { listItemsEffective, listRunesEffective, listSpellsEffective, listTalentsEffective } from "../lib/campaignContent";
+import { listCompanionModelsEffective, listItemsEffective, listRunesEffective, listSpellsEffective, listTalentsEffective } from "../lib/campaignContent";
 import {
   normalizeCombatActionContent,
   normalizeConditionContent,
@@ -38,12 +38,14 @@ import {
   normalizeTalentContent,
   normalizeItemContent,
   normalizeSpellContent,
+  normalizeCompanionModel,
   type CombatActionContent,
   type ConditionContent,
   type ReactionRules,
   type TalentContent,
   type ItemContent,
   type SpellContent,
+  type CompanionModelSummary,
 } from "../lib/character";
 import type { CharacterRecord, CharacterRulesPayload } from "../lib/character";
 import type { Campaign } from "../lib/table";
@@ -213,6 +215,18 @@ export async function CharacterSheetView({
     escalposError = error instanceof Error ? error.message : "Não foi possível carregar o catálogo de escalpos.";
   }
 
+  // Catálogo de modelos de drone/robô (checkpoint "Catálogo oficial de
+  // drones e robôs consumido pela ficha") — preenche o registro de
+  // drone/robô nas abas de Talentos (Droneiro/Mecatrônico).
+  let companionModels: CompanionModelSummary[] = [];
+  let companionModelsError: string | null = null;
+  try {
+    const docs = await listCompanionModelsEffective(campaignId);
+    companionModels = docs.map((doc) => normalizeCompanionModel(doc.payload as Record<string, unknown>));
+  } catch (error) {
+    companionModelsError = error instanceof Error ? error.message : "Não foi possível carregar o catálogo de drones/robôs.";
+  }
+
   return (
     <CharacterSheetClient
       regras={regras}
@@ -237,6 +251,8 @@ export async function CharacterSheetView({
       runesError={runesError}
       escalposIniciais={escalpos}
       escalposError={escalposError}
+      companionModelsIniciais={companionModels}
+      companionModelsError={companionModelsError}
       initialCampaignId={campaignId}
       initialProfileId={profileId}
       mode={mode}
