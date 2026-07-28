@@ -91,6 +91,7 @@ import type { Campaign, CampaignProfile } from "../table";
 import { CharacterStorageError } from "./storage.errors";
 import { validateCreationBudget } from "./createCharacterValidation";
 import type { Character, CharacterRecord, CharacterRulesPayload } from "./types";
+import { getCharacterRules } from "../content";
 
 const TABLE = "characters";
 
@@ -288,6 +289,17 @@ export async function createCharacterForCampaign(
  * Sem `options.profileId` (narrador criando personagem solto/PNJ pelo
  * wizard, sem vincular a nenhum perfil): não há segunda operação para
  * tornar atômica com o insert — mantém o caminho simples direto.
+ *
+ * Rodada de fechamento (auditoria da RPC 0044): o parâmetro `regras`
+ * chegava DO CLIENTE (prop React repassada de volta como argumento da
+ * Server Action) — um chamador hostil podia enviar um
+ * `criacao_personagem` com orçamento inflado junto de um `character`
+ * também inflado, e `validateCreationBudget` validaria contra a régua
+ * FALSA, nunca contra a real. Corrigido: quando há `options.profileId`
+ * (caminho não confiável — pode não ser o narrador), `regras` é
+ * IGNORADO e buscado de novo aqui, direto da Biblioteca publicada
+ * (`getCharacterRules`, mesma fonte que `page.tsx` já usa) — nunca do
+ * argumento do chamador.
  */
 export async function createCharacterFromWizard(
   campaignId: string,
@@ -295,7 +307,17 @@ export async function createCharacterFromWizard(
   regras: CharacterRulesPayload,
   options: { profileId?: string | null; ownerLabel?: string; creationRequestId?: string } = {},
 ): Promise<CharacterRecord> {
-  const validation = validateCreationBudget(character, regras);
+  let regrasConfiaveis = regras;
+  if (options.profileId) {
+    const doc = await getCharacterRules();
+    const regrasReais = doc?.payload as CharacterRulesPayload | undefined;
+    if (!regrasReais) {
+      throw new CharacterStorageError("Regras de criação indisponíveis no servidor.");
+    }
+    regrasConfiaveis = regrasReais;
+  }
+
+  const validation = validateCreationBudget(character, regrasConfiaveis);
   if (!validation.ok) {
     throw new CharacterStorageError(validation.reason ?? "Orçamento de criação inválido.");
   }
