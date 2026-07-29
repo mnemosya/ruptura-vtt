@@ -8,6 +8,7 @@
  */
 
 import { createAnonAuthClient } from "./anonClient";
+import { getScopedTableClient } from "./scopedClient";
 import { writeAuthTokens, clearAuthTokens } from "./session";
 
 export interface AuthActionResult {
@@ -60,4 +61,24 @@ export async function signUpDevNarrator(email: string, password: string): Promis
 /** Logout — limpa o cookie de sessão (não revoga o token no Supabase nesta etapa dev). */
 export async function signOut(): Promise<void> {
   await clearAuthTokens();
+}
+
+/**
+ * Atualiza o nome de exibição da conta logada ("Conta e preferências",
+ * aditivo §4.3) — grava em `user_metadata.display_name` via
+ * `auth.updateUser`, a própria conta autenticando a mudança em si
+ * mesma (nunca uma escrita administrativa, nunca uma tabela nova).
+ * Sem sessão válida, `updateUser` falha e o erro é devolvido — não há
+ * caminho para alterar o nome de outra conta por aqui.
+ */
+export async function updateDisplayName(displayName: string): Promise<AuthActionResult> {
+  try {
+    const client = await getScopedTableClient();
+    const trimmed = displayName.trim();
+    const { error } = await client.auth.updateUser({ data: { display_name: trimmed || null } });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Erro desconhecido ao atualizar nome de exibição." };
+  }
 }

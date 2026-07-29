@@ -27,6 +27,14 @@ export interface AuthTokens {
 export interface AuthUser {
   id: string;
   email: string | null;
+  /**
+   * Nome de exibição (aditivo §3.1/§4.3 "Conta e preferências") — vive
+   * em `user_metadata` do próprio Supabase Auth (`display_name`), sem
+   * tabela nova nem migration: é a conta autenticando a si mesma via
+   * `auth.updateUser`, nunca uma escrita administrativa. Null quando a
+   * conta ainda não definiu um.
+   */
+  displayName: string | null;
 }
 
 export async function readAuthTokens(): Promise<AuthTokens | null> {
@@ -65,7 +73,12 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     const supabase = createAnonAuthClient();
     const { data, error } = await supabase.auth.getUser(tokens.access_token);
     if (error || !data.user) return null;
-    return { id: data.user.id, email: data.user.email ?? null };
+    const displayName = data.user.user_metadata?.display_name;
+    return {
+      id: data.user.id,
+      email: data.user.email ?? null,
+      displayName: typeof displayName === "string" && displayName.trim() ? displayName.trim() : null,
+    };
   } catch {
     return null;
   }

@@ -1,40 +1,36 @@
 "use client";
 
+/**
+ * "Minhas Campanhas" (aditivo §4.2) — lista TODAS as campanhas da
+ * conta autenticada, narradora em algumas e jogadora em outras, com a
+ * ação principal certa para cada papel. "Criar Campanha" continua
+ * nesta mesma página (âncora `#criar-campanha`, alvo do item de mesmo
+ * nome no menu geral da conta) — não há necessidade de uma rota
+ * própria só para o formulário.
+ */
+
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createCampaign } from "../../lib/table/storage";
-import { signOut } from "../../lib/auth/actions";
 import type { Campaign } from "../../lib/table";
+import { AccountNav } from "./_account/AccountNav";
+import { badge, btnPrimary, card, color, emptyState, input, pageContainer, text } from "./[campaignId]/_shell/theme";
 
-const buttonStyle: React.CSSProperties = {
-  background: "#1d1e24",
-  color: "inherit",
-  border: "1px solid #333",
-  borderRadius: 6,
-  padding: "8px 14px",
-  fontSize: 13,
-  cursor: "pointer",
-};
-
-const inputStyle: React.CSSProperties = {
-  background: "#0f1014",
-  color: "inherit",
-  border: "1px solid #333",
-  borderRadius: 4,
-  padding: "8px 10px",
-  fontSize: 13,
-};
+export interface CampaignCardData {
+  campaign: Campaign;
+  role: "narrator" | "player";
+  /** Só relevante para role="player" — quantos personagens a conta controla nesta campanha. null para narrador (não se aplica). */
+  controlledCharacterCount: number | null;
+}
 
 interface Props {
   userEmail: string;
-  mesasIniciais: Campaign[];
+  campanhasIniciais: CampaignCardData[];
   errorInicial: string | null;
 }
 
-export default function MesasDashboardClient({ userEmail, mesasIniciais, errorInicial }: Props) {
-  const router = useRouter();
-  const [mesas, setMesas] = useState<Campaign[]>(mesasIniciais);
+export default function MesasDashboardClient({ userEmail, campanhasIniciais, errorInicial }: Props) {
+  const [campanhas, setCampanhas] = useState<CampaignCardData[]>(campanhasIniciais);
   const [novoNome, setNovoNome] = useState("");
   const [error, setError] = useState<string | null>(errorInicial);
   const [busy, setBusy] = useState(false);
@@ -46,79 +42,103 @@ export default function MesasDashboardClient({ userEmail, mesasIniciais, errorIn
     try {
       const mesa = await createCampaign(novoNome);
       setNovoNome("");
-      setMesas((prev) => [mesa, ...prev]);
+      setCampanhas((prev) => [{ campaign: mesa, role: "narrator", controlledCharacterCount: null }, ...prev]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao criar mesa.");
+      setError(err instanceof Error ? err.message : "Erro ao criar campanha.");
     } finally {
       setBusy(false);
     }
   }
 
-  async function handleLogout() {
-    await signOut();
-    router.push("/login");
-    router.refresh();
-  }
-
   return (
-    <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 8 }}>
-        <h1 style={{ fontSize: 22 }}>Minhas mesas</h1>
-        <div style={{ fontSize: 12, opacity: 0.7 }}>
-          {userEmail} · <button onClick={handleLogout} style={{ ...buttonStyle, padding: "4px 10px" }}>Sair</button>
-        </div>
-      </div>
+    <div>
+      <AccountNav userEmail={userEmail} />
+      <main style={pageContainer(760)}>
+        <h1 style={{ ...text.h1, marginBottom: 20 }}>Minhas Campanhas</h1>
 
-      {error && <p style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 16 }}>Erro: {error}</p>}
+        {error && (
+          <p role="alert" style={{ color: color.danger, fontSize: 13, marginBottom: 16 }}>
+            Erro: {error}
+          </p>
+        )}
 
-      <section style={{ marginBottom: 28 }}>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input
-            data-testid="dash-nova-mesa"
-            type="text"
-            value={novoNome}
-            onChange={(e) => setNovoNome(e.target.value)}
-            placeholder="Nome da nova mesa"
-            style={{ ...inputStyle, flex: 1 }}
-          />
-          <button data-testid="dash-criar-mesa" onClick={handleCreate} disabled={busy || !novoNome.trim()} style={buttonStyle}>
-            {busy ? "…" : "Criar mesa"}
-          </button>
-        </div>
-      </section>
-
-      {mesas.length === 0 && (
-        <p style={{ fontSize: 13, opacity: 0.6 }}>Você ainda não tem mesas. Crie a primeira acima.</p>
-      )}
-      <div data-testid="dash-mesas-lista" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {mesas.map((mesa) => (
-          <div
-            key={mesa.id}
-            data-testid="dash-mesa-item"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-              background: "#1d1e24",
-              borderRadius: 8,
-              padding: "10px 14px",
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>{mesa.name}</div>
-              <div style={{ fontSize: 11, opacity: 0.5 }}>{mesa.id}</div>
-            </div>
-            <Link href={`/mesas/${mesa.id}`} data-testid={`dash-abrir-${mesa.id}`} style={{ ...buttonStyle, textDecoration: "none" }}>
-              Abrir
-            </Link>
+        <section id="criar-campanha" style={{ marginBottom: 32, scrollMarginTop: 24 }}>
+          <h2 style={{ ...text.h2, marginBottom: 10 }}>Criar Campanha</h2>
+          <div style={{ display: "flex", gap: 8 }}>
+            <label htmlFor="nova-campanha-nome" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)" }}>
+              Nome da nova campanha
+            </label>
+            <input
+              id="nova-campanha-nome"
+              data-testid="dash-nova-mesa"
+              type="text"
+              value={novoNome}
+              onChange={(e) => setNovoNome(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && novoNome.trim() && !busy) handleCreate(); }}
+              placeholder="Nome da nova campanha"
+              className="rv-focusable"
+              style={{ ...input, flex: 1 }}
+            />
+            <button
+              data-testid="dash-criar-mesa"
+              onClick={handleCreate}
+              disabled={busy || !novoNome.trim()}
+              className="rv-btn rv-focusable"
+              style={{ ...btnPrimary, opacity: busy || !novoNome.trim() ? 0.6 : 1 }}
+            >
+              {busy ? "Criando…" : "Criar campanha"}
+            </button>
           </div>
-        ))}
-      </div>
+        </section>
 
-      <p style={{ marginTop: 24, fontSize: 12, opacity: 0.6 }}>
-        Console de diagnóstico dev: <Link href="/dev/table" style={{ color: "#5ec8ff" }}>/dev/table</Link>
-      </p>
-    </main>
+        <section>
+          <h2 style={{ ...text.h2, marginBottom: 10 }}>Suas campanhas</h2>
+          {campanhas.length === 0 ? (
+            <div style={emptyState} data-testid="dash-vazio">
+              <p style={{ margin: 0 }}>Você ainda não tem campanhas.</p>
+              <p style={{ margin: "6px 0 0", fontSize: 12, opacity: 0.7 }}>
+                Crie a primeira acima, ou peça um convite a quem já narra uma campanha.
+              </p>
+            </div>
+          ) : (
+            <div data-testid="dash-mesas-lista" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {campanhas.map(({ campaign, role, controlledCharacterCount }) => (
+                <div
+                  key={campaign.id}
+                  data-testid="dash-mesa-item"
+                  style={{ ...card, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <strong style={{ fontSize: 14 }}>{campaign.name}</strong>
+                      <span style={badge(role)}>{role === "narrator" ? "Narradora" : "Jogadora"}</span>
+                    </div>
+                    {role === "player" && (
+                      <span style={{ fontSize: 11, opacity: 0.6 }}>
+                        {controlledCharacterCount === 0
+                          ? "Sem personagem controlado ainda"
+                          : `${controlledCharacterCount} personagem${controlledCharacterCount === 1 ? "" : "ns"} controlado${controlledCharacterCount === 1 ? "" : "s"}`}
+                      </span>
+                    )}
+                  </div>
+                  <Link
+                    href={`/mesas/${campaign.id}`}
+                    data-testid={`dash-abrir-${campaign.id}`}
+                    className="rv-btn rv-focusable"
+                    style={{ background: color.surface, color: "inherit", border: `1px solid ${color.border}`, borderRadius: 6, padding: "8px 14px", fontSize: 13, textDecoration: "none" }}
+                  >
+                    {role === "narrator" ? "Entrar na campanha" : "Abrir campanha"}
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <p style={{ marginTop: 32, fontSize: 12, opacity: 0.5 }}>
+          Console de diagnóstico dev: <Link href="/dev/table" style={{ color: "#5ec8ff" }}>/dev/table</Link>
+        </p>
+      </main>
+    </div>
   );
 }
