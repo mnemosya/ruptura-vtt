@@ -73,6 +73,13 @@ export default async function LivroPage({ params }: PageProps) {
       <p style={{ marginBottom: 16 }}>
         <Link href={`/mesas/${campaignId}`} style={{ color: "#5ec8ff", fontSize: 13 }}>← Voltar para a mesa</Link>
       </p>
+      {isOwner && (
+        <p style={{ marginBottom: 16 }}>
+          <Link href={`/mesas/${campaignId}/biblioteca`} style={{ color: "#5ec8ff", fontSize: 13 }}>
+            Gerenciar conteúdo da campanha (homebrew e overrides) →
+          </Link>
+        </p>
+      )}
       <h1 style={{ fontSize: 24, marginBottom: 4 }}>Livro — {campaign.name}</h1>
       <p style={{ fontSize: 13, color: "#a8a8b3", marginBottom: 20 }}>
         Capítulos publicados desta mesa (oficial, override ou homebrew). Rascunhos nunca aparecem aqui.

@@ -50,16 +50,25 @@ import {
 import type { CharacterRecord, CharacterRulesPayload } from "../lib/character";
 import type { Campaign } from "../lib/table";
 import type { ConditionOption } from "./dev/character-sheet/components/ConditionsTab";
+import { TABS, type TabId } from "./dev/character-sheet/components/CharacterSheetTabs";
 import CharacterSheetClient from "./dev/character-sheet/CharacterSheetClient";
+
+function resolveInitialTab(tab: string | null | undefined): TabId | undefined {
+  if (!tab) return undefined;
+  return (TABS as readonly string[]).includes(tab) ? (tab as TabId) : undefined;
+}
 
 export async function CharacterSheetView({
   campaignId,
   characterId,
   mode = "dev",
+  initialTab,
 }: {
   campaignId: string | null;
   characterId: string | null;
   mode?: "dev" | "product";
+  /** Deep-link de aba (Fase 3, item de menu "Mercado" → `?tab=inventario`) — string arbitrária da URL, validada contra TABS antes de virar TabId. */
+  initialTab?: string | null;
 }) {
   let regras: CharacterRulesPayload | null = null;
   let errorMessage: string | null = null;
@@ -256,6 +265,7 @@ export async function CharacterSheetView({
       initialCampaignId={campaignId}
       initialCharacterId={characterId}
       mode={mode}
+      initialTab={resolveInitialTab(initialTab)}
     />
   );
 }

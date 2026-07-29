@@ -16,12 +16,17 @@ import { CharacterSheetView } from "../CharacterSheetView";
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  searchParams: Promise<{ campaignId?: string; characterId?: string }>;
+  searchParams: Promise<{ campaignId?: string; characterId?: string; tab?: string }>;
 }
 
 export default async function FichaPage({ searchParams }: PageProps) {
   const params = await searchParams;
   return (
-    <CharacterSheetView campaignId={params.campaignId ?? null} characterId={params.characterId ?? null} mode="product" />
+    <CharacterSheetView
+      campaignId={params.campaignId ?? null}
+      characterId={params.characterId ?? null}
+      mode="product"
+      initialTab={params.tab ?? null}
+    />
   );
 }

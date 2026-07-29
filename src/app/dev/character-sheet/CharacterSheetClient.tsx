@@ -390,6 +390,13 @@ interface Props {
    * arbitrário.
    */
   mode: "dev" | "product";
+  /**
+   * Aba inicial (Fase 3, deep-link do item de menu "Mercado" para a
+   * aba Inventário — `?tab=inventario`) — só define o valor inicial de
+   * `activeTab`; não é seletor de personagem nem retorno de ficha
+   * (isso é Fase 5). Ignorado se não for um TabId válido.
+   */
+  initialTab?: TabId;
 }
 
 type SaveState = "idle" | "saving" | "saved" | "error";
@@ -443,6 +450,7 @@ export default function CharacterSheetClient({
   initialCampaignId,
   initialCharacterId,
   mode,
+  initialTab,
 }: Props) {
   const [character, setCharacter] = useState<Character>(() => createInitialCharacter(regras));
   const characterRef = useRef(character);
@@ -468,7 +476,7 @@ export default function CharacterSheetClient({
   const [personagens, setPersonagens] = useState<CharacterRecord[]>(personagensIniciais);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabId>("geral");
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab ?? "geral");
   // Estado de UI local — não vai para o payload salvo (ver handleSave).
   const [sheetMode, setSheetMode] = useState<SheetMode>("jogo");
   // "Rolagem preparada" — ponte entre o clique em "Rolar" nas abas
