@@ -25,3 +25,48 @@ body {
 .ruptura-pulse {
   animation: ruptura-pulse 1.6s ease-in-out infinite;
 }
+
+/*
+ * Navegação da campanha (Fase 3 — menu geral da conta e menu da
+ * campanha, aditivo §4.3/§5). Classes utilitárias mínimas só para o
+ * que estilo inline não cobre bem: foco visível consistente e estados
+ * de hover/ativo dos links de nav e botões. O resto da UI da campanha
+ * continua em estilo inline, mesmo padrão do restante do projeto.
+ */
+.rv-focusable:focus-visible {
+  outline: 2px solid #5ec8ff;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.rv-nav-link {
+  color: #a8a8b4;
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.rv-nav-link:hover {
+  background: #1d1e24;
+  color: #e8e8ec;
+}
+
+.rv-nav-link[aria-current="page"] {
+  background: #22314a;
+  color: #cfe6ff;
+  font-weight: 600;
+}
+
+.rv-btn {
+  transition: filter 0.12s ease;
+}
+
+.rv-btn:hover:not(:disabled) {
+  filter: brightness(1.15);
+}
+
+.rv-btn:disabled {
+  cursor: not-allowed;
+}
