@@ -1,7 +1,7 @@
 /**
- * Biblioteca do Livro — sumário (checkpoint pós-v0.94, fase 10, PRD
- * §2.1.9). Rota de LEITURA para narrador e jogador (qualquer membro da
- * campanha com perfil reivindicado, mesmo guard de acesso já usado em
+ * Biblioteca do Livro — sumário (PRD §2.1.9). Rota de LEITURA para
+ * narrador e jogador (qualquer participante ATIVO da campanha —
+ * `campaign_members`, mesmo guard de acesso já usado em
  * `/mesas/[campaignId]/personagens/novo`) — nunca expõe rascunho, só
  * conteúdo efetivo com `status === "published"`.
  */
@@ -9,7 +9,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "../../../../lib/auth/session";
-import { getCampaign, listCampaignProfiles } from "../../../../lib/table/storage";
+import { getCampaign, isCampaignMember } from "../../../../lib/table/storage";
 import { listCapitulosEffective } from "../../../../lib/campaignContent";
 import type { Campaign } from "../../../../lib/table";
 import { LivroSumarioClient, type CapituloResumo } from "./LivroSumarioClient";
@@ -41,20 +41,16 @@ export default async function LivroPage({ params }: PageProps) {
   }
 
   const isOwner = campaign.owner_id === user.id;
-  if (!isOwner) {
-    const perfis = await listCampaignProfiles(campaignId).catch(() => []);
-    const temPerfil = perfis.some((p) => p.user_id === user.id);
-    if (!temPerfil) {
-      return (
-        <main style={{ maxWidth: 640, margin: "60px auto", padding: "0 20px" }}>
-          <h1 style={{ fontSize: 20 }}>Acesso negado</h1>
-          <p style={{ fontSize: 13, opacity: 0.8 }}>
-            Você precisa entrar nesta mesa por um convite e reivindicar um perfil para ler o Livro.
-          </p>
-          <Link href="/mesas" style={{ color: "#5ec8ff", fontSize: 13 }}>← Minhas mesas</Link>
-        </main>
-      );
-    }
+  if (!isOwner && !(await isCampaignMember(campaignId))) {
+    return (
+      <main style={{ maxWidth: 640, margin: "60px auto", padding: "0 20px" }}>
+        <h1 style={{ fontSize: 20 }}>Acesso negado</h1>
+        <p style={{ fontSize: 13, opacity: 0.8 }}>
+          Você precisa entrar nesta mesa por um convite para ler o Livro.
+        </p>
+        <Link href="/mesas" style={{ color: "#5ec8ff", fontSize: 13 }}>← Minhas mesas</Link>
+      </main>
+    );
   }
 
   const docs = await listCapitulosEffective(campaignId).catch(() => []);

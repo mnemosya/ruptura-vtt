@@ -1,22 +1,26 @@
 /**
- * Assistente de criação de personagem (checkpoint v0.41, PRD 3.2;
- * autorização de jogador — checkpoint pós-v0.94, fase 2 "criação
- * autônoma"). Exige login E que o usuário seja OU o narrador dono da
- * mesa OU um jogador com perfil já reivindicado nesta mesa
- * (`campaign_profiles.user_id`, migration 0028) — a RLS de
- * `characters` (migration 0030) já permite o INSERT vinculado ao
- * PRÓPRIO perfil; antes desta correção só o guard desta página negava
- * acesso a quem não fosse o dono, deixando a criação pelo jogador
- * inacessível apesar de já autorizada no banco.
+ * Assistente de criação de personagem (checkpoint v0.41, PRD 3.2).
+ *
+ * Fase 1 do plano de contas/campanhas/convites/personagens (revisão 4):
+ * exige login E que o usuário seja participante ATIVO da campanha
+ * (`is_campaign_member` — narrador dono OU jogador com `campaign_members`
+ * ativo). Não existe mais "perfil" — a RPC `complete_character_creation`
+ * (migration 0054) já autoriza pela mesma checagem e concede controle
+ * (`character_controllers`) automaticamente à conta que cria.
+ *
+ * Permitir qualquer participante ativo criar pelo wizard é uma decisão
+ * provisória desta fase — a política final de "quem pode criar
+ * personagem livremente" é uma decisão de produto pendente (ver §12 do
+ * relatório de auditoria), não bloqueada por esta página.
  */
 
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "../../../../../lib/auth/session";
-import { getCampaign, listCampaignProfiles } from "../../../../../lib/table/storage";
+import { getCampaign, isCampaignMember } from "../../../../../lib/table/storage";
 import { getCharacterRules } from "../../../../../lib/content";
 import { listTalentsEffective, listSpellsEffective, listItemsEffective } from "../../../../../lib/campaignContent";
-import type { Campaign, CampaignProfile } from "../../../../../lib/table";
+import type { Campaign } from "../../../../../lib/table";
 import {
   normalizeTalentContent,
   normalizeSpellContent,
@@ -65,35 +69,21 @@ export default async function NovoPersonagemPage({ params }: PageProps) {
 
   const isOwner = campaign.owner_id === user.id;
 
-  let perfis: CampaignProfile[] = [];
-  try {
-    perfis = await listCampaignProfiles(campaignId);
-  } catch {
-    perfis = [];
-  }
-
-  // Jogador (não-narrador): só pode entrar se já tiver um perfil
-  // reivindicado NESTA mesa (migration 0028 — `claim_campaign_profile`,
-  // fluxo de convite). Sem perfil reivindicado, não há a quem vincular
-  // o personagem novo, então o acesso é negado (não é "mesa alheia" —
-  // é "ainda não entrou nesta mesa por convite").
-  const perfilProprio = perfis.find((p) => p.user_id === user.id) ?? null;
-  if (!isOwner && !perfilProprio) {
+  // Jogador (não-narrador): só pode entrar se for participante ATIVO
+  // desta campanha (aceitou um convite — `campaign_members`). Não é
+  // "mesa alheia" — é "ainda não entrou nesta mesa por convite".
+  const isMember = isOwner || (await isCampaignMember(campaignId));
+  if (!isMember) {
     return (
       <main style={{ maxWidth: 640, margin: "60px auto", padding: "0 20px" }}>
         <h1 style={{ fontSize: 20 }}>Acesso negado</h1>
         <p style={{ fontSize: 13, opacity: 0.8 }}>
-          Você precisa entrar nesta mesa por um convite e reivindicar um perfil antes de criar um personagem.
+          Você precisa entrar nesta mesa por um convite antes de criar um personagem.
         </p>
         <Link href="/mesas" style={{ color: "#5ec8ff", fontSize: 13 }}>← Minhas mesas</Link>
       </main>
     );
   }
-
-  // Jogador só vê/vincula ao PRÓPRIO perfil (nunca a lista inteira da
-  // mesa) — a RLS de `campaign_profiles`/`characters` já bloqueia
-  // vincular a perfil alheio, mas a UI não deve nem oferecer a opção.
-  const perfisParaWizard = isOwner ? perfis : perfilProprio ? [perfilProprio] : [];
 
   let regras: CharacterRulesPayload | null = null;
   try {
@@ -154,11 +144,9 @@ export default async function NovoPersonagemPage({ params }: PageProps) {
     <CreateCharacterWizardClient
       campaign={campaign}
       regras={regras}
-      perfisIniciais={perfisParaWizard}
       talentos={talentos}
       magias={magias}
       itensLoja={itensLoja}
-      travarSelecaoDePerfil={!isOwner}
     />
   );
 }

@@ -129,9 +129,6 @@ export function RollsTab({
   campaignId,
   characterId,
   characterNome,
-  profileId,
-  profileNickname,
-  profileSessionId,
   activeEffects,
   marginPromotions = [],
   saqueFantasmaAvailable = false,
@@ -166,11 +163,6 @@ export function RollsTab({
   campaignId: string | null;
   characterId: string | null;
   characterNome: string;
-  /** Perfil selecionado na aba Geral (campaign_profiles) — anotado no payload das rolagens. */
-  profileId: string | null;
-  profileNickname: string | null;
-  /** sessionId do navegador (checkpoint v0.24) — anotado em table_logs.profile_session_id. */
-  profileSessionId?: string | null;
   /** Efeitos derivados das condições ativas do personagem (checkpoint v0.33) — ver deriveActiveEffectsFromConditions. */
   activeEffects: ActiveEffect[];
   /** Promoções de margem data-driven por perícia (Passo Fantasma, Olhar Penetrante) — checkpoint talentos. */
@@ -333,8 +325,6 @@ export function RollsTab({
       await addLog({
         campaignId,
         characterId: characterId ?? undefined,
-        profileId,
-        profileSessionId,
         type: tipo,
         visibility: visibilidade,
         payload,
@@ -473,8 +463,6 @@ export function RollsTab({
     onLog("rolagem_pericia", `${resultado.atributoNome}${periciaParte}: total ${resultado.total}${cdParte}`);
 
     await persistirNaMesa("rolagem_pericia", {
-      profileId,
-      profileNickname,
       characterId,
       characterNome,
       atributo: resultado.atributoNome,
@@ -532,8 +520,6 @@ export function RollsTab({
     const cdParte = resultado.cd != null ? ` vs CD ${resultado.cd} (${resultado.sucesso ? "Sucesso" : "Falha"})` : "";
     onLog("rolagem_pericia", `Rerroll (Briefing de Campo): ${resultado.atributoNome}${periciaParte}: total ${resultado.total}${cdParte}`);
     await persistirNaMesa("rolagem_pericia", {
-      profileId,
-      profileNickname,
       characterId,
       characterNome,
       atributo: resultado.atributoNome,
@@ -560,8 +546,6 @@ export function RollsTab({
       onLog("rolagem_expressao", `"${resultado.expression}": total ${resultado.total}`);
 
       await persistirNaMesa("rolagem_expressao", {
-        profileId,
-        profileNickname,
         characterId,
         characterNome,
         expressao: resultado.expression,

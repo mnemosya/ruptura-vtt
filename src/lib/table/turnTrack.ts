@@ -11,10 +11,12 @@
  *     `isActionAllowedInWindow`, usado por actionConsole.ts), não do
  *     motor de turno.
  *   - A rodada alterna entre PJ e PNJ dentro da janela (seção 6.1).
- *     "PJ" = personagem com profile_id (vinculado a um jogador); "PNJ"
- *     = sem profile_id (controlado pelo narrador) — não existe uma
- *     coluna dedicada no schema de personagem para isto, então esta é
- *     a única distinção disponível nos dados e é a usada aqui.
+ *     "PJ" = personagem com pelo menos um controlador em
+ *     `character_controllers` (vinculado a uma conta de jogador); "PNJ"
+ *     = sem controlador (só o narrador) — não existe uma coluna
+ *     dedicada no schema de personagem para isto, então esta é a única
+ *     distinção disponível nos dados e é a usada aqui (calculada em
+ *     `turnTrackActions.ts`, este módulo só recebe `side` já pronto).
  *   - Desempate por Reflexos quando jogadores não entram em consenso
  *     (seção 6.1) — o valor de Reflexos de cada participante é
  *     CALCULADO FORA deste módulo (perícia derivada, não atributo cru)

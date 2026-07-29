@@ -1,7 +1,13 @@
 /**
- * Detalhe de mesa no dashboard do narrador (checkpoint v0.21). Exige
- * login E que o narrador seja o dono da mesa. Reúne perfis, convites,
- * personagens (checkpoint v0.23) e log (visão de narrador = tudo) da mesa.
+ * Detalhe de mesa no dashboard do narrador. Exige login E que o
+ * narrador seja o dono da mesa. Reúne participantes, convites,
+ * controles de personagem, personagens e log (visão de narrador = tudo)
+ * da mesa.
+ *
+ * Fase 1 do plano de contas/campanhas/convites/personagens (revisão 4):
+ * "perfis"/"sessões de perfil" (campaign_profiles/profile_sessions)
+ * foram removidos por completo — substituídos por `campaign_members`
+ * (participação) e `character_controllers` (controle de personagem).
  */
 
 import { redirect } from "next/navigation";
@@ -9,13 +15,16 @@ import Link from "next/link";
 import { getCurrentUser } from "../../../lib/auth/session";
 import {
   getCampaign,
-  listCampaignProfiles,
+  listCampaignMembers,
   listCampaignInvites,
-  listProfileSessions,
   listLogsForViewer,
-  expireStaleProfileSessions,
 } from "../../../lib/table/storage";
-import { listCharactersForNarratorCampaign, listUnassignedCharactersForNarrator } from "../../../lib/character/storage";
+import {
+  listCharactersForNarratorCampaign,
+  listUnassignedCharactersForNarrator,
+  listCharacterControllers,
+  type CharacterController,
+} from "../../../lib/character/storage";
 import {
   getCharacterRules,
   getCombatField,
@@ -25,7 +34,7 @@ import {
   type TechnicalContentItem,
 } from "../../../lib/content";
 import { listItemsEffective, listRunesEffective } from "../../../lib/campaignContent";
-import type { Campaign, CampaignProfile, CampaignInvite, ProfileSession, TableLogEntry } from "../../../lib/table";
+import type { Campaign, CampaignMember, CampaignInvite, TableLogEntry } from "../../../lib/table";
 import {
   normalizeAttackCriticalRules,
   normalizeItemContent,
@@ -77,9 +86,9 @@ export default async function MesaDetailPage({ params }: PageProps) {
     );
   }
 
-  let perfis: CampaignProfile[] = [];
+  let membros: CampaignMember[] = [];
   let convites: CampaignInvite[] = [];
-  let sessoes: ProfileSession[] = [];
+  let controles: CharacterController[] = [];
   let logs: TableLogEntry[] = [];
   let personagensDaMesa: CharacterRecord[] = [];
   let personagensDisponiveis: CharacterRecord[] = [];
@@ -125,11 +134,9 @@ export default async function MesaDetailPage({ params }: PageProps) {
     // Sugestões críticas ficam indisponíveis; o ataque básico continua funcional.
   }
   try {
-    // v0.26: expira sessões velhas desta mesa antes de listar perfis/sessões — ver expireStaleProfileSessions.
-    await expireStaleProfileSessions(campaignId).catch(() => {});
-    perfis = await listCampaignProfiles(campaignId);
+    membros = await listCampaignMembers(campaignId);
     convites = await listCampaignInvites(campaignId);
-    sessoes = await listProfileSessions(campaignId);
+    controles = await listCharacterControllers(campaignId);
     logs = await listLogsForViewer(campaignId, {}); // narrador dono → vê tudo
     personagensDaMesa = await listCharactersForNarratorCampaign(campaignId);
     // "Disponíveis para vincular": personagens legados/globais, sem mesa
@@ -150,9 +157,9 @@ export default async function MesaDetailPage({ params }: PageProps) {
       </p>
       <MesaDetailClient
         campaign={campaign}
-        perfisIniciais={perfis}
+        membrosIniciais={membros}
         convitesIniciais={convites}
-        sessoesIniciais={sessoes}
+        controlesIniciais={controles}
         logsIniciais={logs}
         personagensDaMesaIniciais={personagensDaMesa}
         personagensDisponiveisIniciais={personagensDisponiveis}

@@ -259,8 +259,8 @@ import {
   getCharacter,
   listLegacyCharactersDev,
   deleteCharacter,
-  getCharacterForProfileSession,
-  saveCharacterForProfileSession,
+  getCharacterForCampaign,
+  updateCharacterSheetPayload,
 } from "../../../lib/character/storage";
 import type {
   ActiveCondition,
@@ -287,26 +287,11 @@ import type {
 } from "../../../lib/character";
 import type { TechnicalContentItem } from "../../../lib/content";
 import { rollPericia, type PreparedRoll } from "../../../lib/dice";
-import {
-  listCampaignProfiles,
-  enterCampaignProfile,
-  heartbeatCampaignProfile,
-  leaveCampaignProfile,
-  addLog,
-} from "../../../lib/table/storage";
+import { addLog } from "../../../lib/table/storage";
 import { upsertCrewInventoryItem } from "../../../lib/table/crewInventory";
-import { PROFILE_HEARTBEAT_INTERVAL_MS } from "../../../lib/table";
-import type { Campaign, CampaignProfile } from "../../../lib/table";
+import type { Campaign } from "../../../lib/table";
 import { useCharacterRealtime } from "../../../lib/realtime/useCharacterRealtime";
 import { describeRealtimeStatus } from "../../../lib/realtime/tableRealtime";
-import {
-  getOrCreateBrowserSessionId,
-  readProfileSessionToken,
-  saveProfileSessionToken,
-  clearProfileSessionToken,
-  type StoredProfileSessionToken,
-} from "../../../lib/table/browserSession";
-import { computeProfileStatus } from "../../../lib/table/profileStatus";
 import { CharacterSheetTabs, type TabId } from "./components/CharacterSheetTabs";
 import { GeneralTab } from "./components/GeneralTab";
 import { AttributesTab } from "./components/AttributesTab";
@@ -389,20 +374,20 @@ interface Props {
   companionModelsIniciais: CompanionModelSummary[];
   companionModelsError: string | null;
   /**
-   * Mesa/perfil pré-selecionados via query string (`?campaignId=...&
-   * profileId=...`) — vindos de `/dev/join/[campaignId]` (checkpoint
-   * v0.10). `null` quando a ficha é aberta diretamente, sem link.
+   * Mesa/personagem pré-selecionados via query string (`?campaignId=...&
+   * characterId=...`). `null` quando a ficha é aberta diretamente, sem
+   * link.
    */
   initialCampaignId: string | null;
-  initialProfileId: string | null;
+  initialCharacterId: string | null;
   /**
    * "dev" (`/dev/character-sheet`) mantém todo o comportamento de
-   * diagnóstico (lista global de personagens, seletor livre de
-   * mesa/perfil, aba Debug). "product" (`/ficha`, checkpoint v0.24)
-   * exige uma sessão de perfil real e válida (ver
-   * `productSessionState` abaixo) antes de mostrar qualquer coisa, e só
-   * carrega o personagem ATIVO do perfil da sessão — nunca a lista
-   * global nem um personagem arbitrário.
+   * diagnóstico (lista global de personagens, seletor livre de mesa, aba
+   * Debug). "product" (`/ficha`) exige que `initialCampaignId`/
+   * `initialCharacterId` resolvam para um personagem real via
+   * `getCharacterForCampaign` (ver `productSessionState` abaixo) antes
+   * de mostrar qualquer coisa — nunca a lista global nem um personagem
+   * arbitrário.
    */
   mode: "dev" | "product";
 }
@@ -410,18 +395,14 @@ interface Props {
 type SaveState = "idle" | "saving" | "saved" | "error";
 
 /**
- * Estado da validação de sessão real de perfil (modo "product", v0.24):
- *   • "pending": ainda checando (efeito de validação ainda não rodou).
- *   • "no_params": `/ficha` foi aberta sem campaignId/profileId na URL.
- *   • "invalid": sessionId do navegador não é o dono do bloqueio deste
- *     perfil (nunca entrou, ou outra sessão assumiu o perfil).
- *   • "no_character": sessão válida, mas o perfil ainda não tem
- *     personagem ativo vinculado (ver dashboard /mesas/[campaignId]).
- *   • "left": o próprio jogador saiu do perfil nesta aba (botão "Sair
- *     do perfil") — precisa entrar de novo pelo convite.
- *   • "valid": sessão válida e personagem carregado — ficha liberada.
+ * Estado da resolução do personagem no modo "product":
+ *   • "pending": ainda checando (efeito de carregamento ainda não rodou).
+ *   • "no_params": `/ficha` foi aberta sem campaignId/characterId na URL.
+ *   • "not_found": personagem não encontrado, ou usuário sem acesso a ele
+ *     (RLS não distingue os dois casos).
+ *   • "valid": personagem carregado — ficha liberada.
  */
-type ProductSessionState = "pending" | "no_params" | "invalid" | "no_character" | "left" | "valid";
+type ProductSessionState = "pending" | "no_params" | "not_found" | "valid";
 
 function clamp(value: number, min: number, max: number): number {
   if (Number.isNaN(value)) return min;
@@ -460,7 +441,7 @@ export default function CharacterSheetClient({
   companionModelsIniciais,
   companionModelsError,
   initialCampaignId,
-  initialProfileId,
+  initialCharacterId,
   mode,
 }: Props) {
   const [character, setCharacter] = useState<Character>(() => createInitialCharacter(regras));
@@ -528,43 +509,16 @@ export default function CharacterSheetClient({
   // rolagem em table_logs (ver checkpoint v0.2 do relatório de Mesas).
   const [mesas, setMesas] = useState<Campaign[]>(mesasIniciais);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
-  // Perfis da mesa selecionada (campaign_profiles, migration 0004) — UI
-  // local, recarregada toda vez que a mesa muda. Perfil escolhido aqui
-  // também não persiste no payload do personagem, só serve para
-  // "Carregar personagem ativo" e para anotar profileId/profileNickname
-  // no payload das rolagens gravadas em table_logs (ver RollsTab).
-  const [perfis, setPerfis] = useState<CampaignProfile[]>([]);
-  /** Outros personagens ATIVOS na mesa (checkpoint pós-v0.71 — uso de item em aliado): um por perfil com `active_character_id` != o próprio personagem carregado. Recarregado ao trocar de mesa e ao abrir o painel "Usar em aliado" de um item. */
+  /**
+   * Outros personagens ATIVOS na mesa (checkpoint pós-v0.71 — uso de item
+   * em aliado). Fase 1: deixou de depender da antiga tabela de perfis de
+   * mesa/`active_character_id` (perfil removido) — agora é derivado
+   * diretamente dos personagens já carregados em `personagens` que
+   * pertencem à mesa selecionada, excluindo o próprio personagem.
+   * Recalculado ao trocar de mesa e ao abrir o painel "Usar em aliado" de
+   * um item.
+   */
   const [alliesAtivos, setAlliesAtivos] = useState<{ id: string; nome: string; character: Character }[]>([]);
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
-  const [profileWarning, setProfileWarning] = useState<string | null>(null);
-  // Heartbeat dev de perfil (checkpoint v0.9) — sessionId é um id local
-  // de navegador (localStorage), não autenticação real (ver
-  // sessionId.ts e a migration 0005). null até o efeito de montagem
-  // rodar no cliente (localStorage não existe durante SSR).
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  // Perfil que ESTA aba/sessão entrou via heartbeat (distinto de
-  // `selectedProfileId`, que é só o perfil em foco no <select> — pode
-  // estar olhando um perfil sem ter entrado nele).
-  const [enteredProfile, setEnteredProfile] = useState<{ id: string; nickname: string } | null>(null);
-  // Token REAL de sessão de perfil (checkpoint v0.30) — par
-  // {profileSessionId, rawSessionToken} gerado por enterCampaignProfile
-  // e guardado no localStorage por perfil (browserSession.ts). É o que
-  // autoriza heartbeat/sair/ler/salvar personagem — nunca o sessionId
-  // de navegador sozinho. Nulo até entrar (ou retomar de localStorage);
-  // limpo ao sair ou quando o servidor rejeita o token.
-  const [profileSessionToken, setProfileSessionToken] = useState<StoredProfileSessionToken | null>(null);
-  // Aviso de sessão expirada (checkpoint v0.26, modo product/ficha) —
-  // true quando o heartbeat desta aba foi rejeitado (outra sessão
-  // assumiu o perfil, ou expireStaleProfileSessions liberou o
-  // bloqueio por inatividade). Não bloqueia a ficha sozinho — só avisa;
-  // a ficha continua legível/editável, mas o vínculo de "dono" do
-  // perfil pode já ter mudado no banco.
-  const [sessionExpiredWarning, setSessionExpiredWarning] = useState(false);
-  // Tick local (atualizado a cada 5s) só para forçar recalcular o
-  // status "Expirado" exibido na UI, comparando last_seen_at com o
-  // relógio do navegador — não busca nada novo do servidor.
-  const [nowTick, setNowTick] = useState(() => Date.now());
   // Log local mínimo (não persiste no Supabase) — alimentado por rolagens
   // (via callback passado a RollsTab) e pelos handlers de recurso/PA/
   // reação abaixo. Limitado às últimas 50 entradas.
@@ -583,7 +537,7 @@ export default function CharacterSheetClient({
   // guarda a última leva de condições removidas por ter recuperado 1+
   // PV, para exibir o aviso e permitir "Desfazer" (reativa só essa
   // leva, nunca remoções manuais). Estado só de UI desta aba — some ao
-  // recarregar a página, igual sessionExpiredWarning.
+  // recarregar a página.
   const [autoHealBanner, setAutoHealBanner] = useState<{ ids: string[]; nomes: string[]; pvAnterior: number; pvNovo: number } | null>(
     null,
   );
@@ -606,120 +560,59 @@ export default function CharacterSheetClient({
     setLog((prev) => [entry, ...prev].slice(0, LOG_MAX));
   }
 
-  // sessionId só existe no navegador (localStorage) — gerado/lido uma
-  // vez na montagem do componente, nunca durante SSR.
-  useEffect(() => {
-    setSessionId(getOrCreateBrowserSessionId());
-  }, []);
-
-  // Pré-seleção via link de mesa (/dev/join/[campaignId], checkpoint
-  // v0.10): se a página foi aberta com ?campaignId=...&profileId=...,
-  // seleciona a mesa (que já dispara o fetch de perfis) e, em seguida,
-  // o perfil — roda só uma vez (didPrefillRef), sem depender de
-  // sessionId (handleSelectCampaign não precisa dele). Só no modo dev —
-  // o modo product tem seu próprio efeito de validação (mais abaixo),
-  // que não usa seletor livre de mesa/perfil.
+  // Pré-seleção via link de mesa (checkpoint v0.10): se a página foi
+  // aberta com ?campaignId=...&characterId=..., seleciona a mesa e
+  // carrega diretamente esse personagem — reusa `handleLoad`, a mesma
+  // função usada pela aba Personagens (SavedCharactersTab), sem duplicar
+  // lógica de carregamento. Roda só uma vez (didPrefillRef). Só no modo
+  // dev — o modo product tem seu próprio efeito de carregamento
+  // (loadProductSession, mais abaixo), que não usa seletor livre de mesa.
   const didPrefillRef = useRef(false);
   useEffect(() => {
     if (mode !== "dev" || didPrefillRef.current || !initialCampaignId) return;
     didPrefillRef.current = true;
     handleSelectCampaign(initialCampaignId).then(() => {
-      if (initialProfileId) setSelectedProfileId(initialProfileId);
+      if (initialCharacterId) handleLoad(initialCharacterId);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, initialCampaignId, initialProfileId]);
-
-  // Retomar heartbeat após vir de /dev/join: se o perfil pré-selecionado
-  // já está bloqueado por ESTA MESMA sessão (porque a entrada já
-  // aconteceu na tela de join, via enterCampaignProfile), assume
-  // enteredProfile aqui para o useEffect de heartbeat (mais abaixo)
-  // retomar o envio de last_seen_at — sem chamar enterCampaignProfile
-  // de novo. resumedHeartbeatRef garante que isso só roda uma vez,
-  // mesmo que `perfis` mude depois por outros motivos. Só no modo dev.
-  const resumedHeartbeatRef = useRef(false);
-  useEffect(() => {
-    if (mode !== "dev" || resumedHeartbeatRef.current || !sessionId || !initialProfileId) return;
-    const perfil = perfis.find((p) => p.id === initialProfileId);
-    if (!perfil) return; // perfis desta mesa ainda não carregou
-    resumedHeartbeatRef.current = true;
-    if (perfil.lock_session_id === sessionId) {
-      // v0.30: o token real de sessão vem do localStorage (salvo por
-      // JoinClient ao entrar) — sem ele, não há como retomar heartbeat
-      // (sessionId sozinho não autoriza mais nada).
-      const token = readProfileSessionToken(perfil.id);
-      if (token) {
-        setEnteredProfile({ id: perfil.id, nickname: perfil.nickname });
-        setProfileSessionToken(token);
-      }
-    }
-  }, [mode, perfis, sessionId, initialProfileId]);
+  }, [mode, initialCampaignId, initialCharacterId]);
 
   // =====================================================================
-  // Sessão real de perfil (modo "product" — /ficha, checkpoint v0.24/v0.30)
+  // Resolução do personagem no modo "product" (/ficha)
   // =====================================================================
   //
-  // /ficha não usa seletor livre de mesa/perfil: campaignId/profileId
-  // vêm fixos da URL (query string, montada por /join/[token] ao clicar
-  // "Abrir ficha"). O TOKEN REAL de sessão (profileSessionId +
-  // rawSessionToken, checkpoint v0.30) vem do localStorage — nunca da
-  // URL — salvo por JoinClient no momento de "Entrar como perfil".
-  // Sem token guardado, nem tenta validar no servidor: mostra
-  // diretamente "sessão inválida ou expirada". Com token, valida no
-  // servidor via getCharacterForProfileSession (hard check contra
-  // profile_sessions — checkpoint v0.28/v0.30) — só então carrega o
-  // personagem ATIVO desse perfil (nunca uma lista global, nunca um id
-  // arbitrário).
+  // /ficha não usa seletor livre de mesa: campaignId/characterId vêm
+  // fixos da URL (query string). Resolve direto por campanha+personagem
+  // via `getCharacterForCampaign` — autorizado no servidor via RLS (dono
+  // da campanha OU controlador com participação ativa); devolve `null`
+  // tanto para "não encontrado" quanto para "sem autorização".
   const [productSessionState, setProductSessionState] = useState<ProductSessionState>("pending");
 
   async function loadProductSession() {
-    if (!initialCampaignId || !initialProfileId) {
-      setProductSessionState("no_params");
-      return;
-    }
-    const token = readProfileSessionToken(initialProfileId);
-    if (!token) {
+    if (!initialCampaignId || !initialCharacterId) {
       setProductSessionState("no_params");
       return;
     }
     setProductSessionState("pending");
     try {
-      const result = await getCharacterForProfileSession(
-        initialCampaignId,
-        initialProfileId,
-        token.profileSessionId,
-        token.rawSessionToken,
-      );
-      if (!result.profile) {
-        // Token guardado não bate mais (expirado/trocado/revogado) —
-        // limpa para não ficar tentando de novo com um token morto.
-        clearProfileSessionToken(initialProfileId);
-        setProductSessionState("invalid");
+      const record = await getCharacterForCampaign(initialCampaignId, initialCharacterId);
+      if (!record) {
+        setProductSessionState("not_found");
         return;
       }
       setSelectedCampaignId(initialCampaignId);
-      setSelectedProfileId(initialProfileId);
-      setPerfis([result.profile]);
-      if (result.campaign) setMesas([result.campaign]);
-      setEnteredProfile({ id: result.profile.id, nickname: result.profile.nickname });
-      setProfileSessionToken(token);
-
-      if (!result.character) {
-        setCharacterId(null);
-        setProductSessionState("no_character");
-        return;
-      }
-      const loadedRaw = normalizeCharacter(result.character.payload);
+      setCharacterId(record.id);
+      const loadedRaw = normalizeCharacter(record.payload);
       const { character: loaded, expiredInstanceIds } = expireItemTemporaryEffects(loadedRaw, new Date().toISOString());
       lastSyncedCharacterRef.current = loaded;
       setCharacter(loaded);
-      setCharacterId(result.character.id);
       setProductSessionState("valid");
       if (expiredInstanceIds.length > 0) {
         addLogEntry("condicao", `Toque de Midas expirado ao carregar em ${expiredInstanceIds.length} item(ns) — bônus/PD temporário removidos.`);
       }
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao validar sessão.");
-      setProductSessionState("invalid");
+      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao carregar personagem.");
+      setProductSessionState("not_found");
     }
   }
 
@@ -727,134 +620,7 @@ export default function CharacterSheetClient({
     if (mode !== "product") return;
     loadProductSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, initialCampaignId, initialProfileId]);
-
-  // Tick de exibição (não busca nada do servidor) — só recalcula se um
-  // perfil parece "Expirado" comparando last_seen_at já carregado com
-  // Date.now() local. Roda sempre que há mesa selecionada (perfis na
-  // tela), evitado nas outras abas.
-  useEffect(() => {
-    if (!selectedCampaignId) return;
-    const id = setInterval(() => setNowTick(Date.now()), 5000);
-    return () => clearInterval(id);
-  }, [selectedCampaignId]);
-
-  /**
-   * Registra um evento de perfil (entrar/sair/heartbeat_expirado) no
-   * Log local (sempre) e em table_logs como type="profile_event"
-   * (melhor esforço — falha de gravação não bloqueia o fluxo de
-   * entrar/sair). Visibilidade "gm": evento operacional de mesa, não é
-   * mensagem de jogador.
-   */
-  async function persistProfileEvent(
-    campaignId: string | null,
-    profile: { id: string; nickname: string },
-    evento: "enter" | "leave" | "heartbeat_expirado",
-  ) {
-    if (!campaignId) return;
-    try {
-      await addLog({
-        campaignId,
-        characterId: characterId ?? undefined,
-        profileId: profile.id,
-        type: "profile_event",
-        visibility: "gm",
-        profileSessionId: profileSessionToken?.profileSessionId ?? null,
-        payload: {
-          evento,
-          profileId: profile.id,
-          profileNickname: profile.nickname,
-          sessionId,
-          characterId,
-          characterNome: character.nome,
-        },
-      });
-    } catch {
-      avisarFalhaLogMesa();
-      // Best effort — o evento já foi registrado no Log local; falha
-      // aqui não deve travar entrar/sair/expirar.
-    }
-  }
-
-  /** Botão "Entrar como perfil" — ver regras de heartbeat em enterCampaignProfile (src/lib/table/storage.ts). */
-  async function handleEnterProfile() {
-    if (!selectedProfileId || !sessionId) return;
-    setProfileWarning(null);
-    try {
-      // v0.30: enterCampaignProfile agora também gera o token real de
-      // sessão — guardado no localStorage por perfil, usado por
-      // heartbeat/sair/salvar personagem daqui em diante.
-      const { profile: updated, profileSessionId, rawSessionToken } = await enterCampaignProfile(selectedProfileId, sessionId);
-      saveProfileSessionToken(selectedProfileId, { profileSessionId, rawSessionToken });
-      setProfileSessionToken({ profileSessionId, rawSessionToken });
-      setPerfis((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-      setEnteredProfile({ id: updated.id, nickname: updated.nickname });
-      addLogEntry("perfil", `Entrou no perfil "${updated.nickname}".`);
-      await persistProfileEvent(selectedCampaignId, { id: updated.id, nickname: updated.nickname }, "enter");
-    } catch (err) {
-      setProfileWarning(err instanceof Error ? err.message : "Erro desconhecido ao entrar no perfil.");
-    }
-  }
-
-  /** Botão "Sair do perfil" — valida o token real da sessão (ver leaveCampaignProfile, checkpoint v0.30). */
-  async function handleLeaveProfile() {
-    if (!enteredProfile || !profileSessionToken) return;
-    setProfileWarning(null);
-    const profileSaindo = enteredProfile;
-    try {
-      const updated = await leaveCampaignProfile(
-        profileSaindo.id,
-        profileSessionToken.profileSessionId,
-        profileSessionToken.rawSessionToken,
-      );
-      setPerfis((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-      addLogEntry("perfil", `Saiu do perfil "${updated.nickname}".`);
-      await persistProfileEvent(selectedCampaignId, profileSaindo, "leave");
-    } catch (err) {
-      setProfileWarning(err instanceof Error ? err.message : "Erro desconhecido ao sair do perfil.");
-    } finally {
-      clearProfileSessionToken(profileSaindo.id);
-      setEnteredProfile(null);
-      setProfileSessionToken(null);
-      // No modo product (/ficha), sair do perfil invalida a sessão desta
-      // aba — precisa entrar de novo pelo convite (não tem seletor livre
-      // de perfil para "trocar" para outro).
-      if (mode === "product") setProductSessionState("left");
-    }
-  }
-
-  // Heartbeat: enquanto esta sessão estiver "dentro" de um perfil,
-  // renova last_seen_at a cada PROFILE_HEARTBEAT_INTERVAL_MS — validado
-  // pelo token real de sessão (checkpoint v0.30), não mais pelo
-  // sessionId de navegador sozinho. Se o heartbeat for rejeitado (token
-  // inválido, sessão não mais 'active', ou perfil liberado/assumido por
-  // outra sessão), a sessão perde o perfil automaticamente e registra
-  // o evento.
-  useEffect(() => {
-    if (!enteredProfile || !profileSessionToken) return;
-    const profileAtual = enteredProfile;
-    const tokenAtual = profileSessionToken;
-
-    const intervalId = setInterval(async () => {
-      try {
-        const updated = await heartbeatCampaignProfile(profileAtual.id, tokenAtual.profileSessionId, tokenAtual.rawSessionToken);
-        setPerfis((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-      } catch {
-        addLogEntry("perfil", `Heartbeat expirado — perfil "${profileAtual.nickname}" foi perdido por esta aba.`);
-        clearProfileSessionToken(profileAtual.id);
-        setEnteredProfile(null);
-        setProfileSessionToken(null);
-        // v0.26: /ficha detecta a própria sessão expirando e avisa —
-        // não bloqueia a ficha (o jogador pode continuar vendo/editando
-        // localmente), só sinaliza que o vínculo de perfil pode ter mudado.
-        if (mode === "product") setSessionExpiredWarning(true);
-        await persistProfileEvent(selectedCampaignId, profileAtual, "heartbeat_expirado");
-      }
-    }, PROFILE_HEARTBEAT_INTERVAL_MS);
-
-    return () => clearInterval(intervalId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enteredProfile, profileSessionToken]);
+  }, [mode, initialCampaignId, initialCharacterId]);
 
   // Posturas (checkpoint v0.64) como pseudo-"ConditionContent" — mesmo
   // shape mínimo que `deriveActiveEffectsFromConditions` já espera
@@ -1008,8 +774,8 @@ export default function CharacterSheetClient({
   /**
    * Recarrega a lista de personagens salvos. No modo "product" (/ficha)
    * é um no-op deliberado — a ficha real nunca busca a lista global de
-   * personagens de outros perfis/mesas (checkpoint v0.24), só o
-   * personagem ativo já carregado via loadProductSession.
+   * personagens de outras mesas, só o personagem já carregado via
+   * loadProductSession.
    */
   async function refreshList() {
     if (mode === "product") return;
@@ -1022,13 +788,11 @@ export default function CharacterSheetClient({
 
   async function handleSave() {
     // Defesa em profundidade: a ficha real (/ficha) só edita o
-    // personagem ativo do perfil da sessão — nunca cria um personagem
-    // novo/solto. Na prática characterId/selectedCampaignId/
-    // selectedProfileId/profileSessionToken nunca são null aqui em modo
-    // product (a UI de edição só aparece com productSessionState
-    // "valid", que exige a sessão já validada e um personagem já
-    // carregado).
-    if (mode === "product" && (!characterId || !selectedCampaignId || !selectedProfileId || !profileSessionToken)) return;
+    // personagem já resolvido via getCharacterForCampaign — nunca cria
+    // um personagem novo/solto. Na prática characterId/selectedCampaignId
+    // nunca são null aqui em modo product (a UI de edição só aparece com
+    // productSessionState "valid", que exige o personagem já carregado).
+    if (mode === "product" && (!characterId || !selectedCampaignId)) return;
     setSaveState("saving");
     setErrorMessage(null);
     try {
@@ -1038,14 +802,7 @@ export default function CharacterSheetClient({
       const toSave = normalizeCharacter(character, derivados);
       const record =
         mode === "product"
-          ? await saveCharacterForProfileSession(
-              selectedCampaignId as string,
-              selectedProfileId as string,
-              (profileSessionToken as StoredProfileSessionToken).profileSessionId,
-              (profileSessionToken as StoredProfileSessionToken).rawSessionToken,
-              characterId as string,
-              toSave,
-            )
+          ? await updateCharacterSheetPayload(characterId as string, toSave)
           : characterId
             ? await updateCharacter(characterId, toSave)
             : await createCharacter(toSave);
@@ -1176,82 +933,41 @@ export default function CharacterSheetClient({
   }
 
   /**
-   * Troca de mesa selecionada (aba Geral) — também recarrega os perfis
-   * dessa mesa (campaign_profiles). Trocar de mesa limpa o perfil
-   * selecionado anterior (perfis são por mesa, não fazem sentido
-   * "vazar" de uma mesa para outra).
+   * Troca de mesa selecionada (aba Geral) — também recalcula
+   * `alliesAtivos` para a mesa nova (ou limpa, se nenhuma mesa).
    */
   async function handleSelectCampaign(id: string | null) {
     setSelectedCampaignId(id);
-    setSelectedProfileId(null);
-    setProfileWarning(null);
     if (!id) {
-      setPerfis([]);
       setAlliesAtivos([]);
       return;
     }
-    try {
-      setPerfis(await listCampaignProfiles(id));
-    } catch (err) {
-      setPerfis([]);
-      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao carregar perfis da mesa.");
-    }
-    await refreshAlliesAtivos(id);
+    refreshAlliesAtivos(id);
   }
 
   /**
    * Outros personagens ATIVOS na mesa (checkpoint pós-v0.71 — uso de
-   * item em aliado) — mesmo critério de "ativo" usado em /dev/table
-   * (`personagensAtivos`): um por perfil com `active_character_id`
-   * preenchido, aqui excluindo o próprio personagem carregado. Usa
-   * `listCampaignProfiles`/`getCharacter`, ambos já anon-safe (mesmas
-   * chamadas que a ficha já faz para o próprio perfil/personagem — sem
-   * client narrador, sem service role). Falha silenciosa (lista vazia)
-   * — a UI trata "nenhum aliado ativo" e "erro" da mesma forma (opção
-   * escondida/indisponível), não há necessidade de um banner extra.
+   * item em aliado). Fase 1: deixou de depender da antiga tabela de
+   * perfis de mesa/`active_character_id` (perfil removido do backend) —
+   * agora deriva
+   * direto de `personagens`, a lista já carregada no estado (dev: lista
+   * global via `listLegacyCharactersDev`), filtrando pela mesa
+   * selecionada e excluindo o próprio personagem carregado. Sem I/O
+   * extra — só recalcula em cima do que já está em memória.
    */
-  async function refreshAlliesAtivos(campaignId: string) {
-    try {
-      const perfisAtuais = await listCampaignProfiles(campaignId);
-      const ids = Array.from(
-        new Set(
-          perfisAtuais
-            .map((p) => p.active_character_id)
-            .filter((id): id is string => Boolean(id) && id !== characterId),
-        ),
-      );
-      const registros = await Promise.all(ids.map((id) => getCharacter(id)));
-      setAlliesAtivos(
-        registros
-          .filter((r): r is NonNullable<typeof r> => r != null)
-          .map((r) => ({ id: r.id, nome: r.name, character: normalizeCharacter(r.payload) })),
-      );
-    } catch {
-      setAlliesAtivos([]);
-    }
+  function refreshAlliesAtivos(campaignId: string) {
+    setAlliesAtivos(
+      personagens
+        .filter((p) => p.campaign_id === campaignId && p.id !== characterId)
+        .map((p) => ({ id: p.id, nome: p.name, character: normalizeCharacter(p.payload) })),
+    );
   }
 
-  /**
-   * Botão "Carregar personagem ativo" (dev) / "Recarregar personagem"
-   * (product). No modo product, refaz a validação de sessão inteira
-   * (loadProductSession) — útil se o narrador trocou o personagem ativo
-   * do perfil durante a sessão (sem realtime, ver v0.26 para expiração
-   * automática). No modo dev, busca o personagem vinculado ao perfil
-   * selecionado no dropdown, reusando handleLoad.
-   */
+  /** Botão "Recarregar personagem" (modo product) — refaz loadProductSession, útil se o narrador mudou algo no personagem durante a sessão (sem realtime). */
   async function handleLoadPersonagemAtivo() {
     if (mode === "product") {
       await loadProductSession();
-      return;
     }
-    setProfileWarning(null);
-    const perfil = perfis.find((p) => p.id === selectedProfileId);
-    if (!perfil) return;
-    if (!perfil.active_character_id) {
-      setProfileWarning(`O perfil "${perfil.nickname}" ainda não tem personagem ativo vinculado. Peça ao narrador para vincular um personagem a este perfil.`);
-      return;
-    }
-    await handleLoad(perfil.active_character_id);
   }
 
   function handleNew() {
@@ -1281,8 +997,6 @@ export default function CharacterSheetClient({
       await addLog({
         campaignId: selectedCampaignId,
         characterId: characterId ?? undefined,
-        profileId: selectedProfileId,
-        profileSessionId: profileSessionToken?.profileSessionId ?? null,
         type: "character_evolution",
         visibility: "gm",
         payload: {
@@ -1422,8 +1136,6 @@ export default function CharacterSheetClient({
         await addLog({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
-          profileId: selectedProfileId,
-          profileSessionId: profileSessionToken?.profileSessionId ?? null,
           type: "condition_auto_removed",
           visibility: "public",
           payload: {
@@ -1435,7 +1147,6 @@ export default function CharacterSheetClient({
             pvNovo,
             characterId,
             characterNome: character.nome,
-            profileId: selectedProfileId,
           },
         });
       } catch {
@@ -1460,8 +1171,6 @@ export default function CharacterSheetClient({
         await addLog({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
-          profileId: selectedProfileId,
-          profileSessionId: profileSessionToken?.profileSessionId ?? null,
           type: "condition_auto_removal_undone",
           visibility: "public",
           payload: {
@@ -1471,7 +1180,6 @@ export default function CharacterSheetClient({
             pvNovo: banner.pvNovo,
             characterId,
             characterNome: character.nome,
-            profileId: selectedProfileId,
           },
         });
       } catch {
@@ -1494,15 +1202,11 @@ export default function CharacterSheetClient({
       await addLog({
         campaignId: selectedCampaignId,
         characterId: characterId ?? undefined,
-        profileId: selectedProfileId,
-        profileSessionId: profileSessionToken?.profileSessionId ?? null,
         type: tipo,
         visibility: "public",
         payload: {
           characterId,
           characterNome: character.nome,
-          profileId: selectedProfileId,
-          profileSessionId: profileSessionToken?.profileSessionId ?? null,
           before: result.before,
           after: result.after,
           diff: result.diff,
@@ -1621,15 +1325,11 @@ export default function CharacterSheetClient({
         await addLog({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
-          profileId: selectedProfileId,
-          profileSessionId: profileSessionToken?.profileSessionId ?? null,
           type: "overload_surge_used",
           visibility: "public",
           payload: {
             characterId,
             characterNome: character.nome,
-            profileId: selectedProfileId,
-            profileSessionId: profileSessionToken?.profileSessionId ?? null,
             tipo,
             indice: result.surge.indice,
             maxSurtos,
@@ -1689,15 +1389,11 @@ export default function CharacterSheetClient({
         await addLog({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
-          profileId: selectedProfileId,
-          profileSessionId: profileSessionToken?.profileSessionId ?? null,
           type: "overload_will_roll",
           visibility: "public",
           payload: {
             characterId,
             characterNome: character.nome,
-            profileId: selectedProfileId,
-            profileSessionId: profileSessionToken?.profileSessionId ?? null,
             total: resultado.total,
             cd: getOverloadWillTestRule(regras?.sobrecarga).cd,
             sucesso,
@@ -1725,15 +1421,11 @@ export default function CharacterSheetClient({
       await addLog({
         campaignId: selectedCampaignId,
         characterId: characterId ?? undefined,
-        profileId: selectedProfileId,
-        profileSessionId: profileSessionToken?.profileSessionId ?? null,
         type: tipo,
         visibility: "public",
         payload: {
           characterId,
           characterNome: character.nome,
-          profileId: selectedProfileId,
-          profileSessionId: profileSessionToken?.profileSessionId ?? null,
           source: "character_sheet",
           ...extra,
         },
@@ -2136,11 +1828,9 @@ export default function CharacterSheetClient({
           await addLog({
             campaignId: selectedCampaignId,
             characterId: characterId ?? undefined,
-            profileId: selectedProfileId,
-            profileSessionId: profileSessionToken?.profileSessionId ?? null,
             type: entry.type,
             visibility: "public",
-            payload: { ...entry.payload, characterId, characterNome: current.nome, profileId: selectedProfileId },
+            payload: { ...entry.payload, characterId, characterNome: current.nome },
           });
         } catch {
           avisarFalhaLogMesa();
@@ -2180,11 +1870,9 @@ export default function CharacterSheetClient({
           await addLog({
             campaignId: selectedCampaignId,
             characterId: characterId ?? undefined,
-            profileId: selectedProfileId,
-            profileSessionId: profileSessionToken?.profileSessionId ?? null,
             type: entry.type,
             visibility: "public",
-            payload: { ...entry.payload, characterId, characterNome: current.nome, profileId: selectedProfileId },
+            payload: { ...entry.payload, characterId, characterNome: current.nome },
           });
         } catch {
           avisarFalhaLogMesa();
@@ -2215,14 +1903,11 @@ export default function CharacterSheetClient({
         await addLog({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
-          profileId: selectedProfileId,
-          profileSessionId: profileSessionToken?.profileSessionId ?? null,
           type: "rupture_choice_resolved",
           visibility: "public",
           payload: {
             characterId,
             characterNome: current.nome,
-            profileId: selectedProfileId,
             pendingChoiceId: choiceId,
             marca: marca.trim() || null,
             traco: traco.trim() || null,
@@ -2287,15 +1972,11 @@ export default function CharacterSheetClient({
       await addLog({
         campaignId: selectedCampaignId,
         characterId: characterId ?? undefined,
-        profileId: selectedProfileId,
-        profileSessionId: profileSessionToken?.profileSessionId ?? null,
         type: "talent_used",
         visibility: "public",
         payload: {
           characterId,
           characterNome: characterRef.current.nome,
-          profileId: selectedProfileId,
-          profileNickname: perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null,
           source: "character_sheet_talents",
           ...payload,
         },
@@ -3708,8 +3389,6 @@ export default function CharacterSheetClient({
       await addLog({
         campaignId: selectedCampaignId,
         characterId: targetId ?? undefined,
-        profileId: selectedProfileId,
-        profileSessionId: profileSessionToken?.profileSessionId ?? null,
         type: "temporary_effect_added",
         visibility: "public",
         payload: {
@@ -3758,8 +3437,6 @@ export default function CharacterSheetClient({
       await addLog({
         campaignId: selectedCampaignId,
         characterId: characterId ?? undefined,
-        profileId: selectedProfileId,
-        profileSessionId: profileSessionToken?.profileSessionId ?? null,
         type: "temporary_effect_removed",
         visibility: "public",
         payload: {
@@ -3892,15 +3569,11 @@ export default function CharacterSheetClient({
         await addLog({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
-          profileId: selectedProfileId,
-          profileSessionId: profileSessionToken?.profileSessionId ?? null,
           type: "item_used",
           visibility: "public",
           payload: {
             characterId,
             characterNome: current.nome,
-            profileId: selectedProfileId,
-            profileNickname: perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null,
             itemInstanceId: instanceId,
             itemName: itemModelo.nome,
             itemCategory: itemModelo.categoria,
@@ -4074,15 +3747,11 @@ export default function CharacterSheetClient({
       await addLog({
         campaignId: selectedCampaignId,
         characterId: characterId ?? undefined,
-        profileId: selectedProfileId,
-        profileSessionId: profileSessionToken?.profileSessionId ?? null,
         type: "item_used",
         visibility: "public",
         payload: {
           characterId,
           characterNome: current.nome,
-          profileId: selectedProfileId,
-          profileNickname: perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null,
           sourceCharacterId: characterId,
           sourceCharacterName: current.nome,
           targetCharacterId: ally.id,
@@ -4171,8 +3840,6 @@ export default function CharacterSheetClient({
         await addLog({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
-          profileId: selectedProfileId,
-          profileSessionId: profileSessionToken?.profileSessionId ?? null,
           type: "inventory_transfer",
           visibility: "public",
           payload: {
@@ -4623,15 +4290,11 @@ export default function CharacterSheetClient({
         await addLog({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
-          profileId: selectedProfileId,
-          profileSessionId: profileSessionToken?.profileSessionId ?? null,
           type: "spell_cast",
           visibility: "public",
           payload: {
             characterId,
             characterNome: current.nome,
-            profileId: selectedProfileId,
-            profileNickname: perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null,
             spellSlug: spell.slug,
             spellNome: spell.nome,
             vertente: spell.vertente,
@@ -4664,15 +4327,11 @@ export default function CharacterSheetClient({
           await addLog({
             campaignId: selectedCampaignId,
             characterId: characterId ?? undefined,
-            profileId: selectedProfileId,
-            profileSessionId: profileSessionToken?.profileSessionId ?? null,
             type: "spell_attack_used",
             visibility: "public",
             payload: {
               characterId,
               characterNome: current.nome,
-              profileId: selectedProfileId,
-              profileNickname: perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null,
               spellSlug: spell.slug,
               spellId: spell.slug,
               spellName: spell.nome,
@@ -4793,15 +4452,11 @@ export default function CharacterSheetClient({
         await addLog({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
-          profileId: selectedProfileId,
-          profileSessionId: profileSessionToken?.profileSessionId ?? null,
           type: "spell_cast",
           visibility: "public",
           payload: {
             characterId,
             characterNome: current.nome,
-            profileId: selectedProfileId,
-            profileNickname: perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null,
             spellSlug: spell.slug,
             spellNome: spell.nome,
             vertente: spell.vertente,
@@ -4844,15 +4499,11 @@ export default function CharacterSheetClient({
           await addLog({
             campaignId: selectedCampaignId,
             characterId: characterId ?? undefined,
-            profileId: selectedProfileId,
-            profileSessionId: profileSessionToken?.profileSessionId ?? null,
             type: "spell_attack_used",
             visibility: "public",
             payload: {
               characterId,
               characterNome: current.nome,
-              profileId: selectedProfileId,
-              profileNickname: perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null,
               spellSlug: spell.slug,
               spellId: spell.slug,
               spellName: spell.nome,
@@ -4967,8 +4618,6 @@ export default function CharacterSheetClient({
         await addLog({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
-          profileId: selectedProfileId,
-          profileSessionId: profileSessionToken?.profileSessionId ?? null,
           type: "condition_applied",
           visibility: "public",
           payload: {
@@ -4980,7 +4629,6 @@ export default function CharacterSheetClient({
             duracao: novaCondicao.duracao,
             characterId,
             characterNome: character.nome,
-            profileId: selectedProfileId,
           },
         });
       } catch {
@@ -5013,8 +4661,6 @@ export default function CharacterSheetClient({
         await addLog({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
-          profileId: selectedProfileId,
-          profileSessionId: profileSessionToken?.profileSessionId ?? null,
           type: "condition_removed",
           visibility: "public",
           payload: {
@@ -5023,7 +4669,6 @@ export default function CharacterSheetClient({
             nome: condicao.nome,
             characterId,
             characterNome: character.nome,
-            profileId: selectedProfileId,
           },
         });
       } catch {
@@ -5056,7 +4701,7 @@ export default function CharacterSheetClient({
    * isto não é um auto-save geral do console.
    *
    * Reaproveita o MESMO par storage+log de `handleSave`
-   * (`saveCharacterForProfileSession`/`updateCharacter`) — nenhum
+   * (`updateCharacterSheetPayload`/`updateCharacter`) — nenhum
    * caminho de persistência novo. Falha aqui NUNCA reverte a mudança
    * local (ela já aconteceu antes desta chamada): só avisa via
    * `saveState`/`errorMessage` e deixa "Salvar personagem" disponível
@@ -5076,23 +4721,13 @@ export default function CharacterSheetClient({
   }
 
   async function persistAutomatedActionExecution(nextCharacter: Character) {
-    const isConnected =
-      mode === "product"
-        ? Boolean(characterId && selectedCampaignId && selectedProfileId && profileSessionToken)
-        : Boolean(characterId && selectedCampaignId);
+    const isConnected = Boolean(characterId && selectedCampaignId);
     if (!isConnected) return; // Modo local (sem mesa/personagem salvo) — nada a persistir, sem erro.
     try {
       const toSave = normalizeCharacter(nextCharacter, derivados);
       const record =
         mode === "product"
-          ? await saveCharacterForProfileSession(
-              selectedCampaignId as string,
-              selectedProfileId as string,
-              (profileSessionToken as StoredProfileSessionToken).profileSessionId,
-              (profileSessionToken as StoredProfileSessionToken).rawSessionToken,
-              characterId as string,
-              toSave,
-            )
+          ? await updateCharacterSheetPayload(characterId as string, toSave)
           : await updateCharacter(characterId as string, toSave);
       lastSyncedCharacterRef.current = record.payload;
       characterRef.current = record.payload;
@@ -5348,15 +4983,11 @@ export default function CharacterSheetClient({
         await addLog({
           campaignId: selectedCampaignId,
           characterId: characterId ?? undefined,
-          profileId: selectedProfileId,
-          profileSessionId: profileSessionToken?.profileSessionId ?? null,
           type: "action_used",
           visibility: "public",
           payload: {
             characterId,
             characterNome: currentCharacter.nome,
-            profileId: selectedProfileId,
-            profileNickname: perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null,
             actionId: actionContent.id,
             actionSlug,
             actionName: item.nome,
@@ -5515,26 +5146,16 @@ export default function CharacterSheetClient({
     setActiveTab("rolagens");
   }
 
-  const perfilEmFoco = perfis.find((p) => p.id === selectedProfileId) ?? null;
-  const perfilStatus = perfilEmFoco ? computeProfileStatus(perfilEmFoco, sessionId, nowTick) : null;
-
-  // Modo product (/ficha, checkpoint v0.24): antes de mostrar qualquer
-  // ficha, exige uma sessão de perfil real e válida (ver
+  // Modo product (/ficha): antes de mostrar qualquer ficha, exige o
+  // personagem já resolvido por campanha+id (ver
   // productSessionState/loadProductSession acima). Cada estado tem uma
   // mensagem de bloqueio própria — nenhum deles renderiza os dados do
   // personagem/mesa por baixo.
   if (mode === "product" && productSessionState !== "valid") {
     const bloqueio: Record<Exclude<ProductSessionState, "valid">, string> = {
       pending: "Carregando…",
-      // v0.30: sem token real guardado (nunca entrou por convite nesta
-      // aba, ou o token foi limpo) — mesma mensagem de "invalid" abaixo.
-      no_params: "Sessão inválida ou expirada. Entre novamente pelo convite.",
-      // v0.30: token guardado existe, mas o servidor rejeitou (hash não
-      // bate, sessão não está mais 'active', ou perfil foi liberado).
-      invalid: "Sessão inválida ou expirada. Entre novamente pelo convite.",
-      no_character:
-        "Este perfil ainda não tem personagem vinculado. Peça ao narrador para vincular um personagem a este perfil (dashboard da mesa → Personagens da mesa).",
-      left: "Você saiu deste perfil. Sessão inválida ou expirada — entre novamente pelo convite.",
+      no_params: "Link incompleto — volte pelo convite ou pela lista de personagens.",
+      not_found: "Personagem não encontrado ou você não tem acesso a ele. Volte pelo link da campanha.",
     };
     return (
       <main style={{ maxWidth: 640, margin: "60px auto", padding: "0 20px" }}>
@@ -5607,13 +5228,6 @@ export default function CharacterSheetClient({
           ⚠ regras_personagem não veio do banco — usando fórmulas de fallback temporárias.
         </p>
       )}
-      {mode === "product" && sessionExpiredWarning && (
-        <p data-testid="ficha-sessao-expirada-aviso" style={{ color: "#ffb84f", fontSize: 13, marginBottom: 16 }}>
-          ⚠ Sua sessão deste perfil expirou (sem sinal por muito tempo) — outra pessoa pode ter
-          assumido este perfil. Suas próximas ações podem não ser salvas como esperado; recarregue a
-          página e entre novamente pelo convite se precisar.
-        </p>
-      )}
       {autoHealBanner && (
         <div
           data-testid="auto-heal-banner"
@@ -5683,16 +5297,7 @@ export default function CharacterSheetClient({
           mesas={mesas}
           selectedCampaignId={selectedCampaignId}
           onSelectCampaign={handleSelectCampaign}
-          perfis={perfis}
-          selectedProfileId={selectedProfileId}
-          onSelectProfile={setSelectedProfileId}
           onLoadPersonagemAtivo={handleLoadPersonagemAtivo}
-          profileWarning={profileWarning}
-          personagens={personagens}
-          perfilStatus={perfilStatus}
-          enteredProfileId={enteredProfile?.id ?? null}
-          onEnterProfile={handleEnterProfile}
-          onLeaveProfile={handleLeaveProfile}
           pmTotal={character.pm_total ?? 0}
           pmDisponivel={character.pm_disponivel ?? 0}
           historicoEvolucao={character.historico_evolucao ?? []}
@@ -6026,9 +5631,6 @@ export default function CharacterSheetClient({
           campaignId={selectedCampaignId}
           characterId={characterId}
           characterNome={character.nome}
-          profileId={selectedProfileId}
-          profileNickname={perfis.find((p) => p.id === selectedProfileId)?.nickname ?? null}
-          profileSessionId={profileSessionToken?.profileSessionId ?? null}
           activeEffects={activeEffects}
           marginPromotions={getMarginPromotions(character, talentsIniciais)}
           saqueFantasmaAvailable={hasSaqueFantasma(character, talentsIniciais)}
@@ -6068,11 +5670,8 @@ export default function CharacterSheetClient({
           <MesaTab
             campaignId={selectedCampaignId}
             mesaNome={mesas.find((m) => m.id === selectedCampaignId)?.name ?? null}
-            profileId={selectedProfileId}
-            profileNickname={perfilEmFoco?.nickname ?? null}
             characterId={characterId}
             characterNome={character.nome}
-            profileSessionId={profileSessionToken?.profileSessionId ?? null}
           />
         </>
       )}

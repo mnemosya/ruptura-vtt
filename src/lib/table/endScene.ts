@@ -39,7 +39,6 @@ import { getCampaign, canAdvanceCampaign, endScene as advanceCampaignScene, addL
 export interface RuptureResolvedSummary {
   characterId: string;
   characterNome: string;
-  profileId: string | null;
   ruptureLevel: number;
   integridadeAntes: number;
   integridadeDepois: number;
@@ -54,7 +53,6 @@ export interface RuptureResolvedSummary {
 export interface ProcessedCharacterSceneSummary {
   characterId: string;
   characterNome: string;
-  profileId: string | null;
   ruptureResolved: boolean;
   ruptureLevel: number;
   integridadeAntes: number;
@@ -158,7 +156,6 @@ export async function resolveCampaignEndSceneForCharacters(params: {
           payload: {
             characterId: record.id,
             characterNome: character.nome,
-            profileId: record.profile_id,
             message: `Último Fôlego: ${character.nome} ainda estava de pé ao fim da cena — caiu a 0 PV automaticamente (consequência do payload, cura não impede).`,
             sourceTalentId: "berserker_ultimo_folego",
             source: "campaign_end_scene",
@@ -172,7 +169,6 @@ export async function resolveCampaignEndSceneForCharacters(params: {
           payload: {
             characterId: record.id,
             characterNome: character.nome,
-            profileId: record.profile_id,
             effectId: e.id,
             effectName: e.name,
             sourceType: e.sourceType,
@@ -195,7 +191,6 @@ export async function resolveCampaignEndSceneForCharacters(params: {
           payload: {
             characterId: record.id,
             characterNome: character.nome,
-            profileId: record.profile_id,
             scene,
             ruptureLevel: result.level,
             integrityBefore: result.integridadeAntes,
@@ -213,7 +208,6 @@ export async function resolveCampaignEndSceneForCharacters(params: {
           payload: {
             characterId: record.id,
             characterNome: character.nome,
-            profileId: record.profile_id,
             scene,
             ruptureLevel: result.level,
             pendingChoiceId: result.pendingChoiceId,
@@ -226,8 +220,7 @@ export async function resolveCampaignEndSceneForCharacters(params: {
             payload: {
               characterId: record.id,
               characterNome: character.nome,
-              profileId: record.profile_id,
-              scene,
+                scene,
               integrityBefore: result.integridadeAntes,
               integrityAfter: result.integridadeDepois,
               source: "campaign_end_scene",
@@ -242,7 +235,6 @@ export async function resolveCampaignEndSceneForCharacters(params: {
       processedCharacters.push({
         characterId: record.id,
         characterNome: character.nome,
-        profileId: record.profile_id,
         ruptureResolved: result.resolved,
         ruptureLevel: result.level,
         integridadeAntes: result.integridadeAntes,
@@ -323,7 +315,6 @@ export async function endCampaignScene(params: {
       await addLog({
         campaignId: params.campaignId,
         characterId: typeof entry.payload.characterId === "string" ? entry.payload.characterId : undefined,
-        profileId: typeof entry.payload.profileId === "string" ? entry.payload.profileId : null,
         type: entry.type,
         visibility: "public",
         payload: entry.payload,

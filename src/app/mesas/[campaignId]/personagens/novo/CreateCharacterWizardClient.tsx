@@ -17,7 +17,7 @@ import {
   deleteCharacterCreationDraft,
   type LoadDraftResult,
 } from "../../../../../lib/character/storage";
-import type { Campaign, CampaignProfile } from "../../../../../lib/table";
+import type { Campaign } from "../../../../../lib/table";
 import {
   learnSpell,
   acquireTalentLevel,
@@ -65,20 +65,15 @@ interface Identidade {
 export default function CreateCharacterWizardClient({
   campaign,
   regras,
-  perfisIniciais,
   talentos,
   magias,
   itensLoja,
-  travarSelecaoDePerfil = false,
 }: {
   campaign: Campaign;
   regras: CharacterRulesPayload;
-  perfisIniciais: CampaignProfile[];
   talentos: TalentContent[];
   magias: SpellContent[];
   itensLoja: ItemContent[];
-  /** Jogador (não-narrador): só tem o próprio perfil na lista e não pode trocar (checkpoint pós-v0.94, fase 2). */
-  travarSelecaoDePerfil?: boolean;
 }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -110,10 +105,6 @@ export default function CreateCharacterWizardClient({
   const [talentoNivelIdEscolhido, setTalentoNivelIdEscolhido] = useState<string>("");
   const [carteira, setCarteira] = useState({ aretz_informal: aretzIniciais, cdi: 0, cdi_craqueada: 0 });
   const [inventario, setInventario] = useState<NonNullable<Character["inventario"]>>([]);
-  const [perfisState] = useState(perfisIniciais);
-  const [profileIdSelecionado, setProfileIdSelecionado] = useState<string>(
-    travarSelecaoDePerfil ? (perfisIniciais[0]?.id ?? "") : "",
-  );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [criando, setCriando] = useState(false);
   // Chave estável de idempotência (migration 0044) — gerada por
@@ -124,16 +115,14 @@ export default function CreateCharacterWizardClient({
   const [creationRequestId, setCreationRequestId] = useState(() => crypto.randomUUID());
 
   // ---------------------------------------------------------------
-  // Draft persistente (checkpoint draft persistente, migration 0047/
-  // 0048) — só para o fluxo do JOGADOR (`travarSelecaoDePerfil`, perfil
-  // conhecido desde o mount). Fluxo do narrador não persiste.
+  // Draft persistente — Fase 1 (revisão 4): chave é (campaign_id,
+  // owner_id) — sempre ativo para quem quer que esteja criando (não
+  // depende mais de "perfil conhecido", já que não existe mais perfil;
+  // a conta que cria sempre recebe controle automaticamente).
   // ---------------------------------------------------------------
-  const draftProfileId = travarSelecaoDePerfil ? profileIdSelecionado : "";
   const [itensEscolhidos, setItensEscolhidos] = useState<DraftItemEscolhido[]>([]);
   const [draftHydrated, setDraftHydrated] = useState(false);
-  const [loadState, setLoadState] = useState<"loading" | "error" | "confirm_discard" | "ready">(
-    draftProfileId ? "loading" : "ready",
-  );
+  const [loadState, setLoadState] = useState<"loading" | "error" | "confirm_discard" | "ready">("loading");
   const [loadMessage, setLoadMessage] = useState<string | null>(null);
   const [itensRemovidosAoRestaurar, setItensRemovidosAoRestaurar] = useState(0);
   const [salvandoESaindo, setSalvandoESaindo] = useState(false);
@@ -199,8 +188,7 @@ export default function CreateCharacterWizardClient({
     atributosValidos &&
     periciasValidas &&
     vertentesValidas &&
-    identidade.nome.trim().length > 0 &&
-    (!travarSelecaoDePerfil || Boolean(profileIdSelecionado));
+    identidade.nome.trim().length > 0;
 
   // ---------------------------------------------------------------
   // Draft persistente — montagem do payload mínimo (nunca carteira/
@@ -299,12 +287,10 @@ export default function CreateCharacterWizardClient({
 
   /** Descarta o draft inválido explicitamente confirmado pelo jogador e começa do zero. */
   async function handleDescartarDraftInvalido() {
-    if (draftProfileId) {
-      try {
-        await deleteCharacterCreationDraft(campaign.id, draftProfileId);
-      } catch (err) {
-        logError("wizard.draft.discardInvalid", err);
-      }
+    try {
+      await deleteCharacterCreationDraft(campaign.id);
+    } catch (err) {
+      logError("wizard.draft.discardInvalid", err);
     }
     revisionRef.current = 0;
     setLoadState("ready");
@@ -312,23 +298,16 @@ export default function CreateCharacterWizardClient({
   }
 
   async function handleTentarCarregarNovamente() {
-    if (!draftProfileId) return;
     setLoadState("loading");
-    const result = await loadCharacterCreationDraft(campaign.id, draftProfileId);
+    const result = await loadCharacterCreationDraft(campaign.id);
     await applyLoadResult(result);
   }
 
-  // Carregamento inicial — uma vez, só no fluxo do jogador com perfil
-  // conhecido. Narrador (sem perfil travado) nunca tenta carregar.
+  // Carregamento inicial — uma vez, para qualquer conta que abra o wizard.
   useEffect(() => {
-    if (!draftProfileId) {
-      setLoadState("ready");
-      setDraftHydrated(true);
-      return;
-    }
     let cancelado = false;
     (async () => {
-      const result = await loadCharacterCreationDraft(campaign.id, draftProfileId);
+      const result = await loadCharacterCreationDraft(campaign.id);
       if (!cancelado) await applyLoadResult(result);
     })();
     return () => {
@@ -349,7 +328,7 @@ export default function CreateCharacterWizardClient({
    * navegar.
    */
   function triggerSave(overridePayload?: DraftPayload): Promise<void> {
-    if (finalizingRef.current || !draftProfileId || loadState !== "ready") return Promise.resolve();
+    if (finalizingRef.current || loadState !== "ready") return Promise.resolve();
     if (savingRef.current) {
       pendingRef.current = true;
       return savingPromiseRef.current ?? Promise.resolve();
@@ -359,7 +338,7 @@ export default function CreateCharacterWizardClient({
       try {
         const payloadToSave = overridePayload ?? latestSnapshotRef.current;
         if (payloadToSave) {
-          const result = await saveCharacterCreationDraft(campaign.id, draftProfileId, payloadToSave, creationRequestId, revisionRef.current);
+          const result = await saveCharacterCreationDraft(campaign.id, payloadToSave, creationRequestId, revisionRef.current);
           if ("conflict" in result) {
             await handleConflitoDeRevisao();
           } else {
@@ -386,8 +365,7 @@ export default function CreateCharacterWizardClient({
   /** Outra aba/sessão já salvou uma revisão mais nova — resincroniza a partir do servidor (aceita perder a edição local não salva desta aba). */
   async function handleConflitoDeRevisao() {
     setErrorMessage("Este rascunho foi atualizado em outra aba ou sessão — recarregando o estado salvo mais recente.");
-    if (!draftProfileId) return;
-    const result = await loadCharacterCreationDraft(campaign.id, draftProfileId);
+    const result = await loadCharacterCreationDraft(campaign.id);
     await applyLoadResult(result);
   }
 
@@ -411,22 +389,16 @@ export default function CreateCharacterWizardClient({
   }
 
   async function handleSalvarESair() {
-    // `/mesas/[campaignId]` é a mesa do NARRADOR (guard owner-only, mesmo
-    // achado documentado em `finalizar()`) — um jogador sem personagem
-    // ainda não tem uma "própria ficha" para onde ir, então volta para o
-    // dashboard geral (`/mesas`, acessível a qualquer autenticado),
-    // nunca para a mesa do narrador.
-    const destino = draftProfileId ? "/mesas" : `/mesas/${campaign.id}`;
-    if (!draftProfileId) {
-      router.push(destino);
-      return;
-    }
+    // `/mesas/[campaignId]` é a mesa do NARRADOR (guard owner-only) —
+    // quem está criando pode não ter acesso a ela ainda, então volta
+    // para o dashboard geral (`/mesas`, acessível a qualquer conta
+    // autenticada).
     setSalvandoESaindo(true);
     setErrorMessage(null);
     try {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
       await triggerSave();
-      router.push(destino);
+      router.push("/mesas");
     } catch {
       setErrorMessage("Não foi possível salvar o rascunho agora — tente novamente antes de sair.");
     } finally {
@@ -439,13 +411,11 @@ export default function CreateCharacterWizardClient({
     finalizingRef.current = true;
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     try {
-      if (draftProfileId) await deleteCharacterCreationDraft(campaign.id, draftProfileId);
+      await deleteCharacterCreationDraft(campaign.id);
     } catch (err) {
       logError("wizard.draft.cancel", err);
     }
-    // Mesmo raciocínio de `handleSalvarESair`: `/mesas/[campaignId]` é
-    // owner-only — jogador sem personagem vai para o dashboard geral.
-    router.push(draftProfileId ? "/mesas" : `/mesas/${campaign.id}`);
+    router.push("/mesas");
   }
 
   function ajustarAtributo(id: string, delta: number) {
@@ -601,35 +571,22 @@ export default function CreateCharacterWizardClient({
         });
       }
 
-      // Migration 0044: uma única RPC transacional insere o personagem
-      // E reivindica o perfil como ativo (quando há perfil selecionado)
-      // — nunca mais duas chamadas separadas que podiam deixar o
-      // personagem criado sem reivindicação em caso de falha de rede
-      // entre elas. `creationRequestId` torna a chamada idempotente
-      // (duplo clique/retry devolvem o mesmo personagem).
-      await createCharacterFromWizard(campaign.id, character, regras, {
-        profileId: profileIdSelecionado || null,
-        creationRequestId,
-      });
+      // RPC transacional `complete_character_creation` (migration 0054,
+      // Fase 1 revisão 4): insere o personagem E concede controle
+      // (`character_controllers`) à conta que criou, na MESMA transação
+      // — nunca duas chamadas separadas. `creationRequestId` torna a
+      // chamada idempotente (duplo clique/retry devolvem o mesmo
+      // personagem).
+      const created = await createCharacterFromWizard(campaign.id, character, regras, { creationRequestId });
       // Reforço best-effort — a exclusão AUTORITATIVA já aconteceu
-      // dentro da mesma transação de `complete_character_creation`
-      // (migration 0048); se esta chamada falhar (aba fechando, rede),
-      // não há problema — não bloqueia a navegação.
-      if (draftProfileId) {
-        deleteCharacterCreationDraft(campaign.id, draftProfileId).catch((err) => {
-          logError("wizard.draft.cleanupBestEffort", err);
-        });
-      }
-      // Achado da rodada de consolidação (browser real): `/mesas/[campaignId]`
-      // é a mesa do NARRADOR (guard owner-only) — um jogador que acabou de
-      // criar o próprio personagem caía direto em "Acesso negado". Jogador
-      // vai para a própria ficha (mesmo padrão de link usado em JoinClient);
-      // narrador continua indo para a mesa, como já era aceito.
-      if (travarSelecaoDePerfil && profileIdSelecionado) {
-        router.push(`/ficha?campaignId=${campaign.id}&profileId=${profileIdSelecionado}`);
-      } else {
-        router.push(`/mesas/${campaign.id}`);
-      }
+      // dentro da mesma transação da RPC; se esta chamada falhar (aba
+      // fechando, rede), não há problema — não bloqueia a navegação.
+      deleteCharacterCreationDraft(campaign.id).catch((err) => {
+        logError("wizard.draft.cleanupBestEffort", err);
+      });
+      // A conta que criou sempre recebe controle automaticamente — vai
+      // direto para a própria ficha (caminho mínimo da Fase 1).
+      router.push(`/ficha?campaignId=${campaign.id}&characterId=${created.id}`);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao criar personagem.");
       setCriando(false);
@@ -690,14 +647,12 @@ export default function CreateCharacterWizardClient({
         </p>
       )}
 
-      {draftProfileId && (
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          <button onClick={handleSalvarESair} disabled={salvandoESaindo} style={{ ...btn, opacity: salvandoESaindo ? 0.6 : 1 }}>
-            {salvandoESaindo ? "Salvando…" : "Salvar e sair"}
-          </button>
-          <button onClick={handleCancelarCriacao} style={btn}>Cancelar criação</button>
-        </div>
-      )}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <button onClick={handleSalvarESair} disabled={salvandoESaindo} style={{ ...btn, opacity: salvandoESaindo ? 0.6 : 1 }}>
+          {salvandoESaindo ? "Salvando…" : "Salvar e sair"}
+        </button>
+        <button onClick={handleCancelarCriacao} style={btn}>Cancelar criação</button>
+      </div>
 
       <nav style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 24 }}>
         {ETAPAS.map((e) => (
@@ -930,29 +885,6 @@ export default function CreateCharacterWizardClient({
             </p>
           )}
 
-          {travarSelecaoDePerfil ? (
-            <p style={{ fontSize: 12, marginBottom: 16 }}>
-              <strong>Perfil:</strong> {perfisState[0]?.nickname ?? "(nenhum perfil reivindicado — não é possível criar)"}
-            </p>
-          ) : (
-            perfisState.length > 0 && (
-              <label style={{ fontSize: 12, display: "block", marginBottom: 16 }}>
-                Vincular a um perfil desta mesa (opcional — define como personagem ativo)
-                <select
-                  data-testid="wizard-perfil-select"
-                  value={profileIdSelecionado}
-                  onChange={(e) => setProfileIdSelecionado(e.target.value)}
-                  style={{ ...input, marginTop: 4, maxWidth: 320 }}
-                >
-                  <option value="">— nenhum —</option>
-                  {perfisState.map((p) => (
-                    <option key={p.id} value={p.id}>{p.nickname}</option>
-                  ))}
-                </select>
-              </label>
-            )
-          )}
-
           {!atributosValidos && (
             <p style={{ color: "#ff6b6b", fontSize: 12, marginBottom: 8 }}>
               Atributos inválidos — volte à Etapa 2 e distribua exatamente {atributoPontosAdicionais} pontos (teto {atributoTeto}).
@@ -965,11 +897,6 @@ export default function CreateCharacterWizardClient({
           )}
           {!identidade.nome.trim() && (
             <p style={{ color: "#ff6b6b", fontSize: 12, marginBottom: 8 }}>Nome é obrigatório (Etapa 1).</p>
-          )}
-          {travarSelecaoDePerfil && !profileIdSelecionado && (
-            <p style={{ color: "#ff6b6b", fontSize: 12, marginBottom: 8 }}>
-              Nenhum perfil reivindicado nesta mesa — entre por um convite antes de criar seu personagem.
-            </p>
           )}
 
           <button data-testid="wizard-finalizar-button" onClick={finalizar} disabled={!podeFinalizar || criando} style={{ ...btn, opacity: podeFinalizar && !criando ? 1 : 0.5 }}>

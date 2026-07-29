@@ -1,25 +1,23 @@
 #!/usr/bin/env node
 /**
- * Validação de CONCORRÊNCIA SIMULTÂNEA REAL da Etapa 12 (correção 7 +
- * validação integrada) contra o Supabase configurado no projeto.
+ * Validação de CONCORRÊNCIA SIMULTÂNEA REAL contra o Supabase configurado
+ * no projeto — reescrito na Fase 1 (revisão 4) do plano de contas/
+ * campanhas/convites/personagens. A versão anterior deste script testava
+ * concorrência do modelo de "perfil"/"sessão de perfil"
+ * (`campaign_profiles`/`profile_sessions`), removido por completo do
+ * banco — os cenários abaixo testam concorrência do modelo atual:
+ * `character_controllers` (controle de personagem) e
+ * `complete_character_creation` (idempotência da criação via wizard).
  *
- * Diferente da rodada anterior (que só provou RLS/RPC com chamadas
- * SEQUENCIAIS via `SET ROLE`), este script dispara pares de operações
- * usando DOIS CLIENTES `@supabase/supabase-js` independentes, cada um
- * com sua PRÓPRIA sessão real (`auth.signInWithPassword`), disparados
- * com `Promise.allSettled` sem aguardar um antes do outro — ambas as
- * chamadas HTTP saem antes de qualquer resultado ser conhecido.
+ * Dois clientes `@supabase/supabase-js` independentes, cada um com sua
+ * PRÓPRIA sessão real (`auth.signInWithPassword`), disparados com
+ * `Promise.allSettled` sem aguardar um antes do outro.
  *
- * Service role é usado SOMENTE para: criar usuários de teste
- * (`auth.admin.createUser`), preparar fixtures (campanha/perfis/
- * personagens/convite) e inspecionar/limpar o estado final — NUNCA
- * como identidade submetida à autorização testada.
- *
- * Nunca imprime: token bruto, senha, chave anon/service role, cookie,
- * `session_token_hash`.
+ * Service role é usado SOMENTE para: criar usuários de teste, preparar
+ * fixtures e inspecionar/limpar o estado final — NUNCA como identidade
+ * submetida à autorização testada.
  *
  * Uso: npx tsx scripts/dev/validate-campaign-session-concurrency.mjs
- * (roda sob Node puro — .mjs, sem dependência de bundler do Next).
  */
 import { config as loadDotenv } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
@@ -83,28 +81,17 @@ async function addActiveMember(campaignId, userId, role = "player") {
   if (error) throw new Error(`Falha ao adicionar membership: ${error.message}`);
 }
 
-async function createProfile(campaignId, nickname) {
+async function createCharacter(campaignId, name) {
   const id = randomUUID();
-  const { error } = await admin.from("campaign_profiles").insert({ id, campaign_id: campaignId, nickname });
-  if (error) throw new Error(`Falha ao criar perfil: ${error.message}`);
-  return id;
-}
-
-async function createCharacter(campaignId, profileId, name) {
-  const id = randomUUID();
-  const { error } = await admin.from("characters").insert({
-    id, name, payload: { nome: name }, campaign_id: campaignId, profile_id: profileId,
-  });
+  const { error } = await admin.from("characters").insert({ id, name, payload: { nome: name }, campaign_id: campaignId });
   if (error) throw new Error(`Falha ao criar personagem: ${error.message}`);
   return id;
 }
 
 let passed = 0;
 let failed = 0;
-const report = [];
 
 function record(scenario, ok, detail) {
-  report.push({ scenario, ok, detail });
   if (ok) {
     passed++;
     console.log(`ok - ${scenario}: ${detail}`);
@@ -115,312 +102,139 @@ function record(scenario, ok, detail) {
 }
 
 // ---------------------------------------------------------------------
-// Cenário 1 — reivindicação simultânea do mesmo perfil (Player A vs B)
+// Cenário 1 — grant_character_control simultâneo para o MESMO
+// (character, user) — deve convergir para exatamente uma linha
+// (chave primária composta (character_id, user_id) com ON CONFLICT DO
+// NOTHING, migration 0051), sem erro em nenhuma das duas chamadas.
 // ---------------------------------------------------------------------
 async function scenario1() {
   const owner = await createFixtureUser("owner-s1");
-  const playerA = await createFixtureUser("playerA-s1");
-  const playerB = await createFixtureUser("playerB-s1");
+  const player = await createFixtureUser("player-s1");
   const campaignId = await createCampaign(owner.id, "S1");
-  await addActiveMember(campaignId, playerA.id);
-  await addActiveMember(campaignId, playerB.id);
-  const profileId = await createProfile(campaignId, "Perfil disputado S1");
-
-  const clientA = await signIn(playerA);
-  const clientB = await signIn(playerB);
-
-  const t0 = Date.now();
-  const [resA, resB] = await Promise.allSettled([
-    clientA.rpc("claim_campaign_profile", { p_profile_id: profileId }),
-    clientB.rpc("claim_campaign_profile", { p_profile_id: profileId }),
-  ]);
-  const elapsed = Date.now() - t0;
-
-  const okA = resA.status === "fulfilled" && !resA.value.error;
-  const okB = resB.status === "fulfilled" && !resB.value.error;
-  const exactlyOneWon = (okA && !okB) || (!okA && okB);
-
-  const { data: profileRow } = await admin.from("campaign_profiles").select("user_id").eq("id", profileId).single();
-  const singleWinnerInDb = profileRow?.user_id === playerA.id || profileRow?.user_id === playerB.id;
-
-  const { count } = await admin.from("campaign_profiles").select("id", { count: "exact", head: true }).eq("campaign_id", campaignId);
-
-  record(
-    "Cenário 1 (claim simultâneo)",
-    exactlyOneWon && singleWinnerInDb && count === 1,
-    `disparo simultâneo em ${elapsed}ms; A ${okA ? "venceu" : "falhou"}, B ${okB ? "venceu" : "falhou"}; user_id final=${singleWinnerInDb ? "único" : "INCONSISTENTE"}; perfis na campanha=${count}`,
-  );
-}
-
-// ---------------------------------------------------------------------
-// Cenário 2 — dupla entrada simultânea no mesmo perfil (owner, duas
-// conexões distintas — só o owner pode iniciar sessão de perfil não
-// reivindicado neste fixture, então usamos duas sessões de login
-// independentes do MESMO usuário, não uma conexão compartilhada).
-// ---------------------------------------------------------------------
-async function scenario2() {
-  const owner = await createFixtureUser("owner-s2");
-  const campaignId = await createCampaign(owner.id, "S2");
-  const profileId = await createProfile(campaignId, "Perfil S2");
+  await addActiveMember(campaignId, player.id);
+  const characterId = await createCharacter(campaignId, "S1 Personagem");
 
   const clientOwner1 = await signIn(owner);
   const clientOwner2 = await signIn(owner); // segunda sessão real, independente
 
   const t0 = Date.now();
   const [res1, res2] = await Promise.allSettled([
-    clientOwner1.rpc("enter_campaign_profile", { p_profile_id: profileId, p_session_id: "concurrency-session-1" }),
-    clientOwner2.rpc("enter_campaign_profile", { p_profile_id: profileId, p_session_id: "concurrency-session-2" }),
+    clientOwner1.rpc("grant_character_control", { p_character_id: characterId, p_user_id: player.id }),
+    clientOwner2.rpc("grant_character_control", { p_character_id: characterId, p_user_id: player.id }),
   ]);
   const elapsed = Date.now() - t0;
 
   const ok1 = res1.status === "fulfilled" && !res1.value.error;
   const ok2 = res2.status === "fulfilled" && !res2.value.error;
 
-  const { count: activeCount } = await admin
-    .from("profile_sessions")
-    .select("id", { count: "exact", head: true })
-    .eq("profile_id", profileId)
-    .eq("status", "active");
+  const { count } = await admin
+    .from("character_controllers")
+    .select("*", { count: "exact", head: true })
+    .eq("character_id", characterId)
+    .eq("user_id", player.id);
 
-  // Exatamente uma sessão "active" deve sobrar (a segunda entrada libera a anterior).
   record(
-    "Cenário 2 (dupla entrada simultânea)",
-    activeCount === 1,
-    `disparo simultâneo em ${elapsed}ms; entrada1 ${ok1 ? "sucesso" : "falhou"}, entrada2 ${ok2 ? "sucesso" : "falhou"}; sessões active restantes=${activeCount}`,
+    "Cenário 1 (grant_character_control simultâneo, mesmo alvo)",
+    ok1 && ok2 && count === 1,
+    `disparo simultâneo em ${elapsed}ms; grant1 ${ok1 ? "sucesso" : "falhou"}, grant2 ${ok2 ? "sucesso" : "falhou"}; linhas finais em character_controllers=${count}`,
   );
 }
 
 // ---------------------------------------------------------------------
-// Cenário 3 — heartbeat vs leave simultâneos na mesma sessão.
+// Cenário 2 — grant vs revoke simultâneos do MESMO (character, user).
+// Resultado determinístico não é garantido pela ordem de chegada (é
+// uma corrida real), mas o estado final tem que ser um dos dois
+// estados válidos (linha existe OU não existe) — nunca erro/estado
+// inconsistente, e uma segunda leitura direta confirma que o estado é
+// estável (não fica "piscando").
+// ---------------------------------------------------------------------
+async function scenario2() {
+  const owner = await createFixtureUser("owner-s2");
+  const player = await createFixtureUser("player-s2");
+  const campaignId = await createCampaign(owner.id, "S2");
+  await addActiveMember(campaignId, player.id);
+  const characterId = await createCharacter(campaignId, "S2 Personagem");
+  await admin.from("character_controllers").insert({ character_id: characterId, campaign_id: campaignId, user_id: player.id });
+
+  const clientOwner1 = await signIn(owner);
+  const clientOwner2 = await signIn(owner);
+
+  const t0 = Date.now();
+  const [grantRes, revokeRes] = await Promise.allSettled([
+    clientOwner1.rpc("grant_character_control", { p_character_id: characterId, p_user_id: player.id }),
+    clientOwner2.rpc("revoke_character_control", { p_character_id: characterId, p_user_id: player.id }),
+  ]);
+  const elapsed = Date.now() - t0;
+
+  const grantOk = grantRes.status === "fulfilled" && !grantRes.value.error;
+  const revokeOk = revokeRes.status === "fulfilled" && !revokeRes.value.error;
+
+  const { count: countAfter1 } = await admin.from("character_controllers").select("*", { count: "exact", head: true }).eq("character_id", characterId).eq("user_id", player.id);
+  await new Promise((r) => setTimeout(r, 200));
+  const { count: countAfter2 } = await admin.from("character_controllers").select("*", { count: "exact", head: true }).eq("character_id", characterId).eq("user_id", player.id);
+
+  record(
+    "Cenário 2 (grant vs revoke simultâneos)",
+    grantOk && revokeOk && (countAfter1 === 0 || countAfter1 === 1) && countAfter1 === countAfter2,
+    `disparo simultâneo em ${elapsed}ms; grant ${grantOk ? "sucesso" : "falhou"}, revoke ${revokeOk ? "sucesso" : "falhou"}; estado final estável=${countAfter1 === countAfter2}, linhas=${countAfter1}`,
+  );
+}
+
+// ---------------------------------------------------------------------
+// Cenário 3 — complete_character_creation com o MESMO creationRequestId
+// disparado duas vezes simultaneamente (duplo clique/retry) — deve
+// produzir exatamente UM personagem (idempotência real sob concorrência,
+// não só sob chamadas sequenciais), com a segunda resposta marcada
+// idempotentReplay=true.
 // ---------------------------------------------------------------------
 async function scenario3() {
   const owner = await createFixtureUser("owner-s3");
-  const playerA = await createFixtureUser("playerA-s3");
+  const player = await createFixtureUser("player-s3");
   const campaignId = await createCampaign(owner.id, "S3");
-  await addActiveMember(campaignId, playerA.id);
-  const profileId = await createProfile(campaignId, "Perfil S3");
-  await admin.from("campaign_profiles").update({ user_id: playerA.id, claimed_at: new Date().toISOString() }).eq("id", profileId);
+  await addActiveMember(campaignId, player.id);
 
-  const clientA = await signIn(playerA);
-  const { data: enterData, error: enterErr } = await clientA.rpc("enter_campaign_profile", {
-    p_profile_id: profileId,
-    p_session_id: "concurrency-s3",
-  });
-  if (enterErr) throw new Error(`Falha ao entrar no perfil (S3 setup): ${enterErr.message}`);
-  const { profileSessionId, rawSessionToken } = enterData;
-
-  const clientA2 = await signIn(playerA); // segunda conexão real do mesmo jogador
+  const clientPlayer1 = await signIn(player);
+  const clientPlayer2 = await signIn(player);
+  const creationRequestId = randomUUID();
+  const payload = {
+    nome: "S3 Personagem Duplo Clique",
+    niveis_vertente: {},
+    magias_aprendidas: [],
+    talentos_adquiridos: [],
+    inventario: [],
+    carteira: { aretz_informal: 5000, cdi: 0, cdi_craqueada: 0 },
+  };
 
   const t0 = Date.now();
-  const [heartbeatRes, leaveRes] = await Promise.allSettled([
-    clientA.rpc("heartbeat_profile_session", { p_profile_id: profileId, p_profile_session_id: profileSessionId, p_raw_session_token: rawSessionToken }),
-    clientA2.rpc("leave_campaign_profile", { p_profile_id: profileId, p_profile_session_id: profileSessionId, p_raw_session_token: rawSessionToken }),
+  const [res1, res2] = await Promise.allSettled([
+    clientPlayer1.rpc("complete_character_creation", { p_campaign_id: campaignId, p_character_payload: { ...payload, metadados: { creationRequestId } }, p_creation_request_id: creationRequestId }),
+    clientPlayer2.rpc("complete_character_creation", { p_campaign_id: campaignId, p_character_payload: { ...payload, metadados: { creationRequestId } }, p_creation_request_id: creationRequestId }),
   ]);
   const elapsed = Date.now() - t0;
 
-  const { data: sessionRow } = await admin.from("profile_sessions").select("status").eq("id", profileSessionId).single();
-  const { data: profileRow } = await admin.from("campaign_profiles").select("is_locked").eq("id", profileId).single();
+  const ok1 = res1.status === "fulfilled" && !res1.value.error;
+  const ok2 = res2.status === "fulfilled" && !res2.value.error;
 
-  // Garantia real da implementação (lida no código, não inventada): status
-  // final deve ser um estado TERMINAL determinístico ('exited' se leave
-  // venceu; heartbeat nunca reverte 'exited' de volta para 'active') e o
-  // perfil não pode ficar preso bloqueado se a sessão não é mais active.
-  const statusIsTerminalOrActive = ["exited", "active"].includes(sessionRow?.status);
-  const neverBothWrong = !(sessionRow?.status === "active" && profileRow?.is_locked === false);
-
-  record(
-    "Cenário 3 (heartbeat vs leave simultâneos)",
-    statusIsTerminalOrActive && neverBothWrong,
-    `disparo simultâneo em ${elapsed}ms; heartbeat ${heartbeatRes.status === "fulfilled" && !heartbeatRes.value.error ? "sucesso" : "falhou"}, leave ${leaveRes.status === "fulfilled" && !leaveRes.value.error ? "sucesso" : "falhou"}; status final da sessão=${sessionRow?.status}; perfil ainda bloqueado=${profileRow?.is_locked}`,
-  );
-}
-
-// ---------------------------------------------------------------------
-// Cenário 4 — force_release (owner) vs heartbeat (jogador) simultâneos.
-// ---------------------------------------------------------------------
-async function scenario4() {
-  const owner = await createFixtureUser("owner-s4");
-  const playerA = await createFixtureUser("playerA-s4");
-  const campaignId = await createCampaign(owner.id, "S4");
-  await addActiveMember(campaignId, playerA.id);
-  const profileId = await createProfile(campaignId, "Perfil S4");
-  await admin.from("campaign_profiles").update({ user_id: playerA.id, claimed_at: new Date().toISOString() }).eq("id", profileId);
-
-  const clientA = await signIn(playerA);
-  const { data: enterData, error: enterErr } = await clientA.rpc("enter_campaign_profile", {
-    p_profile_id: profileId,
-    p_session_id: "concurrency-s4",
-  });
-  if (enterErr) throw new Error(`Falha ao entrar no perfil (S4 setup): ${enterErr.message}`);
-  const { profileSessionId, rawSessionToken } = enterData;
-
-  const clientOwner = await signIn(owner);
-
-  const t0 = Date.now();
-  const [releaseRes, heartbeatRes] = await Promise.allSettled([
-    clientOwner.rpc("force_release_campaign_profile", { p_profile_id: profileId }),
-    clientA.rpc("heartbeat_profile_session", { p_profile_id: profileId, p_profile_session_id: profileSessionId, p_raw_session_token: rawSessionToken }),
-  ]);
-  const elapsed = Date.now() - t0;
-
-  const { data: profileRow } = await admin.from("campaign_profiles").select("is_locked").eq("id", profileId).single();
-
-  // Depois da corrida, tentar usar o token para ler o personagem (não
-  // deveria autorizar mais nada, independente de quem venceu a corrida).
-  const { data: charAfter } = await clientA.rpc("get_character_for_profile_session", {
-    p_campaign_id: campaignId,
-    p_profile_id: profileId,
-    p_profile_session_id: profileSessionId,
-    p_raw_session_token: rawSessionToken,
-  });
+  const { count: charCount } = await admin
+    .from("characters")
+    .select("*", { count: "exact", head: true })
+    .eq("campaign_id", campaignId)
+    .eq("owner_id", player.id);
 
   record(
-    "Cenário 4 (force_release vs heartbeat simultâneos)",
-    profileRow?.is_locked === false && (!charAfter || charAfter.length === 0),
-    `disparo simultâneo em ${elapsed}ms; release ${releaseRes.status === "fulfilled" && !releaseRes.value.error ? "sucesso" : "falhou"}, heartbeat ${heartbeatRes.status === "fulfilled" && !heartbeatRes.value.error ? "sucesso" : "falhou"}; perfil bloqueado=${profileRow?.is_locked}; personagem ainda acessível pelo token=${!!charAfter?.length}`,
-  );
-}
-
-// ---------------------------------------------------------------------
-// Cenário 5 — save (jogador) vs troca de personagem ativo (owner)
-// simultâneos, mais uma variante hostil (personagem de OUTRO perfil).
-// ---------------------------------------------------------------------
-async function scenario5() {
-  const owner = await createFixtureUser("owner-s5");
-  const playerA = await createFixtureUser("playerA-s5");
-  const campaignId = await createCampaign(owner.id, "S5");
-  await addActiveMember(campaignId, playerA.id);
-  const profileId = await createProfile(campaignId, "Perfil S5");
-  await admin.from("campaign_profiles").update({ user_id: playerA.id, claimed_at: new Date().toISOString() }).eq("id", profileId);
-  const charA1 = await createCharacter(campaignId, profileId, "S5 Personagem A1");
-  const charA2 = await createCharacter(campaignId, profileId, "S5 Personagem A2");
-  await admin.from("campaign_profiles").update({ active_character_id: charA1 }).eq("id", profileId);
-
-  const clientA = await signIn(playerA);
-  const { data: enterData, error: enterErr } = await clientA.rpc("enter_campaign_profile", {
-    p_profile_id: profileId,
-    p_session_id: "concurrency-s5",
-  });
-  if (enterErr) throw new Error(`Falha ao entrar no perfil (S5 setup): ${enterErr.message}`);
-  const { profileSessionId, rawSessionToken } = enterData;
-
-  const clientOwner = await signIn(owner);
-
-  const t0 = Date.now();
-  const [saveRes, swapRes] = await Promise.allSettled([
-    clientA.rpc("save_character_for_profile_session", {
-      p_campaign_id: campaignId,
-      p_profile_id: profileId,
-      p_profile_session_id: profileSessionId,
-      p_raw_session_token: rawSessionToken,
-      p_character_id: charA1,
-      p_name: "S5 A1 salvo pelo jogador",
-      p_payload: { nome: "S5 A1 salvo pelo jogador" },
-    }),
-    clientOwner.rpc("set_campaign_profile_active_character", { p_profile_id: profileId, p_character_id: charA2 }),
-  ]);
-  const elapsed = Date.now() - t0;
-
-  const { data: charA1Row } = await admin.from("characters").select("name").eq("id", charA1).single();
-  const { data: charA2Row } = await admin.from("characters").select("name").eq("id", charA2).single();
-
-  const a2Untouched = charA2Row?.name === "S5 Personagem A2";
-  const a1EitherSavedOrUnchanged = ["S5 A1 salvo pelo jogador", "S5 Personagem A1"].includes(charA1Row?.name);
-
-  record(
-    "Cenário 5 (save vs troca de personagem ativo simultâneos)",
-    a2Untouched && a1EitherSavedOrUnchanged,
-    `disparo simultâneo em ${elapsed}ms; save ${saveRes.status === "fulfilled" && !saveRes.value.error ? "sucesso" : "rejeitado"}, swap ${swapRes.status === "fulfilled" && !swapRes.value.error ? "sucesso" : "rejeitado"}; A2 intocado=${a2Untouched}; A1 estado=${a1EitherSavedOrUnchanged ? "consistente" : "INCONSISTENTE"}`,
-  );
-
-  // Variante hostil: personagem de OUTRO perfil (não da mesma "família").
-  const playerB = await createFixtureUser("playerB-s5");
-  await addActiveMember(campaignId, playerB.id);
-  const profileB = await createProfile(campaignId, "Perfil B S5");
-  await admin.from("campaign_profiles").update({ user_id: playerB.id, claimed_at: new Date().toISOString() }).eq("id", profileB);
-  const charB = await createCharacter(campaignId, profileB, "S5 Personagem B (alheio)");
-
-  const { error: hostileSwapErr } = await clientOwner.rpc("set_campaign_profile_active_character", { p_profile_id: profileId, p_character_id: charB });
-  const { data: hostileSaveData } = await clientA.rpc("save_character_for_profile_session", {
-    p_campaign_id: campaignId,
-    p_profile_id: profileId,
-    p_profile_session_id: profileSessionId,
-    p_raw_session_token: rawSessionToken,
-    p_character_id: charB,
-    p_name: "tentativa hostil",
-    p_payload: { nome: "tentativa hostil" },
-  });
-  const { data: charBAfter } = await admin.from("characters").select("name").eq("id", charB).single();
-
-  record(
-    "Cenário 5b (variante hostil — personagem de outro perfil)",
-    !!hostileSwapErr && (!hostileSaveData || hostileSaveData.length === 0) && charBAfter?.name === "S5 Personagem B (alheio)",
-    `troca hostil ${hostileSwapErr ? "rejeitada corretamente" : "NÃO REJEITADA"}; save hostil ${hostileSaveData?.length ? "TOCOU O PERSONAGEM ALHEIO" : "não tocou nada"}; personagem B final=intocado`,
-  );
-}
-
-// ---------------------------------------------------------------------
-// Cenário 6 — expire_stale_profile_sessions vs heartbeat simultâneos.
-// ---------------------------------------------------------------------
-async function scenario6() {
-  const owner = await createFixtureUser("owner-s6");
-  const playerA = await createFixtureUser("playerA-s6");
-  const playerB = await createFixtureUser("playerB-s6");
-  const campaignId = await createCampaign(owner.id, "S6");
-  await addActiveMember(campaignId, playerA.id);
-  await addActiveMember(campaignId, playerB.id);
-
-  // Perfil A: sessão DELIBERADAMENTE vencida (last_seen_at no passado, via fixture).
-  const profileStale = await createProfile(campaignId, "Perfil S6 vencido");
-  await admin.from("campaign_profiles").update({ user_id: playerA.id, claimed_at: new Date().toISOString() }).eq("id", profileStale);
-  const clientA = await signIn(playerA);
-  const { data: enterStale, error: enterStaleErr } = await clientA.rpc("enter_campaign_profile", { p_profile_id: profileStale, p_session_id: "concurrency-s6-stale" });
-  if (enterStaleErr) throw new Error(`Falha ao entrar (S6 stale setup): ${enterStaleErr.message}`);
-  // Fixture administrativa: força last_seen_at para 5 minutos atrás (bem além do limite de 30s).
-  const staleTimestamp = new Date(Date.now() - 5 * 60_000).toISOString();
-  await admin.from("profile_sessions").update({ last_seen_at: staleTimestamp }).eq("id", enterStale.profileSessionId);
-  await admin.from("campaign_profiles").update({ last_seen_at: staleTimestamp }).eq("id", profileStale);
-
-  // Perfil B: sessão RECENTE (acabou de entrar), não deve expirar.
-  const profileFresh = await createProfile(campaignId, "Perfil S6 recente");
-  await admin.from("campaign_profiles").update({ user_id: playerB.id, claimed_at: new Date().toISOString() }).eq("id", profileFresh);
-  const clientB = await signIn(playerB);
-  const { data: enterFresh, error: enterFreshErr } = await clientB.rpc("enter_campaign_profile", { p_profile_id: profileFresh, p_session_id: "concurrency-s6-fresh" });
-  if (enterFreshErr) throw new Error(`Falha ao entrar (S6 fresh setup): ${enterFreshErr.message}`);
-
-  const t0 = Date.now();
-  const [expireRes, heartbeatStaleRes, heartbeatFreshRes] = await Promise.allSettled([
-    clientA.rpc("expire_stale_profile_sessions", { p_campaign_id: campaignId, p_stale_after_seconds: 30 }),
-    clientA.rpc("heartbeat_profile_session", { p_profile_id: profileStale, p_profile_session_id: enterStale.profileSessionId, p_raw_session_token: enterStale.rawSessionToken }),
-    clientB.rpc("heartbeat_profile_session", { p_profile_id: profileFresh, p_profile_session_id: enterFresh.profileSessionId, p_raw_session_token: enterFresh.rawSessionToken }),
-  ]);
-  const elapsed = Date.now() - t0;
-
-  const { data: staleSessionAfter } = await admin.from("profile_sessions").select("status").eq("id", enterStale.profileSessionId).single();
-  const { data: freshSessionAfter } = await admin.from("profile_sessions").select("status").eq("id", enterFresh.profileSessionId).single();
-  const { data: staleProfileAfter } = await admin.from("campaign_profiles").select("is_locked").eq("id", profileStale).single();
-
-  const staleCorrectlyTerminal = ["expired"].includes(staleSessionAfter?.status) || heartbeatStaleRes.status === "rejected" || (heartbeatStaleRes.status === "fulfilled" && !!heartbeatStaleRes.value.error);
-  const freshRemainsActive = freshSessionAfter?.status === "active";
-  const staleLockReleased = staleProfileAfter?.is_locked === false || staleSessionAfter?.status !== "expired";
-
-  record(
-    "Cenário 6 (expire vs heartbeat simultâneos)",
-    staleCorrectlyTerminal && freshRemainsActive,
-    `disparo simultâneo em ${elapsed}ms; expire ${expireRes.status === "fulfilled" ? "rodou" : "falhou"}; sessão vencida final=${staleSessionAfter?.status} (lock=${staleProfileAfter?.is_locked}); sessão recente final=${freshSessionAfter?.status}`,
+    "Cenário 3 (criação de personagem idempotente sob concorrência real)",
+    ok1 && ok2 && charCount === 1,
+    `disparo simultâneo em ${elapsed}ms; criação1 ${ok1 ? "sucesso" : "falhou"}, criação2 ${ok2 ? "sucesso" : "falhou"}; personagens criados=${charCount} (esperado 1)`,
   );
 }
 
 async function cleanup() {
   console.log("\nLimpando fixtures...");
   for (const campaignId of createdCampaignIds) {
-    await admin.from("campaign_content_changelog").delete().eq("campaign_id", campaignId);
-    await admin.from("campaign_content_documents").delete().eq("campaign_id", campaignId);
-    await admin.from("campaign_content_drafts").delete().eq("campaign_id", campaignId);
     await admin.from("table_logs").delete().eq("campaign_id", campaignId);
-    await admin.from("profile_sessions").delete().eq("campaign_id", campaignId);
+    await admin.from("character_creation_drafts").delete().eq("campaign_id", campaignId);
+    await admin.from("character_controllers").delete().eq("campaign_id", campaignId);
     await admin.from("characters").delete().eq("campaign_id", campaignId);
-    await admin.from("campaign_profiles").delete().eq("campaign_id", campaignId);
     await admin.from("campaign_invites").delete().eq("campaign_id", campaignId);
     await admin.from("campaign_members").delete().eq("campaign_id", campaignId);
     await admin.from("campaigns").delete().eq("id", campaignId);
@@ -429,7 +243,6 @@ async function cleanup() {
     await admin.auth.admin.deleteUser(userId).catch(() => {});
   }
 
-  // Confirmação por contagem: zero fixtures restantes.
   let remaining = 0;
   for (const campaignId of createdCampaignIds) {
     const { count } = await admin.from("campaigns").select("id", { count: "exact", head: true }).eq("id", campaignId);
@@ -444,9 +257,6 @@ async function main() {
     await scenario1();
     await scenario2();
     await scenario3();
-    await scenario4();
-    await scenario5();
-    await scenario6();
   } finally {
     const cleanExit = await cleanup();
     console.log(`\n${passed} cenários aprovados, ${failed} reprovados.`);

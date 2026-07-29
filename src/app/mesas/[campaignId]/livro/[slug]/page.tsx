@@ -6,7 +6,7 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "../../../../../lib/auth/session";
-import { getCampaign, listCampaignProfiles } from "../../../../../lib/table/storage";
+import { getCampaign, isCampaignMember } from "../../../../../lib/table/storage";
 import { listCapitulosEffective } from "../../../../../lib/campaignContent";
 import type { Campaign } from "../../../../../lib/table";
 
@@ -57,19 +57,16 @@ export default async function LivroCapituloPage({ params }: PageProps) {
   }
 
   const isOwner = campaign.owner_id === user.id;
-  if (!isOwner) {
-    const perfis = await listCampaignProfiles(campaignId).catch(() => []);
-    if (!perfis.some((p) => p.user_id === user.id)) {
-      return (
-        <main style={{ maxWidth: 640, margin: "60px auto", padding: "0 20px" }}>
-          <h1 style={{ fontSize: 20 }}>Acesso negado</h1>
-          <p style={{ fontSize: 13, opacity: 0.8 }}>
-            Você precisa entrar nesta mesa por um convite e reivindicar um perfil para ler o Livro.
-          </p>
-          <Link href="/mesas" style={{ color: "#5ec8ff", fontSize: 13 }}>← Minhas mesas</Link>
-        </main>
-      );
-    }
+  if (!isOwner && !(await isCampaignMember(campaignId))) {
+    return (
+      <main style={{ maxWidth: 640, margin: "60px auto", padding: "0 20px" }}>
+        <h1 style={{ fontSize: 20 }}>Acesso negado</h1>
+        <p style={{ fontSize: 13, opacity: 0.8 }}>
+          Você precisa entrar nesta mesa por um convite para ler o Livro.
+        </p>
+        <Link href="/mesas" style={{ color: "#5ec8ff", fontSize: 13 }}>← Minhas mesas</Link>
+      </main>
+    );
   }
 
   const docs = await listCapitulosEffective(campaignId).catch(() => []);

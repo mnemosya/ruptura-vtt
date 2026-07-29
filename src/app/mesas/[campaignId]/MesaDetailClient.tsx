@@ -3,37 +3,35 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  createCampaignProfile,
-  listCampaignProfiles,
-  setCampaignProfileActiveCharacter,
-  forceReleaseCampaignProfile,
   createCampaignInvite,
   listCampaignInvites,
   revokeCampaignInvite,
-  listProfileSessions,
+  listCampaignMembers,
+  removeCampaignMember,
   listLogsForViewer,
   addLog,
-  expireStaleProfileSessions,
   getCampaign,
 } from "../../../lib/table/storage";
 import { endCampaignRound } from "../../../lib/table/endRound";
 import { buildCampaignEndRoundSummary } from "../../../lib/table/endRoundSummary";
 import { endCampaignScene } from "../../../lib/table/endScene";
 import { buildCampaignEndSceneSummary } from "../../../lib/table/endSceneSummary";
-import { computeProfileStatus } from "../../../lib/table/profileStatus";
 import { useCampaignRealtime } from "../../../lib/realtime/useCampaignRealtime";
 import { describeRealtimeStatus, type RealtimeStatus } from "../../../lib/realtime/tableRealtime";
 import {
   listCharactersForNarratorCampaign,
   listUnassignedCharactersForNarrator,
+  listCharacterControllers,
+  grantCharacterControl,
+  revokeCharacterControl,
   assignCharacterToCampaign,
-  assignCharacterToProfile,
   createCharacterForCampaign,
   renameCharacter,
   archiveCharacter,
   restoreCharacter,
   duplicateCharacter,
   updateCharacter,
+  type CharacterController,
 } from "../../../lib/character/storage";
 import {
   createInitialCharacter,
@@ -57,7 +55,7 @@ import {
   type ReactionRules,
 } from "../../../lib/character";
 import type { TechnicalContentItem } from "../../../lib/content";
-import type { Campaign, CampaignProfile, CampaignInvite, ProfileSession, TableLogEntry } from "../../../lib/table";
+import type { Campaign, CampaignMember, CampaignInvite, TableLogEntry } from "../../../lib/table";
 import type { CharacterRecord, CharacterRulesPayload } from "../../../lib/character";
 import { formatTableLogEntry } from "../../dev/character-sheet/components/MesaTab";
 import TurnTrackPanel from "../../components/TurnTrackPanel";
@@ -172,9 +170,9 @@ const card: React.CSSProperties = { background: "#1d1e24", borderRadius: 8, padd
 
 interface Props {
   campaign: Campaign;
-  perfisIniciais: CampaignProfile[];
+  membrosIniciais: CampaignMember[];
   convitesIniciais: CampaignInvite[];
-  sessoesIniciais: ProfileSession[];
+  controlesIniciais: CharacterController[];
   logsIniciais: TableLogEntry[];
   /** Personagens já ligados a esta mesa (campaign_id === campaign.id, checkpoint v0.23). */
   personagensDaMesaIniciais: CharacterRecord[];
@@ -201,9 +199,9 @@ const DEFENSE_TYPE_LABELS: Record<DefenseType, string> = {
 
 export default function MesaDetailClient({
   campaign,
-  perfisIniciais,
+  membrosIniciais,
   convitesIniciais,
-  sessoesIniciais,
+  controlesIniciais,
   logsIniciais,
   personagensDaMesaIniciais,
   personagensDisponiveisIniciais,
@@ -215,15 +213,14 @@ export default function MesaDetailClient({
   reactionRules,
 }: Props) {
   const [campaignState, setCampaignState] = useState(campaign);
-  const [perfis, setPerfis] = useState(perfisIniciais);
+  const [membros, setMembros] = useState(membrosIniciais);
   const [convites, setConvites] = useState(convitesIniciais);
-  const [sessoes, setSessoes] = useState(sessoesIniciais);
+  const [controles, setControles] = useState(controlesIniciais);
   const [logs, setLogs] = useState(logsIniciais);
   const [personagensDaMesa, setPersonagensDaMesa] = useState(personagensDaMesaIniciais);
   const [personagensDisponiveis, setPersonagensDisponiveis] = useState(personagensDisponiveisIniciais);
   const [personagemParaVincular, setPersonagemParaVincular] = useState("");
   const [novoPersonagemNome, setNovoPersonagemNome] = useState("");
-  const [novoPerfil, setNovoPerfil] = useState("");
   const [conviteLabel, setConviteLabel] = useState("");
   const [linkNovo, setLinkNovo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -272,11 +269,11 @@ export default function MesaDetailClient({
     setError(err instanceof Error ? err.message : msg);
   }
 
-  async function reloadPerfis() {
-    try {
-      setPerfis(await listCampaignProfiles(campaign.id));
-      setSessoes(await listProfileSessions(campaign.id));
-    } catch (e) { fail(e, "Erro ao recarregar perfis."); }
+  async function reloadMembros() {
+    try { setMembros(await listCampaignMembers(campaign.id)); } catch (e) { fail(e, "Erro ao recarregar participantes."); }
+  }
+  async function reloadControles() {
+    try { setControles(await listCharacterControllers(campaign.id)); } catch (e) { fail(e, "Erro ao recarregar controles de personagem."); }
   }
   async function reloadConvites() {
     try { setConvites(await listCampaignInvites(campaign.id)); } catch (e) { fail(e, "Erro ao recarregar convites."); }
@@ -299,7 +296,7 @@ export default function MesaDetailClient({
   }
   /** Botão "Recarregar mesa" (checkpoint v0.46) — fallback manual se Realtime estiver indisponível/com erro. */
   async function reloadAll() {
-    await Promise.all([reloadCampaign(), reloadPersonagens(), reloadLogs(), reloadPerfis(), reloadConvites()]);
+    await Promise.all([reloadCampaign(), reloadPersonagens(), reloadLogs(), reloadMembros(), reloadControles(), reloadConvites()]);
   }
 
   /**
@@ -650,18 +647,31 @@ export default function MesaDetailClient({
   async function desvincularPersonagemDaMesa(characterId: string) {
     setError(null);
     try {
+      // assignCharacterToCampaign já revoga os controladores deste
+      // personagem antes de desvincular (FK composta character_controllers
+      // <-> characters(id, campaign_id); controle é escopado à campanha).
       await assignCharacterToCampaign(characterId, null);
       await reloadPersonagens();
-      await reloadPerfis(); // um perfil pode ter esse personagem como ativo
+      await reloadControles();
     } catch (e) { fail(e, "Erro ao desvincular personagem da mesa."); }
   }
-  async function vincularPersonagemAPerfil(characterId: string, profileId: string | null) {
+  /** Concede controle de um personagem a um participante ativo (character_controllers, migration 0051). */
+  async function concederControle(characterId: string, userId: string) {
+    if (!userId) return;
     setError(null);
     try {
-      const record = await assignCharacterToProfile(characterId, profileId);
-      if (profileId) await logCharacterEvent("character_assigned", record.id, record.name, { destino: "perfil", profileId });
-      await reloadPersonagens();
-    } catch (e) { fail(e, "Erro ao vincular personagem ao perfil."); }
+      await grantCharacterControl(characterId, userId);
+      await logCharacterEvent("character_assigned", characterId, personagensDaMesa.find((c) => c.id === characterId)?.name ?? characterId, { destino: "controlador", userId });
+      await reloadControles();
+    } catch (e) { fail(e, "Erro ao conceder controle do personagem."); }
+  }
+  /** Remove controle de um personagem — não apaga o personagem. */
+  async function removerControle(characterId: string, userId: string) {
+    setError(null);
+    try {
+      await revokeCharacterControl(characterId, userId);
+      await reloadControles();
+    } catch (e) { fail(e, "Erro ao remover controle do personagem."); }
   }
 
   /** Cria um personagem mínimo já nascendo vinculado a esta mesa (checkpoint v0.25). */
@@ -713,27 +723,14 @@ export default function MesaDetailClient({
     } catch (e) { fail(e, "Erro ao duplicar personagem."); }
   }
 
-  async function criarPerfil() {
-    if (!novoPerfil.trim()) return;
+  /** Remove um participante da campanha — revoga também, na mesma transação, seus controles de personagem (RPC remove_campaign_member, migration 0055). */
+  async function removerParticipante(userId: string) {
+    if (!window.confirm("Remover este participante da campanha? Isso revoga o acesso dele aos personagens que controla aqui.")) return;
     setError(null);
-    try { await createCampaignProfile(campaign.id, novoPerfil); setNovoPerfil(""); await reloadPerfis(); }
-    catch (e) { fail(e, "Erro ao criar perfil."); }
-  }
-  async function vincular(profileId: string, characterId: string | null) {
-    setError(null);
-    try { await setCampaignProfileActiveCharacter(profileId, characterId); await reloadPerfis(); }
-    catch (e) { fail(e, "Erro ao vincular personagem."); }
-  }
-  async function liberar(profileId: string) {
-    setError(null);
-    try { await forceReleaseCampaignProfile(profileId); await reloadPerfis(); }
-    catch (e) { fail(e, "Erro ao liberar perfil."); }
-  }
-  /** Botão "Limpar expiradas" (checkpoint v0.26) — marca sessões velhas como expiradas e libera o bloqueio. */
-  async function limparExpiradas() {
-    setError(null);
-    try { await expireStaleProfileSessions(campaign.id); await reloadPerfis(); }
-    catch (e) { fail(e, "Erro ao limpar sessões expiradas."); }
+    try {
+      await removeCampaignMember(campaign.id, userId);
+      await Promise.all([reloadMembros(), reloadControles()]);
+    } catch (e) { fail(e, "Erro ao remover participante."); }
   }
   async function criarConvite() {
     setError(null);
@@ -750,17 +747,18 @@ export default function MesaDetailClient({
     catch (e) { fail(e, "Erro ao revogar convite."); }
   }
 
-  function sessaoAtiva(profileId: string): ProfileSession | null {
-    return sessoes.find((s) => s.profile_id === profileId && s.status === "active") ?? null;
-  }
-
-  // Ciclo de vida (checkpoint v0.25): personagensDaMesa vem sem filtro
-  // de archived_at (listCharactersForNarratorCampaign) — separado aqui em duas
-  // listas de exibição. Só os ativos aparecem como opção de "personagem
-  // ativo" de um perfil (abaixo); os arquivados ganham uma seção própria
-  // com "Restaurar".
+  // Ciclo de vida: personagensDaMesa vem sem filtro de archived_at
+  // (listCharactersForNarratorCampaign) — separado aqui em duas listas
+  // de exibição. Só os ativos aparecem como opção de concessão de
+  // controle (acima); os arquivados ganham uma seção própria com
+  // "Restaurar".
   const personagensAtivosDaMesa = personagensDaMesa.filter((c) => !c.archived_at);
   const personagensArquivadosDaMesa = personagensDaMesa.filter((c) => c.archived_at);
+  /** Participantes ativos com função "player" — candidatos a receber controle de personagem. */
+  const jogadoresAtivos = membros.filter((m) => m.role === "player" && m.status === "active");
+  function controladoresDe(characterId: string): CharacterController[] {
+    return controles.filter((c) => c.character_id === characterId);
+  }
 
   return (
     <main style={{ maxWidth: 760, margin: "0 auto", padding: "32px 20px 80px" }}>
@@ -851,8 +849,8 @@ export default function MesaDetailClient({
       <section style={{ marginBottom: 32 }}>
         <h2 style={h2}>Personagens da mesa ({personagensAtivosDaMesa.length})</h2>
         <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
-          Só personagens vinculados a esta mesa aparecem para escolha como "personagem ativo" de
-          um perfil (abaixo). Personagens sem mesa são legados/globais — ver /dev/character-sheet.
+          Só personagens vinculados a esta mesa podem ter controle concedido a um participante.
+          Personagens sem mesa são legados/globais — ver /dev/character-sheet.
         </p>
         <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
           <select data-testid="det-personagem-disponivel-select" value={personagemParaVincular} onChange={(e) => setPersonagemParaVincular(e.target.value)} style={{ ...input, flex: 1 }}>
@@ -893,35 +891,57 @@ export default function MesaDetailClient({
           <p style={{ fontSize: 13, opacity: 0.6 }}>Nenhum personagem vinculado a esta mesa ainda.</p>
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {personagensAtivosDaMesa.map((c) => (
-            <div key={c.id} data-testid="det-personagem-mesa" style={{ ...card, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-              <strong>{c.name}</strong>
-              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                <span style={{ fontSize: 11, opacity: 0.6 }}>Perfil:</span>
-                <select
-                  data-testid={`det-personagem-perfil-select-${c.id}`}
-                  value={c.profile_id ?? ""}
-                  onChange={(e) => vincularPersonagemAPerfil(c.id, e.target.value || null)}
-                  style={input}
-                >
-                  <option value="">— nenhum —</option>
-                  {perfis.map((p) => <option key={p.id} value={p.id}>{p.nickname}</option>)}
-                </select>
-                <button data-testid={`det-renomear-personagem-${c.id}`} onClick={() => renomearPersonagem(c.id, c.name)} style={btn}>
-                  Renomear
-                </button>
-                <button data-testid={`det-duplicar-personagem-${c.id}`} onClick={() => duplicarPersonagem(c.id)} style={btn}>
-                  Duplicar
-                </button>
-                <button data-testid={`det-arquivar-personagem-${c.id}`} onClick={() => arquivarPersonagem(c.id, c.name)} style={btn}>
-                  Arquivar
-                </button>
-                <button data-testid={`det-desvincular-personagem-${c.id}`} onClick={() => desvincularPersonagemDaMesa(c.id)} style={btn}>
-                  Desvincular da mesa
-                </button>
+          {personagensAtivosDaMesa.map((c) => {
+            const controladores = controladoresDe(c.id);
+            const jogadoresSemControle = jogadoresAtivos.filter((m) => !controladores.some((ctrl) => ctrl.user_id === m.user_id));
+            return (
+              <div key={c.id} data-testid="det-personagem-mesa" style={{ ...card, display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                  <strong>{c.name}</strong>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    <button data-testid={`det-renomear-personagem-${c.id}`} onClick={() => renomearPersonagem(c.id, c.name)} style={btn}>
+                      Renomear
+                    </button>
+                    <button data-testid={`det-duplicar-personagem-${c.id}`} onClick={() => duplicarPersonagem(c.id)} style={btn}>
+                      Duplicar
+                    </button>
+                    <button data-testid={`det-arquivar-personagem-${c.id}`} onClick={() => arquivarPersonagem(c.id, c.name)} style={btn}>
+                      Arquivar
+                    </button>
+                    <button data-testid={`det-desvincular-personagem-${c.id}`} onClick={() => desvincularPersonagemDaMesa(c.id)} style={btn}>
+                      Desvincular da mesa
+                    </button>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 11, opacity: 0.6 }}>
+                    Controlado por: {controladores.length === 0 ? "ninguém (sem jogador)" : controladores.map((ctrl) => ctrl.user_id).join(", ")}
+                  </span>
+                  {controladores.map((ctrl) => (
+                    <button key={ctrl.user_id} data-testid={`det-remover-controle-${c.id}-${ctrl.user_id}`} onClick={() => removerControle(c.id, ctrl.user_id)} style={{ ...btn, fontSize: 11 }}>
+                      Remover controle de {ctrl.user_id}
+                    </button>
+                  ))}
+                  {jogadoresSemControle.length > 0 && (
+                    <select
+                      data-testid={`det-personagem-conceder-controle-${c.id}`}
+                      defaultValue=""
+                      onChange={(e) => {
+                        if (e.target.value) concederControle(c.id, e.target.value);
+                        e.target.value = "";
+                      }}
+                      style={input}
+                    >
+                      <option value="">— conceder controle a —</option>
+                      {jogadoresSemControle.map((m) => (
+                        <option key={m.user_id} value={m.user_id}>{m.user_id}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {personagensArquivadosDaMesa.length > 0 && (
@@ -1058,58 +1078,28 @@ export default function MesaDetailClient({
         )}
       </section>
 
-      {/* Perfis */}
+      {/* Participantes (campaign_members) — versão mínima da Fase 1; painel
+          completo "Jogadores e convites" com nome de exibição é Fase 3/4. */}
       <section style={{ marginBottom: 32 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-          <h2 style={{ ...h2, marginBottom: 0 }}>Perfis ({perfis.length})</h2>
-          <button data-testid="det-limpar-expiradas" onClick={limparExpiradas} style={btn}>
-            Limpar expiradas
-          </button>
-        </div>
+        <h2 style={h2}>Participantes ({membros.length})</h2>
         <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
-          Sessões sem heartbeat há mais de 30s (checkpoint v0.26) já são detectadas automaticamente ao
-          abrir esta página/o convite/a ficha; este botão só força a limpeza na hora, sem esperar.
+          Quem aceitou um convite desta campanha. Conceder/remover controle de personagem é feito na
+          seção "Personagens da mesa" acima.
         </p>
-        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-          <input data-testid="det-novo-perfil" value={novoPerfil} onChange={(e) => setNovoPerfil(e.target.value)} placeholder="Apelido do perfil" style={{ ...input, flex: 1 }} />
-          <button data-testid="det-criar-perfil" onClick={criarPerfil} style={btn}>Criar perfil</button>
-        </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {perfis.map((p) => {
-            // Busca em ambas as listas (da mesa + disponíveis) só para exibir o
-            // nome — cobre o caso legado de um active_character_id apontar
-            // para um personagem ainda não vinculado formalmente à mesa.
-            const ativo = [...personagensDaMesa, ...personagensDisponiveis].find((c) => c.id === p.active_character_id);
-            const sess = sessaoAtiva(p.id);
-            // Status calculado sem sessionId de navegador (visão do narrador,
-            // nunca "é esta aba") — reusa a mesma lógica de /ficha e /join.
-            const status = computeProfileStatus(p, null, Date.now());
-            const ultimoSinal = p.last_seen_at ? new Date(p.last_seen_at).toLocaleString("pt-BR") : "nunca";
-            return (
-              <div key={p.id} data-testid="det-perfil" style={{ ...card, display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                  <strong>{p.nickname}</strong>
-                  <span data-testid={`det-perfil-status-${p.id}`} style={{ fontSize: 11, color: sess ? "#5ec8ff" : "#888" }}>
-                    {sess ? "sessão ativa" : "sem sessão"} · {status}
-                  </span>
-                </div>
-                <span style={{ fontSize: 10, opacity: 0.5 }}>
-                  Último sinal: {ultimoSinal}
-                  {status === "Expirado" ? ` (expirado há ${Math.round((Date.now() - new Date(p.last_seen_at ?? 0).getTime()) / 1000)}s)` : ""}
-                </span>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 11, opacity: 0.7 }}>
-                    Personagem: {ativo ? `${ativo.name}${ativo.archived_at ? " (arquivado)" : ""}` : "nenhum"}
-                  </span>
-                  <select data-testid={`det-personagem-${p.id}`} value={p.active_character_id ?? ""} onChange={(e) => vincular(p.id, e.target.value || null)} style={input}>
-                    <option value="">— vincular —</option>
-                    {personagensAtivosDaMesa.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                  <button data-testid={`det-liberar-${p.id}`} onClick={() => liberar(p.id)} disabled={!p.is_locked} style={{ ...btn, opacity: p.is_locked ? 1 : 0.5 }}>Liberar</button>
-                </div>
+          {membros.map((m) => (
+            <div key={m.id} data-testid="det-membro" style={{ ...card, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <span style={{ fontFamily: "monospace", fontSize: 12 }}>{m.user_id}</span>
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <span style={{ fontSize: 11, opacity: 0.7 }}>{m.role === "owner" ? "Narrador" : "Jogador"} · {m.status}</span>
+                {m.role !== "owner" && m.status === "active" && (
+                  <button data-testid={`det-remover-participante-${m.user_id}`} onClick={() => removerParticipante(m.user_id)} style={btn}>
+                    Remover
+                  </button>
+                )}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </section>
 

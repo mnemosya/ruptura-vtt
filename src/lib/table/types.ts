@@ -29,7 +29,16 @@ export interface Campaign {
 export const TABLE_LOG_VISIBILITIES = ["public", "private", "gm"] as const;
 export type TableLogVisibility = (typeof TABLE_LOG_VISIBILITIES)[number];
 
-/** Linha completa de `table_logs`. payload guarda o conteúdo do evento. */
+/**
+ * Linha completa de `table_logs`. payload guarda o conteúdo do evento.
+ *
+ * Fase 1 (revisão 4): `profile_id`/`profile_session_id` foram removidas
+ * (migration 0057, junto com a remoção de `campaign_profiles`/
+ * `profile_sessions`) — `created_by_user_id` (sempre = auth.uid() de
+ * quem registrou, via a RPC `append_table_log`) é agora a única forma
+ * de identificar o autor de um log, inclusive para o filtro de "private"
+ * em listLogsForViewer.
+ */
 export interface TableLogEntry {
   id: string;
   campaign_id: string;
@@ -38,54 +47,9 @@ export interface TableLogEntry {
   visibility: TableLogVisibility;
   payload: Record<string, unknown>;
   created_at: string;
-  /** Perfil que gerou o log (migration 0010) — dono do 'private'. Null em logs antigos. */
-  profile_id: string | null;
-  /** Narrador logado que gerou (migration 0010). Null quando anon. */
+  /** Conta autenticada que gerou o evento. Null em logs antigos anteriores ao login obrigatório. */
   created_by_user_id: string | null;
-  /** Sessão de perfil (migration 0010). Null quando não disponível. */
-  profile_session_id: string | null;
 }
-
-/**
- * Linha completa de `campaign_profiles` (migrations 0004 + 0005).
- * Perfil DEV de mesa — apelido + bloqueio manual/heartbeat + personagem
- * ativo opcional. Não é conta de usuário, login nem link de convite
- * real — `lock_session_id` é só um id gerado no localStorage do
- * navegador (ver aviso completo nas migrations antes de tratar isto
- * como o fluxo final de jogador do PRD).
- */
-export interface CampaignProfile {
-  id: string;
-  campaign_id: string;
-  nickname: string;
-  color_label: string | null;
-  is_locked: boolean;
-  active_character_id: string | null;
-  /** Id de sessão (gerado no localStorage do navegador) que detém o bloqueio atual, se houver. */
-  lock_session_id: string | null;
-  /** Quando o bloqueio atual começou. */
-  locked_at: string | null;
-  /** Último heartbeat recebido — usado para decidir se o bloqueio expirou (ver PROFILE_HEARTBEAT_TIMEOUT_MS). */
-  last_seen_at: string | null;
-  /** Usuário Supabase Auth que reivindicou este perfil (Etapa 12, correção 3, migration 0028) — null = não reivindicado. */
-  user_id: string | null;
-  /** Quando o perfil foi reivindicado. */
-  claimed_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-/**
- * Janela de tolerância do heartbeat dev de perfil: se `last_seen_at`
- * estiver mais velho que isto, o bloqueio é considerado expirado e
- * outra sessão pode assumir o perfil. Decisão tomada no CLIENTE
- * (comparando com Date.now() local) — não há job/cron no banco (ver
- * aviso na migration 0005).
- */
-export const PROFILE_HEARTBEAT_TIMEOUT_MS = 30_000;
-
-/** Intervalo de envio de heartbeat enquanto uma sessão está "dentro" de um perfil. */
-export const PROFILE_HEARTBEAT_INTERVAL_MS = 10_000;
 
 /**
  * Convite de mesa (tabela `campaign_invites`, migration 0008). Tipo
@@ -108,27 +72,24 @@ export interface CampaignInvite {
 export const CAMPAIGN_INVITE_SAFE_COLUMNS =
   "id, campaign_id, label, is_active, expires_at, created_by, created_at, revoked_at";
 
-/** Status de uma sessão de perfil (tabela `profile_sessions`, migration 0009). */
-export type ProfileSessionStatus = "active" | "exited" | "expired" | "released";
-
 /**
- * Sessão de perfil (migration 0009). Tipo PÚBLICO seguro: NÃO inclui
- * `session_token_hash`. Rastreia o ciclo de vida de uma entrada de
- * jogador num perfil (status/last_seen/histórico).
+ * Estado de participação em campanha (`campaign_members.status`).
+ * Fase 1 (revisão 4): "pendente" NÃO é um destes estados — convite por
+ * e-mail pendente vive inteiramente em `campaign_invites` (Fase 2), não
+ * em `campaign_members`. Uma linha só existe aqui depois que a conta se
+ * autentica.
  */
-export interface ProfileSession {
+export type CampaignMemberStatus = "active" | "removed";
+export type CampaignMemberRole = "owner" | "player";
+
+/** Linha completa de `campaign_members` — participação de uma CONTA existente numa campanha. */
+export interface CampaignMember {
   id: string;
   campaign_id: string;
-  profile_id: string;
-  invite_id: string | null;
-  status: ProfileSessionStatus;
+  user_id: string;
+  role: CampaignMemberRole;
+  status: CampaignMemberStatus;
   created_at: string;
-  last_seen_at: string;
-  exited_at: string | null;
-  released_at: string | null;
-  user_agent: string | null;
+  updated_at: string;
+  joined_at: string | null;
 }
-
-/** Colunas seguras de `profile_sessions` (nunca session_token_hash). */
-export const PROFILE_SESSION_SAFE_COLUMNS =
-  "id, campaign_id, profile_id, invite_id, status, created_at, last_seen_at, exited_at, released_at, user_agent";

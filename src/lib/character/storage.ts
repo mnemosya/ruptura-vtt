@@ -2,92 +2,37 @@
 
 /**
  * Persistência de personagem (tabela `characters`, migration
- * 0002_characters.sql; `campaign_id`/`profile_id`/`owner_id` desde a
- * migration 0011, checkpoint v0.23; `archived_at` desde a migration
- * 0012, checkpoint v0.25).
+ * 0002_characters.sql; `campaign_id`/`owner_id` desde a migration 0011;
+ * `archived_at` desde a migration 0012).
  *
- * Checkpoint v0.28 — refactor de escopo (SEM mudança de RLS ainda):
- * `characters` continua com policies `characters_dev_transition_*`
- * totalmente abertas (anon+authenticated) — ver auditoria do
- * checkpoint v0.27. O bloqueio identificado lá era que TODA função
- * deste arquivo usava `getContentClient()` (client anon puro, nunca
- * anexa o JWT do narrador logado), então mesmo com `owner_id`
- * preenchido desde v0.23, nenhuma policy `owner_id = auth.uid()`
- * poderia funcionar — a requisição nunca chegava como
- * `authenticated`.
+ * ---------------------------------------------------------------------
+ * Fase 1 do plano de contas/campanhas/convites/personagens (revisão 4 —
+ * docs/relatorios/AUDITORIA_REFATORACAO_CONTAS_CAMPANHAS_CONVITES_
+ * PERSONAGENS.md, seção 13): `characters.profile_id` e todo o mecanismo
+ * de "perfil"/sessão de perfil foram removidos do banco (migrations
+ * 0051-0058). Autorização de personagem passa a ser:
  *
- * Este checkpoint prepara o terreno SEM endurecer RLS ainda: separa
- * as funções por quem realmente as chama, usando o client certo para
- * cada consumidor:
+ *   - Narrador: dono da campanha (`campaigns.owner_id = auth.uid()`) —
+ *     acessa qualquer personagem da própria campanha, sem precisar ser
+ *     controlador.
+ *   - Jogador: precisa SIMULTANEAMENTE (a) linha em
+ *     `character_controllers` para o personagem E (b) participação
+ *     ATIVA em `campaign_members` para a campanha do personagem — as
+ *     duas condições revalidadas dentro de `can_read_character`/
+ *     `can_manage_character` (migration 0052) a cada leitura/escrita.
+ *   - `characters.owner_id` só autoriza quando `campaign_id IS NULL`
+ *     (personagem solto, sem campanha) — nunca contorna o controle em
+ *     personagem de campanha, mesmo com valor residual de dados antigos.
  *
- *   - PRODUTO/NARRADOR (seção 1): `getScopedTableClient()` — o MESMO
- *     helper já usado por `table/storage.ts` desde o checkpoint v0.16
- *     (reutilizado aqui, não duplicado). Anexa o JWT do narrador
- *     logado quando existe sessão; cai para anon puro se não houver
- *     (mesmo comportamento de sempre, só que agora PRONTO para uma
- *     policy `owner_id = auth.uid()` funcionar no dia em que a RLS for
- *     endurecida). Usadas só por `/mesas/[campaignId]` (dashboard,
- *     sempre autenticado).
- *   - PRODUTO/JOGADOR POR SESSÃO (seção 2): também usam
- *     `getScopedTableClient()`, mas a "identidade" de quem pode ler/
- *     escrever não vem de `auth.uid()` (jogador não tem login real
- *     ainda) — vem de `validateProfileSessionToken()` (table/
- *     storage.ts, checkpoint v0.30), que exige um TOKEN REAL de sessão
- *     (profileSessionId + rawSessionToken, hash comparado em
- *     profile_sessions) ANTES de tocar no personagem. Usadas só por
- *     `/ficha` (modo product).
- *   - DEV/DIAGNÓSTICO (seção 3): `getContentClient()` (anon puro,
- *     como sempre foi) — usadas só por `/dev/character-sheet`,
- *     `/dev/table`, `/dev/join/[campaignId]`. Mostram a lista global
- *     de propósito (é a razão de existir dessas rotas).
- *   - LEGADO/COMPATIBILIDADE (seção 4): `createCharacter`,
- *     `updateCharacter`, `getCharacter`, `listCharacters`,
- *     `deleteCharacter` — mantidas com o MESMO nome e client anon de
- *     sempre porque `scripts/test-character-storage.ts` e o modo dev
- *     de `/dev/character-sheet` dependem exatamente desse
- *     comportamento. Não usar em rota de produto nova — usar as
- *     seções 1/2 acima.
- *
- * Checkpoint v0.29 — RLS controlada (parcial, não final):
- *
- *   - Adiciona policies `characters_owner_*` (authenticated,
- *     owner_id = auth.uid()) — aditivas, coexistem com
- *     `characters_dev_transition_*` sem mudar nada hoje (ver migration
- *     0014). Preparam a base real para narrador autenticado.
- *   - A SEÇÃO 2 (produto/jogador por sessão) deixa de acessar a tabela
- *     `characters` diretamente: `getCharacterForProfileSession`/
- *     `saveCharacterForProfileSession` agora chamam as funções SQL
- *     `get_character_for_profile_session`/
- *     `save_character_for_profile_session` (security definer,
- *     migration 0014), que revalidam a sessão DENTRO do banco e
- *     ignoram RLS — a operação mais sensível desta tabela (jogador
- *     anônimo lendo/escrevendo um personagem) não depende mais de
- *     `characters_dev_transition_select/update` continuarem abertas.
- *   - `characters_dev_transition_*` continuam abertas mesmo assim —
- *     removê-las quebraria `/dev/character-sheet` (edita QUALQUER
- *     personagem da lista global, incluindo já vinculados a mesa/
- *     perfil, por design de diagnóstico) e
- *     `scripts/test-character-storage.ts` (roda sem login). Ver
- *     comentário em cada policy (migration 0014) e blockers/relatório
- *     do checkpoint v0.29 para a condição exata de remoção futura.
- *
- * Etapa 12 (correção 6) — os parágrafos acima ("DEV/DIAGNÓSTICO" e
- * "LEGADO/COMPATIBILIDADE" usando `getContentClient()`/anon) estão
- * DESATUALIZADOS e preservados aqui só como histórico: a auditoria
- * desta correção encontrou que `updateCharacter` e
- * `listCharactersForCampaign` são usadas por rota de PRODUTO real
- * (`MesaDetailClient.tsx`, `table/endRound.ts`, `table/endScene.ts`,
- * `/join/[token]/page.tsx`), não só por dev/scripts — e que "função de
- * desenvolvimento não justifica policy anon aberta em produção" (não
- * há mais policy `anon` nenhuma depois da migration 0031). Todas as
- * funções das seções 3 e 4 agora usam `getScopedTableClient()`; ver
- * nota completa no início da SEÇÃO 3, abaixo.
+ * Escrita do jogador controlador é SEMPRE via `updateCharacterSheetPayload`
+ * (RPC `update_character_sheet_payload`, só toca a coluna `payload`) —
+ * nunca `updateCharacter` (RLS de UPDATE direta na tabela só autoriza o
+ * narrador/dono de personagem solto desde a migration 0052).
+ * ---------------------------------------------------------------------
  */
 
 import { getScopedTableClient } from "../auth/scopedClient";
 import { getCurrentUser } from "../auth/session";
-import { validateProfileSessionToken } from "../table/storage";
-import type { Campaign, CampaignProfile } from "../table";
 import { CharacterStorageError } from "./storage.errors";
 import { validateCreationBudget } from "./createCharacterValidation";
 import type { Character, CharacterRecord, CharacterRulesPayload } from "./types";
@@ -95,6 +40,7 @@ import { getCharacterRules } from "../content";
 import { parseDraftPayload, type DraftPayload } from "./draftValidation";
 
 const CHARACTER_CREATION_DRAFTS_TABLE = "character_creation_drafts";
+const CHARACTER_CONTROLLERS_TABLE = "character_controllers";
 
 export type LoadDraftResult =
   | { kind: "none" }
@@ -107,7 +53,7 @@ export type SaveDraftResult = { revision: number } | { conflict: true };
 const TABLE = "characters";
 
 /**
- * Id do narrador logado, ou null. Best effort: getCurrentUser lê o
+ * Id do usuário logado, ou null. Best effort: getCurrentUser lê o
  * cookie httpOnly via next/headers, que só existe num contexto de
  * request (Server Action/RSC); fora disso (scripts node) cai no catch
  * e retorna null, sem quebrar. Mesmo padrão de currentOwnerId em
@@ -125,10 +71,8 @@ async function currentOwnerId(): Promise<string | null> {
 export interface SaveCharacterOptions {
   ownerLabel?: string;
   status?: string;
-  /** Mesa a que o personagem pertence (migration 0011, checkpoint v0.23). */
+  /** Mesa a que o personagem pertence (migration 0011). */
   campaignId?: string | null;
-  /** Perfil a que o personagem pertence dentro da mesa (migration 0011). */
-  profileId?: string | null;
 }
 
 /**
@@ -136,11 +80,6 @@ export interface SaveCharacterOptions {
  * carimba metadados.schema_version/atualizado_em (e criado_em, na
  * primeira gravação). Não é exportada — arquivos "use server" só
  * podem exportar funções assíncronas, e esta é síncrona/interna.
- *
- * recursos_atuais e demais campos do Character chegam aqui já
- * resolvidos por quem chama (ex.: normalizeCharacter() na UI, que
- * sabe os derivados calculados) — esta função não inventa valores de
- * jogo, só carimba metadados de persistência.
  */
 function buildPayloadForSave(character: Character): Character {
   const now = new Date().toISOString();
@@ -161,7 +100,7 @@ function buildPayloadForSave(character: Character): Character {
 async function insertCharacterScoped(
   client: Awaited<ReturnType<typeof getScopedTableClient>>,
   character: Character,
-  options: { campaignId?: string | null; profileId?: string | null; ownerLabel?: string } = {},
+  options: { campaignId?: string | null; ownerLabel?: string } = {},
 ): Promise<CharacterRecord> {
   const payload = buildPayloadForSave(character);
   const ownerId = await currentOwnerId();
@@ -173,7 +112,6 @@ async function insertCharacterScoped(
       status: "draft",
       payload,
       campaign_id: options.campaignId ?? null,
-      profile_id: options.profileId ?? null,
       owner_id: ownerId,
     })
     .select()
@@ -186,12 +124,7 @@ async function insertCharacterScoped(
 }
 
 // =====================================================================
-// SEÇÃO 1 — PRODUTO / NARRADOR (checkpoint v0.28)
-//
-// Usam getScopedTableClient() (anexa o JWT do narrador logado, cai
-// para anon se não houver sessão — mesmo helper de table/storage.ts,
-// reutilizado aqui, não duplicado). Chamadas só por
-// /mesas/[campaignId] (dashboard, sempre atrás de login desde v0.21).
+// SEÇÃO 1 — PRODUTO / NARRADOR
 // =====================================================================
 
 /** Lista os personagens ligados a uma mesa (campaign_id), visão do narrador dono. Mais recentemente atualizados primeiro. */
@@ -209,28 +142,9 @@ export async function listCharactersForNarratorCampaign(campaignId: string): Pro
   return (data as CharacterRecord[]) ?? [];
 }
 
-/** Lista os personagens ligados a um perfil (profile_id), visão do narrador dono. */
-export async function listCharactersForNarratorProfile(profileId: string): Promise<CharacterRecord[]> {
-  const client = await getScopedTableClient();
-  const { data, error } = await client
-    .from(TABLE)
-    .select()
-    .eq("profile_id", profileId)
-    .order("updated_at", { ascending: false });
-
-  if (error) {
-    throw new CharacterStorageError(`Falha ao listar personagens do perfil "${profileId}": ${error.message}`, error);
-  }
-  return (data as CharacterRecord[]) ?? [];
-}
-
 /**
  * Lista personagens legados/globais (sem mesa) disponíveis para o
- * narrador vincular a uma mesa — substitui o padrão antigo de
- * `listCharacters()` + filtro em memória no dashboard (checkpoint
- * v0.23/v0.25). Continua sem filtrar por owner_id (a tabela ainda não
- * tem RLS restritiva — ver blockers no final do arquivo), mas já usa
- * o client escopado, pronto para quando isso mudar.
+ * narrador vincular a uma mesa.
  */
 export async function listUnassignedCharactersForNarrator(): Promise<CharacterRecord[]> {
   const client = await getScopedTableClient();
@@ -263,75 +177,67 @@ export async function listArchivedCharactersForNarratorCampaign(campaignId: stri
 }
 
 /**
- * Cria um personagem mínimo já nascendo vinculado a uma mesa
- * (dashboard do narrador, checkpoint v0.25 — agora via client
- * escopado). `owner_id` é carimbado com o narrador logado quando há
- * sessão.
+ * Cria um personagem mínimo já nascendo vinculado a uma mesa (dashboard
+ * do narrador — "Criar personagem novo", personagem solto/PNJ, sem
+ * controlador). `owner_id` é carimbado com o narrador logado quando há
+ * sessão. Para dar controle a um jogador depois, usar
+ * `grantCharacterControl`.
  */
 export async function createCharacterForCampaign(
   campaignId: string,
   character: Character,
-  options: { profileId?: string | null; ownerLabel?: string } = {},
+  options: { ownerLabel?: string } = {},
 ): Promise<CharacterRecord> {
   const client = await getScopedTableClient();
   return insertCharacterScoped(client, character, { ...options, campaignId });
 }
 
 /**
- * Criação PELO PRÓPRIO JOGADOR (checkpoint pós-v0.94, fase 2/3; rodada
- * de consolidação, achado do Cenário 3 "payload hostil"; rodada de
- * segurança/atomicidade — migration 0044) — valida o orçamento de
- * criação (atributos/perícias/vertentes) server-side ANTES de
- * persistir. `createCharacterForCampaign` continua sem essa checagem
- * de propósito (uso do narrador, já confiável); esta função existe só
- * para o caminho do wizard, onde o chamador pode não ser o narrador.
+ * Criação PELO PRÓPRIO USUÁRIO via assistente (wizard) — valida o
+ * orçamento de criação (atributos/perícias/vertentes) server-side ANTES
+ * de persistir, contra as regras REAIS (nunca as que o cliente enviar —
+ * buscadas de novo aqui via `getCharacterRules`, mesma fonte confiável
+ * de sempre).
  *
- * Com `options.profileId`: usa a RPC transacional
- * `complete_character_creation` (migration 0044) — insere o
- * personagem E reivindica o perfil como ativo em UMA transação só.
- * Antes desta migration eram duas chamadas separadas (insert aqui +
- * `claimOwnActiveCharacter` no componente do wizard); uma falha de
- * rede exatamente entre as duas deixava o personagem criado mas nunca
- * reivindicado — gap fechado agora (rollback nativo do Postgres se
- * qualquer parte falhar). `options.creationRequestId`, quando
- * informado, torna a conclusão idempotente: retry após sucesso ou
- * duplo clique devolvem o MESMO personagem, nunca duplicam.
+ * Fase 1 (revisão 4): não recebe mais `profileId`. Exige só que o
+ * chamador seja participante ATIVO da campanha (`campaign_members`,
+ * checado dentro da RPC `complete_character_creation`, migration 0054)
+ * — vale tanto para o narrador quanto para um jogador. A conta que cria
+ * o personagem recebe controle automaticamente (`character_controllers`,
+ * inserido dentro da mesma transação da RPC) — aditivo §11 "jogador
+ * recebe controle automaticamente". `options.creationRequestId`, quando
+ * informado, torna a conclusão idempotente: retry após sucesso ou duplo
+ * clique devolvem o MESMO personagem, nunca duplicam.
  *
- * Sem `options.profileId` (narrador criando personagem solto/PNJ pelo
- * wizard, sem vincular a nenhum perfil): não há segunda operação para
- * tornar atômica com o insert — mantém o caminho simples direto.
- *
- * Rodada de fechamento (auditoria da RPC 0044): o parâmetro `regras`
- * chegava DO CLIENTE (prop React repassada de volta como argumento da
- * Server Action) — um chamador hostil podia enviar um
- * `criacao_personagem` com orçamento inflado junto de um `character`
- * também inflado, e `validateCreationBudget` validaria contra a régua
- * FALSA, nunca contra a real. Corrigido: quando há `options.profileId`
- * (caminho não confiável — pode não ser o narrador), `regras` é
- * IGNORADO e buscado de novo aqui, direto da Biblioteca publicada
- * (`getCharacterRules`, mesma fonte que `page.tsx` já usa) — nunca do
- * argumento do chamador.
+ * Diferente da versão anterior a esta fase: não há mais limite de "um
+ * personagem por perfil por campanha" (o índice único que impunha isso
+ * dependia de `profile_id`, removido) — uma conta pode criar mais de um
+ * personagem na mesma campanha ao longo do tempo, alinhado ao modelo
+ * N:N de `character_controllers` que o aditivo pede. Quantos
+ * personagens um jogador pode criar livremente continua uma decisão de
+ * produto pendente (ver §12 do relatório) — não bloqueada por esta
+ * função.
  */
 export async function createCharacterFromWizard(
   campaignId: string,
   character: Character,
   regras: CharacterRulesPayload,
-  options: { profileId?: string | null; ownerLabel?: string; creationRequestId?: string } = {},
+  options: { ownerLabel?: string; creationRequestId?: string } = {},
 ): Promise<CharacterRecord> {
-  let regrasConfiaveis = regras;
-  if (options.profileId) {
-    const doc = await getCharacterRules();
-    const regrasReais = doc?.payload as CharacterRulesPayload | undefined;
-    if (!regrasReais) {
-      throw new CharacterStorageError("Regras de criação indisponíveis no servidor.");
-    }
-    regrasConfiaveis = regrasReais;
+  // `regras` do argumento nunca é confiável (pode ter chegado inflado de
+  // um chamador hostil) — sempre revalidado contra a Biblioteca
+  // publicada real antes de checar o orçamento.
+  const doc = await getCharacterRules();
+  const regrasReais = doc?.payload as CharacterRulesPayload | undefined;
+  if (!regrasReais) {
+    throw new CharacterStorageError("Regras de criação indisponíveis no servidor.");
   }
 
-  const validation = validateCreationBudget(character, regrasConfiaveis);
+  const validation = validateCreationBudget(character, regrasReais);
   if (!validation.ok) {
     throw new CharacterStorageError(validation.reason ?? "Orçamento de criação inválido.");
   }
+  void regras; // mantido no parâmetro por compatibilidade de assinatura com o chamador (UI); nunca usado para validar.
 
   const payload = buildPayloadForSave(character);
   if (options.creationRequestId) {
@@ -339,62 +245,37 @@ export async function createCharacterFromWizard(
   }
 
   const client = await getScopedTableClient();
-
-  if (options.profileId) {
-    const { data, error } = await client.rpc("complete_character_creation", {
-      p_campaign_id: campaignId,
-      p_profile_id: options.profileId,
-      p_character_payload: payload,
-      p_owner_label: options.ownerLabel ?? null,
-      p_creation_request_id: options.creationRequestId ?? null,
-    });
-    if (error) {
-      throw new CharacterStorageError(`Falha ao concluir a criação do personagem: ${error.message}`, error);
-    }
-    const result = data as { character: CharacterRecord; idempotentReplay: boolean };
-    return result.character;
+  const { data, error } = await client.rpc("complete_character_creation", {
+    p_campaign_id: campaignId,
+    p_character_payload: payload,
+    p_owner_label: options.ownerLabel ?? null,
+    p_creation_request_id: options.creationRequestId ?? null,
+  });
+  if (error) {
+    throw new CharacterStorageError(`Falha ao concluir a criação do personagem: ${error.message}`, error);
   }
-
-  try {
-    return await insertCharacterScoped(client, character, { ...options, campaignId });
-  } catch (err) {
-    // Concorrência (migration 0041): índice único (profile_id,
-    // campaign_id) — só alcançável aqui se `options.profileId` vier
-    // preenchido sem passar pelo branch acima (não deveria acontecer
-    // no caminho real, mas mantido como cinto-e-suspensório).
-    if (
-      err instanceof CharacterStorageError &&
-      typeof (err.cause as { code?: string } | undefined)?.code === "string" &&
-      (err.cause as { code?: string }).code === "23505"
-    ) {
-      throw new CharacterStorageError("Este perfil já possui um personagem ativo nesta mesa.", err.cause);
-    }
-    throw err;
-  }
+  const result = data as { character: CharacterRecord; idempotentReplay: boolean };
+  return result.character;
 }
 
 /**
- * Draft persistente do wizard de criação de personagem (checkpoint
- * draft persistente, migration 0047) — só fluxo do jogador (perfil já
- * reivindicado, `auth.uid()` conhecido). `select`/`delete` são
- * protegidos por RLS (owner_id + posse real do perfil); a gravação
- * passa inteira pela RPC `save_character_creation_draft` (ver
- * `saveCharacterCreationDraft` abaixo) — nunca um insert/update direto
+ * Draft persistente do wizard de criação de personagem — só fluxo de
+ * quem já é participante ativo da campanha (`auth.uid()` conhecido).
+ * `select`/`delete` são protegidos por RLS (owner_id + membership
+ * ativa); a gravação passa inteira pela RPC
+ * `save_character_creation_draft` — nunca um insert/update direto
  * nesta tabela.
  *
- * Devolve um resultado discriminado — "erro de rede" e "payload
- * inválido" NUNCA colapsam no mesmo resultado que "nenhum draft": um
- * carregamento que falhar não pode fazer o wizard começar vazio e
- * depois o autosave sobrescrever um rascunho existente com um
- * formulário em branco.
+ * Fase 1 (revisão 4): chave de unicidade passou de (campaign_id,
+ * profile_id) para (campaign_id, owner_id) — um rascunho em andamento
+ * por campanha por CONTA, não mais por perfil.
  */
-export async function loadCharacterCreationDraft(campaignId: string, profileId: string): Promise<LoadDraftResult> {
+export async function loadCharacterCreationDraft(campaignId: string): Promise<LoadDraftResult> {
   const client = await getScopedTableClient();
   const { data, error } = await client
     .from(CHARACTER_CREATION_DRAFTS_TABLE)
     .select("payload, creation_request_id, revision")
     .eq("campaign_id", campaignId)
-    .eq("profile_id", profileId)
     .maybeSingle();
 
   if (error) {
@@ -413,17 +294,15 @@ export async function loadCharacterCreationDraft(campaignId: string, profileId: 
 }
 
 /**
- * Grava o draft via RPC atômica `save_character_creation_draft`
- * (migration 0047) — a RPC valida posse de campanha+perfil, rejeita se
- * o perfil já tiver personagem não arquivado, e faz compare-and-swap
- * por `expectedRevision` (protege contra duas abas/saves fora de ordem
- * sobrescrevendo um ao outro). Um conflito de revisão é um resultado
- * ESPERADO (outra aba/sessão já salvou algo mais novo), não uma falha —
- * devolvido como `{ conflict: true }`, nunca lançado.
+ * Grava o draft via RPC atômica `save_character_creation_draft` — a RPC
+ * valida participação ativa na campanha, rejeita se já existir um
+ * personagem desta conta com o mesmo `creationRequestId` (conclusão já
+ * aconteceu), e faz compare-and-swap por `expectedRevision`. Conflito de
+ * revisão é resultado ESPERADO, não falha — devolvido como
+ * `{ conflict: true }`, nunca lançado.
  */
 export async function saveCharacterCreationDraft(
   campaignId: string,
-  profileId: string,
   payload: DraftPayload,
   creationRequestId: string,
   expectedRevision: number,
@@ -435,7 +314,6 @@ export async function saveCharacterCreationDraft(
   const client = await getScopedTableClient();
   const { data, error } = await client.rpc("save_character_creation_draft", {
     p_campaign_id: campaignId,
-    p_profile_id: profileId,
     p_creation_request_id: creationRequestId,
     p_payload: payload,
     p_expected_revision: expectedRevision,
@@ -455,16 +333,14 @@ export async function saveCharacterCreationDraft(
 /**
  * Apaga o draft — usado pelo botão "Cancelar criação" e como reforço
  * best-effort redundante pós-conclusão (a exclusão AUTORITATIVA
- * acontece dentro da própria transação de `complete_character_creation`,
- * migration 0048; apagar uma linha que já não existe não é erro).
+ * acontece dentro da própria transação de `complete_character_creation`).
  */
-export async function deleteCharacterCreationDraft(campaignId: string, profileId: string): Promise<void> {
+export async function deleteCharacterCreationDraft(campaignId: string): Promise<void> {
   const client = await getScopedTableClient();
   const { error } = await client
     .from(CHARACTER_CREATION_DRAFTS_TABLE)
     .delete()
-    .eq("campaign_id", campaignId)
-    .eq("profile_id", profileId);
+    .eq("campaign_id", campaignId);
   if (error) {
     throw new CharacterStorageError(`Falha ao apagar rascunho de criação: ${error.message}`, error);
   }
@@ -472,12 +348,36 @@ export async function deleteCharacterCreationDraft(campaignId: string, profileId
 
 /**
  * Vincula um personagem a uma mesa (ou remove o vínculo com
- * `campaignId: null`). Não mexe em `profile_id` — desvincular da mesa
- * não desvincula automaticamente do perfil (pode ficar inconsistente
- * intencionalmente; quem chama decide se também limpa o perfil).
+ * `campaignId: null`).
+ *
+ * `character_controllers` tem FK composta contra `characters(id,
+ * campaign_id)` (migration 0051, seção 13.1 do relatório de auditoria)
+ * — mudar `campaign_id` enquanto existem controladores para este
+ * personagem violaria essa FK (o Postgres rejeitaria o UPDATE). Controle
+ * é sempre escopado à campanha atual (um controlador precisa ser
+ * participante ativo DAQUELA campanha) — mover/desvincular o personagem
+ * invalida essa premissa, então os controladores são revogados aqui
+ * ANTES de trocar `campaign_id`, via a mesma RPC `revoke_character_control`
+ * que o narrador já usa manualmente (só o dono da campanha ATUAL pode
+ * revogar, o que já é verdade neste ponto, antes da troca).
  */
 export async function assignCharacterToCampaign(characterId: string, campaignId: string | null): Promise<CharacterRecord> {
   const client = await getScopedTableClient();
+
+  const { data: existing, error: fetchError } = await client.from(TABLE).select("campaign_id").eq("id", characterId).maybeSingle();
+  if (fetchError) {
+    throw new CharacterStorageError(`Falha ao buscar personagem "${characterId}" antes de vincular à mesa: ${fetchError.message}`, fetchError);
+  }
+  const currentCampaignId = (existing as { campaign_id: string | null } | null)?.campaign_id ?? null;
+
+  if (currentCampaignId && currentCampaignId !== campaignId) {
+    const controllers = await listCharacterControllers(currentCampaignId);
+    const toRevoke = controllers.filter((c) => c.character_id === characterId);
+    for (const controller of toRevoke) {
+      await revokeCharacterControl(characterId, controller.user_id);
+    }
+  }
+
   const { data, error } = await client
     .from(TABLE)
     .update({ campaign_id: campaignId })
@@ -487,22 +387,6 @@ export async function assignCharacterToCampaign(characterId: string, campaignId:
 
   if (error) {
     throw new CharacterStorageError(`Falha ao vincular personagem "${characterId}" à mesa: ${error.message}`, error);
-  }
-  return data as CharacterRecord;
-}
-
-/** Vincula um personagem a um perfil (ou remove o vínculo com `profileId: null`). */
-export async function assignCharacterToProfile(characterId: string, profileId: string | null): Promise<CharacterRecord> {
-  const client = await getScopedTableClient();
-  const { data, error } = await client
-    .from(TABLE)
-    .update({ profile_id: profileId })
-    .eq("id", characterId)
-    .select()
-    .single();
-
-  if (error) {
-    throw new CharacterStorageError(`Falha ao vincular personagem "${characterId}" ao perfil: ${error.message}`, error);
   }
   return data as CharacterRecord;
 }
@@ -532,7 +416,7 @@ export async function renameCharacter(id: string, newName: string): Promise<Char
   return data as CharacterRecord;
 }
 
-/** Arquiva um personagem (`archived_at = agora`). Não desvincula mesa/perfil — só marca como inativo. */
+/** Arquiva um personagem (`archived_at = agora`). Não desvincula mesa — só marca como inativo. */
 export async function archiveCharacter(id: string): Promise<CharacterRecord> {
   const client = await getScopedTableClient();
   const { data, error } = await client
@@ -566,11 +450,10 @@ export async function restoreCharacter(id: string): Promise<CharacterRecord> {
 
 /**
  * Duplica um personagem: clona o payload (nome com sufixo " (cópia)"),
- * mantém a mesma mesa (campaign_id) mas NUNCA copia o profile_id — o
- * duplicado nasce sem perfil, para nunca ficar ambíguo qual dos dois é
- * "o" personagem daquele perfil (só active_character_id do perfil
- * decide isso, e essa cópia não mexe nele). owner_id é carimbado com o
- * narrador logado, igual createCharacterForCampaign.
+ * mantém a mesma mesa (campaign_id). O duplicado nasce SEM controlador
+ * (character_controllers não é copiado) — atribuir depois via
+ * `grantCharacterControl`. owner_id é carimbado com o narrador logado,
+ * igual createCharacterForCampaign.
  */
 export async function duplicateCharacter(id: string): Promise<CharacterRecord> {
   const client = await getScopedTableClient();
@@ -589,181 +472,159 @@ export async function duplicateCharacter(id: string): Promise<CharacterRecord> {
   return insertCharacterScoped(client, clonedPayload, {
     ownerLabel: sourceRecord.owner_label ?? undefined,
     campaignId: sourceRecord.campaign_id,
-    profileId: null,
   });
 }
 
 // =====================================================================
-// SEÇÃO 2 — PRODUTO / JOGADOR POR SESSÃO (checkpoint v0.28/v0.30, /ficha)
-//
-// Não há login real de jogador ainda — a "identidade" vem de um TOKEN
-// REAL de sessão (checkpoint v0.30): `profileSessionId` +
-// `rawSessionToken`, gerados por `enterCampaignProfile`
-// (table/storage.ts) e guardados no localStorage do navegador (ver
-// browserSession.ts). `validateProfileSessionToken` faz o hard check
-// (hash bate, status='active', perfil ainda bloqueado) — sem
-// fallback para o sessionId antigo. Nunca expõem lista global nem
-// aceitam um characterId arbitrário — só o personagem ATIVO do perfil
-// da sessão validada.
+// SEÇÃO 2 — Controle de personagem (character_controllers)
 // =====================================================================
 
-export interface CharacterForProfileSessionResult {
-  ok: boolean;
-  reason?: "invalid_session" | "no_character";
-  campaign?: Campaign;
-  profile?: CampaignProfile;
-  character?: CharacterRecord;
+/** Concede controle de um personagem a uma conta — só o narrador dono da campanha (RPC `grant_character_control`, migration 0051). Exige que a conta-alvo já seja participante ativo da campanha. */
+export async function grantCharacterControl(characterId: string, userId: string): Promise<void> {
+  const client = await getScopedTableClient();
+  const { error } = await client.rpc("grant_character_control", {
+    p_character_id: characterId,
+    p_user_id: userId,
+  });
+  if (error) {
+    throw new CharacterStorageError(`Falha ao conceder controle do personagem "${characterId}": ${error.message}`, error);
+  }
 }
+
+/** Remove controle de um personagem de uma conta — só o narrador dono da campanha (RPC `revoke_character_control`). Não apaga o personagem. */
+export async function revokeCharacterControl(characterId: string, userId: string): Promise<void> {
+  const client = await getScopedTableClient();
+  const { error } = await client.rpc("revoke_character_control", {
+    p_character_id: characterId,
+    p_user_id: userId,
+  });
+  if (error) {
+    throw new CharacterStorageError(`Falha ao remover controle do personagem "${characterId}": ${error.message}`, error);
+  }
+}
+
+export interface CharacterController {
+  character_id: string;
+  campaign_id: string;
+  user_id: string;
+  granted_by: string | null;
+  granted_at: string;
+}
+
+/** Lista as linhas de character_controllers de uma campanha (RLS: narrador dono vê todas; jogador só as próprias). */
+export async function listCharacterControllers(campaignId: string): Promise<CharacterController[]> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.from(CHARACTER_CONTROLLERS_TABLE).select().eq("campaign_id", campaignId);
+  if (error) {
+    throw new CharacterStorageError(`Falha ao listar controles de personagem da campanha "${campaignId}": ${error.message}`, error);
+  }
+  return (data as CharacterController[]) ?? [];
+}
+
+/** Lista os personagens que a CONTA LOGADA controla numa campanha — base da área "Personagens" do jogador. */
+export async function listControlledCharacters(campaignId: string): Promise<CharacterRecord[]> {
+  const client = await getScopedTableClient();
+  const userId = await currentOwnerId();
+  if (!userId) return [];
+
+  const { data: controllerRows, error: controllerError } = await client
+    .from(CHARACTER_CONTROLLERS_TABLE)
+    .select("character_id")
+    .eq("campaign_id", campaignId)
+    .eq("user_id", userId);
+  if (controllerError) {
+    throw new CharacterStorageError(`Falha ao listar controles do usuário na campanha "${campaignId}": ${controllerError.message}`, controllerError);
+  }
+  const ids = ((controllerRows as { character_id: string }[] | null) ?? []).map((r) => r.character_id);
+  if (ids.length === 0) return [];
+
+  const { data: chars, error: charsError } = await client
+    .from(TABLE)
+    .select()
+    .in("id", ids)
+    .order("updated_at", { ascending: false });
+  if (charsError) {
+    throw new CharacterStorageError(`Falha ao buscar personagens controlados: ${charsError.message}`, charsError);
+  }
+  return (chars as CharacterRecord[]) ?? [];
+}
+
+// =====================================================================
+// SEÇÃO 3 — Ficha (/ficha) — caminho mínimo (Fase 1, revisão 4 §13.5)
+//
+// Sem UX completa (seletor de personagem, retorno à campanha, entrada
+// pela lista) — isso é Fase 5. Aqui só o essencial para a ficha não
+// ficar quebrada: resolver um personagem por campaignId+characterId, e
+// salvar através do caminho restrito por coluna.
+// =====================================================================
 
 /**
- * Busca o personagem ativo do perfil de uma sessão real e válida.
- *
- * Checkpoint v0.30: a validação da sessão (`validateProfileSessionToken`,
- * table/storage.ts) e a leitura do personagem (RPC
- * `get_character_for_profile_session`, security definer, migration
- * 0016) exigem `profileSessionId`+`rawSessionToken` reais — hard check
- * contra `profile_sessions.session_token_hash`/`status`, sem fallback
- * para o sessionId de navegador antigo.
+ * Busca um personagem por campanha+id. Autorização inteiramente pela
+ * RLS de `characters` (dono da campanha OU controlador com participação
+ * ativa — `can_read_character`, migration 0052). Devolve `null` tanto
+ * para "não encontrado" quanto para "sem autorização" — a RLS filtra a
+ * linha antes de chegar aqui, e a resposta não deve distinguir os dois
+ * casos (mesmo princípio de não vazamento já usado em outras partes do
+ * código).
  */
-export async function getCharacterForProfileSession(
-  campaignId: string,
-  profileId: string,
-  profileSessionId: string,
-  rawSessionToken: string,
-): Promise<CharacterForProfileSessionResult> {
-  const validation = await validateProfileSessionToken(campaignId, profileId, profileSessionId, rawSessionToken);
-  if (!validation.ok || !validation.profile) {
-    return { ok: false, reason: "invalid_session" };
-  }
-  if (!validation.profile.active_character_id) {
-    return { ok: false, reason: "no_character", campaign: validation.campaign, profile: validation.profile };
-  }
-
+export async function getCharacterForCampaign(campaignId: string, characterId: string): Promise<CharacterRecord | null> {
   const client = await getScopedTableClient();
-  const { data, error } = await client.rpc("get_character_for_profile_session", {
-    p_campaign_id: campaignId,
-    p_profile_id: profileId,
-    p_profile_session_id: profileSessionId,
-    p_raw_session_token: rawSessionToken,
-  });
+  const { data, error } = await client
+    .from(TABLE)
+    .select()
+    .eq("id", characterId)
+    .eq("campaign_id", campaignId)
+    .maybeSingle();
 
   if (error) {
-    throw new CharacterStorageError(`Falha ao buscar personagem da sessão de perfil: ${error.message}`, error);
+    throw new CharacterStorageError(`Falha ao buscar personagem "${characterId}" na campanha "${campaignId}": ${error.message}`, error);
   }
-  const record = ((data as CharacterRecord[] | null) ?? [])[0];
-  if (!record) {
-    return { ok: false, reason: "no_character", campaign: validation.campaign, profile: validation.profile };
-  }
-  return { ok: true, campaign: validation.campaign, profile: validation.profile, character: record };
+  return (data as CharacterRecord | null) ?? null;
 }
 
 /**
- * Salva (update) o personagem ativo de uma sessão real e válida.
- *
- * Checkpoint v0.30: a escrita vai via a função SQL
- * `save_character_for_profile_session` (security definer, migration
- * 0016) — ela mesma faz o hard check do token (hash bate,
- * status='active', perfil bloqueado) E confere que `characterId`
- * ainda é o ativo do perfil, DENTRO do banco, atomicamente. A checagem
- * em TypeScript abaixo (via `validateProfileSessionToken`) fica como
- * defesa em profundidade extra (falha cedo, com uma mensagem mais
- * específica, antes de gastar a chamada da RPC) — mas quem realmente
- * impede um token/id trocado é a função SQL.
+ * Único caminho de escrita do jogador controlador (lacuna 3, revisão 4
+ * §13.4) — chama a RPC `update_character_sheet_payload`, que só toca a
+ * coluna `payload` e revalida controle+participação ativa internamente,
+ * nunca confiando em nada além de `characterId`/`payload`. Nunca usar
+ * `updateCharacter` (seção 5) para o caminho do jogador — a RLS de
+ * UPDATE direta na tabela não autoriza controlador desde a migration
+ * 0052, só narrador/dono de personagem solto.
  */
-export async function saveCharacterForProfileSession(
-  campaignId: string,
-  profileId: string,
-  profileSessionId: string,
-  rawSessionToken: string,
-  characterId: string,
-  character: Character,
-): Promise<CharacterRecord> {
-  const validation = await validateProfileSessionToken(campaignId, profileId, profileSessionId, rawSessionToken);
-  if (!validation.ok || !validation.profile) {
-    throw new CharacterStorageError("Sessão de perfil inválida — não é possível salvar o personagem.");
-  }
-  if (validation.profile.active_character_id !== characterId) {
-    throw new CharacterStorageError(
-      `Personagem "${characterId}" não é mais o ativo desta sessão de perfil — recarregue a ficha.`,
-    );
-  }
-
+export async function updateCharacterSheetPayload(characterId: string, character: Character): Promise<CharacterRecord> {
   const payload = buildPayloadForSave(character);
   const client = await getScopedTableClient();
-  const { data, error } = await client.rpc("save_character_for_profile_session", {
-    p_campaign_id: campaignId,
-    p_profile_id: profileId,
-    p_profile_session_id: profileSessionId,
-    p_raw_session_token: rawSessionToken,
+  const { data, error } = await client.rpc("update_character_sheet_payload", {
     p_character_id: characterId,
-    p_name: payload.nome,
     p_payload: payload,
   });
-
   if (error) {
-    throw new CharacterStorageError(`Falha ao salvar personagem "${characterId}" da sessão de perfil: ${error.message}`, error);
+    throw new CharacterStorageError(`Falha ao salvar ficha do personagem "${characterId}": ${error.message}`, error);
   }
-  const record = ((data as CharacterRecord[] | null) ?? [])[0];
-  if (!record) {
-    throw new CharacterStorageError(`Falha ao salvar personagem "${characterId}": nenhuma linha retornada.`);
-  }
-  return record;
+  return data as CharacterRecord;
 }
 
 // =====================================================================
-// SEÇÃO 3 — DEV / DIAGNÓSTICO
-//
-// Etapa 12 (correção 6): a auditoria desta correção reabriu a
-// premissa "usadas só por dev/scripts" função a função (não por
-// nome) e encontrou uma exceção real: `updateCharacter` (seção 4
-// abaixo) também é chamada por `MesaDetailClient.tsx`,
-// `table/endRound.ts` e `table/endScene.ts` — fluxo de PRODUTO real
-// (dashboard do narrador, "Encerrar Rodada"/"Encerrar Cena"), e
-// `listCharactersForCampaign` também é chamada por
-// `/join/[token]/page.tsx` — fluxo de produto real (pós-login,
-// pós-aceite de convite). Preservar `getContentClient()` (anon puro)
-// nessas duas para "não quebrar dev" deixaria de fazer sentido no
-// momento em que a RLS de `anon` é removida por completo (ver
-// migration 0031): função de desenvolvimento não justifica policy
-// aberta, mas função de PRODUTO também não pode depender de client
-// anon. Por isso todas as funções desta seção e da seção 4 abaixo
-// foram migradas para `getScopedTableClient()` (mesmo helper das
-// seções 1/2) — anexam o JWT de quem estiver logado (narrador ou
-// jogador com sessão real) e, sem sessão, se comportam como anon sem
-// nenhuma policy — ou seja, dev/diagnóstico sem login passa a ver
-// listas vazias / falhar por RLS, em vez de acessar a tabela sem
-// restrição. Consequência aceita e documentada (não é regressão de
-// produto): `scripts/test-character-storage.ts`,
-// `scripts/test-campaign-end-scene.ts` e
-// `scripts/test-campaign-end-round.ts` (rodam sem login, fora de um
-// contexto de request) deixam de funcionar sem uma sessão real — nunca
-// fizeram parte da verificação executável automatizada
-// (`validate-campaign-homebrew.mjs`) e já exigiam um Supabase real
-// para rodar.
+// SEÇÃO 4 — DEV / DIAGNÓSTICO
 // =====================================================================
 
-/** Lista TODOS os personagens (global, sem filtro de mesa/dono) — só para telas dev/diagnóstico. Requer sessão (narrador logado) desde a correção 6; sem sessão, RLS devolve lista vazia. */
+/** Lista TODOS os personagens (global, sem filtro de mesa/dono) — só para telas dev/diagnóstico. Requer sessão (usuário logado); sem sessão, RLS devolve lista vazia. */
 export async function listLegacyCharactersDev(): Promise<CharacterRecord[]> {
   return listCharacters();
 }
 
 // =====================================================================
-// SEÇÃO 4 — LEGADO / COMPATIBILIDADE
-//
-// Mantidas com o MESMO nome (compatibilidade de assinatura com
-// scripts/dev existentes), mas migradas de `getContentClient()` para
-// `getScopedTableClient()` na correção 6 — ver nota da seção 3 acima.
-// `updateCharacter` e `listCharactersForCampaign`, especificamente,
-// SÃO usadas por rota de produto real (auditado nesta correção) — não
-// são apenas legado.
+// SEÇÃO 5 — LEGADO / COMPATIBILIDADE (client escopado; RLS de UPDATE
+// direta só autoriza narrador dono da campanha ou dono de personagem
+// solto — nunca usar `updateCharacter` para escrita de jogador
+// controlador, ver `updateCharacterSheetPayload` na seção 3)
 // =====================================================================
 
 /**
- * Cria um novo registro de personagem. payload guarda o Character inteiro.
- * `campaignId`/`profileId` (checkpoint v0.23) são opcionais — omitidos,
- * o personagem nasce "legado" (sem mesa), mesmo comportamento de antes.
- * `owner_id` é carimbado com o narrador logado quando há sessão
- * (best-effort, nunca bloqueia a criação se não houver).
+ * Cria um novo registro de personagem. payload guarda o Character
+ * inteiro. `campaignId` (opcional) — omitido, o personagem nasce
+ * "legado" (sem mesa). `owner_id` é carimbado com o usuário logado
+ * quando há sessão (best-effort, nunca bloqueia a criação se não houver).
  */
 export async function createCharacter(
   character: Character,
@@ -780,7 +641,6 @@ export async function createCharacter(
       status: options.status ?? "draft",
       payload,
       campaign_id: options.campaignId ?? null,
-      profile_id: options.profileId ?? null,
       owner_id: ownerId,
     })
     .select()
@@ -793,10 +653,10 @@ export async function createCharacter(
 }
 
 /**
- * Atualiza um personagem existente. Sobrescreve payload e name (que é
- * sempre projetado de character.nome, para a coluna ficar consistente
- * com o payload). `campaignId`/`profileId` só são tocados quando
- * explicitamente passados em options — omitir preserva o vínculo atual.
+ * Atualiza um personagem existente — caminho ADMINISTRATIVO (narrador
+ * dono da campanha, ou dono de personagem solto). RLS de UPDATE em
+ * `characters` (migration 0052) não autoriza controlador aqui — o
+ * jogador usa `updateCharacterSheetPayload` (seção 3).
  */
 export async function updateCharacter(
   id: string,
@@ -812,7 +672,6 @@ export async function updateCharacter(
   if (options.ownerLabel !== undefined) update.owner_label = options.ownerLabel;
   if (options.status !== undefined) update.status = options.status;
   if (options.campaignId !== undefined) update.campaign_id = options.campaignId;
-  if (options.profileId !== undefined) update.profile_id = options.profileId;
 
   const { data, error } = await client
     .from(TABLE)
@@ -858,15 +717,6 @@ export async function deleteCharacter(id: string): Promise<void> {
     throw new CharacterStorageError(`Falha ao apagar personagem "${id}": ${error.message}`, error);
   }
 }
-
-// =====================================================================
-// Compat direta (checkpoint v0.23) — mantida com o nome antigo, mas
-// migrada para `getScopedTableClient()` na correção 6: a auditoria
-// confirmou que `/join/[token]/page.tsx` chama esta função DEPOIS de
-// exigir `getCurrentUser()` e aceitar o convite (`campaign_members`
-// ativo) — nunca antes de login, ao contrário do que este comentário
-// afirmava. Não é mais "acesso anônimo real", é produto autenticado.
-// =====================================================================
 
 /** Lista os personagens ligados a uma mesa (campaign_id), mais recentemente atualizados primeiro. Uso: /join/[token] (pós-login, campanha-escopado, nunca global). */
 export async function listCharactersForCampaign(campaignId: string): Promise<CharacterRecord[]> {

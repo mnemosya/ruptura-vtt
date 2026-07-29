@@ -41,7 +41,6 @@ import { getScopedTableClient } from "../auth/scopedClient";
 export interface ProcessedCharacterSummary {
   characterId: string;
   characterNome: string;
-  profileId: string | null;
   pvBefore: number;
   pvAfter: number;
   paBefore: number;
@@ -197,7 +196,6 @@ export async function resolveCampaignEndRoundForCharacters(params: {
       processedCharacters.push({
         characterId: record.id,
         characterNome: character.nome,
-        profileId: record.profile_id,
         pvBefore,
         pvAfter,
         paBefore,
@@ -232,7 +230,7 @@ export async function resolveCampaignEndRoundForCharacters(params: {
       for (const entry of [...collapseResult.tableLogs, ...resolved.tableLogs, ...paReduction.tableLogs]) {
         tableLogs.push({
           type: entry.type,
-          payload: { ...entry.payload, characterId: record.id, characterNome: character.nome, profileId: record.profile_id },
+          payload: { ...entry.payload, characterId: record.id, characterNome: character.nome },
         });
       }
       // Efeitos temporários expirados por rodada (checkpoint pós-v0.71) geram log persistente.
@@ -242,7 +240,6 @@ export async function resolveCampaignEndRoundForCharacters(params: {
           payload: {
             characterId: record.id,
             characterNome: character.nome,
-            profileId: record.profile_id,
             effectId: e.id,
             effectName: e.name,
             sourceType: e.sourceType,
@@ -402,7 +399,6 @@ export async function endCampaignRound(params: {
       await addLog({
         campaignId: params.campaignId,
         characterId: typeof entry.payload.characterId === "string" ? entry.payload.characterId : undefined,
-        profileId: typeof entry.payload.profileId === "string" ? entry.payload.profileId : null,
         type: entry.type,
         visibility: "public",
         payload: entry.payload,

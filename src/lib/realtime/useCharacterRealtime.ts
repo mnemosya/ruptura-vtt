@@ -5,7 +5,7 @@
  * `characters` (o próprio `characterId`) e agenda um refetch debounced
  * quando o registro muda. Nunca decide regra: só avisa "algo mudou,
  * refaça a leitura canônica" — quem chama passa a função de refetch
- * de verdade (ex.: `getCharacter`/`getCharacterForProfileSession` +
+ * de verdade (ex.: `getCharacter`/`getCharacterForCampaign` +
  * `normalizeCharacter`, já existentes em `CharacterSheetClient.tsx`).
  */
 

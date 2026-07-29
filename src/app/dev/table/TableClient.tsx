@@ -14,23 +14,14 @@ import {
   canAdvanceCampaign,
   addLog,
   listLogs,
-  createCampaignProfile,
-  listCampaignProfiles,
-  setCampaignProfileLocked,
-  setCampaignProfileActiveCharacter,
-  forceReleaseCampaignProfile,
   createCampaignInvite,
   listCampaignInvites,
   revokeCampaignInvite,
-  listProfileSessions,
 } from "../../../lib/table/storage";
 import {
   TABLE_LOG_VISIBILITIES,
-  PROFILE_HEARTBEAT_TIMEOUT_MS,
   type Campaign,
   type CampaignInvite,
-  type CampaignProfile,
-  type ProfileSession,
   type TableLogEntry,
   type TableLogVisibility,
 } from "../../../lib/table";
@@ -988,12 +979,6 @@ function formatLastSeen(lastSeenAt: string | null): string {
   return new Date(lastSeenAt).toLocaleString("pt-BR");
 }
 
-function isPerfilExpirado(perfil: CampaignProfile, now: number): boolean {
-  if (!perfil.is_locked) return false;
-  const lastSeenMs = perfil.last_seen_at ? new Date(perfil.last_seen_at).getTime() : 0;
-  return now - lastSeenMs > PROFILE_HEARTBEAT_TIMEOUT_MS;
-}
-
 const AUTO_REFRESH_INTERVAL_MS = 5000;
 
 const VISIBILITY_FILTERS = ["todos", ...TABLE_LOG_VISIBILITIES] as const;
@@ -1279,11 +1264,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
   const [visibilidadeFiltro, setVisibilidadeFiltro] = useState<VisibilityFilter>("todos");
   const [autoAtualizar, setAutoAtualizar] = useState(false);
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState<Date | null>(null);
-  const [perfis, setPerfis] = useState<CampaignProfile[]>([]);
-  const [novoPerfilApelido, setNovoPerfilApelido] = useState("");
-  const [loadingPerfis, setLoadingPerfis] = useState(false);
   const [mesaOwnerFiltro, setMesaOwnerFiltro] = useState<MesaOwnerFilter>("todas");
-  const [sessoes, setSessoes] = useState<ProfileSession[]>([]);
   const [convites, setConvites] = useState<CampaignInvite[]>([]);
   const [novoConviteLabel, setNovoConviteLabel] = useState("");
   const [conviteLinkNovo, setConviteLinkNovo] = useState<string | null>(null);
@@ -1297,10 +1278,13 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
   // "Estado dos personagens" — ferramenta de narrador (checkpoint
   // v0.63). `personagens` (acima) é a lista global carregada uma vez
   // no mount da página e nunca é uma fonte confiável do estado ATUAL
-  // de um personagem específico; por isso os personagens ativos dos
-  // perfis são buscados à parte (getCharacter) e mantidos aqui,
-  // atualizados após cada ação de narrador com o registro que
-  // `updateCharacter` devolve (sem precisar recarregar a lista toda).
+  // de um personagem específico; por isso os personagens ativos são
+  // buscados à parte (getCharacter) e mantidos aqui, atualizados após
+  // cada ação de narrador com o registro que `updateCharacter` devolve
+  // (sem precisar recarregar a lista toda). Fase 1: sem mais "perfil",
+  // todo personagem não-arquivado da mesa selecionada é candidato —
+  // a lista de ids candidatos vem de `campaignCharactersAtivos`
+  // (abaixo), não mais de `active_character_id` de perfis.
   // ---------------------------------------------------------------
   const [personagensAtivos, setPersonagensAtivos] = useState<Record<string, CharacterRecord>>({});
   const [gmErro, setGmErro] = useState<string | null>(null);
@@ -1311,9 +1295,8 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
   // logado, `listCrewInventory` lança e a seção mostra o erro em vez de
   // fingir uma lista vazia. `campaignCharactersAtivos` é a MESMA fonte
   // de `fetchActiveCampaignCharacters` (listCharactersForNarratorCampaign,
-  // só não-arquivados) — não a lista de perfis — para o seletor de
-  // personagem de destino incluir qualquer personagem ativo da mesa,
-  // não só os vinculados a um perfil.
+  // só não-arquivados) para o seletor de personagem de destino incluir
+  // qualquer personagem ativo da mesa.
   // ---------------------------------------------------------------
   const [crewInventory, setCrewInventory] = useState<CrewInventoryItem[]>([]);
   const [crewInventoryError, setCrewInventoryError] = useState<string | null>(null);
@@ -2572,8 +2555,13 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     }
   }
 
-  async function refreshPersonagensAtivos(perfisAtuais: CampaignProfile[]) {
-    const ids = Array.from(new Set(perfisAtuais.map((p) => p.active_character_id).filter((id): id is string => !!id)));
+  // Fase 1: sem mais "perfil", todo personagem não-arquivado da mesa é
+  // candidato a `personagensAtivos` — antes só os apontados por
+  // `active_character_id` de algum perfil. `candidatos` vem de
+  // `campaignCharactersAtivos` (mesma fonte de
+  // fetchActiveCampaignCharacters/listCharactersForNarratorCampaign).
+  async function refreshPersonagensAtivos(candidatos: CharacterRecord[]) {
+    const ids = Array.from(new Set(candidatos.map((c) => c.id)));
     if (ids.length === 0) {
       setPersonagensAtivos({});
       return;
@@ -2591,9 +2579,9 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
   }
 
   useEffect(() => {
-    refreshPersonagensAtivos(perfis);
+    refreshPersonagensAtivos(campaignCharactersAtivos);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [perfis]);
+  }, [campaignCharactersAtivos]);
 
   /**
    * Salva o personagem mutado (`updateCharacter`, já normalizado) e
@@ -3091,7 +3079,7 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       } catch {
         // Best-effort — o resumo já mostra o que foi processado.
       }
-      await refreshPersonagensAtivos(perfis);
+      await refreshPersonagensAtivos(campaignCharactersAtivos);
     } catch (err) {
       // Falha (ex.: rodada/cena já avançou) — mantém o preview aberto e os dados; nunca finge que processou.
       setEndErro(err instanceof Error ? err.message : "Erro ao processar o encerramento.");
@@ -3124,7 +3112,6 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
     } finally {
       setLoadingLogs(false);
     }
-    await handleRefreshPerfis(id);
     await handleRefreshConvites(id);
     await refreshCrewInventory(id);
     setConviteLinkNovo(null);
@@ -3171,69 +3158,6 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
       setConviteCopiado(true);
     } catch {
       // Clipboard pode falhar sem gesto do usuário; o link fica visível para cópia manual.
-    }
-  }
-
-  async function handleRefreshPerfis(campaignId: string) {
-    setLoadingPerfis(true);
-    try {
-      setPerfis(await listCampaignProfiles(campaignId));
-      setSessoes(await listProfileSessions(campaignId));
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao carregar perfis.");
-    } finally {
-      setLoadingPerfis(false);
-    }
-  }
-
-  /** Sessão ativa de um perfil (ou null) — derivada da lista carregada. */
-  function activeSessionOf(profileId: string): ProfileSession | null {
-    return sessoes.find((s) => s.profile_id === profileId && s.status === "active") ?? null;
-  }
-
-  async function handleCreatePerfil() {
-    if (!selectedCampaignId) return;
-    setErrorMessage(null);
-    try {
-      await createCampaignProfile(selectedCampaignId, novoPerfilApelido);
-      setNovoPerfilApelido("");
-      await handleRefreshPerfis(selectedCampaignId);
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao criar perfil.");
-    }
-  }
-
-  async function handleToggleLockPerfil(profile: CampaignProfile) {
-    if (!selectedCampaignId) return;
-    setErrorMessage(null);
-    try {
-      await setCampaignProfileLocked(profile.id, !profile.is_locked);
-      await handleRefreshPerfis(selectedCampaignId);
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao bloquear/desbloquear perfil.");
-    }
-  }
-
-  async function handleSetPersonagemAtivo(profileId: string, characterId: string | null) {
-    if (!selectedCampaignId) return;
-    setErrorMessage(null);
-    try {
-      await setCampaignProfileActiveCharacter(profileId, characterId);
-      await handleRefreshPerfis(selectedCampaignId);
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao vincular personagem ativo.");
-    }
-  }
-
-  /** Botão "Liberar perfil" — ação de "narrador", libera incondicionalmente (ver forceReleaseCampaignProfile). */
-  async function handleForceReleasePerfil(profileId: string) {
-    if (!selectedCampaignId) return;
-    setErrorMessage(null);
-    try {
-      await forceReleaseCampaignProfile(profileId);
-      await handleRefreshPerfis(selectedCampaignId);
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao liberar perfil.");
     }
   }
 
@@ -3425,132 +3349,6 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
 
       {selectedCampaignId && (
         <>
-          <section style={{ marginBottom: 32 }}>
-            <h2 style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, opacity: 0.6, marginBottom: 12 }}>
-              Perfis da mesa ({perfis.length}) — {mesaAtual?.name ?? selectedCampaignId}
-            </h2>
-            <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
-              Perfil DEV: apelido + bloqueio manual ou via heartbeat (polling client-side, sem
-              Supabase Realtime). Sem login, sem link de convite real — "sessão" é só um id no
-              localStorage de quem entrou pela ficha, sem prova de identidade (ver migrations 0004
-              e 0005).
-            </p>
-            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-              <input
-                data-testid="novo-perfil-apelido"
-                type="text"
-                value={novoPerfilApelido}
-                onChange={(e) => setNovoPerfilApelido(e.target.value)}
-                placeholder="Apelido do perfil"
-                style={{ ...inputStyle, flex: 1 }}
-              />
-              <button data-testid="criar-perfil-button" onClick={handleCreatePerfil} style={buttonStyle}>
-                Criar perfil
-              </button>
-            </div>
-            {loadingPerfis && <p style={{ fontSize: 13, opacity: 0.6 }}>Carregando…</p>}
-            {!loadingPerfis && perfis.length === 0 && (
-              <p style={{ fontSize: 13, opacity: 0.6 }}>Nenhum perfil criado ainda nesta mesa.</p>
-            )}
-            <div data-testid="perfis-lista" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {perfis.map((perfil) => {
-                const personagemAtivo = personagens.find((p) => p.id === perfil.active_character_id);
-                const expirado = isPerfilExpirado(perfil, nowTick);
-
-                return (
-                  <div
-                    key={perfil.id}
-                    data-testid="perfil-entry"
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 8,
-                      background: "#1d1e24",
-                      borderRadius: 8,
-                      padding: "10px 14px",
-                      fontSize: 13,
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                      <div>
-                        <span data-testid="perfil-apelido" style={{ fontWeight: 600 }}>
-                          {perfil.nickname}
-                        </span>
-                        <span
-                          data-testid="perfil-status"
-                          style={{ marginLeft: 10, fontSize: 11, opacity: 0.7, color: perfil.is_locked ? "#ffb84f" : "#7fd99a" }}
-                        >
-                          {perfil.is_locked ? "Bloqueado" : "Livre"}
-                        </span>
-                      </div>
-                      <button data-testid={`bloquear-perfil-${perfil.id}`} onClick={() => handleToggleLockPerfil(perfil)} style={buttonStyle}>
-                        {perfil.is_locked ? "Desbloquear" : "Bloquear"}
-                      </button>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <span data-testid="perfil-personagem-ativo" style={{ fontSize: 11, opacity: 0.7 }}>
-                        Personagem ativo: {personagemAtivo ? personagemAtivo.name : "nenhum"}
-                      </span>
-                      <select
-                        data-testid={`perfil-personagem-select-${perfil.id}`}
-                        value={perfil.active_character_id ?? ""}
-                        onChange={(e) => handleSetPersonagemAtivo(perfil.id, e.target.value || null)}
-                        style={inputStyle}
-                      >
-                        <option value="">— selecionar personagem —</option>
-                        {personagens.map((personagem) => (
-                          <option key={personagem.id} value={personagem.id}>
-                            {personagem.name}
-                            {personagem.campaign_id == null ? " (sem mesa — legado/dev)" : ""}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        data-testid={`limpar-personagem-ativo-${perfil.id}`}
-                        onClick={() => handleSetPersonagemAtivo(perfil.id, null)}
-                        style={buttonStyle}
-                        disabled={!perfil.active_character_id}
-                      >
-                        Limpar personagem
-                      </button>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <span data-testid={`perfil-last-seen-${perfil.id}`} style={{ fontSize: 11, opacity: 0.7 }}>
-                        Último sinal: {formatLastSeen(perfil.last_seen_at)}
-                      </span>
-                      {expirado && (
-                        <span
-                          data-testid={`perfil-expirado-${perfil.id}`}
-                          style={{ fontSize: 11, color: "#ff6b6b", fontWeight: 700 }}
-                        >
-                          Parece expirado
-                        </span>
-                      )}
-                      <button
-                        data-testid={`liberar-perfil-${perfil.id}`}
-                        onClick={() => handleForceReleasePerfil(perfil.id)}
-                        style={buttonStyle}
-                        disabled={!perfil.is_locked}
-                      >
-                        Liberar perfil
-                      </button>
-                    </div>
-                    {(() => {
-                      const sess = activeSessionOf(perfil.id);
-                      return (
-                        <div data-testid={`perfil-sessao-${perfil.id}`} style={{ fontSize: 11, opacity: 0.7 }}>
-                          Sessão: {sess
-                            ? `ativa · último sinal ${formatLastSeen(sess.last_seen_at)}${sess.invite_id ? " · via convite" : ""}`
-                            : "nenhuma sessão ativa"}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
           <section style={{ marginBottom: 32 }} data-testid="encerramento-secao">
             <h2 style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, opacity: 0.6, marginBottom: 12 }}>
               Encerrar Rodada / Cena — {mesaAtual?.name ?? selectedCampaignId}
@@ -3621,27 +3419,8 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
               </p>
             )}
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {perfis.map((perfil) => {
-                if (!perfil.active_character_id) {
-                  return (
-                    <div
-                      key={perfil.id}
-                      data-testid={`estado-personagem-sem-ativo-${perfil.id}`}
-                      style={{ background: "#1d1e24", borderRadius: 8, padding: "8px 14px", fontSize: 12, opacity: 0.55 }}
-                    >
-                      {perfil.nickname}: sem personagem ativo vinculado.
-                    </div>
-                  );
-                }
-                const characterId = perfil.active_character_id;
-                const record = personagensAtivos[characterId];
-                if (!record) {
-                  return (
-                    <div key={perfil.id} style={{ background: "#1d1e24", borderRadius: 8, padding: "8px 14px", fontSize: 12, opacity: 0.6 }}>
-                      {perfil.nickname}: carregando personagem…
-                    </div>
-                  );
-                }
+              {Object.values(personagensAtivos).map((record) => {
+                const characterId = record.id;
                 const payload = record.payload;
                 const recursos = payload.recursos_atuais ?? {};
                 const condicoesAtivas = (payload.condicoes_ativas ?? []).filter((c) => c.ativa);
@@ -3653,13 +3432,12 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
 
                 return (
                   <div
-                    key={perfil.id}
+                    key={characterId}
                     data-testid={`estado-personagem-${characterId}`}
                     style={{ background: "#1d1e24", borderRadius: 8, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, fontSize: 13 }}
                   >
                     <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-                      <strong>{perfil.nickname}</strong>
-                      <span style={{ opacity: 0.7 }}>→ {record.name}</span>
+                      <strong>{record.name}</strong>
                     </div>
 
                     <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12 }}>
@@ -3915,7 +3693,9 @@ export default function TableClient({ mesasIniciais, personagensIniciais, curren
                   </div>
                 );
               })}
-              {perfis.length === 0 && <p style={{ fontSize: 12, opacity: 0.6 }}>Nenhum perfil nesta mesa ainda.</p>}
+              {Object.keys(personagensAtivos).length === 0 && (
+                <p style={{ fontSize: 12, opacity: 0.6 }}>Nenhum personagem ativo nesta mesa ainda.</p>
+              )}
             </div>
           </section>
 

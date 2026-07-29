@@ -54,11 +54,11 @@ import CharacterSheetClient from "./dev/character-sheet/CharacterSheetClient";
 
 export async function CharacterSheetView({
   campaignId,
-  profileId,
+  characterId,
   mode = "dev",
 }: {
   campaignId: string | null;
-  profileId: string | null;
+  characterId: string | null;
   mode?: "dev" | "product";
 }) {
   let regras: CharacterRulesPayload | null = null;
@@ -254,7 +254,7 @@ export async function CharacterSheetView({
       companionModelsIniciais={companionModels}
       companionModelsError={companionModelsError}
       initialCampaignId={campaignId}
-      initialProfileId={profileId}
+      initialCharacterId={characterId}
       mode={mode}
     />
   );

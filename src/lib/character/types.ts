@@ -1034,9 +1034,13 @@ export interface CharacterRecord {
   updated_at: string;
   /** Mesa a que o personagem pertence (migration 0011). Null = legado/sem mesa. */
   campaign_id: string | null;
-  /** Perfil a que o personagem pertence dentro da mesa (migration 0011). Null = sem perfil. */
-  profile_id: string | null;
-  /** Narrador logado dono do registro (migration 0011). Null = criado sem login. */
+  /**
+   * Conta que criou o registro (migration 0011). Fase 1 (revisão 4):
+   * só é considerado para autorização quando `campaign_id` é null
+   * (personagem solto) — nunca contorna o controle em personagem de
+   * campanha, mesmo com valor residual (ver `character_controllers`
+   * para quem controla o quê dentro de uma campanha).
+   */
   owner_id: string | null;
   /** Momento em que foi arquivado (migration 0012). Null = ativo/vivo. */
   archived_at: string | null;

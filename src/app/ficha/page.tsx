@@ -1,13 +1,14 @@
 /**
- * Rota REAL da ficha (checkpoint v0.22, produto real desde v0.24):
- * /ficha?campaignId&profileId. É para onde o fluxo de convite real
- * (/join/[token]) leva ao "Abrir ficha".
+ * Rota REAL da ficha: /ficha?campaignId&characterId. É para onde o
+ * fluxo de convite real (/join/[token]) e o assistente de criação levam.
  *
- * mode="product" (v0.24): a ficha só abre se o sessionId salvo no
- * localStorage deste navegador for o dono do bloqueio do perfil
- * informado (validado no client via validateProductSession) — nunca
- * mostra lista global de personagens nem permite carregar um
- * personagem arbitrário, só o personagem ativo do perfil da sessão.
+ * Fase 1 do plano de contas/campanhas/convites/personagens (revisão 4):
+ * caminho mínimo — resolve por campaignId+characterId, autorizado
+ * inteiramente pela RLS de `characters` (dono da campanha OU
+ * controlador com participação ativa, ver src/lib/character/storage.ts
+ * `getCharacterForCampaign`). Não depende mais de token/sessão de
+ * perfil em localStorage. UX completa (seletor de personagem, retorno à
+ * campanha, entrada pela lista) é Fase 5.
  */
 
 import { CharacterSheetView } from "../CharacterSheetView";
@@ -15,12 +16,12 @@ import { CharacterSheetView } from "../CharacterSheetView";
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  searchParams: Promise<{ campaignId?: string; profileId?: string }>;
+  searchParams: Promise<{ campaignId?: string; characterId?: string }>;
 }
 
 export default async function FichaPage({ searchParams }: PageProps) {
   const params = await searchParams;
   return (
-    <CharacterSheetView campaignId={params.campaignId ?? null} profileId={params.profileId ?? null} mode="product" />
+    <CharacterSheetView campaignId={params.campaignId ?? null} characterId={params.characterId ?? null} mode="product" />
   );
 }

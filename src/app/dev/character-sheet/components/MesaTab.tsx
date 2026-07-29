@@ -1021,20 +1021,13 @@ export function formatTableLogEntry(entry: TableLogEntry): string {
 export function MesaTab({
   campaignId,
   mesaNome,
-  profileId,
-  profileNickname,
   characterId,
   characterNome,
-  profileSessionId,
 }: {
   campaignId: string | null;
   mesaNome: string | null;
-  profileId: string | null;
-  profileNickname: string | null;
   characterId: string | null;
   characterNome: string;
-  /** sessionId do navegador (checkpoint v0.24) — anotado em table_logs.profile_session_id. */
-  profileSessionId?: string | null;
 }) {
   const [logs, setLogs] = useState<TableLogEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -1075,7 +1068,7 @@ export function MesaTab({
       // Visibilidade REAL (v0.20): o servidor filtra por observador —
       // jogador vê public + private do próprio perfil, nunca gm; narrador
       // dono vê tudo. Não é mais só filtro visual.
-      setLogs(await listLogsForViewer(campaignId, { profileId }));
+      setLogs(await listLogsForViewer(campaignId));
       setLastUpdatedAt(new Date());
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao carregar logs da mesa.");
@@ -1113,15 +1106,11 @@ export function MesaTab({
       await addLog({
         campaignId,
         characterId: characterId ?? undefined,
-        profileId,
-        profileSessionId,
         type: "chat",
         visibility: visibilidade,
         payload: {
           text,
           source: "character_sheet",
-          profileId,
-          profileNickname,
           characterId,
           characterNome,
         },
@@ -1187,7 +1176,7 @@ export function MesaTab({
       >
         <p style={{ fontSize: 12, opacity: 0.6, marginBottom: 8 }}>
           Enviar mensagem como{" "}
-          <strong>{characterNome?.trim() || profileNickname || "Mesa"}</strong>
+          <strong>{characterNome?.trim() || "Mesa"}</strong>
         </p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <input

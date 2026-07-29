@@ -10,7 +10,7 @@
  */
 
 import { getScopedTableClient } from "../auth/scopedClient";
-import { listCharactersForNarratorCampaign } from "../character/storage";
+import { listCharactersForNarratorCampaign, listCharacterControllers } from "../character/storage";
 import { TableStorageError } from "./storage.errors";
 import { getCampaign } from "./storage";
 import {
@@ -37,18 +37,25 @@ function reflexosDeDesempate(payload: { pericias?: Record<string, number> } | nu
 
 /**
  * Participantes elegíveis: personagens ativos (não arquivados) da mesa.
- * "PJ" = tem profile_id (vinculado a um jogador); "PNJ" = sem
- * profile_id (controlado pelo narrador) — não existe campo dedicado no
- * schema de personagem, esta é a única distinção disponível nos dados.
+ * "PJ" = tem pelo menos um controlador em `character_controllers`
+ * (vinculado a uma conta de jogador); "PNJ" = sem controlador
+ * (controlado só pelo narrador). Fase 1 (revisão 4): substitui a
+ * distinção antiga por `profile_id` (removido) — não existe campo
+ * dedicado no schema de personagem, esta é a distinção disponível nos
+ * dados.
  */
 async function buildParticipantsForCampaign(campaignId: string): Promise<TurnParticipantInput[]> {
-  const records = await listCharactersForNarratorCampaign(campaignId);
+  const [records, controllers] = await Promise.all([
+    listCharactersForNarratorCampaign(campaignId),
+    listCharacterControllers(campaignId),
+  ]);
+  const controlledCharacterIds = new Set(controllers.map((c) => c.character_id));
   return records
     .filter((record) => !record.archived_at)
     .map((record) => ({
       characterId: record.id,
       characterNome: record.payload?.nome ?? record.name,
-      side: record.profile_id ? ("pj" as const) : ("pnj" as const),
+      side: controlledCharacterIds.has(record.id) ? ("pj" as const) : ("pnj" as const),
       reflexos: reflexosDeDesempate(record.payload as unknown as { pericias?: Record<string, number> }),
       active: true,
     }));

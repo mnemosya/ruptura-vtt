@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Section } from "./Section";
 import { buttonStyle } from "./styles";
 import { ModeToggle, type SheetMode } from "./ModeToggle";
-import type { Campaign, CampaignProfile } from "../../../../lib/table";
-import type { Character, CharacterRecord, EvolutionHistoryEntry } from "../../../../lib/character";
+import type { Campaign } from "../../../../lib/table";
+import type { Character, EvolutionHistoryEntry } from "../../../../lib/character";
 
 const inputStyle: React.CSSProperties = {
   background: "#0f1014",
@@ -17,7 +17,6 @@ const inputStyle: React.CSSProperties = {
 type SaveState = "idle" | "saving" | "saved" | "error";
 
 const SEM_MESA = "";
-const SEM_PERFIL = "";
 
 const selectStyle = {
   background: "#0f1014",
@@ -45,23 +44,14 @@ export function GeneralTab({
   mesas,
   selectedCampaignId,
   onSelectCampaign,
-  perfis,
-  selectedProfileId,
-  onSelectProfile,
   onLoadPersonagemAtivo,
-  profileWarning,
-  personagens,
-  perfilStatus,
-  enteredProfileId,
-  onEnterProfile,
-  onLeaveProfile,
   pmTotal,
   pmDisponivel,
   historicoEvolucao,
   onGainPm,
   onSpendPm,
 }: {
-  /** "dev" (padrão) mantém os seletores de mesa/perfil; "product" (/ficha, v0.24) mostra mesa/perfil fixos como texto, sem seletor. */
+  /** "dev" (padrão) mantém o seletor de mesa; "product" (/ficha) mostra a mesa fixa como texto, sem seletor. */
   mode?: "dev" | "product";
   nome: string;
   /** Dados capturados no wizard de criação (checkpoint pós-v0.94, fase 4) — só leitura aqui. */
@@ -78,18 +68,8 @@ export function GeneralTab({
   mesas: Campaign[];
   selectedCampaignId: string | null;
   onSelectCampaign: (id: string | null) => void;
-  perfis: CampaignProfile[];
-  selectedProfileId: string | null;
-  onSelectProfile: (id: string | null) => void;
+  /** Recarrega o personagem atual do servidor (modo product: refaz getCharacterForCampaign). */
   onLoadPersonagemAtivo: () => void;
-  profileWarning: string | null;
-  personagens: CharacterRecord[];
-  /** "Livre" | "Em uso por esta aba" | "Expirado" | "Em uso" — calculado pelo componente pai (precisa de sessionId + relógio local). */
-  perfilStatus: string | null;
-  /** Id do perfil que ESTA aba entrou via heartbeat (distinto de selectedProfileId). */
-  enteredProfileId: string | null;
-  onEnterProfile: () => void;
-  onLeaveProfile: () => void;
   /** Checkpoint v0.40 — PM e histórico de evolução. */
   pmTotal: number;
   pmDisponivel: number;
@@ -102,11 +82,6 @@ export function GeneralTab({
   const [gastoQtd, setGastoQtd] = useState("0");
   const [gastoDescricao, setGastoDescricao] = useState("");
 
-  const perfilSelecionado = perfis.find((p) => p.id === selectedProfileId) ?? null;
-  const personagemAtivo = perfilSelecionado
-    ? personagens.find((p) => p.id === perfilSelecionado.active_character_id) ?? null
-    : null;
-  const estaNoPerfilSelecionado = perfilSelecionado != null && enteredProfileId === perfilSelecionado.id;
   const mesaSelecionada = mesas.find((m) => m.id === selectedCampaignId) ?? null;
 
   return (
@@ -263,100 +238,29 @@ export function GeneralTab({
       {mode === "product" ? (
         <div style={{ fontSize: 12, opacity: 0.7, display: "flex", flexDirection: "column", gap: 4, marginBottom: 16 }}>
           <span>Mesa: {mesaSelecionada?.name ?? "—"}</span>
-          <span>Perfil: {perfilSelecionado?.nickname ?? "—"}</span>
-          <span data-testid="perfil-selecionado-status">Status: {perfilStatus ?? "—"}</span>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
             <button data-testid="ficha-recarregar-button" onClick={onLoadPersonagemAtivo} style={buttonStyle}>
               Recarregar personagem
             </button>
-            {estaNoPerfilSelecionado && (
-              <button data-testid="perfil-sair-button" onClick={onLeaveProfile} style={buttonStyle}>
-                Sair do perfil
-              </button>
-            )}
           </div>
-          <span style={{ fontSize: 11, opacity: 0.6 }}>
-            Heartbeat: id de sessão fica só no localStorage deste navegador. Sem heartbeat por 30s, outra
-            sessão pode assumir o perfil.
-          </span>
-          {profileWarning && (
-            <span data-testid="perfil-aviso" style={{ color: "#ffb84f" }}>
-              {profileWarning}
-            </span>
-          )}
         </div>
       ) : (
-        <>
-          <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, marginBottom: 16 }}>
-            Mesa (opcional — rolagens também gravam no log persistente dela)
-            <select
-              data-testid="mesa-select"
-              value={selectedCampaignId ?? SEM_MESA}
-              onChange={(e) => onSelectCampaign(e.target.value === SEM_MESA ? null : e.target.value)}
-              style={selectStyle}
-            >
-              <option value={SEM_MESA}>Nenhuma mesa (só log local)</option>
-              {mesas.map((mesa) => (
-                <option key={mesa.id} value={mesa.id}>
-                  {mesa.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {selectedCampaignId && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12 }}>
-                Perfil nesta mesa (opcional — usado para "Carregar personagem ativo" e anotado nas rolagens)
-                <select
-                  data-testid="perfil-select"
-                  value={selectedProfileId ?? SEM_PERFIL}
-                  onChange={(e) => onSelectProfile(e.target.value === SEM_PERFIL ? null : e.target.value)}
-                  style={selectStyle}
-                >
-                  <option value={SEM_PERFIL}>Nenhum perfil</option>
-                  {perfis.map((perfil) => (
-                    <option key={perfil.id} value={perfil.id}>
-                      {perfil.nickname} ({perfil.is_locked ? "Bloqueado" : "Livre"})
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              {perfilSelecionado && (
-                <div style={{ fontSize: 12, opacity: 0.7, display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span data-testid="perfil-selecionado-status">Status: {perfilStatus ?? "—"}</span>
-                  <span data-testid="perfil-selecionado-personagem-ativo">
-                    Personagem ativo: {personagemAtivo ? personagemAtivo.name : "nenhum"}
-                  </span>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <button onClick={onLoadPersonagemAtivo} style={buttonStyle}>
-                      Carregar personagem ativo
-                    </button>
-                    {estaNoPerfilSelecionado ? (
-                      <button data-testid="perfil-sair-button" onClick={onLeaveProfile} style={buttonStyle}>
-                        Sair do perfil
-                      </button>
-                    ) : (
-                      <button data-testid="perfil-entrar-button" onClick={onEnterProfile} style={buttonStyle}>
-                        Entrar como perfil
-                      </button>
-                    )}
-                  </div>
-                  <span style={{ fontSize: 11, opacity: 0.6 }}>
-                    Heartbeat dev: id de sessão fica só no localStorage deste navegador (não é login). Sem heartbeat
-                    por 30s, outra sessão pode assumir o perfil.
-                  </span>
-                  {profileWarning && (
-                    <span data-testid="perfil-aviso" style={{ color: "#ffb84f" }}>
-                      {profileWarning}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </>
+        <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, marginBottom: 16 }}>
+          Mesa (opcional — rolagens também gravam no log persistente dela)
+          <select
+            data-testid="mesa-select"
+            value={selectedCampaignId ?? SEM_MESA}
+            onChange={(e) => onSelectCampaign(e.target.value === SEM_MESA ? null : e.target.value)}
+            style={selectStyle}
+          >
+            <option value={SEM_MESA}>Nenhuma mesa (só log local)</option>
+            {mesas.map((mesa) => (
+              <option key={mesa.id} value={mesa.id}>
+                {mesa.name}
+              </option>
+            ))}
+          </select>
+        </label>
       )}
     </Section>
   );
