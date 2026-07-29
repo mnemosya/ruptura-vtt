@@ -8,7 +8,12 @@
  * criar, atribuir/remover controle, duplicar, arquivar, restaurar,
  * abrir qualquer ficha). Jogador: só os personagens que controla,
  * apenas "Abrir ficha".
+ *
+ * Fase 5 (aditivo §10.1): jogador com exatamente 1 personagem
+ * controlado abre direto a ficha — "a interface deve evitar uma tela
+ * de seleção desnecessária". Mesmo padrão já usado em Mercado (Fase 3).
  */
+import { redirect } from "next/navigation";
 import { resolveCampaignAccess } from "../../../../lib/campaign/access";
 import {
   listCharactersForNarratorCampaign,
@@ -49,5 +54,8 @@ export default async function PersonagensPage({ params }: PageProps) {
   }
 
   const personagens = (await listControlledCharacters(campaignId).catch(() => [])).filter((c) => !c.archived_at);
+  if (personagens.length === 1) {
+    redirect(`/ficha?campaignId=${campaignId}&characterId=${personagens[0].id}`);
+  }
   return <PersonagensJogadorClient campaignId={campaignId} personagens={personagens} />;
 }
