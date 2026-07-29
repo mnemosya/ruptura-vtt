@@ -4,9 +4,17 @@
  * (rede, timing de canal), então este teste cobre as funções puras de
  * `src/lib/realtime/tableRealtime.ts` (nomes de canal, chave/dedupe de
  * evento, roteamento, debounce, merge de logs) e a formatação de log
- * já existente (`formatCampaignRoundLog`, `MesaDetailClient.tsx`) —
- * exatamente o que o pedido definiu como obrigatório, deixando o
- * smoke de WebSocket de verdade para o teste manual (ver relatório).
+ * já existente (`formatTableLogEntry`, `MesaTab.tsx`) — exatamente o
+ * que o pedido definiu como obrigatório, deixando o smoke de WebSocket
+ * de verdade para o teste manual (ver relatório).
+ *
+ * Fase 3 (divisão do antigo MesaDetailClient.tsx monolítico): o
+ * formatador exercitado aqui passou a ser `formatTableLogEntry`
+ * (MesaTab.tsx) — o mesmo já usado pela ficha e agora também por
+ * `TableLogSection.tsx` (Mesa). `formatCampaignRoundLog`, que este
+ * teste exercitava antes, nunca era chamado por nenhuma tela real
+ * (código morto superado por `formatTableLogEntry`, que já cobre os
+ * mesmos tipos) — removido junto com o resto do MesaDetailClient.tsx.
  */
 
 import assert from "node:assert/strict";
@@ -22,7 +30,8 @@ import {
   subscribeToCampaignRealtime,
   describeRealtimeStatus,
 } from "../src/lib/realtime/tableRealtime";
-import { formatCampaignRoundLog } from "../src/app/mesas/[campaignId]/MesaDetailClient";
+import { formatTableLogEntry } from "../src/app/dev/character-sheet/components/MesaTab";
+import type { TableLogEntry } from "../src/lib/table";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -154,8 +163,19 @@ async function main(): Promise<void> {
     ["scene_rupture_pending", { characterNames: ["A"] }],
   ];
   for (const [type, payload] of tiposRecentes) {
-    const formatado = formatCampaignRoundLog(type, payload);
-    assert.notEqual(formatado, null, `Tipo "${type}" não deve cair no fallback JSON cru do dashboard.`);
+    const entry: TableLogEntry = {
+      id: "log-teste",
+      campaign_id: campaignId,
+      character_id: null,
+      type,
+      visibility: "public",
+      payload,
+      created_at: "2026-07-02T10:00:00Z",
+      created_by_user_id: null,
+    };
+    const formatado = formatTableLogEntry(entry);
+    assert.ok(formatado.length > 0, `Tipo "${type}" não deve produzir texto vazio.`);
+    assert.ok(!formatado.trim().startsWith("{"), `Tipo "${type}" não deve cair em JSON cru.`);
   }
   console.log(`7. Regressão de formatação — ${tiposRecentes.length} tipos de log verificados, nenhum JSON cru — OK`);
 
