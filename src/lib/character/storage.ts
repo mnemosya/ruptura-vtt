@@ -31,6 +31,7 @@
  * ---------------------------------------------------------------------
  */
 
+import { randomUUID } from "node:crypto";
 import { getScopedTableClient } from "../auth/scopedClient";
 import { getCurrentUser } from "../auth/session";
 import { CharacterStorageError } from "./storage.errors";
@@ -96,7 +97,31 @@ function buildPayloadForSave(character: Character): Character {
   };
 }
 
-/** Insere um personagem via um client já resolvido (interno — compartilhado entre criação/duplicação de narrador). */
+/**
+ * Insere um personagem via um client já resolvido (interno —
+ * compartilhado entre criação/duplicação de narrador).
+ *
+ * `insert(...).select()` (INSERT ... RETURNING) faz o Postgres
+ * reavaliar a policy de SELECT (`characters_authenticated_select` →
+ * `can_read_character`, migration 0052) sobre a linha recém-criada
+ * ANTES do fim do comando. `can_read_character` é `STABLE` e resolve
+ * por uma subconsulta própria (`select 1 from characters where id =
+ * ...`) — `STABLE` congela o snapshot no início do comando, então essa
+ * subconsulta nunca enxerga uma linha inserida pelo PRÓPRIO comando
+ * ainda em andamento, mesmo sendo o dono da campanha. Resultado: todo
+ * INSERT com `.select()` nesta tabela falhava com "new row violates
+ * row-level security policy" para qualquer conta real (não
+ * service role) — bug pré-existente à Fase 3/4, nunca exercitado
+ * antes por um narrador autenticado real (o caminho já testado de
+ * criação, o assistente, usa `complete_character_creation`, uma RPC,
+ * não um INSERT direto).
+ *
+ * Correção mínima, sem tocar em RLS/migration: gera o id no cliente
+ * (a coluna já tem `default gen_random_uuid()`, aceita valor
+ * explícito) e faz o SELECT de confirmação como um comando SEPARADO
+ * — nesse ponto a linha já está commitada dentro da transação e
+ * plenamente visível.
+ */
 async function insertCharacterScoped(
   client: Awaited<ReturnType<typeof getScopedTableClient>>,
   character: Character,
@@ -104,21 +129,24 @@ async function insertCharacterScoped(
 ): Promise<CharacterRecord> {
   const payload = buildPayloadForSave(character);
   const ownerId = await currentOwnerId();
-  const { data, error } = await client
-    .from(TABLE)
-    .insert({
-      name: payload.nome,
-      owner_label: options.ownerLabel ?? null,
-      status: "draft",
-      payload,
-      campaign_id: options.campaignId ?? null,
-      owner_id: ownerId,
-    })
-    .select()
-    .single();
+  const id = randomUUID();
+  const { error: insertError } = await client.from(TABLE).insert({
+    id,
+    name: payload.nome,
+    owner_label: options.ownerLabel ?? null,
+    status: "draft",
+    payload,
+    campaign_id: options.campaignId ?? null,
+    owner_id: ownerId,
+  });
 
-  if (error) {
-    throw new CharacterStorageError(`Falha ao criar personagem: ${error.message}`, error);
+  if (insertError) {
+    throw new CharacterStorageError(`Falha ao criar personagem: ${insertError.message}`, insertError);
+  }
+
+  const { data, error: selectError } = await client.from(TABLE).select().eq("id", id).single();
+  if (selectError) {
+    throw new CharacterStorageError(`Personagem criado, mas falhou ao reler "${id}": ${selectError.message}`, selectError);
   }
   return data as CharacterRecord;
 }
