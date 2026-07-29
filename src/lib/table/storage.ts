@@ -32,7 +32,7 @@ import { getScopedTableClient } from "../auth/scopedClient";
 import { getCurrentUser } from "../auth/session";
 import { TableStorageError } from "./storage.errors";
 import { CAMPAIGN_INVITE_SAFE_COLUMNS } from "./types";
-import type { Campaign, CampaignInvite, CampaignMember, TableLogEntry, TableLogVisibility } from "./types";
+import type { Campaign, CampaignInvite, CampaignInviteKind, CampaignMember, TableLogEntry, TableLogVisibility } from "./types";
 
 /**
  * Id do usuário logado (narrador ou jogador) ou null. Best effort:
@@ -389,13 +389,17 @@ export interface ResolvedInvite {
   campaignId?: string;
   campaignName?: string;
   inviteId?: string;
+  /** Fase 2 (migration 0059): tipo do convite e, quando "email", o e-mail associado — usado para pré-preencher o LoginForm. */
+  kind?: CampaignInviteKind;
+  email?: string | null;
 }
 
 /**
- * Cria um convite para uma mesa. Gera um token aleatório forte
- * server-side, guarda só o SHA-256 no banco e devolve o token bruto
- * UMA vez (para montar o link). Quando há narrador logado, recusa se
- * ele não for o dono da mesa.
+ * Cria um convite LIMPO (reutilizável, sempre concede Jogador, nunca
+ * associado a e-mail — aditivo §7) para uma mesa. Gera um token
+ * aleatório forte server-side, guarda só o SHA-256 no banco e devolve o
+ * token bruto UMA vez (para montar o link). Quando há narrador logado,
+ * recusa se ele não for o dono da mesa.
  */
 export async function createCampaignInvite(
   campaignId: string,
@@ -427,12 +431,70 @@ export async function createCampaignInvite(
       label: label?.trim() ? label.trim() : null,
       expires_at: expiresAt ?? null,
       created_by: user?.id ?? null,
+      kind: "clean",
     })
     .select(CAMPAIGN_INVITE_SAFE_COLUMNS)
     .single();
 
   if (error) {
     throw new TableStorageError(`Falha ao criar convite na mesa "${campaignId}": ${error.message}`, error);
+  }
+  return { invite: data as CampaignInvite, rawToken };
+}
+
+/**
+ * Cria um convite POR E-MAIL (aditivo §6) — associado a uma conta
+ * específica. Ativação é automática: quando a pessoa autentica com o
+ * MESMO e-mail (aceitando este link ou fazendo login/cadastro em
+ * qualquer outro ponto, via `activatePendingEmailInvites`), a
+ * participação é criada sem etapa extra. Nunca cria `campaign_members`
+ * no momento da criação do convite — o estado "pendente" vive só aqui,
+ * em `campaign_invites` (revisão 4 do relatório de auditoria).
+ */
+export async function createCampaignEmailInvite(
+  campaignId: string,
+  email: string,
+  label?: string,
+  expiresAt?: string | null,
+): Promise<CreateInviteResult> {
+  const trimmedEmail = email.trim().toLowerCase();
+  if (!trimmedEmail) {
+    throw new TableStorageError("Informe um e-mail para o convite.");
+  }
+
+  const client = await getScopedTableClient();
+  let user: Awaited<ReturnType<typeof getCurrentUser>> = null;
+  try {
+    user = await getCurrentUser();
+  } catch {
+    user = null;
+  }
+
+  if (user) {
+    const { data: camp } = await client.from(CAMPAIGNS_TABLE).select("owner_id").eq("id", campaignId).maybeSingle();
+    if (camp && (camp as { owner_id: string | null }).owner_id && (camp as { owner_id: string | null }).owner_id !== user.id) {
+      throw new TableStorageError("Só o dono da mesa pode criar convites para ela.");
+    }
+  }
+
+  const rawToken = randomBytes(32).toString("base64url");
+  const tokenHash = hashInviteToken(rawToken);
+  const { data, error } = await client
+    .from(CAMPAIGN_INVITES_TABLE)
+    .insert({
+      campaign_id: campaignId,
+      token_hash: tokenHash,
+      label: label?.trim() ? label.trim() : null,
+      expires_at: expiresAt ?? null,
+      created_by: user?.id ?? null,
+      kind: "email",
+      email: trimmedEmail,
+    })
+    .select(CAMPAIGN_INVITE_SAFE_COLUMNS)
+    .single();
+
+  if (error) {
+    throw new TableStorageError(`Falha ao criar convite por e-mail na mesa "${campaignId}": ${error.message}`, error);
   }
   return { invite: data as CampaignInvite, rawToken };
 }
@@ -488,8 +550,36 @@ export async function resolveCampaignInvite(rawToken: string): Promise<ResolvedI
     inviteId?: string;
     campaignId?: string;
     campaignName?: string;
+    kind?: CampaignInviteKind;
+    email?: string | null;
   };
 
   if (!result.ok) return { ok: false, reason: result.reason };
-  return { ok: true, inviteId: result.inviteId, campaignId: result.campaignId, campaignName: result.campaignName };
+  return {
+    ok: true,
+    inviteId: result.inviteId,
+    campaignId: result.campaignId,
+    campaignName: result.campaignName,
+    kind: result.kind,
+    email: result.email,
+  };
+}
+
+/**
+ * Ativa, best-effort, todos os convites por e-mail pendentes cujo
+ * e-mail bate com a conta que acabou de autenticar (login ou cadastro)
+ * — aditivo §6: "ativação automática, sem etapa extra de aceitar
+ * convite". Nunca lança: chamar isso não deve poder quebrar o fluxo de
+ * login. Devolve os ids das campanhas cuja participação foi ativada
+ * agora (lista vazia se nenhuma, ou em caso de erro).
+ */
+export async function activatePendingEmailInvites(): Promise<string[]> {
+  try {
+    const client = await getScopedTableClient();
+    const { data, error } = await client.rpc("activate_pending_email_invites");
+    if (error) return [];
+    return ((data as { activatedCampaignIds?: string[] } | null)?.activatedCampaignIds) ?? [];
+  } catch {
+    return [];
+  }
 }

@@ -11,6 +11,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signInWithPassword, signUpDevNarrator } from "./../lib/auth/actions";
+import { activatePendingEmailInvites } from "../lib/table/storage";
 
 type Mode = "login" | "signup";
 type Status =
@@ -23,10 +24,24 @@ const buttonStyle: React.CSSProperties = { background: "#1d1e24", color: "inheri
 const primaryButtonStyle: React.CSSProperties = { ...buttonStyle, background: "#1d3a1e", border: "1px solid #2a5a2a", flex: 1 };
 const modeTabStyle = (active: boolean): React.CSSProperties => ({ background: "transparent", color: active ? "inherit" : "#888", border: "none", borderBottom: active ? "2px solid #4caf50" : "2px solid transparent", padding: "8px 4px", fontSize: 13, fontWeight: active ? 700 : 400, cursor: "pointer", marginRight: 16 });
 
-export function LoginForm({ redirectTo, context }: { redirectTo: string; context: "prod" | "dev" }) {
+export function LoginForm({
+  redirectTo,
+  context,
+  lockedEmail,
+}: {
+  redirectTo: string;
+  context: "prod" | "dev";
+  /**
+   * Fase 2 (aditivo §6): quando a rota chega de um convite POR E-MAIL,
+   * o e-mail vem pré-preenchido e travado (não editável) — "não pode
+   * ser trocado silenciosamente". Login/cadastro com outro e-mail deve
+   * ser feito fora deste fluxo.
+   */
+  lockedEmail?: string;
+}) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(lockedEmail ?? "");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [busy, setBusy] = useState(false);
@@ -38,16 +53,30 @@ export function LoginForm({ redirectTo, context }: { redirectTo: string; context
     setStatus({ kind: "idle" });
     if (mode === "login") {
       const res = await signInWithPassword(email, password);
-      setBusy(false);
-      if (res.ok) { router.push(redirectTo); router.refresh(); }
-      else setStatus({ kind: "error", message: res.error ?? "Erro desconhecido no login." });
+      if (res.ok) {
+        await activatePendingEmailInvites().catch(() => []);
+        setBusy(false);
+        router.push(redirectTo);
+        router.refresh();
+      } else {
+        setBusy(false);
+        setStatus({ kind: "error", message: res.error ?? "Erro desconhecido no login." });
+      }
       return;
     }
     const res = await signUpDevNarrator(email, password);
-    setBusy(false);
-    if (res.ok && res.needsConfirmation) setStatus({ kind: "needsConfirmation", email: email.trim() });
-    else if (res.ok) { router.push(redirectTo); router.refresh(); }
-    else setStatus({ kind: "error", message: res.error ?? "Erro desconhecido no cadastro." });
+    if (res.ok && res.needsConfirmation) {
+      setBusy(false);
+      setStatus({ kind: "needsConfirmation", email: email.trim() });
+    } else if (res.ok) {
+      await activatePendingEmailInvites().catch(() => []);
+      setBusy(false);
+      router.push(redirectTo);
+      router.refresh();
+    } else {
+      setBusy(false);
+      setStatus({ kind: "error", message: res.error ?? "Erro desconhecido no cadastro." });
+    }
   }
 
   const podeEnviar = email.trim().length > 0 && password.length > 0 && !busy;
@@ -72,8 +101,21 @@ export function LoginForm({ redirectTo, context }: { redirectTo: string; context
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12 }}>
           Email
-          <input data-testid="login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="narrador@exemplo.com" style={inputStyle} />
+          <input
+            data-testid="login-email"
+            type="email"
+            value={email}
+            onChange={lockedEmail ? undefined : (e) => setEmail(e.target.value)}
+            readOnly={!!lockedEmail}
+            placeholder="narrador@exemplo.com"
+            style={{ ...inputStyle, opacity: lockedEmail ? 0.7 : 1 }}
+          />
         </label>
+        {lockedEmail && (
+          <p style={{ fontSize: 11, opacity: 0.6, margin: 0 }}>
+            Este convite pertence a este e-mail — entre ou crie uma conta com ele.
+          </p>
+        )}
         <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12 }}>
           Senha
           <input data-testid="login-senha" type="password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && podeEnviar) handleSubmit(); }} style={inputStyle} />

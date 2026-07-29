@@ -80,9 +80,11 @@ export default async function InviteJoinPage({ params }: PageProps) {
       <main style={{ maxWidth: 420, margin: "60px auto", padding: "0 20px" }}>
         <h1 style={{ fontSize: 20, marginBottom: 8 }}>Entrar em &ldquo;{campaignName}&rdquo;</h1>
         <p style={{ fontSize: 13, opacity: 0.8, marginBottom: 20 }}>
-          Entre ou crie uma conta para acessar esta campanha. Depois de entrar, você volta automaticamente para este convite.
+          {resolved.kind === "email"
+            ? "Este convite é para um e-mail específico. Entre ou crie uma conta com ele para acessar esta campanha."
+            : "Entre ou crie uma conta para acessar esta campanha. Depois de entrar, você volta automaticamente para este convite."}
         </p>
-        <LoginForm redirectTo={`/join/${token}`} context="prod" />
+        <LoginForm redirectTo={`/join/${token}`} context="prod" lockedEmail={resolved.kind === "email" ? (resolved.email ?? undefined) : undefined} />
       </main>
     );
   }

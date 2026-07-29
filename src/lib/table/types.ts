@@ -51,11 +51,16 @@ export interface TableLogEntry {
   created_by_user_id: string | null;
 }
 
+/** Tipo de convite (Fase 2, revisão 4, aditivo §6/§7): "email" (associado a uma conta específica) ou "clean" (reutilizável, sempre concede Jogador). */
+export type CampaignInviteKind = "email" | "clean";
+
 /**
- * Convite de mesa (tabela `campaign_invites`, migration 0008). Tipo
+ * Convite de mesa (tabela `campaign_invites`, migration 0008; `kind`/
+ * `email`/`activated_by`/`activated_at` desde a migration 0059). Tipo
  * PÚBLICO seguro: NÃO inclui `token_hash` (nem o token bruto) — o hash
  * fica só no banco, o token bruto só aparece no momento da criação. Ver
- * createCampaignInvite/resolveCampaignInvite em storage.ts.
+ * createCampaignInvite/createCampaignEmailInvite/resolveCampaignInvite
+ * em storage.ts.
  */
 export interface CampaignInvite {
   id: string;
@@ -66,11 +71,18 @@ export interface CampaignInvite {
   created_by: string | null;
   created_at: string;
   revoked_at: string | null;
+  kind: CampaignInviteKind;
+  /** Só preenchido quando kind="email". */
+  email: string | null;
+  /** Conta que ativou o convite por e-mail (null = ainda pendente). */
+  activated_by: string | null;
+  /** Quando o convite por e-mail foi ativado (null = ainda pendente). */
+  activated_at: string | null;
 }
 
 /** Colunas seguras de `campaign_invites` (nunca token_hash) — usado nos selects. */
 export const CAMPAIGN_INVITE_SAFE_COLUMNS =
-  "id, campaign_id, label, is_active, expires_at, created_by, created_at, revoked_at";
+  "id, campaign_id, label, is_active, expires_at, created_by, created_at, revoked_at, kind, email, activated_by, activated_at";
 
 /**
  * Estado de participação em campanha (`campaign_members.status`).

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   createCampaignInvite,
+  createCampaignEmailInvite,
   listCampaignInvites,
   revokeCampaignInvite,
   listCampaignMembers,
@@ -222,6 +223,8 @@ export default function MesaDetailClient({
   const [personagemParaVincular, setPersonagemParaVincular] = useState("");
   const [novoPersonagemNome, setNovoPersonagemNome] = useState("");
   const [conviteLabel, setConviteLabel] = useState("");
+  const [conviteEmail, setConviteEmail] = useState("");
+  const [conviteEmailLabel, setConviteEmailLabel] = useState("");
   const [linkNovo, setLinkNovo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Checkpoint v0.44.1 — estado do processamento canônico de "Encerrar
@@ -732,6 +735,7 @@ export default function MesaDetailClient({
       await Promise.all([reloadMembros(), reloadControles()]);
     } catch (e) { fail(e, "Erro ao remover participante."); }
   }
+  /** Convite LIMPO (aditivo §7) — reutilizável, sempre concede Jogador. */
   async function criarConvite() {
     setError(null);
     try {
@@ -740,6 +744,18 @@ export default function MesaDetailClient({
       setLinkNovo(`${window.location.origin}/join/${rawToken}`);
       await reloadConvites();
     } catch (e) { fail(e, "Erro ao criar convite."); }
+  }
+  /** Convite POR E-MAIL (aditivo §6) — ativação automática para a conta com esse e-mail. */
+  async function criarConviteEmail() {
+    if (!conviteEmail.trim()) return;
+    setError(null);
+    try {
+      const { rawToken } = await createCampaignEmailInvite(campaign.id, conviteEmail, conviteEmailLabel);
+      setConviteEmail("");
+      setConviteEmailLabel("");
+      setLinkNovo(`${window.location.origin}/join/${rawToken}`);
+      await reloadConvites();
+    } catch (e) { fail(e, "Erro ao criar convite por e-mail."); }
   }
   async function revogar(inviteId: string) {
     setError(null);
@@ -1103,13 +1119,26 @@ export default function MesaDetailClient({
         </div>
       </section>
 
-      {/* Convites */}
+      {/* Convites — dois tipos (aditivo §6/§7): limpo (reutilizável, sempre
+          Jogador) e por e-mail (ativação automática para a conta certa). */}
       <section style={{ marginBottom: 32 }}>
         <h2 style={h2}>Convites ({convites.length})</h2>
+
+        <h3 style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 1, opacity: 0.5, marginBottom: 8 }}>Convite por e-mail</h3>
+        <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+          <input data-testid="det-convite-email" type="email" value={conviteEmail} onChange={(e) => setConviteEmail(e.target.value)} placeholder="e-mail@exemplo.com" style={{ ...input, flex: 1, minWidth: 180 }} />
+          <input data-testid="det-convite-email-label" value={conviteEmailLabel} onChange={(e) => setConviteEmailLabel(e.target.value)} placeholder="Rótulo (opcional)" style={{ ...input, flex: 1, minWidth: 140 }} />
+          <button data-testid="det-criar-convite-email" onClick={criarConviteEmail} disabled={!conviteEmail.trim()} style={{ ...btn, opacity: conviteEmail.trim() ? 1 : 0.5 }}>
+            Convidar por e-mail
+          </button>
+        </div>
+
+        <h3 style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 1, opacity: 0.5, marginBottom: 8 }}>Convite limpo</h3>
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           <input data-testid="det-convite-label" value={conviteLabel} onChange={(e) => setConviteLabel(e.target.value)} placeholder="Rótulo (opcional)" style={{ ...input, flex: 1 }} />
-          <button data-testid="det-criar-convite" onClick={criarConvite} style={btn}>Criar convite</button>
+          <button data-testid="det-criar-convite" onClick={criarConvite} style={btn}>Gerar convite limpo</button>
         </div>
+
         {linkNovo && (
           <div data-testid="det-link-novo" style={{ background: "#15301a", border: "1px solid #2a5a35", borderRadius: 8, padding: 10, marginBottom: 12, fontSize: 12 }}>
             <div style={{ opacity: 0.7, marginBottom: 4 }}>Link (mostrado só agora):</div>
@@ -1119,9 +1148,14 @@ export default function MesaDetailClient({
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {convites.map((c) => {
             const revogado = c.revoked_at != null || !c.is_active;
+            const status = revogado ? "Revogado" : c.kind === "email" ? (c.activated_at ? "Ativado" : "Pendente") : "Ativo";
+            const statusColor = revogado ? "#ff6b6b" : c.kind === "email" && !c.activated_at ? "#f5a623" : "#7fd99a";
             return (
-              <div key={c.id} data-testid="det-convite" style={{ ...card, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-                <span>{c.label ?? "(sem rótulo)"} · <span style={{ color: revogado ? "#ff6b6b" : "#7fd99a", fontSize: 11 }}>{revogado ? "Revogado" : "Ativo"}</span></span>
+              <div key={c.id} data-testid="det-convite" style={{ ...card, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <span>
+                  {c.kind === "email" ? `E-mail: ${c.email}` : c.label ?? "(sem rótulo)"} ·{" "}
+                  <span style={{ color: statusColor, fontSize: 11 }}>{status}</span>
+                </span>
                 <button data-testid={`det-revogar-${c.id}`} onClick={() => revogar(c.id)} disabled={revogado} style={{ ...btn, opacity: revogado ? 0.5 : 1 }}>Revogar</button>
               </div>
             );
