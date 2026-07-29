@@ -386,6 +386,32 @@ export async function removeCampaignMember(campaignId: string, userId: string): 
   }
 }
 
+export interface CampaignParticipantInfo {
+  user_id: string;
+  display_name: string;
+  email: string | null;
+}
+
+/**
+ * Nome de exibição (com fallback humano, nunca UUID cru) e e-mail de
+ * quem participa/controla personagens de uma campanha — SÓ retorna
+ * linhas quando quem chama é o narrador (dono) daquela campanha (RPC
+ * `get_campaign_participant_info`, migration 0060). Não é um sistema de
+ * perfil público: leitura pontual, restrita por campanha, sem consultar
+ * `auth.users` diretamente do frontend. Usada pelas telas exclusivas do
+ * narrador (Jogadores e convites, Personagens) para nunca exibir
+ * `user_id` bruto na UI.
+ */
+export async function getCampaignParticipantInfo(campaignId: string): Promise<Map<string, CampaignParticipantInfo>> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("get_campaign_participant_info", { p_campaign_id: campaignId });
+  if (error) {
+    throw new TableStorageError(`Falha ao buscar nomes de participantes da mesa "${campaignId}": ${error.message}`, error);
+  }
+  const rows = (data as CampaignParticipantInfo[]) ?? [];
+  return new Map(rows.map((r) => [r.user_id, r]));
+}
+
 // =====================================================================
 // Convites de mesa (campaign_invites, migration 0008)
 // =====================================================================

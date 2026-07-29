@@ -1240,7 +1240,7 @@ Não há requisito de migração de dados de produção nesta fase, pois o VTT a
 
 Este aditivo não fixa definitivamente:
 
-1. se jogadores podem criar personagens livremente, somente com aprovação ou apenas quando o narrador permitir;
+1. ~~se jogadores podem criar personagens livremente, somente com aprovação ou apenas quando o narrador permitir~~ — **decidido na Fase 6**: nesta versão privada do Ruptura VTT, jogadores podem criar personagens livremente nas campanhas das quais participam, sem configuração por campanha, aprovação do narrador ou sistema adicional de permissões (ver `docs/checkpoints/CHECKPOINT_FASE6_USABILIDADE_INTEGRIDADE.md`);
 2. se um personagem pode ser controlado simultaneamente por mais de um jogador em todas as campanhas ou apenas quando habilitado;
 3. se haverá funções intermediárias, como assistente de narrador;
 4. se o convite por e-mail terá expiração obrigatória;

@@ -8,7 +8,7 @@
  * existir no servidor, não apenas pela ausência do link".
  */
 import { requireNarratorAccess } from "../../../../lib/campaign/access";
-import { listCampaignMembers, listCampaignInvites } from "../../../../lib/table/storage";
+import { listCampaignMembers, listCampaignInvites, getCampaignParticipantInfo } from "../../../../lib/table/storage";
 import { listCharacterControllers } from "../../../../lib/character/storage";
 import { NarratorOnlyDenied } from "../_shell/NarratorOnlyDenied";
 import JogadoresConvitesClient from "./JogadoresConvitesClient";
@@ -24,10 +24,11 @@ export default async function JogadoresConvitesPage({ params }: PageProps) {
   const access = await requireNarratorAccess(campaignId);
   if (!access) return <NarratorOnlyDenied campaignId={campaignId} />;
 
-  const [membros, convites, controles] = await Promise.all([
+  const [membros, convites, controles, participantInfo] = await Promise.all([
     listCampaignMembers(campaignId).catch(() => []),
     listCampaignInvites(campaignId).catch(() => []),
     listCharacterControllers(campaignId).catch(() => []),
+    getCampaignParticipantInfo(campaignId).catch(() => new Map()),
   ]);
 
   return (
@@ -36,6 +37,7 @@ export default async function JogadoresConvitesPage({ params }: PageProps) {
       membrosIniciais={membros}
       convitesIniciais={convites}
       controlesIniciais={controles}
+      participantInfoIniciais={Object.fromEntries(participantInfo)}
     />
   );
 }

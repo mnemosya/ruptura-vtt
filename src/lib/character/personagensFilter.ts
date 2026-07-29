@@ -5,11 +5,17 @@
  * personagens-fase4.mjs) sem reimplementar a regra em duplicata.
  *
  * Classificação (decisão de implementação registrada no checkpoint da
- * Fase 4 — não é autorização, só apresentação):
- *   - "Jogadores": tem ao menos um controlador ativo.
+ * Fase 4, refinada na Fase 6 — não é autorização, só apresentação):
+ *   - "Jogadores": tem ao menos um controlador com participação ATIVA
+ *     na campanha E função Jogador — `controllerCount` recebido aqui já
+ *     vem filtrado assim pelo chamador (ver
+ *     `PersonagensNarradorClient.activeJogadorControllerCount`), nunca
+ *     a contagem bruta de `character_controllers` (que poderia incluir
+ *     uma linha redundante do narrador ou controle residual de
+ *     participante removido).
  *   - "PNs": `payload.metadados.tipo_personagem === "pn"` (campo
  *     aditivo, sem migration).
- *   - "Sem jogador": nenhum controlador E não marcado como PN.
+ *   - "Sem jogador": nenhum controlador ativo E não marcado como PN.
  *   - "Arquivados": `archived_at` preenchido — exclui dos demais
  *     filtros (aparece só aqui).
  */

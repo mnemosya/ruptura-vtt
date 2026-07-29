@@ -229,7 +229,7 @@ Narrador: acesso a qualquer ficha — caminho mínimo Fase 1, UI de entrada Fase
 *(inalterado, com um item adicional)*
 
 1. Múltiplos narradores — fora de escopo nesta versão.
-2. Jogador pode criar personagem livremente/com aprovação/só se permitido — decisão antes da Fase 4.
+2. Jogador pode criar personagem livremente/com aprovação/só se permitido — **decidido na Fase 6** (`CHECKPOINT_FASE6_USABILIDADE_INTEGRIDADE.md`): nesta versão privada do Ruptura VTT, jogadores podem criar personagens livremente nas campanhas das quais participam, sem configuração por campanha, aprovação do narrador ou sistema adicional de permissões — comportamento já existente desde a Fase 1, apenas registrado formalmente aqui.
 3. Controle simultâneo por mais de um jogador — schema já suporta N:N; política é decisão de produto.
 4. Papéis intermediários — modelo binário hoje.
 5. Expiração de convite por e-mail — default provisório na Fase 2.

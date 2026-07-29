@@ -20,7 +20,7 @@ import {
   listCharacterControllers,
   listControlledCharacters,
 } from "../../../../lib/character/storage";
-import { listCampaignMembers } from "../../../../lib/table/storage";
+import { listCampaignMembers, getCampaignParticipantInfo } from "../../../../lib/table/storage";
 import PersonagensNarradorClient from "./PersonagensNarradorClient";
 import PersonagensJogadorClient from "./PersonagensJogadorClient";
 
@@ -36,10 +36,11 @@ export default async function PersonagensPage({ params }: PageProps) {
   if (access.kind !== "ok") return null; // layout já mostra o estado certo
 
   if (access.role === "narrator") {
-    const [personagens, controles, membros] = await Promise.all([
+    const [personagens, controles, membros, participantInfo] = await Promise.all([
       listCharactersForNarratorCampaign(campaignId).catch(() => []),
       listCharacterControllers(campaignId).catch(() => []),
       listCampaignMembers(campaignId).catch(() => []),
+      getCampaignParticipantInfo(campaignId).catch(() => new Map()),
     ]);
     const jogadoresAtivos = membros.filter((m) => m.role !== "owner" && m.status === "active");
 
@@ -49,6 +50,7 @@ export default async function PersonagensPage({ params }: PageProps) {
         personagensIniciais={personagens}
         controlesIniciais={controles}
         jogadoresAtivos={jogadoresAtivos}
+        participantInfoIniciais={Object.fromEntries(participantInfo)}
       />
     );
   }

@@ -28,6 +28,7 @@ import {
 } from "../../../../lib/character/storage";
 import { createInitialCharacter, type CharacterRecord } from "../../../../lib/character";
 import { isPersonagemPn, personagemMatchesFiltro, type PersonagemFiltro } from "../../../../lib/character/personagensFilter";
+import { getCampaignParticipantInfo, type CampaignParticipantInfo } from "../../../../lib/table/storage";
 import type { CampaignMember } from "../../../../lib/table";
 import { badge, btnDanger, btnGhost, btnPrimary, card, color, emptyState, input, pageContainer, text } from "../_shell/theme";
 
@@ -47,14 +48,18 @@ export default function PersonagensNarradorClient({
   personagensIniciais,
   controlesIniciais,
   jogadoresAtivos,
+  participantInfoIniciais,
 }: {
   campaignId: string;
   personagensIniciais: CharacterRecord[];
   controlesIniciais: CharacterController[];
   jogadoresAtivos: CampaignMember[];
+  /** Nome de exibição + e-mail por user_id (RPC get_campaign_participant_info, migration 0060) — nunca UUID cru na UI. */
+  participantInfoIniciais: Record<string, CampaignParticipantInfo>;
 }) {
   const [personagens, setPersonagens] = useState(personagensIniciais);
   const [controles, setControles] = useState(controlesIniciais);
+  const [participantInfo, setParticipantInfo] = useState<Record<string, CampaignParticipantInfo>>(participantInfoIniciais);
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [ordenacao, setOrdenacao] = useState<Ordenacao>("atualizado");
@@ -70,13 +75,33 @@ export default function PersonagensNarradorClient({
 
   async function reload() {
     try {
-      const [p, c] = await Promise.all([listCharactersForNarratorCampaign(campaignId), listCharacterControllers(campaignId)]);
+      const [p, c, info] = await Promise.all([
+        listCharactersForNarratorCampaign(campaignId),
+        listCharacterControllers(campaignId),
+        getCampaignParticipantInfo(campaignId),
+      ]);
       setPersonagens(p);
       setControles(c);
+      setParticipantInfo(Object.fromEntries(info));
     } catch (e) {
       fail(e, "Erro ao recarregar personagens.");
     }
   }
+
+  function nomeDe(userId: string): string {
+    return participantInfo[userId]?.display_name ?? "Conta sem nome";
+  }
+
+  /**
+   * user_id de quem tem participação ativa e função Jogador nesta
+   * campanha (correção desta revisão) — uma linha em
+   * `character_controllers` sozinha NÃO basta para contar em
+   * "Jogadores": o narrador dono pode ter uma linha redundante (dados
+   * antigos) e um participante removido pode deixar controle residual.
+   * `jogadoresAtivos` já vem filtrado (role !== "owner" && status ===
+   * "active") do server component.
+   */
+  const activeJogadorUserIds = useMemo(() => new Set(jogadoresAtivos.map((m) => m.user_id)), [jogadoresAtivos]);
 
   const controllersByChar = useMemo(() => {
     const map = new Map<string, CharacterController[]>();
@@ -88,21 +113,30 @@ export default function PersonagensNarradorClient({
     return map;
   }, [controles]);
 
+  /** Só controladores com participação ativa e função Jogador — usado nos filtros/contagens (não na lista de "quem controla", que mostra todos por transparência administrativa). */
+  const activeJogadorControllerCount = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const [charId, ctrls] of controllersByChar) {
+      counts.set(charId, ctrls.filter((c) => activeJogadorUserIds.has(c.user_id)).length);
+    }
+    return counts;
+  }, [controllersByChar, activeJogadorUserIds]);
+
   const contagens = useMemo(() => {
     const counts: Record<Filtro, number> = { todos: 0, jogadores: 0, sem_jogador: 0, pns: 0, arquivados: 0 };
     for (const c of personagens) {
-      const n = controllersByChar.get(c.id)?.length ?? 0;
+      const n = activeJogadorControllerCount.get(c.id) ?? 0;
       for (const f of FILTROS) {
         if (personagemMatchesFiltro(c, f.id, n)) counts[f.id]++;
       }
     }
     return counts;
-  }, [personagens, controllersByChar]);
+  }, [personagens, activeJogadorControllerCount]);
 
   const listaFiltrada = useMemo(() => {
     const buscaLower = busca.trim().toLowerCase();
     let lista = personagens.filter((c) => {
-      const n = controllersByChar.get(c.id)?.length ?? 0;
+      const n = activeJogadorControllerCount.get(c.id) ?? 0;
       if (!personagemMatchesFiltro(c, filtro, n)) return false;
       if (buscaLower && !c.name.toLowerCase().includes(buscaLower)) return false;
       return true;
@@ -111,7 +145,7 @@ export default function PersonagensNarradorClient({
       ordenacao === "nome" ? a.name.localeCompare(b.name) : b.updated_at.localeCompare(a.updated_at),
     );
     return lista;
-  }, [personagens, controllersByChar, filtro, busca, ordenacao]);
+  }, [personagens, activeJogadorControllerCount, filtro, busca, ordenacao]);
 
   async function criarPersonagem() {
     if (!novoNome.trim()) return;
@@ -322,6 +356,7 @@ export default function PersonagensNarradorClient({
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }} data-testid="personagens-lista-narrador">
           {listaFiltrada.map((c) => {
             const controladores = controllersByChar.get(c.id) ?? [];
+            const activeCount = activeJogadorControllerCount.get(c.id) ?? 0;
             const jogadoresSemControle = jogadoresAtivos.filter((m) => !controladores.some((ctrl) => ctrl.user_id === m.user_id));
             const arquivado = !!c.archived_at;
             return (
@@ -331,7 +366,7 @@ export default function PersonagensNarradorClient({
                     <strong style={{ fontSize: 14 }}>{c.name}</strong>
                     {arquivado && <span style={badge("narrator")}>Arquivado</span>}
                     {!arquivado && isPersonagemPn(c) && <span style={badge("narrator")}>PN</span>}
-                    {!arquivado && !isPersonagemPn(c) && controladores.length === 0 && <span style={badge("player")}>Sem jogador</span>}
+                    {!arquivado && !isPersonagemPn(c) && activeCount === 0 && <span style={badge("player")}>Sem jogador</span>}
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <Link
@@ -357,7 +392,7 @@ export default function PersonagensNarradorClient({
                 {!arquivado && (
                   <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                     <span style={{ fontSize: 11, opacity: 0.6 }}>
-                      {controladores.length === 0 ? "Nenhum jogador atribuído" : `Jogador${controladores.length > 1 ? "es" : ""}: ${controladores.map((ctrl) => ctrl.user_id).join(", ")}`}
+                      {controladores.length === 0 ? "Nenhum jogador atribuído" : `Jogador${controladores.length > 1 ? "es" : ""}: ${controladores.map((ctrl) => nomeDe(ctrl.user_id)).join(", ")}`}
                     </span>
                     {controladores.map((ctrl) => (
                       <button
@@ -368,7 +403,7 @@ export default function PersonagensNarradorClient({
                         className="rv-btn rv-focusable"
                         style={{ ...btnGhost, fontSize: 11 }}
                       >
-                        Remover controle de {ctrl.user_id.slice(0, 8)}…
+                        Remover controle de {nomeDe(ctrl.user_id)}
                       </button>
                     ))}
                     {jogadoresSemControle.length > 0 && (
@@ -383,7 +418,7 @@ export default function PersonagensNarradorClient({
                       >
                         <option value="">— Atribuir jogador —</option>
                         {jogadoresSemControle.map((m) => (
-                          <option key={m.user_id} value={m.user_id}>{m.user_id.slice(0, 8)}…</option>
+                          <option key={m.user_id} value={m.user_id}>{nomeDe(m.user_id)}</option>
                         ))}
                       </select>
                     )}

@@ -15,6 +15,8 @@ import {
   revokeCampaignInvite,
   listCampaignMembers,
   removeCampaignMember,
+  getCampaignParticipantInfo,
+  type CampaignParticipantInfo,
 } from "../../../../lib/table/storage";
 import { listCharacterControllers, type CharacterController } from "../../../../lib/character/storage";
 import type { CampaignMember, CampaignInvite } from "../../../../lib/table";
@@ -25,12 +27,15 @@ interface Props {
   membrosIniciais: CampaignMember[];
   convitesIniciais: CampaignInvite[];
   controlesIniciais: CharacterController[];
+  /** Nome de exibição + e-mail por user_id (RPC get_campaign_participant_info, migration 0060) — nunca UUID cru na UI. */
+  participantInfoIniciais: Record<string, CampaignParticipantInfo>;
 }
 
-export default function JogadoresConvitesClient({ campaignId, membrosIniciais, convitesIniciais, controlesIniciais }: Props) {
+export default function JogadoresConvitesClient({ campaignId, membrosIniciais, convitesIniciais, controlesIniciais, participantInfoIniciais }: Props) {
   const [membros, setMembros] = useState(membrosIniciais);
   const [convites, setConvites] = useState(convitesIniciais);
   const [controles, setControles] = useState(controlesIniciais);
+  const [participantInfo, setParticipantInfo] = useState<Record<string, CampaignParticipantInfo>>(participantInfoIniciais);
   const [conviteLabel, setConviteLabel] = useState("");
   const [conviteEmail, setConviteEmail] = useState("");
   const [conviteEmailLabel, setConviteEmailLabel] = useState("");
@@ -51,13 +56,23 @@ export default function JogadoresConvitesClient({ campaignId, membrosIniciais, c
   async function reloadControles() {
     try { setControles(await listCharacterControllers(campaignId)); } catch (e) { fail(e, "Erro ao recarregar controles de personagem."); }
   }
+  async function reloadParticipantInfo() {
+    try { setParticipantInfo(Object.fromEntries(await getCampaignParticipantInfo(campaignId))); } catch { /* nome/e-mail são só apresentação — falha não bloqueia a tela */ }
+  }
+
+  function nomeDe(userId: string): string {
+    return participantInfo[userId]?.display_name ?? "Conta sem nome";
+  }
+  function emailDe(userId: string): string | null {
+    return participantInfo[userId]?.email ?? null;
+  }
 
   async function removerParticipante(userId: string) {
     if (!window.confirm("Remover este participante da campanha? Isso revoga o acesso dele aos personagens que controla aqui.")) return;
     setError(null);
     try {
       await removeCampaignMember(campaignId, userId);
-      await Promise.all([reloadMembros(), reloadControles()]);
+      await Promise.all([reloadMembros(), reloadControles(), reloadParticipantInfo()]);
     } catch (e) { fail(e, "Erro ao remover participante."); }
   }
 
@@ -114,7 +129,8 @@ export default function JogadoresConvitesClient({ campaignId, membrosIniciais, c
             {jogadores.map((m) => (
               <div key={m.id} data-testid="det-membro" style={{ ...card, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  <span style={{ fontFamily: "monospace", fontSize: 12 }}>{m.user_id}</span>
+                  <span style={{ fontWeight: 600 }}>{nomeDe(m.user_id)}</span>
+                  {emailDe(m.user_id) && <span style={{ ...text.faint, fontSize: 11 }}>{emailDe(m.user_id)}</span>}
                   <span style={{ ...text.faint }}>
                     {m.status === "active" ? "Ativo" : "Removido"} · {controlesDe(m.user_id)} personagem{controlesDe(m.user_id) === 1 ? "" : "ns"} controlado{controlesDe(m.user_id) === 1 ? "" : "s"}
                   </span>
