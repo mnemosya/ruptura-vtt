@@ -58,6 +58,16 @@ export interface CharacterMetadata {
   schema_version: number;
   criado_em?: string;
   atualizado_em?: string;
+  /**
+   * Classificação de personagem (Fase 4, aditivo §9.1) — só usada para
+   * separar os filtros "Sem jogador" (futuro personagem de jogador,
+   * ainda sem controlador) de "PNs" (personagem não-jogador por
+   * desenho) na página Personagens do narrador. Não é autorização:
+   * controle de acesso continua vindo inteiramente de
+   * `character_controllers` + participação ativa (Fase 1), nunca deste
+   * campo. Ausente/"jogador" = personagem de jogador comum.
+   */
+  tipo_personagem?: "jogador" | "pn";
   /** Outros metadados livres (ex.: notas, origem) — não interpretados pela ficha mínima. */
   [key: string]: unknown;
 }
