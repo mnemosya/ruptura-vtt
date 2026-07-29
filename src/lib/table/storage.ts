@@ -110,6 +110,27 @@ export async function getCampaign(id: string): Promise<Campaign | null> {
 }
 
 /**
+ * Renomeia uma campanha (Configurações, Fase 3) — `UPDATE` direto,
+ * autorizado pela mesma RLS `campaigns_owner_update` (migration 0006)
+ * já usada por `endRound`/`endScene`: só o dono da campanha grava.
+ */
+export async function renameCampaign(campaignId: string, name: string): Promise<Campaign> {
+  const client = await getScopedTableClient();
+  const finalName = name.trim() ? name.trim() : "Mesa sem nome";
+  const { data, error } = await client
+    .from(CAMPAIGNS_TABLE)
+    .update({ name: finalName })
+    .eq("id", campaignId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new TableStorageError(`Falha ao renomear a mesa "${campaignId}": ${error.message}`, error);
+  }
+  return data as Campaign;
+}
+
+/**
  * Preflight de "posso avançar esta campanha?" — usado por
  * `endCampaignRound`/`endCampaignScene` ANTES de processar qualquer
  * personagem, para não deixar estado parcial quando a RLS bloqueia o
