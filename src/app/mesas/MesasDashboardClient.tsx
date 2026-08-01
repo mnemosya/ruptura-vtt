@@ -221,7 +221,7 @@ export default function MesasDashboardClient({
 
 // ── Destaque ────────────────────────────────────────────────────────
 function FeaturedCampaign({ data }: { data: CampaignCardData }) {
-  const { campaign, role, memberCount, characterCount } = data;
+  const { campaign, role, memberCount } = data;
   return (
     <section className="ra2-featured" aria-label="Campanha em destaque" data-testid="dash-mesa-destaque">
       <DecoTop />
@@ -235,24 +235,27 @@ function FeaturedCampaign({ data }: { data: CampaignCardData }) {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 560 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <span className="ra-eyebrow">
-              CENA {campaign.current_scene} // RODADA {campaign.current_round}
-            </span>
             <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
               <h2 className="ra2-featured-title">{campaign.name}</h2>
+              {/*
+               * Não há rastreamento de presença (quem está online agora)
+               * em nenhum lugar do projeto — só dados de banco. Por
+               * decisão explícita, este chip mostra o total de
+               * participantes (o que a RLS permite ao narrador contar),
+               * não "online/total" — não fingir uma contagem online que
+               * não existe. Sem badge "ONLINE" pelo mesmo motivo.
+               */}
               {memberCount !== null && (
                 <span className="ra2-count-chip">
                   <User size={12} strokeWidth={1.5} />
-                  {memberCount}<em>&nbsp;na mesa</em>
+                  {memberCount}<em>&nbsp;participante{memberCount === 1 ? "" : "s"}</em>
                 </span>
               )}
             </div>
           </div>
-          <p className="ra2-featured-desc">
-            {characterCount > 0
-              ? `${characterCount} personagem${characterCount === 1 ? "" : "s"} ${role === "narrator" ? "na campanha" : "sob seu controle"} · atividade ${relativeTime(campaign.updated_at)}.`
-              : `Nenhum personagem ${role === "narrator" ? "criado" : "sob seu controle"} ainda · atividade ${relativeTime(campaign.updated_at)}.`}
-          </p>
+          {/* `campaigns` não tem coluna de descrição — sem descrição real
+              disponível, o espaço fica vazio (não é preenchido com
+              contagem de personagens/atividade, que não é uma descrição). */}
         </div>
 
         <div style={{ maxWidth: 280, marginTop: "auto" }}>
