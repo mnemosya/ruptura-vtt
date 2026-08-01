@@ -483,7 +483,7 @@
 .ra2-panel-row { display: flex; align-items: flex-start; gap: 12px; padding: 8px 0; }
 .ra2-panel-row-main { display: flex; flex-direction: column; min-width: 0; font-size: 12.5px; line-height: 18.75px; }
 .ra2-panel-row-main strong { font-family: var(--font-rajdhani), sans-serif; font-weight: 700; color: #b8d8e8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ra2-panel-row-main span { font-family: var(--font-rajdhani), sans-serif; font-weight: 600; color: rgba(184, 216, 232, 0.8); }
+.ra2-panel-row-main span { font-family: var(--font-rajdhani), sans-serif; font-weight: 500; color: rgba(184, 216, 232, 0.8); }
 .ra-diamond { width: 6px; height: 6px; background: #418292; transform: rotate(45deg); display: inline-block; flex-shrink: 0; }
 .ra2-people { display: flex; flex-direction: column; gap: 12px; width: 100%; }
 .ra2-person { display: flex; align-items: center; gap: 10px; width: 100%; }
@@ -494,7 +494,7 @@
 .ra2-person--off .ra2-person-avatar { opacity: 0.5; }
 .ra2-person-main { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .ra2-person-name { font-family: var(--font-rajdhani), sans-serif; font-weight: 700; font-size: 12.5px; line-height: 18.75px; color: #b8d8e8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ra2-person--off .ra2-person-name { font-weight: 600; color: rgba(184, 216, 232, 0.8); }
+.ra2-person--off .ra2-person-name { font-weight: 500; color: rgba(184, 216, 232, 0.8); }
 .ra2-person-off { font-family: var(--font-rajdhani), sans-serif; font-weight: 500; font-size: 12.5px; color: rgba(207, 234, 246, 0.6); }
 
 /* ── Selos ─────────────────────────────────────────────────────── */

@@ -345,7 +345,7 @@ function ActivityPanel({ campanhas }: { campanhas: CampaignCardData[] }) {
                 <span style={{ paddingTop: 6 }}><span className="ra-diamond" aria-hidden="true" /></span>
                 <div className="ra2-panel-row-main">
                   <strong title={row.campaign.name}>{row.campaign.name}</strong>
-                  <span>{relativeTime(row.campaign.updated_at)}</span>
+                  <span>última sessão {relativeTime(row.campaign.updated_at)}</span>
                 </div>
               </div>
             </div>
@@ -378,7 +378,7 @@ function NetworkPanel({ campanhas, currentUserName }: { campanhas: CampaignCardD
             <span className="ra2-person-name">{currentUserName}</span>
             <span className="ra-online">
               <span className="ra-online-dot" aria-hidden="true" />
-              <span className="ra-online-txt">Você</span>
+              <span className="ra-online-txt">Online</span>
             </span>
           </div>
         </div>
@@ -388,6 +388,7 @@ function NetworkPanel({ campanhas, currentUserName }: { campanhas: CampaignCardD
             <span className="ra2-person-avatar" aria-hidden="true"><User size={14} strokeWidth={1.3} /></span>
             <div className="ra2-person-main">
               <span className="ra2-person-name">{p.name}</span>
+              <span className="ra2-person-off">offline</span>
             </div>
           </div>
         ))}
