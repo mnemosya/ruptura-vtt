@@ -509,6 +509,11 @@ export function LoginForm({
               data-testid="login-submit"
               className={`rv-submit ${isLogin ? "rv-submit--cyan" : "rv-submit--amber"}`}
             >
+              {/* Camada "Glow (primary)" do Figma: aparece DUPLICADA (dois nós
+                  idênticos empilhados) na árvore real do componente — dois
+                  <span> de verdade aqui, não uma aproximação matemática de
+                  uma camada só com alfa dobrado. */}
+              <span className="rv-submit-glow rv-submit-glow--base" aria-hidden="true" />
               <span className="rv-submit-glow rv-submit-glow--base" aria-hidden="true" />
               <span className="rv-submit-glow rv-submit-glow--hover" aria-hidden="true" />
               {submitting && <Spinner size={13} className="rv-spin rv-z" />}

@@ -307,19 +307,25 @@
   font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase;
   transition: background 0.22s, border-color 0.22s, box-shadow 0.22s, transform 0.08s;
 }
-/* O CSS resolvido do Figma (Inspect/Dev Mode) para o botão Default é
-   fill 10%/glow 6%/inset 15% sobre border #0E6B7F — conferido direto
-   com o usuário. Testado lado a lado (mesmo HTML, mesmo painel escuro
-   rgba(13,21,28,.8) confirmado no frame bruto exportado do Figma):
-   esses valores literais compõem para um teal bem escuro, quase sem
-   saturação perceptível — não existe camada clara nem blend mode
-   faltando, é matemática de alfa baixo sobre fundo quase preto. A
-   aparência clara das referências enviadas só aparece com esse MESMO
-   CSS sobre um fundo claro (canvas do Figma) — nesse fundo o texto
-   fica ilegível, então não é o alvo real. Ajuste deliberado: mesmo
-   gradiente/ângulo, alfa da preenchimento subido para 0.3 — testado
-   visualmente sobre o painel real até parar de ler como cinza e
-   continuar com o texto legível. */
+/* Reconstrução literal a partir do componente bruto exportado do Figma
+   (src/imports/LoginButtonPrimary/index.tsx). Cada camada abaixo
+   corresponde 1:1 a um nó real da árvore do componente — nada de
+   camadas fundidas/aproximadas por matemática de alfa:
+     - preenchimento base: linear-gradient 97.8°, stroke sólido
+       #0E6B7F, inset shadow 16px/1px 15% — bate com o Inspect/Dev Mode
+       do Figma, conferido com o usuário;
+     - "Glow (primary)": duas camadas IDÊNTICAS empilhadas (confirmado
+       no painel de camadas do Figma) — por isso dois <span> reais no
+       JSX (ver LoginForm.tsx), cada um a 6%, não um só a alfa dobrado;
+     - "Glow (primary) [hover]": camada extra só visível em hover/click,
+       valores conferidos na variant "Property 1=Hover" do export bruto.
+   ÚNICO desvio deliberado do literal: o alfa do preenchimento base foi
+   testado (harness HTML lado a lado, mesmo painel escuro real
+   rgba(13,21,28,.8) do frame) e subido de 0.1 para 0.3 — nos valores
+   literais o botão compõe para um teal quase sem saturação perceptível
+   sobre o painel escuro (sem nenhuma camada faltando: é matemática de
+   alfa baixo sobre fundo quase preto, verificado). Tudo o mais aqui é
+   fiel ao Figma. */
 .rv-submit--cyan {
   color: rgba(184, 243, 255, 0.88);
   background-image: linear-gradient(97.8deg, rgba(0, 212, 255, 0.3) 0.13%, rgba(6, 129, 154, 0.3) 100%);
@@ -334,6 +340,8 @@
 .rv-submit-glow { position: absolute; inset: 0; pointer-events: none; }
 .rv-submit--cyan .rv-submit-glow--base { background: linear-gradient(90deg, transparent 0%, rgba(0, 212, 255, 0.06) 50%, transparent 100%); }
 .rv-submit--amber .rv-submit-glow--base { background: linear-gradient(90deg, transparent 0%, rgba(230, 165, 46, 0.06) 50%, transparent 100%); }
+/* A segunda <span class="rv-submit-glow--base"> (irmã idêntica no JSX)
+   herda esta mesma regra automaticamente — dois nós, mesma classe. */
 .rv-submit-glow--hover { opacity: 0; transition: opacity 0.2s ease; }
 /* Valores de intensidade (0.08/0.24/0.08) conferidos contra o componente
    bruto exportado do Figma (src/imports/LoginButtonPrimary/index.tsx,
