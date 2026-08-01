@@ -9,6 +9,7 @@
  */
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "../../../lib/auth/session";
+import { GlobalShell } from "../_global/GlobalShell";
 import ContaClient from "./ContaClient";
 
 export const dynamic = "force-dynamic";
@@ -17,5 +18,9 @@ export default async function ContaPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  return <ContaClient email={user.email ?? "(sem email)"} displayNameInicial={user.displayName} />;
+  return (
+    <GlobalShell active="account" userEmail={user.email ?? "(sem email)"} displayName={user.displayName}>
+      <ContaClient email={user.email ?? "(sem email)"} displayNameInicial={user.displayName} />
+    </GlobalShell>
+  );
 }

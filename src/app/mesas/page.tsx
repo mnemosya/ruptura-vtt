@@ -13,16 +13,48 @@
  * já é a lista certa; o papel de cada uma é derivado localmente
  * (`owner_id === user.id` → Narrador; caso contrário, só chegou aqui
  * porque a RLS permitiu — logo é Jogador).
+ *
+ * Redesign da área autenticada: além do papel, a página passa a
+ * carregar o que a home nova exibe de verdade — participantes (que só
+ * o narrador consegue ler, por RLS) e quantidade de personagens. O que
+ * a RLS não devolve aparece como desconhecido, nunca como zero.
  */
 
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "../../lib/auth/session";
-import { listCampaigns } from "../../lib/table/storage";
-import { listControlledCharacters } from "../../lib/character/storage";
+import {
+  getCampaignParticipantInfo,
+  listCampaignMembers,
+  listCampaigns,
+} from "../../lib/table/storage";
+import {
+  listCharactersForNarratorCampaign,
+  listControlledCharacters,
+} from "../../lib/character/storage";
 import type { Campaign } from "../../lib/table";
+import { GlobalShell } from "./_global/GlobalShell";
 import MesasDashboardClient, { type CampaignCardData } from "./MesasDashboardClient";
 
 export const dynamic = "force-dynamic";
+
+async function loadNarratorExtras(
+  campaignId: string,
+): Promise<Pick<CampaignCardData, "memberCount" | "people" | "characterCount">> {
+  const [members, characters, info] = await Promise.all([
+    listCampaignMembers(campaignId).catch(() => []),
+    listCharactersForNarratorCampaign(campaignId).catch(() => []),
+    getCampaignParticipantInfo(campaignId).catch(() => new Map()),
+  ]);
+  const active = members.filter((m) => m.status === "active");
+  return {
+    memberCount: active.length,
+    characterCount: characters.filter((c) => !c.archived_at).length,
+    people: active.map((m) => ({
+      userId: m.user_id,
+      name: info.get(m.user_id)?.display_name ?? "Participante",
+    })),
+  };
+}
 
 export default async function MesasPage() {
   const user = await getCurrentUser();
@@ -35,7 +67,8 @@ export default async function MesasPage() {
     minhasCampanhas = await Promise.all(
       todas.map(async (campaign): Promise<CampaignCardData> => {
         if (campaign.owner_id === user.id) {
-          return { campaign, role: "narrator", controlledCharacterCount: null };
+          const extras = await loadNarratorExtras(campaign.id);
+          return { campaign, role: "narrator", controlledCharacterCount: null, ...extras };
         }
         let controlledCharacterCount = 0;
         try {
@@ -43,7 +76,17 @@ export default async function MesasPage() {
         } catch {
           controlledCharacterCount = 0;
         }
-        return { campaign, role: "player", controlledCharacterCount };
+        return {
+          campaign,
+          role: "player",
+          controlledCharacterCount,
+          // RLS: quem é só jogador enxerga apenas a própria linha em
+          // `campaign_members` — não dá para contar a mesa inteira aqui,
+          // e inventar um número seria pior do que não mostrar.
+          memberCount: null,
+          characterCount: controlledCharacterCount,
+          people: [],
+        };
       }),
     );
   } catch (err) {
@@ -51,10 +94,12 @@ export default async function MesasPage() {
   }
 
   return (
-    <MesasDashboardClient
-      userEmail={user.email ?? "(sem email)"}
-      campanhasIniciais={minhasCampanhas}
-      errorInicial={errorMessage}
-    />
+    <GlobalShell active="campaigns" userEmail={user.email ?? "(sem email)"} displayName={user.displayName}>
+      <MesasDashboardClient
+        campanhasIniciais={minhasCampanhas}
+        errorInicial={errorMessage}
+        currentUserName={user.displayName ?? (user.email ?? "Você").split("@")[0]}
+      />
+    </GlobalShell>
   );
 }
