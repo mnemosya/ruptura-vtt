@@ -316,7 +316,6 @@ export function LoginForm({
     });
   }
 
-  const podeEnviar = email.trim().length > 0 && password.length > 0 && !busy;
   const submitting = busy || feedback.kind === "success";
 
   return (
@@ -424,7 +423,7 @@ export function LoginForm({
                   onChange={(e) => setName(e.target.value)}
                   error={errors.name}
                   icon={<User size={13} />}
-                  placeholder="Como você aparece nas suas campanhas"
+                  placeholder="ex: Gabs"
                   autoComplete="nickname"
                 />
               )}
@@ -455,7 +454,7 @@ export function LoginForm({
                   label="SENHA"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && podeEnviar) handleSubmit(); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
                   error={errors.password}
                   show={showPwd}
                   onToggle={() => setShowPwd((v) => !v)}
@@ -469,7 +468,6 @@ export function LoginForm({
                       className="rv-recover-btn"
                       data-testid="login-recuperar-senha"
                       onClick={handleRecover}
-                      disabled={busy}
                     >
                       RECUPERAR SENHA
                     </button>
@@ -509,7 +507,6 @@ export function LoginForm({
             <button
               type="submit"
               data-testid="login-submit"
-              disabled={submitting || !podeEnviar}
               className={`rv-submit ${isLogin ? "rv-submit--cyan" : "rv-submit--amber"}`}
             >
               <span className="rv-submit-glow rv-submit-glow--base" aria-hidden="true" />
