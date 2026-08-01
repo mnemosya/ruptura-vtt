@@ -508,6 +508,8 @@ export function LoginForm({
               data-testid="login-submit"
               className={`auth-submit-btn ${isLogin ? "auth-submit-btn--cyan" : "auth-submit-btn--amber"}`}
             >
+              <span className="auth-submit-btn-corner" aria-hidden="true" />
+              <span className="auth-submit-btn-baseline" aria-hidden="true" />
               {submitting && <Spinner size={13} className="rv-spin" style={{ marginRight: 10 }} />}
               {submitting ? "PROCESSANDO..." : isLogin ? "INICIAR SESSÃO" : "CRIAR CONTA"}
             </button>
