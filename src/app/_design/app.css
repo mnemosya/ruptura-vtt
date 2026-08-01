@@ -79,6 +79,33 @@
   -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, #000 30%, transparent 85%);
   mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, #000 30%, transparent 85%);
 }
+/* Fundo específico da tela "Minhas Campanhas" (bg2.png) — escopado ao
+   conteúdo, nunca cobre a sidebar nem a topbar porque vive dentro do
+   próprio wrapper da página (que só existe abaixo/à direita delas),
+   não no `.ra-bg` fixo em tela cheia usado pelo resto da área
+   autenticada. Mesmas camadas de decoração da imagem de fundo da tela
+   de autenticação (.rv-img/.rv-img-tint/.rv-img-grad/.rv-img-mask):
+   leve realce de brilho/saturação, tingimento azul discreto, gradiente
+   ciano sutil e vinheta radial. */
+.ra2-page-bg-wrap { position: relative; }
+.ra2-page-bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.ra2-page-bg-img {
+  position: absolute; inset: 0;
+  background-image: url('/brand/campaigns-hud.jpg');
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.98) saturate(1.02);
+}
+.ra2-page-bg-tint { position: absolute; inset: 0; background: rgba(0, 40, 80, 0.04); }
+.ra2-page-bg-grad {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 0%, rgba(0, 212, 255, 0.04) 50%, transparent 100%);
+}
+.ra2-page-bg-mask {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 90% 90% at 50% 50%, transparent 0%, rgba(7, 9, 15, 0.25) 72%, rgba(7, 9, 15, 0.68) 100%);
+}
+
 .ra-scanlines {
   position: fixed; inset: 0; z-index: 60; pointer-events: none; opacity: 0.5;
   background: repeating-linear-gradient(0deg, transparent 0 2px, rgba(0, 0, 0, 0.15) 2px 3px);

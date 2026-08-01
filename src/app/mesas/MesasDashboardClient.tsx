@@ -97,8 +97,15 @@ export default function MesasDashboardClient({
   }
 
   return (
-    <div className="ra2-page ra2-view-enter">
-      <PageHead eyebrow="SYS.RUPTURA // ÁREA DE OPERAÇÕES" title="Minhas Campanhas" />
+    <div className="ra2-page-bg-wrap">
+      <div className="ra2-page-bg" aria-hidden="true">
+        <div className="ra2-page-bg-img" />
+        <div className="ra2-page-bg-tint" />
+        <div className="ra2-page-bg-grad" />
+        <div className="ra2-page-bg-mask" />
+      </div>
+      <div className="ra2-page ra2-view-enter" style={{ position: "relative", zIndex: 1 }}>
+        <PageHead eyebrow="SYS.RUPTURA // ÁREA DE OPERAÇÕES" title="Minhas Campanhas" />
 
       <div className="ra2-toolbar">
         <div className="ra2-toolbar-group">
@@ -207,6 +214,7 @@ export default function MesasDashboardClient({
       )}
 
       {createOpen && <CreateCampaignModal onClose={closeCreate} onCreated={handleCreated} />}
+      </div>
     </div>
   );
 }
