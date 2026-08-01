@@ -87,7 +87,13 @@
    de autenticação (.rv-img/.rv-img-tint/.rv-img-grad/.rv-img-mask):
    leve realce de brilho/saturação, tingimento azul discreto, gradiente
    ciano sutil e vinheta radial. */
-.ra2-page-bg-wrap { position: relative; }
+/* min-height:100% (não só o conteúdo próprio) para o fundo cobrir até
+   o rodapé real quando a lista de campanhas é curta e sobra espaço
+   até o fim da viewport — .ra2-content (flex:1 dentro de .ra2-main,
+   coluna com altura definida por .ra2-shell) já resolve 100% para
+   esse caso; quando o conteúdo é mais alto que a viewport, o wrapper
+   cresce normalmente com o conteúdo (min-height, não height fixo). */
+.ra2-page-bg-wrap { position: relative; min-height: 100%; }
 .ra2-page-bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
 .ra2-page-bg-img {
   position: absolute; inset: 0;
