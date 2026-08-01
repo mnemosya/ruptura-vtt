@@ -33,9 +33,7 @@ import {
   Eye,
   EyeOff,
   Lock,
-  LogIn,
   Mail,
-  Spinner,
   User,
 } from "./_design/icons";
 import "./_design/auth.css";
@@ -316,8 +314,6 @@ export function LoginForm({
     });
   }
 
-  const submitting = busy || feedback.kind === "success";
-
   return (
     <div className="rv-root">
       <AuthCursor />
@@ -503,29 +499,6 @@ export function LoginForm({
                 </span>
               </div>
             )}
-
-            <button
-              type="submit"
-              data-testid="login-submit"
-              className={`rv-submit ${isLogin ? "rv-submit--cyan" : "rv-submit--amber"}`}
-            >
-              {/* Camada "Glow (primary)" do Figma: aparece DUPLICADA (dois nós
-                  idênticos empilhados) na árvore real do componente — dois
-                  <span> de verdade aqui, não uma aproximação matemática de
-                  uma camada só com alfa dobrado. */}
-              <span className="rv-submit-glow rv-submit-glow--base" aria-hidden="true" />
-              <span className="rv-submit-glow rv-submit-glow--base" aria-hidden="true" />
-              <span className="rv-submit-glow rv-submit-glow--hover" aria-hidden="true" />
-              {submitting && <Spinner size={13} className="rv-spin rv-z" />}
-              <span className="rv-z">
-                {submitting ? "PROCESSANDO..." : isLogin ? "INICIAR SESSÃO" : "CRIAR CONTA"}
-              </span>
-              {!submitting && (
-                <kbd className="rv-cmd-tag" aria-label="Atalho: Enter">
-                  ENTER <LogIn size={12} />
-                </kbd>
-              )}
-            </button>
           </form>
 
           <div className="rv-foot">
