@@ -300,12 +300,15 @@
   letter-spacing: 0.22em; text-transform: uppercase; text-decoration: none;
   transition: transform 0.12s ease, border-color 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
 }
+/* Mesmo tratamento do botão de auth/.ra2-secondary: preenchimento
+   sólido/opaco em vez de gradiente translúcido de alfa baixo (que
+   compõe para quase-cinza sobre o painel escuro). */
 .ra2-primary {
-  background-image: linear-gradient(95.6deg, rgba(0, 212, 255, 0.1) 0%, rgba(6, 129, 154, 0.1) 100%);
-  border-color: #0e6b7f; color: rgba(184, 243, 255, 0.88);
-  box-shadow: inset 0 0 16px 1px rgba(168, 240, 255, 0.15);
+  background: linear-gradient(95.6deg, #123640 0%, #1f5464 100%);
+  border-color: #3a94ac; color: #d3f4ff;
+  box-shadow: 0 0 14px rgba(0, 212, 255, 0.15);
 }
-.ra2-primary:hover:not(:disabled) { border-color: #1690a6; box-shadow: inset 0 0 16px 1px rgba(168, 240, 255, 0.15), 0 0 12px 0 rgba(29, 179, 206, 0.25); color: rgba(127, 255, 253, 0.95); }
+.ra2-primary:hover:not(:disabled) { border-color: #6fe0ff; box-shadow: 0 0 18px rgba(0, 212, 255, 0.28); color: #eafcff; }
 .ra2-primary:active:not(:disabled) { border-color: #1db3ce; transform: translateY(1px); }
 .ra2-primary:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.7); outline-offset: 2px; }
 /* Mesmo problema do botão de auth (ver auth.css .auth-submit-btn--amber):
@@ -324,24 +327,27 @@
 .ra2-secondary:disabled { opacity: 0.5; }
 .ra2-btn-block { width: 100%; }
 
+/* .ra-btn/--amber/--danger: mesmo tratamento — preenchimento sólido em
+   vez de fill translúcido de alfa baixo sobre o painel escuro.
+   .ra-btn--ghost fica de fora de propósito (é pra ser transparente). */
 .ra-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 18px;
   font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.16em;
-  border: 1px solid rgba(0, 212, 255, 0.38); background: rgba(0, 212, 255, 0.07); color: var(--cy);
+  border: 1px solid #3a94ac; background: linear-gradient(95.6deg, #123640 0%, #1f5464 100%); color: #d3f4ff;
   position: relative; overflow: hidden; text-transform: uppercase; text-decoration: none;
-  transition: background 0.2s, border-color 0.2s, transform 0.12s, box-shadow 0.2s;
+  transition: filter 0.2s, border-color 0.2s, transform 0.12s, box-shadow 0.2s;
   clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 11px 100%, 0 calc(100% - 11px));
 }
-.ra-btn:hover:not(:disabled) { background: rgba(0, 212, 255, 0.14); border-color: rgba(0, 212, 255, 0.72); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 212, 255, 0.14); }
+.ra-btn:hover:not(:disabled) { filter: brightness(1.15); border-color: #6fe0ff; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 212, 255, 0.18); }
 .ra-btn:active:not(:disabled) { transform: translateY(0); }
 .ra-btn:disabled { opacity: 0.4; }
 .ra-btn:focus-visible { outline: 1px solid rgba(0, 212, 255, 0.75); outline-offset: 3px; }
-.ra-btn--amber { border-color: rgba(245, 162, 0, 0.5); background: rgba(245, 162, 0, 0.08); color: var(--am); }
-.ra-btn--amber:hover:not(:disabled) { border-color: rgba(245, 162, 0, 0.85); background: rgba(245, 162, 0, 0.15); box-shadow: 0 6px 20px rgba(245, 162, 0, 0.14); }
+.ra-btn--amber { border-color: #a97a30; background: linear-gradient(95.6deg, #40290f 0%, #654119 100%); color: #ffe6bd; }
+.ra-btn--amber:hover:not(:disabled) { border-color: #ffcf8a; filter: brightness(1.15); box-shadow: 0 6px 20px rgba(245, 162, 0, 0.2); }
 .ra-btn--ghost { background: transparent; border-color: rgba(0, 212, 255, 0.2); color: rgba(0, 212, 255, 0.7); }
 .ra-btn--ghost:hover:not(:disabled) { background: rgba(0, 212, 255, 0.06); border-color: rgba(0, 212, 255, 0.45); }
-.ra-btn--danger { border-color: rgba(255, 60, 80, 0.3); background: rgba(255, 60, 80, 0.06); color: #ff8ea0; }
-.ra-btn--danger:hover:not(:disabled) { border-color: rgba(255, 60, 80, 0.6); background: rgba(255, 60, 80, 0.12); box-shadow: 0 6px 20px rgba(255, 60, 80, 0.12); }
+.ra-btn--danger { border-color: #c94f63; background: linear-gradient(95.6deg, #3a1017 0%, #5c1c26 100%); color: #ffc4cf; }
+.ra-btn--danger:hover:not(:disabled) { border-color: #ff96a8; filter: brightness(1.15); box-shadow: 0 6px 20px rgba(255, 60, 80, 0.2); }
 .ra-btn--block { width: 100%; }
 .ra-btn--sm { padding: 8px 13px; font-size: 10px; }
 
@@ -393,9 +399,9 @@
 }
 .ra2-seg:not(.ra2-seg--active):hover { background: rgba(0, 212, 255, 0.06); color: rgba(195, 245, 255, 0.85); }
 .ra2-seg--active {
-  color: rgba(0, 212, 255, 0.88); border-color: #0e6b7f;
-  background-image: linear-gradient(92.7deg, rgba(0, 212, 255, 0.1) 0%, rgba(6, 129, 154, 0.1) 100%);
-  box-shadow: inset 0 0 16px 1px rgba(168, 240, 255, 0.15);
+  color: #eafcff; border-color: #3a94ac;
+  background: linear-gradient(92.7deg, #123640 0%, #1f5464 100%);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.18);
 }
 .ra2-seg:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.7); outline-offset: 1px; }
 
@@ -673,7 +679,7 @@
   color: rgba(195, 245, 255, 0.6); transition: background 0.16s, border-color 0.16s, color 0.16s;
 }
 .ra-comp-type:hover { color: rgba(195, 245, 255, 0.9); border-color: rgba(0, 212, 255, 0.3); }
-.ra-comp-type--active { color: rgba(0, 212, 255, 0.9); border-color: #0e6b7f; background-image: linear-gradient(92.7deg, rgba(0, 212, 255, 0.1), rgba(6, 129, 154, 0.1)); box-shadow: inset 0 0 16px 1px rgba(168, 240, 255, 0.15); }
+.ra-comp-type--active { color: #eafcff; border-color: #3a94ac; background: linear-gradient(92.7deg, #123640, #1f5464); box-shadow: 0 0 10px rgba(0, 212, 255, 0.18); }
 .ra-comp-type:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.7); outline-offset: 1px; }
 
 /* ── Animações de entrada ──────────────────────────────────────── */

@@ -221,13 +221,16 @@
 }
 .rv-seg-cyan:not(.rv-seg-btn--active-cyan):hover { color: rgba(195, 245, 255, 0.85); background: rgba(0, 212, 255, 0.05); }
 .rv-seg-amber:not(.rv-seg-btn--active-amber):hover { color: rgba(255, 236, 199, 0.85); background: rgba(230, 165, 46, 0.06); }
+/* Mesmo tratamento do botão de submit (.auth-submit-btn) abaixo:
+   preenchimento sólido em vez de gradiente translúcido de alfa baixo,
+   que compõe pra quase-cinza sobre o painel escuro. */
 .rv-seg-btn--active-cyan {
-  color: rgba(0, 212, 255, 0.9); background-image: linear-gradient(93deg, rgba(0, 212, 255, 0.1), rgba(6, 129, 154, 0.1));
-  border-color: #0e6b7f; box-shadow: inset 0 0 16px rgba(168, 240, 255, 0.15);
+  color: #eafcff; background: linear-gradient(93deg, #123640, #1f5464);
+  border-color: #3a94ac; box-shadow: 0 0 10px rgba(0, 212, 255, 0.18);
 }
 .rv-seg-btn--active-amber {
-  color: rgba(245, 162, 0, 0.9); background-image: linear-gradient(93deg, rgba(230, 165, 46, 0.1), rgba(94, 66, 31, 0.1));
-  border-color: #5e421f; box-shadow: inset 0 0 16px rgba(245, 162, 0, 0.15);
+  color: #ffe6bd; background: linear-gradient(93deg, #40290f, #654119);
+  border-color: #a97a30; box-shadow: 0 0 10px rgba(245, 162, 0, 0.18);
 }
 .rv-seg-btn:focus-visible { outline: 1px solid rgba(0, 212, 255, 0.7); outline-offset: 2px; }
 
@@ -319,15 +322,18 @@
    cada um a 6% literal, deixando o navegador compor as duas camadas.
    "Glow (primary) [hover]" só existe no hover/click — valores
    conferidos na variant "Property 1=Hover" do export bruto. */
+/* .rv-submit--cyan/--amber: só usado por /redefinir-senha hoje (o
+   botão de login/cadastro é .auth-submit-btn, ver mais abaixo) — mesmo
+   tratamento de preenchimento sólido, mesmo motivo. */
 .rv-submit--cyan {
-  color: rgba(184, 243, 255, 0.88);
-  background-image: linear-gradient(97.8deg, rgba(0, 212, 255, 0.1) 0.13%, rgba(6, 129, 154, 0.1) 100%);
-  border: 1px solid #0e6b7f; box-shadow: inset 0 0 16px 1px rgba(168, 240, 255, 0.15);
+  color: #d3f4ff;
+  background: linear-gradient(97.8deg, #123640 0%, #1f5464 100%);
+  border: 1px solid #3a94ac; box-shadow: 0 0 14px rgba(0, 212, 255, 0.15);
 }
 .rv-submit--amber {
-  color: rgba(255, 236, 199, 0.9);
-  background-image: linear-gradient(97.8deg, rgba(230, 165, 46, 0.12), rgba(94, 66, 31, 0.12));
-  border: 1px solid #5e421f; box-shadow: inset 0 0 16px 1px rgba(245, 162, 0, 0.15);
+  color: #ffe6bd;
+  background: linear-gradient(97.8deg, #40290f 0%, #654119 100%);
+  border: 1px solid #a97a30; box-shadow: 0 0 14px rgba(245, 162, 0, 0.15);
 }
 
 .rv-submit-glow { position: absolute; inset: 0; pointer-events: none; }
