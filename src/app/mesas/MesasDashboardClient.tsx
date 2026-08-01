@@ -12,12 +12,13 @@
  * capa e cor de acento não existem no banco e por isso não foram
  * fingidas aqui.
  *
- * Exceção deliberada, só no card em destaque: status "ONLINE", contagem
- * online/total e descrição da campanha usam MOCKS temporários
- * (`mockIsOnline`/`mockOnlineCount`/`mockCampaignDescription` em
- * `_global/parts.tsx`) — pedido explícito do usuário para a interface
- * bater com o design antes do backend (presença real, coluna de
- * descrição) existir. Ver o comentário na origem dessas funções.
+ * Exceção deliberada, só no card em destaque: status "ONLINE" (sempre
+ * mostrado ali, incondicional), contagem online/total e descrição da
+ * campanha usam MOCKS temporários (`OnlineTag`/`mockOnlineCount`/
+ * `mockCampaignDescription` em `_global/parts.tsx`) — pedido explícito
+ * do usuário para a interface bater com o design antes do backend
+ * (presença real, coluna de descrição) existir. Ver o comentário na
+ * origem dessas funções.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -28,7 +29,7 @@ import type { Campaign } from "../../lib/table";
 import { usePushToast } from "./_global/GlobalShell";
 import {
   DecoBottom, DecoTop, OnlineTag, PageHead, RoleBadge, SectionHead,
-  campaignCoverStyle, mockCampaignDescription, mockIsOnline, mockOnlineCount, relativeTime,
+  campaignCoverStyle, mockCampaignDescription, mockOnlineCount, relativeTime,
 } from "./_global/parts";
 import {
   Activity, AlertTriangle, ChevronRight, Clock, Plus, RotateCw, ScrollText, Search, Spinner, User, Users, X,
@@ -243,9 +244,13 @@ function FeaturedCampaign({ data }: { data: CampaignCardData }) {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 560 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {/* MOCK temporário — ver comentário na origem de mockIsOnline/
-                mockOnlineCount em _global/parts.tsx (sem Presence real ainda). */}
-            {memberCount !== null && mockIsOnline(campaign.id, memberCount) && <OnlineTag />}
+            {/* MOCK temporário — o card em destaque sempre mostra "online"
+                (é o que a referência de design mostra); não depende da
+                contagem do chip abaixo, que pode legitimamente ser 0/0
+                numa campanha nova. Ver comentário na origem de
+                mockOnlineCount em _global/parts.tsx (sem Presence real
+                ainda). */}
+            <OnlineTag />
             <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
               <h2 className="ra2-featured-title">{campaign.name}</h2>
               {memberCount !== null && (
