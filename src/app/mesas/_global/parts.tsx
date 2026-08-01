@@ -84,6 +84,40 @@ export function relativeTime(iso: string | null | undefined): string {
   return `há ${diffY} ${diffY === 1 ? "ano" : "anos"}`;
 }
 
+// =====================================================================
+// MOCK TEMPORÁRIO — presença online e descrição de campanha
+//
+// Não existe rastreamento de presença (quem está conectado agora) em
+// nenhum lugar do projeto — só dado de banco via postgres_changes,
+// nunca Supabase Presence/`channel.track()`. E `campaigns` nunca teve
+// coluna de descrição. As duas funções abaixo existem só para a
+// interface do card em destaque bater com o design visual enquanto o
+// backend de verdade não existe — por pedido explícito do usuário
+// ("faz um estado temporário... depois a gente faz o backend").
+//
+// Quando existir Presence real e a coluna de descrição, isso tudo some
+// e os valores passam a vir de `data`/`campaign` como qualquer outro
+// campo real do banco.
+// =====================================================================
+
+/** MOCK — número "online" plausível e estável (não é dado real). */
+export function mockOnlineCount(campaignId: string, total: number): number {
+  if (total <= 0) return 0;
+  const h = hashCode(campaignId);
+  const ratio = 0.35 + (h % 50) / 100; // ~35%–85% do total, estável por campanha
+  return Math.max(1, Math.min(total, Math.round(total * ratio)));
+}
+
+/** MOCK — a campanha "está online" se a presença simulada é > 0. */
+export function mockIsOnline(campaignId: string, total: number): boolean {
+  return mockOnlineCount(campaignId, total) > 0;
+}
+
+/** MOCK — texto de descrição, já que `campaigns` não tem essa coluna ainda. */
+export function mockCampaignDescription(): string {
+  return "Descrição da campanha ainda não é um campo real no banco — texto de exemplo até essa coluna existir.";
+}
+
 export function DecoTop() {
   return (
     <div className="ra-deco-top" aria-hidden="true">

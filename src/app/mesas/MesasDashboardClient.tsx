@@ -9,8 +9,15 @@
  * virou um modal HUD, aberto pelo botão da barra de ferramentas ou pelo
  * item do menu de perfil (que chega como `?novo=1`). O formulário tem
  * só o campo que a criação real aceita hoje (`createCampaign(name)`) —
- * o protótipo trazia ainda descrição, capa e cor de acento, que não
- * existem no banco e por isso não foram fingidos aqui.
+ * capa e cor de acento não existem no banco e por isso não foram
+ * fingidas aqui.
+ *
+ * Exceção deliberada, só no card em destaque: status "ONLINE", contagem
+ * online/total e descrição da campanha usam MOCKS temporários
+ * (`mockIsOnline`/`mockOnlineCount`/`mockCampaignDescription` em
+ * `_global/parts.tsx`) — pedido explícito do usuário para a interface
+ * bater com o design antes do backend (presença real, coluna de
+ * descrição) existir. Ver o comentário na origem dessas funções.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -20,7 +27,8 @@ import { createCampaign } from "../../lib/table/storage";
 import type { Campaign } from "../../lib/table";
 import { usePushToast } from "./_global/GlobalShell";
 import {
-  DecoBottom, DecoTop, PageHead, RoleBadge, SectionHead, campaignCoverStyle, relativeTime,
+  DecoBottom, DecoTop, OnlineTag, PageHead, RoleBadge, SectionHead,
+  campaignCoverStyle, mockCampaignDescription, mockIsOnline, mockOnlineCount, relativeTime,
 } from "./_global/parts";
 import {
   Activity, AlertTriangle, ChevronRight, Clock, Plus, RotateCw, ScrollText, Search, Spinner, User, Users, X,
@@ -235,27 +243,23 @@ function FeaturedCampaign({ data }: { data: CampaignCardData }) {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 560 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {/* MOCK temporário — ver comentário na origem de mockIsOnline/
+                mockOnlineCount em _global/parts.tsx (sem Presence real ainda). */}
+            {memberCount !== null && mockIsOnline(campaign.id, memberCount) && <OnlineTag />}
             <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
               <h2 className="ra2-featured-title">{campaign.name}</h2>
-              {/*
-               * Não há rastreamento de presença (quem está online agora)
-               * em nenhum lugar do projeto — só dados de banco. Por
-               * decisão explícita, este chip mostra o total de
-               * participantes (o que a RLS permite ao narrador contar),
-               * não "online/total" — não fingir uma contagem online que
-               * não existe. Sem badge "ONLINE" pelo mesmo motivo.
-               */}
               {memberCount !== null && (
                 <span className="ra2-count-chip">
                   <User size={12} strokeWidth={1.5} />
-                  {memberCount}<em>&nbsp;participante{memberCount === 1 ? "" : "s"}</em>
+                  <span style={{ color: "#cfeaf6" }}>{mockOnlineCount(campaign.id, memberCount)}</span>
+                  <em>/{memberCount}</em>
                 </span>
               )}
             </div>
           </div>
-          {/* `campaigns` não tem coluna de descrição — sem descrição real
-              disponível, o espaço fica vazio (não é preenchido com
-              contagem de personagens/atividade, que não é uma descrição). */}
+          {/* MOCK temporário — `campaigns` não tem coluna de descrição
+              ainda; ver mockCampaignDescription em _global/parts.tsx. */}
+          <p className="ra2-featured-desc">{mockCampaignDescription()}</p>
         </div>
 
         <div style={{ maxWidth: 280, marginTop: "auto" }}>
