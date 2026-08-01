@@ -322,27 +322,31 @@
 .rv-submit--cyan .rv-submit-glow--base { background: linear-gradient(90deg, transparent 0%, rgba(0, 212, 255, 0.06) 50%, transparent 100%); }
 .rv-submit--amber .rv-submit-glow--base { background: linear-gradient(90deg, transparent 0%, rgba(230, 165, 46, 0.06) 50%, transparent 100%); }
 .rv-submit-glow--hover { opacity: 0; transition: opacity 0.2s ease; }
-.rv-submit--cyan .rv-submit-glow--hover { background: linear-gradient(58deg, transparent 10%, rgba(0, 212, 255, 0.04) 30%, rgba(0, 212, 255, 0.14) 50%, rgba(0, 212, 255, 0.04) 70%, transparent 90%); }
-.rv-submit--amber .rv-submit-glow--hover { background: linear-gradient(58deg, transparent 10%, rgba(230, 165, 46, 0.04) 30%, rgba(230, 165, 46, 0.14) 50%, rgba(230, 165, 46, 0.04) 70%, transparent 90%); }
+/* Valores de intensidade (0.08/0.24/0.08) conferidos contra o componente
+   bruto exportado do Figma (src/imports/LoginButtonPrimary/index.tsx,
+   variant "Property 1=Hover") — a primeira tentativa de porte usava só
+   0.04/0.14/0.04, quase imperceptível sobre o painel escuro. */
+.rv-submit--cyan .rv-submit-glow--hover { background: linear-gradient(58deg, transparent 10%, rgba(0, 212, 255, 0.08) 30%, rgba(0, 212, 255, 0.24) 50%, rgba(0, 212, 255, 0.08) 70%, transparent 90%); }
+.rv-submit--amber .rv-submit-glow--hover { background: linear-gradient(58deg, transparent 10%, rgba(230, 165, 46, 0.08) 30%, rgba(230, 165, 46, 0.24) 50%, rgba(230, 165, 46, 0.08) 70%, transparent 90%); }
 
-.rv-submit--cyan:hover:not(:disabled) {
-  color: rgba(127, 255, 253, 0.95);
-  box-shadow: inset 0 0 16px 1px rgba(168, 240, 255, 0.15), 0 0 12px rgba(0, 210, 255, 0.25); border-color: #1690a6;
-}
-.rv-submit--amber:hover:not(:disabled) {
-  color: rgba(255, 236, 199, 0.95);
-  box-shadow: inset 0 0 16px 1px rgba(245, 162, 0, 0.15), 0 0 12px rgba(230, 165, 46, 0.25); border-color: #8a6428;
-}
-.rv-submit:hover:not(:disabled) .rv-submit-glow--hover { opacity: 1; }
-.rv-submit:active:not(:disabled) { transform: scale(0.995); }
+/* Hover/Click: mesmos valores no Figma ("Property 1=Hover" e "Property
+   1=Click" são idênticos) — a diferenciação do clique fica só por conta
+   do scale(0.995) abaixo, não por cor/glow extra. O Figma também NÃO
+   muda border-color no hover (a primeira versão do port mudava,
+   #1690a6/#8a6428 — não existe na referência, removido). */
+.rv-submit--cyan:hover:not(:disabled),
 .rv-submit--cyan:active:not(:disabled) {
-  color: rgba(127, 255, 253, 0.95);
-  box-shadow: inset 0 0 16px 1px rgba(168, 240, 255, 0.2), 0 0 14px rgba(0, 210, 255, 0.3); border-color: #1db3ce;
+  color: rgba(127, 255, 253, 0.88);
+  box-shadow: inset 0 0 16px 1px rgba(168, 240, 255, 0.15), 0 4px 24px 2px rgba(0, 210, 255, 0.25);
 }
+.rv-submit--amber:hover:not(:disabled),
 .rv-submit--amber:active:not(:disabled) {
-  color: rgba(255, 236, 199, 0.95);
-  box-shadow: inset 0 0 16px 1px rgba(245, 162, 0, 0.2), 0 0 14px rgba(230, 165, 46, 0.3); border-color: #a87d32;
+  color: rgba(255, 236, 199, 0.88);
+  box-shadow: inset 0 0 16px 1px rgba(245, 162, 0, 0.15), 0 4px 24px 2px rgba(230, 165, 46, 0.25);
 }
+.rv-submit:hover:not(:disabled) .rv-submit-glow--hover,
+.rv-submit:active:not(:disabled) .rv-submit-glow--hover { opacity: 1; }
+.rv-submit:active:not(:disabled) { transform: scale(0.995); }
 .rv-submit:disabled { opacity: 0.55; }
 .rv-submit:focus-visible { outline: 1px solid rgba(0, 212, 255, 0.7); outline-offset: 3px; }
 
