@@ -34,6 +34,7 @@ import {
   EyeOff,
   Lock,
   Mail,
+  Spinner,
   User,
 } from "./_design/icons";
 import "./_design/auth.css";
@@ -314,6 +315,8 @@ export function LoginForm({
     });
   }
 
+  const submitting = busy || feedback.kind === "success";
+
   return (
     <div className="rv-root">
       <AuthCursor />
@@ -499,6 +502,15 @@ export function LoginForm({
                 </span>
               </div>
             )}
+
+            <button
+              type="submit"
+              data-testid="login-submit"
+              className={`auth-submit-btn ${isLogin ? "auth-submit-btn--cyan" : "auth-submit-btn--amber"}`}
+            >
+              {submitting && <Spinner size={13} className="rv-spin" style={{ marginRight: 10 }} />}
+              {submitting ? "PROCESSANDO..." : isLogin ? "INICIAR SESSÃO" : "CRIAR CONTA"}
+            </button>
           </form>
 
           <div className="rv-foot">
