@@ -70,6 +70,14 @@ export function ConsoleWindow({
 
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
+        // Escape pertence primeiro a quem está aberto por cima: uma
+        // edição inline ou um modal auxiliar. Só fecha a janela quando
+        // não há nada mais específico para cancelar — sem isso, cancelar
+        // a edição de PV fechava o Console inteiro.
+        const alvo = e.target;
+        const emCampo =
+          alvo instanceof Element && alvo.closest("input, textarea, select, [contenteditable='true']") !== null;
+        if (emCampo || document.querySelector(".rc-aux")) return;
         e.stopPropagation();
         fechar();
         return;

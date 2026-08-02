@@ -64,7 +64,13 @@ export function useConsoleWindow(aberto: boolean) {
     (e: React.PointerEvent) => {
       if (!podeManipular || !geo) return;
       const alvo = e.currentTarget as HTMLElement;
-      alvo.setPointerCapture(e.pointerId);
+      // `setPointerCapture` lança se o ponteiro não estiver ativo; sem o
+      // try/catch uma falha aqui abortaria o arraste inteiro.
+      try {
+        alvo.setPointerCapture(e.pointerId);
+      } catch {
+        /* segue sem captura — o arraste ainda funciona via listeners. */
+      }
       const offsetX = e.clientX - geo.x;
       const offsetY = e.clientY - geo.y;
 
@@ -74,7 +80,7 @@ export function useConsoleWindow(aberto: boolean) {
         );
       }
       function soltar(ev: PointerEvent) {
-        alvo.releasePointerCapture(ev.pointerId);
+        try { alvo.releasePointerCapture(ev.pointerId); } catch { /* já liberado */ }
         alvo.removeEventListener("pointermove", mover);
         alvo.removeEventListener("pointerup", soltar);
         alvo.removeEventListener("pointercancel", soltar);
@@ -92,7 +98,11 @@ export function useConsoleWindow(aberto: boolean) {
       if (!podeManipular || !geo) return;
       e.stopPropagation();
       const alvo = e.currentTarget as HTMLElement;
-      alvo.setPointerCapture(e.pointerId);
+      try {
+        alvo.setPointerCapture(e.pointerId);
+      } catch {
+        /* idem ao arraste. */
+      }
       const inicioX = e.clientX;
       const inicioY = e.clientY;
       const larguraInicial = geo.w;
@@ -111,7 +121,7 @@ export function useConsoleWindow(aberto: boolean) {
         );
       }
       function soltar(ev: PointerEvent) {
-        alvo.releasePointerCapture(ev.pointerId);
+        try { alvo.releasePointerCapture(ev.pointerId); } catch { /* já liberado */ }
         alvo.removeEventListener("pointermove", mover);
         alvo.removeEventListener("pointerup", soltar);
         alvo.removeEventListener("pointercancel", soltar);
@@ -123,32 +133,42 @@ export function useConsoleWindow(aberto: boolean) {
     [geo, podeManipular],
   );
 
+  /**
+   * Alterna maximizado/normal.
+   *
+   * O cálculo acontece FORA dos updaters de estado: aninhar `setGeo`
+   * dentro do updater de `setMode` fazia o efeito rodar duas vezes em
+   * StrictMode e a segunda passada guardava a geometria já maximizada,
+   * quebrando o restaurar.
+   */
   const alternarMaximizar = useCallback(() => {
-    setMode((atual) => {
-      if (atual === "maximized") {
-        const anterior = geoAntesDeMaximizar.current;
-        if (anterior) setGeo(anterior);
-        geoAntesDeMaximizar.current = null;
-        return "normal";
-      }
-      setGeo((g) => {
-        if (g) geoAntesDeMaximizar.current = g;
-        return geometriaMaximizada(viewport());
-      });
-      return "maximized";
-    });
-  }, []);
+    if (mode === "maximized") {
+      const anterior = geoAntesDeMaximizar.current;
+      geoAntesDeMaximizar.current = null;
+      if (anterior) setGeo(anterior);
+      setMode("normal");
+      return;
+    }
+    if (geo) geoAntesDeMaximizar.current = geo;
+    setGeo(geometriaMaximizada(viewport()));
+    setMode("maximized");
+  }, [geo, mode]);
 
-  const minimizar = useCallback(() => setMode("minimized"), []);
+  /** Modo de antes de minimizar — para o dock devolver ao estado certo. */
+  const modoAntesDeMinimizar = useRef<Exclude<WindowMode, "minimized">>("normal");
+
+  const minimizar = useCallback(() => {
+    if (mode !== "minimized") modoAntesDeMinimizar.current = mode;
+    setMode("minimized");
+  }, [mode]);
 
   /**
-   * Restaurar do dock devolve ao modo anterior à minimização. Como
-   * minimizar não altera a geometria, basta voltar para "normal" —
-   * salvo se a janela estava maximizada, caso em que `geoAntesDeMaximizar`
-   * ainda guarda o estado e o modo volta a "maximized".
+   * Restaurar do dock devolve ao modo exato de antes da minimização
+   * (inclusive maximizado). Minimizar não altera a geometria, então
+   * nada precisa ser recalculado aqui.
    */
   const restaurar = useCallback(() => {
-    setMode(geoAntesDeMaximizar.current ? "maximized" : "normal");
+    setMode(modoAntesDeMinimizar.current);
   }, []);
 
   return {

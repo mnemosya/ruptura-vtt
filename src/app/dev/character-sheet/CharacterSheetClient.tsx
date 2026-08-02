@@ -31,6 +31,7 @@ import {
   applyLongRest,
   useOverloadSurge,
   getOverloadMaxPerDay,
+  OVERLOAD_SURGE_TYPES,
   getOverloadSurgeDamageDie,
   getOverloadWillTestRule,
   applyStunFromFailedWillTest,
@@ -293,6 +294,9 @@ import type { Campaign } from "../../../lib/table";
 import { useCharacterRealtime } from "../../../lib/realtime/useCharacterRealtime";
 import { describeRealtimeStatus } from "../../../lib/realtime/tableRealtime";
 import { CharacterSheetTabs, type TabId } from "./components/CharacterSheetTabs";
+import { CharacterConsole } from "../../ficha/_console/CharacterConsole";
+import type { ConsoleApi, ConsolePin } from "../../ficha/_console/types";
+import type { BodySlotId } from "../../ficha/_console/slots";
 import { GeneralTab } from "./components/GeneralTab";
 import { AttributesTab } from "./components/AttributesTab";
 import { SkillsTab } from "./components/SkillsTab";
@@ -477,6 +481,9 @@ export default function CharacterSheetClient({
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>(initialTab ?? "geral");
+  /** Console do Personagem — janela flutuante sobre a ficha (aditiva). */
+  const [consoleAberto, setConsoleAberto] = useState(false);
+  const [consolePins, setConsolePins] = useState<ConsolePin[]>([]);
   // Estado de UI local — não vai para o payload salvo (ver handleSave).
   const [sheetMode, setSheetMode] = useState<SheetMode>("jogo");
   // "Rolagem preparada" — ponte entre o clique em "Rolar" nas abas
@@ -5176,8 +5183,111 @@ export default function CharacterSheetClient({
 
   const estocarStatusFicha = getEstocarAvailability(character, talentsIniciais);
 
+  // ── Console do Personagem ──────────────────────────────────────
+  // O Console é ADITIVO: a ficha em abas continua intacta por baixo.
+  // Ele não implementa regra — só reempacota os handlers já existentes
+  // no contrato `ConsoleApi`, para nenhuma lógica ser duplicada.
+  const catalogoItens = useMemo(() => new Map(itemsIniciais.map((i) => [i.slug, i])), [itemsIniciais]);
+
+  const consoleApi: ConsoleApi = {
+    character,
+    derivados,
+    regras,
+    catalogo: catalogoItens,
+
+    rolarAtributo: (id) => {
+      const def = regras?.atributos.find((a) => a.id === id);
+      const r = rollPericia({
+        atributoId: id,
+        atributoNome: def?.nome ?? id,
+        atributoValor: character.atributos[id],
+        modificador: 0,
+      });
+      addLogEntry("rolagem_pericia", `Console — ${def?.nome ?? id}: ${r.dados.join(", ")} → maior ${r.maiorDado}, total ${r.total}.`);
+      return r;
+    },
+    rolarPericia: (periciaId) => {
+      const def = regras?.pericias.find((p) => p.id === periciaId);
+      const candidato = def?.atributo_primario;
+      const atributoId: keyof CharacterAttributes =
+        candidato === "corpo" || candidato === "mente" || candidato === "animo" ? candidato : "corpo";
+      const atributoDef = regras?.atributos.find((a) => a.id === atributoId);
+      const r = rollPericia({
+        atributoId,
+        atributoNome: atributoDef?.nome ?? atributoId,
+        atributoValor: character.atributos[atributoId],
+        periciaId,
+        periciaNome: def?.nome,
+        periciaValor: character.pericias[periciaId] ?? 0,
+        modificador: 0,
+      });
+      addLogEntry("rolagem_pericia", `Console — ${def?.nome ?? periciaId}: ${r.dados.join(", ")} → maior ${r.maiorDado}, total ${r.total}.`);
+      return r;
+    },
+
+    editarRecurso: (id, valor) => updateRecursoAtual(id, valor),
+    ajustarPa: (delta) => adjustEstadoJogo("pa_gastos", delta),
+    ajustarReacoes: (delta) => adjustEstadoJogo("reacoes_usadas", delta),
+
+    usarSobrecarga: (tipo) => void handleUseOverloadSurge(tipo),
+    tiposDeSurto: OVERLOAD_SURGE_TYPES,
+    // Ruptura pendente bloqueia novos surtos até o próximo descanso longo.
+    podeUsarSobrecarga: !(character.ruptura_pendente ?? false),
+
+    avancarColapso: handleAdvanceCollapseSegmentManual,
+    estabilizarColapso: handleStabilizeCollapse,
+
+    equiparNoSlot: (instanceId: string, slot: BodySlotId) => {
+      const instancia = character.inventario?.find((i) => i.id === instanceId);
+      const modelo = instancia ? itemsIniciais.find((m) => m.slug === instancia.itemSlug) : undefined;
+      if (!instancia || !modelo) return;
+      // Armadura/escudo passam pelo fluxo defensivo (MIT/PD ativos);
+      // o resto é só mudança de estado de loadout.
+      if (modelo.categoria === "armadura" || modelo.categoria === "escudo") {
+        handleEquipDefensive(instanceId);
+        return;
+      }
+      const estado: ItemLoadoutState =
+        slot === "arma_primaria" || slot === "arma_secundaria" ? "empunhado" : "acesso_rapido";
+      handleSetItemEstado(instanceId, estado);
+    },
+    desequipar: (instanceId: string) => {
+      const instancia = character.inventario?.find((i) => i.id === instanceId);
+      if (instancia?.equipadoDefensivo) handleUnequipDefensive(instanceId);
+      else handleSetItemEstado(instanceId, "mochila");
+    },
+    definirMit: handleSetMitAtual,
+    definirPd: handleSetPdAtual,
+    recarregar: handleReloadWeapon,
+
+    adicionarCondicao: (input) => void handleAddCondition(input),
+    removerCondicao: (id) => void handleRemoveCondition(id),
+    condicoesDisponiveis: condicoesDisponiveis.map((c) => ({
+      slug: c.slug,
+      nome: c.nome,
+      descricao_curta: c.descricao_curta,
+    })),
+
+    // `pinned` ainda não existe no payload do personagem — os três slots
+    // ficam livres até o modelo existir, sem simular conteúdo.
+    pins: consolePins,
+    removerPin: (id) => setConsolePins((atuais) => atuais.filter((p) => p.id !== id)),
+
+    erro: saveState === "error" ? errorMessage : null,
+  };
+
+
   return (
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
+      <CharacterConsole aberto={consoleAberto} onClose={() => setConsoleAberto(false)} api={consoleApi} />
+      <button
+        type="button"
+        data-testid="abrir-console"
+        onClick={() => setConsoleAberto(true)}
+        style={{ ...buttonStyle, marginBottom: 12 }}
+      >
+        Abrir Console do Personagem
+      </button>
       <p style={{ opacity: 0.6, fontSize: 13, marginBottom: 4 }}>
         {mode === "dev"
           ? '/dev/character-sheet — ficha mínima (dev). Edição é local até clicar em "Salvar personagem".'
