@@ -26,15 +26,15 @@ export type BodySlotId =
   | "acesso_rapido_2";
 
 export const BODY_SLOT_LABELS: Record<BodySlotId, string> = {
-  cabeca: "equip cabeça",
-  tronco: "equip tronco",
-  membro_superior: "equip membro superior",
-  membro_inferior: "equip membro inferior",
-  escudo: "escudo",
-  arma_primaria: "arma primária",
-  arma_secundaria: "arma secundária",
-  acesso_rapido_1: "acesso rápido #1",
-  acesso_rapido_2: "acesso rápido #2",
+  cabeca: "Cabeça",
+  tronco: "Tronco",
+  membro_superior: "Membro superior",
+  membro_inferior: "Membro inferior",
+  escudo: "Escudo",
+  arma_primaria: "Arma primária",
+  arma_secundaria: "Arma secundária",
+  acesso_rapido_1: "Acesso rápido 1",
+  acesso_rapido_2: "Acesso rápido 2",
 };
 
 /** Slot corporal → valor esperado em `ItemContent.regioes`. */

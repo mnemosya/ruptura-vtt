@@ -1,8 +1,18 @@
 "use client";
 
 /**
- * Equipamentos — corpo ao centro e slots ao redor, nas posições do
- * wireframe, cada um ligado à região correspondente por um traço.
+ * Equipamentos — corpo ao centro e slots posicionados ao redor dele.
+ *
+ * Os slots usam posicionamento ABSOLUTO dentro de um canvas próprio
+ * (`.rc-doll`, `position:relative`), com coordenadas PERCENTUAIS — não
+ * a viewport — porque precisam guardar uma relação espacial específica
+ * com a silhueta e podem avançar parcialmente sobre ela (spec: isso é
+ * parte da composição). Percentuais mantêm o comportamento durante
+ * resize; o canvas tem `min-height` fixo para as posições terem uma
+ * referência estável.
+ *
+ * Acesso rápido #1/#2 ficam FORA do canvas absoluto, numa fileira
+ * normal abaixo — não têm relação espacial com o corpo.
  *
  * Armaduras mostram trilha de MIT + tipo de resistência; escudo mostra
  * PD; armas mostram dano, propriedades e munição com ação de recarga.
@@ -10,6 +20,7 @@
  * inventado aqui. Slot vazio abre a Mochila já filtrada pelo slot.
  */
 
+import type { CSSProperties } from "react";
 import { HardHat, Shirt, Hand, Footprints, Shield, Swords, Crosshair, Package } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -18,6 +29,7 @@ import {
   type InventoryItemInstance,
   type ItemContent,
 } from "../../../../lib/character";
+import { useClickGuard } from "../useClickGuard";
 import { BODY_SLOT_LABELS, type BodySlot, type BodySlotId } from "../slots";
 import type { ConsoleApi } from "../types";
 
@@ -39,6 +51,22 @@ const PROTECAO_LABEL: Record<string, string> = {
   hibrida: "Híbrido",
 };
 
+/**
+ * Coordenadas percentuais dos 7 slots posicionados sobre a silhueta —
+ * coluna esquerda (membro superior/escudo/membro inferior) e direita
+ * (cabeça/tronco/arma primária/arma secundária), seguindo o print de
+ * referência. Acesso rápido fica fora deste canvas.
+ */
+const POSICAO: Partial<Record<BodySlotId, CSSProperties>> = {
+  membro_superior: { left: "0%", top: "16%", width: "43%" },
+  escudo: { left: "0%", top: "43%", width: "43%" },
+  membro_inferior: { left: "0%", top: "70%", width: "43%" },
+  cabeca: { right: "0%", top: "4%", width: "43%" },
+  tronco: { right: "0%", top: "32%", width: "43%" },
+  arma_primaria: { right: "0%", top: "58%", width: "43%" },
+  arma_secundaria: { right: "0%", top: "80%", width: "43%" },
+};
+
 /** Trilha clicável de MIT/PD: cheio = ponto disponível, vazado = consumido. */
 function MiniTrilha({
   atual,
@@ -51,6 +79,7 @@ function MiniTrilha({
   rotulo: string;
   onDefinir: (valor: number) => void;
 }) {
+  const guard = useClickGuard();
   return (
     <span className="rc-slot-linha">
       <span className="rc-minipips">
@@ -65,7 +94,7 @@ function MiniTrilha({
               onClick={(e) => {
                 e.stopPropagation();
                 // Clicar num cheio consome até ali; num vazado, devolve.
-                onDefinir(cheio ? i : i + 1);
+                guard(() => onDefinir(cheio ? i : i + 1));
               }}
               aria-label={`${rotulo} ${i + 1} de ${max}: ${cheio ? "disponível" : "consumido"}`}
             />
@@ -81,6 +110,7 @@ function MiniTrilha({
 
 function SlotCard({
   slot,
+  style,
   api,
   onAbrirVazio,
   onAbrirAtaque,
@@ -88,6 +118,7 @@ function SlotCard({
   onRecarregar,
 }: {
   slot: BodySlot;
+  style?: CSSProperties;
   api: ConsoleApi;
   onAbrirVazio: (slot: BodySlotId) => void;
   onAbrirAtaque: (inst: InventoryItemInstance, modelo: ItemContent) => void;
@@ -97,25 +128,28 @@ function SlotCard({
   const Icone = ICONES[slot.id];
   const inst = slot.instance;
   const modelo = inst ? api.catalogo.get(inst.itemSlug) : undefined;
+  const wrapClass = style ? "rc-slot-abs" : undefined;
 
   if (!inst) {
     return (
-      <button
-        type="button"
-        className="rc-slot"
-        data-preenchido={false}
-        data-testid={`console-slot-${slot.id}`}
-        onClick={() => onAbrirVazio(slot.id)}
-        aria-label={`${BODY_SLOT_LABELS[slot.id]}: vazio. Abrir mochila filtrada`}
-      >
-        <Icone size={15} className="rc-slot-ico" aria-hidden="true" />
-        <span className="rc-slot-main">
-          <span className="rc-slot-label">{slot.label}</span>
-          <span className="rc-slot-nome" data-vazio="true">
-            vazio
+      <div className={wrapClass} style={style}>
+        <button
+          type="button"
+          className="rc-slot"
+          data-preenchido={false}
+          data-testid={`console-slot-${slot.id}`}
+          onClick={() => onAbrirVazio(slot.id)}
+          aria-label={`${BODY_SLOT_LABELS[slot.id]}: vazio. Abrir mochila filtrada`}
+        >
+          <Icone size={17} className="rc-slot-ico" aria-hidden="true" />
+          <span className="rc-slot-main">
+            <span className="rc-slot-label">{slot.label}</span>
+            <span className="rc-slot-nome" data-vazio="true">
+              vazio
+            </span>
           </span>
-        </span>
-      </button>
+        </button>
+      </div>
     );
   }
 
@@ -126,95 +160,96 @@ function SlotCard({
   const municaoAtual = getWeaponAmmoAtual(inst);
 
   return (
-    <div
-      className="rc-slot"
-      data-preenchido="true"
-      data-testid={`console-slot-${slot.id}`}
-      role="group"
-      aria-label={`${BODY_SLOT_LABELS[slot.id]}: ${inst.itemNome}`}
-    >
-      <Icone size={15} className="rc-slot-ico" aria-hidden="true" />
-      <span className="rc-slot-main">
-        <span className="rc-slot-label">{slot.label}</span>
-        <button
-          type="button"
-          className="rc-slot-nome"
-          style={{ background: "none", border: "none", padding: 0, textAlign: "left", color: "inherit" }}
-          onClick={() => (ehArma && modelo ? onAbrirAtaque(inst, modelo) : onUsarItem(inst, modelo))}
-          title={ehArma ? "Abrir ataque" : "Usar item"}
-        >
-          {inst.itemNome}
-        </button>
+    <div className={wrapClass} style={style}>
+      <div
+        className="rc-slot"
+        data-preenchido="true"
+        data-testid={`console-slot-${slot.id}`}
+        role="group"
+        aria-label={`${BODY_SLOT_LABELS[slot.id]}: ${inst.itemNome}`}
+      >
+        <Icone size={17} className="rc-slot-ico" aria-hidden="true" />
+        <span className="rc-slot-main">
+          <span className="rc-slot-label">{slot.label}</span>
+          <button
+            type="button"
+            className="rc-slot-nome"
+            onClick={() => (ehArma && modelo ? onAbrirAtaque(inst, modelo) : onUsarItem(inst, modelo))}
+            title={`${inst.itemNome} — ${ehArma ? "abrir ataque" : "usar item"}`}
+          >
+            {inst.itemNome}
+          </button>
 
-        {ehArma && modelo && (
-          <>
-            <span className="rc-slot-linha">
-              {modelo.danoBase && <span className="rc-tag">{modelo.danoBase}</span>}
-              {modelo.tipoDano && <span className="rc-tag">{modelo.tipoDano}</span>}
-              {modelo.propertySlugs.slice(0, 2).map((p) => (
-                <span className="rc-tag" key={p}>
-                  {p.replace(/_/g, " ")}
-                </span>
-              ))}
-            </span>
-            {municaoMax != null && (
+          {ehArma && modelo && (
+            <>
               <span className="rc-slot-linha">
-                <span className="rc-num">
-                  {municaoAtual ?? 0}/{municaoMax} mun.
-                </span>
-                <button
-                  type="button"
-                  className="rc-slot-acao"
-                  // stopPropagation: Recarregar não pode abrir o Ataque.
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRecarregar(inst);
-                  }}
-                  data-testid={`console-recarregar-${slot.id}`}
-                >
-                  Recarregar
-                </button>
+                {modelo.danoBase && <span className="rc-tag">{modelo.danoBase}</span>}
+                {modelo.tipoDano && <span className="rc-tag">{modelo.tipoDano}</span>}
+                {modelo.propertySlugs.slice(0, 2).map((p) => (
+                  <span className="rc-tag" key={p}>
+                    {p.replace(/_/g, " ")}
+                  </span>
+                ))}
               </span>
-            )}
-          </>
-        )}
+              {municaoMax != null && (
+                <span className="rc-slot-linha">
+                  <span className="rc-num">
+                    {municaoAtual ?? 0}/{municaoMax} mun.
+                  </span>
+                  <button
+                    type="button"
+                    className="rc-slot-acao"
+                    // stopPropagation: Recarregar não pode abrir o Ataque.
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRecarregar(inst);
+                    }}
+                    data-testid={`console-recarregar-${slot.id}`}
+                  >
+                    Recarregar
+                  </button>
+                </span>
+              )}
+            </>
+          )}
 
-        {ehArmadura && modelo?.mitMax != null && (
-          <>
+          {ehArmadura && modelo?.mitMax != null && (
+            <>
+              <MiniTrilha
+                atual={inst.mitAtual ?? modelo.mitMax}
+                max={modelo.mitMax}
+                rotulo="MIT"
+                onDefinir={(v) => api.definirMit(inst.id, v)}
+              />
+              {modelo.tipoProtecao && (
+                <span className="rc-slot-linha">
+                  <span className="rc-tag rc-tag--am">{PROTECAO_LABEL[modelo.tipoProtecao] ?? modelo.tipoProtecao}</span>
+                </span>
+              )}
+            </>
+          )}
+
+          {ehEscudo && modelo?.pdMax != null && (
             <MiniTrilha
-              atual={inst.mitAtual ?? modelo.mitMax}
-              max={modelo.mitMax}
-              rotulo="MIT"
-              onDefinir={(v) => api.definirMit(inst.id, v)}
+              atual={inst.pdAtual ?? modelo.pdMax}
+              max={modelo.pdMax}
+              rotulo="PD"
+              onDefinir={(v) => api.definirPd(inst.id, v)}
             />
-            {modelo.tipoProtecao && (
-              <span className="rc-slot-linha">
-                <span className="rc-tag rc-tag--am">{PROTECAO_LABEL[modelo.tipoProtecao] ?? modelo.tipoProtecao}</span>
-              </span>
-            )}
-          </>
-        )}
+          )}
 
-        {ehEscudo && modelo?.pdMax != null && (
-          <MiniTrilha
-            atual={inst.pdAtual ?? modelo.pdMax}
-            max={modelo.pdMax}
-            rotulo="PD"
-            onDefinir={(v) => api.definirPd(inst.id, v)}
-          />
-        )}
-
-        <button
-          type="button"
-          className="rc-slot-acao"
-          onClick={(e) => {
-            e.stopPropagation();
-            api.desequipar(inst.id);
-          }}
-        >
-          Desequipar
-        </button>
-      </span>
+          <button
+            type="button"
+            className="rc-slot-acao"
+            onClick={(e) => {
+              e.stopPropagation();
+              api.desequipar(inst.id);
+            }}
+          >
+            Desequipar
+          </button>
+        </span>
+      </div>
     </div>
   );
 }
@@ -250,32 +285,32 @@ export function EquipmentPanel({
 }) {
   const por = (id: BodySlotId) => slots.find((s) => s.id === id)!;
   const comuns = { api, onAbrirVazio, onAbrirAtaque, onUsarItem, onRecarregar };
+  const posicionados: BodySlotId[] = [
+    "membro_superior",
+    "escudo",
+    "membro_inferior",
+    "cabeca",
+    "tronco",
+    "arma_primaria",
+    "arma_secundaria",
+  ];
 
   return (
     <section className="rc-panel rc-equip" aria-label="Equipamentos">
       <span className="rc-caption">Equipamentos</span>
-      <div className="rc-doll">
-        <div className="rc-doll-col">
-          <SlotCard slot={por("membro_superior")} {...comuns} />
-          <SlotCard slot={por("membro_inferior")} {...comuns} />
-          <SlotCard slot={por("escudo")} {...comuns} />
-        </div>
 
+      <div className="rc-doll">
         <div className="rc-doll-figure">
           <CorpoHumano />
         </div>
+        {posicionados.map((id) => (
+          <SlotCard key={id} slot={por(id)} style={POSICAO[id]} {...comuns} />
+        ))}
+      </div>
 
-        <div className="rc-doll-col">
-          <SlotCard slot={por("cabeca")} {...comuns} />
-          <SlotCard slot={por("tronco")} {...comuns} />
-          <SlotCard slot={por("arma_primaria")} {...comuns} />
-          <SlotCard slot={por("arma_secundaria")} {...comuns} />
-        </div>
-
-        <div className="rc-doll-quick">
-          <SlotCard slot={por("acesso_rapido_1")} {...comuns} />
-          <SlotCard slot={por("acesso_rapido_2")} {...comuns} />
-        </div>
+      <div className="rc-doll-quick">
+        <SlotCard slot={por("acesso_rapido_1")} {...comuns} />
+        <SlotCard slot={por("acesso_rapido_2")} {...comuns} />
       </div>
     </section>
   );

@@ -7,8 +7,12 @@
  * `api`, que é o conjunto de handlers que `CharacterSheetClient` já
  * implementa. Nenhuma regra de domínio vive aqui.
  *
- * Só a Visão Geral é implementada nesta etapa; as demais abas existem,
- * trocam e mostram um estado discreto (spec §7).
+ * Só a Visão Geral é implementada nesta etapa; as demais abas existem
+ * no trilho lateral, trocam e mostram um estado discreto (spec §7).
+ *
+ * O estado do avatar (preview local — o projeto ainda não tem fluxo de
+ * upload real, ver limitações) vive AQUI, não dentro de `IdentityAside`,
+ * porque o console minimizado precisa mostrar a MESMA imagem.
  */
 
 import { useMemo, useState } from "react";
@@ -17,6 +21,8 @@ import { IdentityAside } from "./panels/IdentityAside";
 import { VitalsRow } from "./panels/VitalsRow";
 import { EquipmentPanel } from "./panels/EquipmentPanel";
 import { SkillsGrid } from "./panels/SkillsGrid";
+import { TabRail } from "./panels/TabRail";
+import { MinimizedDockContent } from "./panels/MinimizedDockContent";
 import { PinsRow, ConditionsPanel } from "./panels/PinsAndConditions";
 import {
   AttackModal,
@@ -27,20 +33,10 @@ import {
   SurgePickerModal,
 } from "./panels/AuxModals";
 import { itensCompativeisComSlot, projectBodySlots, type BodySlotId } from "./slots";
+import { ABAS, type AbaId } from "./tabs";
 import type { ConsoleApi, ConsolePin } from "./types";
 import type { CharacterAttributes, InventoryItemInstance, ItemContent } from "../../../lib/character";
 import type { RupturaRollResult } from "../../../lib/dice/types";
-
-const ABAS = [
-  { id: "visao_geral", label: "Visão Geral" },
-  { id: "magias", label: "Magias" },
-  { id: "mochila", label: "Mochila" },
-  { id: "escalpos", label: "Escalpos" },
-  { id: "caracteristicas", label: "Características" },
-  { id: "acoes", label: "Ações" },
-] as const;
-
-type AbaId = (typeof ABAS)[number]["id"];
 
 /** Estado do modal auxiliar aberto no momento (um por vez). */
 type Aux =
@@ -57,6 +53,23 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
   const [aba, setAba] = useState<AbaId>("visao_geral");
   const [aux, setAux] = useState<Aux>(null);
 
+  // Avatar: preview local só (ver limitações — sem fluxo de upload real
+  // no projeto). Vive aqui para o console minimizado mostrar a mesma imagem.
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarErro, setAvatarErro] = useState<string | null>(null);
+  function onAvatarChange(file: File) {
+    setAvatarErro(null);
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
+      setAvatarErro("Formato inválido — use PNG, JPEG ou WebP.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setAvatarErro("Imagem acima de 2 MB.");
+      return;
+    }
+    setAvatarUrl(URL.createObjectURL(file));
+  }
+
   const inventario = useMemo(() => api.character.inventario ?? [], [api.character.inventario]);
   const projecao = useMemo(
     () => projectBodySlots(inventario as InventoryItemInstance[], api.catalogo),
@@ -70,20 +83,23 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
     setAux({ tipo: "rolagem", resultado: api.rolarPericia(id) });
   }
 
-  const dock = {
-    nome: api.character.nome || "Sem nome",
-    trilhas: [
-      { chave: "pv", atual: api.character.recursos_atuais?.pv ?? api.derivados.pv_max, max: api.derivados.pv_max, cor: "#e0455e" },
-      { chave: "pe", atual: api.character.recursos_atuais?.pe ?? api.derivados.pe_max, max: api.derivados.pe_max, cor: "#9a6cff" },
-      { chave: "mana", atual: api.character.recursos_atuais?.mana ?? api.derivados.mana_max, max: api.derivados.mana_max, cor: "#3aa6f0" },
-    ],
-  };
-
   return (
     <>
-      <ConsoleWindow aberto={aberto} onClose={onClose} titulo="Console do Personagem" dock={dock}>
+      <ConsoleWindow
+        aberto={aberto}
+        onClose={onClose}
+        titulo="Console do Personagem"
+        dockContent={<MinimizedDockContent api={api} avatarUrl={avatarUrl} />}
+      >
         <div className="rc-grid">
-          <IdentityAside api={api} onRolarAtributo={rolarAtributo} onEscolherSurto={() => setAux({ tipo: "surto" })} />
+          <IdentityAside
+            api={api}
+            avatarUrl={avatarUrl}
+            avatarErro={avatarErro}
+            onAvatarChange={onAvatarChange}
+            onRolarAtributo={rolarAtributo}
+            onEscolherSurto={() => setAux({ tipo: "surto" })}
+          />
 
           <VitalsRow api={api} onEstabilizar={api.estabilizarColapso} />
 
@@ -111,58 +127,53 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
             </section>
           )}
 
-          <div className="rc-tabsarea">
-            <div className="rc-tabs" role="tablist" aria-label="Seções do console">
-              {ABAS.map((a) => (
-                <button
-                  key={a.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={aba === a.id}
-                  className="rc-tab"
-                  onClick={() => setAba(a.id)}
-                  data-testid={`console-tab-${a.id}`}
-                >
-                  {a.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="rc-tabpanel" role="tabpanel">
-              {aba === "visao_geral" ? (
-                <SkillsGrid api={api} onRolar={rolarPericia} />
-              ) : (
-                <div className="rc-tab-vazio">
-                  <span className="rc-vazio">Conteúdo pendente.</span>
+          <div className="rc-tabsarea-outer">
+            <div className="rc-tabsarea">
+              <div className="rc-tabsarea-main">
+                <div className="rc-tabpanel" role="tabpanel">
+                  {aba === "visao_geral" ? (
+                    <SkillsGrid api={api} onRolar={rolarPericia} />
+                  ) : (
+                    <div className="rc-tab-vazio">
+                      <span className="rc-vazio">Conteúdo pendente.</span>
+                    </div>
+                  )}
                 </div>
-              )}
+
+                <PinsRow
+                  api={api}
+                  onAbrirPin={(p: ConsolePin) =>
+                    setAux({ tipo: "aviso", titulo: p.nome, mensagem: `Abrir ${p.tipo} (${p.ref}) — fluxo definitivo pendente.` })
+                  }
+                />
+
+                <ConditionsPanel
+                  api={api}
+                  onAdicionar={() => setAux({ tipo: "condicao" })}
+                  onDetalhes={(id) => {
+                    const c = (api.character.condicoes_ativas ?? []).find((x) => x.id === id);
+                    setAux({ tipo: "aviso", titulo: c?.nome ?? "Condição", mensagem: c?.descricao ?? "Sem descrição registrada." });
+                  }}
+                />
+
+                {api.erro && (
+                  <p className="rc-vazio" role="alert" style={{ color: "#ffc4cf" }}>
+                    {api.erro}
+                  </p>
+                )}
+              </div>
+
+              <TabRail aba={aba} onChange={setAba} />
             </div>
-
-            <PinsRow
-              api={api}
-              onAbrirPin={(p: ConsolePin) =>
-                setAux({ tipo: "aviso", titulo: p.nome, mensagem: `Abrir ${p.tipo} (${p.ref}) — fluxo definitivo pendente.` })
-              }
-            />
-
-            <ConditionsPanel
-              api={api}
-              onAdicionar={() => setAux({ tipo: "condicao" })}
-              onDetalhes={(id) => {
-                const c = (api.character.condicoes_ativas ?? []).find((x) => x.id === id);
-                setAux({ tipo: "aviso", titulo: c?.nome ?? "Condição", mensagem: c?.descricao ?? "Sem descrição registrada." });
-              }}
-            />
-
-            {api.erro && (
-              <p className="rc-vazio" role="alert" style={{ color: "#ffc4cf" }}>
-                {api.erro}
-              </p>
-            )}
           </div>
         </div>
       </ConsoleWindow>
 
+      {/* Modais auxiliares NÃO passam pelo portal de ConsoleWindow — sem
+          este wrapper, o cursor nativo voltaria a aparecer sobre eles
+          (o HudCursor global continua rastreando a posição normalmente,
+          só falta a regra `cursor:none` alcançar este ramo da árvore). */}
+      <div className="rc-cursor-scope">
       {aux?.tipo === "rolagem" && <RollResultModal resultado={aux.resultado} onFechar={() => setAux(null)} />}
 
       {aux?.tipo === "surto" && (
@@ -217,6 +228,7 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
       {aux?.tipo === "aviso" && (
         <ConfirmModal titulo={aux.titulo} mensagem={aux.mensagem} onConfirmar={() => setAux(null)} onFechar={() => setAux(null)} />
       )}
+      </div>
     </>
   );
 }

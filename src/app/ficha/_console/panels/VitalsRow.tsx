@@ -4,17 +4,20 @@
  * Colapso (trilha inclinada, à esquerda) + Recursos (PV/PE/Mana), na
  * posição do wireframe.
  *
- * O card de valor abre edição inline aceitando absoluto ("8"),
- * adição ("+2") e subtração ("-3") — a interpretação vive em
- * `parseResourceEdit`, função única e testada. Gravar passa por
- * `api.editarRecurso`, que é o `updateRecursoAtual` da ficha (cura
- * automática de condição e detecção de Colapso continuam valendo).
+ * Inclinações (clip-path, nunca transform): Colapso e os cards de
+ * ícone/trilha de recurso inclinam no MESMO sentido (topo à esquerda,
+ * base à direita); o card de VALOR usa a inclinação OPOSTA, fechando
+ * a composição como um par de chanfros que se encaixam.
+ *
+ * A edição do valor usa `ResourceValueCard` (compartilhado com o
+ * console minimizado — `MinimizedDockContent`) para não duplicar a
+ * lógica de parsing/gravação.
  */
 
-import { useEffect, useRef, useState } from "react";
 import { HeartPulse, Zap, Sparkles, ShieldCheck } from "lucide-react";
 import { MAX_COLLAPSE_SEGMENTS } from "../../../../lib/character";
-import { parseResourceEdit } from "../resourceMath";
+import { useClickGuard } from "../useClickGuard";
+import { ResourceValueCard } from "./ResourceValueCard";
 import type { ConsoleApi, RecursoEditavel } from "../types";
 
 const RECURSOS: { id: RecursoEditavel; rotulo: string; cor: string; Icone: typeof Zap }[] = [
@@ -23,93 +26,11 @@ const RECURSOS: { id: RecursoEditavel; rotulo: string; cor: string; Icone: typeo
   { id: "mana", rotulo: "Mana", cor: "#3aa6f0", Icone: Sparkles },
 ];
 
-function CardValor({
-  atual,
-  max,
-  rotulo,
-  onGravar,
-}: {
-  atual: number;
-  max: number;
-  rotulo: string;
-  onGravar: (valor: number) => void;
-}) {
-  const [editando, setEditando] = useState(false);
-  const [texto, setTexto] = useState("");
-  const [invalido, setInvalido] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (editando) inputRef.current?.select();
-  }, [editando]);
-
-  function abrir() {
-    setTexto(String(atual));
-    setInvalido(false);
-    setEditando(true);
-  }
-
-  function confirmar(): boolean {
-    const r = parseResourceEdit(texto, atual, max);
-    if (!r.ok) {
-      setInvalido(true);
-      return false;
-    }
-    if (r.value !== atual) onGravar(r.value);
-    setEditando(false);
-    setInvalido(false);
-    return true;
-  }
-
-  if (editando) {
-    return (
-      <span className="rc-res-val" data-invalido={invalido} data-no-drag>
-        <input
-          ref={inputRef}
-          className="rc-res-input"
-          value={texto}
-          onChange={(e) => {
-            setTexto(e.target.value);
-            setInvalido(false);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              confirmar();
-            } else if (e.key === "Escape") {
-              e.preventDefault();
-              setEditando(false);
-              setInvalido(false);
-            }
-          }}
-          // Perder o foco confirma SOMENTE se a entrada for válida.
-          onBlur={() => {
-            if (!confirmar()) setEditando(false);
-          }}
-          aria-label={`${rotulo}: valor absoluto, +N ou -N`}
-          aria-invalid={invalido}
-        />
-      </span>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      className="rc-res-val"
-      onClick={abrir}
-      data-testid={`console-res-${rotulo.toLowerCase()}`}
-      aria-label={`${rotulo} ${atual} de ${max}. Editar`}
-    >
-      {atual}/{max}
-    </button>
-  );
-}
-
 export function VitalsRow({ api, onEstabilizar }: { api: ConsoleApi; onEstabilizar: () => void }) {
   const { character, derivados } = api;
   const colapso = character.colapso;
   const segmentos = colapso?.segmentos ?? 0;
+  const guard = useClickGuard();
 
   const maximos: Record<RecursoEditavel, number> = {
     pv: derivados.pv_max,
@@ -146,7 +67,7 @@ export function VitalsRow({ api, onEstabilizar }: { api: ConsoleApi; onEstabiliz
                   className="rc-collapse-seg"
                   data-on={preenchido}
                   data-atual={i === segmentos - 1}
-                  onClick={api.avancarColapso}
+                  onClick={() => guard(api.avancarColapso)}
                   disabled={preenchido}
                   aria-label={`Colapso segmento ${i + 1} de ${MAX_COLLAPSE_SEGMENTS}${preenchido ? " (atingido)" : ""}`}
                 />
@@ -169,12 +90,19 @@ export function VitalsRow({ api, onEstabilizar }: { api: ConsoleApi; onEstabiliz
             return (
               <div className="rc-res-row" key={id}>
                 <span className="rc-res-ico" style={{ color: cor }} aria-hidden="true">
-                  <Icone size={14} />
+                  <Icone size={13} />
                 </span>
                 <span className="rc-res-bar" role="img" aria-label={`${rotulo} ${atual} de ${max}`}>
                   <span className="rc-res-fill" style={{ width: `${pct}%`, ["--rc-res-cor" as string]: cor }} />
                 </span>
-                <CardValor atual={atual} max={max} rotulo={rotulo} onGravar={(v) => api.editarRecurso(id, v)} />
+                <ResourceValueCard
+                  atual={atual}
+                  max={max}
+                  rotulo={rotulo}
+                  className="rc-res-val"
+                  inputClassName="rc-res-input"
+                  onGravar={(v) => api.editarRecurso(id, v)}
+                />
                 <span className="rc-res-tag">{rotulo}</span>
               </div>
             );

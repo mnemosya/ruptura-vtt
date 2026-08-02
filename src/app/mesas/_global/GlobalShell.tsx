@@ -71,7 +71,13 @@ export function usePushToast() {
 }
 
 // ── Cursor HUD ──────────────────────────────────────────────────────
-function HudCursor({ enabled }: { enabled: boolean }) {
+/**
+ * Exportado para o Console do Personagem (`src/app/ficha/_console/`)
+ * reusar o MESMO tracking (mousemove/hover/click), em vez de uma
+ * implementação paralela — o Console não passa por `GlobalShell`, mas
+ * precisa do mesmo cursor HUD do resto do VTT.
+ */
+export function HudCursor({ enabled }: { enabled: boolean }) {
   const dotRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
   const mouse = useRef({ x: -300, y: -300 });

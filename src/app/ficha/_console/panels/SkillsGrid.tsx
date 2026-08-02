@@ -30,7 +30,7 @@ export function SkillsGrid({ api, onRolar }: { api: ConsoleApi; onRolar: (perici
 
   if (definicoes.length === 0) {
     return (
-      <div>
+      <div className="rc-skills-wrap">
         <span className="rc-caption">Perícias</span>
         <p className="rc-vazio">
           As definições de perícia não vieram de regras_personagem — nenhuma lista local é usada no lugar.
@@ -40,7 +40,7 @@ export function SkillsGrid({ api, onRolar }: { api: ConsoleApi; onRolar: (perici
   }
 
   return (
-    <div>
+    <div className="rc-skills-wrap">
       <span className="rc-caption">Perícias</span>
       <div className="rc-skills">
         {celulas.map((skill, i) => {
@@ -59,8 +59,10 @@ export function SkillsGrid({ api, onRolar }: { api: ConsoleApi; onRolar: (perici
               data-testid={`console-pericia-${skill.id}`}
               aria-label={`Rolar ${skill.nome}: ${dados}d8`}
             >
-              <Target size={13} className="rc-skill-ico" aria-hidden="true" />
-              <span className="rc-skill-nome">{skill.nome}</span>
+              <Target size={14} className="rc-skill-ico" aria-hidden="true" />
+              <span className="rc-skill-nome" title={skill.nome}>
+                {skill.nome}
+              </span>
               <span className="rc-skill-tag">
                 {abrev} · {dados}d8
               </span>

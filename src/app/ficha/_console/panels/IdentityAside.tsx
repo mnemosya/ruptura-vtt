@@ -5,13 +5,25 @@
  * bloco decorado de identidade (nome + ranking de Cobalto), atributos,
  * Integridade, Sobrecarga, Deslocamento, PA e Reações.
  *
+ * Avatar e atributos usam borda poligonal REAL (SVG com `stroke`), não
+ * `clip-path` sobre um retângulo com `border` — essa combinação é o
+ * que produzia os "nubs" quadrados nos cantos. O avatar guarda a
+ * imagem/placeholder numa camada separada (clip-path só para recortar
+ * a foto, sem borda própria); os atributos usam um único polígono SVG
+ * com fill+stroke (sem foto para recortar, então uma camada basta).
+ *
+ * O estado do avatar (preview local + erro) vem de fora — o console
+ * minimizado (`MinimizedDockContent`) precisa mostrar a MESMA imagem,
+ * então o estado não pode viver só aqui.
+ *
  * Nenhum valor é calculado aqui — tudo vem de `api` (derivados já
  * resolvidos e ações que a ficha já implementa).
  */
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Hand, Brain, Heart, User } from "lucide-react";
 import { MAX_OVERLOAD_SURGES_PER_DAY, type CharacterAttributes } from "../../../../lib/character";
+import { useClickGuard } from "../useClickGuard";
 import type { ConsoleApi } from "../types";
 
 const ATRIBUTOS: { id: keyof CharacterAttributes; nome: string; Icone: typeof Hand }[] = [
@@ -19,6 +31,10 @@ const ATRIBUTOS: { id: keyof CharacterAttributes; nome: string; Icone: typeof Ha
   { id: "mente", nome: "Mente", Icone: Brain },
   { id: "animo", nome: "Ânimo", Icone: Heart },
 ];
+
+/** Pontos hexagonais do avatar/atributos — ponta em cima e embaixo, como no desenho. */
+const HEX_AVATAR = "50,2 98,27 98,79 50,104 2,79 2,27";
+const HEX_ATTR = "50,2 98,32 98,84 50,114 2,84 2,32";
 
 /** Trilha de pontos losangulares (PA / Reações): clicar alterna cada ponto. */
 function PontosAlternaveis({
@@ -32,6 +48,7 @@ function PontosAlternaveis({
   max: number;
   onAlternar: (delta: number) => void;
 }) {
+  const guard = useClickGuard();
   const total = Math.max(0, Math.round(max));
   return (
     <div className="rc-panel">
@@ -52,7 +69,7 @@ function PontosAlternaveis({
                   className="rc-point"
                   data-on={cheio}
                   // Cheio → gastar (delta +1 no "gasto"); vazado → devolver.
-                  onClick={() => onAlternar(cheio ? 1 : -1)}
+                  onClick={() => guard(() => onAlternar(cheio ? 1 : -1))}
                   aria-label={`${rotulo} ${i + 1} de ${total}: ${cheio ? "disponível" : "gasto"}`}
                   aria-pressed={cheio}
                 />
@@ -68,19 +85,81 @@ function PontosAlternaveis({
   );
 }
 
+/**
+ * Trilha de Integridade: segmentos contíguos (flex:1, sem sobra de
+ * espaço), clicáveis, com prévia discreta no hover. Clicar num
+ * segmento VAZIO aumenta até ali; clicar num PREENCHIDO reduz para o
+ * ponto anterior a ele.
+ */
+function TrilhaIntegridade({
+  atual,
+  max,
+  onDefinir,
+}: {
+  atual: number;
+  max: number;
+  onDefinir: (valor: number) => void;
+}) {
+  const guard = useClickGuard();
+  const [hover, setHover] = useState<number | null>(null);
+  const total = Math.max(0, Math.round(max));
+
+  // Resultado se o segmento sob o mouse (hover) fosse clicado agora.
+  const previewValor = hover == null ? null : hover < atual ? hover : hover + 1;
+
+  return (
+    <div>
+      <div className="rc-track-head">
+        <span className="rc-label">Integridade</span>
+        <span className="rc-num">
+          {atual}/{total}
+        </span>
+      </div>
+      <div className="rc-pips" onMouseLeave={() => setHover(null)}>
+        {Array.from({ length: total }, (_, i) => {
+          const cheio = i < atual;
+          let preview: "fill" | "empty" | undefined;
+          if (previewValor != null) {
+            if (previewValor > atual && i >= atual && i < previewValor) preview = "fill";
+            else if (previewValor < atual && i >= previewValor && i < atual) preview = "empty";
+          }
+          return (
+            <button
+              key={i}
+              type="button"
+              className="rc-pip"
+              data-on={cheio}
+              data-preview={preview}
+              onMouseEnter={() => setHover(i)}
+              onFocus={() => setHover(i)}
+              onBlur={() => setHover(null)}
+              onClick={() => guard(() => onDefinir(cheio ? i : i + 1))}
+              aria-label={`Integridade — segmento ${i + 1} de ${total}: ${cheio ? "preenchido" : "vazio"}. Clique para ajustar até aqui.`}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function IdentityAside({
   api,
+  avatarUrl,
+  avatarErro,
+  onAvatarChange,
   onRolarAtributo,
   onEscolherSurto,
 }: {
   api: ConsoleApi;
+  avatarUrl: string | null;
+  avatarErro: string | null;
+  onAvatarChange: (file: File) => void;
   onRolarAtributo: (id: keyof CharacterAttributes) => void;
   onEscolherSurto: () => void;
 }) {
   const { character, derivados } = api;
-  const inputArquivo = useRef<HTMLInputElement>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [avatarErro, setAvatarErro] = useState<string | null>(null);
+  const guard = useClickGuard();
 
   const integridade = character.recursos_atuais?.integridade ?? derivados.integridade_max;
   const paDisponivel = Math.max(0, derivados.pa_max - (character.estado_jogo?.pa_gastos ?? 0));
@@ -90,40 +169,28 @@ export function IdentityAside({
 
   function aoEscolherArquivo(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
-    setAvatarErro(null);
-    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
-      setAvatarErro("Formato inválido — use PNG, JPEG ou WebP.");
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      setAvatarErro("Imagem acima de 2 MB.");
-      return;
-    }
-    // Preview local. O projeto ainda não tem fluxo de upload (nenhum uso
-    // de Supabase Storage) — criar um storage paralelo aqui seria pior
-    // que assumir a limitação. Ver "limitações" na entrega.
-    setAvatarPreview(URL.createObjectURL(file));
+    if (file) onAvatarChange(file);
+    e.target.value = "";
   }
 
   return (
     <aside className="rc-aside">
-      <button
-        type="button"
-        className="rc-avatar"
-        onClick={() => inputArquivo.current?.click()}
-        aria-label="Trocar avatar do personagem"
-      >
-        {avatarPreview ? <img src={avatarPreview} alt="" /> : <User size={54} strokeWidth={1.2} aria-hidden="true" />}
+      <label className="rc-avatar" data-no-drag>
+        <span className="rc-avatar-fill">
+          {avatarUrl ? <img src={avatarUrl} alt="" /> : <User size={52} strokeWidth={1.2} aria-hidden="true" />}
+        </span>
+        <svg className="rc-avatar-poly" viewBox="0 0 100 106" preserveAspectRatio="none" aria-hidden="true">
+          <polygon points={HEX_AVATAR} />
+        </svg>
         <span className="rc-avatar-hint">trocar</span>
-      </button>
-      <input
-        ref={inputArquivo}
-        type="file"
-        accept="image/png,image/jpeg,image/webp"
-        onChange={aoEscolherArquivo}
-        hidden
-      />
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          onChange={aoEscolherArquivo}
+          hidden
+          aria-label="Trocar avatar do personagem"
+        />
+      </label>
       {avatarErro && (
         <p className="rc-vazio" role="alert" style={{ color: "#ffc4cf" }}>
           {avatarErro}
@@ -154,30 +221,23 @@ export function IdentityAside({
               data-testid={`console-attr-${id}`}
               aria-label={`Rolar ${nome}: ${character.atributos[id]}d8`}
             >
-              <Icone size={13} className="rc-attr-ico" aria-hidden="true" />
-              <span className="rc-attr-nome">{nome}</span>
-              <span className="rc-attr-val">{character.atributos[id]}</span>
+              <svg className="rc-attr-poly" viewBox="0 0 100 116" preserveAspectRatio="none" aria-hidden="true">
+                <polygon points={HEX_ATTR} />
+              </svg>
+              <span className="rc-attr-content">
+                <Icone size={14} className="rc-attr-ico" aria-hidden="true" />
+                <span className="rc-attr-nome">{nome}</span>
+                <span className="rc-attr-val">{character.atributos[id]}</span>
+              </span>
             </button>
           ))}
         </div>
 
-        <div>
-          <div className="rc-track-head">
-            <span className="rc-label">Integridade</span>
-            <span className="rc-num">
-              {integridade}/{derivados.integridade_max}
-            </span>
-          </div>
-          <div className="rc-pips" role="img" aria-label={`Integridade ${integridade} de ${derivados.integridade_max}`}>
-            {Array.from({ length: Math.max(0, Math.round(derivados.integridade_max)) }, (_, i) => (
-              <span key={i} className="rc-pip" data-on={i < integridade} />
-            ))}
-          </div>
-        </div>
+        <TrilhaIntegridade atual={integridade} max={derivados.integridade_max} onDefinir={api.editarIntegridade} />
 
         <div>
           <div className="rc-track-head">
-            <span className="rc-label rc-label--danger">Sobrecarga</span>
+            <span className="rc-label rc-label--am">Sobrecarga</span>
             <span className="rc-num">
               {sobrecarga}/{MAX_OVERLOAD_SURGES_PER_DAY}
             </span>
@@ -192,7 +252,7 @@ export function IdentityAside({
                   className="rc-surge"
                   data-on={usada}
                   disabled={usada || !api.podeUsarSobrecarga}
-                  onClick={onEscolherSurto}
+                  onClick={() => guard(onEscolherSurto)}
                   data-testid={`console-surto-${i + 1}`}
                   aria-label={`Sobrecarga ${i + 1} de ${MAX_OVERLOAD_SURGES_PER_DAY}${usada ? " (usada)" : ""}`}
                 />

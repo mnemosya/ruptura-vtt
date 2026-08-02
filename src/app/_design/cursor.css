@@ -1,0 +1,49 @@
+/*
+ * Cursor HUD compartilhado — extraído de app.css para ser reusado pelo
+ * Console do Personagem (`console.css`) sem duplicar a implementação.
+ * O tracking real (mousemove/hover) é um único componente React
+ * (`HudCursor`, exportado de `GlobalShell.tsx`) — este arquivo só tem a
+ * folha de estilo que os dois "escopos" de cursor (`.ra-root` na área
+ * autenticada global, `.rc-cursor-scope` no Console) compartilham.
+ */
+
+@media (pointer: fine) {
+  .ra-root:not(.ra-no-cursor),
+  .rc-cursor-scope:not(.ra-no-cursor) { cursor: none; }
+  .ra-root:not(.ra-no-cursor) button,
+  .ra-root:not(.ra-no-cursor) a,
+  .ra-root:not(.ra-no-cursor) input,
+  .ra-root:not(.ra-no-cursor) select,
+  .ra-root:not(.ra-no-cursor) label,
+  .ra-root:not(.ra-no-cursor) [role="button"],
+  .rc-cursor-scope:not(.ra-no-cursor) button,
+  .rc-cursor-scope:not(.ra-no-cursor) a,
+  .rc-cursor-scope:not(.ra-no-cursor) input,
+  .rc-cursor-scope:not(.ra-no-cursor) select,
+  .rc-cursor-scope:not(.ra-no-cursor) label,
+  .rc-cursor-scope:not(.ra-no-cursor) [role="button"] { cursor: none; }
+}
+
+/* ── Cursor HUD ────────────────────────────────────────────────── */
+.ra-cursor-dot {
+  position: fixed; left: 0; top: 0; width: 5px; height: 5px;
+  background: var(--cy); border-radius: 50%; pointer-events: none; z-index: 99999;
+  box-shadow: 0 0 8px var(--cy), 0 0 16px rgba(0, 212, 255, 0.6);
+  will-change: transform; transform: translate(-300px, -300px);
+}
+.ra-cursor-ring {
+  position: fixed; left: 0; top: 0; width: 34px; height: 34px;
+  border: 1px solid rgba(0, 212, 255, 0.55); border-radius: 50%;
+  pointer-events: none; z-index: 99998; will-change: transform;
+  transform: translate(-300px, -300px);
+  transition: border-color 0.18s, width 0.18s, height 0.18s, box-shadow 0.18s;
+}
+.ra-cursor-ring::after { content: ''; position: absolute; inset: 5px; border: 1px solid rgba(0, 212, 255, 0.15); border-radius: 50%; }
+.ra-cursor-ring--hover { width: 50px; height: 50px; border-color: rgba(0, 212, 255, 0.85); box-shadow: 0 0 12px rgba(0, 212, 255, 0.2); }
+.ra-cursor-ring--click { width: 22px; height: 22px; border-color: var(--am); box-shadow: 0 0 10px rgba(245, 162, 0, 0.4); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ra-cursor-dot, .ra-cursor-ring { display: none !important; }
+  .ra-root, .ra-root button, .ra-root a, .ra-root input, .ra-root label,
+  .rc-cursor-scope, .rc-cursor-scope button, .rc-cursor-scope a, .rc-cursor-scope input, .rc-cursor-scope label { cursor: auto; }
+}

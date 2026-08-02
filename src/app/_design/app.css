@@ -11,6 +11,10 @@
  * Famílias tipográficas vêm de `next/font` (ver src/app/layout.tsx).
  */
 
+/* Cursor HUD (dot+ring) — compartilhado com o Console do Personagem
+   via `.rc-cursor-scope`; a folha de estilo vive só em cursor.css. */
+@import "./cursor.css";
+
 .ra-root {
   --cy: #00d4ff;
   --am: #f5a200;
@@ -27,34 +31,6 @@
 .ra-root input,
 .ra-root select,
 .ra-root textarea { font-family: inherit; }
-
-@media (pointer: fine) {
-  .ra-root:not(.ra-no-cursor) { cursor: none; }
-  .ra-root:not(.ra-no-cursor) button,
-  .ra-root:not(.ra-no-cursor) a,
-  .ra-root:not(.ra-no-cursor) input,
-  .ra-root:not(.ra-no-cursor) select,
-  .ra-root:not(.ra-no-cursor) label,
-  .ra-root:not(.ra-no-cursor) [role="button"] { cursor: none; }
-}
-
-/* ── Cursor HUD ────────────────────────────────────────────────── */
-.ra-cursor-dot {
-  position: fixed; left: 0; top: 0; width: 5px; height: 5px;
-  background: var(--cy); border-radius: 50%; pointer-events: none; z-index: 99999;
-  box-shadow: 0 0 8px var(--cy), 0 0 16px rgba(0, 212, 255, 0.6);
-  will-change: transform; transform: translate(-300px, -300px);
-}
-.ra-cursor-ring {
-  position: fixed; left: 0; top: 0; width: 34px; height: 34px;
-  border: 1px solid rgba(0, 212, 255, 0.55); border-radius: 50%;
-  pointer-events: none; z-index: 99998; will-change: transform;
-  transform: translate(-300px, -300px);
-  transition: border-color 0.18s, width 0.18s, height 0.18s, box-shadow 0.18s;
-}
-.ra-cursor-ring::after { content: ''; position: absolute; inset: 5px; border: 1px solid rgba(0, 212, 255, 0.15); border-radius: 50%; }
-.ra-cursor-ring--hover { width: 50px; height: 50px; border-color: rgba(0, 212, 255, 0.85); box-shadow: 0 0 12px rgba(0, 212, 255, 0.2); }
-.ra-cursor-ring--click { width: 22px; height: 22px; border-color: var(--am); box-shadow: 0 0 10px rgba(245, 162, 0, 0.4); }
 
 /* ── Fundo ─────────────────────────────────────────────────────── */
 .ra-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
@@ -747,6 +723,6 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  .ra-cursor-dot, .ra-cursor-ring { display: none !important; }
-  .ra-root, .ra-root button, .ra-root a, .ra-root input, .ra-root label { cursor: auto; }
+  /* .ra-cursor-dot/.ra-cursor-ring e o fallback de cursor:auto ficam
+     em cursor.css (compartilhado com o Console). */
 }

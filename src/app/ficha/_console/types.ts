@@ -40,6 +40,8 @@ export interface ConsoleApi {
 
   /** Grava PV/PE/Mana — passa por `updateRecursoAtual` (cura automática + colapso). */
   editarRecurso: (id: RecursoEditavel, valor: number) => void;
+  /** Idem, para a trilha de Integridade (mesmo `updateRecursoAtual`, chave "integridade"). */
+  editarIntegridade: (valor: number) => void;
 
   /** Delta em PA gastos / Reações usadas (`adjustEstadoJogo`). */
   ajustarPa: (delta: number) => void;

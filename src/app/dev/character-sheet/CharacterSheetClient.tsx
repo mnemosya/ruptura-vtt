@@ -5226,6 +5226,7 @@ export default function CharacterSheetClient({
     },
 
     editarRecurso: (id, valor) => updateRecursoAtual(id, valor),
+    editarIntegridade: (valor) => updateRecursoAtual("integridade", valor),
     ajustarPa: (delta) => adjustEstadoJogo("pa_gastos", delta),
     ajustarReacoes: (delta) => adjustEstadoJogo("reacoes_usadas", delta),
 

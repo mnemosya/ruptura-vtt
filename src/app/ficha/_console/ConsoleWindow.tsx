@@ -9,12 +9,19 @@
  * `visibility:hidden` + `inert`. É o que preserva aba ativa, scroll,
  * campos em edição e seleção, como a spec exige; desmontar perderia
  * tudo isso.
+ *
+ * Cursor HUD: reusa o MESMO componente do resto do VTT (`HudCursor`,
+ * exportado de `GlobalShell.tsx`) — nenhum tracking paralelo. O
+ * Console não passa por `GlobalShell`, então monta sua própria
+ * instância, escopada por `.rc-cursor-scope` (regra compartilhada em
+ * `cursor.css`, a mesma que `.ra-root` usa).
  */
 
-import { useCallback, useEffect, useId, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Minus, Square, Copy, X, RotateCcw } from "lucide-react";
+import { Minus, Square, Minimize2, Maximize2, X } from "lucide-react";
 import { useConsoleWindow } from "./useConsoleWindow";
+import { HudCursor } from "../../mesas/_global/GlobalShell";
 import "../../_design/console.css";
 
 /** Não inicia arraste quando o clique nasce num elemento interativo. */
@@ -22,26 +29,38 @@ function ehInterativo(alvo: EventTarget | null): boolean {
   return alvo instanceof Element && alvo.closest("button, a, input, select, textarea, [role='button'], [data-no-drag]") !== null;
 }
 
-export interface DockInfo {
-  nome: string;
-  avatarUrl?: string | null;
-  trilhas: { chave: string; atual: number; max: number; cor: string }[];
+function useCursorHabilitado(): boolean {
+  const [habilitado, setHabilitado] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setHabilitado(!mq.matches);
+    const onChange = () => setHabilitado(!mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return habilitado;
 }
 
 export function ConsoleWindow({
   aberto,
   onClose,
   titulo,
-  dock,
+  titlebarExtra,
+  dockContent,
   children,
 }: {
   aberto: boolean;
   onClose: () => void;
   titulo: string;
-  dock: DockInfo;
+  /** Conteúdo extra da topbar (ex.: status de sync) — opcional. */
+  titlebarExtra?: ReactNode;
+  /** Conteúdo do console minimizado — domínio de quem chama (nome,
+      avatar, recursos); a janela só fornece a moldura/controles. */
+  dockContent: ReactNode;
   children: ReactNode;
 }) {
   const win = useConsoleWindow(aberto);
+  const cursorHabilitado = useCursorHabilitado();
   const windowRef = useRef<HTMLDivElement>(null);
   const tituloId = useId();
   /** Elemento que abriu o console — o foco volta para ele ao fechar. */
@@ -104,7 +123,9 @@ export function ConsoleWindow({
   if (!aberto || !win.geo) return null;
 
   const conteudo = (
-    <>
+    <div className="rc-cursor-scope">
+      <HudCursor enabled={cursorHabilitado} />
+
       {!minimizada && <div className="rc-backdrop" onMouseDown={(e) => e.preventDefault()} />}
 
       <div
@@ -131,35 +152,38 @@ export function ConsoleWindow({
             {titulo}
           </span>
           <div className="rc-topbar-right">
-            <button
-              type="button"
-              className="rc-winbtn"
-              onClick={win.minimizar}
-              aria-label="Minimizar console"
-              title="Minimizar"
-            >
-              <Minus size={15} />
-            </button>
-            <button
-              type="button"
-              className="rc-winbtn"
-              onClick={win.alternarMaximizar}
-              aria-label={win.mode === "maximized" ? "Restaurar console" : "Maximizar console"}
-              title={win.mode === "maximized" ? "Restaurar" : "Maximizar"}
-              data-testid="console-maximizar"
-            >
-              {win.mode === "maximized" ? <Copy size={13} /> : <Square size={13} />}
-            </button>
-            <button
-              type="button"
-              className="rc-winbtn rc-winbtn--close"
-              onClick={fechar}
-              aria-label="Fechar console"
-              title="Fechar"
-              data-foco-inicial
-            >
-              <X size={16} />
-            </button>
+            {titlebarExtra}
+            <div className="rc-winbtns">
+              <button
+                type="button"
+                className="rc-winbtn"
+                onClick={win.minimizar}
+                aria-label="Minimizar console"
+                title="Minimizar"
+              >
+                <Minus size={15} />
+              </button>
+              <button
+                type="button"
+                className="rc-winbtn"
+                onClick={win.alternarMaximizar}
+                aria-label={win.mode === "maximized" ? "Restaurar console" : "Maximizar console"}
+                title={win.mode === "maximized" ? "Restaurar" : "Maximizar"}
+                data-testid="console-maximizar"
+              >
+                {win.mode === "maximized" ? <Minimize2 size={13} /> : <Square size={13} />}
+              </button>
+              <button
+                type="button"
+                className="rc-winbtn rc-winbtn--close"
+                onClick={fechar}
+                aria-label="Fechar console"
+                title="Fechar"
+                data-foco-inicial
+              >
+                <X size={16} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -180,24 +204,7 @@ export function ConsoleWindow({
 
       {minimizada && (
         <div className="rc-dock" data-testid="console-dock">
-          <span className="rc-dock-av" aria-hidden="true">
-            {dock.avatarUrl ? <img src={dock.avatarUrl} alt="" /> : <span style={{ fontSize: 11 }}>◈</span>}
-          </span>
-          <div className="rc-dock-info">
-            <span className="rc-dock-nome">{dock.nome}</span>
-            <span className="rc-dock-tracks">
-              {dock.trilhas.map((t) => (
-                <span
-                  key={t.chave}
-                  className="rc-dock-track"
-                  title={`${t.chave.toUpperCase()} ${t.atual}/${t.max}`}
-                  style={{ ["--rc-dock-cor" as string]: t.cor }}
-                >
-                  <span style={{ width: `${t.max > 0 ? Math.max(0, Math.min(100, (t.atual / t.max) * 100)) : 0}%` }} />
-                </span>
-              ))}
-            </span>
-          </div>
+          {dockContent}
           <div className="rc-dock-acoes">
             <button
               type="button"
@@ -207,7 +214,8 @@ export function ConsoleWindow({
               title="Restaurar"
               data-testid="console-restaurar"
             >
-              <RotateCcw size={14} />
+              {/* Cantos se afastando — comunica expansão, não "desfazer". */}
+              <Maximize2 size={14} />
             </button>
             <button
               type="button"
@@ -221,7 +229,7 @@ export function ConsoleWindow({
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 
   return createPortal(conteudo, document.body);

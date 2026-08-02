@@ -10,8 +10,24 @@
  * pode ser translúcida; ESTADO ATIVO é preenchimento sólido. Gradiente
  * translúcido de alfa baixa sobre fundo escuro compõe para quase-cinza.
  *
+ * Cursor HUD compartilhado com o resto do VTT — ver cursor.css e
+ * `.rc-cursor-scope` (aplicado no wrapper do portal em ConsoleWindow).
+ *
+ * Fonte mínima nesta folha: 10px (nenhum texto funcional abaixo disso).
+ *
  * Prefixo: `rc-`.
  */
+
+@import "./cursor.css";
+
+/* `cursor.css` só esconde o cursor nativo em button/a/input/select/
+   label/[role=button] — a topbar (drag) e o canto de resize são <div>s
+   com cursor nativo PRÓPRIO (grab/grabbing/nwse-resize) que, sem isso,
+   apareceriam por baixo do anel/ponto customizados ao mesmo tempo. */
+@media (pointer: fine) {
+  .rc-cursor-scope:not(.ra-no-cursor) .rc-topbar[data-draggable="true"],
+  .rc-cursor-scope:not(.ra-no-cursor) .rc-resize { cursor: none; }
+}
 
 /* ── Janela ────────────────────────────────────────────────────── */
 .rc-backdrop {
@@ -47,9 +63,10 @@
 .rc-window[data-mode="minimized"] { visibility: hidden; pointer-events: none; }
 .rc-window *, .rc-window *::before, .rc-window *::after { box-sizing: border-box; }
 .rc-window button, .rc-window input, .rc-window select { font-family: inherit; }
+.rc-window button:disabled { cursor: not-allowed; }
 
 @media (prefers-reduced-motion: reduce) {
-  .rc-window, .rc-backdrop { animation: none; }
+  .rc-window, .rc-backdrop, .rc-dock { animation: none; }
   .rc-window * { transition: none !important; }
 }
 
@@ -57,7 +74,7 @@
 .rc-topbar {
   flex: none;
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  padding: 0 14px 0 20px; height: 42px;
+  padding: 0 12px 0 20px; height: 44px;
   border-bottom: 1px solid var(--rc-line);
   background: linear-gradient(92deg, #123640 0%, #0c1e28 100%);
   touch-action: none;
@@ -69,17 +86,33 @@
   font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
   color: #d3f4ff; white-space: nowrap;
 }
-.rc-topbar-right { display: flex; align-items: center; gap: 4px; }
+.rc-topbar-right { display: flex; align-items: center; gap: 8px; }
+.rc-topbar-chip {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px; letter-spacing: 0.1em; color: rgba(211, 244, 255, 0.6);
+}
+
+/* ── Controles da janela (minimizar / maximizar / fechar) ───────
+   Quadrados com borda visível, não botões "ghost" invisíveis até o
+   hover — geometria/proporção seguindo a referência anexada. */
+.rc-winbtns { display: flex; align-items: center; gap: 5px; }
 .rc-winbtn {
   display: grid; place-items: center;
-  width: 30px; height: 26px;
-  border: 1px solid transparent; background: transparent;
-  color: rgba(211, 244, 255, 0.7);
+  width: 28px; height: 28px;
+  border: 1px solid var(--rc-line);
+  background: transparent;
+  color: var(--cy);
+  cursor: pointer;
   transition: color 0.14s, background 0.14s, border-color 0.14s;
 }
-.rc-winbtn:hover { color: #eafcff; background: rgba(0, 212, 255, 0.12); border-color: var(--rc-line); }
-.rc-winbtn:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
-.rc-winbtn--close:hover { color: #ffc4cf; background: rgba(255, 60, 80, 0.16); border-color: rgba(255, 95, 116, 0.5); }
+.rc-winbtn:hover { color: #eafcff; background: rgba(0, 212, 255, 0.14); border-color: #6fe0ff; }
+.rc-winbtn:active { background: rgba(0, 212, 255, 0.24); }
+.rc-winbtn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+/* Fechar já nasce na paleta de perigo — não só no hover. */
+.rc-winbtn--close { border-color: rgba(255, 95, 116, 0.6); color: var(--rc-danger); }
+.rc-winbtn--close:hover { color: #ff96a8; background: rgba(255, 95, 116, 0.18); border-color: #ff96a8; }
+.rc-winbtn--close:active { background: rgba(255, 95, 116, 0.28); }
+.rc-winbtn--close:focus-visible { outline-color: var(--rc-danger); }
 
 /* Canto de resize (elemento do wireframe). */
 .rc-resize {
@@ -99,7 +132,7 @@
 /* Abaixo do tamanho mínimo o layout NÃO se reorganiza — rola. */
 .rc-grid {
   display: grid;
-  grid-template-columns: 268px minmax(430px, 1fr) minmax(430px, 1.02fr);
+  grid-template-columns: 268px minmax(430px, 1fr) minmax(460px, 1.05fr);
   grid-template-rows: auto 1fr;
   gap: 12px;
   min-width: 1080px;
@@ -108,7 +141,7 @@
 /* Painel lateral ocupa as duas linhas, como no wireframe. */
 .rc-aside { grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .rc-vitals { grid-column: 2; grid-row: 1; }
-.rc-tabsarea { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.rc-tabsarea-outer { grid-column: 3; grid-row: 1 / span 2; min-width: 0; }
 .rc-equip { grid-column: 2; grid-row: 2; min-width: 0; }
 
 /* ── Peças genéricas ───────────────────────────────────────────── */
@@ -121,13 +154,14 @@
 }
 .rc-label {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 8.5px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
   color: rgba(0, 212, 255, 0.72);
 }
 .rc-label--danger { color: var(--rc-danger); }
+.rc-label--am { color: var(--am); }
 .rc-num {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; color: var(--rc-dim);
+  font-size: 10.5px; color: var(--rc-dim);
 }
 /* Selo de título centralizado (EQUIPAMENTOS, PERÍCIAS). */
 .rc-caption {
@@ -136,36 +170,48 @@
   border: 1px solid var(--rc-line);
   background: #123640;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
   color: #d3f4ff;
   clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 100%, 0 100%);
 }
 
-/* ── Avatar ────────────────────────────────────────────────────── */
+/* ── Avatar — moldura hexagonal REAL (SVG), não clip-path sobre
+   retângulo. Camada externa (SVG, só stroke) = borda; camada interna
+   (`rc-avatar-fill`, clip-path) = fundo + imagem/placeholder. Como a
+   camada de fundo não tem `border` próprio, o bug de "nub quadrado nos
+   cantos" (clip-path + border no mesmo elemento) não pode acontecer. */
 .rc-avatar {
-  position: relative; width: 100%; max-width: 190px; margin: 0 auto;
+  position: relative; display: block; width: 100%; max-width: 190px; margin: 0 auto;
   aspect-ratio: 1 / 1.06;
+  padding: 0; border: none; background: none; cursor: pointer;
+}
+.rc-avatar-fill {
+  position: absolute; inset: 3px;
   display: grid; place-items: center;
-  border: 2px solid var(--rc-line);
   background: rgba(0, 212, 255, 0.06);
   color: rgba(0, 212, 255, 0.55);
   clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-  overflow: hidden; padding: 0;
-  transition: border-color 0.16s, background 0.16s;
+  overflow: hidden;
+  transition: background 0.16s;
 }
-.rc-avatar:hover, .rc-avatar:focus-visible { border-color: var(--cy); background: rgba(0, 212, 255, 0.12); }
-.rc-avatar:focus-visible { outline: 2px solid var(--cy); outline-offset: 3px; }
-.rc-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.rc-avatar-fill img { width: 100%; height: 100%; object-fit: cover; }
+.rc-avatar-poly { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.rc-avatar-poly polygon { fill: none; stroke: var(--rc-line); stroke-width: 2; transition: stroke 0.16s; }
+.rc-avatar:hover .rc-avatar-poly polygon,
+.rc-avatar:focus-visible .rc-avatar-poly polygon { stroke: var(--cy); }
+.rc-avatar:hover .rc-avatar-fill,
+.rc-avatar:focus-visible .rc-avatar-fill { background: rgba(0, 212, 255, 0.13); }
+.rc-avatar:focus-visible { outline: none; }
+.rc-avatar:focus-visible .rc-avatar-poly polygon { stroke-width: 3; filter: drop-shadow(0 0 4px var(--cy)); }
 .rc-avatar-hint {
-  position: absolute; inset: auto 0 12% 0;
+  position: absolute; inset: auto 0 10% 0; z-index: 2;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 7.5px; letter-spacing: 0.14em; text-transform: uppercase;
-  color: rgba(0, 212, 255, 0.8); opacity: 0; transition: opacity 0.16s;
+  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: rgba(0, 212, 255, 0.9); opacity: 0; transition: opacity 0.16s; pointer-events: none;
 }
 .rc-avatar:hover .rc-avatar-hint, .rc-avatar:focus-visible .rc-avatar-hint { opacity: 1; }
 
 /* ── Identidade + atributos ────────────────────────────────────── */
-/* As duas pontas superiores triangulares abertas do wireframe. */
 .rc-ident {
   border: 1px solid var(--rc-line);
   background: var(--rc-panel);
@@ -191,122 +237,152 @@
 }
 .rc-rank[data-vazio="true"] { color: rgba(255, 230, 189, 0.35); border-color: rgba(169, 122, 48, 0.55); }
 
+/* Cards de atributo — hexágono REAL de 6 lados via SVG (fill+stroke
+   num único polígono vetorial: sem `border` de CSS no mesmo elemento
+   clipado, então sem o bug de canto quadrado). Paleta âmbar. */
 .rc-attrs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
-/* Caixa de sete lados, mantendo a linguagem angular do wireframe. */
 .rc-attr {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  aspect-ratio: 1 / 1.12; padding: 4px;
-  border: 1px solid var(--rc-line);
-  background: rgba(0, 212, 255, 0.06);
-  color: inherit;
-  clip-path: polygon(50% 0, 100% 20%, 100% 72%, 74% 100%, 26% 100%, 0 72%, 0 20%);
-  transition: background 0.15s, border-color 0.15s, transform 0.12s;
+  position: relative; aspect-ratio: 1 / 1.16;
+  padding: 0; border: none; background: none; cursor: pointer;
+  transition: transform 0.12s;
 }
-.rc-attr:hover { background: rgba(0, 212, 255, 0.16); border-color: var(--cy); }
 .rc-attr:active { transform: translateY(1px); }
-.rc-attr:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
-.rc-attr-ico { color: rgba(0, 212, 255, 0.8); }
+.rc-attr-poly { position: absolute; inset: 0; width: 100%; height: 100%; }
+.rc-attr-poly polygon {
+  fill: rgba(245, 162, 0, 0.07); stroke: rgba(245, 162, 0, 0.55); stroke-width: 2;
+  transition: fill 0.15s, stroke 0.15s;
+}
+.rc-attr:hover .rc-attr-poly polygon { fill: rgba(245, 162, 0, 0.16); stroke: var(--am); }
+.rc-attr:active .rc-attr-poly polygon { fill: rgba(245, 162, 0, 0.24); }
+.rc-attr:focus-visible { outline: none; }
+.rc-attr:focus-visible .rc-attr-poly polygon { stroke: var(--am); stroke-width: 3; filter: drop-shadow(0 0 3px var(--am)); }
+.rc-attr-content {
+  position: relative; z-index: 1; height: 100%; padding: 6px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+}
+.rc-attr-ico { color: rgba(255, 214, 150, 0.9); }
 .rc-attr-nome {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 7px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(0, 212, 255, 0.85);
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 230, 189, 0.85);
 }
-.rc-attr-val { font-size: 17px; font-weight: 700; color: #eafcff; line-height: 1; }
+.rc-attr-val { font-size: 19px; font-weight: 700; color: #fff3df; line-height: 1; }
 
 /* ── Trilhas (Integridade / PA / Reações) ──────────────────────── */
 .rc-track-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
-.rc-pips { display: flex; flex-wrap: wrap; gap: 3px; }
+
+/* Integridade: segmentos flex:1 preenchendo toda a largura (nada de
+   espaço morto no final), cor suave para não competir com PV/alertas.
+   Interativa: clicar aumenta/reduz; hover mostra prévia do resultado. */
+.rc-pips { display: flex; gap: 2px; width: 100%; }
 .rc-pip {
-  width: 13px; height: 13px; padding: 0;
-  border: 1px solid rgba(0, 212, 255, 0.42);
-  background: transparent;
+  flex: 1; min-width: 0; height: 14px; padding: 0;
+  border: 1px solid rgba(120, 190, 220, 0.3);
+  background: rgba(120, 190, 220, 0.05);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
 }
-/* Integridade cheia é suave de propósito: não pode competir com PV. */
-.rc-pip[data-on="true"] { background: rgba(0, 212, 255, 0.42); }
+.rc-pip[data-on="true"] { background: rgba(140, 200, 225, 0.3); border-color: rgba(140, 200, 225, 0.48); }
+.rc-pip[data-preview="fill"] { background: rgba(140, 200, 225, 0.16); border-color: rgba(140, 200, 225, 0.4); }
+.rc-pip[data-preview="empty"] { background: rgba(255, 95, 116, 0.14); border-color: rgba(255, 95, 116, 0.4); }
+.rc-pip:hover { border-color: rgba(140, 200, 225, 0.6); }
+.rc-pip:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-pip:disabled { cursor: not-allowed; opacity: 0.5; }
 
 .rc-points { display: flex; align-items: center; gap: 8px; }
-.rc-point-row { display: flex; gap: 6px; flex: 1; flex-wrap: wrap; }
+.rc-point-row { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; align-items: center; }
+/* Diamante via rotate(45deg) — borda real, cantos sempre limpos, e o
+   outline nativo de focus já sai em forma de losango (segue o
+   polígono automaticamente, sem CSS extra). */
 .rc-point {
-  width: 15px; height: 15px; padding: 0;
-  border: 1px solid rgba(0, 212, 255, 0.6);
-  background: transparent;
-  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
-  transition: background 0.14s;
+  width: 14px; height: 14px; padding: 0;
+  border: 1px solid rgba(0, 212, 255, 0.55);
+  background: rgba(0, 212, 255, 0.1);
+  transform: rotate(45deg);
+  cursor: pointer;
+  transition: background 0.14s, border-color 0.14s, box-shadow 0.14s;
 }
-.rc-point[data-on="true"] { background: var(--cy); }
-.rc-point:hover { border-color: #6fe0ff; }
-.rc-point:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.rc-point[data-on="true"] { background: var(--cy); border-color: #6fe0ff; box-shadow: 0 0 6px rgba(0, 212, 255, 0.5); }
+.rc-point:hover { border-color: #6fe0ff; background: rgba(0, 212, 255, 0.22); }
+.rc-point:focus-visible { outline: 2px solid var(--cy); outline-offset: 3px; }
+.rc-point:disabled { cursor: not-allowed; opacity: 0.5; }
 .rc-point-tag {
   flex: none; padding: 3px 9px;
   border: 1px solid var(--rc-line);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; font-weight: 600; color: #d3f4ff;
+  font-size: 10.5px; font-weight: 600; color: #d3f4ff;
   clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%);
 }
 
-/* Sobrecarga: três barras. */
+/* Sobrecarga: paleta âmbar, fundo translúcido permanente (nunca
+   totalmente vazio), hover diferenciado por borda/glow interno (não
+   pela mesma adição de fundo do estado padrão). */
 .rc-surges { display: flex; gap: 6px; }
 .rc-surge {
-  flex: 1; height: 15px; padding: 0;
-  border: 1px solid rgba(255, 95, 116, 0.5);
-  background: transparent;
+  flex: 1; height: 15px; padding: 0; cursor: pointer;
+  border: 1px solid rgba(245, 162, 0, 0.5);
+  background: rgba(245, 162, 0, 0.08);
   clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
-  transition: background 0.14s;
+  transition: border-color 0.14s, box-shadow 0.14s, background 0.14s;
 }
-.rc-surge[data-on="true"] { background: var(--rc-danger); }
-.rc-surge:not(:disabled):hover { background: rgba(255, 95, 116, 0.3); }
-.rc-surge:disabled { opacity: 0.45; }
-.rc-surge:focus-visible { outline: 2px solid var(--rc-danger); outline-offset: 2px; }
+.rc-surge[data-on="true"] { background: var(--am); border-color: #ffcf8a; box-shadow: 0 0 8px rgba(245, 162, 0, 0.5); }
+.rc-surge:not(:disabled):not([data-on="true"]):hover { border-color: #ffcf8a; box-shadow: inset 0 0 9px rgba(245, 162, 0, 0.4); }
+.rc-surge:disabled { opacity: 0.4; cursor: not-allowed; }
+.rc-surge:focus-visible { outline: 2px solid var(--am); outline-offset: 2px; }
 
 .rc-readout { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .rc-readout-val { font-size: 15px; font-weight: 700; color: #d3f4ff; }
-.rc-readout-val small { font-size: 10px; font-weight: 500; color: var(--rc-dim); margin-left: 2px; }
+.rc-readout-val small { font-size: 10.5px; font-weight: 500; color: var(--rc-dim); margin-left: 2px; }
 
 /* ── Colapso + Recursos ────────────────────────────────────────── */
 .rc-vitals-row { display: flex; gap: 12px; align-items: stretch; }
 
 .rc-collapse { flex: none; width: 92px; display: flex; flex-direction: column; gap: 6px; }
 .rc-collapse-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+/* Trilha do Colapso inclinada — MESMO sentido dos cards de ícone e das
+   barras de recurso ("da esquerda para a direita": o topo fica para a
+   esquerda, a base para a direita). Via clip-path — nunca skew/rotate
+   no bloco, que inclinaria texto; aqui não há texto dentro. */
 .rc-collapse-track {
   flex: 1; display: flex; flex-direction: column-reverse; gap: 5px;
-  /* Inclinação ~30° do wireframe, com padding interno: os segmentos
-     não encostam nas bordas do contêiner. */
-  transform: skewX(-16deg);
+  padding: 6px 12px;
   border: 1px solid rgba(255, 95, 116, 0.45);
   background: rgba(255, 95, 116, 0.06);
-  padding: 6px;
+  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 100%, 9px 100%);
 }
 .rc-collapse-seg {
-  flex: 1; min-height: 20px; padding: 0;
+  flex: 1; min-height: 20px; padding: 0; cursor: pointer;
   border: 1px solid rgba(255, 95, 116, 0.5);
-  background: transparent;
-  transition: background 0.14s;
+  background: rgba(255, 95, 116, 0.08);
+  transition: background 0.14s, box-shadow 0.14s;
 }
 .rc-collapse-seg[data-on="true"] { background: var(--rc-danger); }
 .rc-collapse-seg[data-atual="true"] { border-color: #ffc4cf; box-shadow: 0 0 8px rgba(255, 95, 116, 0.5); }
-.rc-collapse-seg:not(:disabled):hover { background: rgba(255, 95, 116, 0.3); }
+.rc-collapse-seg:not(:disabled):hover { border-color: #ff96a8; box-shadow: inset 0 0 8px rgba(255, 95, 116, 0.35); }
+.rc-collapse-seg:disabled { cursor: not-allowed; }
 .rc-collapse-seg:focus-visible { outline: 2px solid var(--rc-danger); outline-offset: 2px; }
 .rc-collapse-state {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 7px; letter-spacing: 0.12em; text-transform: uppercase;
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
   color: rgba(255, 120, 140, 0.8); text-align: center;
 }
 
-.rc-res { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-.rc-res-row { display: flex; align-items: center; gap: 8px; }
-/* Três partes: card do ícone, card da trilha, card do valor. */
+.rc-res { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; justify-content: center; }
+.rc-res-row { display: flex; align-items: center; gap: 7px; }
+/* Ícone e barra inclinam no MESMO sentido do Colapso (topo à esquerda,
+   base à direita) — clip-path tipo 1. */
 .rc-res-ico {
-  flex: none; width: 30px; height: 26px;
+  flex: none; width: 27px; height: 20px;
   display: grid; place-items: center;
   border: 1px solid var(--rc-line);
   background: rgba(0, 212, 255, 0.07);
-  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 100%, 6px 100%);
 }
 .rc-res-bar {
-  position: relative; flex: 1; min-width: 0; height: 26px;
+  position: relative; flex: 1; min-width: 0; height: 20px;
   border: 1px solid var(--rc-line);
   background: rgba(2, 8, 14, 0.6);
   overflow: hidden;
-  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 100%, 7px 100%);
 }
 .rc-res-fill {
   position: absolute; inset: 0 auto 0 0;
@@ -321,52 +397,87 @@
     linear-gradient(90deg, transparent calc(50% - 1px), rgba(2, 8, 14, 0.9) calc(50% - 1px), rgba(2, 8, 14, 0.9) 50%, transparent 50%),
     linear-gradient(90deg, transparent calc(75% - 1px), rgba(2, 8, 14, 0.85) calc(75% - 1px), rgba(2, 8, 14, 0.85) 75%, transparent 75%);
 }
+/* Card de valor: inclinação OPOSTA (fecha a composição) — clip-path
+   tipo 2. Tamanho FIXO (largura E altura), para a edição inline nunca
+   provocar reflow do card ou das trilhas vizinhas. */
 .rc-res-val {
-  flex: none; min-width: 62px; height: 26px; padding: 0 8px;
+  flex: none; width: 72px; height: 20px; padding: 0;
   display: grid; place-items: center;
   border: 1px solid var(--rc-line);
-  background: rgba(2, 8, 14, 0.6);
+  background: rgba(0, 212, 255, 0.07);
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10.5px; font-weight: 600; color: #eafcff;
+  cursor: pointer;
   transition: border-color 0.14s, background 0.14s;
+  box-sizing: border-box;
 }
-.rc-res-val:hover { border-color: var(--cy); background: rgba(0, 212, 255, 0.1); }
+.rc-res-val:hover { border-color: var(--cy); background: rgba(0, 212, 255, 0.13); }
 .rc-res-val:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 .rc-res-val[data-invalido="true"] { border-color: var(--rc-danger); color: #ffc4cf; }
 .rc-res-input {
-  width: 100%; height: 100%; min-width: 58px;
+  width: 100%; height: 100%; min-width: 0; padding: 0 6px;
   border: none; background: transparent; text-align: center;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10.5px; font-weight: 600; color: #eafcff;
+  font: inherit; color: inherit;
+  box-sizing: border-box;
+  cursor: text;
 }
 .rc-res-input:focus { outline: none; }
 .rc-res-tag {
   flex: none; width: 42px;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: rgba(200, 228, 242, 0.9);
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; color: rgba(200, 228, 242, 0.9);
 }
 
-/* ── Abas ──────────────────────────────────────────────────────── */
-.rc-tabs { display: flex; flex-wrap: wrap; gap: 3px; flex: none; }
-.rc-tab {
-  padding: 8px 14px;
-  border: 1px solid var(--rc-line-soft); border-bottom: none;
-  background: transparent;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
-  color: rgba(184, 216, 232, 0.55);
-  clip-path: polygon(9px 0, 100% 0, 100% 100%, 0 100%);
+/* ── Área de abas (conteúdo + trilho vertical à direita) ─────────
+   O trilho fica colado à borda direita da área principal, só ícones,
+   com hint ao passar mouse/foco. Substitui a navegação textual que
+   ficava no topo. */
+.rc-tabsarea { display: flex; flex-direction: row; gap: 8px; min-width: 0; height: 100%; }
+.rc-tabsarea-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+
+.rc-tabrail {
+  flex: none; width: 42px;
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 2px 0;
+  border-left: 1px solid var(--rc-line-soft);
+  padding-left: 8px;
+}
+.rc-tabrail-btn {
+  position: relative;
+  width: 36px; height: 36px; padding: 0;
+  display: grid; place-items: center;
+  border: 1px solid var(--rc-line-soft);
+  background: rgba(10, 20, 31, 0.7);
+  color: rgba(184, 216, 232, 0.6);
+  cursor: pointer;
   transition: color 0.14s, background 0.14s, border-color 0.14s;
 }
-.rc-tab:hover { color: #d3f4ff; background: rgba(0, 212, 255, 0.08); }
-/* Ativo com preenchimento SÓLIDO (regra herdada do fix dos botões). */
-.rc-tab[aria-selected="true"] { color: #eafcff; border-color: var(--cy); background: #123640; }
-.rc-tab:focus-visible { outline: 2px solid var(--cy); outline-offset: -2px; }
+.rc-tabrail-btn:hover { color: #d3f4ff; border-color: var(--rc-line); background: rgba(0, 212, 255, 0.09); }
+.rc-tabrail-btn[aria-selected="true"] {
+  color: #eafcff; border-color: var(--cy); background: #123640;
+  box-shadow: 0 0 9px rgba(0, 212, 255, 0.25);
+}
+.rc-tabrail-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.rc-tabrail-hint {
+  position: absolute; right: calc(100% + 9px); top: 50%; transform: translateY(-50%);
+  padding: 5px 10px; white-space: nowrap;
+  border: 1px solid var(--rc-line);
+  background: rgb(13, 20, 29);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10.5px; letter-spacing: 0.05em; color: #d3f4ff;
+  opacity: 0; pointer-events: none; z-index: 5;
+  transition: opacity 0.12s;
+}
+.rc-tabrail-btn:hover .rc-tabrail-hint,
+.rc-tabrail-btn:focus-visible .rc-tabrail-hint { opacity: 1; transition-delay: 0.35s; }
+
 .rc-tabpanel {
   flex: 1; min-height: 0; overflow: auto;
   border: 1px solid var(--rc-line);
   background: var(--rc-panel);
   padding: 12px;
+  display: flex; flex-direction: column;
 }
 .rc-tab-vazio {
   display: grid; place-items: center; min-height: 200px; gap: 6px;
@@ -374,112 +485,132 @@
 }
 
 /* ── Equipamentos ──────────────────────────────────────────────── */
+/* Canvas de posicionamento absoluto — necessário para os slots
+   guardarem relação espacial específica com o corpo (podem avançar
+   parcialmente sobre a silhueta). As posições são PERCENTUAIS,
+   relativas a este contêiner (nunca à viewport), preservando o
+   comportamento em resize. */
 .rc-doll {
-  display: grid; grid-template-columns: 1fr 150px 1fr; gap: 10px; align-items: center;
-  min-height: 100%;
+  position: relative;
+  min-height: 460px;
 }
-.rc-doll-col { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
-.rc-doll-figure { display: grid; place-items: center; align-self: stretch; color: rgba(0, 212, 255, 0.55); }
-.rc-doll-figure svg { width: 100%; height: auto; max-height: 330px; }
-.rc-doll-quick { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rc-doll-figure {
+  position: absolute; left: 50%; top: 4%; width: 32%;
+  transform: translateX(-50%);
+  z-index: 0;
+  color: rgba(0, 212, 255, 0.5);
+  pointer-events: none;
+}
+.rc-doll-figure svg { width: 100%; height: auto; }
+.rc-slot-abs { position: absolute; z-index: 1; }
+.rc-doll-quick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
 
 .rc-slot {
   position: relative;
-  display: flex; align-items: flex-start; gap: 8px;
-  width: 100%; text-align: left; padding: 8px 9px;
+  display: flex; align-items: flex-start; gap: 9px;
+  width: 100%; text-align: left; padding: 10px 12px;
   border: 1px solid var(--rc-line-soft);
-  background: rgba(10, 20, 31, 0.82);
+  background: rgba(10, 20, 31, 0.86);
   color: inherit;
-  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+  cursor: pointer;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
   transition: border-color 0.14s, background 0.14s;
 }
-.rc-slot:hover { border-color: var(--cy); background: rgba(0, 212, 255, 0.1); }
+.rc-slot:hover { border-color: var(--cy); background: rgba(0, 212, 255, 0.11); }
 .rc-slot:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
-.rc-slot[data-preenchido="true"] { border-color: rgba(0, 212, 255, 0.5); background: rgba(0, 212, 255, 0.07); }
-.rc-slot-ico { flex: none; color: rgba(0, 212, 255, 0.65); margin-top: 1px; }
-.rc-slot-main { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.rc-slot[data-preenchido="true"] { border-color: rgba(0, 212, 255, 0.5); background: rgba(0, 212, 255, 0.08); }
+.rc-slot-ico { flex: none; color: rgba(0, 212, 255, 0.7); margin-top: 1px; }
+.rc-slot-main { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
 .rc-slot-label {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 7.5px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(0, 212, 255, 0.62);
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(0, 212, 255, 0.65);
 }
 .rc-slot-nome {
-  font-size: 12px; font-weight: 600; color: #d3f4ff;
+  font-size: 13px; font-weight: 600; color: #d3f4ff;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  background: none; border: none; padding: 0; text-align: left; cursor: pointer;
 }
-.rc-slot-nome[data-vazio="true"] { color: rgba(184, 216, 232, 0.34); font-weight: 400; }
+.rc-slot-nome[data-vazio="true"] { color: rgba(184, 216, 232, 0.36); font-weight: 400; cursor: inherit; }
 .rc-slot-linha { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .rc-tag {
-  padding: 1px 6px;
+  padding: 2px 7px;
   border: 1px solid rgba(0, 212, 255, 0.3);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 7.5px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(184, 216, 232, 0.8);
+  font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: rgba(184, 216, 232, 0.85);
 }
 .rc-tag--am { border-color: rgba(245, 162, 0, 0.5); color: #ffe6bd; }
-.rc-minipips { display: flex; gap: 2px; }
+.rc-minipips { display: flex; gap: 3px; }
 .rc-minipip {
-  width: 9px; height: 9px; padding: 0;
-  border: 1px solid rgba(0, 212, 255, 0.45); background: transparent;
+  width: 10px; height: 10px; padding: 0; cursor: pointer;
+  border: 1px solid rgba(0, 212, 255, 0.45);
+  background: rgba(0, 212, 255, 0.08);
+  transition: background 0.12s, border-color 0.12s;
 }
 .rc-minipip[data-on="true"] { background: var(--cy); }
+.rc-minipip:hover { border-color: #6fe0ff; }
 .rc-minipip:focus-visible { outline: 1px solid var(--cy); outline-offset: 1px; }
 .rc-slot-acao {
-  margin-top: 3px; padding: 3px 8px; align-self: flex-start;
+  margin-top: 3px; padding: 4px 9px; align-self: flex-start; cursor: pointer;
   border: 1px solid rgba(0, 212, 255, 0.35); background: transparent;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 7.5px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(0, 212, 255, 0.85);
+  font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(0, 212, 255, 0.9);
   transition: background 0.14s, border-color 0.14s;
 }
 .rc-slot-acao:hover { background: rgba(0, 212, 255, 0.16); border-color: var(--cy); color: #eafcff; }
 .rc-slot-acao:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 
 /* ── Perícias ──────────────────────────────────────────────────── */
-.rc-skills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.rc-skills-wrap { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+/* Linhas em 1fr: a grade estica pela altura disponível do painel em
+   vez de deixar espaço morto embaixo. */
+.rc-skills { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: 8px; }
+@media (max-width: 900px) { .rc-skills { grid-template-columns: repeat(2, 1fr); } }
 .rc-skill {
-  display: flex; align-items: center; gap: 7px;
-  padding: 7px 8px; width: 100%; text-align: left;
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; width: 100%; text-align: left; cursor: pointer;
   border: 1px solid var(--rc-line-soft);
-  background: rgba(10, 20, 31, 0.8);
+  background: rgba(10, 20, 31, 0.82);
   color: inherit;
   clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
   transition: border-color 0.14s, background 0.14s;
 }
 .rc-skill:hover { border-color: var(--cy); background: rgba(0, 212, 255, 0.1); }
 .rc-skill:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
-.rc-skill[data-vazio="true"] { opacity: 0.3; pointer-events: none; }
-.rc-skill-ico { flex: none; color: rgba(0, 212, 255, 0.6); }
+.rc-skill[data-vazio="true"] { opacity: 0.28; pointer-events: none; cursor: default; }
+.rc-skill-ico { flex: none; color: rgba(0, 212, 255, 0.62); }
 .rc-skill-nome {
-  flex: 1; min-width: 0; font-size: 11.5px; font-weight: 500; color: #cfe9f5;
+  flex: 1; min-width: 0; font-size: 12px; font-weight: 500; color: #cfe9f5;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .rc-skill-tag {
   flex: none;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 8px; letter-spacing: 0.06em; color: rgba(184, 216, 232, 0.5);
+  font-size: 10px; letter-spacing: 0.04em; color: rgba(184, 216, 232, 0.55);
 }
 
 /* ── Pins ──────────────────────────────────────────────────────── */
 .rc-pins { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; flex: none; }
 .rc-pin {
-  position: relative; min-height: 60px;
+  position: relative; min-height: 58px;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-  padding: 9px; width: 100%;
+  padding: 9px; width: 100%; cursor: pointer;
   border: 1px dashed var(--rc-line-soft);
-  background: rgba(10, 20, 31, 0.7);
+  background: rgba(10, 20, 31, 0.72);
   color: inherit;
   clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
   transition: border-color 0.14s, background 0.14s;
 }
-.rc-pin[data-preenchido="true"] { border-style: solid; border-color: rgba(0, 212, 255, 0.5); background: rgba(0, 212, 255, 0.07); }
+.rc-pin[data-preenchido="true"] { border-style: solid; border-color: rgba(0, 212, 255, 0.5); background: rgba(0, 212, 255, 0.08); cursor: default; }
 .rc-pin:hover { border-color: var(--cy); }
 .rc-pin:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
-.rc-pin-nome { font-size: 11.5px; font-weight: 600; color: #d3f4ff; text-align: center; }
+.rc-pin-nome { font-size: 12px; font-weight: 600; color: #d3f4ff; text-align: center; }
 .rc-pin-sub {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 7.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--rc-dim);
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--rc-dim);
 }
 .rc-pin-x {
-  position: absolute; top: 3px; right: 3px;
-  display: grid; place-items: center; width: 18px; height: 18px;
+  position: absolute; top: 3px; right: 3px; cursor: pointer;
+  display: grid; place-items: center; width: 20px; height: 20px;
   border: none; background: transparent; color: rgba(184, 216, 232, 0.5);
 }
 .rc-pin-x:hover { color: #ffc4cf; }
@@ -490,65 +621,94 @@
 .rc-cond-list { display: flex; flex-wrap: wrap; gap: 6px; }
 .rc-cond {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 3px 4px 3px 9px;
+  padding: 3px 4px 3px 10px;
   border: 1px solid rgba(255, 95, 116, 0.55);
   background: rgba(255, 95, 116, 0.1);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 8.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #ffc4cf;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #ffc4cf;
   clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
 }
-.rc-cond-abrir { background: none; border: none; color: inherit; font: inherit; padding: 0; }
+.rc-cond-abrir { background: none; border: none; color: inherit; font: inherit; padding: 0; cursor: pointer; }
 .rc-cond-abrir:hover { color: #fff; text-decoration: underline; }
 .rc-cond-abrir:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 .rc-cond-x {
-  display: grid; place-items: center; width: 16px; height: 16px;
+  display: grid; place-items: center; width: 18px; height: 18px; cursor: pointer;
   border: none; background: transparent; color: rgba(255, 196, 207, 0.7);
 }
 .rc-cond-x:hover { color: #fff; }
 .rc-cond-x:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
-.rc-vazio { font-size: 11.5px; color: var(--rc-dim); }
+.rc-vazio { font-size: 12px; color: var(--rc-dim); line-height: 1.5; }
 
 /* Botão discreto reutilizável. */
 .rc-ghost {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 4px 9px;
+  display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+  padding: 5px 10px;
   border: 1px solid rgba(0, 212, 255, 0.35); background: transparent;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(0, 212, 255, 0.85);
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(0, 212, 255, 0.85);
   transition: background 0.14s, border-color 0.14s, color 0.14s;
 }
 .rc-ghost:hover:not(:disabled) { background: rgba(0, 212, 255, 0.14); border-color: var(--cy); color: #eafcff; }
-.rc-ghost:disabled { opacity: 0.4; }
+.rc-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
 .rc-ghost:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 
-/* ── Dock (janela minimizada) ──────────────────────────────────── */
+/* ── Dock (janela minimizada) — "console compacto de recursos", não
+   uma pill genérica: nome, avatar e as três trilhas REAIS de PV/PE/
+   Mana, editáveis sem expandir. ────────────────────────────────── */
 .rc-dock {
   position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
   z-index: 502;
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 10px 8px 12px;
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 12px 10px 12px;
   border: 1px solid var(--rc-line);
   background: rgba(11, 18, 27, 0.97);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
   color: #b8d8e8;
   font-family: var(--font-rajdhani), sans-serif;
-  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
   animation: rc-dock-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes rc-dock-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
-@media (prefers-reduced-motion: reduce) { .rc-dock { animation: none; } }
 .rc-dock-av {
-  flex: none; width: 30px; height: 30px; display: grid; place-items: center;
+  flex: none; width: 40px; height: 40px; display: grid; place-items: center;
   border: 1px solid var(--rc-line); background: rgba(0, 212, 255, 0.08);
-  color: rgba(0, 212, 255, 0.7); overflow: hidden;
+  color: rgba(0, 212, 255, 0.75); overflow: hidden;
 }
 .rc-dock-av img { width: 100%; height: 100%; object-fit: cover; }
-.rc-dock-info { display: flex; flex-direction: column; gap: 3px; min-width: 130px; }
-.rc-dock-nome { font-size: 12px; font-weight: 600; color: #d3f4ff; line-height: 1; }
-.rc-dock-tracks { display: flex; gap: 4px; }
-.rc-dock-track { width: 40px; height: 4px; background: rgba(0, 212, 255, 0.12); overflow: hidden; }
-.rc-dock-track span { display: block; height: 100%; background: var(--rc-dock-cor); }
-.rc-dock-acoes { display: flex; gap: 2px; }
+.rc-dock-info { display: flex; flex-direction: column; gap: 5px; }
+.rc-dock-nome { font-size: 13px; font-weight: 600; color: #d3f4ff; line-height: 1; }
+.rc-dock-res { display: flex; flex-direction: column; gap: 3px; }
+.rc-dock-row { display: flex; align-items: center; gap: 6px; }
+.rc-dock-tag {
+  flex: none; width: 30px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.04em; color: rgba(200, 228, 242, 0.85);
+}
+.rc-dock-bar {
+  position: relative; width: 76px; height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.rc-dock-bar span { display: block; height: 100%; background: var(--rc-dock-cor); transition: width 0.2s ease; }
+.rc-dock-val {
+  flex: none; width: 56px; height: 18px; padding: 0;
+  display: grid; place-items: center;
+  border: 1px solid var(--rc-line-soft);
+  background: rgba(0, 212, 255, 0.06);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px; font-weight: 600; color: #eafcff;
+  cursor: pointer; box-sizing: border-box;
+}
+.rc-dock-val:hover { border-color: var(--cy); }
+.rc-dock-val:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-dock-val[data-invalido="true"] { border-color: var(--rc-danger); color: #ffc4cf; }
+.rc-dock-input {
+  width: 100%; height: 100%; min-width: 0; padding: 0 3px;
+  border: none; background: transparent; text-align: center;
+  font: inherit; color: inherit; box-sizing: border-box; cursor: text;
+}
+.rc-dock-input:focus { outline: none; }
+.rc-dock-acoes { display: flex; flex-direction: column; gap: 4px; }
 
 /* ── Modais auxiliares (placeholders funcionais) ───────────────── */
 .rc-aux-backdrop {
@@ -567,13 +727,13 @@
 }
 .rc-aux h2 {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
   color: #d3f4ff; margin: 0 0 12px;
 }
 .rc-aux-lista { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
 .rc-aux-item {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  padding: 8px 10px; width: 100%; text-align: left;
+  padding: 8px 10px; width: 100%; text-align: left; cursor: pointer;
   border: 1px solid rgba(0, 212, 255, 0.2); background: rgba(0, 212, 255, 0.04);
   color: inherit; font-size: 12px;
 }
