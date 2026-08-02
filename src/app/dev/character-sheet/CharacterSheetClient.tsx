@@ -292,7 +292,8 @@ import { upsertCrewInventoryItem } from "../../../lib/table/crewInventory";
 import type { Campaign } from "../../../lib/table";
 import { useCharacterRealtime } from "../../../lib/realtime/useCharacterRealtime";
 import { describeRealtimeStatus } from "../../../lib/realtime/tableRealtime";
-import { CharacterSheetTabs, type TabId } from "./components/CharacterSheetTabs";
+import { TAB_LABELS, TABS, type TabId } from "./components/CharacterSheetTabs";
+import { ConsoleShell, type ConsoleTab } from "../../ficha/_console/ConsoleShell";
 import { GeneralTab } from "./components/GeneralTab";
 import { AttributesTab } from "./components/AttributesTab";
 import { SkillsTab } from "./components/SkillsTab";
@@ -477,6 +478,25 @@ export default function CharacterSheetClient({
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>(initialTab ?? "geral");
+  /**
+   * Abas do Console. A ordem segue a leitura do wireframe (Perícias,
+   * Magias, Mochila/Inventário, Escalpos/Biblioteca, Características/
+   * Talentos, Ações) e as demais vêm depois — é só REORDENAÇÃO: nenhuma
+   * aba foi removida, renomeada ou consolidada. Unificar os 15 destinos
+   * atuais nos 6 do desenho é decisão de produto, registrada como
+   * pendência no checkpoint.
+   */
+  const consoleTabs = useMemo<ConsoleTab[]>(() => {
+    const ordemWireframe: TabId[] = ["pericias", "magias", "inventario", "biblioteca", "talentos", "acoes"];
+    const ocultas: TabId[] = mode === "product" ? ["personagens", "debug"] : [];
+    const restantes = TABS.filter((t) => !ordemWireframe.includes(t));
+    return [...ordemWireframe, ...restantes]
+      .filter((t) => !ocultas.includes(t))
+      .map((t) => ({
+        id: t,
+        label: t === "personagens" ? `${TAB_LABELS[t]} (${personagens.length})` : TAB_LABELS[t],
+      }));
+  }, [mode, personagens.length]);
   // Estado de UI local — não vai para o payload salvo (ver handleSave).
   const [sheetMode, setSheetMode] = useState<SheetMode>("jogo");
   // "Rolagem preparada" — ponte entre o clique em "Rolar" nas abas
@@ -5177,12 +5197,27 @@ export default function CharacterSheetClient({
   const estocarStatusFicha = getEstocarAvailability(character, talentsIniciais);
 
   return (
-    <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
-      <p style={{ opacity: 0.6, fontSize: 13, marginBottom: 4 }}>
-        {mode === "dev"
-          ? '/dev/character-sheet — ficha mínima (dev). Edição é local até clicar em "Salvar personagem".'
-          : 'Ficha. Edição é local até clicar em "Salvar personagem".'}
-      </p>
+    <ConsoleShell
+      character={character}
+      derivados={derivados}
+      tabs={consoleTabs}
+      activeTab={activeTab}
+      onTabChange={(id) => setActiveTab(id as TabId)}
+      conditions={
+        <ActiveStateStrip
+          condicoes={character.condicoes_ativas ?? []}
+          activeEffects={activeEffects}
+          conditionContents={conditionContents}
+          onVerCondicoes={() => setActiveTab("condicoes")}
+          pvTemporario={character.recursos_atuais?.pv_temporario ?? 0}
+          manaTemporaria={character.recursos_atuais?.mana_temporaria ?? 0}
+          sobrecargaUsadaDia={character.sobrecarga_usada_dia ?? 0}
+          rupturaPendente={character.ruptura_pendente ?? false}
+          colapso={character.colapso}
+        />
+      }
+      banners={
+        <>
       {characterId && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
           <span data-testid="ficha-sync-status" style={{ fontSize: 11, color: describeRealtimeStatus(characterSyncStatus, "ficha").cor }}>
@@ -5269,25 +5304,9 @@ export default function CharacterSheetClient({
         </div>
       )}
 
-      <ActiveStateStrip
-        condicoes={character.condicoes_ativas ?? []}
-        activeEffects={activeEffects}
-        conditionContents={conditionContents}
-        onVerCondicoes={() => setActiveTab("condicoes")}
-        pvTemporario={character.recursos_atuais?.pv_temporario ?? 0}
-        manaTemporaria={character.recursos_atuais?.mana_temporaria ?? 0}
-        sobrecargaUsadaDia={character.sobrecarga_usada_dia ?? 0}
-        rupturaPendente={character.ruptura_pendente ?? false}
-        colapso={character.colapso}
-      />
-
-      <CharacterSheetTabs
-        activeTab={activeTab}
-        personagensCount={personagens.length}
-        onChange={setActiveTab}
-        hiddenTabs={mode === "product" ? (["personagens", "debug"] as const) : undefined}
-      />
-
+        </>
+      }
+    >
       {activeTab === "geral" && (
         <GeneralTab
           mode={mode}
@@ -5703,6 +5722,6 @@ export default function CharacterSheetClient({
           usandoFallback={usandoFallback}
         />
       )}
-    </main>
+    </ConsoleShell>
   );
 }
