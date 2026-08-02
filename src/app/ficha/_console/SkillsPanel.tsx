@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * Grid de Perícias do Console — três colunas de slots, seguindo a
- * referência anexada: marcador circular, nome, atributo primário
- * abreviado e valor à direita. Perícias com valor investido acendem a
- * borda esquerda e ganham o acento âmbar no canto.
+ * Grid de Perícias do Console — três colunas de caixas simples com
+ * marcador circular, nome, atributo primário abreviado e valor à
+ * direita. Perícias com valor investido só mudam a cor da borda —
+ * sem gradiente, sem canto cortado, sem acento decorativo.
  *
  * As definições vêm de `regras_personagem` (SkillDefinition), nunca de
  * uma lista local — mesma fonte que a ficha antiga já usava.

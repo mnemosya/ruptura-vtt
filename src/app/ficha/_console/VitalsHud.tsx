@@ -1,56 +1,41 @@
 "use client";
 
 /**
- * Colapso + Recursos — terceira reconstrução deste bloco.
+ * Colapso + Recursos — barras anguladas com hachura diagonal, como no
+ * wireframe. Cada barra de recurso é UMA peça só (não segmentos
+ * discretos), preenchida proporcionalmente com uma textura de hachura;
+ * o Colapso tem 3 segmentos anguladas separados, também hachurados
+ * quando ativos.
  *
- * Nome e classes CSS (`rc-hud-*`) exclusivos deste arquivo — nada
- * reaproveitado das duas tentativas anteriores (`ResourcesRow.tsx` e
- * o CSS `rc-vit-*`/`rc-cls-*`/`rc-res-*`, ambos apagados). Correções
- * pedidas sobre o resultado anterior, que ficou visualmente idêntico:
- *
- * 1. Espessura: os segmentos de recurso eram hairlines finas — agora
- *    são blocos grossos (~22px), cada um um paralelogramo isolado.
- * 2. Ângulo: o painel de Colapso estava reto/vertical — agora ele
- *    INTEIRO é inclinado (skew), com as 3 barras internas herdando a
- *    mesma inclinação, não só os segmentos do recurso.
- * 3. O valor ("13/13 PV") vira um selo com 3 células visíveis (corte |
- *    número | unidade), separadas por divisor interno.
- *
- * A adjacência Colapso-junto-de-Recursos é mecânica: o Colapso dispara
- * quando PV ou PE chega a 0 (`collapse.ts`). A camada TEMPORÁRIA
- * (`pv_temporario`, `mana_temporaria`) aparece como segmentos
- * hachurados depois dos cheios — o motor já mantém esses valores.
+ * A camada TEMPORÁRIA (`pv_temporario`, `mana_temporaria`) aparece como
+ * uma faixa extra hachurada em branco depois da faixa cheia — o motor
+ * já mantém esses valores.
  *
  * Apresentação pura: nada é recalculado aqui.
  */
 
-import type { ReactNode } from "react";
 import { MAX_COLLAPSE_SEGMENTS, type Character, type DerivedStats } from "../../../lib/character";
 
 type Tone = "pv" | "pe" | "mana";
 
-/** Teto de segmentos desenhados — acima disso vira ruído visual. */
-const MAX_SEGMENTS = 14;
-
-function IconPv() {
+function IconPlus() {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor">
-      <path d="M10 2h4v6h6v4h-6v6h-4v-6H4V8h6V2z" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+      <path d="M12 5v14M5 12h14" />
     </svg>
   );
 }
-function IconPe() {
+function IconBolt() {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor">
       <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" />
     </svg>
   );
 }
-function IconMana() {
+function IconRing() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <circle cx="12" cy="12" r="8.5" />
-      <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="8" />
     </svg>
   );
 }
@@ -68,36 +53,27 @@ function ResourceRow({
   max: number;
   temporario?: number;
   tone: Tone;
-  icon: ReactNode;
+  icon: React.ReactNode;
 }) {
   const maxSeguro = Number.isFinite(max) && max > 0 ? max : 0;
-  const segCount = maxSeguro > 0 ? Math.min(Math.round(maxSeguro), MAX_SEGMENTS) : 1;
-  const porSeg = maxSeguro > 0 ? maxSeguro / segCount : 0;
-
-  const cheios = porSeg > 0 ? Math.min(segCount, Math.round(atual / porSeg)) : 0;
-  const temps = porSeg > 0 ? Math.min(segCount - cheios, Math.round(temporario / porSeg)) : 0;
+  const pctCheio = maxSeguro > 0 ? Math.max(0, Math.min(100, (atual / maxSeguro) * 100)) : 0;
+  const pctTemp = maxSeguro > 0 ? Math.max(0, Math.min(100 - pctCheio, (temporario / maxSeguro) * 100)) : 0;
 
   return (
     <div className="rc-hud-row" data-tone={tone} data-critical={maxSeguro > 0 && atual <= 0}>
       <span className="rc-hud-ico" aria-hidden="true">
         {icon}
       </span>
-      <span className="rc-hud-track">
-        {Array.from({ length: segCount }, (_, i) => (
-          <span
-            key={i}
-            className="rc-hud-seg"
-            data-on={i < cheios}
-            data-temp={i >= cheios && i < cheios + temps ? "true" : undefined}
-          />
-        ))}
+      <span className="rc-hud-bar">
+        <span className="rc-hud-fill" style={{ width: `${pctCheio}%` }} />
+        {pctTemp > 0 && (
+          <span className="rc-hud-fill" data-temp="true" style={{ left: `${pctCheio}%`, width: `${pctTemp}%` }} />
+        )}
       </span>
       <span className="rc-hud-val">
-        <span className="rc-hud-val-num">
-          {atual}
-          {temporario > 0 ? `+${temporario}` : ""}/{maxSeguro}
-        </span>
-        <span className="rc-hud-val-unit">{label}</span>
+        {atual}
+        {temporario > 0 ? `+${temporario}` : ""}/{maxSeguro}
+        <small>{label}</small>
       </span>
     </div>
   );
@@ -112,7 +88,7 @@ export function VitalsHud({ character, derivados }: { character: Character; deri
     <div className="rc-hud">
       <div className="rc-hud-cls-wrap">
         <span className="rc-hud-cls-label">Colapso</span>
-        <div className="rc-hud-cls" data-active={colapsoAtivo} data-testid="console-colapso">
+        <div className="rc-hud-cls" data-testid="console-colapso">
           {Array.from({ length: MAX_COLLAPSE_SEGMENTS }, (_, i) => (
             <span key={i} className="rc-hud-cls-seg" data-on={i < (colapso?.segmentos ?? 0)} />
           ))}
@@ -129,7 +105,7 @@ export function VitalsHud({ character, derivados }: { character: Character; deri
         <ResourceRow
           label="PV"
           tone="pv"
-          icon={<IconPv />}
+          icon={<IconPlus />}
           atual={recursos.pv ?? derivados.pv_max}
           max={derivados.pv_max}
           temporario={recursos.pv_temporario ?? 0}
@@ -137,14 +113,14 @@ export function VitalsHud({ character, derivados }: { character: Character; deri
         <ResourceRow
           label="PE"
           tone="pe"
-          icon={<IconPe />}
+          icon={<IconBolt />}
           atual={recursos.pe ?? derivados.pe_max}
           max={derivados.pe_max}
         />
         <ResourceRow
           label="Mana"
           tone="mana"
-          icon={<IconMana />}
+          icon={<IconRing />}
           atual={recursos.mana ?? derivados.mana_max}
           max={derivados.mana_max}
           temporario={recursos.mana_temporaria ?? 0}

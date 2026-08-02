@@ -32,7 +32,7 @@ export interface ConsoleTab {
 function ConditionsPanel({ condicoes }: { condicoes: ActiveCondition[] }) {
   const ativas = condicoes.filter((c) => c.ativa !== false);
   return (
-    <div className="rc-panel rc-brackets">
+    <div className="rc-panel">
       <div className="rc-block-label" style={{ marginBottom: 9 }}>
         Condições
       </div>
@@ -76,12 +76,6 @@ export function ConsoleShell({
   return (
     <div className="rc-root">
       <div className="rc-window">
-        <span className="rc-rail rc-rail--left" aria-hidden="true">
-          <span>sys.ruptura // console</span>
-        </span>
-        <span className="rc-rail rc-rail--right" aria-hidden="true">
-          <span>ficha operacional</span>
-        </span>
         <div className="rc-titlebar">
           <span className="rc-titlebar-name rc-mono">Console do Personagem</span>
           <span className="rc-titlebar-right">{titlebarExtra}</span>
@@ -106,7 +100,6 @@ export function ConsoleShell({
                   checkpoint. Slots visíveis e vazios, sem simular conteúdo. */}
               {[1, 2, 3].map((n) => (
                 <div key={n} className="rc-pinned-slot" data-testid={`console-pinned-${n}`}>
-                  <span className="rc-pinned-mark" aria-hidden="true" />
                   <span className="rc-pinned-label">Fixado #{n}</span>
                 </div>
               ))}
