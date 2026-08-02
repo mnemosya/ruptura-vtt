@@ -295,6 +295,7 @@ import { useCharacterRealtime } from "../../../lib/realtime/useCharacterRealtime
 import { describeRealtimeStatus } from "../../../lib/realtime/tableRealtime";
 import { CharacterSheetTabs, type TabId } from "./components/CharacterSheetTabs";
 import { CharacterConsole } from "../../ficha/_console/CharacterConsole";
+import { ConsoleErrorBoundary } from "../../ficha/_console/ConsoleErrorBoundary";
 import type { ConsoleApi, ConsolePin } from "../../ficha/_console/types";
 import type { BodySlotId } from "../../ficha/_console/slots";
 import { GeneralTab } from "./components/GeneralTab";
@@ -5287,7 +5288,11 @@ export default function CharacterSheetClient({
 
   return (
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
-      <CharacterConsole aberto={consoleAberto} onClose={() => setConsoleAberto(false)} api={consoleApi} />
+      {consoleAberto && (
+        <ConsoleErrorBoundary>
+          <CharacterConsole aberto={consoleAberto} onClose={() => setConsoleAberto(false)} api={consoleApi} />
+        </ConsoleErrorBoundary>
+      )}
       <button
         type="button"
         data-testid="abrir-console"
