@@ -33,6 +33,7 @@
     "test:spells": "tsx scripts/test-spells.ts",
     "test:character-storage": "tsx scripts/test-character-storage.ts",
     "test:ammunition": "tsx scripts/test-ammunition.ts",
+    "test:console": "tsx scripts/test-console.ts",
     "test:canonical-schema": "tsx scripts/test-canonical-content-schema.ts",
     "db:migrate:generic": "tsx scripts/dev/apply-migration-generic.ts",
     "grant:content-admin": "tsx scripts/grant-content-admin.ts",
@@ -50,6 +51,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
     "dotenv": "^16.4.5",
+    "lucide-react": "^1.28.0",
     "next": "^16.2.9",
     "pg": "^8.13.1",
     "react": "^19.2.7",

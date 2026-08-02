@@ -91,6 +91,18 @@ export interface ItemContent {
   pdMax: number | null;
   /** `estatisticas.tipo_protecao` ("fisica"/"energetica"/"hibrida") — usado só para checar se o MIT/PD se aplica ao tipo de dano recebido. */
   tipoProtecao: string | null;
+  /**
+   * `estatisticas.regioes` das armaduras — regiões do corpo cobertas
+   * ("cabeca" | "tronco" | "bracos" | "pernas"). Dado CANÔNICO já
+   * presente em 100% das armaduras do DB; exposto aqui para o paper
+   * doll do Console poder decidir compatibilidade de slot sem inventar
+   * regra. Vazio para itens que não são armadura.
+   *
+   * NÃO é o modelo de sobreposição por região do PRD 13.7 (que trata
+   * de duas armaduras cobrindo a mesma região) — isso continua fora de
+   * escopo. Aqui é só leitura de compatibilidade.
+   */
+  regioes: string[];
   /** `estatisticas.compatibilidade.familia` — família da munição (ex.: "flecha_simples", "mun_pistola"). `null` para não-munições. */
   ammoFamilia: string | null;
   /** `estatisticas.compatibilidade.itens` — slugs de armas compatíveis com esta munição. Vazio para não-munições. */
@@ -162,6 +174,7 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
     mitMax: typeof estatisticas?.mit_base === "number" ? estatisticas.mit_base : null,
     pdMax: typeof estatisticas?.pd_max === "number" ? estatisticas.pd_max : null,
     tipoProtecao: typeof estatisticas?.tipo_protecao === "string" ? estatisticas.tipo_protecao : null,
+    regioes: asStringArray(estatisticas?.regioes),
     ammoFamilia: (() => {
       const compat = asRecord(estatisticas?.compatibilidade);
       return typeof compat?.familia === "string" ? compat.familia : null;
