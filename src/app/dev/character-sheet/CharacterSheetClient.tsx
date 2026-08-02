@@ -481,8 +481,15 @@ export default function CharacterSheetClient({
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>(initialTab ?? "geral");
-  /** Console do Personagem — janela flutuante sobre a ficha (aditiva). */
-  const [consoleAberto, setConsoleAberto] = useState(false);
+  /**
+   * Console do Personagem — janela flutuante sobre a ficha (aditiva).
+   * Em `mode === "product"` (rota real /ficha, usada pelos cards de
+   * "Fichas ao seu alcance" e "Abrir ficha") ele abre AUTOMATICAMENTE:
+   * clicar num personagem precisa levar direto ao Console, não a uma
+   * tela intermediária com um botão para abri-lo. Em `mode === "dev"`
+   * continua manual, controlado pelo botão de teste.
+   */
+  const [consoleAberto, setConsoleAberto] = useState(mode === "product");
   const [consolePins, setConsolePins] = useState<ConsolePin[]>([]);
   // Estado de UI local — não vai para o payload salvo (ver handleSave).
   const [sheetMode, setSheetMode] = useState<SheetMode>("jogo");
