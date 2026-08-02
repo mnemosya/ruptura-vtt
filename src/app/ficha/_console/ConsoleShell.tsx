@@ -21,7 +21,7 @@ import type { ReactNode } from "react";
 import type { ActiveCondition, Character, DerivedStats } from "../../../lib/character";
 import { VitalsColumn } from "./VitalsColumn";
 import { ResourcesRow } from "./ResourcesRow";
-import { PaperDoll } from "./PaperDoll";
+import { PaperDoll, QuickAccessCards } from "./PaperDoll";
 import "../../_design/console.css";
 
 export interface ConsoleTab {
@@ -76,8 +76,12 @@ export function ConsoleShell({
   return (
     <div className="rc-root">
       <div className="rc-window">
-        <span className="rc-rail rc-rail--left" aria-hidden="true" />
-        <span className="rc-rail rc-rail--right" aria-hidden="true" />
+        <span className="rc-rail rc-rail--left" aria-hidden="true">
+          <span>sys.ruptura // console</span>
+        </span>
+        <span className="rc-rail rc-rail--right" aria-hidden="true">
+          <span>ficha operacional</span>
+        </span>
         <div className="rc-titlebar">
           <span className="rc-titlebar-name rc-mono">Console do Personagem</span>
           <span className="rc-titlebar-right">{titlebarExtra}</span>
@@ -92,7 +96,11 @@ export function ConsoleShell({
             <ResourcesRow character={character} derivados={derivados} />
             <PaperDoll character={character} />
 
-            {/* Fixados e Condições ficam abaixo de Equipamentos. */}
+            {/* Acesso Rápido: dois cards próprios, fora do paper doll. */}
+            <QuickAccessCards character={character} />
+
+            {/* Fixados ficam abaixo de Equipamentos; Condições foi para
+                a coluna da direita, sob o painel de Perícias. */}
             <div className="rc-pinned">
               {/* `pinned` ainda não existe no payload — pendência no
                   checkpoint. Slots visíveis e vazios, sem simular conteúdo. */}
@@ -103,8 +111,6 @@ export function ConsoleShell({
                 </div>
               ))}
             </div>
-
-            <ConditionsPanel condicoes={character.condicoes_ativas ?? []} />
           </div>
 
           <div className="rc-col rc-col-tabs">
@@ -125,6 +131,8 @@ export function ConsoleShell({
             <div className="rc-tabpanel" role="tabpanel">
               {children}
             </div>
+
+            <ConditionsPanel condicoes={character.condicoes_ativas ?? []} />
           </div>
         </div>
       </div>
