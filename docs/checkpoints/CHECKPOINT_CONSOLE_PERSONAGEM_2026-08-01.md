@@ -127,21 +127,37 @@ Não existe no payload. Os três slots renderizam vazios e rotulados, sem
 simular conteúdo. Precisa de modelo (provavelmente referências a
 ação/magia/item) antes de virar funcional.
 
-### 5.4 Consolidação das abas
+### 5.4 Destinos órfãos (consequência direta das 6 abas) — PRIORITÁRIO
 
-O wireframe mostra **6 abas**; o sistema tem **15**. O Tempo 1 fez
-apenas **reordenação** — a ordem de leitura do wireframe (Perícias,
-Magias, Inventário, Biblioteca, Talentos, Ações) vem primeiro e o resto
-segue. **Nada foi removido, renomeado ou consolidado.**
+O Console renderiza exatamente as **seis abas do wireframe**: Perícias,
+Magias, Mochila (`inventario`), Escalpos (`biblioteca` — é onde
+`escalpos_instalados` é gerenciado hoje), Características (`talentos`) e
+Ações.
 
-Decisões de produto em aberto:
+Os outros sete destinos (Geral, Atributos, Recursos, Condições,
+Rolagens, Log, Mesa) **deixaram de ser renderizados**. O código deles
+NÃO foi apagado — ficou dormente no `CharacterSheetClient`, porque são
+regras implementadas e testadas. Ficaram inalcançáveis pela UI:
 
-- `MOCHILA` (wireframe) vs `Inventário` (sistema) — com o paper doll
-  separado, o que sobra na aba de fato é a mochila, mas o rename é
-  escolha da autora.
-- `ESCALPOS` (wireframe) não tem aba própria: escalpos vivem dentro de
-  `Biblioteca`, junto com Propriedades e Runas.
-- `rolagens`, `log` e `mesa` não têm lugar no desenho.
+- descanso curto / longo e restaurar recursos ao máximo
+- surto de Sobrecarga e teste de Vontade
+- avanço / estabilização / teste de Colapso
+- resolução de Ruptura pendente
+- adicionar e remover Condição, resolver testes de resistência
+- usar / desfazer Reação, resetar reações
+- PM e histórico de evolução (Modo Evolução)
+- edição de atributos, perícias e recursos atuais
+- console de Rolagens, Log e painel de Mesa / fim de rodada
+- "Novo personagem" (dev: Personagens salvos, Debug)
+
+**Salvar personagem** foi o único resgatado de imediato — saiu da aba
+Geral para a barra de título, porque perder a persistência seria perda
+de dado, não só de navegação.
+
+Régua exata para reconectar: `npx tsc --noEmit --noUnusedLocals` lista
+os **62 símbolos** hoje sem uso no client. Cada um precisa de um destino
+definido (aba nova, painel do Console, modal) antes de a ficha voltar a
+ser operacionalmente completa.
 
 ### 5.5 Estilo interno das abas
 
@@ -160,8 +176,9 @@ Novos:
   (prefixo `rc-`), mesmos tokens de `auth.css`/`app.css`
 - `src/app/ficha/_console/ConsoleShell.tsx`
 - `src/app/ficha/_console/VitalsColumn.tsx`
-- `src/app/ficha/_console/ResourcesPanel.tsx`
+- `src/app/ficha/_console/ResourcesRow.tsx`
 - `src/app/ficha/_console/PaperDoll.tsx`
+- `src/app/ficha/_console/SkillsPanel.tsx`
 - `src/lib/character/equipmentSlots.ts`
 - `scripts/test-equipment-slots.ts`
 

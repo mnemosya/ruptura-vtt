@@ -292,8 +292,9 @@ import { upsertCrewInventoryItem } from "../../../lib/table/crewInventory";
 import type { Campaign } from "../../../lib/table";
 import { useCharacterRealtime } from "../../../lib/realtime/useCharacterRealtime";
 import { describeRealtimeStatus } from "../../../lib/realtime/tableRealtime";
-import { TAB_LABELS, TABS, type TabId } from "./components/CharacterSheetTabs";
+import { type TabId } from "./components/CharacterSheetTabs";
 import { ConsoleShell, type ConsoleTab } from "../../ficha/_console/ConsoleShell";
+import { SkillsPanel } from "../../ficha/_console/SkillsPanel";
 import { GeneralTab } from "./components/GeneralTab";
 import { AttributesTab } from "./components/AttributesTab";
 import { SkillsTab } from "./components/SkillsTab";
@@ -477,26 +478,39 @@ export default function CharacterSheetClient({
   const [personagens, setPersonagens] = useState<CharacterRecord[]>(personagensIniciais);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabId>(initialTab ?? "geral");
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab ?? "pericias");
   /**
-   * Abas do Console. A ordem segue a leitura do wireframe (Perícias,
-   * Magias, Mochila/Inventário, Escalpos/Biblioteca, Características/
-   * Talentos, Ações) e as demais vêm depois — é só REORDENAÇÃO: nenhuma
-   * aba foi removida, renomeada ou consolidada. Unificar os 15 destinos
-   * atuais nos 6 do desenho é decisão de produto, registrada como
-   * pendência no checkpoint.
+   * As SEIS abas do wireframe, nesta ordem e com estes rótulos.
+   *
+   * ATENÇÃO — CÓDIGO DORMENTE, NÃO É CÓDIGO MORTO. Os destinos antigos
+   * que não aparecem no wireframe (Geral, Atributos, Recursos,
+   * Condições, Rolagens, Log, Mesa) deixaram de ser renderizados, mas
+   * os handlers deles continuam AQUI de propósito: descanso curto/longo,
+   * surto de Sobrecarga, teste de Vontade, avanço/estabilização de
+   * Colapso, resolução de Ruptura, adicionar/remover Condição, reações,
+   * PM/evolução, edição de atributos/perícias/recursos e fim de rodada
+   * são regras implementadas e testadas. Apagá-los seria destruir
+   * funcionalidade, não limpar sobra.
+   *
+   * `npx tsc --noEmit --noUnusedLocals` lista o conjunto exato (62
+   * símbolos) — é a régua para reconectar cada um quando o destino
+   * dele for definido. Ver "destinos órfãos" no checkpoint do Console.
+   *
+   * "Salvar personagem" foi o único resgatado de imediato: saiu da aba
+   * Geral para a barra de título, porque perder a persistência seria
+   * perda de dado, não só de navegação.
    */
-  const consoleTabs = useMemo<ConsoleTab[]>(() => {
-    const ordemWireframe: TabId[] = ["pericias", "magias", "inventario", "biblioteca", "talentos", "acoes"];
-    const ocultas: TabId[] = mode === "product" ? ["personagens", "debug"] : [];
-    const restantes = TABS.filter((t) => !ordemWireframe.includes(t));
-    return [...ordemWireframe, ...restantes]
-      .filter((t) => !ocultas.includes(t))
-      .map((t) => ({
-        id: t,
-        label: t === "personagens" ? `${TAB_LABELS[t]} (${personagens.length})` : TAB_LABELS[t],
-      }));
-  }, [mode, personagens.length]);
+  const consoleTabs = useMemo<ConsoleTab[]>(
+    () => [
+      { id: "pericias", label: "Perícias" },
+      { id: "magias", label: "Magias" },
+      { id: "inventario", label: "Mochila" },
+      { id: "biblioteca", label: "Escalpos" },
+      { id: "talentos", label: "Características" },
+      { id: "acoes", label: "Ações" },
+    ],
+    [],
+  );
   // Estado de UI local — não vai para o payload salvo (ver handleSave).
   const [sheetMode, setSheetMode] = useState<SheetMode>("jogo");
   // "Rolagem preparada" — ponte entre o clique em "Rolar" nas abas
@@ -5203,18 +5217,26 @@ export default function CharacterSheetClient({
       tabs={consoleTabs}
       activeTab={activeTab}
       onTabChange={(id) => setActiveTab(id as TabId)}
-      conditions={
-        <ActiveStateStrip
-          condicoes={character.condicoes_ativas ?? []}
-          activeEffects={activeEffects}
-          conditionContents={conditionContents}
-          onVerCondicoes={() => setActiveTab("condicoes")}
-          pvTemporario={character.recursos_atuais?.pv_temporario ?? 0}
-          manaTemporaria={character.recursos_atuais?.mana_temporaria ?? 0}
-          sobrecargaUsadaDia={character.sobrecarga_usada_dia ?? 0}
-          rupturaPendente={character.ruptura_pendente ?? false}
-          colapso={character.colapso}
-        />
+      titlebarExtra={
+        <>
+          <span className="rc-titlebar-chip">{character.nome || "sem nome"}</span>
+          {characterId && (
+            <span className="rc-titlebar-chip" data-testid="ficha-sync-status">
+              ● {describeRealtimeStatus(characterSyncStatus, "ficha").texto}
+            </span>
+          )}
+          {/* Saiu da aba Geral (que não existe no wireframe) para cá:
+              perder a persistência seria perda de dado, não navegação. */}
+          <button
+            type="button"
+            className="rc-winbtn rc-winbtn--save"
+            data-testid="ficha-salvar"
+            onClick={handleSave}
+            disabled={saveState === "saving"}
+          >
+            {saveState === "saving" ? "Salvando…" : "Salvar"}
+          </button>
+        </>
       }
       banners={
         <>
@@ -5307,103 +5329,8 @@ export default function CharacterSheetClient({
         </>
       }
     >
-      {activeTab === "geral" && (
-        <GeneralTab
-          mode={mode}
-          nome={character.nome}
-          metadados={character.metadados}
-          characterId={characterId}
-          schemaVersion={character.metadados?.schema_version}
-          saveState={saveState}
-          errorMessage={errorMessage}
-          sheetMode={sheetMode}
-          onModeChange={setSheetMode}
-          onNomeChange={(value) => setCharacter((prev) => ({ ...prev, nome: value }))}
-          onSave={handleSave}
-          onNew={handleNew}
-          mesas={mesas}
-          selectedCampaignId={selectedCampaignId}
-          onSelectCampaign={handleSelectCampaign}
-          onLoadPersonagemAtivo={handleLoadPersonagemAtivo}
-          pmTotal={character.pm_total ?? 0}
-          pmDisponivel={character.pm_disponivel ?? 0}
-          historicoEvolucao={character.historico_evolucao ?? []}
-          onGainPm={handleGainPm}
-          onSpendPm={handleSpendPm}
-        />
-      )}
-
-      {activeTab === "atributos" && (
-        <AttributesTab
-          atributos={character.atributos}
-          definitions={regras?.atributos}
-          readOnly={sheetMode === "jogo"}
-          onChange={updateAtributo}
-          onRoll={handleRollAtributo}
-        />
-      )}
-
       {activeTab === "pericias" && (
-        <SkillsTab
-          pericias={character.pericias}
-          definitions={regras?.pericias}
-          readOnly={sheetMode === "jogo"}
-          onChange={updatePericia}
-          onRoll={handleRollPericia}
-        />
-      )}
-
-      {activeTab === "recursos" && (
-        <ResourcesTab
-          regras={regras}
-          derivados={derivados}
-          recursosAtuais={character.recursos_atuais}
-          onChangeRecursoAtual={updateRecursoAtual}
-          onRestoreMax={handleRestoreRecursosMax}
-          estadoJogo={character.estado_jogo}
-          penalidadeDefensivaAtual={reactionAvailability.currentOverflowPenalty}
-          onGastarPA={() => adjustEstadoJogo("pa_gastos", 1)}
-          onDesfazerPA={() => adjustEstadoJogo("pa_gastos", -1)}
-          onResetarPA={() => resetEstadoJogo("pa_gastos")}
-          onUsarReacao={handleUseReactionManual}
-          onDesfazerReacao={handleUndoReactionManual}
-          onResetarReacoes={handleResetReactions}
-          atributos={character.atributos}
-          onApplyShortRest={handleApplyShortRest}
-          onApplyLongRest={handleApplyLongRest}
-          onMarkNewDayTalents={handleMarkNewDayTalents}
-          sobrecargaUsadaDia={character.sobrecarga_usada_dia ?? 0}
-          overloadMaxOverride={getTalentOverloadLimitOverride(character, talentsIniciais)}
-          rupturaEspecialAscensao={character.ruptura_especial_ascensao ?? null}
-          rupturaPendente={character.ruptura_pendente ?? false}
-          overloadWillRollPending={overloadWillRollPending}
-          onUseOverloadSurge={handleUseOverloadSurge}
-          onRollOverloadWillTest={handleRollOverloadWillTest}
-          colapso={character.colapso}
-          onStabilizeCollapse={handleStabilizeCollapse}
-          onAdvanceCollapseSegment={handleAdvanceCollapseSegmentManual}
-          onRollCollapseTest={handleRollCollapseTest}
-          currentRound={character.current_round ?? 1}
-          onEndRound={handleEndRoundForCharacter}
-          endRoundSummary={endRoundSummary}
-          ultimaVontadePendente={character.ultima_vontade_pendente ?? false}
-          ruptureChoices={character.pending_rupture_choices ?? []}
-          onResolveRuptureChoice={handleResolveRuptureChoice}
-        />
-      )}
-
-      {activeTab === "condicoes" && (
-        <ConditionsTab
-          condicoes={character.condicoes_ativas ?? []}
-          condicoesDisponiveis={condicoesDisponiveis}
-          activeEffects={activeEffects}
-          pendingChecks={character.pending_condition_checks ?? []}
-          temporaryEffects={getActiveTemporaryEffects(character)}
-          onRemoveTemporaryEffect={handleRemoveTemporaryEffect}
-          onResolveCheck={handleResolveConditionCheck}
-          onAdd={handleAddCondition}
-          onRemove={handleRemoveCondition}
-        />
+        <SkillsPanel pericias={character.pericias} definitions={regras?.pericias} />
       )}
 
       {activeTab === "talentos" && (
@@ -5646,82 +5573,6 @@ export default function CharacterSheetClient({
         />
       )}
 
-      {activeTab === "rolagens" && (
-        <RollsTab
-          atributos={character.atributos}
-          atributoDefinitions={regras?.atributos}
-          pericias={character.pericias}
-          periciaDefinitions={regras?.pericias}
-          preparedRoll={preparedRoll}
-          onPreparedRollApplied={() => setPreparedRoll(null)}
-          onLog={addLogEntry}
-          campaignId={selectedCampaignId}
-          characterId={characterId}
-          characterNome={character.nome}
-          activeEffects={activeEffects}
-          marginPromotions={getMarginPromotions(character, talentsIniciais)}
-          saqueFantasmaAvailable={hasSaqueFantasma(character, talentsIniciais)}
-          gatilhoQuenteStatus={getGatilhoQuenteAvailability(character, talentsIniciais)}
-          onGatilhoDadoResultado={handleUseGatilhoDado}
-          bangBangAvailable={hasBangBangSegundoDisparo(character, talentsIniciais)}
-          paDisponivel={Math.max(0, derivados.pa_max - (character.estado_jogo?.pa_gastos ?? 0))}
-          onSpendPaBangBang={handleSpendPaBangBang}
-          totemBencaoAvailable={hasTotemBencao(character, talentsIniciais)}
-          bencaoTokenAtivo={character.bencao_token_ativo ?? null}
-          onConsumeBencaoToken={handleConsumeBencaoToken}
-          falcaoTokenAtivo={character.falcao_token_ativo ?? null}
-          onConsumeFalcaoToken={handleConsumeFalcaoToken}
-          briefingCampoAtivo={character.briefing_campo_ativo ?? null}
-          onConsumeBriefingCampo={handleConsumeBriefingCampo}
-          entrelinhasAtivo={character.entrelinhas_ativo ?? null}
-          onConsumeEntrelinhas={handleConsumeEntrelinhas}
-          espetaculoMortalAtivo={character.espetaculo_mortal_ativo ?? null}
-          onConsumeEspetaculoMortal={handleConsumeEspetaculoMortal}
-          showdownStatus={getShowdownAvailability(character, talentsIniciais)}
-          onShowdownUsado={handleShowdownUsado}
-        />
-      )}
-
-      {activeTab === "log" && <LogTab log={log} onClear={() => setLog([])} />}
-
-      {activeTab === "mesa" && (
-        <>
-          {selectedCampaignId && mesas.find((m) => m.id === selectedCampaignId) && (
-            <TurnTrackPanel
-              campaign={mesas.find((m) => m.id === selectedCampaignId)!}
-              onCampaignChange={(next) => setMesas((prev) => prev.map((m) => (m.id === next.id ? next : m)))}
-              isNarrator={false}
-              viewerCharacterId={characterId}
-            />
-          )}
-          <MesaTab
-            campaignId={selectedCampaignId}
-            mesaNome={mesas.find((m) => m.id === selectedCampaignId)?.name ?? null}
-            characterId={characterId}
-            characterNome={character.nome}
-          />
-        </>
-      )}
-
-      {mode === "dev" && activeTab === "personagens" && (
-        <SavedCharactersTab
-          personagens={personagens}
-          characterId={characterId}
-          onLoad={handleLoad}
-          onDelete={handleDelete}
-        />
-      )}
-
-      {mode === "dev" && activeTab === "debug" && (
-        <DebugTab
-          characterId={characterId}
-          schemaVersion={character.metadados?.schema_version}
-          saveState={saveState}
-          errorMessage={errorMessage}
-          personagensCount={personagens.length}
-          usandoFallback={usandoFallback}
-        />
-      )}
     </ConsoleShell>
   );
 }

@@ -1,26 +1,26 @@
 "use client";
 
 /**
- * Moldura do Console do Personagem — a casca visual que substitui o
- * layout antigo da ficha (`<main style={{maxWidth:720}}>` +
- * `CharacterSheetTabs`) sem tocar na lógica das abas.
+ * Moldura do Console do Personagem.
  *
- * Decisão de arquitetura (Tempo 1): o motor da ficha
- * (`CharacterSheetClient`, ~5.7k linhas) NÃO é reescrito. Este shell
- * envolve o mesmo estado e recebe o conteúdo das abas como `children`,
- * então cada aba continua exatamente como estava. Trocar motor e
- * carroceria ao mesmo tempo seria o jeito caro e arriscado de fazer
- * isso.
+ * Estrutura fiel ao wireframe:
+ * - coluna esquerda: retrato, identidade, atributos e um card por bloco
+ *   de vitais (Integridade, Sobrecarga, Deslocamento, PA, Reações);
+ * - coluna central: Colapso + Recursos no topo, Equipamentos, e abaixo
+ *   dele os Fixados e as Condições;
+ * - coluna direita: as SEIS abas do wireframe e o painel de conteúdo.
  *
- * Identidade visual: `_design/console.css`, terceira folha da mesma
- * linguagem HUD de `auth.css` e `app.css` (mesmos tokens, mesma
- * tipografia, mesmo canto cortado).
+ * Decisão de arquitetura: o motor da ficha (`CharacterSheetClient`)
+ * não é reescrito — este shell envolve o mesmo estado e recebe o
+ * conteúdo da aba como `children`.
+ *
+ * Identidade visual: `_design/console.css`.
  */
 
 import type { ReactNode } from "react";
-import type { Character, DerivedStats } from "../../../lib/character";
+import type { ActiveCondition, Character, DerivedStats } from "../../../lib/character";
 import { VitalsColumn } from "./VitalsColumn";
-import { ResourcesPanel } from "./ResourcesPanel";
+import { ResourcesRow } from "./ResourcesRow";
 import { PaperDoll } from "./PaperDoll";
 import "../../_design/console.css";
 
@@ -29,13 +29,35 @@ export interface ConsoleTab {
   label: string;
 }
 
+function ConditionsPanel({ condicoes }: { condicoes: ActiveCondition[] }) {
+  const ativas = condicoes.filter((c) => c.ativa !== false);
+  return (
+    <div className="rc-panel rc-brackets">
+      <div className="rc-block-label" style={{ marginBottom: 9 }}>
+        Condições
+      </div>
+      {ativas.length === 0 ? (
+        <p className="rc-conditions-empty">Nenhuma condição ativa.</p>
+      ) : (
+        <div className="rc-conditions">
+          {ativas.map((c) => (
+            <span key={c.id} className="rc-condition-chip" data-tone="debuff" title={c.nome}>
+              {c.nome}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ConsoleShell({
   character,
   derivados,
   tabs,
   activeTab,
   onTabChange,
-  conditions,
+  titlebarExtra,
   banners,
   children,
 }: {
@@ -44,8 +66,8 @@ export function ConsoleShell({
   tabs: readonly ConsoleTab[];
   activeTab: string;
   onTabChange: (id: string) => void;
-  /** Faixa de estados ativos (ActiveStateStrip) — entra no painel Condições. */
-  conditions?: ReactNode;
+  /** Controles que o wireframe põe na barra de título (salvar, status). */
+  titlebarExtra?: ReactNode;
   /** Avisos de sessão/sync/erro herdados da ficha antiga. */
   banners?: ReactNode;
   /** Conteúdo da aba ativa. */
@@ -54,11 +76,11 @@ export function ConsoleShell({
   return (
     <div className="rc-root">
       <div className="rc-window">
+        <span className="rc-rail rc-rail--left" aria-hidden="true" />
+        <span className="rc-rail rc-rail--right" aria-hidden="true" />
         <div className="rc-titlebar">
           <span className="rc-titlebar-name rc-mono">Console do Personagem</span>
-          <span className="rc-titlebar-actions rc-mono" aria-hidden="true">
-            <span style={{ fontSize: 10, letterSpacing: "0.16em" }}>{character.nome || "sem nome"}</span>
-          </span>
+          <span className="rc-titlebar-right">{titlebarExtra}</span>
         </div>
 
         {banners ? <div className="rc-banners">{banners}</div> : null}
@@ -67,45 +89,41 @@ export function ConsoleShell({
           <VitalsColumn character={character} derivados={derivados} />
 
           <div className="rc-col rc-col-center">
-            <ResourcesPanel character={character} derivados={derivados} />
+            <ResourcesRow character={character} derivados={derivados} />
             <PaperDoll character={character} />
-          </div>
 
-          <div className="rc-col rc-col-tabs">
-            <div>
-              <div className="rc-tabs" role="tablist">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    role="tab"
-                    aria-selected={activeTab === tab.id}
-                    data-testid={`tab-${tab.id}`}
-                    className={`rc-tab${activeTab === tab.id ? " rc-tab--active" : ""}`}
-                    onClick={() => onTabChange(tab.id)}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-              <div className="rc-tabpanel" role="tabpanel">
-                {children}
-              </div>
-            </div>
-
+            {/* Fixados e Condições ficam abaixo de Equipamentos. */}
             <div className="rc-pinned">
-              {/* `pinned` ainda não existe no payload — pendência registrada
-                  no checkpoint. Slots ficam visíveis e vazios, sem simular
-                  conteúdo. */}
+              {/* `pinned` ainda não existe no payload — pendência no
+                  checkpoint. Slots visíveis e vazios, sem simular conteúdo. */}
               {[1, 2, 3].map((n) => (
                 <div key={n} className="rc-pinned-slot" data-testid={`console-pinned-${n}`}>
-                  pinned #{n}
+                  <span className="rc-pinned-mark" aria-hidden="true" />
+                  <span className="rc-pinned-label">Fixado #{n}</span>
                 </div>
               ))}
             </div>
 
-            <div className="rc-panel">
-              <div className="rc-panel-title">Condições</div>
-              {conditions ?? <p className="rc-conditions-empty">Nenhuma condição ativa.</p>}
+            <ConditionsPanel condicoes={character.condicoes_ativas ?? []} />
+          </div>
+
+          <div className="rc-col rc-col-tabs">
+            <div className="rc-tabs" role="tablist">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  role="tab"
+                  aria-selected={activeTab === tab.id}
+                  data-testid={`tab-${tab.id}`}
+                  className={`rc-tab${activeTab === tab.id ? " rc-tab--active" : ""}`}
+                  onClick={() => onTabChange(tab.id)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <div className="rc-tabpanel" role="tabpanel">
+              {children}
             </div>
           </div>
         </div>
