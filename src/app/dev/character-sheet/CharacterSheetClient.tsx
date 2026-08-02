@@ -5169,6 +5169,24 @@ export default function CharacterSheetClient({
     setActiveTab("rolagens");
   }
 
+  // ── Console do Personagem ──────────────────────────────────────
+  // O Console é ADITIVO: a ficha em abas continua intacta por baixo.
+  // Ele não implementa regra — só reempacota os handlers já existentes
+  // no contrato `ConsoleApi`, para nenhuma lógica ser duplicada.
+  //
+  // ESTE HOOK PRECISA VIR ANTES do `return` de bloqueio do modo product
+  // logo abaixo — Regras dos Hooks: nenhum hook pode ficar atrás de um
+  // return condicional, senão a CONTAGEM de hooks muda entre renders
+  // (aqui: 1º render com productSessionState "pending" retorna cedo
+  // SEM rodar este useMemo; quando o personagem termina de carregar e
+  // productSessionState vira "valid", o mesmo componente de repente
+  // roda um hook A MAIS que no render anterior). React detecta isso e
+  // quebra com "Rendered more hooks than during the previous render" —
+  // exatamente o crash que derrubava /ficha inteira ao abrir um
+  // personagem real (nunca aparecia em /dev/character-sheet, que nunca
+  // passa por esse bloqueio: lá `mode` é sempre "dev").
+  const catalogoItens = useMemo(() => new Map(itemsIniciais.map((i) => [i.slug, i])), [itemsIniciais]);
+
   // Modo product (/ficha): antes de mostrar qualquer ficha, exige o
   // personagem já resolvido por campanha+id (ver
   // productSessionState/loadProductSession acima). Cada estado tem uma
@@ -5190,12 +5208,6 @@ export default function CharacterSheetClient({
   }
 
   const estocarStatusFicha = getEstocarAvailability(character, talentsIniciais);
-
-  // ── Console do Personagem ──────────────────────────────────────
-  // O Console é ADITIVO: a ficha em abas continua intacta por baixo.
-  // Ele não implementa regra — só reempacota os handlers já existentes
-  // no contrato `ConsoleApi`, para nenhuma lógica ser duplicada.
-  const catalogoItens = useMemo(() => new Map(itemsIniciais.map((i) => [i.slug, i])), [itemsIniciais]);
 
   const consoleApi: ConsoleApi = {
     character,
