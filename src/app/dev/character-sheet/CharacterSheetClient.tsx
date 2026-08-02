@@ -296,6 +296,7 @@ import { describeRealtimeStatus } from "../../../lib/realtime/tableRealtime";
 import { CharacterSheetTabs, type TabId } from "./components/CharacterSheetTabs";
 import { CharacterConsole } from "../../ficha/_console/CharacterConsole";
 import { ConsoleErrorBoundary } from "../../ficha/_console/ConsoleErrorBoundary";
+import { useConsoleCloseOverride } from "../../ficha/_console/ConsoleCloseContext";
 import type { ConsoleApi, ConsolePin } from "../../ficha/_console/types";
 import type { BodySlotId } from "../../ficha/_console/slots";
 import { GeneralTab } from "./components/GeneralTab";
@@ -5186,6 +5187,10 @@ export default function CharacterSheetClient({
   // personagem real (nunca aparecia em /dev/character-sheet, que nunca
   // passa por esse bloqueio: lá `mode` é sempre "dev").
   const catalogoItens = useMemo(() => new Map(itemsIniciais.map((i) => [i.slug, i])), [itemsIniciais]);
+  // Também precisa vir antes do return de bloqueio — mesma regra acima.
+  // `null` na rota /ficha normal; vira `router.back()` só quando esta
+  // árvore está montada dentro da rota interceptada do modal.
+  const consoleCloseOverride = useConsoleCloseOverride();
 
   // Modo product (/ficha): antes de mostrar qualquer ficha, exige o
   // personagem já resolvido por campanha+id (ver
@@ -5302,7 +5307,17 @@ export default function CharacterSheetClient({
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
       {consoleAberto && (
         <ConsoleErrorBoundary>
-          <CharacterConsole aberto={consoleAberto} onClose={() => setConsoleAberto(false)} api={consoleApi} />
+          <CharacterConsole
+            aberto={consoleAberto}
+            onClose={() => {
+              setConsoleAberto(false);
+              // Rota interceptada (modal sobre Personagens): fechar
+              // literalmente volta para a página de origem em vez de
+              // deixar a ficha clássica visível na URL /ficha.
+              consoleCloseOverride?.();
+            }}
+            api={consoleApi}
+          />
         </ConsoleErrorBoundary>
       )}
       <button
