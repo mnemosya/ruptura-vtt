@@ -20,7 +20,7 @@
 import type { ReactNode } from "react";
 import type { ActiveCondition, Character, DerivedStats } from "../../../lib/character";
 import { VitalsColumn } from "./VitalsColumn";
-import { ResourcesRow } from "./ResourcesRow";
+import { VitalsHud } from "./VitalsHud";
 import { PaperDoll, QuickAccessCards } from "./PaperDoll";
 import "../../_design/console.css";
 
@@ -93,7 +93,7 @@ export function ConsoleShell({
           <VitalsColumn character={character} derivados={derivados} />
 
           <div className="rc-col rc-col-center">
-            <ResourcesRow character={character} derivados={derivados} />
+            <VitalsHud character={character} derivados={derivados} />
             <PaperDoll character={character} />
 
             {/* Acesso Rápido: dois cards próprios, fora do paper doll. */}
