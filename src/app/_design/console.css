@@ -375,104 +375,104 @@
   clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 50%, calc(100% - 9px) 100%, 0 100%);
 }
 
-/* ── Recursos + Colapso (topo do centro) ───────────────────────── */
-/* `stretch` faz a barra de Colapso acompanhar a altura das três barras
-   de recurso, como no wireframe. */
-.rc-vitals-row { display: flex; align-items: stretch; gap: 12px; }
+/* ── Colapso + Recursos ────────────────────────────────────────
+   Refeito do zero. Um ÚNICO container abriga o painel de Colapso
+   (à esquerda, vermelho, com as três barras de segmento dentro) e as
+   três barras de recurso. As barras são retângulos com cantos
+   cortados; a angulação vive só nos segmentos internos. O contador
+   "11/11" fica numa CÉLULA dentro da própria barra, separada por um
+   divisor — não solto do lado de fora. */
 
-.rc-axis-label {
-  display: block;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
-  margin-bottom: 7px;
+.rc-vit {
+  position: relative;
+  border: 1px solid var(--rc-line);
+  background: linear-gradient(180deg, rgba(0, 212, 255, 0.06), rgba(10, 20, 31, 0.86));
+  padding: 9px 12px 12px;
+  clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px));
 }
-.rc-axis-label--collapse { color: #ff8ea0; }
-.rc-axis-label--res { color: rgba(0, 212, 255, 0.8); }
+.rc-vit-head { display: flex; gap: 12px; margin-bottom: 9px; }
+.rc-vit-head > span {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+}
+.rc-vit-head-cls { flex: none; width: 104px; color: #ff5f74; }
+.rc-vit-head-res { color: rgba(0, 212, 255, 0.85); }
+.rc-vit-body { display: flex; gap: 12px; align-items: stretch; }
 
-/* Colapso: painel vermelho à ESQUERDA dos recursos, com as TRÊS
-   barras de segmento dentro (uma por segmento de colapso) e um fundo
-   de varredura para dar peso — a versão anterior eram três caixas
-   ocas e parecia componente quebrado. */
-.rc-collapse-col { flex: none; width: 74px; display: flex; flex-direction: column; }
-.rc-collapse-bar {
+/* Painel de Colapso — as três barras ficam DENTRO dele. */
+.rc-cls-col { flex: none; width: 104px; display: flex; flex-direction: column; }
+.rc-cls {
   position: relative; flex: 1;
-  display: flex; flex-direction: column-reverse; gap: 5px;
-  padding: 7px 6px;
+  display: flex; flex-direction: column-reverse; gap: 6px;
+  padding: 7px;
   border: 1px solid rgba(255, 60, 80, 0.5);
-  background:
-    repeating-linear-gradient(180deg, rgba(255, 60, 80, 0.09) 0 1px, transparent 1px 6px),
-    linear-gradient(180deg, rgba(255, 60, 80, 0.16), rgba(255, 60, 80, 0.04));
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%);
-}
-.rc-collapse-bar::before {
-  content: ""; position: absolute; inset: 3px; pointer-events: none;
-  border: 1px solid rgba(255, 60, 80, 0.16);
-}
-.rc-collapse-bar[data-active="true"] {
-  border-color: #ff7d8f;
-  box-shadow: 0 0 18px rgba(255, 60, 80, 0.35), 0 0 22px rgba(255, 60, 80, 0.18) inset;
-}
-.rc-collapse-seg {
-  position: relative; flex: 1; min-height: 24px;
-  border: 1px solid rgba(255, 60, 80, 0.5);
-  background: rgba(255, 60, 80, 0.06);
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
-}
-.rc-collapse-seg[data-on="true"] {
-  background: linear-gradient(180deg, #d8394b, #6b1420);
-  border-color: #ff96a8;
-  box-shadow: 0 0 10px rgba(255, 60, 80, 0.5);
-}
-.rc-collapse-state {
-  margin-top: 6px; display: block; text-align: center;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 7px; letter-spacing: 0.12em; text-transform: uppercase;
-  color: rgba(255, 142, 160, 0.8);
-}
-
-/* Recursos: barras anguladas e segmentadas, sem card em volta. */
-.rc-res-col { flex: 1; min-width: 0; }
-.rc-res-list { display: flex; flex-direction: column; gap: 8px; }
-.rc-res-row { display: flex; align-items: center; gap: 9px; }
-.rc-res-icon {
-  flex: none; width: 26px; height: 22px;
-  display: flex; align-items: center; justify-content: center;
-  border: 1px solid var(--rc-line);
-  color: var(--cy);
-  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
-}
-.rc-res-icon svg { width: 13px; height: 13px; }
-.rc-res-track {
-  position: relative; flex: 1; min-width: 0;
-  display: flex; gap: 3px;
-  height: 27px;
-  border: 1px solid var(--rc-line);
-  padding: 2px;
-  background: rgba(0, 212, 255, 0.05);
-  /* A trilha é um RETÂNGULO limpo; a angulação vive nos segmentos.
-     Inclinar a trilha inteira deixava as pontas diagonais e a barra
-     parecia torta — erro da versão anterior. */
+  background: linear-gradient(180deg, rgba(255, 60, 80, 0.15), rgba(255, 60, 80, 0.04));
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%);
   overflow: hidden;
 }
-.rc-res-seg {
-  flex: 1; background: rgba(0, 212, 255, 0.08);
-  transform: skewX(-18deg);
+.rc-cls-scan { position: absolute; inset: 0; opacity: 0.55; pointer-events: none; }
+.rc-cls-scan svg { width: 100%; height: 100%; }
+.rc-cls-seg {
+  position: relative; z-index: 1; flex: 1; min-height: 21px;
+  border: 1px solid rgba(255, 60, 80, 0.55);
+  background: rgba(255, 60, 80, 0.07);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
 }
-.rc-res-seg[data-on="true"] { background: linear-gradient(95deg, #2f9fc4, #6fe0ff); }
-.rc-res-row[data-tone="pe"] .rc-res-seg[data-on="true"] { background: linear-gradient(95deg, #1f8f68, #52e0a8); }
-.rc-res-row[data-tone="mana"] .rc-res-seg[data-on="true"] { background: linear-gradient(95deg, #6a3fb0, #b48cff); }
-/* Camada temporária (pv_temporario / mana_temporaria) — hachurada. */
-.rc-res-seg[data-temp="true"] { background: repeating-linear-gradient(0deg, #d8f6ff 0 3px, #6fb6d0 3px 6px); }
-.rc-res-value {
-  flex: none; width: 52px; text-align: right;
+.rc-cls-seg[data-on="true"] {
+  background: linear-gradient(180deg, #e04256, #6b1420);
+  border-color: #ff96a8;
+  box-shadow: 0 0 11px rgba(255, 60, 80, 0.55);
+}
+.rc-cls[data-active="true"] { border-color: #ff7d8f; box-shadow: 0 0 20px rgba(255, 60, 80, 0.3) inset; }
+.rc-cls-state {
+  display: block; margin-top: 7px; text-align: center;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 7px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: rgba(255, 120, 140, 0.85);
+}
+
+/* Recursos */
+.rc-res { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 9px; justify-content: center; }
+.rc-res-row { display: flex; align-items: center; gap: 9px; }
+.rc-res-ico {
+  flex: none; width: 34px; height: 31px;
+  display: grid; place-items: center;
+  border: 1px solid var(--rc-line);
+  background: linear-gradient(150deg, rgba(0, 212, 255, 0.2), rgba(0, 212, 255, 0.05));
+  color: #eafcff;
+  clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+}
+.rc-res-ico svg { width: 16px; height: 16px; }
+.rc-res-bar {
+  flex: 1; min-width: 0;
+  display: flex; align-items: stretch; height: 31px;
+  border: 1px solid var(--rc-line);
+  background: rgba(2, 8, 14, 0.72);
+  padding: 3px;
+  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+}
+.rc-res-segs { flex: 1; min-width: 0; display: flex; gap: 3px; overflow: hidden; }
+.rc-res-seg { flex: 1; background: rgba(120, 190, 220, 0.09); transform: skewX(-18deg); }
+/* Célula do contador DENTRO da barra, separada por divisor. */
+.rc-res-num {
+  flex: none; width: 62px;
+  display: grid; place-items: center;
+  margin-left: 3px; border-left: 1px solid var(--rc-line);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10.5px; font-weight: 600; color: #eafcff;
 }
-.rc-res-label {
-  flex: none; width: 42px;
+.rc-res-tag {
+  flex: none; width: 44px;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: rgba(184, 216, 232, 0.9);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: rgba(200, 228, 242, 0.95);
 }
+/* Cores por recurso — preenchimento sólido (regra do console.css). */
+.rc-res-row[data-tone="pv"] .rc-res-seg[data-on="true"] { background: linear-gradient(95deg, #37a9d6, #7fe4ff); }
+.rc-res-row[data-tone="pe"] .rc-res-seg[data-on="true"] { background: linear-gradient(95deg, #24956c, #5fe8b0); }
+.rc-res-row[data-tone="mana"] .rc-res-seg[data-on="true"] { background: linear-gradient(95deg, #6f45b6, #bb93ff); }
+/* Camada temporária (pv_temporario / mana_temporaria) — hachurada. */
+.rc-res-seg[data-temp="true"] { background: repeating-linear-gradient(0deg, #e2f8ff 0 3px, #74b9d4 3px 6px); }
+.rc-res-row[data-critical="true"] .rc-res-num { color: #ff96a8; }
 
 /* ── Equipamentos (paper doll) ─────────────────────────────────── */
 .rc-doll {
