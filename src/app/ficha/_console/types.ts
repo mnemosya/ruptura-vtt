@@ -37,6 +37,15 @@ export interface ConsoleApi {
   rolarAtributo: (id: keyof CharacterAttributes) => RupturaRollResult;
   /** Rola uma perícia usando o motor real e registra no log. */
   rolarPericia: (periciaId: string) => RupturaRollResult;
+  /**
+   * Rola uma perícia de defesa (Esquivar/Bloquear/Aparar/Resistir) já
+   * gastando a Reação pela regra data-driven de `combat_flow`
+   * (`spendReactionForDefense`, `lib/character/reactions.ts`) — mesma
+   * regra do controle manual de Reação do harness de dev. Sem Reação
+   * disponível, a defesa ainda acontece, mas com a penalidade
+   * cumulativa (`-1`, `-2`...) já aplicada como modificador da rolagem.
+   */
+  rolarDefesa: (periciaId: string) => ConsoleDefenseRollResult;
 
   /** Grava PV/PE/Mana — passa por `updateRecursoAtual` (cura automática + colapso). */
   editarRecurso: (id: RecursoEditavel, valor: number) => void;
@@ -77,6 +86,17 @@ export interface ConsoleApi {
 
   /** Erro não fatal para exibir sem derrubar a janela. */
   erro: string | null;
+}
+
+/** Resultado de `rolarDefesa` — a rolagem em si (`resultado`) mais o
+    que aconteceu com a Reação, pra UI poder mostrar a penalidade. */
+export interface ConsoleDefenseRollResult {
+  resultado: RupturaRollResult;
+  usouReacao: boolean;
+  /** Sempre `<= 0` — modificador cumulativo já aplicado a `resultado.total`. */
+  penalidade: number;
+  /** Quantas defesas sem Reação já foram feitas nesta rodada, incluindo esta. */
+  defesasSemReacao: number;
 }
 
 export type ConsolePinTipo = "magia" | "item" | "arma" | "consumivel" | "talento" | "habilidade" | "acao";

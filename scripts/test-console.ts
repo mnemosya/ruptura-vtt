@@ -13,6 +13,7 @@ import {
   geometriaMaximizada,
   limitarPosicao,
   redimensionar,
+  redimensionarPelaEsquerda,
   MIN_W,
   MIN_H,
   type Geometry,
@@ -57,11 +58,76 @@ const inicial = geometriaInicial(vpGrande);
 assert.ok(inicial.w >= MIN_W && inicial.h >= MIN_H, "Inicial respeita os mínimos.");
 assert.ok(inicial.x > 0 && inicial.y > 0, "Inicial fica centralizada, sem encostar nas bordas.");
 
-const vpPequena = { w: 800, h: 600 };
+const vpPequena = { w: 300, h: 500 };
 const inicialPequena = geometriaInicial(vpPequena);
 assert.equal(inicialPequena.w, MIN_W, "Abaixo do mínimo a janela fica no mínimo (conteúdo é que rola).");
 assert.equal(inicialPequena.h, MIN_H, "Idem para a altura.");
 console.log("4. Geometria inicial — OK");
+
+// -------------------------------------------------------------
+// 4b. `alturaMaxima` (altura da coluna 1) vira teto real da altura —
+// mesmo numa viewport grande, a janela não abre/redimensiona/maximiza
+// mais alta que a coluna 1 (spec "a altura máxima deve ser o tamanho
+// da coluna 1"). Sem o parâmetro, comportamento idêntico ao de antes
+// (testado acima em #4/#5/#7) — é só um teto ADICIONAL, opcional.
+// -------------------------------------------------------------
+const alturaColuna1 = 700;
+const inicialComTeto = geometriaInicial(vpGrande, alturaColuna1);
+assert.equal(inicialComTeto.h, alturaColuna1, "Inicial não passa da altura da coluna 1, mesmo com viewport grande.");
+assert.ok(inicialComTeto.h < Math.round(vpGrande.h * 0.9), "Realmente é MENOR que o cálculo de viewport (90vh) sozinho daria.");
+
+const maxComTeto = geometriaMaximizada(vpGrande, alturaColuna1);
+assert.equal(maxComTeto.h, alturaColuna1, "Maximizada também respeita o teto da coluna 1.");
+
+const resizeComTeto = redimensionar({ x: 10, y: 10, w: 1300, h: 780 }, 1300, 2000, vpGrande, alturaColuna1);
+assert.equal(resizeComTeto.h, alturaColuna1, "Resize manual não passa do teto da coluna 1 mesmo pedindo mais.");
+
+// O teto nunca derruba abaixo do piso de segurança MIN_H.
+const tetoMenorQueMinimo = geometriaInicial(vpGrande, 50);
+assert.equal(tetoMenorQueMinimo.h, MIN_H, "Teto menor que MIN_H não quebra o piso de segurança.");
+
+// BUG real que motivou o teto de viewport: numa tela PEQUENA, se a
+// coluna 1 pede mais altura do que cabe, a janela precisa respeitar a
+// VIEWPORT, não só o conteúdo — senão a janela fica maior que a
+// própria tela (o que o usuário via de verdade ao testar).
+const vpPequenaAltura = { w: 1400, h: 900 };
+const colunaAltaDemaisPraTela = 1400; // conteúdo pede mais do que a tela comporta
+const inicialTelaPequena = geometriaInicial(vpPequenaAltura, colunaAltaDemaisPraTela);
+assert.ok(
+  inicialTelaPequena.h < colunaAltaDemaisPraTela,
+  "Numa tela pequena, o teto de VIEWPORT vence — a janela não fica maior que a coluna 1 pede, mas também não maior que a tela.",
+);
+assert.equal(inicialTelaPequena.h, Math.round(vpPequenaAltura.h * 0.9), "Cai exatamente no teto de 90vh nesse caso.");
+console.log("4b. Teto de altura da coluna 1 (com teto de viewport) — OK");
+
+// -------------------------------------------------------------
+// 4c. `larguraMaxima` (largura natural do `.rc-grid`) — mesmo esquema
+// da altura, agora pra largura (spec: coluna 2 no max width, coluna 3
+// entre 500–610px, sem esticar quando a viewport sobra).
+// -------------------------------------------------------------
+const larguraGrid = 1382; // 268 + 12 + 480 + 12 + 610
+const inicialComTetoLargura = geometriaInicial(vpGrande, undefined, larguraGrid);
+assert.equal(inicialComTetoLargura.w, larguraGrid, "Inicial não passa da largura natural do grid.");
+assert.ok(inicialComTetoLargura.w < Math.round(vpGrande.w * 0.86), "Menor que o cálculo de 86vw sozinho daria.");
+console.log("4c. Teto de largura do grid — OK");
+
+// -------------------------------------------------------------
+// 4d. Resize pelo canto ESQUERDO — espelhado: a borda DIREITA fica
+// parada, x e w mudam juntos.
+// -------------------------------------------------------------
+const geoOriginal: Geometry = { x: 200, y: 100, w: 800, h: 600 };
+const bordaDireitaOriginal = geoOriginal.x + geoOriginal.w;
+// Pede uma largura maior (arrastou pra esquerda) — x precisa diminuir
+// na mesma proporção pra borda direita continuar no mesmo lugar.
+const cresceuPelaEsquerda = redimensionarPelaEsquerda(geoOriginal, 1000, 600, vpGrande);
+assert.equal(cresceuPelaEsquerda.w, 1000, "Largura aplicada normalmente.");
+assert.equal(cresceuPelaEsquerda.x + cresceuPelaEsquerda.w, bordaDireitaOriginal, "Borda direita não se move.");
+assert.equal(cresceuPelaEsquerda.y, geoOriginal.y, "Topo não se move (mesmo comportamento vertical do resize normal).");
+// Não deixa a largura passar do mínimo mesmo pedindo menos que isso.
+const encolheuDemaisPelaEsquerda = redimensionarPelaEsquerda(geoOriginal, 10, 600, vpGrande);
+assert.equal(encolheuDemaisPelaEsquerda.w, MIN_W, "Respeita a largura mínima.");
+assert.equal(encolheuDemaisPelaEsquerda.x + encolheuDemaisPelaEsquerda.w, bordaDireitaOriginal, "Borda direita continua fixa mesmo no mínimo.");
+console.log("4d. Resize pelo canto esquerdo — OK");
 
 // -------------------------------------------------------------
 // 5. Maximizar e restaurar devolvem a geometria EXATA anterior.

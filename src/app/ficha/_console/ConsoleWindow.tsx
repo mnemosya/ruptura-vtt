@@ -21,6 +21,7 @@ import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 
 import { createPortal } from "react-dom";
 import { Minus, Square, Minimize2, Maximize2, X } from "lucide-react";
 import { useConsoleWindow } from "./useConsoleWindow";
+import { Scrollbar } from "./scrollbar";
 import { HudCursor } from "../../mesas/_global/GlobalShell";
 import "../../_design/console.css";
 
@@ -47,6 +48,10 @@ export function ConsoleWindow({
   titulo,
   titlebarExtra,
   dockContent,
+  tablist,
+  larguraMaximaFixa,
+  alturaFallbackInicial,
+  conteudoChave = "",
   children,
 }: {
   aberto: boolean;
@@ -57,11 +62,29 @@ export function ConsoleWindow({
   /** Conteúdo do console minimizado — domínio de quem chama (nome,
       avatar, recursos); a janela só fornece a moldura/controles. */
   dockContent: ReactNode;
+  /** Trilho de abas — vive FORA do conteúdo rolável da janela, rente à
+      borda direita (spec "JANELA CONSOLE"). Opcional pra manter
+      `ConsoleWindow` reutilizável por quem não tem abas. */
+  tablist?: ReactNode;
+  /** Largura MÁXIMA fixa da janela (spec modo Foco: 818px) — quando
+      informada, substitui a largura medida de `.rc-grid`. `undefined`
+      no modo Painel (largura volta a ser medida). */
+  larguraMaximaFixa?: number;
+  /** Altura de PARTIDA antes da 1ª medição do conteúdo ativo (spec
+      modo Foco: 726px) — só o valor inicial, não um teto; some assim
+      que a medição real chega. */
+  alturaFallbackInicial?: number;
+  /** Muda sempre que o conteúdo medido (`.rc-aside`/`.rc-grid` ou
+      `.rc-foco-content`) troca de identidade — ex.: alternar Painel↔
+      Foco, ou trocar de aba dentro do Foco — pra recolocar o
+      `ResizeObserver` no elemento certo. */
+  conteudoChave?: string | number;
   children: ReactNode;
 }) {
-  const win = useConsoleWindow(aberto);
+  const win = useConsoleWindow(aberto, { larguraMaximaFixa, alturaFallbackInicial });
   const cursorHabilitado = useCursorHabilitado();
   const windowRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const tituloId = useId();
   /** Elemento que abriu o console — o foco volta para ele ao fechar. */
   const abridorRef = useRef<HTMLElement | null>(null);
@@ -77,6 +100,53 @@ export function ConsoleWindow({
   }, [onClose]);
 
   const minimizada = win.mode === "minimized";
+
+  // A altura máxima da janela é a altura NATURAL do conteúdo que HUGA
+  // (não estica) — coluna 1 (`.rc-aside`) no modo Painel, ou a aba
+  // Personagem (`.rc-foco-personagem`) no modo Foco — e a largura
+  // máxima é a largura NATURAL do `.rc-grid` (só existe no Painel; no
+  // Foco a largura é fixa, ver `larguraMaximaFixa`). Spec: a janela
+  // não estica além do conteúdo quando a viewport sobra.
+  //
+  // Só `.rc-foco-personagem` é medida no Foco, NÃO `.rc-foco-content`
+  // (que hoje estica pra preencher `.rc-body`, então medi-la seria
+  // circular) nem as abas de navegação comuns (`.rc-tabsarea-outer`,
+  // que também esticam lá dentro — ver console.css) — quando a aba
+  // ativa não é "Personagem", a altura da janela simplesmente não é
+  // re-sincronizada, e o conteúdo rola por dentro se precisar.
+  //
+  // `.rc-aside`/`.rc-grid`/`.rc-foco-personagem` só existem depois que
+  // `win.geo` monta o conteúdo (por isso o `!!win.geo` na dependência,
+  // não só `aberto`) — a janela abre num tamanho provisório e se
+  // ajusta assim que a medição chega. `conteudoChave` força reconectar
+  // o observer quando o elemento medido troca de identidade (alternar
+  // Painel↔Foco, ou trocar de aba dentro do Foco).
+  useEffect(() => {
+    if (!aberto || !win.geo) return;
+    const raiz = windowRef.current;
+    if (!raiz) return;
+    const alvoAltura = raiz.querySelector<HTMLElement>(".rc-aside") ?? raiz.querySelector<HTMLElement>(".rc-foco-personagem");
+    const alvoLargura = raiz.querySelector<HTMLElement>(".rc-grid");
+    const observers: ResizeObserver[] = [];
+    if (alvoAltura) {
+      const roAltura = new ResizeObserver((entries) => {
+        const altura = entries[0]?.contentRect.height;
+        if (altura != null) win.registrarAlturaColuna1(altura);
+      });
+      roAltura.observe(alvoAltura);
+      observers.push(roAltura);
+    }
+    if (alvoLargura) {
+      const roLargura = new ResizeObserver((entries) => {
+        const largura = entries[0]?.contentRect.width;
+        if (largura != null) win.registrarLarguraGrid(largura);
+      });
+      roLargura.observe(alvoLargura);
+      observers.push(roLargura);
+    }
+    return () => observers.forEach((ro) => ro.disconnect());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aberto, !!win.geo, conteudoChave, win.registrarAlturaColuna1, win.registrarLarguraGrid]);
 
   // Foco inicial e armadilha de foco enquanto a janela está visível.
   useEffect(() => {
@@ -130,76 +200,96 @@ export function ConsoleWindow({
 
       <div
         ref={windowRef}
-        className="rc-window"
+        className="rc-window-wrap"
         data-mode={win.mode}
-        data-testid="console-window"
         role="dialog"
         aria-modal={!minimizada}
         aria-labelledby={tituloId}
         // `inert` enquanto minimizada: some da navegação por teclado sem
-        // desmontar (o que preservaria o estado interno).
+        // desmontar (o que preservaria o estado interno). Vive aqui (não
+        // só em `.rc-window`) pra cobrir o trilho de abas também, que
+        // agora é irmão da janela, fora do seu conteúdo interno.
         inert={minimizada || undefined}
-        style={{ left: win.geo.x, top: win.geo.y, width: win.geo.w, height: win.geo.h }}
+        style={{ left: win.geo.x, top: win.geo.y }}
       >
-        <div
-          className="rc-topbar"
-          data-draggable={win.podeManipular}
-          onPointerDown={(e) => {
-            if (!ehInterativo(e.target)) win.iniciarArraste(e);
-          }}
-        >
-          <span className="rc-topbar-title" id={tituloId}>
-            {titulo}
-          </span>
-          <div className="rc-topbar-right">
-            {titlebarExtra}
-            <div className="rc-winbtns">
-              <button
-                type="button"
-                className="rc-winbtn"
-                onClick={win.minimizar}
-                aria-label="Minimizar console"
-                title="Minimizar"
-              >
-                <Minus size={15} />
-              </button>
-              <button
-                type="button"
-                className="rc-winbtn"
-                onClick={win.alternarMaximizar}
-                aria-label={win.mode === "maximized" ? "Restaurar console" : "Maximizar console"}
-                title={win.mode === "maximized" ? "Restaurar" : "Maximizar"}
-                data-testid="console-maximizar"
-              >
-                {win.mode === "maximized" ? <Minimize2 size={13} /> : <Square size={13} />}
-              </button>
-              <button
-                type="button"
-                className="rc-winbtn rc-winbtn--close"
-                onClick={fechar}
-                aria-label="Fechar console"
-                title="Fechar"
-                data-foco-inicial
-              >
-                <X size={16} />
-              </button>
+        <div className="rc-window" data-testid="console-window" style={{ width: win.geo.w, height: win.geo.h }}>
+          <div
+            className="rc-topbar"
+            data-draggable={win.podeManipular}
+            onPointerDown={(e) => {
+              if (!ehInterativo(e.target)) win.iniciarArraste(e);
+            }}
+          >
+            <span className="rc-topbar-title" id={tituloId}>
+              {titulo}
+            </span>
+            <div className="rc-topbar-right">
+              {titlebarExtra}
+              <div className="rc-winbtns">
+                <button
+                  type="button"
+                  className="rc-winbtn"
+                  onClick={win.minimizar}
+                  aria-label="Minimizar console"
+                  title="Minimizar"
+                >
+                  <Minus size={15} />
+                </button>
+                <button
+                  type="button"
+                  className="rc-winbtn"
+                  onClick={win.alternarMaximizar}
+                  aria-label={win.mode === "maximized" ? "Restaurar console" : "Maximizar console"}
+                  title={win.mode === "maximized" ? "Restaurar" : "Maximizar"}
+                  data-testid="console-maximizar"
+                >
+                  {win.mode === "maximized" ? <Minimize2 size={13} /> : <Square size={13} />}
+                </button>
+                <button
+                  type="button"
+                  className="rc-winbtn rc-winbtn--close"
+                  onClick={fechar}
+                  aria-label="Fechar console"
+                  title="Fechar"
+                  data-foco-inicial
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
           </div>
+
+          <div className="rc-body" ref={bodyRef}>
+            {children}
+          </div>
+          <Scrollbar targetRef={bodyRef} orientacao="horizontal" />
+          <Scrollbar targetRef={bodyRef} orientacao="vertical" />
+
+          {win.podeManipular && (
+            <>
+              <div
+                className="rc-resize rc-resize--direita"
+                data-testid="console-resize"
+                onPointerDown={win.iniciarResize}
+                role="separator"
+                aria-label="Redimensionar console"
+                aria-orientation="vertical"
+                tabIndex={0}
+              />
+              <div
+                className="rc-resize rc-resize--esquerda"
+                data-testid="console-resize-esquerda"
+                onPointerDown={win.iniciarResizeEsquerda}
+                role="separator"
+                aria-label="Redimensionar console pelo canto esquerdo"
+                aria-orientation="vertical"
+                tabIndex={0}
+              />
+            </>
+          )}
         </div>
 
-        <div className="rc-body">{children}</div>
-
-        {win.podeManipular && (
-          <div
-            className="rc-resize"
-            data-testid="console-resize"
-            onPointerDown={win.iniciarResize}
-            role="separator"
-            aria-label="Redimensionar console"
-            aria-orientation="vertical"
-            tabIndex={0}
-          />
-        )}
+        {tablist}
       </div>
 
       {minimizada && (

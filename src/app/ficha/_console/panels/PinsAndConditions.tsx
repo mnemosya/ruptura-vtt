@@ -8,7 +8,7 @@
  * referenciado. O limite de 3 é estrutural: são exatamente 3 posições.
  */
 
-import { Pin, X, Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import type { ConsoleApi, ConsolePin } from "../types";
 
 const LIMITE_PINS = 3;
@@ -41,8 +41,8 @@ export function PinsRow({ api, onAbrirPin }: { api: ConsoleApi; onAbrirPin: (pin
           </div>
         ) : (
           <div key={`vazio-${i}`} className="rc-pin" role="listitem">
-            <Pin size={14} aria-hidden="true" style={{ opacity: 0.45 }} />
-            <span className="rc-pin-sub">slot livre</span>
+            <Plus size={14} strokeWidth={1.6} aria-hidden="true" style={{ color: "rgba(184, 216, 232, 0.7)" }} />
+            <span className="rc-pin-empty-txt">Espaço livre</span>
           </div>
         ),
       )}
@@ -62,36 +62,30 @@ export function ConditionsPanel({
   const ativas = (api.character.condicoes_ativas ?? []).filter((c) => c.ativa !== false);
 
   return (
-    <section className="rc-panel" aria-label="Condições">
-      <div className="rc-cond-head">
-        <span className="rc-label">Condições</span>
-        <button type="button" className="rc-ghost" onClick={onAdicionar} data-testid="console-add-condicao">
-          <Plus size={11} aria-hidden="true" /> Adicionar
+    <div className="rc-ncond-wrap">
+      <span className="rc-ncond-caption">Condições</span>
+      <section className="rc-ncond-card" aria-label="Condições">
+        {ativas.length === 0 && <p className="rc-ncond-vazio">Nenhuma condição ativa.</p>}
+        {ativas.map((c) => (
+          <span key={c.id} className="rc-ncond-tag">
+            <button type="button" className="rc-ncond-abrir" onClick={() => onDetalhes(c.id)} title={c.descricao ?? c.nome}>
+              {c.nome}
+            </button>
+            <button
+              type="button"
+              className="rc-ncond-x"
+              onClick={() => api.removerCondicao(c.id)}
+              aria-label={`Remover condição ${c.nome}`}
+              title="Remover"
+            >
+              <X size={10} strokeWidth={1.6} />
+            </button>
+          </span>
+        ))}
+        <button type="button" className="rc-ncond-add" onClick={onAdicionar} data-testid="console-add-condicao">
+          <Plus size={12} aria-hidden="true" /> Adicionar
         </button>
-      </div>
-
-      {ativas.length === 0 ? (
-        <p className="rc-vazio">Nenhuma condição ativa.</p>
-      ) : (
-        <div className="rc-cond-list">
-          {ativas.map((c) => (
-            <span key={c.id} className="rc-cond">
-              <button type="button" className="rc-cond-abrir" onClick={() => onDetalhes(c.id)} title={c.descricao ?? c.nome}>
-                {c.nome}
-              </button>
-              <button
-                type="button"
-                className="rc-cond-x"
-                onClick={() => api.removerCondicao(c.id)}
-                aria-label={`Remover condição ${c.nome}`}
-                title="Remover"
-              >
-                <X size={11} />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
-    </section>
+      </section>
+    </div>
   );
 }

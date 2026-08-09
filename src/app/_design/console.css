@@ -38,7 +38,13 @@
 }
 @keyframes rc-fade { from { opacity: 0; } to { opacity: 1; } }
 
-.rc-window {
+/* Janela + trilho de abas são IRMÃOS aqui (spec "JANELA CONSOLE"): o
+   trilho vive fora do conteúdo interno/rolável da janela, colado à
+   borda direita, sem ser cortado ao redimensionar. `.rc-window-wrap` é
+   quem carrega posição/z-index/tokens de cor (as custom properties
+   precisam estar num ancestral comum aos dois, não só em `.rc-window`,
+   senão o trilho fica sem acesso a `--cy` etc.). */
+.rc-window-wrap {
   --cy: #00d4ff;
   --am: #f5a200;
   --rc-line: rgba(0, 212, 255, 0.3);
@@ -50,24 +56,33 @@
   --rc-danger: #ff5f74;
 
   position: fixed; z-index: 501;
-  display: flex; flex-direction: column;
-  background: var(--rc-surface);
-  border: 1px solid var(--rc-line);
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.72), inset 0 0 60px rgba(0, 60, 90, 0.1);
+  display: inline-flex; align-items: center;
   color: var(--rc-text);
   font-family: var(--font-rajdhani), "Rajdhani", sans-serif;
-  clip-path: polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px));
   animation: rc-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes rc-in { from { opacity: 0; transform: translateY(12px) scale(0.985); } to { opacity: 1; transform: none; } }
-.rc-window[data-mode="minimized"] { visibility: hidden; pointer-events: none; }
-.rc-window *, .rc-window *::before, .rc-window *::after { box-sizing: border-box; }
-.rc-window button, .rc-window input, .rc-window select { font-family: inherit; }
-.rc-window button:disabled { cursor: not-allowed; }
+.rc-window-wrap[data-mode="minimized"] { visibility: hidden; pointer-events: none; }
+.rc-window-wrap *, .rc-window-wrap *::before, .rc-window-wrap *::after { box-sizing: border-box; }
+.rc-window-wrap button, .rc-window-wrap input, .rc-window-wrap select { font-family: inherit; }
+.rc-window-wrap button:disabled { cursor: not-allowed; }
 
 @media (prefers-reduced-motion: reduce) {
-  .rc-window, .rc-backdrop, .rc-dock { animation: none; }
-  .rc-window * { transition: none !important; }
+  .rc-window-wrap, .rc-backdrop, .rc-dock { animation: none; }
+  .rc-window-wrap * { transition: none !important; }
+}
+
+/* Sem mais os cortes decorativos nas diagonais (canto inferior
+   esquerdo e superior direito) — retângulo reto. O SVG decorativo fica
+   POR CIMA do fundo sólido (2 camadas de `background`), grande o
+   bastante pra nunca faltar cobertura mesmo numa janela maximizada. */
+.rc-window {
+  position: relative;
+  display: flex; flex-direction: column;
+  padding: 1px;
+  border: 1px solid var(--rc-line);
+  background: url("/console/bg-console-do-personagem.svg") center / cover no-repeat, var(--rc-surface);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.72), inset 0 0 60px rgba(0, 60, 90, 0.1);
 }
 
 /* ── Topbar ────────────────────────────────────────────────────── */
@@ -85,8 +100,13 @@
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
   color: #d3f4ff; white-space: nowrap;
+  /* Encolhe e trunca ANTES dos controles da janela — sem isso, numa
+     janela estreita, o título comprido empurrava minimizar/maximizar/
+     fechar pra fora do topbar (space-between não protege quem não tem
+     min-width:0). */
+  overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1 1 auto;
 }
-.rc-topbar-right { display: flex; align-items: center; gap: 8px; }
+.rc-topbar-right { display: flex; align-items: center; gap: 8px; flex: none; }
 .rc-topbar-chip {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px; letter-spacing: 0.1em; color: rgba(211, 244, 255, 0.6);
@@ -114,12 +134,24 @@
 .rc-winbtn--close:active { background: rgba(255, 95, 116, 0.28); }
 .rc-winbtn--close:focus-visible { outline-color: var(--rc-danger); }
 
-/* Canto de resize (elemento do wireframe). */
+/* Cantos de resize — direito (original) e esquerdo (espelhado, mesma
+   diagonal só que invertida: `-135deg` em vez de `135deg`). Menores
+   que antes (18px, era 26px) — hachura reescalada na mesma proporção. */
 .rc-resize {
-  position: absolute; right: 0; bottom: 0; width: 26px; height: 26px;
-  cursor: nwse-resize; touch-action: none;
+  position: absolute; bottom: 0; width: 18px; height: 18px;
+  touch-action: none;
+}
+.rc-resize--direita {
+  right: 0;
+  cursor: nwse-resize;
   background: repeating-linear-gradient(
-    135deg, transparent 0 4px, rgba(0, 212, 255, 0.55) 4px 5px, transparent 5px 9px);
+    135deg, transparent 0 3px, rgba(0, 212, 255, 0.55) 3px 4px, transparent 4px 7px);
+}
+.rc-resize--esquerda {
+  left: 0;
+  cursor: nesw-resize;
+  background: repeating-linear-gradient(
+    -135deg, transparent 0 3px, rgba(0, 212, 255, 0.55) 3px 4px, transparent 4px 7px);
 }
 .rc-resize:focus-visible { outline: 2px solid var(--cy); outline-offset: -3px; }
 
@@ -127,22 +159,168 @@
 .rc-body {
   flex: 1; min-height: 0;
   overflow: auto;
-  padding: 14px;
+  padding: 24px;
+  display: flex; flex-direction: column; align-items: flex-start;
 }
+/* `.rc-body` e `.rc-tabpanel` escondem a scrollbar NATIVA de propósito
+   nos dois eixos — mesmo estilizada via `::-webkit-scrollbar`, o SO
+   ainda pode escondê-la até o usuário rolar ativamente (macOS
+   "Automatically based on mouse or trackpad", por exemplo), e não tem
+   como forçar isso com CSS puro. `<Scrollbar>` (scrollbar.tsx) desenha
+   uma barra própria por cima de cada um (`.rc-hscroll`/`.rc-vscroll`),
+   sempre visível quando há overflow, sem depender da scrollbar do
+   navegador nem do SO. */
+.rc-body, .rc-tabpanel { scrollbar-width: none; }
+.rc-body::-webkit-scrollbar, .rc-tabpanel::-webkit-scrollbar { display: none; }
+
+/* Barras desenhadas por `<Scrollbar>` — finas e sem cantos
+   arredondados, grudadas na borda de `.rc-window` (mesma posição de
+   uma scrollbar nativa). Param antes dos cantos de resize (18px) pra
+   não brigar com a área de arraste. O estado de hover (trilho mais
+   grosso) vale pro CONTAINER inteiro, não só o trilho — e cresce pro
+   lado de DENTRO da janela (`align-items: flex-end`/`flex-end`
+   mantêm a borda externa fixa), nunca por cima da borda da janela. */
+.rc-hscroll {
+  position: absolute; left: 19px; right: 19px; bottom: 1px;
+  height: 8px;
+  display: flex; align-items: flex-end;
+  z-index: 2;
+  pointer-events: none;
+}
+.rc-hscroll-trilho {
+  position: relative;
+  width: 100%; height: 4px;
+  background: rgba(11, 18, 27, 0.6);
+  border-top: 1px solid rgba(0, 212, 255, 0.14);
+  pointer-events: auto;
+  transition: height 0.12s;
+}
+.rc-hscroll:hover .rc-hscroll-trilho { height: 8px; }
+.rc-hscroll-polegar {
+  position: absolute; top: 0; height: 100%;
+  background: rgba(0, 212, 255, 0.45);
+  border: none; border-radius: 0;
+  cursor: pointer;
+  touch-action: none;
+}
+.rc-hscroll-polegar:hover { background: rgba(0, 212, 255, 0.65); }
+
+.rc-vscroll {
+  position: absolute; top: 1px; bottom: 19px; right: 1px;
+  width: 8px;
+  display: flex; justify-content: flex-end;
+  z-index: 2;
+  pointer-events: none;
+}
+.rc-vscroll-trilho {
+  position: relative;
+  width: 4px; height: 100%;
+  background: rgba(11, 18, 27, 0.6);
+  border-left: 1px solid rgba(0, 212, 255, 0.14);
+  pointer-events: auto;
+  transition: width 0.12s;
+}
+.rc-vscroll:hover .rc-vscroll-trilho { width: 8px; }
+.rc-vscroll-polegar {
+  position: absolute; left: 0; width: 100%;
+  background: rgba(0, 212, 255, 0.45);
+  border: none; border-radius: 0;
+  cursor: pointer;
+  touch-action: none;
+}
+.rc-vscroll-polegar:hover { background: rgba(0, 212, 255, 0.65); }
+
+/* `.rc-tabpanel` precisa de um ancestral `position:relative` pra
+   `.rc-vscroll`/`.rc-hscroll` se ancorarem nele (não em `.rc-window`
+   inteiro) — ver uso em `CharacterConsole.tsx`. */
+.rc-tabsarea-main { position: relative; }
 /* Abaixo do tamanho mínimo o layout NÃO se reorganiza — rola. */
 .rc-grid {
   display: grid;
-  grid-template-columns: 268px minmax(430px, 1fr) minmax(460px, 1.05fr);
+  grid-template-columns: 268px minmax(456px, 480px) minmax(500px, 610px);
   grid-template-rows: auto 1fr;
   gap: 12px;
-  min-width: 1080px;
-  min-height: 100%;
+  min-width: 1248px;
+  /* SEM stretch de propósito (spec: "não quero que estique até o
+     final" quando a viewport sobra) — a grade huga o tamanho natural
+     das 3 colunas (268 + 480 + 610 + gaps), e é ESSA largura que
+     `ConsoleWindow` mede (`.rc-grid`, `ResizeObserver`) pra virar o
+     teto de largura da própria janela (`registrarLarguraGrid`, em
+     `useConsoleWindow.ts`) — mesmo esquema já usado pra altura via
+     `.rc-aside`.
+     SEM `min-height: 100%` de propósito também — isso forçava a grade
+     a ficar do tamanho de `.rc-body` mesmo quando `.rc-aside` (item
+     que ocupa as duas linhas) precisava de mais espaço, e como o
+     tamanho das ROWS do grid (`auto 1fr`) não cresce pra acomodar um
+     item que só ocupa espaço via `grid-row: span`, a coluna 1
+     "vazava" pra fora da grade via `overflow: visible` (padrão do
+     grid) — isso é o que fazia `.rc-body` perder o padding-bottom de
+     24px no fim do scroll (mesmo bug, mesma causa, do `.rc-foco-content`
+     no modo Foco). Sem essa altura mínima artificial, a grade HUGA o
+     item mais alto de verdade, sem descompasso. */
+  align-self: start;
 }
-/* Painel lateral ocupa as duas linhas, como no wireframe. */
-.rc-aside { grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+/* Painel lateral ocupa as duas linhas, como no wireframe. `align-self:
+   start` (em vez do stretch padrão do grid) é o que permite medir a
+   altura NATURAL do conteúdo da coluna 1 em `ConsoleWindow` — ela é
+   quem agora define a altura máxima da janela (Equipamentos, mais
+   alto, rola por dentro em vez de esticar a janela). Com stretch, a
+   caixa sempre teria a altura da linha do grid inteira, e medir isso
+   seria circular (a altura da janela dependeria da altura da própria
+   janela). */
+.rc-aside { grid-row: 1 / span 2; align-self: start; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .rc-vitals { grid-column: 2; grid-row: 1; }
 .rc-tabsarea-outer { grid-column: 3; grid-row: 1 / span 2; min-width: 0; }
-.rc-equip { grid-column: 2; grid-row: 2; min-width: 0; }
+/* Antigo lugar de Equipamentos — agora Perícias fixa + Fixados +
+   Condições, empilhados (não é mais um painel único, então não herda
+   `.rc-panel`; cada filho tem sua própria moldura). */
+.rc-center-lower { grid-column: 2; grid-row: 2; min-width: 0; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+
+/* ── Modo Foco ─────────────────────────────────────────────────────
+   Ao contrário de `.rc-grid` (que huga o tamanho natural, sem
+   esticar), o conteúdo do Foco DEVE preencher a largura disponível
+   (spec: "expandir para ocupar todo o espaço disponível até o
+   max-width") — `align-self: stretch` aqui é o oposto proposital do
+   `align-self: start` do `.rc-grid`.
+   `flex: 1; min-height: 0` SÓ entra quando o conteúdo é
+   `.rc-tabsarea-outer` (abas normais, ver `:has()` abaixo) — ele dá
+   altura DEFINIDA nesse caso porque a cadeia `height: 100%` que
+   `.rc-tabsarea-main`/`.rc-eq-outer` etc. já usam (herdada do modo
+   Painel, onde vem da linha do grid) não tem base nenhuma pra
+   resolver sem isso e colapsa pra 0 (bug real, visto rodando:
+   `.rc-eq-outer` media `height: 0`).
+   Quando o conteúdo é `.rc-foco-personagem` (aba Personagem), NÃO
+   leva `flex: 1` de propósito — com ele, `.rc-foco-content` ficava
+   mais BAIXO que `.rc-foco-personagem` (que huga a própria altura
+   natural pro `ResizeObserver` medir), e o filho só aparecia por cima
+   via overflow:visible — isso é o que fazia `.rc-body` perder o
+   padding-bottom de 24px no fim do scroll (bug real, visto rodando:
+   `scrollHeight` da `.rc-body` não incluía a altura completa +
+   padding). Sem `flex:1` aqui, `.rc-foco-content` HUGA o filho
+   igualzinho, sem esse descompasso — mesmo motivo de `.rc-grid` usar
+   `align-self: start` em vez de stretch. */
+.rc-foco-content { align-self: stretch; width: 100%; display: flex; flex-direction: column; }
+/* Abas de navegação normais (Equipamentos etc.) DENTRO do Foco: aqui
+   SIM esticamos (`flex: 1` no pai via `:has()`) porque o conteúdo
+   (`EquipmentPanel`) já é desenhado pra preencher o espaço disponível
+   e rolar por dentro (`.rc-tabpanel { overflow: auto }`), não pra ter
+   uma altura natural própria — não tem o mesmo conflito de
+   `.rc-foco-personagem` acima. */
+.rc-foco-content:has(> .rc-tabsarea-outer) { flex: 1; min-height: 0; }
+.rc-foco-content > .rc-tabsarea-outer { flex: 1; min-height: 0; }
+
+/* Layout interno da aba especial Personagem — os MESMOS componentes
+   das colunas 1/2 do Painel (`IdentityAside`/`VitalsRow`/
+   `rc-center-lower`), agora lado a lado numa única aba em vez de
+   colunas de grid. `.rc-aside` não ganha largura de uma grid-track
+   aqui, então precisa da largura fixa explícita (mesmos 268px do
+   Painel). SEM `flex-grow` de propósito — ao contrário de
+   `.rc-tabsarea-outer` acima, este HUGA a própria altura (não estica),
+   porque é o que dá pro `ResizeObserver` medir a altura natural do
+   conteúdo (spec "max-height que abrace o conteúdo"). */
+.rc-foco-personagem { display: flex; gap: 12px; align-items: flex-start; width: 100%; }
+.rc-foco-personagem > .rc-aside { width: 268px; flex: none; }
+.rc-foco-personagem-col2 { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
 
 /* ── Peças genéricas ───────────────────────────────────────────── */
 .rc-panel {
@@ -181,281 +359,419 @@
    camada de fundo não tem `border` próprio, o bug de "nub quadrado nos
    cantos" (clip-path + border no mesmo elemento) não pode acontecer. */
 .rc-avatar {
-  position: relative; display: block; width: 100%; max-width: 190px; margin: 0 auto;
-  aspect-ratio: 1 / 1.06;
+  position: relative; display: block; width: 100%; max-width: 211px; margin: 0 auto;
+  aspect-ratio: 1 / 1;
   padding: 0; border: none; background: none; cursor: pointer;
 }
 .rc-avatar-fill {
-  position: absolute; inset: 3px;
+  position: absolute; inset: 0;
   display: grid; place-items: center;
-  background: rgba(0, 212, 255, 0.06);
+  background: rgba(29, 53, 67, 0.73);
   color: rgba(0, 212, 255, 0.55);
-  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  clip-path: polygon(49.93% 0%, 89.97% 19.77%, 99.86% 64.17%, 72.15% 99.78%, 27.71% 99.78%, 0% 64.17%, 9.89% 19.77%);
   overflow: hidden;
   transition: background 0.16s;
 }
 .rc-avatar-fill img { width: 100%; height: 100%; object-fit: cover; }
 .rc-avatar-poly { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.rc-avatar-poly polygon { fill: none; stroke: var(--rc-line); stroke-width: 2; transition: stroke 0.16s; }
-.rc-avatar:hover .rc-avatar-poly polygon,
-.rc-avatar:focus-visible .rc-avatar-poly polygon { stroke: var(--cy); }
+.rc-avatar-poly path { fill: none; stroke: rgba(0, 212, 255, 0.14); stroke-width: 1; stroke-dasharray: none; transition: stroke 0.16s, stroke-dasharray 0.16s; }
+.rc-avatar:hover .rc-avatar-poly path,
+.rc-avatar:focus-visible .rc-avatar-poly path { stroke: rgba(0, 212, 255, 0.51); stroke-dasharray: 5 5; }
 .rc-avatar:hover .rc-avatar-fill,
-.rc-avatar:focus-visible .rc-avatar-fill { background: rgba(0, 212, 255, 0.13); }
+.rc-avatar:focus-visible .rc-avatar-fill { background: rgba(55, 91, 112, 0.43); }
 .rc-avatar:focus-visible { outline: none; }
-.rc-avatar:focus-visible .rc-avatar-poly polygon { stroke-width: 3; filter: drop-shadow(0 0 4px var(--cy)); }
-.rc-avatar-hint {
-  position: absolute; inset: auto 0 10% 0; z-index: 2;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
-  color: rgba(0, 212, 255, 0.9); opacity: 0; transition: opacity 0.16s; pointer-events: none;
-}
-.rc-avatar:hover .rc-avatar-hint, .rc-avatar:focus-visible .rc-avatar-hint { opacity: 1; }
 
-/* ── Identidade + atributos ────────────────────────────────────── */
-.rc-ident {
-  border: 1px solid var(--rc-line);
-  background: var(--rc-panel);
-  padding: 12px 12px 10px;
-  clip-path: polygon(0 18px, 40px 0, calc(100% - 40px) 0, 100% 18px, 100% 100%, 0 100%);
-  display: flex; flex-direction: column; gap: 10px;
+/* Ícone padrão (usuário) x ícone de upload (hover) — trocam via
+   opacidade, nunca os dois clicáveis/visíveis ao mesmo tempo. */
+.rc-avatar-ico { width: 64px; max-width: 55%; }
+.rc-avatar-ico svg { width: 100%; height: auto; display: block; }
+.rc-avatar-ico--user { transition: opacity 0.16s; }
+.rc-avatar:hover .rc-avatar-ico--user, .rc-avatar:focus-visible .rc-avatar-ico--user { opacity: 0; }
+.rc-avatar-upload {
+  position: absolute; inset: 0; z-index: 1;
+  display: grid; place-items: center;
+  opacity: 0; transition: opacity 0.16s; pointer-events: none;
 }
-.rc-ident-row { display: flex; align-items: stretch; gap: 10px; }
-.rc-ident-name {
-  flex: 1; min-width: 0; align-self: center;
-  font-size: 15px; font-weight: 600; letter-spacing: 0.04em; color: #d3f4ff;
-  text-transform: uppercase;
+.rc-avatar:hover .rc-avatar-upload, .rc-avatar:focus-visible .rc-avatar-upload { opacity: 1; }
+
+/* ── Card Nome/Ranking/Atributos/Integridade v2 (spec Figma) ────── */
+.rc-nric-card {
+  display: flex; flex-direction: column; align-items: center;
+  width: 100%; padding: 16px; gap: 16px;
+  border: 1px solid rgba(0, 212, 255, 0.14);
+  background: rgba(16, 26, 38, 0.70);
+}
+.rc-nric-nome-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; }
+.rc-nric-nome {
+  flex: 1; min-width: 0;
+  font-family: var(--font-rajdhani), sans-serif;
+  font-size: 20px; font-weight: 700; letter-spacing: 0.6px; color: rgba(211, 244, 255, 0.88);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.rc-rank {
-  flex: none; width: 46px; height: 46px;
+.rc-nric-badge {
+  flex: none; width: 40px; height: 40px;
   display: grid; place-items: center;
-  border: 1px solid var(--am);
-  background: rgba(245, 162, 0, 0.1);
   font-family: var(--font-orbitron), var(--font-rajdhani), sans-serif;
-  font-size: 22px; font-weight: 700; color: #ffe6bd;
-  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  font-size: 22px; font-weight: 500; color: #0596B7; text-align: center;
 }
-.rc-rank[data-vazio="true"] { color: rgba(255, 230, 189, 0.35); border-color: rgba(169, 122, 48, 0.55); }
+.rc-nric-badge[data-vazio="true"] { color: rgba(5, 150, 183, 0.35); }
 
-/* Cards de atributo — hexágono REAL de 6 lados via SVG (fill+stroke
-   num único polígono vetorial: sem `border` de CSS no mesmo elemento
-   clipado, então sem o bug de canto quadrado). Paleta âmbar. */
-.rc-attrs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
-.rc-attr {
-  position: relative; aspect-ratio: 1 / 1.16;
+/* Atributos — hexágono REAL (path exato do Figma, cantos arredondados
+   via bezier, não `polygon()`), fill+stroke por atributo. */
+.rc-nric-attrs { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; gap: 6px; }
+.rc-nric-attr {
+  position: relative; flex: 1 1 0; min-width: 0; aspect-ratio: 76 / 89;
   padding: 0; border: none; background: none; cursor: pointer;
   transition: transform 0.12s;
 }
-.rc-attr:active { transform: translateY(1px); }
-.rc-attr-poly { position: absolute; inset: 0; width: 100%; height: 100%; }
-.rc-attr-poly polygon {
-  fill: rgba(245, 162, 0, 0.07); stroke: rgba(245, 162, 0, 0.55); stroke-width: 2;
-  transition: fill 0.15s, stroke 0.15s;
+.rc-nric-attr:active { transform: translateY(1px); }
+.rc-nric-attr-poly { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* fill/stroke/stroke-opacity SEMPRE via CSS (nunca via atributo SVG
+   direto) — os dois estados (padrão e hover) saem da MESMA origem,
+   então a transição anima os três juntos e no mesmo ritmo. Misturar
+   atributo de apresentação (padrão) com override de CSS (hover) fazia
+   a cor "pular" em vez de esmaecer, parecendo dois efeitos
+   sobrepostos. */
+.rc-nric-attr-poly path {
+  fill: var(--rc-attr-fill);
+  stroke: var(--rc-attr-stroke);
+  stroke-opacity: var(--rc-attr-stroke-op);
+  transition: fill 0.15s, stroke 0.15s, stroke-opacity 0.15s;
 }
-.rc-attr:hover .rc-attr-poly polygon { fill: rgba(245, 162, 0, 0.16); stroke: var(--am); }
-.rc-attr:active .rc-attr-poly polygon { fill: rgba(245, 162, 0, 0.24); }
-.rc-attr:focus-visible { outline: none; }
-.rc-attr:focus-visible .rc-attr-poly polygon { stroke: var(--am); stroke-width: 3; filter: drop-shadow(0 0 3px var(--am)); }
-.rc-attr-content {
-  position: relative; z-index: 1; height: 100%; padding: 6px;
+.rc-nric-attr:hover .rc-nric-attr-poly path,
+.rc-nric-attr:focus-visible .rc-nric-attr-poly path {
+  fill: var(--rc-attr-hover-fill);
+  stroke: var(--rc-attr-hover-stroke);
+  stroke-opacity: 1;
+}
+.rc-nric-attr:focus-visible { outline: none; }
+.rc-nric-attr-content {
+  position: relative; z-index: 1; height: 100%;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
 }
-.rc-attr-ico { color: rgba(255, 214, 150, 0.9); }
-.rc-attr-nome {
+.rc-nric-attr-ico svg { width: 14px; height: 14px; display: block; }
+.rc-nric-attr-nome {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 230, 189, 0.85);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
 }
-.rc-attr-val { font-size: 19px; font-weight: 700; color: #fff3df; line-height: 1; }
+.rc-nric-attr-val { font-family: var(--font-rajdhani), sans-serif; font-size: 19px; font-weight: 700; line-height: 1; color: #BECDD6; text-align: center; }
 
-/* ── Trilhas (Integridade / PA / Reações) ──────────────────────── */
-.rc-track-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+/* Integridade — cabeçalho + trilha de segmentos com diagonais nas
+   pontas (paths exatos do Figma), emendados com margem negativa de
+   1px para formar uma trilha contínua. */
+.rc-nric-integ { display: flex; flex-direction: column; align-items: flex-start; width: 100%; gap: 6px; }
+.rc-nric-integ-head { display: flex; justify-content: space-between; align-items: baseline; width: 100%; }
+.rc-nric-integ-label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase;
+  color: rgba(0, 212, 255, 0.72);
+}
+.rc-nric-integ-val { font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; font-weight: 700; color: #EAF7FF; }
+.rc-nric-integ-total { font-weight: 400; color: rgba(184, 216, 232, 0.60); }
+.rc-nric-pips { display: flex; width: 100%; }
+.rc-nric-pip { flex: 1; min-width: 0; height: 14px; padding: 0; border: none; background: none; cursor: pointer; }
+.rc-nric-pip:not(:first-child) { margin-left: -1px; }
+.rc-nric-pip svg { width: 100%; height: 100%; display: block; }
+.rc-nric-pip:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 
-/* Integridade: segmentos flex:1 preenchendo toda a largura (nada de
-   espaço morto no final), cor suave para não competir com PV/alertas.
-   Interativa: clicar aumenta/reduz; hover mostra prévia do resultado. */
-.rc-pips { display: flex; gap: 2px; width: 100%; }
-.rc-pip {
-  flex: 1; min-width: 0; height: 14px; padding: 0;
-  border: 1px solid rgba(120, 190, 220, 0.3);
-  background: rgba(120, 190, 220, 0.05);
+/* ── Card Sobrecarga v2 (spec Figma) — mesma lógica de diagonais da
+   Integridade, paleta âmbar, overlap de -10px (bem mais acentuado). */
+.rc-nsob-card {
+  display: flex; flex-direction: column; align-items: center; width: 100%;
+  padding: 16px; gap: 6px;
+  border: 1px solid rgba(0, 212, 255, 0.14);
+  background: rgba(16, 26, 38, 0.70);
+}
+.rc-nsob-head { display: flex; justify-content: space-between; align-items: baseline; align-self: stretch; }
+.rc-nsob-label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: #F5A200;
+}
+.rc-nsob-val { font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; font-weight: 700; color: #EAF7FF; }
+.rc-nsob-total { font-weight: 400; color: rgba(184, 216, 232, 0.60); }
+.rc-nsob-pips { display: flex; justify-content: center; align-items: flex-start; align-self: stretch; }
+.rc-nsob-pip { flex: 1; min-width: 0; height: 12px; padding: 0; border: none; background: none; cursor: pointer; }
+.rc-nsob-pip:not(:first-child) { margin-left: -10px; }
+.rc-nsob-pip svg { width: 100%; height: 100%; display: block; }
+.rc-nsob-pip:disabled { cursor: not-allowed; }
+.rc-nsob-pip svg path:first-child { transition: fill 0.14s; }
+.rc-nsob-pip:not(:disabled):hover svg path:first-child { fill: rgba(245, 162, 0, 0.28); }
+.rc-nsob-pip:focus-visible { outline: 2px solid var(--am); outline-offset: 1px; }
+
+/* ── Card Deslocamento v2 (spec Figma) ───────────────────────────── */
+.rc-ndesl-card {
+  display: flex; justify-content: space-between; align-items: baseline; width: 100%;
+  padding: 16px;
+  border: 1px solid rgba(0, 212, 255, 0.14);
+  background: rgba(16, 26, 38, 0.70);
+}
+.rc-ndesl-label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: rgba(234, 247, 255, 0.88);
+}
+.rc-ndesl-val { font-family: var(--font-mono), ui-monospace, monospace; font-size: 12px; font-weight: 700; color: #EAF7FF; }
+.rc-ndesl-correr { font-weight: 400; color: rgba(184, 216, 232, 0.55); }
+
+/* ── Card PA & Reações v2 (spec Figma) — um card só, dois
+   `Container PA` empilhados (a spec reaproveita o mesmo pro de
+   Reações: "é a mesma coisa"). Losango sem variação de posição
+   (diferente da Integridade/Sobrecarga — aqui os pips não se
+   emendam, ficam com gap normal). */
+.rc-npr-card {
+  display: flex; flex-direction: column; align-items: center; width: 100%;
+  padding: 16px; gap: 16px;
+  border: 1px solid rgba(0, 212, 255, 0.14);
+  background: rgba(16, 26, 38, 0.70);
+}
+.rc-npr { display: flex; flex-direction: column; align-items: flex-start; width: 100%; gap: 6px; }
+.rc-npr-label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: rgba(234, 247, 255, 0.88);
+}
+.rc-npr-row { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 1px 0; }
+.rc-npr-pips { display: flex; align-items: flex-start; gap: 2px; flex-wrap: wrap; }
+.rc-npr-pip { width: 19px; height: 18px; padding: 0; border: none; background: none; cursor: pointer; }
+.rc-npr-pip:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+
+/* Botão "Rolar defesa" — só no bloco de Reações (spec). `.rc-npr` já
+   tem `gap: 6px` entre label/row; os 6px de `margin-top` aqui somam
+   com esse gap pra dar exatamente os 12px pedidos entre o conjunto de
+   pips+valor e o botão, sem mexer no espaçamento label→row. Mesma
+   base visual do botão "Adicionar" de Condições (`.rc-ncond-add`) e
+   do "Estabilizar" de Colapso (`.rc-ncol-estabilizar`), só que
+   ocupando a largura inteira (spec). */
+.rc-npr-defesa {
+  display: flex; height: 28px; padding: 0 6px; justify-content: center; align-items: center; gap: 6px;
+  align-self: stretch; width: 100%; margin-top: 6px;
+  border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.08);
+  background: #0c1f2b;
+  font-family: var(--font-rajdhani), sans-serif;
+  font-size: 13px; font-style: normal; font-weight: 600; line-height: 18px;
+  color: rgba(234, 247, 255, 0.80);
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
 }
-.rc-pip[data-on="true"] { background: rgba(140, 200, 225, 0.3); border-color: rgba(140, 200, 225, 0.48); }
-.rc-pip[data-preview="fill"] { background: rgba(140, 200, 225, 0.16); border-color: rgba(140, 200, 225, 0.4); }
-.rc-pip[data-preview="empty"] { background: rgba(255, 95, 116, 0.14); border-color: rgba(255, 95, 116, 0.4); }
-.rc-pip:hover { border-color: rgba(140, 200, 225, 0.6); }
-.rc-pip:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
-.rc-pip:disabled { cursor: not-allowed; opacity: 0.5; }
+.rc-npr-defesa svg { width: 14px; height: 14px; flex-shrink: 0; }
+.rc-npr-defesa:hover { border-color: rgba(0, 212, 255, 0.3); color: #eaf7ff; }
+.rc-npr-defesa:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-npr-defesa:active { background: rgba(0, 212, 255, 0.08); }
+.rc-npr-defesa:disabled { opacity: 0.45; cursor: not-allowed; }
 
-.rc-points { display: flex; align-items: center; gap: 8px; }
-.rc-point-row { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; align-items: center; }
-/* Diamante via rotate(45deg) — borda real, cantos sempre limpos, e o
-   outline nativo de focus já sai em forma de losango (segue o
-   polígono automaticamente, sem CSS extra). */
-.rc-point {
-  width: 14px; height: 14px; padding: 0;
-  border: 1px solid rgba(0, 212, 255, 0.55);
-  background: rgba(0, 212, 255, 0.1);
-  transform: rotate(45deg);
+/* ── Pip losangular compartilhado (PA/Reações + MIT/PD dos
+   Equipamentos) — cores padronizadas entre os dois lugares. Hover em
+   preenchido = "remover" (avermelhado); hover em vazio = "adicionar"
+   (cyan mais forte). Um path só (não dois) para never ter a origem
+   mista atributo/CSS que causou o bug do "efeito duplo" no hover dos
+   atributos. */
+.rc-diapip { display: block; }
+.rc-diapip path { transition: fill 0.12s, stroke 0.12s; }
+.rc-diapip[data-on="false"] path { fill: rgba(18, 49, 67, 0.30); stroke: #0C3D4E; }
+.rc-diapip[data-on="true"] path { fill: rgba(4, 158, 192, 0.43); stroke: rgba(0, 212, 255, 0.18); }
+.rc-pip-btn:hover .rc-diapip[data-on="true"] path { fill: #32202A; stroke: rgba(121, 51, 65, 0.77); }
+.rc-pip-btn:hover .rc-diapip[data-on="false"] path { fill: rgba(4, 158, 192, 0.25); stroke: rgba(0, 212, 255, 0.36); }
+.rc-pip-btn:disabled .rc-diapip { opacity: 0.5; }
+/* Prévia de TRILHA (vários pips de uma vez, não só o hovered — igual
+   Integridade). Precisa vir DEPOIS das regras de `:hover` acima pra
+   ganhar em empate de especificidade quando os dois se aplicam. */
+.rc-diapip[data-preview="empty"] path { fill: #32202A; stroke: rgba(121, 51, 65, 0.77); }
+.rc-diapip[data-preview="fill"] path { fill: rgba(4, 158, 192, 0.25); stroke: rgba(0, 212, 255, 0.36); }
+.rc-npr-valor {
+  /* Largura FIXA = a mesma composição de antes (padding 4 + minus 11 +
+     gap 4 + valor 30 + gap 4 + plus 11 + padding 4 = 68px) — os
+     botões saíram do fluxo (agora absolutos, cobrindo cada metade),
+     então sem essa largura explícita a caixa encolhia só para caber o
+     valor e os ícones ficavam espremidos no meio. */
+  position: relative; display: flex; width: 68px; height: 24px; padding: 0 4px; justify-content: center; align-items: center;
+  border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.14);
+  background: #0E2431;
+}
+/* Clicável na METADE da caixa (não só no ícone de 11px) — clicar em
+   qualquer ponto da esquerda gasta, da direita devolve; o ícone só
+   marca visualmente o lado. */
+.rc-npr-btn {
+  position: absolute; inset: 0; width: 50%; padding: 0 4px;
+  border: none; background: none; cursor: pointer;
+  display: flex; align-items: center; color: #418292;
+}
+.rc-npr-btn:first-child { left: 0; justify-content: flex-start; }
+.rc-npr-btn:last-child { left: auto; right: 0; justify-content: flex-end; }
+.rc-npr-btn svg { width: 11px; height: 11px; display: block; }
+.rc-npr-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.rc-npr-btn:hover:not(:disabled) svg path { stroke: #6fe0ff; }
+.rc-npr-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: -2px; }
+.rc-npr-num {
+  position: relative; z-index: 1; width: 30px; text-align: center; pointer-events: none;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px; font-weight: 700; line-height: 16px; color: #EAF7FF;
+}
+.rc-npr-num-total { font-weight: 400; color: rgba(184, 216, 232, 0.60); }
+
+/* ── Colapso + Recursos v2 (spec Figma) ──────────────────────────── */
+.rc-vitals-row { display: flex; gap: 8px; align-items: stretch; }
+
+.rc-ncol-wrap { display: flex; flex-direction: column; align-items: flex-start; flex: none; width: 114px; }
+.rc-ncol-caption {
+  display: flex; padding: 4px 8px; justify-content: center; align-items: center; gap: 8px;
+  width: 100%; box-sizing: border-box;
+  border-top: 1px solid rgba(0, 212, 255, 0.14);
+  border-right: 1px solid rgba(0, 212, 255, 0.14);
+  border-left: 1px solid rgba(0, 212, 255, 0.14);
+  background: rgba(24, 49, 67, 0.50);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase;
+  color: #FF5F74;
+}
+.rc-ncol-card {
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  padding: 8px; gap: 12px; flex: 1 0 0; align-self: stretch; width: 100%; box-sizing: border-box;
+  border: 1px solid rgba(0, 212, 255, 0.14);
+  background: rgba(16, 26, 38, 0.70);
+}
+.rc-ncol-mid { display: flex; justify-content: center; align-items: center; gap: 8px; }
+.rc-ncol-pips { display: flex; align-items: flex-start; gap: 2px; }
+.rc-ncol-pip { width: 19px; height: 18px; padding: 0; border: none; background: none; cursor: pointer; }
+.rc-ncol-pip svg { width: 100%; height: 100%; display: block; }
+.rc-ncol-pip:disabled { cursor: not-allowed; }
+.rc-ncol-pip:focus-visible { outline: 2px solid var(--rc-danger); outline-offset: 1px; }
+.rc-ncol-morte {
+  display: flex; padding: 4px; justify-content: center; align-items: center;
+  border: 1px solid rgba(255, 95, 116, 0.50);
+  background: rgba(255, 95, 116, 0.20);
+}
+.rc-ncol-morte svg { width: 12px; height: 12px; display: block; }
+.rc-ncol-estabilizar {
+  display: flex; height: 28px; padding: 0 6px; align-items: center; justify-content: center; gap: 6px;
+  width: 100%;
+  border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.08);
+  background: #0C1F2B;
+  font-family: var(--font-rajdhani), sans-serif;
+  font-size: 13px; font-weight: 600; line-height: 18px; color: rgba(234, 247, 255, 0.65);
   cursor: pointer;
-  transition: background 0.14s, border-color 0.14s, box-shadow 0.14s;
 }
-.rc-point[data-on="true"] { background: var(--cy); border-color: #6fe0ff; box-shadow: 0 0 6px rgba(0, 212, 255, 0.5); }
-.rc-point:hover { border-color: #6fe0ff; background: rgba(0, 212, 255, 0.22); }
-.rc-point:focus-visible { outline: 2px solid var(--cy); outline-offset: 3px; }
-.rc-point:disabled { cursor: not-allowed; opacity: 0.5; }
-.rc-point-tag {
-  flex: none; padding: 3px 9px;
-  border: 1px solid var(--rc-line);
+.rc-ncol-estabilizar:disabled { opacity: 0.45; cursor: not-allowed; }
+.rc-ncol-estabilizar:not(:disabled):hover { border-color: rgba(0, 212, 255, 0.3); color: #eaf7ff; }
+.rc-ncol-estabilizar:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+
+/* Recursos — mesmo padrão em 3 camadas de Perícias (externo/box
+   título/interno). */
+.rc-nres-wrap { display: flex; flex-direction: column; align-items: flex-start; flex: 1 0 0; }
+.rc-nres-caption {
+  display: flex; padding: 4px 8px; justify-content: center; align-items: center; gap: 4px;
+  border-top: 1px solid rgba(0, 212, 255, 0.14);
+  border-right: 1px solid rgba(0, 212, 255, 0.14);
+  border-left: 1px solid rgba(0, 212, 255, 0.14);
+  background: rgba(24, 49, 67, 0.50);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10.5px; font-weight: 600; color: #d3f4ff;
-  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%);
+  font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase;
+  color: rgba(0, 212, 255, 0.72);
 }
-
-/* Sobrecarga: paleta âmbar, fundo translúcido permanente (nunca
-   totalmente vazio), hover diferenciado por borda/glow interno (não
-   pela mesma adição de fundo do estado padrão). */
-.rc-surges { display: flex; gap: 6px; }
-.rc-surge {
-  flex: 1; height: 15px; padding: 0; cursor: pointer;
-  border: 1px solid rgba(245, 162, 0, 0.5);
-  background: rgba(245, 162, 0, 0.08);
-  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
-  transition: border-color 0.14s, box-shadow 0.14s, background 0.14s;
+.rc-nres-card {
+  display: flex; padding: 8px; flex-direction: column; justify-content: center; align-items: stretch;
+  gap: 6px; width: 100%;
+  border: 1px solid rgba(0, 212, 255, 0.14);
+  background: rgba(16, 26, 38, 0.70);
 }
-.rc-surge[data-on="true"] { background: var(--am); border-color: #ffcf8a; box-shadow: 0 0 8px rgba(245, 162, 0, 0.5); }
-.rc-surge:not(:disabled):not([data-on="true"]):hover { border-color: #ffcf8a; box-shadow: inset 0 0 9px rgba(245, 162, 0, 0.4); }
-.rc-surge:disabled { opacity: 0.4; cursor: not-allowed; }
-.rc-surge:focus-visible { outline: 2px solid var(--am); outline-offset: 2px; }
-
-.rc-readout { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.rc-readout-val { font-size: 15px; font-weight: 700; color: #d3f4ff; }
-.rc-readout-val small { font-size: 10.5px; font-weight: 500; color: var(--rc-dim); margin-left: 2px; }
-
-/* ── Colapso + Recursos ────────────────────────────────────────── */
-.rc-vitals-row { display: flex; gap: 12px; align-items: stretch; }
-
-.rc-collapse { flex: none; width: 92px; display: flex; flex-direction: column; gap: 6px; }
-.rc-collapse-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-/* Trilha do Colapso inclinada — MESMO sentido dos cards de ícone e das
-   barras de recurso ("da esquerda para a direita": o topo fica para a
-   esquerda, a base para a direita). Via clip-path — nunca skew/rotate
-   no bloco, que inclinaria texto; aqui não há texto dentro. */
-.rc-collapse-track {
-  flex: 1; display: flex; flex-direction: column-reverse; gap: 5px;
-  padding: 6px 12px;
-  border: 1px solid rgba(255, 95, 116, 0.45);
-  background: rgba(255, 95, 116, 0.06);
-  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 100%, 9px 100%);
+.rc-nres-row { display: flex; align-items: flex-end; gap: 4px; }
+.rc-nres-badge {
+  display: flex; padding: 4px; justify-content: center; align-items: center;
+  border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.14);
 }
-.rc-collapse-seg {
-  flex: 1; min-height: 20px; padding: 0; cursor: pointer;
-  border: 1px solid rgba(255, 95, 116, 0.5);
-  background: rgba(255, 95, 116, 0.08);
-  transition: background 0.14s, box-shadow 0.14s;
+.rc-nres-track {
+  display: flex; padding: 2px; justify-content: center; align-items: center; gap: 0;
+  flex: 1 0 0; min-width: 0;
+  border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.14);
 }
-.rc-collapse-seg[data-on="true"] { background: var(--rc-danger); }
-.rc-collapse-seg[data-atual="true"] { border-color: #ffc4cf; box-shadow: 0 0 8px rgba(255, 95, 116, 0.5); }
-.rc-collapse-seg:not(:disabled):hover { border-color: #ff96a8; box-shadow: inset 0 0 8px rgba(255, 95, 116, 0.35); }
-.rc-collapse-seg:disabled { cursor: not-allowed; }
-.rc-collapse-seg:focus-visible { outline: 2px solid var(--rc-danger); outline-offset: 2px; }
-.rc-collapse-state {
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
-  color: rgba(255, 120, 140, 0.8); text-align: center;
+/* Cada célula é UMA fração fixa (1/4) da trilha — nunca distorce com
+   a largura da janela. A sobreposição entre células é percentual
+   (não px fixo), senão em telas largas o "entalhe" da diagonal fica
+   proporcionalmente maior e a trilha parece cheia de espaço morto. */
+.rc-nres-cell { position: relative; flex: 1 0 0; min-width: 0; height: 8px; }
+.rc-nres-cell:not(:first-child) { margin-left: -2.84%; }
+.rc-nres-cell svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.rc-nres-cell svg:last-child { transition: clip-path 0.2s ease; }
+.rc-nres-nome {
+  width: 30px; flex-shrink: 0;
+  font-family: var(--font-rajdhani), sans-serif;
+  font-size: 12px; font-weight: 700; line-height: 14px;
 }
-
-.rc-res { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; justify-content: center; }
-.rc-res-row { display: flex; align-items: center; gap: 7px; }
-/* Ícone e barra inclinam no MESMO sentido do Colapso (topo à esquerda,
-   base à direita) — clip-path tipo 1. */
-.rc-res-ico {
-  flex: none; width: 27px; height: 20px;
+.rc-nres-adj {
+  display: flex; width: 106px; height: 24px; padding: 0 4px;
+  justify-content: space-between; align-items: center;
+  border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.14);
+  background: #0E2431;
+}
+/* Área da caixa dedicada a minus/valor/plus — width fixa pra poder
+   dividir em duas metades clicáveis (mesma ideia do PA/Reações). */
+.rc-nres-ctrls { position: relative; display: flex; justify-content: center; align-items: center; width: 60px; height: 100%; }
+.rc-nres-btn {
+  position: absolute; inset: 0; width: 50%; padding: 0 2px;
+  border: none; background: none; cursor: pointer;
+  display: flex; align-items: center; color: #418292;
+}
+.rc-nres-btn:first-child { left: 0; justify-content: flex-start; }
+.rc-nres-btn:last-child { left: auto; right: 0; justify-content: flex-end; }
+.rc-nres-btn svg { width: 11px; height: 11px; display: block; }
+.rc-nres-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.rc-nres-btn:hover:not(:disabled) svg path { stroke: #6fe0ff; }
+.rc-nres-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: -2px; }
+.rc-nres-val {
+  position: relative; z-index: 1;
+  flex: none; width: 30px; height: 16px; padding: 0;
   display: grid; place-items: center;
-  border: 1px solid var(--rc-line);
-  background: rgba(0, 212, 255, 0.07);
-  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 100%, 6px 100%);
-}
-.rc-res-bar {
-  position: relative; flex: 1; min-width: 0; height: 20px;
-  border: 1px solid var(--rc-line);
-  background: rgba(2, 8, 14, 0.6);
-  overflow: hidden;
-  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 100%, 7px 100%);
-}
-.rc-res-fill {
-  position: absolute; inset: 0 auto 0 0;
-  background: var(--rc-res-cor);
-  transition: width 0.2s ease;
-}
-/* Divisórias estruturais: leitura rápida da proporção, não contagem. */
-.rc-res-bar::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background:
-    linear-gradient(90deg, transparent calc(25% - 1px), rgba(2, 8, 14, 0.85) calc(25% - 1px), rgba(2, 8, 14, 0.85) 25%, transparent 25%),
-    linear-gradient(90deg, transparent calc(50% - 1px), rgba(2, 8, 14, 0.9) calc(50% - 1px), rgba(2, 8, 14, 0.9) 50%, transparent 50%),
-    linear-gradient(90deg, transparent calc(75% - 1px), rgba(2, 8, 14, 0.85) calc(75% - 1px), rgba(2, 8, 14, 0.85) 75%, transparent 75%);
-}
-/* Card de valor: inclinação OPOSTA (fecha a composição) — clip-path
-   tipo 2. Tamanho FIXO (largura E altura), para a edição inline nunca
-   provocar reflow do card ou das trilhas vizinhas. */
-.rc-res-val {
-  flex: none; width: 72px; height: 20px; padding: 0;
-  display: grid; place-items: center;
-  border: 1px solid var(--rc-line);
-  background: rgba(0, 212, 255, 0.07);
-  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  border: none; background: none;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10.5px; font-weight: 600; color: #eafcff;
+  font-size: 11px; font-weight: 700; color: #EAF7FF;
   cursor: pointer;
-  transition: border-color 0.14s, background 0.14s;
   box-sizing: border-box;
 }
-.rc-res-val:hover { border-color: var(--cy); background: rgba(0, 212, 255, 0.13); }
-.rc-res-val:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
-.rc-res-val[data-invalido="true"] { border-color: var(--rc-danger); color: #ffc4cf; }
-.rc-res-input {
-  width: 100%; height: 100%; min-width: 0; padding: 0 6px;
+.rc-nres-val:hover { color: #fff; }
+.rc-nres-val:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-nres-val[data-invalido="true"] { color: var(--rc-danger); }
+.rc-nres-input {
+  width: 100%; height: 100%; min-width: 0; padding: 0;
   border: none; background: transparent; text-align: center;
   font: inherit; color: inherit;
   box-sizing: border-box;
   cursor: text;
 }
-.rc-res-input:focus { outline: none; }
-.rc-res-tag {
-  flex: none; width: 42px;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; color: rgba(200, 228, 242, 0.9);
-}
+.rc-nres-input:focus { outline: none; }
 
-/* ── Área de abas (conteúdo + trilho vertical à direita) ─────────
-   O trilho fica colado à borda direita da área principal, só ícones,
-   com hint ao passar mouse/foco. Substitui a navegação textual que
-   ficava no topo. */
-.rc-tabsarea { display: flex; flex-direction: row; gap: 8px; min-width: 0; height: 100%; }
-.rc-tabsarea-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+/* ── Área de abas (conteúdo da aba selecionada) ───────────────────
+   O trilho de ícones em si NÃO mora mais aqui — ver `.rc-tabrail`
+   abaixo, agora irmão de `.rc-window` (spec "JANELA CONSOLE": trilho
+   fora do conteúdo interno/rolável da janela, senão é cortado ao
+   redimensionar). */
+.rc-tabsarea-main { min-width: 0; height: 100%; display: flex; flex-direction: column; gap: 10px; }
 
+/* Trilho de abas: irmão de `.rc-window` dentro de `.rc-window-wrap`,
+   centralizado verticalmente (herda do `align-items: center` do wrap),
+   colado à borda direita da janela — sem borda esquerda própria, pra
+   fundir visualmente com a borda direita da janela ao lado.
+   Reorganizado em GRUPOS (spec "modos Painel e Foco") — `gap: 12px`
+   aqui é o espaçamento ENTRE grupo/divider/grupo; o `gap: 8px` DENTRO
+   de cada grupo mora em `.rc-tabrail-group`, não aqui. */
 .rc-tabrail {
-  flex: none; width: 42px;
-  display: flex; flex-direction: column; gap: 6px;
-  padding: 2px 0;
-  border-left: 1px solid var(--rc-line-soft);
-  padding-left: 8px;
+  display: flex; width: 53px; padding: 8px;
+  flex-direction: column; justify-content: center; align-items: center; gap: 12px;
+  border-top: 1px solid rgba(0, 212, 255, 0.14);
+  border-right: 1px solid rgba(0, 212, 255, 0.14);
+  border-bottom: 1px solid rgba(0, 212, 255, 0.14);
+  background: rgba(16, 26, 38, 0.70);
 }
+.rc-tabrail-group { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.rc-tabrail-divider { height: 1px; align-self: stretch; background: #0e3647; }
 .rc-tabrail-btn {
   position: relative;
-  width: 36px; height: 36px; padding: 0;
-  display: grid; place-items: center;
-  border: 1px solid var(--rc-line-soft);
-  background: rgba(10, 20, 31, 0.7);
-  color: rgba(184, 216, 232, 0.6);
+  width: 36px; height: 36px; padding: 8.5px 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  background: rgba(10, 20, 31, 0.70);
+  color: #728997;
   cursor: pointer;
   transition: color 0.14s, background 0.14s, border-color 0.14s;
 }
 .rc-tabrail-btn:hover { color: #d3f4ff; border-color: var(--rc-line); background: rgba(0, 212, 255, 0.09); }
 .rc-tabrail-btn[aria-selected="true"] {
-  color: #eafcff; border-color: var(--cy); background: #123640;
+  color: #eafcff; border-color: #108bac; background: #123640;
   box-shadow: 0 0 9px rgba(0, 212, 255, 0.25);
 }
 .rc-tabrail-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
@@ -472,6 +788,37 @@
 .rc-tabrail-btn:hover .rc-tabrail-hint,
 .rc-tabrail-btn:focus-visible .rc-tabrail-hint { opacity: 1; transition-delay: 0.35s; }
 
+/* Controles de modo (Painel/Foco) — mesma base, estado ativo DISTINTO
+   e mais discreto (só borda esquerda + fundo, sem o brilho cheio das
+   abas de conteúdo — spec "Controles de modo"). Default/hover/focus
+   ficam iguais às outras abas (herdados de `.rc-tabrail-btn`, sem
+   modificador aqui). */
+.rc-tabrail-btn--modo[aria-selected="true"] {
+  border-left: 1px solid #108bac;
+  background: #123640;
+  box-shadow: none;
+}
+
+/* Aba Personagem (só existe no modo Foco) — paleta âmbar própria pra
+   se diferenciar das abas de conteúdo (spec "Aba Personagem"). Hover é
+   um passo intermediário ENTRE default e active, não os mesmos tons. */
+.rc-tabrail-btn--personagem {
+  border: 1px solid #534228;
+  background: rgba(10, 20, 31, 0.70);
+  color: #906830;
+}
+.rc-tabrail-btn--personagem:hover {
+  border-color: #6e5126;
+  background: rgba(136, 96, 36, 0.16);
+  color: #ae7930;
+}
+.rc-tabrail-btn--personagem[aria-selected="true"] {
+  border-color: #886024;
+  background: rgba(136, 96, 36, 0.32);
+  box-shadow: 0 0 9px rgba(179, 124, 42, 0.25);
+  color: #cc8a2e;
+}
+
 .rc-tabpanel {
   flex: 1; min-height: 0; overflow: auto;
   border: 1px solid var(--rc-line);
@@ -485,119 +832,310 @@
 }
 
 /* ── Equipamentos ──────────────────────────────────────────────── */
-/* Canvas de posicionamento absoluto — necessário para os slots
-   guardarem relação espacial específica com o corpo (podem avançar
-   parcialmente sobre a silhueta). As posições são PERCENTUAIS,
-   relativas a este contêiner (nunca à viewport), preservando o
-   comportamento em resize. */
-.rc-doll {
-  position: relative;
-  min-height: 460px;
+/* ── Equipamentos v2 (spec Figma) ─────────────────────────────────
+   Card Externo → Box título (CENTRALIZADO, diferente dos outros) →
+   Card interno → Container interno (relative, hospeda a silhueta +
+   os boxes em absolute). */
+.rc-eq-outer { display: flex; flex-direction: column; align-items: center; flex: 1 0 0; align-self: stretch; height: 100%; min-height: 0; }
+.rc-eq-caption {
+  display: flex; padding: 4px 8px; justify-content: center; align-items: center; gap: 8px;
+  align-self: center;
+  border-top: 1px solid rgba(0, 212, 255, 0.14);
+  border-right: 1px solid rgba(0, 212, 255, 0.14);
+  border-left: 1px solid rgba(0, 212, 255, 0.14);
+  background: rgba(24, 49, 67, 0.50);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px; font-weight: 500; letter-spacing: 1.6px; text-transform: uppercase;
+  color: rgba(0, 212, 255, 0.72);
 }
-.rc-doll-figure {
-  position: absolute; left: 50%; top: 4%; width: 32%;
-  transform: translateX(-50%);
-  z-index: 0;
-  color: rgba(0, 212, 255, 0.5);
-  pointer-events: none;
+.rc-eq-card-outer {
+  display: flex; padding: 56px 16px 68px; flex-direction: column; justify-content: center; align-items: center; gap: 16px;
+  flex: 1 0 0; align-self: stretch; width: 100%; min-height: 0;
+  border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.14);
+  background: rgba(16, 26, 38, 0.70);
+  box-sizing: border-box;
 }
-.rc-doll-figure svg { width: 100%; height: auto; }
-.rc-slot-abs { position: absolute; z-index: 1; }
-.rc-doll-quick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+/* `.rc-tabpanel` (pai genérico da aba) já tem a SUA própria borda —
+   redundante com a do Card interno acima (mesmo bug que Perícias já
+   teve). Só zera quando hospeda Equipamentos; as outras abas, ainda
+   não redesenhadas, continuam usando a borda genérica do tabpanel. */
+.rc-tabpanel:has(.rc-eq-outer) { border: none; background: none; padding: 0; }
+.rc-eq-inner-container { position: relative; flex: 1 0 0; align-self: stretch; width: 100%; min-height: 420px; }
+/* SVG inline, um <path> por região — `preserveAspectRatio` padrão
+   ("xMidYMid meet", o mesmo efeito do object-fit:contain) já centraliza
+   e maximiza sozinho, sem medir nada em JS. Hover é o path real
+   (pointer-events na área preenchida), não mais um retângulo
+   aproximado. */
+.rc-eq-body { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+.rc-eq-body path { cursor: pointer; transition: fill 0.15s; }
 
-.rc-slot {
-  position: relative;
-  display: flex; align-items: flex-start; gap: 9px;
-  width: 100%; text-align: left; padding: 10px 12px;
-  border: 1px solid var(--rc-line-soft);
-  background: rgba(10, 20, 31, 0.86);
-  color: inherit;
-  cursor: pointer;
-  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+/* Box equipamento — pinado na borda esquerda/direita do container
+   (nunca solto no meio), largura entre os limites da spec. Arma
+   primária/secundária ficam num par empilhado (`.rc-eq-armas-stack`,
+   ele mesmo absolute) — os dois boxes ali dentro não pinam de novo
+   (`pinned={false}`, sem `.rc-eq-box--pinned`). */
+.rc-eq-box {
+  /* Largura HUG (não um valor fixo/percentual compartilhado) — cada
+     card ocupa só o que precisa, só clampado entre os limites da
+     spec. Um `clamp(154px, %, 220px)` fixo fazia TODOS os cards da
+     mesma pilha (ex.: arma primária/secundária) ficarem exatamente do
+     mesmo tamanho mesmo quando um precisava de mais espaço (texto
+     truncando à toa enquanto sobrava até 220px de limite). */
+  display: inline-flex; width: max-content; min-width: 154px; max-width: 220px;
+  padding: 8px 10px; flex-direction: column; justify-content: center; align-items: flex-start; gap: 6px;
+  border: 1px solid rgba(0, 212, 255, 0.12);
+  background: rgba(0, 18, 32, 0.50);
+  box-sizing: border-box;
+  transition: background 0.14s;
+}
+.rc-eq-box--pinned { position: absolute; z-index: 1; }
+.rc-eq-box:hover, .rc-eq-box[data-hover="true"] { background: rgba(0, 27, 47, 0.65); }
+.rc-eq-armas-stack {
+  position: absolute; z-index: 1; right: 0;
+  display: inline-flex; flex-direction: column; align-items: flex-end; gap: 10px;
+}
+.rc-eq-box-label {
+  color: rgba(234, 247, 255, 0.65);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+}
+
+/* Card interno — compartilhado entre "Botão Equipar" e o card
+   preenchido (mesma moldura default/hover nos dois). */
+.rc-eq-inner {
+  display: flex; width: 100%; padding: 2px 4px 2px 2px; align-items: center; gap: 6px;
+  border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.08);
+  background: rgba(12, 31, 43, 0.50);
+  box-sizing: border-box;
+  cursor: pointer; text-align: left;
   transition: border-color 0.14s, background 0.14s;
 }
-.rc-slot:hover { border-color: var(--cy); background: rgba(0, 212, 255, 0.11); }
-.rc-slot:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
-.rc-slot[data-preenchido="true"] { border-color: rgba(0, 212, 255, 0.5); background: rgba(0, 212, 255, 0.08); }
-.rc-slot-ico { flex: none; color: rgba(0, 212, 255, 0.7); margin-top: 1px; }
-.rc-slot-main { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
-.rc-slot-label {
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(0, 212, 255, 0.65);
+.rc-eq-inner:hover, .rc-eq-inner:focus-visible { border-color: var(--stroke-button-hover-primary, #0E6B7F); background: rgba(23, 52, 70, 0.50); }
+.rc-eq-inner:focus-visible { outline: none; }
+
+/* Card ícone — mesmo tratamento pros dois estados (vazio/preenchido)
+   dos cards que NÃO são acesso rápido; só o acesso rápido usa a
+   variante âmbar (`--quick`). */
+.rc-eq-ico {
+  flex: none; display: flex; padding: 4px; justify-content: center; align-items: center; gap: 8px; align-self: stretch;
+  border-radius: 1px; background: rgba(8, 136, 166, 0.10);
+  color: #0485A3;
 }
-.rc-slot-nome {
-  font-size: 13px; font-weight: 600; color: #d3f4ff;
+.rc-eq-ico svg { width: 18px; height: 18px; display: block; }
+.rc-eq-inner:hover .rc-eq-ico, .rc-eq-inner:focus-visible .rc-eq-ico { color: #039ABD; }
+.rc-eq-equipar-txt {
+  color: rgba(234, 247, 255, 0.65);
+  font-family: var(--font-rajdhani), sans-serif; font-size: 13px; font-weight: 600; line-height: 18px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  background: none; border: none; padding: 0; text-align: left; cursor: pointer;
 }
-.rc-slot-nome[data-vazio="true"] { color: rgba(184, 216, 232, 0.36); font-weight: 400; cursor: inherit; }
-.rc-slot-linha { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.rc-tag {
-  padding: 2px 7px;
-  border: 1px solid rgba(0, 212, 255, 0.3);
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: rgba(184, 216, 232, 0.85);
-}
-.rc-tag--am { border-color: rgba(245, 162, 0, 0.5); color: #ffe6bd; }
-.rc-minipips { display: flex; gap: 3px; }
-.rc-minipip {
-  width: 10px; height: 10px; padding: 0; cursor: pointer;
-  border: 1px solid rgba(0, 212, 255, 0.45);
-  background: rgba(0, 212, 255, 0.08);
-  transition: background 0.12s, border-color 0.12s;
-}
-.rc-minipip[data-on="true"] { background: var(--cy); }
-.rc-minipip:hover { border-color: #6fe0ff; }
-.rc-minipip:focus-visible { outline: 1px solid var(--cy); outline-offset: 1px; }
-.rc-slot-acao {
-  margin-top: 3px; padding: 4px 9px; align-self: flex-start; cursor: pointer;
-  border: 1px solid rgba(0, 212, 255, 0.35); background: transparent;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(0, 212, 255, 0.9);
-  transition: background 0.14s, border-color 0.14s;
-}
-.rc-slot-acao:hover { background: rgba(0, 212, 255, 0.16); border-color: var(--cy); color: #eafcff; }
-.rc-slot-acao:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-eq-inner:hover .rc-eq-equipar-txt, .rc-eq-inner:focus-visible .rc-eq-equipar-txt { color: rgba(234, 247, 255, 0.83); }
 
-/* ── Perícias ──────────────────────────────────────────────────── */
-.rc-skills-wrap { display: flex; flex-direction: column; height: 100%; min-height: 0; }
-/* Linhas em 1fr: a grade estica pela altura disponível do painel em
-   vez de deixar espaço morto embaixo. */
-.rc-skills { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: 8px; }
-@media (max-width: 900px) { .rc-skills { grid-template-columns: repeat(2, 1fr); } }
-.rc-skill {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 10px; width: 100%; text-align: left; cursor: pointer;
-  border: 1px solid var(--rc-line-soft);
-  background: rgba(10, 20, 31, 0.82);
-  color: inherit;
-  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+.rc-eq-corpo { min-width: 0; flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.rc-eq-nome {
+  background: none; border: none; padding: 0; cursor: pointer; text-align: left;
+  color: #EAF7FF;
+  font-family: var(--font-rajdhani), sans-serif; font-size: 13px; font-weight: 600; line-height: 18px;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rc-eq-pipvalor { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.rc-eq-pips { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
+.rc-eq-pipbtn { width: 14px; height: 14px; padding: 0; border: none; background: none; cursor: pointer; }
+.rc-eq-valor {
+  color: rgba(234, 247, 255, 0.80);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px; font-weight: 500; line-height: 16px;
+}
+.rc-eq-dano {
+  color: rgba(184, 216, 232, 0.85);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px; font-style: normal; font-weight: 400; line-height: 16px;
+}
+.rc-eq-valor-total { font-weight: 400; color: rgba(184, 216, 232, 0.60); }
+
+/* Acesso rápido — mesma estrutura, paleta âmbar. */
+.rc-eq-quick-row { position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 12px; justify-content: center; z-index: 1; }
+.rc-eq-quick {
+  display: flex; width: max-content; min-width: 154px; max-width: 220px; padding: 8px 10px; flex-direction: column; justify-content: center; align-items: flex-start; gap: 6px;
+  border: 1px solid rgba(169, 122, 48, 0.24);
+  background: rgba(230, 165, 46, 0.10);
+  box-sizing: border-box;
   transition: border-color 0.14s, background 0.14s;
 }
-.rc-skill:hover { border-color: var(--cy); background: rgba(0, 212, 255, 0.1); }
-.rc-skill:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-eq-quick:hover { border-color: rgba(169, 122, 48, 0.55); background: rgba(230, 165, 46, 0.13); }
+/* Card interno + ícone do Acesso rápido — MESMA estrutura/hover dos
+   cards normais (o hover troca de cor no BOTÃO, não só no badge do
+   ícone), só que na paleta âmbar — cada tom cyan tem seu par âmbar de
+   mesmo "nível", reaproveitando cores já usadas na plataforma. */
+.rc-eq-quick-inner {
+  border-color: rgba(169, 122, 48, 0.17);
+  background: rgba(46, 44, 36, 0.50);
+}
+.rc-eq-quick-inner:hover, .rc-eq-quick-inner:focus-visible {
+  /* Mesmo NÍVEL do hover do card normal (rgba(23,52,70,0.50) — um
+     neutro escuro, quase sem saturação); a versão âmbar brilhante
+     (rgba(230,165,46,...), usada só no CARD EXTERNO do acesso rápido)
+     destoava demais aqui dentro. */
+  border-color: rgba(169, 122, 48, 0.8);
+  background: rgba(70, 52, 23, 0.50);
+}
+.rc-eq-ico--quick { background: rgba(228, 171, 39, 0.09); color: #A97A30; }
+.rc-eq-quick-inner:hover .rc-eq-ico--quick, .rc-eq-quick-inner:focus-visible .rc-eq-ico--quick { color: #C99138; }
+
+/* ── Perícias v2 (spec Figma) ─────────────────────────────────────
+   3 camadas: Card externo (wrapper, alinhado à esquerda) → Box título
+   "PERÍCIAS" (borda só em cima/direita/esquerda — funde com o painel
+   abaixo, sem borda inferior) → Card interno (painel com borda+fundo
+   próprios) → grade de Card perícia.
+   Cor por atributo, não por perícia: verde=Corpo (#207834), roxo=Mente
+   (#6A49BC), cyan-petróleo=Ânimo (#0596B7 — cor PRÓPRIA, não o --cy
+   geral do resto do Console; correção depois de eu ter presumido
+   errado da primeira vez). A cor mora no BADGE do ícone (borda+fundo
+   próprios) e na tag — a borda do CARD em si é neutra, igual pros 3
+   atributos (rgba(0,212,255,0.12), confirmado pela spec E pelas
+   imagens de referência lado a lado). As larguras/paddings do frame do
+   Figma ("450px" etc.) foram adaptadas para preencher o painel real,
+   que é fluido — um valor fixo quebraria em qualquer resolução
+   diferente da tela em que foi desenhado. */
+/* Sem height:100% — agora Perícias divide a coluna com Fixados e
+   Condições (não é mais dona do painel inteiro), então "hug" a própria
+   altura em vez de tentar preencher o espaço dos vizinhos. */
+.rc-skills-wrap { display: flex; flex-direction: column; align-items: flex-start; width: 100%; container-type: inline-size; container-name: rc-skills; }
+.rc-skills-caption {
+  display: flex; align-items: center; justify-content: center;
+  padding: 4px 8px; gap: 8px;
+  border-top: 1px solid rgba(0, 212, 255, 0.14);
+  border-right: 1px solid rgba(0, 212, 255, 0.14);
+  border-left: 1px solid rgba(0, 212, 255, 0.14);
+  background: rgba(24, 49, 67, 0.5);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+  color: #d3f4ff;
+}
+/* "Card interno" da spec: correção anterior errada — não era ESTE card
+   que sobrava, era o painel externo que hospedava a Perícias inteira
+   (`.rc-tabpanel`, que tinha sua PRÓPRIA borda+fundo, redundante com a
+   deste aqui). Perícias já não vive mais dentro de `.rc-tabpanel`
+   (agora fica em `.rc-center-lower`, sem moldura própria), então essa
+   dupla borda já não existe — e este card interno volta a existir,
+   como sempre devia. */
+.rc-skills-card {
+  display: flex; flex-direction: column; align-items: stretch;
+  width: 100%;
+  padding: 16px;
+  border-radius: 1px;
+  border: 1px solid rgba(0, 212, 255, 0.14);
+  background: rgba(16, 26, 38, 0.7);
+}
+/* Altura HUG, não FILL: cada card fica do tamanho do próprio conteúdo
+   (`grid-auto-rows: auto`) — não estica pra preencher a altura
+   disponível, que deixava espaço morto embaixo do texto. */
+.rc-skills { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: auto; gap: 10px; }
+@media (max-width: 900px) { .rc-skills { grid-template-columns: repeat(2, 1fr); } }
+
+.rc-skill {
+  display: flex; align-items: center;
+  /* `<button>` tem padding padrão do navegador — sem zerar os 4 lados
+     aqui, sobrava um respiro à esquerda antes do ícone que não deveria
+     existir (o navegador aplicava o padding-left dele por baixo do meu
+     padding-right). */
+  padding: 0 10px 0 0; gap: 10px;
+  /* `min-width: 0` — sem isso o item de grid usa o min-content do
+     conteúdo (badge+texto+valor, todos `flex: none`/`white-space:
+     nowrap`) como piso, e isso "estoura" a coluna de 1fr pra fora do
+     padding do `.rc-skills-card` em vez de encolher. */
+  width: 100%; min-width: 0; text-align: left; cursor: pointer;
+  border-radius: 1px;
+  /* Borda do CARD é neutra pros 3 atributos — a cor mora no badge do
+     ícone e na tag, não aqui. */
+  border: 1px solid rgba(0, 212, 255, 0.12);
+  background: rgba(0, 18, 32, 0.5);
+  color: inherit;
+  transition: border-color 0.14s, background 0.14s;
+}
+.rc-skill:hover { background: rgba(0, 18, 32, 0.85); border-color: var(--rc-skill-cor, rgba(0, 212, 255, 0.3)); }
+.rc-skill:focus-visible { outline: 2px solid var(--rc-skill-cor, var(--cy)); outline-offset: 1px; }
 .rc-skill[data-vazio="true"] { opacity: 0.28; pointer-events: none; cursor: default; }
-.rc-skill-ico { flex: none; color: rgba(0, 212, 255, 0.62); }
+
+/* Badge do ícone: borda+fundo PRÓPRIOS, por atributo — "align-self:
+   stretch" no Figma = preenche a altura inteira do card. */
+.rc-skill-ico {
+  flex: none;
+  display: flex; justify-content: center; align-items: center;
+  align-self: stretch;
+  padding: 0 8px;
+  border-radius: 1px;
+  border: 1px solid var(--rc-skill-ico-border, transparent);
+  background: var(--rc-skill-ico-bg, transparent);
+  color: var(--rc-skill-cor, var(--cy));
+}
+.rc-skill-ico svg { width: 15px; height: 15px; }
+/* flex:1 (fill) — é o que empurra o valor da perícia pra ponta direita
+   do card. */
+.rc-skill-body { display: flex; flex-direction: column; align-items: flex-start; padding: 4px 0; flex: 1 0 0; min-width: 0; }
 .rc-skill-nome {
-  flex: 1; min-width: 0; font-size: 12px; font-weight: 500; color: #cfe9f5;
+  font-family: var(--font-rajdhani), "Rajdhani", sans-serif;
+  font-size: 13px; font-weight: 600; line-height: 18px;
+  color: rgba(234, 247, 255, 0.8);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .rc-skill-tag {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px; font-weight: 400; letter-spacing: 0.8px; text-transform: uppercase;
+  color: var(--rc-skill-cor, var(--cy));
+}
+.rc-skill-dado {
+  text-transform: none;
+}
+/* Valor investido na perícia (character.pericias[id]) — distinto da
+   tag "M · 1D8" (que é o pool de dados do ATRIBUTO, não da perícia).
+   Neutro, não muda de cor por atributo. */
+.rc-skill-valor {
   flex: none;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; letter-spacing: 0.04em; color: rgba(184, 216, 232, 0.55);
+  font-size: 12px; font-weight: 600; line-height: 16px;
+  color: rgba(234, 247, 255, 0.8);
 }
 
-/* ── Pins ──────────────────────────────────────────────────────── */
-.rc-pins { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; flex: none; }
+/* Abaixo de 456px de largura do card de Perícias o badge do ícone não
+   cabe mais sem espremer nome/tag/valor — remove o ícone e usa o
+   espaço liberado como padding-left, em vez de deixar os cards
+   sobrepor o padding do container. */
+@container rc-skills (max-width: 455px) {
+  .rc-skill-ico { display: none; }
+  .rc-skill { padding-left: 10px; }
+}
+
+/* Corpo: só a cor do ícone foi especificada (fill #207834) — o
+   badge (borda+fundo) segue o MESMO padrão estrutural de Mente/Ânimo
+   por consistência, com o verde no lugar do roxo/petróleo. Sinalizado
+   porque não veio explícito como os outros dois. */
+.rc-skill[data-attr="corpo"] {
+  --rc-skill-cor: #207834;
+  --rc-skill-ico-border: rgba(32, 120, 52, 0.55);
+  --rc-skill-ico-bg: #13241a;
+}
+.rc-skill[data-attr="mente"] {
+  --rc-skill-cor: #6a49bc;
+  --rc-skill-ico-border: rgba(106, 74, 189, 0.55);
+  --rc-skill-ico-bg: #1b2339;
+}
+.rc-skill[data-attr="animo"] {
+  --rc-skill-cor: #0596b7;
+  --rc-skill-ico-border: rgba(0, 212, 255, 0.14);
+  --rc-skill-ico-bg: #0e2431;
+}
+
+/* ── Pins / Espaço livre v2 (spec Figma para o slot vazio; slot
+   preenchido mantém o estilo anterior — a spec não cobriu esse
+   estado). ─────────────────────────────────────────────────────── */
+.rc-pins { display: flex; align-items: flex-start; gap: 12px; align-self: stretch; }
 .rc-pin {
-  position: relative; min-height: 58px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-  padding: 9px; width: 100%; cursor: pointer;
-  border: 1px dashed var(--rc-line-soft);
-  background: rgba(10, 20, 31, 0.72);
+  position: relative; flex: 1 0 0; min-height: 58px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  padding: 16px; width: 100%; cursor: pointer;
+  border: 1px dashed rgba(0, 212, 255, 0.14);
+  background: rgba(16, 26, 38, 0.70);
   color: inherit;
-  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
   transition: border-color 0.14s, background 0.14s;
 }
 .rc-pin[data-preenchido="true"] { border-style: solid; border-color: rgba(0, 212, 255, 0.5); background: rgba(0, 212, 255, 0.08); cursor: default; }
@@ -608,6 +1146,10 @@
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--rc-dim);
 }
+.rc-pin-empty-txt {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px; font-weight: 400; text-transform: uppercase; color: rgba(184, 216, 232, 0.70);
+}
 .rc-pin-x {
   position: absolute; top: 3px; right: 3px; cursor: pointer;
   display: grid; place-items: center; width: 20px; height: 20px;
@@ -616,27 +1158,56 @@
 .rc-pin-x:hover { color: #ffc4cf; }
 .rc-pin-x:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 
-/* ── Condições ─────────────────────────────────────────────────── */
-.rc-cond-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-.rc-cond-list { display: flex; flex-wrap: wrap; gap: 6px; }
-.rc-cond {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 3px 4px 3px 10px;
-  border: 1px solid rgba(255, 95, 116, 0.55);
-  background: rgba(255, 95, 116, 0.1);
+/* ── Condições v2 (spec Figma) — mesmo padrão em 3 camadas de
+   Perícias/Recursos (externo/box título/interno). */
+.rc-ncond-wrap { display: flex; flex-direction: column; align-items: flex-start; width: 100%; }
+.rc-ncond-caption {
+  display: flex; padding: 4px 8px; justify-content: center; align-items: center; gap: 8px;
+  border-top: 1px solid rgba(0, 212, 255, 0.14);
+  border-right: 1px solid rgba(0, 212, 255, 0.14);
+  border-left: 1px solid rgba(0, 212, 255, 0.14);
+  background: rgba(24, 49, 67, 0.50);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #ffc4cf;
-  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+  font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase;
+  color: rgba(0, 212, 255, 0.72);
 }
-.rc-cond-abrir { background: none; border: none; color: inherit; font: inherit; padding: 0; cursor: pointer; }
-.rc-cond-abrir:hover { color: #fff; text-decoration: underline; }
-.rc-cond-abrir:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
-.rc-cond-x {
-  display: grid; place-items: center; width: 18px; height: 18px; cursor: pointer;
-  border: none; background: transparent; color: rgba(255, 196, 207, 0.7);
+.rc-ncond-card {
+  display: flex; padding: 16px; align-items: flex-start; align-content: flex-start; gap: 6px;
+  flex-wrap: wrap; width: 100%;
+  border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.14);
+  background: rgba(16, 26, 38, 0.70);
 }
-.rc-cond-x:hover { color: #fff; }
-.rc-cond-x:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-ncond-tag {
+  display: inline-flex; height: 28px; padding: 0 6px; align-items: center; gap: 6px;
+  border: 1px solid rgba(255, 95, 116, 0.50);
+  background: rgba(255, 95, 116, 0.08);
+}
+.rc-ncond-abrir {
+  background: none; border: none; color: #F9899C; font: inherit; padding: 0; cursor: pointer;
+  font-family: var(--font-rajdhani), sans-serif; font-size: 13px; font-weight: 600; line-height: 18px;
+}
+.rc-ncond-abrir:hover { text-decoration: underline; }
+.rc-ncond-abrir:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.rc-ncond-x {
+  display: grid; place-items: center; width: 14px; height: 14px; cursor: pointer;
+  border: none; background: transparent; color: #8F3F4F;
+}
+.rc-ncond-x:hover { color: #F9899C; }
+.rc-ncond-x:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-ncond-add {
+  display: inline-flex; height: 28px; padding: 0 6px; align-items: center; gap: 6px;
+  border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.08);
+  background: #0C1F2B;
+  font-family: var(--font-rajdhani), sans-serif; font-size: 13px; font-weight: 600; line-height: 18px;
+  color: rgba(234, 247, 255, 0.65); cursor: pointer;
+}
+.rc-ncond-add:hover { border-color: rgba(0, 212, 255, 0.3); color: #eaf7ff; }
+.rc-ncond-add:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-ncond-vazio {
+  flex: 1 0 0; align-self: stretch; margin: 0; display: flex; align-items: center;
+  color: rgba(184, 216, 232, 0.70);
+  font-family: var(--font-rajdhani), sans-serif; font-size: 14px; font-weight: 500;
+}
 .rc-vazio { font-size: 12px; color: var(--rc-dim); line-height: 1.5; }
 
 /* Botão discreto reutilizável. */
@@ -751,3 +1322,18 @@
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 20px; font-weight: 700; color: #eafcff;
 }
+
+/* Aviso de defesa sem Reação (penalidade cumulativa) — mesma paleta
+   âmbar de Sobrecarga (`--am`), reaproveitada aqui pro mesmo
+   significado ("pressão de recurso"/desvantagem), não a paleta de erro
+   (`--rc-danger`, vermelha) — a defesa AINDA acontece, não falhou. */
+.rc-aux-defesa-aviso {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 8px 10px; margin-bottom: 10px;
+  border: 1px solid rgba(245, 162, 0, 0.35);
+  background: rgba(245, 162, 0, 0.08);
+  border-radius: 1px;
+  font-size: 12px; line-height: 16px; color: rgba(238, 203, 143, 0.92);
+}
+.rc-aux-defesa-aviso svg { flex-shrink: 0; margin-top: 1px; color: var(--am, #f5a200); }
+.rc-aux-defesa-aviso strong { color: #f5a200; }

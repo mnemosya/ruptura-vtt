@@ -1,35 +1,34 @@
 "use client";
 
 /**
- * Equipamentos — corpo ao centro e slots posicionados ao redor dele.
+ * Equipamentos v2 (spec Figma) — silhueta do corpo (SVG real, com uma
+ * variante por região que troca no hover) centralizada, com os boxes
+ * de equipamento posicionados em absolute ao redor dela: os da direita
+ * rente à direita, os da esquerda rente à esquerda (nunca soltos no
+ * meio), largura entre 154px e 220px.
  *
- * Os slots usam posicionamento ABSOLUTO dentro de um canvas próprio
- * (`.rc-doll`, `position:relative`), com coordenadas PERCENTUAIS — não
- * a viewport — porque precisam guardar uma relação espacial específica
- * com a silhueta e podem avançar parcialmente sobre ela (spec: isso é
- * parte da composição). Percentuais mantêm o comportamento durante
- * resize; o canvas tem `min-height` fixo para as posições terem uma
- * referência estável.
+ * Escudo e Arma secundária são dois slots INDEPENDENTES no modelo
+ * (equipadoDefensivo × empunhado[1]), mas representam a MESMA mão —
+ * por pedido explícito do usuário ("não dá pra segurar 2 pistolas e
+ * ter um escudo"), viram um único box visual "Arma secundária" que
+ * mostra o que estiver preenchido (escudo tem prioridade porque só um
+ * dos dois deveria existir por vez). `itemCabeNoSlot` foi ajustado em
+ * `slots.ts` pra aceitar arma OU escudo neste slot, então "Equipar" a
+ * partir do box vazio já mostra as duas categorias na mochila.
  *
- * Acesso rápido #1/#2 ficam FORA do canvas absoluto, numa fileira
- * normal abaixo — não têm relação espacial com o corpo.
- *
- * Armaduras mostram trilha de MIT + tipo de resistência; escudo mostra
- * PD; armas mostram dano, propriedades e munição com ação de recarga.
- * Todos esses dados vêm do modelo publicado (`ItemContent`) — nada é
- * inventado aqui. Slot vazio abre a Mochila já filtrada pelo slot.
+ * Armas (primária/secundária-arma) mostram só o dano — sem munição,
+ * sem lista de propriedades: a spec pede exatamente esse conteúdo
+ * mínimo pra esse card, e não há em nenhum outro lugar hoje uma
+ * exibição de munição pra recuperar depois (sinalizado à parte).
  */
 
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { HardHat, Shirt, Hand, Footprints, Shield, Swords, Crosshair, Package } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import {
-  getWeaponAmmoAtual,
-  getWeaponAmmoMax,
-  type InventoryItemInstance,
-  type ItemContent,
-} from "../../../../lib/character";
+import { type InventoryItemInstance, type ItemContent } from "../../../../lib/character";
 import { useClickGuard } from "../useClickGuard";
+import { DiamondPip } from "../pips";
+import { BodySilhouette, type BodyRegiao } from "../bodySilhouette";
 import { BODY_SLOT_LABELS, type BodySlot, type BodySlotId } from "../slots";
 import type { ConsoleApi } from "../types";
 
@@ -45,30 +44,53 @@ const ICONES: Record<BodySlotId, LucideIcon> = {
   acesso_rapido_2: Package,
 };
 
-const PROTECAO_LABEL: Record<string, string> = {
-  fisica: "Físico",
-  energetica: "Energético",
-  hibrida: "Híbrido",
-};
+/** Boxes rente à ESQUERDA (membros superiores/inferiores — braços/pernas de fora da silhueta). */
+const ESQUERDA: { id: BodySlotId; regiao: BodyRegiao; top: string }[] = [
+  { id: "membro_superior", regiao: "membro_superior", top: "13%" },
+  { id: "membro_inferior", regiao: "membro_inferior", top: "58%" },
+];
 
-/**
- * Coordenadas percentuais dos 7 slots posicionados sobre a silhueta —
- * coluna esquerda (membro superior/escudo/membro inferior) e direita
- * (cabeça/tronco/arma primária/arma secundária), seguindo o print de
- * referência. Acesso rápido fica fora deste canvas.
- */
-const POSICAO: Partial<Record<BodySlotId, CSSProperties>> = {
-  membro_superior: { left: "0%", top: "16%", width: "43%" },
-  escudo: { left: "0%", top: "43%", width: "43%" },
-  membro_inferior: { left: "0%", top: "70%", width: "43%" },
-  cabeca: { right: "0%", top: "4%", width: "43%" },
-  tronco: { right: "0%", top: "32%", width: "43%" },
-  arma_primaria: { right: "0%", top: "58%", width: "43%" },
-  arma_secundaria: { right: "0%", top: "80%", width: "43%" },
-};
+/** Boxes rente à DIREITA (soltos — armas ficam num par empilhado à parte). */
+const DIREITA: { id: BodySlotId; regiao: BodyRegiao; top: string }[] = [
+  { id: "cabeca", regiao: "cabeca", top: "1%" },
+  { id: "tronco", regiao: "tronco", top: "23%" },
+];
 
-/** Trilha clicável de MIT/PD: cheio = ponto disponível, vazado = consumido. */
-function MiniTrilha({
+/** Arma primária + Arma secundária ficam anexadas, uma em cima da outra. */
+const ARMAS_TOP = "47%";
+
+function PlusIcon() {
+  return (
+    // Preenchido (um polígono só), não duas linhas com STROKE se
+    // cruzando — duas linhas tracejadas se sobrepondo no meio faz os
+    // pixels da interseção ficarem parcialmente cobertos duas vezes
+    // (antialiasing composto), o que lia como "mais escuro/translúcido"
+    // bem no cruzamento mesmo com uma cor 100% opaca. Um fill único
+    // não tem essa sobreposição — é uma região sólida só.
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M7.75 3.75H10.25V7.75H14.25V10.25H10.25V14.25H7.75V10.25H3.75V7.75H7.75V3.75Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function BotaoEquipar({ onClick, testId, label }: { onClick: () => void; testId: string; label: string }) {
+  return (
+    <button
+      type="button"
+      className="rc-eq-inner rc-eq-equipar"
+      onClick={onClick}
+      data-testid={testId}
+      aria-label={`${label}: vazio. Abrir mochila filtrada`}
+    >
+      <span className="rc-eq-ico">
+        <PlusIcon />
+      </span>
+      <span className="rc-eq-equipar-txt">Equipar</span>
+    </button>
+  );
+}
+
+function PipRow({
   atual,
   max,
   rotulo,
@@ -80,191 +102,123 @@ function MiniTrilha({
   onDefinir: (valor: number) => void;
 }) {
   const guard = useClickGuard();
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const total = Math.max(0, Math.round(max));
+  // Mesma prévia de trilha de Integridade: hover num pip mostra o que
+  // TODOS os pips entre o atual e ele fariam se clicado agora — não só
+  // o pip sob o cursor.
+  const previewValor = hoverIdx == null ? null : hoverIdx < atual ? hoverIdx : hoverIdx + 1;
   return (
-    <span className="rc-slot-linha">
-      <span className="rc-minipips">
-        {Array.from({ length: Math.max(0, Math.round(max)) }, (_, i) => {
+    // stopPropagation aqui (não só nos botões dos pips) — clicar no
+    // texto "3/5 PD" entre os pips não pode abrir o modal do item.
+    <span className="rc-eq-pipvalor" onClick={(e) => e.stopPropagation()}>
+      <span className="rc-eq-pips" onMouseLeave={() => setHoverIdx(null)}>
+        {Array.from({ length: total }, (_, i) => {
           const cheio = i < atual;
+          let preview: "fill" | "empty" | undefined;
+          if (previewValor != null) {
+            if (previewValor > atual && i >= atual && i < previewValor) preview = "fill";
+            else if (previewValor < atual && i >= previewValor && i < atual) preview = "empty";
+          }
           return (
             <button
               key={i}
               type="button"
-              className="rc-minipip"
-              data-on={cheio}
-              onClick={(e) => {
-                e.stopPropagation();
-                // Clicar num cheio consome até ali; num vazado, devolve.
-                guard(() => onDefinir(cheio ? i : i + 1));
-              }}
-              aria-label={`${rotulo} ${i + 1} de ${max}: ${cheio ? "disponível" : "consumido"}`}
-            />
+              className="rc-eq-pipbtn"
+              onMouseEnter={() => setHoverIdx(i)}
+              onFocus={() => setHoverIdx(i)}
+              onBlur={() => setHoverIdx(null)}
+              onClick={() => guard(() => onDefinir(cheio ? i : i + 1))}
+              aria-label={`${rotulo} ${i + 1} de ${total}: ${cheio ? "disponível" : "consumido"}. Clique para ajustar até aqui.`}
+            >
+              <DiamondPip cheio={cheio} size={14} preview={preview} />
+            </button>
           );
         })}
       </span>
-      <span className="rc-num">
-        {atual}/{max} {rotulo}
+      <span className="rc-eq-valor">
+        {atual}
+        <span className="rc-eq-valor-total">
+          /{total} {rotulo}
+        </span>
       </span>
     </span>
   );
 }
 
-function SlotCard({
-  slot,
-  style,
-  api,
-  onAbrirVazio,
-  onAbrirAtaque,
-  onUsarItem,
-  onRecarregar,
+function CardFilled({
+  Icone,
+  nome,
+  onAbrirNome,
+  titleNome,
+  direita,
 }: {
-  slot: BodySlot;
-  style?: CSSProperties;
-  api: ConsoleApi;
-  onAbrirVazio: (slot: BodySlotId) => void;
-  onAbrirAtaque: (inst: InventoryItemInstance, modelo: ItemContent) => void;
-  onUsarItem: (inst: InventoryItemInstance, modelo: ItemContent | undefined) => void;
-  onRecarregar: (inst: InventoryItemInstance) => void;
+  Icone: LucideIcon;
+  nome: string;
+  onAbrirNome: () => void;
+  titleNome: string;
+  direita: ReactNode;
 }) {
-  const Icone = ICONES[slot.id];
-  const inst = slot.instance;
-  const modelo = inst ? api.catalogo.get(inst.itemSlug) : undefined;
-  const wrapClass = style ? "rc-slot-abs" : undefined;
-
-  if (!inst) {
-    return (
-      <div className={wrapClass} style={style}>
-        <button
-          type="button"
-          className="rc-slot"
-          data-preenchido={false}
-          data-testid={`console-slot-${slot.id}`}
-          onClick={() => onAbrirVazio(slot.id)}
-          aria-label={`${BODY_SLOT_LABELS[slot.id]}: vazio. Abrir mochila filtrada`}
-        >
-          <Icone size={17} className="rc-slot-ico" aria-hidden="true" />
-          <span className="rc-slot-main">
-            <span className="rc-slot-label">{slot.label}</span>
-            <span className="rc-slot-nome" data-vazio="true">
-              vazio
-            </span>
-          </span>
-        </button>
-      </div>
-    );
-  }
-
-  const ehArma = modelo?.categoria === "arma";
-  const ehArmadura = modelo?.categoria === "armadura";
-  const ehEscudo = modelo?.categoria === "escudo";
-  const municaoMax = modelo ? getWeaponAmmoMax(modelo) : null;
-  const municaoAtual = getWeaponAmmoAtual(inst);
-
   return (
-    <div className={wrapClass} style={style}>
-      <div
-        className="rc-slot"
-        data-preenchido="true"
-        data-testid={`console-slot-${slot.id}`}
-        role="group"
-        aria-label={`${BODY_SLOT_LABELS[slot.id]}: ${inst.itemNome}`}
-      >
-        <Icone size={17} className="rc-slot-ico" aria-hidden="true" />
-        <span className="rc-slot-main">
-          <span className="rc-slot-label">{slot.label}</span>
-          <button
-            type="button"
-            className="rc-slot-nome"
-            onClick={() => (ehArma && modelo ? onAbrirAtaque(inst, modelo) : onUsarItem(inst, modelo))}
-            title={`${inst.itemNome} — ${ehArma ? "abrir ataque" : "usar item"}`}
-          >
-            {inst.itemNome}
-          </button>
-
-          {ehArma && modelo && (
-            <>
-              <span className="rc-slot-linha">
-                {modelo.danoBase && <span className="rc-tag">{modelo.danoBase}</span>}
-                {modelo.tipoDano && <span className="rc-tag">{modelo.tipoDano}</span>}
-                {modelo.propertySlugs.slice(0, 2).map((p) => (
-                  <span className="rc-tag" key={p}>
-                    {p.replace(/_/g, " ")}
-                  </span>
-                ))}
-              </span>
-              {municaoMax != null && (
-                <span className="rc-slot-linha">
-                  <span className="rc-num">
-                    {municaoAtual ?? 0}/{municaoMax} mun.
-                  </span>
-                  <button
-                    type="button"
-                    className="rc-slot-acao"
-                    // stopPropagation: Recarregar não pode abrir o Ataque.
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRecarregar(inst);
-                    }}
-                    data-testid={`console-recarregar-${slot.id}`}
-                  >
-                    Recarregar
-                  </button>
-                </span>
-              )}
-            </>
-          )}
-
-          {ehArmadura && modelo?.mitMax != null && (
-            <>
-              <MiniTrilha
-                atual={inst.mitAtual ?? modelo.mitMax}
-                max={modelo.mitMax}
-                rotulo="MIT"
-                onDefinir={(v) => api.definirMit(inst.id, v)}
-              />
-              {modelo.tipoProtecao && (
-                <span className="rc-slot-linha">
-                  <span className="rc-tag rc-tag--am">{PROTECAO_LABEL[modelo.tipoProtecao] ?? modelo.tipoProtecao}</span>
-                </span>
-              )}
-            </>
-          )}
-
-          {ehEscudo && modelo?.pdMax != null && (
-            <MiniTrilha
-              atual={inst.pdAtual ?? modelo.pdMax}
-              max={modelo.pdMax}
-              rotulo="PD"
-              onDefinir={(v) => api.definirPd(inst.id, v)}
-            />
-          )}
-
-          <button
-            type="button"
-            className="rc-slot-acao"
-            onClick={(e) => {
-              e.stopPropagation();
-              api.desequipar(inst.id);
-            }}
-          >
-            Desequipar
-          </button>
-        </span>
-      </div>
+    // Não é um <button> de verdade porque o conteúdo (PipRow) tem seus
+    // próprios botões dentro — <button> não pode aninhar <button>.
+    <div
+      className="rc-eq-inner"
+      role="button"
+      tabIndex={0}
+      onClick={onAbrirNome}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onAbrirNome();
+        }
+      }}
+      title={titleNome}
+    >
+      <span className="rc-eq-ico">
+        <Icone size={18} strokeWidth={1.8} aria-hidden="true" />
+      </span>
+      <span className="rc-eq-corpo">
+        <span className="rc-eq-nome">{nome}</span>
+        {direita}
+      </span>
     </div>
   );
 }
 
-/** Silhueta substituível — o SVG definitivo entra no lugar deste componente. */
-function CorpoHumano() {
+function EquipBox({
+  slotId,
+  regiao,
+  label,
+  style,
+  pinned = true,
+  active,
+  onHover,
+  children,
+}: {
+  slotId: BodySlotId;
+  regiao: BodyRegiao;
+  label: string;
+  style?: CSSProperties;
+  /** false = filho de um wrapper que já é absolute (ex.: par de armas empilhado) — não pina de novo. */
+  pinned?: boolean;
+  /** true quando o hover veio do SVG do corpo (não do mouse real sobre o box) — precisa de um data-attr porque `:hover` só reflete o cursor de verdade. */
+  active: boolean;
+  onHover: (r: BodyRegiao | null) => void;
+  children: ReactNode;
+}) {
   return (
-    <svg viewBox="0 0 120 300" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
-      <ellipse cx="60" cy="30" rx="17" ry="21" />
-      <path d="M53 50h14v10" />
-      <path d="M60 58c-12 0-21 5-24 13l-4 32c-1 7-1 13 1 20l4 24h46l4-24c2-7 2-13 1-20l-4-32c-3-8-12-13-24-13z" />
-      <path d="M36 72c-6 4-10 9-11 17l-7 44c-1 5-1 10 0 15l3 24M84 72c6 4 10 9 11 17l7 44c1 5 1 10 0 15l-3 24" />
-      <path d="M42 157l-4 60c-1 8-2 16-3 24l-4 30h14l3-30c2-8 3-16 3-24l5-42 5 42c0 8 1 16 3 24l3 30h14l-4-30c-1-8-2-16-3-24l-4-60z" />
-      <path d="M31 273h16M73 273h16" />
-    </svg>
+    <div
+      className={pinned ? "rc-eq-box rc-eq-box--pinned" : "rc-eq-box"}
+      style={style}
+      data-testid={`console-equip-box-${slotId}`}
+      data-hover={active}
+      onMouseEnter={() => onHover(regiao)}
+      onMouseLeave={() => onHover(null)}
+    >
+      <span className="rc-eq-box-label">{label}</span>
+      {children}
+    </div>
   );
 }
 
@@ -274,7 +228,7 @@ export function EquipmentPanel({
   onAbrirVazio,
   onAbrirAtaque,
   onUsarItem,
-  onRecarregar,
+  onRecarregar: _onRecarregar,
 }: {
   slots: BodySlot[];
   api: ConsoleApi;
@@ -283,34 +237,185 @@ export function EquipmentPanel({
   onUsarItem: (inst: InventoryItemInstance, modelo: ItemContent | undefined) => void;
   onRecarregar: (inst: InventoryItemInstance) => void;
 }) {
+  const [hover, setHover] = useState<BodyRegiao | null>(null);
   const por = (id: BodySlotId) => slots.find((s) => s.id === id)!;
-  const comuns = { api, onAbrirVazio, onAbrirAtaque, onUsarItem, onRecarregar };
-  const posicionados: BodySlotId[] = [
-    "membro_superior",
-    "escudo",
-    "membro_inferior",
-    "cabeca",
-    "tronco",
-    "arma_primaria",
-    "arma_secundaria",
-  ];
+
+  // Escudo e arma secundária representam a MESMA mão — um único box
+  // visual, escudo tem prioridade de exibição se os dois existirem.
+  const escudoSlot = por("escudo");
+  const armaSecSlot = por("arma_secundaria");
+  const secundariaInst = escudoSlot.instance ?? armaSecSlot.instance;
+  const secundariaModelo = secundariaInst ? api.catalogo.get(secundariaInst.itemSlug) : undefined;
+  const secundariaEhEscudo = secundariaInst === escudoSlot.instance && !!secundariaInst;
+
+  function renderArmadura(slotId: BodySlotId) {
+    const slot = por(slotId);
+    const Icone = ICONES[slotId];
+    const inst = slot.instance;
+    const modelo = inst ? api.catalogo.get(inst.itemSlug) : undefined;
+
+    if (!inst || !modelo) {
+      return <BotaoEquipar onClick={() => onAbrirVazio(slotId)} testId={`console-equipar-${slotId}`} label={BODY_SLOT_LABELS[slotId]} />;
+    }
+
+    return (
+      <CardFilled
+        Icone={Icone}
+        nome={inst.itemNome}
+        titleNome={`${inst.itemNome} — usar item`}
+        onAbrirNome={() => onUsarItem(inst, modelo)}
+        direita={
+          modelo.mitMax != null ? (
+            <PipRow atual={inst.mitAtual ?? modelo.mitMax} max={modelo.mitMax} rotulo="MIT" onDefinir={(v) => api.definirMit(inst.id, v)} />
+          ) : null
+        }
+      />
+    );
+  }
+
+  function renderArma(slotId: "arma_primaria") {
+    const slot = por(slotId);
+    const Icone = ICONES[slotId];
+    const inst = slot.instance;
+    const modelo = inst ? api.catalogo.get(inst.itemSlug) : undefined;
+
+    if (!inst || !modelo) {
+      return <BotaoEquipar onClick={() => onAbrirVazio(slotId)} testId={`console-equipar-${slotId}`} label={BODY_SLOT_LABELS[slotId]} />;
+    }
+
+    const dano = [modelo.danoBase, modelo.subtipoDano].filter(Boolean).join(" ");
+    return (
+      <CardFilled
+        Icone={Icone}
+        nome={inst.itemNome}
+        titleNome={`${inst.itemNome} — abrir ataque`}
+        onAbrirNome={() => onAbrirAtaque(inst, modelo)}
+        direita={dano ? <span className="rc-eq-dano">{dano}</span> : null}
+      />
+    );
+  }
+
+  function renderSecundaria() {
+    const Icone = secundariaEhEscudo ? ICONES.escudo : ICONES.arma_primaria;
+    if (!secundariaInst || !secundariaModelo) {
+      return <BotaoEquipar onClick={() => onAbrirVazio("arma_secundaria")} testId="console-equipar-arma_secundaria" label="Arma secundária" />;
+    }
+
+    if (secundariaEhEscudo) {
+      return (
+        <CardFilled
+          Icone={Icone}
+          nome={secundariaInst.itemNome}
+          titleNome={`${secundariaInst.itemNome} — usar item`}
+          onAbrirNome={() => onUsarItem(secundariaInst, secundariaModelo)}
+          direita={
+            secundariaModelo.pdMax != null ? (
+              <PipRow
+                atual={secundariaInst.pdAtual ?? secundariaModelo.pdMax}
+                max={secundariaModelo.pdMax}
+                rotulo="PD"
+                onDefinir={(v) => api.definirPd(secundariaInst.id, v)}
+              />
+            ) : null
+          }
+        />
+      );
+    }
+
+    const dano = [secundariaModelo.danoBase, secundariaModelo.subtipoDano].filter(Boolean).join(" ");
+    return (
+      <CardFilled
+        Icone={Icone}
+        nome={secundariaInst.itemNome}
+        titleNome={`${secundariaInst.itemNome} — abrir ataque`}
+        onAbrirNome={() => onAbrirAtaque(secundariaInst, secundariaModelo)}
+        direita={dano ? <span className="rc-eq-dano">{dano}</span> : null}
+      />
+    );
+  }
+
+  function conteudo(slotId: BodySlotId) {
+    if (slotId === "arma_primaria") return renderArma("arma_primaria");
+    if (slotId === "arma_secundaria") return renderSecundaria();
+    return renderArmadura(slotId);
+  }
+
+  function renderAcessoRapido(slotId: "acesso_rapido_1" | "acesso_rapido_2", numero: 1 | 2) {
+    const slot = por(slotId);
+    const inst = slot.instance;
+    const modelo = inst ? api.catalogo.get(inst.itemSlug) : undefined;
+
+    return (
+      <div className="rc-eq-quick" data-testid={`console-equip-box-${slotId}`}>
+        <span className="rc-eq-box-label">Acesso rápido #{numero}</span>
+        {!inst || !modelo ? (
+          <button
+            type="button"
+            className="rc-eq-inner rc-eq-quick-inner rc-eq-equipar"
+            onClick={() => onAbrirVazio(slotId)}
+            data-testid={`console-equipar-${slotId}`}
+            aria-label={`Acesso rápido ${numero}: vazio. Abrir mochila filtrada`}
+          >
+            <span className="rc-eq-ico rc-eq-ico--quick">
+              <PlusIcon />
+            </span>
+            <span className="rc-eq-equipar-txt">Equipar</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="rc-eq-inner rc-eq-quick-inner"
+            onClick={() => onUsarItem(inst, modelo)}
+            title={`${inst.itemNome} — usar item`}
+            aria-label={`Acesso rápido ${numero}: ${inst.itemNome}. Usar item`}
+          >
+            <span className="rc-eq-ico rc-eq-ico--quick">
+              <Package size={18} strokeWidth={1.8} aria-hidden="true" />
+            </span>
+            <span className="rc-eq-equipar-txt">{inst.itemNome}</span>
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
-    <section className="rc-panel rc-equip" aria-label="Equipamentos">
-      <span className="rc-caption">Equipamentos</span>
+    <section aria-label="Equipamentos" className="rc-eq-outer">
+      <span className="rc-eq-caption">Equipamentos</span>
+      <div className="rc-eq-card-outer">
+        <div className="rc-eq-inner-container">
+          {/* SVG inline, path por região (não <img>) — hover é o PATH
+              real (pixel-perfect, sem retângulo aproximado), e o
+              tamanho/centralização vêm de graça do `viewBox` +
+              `preserveAspectRatio` padrão do SVG (mesmo efeito do
+              object-fit:contain, sem precisar medir nada em JS). */}
+          <BodySilhouette hover={hover} onHover={setHover} />
 
-      <div className="rc-doll">
-        <div className="rc-doll-figure">
-          <CorpoHumano />
+          {ESQUERDA.map(({ id, regiao, top }) => (
+            <EquipBox key={id} slotId={id} regiao={regiao} label={BODY_SLOT_LABELS[id]} style={{ left: 0, top }} active={hover === regiao} onHover={setHover}>
+              {conteudo(id)}
+            </EquipBox>
+          ))}
+          {DIREITA.map(({ id, regiao, top }) => (
+            <EquipBox key={id} slotId={id} regiao={regiao} label={BODY_SLOT_LABELS[id]} style={{ right: 0, top }} active={hover === regiao} onHover={setHover}>
+              {conteudo(id)}
+            </EquipBox>
+          ))}
+
+          <div className="rc-eq-armas-stack" style={{ top: ARMAS_TOP }}>
+            <EquipBox slotId="arma_primaria" regiao="arma_primaria" label={BODY_SLOT_LABELS.arma_primaria} pinned={false} active={hover === "arma_primaria"} onHover={setHover}>
+              {conteudo("arma_primaria")}
+            </EquipBox>
+            <EquipBox slotId="arma_secundaria" regiao="arma_secundaria" label="Arma secundária" pinned={false} active={hover === "arma_secundaria"} onHover={setHover}>
+              {conteudo("arma_secundaria")}
+            </EquipBox>
+          </div>
+
+          <div className="rc-eq-quick-row">
+            {renderAcessoRapido("acesso_rapido_1", 1)}
+            {renderAcessoRapido("acesso_rapido_2", 2)}
+          </div>
         </div>
-        {posicionados.map((id) => (
-          <SlotCard key={id} slot={por(id)} style={POSICAO[id]} {...comuns} />
-        ))}
-      </div>
-
-      <div className="rc-doll-quick">
-        <SlotCard slot={por("acesso_rapido_1")} {...comuns} />
-        <SlotCard slot={por("acesso_rapido_2")} {...comuns} />
       </div>
     </section>
   );

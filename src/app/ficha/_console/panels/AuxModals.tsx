@@ -8,6 +8,7 @@
  */
 
 import { useState, type ReactNode } from "react";
+import { TriangleAlert } from "lucide-react";
 import type { RupturaRollResult } from "../../../../lib/dice/types";
 import type { InventoryItemInstance, ItemContent } from "../../../../lib/character";
 import { BODY_SLOT_LABELS, type BodySlotId } from "../slots";
@@ -28,10 +29,34 @@ function Aux({ titulo, onFechar, children }: { titulo: string; onFechar: () => v
   );
 }
 
-/** Resultado de rolagem — mostra atributo, quantidade de dados e resultados. */
-export function RollResultModal({ resultado, onFechar }: { resultado: RupturaRollResult; onFechar: () => void }) {
+/**
+ * Resultado de rolagem — mostra atributo, quantidade de dados e
+ * resultados. `defesa`, quando informado (só rolagens vindas de
+ * "Rolar defesa"), mostra um aviso pra explicar de onde veio o
+ * modificador negativo — regra "Reação": defender sem Reação disponível
+ * ainda é permitido, mas cada defesa nessas condições na MESMA rodada
+ * soma -1 cumulativo.
+ */
+export function RollResultModal({
+  resultado,
+  defesa,
+  onFechar,
+}: {
+  resultado: RupturaRollResult;
+  defesa?: { usouReacao: boolean; penalidade: number; defesasSemReacao: number };
+  onFechar: () => void;
+}) {
   return (
     <Aux titulo="Rolagem" onFechar={onFechar}>
+      {defesa && !defesa.usouReacao && (
+        <div className="rc-aux-defesa-aviso" role="status">
+          <TriangleAlert size={15} aria-hidden="true" />
+          <span>
+            Sem Reação disponível — {defesa.defesasSemReacao}ª defesa sem Reação nesta rodada, penalidade cumulativa de{" "}
+            <strong>{defesa.penalidade}</strong> já aplicada abaixo.
+          </span>
+        </div>
+      )}
       <p className="rc-vazio" style={{ marginBottom: 8 }}>
         {resultado.periciaNome ? `${resultado.periciaNome} · ` : ""}
         {resultado.atributoNome} — {resultado.atributoValor}d8
@@ -94,6 +119,76 @@ export function SurgePickerModal({
       </div>
       <div className="rc-aux-acoes">
         <button type="button" className="rc-ghost" onClick={onFechar} disabled={enviando}>
+          Cancelar
+        </button>
+      </div>
+    </Aux>
+  );
+}
+
+export const TIPOS_DEFESA = ["esquivar", "bloquear", "aparar", "resistir"] as const;
+export type TipoDefesa = (typeof TIPOS_DEFESA)[number];
+const LABEL_DEFESA: Record<TipoDefesa, string> = {
+  esquivar: "Esquivar",
+  bloquear: "Bloquear",
+  aparar: "Aparar",
+  resistir: "Resistir",
+};
+
+/**
+ * Escolha de defesa (botão "Rolar defesa" de Reações) — regra "AÇÕES
+ * DEFENSIVAS": Esquivar e Bloquear testam Reflexos, Aparar testa
+ * Luta, todas perícias reais em `regras_personagem` (id "reflexos"/
+ * "luta"). "Resistir" não tem perícia fixa — a regra deixa a critério
+ * do narrador entre Vigor (força) e Mobilidade (agilidade) —, então
+ * escolher "Resistir" aqui abre um segundo passo (`ResistirAtributoModal`)
+ * em vez de rolar direto.
+ */
+export function DefensePickerModal({ onEscolher, onFechar }: { onEscolher: (tipo: TipoDefesa) => void; onFechar: () => void }) {
+  return (
+    <Aux titulo="Rolar defesa" onFechar={onFechar}>
+      <p className="rc-vazio">Escolha a defesa usada nesta reação.</p>
+      <div className="rc-aux-lista">
+        {TIPOS_DEFESA.map((tipo) => (
+          <button key={tipo} type="button" className="rc-aux-item" onClick={() => onEscolher(tipo)}>
+            <span>{LABEL_DEFESA[tipo]}</span>
+          </button>
+        ))}
+      </div>
+      <div className="rc-aux-acoes">
+        <button type="button" className="rc-ghost" onClick={onFechar}>
+          Cancelar
+        </button>
+      </div>
+    </Aux>
+  );
+}
+
+/**
+ * Segundo passo só de "Resistir": a regra deixa a critério do
+ * narrador qual perícia se aplica ("firmeza muscular" = Vigor,
+ * "agilidade" = Mobilidade) — sem isso não dá pra saber qual rolar.
+ */
+export function ResistirAtributoModal({
+  onEscolher,
+  onFechar,
+}: {
+  onEscolher: (periciaId: "vigor" | "mobilidade") => void;
+  onFechar: () => void;
+}) {
+  return (
+    <Aux titulo="Resistir" onFechar={onFechar}>
+      <p className="rc-vazio">O narrador indica qual das duas opções se aplica nesta situação.</p>
+      <div className="rc-aux-lista">
+        <button type="button" className="rc-aux-item" onClick={() => onEscolher("vigor")}>
+          <span>Vigor — robustez, suportar impacto ou pressão física</span>
+        </button>
+        <button type="button" className="rc-aux-item" onClick={() => onEscolher("mobilidade")}>
+          <span>Mobilidade — maleabilidade, evitar o efeito com agilidade</span>
+        </button>
+      </div>
+      <div className="rc-aux-acoes">
+        <button type="button" className="rc-ghost" onClick={onFechar}>
           Cancelar
         </button>
       </div>

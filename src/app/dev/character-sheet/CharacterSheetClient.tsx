@@ -1675,6 +1675,36 @@ export default function CharacterSheetClient({
     }
   }
 
+  /**
+   * Ajusta Reações (delta negativo = recuperar) e, quando recupera com
+   * penalidade cumulativa de "defesa sem Reação" ainda ativa da rodada
+   * (`defesas_sem_reacao`), zera essa penalidade junto — ela só faz
+   * sentido enquanto a Reação segue indisponível; assim que volta, a
+   * próxima defesa já pode gastar Reação de novo, sem carregar
+   * penalidade de antes. Fora esse caso, comportamento idêntico a
+   * `adjustEstadoJogo("reacoes_usadas", delta)`.
+   */
+  function ajustarReacoesConsole(delta: number) {
+    const overflowAnterior = characterRef.current.estado_jogo?.defesas_sem_reacao ?? 0;
+    if (delta < 0 && overflowAnterior > 0) {
+      const anterior = characterRef.current;
+      const usadosAnterior = anterior.estado_jogo?.reacoes_usadas ?? 0;
+      const novoUsados = Math.max(0, Math.trunc(usadosAnterior + delta));
+      const next: Character = {
+        ...anterior,
+        estado_jogo: { ...anterior.estado_jogo, reacoes_usadas: novoUsados, defesas_sem_reacao: 0 },
+      };
+      characterRef.current = next;
+      setCharacter(next);
+      addLogEntry(
+        "reacao",
+        `Reações usadas: ${usadosAnterior} → ${novoUsados}; defesas sem Reação zeradas (${overflowAnterior} → 0).`,
+      );
+      return;
+    }
+    adjustEstadoJogo("reacoes_usadas", delta);
+  }
+
   function resetEstadoJogo(key: keyof Pick<CharacterGameState, "pa_gastos" | "reacoes_usadas">) {
     const anterior = character.estado_jogo?.[key] ?? 0;
     setCharacter((prev) => ({ ...prev, estado_jogo: { ...prev.estado_jogo, [key]: 0 } }));
@@ -5249,11 +5279,52 @@ export default function CharacterSheetClient({
       addLogEntry("rolagem_pericia", `Console — ${def?.nome ?? periciaId}: ${r.dados.join(", ")} → maior ${r.maiorDado}, total ${r.total}.`);
       return r;
     },
+    // Mesma regra data-driven do controle manual de Reação do harness
+    // (`handleUseReactionManual`) — só que combinada com a rolagem em
+    // vez de um botão separado, e a penalidade cumulativa (se houver)
+    // já entra como `modificador` da própria rolagem.
+    rolarDefesa: (periciaId) => {
+      const current = characterRef.current;
+      const spend = spendReactionForDefense(current, derivados.reacoes_por_rodada, reactionRules);
+      if (spend.character !== current) {
+        characterRef.current = spend.character;
+        setCharacter(spend.character);
+      }
+      const def = regras?.pericias.find((p) => p.id === periciaId);
+      const candidato = def?.atributo_primario;
+      const atributoId: keyof CharacterAttributes =
+        candidato === "corpo" || candidato === "mente" || candidato === "animo" ? candidato : "corpo";
+      const atributoDef = regras?.atributos.find((a) => a.id === atributoId);
+      const r = rollPericia({
+        atributoId,
+        atributoNome: atributoDef?.nome ?? atributoId,
+        atributoValor: character.atributos[atributoId],
+        periciaId,
+        periciaNome: def?.nome,
+        periciaValor: character.pericias[periciaId] ?? 0,
+        modificador: spend.penaltyApplied,
+      });
+      const reacaoLog = spend.defenseWithoutReaction
+        ? `Defesa sem Reação: ${spend.defensesWithoutReactionBefore} → ${spend.defensesWithoutReactionAfter}; penalidade ${spend.penaltyApplied}.`
+        : spend.usedReaction
+          ? `Reações usadas: ${spend.reactionBefore} → ${spend.reactionAfter}.`
+          : (spend.warnings[0] ?? "");
+      addLogEntry(
+        "rolagem_pericia",
+        `Console — ${def?.nome ?? periciaId} (defesa): ${r.dados.join(", ")} → maior ${r.maiorDado}, total ${r.total}. ${reacaoLog}`,
+      );
+      return {
+        resultado: r,
+        usouReacao: spend.usedReaction,
+        penalidade: spend.penaltyApplied,
+        defesasSemReacao: spend.defensesWithoutReactionAfter,
+      };
+    },
 
     editarRecurso: (id, valor) => updateRecursoAtual(id, valor),
     editarIntegridade: (valor) => updateRecursoAtual("integridade", valor),
     ajustarPa: (delta) => adjustEstadoJogo("pa_gastos", delta),
-    ajustarReacoes: (delta) => adjustEstadoJogo("reacoes_usadas", delta),
+    ajustarReacoes: (delta) => ajustarReacoesConsole(delta),
 
     usarSobrecarga: (tipo) => void handleUseOverloadSurge(tipo),
     tiposDeSurto: OVERLOAD_SURGE_TYPES,

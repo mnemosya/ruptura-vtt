@@ -28,8 +28,8 @@ export type BodySlotId =
 export const BODY_SLOT_LABELS: Record<BodySlotId, string> = {
   cabeca: "Cabeça",
   tronco: "Tronco",
-  membro_superior: "Membro superior",
-  membro_inferior: "Membro inferior",
+  membro_superior: "Braços",
+  membro_inferior: "Pernas",
   escudo: "Escudo",
   arma_primaria: "Arma primária",
   arma_secundaria: "Arma secundária",
@@ -60,7 +60,14 @@ const CATEGORIAS_ACESSO_RAPIDO = new Set(["farmacia", "explosivo", "vertina"]);
 export function itemCabeNoSlot(item: ItemContent | undefined, slot: BodySlotId): boolean {
   if (!item) return false;
 
-  if (slot === "arma_primaria" || slot === "arma_secundaria") return item.categoria === "arma";
+  if (slot === "arma_primaria") return item.categoria === "arma";
+  // Arma secundária representa a mão livre (fora da que empunha a
+  // arma primária) — a mesma mão que pode segurar um escudo. Os dois
+  // são flags independentes no modelo hoje (`equipadoDefensivo` ×
+  // `empunhado[1]`), mas na composição visual do Console viram um só
+  // slot: aceitar as duas categorias aqui é o que faz "Equipar" a
+  // partir desse box mostrar arma OU escudo na mochila.
+  if (slot === "arma_secundaria") return item.categoria === "arma" || item.categoria === "escudo";
   if (slot === "escudo") return item.categoria === "escudo";
   if (slot === "acesso_rapido_1" || slot === "acesso_rapido_2") {
     return CATEGORIAS_ACESSO_RAPIDO.has(item.categoria);

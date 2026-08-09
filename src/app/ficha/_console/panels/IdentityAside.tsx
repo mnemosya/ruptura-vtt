@@ -21,66 +21,203 @@
  */
 
 import { useState } from "react";
-import { Hand, Brain, Heart, User } from "lucide-react";
+import { Shield } from "lucide-react";
 import { MAX_OVERLOAD_SURGES_PER_DAY, type CharacterAttributes } from "../../../../lib/character";
 import { useClickGuard } from "../useClickGuard";
 import type { ConsoleApi } from "../types";
+import { AvatarUserIcon, AvatarUploadIcon, AvatarHexPolygon } from "../avatarIcons";
+import { AttrHexPolygon, ATTR_ICONS, ATTR_LABEL_COLOR } from "../attrIcons";
+import { DiamondPip } from "../pips";
 
-const ATRIBUTOS: { id: keyof CharacterAttributes; nome: string; Icone: typeof Hand }[] = [
-  { id: "corpo", nome: "Corpo", Icone: Hand },
-  { id: "mente", nome: "Mente", Icone: Brain },
-  { id: "animo", nome: "Ânimo", Icone: Heart },
+const ATRIBUTOS: { id: keyof CharacterAttributes; nome: string }[] = [
+  { id: "corpo", nome: "Corpo" },
+  { id: "mente", nome: "Mente" },
+  { id: "animo", nome: "Ânimo" },
 ];
 
-/** Pontos hexagonais do avatar/atributos — ponta em cima e embaixo, como no desenho. */
-const HEX_AVATAR = "50,2 98,27 98,79 50,104 2,79 2,27";
-const HEX_ATTR = "50,2 98,32 98,84 50,114 2,84 2,32";
+/**
+ * Segmento da trilha de Integridade — paths EXATOS do prompt (viewBox
+ * 22×14): "Inicial" tem lado esquerdo reto e direito em diagonal,
+ * "Final" o inverso, "Meio" os dois lados em diagonal — formando uma
+ * trilha contínua quando emendados com margem negativa de 1px. Não é
+ * seta/chevron: é só o resultado dessas diagonais.
+ */
+const PIP_OUTER: Record<"first" | "middle" | "last", string> = {
+  first: "M0 0H17.463L21.0833 14H0L0 0Z",
+  middle: "M0 0H17.463L21.0833 14H3.62037L0 0Z",
+  last: "M0 0H21.0833V14H3.62037L0 0Z",
+};
+const PIP_INSET: Record<"first" | "middle" | "last", string> = {
+  first: "M17.0752 0.5L20.4375 13.5H0.5V0.5H17.0752Z",
+  middle: "M17.0752 0.5L20.4375 13.5H4.00781L0.645508 0.5H17.0752Z",
+  last: "M20.583 0.5V13.5H4.00781L0.645508 0.5H20.583Z",
+};
 
-/** Trilha de pontos losangulares (PA / Reações): clicar alterna cada ponto. */
-function PontosAlternaveis({
+function IntegrityPip({
+  position,
+  cheio,
+  preview,
+}: {
+  position: "first" | "middle" | "last";
+  cheio: boolean;
+  preview?: "fill" | "empty";
+}) {
+  if (preview) {
+    const fill = preview === "fill" ? "rgba(4, 158, 192, 0.22)" : "rgba(255, 95, 116, 0.14)";
+    const stroke = preview === "fill" ? "rgba(0, 212, 255, 0.35)" : "rgba(255, 95, 116, 0.4)";
+    return (
+      <svg viewBox="0 0 22 14" preserveAspectRatio="none" aria-hidden="true">
+        <path d={PIP_INSET[position]} fill={fill} stroke={stroke} />
+      </svg>
+    );
+  }
+  if (cheio) {
+    return (
+      <svg viewBox="0 0 22 14" preserveAspectRatio="none" aria-hidden="true">
+        <path d={PIP_OUTER[position]} fill="#049EC0" fillOpacity="0.43" />
+        <path d={PIP_INSET[position]} fill="none" stroke="#00D4FF" strokeOpacity="0.18" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 22 14" preserveAspectRatio="none" aria-hidden="true">
+      <path d={PIP_INSET[position]} fill="#123143" fillOpacity="0.2" stroke="#0C3D4E" />
+    </svg>
+  );
+}
+
+/**
+ * Segmento da trilha de Sobrecarga — mesma lógica de diagonais da
+ * Integridade, geometria própria (88×12) e paleta âmbar; sempre
+ * exatamente 3 (MAX_OVERLOAD_SURGES_PER_DAY), então só usa
+ * Inicial/Meio/Final, nunca repete Meio.
+ */
+const SURGE_OUTER: Record<"first" | "middle" | "last", string> = {
+  first: "M0 0H72.3367L87.3333 12H0L0 0Z",
+  middle: "M0 0H72.3367L87.3333 12H14.9966L0 0Z",
+  last: "M0 0H87.3333V12H14.9966L0 0Z",
+};
+const SURGE_INSET: Record<"first" | "middle" | "last", string> = {
+  first: "M72.1611 0.5L85.9072 11.5H0.5V0.5H72.1611Z",
+  middle: "M72.1611 0.5L85.9072 11.5H15.1719L1.42578 0.5H72.1611Z",
+  last: "M86.833 0.5V11.5H15.1719L1.42578 0.5H86.833Z",
+};
+
+function SurgePip({ position, usada }: { position: "first" | "middle" | "last"; usada: boolean }) {
+  return (
+    <svg viewBox="0 0 88 12" preserveAspectRatio="none" aria-hidden="true">
+      <path d={SURGE_OUTER[position]} fill={usada ? "#483A1A" : "#20221F"} />
+      <path d={SURGE_INSET[position]} fill="none" stroke="#A97A30" strokeOpacity="0.55" />
+    </svg>
+  );
+}
+
+
+function MinusIcon() {
+  return (
+    <svg viewBox="0 0 11 11" fill="none" aria-hidden="true">
+      <path d="M2.2915 5.5H8.70817" stroke="#418292" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 11 11" fill="none" aria-hidden="true">
+      <path d="M2.2915 5.50033H8.70817M5.49984 2.29199V8.70866" stroke="#418292" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/**
+ * Container PA/Reações — "serve pra Reações também, é a mesma coisa"
+ * (spec). Trilha de losangos + botões minus/plus (±1) lado a lado com
+ * o valor atual/total.
+ */
+function RecursoPontos({
   rotulo,
   disponivel,
   max,
   onAlternar,
+  onRolarDefesa,
 }: {
   rotulo: string;
   disponivel: number;
   max: number;
   onAlternar: (delta: number) => void;
+  /** Só o bloco de Reações recebe isso — botão "Rolar defesa" logo
+      abaixo dos pips/valor, dentro do MESMO container (spec "botão
+      Rolar defesa"). Opcional pra não afetar o bloco de PA. */
+  onRolarDefesa?: () => void;
 }) {
   const guard = useClickGuard();
+  const [hover, setHover] = useState<number | null>(null);
   const total = Math.max(0, Math.round(max));
+  const previewValor = hover == null ? null : hover < disponivel ? hover : hover + 1;
   return (
-    <div className="rc-panel">
-      <div className="rc-track-head">
-        <span className="rc-label">{rotulo}</span>
-      </div>
-      <div className="rc-points">
-        <div className="rc-point-row">
+    <div className="rc-npr">
+      <span className="rc-npr-label">{rotulo}</span>
+      <div className="rc-npr-row">
+        <div className="rc-npr-pips" onMouseLeave={() => setHover(null)}>
           {total === 0 ? (
             <span className="rc-vazio">—</span>
           ) : (
             Array.from({ length: total }, (_, i) => {
               const cheio = i < disponivel;
+              let preview: "fill" | "empty" | undefined;
+              if (previewValor != null) {
+                if (previewValor > disponivel && i >= disponivel && i < previewValor) preview = "fill";
+                else if (previewValor < disponivel && i >= previewValor && i < disponivel) preview = "empty";
+              }
               return (
                 <button
                   key={i}
                   type="button"
-                  className="rc-point"
-                  data-on={cheio}
-                  // Cheio → gastar (delta +1 no "gasto"); vazado → devolver.
+                  className="rc-npr-pip"
+                  onMouseEnter={() => setHover(i)}
+                  onFocus={() => setHover(i)}
+                  onBlur={() => setHover(null)}
                   onClick={() => guard(() => onAlternar(cheio ? 1 : -1))}
                   aria-label={`${rotulo} ${i + 1} de ${total}: ${cheio ? "disponível" : "gasto"}`}
                   aria-pressed={cheio}
-                />
+                >
+                  <DiamondPip cheio={cheio} size={19} preview={preview} />
+                </button>
               );
             })
           )}
         </div>
-        <span className="rc-point-tag">
-          {disponivel}/{total}
-        </span>
+        <div className="rc-npr-valor">
+          <button
+            type="button"
+            className="rc-npr-btn"
+            onClick={() => guard(() => onAlternar(1))}
+            disabled={disponivel <= 0}
+            aria-label={`Gastar 1 ${rotulo}`}
+          >
+            <MinusIcon />
+          </button>
+          <span className="rc-npr-num">
+            {disponivel}
+            <span className="rc-npr-num-total">/{total}</span>
+          </span>
+          <button
+            type="button"
+            className="rc-npr-btn"
+            onClick={() => guard(() => onAlternar(-1))}
+            disabled={disponivel >= total}
+            aria-label={`Devolver 1 ${rotulo}`}
+          >
+            <PlusIcon />
+          </button>
+        </div>
       </div>
+      {onRolarDefesa && (
+        <button type="button" className="rc-npr-defesa" onClick={() => guard(onRolarDefesa)} aria-label="Rolar defesa">
+          <Shield size={14} strokeWidth={1.5} color="#0485A3" fill="rgba(4, 133, 163, 0.33)" aria-hidden="true" />
+          Rolar defesa
+        </button>
+      )}
     </div>
   );
 }
@@ -108,14 +245,15 @@ function TrilhaIntegridade({
   const previewValor = hover == null ? null : hover < atual ? hover : hover + 1;
 
   return (
-    <div>
-      <div className="rc-track-head">
-        <span className="rc-label">Integridade</span>
-        <span className="rc-num">
-          {atual}/{total}
+    <div className="rc-nric-integ">
+      <div className="rc-nric-integ-head">
+        <span className="rc-nric-integ-label">Integridade</span>
+        <span className="rc-nric-integ-val">
+          {atual}
+          <span className="rc-nric-integ-total">/{total}</span>
         </span>
       </div>
-      <div className="rc-pips" onMouseLeave={() => setHover(null)}>
+      <div className="rc-nric-pips" onMouseLeave={() => setHover(null)}>
         {Array.from({ length: total }, (_, i) => {
           const cheio = i < atual;
           let preview: "fill" | "empty" | undefined;
@@ -123,19 +261,20 @@ function TrilhaIntegridade({
             if (previewValor > atual && i >= atual && i < previewValor) preview = "fill";
             else if (previewValor < atual && i >= previewValor && i < atual) preview = "empty";
           }
+          const position: "first" | "middle" | "last" = i === 0 ? "first" : i === total - 1 ? "last" : "middle";
           return (
             <button
               key={i}
               type="button"
-              className="rc-pip"
-              data-on={cheio}
-              data-preview={preview}
+              className="rc-nric-pip"
               onMouseEnter={() => setHover(i)}
               onFocus={() => setHover(i)}
               onBlur={() => setHover(null)}
               onClick={() => guard(() => onDefinir(cheio ? i : i + 1))}
               aria-label={`Integridade — segmento ${i + 1} de ${total}: ${cheio ? "preenchido" : "vazio"}. Clique para ajustar até aqui.`}
-            />
+            >
+              <IntegrityPip position={position} cheio={cheio} preview={preview} />
+            </button>
           );
         })}
       </div>
@@ -150,6 +289,7 @@ export function IdentityAside({
   onAvatarChange,
   onRolarAtributo,
   onEscolherSurto,
+  onRolarDefesa,
 }: {
   api: ConsoleApi;
   avatarUrl: string | null;
@@ -157,6 +297,7 @@ export function IdentityAside({
   onAvatarChange: (file: File) => void;
   onRolarAtributo: (id: keyof CharacterAttributes) => void;
   onEscolherSurto: () => void;
+  onRolarDefesa: () => void;
 }) {
   const { character, derivados } = api;
   const guard = useClickGuard();
@@ -177,12 +318,19 @@ export function IdentityAside({
     <aside className="rc-aside">
       <label className="rc-avatar" data-no-drag>
         <span className="rc-avatar-fill">
-          {avatarUrl ? <img src={avatarUrl} alt="" /> : <User size={52} strokeWidth={1.2} aria-hidden="true" />}
+          {avatarUrl && <img src={avatarUrl} alt="" />}
+          {!avatarUrl && (
+            <span className="rc-avatar-ico rc-avatar-ico--user" aria-hidden="true">
+              <AvatarUserIcon />
+            </span>
+          )}
+          <span className="rc-avatar-upload" aria-hidden="true">
+            <span className="rc-avatar-ico rc-avatar-ico--upload">
+              <AvatarUploadIcon />
+            </span>
+          </span>
         </span>
-        <svg className="rc-avatar-poly" viewBox="0 0 100 106" preserveAspectRatio="none" aria-hidden="true">
-          <polygon points={HEX_AVATAR} />
-        </svg>
-        <span className="rc-avatar-hint">trocar</span>
+        <AvatarHexPolygon />
         <input
           type="file"
           accept="image/png,image/jpeg,image/webp"
@@ -197,13 +345,13 @@ export function IdentityAside({
         </p>
       )}
 
-      <div className="rc-ident">
-        <div className="rc-ident-row">
-          <span className="rc-ident-name" title={character.nome || "Sem nome"}>
+      <div className="rc-nric-card">
+        <div className="rc-nric-nome-row">
+          <span className="rc-nric-nome" title={character.nome || "Sem nome"}>
             {character.nome || "Sem nome"}
           </span>
           <span
-            className="rc-rank"
+            className="rc-nric-badge"
             data-vazio={!ranking}
             title={ranking ? `Ranking de Cobalto ${ranking}` : "Ranking de Cobalto não definido"}
           >
@@ -211,73 +359,84 @@ export function IdentityAside({
           </span>
         </div>
 
-        <div className="rc-attrs">
-          {ATRIBUTOS.map(({ id, nome, Icone }) => (
-            <button
-              key={id}
-              type="button"
-              className="rc-attr"
-              onClick={() => onRolarAtributo(id)}
-              data-testid={`console-attr-${id}`}
-              aria-label={`Rolar ${nome}: ${character.atributos[id]}d8`}
-            >
-              <svg className="rc-attr-poly" viewBox="0 0 100 116" preserveAspectRatio="none" aria-hidden="true">
-                <polygon points={HEX_ATTR} />
-              </svg>
-              <span className="rc-attr-content">
-                <Icone size={14} className="rc-attr-ico" aria-hidden="true" />
-                <span className="rc-attr-nome">{nome}</span>
-                <span className="rc-attr-val">{character.atributos[id]}</span>
-              </span>
-            </button>
-          ))}
+        <div className="rc-nric-attrs">
+          {ATRIBUTOS.map(({ id, nome }) => {
+            const Icone = ATTR_ICONS[id];
+            return (
+              <button
+                key={id}
+                type="button"
+                className="rc-nric-attr"
+                data-attr={id}
+                onClick={() => onRolarAtributo(id)}
+                data-testid={`console-attr-${id}`}
+                aria-label={`Rolar ${nome}: ${character.atributos[id]}d8`}
+              >
+                <AttrHexPolygon attr={id} />
+                <span className="rc-nric-attr-content">
+                  <span className="rc-nric-attr-ico" style={{ color: ATTR_LABEL_COLOR[id] }} aria-hidden="true">
+                    <Icone />
+                  </span>
+                  <span className="rc-nric-attr-nome" style={{ color: ATTR_LABEL_COLOR[id] }}>
+                    {nome}
+                  </span>
+                  <span className="rc-nric-attr-val">{character.atributos[id]}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         <TrilhaIntegridade atual={integridade} max={derivados.integridade_max} onDefinir={api.editarIntegridade} />
-
-        <div>
-          <div className="rc-track-head">
-            <span className="rc-label rc-label--am">Sobrecarga</span>
-            <span className="rc-num">
-              {sobrecarga}/{MAX_OVERLOAD_SURGES_PER_DAY}
-            </span>
-          </div>
-          <div className="rc-surges">
-            {Array.from({ length: MAX_OVERLOAD_SURGES_PER_DAY }, (_, i) => {
-              const usada = i < sobrecarga;
-              return (
-                <button
-                  key={i}
-                  type="button"
-                  className="rc-surge"
-                  data-on={usada}
-                  disabled={usada || !api.podeUsarSobrecarga}
-                  onClick={() => guard(onEscolherSurto)}
-                  data-testid={`console-surto-${i + 1}`}
-                  aria-label={`Sobrecarga ${i + 1} de ${MAX_OVERLOAD_SURGES_PER_DAY}${usada ? " (usada)" : ""}`}
-                />
-              );
-            })}
-          </div>
-        </div>
       </div>
 
-      <div className="rc-panel">
-        <div className="rc-readout">
-          <span className="rc-label">Deslocamento</span>
-          <span className="rc-readout-val">
-            {derivados.andar_m}m<small>/{derivados.correr_m}m</small>
+      <div className="rc-nsob-card">
+        <div className="rc-nsob-head">
+          <span className="rc-nsob-label">Sobrecarga</span>
+          <span className="rc-nsob-val">
+            {sobrecarga}
+            <span className="rc-nsob-total">/{MAX_OVERLOAD_SURGES_PER_DAY}</span>
           </span>
         </div>
+        <div className="rc-nsob-pips">
+          {Array.from({ length: MAX_OVERLOAD_SURGES_PER_DAY }, (_, i) => {
+            const usada = i < sobrecarga;
+            const position: "first" | "middle" | "last" =
+              i === 0 ? "first" : i === MAX_OVERLOAD_SURGES_PER_DAY - 1 ? "last" : "middle";
+            return (
+              <button
+                key={i}
+                type="button"
+                className="rc-nsob-pip"
+                disabled={usada || !api.podeUsarSobrecarga}
+                onClick={() => guard(onEscolherSurto)}
+                data-testid={`console-surto-${i + 1}`}
+                aria-label={`Sobrecarga ${i + 1} de ${MAX_OVERLOAD_SURGES_PER_DAY}${usada ? " (usada)" : ""}`}
+              >
+                <SurgePip position={position} usada={usada} />
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <PontosAlternaveis rotulo="PA" disponivel={paDisponivel} max={derivados.pa_max} onAlternar={api.ajustarPa} />
-      <PontosAlternaveis
-        rotulo="Reações"
-        disponivel={reacoesDisponiveis}
-        max={derivados.reacoes_por_rodada}
-        onAlternar={api.ajustarReacoes}
-      />
+      <div className="rc-ndesl-card">
+        <span className="rc-ndesl-label">Deslocamento</span>
+        <span className="rc-ndesl-val">
+          {derivados.andar_m}m<span className="rc-ndesl-correr"> · {derivados.correr_m}m</span>
+        </span>
+      </div>
+
+      <div className="rc-npr-card">
+        <RecursoPontos rotulo="PA" disponivel={paDisponivel} max={derivados.pa_max} onAlternar={api.ajustarPa} />
+        <RecursoPontos
+          rotulo="Reações"
+          disponivel={reacoesDisponiveis}
+          max={derivados.reacoes_por_rodada}
+          onAlternar={api.ajustarReacoes}
+          onRolarDefesa={onRolarDefesa}
+        />
+      </div>
     </aside>
   );
 }

@@ -132,18 +132,11 @@ Servidor local iniciado via `next start` (build de produção) na porta 3100 —
 3. `PersonagensJogadorClient.tsx` e `FichaHeader.tsx` já não exibiam `user_id` (confirmado por grep) — nenhuma mudança necessária ali.
 4. `display_name` só existe hoje se a conta tiver `user_metadata.display_name`/`full_name` preenchido (ex.: via "Conta e preferências", fora desta rodada) — sem isso, o fallback é a parte local do e-mail, nunca UUID, o que já satisfaz o requisito de "nunca UUID" mesmo sem um formulário de nome de exibição dedicado.
 
-## 12. Working tree final
+## 13. Commit realizado
 
-```
- M src/app/mesas/[campaignId]/jogadores-e-convites/JogadoresConvitesClient.tsx
- M src/app/mesas/[campaignId]/jogadores-e-convites/page.tsx
- M src/app/mesas/[campaignId]/personagens/PersonagensNarradorClient.tsx
- M src/app/mesas/[campaignId]/personagens/page.tsx
- M src/lib/character/personagensFilter.ts
- M src/lib/table/storage.ts
-?? scripts/dev/validate-fase6-usabilidade-integridade.mjs
-?? supabase/migrations/0060_display_names_tipo_personagem_protection.sql
-?? docs/checkpoints/CHECKPOINT_FASE6_USABILIDADE_INTEGRIDADE.md
-```
+**Hash**: `38bc8ba`  
+**Arquivos incluídos**: os 8 listados acima (6 modificados, 2 criados).
 
-Fixtures de browser check (2 contas, 1 campanha) criadas e removidas via Supabase real ao final da sessão — nenhum dado de teste permanece no banco.
+## 14. Working tree final
+
+Limpo (`git status` retorna "nothing to commit, working tree clean"). Fixtures de browser check (2 contas, 1 campanha) criadas e removidas via Supabase real ao final da sessão — nenhum dado de teste permanece no banco.
