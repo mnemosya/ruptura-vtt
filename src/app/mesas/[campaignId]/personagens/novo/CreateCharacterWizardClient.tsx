@@ -10,6 +10,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   createCharacterFromWizard,
   loadCharacterCreationDraft,
@@ -36,11 +37,6 @@ import { logError } from "../../../../../lib/logger";
 /** ~800ms — janela do autosave por debounce (rede de segurança; troca de etapa e "Salvar e sair" salvam imediatamente). */
 const AUTOSAVE_DEBOUNCE_MS = 800;
 
-const btn: React.CSSProperties = { background: "#1d1e24", color: "inherit", border: "1px solid #333", borderRadius: 6, padding: "8px 14px", fontSize: 13, cursor: "pointer" };
-const btnAtivo: React.CSSProperties = { ...btn, background: "#2d4a2f", border: "1px solid #4caf50", fontWeight: 700 };
-const input: React.CSSProperties = { background: "#0f1014", color: "inherit", border: "1px solid #333", borderRadius: 4, padding: "6px 8px", fontSize: 13, width: "100%" };
-const h2: React.CSSProperties = { fontSize: 14, textTransform: "uppercase", letterSpacing: 1, opacity: 0.6, marginBottom: 12 };
-
 const ETAPAS = [
   { id: 1, nome: "Conceito e identidade" },
   { id: 2, nome: "Atributos" },
@@ -66,14 +62,21 @@ export default function CreateCharacterWizardClient({
   campaign,
   regras,
   talentos,
+  talentosErro,
   magias,
+  magiasErro,
   itensLoja,
+  itensLojaErro,
 }: {
   campaign: Campaign;
   regras: CharacterRulesPayload;
   talentos: TalentContent[];
+  /** Falha REAL na leitura do catálogo — distinta de "nenhum talento publicado ainda" (auditoria pós-Fase-6). */
+  talentosErro: string | null;
   magias: SpellContent[];
+  magiasErro: string | null;
   itensLoja: ItemContent[];
+  itensLojaErro: string | null;
 }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -598,65 +601,81 @@ export default function CreateCharacterWizardClient({
 
   if (loadState === "loading") {
     return (
-      <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
-        <a href={`/mesas/${campaign.id}`} style={{ color: "#5ec8ff", fontSize: 12 }}>← {campaign.name}</a>
-        <h1 style={{ fontSize: 22, margin: "8px 0 16px" }}>Novo personagem</h1>
-        <p role="status" style={{ fontSize: 13, opacity: 0.7 }}>Restaurando rascunho…</p>
+      <main className="rm-page" style={{ maxWidth: 720 }}>
+        <Link href={`/mesas/${campaign.id}`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12 }}>← {campaign.name}</Link>
+        <h1 className="rm-page-title" style={{ margin: "8px 0 16px" }}>Novo personagem</h1>
+        <p role="status" className="rm-faint">Restaurando rascunho…</p>
       </main>
     );
   }
 
   if (loadState === "error") {
     return (
-      <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
-        <a href={`/mesas/${campaign.id}`} style={{ color: "#5ec8ff", fontSize: 12 }}>← {campaign.name}</a>
-        <h1 style={{ fontSize: 22, margin: "8px 0 16px" }}>Novo personagem</h1>
-        <p role="alert" style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 12 }}>
+      <main className="rm-page" style={{ maxWidth: 720 }}>
+        <Link href={`/mesas/${campaign.id}`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12 }}>← {campaign.name}</Link>
+        <h1 className="rm-page-title" style={{ margin: "8px 0 16px" }}>Novo personagem</h1>
+        <p role="alert" className="rm-erro" style={{ marginBottom: 12 }}>
           Não foi possível verificar se você tem um rascunho salvo: {loadMessage}
         </p>
-        <button onClick={handleTentarCarregarNovamente} style={btn}>Tentar novamente</button>
+        <button onClick={handleTentarCarregarNovamente} className="rm-btn rm-btn-ghost rv-focusable">Tentar novamente</button>
       </main>
     );
   }
 
   if (loadState === "confirm_discard") {
     return (
-      <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
-        <a href={`/mesas/${campaign.id}`} style={{ color: "#5ec8ff", fontSize: 12 }}>← {campaign.name}</a>
-        <h1 style={{ fontSize: 22, margin: "8px 0 16px" }}>Novo personagem</h1>
-        <p role="alert" style={{ color: "#f5a623", fontSize: 13, marginBottom: 12 }}>
+      <main className="rm-page" style={{ maxWidth: 720 }}>
+        <Link href={`/mesas/${campaign.id}`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12 }}>← {campaign.name}</Link>
+        <h1 className="rm-page-title" style={{ margin: "8px 0 16px" }}>Novo personagem</h1>
+        <p role="alert" className="rm-note rm-note--warn" style={{ marginBottom: 12 }}>
           Não foi possível restaurar seu rascunho anterior (formato incompatível). Deseja descartá-lo e começar do zero?
         </p>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={handleDescartarDraftInvalido} style={btn}>Descartar e começar do zero</button>
-          <button onClick={handleTentarCarregarNovamente} style={btn}>Tentar carregar de novo</button>
+          <button onClick={handleDescartarDraftInvalido} className="rm-btn rm-btn-ghost rv-focusable">Descartar e começar do zero</button>
+          <button onClick={handleTentarCarregarNovamente} className="rm-btn rm-btn-ghost rv-focusable">Tentar carregar de novo</button>
         </div>
       </main>
     );
   }
 
   return (
-    <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px 80px" }}>
-      <a href={`/mesas/${campaign.id}`} style={{ color: "#5ec8ff", fontSize: 12 }}>← {campaign.name}</a>
-      <h1 style={{ fontSize: 22, margin: "8px 0 16px" }}>Novo personagem</h1>
+    <main className="rm-page" style={{ maxWidth: 720 }}>
+      <Link href={`/mesas/${campaign.id}`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12 }}>← {campaign.name}</Link>
+      <h1 className="rm-page-title" style={{ margin: "8px 0 16px" }}>Novo personagem</h1>
 
-      {errorMessage && <p role="alert" style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 16 }}>Erro: {errorMessage}</p>}
+      {errorMessage && <p role="alert" className="rm-erro" style={{ marginBottom: 16 }}>Erro: {errorMessage}</p>}
       {itensRemovidosAoRestaurar > 0 && (
-        <p style={{ color: "#f5a623", fontSize: 12, marginBottom: 16 }}>
+        <p className="rm-note rm-note--warn" style={{ marginBottom: 16 }}>
           {itensRemovidosAoRestaurar} item(ns) do rascunho não estão mais disponíveis e foram removidos do inventário restaurado.
         </p>
       )}
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        <button onClick={handleSalvarESair} disabled={salvandoESaindo} style={{ ...btn, opacity: salvandoESaindo ? 0.6 : 1 }}>
+        <button onClick={handleSalvarESair} disabled={salvandoESaindo} className="rm-btn rm-btn-ghost rv-focusable">
           {salvandoESaindo ? "Salvando…" : "Salvar e sair"}
         </button>
-        <button onClick={handleCancelarCriacao} style={btn}>Cancelar criação</button>
+        <button onClick={handleCancelarCriacao} className="rm-btn rm-btn-danger rv-focusable">Cancelar criação</button>
       </div>
 
-      <nav style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 24 }}>
+      {/* NÃO é `role="tablist"`/`role="tab"` de propósito (auditoria da
+          Fase 6): isso anunciaria o padrão ARIA de abas — que exige
+          `tabpanel`, `aria-controls`, roving `tabIndex` e navegação por
+          setas, nenhum implementado aqui — para leitores de tela.
+          Etapas de wizard livremente pulável não são abas: são um
+          indicador de progresso/navegação, o mesmo caso já resolvido
+          pro trilho da campanha (correção #8 do plano — `aria-current`,
+          nunca `aria-selected`, pra navegação que não é um conjunto de
+          abas de conteúdo). `aria-current="step"` é o valor do padrão
+          feito exatamente para isto. */}
+      <nav className="rm-pills" aria-label="Etapas da criação" style={{ marginBottom: 24 }}>
         {ETAPAS.map((e) => (
-          <button key={e.id} onClick={() => irParaEtapa(e.id)} style={step === e.id ? btnAtivo : btn}>
+          <button
+            key={e.id}
+            aria-current={step === e.id ? "step" : undefined}
+            onClick={() => irParaEtapa(e.id)}
+            className="rm-pill rv-focusable"
+            data-testid={`wizard-etapa-${e.id}`}
+          >
             {e.id}. {e.nome}
           </button>
         ))}
@@ -664,35 +683,35 @@ export default function CreateCharacterWizardClient({
 
       {step === 1 && (
         <section>
-          <h2 style={h2}>Etapa 1 — Conceito e identidade</h2>
+          <h2 className="rm-section-title">Etapa 1 — Conceito e identidade</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 480 }}>
-            <label style={{ fontSize: 12 }}>
-              Nome *
-              <input data-testid="wizard-nome" value={identidade.nome} onChange={(e) => setIdentidade({ ...identidade, nome: e.target.value })} style={{ ...input, marginTop: 4 }} />
+            <label className="rm-field">
+              <span className="rm-field-label">Nome *</span>
+              <input data-testid="wizard-nome" value={identidade.nome} onChange={(e) => setIdentidade({ ...identidade, nome: e.target.value })} className="rm-input rv-focusable" />
             </label>
-            <label style={{ fontSize: 12 }}>
-              Alcunha
-              <input value={identidade.alcunha} onChange={(e) => setIdentidade({ ...identidade, alcunha: e.target.value })} style={{ ...input, marginTop: 4 }} />
+            <label className="rm-field">
+              <span className="rm-field-label">Alcunha</span>
+              <input value={identidade.alcunha} onChange={(e) => setIdentidade({ ...identidade, alcunha: e.target.value })} className="rm-input rv-focusable" />
             </label>
-            <label style={{ fontSize: 12 }}>
-              Conceito
-              <input value={identidade.conceito} onChange={(e) => setIdentidade({ ...identidade, conceito: e.target.value })} style={{ ...input, marginTop: 4 }} />
+            <label className="rm-field">
+              <span className="rm-field-label">Conceito</span>
+              <input value={identidade.conceito} onChange={(e) => setIdentidade({ ...identidade, conceito: e.target.value })} className="rm-input rv-focusable" />
             </label>
-            <label style={{ fontSize: 12 }}>
-              Origem
-              <select data-testid="wizard-origem" value={identidade.origem} onChange={(e) => setIdentidade({ ...identidade, origem: e.target.value })} style={{ ...input, marginTop: 4 }}>
+            <label className="rm-field">
+              <span className="rm-field-label">Origem</span>
+              <select data-testid="wizard-origem" value={identidade.origem} onChange={(e) => setIdentidade({ ...identidade, origem: e.target.value })} className="rm-select rv-focusable">
                 {ORIGENS.map((o) => (
                   <option key={o} value={o}>{o}</option>
                 ))}
               </select>
             </label>
-            <label style={{ fontSize: 12 }}>
-              Idioma (regional + vastrano)
-              <input value={identidade.idioma} onChange={(e) => setIdentidade({ ...identidade, idioma: e.target.value })} style={{ ...input, marginTop: 4 }} />
+            <label className="rm-field">
+              <span className="rm-field-label">Idioma (regional + vastrano)</span>
+              <input value={identidade.idioma} onChange={(e) => setIdentidade({ ...identidade, idioma: e.target.value })} className="rm-input rv-focusable" />
             </label>
-            <label style={{ fontSize: 12 }}>
-              Afiliação
-              <input value={identidade.afiliacao} onChange={(e) => setIdentidade({ ...identidade, afiliacao: e.target.value })} style={{ ...input, marginTop: 4 }} />
+            <label className="rm-field">
+              <span className="rm-field-label">Afiliação</span>
+              <input value={identidade.afiliacao} onChange={(e) => setIdentidade({ ...identidade, afiliacao: e.target.value })} className="rm-input rv-focusable" />
             </label>
           </div>
         </section>
@@ -700,17 +719,17 @@ export default function CreateCharacterWizardClient({
 
       {step === 2 && (
         <section>
-          <h2 style={h2}>Etapa 2 — Atributos</h2>
-          <p data-testid="wizard-atributos-pontos-restantes" style={{ fontSize: 13, marginBottom: 12, color: pontosAtributoRestantes === 0 ? "#4caf50" : "#f5a623" }}>
+          <h2 className="rm-section-title">Etapa 2 — Atributos</h2>
+          <p data-testid="wizard-atributos-pontos-restantes" style={{ fontSize: 13, marginBottom: 12, color: pontosAtributoRestantes === 0 ? "var(--rm-success)" : "var(--am)" }}>
             Pontos restantes: {pontosAtributoRestantes} / {atributoPontosAdicionais} (teto de criação: {atributoTeto})
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {regras.atributos.map((a) => (
               <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ width: 80, fontSize: 13 }}>{a.nome}</span>
-                <button data-testid={`wizard-atributo-${a.id}-menos`} onClick={() => ajustarAtributo(a.id, -1)} style={btn}>-</button>
+                <button data-testid={`wizard-atributo-${a.id}-menos`} onClick={() => ajustarAtributo(a.id, -1)} className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable">-</button>
                 <span data-testid={`wizard-atributo-${a.id}-valor`} style={{ width: 24, textAlign: "center" }}>{atributos[a.id] ?? atributoValorInicial}</span>
-                <button data-testid={`wizard-atributo-${a.id}-mais`} onClick={() => ajustarAtributo(a.id, 1)} style={btn}>+</button>
+                <button data-testid={`wizard-atributo-${a.id}-mais`} onClick={() => ajustarAtributo(a.id, 1)} className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable">+</button>
               </div>
             ))}
           </div>
@@ -719,17 +738,17 @@ export default function CreateCharacterWizardClient({
 
       {step === 3 && (
         <section>
-          <h2 style={h2}>Etapa 3 — Perícias</h2>
-          <p data-testid="wizard-pericias-pontos-restantes" style={{ fontSize: 13, marginBottom: 12, color: pontosPericiaRestantes >= 0 ? "#4caf50" : "#ff6b6b" }}>
+          <h2 className="rm-section-title">Etapa 3 — Perícias</h2>
+          <p data-testid="wizard-pericias-pontos-restantes" style={{ fontSize: 13, marginBottom: 12, color: pontosPericiaRestantes >= 0 ? "var(--rm-success)" : "var(--rm-danger)" }}>
             Pontos restantes: {pontosPericiaRestantes} / {periciaPontosTotais} (teto de criação: {periciaTeto})
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 8 }}>
             {regras.pericias.map((p) => (
               <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ flex: 1, fontSize: 12 }}>{p.nome}</span>
-                <button data-testid={`wizard-pericia-${p.id}-menos`} onClick={() => ajustarPericia(p.id, -1)} style={btn}>-</button>
+                <button data-testid={`wizard-pericia-${p.id}-menos`} onClick={() => ajustarPericia(p.id, -1)} className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable">-</button>
                 <span data-testid={`wizard-pericia-${p.id}-valor`} style={{ width: 20, textAlign: "center" }}>{pericias[p.id] ?? 0}</span>
-                <button data-testid={`wizard-pericia-${p.id}-mais`} onClick={() => ajustarPericia(p.id, 1)} style={btn}>+</button>
+                <button data-testid={`wizard-pericia-${p.id}-mais`} onClick={() => ajustarPericia(p.id, 1)} className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable">+</button>
               </div>
             ))}
           </div>
@@ -738,33 +757,40 @@ export default function CreateCharacterWizardClient({
 
       {step === 4 && (
         <section>
-          <h2 style={h2}>Etapa 4 — Vertentes e magias</h2>
-          {vertentesDisponiveis.length === 0 ? (
-            <p style={{ fontSize: 13, opacity: 0.7 }}>
+          <h2 className="rm-section-title">Etapa 4 — Vertentes e magias</h2>
+          {magiasErro ? (
+            <div className="rm-note rm-note--danger" role="alert" data-testid="wizard-magias-erro">
+              Não foi possível carregar as magias publicadas nesta mesa: {magiasErro}{" "}
+              <button type="button" onClick={() => router.refresh()} className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable" style={{ marginLeft: 6 }}>
+                Tentar de novo
+              </button>
+            </div>
+          ) : vertentesDisponiveis.length === 0 ? (
+            <p className="rm-faint">
               Nenhuma magia publicada nesta mesa ainda — não há vertentes para investir. Avance sem preencher nada.
             </p>
           ) : (
             <>
-              <p data-testid="wizard-vertentes-pontos-restantes" style={{ fontSize: 13, marginBottom: 12, color: pontosVertenteRestantes === 0 ? "#4caf50" : "#f5a623" }}>
+              <p data-testid="wizard-vertentes-pontos-restantes" style={{ fontSize: 13, marginBottom: 12, color: pontosVertenteRestantes === 0 ? "var(--rm-success)" : "var(--am)" }}>
                 Pontos restantes: {pontosVertenteRestantes} / {PONTOS_VERTENTE_CRIACAO}
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
                 {vertentesDisponiveis.map((v) => (
                   <div key={v.slug} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ width: 140, fontSize: 13 }}>{v.label}</span>
-                    <button data-testid={`wizard-vertente-${v.slug}-menos`} onClick={() => ajustarVertente(v.slug, -1)} style={btn}>-</button>
+                    <button data-testid={`wizard-vertente-${v.slug}-menos`} onClick={() => ajustarVertente(v.slug, -1)} className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable">-</button>
                     <span data-testid={`wizard-vertente-${v.slug}-valor`} style={{ width: 24, textAlign: "center" }}>{niveisVertente[v.slug] ?? 0}</span>
-                    <button data-testid={`wizard-vertente-${v.slug}-mais`} onClick={() => ajustarVertente(v.slug, 1)} style={btn}>+</button>
+                    <button data-testid={`wizard-vertente-${v.slug}-mais`} onClick={() => ajustarVertente(v.slug, 1)} className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable">+</button>
                     {(niveisVertente[v.slug] ?? 0) > 0 && (
-                      <span style={{ fontSize: 11, opacity: 0.6 }}>CD de resistência: {6 + (niveisVertente[v.slug] ?? 0)}</span>
+                      <span className="rm-faint">CD de resistência: {6 + (niveisVertente[v.slug] ?? 0)}</span>
                     )}
                   </div>
                 ))}
               </div>
 
-              <h3 style={{ fontSize: 13, marginBottom: 8, opacity: 0.8 }}>Magias liberadas pelo nível investido</h3>
+              <h3 className="rm-section-title">Magias liberadas pelo nível investido</h3>
               {magiasElegiveis.length === 0 ? (
-                <p style={{ fontSize: 12, opacity: 0.6 }}>Invista pontos numa vertente para liberar magias.</p>
+                <p className="rm-faint">Invista pontos numa vertente para liberar magias.</p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {magiasElegiveis.map((magia) => (
@@ -775,7 +801,7 @@ export default function CreateCharacterWizardClient({
                         checked={magiasEscolhidas.has(magia.slug)}
                         onChange={() => toggleMagia(magia.slug)}
                       />
-                      {magia.nome} <span style={{ opacity: 0.5 }}>({magia.vertente_label ?? magia.vertente}, nível {magia.estatisticas.nivel})</span>
+                      {magia.nome} <span className="rm-faint">({magia.vertente_label ?? magia.vertente}, nível {magia.estatisticas.nivel})</span>
                     </label>
                   ))}
                 </div>
@@ -787,15 +813,23 @@ export default function CreateCharacterWizardClient({
 
       {step === 5 && (
         <section>
-          <h2 style={h2}>Etapa 5 — Talento inicial</h2>
-          {talentoOptions.length > 0 ? (
+          <h2 className="rm-section-title">Etapa 5 — Talento inicial</h2>
+          {talentosErro ? (
+            <div className="rm-note rm-note--danger" role="alert" data-testid="wizard-talentos-erro">
+              Não foi possível carregar os talentos publicados nesta mesa: {talentosErro}{" "}
+              <button type="button" onClick={() => router.refresh()} className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable" style={{ marginLeft: 6 }}>
+                Tentar de novo
+              </button>
+            </div>
+          ) : talentoOptions.length > 0 ? (
             <>
-              <p style={{ fontSize: 12, opacity: 0.6, marginBottom: 8 }}>Escolha 1 talento de nível 1 (da Biblioteca).</p>
+              <p className="rm-faint" style={{ marginBottom: 8 }}>Escolha 1 talento de nível 1 (da Biblioteca).</p>
               <select
                 data-testid="wizard-talento-select"
                 value={talentoNivelIdEscolhido}
                 onChange={(e) => setTalentoNivelIdEscolhido(e.target.value)}
-                style={{ ...input, maxWidth: 420 }}
+                className="rm-select rv-focusable"
+                style={{ maxWidth: 420 }}
               >
                 <option value="">— nenhum —</option>
                 {talentoOptions.map((t) => (
@@ -804,7 +838,7 @@ export default function CreateCharacterWizardClient({
               </select>
             </>
           ) : (
-            <p style={{ fontSize: 13, opacity: 0.7 }}>
+            <p className="rm-faint">
               Nenhum talento de nível 1 publicado nesta mesa ainda. Avance sem escolher.
             </p>
           )}
@@ -813,31 +847,43 @@ export default function CreateCharacterWizardClient({
 
       {step === 6 && (
         <section>
-          <h2 style={h2}>Etapa 6 — Inventário</h2>
+          <h2 className="rm-section-title">Etapa 6 — Inventário</h2>
           <p style={{ fontSize: 13, marginBottom: 12 }}>
             Aretz: <strong data-testid="wizard-aretz-restante">{carteira.aretz_informal}</strong> / {aretzIniciais}
           </p>
-          <p style={{ fontSize: 11, opacity: 0.5, marginBottom: 12 }}>
+          <p className="rm-faint" style={{ marginBottom: 12 }}>
             Loja restrita a itens de raridade até incomum na criação (PRD 3.2) — raros e muito raros liberados só em jogo.
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 8, marginBottom: 20 }}>
-            {itensLoja.map((item) => (
-              <div key={item.slug} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, background: "#1d1e24", borderRadius: 6, padding: "6px 10px" }}>
-                <span style={{ fontSize: 12 }}>{item.nome} — {item.preco} aretz</span>
-                <button data-testid={`wizard-comprar-${item.slug}`} onClick={() => handleComprarItem(item)} style={btn}>Comprar</button>
-              </div>
-            ))}
-          </div>
+          {itensLojaErro ? (
+            <div className="rm-note rm-note--danger" role="alert" data-testid="wizard-itens-erro" style={{ marginBottom: 20 }}>
+              Não foi possível carregar os itens da loja desta mesa: {itensLojaErro}{" "}
+              <button type="button" onClick={() => router.refresh()} className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable" style={{ marginLeft: 6 }}>
+                Tentar de novo
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 8, marginBottom: 20 }}>
+              {itensLoja.map((item) => (
+                <div key={item.slug} className="rm-card rm-card-row">
+                  <span style={{ fontSize: 12 }}>{item.nome} — {item.preco} aretz</span>
+                  <button data-testid={`wizard-comprar-${item.slug}`} onClick={() => handleComprarItem(item)} className="rm-btn rm-btn-primary rm-btn-sm rv-focusable">Comprar</button>
+                </div>
+              ))}
+            </div>
+          )}
 
-          <h3 style={{ fontSize: 13, marginBottom: 8, opacity: 0.8 }}>Inventário inicial ({inventario.length})</h3>
+          {/* "Inventário inicial" é sobre itens JÁ comprados (estado do
+              cliente) — nunca afetado por uma falha na leitura do
+              catálogo da loja, continua visível independente dela. */}
+          <h3 className="rm-section-title">Inventário inicial ({inventario.length})</h3>
           {inventario.length === 0 ? (
-            <p style={{ fontSize: 12, opacity: 0.6 }}>Nenhum item comprado ainda.</p>
+            <p className="rm-faint">Nenhum item comprado ainda.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {inventario.map((instancia) => (
                 <div key={instancia.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12 }}>
                   <span>{instancia.itemNome} × {instancia.quantidade}</span>
-                  <button data-testid={`wizard-remover-${instancia.id}`} onClick={() => handleRemoverItem(instancia.id)} style={{ ...btn, fontSize: 11 }}>Remover</button>
+                  <button data-testid={`wizard-remover-${instancia.id}`} onClick={() => handleRemoverItem(instancia.id)} className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable">Remover</button>
                 </div>
               ))}
             </div>
@@ -847,7 +893,7 @@ export default function CreateCharacterWizardClient({
 
       {step === 7 && (
         <section>
-          <h2 style={h2}>Etapa 7 — Revisão</h2>
+          <h2 className="rm-section-title">Etapa 7 — Revisão</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13, marginBottom: 16 }}>
             <span><strong>Nome:</strong> {identidade.nome || "(vazio)"}</span>
             <span><strong>Alcunha:</strong> {identidade.alcunha || "—"}</span>
@@ -880,26 +926,26 @@ export default function CreateCharacterWizardClient({
           </div>
 
           {!vertentesValidas && vertentesDisponiveis.length > 0 && (
-            <p style={{ color: "#ff6b6b", fontSize: 12, marginBottom: 8 }}>
+            <p role="alert" className="rm-erro" style={{ marginBottom: 8 }}>
               Vertentes inválidas — volte à Etapa 4 e distribua exatamente {PONTOS_VERTENTE_CRIACAO} pontos.
             </p>
           )}
 
           {!atributosValidos && (
-            <p style={{ color: "#ff6b6b", fontSize: 12, marginBottom: 8 }}>
+            <p role="alert" className="rm-erro" style={{ marginBottom: 8 }}>
               Atributos inválidos — volte à Etapa 2 e distribua exatamente {atributoPontosAdicionais} pontos (teto {atributoTeto}).
             </p>
           )}
           {!periciasValidas && (
-            <p style={{ color: "#ff6b6b", fontSize: 12, marginBottom: 8 }}>
+            <p role="alert" className="rm-erro" style={{ marginBottom: 8 }}>
               Perícias inválidas — volte à Etapa 3 (máximo {periciaPontosTotais} pontos, teto {periciaTeto} por perícia).
             </p>
           )}
           {!identidade.nome.trim() && (
-            <p style={{ color: "#ff6b6b", fontSize: 12, marginBottom: 8 }}>Nome é obrigatório (Etapa 1).</p>
+            <p role="alert" className="rm-erro" style={{ marginBottom: 8 }}>Nome é obrigatório (Etapa 1).</p>
           )}
 
-          <button data-testid="wizard-finalizar-button" onClick={finalizar} disabled={!podeFinalizar || criando} style={{ ...btn, opacity: podeFinalizar && !criando ? 1 : 0.5 }}>
+          <button data-testid="wizard-finalizar-button" onClick={finalizar} disabled={!podeFinalizar || criando} className="rm-btn rm-btn-primary rv-focusable">
             {criando ? "Criando…" : "Criar personagem"}
           </button>
         </section>

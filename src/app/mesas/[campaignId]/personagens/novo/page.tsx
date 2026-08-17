@@ -12,15 +12,33 @@
  * provisória desta fase — a política final de "quem pode criar
  * personagem livremente" é uma decisão de produto pendente (ver §12 do
  * relatório de auditoria), não bloqueada por esta página.
+ *
+ * Fase 6: o guard próprio (`getCurrentUser` + `getCampaign` +
+ * `isCampaignMember`, com telas de erro hand-rolled em hex) virou
+ * `resolveCampaignAccess` — já cobre "narrador OU jogador membro ativo"
+ * num só veredito (`kind === "ok"` para os dois papéis), e o layout da
+ * campanha já resolve login/`not_found`/`no_access` antes desta página
+ * renderizar (memoizado por request), então a checagem aqui era uma
+ * segunda consulta pro mesmo resultado. Mesmo padrão já aplicado nas
+ * demais rotas de conteúdo da Fase 5.
+ *
+ * `.catch(() => [])` nos 3 catálogos (talentos/magias/itens) virou erro
+ * POR RECURSO, não vazio silencioso (auditoria pós-Fase-6): os 3 têm um
+ * estado "vazio de verdade" LEGÍTIMO e comum (mesa nova, Biblioteca sem
+ * nada publicado ainda — as etapas 4/5 já dizem "avance sem preencher")
+ * — colapsar falha de leitura no mesmo `[]` faz o jogador acreditar
+ * que a mesa não tem talento/magia/item nenhum, quando na verdade a
+ * consulta quebrou, e ele pode finalizar um personagem baseado nisso.
+ * `talentosErro`/`magiasErro`/`itensLojaErro` chegam ao client só pra
+ * decidir "mostro a etapa normal (vazio real OU dado carregado) ou um
+ * erro+retry no lugar dela" — nunca os dois ao mesmo tempo.
  */
 
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import { getCurrentUser } from "../../../../../lib/auth/session";
-import { getCampaign, isCampaignMember } from "../../../../../lib/table/storage";
+import { resolveCampaignAccess } from "../../../../../lib/campaign/access";
 import { getCharacterRules } from "../../../../../lib/content";
 import { listTalentsEffective, listSpellsEffective, listItemsEffective } from "../../../../../lib/campaignContent";
-import type { Campaign } from "../../../../../lib/table";
+import { comFalhaInjetavel } from "../../../../../lib/dev/faultInjection";
 import {
   normalizeTalentContent,
   normalizeSpellContent,
@@ -48,42 +66,9 @@ interface PageProps {
 
 export default async function NovoPersonagemPage({ params }: PageProps) {
   const { campaignId } = await params;
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-
-  let campaign: Campaign | null = null;
-  try {
-    campaign = await getCampaign(campaignId);
-  } catch {
-    campaign = null;
-  }
-
-  if (!campaign) {
-    return (
-      <main style={{ maxWidth: 640, margin: "60px auto", padding: "0 20px" }}>
-        <h1 style={{ fontSize: 20 }}>Mesa não encontrada</h1>
-        <Link href="/mesas" style={{ color: "#5ec8ff", fontSize: 13 }}>← Minhas mesas</Link>
-      </main>
-    );
-  }
-
-  const isOwner = campaign.owner_id === user.id;
-
-  // Jogador (não-narrador): só pode entrar se for participante ATIVO
-  // desta campanha (aceitou um convite — `campaign_members`). Não é
-  // "mesa alheia" — é "ainda não entrou nesta mesa por convite".
-  const isMember = isOwner || (await isCampaignMember(campaignId));
-  if (!isMember) {
-    return (
-      <main style={{ maxWidth: 640, margin: "60px auto", padding: "0 20px" }}>
-        <h1 style={{ fontSize: 20 }}>Acesso negado</h1>
-        <p style={{ fontSize: 13, opacity: 0.8 }}>
-          Você precisa entrar nesta mesa por um convite antes de criar um personagem.
-        </p>
-        <Link href="/mesas" style={{ color: "#5ec8ff", fontSize: 13 }}>← Minhas mesas</Link>
-      </main>
-    );
-  }
+  const access = await resolveCampaignAccess(campaignId);
+  if (access.kind !== "ok") return null; // layout já mostra o estado certo (login/não encontrada/sem acesso)
+  const campaign = access.campaign;
 
   let regras: CharacterRulesPayload | null = null;
   try {
@@ -98,44 +83,49 @@ export default async function NovoPersonagemPage({ params }: PageProps) {
   // Universal publicou de verdade para esta mesa (oficial + override +
   // homebrew, via listXEffective).
   let talentos: TalentContent[] = [];
+  let talentosErro: string | null = null;
   try {
-    const docs = await listTalentsEffective(campaignId);
+    const docs = await comFalhaInjetavel("wizard-talentos", () => listTalentsEffective(campaignId));
     talentos = docs
       .map((doc) => normalizeTalentContent(doc.payload))
       .filter((t) => t.status === "published");
-  } catch {
-    talentos = [];
+  } catch (e) {
+    talentosErro = e instanceof Error ? e.message : "Erro ao carregar talentos.";
   }
 
   let magias: SpellContent[] = [];
+  let magiasErro: string | null = null;
   try {
-    const docs = await listSpellsEffective(campaignId);
+    const docs = await comFalhaInjetavel("wizard-magias", () => listSpellsEffective(campaignId));
     magias = docs
       .map((doc) => normalizeSpellContent(doc.payload))
       .filter((m) => m.status === "published");
-  } catch {
-    magias = [];
+  } catch (e) {
+    magiasErro = e instanceof Error ? e.message : "Erro ao carregar magias.";
   }
 
   let itensLoja: ItemContent[] = [];
+  let itensLojaErro: string | null = null;
   try {
-    const docs = await listItemsEffective(campaignId);
+    const docs = await comFalhaInjetavel("wizard-itens", () => listItemsEffective(campaignId));
     itensLoja = docs
       .map((doc) => normalizeItemContent(doc.payload))
       .filter((item) => item.raridade != null && RARIDADES_PERMITIDAS_NA_CRIACAO.has(item.raridade));
-  } catch {
-    itensLoja = [];
+  } catch (e) {
+    itensLojaErro = e instanceof Error ? e.message : "Erro ao carregar itens da loja.";
   }
 
   if (!regras) {
     return (
-      <main style={{ maxWidth: 640, margin: "60px auto", padding: "0 20px" }}>
-        <h1 style={{ fontSize: 20 }}>Erro ao carregar regras</h1>
-        <p style={{ color: "#ff6b6b", fontSize: 13 }}>
+      <main className="rm-boundary">
+        <h1 className="rm-page-title">Erro ao carregar regras</h1>
+        <p role="alert" className="rm-boundary-msg">
           regras_personagem não veio do banco — não é possível montar o assistente de criação sem
           atributos/perícias reais da Biblioteca.
         </p>
-        <Link href={`/mesas/${campaignId}`} style={{ color: "#5ec8ff", fontSize: 13 }}>← Voltar à mesa</Link>
+        <div className="rm-boundary-acoes">
+          <Link href={`/mesas/${campaignId}`} className="rm-btn rm-btn-ghost rv-focusable">← Voltar à mesa</Link>
+        </div>
       </main>
     );
   }
@@ -145,8 +135,11 @@ export default async function NovoPersonagemPage({ params }: PageProps) {
       campaign={campaign}
       regras={regras}
       talentos={talentos}
+      talentosErro={talentosErro}
       magias={magias}
+      magiasErro={magiasErro}
       itensLoja={itensLoja}
+      itensLojaErro={itensLojaErro}
     />
   );
 }
