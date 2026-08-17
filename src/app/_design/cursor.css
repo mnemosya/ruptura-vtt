@@ -1,15 +1,23 @@
 /*
  * Cursor HUD compartilhado — extraído de app.css para ser reusado pelo
- * Console do Personagem (`console.css`) sem duplicar a implementação.
- * O tracking real (mousemove/hover) é um único componente React
- * (`HudCursor`, exportado de `GlobalShell.tsx`) — este arquivo só tem a
- * folha de estilo que os dois "escopos" de cursor (`.ra-root` na área
- * autenticada global, `.rc-cursor-scope` no Console) compartilham.
+ * Console do Personagem (`console.css`) e pela área de campanha
+ * (`mesa.css`) sem duplicar a implementação. O tracking real
+ * (mousemove/hover) é um único componente React (`HudCursor`,
+ * exportado de `GlobalShell.tsx`) — este arquivo só tem a folha de
+ * estilo que os três "escopos" de cursor compartilham: `.ra-root` na
+ * área autenticada global, `.rc-cursor-scope` no Console e `.rm-root`
+ * na campanha.
+ *
+ * Este é o ÚNICO arquivo de estilo compartilhado entre as folhas da
+ * linguagem HUD — todo o resto (tokens, decoração, atmosfera) é
+ * redeclarado por folha, de propósito. A exceção se justifica porque
+ * aqui a implementação é um componente React único, não só CSS.
  */
 
 @media (pointer: fine) {
   .ra-root:not(.ra-no-cursor),
-  .rc-cursor-scope:not(.ra-no-cursor) { cursor: none; }
+  .rc-cursor-scope:not(.ra-no-cursor),
+  .rm-root:not(.ra-no-cursor) { cursor: none; }
   .ra-root:not(.ra-no-cursor) button,
   .ra-root:not(.ra-no-cursor) a,
   .ra-root:not(.ra-no-cursor) input,
@@ -21,7 +29,13 @@
   .rc-cursor-scope:not(.ra-no-cursor) input,
   .rc-cursor-scope:not(.ra-no-cursor) select,
   .rc-cursor-scope:not(.ra-no-cursor) label,
-  .rc-cursor-scope:not(.ra-no-cursor) [role="button"] { cursor: none; }
+  .rc-cursor-scope:not(.ra-no-cursor) [role="button"],
+  .rm-root:not(.ra-no-cursor) button,
+  .rm-root:not(.ra-no-cursor) a,
+  .rm-root:not(.ra-no-cursor) input,
+  .rm-root:not(.ra-no-cursor) select,
+  .rm-root:not(.ra-no-cursor) label,
+  .rm-root:not(.ra-no-cursor) [role="button"] { cursor: none; }
 }
 
 /* ── Cursor HUD ────────────────────────────────────────────────── */

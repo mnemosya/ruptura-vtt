@@ -305,3 +305,32 @@ export const Swords = (p: IconProps) => (
     <path d="M3 14v7h7" />
   </Svg>
 );
+
+/* Adicionados para o trilho de navegação da área de campanha (mesa.css)
+   — as oito áreas precisam de um ícone cada, e estes três não existiam:
+   Bando (inventário compartilhado do grupo), Mercado e Configurações. */
+
+export const Backpack = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
+    <path d="M9 6V5a3 3 0 0 1 6 0v1" />
+    <path d="M8 21v-5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v5" />
+    <path d="M8 10h8" />
+  </Svg>
+);
+
+export const Store = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="m4 4 -1 5a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0l-1-5Z" />
+    <path d="M4 4h16" />
+    <path d="M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" />
+    <path d="M10 20v-5h4v5" />
+  </Svg>
+);
+
+export const Settings = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+  </Svg>
+);
