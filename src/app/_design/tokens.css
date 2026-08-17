@@ -1,0 +1,105 @@
+/*
+ * Escalas compartilhadas da linguagem HUD (F1 do redesign da área de
+ * campanha).
+ *
+ * REGRA DESTE ARQUIVO: ele só ADICIONA nomes. Nenhum token já existente
+ * (`--cy`, `--am`, `--rc-*`, `--rm-*`, `--font-*`) é declarado ou
+ * sobrescrito aqui. O motivo é concreto e foi medido, não suposto:
+ * `console.css` consome `--font-mono`/`--font-orbitron`/`--font-rajdhani`
+ * SEM redeclará-las no próprio escopo, então qualquer declaração nova
+ * no `:root` com um desses nomes muda a tipografia do Console inteiro
+ * sem ninguém ter tocado nele. `scripts/dev/check-console-baseline.ts`
+ * existe justamente pra reprovar isso, e mede os nomes `--hud-*` daqui
+ * DENTRO do Console esperando que continuem vazios.
+ *
+ * ESCOPO: lista de raízes, não `:root`. A primeira versão declarava em
+ * `:root` e a linha de base do Console acusou 60 diferenças — todas
+ * inofensivas (só os `--hud-*` passando a INHERITAR pra dentro da
+ * janela, zero mudança visual), mas o resultado ensina o certo: em
+ * `:root`, "os `--hud-*` são vazios dentro do Console" deixa de ser uma
+ * afirmação verificável, e é justamente ela que protege a F6, onde
+ * janelas em `rm-*` vão conviver com o Console. Escopar mantém a
+ * asserção viva e não custa nada — quem precisar destas escalas noutra
+ * folha entra nesta lista, exatamente como `cursor.css` já faz com
+ * `.rm-root`/`.ra-root`/`.rc-cursor-scope`.
+ *
+ * Por que só escalas, e não cores: as quatro folhas HUD (`auth.css`,
+ * `app.css`, `console.css`, `mesa.css`) redeclaram a própria paleta no
+ * próprio namespace de propósito — é o que garante que uma tela nunca
+ * apareça sem estilo porque a folha irmã não foi importada. Essa
+ * convenção fica. O que NÃO existe em lugar nenhum hoje, e por isso
+ * cabe aqui, é escala: espaçamento, raio, sombra, tipo e chanfro eram
+ * valores soltos, repetidos à mão em cada regra.
+ *
+ * Os valores não são inventados: são os que `console.css` já usa em
+ * produção, extraídos pra virarem nomeáveis. O Console continua com os
+ * literais dele (não é reapontado pra cá — ver decisão de escopo no
+ * plano); quem consome estes nomes é `mesa.css`, pra parar de divergir
+ * do irmão que já está certo.
+ */
+
+.rm-root {
+  /* ── Espaçamento ────────────────────────────────────────────────
+     Os 8 degraus que `console.css` de fato usa (gap/padding medidos):
+     4 e 6 pra dentro de pill/badge, 8-12 entre campos, 16 pra dentro
+     de card, 20-24 entre blocos, 32 entre seções. */
+  --hud-space-1: 4px;
+  --hud-space-2: 6px;
+  --hud-space-3: 8px;
+  --hud-space-4: 12px;
+  --hud-space-5: 16px;
+  --hud-space-6: 20px;
+  --hud-space-7: 24px;
+  --hud-space-8: 32px;
+
+  /* ── Raio ───────────────────────────────────────────────────────
+     `--hud-radius-hard: 1px` não é "quase zero" por acidente: é a
+     escolha deliberada do Console (19 regras) — canto duro de painel
+     técnico, mas 1px pra não serrilhar na diagonal. Raio maior só em
+     elementos que já são "aviso"/"nota", nunca em chrome. */
+  --hud-radius-hard: 1px;
+  --hud-radius-note: 8px;
+  --hud-radius-pill: 999px;
+
+  /* ── Sombra ─────────────────────────────────────────────────────
+     `window` é literalmente a sombra da janela do Console — sombra
+     projetada pesada + glow ciano INTERNO. É o que dá a sensação de
+     vidro iluminado por dentro, e é o que falta em `mesa.css`, onde
+     nenhum card tem sombra nenhuma. */
+  --hud-shadow-panel: 0 2px 10px rgba(0, 0, 0, 0.35);
+  --hud-shadow-window: 0 30px 90px rgba(0, 0, 0, 0.72), inset 0 0 60px rgba(0, 60, 90, 0.1);
+  --hud-shadow-dock: -18px 0 40px rgba(0, 0, 0, 0.45);
+  --hud-glow-cy: 0 0 9px rgba(0, 212, 255, 0.25);
+
+  /* ── Tipografia ─────────────────────────────────────────────────
+     Cada degrau é tamanho + tracking JUNTOS, porque no HUD eles não
+     são independentes: quanto menor o texto, maior o espaçamento entre
+     letras. `caption` (0.18em) é a assinatura do Console — os rótulos
+     tipo [RECURSOS] / [PERÍCIAS]. `mesa.css` hoje para em 0.12em, e é
+     parte de por que ela parece mais "formulário" que "painel". */
+  --hud-caption-size: 10px;
+  --hud-caption-track: 0.18em;
+  --hud-label-size: 11px;
+  --hud-label-track: 0.1em;
+  --hud-body-size: 13px;
+  --hud-body-track: 0.01em;
+  --hud-title-size: 15px;
+  --hud-title-track: 0.02em;
+  --hud-display-size: 20px;
+  --hud-display-track: 0.05em;
+
+  /* ── Chanfro (canto cortado) ────────────────────────────────────
+     Os 3 tamanhos que `console.css` usa em `clip-path`: 12px em painel
+     comum, 14px no dock, 16px em modal auxiliar. Maior o elemento,
+     maior o corte. */
+  --hud-notch-sm: 12px;
+  --hud-notch-md: 14px;
+  --hud-notch-lg: 16px;
+
+  /* ── Movimento ──────────────────────────────────────────────────
+     A curva de entrada do Console (`rc-in`). Um só nome pra não
+     divergir por folha. */
+  --hud-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --hud-dur-fast: 0.14s;
+  --hud-dur-enter: 0.22s;
+}

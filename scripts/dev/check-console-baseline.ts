@@ -201,16 +201,28 @@ async function esperarAnimacoes(page: Page): Promise<void> {
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null)))));
 }
 
+/**
+ * `waitUntil: "domcontentloaded"` + espera POR SELETOR, nunca
+ * `networkidle`: a área de campanha mantém um WebSocket de Realtime
+ * aberto e recarrega roster/viewer por foco, então "a rede ficou
+ * quieta por 500ms" pode simplesmente nunca acontecer. Isto reprovou de
+ * verdade aqui (timeout de 30s em `/personagens` que responde 200 em
+ * 0,5s no curl) — o wait estava medindo a quietude da rede, não a
+ * prontidão da página.
+ */
 async function descobrirAlvo(page: Page): Promise<{ campaignId: string; characterId: string }> {
-  await page.goto(`${BASE_URL}/mesas`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas`, { waitUntil: "domcontentloaded" });
+  await page.locator('a[href^="/mesas/"]').first().waitFor({ state: "attached", timeout: 20000 });
   const hrefs = await page.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? ""));
   const campaignId = hrefs
     .map((h) => h.match(/^\/mesas\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i)?.[1])
     .find(Boolean);
   if (!campaignId) throw new Error("Nenhuma campanha encontrada em /mesas — sessão expirada? Rode refresh-admin-session.ts");
 
-  await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "networkidle" });
-  const href = await page.locator('a[data-testid^="personagens-abrir-ficha-"]').first().getAttribute("href");
+  await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "domcontentloaded" });
+  const linkFicha = page.locator('a[data-testid^="personagens-abrir-ficha-"]').first();
+  await linkFicha.waitFor({ state: "attached", timeout: 20000 });
+  const href = await linkFicha.getAttribute("href");
   const characterId = href?.match(/characterId=([0-9a-f-]{36})/i)?.[1];
   if (!characterId) throw new Error(`Nenhum personagem encontrado na campanha ${campaignId}`);
   return { campaignId, characterId };
@@ -231,14 +243,15 @@ async function main() {
       const { campaignId, characterId } = await descobrirAlvo(page);
 
       // --- Cena A: rota DIRETA /ficha (sem mesa.css na árvore) ---
-      await page.goto(`${BASE_URL}/ficha?campaignId=${campaignId}&characterId=${characterId}`, { waitUntil: "networkidle" });
+      await page.goto(`${BASE_URL}/ficha?campaignId=${campaignId}&characterId=${characterId}`, { waitUntil: "domcontentloaded" });
       await page.waitForSelector(".rc-window", { state: "visible", timeout: 10000 });
       await esperarAnimacoes(page);
       retratos[`${vp.nome}/direta`] = await capturar(page, SELETORES, PROPRIEDADES, CUSTOM_PROPS);
 
       // --- Cena B: modal interceptado SOBRE a campanha (mesa.css montado
       // junto — é aqui que um vazamento de token apareceria) ---
-      await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "networkidle" });
+      await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "domcontentloaded" });
+      await page.locator(`[data-testid="personagens-abrir-ficha-${characterId}"]`).waitFor({ state: "visible", timeout: 20000 });
       await page.locator(`[data-testid="personagens-abrir-ficha-${characterId}"]`).click();
       await page.waitForURL(/\/ficha\?/, { timeout: 5000 });
       await page.waitForSelector(".rc-window", { state: "visible", timeout: 10000 });

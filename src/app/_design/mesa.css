@@ -33,6 +33,7 @@
  * barra de navegação inferior nem menu "Mais".
  */
 
+@import "./tokens.css";
 @import "./cursor.css";
 
 .rm-root {
@@ -132,9 +133,23 @@
    não só uma). A coluna do painel só existe no breakpoint amplo; no
    intermediário ela vira drawer sobreposto e a faixa some do grid (ver
    media query no fim). */
+/* ALTURA FIXA + rolagem só no conteúdo (F1 do redesign). Antes: o shell
+   tinha `min-height: 100vh` e o DOCUMENTO rolava. Isso é o que produzia
+   ~60% de tela vazia em toda rota — o conteúdo ficava encostado no topo
+   de uma página do tamanho do conteúdo, dentro de uma viewport muito
+   maior, e nada podia "preencher a altura" porque não havia altura
+   definida pra preencher (`height: 100%` num pai sem altura não resolve).
+   Com o shell travado na viewport, `1fr` na linha `main` vira uma altura
+   REAL, e painel/dock/lista passam a poder ocupar o que sobra — que é
+   como Foundry/Roll20 se comportam.
+
+   Consequência que vale declarar: quem rola agora é `.rm-shell-main`,
+   não a página. Toda rota da campanha depende dessa regra — por isso o
+   critério de densidade checa as 8. */
 .rm-shell {
   position: relative; z-index: 1;
-  min-height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   display: grid;
   /* Duas colunas por padrão. A faixa do painel de sessão só é reservada
      quando ele existe de fato (`:has()`) — sem isso, a coluna de 320px
@@ -154,10 +169,18 @@
     "rail dock   panel"
     "rail main   panel";
 }
-.rm-shell-rail { grid-area: rail; }
+.rm-shell-rail { grid-area: rail; min-height: 0; }
 .rm-shell-header { grid-area: header; }
-.rm-shell-dock { grid-area: dock; padding: 10px 24px 0; }
-.rm-shell-main { grid-area: main; min-width: 0; padding: 12px 24px 72px; }
+.rm-shell-dock { grid-area: dock; padding: var(--hud-space-4) var(--hud-space-7) 0; }
+/* `min-height: 0` é obrigatório, não defensivo: um item de grid tem
+   `min-height: auto` por padrão, então ele se recusa a encolher abaixo
+   do conteúdo e `overflow: auto` nunca chega a rolar — o conteúdo
+   vazaria pra fora do shell em vez de rolar dentro dele. */
+.rm-shell-main {
+  grid-area: main; min-width: 0; min-height: 0;
+  overflow-y: auto; overflow-x: hidden;
+  padding: var(--hud-space-5) var(--hud-space-7) var(--hud-space-8);
+}
 
 /* Uma ÚNICA superfície para o painel de sessão (`PainelSessao` em
    CampaignShell.tsx), reposicionada por breakpoint via CSS — não duas
@@ -165,7 +188,19 @@
    `painelSessao` duas vezes, uma por breakpoint, o que criava duas
    instâncias de componente/estado/DOM para o mesmo conteúdo).
    Em ≥1280px: coluna normal do grid, sempre visível. */
-.rm-shell-panel { grid-area: panel; min-width: 0; }
+/* No amplo o painel não tinha NENHUM tratamento visual — só
+   `grid-area` — então log e roster flutuavam direto sobre o fundo, sem
+   nada que os lesse como um painel. Ganha superfície, borda esquerda e
+   altura própria (`min-height: 0` pelo mesmo motivo do `main`: item de
+   grid não encolhe abaixo do conteúdo sem isso, e as listas internas
+   nunca chegariam a rolar). */
+.rm-shell-panel {
+  grid-area: panel; min-width: 0; min-height: 0;
+  display: flex; flex-direction: column;
+  border-left: 1px solid var(--rm-line);
+  background: rgba(10, 16, 23, 0.55);
+  backdrop-filter: blur(4px);
+}
 
 .rm-header {
   position: relative;
@@ -237,9 +272,12 @@
    Aparência portada de `.rc-tabrail*` (Console), semântica NÃO: lá são
    abas (`aria-selected`, conteúdo trocado sem navegar); aqui são rotas
    reais — `<Link>`, URL muda, então `aria-current="page"`. */
+/* `height: 100%` (não `sticky` + `100vh`): com o shell travado na
+   viewport, a página não rola mais, então `position: sticky` não tinha
+   o que grudar — e `100vh` brigava com o `100dvh` do shell, deixando o
+   trilho 1-2px mais alto que o pai em algumas alturas de viewport. */
 .rm-navrail {
-  position: sticky; top: 0;
-  height: 100vh;
+  height: 100%;
   display: flex; flex-direction: column; align-items: center; gap: 12px;
   padding: 12px 8px;
   border-right: 1px solid var(--rm-line);
@@ -343,25 +381,86 @@
    próprio como o `theme.ts` antigo tinha — um único accent de "ação
    principal" em toda a área de campanha, não um por tela. */
 
-.rm-page { max-width: 1100px; }
+/* Sem `max-width` geral (era 1100px). Um teto único aplicado a TODA
+   rota é o que fazia a Biblioteca desperdiçar meia tela em 1920 e a
+   Mesa ficar encolhida num canto. Medida de leitura continua existindo
+   onde ela importa de verdade — `.rm-prose` (68ch) para capítulo de
+   Livro — e as telas que querem ser estreitas de propósito (Mercado,
+   telas de erro) já declaram o próprio `maxWidth` inline.
+
+   `min-height: 100%` + coluna flex: com o shell agora tendo altura
+   real, isto dá aos filhos um container de altura conhecida pra
+   preencher — é o que a F2 usa pra Mesa ocupar a tela em vez de
+   flutuar no topo. */
+.rm-page {
+  min-height: 100%;
+  display: flex; flex-direction: column;
+  gap: var(--hud-space-6);
+}
 .rm-page-title {
   font-family: var(--font-orbitron), var(--font-rajdhani), sans-serif;
   font-size: 20px; font-weight: 700; letter-spacing: 0.01em;
   color: var(--rm-text-strong);
   margin: 0 0 20px;
 }
+/* Rótulo de seção com a assinatura do Console: mono, 0.18em, e um
+   colchete de canto à esquerda em vez de texto solto. É o mesmo papel
+   dos `[RECURSOS]` / `[PERÍCIAS]` de lá — dá início visual à seção, em
+   vez de deixar o conteúdo começar do nada. */
 .rm-section-title {
+  display: flex; align-items: center; gap: var(--hud-space-3);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--rm-text-dim);
-  margin: 0 0 10px;
+  font-size: var(--hud-caption-size); font-weight: 700;
+  letter-spacing: var(--hud-caption-track); text-transform: uppercase;
+  color: rgba(0, 212, 255, 0.72);
+  margin: 0 0 var(--hud-space-4);
+}
+.rm-section-title::before {
+  content: "";
+  width: 10px; height: 10px; flex: none;
+  border-left: 1px solid var(--rm-line-strong);
+  border-top: 1px solid var(--rm-line-strong);
+}
+/* A régua à direita fecha o rótulo até a borda do container — sem ela
+   o título fica boiando no meio da largura. */
+.rm-section-title::after {
+  content: "";
+  flex: 1 1 auto; height: 1px;
+  background: linear-gradient(90deg, var(--rm-line) 0%, transparent 100%);
 }
 .rm-faint { font-size: 12px; color: var(--rm-text-dim); }
 
+/* Card com o tratamento do Console: canto chanfrado (`clip-path`),
+   sombra e glow interno. Antes era borda 1px + fundo e mais nada — a
+   razão principal de a campanha parecer "formulário" e o Console
+   parecer "painel", já que os dois usam a MESMA paleta.
+
+   `clip-path` corta a borda junto com o fundo (não dá pra ter borda e
+   canto cortado no mesmo elemento), então o contorno vem de um
+   `box-shadow` inset de 1px em vez de `border` — mesma solução que o
+   Console usa em `.rc-panel`. */
 .rm-card {
-  border: 1px solid var(--rm-line);
+  position: relative;
   background: var(--rm-surface);
-  padding: 14px 16px;
+  padding: var(--hud-space-4) var(--hud-space-5);
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--hud-notch-sm)) 0,
+    100% var(--hud-notch-sm),
+    100% 100%,
+    var(--hud-notch-sm) 100%,
+    0 calc(100% - var(--hud-notch-sm))
+  );
+  box-shadow:
+    inset 0 0 0 1px var(--rm-line),
+    var(--hud-shadow-panel);
+}
+/* Variante sem chanfro pra quem fica dentro de uma lista densa, onde
+   6 cantos cortados por linha viram ruído em vez de acabamento. */
+.rm-card--reto {
+  clip-path: none;
+  border: 1px solid var(--rm-line);
+  box-shadow: var(--hud-shadow-panel);
 }
 .rm-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
 .rm-card-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
@@ -761,6 +860,83 @@
      componente nem o renderiza sem `painelSessao`, e esta regra garante
      que ele não apareça por CSS antes disso. */
   .rm-drawer-toggle { display: flex; }
+}
+
+/* ── Scrollbar própria (F1) ────────────────────────────────────────
+   O Console desenha as dele com componente React (`scrollbar.tsx`,
+   porque a janela precisa de trilho posicionado por fora do conteúdo
+   rolável). Aqui não é preciso ir tão longe: as regiões roláveis da
+   campanha são retangulares comuns, então `::-webkit-scrollbar` +
+   `scrollbar-*` padrão resolvem com zero JS. O que importa é não
+   deixar a barra cinza do sistema operacional cortando o HUD.
+
+   Escopado a `.rm-root` de propósito: a janela do Console é portada
+   pro `document.body` e NÃO é descendente de `.rm-root`, então estas
+   regras não a alcançam — o que é exatamente o desejado, e é o que a
+   linha de base do Console confirma. */
+.rm-root * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 212, 255, 0.28) transparent;
+}
+.rm-root *::-webkit-scrollbar { width: 10px; height: 10px; }
+.rm-root *::-webkit-scrollbar-track { background: transparent; }
+.rm-root *::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.22);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.rm-root *::-webkit-scrollbar-thumb:hover { background: rgba(0, 212, 255, 0.45); background-clip: content-box; }
+.rm-root *::-webkit-scrollbar-corner { background: transparent; }
+
+/* ── Entrada de conteúdo (F1) ──────────────────────────────────────
+   Mesma curva e duração do `rc-in` do Console. Aplicada só ao conteúdo
+   da rota, nunca à casca: o trilho, o header e o painel de sessão
+   PERSISTEM entre rotas (é a premissa da reestrutura anterior), então
+   animá-los a cada navegação seria mentir sobre o que remontou. */
+@keyframes rm-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.rm-page { animation: rm-in var(--hud-dur-enter) var(--hud-ease-out) both; }
+
+/* ── Breakpoints amplos (F1) ───────────────────────────────────────
+   Antes havia UM breakpoint (1279, drawer). Em telas grandes o layout
+   simplesmente esticava, com o painel travado em 320px e o trilho em
+   52px só de ícone — desperdício justamente onde há espaço sobrando. */
+@media (min-width: 1600px) {
+  .rm-root { --rm-panel-w: 380px; }
+}
+/* ≥1920: o trilho ganha RÓTULO, não só ícone. O mockup do Figma sempre
+   previu sidebar com texto (`ra-cnav-item` = ícone + label); o trilho
+   só-ícone foi uma redução da implementação. Onde há largura de sobra,
+   o rótulo volta — e o tooltip vira redundante, então some. */
+@media (min-width: 1920px) {
+  /* 232px. Chegou aqui por MEDIDA, não por chute: 176 truncava vários
+     rótulos, e 216 ainda truncava "Conteúdo da campanha" e "Jogadores
+     e convites" por 2px (141 de texto contra 139 disponíveis). Um
+     trilho com rótulo cortado é pior que um trilho só de ícone —
+     promete legibilidade e entrega reticências. O critério 8b de
+     `check-redesign-densidade.ts` mede isso a cada execução, comparando
+     a largura real do texto (canvas, mesma fonte e tracking) com o
+     espaço livre no botão, pra este ajuste não voltar em silêncio se
+     algum rótulo mudar. */
+  .rm-root { --rm-rail-w: 232px; }
+  .rm-navrail { align-items: stretch; padding: 12px 10px; }
+  .rm-navrail-btn {
+    width: 100%; height: 34px;
+    justify-content: flex-start; gap: var(--hud-space-4);
+    padding: 0 var(--hud-space-4);
+  }
+  .rm-navrail-btn::after {
+    content: attr(aria-label);
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: var(--hud-label-size);
+    letter-spacing: 0.04em; text-transform: uppercase;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  /* O tooltip existe pro trilho só-ícone; com rótulo visível ele vira
+     ruído duplicado (e apareceria por cima do conteúdo). */
+  .rm-navrail-hint { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

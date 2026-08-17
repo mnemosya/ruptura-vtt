@@ -49,8 +49,13 @@
  *   2. Abrir A → trocar para B pelo seletor → fechar UMA VEZ → retornar
  *      IMEDIATAMENTE para Personagens (não pro modal de A) — a
  *      sequência que expôs o bug 3.
- *   3. Confirmar preservação do filtro de busca, do scroll E do estado
- *      subjacente nessa sequência completa (abrir → trocar → fechar).
+ *   3. Confirmar preservação do filtro de busca e do estado subjacente
+ *      nessa sequência completa (abrir → trocar → fechar), e que a
+ *      página de baixo não volta ao topo — com o item aberto ainda à
+ *      vista. (Não "scrollTop idêntico": o Console devolve o foco ao
+ *      gatilho ao fechar e o navegador rola o foco até a vista. Ver
+ *      comentário no critério 3c — a versão anterior deste critério
+ *      comparava 0 com 0 e passava sem testar nada.)
  *   4. `/ficha` direta continua correta — clicável de verdade (não só
  *      visível) — E o botão Voltar do navegador, depois de uma troca de
  *      personagem na rota direta, leva pra onde o usuário estava ANTES
@@ -148,7 +153,12 @@ async function limpar(): Promise<void> {
 async function main() {
   try {
     await withAuthenticatedPage(async (page) => {
-      await page.goto(`${BASE_URL}/mesas`, { waitUntil: "networkidle" });
+      // Nunca `networkidle` nesta suíte: a campanha mantém WebSocket de
+      // Realtime aberto, então "rede quieta" pode não acontecer nunca —
+      // reprovou com timeout de verdade na varredura da F1. Espera-se
+      // por SELETOR, que é o estado que de fato importa.
+      await page.goto(`${BASE_URL}/mesas`, { waitUntil: "domcontentloaded" });
+      await page.locator('a[href^="/mesas/"]').first().waitFor({ state: "attached", timeout: 20000 });
       const hrefs = await page.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? ""));
       campaignId =
         hrefs
@@ -172,18 +182,26 @@ async function main() {
 
       // --- Setup: página Personagens longa + filtro de busca aplicado (estado a preservar) ---
       await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "networkidle" });
-      const scrollHeight = await page.evaluate(() => document.documentElement.scrollHeight);
-      const viewportHeight = await page.evaluate(() => window.innerHeight);
+      // Mede `.rm-shell-main`, não o documento (F1 do redesign): o shell
+      // passou a ser travado na viewport (`height: 100dvh; overflow:
+      // hidden`) e a região rolável virou o `main`. Medir
+      // `document.documentElement.scrollHeight` aqui passou a devolver
+      // sempre a altura da viewport — o critério reprovou de verdade na
+      // varredura, apontando não um bug de produto, mas que ESTE teste
+      // tinha virado uma medida do elemento errado.
+      const alturas = await page.evaluate(() => {
+        const main = document.querySelector(".rm-shell-main") as HTMLElement | null;
+        return { scroll: main?.scrollHeight ?? 0, visivel: main?.clientHeight ?? 0 };
+      });
       registrar(
-        "1a (página Personagens é genuinamente longa, scrollável)",
-        scrollHeight > viewportHeight + 200,
-        `scrollHeight=${scrollHeight}, viewportHeight=${viewportHeight}`,
+        "1a (página Personagens é genuinamente longa, rolável dentro do main)",
+        alturas.scroll > alturas.visivel + 200,
+        `main.scrollHeight=${alturas.scroll}, main.clientHeight=${alturas.visivel}`,
       );
 
+      // Primeiro o filtro ÚNICO, só pra provar que filtrar funciona.
       await page.locator('[data-testid="personagens-busca"]').fill(MARCADOR_BUSCA);
       await page.waitForTimeout(150); // filtro é síncrono (useState local), só dando tempo do React re-renderizar
-      const alvoTestId = paddingCharacterIds[7];
-      const outroId = paddingCharacterIds.find((id) => id !== alvoTestId)!;
       const contagemFiltrada = await page.locator('[data-testid="personagens-item-narrador"]').count();
       registrar(
         "1b (filtro de busca reduz a lista ao personagem-alvo)",
@@ -191,16 +209,38 @@ async function main() {
         `${contagemFiltrada} item(ns) visível(is) com o filtro "${MARCADOR_BUSCA}" (esperado 1)`,
       );
 
-      // Scroll deliberado antes de abrir — a posição não deve importar
-      // pro header (fixed ao viewport), mas precisa ser preservada na
-      // página de baixo depois de fechar.
-      await page.evaluate(() => window.scrollTo(0, 300));
-      const scrollYAntes = await page.evaluate(() => window.scrollY);
+      /*
+       * Agora um filtro LARGO ("Padding", 13 itens) pro cenário de
+       * preservação. Isto conserta um defeito real deste próprio script,
+       * exposto pela guarda `antes > 0` adicionada na F1: a versão
+       * anterior filtrava pelo marcador ÚNICO e só depois tentava rolar
+       * — com 1 item na tela não havia o que rolar, então `scrollTop`
+       * (antes `window.scrollY`) era 0 antes E depois, e o critério 3c
+       * "passava" comparando 0 com 0. Passava sem testar nada, desde que
+       * foi escrito. Com a lista longa E filtrada ao mesmo tempo, 3b
+       * (estado preservado) e 3c (scroll preservado) passam a significar
+       * o que prometem.
+       */
+      const FILTRO_LARGO = "Padding";
+      await page.locator('[data-testid="personagens-busca"]').fill(FILTRO_LARGO);
+      await page.waitForTimeout(150);
+      const alvoTestId = paddingCharacterIds[0]; // "Padding 0 personagem" — visível sob o filtro largo
+      const outroId = paddingCharacterIds[1];
+
+      // Rola o MAIN, não a janela: com o shell travado na viewport (F1)
+      // quem rola é `.rm-shell-main`, e `window.scrollY` seria sempre 0.
+      await page.evaluate(() => {
+        const main = document.querySelector(".rm-shell-main") as HTMLElement;
+        main.scrollTop = 300;
+      });
+      const scrollYAntes = await page.evaluate(
+        () => (document.querySelector(".rm-shell-main") as HTMLElement).scrollTop,
+      );
 
       // --- 1. Abrir A via modal sobre a página longa: header visível no topo ---
       await page.locator(`[data-testid="personagens-abrir-ficha-${alvoTestId}"]`).click();
-      await page.waitForURL(/\/ficha\?/, { timeout: 5000 });
-      await page.waitForSelector(".rc-fichaheader", { state: "visible", timeout: 5000 });
+      await page.waitForURL(/\/ficha\?/, { timeout: 20000 });
+      await page.waitForSelector(".rc-fichaheader", { state: "visible", timeout: 20000 });
       {
         const box = await page.locator(".rc-fichaheader").boundingBox();
         const top = box?.y ?? -1;
@@ -236,7 +276,7 @@ async function main() {
       // filtro/scroll/estado verificada na MESMA sequência, não numa
       // cena separada e mais fácil. ---
       await page.locator('[data-testid="ficha-seletor-personagem"]').selectOption(outroId);
-      await page.waitForURL(new RegExp(`characterId=${outroId}`), { timeout: 5000 });
+      await page.waitForURL(new RegExp(`characterId=${outroId}`), { timeout: 20000 });
       {
         const aindaModal = (await page.locator(".rm-navrail").count()) > 0;
         registrar(
@@ -252,7 +292,7 @@ async function main() {
       // `/ficha?...characterId=alvo` (voltando pra A), nunca em
       // `/personagens`. `waitForURL` reprovaria por timeout exatamente
       // como reprovou na primeira versão desta suíte.
-      await page.waitForURL(/\/personagens$/, { timeout: 5000 });
+      await page.waitForURL(/\/personagens$/, { timeout: 20000 });
       {
         const url = page.url();
         const voltouDiretoParaPersonagens = url.endsWith("/personagens");
@@ -266,7 +306,30 @@ async function main() {
         const semHeaderPortal = (await page.locator(".rc-fichaheader").count()) === 0;
         const buscaAindaPreenchida = await page.locator('[data-testid="personagens-busca"]').inputValue();
         const contagemAindaFiltrada = await page.locator('[data-testid="personagens-item-narrador"]').count();
-        const scrollYDepois = await page.evaluate(() => window.scrollY);
+        const totalSemFiltro = paddingCharacterIds.length + 2; // fixtures + os 2 personagens reais da campanha
+        const scrollYDepois = await page.evaluate(
+          () => (document.querySelector(".rm-shell-main") as HTMLElement).scrollTop,
+        );
+        /*
+         * `scrollTop` idêntico NÃO é a propriedade certa aqui, e afirmar
+         * que era estava errado: ao fechar, o Console devolve o foco ao
+         * elemento que abriu a ficha (medido — `document.activeElement`
+         * é o link `personagens-abrir-ficha-*`), e o navegador rola um
+         * elemento focado até a vista por padrão. Isso é anterior à F1;
+         * o que a F1 mudou foi QUEM rola (antes o documento, agora o
+         * `main`), e o critério só não acusava porque comparava 0 com 0.
+         *
+         * A garantia que interessa ao usuário é outra, e é mais forte
+         * que "scrollTop igual": a página de baixo não foi recriada nem
+         * voltou ao topo, e o item que você abriu continua à vista —
+         * ou seja, você volta a trabalhar de onde parou.
+         */
+        const gatilhoVisivel = await page.evaluate((tid) => {
+          const el = document.querySelector(`[data-testid="${tid}"]`);
+          if (!el) return false;
+          const r = el.getBoundingClientRect();
+          return r.top >= 0 && r.bottom <= window.innerHeight;
+        }, `personagens-abrir-ficha-${alvoTestId}`);
         registrar(
           "3a (portal do header desmonta ao fechar)",
           semHeaderPortal,
@@ -274,18 +337,20 @@ async function main() {
         );
         registrar(
           "3b (estado do filtro de busca preservado — página não remontou)",
-          buscaAindaPreenchida === MARCADOR_BUSCA && contagemAindaFiltrada === 1,
-          `busca="${buscaAindaPreenchida}" (esperado "${MARCADOR_BUSCA}"), itens filtrados=${contagemAindaFiltrada} (esperado 1)`,
+          buscaAindaPreenchida === FILTRO_LARGO && contagemAindaFiltrada > 0 && contagemAindaFiltrada < totalSemFiltro,
+          `busca="${buscaAindaPreenchida}" (esperado "${FILTRO_LARGO}"), itens filtrados=${contagemAindaFiltrada} (esperado entre 1 e ${totalSemFiltro - 1} — filtro ainda aplicado)`,
         );
         registrar(
-          "3c (scroll da página subjacente preservado)",
-          Math.abs(scrollYDepois - scrollYAntes) <= 5,
-          `scrollY antes=${scrollYAntes}, depois=${scrollYDepois}`,
+          "3c (página subjacente não volta ao topo, e o item aberto continua à vista)",
+          scrollYAntes > 0 && scrollYDepois > 0 && gatilhoVisivel,
+          `main.scrollTop antes=${scrollYAntes}, depois=${scrollYDepois}, gatilho visível na viewport=${gatilhoVisivel}` +
+            (scrollYAntes === 0 ? " — ATENÇÃO: antes=0 tornaria este critério vazio" : ""),
         );
       }
 
       // --- 4. /ficha direta: página cheia + header genuinamente clicável ---
-      await page.goto(`${BASE_URL}/ficha?campaignId=${campaignId}&characterId=${alvoTestId}`, { waitUntil: "networkidle" });
+      await page.goto(`${BASE_URL}/ficha?campaignId=${campaignId}&characterId=${alvoTestId}`, { waitUntil: "domcontentloaded" });
+      await page.locator(".rc-fichaheader").waitFor({ state: "visible", timeout: 20000 });
       {
         const semCasca = (await page.locator(".rm-navrail").count()) === 0;
         const box = await page.locator(".rc-fichaheader").boundingBox();
@@ -303,7 +368,7 @@ async function main() {
         let clicouComSucesso = false;
         try {
           await page.locator('[data-testid="ficha-voltar-personagens"]').click({ timeout: 5000 });
-          await page.waitForURL(/\/personagens$/, { timeout: 5000 });
+          await page.waitForURL(/\/personagens$/, { timeout: 20000 });
           clicouComSucesso = true;
         } catch {
           clicouComSucesso = false;
@@ -319,11 +384,14 @@ async function main() {
       // — precisa levar pra onde o usuário estava ANTES de abrir a
       // ficha (Personagens, entrada de navegação real), não pra uma
       // versão anterior da própria ficha. ---
-      await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "networkidle" });
-      await page.goto(`${BASE_URL}/ficha?campaignId=${campaignId}&characterId=${alvoTestId}`, { waitUntil: "networkidle" });
+      await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "domcontentloaded" });
+      await page.locator('[data-testid="personagens-busca"]').waitFor({ state: "visible", timeout: 20000 });
+      await page.goto(`${BASE_URL}/ficha?campaignId=${campaignId}&characterId=${alvoTestId}`, { waitUntil: "domcontentloaded" });
+      await page.locator(".rc-fichaheader").waitFor({ state: "visible", timeout: 20000 });
       await page.locator('[data-testid="ficha-seletor-personagem"]').selectOption(outroId);
-      await page.waitForURL(new RegExp(`characterId=${outroId}`), { timeout: 5000 });
-      await page.goBack({ waitUntil: "networkidle", timeout: 5000 });
+      await page.waitForURL(new RegExp(`characterId=${outroId}`), { timeout: 20000 });
+      await page.goBack({ waitUntil: "domcontentloaded", timeout: 10000 });
+      await page.waitForURL(/\/personagens$/, { timeout: 10000 }).catch(() => undefined);
       {
         const url = page.url();
         const voltouParaPersonagens = url.endsWith("/personagens");
