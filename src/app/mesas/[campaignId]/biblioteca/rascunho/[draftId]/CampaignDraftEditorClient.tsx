@@ -1,6 +1,24 @@
 "use client";
 
+/**
+ * Editor de rascunho de conteúdo DA CAMPANHA.
+ *
+ * Escopo de estilo na Fase 5, decisão deliberada: as SEÇÕES DE
+ * FORMULÁRIO (`CamposComunsSection`, `EffectsEditorSection`, etc.) e o
+ * `formStyles` que elas usam vêm de
+ * `src/app/admin/biblioteca/rascunhos/_shared/` — compartilhados com a
+ * Biblioteca do Sistema (/admin), área FORA desta reestrutura.
+ * Restilizá-los mudaria /admin junto; duplicá-los para a campanha criaria
+ * duas cópias do mesmo formulário complexo para manter em sincronia.
+ * Nenhuma das duas se paga aqui. Migrado então só o que ESTE arquivo
+ * possui — container, cabeçalho, avisos, botões e o campo de resumo —,
+ * deixando as seções compartilhadas com a aparência de /admin. É a
+ * mesma régua do critério de limpeza da Fase 6 ("não é uma regra de
+ * zero `style=` sob pena de falha").
+ */
+
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { OpcoesDeRegras } from "../../../../../../lib/contentSchema/characterRuleOptions";
 import type { CamposItem, CamposMagia, CamposRuna, CamposTalento } from "../../../../../../lib/contentSchema/draftTypes";
@@ -13,7 +31,6 @@ import { CamposRunaSection } from "../../../../../admin/biblioteca/rascunhos/_sh
 import { CamposTalentoSection } from "../../../../../admin/biblioteca/rascunhos/_shared/CamposTalentoSection";
 import { EffectsEditorSection } from "../../../../../admin/biblioteca/rascunhos/_shared/EffectsEditorSection";
 import { EffectsPreviewList } from "../../../../../admin/biblioteca/rascunhos/_shared/EffectsPreviewList";
-import { dangerTextStyle, primaryButtonStyle, sectionStyle, warnTextStyle, buttonStyle } from "../../../../../admin/biblioteca/rascunhos/_shared/formStyles";
 import { PreviewPreservado } from "../../../../../admin/biblioteca/rascunhos/_shared/PreviewPreservado";
 import type { CampaignContentDraftRow } from "../../../../../../lib/campaignContent";
 import { atualizarRascunhoCampanha, excluirRascunhoCampanha, publicarRascunhoCampanha } from "../../../../../../lib/campaignContent/campaignContentServerActions";
@@ -131,33 +148,35 @@ export function CampaignDraftEditorClient({
   const definicaoTipo = CONTENT_TYPE_REGISTRY[draft.content_type];
 
   return (
-    <main style={{ maxWidth: 1000, margin: "0 auto", padding: "24px 20px 64px" }}>
+    <main className="rm-page">
+      {/* Sub-rota de "Conteúdo da campanha" — o trilho leva à lista, não a
+          este rascunho; o link de volta continua útil aqui. */}
       <p style={{ marginBottom: 16 }}>
-        <a href={`/mesas/${campaignId}/biblioteca`} style={{ color: "#5ec8ff", fontSize: 13 }}>
-          ← voltar para a Biblioteca da campanha
-        </a>
+        <Link href={`/mesas/${campaignId}/biblioteca`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12.5 }}>
+          ← Conteúdo da campanha
+        </Link>
       </p>
 
       <header style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 12, color: "#7d7d8a", textTransform: "uppercase" }}>{definicaoTipo.label} — conteúdo da campanha</div>
-        <h2 style={{ fontSize: 24, margin: "4px 0 8px" }}>{OPERACAO_LABEL[draft.operation] ?? draft.operation}</h2>
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 13, color: "#a8a8b3" }}>
+        <div className="rm-section-title">{definicaoTipo.label} — conteúdo da campanha</div>
+        <h1 className="rm-page-title" style={{ marginBottom: 8 }}>{OPERACAO_LABEL[draft.operation] ?? draft.operation}</h1>
+        <div className="rm-faint" style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
           <span>id: {draft.id}</span>
           <span>versão de edição: {version}</span>
           <span>criado em: {new Date(draft.created_at).toLocaleString("pt-BR")}</span>
-          {sujo && <span style={{ color: "#e0c56b" }}>● alterações não salvas</span>}
+          {sujo && <span className="rm-badge rm-badge--warn" data-testid="rascunho-sujo">alterações não salvas</span>}
         </div>
         {draft.base_official_document_id && (
-          <p style={{ fontSize: 13, color: "#a8a8b3", marginTop: 6 }}>
-            Base oficial: <code>{draft.base_official_document_id}</code> (versão {draft.base_official_version ?? "—"}).{" "}
-            {baseDocumentoStatus === "mudou" && <span style={warnTextStyle}>O oficial mudou desde a criação deste rascunho — revise antes de publicar.</span>}
-            {baseDocumentoStatus === "removido" && <span style={dangerTextStyle}>O conteúdo oficial de origem não foi encontrado.</span>}
+          <p className="rm-faint" style={{ marginTop: 6 }}>
+            Base oficial: <code className="rm-code">{draft.base_official_document_id}</code> (versão {draft.base_official_version ?? "—"}).{" "}
+            {baseDocumentoStatus === "mudou" && <span style={{ color: "var(--am)" }}>O oficial mudou desde a criação deste rascunho — revise antes de publicar.</span>}
+            {baseDocumentoStatus === "removido" && <span style={{ color: "var(--rm-danger)" }}>O conteúdo oficial de origem não foi encontrado.</span>}
           </p>
         )}
       </header>
 
-      <div style={sectionStyle}>
-        <h3 style={{ marginTop: 0, fontSize: 15 }}>Identificação</h3>
+      <div className="rm-card" style={{ marginBottom: 16 }}>
+        <h3 className="rm-section-title">Identificação</h3>
         <CamposComunsSection
           campos={campos}
           onChange={atualizarCampos}
@@ -166,8 +185,8 @@ export function CampaignDraftEditorClient({
         />
       </div>
 
-      <div style={sectionStyle}>
-        <h3 style={{ marginTop: 0, fontSize: 15 }}>Classificação e campos específicos</h3>
+      <div className="rm-card" style={{ marginBottom: 16 }}>
+        <h3 className="rm-section-title">Classificação e campos específicos</h3>
         {draft.content_type === "spell" && <CamposMagiaSection campos={campos as CamposMagia} onChange={atualizarCampos} />}
         {draft.content_type === "item" && <CamposItemSection campos={campos as CamposItem} onChange={atualizarCampos} />}
         {draft.content_type === "rune" && <CamposRunaSection campos={campos as CamposRuna} onChange={atualizarCampos} />}
@@ -177,8 +196,8 @@ export function CampaignDraftEditorClient({
       </div>
 
       {(draft.content_type === "spell" || draft.content_type === "item" || draft.content_type === "rune") && (
-        <div style={sectionStyle}>
-          <h3 style={{ marginTop: 0, fontSize: 15 }}>Efeitos</h3>
+        <div className="rm-card" style={{ marginBottom: 16 }}>
+          <h3 className="rm-section-title">Efeitos</h3>
           <EffectsEditorSection
             efeitos={(campos as CamposMagia | CamposItem | CamposRuna).efeitos}
             onChange={(efeitos) => atualizarCampos({ efeitos } as Partial<CamposUniao>)}
@@ -190,51 +209,53 @@ export function CampaignDraftEditorClient({
       )}
 
       {(erros.length > 0 || avisos.length > 0) && (
-        <div style={{ ...sectionStyle, borderColor: erros.length > 0 ? "#5a2424" : "#5a4a24", background: erros.length > 0 ? "#241414" : "#241f14" }}>
-          {conflito && <p style={{ ...dangerTextStyle, fontWeight: 600 }}>Conflito de edição concorrente — recarregue a página antes de tentar de novo.</p>}
+        <div className={`rm-note ${erros.length > 0 ? "rm-note--danger" : "rm-note--warn"}`} role="alert" style={{ marginBottom: 16 }}>
+          {conflito && <p style={{ fontWeight: 600, margin: "0 0 4px" }}>Conflito de edição concorrente — recarregue a página antes de tentar de novo.</p>}
           {erros.map((e, i) => (
-            <div key={i} style={dangerTextStyle}>✕ {e}</div>
+            <div key={i}>✕ {e}</div>
           ))}
           {avisos.map((a, i) => (
-            <div key={i} style={warnTextStyle}>⚠ {a}</div>
+            <div key={i}>⚠ {a}</div>
           ))}
         </div>
       )}
 
       <div style={{ display: "flex", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
-        <button onClick={salvar} disabled={salvando} style={primaryButtonStyle}>{salvando ? "Salvando..." : "Salvar rascunho"}</button>
-        <button onClick={cancelar} style={buttonStyle}>Cancelar</button>
-        <button onClick={excluirEVoltar} disabled={excluindo} style={{ ...buttonStyle, marginLeft: "auto", color: "#e08a8a" }}>
+        <button onClick={salvar} disabled={salvando} className="rm-btn rm-btn-primary rv-focusable">{salvando ? "Salvando..." : "Salvar rascunho"}</button>
+        <button onClick={cancelar} className="rm-btn rm-btn-ghost rv-focusable">Cancelar</button>
+        <button onClick={excluirEVoltar} disabled={excluindo} className="rm-btn rm-btn-danger rv-focusable" style={{ marginLeft: "auto" }}>
           {excluindo ? "Excluindo..." : "Excluir rascunho"}
         </button>
       </div>
 
-      <div style={sectionStyle}>
-        <h3 style={{ marginTop: 0, fontSize: 15 }}>Publicar na campanha</h3>
-        <p style={{ fontSize: 12, color: "#7d7d8a", marginBottom: 8 }}>
+      <div className="rm-card" style={{ marginBottom: 16 }}>
+        <h3 className="rm-section-title">Publicar na campanha</h3>
+        <p className="rm-faint" style={{ marginBottom: 8 }}>
           Isto publica SOMENTE nesta campanha — nunca no catálogo oficial. Salve o rascunho antes de publicar.
         </p>
         <input
           value={resumo}
           onChange={(e) => setResumo(e.target.value)}
           placeholder="Resumo da mudança (obrigatório)"
-          style={{ width: "100%", marginBottom: 8, background: "#111116", color: "#e4e4ea", border: "1px solid #26262e", borderRadius: 6, padding: "6px 8px" }}
+          aria-label="Resumo da mudança"
+          className="rm-input rv-focusable"
+          style={{ width: "100%", marginBottom: 8 }}
         />
-        <button onClick={publicar} disabled={publicando} style={primaryButtonStyle}>
+        <button onClick={publicar} disabled={publicando} className="rm-btn rm-btn-primary rv-focusable">
           {publicando ? "Publicando..." : "Publicar na campanha"}
         </button>
       </div>
 
-      <div style={sectionStyle}>
-        <h3 style={{ marginTop: 0, fontSize: 15 }}>Preview</h3>
-        <p style={{ fontSize: 14 }}>
+      <div className="rm-card">
+        <h3 className="rm-section-title">Preview</h3>
+        <p style={{ fontSize: 14, margin: "0 0 4px" }}>
           <strong>{campos.nome || "(sem nome)"}</strong> — {definicaoTipo.label}
         </p>
-        {campos.descricaoCurta && <p style={{ fontSize: 13, color: "#c9c9d1" }}>{campos.descricaoCurta}</p>}
+        {campos.descricaoCurta && <p className="rm-faint">{campos.descricaoCurta}</p>}
         {draft.content_type === "talent" ? (
           (campos as CamposTalento).niveis.map((nivel, i) => (
             <div key={i} style={{ marginBottom: 10 }}>
-              <h4 style={{ fontSize: 13, color: "#a8a8b3", margin: "8px 0 4px" }}>Nível {nivel.nivel} — {nivel.nomeNivel || "(sem nome)"}</h4>
+              <h4 className="rm-faint" style={{ margin: "8px 0 4px" }}>Nível {nivel.nivel} — {nivel.nomeNivel || "(sem nome)"}</h4>
               <EffectsPreviewList efeitos={nivel.efeitos} />
             </div>
           ))

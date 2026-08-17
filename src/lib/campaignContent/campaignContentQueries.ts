@@ -20,12 +20,27 @@ import type { ContentType } from "../content/types";
 import type { DraftContentType } from "../contentSchema/draftTypes";
 import type { CampaignContentChangelogRow, CampaignContentDocumentRow, CampaignContentDraftRow } from "./campaignContentTypes";
 
+/**
+ * Auditoria da Fase 5: esta função era a ÚNICA do arquivo que engolia o
+ * erro (`if (error) return []`) em vez de lançar como todas as irmãs —
+ * e é justamente a base de `resolveEffectiveList`, ou seja, do conteúdo
+ * efetivo inteiro da campanha. Consequências reais, todas confirmadas
+ * por teste com o GRANT da tabela revogado:
+ *   - Livro: "Nenhum capítulo publicado ainda" para uma falha de leitura;
+ *   - Livro/[slug]: `notFound()` — um 404 afirmando que o capítulo não
+ *     existe, sobre um capítulo que existe;
+ *   - Conteúdo da campanha: pior que vazio — os overrides e homebrews
+ *     somem da resolução e cada linha passa a se apresentar como
+ *     "Oficial", ou seja, procedência ERRADA na exata tela usada para
+ *     gerenciá-la.
+ * Corrigir na página não bastava: o erro morria aqui, uma camada abaixo.
+ */
 export async function listCampaignContentDocumentsPublic(campaignId: string, contentType?: ContentType): Promise<CampaignContentDocumentRow[]> {
   const client = await getScopedTableClient();
   let query = client.from("campaign_content_documents").select("*").eq("campaign_id", campaignId).eq("status", "published");
   if (contentType) query = query.eq("content_type", contentType);
   const { data, error } = await query;
-  if (error) return [];
+  if (error) throw new Error(`Falha ao listar conteúdo publicado da campanha: ${error.message}`);
   return (data ?? []) as CampaignContentDocumentRow[];
 }
 

@@ -1,5 +1,7 @@
-import { SectionLoading } from "../../../_boundaries/SectionLoading";
-
 export default function LivroLoading() {
-  return <SectionLoading label="Carregando o Livro…" />;
+  return (
+    <main className="rm-boundary" aria-busy="true">
+      <p className="rm-boundary-msg">Carregando o Livro…</p>
+    </main>
+  );
 }

@@ -1,17 +1,33 @@
 /**
- * Biblioteca do Livro — sumário (PRD §2.1.9). Rota de LEITURA para
- * narrador e jogador (qualquer participante ATIVO da campanha —
- * `campaign_members`, mesmo guard de acesso já usado em
- * `/mesas/[campaignId]/personagens/novo`) — nunca expõe rascunho, só
+ * Livro — sumário (PRD §2.1.9). Rota de LEITURA para narrador E
+ * jogador (qualquer participante ativo) — nunca expõe rascunho, só
  * conteúdo efetivo com `status === "published"`.
+ *
+ * Fase 5: o guard próprio (`getCurrentUser` + `getCampaign` +
+ * `isCampaignMember`, com telas de erro próprias) saiu — o layout da
+ * campanha já resolve login/`not_found`/`no_access` antes desta página
+ * renderizar, e `resolveCampaignAccess` é memoizada por request, então
+ * a checagem aqui era uma segunda consulta para o mesmo veredito. Como
+ * esta rota é aberta aos DOIS papéis, não sobra checagem de papel
+ * específica para fazer aqui (diferente de `/biblioteca`, que é
+ * exclusiva do narrador e mantém a sua).
+ *
+ * O link "Gerenciar conteúdo da campanha" também saiu: era o único
+ * caminho até `/biblioteca` antes do trilho existir (correção #11 do
+ * plano), e agora as duas rotas têm entrada própria na navegação.
+ *
+ * A leitura dos capítulos NÃO é encapsulada em `.catch(() => [])`
+ * (auditoria da Fase 5): esta página tem UM recurso só, e degradá-lo
+ * para lista vazia faria uma falha técnica virar a afirmação de
+ * domínio "nenhum capítulo publicado ainda" — indistinguível de um
+ * Livro genuinamente vazio, e sem saída para o leitor. Deixar o erro
+ * subir entrega o `error.tsx` da campanha, que já registra no logger
+ * central e oferece "Tentar de novo".
  */
 
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import { getCurrentUser } from "../../../../lib/auth/session";
-import { getCampaign, isCampaignMember } from "../../../../lib/table/storage";
+import { resolveCampaignAccess } from "../../../../lib/campaign/access";
 import { listCapitulosEffective } from "../../../../lib/campaignContent";
-import type { Campaign } from "../../../../lib/table";
+import { comFalhaInjetavel } from "../../../../lib/dev/faultInjection";
 import { LivroSumarioClient, type CapituloResumo } from "./LivroSumarioClient";
 
 export const dynamic = "force-dynamic";
@@ -22,38 +38,10 @@ interface PageProps {
 
 export default async function LivroPage({ params }: PageProps) {
   const { campaignId } = await params;
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  const access = await resolveCampaignAccess(campaignId);
+  if (access.kind !== "ok") return null; // layout já mostra o estado certo
 
-  let campaign: Campaign | null = null;
-  try {
-    campaign = await getCampaign(campaignId);
-  } catch {
-    campaign = null;
-  }
-  if (!campaign) {
-    return (
-      <main style={{ maxWidth: 640, margin: "60px auto", padding: "0 20px" }}>
-        <h1 style={{ fontSize: 20 }}>Mesa não encontrada</h1>
-        <Link href="/mesas" style={{ color: "#5ec8ff", fontSize: 13 }}>← Minhas mesas</Link>
-      </main>
-    );
-  }
-
-  const isOwner = campaign.owner_id === user.id;
-  if (!isOwner && !(await isCampaignMember(campaignId))) {
-    return (
-      <main style={{ maxWidth: 640, margin: "60px auto", padding: "0 20px" }}>
-        <h1 style={{ fontSize: 20 }}>Acesso negado</h1>
-        <p style={{ fontSize: 13, opacity: 0.8 }}>
-          Você precisa entrar nesta mesa por um convite para ler o Livro.
-        </p>
-        <Link href="/mesas" style={{ color: "#5ec8ff", fontSize: 13 }}>← Minhas mesas</Link>
-      </main>
-    );
-  }
-
-  const docs = await listCapitulosEffective(campaignId).catch(() => []);
+  const docs = await comFalhaInjetavel("livro", () => listCapitulosEffective(campaignId));
   const capitulos: CapituloResumo[] = docs
     .filter((doc) => (doc.payload as { status?: string }).status === "published")
     .map((doc) => {
@@ -69,23 +57,13 @@ export default async function LivroPage({ params }: PageProps) {
     .sort((a, b) => a.nome.localeCompare(b.nome));
 
   return (
-    <main style={{ maxWidth: 900, margin: "0 auto", padding: "24px 20px 64px" }}>
-      <p style={{ marginBottom: 16 }}>
-        <Link href={`/mesas/${campaignId}`} style={{ color: "#5ec8ff", fontSize: 13 }}>← Voltar para a mesa</Link>
-      </p>
-      {isOwner && (
-        <p style={{ marginBottom: 16 }}>
-          <Link href={`/mesas/${campaignId}/biblioteca`} style={{ color: "#5ec8ff", fontSize: 13 }}>
-            Gerenciar conteúdo da campanha (homebrew e overrides) →
-          </Link>
-        </p>
-      )}
-      <h1 style={{ fontSize: 24, marginBottom: 4 }}>Livro — {campaign.name}</h1>
-      <p style={{ fontSize: 13, color: "#a8a8b3", marginBottom: 20 }}>
+    <main className="rm-page" style={{ maxWidth: 900 }}>
+      <h1 className="rm-page-title" style={{ marginBottom: 4 }}>Livro</h1>
+      <p className="rm-faint" style={{ marginBottom: 20 }}>
         Capítulos publicados desta mesa (oficial, override ou homebrew). Rascunhos nunca aparecem aqui.
       </p>
       {capitulos.length === 0 ? (
-        <p style={{ fontSize: 13, opacity: 0.6 }}>Nenhum capítulo publicado ainda.</p>
+        <p className="rm-empty" data-testid="livro-vazio">Nenhum capítulo publicado ainda.</p>
       ) : (
         <LivroSumarioClient campaignId={campaignId} capitulos={capitulos} />
       )}

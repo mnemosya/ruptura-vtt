@@ -2,18 +2,27 @@
  * Editor de rascunho de campanha (Etapa 12). Reaproveita o mesmo
  * viewModel (`construirDraftViewModel`) e as mesmas seções de campo do
  * Editor Universal (Etapa 3/4) — só a persistência/publicação são
- * escopadas à campanha. O gate de acesso (login + narrador dono) roda
- * aqui, já que esta rota não está sob `/admin`.
+ * escopadas à campanha.
+ *
+ * Fase 5: o gate próprio (`getCurrentUser` + `getCampaign` +
+ * `.catch(() => null)` → `notFound()`) virou `requireNarratorAccess` +
+ * `NarratorOnlyDenied`, como nas rotas administrativas irmãs. Além de
+ * remover a consulta duplicada (o layout já resolveu o acesso, e
+ * `resolveCampaignAccess` é memoizada por request), isso fecha um caso
+ * da auditoria da Fase 5 que não estava na lista mas é o mesmo defeito
+ * e o mais grave da família: uma FALHA DE LEITURA da campanha virava
+ * `null` e caía num `notFound()` — um 404 afirmando que o rascunho não
+ * existe, sobre um rascunho que provavelmente existe.
  */
 
-import { notFound, redirect } from "next/navigation";
-import { getCurrentUser } from "../../../../../../lib/auth/session";
+import { notFound } from "next/navigation";
+import { requireNarratorAccess } from "../../../../../../lib/campaign/access";
 import { getOpcoesDeRegras } from "../../../../../../lib/contentSchema/characterRuleOptions";
 import { construirDraftViewModel } from "../../../../../../lib/contentSchema/draftView";
 import type { ContentDraftRow } from "../../../../../../lib/contentSchema/draftTypes";
 import { listConditions } from "../../../../../../lib/content/queries";
 import { getCampaignDraftById } from "../../../../../../lib/campaignContent";
-import { getCampaign } from "../../../../../../lib/table/storage";
+import { NarratorOnlyDenied } from "../../../_shell/NarratorOnlyDenied";
 import { CampaignDraftEditorClient } from "./CampaignDraftEditorClient";
 
 export const dynamic = "force-dynamic";
@@ -24,12 +33,11 @@ interface PageProps {
 
 export default async function CampaignDraftEditorPage({ params }: PageProps) {
   const { campaignId, draftId } = await params;
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  const access = await requireNarratorAccess(campaignId);
+  if (!access) return <NarratorOnlyDenied campaignId={campaignId} />;
 
-  const campaign = await getCampaign(campaignId).catch(() => null);
-  if (!campaign || campaign.owner_id !== user.id) notFound();
-
+  // `notFound()` só para ausência REAL: `getCampaignDraftById` lança se
+  // a leitura falhar, e esse erro sobe para o `error.tsx` da campanha.
   const draft = await getCampaignDraftById(draftId);
   if (!draft || draft.campaign_id !== campaignId) notFound();
 

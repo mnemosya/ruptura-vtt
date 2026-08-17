@@ -26,10 +26,11 @@ const ORIGEM_LABEL: Record<ConteudoEfetivo["origem"], string> = {
   modificado_pela_mesa: "Modificado pela mesa",
   homebrew_da_mesa: "Homebrew da mesa",
 };
-const ORIGEM_COR: Record<ConteudoEfetivo["origem"], string> = {
-  oficial: "#a8a8b3",
-  modificado_pela_mesa: "#e0c56b",
-  homebrew_da_mesa: "#7fd39a",
+/** Classe, não hex: as três cores de origem moram em `mesa.css` (critério da Fase 5). */
+const ORIGEM_CLASSE: Record<ConteudoEfetivo["origem"], string> = {
+  oficial: "rm-origem-oficial",
+  modificado_pela_mesa: "rm-origem-modificado",
+  homebrew_da_mesa: "rm-origem-homebrew",
 };
 const ATUALIZACAO_LABEL: Record<NonNullable<ConteudoEfetivo["estadoAtualizacao"]>, string> = {
   atualizado: "Atualizado",
@@ -43,9 +44,11 @@ interface Props {
   tipos: { id: DraftContentType; label: string }[];
   efetivos: ConteudoEfetivo[];
   rascunhos: CampaignContentDraftRow[];
+  /** Falha REAL ao ler os rascunhos — distinta de "nenhum rascunho aberto" (auditoria da Fase 5). */
+  rascunhosErro: string | null;
 }
 
-export function BibliotecaCampanhaClient({ campaignId, tipos, efetivos, rascunhos }: Props) {
+export function BibliotecaCampanhaClient({ campaignId, tipos, efetivos, rascunhos, rascunhosErro }: Props) {
   const router = useRouter();
   const [filtroTipo, setFiltroTipo] = useState<DraftContentType | "todos">("todos");
   const [carregando, setCarregando] = useState<string | null>(null);
@@ -75,46 +78,74 @@ export function BibliotecaCampanhaClient({ campaignId, tipos, efetivos, rascunho
   return (
     <div>
       <div style={{ display: "flex", gap: 10, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
-        <select value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value as DraftContentType | "todos")} style={selectStyle}>
+        <select
+          aria-label="Filtrar por tipo de conteúdo"
+          value={filtroTipo}
+          onChange={(e) => setFiltroTipo(e.target.value as DraftContentType | "todos")}
+          className="rm-select rv-focusable"
+        >
           <option value="todos">Todos os tipos</option>
           {tipos.map((t) => (
             <option key={t.id} value={t.id}>{t.label}</option>
           ))}
         </select>
-        <button onClick={() => setMostrarNovo((v) => !v)} style={primaryButtonStyle}>+ Novo conteúdo da campanha</button>
+        <button onClick={() => setMostrarNovo((v) => !v)} className="rm-btn rm-btn-primary rv-focusable" aria-expanded={mostrarNovo} data-testid="biblioteca-toggle-novo">
+          + Novo conteúdo da campanha
+        </button>
       </div>
 
       {mostrarNovo && (
-        <div style={{ border: "1px solid #26262e", borderRadius: 8, padding: 14, marginBottom: 16, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <select value={novoTipo} onChange={(e) => setNovoTipo(e.target.value as DraftContentType)} style={selectStyle}>
+        <div className="rm-card" style={{ marginBottom: 16, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <select aria-label="Tipo do novo conteúdo" value={novoTipo} onChange={(e) => setNovoTipo(e.target.value as DraftContentType)} className="rm-select rv-focusable">
             {tipos.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
           </select>
-          <input value={novoNome} onChange={(e) => setNovoNome(e.target.value)} placeholder="Nome" style={inputStyle} />
+          <input
+            aria-label="Nome do novo conteúdo"
+            value={novoNome}
+            onChange={(e) => setNovoNome(e.target.value)}
+            placeholder="Nome"
+            className="rm-input rv-focusable"
+            style={{ flex: 1 }}
+          />
           <button
             disabled={carregando !== null || !novoNome.trim()}
             onClick={() => rodar("novo", () => criarRascunhoHomebrewNovo(campaignId, novoTipo, novoNome))}
-            style={primaryButtonStyle}
+            className="rm-btn rm-btn-primary rv-focusable"
           >
             Criar rascunho
           </button>
         </div>
       )}
 
-      {erro && <p style={{ color: "#e08a8a", fontSize: 13 }}>{erro}</p>}
+      {erro && <p role="alert" className="rm-erro" style={{ marginBottom: 12 }}>{erro}</p>}
 
-      {rascunhos.length > 0 && (
-        <div style={{ marginBottom: 20, border: "1px solid #26262e", borderRadius: 8, padding: 14 }}>
-          <h3 style={{ fontSize: 14, marginTop: 0 }}>Rascunhos abertos ({rascunhos.length})</h3>
-          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
+      {/* A ausência da seção de rascunhos comunica "nenhum rascunho
+          aberto". Com a leitura falha isso seria mentira, então o banner
+          toma o lugar dela — `router.refresh()` refaz a leitura do
+          servidor, que é onde ela acontece. */}
+      {rascunhosErro && (
+        <div className="rm-note rm-note--danger" role="alert" data-testid="biblioteca-erro-rascunhos" style={{ marginBottom: 16 }}>
+          Não foi possível carregar os rascunhos abertos: {rascunhosErro}{" "}
+          <button type="button" onClick={() => router.refresh()} className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable" style={{ marginLeft: 6 }}>
+            Tentar de novo
+          </button>
+        </div>
+      )}
+
+      {!rascunhosErro && rascunhos.length > 0 && (
+        <div className="rm-card" style={{ marginBottom: 20 }}>
+          <h3 className="rm-section-title">Rascunhos abertos ({rascunhos.length})</h3>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5 }}>
             {rascunhos.map((d) => (
               <li key={d.id} style={{ marginBottom: 4 }}>
-                <a href={`/mesas/${campaignId}/biblioteca/rascunho/${d.id}`} style={{ color: "#5ec8ff" }}>
+                <a href={`/mesas/${campaignId}/biblioteca/rascunho/${d.id}`} style={{ color: "var(--cy)" }}>
                   {d.content_type}:{d.slug} — {d.operation}
                 </a>{" "}
                 <button
                   disabled={carregando !== null}
                   onClick={() => rodar(`excluir-${d.id}`, () => excluirRascunhoCampanha(d.id))}
-                  style={{ background: "none", border: "none", color: "#e08a8a", cursor: "pointer", fontSize: 12 }}
+                  className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable"
+                  style={{ marginLeft: 4 }}
                 >
                   excluir
                 </button>
@@ -124,29 +155,31 @@ export function BibliotecaCampanhaClient({ campaignId, tipos, efetivos, rascunho
         </div>
       )}
 
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-        <thead>
-          <tr style={{ textAlign: "left", color: "#7d7d8a", borderBottom: "1px solid #26262e" }}>
-            <th style={{ padding: "6px 8px" }}>Tipo</th>
-            <th style={{ padding: "6px 8px" }}>Nome</th>
-            <th style={{ padding: "6px 8px" }}>Origem</th>
-            <th style={{ padding: "6px 8px" }}>Atualização</th>
-            <th style={{ padding: "6px 8px" }}>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {lista.map((e) => {
-            const chave = `${e.contentType}:${e.slug}`;
-            return (
-              <tr key={chave} style={{ borderBottom: "1px solid #1c1c22" }}>
-                <td style={{ padding: "6px 8px" }}>{e.contentType}</td>
-                <td style={{ padding: "6px 8px" }}>{e.nome ?? e.slug}</td>
-                <td style={{ padding: "6px 8px", color: ORIGEM_COR[e.origem] }}>{ORIGEM_LABEL[e.origem]}</td>
-                <td style={{ padding: "6px 8px" }}>{e.estadoAtualizacao ? ATUALIZACAO_LABEL[e.estadoAtualizacao] : "—"}</td>
-                <td style={{ padding: "6px 8px", display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <div className="rm-table-wrap">
+        <table className="rm-table" data-testid="biblioteca-tabela">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Nome</th>
+              <th>Origem</th>
+              <th>Atualização</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lista.map((e) => {
+              const chave = `${e.contentType}:${e.slug}`;
+              return (
+                <tr key={chave}>
+                  <td>{e.contentType}</td>
+                  <td>{e.nome ?? e.slug}</td>
+                  <td className={ORIGEM_CLASSE[e.origem]}>{ORIGEM_LABEL[e.origem]}</td>
+                  <td>{e.estadoAtualizacao ? ATUALIZACAO_LABEL[e.estadoAtualizacao] : "—"}</td>
+                  <td>
+                    <div className="rm-table-acoes">
                   {e.origem === "oficial" && (
                     <>
-                      <button disabled={carregando !== null} onClick={() => rodar(chave, () => criarRascunhoOverride(campaignId, e.contentType as DraftContentType, e.slug))} style={linkButtonStyle}>
+                      <button disabled={carregando !== null} onClick={() => rodar(chave, () => criarRascunhoOverride(campaignId, e.contentType as DraftContentType, e.slug))} className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable">
                         Criar override
                       </button>
                       <button
@@ -156,7 +189,7 @@ export function BibliotecaCampanhaClient({ campaignId, tipos, efetivos, rascunho
                           const novoNomeCopia = prompt("Nome da cópia:", e.nome ?? e.slug);
                           if (novoSlug && novoNomeCopia) rodar(chave, () => criarRascunhoCopiaHomebrew(campaignId, e.contentType as DraftContentType, e.slug, novoSlug, novoNomeCopia));
                         }}
-                        style={linkButtonStyle}
+                        className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable"
                       >
                         Criar cópia homebrew
                       </button>
@@ -165,7 +198,7 @@ export function BibliotecaCampanhaClient({ campaignId, tipos, efetivos, rascunho
                   {e.origem === "modificado_pela_mesa" && e.campaignContentDocumentId && (
                     <>
                       {e.estadoAtualizacao && e.estadoAtualizacao !== "atualizado" && (
-                        <a href={`/mesas/${campaignId}/biblioteca/comparar/${e.campaignContentDocumentId}`} style={linkButtonStyle}>
+                        <a href={`/mesas/${campaignId}/biblioteca/comparar/${e.campaignContentDocumentId}`} className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable">
                           Comparar com oficial
                         </a>
                       )}
@@ -175,7 +208,7 @@ export function BibliotecaCampanhaClient({ campaignId, tipos, efetivos, rascunho
                           const motivo = prompt("Motivo da remoção do override (restaura o oficial):", "") ?? "";
                           rodar(chave, () => removerOverrideCampanha(e.campaignContentDocumentId!, e.localVersion ?? 1, motivo));
                         }}
-                        style={dangerButtonStyle}
+                        className="rm-btn rm-btn-danger rm-btn-sm rv-focusable"
                       >
                         Remover override
                       </button>
@@ -199,23 +232,19 @@ export function BibliotecaCampanhaClient({ campaignId, tipos, efetivos, rascunho
                         const motivo = prompt("Motivo do arquivamento:", "") ?? "";
                         rodar(chave, () => arquivarHomebrewCampanha(e.campaignContentDocumentId!, e.localVersion ?? 1, motivo));
                       }}
-                      style={dangerButtonStyle}
+                      className="rm-btn rm-btn-danger rm-btn-sm rv-focusable"
                     >
                       Arquivar
                     </button>
                   )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
-
-const selectStyle: React.CSSProperties = { background: "#111116", color: "#e4e4ea", border: "1px solid #26262e", borderRadius: 6, padding: "6px 8px" };
-const inputStyle: React.CSSProperties = { background: "#111116", color: "#e4e4ea", border: "1px solid #26262e", borderRadius: 6, padding: "6px 8px", flex: 1 };
-const primaryButtonStyle: React.CSSProperties = { background: "#2a5a3a", color: "#e4e4ea", border: "1px solid #3d7a4f", borderRadius: 6, padding: "6px 12px", cursor: "pointer" };
-const linkButtonStyle: React.CSSProperties = { background: "none", border: "1px solid #26262e", color: "#5ec8ff", borderRadius: 6, padding: "4px 8px", cursor: "pointer", fontSize: 12 };
-const dangerButtonStyle: React.CSSProperties = { background: "none", border: "1px solid #5c2626", color: "#e08a8a", borderRadius: 6, padding: "4px 8px", cursor: "pointer", fontSize: 12 };

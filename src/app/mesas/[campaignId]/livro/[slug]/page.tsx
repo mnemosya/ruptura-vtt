@@ -1,14 +1,26 @@
 /**
- * Biblioteca do Livro — leitura de um capítulo (checkpoint pós-v0.94,
- * fase 10). Mesmo guard de acesso da página de sumário.
+ * Livro — leitura de um capítulo. Mesmo guard do sumário: o layout da
+ * campanha já resolve login/acesso antes daqui (ver nota em
+ * `../page.tsx`), então esta página só cuida do conteúdo.
+ *
+ * Fase 5: decoração deliberadamente mínima — é a única tela da área de
+ * campanha que é texto longo de ponta a ponta. Medida de leitura
+ * (`.rm-prose`, ~68ch) em vez da largura cheia da coluna de conteúdo.
+ *
+ * A leitura NÃO é encapsulada em `.catch(() => [])` (auditoria da
+ * Fase 5): aqui o degradê era pior que no sumário — lista vazia levava
+ * direto a `notFound()`, ou seja, uma falha de leitura virava um 404
+ * afirmando que o capítulo NÃO EXISTE. `notFound()` agora só é
+ * alcançável quando a lista carregou de verdade e o slug não está
+ * nela; qualquer falha sobe para o `error.tsx` da campanha (logger
+ * central + "Tentar de novo").
  */
 
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getCurrentUser } from "../../../../../lib/auth/session";
-import { getCampaign, isCampaignMember } from "../../../../../lib/table/storage";
+import { resolveCampaignAccess } from "../../../../../lib/campaign/access";
 import { listCapitulosEffective } from "../../../../../lib/campaignContent";
-import type { Campaign } from "../../../../../lib/table";
+import { comFalhaInjetavel } from "../../../../../lib/dev/faultInjection";
 
 export const dynamic = "force-dynamic";
 
@@ -38,38 +50,10 @@ interface PageProps {
 
 export default async function LivroCapituloPage({ params }: PageProps) {
   const { campaignId, slug } = await params;
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  const access = await resolveCampaignAccess(campaignId);
+  if (access.kind !== "ok") return null; // layout já mostra o estado certo
 
-  let campaign: Campaign | null = null;
-  try {
-    campaign = await getCampaign(campaignId);
-  } catch {
-    campaign = null;
-  }
-  if (!campaign) {
-    return (
-      <main style={{ maxWidth: 640, margin: "60px auto", padding: "0 20px" }}>
-        <h1 style={{ fontSize: 20 }}>Mesa não encontrada</h1>
-        <Link href="/mesas" style={{ color: "#5ec8ff", fontSize: 13 }}>← Minhas mesas</Link>
-      </main>
-    );
-  }
-
-  const isOwner = campaign.owner_id === user.id;
-  if (!isOwner && !(await isCampaignMember(campaignId))) {
-    return (
-      <main style={{ maxWidth: 640, margin: "60px auto", padding: "0 20px" }}>
-        <h1 style={{ fontSize: 20 }}>Acesso negado</h1>
-        <p style={{ fontSize: 13, opacity: 0.8 }}>
-          Você precisa entrar nesta mesa por um convite para ler o Livro.
-        </p>
-        <Link href="/mesas" style={{ color: "#5ec8ff", fontSize: 13 }}>← Minhas mesas</Link>
-      </main>
-    );
-  }
-
-  const docs = await listCapitulosEffective(campaignId).catch(() => []);
+  const docs = await comFalhaInjetavel("livro", () => listCapitulosEffective(campaignId));
   const publicados = docs
     .filter((doc) => (doc.payload as { status?: string }).status === "published")
     .map((doc) => ({
@@ -94,53 +78,47 @@ export default async function LivroCapituloPage({ params }: PageProps) {
   const blocos = Array.isArray(atual.payload.blocos) ? atual.payload.blocos : [];
 
   return (
-    <main style={{ maxWidth: 760, margin: "0 auto", padding: "24px 20px 64px" }}>
+    <main className="rm-page rm-prose">
       <p style={{ marginBottom: 16 }}>
-        <Link href={`/mesas/${campaignId}/livro`} style={{ color: "#5ec8ff", fontSize: 13 }}>← Sumário</Link>
+        <Link href={`/mesas/${campaignId}/livro`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12.5 }}>
+          ← Sumário
+        </Link>
       </p>
-      <h1 style={{ fontSize: 24, marginBottom: 4 }}>{atual.nome}</h1>
+      <h1 className="rm-page-title" style={{ marginBottom: 4 }}>{atual.nome}</h1>
       {atual.payload.descricao_curta && (
-        <p style={{ fontSize: 13, opacity: 0.7, marginBottom: 16 }}>{atual.payload.descricao_curta}</p>
+        <p className="rm-faint" style={{ marginBottom: 16 }}>{atual.payload.descricao_curta}</p>
       )}
-      {atual.payload.corpo && (
-        <p style={{ fontSize: 15, lineHeight: 1.6, marginBottom: 20, whiteSpace: "pre-wrap" }}>{atual.payload.corpo}</p>
-      )}
+      {atual.payload.corpo && <p style={{ marginBottom: 20 }}>{atual.payload.corpo}</p>}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {blocos.map((bloco) =>
           bloco.tipo === "texto" ? (
-            <p key={bloco.id} style={{ fontSize: 15, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
-              {bloco.texto}
-            </p>
+            <p key={bloco.id}>{bloco.texto}</p>
           ) : bloco.entidade.tipo_conteudo === "capitulo" ? (
             <Link
               key={bloco.id}
               href={`/mesas/${campaignId}/livro/${bloco.entidade.slug}`}
               data-testid={`livro-bloco-entidade-${bloco.id}`}
-              style={{ background: "#1d1e24", borderRadius: 8, padding: "10px 14px", textDecoration: "none", color: "inherit", fontSize: 13 }}
+              className="rm-doclist-item rv-focusable"
             >
               → Ver capítulo: {publicados.find((c) => c.slug === bloco.entidade.slug)?.nome ?? bloco.entidade.slug}
             </Link>
           ) : (
-            <div
-              key={bloco.id}
-              data-testid={`livro-bloco-entidade-${bloco.id}`}
-              style={{ background: "#1d1e24", borderRadius: 8, padding: "10px 14px", fontSize: 13 }}
-            >
+            <div key={bloco.id} data-testid={`livro-bloco-entidade-${bloco.id}`} className="rm-doclist-item">
               {TIPO_CONTEUDO_LABEL[bloco.entidade.tipo_conteudo] ?? bloco.entidade.tipo_conteudo}: {bloco.entidade.slug}
             </div>
           ),
         )}
       </div>
 
-      <nav style={{ display: "flex", justifyContent: "space-between", marginTop: 32, fontSize: 13 }}>
+      <nav className="rm-prose-nav">
         {anterior ? (
-          <Link href={`/mesas/${campaignId}/livro/${anterior.slug}`} style={{ color: "#5ec8ff" }}>← {anterior.nome}</Link>
+          <Link href={`/mesas/${campaignId}/livro/${anterior.slug}`} className="rv-focusable">← {anterior.nome}</Link>
         ) : (
           <span />
         )}
         {proximo ? (
-          <Link href={`/mesas/${campaignId}/livro/${proximo.slug}`} style={{ color: "#5ec8ff" }}>{proximo.nome} →</Link>
+          <Link href={`/mesas/${campaignId}/livro/${proximo.slug}`} className="rv-focusable">{proximo.nome} →</Link>
         ) : (
           <span />
         )}

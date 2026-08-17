@@ -1,12 +1,13 @@
-import { SectionNotFound } from "../../../_boundaries/SectionNotFound";
+import Link from "next/link";
 
 export default function LivroNotFound() {
   return (
-    <SectionNotFound
-      title="Capítulo não encontrado"
-      message="Este capítulo não existe no Livro desta mesa, ou foi removido."
-      backHref="/mesas"
-      backLabel="Minhas mesas"
-    />
+    <main className="rm-boundary">
+      <h1 className="rm-page-title">Capítulo não encontrado</h1>
+      <p className="rm-boundary-msg">Este capítulo não existe no Livro desta campanha, ou foi removido.</p>
+      <div className="rm-boundary-acoes">
+        <Link href="/mesas" className="rm-btn rm-btn-ghost rv-focusable">Minhas Campanhas</Link>
+      </div>
+    </main>
   );
 }

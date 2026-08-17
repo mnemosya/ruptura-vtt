@@ -4,12 +4,13 @@
  * (mesmo critério de `/mesas/[campaignId]`).
  */
 
-import { notFound, redirect } from "next/navigation";
-import { getCurrentUser } from "../../../../../../lib/auth/session";
-import { getCampaign } from "../../../../../../lib/table/storage";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { requireNarratorAccess } from "../../../../../../lib/campaign/access";
 import { getContentDocument } from "../../../../../../lib/content/queries";
 import type { ContentType } from "../../../../../../lib/content/types";
 import { getCampaignContentDocumentById, compararTresVias } from "../../../../../../lib/campaignContent";
+import { NarratorOnlyDenied } from "../../../_shell/NarratorOnlyDenied";
 import { ComparacaoTresViasClient } from "./ComparacaoTresViasClient";
 
 export const dynamic = "force-dynamic";
@@ -20,32 +21,41 @@ interface PageProps {
 
 export default async function ComparacaoTresViasPage({ params }: PageProps) {
   const { campaignId, docId } = await params;
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-
-  const campaign = await getCampaign(campaignId).catch(() => null);
-  if (!campaign || campaign.owner_id !== user.id) notFound();
+  const access = await requireNarratorAccess(campaignId);
+  if (!access) return <NarratorOnlyDenied campaignId={campaignId} />;
 
   const doc = await getCampaignContentDocumentById(docId);
   if (!doc || doc.campaign_id !== campaignId || doc.origin_type !== "override") notFound();
 
-  const oficialAtual = await getContentDocument(doc.content_type as ContentType, doc.slug).catch(() => null);
+  // SEM `.catch(() => null)` (auditoria da Fase 5): `getContentDocument`
+  // já distingue os dois casos — devolve `null` quando o oficial de fato
+  // não existe mais publicado, e LANÇA quando a leitura falha. O catch
+  // colapsava os dois no mesmo `null`, e isso não era só um rótulo
+  // errado ("ausente/arquivado" para uma falha de rede): o diff de três
+  // vias era então calculado contra `{}`, produzindo uma comparação que
+  // mostrava o oficial tendo removido TUDO — informação errada numa tela
+  // cuja função é embasar a decisão de manter ou descartar o override.
+  // Falha de leitura agora sobe para o `error.tsx` da campanha.
+  const oficialAtual = await getContentDocument(doc.content_type as ContentType, doc.slug);
   const oficialBase = doc.official_snapshot ?? {};
   const oficialAtualPayload = (oficialAtual?.payload as Record<string, unknown>) ?? {};
 
   const comparacao = compararTresVias(oficialBase, oficialAtualPayload, doc.payload);
 
   return (
-    <main style={{ maxWidth: 1000, margin: "0 auto", padding: "24px 20px 64px" }}>
+    <main className="rm-page">
+      {/* Sub-rota de "Conteúdo da campanha": o trilho leva à lista, não a
+          este detalhe — aqui o link de volta continua sendo o caminho certo
+          (diferente das telas de topo, onde ele duplicava a navegação). */}
       <p style={{ marginBottom: 16 }}>
-        <a href={`/mesas/${campaignId}/biblioteca`} style={{ color: "#5ec8ff", fontSize: 13 }}>
-          ← voltar para a Biblioteca da campanha
-        </a>
+        <Link href={`/mesas/${campaignId}/biblioteca`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12.5 }}>
+          ← Conteúdo da campanha
+        </Link>
       </p>
-      <h1 style={{ fontSize: 22, marginBottom: 4 }}>
+      <h1 className="rm-page-title" style={{ marginBottom: 8 }}>
         Comparação de três vias — {doc.nome ?? doc.slug}
       </h1>
-      <div style={{ display: "flex", gap: 18, flexWrap: "wrap", fontSize: 13, color: "#a8a8b3", marginBottom: 20 }}>
+      <div className="rm-faint" style={{ display: "flex", gap: 18, flexWrap: "wrap", marginBottom: 20 }}>
         <span>oficial-base: {doc.official_version_base ?? "—"}</span>
         <span>oficial atual: {oficialAtual?.version ?? "ausente/arquivado"}</span>
         <span>versão local: {doc.local_version}</span>
