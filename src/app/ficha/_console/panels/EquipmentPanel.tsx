@@ -29,6 +29,7 @@ import { type InventoryItemInstance, type ItemContent } from "../../../../lib/ch
 import { useClickGuard } from "../useClickGuard";
 import { DiamondPip } from "../pips";
 import { BodySilhouette, type BodyRegiao } from "../bodySilhouette";
+import { DecoTop } from "../deco";
 import { BODY_SLOT_LABELS, type BodySlot, type BodySlotId } from "../slots";
 import type { ConsoleApi } from "../types";
 
@@ -340,6 +341,27 @@ export function EquipmentPanel({
     return renderArmadura(slotId);
   }
 
+  /**
+   * Clicar numa parte do corpo faz o MESMO que clicar no box daquela
+   * região: mochila filtrada se o slot está vazio, abrir ataque (arma)
+   * ou usar item (armadura/escudo) se está preenchido. É um atalho
+   * redundante e só de mouse — a via acessível continua sendo o box,
+   * que é botão de verdade (a silhueta é `aria-hidden`).
+   */
+  function acionarRegiao(regiao: BodyRegiao) {
+    if (regiao === "arma_secundaria") {
+      if (!secundariaInst || !secundariaModelo) return onAbrirVazio("arma_secundaria");
+      if (secundariaEhEscudo) return onUsarItem(secundariaInst, secundariaModelo);
+      return onAbrirAtaque(secundariaInst, secundariaModelo);
+    }
+
+    const inst = por(regiao).instance;
+    const modelo = inst ? api.catalogo.get(inst.itemSlug) : undefined;
+    if (!inst || !modelo) return onAbrirVazio(regiao);
+    if (regiao === "arma_primaria") return onAbrirAtaque(inst, modelo);
+    return onUsarItem(inst, modelo);
+  }
+
   function renderAcessoRapido(slotId: "acesso_rapido_1" | "acesso_rapido_2", numero: 1 | 2) {
     const slot = por(slotId);
     const inst = slot.instance;
@@ -383,13 +405,14 @@ export function EquipmentPanel({
     <section aria-label="Equipamentos" className="rc-eq-outer">
       <span className="rc-eq-caption">Equipamentos</span>
       <div className="rc-eq-card-outer">
+        <DecoTop />
         <div className="rc-eq-inner-container">
           {/* SVG inline, path por região (não <img>) — hover é o PATH
               real (pixel-perfect, sem retângulo aproximado), e o
               tamanho/centralização vêm de graça do `viewBox` +
               `preserveAspectRatio` padrão do SVG (mesmo efeito do
               object-fit:contain, sem precisar medir nada em JS). */}
-          <BodySilhouette hover={hover} onHover={setHover} />
+          <BodySilhouette hover={hover} onHover={setHover} onAcionar={acionarRegiao} />
 
           {ESQUERDA.map(({ id, regiao, top }) => (
             <EquipBox key={id} slotId={id} regiao={regiao} label={BODY_SLOT_LABELS[id]} style={{ left: 0, top }} active={hover === regiao} onHover={setHover}>

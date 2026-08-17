@@ -79,12 +79,18 @@ function PlusIcon() {
   );
 }
 
-/** Losango de Colapso — mesma geometria de PA/Reações, paleta vermelha. */
+/**
+ * Losango de Colapso — mesma geometria de PA/Reações, paleta vermelha.
+ * Cores vêm do CSS (`.rc-colpip`, via `data-on`), não de atributos
+ * inline: é o que deixa o hover ser uma transição de cor pura, igual
+ * ao `DiamondPip` compartilhado. Um path só pelo mesmo motivo — path
+ * de fill + path de stroke separados fazem o hover pintar em duas
+ * origens diferentes (o bug do "efeito duplo" já visto nos atributos).
+ */
 function ColapsoPip({ cheio }: { cheio: boolean }) {
   return (
-    <svg viewBox="0 0 19 18" aria-hidden="true">
-      <path d="M9.5 0L19 9L9.5 18L0 9L9.5 0Z" fill="#FF5F74" fillOpacity={cheio ? "0.5" : "0.08"} />
-      <path d="M18.2725 9L9.5 17.3105L0.726562 9L9.5 0.688477L18.2725 9Z" fill="none" stroke="#FF5F74" strokeOpacity="0.5" />
+    <svg className="rc-colpip" data-on={cheio} viewBox="0 0 19 18" aria-hidden="true">
+      <path d="M18.2725 9L9.5 17.3105L0.726562 9L9.5 0.688477L18.2725 9Z" />
     </svg>
   );
 }

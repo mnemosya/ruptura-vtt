@@ -30,6 +30,7 @@
 import { useMemo, useRef, useState } from "react";
 import { ConsoleWindow } from "./ConsoleWindow";
 import { Scrollbar } from "./scrollbar";
+import { DecoTop } from "./deco";
 import { IdentityAside } from "./panels/IdentityAside";
 import { VitalsRow } from "./panels/VitalsRow";
 import { EquipmentPanel } from "./panels/EquipmentPanel";
@@ -161,6 +162,14 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
     return (
       <div className="rc-tabsarea-outer">
         <div className="rc-tabsarea-main">
+          {/* Decoração fica FORA do `.rc-tabpanel`: ele rola por dentro
+              (`overflow: auto`), e um filho absoluto em `top: 0` ali
+              rolaria junto com o conteúdo. `.rc-tabsarea-main` já é
+              `position: relative` (âncora das scrollbars) e o tabpanel
+              é o primeiro filho, então `top: 0` daqui cai exatamente na
+              borda de cima dele. A aba de Equipamentos tem a sua
+              própria, no `.rc-eq-card-outer`. */}
+          {aba !== "equipamentos" && <DecoTop />}
           <div className="rc-tabpanel" role="tabpanel" ref={tabpanelRef}>
             {aba === "equipamentos" ? (
               <EquipmentPanel

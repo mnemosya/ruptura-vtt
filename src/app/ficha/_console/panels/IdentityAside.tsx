@@ -25,9 +25,10 @@ import { Shield } from "lucide-react";
 import { MAX_OVERLOAD_SURGES_PER_DAY, type CharacterAttributes } from "../../../../lib/character";
 import { useClickGuard } from "../useClickGuard";
 import type { ConsoleApi } from "../types";
-import { AvatarUserIcon, AvatarUploadIcon, AvatarHexPolygon } from "../avatarIcons";
+import { AvatarUserIcon, AvatarHexPolygon } from "../avatarIcons";
 import { AttrHexPolygon, ATTR_ICONS, ATTR_LABEL_COLOR } from "../attrIcons";
 import { DiamondPip } from "../pips";
+import { DecoTop } from "../deco";
 
 const ATRIBUTOS: { id: keyof CharacterAttributes; nome: string }[] = [
   { id: "corpo", nome: "Corpo" },
@@ -36,12 +37,20 @@ const ATRIBUTOS: { id: keyof CharacterAttributes; nome: string }[] = [
 ];
 
 /**
- * Segmento da trilha de Integridade — paths EXATOS do prompt (viewBox
- * 22×14): "Inicial" tem lado esquerdo reto e direito em diagonal,
- * "Final" o inverso, "Meio" os dois lados em diagonal — formando uma
- * trilha contínua quando emendados com margem negativa de 1px. Não é
- * seta/chevron: é só o resultado dessas diagonais.
+ * Segmento da trilha de Integridade — paths EXATOS do prompt: "Inicial"
+ * tem lado esquerdo reto e direito em diagonal, "Final" o inverso,
+ * "Meio" os dois lados em diagonal — formando uma trilha contínua
+ * quando emendados com margem negativa de 1px. Não é seta/chevron: é
+ * só o resultado dessas diagonais.
+ *
+ * O viewBox é 21.0833 de largura (não 22): 21.0833 é o x máximo real
+ * de TODOS os paths, e os 0.9167 a mais que o prompt trazia viravam
+ * espaço morto à direita de cada pip. Nos pips "Inicial"/"Meio" isso
+ * passava batido porque o overlap de -1px com o pip seguinte cobria a
+ * sobra; no ÚLTIMO não há pip depois, então a borda direita dele
+ * ficava recuada pra dentro da caixa e lia como "cortada".
  */
+const PIP_VIEWBOX = "0 0 21.0833 14";
 const PIP_OUTER: Record<"first" | "middle" | "last", string> = {
   first: "M0 0H17.463L21.0833 14H0L0 0Z",
   middle: "M0 0H17.463L21.0833 14H3.62037L0 0Z",
@@ -66,21 +75,21 @@ function IntegrityPip({
     const fill = preview === "fill" ? "rgba(4, 158, 192, 0.22)" : "rgba(255, 95, 116, 0.14)";
     const stroke = preview === "fill" ? "rgba(0, 212, 255, 0.35)" : "rgba(255, 95, 116, 0.4)";
     return (
-      <svg viewBox="0 0 22 14" preserveAspectRatio="none" aria-hidden="true">
+      <svg viewBox={PIP_VIEWBOX} preserveAspectRatio="none" aria-hidden="true">
         <path d={PIP_INSET[position]} fill={fill} stroke={stroke} />
       </svg>
     );
   }
   if (cheio) {
     return (
-      <svg viewBox="0 0 22 14" preserveAspectRatio="none" aria-hidden="true">
+      <svg viewBox={PIP_VIEWBOX} preserveAspectRatio="none" aria-hidden="true">
         <path d={PIP_OUTER[position]} fill="#049EC0" fillOpacity="0.43" />
         <path d={PIP_INSET[position]} fill="none" stroke="#00D4FF" strokeOpacity="0.18" />
       </svg>
     );
   }
   return (
-    <svg viewBox="0 0 22 14" preserveAspectRatio="none" aria-hidden="true">
+    <svg viewBox={PIP_VIEWBOX} preserveAspectRatio="none" aria-hidden="true">
       <path d={PIP_INSET[position]} fill="#123143" fillOpacity="0.2" stroke="#0C3D4E" />
     </svg>
   );
@@ -177,7 +186,19 @@ function RecursoPontos({
                   onMouseEnter={() => setHover(i)}
                   onFocus={() => setHover(i)}
                   onBlur={() => setHover(null)}
-                  onClick={() => guard(() => onAlternar(cheio ? 1 : -1))}
+                  // Mesma lógica de "salto direto" da Trilha de
+                  // Integridade — clicar no pip N ajusta pro estado que
+                  // o hover já está PREVENDO ali (cheio → volta pra N,
+                  // vazio → enche até N+1), num delta só. Antes disso
+                  // aqui sempre mandava ±1 (herdado de um clique "sem
+                  // posição"), então passar o mouse por vários pips
+                  // prometia um salto que o clique não cumpria — cada
+                  // clique só tirava/devolvia 1, nunca o previsto.
+                  // `onAlternar` soma ao GASTO (não ao disponível), daí
+                  // o delta ser "disponível atual − alvo": alvo MAIOR
+                  // que o disponível (recuperar) precisa de um delta
+                  // NEGATIVO.
+                  onClick={() => guard(() => onAlternar(disponivel - (cheio ? i : i + 1)))}
                   aria-label={`${rotulo} ${i + 1} de ${total}: ${cheio ? "disponível" : "gasto"}`}
                   aria-pressed={cheio}
                 >
@@ -198,8 +219,10 @@ function RecursoPontos({
             <MinusIcon />
           </button>
           <span className="rc-npr-num">
-            {disponivel}
-            <span className="rc-npr-num-total">/{total}</span>
+            <span className="rc-npr-num-linha">
+              {disponivel}
+              <span className="rc-npr-num-total">/{total}</span>
+            </span>
           </span>
           <button
             type="button"
@@ -324,11 +347,6 @@ export function IdentityAside({
               <AvatarUserIcon />
             </span>
           )}
-          <span className="rc-avatar-upload" aria-hidden="true">
-            <span className="rc-avatar-ico rc-avatar-ico--upload">
-              <AvatarUploadIcon />
-            </span>
-          </span>
         </span>
         <AvatarHexPolygon />
         <input
@@ -346,6 +364,7 @@ export function IdentityAside({
       )}
 
       <div className="rc-nric-card">
+        <DecoTop />
         <div className="rc-nric-nome-row">
           <span className="rc-nric-nome" title={character.nome || "Sem nome"}>
             {character.nome || "Sem nome"}

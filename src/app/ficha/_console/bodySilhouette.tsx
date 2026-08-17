@@ -20,7 +20,21 @@ const BODY_PATHS: { regiao: BodyRegiao; d: string; fill: string }[] = [
   { regiao: "cabeca", fill: "#223C4A", d: "M51.6671 16.5572C53.0496 13.7345 54.8528 11.1126 57.0201 8.82071C58.6219 7.12806 60.367 5.63461 62.3957 4.45676C74.1714 -2.38721 93.0061 -1.46438 103.175 8.02699C107.013 11.6083 109.047 16.7166 109.531 21.8488C109.984 26.659 109.244 31.4979 108.366 36.2507C107.408 41.4403 106.793 46.6745 105.969 51.8465C105.162 56.9277 104.19 61.3681 99.9909 64.7695C95.758 68.1978 91.6005 71.7458 87.2679 75.0511C85.3486 76.5159 83.5145 78.1209 81.4116 79.329C79.1497 80.6281 76.7551 81.0679 74.1763 81.3357C70.9345 81.6719 67.6457 81.5752 64.4293 81.0541C61.3934 80.5612 58.14 80.1263 56.303 77.4644C54.0439 74.1937 52.9787 70.319 52.3358 66.4525C51.6638 62.4089 51.1595 58.308 50.5891 54.2325C49.9687 49.7984 49.4804 45.3468 49.1259 40.8857C48.802 36.8325 48.2638 32.6073 48.4959 28.5541C48.7343 24.4021 49.8333 20.3027 51.6671 16.5572Z" },
 ];
 
-export function BodySilhouette({ hover, onHover }: { hover: BodyRegiao | null; onHover: (r: BodyRegiao | null) => void }) {
+/**
+ * `onAcionar` dispara a MESMA ação do box de equipamento daquela
+ * região (abrir a mochila filtrada se o slot está vazio, ou abrir
+ * ataque/usar item se está preenchido) — quem decide é o
+ * `EquipmentPanel`, aqui só se traduz "path clicado → região".
+ */
+export function BodySilhouette({
+  hover,
+  onHover,
+  onAcionar,
+}: {
+  hover: BodyRegiao | null;
+  onHover: (r: BodyRegiao | null) => void;
+  onAcionar: (r: BodyRegiao) => void;
+}) {
   return (
     <svg className="rc-eq-body" viewBox="0 0 201 613" fill="none" aria-hidden="true">
       <defs>
@@ -43,6 +57,7 @@ export function BodySilhouette({ hover, onHover }: { hover: BodyRegiao | null; o
               pointerEvents="fill"
               onMouseEnter={() => onHover(p.regiao)}
               onMouseLeave={() => onHover(null)}
+              onClick={() => onAcionar(p.regiao)}
             />
           );
         })}
