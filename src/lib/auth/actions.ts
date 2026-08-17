@@ -10,7 +10,7 @@
 import { headers } from "next/headers";
 import { createAnonAuthClient } from "./anonClient";
 import { getScopedTableClient } from "./scopedClient";
-import { writeAuthTokens, clearAuthTokens } from "./session";
+import { writeAuthTokens, clearAuthTokens, readAuthTokens } from "./session";
 
 export interface AuthActionResult {
   ok: boolean;
@@ -85,6 +85,134 @@ export async function signUpWithPassword(
 /** Logout — limpa o cookie de sessão (não revoga o token no Supabase nesta etapa dev). */
 export async function signOut(): Promise<void> {
   await clearAuthTokens();
+}
+
+export interface RefreshedAccessToken {
+  ok: boolean;
+  /** Novo access token, só em sucesso. NUNCA acompanha o refresh token — esse fica no cookie httpOnly. */
+  accessToken?: string;
+  /** `exp` do novo token em ms desde epoch, para o cliente reagendar a próxima renovação sem redecodificar o JWT. */
+  expiresAtMs?: number;
+  /**
+   * `true` quando o refresh token em si é inválido/revogado/expirado —
+   * nesse caso não adianta tentar de novo, só um login novo resolve.
+   * `false` (com `ok: false`) é falha transitória: rede, Supabase fora
+   * do ar, corrida entre abas — vale reter o estado e oferecer "Tentar
+   * novamente".
+   */
+  needsLogin?: boolean;
+  error?: string;
+}
+
+/**
+ * Renova SILENCIOSAMENTE o access token da sessão, usando o refresh
+ * token que já está no cookie httpOnly — nunca pede senha, nunca expõe
+ * o refresh token ao cliente.
+ *
+ * Existe para o Realtime da área de campanha: o WebSocket é autenticado
+ * com o access token (ver `setBrowserSupabaseRealtimeAuth`), que expira
+ * em ~1h; uma sessão de RPG dura várias horas, e ninguém deve precisar
+ * recarregar a página no meio de uma cena. O cliente chama isto pouco
+ * antes da expiração, aplica o token novo com `realtime.setAuth(...)` e
+ * reagenda — sem reload, sem navegação, sem perder estado de interface
+ * (o `setAuth` do realtime-js empurra o token pros canais JÁ inscritos,
+ * não recria assinatura nenhuma).
+ *
+ * O refresh token do Supabase ROTACIONA a cada uso, por isso o cookie é
+ * regravado aqui (`writeAuthTokens`) — o par novo precisa valer para as
+ * próximas leituras server-side também, não só para o Realtime.
+ *
+ * Corrida entre abas: duas abas da mesma conta renovando quase junto
+ * podem levar uma delas a usar um refresh token recém-rotacionado. O
+ * Supabase tolera reuso dentro de uma janela curta, então normalmente
+ * as duas passam; se uma falhar, cai em `ok: false` SEM `needsLogin`, e
+ * o "Tentar novamente" da interface relê o cookie (já atualizado pela
+ * outra aba) e passa. Não há perda de sessão nesse caminho.
+ */
+export async function refreshAccessToken(): Promise<RefreshedAccessToken> {
+  try {
+    const tokens = await readAuthTokens();
+    if (!tokens?.refresh_token) {
+      return { ok: false, needsLogin: true, error: "Sessão ausente." };
+    }
+
+    const primeira = await tentarRenovar(tokens.refresh_token);
+    if (primeira.ok) return primeira;
+
+    // Não exige login por causa de UMA recusa. Numa corrida entre abas, a
+    // aba lenta apresenta um refresh token que a outra JÁ rotacionou; a
+    // sessão está viva e o cookie já tem o par novo, gravado por quem
+    // ganhou. A verificação é COMPORTAMENTAL, não por código de erro —
+    // medido contra o Supabase real (ver `tentarRenovar`), o erro de
+    // token rotacionado fora da janela de tolerância é indistinguível do
+    // de token genuinamente morto. Reler o cookie e tentar uma vez com o
+    // token atualizado separa os dois casos sem chutar.
+    //
+    // A pausa curta cobre o outro lado da corrida: a aba vencedora pode
+    // estar com a requisição em voo e ainda não ter gravado o cookie no
+    // instante em que esta falhou.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const tokensAtuais = await readAuthTokens();
+    const rotacionadoPorOutraAba = !!tokensAtuais?.refresh_token && tokensAtuais.refresh_token !== tokens.refresh_token;
+    if (rotacionadoPorOutraAba) {
+      return await tentarRenovar(tokensAtuais.refresh_token);
+    }
+
+    return primeira;
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Erro desconhecido ao renovar a sessão." };
+  }
+}
+
+/**
+ * Uma tentativa de renovação.
+ *
+ * Classificação medida contra o Supabase REAL desta instalação, não
+ * suposta:
+ *   - token inexistente/inválido → `status 400`, `code
+ *     "validation_failed"`, mensagem "Refresh token is not valid";
+ *   - token recém-rotacionado, reusado DENTRO da janela de tolerância
+ *     (o caso comum da corrida entre abas) → NÃO dá erro nenhum: o
+ *     Supabase devolve sessão normalmente.
+ *
+ * Ou seja: status 400 sozinho nunca serve como veredito (foi o bug
+ * apontado na auditoria), e o código de erro também não distingue
+ * "morto" de "rotacionado há muito tempo por outra aba". Por isso quem
+ * chama (`refreshAccessToken`) faz a desambiguação COMPORTAMENTAL —
+ * relê o cookie e tenta de novo — antes de aceitar um `needsLogin`
+ * daqui.
+ */
+async function tentarRenovar(refreshToken: string): Promise<RefreshedAccessToken> {
+  const supabase = createAnonAuthClient();
+  const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken });
+
+  if (error || !data.session) {
+    const code = (error as { code?: string } | null)?.code;
+    const mensagem = (error?.message ?? "").toLowerCase();
+    const tokenRecusado =
+      code === "validation_failed" ||
+      code === "refresh_token_not_found" ||
+      code === "refresh_token_already_used" ||
+      code === "session_not_found" ||
+      mensagem.includes("not valid") ||
+      mensagem.includes("refresh token not found") ||
+      mensagem.includes("already used") ||
+      mensagem.includes("revoked");
+    return {
+      ok: false,
+      needsLogin: tokenRecusado,
+      error: error?.message ?? "Renovação não retornou sessão.",
+    };
+  }
+
+  await writeAuthTokens({
+    access_token: data.session.access_token,
+    refresh_token: data.session.refresh_token,
+  });
+
+  // `expires_at` vem em SEGUNDOS desde epoch (contrato do Supabase).
+  const expiresAtMs = typeof data.session.expires_at === "number" ? data.session.expires_at * 1000 : undefined;
+  return { ok: true, accessToken: data.session.access_token, expiresAtMs };
 }
 
 /**

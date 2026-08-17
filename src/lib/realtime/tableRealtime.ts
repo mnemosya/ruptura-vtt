@@ -38,6 +38,10 @@ export function buildTableLogsChannelName(campaignId: string): string {
   return `table_logs:${campaignId}`;
 }
 
+export function buildCharacterControllersChannelName(campaignId: string): string {
+  return `character_controllers:${campaignId}`;
+}
+
 // ---------------------------------------------------------------------
 // Chave de evento + dedupe — dois eventos "iguais" (mesma tabela, mesmo
 // tipo, mesmo id de registro, mesmo commit_timestamp do Postgres) geram
@@ -234,6 +238,41 @@ export function subscribeToCampaignCharactersRealtime(params: {
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "characters", filter: `campaign_id=eq.${params.campaignId}` },
+      (payload) => params.onChange(payload as unknown as RealtimeEventLike),
+    )
+    .subscribe((status) => params.onStatusChange?.(mapSupabaseChannelStatus(status)));
+
+  return () => {
+    client.removeChannel(channel);
+  };
+}
+
+/**
+ * Mudanças de CONTROLE (`character_controllers`) — grant/revoke não
+ * mexe na linha de `characters`, então o canal de personagens (acima)
+ * nunca vê esse evento. Filtro por `campaign_id`; RLS de
+ * `character_controllers_select` (migration 0051: `user_id =
+ * auth.uid() or is_campaign_owner(campaign_id)`) já restringe o que
+ * cada assinante recebe — o jogador só vê linhas do PRÓPRIO
+ * `user_id`, o narrador vê a campanha inteira. Não precisa filtrar de
+ * novo no cliente.
+ */
+export function subscribeToCampaignCharacterControllersRealtime(params: {
+  campaignId: string;
+  onChange: (payload: RealtimeEventLike) => void;
+  onStatusChange?: (status: RealtimeStatus) => void;
+}): () => void {
+  const client = getBrowserSupabaseClient();
+  if (!client) {
+    params.onStatusChange?.("disabled");
+    return () => {};
+  }
+
+  const channel: RealtimeChannel = client
+    .channel(buildCharacterControllersChannelName(params.campaignId))
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "character_controllers", filter: `campaign_id=eq.${params.campaignId}` },
       (payload) => params.onChange(payload as unknown as RealtimeEventLike),
     )
     .subscribe((status) => params.onStatusChange?.(mapSupabaseChannelStatus(status)));

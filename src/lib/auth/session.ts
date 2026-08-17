@@ -6,12 +6,22 @@
  * quem está logado; as MUTAÇÕES (login/logout, que escrevem/limpam o
  * cookie) ficam em actions.ts ("use server").
  *
- * Limitação dev documentada: a leitura usa `getUser(access_token)`, que
- * valida o JWT direto no Supabase sem rotacionar refresh token. Quando o
- * access token expira (~1h por padrão), a sessão é considerada
- * encerrada até novo login — não há refresh automático server-side nesta
- * etapa (isso é o que o @supabase/ssr automatiza; ver pendência no
+ * Limitação dev ainda válida AQUI: a leitura usa `getUser(access_token)`,
+ * que valida o JWT direto no Supabase sem rotacionar refresh token — esta
+ * função, por si só, não renova nada; um access token expirado (~1h por
+ * padrão) faz `getCurrentUser` tratar a sessão como encerrada até novo
+ * login (isso é o que o @supabase/ssr automatiza; ver pendência no
  * relatório). Suficiente para a base de auth dev deste checkpoint.
+ *
+ * EXCEÇÃO (área de campanha, `/mesas/[campaignId]/...`): existe
+ * renovação automática, mas não É deste arquivo — `refreshAccessToken`
+ * (`actions.ts`) troca o refresh token por um par novo e regrava este
+ * MESMO cookie, disparada pelo `CampaignRealtimeProvider` (client)
+ * pouco antes do access token vencer, pra manter o WebSocket de
+ * Realtime autenticado numa sessão de RPG de várias horas — ver
+ * `setBrowserSupabaseRealtimeAuth` em `lib/supabase/browserClient.ts`.
+ * Fora dessa área, a limitação acima continua valendo sem exceção:
+ * nenhuma outra rota chama `refreshAccessToken`.
  */
 
 import { cookies } from "next/headers";

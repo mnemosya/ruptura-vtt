@@ -412,6 +412,49 @@ export async function getCampaignParticipantInfo(campaignId: string): Promise<Ma
   return new Map(rows.map((r) => [r.user_id, r]));
 }
 
+export interface CampaignRosterEntry {
+  userId: string;
+  displayName: string;
+  role: "narrator" | "player";
+}
+
+/**
+ * Participantes ATIVOS de uma campanha, legível por QUALQUER
+ * participante ativo dela (RPC `list_campaign_roster`, migration 0061).
+ * Alimenta o painel de Participantes da sessão, sempre montado na casca
+ * da campanha.
+ *
+ * Não é a mesma coisa que as duas leituras vizinhas, e nenhuma delas
+ * serve no lugar desta:
+ *   - `listCampaignMembers` passa pela RLS de `campaign_members`, que
+ *     devolve ao jogador só a própria linha;
+ *   - `getCampaignParticipantInfo` só responde ao narrador e traz
+ *     e-mail.
+ *
+ * Devolve nome de exibição e papel, nunca e-mail — e o narrador vem
+ * derivado de `campaigns.owner_id`, aparecendo exatamente uma vez
+ * independente de a campanha ter ou não a linha de dono em
+ * `campaign_members` (ver cabeçalho da migration). Quem não participa
+ * recebe lista vazia, não erro.
+ */
+export async function listCampaignRoster(campaignId: string): Promise<CampaignRosterEntry[]> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("list_campaign_roster", { p_campaign_id: campaignId });
+  if (error) {
+    throw new TableStorageError(`Falha ao listar participantes da mesa "${campaignId}": ${error.message}`, error);
+  }
+  const rows = (data as { user_id: string; display_name: string; role: string }[]) ?? [];
+  // Fail-closed no papel: hoje o SQL só emite 'narrator'/'player', mas
+  // mapear qualquer outra coisa para "player" daria a um papel
+  // desconhecido as permissões visuais do mais permissivo dos dois. Uma
+  // linha que não sabemos classificar simplesmente não entra no roster.
+  return rows.flatMap<CampaignRosterEntry>((r) =>
+    r.role === "narrator" || r.role === "player"
+      ? [{ userId: r.user_id, displayName: r.display_name, role: r.role }]
+      : [],
+  );
+}
+
 // =====================================================================
 // Convites de mesa (campaign_invites, migration 0008)
 // =====================================================================
