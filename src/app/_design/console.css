@@ -377,25 +377,37 @@
 .rc-avatar-poly path { fill: none; stroke: rgba(0, 212, 255, 0.14); stroke-width: 1; stroke-dasharray: none; transition: stroke 0.16s, stroke-dasharray 0.16s; }
 .rc-avatar:hover .rc-avatar-poly path,
 .rc-avatar:focus-visible .rc-avatar-poly path { stroke: rgba(0, 212, 255, 0.51); stroke-dasharray: 5 5; }
+/* Hover só reforça o MESMO fundo (mesmo tom, mais opaco) — sem trocar
+   de cor nem de ícone; o ícone de usuário fica visível o tempo todo,
+   inclusive no hover. */
 .rc-avatar:hover .rc-avatar-fill,
-.rc-avatar:focus-visible .rc-avatar-fill { background: rgba(55, 91, 112, 0.43); }
+.rc-avatar:focus-visible .rc-avatar-fill { background: rgba(29, 53, 67, 0.92); }
 .rc-avatar:focus-visible { outline: none; }
 
-/* Ícone padrão (usuário) x ícone de upload (hover) — trocam via
-   opacidade, nunca os dois clicáveis/visíveis ao mesmo tempo. */
 .rc-avatar-ico { width: 64px; max-width: 55%; }
 .rc-avatar-ico svg { width: 100%; height: auto; display: block; }
-.rc-avatar-ico--user { transition: opacity 0.16s; }
-.rc-avatar:hover .rc-avatar-ico--user, .rc-avatar:focus-visible .rc-avatar-ico--user { opacity: 0; }
-.rc-avatar-upload {
-  position: absolute; inset: 0; z-index: 1;
-  display: grid; place-items: center;
-  opacity: 0; transition: opacity 0.16s; pointer-events: none;
+
+/* ── Container decoration ─────────────────────────────────────────
+   O MESMO componente de decoração de painel já usado no login
+   (`.rv-deco-*`, auth.css) e na área autenticada / "minhas campanhas"
+   (`.ra-deco-*`, app.css): duas linhas finas empilhadas, a de cima
+   curta e mais forte, a de baixo cheia e mais fraca. Valores copiados
+   da variante de app.css.
+
+   Cada folha da linguagem HUD redeclara esse vocabulário no próprio
+   namespace (é assim que `rv-`/`ra-` já convivem), então aqui ele vira
+   `rc-`. Markup em `deco.tsx`. */
+.rc-deco-top {
+  position: absolute; top: 0; left: 16px; right: 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  pointer-events: none; z-index: 20;
 }
-.rc-avatar:hover .rc-avatar-upload, .rc-avatar:focus-visible .rc-avatar-upload { opacity: 1; }
+.rc-deco-a { height: 1px; width: 348px; max-width: 100%; background: linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(0, 212, 255, 0.6) 50%, rgba(0, 0, 0, 0)); }
+.rc-deco-b { height: 1px; width: 100%; opacity: 0.89; background: linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(0, 212, 255, 0.35) 50%, rgba(0, 0, 0, 0)); }
 
 /* ── Card Nome/Ranking/Atributos/Integridade v2 (spec Figma) ────── */
 .rc-nric-card {
+  position: relative;
   display: flex; flex-direction: column; align-items: center;
   width: 100%; padding: 16px; gap: 16px;
   border: 1px solid rgba(0, 212, 255, 0.14);
@@ -574,44 +586,52 @@
    ganhar em empate de especificidade quando os dois se aplicam. */
 .rc-diapip[data-preview="empty"] path { fill: #32202A; stroke: rgba(121, 51, 65, 0.77); }
 .rc-diapip[data-preview="fill"] path { fill: rgba(4, 158, 192, 0.25); stroke: rgba(0, 212, 255, 0.36); }
+/* Controle de valor PA/Reações — o "−" e o "+" ficam COLADOS nos
+   cantos do box externo (sem padding nem gap separando), e a única
+   borda que cada um desenha é o divisor do lado de dentro: dar borda
+   completa a eles duplicaria a borda do box externo justo onde as
+   duas se encostam. O valor no meio ocupa o espaço que sobra. */
 .rc-npr-valor {
-  /* Largura FIXA = a mesma composição de antes (padding 4 + minus 11 +
-     gap 4 + valor 30 + gap 4 + plus 11 + padding 4 = 68px) — os
-     botões saíram do fluxo (agora absolutos, cobrindo cada metade),
-     então sem essa largura explícita a caixa encolhia só para caber o
-     valor e os ícones ficavam espremidos no meio. */
-  position: relative; display: flex; width: 68px; height: 24px; padding: 0 4px; justify-content: center; align-items: center;
+  display: flex; height: 24px; align-items: stretch;
   border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.14);
   background: #0E2431;
 }
-/* Clicável na METADE da caixa (não só no ícone de 11px) — clicar em
-   qualquer ponto da esquerda gasta, da direita devolve; o ícone só
-   marca visualmente o lado. */
 .rc-npr-btn {
-  position: absolute; inset: 0; width: 50%; padding: 0 4px;
-  border: none; background: none; cursor: pointer;
-  display: flex; align-items: center; color: #418292;
+  display: flex; padding: 0 6px; align-items: center; justify-content: center; flex: none;
+  border: none; background: none;
+  color: #418292; cursor: pointer;
 }
-.rc-npr-btn:first-child { left: 0; justify-content: flex-start; }
-.rc-npr-btn:last-child { left: auto; right: 0; justify-content: flex-end; }
+.rc-npr-btn:first-child { border-right: 1px solid rgba(0, 212, 255, 0.14); }
+.rc-npr-btn:last-child { border-left: 1px solid rgba(0, 212, 255, 0.14); }
 .rc-npr-btn svg { width: 11px; height: 11px; display: block; }
 .rc-npr-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.rc-npr-btn:hover:not(:disabled) { background: rgba(0, 212, 255, 0.10); }
 .rc-npr-btn:hover:not(:disabled) svg path { stroke: #6fe0ff; }
 .rc-npr-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: -2px; }
 .rc-npr-num {
-  position: relative; z-index: 1; width: 30px; text-align: center; pointer-events: none;
+  display: flex; flex: 1 0 auto; min-width: 35px; padding: 0 6px;
+  flex-direction: column; justify-content: center; align-self: stretch;
+  text-align: center; pointer-events: none;
+  background: #0C1B27;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 11px; font-weight: 700; line-height: 16px; color: #EAF7FF;
 }
+/* Valor e "/total" precisam ser UM único filho do `.rc-npr-num`: ele é
+   flex-column, então dois filhos (o número e o `<span>` do total)
+   viravam duas LINHAS empilhadas em vez de "1/3" na mesma linha. */
+.rc-npr-num-linha { white-space: nowrap; }
 .rc-npr-num-total { font-weight: 400; color: rgba(184, 216, 232, 0.60); }
 
 /* ── Colapso + Recursos v2 (spec Figma) ──────────────────────────── */
 .rc-vitals-row { display: flex; gap: 8px; align-items: stretch; }
 
 .rc-ncol-wrap { display: flex; flex-direction: column; align-items: flex-start; flex: none; width: 114px; }
+/* Diferente dos outros três (Recursos/Perícias/Condições, que ficam
+   presos à esquerda com 8px de recuo): aqui o box do título HUGA o
+   texto e fica centralizado no card. */
 .rc-ncol-caption {
   display: flex; padding: 4px 8px; justify-content: center; align-items: center; gap: 8px;
-  width: 100%; box-sizing: border-box;
+  align-self: center;
   border-top: 1px solid rgba(0, 212, 255, 0.14);
   border-right: 1px solid rgba(0, 212, 255, 0.14);
   border-left: 1px solid rgba(0, 212, 255, 0.14);
@@ -632,6 +652,17 @@
 .rc-ncol-pip svg { width: 100%; height: 100%; display: block; }
 .rc-ncol-pip:disabled { cursor: not-allowed; }
 .rc-ncol-pip:focus-visible { outline: 2px solid var(--rc-danger); outline-offset: 1px; }
+/* Losango de Colapso — só os pips VAZIOS são clicáveis (os preenchidos
+   vêm `disabled`), e clicar avança o Colapso. Então o hover é uma
+   PRÉVIA do estado preenchido: o vermelho fica mais forte e a borda
+   mais acesa, no meio do caminho entre vazio (0.08) e cheio (0.50).
+   Dessacaturar a borda aqui não lia como hover — lia como desabilitado,
+   que é o oposto do que o estado significa. */
+.rc-colpip { display: block; }
+.rc-colpip path { transition: fill 0.12s, stroke-opacity 0.12s; stroke: #FF5F74; stroke-opacity: 0.5; }
+.rc-colpip[data-on="false"] path { fill: rgba(255, 95, 116, 0.08); }
+.rc-colpip[data-on="true"] path { fill: rgba(255, 95, 116, 0.50); }
+.rc-ncol-pip:hover:not(:disabled) .rc-colpip path { fill: rgba(255, 95, 116, 0.30); stroke-opacity: 0.95; }
 .rc-ncol-morte {
   display: flex; padding: 4px; justify-content: center; align-items: center;
   border: 1px solid rgba(255, 95, 116, 0.50);
@@ -656,6 +687,7 @@
 .rc-nres-wrap { display: flex; flex-direction: column; align-items: flex-start; flex: 1 0 0; }
 .rc-nres-caption {
   display: flex; padding: 4px 8px; justify-content: center; align-items: center; gap: 4px;
+  margin-left: 8px;
   border-top: 1px solid rgba(0, 212, 255, 0.14);
   border-right: 1px solid rgba(0, 212, 255, 0.14);
   border-left: 1px solid rgba(0, 212, 255, 0.14);
@@ -850,6 +882,7 @@
 }
 .rc-eq-card-outer {
   display: flex; padding: 56px 16px 68px; flex-direction: column; justify-content: center; align-items: center; gap: 16px;
+  position: relative;
   flex: 1 0 0; align-self: stretch; width: 100%; min-height: 0;
   border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.14);
   background: rgba(16, 26, 38, 0.70);
@@ -1003,13 +1036,16 @@
 .rc-skills-caption {
   display: flex; align-items: center; justify-content: center;
   padding: 4px 8px; gap: 8px;
+  margin-left: 8px;
   border-top: 1px solid rgba(0, 212, 255, 0.14);
   border-right: 1px solid rgba(0, 212, 255, 0.14);
   border-left: 1px solid rgba(0, 212, 255, 0.14);
   background: rgba(24, 49, 67, 0.5);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
-  color: #d3f4ff;
+  /* Mesmo cyan dos outros box de título (Recursos/Condições/Colapso) —
+     este tinha ficado num branco-azulado e destoava da fileira. */
+  color: rgba(0, 212, 255, 0.72);
 }
 /* "Card interno" da spec: correção anterior errada — não era ESTE card
    que sobrava, era o painel externo que hospedava a Perícias inteira
@@ -1139,7 +1175,10 @@
   transition: border-color 0.14s, background 0.14s;
 }
 .rc-pin[data-preenchido="true"] { border-style: solid; border-color: rgba(0, 212, 255, 0.5); background: rgba(0, 212, 255, 0.08); cursor: default; }
-.rc-pin:hover { border-color: var(--cy); }
+/* Hover discreto de propósito: `var(--cy)` cheio deixava o tracejado
+   do slot vazio mais forte que a borda dos slots PREENCHIDOS ao lado,
+   invertendo a hierarquia visual. */
+.rc-pin:hover { border-color: rgba(0, 212, 255, 0.42); }
 .rc-pin:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 .rc-pin-nome { font-size: 12px; font-weight: 600; color: #d3f4ff; text-align: center; }
 .rc-pin-sub {
@@ -1163,6 +1202,7 @@
 .rc-ncond-wrap { display: flex; flex-direction: column; align-items: flex-start; width: 100%; }
 .rc-ncond-caption {
   display: flex; padding: 4px 8px; justify-content: center; align-items: center; gap: 8px;
+  margin-left: 8px;
   border-top: 1px solid rgba(0, 212, 255, 0.14);
   border-right: 1px solid rgba(0, 212, 255, 0.14);
   border-left: 1px solid rgba(0, 212, 255, 0.14);
@@ -1337,3 +1377,52 @@
 }
 .rc-aux-defesa-aviso svg { flex-shrink: 0; margin-top: 1px; color: var(--am, #f5a200); }
 .rc-aux-defesa-aviso strong { color: #f5a200; }
+
+/* ── FichaHeader (/ficha) ──────────────────────────────────────────
+   Cabeçalho que envolve o Console por FORA (ver docblock de
+   `FichaHeader.tsx`) — renderiza ACIMA de `.rc-window-wrap`, fora do
+   escopo onde essa classe declara `--cy`/`--rc-*`. Paleta própria,
+   valores literais (nunca foram computados/derivados em TypeScript,
+   só um objeto de constantes — mover pra CSS não perde nada). Migrado
+   na Fase 6 (auditoria pós-fechamento): antes eram os últimos tokens
+   de `_shell/theme.ts` (área de campanha) importados cruzando pra
+   `/ficha`; agora são só desta folha, sem acoplar com nenhuma outra
+   área. */
+/* `position: fixed` + `z-index: 510` (auditoria pós-Fase-6, 2ª rodada):
+   acima de `.rc-backdrop` (500) e `.rc-window-wrap` (501) — sem isso o
+   header ficava atrás do backdrop em QUALQUER rota (direta ou modal),
+   clicável só na aparência (o backdrop é semi-transparente com blur,
+   deixa o texto visível mas intercepta o clique); abaixo de
+   `.rc-aux-backdrop` (520) de propósito — um modal auxiliar do Console
+   (ex.: confirmar remoção de item) deve continuar bloqueando o header
+   enquanto aberto. Fixo ao viewport também resolve o outro problema
+   (fluxo de documento empurrando o header pra baixo quando aberto via
+   `@modal`) com o mesmo código — ver docblock de `FichaHeader.tsx`. */
+.rc-fichaheader {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 510;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 10px 20px; flex-wrap: wrap;
+  background: #0f1014;
+  border-bottom: 1px solid #2a2b32;
+  color: #e8e8ec;
+}
+.rc-fichaheader-crumbs { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.rc-fichaheader-voltar { color: #5ec8ff; font-size: 12px; text-decoration: none; white-space: nowrap; }
+.rc-fichaheader-sep { opacity: 0.3; }
+.rc-fichaheader-nome {
+  font-size: 13px; font-weight: 600; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; max-width: 220px;
+}
+.rc-fichaheader-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px;
+}
+.rc-fichaheader-badge--narrator { background: #3a2a1a; border: 1px solid #6a4a2a; color: #e0b95c; }
+.rc-fichaheader-badge--player { background: #1a2a3a; border: 1px solid #2a4a6a; color: #5ec8ff; }
+.rc-fichaheader-seletor { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.rc-fichaheader-seletor-rotulo { opacity: 0.6; }
+.rc-fichaheader-select {
+  background: #1d1e24; color: inherit;
+  border: 1px solid #333; border-radius: 6px;
+  padding: 6px 10px; font-size: 13px; max-width: 220px;
+}
