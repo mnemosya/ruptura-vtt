@@ -4,10 +4,14 @@
  * (`resolveCampaignAccess`) — esta página só decide QUANTO buscar
  * conforme o papel (o jogador não precisa das listas usadas só por
  * "Resolver Ataque", ferramenta exclusiva do narrador).
+ *
+ * Campanha, log e roster NÃO são mais buscados aqui: subiram para o
+ * layout, que os entrega ao `CampaignRealtimeProvider` — os painéis que
+ * os consomem vivem na casca e não podem depender de estar na Mesa.
+ * Buscar de novo aqui seria consulta duplicada no mesmo request.
  */
 import { resolveCampaignAccess } from "../../../lib/campaign/access";
-import { listLogsForViewer } from "../../../lib/table/storage";
-import { listCharactersForNarratorCampaign } from "../../../lib/character/storage";
+import { listCharactersForNarratorCampaign, listControlledCharacters } from "../../../lib/character/storage";
 import {
   getCharacterRules,
   getCombatField,
@@ -27,7 +31,6 @@ import {
   type ItemContent,
   type ReactionRules,
 } from "../../../lib/character";
-import type { TableLogEntry } from "../../../lib/table";
 import MesaClient from "./MesaClient";
 
 export const dynamic = "force-dynamic";
@@ -43,13 +46,6 @@ export default async function MesaPage({ params }: PageProps) {
 
   const isNarrator = access.role === "narrator";
 
-  let logs: TableLogEntry[] = [];
-  try {
-    logs = await listLogsForViewer(campaignId, {});
-  } catch {
-    // UI lida com log vazio.
-  }
-
   let personagensAtivos: CharacterRecord[] = [];
   let regras: CharacterRulesPayload | null = null;
   let criticalRules: AttackCriticalRules = normalizeAttackCriticalRules(null);
@@ -57,6 +53,28 @@ export default async function MesaPage({ params }: PageProps) {
   let properties: TechnicalContentItem[] = [];
   let runes: TechnicalContentItem[] = [];
   let reactionRules: ReactionRules = normalizeReactionRules(null);
+  let personagensControlados: CharacterRecord[] = [];
+  // Distinto de "[]" por decisão explícita (auditoria da Fase 4): uma
+  // falha real de leitura não pode virar silenciosamente "você não
+  // controla personagem nenhum" pro jogador — a Mesa do cliente usa
+  // este campo pra mostrar erro+retry em vez do estado vazio quando
+  // `personagensControlados` está vazio só porque a consulta quebrou,
+  // não porque é vazio de verdade.
+  let personagensControladosErro: string | null = null;
+
+  if (!isNarrator) {
+    // "Seus personagens" (Mesa do jogador) — mesma leitura que já
+    // alimenta `controlledCharacterIds` no `CampaignSessionViewer`
+    // (`resolveCampaignSessionViewer`, layout.tsx), chamada de novo
+    // aqui porque aquela descarta os registros inteiros e fica só com
+    // os ids. `CharacterRecord` já traz PV/PE/Mana/Integridade ATUAIS e
+    // colapso/condições no `payload` — nenhuma consulta extra pra isso.
+    try {
+      personagensControlados = (await listControlledCharacters(campaignId)).filter((c) => !c.archived_at);
+    } catch (e) {
+      personagensControladosErro = e instanceof Error ? e.message : "Erro ao carregar seus personagens.";
+    }
+  }
 
   if (isNarrator) {
     // Só o narrador usa "Resolver Ataque" — o jogador não precisa
@@ -101,10 +119,9 @@ export default async function MesaPage({ params }: PageProps) {
 
   return (
     <MesaClient
-      campaign={access.campaign}
-      isNarrator={isNarrator}
-      logsIniciais={logs}
       personagensAtivosIniciais={personagensAtivos}
+      personagensControladosIniciais={personagensControlados}
+      personagensControladosErroInicial={personagensControladosErro}
       regras={regras}
       criticalRules={criticalRules}
       items={items}

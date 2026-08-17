@@ -9,11 +9,18 @@
  * abrir qualquer ficha). Jogador: só os personagens que controla,
  * apenas "Abrir ficha".
  *
- * Fase 5 (aditivo §10.1): jogador com exatamente 1 personagem
- * controlado abre direto a ficha — "a interface deve evitar uma tela
- * de seleção desnecessária". Mesmo padrão já usado em Mercado (Fase 3).
+ * SEM auto-redirect de servidor pro caso de 1 personagem só (correção
+ * #13 do plano da Fase 4 — decisão revista): a versão anterior desta
+ * página tinha `redirect()` quando `personagens.length === 1`, saindo
+ * da campanha sem o usuário ter clicado em nada. Trocar por um
+ * `useEffect` client-side com `router.push()` preservaria o modal, mas
+ * manteria o problema real — flash de conteúdo, navegação que ninguém
+ * pediu. A correção é remover a navegação automática por completo:
+ * `PersonagensJogadorClient` já renderiza a lista normalmente mesmo com
+ * 1 item só (nunca teve um branch especial pra isso — o redirect
+ * simplesmente nunca deixava esse caminho rodar), e uma lista de 1 item
+ * com "Abrir ficha" já É "o personagem mostrado com uma ação explícita".
  */
-import { redirect } from "next/navigation";
 import { resolveCampaignAccess } from "../../../../lib/campaign/access";
 import {
   listCharactersForNarratorCampaign,
@@ -36,8 +43,14 @@ export default async function PersonagensPage({ params }: PageProps) {
   if (access.kind !== "ok") return null; // layout já mostra o estado certo
 
   if (access.role === "narrator") {
+    // A lista de personagens é o conteúdo da tela: falhar nela sobe para
+    // o `error.tsx` da campanha em vez de virar "nenhum personagem"
+    // (mesmo princípio aplicado no Livro e no Mercado na auditoria da
+    // Fase 5). Os três secundários continuam tolerantes — são
+    // enriquecimento da linha (quem controla, nome do jogador) e a
+    // degradação deles já é visível na própria UI.
     const [personagens, controles, membros, participantInfo] = await Promise.all([
-      listCharactersForNarratorCampaign(campaignId).catch(() => []),
+      listCharactersForNarratorCampaign(campaignId),
       listCharacterControllers(campaignId).catch(() => []),
       listCampaignMembers(campaignId).catch(() => []),
       getCampaignParticipantInfo(campaignId).catch(() => new Map()),
@@ -55,9 +68,10 @@ export default async function PersonagensPage({ params }: PageProps) {
     );
   }
 
-  const personagens = (await listControlledCharacters(campaignId).catch(() => [])).filter((c) => !c.archived_at);
-  if (personagens.length === 1) {
-    redirect(`/ficha?campaignId=${campaignId}&characterId=${personagens[0].id}`);
-  }
+  // Mesma regra do branch do narrador: sem `.catch(() => [])`, senão uma
+  // falha de leitura diria ao jogador "você ainda não tem personagens"
+  // (com botão de criar outro) sobre personagens que provavelmente
+  // existem — o caso que a Fase 4 já tinha corrigido na Mesa.
+  const personagens = (await listControlledCharacters(campaignId)).filter((c) => !c.archived_at);
   return <PersonagensJogadorClient campaignId={campaignId} personagens={personagens} />;
 }

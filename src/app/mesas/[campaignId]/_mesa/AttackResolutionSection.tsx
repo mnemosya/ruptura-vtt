@@ -41,7 +41,6 @@ import {
 } from "../../../../lib/character";
 import type { TechnicalContentItem } from "../../../../lib/content";
 import type { CharacterRecord, CharacterRulesPayload } from "../../../../lib/character";
-import { btnPrimary, card, input, text } from "../_shell/theme";
 
 type DefenseType = "esquivar" | "aparar" | "bloquear" | "resistir";
 const DEFENSE_TYPE_LABELS: Record<DefenseType, string> = {
@@ -308,61 +307,61 @@ export function AttackResolutionSection({
 
   return (
     <section aria-labelledby="mesa-ataque-heading" style={{ marginBottom: 32 }}>
-      <h2 id="mesa-ataque-heading" style={{ ...text.h2, marginBottom: 10 }}>Resolver Ataque</h2>
-      <p style={{ ...text.faint, marginBottom: 12 }}>
+      <h2 id="mesa-ataque-heading" className="rm-section-title">Resolver Ataque</h2>
+      <p className="rm-faint" style={{ marginBottom: 12 }}>
         Informe os totais JÁ ROLADOS de ataque e defesa — maior total vence, empate favorece o defensor. Em caso de
         acerto, escolha a região liberada pela margem para aplicar MIT/PD e dano.
       </p>
-      {error && <p role="alert" style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 12 }}>Erro: {error}</p>}
+      {error && <p role="alert" className="rm-erro" style={{ marginBottom: 12 }}>Erro: {error}</p>}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-        <select data-testid="det-ataque-atacante-select" value={ataqueAtacanteId} onChange={(e) => { setAtaqueAtacanteId(e.target.value); setAtaqueItemInstanceId(""); }} className="rv-focusable" style={input}>
+        <select data-testid="det-ataque-atacante-select" value={ataqueAtacanteId} onChange={(e) => { setAtaqueAtacanteId(e.target.value); setAtaqueItemInstanceId(""); }} className="rm-select rv-focusable">
           <option value="">— atacante —</option>
           {personagensAtivos.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        <select data-testid="det-ataque-item-select" value={ataqueItemInstanceId} onChange={(e) => setAtaqueItemInstanceId(e.target.value)} className="rv-focusable" style={input}>
+        <select data-testid="det-ataque-item-select" value={ataqueItemInstanceId} onChange={(e) => setAtaqueItemInstanceId(e.target.value)} className="rm-select rv-focusable">
           <option value="">— arma usada (opcional) —</option>
           {ataqueArmas.map((item) => <option key={item.id} value={item.id}>{item.itemNome}</option>)}
         </select>
-        <select data-testid="det-ataque-alvo-select" value={ataqueAlvoId} onChange={(e) => setAtaqueAlvoId(e.target.value)} className="rv-focusable" style={input}>
+        <select data-testid="det-ataque-alvo-select" value={ataqueAlvoId} onChange={(e) => setAtaqueAlvoId(e.target.value)} className="rm-select rv-focusable">
           <option value="">— alvo —</option>
           {personagensAtivos.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-        <input data-testid="det-ataque-total-ataque" type="number" placeholder="Total do ataque" value={ataqueTotalAtaque} onChange={(e) => setAtaqueTotalAtaque(e.target.value)} className="rv-focusable" style={{ ...input, width: 140 }} />
-        <input data-testid="det-ataque-total-defesa" type="number" placeholder="Total da defesa" value={ataqueTotalDefesa} onChange={(e) => setAtaqueTotalDefesa(e.target.value)} className="rv-focusable" style={{ ...input, width: 140 }} />
-        <select data-testid="det-ataque-defesa-tipo" value={ataqueDefesaTipo} onChange={(e) => setAtaqueDefesaTipo(e.target.value as DefenseType | "nenhuma")} className="rv-focusable" style={input}>
+        <input data-testid="det-ataque-total-ataque" type="number" placeholder="Total do ataque" value={ataqueTotalAtaque} onChange={(e) => setAtaqueTotalAtaque(e.target.value)} className="rm-input rv-focusable" style={{ width: 140 }} />
+        <input data-testid="det-ataque-total-defesa" type="number" placeholder="Total da defesa" value={ataqueTotalDefesa} onChange={(e) => setAtaqueTotalDefesa(e.target.value)} className="rm-input rv-focusable" style={{ width: 140 }} />
+        <select data-testid="det-ataque-defesa-tipo" value={ataqueDefesaTipo} onChange={(e) => setAtaqueDefesaTipo(e.target.value as DefenseType | "nenhuma")} className="rm-select rv-focusable">
           <option value="nenhuma">Sem reação declarada</option>
           {(["esquivar", "aparar", "bloquear", "resistir"] as DefenseType[]).map((tipo) => <option key={tipo} value={tipo}>{DEFENSE_TYPE_LABELS[tipo]}</option>)}
         </select>
-        <input data-testid="det-ataque-formula-dano" type="text" placeholder="Fórmula de dano (ex.: 1d6+2)" value={ataqueFormulaDano} onChange={(e) => setAtaqueFormulaDano(e.target.value)} className="rv-focusable" style={{ ...input, width: 180 }} />
-        <input data-testid="det-ataque-tipo-dano" type="text" placeholder="Tipo de dano" value={ataqueTipoDano} onChange={(e) => setAtaqueTipoDano(e.target.value)} className="rv-focusable" style={{ ...input, width: 120 }} />
-        <input data-testid="det-ataque-subtipo-dano" type="text" placeholder="Subtipo de dano (opcional)" value={ataqueSubtipoDano} onChange={(e) => setAtaqueSubtipoDano(e.target.value)} className="rv-focusable" style={{ ...input, width: 220 }} />
+        <input data-testid="det-ataque-formula-dano" type="text" placeholder="Fórmula de dano (ex.: 1d6+2)" value={ataqueFormulaDano} onChange={(e) => setAtaqueFormulaDano(e.target.value)} className="rm-input rv-focusable" style={{ width: 180 }} />
+        <input data-testid="det-ataque-tipo-dano" type="text" placeholder="Tipo de dano" value={ataqueTipoDano} onChange={(e) => setAtaqueTipoDano(e.target.value)} className="rm-input rv-focusable" style={{ width: 120 }} />
+        <input data-testid="det-ataque-subtipo-dano" type="text" placeholder="Subtipo de dano (opcional)" value={ataqueSubtipoDano} onChange={(e) => setAtaqueSubtipoDano(e.target.value)} className="rm-input rv-focusable" style={{ width: 220 }} />
       </div>
-      <button data-testid="det-calcular-margem" onClick={handleCalcularMargem} disabled={ataqueProcessing} className="rv-btn rv-focusable" style={{ ...btnPrimary, opacity: ataqueProcessing ? 0.6 : 1 }}>
+      <button data-testid="det-calcular-margem" onClick={handleCalcularMargem} disabled={ataqueProcessing} className="rm-btn rm-btn-primary rv-focusable">
         {ataqueProcessing ? "Calculando…" : "Calcular Margem"}
       </button>
-      {ataqueReacaoAviso && <p data-testid="det-ataque-reacao-aviso" style={{ fontSize: 12, color: "#e0b95c", marginTop: 8 }}>{ataqueReacaoAviso}</p>}
-      {ataqueResultado && <p data-testid="det-ataque-resultado" style={{ fontSize: 12, opacity: 0.85, marginTop: 10 }}>{ataqueResultado}</p>}
+      {ataqueReacaoAviso && <p data-testid="det-ataque-reacao-aviso" style={{ fontSize: 12, color: "var(--am)", marginTop: 8 }}>{ataqueReacaoAviso}</p>}
+      {ataqueResultado && <p data-testid="det-ataque-resultado" className="rm-faint" style={{ marginTop: 10 }}>{ataqueResultado}</p>}
       {ataqueMargemPendente && (
-        <div data-testid="det-ataque-margem-pendente" style={{ ...card, marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+        <div data-testid="det-ataque-margem-pendente" className="rm-card" style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
           <strong>Margem {ataqueMargemPendente.margin} ({ataqueMargemPendente.band.band}) — escolha a região atingida</strong>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            <select data-testid="det-ataque-regiao-select" value={ataqueRegiaoEscolhida} onChange={(e) => setAtaqueRegiaoEscolhida(e.target.value as BodyRegion)} className="rv-focusable" style={input}>
+            <select data-testid="det-ataque-regiao-select" value={ataqueRegiaoEscolhida} onChange={(e) => setAtaqueRegiaoEscolhida(e.target.value as BodyRegion)} className="rm-select rv-focusable">
               <option value="">— região —</option>
               {ataqueMargemPendente.band.allowedRegions.map((regiao) => <option key={regiao} value={regiao}>{BODY_REGION_LABELS[regiao]}</option>)}
             </select>
-            <button data-testid="det-aplicar-dano" onClick={handleAplicarDano} disabled={ataqueProcessing || !ataqueRegiaoEscolhida} className="rv-btn rv-focusable" style={{ ...btnPrimary, opacity: ataqueProcessing || !ataqueRegiaoEscolhida ? 0.6 : 1 }}>
+            <button data-testid="det-aplicar-dano" onClick={handleAplicarDano} disabled={ataqueProcessing || !ataqueRegiaoEscolhida} className="rm-btn rm-btn-primary rv-focusable">
               {ataqueProcessing ? "Aplicando…" : "Aplicar Dano"}
             </button>
-            <button data-testid="det-cancelar-ataque-pendente" onClick={handleCancelarAtaquePendente} disabled={ataqueProcessing} className="rv-btn rv-focusable" style={{ background: "transparent", border: "1px solid #333", borderRadius: 6, padding: "7px 14px", fontSize: 13, cursor: "pointer" }}>
+            <button data-testid="det-cancelar-ataque-pendente" onClick={handleCancelarAtaquePendente} disabled={ataqueProcessing} className="rm-btn rm-btn-ghost rv-focusable">
               Cancelar
             </button>
           </div>
         </div>
       )}
       {ataqueSugestoesCriticas.length > 0 && (
-        <div data-testid="det-ataque-propriedades-criticas" style={{ ...card, marginTop: 8 }}>
+        <div data-testid="det-ataque-propriedades-criticas" className="rm-card" style={{ marginTop: 8 }}>
           <strong>Propriedades críticas — lembretes manuais</strong>
           {ataqueSugestoesCriticas.map((suggestion) => (
             <p key={suggestion.id} style={{ margin: "4px 0 0", fontSize: 12 }}>

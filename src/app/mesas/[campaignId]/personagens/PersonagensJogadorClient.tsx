@@ -9,7 +9,6 @@
  */
 import Link from "next/link";
 import type { CharacterRecord } from "../../../../lib/character";
-import { btnPrimary, card, emptyState, pageContainer, text } from "../_shell/theme";
 
 export default function PersonagensJogadorClient({
   campaignId,
@@ -19,31 +18,30 @@ export default function PersonagensJogadorClient({
   personagens: CharacterRecord[];
 }) {
   return (
-    <main style={pageContainer()}>
-      <h1 style={{ ...text.h1, marginBottom: 20 }}>Personagens</h1>
+    <main className="rm-page">
+      <h1 className="rm-page-title">Personagens</h1>
 
       {personagens.length === 0 ? (
-        <div style={emptyState} data-testid="personagens-vazio-jogador">
+        <div className="rm-empty" data-testid="personagens-vazio-jogador">
           <p style={{ margin: 0 }}>Você ainda não controla um personagem nesta campanha.</p>
           <Link
             href={`/mesas/${campaignId}/personagens/novo`}
             data-testid="personagens-criar-jogador"
-            className="rv-btn rv-focusable"
-            style={{ ...btnPrimary, display: "inline-block", textDecoration: "none", marginTop: 12 }}
+            className="rm-btn rm-btn-primary rv-focusable"
+            style={{ marginTop: 12 }}
           >
             Criar personagem
           </Link>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }} data-testid="personagens-lista-jogador">
+        <div className="rm-card-grid" data-testid="personagens-lista-jogador">
           {personagens.map((c) => (
-            <div key={c.id} data-testid="personagens-item-jogador" style={{ ...card, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div key={c.id} data-testid="personagens-item-jogador" className="rm-card rm-card-row">
               <strong style={{ fontSize: 14 }}>{c.name}</strong>
               <Link
                 href={`/ficha?campaignId=${campaignId}&characterId=${c.id}`}
                 data-testid={`personagens-abrir-ficha-${c.id}`}
-                className="rv-focusable"
-                style={{ background: "#1d1e24", color: "inherit", border: "1px solid #333", borderRadius: 6, padding: "7px 14px", fontSize: 13, textDecoration: "none" }}
+                className="rm-btn rm-btn-primary rv-focusable"
               >
                 Abrir ficha
               </Link>

@@ -16,7 +16,6 @@ import { buildCampaignEndRoundSummary } from "../../../../lib/table/endRoundSumm
 import { endCampaignScene } from "../../../../lib/table/endScene";
 import { buildCampaignEndSceneSummary } from "../../../../lib/table/endSceneSummary";
 import type { Campaign } from "../../../../lib/table";
-import { btnPrimary, text } from "../_shell/theme";
 
 export function RoundSceneSection({
   campaign,
@@ -70,14 +69,14 @@ export function RoundSceneSection({
 
   return (
     <section aria-labelledby="mesa-rodada-heading" style={{ marginBottom: 32 }}>
-      <h2 id="mesa-rodada-heading" style={{ ...text.h2, marginBottom: 10 }}>Rodada e cena</h2>
+      <h2 id="mesa-rodada-heading" className="rm-section-title">Rodada e cena</h2>
       {isNarrator && (
-        <p style={{ ...text.faint, marginBottom: 12 }}>
+        <p className="rm-faint" style={{ marginBottom: 12 }}>
           &quot;Encerrar Rodada&quot; processa todos os personagens vinculados (dano/testes de condição, renovação de
           PA/Reações). &quot;Encerrar Cena&quot; resolve Ruptura pendente, Integridade e Mana máxima de todos.
         </p>
       )}
-      {error && <p role="alert" style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 12 }}>Erro: {error}</p>}
+      {error && <p role="alert" className="rm-erro" style={{ marginBottom: 12 }}>Erro: {error}</p>}
       <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
         <span data-testid="det-rodada-atual" style={{ fontSize: 13 }}>
           Rodada <strong>{campaign.current_round}</strong>
@@ -87,8 +86,7 @@ export function RoundSceneSection({
             data-testid="det-encerrar-rodada"
             onClick={handleEndRound}
             disabled={endRoundProcessing}
-            className="rv-btn rv-focusable"
-            style={{ ...btnPrimary, opacity: endRoundProcessing ? 0.6 : 1 }}
+            className="rm-btn rm-btn-primary rv-focusable"
           >
             {endRoundProcessing ? "Processando…" : "Encerrar Rodada"}
           </button>
@@ -101,8 +99,7 @@ export function RoundSceneSection({
             data-testid="det-encerrar-cena"
             onClick={handleEndScene}
             disabled={endSceneProcessing}
-            className="rv-btn rv-focusable"
-            style={{ ...btnPrimary, opacity: endSceneProcessing ? 0.6 : 1 }}
+            className="rm-btn rm-btn-primary rv-focusable"
           >
             {endSceneProcessing ? "Processando…" : "Encerrar Cena"}
           </button>

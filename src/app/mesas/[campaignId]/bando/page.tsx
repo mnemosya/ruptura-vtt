@@ -25,7 +25,9 @@ export default async function BandoPage({ params }: PageProps) {
   const access = await resolveCampaignAccess(campaignId);
   if (access.kind !== "ok") return null; // layout já mostra o estado certo
 
-  const itens = await listCrewInventory(campaignId).catch(() => []);
+  // Sem `.catch(() => [])`: uma falha de leitura viraria "o bando não
+  // tem nada", indistinguível de um inventário genuinamente vazio.
+  const itens = await listCrewInventory(campaignId);
 
   return <BandoClient campaignId={campaignId} isNarrator={access.role === "narrator"} itensIniciais={itens} />;
 }

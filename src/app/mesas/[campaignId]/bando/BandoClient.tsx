@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { listCrewInventory, removeCrewInventoryItem, type CrewInventoryItem } from "../../../../lib/table/crewInventory";
-import { btnDanger, btnGhost, card, emptyState, pageContainer, text } from "../_shell/theme";
 
 export default function BandoClient({
   campaignId,
@@ -40,24 +39,24 @@ export default function BandoClient({
   }
 
   return (
-    <main style={pageContainer()}>
+    <main className="rm-page">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <h1 style={text.h1}>Bando</h1>
-        <button onClick={reload} className="rv-btn rv-focusable" style={btnGhost}>Atualizar</button>
+        <h1 className="rm-page-title" style={{ marginBottom: 0 }}>Bando</h1>
+        <button onClick={reload} className="rm-btn rm-btn-ghost rv-focusable">Atualizar</button>
       </div>
-      <p style={{ ...text.faint, marginBottom: 16 }}>
+      <p className="rm-faint" style={{ marginBottom: 16 }}>
         Inventário compartilhado do grupo. Enviar ou retirar um item específico é feito pela ficha do
         personagem (aba Mesa/Inventário) — aqui você vê o que já está guardado{isNarrator ? " e pode remover itens" : ""}.
       </p>
 
-      {error && <p role="alert" style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 16 }}>Erro: {error}</p>}
+      {error && <p role="alert" className="rm-erro" style={{ marginBottom: 16 }}>Erro: {error}</p>}
 
       {itens.length === 0 ? (
-        <div style={emptyState}>O bando ainda não tem nenhum item.</div>
+        <div className="rm-empty">O bando ainda não tem nenhum item.</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {itens.map((item) => (
-            <div key={item.id} style={{ ...card, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div key={item.id} className="rm-card rm-card-row">
               <span>
                 {item.itemName ?? "(item sem nome)"}
                 {item.quantity != null && item.quantity > 1 ? ` ×${item.quantity}` : ""}
@@ -66,8 +65,7 @@ export default function BandoClient({
                 <button
                   onClick={() => remover(item.id)}
                   disabled={busyId === item.id}
-                  className="rv-btn rv-focusable"
-                  style={{ ...btnDanger, opacity: busyId === item.id ? 0.6 : 1 }}
+                  className="rm-btn rm-btn-danger rv-focusable"
                 >
                   {busyId === item.id ? "Removendo…" : "Remover"}
                 </button>

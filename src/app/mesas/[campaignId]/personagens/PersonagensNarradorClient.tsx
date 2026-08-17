@@ -30,7 +30,6 @@ import { createInitialCharacter, type CharacterRecord } from "../../../../lib/ch
 import { isPersonagemPn, personagemMatchesFiltro, type PersonagemFiltro } from "../../../../lib/character/personagensFilter";
 import { getCampaignParticipantInfo, type CampaignParticipantInfo } from "../../../../lib/table/storage";
 import type { CampaignMember } from "../../../../lib/table";
-import { badge, btnDanger, btnGhost, btnPrimary, card, color, emptyState, input, pageContainer, text } from "../_shell/theme";
 
 type Filtro = PersonagemFiltro;
 const FILTROS: { id: Filtro; label: string }[] = [
@@ -249,23 +248,22 @@ export default function PersonagensNarradorClient({
   }
 
   return (
-    <main style={pageContainer(1040)}>
+    <main className="rm-page">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
-        <h1 style={text.h1}>Personagens</h1>
+        <h1 className="rm-page-title" style={{ marginBottom: 0 }}>Personagens</h1>
         <button
           data-testid="personagens-toggle-criar"
           onClick={() => setMostrarCriar((v) => !v)}
-          className="rv-btn rv-focusable"
-          style={btnPrimary}
+          className="rm-btn rm-btn-primary rv-focusable"
         >
           {mostrarCriar ? "Cancelar" : "Criar personagem"}
         </button>
       </div>
 
-      {error && <p role="alert" style={{ color: color.danger, fontSize: 13, marginBottom: 16 }}>Erro: {error}</p>}
+      {error && <p role="alert" className="rm-erro" style={{ marginBottom: 16 }}>Erro: {error}</p>}
 
       {mostrarCriar && (
-        <div style={{ ...card, display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+        <div className="rm-card" style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             <input
               data-testid="personagens-novo-nome"
@@ -273,8 +271,8 @@ export default function PersonagensNarradorClient({
               onChange={(e) => setNovoNome(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && novoNome.trim()) criarPersonagem(); }}
               placeholder="Nome do novo personagem"
-              className="rv-focusable"
-              style={{ ...input, flex: 1, minWidth: 200 }}
+              className="rm-input rv-focusable"
+              style={{ flex: 1, minWidth: 200 }}
             />
             <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
               <input type="checkbox" checked={novoPn} onChange={(e) => setNovoPn(e.target.checked)} data-testid="personagens-novo-pn" />
@@ -284,20 +282,19 @@ export default function PersonagensNarradorClient({
               data-testid="personagens-criar-submit"
               onClick={criarPersonagem}
               disabled={!novoNome.trim() || busy === "criar"}
-              className="rv-btn rv-focusable"
-              style={{ ...btnPrimary, opacity: !novoNome.trim() || busy === "criar" ? 0.6 : 1 }}
+              className="rm-btn rm-btn-primary rv-focusable"
             >
               {busy === "criar" ? "Criando…" : "Criar"}
             </button>
           </div>
-          <Link href={`/mesas/${campaignId}/personagens/novo`} className="rv-focusable" style={{ color: color.accent, fontSize: 12 }}>
+          <Link href={`/mesas/${campaignId}/personagens/novo`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12 }}>
             Ou usar o assistente de criação completo →
           </Link>
         </div>
       )}
 
       <div style={{ display: "flex", gap: 16, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
-        <label style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)" }} htmlFor="personagens-busca">
+        <label className="rm-sr-only" htmlFor="personagens-busca">
           Buscar personagem por nome
         </label>
         <input
@@ -306,15 +303,14 @@ export default function PersonagensNarradorClient({
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
           placeholder="Buscar por nome…"
-          className="rv-focusable"
-          style={{ ...input, minWidth: 220 }}
+          className="rm-input rv-focusable"
+          style={{ minWidth: 220 }}
         />
         <select
           data-testid="personagens-ordenacao"
           value={ordenacao}
           onChange={(e) => setOrdenacao(e.target.value as Ordenacao)}
-          className="rv-focusable"
-          style={input}
+          className="rm-select rv-focusable"
           aria-label="Ordenar por"
         >
           <option value="atualizado">Mais recentes primeiro</option>
@@ -322,7 +318,7 @@ export default function PersonagensNarradorClient({
         </select>
       </div>
 
-      <div role="tablist" aria-label="Filtrar personagens" style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap" }}>
+      <div role="tablist" aria-label="Filtrar personagens" className="rm-pills" style={{ marginBottom: 20 }}>
         {FILTROS.map((f) => (
           <button
             key={f.id}
@@ -330,16 +326,7 @@ export default function PersonagensNarradorClient({
             aria-selected={filtro === f.id}
             data-testid={`personagens-filtro-${f.id}`}
             onClick={() => setFiltro(f.id)}
-            className="rv-focusable"
-            style={{
-              background: filtro === f.id ? "#22314a" : color.surface,
-              color: filtro === f.id ? "#cfe6ff" : "inherit",
-              border: `1px solid ${filtro === f.id ? "#3a5a8a" : color.border}`,
-              borderRadius: 999,
-              padding: "6px 14px",
-              fontSize: 12,
-              cursor: "pointer",
-            }}
+            className="rm-pill rv-focusable"
           >
             {f.label} ({contagens[f.id]})
           </button>
@@ -347,7 +334,7 @@ export default function PersonagensNarradorClient({
       </div>
 
       {listaFiltrada.length === 0 ? (
-        <div style={emptyState} data-testid="personagens-vazio-narrador">
+        <div className="rm-empty" data-testid="personagens-vazio-narrador">
           {personagens.length === 0
             ? "Nenhum personagem nesta campanha ainda. Crie o primeiro acima."
             : "Nenhum personagem corresponde à busca/filtro atual."}
@@ -360,38 +347,37 @@ export default function PersonagensNarradorClient({
             const jogadoresSemControle = jogadoresAtivos.filter((m) => !controladores.some((ctrl) => ctrl.user_id === m.user_id));
             const arquivado = !!c.archived_at;
             return (
-              <div key={c.id} data-testid="personagens-item-narrador" style={{ ...card, display: "flex", flexDirection: "column", gap: 8, opacity: arquivado ? 0.7 : 1 }}>
+              <div key={c.id} data-testid="personagens-item-narrador" className="rm-card" style={{ display: "flex", flexDirection: "column", gap: 8, opacity: arquivado ? 0.7 : 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <strong style={{ fontSize: 14 }}>{c.name}</strong>
-                    {arquivado && <span style={badge("narrator")}>Arquivado</span>}
-                    {!arquivado && isPersonagemPn(c) && <span style={badge("narrator")}>PN</span>}
-                    {!arquivado && !isPersonagemPn(c) && activeCount === 0 && <span style={badge("player")}>Sem jogador</span>}
+                    {arquivado && <span className="rm-badge rm-badge--warn">Arquivado</span>}
+                    {!arquivado && isPersonagemPn(c) && <span className="rm-badge rm-badge--warn">PN</span>}
+                    {!arquivado && !isPersonagemPn(c) && activeCount === 0 && <span className="rm-badge">Sem jogador</span>}
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <Link
                       href={`/ficha?campaignId=${campaignId}&characterId=${c.id}`}
                       data-testid={`personagens-abrir-ficha-${c.id}`}
-                      className="rv-focusable"
-                      style={{ background: "#1d1e24", color: "inherit", border: "1px solid #333", borderRadius: 6, padding: "6px 12px", fontSize: 12, textDecoration: "none" }}
+                      className="rm-btn rm-btn-primary rv-focusable"
                     >
                       Abrir ficha
                     </Link>
                     {!arquivado && (
                       <>
-                        <button onClick={() => renomear(c.id, c.name)} disabled={busy === c.id} className="rv-btn rv-focusable" style={btnGhost}>Renomear</button>
-                        <button onClick={() => duplicar(c.id)} disabled={busy === c.id} className="rv-btn rv-focusable" style={btnGhost}>Duplicar</button>
-                        <button data-testid={`personagens-arquivar-${c.id}`} onClick={() => arquivar(c.id)} disabled={busy === c.id} className="rv-btn rv-focusable" style={btnDanger}>Arquivar</button>
+                        <button onClick={() => renomear(c.id, c.name)} disabled={busy === c.id} className="rm-btn rm-btn-ghost rv-focusable">Renomear</button>
+                        <button onClick={() => duplicar(c.id)} disabled={busy === c.id} className="rm-btn rm-btn-ghost rv-focusable">Duplicar</button>
+                        <button data-testid={`personagens-arquivar-${c.id}`} onClick={() => arquivar(c.id)} disabled={busy === c.id} className="rm-btn rm-btn-danger rv-focusable">Arquivar</button>
                       </>
                     )}
                     {arquivado && (
-                      <button data-testid={`personagens-restaurar-${c.id}`} onClick={() => restaurar(c.id)} disabled={busy === c.id} className="rv-btn rv-focusable" style={btnGhost}>Restaurar</button>
+                      <button data-testid={`personagens-restaurar-${c.id}`} onClick={() => restaurar(c.id)} disabled={busy === c.id} className="rm-btn rm-btn-ghost rv-focusable">Restaurar</button>
                     )}
                   </div>
                 </div>
                 {!arquivado && (
                   <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 11, opacity: 0.6 }}>
+                    <span className="rm-faint">
                       {controladores.length === 0 ? "Nenhum jogador atribuído" : `Jogador${controladores.length > 1 ? "es" : ""}: ${controladores.map((ctrl) => nomeDe(ctrl.user_id)).join(", ")}`}
                     </span>
                     {controladores.map((ctrl) => (
@@ -400,8 +386,8 @@ export default function PersonagensNarradorClient({
                         data-testid={`personagens-remover-controle-${c.id}-${ctrl.user_id}`}
                         onClick={() => removerControle(c.id, ctrl.user_id)}
                         disabled={busy === c.id}
-                        className="rv-btn rv-focusable"
-                        style={{ ...btnGhost, fontSize: 11 }}
+                        className="rm-btn rm-btn-ghost rv-focusable"
+                        style={{ fontSize: 11, padding: "5px 10px" }}
                       >
                         Remover controle de {nomeDe(ctrl.user_id)}
                       </button>
@@ -412,8 +398,8 @@ export default function PersonagensNarradorClient({
                         defaultValue=""
                         disabled={busy === c.id}
                         onChange={(e) => { if (e.target.value) atribuir(c.id, e.target.value); e.target.value = ""; }}
-                        className="rv-focusable"
-                        style={{ ...input, fontSize: 11 }}
+                        className="rm-select rv-focusable"
+                        style={{ fontSize: 11 }}
                         aria-label={`Atribuir jogador a ${c.name}`}
                       >
                         <option value="">— Atribuir jogador —</option>
