@@ -28,6 +28,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LinkPending } from "../../../_design/NavPending";
 import type { CampaignRole } from "../../../../lib/campaign/access";
 import {
   Backpack,
@@ -51,7 +52,7 @@ interface NavItem {
 
 function grupoJogo(campaignId: string): NavItem[] {
   return [
-    { href: `/mesas/${campaignId}`, label: "Mesa", Icone: Monitor, exact: true },
+    { href: `/mesas/${campaignId}/vtt`, label: "Mesa", Icone: Monitor, exact: true },
     { href: `/mesas/${campaignId}/personagens`, label: "Personagens", Icone: Users },
     { href: `/mesas/${campaignId}/bando`, label: "Bando", Icone: Backpack },
     { href: `/mesas/${campaignId}/mercado`, label: "Mercado", Icone: Store },
@@ -96,6 +97,9 @@ function ItemTrilho({ item, ativo }: { item: NavItem; ativo: boolean }) {
       <span className="rm-navrail-hint" aria-hidden="true">
         {item.label}
       </span>
+      {/* Marca o destino enquanto a rota está em voo — ver
+          `NavPending.tsx` e `.mo-linkflag`/`:has()` em `mesa.css`. */}
+      <LinkPending />
     </Link>
   );
 }
@@ -134,6 +138,7 @@ export function CampaignNav({ campaignId, role }: { campaignId: string; role: Ca
           <span className="rm-navrail-hint" aria-hidden="true">
             Minhas Campanhas
           </span>
+          <LinkPending />
         </Link>
       </div>
     </nav>

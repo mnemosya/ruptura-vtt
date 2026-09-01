@@ -189,7 +189,7 @@ async function main() {
     await page.goto(`${BASE_URL}/mesas`, { waitUntil: "networkidle" });
     const hrefs = await page.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? ""));
     const campaignId = hrefs
-      .map((h) => h.match(/^\/mesas\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i)?.[1])
+      .map((h) => h.match(/^\/mesas\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\/|$)/i)?.[1])
       .find(Boolean);
     if (!campaignId) {
       registrar("0 (campanha de teste)", false, "Nenhuma campanha encontrada em /mesas para esta conta.");
@@ -549,6 +549,35 @@ async function main() {
       // tivesse falhado, porque o relógio simulado engana só o browser.
       // Este marcador fecha esse buraco.
       const authAntes = await lerAuthRealtimeAplicada(page);
+
+      // O relógio simulado engana só o BROWSER — a requisição real que
+      // o timer dispara chega ao servidor no relógio REAL, segundos
+      // depois da carga da página, com o access token real ainda longe
+      // do vencimento de verdade. Desde que `refreshAccessToken`
+      // (`lib/auth/actions.ts`) ganhou uma checagem de "já foi renovado
+      // agora mesmo" — pra não girar o refresh token duas vezes com
+      // `middleware.ts` — essa checagem decodifica o `exp` REAL do
+      // token e, vendo validade de sobra, devolve o MESMO token sem
+      // tocar o Supabase: correto do ponto de vista do servidor, mas
+      // silenciosamente esvaziava este critério (nenhuma rotação de
+      // verdade acontecia, então `expDepois > expAntes` nunca seria
+      // provado por uma razão nova). Troca o cookie por um access token
+      // que DECODIFICA como vencido (mantendo o refresh token REAL) —
+      // força tanto o middleware quanto a Server Action a passarem pelo
+      // Supabase de verdade quando o timer disparar.
+      const cookiesAntesForcar = await page.context().cookies();
+      const brutoAntesForcar = cookiesAntesForcar.find((c) => c.name === "ruptura_auth")?.value;
+      const refreshTokenReal = brutoAntesForcar
+        ? (JSON.parse(decodeURIComponent(brutoAntesForcar)) as { refresh_token?: string }).refresh_token
+        : undefined;
+      if (refreshTokenReal) {
+        await page.context().addCookies([{
+          name: "ruptura_auth",
+          value: JSON.stringify({ access_token: "cabecalho.expirado.forcado", refresh_token: refreshTokenReal }),
+          domain: "localhost", path: "/", httpOnly: true, secure: false, sameSite: "Lax",
+          expires: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30,
+        }]);
+      }
 
       // Ultrapassa a validade do access token (~1h). O agendamento
       // dispara a renovação silenciosa durante este salto.

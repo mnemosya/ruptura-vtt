@@ -277,10 +277,26 @@ async function main() {
     }
 
     // --- 4. Escape fecha e devolve o foco ao botão ---
+    /*
+     * NOTA DE TIMING (fase de motion): fechar o drawer deixou de ser
+     * instantâneo — a superfície agora tem transição de SAÍDA de 150ms
+     * (`--mo-dur-exit`, ver a media query em `mesa.css`), então
+     * `display` só volta pra `none` no fim dela. Um `waitForTimeout(150)`
+     * seguido de leitura imediata vira corrida com a própria animação:
+     * o check reprovava por chegar um frame cedo, não por regressão.
+     *
+     * A correção NÃO é dormir mais: é esperar o ESTADO, com
+     * `waitFor({ state })`. Isso é estritamente mais forte que o sleep
+     * fixo anterior — falha de verdade se o painel nunca fechar (estoura
+     * o timeout), e não depende de a duração da animação ser adivinhada
+     * aqui. Mesma troca nos critérios 4 e 5.
+     */
     {
       await page.keyboard.press("Escape");
-      await page.waitForTimeout(150);
-      const fechado = await painel.isHidden();
+      const fechado = await painel
+        .waitFor({ state: "hidden", timeout: 2000 })
+        .then(() => true)
+        .catch(() => false);
       const focoNoBotao = await page.evaluate(() => document.activeElement?.getAttribute("data-testid") === "campshell-drawer-toggle");
       registrar("4 (Escape fecha e devolve foco ao botão)", fechado && focoNoBotao, `fechado=${fechado}, foco voltou ao toggle=${focoNoBotao}`);
     }
@@ -297,8 +313,10 @@ async function main() {
       // "cobre tudo, exceto o trilho".
       const cobreConteudoTodo = !!box && box.x >= 50 && box.width >= 970 && box.height >= 800;
       await backdrop.click({ position: { x: 5, y: 5 } }); // canto do backdrop, longe do painel (que fica à direita)
-      await page.waitForTimeout(150);
-      const fechouAoClicar = await painel.isHidden();
+      const fechouAoClicar = await painel
+        .waitFor({ state: "hidden", timeout: 2000 })
+        .then(() => true)
+        .catch(() => false);
       registrar(
         "5 (backdrop cobre o conteúdo mas poupa o trilho, e fecha ao clicar)",
         backdropVisivel && cobreConteudoTodo && fechouAoClicar,

@@ -124,7 +124,7 @@ export default async function NovoPersonagemPage({ params }: PageProps) {
           atributos/perícias reais da Biblioteca.
         </p>
         <div className="rm-boundary-acoes">
-          <Link href={`/mesas/${campaignId}`} className="rm-btn rm-btn-ghost rv-focusable">← Voltar à mesa</Link>
+          <Link href={`/mesas/${campaignId}/vtt`} className="rm-btn rm-btn-ghost rv-focusable">← Voltar à mesa</Link>
         </div>
       </main>
     );

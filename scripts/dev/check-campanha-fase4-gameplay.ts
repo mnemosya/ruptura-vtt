@@ -219,7 +219,7 @@ async function main() {
   await withAuthenticatedPage(async (narradorPage) => {
     await narradorPage.goto(`${BASE_URL}/mesas`, { waitUntil: "networkidle" });
     const hrefs = await narradorPage.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? ""));
-    campaignId = hrefs.map((h) => h.match(/^\/mesas\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i)?.[1]).find(Boolean) ?? null;
+    campaignId = hrefs.map((h) => h.match(/^\/mesas\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\/|$)/i)?.[1]).find(Boolean) ?? null;
     if (!campaignId) {
       registrar("0 (campanha de teste)", false, "nenhuma campanha encontrada em /mesas para esta conta");
       return;
@@ -492,7 +492,14 @@ async function main() {
     // --- 8. Abrir ficha a partir de Personagens abre como MODAL (campanha continua montada) ---
     await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "networkidle" });
     await jogadorPage.locator(`[data-testid="personagens-abrir-ficha-${characterId}"]`).click();
-    await jogadorPage.waitForTimeout(600);
+    // Espera a URL virar, não um tempo fixo. O `waitForTimeout(600)`
+    // anterior era uma aposta na velocidade do commit da rota
+    // interceptada — reprovou quando o carregamento da ficha passou de
+    // 600ms, sem que a interceptação em si tivesse qualquer problema
+    // (o modal abria, só um pouco depois da leitura). Esperar o
+    // destino é mais forte: falha de verdade se o modal NÃO abrir.
+    await jogadorPage.waitForURL(/\/ficha\?/, { timeout: 15000 }).catch(() => {});
+    await jogadorPage.waitForTimeout(300);
     {
       const url = jogadorPage.url();
       const viradouFicha = url.includes("/ficha?") && url.includes(`characterId=${characterId}`);

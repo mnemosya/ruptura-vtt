@@ -177,8 +177,14 @@ export function SessionPanel() {
         </p>
       )}
 
+      {/*
+        `mo-panel-in`: troca de aba ganha a MESMA entrada curta de
+        qualquer painel (200ms, 6px) — nunca a de rota (260ms), porque
+        a moldura não mudou, só o miolo. Sem isto, Log e Participantes
+        trocavam secos e nada dizia qual dos dois acabou de chegar.
+      */}
       {aba === "log" ? (
-        <div className="rm-session-body">
+        <div className="rm-session-body mo-panel-in">
           <div className="rm-session-log" ref={scrollRef} onScroll={aoRolar} data-testid="session-log-scroll">
             {logs.length === 0 ? (
               <p className="rm-vazio">Nenhum evento nesta campanha ainda.</p>
@@ -198,7 +204,7 @@ export function SessionPanel() {
           )}
         </div>
       ) : (
-        <div className="rm-session-body">
+        <div className="rm-session-body mo-panel-in">
           <div className="rm-session-roster-head">
             <span className="rm-vazio">{isNarrator ? "Como narrador, você vê tudo (público, privado e de narrador)." : "Você vê os eventos públicos e os seus próprios."}</span>
             <button type="button" className="rm-session-roster-atualizar" onClick={() => reloadMembers()} data-testid="session-roster-atualizar">

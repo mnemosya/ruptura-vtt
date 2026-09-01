@@ -177,7 +177,7 @@ async function main() {
     await narradorPage.goto(`${BASE_URL}/mesas`, { waitUntil: "networkidle" });
     const hrefs = await narradorPage.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? ""));
     campaignId =
-      hrefs.map((h) => h.match(/^\/mesas\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i)?.[1]).find(Boolean) ?? null;
+      hrefs.map((h) => h.match(/^\/mesas\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\/|$)/i)?.[1]).find(Boolean) ?? null;
     if (!campaignId) {
       registrar("0 (campanha de teste)", false, "nenhuma campanha encontrada em /mesas para esta conta");
       return;

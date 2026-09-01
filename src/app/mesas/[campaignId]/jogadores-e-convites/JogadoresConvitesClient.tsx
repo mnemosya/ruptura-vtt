@@ -24,6 +24,7 @@
  * válidos ficam, o banner aparece por cima com "Tentar de novo".
  */
 import { useState } from "react";
+import { Spinner } from "../../../_design/icons";
 import {
   createCampaignInvite,
   createCampaignEmailInvite,
@@ -250,7 +251,15 @@ export default function JogadoresConvitesClient({ campaignId, membrosIniciais, c
             className="rm-input rv-focusable"
             style={{ flex: 1, minWidth: 140 }}
           />
-          <button data-testid="det-criar-convite-email" onClick={criarConviteEmail} disabled={!conviteEmail.trim() || busyInvite} className="rm-btn rm-btn-primary rv-focusable">
+          <button
+            data-testid="det-criar-convite-email"
+            onClick={criarConviteEmail}
+            disabled={!conviteEmail.trim() || busyInvite}
+            data-pending={busyInvite}
+            aria-busy={busyInvite}
+            className="rm-btn rm-btn-primary rv-focusable"
+          >
+            {busyInvite && <Spinner size={13} strokeWidth={2} className="mo-spin" aria-hidden="true" />}
             Convidar por e-mail
           </button>
         </div>
@@ -286,7 +295,15 @@ export default function JogadoresConvitesClient({ campaignId, membrosIniciais, c
             className="rm-input rv-focusable"
             style={{ flex: 1 }}
           />
-          <button data-testid="det-criar-convite" onClick={criarConvite} disabled={busyInvite} className="rm-btn rm-btn-primary rv-focusable">
+          <button
+            data-testid="det-criar-convite"
+            onClick={criarConvite}
+            disabled={busyInvite}
+            data-pending={busyInvite}
+            aria-busy={busyInvite}
+            className="rm-btn rm-btn-primary rv-focusable"
+          >
+            {busyInvite && <Spinner size={13} strokeWidth={2} className="mo-spin" aria-hidden="true" />}
             Gerar convite limpo
           </button>
         </div>

@@ -36,6 +36,8 @@ import { usePathname } from "next/navigation";
 import type { CampaignRole } from "../../../../lib/campaign/access";
 import { HudCursor } from "../../_global/GlobalShell";
 import { CampaignNav } from "./CampaignNav";
+import { NavPendingProvider } from "../../../_design/NavPending";
+import { BootMinDurationOverlay } from "../../../_boundaries/BootMinDurationOverlay";
 import "../../../_design/mesa.css";
 
 /**
@@ -283,10 +285,26 @@ function PainelSessao({ children, rotulo }: { children: ReactNode; rotulo: strin
         )}
       </button>
 
-      {intermediario && aberto && (
+      {/*
+        MONTADO enquanto o breakpoint for o intermediário, aberto ou
+        não — antes era `intermediario && aberto`, e essa era a razão
+        de o fechamento não poder ser animado: React removia o nó no
+        mesmo frame do clique, então nenhuma transição de saída chegava
+        a rodar e o véu sumia seco enquanto o painel ainda estava lá.
+        Com o nó permanente, `.mo-scrim` (motion.css) cuida do resto e
+        os dois saem JUNTOS, com a mesma curva e a mesma duração.
+
+        `inert` quando fechado, além de `visibility: hidden` do
+        `.mo-scrim`: um `<button>` invisível mas focável seria uma
+        armadilha de teclado silenciosa — Tab pararia num "Fechar
+        painel" que o usuário não vê e que não faz nada.
+      */}
+      {intermediario && (
         <button
           type="button"
-          className="rm-drawer-backdrop"
+          className="rm-drawer-backdrop mo-scrim"
+          data-open={aberto}
+          inert={!aberto}
           aria-label="Fechar painel"
           onClick={() => {
             fechamentoExplicitoRef.current = true;
@@ -358,7 +376,24 @@ export function CampaignShell({
 }) {
   const cursorHabilitado = useCursorHabilitado();
 
+  // A Mesa (`/vtt`) é uma UI própria, de tela cheia, com FERRAMENTAS e
+  // PAINEL LATERAL equivalentes já embutidos (`rv-ferramentas`,
+  // `rv-painel` — Chat/Personagens/Participantes/Bando/Compêndio). O
+  // drawer geral de Log/Participantes da casca é redundante ali e,
+  // como precisa de um z-index acima de tudo pra funcionar como
+  // overlay nas outras rotas, renderiza POR CIMA do painel próprio da
+  // Mesa em vez de ao lado dele — bug real reportado visualmente
+  // ("o painel de log fica na frente do menu da direita da mesa").
+  // Suprimido só nesta rota; nenhuma outra página perde o drawer.
+  const pathname = usePathname();
+  const naMesaVtt = pathname?.endsWith("/vtt") ?? false;
+
   return (
+    // Agrega `useLinkStatus()` de todo `<LinkPending>` do trilho (ver
+    // `CampaignNav.tsx`) numa contagem única — é o sinal que
+    // `BootMinDurationOverlay` (dentro de `.rm-shell-main`, abaixo) usa
+    // pra saber se alguma navegação está em voo.
+    <NavPendingProvider>
     <div className="rm-root">
       <HudCursor enabled={cursorHabilitado} />
 
@@ -401,12 +436,17 @@ export function CampaignShell({
 
         {turnTrackDock && <div className="rm-shell-dock">{turnTrackDock}</div>}
 
-        <main className="rm-shell-main">{children}</main>
+        <main className="rm-shell-main">
+          {children}
+          <BootMinDurationOverlay label="Carregando mesa" />
+        </main>
 
         {/* Uma única chamada — a superfície decide sozinha, via CSS de
-            breakpoint, se é coluna de grid ou drawer. */}
-        {painelSessao && <PainelSessao rotulo="Sessão">{painelSessao}</PainelSessao>}
+            breakpoint, se é coluna de grid ou drawer. Suprimida na
+            Mesa (`naMesaVtt`) — ver comentário acima. */}
+        {painelSessao && !naMesaVtt && <PainelSessao rotulo="Sessão">{painelSessao}</PainelSessao>}
       </div>
     </div>
+    </NavPendingProvider>
   );
 }

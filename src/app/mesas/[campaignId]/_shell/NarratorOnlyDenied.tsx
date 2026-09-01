@@ -20,7 +20,7 @@ export function NarratorOnlyDenied({ campaignId }: { campaignId: string }) {
       <h1 className="rm-page-title">Área exclusiva do narrador</h1>
       <p className="rm-boundary-msg">Esta área só está disponível para quem narra esta campanha.</p>
       <div className="rm-boundary-acoes">
-        <Link href={`/mesas/${campaignId}`} className="rm-btn rm-btn-primary rv-focusable">
+        <Link href={`/mesas/${campaignId}/vtt`} className="rm-btn rm-btn-primary rv-focusable">
           Ir para a Mesa
         </Link>
       </div>

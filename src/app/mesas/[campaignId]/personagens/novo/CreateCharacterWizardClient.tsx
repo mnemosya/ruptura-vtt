@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Spinner } from "../../../../_design/icons";
 import {
   createCharacterFromWizard,
   loadCharacterCreationDraft,
@@ -602,7 +603,7 @@ export default function CreateCharacterWizardClient({
   if (loadState === "loading") {
     return (
       <main className="rm-page" style={{ maxWidth: 720 }}>
-        <Link href={`/mesas/${campaign.id}`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12 }}>← {campaign.name}</Link>
+        <Link href={`/mesas/${campaign.id}/vtt`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12 }}>← {campaign.name}</Link>
         <h1 className="rm-page-title" style={{ margin: "8px 0 16px" }}>Novo personagem</h1>
         <p role="status" className="rm-faint">Restaurando rascunho…</p>
       </main>
@@ -612,7 +613,7 @@ export default function CreateCharacterWizardClient({
   if (loadState === "error") {
     return (
       <main className="rm-page" style={{ maxWidth: 720 }}>
-        <Link href={`/mesas/${campaign.id}`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12 }}>← {campaign.name}</Link>
+        <Link href={`/mesas/${campaign.id}/vtt`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12 }}>← {campaign.name}</Link>
         <h1 className="rm-page-title" style={{ margin: "8px 0 16px" }}>Novo personagem</h1>
         <p role="alert" className="rm-erro" style={{ marginBottom: 12 }}>
           Não foi possível verificar se você tem um rascunho salvo: {loadMessage}
@@ -625,7 +626,7 @@ export default function CreateCharacterWizardClient({
   if (loadState === "confirm_discard") {
     return (
       <main className="rm-page" style={{ maxWidth: 720 }}>
-        <Link href={`/mesas/${campaign.id}`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12 }}>← {campaign.name}</Link>
+        <Link href={`/mesas/${campaign.id}/vtt`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12 }}>← {campaign.name}</Link>
         <h1 className="rm-page-title" style={{ margin: "8px 0 16px" }}>Novo personagem</h1>
         <p role="alert" className="rm-note rm-note--warn" style={{ marginBottom: 12 }}>
           Não foi possível restaurar seu rascunho anterior (formato incompatível). Deseja descartá-lo e começar do zero?
@@ -640,7 +641,7 @@ export default function CreateCharacterWizardClient({
 
   return (
     <main className="rm-page" style={{ maxWidth: 720 }}>
-      <Link href={`/mesas/${campaign.id}`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12 }}>← {campaign.name}</Link>
+      <Link href={`/mesas/${campaign.id}/vtt`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12 }}>← {campaign.name}</Link>
       <h1 className="rm-page-title" style={{ margin: "8px 0 16px" }}>Novo personagem</h1>
 
       {errorMessage && <p role="alert" className="rm-erro" style={{ marginBottom: 16 }}>Erro: {errorMessage}</p>}
@@ -651,7 +652,19 @@ export default function CreateCharacterWizardClient({
       )}
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        <button onClick={handleSalvarESair} disabled={salvandoESaindo} className="rm-btn rm-btn-ghost rv-focusable">
+        {/* `data-pending` + `aria-busy` + spinner: os três saem do MESMO
+            booleano que já controla `disabled`, então o estado visual
+            nunca diverge do anunciado ao leitor de tela. O rótulo
+            continua legível — a regra é "mostrar que está em curso", não
+            "esconder o que era". */}
+        <button
+          onClick={handleSalvarESair}
+          disabled={salvandoESaindo}
+          data-pending={salvandoESaindo}
+          aria-busy={salvandoESaindo}
+          className="rm-btn rm-btn-ghost rv-focusable"
+        >
+          {salvandoESaindo && <Spinner size={13} strokeWidth={2} className="mo-spin" aria-hidden="true" />}
           {salvandoESaindo ? "Salvando…" : "Salvar e sair"}
         </button>
         <button onClick={handleCancelarCriacao} className="rm-btn rm-btn-danger rv-focusable">Cancelar criação</button>
@@ -681,8 +694,19 @@ export default function CreateCharacterWizardClient({
         ))}
       </nav>
 
+      {/*
+        `mo-panel-in` em cada etapa: a troca de passo é uma troca de
+        PAINEL (a moldura — título, pills de etapa, rodapé — não muda),
+        então leva o degrau curto de 200ms/6px, nunca o de rota. Sem
+        isto, pular de etapa trocava o conteúdo seco e não havia sinal
+        nenhum de que o painel abaixo das pills tinha sido substituído.
+
+        Cada `<section>` já remonta sozinha na troca (o slot anterior
+        vira `false` e o novo monta), então a animação dispara pela
+        montagem — sem `key` artificial e sem estado de transição.
+      */}
       {step === 1 && (
-        <section>
+        <section className="mo-panel-in">
           <h2 className="rm-section-title">Etapa 1 — Conceito e identidade</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 480 }}>
             <label className="rm-field">
@@ -718,7 +742,7 @@ export default function CreateCharacterWizardClient({
       )}
 
       {step === 2 && (
-        <section>
+        <section className="mo-panel-in">
           <h2 className="rm-section-title">Etapa 2 — Atributos</h2>
           <p data-testid="wizard-atributos-pontos-restantes" style={{ fontSize: 13, marginBottom: 12, color: pontosAtributoRestantes === 0 ? "var(--rm-success)" : "var(--am)" }}>
             Pontos restantes: {pontosAtributoRestantes} / {atributoPontosAdicionais} (teto de criação: {atributoTeto})
@@ -737,7 +761,7 @@ export default function CreateCharacterWizardClient({
       )}
 
       {step === 3 && (
-        <section>
+        <section className="mo-panel-in">
           <h2 className="rm-section-title">Etapa 3 — Perícias</h2>
           <p data-testid="wizard-pericias-pontos-restantes" style={{ fontSize: 13, marginBottom: 12, color: pontosPericiaRestantes >= 0 ? "var(--rm-success)" : "var(--rm-danger)" }}>
             Pontos restantes: {pontosPericiaRestantes} / {periciaPontosTotais} (teto de criação: {periciaTeto})
@@ -756,7 +780,7 @@ export default function CreateCharacterWizardClient({
       )}
 
       {step === 4 && (
-        <section>
+        <section className="mo-panel-in">
           <h2 className="rm-section-title">Etapa 4 — Vertentes e magias</h2>
           {magiasErro ? (
             <div className="rm-note rm-note--danger" role="alert" data-testid="wizard-magias-erro">
@@ -812,7 +836,7 @@ export default function CreateCharacterWizardClient({
       )}
 
       {step === 5 && (
-        <section>
+        <section className="mo-panel-in">
           <h2 className="rm-section-title">Etapa 5 — Talento inicial</h2>
           {talentosErro ? (
             <div className="rm-note rm-note--danger" role="alert" data-testid="wizard-talentos-erro">
@@ -846,7 +870,7 @@ export default function CreateCharacterWizardClient({
       )}
 
       {step === 6 && (
-        <section>
+        <section className="mo-panel-in">
           <h2 className="rm-section-title">Etapa 6 — Inventário</h2>
           <p style={{ fontSize: 13, marginBottom: 12 }}>
             Aretz: <strong data-testid="wizard-aretz-restante">{carteira.aretz_informal}</strong> / {aretzIniciais}
@@ -892,7 +916,7 @@ export default function CreateCharacterWizardClient({
       )}
 
       {step === 7 && (
-        <section>
+        <section className="mo-panel-in">
           <h2 className="rm-section-title">Etapa 7 — Revisão</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13, marginBottom: 16 }}>
             <span><strong>Nome:</strong> {identidade.nome || "(vazio)"}</span>
@@ -945,7 +969,15 @@ export default function CreateCharacterWizardClient({
             <p role="alert" className="rm-erro" style={{ marginBottom: 8 }}>Nome é obrigatório (Etapa 1).</p>
           )}
 
-          <button data-testid="wizard-finalizar-button" onClick={finalizar} disabled={!podeFinalizar || criando} className="rm-btn rm-btn-primary rv-focusable">
+          <button
+            data-testid="wizard-finalizar-button"
+            onClick={finalizar}
+            disabled={!podeFinalizar || criando}
+            data-pending={criando}
+            aria-busy={criando}
+            className="rm-btn rm-btn-primary rv-focusable"
+          >
+            {criando && <Spinner size={13} strokeWidth={2} className="mo-spin" aria-hidden="true" />}
             {criando ? "Criando…" : "Criar personagem"}
           </button>
         </section>

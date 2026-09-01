@@ -86,7 +86,7 @@ async function main() {
     // antes das campanhas na ordem do DOM.
     const hrefs = await page.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? ""));
     const campaignId =
-      hrefs.map((h) => h.match(/^\/mesas\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i)?.[1]).find(Boolean) ?? null;
+      hrefs.map((h) => h.match(/^\/mesas\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\/|$)/i)?.[1]).find(Boolean) ?? null;
 
     if (!campaignId) {
       registrar("0 (campanha de teste disponível)", false, "Nenhuma campanha encontrada em /mesas para esta conta — crie uma antes de rodar este check.");

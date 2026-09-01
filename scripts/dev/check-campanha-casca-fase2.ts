@@ -70,7 +70,7 @@ async function main() {
     await page.goto(`${BASE_URL}/mesas`, { waitUntil: "networkidle" });
     const hrefs = await page.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? ""));
     const campaignId = hrefs
-      .map((h) => h.match(/^\/mesas\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i)?.[1])
+      .map((h) => h.match(/^\/mesas\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\/|$)/i)?.[1])
       .find(Boolean);
 
     if (!campaignId) {
@@ -91,7 +91,7 @@ async function main() {
     });
 
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
     await page.waitForTimeout(1200);
 
     // --- 1. Casca HUD presente ---
@@ -162,6 +162,15 @@ async function main() {
     // mesa.css) continua existindo e intocada — só não há mais rota
     // real que a exercite; `check-campaign-shell-drawer.ts` (harness)
     // é onde ausência de conteúdo é testada de propósito.
+    //
+    // Exceção NOVA (correção pedida pelo usuário: "Mesa" virou a VTT):
+    // a VTT suprime `painelSessao` de propósito (tem painel próprio,
+    // `rv-painel`, que o drawer geral só sobrepunha) — navega pra uma
+    // rota comum (`/personagens`) pra testar a asserção que este
+    // critério é sobre ("painel presente → coluna certa"), não a
+    // exceção deliberada da Mesa.
+    await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "networkidle" });
+    await page.waitForTimeout(400);
     {
       const amplo = await page.evaluate(() => ({
         cols: getComputedStyle(document.querySelector(".rm-shell")!).gridTemplateColumns,
@@ -195,7 +204,7 @@ async function main() {
 
     // --- 6. Teclado: Tab percorre o trilho com foco visível ---
     {
-      await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
+      await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
       await page.waitForTimeout(800);
       await page.keyboard.press("Tab");
       const primeiro = await page.evaluate(() => {
