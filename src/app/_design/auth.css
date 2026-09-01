@@ -10,6 +10,8 @@
  * --font-orbitron / --font-rajdhani / --font-mono.
  */
 
+@import "./motion.css";
+
 .rv-root *,
 .rv-root *::before,
 .rv-root *::after { box-sizing: border-box; }
@@ -246,7 +248,10 @@
 .rv-input-wrap {
   position: relative; display: flex; align-items: center; background: #15212c;
   border: 1px solid rgba(14, 107, 127, 0.6); border-radius: 1px;
-  transition: border-color 0.22s, box-shadow 0.22s, background 0.22s;
+  transition:
+    border-color var(--mo-dur-micro) var(--mo-ease-standard),
+    box-shadow var(--mo-dur-micro) var(--mo-ease-standard),
+    background var(--mo-dur-micro) var(--mo-ease-standard);
 }
 .rv-input-wrap:hover { background: rgba(14, 107, 127, 0.14); }
 .rv-input-wrap:focus-within {
@@ -295,7 +300,12 @@
 
 .rv-alert {
   display: flex; align-items: flex-start; gap: 9px; padding: 10px 14px; font-family: var(--font-mono), monospace;
-  font-size: 9.5px; letter-spacing: 0.06em; line-height: 1.5; animation: rv-enter 0.3s ease;
+  /* Alerta é FEEDBACK de uma ação que o usuário acabou de fazer, então
+     entra no degrau do sistema (`mo-view-in`, 200ms) — não na abertura
+     de cena do painel, que é deliberadamente mais longa e só acontece
+     uma vez, no primeiro carregamento da tela de acesso. */
+  font-size: 9.5px; letter-spacing: 0.06em; line-height: 1.5;
+  animation: mo-view-in var(--mo-dur-enter) var(--mo-ease-out) both;
   clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
 }
 .rv-alert--error { background: rgba(255, 50, 70, 0.07); border: 1px solid rgba(255, 50, 70, 0.22); color: rgba(255, 110, 130, 0.95); }
@@ -308,7 +318,11 @@
   position: relative; display: flex; align-items: center; justify-content: center; gap: 10px;
   padding: 13px 17px; width: 100%; border-radius: 1px; overflow: hidden;
   font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase;
-  transition: background 0.22s, border-color 0.22s, box-shadow 0.22s, transform 0.08s;
+  transition:
+    background var(--mo-dur-micro) var(--mo-ease-standard),
+    border-color var(--mo-dur-micro) var(--mo-ease-standard),
+    box-shadow var(--mo-dur-micro) var(--mo-ease-standard),
+    transform var(--mo-dur-micro) var(--mo-ease-standard);
 }
 /* Reconstrução literal a partir do componente bruto exportado do Figma
    (src/imports/LoginButtonPrimary/index.tsx) e do CSS resolvido via
@@ -341,7 +355,7 @@
 .rv-submit--amber .rv-submit-glow--base { background: linear-gradient(90deg, transparent 0%, rgba(230, 165, 46, 0.06) 50%, transparent 100%); }
 /* A segunda <span class="rv-submit-glow--base"> (irmã idêntica no JSX)
    herda esta mesma regra automaticamente — dois nós, mesma classe. */
-.rv-submit-glow--hover { opacity: 0; transition: opacity 0.2s ease; }
+.rv-submit-glow--hover { opacity: 0; transition: opacity var(--mo-dur-micro) var(--mo-ease-standard); }
 /* Valores de intensidade (0.08/0.24/0.08) conferidos contra o componente
    bruto exportado do Figma (src/imports/LoginButtonPrimary/index.tsx,
    variant "Property 1=Hover") — a primeira tentativa de porte usava só
@@ -375,7 +389,11 @@
   display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 3px;
   font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; line-height: 1;
   color: rgba(84, 172, 190, 0.8); background: rgba(0, 212, 255, 0.08); border: 1px solid rgba(84, 172, 190, 0.1);
-  transition: color 0.22s, background 0.22s, border-color 0.22s; pointer-events: none;
+  transition:
+    color var(--mo-dur-micro) var(--mo-ease-standard),
+    background var(--mo-dur-micro) var(--mo-ease-standard),
+    border-color var(--mo-dur-micro) var(--mo-ease-standard);
+  pointer-events: none;
 }
 .rv-submit--cyan:hover:not(:disabled) .rv-cmd-tag,
 .rv-submit--cyan:active:not(:disabled) .rv-cmd-tag { color: #44cbe6; background: rgba(0, 212, 255, 0.15); border-color: rgba(84, 172, 190, 0.25); }

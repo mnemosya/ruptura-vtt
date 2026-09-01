@@ -35,6 +35,7 @@
 
 @import "./tokens.css";
 @import "./cursor.css";
+@import "./motion.css";
 
 .rm-root {
   --cy: #00d4ff;
@@ -180,6 +181,11 @@
   grid-area: main; min-width: 0; min-height: 0;
   overflow-y: auto; overflow-x: hidden;
   padding: var(--hud-space-5) var(--hud-space-7) var(--hud-space-8);
+  /* `relative`: ancestral de posicionamento pra `.mo-boot-overlay`
+     (`BootMinDurationOverlay`), que cobre esta área com
+     `position: absolute; inset: 0` enquanto uma navegação demora mais
+     que o mínimo pra ler. */
+  position: relative;
 }
 
 /* Uma ÚNICA superfície para o painel de sessão (`PainelSessao` em
@@ -295,7 +301,9 @@
   background: rgba(10, 20, 31, 0.7);
   color: #728997;
   cursor: pointer; text-decoration: none;
-  transition: color 0.14s, background 0.14s, border-color 0.14s;
+  transition: color var(--mo-dur-micro) var(--mo-ease-standard),
+              background var(--mo-dur-micro) var(--mo-ease-standard),
+              border-color var(--mo-dur-micro) var(--mo-ease-standard);
 }
 .rm-navrail-btn:hover { color: #d3f4ff; border-color: var(--rm-line-strong); background: rgba(0, 212, 255, 0.09); }
 .rm-navrail-btn[aria-current="page"] {
@@ -303,6 +311,50 @@
   box-shadow: 0 0 9px rgba(0, 212, 255, 0.25);
 }
 .rm-navrail-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+
+/* ── Destino pendente ──────────────────────────────────────────────
+   O buraco de UX que faltava no trilho: entre clicar e a rota resolver
+   (Server Component + consultas), NADA acontecia — nem o item clicado
+   mudava, porque `aria-current` só vira quando `usePathname` já mudou.
+   Em rota lenta isso lê como clique perdido, e a reação natural do
+   usuário é clicar de novo.
+
+   O sinal vem de `<LinkPending>` (src/app/_design/NavPending.tsx), que
+   lê `useLinkStatus` do próprio Next — sem estado global, sem
+   biblioteca, sem tocar no roteamento. Ele monta `.mo-linkflag` (um
+   marcador que não pinta nada) DENTRO do link enquanto a navegação está
+   em voo; `:has()` deixa o link inteiro reagir. `:has()` em vez de um
+   `data-pending` no próprio link porque `useLinkStatus` só é legível de
+   um DESCENDENTE de `<Link>` — o filho não tem como marcar o pai.
+
+   ── Desenho ────────────────────────────────────────────────────────
+   O botão ACENDE: o mesmo glow ciano que o estado `aria-current` usa,
+   só que respirando e sem a borda/fundo do ativo. Lê como "armando o
+   destino" e resolve em "chegou" quando o ativo assume — dois estados
+   parentes, um vocabulário só.
+
+   A primeira versão desenhava uma barrinha de 1px sob o ícone e foi
+   reprovada na revisão visual, com razão: ficava em `bottom: -1px`, ou
+   seja POR CIMA da borda do botão, e lia como borda quebrada. Glow não
+   tem geometria própria — não há o que desalinhar.
+
+   TUDO dentro da animação, nada estático: é o `both` com
+   `--mo-delay-busy` que segura o estado invisível durante os primeiros
+   120ms. Se a cor ou a borda mudassem por regra estática, elas
+   apareceriam no frame do clique e voltariam logo depois — o pisca-pisca
+   que o atraso existe pra evitar, justamente nas navegações rápidas,
+   que são a maioria. */
+.rm-navrail-btn:has(.mo-linkflag) {
+  animation: mo-armado 1300ms var(--mo-ease-standard) var(--mo-delay-busy) infinite both;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* O destino pendente continua marcado — é informação, não enfeite.
+     O que some é a respiração: glow parado, no ponto alto. */
+  .rm-navrail-btn:has(.mo-linkflag) {
+    animation: none;
+    box-shadow: inset 0 0 10px rgba(0, 212, 255, 0.22), 0 0 8px rgba(0, 212, 255, 0.28);
+  }
+}
 
 .rm-navrail-hint {
   position: absolute; left: calc(100% + 9px); top: 50%; transform: translateY(-50%);
@@ -312,7 +364,7 @@
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10.5px; letter-spacing: 0.05em; color: #d3f4ff;
   opacity: 0; pointer-events: none; z-index: 30;
-  transition: opacity 0.12s;
+  transition: opacity var(--mo-dur-micro) var(--mo-ease-standard);
 }
 .rm-navrail-btn:hover .rm-navrail-hint,
 .rm-navrail-btn:focus-visible .rm-navrail-hint { opacity: 1; transition-delay: 0.35s; }
@@ -337,6 +389,17 @@
   font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase;
 }
 .rm-drawer-toggle:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.rm-drawer-toggle {
+  transition:
+    background var(--mo-dur-micro) var(--mo-ease-standard),
+    border-color var(--mo-dur-micro) var(--mo-ease-standard),
+    transform var(--mo-dur-micro) var(--mo-ease-standard);
+}
+.rm-drawer-toggle:hover { background: rgba(0, 212, 255, 0.14); border-color: var(--cy); }
+/* `translateY(-50%)` faz parte do POSICIONAMENTO deste botão (é o que o
+   centra verticalmente), então o feedback de clique precisa recompor os
+   dois — um `scale()` sozinho aqui jogaria o botão pra fora do lugar. */
+.rm-drawer-toggle:active { transform: translateY(-50%) scale(var(--mo-scale-press)); }
 .rm-drawer-contador {
   min-width: 16px; padding: 1px 4px;
   border: 1px solid var(--rm-line-strong);
@@ -476,11 +539,24 @@
   font-size: 13px; font-weight: 600;
   cursor: pointer;
   text-decoration: none;
-  transition: background 0.14s, border-color 0.14s, opacity 0.14s;
+  transition: background var(--mo-dur-micro) var(--mo-ease-standard),
+              border-color var(--mo-dur-micro) var(--mo-ease-standard),
+              opacity var(--mo-dur-micro) var(--mo-ease-standard),
+              transform var(--mo-dur-micro) var(--mo-ease-standard);
 }
 .rm-btn:hover:not(:disabled) { border-color: var(--cy); }
 .rm-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 .rm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+/* Feedback do CLIQUE — o gesto mais barato e o mais sentido: responde
+   no frame do `mousedown`, sem esperar rede nenhuma. Fica no primitivo
+   (e não numa classe opcional) porque "o botão reagiu" não é enfeite de
+   uma tela específica. */
+.rm-btn:active:not(:disabled) { transform: scale(var(--mo-scale-press)); }
+/* Ação assíncrona em curso. `[data-pending]` (atributo, não classe) pra
+   o TSX poder derivá-lo do mesmo booleano que já controla `disabled` e
+   `aria-busy` — o estado visual nunca diverge do anunciado ao leitor de
+   tela. O rótulo continua legível: some o "clicável", não a informação. */
+.rm-btn[data-pending="true"] { cursor: progress; opacity: 0.75; }
 .rm-btn-primary { background: rgba(0, 212, 255, 0.1); border-color: var(--rm-line-strong); color: var(--cy); }
 .rm-btn-primary:hover:not(:disabled) { background: rgba(0, 212, 255, 0.18); border-color: var(--cy); }
 .rm-btn-ghost { background: transparent; border-color: var(--rm-line); color: var(--rm-text-dim); }
@@ -541,7 +617,16 @@
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 11px; letter-spacing: 0.04em;
   cursor: pointer;
+  /* Pills são o controle mais clicado da campanha (filtro de
+     Personagens e etapas do wizard). Só cor/borda: mudar tamanho aqui
+     reflui a linha inteira de pills. */
+  transition:
+    background var(--mo-dur-micro) var(--mo-ease-standard),
+    border-color var(--mo-dur-micro) var(--mo-ease-standard),
+    color var(--mo-dur-micro) var(--mo-ease-standard),
+    transform var(--mo-dur-micro) var(--mo-ease-standard);
 }
+.rm-pill:active { transform: scale(var(--mo-scale-press)); }
 /* `aria-selected` — pills que são genuinamente abas de conteúdo (filtro
    de Personagens, `role="tablist"` de verdade). `aria-current="step"` —
    pills que são navegação de progresso, não abas (etapas do wizard de
@@ -654,6 +739,17 @@
 .rm-boundary { max-width: 560px; margin: 64px auto; padding: 0 20px; text-align: center; }
 .rm-boundary-msg { font-size: 13px; color: var(--rm-text-dim); margin: 0 0 20px; }
 .rm-boundary-acoes { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+/* Erro e "não encontrado" entram como qualquer outro conteúdo de rota —
+   antes apareciam secos, o que os fazia parecer um crash da casca em
+   vez de um estado da tela. */
+.rm-boundary { animation: mo-view-in var(--mo-dur-view) var(--mo-ease-out) both; }
+
+/* O carregamento de rota da campanha não tem classes próprias: o
+   desenho é o `BootPanel` compartilhado (`.mo-boot*` em motion.css). As
+   classes `.rm-skeleton-*` que existiam aqui saíram junto com o
+   esqueleto de blocos que elas dimensionavam — ver a nota no
+   `BootPanel` sobre por que um esqueleto genérico prometia uma forma e
+   entregava outra. */
 
 /* ── TurnTrackDock ──────────────────────────────────────────────────
    Faixa compacta sempre visível (estado padrão) — rodada/janela,
@@ -687,8 +783,12 @@
   font-family: var(--font-rajdhani), sans-serif;
   font-size: 13px; font-weight: 600;
   cursor: pointer;
-  transition: background 0.14s, border-color 0.14s;
+  transition:
+    background var(--mo-dur-micro) var(--mo-ease-standard),
+    border-color var(--mo-dur-micro) var(--mo-ease-standard),
+    transform var(--mo-dur-micro) var(--mo-ease-standard);
 }
+.rm-turndock-acao:active:not(:disabled) { transform: scale(var(--mo-scale-press)); }
 .rm-turndock-atual[data-sua-vez="true"] ~ .rm-turndock-acao {
   border-color: rgba(245, 162, 0, 0.5); background: rgba(245, 162, 0, 0.14); color: var(--am);
 }
@@ -728,6 +828,14 @@
   font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
   display: flex; align-items: center; justify-content: center; gap: 6px;
   cursor: pointer;
+  /* `border-bottom-color` (não `border-bottom-width`): a largura já é
+     2px nos dois estados, com `transparent` no inativo, então o
+     indicador acende e apaga sem NUNCA mexer na altura da aba — zero
+     layout shift, e é por isso que a regra base declara a borda em vez
+     de só o estado selecionado. */
+  transition:
+    color var(--mo-dur-micro) var(--mo-ease-standard),
+    border-bottom-color var(--mo-dur-micro) var(--mo-ease-standard);
 }
 .rm-session-tab[aria-selected="true"] { color: var(--cy); border-bottom-color: var(--cy); }
 .rm-session-tab:hover { color: var(--rm-text-strong); }
@@ -854,8 +962,54 @@
     background: var(--rm-surface-solid);
     box-shadow: -18px 0 40px rgba(0, 0, 0, 0.45);
     display: none; flex-direction: column;
+
+    /* ── Entrada E saída (fase de motion) ────────────────────────────
+       Antes o drawer trocava `display` seco nos dois sentidos: aparecia
+       e sumia sem nada, e o backdrop (montado/desmontado por React)
+       piscava fora de sincronia com ele. Agora os dois compartilham as
+       mesmas durações e curvas, então abrem e fecham como UM gesto.
+
+       `transition-behavior: allow-discrete` + `@starting-style` são o
+       que permite animar a SAÍDA sem biblioteca de motion: `display`
+       passa a participar da transição, o nó fica visível durante os
+       150ms de saída e só então volta pra `none`. Continua sendo
+       `display` (não só opacidade) de propósito — fechado, o painel
+       precisa sair da árvore de foco e do hit-testing, não ficar
+       transparente e clicável.
+
+       Degradação em browser sem `allow-discrete`: `display` troca na
+       hora, exatamente como hoje. Nunca pior que o estado anterior.
+
+       Só aqui dentro da media query: em ≥1280px `data-open` é `false`
+       o tempo todo (o botão que o alterna nem aparece) e o painel é uma
+       coluna do grid sempre visível — levar estas regras pra fora
+       esconderia o painel no breakpoint amplo. */
+    opacity: 0;
+    transform: translateX(var(--mo-dist-panel));
+    transition:
+      opacity var(--mo-dur-exit) var(--mo-ease-in),
+      transform var(--mo-dur-exit) var(--mo-ease-in),
+      display var(--mo-dur-exit) allow-discrete;
   }
-  .rm-shell-panel[data-open="true"] { display: flex; }
+  .rm-shell-panel[data-open="true"] {
+    display: flex;
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity var(--mo-dur-enter) var(--mo-ease-out),
+      transform var(--mo-dur-enter) var(--mo-ease-out),
+      display var(--mo-dur-enter) allow-discrete;
+  }
+  /* Estado de PARTIDA do primeiro frame em que o painel entra na
+     árvore renderizada. Sem isto o browser não tem de onde interpolar
+     (o elemento acabou de sair de `display: none`) e a entrada não
+     acontece — só a saída animaria. */
+  @starting-style {
+    .rm-shell-panel[data-open="true"] {
+      opacity: 0;
+      transform: translateX(var(--mo-dist-panel));
+    }
+  }
   /* O botão do drawer só existe quando há painel para abrir — o
      componente nem o renderiza sem `painelSessao`, e esta regra garante
      que ele não apareça por CSS antes disso. */
@@ -888,16 +1042,18 @@
 .rm-root *::-webkit-scrollbar-thumb:hover { background: rgba(0, 212, 255, 0.45); background-clip: content-box; }
 .rm-root *::-webkit-scrollbar-corner { background: transparent; }
 
-/* ── Entrada de conteúdo (F1) ──────────────────────────────────────
-   Mesma curva e duração do `rc-in` do Console. Aplicada só ao conteúdo
-   da rota, nunca à casca: o trilho, o header e o painel de sessão
-   PERSISTEM entre rotas (é a premissa da reestrutura anterior), então
-   animá-los a cada navegação seria mentir sobre o que remontou. */
-@keyframes rm-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: none; }
-}
-.rm-page { animation: rm-in var(--hud-dur-enter) var(--hud-ease-out) both; }
+/* ── Entrada de conteúdo (F1, reapontada na fase de motion) ────────
+   Aplicada só ao conteúdo da rota, nunca à casca: o trilho, o header e
+   o painel de sessão PERSISTEM entre rotas (é a premissa da
+   reestrutura anterior), então animá-los a cada navegação seria mentir
+   sobre o que remontou.
+
+   O keyframe local `rm-in` foi REMOVIDO em favor de `mo-view-in`
+   (motion.css) — era uma cópia exata dele, e manter as duas garantia
+   que uma divergisse da outra na próxima vez que alguém ajustasse a
+   duração. É `--mo-dur-view` (260ms), não `--mo-dur-enter`: trocar de
+   rota é a maior das transições, e o degrau existe pra ela. */
+.rm-page { animation: mo-view-in var(--mo-dur-view) var(--mo-ease-out) both; }
 
 /* ── Breakpoints amplos (F1) ───────────────────────────────────────
    Antes havia UM breakpoint (1279, drawer). Em telas grandes o layout

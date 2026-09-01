@@ -14,6 +14,12 @@
 /* Cursor HUD (dot+ring) — compartilhado com o Console do Personagem
    via `.rc-cursor-scope`; a folha de estilo vive só em cursor.css. */
 @import "./cursor.css";
+/* Linguagem de movimento compartilhada (escalas `--mo-*` + utilitários
+   `mo-*`). Importada aqui, e não no `layout.tsx`, pelo mesmo motivo do
+   cursor: a folha que USA os nomes é quem garante que eles existem —
+   nenhuma tela pode aparecer com metade do vocabulário faltando porque
+   alguém esqueceu um import lá em cima. */
+@import "./motion.css";
 
 .ra-root {
   --cy: #00d4ff;
@@ -140,7 +146,11 @@
   background: linear-gradient(180deg, rgba(9, 13, 22, 0.92), rgba(9, 13, 22, 0.72));
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
 }
-.ra2-content { flex: 1; }
+/* `relative`: ancestral de posicionamento pra `.mo-boot-overlay`
+   (`BootMinDurationOverlay`), que cobre esta área com
+   `position: absolute; inset: 0` enquanto uma navegação demora mais
+   que o mínimo pra ler. */
+.ra2-content { flex: 1; position: relative; }
 .ra2-page { width: 100%; max-width: 1360px; margin: 0 auto; padding: 34px 40px 60px; display: flex; flex-direction: column; gap: 24px; }
 .ra2-page--narrow { max-width: 900px; }
 .ra2-home-cols { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 22px; align-items: start; }
@@ -154,7 +164,14 @@
   width: 240px; flex-shrink: 0; padding: 20px 24px;
   border-right: 1px solid rgba(0, 212, 255, 0.12);
   background: linear-gradient(180deg, rgba(9, 13, 22, 0.92), rgba(7, 10, 17, 0.96));
-  transition: width 0.22s ease, padding 0.22s ease;
+  /* LIMITAÇÃO CONHECIDA e aceita: `width` é propriedade de layout, e
+     animá-la custa reflow. É intencional — recolher a sidebar é uma
+     mudança de LAYOUT real (o conteúdo ao lado precisa refluir junto);
+     fazer com `transform` deixaria um buraco de 164px onde a sidebar
+     estava. Reflow de um elemento por gesto deliberado do usuário, uma
+     vez, não é o caso que a regra "só transform/opacity" existe pra
+     evitar (que é animação contínua ou por frame). */
+  transition: width var(--mo-dur-enter) var(--mo-ease-out), padding var(--mo-dur-enter) var(--mo-ease-out);
 }
 .ra2-sidebar--collapsed { width: 76px; padding: 20px 12px; }
 
@@ -179,7 +196,11 @@
 .ra2-nav-item {
   position: relative; display: flex; align-items: center; gap: 8px; padding: 12px; width: 100%;
   text-align: left; text-decoration: none; background: transparent; border: 1px solid transparent;
-  color: #ffffff; transition: background 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  color: #ffffff;
+  transition:
+    background var(--mo-dur-micro) var(--mo-ease-standard),
+    box-shadow var(--mo-dur-micro) var(--mo-ease-standard),
+    border-color var(--mo-dur-micro) var(--mo-ease-standard);
 }
 .ra2-nav-item > .ra2-nav-icon { flex-shrink: 0; display: flex; opacity: 0.7; }
 .ra2-nav-item > .ra2-nav-label {
@@ -199,6 +220,33 @@
   background: var(--cy); box-shadow: 0 0 8px 0 var(--cy);
 }
 .ra2-nav-item:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.8); outline-offset: 1px; }
+
+/* ── Destino pendente ──────────────────────────────────────────────
+   Mesma solução do trilho da campanha (ver o bloco equivalente em
+   `mesa.css`, que tem a explicação completa): `<LinkPending>` monta
+   `.mo-linkflag` dentro do `<Link>` enquanto a rota está em voo, e
+   `:has()` deixa o item inteiro reagir. Sem isto, `--active` só chegava
+   DEPOIS que a rota resolvia — o clique ficava sem resposta no
+   meio-tempo.
+
+   O item ACENDE com o mesmo glow interno do estado `--active`, só que
+   respirando, e SEM a barra lateral `::before` nem o fundo do ativo —
+   é o que mantém "indo pra lá" e "estou aqui" distinguíveis com um
+   vocabulário só.
+
+   Nada estático fora da animação: é o `both` com `--mo-delay-busy` que
+   segura o estado invisível nos primeiros 120ms. Uma regra estática
+   acenderia no frame do clique e apagaria logo depois em toda navegação
+   rápida — o pisca-pisca que o atraso existe pra evitar. */
+.ra2-nav-item:has(.mo-linkflag) {
+  animation: mo-armado 1300ms var(--mo-ease-standard) var(--mo-delay-busy) infinite both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ra2-nav-item:has(.mo-linkflag) {
+    animation: none;
+    box-shadow: inset 0 0 14px rgba(0, 212, 255, 0.22), 0 0 8px rgba(0, 212, 255, 0.24);
+  }
+}
 .ra2-nav-logout > .ra2-nav-icon,
 .ra2-nav-logout > .ra2-nav-label { color: #ff3452; opacity: 1; }
 .ra2-nav-logout:hover { background: rgba(255, 52, 82, 0.1); }
@@ -213,7 +261,10 @@
   width: 100%; padding: 8px; background: rgba(0, 20, 35, 0.5);
   border: 1px solid rgba(0, 212, 255, 0.16); color: rgba(0, 212, 255, 0.7);
   font-family: var(--font-mono), monospace; font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
-  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+  transition:
+    border-color var(--mo-dur-micro) var(--mo-ease-standard),
+    color var(--mo-dur-micro) var(--mo-ease-standard),
+    background var(--mo-dur-micro) var(--mo-ease-standard);
 }
 .ra2-collapse-btn:hover { border-color: rgba(0, 212, 255, 0.45); color: #eaf7ff; background: rgba(0, 30, 50, 0.6); }
 .ra2-collapse-btn:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.7); outline-offset: 2px; }
@@ -225,7 +276,7 @@
 .ra2-profile {
   display: flex; align-items: center; gap: 10px; padding: 5px 10px 5px 6px;
   background: rgba(0, 20, 35, 0.5); border: 1px solid rgba(0, 212, 255, 0.16); color: #b8d8e8;
-  transition: border-color 0.18s ease, background 0.18s ease;
+  transition: border-color var(--mo-dur-micro) var(--mo-ease-standard), background var(--mo-dur-micro) var(--mo-ease-standard);
 }
 .ra2-profile:hover { border-color: rgba(0, 212, 255, 0.4); background: rgba(0, 26, 45, 0.6); }
 .ra2-profile:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.7); outline-offset: 2px; }
@@ -234,7 +285,7 @@
   border: 1px solid rgba(0, 212, 255, 0.3); background: rgba(0, 212, 255, 0.06); color: #418292; border-radius: 2px;
 }
 .ra2-profile-name { font-family: var(--font-rajdhani), sans-serif; font-weight: 700; font-size: 14px; line-height: 20px; white-space: nowrap; }
-.ra2-chevron { color: rgba(0, 212, 255, 0.5); transition: transform 0.18s ease; }
+.ra2-chevron { color: rgba(0, 212, 255, 0.5); transition: transform var(--mo-dur-micro) var(--mo-ease-standard); }
 .ra2-chevron--up { transform: rotate(180deg); }
 
 .ra-online { display: inline-flex; align-items: center; gap: 8px; }
@@ -251,16 +302,20 @@
   background: rgb(15, 19, 27); border: 1px solid rgba(0, 212, 255, 0.28);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), inset 0 0 30px rgba(0, 60, 90, 0.14);
   clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
-  animation: ra-pop 0.18s ease both; padding: 6px;
+  /* `mo-pop-in` (motion.css) no lugar do keyframe local `ra-pop`, que
+     era uma cópia com outra duração e outra curva. Menu ancorado não
+     leva escala: ele é extensão do botão que o abriu, não uma camada
+     nova — quem leva escala é modal/overlay (`mo-surface-in`). */
+  animation: mo-pop-in var(--mo-dur-micro) var(--mo-ease-out) both; padding: 6px;
 }
-@keyframes ra-pop { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: none; } }
 .ra-menu-head { padding: 12px 12px 10px; border-bottom: 1px solid rgba(0, 212, 255, 0.12); margin-bottom: 6px; }
 .ra-menu-name { font-weight: 600; color: #cfeaf6; font-size: 14px; }
 .ra-menu-mail { font-size: 11.5px; color: rgba(184, 216, 232, 0.55); word-break: break-all; }
 .ra-menu-item {
   width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: transparent;
   border: none; color: #b8d8e8; font-family: var(--font-rajdhani), sans-serif; font-size: 13px; font-weight: 500;
-  text-align: left; text-decoration: none; transition: background 0.15s, color 0.15s;
+  text-align: left; text-decoration: none;
+  transition: background var(--mo-dur-micro) var(--mo-ease-standard), color var(--mo-dur-micro) var(--mo-ease-standard);
 }
 .ra-menu-item:hover { background: rgba(0, 212, 255, 0.08); color: #eaf7ff; }
 .ra-menu-item:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.6); outline-offset: -2px; }
@@ -274,7 +329,11 @@
   height: 42px; padding: 0 17px; border-radius: 1px; border: 1px solid transparent;
   font-family: var(--font-mono), monospace; font-weight: 600; font-size: 11px; line-height: 16px;
   letter-spacing: 0.22em; text-transform: uppercase; text-decoration: none;
-  transition: transform 0.12s ease, border-color 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
+  transition:
+    transform var(--mo-dur-micro) var(--mo-ease-standard),
+    border-color var(--mo-dur-micro) var(--mo-ease-standard),
+    box-shadow var(--mo-dur-micro) var(--mo-ease-standard),
+    color var(--mo-dur-micro) var(--mo-ease-standard);
 }
 /* Mesmo tratamento do botão de auth/.ra2-secondary: preenchimento
    sólido/opaco em vez de gradiente translúcido de alfa baixo (que
@@ -433,10 +492,18 @@
 
 /* ── Cards ─────────────────────────────────────────────────────── */
 .ra2-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; padding-top: 16px; }
-.ra2-card { position: relative; width: 100%; transition: transform 0.2s ease; animation: ra2-fade 0.5s ease both; }
+/* SEM entrada própria: o card chega no fade da rota, junto com o resto
+   da tela. Duas versões anteriores animaram card por card —
+   `style={{ animationDelay: index*60ms }}` inline (1,2s de cauda numa
+   conta com 20 campanhas) e depois um stagger com teto no 8º item. O
+   teto consertava o tempo, não o problema: card entrando um a um chama
+   atenção pro ato de carregar em vez de pro conteúdo, e num grid de
+   cards grandes com borda luminosa lê como pipoca. */
+.ra2-card { position: relative; width: 100%; transition: transform var(--mo-dur-micro) var(--mo-ease-standard); }
 .ra2-card-inner {
   position: relative; height: 222px; overflow: hidden; background: #0d1119;
-  border: 1px solid rgba(0, 212, 255, 0.16); transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid rgba(0, 212, 255, 0.16);
+  transition: border-color var(--mo-dur-micro) var(--mo-ease-standard), box-shadow var(--mo-dur-micro) var(--mo-ease-standard);
 }
 .ra2-card:hover { transform: translateY(-3px); }
 .ra2-card:hover .ra2-card-inner { border-color: rgba(0, 212, 255, 0.4); box-shadow: 0 8px 26px rgba(0, 0, 0, 0.5), 0 0 18px rgba(0, 212, 255, 0.12); }
@@ -510,7 +577,7 @@
   border: 1px solid rgba(0, 212, 255, 0.16);
   background: radial-gradient(ellipse 70% 90% at 50% 20%, rgba(0, 60, 90, 0.28), rgba(11, 15, 23, 0.9));
   clip-path: polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px));
-  animation: ra-view 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: mo-view-in var(--mo-dur-view) var(--mo-ease-out) both;
 }
 .ra-empty-glyph {
   width: 96px; height: 96px; margin: 0 auto 24px; display: flex; align-items: center; justify-content: center;
@@ -592,17 +659,45 @@
 /* ── Overlay / modal ───────────────────────────────────────────── */
 .ra-overlay {
   position: fixed; inset: 0; z-index: 400; background: rgba(4, 7, 12, 0.72); backdrop-filter: blur(3px);
-  animation: ra-fade 0.2s ease both; display: flex; padding: 24px;
+  display: flex; padding: 24px;
+  /* Estado (`data-open`), não `@keyframes`: keyframe só sabe ENTRAR —
+     na saída React já removeu o nó. Quem segura o nó montado durante os
+     150ms de saída é `usePresence` (src/app/_design/usePresence.ts);
+     aqui só se descreve como cada estado se parece, e o browser
+     interpola nos dois sentidos. Efeito colateral bem-vindo: fechar e
+     reabrir no meio do caminho INVERTE a animação em vez de reiniciar. */
+  opacity: 0;
+  transition: opacity var(--mo-dur-exit) var(--mo-ease-in);
 }
-@keyframes ra-fade { from { opacity: 0; } to { opacity: 1; } }
+.ra-overlay[data-open="true"] {
+  opacity: 1;
+  transition: opacity var(--mo-dur-enter) var(--mo-ease-out);
+}
 .ra-modal {
   margin: auto; width: 520px; max-width: 100%; max-height: 88vh; overflow-y: auto; position: relative;
   background: rgb(15, 19, 27); border: 1px solid rgba(0, 212, 255, 0.28);
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7), inset 0 0 40px rgba(0, 60, 90, 0.12);
   clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 22px 100%, 0 calc(100% - 22px));
-  animation: ra-modal-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; padding: 30px 34px;
+  /* 300ms → `--mo-dur-enter` (200ms), e o deslocamento de 18px → 10px:
+     era a animação mais longa e mais deslocada do app inteiro, e um
+     modal que "sobe" quase 20px lê como lentidão, não como cuidado.
+     Véu e modal agora compartilham duração e curva — antes o véu
+     terminava (200ms) com o modal ainda a 100ms de chegar, e na saída
+     os dois simplesmente sumiam. */
+  padding: 30px 34px;
+  opacity: 0;
+  transform: translateY(var(--mo-dist-md)) scale(var(--mo-scale-in));
+  transition:
+    opacity var(--mo-dur-exit) var(--mo-ease-in),
+    transform var(--mo-dur-exit) var(--mo-ease-in);
 }
-@keyframes ra-modal-in { from { opacity: 0; transform: translateY(18px) scale(0.97); } to { opacity: 1; transform: none; } }
+.ra-overlay[data-open="true"] .ra-modal {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--mo-dur-enter) var(--mo-ease-out),
+    transform var(--mo-dur-enter) var(--mo-ease-out);
+}
 .ra-modal-close { position: absolute; top: 18px; right: 20px; }
 
 /* ── Toasts ────────────────────────────────────────────────────── */
@@ -611,10 +706,9 @@
   display: flex; align-items: center; gap: 10px; padding: 12px 18px; background: rgb(10, 14, 20);
   border: 1px solid rgba(0, 212, 255, 0.35); font-family: var(--font-mono), monospace; font-size: 11px;
   letter-spacing: 0.06em; color: #cdeaf6; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-  animation: ra-toast-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: mo-surface-in var(--mo-dur-enter) var(--mo-ease-out) both;
   clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
 }
-@keyframes ra-toast-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 .ra-toast--success { border-color: rgba(34, 211, 170, 0.5); color: #7ff0d0; }
 .ra-toast--error { border-color: rgba(255, 60, 80, 0.5); color: #ffa0b0; }
 
@@ -623,8 +717,15 @@
 .ra-charcard {
   position: relative; display: flex; gap: 14px; padding: 16px; text-decoration: none; color: inherit;
   border: 1px solid rgba(0, 212, 255, 0.16); background: rgb(12, 16, 24);
-  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
-  animation: ra2-fade 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition:
+    border-color var(--mo-dur-micro) var(--mo-ease-standard),
+    transform var(--mo-dur-micro) var(--mo-ease-standard),
+    box-shadow var(--mo-dur-micro) var(--mo-ease-standard);
+  /* A entrada saiu daqui de vez (ver a nota em `.ra2-card`): o card
+     chega no fade da rota, com a tela inteira. A versão anterior
+     animava cada card por 450ms — todos ao mesmo tempo, pelo dobro do
+     tempo do resto do app, e ainda por cima duplicando a entrada que a
+     própria página já fazia. */
   clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
 }
 .ra-charcard:hover { border-color: rgba(0, 212, 255, 0.42); transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5); }
@@ -659,9 +760,17 @@
 .ra-comp-type:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.7); outline-offset: 1px; }
 
 /* ── Animações de entrada ──────────────────────────────────────── */
-.ra2-view-enter { animation: ra2-fade 0.5s ease both; }
-@keyframes ra2-fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-@keyframes ra-view { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+/* 500ms/`ease`/10px → o degrau de ROTA do sistema (260ms, curva de
+   saída suave, 6px). Meio segundo era o suficiente pra a tela parecer
+   que estava carregando depois de já ter carregado.
+
+   Os keyframes locais `ra2-fade`, `ra-view`, `ra-pop`, `ra-fade`,
+   `ra-modal-in` e `ra-toast-in` foram removidos junto: eram seis
+   variantes do MESMO gesto, com seis durações, que `mo-view-in` /
+   `mo-surface-in` / `mo-pop-in` / `mo-fade-in` agora cobrem. Todos os
+   consumidores foram reapontados (`.ra2-card`, `.ra-charcard` e
+   `.ra-empty` estão nos blocos acima). */
+.ra2-view-enter { animation: mo-view-in var(--mo-dur-view) var(--mo-ease-out) both; }
 
 /* ── Responsivo ────────────────────────────────────────────────── */
 .ra2-sidebar-wrap { display: contents; }
@@ -686,13 +795,52 @@
     background: rgba(0, 20, 35, 0.5); border: 1px solid rgba(0, 212, 255, 0.16); color: var(--cy);
   }
   .ra2-menu-btn:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.7); outline-offset: 2px; }
-  .ra2-sidebar-wrap { display: block; position: fixed; inset: 0 auto 0 0; z-index: 60; transform: translateX(-100%); transition: transform 0.25s ease; }
-  .ra2-sidebar-wrap--open { transform: none; }
+  /* Drawer da navegação global no mobile. `transform` (nunca `left`)
+     desde antes desta fase — o que muda aqui é só a duração/curva, que
+     agora são as mesmas do véu, e a ASSIMETRIA: entra em 200ms com
+     desaceleração, sai em 150ms acelerando. Antes os dois lados eram
+     250ms lineares-ish e o véu (montado/desmontado por React) sumia
+     seco enquanto a sidebar ainda estava deslizando. */
+  .ra2-sidebar-wrap {
+    display: block; position: fixed; inset: 0 auto 0 0; z-index: 60;
+    transform: translateX(-100%);
+    /* Fora da tela, o drawer não pode ser alcançável por Tab —
+       `transform` sozinho não tira nada da ordem de foco, então a
+       versão anterior deixava a navegação inteira tabulável por trás do
+       conteúdo no mobile (bug de acessibilidade real, corrigido aqui de
+       carona). `visibility: hidden` resolve os dois: some da ordem de
+       foco E do hit-testing.
+
+       É `visibility`, e não o atributo `inert` no TSX, de propósito:
+       `inert` seria aplicado pelo React sem saber o breakpoint, e acima
+       de 860px este mesmo elemento é a sidebar NORMAL (`display:
+       contents`, sempre visível) — inertizá-la ali mataria a navegação
+       do desktop. A media query, que é quem de fato sabe o breakpoint,
+       é o lugar certo pra essa decisão.
+
+       `allow-discrete` faz `visibility` esperar o slide terminar em vez
+       de sumir no primeiro frame da saída. */
+    visibility: hidden;
+    transition:
+      transform var(--mo-dur-exit) var(--mo-ease-in),
+      visibility var(--mo-dur-exit) allow-discrete;
+  }
+  .ra2-sidebar-wrap--open {
+    transform: none;
+    visibility: visible;
+    transition:
+      transform var(--mo-dur-enter) var(--mo-ease-out),
+      visibility var(--mo-dur-enter) allow-discrete;
+  }
   .ra2-sidebar-wrap .ra2-sidebar { height: 100vh; width: 240px; padding: 20px 24px; }
   .ra2-sidebar-wrap .ra2-nav-label,
   .ra2-sidebar-wrap .ra2-brand-full { display: block; }
   .ra2-sidebar-wrap .ra2-nav-item { justify-content: flex-start; padding: 12px; }
   .ra2-sidebar-wrap .ra2-collapse-btn { display: none; }
+  /* `display: block` incondicional: quem controla a visibilidade agora
+     é `.mo-scrim` (motion.css) via `data-open`, pra o véu poder SAIR
+     junto com o drawer em vez de ser removido do DOM no frame do
+     clique. Ver a mesma decisão em `CampaignShell.tsx`. */
   .ra2-scrim { display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); z-index: 55; }
   .ra-vp-corner { display: none; }
 }

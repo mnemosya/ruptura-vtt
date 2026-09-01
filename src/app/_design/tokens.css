@@ -97,9 +97,13 @@
   --hud-notch-lg: 16px;
 
   /* ── Movimento ──────────────────────────────────────────────────
-     A curva de entrada do Console (`rc-in`). Um só nome pra não
-     divergir por folha. */
-  --hud-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --hud-dur-fast: 0.14s;
-  --hud-dur-enter: 0.22s;
+     ALIASES, desde a fase de motion: a fonte única passou a ser
+     `motion.css` (`--mo-*`), que cobre as quatro folhas HUD e não só
+     esta. Os nomes `--hud-*` continuam existindo porque `mesa.css` já
+     os consumia em regras não relacionadas a esta fase — apagá-los
+     seria uma mudança de escopo maior que o ganho. Quem escrever regra
+     NOVA usa `--mo-*` direto. */
+  --hud-ease-out: var(--mo-ease-out);
+  --hud-dur-fast: var(--mo-dur-micro);
+  --hud-dur-enter: var(--mo-dur-enter);
 }

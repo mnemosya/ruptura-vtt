@@ -1,0 +1,606 @@
+/*
+ * LINGUAGEM DE MOVIMENTO compartilhada (escalas + utilitários `mo-*`).
+ *
+ * Por que este arquivo existe: até aqui cada folha HUD tinha o próprio
+ * vocabulário de movimento, inventado no lugar. Uma varredura antes
+ * desta fase encontrou 9 durações diferentes para o MESMO gesto
+ * (0.12s, 0.14s, 0.15s, 0.16s, 0.18s, 0.2s, 0.22s, 0.25s, 0.3s), três
+ * curvas (`ease`, `ease-in-out`, `cubic-bezier(.16,1,.3,1)`) e cinco
+ * keyframes de entrada praticamente idênticos com deslocamentos de 6,
+ * 10, 12, 14, 16 e 18px (`rm-in`, `rc-in`, `ra-view`, `ra2-fade`,
+ * `rv-enter`, `ra-toast-in`, `ra-modal-in`). O efeito prático é o que a
+ * auditoria de UX descreveu: cada tela "se move de um jeito", então
+ * nenhum movimento significa nada.
+ *
+ * ESCOPO DAS ESCALAS: lista de raízes, NUNCA `:root` — mesma decisão
+ * (e mesmo motivo) de `tokens.css`. `console.css` consome tokens sem os
+ * redeclarar no próprio escopo, e `check-console-baseline.ts` mede
+ * dentro da janela do Console esperando que os nomes do redesign
+ * continuem VAZIOS lá. Declarar em `:root` mataria essa asserção. Quem
+ * precisar das escalas fora dessas raízes usa `.mo-scope` (é o que os
+ * boundaries globais fazem — eles renderizam fora de `.rm-root`).
+ *
+ * O Console NÃO é reapontado pra cá de propósito: ele é a referência
+ * visual pronta do projeto e já era o mais coerente dos quatro. O que
+ * se fez foi o inverso — as escalas abaixo foram EXTRAÍDAS dele
+ * (`--mo-ease-out` é literalmente a curva de `rc-in`, `--mo-dur-enter`
+ * é a duração de `rc-in`), e as outras folhas passam a convergir para
+ * o que ele já fazia certo.
+ *
+ * REGRA DE OURO: só `opacity`, `transform`, `filter` e (em transições
+ * discretas) `display`/`visibility`. Nada aqui anima `width`, `height`,
+ * `top` ou `margin`. A única exceção do projeto inteiro é o recolher da
+ * sidebar global (`width`, em `app.css`), que é uma mudança de LAYOUT
+ * de verdade e está justificada no lugar.
+ */
+
+.rm-root,
+.ra-root,
+.rv-root,
+.mo-scope {
+  /* ── Curvas ──────────────────────────────────────────────────────
+     Três, não mais: entrada desacelerando (a curva do Console), saída
+     acelerando, e uma padrão simétrica para hover/estado que não tem
+     "direção". */
+  --mo-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --mo-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --mo-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ── Durações ────────────────────────────────────────────────────
+     Quatro degraus, um por CLASSE de gesto. Saída (`exit`) é
+     deliberadamente mais curta que entrada: sair é confirmação de uma
+     decisão já tomada, esperar por ela é o que faz uma interface
+     parecer lenta.
+
+     `micro`  — hover, foco, pressionar, troca de cor/borda.
+     `enter`  — um componente aparecendo (modal, drawer, popover, card).
+     `exit`   — o mesmo componente saindo.
+     `view`   — troca de tela/rota inteira. */
+  --mo-dur-micro: 140ms;
+  --mo-dur-enter: 200ms;
+  --mo-dur-exit: 150ms;
+  --mo-dur-view: 260ms;
+
+  /* ── Deslocamentos ───────────────────────────────────────────────
+     REGRA, aprendida na revisão visual: deslocamento só existe pra
+     comunicar DIREÇÃO. O drawer entra pela direita (`panel`), o menu
+     desce do botão que o abriu (`sm`), o modal sobe pra dentro da tela
+     (`md`). Onde não há direção a comunicar — troca de rota, troca de
+     aba, lista chegando — o movimento é fade puro, e qualquer
+     deslocamento ali é enfeite que o olho lê como desalinhamento.
+
+     `panel` é o único acima de 10px porque uma superfície que entra
+     pela borda precisa mesmo dizer de onde veio: 6px numa coluna de
+     380px não lê como "veio da direita", lê como tremor. */
+  --mo-dist-sm: 6px;
+  --mo-dist-md: 10px;
+  --mo-dist-panel: 24px;
+
+  /* Escala de "pressionado"/"surgindo". Nunca zoom chamativo. */
+  --mo-scale-press: 0.985;
+  --mo-scale-in: 0.98;
+
+  /* Atraso ANTI-FLASH de indicador de carregamento (não é atraso
+     artificial de conteúdo: o conteúdo nunca espera por isto). Abaixo
+     disso, uma navegação rápida faz o indicador piscar — o usuário vê
+     um lampejo e não consegue ler nada, o que é pior que nenhum
+     feedback. 120ms é o piso comum de percepção para esse caso. */
+  --mo-delay-busy: 120ms;
+
+  /* Atraso do PAINEL de carregamento (`BootPanel`) especificamente —
+     dois eixos, dois números, NÃO confundir:
+
+       - `--mo-delay-boot` (aqui) decide SE mostra: abaixo dele, uma
+         navegação lê como instantânea e o painel nunca aparece.
+       - `BOOT_MIN_VISIBLE_MS` (`bootTiming.ts`) decide, uma vez que já
+         decidiu mostrar, por QUANTO TEMPO NO MÍNIMO — implementado por
+         `BootMinDurationReveal`, do lado do conteúdo que vem depois,
+         porque o painel em si (uma fronteira `<Suspense>`) é desmontado
+         pelo React no instante em que os dados ficam prontos, e nada
+         CSS ou estado local consegue adiar isso.
+
+     Um valor ANTERIOR (350ms) tentava fazer as DUAS coisas ao mesmo
+     tempo — "espera bastante antes de mostrar" como substituto pra
+     "quando mostrar, mostra por um tempo digno". Reportado direto: o
+     painel passou a aparecer em POUCAS transições — 350ms cortava fora
+     justamente as navegações de duração média (as mais comuns nas
+     rotas `force-dynamic`, medidas por volta de 300–600ms em dev
+     local), que são exatamente as que mais se beneficiariam de um
+     indicador. 120ms — o mesmo piso de `--mo-delay-busy` — ainda
+     protege contra navegação genuinamente instantânea, sem descartar a
+     faixa intermediária. A permanência mínima, agora que é uma garantia
+     de verdade, deixa de precisar de um atraso de entrada
+     artificialmente alongado pra compensar. */
+  --mo-delay-boot: 120ms;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ENTRADAS
+   Um keyframe por INTENÇÃO, não um por tela. Todos terminam em
+   `transform: none` (nunca `translateY(0)`) para não fixar uma matriz
+   que sobrescreveria um `transform` de posicionamento do elemento.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Conteúdo de rota chegando (e troca de painel/aba/etapa, que usa o
+   mesmo keyframe em `--mo-dur-enter`, mais curto).
+
+   Versão anterior oscilava a opacidade (0 → 0.5 → 0.18 → 1 → 0.82 → 1)
+   simulando um painel CRT ligando. Revertido: em uso real, numa tela
+   que troca de conteúdo o dia inteiro, aquilo lê como a TELA
+   piscando — exatamente o que a regra "sem fade global que faça a
+   interface piscar" proíbe. O gesto era bonito isolado numa captura de
+   tela; repetido a cada navegação, é cansativo e chama atenção pra si
+   em vez de deixar o usuário ler o conteúdo nascendo.
+
+   Fade monotônico simples: só sobe, nunca desce. Sem deslocamento —
+   numa tela em que a moldura toda (trilho, cabeçalho, dock, painel de
+   sessão) fica PARADA, mover só o miolo lê como o conteúdo escorregando
+   dentro de uma janela fixa. Só `opacity`: zero risco de layout shift. */
+@keyframes mo-view-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Componente surgindo no lugar (modal, card, popover). O leve
+   `scale` comunica "isto é uma camada nova", o `translateY` comunica
+   de onde. */
+@keyframes mo-surface-in {
+  from { opacity: 0; transform: translateY(var(--mo-dist-md)) scale(var(--mo-scale-in)); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Popover/menu ancorado: desce 6px do gatilho, sem escala (ele não é
+   uma camada nova, é uma extensão do botão). */
+@keyframes mo-pop-in {
+  from { opacity: 0; transform: translateY(calc(var(--mo-dist-sm) * -1)); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes mo-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mo-spin { to { transform: rotate(360deg); } }
+
+/* Reveal em BLOCOS do `BootPanel` — substitui um fade contínuo de
+   propósito. A diferença importa exatamente no caso que motivou este
+   ajuste: React desmonta a fronteira `<Suspense>` (este painel) no
+   instante em que o conteúdo real fica pronto, sem aviso e sem chance
+   de terminar uma transição em curso.
+
+   Uma versão anterior fazia a moldura do painel aparecer em BLOCOS
+   (`clip-path` com `steps()`, revelando da esquerda pra direita) — a
+   ideia era que uma aparição truncada, pega no meio pelo desmonte,
+   continuasse lendo como "estava carregando" em vez de "quebrou no
+   meio". Na prática, reportado direto: o painel parecia nascer
+   INCOMPLETO — metade de uma borda, um rótulo cortado — e isso lia
+   pior do que qualquer fade. Revertido: a moldura entra INTEIRA (ver
+   `.mo-boot-in` mais abaixo, agora um fade curto de `opacity`, não uma
+   revelação de geometria). O sinal de "ainda em curso" passou a ser
+   exclusividade da BARRA de blocos internos (`.mo-boot-bar`) — a
+   moldura nunca está "pela metade", só o preenchimento cresce. */
+
+/* Varredura de scanline — o idioma que esta interface JÁ tem
+   (`.rv-scan-sweep` em auth.css, `.rm-scanlines` em mesa.css). Entra no
+   lugar do `mo-shimmer` (um brilho diagonal atravessando um bloco
+   arredondado), que era vocabulário de outra família de produto e
+   destoava de tudo à volta. */
+@keyframes mo-scan {
+  0% { transform: translateY(-100%); opacity: 0; }
+  18% { opacity: 1; }
+  82% { opacity: 1; }
+  100% { transform: translateY(240%); opacity: 0; }
+}
+
+/* Respiração do GLOW — usada para "algo está em curso neste elemento".
+   Só `box-shadow`/`border-color`: nenhuma geometria muda, então não há
+   como produzir o artefato que a primeira versão produzia (uma barra
+   sobreposta à borda, que lia como borda quebrada). */
+@keyframes mo-armado {
+  0%, 100% { box-shadow: inset 0 0 0 rgba(0, 212, 255, 0), 0 0 0 rgba(0, 212, 255, 0); }
+  50% { box-shadow: inset 0 0 10px rgba(0, 212, 255, 0.22), 0 0 8px rgba(0, 212, 255, 0.28); }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   UTILITÁRIOS
+   ══════════════════════════════════════════════════════════════════ */
+
+/* NOTA sobre o que NÃO existe aqui: não há uma classe utilitária por
+   keyframe (`.mo-view-in`, `.mo-surface-in`, …). Os quatro keyframes
+   acima são consumidos DIRETAMENTE pelas folhas HUD, no seletor que já
+   descreve o elemento (`.rm-page`, `.ra-modal`, `.ra-menu`,
+   `.ra2-view-enter`) — uma classe extra no JSX seria um segundo nome
+   para a mesma coisa e um convite a divergirem. Só entram aqui as
+   utilitárias que o TSX de fato aplica.
+
+   Troca de painel/aba/etapa DENTRO de uma tela que já está montada.
+   Mais curta que a de rota: a moldura não mudou, só o miolo — animar
+   como se fosse uma tela nova mentiria sobre a hierarquia. */
+.mo-panel-in { animation: mo-view-in var(--mo-dur-enter) var(--mo-ease-out) both; }
+
+/* ── Sobre listas: NÃO há stagger ──────────────────────────────────
+   Havia (`.mo-list`, 28ms por item, teto no 8º) e foi removido na
+   revisão visual. O motivo não é performance: é que cards entrando um
+   a um chamam atenção para o ATO DE CARREGAR em vez de para o
+   conteúdo, e num grid de cards grandes com borda luminosa o efeito
+   lê como pipoca. A lista inteira entra junto, no fade da própria
+   rota (`.rm-page` / `.ra2-view-enter`) — um bloco de informação
+   chegando de uma vez, que é o que ele de fato é. */
+
+/* ── Feedback de ação ──────────────────────────────────────────────
+   O `:active` de "pressionado" (`scale(var(--mo-scale-press))`) vive nos
+   PRIMITIVOS de cada folha (`.rm-btn`, `.rm-pill`, `.ra2-primary`…), não
+   numa classe utilitária: pressionar é comportamento de botão, e um
+   botão que só reage se alguém lembrar de pôr uma classe é um botão que
+   às vezes não reage. Idem `[data-pending]`, que precisa conviver com o
+   `:disabled` do mesmo primitivo.
+
+   Rotação compartilhada. NÃO desenha um spinner: o desenho vem do
+   ícone `Spinner` de `_design/icons.tsx`, o mesmo que /login e o
+   dashboard já usam. A primeira versão desenhava um círculo em CSS
+   (`border-radius: 50%` + borda com um lado transparente) e virava um
+   terceiro spinner no produto, com outro traço e outro raio que os dois
+   existentes — genérico onde tudo à volta é desenhado. Uma classe de
+   rotação sobre o ícone certo resolve sem inventar forma nova. */
+.mo-spin { animation: mo-spin 900ms linear infinite; flex: none; }
+
+/* ── Entrada do painel de carregamento ─────────────────────────────
+   Ver `.mo-boot` mais abaixo pro desenho completo — este é só o
+   MOVIMENTO. `.mo-boot-in` continua um WRAPPER em volta de `.mo-boot`
+   (elemento separado, nunca junto no mesmo nó): quem cuida do chanfro
+   (`clip-path: polygon`, estático) é `.mo-boot`; este wrapper só cuida
+   de QUANDO o painel aparece, nunca de COMO a geometria dele se forma —
+   a moldura chega pronta, inteira, sempre.
+
+   O elemento existe no DOM desde o primeiro frame (para não causar
+   layout shift quando aparecer), mas fica com `opacity: 0` (é o `from`
+   de `mo-fade-in`, com `both`) até `--mo-delay-boot` passar. Se a rota
+   resolver antes disso, o usuário nunca vê o painel — comportamento
+   correto pra navegação instantânea.
+
+   Fade CURTO (`--mo-dur-micro`, 140ms) de propósito: rápido o bastante
+   pra que mesmo se o React desmontar o painel no meio dele (a rota
+   resolveu bem na hora em que ele começava a aparecer), a diferença
+   entre "quase invisível" e "totalmente visível" seja pequena demais
+   pra notar — o painel simplesmente aparece, não se revela aos
+   pedaços. O que comunica "ainda em curso" enquanto ele fica na tela
+   é a BARRA de blocos internos (`.mo-boot-bar`), não a entrada dele. */
+.mo-boot-in {
+  /* `width:100%` sozinho, dentro do `.mo-boot-stage` flex, faria este
+     wrapper preencher a LINHA INTEIRA — e um item que já ocupa 100% do
+     eixo principal não sobra espaço nenhum pro `justify-content:
+     center` do stage centralizar (bug real, pego só visualmente: o
+     painel aparecia colado na borda esquerda em vez de centralizado).
+     `max-width: 320px` (o mesmo teto de `.mo-boot`) resolve os dois
+     lados: dá ao filho um valor definido de `100%` pra `min(320px,
+     100%)` resolver contra (sem isso, largura `auto` como item flex
+     colapsaria pra 0 — dependência circular clássica de CSS), e ainda
+     assim deixa o wrapper mais estreito que a linha em qualquer
+     viewport largo, que é o que a centralização precisa pra ter efeito. */
+  width: 100%;
+  max-width: 320px;
+  animation: mo-fade-in var(--mo-dur-micro, 140ms) var(--mo-ease-out, cubic-bezier(0.16, 1, 0.3, 1)) var(--mo-delay-boot, 120ms) both;
+}
+
+/* ── Navegação em voo ──────────────────────────────────────────────
+   MARCADOR, não um desenho. `<LinkPending>` (NavPending.tsx) monta este
+   span dentro do `<Link>` enquanto a rota está em voo — `useLinkStatus`
+   só é legível de um DESCENDENTE do link, então o filho não tem como
+   marcar o pai; `:has(.mo-linkflag)` faz o link inteiro reagir.
+
+   `display: none` de propósito: o elemento não pinta NADA. Quem desenha
+   o estado pendente é cada casca, com o vocabulário dela (glow ciano
+   respirando no trilho da campanha, barra lateral do item na sidebar
+   global) — ver `mesa.css` e `app.css`.
+
+   Por que ele deixou de desenhar: a primeira versão era uma barrinha
+   de 1px em `bottom: -1px` com `background: currentColor`. Três erros
+   num elemento só — ficava POR CIMA da borda do botão (lia como borda
+   quebrada), herdava um branco-azulado em vez do ciano do HUD, e
+   pulsava em `scaleX`, que é vocabulário de barra de progresso e não
+   existe em lugar nenhum desta interface. Um elemento que não pinta não
+   tem como produzir artefato nenhum; o estado passa a ser desenhado por
+   quem já sabe desenhar aquele componente. */
+.mo-linkflag { display: none; }
+
+/* Texto só para leitor de tela. Existe aqui (e não só nas folhas por
+   escopo) porque `<LinkPending>` é compartilhado pelas duas cascas, e
+   o estado "carregando" não pode ser exclusivamente visual. */
+.mo-sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ── Palco do painel de carregamento ────────────────────────────────
+   Container de centralização, reutilizável por qualquer lugar que
+   mostre `BootPanel`. Não faz parte de `.mo-boot`/`.mo-boot-in` porque
+   quem sabe a altura disponível é o CONSUMIDOR (a página de loading),
+   não o painel — o painel não tem por que saber se está dentro de
+   `.rm-shell-main`, `.ra2-content` ou uma coluna estreita de
+   `SectionLoading`.
+
+   `min-height: 100%` depende do ancestral ter altura REAL (não só
+   `min-height`) — `.rm-shell-main` e `.ra2-content` já têm isso por
+   construção (são a região rolável de um grid/flex de altura de tela
+   cheia). Onde não há esse ancestral (rotas sem casca persistente,
+   como /admin, /login, /join), o consumidor passa `--mo-boot-stage-min`
+   para trocar a base de `min-height` por `100dvh` — ver
+   `SectionLoading.tsx`. */
+.mo-boot-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--mo-boot-stage-min, 100%);
+  width: 100%;
+}
+
+/* Modificador de `.mo-boot-stage` usado por `BootMinDurationOverlay`
+   (a única SOBREPOSIÇÃO de carregamento do projeto — todo o resto que
+   usa `.mo-boot-stage` é conteúdo NORMAL de rota, no fluxo do
+   documento). Cobre o ancestral posicionado mais próximo
+   (`.rm-shell-main`/`.ra2-content`, ambos `position: relative` de
+   propósito) com um fundo opaco: por baixo pode estar conteúdo antigo
+   ainda visível, ou o `loading.tsx` do próprio Next — os dois ficam
+   igualmente escondidos, porque visualmente a sobreposição É o mesmo
+   painel, só que garantindo que ele não suma cedo demais.
+
+   Suposição aceita: a área coberta é a do CONTAINER (que pode rolar),
+   não da viewport visível — se o usuário já tiver rolado quando a
+   sobreposição aparece, ela cobre até onde a rolagem alcançar, não
+   necessariamente o que está na tela naquele instante. Na prática isso
+   não importa: a sobreposição só aparece no INÍCIO de uma navegação,
+   quando o scroll já resetou pro topo. */
+.mo-boot-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(6, 10, 16, 0.94);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PAINEL DE CARREGAMENTO ("boot")
+   ------------------------------------------------------------------
+   Substitui o esqueleto de blocos. Duas razões, as duas levantadas na
+   revisão:
+
+   1. ESTRUTURAL. Esqueleto só faz sentido quando ele imita a forma do
+      que vai chegar E o resto da tela permanece. Aqui o resto da tela
+      passou a permanecer de verdade (a casca subiu para o layout do
+      grupo `(global)` e para o da campanha), então o que falta é só a
+      ÁREA DE CONTEÚDO — e a forma dela muda completamente entre rotas
+      (grid de cards, lista, formulário, capítulo de livro). Um
+      esqueleto genérico ali não imita nada: promete uma forma e entrega
+      outra, o que é pior que não prometer.
+
+   2. ESTÉTICA. Blocos cinza pulsando são vocabulário de outra família
+      de produto. A referência pedida (Cyberpunk 2077 e os sites
+      oficiais) carrega de outro jeito: painel angular com cantos
+      cortados, rótulo em mono caixa-alta com tracking largo, cursor de
+      bloco piscando, barra SEGMENTADA que cresce (não um progresso
+      contínuo genérico) e varredura de scanline. É esse o desenho
+      abaixo.
+
+   Fica CENTRALIZADO no espaço disponível de conteúdo — nunca na tela
+   inteira. A área que ele centraliza já exclui trilho/sidebar e
+   cabeçalho/topbar por construção: `.mo-boot-stage` (abaixo) mede
+   `min-height: 100%` contra o ANCESTRAL que já é só-conteúdo
+   (`.rm-shell-main` na campanha, `.ra2-content` na área global) —
+   então "centralizar" aqui nunca significa "por cima do menu", porque
+   o menu não faz parte da caixa que está sendo centralizada.
+
+   Uma versão anterior deste painel ficava ancorado no topo, de
+   propósito ("a tela não está vazia, só falta um pedaço"). Centralizado
+   lê melhor na prática: um retângulo pequeno colado no canto superior
+   do vazio de conteúdo parecia perdido, sem relação com o espaço ao
+   redor — centralizado, ele lê como o FOCO da espera, que é o que de
+   fato é.
+   ══════════════════════════════════════════════════════════════════ */
+.mo-boot {
+  position: relative;
+  overflow: hidden;
+  width: min(320px, 100%);
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 13px 16px;
+  border: 1px solid rgba(0, 212, 255, 0.22);
+  background: rgba(0, 212, 255, 0.035);
+  /* Canto cortado — o chanfro é a assinatura geométrica desta interface
+     (`.rm-card`, `.rc-dock`, `.ra-modal` todos o usam). */
+  clip-path: polygon(
+    0 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  );
+}
+
+/* Varredura descendo pelo painel. Mesmo gesto de `.rv-scan-sweep` na
+   tela de acesso — é o que faz o painel parecer LIGADO em vez de
+   parado. `transform`, nunca `background-position`: um carregamento
+   pode ficar minutos na tela. */
+.mo-boot::after {
+  content: "";
+  position: absolute; left: 0; right: 0; top: 0;
+  height: 55%;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent 0%, rgba(0, 212, 255, 0.12) 50%, transparent 100%);
+  animation: mo-scan 2.1s var(--mo-ease-standard, cubic-bezier(0.4, 0, 0.2, 1)) infinite;
+}
+
+.mo-boot-label {
+  display: flex; align-items: center; gap: 7px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: rgba(0, 212, 255, 0.75);
+  white-space: nowrap;
+}
+
+/* Cursor de bloco piscando — terminal, não spinner. `steps(1)` para o
+   piscar ser um corte seco; um cursor que faz fade não é um cursor. */
+.mo-boot-caret {
+  width: 6px; height: 11px; flex: none;
+  background: var(--am, #f5a200);
+  animation: mo-caret 1.1s steps(1, end) infinite;
+}
+@keyframes mo-caret {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+
+/* Quadradinhos de carregamento — o único elemento do painel que muda
+   de estado enquanto ele fica na tela (a moldura, o rótulo e o cursor
+   são estáticos ou piscam no lugar; só isto aqui progride).
+
+   Segunda versão. A primeira era três quadrados fixos pulsando em onda
+   (acender → apagar → acender) — devolvida com dois problemas reais:
+   pequenos e a 25% de opacidade sobre fundo quase preto, quase
+   somem; e "três" nunca muda, então não existe sensação de AVANÇO,
+   só de piscar no lugar. O pedido foi direto: são quadradinhos de
+   carregamento, e o que representa carregar é a contagem deles
+   CRESCENDO — não um número fixo pulsando.
+
+   A técnica: uma trilha com blocos DESENHADOS por uma máscara (fixos,
+   nunca se movem) e um preenchimento por baixo que CRESCE da esquerda
+   pra direita (`scaleX`, não `width` — não dispara reflow) até cobrir
+   a trilha inteira, e então reinicia. Cada bloco "acende" no instante
+   em que o preenchimento alcança a posição dele — o efeito visual é
+   literalmente "mais quadradinhos acesos a cada instante", até
+   reiniciar do zero. Mais visível que a versão anterior (o
+   preenchimento é ciano cheio, não um ponto a 25%) e comunica o
+   crescimento que faltava. */
+.mo-boot-bar {
+  position: relative;
+  height: 6px; width: 100%;
+  background: rgba(0, 212, 255, 0.14);
+  -webkit-mask: repeating-linear-gradient(90deg, #000 0 5px, transparent 5px 8px);
+  mask: repeating-linear-gradient(90deg, #000 0 5px, transparent 5px 8px);
+}
+.mo-boot-bar::after {
+  content: "";
+  position: absolute; inset: 0;
+  transform-origin: left center;
+  transform: scaleX(0);
+  background: var(--cy, #00d4ff);
+  animation: mo-boot-fill 1.6s var(--mo-ease-standard, cubic-bezier(0.4, 0, 0.2, 1)) infinite;
+}
+@keyframes mo-boot-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   SUPERFÍCIES COM ENTRADA **E** SAÍDA
+   ------------------------------------------------------------------
+   Toda superfície abaixo permanece MONTADA e é controlada por
+   `data-open` — é a única forma de animar a SAÍDA sem uma biblioteca
+   de motion (React remove o nó no mesmo frame; um `@keyframes` de
+   saída nunca chegaria a rodar). `transition-behavior: allow-discrete`
+   + `@starting-style` fazem `display`/`visibility` participarem da
+   transição, então a superfície continua fora da árvore de foco e do
+   hit-testing quando fechada — não é "invisível mas clicável".
+
+   Degradação: num browser sem `allow-discrete`, `display` troca na
+   hora e a superfície aparece/some seca — exatamente o comportamento
+   de HOJE, nunca pior.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Véu/backdrop. Só opacidade — um backdrop que se move chama atenção
+   pra si em vez de pro que ele está destacando. */
+.mo-scrim {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--mo-dur-exit) var(--mo-ease-in),
+    visibility var(--mo-dur-exit) allow-discrete;
+}
+.mo-scrim[data-open="true"] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    opacity var(--mo-dur-enter) var(--mo-ease-out),
+    visibility var(--mo-dur-enter) allow-discrete;
+}
+@starting-style {
+  .mo-scrim[data-open="true"] { opacity: 0; }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   MOVIMENTO REDUZIDO
+   ------------------------------------------------------------------
+   Regra do projeto: o movimento some, a INFORMAÇÃO não. Deslocamento e
+   escala são zerados (é o que causa desconforto vestibular); a
+   opacidade continua, mas quase instantânea — mantida porque é ela que
+   preserva a coordenação entre véu e painel (some junto, não em duas
+   etapas visíveis) e porque um fade de 1 frame não é movimento.
+
+   Alcance: as classes `mo-*` diretamente (elas podem viver fora de
+   `.rm-root`/`.ra-root`) — os blocos por-raiz que já existem em
+   `mesa.css`/`app.css`/`auth.css`/`console.css` cobrem o resto e
+   continuam valendo.
+   ══════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .rm-root, .ra-root, .rv-root, .mo-scope {
+    --mo-dur-micro: 0.01ms;
+    --mo-dur-enter: 0.01ms;
+    --mo-dur-exit: 0.01ms;
+    --mo-dur-view: 0.01ms;
+    --mo-dist-sm: 0px;
+    --mo-dist-md: 0px;
+    --mo-dist-panel: 0px;
+    --mo-scale-press: 1;
+    --mo-scale-in: 1;
+  }
+
+  /* O atraso anti-flash NÃO é zerado: ele não é movimento, é uma
+     decisão de UX (não piscar um esqueleto numa navegação de 40ms) que
+     vale igual pra quem pede movimento reduzido. */
+
+  .mo-panel-in {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  /* O painel de carregamento preserva o atraso (não é movimento, é
+     anti-flash — mesma regra de sempre) mas o fade em si cai quase a
+     zero: `animation-duration` some, `animation-delay` continua o
+     mesmo. Zerar o delay aqui seria o erro oposto — mostraria o painel
+     na hora do clique, inclusive em navegações que resolveriam rápido
+     demais pra justificar mostrá-lo. */
+  .mo-boot-in {
+    animation-duration: 0.01ms !important;
+  }
+  /* Movimento CONTÍNUO é o que mais incomoda quem pede movimento
+     reduzido, então a varredura e o crescimento da barra somem por
+     completo. O painel FICA, com o rótulo, o cursor parado e a barra
+     CHEIA e parada (não vazia — "há uma trilha de blocos acesos" ainda
+     é informação; o que some é só o ciclo de crescer-e-reiniciar):
+     quem lê "CARREGANDO" recebe a informação inteira sem um único
+     pixel se mexendo. O estado nunca dependeu do movimento — o
+     movimento só o tornava vivo. */
+  .mo-boot::after { animation: none; opacity: 0; }
+  .mo-boot-bar::after { animation: none; transform: scaleX(1); }
+  .mo-boot-caret { animation: none; opacity: 1; }
+  /* `.rm-page`/`.ra2-view-enter`/`.rm-boundary`/`.mo-panel-in` não
+     precisam de override aqui: `mo-view-in` virou um fade monotônico
+     simples (nunca teve degrau de "ligar" pra desligar — essa versão
+     foi revertida por piscar demais em uso real, ver o keyframe). O
+     `--mo-dur-view`/`--mo-dur-enter` a 0.01ms no bloco de escalas acima
+     já corta a duração pra praticamente zero, que é tudo que resta a
+     fazer quando a animação em si já é só opacidade subindo.
+
+     Rotação continua, só mais lenta: é o único sinal de que uma ação
+     assíncrona está VIVA (e não travada). Movimento reduzido pede menos
+     movimento, não menos informação. */
+  .mo-spin { animation-duration: 2s !important; }
+  /* O destino pendente também não some — é informação. O que some é a
+     respiração do glow; cada casca declara o equivalente estático no
+     próprio bloco de movimento reduzido (mesa.css/app.css), porque a
+     cor certa desse estado é assunto de cada uma. */
+  /* O `:active` de "pressionado" some por outro caminho: `--mo-scale-press`
+     vira `1` no bloco de escalas acima, então o `scale()` dos primitivos
+     resolve pra identidade sem precisar de regra própria aqui. */
+}

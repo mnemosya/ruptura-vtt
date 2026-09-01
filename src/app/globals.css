@@ -1,5 +1,29 @@
 /* Estilos mínimos só para as páginas de /dev — não é o design system do VTT. */
 
+/*
+ * Linguagem de movimento (`motion.css`) importada AQUI, e não só nas
+ * folhas HUD, porque os boundaries globais (`src/app/_boundaries/*`,
+ * `loading.tsx`/`error.tsx` raiz) renderizam FORA de `.rm-root`,
+ * `.ra-root` e `.rv-root` — servem /admin, /join e /login, que não
+ * carregam nenhuma das três folhas. Sem este import, o `BootPanel`
+ * (`.mo-boot*`) e o atraso anti-flash cairiam para o valor inicial
+ * justamente nas telas onde o carregamento é mais visível.
+ *
+ * Não viola a regra de escopo de `tokens.css`: `motion.css` não
+ * declara NADA em `:root` — as escalas ficam em `.rm-root`/`.ra-root`/
+ * `.rv-root`/`.mo-scope`, então o Console continua sem enxergá-las e a
+ * asserção de `check-console-baseline.ts` segue verificável. O que
+ * este import acrescenta globalmente são só as CLASSES `mo-*`, que
+ * ninguém aplica ao Console.
+ *
+ * As folhas HUD mantêm o próprio `@import "./motion.css"` de propósito
+ * (mesma convenção do `cursor.css`): quem USA os nomes garante que eles
+ * existem, e nenhuma tela pode aparecer com metade do vocabulário
+ * faltando porque alguém mexeu neste arquivo. O bundler resolve o mesmo
+ * módulo uma vez só.
+ */
+@import "./_design/motion.css";
+
 :root {
   color-scheme: dark;
 }
