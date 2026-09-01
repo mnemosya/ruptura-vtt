@@ -10,9 +10,9 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { ContentType } from "../../../lib/content/types";
-import { PageHead, SectionHead } from "../_global/parts";
-import { AlertTriangle, BookText, ChevronDown, RotateCw, Search } from "../../_design/icons";
+import type { ContentType } from "../../../../lib/content/types";
+import { PageHead, SectionHead } from "../../_global/parts";
+import { AlertTriangle, BookText, ChevronDown, RotateCw, Search } from "../../../_design/icons";
 
 export interface CompendioTipo { id: ContentType; label: string }
 

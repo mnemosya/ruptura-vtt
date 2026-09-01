@@ -8,8 +8,7 @@
  * registrada no checkpoint da Fase 3, não bloqueia esta página.
  */
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "../../../lib/auth/session";
-import { GlobalShell } from "../_global/GlobalShell";
+import { getCurrentUser } from "../../../../lib/auth/session";
 import ContaClient from "./ContaClient";
 
 export const dynamic = "force-dynamic";
@@ -19,8 +18,6 @@ export default async function ContaPage() {
   if (!user) redirect("/login");
 
   return (
-    <GlobalShell active="account" userEmail={user.email ?? "(sem email)"} displayName={user.displayName}>
-      <ContaClient email={user.email ?? "(sem email)"} displayNameInicial={user.displayName} />
-    </GlobalShell>
+    <ContaClient email={user.email ?? "(sem email)"} displayNameInicial={user.displayName} />
   );
 }

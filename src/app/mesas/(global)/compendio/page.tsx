@@ -14,10 +14,9 @@
  */
 
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "../../../lib/auth/session";
-import { listContentDocuments } from "../../../lib/content/queries";
-import type { ContentType } from "../../../lib/content/types";
-import { GlobalShell } from "../_global/GlobalShell";
+import { getCurrentUser } from "../../../../lib/auth/session";
+import { listContentDocuments } from "../../../../lib/content/queries";
+import type { ContentType } from "../../../../lib/content/types";
 import CompendioClient, { type CompendioEntry, type CompendioTipo } from "./CompendioClient";
 
 export const dynamic = "force-dynamic";
@@ -97,13 +96,11 @@ export default async function CompendioPage({ searchParams }: PageProps) {
   }
 
   return (
-    <GlobalShell active="compendium" userEmail={user.email ?? "(sem email)"} displayName={user.displayName}>
-      <CompendioClient
-        tipos={TIPOS}
-        tipoAtual={tipoAtual}
-        entradas={entradas}
-        errorInicial={errorMessage}
-      />
-    </GlobalShell>
+    <CompendioClient
+      tipos={TIPOS}
+      tipoAtual={tipoAtual}
+      entradas={entradas}
+      errorInicial={errorMessage}
+    />
   );
 }

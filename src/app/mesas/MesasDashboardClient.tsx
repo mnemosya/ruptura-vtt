@@ -21,12 +21,13 @@
  * origem dessas funções.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createCampaign } from "../../lib/table/storage";
 import type { Campaign } from "../../lib/table";
 import { usePushToast } from "./_global/GlobalShell";
+import { usePresence } from "../_design/usePresence";
 import {
   DecoBottom, DecoTop, OnlineTag, PageHead, RoleBadge, SectionHead,
   campaignCoverStyle, mockCampaignDescription, mockOnlineCount, relativeTime,
@@ -75,6 +76,35 @@ export default function MesasDashboardClient({
   const [filter, setFilter] = useState<Filter>("all");
   const [createOpen, setCreateOpen] = useState(false);
 
+  /**
+   * Quem abriu o modal de criação — para devolver o foco ao fechar.
+   * Faltava por completo: `autoFocus` levava o foco pra dentro do
+   * diálogo e, no fechamento, ele voltava pro `<body>`; quem navega por
+   * teclado perdia o lugar e precisava tabular a página inteira de novo.
+   *
+   * O gatilho é capturado AQUI, no handler do clique, e não dentro do
+   * modal via `document.activeElement`: quando o modal monta, o
+   * `autoFocus` do input já moveu o foco pra dentro dele, então lá
+   * dentro não há mais como saber de onde o usuário veio. `null` no
+   * caminho `?novo=1` é honesto — o gatilho é um item de menu de outra
+   * casca, que nem existe mais quando o modal fecha.
+   */
+  const gatilhoCriacaoRef = useRef<HTMLElement | null>(null);
+
+  const abrirCriacao = useCallback((e?: { currentTarget: HTMLElement }) => {
+    gatilhoCriacaoRef.current = e?.currentTarget ?? null;
+    setCreateOpen(true);
+  }, []);
+
+  const devolverFocoAoGatilho = useCallback(() => {
+    const el = gatilhoCriacaoRef.current;
+    gatilhoCriacaoRef.current = null;
+    // `isConnected`: o gatilho pode ter saído do DOM enquanto o modal
+    // estava aberto (a lista rerenderiza) — focar um nó órfão é no-op,
+    // mas checar deixa a intenção explícita.
+    if (el?.isConnected) el.focus();
+  }, []);
+
   useEffect(() => { setCampanhas(campanhasIniciais); }, [campanhasIniciais]);
 
   // O item "Criar campanha" do menu de perfil chega como ?novo=1.
@@ -84,8 +114,9 @@ export default function MesasDashboardClient({
 
   const closeCreate = useCallback(() => {
     setCreateOpen(false);
+    devolverFocoAoGatilho();
     if (searchParams.get("novo") === "1") router.replace("/mesas");
-  }, [router, searchParams]);
+  }, [devolverFocoAoGatilho, router, searchParams]);
 
   const filtradas = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -100,6 +131,7 @@ export default function MesasDashboardClient({
   function handleCreated(data: CampaignCardData) {
     setCampanhas((prev) => [data, ...prev]);
     setCreateOpen(false);
+    devolverFocoAoGatilho();
     if (searchParams.get("novo") === "1") router.replace("/mesas");
     pushToast("success", `Campanha "${data.campaign.name}" criada.`);
     router.refresh();
@@ -152,7 +184,7 @@ export default function MesasDashboardClient({
           type="button"
           className="ra2-secondary"
           data-testid="dash-abrir-criar-mesa"
-          onClick={() => setCreateOpen(true)}
+          onClick={abrirCriacao}
         >
           <Plus size={16} strokeWidth={1.4} /> Criar campanha
         </button>
@@ -183,7 +215,7 @@ export default function MesasDashboardClient({
             enviado pelo narrador de uma mesa.
           </p>
           <div className="ra-empty-actions">
-            <button type="button" className="ra-btn ra-btn--amber" onClick={() => setCreateOpen(true)}>
+            <button type="button" className="ra-btn ra-btn--amber" onClick={abrirCriacao}>
               <Plus size={15} /> Criar campanha
             </button>
           </div>
@@ -208,8 +240,18 @@ export default function MesasDashboardClient({
             {resto.length > 0 && (
               <>
                 <SectionHead title="Todas as campanhas" count={resto.length} />
+                {/* Sem stagger nenhum: os cards entram JUNTOS, no fade
+                    da própria rota. Duas versões anteriores erraram
+                    aqui — `animationDelay: index * 60ms` inline (sem
+                    teto: 1,2s de cauda com 20 campanhas) e depois um
+                    stagger de 28ms com teto no 8º. O teto resolvia o
+                    tempo, não o problema: card entrando um a um chama
+                    atenção pro ato de carregar em vez de pro conteúdo, e
+                    num grid de cards grandes com borda luminosa lê como
+                    pipoca. Uma lista é um bloco de informação, e chega
+                    como um bloco. */}
                 <div className="ra2-grid" data-testid="dash-mesas-lista">
-                  {resto.map((item, i) => <CampaignCard key={item.campaign.id} data={item} index={i} />)}
+                  {resto.map((item) => <CampaignCard key={item.campaign.id} data={item} />)}
                 </div>
               </>
             )}
@@ -222,7 +264,11 @@ export default function MesasDashboardClient({
         </div>
       )}
 
-      {createOpen && <CreateCampaignModal onClose={closeCreate} onCreated={handleCreated} />}
+      {/* `aberto` como PROP em vez de `createOpen && <Modal/>`: o
+          próprio modal usa `usePresence` pra continuar montado durante
+          os 150ms de saída — sem isso, React arrancava o nó no frame do
+          clique e nenhuma animação de fechamento chegava a existir. */}
+      <CreateCampaignModal aberto={createOpen} onClose={closeCreate} onCreated={handleCreated} />
       </div>
     </div>
   );
@@ -269,7 +315,7 @@ function FeaturedCampaign({ data }: { data: CampaignCardData }) {
 
         <div style={{ maxWidth: 280, marginTop: "auto" }}>
           <Link
-            href={`/mesas/${campaign.id}`}
+            href={`/mesas/${campaign.id}/vtt`}
             data-testid={`dash-abrir-${campaign.id}`}
             className="ra2-primary ra2-btn-block"
             aria-label={`${role === "narrator" ? "Entrar na" : "Abrir"} campanha ${campaign.name}`}
@@ -288,10 +334,10 @@ function FeaturedCampaign({ data }: { data: CampaignCardData }) {
 }
 
 // ── Card ────────────────────────────────────────────────────────────
-function CampaignCard({ data, index }: { data: CampaignCardData; index: number }) {
+function CampaignCard({ data }: { data: CampaignCardData }) {
   const { campaign, role } = data;
   return (
-    <div className="ra2-card" style={{ animationDelay: `${index * 60}ms` }} data-testid="dash-mesa-item">
+    <div className="ra2-card" data-testid="dash-mesa-item">
       <div className="ra2-card-inner">
         <div className="ra2-cover" style={campaignCoverStyle(campaign.id)} aria-hidden="true" />
         <div className="ra2-card-scrim" aria-hidden="true" />
@@ -305,7 +351,7 @@ function CampaignCard({ data, index }: { data: CampaignCardData; index: number }
             </span>
           </div>
           <Link
-            href={`/mesas/${campaign.id}`}
+            href={`/mesas/${campaign.id}/vtt`}
             data-testid={`dash-abrir-${campaign.id}`}
             className="ra2-primary ra2-btn-block"
             aria-label={`${role === "narrator" ? "Entrar na" : "Abrir"} campanha ${campaign.name}`}
@@ -408,21 +454,31 @@ function NetworkPanel({ campanhas, currentUserName }: { campanhas: CampaignCardD
 
 // ── Modal de criação ────────────────────────────────────────────────
 function CreateCampaignModal({
+  aberto,
   onClose,
   onCreated,
 }: {
+  aberto: boolean;
   onClose: () => void;
   onCreated: (data: CampaignCardData) => void;
 }) {
+  const { montado, visivel } = usePresence(aberto);
   const [nome, setNome] = useState("");
   const [busy, setBusy] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
+  // A devolução do foco ao gatilho é responsabilidade do PAI
+  // (`devolverFocoAoGatilho`) — ver a nota lá: aqui dentro o
+  // `autoFocus` do input já apagou o rastro de quem abriu.
+
   useEffect(() => {
+    if (!aberto) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !busy) onClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [busy, onClose]);
+  }, [aberto, busy, onClose]);
+
+  if (!montado) return null;
 
   async function handleCreate() {
     const trimmed = nome.trim();
@@ -446,7 +502,11 @@ function CreateCampaignModal({
   }
 
   return (
-    <div className="ra-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) onClose(); }}>
+    <div
+      className="ra-overlay"
+      data-open={visivel}
+      onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) onClose(); }}
+    >
       <div className="ra-modal" role="dialog" aria-modal="true" aria-labelledby="criar-campanha-titulo">
         <button type="button" className="ra-iconbtn ra-modal-close" onClick={onClose} disabled={busy} aria-label="Fechar">
           <X size={16} />

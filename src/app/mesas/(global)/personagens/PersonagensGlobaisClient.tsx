@@ -9,8 +9,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PageHead, RoleBadge, SectionHead, relativeTime } from "../_global/parts";
-import { AlertTriangle, RotateCw, Search, User, Users } from "../../_design/icons";
+import { PageHead, RoleBadge, SectionHead, relativeTime } from "../../_global/parts";
+import { AlertTriangle, RotateCw, Search, User, Users } from "../../../_design/icons";
 
 export interface PersonagemGlobal {
   id: string;

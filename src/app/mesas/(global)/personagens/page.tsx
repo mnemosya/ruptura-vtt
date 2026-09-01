@@ -15,13 +15,12 @@
  */
 
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "../../../lib/auth/session";
-import { listCampaigns } from "../../../lib/table/storage";
+import { getCurrentUser } from "../../../../lib/auth/session";
+import { listCampaigns } from "../../../../lib/table/storage";
 import {
   listCharactersForNarratorCampaign,
   listControlledCharacters,
-} from "../../../lib/character/storage";
-import { GlobalShell } from "../_global/GlobalShell";
+} from "../../../../lib/character/storage";
 import PersonagensGlobaisClient, { type PersonagemGlobal } from "./PersonagensGlobaisClient";
 
 export const dynamic = "force-dynamic";
@@ -62,8 +61,6 @@ export default async function PersonagensGlobaisPage() {
   }
 
   return (
-    <GlobalShell active="characters" userEmail={user.email ?? "(sem email)"} displayName={user.displayName}>
-      <PersonagensGlobaisClient personagens={personagens} errorInicial={errorMessage} />
-    </GlobalShell>
+    <PersonagensGlobaisClient personagens={personagens} errorInicial={errorMessage} />
   );
 }

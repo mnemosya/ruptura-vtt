@@ -21,19 +21,18 @@
  */
 
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "../../lib/auth/session";
+import { getCurrentUser } from "../../../lib/auth/session";
 import {
   getCampaignParticipantInfo,
   listCampaignMembers,
   listCampaigns,
-} from "../../lib/table/storage";
+} from "../../../lib/table/storage";
 import {
   listCharactersForNarratorCampaign,
   listControlledCharacters,
-} from "../../lib/character/storage";
-import type { Campaign } from "../../lib/table";
-import { GlobalShell } from "./_global/GlobalShell";
-import MesasDashboardClient, { type CampaignCardData } from "./MesasDashboardClient";
+} from "../../../lib/character/storage";
+import type { Campaign } from "../../../lib/table";
+import MesasDashboardClient, { type CampaignCardData } from "../MesasDashboardClient";
 
 export const dynamic = "force-dynamic";
 
@@ -94,12 +93,10 @@ export default async function MesasPage() {
   }
 
   return (
-    <GlobalShell active="campaigns" userEmail={user.email ?? "(sem email)"} displayName={user.displayName}>
-      <MesasDashboardClient
-        campanhasIniciais={minhasCampanhas}
-        errorInicial={errorMessage}
-        currentUserName={user.displayName ?? (user.email ?? "Você").split("@")[0]}
-      />
-    </GlobalShell>
+    <MesasDashboardClient
+      campanhasIniciais={minhasCampanhas}
+      errorInicial={errorMessage}
+      currentUserName={user.displayName ?? (user.email ?? "Você").split("@")[0]}
+    />
   );
 }

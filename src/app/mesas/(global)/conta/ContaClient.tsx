@@ -16,12 +16,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signOut, updateDisplayName } from "../../../lib/auth/actions";
-import { useVisualPrefs } from "../_global/GlobalShell";
-import { PageHead } from "../_global/parts";
+import { signOut, updateDisplayName } from "../../../../lib/auth/actions";
+import { useVisualPrefs } from "../../_global/GlobalShell";
+import { PageHead } from "../../_global/parts";
 import {
   AlertTriangle, Check, LogOut, Mail, Monitor, Shield, Spinner, User, Zap,
-} from "../../_design/icons";
+} from "../../../_design/icons";
 
 type SaveState = { kind: "idle" } | { kind: "saving" } | { kind: "saved" } | { kind: "error"; message: string };
 

@@ -26,10 +26,12 @@ import {
 } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { LinkPending, NavPendingProvider } from "../../_design/NavPending";
+import { BootMinDurationOverlay } from "../../_boundaries/BootMinDurationOverlay";
 import { signOut } from "../../../lib/auth/actions";
 import {
   AlertTriangle, BookText, CheckCircle, ChevronDown, LayoutGrid, LogOut, Menu,
-  PanelLeftClose, PanelLeftOpen, Plus, Ticket, User, UserCog, Users, X,
+  PanelLeftClose, PanelLeftOpen, Plus, Spinner, Ticket, User, UserCog, Users, X,
 } from "../../_design/icons";
 import "../../_design/app.css";
 
@@ -156,19 +158,38 @@ function useParallax(ref: React.RefObject<HTMLDivElement | null>, strength: numb
 }
 
 // ── Shell ───────────────────────────────────────────────────────────
+/**
+ * Rota ativa DERIVADA do pathname, não recebida por prop.
+ *
+ * Mudou porque a casca saiu das páginas e subiu para o layout do grupo
+ * `(global)` — e um layout não sabe (nem deve saber) qual das quatro
+ * rotas filhas está em cena. `usePathname` já estava aqui de qualquer
+ * forma; a prop `active` só duplicava, em quatro lugares, uma
+ * informação que o próprio componente tinha.
+ *
+ * Ordem importa: `/mesas` é prefixo de todas as outras, então a
+ * checagem exata dele vem por último.
+ */
+function rotaAtiva(pathname: string): NavKey | null {
+  if (pathname.startsWith("/mesas/personagens")) return "characters";
+  if (pathname.startsWith("/mesas/compendio")) return "compendium";
+  if (pathname.startsWith("/mesas/conta")) return "account";
+  if (pathname === "/mesas") return "campaigns";
+  return null;
+}
+
 export function GlobalShell({
-  active,
   userEmail,
   displayName,
   children,
 }: {
-  active: NavKey;
   userEmail: string;
   displayName: string | null;
   children: React.ReactNode;
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const ativo = rotaAtiva(pathname);
 
   const [collapsed, setCollapsed] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -261,6 +282,12 @@ export function GlobalShell({
   return (
     <PrefsContext.Provider value={prefsValue}>
       <ToastContext.Provider value={pushToast}>
+        {/* Agrega `useLinkStatus()` de todo `<LinkPending>` desta casca
+            numa contagem única — é o sinal que `BootMinDurationOverlay`
+            (dentro de `.ra2-content`, abaixo) usa pra saber se alguma
+            navegação está em voo. Precisa envolver TANTO os links do
+            menu quanto a sobreposição, então fica na raiz da árvore. */}
+        <NavPendingProvider>
         <div className={rootClass}>
           <HudCursor enabled={!prefs.reduceMotion} />
 
@@ -276,7 +303,21 @@ export function GlobalShell({
           <div className="ra-vp-corner ra-vp-br" aria-hidden="true" />
 
           <div className="ra2-shell">
-            {drawerOpen && <div className="ra2-scrim" onClick={() => setDrawerOpen(false)} aria-hidden="true" />}
+            {/*
+              MONTADO sempre, visibilidade por `data-open` — antes era
+              `drawerOpen && <div/>`, e por isso o véu era ARRANCADO do
+              DOM no frame do clique enquanto a sidebar ainda deslizava
+              por 250ms. Os dois agora saem juntos, com as mesmas
+              durações (`.mo-scrim`, motion.css). Fora do mobile ele
+              continua `display: none` pela media query de `app.css`,
+              então montá-lo sempre não custa nada.
+            */}
+            <div
+              className="ra2-scrim mo-scrim"
+              data-open={drawerOpen}
+              onClick={() => setDrawerOpen(false)}
+              aria-hidden="true"
+            />
 
             <div className={`ra2-sidebar-wrap${drawerOpen ? " ra2-sidebar-wrap--open" : ""}`}>
               <nav
@@ -296,7 +337,7 @@ export function GlobalShell({
 
                 <div className="ra2-nav">
                   {NAV_ITEMS.map((item) => {
-                    const isActive = active === item.key;
+                    const isActive = ativo === item.key;
                     return (
                       <Link
                         key={item.key}
@@ -308,6 +349,9 @@ export function GlobalShell({
                       >
                         <span className="ra2-nav-icon">{item.icon}</span>
                         <span className="ra2-nav-label">{item.label}</span>
+                        {/* Destino pendente — ver `NavPending.tsx` e
+                            `.ra2-nav-item:has(.mo-linkflag)` em app.css. */}
+                        <LinkPending />
                       </Link>
                     );
                   })}
@@ -333,8 +377,19 @@ export function GlobalShell({
                     disabled={signingOut}
                     title={collapsed ? "Sair" : undefined}
                     className="ra2-nav-item ra2-nav-logout"
+                    aria-busy={signingOut}
                   >
-                    <span className="ra2-nav-icon"><LogOut size={18} strokeWidth={1.5} /></span>
+                    {/* Sair chama uma Server Action + dois `router.*` —
+                        é a ação mais lenta da casca e a única sem
+                        feedback próprio até aqui. O rótulo já mudava
+                        pra "Saindo…"; o que faltava era o sinal de que
+                        algo está EM CURSO (e `aria-busy`, pro leitor de
+                        tela receber a mesma informação). */}
+                    <span className="ra2-nav-icon">
+                      {signingOut
+                        ? <Spinner size={18} strokeWidth={1.5} className="mo-spin" />
+                        : <LogOut size={18} strokeWidth={1.5} />}
+                    </span>
                     <span className="ra2-nav-label">{signingOut ? "Saindo…" : "Sair"}</span>
                   </button>
                 </div>
@@ -400,7 +455,10 @@ export function GlobalShell({
                 </div>
               </header>
 
-              <div className="ra2-content">{children}</div>
+              <div className="ra2-content">
+                {children}
+                <BootMinDurationOverlay label="Carregando" />
+              </div>
             </div>
           </div>
 
@@ -416,6 +474,7 @@ export function GlobalShell({
             ))}
           </div>
         </div>
+        </NavPendingProvider>
       </ToastContext.Provider>
     </PrefsContext.Provider>
   );
