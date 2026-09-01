@@ -82,7 +82,7 @@ async function descobrirCampanha(page: Page): Promise<string | null> {
   const hrefs = await page.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? ""));
   return (
     hrefs
-      .map((h) => h.match(/^\/mesas\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i)?.[1])
+      .map((h) => h.match(/^\/mesas\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\/|$)/i)?.[1])
       .find(Boolean) ?? null
   );
 }
@@ -170,6 +170,32 @@ async function main() {
           await page.clock.install({ time: Date.now() });
           await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "networkidle" });
           await page.waitForTimeout(1200);
+
+          // `page.clock` só engana o relógio do NAVEGADOR — a requisição
+          // real que o timer da renovação dispara chega ao servidor no
+          // relógio REAL, poucos segundos depois do carregamento, com o
+          // access token real ainda longe do vencimento de verdade. Sem
+          // isto, a checagem de "já foi renovado agora mesmo" em
+          // `refreshAccessToken` (`lib/auth/actions.ts` — evita a
+          // dupla rotação com `middleware.ts`) via decodificar o `exp`
+          // REAL do token via curto-circuita ANTES de sequer tentar o
+          // refresh token morto, porque o access token real ainda tem
+          // validade de sobra — o critério passaria por acidente
+          // (nunca exercitando o caminho do refresh token morto) ou,
+          // como aconteceu numa rodada real desta suíte, o middleware
+          // já teria descartado silenciosamente a tentativa de renovar
+          // com o refresh token morto na PRÓPRIA carga da página,
+          // deixando o alerta sem motivo pra aparecer. Troca o cookie
+          // por um access token que DECODIFICA como vencido de verdade
+          // — força tanto o middleware quanto `refreshAccessToken` a
+          // baterem no refresh token morto de propósito, o cenário que
+          // este critério existe pra provar.
+          await context.addCookies([{
+            name: "ruptura_auth",
+            value: JSON.stringify({ access_token: "cabecalho.expirado.forcado", refresh_token: "refresh-token-morto-de-proposito" }),
+            domain: "localhost", path: "/", httpOnly: true, secure: false, sameSite: "Lax",
+            expires: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30,
+          }]);
           await page.clock.fastForward("01:00:00");
           await page.waitForTimeout(3000);
 

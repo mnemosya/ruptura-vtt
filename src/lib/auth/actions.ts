@@ -87,6 +87,27 @@ export async function signOut(): Promise<void> {
   await clearAuthTokens();
 }
 
+/**
+ * Folga bem maior que a margem de qualquer um dos dois agendadores
+ * que chamam esta função (`src/middleware.ts` e
+ * `CampaignRealtimeProvider`, ambos ~60s) — ver o comentário de
+ * `refreshAccessToken` sobre o motivo de existir.
+ */
+const LIMIAR_JA_RENOVADO_MS = 5 * 60_000;
+
+/** `exp` (ms desde epoch) de um JWT, ou `null` se ilegível — nunca lança. `atob` é global no runtime Node/Edge do Next, sem import. */
+function decodificarExpiracaoJwt(token: string): number | null {
+  try {
+    const payloadBase64Url = token.split(".")[1];
+    if (!payloadBase64Url) return null;
+    const payloadBase64 = payloadBase64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(atob(payloadBase64)) as { exp?: number };
+    return typeof payload.exp === "number" ? payload.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
 export interface RefreshedAccessToken {
   ok: boolean;
   /** Novo access token, só em sucesso. NUNCA acompanha o refresh token — esse fica no cookie httpOnly. */
@@ -128,12 +149,37 @@ export interface RefreshedAccessToken {
  * as duas passam; se uma falhar, cai em `ok: false` SEM `needsLogin`, e
  * o "Tentar novamente" da interface relê o cookie (já atualizado pela
  * outra aba) e passa. Não há perda de sessão nesse caminho.
+ *
+ * Corrida com `src/middleware.ts` (achado de auditoria, real): esta
+ * função É uma Server Action, então uma chamada dela passa pelo MESMO
+ * middleware que qualquer outra rota — que já renova o cookie sozinho
+ * quando o access token está a menos de ~60s de vencer. O
+ * `CampaignRealtimeProvider` agenda a própria chamada com a MESMA
+ * margem (~60s antes de vencer), então as duas coisas disparam pro
+ * MESMO instante: o middleware renova primeiro (roda antes da action),
+ * e SEM a checagem abaixo esta função giraria o refresh token de NOVO
+ * em cima de um token que acabou de ganhar ~1h de validade — duas
+ * rotações por renovação, e dois `Set-Cookie` na mesma resposta HTTP
+ * arriscando o navegador guardar o par ERRADO (o já obsoleto),
+ * dependendo de qual delas o Next aplica por último.
+ *
+ * Por isso o PRIMEIRO passo aqui é ler o token que JÁ está no cookie
+ * (pode já ser o que o middleware acabou de colocar) e, se ele ainda
+ * tiver bastante validade, devolvê-lo direto — sem chamar
+ * `refreshSession` de novo. `LIMIAR_JA_RENOVADO_MS` é bem maior que os
+ * ~60s de margem dos dois agendadores, então não há ambiguidade entre
+ * "acabou de ser renovado" e "está genuinamente perto de vencer".
  */
 export async function refreshAccessToken(): Promise<RefreshedAccessToken> {
   try {
     const tokens = await readAuthTokens();
     if (!tokens?.refresh_token) {
       return { ok: false, needsLogin: true, error: "Sessão ausente." };
+    }
+
+    const expAtual = decodificarExpiracaoJwt(tokens.access_token);
+    if (expAtual !== null && expAtual - Date.now() > LIMIAR_JA_RENOVADO_MS) {
+      return { ok: true, accessToken: tokens.access_token, expiresAtMs: expAtual };
     }
 
     const primeira = await tentarRenovar(tokens.refresh_token);

@@ -63,9 +63,15 @@ export function getBrowserSupabaseClient(): SupabaseClient | null {
  * `lib/auth/actions.ts`) pouco antes de vencer, aplica o token novo
  * aqui com `setAuth` e reagenda — sem reload, sem recriar assinatura
  * nenhuma (confirmado no realtime-js: `setAuth` empurra o token pros
- * canais já inscritos). Essa renovação é local à área de campanha, não
- * um comportamento deste módulo nem de `session.ts` — outra rota que
- * assine Realtime por conta própria precisaria do mesmo agendamento.
+ * canais já inscritos). Essa renovação AQUI é sobre o WEBSOCKET
+ * especificamente, e só existe enquanto a aba está aberta — outra
+ * rota que assine Realtime por conta própria ainda precisaria do
+ * mesmo agendamento pro próprio canal. O cookie httpOnly em si
+ * (`session.ts`) é renovado por um mecanismo DIFERENTE e mais forte —
+ * `src/middleware.ts`, no servidor, em toda requisição — que não
+ * depende de nenhum JS do cliente já ter rodado (cobre inclusive a
+ * primeira leitura depois de reabrir o navegador com o token já
+ * vencido, caso que um agendamento só-client-side não alcança).
  *
  * PROPAGA a falha de propósito (não engole): quem chama precisa saber se
  * o WebSocket realmente aceitou o token antes de considerar a sessão
