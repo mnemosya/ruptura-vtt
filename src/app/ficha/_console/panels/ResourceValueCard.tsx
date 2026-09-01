@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * Card de valor editável de recurso (PV/PE/Mana) — usado na janela
- * principal (`VitalsRow`) E no console minimizado (`MinimizedDockContent`),
- * para não duplicar a lógica de parsing/edição em dois lugares.
+ * Card de valor editável de recurso (PV/PE/Mana) — usado pela base
+ * compartilhada da janela principal, console minimizado e HUD do VTT,
+ * para não duplicar parsing/edição entre superfícies.
  *
  * O card tem largura e altura FIXAS (`className` controla isso via
  * `box-sizing:border-box`); o input, ao abrir, ocupa exatamente o
@@ -22,6 +22,8 @@ export function ResourceValueCard({
   inputClassName,
   onGravar,
   testIdPrefix = "console-res",
+  readOnly = false,
+  disabled = false,
 }: {
   atual: number;
   max: number;
@@ -35,6 +37,10 @@ export function ResourceValueCard({
       o dock precisa de um testid distinto para não colidir com o card
       equivalente lá embaixo. */
   testIdPrefix?: string;
+  /** Observadores do VTT recebem o mesmo card sem transformar o valor em controle focavel. */
+  readOnly?: boolean;
+  /** Bloqueio pontual durante uma gravacao; nao bloqueia o restante do HUD. */
+  disabled?: boolean;
 }) {
   const [editando, setEditando] = useState(false);
   const [texto, setTexto] = useState("");
@@ -46,6 +52,7 @@ export function ResourceValueCard({
   }, [editando]);
 
   function abrir() {
+    if (readOnly || disabled) return;
     setTexto(String(atual));
     setInvalido(false);
     setEditando(true);
@@ -63,7 +70,7 @@ export function ResourceValueCard({
     return true;
   }
 
-  if (editando) {
+  if (editando && !readOnly) {
     return (
       <span className={className} data-invalido={invalido} data-no-drag>
         <input
@@ -95,11 +102,20 @@ export function ResourceValueCard({
     );
   }
 
+  if (readOnly) {
+    return (
+      <span className={className} aria-label={`${rotulo} ${atual} de ${max}`}>
+        {atual}/{max}
+      </span>
+    );
+  }
+
   return (
     <button
       type="button"
       className={className}
       onClick={abrir}
+      disabled={disabled}
       data-testid={`${testIdPrefix}-${rotulo.toLowerCase()}`}
       aria-label={`${rotulo} ${atual} de ${max}. Editar`}
     >

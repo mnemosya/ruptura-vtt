@@ -24,6 +24,7 @@ import {
   createInitialCharacter,
   computeDerivedStats,
   normalizeCharacter,
+  applyConsoleMutation,
   deriveActiveEffectsFromConditions,
   applyAutoHealRemoval,
   undoAutoHealRemoval,
@@ -1528,39 +1529,36 @@ export default function CharacterSheetClient({
     const anterior = character.recursos_atuais?.[id] ?? 0;
     const novo = parseRecursoAtual(rawValue);
 
-    if (id === "pv" || id === "pe") {
+    if (id === "pv" || id === "pe" || id === "mana") {
       const nowIso = new Date().toISOString();
       const beforePvPe = { pv: character.recursos_atuais?.pv ?? 0, pe: character.recursos_atuais?.pe ?? 0 };
-      const afterPvPe = { ...beforePvPe, [id]: novo };
-      const { character: charComEfeitos, removidasPorCura, colapso, collapseAdvance, pvGatedDeactivated } = applyPvPeSideEffects(
+      const result = applyConsoleMutation(
         character,
-        beforePvPe,
-        afterPvPe,
-        nowIso,
+        { type: "resource", resource: id, value: novo, nowIso },
+        { derived: derivados, rules: regras, reactionRules, talents: talentsIniciais },
       );
 
-      setCharacter({
-        ...charComEfeitos,
-        recursos_atuais: { ...charComEfeitos.recursos_atuais, [id]: novo },
-      });
+      setCharacter(result.character);
       if (novo !== anterior) {
         addLogEntry("recurso", `${RECURSO_LABELS[id]}: ${anterior} → ${novo}`);
       }
-      if (removidasPorCura.length > 0) void handleAutoHealRemovals(removidasPorCura, beforePvPe.pv, afterPvPe.pv);
-      for (const d of pvGatedDeactivated) {
+      if ((result.meta.autoRemovedConditions?.length ?? 0) > 0) {
+        void handleAutoHealRemovals(result.meta.autoRemovedConditions ?? [], beforePvPe.pv, id === "pv" ? novo : beforePvPe.pv);
+      }
+      for (const d of result.meta.pvGatedDeactivated ?? []) {
         addLogEntry("recurso", `${d.talentNome} — ${d.nivelNome}: encerrado automaticamente (PV voltou a ficar acima da metade).`);
       }
-      if (colapso.started) {
-        addLogEntry("recurso", `Colapso iniciado (${colapso.tipo === "pv" ? "PV" : "PE"} a 0) — Inconsciente aplicado.`);
-        void persistCollapseEvent("collapse_started", { tipo: colapso.tipo });
+      if (result.meta.collapseStarted) {
+        addLogEntry("recurso", `Colapso iniciado (${result.meta.collapseStarted === "pv" ? "PV" : "PE"} a 0) — Inconsciente aplicado.`);
+        void persistCollapseEvent("collapse_started", { tipo: result.meta.collapseStarted });
       }
-      if (colapso.ended) {
+      if (result.meta.collapseEnded) {
         addLogEntry("recurso", `Colapso encerrado por cura — cicatriz pendente.`);
-        void persistCollapseEvent("collapse_ended", { tipo: colapso.tipo, motivo: "cura" });
+        void persistCollapseEvent("collapse_ended", { tipo: result.meta.collapseEnded, motivo: "cura" });
       }
-      if (collapseAdvance && collapseAdvance.logs.length > 0) {
-        for (const line of collapseAdvance.logs) addLogEntry("recurso", line);
-        void persistCollapseEvent("collapse_advanced", { tipo: id, motivo: "dano_adicional", outcome: collapseAdvance.outcome });
+      if ((result.meta.collapseAdvanceLogs?.length ?? 0) > 0) {
+        for (const line of result.meta.collapseAdvanceLogs ?? []) addLogEntry("recurso", line);
+        void persistCollapseEvent("collapse_advanced", { tipo: id, motivo: "dano_adicional", outcome: result.meta.collapseAdvanceOutcome });
       }
       return;
     }
@@ -1675,6 +1673,21 @@ export default function CharacterSheetClient({
     }
   }
 
+  /** Mesmo redutor puro consumido pelo HUD; esta camada só mantém o log local da ficha. */
+  function ajustarPaConsole(delta: number) {
+    const current = characterRef.current;
+    const before = current.estado_jogo?.pa_gastos ?? 0;
+    const result = applyConsoleMutation(
+      current,
+      { type: "pa", delta },
+      { derived: derivados, rules: regras, reactionRules, talents: talentsIniciais },
+    );
+    const after = result.character.estado_jogo?.pa_gastos ?? 0;
+    characterRef.current = result.character;
+    setCharacter(result.character);
+    if (after !== before) addLogEntry("pa", `PA gastos: ${before} → ${after}`);
+  }
+
   /**
    * Ajusta Reações (delta negativo = recuperar) e, quando recupera com
    * penalidade cumulativa de "defesa sem Reação" ainda ativa da rodada
@@ -1685,24 +1698,24 @@ export default function CharacterSheetClient({
    * `adjustEstadoJogo("reacoes_usadas", delta)`.
    */
   function ajustarReacoesConsole(delta: number) {
-    const overflowAnterior = characterRef.current.estado_jogo?.defesas_sem_reacao ?? 0;
-    if (delta < 0 && overflowAnterior > 0) {
-      const anterior = characterRef.current;
-      const usadosAnterior = anterior.estado_jogo?.reacoes_usadas ?? 0;
-      const novoUsados = Math.max(0, Math.trunc(usadosAnterior + delta));
-      const next: Character = {
-        ...anterior,
-        estado_jogo: { ...anterior.estado_jogo, reacoes_usadas: novoUsados, defesas_sem_reacao: 0 },
-      };
-      characterRef.current = next;
-      setCharacter(next);
+    const current = characterRef.current;
+    const usedBefore = current.estado_jogo?.reacoes_usadas ?? 0;
+    const overflowBefore = current.estado_jogo?.defesas_sem_reacao ?? 0;
+    const result = applyConsoleMutation(
+      current,
+      { type: "reactions", delta },
+      { derived: derivados, rules: regras, reactionRules, talents: talentsIniciais },
+    );
+    const usedAfter = result.character.estado_jogo?.reacoes_usadas ?? 0;
+    const overflowAfter = result.character.estado_jogo?.defesas_sem_reacao ?? 0;
+    characterRef.current = result.character;
+    setCharacter(result.character);
+    if (usedAfter !== usedBefore || overflowAfter !== overflowBefore) {
       addLogEntry(
         "reacao",
-        `Reações usadas: ${usadosAnterior} → ${novoUsados}; defesas sem Reação zeradas (${overflowAnterior} → 0).`,
+        `Reações usadas: ${usedBefore} → ${usedAfter}${overflowAfter !== overflowBefore ? `; defesas sem Reação zeradas (${overflowBefore} → ${overflowAfter})` : ""}.`,
       );
-      return;
     }
-    adjustEstadoJogo("reacoes_usadas", delta);
   }
 
   function resetEstadoJogo(key: keyof Pick<CharacterGameState, "pa_gastos" | "reacoes_usadas">) {
@@ -4662,10 +4675,13 @@ export default function CharacterSheetClient({
       removidaEm: null,
       ativa: true,
     };
-    setCharacter((prev) => ({
-      ...prev,
-      condicoes_ativas: [...(prev.condicoes_ativas ?? []), novaCondicao],
-    }));
+    const addResult = applyConsoleMutation(
+      characterRef.current,
+      { type: "condition_add", condition: novaCondicao },
+      { derived: derivados, rules: regras, reactionRules, talents: talentsIniciais },
+    );
+    characterRef.current = addResult.character;
+    setCharacter(addResult.character);
     addLogEntry("condicao", `Condição aplicada: "${novaCondicao.nome}".`);
     if (selectedCampaignId) {
       try {
@@ -4703,12 +4719,13 @@ export default function CharacterSheetClient({
     const condicao = (character.condicoes_ativas ?? []).find((c) => c.id === id);
     if (!condicao || !condicao.ativa) return;
     const removidaEm = new Date().toISOString();
-    setCharacter((prev) => ({
-      ...prev,
-      condicoes_ativas: (prev.condicoes_ativas ?? []).map((c) =>
-        c.id === id ? { ...c, ativa: false, removidaEm } : c,
-      ),
-    }));
+    const removeResult = applyConsoleMutation(
+      characterRef.current,
+      { type: "condition_remove", conditionId: id, nowIso: removidaEm },
+      { derived: derivados, rules: regras, reactionRules, talents: talentsIniciais },
+    );
+    characterRef.current = removeResult.character;
+    setCharacter(removeResult.character);
     addLogEntry("condicao", `Condição removida: "${condicao.nome}".`);
     if (selectedCampaignId) {
       try {
@@ -5285,10 +5302,14 @@ export default function CharacterSheetClient({
     // já entra como `modificador` da própria rolagem.
     rolarDefesa: (periciaId) => {
       const current = characterRef.current;
-      const spend = spendReactionForDefense(current, derivados.reacoes_por_rodada, reactionRules);
-      if (spend.character !== current) {
-        characterRef.current = spend.character;
-        setCharacter(spend.character);
+      const mutation = applyConsoleMutation(
+        current,
+        { type: "defense" },
+        { derived: derivados, rules: regras, reactionRules, talents: talentsIniciais },
+      );
+      if (mutation.character !== current) {
+        characterRef.current = mutation.character;
+        setCharacter(mutation.character);
       }
       const def = regras?.pericias.find((p) => p.id === periciaId);
       const candidato = def?.atributo_primario;
@@ -5302,28 +5323,28 @@ export default function CharacterSheetClient({
         periciaId,
         periciaNome: def?.nome,
         periciaValor: character.pericias[periciaId] ?? 0,
-        modificador: spend.penaltyApplied,
+        modificador: mutation.meta.reactionPenalty ?? 0,
       });
-      const reacaoLog = spend.defenseWithoutReaction
-        ? `Defesa sem Reação: ${spend.defensesWithoutReactionBefore} → ${spend.defensesWithoutReactionAfter}; penalidade ${spend.penaltyApplied}.`
-        : spend.usedReaction
-          ? `Reações usadas: ${spend.reactionBefore} → ${spend.reactionAfter}.`
-          : (spend.warnings[0] ?? "");
+      const reacaoLog = mutation.meta.defenseWithoutReaction
+        ? `Defesa sem Reação: ${mutation.meta.defensesWithoutReactionBefore ?? 0} → ${mutation.meta.defensesWithoutReaction ?? 0}; penalidade ${mutation.meta.reactionPenalty ?? 0}.`
+        : mutation.meta.usedReaction
+          ? `Reações usadas: ${mutation.meta.reactionBefore ?? 0} → ${mutation.meta.reactionAfter ?? 0}.`
+          : (mutation.meta.warnings?.[0] ?? "");
       addLogEntry(
         "rolagem_pericia",
         `Console — ${def?.nome ?? periciaId} (defesa): ${r.dados.join(", ")} → maior ${r.maiorDado}, total ${r.total}. ${reacaoLog}`,
       );
       return {
         resultado: r,
-        usouReacao: spend.usedReaction,
-        penalidade: spend.penaltyApplied,
-        defesasSemReacao: spend.defensesWithoutReactionAfter,
+        usouReacao: mutation.meta.usedReaction === true,
+        penalidade: mutation.meta.reactionPenalty ?? 0,
+        defesasSemReacao: mutation.meta.defensesWithoutReaction ?? 0,
       };
     },
 
     editarRecurso: (id, valor) => updateRecursoAtual(id, valor),
     editarIntegridade: (valor) => updateRecursoAtual("integridade", valor),
-    ajustarPa: (delta) => adjustEstadoJogo("pa_gastos", delta),
+    ajustarPa: (delta) => ajustarPaConsole(delta),
     ajustarReacoes: (delta) => ajustarReacoesConsole(delta),
 
     usarSobrecarga: (tipo) => void handleUseOverloadSurge(tipo),

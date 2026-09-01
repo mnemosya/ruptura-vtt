@@ -14,13 +14,13 @@
  * de ±1 em cima da mesma ação (`editarRecurso` grava valor absoluto).
  */
 
-import { HeartPulse, Zap, Sparkles } from "lucide-react";
+import { Eye, EyeOff, HeartPulse, Zap, Sparkles } from "lucide-react";
 import { MAX_COLLAPSE_SEGMENTS } from "../../../../lib/character";
 import { useClickGuard } from "../useClickGuard";
 import { ResourceValueCard } from "./ResourceValueCard";
 import type { ConsoleApi, RecursoEditavel } from "../types";
 
-const RECURSOS: { id: RecursoEditavel; rotulo: string; corTexto: string; corBarra: string; corVazado: string; bgBadge: string; Icone: typeof Zap }[] = [
+export const CONSOLE_RESOURCE_DEFINITIONS: { id: RecursoEditavel; rotulo: string; corTexto: string; corBarra: string; corVazado: string; bgBadge: string; Icone: typeof Zap }[] = [
   { id: "pv", rotulo: "PV", corTexto: "#FF5F74", corBarra: "rgba(228, 57, 76, 0.70)", corVazado: "228, 57, 76", bgBadge: "transparent", Icone: HeartPulse },
   { id: "pe", rotulo: "PE", corTexto: "#8B5CF6", corBarra: "rgba(139, 92, 246, 0.70)", corVazado: "139, 92, 246", bgBadge: "rgba(139, 92, 246, 0.10)", Icone: Zap },
   { id: "mana", rotulo: "Mana", corTexto: "#00D4FF", corBarra: "rgba(0, 212, 255, 0.70)", corVazado: "0, 212, 255", bgBadge: "rgba(0, 212, 255, 0.10)", Icone: Sparkles },
@@ -79,6 +79,120 @@ function PlusIcon() {
   );
 }
 
+export interface ConsoleResourceValue {
+  id: RecursoEditavel;
+  atual: number;
+  max: number;
+  /** So existe para quem pode administrar a exposicao publica. */
+  publico?: boolean;
+  pendente?: boolean;
+}
+
+/**
+ * Base visual/comportamental compartilhada por ficha, dock minimizado e
+ * HUD do VTT. A variante muda somente densidade; parsing, limites,
+ * botoes, teclado, animacao e semantica continuam nesta unica arvore.
+ */
+export function ResourceControls({
+  resources,
+  onEdit,
+  onTogglePublic,
+  readOnly = false,
+  variant = "console",
+}: {
+  resources: ConsoleResourceValue[];
+  onEdit?: (id: RecursoEditavel, value: number) => void;
+  onTogglePublic?: (id: RecursoEditavel, publico: boolean) => void;
+  readOnly?: boolean;
+  variant?: "console" | "hud";
+}) {
+  const guard = useClickGuard();
+  const byId = new Map(resources.map((resource) => [resource.id, resource]));
+
+  return (
+    <div className="rc-nres-card" data-variant={variant}>
+      {CONSOLE_RESOURCE_DEFINITIONS.map(({ id, rotulo, corTexto, corBarra, corVazado, bgBadge, Icone }) => {
+        const resource = byId.get(id);
+        if (!resource) return null;
+        const { atual, max, publico, pendente = false } = resource;
+        const pct = max > 0 ? Math.max(0, Math.min(100, (atual / max) * 100)) : 0;
+        const editable = !readOnly && !!onEdit;
+        return (
+          <div className="rc-nres-row" key={id} data-resource={id} aria-busy={pendente || undefined}>
+            <span className="rc-nres-badge" style={{ background: bgBadge }} aria-hidden="true">
+              <Icone size={13} color={corTexto} />
+            </span>
+            <div
+              className="rc-nres-track"
+              style={{ background: `rgba(${corVazado}, 0.10)` }}
+              role="progressbar"
+              aria-label={rotulo}
+              aria-valuenow={atual}
+              aria-valuemin={0}
+              aria-valuemax={max}
+            >
+              {[0, 1, 2, 3].map((i) => {
+                const localPct = Math.max(0, Math.min(100, (pct - i * 25) * 4));
+                return <BarCell key={i} localPct={localPct} cheioColor={corBarra} vazadoRgb={corVazado} />;
+              })}
+            </div>
+            <div className="rc-nres-adj">
+              <span className="rc-nres-nome" style={{ color: corTexto }}>{rotulo}</span>
+              <div className="rc-nres-ctrls">
+                {editable && (
+                  <button
+                    type="button"
+                    className="rc-nres-btn"
+                    onClick={() => guard(() => onEdit(id, Math.max(0, atual - 1)))}
+                    disabled={pendente || atual <= 0}
+                    aria-label={`Reduzir ${rotulo} em 1`}
+                  >
+                    <MinusIcon />
+                  </button>
+                )}
+                <ResourceValueCard
+                  atual={atual}
+                  max={max}
+                  rotulo={rotulo}
+                  className="rc-nres-val"
+                  inputClassName="rc-nres-input"
+                  readOnly={!editable}
+                  disabled={pendente}
+                  onGravar={(value) => onEdit?.(id, value)}
+                />
+                {editable && (
+                  <button
+                    type="button"
+                    className="rc-nres-btn"
+                    onClick={() => guard(() => onEdit(id, Math.min(max, atual + 1)))}
+                    disabled={pendente || atual >= max}
+                    aria-label={`Aumentar ${rotulo} em 1`}
+                  >
+                    <PlusIcon />
+                  </button>
+                )}
+              </div>
+              {typeof publico === "boolean" && onTogglePublic && !readOnly && (
+                <button
+                  type="button"
+                  className="rc-nres-eye"
+                  aria-pressed={publico}
+                  aria-label={publico ? `Ocultar ${rotulo} dos jogadores` : `Mostrar ${rotulo} aos jogadores`}
+                  title={publico ? `Ocultar ${rotulo} dos jogadores` : `Mostrar ${rotulo} aos jogadores`}
+                  disabled={pendente}
+                  onClick={() => guard(() => onTogglePublic(id, !publico))}
+                >
+                  {publico ? <Eye size={13} aria-hidden="true" /> : <EyeOff size={13} aria-hidden="true" />}
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /**
  * Losango de Colapso — mesma geometria de PA/Reações, paleta vermelha.
  * Cores vêm do CSS (`.rc-colpip`, via `data-on`), não de atributos
@@ -126,59 +240,14 @@ export function VitalsRow({ api, onEstabilizar }: { api: ConsoleApi; onEstabiliz
     <div className="rc-vitals rc-vitals-row">
       <div className="rc-nres-wrap">
         <span className="rc-nres-caption">Recursos</span>
-        <div className="rc-nres-card">
-          {RECURSOS.map(({ id, rotulo, corTexto, corBarra, corVazado, bgBadge, Icone }) => {
-            const max = maximos[id];
-            const atual = character.recursos_atuais?.[id] ?? max;
-            const pct = max > 0 ? Math.max(0, Math.min(100, (atual / max) * 100)) : 0;
-            return (
-              <div className="rc-nres-row" key={id}>
-                <span className="rc-nres-badge" style={{ background: bgBadge }} aria-hidden="true">
-                  <Icone size={13} color={corTexto} />
-                </span>
-                <div className="rc-nres-track" style={{ background: `rgba(${corVazado}, 0.10)` }} role="img" aria-label={`${rotulo} ${atual} de ${max}`}>
-                  {[0, 1, 2, 3].map((i) => {
-                    const localPct = Math.max(0, Math.min(100, (pct - i * 25) * 4));
-                    return <BarCell key={i} localPct={localPct} cheioColor={corBarra} vazadoRgb={corVazado} />;
-                  })}
-                </div>
-                <div className="rc-nres-adj">
-                  <span className="rc-nres-nome" style={{ color: corTexto }}>
-                    {rotulo}
-                  </span>
-                  <div className="rc-nres-ctrls">
-                    <button
-                      type="button"
-                      className="rc-nres-btn"
-                      onClick={() => guard(() => api.editarRecurso(id, Math.max(0, atual - 1)))}
-                      disabled={atual <= 0}
-                      aria-label={`Reduzir ${rotulo} em 1`}
-                    >
-                      <MinusIcon />
-                    </button>
-                    <ResourceValueCard
-                      atual={atual}
-                      max={max}
-                      rotulo={rotulo}
-                      className="rc-nres-val"
-                      inputClassName="rc-nres-input"
-                      onGravar={(v) => api.editarRecurso(id, v)}
-                    />
-                    <button
-                      type="button"
-                      className="rc-nres-btn"
-                      onClick={() => guard(() => api.editarRecurso(id, Math.min(max, atual + 1)))}
-                      disabled={atual >= max}
-                      aria-label={`Aumentar ${rotulo} em 1`}
-                    >
-                      <PlusIcon />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <ResourceControls
+          resources={CONSOLE_RESOURCE_DEFINITIONS.map(({ id }) => ({
+            id,
+            max: maximos[id],
+            atual: character.recursos_atuais?.[id] ?? maximos[id],
+          }))}
+          onEdit={api.editarRecurso}
+        />
       </div>
 
       <div className="rc-ncol-wrap">

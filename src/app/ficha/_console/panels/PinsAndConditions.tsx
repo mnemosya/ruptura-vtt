@@ -62,29 +62,72 @@ export function ConditionsPanel({
   const ativas = (api.character.condicoes_ativas ?? []).filter((c) => c.ativa !== false);
 
   return (
-    <div className="rc-ncond-wrap">
+    <ConditionsControls
+      conditions={ativas}
+      onAdd={onAdicionar}
+      onDetails={onDetalhes}
+      onRemove={api.removerCondicao}
+    />
+  );
+}
+
+export interface SharedCondition {
+  id: string;
+  nome: string;
+  descricao?: string;
+}
+
+/** Mesma lista/chips/teclado usada pela ficha e pelo HUD. */
+export function ConditionsControls({
+  conditions,
+  onAdd,
+  onDetails,
+  onRemove,
+  readOnly = false,
+  busy = false,
+  variant = "console",
+}: {
+  conditions: SharedCondition[];
+  onAdd?: () => void;
+  onDetails?: (id: string) => void;
+  onRemove?: (id: string) => void;
+  readOnly?: boolean;
+  busy?: boolean;
+  variant?: "console" | "hud";
+}) {
+  const editable = !readOnly && !!onRemove;
+
+  return (
+    <div className="rc-ncond-wrap" data-variant={variant} aria-busy={busy || undefined}>
       <span className="rc-ncond-caption">Condições</span>
       <section className="rc-ncond-card" aria-label="Condições">
-        {ativas.length === 0 && <p className="rc-ncond-vazio">Nenhuma condição ativa.</p>}
-        {ativas.map((c) => (
+        {conditions.length === 0 && <p className="rc-ncond-vazio">Nenhuma condição ativa.</p>}
+        {conditions.map((c) => (
           <span key={c.id} className="rc-ncond-tag">
-            <button type="button" className="rc-ncond-abrir" onClick={() => onDetalhes(c.id)} title={c.descricao ?? c.nome}>
-              {c.nome}
-            </button>
-            <button
-              type="button"
-              className="rc-ncond-x"
-              onClick={() => api.removerCondicao(c.id)}
-              aria-label={`Remover condição ${c.nome}`}
-              title="Remover"
-            >
-              <X size={10} strokeWidth={1.6} />
-            </button>
+            {onDetails && !readOnly ? (
+              <button type="button" className="rc-ncond-abrir" onClick={() => onDetails(c.id)} title={c.descricao ?? c.nome}>
+                {c.nome}
+              </button>
+            ) : <span className="rc-ncond-abrir" title={c.descricao ?? c.nome}>{c.nome}</span>}
+            {editable && (
+              <button
+                type="button"
+                className="rc-ncond-x"
+                onClick={() => onRemove?.(c.id)}
+                disabled={busy}
+                aria-label={`Remover condição ${c.nome}`}
+                title="Remover"
+              >
+                <X size={10} strokeWidth={1.6} />
+              </button>
+            )}
           </span>
         ))}
-        <button type="button" className="rc-ncond-add" onClick={onAdicionar} data-testid="console-add-condicao">
-          <Plus size={12} aria-hidden="true" /> Adicionar
-        </button>
+        {!readOnly && onAdd && (
+          <button type="button" className="rc-ncond-add" onClick={onAdd} disabled={busy} data-testid="console-add-condicao">
+            <Plus size={12} aria-hidden="true" /> Adicionar
+          </button>
+        )}
       </section>
     </div>
   );

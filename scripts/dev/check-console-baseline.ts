@@ -215,7 +215,7 @@ async function descobrirAlvo(page: Page): Promise<{ campaignId: string; characte
   await page.locator('a[href^="/mesas/"]').first().waitFor({ state: "attached", timeout: 20000 });
   const hrefs = await page.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? ""));
   const campaignId = hrefs
-    .map((h) => h.match(/^\/mesas\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i)?.[1])
+    .map((h) => h.match(/^\/mesas\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\/|$)/i)?.[1])
     .find(Boolean);
   if (!campaignId) throw new Error("Nenhuma campanha encontrada em /mesas — sessão expirada? Rode refresh-admin-session.ts");
 

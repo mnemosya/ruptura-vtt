@@ -143,12 +143,14 @@ function PlusIcon() {
  * (spec). Trilha de losangos + botões minus/plus (±1) lado a lado com
  * o valor atual/total.
  */
-function RecursoPontos({
+export function PointResourceControls({
   rotulo,
   disponivel,
   max,
   onAlternar,
   onRolarDefesa,
+  disabled = false,
+  variant = "console",
 }: {
   rotulo: string;
   disponivel: number;
@@ -158,13 +160,15 @@ function RecursoPontos({
       abaixo dos pips/valor, dentro do MESMO container (spec "botão
       Rolar defesa"). Opcional pra não afetar o bloco de PA. */
   onRolarDefesa?: () => void;
+  disabled?: boolean;
+  variant?: "console" | "hud";
 }) {
   const guard = useClickGuard();
   const [hover, setHover] = useState<number | null>(null);
   const total = Math.max(0, Math.round(max));
   const previewValor = hover == null ? null : hover < disponivel ? hover : hover + 1;
   return (
-    <div className="rc-npr">
+    <div className="rc-npr" data-variant={variant} aria-busy={disabled || undefined}>
       <span className="rc-npr-label">{rotulo}</span>
       <div className="rc-npr-row">
         <div className="rc-npr-pips" onMouseLeave={() => setHover(null)}>
@@ -199,6 +203,7 @@ function RecursoPontos({
                   // que o disponível (recuperar) precisa de um delta
                   // NEGATIVO.
                   onClick={() => guard(() => onAlternar(disponivel - (cheio ? i : i + 1)))}
+                  disabled={disabled}
                   aria-label={`${rotulo} ${i + 1} de ${total}: ${cheio ? "disponível" : "gasto"}`}
                   aria-pressed={cheio}
                 >
@@ -213,7 +218,7 @@ function RecursoPontos({
             type="button"
             className="rc-npr-btn"
             onClick={() => guard(() => onAlternar(1))}
-            disabled={disponivel <= 0}
+            disabled={disabled || disponivel <= 0}
             aria-label={`Gastar 1 ${rotulo}`}
           >
             <MinusIcon />
@@ -228,7 +233,7 @@ function RecursoPontos({
             type="button"
             className="rc-npr-btn"
             onClick={() => guard(() => onAlternar(-1))}
-            disabled={disponivel >= total}
+            disabled={disabled || disponivel >= total}
             aria-label={`Devolver 1 ${rotulo}`}
           >
             <PlusIcon />
@@ -236,7 +241,7 @@ function RecursoPontos({
         </div>
       </div>
       {onRolarDefesa && (
-        <button type="button" className="rc-npr-defesa" onClick={() => guard(onRolarDefesa)} aria-label="Rolar defesa">
+        <button type="button" className="rc-npr-defesa" onClick={() => guard(onRolarDefesa)} disabled={disabled} aria-label="Rolar defesa">
           <Shield size={14} strokeWidth={1.5} color="#0485A3" fill="rgba(4, 133, 163, 0.33)" aria-hidden="true" />
           Rolar defesa
         </button>
@@ -447,8 +452,8 @@ export function IdentityAside({
       </div>
 
       <div className="rc-npr-card">
-        <RecursoPontos rotulo="PA" disponivel={paDisponivel} max={derivados.pa_max} onAlternar={api.ajustarPa} />
-        <RecursoPontos
+        <PointResourceControls rotulo="PA" disponivel={paDisponivel} max={derivados.pa_max} onAlternar={api.ajustarPa} />
+        <PointResourceControls
           rotulo="Reações"
           disponivel={reacoesDisponiveis}
           max={derivados.reacoes_por_rodada}

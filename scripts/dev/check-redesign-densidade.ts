@@ -98,7 +98,7 @@ async function main() {
     await page.locator('a[href^="/mesas/"]').first().waitFor({ state: "attached", timeout: 20000 });
     const hrefs = await page.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? ""));
     const campaignId = hrefs
-      .map((h) => h.match(/^\/mesas\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i)?.[1])
+      .map((h) => h.match(/^\/mesas\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\/|$)/i)?.[1])
       .find(Boolean);
     if (!campaignId) {
       registrar("0 (campanha de teste)", false, "nenhuma campanha em /mesas — sessão expirada?");
