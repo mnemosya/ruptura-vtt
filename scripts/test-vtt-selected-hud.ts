@@ -1,0 +1,72 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import {
+  applyConsoleMutation,
+  computeDerivedStats,
+  createInitialCharacter,
+  normalizeReactionRules,
+  type ActiveCondition,
+} from "../src/lib/character/index.js";
+
+const flow = JSON.parse(readFileSync("content/db_fluxo_combate_normalizado_v1_1.json", "utf8"));
+const reactionRules = normalizeReactionRules(flow);
+const initial = createInitialCharacter(null, "HUD Teste");
+const derived = computeDerivedStats(initial.atributos, null);
+const context = { derived, rules: null, reactionRules, talents: [] };
+
+const collapsed = applyConsoleMutation(initial, { type: "resource", resource: "pv", value: 0, nowIso: "2026-08-25T12:00:00.000Z" }, context);
+assert.equal(collapsed.character.recursos_atuais?.pv, 0);
+assert.equal(collapsed.meta.collapseStarted, "pv", "PV do HUD usa o mesmo início de Colapso da ficha.");
+
+const pa = applyConsoleMutation(initial, { type: "pa", delta: 1 }, context);
+assert.equal(pa.character.estado_jogo?.pa_gastos, 1);
+
+const reaction = applyConsoleMutation(initial, { type: "defense" }, context);
+assert.equal(reaction.meta.usedReaction, true);
+assert.equal(reaction.character.estado_jogo?.reacoes_usadas, 1);
+
+const condition: ActiveCondition = {
+  id: "condition-test",
+  conditionId: "caido",
+  nome: "Caído",
+  aplicadaEm: "2026-08-25T12:00:00.000Z",
+  ativa: true,
+};
+const added = applyConsoleMutation(initial, { type: "condition_add", condition }, context);
+assert.equal(added.character.condicoes_ativas?.at(-1)?.id, condition.id);
+const removed = applyConsoleMutation(added.character, { type: "condition_remove", conditionId: condition.id, nowIso: "2026-08-25T12:01:00.000Z" }, context);
+assert.equal(removed.character.condicoes_ativas?.at(-1)?.ativa, false);
+
+const vttClient = readFileSync("src/app/mesas/[campaignId]/vtt/VttClient.tsx", "utf8");
+const hud = readFileSync("src/app/mesas/[campaignId]/vtt/_shell/SelectedTokenHud.tsx", "utf8");
+const vitals = readFileSync("src/app/ficha/_console/panels/VitalsRow.tsx", "utf8");
+const identity = readFileSync("src/app/ficha/_console/panels/IdentityAside.tsx", "utf8");
+const conditions = readFileSync("src/app/ficha/_console/panels/PinsAndConditions.tsx", "utf8");
+const migration = readFileSync("supabase/migrations/0084_vtt_selected_token_hud.sql", "utf8");
+const realtime = readFileSync("src/app/mesas/[campaignId]/vtt/_realtime/vttRealtime.ts", "utf8");
+
+assert.match(vitals, /export function ResourceControls/);
+assert.match(vitals, /<ResourceControls/);
+assert.match(identity, /export function PointResourceControls/);
+assert.match(identity, /<PointResourceControls/);
+assert.match(conditions, /export function ConditionsControls/);
+assert.match(conditions, /<ConditionsControls/);
+assert.match(hud, /<ResourceControls/);
+assert.match(hud, /<PointResourceControls/);
+assert.match(hud, /<ConditionsControls/);
+assert.match(hud, /applyConsoleMutation/);
+
+assert.match(vttClient, /const tokenDoHud = tokenSelecionado;/, "HUD deve seguir só a seleção explícita.");
+assert.doesNotMatch(vttClient, /function Hud\(/, "Dock antigo não pode permanecer montável.");
+assert.match(vttClient, /setSelecionadoId\(null\)/, "Limpar seleção deve desmontar o HUD.");
+
+assert.match(migration, /pv_publico boolean not null default false/);
+assert.match(migration, /pe_publico boolean not null default false/);
+assert.match(migration, /mana_publica boolean not null default false/);
+assert.match(migration, /create or replace function public\.read_vtt_token_hud/);
+assert.match(migration, /create or replace function public\.set_vtt_token_resource_visibility/);
+assert.match(migration, /create or replace function public\.update_linked_vtt_hud_character/);
+assert.match(migration, /public\.is_campaign_member\(t\.campaign_id, check_user_id\)/);
+assert.doesNotMatch(realtime, /table: "vtt_tokens"/, "Linha privada de token não deve entrar no payload Realtime do cliente.");
+
+console.log("test-vtt-selected-hud: recursos, pontos, defesa, condições, seleção, autorização e projeção — OK");

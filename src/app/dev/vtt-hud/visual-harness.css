@@ -1,0 +1,47 @@
+.hud-visual-map {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 68% 32%, rgba(100, 74, 151, .25), transparent 32%),
+    linear-gradient(145deg, #111421 0%, #15172a 48%, #0b1019 100%);
+}
+
+.hud-visual-grid {
+  position: absolute;
+  inset: 0;
+  opacity: .18;
+  background-image:
+    linear-gradient(30deg, #6c7890 1px, transparent 1px),
+    linear-gradient(150deg, #6c7890 1px, transparent 1px);
+  background-size: 48px 84px;
+}
+
+.hud-visual-scenarios {
+  position: fixed;
+  z-index: 500;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid rgba(142, 154, 181, .3);
+  border-radius: 9px;
+  background: rgba(8, 11, 18, .9);
+}
+
+.hud-visual-scenarios button {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 7px 10px;
+  color: #c4cadd;
+  background: transparent;
+  font: 600 11px/1 ui-monospace, monospace;
+  cursor: pointer;
+}
+
+.hud-visual-scenarios button[aria-pressed="true"] {
+  border-color: rgba(111, 198, 224, .5);
+  color: #eafaff;
+  background: rgba(67, 134, 158, .24);
+}

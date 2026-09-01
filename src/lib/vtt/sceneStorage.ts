@@ -1,0 +1,1304 @@
+/**
+ * Leitura e escrita do estado da cena do VTT.
+ *
+ * Roda no SERVIDOR, com `getScopedTableClient()` — o client Supabase
+ * que carrega o access token do usuário logado. Consequência que é o
+ * ponto central do desenho: **toda consulta daqui passa pela RLS da
+ * migration 0065 como aquele usuário**. Não existe caminho em que a
+ * autorização dependa de um id ou papel mandado pelo cliente.
+ *
+ * Por isso as funções de escrita aqui não recebem "quem sou eu": o
+ * banco já sabe (`auth.uid()`), e as policies decidem. Um jogador
+ * chamando `moverToken` para um token que não controla recebe 0 linhas
+ * afetadas — não um erro de UI, uma recusa do banco.
+ *
+ * Granularidade: cada operação toca as linhas que precisa e só elas.
+ * Pintar uma célula é um upsert de UMA linha em `vtt_terrain`; mover um
+ * token é um update de UMA linha em `vtt_tokens`. Nada de reescrever um
+ * JSON de cena inteiro a cada gesto.
+ */
+
+import "server-only";
+import { getScopedTableClient } from "../auth/scopedClient";
+import { getCurrentUser } from "../auth/session";
+
+export type TipoTerreno = "dificil" | "bloqueado";
+export type TipoMarca = "linha" | "seta" | "desenho" | "texto";
+export type CorMarca = "ciano" | "ambar" | "verde" | "vermelho" | "roxo" | "branco";
+
+export interface CenaVtt {
+  id: string;
+  campaignId: string;
+  nome: string;
+  local: string | null;
+  resumo: string | null;
+  largura: number;
+  altura: number;
+  revision: number;
+}
+
+export interface TokenVtt {
+  id: string;
+  sceneId: string;
+  characterId: string | null;
+  nome: string;
+  sigla: string;
+  lado: "pj" | "pn" | "neutro";
+  vertente: string;
+  /** Posição da ÂNCORA — pertence à pegada, nunca o centro geométrico (`_dominio/pegada.ts`). */
+  q: number;
+  r: number;
+  tamanho: "pequeno" | "medio" | "grande" | "enorme" | "colossal";
+  /** Rotação em passos de 60°, 0-5. Presets padrão são rotacionados a partir disto no domínio — nunca persistidos já rotacionados. */
+  orientacao: number;
+  /** Offsets axiais relativos à âncora — só quando a pegada NÃO é o preset da categoria. `null` = usa o preset de `tamanho`. */
+  pegadaPersonalizada: { q: number; r: number }[] | null;
+  bloqueado: boolean;
+  visivel: boolean;
+  /** Apresentação da presença na cena; recursos vinculados são projetados da ficha canônica. */
+  retratoUrl: string | null;
+  pvAtual: number | null;
+  pvMax: number | null;
+  condicoes: string[];
+  /** Flags só chegam a narrador/controlador; observador recebe null. */
+  pvPublico: boolean | null;
+  pePublico: boolean | null;
+  manaPublica: boolean | null;
+  /** Resultado do helper canônico `can_move_vtt_token`, calculado no servidor. */
+  podeControlar: boolean;
+  revision: number;
+}
+
+export interface CelulaTerreno {
+  q: number;
+  r: number;
+  tipo: TipoTerreno;
+}
+
+export interface MarcaVtt {
+  id: string;
+  autorId: string;
+  tipo: TipoMarca;
+  pontos: { q: number; r: number }[];
+  texto: string | null;
+  cor: CorMarca;
+  espessura: number;
+  opacidade: number;
+  privada: boolean;
+  criadaEm: string;
+}
+
+/** Os nove formatos de área de Ruptura (`16 COMBATE` → ÁREA) mais a personalizada, de apoio ao narrador. */
+export type TipoArea = "esfera" | "domo" | "aura" | "linha" | "faixa" | "parede" | "cubo" | "cone" | "personalizada";
+export type ModoLinhaArea = "uma_celula" | "traco_fino";
+
+/**
+ * Área de efeito PERSISTIDA. Guarda os PARÂMETROS canônicos da
+ * geometria — nunca um desenho em pixels, nunca a lista congelada de
+ * tokens atingidos, nunca um resultado que dependa de zoom. Células e
+ * tokens afetados são recalculados no cliente a partir daqui
+ * (`_dominio/areaEfeito.ts`), então movimento/rotação/troca de pegada/
+ * troca de cena reavaliam sozinhos.
+ *
+ * Coordenadas em axial FRACIONÁRIO (a origem de uma área não precisa
+ * cair no centro de uma célula), distâncias em metros, direção em graus.
+ */
+export interface AreaVtt {
+  id: string;
+  sceneId: string;
+  campaignId: string;
+  tipo: TipoArea;
+  origemQ: number | null;
+  origemR: number | null;
+  direcaoGraus: number | null;
+  raioM: number | null;
+  /** Comprimento em metros. No tipo `cone`, é o ALCANCE. */
+  comprimentoM: number | null;
+  larguraM: number | null;
+  /** Altura em metros dos formatos tridimensionais — informativa nesta fase (o mapa é projeção superior). */
+  alturaM: number | null;
+  ladoM: number | null;
+  /** Sempre 45 no cone; `null` nos demais. Regra fixa aplicada pelo servidor. */
+  aberturaGraus: number | null;
+  nivelOrigemM: number | null;
+  modoLinha: ModoLinhaArea | null;
+  pontos: { q: number; r: number }[] | null;
+  /** Aura: token de origem. A geometria é derivada da posição/pegada ATUAL dele. */
+  tokenId: string | null;
+  cor: CorMarca;
+  opacidade: number;
+  rotulo: string | null;
+  visivel: boolean;
+  criadorId: string;
+  revision: number;
+  criadaEm: string;
+  atualizadaEm: string;
+}
+
+export type PresetObjeto =
+  | "muro" | "porta" | "caixa" | "entulho" | "mesa"
+  | "veiculo" | "barricada" | "coluna" | "grade" | "personalizado";
+export type GrauCoberturaObjeto = "parcial" | "maior" | "total";
+export type CategoriaObjeto = "fragil" | "media" | "resistente";
+
+/**
+ * Objeto tático da cena — entidade com identidade própria (migration
+ * 0085), não um punhado de células pintadas de "bloqueado".
+ *
+ * `bloqueiaMovimento` e `terrenoProjetado` são os dois campos MECÂNICOS,
+ * separados de propósito: entulho é o caso que prova a distinção — não
+ * bloqueia, mas encarece o passo. Cobertura, categoria e PD são
+ * informação tática MOSTRADA; a regra de cobertura segue consultiva (o
+ * narrador decide), nada aqui é aplicado sozinho.
+ */
+export interface ObjetoVtt {
+  id: string;
+  sceneId: string;
+  nome: string;
+  preset: PresetObjeto;
+  celulas: { q: number; r: number }[];
+  bloqueiaMovimento: boolean;
+  /** `"dificil"` projeta custo dobrado nas células ocupadas; `null` não altera o custo. */
+  terrenoProjetado: "dificil" | null;
+  grauCobertura: GrauCoberturaObjeto | null;
+  categoria: CategoriaObjeto | null;
+  pd: number | null;
+  pdMax: number | null;
+  /** Oculto continua BLOQUEANDO no servidor — esconder é segredo do narrador, não licença pra atravessar. */
+  visivel: boolean;
+  travado: boolean;
+  revision: number;
+}
+
+export function linhaParaObjeto(o: Record<string, unknown>): ObjetoVtt {
+  return {
+    id: o.id as string,
+    sceneId: o.scene_id as string,
+    nome: o.nome as string,
+    preset: o.preset as PresetObjeto,
+    celulas: (o.celulas as { q: number; r: number }[]) ?? [],
+    bloqueiaMovimento: o.bloqueia_movimento as boolean,
+    terrenoProjetado: (o.terreno_projetado as "dificil" | null) ?? null,
+    grauCobertura: (o.grau_cobertura as GrauCoberturaObjeto | null) ?? null,
+    categoria: (o.categoria as CategoriaObjeto | null) ?? null,
+    pd: (o.pd as number | null) ?? null,
+    pdMax: (o.pd_max as number | null) ?? null,
+    visivel: o.visivel as boolean,
+    travado: o.travado as boolean,
+    revision: o.revision as number,
+  };
+}
+
+/**
+ * Trilha de turnos persistida da cena (migration 0088), CRUA.
+ *
+ * `estado` fica `unknown` de propósito: as regras de combate moram em
+ * `_turnos/modelo.ts` e a validação da forma em
+ * `_turnos/serializacao.ts`, ambos do lado do app. Tipar aqui exigiria
+ * esta camada (que é `server-only`) importar o modelo de combate de
+ * dentro de `src/app/` — dependência invertida, e uma segunda cópia da
+ * definição do estado só pra agradar o compilador. Storage transporta;
+ * quem entende a forma valida.
+ *
+ * `null` na cena = não há rodadas ativas.
+ */
+export interface TrilhaPersistida {
+  sceneId: string;
+  estado: unknown;
+  revision: number;
+}
+
+export interface EstadoCena {
+  cena: CenaVtt;
+  tokens: TokenVtt[];
+  terreno: CelulaTerreno[];
+  marcas: MarcaVtt[];
+  areas: AreaVtt[];
+  objetos: ObjetoVtt[];
+  medicoes: MedicaoVtt[];
+  /** `null` quando não há combate em andamento nesta cena. */
+  trilha: TrilhaPersistida | null;
+}
+
+/**
+ * Relê os objetos da cena. Um objeto vive em DUAS tabelas
+ * (`vtt_objects` + `vtt_object_cells`), então o Realtime entrega só um
+ * sinal de "mudou" e a lista consistente vem daqui — mesma disciplina de
+ * invalidação sanitizada que os tokens usam desde a 0084, e o que evita
+ * montar um agregado de duas tabelas a partir de eventos soltos.
+ */
+export async function carregarObjetosDaCena(sceneId: string): Promise<ObjetoVtt[]> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("read_vtt_scene_objects", { p_scene_id: sceneId });
+  if (error) throw new VttStorageError(`Falha ao ler objetos: ${error.message}`, error);
+  return (Array.isArray(data) ? data : []).map((o) => linhaParaObjeto(o as Record<string, unknown>));
+}
+
+/**
+ * Cria um objeto tático — `create_vtt_object` (migration 0086), narrador-only
+ * (a RPC reautoriza via `is_campaign_owner`; a checagem aqui é só UX-cedo, no
+ * Server Action). Nasce com PD cheio (`pd === pdMax`, resolvido por quem
+ * chama a partir do preset — ver `_dominio/presetsObjeto.ts`).
+ */
+export async function criarObjeto(params: {
+  sceneId: string;
+  campaignId: string;
+  nome: string;
+  preset: PresetObjeto;
+  celulas: { q: number; r: number }[];
+  bloqueiaMovimento: boolean;
+  terrenoProjetado: "dificil" | null;
+  grauCobertura: GrauCoberturaObjeto | null;
+  categoria: CategoriaObjeto | null;
+  pd: number | null;
+  pdMax: number | null;
+  visivel: boolean;
+}): Promise<ResultadoEscrita & { objeto?: ObjetoVtt }> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("create_vtt_object", {
+    p_scene_id: params.sceneId,
+    p_campaign_id: params.campaignId,
+    p_nome: params.nome,
+    p_preset: params.preset,
+    p_celulas: params.celulas,
+    p_bloqueia_movimento: params.bloqueiaMovimento,
+    p_terreno_projetado: params.terrenoProjetado,
+    p_grau_cobertura: params.grauCobertura,
+    p_categoria: params.categoria,
+    p_pd: params.pd,
+    p_pd_max: params.pdMax,
+    p_visivel: params.visivel,
+  });
+  if (error) return { ok: false, erro: error.message };
+  if (!data) return { ok: false, erro: "Criação recusada pelo servidor." };
+  const objeto = linhaParaObjeto(data as Record<string, unknown>);
+  return { ok: true, revision: objeto.revision, objeto };
+}
+
+/** Remove — DURA, sem exclusão lógica (`delete_vtt_object`). Bloqueado por `travado`, checado no servidor. */
+export async function removerObjeto(objectId: string): Promise<ResultadoEscrita> {
+  const client = await getScopedTableClient();
+  const { error } = await client.rpc("delete_vtt_object", { p_object_id: objectId });
+  if (error) return { ok: false, erro: error.message };
+  return { ok: true };
+}
+
+/**
+ * Edita campos NÃO-geométricos de um objeto — `update_vtt_object`
+ * (migration 0086), narrador-only, revisão otimista. É POR AQUI que se
+ * destrava (`travado` bloqueia `move`/`delete`, nunca `update`) — cinto
+ * de segurança contra edição acidental de geometria, não autorização.
+ * A RPC substitui TODOS os campos de uma vez (sem `PATCH` parcial): quem
+ * chama sempre manda o objeto inteiro de volta, inclusive os campos que
+ * não mudaram.
+ */
+export async function atualizarObjeto(params: {
+  objectId: string;
+  revisionEsperada: number;
+  nome: string;
+  bloqueiaMovimento: boolean;
+  terrenoProjetado: "dificil" | null;
+  grauCobertura: GrauCoberturaObjeto | null;
+  categoria: CategoriaObjeto | null;
+  pd: number | null;
+  pdMax: number | null;
+  visivel: boolean;
+  travado: boolean;
+}): Promise<ResultadoEscrita & { objeto?: ObjetoVtt }> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("update_vtt_object", {
+    p_object_id: params.objectId,
+    p_expected_revision: params.revisionEsperada,
+    p_nome: params.nome,
+    p_bloqueia_movimento: params.bloqueiaMovimento,
+    p_terreno_projetado: params.terrenoProjetado,
+    p_grau_cobertura: params.grauCobertura,
+    p_categoria: params.categoria,
+    p_pd: params.pd,
+    p_pd_max: params.pdMax,
+    p_visivel: params.visivel,
+    p_travado: params.travado,
+  });
+  if (error) return { ok: false, erro: error.message };
+  if (!data) return { ok: false, erro: "Edição recusada pelo servidor." };
+  const objeto = linhaParaObjeto(data as Record<string, unknown>);
+  return { ok: true, revision: objeto.revision, objeto };
+}
+
+/**
+ * Move (redefine as células) — `move_vtt_object`, revisão otimista.
+ * Bloqueado por `travado` no servidor, mesma trava de `removerObjeto`.
+ */
+export async function moverObjeto(params: {
+  objectId: string;
+  revisionEsperada: number;
+  celulas: { q: number; r: number }[];
+}): Promise<ResultadoEscrita & { objeto?: ObjetoVtt }> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("move_vtt_object", {
+    p_object_id: params.objectId,
+    p_expected_revision: params.revisionEsperada,
+    p_celulas: params.celulas,
+  });
+  if (error) return { ok: false, erro: error.message };
+  if (!data) return { ok: false, erro: "Movimento recusado pelo servidor." };
+  const objeto = linhaParaObjeto(data as Record<string, unknown>);
+  return { ok: true, revision: objeto.revision, objeto };
+}
+
+/**
+ * Aplica dano (`p_delta` negativo) ou reparo (positivo) — `damage_vtt_object`,
+ * revisão otimista. O servidor SEMPRE clampa entre 0 e `pdMax`; chegar a 0
+ * NÃO remove nem transforma o objeto sozinho — virar entulho ou excluir é
+ * decisão do narrador, feita à parte (ver `atualizarObjeto`/`removerObjeto`).
+ */
+export async function danificarObjeto(params: {
+  objectId: string;
+  revisionEsperada: number;
+  delta: number;
+}): Promise<ResultadoEscrita & { objeto?: ObjetoVtt }> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("damage_vtt_object", {
+    p_object_id: params.objectId,
+    p_expected_revision: params.revisionEsperada,
+    p_delta: params.delta,
+  });
+  if (error) return { ok: false, erro: error.message };
+  if (!data) return { ok: false, erro: "Dano recusado pelo servidor." };
+  const objeto = linhaParaObjeto(data as Record<string, unknown>);
+  return { ok: true, revision: objeto.revision, objeto };
+}
+
+export class VttStorageError extends Error {
+  constructor(message: string, readonly causa?: unknown) {
+    super(message);
+    this.name = "VttStorageError";
+  }
+}
+
+/**
+ * Carrega a cena ativa da campanha com tudo que a mesa precisa.
+ *
+ * Devolve `null` quando a campanha ainda não tem cena — quem chama
+ * decide se semeia (narrador) ou mostra estado vazio (jogador). Não
+ * cria cena implicitamente: criar dado como efeito colateral de uma
+ * LEITURA é o tipo de surpresa que depois ninguém consegue rastrear.
+ */
+export async function carregarCenaAtiva(campaignId: string): Promise<EstadoCena | null> {
+  const client = await getScopedTableClient();
+
+  const { data: cenaRow, error: erroCena } = await client
+    .from("vtt_scenes")
+    .select("id, campaign_id, nome, local, resumo, largura, altura, revision")
+    .eq("campaign_id", campaignId)
+    .eq("ativa", true)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (erroCena) throw new VttStorageError(`Falha ao ler a cena da campanha: ${erroCena.message}`, erroCena);
+  if (!cenaRow) return null;
+
+  const sceneId = cenaRow.id as string;
+
+  const [tokensRes, terrenoRes, marcasRes, areasRes, objetosRes, medicoesRes, trilhaRes] = await Promise.all([
+    client.rpc("read_vtt_scene_tokens", { p_scene_id: sceneId }),
+    client.from("vtt_terrain").select("q, r, tipo").eq("scene_id", sceneId),
+    client.from("vtt_marks")
+      .select("id, autor_id, tipo, pontos, texto, cor, espessura, opacidade, privada, created_at")
+      .eq("scene_id", sceneId)
+      .order("created_at", { ascending: true }),
+    client.from("vtt_areas")
+      .select(COLUNAS_AREA)
+      .eq("scene_id", sceneId)
+      .order("created_at", { ascending: true }),
+    // Objetos vêm por RPC (não leitura direta): a projeção já resolve
+    // visibilidade e agrega as células numa consulta só — ler as duas
+    // tabelas daqui exigiria um segundo round-trip e reimplementaria a
+    // regra de quem enxerga o quê no cliente.
+    client.rpc("read_vtt_scene_objects", { p_scene_id: sceneId }),
+    client.from("vtt_measurements")
+      .select("id, autor_id, pontos, cor, rotulo, created_at")
+      .eq("scene_id", sceneId)
+      .order("created_at", { ascending: true }),
+    // Trilha na MESMA carga da cena: é o que faz um F5 no meio do
+    // combate voltar na rodada certa, sem um segundo round-trip que
+    // deixaria os trilhos piscando "sem combate" antes de aparecer.
+    client.from("vtt_turn_tracks").select("scene_id, estado, revision").eq("scene_id", sceneId).maybeSingle(),
+  ]);
+
+  if (tokensRes.error) throw new VttStorageError(`Falha ao ler tokens: ${tokensRes.error.message}`, tokensRes.error);
+  if (terrenoRes.error) throw new VttStorageError(`Falha ao ler terreno: ${terrenoRes.error.message}`, terrenoRes.error);
+  if (marcasRes.error) throw new VttStorageError(`Falha ao ler marcações: ${marcasRes.error.message}`, marcasRes.error);
+  if (areasRes.error) throw new VttStorageError(`Falha ao ler áreas: ${areasRes.error.message}`, areasRes.error);
+  if (objetosRes.error) throw new VttStorageError(`Falha ao ler objetos: ${objetosRes.error.message}`, objetosRes.error);
+  if (medicoesRes.error) throw new VttStorageError(`Falha ao ler medições: ${medicoesRes.error.message}`, medicoesRes.error);
+  if (trilhaRes.error) throw new VttStorageError(`Falha ao ler a trilha de turnos: ${trilhaRes.error.message}`, trilhaRes.error);
+
+  return {
+    trilha: trilhaRes.data
+      ? { sceneId, estado: trilhaRes.data.estado as unknown, revision: trilhaRes.data.revision as number }
+      : null,
+    cena: {
+      id: sceneId,
+      campaignId: cenaRow.campaign_id as string,
+      nome: cenaRow.nome as string,
+      local: (cenaRow.local as string | null) ?? null,
+      resumo: (cenaRow.resumo as string | null) ?? null,
+      largura: cenaRow.largura as number,
+      altura: cenaRow.altura as number,
+      revision: cenaRow.revision as number,
+    },
+    tokens: (Array.isArray(tokensRes.data) ? tokensRes.data : []).map((t) => linhaParaTokenVtt(t as Record<string, unknown>)),
+    terreno: (terrenoRes.data ?? []).map((c) => ({ q: c.q as number, r: c.r as number, tipo: c.tipo as TipoTerreno })),
+    areas: (areasRes.data ?? []).map((a) => linhaParaArea(a as Record<string, unknown>)),
+    objetos: (Array.isArray(objetosRes.data) ? objetosRes.data : []).map((o) => linhaParaObjeto(o as Record<string, unknown>)),
+    medicoes: (medicoesRes.data ?? []).map((m) => ({
+      id: m.id as string,
+      autorId: m.autor_id as string,
+      pontos: (m.pontos as { q: number; r: number }[]) ?? [],
+      cor: m.cor as CorMarca,
+      rotulo: (m.rotulo as string | null) ?? null,
+      criadaEm: m.created_at as string,
+    })),
+    marcas: (marcasRes.data ?? []).map((m) => ({
+      id: m.id as string,
+      autorId: m.autor_id as string,
+      tipo: m.tipo as TipoMarca,
+      pontos: (m.pontos as { q: number; r: number }[]) ?? [],
+      texto: (m.texto as string | null) ?? null,
+      cor: m.cor as CorMarca,
+      espessura: m.espessura as number,
+      opacidade: Number(m.opacidade),
+      privada: m.privada as boolean,
+      criadaEm: m.created_at as string,
+    })),
+  };
+}
+
+export interface ResultadoEscrita {
+  ok: boolean;
+  /** Mensagem curta pra UI quando `ok` é falso. */
+  erro?: string;
+  /** Revisão nova, quando a operação devolve uma. */
+  revision?: number;
+}
+
+/**
+ * Move um token pela ROTA inteira (não só o destino).
+ *
+ * Auditoria pós-0065: a versão anterior fazia `UPDATE` direto na
+ * tabela, e a tabela concedia `UPDATE` genérico de TODAS as colunas a
+ * `authenticated` — um jogador com permissão de mover podia, na mesma
+ * chamada, trocar `character_id`/`visivel`/`bloqueado`/`lado`/`nome`.
+ * Pior: só o CLIENTE validava limites do mapa e célula bloqueada
+ * (`_dominio/movimento.ts`), então uma chamada direta ao banco (fora da
+ * UI) podia mover um token pra fora da grade ou atravessar bloqueio.
+ *
+ * A migration 0066 fechou os dois: revogou o `UPDATE` genérico da
+ * tabela e criou `move_vtt_token` (SECURITY DEFINER), que só altera
+ * `q`/`r`/`revision`/`updated_at`, e REVALIDA a rota inteira contra
+ * limites e bloqueio no servidor — a mesma checagem que
+ * `_dominio/movimento.ts` faz no cliente, agora também do lado que não
+ * pode ser contornado.
+ *
+ * `rota` inclui a ORIGEM (primeiro ponto) — é o que permite ao servidor
+ * checar cada célula ENTRADA, não só o destino final.
+ */
+export async function moverToken(params: {
+  tokenId: string;
+  rota: { q: number; r: number }[];
+  revisionEsperada: number;
+}): Promise<ResultadoEscrita> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("move_vtt_token", {
+    p_token_id: params.tokenId,
+    p_rota: params.rota,
+    p_expected_revision: params.revisionEsperada,
+  });
+
+  if (error) {
+    // Mensagens de `raise exception` no Postgres chegam aqui —
+    // já são o texto explicativo que a UI mostra (limites, bloqueio,
+    // permissão, revisão desatualizada).
+    return { ok: false, erro: error.message };
+  }
+  const linha = Array.isArray(data) ? data[0] : data;
+  if (!linha) return { ok: false, erro: "Movimento recusado pelo servidor." };
+  return { ok: true, revision: linha.revision as number };
+}
+
+/**
+ * Rotaciona um token — `rotacionar_vtt_token` (migration 0071),
+ * mesma autorização/concorrência de `moverToken` (narrador ou quem
+ * controla o personagem, revisão otimista). O SERVIDOR recalcula a
+ * pegada na orientação nova e valida limites/bloqueio/colisão contra
+ * ela — o cliente nunca decide sozinho que uma rotação é válida.
+ */
+export async function rotacionarToken(params: {
+  tokenId: string;
+  orientacao: number;
+  revisionEsperada: number;
+}): Promise<ResultadoEscrita> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("rotacionar_vtt_token", {
+    p_token_id: params.tokenId,
+    p_orientacao: params.orientacao,
+    p_expected_revision: params.revisionEsperada,
+  });
+  if (error) return { ok: false, erro: error.message };
+  const linha = Array.isArray(data) ? data[0] : data;
+  if (!linha) return { ok: false, erro: "Rotação recusada pelo servidor." };
+  return { ok: true, revision: linha.revision as number };
+}
+
+/**
+ * Trava/destrava e mostra/oculta um token — só narrador
+ * (`set_vtt_token_flags`, migration 0066). Ligada ao menu contextual
+ * do token (gerenciamento completo, migration 0073).
+ */
+export async function definirFlagsToken(params: {
+  tokenId: string;
+  bloqueado: boolean;
+  visivel: boolean;
+}): Promise<ResultadoEscrita> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("set_vtt_token_flags", {
+    p_token_id: params.tokenId,
+    p_bloqueado: params.bloqueado,
+    p_visivel: params.visivel,
+  });
+  if (error) return { ok: false, erro: error.message };
+  const linha = Array.isArray(data) ? data[0] : data;
+  if (!linha) return { ok: false, erro: "Alteração recusada pelo servidor." };
+  return { ok: true, revision: linha.revision as number };
+}
+
+function linhaParaTokenVtt(linha: Record<string, unknown>): TokenVtt {
+  return {
+    id: linha.id as string,
+    sceneId: linha.scene_id as string,
+    characterId: (linha.character_id as string | null) ?? null,
+    nome: linha.nome as string,
+    sigla: linha.sigla as string,
+    lado: linha.lado as TokenVtt["lado"],
+    vertente: linha.vertente as string,
+    q: linha.q as number,
+    r: linha.r as number,
+    tamanho: linha.tamanho as TokenVtt["tamanho"],
+    orientacao: linha.orientacao as number,
+    pegadaPersonalizada: (linha.pegada_personalizada as { q: number; r: number }[] | null) ?? null,
+    bloqueado: linha.bloqueado as boolean,
+    visivel: linha.visivel as boolean,
+    retratoUrl: (linha.retrato_url as string | null) ?? null,
+    pvAtual: (linha.pv_atual as number | null) ?? null,
+    pvMax: (linha.pv_max as number | null) ?? null,
+    condicoes: (linha.condicoes as string[] | null) ?? [],
+    pvPublico: typeof linha.pv_publico === "boolean" ? linha.pv_publico : null,
+    pePublico: typeof linha.pe_publico === "boolean" ? linha.pe_publico : null,
+    manaPublica: typeof linha.mana_publica === "boolean" ? linha.mana_publica : null,
+    podeControlar: linha.pode_controlar === true,
+    revision: linha.revision as number,
+  };
+}
+
+export interface ResultadoEscritaToken extends ResultadoEscrita {
+  token?: TokenVtt;
+}
+
+/**
+ * Cria um token novo — narrador-only (`create_vtt_token`, migration
+ * 0073). O servidor revalida a pegada inteira (limites, bloqueio,
+ * colisão) na posição pedida — o preview no cliente é só UX.
+ */
+export async function criarToken(params: {
+  sceneId: string;
+  campaignId: string;
+  nome: string;
+  sigla: string;
+  lado: TokenVtt["lado"];
+  vertente: string;
+  tamanho: TokenVtt["tamanho"];
+  orientacao: number;
+  pegadaPersonalizada: { q: number; r: number }[] | null;
+  q: number;
+  r: number;
+  characterId: string | null;
+  visivel: boolean;
+  bloqueado: boolean;
+  retratoUrl: string | null;
+  pvAtual: number | null;
+  pvMax: number | null;
+  condicoes: string[];
+}): Promise<ResultadoEscritaToken> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("create_vtt_token", {
+    p_scene_id: params.sceneId,
+    p_campaign_id: params.campaignId,
+    p_nome: params.nome,
+    p_sigla: params.sigla,
+    p_lado: params.lado,
+    p_vertente: params.vertente,
+    p_tamanho: params.tamanho,
+    p_orientacao: params.orientacao,
+    p_pegada_personalizada: params.pegadaPersonalizada,
+    p_q: params.q,
+    p_r: params.r,
+    p_character_id: params.characterId,
+    p_visivel: params.visivel,
+    p_bloqueado: params.bloqueado,
+    p_retrato_url: params.retratoUrl,
+    p_pv_atual: params.pvAtual,
+    p_pv_max: params.pvMax,
+    p_condicoes: params.condicoes,
+  }).single();
+  if (error) return { ok: false, erro: error.message };
+  if (!data) return { ok: false, erro: "Criação recusada pelo servidor." };
+  const token = linhaParaTokenVtt(data as Record<string, unknown>);
+  return { ok: true, revision: token.revision, token };
+}
+
+/** Edita campos não-geométricos de um token — narrador-only, revisão otimista. */
+export async function atualizarToken(params: {
+  tokenId: string;
+  nome: string;
+  sigla: string;
+  lado: TokenVtt["lado"];
+  vertente: string;
+  characterId: string | null;
+  retratoUrl: string | null;
+  pvAtual: number | null;
+  pvMax: number | null;
+  condicoes: string[];
+  revisionEsperada: number;
+}): Promise<ResultadoEscritaToken> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("update_vtt_token", {
+    p_token_id: params.tokenId,
+    p_nome: params.nome,
+    p_sigla: params.sigla,
+    p_lado: params.lado,
+    p_vertente: params.vertente,
+    p_character_id: params.characterId,
+    p_retrato_url: params.retratoUrl,
+    p_pv_atual: params.pvAtual,
+    p_pv_max: params.pvMax,
+    p_condicoes: params.condicoes,
+    p_expected_revision: params.revisionEsperada,
+  }).single();
+  if (error) return { ok: false, erro: error.message };
+  if (!data) return { ok: false, erro: "Edição recusada pelo servidor." };
+  const token = linhaParaTokenVtt(data as Record<string, unknown>);
+  return { ok: true, revision: token.revision, token };
+}
+
+/**
+ * Edita TUDO que o formulário de edição pode mudar — campos de
+ * apresentação/estado E, quando de fato mudou, o tamanho — numa única
+ * RPC atômica (`edit_vtt_token`, migration 0076). Corrige uma
+ * persistência PARCIAL real: chamar `atualizarToken` seguido de
+ * `redimensionarToken` (duas RPCs, duas transações) deixava o restante
+ * da edição salvo mesmo quando o redimensionar era recusado por
+ * colisão/borda/bloqueio. Uma única revisão sobe, uma única
+ * invalidação é emitida — nunca duas. Nunca move nem gira: o servidor
+ * revalida a pegada nova contra a âncora/orientação JÁ PERSISTIDAS,
+ * não aceita nenhuma das duas como parâmetro.
+ */
+export async function editarToken(params: {
+  tokenId: string;
+  nome: string;
+  sigla: string;
+  lado: TokenVtt["lado"];
+  vertente: string;
+  characterId: string | null;
+  retratoUrl: string | null;
+  pvAtual: number | null;
+  pvMax: number | null;
+  condicoes: string[];
+  tamanho: TokenVtt["tamanho"];
+  revisionEsperada: number;
+}): Promise<ResultadoEscritaToken> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("edit_vtt_token", {
+    p_token_id: params.tokenId,
+    p_nome: params.nome,
+    p_sigla: params.sigla,
+    p_lado: params.lado,
+    p_vertente: params.vertente,
+    p_character_id: params.characterId,
+    p_retrato_url: params.retratoUrl,
+    p_pv_atual: params.pvAtual,
+    p_pv_max: params.pvMax,
+    p_condicoes: params.condicoes,
+    p_tamanho: params.tamanho,
+    p_expected_revision: params.revisionEsperada,
+  }).single();
+  if (error) return { ok: false, erro: error.message };
+  if (!data) return { ok: false, erro: "Edição recusada pelo servidor." };
+  const token = linhaParaTokenVtt(data as Record<string, unknown>);
+  return { ok: true, revision: token.revision, token };
+}
+
+/**
+ * Muda tamanho/orientação/pegada — âncora preservada
+ * (`resize_vtt_token`, migration 0073). Reusa `_dominio/pegada.ts` pro
+ * cliente montar o preview; o servidor recalcula a pegada sozinho
+ * (`vtt_pegada_celulas`) e revalida contra limites/bloqueio/colisão —
+ * nunca confia na lista de células que o cliente eventualmente exiba.
+ * O formulário de editar usa `editarToken` (acima), atômica — esta
+ * função fica intocada só porque tem suíte própria de autorização
+ * (`check-vtt-gerenciamento-tokens.ts`); não é mais chamada pela UI.
+ */
+export async function redimensionarToken(params: {
+  tokenId: string;
+  tamanho: TokenVtt["tamanho"];
+  orientacao: number;
+  pegadaPersonalizada: { q: number; r: number }[] | null;
+  revisionEsperada: number;
+}): Promise<ResultadoEscritaToken> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("resize_vtt_token", {
+    p_token_id: params.tokenId,
+    p_tamanho: params.tamanho,
+    p_orientacao: params.orientacao,
+    p_pegada_personalizada: params.pegadaPersonalizada,
+    p_expected_revision: params.revisionEsperada,
+  }).single();
+  if (error) return { ok: false, erro: error.message };
+  if (!data) return { ok: false, erro: "Alteração de tamanho recusada pelo servidor." };
+  const token = linhaParaTokenVtt(data as Record<string, unknown>);
+  return { ok: true, revision: token.revision, token };
+}
+
+/**
+ * Duplica — a posição já vem escolhida por quem chama (busca
+ * determinística por anel hexagonal, ver `VttClient.tsx`); o servidor
+ * só VALIDA aquela posição, nunca escolhe uma sozinho nem confia que o
+ * cliente já garantiu que cabe.
+ */
+export async function duplicarToken(params: {
+  tokenId: string;
+  q: number;
+  r: number;
+}): Promise<ResultadoEscritaToken> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("duplicate_vtt_token", {
+    p_token_id: params.tokenId,
+    p_q: params.q,
+    p_r: params.r,
+  }).single();
+  if (error) return { ok: false, erro: error.message };
+  if (!data) return { ok: false, erro: "Duplicação recusada pelo servidor." };
+  const token = linhaParaTokenVtt(data as Record<string, unknown>);
+  return { ok: true, revision: token.revision, token };
+}
+
+/**
+ * Remove — DURA, sem exclusão lógica (`delete_vtt_token`, migration
+ * 0073). Não há coluna de arquivamento em `vtt_tokens`; oferecer um
+ * "desfazer" aqui seria fingir uma reversibilidade que não existe.
+ */
+export async function removerToken(tokenId: string): Promise<ResultadoEscrita> {
+  const client = await getScopedTableClient();
+  const { error } = await client.rpc("delete_vtt_token", { p_token_id: tokenId });
+  if (error) return { ok: false, erro: error.message };
+  return { ok: true };
+}
+
+/**
+ * Ping efêmero — a RPC (`vtt_ping`, migration 0073) é quem PUBLICA o
+ * broadcast, não este código: o cliente nunca chama `channel.send()`
+ * pra ping, só assina o canal pra RECEBER (`_realtime/vttRealtime.ts`).
+ * Devolve `false` (não erro) quando o rate limit do servidor recusa —
+ * é um estado normal de uso, não uma falha.
+ */
+export async function enviarPing(params: {
+  campaignId: string;
+  sceneId: string;
+  q: number;
+  r: number;
+  /** "Ping de foco" (menu contextual, estilo Roll20): recentraliza a câmera de quem recebe. Padrão `false` — ping comum, só visual. */
+  foco?: boolean;
+}): Promise<{ ok: boolean; enviado: boolean; erro?: string }> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("vtt_ping", {
+    p_campaign_id: params.campaignId,
+    p_scene_id: params.sceneId,
+    p_q: params.q,
+    p_r: params.r,
+    p_foco: params.foco ?? false,
+  });
+  if (error) return { ok: false, enviado: false, erro: error.message };
+  return { ok: true, enviado: data === true };
+}
+
+/**
+ * Pinta uma célula de terreno (upsert) ou apaga (`tipo: null`).
+ *
+ * Só o narrador passa — `vtt_terrain_insert/update/delete` exigem
+ * `is_campaign_owner`. Um jogador chamando isto direto recebe recusa
+ * do banco, não da interface.
+ */
+export async function pintarTerreno(params: {
+  sceneId: string;
+  campaignId: string;
+  q: number;
+  r: number;
+  tipo: TipoTerreno | null;
+}): Promise<ResultadoEscrita> {
+  const client = await getScopedTableClient();
+
+  if (params.tipo === null) {
+    const { error } = await client
+      .from("vtt_terrain")
+      .delete()
+      .eq("scene_id", params.sceneId)
+      .eq("q", params.q)
+      .eq("r", params.r);
+    if (error) return { ok: false, erro: `Falha ao apagar terreno: ${error.message}` };
+    return { ok: true };
+  }
+
+  const { error } = await client.from("vtt_terrain").upsert(
+    {
+      scene_id: params.sceneId,
+      campaign_id: params.campaignId,
+      q: params.q,
+      r: params.r,
+      tipo: params.tipo,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "scene_id,q,r" },
+  );
+  if (error) return { ok: false, erro: `Terreno recusado: ${error.message}` };
+  return { ok: true };
+}
+
+/**
+ * Pinta ou apaga VÁRIAS células numa chamada só — o caso de "pintar
+ * arrastando". Uma requisição com N linhas, não N requisições: é a
+ * diferença entre uma pincelada e uma rajada de round-trips.
+ *
+ * `apagar: true` remove todas as células listadas; senão, faz upsert de
+ * todas com o `tipo` informado. RLS é a MESMA das funções de célula
+ * única (só narrador) — em lote não abre exceção nenhuma.
+ */
+export async function pintarTerrenoLote(params: {
+  sceneId: string;
+  campaignId: string;
+  celulas: { q: number; r: number }[];
+  tipo: TipoTerreno | null;
+}): Promise<ResultadoEscrita> {
+  if (params.celulas.length === 0) return { ok: true };
+  const client = await getScopedTableClient();
+
+  if (params.tipo === null) {
+    // Postgrest não tem "delete where (q,r) in ((..),(..))" via query
+    // builder — apaga célula a célula. Continua sendo UMA função pra
+    // quem chama (o arraste inteiro vira uma promise só), só não é
+    // literalmente um único round-trip de rede. Em PARALELO (não em
+    // série): um balde de centenas de células levava vários segundos
+    // pra desfazer com round-trips sequenciais — concorrentes, o tempo
+    // total cai pro round-trip MAIS LENTO, não pra soma de todos.
+    const resultados = await Promise.all(
+      params.celulas.map((c) => client.from("vtt_terrain").delete().eq("scene_id", params.sceneId).eq("q", c.q).eq("r", c.r)),
+    );
+    const falha = resultados.find((r) => r.error)?.error;
+    return falha ? { ok: false, erro: `Falha ao apagar terreno: ${falha.message}` } : { ok: true };
+  }
+
+  const { error } = await client.from("vtt_terrain").upsert(
+    params.celulas.map((c) => ({
+      scene_id: params.sceneId,
+      campaign_id: params.campaignId,
+      q: c.q,
+      r: c.r,
+      tipo: params.tipo,
+      updated_at: new Date().toISOString(),
+    })),
+    { onConflict: "scene_id,q,r" },
+  );
+  if (error) return { ok: false, erro: `Terreno recusado: ${error.message}` };
+  return { ok: true };
+}
+
+/**
+ * Cria uma marcação.
+ *
+ * `autorId` NÃO é parâmetro — resolvido aqui via `getCurrentUser()`,
+ * batendo com a promessa que o comentário original já fazia mas o
+ * código não cumpria (auditoria pós-0065). Antes, quem chamava esta
+ * função decidia o valor de `autorId`; a policy `vtt_marks_insert`
+ * (`autor_id = auth.uid()`) já impedia EXPLORAÇÃO — um valor forjado só
+ * fazia a inserção falhar —, mas o contrato mentia sobre a própria
+ * garantia. Agora é estruturalmente impossível passar autoria errada:
+ * a função nem aceita o parâmetro.
+ */
+export async function criarMarca(params: {
+  sceneId: string;
+  campaignId: string;
+  tipo: TipoMarca;
+  pontos: { q: number; r: number }[];
+  texto?: string | null;
+  cor: CorMarca;
+  espessura: number;
+  opacidade: number;
+  privada: boolean;
+}): Promise<ResultadoEscrita & { id?: string }> {
+  const usuario = await getCurrentUser();
+  if (!usuario) return { ok: false, erro: "Sessão expirada — faça login novamente." };
+
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from("vtt_marks")
+    .insert({
+      scene_id: params.sceneId,
+      campaign_id: params.campaignId,
+      autor_id: usuario.id,
+      tipo: params.tipo,
+      pontos: params.pontos,
+      texto: params.texto ?? null,
+      cor: params.cor,
+      espessura: params.espessura,
+      opacidade: params.opacidade,
+      privada: params.privada,
+    })
+    .select("id")
+    .maybeSingle();
+
+  if (error) return { ok: false, erro: `Marcação recusada: ${error.message}` };
+  if (!data) return { ok: false, erro: "Marcação recusada pelo banco." };
+  return { ok: true, id: data.id as string };
+}
+
+/**
+ * Apaga uma marcação. A policy `vtt_marks_delete` já restringe a autor
+ * ou narrador — jogador tentando apagar marcação alheia casa 0 linhas.
+ */
+export async function apagarMarca(marcaId: string): Promise<ResultadoEscrita> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.from("vtt_marks").delete().eq("id", marcaId).select("id").maybeSingle();
+  if (error) return { ok: false, erro: `Falha ao apagar marcação: ${error.message}` };
+  if (!data) return { ok: false, erro: "Você só pode apagar as suas próprias marcações." };
+  return { ok: true };
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Medições permanentes da régua (migration 0087)
+//
+// Mesma disciplina de `vtt_marks`: escrita direta na tabela com RLS
+// (não RPC), porque a autorização é simples e declarativa — cria quem
+// é participante, como si mesmo; apaga o autor ou o narrador. Não há
+// UPDATE: uma régua é imutável, quem errou apaga e mede de novo.
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Régua PERSISTIDA. Guarda só os pontos — a distância NÃO é gravada de
+ * propósito: ela depende do terreno, que muda. Recalcular no cliente
+ * (`medir()`) faz a régua salva se reavaliar sozinha quando alguém
+ * pinta terreno difícil por baixo dela; um número congelado aqui
+ * viraria uma régua mentirosa na primeira mudança de cenário.
+ */
+export interface MedicaoVtt {
+  id: string;
+  autorId: string;
+  pontos: { q: number; r: number }[];
+  cor: CorMarca;
+  rotulo: string | null;
+  criadaEm: string;
+}
+
+/**
+ * Cria uma medição permanente. `autor_id` sai de `getCurrentUser()`,
+ * nunca de parâmetro — mesmo motivo de `criarMarca`: um contrato que
+ * aceita autoria por fora mente sobre a própria garantia, ainda que a
+ * policy recuse o valor forjado.
+ */
+export async function criarMedicao(params: {
+  sceneId: string;
+  campaignId: string;
+  pontos: { q: number; r: number }[];
+  cor?: CorMarca;
+  rotulo?: string | null;
+}): Promise<ResultadoEscrita & { id?: string }> {
+  const usuario = await getCurrentUser();
+  if (!usuario) return { ok: false, erro: "Sessão expirada — faça login novamente." };
+  // Espelha o CHECK da 0087 — recusar aqui dá uma mensagem em
+  // português em vez de um erro cru de constraint vindo do Postgres.
+  if (params.pontos.length < 2) return { ok: false, erro: "Uma medição precisa de pelo menos dois pontos." };
+  if (params.pontos.length > 64) return { ok: false, erro: "Medição com dobras demais (máximo 64 pontos)." };
+
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from("vtt_measurements")
+    .insert({
+      scene_id: params.sceneId,
+      campaign_id: params.campaignId,
+      autor_id: usuario.id,
+      pontos: params.pontos,
+      cor: params.cor ?? "ciano",
+      rotulo: params.rotulo ?? null,
+    })
+    .select("id")
+    .maybeSingle();
+
+  if (error) return { ok: false, erro: `Medição recusada: ${error.message}` };
+  if (!data) return { ok: false, erro: "Medição recusada pelo banco." };
+  return { ok: true, id: data.id as string };
+}
+
+/**
+ * Apaga uma medição. A policy `vtt_measurements_delete` já restringe a
+ * autor ou narrador — tentar apagar régua alheia casa 0 linhas, e o
+ * `!data` vira a mensagem de recusa.
+ */
+export async function apagarMedicao(medicaoId: string): Promise<ResultadoEscrita> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.from("vtt_measurements").delete().eq("id", medicaoId).select("id").maybeSingle();
+  if (error) return { ok: false, erro: `Falha ao apagar medição: ${error.message}` };
+  if (!data) return { ok: false, erro: "Você só pode apagar as suas próprias medições." };
+  return { ok: true };
+}
+
+/**
+ * Apaga TODAS as medições da cena que este usuário pode apagar — as
+ * suas, e todas se for narrador. Um `delete` só, filtrado por cena: a
+ * RLS decide quais linhas casam, então o jogador limpa as próprias
+ * réguas sem nunca tocar nas dos outros, e o narrador limpa o mapa
+ * inteiro. Devolve quantas saíram, pra UI dizer o que de fato ocorreu.
+ */
+export async function limparMedicoesDaCena(sceneId: string): Promise<ResultadoEscrita & { removidas?: number }> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.from("vtt_measurements").delete().eq("scene_id", sceneId).select("id");
+  if (error) return { ok: false, erro: `Falha ao limpar medições: ${error.message}` };
+  return { ok: true, removidas: (data ?? []).length };
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Áreas de efeito (migration 0081; autorização revista na 0083)
+//
+// Mesma disciplina de `vtt_tokens` depois da 0066/0073: `authenticated`
+// só tem `select` na tabela; TODA escrita passa por RPC
+// `security definer`. Criar exige só ser participante VÁLIDO da
+// campanha (`pode_criar_vtt_area`, 0083) — não existe mais autorização
+// explícita por jogador. Editar/excluir/duplicar exige narrador OU
+// autoria (`pode_editar_vtt_area`). O cliente nunca manda campanha,
+// cena, criador ou revisão que ele mesmo escolheu — os três primeiros
+// vêm da própria linha/do `auth.uid()`, e a revisão só é aceita se
+// ainda for a corrente.
+// ─────────────────────────────────────────────────────────────────
+
+const COLUNAS_AREA =
+  "id, scene_id, campaign_id, tipo, origem_q, origem_r, direcao_graus, raio_m, comprimento_m, largura_m, altura_m, lado_m, abertura_graus, nivel_origem_m, modo_linha, pontos, token_id, cor, opacidade, rotulo, visivel, criador_id, revision, created_at, updated_at";
+
+/** `numeric` do Postgres chega como string no PostgREST — converter num lugar só evita `"4" + 1 === "41"` espalhado pelo cliente. */
+function numeroOuNulo(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+export function linhaParaArea(linha: Record<string, unknown>): AreaVtt {
+  return {
+    id: linha.id as string,
+    sceneId: linha.scene_id as string,
+    campaignId: linha.campaign_id as string,
+    tipo: linha.tipo as TipoArea,
+    origemQ: numeroOuNulo(linha.origem_q),
+    origemR: numeroOuNulo(linha.origem_r),
+    direcaoGraus: numeroOuNulo(linha.direcao_graus),
+    raioM: numeroOuNulo(linha.raio_m),
+    comprimentoM: numeroOuNulo(linha.comprimento_m),
+    larguraM: numeroOuNulo(linha.largura_m),
+    alturaM: numeroOuNulo(linha.altura_m),
+    ladoM: numeroOuNulo(linha.lado_m),
+    aberturaGraus: numeroOuNulo(linha.abertura_graus),
+    nivelOrigemM: numeroOuNulo(linha.nivel_origem_m),
+    modoLinha: (linha.modo_linha as ModoLinhaArea | null) ?? null,
+    pontos: (linha.pontos as { q: number; r: number }[] | null) ?? null,
+    tokenId: (linha.token_id as string | null) ?? null,
+    cor: linha.cor as CorMarca,
+    opacidade: Number(linha.opacidade),
+    rotulo: (linha.rotulo as string | null) ?? null,
+    visivel: linha.visivel as boolean,
+    criadorId: linha.criador_id as string,
+    revision: linha.revision as number,
+    criadaEm: linha.created_at as string,
+    atualizadaEm: linha.updated_at as string,
+  };
+}
+
+export interface ParametrosAreaEscrita {
+  origemQ: number | null;
+  origemR: number | null;
+  direcaoGraus: number | null;
+  raioM: number | null;
+  comprimentoM: number | null;
+  larguraM: number | null;
+  alturaM: number | null;
+  ladoM: number | null;
+  nivelOrigemM: number | null;
+  modoLinha: ModoLinhaArea | null;
+  pontos: { q: number; r: number }[] | null;
+  tokenId: string | null;
+  cor: CorMarca;
+  opacidade: number;
+  rotulo: string | null;
+  visivel: boolean;
+}
+
+export interface ResultadoEscritaArea extends ResultadoEscrita {
+  area?: AreaVtt;
+}
+
+export async function criarArea(params: ParametrosAreaEscrita & { sceneId: string; campaignId: string; tipo: TipoArea }): Promise<ResultadoEscritaArea> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("create_vtt_area", {
+    p_scene_id: params.sceneId,
+    p_campaign_id: params.campaignId,
+    p_tipo: params.tipo,
+    p_origem_q: params.origemQ,
+    p_origem_r: params.origemR,
+    p_direcao_graus: params.direcaoGraus,
+    p_raio_m: params.raioM,
+    p_comprimento_m: params.comprimentoM,
+    p_largura_m: params.larguraM,
+    p_altura_m: params.alturaM,
+    p_lado_m: params.ladoM,
+    p_nivel_origem_m: params.nivelOrigemM,
+    p_modo_linha: params.modoLinha,
+    p_pontos: params.pontos,
+    p_token_id: params.tokenId,
+    p_cor: params.cor,
+    p_opacidade: params.opacidade,
+    p_rotulo: params.rotulo,
+    p_visivel: params.visivel,
+  }).single();
+  if (error) return { ok: false, erro: error.message };
+  if (!data) return { ok: false, erro: "Área recusada pelo servidor." };
+  const area = linhaParaArea(data as Record<string, unknown>);
+  return { ok: true, revision: area.revision, area };
+}
+
+export async function atualizarArea(params: ParametrosAreaEscrita & { areaId: string; revisionEsperada: number }): Promise<ResultadoEscritaArea> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("update_vtt_area", {
+    p_area_id: params.areaId,
+    p_origem_q: params.origemQ,
+    p_origem_r: params.origemR,
+    p_direcao_graus: params.direcaoGraus,
+    p_raio_m: params.raioM,
+    p_comprimento_m: params.comprimentoM,
+    p_largura_m: params.larguraM,
+    p_altura_m: params.alturaM,
+    p_lado_m: params.ladoM,
+    p_nivel_origem_m: params.nivelOrigemM,
+    p_modo_linha: params.modoLinha,
+    p_pontos: params.pontos,
+    p_token_id: params.tokenId,
+    p_cor: params.cor,
+    p_opacidade: params.opacidade,
+    p_rotulo: params.rotulo,
+    p_visivel: params.visivel,
+    p_expected_revision: params.revisionEsperada,
+  }).single();
+  if (error) return { ok: false, erro: error.message };
+  if (!data) return { ok: false, erro: "Edição de área recusada pelo servidor." };
+  const area = linhaParaArea(data as Record<string, unknown>);
+  return { ok: true, revision: area.revision, area };
+}
+
+export async function duplicarArea(areaId: string): Promise<ResultadoEscritaArea> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("duplicate_vtt_area", { p_area_id: areaId }).single();
+  if (error) return { ok: false, erro: error.message };
+  if (!data) return { ok: false, erro: "Duplicação recusada pelo servidor." };
+  const area = linhaParaArea(data as Record<string, unknown>);
+  return { ok: true, revision: area.revision, area };
+}
+
+/** Remoção DURA — não há arquivamento em `vtt_areas`; oferecer "desfazer" fingiria uma reversibilidade que não existe. */
+export async function removerArea(areaId: string): Promise<ResultadoEscrita> {
+  const client = await getScopedTableClient();
+  const { error } = await client.rpc("delete_vtt_area", { p_area_id: areaId });
+  if (error) return { ok: false, erro: error.message };
+  return { ok: true };
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Trilha de turnos (migration 0088)
+//
+// As três escritas passam por RPC `security definer`, nunca por
+// UPDATE direto: a tabela não concede escrita nenhuma a
+// `authenticated`, porque a regra de "quem pode mudar o quê" é fina
+// demais pra uma policy (narrador inicia/encerra/edita elenco e modo;
+// qualquer participante avança). Ver o cabeçalho da migration.
+// ─────────────────────────────────────────────────────────────────
+
+/** Relê a trilha da cena — usado pra resolver conflito de revisão sem recarregar a cena inteira. */
+export async function carregarTrilha(sceneId: string): Promise<TrilhaPersistida | null> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from("vtt_turn_tracks")
+    .select("scene_id, estado, revision")
+    .eq("scene_id", sceneId)
+    .maybeSingle();
+  if (error) throw new VttStorageError(`Falha ao ler a trilha de turnos: ${error.message}`, error);
+  if (!data) return null;
+  return { sceneId, estado: data.estado as unknown, revision: data.revision as number };
+}
+
+export interface ResultadoTrilha extends ResultadoEscrita {
+  trilha?: TrilhaPersistida | null;
+}
+
+/** Inicia (ou reinicia) as rodadas da cena — só narrador, decidido no servidor. */
+export async function iniciarTrilha(params: { sceneId: string; estado: unknown }): Promise<ResultadoTrilha> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("iniciar_vtt_trilha", {
+    p_scene_id: params.sceneId,
+    p_estado: params.estado,
+  });
+  if (error) return { ok: false, erro: error.message };
+  const linha = Array.isArray(data) ? data[0] : data;
+  if (!linha) return { ok: false, erro: "Início de rodadas recusado pelo servidor." };
+  return {
+    ok: true,
+    revision: linha.revision as number,
+    trilha: { sceneId: params.sceneId, estado: linha.estado as unknown, revision: linha.revision as number },
+  };
+}
+
+/**
+ * Avança a trilha com revisão otimista. Um conflito volta como
+ * `ok: false` com a mensagem do servidor — quem chama relê e reaplica,
+ * nunca força por cima.
+ */
+export async function atualizarTrilha(params: {
+  sceneId: string;
+  estado: unknown;
+  revisionEsperada: number;
+}): Promise<ResultadoTrilha> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("atualizar_vtt_trilha", {
+    p_scene_id: params.sceneId,
+    p_estado: params.estado,
+    p_expected_revision: params.revisionEsperada,
+  });
+  if (error) return { ok: false, erro: error.message };
+  const linha = Array.isArray(data) ? data[0] : data;
+  if (!linha) return { ok: false, erro: "Atualização da trilha recusada pelo servidor." };
+  return {
+    ok: true,
+    revision: linha.revision as number,
+    trilha: { sceneId: params.sceneId, estado: linha.estado as unknown, revision: linha.revision as number },
+  };
+}
+
+/** Encerra as rodadas — só narrador. Nunca toca nos tokens da cena. */
+export async function encerrarTrilha(sceneId: string): Promise<ResultadoTrilha> {
+  const client = await getScopedTableClient();
+  const { error } = await client.rpc("encerrar_vtt_trilha", { p_scene_id: sceneId });
+  if (error) return { ok: false, erro: error.message };
+  return { ok: true, trilha: null };
+}

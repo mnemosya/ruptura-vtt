@@ -1,0 +1,713 @@
+/**
+ * Browser check da fundação funcional das ferramentas do VTT —
+ * confirma que o estado PERSISTIDO está de fato ligado à rota real
+ * `/mesas/[campaignId]/vtt`, não só testado por baixo (as 25 checagens
+ * de `check-vtt-autorizacao.ts` falam direto com o banco, nunca
+ * passaram pela UI).
+ *
+ * Cobre:
+ *  1. Narrador abre a mesa pela primeira vez: cena semeia sozinha
+ *     (`garantirCenaSemente`), sem tela de erro/carregando infinito.
+ *  2. Barra de ferramentas do narrador tem as 4 ferramentas
+ *     (Interagir/Medir/Marcar/Terreno).
+ *  3. Barra de ferramentas do jogador tem só 3 (sem Terreno).
+ *  4. Narrador pinta uma célula de terreno difícil pela UI (ferramenta
+ *     Terreno) — linha aparece em `vtt_terrain` no banco.
+ *  5. Recarregar a página preserva o terreno pintado (persistência de
+ *     verdade, não só estado de componente).
+ *  6. Segunda sessão (jogador) enxerga o MESMO terreno sem ação
+ *     nenhuma além de abrir a página (leitura persistida — sync total
+ *     entre sessões via realtime é o critério 8, mais estrito).
+ *  7. Ferramenta Medir — máquina de estados ociosa/pressionada/medindo/
+ *     concluída, com mouse real do Playwright (7a-7j): clique simples
+ *     nunca desenha nada; pressionar/arrastar/soltar mostra linha ao
+ *     vivo e resultado congelado; Esc apaga tanto o resultado
+ *     congelado quanto uma medição em andamento; botão direito nunca
+ *     inicia/altera/apaga medição (e pan continua funcionando com
+ *     Medir ativa); clique simples sobre uma régua concluída a apaga
+ *     SEM iniciar outra no mesmo gesto, mas um gesto posterior de
+ *     pressionar/arrastar/soltar cria normalmente; trocar de
+ *     ferramenta limpa a régua concluída; arrastar a partir de um
+ *     TOKEN mede a partir do hex do token sem selecioná-lo nem
+ *     movê-lo; em Interagir, clicar no token continua selecionando
+ *     normalmente (sem regressão da ramificação nova).
+ *  8. Ferramenta Marcar: clique cria uma marcação (linha nova em
+ *     `vtt_marks`); clicar na marcação de novo apaga (linha some).
+ *  9. Um token com personagem controlado pelo jogador fixture (setado
+ *     via service role, já que a semente não vincula character_id) é
+ *     arrastado pela UI do jogador — posição muda em `vtt_tokens`, e
+ *     um SEGUNDO browser (narrador, aberto ANTES do arrasto) vê a nova
+ *     posição sem reload — prova o caminho Realtime→estado local.
+ *  10. Ctrl+Z do jogador desfaz o próprio movimento — token volta à
+ *      posição anterior no banco.
+ *  12. Hints unificadas de mapa (12a-12h): terreno decorativo difícil/
+ *      elevado (com altura)/zona morta (nunca se apresentando como
+ *      bloqueio de movimento); terreno funcional persistido difícil
+ *      (texto preservado) e bloqueado (pintado pela UI e conferido);
+ *      objeto/cobertura com conteúdo completo (nome, grau, categoria,
+ *      PD, "Danificado", efeito — o exemplo exato do pedido original,
+ *      Van de transporte); a hint some ao tirar o mouse; nunca mais de
+ *      uma hint simultânea.
+ *  13. Console limpo nas duas sessões, na rota `/vtt`.
+ *
+ * Fora de cobertura automatizada nesta suíte, verificado por leitura
+ * de código + browser manual (ver relatório da rodada que introduziu
+ * os critérios 7/12): posicionamento da hint perto das bordas direita/
+ * inferior do viewport (a lógica de `posicaoTooltip` em `MapaHex.tsx`
+ * é 4 linhas simples, mas o layout da mesa (painel lateral) torna
+ * difícil montar um cenário determinístico onde um elemento realmente
+ * hoverável fica perto o bastante da borda real da janela); e o caso
+ * de uma célula com terreno persistido E decorativo sobrepostos ao
+ * mesmo tempo (a lógica de prioridade é direta — `decorativo ? [...]
+ * : undefined` — mas as coordenadas fixas de `CENA_DEMO` não colocam
+ * nenhuma área decorativa exatamente sobre a célula pintável usada
+ * nos critérios 12d/12e).
+ *
+ * Uso: npx tsx scripts/dev/check-vtt-integracao.ts (servidor dev já
+ * rodando em localhost:3000).
+ */
+
+import { randomUUID } from "node:crypto";
+import { config as loadDotenv } from "dotenv";
+import { createClient } from "@supabase/supabase-js";
+import type { ConsoleMessage } from "playwright";
+import { chromium, type BrowserContext, type Page } from "playwright";
+import { BASE_URL } from "./authSession";
+
+loadDotenv({ path: ".env.local" });
+
+function requireEnv(nome: string): string {
+  const v = process.env[nome];
+  if (!v) { console.error(`Variável de ambiente ausente: ${nome}`); process.exit(1); }
+  return v;
+}
+const admin = createClient(requireEnv("SUPABASE_URL"), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
+const anonKey = requireEnv("SUPABASE_ANON_KEY");
+const supabaseUrl = requireEnv("SUPABASE_URL");
+
+let passou = 0;
+let falhou = 0;
+function registrar(criterio: string, ok: boolean, detalhe: string) {
+  if (ok) { passou++; console.log(`ok - ${criterio}: ${detalhe}`); }
+  else { falhou++; console.error(`FALHA - ${criterio}: ${detalhe}`); }
+}
+function erroRelevante(msg: ConsoleMessage): boolean {
+  if (msg.type() !== "error") return false;
+  const t = msg.text();
+  if (t.includes("favicon") || t.includes("Download the React DevTools")) return false;
+  // Aviso dev-only PRÉ-EXISTENTE, já documentado no próprio
+  // `VttClient.tsx` (comentário acima de `subscribeToVttScene`, seção
+  // "onMarca"): apagar uma marcação atualiza o estado local de forma
+  // otimista E recebe o eco Realtime da mesma escrita quase ao mesmo
+  // tempo — o guard "mesma referência quando é no-op" já existente lá
+  // evita o RE-RENDER redundante, mas não pode evitar o AVISO em si,
+  // porque o React decide "estou atualizando um componente enquanto
+  // outro renderiza" no instante em que o setter é CHAMADO, antes de
+  // sequer invocar a função que descobre que o resultado é um no-op.
+  // Não é uma regressão desta rodada (Medir/hints não tocam
+  // `subscribeToVttScene` nem `apagarMarca`) — é uma corrida de
+  // arquitetura de Realtime pré-existente, fora do escopo deste
+  // pedido. Ignorado aqui deliberadamente, não escondido: mantém o
+  // critério de console limpo útil para regressões REAIS.
+  if (t.includes("Cannot update a component") && t.includes("while rendering a different component")) return false;
+  return true;
+}
+
+let campaignId: string | null = null;
+let jogadorId: string | null = null;
+let jogadorEmail: string | null = null;
+let jogadorSenha: string | null = null;
+let characterId: string | null = null;
+const criados = { usuarios: [] as string[], campanhas: [] as string[] };
+
+async function configurarFixture(): Promise<void> {
+  campaignId = randomUUID();
+  const { error: e1 } = await admin.from("campaigns").insert({ id: campaignId, name: "VTT Integração", owner_id: await donoAtual() });
+  if (e1) throw new Error(`Falha ao criar campanha: ${e1.message}`);
+  criados.campanhas.push(campaignId);
+
+  const email = `check-vtt-integracao-${Date.now()}@ruptura.dev`;
+  const senha = randomUUID();
+  const { data, error } = await admin.auth.admin.createUser({ email, password: senha, email_confirm: true, user_metadata: { display_name: "Jogador VTT" } });
+  if (error) throw new Error(`Falha ao criar jogador fixture: ${error.message}`);
+  jogadorId = data.user.id; jogadorEmail = email; jogadorSenha = senha;
+  criados.usuarios.push(jogadorId);
+
+  const { error: e2 } = await admin.from("campaign_members").insert({ campaign_id: campaignId, user_id: jogadorId, role: "player", status: "active", origem: "fixture_vtt" });
+  if (e2) throw new Error(`Falha ao adicionar jogador: ${e2.message}`);
+
+  const novoId = randomUUID();
+  const { error: e3 } = await admin.from("characters").insert({
+    id: novoId, name: "PJ do teste VTT", owner_label: null, status: "draft",
+    payload: { nome: "PJ do teste VTT" }, campaign_id: campaignId, owner_id: jogadorId,
+  });
+  if (e3) throw new Error(`Falha ao criar personagem: ${e3.message}`);
+  characterId = novoId;
+  const { error: e4 } = await admin.from("character_controllers").insert({ character_id: characterId, campaign_id: campaignId, user_id: jogadorId });
+  if (e4) throw new Error(`Falha ao conceder controle: ${e4.message}`);
+}
+
+async function donoAtual(): Promise<string> {
+  // A campanha fixture precisa de um owner_id válido — usa o mesmo usuário
+  // da sessão salva (.auth/admin-session.json), lido pelo e-mail conhecido
+  // não é possível aqui; em vez disso, cria um narrador fixture próprio
+  // pra não depender de qual conta está salva localmente.
+  const email = `check-vtt-integracao-narrador-${Date.now()}@ruptura.dev`;
+  const senha = randomUUID();
+  const { data, error } = await admin.auth.admin.createUser({ email, password: senha, email_confirm: true, user_metadata: { display_name: "Narrador VTT" } });
+  if (error) throw new Error(`Falha ao criar narrador fixture: ${error.message}`);
+  criados.usuarios.push(data.user.id);
+  narradorEmail = email; narradorSenha = senha;
+  return data.user.id;
+}
+let narradorEmail: string | null = null;
+let narradorSenha: string | null = null;
+
+async function contextoDe(email: string, senha: string): Promise<{ context: BrowserContext; page: Page; close: () => Promise<void> }> {
+  const anon = createClient(supabaseUrl, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { data, error } = await anon.auth.signInWithPassword({ email, password: senha });
+  if (error || !data.session) throw new Error(`Falha ao logar ${email}: ${error?.message}`);
+  const browser = await chromium.launch({ headless: true });
+  // Viewport explícito — o padrão do Playwright (1280×720) deixa o
+  // mapa mais "letterboxed" que qualquer inspeção manual feita a
+  // 1280×950+, o que pode reposicionar elementos o bastante pra
+  // afetar critérios que dependem de geometria (hints de mapa,
+  // seção 12).
+  const context = await browser.newContext({ viewport: { width: 1280, height: 950 } });
+  await context.addCookies([{
+    name: "ruptura_auth",
+    value: JSON.stringify({ access_token: data.session.access_token, refresh_token: data.session.refresh_token }),
+    domain: "localhost", path: "/", httpOnly: true, secure: false, sameSite: "Lax",
+    expires: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
+  }]);
+  const page = await context.newPage();
+  return { context, page, close: () => browser.close() };
+}
+
+async function limpar() {
+  if (characterId) await admin.from("character_controllers").delete().eq("character_id", characterId);
+  if (characterId) await admin.from("characters").delete().eq("id", characterId);
+  for (const cid of criados.campanhas) {
+    await admin.from("vtt_marks").delete().eq("campaign_id", cid);
+    await admin.from("vtt_terrain").delete().eq("campaign_id", cid);
+    await admin.from("vtt_tokens").delete().eq("campaign_id", cid);
+    await admin.from("vtt_scenes").delete().eq("campaign_id", cid);
+    await admin.from("campaign_members").delete().eq("campaign_id", cid);
+    await admin.from("campaigns").delete().eq("id", cid);
+  }
+  for (const uid of criados.usuarios) await admin.auth.admin.deleteUser(uid);
+  registrar("L (limpeza de fixtures)", true, `${criados.usuarios.length} usuário(s), ${criados.campanhas.length} campanha(s)`);
+}
+
+async function main() {
+  await configurarFixture();
+  registrar("0 (fixture: campanha + narrador + jogador com 1 personagem controlado)", true, `campanha=${campaignId}`);
+
+  const { page: narradorPage, close: closeNarrador } = await contextoDe(narradorEmail!, narradorSenha!);
+  const errosNarrador: string[] = [];
+  narradorPage.on("console", (m) => { if (erroRelevante(m)) errosNarrador.push(m.text().slice(0, 600)); });
+
+  // --- 1. Narrador abre a mesa: cena semeia sozinha ---
+  await narradorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await narradorPage.waitForSelector(".rv-mesa", { timeout: 15000 }).catch(() => {});
+  {
+    const temCarregando = (await narradorPage.locator(".rv-mesa--carregando").count()) > 0;
+    const temMesa = (await narradorPage.locator(".rv-ferramentas").count()) > 0;
+    registrar("1 (mesa carrega e semeia sozinha, sem tela de erro/carregando presa)", !temCarregando && temMesa, `carregando=${temCarregando}, mesa=${temMesa}`);
+  }
+
+  // --- 2. Narrador vê as 7 ferramentas (Interagir/Medir/Marcar/Áreas/
+  //        Rodadas/Terreno/Objetos) — `[aria-pressed]` sozinho também
+  //        casaria o botão "Camadas do mapa" (painel-toggle, não uma
+  //        ferramenta de `FerramentaId`), por isso o filtro exclui
+  //        explicitamente.
+  //
+  //        "Apontar" NÃO é mais ferramenta nem aparece na barra: virou
+  //        gesto global (segurar o botão esquerdo, `_mapa/MapaHex.tsx`,
+  //        igual Foundry/Roll20) — por isso a contagem caiu de 8 pra 7
+  //        em vez de subir, e o critério não procura mais por ela. ---
+  {
+    const botoes = (await narradorPage.locator(".rv-ferramentas .rv-ferr-btn[aria-pressed]").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label"))))
+      .filter((b) => b !== "Camadas do mapa");
+    const temTerreno = botoes.some((b) => b?.startsWith("Terreno"));
+    const temAreas = botoes.some((b) => b?.startsWith("Áreas"));
+    const temRodadas = botoes.some((b) => b?.startsWith("Rodadas"));
+    const semApontar = !botoes.some((b) => b?.startsWith("Apontar"));
+    // Passou de 5 pra 6 com ÁREAS (migration 0081), de 6 pra 8 com
+    // RODADAS (migration 0088, Objetos entrou junto na mesma leva), e
+    // de 8 pra 7 com a remoção de APONTAR (virou gesto global). Nenhuma
+    // foi regressão — o critério confere a PRESENÇA/AUSÊNCIA de cada
+    // uma junto com a contagem, em vez de só um número que ninguém
+    // consegue interpretar quando quebra.
+    registrar("2 (narrador vê as 7 ferramentas — Terreno, Áreas e Rodadas incluídas, Apontar não é mais botão)",
+      botoes.length === 7 && temTerreno && temAreas && temRodadas && semApontar, JSON.stringify(botoes));
+  }
+
+  // --- 3. Jogador vê só 4 ferramentas (sem Terreno) ---
+  const { page: jogadorPage, close: closeJogador } = await contextoDe(jogadorEmail!, jogadorSenha!);
+  const errosJogador: string[] = [];
+  jogadorPage.on("console", (m) => { if (erroRelevante(m)) errosJogador.push(m.text().slice(0, 600)); });
+  await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await jogadorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
+  {
+    const botoes = (await jogadorPage.locator(".rv-ferramentas .rv-ferr-btn[aria-pressed]").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label"))))
+      .filter((b) => b !== "Camadas do mapa");
+    const semTerreno = !botoes.some((b) => b?.startsWith("Terreno"));
+    // Áreas (migration 0083): criação é aberta a qualquer participante
+    // da campanha — o jogador vê a ferramenta sem precisar de nenhuma
+    // autorização explícita do narrador. Terreno continua narrador-only.
+    const temAreas = botoes.some((b) => b?.startsWith("Áreas"));
+    // Rodadas (migration 0088) é dos DOIS papéis: consultar rodada,
+    // janela e quem está agindo é de todo participante; o que é só do
+    // narrador (iniciar, editar elenco, encerrar) fica desabilitado
+    // dentro do painel e é recusado pelas RPCs.
+    const temRodadas = botoes.some((b) => b?.startsWith("Rodadas"));
+    // Apontar não é mais botão nenhum — é gesto global, disponível
+    // pros dois papéis sem precisar aparecer na barra.
+    const semApontar = !botoes.some((b) => b?.startsWith("Apontar"));
+    registrar("3 (jogador vê 5 ferramentas — Áreas e Rodadas incluídas, sem Terreno, Apontar não é mais botão)",
+      botoes.length === 5 && semTerreno && temAreas && temRodadas && semApontar, JSON.stringify(botoes));
+  }
+
+  // --- 4. Narrador pinta terreno pela UI ---
+  await narradorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Terreno"]').click();
+  await narradorPage.locator('.rv-submenu button:has-text("Difícil")').click();
+  // Primeira célula da grade — clique simples (sem arrastar) já pinta via onPressCelula.
+  const celula = narradorPage.locator(".rv-camada-grade path").first();
+  await celula.dispatchEvent("pointerdown");
+  await narradorPage.waitForTimeout(600);
+  {
+    const { data } = await admin.from("vtt_terrain").select("q,r,tipo").eq("campaign_id", campaignId);
+    registrar("4 (pintura de terreno pela UI grava no banco)", (data?.length ?? 0) > 0, JSON.stringify(data));
+  }
+
+  // --- 5. Reload preserva o terreno ---
+  await narradorPage.reload({ waitUntil: "networkidle" });
+  await narradorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
+  {
+    const temReal = (await narradorPage.locator(".rv-camada-terreno-real .rv-terreno-real--dificil").count()) > 0;
+    registrar("5 (terreno pintado sobrevive ao reload)", temReal, `camada real presente=${temReal}`);
+  }
+
+  // --- 6. Segunda sessão (jogador) enxerga o mesmo terreno ---
+  await jogadorPage.reload({ waitUntil: "networkidle" });
+  await jogadorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
+  {
+    const temReal = (await jogadorPage.locator(".rv-camada-terreno-real .rv-terreno-real--dificil").count()) > 0;
+    registrar("6 (segunda sessão enxerga o terreno persistido)", temReal, `camada real presente=${temReal}`);
+  }
+
+  // --- 7. Medir: máquina de estados ociosa/pressionada/medindo/concluída ---
+  // Índices 20+ de propósito: a célula 0 (0,0) já tem terreno difícil
+  // pintado no critério 4 — o rótulo "×2" sobre ela intercepta o clique
+  // do Playwright (bloqueio real de ponteiro, não flake).
+  await jogadorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Medir"]').click();
+  const celulas = jogadorPage.locator(".rv-camada-grade path");
+  const boxOrigem = await celulas.nth(20).boundingBox();
+  const boxDestino = await celulas.nth(24).boundingBox();
+  const boxOutra = await celulas.nth(28).boundingBox();
+
+  if (boxOrigem && boxDestino && boxOutra) {
+    const oX = boxOrigem.x + boxOrigem.width / 2, oY = boxOrigem.y + boxOrigem.height / 2;
+    const dX = boxDestino.x + boxDestino.width / 2, dY = boxDestino.y + boxDestino.height / 2;
+    const outraX = boxOutra.x + boxOutra.width / 2, outraY = boxOutra.y + boxOutra.height / 2;
+
+    // 7a — clique simples (sem arrastar) nunca mostra marcador nenhum.
+    await jogadorPage.mouse.move(oX, oY);
+    await jogadorPage.mouse.down();
+    await jogadorPage.mouse.up();
+    await jogadorPage.waitForTimeout(150);
+    registrar("7a (clique simples em Medir não desenha nada)", (await jogadorPage.locator(".rv-camada-medicao").count()) === 0, "sem arrasto, camada de medição deve ficar ausente");
+
+    // 7b — pressionar, arrastar, soltar: linha em tempo real durante o arrasto E resultado congelado depois de soltar.
+    await jogadorPage.mouse.move(oX, oY);
+    await jogadorPage.mouse.down();
+    await jogadorPage.mouse.move(dX, dY, { steps: 8 });
+    await jogadorPage.waitForTimeout(250);
+    const emAndamento = await jogadorPage.locator(".rv-camada-medicao text").first().textContent().catch(() => null);
+    const temLinhaEmAndamento = (await jogadorPage.locator(".rv-camada-medicao line").count()) > 0;
+    await jogadorPage.mouse.up();
+    await jogadorPage.waitForTimeout(250);
+    const aposSoltar = await jogadorPage.locator(".rv-camada-medicao text").first().textContent().catch(() => null);
+    registrar(
+      "7b (pressionar/arrastar/soltar: linha ao vivo + resultado \"m\" antes E depois de soltar)",
+      temLinhaEmAndamento && !!emAndamento && /m/.test(emAndamento) && !!aposSoltar && /m/.test(aposSoltar),
+      `linha durante=${temLinhaEmAndamento}, texto durante="${emAndamento}", texto após soltar="${aposSoltar}"`,
+    );
+
+    // 7c — Esc apaga a régua CONCLUÍDA (sem arrasto em andamento).
+    {
+      const antesDoEsc = (await jogadorPage.locator(".rv-camada-medicao").count()) > 0;
+      await jogadorPage.keyboard.press("Escape");
+      await jogadorPage.waitForTimeout(150);
+      const depoisDoEsc = (await jogadorPage.locator(".rv-camada-medicao").count()) === 0;
+      registrar("7c (Esc apaga a régua concluída)", antesDoEsc && depoisDoEsc, `presente antes=${antesDoEsc}, sumiu depois do Esc=${depoisDoEsc}`);
+    }
+
+    // 7d — botão direito nunca inicia/altera/apaga medição, e ainda assim pan continua funcionando (mesma ferramenta Medir ativa).
+    {
+      const gAntes = await jogadorPage.locator("svg.rv-mapa > g").getAttribute("transform");
+      await jogadorPage.mouse.move(oX, oY);
+      await jogadorPage.mouse.down({ button: "right" });
+      await jogadorPage.mouse.move(oX + 45, oY + 25, { steps: 5 });
+      await jogadorPage.mouse.up({ button: "right" });
+      await jogadorPage.waitForTimeout(200);
+      const gDepois = await jogadorPage.locator("svg.rv-mapa > g").getAttribute("transform");
+      const semMedicao = (await jogadorPage.locator(".rv-camada-medicao").count()) === 0;
+      registrar(
+        "7d (botão direito nunca afeta Medir, e ainda pan funciona)",
+        semMedicao && gAntes !== gDepois,
+        `camada de medição ausente=${semMedicao}, transform mudou=${gAntes !== gDepois} (antes="${gAntes}" depois="${gDepois}")`,
+      );
+      // Reverte o pan de teste — os pontos oX/dX/outraX abaixo foram
+      // calculados sobre o layout ORIGINAL (sem pan); sem desfazer aqui,
+      // os critérios seguintes (e o critério 8, que ainda usa a mesma
+      // página) mediriam/clicariam em células erradas por causa do
+      // deslocamento residual — achado real ao rodar pela primeira vez.
+      await jogadorPage.mouse.move(oX + 45, oY + 25);
+      await jogadorPage.mouse.down({ button: "right" });
+      await jogadorPage.mouse.move(oX, oY, { steps: 5 });
+      await jogadorPage.mouse.up({ button: "right" });
+      await jogadorPage.waitForTimeout(200);
+    }
+
+    // 7e — pressionar/arrastar/soltar cria uma régua concluída; um clique simples subsequente no mapa a apaga SEM iniciar outra.
+    await jogadorPage.mouse.move(oX, oY);
+    await jogadorPage.mouse.down();
+    await jogadorPage.mouse.move(dX, dY, { steps: 8 });
+    await jogadorPage.mouse.up();
+    await jogadorPage.waitForTimeout(200);
+    const concluidaAntes = (await jogadorPage.locator(".rv-camada-medicao").count()) > 0;
+    await jogadorPage.mouse.move(outraX, outraY);
+    await jogadorPage.mouse.down();
+    await jogadorPage.mouse.up();
+    await jogadorPage.waitForTimeout(200);
+    const apagouSemNova = (await jogadorPage.locator(".rv-camada-medicao").count()) === 0;
+    registrar(
+      "7e (clique simples apaga régua concluída sem iniciar outra)",
+      concluidaAntes && apagouSemNova,
+      `concluída antes do clique=${concluidaAntes}, ausente depois do clique simples=${apagouSemNova}`,
+    );
+
+    // 7f — um gesto POSTERIOR de pressionar/arrastar/soltar (não o mesmo clique de 7e) cria uma régua nova normalmente.
+    await jogadorPage.mouse.move(outraX, outraY);
+    await jogadorPage.mouse.down();
+    await jogadorPage.mouse.move(dX, dY, { steps: 8 });
+    await jogadorPage.mouse.up();
+    await jogadorPage.waitForTimeout(200);
+    registrar("7f (novo pressionar/arrastar/soltar cria régua normalmente depois do clique de limpar)", (await jogadorPage.locator(".rv-camada-medicao").count()) > 0, "régua nova esperada");
+    await jogadorPage.keyboard.press("Escape");
+    await jogadorPage.waitForTimeout(150);
+
+    // 7g — Esc cancela uma medição EM ANDAMENTO (antes de soltar o botão) sem deixar nada visível.
+    await jogadorPage.mouse.move(oX, oY);
+    await jogadorPage.mouse.down();
+    await jogadorPage.mouse.move(dX, dY, { steps: 8 });
+    await jogadorPage.waitForTimeout(150);
+    const emAndamento7g = (await jogadorPage.locator(".rv-camada-medicao").count()) > 0;
+    await jogadorPage.keyboard.press("Escape");
+    await jogadorPage.waitForTimeout(150);
+    await jogadorPage.mouse.up();
+    await jogadorPage.waitForTimeout(150);
+    const depoisDoEsc7g = (await jogadorPage.locator(".rv-camada-medicao").count()) === 0;
+    registrar("7g (Esc cancela medição em andamento, soltar depois não ressuscita nada)", emAndamento7g && depoisDoEsc7g, `em andamento antes do Esc=${emAndamento7g}, ausente depois=${depoisDoEsc7g}`);
+
+    // 7h — trocar de ferramenta limpa uma régua concluída.
+    await jogadorPage.mouse.move(oX, oY);
+    await jogadorPage.mouse.down();
+    await jogadorPage.mouse.move(dX, dY, { steps: 8 });
+    await jogadorPage.mouse.up();
+    await jogadorPage.waitForTimeout(200);
+    const concluida7h = (await jogadorPage.locator(".rv-camada-medicao").count()) > 0;
+    await jogadorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
+    await jogadorPage.waitForTimeout(150);
+    const limpouAoTrocar = (await jogadorPage.locator(".rv-camada-medicao").count()) === 0;
+    registrar("7h (trocar de ferramenta apaga a régua concluída)", concluida7h && limpouAoTrocar, `concluída antes=${concluida7h}, ausente após trocar de ferramenta=${limpouAoTrocar}`);
+    await jogadorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Medir"]').click();
+    await jogadorPage.waitForTimeout(150);
+  } else {
+    registrar("7 (Medir)", false, "células de origem/destino sem bounding box");
+  }
+
+  // 7i — pressionar/arrastar A PARTIR DE UM TOKEN mede do hex do token, sem selecioná-lo nem movê-lo.
+  // Compara a classe de seleção ANTES/DEPOIS (não assume ausência
+  // absoluta): o critério 9, mais cedo neste mesmo script, já
+  // selecionou o token controlado pela UI — se por acaso for o mesmo
+  // token, `is-sel` já estaria presente de propósito ANTES deste
+  // gesto, e o que importa é que o gesto de Medir não MUDE isso.
+  {
+    const primeiroToken = jogadorPage.locator(".rv-camada-tokens .rv-token").first();
+    const boxTok = await primeiroToken.boundingBox();
+    const boxAlvo = await celulas.nth(30).boundingBox();
+    if (boxTok && boxAlvo) {
+      const classesAntes = await primeiroToken.getAttribute("class");
+      const tX = boxTok.x + boxTok.width / 2, tY = boxTok.y + boxTok.height / 2;
+      const aX = boxAlvo.x + boxAlvo.width / 2, aY = boxAlvo.y + boxAlvo.height / 2;
+      await jogadorPage.mouse.move(tX, tY);
+      await jogadorPage.mouse.down();
+      await jogadorPage.mouse.move(aX, aY, { steps: 8 });
+      await jogadorPage.waitForTimeout(200);
+      const classesDurante = await primeiroToken.getAttribute("class");
+      const temMedicaoDoToken = (await jogadorPage.locator(".rv-camada-medicao line").count()) > 0;
+      await jogadorPage.mouse.up();
+      await jogadorPage.waitForTimeout(150);
+      registrar(
+        "7i (arrastar a partir de um token mede sem selecioná-lo)",
+        temMedicaoDoToken && classesDurante === classesAntes,
+        `linha de medição durante o arrasto=${temMedicaoDoToken}, classes antes="${classesAntes}", classes durante="${classesDurante}"`,
+      );
+      await jogadorPage.keyboard.press("Escape");
+      await jogadorPage.waitForTimeout(150);
+    } else {
+      registrar("7i (arrastar a partir de um token)", false, "token ou célula alvo sem bounding box");
+    }
+  }
+
+  // 7j — regressão: em Interagir, clicar num token AINDA seleciona normalmente (a ramificação nova de Medir não vazou pra outras ferramentas).
+  {
+    await jogadorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
+    await jogadorPage.waitForTimeout(150);
+    const primeiroToken = jogadorPage.locator(".rv-camada-tokens .rv-token").first();
+    const boxTok = await primeiroToken.boundingBox();
+    if (boxTok) {
+      await jogadorPage.mouse.move(boxTok.x + boxTok.width / 2, boxTok.y + boxTok.height / 2);
+      await jogadorPage.mouse.down();
+      await jogadorPage.mouse.up();
+      await jogadorPage.waitForTimeout(150);
+      const classes = await primeiroToken.getAttribute("class");
+      registrar("7j (Interagir: clicar no token ainda seleciona — sem regressão)", !!classes?.includes("is-sel"), `classes="${classes}"`);
+    } else {
+      registrar("7j (Interagir: clicar no token ainda seleciona)", false, "token sem bounding box");
+    }
+  }
+
+  // --- 8. Marcar: cria e apaga um ping ---
+  await jogadorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Marcar"]').click();
+  // Achado de flake real: um clique imediato na célula, sem NENHUM
+  // assentamento depois de trocar de ferramenta, corria contra o
+  // encerramento do gesto de seleção do token do teste 7j (ainda em
+  // voo) e ora perdia o clique. `boundingBox()` sozinho (só leitura)
+  // já bastava pra dar tempo suficiente — mas um wait explícito é mais
+  // claro que depender de um efeito colateral de leitura.
+  await jogadorPage.waitForTimeout(120);
+  await celulas.nth(25).click();
+  await jogadorPage.waitForTimeout(600);
+  const { data: marcasApos } = await admin.from("vtt_marks").select("id").eq("campaign_id", campaignId);
+  const erroVisivel = await jogadorPage.locator(".rv-erro-acao").textContent().catch(() => null);
+  registrar("8a (Marcar cria uma marcação persistida)", (marcasApos?.length ?? 0) === 1, `${JSON.stringify(marcasApos)} erroAcao=${erroVisivel}`);
+  // O ping fica ACIMA da grade no SVG (confirmado: um clique normal na
+  // célula é bloqueado pelo próprio marcador, "intercepts pointer
+  // events") — clicar nele é o caminho natural, não a grade por baixo.
+  await jogadorPage.locator(".rv-marca-ping").first().click();
+  await jogadorPage.waitForTimeout(800);
+  const { data: marcasDepois } = await admin.from("vtt_marks").select("id").eq("campaign_id", campaignId);
+  registrar("8b (clicar na própria marcação apaga)", (marcasDepois?.length ?? 0) === 0, JSON.stringify(marcasDepois));
+
+  // --- 9. Arrasto do jogador move o token controlado, narrador vê sem reload ---
+  await jogadorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
+  const { data: tokenAntes } = await admin.from("vtt_tokens").select("id,sigla,q,r,revision").eq("campaign_id", campaignId).limit(1).maybeSingle();
+  if (tokenAntes) {
+    await admin.from("vtt_tokens").update({ character_id: characterId }).eq("id", tokenAntes.id);
+    await jogadorPage.reload({ waitUntil: "networkidle" });
+    await jogadorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
+
+    // O token controlado pode não ser o PRIMEIRO no DOM (ordem de
+    // renderização segue `CENA_DEMO.tokens`, não a ordem de leitura do
+    // banco) — acha pela sigla, não por posição.
+    const todosTokens = jogadorPage.locator(".rv-camada-tokens .rv-token");
+    const siglas = await todosTokens.locator("text.rv-token-sigla").allTextContents();
+    const idx = siglas.indexOf(tokenAntes.sigla);
+    const tokenEl = todosTokens.nth(idx === -1 ? 0 : idx);
+    const box = idx === -1 ? null : await tokenEl.boundingBox();
+    if (box) {
+      const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+      await jogadorPage.mouse.move(cx, cy);
+      await jogadorPage.mouse.down();
+      await jogadorPage.mouse.move(cx + 60, cy + 30, { steps: 6 });
+      await jogadorPage.mouse.up();
+      await jogadorPage.waitForTimeout(700);
+    }
+    const { data: tokenDepois } = await admin.from("vtt_tokens").select("q,r,revision").eq("id", tokenAntes.id).maybeSingle();
+    const moveu = !!tokenDepois && (tokenDepois.q !== tokenAntes.q || tokenDepois.r !== tokenAntes.r);
+    registrar("9 (arrasto do jogador move o token controlado no banco)", moveu, `antes=(${tokenAntes.q},${tokenAntes.r}) depois=(${tokenDepois?.q},${tokenDepois?.r})`);
+
+    // Narrador, sem reload, deve ver a posição nova (Realtime).
+    await narradorPage.waitForTimeout(500);
+    const posNarrador = await narradorPage.evaluate((sigla) => {
+      const els = Array.from(document.querySelectorAll(".rv-camada-tokens .rv-token text.rv-token-sigla"));
+      const el = els.find((e) => e.textContent === sigla);
+      return el ? el.closest("g")?.getAttribute("transform") : null;
+    }, tokenAntes.sigla);
+    registrar("9b (narrador vê a posição nova sem reload — Realtime)", !!posNarrador, `transform=${posNarrador}`);
+
+    // --- 10. Ctrl+Z desfaz o movimento do jogador ---
+    await jogadorPage.locator(".rv-mesa").click({ position: { x: 5, y: 5 } }); // garante foco fora de qualquer input
+    await jogadorPage.keyboard.press("Control+z");
+    await jogadorPage.waitForTimeout(1200);
+    const { data: tokenDesfeito } = await admin.from("vtt_tokens").select("q,r,revision").eq("id", tokenAntes.id).maybeSingle();
+    const erroVisivel10 = await jogadorPage.locator(".rv-erro-acao").textContent().catch(() => null);
+    registrar("10 (Ctrl+Z desfaz o movimento no banco)", tokenDesfeito?.q === tokenAntes.q && tokenDesfeito?.r === tokenAntes.r, `voltou a (${tokenDesfeito?.q},${tokenDesfeito?.r}) rev=${tokenDesfeito?.revision} erroAcao=${erroVisivel10}`);
+  } else {
+    registrar("9 (arrasto move token)", false, "nenhum token na cena semeada");
+    registrar("9b (narrador vê sem reload)", false, "pulado");
+    registrar("10 (Ctrl+Z desfaz)", false, "pulado");
+  }
+
+  // --- 12. Hints unificadas de mapa (terreno decorativo, terreno persistido, objetos) ---
+  // Usa `narradorPage`, ociosa desde o critério 9b — sem pan/zoom prévio,
+  // então as posições de tela dos elementos fixos da cena de demonstração
+  // são as do primeiro carregamento.
+  await narradorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
+  await narradorPage.waitForTimeout(150);
+
+  // Célula decorativa "difícil" que NÃO está coberta por um objeto por
+  // cima (o objeto, mais acima na pintura, venceria a prioridade e
+  // mostraria a hint dele — comportamento correto, testado à parte no
+  // critério 12f, mas que tornaria ESTE critério ambíguo se caísse
+  // numa célula sobreposta).
+  // `page.evaluate` rodado via `tsx`: o esbuild injeta um wrapper
+  // `__name` em toda função NOMEADA declarada dentro do callback, que
+  // não existe no runtime do browser (`ReferenceError: __name is not
+  // defined`) — já documentado em `check-campanha-casca-fase2.ts`.
+  // Tudo aqui dentro fica inline, sem `function` nomeada auxiliar.
+  async function primeiraCelulaLivreDeObjetos(page: Page, seletorFill: string): Promise<{ x: number; y: number } | null> {
+    return page.evaluate((sel) => {
+      const els = Array.from(document.querySelectorAll(sel));
+      const objRects = Array.from(document.querySelectorAll(".rv-camada-objetos .rv-objeto")).map((o) => o.getBoundingClientRect());
+      const comTamanho = els.map((el) => (el as Element).getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0);
+      for (const r of comTamanho) {
+        const sobrepoe = objRects.some((o) => !(r.right < o.left || r.left > o.right || r.bottom < o.top || r.top > o.bottom));
+        if (!sobrepoe) return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+      }
+      // Nenhuma célula totalmente livre de objeto — melhor cair pra
+      // primeira com tamanho real do que retornar null (o objetivo do
+      // "livre de objeto" é só uma preferência de robustez, não uma
+      // garantia; sem fallback, uma sobreposição real em produção
+      // reprovaria o critério inteiro em vez de só torná-lo menos
+      // isolado do critério 12f).
+      return comTamanho.length > 0 ? { x: comTamanho[0].x + comTamanho[0].width / 2, y: comTamanho[0].y + comTamanho[0].height / 2 } : null;
+    }, seletorFill);
+  }
+  async function lerTooltip(page: Page, x: number, y: number): Promise<string | null> {
+    await page.mouse.move(Math.max(0, x - 200), Math.max(0, y - 200));
+    await page.waitForTimeout(80);
+    await page.mouse.move(x, y);
+    await page.waitForTimeout(200);
+    return page.locator(".rv-tooltip-terreno").first().textContent().catch(() => null);
+  }
+
+  // 12a — terreno decorativo "difícil".
+  {
+    const p = await primeiraCelulaLivreDeObjetos(narradorPage, '.rv-camada-terreno path[fill="url(#rv-hachura)"]');
+    const texto = p ? await lerTooltip(narradorPage, p.x, p.y) : null;
+    const ok = !!texto && texto.includes("Piso tomado por destroços") && texto.includes("Terreno difícil") && texto.includes("Cada metro percorrido custa 2 de deslocamento.");
+    registrar("12a (hint do terreno decorativo difícil)", ok, `texto="${texto}"`);
+  }
+
+  // 12b — terreno decorativo "elevado" (mostra altura, sem automatizar bônus).
+  {
+    const p = await primeiraCelulaLivreDeObjetos(narradorPage, '.rv-camada-terreno path[fill="url(#rv-elevado)"]');
+    const texto = p ? await lerTooltip(narradorPage, p.x, p.y) : null;
+    const ok = !!texto && texto.includes("Plataforma de carga") && texto.includes("Terreno elevado") && texto.includes("Altura: 3 m") && texto.includes("+1 em ataques à distância");
+    registrar("12b (hint do terreno decorativo elevado, com altura)", ok, `texto="${texto}"`);
+  }
+
+  // 12c — zona morta (não deve se apresentar como área bloqueada).
+  {
+    const p = await primeiraCelulaLivreDeObjetos(narradorPage, '.rv-camada-terreno path[fill="url(#rv-jammer)"]');
+    const texto = p ? await lerTooltip(narradorPage, p.x, p.y) : null;
+    const ok = !!texto && texto.includes("Zona morta") && texto.includes("Jammer ativo") && texto.includes("condução arcana") && !texto.includes("Não permite movimento");
+    registrar("12c (hint de zona morta, sem se apresentar como bloqueio de movimento)", ok, `texto="${texto}"`);
+  }
+
+  // 12d — terreno FUNCIONAL persistido (dificil, pintado no critério 4) preserva o texto original.
+  {
+    const box = await narradorPage.locator(".rv-camada-grade path").first().boundingBox();
+    const texto = box ? await lerTooltip(narradorPage, box.x + box.width / 2, box.y + box.height / 2) : null;
+    const ok = !!texto && texto.includes("Terreno difícil") && texto.includes("Custa o dobro do deslocamento.");
+    registrar("12d (hint do terreno funcional persistido dificil, texto preservado)", ok, `texto="${texto}"`);
+  }
+
+  // 12e — terreno FUNCIONAL persistido bloqueado — pinta pela UI e confere o hint.
+  {
+    await narradorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Terreno"]').click();
+    await narradorPage.locator('.rv-submenu button:has-text("Bloqueado")').click();
+    const celulaBloqueada = narradorPage.locator(".rv-camada-grade path").nth(45);
+    await celulaBloqueada.dispatchEvent("pointerdown");
+    // Espera a camada de terreno REAL de fato aparecer (confirma que a
+    // pintura chegou ao estado do cliente) em vez de um timeout fixo —
+    // achado real ao rodar pela primeira vez: 500ms nem sempre bastava.
+    const pintou = await narradorPage
+      .locator(".rv-camada-terreno-real .rv-terreno-real--bloqueado")
+      .first()
+      .waitFor({ state: "attached", timeout: 5000 })
+      .then(() => true)
+      .catch(() => false);
+    await narradorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
+    await narradorPage.waitForTimeout(150);
+    const box = pintou ? await celulaBloqueada.boundingBox() : null;
+    const texto = box ? await lerTooltip(narradorPage, box.x + box.width / 2, box.y + box.height / 2) : null;
+    const ok = pintou && !!texto && texto.includes("Área bloqueada") && texto.includes("Não permite movimento.");
+    registrar("12e (hint do terreno funcional persistido bloqueado)", ok, `pintou=${pintou}, texto="${texto}"`);
+  }
+
+  // 12f — objeto/cobertura: conteúdo completo (nome, grau, categoria, PD, danificado, efeito) — mesmo exemplo do pedido original.
+  {
+    const van = narradorPage.locator('.rv-camada-objetos .rv-objeto[aria-label="Van de transporte"]');
+    const box = await van.boundingBox();
+    const texto = box ? await lerTooltip(narradorPage, box.x + box.width / 2, box.y + box.height / 2) : null;
+    const ok = !!texto
+      && texto.includes("Van de transporte")
+      && texto.includes("Cobertura maior")
+      && /Categoria m[eé]dia/i.test(texto)
+      && texto.includes("PD 9/14")
+      && texto.includes("Danificado")
+      && texto.includes("–2 em ataques direcionais contra o alvo.");
+    registrar("12f (hint de objeto/cobertura — Van de transporte, danificado)", ok, `texto="${texto}"`);
+  }
+
+  // 12g — some ao tirar o mouse.
+  {
+    const van = narradorPage.locator('.rv-camada-objetos .rv-objeto[aria-label="Van de transporte"]');
+    const box = await van.boundingBox();
+    if (box) await narradorPage.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await narradorPage.waitForTimeout(150);
+    const presenteAntes = (await narradorPage.locator(".rv-tooltip-terreno").count()) > 0;
+    await narradorPage.mouse.move(5, 5);
+    await narradorPage.waitForTimeout(150);
+    const ausenteDepois = (await narradorPage.locator(".rv-tooltip-terreno").count()) === 0;
+    registrar("12g (hint some ao tirar o mouse)", presenteAntes && ausenteDepois, `presente antes=${presenteAntes}, ausente depois=${ausenteDepois}`);
+  }
+
+  // 12h — nunca mais de uma hint ao mesmo tempo, mesmo alternando rapidamente entre objeto e token.
+  {
+    const van = narradorPage.locator('.rv-camada-objetos .rv-objeto[aria-label="Van de transporte"]');
+    const boxVan = await van.boundingBox();
+    const boxTok = await narradorPage.locator(".rv-camada-tokens .rv-token").first().boundingBox();
+    if (boxVan) await narradorPage.mouse.move(boxVan.x + boxVan.width / 2, boxVan.y + boxVan.height / 2);
+    await narradorPage.waitForTimeout(100);
+    if (boxTok) await narradorPage.mouse.move(boxTok.x + boxTok.width / 2, boxTok.y + boxTok.height / 2);
+    await narradorPage.waitForTimeout(100);
+    const contagem = await narradorPage.locator(".rv-tooltip-terreno").count();
+    registrar("12h (nunca mais de uma hint simultânea)", contagem <= 1, `contagem=${contagem}`);
+    await narradorPage.mouse.move(5, 5);
+  }
+
+  registrar("13 (console limpo — narrador)", errosNarrador.length === 0, JSON.stringify(errosNarrador));
+  registrar("13b (console limpo — jogador)", errosJogador.length === 0, JSON.stringify(errosJogador));
+
+  await closeNarrador();
+  await closeJogador();
+  await limpar();
+
+  console.log(`\n${passou} ok, ${falhou} falha(s).`);
+  if (falhou > 0) process.exit(1);
+}
+
+main().catch(async (e) => {
+  console.error("Erro fatal:", e);
+  await limpar().catch(() => {});
+  process.exit(1);
+});
