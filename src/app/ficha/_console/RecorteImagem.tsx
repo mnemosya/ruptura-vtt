@@ -32,6 +32,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { RotateCcw, ZoomIn } from "lucide-react";
 
 /** Lado da janela de enquadramento, em pixels de tela. */
@@ -76,6 +77,18 @@ const CANTOS = ["tl", "tr", "bl", "br"] as const;
  * `.rv-fp`, porque `vtt.css` só carrega nas rotas do VTT e este passo
  * também roda em `/ficha` — mesmo motivo já registrado na moldura de
  * `_dados3d/ResultadoRolagem.tsx`.
+ *
+ * PORTAL PARA O `body`, e isso não é detalhe: no VTT o editor de
+ * retrato mora dentro do HUD do token, e `.rv-hud` tem
+ * `filter: drop-shadow(...)`. Um ancestral com `filter` (ou
+ * `transform`, ou `contain`) vira o bloco de contenção de qualquer
+ * `position: fixed` abaixo dele — então a janela se centrava NO HUD,
+ * nascia baixa e tinha o rodapé cortado pela borda da tela. No `body`
+ * ela volta a se medir pela viewport.
+ *
+ * O wrapper leva `.rc-cursor-scope` porque sai do portal do
+ * `ConsoleWindow`: sem ele o cursor nativo reapareceria por cima da
+ * janela (o `HudCursor` continua desenhando o anél por baixo).
  */
 export function JanelaRecorte({
   titulo, codigo, erro, ...props
@@ -87,8 +100,12 @@ export function JanelaRecorte({
   /** Falha do envio, mostrada no rodapé sem tirar a janela do lugar. */
   erro?: string | null;
 }) {
-  return (
-    <div className="rc-recorte-janela" role="dialog" aria-modal="true" aria-label={titulo}>
+  const [montado, setMontado] = useState(false);
+  useEffect(() => { setMontado(true); }, []);
+  if (!montado) return null;
+
+  return createPortal(
+    <div className="rc-cursor-scope rc-recorte-janela" role="dialog" aria-modal="true" aria-label={titulo}>
       {CANTOS.map((c) => (
         <span key={c} className="rc-recorte-janela__canto" data-canto={c} aria-hidden="true" />
       ))}
@@ -105,7 +122,8 @@ export function JanelaRecorte({
         <RecorteImagem {...props} />
         {erro && <p className="rc-recorte-janela__erro" role="alert">{erro}</p>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

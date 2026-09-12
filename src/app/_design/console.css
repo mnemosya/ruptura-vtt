@@ -1658,7 +1658,17 @@
   border: 1px solid var(--jr-linha); border-radius: 2px;
   background: linear-gradient(180deg, #0b1322, #080e19);
   box-shadow: 0 20px 56px rgba(0, 0, 0, .7);
+  /* Nunca mais alta que a tela: a janela de recorte tem 240px fixos e,
+     com cabeçalho e rodapé, passava de 400px — numa janela de
+     navegador baixa ela nascia centrada e as ações ficavam FORA da
+     tela, sem jeito de alcançar. `dvh` (e não `vh`) porque no mobile a
+     barra do navegador entra e sai da conta. */
+  max-height: calc(100dvh - 24px); max-width: calc(100vw - 24px);
+  display: flex;
 }
+/* O corpo é quem rola — a espinha é `absolute` e acompanha a altura
+   toda, então ela nunca sai de vista junto com o conteúdo. */
+.rc-recorte-janela__corpo { overflow: auto; min-height: 0; }
 .rc-recorte-janela__canto {
   position: absolute; z-index: 2; width: 11px; height: 11px;
   pointer-events: none; opacity: .55; border-color: var(--jr-acento); border-style: solid; border-width: 0;
@@ -1684,7 +1694,7 @@
   width: 6px; height: 6px; border-radius: 999px;
   background: var(--jr-acento); box-shadow: 0 0 7px color-mix(in srgb, var(--jr-acento) 45%, transparent);
 }
-.rc-recorte-janela__corpo { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px 16px; }
+.rc-recorte-janela__corpo { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px 16px; flex: 1 1 auto; }
 .rc-recorte-janela__cab { display: flex; flex-direction: column; gap: 5px; }
 .rc-recorte-janela__titulo {
   /* MESMO título da janela de ferramenta (`.rv-fp-titulo`): Chakra
