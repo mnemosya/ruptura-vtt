@@ -3734,7 +3734,40 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-biblioteca__fechar:hover { color: var(--rv-ink); border-color: var(--rv-line-hover, var(--jf-acento, var(--cy))); }
 .rv-biblioteca__fechar:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 2px; }
+/* O segmentado do papel: `.rv-segmentado-item` empilha nome e sub, mas
+   só quando eles são BLOCO — soltos, "FUNDO" e "cobre a cena" saíam
+   colados na mesma linha. As duas regras abaixo são o que faltava. */
 .rv-biblioteca__papel { display: flex; gap: 4px; }
+.rv-biblioteca__papel .rv-segmentado-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.rv-biblioteca__papel .rv-fp-seg-nome {
+  display: block; font-family: var(--rv-display), sans-serif;
+  font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+}
+.rv-biblioteca__papel .rv-fp-seg-sub {
+  display: block; font-family: var(--font-mono), monospace;
+  font-size: 9px; letter-spacing: .06em; text-transform: uppercase; color: var(--rv-ink-faint);
+}
+
+/* Filtro de rostos — caixa de seleção discreta, no registro do rodapé. */
+.rv-biblioteca__filtro {
+  display: flex; align-items: center; gap: 7px; cursor: pointer;
+  font-family: var(--font-mono), monospace;
+  font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--rv-ink-dim);
+}
+.rv-biblioteca__filtro input { width: 13px; height: 13px; accent-color: var(--jf-acento, var(--cy)); }
+
+/* Selo de uso sobre a miniatura. */
+.rv-biblioteca__selo {
+  position: absolute; left: 4px; bottom: 4px;
+  padding: 1px 5px; border-radius: 2px;
+  background: rgba(8, 12, 18, .88);
+  font-family: var(--font-mono), monospace;
+  font-size: 8px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+}
+.rv-biblioteca__selo[data-uso="cena"] { color: var(--rv-ok); border: 1px solid color-mix(in srgb, var(--rv-ok) 40%, transparent); }
+.rv-biblioteca__selo[data-uso="rosto"] { color: var(--rv-am); border: 1px solid color-mix(in srgb, var(--rv-am) 40%, transparent); }
 
 .rv-biblioteca__estado {
   margin: 0; padding: 22px 10px;
@@ -3765,7 +3798,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-biblioteca__item:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 1px; }
 .rv-biblioteca__item:disabled { opacity: .45; cursor: not-allowed; }
 .rv-biblioteca__miniatura {
-  display: block; aspect-ratio: 1 / 1; overflow: hidden;
+  position: relative; display: block; aspect-ratio: 1 / 1; overflow: hidden;
   border-radius: 2px; background: var(--rv-ground);
 }
 .rv-biblioteca__miniatura img { width: 100%; height: 100%; object-fit: cover; display: block; }

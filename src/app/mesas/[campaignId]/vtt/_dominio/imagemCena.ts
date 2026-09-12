@@ -217,6 +217,26 @@ export interface ImagemBiblioteca {
   heightPx: number;
   bytes: number;
   criadaEm: string;
+  /** Quantas colocações de cena usam este arquivo. */
+  usosCena: number;
+  /** Quantos tokens o usam como retrato próprio. */
+  usosRetrato: number;
+  /** Quantas fichas o usam como avatar. */
+  usosAvatar: number;
+}
+
+/**
+ * O que este arquivo É, pelo uso que tem. Um asset pode ser as três
+ * coisas (a deduplicação por `sha256` é o que torna isso barato), e
+ * por isso a resposta é o uso PREDOMINANTE, na ordem em que a pessoa
+ * pensa quando está montando uma cena: se já está numa cena, é imagem
+ * de cena; se só aparece como avatar/retrato, é rosto; sem uso nenhum,
+ * é só um arquivo.
+ */
+export function usoDaImagem(img: ImagemBiblioteca): "cena" | "rosto" | "solta" {
+  if (img.usosCena > 0) return "cena";
+  if (img.usosAvatar > 0 || img.usosRetrato > 0) return "rosto";
+  return "solta";
 }
 
 export function imagemBibliotecaDeJson(bruto: unknown): ImagemBiblioteca | null {
@@ -237,6 +257,9 @@ export function imagemBibliotecaDeJson(bruto: unknown): ImagemBiblioteca | null 
     heightPx,
     bytes: numero(j.bytes) ?? 0,
     criadaEm: texto(j.created_at) ?? "",
+    usosCena: numero(j.usos_cena) ?? 0,
+    usosRetrato: numero(j.usos_retrato) ?? 0,
+    usosAvatar: numero(j.usos_avatar) ?? 0,
   };
 }
 

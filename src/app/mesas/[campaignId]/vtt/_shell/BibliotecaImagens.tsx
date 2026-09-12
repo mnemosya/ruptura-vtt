@@ -14,16 +14,22 @@
  * PURAMENTE APRESENTACIONAL, como `PainelImagens`: recebe a lista já
  * lida e devolve a intenção. Nenhuma RPC aqui.
  *
- * ── O QUE ELA NÃO MOSTRA ────────────────────────────────────────────
- * Onde cada arquivo está em uso. `read_vtt_campaign_images` devolve
- * `id`, dimensões, peso e data — nada de usos. Inventar um "em uso
- * em 2 cenas" a partir do que o cliente tem à mão seria adivinhar;
- * quando a projeção carregar isso, a legenda ganha a informação.
+ * ── ROSTO NÃO É MAPA ────────────────────────────────────────────────
+ * A campanha guarda num lugar só os mapas, os retratos de token e os
+ * avatares de ficha — a deduplicação por `sha256` é o que torna isso
+ * barato, e a finalidade não é propriedade do arquivo, é dos USOS.
+ * Listar tudo junto, porém, punha avatares de personagem lado a lado
+ * com mapas num seletor de imagem de CENA.
+ *
+ * A projeção (0108) passou a contar os usos, e esta janela filtra por
+ * eles: por padrão esconde o que só serve de rosto. O filtro é
+ * visível e reversível — esconder para sempre seria decidir pela
+ * pessoa que ela nunca vai querer um retrato como tile.
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Images, Loader2, X } from "lucide-react";
-import { type ImagemBiblioteca, pesoLegivel } from "../_dominio/imagemCena";
+import { type ImagemBiblioteca, pesoLegivel, usoDaImagem } from "../_dominio/imagemCena";
 
 export interface PropsBibliotecaImagens {
   /** `null` enquanto a primeira leitura não voltou. */
@@ -47,6 +53,13 @@ export function BibliotecaImagens({
   const [papel, setPapel] = useState<"fundo" | "tile">(jaTemFundo ? "tile" : "fundo");
   const papelEfetivo = jaTemFundo ? "tile" : papel;
 
+  const [mostrarRostos, setMostrarRostos] = useState(false);
+  const rostos = useMemo(() => (imagens ?? []).filter((i) => usoDaImagem(i) === "rosto").length, [imagens]);
+  const visiveis = useMemo(
+    () => (imagens ?? []).filter((i) => mostrarRostos || usoDaImagem(i) !== "rosto"),
+    [imagens, mostrarRostos],
+  );
+
   return (
     <div className="rv-biblioteca" role="dialog" aria-modal="true" aria-label="Biblioteca de imagens" data-testid="biblioteca-imagens">
       <header className="rv-biblioteca__cab">
@@ -58,7 +71,7 @@ export function BibliotecaImagens({
               ? "lendo…"
               : imagens === null
                 ? "—"
-                : `${imagens.length} ${imagens.length === 1 ? "arquivo" : "arquivos"}`}
+                : `${visiveis.length} ${visiveis.length === 1 ? "arquivo" : "arquivos"}`}
           </p>
         </div>
         <button type="button" className="rv-biblioteca__fechar" onClick={onFechar} aria-label="Fechar biblioteca">
@@ -82,13 +95,26 @@ export function BibliotecaImagens({
         </div>
       )}
 
+      {/* O filtro só aparece quando há rostos para esconder — um
+          interruptor que nunca muda nada é ruído. */}
+      {rostos > 0 && (
+        <label className="rv-biblioteca__filtro">
+          <input type="checkbox" checked={mostrarRostos} onChange={(e) => setMostrarRostos(e.target.checked)} />
+          <span>Mostrar também retratos e avatares ({rostos})</span>
+        </label>
+      )}
+
       {carregando && imagens === null ? (
         <p className="rv-biblioteca__estado"><Loader2 size={13} className="rv-spin" aria-hidden /> Lendo a biblioteca…</p>
-      ) : imagens !== null && imagens.length === 0 ? (
-        <p className="rv-biblioteca__estado">Nenhuma imagem enviada nesta campanha ainda</p>
+      ) : imagens !== null && visiveis.length === 0 ? (
+        <p className="rv-biblioteca__estado">
+          {imagens.length === 0
+            ? "Nenhuma imagem enviada nesta campanha ainda"
+            : "Só há retratos e avatares — marque acima para vê-los"}
+        </p>
       ) : (
         <ul className="rv-biblioteca__grade">
-          {(imagens ?? []).map((img) => {
+          {visiveis.map((img) => {
             const url = urls[img.id];
             return (
               <li key={img.id}>
@@ -101,7 +127,17 @@ export function BibliotecaImagens({
                 >
                   {/* Sem URL assinada a moldura fica vazia, não quebrada:
                       assinatura é renovável, não erro. */}
-                  <span className="rv-biblioteca__miniatura">{url ? <img src={url} alt="" /> : null}</span>
+                  <span className="rv-biblioteca__miniatura">
+                    {url ? <img src={url} alt="" /> : null}
+                    {/* Selo de uso: diz o que o arquivo JÁ é na campanha,
+                        que é exatamente a dúvida de quem vê um rosto no
+                        meio dos mapas. */}
+                    {usoDaImagem(img) !== "solta" && (
+                      <span className="rv-biblioteca__selo" data-uso={usoDaImagem(img)}>
+                        {usoDaImagem(img) === "cena" ? "em cena" : "rosto"}
+                      </span>
+                    )}
+                  </span>
                   <span className="rv-biblioteca__medida">{img.widthPx}×{img.heightPx}</span>
                   <span className="rv-biblioteca__peso">{pesoLegivel(img.bytes)}</span>
                 </button>

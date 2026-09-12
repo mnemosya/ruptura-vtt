@@ -30,6 +30,7 @@ import sharp from "sharp";
 import { type SupabaseClient } from "@supabase/supabase-js";
 import { getAdminSupabaseClient } from "../supabase/adminClient";
 import { BUCKET_IMAGENS_VTT, type ResultadoColeta, coletarLixoCom } from "./imageGc";
+import { medir, iniciarFluxo } from "./_medicao"; // INSTRUMENTAÇÃO TEMPORÁRIA
 
 export type { ResultadoColeta };
 
@@ -94,9 +95,12 @@ export async function assinarUploadUrl(storagePath: string): Promise<{ url: stri
  * ponto onde "bytes arbitrários com Content-Type mentiroso" morre.
  */
 export async function validarEReencodar(storagePath: string): Promise<MedidaImagem> {
+  const fim = iniciarFluxo("validarEReencodar");
   const client = admin();
 
-  const baixado = await client.storage.from(BUCKET_IMAGENS_VTT).download(storagePath);
+  const baixado = await medir("S1. download do Storage", () =>
+    client.storage.from(BUCKET_IMAGENS_VTT).download(storagePath),
+  );
   if (baixado.error || !baixado.data) {
     throw new Error("O arquivo enviado não chegou ao servidor. Tente de novo.");
   }
@@ -119,7 +123,7 @@ export async function validarEReencodar(storagePath: string): Promise<MedidaImag
 
   let metadados;
   try {
-    metadados = await sharp(original).metadata();
+    metadados = await medir("S2. sharp metadata", () => sharp(original).metadata());
   } catch {
     throw new Error("Não foi possível ler a imagem enviada.");
   }
@@ -135,22 +139,27 @@ export async function validarEReencodar(storagePath: string): Promise<MedidaImag
   // Reencode: o que fica guardado é sempre produto do NOSSO pipeline.
   // `rotate()` sem argumento aplica a orientação EXIF e a descarta, em
   // vez de deixar um retrato deitado para o `<image>` do SVG resolver.
-  const normalizado = await sharp(original).rotate().webp({ quality: 82 }).toBuffer();
+  const normalizado = await medir("S3. sharp reencode webp", () =>
+    sharp(original).rotate().webp({ quality: 82 }).toBuffer(),
+  );
   if (normalizado.byteLength > BYTES_MAXIMO) {
     throw new Error("Arquivo fora do tamanho permitido.");
   }
-  const medidoDepois = await sharp(normalizado).metadata();
+  const medidoDepois = await medir("S4. sharp metadata (depois)", () => sharp(normalizado).metadata());
   if (!medidoDepois.width || !medidoDepois.height) {
     throw new Error("Não foi possível ler a imagem enviada.");
   }
 
-  const regravado = await client.storage
-    .from(BUCKET_IMAGENS_VTT)
-    .upload(storagePath, normalizado, { contentType: "image/webp", upsert: true });
+  const regravado = await medir("S5. upload regravado ao Storage", () =>
+    client.storage
+      .from(BUCKET_IMAGENS_VTT)
+      .upload(storagePath, normalizado, { contentType: "image/webp", upsert: true }),
+  );
   if (regravado.error) {
     throw new Error("Não foi possível guardar a imagem. Tente de novo.");
   }
 
+  fim();
   return {
     bytes: normalizado.byteLength,
     widthPx: medidoDepois.width,
@@ -174,22 +183,30 @@ export async function assinarDownloadUrls(
 
   const client = admin();
 
-  const autorizados: { id: string; path: string }[] = [];
-  for (const id of unicos) {
+  /* Uma consulta para TODOS os caminhos e as autorizações em paralelo.
+     Antes era um laço com DUAS idas sequenciais por asset (a RPC de
+     autorização e um `select` do caminho): 20 imagens = 40 viagens em
+     fila, e a biblioteca levava segundos para pintar as miniaturas. A
+     regra de autorização continua sendo a mesma RPC, por asset — o que
+     mudou foi a espera, não o critério. */
+  const { data: linhas } = await client
+    .from("vtt_image_assets")
+    .select("id, storage_path")
+    .in("id", unicos);
+  const caminhoPorId = new Map<string, string>(
+    (linhas ?? []).map((l) => [l.id as string, l.storage_path as string]),
+  );
+
+  const vistos = await Promise.all(unicos.map(async (id) => {
+    if (!caminhoPorId.has(id)) return null;
     const { data: podeVer, error } = await client.rpc("vtt_asset_assinavel_para", {
       p_asset_id: id,
       p_user_id: userId,
     });
-    if (error || podeVer !== true) continue;
-
-    const { data: linha, error: erroLinha } = await client
-      .from("vtt_image_assets")
-      .select("storage_path")
-      .eq("id", id)
-      .single();
-    if (erroLinha || !linha) continue;
-    autorizados.push({ id, path: linha.storage_path as string });
-  }
+    if (error || podeVer !== true) return null;
+    return { id, path: caminhoPorId.get(id)! };
+  }));
+  const autorizados = vistos.filter((a): a is { id: string; path: string } => a !== null);
   if (autorizados.length === 0) return resultado;
 
   const { data, error } = await client.storage
