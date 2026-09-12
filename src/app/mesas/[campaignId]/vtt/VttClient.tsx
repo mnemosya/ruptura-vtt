@@ -100,6 +100,7 @@ import { PainelAreas, type ItemListaArea } from "./_shell/PainelAreas";
 import { PainelTerreno } from "./_shell/PainelTerreno";
 import { PainelObjetos } from "./_shell/PainelObjetos";
 import { PainelImagens } from "./_shell/PainelImagens";
+import { BibliotecaImagens } from "./_shell/BibliotecaImagens";
 import { ColocarImagem } from "./_shell/ColocarImagem";
 import { useImagensDaCena } from "./_shell/useImagensDaCena";
 import { PainelMedir, type ModoMedicao } from "./_shell/PainelMedir";
@@ -4022,6 +4023,7 @@ export function VttClient({
   }, [estadoCena?.cena.largura, estadoCena?.cena.altura]);
 
   const inputImagemRef = useRef<HTMLInputElement | null>(null);
+  const [bibliotecaAberta, setBibliotecaAberta] = useState(false);
   const escolherArquivoDeImagem = useCallback(() => {
     inputImagemRef.current?.click();
   }, []);
@@ -4818,8 +4820,33 @@ export function VttClient({
             onRemover={(img) => { void imgs.remover(img); }}
             onAjustar={(img, ajuste) => { void imgs.ajustar(img, ajuste); }}
             onEnviarArquivo={escolherArquivoDeImagem}
-            onAbrirBiblioteca={escolherArquivoDeImagem}
+            onAbrirBiblioteca={() => { setBibliotecaAberta(true); void imgs.carregarBiblioteca(); }}
             onFechar={() => trocarFerramenta("interagir")}
+          />
+        )}
+        {/* BIBLIOTECA — recolocar um arquivo que a campanha já tem, sem
+            upload nenhum. Fica fora do painel (e não dentro dele)
+            porque é uma grade de miniaturas: na coluna de 400px ela
+            caberia com duas por linha e viraria uma lista. */}
+        {ferramenta === "imagens" && ehNarrador && bibliotecaAberta && (
+          <BibliotecaImagens
+            imagens={imgs.biblioteca}
+            carregando={imgs.carregandoBiblioteca}
+            urls={imgs.urls}
+            jaTemFundo={imgs.jaTemFundo}
+            ocupado={imgs.ocupado}
+            onColocar={(img, papel) => {
+              // Sem gesto no mapa, o tile nasce no CENTRO da cena — o
+              // mesmo lugar onde o fundo nasceria. Arrastar depois é um
+              // gesto; adivinhar um canto não é.
+              const centro = {
+                q: Math.round((estadoCena?.cena.largura ?? 1) / 2) - 1,
+                r: Math.round((estadoCena?.cena.altura ?? 1) / 2) - 1,
+              };
+              void imgs.colocarDaBiblioteca(img, papel, centro);
+              setBibliotecaAberta(false);
+            }}
+            onFechar={() => setBibliotecaAberta(false)}
           />
         )}
         {/* Input fora da tela, dono do gesto "Enviar arquivo…". Fica

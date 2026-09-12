@@ -61,8 +61,8 @@ export function PainelImagens({
       id="imagens"
       icone={<Images size={14} aria-hidden />}
       titulo="Imagens"
-      /* Linha de estado, como toda janela de ferramenta tem — esta não
-         tinha, e o cabeçalho ficava com um título solto. */
+      // Linha de estado, como toda janela de ferramenta tem — esta não
+      // tinha, e o cabeçalho ficava com um título solto.
       modo={ordenadas.length === 0
         ? "nenhuma na cena"
         : `${ordenadas.length} ${ordenadas.length === 1 ? "imagem" : "imagens"} na cena`}

@@ -3691,3 +3691,89 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-editor-retrato__origem strong { color: var(--rv-ink); font-weight: 600; }
 .rv-editor-retrato__origem svg { flex: none; margin-top: 1px; color: var(--cy); }
+
+/* ── Biblioteca de imagens da campanha (`_shell/BibliotecaImagens.tsx`)
+   Grade de miniaturas para recolocar um arquivo que a campanha já tem,
+   sem upload. Janela própria (e não uma seção do painel de Imagens)
+   porque é uma GRADE: dentro da coluna de 400px caberiam duas por
+   linha, e ela viraria a mesma lista que já existe ao lado.
+
+   Chassi das janelas de ferramenta: fio, gradiente, raio de 2px. Sem
+   espinha nem brackets — ela é temporária, some ao escolher, e não
+   compete com a janela que a abriu. */
+.rv-biblioteca {
+  position: fixed; z-index: 46; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; gap: 14px;
+  width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 48px);
+  padding: 16px;
+  border: 1px solid var(--rv-line-2); border-radius: 2px;
+  background: linear-gradient(180deg, #0b1322, #080e19);
+  box-shadow: 0 20px 56px rgba(0, 0, 0, .7);
+}
+.rv-biblioteca__cab { display: flex; align-items: center; gap: 10px; }
+.rv-biblioteca__ico { display: grid; place-items: center; flex: none; color: var(--jf-acento, var(--cy)); }
+.rv-biblioteca__txt { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.rv-biblioteca__titulo {
+  margin: 0; color: var(--rv-ink);
+  font: 700 12px var(--rv-display), sans-serif;
+  letter-spacing: .12em; text-transform: uppercase; line-height: 1;
+}
+.rv-biblioteca__modo {
+  display: flex; align-items: center; gap: 6px; margin: 0;
+  color: var(--rv-ink-faint); font: 10px var(--font-mono), monospace;
+  letter-spacing: .14em; text-transform: uppercase;
+}
+.rv-biblioteca__modo::before {
+  content: ""; flex: none; width: 4px; height: 4px; border-radius: 999px; background: var(--jf-acento, var(--cy));
+}
+.rv-biblioteca__fechar {
+  width: 24px; height: 24px; flex: none; display: grid; place-items: center;
+  border: 1px solid var(--rv-line-strong); border-radius: 2px;
+  background: transparent; color: var(--rv-ink-faint); cursor: pointer;
+  transition: color .14s, border-color .14s;
+}
+.rv-biblioteca__fechar:hover { color: var(--rv-ink); border-color: var(--rv-line-hover, var(--jf-acento, var(--cy))); }
+.rv-biblioteca__fechar:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 2px; }
+.rv-biblioteca__papel { display: flex; gap: 4px; }
+
+.rv-biblioteca__estado {
+  margin: 0; padding: 22px 10px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1px dashed var(--rv-line-2); border-radius: 2px;
+  font-family: var(--font-mono), monospace;
+  font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--rv-ink-faint);
+}
+
+.rv-biblioteca__grade {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 8px; margin: 0; padding: 2px; list-style: none;
+  overflow-y: auto; min-height: 0;
+}
+/* O item inteiro é o botão: a miniatura é o alvo, e um "usar" ao lado
+   dela seria um segundo clique para a mesma decisão. */
+.rv-biblioteca__item {
+  width: 100%; display: flex; flex-direction: column; gap: 4px;
+  padding: 6px; border: 1px solid var(--rv-line-2); border-radius: 2px;
+  background: var(--rv-sunken); cursor: pointer; text-align: left;
+  transition: border-color .14s, background .14s;
+}
+.rv-biblioteca__item:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--jf-acento, var(--cy)) 53%, transparent);
+  background: color-mix(in srgb, var(--jf-acento, var(--cy)) 10%, transparent);
+}
+.rv-biblioteca__item:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 1px; }
+.rv-biblioteca__item:disabled { opacity: .45; cursor: not-allowed; }
+.rv-biblioteca__miniatura {
+  display: block; aspect-ratio: 1 / 1; overflow: hidden;
+  border-radius: 2px; background: var(--rv-ground);
+}
+.rv-biblioteca__miniatura img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rv-biblioteca__medida {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 600; letter-spacing: .06em; color: var(--rv-ink);
+}
+.rv-biblioteca__peso {
+  font-family: var(--font-mono), monospace; font-size: 9px;
+  letter-spacing: .06em; color: var(--rv-ink-faint);
+}

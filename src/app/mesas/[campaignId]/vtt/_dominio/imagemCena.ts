@@ -204,3 +204,45 @@ export function imagensCenaDeJson(bruto: unknown): ImagemCena[] {
   if (!Array.isArray(bruto)) return [];
   return bruto.map(imagemCenaDeJson).filter((i): i is ImagemCena => i !== null);
 }
+
+/* ── BIBLIOTECA DA CAMPANHA ─────────────────────────────────────────
+   O que `read_vtt_campaign_images` devolve: todo asset `ready` da
+   campanha, sem saber onde está em uso. É deliberadamente pouco — a
+   biblioteca serve para RECOLOCAR um arquivo sem subir de novo, e para
+   isso bastam miniatura, tamanho e data. */
+
+export interface ImagemBiblioteca {
+  id: string;
+  widthPx: number;
+  heightPx: number;
+  bytes: number;
+  criadaEm: string;
+}
+
+export function imagemBibliotecaDeJson(bruto: unknown): ImagemBiblioteca | null {
+  if (!bruto || typeof bruto !== "object") return null;
+  const j = bruto as Record<string, unknown>;
+  const texto = (v: unknown): string | null => (typeof v === "string" && v !== "" ? v : null);
+  const numero = (v: unknown): number | null => {
+    const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+    return Number.isFinite(n) ? n : null;
+  };
+  const id = texto(j.id);
+  const widthPx = numero(j.width_px);
+  const heightPx = numero(j.height_px);
+  if (id === null || widthPx === null || heightPx === null) return null;
+  return {
+    id,
+    widthPx,
+    heightPx,
+    bytes: numero(j.bytes) ?? 0,
+    criadaEm: texto(j.created_at) ?? "",
+  };
+}
+
+/** "1,2 MB", "840 KB" — peso legível para a legenda da miniatura. */
+export function pesoLegivel(bytes: number): string {
+  const kb = bytes / 1024;
+  if (kb >= 1024) return `${(kb / 1024).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(kb))} KB`;
+}

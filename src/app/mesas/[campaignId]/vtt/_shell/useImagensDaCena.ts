@@ -46,13 +46,16 @@ import {
   cancelarUploadAction,
   criarImagemCenaAction,
   finalizarUploadCenaAction,
+  lerBibliotecaImagensAction,
   lerImagensCenaAction,
   moverImagemCenaAction,
   removerImagemCenaAction,
   reservarUploadAction,
 } from "../_acoes/imageActions";
 import {
+  type ImagemBiblioteca,
   type ImagemCena,
+  imagemBibliotecaDeJson,
   imagemCenaDeJson,
   imagensCenaDeJson,
   larguraInicialM,
@@ -290,10 +293,74 @@ export function useImagensDaCena(params: {
 
   const jaTemFundo = useMemo(() => imagens.some((i) => i.papel === "fundo"), [imagens]);
 
+  /* ── BIBLIOTECA DA CAMPANHA ────────────────────────────────────────
+     Recolocar um arquivo que JÁ está na campanha: sem reserva, sem
+     upload, sem gastar quota — só um uso novo do mesmo asset
+     (`criar_vtt_scene_image`). É o mesmo atalho que o envio já toma
+     sozinho quando reconhece o `sha256`; aqui ele vira escolha
+     explícita, em vez de depender de a pessoa achar o arquivo
+     original no computador. */
+  const [biblioteca, setBiblioteca] = useState<ImagemBiblioteca[] | null>(null);
+  const [carregandoBiblioteca, setCarregandoBiblioteca] = useState(false);
+
+  const carregarBiblioteca = useCallback(async () => {
+    if (!ehNarrador) return;
+    setCarregandoBiblioteca(true);
+    setErro(null);
+    try {
+      const r = await lerBibliotecaImagensAction(campaignId);
+      if (!r.ok) throw new Error(r.erro ?? "Não foi possível ler a biblioteca.");
+      const lista = Array.isArray(r.dados)
+        ? (r.dados as unknown[]).map(imagemBibliotecaDeJson).filter((i): i is ImagemBiblioteca => i !== null)
+        : [];
+      setBiblioteca(lista);
+      // As miniaturas usam o MESMO mapa de URLs assinadas das imagens
+      // da cena: uma imagem colocada e a mesma imagem na biblioteca
+      // são o mesmo asset, e assinar duas vezes seria desperdício.
+      if (lista.length > 0) {
+        const assinadas = await assinarImagensAction(campaignId, lista.map((i) => i.id));
+        if (assinadas.ok && assinadas.dados) setUrls((atual) => ({ ...atual, ...assinadas.dados }));
+      }
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Não foi possível ler a biblioteca.");
+    } finally {
+      setCarregandoBiblioteca(false);
+    }
+  }, [campaignId, ehNarrador]);
+
+  /** Coloca na cena um asset da biblioteca, no mesmo enquadramento do envio. */
+  const colocarDaBiblioteca = useCallback(async (
+    imagem: ImagemBiblioteca,
+    papel: "fundo" | "tile",
+    ancora: PontoAxial,
+  ) => {
+    if (!sceneId) return;
+    setOcupado(true);
+    setErro(null);
+    try {
+      const r = await criarImagemCenaAction(campaignId, imagem.id, {
+        sceneId,
+        papel,
+        // Mesma regra do envio: fundo nasce centrado na cena, tile
+        // respeita o ponto pedido.
+        centroQ: papel === "fundo" ? (larguraCena - 1) / 2 : ancora.q,
+        centroR: papel === "fundo" ? (alturaCena - 1) / 2 : ancora.r,
+        larguraM: larguraInicialM(papel, imagem.widthPx, larguraCena),
+      });
+      if (!r.ok) throw new Error(r.erro ?? "Não foi possível colocar a imagem.");
+      await recarregar();
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Não foi possível colocar a imagem.");
+    } finally {
+      setOcupado(false);
+    }
+  }, [campaignId, sceneId, larguraCena, alturaCena, recarregar]);
+
   return {
     imagens, urls, selecionadaId, setSelecionadaId,
     pendente, ocupado, erro, limparErro: () => setErro(null),
     jaTemFundo,
+    biblioteca, carregandoBiblioteca, carregarBiblioteca, colocarDaBiblioteca,
     recarregar, prepararArquivo, confirmarColocacao, cancelarPendente,
     mover, escalar, ajustar, mudarOrdem, remover,
   };
