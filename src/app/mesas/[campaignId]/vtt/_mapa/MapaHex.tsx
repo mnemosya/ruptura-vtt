@@ -2088,6 +2088,13 @@ export function MapaHex({
             separado). ─────────────────────────────────────────── */}
         <g
           className={`rv-camada-grade${cVisivel("grade") ? "" : " rv-camada-grade--oculta"}`}
+          /* A grade cobre o mapa INTEIRO e é irmã (posterior) da camada
+             de imagens de fundo: com a ferramenta Imagens ativa era ela
+             quem recebia o pointerdown, e a imagem embaixo nunca via o
+             gesto — dava pra selecionar pela alça, mas não pra arrastar
+             o corpo. Sob Imagens a grade não tem nenhum gesto próprio,
+             então deixá-la transparente ao ponteiro não custa nada. */
+          pointerEvents={ferramenta === "imagens" ? "none" : undefined}
           // Sair da grade inteira apaga a prévia — sem isto o disco
           // ficava desenhado na última célula depois do cursor já ter
           // ido pro painel ou pra fora do mapa.
