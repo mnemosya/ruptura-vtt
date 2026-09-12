@@ -214,6 +214,27 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
     }
   }
 
+  /**
+   * Tira o avatar do personagem. É o mesmo `set_character_avatar_image`
+   * do envio, com `null` no lugar do id — a imagem em si continua na
+   * biblioteca da campanha (pode estar em uso por outro personagem);
+   * o que se desfaz aqui é só o vínculo.
+   */
+  async function removerAvatar() {
+    if (!mesa || avatarEnviando) return;
+    setAvatarEnviando(true);
+    setAvatarErro(null);
+    try {
+      const r = await definirAvatarPersonagemAction(mesa.campaignId, mesa.characterId, null);
+      if (!r.ok) throw new Error(r.erro ?? "Não foi possível remover o avatar.");
+      setAvatarUrl(null);
+    } catch (e) {
+      setAvatarErro(e instanceof Error ? e.message : "Não foi possível remover o avatar.");
+    } finally {
+      setAvatarEnviando(false);
+    }
+  }
+
   const inventario = useMemo(() => api.character.inventario ?? [], [api.character.inventario]);
   const projecao = useMemo(
     () => projectBodySlots(inventario as InventoryItemInstance[], api.catalogo),
@@ -318,6 +339,8 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
           avatarUrl={avatarUrl}
           avatarErro={avatarErro}
           onAvatarChange={onAvatarChange}
+          onAvatarRemover={() => { void removerAvatar(); }}
+          avatarOcupado={avatarEnviando}
           onRolarAtributo={rolarAtributo}
           onEscolherSurto={() => setAux({ tipo: "surto" })}
           onRolarDefesa={() => setAux({ tipo: "defesa" })}
@@ -365,6 +388,8 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
               avatarUrl={avatarUrl}
               avatarErro={avatarErro}
               onAvatarChange={onAvatarChange}
+              onAvatarRemover={() => { void removerAvatar(); }}
+              avatarOcupado={avatarEnviando}
               onRolarAtributo={rolarAtributo}
               onEscolherSurto={() => setAux({ tipo: "surto" })}
               onRolarDefesa={() => setAux({ tipo: "defesa" })}

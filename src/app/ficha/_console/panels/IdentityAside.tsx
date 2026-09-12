@@ -21,7 +21,7 @@
  */
 
 import { useState } from "react";
-import { ImageUp, Shield } from "lucide-react";
+import { ImageUp, Shield, Trash2 } from "lucide-react";
 import { MAX_OVERLOAD_SURGES_PER_DAY, type CharacterAttributes } from "../../../../lib/character";
 import { useClickGuard } from "../useClickGuard";
 import type { ConsoleApi } from "../types";
@@ -316,6 +316,8 @@ export function IdentityAside({
   avatarUrl,
   avatarErro,
   onAvatarChange,
+  onAvatarRemover,
+  avatarOcupado,
   onRolarAtributo,
   onEscolherSurto,
   onRolarDefesa,
@@ -324,6 +326,10 @@ export function IdentityAside({
   avatarUrl: string | null;
   avatarErro: string | null;
   onAvatarChange: (file: File) => void;
+  /** Desfaz o vínculo do avatar. Sem ela, o botão de remover não aparece. */
+  onAvatarRemover?: () => void;
+  /** Envio ou remoção em voo — trava os dois gestos. */
+  avatarOcupado?: boolean;
   onRolarAtributo: (id: keyof CharacterAttributes) => void;
   onEscolherSurto: () => void;
   onRolarDefesa: () => void;
@@ -345,6 +351,7 @@ export function IdentityAside({
 
   return (
     <aside className="rc-aside">
+      <div className="rc-avatar-wrap">
       <label className="rc-avatar" data-no-drag>
         <span className="rc-avatar-fill">
           {avatarUrl && <img src={avatarUrl} alt="" />}
@@ -372,8 +379,28 @@ export function IdentityAside({
           onChange={aoEscolherArquivo}
           hidden
           aria-label="Trocar avatar do personagem"
+          disabled={avatarOcupado}
         />
       </label>
+      {/* REMOVER fica FORA do `<label>`: dentro dele, qualquer clique
+          — inclusive no botão — abriria o seletor de arquivo, e
+          conteúdo interativo dentro de `label` é inválido. Só aparece
+          com imagem e no hover/foco do conjunto, como o lápis de edição
+          rápida das áreas no mapa. */}
+      {avatarUrl && onAvatarRemover && (
+        <button
+          type="button"
+          className="rc-avatar-remover"
+          onClick={onAvatarRemover}
+          disabled={avatarOcupado}
+          aria-label="Remover avatar do personagem"
+          title="Remover avatar"
+          data-testid="console-avatar-remover"
+        >
+          <Trash2 size={13} aria-hidden="true" />
+        </button>
+      )}
+      </div>
       {avatarErro && (
         <p className="rc-vazio" role="alert" style={{ color: "#ffc4cf" }}>
           {avatarErro}

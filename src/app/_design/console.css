@@ -446,8 +446,12 @@
    (`rc-avatar-fill`, clip-path) = fundo + imagem/placeholder. Como a
    camada de fundo não tem `border` próprio, o bug de "nub quadrado nos
    cantos" (clip-path + border no mesmo elemento) não pode acontecer. */
+/* O wrapper existe só para o botão de remover poder se ancorar no
+   canto do avatar: ele precisa ficar FORA do `<label>` (dentro, o
+   clique nele abriria o seletor de arquivo). */
+.rc-avatar-wrap { position: relative; width: 100%; max-width: 211px; margin: 0 auto; }
 .rc-avatar {
-  position: relative; display: block; width: 100%; max-width: 211px; margin: 0 auto;
+  position: relative; display: block; width: 100%; margin: 0;
   aspect-ratio: 1 / 1;
   padding: 0; border: none; background: none; cursor: pointer;
 }
@@ -486,6 +490,31 @@
 }
 .rc-avatar:hover .rc-avatar-troca,
 .rc-avatar:focus-within .rc-avatar-troca { opacity: 1; }
+
+/* REMOVER — mesma lógica do lápis de edição rápida das áreas: um
+   botão-ícone que só existe enquanto o ponteiro está na área, ancorado
+   num canto em vez de ocupar espaço fixo.
+   Canto superior direito, recuado o bastante para cair DENTRO do
+   heptágono — no canto absoluto do quadro ele flutuaria fora da
+   forma. `pointer-events: none` enquanto invisível para não roubar o
+   clique de trocar a imagem. */
+.rc-avatar-remover {
+  position: absolute; top: 8%; right: 12%; z-index: 2;
+  display: grid; place-items: center; width: 26px; height: 26px;
+  border: 1px solid color-mix(in srgb, var(--rc-danger) 45%, transparent); border-radius: 2px;
+  background: rgba(10, 14, 20, .82); color: var(--rc-danger);
+  cursor: pointer; opacity: 0; pointer-events: none;
+  transition: opacity .12s ease, background .14s, border-color .14s, color .14s;
+}
+.rc-avatar-wrap:hover .rc-avatar-remover,
+.rc-avatar-wrap:focus-within .rc-avatar-remover { opacity: 1; pointer-events: auto; }
+.rc-avatar-remover:hover:not(:disabled) {
+  border-color: var(--rc-danger);
+  background: color-mix(in srgb, var(--rc-danger) 26%, rgba(10, 14, 20, .9));
+  color: #ffb3bd;
+}
+.rc-avatar-remover:focus-visible { opacity: 1; pointer-events: auto; outline: 2px solid var(--rc-danger); outline-offset: 2px; }
+.rc-avatar-remover:disabled { opacity: .45; cursor: not-allowed; }
 
 .rc-avatar-ico { width: 64px; max-width: 55%; }
 .rc-avatar-ico svg { width: 100%; height: auto; display: block; }
