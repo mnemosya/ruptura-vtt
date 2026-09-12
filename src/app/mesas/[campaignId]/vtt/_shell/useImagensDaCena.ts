@@ -103,14 +103,17 @@ export function useImagensDaCena(params: {
   imagensRef.current = imagens;
 
   // ── Leitura ────────────────────────────────────────────────────────
-  const recarregar = useCallback(async () => {
-    if (!sceneId) { setImagens([]); return; }
+  /** Devolve a lista lida — quem chama às vezes precisa achar nela a
+      imagem que acabou de criar (ver `colocarDaBiblioteca`). */
+  const recarregar = useCallback(async (): Promise<ImagemCena[] | null> => {
+    if (!sceneId) { setImagens([]); return null; }
     const r = await lerImagensCenaAction(campaignId, sceneId);
-    if (!r.ok || r.dados === undefined) return;
+    if (!r.ok || r.dados === undefined) return null;
     const lista = imagensCenaDeJson(r.dados);
     // Uma releitura tardia de OUTRA cena nunca pode sobrescrever a
     // atual — mesma proteção que a releitura de objetos já faz.
     setImagens((anterior) => (sceneIdRef.current === sceneId ? lista : anterior));
+    return lista;
   }, [campaignId, sceneId]);
 
   const sceneIdRef = useRef<string | null>(sceneId);
@@ -267,13 +270,24 @@ export function useImagensDaCena(params: {
     await aplicar(await moverImagemCenaAction(campaignId, id, centroQ, centroR, img.revision));
   }, [campaignId, aplicar]);
 
-  const escalar = useCallback(async (id: string, larguraM: number) => {
+  const escalar = useCallback(async (
+    id: string,
+    larguraM: number,
+    /** Centro novo — o gesto de canto mantém o canto oposto parado. */
+    centro?: { q: number; r: number },
+  ) => {
     const img = imagensRef.current.find((i) => i.id === id);
     if (!img) return;
     // Escalar preserva a distorção deliberada: se `alturaM` estava
     // explícita, ela escala junto, senão continua derivada.
     const alturaM = img.alturaM === null ? null : (img.alturaM * larguraM) / img.larguraM;
-    await aplicar(await atualizarImagemCenaAction(campaignId, id, img.revision, { larguraM, alturaM }));
+    await aplicar(await atualizarImagemCenaAction(campaignId, id, img.revision, {
+      larguraM,
+      alturaM,
+      // Uma escrita só para tamanho + posição (0110).
+      centroQ: centro?.q ?? null,
+      centroR: centro?.r ?? null,
+    }));
   }, [campaignId, aplicar]);
 
   const ajustar = useCallback(async (img: ImagemCena, ajuste: AjusteImagemCena) => {
@@ -368,7 +382,13 @@ export function useImagensDaCena(params: {
         larguraM: larguraInicialM(papel, imagem.widthPx, larguraCena),
       });
       if (!r.ok) throw new Error(r.erro ?? "Não foi possível colocar a imagem.");
-      await recarregar();
+      const lista = await recarregar();
+      /* JÁ SELECIONADA: quem acabou de pôr uma imagem quer ajustá-la
+         agora — e as alças de redimensionar só existem na selecionada.
+         Sem isto era preciso caçar a imagem na lista ou no mapa para
+         começar a mexer. */
+      const nova = (lista ?? []).find((i) => i.imageId === imagem.id);
+      if (nova) setSelecionadaId(nova.id);
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Não foi possível colocar a imagem.");
     } finally {

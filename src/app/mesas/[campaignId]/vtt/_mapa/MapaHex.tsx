@@ -545,7 +545,8 @@ export interface PropsMapaHex {
   /** Fim do gesto de mover — âncora axial CONTÍNUA (nada encaixa em célula). */
   onMoverImagem?: (id: string, centroQ: number, centroR: number) => void;
   /** Fim do gesto de escalar — largura em metros; a altura segue a proporção. */
-  onEscalarImagem?: (id: string, larguraM: number) => void;
+  /** Escalar pelo canto muda largura E centro na mesma escrita (0110). */
+  onEscalarImagem?: (id: string, larguraM: number, centro: { q: number; r: number }) => void;
 
   /**
    * Zoom pela roda do mouse/trackpad — recebe o delta já normalizado
@@ -1020,19 +1021,24 @@ export function MapaHex({
     if (!previaImagem) return lista;
     return lista.map((img) => {
       if (img.id !== previaImagem.id) return img;
-      if (previaImagem.escala !== 1) {
-        return {
-          ...img,
-          larguraM: img.larguraM * previaImagem.escala,
-          // A altura explícita escala JUNTO — senão a imagem que
-          // alguém distorceu de propósito voltaria à proporção do
-          // arquivo no meio de um gesto de tamanho.
-          alturaM: img.alturaM === null ? null : img.alturaM * previaImagem.escala,
-        };
-      }
+      /* Escala e deslocamento CONVIVEM: arrastar um canto mantém o
+         canto oposto parado, e isso muda tamanho e centro ao mesmo
+         tempo. Antes eram exclusivos (ou escalava, ou movia), e por
+         isso a escala só podia ser a partir do centro. */
+      const escalada = previaImagem.escala !== 1
+        ? {
+            ...img,
+            larguraM: img.larguraM * previaImagem.escala,
+            // A altura explícita escala JUNTO — senão a imagem que
+            // alguém distorceu de propósito voltaria à proporção do
+            // arquivo no meio de um gesto de tamanho.
+            alturaM: img.alturaM === null ? null : img.alturaM * previaImagem.escala,
+          }
+        : img;
+      if (previaImagem.dx === 0 && previaImagem.dy === 0) return escalada;
       const r = retanguloDaImagem(img, TAM);
       const destino = mundoParaAxial(r.centroX + previaImagem.dx, r.centroY + previaImagem.dy, TAM);
-      return { ...img, centroQ: destino.q, centroR: destino.r };
+      return { ...escalada, centroQ: destino.q, centroR: destino.r };
     });
   }, [imagensCena, previaImagem]);
 
@@ -1061,17 +1067,41 @@ export function MapaHex({
         return;
       }
 
-      // Escala UNIFORME a partir do centro, pela distância ao centro.
-      // Escalar pelo canto oposto (o comportamento de editor gráfico)
-      // moveria a imagem junto, e mover é o outro gesto — misturar os
-      // dois faria o ajuste fino de tamanho exigir reposicionar depois.
+      /* ESCALA PELO CANTO, com o canto OPOSTO ancorado — o gesto que
+         todo VTT tem. A escala sai da distância ao ponto âncora (não ao
+         centro), e o centro anda metade do que a imagem cresceu, que é
+         o que mantém a âncora parada.
+
+         Uniforme de propósito: arrastar um canto nunca DISTORCE. A
+         distorção é deliberada e mora no ajuste fino, com um botão pra
+         desfazer — esticar sem querer um mapa inteiro é o tipo de
+         estrago que se descobre tarde. */
       const r = retanguloDaImagem(g.inicial, TAM);
-      const antes = Math.hypot(g.origem.x - r.centroX, g.origem.y - r.centroY);
-      const agora = Math.hypot(p.x - r.centroX, p.y - r.centroY);
-      // Perto do centro a razão explode (divisão por ~0): abaixo de um
-      // limiar o gesto simplesmente não escala, em vez de saltar.
-      const escala = antes < 4 ? 1 : Math.max(0.05, agora / antes);
-      setPreviaImagem({ id: g.id, dx: 0, dy: 0, escala });
+      const ancoraX = g.canto === "tl" || g.canto === "bl" ? r.x + r.largura : r.x;
+      const ancoraY = g.canto === "tl" || g.canto === "tr" ? r.y + r.altura : r.y;
+      const antesX = Math.abs(g.origem.x - ancoraX);
+      const antesY = Math.abs(g.origem.y - ancoraY);
+      const agoraX = Math.abs(p.x - ancoraX);
+      const agoraY = Math.abs(p.y - ancoraY);
+      // Perto da âncora a razão explode (divisão por ~0): abaixo de um
+      // limiar o gesto simplesmente não escala, em vez de saltar. O
+      // eixo que domina é o que mais andou, para o gesto seguir a mão.
+      const base = Math.max(antesX, antesY);
+      const escala = base < 4
+        ? 1
+        : Math.max(0.05, (antesX >= antesY ? agoraX / antesX : agoraY / antesY));
+      // Centro novo = âncora + metade do retângulo já escalado, no
+      // sentido em que a imagem se estende a partir dela.
+      const sinalX = r.centroX >= ancoraX ? 1 : -1;
+      const sinalY = r.centroY >= ancoraY ? 1 : -1;
+      const novoCentroX = ancoraX + sinalX * (r.largura * escala) / 2;
+      const novoCentroY = ancoraY + sinalY * (r.altura * escala) / 2;
+      setPreviaImagem({
+        id: g.id,
+        dx: novoCentroX - r.centroX,
+        dy: novoCentroY - r.centroY,
+        escala,
+      });
     }
 
     function soltar() {
@@ -1094,7 +1124,13 @@ export function MapaHex({
       }
 
       if (Math.abs(previa.escala - 1) < 0.01) return;
-      onEscalarImagem?.(g.id, g.inicial.larguraM * previa.escala);
+      /* UMA escrita com tamanho e centro: duas (escalar, depois mover)
+         fariam a segunda chegar com a revisão que a primeira
+         invalidou, e quem assiste veria a imagem crescer e só depois
+         pular de lugar. */
+      const r = retanguloDaImagem(g.inicial, TAM);
+      const centro = mundoParaAxial(r.centroX + previa.dx, r.centroY + previa.dy, TAM);
+      onEscalarImagem?.(g.id, g.inicial.larguraM * previa.escala, centro);
     }
 
     // `pointercancel`/`blur` cancelam sem gravar, como no arrasto de

@@ -506,6 +506,15 @@ export interface AjusteImagemCena {
    * `null` em `alturaM` é indistinguível de "não mexer neste campo".
    */
   limparAltura?: boolean;
+  /**
+   * Centro novo — só o gesto de escalar PELO CANTO usa. Arrastar um
+   * canto mantém o canto oposto parado, e isso muda largura e centro ao
+   * mesmo tempo: as duas coisas precisam ir na MESMA escrita, senão a
+   * segunda chega com a revisão que a primeira invalidou e quem assiste
+   * vê a imagem crescer e só depois pular de lugar (0110).
+   */
+  centroQ?: number | null;
+  centroR?: number | null;
 }
 
 export async function atualizarImagemCenaAction(
@@ -529,6 +538,8 @@ export async function atualizarImagemCenaAction(
     p_visivel: ajuste.visivel ?? null,
     p_travado: ajuste.travado ?? null,
     p_limpar_altura: ajuste.limparAltura ?? false,
+    p_centro_q: ajuste.centroQ ?? null,
+    p_centro_r: ajuste.centroR ?? null,
   });
   if (error) return { ok: false, erro: error.message };
   return { ok: true, dados: data };
