@@ -139,11 +139,38 @@ function tetoDeEixo(valorViewport: number, fracao: number, conteudoMaximo: numbe
 export function geometriaInicial(vp: Viewport, alturaMaxima?: number, larguraMaxima?: number): Geometry {
   const w = tetoDeEixo(vp.w, LARGURA_INICIAL_VW, larguraMaxima, MIN_W);
   const h = tetoDeEixo(vp.h, ALTURA_INICIAL_VH, alturaMaxima, MIN_H);
+  return { w, h, ...ancoraSuperiorEsquerda(vp, w, h) };
+}
+
+/** Folga entre a janela e o trilho da esquerda — a mesma das janelas de ferramenta do VTT. */
+const GAP_TRILHO = 16;
+/** Folga do topo, também a das janelas de ferramenta. */
+const MARGEM_TOPO = 74;
+
+/**
+ * Onde o Console NASCE: encostado no trilho da esquerda, perto do
+ * topo — nunca centralizado.
+ *
+ * Centralizado, ele abria bem no meio do mapa e tapava justamente o
+ * que a pessoa estava olhando quando pediu a ficha. Encostado na
+ * barra de ferramentas ele segue a mesma âncora que TODAS as janelas
+ * de ferramenta do VTT já usam, então abrir a ficha não muda o lugar
+ * pra onde o olho vai.
+ *
+ * A largura do trilho é MEDIDA (a barra do VTT e o trilho da campanha
+ * têm larguras diferentes, e fora das duas não há trilho nenhum) —
+ * nunca um número chutado que ficaria errado em metade das telas.
+ */
+function ancoraSuperiorEsquerda(vp: Viewport, w: number, h: number): { x: number; y: number } {
+  const trilho = typeof document === "undefined"
+    ? null
+    : document.querySelector(".rv-ferramentas") ?? document.querySelector(".rm-shell-rail");
+  const borda = trilho ? trilho.getBoundingClientRect().right : 0;
   return {
-    w,
-    h,
-    x: Math.round((vp.w - w) / 2),
-    y: Math.round((vp.h - h) / 2),
+    // Se a janela não couber ao lado do trilho (tela estreita), o
+    // clamp de sempre traz ela de volta pra dentro.
+    x: Math.max(GAP_TRILHO, Math.min(Math.round(borda + GAP_TRILHO), vp.w - w - GAP_TRILHO)),
+    y: Math.max(GAP_TRILHO, Math.min(MARGEM_TOPO, vp.h - h - GAP_TRILHO)),
   };
 }
 

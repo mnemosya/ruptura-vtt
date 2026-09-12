@@ -2210,7 +2210,7 @@ function TramaWidget({
           {trama[key].map((nomeEl, i) => (
             <span key={i} data-testid={`trama-${key}-${i}`} style={{ background: "#22232a", borderRadius: 4, padding: "1px 6px" }}>
               {nomeEl}
-              <button data-testid={`trama-${key}-remover-${i}`} onClick={() => onRemoverElemento?.(key, i)} style={{ ...buttonStyle, fontSize: 9, padding: "0 4px", marginLeft: 4 }}>×</button>
+              <button data-testid={`trama-${key}-remover-${i}`} onClick={() => onRemoverElemento?.(key, i)} style={{ ...buttonStyle, fontSize: 10, padding: "0 4px", marginLeft: 4 }}>×</button>
             </span>
           ))}
           <input
@@ -2227,7 +2227,7 @@ function TramaWidget({
               onAdicionarElemento?.(key, novoElemento[key]!.trim());
               setNovoElemento((p) => ({ ...p, [key]: "" }));
             }}
-            style={{ ...buttonStyle, fontSize: 9, padding: "1px 6px" }}
+            style={{ ...buttonStyle, fontSize: 10, padding: "1px 6px" }}
           >
             +
           </button>

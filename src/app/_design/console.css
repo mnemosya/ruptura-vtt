@@ -3,7 +3,7 @@
  *
  * Terceira folha da linguagem HUD, ao lado de `auth.css` (autenticação)
  * e `app.css` (área autenticada global). Reusa os mesmos tokens
- * (--cy #00d4ff, --am #f5a200), a mesma tipografia (next/font) e o
+ * (--cy #00d4ff, --am var(--am)), a mesma tipografia (next/font) e o
  * mesmo vocabulário de canto cortado das outras telas.
  *
  * Regra herdada do fix dos botões (app.css `.ra2-primary`): SUPERFÍCIE
@@ -29,6 +29,80 @@
   .rc-cursor-scope:not(.ra-no-cursor) .rc-resize { cursor: none; }
 }
 
+/* ── Modo Evolução ─────────────────────────────────────────────
+   O interruptor da barra de título, a faixa de aviso e os passos −/+
+   que substituem o clique de rolagem enquanto a ficha está destravada.
+
+   Estas dez classes existiam no TSX (`panels/ModoEvolucao.tsx`) e NÃO
+   tinham regra nenhuma nesta folha: o chip "Evoluir" era um `<button>`
+   cru do navegador — cinza, borda branca, fonte do sistema. Ganharam
+   aqui a mesma receita dos controles de janela (`.rc-winbtn`), com o
+   ÂMBAR reservado ao estado ligado: evolução é ação deliberada, não
+   perigo, e âmbar é o que esta folha já usa para "atenção". */
+.rc-modo-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 28px; padding: 0 10px;
+  border: 1px solid var(--rc-line);
+  background: transparent;
+  color: var(--cy);
+  font-family: var(--font-rajdhani), sans-serif;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  white-space: nowrap; cursor: pointer;
+  transition: color 0.14s, background 0.14s, border-color 0.14s;
+}
+.rc-modo-chip:hover { color: var(--rc-text); border-color: var(--cy); background: rgba(0, 212, 255, 0.08); }
+.rc-modo-chip:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+/* Ligado: o chip vira o estado, não só um botão apertado. */
+.rc-modo-chip[data-evolucao="true"] {
+  color: var(--am); border-color: color-mix(in srgb, var(--am) 55%, transparent); background: color-mix(in srgb, var(--am) 10%, transparent);
+}
+.rc-modo-chip[data-evolucao="true"]:hover { border-color: var(--am); background: color-mix(in srgb, var(--am) 18%, transparent); }
+.rc-modo-chip-ico { display: grid; place-items: center; flex: none; }
+.rc-modo-chip-ico svg { display: block; }
+
+.rc-modo-faixa {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 6px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--am) 28%, transparent);
+  background: color-mix(in srgb, var(--am) 8%, transparent);
+}
+.rc-modo-faixa-selo {
+  flex: none; padding: 1px 6px;
+  border: 1px solid color-mix(in srgb, var(--am) 45%, transparent);
+  color: var(--am);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+}
+.rc-modo-faixa-texto { flex: 1 1 auto; min-width: 0; font-size: 11px; line-height: 1.35; color: var(--rc-dim); }
+.rc-modo-faixa-pm {
+  flex: none;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--am);
+}
+.rc-modo-faixa-pm strong { font-size: 13px; }
+.rc-modo-faixa-pm span { color: var(--rc-dim); }
+
+/* Passo −/+ dentro de um card de atributo/perícia. Compacto de
+   propósito: divide espaço com o valor e o botão de rolar. */
+.rc-passo { display: inline-flex; align-items: center; gap: 3px; }
+.rc-passo-btn {
+  display: grid; place-items: center;
+  width: 18px; height: 18px;
+  border: 1px solid color-mix(in srgb, var(--am) 33%, transparent);
+  background: transparent; color: var(--am);
+  font-family: var(--font-mono), ui-monospace, monospace; font-size: 12px; line-height: 1;
+  cursor: pointer;
+  transition: color 0.14s, background 0.14s, border-color 0.14s;
+}
+.rc-passo-btn:hover:not(:disabled) { border-color: var(--am); background: color-mix(in srgb, var(--am) 14%, transparent); }
+.rc-passo-btn:focus-visible { outline: 2px solid var(--am); outline-offset: 1px; }
+.rc-passo-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.rc-passo-val {
+  min-width: 2ch; text-align: center;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px; font-weight: 700; color: var(--rc-text);
+}
+
 /* ── Janela ────────────────────────────────────────────────────── */
 .rc-backdrop {
   position: fixed; inset: 0; z-index: 500;
@@ -45,15 +119,29 @@
    precisam estar num ancestral comum aos dois, não só em `.rc-window`,
    senão o trilho fica sem acesso a `--cy` etc.). */
 .rc-window-wrap {
+  /* CROMO do VTT, ACENTO do Console.
+     A janela flutua por cima da mesa, e o que fazia ela parecer de
+     outro produto era o CROMO: fios cianos, superfícies e tintas
+     próprias. Esses passam a ser os do chassi do VTT
+     (`_design/vtt-chassi.css`), valores JÁ RESOLVIDOS — aquela folha
+     só carrega nas rotas do VTT, e o Console também roda em `/ficha` e
+     no harness (mesmo motivo da moldura inline de
+     `_dados3d/ResultadoRolagem.tsx`).
+
+     O ACENTO (`--cy`) fica como sempre foi: `#00d4ff`, e com ele todas
+     as lavagens `rgba(0, 212, 255, α)` e os SVGs de pip, ícone e barra.
+     Trocar o ciano foi tentado e desfeito — é ele que dá identidade ao
+     Console; o que destoava era a moldura em volta. */
   --cy: #00d4ff;
-  --am: #f5a200;
-  --rc-line: rgba(0, 212, 255, 0.3);
-  --rc-line-soft: rgba(0, 212, 255, 0.15);
-  --rc-surface: rgba(11, 18, 27, 0.96);
-  --rc-panel: rgba(16, 26, 38, 0.72);
-  --rc-text: #b8d8e8;
-  --rc-dim: rgba(184, 216, 232, 0.55);
-  --rc-danger: #ff5f74;
+  --am: #cf9a3e;          /* --rv-am */
+  --rc-line: #1c2b45;     /* --rv-line-strong */
+  --rc-line-soft: #16233a;/* --rv-line-2 */
+  --rc-surface: rgba(12, 20, 32, 0.96);  /* --rv-panel, com alfa: a janela é flutuante */
+  --rc-panel: rgba(17, 29, 49, 0.72);    /* --rv-panel-2 */
+  --rc-text: #d6e4f5;     /* --rv-ink */
+  --rc-dim: #7f95b3;      /* --rv-ink-dim */
+  --rc-danger: #d15068;   /* --rv-dg */
+  --rc-ok: #4fae82;       /* --rv-ok */
 
   position: fixed; z-index: 501;
   display: inline-flex; align-items: center;
@@ -82,7 +170,7 @@
   padding: 1px;
   border: 1px solid var(--rc-line);
   background: url("/console/bg-console-do-personagem.svg") center / cover no-repeat, var(--rc-surface);
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.72), inset 0 0 60px rgba(0, 60, 90, 0.1);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.72), inset 0 0 60px rgba(17, 29, 49, 0.1);
 }
 
 /* ── Topbar ────────────────────────────────────────────────────── */
@@ -91,7 +179,7 @@
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   padding: 0 12px 0 20px; height: 44px;
   border-bottom: 1px solid var(--rc-line);
-  background: linear-gradient(92deg, #123640 0%, #0c1e28 100%);
+  background: linear-gradient(92deg, #111d31 0%, #0c1420 100%);
   touch-action: none;
 }
 .rc-topbar[data-draggable="true"] { cursor: grab; }
@@ -99,7 +187,7 @@
 .rc-topbar-title {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
-  color: #d3f4ff; white-space: nowrap;
+  color: #d6e4f5; white-space: nowrap;
   /* Encolhe e trunca ANTES dos controles da janela — sem isso, numa
      janela estreita, o título comprido empurrava minimizar/maximizar/
      fechar pra fora do topbar (space-between não protege quem não tem
@@ -125,13 +213,13 @@
   cursor: pointer;
   transition: color 0.14s, background 0.14s, border-color 0.14s;
 }
-.rc-winbtn:hover { color: #eafcff; background: rgba(0, 212, 255, 0.14); border-color: #6fe0ff; }
+.rc-winbtn:hover { color: #d6e4f5; background: rgba(0, 212, 255, 0.14); border-color: #6fe0ff; }
 .rc-winbtn:active { background: rgba(0, 212, 255, 0.24); }
 .rc-winbtn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 /* Fechar já nasce na paleta de perigo — não só no hover. */
-.rc-winbtn--close { border-color: rgba(255, 95, 116, 0.6); color: var(--rc-danger); }
-.rc-winbtn--close:hover { color: #ff96a8; background: rgba(255, 95, 116, 0.18); border-color: #ff96a8; }
-.rc-winbtn--close:active { background: rgba(255, 95, 116, 0.28); }
+.rc-winbtn--close { border-color: rgba(209, 80, 104, 0.6); color: var(--rc-danger); }
+.rc-winbtn--close:hover { color: color-mix(in srgb, var(--rc-danger) 75%, #fff); background: rgba(209, 80, 104, 0.18); border-color: color-mix(in srgb, var(--rc-danger) 75%, #fff); }
+.rc-winbtn--close:active { background: rgba(209, 80, 104, 0.28); }
 .rc-winbtn--close:focus-visible { outline-color: var(--rc-danger); }
 
 /* Cantos de resize — direito (original) e esquerdo (espelhado, mesma
@@ -190,7 +278,7 @@
 .rc-hscroll-trilho {
   position: relative;
   width: 100%; height: 4px;
-  background: rgba(11, 18, 27, 0.6);
+  background: rgba(12, 20, 32, 0.6);
   border-top: 1px solid rgba(0, 212, 255, 0.14);
   pointer-events: auto;
   transition: height 0.12s;
@@ -215,7 +303,7 @@
 .rc-vscroll-trilho {
   position: relative;
   width: 4px; height: 100%;
-  background: rgba(11, 18, 27, 0.6);
+  background: rgba(12, 20, 32, 0.6);
   border-left: 1px solid rgba(0, 212, 255, 0.14);
   pointer-events: auto;
   transition: width 0.12s;
@@ -346,10 +434,10 @@
   display: block; width: fit-content; margin: 0 auto 10px;
   padding: 4px 22px;
   border: 1px solid var(--rc-line);
-  background: #123640;
+  background: #111d31;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
-  color: #d3f4ff;
+  color: #d6e4f5;
   clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 100%, 0 100%);
 }
 
@@ -366,7 +454,7 @@
 .rc-avatar-fill {
   position: absolute; inset: 0;
   display: grid; place-items: center;
-  background: rgba(29, 53, 67, 0.73);
+  background: rgba(17, 29, 49, 0.73);
   color: rgba(0, 212, 255, 0.55);
   clip-path: polygon(49.93% 0%, 89.97% 19.77%, 99.86% 64.17%, 72.15% 99.78%, 27.71% 99.78%, 0% 64.17%, 9.89% 19.77%);
   overflow: hidden;
@@ -381,7 +469,7 @@
    de cor nem de ícone; o ícone de usuário fica visível o tempo todo,
    inclusive no hover. */
 .rc-avatar:hover .rc-avatar-fill,
-.rc-avatar:focus-visible .rc-avatar-fill { background: rgba(29, 53, 67, 0.92); }
+.rc-avatar:focus-visible .rc-avatar-fill { background: rgba(17, 29, 49, 0.92); }
 .rc-avatar:focus-visible { outline: none; }
 
 .rc-avatar-ico { width: 64px; max-width: 55%; }
@@ -411,7 +499,7 @@
   display: flex; flex-direction: column; align-items: center;
   width: 100%; padding: 16px; gap: 16px;
   border: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(16, 26, 38, 0.70);
+  background: rgba(17, 29, 49, 0.70);
 }
 .rc-nric-nome-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; }
 .rc-nric-nome {
@@ -466,7 +554,7 @@
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
 }
-.rc-nric-attr-val { font-family: var(--font-rajdhani), sans-serif; font-size: 19px; font-weight: 700; line-height: 1; color: #BECDD6; text-align: center; }
+.rc-nric-attr-val { font-family: var(--font-rajdhani), sans-serif; font-size: 19px; font-weight: 700; line-height: 1; color: #d6e4f5; text-align: center; }
 
 /* Integridade — cabeçalho + trilha de segmentos com diagonais nas
    pontas (paths exatos do Figma), emendados com margem negativa de
@@ -478,8 +566,8 @@
   font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase;
   color: rgba(0, 212, 255, 0.72);
 }
-.rc-nric-integ-val { font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; font-weight: 700; color: #EAF7FF; }
-.rc-nric-integ-total { font-weight: 400; color: rgba(184, 216, 232, 0.60); }
+.rc-nric-integ-val { font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; font-weight: 700; color: #d6e4f5; }
+.rc-nric-integ-total { font-weight: 400; color: rgba(214, 228, 245, 0.60); }
 .rc-nric-pips { display: flex; width: 100%; }
 .rc-nric-pip { flex: 1; min-width: 0; height: 14px; padding: 0; border: none; background: none; cursor: pointer; }
 .rc-nric-pip:not(:first-child) { margin-left: -1px; }
@@ -492,22 +580,22 @@
   display: flex; flex-direction: column; align-items: center; width: 100%;
   padding: 16px; gap: 6px;
   border: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(16, 26, 38, 0.70);
+  background: rgba(17, 29, 49, 0.70);
 }
 .rc-nsob-head { display: flex; justify-content: space-between; align-items: baseline; align-self: stretch; }
 .rc-nsob-label {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: #F5A200;
+  font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: var(--am);
 }
-.rc-nsob-val { font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; font-weight: 700; color: #EAF7FF; }
-.rc-nsob-total { font-weight: 400; color: rgba(184, 216, 232, 0.60); }
+.rc-nsob-val { font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; font-weight: 700; color: #d6e4f5; }
+.rc-nsob-total { font-weight: 400; color: rgba(214, 228, 245, 0.60); }
 .rc-nsob-pips { display: flex; justify-content: center; align-items: flex-start; align-self: stretch; }
 .rc-nsob-pip { flex: 1; min-width: 0; height: 12px; padding: 0; border: none; background: none; cursor: pointer; }
 .rc-nsob-pip:not(:first-child) { margin-left: -10px; }
 .rc-nsob-pip svg { width: 100%; height: 100%; display: block; }
 .rc-nsob-pip:disabled { cursor: not-allowed; }
 .rc-nsob-pip svg path:first-child { transition: fill 0.14s; }
-.rc-nsob-pip:not(:disabled):hover svg path:first-child { fill: rgba(245, 162, 0, 0.28); }
+.rc-nsob-pip:not(:disabled):hover svg path:first-child { fill: color-mix(in srgb, var(--am) 28%, transparent); }
 .rc-nsob-pip:focus-visible { outline: 2px solid var(--am); outline-offset: 1px; }
 
 /* ── Card Deslocamento v2 (spec Figma) ───────────────────────────── */
@@ -515,14 +603,14 @@
   display: flex; justify-content: space-between; align-items: baseline; width: 100%;
   padding: 16px;
   border: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(16, 26, 38, 0.70);
+  background: rgba(17, 29, 49, 0.70);
 }
 .rc-ndesl-label {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: rgba(234, 247, 255, 0.88);
+  font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: rgba(214, 228, 245, 0.88);
 }
-.rc-ndesl-val { font-family: var(--font-mono), ui-monospace, monospace; font-size: 12px; font-weight: 700; color: #EAF7FF; }
-.rc-ndesl-correr { font-weight: 400; color: rgba(184, 216, 232, 0.55); }
+.rc-ndesl-val { font-family: var(--font-mono), ui-monospace, monospace; font-size: 12px; font-weight: 700; color: #d6e4f5; }
+.rc-ndesl-correr { font-weight: 400; color: rgba(214, 228, 245, 0.55); }
 
 /* ── Card PA & Reações v2 (spec Figma) — um card só, dois
    `Container PA` empilhados (a spec reaproveita o mesmo pro de
@@ -533,12 +621,12 @@
   display: flex; flex-direction: column; align-items: center; width: 100%;
   padding: 16px; gap: 16px;
   border: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(16, 26, 38, 0.70);
+  background: rgba(17, 29, 49, 0.70);
 }
 .rc-npr { display: flex; flex-direction: column; align-items: flex-start; width: 100%; gap: 6px; }
 .rc-npr-label {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: rgba(234, 247, 255, 0.88);
+  font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: rgba(214, 228, 245, 0.88);
 }
 .rc-npr-row { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 1px 0; }
 .rc-npr-pips { display: flex; align-items: flex-start; gap: 2px; flex-wrap: wrap; }
@@ -556,14 +644,14 @@
   display: flex; height: 28px; padding: 0 6px; justify-content: center; align-items: center; gap: 6px;
   align-self: stretch; width: 100%; margin-top: 6px;
   border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.08);
-  background: #0c1f2b;
+  background: #0c1420;
   font-family: var(--font-rajdhani), sans-serif;
   font-size: 13px; font-style: normal; font-weight: 600; line-height: 18px;
-  color: rgba(234, 247, 255, 0.80);
+  color: rgba(214, 228, 245, 0.80);
   cursor: pointer;
 }
 .rc-npr-defesa svg { width: 14px; height: 14px; flex-shrink: 0; }
-.rc-npr-defesa:hover { border-color: rgba(0, 212, 255, 0.3); color: #eaf7ff; }
+.rc-npr-defesa:hover { border-color: rgba(0, 212, 255, 0.3); color: #d6e4f5; }
 .rc-npr-defesa:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 .rc-npr-defesa:active { background: rgba(0, 212, 255, 0.08); }
 .rc-npr-defesa:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -576,15 +664,15 @@
    atributos. */
 .rc-diapip { display: block; }
 .rc-diapip path { transition: fill 0.12s, stroke 0.12s; }
-.rc-diapip[data-on="false"] path { fill: rgba(18, 49, 67, 0.30); stroke: #0C3D4E; }
+.rc-diapip[data-on="false"] path { fill: rgba(17, 29, 49, 0.30); stroke: #1c2b45; }
 .rc-diapip[data-on="true"] path { fill: rgba(4, 158, 192, 0.43); stroke: rgba(0, 212, 255, 0.18); }
-.rc-pip-btn:hover .rc-diapip[data-on="true"] path { fill: #32202A; stroke: rgba(121, 51, 65, 0.77); }
+.rc-pip-btn:hover .rc-diapip[data-on="true"] path { fill: #32202A; stroke: rgba(209, 80, 104, 0.77); }
 .rc-pip-btn:hover .rc-diapip[data-on="false"] path { fill: rgba(4, 158, 192, 0.25); stroke: rgba(0, 212, 255, 0.36); }
 .rc-pip-btn:disabled .rc-diapip { opacity: 0.5; }
 /* Prévia de TRILHA (vários pips de uma vez, não só o hovered — igual
    Integridade). Precisa vir DEPOIS das regras de `:hover` acima pra
    ganhar em empate de especificidade quando os dois se aplicam. */
-.rc-diapip[data-preview="empty"] path { fill: #32202A; stroke: rgba(121, 51, 65, 0.77); }
+.rc-diapip[data-preview="empty"] path { fill: #32202A; stroke: rgba(209, 80, 104, 0.77); }
 .rc-diapip[data-preview="fill"] path { fill: rgba(4, 158, 192, 0.25); stroke: rgba(0, 212, 255, 0.36); }
 /* Controle de valor PA/Reações — o "−" e o "+" ficam COLADOS nos
    cantos do box externo (sem padding nem gap separando), e a única
@@ -594,7 +682,7 @@
 .rc-npr-valor {
   display: flex; height: 24px; align-items: stretch;
   border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.14);
-  background: #0E2431;
+  background: #0c1420;
 }
 .rc-npr-btn {
   display: flex; padding: 0 6px; align-items: center; justify-content: center; flex: none;
@@ -612,15 +700,15 @@
   display: flex; flex: 1 0 auto; min-width: 35px; padding: 0 6px;
   flex-direction: column; justify-content: center; align-self: stretch;
   text-align: center; pointer-events: none;
-  background: #0C1B27;
+  background: #0c1420;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 11px; font-weight: 700; line-height: 16px; color: #EAF7FF;
+  font-size: 11px; font-weight: 700; line-height: 16px; color: #d6e4f5;
 }
 /* Valor e "/total" precisam ser UM único filho do `.rc-npr-num`: ele é
    flex-column, então dois filhos (o número e o `<span>` do total)
    viravam duas LINHAS empilhadas em vez de "1/3" na mesma linha. */
 .rc-npr-num-linha { white-space: nowrap; }
-.rc-npr-num-total { font-weight: 400; color: rgba(184, 216, 232, 0.60); }
+.rc-npr-num-total { font-weight: 400; color: rgba(214, 228, 245, 0.60); }
 
 /* ── Colapso + Recursos v2 (spec Figma) ──────────────────────────── */
 .rc-vitals-row { display: flex; gap: 8px; align-items: stretch; }
@@ -635,16 +723,16 @@
   border-top: 1px solid rgba(0, 212, 255, 0.14);
   border-right: 1px solid rgba(0, 212, 255, 0.14);
   border-left: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(24, 49, 67, 0.50);
+  background: rgba(17, 29, 49, 0.50);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase;
-  color: #FF5F74;
+  color: var(--rc-danger);
 }
 .rc-ncol-card {
   display: flex; flex-direction: column; justify-content: center; align-items: center;
   padding: 8px; gap: 12px; flex: 1 0 0; align-self: stretch; width: 100%; box-sizing: border-box;
   border: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(16, 26, 38, 0.70);
+  background: rgba(17, 29, 49, 0.70);
 }
 .rc-ncol-mid { display: flex; justify-content: center; align-items: center; gap: 8px; }
 .rc-ncol-pips { display: flex; align-items: flex-start; gap: 2px; }
@@ -659,27 +747,27 @@
    Dessacaturar a borda aqui não lia como hover — lia como desabilitado,
    que é o oposto do que o estado significa. */
 .rc-colpip { display: block; }
-.rc-colpip path { transition: fill 0.12s, stroke-opacity 0.12s; stroke: #FF5F74; stroke-opacity: 0.5; }
-.rc-colpip[data-on="false"] path { fill: rgba(255, 95, 116, 0.08); }
-.rc-colpip[data-on="true"] path { fill: rgba(255, 95, 116, 0.50); }
-.rc-ncol-pip:hover:not(:disabled) .rc-colpip path { fill: rgba(255, 95, 116, 0.30); stroke-opacity: 0.95; }
+.rc-colpip path { transition: fill 0.12s, stroke-opacity 0.12s; stroke: var(--rc-danger); stroke-opacity: 0.5; }
+.rc-colpip[data-on="false"] path { fill: rgba(209, 80, 104, 0.08); }
+.rc-colpip[data-on="true"] path { fill: rgba(209, 80, 104, 0.50); }
+.rc-ncol-pip:hover:not(:disabled) .rc-colpip path { fill: rgba(209, 80, 104, 0.30); stroke-opacity: 0.95; }
 .rc-ncol-morte {
   display: flex; padding: 4px; justify-content: center; align-items: center;
-  border: 1px solid rgba(255, 95, 116, 0.50);
-  background: rgba(255, 95, 116, 0.20);
+  border: 1px solid rgba(209, 80, 104, 0.50);
+  background: rgba(209, 80, 104, 0.20);
 }
 .rc-ncol-morte svg { width: 12px; height: 12px; display: block; }
 .rc-ncol-estabilizar {
   display: flex; height: 28px; padding: 0 6px; align-items: center; justify-content: center; gap: 6px;
   width: 100%;
   border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.08);
-  background: #0C1F2B;
+  background: #0c1420;
   font-family: var(--font-rajdhani), sans-serif;
-  font-size: 13px; font-weight: 600; line-height: 18px; color: rgba(234, 247, 255, 0.65);
+  font-size: 13px; font-weight: 600; line-height: 18px; color: rgba(214, 228, 245, 0.65);
   cursor: pointer;
 }
 .rc-ncol-estabilizar:disabled { opacity: 0.45; cursor: not-allowed; }
-.rc-ncol-estabilizar:not(:disabled):hover { border-color: rgba(0, 212, 255, 0.3); color: #eaf7ff; }
+.rc-ncol-estabilizar:not(:disabled):hover { border-color: rgba(0, 212, 255, 0.3); color: #d6e4f5; }
 .rc-ncol-estabilizar:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 
 /* Recursos — mesmo padrão em 3 camadas de Perícias (externo/box
@@ -691,7 +779,7 @@
   border-top: 1px solid rgba(0, 212, 255, 0.14);
   border-right: 1px solid rgba(0, 212, 255, 0.14);
   border-left: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(24, 49, 67, 0.50);
+  background: rgba(17, 29, 49, 0.50);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase;
   color: rgba(0, 212, 255, 0.72);
@@ -700,7 +788,7 @@
   display: flex; padding: 8px; flex-direction: column; justify-content: center; align-items: stretch;
   gap: 6px; width: 100%;
   border: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(16, 26, 38, 0.70);
+  background: rgba(17, 29, 49, 0.70);
 }
 .rc-nres-row { display: flex; align-items: flex-end; gap: 4px; }
 .rc-nres-badge {
@@ -729,7 +817,7 @@
   display: flex; width: 106px; height: 24px; padding: 0 4px;
   justify-content: space-between; align-items: center;
   border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.14);
-  background: #0E2431;
+  background: #0c1420;
 }
 /* Área da caixa dedicada a minus/valor/plus — width fixa pra poder
    dividir em duas metades clicáveis (mesma ideia do PA/Reações). */
@@ -751,7 +839,7 @@
   display: grid; place-items: center;
   border: none; background: none;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 11px; font-weight: 700; color: #EAF7FF;
+  font-size: 11px; font-weight: 700; color: #d6e4f5;
   cursor: pointer;
   box-sizing: border-box;
 }
@@ -787,23 +875,23 @@
   border-top: 1px solid rgba(0, 212, 255, 0.14);
   border-right: 1px solid rgba(0, 212, 255, 0.14);
   border-bottom: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(16, 26, 38, 0.70);
+  background: rgba(17, 29, 49, 0.70);
 }
 .rc-tabrail-group { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.rc-tabrail-divider { height: 1px; align-self: stretch; background: #0e3647; }
+.rc-tabrail-divider { height: 1px; align-self: stretch; background: #111d31; }
 .rc-tabrail-btn {
   position: relative;
   width: 36px; height: 36px; padding: 8.5px 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   border: 1px solid rgba(0, 212, 255, 0.15);
-  background: rgba(10, 20, 31, 0.70);
-  color: #728997;
+  background: rgba(12, 20, 32, 0.70);
+  color: #7f95b3;
   cursor: pointer;
   transition: color 0.14s, background 0.14s, border-color 0.14s;
 }
-.rc-tabrail-btn:hover { color: #d3f4ff; border-color: var(--rc-line); background: rgba(0, 212, 255, 0.09); }
+.rc-tabrail-btn:hover { color: #d6e4f5; border-color: var(--rc-line); background: rgba(0, 212, 255, 0.09); }
 .rc-tabrail-btn[aria-selected="true"] {
-  color: #eafcff; border-color: #108bac; background: #123640;
+  color: #d6e4f5; border-color: #108bac; background: #111d31;
   box-shadow: 0 0 9px rgba(0, 212, 255, 0.25);
 }
 .rc-tabrail-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
@@ -813,7 +901,7 @@
   border: 1px solid var(--rc-line);
   background: rgb(13, 20, 29);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10.5px; letter-spacing: 0.05em; color: #d3f4ff;
+  font-size: 10.5px; letter-spacing: 0.05em; color: #d6e4f5;
   opacity: 0; pointer-events: none; z-index: 5;
   transition: opacity 0.12s;
 }
@@ -827,7 +915,7 @@
    modificador aqui). */
 .rc-tabrail-btn--modo[aria-selected="true"] {
   border-left: 1px solid #108bac;
-  background: #123640;
+  background: #111d31;
   box-shadow: none;
 }
 
@@ -835,20 +923,20 @@
    se diferenciar das abas de conteúdo (spec "Aba Personagem"). Hover é
    um passo intermediário ENTRE default e active, não os mesmos tons. */
 .rc-tabrail-btn--personagem {
-  border: 1px solid #534228;
-  background: rgba(10, 20, 31, 0.70);
-  color: #906830;
+  border: 1px solid color-mix(in srgb, var(--am) 35%, #06121c);
+  background: rgba(12, 20, 32, 0.70);
+  color: color-mix(in srgb, var(--am) 70%, #06121c);
 }
 .rc-tabrail-btn--personagem:hover {
-  border-color: #6e5126;
-  background: rgba(136, 96, 36, 0.16);
-  color: #ae7930;
+  border-color: color-mix(in srgb, var(--am) 45%, #06121c);
+  background: rgba(207, 154, 62, 0.16);
+  color: var(--am);
 }
 .rc-tabrail-btn--personagem[aria-selected="true"] {
-  border-color: #886024;
-  background: rgba(136, 96, 36, 0.32);
-  box-shadow: 0 0 9px rgba(179, 124, 42, 0.25);
-  color: #cc8a2e;
+  border-color: color-mix(in srgb, var(--am) 60%, #06121c);
+  background: rgba(207, 154, 62, 0.32);
+  box-shadow: 0 0 9px rgba(207, 154, 62, 0.25);
+  color: var(--am);
 }
 
 .rc-tabpanel {
@@ -875,7 +963,7 @@
   border-top: 1px solid rgba(0, 212, 255, 0.14);
   border-right: 1px solid rgba(0, 212, 255, 0.14);
   border-left: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(24, 49, 67, 0.50);
+  background: rgba(17, 29, 49, 0.50);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 11px; font-weight: 500; letter-spacing: 1.6px; text-transform: uppercase;
   color: rgba(0, 212, 255, 0.72);
@@ -885,7 +973,7 @@
   position: relative;
   flex: 1 0 0; align-self: stretch; width: 100%; min-height: 0;
   border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(16, 26, 38, 0.70);
+  background: rgba(17, 29, 49, 0.70);
   box-sizing: border-box;
 }
 /* `.rc-tabpanel` (pai genérico da aba) já tem a SUA própria borda —
@@ -917,18 +1005,18 @@
   display: inline-flex; width: max-content; min-width: 154px; max-width: 220px;
   padding: 8px 10px; flex-direction: column; justify-content: center; align-items: flex-start; gap: 6px;
   border: 1px solid rgba(0, 212, 255, 0.12);
-  background: rgba(0, 18, 32, 0.50);
+  background: rgba(7, 13, 23, 0.50);
   box-sizing: border-box;
   transition: background 0.14s;
 }
 .rc-eq-box--pinned { position: absolute; z-index: 1; }
-.rc-eq-box:hover, .rc-eq-box[data-hover="true"] { background: rgba(0, 27, 47, 0.65); }
+.rc-eq-box:hover, .rc-eq-box[data-hover="true"] { background: rgba(7, 13, 23, 0.65); }
 .rc-eq-armas-stack {
   position: absolute; z-index: 1; right: 0;
   display: inline-flex; flex-direction: column; align-items: flex-end; gap: 10px;
 }
 .rc-eq-box-label {
-  color: rgba(234, 247, 255, 0.65);
+  color: rgba(214, 228, 245, 0.65);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
 }
@@ -938,7 +1026,7 @@
 .rc-eq-inner {
   display: flex; width: 100%; padding: 2px 4px 2px 2px; align-items: center; gap: 6px;
   border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.08);
-  background: rgba(12, 31, 43, 0.50);
+  background: rgba(12, 20, 32, 0.50);
   box-sizing: border-box;
   cursor: pointer; text-align: left;
   transition: border-color 0.14s, background 0.14s;
@@ -957,16 +1045,16 @@
 .rc-eq-ico svg { width: 18px; height: 18px; display: block; }
 .rc-eq-inner:hover .rc-eq-ico, .rc-eq-inner:focus-visible .rc-eq-ico { color: #039ABD; }
 .rc-eq-equipar-txt {
-  color: rgba(234, 247, 255, 0.65);
+  color: rgba(214, 228, 245, 0.65);
   font-family: var(--font-rajdhani), sans-serif; font-size: 13px; font-weight: 600; line-height: 18px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.rc-eq-inner:hover .rc-eq-equipar-txt, .rc-eq-inner:focus-visible .rc-eq-equipar-txt { color: rgba(234, 247, 255, 0.83); }
+.rc-eq-inner:hover .rc-eq-equipar-txt, .rc-eq-inner:focus-visible .rc-eq-equipar-txt { color: rgba(214, 228, 245, 0.83); }
 
 .rc-eq-corpo { min-width: 0; flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 .rc-eq-nome {
   background: none; border: none; padding: 0; cursor: pointer; text-align: left;
-  color: #EAF7FF;
+  color: #d6e4f5;
   font-family: var(--font-rajdhani), sans-serif; font-size: 13px; font-weight: 600; line-height: 18px;
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
@@ -974,53 +1062,53 @@
 .rc-eq-pips { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
 .rc-eq-pipbtn { width: 14px; height: 14px; padding: 0; border: none; background: none; cursor: pointer; }
 .rc-eq-valor {
-  color: rgba(234, 247, 255, 0.80);
+  color: rgba(214, 228, 245, 0.80);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 12px; font-weight: 500; line-height: 16px;
 }
 .rc-eq-dano {
-  color: rgba(184, 216, 232, 0.85);
+  color: rgba(214, 228, 245, 0.85);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 12px; font-style: normal; font-weight: 400; line-height: 16px;
 }
-.rc-eq-valor-total { font-weight: 400; color: rgba(184, 216, 232, 0.60); }
+.rc-eq-valor-total { font-weight: 400; color: rgba(214, 228, 245, 0.60); }
 
 /* Acesso rápido — mesma estrutura, paleta âmbar. */
 .rc-eq-quick-row { position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 12px; justify-content: center; z-index: 1; }
 .rc-eq-quick {
   display: flex; width: max-content; min-width: 154px; max-width: 220px; padding: 8px 10px; flex-direction: column; justify-content: center; align-items: flex-start; gap: 6px;
-  border: 1px solid rgba(169, 122, 48, 0.24);
+  border: 1px solid rgba(207, 154, 62, 0.24);
   background: rgba(230, 165, 46, 0.10);
   box-sizing: border-box;
   transition: border-color 0.14s, background 0.14s;
 }
-.rc-eq-quick:hover { border-color: rgba(169, 122, 48, 0.55); background: rgba(230, 165, 46, 0.13); }
+.rc-eq-quick:hover { border-color: color-mix(in srgb, var(--am) 55%, transparent); background: rgba(230, 165, 46, 0.13); }
 /* Card interno + ícone do Acesso rápido — MESMA estrutura/hover dos
    cards normais (o hover troca de cor no BOTÃO, não só no badge do
    ícone), só que na paleta âmbar — cada tom cyan tem seu par âmbar de
    mesmo "nível", reaproveitando cores já usadas na plataforma. */
 .rc-eq-quick-inner {
-  border-color: rgba(169, 122, 48, 0.17);
-  background: rgba(46, 44, 36, 0.50);
+  border-color: rgba(207, 154, 62, 0.17);
+  background: rgba(17, 29, 49, 0.50);
 }
 .rc-eq-quick-inner:hover, .rc-eq-quick-inner:focus-visible {
   /* Mesmo NÍVEL do hover do card normal (rgba(23,52,70,0.50) — um
      neutro escuro, quase sem saturação); a versão âmbar brilhante
      (rgba(230,165,46,...), usada só no CARD EXTERNO do acesso rápido)
      destoava demais aqui dentro. */
-  border-color: rgba(169, 122, 48, 0.8);
-  background: rgba(70, 52, 23, 0.50);
+  border-color: rgba(207, 154, 62, 0.8);
+  background: rgba(207, 154, 62, 0.50);
 }
-.rc-eq-ico--quick { background: rgba(228, 171, 39, 0.09); color: #A97A30; }
-.rc-eq-quick-inner:hover .rc-eq-ico--quick, .rc-eq-quick-inner:focus-visible .rc-eq-ico--quick { color: #C99138; }
+.rc-eq-ico--quick { background: rgba(228, 171, 39, 0.09); color: var(--am); }
+.rc-eq-quick-inner:hover .rc-eq-ico--quick, .rc-eq-quick-inner:focus-visible .rc-eq-ico--quick { color: var(--am); }
 
 /* ── Perícias v2 (spec Figma) ─────────────────────────────────────
    3 camadas: Card externo (wrapper, alinhado à esquerda) → Box título
    "PERÍCIAS" (borda só em cima/direita/esquerda — funde com o painel
    abaixo, sem borda inferior) → Card interno (painel com borda+fundo
    próprios) → grade de Card perícia.
-   Cor por atributo, não por perícia: verde=Corpo (#207834), roxo=Mente
-   (#6A49BC), cyan-petróleo=Ânimo (#0596B7 — cor PRÓPRIA, não o --cy
+   Cor por atributo, não por perícia: verde=Corpo (color-mix(in srgb, var(--rc-ok) 70%, #06121c)), roxo=Mente
+   (#816fd6), cyan-petróleo=Ânimo (#0596B7 — cor PRÓPRIA, não o --cy
    geral do resto do Console; correção depois de eu ter presumido
    errado da primeira vez). A cor mora no BADGE do ícone (borda+fundo
    próprios) e na tag — a borda do CARD em si é neutra, igual pros 3
@@ -1040,7 +1128,7 @@
   border-top: 1px solid rgba(0, 212, 255, 0.14);
   border-right: 1px solid rgba(0, 212, 255, 0.14);
   border-left: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(24, 49, 67, 0.5);
+  background: rgba(17, 29, 49, 0.5);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
   /* Mesmo cyan dos outros box de título (Recursos/Condições/Colapso) —
@@ -1060,7 +1148,7 @@
   padding: 16px;
   border-radius: 1px;
   border: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(16, 26, 38, 0.7);
+  background: rgba(17, 29, 49, 0.7);
 }
 /* Altura HUG, não FILL: cada card fica do tamanho do próprio conteúdo
    (`grid-auto-rows: auto`) — não estica pra preencher a altura
@@ -1084,11 +1172,11 @@
   /* Borda do CARD é neutra pros 3 atributos — a cor mora no badge do
      ícone e na tag, não aqui. */
   border: 1px solid rgba(0, 212, 255, 0.12);
-  background: rgba(0, 18, 32, 0.5);
+  background: rgba(7, 13, 23, 0.5);
   color: inherit;
   transition: border-color 0.14s, background 0.14s;
 }
-.rc-skill:hover { background: rgba(0, 18, 32, 0.85); border-color: var(--rc-skill-cor, rgba(0, 212, 255, 0.3)); }
+.rc-skill:hover { background: rgba(7, 13, 23, 0.85); border-color: var(--rc-skill-cor, rgba(0, 212, 255, 0.3)); }
 .rc-skill:focus-visible { outline: 2px solid var(--rc-skill-cor, var(--cy)); outline-offset: 1px; }
 .rc-skill[data-vazio="true"] { opacity: 0.28; pointer-events: none; cursor: default; }
 
@@ -1111,7 +1199,7 @@
 .rc-skill-nome {
   font-family: var(--font-rajdhani), "Rajdhani", sans-serif;
   font-size: 13px; font-weight: 600; line-height: 18px;
-  color: rgba(234, 247, 255, 0.8);
+  color: rgba(214, 228, 245, 0.8);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .rc-skill-tag {
@@ -1129,7 +1217,7 @@
   flex: none;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 12px; font-weight: 600; line-height: 16px;
-  color: rgba(234, 247, 255, 0.8);
+  color: rgba(214, 228, 245, 0.8);
 }
 
 /* Abaixo de 456px de largura do card de Perícias o badge do ícone não
@@ -1141,24 +1229,24 @@
   .rc-skill { padding-left: 10px; }
 }
 
-/* Corpo: só a cor do ícone foi especificada (fill #207834) — o
+/* Corpo: só a cor do ícone foi especificada (fill color-mix(in srgb, var(--rc-ok) 70%, #06121c)) — o
    badge (borda+fundo) segue o MESMO padrão estrutural de Mente/Ânimo
    por consistência, com o verde no lugar do roxo/petróleo. Sinalizado
    porque não veio explícito como os outros dois. */
 .rc-skill[data-attr="corpo"] {
-  --rc-skill-cor: #207834;
-  --rc-skill-ico-border: rgba(32, 120, 52, 0.55);
-  --rc-skill-ico-bg: #13241a;
+  --rc-skill-cor: color-mix(in srgb, var(--rc-ok) 70%, #06121c);
+  --rc-skill-ico-border: rgba(79, 174, 130, 0.55);
+  --rc-skill-ico-bg: color-mix(in srgb, var(--rc-ok) 18%, #0c1420);
 }
 .rc-skill[data-attr="mente"] {
-  --rc-skill-cor: #6a49bc;
+  --rc-skill-cor: #816fd6;
   --rc-skill-ico-border: rgba(106, 74, 189, 0.55);
-  --rc-skill-ico-bg: #1b2339;
+  --rc-skill-ico-bg: #111d31;
 }
 .rc-skill[data-attr="animo"] {
   --rc-skill-cor: #0596b7;
   --rc-skill-ico-border: rgba(0, 212, 255, 0.14);
-  --rc-skill-ico-bg: #0e2431;
+  --rc-skill-ico-bg: #0c1420;
 }
 
 /* ── Pins / Espaço livre v2 (spec Figma para o slot vazio; slot
@@ -1170,7 +1258,7 @@
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
   padding: 16px; width: 100%; cursor: pointer;
   border: 1px dashed rgba(0, 212, 255, 0.14);
-  background: rgba(16, 26, 38, 0.70);
+  background: rgba(17, 29, 49, 0.70);
   color: inherit;
   transition: border-color 0.14s, background 0.14s;
 }
@@ -1180,21 +1268,21 @@
    invertendo a hierarquia visual. */
 .rc-pin:hover { border-color: rgba(0, 212, 255, 0.42); }
 .rc-pin:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
-.rc-pin-nome { font-size: 12px; font-weight: 600; color: #d3f4ff; text-align: center; }
+.rc-pin-nome { font-size: 12px; font-weight: 600; color: #d6e4f5; text-align: center; }
 .rc-pin-sub {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--rc-dim);
 }
 .rc-pin-empty-txt {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 12px; font-weight: 400; text-transform: uppercase; color: rgba(184, 216, 232, 0.70);
+  font-size: 12px; font-weight: 400; text-transform: uppercase; color: rgba(214, 228, 245, 0.70);
 }
 .rc-pin-x {
   position: absolute; top: 3px; right: 3px; cursor: pointer;
   display: grid; place-items: center; width: 20px; height: 20px;
-  border: none; background: transparent; color: rgba(184, 216, 232, 0.5);
+  border: none; background: transparent; color: rgba(214, 228, 245, 0.5);
 }
-.rc-pin-x:hover { color: #ffc4cf; }
+.rc-pin-x:hover { color: color-mix(in srgb, var(--rc-danger) 45%, #fff); }
 .rc-pin-x:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 
 /* ── Condições v2 (spec Figma) — mesmo padrão em 3 camadas de
@@ -1206,7 +1294,7 @@
   border-top: 1px solid rgba(0, 212, 255, 0.14);
   border-right: 1px solid rgba(0, 212, 255, 0.14);
   border-left: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(24, 49, 67, 0.50);
+  background: rgba(17, 29, 49, 0.50);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase;
   color: rgba(0, 212, 255, 0.72);
@@ -1215,37 +1303,37 @@
   display: flex; padding: 16px; align-items: flex-start; align-content: flex-start; gap: 6px;
   flex-wrap: wrap; width: 100%;
   border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(16, 26, 38, 0.70);
+  background: rgba(17, 29, 49, 0.70);
 }
 .rc-ncond-tag {
   display: inline-flex; height: 28px; padding: 0 6px; align-items: center; gap: 6px;
-  border: 1px solid rgba(255, 95, 116, 0.50);
-  background: rgba(255, 95, 116, 0.08);
+  border: 1px solid rgba(209, 80, 104, 0.50);
+  background: rgba(209, 80, 104, 0.08);
 }
 .rc-ncond-abrir {
-  background: none; border: none; color: #F9899C; font: inherit; padding: 0; cursor: pointer;
+  background: none; border: none; color: color-mix(in srgb, var(--rc-danger) 75%, #fff); font: inherit; padding: 0; cursor: pointer;
   font-family: var(--font-rajdhani), sans-serif; font-size: 13px; font-weight: 600; line-height: 18px;
 }
 .rc-ncond-abrir:hover { text-decoration: underline; }
 .rc-ncond-abrir:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 .rc-ncond-x {
   display: grid; place-items: center; width: 14px; height: 14px; cursor: pointer;
-  border: none; background: transparent; color: #8F3F4F;
+  border: none; background: transparent; color: color-mix(in srgb, var(--rc-danger) 70%, #06121c);
 }
-.rc-ncond-x:hover { color: #F9899C; }
+.rc-ncond-x:hover { color: color-mix(in srgb, var(--rc-danger) 75%, #fff); }
 .rc-ncond-x:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 .rc-ncond-add {
   display: inline-flex; height: 28px; padding: 0 6px; align-items: center; gap: 6px;
   border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.08);
-  background: #0C1F2B;
+  background: #0c1420;
   font-family: var(--font-rajdhani), sans-serif; font-size: 13px; font-weight: 600; line-height: 18px;
-  color: rgba(234, 247, 255, 0.65); cursor: pointer;
+  color: rgba(214, 228, 245, 0.65); cursor: pointer;
 }
-.rc-ncond-add:hover { border-color: rgba(0, 212, 255, 0.3); color: #eaf7ff; }
+.rc-ncond-add:hover { border-color: rgba(0, 212, 255, 0.3); color: #d6e4f5; }
 .rc-ncond-add:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 .rc-ncond-vazio {
   flex: 1 0 0; align-self: stretch; margin: 0; display: flex; align-items: center;
-  color: rgba(184, 216, 232, 0.70);
+  color: rgba(214, 228, 245, 0.70);
   font-family: var(--font-rajdhani), sans-serif; font-size: 14px; font-weight: 500;
 }
 .rc-vazio { font-size: 12px; color: var(--rc-dim); line-height: 1.5; }
@@ -1259,7 +1347,7 @@
   font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(0, 212, 255, 0.85);
   transition: background 0.14s, border-color 0.14s, color 0.14s;
 }
-.rc-ghost:hover:not(:disabled) { background: rgba(0, 212, 255, 0.14); border-color: var(--cy); color: #eafcff; }
+.rc-ghost:hover:not(:disabled) { background: rgba(0, 212, 255, 0.14); border-color: var(--cy); color: #d6e4f5; }
 .rc-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
 .rc-ghost:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 
@@ -1272,9 +1360,9 @@
   display: flex; align-items: center; gap: 14px;
   padding: 10px 12px 10px 12px;
   border: 1px solid var(--rc-line);
-  background: rgba(11, 18, 27, 0.97);
+  background: rgba(12, 20, 32, 0.97);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-  color: #b8d8e8;
+  color: #d6e4f5;
   font-family: var(--font-rajdhani), sans-serif;
   clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
   animation: rc-dock-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -1287,13 +1375,13 @@
 }
 .rc-dock-av img { width: 100%; height: 100%; object-fit: cover; }
 .rc-dock-info { display: flex; flex-direction: column; gap: 5px; }
-.rc-dock-nome { font-size: 13px; font-weight: 600; color: #d3f4ff; line-height: 1; }
+.rc-dock-nome { font-size: 13px; font-weight: 600; color: #d6e4f5; line-height: 1; }
 .rc-dock-res { display: flex; flex-direction: column; gap: 3px; }
 .rc-dock-row { display: flex; align-items: center; gap: 6px; }
 .rc-dock-tag {
   flex: none; width: 30px;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.04em; color: rgba(200, 228, 242, 0.85);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.04em; color: rgba(214, 228, 245, 0.85);
 }
 .rc-dock-bar {
   position: relative; width: 76px; height: 8px;
@@ -1307,12 +1395,12 @@
   border: 1px solid var(--rc-line-soft);
   background: rgba(0, 212, 255, 0.06);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; font-weight: 600; color: #eafcff;
+  font-size: 10px; font-weight: 600; color: #d6e4f5;
   cursor: pointer; box-sizing: border-box;
 }
 .rc-dock-val:hover { border-color: var(--cy); }
 .rc-dock-val:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
-.rc-dock-val[data-invalido="true"] { border-color: var(--rc-danger); color: #ffc4cf; }
+.rc-dock-val[data-invalido="true"] { border-color: var(--rc-danger); color: color-mix(in srgb, var(--rc-danger) 45%, #fff); }
 .rc-dock-input {
   width: 100%; height: 100%; min-width: 0; padding: 0 3px;
   border: none; background: transparent; text-align: center;
@@ -1331,7 +1419,7 @@
   width: 460px; max-width: 100%; max-height: 80vh; overflow: auto;
   border: 1px solid var(--rc-line, rgba(0, 212, 255, 0.3));
   background: rgb(13, 20, 29);
-  color: #b8d8e8;
+  color: #d6e4f5;
   font-family: var(--font-rajdhani), sans-serif;
   padding: 18px 20px;
   clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
@@ -1339,7 +1427,7 @@
 .rc-aux h2 {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
-  color: #d3f4ff; margin: 0 0 12px;
+  color: #d6e4f5; margin: 0 0 12px;
 }
 .rc-aux-lista { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
 .rc-aux-item {
@@ -1355,12 +1443,12 @@
 .rc-aux-dado {
   width: 30px; height: 30px; display: grid; place-items: center;
   border: 1px solid rgba(0, 212, 255, 0.35);
-  font-family: var(--font-mono), ui-monospace, monospace; font-size: 12px; color: #b8d8e8;
+  font-family: var(--font-mono), ui-monospace, monospace; font-size: 12px; color: #d6e4f5;
 }
-.rc-aux-dado[data-maior="true"] { border-color: var(--cy, #00d4ff); background: #123640; color: #eafcff; font-weight: 700; }
+.rc-aux-dado[data-maior="true"] { border-color: var(--cy, #00d4ff); background: #111d31; color: #d6e4f5; font-weight: 700; }
 .rc-aux-total {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 20px; font-weight: 700; color: #eafcff;
+  font-size: 20px; font-weight: 700; color: #d6e4f5;
 }
 
 /* Aviso de defesa sem Reação (penalidade cumulativa) — mesma paleta
@@ -1370,13 +1458,13 @@
 .rc-aux-defesa-aviso {
   display: flex; align-items: flex-start; gap: 8px;
   padding: 8px 10px; margin-bottom: 10px;
-  border: 1px solid rgba(245, 162, 0, 0.35);
-  background: rgba(245, 162, 0, 0.08);
+  border: 1px solid rgba(207, 154, 62, 0.35);
+  background: color-mix(in srgb, var(--am) 8%, transparent);
   border-radius: 1px;
   font-size: 12px; line-height: 16px; color: rgba(238, 203, 143, 0.92);
 }
-.rc-aux-defesa-aviso svg { flex-shrink: 0; margin-top: 1px; color: var(--am, #f5a200); }
-.rc-aux-defesa-aviso strong { color: #f5a200; }
+.rc-aux-defesa-aviso svg { flex-shrink: 0; margin-top: 1px; color: var(--am, var(--am)); }
+.rc-aux-defesa-aviso strong { color: var(--am); }
 
 /* ── FichaHeader (/ficha) ──────────────────────────────────────────
    Cabeçalho que envolve o Console por FORA (ver docblock de
@@ -1402,9 +1490,9 @@
   position: fixed; top: 0; left: 0; right: 0; z-index: 510;
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; padding: 10px 20px; flex-wrap: wrap;
-  background: #0f1014;
-  border-bottom: 1px solid #2a2b32;
-  color: #e8e8ec;
+  background: #060a12;
+  border-bottom: 1px solid #1c2b45;
+  color: #d6e4f5;
 }
 .rc-fichaheader-crumbs { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .rc-fichaheader-voltar { color: #5ec8ff; font-size: 12px; text-decoration: none; white-space: nowrap; }
@@ -1417,12 +1505,12 @@
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px;
 }
-.rc-fichaheader-badge--narrator { background: #3a2a1a; border: 1px solid #6a4a2a; color: #e0b95c; }
-.rc-fichaheader-badge--player { background: #1a2a3a; border: 1px solid #2a4a6a; color: #5ec8ff; }
+.rc-fichaheader-badge--narrator { background: color-mix(in srgb, var(--am) 20%, #0c1420); border: 1px solid color-mix(in srgb, var(--am) 45%, #06121c); color: color-mix(in srgb, var(--am) 75%, #fff); }
+.rc-fichaheader-badge--player { background: #111d31; border: 1px solid #1c2b45; color: #5ec8ff; }
 .rc-fichaheader-seletor { display: flex; align-items: center; gap: 6px; font-size: 12px; }
 .rc-fichaheader-seletor-rotulo { opacity: 0.6; }
 .rc-fichaheader-select {
-  background: #1d1e24; color: inherit;
+  background: #0c1420; color: inherit;
   border: 1px solid #333; border-radius: 6px;
   padding: 6px 10px; font-size: 13px; max-width: 220px;
 }

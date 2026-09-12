@@ -10,6 +10,10 @@
 import { useState, type ReactNode } from "react";
 import { TriangleAlert } from "lucide-react";
 import type { RupturaRollResult } from "../../../../lib/dice/types";
+import {
+  ACCENTS, BODY, DISPLAY, DadosRolados, FaixaResultado, GroupLabel, INK, INK_FAINT, Leitura, MONO,
+  MolduraRolagem, RESULTS, Stack, type ResultKey,
+} from "../../../mesas/[campaignId]/vtt/_dados3d/ResultadoRolagem";
 import type { InventoryItemInstance, ItemContent } from "../../../../lib/character";
 import { BODY_SLOT_LABELS, type BodySlotId } from "../slots";
 
@@ -30,24 +34,84 @@ function Aux({ titulo, onFechar, children }: { titulo: string; onFechar: () => v
 }
 
 /**
- * Resultado de rolagem — mostra atributo, quantidade de dados e
- * resultados. `defesa`, quando informado (só rolagens vindas de
- * "Rolar defesa"), mostra um aviso pra explicar de onde veio o
- * modificador negativo — regra "Reação": defender sem Reação disponível
- * ainda é permitido, mas cada defesa nessas condições na MESMA rodada
- * soma -1 cumulativo.
+ * RESULTADO DE ROLAGEM — a ferramenta "Rolar Dados", em versão de
+ * leitura.
+ *
+ * Antes era uma lista de números em texto corrido. Agora é o MESMO
+ * corpo da ferramenta flutuante do VTT (`_dados3d/RoladorDados`), pelas
+ * mesmas peças (`_dados3d/ResultadoRolagem`): a fileira de d8 com o
+ * maior aceso e a faixa de resultado com a classificação de margem.
+ * Vale pra TODA rolagem do Console — atributo, perícia e as quatro
+ * defesas passam por aqui.
+ *
+ * O que da ferramenta NÃO veio junto, e por quê:
+ *
+ *  · "Rolando como" — a ferramenta pergunta por qual personagem rolar
+ *    porque quem a abre pode controlar vários. O Console JÁ É um
+ *    personagem: a identidade não é escolha, é o contexto.
+ *  · Abas "Atributo & Perícia" / "Livre" — o que vai ser rolado foi
+ *    decidido pelo clique que abriu isto. Uma bandeja livre aqui seria
+ *    uma segunda rolagem, não a leitura desta.
+ *  · Os dois `Select` (atributo, perícia) e o `Stepper` de
+ *    modificadores viram LEITURA. A rolagem já aconteceu — com
+ *    talentos, condições e a penalidade de Reação já aplicados por
+ *    `rollPericia`/`applyConsoleMutation`. Um controle editável aqui
+ *    prometeria refazer a conta e não refaria.
+ *  · "Definir CD" — mesma razão; a CD aparece na faixa quando a
+ *    rolagem teve uma, e vira "sem CD definida" quando não teve.
+ *  · Seletor de visibilidade (Mesa/Privada/Narrador) — a rolagem do
+ *    Console é publicada como `public`, com origem "Console do
+ *    Personagem", ANTES deste modal abrir. Oferecer a escolha depois
+ *    seria oferecer algo que já não dá pra mudar.
+ *  · Botão "Rolar"/"Rolar de novo" — a ferramenta rola; isto RELATA.
+ *    Um botão de rolar aqui gravaria uma segunda linha em `table_logs`
+ *    sem que ninguém tivesse pedido um segundo teste.
+ *  · Dados 3D no palco — o Console também roda fora do VTT (`/ficha`,
+ *    harness da ficha), onde não existe mesa pra jogar dado em cima. As
+ *    faces chatas (`PolyDie`) são as mesmas que a ferramenta usa
+ *    depois que os dados param.
+ *
+ * E o que é do Console e a ferramenta não tinha: o aviso de defesa sem
+ * Reação, o talento que promoveu a margem e os dados de gatilho.
  */
 export function RollResultModal({
   resultado,
   defesa,
+  personagem,
   onFechar,
 }: {
   resultado: RupturaRollResult;
   defesa?: { usouReacao: boolean; penalidade: number; defesasSemReacao: number };
+  /** Nome de quem rolou — ocupa o lugar que a ferramenta dá à ficha escolhida. */
+  personagem?: string | null;
   onFechar: () => void;
 }) {
+  const nd8 = resultado.atributoValor;
+  const natureza = defesa
+    ? "Defesa"
+    : resultado.periciaNome
+      ? "Teste de perícia"
+      : "Teste de atributo";
+  // Dados de gatilho (Pistoleiro) já vêm somados em `dados`/`maiorDado`;
+  // aqui é só dizer QUAIS foram, senão a fileira mostra um dado a mais
+  // que o atributo permite sem explicar de onde saiu.
+  const gatilho = resultado.dadosGatilhoResultados?.length
+    ? resultado.dadosGatilhoResultados
+    : resultado.dadoGatilhoResultado != null
+      ? [resultado.dadoGatilhoResultado]
+      : [];
+
   return (
-    <Aux titulo="Rolagem" onFechar={onFechar}>
+    <div style={CAMADA_ROLAGEM}>
+      <div style={{ pointerEvents: "auto" }}>
+      <MolduraRolagem
+        indice="01"
+        codigo="Rolagem"
+        titulo="Rolar Dados"
+        modo="d8 · maior dado + perícia + modificadores"
+        aoFechar={onFechar}
+        rotuloFechar="Fechar rolagem"
+      >
       {defesa && !defesa.usouReacao && (
         <div className="rc-aux-defesa-aviso" role="status">
           <TriangleAlert size={15} aria-hidden="true" />
@@ -57,33 +121,96 @@ export function RollResultModal({
           </span>
         </div>
       )}
-      <p className="rc-vazio" style={{ marginBottom: 8 }}>
-        {resultado.periciaNome ? `${resultado.periciaNome} · ` : ""}
-        {resultado.atributoNome} — {resultado.atributoValor}d8
-      </p>
-      <div className="rc-aux-dados" data-testid="console-roll-dados">
-        {resultado.dados.map((d, i) => (
-          <span key={i} className="rc-aux-dado" data-maior={d === resultado.maiorDado}>
-            {d}
-          </span>
-        ))}
+
+      <Stack gap={16}>
+        <div>
+          <GroupLabel
+            right={personagem ? (
+              <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: INK_FAINT }}>
+                {personagem}
+              </span>
+            ) : undefined}
+          >
+            {natureza}
+          </GroupLabel>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Leitura label="Atributo · nº d8">{resultado.atributoNome} · {nd8}d8</Leitura>
+            <Leitura label="Perícia · bônus">
+              {resultado.periciaNome ? `${resultado.periciaNome} · +${resultado.periciaValor}` : "Sem perícia"}
+            </Leitura>
+          </div>
+          <div style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <span style={{ fontFamily: DISPLAY, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.16em", color: INK_FAINT }}>
+              Modificadores
+            </span>
+            <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: resultado.modificador === 0 ? INK_FAINT : INK }}>
+              {resultado.modificador >= 0 ? `+${resultado.modificador}` : String(resultado.modificador)}
+            </span>
+          </div>
+        </div>
+
+        <div style={{ borderRadius: 2, padding: 14, background: "#0c1420", border: "1px solid #16233a" }}>
+          <div style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.14em", color: INK_FAINT }}>
+              Pool · <span style={{ color: "#35c7d8" }}>{nd8}d8</span> · maior dado
+            </span>
+            <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: INK_FAINT }}>
+              {resultado.cd == null ? "sem CD definida" : `cd ${resultado.cd}`}
+            </span>
+          </div>
+          <div data-testid="console-roll-dados">
+            <DadosRolados
+              dados={resultado.dados}
+              maiorDado={resultado.maiorDado}
+              size={40}
+              landed
+              acento={resultado.classificacaoMargem ? RESULTS[resultado.classificacaoMargem as ResultKey].accent : undefined}
+            />
+          </div>
+          <div style={{ marginTop: 14 }}>
+            <FaixaResultado
+              testIdTotal="console-roll-total"
+              r={{
+                maiorDado: resultado.maiorDado,
+                pericia: resultado.periciaNome ?? null,
+                periciaValor: resultado.periciaValor,
+                modificador: resultado.modificador,
+                total: resultado.total,
+                cd: resultado.cd ?? null,
+                classificacao: resultado.classificacaoMargem ?? null,
+              }}
+              nota={resultado.promocaoAplicada ? (
+                <div style={{ marginTop: 4, fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em", color: ACCENTS.arcane.hex }}>
+                  margem promovida por {resultado.promocaoAplicada}
+                </div>
+              ) : undefined}
+            />
+          </div>
+          {gatilho.length > 0 && (
+            <p style={{ margin: "10px 0 0", fontFamily: BODY, fontSize: 11.5, lineHeight: 1.5, color: INK_FAINT }}>
+              Dado de gatilho: {gatilho.join(", ")}
+              {resultado.dadoGatilhoEscolhido ? " — foi o maior dado da rolagem." : " — já incluído no pool acima."}
+            </p>
+          )}
+        </div>
+      </Stack>
+
+      </MolduraRolagem>
       </div>
-      <p className="rc-vazio">
-        maior dado {resultado.maiorDado}
-        {resultado.periciaValor ? ` + perícia ${resultado.periciaValor}` : ""}
-        {resultado.modificador ? ` + mod ${resultado.modificador}` : ""}
-      </p>
-      <p className="rc-aux-total" data-testid="console-roll-total">
-        {resultado.total}
-      </p>
-      <div className="rc-aux-acoes">
-        <button type="button" className="rc-ghost" onClick={onFechar}>
-          Fechar
-        </button>
-      </div>
-    </Aux>
+    </div>
   );
 }
+
+/**
+ * Mesma camada sem backdrop do painel de rolagem do Console (ver
+ * `PainelRolagem`): a janela flutua, o mapa atrás continua clicável, e
+ * fechar é pelo X.
+ */
+const CAMADA_ROLAGEM: React.CSSProperties = {
+  position: "fixed", inset: 0, zIndex: 520,
+  pointerEvents: "none",
+  display: "grid", placeItems: "center", padding: 24,
+};
 
 /** Seleção de surto de Sobrecarga — os rótulos vêm das regras publicadas. */
 export function SurgePickerModal({

@@ -27,13 +27,20 @@ export const CONSOLE_RESOURCE_DEFINITIONS: { id: RecursoEditavel; rotulo: string
 ];
 
 /**
- * Célula da trilha de recurso — SEMPRE a peça "Meio" do prompt (as
- * diagonais dos dois lados são simétricas), repetida para todas as
- * células. Usar peças diferentes por posição (Primeiro/Meio/Último,
- * cada uma com um recorte de largura distinta) fazia o "entalhe"
- * entre as células crescer da esquerda pra direita — a peça do meio
- * tem o mesmo entalhe nos dois lados, então repetí-la dá o gap
- * uniforme correto em qualquer célula.
+ * Célula da trilha de recurso.
+ *
+ * Três peças, e não uma: a do MEIO tem diagonal dos dois lados, a
+ * PRIMEIRA fecha reto à esquerda e a ÚLTIMA fecha reto à direita — é
+ * assim que a trilha tem início e fim em vez de parecer cortada no
+ * meio de um corte diagonal.
+ *
+ * A tentativa anterior de fazer isso deu errado por um motivo que
+ * continua valendo e que estas peças respeitam: o ENTALHE entre
+ * células tem que ser o mesmo em todas. Por isso as três compartilham
+ * exatamente a mesma geometria interna (mesmo `viewBox`, mesma
+ * diagonal, mesmos raios de canto) e só trocam a aresta EXTERNA por
+ * uma vertical. Nenhuma delas muda de largura, então o `margin-left`
+ * negativo que encaixa uma na outra continua igual pra todas.
  *
  * Cada célula tem DUAS camadas empilhadas (vazado embaixo, cheio em
  * cima) — a de cima é recortada com `clip-path: inset()` na fração
@@ -42,14 +49,29 @@ export const CONSOLE_RESOURCE_DEFINITIONS: { id: RecursoEditavel; rotulo: string
  * real), então o efeito é um recorte gradual (some devagar) e não uma
  * distorção da forma nem um "pulo" a cada 1/4 da trilha.
  */
-const BAR_D =
+/** Meio: diagonal dos dois lados (a peça original). */
+const BAR_MEIO =
   "M0.284709 1.69673C-0.331128 1.06268 0.118147 0 1.00204 0H35.6937C35.964 0 36.2228 0.109398 36.4111 0.303271L42.2387 6.30327C42.8546 6.93732 42.4053 8 41.5214 8H6.8297C6.55943 8 6.30067 7.8906 6.11236 7.69673L0.284709 1.69673Z";
+/** Primeira: aresta esquerda VERTICAL, direita igual à do meio. */
+const BAR_PRIMEIRA =
+  "M1.00204 0H35.6937C35.964 0 36.2228 0.109398 36.4111 0.303271L42.2387 6.30327C42.8546 6.93732 42.4053 8 41.5214 8H1.00204C0.448624 8 0 7.55138 0 6.99796V1.00204C0 0.448624 0.448624 0 1.00204 0Z";
+/** Última: esquerda igual à do meio, aresta direita VERTICAL. */
+const BAR_ULTIMA =
+  "M0.284709 1.69673C-0.331128 1.06268 0.118147 0 1.00204 0H41.2367C41.7901 0 42.2387 0.448624 42.2387 1.00204V6.99796C42.2387 7.55138 41.7901 8 41.2367 8H6.8297C6.55943 8 6.30067 7.8906 6.11236 7.69673L0.284709 1.69673Z";
 
-function BarCell({ localPct, cheioColor, vazadoRgb }: { localPct: number; cheioColor: string; vazadoRgb: string }) {
+/** A peça de cada posição da trilha. Uma célula só (trilha de 1) fecha dos dois lados. */
+function pecaDaPosicao(i: number, total: number): string {
+  if (total === 1) return BAR_PRIMEIRA;
+  if (i === 0) return BAR_PRIMEIRA;
+  if (i === total - 1) return BAR_ULTIMA;
+  return BAR_MEIO;
+}
+
+function BarCell({ d, localPct, cheioColor, vazadoRgb }: { d: string; localPct: number; cheioColor: string; vazadoRgb: string }) {
   return (
     <div className="rc-nres-cell">
       <svg viewBox="0 0 44 8" preserveAspectRatio="none" aria-hidden="true">
-        <path d={BAR_D} fill={`rgba(${vazadoRgb}, 0.08)`} stroke={`rgba(${vazadoRgb}, 0.20)`} strokeWidth="0.5" />
+        <path d={d} fill={`rgba(${vazadoRgb}, 0.08)`} stroke={`rgba(${vazadoRgb}, 0.20)`} strokeWidth="0.5" />
       </svg>
       <svg
         viewBox="0 0 44 8"
@@ -57,7 +79,7 @@ function BarCell({ localPct, cheioColor, vazadoRgb }: { localPct: number; cheioC
         aria-hidden="true"
         style={{ clipPath: `inset(0 ${100 - localPct}% 0 0)` }}
       >
-        <path d={BAR_D} fill={cheioColor} />
+        <path d={d} fill={cheioColor} />
       </svg>
     </div>
   );
@@ -131,9 +153,17 @@ export function ResourceControls({
               aria-valuemin={0}
               aria-valuemax={max}
             >
-              {[0, 1, 2, 3].map((i) => {
+              {[0, 1, 2, 3].map((i, _j, arr) => {
                 const localPct = Math.max(0, Math.min(100, (pct - i * 25) * 4));
-                return <BarCell key={i} localPct={localPct} cheioColor={corBarra} vazadoRgb={corVazado} />;
+                return (
+                  <BarCell
+                    key={i}
+                    d={pecaDaPosicao(i, arr.length)}
+                    localPct={localPct}
+                    cheioColor={corBarra}
+                    vazadoRgb={corVazado}
+                  />
+                );
               })}
             </div>
             <div className="rc-nres-adj">

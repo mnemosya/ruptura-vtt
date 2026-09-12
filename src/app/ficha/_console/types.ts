@@ -20,9 +20,19 @@ import type {
   ItemContent,
 } from "../../../lib/character";
 import type { RupturaRollResult } from "../../../lib/dice/types";
+import type { TableLogVisibility } from "../../../lib/table";
 import type { BodySlotId } from "./slots";
 
 export type RecursoEditavel = "pv" | "pe" | "mana";
+
+/**
+ * Modo da ficha. `jogo` é a sessão (nada permanente muda por acidente);
+ * `evolucao` destrava as alterações permanentes — atributos, perícias,
+ * talentos, vertentes — que já passam por `logPermanentAdjustment` e
+ * pelo `table_logs`. É o MESMO `SheetMode` de `ModeToggle.tsx`; o
+ * Console só ganhou uma porta pra ele.
+ */
+export type ConsoleModo = "jogo" | "evolucao";
 
 export interface ConsoleApi {
   /** Estado atual do personagem (fonte única — vem do client). */
@@ -46,6 +56,42 @@ export interface ConsoleApi {
    * cumulativa (`-1`, `-2`...) já aplicada como modificador da rolagem.
    */
   rolarDefesa: (periciaId: string) => ConsoleDefenseRollResult;
+
+  /**
+   * Mesa a que esta ficha está ligada. `null` na ficha solta (harness,
+   * personagem ainda não salvo): sem mesa não há o que publicar, e o
+   * painel de rolagem esconde a escolha de quem enxerga.
+   */
+  mesa: { campaignId: string; characterId: string } | null;
+
+  /** Atributo primário de uma perícia (com o fallback de sempre: Corpo). */
+  atributoDaPericia: (periciaId: string) => keyof CharacterAttributes;
+  /**
+   * Declara a defesa e GASTA a Reação, sem rolar — a rolagem vem depois,
+   * quando a pessoa apertar o botão no painel. Devolve a penalidade
+   * cumulativa (se houver) pra entrar como modificador daquela rolagem.
+   */
+  prepararDefesa: () => { usouReacao: boolean; penalidade: number; defesasSemReacao: number };
+  /**
+   * A rolagem do painel: atributo, perícia, modificador e CD como
+   * configurados, com as faces vindas dos dados 3D em `dados` (ausente
+   * = sorteia internamente). Registra no log e publica na mesa com a
+   * visibilidade escolhida.
+   */
+  rolarTeste: (p: {
+    atributoId: keyof CharacterAttributes;
+    periciaId: string | null;
+    modificador: number;
+    cd: number | null;
+    dados?: number[];
+    visibilidade: TableLogVisibility;
+    /**
+     * O que a pessoa QUIS rolar, quando isso não é a própria perícia:
+     * "Aparar" usa Luta, "Esquivar" usa Reflexos. Sem isto o feed
+     * mostra a perícia e a intenção se perde.
+     */
+    intencao?: { tipo: string; nome: string } | null;
+  }) => RupturaRollResult;
 
   /** Grava PV/PE/Mana — passa por `updateRecursoAtual` (cura automática + colapso). */
   editarRecurso: (id: RecursoEditavel, valor: number) => void;
@@ -79,6 +125,21 @@ export interface ConsoleApi {
   removerCondicao: (id: string) => void;
   /** Condições publicadas na Biblioteca, para o seletor. */
   condicoesDisponiveis: { slug: string; nome: string; descricao_curta?: string }[];
+
+  /** Modo atual da ficha — o Console só LÊ e alterna; a regra de quem pode editar continua no client. */
+  modo: ConsoleModo;
+  definirModo: (modo: ConsoleModo) => void;
+  /**
+   * Alteração PERMANENTE de atributo/perícia (só em Modo Evolução).
+   * São os mesmos `updateAtributo`/`updatePericia` do client: clampam
+   * pelo mín/máx das regras, recalculam derivados, sobem os recursos
+   * atuais na medida aplicável e gravam no histórico de evolução.
+   * Em Modo Jogo o próprio handler recusa — a UI só esconde o controle.
+   */
+  editarAtributo: (id: keyof CharacterAttributes, valor: number) => void;
+  editarPericia: (id: string, valor: number) => void;
+  /** PM de evolução — `null` quando a ficha nunca registrou PM. */
+  pm: { disponivel: number; total: number } | null;
 
   /** Pins (referência tipada, nunca cópia da entidade). */
   pins: ConsolePin[];

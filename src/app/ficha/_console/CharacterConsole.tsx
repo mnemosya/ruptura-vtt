@@ -38,6 +38,7 @@ import { SkillsGrid } from "./panels/SkillsGrid";
 import { TabRail } from "./panels/TabRail";
 import { MinimizedDockContent } from "./panels/MinimizedDockContent";
 import { PinsRow, ConditionsPanel } from "./panels/PinsAndConditions";
+import { FaixaEvolucao, ModoChip, VerNoMapaChip } from "./panels/ModoEvolucao";
 import {
   AttackModal,
   BackpackPickerModal,
@@ -45,7 +46,6 @@ import {
   ConfirmModal,
   DefensePickerModal,
   ResistirAtributoModal,
-  RollResultModal,
   SurgePickerModal,
   type TipoDefesa,
 } from "./panels/AuxModals";
@@ -53,13 +53,13 @@ import { itensCompativeisComSlot, projectBodySlots, type BodySlotId } from "./sl
 import { ABAS, type AbaId } from "./tabs";
 import type { ViewMode } from "./viewMode";
 import { FOCO_MAX_W, FOCO_ALTURA_INICIAL } from "./geometry";
+import { PainelRolagem, type PrefillRolagem } from "./panels/PainelRolagem";
 import type { ConsoleApi, ConsolePin } from "./types";
 import type { CharacterAttributes, InventoryItemInstance, ItemContent } from "../../../lib/character";
-import type { RupturaRollResult } from "../../../lib/dice/types";
 
 /** Estado do modal auxiliar aberto no momento (um por vez). */
 type Aux =
-  | { tipo: "rolagem"; resultado: RupturaRollResult; defesa?: { usouReacao: boolean; penalidade: number; defesasSemReacao: number } }
+  | { tipo: "rolagem"; prefill: PrefillRolagem }
   | { tipo: "surto" }
   | { tipo: "mochila"; slot: BodySlotId }
   | { tipo: "ataque"; instancia: InventoryItemInstance; modelo: ItemContent }
@@ -71,8 +71,13 @@ type Aux =
   | null;
 
 export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; onClose: () => void; api: ConsoleApi }) {
-  const [aba, setAba] = useState<AbaId>("equipamentos");
-  const [viewMode, setViewMode] = useState<ViewMode>("painel");
+  const [aba, setAba] = useState<AbaId>("personagem");
+  /**
+   * FOCO é o padrão de abertura: o Console abre na ficha do
+   * personagem, não numa aba de gestão. Painel continua a um clique no
+   * trilho, para quem quer as colunas fixas ao lado da aba ativa.
+   */
+  const [viewMode, setViewMode] = useState<ViewMode>("foco");
   const [aux, setAux] = useState<Aux>(null);
   const tabpanelRef = useRef<HTMLDivElement>(null);
 
@@ -115,11 +120,14 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
     [inventario, api.catalogo],
   );
 
+  // Clicar num atributo ou numa perícia ABRE a ferramenta já
+  // preenchida — não rola. Rolar é o botão: até apertá-lo dá pra
+  // trocar a perícia, mexer no modificador e pôr uma CD.
   function rolarAtributo(id: keyof CharacterAttributes) {
-    setAux({ tipo: "rolagem", resultado: api.rolarAtributo(id) });
+    setAux({ tipo: "rolagem", prefill: { tipo: "atributo", atributoId: id } });
   }
   function rolarPericia(id: string) {
-    setAux({ tipo: "rolagem", resultado: api.rolarPericia(id) });
+    setAux({ tipo: "rolagem", prefill: { tipo: "pericia", periciaId: id } });
   }
   function onAdicionarCondicao() {
     setAux({ tipo: "condicao" });
@@ -137,6 +145,7 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
   // decide entre Vigor/Mobilidade conforme a situação), então abre um
   // segundo passo em vez de rolar direto.
   const PERICIA_DEFESA: Partial<Record<TipoDefesa, string>> = { esquivar: "reflexos", bloquear: "reflexos", aparar: "luta" };
+  const NOME_DEFESA: Record<TipoDefesa, string> = { esquivar: "Esquivar", bloquear: "Bloquear", aparar: "Aparar", resistir: "Resistir" };
   function onEscolherDefesa(tipo: TipoDefesa) {
     if (tipo === "resistir") {
       setAux({ tipo: "resistir-atributo" });
@@ -144,15 +153,13 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
     }
     // Regra "Reação": rolar qualquer defesa gasta 1 Reação — sem
     // sobra, a defesa ainda acontece, só que com a penalidade
-    // cumulativa da rodada já aplicada na própria rolagem
-    // (`rolarDefesa` decide isso via `spendReactionForDefense`, não o
-    // Console).
-    const { resultado, ...defesa } = api.rolarDefesa(PERICIA_DEFESA[tipo]!);
-    setAux({ tipo: "rolagem", resultado, defesa });
+    // cumulativa da rodada já aplicada na própria rolagem. Quem gasta
+    // é o painel, no instante do clique em "Rolar" (`prepararDefesa`):
+    // abrir a ferramenta e desistir não pode consumir Reação.
+    setAux({ tipo: "rolagem", prefill: { tipo: "defesa", periciaId: PERICIA_DEFESA[tipo]!, acao: NOME_DEFESA[tipo] } });
   }
   function onEscolherResistir(periciaId: "vigor" | "mobilidade") {
-    const { resultado, ...defesa } = api.rolarDefesa(periciaId);
-    setAux({ tipo: "rolagem", resultado, defesa });
+    setAux({ tipo: "rolagem", prefill: { tipo: "defesa", periciaId, acao: NOME_DEFESA.resistir } });
   }
 
   /** Conteúdo da aba de NAVEGAÇÃO ativa — reusado sem mudanças tanto no
@@ -238,12 +245,19 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
         aberto={aberto}
         onClose={onClose}
         titulo="Console do Personagem"
+        titlebarExtra={
+          <>
+            <VerNoMapaChip />
+            <ModoChip modo={api.modo} onAlternar={api.definirModo} />
+          </>
+        }
         dockContent={<MinimizedDockContent api={api} avatarUrl={avatarUrl} />}
         tablist={<TabRail aba={aba} onChangeAba={escolherAba} viewMode={viewMode} onChangeViewMode={alternarViewMode} />}
         larguraMaximaFixa={viewMode === "foco" ? FOCO_MAX_W : undefined}
         alturaFallbackInicial={viewMode === "foco" ? FOCO_ALTURA_INICIAL : undefined}
         conteudoChave={`${viewMode}:${aba}`}
       >
+        <FaixaEvolucao api={api} />
         {viewMode === "painel" ? (
           <div className="rc-grid">
             <IdentityAside
@@ -283,7 +297,18 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
           (o HudCursor global continua rastreando a posição normalmente,
           só falta a regra `cursor:none` alcançar este ramo da árvore). */}
       <div className="rc-cursor-scope">
-      {aux?.tipo === "rolagem" && <RollResultModal resultado={aux.resultado} defesa={aux.defesa} onFechar={() => setAux(null)} />}
+      {aux?.tipo === "rolagem" && (
+        // `key` pelo que foi pedido: sem backdrop, clicar noutra perícia
+        // com a ferramenta aberta é um gesto normal — e ela tem que
+        // REABRIR preenchida com a nova, não continuar mostrando a
+        // anterior (o estado interno nasce do `prefill`).
+        <PainelRolagem
+          key={aux.prefill.tipo === "atributo" ? `a:${aux.prefill.atributoId}` : `${aux.prefill.tipo}:${aux.prefill.periciaId}`}
+          api={api}
+          prefill={aux.prefill}
+          onFechar={() => setAux(null)}
+        />
+      )}
 
       {aux?.tipo === "surto" && (
         <SurgePickerModal

@@ -26,6 +26,7 @@ import { HelpCircle } from "lucide-react";
 import type { CharacterAttributes } from "../../../../lib/character";
 import type { ConsoleApi } from "../types";
 import { SKILL_ICONS } from "../skillIcons";
+import { PassoValor } from "./ModoEvolucao";
 
 const TOTAL_CELULAS = 21;
 
@@ -54,7 +55,7 @@ export function SkillsGrid({ api, onRolar }: { api: ConsoleApi; onRolar: (perici
     <div className="rc-skills-wrap">
       <span className="rc-skills-caption">Perícias</span>
       <div className="rc-skills-card">
-        <div className="rc-skills">
+        <div className="rc-skills" data-evolucao={api.modo === "evolucao" ? "true" : undefined}>
           {celulas.map((skill, i) => {
             if (!skill) {
               return <span key={`vazio-${i}`} className="rc-skill" data-vazio="true" aria-hidden="true" />;
@@ -64,6 +65,40 @@ export function SkillsGrid({ api, onRolar }: { api: ConsoleApi; onRolar: (perici
             const abrev = attr ? (ABREV[attr] ?? attr.charAt(0).toUpperCase()) : "";
             const Icone = SKILL_ICONS[skill.id] ?? HelpCircle;
             const valor = api.character.pericias[skill.id] ?? 0;
+
+            const corpo = (
+              <>
+                <span className="rc-skill-ico" aria-hidden="true">
+                  <Icone size={15} strokeWidth={1.8} />
+                </span>
+                <span className="rc-skill-body">
+                  <span className="rc-skill-nome">{skill.nome}</span>
+                  <span className="rc-skill-tag">
+                    {abrev} · <span className="rc-skill-dado">{dados}d8</span>
+                  </span>
+                </span>
+              </>
+            );
+
+            // Modo Evolução: o card para de rolar e passa a ajustar —
+            // mesmo motivo dos atributos (clique de rolagem no meio de
+            // uma edição é acidente garantido).
+            if (api.modo === "evolucao") {
+              return (
+                <div key={skill.id} className="rc-skill" data-attr={attr} data-editando="true" data-testid={`console-pericia-${skill.id}`}>
+                  {corpo}
+                  <PassoValor
+                    valor={valor}
+                    min={skill.valor_minimo ?? 0}
+                    max={skill.valor_maximo ?? 5}
+                    rotulo={skill.nome}
+                    onDefinir={(novo) => api.editarPericia(skill.id, novo)}
+                    testId={`console-pericia-passo-${skill.id}`}
+                  />
+                </div>
+              );
+            }
+
             return (
               <button
                 key={skill.id}
@@ -74,15 +109,7 @@ export function SkillsGrid({ api, onRolar }: { api: ConsoleApi; onRolar: (perici
                 data-testid={`console-pericia-${skill.id}`}
                 aria-label={`Rolar ${skill.nome}: ${dados}d8, valor ${valor}`}
               >
-                <span className="rc-skill-ico" aria-hidden="true">
-                  <Icone size={15} strokeWidth={1.8} />
-                </span>
-                <span className="rc-skill-body">
-                  <span className="rc-skill-nome">{skill.nome}</span>
-                  <span className="rc-skill-tag">
-                    {abrev} · <span className="rc-skill-dado">{dados}d8</span>
-                  </span>
-                </span>
+                {corpo}
                 <span className="rc-skill-valor">{valor}</span>
               </button>
             );

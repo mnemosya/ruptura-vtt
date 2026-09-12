@@ -27,6 +27,7 @@ import { useClickGuard } from "../useClickGuard";
 import type { ConsoleApi } from "../types";
 import { AvatarUserIcon, AvatarHexPolygon } from "../avatarIcons";
 import { AttrHexPolygon, ATTR_ICONS, ATTR_LABEL_COLOR } from "../attrIcons";
+import { PassoValor } from "./ModoEvolucao";
 import { DiamondPip } from "../pips";
 import { DecoTop } from "../deco";
 
@@ -383,9 +384,42 @@ export function IdentityAside({
           </span>
         </div>
 
-        <div className="rc-nric-attrs">
+        <div className="rc-nric-attrs" data-evolucao={api.modo === "evolucao" ? "true" : undefined}>
           {ATRIBUTOS.map(({ id, nome }) => {
             const Icone = ATTR_ICONS[id];
+            const valor = character.atributos[id];
+            const def = api.regras?.atributos.find((a) => a.id === id);
+            const min = def?.valor_minimo ?? 1;
+            const max = def?.valor_maximo ?? 5;
+
+            // Em Modo Evolução o card deixa de ser "rolar" e vira
+            // "ajustar": clicar no card inteiro rolaria por engano no
+            // meio de uma edição, então ele vira `<div>` e quem age são
+            // os dois passos.
+            if (api.modo === "evolucao") {
+              return (
+                <div key={id} className="rc-nric-attr" data-attr={id} data-editando="true" data-testid={`console-attr-${id}`}>
+                  <AttrHexPolygon attr={id} />
+                  <span className="rc-nric-attr-content">
+                    <span className="rc-nric-attr-ico" style={{ color: ATTR_LABEL_COLOR[id] }} aria-hidden="true">
+                      <Icone />
+                    </span>
+                    <span className="rc-nric-attr-nome" style={{ color: ATTR_LABEL_COLOR[id] }}>
+                      {nome}
+                    </span>
+                    <PassoValor
+                      valor={valor}
+                      min={min}
+                      max={max}
+                      rotulo={nome}
+                      onDefinir={(novo) => api.editarAtributo(id, novo)}
+                      testId={`console-attr-passo-${id}`}
+                    />
+                  </span>
+                </div>
+              );
+            }
+
             return (
               <button
                 key={id}
@@ -394,7 +428,7 @@ export function IdentityAside({
                 data-attr={id}
                 onClick={() => onRolarAtributo(id)}
                 data-testid={`console-attr-${id}`}
-                aria-label={`Rolar ${nome}: ${character.atributos[id]}d8`}
+                aria-label={`Rolar ${nome}: ${valor}d8`}
               >
                 <AttrHexPolygon attr={id} />
                 <span className="rc-nric-attr-content">
@@ -404,7 +438,7 @@ export function IdentityAside({
                   <span className="rc-nric-attr-nome" style={{ color: ATTR_LABEL_COLOR[id] }}>
                     {nome}
                   </span>
-                  <span className="rc-nric-attr-val">{character.atributos[id]}</span>
+                  <span className="rc-nric-attr-val">{valor}</span>
                 </span>
               </button>
             );

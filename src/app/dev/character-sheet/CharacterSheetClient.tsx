@@ -288,16 +288,18 @@ import type {
   CompanionModelSummary,
 } from "../../../lib/character";
 import type { TechnicalContentItem } from "../../../lib/content";
-import { rollPericia, type PreparedRoll } from "../../../lib/dice";
+import { resolverPericia, rollPericia, type PreparedRoll } from "../../../lib/dice";
 import { addLog } from "../../../lib/table/storage";
 import { upsertCrewInventoryItem } from "../../../lib/table/crewInventory";
-import type { Campaign } from "../../../lib/table";
+import type { Campaign, TableLogVisibility } from "../../../lib/table";
 import { useCharacterRealtime } from "../../../lib/realtime/useCharacterRealtime";
 import { describeRealtimeStatus } from "../../../lib/realtime/tableRealtime";
 import { CharacterSheetTabs, type TabId } from "./components/CharacterSheetTabs";
 import { CharacterConsole } from "../../ficha/_console/CharacterConsole";
 import { ConsoleErrorBoundary } from "../../ficha/_console/ConsoleErrorBoundary";
 import { useConsoleCloseOverride } from "../../ficha/_console/ConsoleCloseContext";
+import { registrarRolagemPericiaAction } from "../../mesas/[campaignId]/vtt/_painel/acoes/rolagemPainel";
+import type { TurnWindow } from "../../../lib/table/turnTrack";
 import type { ConsoleApi, ConsolePin } from "../../ficha/_console/types";
 import type { BodySlotId } from "../../ficha/_console/slots";
 import { GeneralTab } from "./components/GeneralTab";
@@ -314,7 +316,6 @@ import { BibliotecaTab } from "./components/BibliotecaTab";
 import { ActionsTab } from "./components/ActionsTab";
 import { ActiveStateStrip } from "./components/ActiveStateStrip";
 import { MesaTab } from "./components/MesaTab";
-import TurnTrackPanel from "../../components/TurnTrackPanel";
 import { SavedCharactersTab } from "./components/SavedCharactersTab";
 import { DebugTab } from "./components/DebugTab";
 import type { SheetMode } from "./components/ModeToggle";
@@ -388,6 +389,13 @@ interface Props {
   initialCampaignId: string | null;
   initialCharacterId: string | null;
   /**
+   * Janela de turno do combate que a MESA está rodando, quando a ficha
+   * é aberta de dentro dela. `undefined` fora da mesa (rota `/ficha`
+   * direta, `/dev/character-sheet`), onde o valor antigo — vindo de
+   * `campaigns.turn_track` — continua valendo.
+   */
+  janelaDeTurno?: TurnWindow | null;
+  /**
    * "dev" (`/dev/character-sheet`) mantém todo o comportamento de
    * diagnóstico (lista global de personagens, seletor livre de mesa, aba
    * Debug). "product" (`/ficha`) exige que `initialCampaignId`/
@@ -456,6 +464,7 @@ export default function CharacterSheetClient({
   companionModelsError,
   initialCampaignId,
   initialCharacterId,
+  janelaDeTurno,
   mode,
   initialTab,
 }: Props) {
@@ -471,6 +480,30 @@ export default function CharacterSheetClient({
   // oferece a escolha via `pendingRemoteCharacter` (ver
   // refetchCharacterFromRealtime abaixo).
   const lastSyncedCharacterRef = useRef(character);
+  /**
+   * Ordem das gravações automáticas. Os passos de +/− do Modo Evolução
+   * são clicáveis em rajada, e a resposta do servidor volta com o
+   * personagem gravado: sem este selo, uma resposta ATRASADA do
+   * primeiro clique reescreveria por cima do segundo, e o valor
+   * "voltaria" sozinho na tela. Só a gravação mais recente escreve
+   * estado.
+   */
+  const seloGravacaoRef = useRef(0);
+  /**
+   * Gravação automática SERIALIZADA. O selo acima já impedia uma
+   * resposta atrasada de reescrever a TELA, mas não impedia duas
+   * gravações de correrem no SERVIDOR: cada uma manda o payload
+   * INTEIRO, e a que commitar por último vence. Dois cliques em
+   * sequência no Modo Evolução (um atributo, depois uma perícia)
+   * podiam terminar com o banco guardando só o primeiro — a tela
+   * mostrava os dois e o histórico registrava os dois.
+   *
+   * Uma de cada vez, e o que fica pendente é sempre o estado MAIS
+   * NOVO (não a fila de passos intermediários: cada payload já é um
+   * retrato completo, então gravar o último grava todos).
+   */
+  const gravacaoEmVooRef = useRef(false);
+  const gravacaoPendenteRef = useRef<{ personagem: Character; oQueFalhou: string } | null>(null);
   // Versão do personagem vinda do servidor via Realtime enquanto havia
   // edição local pendente — não nulo só quando a ficha está esperando o
   // usuário decidir entre "Recarregar do servidor" e "Manter minha versão".
@@ -725,10 +758,12 @@ export default function CharacterSheetClient({
   // achado da rodada de consolidação — sem isto, `buildActionConsoleItems`/
   // `executeActionOnCharacter` nunca recebiam a janela real, então o
   // bloqueio de PA>2 em Rápidos nunca disparava de verdade na ficha).
-  const currentTurnWindow = useMemo(
-    () => mesas.find((m) => m.id === selectedCampaignId)?.turn_track?.window ?? null,
-    [mesas, selectedCampaignId],
-  );
+  // Janela de turno: fonte ÚNICA, `vtt_turn_tracks`, entregue por quem
+  // abriu a ficha (`janelaDeTurno`). A leitura antiga era
+  // `campaigns.turn_track` via `mesas` — outro sistema de combate, que
+  // o VTT nunca escreveu e que em modo product era sempre `[]`: as
+  // regras de janela (teto de PA em Rápidos) nunca disparavam.
+  const currentTurnWindow = janelaDeTurno ?? null;
   const reactionAvailability = useMemo(
     () => getReactionAvailability(character, derivados.reacoes_por_rodada, reactionRules),
     [character, derivados.reacoes_por_rodada, reactionRules],
@@ -1044,6 +1079,53 @@ export default function CharacterSheetClient({
   }
 
   /**
+   * Publica na MESA uma rolagem feita no Console.
+   *
+   * O Console rolava só no log local (`addLogEntry`) — volátil, da
+   * sessão da ficha, invisível pra todo mundo. Quem estava na mesa não
+   * via a pessoa rolar Balística; o rolador 3D do VTT, sim, porque
+   * chama `registrarRolagemPericiaAction`. Agora o Console chama a
+   * MESMA ação: um vocabulário só de rolagem no `table_logs`, com o
+   * mesmo payload que o feed já sabe desenhar.
+   *
+   * O servidor não confia nas faces: revalida a quantidade contra o
+   * atributo LIDO DO BANCO e recalcula margem e total. Se a ficha
+   * local estiver à frente do que foi gravado, a ação recusa — e o
+   * aviso vai pro log local, sem tocar no que já aconteceu na tela.
+   */
+  async function publicarRolagemNaMesa(
+    atributoId: string,
+    periciaId: string | null,
+    dados: number[],
+    modificador: number,
+    cd: number | null = null,
+    // `public` continua sendo o padrão: uma rolagem disparada de um
+    // atalho da ficha (sem painel aberto pra escolher) é da mesa.
+    visibilidade: TableLogVisibility = "public",
+    /** Ver `rolarTeste` em `_console/types.ts`. */
+    intencao: { tipo: string; nome: string } | null = null,
+  ) {
+    if (!selectedCampaignId || !characterId) return; // ficha solta, sem mesa — nada a publicar
+    try {
+      const r = await registrarRolagemPericiaAction({
+        campaignId: selectedCampaignId,
+        characterId,
+        atributoId,
+        periciaId,
+        modificador,
+        cd,
+        dados,
+        visibilidade,
+        intencao,
+        origem: { rotulo: "Console do Personagem", source: "console_personagem" },
+      });
+      if (!r.ok) addLogEntry("recurso", `⚠ A rolagem não foi publicada na mesa: ${r.erro}`);
+    } catch {
+      avisarFalhaLogMesa();
+    }
+  }
+
+  /**
    * Alteração permanente de atributo (Modo Evolução, checkpoint v0.40)
    * — recalcula os derivados máximos antes/depois e soma a MESMA
    * diferença nos recursos atuais correspondentes ("atuais sobem junto
@@ -1095,6 +1177,7 @@ export default function CharacterSheetClient({
     );
     setCharacter(proximo);
     addLogEntry("recurso", `Evolução — ${descricao}.`);
+    void persistEvolucao(proximo);
     void persistEvolutionEvent(proximo, "ajuste", 0, descricao, antes, depois);
   }
 
@@ -1121,6 +1204,7 @@ export default function CharacterSheetClient({
     );
     setCharacter(proximo);
     addLogEntry("recurso", `Evolução — ${descricao}.`);
+    void persistEvolucao(proximo);
     void persistEvolutionEvent(proximo, "ajuste", 0, descricao, antes, depois);
   }
 
@@ -1130,6 +1214,7 @@ export default function CharacterSheetClient({
     const result = gainPm(character, quantidade, descricao, nowIso);
     setCharacter(result.character);
     addLogEntry("recurso", `PM recebido: +${result.entry.quantidade} (${result.entry.descricao}).`);
+    void persistEvolucao(result.character);
     void persistEvolutionEvent(result.character, "ganho", result.entry.quantidade, result.entry.descricao, result.entry.antes, result.entry.depois);
   }
 
@@ -1140,6 +1225,7 @@ export default function CharacterSheetClient({
     setCharacter(result.character);
     addLogEntry("recurso", `PM gasto: -${result.entry.quantidade} (${result.entry.descricao}).`);
     if (result.warnings.length > 0) addLogEntry("recurso", result.warnings[0]);
+    void persistEvolucao(result.character);
     void persistEvolutionEvent(result.character, "gasto", result.entry.quantidade, result.entry.descricao, result.entry.antes, result.entry.depois);
   }
 
@@ -4791,30 +4877,85 @@ export default function CharacterSheetClient({
     );
   }
 
-  async function persistAutomatedActionExecution(nextCharacter: Character) {
+  /**
+   * O par storage+estado de TODA gravação automática do console.
+   *
+   * Os derivados saem do PRÓPRIO personagem que está sendo gravado, e
+   * não do memo `derivados` do render: numa mudança de atributo o memo
+   * ainda é o de ANTES (o `setCharacter` desta mesma chamada só chega
+   * no próximo render), e gravar com ele carimbaria pv_max/pe_max
+   * velhos por cima dos valores recém-calculados.
+   *
+   * Falha aqui NUNCA reverte a mudança local — ela já aconteceu antes
+   * desta chamada: só avisa via `saveState`/`errorMessage` e deixa
+   * "Salvar personagem" disponível como caminho manual.
+   */
+  async function persistCharacterAuto(nextCharacter: Character, oQueFalhou: string) {
     const isConnected = Boolean(characterId && selectedCampaignId);
     if (!isConnected) return; // Modo local (sem mesa/personagem salvo) — nada a persistir, sem erro.
+
+    // Já tem uma gravação no ar: esta vira a pendente e sai. Quem está
+    // em voo grava este payload assim que voltar — nunca duas subindo
+    // o personagem inteiro ao mesmo tempo, onde a mais VELHA pode
+    // commitar por último e apagar a mais nova.
+    gravacaoPendenteRef.current = { personagem: nextCharacter, oQueFalhou };
+    if (gravacaoEmVooRef.current) return;
+
+    gravacaoEmVooRef.current = true;
     try {
-      const toSave = normalizeCharacter(nextCharacter, derivados);
-      const record =
-        mode === "product"
-          ? await updateCharacterSheetPayload(characterId as string, toSave)
-          : await updateCharacter(characterId as string, toSave);
-      lastSyncedCharacterRef.current = record.payload;
-      characterRef.current = record.payload;
-      setCharacter(record.payload);
-      setSaveState("saved");
-    } catch (err) {
-      // Mantém a mudança local (já aplicada antes desta chamada) —
-      // nunca reverte em silêncio. "Salvar personagem" continua
-      // disponível para tentar de novo manualmente.
-      setSaveState("error");
-      setErrorMessage(
-        err instanceof Error
-          ? `Ação executada localmente, mas falhou ao salvar automaticamente: ${err.message}`
-          : "Ação executada localmente, mas falhou ao salvar automaticamente.",
-      );
+      while (gravacaoPendenteRef.current) {
+        const alvo = gravacaoPendenteRef.current;
+        gravacaoPendenteRef.current = null;
+        const selo = ++seloGravacaoRef.current;
+        try {
+          const toSave = normalizeCharacter(
+            alvo.personagem,
+            computeDerivedStats(alvo.personagem.atributos, regras, alvo.personagem.mana_bonus_ruptura ?? 0),
+          );
+          const record =
+            mode === "product"
+              ? await updateCharacterSheetPayload(characterId as string, toSave)
+              : await updateCharacter(characterId as string, toSave);
+          // Outra gravação começou enquanto esta ia e voltava: o payload
+          // desta já é passado. Ela FOI gravada (a de agora vai por cima no
+          // servidor); o que não pode é ela reescrever a tela.
+          if (selo !== seloGravacaoRef.current || gravacaoPendenteRef.current) continue;
+          lastSyncedCharacterRef.current = record.payload;
+          characterRef.current = record.payload;
+          setCharacter(record.payload);
+          setSaveState("saved");
+        } catch (err) {
+          setSaveState("error");
+          setErrorMessage(
+            err instanceof Error
+              ? `${alvo.oQueFalhou} localmente, mas falhou ao salvar automaticamente: ${err.message}`
+              : `${alvo.oQueFalhou} localmente, mas falhou ao salvar automaticamente.`,
+          );
+        }
+      }
+    } finally {
+      gravacaoEmVooRef.current = false;
     }
+  }
+
+  async function persistAutomatedActionExecution(nextCharacter: Character) {
+    await persistCharacterAuto(nextCharacter, "Ação executada");
+  }
+
+  /**
+   * Gravação das mudanças PERMANENTES do Modo Evolução (atributo,
+   * perícia, PM ganho/gasto).
+   *
+   * Elas precisam disto por um motivo que as ações do Console não têm:
+   * o Console vive dentro do VTT e da ficha, onde não existe botão
+   * "Salvar personagem" nenhum. Sem gravar aqui, subir um atributo
+   * ficava só no estado do React e sumia ao fechar a janela — que é
+   * exatamente o que acontecia. O log de evolução (`table_logs`) já era
+   * escrito, então o histórico registrava uma mudança que o personagem
+   * não tinha.
+   */
+  async function persistEvolucao(nextCharacter: Character) {
+    await persistCharacterAuto(nextCharacter, "Evolução aplicada");
   }
 
   async function handleUseAction(actionId: string) {
@@ -5267,6 +5408,20 @@ export default function CharacterSheetClient({
     regras,
     catalogo: catalogoItens,
 
+    // Modo Evolução no Console: a MESMA porta que `ModeToggle` já
+    // oferecia na aba Geral, agora alcançável de dentro da janela (e
+    // portanto de dentro do VTT). Nenhuma regra nova — `updateAtributo`
+    // e `updatePericia` continuam sendo o único caminho de alteração
+    // permanente, com clamp, derivados, histórico e `table_logs`.
+    modo: sheetMode,
+    definirModo: setSheetMode,
+    editarAtributo: updateAtributo,
+    editarPericia: updatePericia,
+    pm:
+      character.pm_total == null && character.pm_disponivel == null
+        ? null
+        : { disponivel: character.pm_disponivel ?? 0, total: character.pm_total ?? 0 },
+
     rolarAtributo: (id) => {
       const def = regras?.atributos.find((a) => a.id === id);
       const r = rollPericia({
@@ -5276,6 +5431,7 @@ export default function CharacterSheetClient({
         modificador: 0,
       });
       addLogEntry("rolagem_pericia", `Console — ${def?.nome ?? id}: ${r.dados.join(", ")} → maior ${r.maiorDado}, total ${r.total}.`);
+      void publicarRolagemNaMesa(id, null, r.dados, 0);
       return r;
     },
     rolarPericia: (periciaId) => {
@@ -5294,8 +5450,87 @@ export default function CharacterSheetClient({
         modificador: 0,
       });
       addLogEntry("rolagem_pericia", `Console — ${def?.nome ?? periciaId}: ${r.dados.join(", ")} → maior ${r.maiorDado}, total ${r.total}.`);
+      void publicarRolagemNaMesa(atributoId, periciaId, r.dados, 0);
       return r;
     },
+    mesa: selectedCampaignId && characterId ? { campaignId: selectedCampaignId, characterId } : null,
+
+    /**
+     * Atributo primário de uma perícia, com o mesmo fallback que as
+     * três rolagens já usavam soltas. Vira função porque agora quem
+     * escolhe a perícia é o painel, não o clique.
+     */
+    atributoDaPericia: (periciaId) => {
+      const candidato = regras?.pericias.find((p) => p.id === periciaId)?.atributo_primario;
+      return candidato === "corpo" || candidato === "mente" || candidato === "animo" ? candidato : "corpo";
+    },
+
+    /**
+     * Gasta a Reação da defesa SEM rolar.
+     *
+     * A rolagem deixou de ser instantânea: o painel abre, a pessoa
+     * ajusta perícia/modificador/CD e só então rola. A Reação, porém,
+     * é consumida pela DECLARAÇÃO da defesa — então este passo existe
+     * separado, e a penalidade que ele devolve entra como modificador
+     * da rolagem que vier depois.
+     */
+    prepararDefesa: () => {
+      const current = characterRef.current;
+      const mutation = applyConsoleMutation(
+        current,
+        { type: "defense" },
+        { derived: derivados, rules: regras, reactionRules, talents: talentsIniciais },
+      );
+      if (mutation.character !== current) {
+        characterRef.current = mutation.character;
+        setCharacter(mutation.character);
+      }
+      const reacaoLog = mutation.meta.defenseWithoutReaction
+        ? `Defesa sem Reação: ${mutation.meta.defensesWithoutReactionBefore ?? 0} → ${mutation.meta.defensesWithoutReaction ?? 0}; penalidade ${mutation.meta.reactionPenalty ?? 0}.`
+        : mutation.meta.usedReaction
+          ? `Reações usadas: ${mutation.meta.reactionBefore ?? 0} → ${mutation.meta.reactionAfter ?? 0}.`
+          : (mutation.meta.warnings?.[0] ?? "");
+      if (reacaoLog) addLogEntry("recurso", `Console — defesa declarada. ${reacaoLog}`);
+      return {
+        usouReacao: mutation.meta.usedReaction === true,
+        penalidade: mutation.meta.reactionPenalty ?? 0,
+        defesasSemReacao: mutation.meta.defensesWithoutReaction ?? 0,
+      };
+    },
+
+    /**
+     * A rolagem do PAINEL — atributo, perícia, modificador e CD como a
+     * pessoa configurou, e as faces vindas dos dados 3D quando eles
+     * rolaram (`dados`). Sem `dados`, sorteia — é o caminho de quando
+     * não há mesa física por perto.
+     *
+     * `resolverPericia` é a mesma regra de `rollPericia`, só que a
+     * partir de dados que já existem: é o que deixa os d8 de verdade da
+     * mesa e o sorteio interno terminarem no MESMO resultado.
+     */
+    rolarTeste: ({ atributoId, periciaId, modificador, cd, dados, visibilidade, intencao }) => {
+      const atributoDef = regras?.atributos.find((a) => a.id === atributoId);
+      const periciaDef = periciaId ? regras?.pericias.find((p) => p.id === periciaId) : null;
+      const params = {
+        atributoId,
+        atributoNome: atributoDef?.nome ?? atributoId,
+        atributoValor: character.atributos[atributoId],
+        periciaId: periciaId ?? undefined,
+        periciaNome: periciaDef?.nome,
+        periciaValor: periciaId ? character.pericias[periciaId] ?? 0 : 0,
+        modificador,
+        cd: cd ?? undefined,
+      };
+      const r = dados && dados.length > 0 ? resolverPericia(params, dados) : rollPericia(params);
+      const alvo = periciaDef?.nome ?? atributoDef?.nome ?? atributoId;
+      addLogEntry(
+        "rolagem_pericia",
+        `Console — ${alvo}: ${r.dados.join(", ")} → maior ${r.maiorDado}, total ${r.total}${cd != null ? ` (CD ${cd})` : ""}.`,
+      );
+      void publicarRolagemNaMesa(atributoId, periciaId, r.dados, modificador, cd, visibilidade, intencao ?? null);
+      return r;
+    },
+
     // Mesma regra data-driven do controle manual de Reação do harness
     // (`handleUseReactionManual`) — só que combinada com a rolagem em
     // vez de um botão separado, e a penalidade cumulativa (se houver)
@@ -5334,6 +5569,10 @@ export default function CharacterSheetClient({
         "rolagem_pericia",
         `Console — ${def?.nome ?? periciaId} (defesa): ${r.dados.join(", ")} → maior ${r.maiorDado}, total ${r.total}. ${reacaoLog}`,
       );
+      // A penalidade de Reação entra como modificador da rolagem, então
+      // vai junto pra mesa — senão o total publicado não bateria com o
+      // que a pessoa viu na ficha.
+      void publicarRolagemNaMesa(atributoId, periciaId, r.dados, mutation.meta.reactionPenalty ?? 0);
       return {
         resultado: r,
         usouReacao: mutation.meta.usedReaction === true,
@@ -5909,14 +6148,6 @@ export default function CharacterSheetClient({
 
       {activeTab === "mesa" && (
         <>
-          {selectedCampaignId && mesas.find((m) => m.id === selectedCampaignId) && (
-            <TurnTrackPanel
-              campaign={mesas.find((m) => m.id === selectedCampaignId)!}
-              onCampaignChange={(next) => setMesas((prev) => prev.map((m) => (m.id === next.id ? next : m)))}
-              isNarrator={false}
-              viewerCharacterId={characterId}
-            />
-          )}
           <MesaTab
             campaignId={selectedCampaignId}
             mesaNome={mesas.find((m) => m.id === selectedCampaignId)?.name ?? null}
