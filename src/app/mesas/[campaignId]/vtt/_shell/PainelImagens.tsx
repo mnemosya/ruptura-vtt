@@ -139,27 +139,40 @@ export function PainelImagens({
                   {img.papel === "tile" && (
                     <>
                       <button type="button" className="rv-imagens-item__acao" onClick={() => onMudarOrdem(img, -1)} aria-label="Mandar para trás">
-                        <ChevronDown size={14} aria-hidden />
+                        <ChevronDown size={16} aria-hidden />
+                        <span className="rv-dica rv-dica--esq">Mandar para trás</span>
                       </button>
                       <button type="button" className="rv-imagens-item__acao" onClick={() => onMudarOrdem(img, 1)} aria-label="Trazer para frente">
-                        <ChevronUp size={14} aria-hidden />
+                        <ChevronUp size={16} aria-hidden />
+                        <span className="rv-dica rv-dica--esq">Trazer para frente</span>
                       </button>
                     </>
                   )}
                   <button type="button" className="rv-imagens-item__acao" onClick={() => onAlternarVisivel(img)}
                     aria-label={img.visivel ? "Esconder dos jogadores" : "Mostrar aos jogadores"}
                     aria-pressed={!img.visivel}>
-                    {img.visivel ? <Eye size={14} aria-hidden /> : <EyeOff size={14} aria-hidden />}
+                    {img.visivel ? <Eye size={16} aria-hidden /> : <EyeOff size={16} aria-hidden />}
+                    <span className="rv-dica rv-dica--esq">
+                      {img.visivel ? "Esconder dos jogadores" : "Mostrar aos jogadores"}
+                    </span>
                   </button>
                   <button type="button" className="rv-imagens-item__acao" onClick={() => onAlternarTravado(img)}
                     aria-label={img.travado ? "Destravar" : "Travar posição"}
                     aria-pressed={img.travado}>
-                    {img.travado ? <Lock size={14} aria-hidden /> : <LockOpen size={14} aria-hidden />}
+                    {img.travado ? <Lock size={16} aria-hidden /> : <LockOpen size={16} aria-hidden />}
+                    <span className="rv-dica rv-dica--esq">
+                      {img.travado ? "Destravar" : "Travar posição"}
+                    </span>
                   </button>
                   <button type="button" className="rv-imagens-item__acao rv-imagens-item__acao--perigo"
                     onClick={() => onRemover(img)} disabled={img.travado}
                     aria-label="Remover da cena">
-                    <Trash2 size={14} aria-hidden />
+                    <Trash2 size={16} aria-hidden />
+                    {/* Sem texto alternativo para "travada": o botão fica
+                        `disabled`, e um <button> desabilitado não recebe
+                        hover — a dica nunca apareceria. Quem explica o
+                        estado é o cadeado ao lado, que continua clicável. */}
+                    <span className="rv-dica rv-dica--esq">Remover da cena</span>
                   </button>
                 </span>
               </li>

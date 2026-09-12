@@ -111,6 +111,11 @@
 .rv-ferr-btn:hover .rv-dica, .rv-ferr-btn:focus-visible .rv-dica,
 .rv-aba:hover .rv-dica, .rv-aba:focus-visible .rv-dica { opacity: 1; transition-delay: .35s; }
 .rv-painel .rv-dica { left: auto; right: calc(100% + 10px); }
+/* Abre para a ESQUERDA por obrigação, não por gosto: estes botões vivem
+   na borda direita de uma janela de ferramenta, e o corpo da janela
+   rola (`overflow-y: auto`), então um balão à direita — ou acima —
+   seria recortado. À esquerda ele cabe dentro da própria linha. */
+.rv-dica--esq { left: auto; right: calc(100% + 8px); }
 /* Variante posicionada por medição (`position: fixed`, coordenadas
    inline): o trilho de facção rola, e um balão `absolute` seria
    recortado pela caixa de rolagem. Ver `BotaoDeclarar` em
@@ -3445,7 +3450,12 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    botão cru do navegador dentro da janela. Mesma receita dos ícones da
    lista de áreas — sem caixa em repouso, acento ao mirar. */
 .rv-imagens-item__acao {
-  width: 22px; height: 22px; flex: none;
+  /* 26px com ícone de 16: a 22/14 os alvos ficavam menores que o mínimo
+     confortável e os traços do lucide sumiam ao lado do texto do item.
+     `padding: 0` porque o padrão do <button> (`1px 6px`) descentra o
+     ícone dentro de um quadrado. `position: relative` ancora a dica. */
+  position: relative;
+  width: 26px; height: 26px; padding: 0; flex: none;
   display: flex; align-items: center; justify-content: center;
   border: 1px solid transparent; border-radius: 2px;
   background: transparent; color: var(--rv-ink-dim); cursor: pointer;
@@ -3463,6 +3473,8 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   background: var(--rv-dg-soft); color: #ffb3bd;
 }
 .rv-imagens-item__acao:disabled { opacity: .35; cursor: not-allowed; }
+.rv-imagens-item__acao:hover .rv-dica,
+.rv-imagens-item__acao:focus-visible .rv-dica { opacity: 1; transition-delay: .35s; }
 /* Vazio não é erro: fio tracejado e texto discreto, o mesmo tom do
    "sem resultados" do painel. */
 .rv-imagens-vazio {
