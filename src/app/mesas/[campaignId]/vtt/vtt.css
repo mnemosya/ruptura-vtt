@@ -3567,7 +3567,24 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    olhando o token, e um modal central a faria perder de vista qual. */
 .rv-hud-retrato-editor {
   position: absolute; bottom: calc(100% + 8px); left: 0; z-index: 50;
-  width: min(280px, 92vw); padding: 10px;
-  border: 1px solid rgba(127,155,209,.4); border-radius: 4px;
-  background: var(--rv-raise, #10161e); box-shadow: 0 14px 40px rgba(0,0,0,.6);
+  width: min(300px, 92vw); padding: 12px;
+  /* `--rv-panel-grad` e `--rv-line`, a casca das janelas do VTT. A
+     primeira versão usava `--rv-raise`, que é um TINGIMENTO de
+     superfície (`rgba(255,255,255,.015)`), não um fundo — o painel
+     ficava praticamente transparente e o mapa aparecia através dele.
+     O fallback `#10161e` nunca entrava, porque a variável existe. */
+  border: 1px solid var(--rv-line); border-radius: var(--rv-r, 2px);
+  background: var(--rv-panel-grad, linear-gradient(160deg, #0b1424, #080e19));
+  box-shadow: 0 16px 44px rgba(0,0,0,.72);
 }
+
+/* Origem herdada: a cara vem da ficha, e este editor não manda nela. */
+.rv-editor-retrato__origem {
+  display: flex; align-items: flex-start; gap: 6px; margin: 0;
+  padding: 7px 9px; border-radius: var(--rv-r, 2px);
+  border: 1px solid color-mix(in srgb, var(--cy) 24%, transparent);
+  background: color-mix(in srgb, var(--cy) 7%, transparent);
+  font-size: 10.5px; line-height: 1.45; color: var(--txt-dim);
+}
+.rv-editor-retrato__origem strong { color: var(--rv-ink); font-weight: 600; }
+.rv-editor-retrato__origem svg { flex: none; margin-top: 1px; color: var(--cy); }

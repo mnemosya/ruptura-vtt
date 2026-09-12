@@ -32,7 +32,7 @@ function tokenFor(scenario: Scenario): TokenApresentacao {
     orientacao: 0,
     pegadaPersonalizada: null,
     retrato: null,
-    retratoImageId: null,
+    retratoImageId: null, origemRetrato: "nenhum",
     pv: scenario === "unlinked" ? 7 : null,
     pvMax: scenario === "unlinked" ? 12 : null,
     condicoes: scenario === "unlinked" ? ["caido"] : [],

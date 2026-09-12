@@ -395,8 +395,15 @@ async function main() {
   {
     const { data: antes } = await admin.from("vtt_campaign_storage_usage")
       .select("bytes_usados").eq("campaign_id", campaignId).single();
+    // Escopado à campanha do FIXTURE. Sem o `eq`, este caso pegava
+    // qualquer asset em `deleting` do banco — inclusive de outra
+    // campanha, deixada por um teste manual — e aí a conta de bytes
+    // comparava a quota de uma campanha com o arquivo de outra. O caso
+    // falhava de forma intermitente por culpa do próprio teste.
     const { data: alvo } = await admin.from("vtt_image_assets")
-      .select("storage_path, bytes").eq("estado", "deleting").limit(1).single();
+      .select("storage_path, bytes")
+      .eq("campaign_id", campaignId).eq("estado", "deleting")
+      .limit(1).maybeSingle();
 
     if (!alvo) {
       ok("32 (a coleta devolve a quota)", false, "nenhum asset em `deleting` para exercitar o caso");

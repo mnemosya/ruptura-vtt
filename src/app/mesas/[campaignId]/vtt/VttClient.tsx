@@ -346,7 +346,11 @@ export function VttClient({
    */
   const idsRetratoEmCena = useMemo(
     () => (estadoCena?.tokens ?? [])
-      .map((t) => t.retratoImageId)
+      // O EFETIVO, não o próprio: é ele que vai ser desenhado, e um
+      // retrato herdado da ficha tem `retratoImageId` nulo. Assinar o
+      // campo cru deixava justamente a herança sem URL — token de volta
+      // à sigla, com a cara existindo no banco.
+      .map((t) => t.retratoEfetivoId)
       .filter((id): id is string => id !== null),
     [estadoCena?.tokens],
   );

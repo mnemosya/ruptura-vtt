@@ -360,11 +360,12 @@ export function SelectedTokenHud(props: SelectedTokenHudProps) {
             revision={token.revision}
             retratoUrlAtual={token.retrato}
             previewAtual={imageUrl}
-            // A projeção do HUD (0084) já resolve a precedência; se o
-            // que ela devolveu não é o endereço externo, o retrato vem
-            // de arquivo.
-            temImagemPropria={token.retratoImageId !== null}
-            onConcluido={() => setEditandoRetrato(false)}
+            // A ORIGEM vem resolvida do domínio (0106 separa o retrato
+            // próprio do efetivo): o editor precisa saber se a cara na
+            // tela é deste token ou da ficha aparecendo por baixo.
+            origem={token.origemRetrato}
+            nomePersonagem={data?.character?.nome ?? null}
+            onConcluido={(o) => { if (!o?.manterAberto) setEditandoRetrato(false); }}
             onCancelar={() => setEditandoRetrato(false)}
           />
         </div>

@@ -34,7 +34,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { ImageUp, Link2, Loader2, Trash2, TriangleAlert } from "lucide-react";
+import { ImageUp, Link2, Loader2, Trash2, TriangleAlert, UserRound } from "lucide-react";
 import {
   enviarParaUrlAssinada,
   prepararRecorteQuadrado,
@@ -53,10 +53,18 @@ export interface PropsEditorRetratoToken {
   /** Revisão lida — vai como `expected_revision` e é o que impede sobrescrita silenciosa. */
   revision: number;
   retratoUrlAtual: string | null;
-  /** URL JÁ ASSINADA do retrato de arquivo, quando houver (o componente não assina nada sozinho). */
+  /** URL JÁ ASSINADA do que está sendo desenhado (o componente não assina nada sozinho). */
   previewAtual: string | null;
-  temImagemPropria: boolean;
-  onConcluido: () => void;
+  /**
+   * De onde vem a cara atual. `herdado` é o caso que faltava: a imagem
+   * na tela é o avatar da FICHA, e este editor não manda nela — oferecer
+   * "Remover" ali removeria o nada e deixaria a imagem no lugar, que foi
+   * exatamente o que confundiu na mesa.
+   */
+  origem: "arquivo" | "endereco" | "herdado" | "nenhum";
+  /** Nome do personagem, para dizer de onde a herança vem. */
+  nomePersonagem: string | null;
+  onConcluido: (opcoes?: { manterAberto?: boolean }) => void;
   onCancelar: () => void;
 }
 
@@ -64,9 +72,9 @@ type Aba = "arquivo" | "endereco";
 
 export function EditorRetratoToken({
   campaignId, tokenId, revision, retratoUrlAtual, previewAtual,
-  temImagemPropria, onConcluido, onCancelar,
+  origem, nomePersonagem, onConcluido, onCancelar,
 }: PropsEditorRetratoToken) {
-  const [aba, setAba] = useState<Aba>(temImagemPropria || !retratoUrlAtual ? "arquivo" : "endereco");
+  const [aba, setAba] = useState<Aba>(origem === "endereco" ? "endereco" : "arquivo");
   const [url, setUrl] = useState(retratoUrlAtual ?? "");
   /** Arquivo escolhido, esperando enquadramento. Nada subiu ainda. */
   const [arquivoParaRecortar, setArquivoParaRecortar] = useState<File | null>(null);
@@ -137,17 +145,35 @@ export function EditorRetratoToken({
     onConcluido();
   }
 
+  /**
+   * Remove o retrato PRÓPRIO do token. Não fecha a janela: remover é um
+   * ajuste, não um fim de tarefa — e fechar escondia o resultado
+   * justamente de quem acabou de pedir a mudança. Quem fecha é "Fechar".
+   *
+   * Se o token for de um personagem com avatar, a cara NÃO some: a
+   * herança volta a valer. A janela diz isso antes de a pessoa clicar,
+   * para o resultado não parecer uma imagem antiga ressuscitando.
+   */
   async function remover() {
     setOcupado(true);
     setErro(null);
     const r = await definirRetratoImagemAction(campaignId, tokenId, null, revision);
     setOcupado(false);
     if (!r.ok) { setErro(r.erro ?? "Não foi possível remover o retrato."); return; }
-    onConcluido();
+    onConcluido({ manterAberto: true });
   }
 
   const previewMostrado = previewAtual;
-  const temRetrato = temImagemPropria || !!retratoUrlAtual;
+    // Só há o que remover quando o retrato é DESTE token.
+  const temProprio = origem === "arquivo" || origem === "endereco";
+  /**
+   * O token tem ficha, então remover o retrato próprio pode não deixar
+   * vazio — a herança volta a valer SE a ficha tiver avatar. Este
+   * componente não sabe se tem (o id do avatar é coluna de
+   * `characters`, fora da projeção do HUD), e por isso o aviso diz
+   * "se houver" em vez de prometer o que não pode conferir.
+   */
+  const origemHerdavel = nomePersonagem !== null;
 
   // O enquadramento roda ANTES de qualquer envio, sobre o arquivo
   // escolhido. Enquanto ele está aberto, o resto do editor sai de cena:
@@ -201,18 +227,35 @@ export function EditorRetratoToken({
           <button
             type="button" className="rv-editor-retrato__disco"
             onClick={() => inputArquivo.current?.click()} disabled={ocupado}
-            aria-label={temRetrato ? "Trocar a imagem do retrato" : "Escolher uma imagem"}
+            aria-label={previewAtual ? "Trocar a imagem do retrato" : "Escolher uma imagem"}
           >
             {previewMostrado
               ? <img src={previewMostrado} alt="" />
               : <ImageUp size={20} aria-hidden />}
             <span className="rv-editor-retrato__disco-acao">
-              {temRetrato ? "Trocar" : "Escolher"}
+              {previewAtual ? "Trocar" : "Escolher"}
             </span>
           </button>
-          <p className="rv-editor-retrato__nota">
-            PNG, JPEG ou WebP · até 2 MB
-          </p>
+          {/* Dizer de onde a cara vem é o que impede o mal-entendido:
+              sem isto, remover o retrato do token faz o avatar da ficha
+              aparecer e parece que uma imagem antiga voltou. */}
+          {origem === "herdado" ? (
+            <p className="rv-editor-retrato__origem">
+              <UserRound size={12} aria-hidden />
+              <span>
+                Vem da ficha{nomePersonagem ? <> de <strong>{nomePersonagem}</strong></> : null}.
+                Enviar um arquivo aqui vale só para este token.
+              </span>
+            </p>
+          ) : (
+            <p className="rv-editor-retrato__nota">PNG, JPEG ou WebP · até 2 MB</p>
+          )}
+          {/* Avisado ANTES do clique, não descoberto depois dele. */}
+          {temProprio && origemHerdavel && (
+            <p className="rv-editor-retrato__nota">
+              Ao remover, o token volta ao avatar da ficha, se houver.
+            </p>
+          )}
         </>
       ) : (
         <>
@@ -227,7 +270,7 @@ export function EditorRetratoToken({
             Um retrato tem uma origem só: salvar aqui apaga o arquivo enviado.
           </p>
           <div className="rv-editor-retrato__acoes">
-            {temRetrato && (
+            {temProprio && (
               <button type="button" className="rv-btn rv-btn--ghost rv-editor-retrato__remover"
                 onClick={() => void remover()} disabled={ocupado}>
                 <Trash2 size={13} aria-hidden /> Remover
@@ -250,7 +293,7 @@ export function EditorRetratoToken({
           nada seria pior que nenhum. */}
       {aba === "arquivo" && (
         <div className="rv-editor-retrato__acoes">
-          {temRetrato && (
+          {temProprio && (
             <button type="button" className="rv-btn rv-btn--ghost rv-editor-retrato__remover"
               onClick={() => void remover()} disabled={ocupado}>
               <Trash2 size={13} aria-hidden /> Remover

@@ -76,11 +76,20 @@ export interface TokenVtt {
   /** Apresentação da presença na cena; recursos vinculados são projetados da ficha canônica. */
   retratoUrl: string | null;
   /**
-   * Arquivo próprio (0101/0102). NÃO é uma URL: é o id do asset, que só
-   * vira imagem depois de assinado pelo servidor. Um retrato tem UMA
+   * Arquivo PRÓPRIO do token (0101/0102). NÃO é uma URL: é o id do
+   * asset, que só vira imagem depois de assinado. Um retrato tem UMA
    * origem — quando isto está preenchido, `retratoUrl` está nulo.
    */
   retratoImageId: string | null;
+  /**
+   * O que se DESENHA, com a herança do avatar da ficha já resolvida
+   * (0105/0106). Igual a `retratoImageId` quando o token tem retrato
+   * próprio; o avatar do personagem quando não tem.
+   *
+   * Os dois existem porque a interface precisa dos dois: um diz o que
+   * mostrar, o outro diz o que a pessoa pode remover daqui.
+   */
+  retratoEfetivoId: string | null;
   pvAtual: number | null;
   pvMax: number | null;
   condicoes: string[];
@@ -637,6 +646,7 @@ function linhaParaTokenVtt(linha: Record<string, unknown>): TokenVtt {
     visivel: linha.visivel as boolean,
     retratoUrl: (linha.retrato_url as string | null) ?? null,
     retratoImageId: (linha.retrato_image_id as string | null) ?? null,
+    retratoEfetivoId: (linha.retrato_efetivo_id as string | null) ?? null,
     offsetQ: Number(linha.offset_q ?? 0) || 0,
     offsetR: Number(linha.offset_r ?? 0) || 0,
     pvAtual: (linha.pv_atual as number | null) ?? null,

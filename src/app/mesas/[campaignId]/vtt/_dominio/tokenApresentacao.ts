@@ -45,8 +45,16 @@ export interface TokenApresentacao {
   orientacao: number;
   pegadaPersonalizada: Hex[] | null;
   retrato: string | null;
-  /** Id do arquivo, quando o retrato vem de upload — `null` quando vem de endereço externo ou não existe. */
+  /** Id do arquivo PRÓPRIO do token — `null` quando o retrato é herdado, externo, ou não existe. */
   retratoImageId: string | null;
+  /**
+   * De onde vem a cara que está sendo desenhada. A interface precisa
+   * disto para não oferecer "Remover" sobre uma imagem que não é deste
+   * token — foi exatamente o que confundiu na mesa: remover o próprio
+   * fazia o avatar da ficha aparecer, e parecia "voltar" para uma
+   * imagem antiga.
+   */
+  origemRetrato: "arquivo" | "endereco" | "herdado" | "nenhum";
   /** `null` = sem PV definido (a UI deve tratar como "sem barra de vida", não como 0). */
   pv: number | null;
   pvMax: number | null;
@@ -93,6 +101,7 @@ export function tokenApresentacaoDe(t: {
   pegadaPersonalizada: Hex[] | null;
   retratoUrl: string | null;
   retratoImageId: string | null;
+  retratoEfetivoId: string | null;
   pvAtual: number | null;
   pvMax: number | null;
   condicoes: string[];
@@ -127,8 +136,15 @@ export function tokenApresentacaoDe(t: {
     // A precedência é do BANCO, não daqui: a 0101 garante que só uma
     // das duas origens está preenchida por vez. Resolver na ordem é
     // só refletir isso — `??` e não um fallback que "conserta".
-    retrato: t.retratoImageId ? (urlsAssinadas?.[t.retratoImageId] ?? null) : t.retratoUrl,
+    retrato: t.retratoEfetivoId
+      ? (urlsAssinadas?.[t.retratoEfetivoId] ?? null)
+      : t.retratoUrl,
     retratoImageId: t.retratoImageId,
+    origemRetrato:
+      t.retratoImageId !== null ? "arquivo"
+      : t.retratoUrl !== null ? "endereco"
+      : t.retratoEfetivoId !== null ? "herdado"
+      : "nenhum",
     pv: t.pvAtual,
     pvMax: t.pvMax,
     condicoes: condicoesValidas(t.condicoes),
