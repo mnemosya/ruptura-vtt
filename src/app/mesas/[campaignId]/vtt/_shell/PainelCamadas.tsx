@@ -46,7 +46,8 @@ import { useEffect } from "react";
 import { Eye, EyeOff, Layers, Lock, RotateCcw, Unlock } from "lucide-react";
 import { JanelaFerramenta } from "./JanelaFerramenta";
 
-export type CamadaId = "grade" | "terrenoFuncional" | "objetos" | "marcas" | "tokens" | "pings";
+export type CamadaId =
+  | "imagemFundo" | "tiles" | "grade" | "terrenoFuncional" | "objetos" | "marcas" | "tokens" | "pings";
 
 export interface EstadoUmaCamada {
   visivel: boolean;
@@ -83,6 +84,17 @@ interface DefinicaoCamada {
 
 /** Ordem de exibição no painel — não é `z-index` (isso continua fixo no SVG, ver `MapaHex.tsx`), só a ordem da lista de controles. */
 export const CAMADAS_DEFINICAO: DefinicaoCamada[] = [
+  // Imagem entra como DUAS camadas, não uma, porque os ids são
+  // contrato do servidor: `vtt_asset_assinavel_para` (0100) decide se
+  // assina a URL consultando `imagemFundo` ou `tiles` conforme o papel
+  // da colocação. Esconder aqui não é só parar de desenhar — é parar de
+  // emitir URL nova pro jogador.
+  //
+  // E separar as duas é o que torna a camada útil: um mapa de fundo e
+  // os móveis por cima quase nunca se escondem juntos. Revelar a planta
+  // sem revelar onde estão as coisas é um gesto de narração comum.
+  { id: "imagemFundo", rotulo: "Fundo do mapa", temBloqueio: true, grupo: "cena", descricao: "a planta por baixo de tudo" },
+  { id: "tiles", rotulo: "Imagens soltas", temBloqueio: true, grupo: "cena", descricao: "móveis, manchas, recortes" },
   { id: "terrenoFuncional", rotulo: "Terreno", temBloqueio: true, grupo: "cena", descricao: "difícil e bloqueado" },
   { id: "objetos", rotulo: "Objetos / coberturas", temBloqueio: false, grupo: "cena", descricao: "cobertura e colisão" },
   { id: "tokens", rotulo: "Tokens", temBloqueio: true, grupo: "cena", descricao: "quem está em cena" },
@@ -103,6 +115,8 @@ const GRUPOS: { id: GrupoCamada; titulo: string }[] = [
 ];
 
 const SIGLA_CAMADA: Record<CamadaId, string> = {
+  imagemFundo: "IF",
+  tiles: "IM",
   grade: "G",
   terrenoFuncional: "T",
   objetos: "O",
@@ -122,6 +136,8 @@ export function ehCamadaDeFerramenta(id: CamadaId): boolean {
 }
 
 export const CAMADAS_PADRAO: EstadoCamadas = {
+  imagemFundo: { visivel: true, bloqueada: false },
+  tiles: { visivel: true, bloqueada: false },
   grade: { visivel: true, bloqueada: false },
   terrenoFuncional: { visivel: true, bloqueada: false },
   objetos: { visivel: true, bloqueada: false },

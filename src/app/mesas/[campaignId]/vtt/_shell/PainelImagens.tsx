@@ -24,6 +24,7 @@ import {
   ChevronDown, ChevronUp, Eye, EyeOff, ImageUp, Images, Lock, LockOpen, Trash2,
 } from "lucide-react";
 import { type ImagemCena, alturaEfetivaM } from "../_dominio/imagemCena";
+import type { AjusteImagemCena } from "../_acoes/imageActions";
 
 export interface PropsPainelImagens {
   imagens: ImagemCena[];
@@ -37,13 +38,17 @@ export interface PropsPainelImagens {
   onRemover: (img: ImagemCena) => void;
   onEnviarArquivo: () => void;
   onAbrirBiblioteca: () => void;
+  /** Ajuste fino da selecionada — rotação, opacidade, camada. */
+  onAjustar: (img: ImagemCena, ajuste: AjusteImagemCena) => void;
   onFechar: () => void;
 }
 
 export function PainelImagens({
   imagens, urlsAssinadas, selecionadaId, onSelecionar, onAlternarVisivel,
-  onAlternarTravado, onMudarOrdem, onRemover, onEnviarArquivo, onAbrirBiblioteca, onFechar,
+  onAlternarTravado, onMudarOrdem, onRemover, onEnviarArquivo, onAbrirBiblioteca,
+  onAjustar, onFechar,
 }: PropsPainelImagens) {
+  const selecionada = imagens.find((i) => i.id === selecionadaId) ?? null;
   // Fundo primeiro, depois os tiles por `z` — a mesma ordem que o SVG
   // desenha, para a lista não contradizer o mapa.
   const ordenadas = [...imagens].sort((a, b) => {
@@ -134,6 +139,92 @@ export function PainelImagens({
             );
           })}
         </ul>
+      )}
+
+      {/* ── Ajuste fino da selecionada ────────────────────────────────
+          Mover e escalar são GESTO, no mapa, porque são espaciais: a
+          pessoa precisa ver a imagem encaixar na grade enquanto mexe.
+          Rotação, opacidade e camada são NÚMERO, e aqui, porque
+          ninguém acerta 15° arrastando — e porque opacidade só faz
+          sentido comparada com o que está por baixo, que continua
+          visível com o painel ao lado.
+
+          Cada controle grava ao SOLTAR (`onChange` do range dispara no
+          fim do gesto em todos os navegadores de hoje), não a cada
+          pixel: uma escrita por ajuste, a mesma disciplina do arrasto
+          de token. ───────────────────────────────────────────────── */}
+      {selecionada && (
+        <div className="rv-imagens-ajuste">
+          <p className="rv-imagens-ajuste__titulo">
+            Ajustar {selecionada.papel === "fundo" ? "o fundo" : "o tile"}
+          </p>
+
+          <label className="rv-imagens-ajuste__campo">
+            <span>Rotação <em>{Math.round(selecionada.rotacaoGraus)}°</em></span>
+            <input
+              type="range" min={0} max={359} step={1}
+              value={Math.round(selecionada.rotacaoGraus)}
+              disabled={selecionada.travado}
+              onChange={(e) => onAjustar(selecionada, { rotacaoGraus: Number(e.target.value) })}
+            />
+          </label>
+
+          <label className="rv-imagens-ajuste__campo">
+            <span>Opacidade <em>{Math.round(selecionada.opacidade * 100)}%</em></span>
+            <input
+              type="range" min={10} max={100} step={5}
+              value={Math.round(selecionada.opacidade * 100)}
+              disabled={selecionada.travado}
+              onChange={(e) => onAjustar(selecionada, { opacidade: Number(e.target.value) / 100 })}
+            />
+          </label>
+
+          <label className="rv-imagens-ajuste__campo">
+            <span>Largura <em>{selecionada.larguraM.toFixed(1)} m</em></span>
+            <input
+              type="range" min={1} max={200} step={1}
+              value={Math.min(200, Math.max(1, Math.round(selecionada.larguraM)))}
+              disabled={selecionada.travado}
+              onChange={(e) => onAjustar(selecionada, { larguraM: Number(e.target.value) })}
+            />
+          </label>
+
+          <div className="rv-imagens-ajuste__camada" role="group" aria-label="Posição na pilha">
+            <button
+              type="button" disabled={selecionada.travado}
+              aria-pressed={selecionada.camada === "abaixo_grade"}
+              className={selecionada.camada === "abaixo_grade" ? "is-ativo" : undefined}
+              onClick={() => onAjustar(selecionada, { camada: "abaixo_grade" })}
+            >
+              Sob a grade
+            </button>
+            <button
+              type="button" disabled={selecionada.travado}
+              aria-pressed={selecionada.camada === "acima_grade"}
+              className={selecionada.camada === "acima_grade" ? "is-ativo" : undefined}
+              onClick={() => onAjustar(selecionada, { camada: "acima_grade" })}
+            >
+              Sobre a grade
+            </button>
+          </div>
+
+          {/* A distorção é sempre deliberada, então desfazê-la também
+              precisa ser um gesto explícito — e só aparece quando há o
+              que desfazer. */}
+          {selecionada.alturaM !== null && (
+            <button
+              type="button" className="rv-imagens-ajuste__proporcao"
+              disabled={selecionada.travado}
+              onClick={() => onAjustar(selecionada, { limparAltura: true })}
+            >
+              Voltar à proporção do arquivo
+            </button>
+          )}
+
+          {selecionada.travado && (
+            <p className="rv-imagens-ajuste__travada">Destrave para ajustar.</p>
+          )}
+        </div>
       )}
     </JanelaFerramenta>
   );

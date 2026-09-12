@@ -146,3 +146,61 @@ export function dimensaoDentroDoTeto(
 ): boolean {
   return valorM > 0 && valorM <= 4 * Math.max(larguraCena, alturaCena);
 }
+
+/**
+ * Projeção do servidor (`read_vtt_scene_images` / `vtt_scene_image_json`,
+ * 0100) para o tipo do cliente.
+ *
+ * TOLERANTE como `camadasDeJson`: o que não bate a forma vira `null` e é
+ * descartado pela lista, em vez de derrubar o mapa inteiro. Vale para a
+ * leitura persistida e para qualquer payload futuro — um evento ao vivo
+ * não é mais confiável que uma linha lida, e duas validações diferentes
+ * é como estados impossíveis nascem.
+ *
+ * `numeric` do Postgres chega como STRING no JSON quando passa da
+ * precisão de `double` (é o comportamento do driver, não um acidente):
+ * por isso cada número passa por `Number(...)` e por um teste de
+ * finitude, nunca por um cast.
+ */
+export function imagemCenaDeJson(bruto: unknown): ImagemCena | null {
+  if (!bruto || typeof bruto !== "object") return null;
+  const j = bruto as Record<string, unknown>;
+
+  const texto = (v: unknown): string | null => (typeof v === "string" && v !== "" ? v : null);
+  const numero = (v: unknown): number | null => {
+    const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const id = texto(j.id);
+  const imageId = texto(j.image_id);
+  const papel = j.papel === "fundo" || j.papel === "tile" ? j.papel : null;
+  const camada = j.camada === "abaixo_grade" || j.camada === "acima_grade" ? j.camada : null;
+  const centroQ = numero(j.centro_q);
+  const centroR = numero(j.centro_r);
+  const larguraM = numero(j.largura_m);
+  const widthPx = numero(j.width_px);
+  const heightPx = numero(j.height_px);
+  if (id === null || imageId === null || papel === null || camada === null) return null;
+  if (centroQ === null || centroR === null || larguraM === null) return null;
+  if (widthPx === null || heightPx === null) return null;
+
+  return {
+    id, imageId, papel, camada, centroQ, centroR, larguraM, widthPx, heightPx,
+    // `altura_m` nulo é significativo: quer dizer "derive da proporção".
+    // Só um número de verdade destrava a distorção.
+    alturaM: j.altura_m === null || j.altura_m === undefined ? null : numero(j.altura_m),
+    rotacaoGraus: numero(j.rotacao_graus) ?? 0,
+    opacidade: numero(j.opacidade) ?? 1,
+    z: numero(j.z) ?? 0,
+    visivel: j.visivel !== false,
+    travado: j.travado === true,
+    revision: numero(j.revision) ?? 1,
+  };
+}
+
+/** A lista inteira, descartando em silêncio o que não valida. */
+export function imagensCenaDeJson(bruto: unknown): ImagemCena[] {
+  if (!Array.isArray(bruto)) return [];
+  return bruto.map(imagemCenaDeJson).filter((i): i is ImagemCena => i !== null);
+}

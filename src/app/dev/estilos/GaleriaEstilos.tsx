@@ -77,7 +77,7 @@ function token(id: string, nome: string, sigla: string, lado: Lado): TokenAprese
   return {
     id, nome, sigla, lado, vertente: "energetico", tamanho: "medio",
     pos: { q: 0, r: 0 }, offset: { q: 0, r: 0 }, orientacao: 0,
-    pegadaPersonalizada: null, retrato: null, pv: null, pvMax: null,
+    pegadaPersonalizada: null, retrato: null, retratoImageId: null, pv: null, pvMax: null,
     condicoes: [], visivel: true, bloqueado: false, characterId: null,
     pvPublico: true, pePublico: false, manaPublica: true, podeControlar: true, revision: 1,
   };

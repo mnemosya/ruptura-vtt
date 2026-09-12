@@ -135,6 +135,19 @@ export function subscribeToVttScene(params: {
    * recebe relê a lista inteira via `carregarObjetosDaCena`.
    */
   onObjetosInvalidados: () => void;
+  /**
+   * Sinal de "as imagens desta cena mudaram" — também SEM payload, e
+   * por uma razão a mais que os objetos: a colocação sozinha não basta
+   * pra desenhar. Cada imagem precisa de uma URL ASSINADA, que só o
+   * servidor emite e só depois de conferir se esta pessoa pode ver
+   * aquele arquivo (`vtt_asset_assinavel_para`, 0100).
+   *
+   * Mandar a linha pelo canal seria mandar `image_id` pra quem o
+   * servidor talvez recuse assinar — o identificador de um arquivo que
+   * a pessoa não deveria saber que existe. Quem recebe relê a cena e
+   * pede as assinaturas, e a recusa acontece onde tem que acontecer.
+   */
+  onImagensInvalidadas: () => void;
   onStatusChange?: (status: "conectando" | "conectado" | "erro" | "desabilitado") => void;
 }): () => void {
   const client = getBrowserSupabaseClient();
@@ -280,6 +293,22 @@ export function subscribeToVttScene(params: {
       // e igualmente estreito.
       { event: "*", schema: "public", table: "vtt_object_cells", filter: `scene_id=eq.${params.sceneId}` },
       () => params.onObjetosInvalidados(),
+    )
+    .on(
+      "postgres_changes",
+      // Só as COLOCAÇÕES entram no canal. `vtt_image_assets` fica fora
+      // da publicação de propósito (0099): publicar o arquivo vazaria a
+      // existência de asset que nenhuma colocação visível expõe.
+      { event: "*", schema: "public", table: "vtt_scene_images", filter: `scene_id=eq.${params.sceneId}` },
+      () => params.onImagensInvalidadas(),
+    )
+    .on(
+      "postgres_changes",
+      // Esconder a camada muda o que a MESA enxerga (0093 + 0100): as
+      // imagens da camada escondida deixam de ser assináveis, então a
+      // releitura precisa acontecer também quando só `camadas` mudou.
+      { event: "UPDATE", schema: "public", table: "vtt_scenes", filter: `id=eq.${params.sceneId}` },
+      () => params.onImagensInvalidadas(),
     )
     .subscribe((status) => {
       if (status === "SUBSCRIBED") params.onStatusChange?.("conectado");

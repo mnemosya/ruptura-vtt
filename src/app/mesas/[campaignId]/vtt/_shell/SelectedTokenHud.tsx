@@ -2,7 +2,7 @@
 
 import { AbrirFicha } from "../../_shell/AbrirFicha";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Redo2, RotateCcw, RotateCw, Undo2 } from "lucide-react";
+import { ChevronDown, ImageUp, Redo2, RotateCcw, RotateCw, Undo2 } from "lucide-react";
 import {
   applyConsoleMutation,
   type Character,
@@ -29,6 +29,7 @@ import {
   setSelectedTokenHudVisibilityAction,
 } from "../_acoes/hudActions";
 import type { TokenApresentacao } from "../_dominio/tokenApresentacao";
+import { EditorRetratoToken } from "./EditorRetratoToken";
 
 export interface HudConditionOption {
   slug: string;
@@ -321,6 +322,18 @@ export function SelectedTokenHud(props: SelectedTokenHudProps) {
   const showConditions = !collapsed && canControl;
   const showPoints = !collapsed && canControl && pointData !== null;
   const showCenter = resources.length > 0 || showConditions;
+  /**
+   * O RETRATO É O BOTÃO. "Alterar retrato" não vira mais um ícone na
+   * fileira de ações: quem quer trocar o retrato clica no retrato, que
+   * é o alvo mais óbvio da tela e já está ali, do tamanho certo.
+   *
+   * É por AQUI que o jogador entra — e é a razão de a 0101 existir.
+   * `edit_vtt_token` (0076) é narrador-only e o gerenciador de token
+   * inteiro também: sem este caminho, o backend novo não entregaria
+   * nada a quem controla o token sem conduzir a mesa.
+   */
+  const [editandoRetrato, setEditandoRetrato] = useState(false);
+
   const collapseButton = (
     <button type="button" className="rv-hud-toggle" onClick={toggleCollapsed} aria-expanded={!collapsed} aria-label={collapsed ? "Expandir HUD" : "Recolher HUD"}>
       <ChevronDown size={14} aria-hidden="true" />
@@ -339,14 +352,45 @@ export function SelectedTokenHud(props: SelectedTokenHudProps) {
     >
       {!showCenter && collapseButton}
 
+      {editandoRetrato && (
+        <div className="rv-hud-retrato-editor">
+          <EditorRetratoToken
+            campaignId={campaignId}
+            tokenId={token.id}
+            revision={token.revision}
+            retratoUrlAtual={token.retrato}
+            previewAtual={imageUrl}
+            // A projeção do HUD (0084) já resolve a precedência; se o
+            // que ela devolveu não é o endereço externo, o retrato vem
+            // de arquivo.
+            temImagemPropria={token.retratoImageId !== null}
+            onConcluido={() => setEditandoRetrato(false)}
+            onCancelar={() => setEditandoRetrato(false)}
+          />
+        </div>
+      )}
+
       <div className="rv-hud-identity">
         <div className="rv-hud-namebar">
           <strong>{name}</strong>
           <span>token selecionado</span>
         </div>
-        <div className="rv-hud-portrait" aria-label={`Retrato de ${name}`}>
-          {imageUrl ? <img src={imageUrl} alt="" /> : <span>{initials}</span>}
-        </div>
+        {canControl ? (
+          <button
+            type="button" className="rv-hud-portrait rv-hud-portrait--editavel"
+            onClick={() => setEditandoRetrato(true)}
+            aria-label={`Alterar o retrato de ${name}`}
+          >
+            {imageUrl ? <img src={imageUrl} alt="" /> : <span>{initials}</span>}
+            <span className="rv-hud-portrait__lapis" aria-hidden>
+              <ImageUp size={13} />
+            </span>
+          </button>
+        ) : (
+          <div className="rv-hud-portrait" aria-label={`Retrato de ${name}`}>
+            {imageUrl ? <img src={imageUrl} alt="" /> : <span>{initials}</span>}
+          </div>
+        )}
       </div>
 
       {showCenter && <div className="rv-hud-center">

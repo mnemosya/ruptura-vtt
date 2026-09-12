@@ -75,6 +75,12 @@ export interface TokenVtt {
   offsetR: number;
   /** Apresentação da presença na cena; recursos vinculados são projetados da ficha canônica. */
   retratoUrl: string | null;
+  /**
+   * Arquivo próprio (0101/0102). NÃO é uma URL: é o id do asset, que só
+   * vira imagem depois de assinado pelo servidor. Um retrato tem UMA
+   * origem — quando isto está preenchido, `retratoUrl` está nulo.
+   */
+  retratoImageId: string | null;
   pvAtual: number | null;
   pvMax: number | null;
   condicoes: string[];
@@ -630,6 +636,7 @@ function linhaParaTokenVtt(linha: Record<string, unknown>): TokenVtt {
     bloqueado: linha.bloqueado as boolean,
     visivel: linha.visivel as boolean,
     retratoUrl: (linha.retrato_url as string | null) ?? null,
+    retratoImageId: (linha.retrato_image_id as string | null) ?? null,
     offsetQ: Number(linha.offset_q ?? 0) || 0,
     offsetR: Number(linha.offset_r ?? 0) || 0,
     pvAtual: (linha.pv_atual as number | null) ?? null,

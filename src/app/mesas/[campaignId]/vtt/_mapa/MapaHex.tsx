@@ -104,6 +104,8 @@ import {
 import { type AlcaArea, type AreaDesenhavel, type GuiaGesto, CamadaAreas, CapturaAreas } from "./CamadaAreas";
 import { type RegiaoArea, pontoDentroDaRegiao } from "../_dominio/areaEfeito";
 import { type PontoAxial, mundoParaAxial } from "../_dominio/escalaMapa";
+import { type CantoImagem, CamadaImagens } from "./CamadaImagens";
+import { type ImagemCena, alturaEfetivaM, pxPorMetro, retanguloDaImagem } from "../_dominio/imagemCena";
 import { useAnimacaoToken } from "./useAnimacaoToken";
 
 export const TAM = 26; // raio do hexágono em px do mundo
@@ -504,6 +506,48 @@ export interface PropsMapaHex {
   verCamadasOcultas?: boolean;
 
   /**
+   * IMAGENS da cena — fundo e tiles (migration 0100). Decoração pura:
+   * este componente as desenha e deixa arrastar, e nada mais. Elas não
+   * entram em pathfinding, colisão nem custo de terreno, pelo mesmo
+   * princípio que separa objeto tático de enfeite.
+   *
+   * `urlsImagens` chega ASSINADA de fora. Este componente nunca assina
+   * nada: quem decide se uma pessoa pode ver um arquivo é o servidor
+   * (`vtt_asset_assinavel_para`), e um mapa que pudesse pedir a própria
+   * URL seria uma segunda porta para a mesma decisão.
+   */
+  /**
+   * Onde o ponteiro está sobre o mapa, em axial CONTÍNUO — escrito por
+   * este componente, lido por quem cola ou solta um arquivo.
+   *
+   * É REF, não callback com estado: um `setState` por `pointermove`
+   * redesenharia o mapa inteiro dezenas de vezes por segundo para
+   * alimentar um valor que só é lido no instante de um `paste`. Fica
+   * `null` enquanto o ponteiro não entrou no mapa — e esse `null` é
+   * informação, não ausência: é ele que manda a colagem cair no centro
+   * da viewport em vez de num ponto que a pessoa nunca apontou.
+   */
+  ancoraPonteiroRef?: React.MutableRefObject<PontoAxial | null>;
+  /**
+   * Conversor tela→axial, publicado por este componente para quem
+   * precisa dele fora do mapa — hoje, o `drop` de arquivo.
+   *
+   * Um arraste de arquivo NÃO emite `pointermove`, então a âncora
+   * guardada está parada onde o mouse esteve antes do arraste começar:
+   * o ponto do drop só existe nas coordenadas do próprio evento, e
+   * convertê-las exige o CTM do SVG, que só este componente tem.
+   */
+  conversorPontoRef?: React.MutableRefObject<((x: number, y: number) => PontoAxial | null) | null>;
+  imagensCena?: readonly ImagemCena[];
+  urlsImagens?: Record<string, string>;
+  imagemSelecionadaId?: string | null;
+  onSelecionarImagem?: (id: string | null) => void;
+  /** Fim do gesto de mover — âncora axial CONTÍNUA (nada encaixa em célula). */
+  onMoverImagem?: (id: string, centroQ: number, centroR: number) => void;
+  /** Fim do gesto de escalar — largura em metros; a altura segue a proporção. */
+  onEscalarImagem?: (id: string, larguraM: number) => void;
+
+  /**
    * Zoom pela roda do mouse/trackpad — recebe o delta já normalizado
    * (`deltaMode` resolvido pra uma escala aproximada de pixels, ver
    * `normalizarDeltaWheel`) e o ponto do MUNDO que estava sob o cursor
@@ -589,6 +633,14 @@ export function MapaHex({
   onAreaAlcaCancelar,
   areasInteracao,
   verCamadasOcultas,
+  ancoraPonteiroRef,
+  conversorPontoRef,
+  imagensCena,
+  urlsImagens,
+  imagemSelecionadaId,
+  onSelecionarImagem,
+  onMoverImagem,
+  onEscalarImagem,
 }: PropsMapaHex) {
   /** Última posição axial EXATA do ponteiro num arrasto — ver `soltar()`. */
   const pontoExatoRef = useRef<{ q: number; r: number } | null>(null);
@@ -897,6 +949,177 @@ export function MapaHex({
     window.addEventListener("keydown", aoTeclar);
     return () => window.removeEventListener("keydown", aoTeclar);
   }, [rotacaoAlca, cancelarRotacaoAlca]);
+
+  useEffect(() => {
+    if (!conversorPontoRef) return;
+    const ref = conversorPontoRef;
+    ref.current = (x, y) => {
+      const p = pontoMundo(x, y);
+      return p ? mundoParaAxial(p.x, p.y, TAM) : null;
+    };
+    return () => { ref.current = null; };
+  }, [conversorPontoRef, pontoMundo]);
+
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg || !ancoraPonteiroRef) return;
+    const ref = ancoraPonteiroRef;
+    function aoMover(e: PointerEvent) {
+      const p = pontoMundo(e.clientX, e.clientY);
+      ref.current = p ? mundoParaAxial(p.x, p.y, TAM) : null;
+    }
+    function aoSair() { ref.current = null; }
+    svg.addEventListener("pointermove", aoMover);
+    svg.addEventListener("pointerleave", aoSair);
+    return () => {
+      svg.removeEventListener("pointermove", aoMover);
+      svg.removeEventListener("pointerleave", aoSair);
+      ref.current = null;
+    };
+  }, [ancoraPonteiroRef, pontoMundo]);
+
+  // ── Gesto de IMAGEM: mover e escalar ───────────────────────────────
+  //
+  // Deliberadamente SEPARADO de `arrasto` (o de token), e não uma
+  // variante dele. O arrasto de token carrega rota, pathfinding,
+  // pegada, waypoints e colisão; imagem não tem nada disso — ela flutua
+  // livre em coordenada contínua, sem encaixar em célula e sem
+  // consultar terreno. Enfiar os dois no mesmo estado significaria um
+  // punhado de campos sempre nulos num deles e uma condição de "qual
+  // modo é este" em cada leitura.
+  //
+  // O gesto vive num ref e só produz UMA escrita, no `pointerup` —
+  // mesma disciplina do token: nada é persistido durante o arraste. O
+  // que muda durante o gesto é só o `transform` de prévia, aplicado no
+  // SVG sem passar pelo servidor.
+  const gestoImagemRef = useRef<{
+    id: string;
+    canto: CantoImagem | null;
+    /** Ponto de mundo onde a pressão começou. */
+    origem: { x: number; y: number };
+    /** Estado da imagem no início — a prévia é sempre relativa a ele. */
+    inicial: ImagemCena;
+  } | null>(null);
+  const [previaImagem, setPreviaImagem] = useState<
+    { id: string; dx: number; dy: number; escala: number } | null
+  >(null);
+  /* Mesmo motivo do `arrastoRef`: `soltar()` é efeito colateral real
+     (chama o servidor) e precisa do valor do gesto que acabou de
+     acontecer, não do que o último commit refletiu. */
+  const previaImagemRef = useRef<typeof previaImagem>(null);
+  previaImagemRef.current = previaImagem;
+
+  /**
+   * A lista que o SVG desenha — igual à recebida, exceto pela imagem
+   * em gesto, que ganha a prévia aplicada. A prévia vive só aqui: o
+   * servidor não sabe dela até o `pointerup`, e é isso que faz um
+   * arraste custar uma escrita e não trinta.
+   */
+  const imagensDesenhaveis = useMemo<readonly ImagemCena[]>(() => {
+    const lista = imagensCena ?? [];
+    if (!previaImagem) return lista;
+    return lista.map((img) => {
+      if (img.id !== previaImagem.id) return img;
+      if (previaImagem.escala !== 1) {
+        return {
+          ...img,
+          larguraM: img.larguraM * previaImagem.escala,
+          // A altura explícita escala JUNTO — senão a imagem que
+          // alguém distorceu de propósito voltaria à proporção do
+          // arquivo no meio de um gesto de tamanho.
+          alturaM: img.alturaM === null ? null : img.alturaM * previaImagem.escala,
+        };
+      }
+      const r = retanguloDaImagem(img, TAM);
+      const destino = mundoParaAxial(r.centroX + previaImagem.dx, r.centroY + previaImagem.dy, TAM);
+      return { ...img, centroQ: destino.q, centroR: destino.r };
+    });
+  }, [imagensCena, previaImagem]);
+
+  const pressionarImagem = useCallback((id: string, canto: CantoImagem | null, e: React.PointerEvent) => {
+    const img = imagensCena?.find((i) => i.id === id);
+    if (!img || img.travado) return;
+    const p = pontoMundo(e.clientX, e.clientY);
+    if (!p) return;
+    e.stopPropagation();
+    gestoImagemRef.current = { id, canto, origem: p, inicial: img };
+    setPreviaImagem({ id, dx: 0, dy: 0, escala: 1 });
+  }, [imagensCena, pontoMundo]);
+
+  useEffect(() => {
+    if (!previaImagem) return;
+
+    function mover(e: PointerEvent) {
+      const g = gestoImagemRef.current;
+      const p = g ? pontoMundo(e.clientX, e.clientY) : null;
+      if (!g || !p) return;
+      const dx = p.x - g.origem.x;
+      const dy = p.y - g.origem.y;
+
+      if (g.canto === null) {
+        setPreviaImagem({ id: g.id, dx, dy, escala: 1 });
+        return;
+      }
+
+      // Escala UNIFORME a partir do centro, pela distância ao centro.
+      // Escalar pelo canto oposto (o comportamento de editor gráfico)
+      // moveria a imagem junto, e mover é o outro gesto — misturar os
+      // dois faria o ajuste fino de tamanho exigir reposicionar depois.
+      const r = retanguloDaImagem(g.inicial, TAM);
+      const antes = Math.hypot(g.origem.x - r.centroX, g.origem.y - r.centroY);
+      const agora = Math.hypot(p.x - r.centroX, p.y - r.centroY);
+      // Perto do centro a razão explode (divisão por ~0): abaixo de um
+      // limiar o gesto simplesmente não escala, em vez de saltar.
+      const escala = antes < 4 ? 1 : Math.max(0.05, agora / antes);
+      setPreviaImagem({ id: g.id, dx: 0, dy: 0, escala });
+    }
+
+    function soltar() {
+      const g = gestoImagemRef.current;
+      gestoImagemRef.current = null;
+      const previa = previaImagemRef.current;
+      setPreviaImagem(null);
+      if (!g || !previa) return;
+
+      if (g.canto === null) {
+        // Nada de `pixelParaHex`: a âncora é contínua de propósito. Um
+        // fundo quase nunca cai sobre o centro de um hexágono, e
+        // encaixar aqui desalinharia o mapa da grade por até meia
+        // célula — o erro nº 1 de mapa em VTT.
+        if (Math.abs(previa.dx) < 0.5 && Math.abs(previa.dy) < 0.5) return;
+        const r = retanguloDaImagem(g.inicial, TAM);
+        const destino = mundoParaAxial(r.centroX + previa.dx, r.centroY + previa.dy, TAM);
+        onMoverImagem?.(g.id, destino.q, destino.r);
+        return;
+      }
+
+      if (Math.abs(previa.escala - 1) < 0.01) return;
+      onEscalarImagem?.(g.id, g.inicial.larguraM * previa.escala);
+    }
+
+    // `pointercancel`/`blur` cancelam sem gravar, como no arrasto de
+    // token: um gesto roubado pelo sistema não é um gesto concluído.
+    function cancelar() {
+      gestoImagemRef.current = null;
+      setPreviaImagem(null);
+    }
+    function tecla(e: KeyboardEvent) {
+      if (e.key === "Escape") cancelar();
+    }
+
+    window.addEventListener("pointermove", mover);
+    window.addEventListener("pointerup", soltar);
+    window.addEventListener("pointercancel", cancelar);
+    window.addEventListener("blur", cancelar);
+    window.addEventListener("keydown", tecla);
+    return () => {
+      window.removeEventListener("pointermove", mover);
+      window.removeEventListener("pointerup", soltar);
+      window.removeEventListener("pointercancel", cancelar);
+      window.removeEventListener("blur", cancelar);
+      window.removeEventListener("keydown", tecla);
+    };
+  }, [previaImagem !== null, pontoMundo, onMoverImagem, onEscalarImagem]);
 
   useEffect(() => {
     if (!arrasto) return;
@@ -1795,6 +2018,32 @@ export function MapaHex({
         <ellipse cx={(minX + maxX) * 0.42} cy={(minY + maxY) * 0.55} rx={280} ry={190} fill="url(#rv-mancha)" />
         <ellipse cx={(minX + maxX) * 0.72} cy={(minY + maxY) * 0.3} rx={200} ry={140} fill="url(#rv-mancha)" />
 
+        {/* ── IMAGENS (abaixo da grade) ── o caso normal: a planta é o
+            chão, e grade/terreno/tokens se apoiam nela. Fica DEPOIS do
+            piso porque o piso é o "cinza vazio" que ela substitui, e
+            ANTES da grade porque a grade precisa continuar legível por
+            cima de qualquer mapa. ─────────────────────────────────── */}
+        <CamadaImagens
+          imagens={imagensDesenhaveis} camada="abaixo_grade" tamanhoCelula={TAM}
+          urls={urlsImagens ?? {}}
+          // `cOculta`, não `cVisivel`: para o narrador `cVisivel` já
+          // devolve `true` de propósito (o mapa separa "desenhar" de
+          // "atenuar", e quem atenua é `cAtenuacao`). A camada de
+          // imagens faz as duas coisas junto — precisa do estado CRU
+          // pra decidir entre sumir (jogador) e virar fantasma
+          // (narrador).
+          visivelFundo={!cOculta("imagemFundo")}
+          visivelTiles={!cOculta("tiles")}
+          ehNarrador={verCamadasOcultas === true}
+          ferramentaAtiva={ferramenta === "imagens"}
+          bloqueadaFundo={cBloqueada("imagemFundo")}
+          bloqueadaTiles={cBloqueada("tiles")}
+          selecionadaId={imagemSelecionadaId ?? null}
+          onSelecionar={onSelecionarImagem}
+          onPressionarCorpo={(id, e) => pressionarImagem(id, null, e)}
+          onPressionarCanto={(id, canto, e) => pressionarImagem(id, canto, e)}
+        />
+
         {/* ── Grade ── visibilidade é só opacidade (nunca `display:none`
             nem tira o `<path>` da árvore): Medir/pintura de terreno
             continuam funcionando através da grade mesmo "oculta" — a
@@ -1903,6 +2152,31 @@ export function MapaHex({
             })}
           </g>
         )}
+
+        {/* ── IMAGENS (acima da grade) ── o recorte que precisa tapar a
+            grade: tapete, telhado, mancha. Continua ABAIXO de áreas,
+            marcações, objetos e tokens — decoração nunca esconde quem
+            está em cena nem um sinal deixado pela mesa. ───────────── */}
+        <CamadaImagens
+          imagens={imagensDesenhaveis} camada="acima_grade" tamanhoCelula={TAM}
+          urls={urlsImagens ?? {}}
+          // `cOculta`, não `cVisivel`: para o narrador `cVisivel` já
+          // devolve `true` de propósito (o mapa separa "desenhar" de
+          // "atenuar", e quem atenua é `cAtenuacao`). A camada de
+          // imagens faz as duas coisas junto — precisa do estado CRU
+          // pra decidir entre sumir (jogador) e virar fantasma
+          // (narrador).
+          visivelFundo={!cOculta("imagemFundo")}
+          visivelTiles={!cOculta("tiles")}
+          ehNarrador={verCamadasOcultas === true}
+          ferramentaAtiva={ferramenta === "imagens"}
+          bloqueadaFundo={cBloqueada("imagemFundo")}
+          bloqueadaTiles={cBloqueada("tiles")}
+          selecionadaId={imagemSelecionadaId ?? null}
+          onSelecionar={onSelecionarImagem}
+          onPressionarCorpo={(id, e) => pressionarImagem(id, null, e)}
+          onPressionarCanto={(id, canto, e) => pressionarImagem(id, canto, e)}
+        />
 
         {/* ── ÁREAS DE EFEITO (visual) ─────────────────────────────
             Abaixo de marcas, objetos e tokens de propósito: a área é

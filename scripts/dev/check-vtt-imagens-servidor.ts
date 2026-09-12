@@ -386,6 +386,38 @@ async function main() {
       Array.isArray(pendentes) && pendentes.length > 0, `${(pendentes as unknown[]).length} pendente(s)`);
   }
 
+  // ── A coleta devolve a quota (0103) ────────────────────────────────
+  // Regressão encontrada rodando o ciclo inteiro na mesa: o arquivo
+  // saía do bucket e da tabela, e `bytes_usados` ficava igual. Sem esta
+  // devolução, uma campanha que sobe e descarta mapas trava em 1 GB com
+  // o bucket VAZIO — e o sintoma não aponta pra nada, porque não há o
+  // que apagar.
+  {
+    const { data: antes } = await admin.from("vtt_campaign_storage_usage")
+      .select("bytes_usados").eq("campaign_id", campaignId).single();
+    const { data: alvo } = await admin.from("vtt_image_assets")
+      .select("storage_path, bytes").eq("estado", "deleting").limit(1).single();
+
+    if (!alvo) {
+      ok("32 (a coleta devolve a quota)", false, "nenhum asset em `deleting` para exercitar o caso");
+    } else {
+      await admin.rpc("vtt_confirmar_remocao_imagem", { p_storage_path: alvo.storage_path });
+      const { data: depois } = await admin.from("vtt_campaign_storage_usage")
+        .select("bytes_usados").eq("campaign_id", campaignId).single();
+      const esperado = Number(antes!.bytes_usados) - Number(alvo.bytes);
+      ok("32 (confirmar a remoção DEVOLVE os bytes — senão a quota vaza pra sempre)",
+        Number(depois!.bytes_usados) === esperado,
+        `${antes!.bytes_usados} − ${alvo.bytes} = ${depois!.bytes_usados} (esperado ${esperado})`);
+
+      // Idempotência da devolução: repetir não pode descontar de novo.
+      await admin.rpc("vtt_confirmar_remocao_imagem", { p_storage_path: alvo.storage_path });
+      const { data: terceira } = await admin.from("vtt_campaign_storage_usage")
+        .select("bytes_usados").eq("campaign_id", campaignId).single();
+      ok("33 (repetir a confirmação não desconta duas vezes)",
+        Number(terceira!.bytes_usados) === esperado, `${terceira!.bytes_usados}`);
+    }
+  }
+
   console.log(`\n${passou} ok, ${falhou} falha(s).`);
 }
 

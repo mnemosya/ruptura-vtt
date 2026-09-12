@@ -99,6 +99,9 @@ import {
 import { PainelAreas, type ItemListaArea } from "./_shell/PainelAreas";
 import { PainelTerreno } from "./_shell/PainelTerreno";
 import { PainelObjetos } from "./_shell/PainelObjetos";
+import { PainelImagens } from "./_shell/PainelImagens";
+import { ColocarImagem } from "./_shell/ColocarImagem";
+import { useImagensDaCena } from "./_shell/useImagensDaCena";
 import { PainelMedir, type ModoMedicao } from "./_shell/PainelMedir";
 import { PainelDados } from "./_shell/PainelDados";
 import { MesaDadosOverlay } from "./_dados3d/MesaDadosOverlay";
@@ -329,6 +332,49 @@ export function VttClient({
 
   // ── Estado persistido (banco) ────────────────────────────────────
   const [estadoCena, setEstadoCena] = useState<EstadoCenaVtt>(null);
+
+  /**
+   * IMAGENS da cena. Todo o assunto — lista, URLs assinadas, preparo em
+   * memória e as escritas — vive no hook; aqui só se liga o resultado
+   * na barra, no mapa e no painel.
+   */
+  /**
+   * Retratos de ARQUIVO em cena. Entram na mesma leva de assinatura das
+   * imagens de cena — são o mesmo bucket, a mesma autorização e o mesmo
+   * ciclo de renovação, e uma segunda leva seria uma segunda chance de
+   * as duas discordarem sobre o que está válido.
+   */
+  const idsRetratoEmCena = useMemo(
+    () => (estadoCena?.tokens ?? [])
+      .map((t) => t.retratoImageId)
+      .filter((id): id is string => id !== null),
+    [estadoCena?.tokens],
+  );
+  const imgs = useImagensDaCena({
+    campaignId,
+    sceneId: estadoCena?.cena.id ?? null,
+    ehNarrador,
+    larguraCena: estadoCena?.cena.largura ?? 0,
+    alturaCena: estadoCena?.cena.altura ?? 0,
+    idsExtras: idsRetratoEmCena,
+  });
+  /** Último ponto do ponteiro sobre o mapa — escrito pelo `MapaHex`. */
+  const ancoraPonteiroRef = useRef<PontoAxial | null>(null);
+  /* A assinatura do canal de Realtime não pode depender da identidade
+     de `recarregar`: ela muda a cada troca de cena, e re-inscrever o
+     canal inteiro por causa disso derrubaria e refaria a conexão da
+     mesa. O ref mantém o handler estável e sempre apontando pra função
+     corrente — o mesmo padrão que o resto deste arquivo já usa. */
+  const palcoRef = useRef<HTMLElement | null>(null);
+  /** Realce do palco enquanto um arquivo paira sobre ele. */
+  const [arrastandoArquivo, setArrastandoArquivo] = useState(false);
+  const conversorPontoRef = useRef<((x: number, y: number) => PontoAxial | null) | null>(null);
+  const pontoAxialDoEvento = useCallback(
+    (x: number, y: number): PontoAxial | null => conversorPontoRef.current?.(x, y) ?? null,
+    [],
+  );
+  const imagensRecarregarRef = useRef(imgs.recarregar);
+  imagensRecarregarRef.current = imgs.recarregar;
   const [carregandoCena, setCarregandoCena] = useState(true);
   const [erroCena, setErroCena] = useState<string | null>(null);
   const [usuarioId, setUsuarioId] = useState<string | null>(null);
@@ -624,8 +670,11 @@ export function VttClient({
   // — uma linha oculta nem chega em `estadoCena.tokens` pra um jogador,
   // então não há filtro de visibilidade a refazer aqui.
   const tokensApresentacao = useMemo(
-    () => (estadoCena?.tokens ?? []).map(tokenApresentacaoDe),
-    [estadoCena],
+    // `(t) => …` e não `map(tokenApresentacaoDe)`: passar a função nua
+    // entregaria o ÍNDICE do `map` no segundo parâmetro, que agora é o
+    // mapa de URLs assinadas.
+    () => (estadoCena?.tokens ?? []).map((t) => tokenApresentacaoDe(t, imgs.urls)),
+    [estadoCena, imgs.urls],
   );
   const tokenPorId = useMemo(() => new Map(tokensApresentacao.map((t) => [t.id, t])), [tokensApresentacao]);
   /**
@@ -1274,6 +1323,10 @@ export function VttClient({
         if (e.tipo === "encerrada") { adotarTrilha(null); return; }
         adotarTrilha({ estado: e.estado, revision: e.revision });
       },
+      // A releitura das imagens é a mesma tanto pra colocação que mudou
+      // quanto pra camada que foi escondida: nos dois casos o que este
+      // cliente pode VER mudou, e só o servidor sabe o novo recorte.
+      onImagensInvalidadas: () => { void imagensRecarregarRef.current(); },
       onObjetosInvalidados: () => {
         void lerObjetosCenaAction({ campaignId, sceneId })
           .then((r) => {
@@ -1840,6 +1893,10 @@ export function VttClient({
     // terreno que o gerou — sair da ferramenta Terreno (por qualquer
     // caminho que não seja o próprio atalho, que já leu o valor antes
     // de chamar `trocarFerramenta`) descarta a oferta.
+    // Seleção de imagem é ponteiro local, como a de objeto: sair da
+    // ferramenta desmarca, senão as alças de escala continuariam
+    // desenhadas sob uma ferramenta que não as opera.
+    if (nova !== "imagens") imgs.setSelecionadaId(null);
     if (nova !== "terreno") setUltimoGestoTerrenoCelulas(null);
     // UMA JANELA POR VEZ: entre ferramentas isso já era automático (a
     // janela é a ferramenta ativa), mas Camadas e Configurações da cena
@@ -3929,6 +3986,108 @@ export function VttClient({
 
   const onClicarMarca = useCallback((id: string) => { apagarMarca(id); }, [apagarMarca]);
 
+
+  // ── IMAGENS: os três gestos de entrada ─────────────────────────────
+  //
+  // Colar, arrastar do sistema e escolher pelo painel. Os três param no
+  // MESMO lugar — `prepararArquivo`, que decodifica em memória e abre a
+  // confirmação — porque um segundo caminho de upload seria um segundo
+  // conjunto de regras para manter de acordo com o primeiro.
+  //
+  // Só narrador: fundo e tile são montagem de mesa. O retrato de token,
+  // que o jogador troca, entra por outra porta (o HUD do token), com
+  // outra intenção e outra autorização no servidor.
+
+  /**
+   * Onde a imagem cai. O ponteiro manda quando esteve sobre o mapa; se
+   * não esteve, o centro da cena.
+   *
+   * A regra é FIXA e documentada de propósito: colar "onde o mouse
+   * estava" é o que a mesa espera, mas um ponteiro que nunca entrou no
+   * mapa (a pessoa colou logo depois de alternar de aba) não tem
+   * posição nenhuma — e cair em (0,0), o canto, seria pior que cair no
+   * meio.
+   */
+  const ancoraParaImagem = useCallback((): PontoAxial => {
+    const p = ancoraPonteiroRef.current;
+    if (p) return p;
+    return {
+      q: ((estadoCena?.cena.largura ?? 1) - 1) / 2,
+      r: ((estadoCena?.cena.altura ?? 1) - 1) / 2,
+    };
+  }, [estadoCena?.cena.largura, estadoCena?.cena.altura]);
+
+  const inputImagemRef = useRef<HTMLInputElement | null>(null);
+  const escolherArquivoDeImagem = useCallback(() => {
+    inputImagemRef.current?.click();
+  }, []);
+
+  // Colar. O guarda de foco é o ponto crítico: sem ele, colar um texto
+  // no chat ou um nome no campo de token seria interceptado pelo mapa —
+  // o tipo de captura global que faz uma interface parecer enfeitiçada.
+  useEffect(() => {
+    if (!ehNarrador) return;
+    function aoColar(e: ClipboardEvent) {
+      if (elementoEhEditavel(document.activeElement as HTMLElement | null)) return;
+      const arquivo = Array.from(e.clipboardData?.items ?? [])
+        .find((i) => i.kind === "file" && i.type.startsWith("image/"))
+        ?.getAsFile();
+      if (!arquivo) return;
+      e.preventDefault();
+      void imgs.prepararArquivo(arquivo, ancoraParaImagem());
+    }
+    window.addEventListener("paste", aoColar);
+    return () => window.removeEventListener("paste", aoColar);
+  }, [ehNarrador, imgs, ancoraParaImagem]);
+
+  // Soltar um arquivo do sistema. `dragover` precisa do `preventDefault`
+  // para o `drop` chegar — sem ele o navegador abre a imagem numa aba e
+  // o VTT some da tela.
+  useEffect(() => {
+    if (!ehNarrador) return;
+    const alvo = palcoRef.current;
+    if (!alvo) return;
+
+    function temArquivo(e: DragEvent): boolean {
+      return Array.from(e.dataTransfer?.types ?? []).includes("Files");
+    }
+    function aoArrastar(e: DragEvent) {
+      if (!temArquivo(e)) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+      setArrastandoArquivo(true);
+    }
+    function aoSair(e: DragEvent) {
+      // `dragleave` dispara ao cruzar qualquer borda interna; só o que
+      // sai do palco de verdade apaga o realce.
+      if (e.relatedTarget && alvo!.contains(e.relatedTarget as Node)) return;
+      setArrastandoArquivo(false);
+    }
+    function aoSoltar(e: DragEvent) {
+      if (!temArquivo(e)) return;
+      e.preventDefault();
+      setArrastandoArquivo(false);
+      const arquivo = Array.from(e.dataTransfer?.files ?? [])
+        .find((f) => f.type.startsWith("image/"));
+      if (!arquivo) return;
+      // A âncora vem do ponto do DROP, não do ponteiro guardado: o
+      // navegador não emite `pointermove` durante um arraste de
+      // arquivo, então `ancoraPonteiroRef` estaria parado onde o mouse
+      // esteve pela última vez antes do arraste começar.
+      const p = pontoAxialDoEvento(e.clientX, e.clientY);
+      void imgs.prepararArquivo(arquivo, p ?? ancoraParaImagem());
+    }
+
+    alvo.addEventListener("dragover", aoArrastar);
+    alvo.addEventListener("dragleave", aoSair);
+    alvo.addEventListener("drop", aoSoltar);
+    return () => {
+      alvo.removeEventListener("dragover", aoArrastar);
+      alvo.removeEventListener("dragleave", aoSair);
+      alvo.removeEventListener("drop", aoSoltar);
+    };
+  }, [ehNarrador, imgs, ancoraParaImagem, pontoAxialDoEvento]);
+
   // ── Objetos: seleção de células PENDENTE, local — só vira objeto de
   // verdade quando o narrador confirma (`criarObjetoPendente`). Clique
   // (pressão sem arrastar) ALTERNA a célula — é como se tira uma
@@ -4494,7 +4653,7 @@ export function VttClient({
       </aside>
 
       {/* ═══ PALCO — mapa em tela cheia, tudo flutua por cima ═══ */}
-      <main className="rv-palco">
+      <main className="rv-palco" ref={palcoRef} data-arrastando-arquivo={arrastandoArquivo || undefined}>
         {/* O contêiner do mapa é quem recebe o arrasto vindo do painel
             (`dragover`/`drop` não chegam dentro do `<svg>`). Só reage
             ao MIME do diretório de personagens — arrastar qualquer
@@ -4512,6 +4671,14 @@ export function VttClient({
             cena={cenaExibida} zoom={zoom} pan={pan}
             selecionadoId={selecionadoId} hoverId={hoverId} alvoIds={[]}
             estadoPorToken={estadoPorToken}
+            ancoraPonteiroRef={ancoraPonteiroRef}
+            conversorPontoRef={conversorPontoRef}
+            imagensCena={imgs.imagens}
+            urlsImagens={imgs.urls}
+            imagemSelecionadaId={imgs.selecionadaId}
+            onSelecionarImagem={imgs.setSelecionadaId}
+            onMoverImagem={(id, q, r) => { void imgs.mover(id, q, r); }}
+            onEscalarImagem={(id, larguraM) => { void imgs.escalar(id, larguraM); }}
             celulasRealce={ferramenta === "objetos" ? celulasObjetoPendente : []}
             tipoRealce={ferramenta === "objetos" ? "objeto" : null}
             onSelecionarToken={onSelecionarToken} onHoverToken={setHoverId}
@@ -4633,6 +4800,54 @@ export function VttClient({
             excluindo={excluindoObjeto}
             onExcluir={excluirObjetoSelecionado}
             onFechar={() => trocarFerramenta("interagir")}
+          />
+        )}
+        {ferramenta === "imagens" && ehNarrador && (
+          <PainelImagens
+            imagens={imgs.imagens}
+            urlsAssinadas={imgs.urls}
+            selecionadaId={imgs.selecionadaId}
+            onSelecionar={imgs.setSelecionadaId}
+            onAlternarVisivel={(img) => { void imgs.ajustar(img, { visivel: !img.visivel }); }}
+            onAlternarTravado={(img) => { void imgs.ajustar(img, { travado: !img.travado }); }}
+            onMudarOrdem={(img, delta) => { void imgs.mudarOrdem(img, delta); }}
+            onRemover={(img) => { void imgs.remover(img); }}
+            onAjustar={(img, ajuste) => { void imgs.ajustar(img, ajuste); }}
+            onEnviarArquivo={escolherArquivoDeImagem}
+            onAbrirBiblioteca={escolherArquivoDeImagem}
+            onFechar={() => trocarFerramenta("interagir")}
+          />
+        )}
+        {/* Input fora da tela, dono do gesto "Enviar arquivo…". Fica
+            aqui e não dentro do painel porque o painel é apresentação
+            pura, e porque colar/soltar/escolher precisam terminar no
+            mesmo lugar. `value = ""` a cada escolha: sem isso, escolher
+            o MESMO arquivo duas vezes seguidas não dispara `change`. */}
+        <input
+          ref={inputImagemRef} type="file" accept="image/png,image/jpeg,image/webp"
+          hidden aria-hidden="true" tabIndex={-1}
+          onChange={(e) => {
+            const arquivo = e.target.files?.[0];
+            e.target.value = "";
+            if (arquivo) void imgs.prepararArquivo(arquivo, ancoraParaImagem());
+          }}
+        />
+        {/* Realce de "pode soltar aqui". Um alvo de drop invisível é um
+            alvo que ninguém encontra. */}
+        {arrastandoArquivo && (
+          <div className="rv-arrastando-imagem" aria-hidden>
+            <span>Solte para colocar na cena</span>
+          </div>
+        )}
+        {imgs.pendente && (
+          <ColocarImagem
+            preparada={imgs.pendente.preparada}
+            larguraCena={estadoCena?.cena.largura ?? 0}
+            jaTemFundo={imgs.jaTemFundo}
+            ocupado={imgs.ocupado}
+            erro={imgs.erro}
+            onConfirmar={(papel) => { void imgs.confirmarColocacao(papel); }}
+            onCancelar={imgs.cancelarPendente}
           />
         )}
         {ferramenta === "medir" && (

@@ -45,6 +45,8 @@ export interface TokenApresentacao {
   orientacao: number;
   pegadaPersonalizada: Hex[] | null;
   retrato: string | null;
+  /** Id do arquivo, quando o retrato vem de upload — `null` quando vem de endereço externo ou não existe. */
+  retratoImageId: string | null;
   /** `null` = sem PV definido (a UI deve tratar como "sem barra de vida", não como 0). */
   pv: number | null;
   pvMax: number | null;
@@ -90,6 +92,7 @@ export function tokenApresentacaoDe(t: {
   orientacao: number;
   pegadaPersonalizada: Hex[] | null;
   retratoUrl: string | null;
+  retratoImageId: string | null;
   pvAtual: number | null;
   pvMax: number | null;
   condicoes: string[];
@@ -101,7 +104,14 @@ export function tokenApresentacaoDe(t: {
   manaPublica: boolean | null;
   podeControlar: boolean;
   revision: number;
-}): TokenApresentacao {
+},
+  /**
+   * URLs já assinadas por id de arquivo. Opcional: quem não tem imagem
+   * de arquivo em cena (ou ainda não recebeu as assinaturas) passa
+   * nada, e o retrato cai no endereço externo ou na sigla.
+   */
+  urlsAssinadas?: Record<string, string>,
+): TokenApresentacao {
   return {
     id: t.id,
     nome: t.nome,
@@ -114,7 +124,11 @@ export function tokenApresentacaoDe(t: {
     offset: { q: t.offsetQ ?? 0, r: t.offsetR ?? 0 },
     orientacao: t.orientacao,
     pegadaPersonalizada: t.pegadaPersonalizada,
-    retrato: t.retratoUrl,
+    // A precedência é do BANCO, não daqui: a 0101 garante que só uma
+    // das duas origens está preenchida por vez. Resolver na ordem é
+    // só refletir isso — `??` e não um fallback que "conserta".
+    retrato: t.retratoImageId ? (urlsAssinadas?.[t.retratoImageId] ?? null) : t.retratoUrl,
+    retratoImageId: t.retratoImageId,
     pv: t.pvAtual,
     pvMax: t.pvMax,
     condicoes: condicoesValidas(t.condicoes),

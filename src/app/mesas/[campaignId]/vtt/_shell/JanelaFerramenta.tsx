@@ -120,6 +120,11 @@ const ESPINHA: Partial<Record<JanelaId, { indice: string; codigo: string; acento
   rodadas:   { indice: "05", codigo: "Turnos",    acento: "#cf9a3e" },
   terreno:   { indice: "06", codigo: "Terreno",   acento: "#4fae82" },
   objetos:   { indice: "07", codigo: "Objetos",   acento: "#cf9a3e" },
+  // Azul de planta: imagem de cena é a PLANTA por baixo do tabuleiro, e
+  // o acento próprio é o que separa, de relance, a janela que mexe no
+  // desenho do mapa daquela que mexe em objeto tático (âmbar) — duas
+  // coisas que se parecem na tela e não se parecem em nada na regra.
+  imagens:   { indice: "10", codigo: "Imagem",    acento: "#7f9bd1" },
 };
 
 const CANTOS = ["tl", "tr", "bl", "br"] as const;
