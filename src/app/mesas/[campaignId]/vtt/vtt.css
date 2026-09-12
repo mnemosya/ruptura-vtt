@@ -3311,10 +3311,8 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    mapa faria. */
 .rv-editor-retrato { display: flex; flex-direction: column; gap: 10px; }
 
-.rv-editor-retrato__passo {
-  margin: 0; color: var(--cy);
-  font: 700 10px var(--rv-display); letter-spacing: .16em; text-transform: uppercase;
-}
+/* `.rv-editor-retrato__passo` saiu: o passo de enquadramento agora é a
+   janela unificada (`.rc-recorte-janela`), com título próprio. */
 
 /* Abas: o sublinhado de acento é a seleção, não uma caixa preenchida —
    duas caixas lado a lado brigariam com os botões de ação abaixo. */

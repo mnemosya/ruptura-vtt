@@ -41,7 +41,7 @@ import {
   lerAvatarAssinadoAction,
   reservarUploadAction,
 } from "../../mesas/[campaignId]/vtt/_acoes/imageActions";
-import { RecorteImagem } from "./RecorteImagem";
+import { JanelaRecorte } from "./RecorteImagem";
 import { ConsoleWindow } from "./ConsoleWindow";
 import { Scrollbar } from "./scrollbar";
 import { DecoTop } from "./deco";
@@ -402,18 +402,17 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
           espaço: a janela de recorte tem 240 px e a coluna da esquerda
           não tem isso. */}
       {avatarParaRecortar && (
-        <div className="rc-recorte-modal" role="dialog" aria-modal="true" aria-label="Enquadrar avatar">
-          <p className="rc-recorte-modal__titulo">Enquadrar o avatar</p>
-          <RecorteImagem
-            arquivo={avatarParaRecortar}
-            forma="hexagono"
-            ocupado={avatarEnviando}
-            rotuloConfirmar="Salvar avatar"
-            onConfirmar={(r) => { void enviarAvatarRecortado(r); }}
-            onCancelar={() => { setAvatarParaRecortar(null); setAvatarErro(null); }}
-          />
-          {avatarErro && <p className="rc-recorte-modal__erro" role="alert">{avatarErro}</p>}
-        </div>
+        <JanelaRecorte
+          titulo="Enquadrar o avatar"
+          codigo="Avatar"
+          erro={avatarErro}
+          arquivo={avatarParaRecortar}
+          forma="hexagono"
+          ocupado={avatarEnviando}
+          rotuloConfirmar="Salvar avatar"
+          onConfirmar={(r) => { void enviarAvatarRecortado(r); }}
+          onCancelar={() => { setAvatarParaRecortar(null); setAvatarErro(null); }}
+        />
       )}
       {aux?.tipo === "rolagem" && (
         // `key` pelo que foi pedido: sem backdrop, clicar noutra perícia

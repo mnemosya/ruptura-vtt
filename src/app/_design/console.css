@@ -1523,7 +1523,7 @@
 .rc-recorte--carregando { padding: 24px; font-size: 12px; color: var(--rc-dim); }
 .rc-recorte__janela {
   position: relative; overflow: hidden; touch-action: none; cursor: grab;
-  border-radius: 4px; background: #070b11;
+  border: 1px solid var(--rc-line-soft); border-radius: 2px; background: var(--rc-surface);
 }
 .rc-recorte__janela:active { cursor: grabbing; }
 /* Camada de baixo: o que FICA DE FORA, escurecido. Sem ela a pessoa não
@@ -1535,39 +1535,107 @@
 .rc-recorte__zoom input[type="range"] { flex: 1; accent-color: var(--cy); }
 .rc-recorte__reset {
   display: grid; place-items: center; width: 24px; height: 24px;
-  border: 1px solid var(--rc-line); border-radius: 3px;
+  border: 1px solid var(--rc-line); border-radius: 2px;
   background: transparent; color: var(--rc-dim);
+  transition: color .14s, border-color .14s;
 }
 .rc-recorte__reset:hover:not(:disabled) { color: var(--cy); border-color: var(--cy); }
+/* A dica é legenda do gesto: mono, caixa alta, no nível de ruído do
+   rodapé — nunca competindo com o título da janela. */
 .rc-recorte__dica {
-  margin: 0; font-size: 10.5px; color: var(--rc-dim);
-  letter-spacing: .04em; text-align: center;
+  margin: 0; font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--rc-dim); opacity: .8; text-align: center;
 }
-.rc-recorte__acoes { display: flex; gap: 8px; justify-content: flex-end; width: 100%; }
+/* Rodapé com a hierarquia de três níveis do VTT: descartar é discreta
+   (sem fio, sem fundo) e confirmar é primária (fio + fundo no acento).
+   Antes as duas tinham o mesmo fio e o confirmar precisava de
+   `!important` pra vencer — sinal de que a regra base fazia demais. */
+.rc-recorte__acoes {
+  display: flex; gap: 8px; justify-content: flex-end; width: 100%;
+  padding-top: 12px; border-top: 1px solid var(--rc-line-soft);
+}
 .rc-recorte__acoes button {
-  padding: 6px 14px; font-size: 12px;
-  border: 1px solid var(--rc-line); border-radius: 3px;
+  padding: 7px 14px;
+  border: 1px solid transparent; border-radius: 2px;
   background: transparent; color: var(--rc-dim);
+  font-family: var(--font-rajdhani), sans-serif;
+  font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  cursor: pointer;
+  transition: color .14s, border-color .14s, background .14s;
 }
+.rc-recorte__acoes button:hover:not(:disabled) { color: var(--rc-text); border-color: var(--rc-line); }
 .rc-recorte__confirmar {
-  border-color: color-mix(in srgb, var(--cy) 60%, transparent) !important;
-  background: color-mix(in srgb, var(--cy) 16%, transparent) !important;
-  color: var(--cy) !important;
+  border-color: color-mix(in srgb, var(--cy) 55%, transparent);
+  background: color-mix(in srgb, var(--cy) 14%, transparent);
+  color: var(--cy);
 }
-.rc-recorte__acoes button:disabled { opacity: .5; cursor: not-allowed; }
+.rc-recorte__confirmar:hover:not(:disabled) {
+  border-color: var(--cy); background: color-mix(in srgb, var(--cy) 22%, transparent); color: var(--rc-text);
+}
+.rc-recorte__acoes button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.rc-recorte__acoes button:disabled { opacity: .45; cursor: not-allowed; }
 
-/* `fixed` + `z-index` acima do console, como `.rc-aux-backdrop` — a
+/* JANELA DE ENQUADRAMENTO — moldura única dos dois recortes (avatar da
+   ficha e retrato do token). O desenho é o da janela de ferramenta do
+   VTT: espinha com código vertical, brackets nos quatro cantos,
+   cabeçalho em display caixa alta com a linha de modo em mono.
+
+   `fixed` + `z-index` acima do console, como `.rc-aux-backdrop` — a
    primeira versão usava `absolute; z-index: 70` e o modal nascia ATRÁS
    da ficha: o console cria o próprio contexto de empilhamento, e um
    número baixo ali dentro não alcança nada. */
-.rc-recorte-modal {
+.rc-recorte-janela {
   position: fixed; z-index: 521; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  display: flex; flex-direction: column; gap: 10px; padding: 14px;
-  border: 1px solid color-mix(in srgb, var(--cy) 35%, transparent); border-radius: 4px;
-  background: #0b1119; box-shadow: 0 20px 56px rgba(0,0,0,.7);
+  padding-left: 36px;
+  border: 1px solid var(--rc-line-soft); border-radius: 2px;
+  background: linear-gradient(180deg, #0b1322, #080e19);
+  box-shadow: 0 20px 56px rgba(0, 0, 0, .7);
 }
-.rc-recorte-modal__titulo {
-  margin: 0; color: var(--cy); font: 700 11px var(--font-rajdhani), sans-serif;
-  letter-spacing: .16em; text-transform: uppercase;
+.rc-recorte-janela__canto {
+  position: absolute; z-index: 2; width: 11px; height: 11px;
+  pointer-events: none; opacity: .55; border-color: var(--cy); border-style: solid; border-width: 0;
 }
-.rc-recorte-modal__erro { margin: 0; font-size: 11px; color: var(--rc-danger); max-width: 240px; }
+.rc-recorte-janela__canto[data-canto="tl"] { left: 6px; top: 6px; border-left-width: 1px; border-top-width: 1px; }
+.rc-recorte-janela__canto[data-canto="tr"] { right: 6px; top: 6px; border-right-width: 1px; border-top-width: 1px; }
+.rc-recorte-janela__canto[data-canto="bl"] { left: 6px; bottom: 6px; border-left-width: 1px; border-bottom-width: 1px; }
+.rc-recorte-janela__canto[data-canto="br"] { right: 6px; bottom: 6px; border-right-width: 1px; border-bottom-width: 1px; }
+.rc-recorte-janela__espinha {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 36px;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  padding: 14px 0; border-right: 1px solid var(--rc-line-soft);
+  background: rgba(255, 255, 255, .015);
+}
+.rc-recorte-janela__indice { color: var(--cy); font: 700 10px var(--font-mono), monospace; letter-spacing: .1em; }
+.rc-recorte-janela__codigo {
+  color: var(--cy); opacity: .85; font: 700 10px var(--font-rajdhani), sans-serif;
+  letter-spacing: .3em; text-transform: uppercase;
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  max-height: 100%; overflow: hidden;
+}
+.rc-recorte-janela__ponto {
+  width: 6px; height: 6px; border-radius: 999px;
+  background: var(--cy); box-shadow: 0 0 7px color-mix(in srgb, var(--cy) 45%, transparent);
+}
+.rc-recorte-janela__corpo { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px 16px; }
+.rc-recorte-janela__cab { display: flex; flex-direction: column; gap: 5px; }
+.rc-recorte-janela__titulo {
+  margin: 0; color: var(--rc-text);
+  font: 700 16px var(--font-rajdhani), sans-serif;
+  letter-spacing: .12em; text-transform: uppercase; line-height: 1;
+}
+/* Linha de modo: o mesmo pípe de acento das janelas de ferramenta —
+   diz em que FORMA a imagem vai ser cortada, que é a razão de este
+   passo existir. */
+.rc-recorte-janela__modo {
+  display: flex; align-items: center; gap: 6px; margin: 0;
+  color: var(--rc-dim); font: 10px var(--font-mono), monospace;
+  letter-spacing: .14em; text-transform: uppercase;
+}
+.rc-recorte-janela__modo::before {
+  content: ""; flex: none; width: 4px; height: 4px; border-radius: 999px; background: var(--cy);
+}
+.rc-recorte-janela__erro {
+  margin: 0; max-width: 240px;
+  color: var(--rc-danger); font-size: 11px; line-height: 1.35;
+}

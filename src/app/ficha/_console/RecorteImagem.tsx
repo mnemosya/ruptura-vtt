@@ -57,6 +57,58 @@ export interface RecorteEscolhido {
   tamanho: number;
 }
 
+/** Cantos em bracket — os mesmos quatro da janela de ferramenta. */
+const CANTOS = ["tl", "tr", "bl", "br"] as const;
+
+/**
+ * JANELA DE ENQUADRAMENTO — a moldura ÚNICA dos dois enquadramentos.
+ *
+ * Antes eram duas: o Console abria `.rc-recorte-modal` (fixa, com
+ * título próprio) e o VTT desenhava o passo INLINE dentro do editor de
+ * retrato, com outro título, outro erro e outro espaçamento. O miolo já
+ * era o mesmo componente; o que divergia era justamente a casca — e
+ * por isso as duas telas pareciam de produtos diferentes fazendo a
+ * mesma coisa.
+ *
+ * O desenho é o da janela de ferramenta do VTT: espinha com código
+ * vertical, brackets nos quatro cantos, cabeçalho em display caixa alta
+ * com a linha de modo em mono. Em estilo inline, e não pelas classes
+ * `.rv-fp`, porque `vtt.css` só carrega nas rotas do VTT e este passo
+ * também roda em `/ficha` — mesmo motivo já registrado na moldura de
+ * `_dados3d/ResultadoRolagem.tsx`.
+ */
+export function JanelaRecorte({
+  titulo, codigo, erro, ...props
+}: Parameters<typeof RecorteImagem>[0] & {
+  /** Título da janela: "Enquadrar o avatar", "Enquadrar o retrato". */
+  titulo: string;
+  /** Código vertical da espinha — uma palavra: "Avatar", "Retrato". */
+  codigo: string;
+  /** Falha do envio, mostrada no rodapé sem tirar a janela do lugar. */
+  erro?: string | null;
+}) {
+  return (
+    <div className="rc-recorte-janela" role="dialog" aria-modal="true" aria-label={titulo}>
+      {CANTOS.map((c) => (
+        <span key={c} className="rc-recorte-janela__canto" data-canto={c} aria-hidden="true" />
+      ))}
+      <span className="rc-recorte-janela__espinha" aria-hidden="true">
+        <span className="rc-recorte-janela__indice">::</span>
+        <span className="rc-recorte-janela__codigo">{codigo}</span>
+        <span className="rc-recorte-janela__ponto" />
+      </span>
+      <div className="rc-recorte-janela__corpo">
+        <header className="rc-recorte-janela__cab">
+          <h2 className="rc-recorte-janela__titulo">{titulo}</h2>
+          <p className="rc-recorte-janela__modo">{props.forma === "hexagono" ? "heptágono do avatar" : "círculo do token"}</p>
+        </header>
+        <RecorteImagem {...props} />
+        {erro && <p className="rc-recorte-janela__erro" role="alert">{erro}</p>}
+      </div>
+    </div>
+  );
+}
+
 export function RecorteImagem({
   arquivo, forma, onConfirmar, onCancelar, ocupado = false, rotuloConfirmar = "Usar esta imagem",
 }: {

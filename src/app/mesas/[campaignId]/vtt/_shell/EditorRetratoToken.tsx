@@ -39,7 +39,7 @@ import {
   enviarParaUrlAssinada,
   prepararRecorteQuadrado,
 } from "../../../../../lib/vtt/imagePreparation";
-import { RecorteImagem } from "../../../../ficha/_console/RecorteImagem";
+import { JanelaRecorte } from "../../../../ficha/_console/RecorteImagem";
 import {
   definirRetratoImagemAction,
   definirRetratoUrlAction,
@@ -180,22 +180,17 @@ export function EditorRetratoToken({
   // são dois passos de uma coisa só, não duas coisas ao mesmo tempo.
   if (arquivoParaRecortar) {
     return (
-      <div className="rv-editor-retrato">
-        <p className="rv-editor-retrato__passo">Enquadrar o retrato</p>
-        <RecorteImagem
-          arquivo={arquivoParaRecortar}
-          forma="circulo"
-          ocupado={ocupado}
-          rotuloConfirmar="Salvar retrato"
-          onConfirmar={(r) => { void recortarEEnviar(r); }}
-          onCancelar={() => { setArquivoParaRecortar(null); setErro(null); }}
-        />
-        {erro && (
-          <p className="rv-editor-retrato__erro" role="alert">
-            <TriangleAlert size={13} aria-hidden /> {erro}
-          </p>
-        )}
-      </div>
+      <JanelaRecorte
+        titulo="Enquadrar o retrato"
+        codigo="Retrato"
+        erro={erro}
+        arquivo={arquivoParaRecortar}
+        forma="circulo"
+        ocupado={ocupado}
+        rotuloConfirmar="Salvar retrato"
+        onConfirmar={(r) => { void recortarEEnviar(r); }}
+        onCancelar={() => { setArquivoParaRecortar(null); setErro(null); }}
+      />
     );
   }
 
