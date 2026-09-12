@@ -182,7 +182,7 @@
    moldura nunca está "pela metade", só o preenchimento cresce. */
 
 /* Varredura de scanline — o idioma que esta interface JÁ tem
-   (`.rv-scan-sweep` em auth.css, `.rm-scanlines` em mesa.css). Entra no
+   (`.rv-scan-sweep` em auth.css). Entra no
    lugar do `mo-shimmer` (um brilho diagonal atravessando um bloco
    arredondado), que era vocabulário de outra família de produto e
    destoava de tudo à volta. */

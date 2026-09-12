@@ -12,7 +12,7 @@
  *     `localStorage`; em telas estreitas ela vira drawer;
  *   - topbar discreta, só com o controle de perfil à direita e seu
  *     menu suspenso;
- *   - fundo HUD com parallax, grade, vinheta e scanlines;
+ *   - fundo HUD com parallax, grade e vinheta;
  *   - cursor HUD próprio.
  *
  * As preferências visuais ("reduzir movimento", "alto contraste") vivem
@@ -296,7 +296,6 @@ export function GlobalShell({
             <div className="ra-bg-grid" />
             <div className="ra-bg-vignette" />
           </div>
-          <div className="ra-scanlines" aria-hidden="true" />
           <div className="ra-vp-corner ra-vp-tl" aria-hidden="true" />
           <div className="ra-vp-corner ra-vp-tr" aria-hidden="true" />
           <div className="ra-vp-corner ra-vp-bl" aria-hidden="true" />

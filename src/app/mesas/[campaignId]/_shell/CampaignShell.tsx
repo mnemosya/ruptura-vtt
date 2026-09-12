@@ -38,6 +38,9 @@ import { HudCursor } from "../../_global/GlobalShell";
 import { CampaignNav } from "./CampaignNav";
 import { NavPendingProvider } from "../../../_design/NavPending";
 import { BootMinDurationOverlay } from "../../../_boundaries/BootMinDurationOverlay";
+import { ProvedorConsoleDaMesa, useConsoleDaMesa } from "./ConsoleDaMesa";
+import { ProvedorMesaDados } from "../vtt/_dados3d/ContextoMesaDados";
+import { ProvedorTrilhaDaMesa } from "./TrilhaDaMesa";
 import "../../../_design/mesa.css";
 
 /**
@@ -394,6 +397,21 @@ export function CampaignShell({
     // `BootMinDurationOverlay` (dentro de `.rm-shell-main`, abaixo) usa
     // pra saber se alguma navegação está em voo.
     <NavPendingProvider>
+    {/* O Console do Personagem é janela DESTA casca, não uma rota:
+        qualquer página da campanha abre a ficha por cima de si mesma,
+        sem navegar. Ver `ConsoleDaMesa.tsx`. */}
+    {/* Uma trilha de turnos só, para a campanha inteira — o dock, a
+        ficha e o VTT leem a MESMA linha de `vtt_turn_tracks`. Ver
+        `TrilhaDaMesa.tsx`. */}
+    <ProvedorTrilhaDaMesa campaignId={campaignId}>
+    {/* A mesa de dados envolve a campanha INTEIRA, não só o VTT: o
+        Console é uma janela desta casca (`ConsoleDaMesa.tsx`) e rola
+        pelos mesmos d8 de verdade que a ferramenta do mapa. Quem
+        DESENHA a física continua sendo quem tem palco — o VTT o
+        reivindica; nas outras páginas o próprio provedor desenha por
+        cima da página. */}
+    <ProvedorMesaDados>
+    <ProvedorConsoleDaMesa campaignId={campaignId}>
     <div className="rm-root">
       <HudCursor enabled={cursorHabilitado} />
 
@@ -402,11 +420,6 @@ export function CampaignShell({
         <div className="rm-bg-grid" />
         <div className="rm-bg-vignette" />
       </div>
-      <div className="rm-scanlines" aria-hidden="true" />
-      <div className="rm-vp-corner rm-vp-tl" aria-hidden="true" />
-      <div className="rm-vp-corner rm-vp-tr" aria-hidden="true" />
-      <div className="rm-vp-corner rm-vp-bl" aria-hidden="true" />
-      <div className="rm-vp-corner rm-vp-br" aria-hidden="true" />
 
       <div className="rm-shell">
         <div className="rm-shell-rail">
@@ -443,10 +456,30 @@ export function CampaignShell({
 
         {/* Uma única chamada — a superfície decide sozinha, via CSS de
             breakpoint, se é coluna de grid ou drawer. Suprimida na
-            Mesa (`naMesaVtt`) — ver comentário acima. */}
-        {painelSessao && !naMesaVtt && <PainelSessao rotulo="Sessão">{painelSessao}</PainelSessao>}
+            Mesa (`naMesaVtt`) — ver comentário acima — e enquanto uma
+            ficha está aberta. */}
+        {painelSessao && !naMesaVtt && <PainelSessaoSeLivre rotulo="Sessão">{painelSessao}</PainelSessaoSeLivre>}
       </div>
     </div>
+    </ProvedorConsoleDaMesa>
+    </ProvedorMesaDados>
+    </ProvedorTrilhaDaMesa>
     </NavPendingProvider>
   );
+}
+
+/**
+ * A faixa de sessão (Log/Participantes) some enquanto uma ficha está
+ * aberta.
+ *
+ * A ficha ocupa quase toda a largura útil e o que sobrava do painel ao
+ * lado era uma tira de log sem contexto — parecia outra tela colada na
+ * ficha, que foi exatamente a leitura de quem usou. Ela volta sozinha
+ * ao fechar; nada é desmontado, só deixa de ser renderizado no lugar
+ * onde atrapalhava.
+ */
+function PainelSessaoSeLivre({ rotulo, children }: { rotulo: string; children: ReactNode }) {
+  const consoleDaMesa = useConsoleDaMesa();
+  if (consoleDaMesa?.aberto) return null;
+  return <PainelSessao rotulo={rotulo}>{children}</PainelSessao>;
 }

@@ -30,8 +30,7 @@
  * `erro` ser um campo separado de `personagens`, não algo que zera a
  * lista.
  */
-import Link from "next/link";
-import { isParticipantTurnNow, type TurnTrackState } from "../../../../lib/table/turnTrack";
+import { AbrirFicha } from "../_shell/AbrirFicha";
 import type { CharacterRecord } from "../../../../lib/character";
 
 function ConditionBadges({ character }: { character: CharacterRecord }) {
@@ -100,13 +99,14 @@ function CharacterCard({
       <CollapseBadge character={character} />
       <ConditionBadges character={character} />
       <div className="rm-charcard-acao">
-        <Link
-          href={`/ficha?campaignId=${campaignId}&characterId=${character.id}`}
+        <AbrirFicha
+          campaignId={campaignId}
+          characterId={character.id}
           className="rm-btn rm-btn-primary rv-focusable"
-          data-testid="mesa-jogador-abrir-ficha"
+          testId="mesa-jogador-abrir-ficha"
         >
           Abrir ficha
-        </Link>
+        </AbrirFicha>
       </div>
     </div>
   );
@@ -115,13 +115,20 @@ function CharacterCard({
 export function PlayerCharactersSection({
   campaignId,
   personagens,
-  turnTrack,
+  personagemNaVez,
   erro,
   onTentarDeNovo,
 }: {
   campaignId: string;
   personagens: CharacterRecord[];
-  turnTrack: TurnTrackState;
+  /**
+   * Personagem com o turno aberto agora, quando é desta pessoa — vem
+   * da trilha REAL do combate (`vtt_turn_tracks`, via
+   * `_shell/TrilhaDaMesa`). Antes saía de `campaigns.turn_track`, o
+   * sistema antigo, que o VTT nunca escreveu: o card dizia "sua vez"
+   * numa rodada que não existia mais.
+   */
+  personagemNaVez: string | null;
   /** Falha da leitura mais recente (SSR ou releitura) — distinta de "vazio de verdade": nunca reescreve `personagens` sozinha, os cards já carregados continuam de pé. */
   erro: string | null;
   onTentarDeNovo: () => void;
@@ -152,7 +159,7 @@ export function PlayerCharactersSection({
       ) : (
         <div className="rm-card-grid">
           {personagens.map((c) => (
-            <CharacterCard key={c.id} character={c} campaignId={campaignId} suaVezAgora={isParticipantTurnNow(turnTrack, c.id)} />
+            <CharacterCard key={c.id} character={c} campaignId={campaignId} suaVezAgora={personagemNaVez === c.id} />
           ))}
         </div>
       )}

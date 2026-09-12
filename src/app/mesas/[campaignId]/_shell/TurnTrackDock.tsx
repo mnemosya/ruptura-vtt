@@ -1,82 +1,45 @@
 "use client";
 
 /**
- * Dock persistente do rastreador de turno — vive na casca da campanha
- * (`CampaignShell`), visível em QUALQUER rota, não só na Mesa. Lê
- * `campaign`/`viewer`/`isNarrator` do `CampaignRealtimeProvider` via
- * Context, não de props — é irmão de `{children}`, não descendente da
- * página roteada, então não tem como receber isso por props de uma
- * página.
+ * Dock do rastreador de turno — vive na casca da campanha
+ * (`CampaignShell`), visível em QUALQUER rota, não só na Mesa.
  *
- * Dois estados:
- *   - COMPACTO (padrão): rodada/janela, participante atual, próximo,
- *     indicação "sua vez" e UMA ação principal contextual.
- *   - EXPANDIDO: o `TurnTrackPanel` de sempre (`src/app/components/
- *     TurnTrackPanel.tsx`), SEM NENHUMA MUDANÇA — o mesmo componente
- *     que a Ficha usa, reaproveitado aqui como a apresentação "ver
- *     tudo". Nenhuma lógica de turno é duplicada: as ações vêm de
- *     `turnTrackActions.ts`, o cálculo de "é a minha vez" vem de
- *     `isParticipantTurnNow` — os mesmos que `TurnTrackPanel` já usa
- *     internamente.
+ * Passou a ler a trilha REAL do combate (`vtt_turn_tracks`, via
+ * `ProvedorTrilhaDaMesa`) no lugar de `campaigns.turn_track`. Eram dois
+ * sistemas: o VTT rodava o combate num, o dock mostrava o outro, e dava
+ * pra ver os dois discordando na mesma tela — "Rodada 1 · sem janela
+ * ativa" aqui enquanto os trilhos do mapa mostravam Rápidos na rodada 3.
  *
- * "É a minha vez" olha TODOS os personagens que o viewer controla
- * (`viewer.controlledCharacterIds`), não um id fixo — quem controla
- * vários pode ter qualquer um deles na vez. Só um pode estar "atual" a
- * qualquer momento, então não há ambiguidade real de "qual dos meus".
+ * O QUE ELE FAZ E O QUE NÃO FAZ mudou junto, e de propósito:
+ *
+ *   · MOSTRA rodada, janela, quem age agora, quem o motor sugere como
+ *     próximo, e destaca quando a vez é sua.
+ *   · ENCERRA o seu turno — a única ação que não precisa do mapa.
+ *   · NÃO monta combate. Escolher elenco, lado e modo exige os tokens
+ *     da cena; isso mora na ferramenta Rodadas, no VTT. O dock leva
+ *     você até lá em vez de oferecer um "Iniciar rodada" que teria que
+ *     inventar um elenco.
+ *   · NÃO avança o turno dos outros. Quem faz isso é o narrador, na
+ *     ferramenta, olhando o tabuleiro.
+ *
+ * "É a minha vez" é decidido pelo SERVIDOR (`pode_controlar` na
+ * projeção dos tokens), não por uma lista de ids no cliente.
  */
 
-import { useState } from "react";
-import TurnTrackPanel from "../../../components/TurnTrackPanel";
-import { isParticipantTurnNow, type TurnParticipant } from "../../../../lib/table/turnTrack";
-import { endOwnTurn, narratorAdvanceTurn, startTurnRound } from "../../../../lib/table/turnTrackActions";
-import type { Campaign } from "../../../../lib/table/types";
+import Link from "next/link";
+import { ROTULO_LADO } from "../vtt/_turnos/modelo";
+import { useTrilhaDaMesa } from "./TrilhaDaMesa";
 import { useCampaignSession } from "./CampaignRealtimeProvider";
 
 export function TurnTrackDock() {
-  const { campaign, setCampaign, isNarrator, viewer } = useCampaignSession();
-  const [expandido, setExpandido] = useState(false);
-  const [processando, setProcessando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
+  const { campaign, isNarrator } = useCampaignSession();
+  const trilha = useTrilhaDaMesa();
 
-  const turnTrack = campaign.turn_track;
-  const currentCharacterId = turnTrack.window && turnTrack.currentIndex >= 0 ? turnTrack.order[turnTrack.currentIndex] : null;
-  const currentParticipant: TurnParticipant | null = currentCharacterId
-    ? (turnTrack.participants.find((p) => p.characterId === currentCharacterId) ?? null)
-    : null;
-  const nextCharacterId =
-    turnTrack.window && turnTrack.currentIndex >= 0 && turnTrack.order.length > 0
-      ? turnTrack.order[(turnTrack.currentIndex + 1) % turnTrack.order.length]
-      : null;
-  const nextParticipant: TurnParticipant | null =
-    nextCharacterId && nextCharacterId !== currentCharacterId
-      ? (turnTrack.participants.find((p) => p.characterId === nextCharacterId) ?? null)
-      : null;
+  // Enquanto a primeira leitura não volta, o dock não afirma nada — dizer
+  // "sem combate" e se corrigir meio segundo depois é pior que esperar.
+  if (!trilha || !trilha.carregada) return null;
 
-  const meuPersonagemNaVez = currentCharacterId && viewer.controlledCharacterIds.includes(currentCharacterId) ? currentCharacterId : null;
-  const souEuAgora = meuPersonagemNaVez ? isParticipantTurnNow(turnTrack, meuPersonagemNaVez) : false;
-
-  async function run(action: () => Promise<Campaign>) {
-    setProcessando(true);
-    setErro(null);
-    try {
-      setCampaign(await action());
-    } catch (e) {
-      setErro(e instanceof Error ? e.message : "Falha ao atualizar a trilha de turnos.");
-    } finally {
-      setProcessando(false);
-    }
-  }
-
-  if (expandido) {
-    return (
-      <div className="rm-turndock rm-turndock--expandido" data-testid="turndock-expandido">
-        <TurnTrackPanel campaign={campaign} onCampaignChange={setCampaign} isNarrator={isNarrator} viewerCharacterId={meuPersonagemNaVez} />
-        <button type="button" className="rm-turndock-recolher" onClick={() => setExpandido(false)} data-testid="turndock-recolher">
-          Recolher
-        </button>
-      </div>
-    );
-  }
+  const { resumo, meuNaVez, ocupada, erro, temCena } = trilha;
 
   return (
     <div className="rm-turndock" data-testid="turndock-compacto">
@@ -86,64 +49,59 @@ export function TurnTrackDock() {
         </p>
       )}
 
-      {!turnTrack.window ? (
+      {!resumo ? (
         <span className="rm-turndock-status" data-testid="turndock-status">
-          Rodada {turnTrack.round} · sem janela ativa
+          Sem combate em andamento
         </span>
       ) : (
         <>
           <span className="rm-turndock-status" data-testid="turndock-status">
-            Rodada {turnTrack.round} · {turnTrack.window === "rapida" ? "Rápidos" : "Lentos"}
+            Rodada {resumo.rodada} · {resumo.janela}
           </span>
-          {currentParticipant && (
-            <span className="rm-turndock-atual" data-testid="turndock-atual" data-sua-vez={souEuAgora}>
-              {souEuAgora ? "Sua vez — " : "Agora: "}
-              <strong>{currentParticipant.characterNome}</strong>
+          {resumo.agindo ? (
+            <span className="rm-turndock-atual" data-testid="turndock-atual" data-sua-vez={meuNaVez !== null}>
+              {meuNaVez ? "Sua vez — " : "Agora: "}
+              <strong>{resumo.agindo.nome}</strong>
             </span>
+          ) : (
+            resumo.ladoDaVez && (
+              <span className="rm-turndock-atual" data-testid="turndock-atual">
+                Vez de <strong>{ROTULO_LADO[resumo.ladoDaVez]}</strong>
+              </span>
+            )
           )}
-          {nextParticipant && (
+          {resumo.proximo && (
             <span className="rm-turndock-proximo" data-testid="turndock-proximo">
-              Próximo: {nextParticipant.characterNome}
+              Próximo: {resumo.proximo.nome}
             </span>
           )}
         </>
       )}
 
-      {souEuAgora && meuPersonagemNaVez ? (
+      {meuNaVez && (
         <button
           type="button"
           className="rm-turndock-acao"
-          disabled={processando}
-          onClick={() => run(() => endOwnTurn(campaign.id, meuPersonagemNaVez))}
+          disabled={ocupada}
+          onClick={() => void trilha.encerrarMeuTurno()}
           data-testid="turndock-encerrar-meu-turno"
         >
           Encerrar meu turno
         </button>
-      ) : isNarrator && !turnTrack.window ? (
-        <button
-          type="button"
-          className="rm-turndock-acao"
-          disabled={processando}
-          onClick={() => run(() => startTurnRound(campaign.id))}
-          data-testid="turndock-iniciar-rodada"
-        >
-          Iniciar rodada
-        </button>
-      ) : isNarrator && turnTrack.window ? (
-        <button
-          type="button"
-          className="rm-turndock-acao"
-          disabled={processando}
-          onClick={() => run(() => narratorAdvanceTurn(campaign.id))}
-          data-testid="turndock-avancar-turno"
-        >
-          Avançar turno
-        </button>
-      ) : null}
+      )}
 
-      <button type="button" className="rm-turndock-expandir" onClick={() => setExpandido(true)} data-testid="turndock-expandir">
-        Expandir
-      </button>
+      {/* A ferramenta Rodadas é onde o combate se monta e se conduz.
+          Pro narrador sem combate, este é o convite; com combate, é o
+          caminho para conduzir. Jogador só vê quando há o que ver. */}
+      {temCena && (isNarrator || resumo) && (
+        <Link
+          href={`/mesas/${campaign.id}/vtt`}
+          className="rm-turndock-expandir"
+          data-testid="turndock-abrir-rodadas"
+        >
+          {resumo ? "Ver no mapa" : "Montar combate"}
+        </Link>
+      )}
     </div>
   );
 }

@@ -53,7 +53,7 @@ import type { Campaign, TableLogEntry } from "../../../../lib/table";
 import type { CampaignRole } from "../../../../lib/campaign/access";
 import type { CampaignSessionViewer } from "../../../../lib/campaign/session";
 
-interface CampaignSessionValue {
+export interface CampaignSessionValue {
   campaignId: string;
   role: CampaignRole;
   isNarrator: boolean;
@@ -170,7 +170,14 @@ interface CampaignSessionValue {
   sessionMountId: number | null;
 }
 
-const CampaignSessionContext = createContext<CampaignSessionValue | null>(null);
+/**
+ * O contexto é EXPORTADO só para a galeria de estilos (`/dev/estilos`),
+ * que monta as abas do painel com uma sessão fabricada em vez de abrir
+ * uma campanha de verdade. Mesma ideia do `visualFixtureData` do
+ * `SelectedTokenHud`: a mesa real nunca usa isto, e quem consome a
+ * sessão continua fazendo por `useCampaignSession`.
+ */
+export const CampaignSessionContext = createContext<CampaignSessionValue | null>(null);
 
 export function useCampaignSession(): CampaignSessionValue {
   const ctx = useContext(CampaignSessionContext);

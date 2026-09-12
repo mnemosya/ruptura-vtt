@@ -329,7 +329,6 @@ export function LoginForm({
           <div className="rv-img-mask" />
         </div>
       </div>
-      <div className="rv-scanlines" aria-hidden="true" />
       <div className="rv-scan-sweep" aria-hidden="true" />
 
       <div className="rv-vp-corner rv-vp-corner-tl" aria-hidden="true" />

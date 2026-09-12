@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AbrirFicha } from "./AbrirFicha";
 import type { CharacterRecord } from "../../../../lib/character";
 
 /** Lista simples de personagens com uma ação de abrir a ficha (numa aba específica, opcional) — usado por entradas de menu que precisam escolher um personagem antes de continuar (ex.: Mercado). */
@@ -18,12 +18,14 @@ export function CharacterPickerList({
       {personagens.map((c) => (
         <div key={c.id} className="rm-card rm-card-row">
           <strong style={{ fontSize: 14 }}>{c.name}</strong>
-          <Link
-            href={`/ficha?campaignId=${campaignId}&characterId=${c.id}${tab ? `&tab=${tab}` : ""}`}
+          <AbrirFicha
+            campaignId={campaignId}
+            characterId={c.id}
+            tab={tab}
             className="rm-btn rm-btn-primary rv-focusable"
           >
             {actionLabel}
-          </Link>
+          </AbrirFicha>
         </div>
       ))}
     </div>

@@ -8,6 +8,7 @@
  * `is_campaign_owner` na RLS, ver migration 0052).
  */
 import Link from "next/link";
+import { AbrirFicha } from "../_shell/AbrirFicha";
 import type { CharacterRecord } from "../../../../lib/character";
 
 export default function PersonagensJogadorClient({
@@ -38,13 +39,14 @@ export default function PersonagensJogadorClient({
           {personagens.map((c) => (
             <div key={c.id} data-testid="personagens-item-jogador" className="rm-card rm-card-row">
               <strong style={{ fontSize: 14 }}>{c.name}</strong>
-              <Link
-                href={`/ficha?campaignId=${campaignId}&characterId=${c.id}`}
-                data-testid={`personagens-abrir-ficha-${c.id}`}
+              <AbrirFicha
+                campaignId={campaignId}
+                characterId={c.id}
+                testId={`personagens-abrir-ficha-${c.id}`}
                 className="rm-btn rm-btn-primary rv-focusable"
               >
                 Abrir ficha
-              </Link>
+              </AbrirFicha>
             </div>
           ))}
         </div>

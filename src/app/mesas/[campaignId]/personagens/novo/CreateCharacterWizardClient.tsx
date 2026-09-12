@@ -8,8 +8,9 @@
  * reimplementado), não mais placeholders de texto.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useConsoleDaMesa } from "../../_shell/ConsoleDaMesa";
 import Link from "next/link";
 import { Spinner } from "../../../../_design/icons";
 import {
@@ -80,6 +81,27 @@ export default function CreateCharacterWizardClient({
   itensLojaErro: string | null;
 }) {
   const router = useRouter();
+  const consoleDaMesa = useConsoleDaMesa();
+
+  /**
+   * Leva o wizard ao personagem recém-criado.
+   *
+   * A casca da campanha é um LAYOUT: ela não remonta quando a rota
+   * muda de `novo` para `personagens`, então o estado do Console
+   * sobrevive à navegação e a janela abre já na tela de destino. Fora
+   * da casca (não deveria acontecer aqui) sobra a rota `/ficha`, que
+   * continua existindo pra link direto.
+   */
+  const abrirFicha = useCallback((characterId: string) => {
+    if (consoleDaMesa) {
+      // UMA navegação, e o pedido de abrir vai NELA (`?ficha=`). Navegar
+      // e mexer no estado do provider no mesmo tick descartava a
+      // transição do router — o wizard ficava parado em "Criando…".
+      router.push(`/mesas/${campaign.id}/personagens?ficha=${characterId}`);
+      return;
+    }
+    router.push(`/ficha?campaignId=${campaign.id}&characterId=${characterId}`);
+  }, [consoleDaMesa, router, campaign.id]);
   const [step, setStep] = useState(1);
   const [identidade, setIdentidade] = useState<Identidade>({
     nome: "",
@@ -588,9 +610,13 @@ export default function CreateCharacterWizardClient({
       deleteCharacterCreationDraft(campaign.id).catch((err) => {
         logError("wizard.draft.cleanupBestEffort", err);
       });
-      // A conta que criou sempre recebe controle automaticamente — vai
-      // direto para a própria ficha (caminho mínimo da Fase 1).
-      router.push(`/ficha?campaignId=${campaign.id}&characterId=${created.id}`);
+      // A conta que criou sempre recebe controle automaticamente e cai
+      // direto na própria ficha. Mas a ficha deixou de ser rota: é
+      // janela da casca da campanha. Então o wizard volta pra
+      // Personagens — a tela de onde ele saiu — e a janela abre por
+      // cima dela, sem o salto pra uma página separada com barra e
+      // navegação próprias.
+      abrirFicha(created.id);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao criar personagem.");
       setCriando(false);

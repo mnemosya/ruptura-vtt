@@ -83,14 +83,9 @@ body {
   font-weight: 600;
 }
 
-.rv-btn {
-  transition: filter 0.12s ease;
-}
-
-.rv-btn:hover:not(:disabled) {
-  filter: brightness(1.15);
-}
-
-.rv-btn:disabled {
-  cursor: not-allowed;
-}
+/* `.rv-btn` mora inteiro em `vtt.css` — ele é peça do VTT e de mais
+   nenhum lugar (conferido: nenhum uso fora de `mesas/[id]/vtt`). As
+   três regras que viviam aqui foram para lá: declarar o mesmo botão em
+   duas folhas era o que fazia o `:disabled` existir duas vezes com
+   valores diferentes, e o `filter: brightness` do hover brigar com o
+   hover de acento. */

@@ -108,7 +108,6 @@ export default function RedefinirSenhaPage() {
           <div className="rv-img-mask" />
         </div>
       </div>
-      <div className="rv-scanlines" aria-hidden="true" />
 
       <div className="rv-panel-wrap">
         <div className="rv-stripe rv-stripe-l" aria-hidden="true" />

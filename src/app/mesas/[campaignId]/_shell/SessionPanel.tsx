@@ -12,12 +12,13 @@
  * vez de duas colunas. O log nunca desaparece por causa de navegação,
  * só fica atrás da aba Participantes quando o usuário escolhe vê-la.
  *
- * Reaproveita `formatTableLogEntry` (já usado pela Ficha) — não duplica
- * a lógica de formatação por tipo de evento.
+ * Reaproveita `formatTableLogEntry` (`lib/table/logPresentation.ts`, o
+ * mesmo formatador da Ficha e do painel da Mesa) — não duplica a
+ * lógica de formatação por tipo de evento.
  */
 
 import { useEffect, useRef, useState } from "react";
-import { formatTableLogEntry } from "../../../dev/character-sheet/components/MesaTab";
+import { formatTableLogEntry } from "../../../../lib/table/logPresentation";
 import { useCampaignSession } from "./CampaignRealtimeProvider";
 import { usePainelSessaoVisivel, usePainelSessaoBadge } from "./CampaignShell";
 

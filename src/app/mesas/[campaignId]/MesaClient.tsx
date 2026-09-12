@@ -26,7 +26,6 @@
  * dela: Rodada/Cena e (pro narrador) Resolver Ataque.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
 import { listCharactersForNarratorCampaign, listControlledCharacters } from "../../../lib/character/storage";
 import { aggregateRealtimeStatus, useCampaignCharacterControllersRealtime, useCampaignCharactersRealtime } from "../../../lib/realtime/useCampaignRealtime";
 import { describeRealtimeStatus } from "../../../lib/realtime/tableRealtime";
@@ -37,6 +36,8 @@ import { useCampaignSession } from "./_shell/CampaignRealtimeProvider";
 import { RoundSceneSection } from "./_mesa/RoundSceneSection";
 import { AttackResolutionSection } from "./_mesa/AttackResolutionSection";
 import { PlayerCharactersSection } from "./_mesa/PlayerCharactersSection";
+import { useConsoleDaMesa } from "./_shell/ConsoleDaMesa";
+import { useTrilhaDaMesa } from "./_shell/TrilhaDaMesa";
 
 interface Props {
   personagensAtivosIniciais: CharacterRecord[];
@@ -159,24 +160,23 @@ export default function MesaClient({
     reloadPersonagensControlados();
   }, [idsControladosChave, isNarrator, reloadPersonagensControlados]);
 
-  // Gatilho 3 (jogador): retorno/fechamento da ficha. A ficha abre como
-  // modal por cima desta página via rota interceptada
-  // (`@modal/(...)ficha`) — a Mesa NUNCA desmonta enquanto o modal está
-  // aberto, só a URL muda (`usePathname` reflete isso mesmo com o modal
-  // por cima, confirmado pelo critério 8 do check da Fase 4). Sem
-  // remount pra disparar um refetch natural, o único jeito de saber
-  // "a ficha acabou de fechar" é comparar o pathname ANTERIOR (que
-  // começava com `/ficha`) com o atual (que não começa mais).
-  const pathname = usePathname();
-  const pathnameAnteriorRef = useRef(pathname);
+  // Gatilho 3 (jogador): fechamento da ficha. A ficha abre como JANELA
+  // desta casca (`_shell/ConsoleDaMesa.tsx`) — a Mesa nunca desmonta e,
+  // desde que o Console deixou de ser rota, a URL também não muda. O
+  // sinal, que antes era o pathname saindo de `/ficha`, agora é
+  // explícito: `fechadaEm` sobe a cada fechamento. Os personagens
+  // controlados são lidos POR AÇÃO no cliente, então `router.refresh()`
+  // (que o provider também dispara) não chega até eles sozinho.
+  const consoleDaMesa = useConsoleDaMesa();
+  const trilhaDaMesa = useTrilhaDaMesa();
+  const fechadaEm = consoleDaMesa?.fechadaEm ?? 0;
+  const fechamentoAnteriorRef = useRef(fechadaEm);
   useEffect(() => {
-    const anterior = pathnameAnteriorRef.current;
-    pathnameAnteriorRef.current = pathname;
+    const anterior = fechamentoAnteriorRef.current;
+    fechamentoAnteriorRef.current = fechadaEm;
     if (isNarrator) return;
-    if (anterior?.startsWith("/ficha") && !pathname?.startsWith("/ficha")) {
-      reloadPersonagensControlados();
-    }
-  }, [pathname, isNarrator, reloadPersonagensControlados]);
+    if (fechadaEm > anterior) reloadPersonagensControlados();
+  }, [fechadaEm, isNarrator, reloadPersonagensControlados]);
 
   return (
     <div className="rm-page">
@@ -221,7 +221,7 @@ export default function MesaClient({
         <PlayerCharactersSection
           campaignId={campaignId}
           personagens={personagensControlados}
-          turnTrack={campaign.turn_track}
+          personagemNaVez={trilhaDaMesa?.meuPersonagemNaVez ?? null}
           erro={erroPersonagensControlados}
           onTentarDeNovo={reloadPersonagensControlados}
         />

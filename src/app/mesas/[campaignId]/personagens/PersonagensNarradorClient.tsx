@@ -14,6 +14,7 @@
  */
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { AbrirFicha } from "../_shell/AbrirFicha";
 import {
   listCharactersForNarratorCampaign,
   listCharacterControllers,
@@ -356,13 +357,14 @@ export default function PersonagensNarradorClient({
                     {!arquivado && !isPersonagemPn(c) && activeCount === 0 && <span className="rm-badge">Sem jogador</span>}
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <Link
-                      href={`/ficha?campaignId=${campaignId}&characterId=${c.id}`}
-                      data-testid={`personagens-abrir-ficha-${c.id}`}
+                    <AbrirFicha
+                      campaignId={campaignId}
+                      characterId={c.id}
+                      testId={`personagens-abrir-ficha-${c.id}`}
                       className="rm-btn rm-btn-primary rv-focusable"
                     >
                       Abrir ficha
-                    </Link>
+                    </AbrirFicha>
                     {!arquivado && (
                       <>
                         <button onClick={() => renomear(c.id, c.name)} disabled={busy === c.id} className="rm-btn rm-btn-ghost rv-focusable">Renomear</button>

@@ -1,3 +1,17 @@
+/* PISO TIPOGRÁFICO: esta folha é EXCEÇÃO.
+ *
+ * O piso de 10px vale no resto do app. Aqui não: a tela de acesso é
+ * uma peça de cenário, não uma superfície de trabalho. As tipografias
+ * de 8,5–9,5px abaixo são MOLDURA — coordenadas de canto, leituras de
+ * rodapé, o carimbo `SYS.AUTH.NODE` — texto que compõe o terminal e
+ * não se lê palavra por palavra. Subi-las a 10px engrossou a moldura
+ * até ela competir com o formulário, que é o que de fato se usa aqui.
+ *
+ * A exceção vale pra folha inteira, incluindo `.rv-field-error` e
+ * `.rv-field-hint`: eles vivem colados ao campo que os gerou, em mono
+ * de alto contraste, e são a única coisa que muda naquele ponto da
+ * tela — o que sustenta 9px ali é a atenção já estar no lugar certo.
+ */
 /*
  * Identidade visual da TELA DE AUTENTICAÇÃO (terminal de acesso à malha).
  *
@@ -85,10 +99,6 @@
   background: radial-gradient(ellipse 90% 90% at 50% 50%, transparent 0%, rgba(7, 9, 15, 0.25) 72%, rgba(7, 9, 15, 0.68) 100%);
 }
 
-.rv-scanlines {
-  position: absolute; inset: 0; z-index: 1; pointer-events: none;
-  background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0, 0, 0, 0.16) 2px, rgba(0, 0, 0, 0.16) 3px);
-}
 .rv-scan-sweep {
   position: absolute; inset: 0; z-index: 1; pointer-events: none;
   background: linear-gradient(to bottom, transparent 0%, rgba(0, 212, 255, 0.03) 50%, transparent 100%);

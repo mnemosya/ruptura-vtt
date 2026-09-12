@@ -74,10 +74,14 @@
 .rm-root textarea { font-family: inherit; }
 
 /* ── Atmosfera ─────────────────────────────────────────────────────
-   Nível de `app.css` (imagem + grade + vinheta + scanlines + cantos),
-   sem o "scan sweep" animado de `auth.css`: a campanha é uma área de
-   trabalho contínua, onde se passa a sessão inteira, não uma cena de
-   entrada. */
+   Nível de `app.css` (imagem + grade + vinheta + cantos), sem o "scan
+   sweep" animado de `auth.css`: a campanha é uma área de trabalho
+   contínua, onde se passa a sessão inteira, não uma cena de entrada.
+
+   O campo de listras horizontais que existia aqui (e nos outros dois
+   níveis) foi removido: uma trama de 1px repetida por cima da tela
+   inteira some no efeito e sobra no ruído — ela vinha por cima de todo
+   texto, de toda tabela e de todo mapa, o dia inteiro. */
 .rm-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
 .rm-bg-img {
   position: absolute; inset: -4%;
@@ -99,18 +103,10 @@
   position: absolute; inset: 0;
   background: radial-gradient(ellipse 90% 80% at 50% 30%, transparent 0%, rgba(7, 9, 15, 0.6) 62%, rgba(7, 9, 15, 0.96) 100%);
 }
-.rm-scanlines {
-  position: fixed; inset: 0; z-index: 60; pointer-events: none; opacity: 0.5;
-  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.16) 0px, rgba(0, 0, 0, 0.16) 1px, transparent 1px, transparent 3px);
-}
-.rm-vp-corner {
-  position: fixed; width: 22px; height: 22px; z-index: 61; pointer-events: none;
-  border-color: rgba(0, 212, 255, 0.28); border-style: solid; border-width: 0;
-}
-.rm-vp-tl { top: 8px; left: 8px; border-top-width: 1.5px; border-left-width: 1.5px; }
-.rm-vp-tr { top: 8px; right: 8px; border-top-width: 1.5px; border-right-width: 1.5px; }
-.rm-vp-bl { bottom: 8px; left: 8px; border-bottom-width: 1.5px; border-left-width: 1.5px; }
-.rm-vp-br { bottom: 8px; right: 8px; border-bottom-width: 1.5px; border-right-width: 1.5px; }
+/* Os cantos do viewport (`rm-vp-*`) foram REMOVIDOS: a mesa já é
+   emoldurada pela barra de ferramentas à esquerda e pelo painel à
+   direita, os dois com chassi próprio. Os colchetes flutuavam por
+   cima deles, emoldurando o que já tinha moldura. */
 
 /* ── Container decoration ──────────────────────────────────────────
    Mesmo componente de `rv-deco-*` (auth), `ra-deco-*` (app) e
@@ -405,7 +401,7 @@
   border: 1px solid var(--rm-line-strong);
   background: rgba(0, 212, 255, 0.14);
   color: var(--rm-text-strong);
-  font-size: 9.5px; text-align: center;
+  font-size: 10px; text-align: center;
 }
 
 /* `left: var(--rm-rail-w)`, não `inset: 0` — o backdrop cobre o
@@ -906,7 +902,7 @@
 .rm-session-roster-papel {
   flex: none;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase;
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--rm-text-dim);
 }
 .rm-session-roster-item[data-role="narrator"] .rm-session-roster-papel { color: var(--am); }
