@@ -21,7 +21,7 @@
  */
 
 import { useState } from "react";
-import { Shield } from "lucide-react";
+import { ImageUp, Shield } from "lucide-react";
 import { MAX_OVERLOAD_SURGES_PER_DAY, type CharacterAttributes } from "../../../../lib/character";
 import { useClickGuard } from "../useClickGuard";
 import type { ConsoleApi } from "../types";
@@ -351,6 +351,17 @@ export function IdentityAside({
           {!avatarUrl && (
             <span className="rc-avatar-ico rc-avatar-ico--user" aria-hidden="true">
               <AvatarUserIcon />
+            </span>
+          )}
+          {/* VÉU DE TROCA — só quando JÁ HÁ imagem, e é o mesmo gesto do
+              retrato do HUD (`.rv-hud-portrait__lapis`): a imagem é o
+              alvo, e o ícone de trocar aparece por cima dela no hover.
+              Vazio, o hover continua como era — ali o ícone de usuário
+              já ocupa o centro e um véu por cima dele não diria nada
+              que o próprio quadro vazio não diga. */}
+          {avatarUrl && (
+            <span className="rc-avatar-troca" aria-hidden="true">
+              <ImageUp size={22} strokeWidth={1.6} />
             </span>
           )}
         </span>

@@ -465,12 +465,27 @@
 .rc-avatar-poly path { fill: none; stroke: rgba(0, 212, 255, 0.14); stroke-width: 1; stroke-dasharray: none; transition: stroke 0.16s, stroke-dasharray 0.16s; }
 .rc-avatar:hover .rc-avatar-poly path,
 .rc-avatar:focus-visible .rc-avatar-poly path { stroke: rgba(0, 212, 255, 0.51); stroke-dasharray: 5 5; }
-/* Hover só reforça o MESMO fundo (mesmo tom, mais opaco) — sem trocar
-   de cor nem de ícone; o ícone de usuário fica visível o tempo todo,
-   inclusive no hover. */
+/* SEM imagem, o hover só reforça o MESMO fundo (mesmo tom, mais opaco)
+   — sem trocar de cor nem de ícone; o ícone de usuário fica visível o
+   tempo todo, inclusive no hover. */
 .rc-avatar:hover .rc-avatar-fill,
 .rc-avatar:focus-visible .rc-avatar-fill { background: rgba(17, 29, 49, 0.92); }
 .rc-avatar:focus-visible { outline: none; }
+
+/* COM imagem, o mesmo gesto do retrato do HUD
+   (`.rv-hud-portrait__lapis` em `vtt.css`): a imagem é o alvo e o
+   ícone de trocar sobe por cima dela no hover/foco. Um selo permanente
+   competiria com o rosto, que é a informação.
+   Mora DENTRO de `.rc-avatar-fill`, então o véu é recortado pelo
+   heptágono junto com a foto — um overlay irmão sairia quadrado nos
+   cantos. */
+.rc-avatar-troca {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  background: rgba(10, 14, 20, .66); color: #cfe0f7;
+  opacity: 0; transition: opacity .12s ease;
+}
+.rc-avatar:hover .rc-avatar-troca,
+.rc-avatar:focus-within .rc-avatar-troca { opacity: 1; }
 
 .rc-avatar-ico { width: 64px; max-width: 55%; }
 .rc-avatar-ico svg { width: 100%; height: auto; display: block; }
