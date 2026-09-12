@@ -413,7 +413,16 @@ async function main() {
       await jogadorPage.reload({ waitUntil: "networkidle" });
       await jogadorPage.waitForTimeout(1500);
       jogadorPage.off("request", capturaMount);
-      const idPersonagensControlados = [...idsNoMount].find((id) => id !== idReloadMembers) ?? null;
+      // Tudo que a Mesa dispara no mount MENOS `reloadMembers`. Era
+      // `.find(...)` — "o outro" — o que só funcionava enquanto a casca
+      // fizesse exatamente duas chamadas. Com a trilha unificada ela faz
+      // mais uma (`lerTrilhaDaMesaAction`, do dock), e a escolha por
+      // eliminação passou a cair na ação errada: o teste bloqueava a
+      // trilha, a releitura de personagens continuava passando, e o
+      // estado de erro que ele espera nunca aparecia. Bloquear todas é
+      // estável a quantas ações a casca vier a ter.
+      const idsPersonagensControlados = [...idsNoMount].filter((id) => id !== idReloadMembers);
+      const idPersonagensControlados = idsPersonagensControlados[0] ?? null;
 
       if (!idPersonagensControlados) {
         registrar(
@@ -422,10 +431,10 @@ async function main() {
           `não foi possível identificar o next-action de listControlledCharacters (reloadMembers="${idReloadMembers}", ids vistos no mount=${JSON.stringify([...idsNoMount])}) — script desatualizado?`,
         );
       } else {
-        const idCapturado = idPersonagensControlados;
+        const bloqueados = new Set(idsPersonagensControlados);
         await jogadorPage.route(mesaUrl, (route) => {
           const header = route.request().headers()["next-action"];
-          if (header === idCapturado) route.abort("failed");
+          if (header && bloqueados.has(header)) route.abort("failed");
           else route.continue();
         });
 
@@ -466,7 +475,13 @@ async function main() {
       await pageBloqueada.waitForTimeout(1500);
 
       const personagemNome = "Fixture Único";
-      const urlVirouFicha = pageBloqueada.url().includes("/ficha?");
+      // A ficha não navega mais (virou janela da casca): o que prova
+      // que ela abriu é a janela no DOM, não a URL. A propriedade que
+      // este critério guarda continua a mesma e é ela que importa —
+      // fechar a ficha traz pra Mesa o que mudou enquanto ela estava
+      // aberta, sem depender do Realtime.
+      await pageBloqueada.waitForSelector('[data-testid="console-window"]', { timeout: 30000 }).catch(() => {});
+      const abriuAJanela = (await pageBloqueada.locator('[data-testid="console-window"]').count()) > 0;
       const nomeCorreto = (await pageBloqueada.getByText(personagemNome).count()) > 0;
 
       const pvComModalAberto = 555;
@@ -477,37 +492,40 @@ async function main() {
       await pageBloqueada.waitForTimeout(1500);
 
       const voltouParaMesa = pageBloqueada.url().startsWith(mesaUrl);
+      const janelaFechou = (await pageBloqueada.locator('[data-testid="console-window"]').count()) === 0;
       const cascaPreservada = (await pageBloqueada.locator(".rm-navrail").count()) > 0;
       const pvAtualizado = await pageBloqueada.locator('[data-testid="mesa-jogador-vital-pv"] strong').textContent();
 
       registrar(
-        "15 (fechar modal da ficha atualiza a Mesa mesmo com Realtime bloqueado)",
-        urlVirouFicha && nomeCorreto && voltouParaMesa && cascaPreservada && pvAtualizado?.trim() === String(pvComModalAberto),
-        `abriu ficha correta (url=/ficha?=${urlVirouFicha}, nome "${personagemNome}" presente=${nomeCorreto}); ao fechar: voltou pra Mesa=${voltouParaMesa}, casca preservada=${cascaPreservada}, PV mostrado="${pvAtualizado?.trim()}" (esperado "${pvComModalAberto}" — só o fechamento do modal poderia ter trazido isso, Realtime estava bloqueado)`,
+        "15 (fechar a ficha atualiza a Mesa mesmo com Realtime bloqueado)",
+        abriuAJanela && nomeCorreto && voltouParaMesa && janelaFechou && cascaPreservada && pvAtualizado?.trim() === String(pvComModalAberto),
+        `abriu ficha correta (janela=${abriuAJanela}, nome "${personagemNome}" presente=${nomeCorreto}); ao fechar: janela sumiu=${janelaFechou}, segue na Mesa=${voltouParaMesa}, casca preservada=${cascaPreservada}, PV mostrado="${pvAtualizado?.trim()}" (esperado "${pvComModalAberto}" — só o fechamento poderia ter trazido isso, Realtime estava bloqueado)`,
       );
 
       await pageBloqueada.close();
     }
 
-    // --- 8. Abrir ficha a partir de Personagens abre como MODAL (campanha continua montada) ---
+    // --- 8. Abrir ficha a partir de Personagens é JANELA DA MESA, sem navegar ---
+    // O Console deixou de ser rota (nem cheia, nem interceptada): é uma
+    // janela da casca da campanha (`_shell/ConsoleDaMesa.tsx`). Então o
+    // que se exige mudou de "a URL vira /ficha" para o oposto — a URL
+    // NÃO pode mudar — e ganhou o resto do que a pessoa pediu: sem a
+    // barra própria da ficha, sem véu e sem o painel de sessão ao lado.
     await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "networkidle" });
+    const urlAntesDaFicha = jogadorPage.url();
     await jogadorPage.locator(`[data-testid="personagens-abrir-ficha-${characterId}"]`).click();
-    // Espera a URL virar, não um tempo fixo. O `waitForTimeout(600)`
-    // anterior era uma aposta na velocidade do commit da rota
-    // interceptada — reprovou quando o carregamento da ficha passou de
-    // 600ms, sem que a interceptação em si tivesse qualquer problema
-    // (o modal abria, só um pouco depois da leitura). Esperar o
-    // destino é mais forte: falha de verdade se o modal NÃO abrir.
-    await jogadorPage.waitForURL(/\/ficha\?/, { timeout: 15000 }).catch(() => {});
-    await jogadorPage.waitForTimeout(300);
+    await jogadorPage.waitForSelector('[data-testid="console-window"]', { timeout: 30000 }).catch(() => {});
     {
       const url = jogadorPage.url();
-      const viradouFicha = url.includes("/ficha?") && url.includes(`characterId=${characterId}`);
+      const naoNavegou = url === urlAntesDaFicha;
       const casacaAindaMontada = (await jogadorPage.locator(".rm-navrail").count()) > 0;
+      const janela = (await jogadorPage.locator('[data-testid="console-window"]').count()) > 0;
+      const semVeu = (await jogadorPage.locator(".rc-backdrop").count()) === 0;
+      const semPainelSessao = (await jogadorPage.locator('[data-testid="campshell-painel-sessao"]').count()) === 0;
       registrar(
-        "8 (Abrir ficha via Personagens é modal — campanha continua montada por baixo)",
-        viradouFicha && casacaAindaMontada,
-        `url="${url}" (esperado /ficha?...), .rm-navrail ainda no DOM=${casacaAindaMontada} (esperado true — senão foi navegação cheia, não modal)`,
+        "8 (Abrir ficha via Personagens é janela da mesa — não navega, não escurece, não abre painel ao lado)",
+        naoNavegou && casacaAindaMontada && janela && semVeu && semPainelSessao,
+        `url intacta=${naoNavegou}, .rm-navrail=${casacaAindaMontada}, janela=${janela}, sem véu=${semVeu}, sem painel de sessão=${semPainelSessao}`,
       );
     }
 

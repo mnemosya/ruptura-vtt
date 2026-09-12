@@ -32,6 +32,7 @@ ok("2b (jogador vê Áreas — criação é aberta a qualquer participante)", fe
 ok("2c (narrador vê Áreas)", ferramentasParaPapel(true).includes("areas"), JSON.stringify(ferramentasParaPapel(true)));
 ok("2d (jogador não vê Objetos)", !ferramentasParaPapel(false).includes("objetos"), JSON.stringify(ferramentasParaPapel(false)));
 ok("2e (narrador vê Objetos)", ferramentasParaPapel(true).includes("objetos"), JSON.stringify(ferramentasParaPapel(true)));
+ok("2f (todos veem Rolar Dados)", ferramentasParaPapel(false).includes("dados") && ferramentasParaPapel(true).includes("dados"), JSON.stringify(ferramentasParaPapel(false)));
 
 // ── Atalhos ──────────────────────────────────────────────────────
 const disponiveisJogador = ferramentasParaPapel(false);
@@ -40,6 +41,7 @@ const base = { ctrlKey: false, metaKey: false, shiftKey: false, alvoEhEditavel: 
 
 ok("3 (V ativa Interagir)", interpretarAtalho({ ...base, key: "v" }, disponiveisJogador)?.tipo === "ferramenta", "ok");
 ok("4 (M ativa Medir)", (interpretarAtalho({ ...base, key: "m" }, disponiveisJogador) as { id: string })?.id === "medir", "ok");
+ok("4b (L ativa Rolar Dados)", (interpretarAtalho({ ...base, key: "l" }, disponiveisJogador) as { id: string })?.id === "dados", "ok");
 ok(
   "5 (T não ativa nada pro jogador — ferramenta indisponível)",
   interpretarAtalho({ ...base, key: "t" }, disponiveisJogador) === null,
@@ -74,6 +76,11 @@ ok("11 (elementoEhEditavel reconhece INPUT/TEXTAREA/SELECT/contentEditable)",
   elementoEhEditavel({ tagName: "SELECT" }) && elementoEhEditavel({ isContentEditable: true }) &&
   !elementoEhEditavel({ tagName: "DIV" }) && !elementoEhEditavel(null),
   "todos corretos");
+ok("11b (elementoEhEditavel também barra atalho com o botão de força carregando)",
+  elementoEhEditavel({ tagName: "BUTTON", dataset: { carregandoForca: "true" } }) &&
+  !elementoEhEditavel({ tagName: "BUTTON", dataset: { carregandoForca: "false" } }) &&
+  !elementoEhEditavel({ tagName: "BUTTON" }),
+  "true só com o dataset explicitamente \"true\"");
 
 // ── Undo/redo — pilha de comandos, não snapshot ───────────────────
 function comandoFake(rotulo: string, autorId: string, log: string[]): Comando {

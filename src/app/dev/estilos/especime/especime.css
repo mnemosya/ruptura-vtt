@@ -1,0 +1,34 @@
+/* Moldura MÍNIMA do iframe de espécime.
+ *
+ * Nada aqui pode alcançar o botão — o iframe existe justamente para que
+ * a folha do sistema seja a única voz sobre como ele desenha. O que
+ * esta folha faz é só dar ao botão a CAIXA que ele espera. */
+html, body { margin: 0; background: #0a1120; color: #7f95b3; }
+body { padding: 12px; font: 12px/1.4 system-ui, sans-serif; }
+
+.esp-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; align-items: start; }
+.esp-cel { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+
+/* A caixa importa: vários destes botões são `width: 100%` ou `flex: 1`
+   porque nasceram dentro de um formulário ou de uma barra. Sem uma
+   caixa que os segure, eles esticam pela página — que foi como a
+   galeria quebrou da primeira vez. Esta é a barra que eles esperam. */
+.esp-palco {
+  display: flex; align-items: center; min-height: 48px; padding: 8px 10px;
+  border: 1px solid #16233a; border-radius: 2px; background: #070d17; overflow: hidden;
+  /* contém filho `absolute`/`fixed` — algumas destas classes são
+     posicionadas na tela real e, solto, o botão sai voando. */
+  position: relative; contain: layout paint;
+}
+/* A raiz de tokens envolve SÓ o botão; ela também é a casca de uma tela
+   inteira em alguns sistemas, então a casca é desligada aqui. */
+.esp-palco > div { display: contents; }
+.esp-cel > strong { font-size: 11.5px; font-weight: 600; color: #c3d2e8; }
+.esp-cel > code {
+  font-family: ui-monospace, monospace; font-size: 10px; color: #4a5d80;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* O indicador de dev do Next se monta em todo documento — inclusive
+   dentro destes iframes, onde vira um "N" flutuando sobre a peça. */
+nextjs-portal { display: none !important; }

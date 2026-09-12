@@ -209,6 +209,26 @@ async function main() {
   const errosNarrador: string[] = [];
   narradorPage.on("console", (m) => { if (erroRelevante(m)) errosNarrador.push(m.text().slice(0, 600)); });
 
+  // Espera CONDIÇÃO no banco, nunca tempo. Um clique dispara uma
+  // server action; ler logo depois de um `waitForTimeout` fixo é
+  // corrida, e ela reprova de forma intermitente sob carga.
+  async function esperarLinhas<T>(
+    tabela: string,
+    colunas: string,
+    condicao: (linhas: T[]) => boolean,
+    timeoutMs = 8000,
+  ): Promise<T[]> {
+    const limite = Date.now() + timeoutMs;
+    let ultimas: T[] = [];
+    for (;;) {
+      const { data } = await admin.from(tabela).select(colunas).eq("campaign_id", campaignId);
+      ultimas = (data as T[] | null) ?? [];
+      if (condicao(ultimas)) return ultimas;
+      if (Date.now() > limite) return ultimas;
+      await new Promise((r) => setTimeout(r, 150));
+    }
+  }
+
   // --- 1. Narrador abre a mesa: cena semeia sozinha ---
   await narradorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
   await narradorPage.waitForSelector(".rv-mesa", { timeout: 15000 }).catch(() => {});
@@ -216,6 +236,40 @@ async function main() {
     const temCarregando = (await narradorPage.locator(".rv-mesa--carregando").count()) > 0;
     const temMesa = (await narradorPage.locator(".rv-ferramentas").count()) > 0;
     registrar("1 (mesa carrega e semeia sozinha, sem tela de erro/carregando presa)", !temCarregando && temMesa, `carregando=${temCarregando}, mesa=${temMesa}`);
+  }
+
+  // Elenco da fixture. A cena semente nasce EM BRANCO
+  // (`garantirCenaSemente`: "sem elenco, objeto ou terreno fictício") —
+  // os critérios de seleção, HUD e movimento precisam de tokens, e
+  // criá-los aqui desacopla a suíte do que a semente resolva fazer.
+  {
+    const { data: cena } = await admin.from("vtt_scenes").select("id").eq("campaign_id", campaignId).limit(1).maybeSingle();
+    if (cena?.id) {
+      await admin.from("vtt_tokens").insert([
+        // Vinculado ao personagem do jogador: é o que dá a ele um token
+        // que pode arrastar de verdade (`can_move_vtt_token`).
+        { campaign_id: campaignId, scene_id: cena.id, character_id: characterId, nome: "Aliado", sigla: "AL", lado: "pj", vertente: "nenhuma", q: 8, r: 8, tamanho: "medio", orientacao: 0 },
+        { campaign_id: campaignId, scene_id: cena.id, nome: "Hostil", sigla: "HO", lado: "pn", vertente: "nenhuma", q: 12, r: 10, tamanho: "medio", orientacao: 0 },
+      ]);
+      // O objeto que as hints de cobertura usam. Vinha da cena de
+      // demonstração; agora é da fixture, com os MESMOS valores que os
+      // critérios 12f/12g/12h afirmam (cobertura maior, categoria
+      // média, PD 9 de 14 — danificado).
+      const vanId = randomUUID();
+      await admin.from("vtt_objects").insert({
+        id: vanId, scene_id: cena.id, campaign_id: campaignId,
+        nome: "Van de transporte", preset: "veiculo",
+        bloqueia_movimento: true, grau_cobertura: "maior", categoria: "media",
+        pd: 9, pd_max: 14,
+      });
+      await admin.from("vtt_object_cells").insert([
+        { object_id: vanId, scene_id: cena.id, q: 14, r: 12 },
+        { object_id: vanId, scene_id: cena.id, q: 15, r: 12 },
+      ]);
+
+      await narradorPage.reload({ waitUntil: "networkidle" });
+      await narradorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
+    }
   }
 
   // --- 2. Narrador vê as 7 ferramentas (Interagir/Medir/Marcar/Áreas/
@@ -229,20 +283,20 @@ async function main() {
   //        igual Foundry/Roll20) — por isso a contagem caiu de 8 pra 7
   //        em vez de subir, e o critério não procura mais por ela. ---
   {
-    const botoes = (await narradorPage.locator(".rv-ferramentas .rv-ferr-btn[aria-pressed]").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label"))))
-      .filter((b) => b !== "Camadas do mapa");
+    const botoes = (await narradorPage.locator(".rv-ferramentas .rv-ferr-btn[aria-pressed]:not([data-tipo='janela'])").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label"))));
     const temTerreno = botoes.some((b) => b?.startsWith("Terreno"));
     const temAreas = botoes.some((b) => b?.startsWith("Áreas"));
     const temRodadas = botoes.some((b) => b?.startsWith("Rodadas"));
     const semApontar = !botoes.some((b) => b?.startsWith("Apontar"));
     // Passou de 5 pra 6 com ÁREAS (migration 0081), de 6 pra 8 com
-    // RODADAS (migration 0088, Objetos entrou junto na mesma leva), e
-    // de 8 pra 7 com a remoção de APONTAR (virou gesto global). Nenhuma
-    // foi regressão — o critério confere a PRESENÇA/AUSÊNCIA de cada
-    // uma junto com a contagem, em vez de só um número que ninguém
-    // consegue interpretar quando quebra.
-    registrar("2 (narrador vê as 7 ferramentas — Terreno, Áreas e Rodadas incluídas, Apontar não é mais botão)",
-      botoes.length === 7 && temTerreno && temAreas && temRodadas && semApontar, JSON.stringify(botoes));
+    // RODADAS (migration 0088), de 8 pra 7 com a remoção de APONTAR
+    // (virou gesto global) e de 7 pra 8 com OBJETOS. Nenhuma foi
+    // regressão — o critério confere a PRESENÇA/AUSÊNCIA de cada uma
+    // junto com a contagem, em vez de só um número que ninguém consegue
+    // interpretar quando quebra.
+    const temObjetos = botoes.some((b) => b?.startsWith("Objetos"));
+    registrar("2 (narrador vê as 8 ferramentas — Terreno, Áreas, Rodadas e Objetos incluídas, Apontar não é mais botão)",
+      botoes.length === 8 && temTerreno && temAreas && temRodadas && temObjetos && semApontar, JSON.stringify(botoes));
   }
 
   // --- 3. Jogador vê só 4 ferramentas (sem Terreno) ---
@@ -252,8 +306,7 @@ async function main() {
   await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
   await jogadorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
   {
-    const botoes = (await jogadorPage.locator(".rv-ferramentas .rv-ferr-btn[aria-pressed]").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label"))))
-      .filter((b) => b !== "Camadas do mapa");
+    const botoes = (await jogadorPage.locator(".rv-ferramentas .rv-ferr-btn[aria-pressed]:not([data-tipo='janela'])").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label"))));
     const semTerreno = !botoes.some((b) => b?.startsWith("Terreno"));
     // Áreas (migration 0083): criação é aberta a qualquer participante
     // da campanha — o jogador vê a ferramenta sem precisar de nenhuma
@@ -267,20 +320,23 @@ async function main() {
     // Apontar não é mais botão nenhum — é gesto global, disponível
     // pros dois papéis sem precisar aparecer na barra.
     const semApontar = !botoes.some((b) => b?.startsWith("Apontar"));
-    registrar("3 (jogador vê 5 ferramentas — Áreas e Rodadas incluídas, sem Terreno, Apontar não é mais botão)",
-      botoes.length === 5 && semTerreno && temAreas && temRodadas && semApontar, JSON.stringify(botoes));
+    registrar("3 (jogador vê 6 ferramentas — Áreas e Rodadas incluídas, sem Terreno nem Objetos, Apontar não é mais botão)",
+      botoes.length === 6 && semTerreno && temAreas && temRodadas && semApontar, JSON.stringify(botoes));
   }
 
   // --- 4. Narrador pinta terreno pela UI ---
   await narradorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Terreno"]').click();
-  await narradorPage.locator('.rv-submenu button:has-text("Difícil")').click();
+  // Terreno deixou de ser um submenu de uma linha e virou JANELA
+  // (`PainelTerreno`, na casca comum): o tipo é um ladrilho com o
+  // `data-tipo` do terreno real, não um botão com texto.
+  await narradorPage.waitForSelector('section[aria-label="Ferramenta Terreno"]', { timeout: 8000 });
+  await narradorPage.locator('.rv-fp-opcao[data-tipo="dificil"]').click();
   // Primeira célula da grade — clique simples (sem arrastar) já pinta via onPressCelula.
   const celula = narradorPage.locator(".rv-camada-grade path").first();
   await celula.dispatchEvent("pointerdown");
-  await narradorPage.waitForTimeout(600);
   {
-    const { data } = await admin.from("vtt_terrain").select("q,r,tipo").eq("campaign_id", campaignId);
-    registrar("4 (pintura de terreno pela UI grava no banco)", (data?.length ?? 0) > 0, JSON.stringify(data));
+    const data = await esperarLinhas<{ q: number; r: number; tipo: string }>("vtt_terrain", "q,r,tipo", (l) => l.length > 0);
+    registrar("4 (pintura de terreno pela UI grava no banco)", data.length > 0, JSON.stringify(data));
   }
 
   // --- 5. Reload preserva o terreno ---
@@ -300,14 +356,24 @@ async function main() {
   }
 
   // --- 7. Medir: máquina de estados ociosa/pressionada/medindo/concluída ---
-  // Índices 20+ de propósito: a célula 0 (0,0) já tem terreno difícil
-  // pintado no critério 4 — o rótulo "×2" sobre ela intercepta o clique
-  // do Playwright (bloqueio real de ponteiro, não flake).
+  //
+  // Células do MEIO do mapa (fileira 5, colunas 10/14/18 numa cena de 20
+  // de largura). Duas razões, as duas descobertas na prática:
+  //
+  //   · a célula (0,0) ganhou terreno difícil no critério 4, e o rótulo
+  //     "×2" sobre ela intercepta o ponteiro;
+  //   · a janela da ferramenta abre encostada na barra e tem 400px —
+  //     as colunas 0..8 ficam POR BAIXO dela, e o arrasto acontecia na
+  //     janela, não no mapa. Era o que derrubava os sete critérios de
+  //     Medir de uma vez.
   await jogadorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Medir"]').click();
+  await jogadorPage.waitForSelector('section[aria-label="Ferramenta Medir"]', { timeout: 8000 });
   const celulas = jogadorPage.locator(".rv-camada-grade path");
-  const boxOrigem = await celulas.nth(20).boundingBox();
-  const boxDestino = await celulas.nth(24).boundingBox();
-  const boxOutra = await celulas.nth(28).boundingBox();
+  const LARGURA_MAPA = 20;
+  const idxDe = (col: number, row: number) => row * LARGURA_MAPA + col;
+  const boxOrigem = await celulas.nth(idxDe(10, 5)).boundingBox();
+  const boxDestino = await celulas.nth(idxDe(14, 5)).boundingBox();
+  const boxOutra = await celulas.nth(idxDe(18, 5)).boundingBox();
 
   if (boxOrigem && boxDestino && boxOutra) {
     const oX = boxOrigem.x + boxOrigem.width / 2, oY = boxOrigem.y + boxOrigem.height / 2;
@@ -331,19 +397,26 @@ async function main() {
     await jogadorPage.mouse.up();
     await jogadorPage.waitForTimeout(250);
     const aposSoltar = await jogadorPage.locator(".rv-camada-medicao text").first().textContent().catch(() => null);
+    // O modo padrão é INSTANTÂNEA, e nele soltar apaga a régua na hora
+    // — está no contrato de `MapaHex.modoMedicao`: "a régua some da
+    // tela na hora; nunca persiste, então não há nada mais a mostrar".
+    // Este critério exigia o oposto (resultado congelado depois de
+    // soltar), que era o comportamento de antes de existirem os dois
+    // modos. O que persiste é o modo PERMANENTE, coberto em 7e.
     registrar(
-      "7b (pressionar/arrastar/soltar: linha ao vivo + resultado \"m\" antes E depois de soltar)",
-      temLinhaEmAndamento && !!emAndamento && /m/.test(emAndamento) && !!aposSoltar && /m/.test(aposSoltar),
+      "7b (Medir instantânea: linha e medida ao vivo durante o arrasto, e some ao soltar)",
+      temLinhaEmAndamento && !!emAndamento && /m/.test(emAndamento) && !aposSoltar,
       `linha durante=${temLinhaEmAndamento}, texto durante="${emAndamento}", texto após soltar="${aposSoltar}"`,
     );
 
-    // 7c — Esc apaga a régua CONCLUÍDA (sem arrasto em andamento).
+    // 7c — depois de soltar em instantânea não sobra régua nenhuma na
+    // tela; Esc não tem o que apagar e também não pode quebrar nada.
+    // (Cancelar uma medição EM ANDAMENTO é o critério 7g.)
     {
-      const antesDoEsc = (await jogadorPage.locator(".rv-camada-medicao").count()) > 0;
       await jogadorPage.keyboard.press("Escape");
       await jogadorPage.waitForTimeout(150);
-      const depoisDoEsc = (await jogadorPage.locator(".rv-camada-medicao").count()) === 0;
-      registrar("7c (Esc apaga a régua concluída)", antesDoEsc && depoisDoEsc, `presente antes=${antesDoEsc}, sumiu depois do Esc=${depoisDoEsc}`);
+      const limpo = (await jogadorPage.locator(".rv-camada-medicao").count()) === 0;
+      registrar("7c (depois de soltar em instantânea não sobra régua, e Esc é inofensivo)", limpo, `camada de medição presente=${!limpo}`);
     }
 
     // 7d — botão direito nunca inicia/altera/apaga medição, e ainda assim pan continua funcionando (mesma ferramenta Medir ativa).
@@ -373,33 +446,46 @@ async function main() {
       await jogadorPage.waitForTimeout(200);
     }
 
-    // 7e — pressionar/arrastar/soltar cria uma régua concluída; um clique simples subsequente no mapa a apaga SEM iniciar outra.
+    // 7e — em PERMANENTE, soltar grava a medição pra mesa.
+    //
+    // Era "clique simples apaga a régua concluída": uma régua que fica
+    // na tela depois de soltar deixou de existir quando Medir ganhou os
+    // dois modos. Em instantânea ela some (7b); o que PERSISTE é o modo
+    // permanente, e é isso que este critério passa a cobrir — porque é
+    // o que a mesa usa quando alguém quer deixar a medida à vista de
+    // todos.
+    await jogadorPage.locator('section[aria-label="Ferramenta Medir"] .rv-fp-seg-btn:has-text("Permanente")').click();
+    await jogadorPage.waitForTimeout(150);
     await jogadorPage.mouse.move(oX, oY);
     await jogadorPage.mouse.down();
     await jogadorPage.mouse.move(dX, dY, { steps: 8 });
     await jogadorPage.mouse.up();
-    await jogadorPage.waitForTimeout(200);
-    const concluidaAntes = (await jogadorPage.locator(".rv-camada-medicao").count()) > 0;
-    await jogadorPage.mouse.move(outraX, outraY);
-    await jogadorPage.mouse.down();
-    await jogadorPage.mouse.up();
-    await jogadorPage.waitForTimeout(200);
-    const apagouSemNova = (await jogadorPage.locator(".rv-camada-medicao").count()) === 0;
+    let medicoesGravadas: unknown[] = [];
+    for (let i = 0; i < 40; i++) {
+      const { data } = await admin.from("vtt_measurements").select("id").eq("campaign_id", campaignId);
+      medicoesGravadas = data ?? [];
+      if (medicoesGravadas.length > 0) break;
+      await jogadorPage.waitForTimeout(150);
+    }
+    const fixaNoMapa = (await jogadorPage.locator(".rv-camada-medicoes-fixas").count()) > 0;
     registrar(
-      "7e (clique simples apaga régua concluída sem iniciar outra)",
-      concluidaAntes && apagouSemNova,
-      `concluída antes do clique=${concluidaAntes}, ausente depois do clique simples=${apagouSemNova}`,
+      "7e (Medir permanente: soltar grava a medição e ela fica no mapa pra mesa)",
+      medicoesGravadas.length === 1 && fixaNoMapa,
+      `no banco=${medicoesGravadas.length}, camada fixa no mapa=${fixaNoMapa}`,
     );
+    // Volta pra instantânea — os critérios seguintes assumem o padrão.
+    await jogadorPage.locator('section[aria-label="Ferramenta Medir"] .rv-fp-seg-btn:has-text("Instantânea")').click();
+    await jogadorPage.waitForTimeout(150);
 
-    // 7f — um gesto POSTERIOR de pressionar/arrastar/soltar (não o mesmo clique de 7e) cria uma régua nova normalmente.
+    // 7f — medir de novo depois da anterior continua funcionando.
     await jogadorPage.mouse.move(outraX, outraY);
     await jogadorPage.mouse.down();
     await jogadorPage.mouse.move(dX, dY, { steps: 8 });
-    await jogadorPage.mouse.up();
     await jogadorPage.waitForTimeout(200);
-    registrar("7f (novo pressionar/arrastar/soltar cria régua normalmente depois do clique de limpar)", (await jogadorPage.locator(".rv-camada-medicao").count()) > 0, "régua nova esperada");
-    await jogadorPage.keyboard.press("Escape");
+    const novaRegua = (await jogadorPage.locator(".rv-camada-medicao line").count()) > 0;
+    await jogadorPage.mouse.up();
     await jogadorPage.waitForTimeout(150);
+    registrar("7f (uma medição nova funciona normalmente depois da anterior)", novaRegua, `linha ao vivo=${novaRegua}`);
 
     // 7g — Esc cancela uma medição EM ANDAMENTO (antes de soltar o botão) sem deixar nada visível.
     await jogadorPage.mouse.move(oX, oY);
@@ -414,17 +500,17 @@ async function main() {
     const depoisDoEsc7g = (await jogadorPage.locator(".rv-camada-medicao").count()) === 0;
     registrar("7g (Esc cancela medição em andamento, soltar depois não ressuscita nada)", emAndamento7g && depoisDoEsc7g, `em andamento antes do Esc=${emAndamento7g}, ausente depois=${depoisDoEsc7g}`);
 
-    // 7h — trocar de ferramenta limpa uma régua concluída.
+    // 7h — trocar de ferramenta no MEIO de uma medição não deixa resíduo.
     await jogadorPage.mouse.move(oX, oY);
     await jogadorPage.mouse.down();
     await jogadorPage.mouse.move(dX, dY, { steps: 8 });
+    await jogadorPage.waitForTimeout(150);
+    const medindo7h = (await jogadorPage.locator(".rv-camada-medicao").count()) > 0;
     await jogadorPage.mouse.up();
-    await jogadorPage.waitForTimeout(200);
-    const concluida7h = (await jogadorPage.locator(".rv-camada-medicao").count()) > 0;
     await jogadorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
     await jogadorPage.waitForTimeout(150);
     const limpouAoTrocar = (await jogadorPage.locator(".rv-camada-medicao").count()) === 0;
-    registrar("7h (trocar de ferramenta apaga a régua concluída)", concluida7h && limpouAoTrocar, `concluída antes=${concluida7h}, ausente após trocar de ferramenta=${limpouAoTrocar}`);
+    registrar("7h (trocar de ferramenta não deixa régua pendurada)", medindo7h && limpouAoTrocar, `havia medição=${medindo7h}, ausente após trocar de ferramenta=${limpouAoTrocar}`);
     await jogadorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Medir"]').click();
     await jogadorPage.waitForTimeout(150);
   } else {
@@ -492,18 +578,20 @@ async function main() {
   // já bastava pra dar tempo suficiente — mas um wait explícito é mais
   // claro que depender de um efeito colateral de leitura.
   await jogadorPage.waitForTimeout(120);
-  await celulas.nth(25).click();
-  await jogadorPage.waitForTimeout(600);
-  const { data: marcasApos } = await admin.from("vtt_marks").select("id").eq("campaign_id", campaignId);
+  // Coluna 12, não 5: a janela de Marcar tem 400px e abre encostada na
+  // barra, então as colunas 0..8 ficam POR BAIXO dela — o mesmo motivo
+  // já anotado no bloco de Medir. `nth(25)` era (col 5, linha 1) e o
+  // clique chegava no botão do painel, não na célula.
+  await celulas.nth(idxDe(12, 1)).click();
+  const marcasApos = await esperarLinhas<{ id: string }>("vtt_marks", "id", (l) => l.length === 1);
   const erroVisivel = await jogadorPage.locator(".rv-erro-acao").textContent().catch(() => null);
-  registrar("8a (Marcar cria uma marcação persistida)", (marcasApos?.length ?? 0) === 1, `${JSON.stringify(marcasApos)} erroAcao=${erroVisivel}`);
+  registrar("8a (Marcar cria uma marcação persistida)", marcasApos.length === 1, `${JSON.stringify(marcasApos)} erroAcao=${erroVisivel}`);
   // O ping fica ACIMA da grade no SVG (confirmado: um clique normal na
   // célula é bloqueado pelo próprio marcador, "intercepts pointer
   // events") — clicar nele é o caminho natural, não a grade por baixo.
   await jogadorPage.locator(".rv-marca-ping").first().click();
-  await jogadorPage.waitForTimeout(800);
-  const { data: marcasDepois } = await admin.from("vtt_marks").select("id").eq("campaign_id", campaignId);
-  registrar("8b (clicar na própria marcação apaga)", (marcasDepois?.length ?? 0) === 0, JSON.stringify(marcasDepois));
+  const marcasDepois = await esperarLinhas<{ id: string }>("vtt_marks", "id", (l) => l.length === 0);
+  registrar("8b (clicar na própria marcação apaga)", marcasDepois.length === 0, JSON.stringify(marcasDepois));
 
   // --- 9. Arrasto do jogador move o token controlado, narrador vê sem reload ---
   await jogadorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
@@ -527,9 +615,16 @@ async function main() {
       await jogadorPage.mouse.down();
       await jogadorPage.mouse.move(cx + 60, cy + 30, { steps: 6 });
       await jogadorPage.mouse.up();
-      await jogadorPage.waitForTimeout(700);
     }
-    const { data: tokenDepois } = await admin.from("vtt_tokens").select("q,r,revision").eq("id", tokenAntes.id).maybeSingle();
+    // Espera o BANCO refletir, não um tempo fixo: a gravação é uma ida
+    // ao servidor e sob carga chega depois da animação local terminar.
+    let tokenDepois: { q: number; r: number; revision: number } | null = null;
+    for (let i = 0; i < 50; i++) {
+      const { data } = await admin.from("vtt_tokens").select("q,r,revision").eq("id", tokenAntes.id).maybeSingle();
+      tokenDepois = (data as { q: number; r: number; revision: number } | null) ?? null;
+      if (tokenDepois && (tokenDepois.q !== tokenAntes.q || tokenDepois.r !== tokenAntes.r)) break;
+      await jogadorPage.waitForTimeout(150);
+    }
     const moveu = !!tokenDepois && (tokenDepois.q !== tokenAntes.q || tokenDepois.r !== tokenAntes.r);
     registrar("9 (arrasto do jogador move o token controlado no banco)", moveu, `antes=(${tokenAntes.q},${tokenAntes.r}) depois=(${tokenDepois?.q},${tokenDepois?.r})`);
 
@@ -545,8 +640,14 @@ async function main() {
     // --- 10. Ctrl+Z desfaz o movimento do jogador ---
     await jogadorPage.locator(".rv-mesa").click({ position: { x: 5, y: 5 } }); // garante foco fora de qualquer input
     await jogadorPage.keyboard.press("Control+z");
-    await jogadorPage.waitForTimeout(1200);
-    const { data: tokenDesfeito } = await admin.from("vtt_tokens").select("q,r,revision").eq("id", tokenAntes.id).maybeSingle();
+    // Espera a volta CHEGAR no banco — mesmo motivo do critério 9.
+    let tokenDesfeito: { q: number; r: number; revision: number } | null = null;
+    for (let i = 0; i < 50; i++) {
+      const { data } = await admin.from("vtt_tokens").select("q,r,revision").eq("id", tokenAntes.id).maybeSingle();
+      tokenDesfeito = (data as { q: number; r: number; revision: number } | null) ?? null;
+      if (tokenDesfeito?.q === tokenAntes.q && tokenDesfeito?.r === tokenAntes.r) break;
+      await jogadorPage.waitForTimeout(150);
+    }
     const erroVisivel10 = await jogadorPage.locator(".rv-erro-acao").textContent().catch(() => null);
     registrar("10 (Ctrl+Z desfaz o movimento no banco)", tokenDesfeito?.q === tokenAntes.q && tokenDesfeito?.r === tokenAntes.r, `voltou a (${tokenDesfeito?.q},${tokenDesfeito?.r}) rev=${tokenDesfeito?.revision} erroAcao=${erroVisivel10}`);
   } else {
@@ -590,37 +691,44 @@ async function main() {
       return comTamanho.length > 0 ? { x: comTamanho[0].x + comTamanho[0].width / 2, y: comTamanho[0].y + comTamanho[0].height / 2 } : null;
     }, seletorFill);
   }
-  async function lerTooltip(page: Page, x: number, y: number): Promise<string | null> {
-    await page.mouse.move(Math.max(0, x - 200), Math.max(0, y - 200));
-    await page.waitForTimeout(80);
-    await page.mouse.move(x, y);
-    await page.waitForTimeout(200);
-    return page.locator(".rv-tooltip-terreno").first().textContent().catch(() => null);
+  /**
+   * Lê a hint de um ponto do mapa.
+   *
+   * Sai de perto e ENTRA na célula em passos — a transição é o que
+   * dispara o handler, e um salto único de um ponto distante nem sempre
+   * a produz. E TENTA DE NOVO enquanto não houver hint: entre pintar e
+   * a hint estar disponível existe um intervalo (o estado da célula
+   * ainda está assentando), e um único hover caía nele de forma
+   * intermitente. É também o que uma pessoa faz quando nada aparece —
+   * mexe o mouse outra vez.
+   */
+  async function lerTooltip(page: Page, x: number, y: number, tentativas = 6): Promise<string | null> {
+    for (let i = 0; i < tentativas; i++) {
+      await page.mouse.move(Math.max(0, x - 200), Math.max(0, y - 200));
+      await page.waitForTimeout(60);
+      await page.mouse.move(x, y, { steps: 8 });
+      await page.waitForTimeout(200);
+      const texto = await page.locator(".rv-tooltip-terreno").first().textContent().catch(() => null);
+      if (texto) return texto;
+    }
+    return null;
   }
 
-  // 12a — terreno decorativo "difícil".
-  {
-    const p = await primeiraCelulaLivreDeObjetos(narradorPage, '.rv-camada-terreno path[fill="url(#rv-hachura)"]');
-    const texto = p ? await lerTooltip(narradorPage, p.x, p.y) : null;
-    const ok = !!texto && texto.includes("Piso tomado por destroços") && texto.includes("Terreno difícil") && texto.includes("Cada metro percorrido custa 2 de deslocamento.");
-    registrar("12a (hint do terreno decorativo difícil)", ok, `texto="${texto}"`);
-  }
-
-  // 12b — terreno decorativo "elevado" (mostra altura, sem automatizar bônus).
-  {
-    const p = await primeiraCelulaLivreDeObjetos(narradorPage, '.rv-camada-terreno path[fill="url(#rv-elevado)"]');
-    const texto = p ? await lerTooltip(narradorPage, p.x, p.y) : null;
-    const ok = !!texto && texto.includes("Plataforma de carga") && texto.includes("Terreno elevado") && texto.includes("Altura: 3 m") && texto.includes("+1 em ataques à distância");
-    registrar("12b (hint do terreno decorativo elevado, com altura)", ok, `texto="${texto}"`);
-  }
-
-  // 12c — zona morta (não deve se apresentar como área bloqueada).
-  {
-    const p = await primeiraCelulaLivreDeObjetos(narradorPage, '.rv-camada-terreno path[fill="url(#rv-jammer)"]');
-    const texto = p ? await lerTooltip(narradorPage, p.x, p.y) : null;
-    const ok = !!texto && texto.includes("Zona morta") && texto.includes("Jammer ativo") && texto.includes("condução arcana") && !texto.includes("Não permite movimento");
-    registrar("12c (hint de zona morta, sem se apresentar como bloqueio de movimento)", ok, `texto="${texto}"`);
-  }
+  // 12a/12b/12c saíram: eles cobriam as hints do terreno DECORATIVO
+  // (`cena.terrenos` — difícil/elevado/zona morta, com texto próprio),
+  // e esse terreno não existe mais no produto. `VttClient` monta o mapa
+  // com `terrenos: []` fixo, então nenhuma dessas células chega a ser
+  // desenhada e nenhuma hint dessas pode aparecer.
+  //
+  // O que restou de terreno é o FUNCIONAL, persistido em `vtt_terrain`
+  // (difícil/bloqueado) — coberto logo abaixo, no 12d, e é ele que a
+  // regra de movimento usa.
+  //
+  // Nota pra quem for mexer: o código de hint decorativo continua em
+  // `MapaHex.tsx` (a tabela por tipo, perto da linha 184) e hoje é
+  // inalcançável. Tirar é decisão de produto — pode ser gancho pra algo
+  // ainda por vir — então fica registrado aqui em vez de removido de
+  // surpresa.
 
   // 12d — terreno FUNCIONAL persistido (dificil, pintado no critério 4) preserva o texto original.
   {
@@ -633,9 +741,27 @@ async function main() {
   // 12e — terreno FUNCIONAL persistido bloqueado — pinta pela UI e confere o hint.
   {
     await narradorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Terreno"]').click();
-    await narradorPage.locator('.rv-submenu button:has-text("Bloqueado")').click();
-    const celulaBloqueada = narradorPage.locator(".rv-camada-grade path").nth(45);
-    await celulaBloqueada.dispatchEvent("pointerdown");
+    // Terreno virou JANELA (`PainelTerreno`), não mais um submenu.
+    await narradorPage.waitForSelector('section[aria-label="Ferramenta Terreno"]', { timeout: 8000 });
+    await narradorPage.locator('.rv-fp-opcao[data-tipo="bloqueado"]').click();
+    // Célula do MEIO do mapa (fileira 3, coluna 14 de 20). A 45 ficava
+    // na faixa esquerda, embaixo da janela da ferramenta: a pintura
+    // funcionava (`dispatchEvent` não passa por hit-test), mas o hover
+    // que lê a hint é ponteiro de verdade e caía na janela.
+    const celulaBloqueada = narradorPage.locator(".rv-camada-grade path").nth(3 * 20 + 14);
+    // Pinta com o MOUSE de verdade (press + release), não com um
+    // `dispatchEvent("pointerdown")` solto: o sintético nunca solta o
+    // botão, então o gesto de pintura fica pendurado — e o estado que
+    // ele deixa é o que fazia a hint desta célula aparecer ou não,
+    // conforme a sorte do tempo.
+    {
+      const alvo = await celulaBloqueada.boundingBox();
+      if (alvo) {
+        await narradorPage.mouse.move(alvo.x + alvo.width / 2, alvo.y + alvo.height / 2);
+        await narradorPage.mouse.down();
+        await narradorPage.mouse.up();
+      }
+    }
     // Espera a camada de terreno REAL de fato aparecer (confirma que a
     // pintura chegou ao estado do cliente) em vez de um timeout fixo —
     // achado real ao rodar pela primeira vez: 500ms nem sempre bastava.

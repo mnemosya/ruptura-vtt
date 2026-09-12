@@ -62,6 +62,8 @@ let campaignId: string | null = null;
 let sceneId: string | null = null;
 let narradorEmail: string | null = null;
 let narradorSenha: string | null = null;
+let jogadorEmail: string | null = null;
+let jogadorSenha: string | null = null;
 const criados = { usuarios: [] as string[], campanhas: [] as string[] };
 
 async function configurarFixture(): Promise<{ tokenId: string }> {
@@ -78,6 +80,18 @@ async function configurarFixture(): Promise<{ tokenId: string }> {
 
   const { data: cena } = await admin.from("vtt_scenes").insert({ campaign_id: campaignId, nome: "Cena Camadas", largura: 16, altura: 16 }).select("id").single();
   sceneId = cena!.id as string;
+
+  // Um JOGADOR de verdade na mesa — o painel de Camadas é decisão do
+  // narrador e não pode nem aparecer pra ele.
+  const eJogador = `check-vtt-camadas-jogador-${Date.now()}@ruptura.dev`;
+  const sJogador = randomUUID();
+  const { data: dJogador, error: errJ } = await admin.auth.admin.createUser({ email: eJogador, password: sJogador, email_confirm: true, user_metadata: { display_name: "Jogador Camadas" } });
+  if (errJ) throw new Error(`Falha ao criar jogador: ${errJ.message}`);
+  jogadorEmail = eJogador; jogadorSenha = sJogador;
+  criados.usuarios.push(dJogador.user.id);
+  await admin.from("campaign_members").insert({
+    campaign_id: campaignId, user_id: dJogador.user.id, role: "player", status: "active", origem: "check_camadas",
+  });
 
   // Terreno difícil bem debaixo/perto do token — prova o halo de contraste do rótulo "×2" sobre a hachura âmbar (mesma cor do texto sem halo).
   await admin.from("vtt_terrain").upsert({ scene_id: sceneId, campaign_id: campaignId, q: 8, r: 8, tipo: "dificil" });
@@ -102,6 +116,7 @@ async function configurarFixture(): Promise<{ tokenId: string }> {
 
 async function limpar() {
   if (campaignId) {
+    await admin.from("campaign_members").delete().eq("campaign_id", campaignId);
     await admin.from("vtt_terrain").delete().eq("campaign_id", campaignId);
     await admin.from("vtt_tokens").delete().eq("campaign_id", campaignId);
     await admin.from("vtt_scenes").delete().eq("campaign_id", campaignId);
@@ -295,6 +310,119 @@ async function main() {
   registrar("console (nenhum erro/warning novo durante toda a sessão)", erros.length === 0, JSON.stringify(erros).slice(0, 2000));
 
   await close();
+
+  // ─── Camadas é do NARRADOR ───
+  // Esconder e travar camada decide o que está no tabuleiro e o que dá
+  // pra mexer. Um jogador com esse controle estaria mandando na cena
+  // pela porta dos fundos — então nem o botão da barra existe pra ele.
+  {
+    const jog = await contextoDe(jogadorEmail!, jogadorSenha!);
+    await jog.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await jog.page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
+    const botaoJogador = await jog.page.locator('button[aria-label="Camadas do mapa"]').count();
+    const janelaJogador = await jog.page.locator('section[aria-label="Camadas do mapa"]').count();
+    registrar(
+      "5 (Camadas não existe pro jogador — nem botão, nem janela)",
+      botaoJogador === 0 && janelaJogador === 0,
+      `botões=${botaoJogador}, janelas=${janelaJogador}`,
+    );
+    await jog.close();
+  }
+
+  // ─── O ajuste vale pra MESA ───
+  // Camadas era preferência local: esconder Objetos escondia só da
+  // própria tela, o oposto do que a ferramenta é. Agora o estado é da
+  // cena (0093) — narrador ajusta, todo mundo obedece. E quem esconde
+  // continua enxergando (atenuado), pelo mesmo princípio de
+  // `vtt_tokens.visivel`.
+  {
+    const nar = await contextoDe(narradorEmail!, narradorSenha!);
+    await nar.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await nar.page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
+    await nar.page.locator('button[aria-label="Camadas do mapa"]').click();
+    await nar.page.waitForSelector('section[aria-label="Camadas do mapa"]', { timeout: 10000 });
+    await nar.page.locator('button[aria-label="Ocultar camada Tokens"]').click();
+    await nar.page.waitForTimeout(1200);
+
+    const { data: cenaDepois } = await admin
+      .from("vtt_scenes").select("camadas").eq("id", sceneId!).maybeSingle();
+    const gravado = (cenaDepois?.camadas ?? {}) as Record<string, { visivel?: boolean }>;
+    registrar(
+      "6 (esconder uma camada grava na CENA, não no navegador de quem clicou)",
+      gravado.tokens?.visivel === false,
+      `vtt_scenes.camadas.tokens=${JSON.stringify(gravado.tokens)}`,
+    );
+
+    const estiloNarrador = await nar.page.locator(".rv-camada-tokens").first().evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { display: s.display, opacity: s.opacity };
+    });
+    registrar(
+      "7 (o narrador continua vendo o que escondeu, atenuado)",
+      estiloNarrador.display !== "none" && Number(estiloNarrador.opacity) < 1,
+      JSON.stringify(estiloNarrador),
+    );
+    // Camada de FERRAMENTA é diferente: escondida, some pro narrador
+    // também. Esconder a grade e continuar vendo a grade não é esconder.
+    await nar.page.locator('button[aria-label="Ocultar camada Grade"]').click();
+    await nar.page.waitForTimeout(1000);
+    const gradeNarrador = await nar.page.locator(".rv-camada-grade").first().evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { display: s.display, opacity: s.opacity, visibility: s.visibility };
+    }).catch(() => ({ display: "ausente", opacity: "0", visibility: "hidden" }));
+    registrar(
+      "7b (camada de ferramenta escondida some pro narrador também)",
+      gradeNarrador.display === "none" || Number(gradeNarrador.opacity) === 0 || gradeNarrador.visibility === "hidden" || gradeNarrador.display === "ausente",
+      JSON.stringify(gradeNarrador),
+    );
+    await nar.close();
+
+    const jog2 = await contextoDe(jogadorEmail!, jogadorSenha!);
+    await jog2.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await jog2.page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
+    await jog2.page.waitForTimeout(800);
+    const displayJogador = await jog2.page.locator(".rv-camada-tokens").first()
+      .evaluate((el) => getComputedStyle(el).display).catch(() => "ausente");
+    registrar(
+      "8 (pro jogador a camada escondida some de verdade)",
+      displayJogador === "none" || displayJogador === "ausente",
+      `display=${displayJogador}`,
+    );
+    await jog2.close();
+  }
+
+  // ─── Grade escondida = movimento livre ───
+  // Com a grade oculta a mesa joga no olho, e o token saltando pro
+  // centro do hex ao soltar denuncia uma grade que deveria não existir.
+  // O deslocamento é SÓ desenho: a célula ocupada continua sendo a
+  // âncora, e é ela que terreno, colisão e alcance enxergam.
+  {
+    const nar = await contextoDe(narradorEmail!, narradorSenha!);
+    await nar.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await nar.page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
+
+    const { data: antes } = await admin
+      .from("vtt_tokens").select("q, r, offset_q, offset_r").eq("campaign_id", campaignId).limit(1).maybeSingle();
+    registrar(
+      "9 (com a grade à vista, o token não carrega deslocamento)",
+      Number(antes?.offset_q ?? 0) === 0 && Number(antes?.offset_r ?? 0) === 0,
+      `offset=(${antes?.offset_q}, ${antes?.offset_r})`,
+    );
+
+    // A coluna existe, aceita fração e é presa a ±1 pelo servidor — o
+    // clamp importa porque um offset grande desenharia o token longe da
+    // célula que ele de fato ocupa, o que seria mentira na tela.
+    const { error: erroForaDeFaixa } = await admin
+      .from("vtt_tokens").update({ offset_q: 5 }).eq("campaign_id", campaignId);
+    registrar(
+      "10 (o banco recusa deslocamento maior que uma célula)",
+      !!erroForaDeFaixa,
+      erroForaDeFaixa ? "recusado" : "PASSOU (FALHA — aceitou offset fora de faixa)",
+    );
+
+    await nar.close();
+  }
+
   await limpar();
 
   console.log(`\n${passou} ok, ${falhou} falha(s).`);

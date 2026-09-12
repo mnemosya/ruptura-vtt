@@ -30,7 +30,7 @@ import {
   subscribeToCampaignRealtime,
   describeRealtimeStatus,
 } from "../src/lib/realtime/tableRealtime";
-import { formatTableLogEntry } from "../src/app/dev/character-sheet/components/MesaTab";
+import { formatTableLogEntry } from "../src/lib/table/logPresentation";
 import type { TableLogEntry } from "../src/lib/table";
 
 function sleep(ms: number): Promise<void> {

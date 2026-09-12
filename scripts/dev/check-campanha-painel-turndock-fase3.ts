@@ -201,33 +201,65 @@ async function main() {
     await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await page.waitForTimeout(600);
 
-    // --- 1. Dock compacto por padrão, com status ---
+    // --- 1. Sem combate, o dock diz isso — não uma rodada inventada ---
+    // O dock lia `campaigns.turn_track`, um SEGUNDO sistema de turnos
+    // que o VTT nunca escreveu: mostrava "Rodada 1 · sem janela ativa"
+    // de forma perene, enquanto os trilhos do mapa podiam estar na
+    // rodada 3. Agora a fonte é `vtt_turn_tracks` — a mesma do VTT — e
+    // "sem combate" é um estado honesto, não um placeholder.
     {
       const compacto = page.locator('[data-testid="turndock-compacto"]');
       const status = page.locator('[data-testid="turndock-status"]');
       const compactoVisivel = await compacto.isVisible().catch(() => false);
       const statusTexto = compactoVisivel ? await status.textContent() : null;
       registrar(
-        "1 (dock compacto por padrão, com status)",
-        compactoVisivel && !!statusTexto && /Rodada/.test(statusTexto),
+        "1 (sem combate, o dock declara isso em vez de inventar rodada)",
+        compactoVisivel && statusTexto === "Sem combate em andamento",
         `compacto visível=${compactoVisivel}, status="${statusTexto}"`,
       );
     }
 
-    // --- 2. Expandir/Recolher alternam pro TurnTrackPanel de sempre ---
+    // --- 2. O dock reflete a trilha REAL do VTT ---
+    // A prova da unificação: escrevendo direto em `vtt_turn_tracks` — a
+    // linha que a ferramenta Rodadas do VTT usa — o dock, que vive em
+    // outra rota e nunca viu o mapa, passa a mostrar aquela rodada e
+    // aquela janela.
     {
-      await page.locator('[data-testid="turndock-expandir"]').click();
-      await page.waitForTimeout(150);
-      const expandido = await page.locator('[data-testid="turndock-expandido"]').isVisible().catch(() => false);
-      const painelClassico = await page.locator('[data-testid="turn-track-panel"]').isVisible().catch(() => false);
-      await page.locator('[data-testid="turndock-recolher"]').click();
-      await page.waitForTimeout(150);
-      const voltouCompacto = await page.locator('[data-testid="turndock-compacto"]').isVisible().catch(() => false);
-      registrar(
-        "2 (expandir mostra o TurnTrackPanel de sempre, recolher volta)",
-        expandido && painelClassico && voltouCompacto,
-        `expandido=${expandido}, TurnTrackPanel clássico presente=${painelClassico}, voltou ao compacto=${voltouCompacto}`,
-      );
+      const { data: cena } = await admin
+        .from("vtt_scenes").select("id").eq("campaign_id", campaignId)
+        .order("created_at", { ascending: true }).limit(1).maybeSingle();
+      if (!cena?.id) {
+        registrar("2 (o dock mostra a trilha real de vtt_turn_tracks)", false, "campanha sem cena — abra o VTT uma vez para semear");
+      } else {
+        const { data: tokenQualquer } = await admin
+          .from("vtt_tokens").select("id, nome").eq("scene_id", cena.id).limit(1).maybeSingle();
+        await admin.from("vtt_turn_tracks").upsert({
+          scene_id: cena.id,
+          campaign_id: campaignId,
+          estado: {
+            modo: "combate", janela: "lentos", rodada: 7, ultimoLado: null, agindoId: null,
+            participantes: [{
+              id: tokenQualquer?.id ?? campaignId, nome: tokenQualquer?.nome ?? "Elenco",
+              lado: "pj", declaracao: null, paTotal: 3, paGasto: 0, reflexos: 0,
+              agiuEm: [], fragmentouEm: null, encerrou: false,
+            }],
+          },
+        }, { onConflict: "scene_id" });
+
+        await page.reload({ waitUntil: "networkidle" });
+        await page.waitForTimeout(1200);
+        const statusReal = await page.locator('[data-testid="turndock-status"]').textContent().catch(() => null);
+        const levaAoMapa = await page.locator('[data-testid="turndock-abrir-rodadas"]').count();
+        registrar(
+          "2 (o dock mostra a trilha real de vtt_turn_tracks, e leva à ferramenta Rodadas)",
+          statusReal === "Rodada 7 · Lentos" && levaAoMapa === 1,
+          `status="${statusReal}" (esperado "Rodada 7 · Lentos"), link pro mapa=${levaAoMapa}`,
+        );
+
+        await admin.from("vtt_turn_tracks").delete().eq("scene_id", cena.id);
+        await page.reload({ waitUntil: "networkidle" });
+        await page.waitForTimeout(600);
+      }
     }
 
     // --- 3. SessionPanel abre no Log, com entradas ---
@@ -520,16 +552,14 @@ async function main() {
       await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
       await page.waitForTimeout(1200);
 
-      // Estado de interface a preservar: dock EXPANDIDO, drawer ABERTO,
-      // aba Participantes, e o id de montagem do provider (prova de que
+      // Estado de interface a preservar: drawer ABERTO, aba
+      // Participantes, e o id de montagem do provider (prova de que
       // nada remontou).
       //
-      // Ordem importa: neste breakpoint o drawer é uma sobreposição que
-      // cobre o conteúdo (comportamento correto — o backdrop só poupa o
-      // trilho), então o dock precisa ser expandido ANTES de abrir o
-      // painel, ou o clique no "Expandir" seria interceptado pelo painel.
-      await page.locator('[data-testid="turndock-expandir"]').click();
-      await page.waitForTimeout(300);
+      // O dock saiu desta lista porque deixou de ter estado próprio: com
+      // a trilha unificada ele é só leitura da linha de
+      // `vtt_turn_tracks`, e "ver tudo" virou o link pra ferramenta
+      // Rodadas, no VTT, em vez de um segundo painel de turnos.
       await page.locator('[data-testid="campshell-drawer-toggle"]').click();
       await page.waitForTimeout(300);
       await page.locator('[data-testid="session-tab-participantes"]').click();
@@ -598,7 +628,6 @@ async function main() {
       // Estado da interface preservado?
       const drawerAberto = (await page.locator('[data-testid="campshell-painel-sessao"]').getAttribute("data-open")) === "true";
       const abaParticipantes = (await page.locator('[data-testid="session-tab-participantes"]').getAttribute("aria-selected")) === "true";
-      const dockExpandido = await page.locator('[data-testid="turndock-expandido"]').isVisible().catch(() => false);
 
       // A PROVA de verdade: o canal ainda ENTREGA depois da renovação.
       // Sem `setAuth` do token novo, a RLS `to authenticated` voltaria a
@@ -620,13 +649,12 @@ async function main() {
           mountAntes === mountDepois &&
           drawerAberto &&
           abaParticipantes &&
-          dockExpandido &&
           entregouDepoisDaRenovacao,
         `+1h30 simuladas: TOKEN TROCADO DE VERDADE=${renovouDeVerdade} (exp ${expAntes ? new Date(expAntes).toISOString() : "?"} → ${expDepois ? new Date(expDepois).toISOString() : "?"}), ` +
           `APLICADO NO WEBSOCKET=${tokenAplicadoNoSocket} (setAuth ${authAntes?.aplicacoes}→${authDepois?.aplicacoes} aplicações, sufixo ${authAntes?.sufixo}→${authDepois?.sufixo}), ` +
           `status="${statusDepois?.trim()}" (antes "${statusAntes?.trim()}"), sem alerta de interrupção=${semAlerta}, ` +
           `provider NÃO remontou=${mountAntes === mountDepois} (id ${mountAntes}→${mountDepois}), drawer segue aberto=${drawerAberto}, ` +
-          `aba Participantes preservada=${abaParticipantes}, dock segue expandido=${dockExpandido}, ENTREGOU evento novo após renovar=${entregouDepoisDaRenovacao}`,
+          `aba Participantes preservada=${abaParticipantes}, ENTREGOU evento novo após renovar=${entregouDepoisDaRenovacao}`,
       );
 
       // Não há `uninstall` na API de Clock do Playwright — devolver o

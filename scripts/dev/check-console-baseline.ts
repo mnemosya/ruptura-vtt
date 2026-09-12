@@ -185,6 +185,11 @@ async function capturar(
  * de cada animação), não por um número mágico.
  */
 async function esperarAnimacoes(page: Page): Promise<void> {
+  // Tira o mouse de cima do conteúdo ANTES de medir. Sem isto, o card
+  // que por acaso ficasse sob o cursor era capturado no estado :hover —
+  // fundo e borda diferentes — e a linha de base acusava uma "regressão
+  // visual" que era só onde o ponteiro parou depois do clique.
+  await page.mouse.move(0, 0);
   await page.evaluate(async () => {
     const anims = document.getAnimations();
     await Promise.all(
@@ -220,10 +225,13 @@ async function descobrirAlvo(page: Page): Promise<{ campaignId: string; characte
   if (!campaignId) throw new Error("Nenhuma campanha encontrada em /mesas — sessão expirada? Rode refresh-admin-session.ts");
 
   await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "domcontentloaded" });
-  const linkFicha = page.locator('a[data-testid^="personagens-abrir-ficha-"]').first();
-  await linkFicha.waitFor({ state: "attached", timeout: 20000 });
-  const href = await linkFicha.getAttribute("href");
-  const characterId = href?.match(/characterId=([0-9a-f-]{36})/i)?.[1];
+  // "Abrir ficha" deixou de ser link: o Console virou janela da casca
+  // da campanha, não rota (`_shell/ConsoleDaMesa.tsx`). O id do
+  // personagem sai do próprio `data-testid`, que não mudou.
+  const botaoFicha = page.locator('[data-testid^="personagens-abrir-ficha-"]').first();
+  await botaoFicha.waitFor({ state: "attached", timeout: 20000 });
+  const testid = await botaoFicha.getAttribute("data-testid");
+  const characterId = testid?.match(/personagens-abrir-ficha-([0-9a-f-]{36})/i)?.[1];
   if (!characterId) throw new Error(`Nenhum personagem encontrado na campanha ${campaignId}`);
   return { campaignId, characterId };
 }
@@ -248,13 +256,13 @@ async function main() {
       await esperarAnimacoes(page);
       retratos[`${vp.nome}/direta`] = await capturar(page, SELETORES, PROPRIEDADES, CUSTOM_PROPS);
 
-      // --- Cena B: modal interceptado SOBRE a campanha (mesa.css montado
-      // junto — é aqui que um vazamento de token apareceria) ---
+      // --- Cena B: a JANELA sobre a campanha (mesa.css montado junto —
+      // é aqui que um vazamento de token apareceria). Não navega mais:
+      // o que se espera é a janela aparecer com a URL intacta. ---
       await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "domcontentloaded" });
       await page.locator(`[data-testid="personagens-abrir-ficha-${characterId}"]`).waitFor({ state: "visible", timeout: 20000 });
       await page.locator(`[data-testid="personagens-abrir-ficha-${characterId}"]`).click();
-      await page.waitForURL(/\/ficha\?/, { timeout: 5000 });
-      await page.waitForSelector(".rc-window", { state: "visible", timeout: 10000 });
+      await page.waitForSelector(".rc-window", { state: "visible", timeout: 30000 });
       await esperarAnimacoes(page);
       retratos[`${vp.nome}/modal`] = await capturar(page, SELETORES, PROPRIEDADES, CUSTOM_PROPS);
 

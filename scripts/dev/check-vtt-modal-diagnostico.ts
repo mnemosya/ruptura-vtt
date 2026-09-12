@@ -148,7 +148,25 @@ async function main() {
     if (abortandoDeProposito && m.text().includes("net::ERR_FAILED")) return;
     if (erroRelevante(m)) erros.push(m.text().slice(0, 500));
   });
-  page.on("pageerror", (e) => erros.push(`pageerror: ${e.message}`));
+  // Com a mensagem sozinha ("Failed to fetch" ×4) não dá pra saber QUAL
+  // chamada ficou sem tratamento — o primeiro quadro do stack é o que
+  // transforma a falha num endereço.
+  //
+  // Mesma exceção do `net::ERR_FAILED` acima, e pelo mesmo motivo: ao
+  // abortar um Server Action, o PRÓPRIO Next rejeita internamente em
+  // `fetchServerAction` (dentro de `node_modules_next_dist_client`), e
+  // essa rejeição chega em `pageerror` mesmo quando o app trata a falha
+  // — é o que N1/O1 provam ao ver a tela de erro aparecer. A isenção é
+  // dupla de propósito: só enquanto a injeção de falha está ligada E só
+  // se o stack for do próprio framework. Uma rejeição solta do código
+  // do app (stack em `/mesas/…`) continua reprovando a suíte.
+  page.on("pageerror", (e) => {
+    const stack = e.stack ?? "";
+    const doFramework = stack.includes("fetchServerAction") || stack.includes("node_modules_next_dist");
+    if (abortandoDeProposito && doFramework) return;
+    const quadro = stack.split("\n").slice(1, 3).map((l) => l.trim()).join(" ← ");
+    erros.push(`pageerror: ${e.message}${quadro ? ` @ ${quadro}` : ""}`);
+  });
   const url = `${BASE_URL}/mesas/${campaignId}/vtt`;
   await page.goto(url, { waitUntil: "networkidle" });
   await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
@@ -157,10 +175,15 @@ async function main() {
     await page.locator('.rv-ferr-btn[aria-label="Adicionar token"]').click();
     await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
   }
-  async function abrirPorPainel() {
+  // O painel lateral NUNCA teve um "Adicionar token" — a aba
+  // Personagens é onde se arrasta ficha pro mapa, não onde se cria
+  // token avulso. As duas portas reais são a barra de ferramentas e o
+  // menu contextual do hex vazio; este helper existia mirando uma
+  // terceira que não chegou a ser construída.
+  async function abrirComOPainelAberto() {
     await page.locator('.rv-aba[aria-label="Personagens"]').click();
-    await page.locator(".rv-painel-corpo .rv-btn", { hasText: "Adicionar token" }).click();
-    await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
+    await page.waitForTimeout(150);
+    await abrirPorBotaoBarra();
   }
   async function abrirPorMenuContextual() {
     await page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
@@ -175,7 +198,7 @@ async function main() {
     let todasOk = true;
     for (let i = 0; i < 20; i++) {
       await abrirPorBotaoBarra();
-      await page.locator('.rv-modal-fechar[aria-label="Fechar"]').click();
+      await page.locator('.rv-gerenciador-token .rv-fp-fechar[aria-label="Fechar"]').click();
       const sumiu = await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).then(() => true).catch(() => false);
       if (!sumiu) { todasOk = false; console.error(`  iteração ${i + 1}: modal não fechou`); break; }
     }
@@ -223,18 +246,28 @@ async function main() {
   {
     await abrirPorBotaoBarra();
     const semBackdrop = (await page.locator(".rv-modal-fundo").count()) === 0;
-    // Clica numa célula do mapa BEM longe da janela — precisa chegar de
-    // verdade nela (elemento real no ponto do clique), não ser
-    // engolida por nenhuma camada invisível por cima.
-    // Índice 0 (canto superior ESQUERDO) — a janela nasce ancorada no
-    // canto superior DIREITO, então este canto oposto está garantido
-    // livre dela, não é uma coincidência de layout.
-    const celula = await page.locator(".rv-camada-grade path").nth(0).boundingBox();
-    const elementoNoClique = await page.evaluate(({ x, y }) => {
+    // Clica numa célula do mapa que esteja REALMENTE descoberta — o
+    // ponto do clique tem que resolver na própria célula, não em
+    // nenhuma camada por cima. O índice fixo que estava aqui assumia
+    // que a janela nascia encostada na borda DIREITA; ela passou a
+    // nascer colada na barra de ferramentas, à ESQUERDA, e o "canto
+    // oposto garantido" virou o canto DEBAixo dela. Procurar o ponto em
+    // vez de presumi-lo é o que impede o critério de voltar a quebrar
+    // quando a janela mudar de tamanho ou de âncora outra vez.
+    const alvoLivre = await page.evaluate(() => {
+      const celulas = Array.from(document.querySelectorAll(".rv-camada-grade path"));
+      for (const c of celulas) {
+        const r = c.getBoundingClientRect();
+        const x = r.x + r.width / 2, y = r.y + r.height / 2;
+        if (document.elementFromPoint(x, y) === c) return { x, y };
+      }
+      return null;
+    });
+    const elementoNoClique = alvoLivre && await page.evaluate(({ x, y }) => {
       const el = document.elementFromPoint(x, y);
       return el ? { tag: el.tagName, cls: el.getAttribute("class") } : null;
-    }, { x: celula!.x + celula!.width / 2, y: celula!.y + celula!.height / 2 });
-    await page.mouse.click(celula!.x + celula!.width / 2, celula!.y + celula!.height / 2);
+    }, alvoLivre);
+    if (alvoLivre) await page.mouse.click(alvoLivre.x, alvoLivre.y);
     await page.waitForTimeout(150);
     const continuaAberta = (await page.locator(".rv-gerenciador-token").count()) === 1;
     registrar(
@@ -242,7 +275,7 @@ async function main() {
       semBackdrop && continuaAberta && elementoNoClique?.cls === "rv-celula",
       `semBackdrop=${semBackdrop}, aberta=${continuaAberta}, elementoNoClique=${JSON.stringify(elementoNoClique)}`,
     );
-    await page.locator('.rv-modal-fechar[aria-label="Fechar"]').click();
+    await page.locator('.rv-gerenciador-token .rv-fp-fechar[aria-label="Fechar"]').click();
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
     await confirmarMapaFuncional(page, "D2 (fechar por X depois de interagir com o mapa continua funcionando)");
   }
@@ -250,17 +283,19 @@ async function main() {
   // --- E: abrir pelo menu contextual, fechar por X ---
   {
     await abrirPorMenuContextual();
-    await page.locator('.rv-modal-fechar[aria-label="Fechar"]').click();
+    await page.locator('.rv-gerenciador-token .rv-fp-fechar[aria-label="Fechar"]').click();
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
     await confirmarMapaFuncional(page, "E (abrir por menu contextual, fechar por X, mapa funcional)");
   }
 
-  // --- F: abrir pelo painel lateral, fechar por Cancelar (sem sujar) ---
+  // --- F: abrir COM o painel lateral aberto, fechar por Cancelar
+  // (sem sujar) — o painel ocupa a direita da tela e é o vizinho mais
+  // provável de brigar por espaço/foco com a janela. ---
   {
-    await abrirPorPainel();
+    await abrirComOPainelAberto();
     await page.locator(".rv-gerenciador-token .rv-btn--ghost", { hasText: "Cancelar" }).click();
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
-    await confirmarMapaFuncional(page, "F (abrir pelo painel lateral, fechar por Cancelar, mapa funcional)");
+    await confirmarMapaFuncional(page, "F (com o painel lateral aberto, fechar por Cancelar, mapa funcional)");
     // fecha o painel de novo, deixa a UI limpa pros próximos cenários
     await page.locator('.rv-aba[aria-label="Personagens"]').click();
   }
@@ -274,7 +309,7 @@ async function main() {
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 });
     await page.locator(".rv-btn", { hasText: "Voltar para editar" }).click();
     await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
-    await page.locator('.rv-modal-fechar[aria-label="Fechar"]').click();
+    await page.locator('.rv-gerenciador-token .rv-fp-fechar[aria-label="Fechar"]').click();
     // "Voltar para editar" preencheu de novo com "Volta Editar Fecha" — sujo=true de novo? Não: valoresIniciais AGORA é o próprio rascunho, então valores===valoresIniciais, sujo=false, fecha direto sem confirm.
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(async () => {
       // se por acaso pedir confirmação (não deveria), aceita pra não travar o restante da suíte.
@@ -286,7 +321,7 @@ async function main() {
   // --- H: erro de validação (PV inválido) e depois fechar ---
   {
     await abrirPorBotaoBarra();
-    await page.locator("summary", { hasText: "Mais opções" }).click();
+    await page.locator("summary", { hasText: "Identidade ampliada" }).click();
     const pvAtual = page.locator('.rv-gerenciador-token fieldset:has-text("Pontos de Vida") input').first();
     const pvMax = page.locator('.rv-gerenciador-token fieldset:has-text("Pontos de Vida") input').nth(1);
     await pvAtual.fill("50");
@@ -304,7 +339,7 @@ async function main() {
     await botaoAbrir.evaluate((el) => { (el as HTMLButtonElement).click(); (el as HTMLButtonElement).click(); });
     await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
     const quantos = await page.locator(".rv-gerenciador-token").count();
-    await page.locator('.rv-modal-fechar[aria-label="Fechar"]').click();
+    await page.locator('.rv-gerenciador-token .rv-fp-fechar[aria-label="Fechar"]').click();
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
     await confirmarMapaFuncional(page, "I (duplo clique no botão abre só uma instância, fecha normalmente)");
     registrar("I-instancia (duplo clique nunca abre duas instâncias simultâneas)", quantos === 1, `instâncias=${quantos}`);
@@ -313,7 +348,7 @@ async function main() {
   // --- J: duplo clique no X ---
   {
     await abrirPorBotaoBarra();
-    const botaoX = page.locator('.rv-modal-fechar[aria-label="Fechar"]');
+    const botaoX = page.locator('.rv-gerenciador-token .rv-fp-fechar[aria-label="Fechar"]');
     await botaoX.evaluate((el) => { (el as HTMLButtonElement).click(); (el as HTMLButtonElement).click(); });
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
     await confirmarMapaFuncional(page, "J (duplo clique no X fecha normalmente, sem reabrir)");
@@ -335,7 +370,7 @@ async function main() {
   // --- L: abrir, fechar, IMEDIATAMENTE abrir de novo por outro gatilho, fechar ---
   {
     await abrirPorBotaoBarra();
-    await page.locator('.rv-modal-fechar[aria-label="Fechar"]').click();
+    await page.locator('.rv-gerenciador-token .rv-fp-fechar[aria-label="Fechar"]').click();
     // sem esperar o detached — abre de novo imediatamente por outro gatilho.
     await abrirPorMenuContextual();
     await page.locator(".rv-gerenciador-token .rv-btn--ghost", { hasText: "Cancelar" }).click();
@@ -347,7 +382,7 @@ async function main() {
   {
     for (let i = 0; i < 5; i++) {
       await abrirPorBotaoBarra();
-      await page.locator('.rv-modal-fechar[aria-label="Fechar"]').click();
+      await page.locator('.rv-gerenciador-token .rv-fp-fechar[aria-label="Fechar"]').click();
       await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
     }
     await confirmarMapaFuncional(page, "M (5× abrir/fechar via X em sequência rápida, mapa funcional)");
@@ -467,7 +502,7 @@ async function main() {
 
     await abrirPorBotaoBarra();
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Config Sem Rede");
-    await page.locator("summary", { hasText: "Mais opções" }).click();
+    await page.locator("summary", { hasText: "Identidade ampliada" }).click();
     await page.locator('.rv-gerenciador-token select[value], .rv-gerenciador-token select').first().selectOption({ index: 1 }).catch(() => {});
     await page.locator('.rv-gerenciador-token input[type=checkbox]').first().click().catch(() => {});
     await page.waitForTimeout(150);
@@ -499,7 +534,7 @@ async function main() {
       ariaModal === null && role === null && tituloExiste && descricaoExiste,
       `aria-modal=${ariaModal}, role=${role}, título associado=${tituloExiste}, descrição associada=${descricaoExiste}`,
     );
-    await page.locator('.rv-modal-fechar[aria-label="Fechar"]').click();
+    await page.locator('.rv-gerenciador-token .rv-fp-fechar[aria-label="Fechar"]').click();
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
   }
 
@@ -527,7 +562,7 @@ async function main() {
     const naoMoveu = Math.abs(depoisCampo!.x - antesCampo!.x) < 2 && Math.abs(depoisCampo!.y - antesCampo!.y) < 2;
     registrar("R2 (arrastar a partir de um campo de formulário NÃO move a janela)", naoMoveu, `antes=(${antesCampo!.x.toFixed(0)},${antesCampo!.y.toFixed(0)}) depois=(${depoisCampo!.x.toFixed(0)},${depoisCampo!.y.toFixed(0)})`);
 
-    await cab.locator("..").locator('.rv-modal-fechar[aria-label="Fechar"]').click();
+    await page.locator('.rv-gerenciador-token .rv-fp-fechar[aria-label="Fechar"]').click();
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
   }
 
@@ -543,9 +578,9 @@ async function main() {
       return !!ativo && !!janela && !janela.contains(ativo);
     });
     registrar("S (Tab a partir do último controle da janela sai dela — sem foco preso)", focoSaiu, `focoSaiu=${focoSaiu}`);
-    await page.locator('.rv-modal-fechar[aria-label="Fechar"]').click().catch(async () => {
+    await page.locator('.rv-gerenciador-token .rv-fp-fechar[aria-label="Fechar"]').click().catch(async () => {
       // se o foco saiu de fato, o botão de fechar ainda existe no DOM — clique direto por seletor, sem depender de foco.
-      await page.locator(".rv-gerenciador-token .rv-modal-fechar").click();
+      await page.locator(".rv-gerenciador-token .rv-fp-fechar").click();
     });
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
   }
@@ -553,7 +588,7 @@ async function main() {
   // --- T: scroll dentro do corpo funciona; pan do mapa (botão direito) continua fora da janela ---
   {
     await abrirPorBotaoBarra();
-    await page.locator("summary", { hasText: "Mais opções" }).click();
+    await page.locator("summary", { hasText: "Identidade ampliada" }).click();
     const corpo = page.locator(".rv-janela-token-corpo");
     const scrollAntes = await corpo.evaluate((el) => el.scrollTop);
     const box = (await corpo.boundingBox())!;
@@ -564,7 +599,19 @@ async function main() {
     registrar("T1 (scroll dentro do corpo da janela rola o formulário)", scrollDepois > scrollAntes, `scrollTop ${scrollAntes} → ${scrollDepois}`);
 
     const transformAntes = await page.locator(".rv-camada-grade").evaluate((el) => (el.closest("g[transform]") as SVGGElement | null)?.getAttribute("transform") ?? el.parentElement?.getAttribute("transform") ?? null).catch(() => null);
-    const pontoMapa = { x: 120, y: 500 };
+    // Ponto DESCOBERTO, não um par de números fixo: a janela nasce
+    // colada na barra de ferramentas, à esquerda, e (120,500) caiu
+    // dentro dela quando o formulário cresceu. Procura-se uma célula
+    // que responda ao `elementFromPoint` — é o mesmo teste que o
+    // usuário faz com o olho antes de arrastar o mapa.
+    const pontoMapa = (await page.evaluate(() => {
+      for (const c of Array.from(document.querySelectorAll(".rv-camada-grade path"))) {
+        const r = c.getBoundingClientRect();
+        const x = r.x + r.width / 2, y = r.y + r.height / 2;
+        if (document.elementFromPoint(x, y) === c) return { x, y };
+      }
+      return null;
+    }))!;
     await page.mouse.move(pontoMapa.x, pontoMapa.y);
     await page.mouse.down({ button: "right" });
     await page.mouse.move(pontoMapa.x + 60, pontoMapa.y + 40, { steps: 6 });
@@ -573,7 +620,7 @@ async function main() {
     const transformDepois = await page.locator(".rv-camada-grade").evaluate((el) => (el.closest("g[transform]") as SVGGElement | null)?.getAttribute("transform") ?? el.parentElement?.getAttribute("transform") ?? null).catch(() => null);
     registrar("T2 (pan do mapa por botão direito continua funcionando com a janela aberta)", transformAntes !== transformDepois, `transform ${transformAntes} → ${transformDepois}`);
 
-    await page.locator('.rv-modal-fechar[aria-label="Fechar"]').click();
+    await page.locator('.rv-gerenciador-token .rv-fp-fechar[aria-label="Fechar"]').click();
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
   }
 
@@ -596,7 +643,7 @@ async function main() {
     );
     await page.setViewportSize({ width: 1280, height: 950 });
     await page.waitForTimeout(200);
-    await page.locator('.rv-modal-fechar[aria-label="Fechar"]').click();
+    await page.locator('.rv-gerenciador-token .rv-fp-fechar[aria-label="Fechar"]').click();
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
     await confirmarMapaFuncional(page, "U-mapa (mapa funcional depois do ciclo de resize)");
   }

@@ -185,8 +185,25 @@ function perto(a: { x: number; y: number }, b: { x: number; y: number }, eps = 0
   return distancia(a, b) < eps;
 }
 
-/** Mesma dimensão de `CENA_DEMO` (`_dados/cenaDemo.ts`) — largura da grade em células. */
-const LARGURA_CENA = 26;
+/**
+ * Dimensão da cena DESTA fixture — a própria suíte grava estes valores
+ * em `vtt_scenes` antes de medir qualquer coisa (ver `main`). Já foram
+ * "a mesma dimensão da `CENA_DEMO`", o que amarrava o script a um dado
+ * de semente que mudou por baixo dele.
+ */
+// Pequena de propósito: os critérios arrastam com o MOUSE sobre a
+// tela, então tudo que participa precisa estar dentro do que a câmera
+// mostra. Uma cena de 26 colunas é mais larga que a viewport do teste,
+// e metade dos destinos caía fora — o gesto acontecia no vazio e o
+// token não saía do lugar.
+// A largura é o que aperta: o palco perde a barra de ferramentas à
+// esquerda e o painel de sessão à direita, então sobra bem menos que a
+// viewport. Célula fora da área visível não é alcançável pelo mouse —
+// o `mouse.move` é limitado à janela — e o arrasto termina onde não
+// devia. 12 colunas cabem com folga, e ainda deixam espaço pros
+// deslocamentos de até 6 células que os critérios fazem.
+const LARGURA_CENA = 12;
+const ALTURA_CENA = 12;
 
 /**
  * Centro de tela (CSS px) de UMA célula (q,r) — via `boundingBox()` do
@@ -214,6 +231,68 @@ async function boxDoToken(page: Page, sigla: string): Promise<{ x: number; y: nu
   }, sigla);
 }
 
+/**
+ * Espera o BANCO refletir o gesto antes de afirmar sobre ele.
+ *
+ * Os critérios abaixo já esperam a ANIMAÇÃO terminar, e por muito tempo
+ * isso serviu como espera da gravação também — mas são coisas
+ * diferentes: a animação é local e a gravação é uma ida ao servidor,
+ * que sob carga chega depois. Ler o banco logo após o `mouse.up()` é
+ * uma corrida, e ela falhava de forma intermitente (reproduzido: mesmo
+ * arrasto, mesma rota, ora persistido ora "não persistido" — a
+ * diferença era só o instante da leitura).
+ *
+ * Espera CONDIÇÃO, nunca tempo. Devolve a última linha lida mesmo se a
+ * condição não se cumprir, pra que a mensagem de falha mostre o que o
+ * banco de fato tinha em vez de "undefined".
+ */
+async function esperarNoBanco<T extends Record<string, unknown>>(
+  tokenId: string,
+  colunas: string,
+  condicao: (linha: T | null) => boolean,
+  timeoutMs = 10000,
+): Promise<T | null> {
+  const limite = Date.now() + timeoutMs;
+  let ultima: T | null = null;
+  for (;;) {
+    const { data } = await admin.from("vtt_tokens").select(colunas).eq("id", tokenId).maybeSingle();
+    ultima = (data as T | null) ?? null;
+    if (condicao(ultima)) return ultima;
+    if (Date.now() > limite) return ultima;
+    await new Promise((r) => setTimeout(r, 150));
+  }
+}
+
+/**
+ * Espera a ANIMAÇÃO pousar antes de afirmar sobre a posição na tela.
+ *
+ * Irmã de `esperarNoBanco`, e necessária pelo mesmo motivo invertido:
+ * a gravação e a animação terminam em instantes diferentes, e esperar
+ * uma não espera a outra. Quando as esperas eram `waitForTimeout` fixos
+ * os dois lados cabiam por sorte na mesma margem; trocar só a do banco
+ * por condição deixou a leitura visual acontecer no MEIO do
+ * deslizamento (sintoma real: banco na origem, tela ainda no destino).
+ *
+ * Espera CONDIÇÃO: a posição chegar perto do alvo. Devolve a última
+ * lida de qualquer forma, pra que a falha mostre onde o token parou.
+ */
+async function esperarVisual(
+  page: Page,
+  sigla: string,
+  alvo: { x: number; y: number },
+  tolerancia: number,
+  timeoutMs = 6000,
+): Promise<{ x: number; y: number } | null> {
+  const limite = Date.now() + timeoutMs;
+  let ultima: { x: number; y: number } | null = null;
+  for (;;) {
+    ultima = await lerTransformToken(page, sigla);
+    if (ultima && perto(ultima, alvo, tolerancia)) return ultima;
+    if (Date.now() > limite) return ultima;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+}
+
 async function main() {
   await configurarFixture();
   registrar("0 (fixture: campanha + narrador + jogador com 1 personagem controlado)", true, `campanha=${campaignId}`);
@@ -228,37 +307,123 @@ async function main() {
     const { data } = await admin.from("vtt_scenes").select("id").eq("campaign_id", campaignId).maybeSingle();
     sceneId = data?.id ?? null;
   }
-  registrar("0b (cena semeada)", !!sceneId, `sceneId=${sceneId}`);
+  // A cena semente nasce 20×20; este script mede células pelo ÍNDICE do
+  // `<path>` na grade (`boxDaCelula`) e escolhe direção de arrasto por
+  // `LARGURA_CENA`/`ALTURA_CENA`, dois números herdados da `CENA_DEMO`.
+  // Em vez de perseguir o padrão da semente — que pode mudar de novo —
+  // a fixture FIXA a dimensão que ela mesma assume. Assim os dois lados
+  // da conta vêm do mesmo lugar.
+  if (sceneId) {
+    await admin.from("vtt_scenes").update({ largura: LARGURA_CENA, altura: ALTURA_CENA }).eq("id", sceneId);
+    await narradorPage.reload({ waitUntil: "networkidle" });
+    await narradorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
+  }
+  registrar("0b (cena semeada e dimensionada pra fixture)", !!sceneId, `sceneId=${sceneId}, ${LARGURA_CENA}x${ALTURA_CENA}`);
 
   const { page: jogadorPage, close: closeJogador } = await contextoDe(jogadorEmail!, jogadorSenha!);
   const errosJogador: string[] = [];
   jogadorPage.on("console", (m) => { if (erroRelevante(m)) errosJogador.push(m.text().slice(0, 400)); });
 
-  // Concede controle do PRIMEIRO token pj ao personagem fixture (mesmo
-  // padrão de `check-vtt-integracao.ts`, critério 9) — precisamos de UM
-  // token que o JOGADOR possa arrastar de verdade pela UI, pros
-  // critérios de rejeição/undo/redo que rodam na sessão dele.
-  const { data: tokenJogador } = await admin.from("vtt_tokens").select("id,sigla,q,r,revision").eq("campaign_id", campaignId).eq("lado", "pj").limit(1).maybeSingle();
-  if (!tokenJogador) { registrar("0c (token pj disponível pra vincular)", false, "nenhum token pj na cena semeada"); await closeNarrador(); await closeJogador(); await limpar(); process.exit(1); }
-  await admin.from("vtt_tokens").update({ character_id: characterId }).eq("id", tokenJogador.id);
+  // O token pj é CRIADO pela fixture, não procurado na cena.
+  //
+  // Antes isto pegava "o primeiro token pj que existisse" — e existia,
+  // porque a cena semente vinha com elenco de exemplo. Ela passou a
+  // nascer EM BRANCO (`garantirCenaSemente`: "sem elenco, objeto ou
+  // terreno fictício", e o narrador povoa com as ferramentas reais), e
+  // o script ficou dependendo de um dado que o produto não produz mais.
+  // Criar o próprio token é o que torna esta suíte independente de
+  // qualquer coisa que a semente resolva fazer amanhã.
+  //
+  // Vinculado ao personagem do jogador desde o insert: é isso que dá a
+  // ele um token que pode arrastar de verdade pela UI, que é o que os
+  // critérios de rejeição/undo/redo exigem.
+  const tokenPjId = randomUUID();
+  const { error: erroTokenPj } = await admin.from("vtt_tokens").insert({
+    id: tokenPjId, campaign_id: campaignId, scene_id: sceneId, character_id: characterId,
+    nome: "Alvo de Animação", sigla: "AA", lado: "pj", vertente: "nenhuma",
+    // Centro do mapa e numa fileira que nenhum figurante ocupa — o
+    // jogador arrasta este token de verdade, pelo mouse, e precisa dele
+    // dentro do que a câmera mostra.
+    q: -1 + 8, r: 2, tamanho: "medio", orientacao: 0,
+  });
+  const { data: tokenJogador } = await admin
+    .from("vtt_tokens").select("id,sigla,q,r,revision").eq("id", tokenPjId).maybeSingle();
+  if (erroTokenPj || !tokenJogador) {
+    registrar("0c (token pj da fixture criado e vinculado)", false, erroTokenPj?.message ?? "insert não devolveu a linha");
+    await closeNarrador(); await closeJogador(); await limpar(); process.exit(1);
+  }
+  // As duas páginas precisam ENXERGAR o token: a do narrador carregou
+  // antes de ele existir.
+  await narradorPage.reload({ waitUntil: "networkidle" });
+  await narradorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
   await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
   await jogadorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
-  registrar("0c (token pj disponível pra vincular)", true, `sigla=${tokenJogador.sigla}, pos=(${tokenJogador.q},${tokenJogador.r})`);
+  registrar("0c (token pj da fixture criado e vinculado)", true, `sigla=${tokenJogador.sigla}, pos=(${tokenJogador.q},${tokenJogador.r})`);
 
   const siglaJogador = tokenJogador.sigla;
 
-  // Um token DISTINTO por critério — busca todos os narrador-only UMA
-  // vez, ordenados de forma estável, e cada bloco abaixo consome um
-  // índice fixo. Evita qualquer chance de dois critérios pegarem sem
-  // querer o MESMO token (a cena semeada tem 6 narrador-only depois
-  // que 1 vira do jogador — exatamente o que os critérios abaixo
-  // precisam).
-  const { data: todosNarrador } = await admin.from("vtt_tokens").select("id,sigla,q,r,revision").eq("campaign_id", campaignId).is("character_id", null).order("sigla", { ascending: true });
-  if (!todosNarrador || todosNarrador.length < 6) {
-    registrar("0d (tokens narrador-only suficientes pros critérios)", false, `esperado >= 6, achou ${todosNarrador?.length ?? 0}`);
+  // Um token DISTINTO por critério — a fixture CRIA os seis, ordenados
+  // de forma estável, e cada bloco abaixo consome um índice fixo. Evita
+  // qualquer chance de dois critérios pegarem sem querer o MESMO token.
+  //
+  // Antes eles vinham da cena semente, que trazia elenco de exemplo.
+  // Ela nasce em branco desde `garantirCenaSemente` — criar aqui é o
+  // que desacopla esta suíte do que a semente resolva fazer.
+  //
+  // Ficam numa fileira afastada do token do jogador (linha r=6): os
+  // critérios arrastam por cima do mapa e dois tokens vizinhos demais
+  // fariam um gesto terminar em cima do outro.
+  // Um por FILEIRA, e cada um com pelo menos 6 células livres dos dois
+  // lados: os critérios arrastam até 6 células no eixo Q e um deles
+  // mexe ±1 no eixo R. Empilhados na mesma fileira, um gesto terminaria
+  // em cima do vizinho e a colisão de pegada recusaria o movimento —
+  // que foi exatamente o que aconteceu na primeira tentativa.
+  //
+  // `qMin` depende da fileira (a grade é axial, cada linha "anda" meia
+  // célula), então a coluna é calculada a partir dele, nunca fixa.
+  const SIGLAS_NARRADOR = ["N1", "N2", "N3", "N4", "N5", "N6"];
+  // Fileiras CENTRAIS, não as das bordas: os critérios arrastam com o
+  // mouse sobre a tela, e um token perto da borda do mapa cai fora do
+  // que a câmera mostra — o gesto acontece no vazio e o token não sai
+  // do lugar. Coluna central pelo mesmo motivo.
+  // Faixa CENTRAL do mapa. As fileiras extremas (0 e 11) ficam nas
+  // bordas do palco, e uma célula fora da área visível não é alcançável
+  // pelo mouse — o arrasto termina onde não devia e o token não sai do
+  // lugar. Só o critério da janela de turno mexe no eixo R (±1), e as
+  // fileiras vizinhas usam colunas diferentes, então adjacência aqui
+  // não gera colisão.
+  // A ORDEM importa: `tokE` (N5) é o único que se desloca no eixo R
+  // (+1), e `tokF` (N6) é o que faz o arrasto mais longo (6 células).
+  // Com eles em fileiras vizinhas, o destino de um caía no CAMINHO do
+  // outro e o pathfinding parava na colisão — o token chegava a meio
+  // percurso e o critério reprovava por um motivo que não é o dele.
+  // N5 vai pra fileira 9 (desce pra 10, vazia) e N6 fica sozinho na 7.
+  const FILEIRAS_NARRADOR = [3, 4, 5, 6, 9, 7];
+  const COLUNA_NARRADOR = 2;
+  const { error: erroNarradorOnly } = await admin.from("vtt_tokens").insert(
+    SIGLAS_NARRADOR.map((sigla, i) => {
+      const r = FILEIRAS_NARRADOR[i];
+      const qMin = -Math.floor(r / 2);
+      return {
+        id: randomUUID(), campaign_id: campaignId, scene_id: sceneId, character_id: null,
+        nome: `Figurante ${sigla}`, sigla, lado: "pn", vertente: "nenhuma",
+        q: qMin + COLUNA_NARRADOR, r, tamanho: "medio", orientacao: 0,
+      };
+    }),
+  );
+  if (erroNarradorOnly) {
+    registrar("0d (tokens narrador-only da fixture criados)", false, erroNarradorOnly.message);
     await closeNarrador(); await closeJogador(); await limpar(); process.exit(1);
   }
-  registrar("0d (tokens narrador-only suficientes pros critérios)", true, `${todosNarrador.length} disponíveis: ${todosNarrador.map((t) => t.sigla).join(" ")}`);
+  await narradorPage.reload({ waitUntil: "networkidle" });
+  await narradorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
+
+  const { data: todosNarrador } = await admin.from("vtt_tokens").select("id,sigla,q,r,revision").eq("campaign_id", campaignId).is("character_id", null).order("sigla", { ascending: true });
+  if (!todosNarrador || todosNarrador.length < 6) {
+    registrar("0d (tokens narrador-only da fixture criados)", false, `esperado >= 6, achou ${todosNarrador?.length ?? 0}`);
+    await closeNarrador(); await closeJogador(); await limpar(); process.exit(1);
+  }
+  registrar("0d (tokens narrador-only da fixture criados)", true, `${todosNarrador.length} disponíveis: ${todosNarrador.map((t) => t.sigla).join(" ")}`);
   const [tokA, tokB, tokC, tokD, tokE, tokF] = todosNarrador;
 
   // --- 1/2/8. Movimento reto de vários hexes: não salta, passa por posição intermediária, termina exato no destino ---
@@ -310,7 +475,8 @@ async function main() {
         );
         registrar("8 (movimento termina EXATAMENTE no centro do hex de destino)", !!terminouExato, `fim=${JSON.stringify(fim)}, destinoEsperado=${JSON.stringify(pDestinoMundo)}`);
 
-        const { data: linhaFinal } = await admin.from("vtt_tokens").select("q,r,revision").eq("id", tokenNarrador.id).maybeSingle();
+        const linhaFinal = await esperarNoBanco<{ q: number; r: number; revision: number }>(
+          tokenNarrador.id, "q,r,revision", (l) => l?.revision === tokenNarrador.revision + 1);
         registrar("19 (uma única escrita no banco por movimento — revisão sobe exatamente 1)", linhaFinal?.revision === tokenNarrador.revision + 1, `revisão antes=${tokenNarrador.revision}, depois=${linhaFinal?.revision}`);
 
         // --- 9. Eco Realtime da própria ação não reinicia a animação ---
@@ -367,7 +533,8 @@ async function main() {
           `meio=${JSON.stringify(meio)}, dist do cotovelo=${distDoCotovelo.toFixed(1)}px (esperado < ${(TAM * 2).toFixed(0)}px), a reta direta passaria a ${distRetaDiretaDoCotovelo.toFixed(1)}px do cotovelo`,
         );
 
-        const { data: linhaFinal } = await admin.from("vtt_tokens").select("q,r").eq("id", tokenNarrador2.id).maybeSingle();
+        const linhaFinal = await esperarNoBanco<{ q: number; r: number }>(
+          tokenNarrador2.id, "q,r", (l) => l?.q === destino.q && l?.r === destino.r);
         registrar("3b (rota com waypoint chega no destino certo, não no atalho reto)", linhaFinal?.q === destino.q && linhaFinal?.r === destino.r, `chegou em (${linhaFinal?.q},${linhaFinal?.r}), esperado (${destino.q},${destino.r})`);
       } else {
         registrar("3 (rota com curva)", false, "token sem bounding box");
@@ -393,7 +560,8 @@ async function main() {
         await narradorPage.mouse.move(boxDestino4.x, boxDestino4.y, { steps: 1 });
         await narradorPage.mouse.up();
         await narradorPage.waitForTimeout(1200);
-        const { data: linhaFinal } = await admin.from("vtt_tokens").select("q,r").eq("id", tokenNarrador3.id).maybeSingle();
+        const linhaFinal = await esperarNoBanco<{ q: number; r: number }>(
+          tokenNarrador3.id, "q,r", (l) => l?.q === destino.q && l?.r === destino.r);
         const erroVisivel = await narradorPage.locator(".rv-erro-acao").textContent().catch(() => null);
         registrar(
           "4/5 (ponteiro rápido/poucos steps: rota expandida ainda é aceita pelo servidor)",
@@ -447,14 +615,16 @@ async function main() {
     // dos dois clientes tem `movimentosConhecidosRef` pra esta
     // mudança. Espera o eco do `postgres_changes` chegar e reconciliar
     // (via fallback reto curto, já que o deslocamento é pequeno).
-    let reconciliado = false;
-    let ultimaLeitura: { x: number; y: number } | null = null;
+    // Orçamento: este é o caminho LENTO de propósito — não há broadcast
+    // do app, então depende do eco do `postgres_changes` chegar, o
+    // cliente reler os tokens e só então animar. Medido: ~1,75 s até o
+    // token começar a se mover, mais a animação. Os 3 s de antes (20 ×
+    // 150 ms) cobriam isso por pouco e reprovavam sob qualquer carga.
+    // O caminho NORMAL continua instantâneo — é o que os critérios 10 e
+    // 10b provam, pelo broadcast do próprio app.
     const pDestinoMundo = hexParaPixel(destino, TAM);
-    for (let i = 0; i < 20; i++) {
-      await narradorPage.waitForTimeout(150);
-      ultimaLeitura = await lerTransformToken(narradorPage, tokE.sigla);
-      if (ultimaLeitura && perto(ultimaLeitura, pDestinoMundo, 0.5)) { reconciliado = true; break; }
-    }
+    const ultimaLeitura = await esperarVisual(narradorPage, tokE.sigla, pDestinoMundo, 0.5, 10000);
+    const reconciliado = !!ultimaLeitura && perto(ultimaLeitura, pDestinoMundo, 0.5);
     registrar("11 (sem broadcast conhecido, o eco do banco ainda reconcilia o destino)", reconciliado, `posição final=${JSON.stringify(ultimaLeitura)}, destinoEsperado=${JSON.stringify(pDestinoMundo)}`);
   }
 
@@ -474,8 +644,15 @@ async function main() {
       await jogadorPage.mouse.move(boxDestino.x, boxDestino.y, { steps: 8 });
       await jogadorPage.mouse.up();
       await jogadorPage.waitForTimeout(700);
-      const { data: apMove } = await admin.from("vtt_tokens").select("q,r").eq("id", tokenJogador.id).maybeSingle();
+      const apMove = await esperarNoBanco<{ q: number; r: number }>(
+        tokenJogador.id, "q,r", (l) => l?.q === destino.q && l?.r === destino.r);
       registrar("13a (jogador move o próprio token normalmente, antes do undo)", apMove?.q === destino.q && apMove?.r === destino.r, `pos=(${apMove?.q},${apMove?.r})`);
+
+      // A ANIMAÇÃO do movimento precisa pousar antes do Ctrl+Z. Desfazer
+      // no meio do deslizamento põe dois movimentos do mesmo token em
+      // voo, e o desempate entre eles é justamente o que os critérios
+      // 13/14 querem observar depois — não antes.
+      await esperarVisual(jogadorPage, siglaJogador, pDestinoMundo, 0.5);
 
       // Undo — precisa focar fora de qualquer campo editável antes do Ctrl+Z (mesmo padrão de `check-vtt-integracao.ts`).
       await jogadorPage.locator(".rv-mesa").click({ position: { x: 5, y: 5 } });
@@ -483,8 +660,9 @@ async function main() {
       await jogadorPage.waitForTimeout(150); // duração esperada do undo: 4 hexes × 110ms = 440ms — margem generosa dos dois lados
       const meioUndo = await lerTransformToken(jogadorPage, siglaJogador);
       await jogadorPage.waitForTimeout(500);
-      const { data: apUndo } = await admin.from("vtt_tokens").select("q,r").eq("id", tokenJogador.id).maybeSingle();
-      const fimUndo = await lerTransformToken(jogadorPage, siglaJogador);
+      const apUndo = await esperarNoBanco<{ q: number; r: number }>(
+        tokenJogador.id, "q,r", (l) => l?.q === origem.q && l?.r === origem.r);
+      const fimUndo = await esperarVisual(jogadorPage, siglaJogador, pOrigemMundo, 0.5);
       registrar(
         "13 (undo: passa por posição intermediária — percorre a rota inversa, não salta)",
         !!meioUndo && !perto(meioUndo, pDestinoMundo, 3) && !perto(meioUndo, pOrigemMundo, 3),
@@ -497,8 +675,9 @@ async function main() {
       await jogadorPage.waitForTimeout(150); // duração esperada do redo: 4 hexes × 110ms = 440ms — margem generosa dos dois lados
       const meioRedo = await lerTransformToken(jogadorPage, siglaJogador);
       await jogadorPage.waitForTimeout(500);
-      const { data: apRedo } = await admin.from("vtt_tokens").select("q,r").eq("id", tokenJogador.id).maybeSingle();
-      const fimRedo = await lerTransformToken(jogadorPage, siglaJogador);
+      const apRedo = await esperarNoBanco<{ q: number; r: number }>(
+        tokenJogador.id, "q,r", (l) => l?.q === destino.q && l?.r === destino.r);
+      const fimRedo = await esperarVisual(jogadorPage, siglaJogador, pDestinoMundo, 0.5);
       registrar(
         "14 (redo: passa por posição intermediária — percorre a rota original, não salta)",
         !!meioRedo && !perto(meioRedo, pOrigemMundo, 3) && !perto(meioRedo, pDestinoMundo, 3),
@@ -547,9 +726,11 @@ async function main() {
         registrar("16 (token animado não inicia outro arrasto)", false, "token sem bounding box em voo");
       }
 
-      await narradorPage.waitForTimeout(900);
-      const { data: linhaFinal } = await admin.from("vtt_tokens").select("q,r").eq("id", tokF.id).maybeSingle();
-      const fimVisual = await lerTransformToken(narradorPage, tokF.sigla);
+      const linhaFinal = await esperarNoBanco<{ q: number; r: number }>(
+        tokF.id, "q,r", (l) => l?.q === destino.q && l?.r === destino.r);
+      // Banco e tela pousam em instantes diferentes — esperar um não
+      // espera o outro. Este critério afirma sobre os dois.
+      const fimVisual = await esperarVisual(narradorPage, tokF.sigla, pDestinoMundo, 0.5);
       registrar(
         "16b (apesar da tentativa de novo arrasto, o token chega no destino original certo)",
         linhaFinal?.q === destino.q && linhaFinal?.r === destino.r && !!fimVisual && perto(fimVisual, pDestinoMundo, 0.5),
@@ -577,7 +758,8 @@ async function main() {
       await narradorPage.mouse.move(boxDestino.x, boxDestino.y, { steps: 6 });
       await narradorPage.mouse.up();
       await narradorPage.waitForTimeout(500);
-      const { data: apos } = await admin.from("vtt_tokens").select("q,r,revision").eq("id", tokAAtual!.id).maybeSingle();
+      const apos = await esperarNoBanco<{ q: number; r: number; revision: number }>(
+        tokAAtual!.id, "q,r,revision", (l) => (l?.revision ?? 0) > tokAAtual!.revision);
       registrar("17 (outro token continua interativo)", apos?.q === destino.q && apos?.r === destino.r && apos?.revision === tokAAtual!.revision + 1, `pos=(${apos?.q},${apos?.r}), revisão ${tokAAtual!.revision}→${apos?.revision}`);
     } else {
       registrar("17 (outro token continua interativo)", false, "token/célula sem bounding box");
@@ -680,8 +862,8 @@ async function main() {
         arrastar(jogadorPage, boxJog, boxDestinoJog),
       ]);
 
-      await narradorPage.waitForTimeout(700);
-      let { data: bancoJog } = await admin.from("vtt_tokens").select("q,r,revision").eq("id", tokJogAtual!.id).maybeSingle();
+      let bancoJog = await esperarNoBanco<{ q: number; r: number; revision: number }>(
+        tokJogAtual!.id, "q,r,revision", (l) => l?.q === destinoJog.q && l?.r === destinoJog.r);
       // Defesa contra a MESMA corrida documentada acima (sincronização
       // de `controlledCharacterIds` via Realtime, não instantânea): se
       // ainda não moveu, não é o que este teste investiga — tenta o
@@ -689,16 +871,17 @@ async function main() {
       // alheio à isolação entre tokens que é o objeto real do teste.
       if (bancoJog?.q !== destinoJog.q || bancoJog?.r !== destinoJog.r) {
         await arrastar(jogadorPage, boxJog, boxDestinoJog);
-        await jogadorPage.waitForTimeout(700);
-        ({ data: bancoJog } = await admin.from("vtt_tokens").select("q,r,revision").eq("id", tokJogAtual!.id).maybeSingle());
+        bancoJog = await esperarNoBanco<{ q: number; r: number; revision: number }>(
+          tokJogAtual!.id, "q,r,revision", (l) => l?.q === destinoJog.q && l?.r === destinoJog.r);
       }
-      const { data: bancoA } = await admin.from("vtt_tokens").select("q,r,revision").eq("id", tokAAtual!.id).maybeSingle();
+      const bancoA = await esperarNoBanco<{ q: number; r: number; revision: number }>(
+        tokAAtual!.id, "q,r,revision", (l) => l?.q === destinoA.q && l?.r === destinoA.r);
       // Visual lido NA PÁGINA DO NARRADOR pros dois — o seu próprio
       // token (A, otimista) E o do jogador, que ele só vê via
       // broadcast (`receberMovimentoRemoto`/`onAnimacaoConcluida`) —
       // exatamente o caminho que o bug de "salto pra origem" afetava.
-      const visualA = await lerTransformToken(narradorPage, tokAAtual!.sigla);
-      const visualJog = await lerTransformToken(narradorPage, siglaJogador);
+      const visualA = await esperarVisual(narradorPage, tokAAtual!.sigla, pDestinoA, 0.5);
+      const visualJog = await esperarVisual(narradorPage, siglaJogador, pDestinoJog, 0.5);
 
       registrar(
         "20a (token A termina no próprio destino — banco e visual)",
@@ -782,8 +965,6 @@ function direcaoQSegura(hex: { q: number; r: number }, magnitude: number): 1 | -
   if (hex.q - magnitude >= qMin) return -1;
   return 1; // mapa menor que 2×magnitude nesta fileira — não deveria acontecer nesta cena, mas nunca lança.
 }
-/** Mesma ideia, pro eixo R (`ALTURA_CENA` linhas — 0..altura-1, sem depender de Q). */
-const ALTURA_CENA = 18;
 function direcaoRSegura(hex: { q: number; r: number }, magnitude: number): 1 | -1 {
   if (hex.r + magnitude <= ALTURA_CENA - 1) return 1;
   if (hex.r - magnitude >= 0) return -1;

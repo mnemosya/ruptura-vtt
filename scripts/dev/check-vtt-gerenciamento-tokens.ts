@@ -798,57 +798,59 @@ async function main() {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // CAMADAS — tolerância de localStorage (função pura, sem rede)
+  // CAMADAS — tolerância do estado que vem da CENA (função pura)
+  //
+  // Camadas deixou de ser preferência em `localStorage` e virou coluna
+  // de `vtt_scenes` (migration 0093): o narrador ajusta e vale pra
+  // mesa. O que continua precisando de teste é a MESMA coisa de antes,
+  // porque a fonte segue sendo jsonb que pode vir torto — cena antiga
+  // sem a coluna, schema velho, camada removida do código, valor
+  // inválido. Só que agora a porta é uma só (`camadasDeJson`), usada
+  // tanto pela leitura persistida quanto pelo payload de Realtime.
   // ═══════════════════════════════════════════════════════════════
   {
-    const armazenamento = new Map<string, string>();
-    (globalThis as unknown as { window: unknown }).window = {
-      localStorage: {
-        getItem: (k: string) => armazenamento.get(k) ?? null,
-        setItem: (k: string, v: string) => { armazenamento.set(k, v); },
-      },
-    };
     const mod = await import("../../src/app/mesas/[campaignId]/vtt/_shell/PainelCamadas");
-    const chave = mod.chaveCamadas("user-1", "camp-1", "scene-1");
 
-    const semNada = mod.carregarPreferenciaCamadas(chave);
-    ok("camadas-1 (chave ausente → padrão, tudo visível/destravado)", JSON.stringify(semNada) === JSON.stringify(mod.CAMADAS_PADRAO), JSON.stringify(semNada));
+    const semNada = mod.camadasDeJson(undefined);
+    ok("camadas-1 (cena sem camadas → padrão, tudo visível/destravado)", JSON.stringify(semNada) === JSON.stringify(mod.CAMADAS_PADRAO), JSON.stringify(semNada));
 
-    armazenamento.set(chave, "{ isto não é json");
-    const corrompido = mod.carregarPreferenciaCamadas(chave);
-    ok("camadas-2 (JSON corrompido → padrão, nunca lança)", JSON.stringify(corrompido) === JSON.stringify(mod.CAMADAS_PADRAO), "ok, sem exceção");
+    const lixo = mod.camadasDeJson("isto não é objeto");
+    ok("camadas-2 (jsonb que não é objeto → padrão, nunca lança)", JSON.stringify(lixo) === JSON.stringify(mod.CAMADAS_PADRAO), "ok, sem exceção");
 
-    armazenamento.set(chave, JSON.stringify({ tokens: { visivel: false, bloqueada: true } })); // schema velho, faltando camadas novas
-    const parcial = mod.carregarPreferenciaCamadas(chave);
+    const parcial = mod.camadasDeJson({ tokens: { visivel: false, bloqueada: true } });
     ok(
       "camadas-3 (schema velho: camada presente é respeitada, camadas ausentes caem no padrão)",
       parcial.tokens.visivel === false && parcial.tokens.bloqueada === true && parcial.pings.visivel === true,
       JSON.stringify(parcial),
     );
 
-    armazenamento.set(chave, JSON.stringify({ tokens: "não é um objeto válido", grade: { visivel: false, bloqueada: false }, camadaQueNaoExisteMais: { visivel: false, bloqueada: true } }));
-    const invalido = mod.carregarPreferenciaCamadas(chave);
+    const invalido = mod.camadasDeJson({
+      tokens: "não é um objeto válido",
+      grade: { visivel: false, bloqueada: false },
+      camadaQueNaoExisteMais: { visivel: false, bloqueada: true },
+    });
     ok(
       "camadas-4 (valor inválido numa camada não contamina as outras; camada removida do código é ignorada)",
       invalido.tokens.visivel === true && invalido.grade.visivel === false,
       JSON.stringify(invalido),
     );
 
-    mod.salvarPreferenciaCamadas(chave, { ...mod.CAMADAS_PADRAO, marcas: { visivel: false, bloqueada: true } });
-    const relido = mod.carregarPreferenciaCamadas(chave);
-    ok("camadas-5 (salvar → reler devolve exatamente o que foi salvo)", relido.marcas.visivel === false && relido.marcas.bloqueada === true, JSON.stringify(relido.marcas));
-
-    ok(
-      "camadas-6 (chave versionada inclui usuário, campanha e cena — nunca vaza entre cenas/usuários diferentes)",
-      chave.includes("user-1") && chave.includes("camp-1") && chave.includes("scene-1") && chave.startsWith("rv-camadas:v"),
-      chave,
-    );
+    const ida = { ...mod.CAMADAS_PADRAO, marcas: { visivel: false, bloqueada: true } };
+    const volta = mod.camadasDeJson(JSON.parse(JSON.stringify(ida)));
+    ok("camadas-5 (ida e volta por jsonb devolve exatamente o que foi gravado)", JSON.stringify(volta) === JSON.stringify(ida), JSON.stringify(volta.marcas));
 
     const comBloqueio = mod.CAMADAS_DEFINICAO.filter((d) => d.temBloqueio).map((d) => d.id).sort();
     ok(
-      "camadas-7 (só terrenoFuncional/marcas/tokens têm bloqueio de interação — as demais só visibilidade)",
+      "camadas-6 (só terrenoFuncional/marcas/tokens têm bloqueio de interação — as demais só visibilidade)",
       JSON.stringify(comBloqueio) === JSON.stringify(["marcas", "terrenoFuncional", "tokens"]),
       JSON.stringify(comBloqueio),
+    );
+
+    const grupos = new Set(mod.CAMADAS_DEFINICAO.map((d) => d.grupo));
+    ok(
+      "camadas-7 (a pilha é dividida entre conteúdo da cena e ferramentas)",
+      grupos.size === 2 && grupos.has("cena") && grupos.has("ferramentas"),
+      JSON.stringify([...grupos]),
     );
   }
 

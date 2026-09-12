@@ -84,10 +84,44 @@ async function limpar() {
 }
 
 async function abrirCriarConfigurando(page: Page, indiceCelula = 40) {
+  // Fecha o que estiver aberto ANTES de procurar célula livre: com a
+  // janela do cenário anterior ainda no ar, boa parte do mapa está
+  // coberta e o clique direito nunca chega na grade.
+  if (await page.locator(".rv-gerenciador-token").count() > 0) {
+    page.once("dialog", (d) => d.accept());
+    await page.keyboard.press("Escape");
+    await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
+  }
   await page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
-  const box = await page.locator(".rv-camada-grade path").nth(indiceCelula).boundingBox();
-  await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2, { button: "right" });
-  await page.locator(".rv-menu-item", { hasText: "Adicionar token" }).click();
+  // A célula precisa estar DESCOBERTA: a janela de token nasce colada
+  // na barra de ferramentas e cresceu, e o índice fixo passou a cair
+  // debaixo dela — o clique direito ia parar no formulário e o menu
+  // nunca abria. Tenta o índice pedido e, se ele estiver coberto,
+  // procura a primeira célula que responde por si no ponto do clique.
+  const ponto = await page.evaluate((idx) => {
+    // Sem função nomeada aqui: o `tsx`/esbuild injeta um helper
+    // (`__name`) que não existe dentro do browser.
+    const celulas = Array.from(document.querySelectorAll(".rv-camada-grade path"));
+    const ordem = celulas[idx] ? [celulas[idx], ...celulas] : celulas;
+    for (const c of ordem) {
+      const r = c.getBoundingClientRect();
+      const x = r.x + r.width / 2, y = r.y + r.height / 2;
+      if (document.elementFromPoint(x, y) === c) return { x, y };
+    }
+    return null;
+  }, indiceCelula);
+
+  if (ponto) {
+    await page.mouse.click(ponto.x, ponto.y, { button: "right" });
+    await page.locator(".rv-menu-item", { hasText: "Adicionar token" }).click();
+  } else {
+    // Nenhuma célula alcançável: numa viewport estreita (o cenário 4
+    // usa 380px) a barra e o painel da sessão cobrem o mapa inteiro, e
+    // o menu do hex vazio deixa de ser uma porta possível. O botão da
+    // barra é a outra porta real, e é a que o cenário precisa — ele
+    // testa o LAYOUT do formulário, não por onde ele foi aberto.
+    await page.locator('.rv-ferr-btn[aria-label="Adicionar token"]').click();
+  }
   await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
 }
 async function continuarParaPosicionar(page: Page) {
@@ -161,14 +195,14 @@ async function main() {
 
   // ── 3: "Mais opções" aberto ──────────────────────────────────────
   {
-    await page.locator("summary", { hasText: "Mais opções" }).click();
+    await page.locator("summary", { hasText: "Identidade ampliada" }).click();
     await page.waitForTimeout(150);
     await page.screenshot({ path: path.join(DIR_SHOTS, "03-mais-opcoes-aberto.png") });
     const vertenteVisivel = await page.locator('.rv-gerenciador-token label:has-text("Vertente")').isVisible();
     const imagemVisivel = await page.locator('.rv-gerenciador-token label:has-text("Imagem do token")').isVisible();
     const pvVisivel = await page.locator('.rv-gerenciador-token fieldset:has-text("Pontos de Vida")').isVisible();
     const condicoesVisivel = await page.locator('.rv-gerenciador-token fieldset:has-text("Condições")').isVisible();
-    registrar("3 ('Mais opções' aberto: Vertente/Imagem/PV/Condições visíveis)", vertenteVisivel && imagemVisivel && pvVisivel && condicoesVisivel, `vertente=${vertenteVisivel}, imagem=${imagemVisivel}, pv=${pvVisivel}, condicoes=${condicoesVisivel}`);
+    registrar("3 ('Identidade ampliada' aberta: Vertente/Imagem/PV/Condições visíveis)", vertenteVisivel && imagemVisivel && pvVisivel && condicoesVisivel, `vertente=${vertenteVisivel}, imagem=${imagemVisivel}, pv=${pvVisivel}, condicoes=${condicoesVisivel}`);
     page.once("dialog", (d) => d.accept());
     await page.keyboard.press("Escape");
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
@@ -179,7 +213,7 @@ async function main() {
     await page.setViewportSize({ width: 380, height: 700 });
     await abrirCriarConfigurando(page, 55);
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Visual Estreito");
-    await page.locator("summary", { hasText: "Mais opções" }).click();
+    await page.locator("summary", { hasText: "Identidade ampliada" }).click();
     await page.screenshot({ path: path.join(DIR_SHOTS, "04-viewport-estreita.png") });
     const rodapeBox = await page.locator(".rv-modal-rodape").boundingBox();
     const rodapeDentro = rodapeBox!.x >= 0 && rodapeBox!.x + rodapeBox!.width <= 380;
@@ -248,13 +282,24 @@ async function main() {
     await abrirCriarConfigurando(page, 130);
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Visual Bloqueado");
     await continuarParaPosicionar(page);
-    // procura, célula a célula, a posição bloqueada (6,6) no viewport atual — mais simples: hover em várias e ler data-valida=false com uma âncora que bata em terreno bloqueado.
-    let achou = false;
-    for (let i = 0; i < 220 && !achou; i += 11) {
-      await moverParaCelula(page, i);
-      const ancora = await page.locator(".rv-camada-posicionamento-token").getAttribute("data-ancora");
-      if (ancora === "6,6") achou = true;
+    // A célula (6,6) tem índice exato na grade — `linha * largura +
+    // coluna`. A varredura de 11 em 11 que estava aqui só encontrava
+    // (6,6) por coincidência aritmética (126 não é múltiplo de 11) e
+    // dependia de o passeio do mouse cair nela por acaso; qualquer
+    // mudança de tamanho de cena ou de área coberta a fazia falhar sem
+    // dizer por quê.
+    // A célula bloqueada acabou de ser pintada e está DESENHADA no
+    // mapa: mirar nela é mais direto (e mais honesto) que caçar um
+    // índice de `path`. A varredura de 11 em 11 que estava aqui só
+    // encontrava (6,6) por coincidência aritmética, e a ordem do DOM
+    // nem é `linha * largura + coluna` — o índice 126 numa cena 20×20
+    // cai em (3,6).
+    const boxBloqueado = await page.locator(".rv-terreno-real--bloqueado").first().boundingBox();
+    if (boxBloqueado) {
+      await page.mouse.move(boxBloqueado.x + boxBloqueado.width / 2, boxBloqueado.y + boxBloqueado.height / 2, { steps: 3 });
+      await page.waitForTimeout(150);
     }
+    const achou = (await page.locator(".rv-camada-posicionamento-token").getAttribute("data-ancora")) === "6,6";
     await page.screenshot({ path: path.join(DIR_SHOTS, "07-preview-terreno-bloqueado.png") });
     const valida = await page.locator(".rv-camada-posicionamento-token").getAttribute("data-valida");
     registrar("7 (preview em terreno bloqueado: inválido/vermelho)", achou && valida === "false", `achouCelula66=${achou}, valida=${valida}`);

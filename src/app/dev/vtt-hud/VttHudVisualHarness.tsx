@@ -28,6 +28,7 @@ function tokenFor(scenario: Scenario): TokenApresentacao {
     vertente: "energetico",
     tamanho: "medio",
     pos: { q: 0, r: 0 },
+    offset: { q: 0, r: 0 },
     orientacao: 0,
     pegadaPersonalizada: null,
     retrato: null,

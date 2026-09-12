@@ -158,13 +158,28 @@ async function escolherTipo(page: Page, tipo: string) {
 }
 
 /**
- * Reentra em `escolhendo_token_da_aura` quando o tipo JÁ é Aura (o
- * efeito que auto-entra nessa fase só dispara numa MUDANÇA de tipo —
- * reclicar o mesmo tipo não teria efeito). O botão "Escolher no mapa"
- * é o caminho real da interface pra isso.
+ * Reentra em `escolhendo_token_da_aura` quando o tipo JÁ é Aura.
+ *
+ * O botão "Escolher no mapa" saiu da interface: com Aura ativa, clicar
+ * num token no mapa já define a origem, e o botão era um segundo
+ * caminho pro mesmo gesto. O caminho que resta é o mesmo que o
+ * jogador usa — SAIR do tipo e voltar, que é o que dispara a fase (o
+ * efeito só reage a MUDANÇA de tipo; reclicar o mesmo não faria nada).
  */
 async function reescolherOrigemAura(page: Page) {
-  await page.locator('[data-testid="area-escolher-token-mapa"]').click();
+  await page.locator('[data-testid="area-tipo-esfera"]').click();
+  await page.locator('[data-testid="area-tipo-aura"]').click();
+}
+
+/**
+ * Abre a seção "Áreas na cena" — ela nasce RECOLHIDA (`listaAberta`
+ * começa `false`), então nenhum botão de item existe no DOM antes
+ * disso. Idempotente: só clica se estiver fechada.
+ */
+async function abrirListaDeAreas(page: Page) {
+  const alternar = page.locator('[data-testid="area-lista-toggle"]');
+  if ((await alternar.getAttribute("aria-expanded")) !== "true") await alternar.click();
+  await page.waitForSelector('[data-testid="area-lista"]', { timeout: 5000 });
 }
 
 async function manterNaMesa(page: Page) {
@@ -243,6 +258,7 @@ async function main() {
 
     // Editar a Aura persistida reacende o destaque.
     const { data: auraRow } = await admin.from("vtt_areas").select("id").eq("campaign_id", campaignId).eq("tipo", "aura").limit(1).maybeSingle();
+    await abrirListaDeAreas(P);
     await P.locator(`[data-testid="area-editar-${auraRow!.id}"]`).click();
     await P.waitForSelector('[data-testid="painel-areas"][data-fase="editando"]', { timeout: 5000 });
     const destaqueEdicao = await P.locator(`.rv-token[data-token-id="${tokenId}"] .rv-token-origem-aura`).count();
@@ -343,6 +359,7 @@ async function main() {
     registrar("5e (outro jogador NÃO vê botão de editar na área de outro jogador)", botaoNaAreaDoJogadorA === 0, `${botaoNaAreaDoJogadorA}`);
 
     // Na lista: sem ícone de editar/ocultar/duplicar/excluir nas áreas alheias, mas COM "Localizar".
+    await abrirListaDeAreas(B.page);
     const listaBtn = B.page.locator(`[data-testid="area-item-${areaEsferaNarrador}"] .rv-area-item-acoes button`);
     const contagem = await listaBtn.count();
     registrar("5f (na lista, área alheia mostra só 'Localizar' pro outro jogador)", contagem === 1, `${contagem} botão(ões)`);
@@ -354,6 +371,7 @@ async function main() {
   // 3. Hints acessíveis na lista "Áreas na cena"
   // ══════════════════════════════════════════════════════════════
   {
+    await abrirListaDeAreas(P);
     const item = P.locator(`[data-testid="area-item-${areaEsferaNarrador}"]`);
     const editarBtn = item.locator(`[data-testid="area-editar-${areaEsferaNarrador}"]`);
     await editarBtn.hover();
@@ -389,7 +407,14 @@ async function main() {
     const textoAntes = await visBtn.getAttribute("aria-label");
     registrar("3e (hint de visibilidade reflete o estado ATUAL — 'Ocultar dos jogadores' enquanto visível)", textoAntes === "Ocultar dos jogadores", `"${textoAntes}"`);
     await visBtn.click();
-    await P.waitForTimeout(600);
+    // Espera pela CONDIÇÃO: alternar a visibilidade vai ao servidor, e
+    // 600ms fixos nem sempre bastavam — o critério falhava lendo o
+    // rótulo antigo.
+    await P.waitForFunction(
+      (sel) => document.querySelector(sel)?.getAttribute("aria-label") === "Mostrar aos jogadores",
+      `[data-testid="area-visibilidade-${areaEsferaNarrador}"]`,
+      { timeout: 10000 },
+    ).catch(() => {});
     const textoDepois = await visBtn.getAttribute("aria-label");
     registrar("3f (depois de ocultar, o hint muda pra 'Mostrar aos jogadores')", textoDepois === "Mostrar aos jogadores", `"${textoDepois}"`);
     await visBtn.click(); // devolve pro estado visível

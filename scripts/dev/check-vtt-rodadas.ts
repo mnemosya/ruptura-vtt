@@ -65,6 +65,7 @@ function erroRelevante(msg: ConsoleMessage): boolean {
 
 let campaignId: string | null = null;
 let sceneId: string | null = null;
+let narradorId: string | null = null;
 let narradorEmail: string | null = null;
 let narradorSenha: string | null = null;
 let jogadorEmail: string | null = null;
@@ -84,6 +85,7 @@ async function criarUsuario(rotulo: string): Promise<{ id: string; email: string
 
 async function configurarFixture(): Promise<void> {
   const narrador = await criarUsuario("narrador");
+  narradorId = narrador.id;
   narradorEmail = narrador.email; narradorSenha = narrador.senha;
   const jogador = await criarUsuario("jogador");
   jogadorEmail = jogador.email; jogadorSenha = jogador.senha;
@@ -123,6 +125,7 @@ async function configurarFixture(): Promise<void> {
 async function limpar() {
   if (campaignId) {
     await admin.from("vtt_turn_tracks").delete().eq("campaign_id", campaignId);
+    await admin.from("vtt_marks").delete().eq("campaign_id", campaignId);
     await admin.from("vtt_tokens").delete().eq("campaign_id", campaignId);
     await admin.from("vtt_scenes").delete().eq("campaign_id", campaignId);
     await admin.from("campaign_members").delete().eq("campaign_id", campaignId);
@@ -254,6 +257,39 @@ async function main() {
     registrar("0g (clicar no X fecha em vez de arrastar)",
       await painel(narrador.page).count() === 0, "painel fechado");
 
+    // ── 0h: a explicação do modo é DICA, não conteúdo do card ──────
+    //
+    // O card mostra só o nome — em qualquer estado, inclusive
+    // selecionado. A regra aparece por cima ao passar o mouse. Duas
+    // coisas se provam juntas: a dica de fato APARECE (dentro de um
+    // `<button>` o Chromium não pintava o filho que ultrapassava a
+    // caixa — daí o invólucro) e o card NÃO cresce ao mostrá-la, senão
+    // o par de modos dança debaixo do cursor.
+    await abrirPainel(narrador.page);
+    {
+      const caixa = narrador.page.locator(".rv-rodadas-modo-caixa").first();
+      const cartao = caixa.locator(".rv-rodadas-modo");
+      const dica = caixa.locator(".rv-rodadas-modo-dica");
+      const alturaRepouso = (await cartao.boundingBox())!.height;
+      const opacidadeRepouso = await dica.evaluate((el) => getComputedStyle(el).opacity);
+      const textoNoCartao = ((await cartao.textContent()) ?? "").trim();
+      await cartao.hover();
+      await esperarAte(async () => (await dica.evaluate((el) => getComputedStyle(el).opacity)) === "1", 2000);
+      const caixaDica = await dica.boundingBox();
+      const alturaHover = (await cartao.boundingBox())!.height;
+      const vp = narrador.page.viewportSize()!;
+      const dentroDaTela = !!caixaDica && caixaDica.x >= 0 && caixaDica.y >= 0
+        && caixaDica.x + caixaDica.width <= vp.width && caixaDica.y + caixaDica.height <= vp.height;
+      const naoCresceu = Math.abs(alturaHover - alturaRepouso) < 1;
+      const soONome = textoNoCartao.length > 0 && !textoNoCartao.includes("Rodada");
+      registrar("0h (a regra do modo é dica flutuante: some em repouso, aparece no hover, dentro da tela, sem mexer no card)",
+        opacidadeRepouso === "0" && dentroDaTela && naoCresceu && soONome,
+        `opacidadeRepouso=${opacidadeRepouso}, dentroDaTela=${dentroDaTela}, altura ${alturaRepouso.toFixed(1)}→${alturaHover.toFixed(1)}, cartão="${textoNoCartao}"`);
+      await narrador.page.mouse.move(4, 4);
+    }
+    await narrador.page.locator('.rv-fp--rodadas .rv-fp-fechar').click();
+    await narrador.page.waitForTimeout(300);
+
     // ── 1: iniciar combate normal com elenco escolhido ─────────────
     await abrirPainel(narrador.page);
     // Deixa o "Reforço" de fora — ele entra no critério 3.
@@ -277,6 +313,36 @@ async function main() {
       trilhosNarrador && await narrador.page.locator(".rv-rodadas").count() === 1,
       `trilhos=${await narrador.page.locator(".rv-faccao").count()} núcleo=${await narrador.page.locator(".rv-rodadas").count()}`);
 
+    // ── 1n: núcleo da rodada, os dois estados do Figma ────────────
+    //
+    // A placa tem um rodapé CONDICIONAL — régua, estado e ação — que só
+    // existe quando há notícia: alguém agindo, um lado da vez, ou a
+    // janela fechada.
+    //
+    // Combate recém-iniciado tem notícia: NINGUÉM declarou ainda, então
+    // ninguém é elegível, `podeEncerrarJanela` é verdadeiro e a placa
+    // abre no estado com ação (Figma 440:2643) oferecendo "Resolver
+    // Lentos". O estado de repouso (440:1827) aparece assim que alguém
+    // declara — e é o que 3n-repouso confere, mais adiante.
+    //
+    // O botão NÃO é clicado: avançar de janela muda o estado do combate
+    // pro resto da suíte e não tem ação inversa. O que se prova aqui é
+    // o que a placa MOSTRA e OFERECE.
+    {
+      const nucleo = narrador.page.locator(".rv-rodadas");
+      const cantos = await nucleo.locator(".rv-rodadas-canto").count();
+      const janelaTxt = ((await nucleo.locator(".rv-rodadas-janela").textContent()) ?? "").trim();
+      const janelaAttr = await nucleo.getAttribute("data-janela");
+      const rodadaTxt = ((await nucleo.locator(".rv-rodadas-rodada").textContent()) ?? "").trim();
+      const estadoTxt = ((await nucleo.locator(".rv-rodadas-estado").textContent()) ?? "").trim();
+      const rotuloAcao = ((await nucleo.locator(".rv-rodadas-avanca").textContent()) ?? "").trim();
+      registrar("1n (núcleo: rodada, janela com o teto de PA, quatro colchetes, e o rodapé com estado + ação)",
+        cantos === 4 && janelaAttr === "rapidos"
+          && janelaTxt === "Rápidos · até 2 PA" && rodadaTxt === "Rodada 1"
+          && estadoTxt === "Janela concluída" && rotuloAcao === "Resolver Lentos",
+        `colchetes=${cantos}, data-janela=${janelaAttr}, janela="${janelaTxt}", rodada="${rodadaTxt}", estado="${estadoTxt}", ação="${rotuloAcao}"`);
+    }
+
     registrar("1c (declaração Rápido/Lento continua dentro dos slots)",
       await narrador.page.locator(".rv-ator .rv-ator-declara button").count() >= 8,
       `botões de declaração=${await narrador.page.locator(".rv-ator .rv-ator-declara button").count()}`);
@@ -299,7 +365,9 @@ async function main() {
       await painelJogador.count() === 1
         && await painelJogador.locator(".rv-rodadas-encerrar").count() === 0
         && await painelJogador.locator(".rv-rodadas-mini").count() === 0
-        && (await painelJogador.locator(".rv-rodadas-estado").textContent())?.includes("Rodada") === true,
+        // O estado do combate agora são as PLACAS do topo (rodada e o
+        // que resta de cada lado), não mais a lista de definições.
+        && (await painelJogador.locator(".rv-fp-placas").textContent())?.includes("Rodada") === true,
       `encerrar=${await painelJogador.locator(".rv-rodadas-encerrar").count()} mini=${await painelJogador.locator(".rv-rodadas-mini").count()}`);
 
     // A prova que importa: o SERVIDOR recusa, não só a UI esconde.
@@ -322,8 +390,42 @@ async function main() {
     registrar("6c (jogador continua podendo JOGAR: declarar janela segue habilitado)",
       jogadorPodeJogar, `declarar habilitado=${jogadorPodeJogar}`);
 
-    // ── 3: adicionar e remover participante ────────────────────────
+    // ── 3z: botão de ícone diz o próprio nome ──────────────────────
+    //
+    // As ações da linha (incapaz, passar, remover) são ÍCONE, sem
+    // rótulo escrito. Isso só é aceitável se o nome estiver a um
+    // hover/foco de distância — e ele tem que passar por cima da borda
+    // do corpo da janela, que ROLA e recortaria uma caixa comum.
     await abrirPainel(narrador.page);
+    {
+      const P = painel(narrador.page);
+      const icones = P.locator(".rv-rodadas-linha").first().locator(".rv-rodadas-mini");
+      const semRotuloEscrito = ((await icones.first().textContent()) ?? "").trim() === "";
+      const rotulo = await icones.first().getAttribute("aria-label");
+      const dica = narrador.page.locator(".rv-rodadas-dica");
+      const antes = await dica.count();
+      await icones.first().hover();
+      const apareceu = await esperarAte(async () => await dica.count() === 1, 2000);
+      const textoDica = apareceu ? ((await dica.textContent()) ?? "").trim() : "";
+      const cx = await dica.boundingBox().catch(() => null);
+      const vp = narrador.page.viewportSize()!;
+      const naTela = !!cx && cx.x >= 0 && cx.y >= 0 && cx.x + cx.width <= vp.width && cx.y + cx.height <= vp.height;
+      await narrador.page.mouse.move(4, 4);
+      const sumiu = await esperarAte(async () => await dica.count() === 0, 2000);
+      registrar("3z (ação de ícone mostra o próprio nome ao passar o mouse, dentro da tela, e some ao sair)",
+        semRotuloEscrito && antes === 0 && apareceu && textoDica === rotulo && naTela && sumiu,
+        `semRotuloEscrito=${semRotuloEscrito}, dica="${textoDica}", aria-label="${rotulo}", naTela=${naTela}, sumiu=${sumiu}`);
+
+      // Teclado alcança a mesma dica — senão o nome existe só pro mouse.
+      await icones.nth(1).focus();
+      const dicaPorFoco = await esperarAte(async () => await dica.count() === 1, 2000);
+      registrar("3z-teclado (a mesma dica aparece ao focar o botão pelo teclado)",
+        dicaPorFoco && ((await dica.textContent()) ?? "").trim() === await icones.nth(1).getAttribute("aria-label"),
+        `apareceu=${dicaPorFoco}, texto="${((await dica.textContent()) ?? "").trim()}"`);
+      await icones.nth(1).blur();
+    }
+
+    // ── 3: adicionar e remover participante ────────────────────────
     const adicionar = narrador.page.locator('.rv-rodadas-mini[aria-label^="Adicionar Reforço"]');
     registrar("3 (token fora da trilha aparece como candidato a entrar)", await adicionar.count() === 1,
       `candidatos=${await narrador.page.locator('.rv-rodadas-mini[aria-label^="Adicionar"]').count()}`);
@@ -341,15 +443,46 @@ async function main() {
     // Avança de verdade antes de recarregar: um reload que só recupera
     // "rodada 1, nada aconteceu" não provaria muita coisa.
     await narrador.page.locator('.rv-fp--rodadas .rv-fp-fechar').click();
+
     const primeiroPj = narrador.page.locator(".rv-faccao--pj .rv-ator").first();
     await primeiroPj.locator('.rv-ator-declara button[data-janela="rapidos"]').click();
-    await narrador.page.waitForTimeout(700);
-    await primeiroPj.locator(".rv-ator-agir").click();
-    const abriuTurno = await esperarAte(async () => (await linhaDoBanco())?.estado.agindoId !== null);
+    // Espera fixa (700ms) flakeava aqui: "agir" só fica clicável depois
+    // que a declaração volta do servidor, e às vezes demorava mais.
+    // Espera pela condição e, se o primeiro clique não abriu o turno
+    // (declaração ainda em voo quando ele saiu), insiste uma vez.
+    let abriuTurno = false;
+    for (let tentativa = 0; tentativa < 3 && !abriuTurno; tentativa++) {
+      // A espera é BEST-EFFORT: se "agir" ainda não está clicável, o
+      // timeout não é o fim — a declaração pode chegar no intervalo
+      // seguinte. Estourar aqui transformava uma corrida em erro fatal
+      // e derrubava a suíte inteira.
+      await primeiroPj.locator(".rv-ator-agir:not([disabled])")
+        .waitFor({ state: "visible", timeout: 8000 }).catch(() => {});
+      if (await primeiroPj.locator(".rv-ator-agir:not([disabled])").count() === 0) continue;
+      await primeiroPj.locator(".rv-ator-agir").click();
+      abriuTurno = await esperarAte(async () => (await linhaDoBanco())?.estado.agindoId !== null, 8000);
+    }
     registrar("4a (assumir turno grava a ativação aberta no servidor)",
       abriuTurno, `agindoId=${(await linhaDoBanco())?.estado.agindoId}`);
 
-    const estadoAntesReload = await narrador.page.locator(".rv-rodadas-estado").textContent();
+    {
+      // Agora HÁ notícia: o rodapé nasce, com o estado do lado de quem
+      // age. A ação de avançar continua fora — nunca no meio de um
+      // turno aberto.
+      const nucleo = narrador.page.locator(".rv-rodadas");
+      const temPe = await esperarAte(async () => await nucleo.locator(".rv-rodadas-pe").count() === 1, 8000);
+      // Sem `count()` antes do `textContent()`, um rodapé ausente vira
+      // 30s de espera e um erro fatal no lugar de uma falha legível.
+      const temEstado = await nucleo.locator(".rv-rodadas-estado").count() === 1;
+      const estadoTxt = temEstado ? ((await nucleo.locator(".rv-rodadas-estado").textContent()) ?? "").trim() : "";
+      const lado = temEstado ? await nucleo.locator(".rv-rodadas-estado").getAttribute("data-lado") : null;
+      const temAcao = await nucleo.locator(".rv-rodadas-avanca").count();
+      registrar("3n-pe (com turno aberto o rodapé aparece com o estado do lado, e sem ação de avançar)",
+        temPe && estadoTxt.endsWith("em ação") && lado === "pj" && temAcao === 0,
+        `rodapé=${temPe}, estado="${estadoTxt}", data-lado=${lado}, ação=${temAcao}`);
+    }
+
+    const estadoAntesReload = await narrador.page.locator(".rv-rodadas-estado").first().textContent();
     await narrador.page.reload({ waitUntil: "networkidle" });
     await narrador.page.waitForSelector(".rv-ferramentas", { timeout: 20000 });
     const voltouComTrilha = await esperarAte(async () => await narrador.page.locator(".rv-faccao").count() === 2, 15000);
@@ -406,6 +539,51 @@ async function main() {
       })(),
       "trilha intacta depois de cancelar");
 
+    // ── 10: marcações com prazo vencem no SERVIDOR ────────────────
+    // A janela de Marcar deixa escolher "Persistente", "Esta rodada" e
+    // "Este combate". "Enforced de verdade" quer dizer: some pra mesa
+    // inteira no mesmo instante, porque quem apaga é o servidor junto
+    // da transição — não um filtro de tela por participante.
+    const marcasFixture = [
+      { duracao: "persistente", texto: "fica" },
+      { duracao: "rodada", texto: "vence na virada" },
+      { duracao: "combate", texto: "vence no fim do combate" },
+    ];
+    const { error: eMarcas } = await admin.from("vtt_marks").insert(marcasFixture.map((m, i) => ({
+      scene_id: sceneId, campaign_id: campaignId, autor_id: narradorId,
+      tipo: "texto", sinal: "alvo", cor: "ciano", pontos: [{ q: 2 + i, r: 2 }],
+      duracao: m.duracao, rodada_criada: 1, texto: m.texto, privada: false,
+    })));
+    if (eMarcas) throw new Error(`Falha ao criar marcações: ${eMarcas.message}`);
+
+    const textosDeMarcas = async () => {
+      const { data } = await admin.from("vtt_marks").select("duracao").eq("scene_id", sceneId);
+      return (data ?? []).map((m) => m.duracao as string).sort();
+    };
+
+    // 10a — a virada de rodada. A RPC é chamada pelo servidor dentro de
+    // `atualizarTrilhaAction`; aqui ela é exercida com a sessão REAL da
+    // narradora, que é a única autorização que conta.
+    const clienteNarradora = createClient(supabaseUrl, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    await clienteNarradora.auth.signInWithPassword({ email: narradorEmail!, password: narradorSenha! });
+    const { data: removidasRodada, error: eRodada } = await clienteNarradora.rpc("expirar_marcas_da_cena", {
+      p_scene_id: sceneId, p_rodada_atual: 2, p_combate_encerrado: false,
+    });
+    registrar("10a (virar a rodada apaga só as marcações de 'esta rodada')",
+      !eRodada && removidasRodada === 1 && JSON.stringify(await textosDeMarcas()) === JSON.stringify(["combate", "persistente"]),
+      `removidas=${removidasRodada} restantes=${JSON.stringify(await textosDeMarcas())} erro=${eRodada?.message ?? "nenhum"}`);
+
+    // 10b — quem NÃO é da mesa não dispara a limpeza da cena alheia.
+    const clienteEstranho = createClient(supabaseUrl, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const estranho = await criarUsuario("estranho");
+    await clienteEstranho.auth.signInWithPassword({ email: estranho.email, password: estranho.senha });
+    const { error: eEstranho } = await clienteEstranho.rpc("expirar_marcas_da_cena", {
+      p_scene_id: sceneId, p_rodada_atual: 9, p_combate_encerrado: true,
+    });
+    registrar("10b (não-membro NÃO expira marcações de uma cena alheia)",
+      !!eEstranho && JSON.stringify(await textosDeMarcas()) === JSON.stringify(["combate", "persistente"]),
+      `erro="${eEstranho?.message ?? "NENHUM"}" restantes=${JSON.stringify(await textosDeMarcas())}`);
+
     // ── 2: emboscada — precisa reiniciar, então encerra antes ──────
     const tokensAntesDeEncerrar = await admin.from("vtt_tokens").select("id, q, r, nome, revision").eq("campaign_id", campaignId!);
     await narrador.page.locator(".rv-rodadas-encerrar").click();
@@ -414,6 +592,14 @@ async function main() {
     registrar("8a (encerrar apaga a trilha e some com os trilhos de quem encerrou)",
       encerrou && await esperarAte(async () => await narrador.page.locator(".rv-faccao").count() === 0),
       `trilhaNoBanco=${(await linhaDoBanco()) !== null} trilhos=${await narrador.page.locator(".rv-faccao").count()}`);
+
+    // 10c — o encerramento REAL, pela UI, passando pelo server action:
+    // "Este combate" some, "Persistente" fica. É esta a prova de que a
+    // expiração está ligada no caminho de produção, não só na RPC.
+    const restaramDepoisDoFim = await esperarAte(
+      async () => JSON.stringify(await textosDeMarcas()) === JSON.stringify(["persistente"]), 10000);
+    registrar("10c (encerrar o combate pela UI apaga 'este combate' e preserva 'persistente')",
+      restaramDepoisDoFim, `restantes=${JSON.stringify(await textosDeMarcas())}`);
 
     // ── 9b: o encerramento chega na outra sessão ───────────────────
     const sumiuNoJogador = await esperarAte(async () => await jogador.page.locator(".rv-faccao").count() === 0, 12000);

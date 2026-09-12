@@ -282,14 +282,18 @@ async function main() {
 
     if (finalizarHabilitado) {
       await page.locator('[data-testid="wizard-finalizar-button"]').click();
-      await page.waitForURL(/\/ficha\?campaignId=.*characterId=/, { timeout: 15000 }).catch(() => {});
+      // A ficha deixou de ser rota: terminar o wizard volta pra
+      // Personagens (a tela de onde ele saiu) e abre o Console por cima
+      // dela. O id do personagem criado sai da própria janela, que
+      // carrega `data-character-id`.
+      await page.waitForSelector('[data-testid="painel-console"]', { timeout: 30000 }).catch(() => {});
       const url = page.url();
-      const criouENavegou = url.includes("/ficha?") && url.includes("characterId=");
-      characterIdCriado = criouENavegou ? new URL(url).searchParams.get("characterId") : null;
+      characterIdCriado = await page.locator('[data-testid="painel-console"]').getAttribute("data-character-id").catch(() => null);
+      const voltouPraPersonagens = /\/personagens$/.test(new URL(url).pathname);
       registrar(
-        "3b (finalizar cria o personagem de verdade e navega pra ficha dele)",
-        criouENavegou && !!characterIdCriado,
-        `url final="${url}", characterId=${characterIdCriado}`,
+        "3b (finalizar cria o personagem e abre a ficha dele como janela da mesa)",
+        voltouPraPersonagens && !!characterIdCriado,
+        `url final="${url}" (esperado terminar em /personagens), characterId=${characterIdCriado}`,
       );
     } else {
       registrar("3b (finalizar cria o personagem de verdade e navega pra ficha dele)", false, "pulado — botão finalizar não habilitou no passo anterior");

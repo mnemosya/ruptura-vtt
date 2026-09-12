@@ -331,7 +331,10 @@ async function main() {
   {
     const { data: criado } = await admin.from("vtt_tokens").insert({
       scene_id: sceneId, campaign_id: campaignId, nome: "Pegada Live", sigla: "PL", lado: "pn",
-      q: 15, r: 15, tamanho: "grande", pegada_personalizada: [{ q: 0, r: 0 }, { q: 1, r: 0 }],
+      // (15,15) caía debaixo do painel da sessão, na direita da tela, e
+      // o clique direito era interceptado por ele. As colunas do meio
+      // ficam livres tanto do painel quanto da barra de ferramentas.
+      q: 8, r: 12, tamanho: "grande", pegada_personalizada: [{ q: 0, r: 0 }, { q: 1, r: 0 }],
       visivel: true,
     }).select("id").single();
     const tokenPegadaId = criado!.id;
@@ -444,20 +447,30 @@ async function main() {
     registrar("10 (ping de outra cena não aparece na cena ativa do narrador)", semPingNovo, `pings visíveis=${!semPingNovo ? "algum" : "nenhum"}`);
   }
 
-  // --- 12. Camadas independentes por sessão ---
+  // --- 12. Camadas são da CENA, não de quem clicou ---
+  //
+  // Este critério já cobrou o contrário ("preferência de camada é
+  // local"). Camada virou estado de CENA (migration 0093) justamente
+  // porque esconder algo só pra si não é ajustar nada: quem conduz a
+  // mesa esconde pra mesa. O narrador segue vendo o que escondeu, só
+  // atenuado — ele precisa saber o que está lá; o jogador não vê.
   {
     await narradorPage.locator('.rv-ferr-btn[aria-label="Camadas do mapa"]').click();
     await narradorPage.evaluate(() => {
       const b = [...document.querySelectorAll(".rv-camadas-item")].find((li) => li.querySelector(".rv-camadas-nome")?.textContent === "Tokens")?.querySelector('button[aria-label^="Ocultar"], button[aria-label^="Mostrar"]') as HTMLButtonElement | undefined;
       b?.click();
     });
-    await narradorPage.waitForTimeout(300);
-    const narradorTokensOcultos = await narradorPage.evaluate(() => document.querySelector(".rv-camada-tokens")?.getAttribute("style"));
-    const jogadorTokensAindaVisiveis = await jogadorPage.evaluate(() => document.querySelector(".rv-camada-tokens")?.getAttribute("style"));
+    const jogadorPerdeuACamada = await esperarAte(
+      async () => (await jogadorPage.evaluate(() => document.querySelector(".rv-camada-tokens")?.getAttribute("style") ?? "")).includes("none"),
+      8000,
+    );
+    const narradorEstilo = await narradorPage.evaluate(() => document.querySelector(".rv-camada-tokens")?.getAttribute("style"));
+    const { data: cenaCamadas } = await admin.from("vtt_scenes").select("camadas").eq("id", sceneId!).single();
+    const gravadoNaCena = (cenaCamadas?.camadas as Record<string, { visivel?: boolean }> | null)?.tokens?.visivel === false;
     registrar(
-      "12 (preferência de camada é local — narrador oculta Tokens, jogador continua com a camada visível)",
-      !!narradorTokensOcultos?.includes("none") && !jogadorTokensAindaVisiveis?.includes("none"),
-      `narrador=${narradorTokensOcultos}, jogador=${jogadorTokensAindaVisiveis}`,
+      "12 (camada é da CENA: o narrador esconde Tokens e o jogador PERDE a camada, sem reload — e a escolha fica gravada na cena, não no navegador)",
+      jogadorPerdeuACamada && !!narradorEstilo?.includes("0.35") && gravadoNaCena,
+      `jogadorPerdeu=${jogadorPerdeuACamada}, narrador=${narradorEstilo}, vtt_scenes.camadas.tokens.visivel=${(cenaCamadas?.camadas as Record<string, { visivel?: boolean }> | null)?.tokens?.visivel}`,
     );
   }
 
@@ -509,13 +522,28 @@ async function main() {
     });
     await narradorPage.waitForTimeout(500); // assenta render + persistência
 
+    // Pro NARRADOR uma camada escondida fica atenuada (opacidade
+    // 0.35), nunca `display:none` — ele precisa continuar sabendo o
+    // que está lá. Procurar "none" no estilo dele era ler o efeito do
+    // jogador na tela errada.
     const estadoFinal = await narradorPage.evaluate(() => {
       const gradeOculta = document.querySelector(".rv-camada-grade")?.classList.contains("rv-camada-grade--oculta") ?? null;
       const objetosStyle = document.querySelector(".rv-camada-objetos")?.getAttribute("style") ?? null;
-      const chaveLs = Object.keys(localStorage).find((k) => k.startsWith("rv-camadas:"));
-      const valorLs = chaveLs ? JSON.parse(localStorage.getItem(chaveLs) ?? "{}") : null;
-      return { gradeOculta, objetosOculto: !!objetosStyle?.includes("none"), valorLs };
+      return { gradeOculta, objetosOculto: !!objetosStyle?.includes("0.35"), objetosStyle };
     });
+    // Espera o BANCO convergir, não um tempo fixo: a rajada vira duas
+    // idas ao servidor em série (a segunda só parte quando a primeira
+    // volta), e 500ms não cobrem as duas sob carga.
+    type CamadasJson = Record<string, { visivel?: boolean }> | null;
+    const lerCamadasDaCena = async (): Promise<CamadasJson> => {
+      const { data } = await admin.from("vtt_scenes").select("camadas").eq("id", sceneId!).single();
+      return (data?.camadas ?? null) as CamadasJson;
+    };
+    await esperarAte(async () => {
+      const c = await lerCamadasDaCena();
+      return c?.grade?.visivel === false && c?.objetos?.visivel === false;
+    }, 10000);
+    const camadasNaCena = await lerCamadasDaCena();
     const novosErros = errosNarrador.slice(antesErros);
 
     registrar(
@@ -524,9 +552,9 @@ async function main() {
       `resultadoCliques=${JSON.stringify(resultadoCliques)}, estado=${JSON.stringify(estadoFinal)}`,
     );
     registrar(
-      "strict-3 (localStorage recebeu exatamente o estado final — grade e objetos ocultos, sem escrita perdida por closure velho)",
-      estadoFinal.valorLs?.grade?.visivel === false && estadoFinal.valorLs?.objetos?.visivel === false,
-      `localStorage=${JSON.stringify(estadoFinal.valorLs)}`,
+      "strict-3 (a CENA recebeu exatamente o estado final — grade e objetos ocultos, sem escrita perdida por closure velho)",
+      camadasNaCena?.grade?.visivel === false && camadasNaCena?.objetos?.visivel === false,
+      `vtt_scenes.camadas=${JSON.stringify(camadasNaCena)}`,
     );
     registrar(
       "strict-4 (5+3 cliques intercalados sem yield: sem warning/erro no console)",

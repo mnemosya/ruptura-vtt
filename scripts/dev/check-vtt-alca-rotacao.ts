@@ -356,11 +356,15 @@ async function main() {
     await page.mouse.move(posAtual9.x, posAtual9.y, { steps: 5 }); // volta pro raio original — MESMA orientação do início ao fim
     await page.mouse.up();
     await page.waitForTimeout(500);
-    const { data: aposSoltar9 } = await admin.from("vtt_tokens").select("orientacao, revision").eq("id", tok.id).single();
+    // Colunas a mais de propósito: "a revisão subiu" não diz O QUE
+    // subiu. Se um gesto de rotação estiver na verdade sendo lido como
+    // ARRASTO do token, quem muda é q/r/offset — e o critério precisa
+    // conseguir apontar isso em vez de só acusar a revisão.
+    const { data: aposSoltar9 } = await admin.from("vtt_tokens").select("orientacao, revision, q, r, offset_q, offset_r").eq("id", tok.id).single();
     registrar(
       "9 (soltar na MESMA orientação não chama RPC nenhuma — revisão intocada)",
       aposSoltar9?.revision === revisaoAntes9 && aposSoltar9?.orientacao === orientacaoAntes9,
-      `revisão ${revisaoAntes9}→${aposSoltar9?.revision}, orientação ${orientacaoAntes9}→${aposSoltar9?.orientacao}`,
+      `revisão ${revisaoAntes9}→${aposSoltar9?.revision}, orientação ${orientacaoAntes9}→${aposSoltar9?.orientacao}, hex=(${aposSoltar9?.q},${aposSoltar9?.r}) offset=(${aposSoltar9?.offset_q},${aposSoltar9?.offset_r})`,
     );
 
     // 17: undo/redo tratam a rotação como UMA operação.

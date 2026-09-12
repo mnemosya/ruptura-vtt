@@ -25,7 +25,7 @@
  *  26-29. Edição preserva posição/orientação; redimensionar sem couber
  *         é recusado com a mensagem certa; URL de imagem perigosa é
  *         recusada; PV inválido é recusado.
- *  30-32. Foco preso no modal de configuração e restaurado ao fechar;
+ *  30-32. Foco entra na janela, sai por Tab e volta ao abridor no Esc;
  *         viewport pequena mantém os campos acessíveis; console limpo.
  *
  * Uso: npx tsx scripts/dev/check-vtt-gerenciador-token-ux.ts (servidor
@@ -135,10 +135,26 @@ async function limpar() {
   registrar("L (limpeza de fixtures)", true, `${criados.usuarios.length} usuário(s), ${criados.campanhas.length} campanha(s)`);
 }
 
-/** Abre "Adicionar token" via clique direito numa célula qualquer — a posição do clique NUNCA importa mais (a etapa de configuração não tem noção de posição). */
+/**
+ * Abre "Adicionar token" via clique direito numa célula qualquer — a
+ * posição do clique NUNCA importa (a etapa de configuração não tem
+ * noção de posição).
+ *
+ * A célula usada é resolvida por `indiceVisivel` — ver lá o porquê.
+ */
 async function abrirCriarConfigurando(page: Page, indiceCelula = 40) {
+  await garantirMapaAlcancavel(page);
   await page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
-  const box = await page.locator(".rv-camada-grade path").nth(indiceCelula).boundingBox();
+  let indice: number;
+  try {
+    indice = await indiceVisivel(page, indiceCelula);
+  } catch {
+    // Layout ainda assentando depois de uma troca de viewport — uma
+    // segunda tentativa, e só então o erro sobe de verdade.
+    await garantirMapaAlcancavel(page);
+    indice = await indiceVisivel(page, indiceCelula);
+  }
+  const box = await celulaBox(page, indice);
   await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2, { button: "right" });
   await page.locator(".rv-menu-item", { hasText: "Adicionar token" }).click();
   await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
@@ -160,9 +176,71 @@ async function celulaBox(page: Page, indice: number) {
   return page.locator(".rv-camada-grade path").nth(indice).boundingBox();
 }
 
+/**
+ * Primeiro índice, a partir do pedido, cuja célula tem o CENTRO dentro
+ * do palco.
+ *
+ * Os critérios 24/25 deixam a câmera panejada e com zoom, e nunca a
+ * devolvem — depois deles vários índices fixos usados por esta suíte
+ * caem fora do mapa (a célula 200 ficava com o centro em x≈57,1 e o
+ * palco começa em x=58). Clicar ali acerta a barra de ferramentas, o
+ * menu não abre e o fantasma não se move: uma falha INTERMITENTE
+ * decidida por um pixel, sem relação com o que cada critério quer
+ * provar. Resolver o índice pela geometria REAL elimina o
+ * cara-ou-coroa sem enfraquecer nenhuma checagem.
+ */
+async function indiceVisivel(page: Page, indice: number): Promise<number> {
+  const celulas = page.locator(".rv-camada-grade path");
+  const total = await celulas.count();
+  for (let i = 0; i < total; i++) {
+    const candidato = (indice + i) % total;
+    const box = await celulas.nth(candidato).boundingBox();
+    if (!box) continue;
+    // Hit-test de verdade: a célula precisa ser o que o cursor ACERTA
+    // naquele ponto. Só checar "está dentro do palco" não bastava —
+    // a barra de ferramentas e o painel ficam POR CIMA das bordas, e
+    // um clique ali nunca chega ao mapa.
+    const alcancavel = await page.evaluate(
+      ([x, y]) => {
+        const el = document.elementFromPoint(x as number, y as number);
+        return !!el && !!el.closest("svg.rv-mapa");
+      },
+      [box.x + box.width / 2, box.y + box.height / 2],
+    );
+    if (alcancavel) return candidato;
+  }
+  throw new Error("nenhuma célula do mapa está alcançável pelo cursor");
+}
+
+/**
+ * No breakpoint estreito o painel da Mesa vira um drawer flutuante
+ * que pode cobrir o mapa inteiro (viewport de 380px do critério 31).
+ * Recolhê-lo é o que uma pessoa faria pra alcançar o mapa — e é o que
+ * esta suíte precisa antes de clicar numa célula.
+ *
+ * Usa o BOTÃO DE RECOLHER, não um clique na aba ativa: clicar de novo
+ * na aba já selecionada passou a ser INERTE de propósito (fechava o
+ * painel por acidente e derrubava scroll, busca e rascunho), e o
+ * recolhimento tem controles próprios — o botão, o × do drawer e o Esc.
+ */
+async function garantirMapaAlcancavel(page: Page) {
+  // `setViewportSize` e o `matchMedia` do painel não são síncronos
+  // entre si — sem esta folga o atributo lido abaixo ainda é o do
+  // breakpoint anterior.
+  await page.waitForTimeout(350);
+  const drawerAberto = await page.evaluate(() => {
+    const p = document.querySelector(".rv-painel");
+    return p?.getAttribute("data-drawer") === "true" && p?.getAttribute("data-aberto") === "true";
+  });
+  if (!drawerAberto) return;
+  const recolher = page.locator('[data-testid="painel-recolher"]');
+  if (await recolher.count()) await recolher.first().click();
+  await page.waitForTimeout(300);
+}
+
 /** Move o mouse pra uma célula (hover, sem clicar) e espera o fantasma refletir. */
 async function moverParaCelula(page: Page, indice: number) {
-  const box = await celulaBox(page, indice);
+  const box = await celulaBox(page, await indiceVisivel(page, indice));
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2, { steps: 3 });
   await page.waitForTimeout(120);
   return box!;
@@ -181,7 +259,10 @@ async function esperarAte(condicao: () => Promise<boolean>, timeoutMs = 5000, pa
 
 async function encontrarCelulaValida(page: Page, indiceInicial: number, passo = 41): Promise<number> {
   for (let i = 0; i < 8; i++) {
-    const indice = indiceInicial + i * passo;
+    // Resolve o índice VISÍVEL e devolve esse — quem chama usa o
+    // retorno pra clicar, então os dois passos precisam olhar pra
+    // mesma célula.
+    const indice = await indiceVisivel(page, indiceInicial + i * passo);
     await moverParaCelula(page, indice);
     const valida = await page.locator(".rv-camada-posicionamento-token").getAttribute("data-valida").catch(() => null);
     if (valida === "true") return indice;
@@ -247,7 +328,7 @@ async function main() {
   // --- 7: "Mais opções" começa fechada (modo criar) ---
   {
     const aberto = await page.locator(".rv-gerenciador-token details.rv-mais-opcoes").getAttribute("open");
-    registrar('7 ("Mais opções" começa fechado)', aberto === null, `open=${aberto}`);
+    registrar('7 ("Identidade ampliada" começa fechada)', aberto === null, `open=${aberto}`);
   }
 
   // --- 8: tamanho mostra quantidade correta de hexes ---
@@ -350,11 +431,19 @@ async function main() {
     const nomeAutomatico = criadosAutomaticos?.[0]?.nome ?? "";
     registrar("nome-ui-4 (servidor gerou um nome '#N' de verdade pro token criado sem nome)", /^#\d+$/.test(nomeAutomatico), `nome="${nomeAutomatico}"`);
 
-    // O painel de Personagens (narrador) mostra o nome DEFINITIVO devolvido pelo servidor — nunca vazio, nunca um placeholder do cliente.
-    await page.locator('.rv-aba[aria-label="Personagens"]').click();
-    const nomeNoPainel = await page.locator(".rv-painel-corpo .rv-lista-item strong", { hasText: nomeAutomatico }).count();
-    registrar("nome-ui-5 (painel de Personagens mostra o nome automático definitivo devolvido pela RPC)", nomeNoPainel === 1, `encontrado=${nomeNoPainel === 1}`);
-    await page.locator('.rv-aba[aria-label="Personagens"]').click();
+    // A interface mostra o nome DEFINITIVO devolvido pelo servidor —
+    // nunca vazio, nunca um placeholder do cliente. O alvo desta
+    // checagem mudou de lugar quando a aba Personagens virou um
+    // DIRETÓRIO de documentos persistentes (ela não lista mais tokens
+    // da cena, de propósito): quem mostra o nome do token selecionado
+    // agora é o HUD da seleção, que a criação já deixa selecionado
+    // (critério 22, acima).
+    const nomeNoHud = (await page.locator(".rv-hud-namebar strong").first().textContent().catch(() => null)) ?? "";
+    registrar(
+      "nome-ui-5 (HUD do token selecionado mostra o nome automático definitivo devolvido pela RPC)",
+      nomeNoHud.trim() === nomeAutomatico,
+      `hud="${nomeNoHud.trim()}", esperado="${nomeAutomatico}"`,
+    );
   }
 
   // --- 16: posição inválida não chama RPC ---
@@ -688,7 +777,7 @@ async function main() {
     await page.locator(`.rv-token[data-token-id="${tokenEditarId}"]`).click({ button: "right" });
     await page.locator(".rv-menu-item", { hasText: "Editar" }).click();
     await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
-    await page.locator("summary", { hasText: "Mais opções" }).click();
+    await page.locator("summary", { hasText: "Identidade ampliada" }).click();
     const imagemInput = page.locator('.rv-gerenciador-token label:has-text("Imagem do token") input');
     await imagemInput.fill("javascript:alert(1)");
     const avisoPerigosa = await page.locator(".rv-gerenciador-token .rv-form-aviso", { hasText: "http" }).count();
@@ -711,7 +800,16 @@ async function main() {
     await pvMax.fill("");
   }
 
-  // --- 30: foco preso no modal de configuração e restaurado ao fechar ---
+  // --- 30: foco entra na janela, NÃO fica preso, e volta ao abridor ---
+  //
+  // A janela de token é FLUTUANTE, não modal — a decisão está escrita
+  // no próprio componente ("Tab precisa poder sair dela livremente pro
+  // trilho/mapa por trás"). Então o que se prova aqui é o trio que essa
+  // decisão exige: (a) o foco ENTRA na janela ao abrir, senão quem usa
+  // teclado tem que caçar o primeiro campo; (b) o foco SAI por Tab, em
+  // vez de girar em círculo; (c) ao fechar com Esc, volta pro botão que
+  // abriu. Este critério já cobrou "foco preso" um dia — cobrava o
+  // oposto do desenho atual.
   {
     page.once("dialog", (d) => d.accept());
     await page.keyboard.press("Escape");
@@ -722,21 +820,21 @@ async function main() {
     await botaoAbrir.click();
     await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
     await page.waitForTimeout(150);
-    const focoInicialNoPrimeiroCampo = await page.evaluate(() => document.activeElement?.tagName === "INPUT");
-    let voltouAoComeco = false;
-    for (let i = 0; i < 40; i++) {
+    const focoInicialNoPrimeiroCampo = await page.evaluate(() =>
+      document.activeElement === document.querySelector(".rv-gerenciador-token input[type=text]"));
+    let saiuPorTab = false;
+    for (let i = 0; i < 60; i++) {
       await page.keyboard.press("Tab");
-      const dentroDoModal = await page.evaluate(() => !!document.activeElement?.closest(".rv-gerenciador-token"));
-      if (!dentroDoModal) break;
-      const ehPrimeiro = await page.evaluate(() => document.activeElement === document.querySelector(".rv-gerenciador-token input[type=text]"));
-      if (ehPrimeiro && i > 3) { voltouAoComeco = true; break; }
+      const dentro = await page.evaluate(() => !!document.activeElement?.closest(".rv-gerenciador-token"));
+      if (!dentro) { saiuPorTab = true; break; }
     }
-    const focoTrap = focoInicialNoPrimeiroCampo && voltouAoComeco;
 
     await page.keyboard.press("Escape");
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 });
     const focoRestaurado = await page.evaluate(() => document.activeElement?.getAttribute("aria-label") === "Adicionar token");
-    registrar("30 (foco preso no modal e restaurado pro botão que abriu, ao fechar com Esc)", focoTrap && focoRestaurado, `focoInicial=${focoInicialNoPrimeiroCampo}, focoPreso=${voltouAoComeco}, focoRestaurado=${focoRestaurado}`);
+    registrar("30 (foco entra na janela ao abrir, sai por Tab e volta pro botão que abriu no Esc)",
+      focoInicialNoPrimeiroCampo && saiuPorTab && focoRestaurado,
+      `focoInicial=${focoInicialNoPrimeiroCampo}, saiuPorTab=${saiuPorTab}, focoRestaurado=${focoRestaurado}`);
   }
 
   // --- 31: viewport pequena mantém campos acessíveis ---

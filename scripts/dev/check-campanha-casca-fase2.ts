@@ -5,7 +5,7 @@
  *
  * O que se verifica:
  *   1. A casca HUD existe de verdade: raiz, atmosfera (fundo/grade/
- *      vinheta/scanlines/cantos), decoração de painel e cursor HUD.
+ *      vinheta/cantos), decoração de painel e cursor HUD.
  *   2. O trilho lista os oito destinos + volta, com `aria-current="page"`
  *      no ativo e NENHUM `aria-selected` — são rotas, não abas (a
  *      aparência vem de `.rc-tabrail` do Console, a semântica não).
@@ -101,12 +101,13 @@ async function main() {
         bg: !!document.querySelector(".rm-bg-img"),
         grid: !!document.querySelector(".rm-bg-grid"),
         vinheta: !!document.querySelector(".rm-bg-vignette"),
-        scanlines: !!document.querySelector(".rm-scanlines"),
         cantos: document.querySelectorAll(".rm-vp-corner").length,
         deco: !!document.querySelector(".rm-deco-top .rm-deco-a") && !!document.querySelector(".rm-deco-top .rm-deco-b"),
         cursor: !!document.querySelector(".ra-cursor-dot") && !!document.querySelector(".ra-cursor-ring"),
       }));
-      const ok = c.root && c.bg && c.grid && c.vinheta && c.scanlines && c.cantos === 4 && c.deco && c.cursor;
+      // Sem `scanlines`: o campo de listras horizontais foi removido da
+      // atmosfera dos três níveis (global, campanha, acesso).
+      const ok = c.root && c.bg && c.grid && c.vinheta && c.cantos === 4 && c.deco && c.cursor;
       registrar("1 (casca HUD completa)", ok, JSON.stringify(c));
     }
 

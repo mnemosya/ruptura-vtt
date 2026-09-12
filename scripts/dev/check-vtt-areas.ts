@@ -99,7 +99,13 @@ async function configurarFixture(): Promise<void> {
   if (e2) throw new Error(`Falha ao adicionar jogador: ${e2.message}`);
 }
 
-async function contextoDe(email: string, senha: string, viewport = { width: 1440, height: 950 }): Promise<{ context: BrowserContext; page: Page; close: () => Promise<void>; erros: string[] }> {
+// 1760×1000, com o painel de sessão RECOLHIDO logo no começo de
+// `main`. As janelas de ferramenta passaram de 320 pra 400px e o palco
+// perde ainda a barra à esquerda; em 1440 metade das células deste
+// teste caía embaixo da janela de Áreas. Este teste é sobre a
+// GEOMETRIA das áreas, não sobre tela apertada — o critério 16, esse
+// sim, cria a própria viewport pequena, de propósito.
+async function contextoDe(email: string, senha: string, viewport = { width: 1760, height: 1000 }): Promise<{ context: BrowserContext; page: Page; close: () => Promise<void>; erros: string[] }> {
   const anon = createClient(supabaseUrl, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data, error } = await anon.auth.signInWithPassword({ email, password: senha });
   if (error || !data.session) throw new Error(`Falha ao logar ${email}: ${error?.message}`);
@@ -142,23 +148,76 @@ async function limpar() {
  * falha por um motivo que não tem nada a ver com a regra sendo testada;
  * melhor estourar aqui, com a coordenada no erro.
  */
+/**
+ * Ponto de tela de uma célula, GARANTIDAMENTE clicável.
+ *
+ * As janelas de ferramenta abrem encostadas na barra e cobrem a faixa
+ * esquerda do mapa. Quando a célula pedida cai embaixo de uma delas,
+ * esta função faz o que um usuário faria: empurra o mapa com o botão
+ * direito e procura de novo. Antes ela só reprovava — o que amarrava o
+ * teste à LARGURA da janela, e quebrou quando ela passou de 320 pra
+ * 400px.
+ *
+ * O que NÃO mudou: continua recusando entregar um ponto coberto. Se
+ * nem depois de empurrar a célula ficar livre, é erro de verdade.
+ */
 async function celula(page: Page, col: number, row: number): Promise<{ x: number; y: number }> {
   const largura = await page.locator(".rv-mapa").getAttribute("aria-label").then((r) => Number(/de (\d+) por/.exec(r ?? "")?.[1] ?? 26));
-  const caixa = await page.locator(".rv-camada-grade path").nth(row * largura + col).boundingBox();
-  if (!caixa) throw new Error(`Célula (${col},${row}) sem caixa`);
-  const ponto = { x: caixa.x + caixa.width / 2, y: caixa.y + caixa.height / 2 };
-  const livre = await page.evaluate(({ x, y }) => {
-    const el = document.elementFromPoint(x, y);
-    return !!el && !!el.closest("svg.rv-mapa");
-  }, ponto);
-  if (!livre) {
+  let ultimoQuem = "nada";
+  let ultimoPonto: { x: number; y: number } | null = null;
+
+  for (let tentativa = 0; tentativa < 4; tentativa++) {
+    const caixa = await page.locator(".rv-camada-grade path").nth(row * largura + col).boundingBox();
+    if (!caixa) throw new Error(`Célula (${col},${row}) sem caixa`);
+    const ponto = { x: caixa.x + caixa.width / 2, y: caixa.y + caixa.height / 2 };
+    ultimoPonto = ponto;
     const quem = await page.evaluate(({ x, y }) => {
-      const e = document.elementFromPoint(x, y) as Element | null;
-      return e ? `${e.tagName}.${e.getAttribute("class") ?? ""}` : "nada";
+      const el = document.elementFromPoint(x, y) as Element | null;
+      if (el && el.closest("svg.rv-mapa")) return null;
+      return el ? `${el.tagName}.${el.getAttribute("class") ?? ""}` : "nada";
     }, ponto);
-    throw new Error(`Célula (${col},${row}) está coberta por ${quem} em ${JSON.stringify(ponto)}`);
+    if (quem === null) return ponto;
+    ultimoQuem = quem;
+
+    // Quanto falta pra célula sair de baixo da janela (ou voltar pra
+    // dentro da tela). Calculado, nunca um passo fixo: passo fixo ou
+    // não chega ou passa direto, e as duas coisas aconteceram aqui.
+    const palco = await page.locator(".rv-palco").boundingBox();
+    if (!palco) break;
+    const zonaLivre = { esquerda: palco.x + 500, direita: palco.x + palco.width - 60 };
+    const alvoX = ponto.x < zonaLivre.esquerda ? zonaLivre.esquerda + 60
+      : ponto.x > zonaLivre.direita ? zonaLivre.direita - 60
+      : ponto.x;
+    const deslocamento = alvoX - ponto.x;
+    if (deslocamento === 0) break;
+    await empurrarMapa(page, deslocamento);
   }
-  return ponto;
+  throw new Error(`Célula (${col},${row}) segue coberta por ${ultimoQuem} em ${JSON.stringify(ultimoPonto)} mesmo após empurrar o mapa`);
+}
+
+/**
+ * Pan com o botão direito, por um deslocamento EXATO.
+ *
+ * O gesto começa num ponto do mapa que esteja livre e cabe na janela
+ * junto com o deslocamento pedido — arrastar a partir de cima da
+ * própria janela de ferramenta não panoramiza nada.
+ */
+async function empurrarMapa(page: Page, deslocamento: number) {
+  const palco = await page.locator(".rv-palco").boundingBox();
+  if (!palco) return;
+  const minimo = palco.x + 500;
+  const maximo = palco.x + palco.width - 40;
+  const inicio = deslocamento > 0
+    ? Math.max(minimo, Math.min(maximo - deslocamento, maximo - 40))
+    : Math.min(maximo, Math.max(minimo - deslocamento, minimo + 40));
+  const fim = inicio + deslocamento;
+  if (fim < minimo - 400 || fim > maximo + 400) return;
+  const y = palco.y + palco.height / 2;
+  await page.mouse.move(inicio, y);
+  await page.mouse.down({ button: "right" });
+  await page.mouse.move(fim, y, { steps: 10 });
+  await page.mouse.up({ button: "right" });
+  await page.waitForTimeout(150);
 }
 
 /** Arraste REAL de mouse (down → vários move → up) — nunca eventos sintéticos. */
@@ -210,6 +269,29 @@ async function areaDoBanco(tipo: string) {
   return data as Record<string, unknown> | null;
 }
 
+/**
+ * Espera o BANCO refletir a mudança antes de afirmar sobre ela.
+ *
+ * Um clique no painel dispara uma server action; ler a linha logo
+ * depois de um `waitForTimeout` fixo é corrida, e ela reprova de forma
+ * intermitente sob carga. Espera CONDIÇÃO, e devolve a última leitura
+ * de qualquer jeito pra que a falha mostre o que o banco tinha.
+ */
+async function esperarArea(
+  tipo: string,
+  condicao: (linha: Record<string, unknown> | null) => boolean,
+  timeoutMs = 8000,
+): Promise<Record<string, unknown> | null> {
+  const limite = Date.now() + timeoutMs;
+  let ultima: Record<string, unknown> | null = null;
+  for (;;) {
+    ultima = await areaDoBanco(tipo);
+    if (condicao(ultima)) return ultima;
+    if (Date.now() > limite) return ultima;
+    await new Promise((r) => setTimeout(r, 150));
+  }
+}
+
 async function main() {
   await configurarFixture();
   registrar("0 (fixture: campanha + narrador + jogador)", true, `campanha=${campaignId}`);
@@ -218,6 +300,45 @@ async function main() {
   await narrador.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
   await narrador.page.waitForSelector(".rv-ferramentas", { timeout: 20000 });
   const P = narrador.page;
+
+  // Um token na cena — a Aura precisa de UMA origem pra existir.
+  //
+  // Isto vinha do elenco de exemplo da cena semente, que deixou de
+  // existir (`garantirCenaSemente`: cena EM BRANCO, o narrador povoa
+  // com as ferramentas reais). O teste passou a depender de um dado que
+  // o produto não produz mais, então cria o seu.
+  {
+    const { data: cena } = await admin.from("vtt_scenes").select("id").eq("campaign_id", campaignId).limit(1).maybeSingle();
+    if (cena?.id) {
+      await admin.from("vtt_tokens").insert({
+        campaign_id: campaignId, scene_id: cena.id, nome: "Origem da Aura", sigla: "OA",
+        lado: "pj", vertente: "nenhuma", q: 6, r: 6, tamanho: "medio", orientacao: 0,
+      });
+      // E um OBJETO — os critérios de interação com cobertura precisam
+      // de um `.rv-objeto` no mapa, que também vinha da cena de exemplo.
+      const objetoId = randomUUID();
+      await admin.from("vtt_objects").insert({
+        id: objetoId, scene_id: cena.id, campaign_id: campaignId,
+        nome: "Muro de teste", preset: "muro",
+        // `pd` e `pd_max` andam juntos (constraint `vtt_objects_pd_coerente`).
+        bloqueia_movimento: true, grau_cobertura: "maior", categoria: "resistente", pd: 20, pd_max: 20,
+      });
+      await admin.from("vtt_object_cells").insert([
+        { object_id: objetoId, scene_id: cena.id, q: 10, r: 6 },
+        { object_id: objetoId, scene_id: cena.id, q: 11, r: 6 },
+      ]);
+
+      await P.reload({ waitUntil: "networkidle" });
+      await P.waitForSelector(".rv-ferramentas", { timeout: 20000 });
+    }
+  }
+
+  // Fecha o painel de sessão: ele ocupa a faixa direita e as ações
+  // flutuantes de uma área criada perto dessa borda ficam por baixo
+  // dele. É o que um narrador faz pra ter mapa inteiro, e o painel
+  // volta com um clique.
+  await P.locator('[data-testid="painel-recolher"]').click();
+  await P.waitForSelector('[data-testid="painel-vtt"][data-aberto="false"]', { timeout: 5000 });
 
   // ── 1. Autorização ──────────────────────────────────────────────
   {
@@ -342,7 +463,12 @@ async function main() {
   {
     await escolherTipo(P, "cubo");
     await arrastar(P, await celula(P, 17, 8), await celula(P, 22, 8));
-    const infoAltura = await P.locator('[data-testid="area-info-altura-cubo"]').textContent();
+    // A altura derivada deixou de ser uma LINHA à parte ("Altura 5 m")
+    // e virou a linha de apoio do campo de tamanho: "Lado" + "Altura"
+    // separados faziam parecer duas medidas independentes quando são a
+    // mesma aresta. A regra não mudou — só onde ela é dita.
+    const infoAltura = await P.locator('[data-testid="area-campo-lado"]')
+      .locator("xpath=ancestor::label[1]").locator(".rv-area-campo-apoio").textContent();
     await manterNaMesa(P);
     const linha = await areaDoBanco("cubo");
     registrar("2f/10 (Cubo com lado, orientação livre e altura igual ao lado)",
@@ -351,8 +477,8 @@ async function main() {
     // Rodada de correção de UX: a frase editorial ("regra do formato")
     // foi removida — o painel mostra só rótulo + valor derivado, sem
     // reexplicar a regra por extenso.
-    registrar("10b (a interface mostra a altura derivada, sem frase editorial explicando a regra)",
-      !!infoAltura && infoAltura.includes("Altura") && infoAltura.includes("m") && !infoAltura.toLowerCase().includes("regra"),
+    registrar("10b (o campo de tamanho diz que a medida vale também pra altura)",
+      !!infoAltura && /altura/i.test(infoAltura) && /largura/i.test(infoAltura),
       infoAltura ?? "");
   }
 
@@ -602,8 +728,7 @@ async function main() {
     registrar("14d (Esc durante a edição descarta a alteração sem tocar o banco)", Number(semSalvar!.largura_m) === 5, `largura no banco = ${semSalvar!.largura_m} m`);
 
     await P.locator(`[data-testid="area-visibilidade-${id}"]`).click();
-    await P.waitForTimeout(700);
-    const oculta = await areaDoBanco("faixa");
+    const oculta = await esperarArea("faixa", (l) => l?.visivel === false);
     registrar("14e (ocultar dos jogadores persiste)", oculta!.visivel === false, `visivel=${oculta!.visivel}`);
 
     const antesDup = await contarAreasNoBanco();
@@ -876,13 +1001,36 @@ async function main() {
     // painel — determinístico, em vez de depender de onde a cena de
     // demonstração deixou os tokens (que podem cair sob a janela).
     const { data: tokenUmHex } = await admin.from("vtt_tokens")
-      .select("id,revision").eq("campaign_id", campaignId).in("tamanho", ["pequeno", "medio"]).limit(1).maybeSingle();
-    const COL_LIVRE = 20, ROW_LIVRE = 8;
+      .select("id,revision,sigla").eq("campaign_id", campaignId).in("tamanho", ["pequeno", "medio"]).limit(1).maybeSingle();
+    // Dentro do mapa: a cena semente tem 20 colunas (0..19), e o 20 de
+    // antes vinha da cena de demonstração, que tinha 26. Fora de faixa,
+    // `celula()` pegava o `<path>` de índice equivalente na fileira
+    // SEGUINTE — o teste desenhava num lugar e movia o token pra outro.
+    const COL_LIVRE = 14, ROW_LIVRE = 8;
     await admin.from("vtt_tokens")
       .update({ q: COL_LIVRE - Math.floor(ROW_LIVRE / 2), r: ROW_LIVRE, revision: (tokenUmHex!.revision as number) + 1 })
       .eq("id", tokenUmHex!.id as string);
-    await P.waitForTimeout(1500); // Realtime entrega a posição nova
-    const centroToken = await celula(P, COL_LIVRE, ROW_LIVRE);
+
+    // Espera o token CHEGAR na célula, em vez de torcer por um tempo
+    // fixo. Este é o caminho lento do Realtime — escrita direta no
+    // banco, sem o broadcast do próprio app: medido em ~1,75 s até o
+    // token começar a se mover, mais a animação. O 1,5 s de antes ficava
+    // logo abaixo disso, e o teste reprovava desenhando longe de um
+    // token que ainda não tinha saído do lugar.
+    const siglaToken = tokenUmHex!.sigla as string;
+    let centroToken = await celula(P, COL_LIVRE, ROW_LIVRE);
+    for (let i = 0; i < 60; i++) {
+      centroToken = await celula(P, COL_LIVRE, ROW_LIVRE);
+      const chegou = await P.evaluate(({ sigla, alvo }) => {
+        const el = Array.from(document.querySelectorAll(".rv-camada-tokens .rv-token text.rv-token-sigla"))
+          .find((e) => e.textContent === sigla)?.closest("g");
+        const r = el?.getBoundingClientRect();
+        if (!r) return false;
+        return Math.hypot(r.x + r.width / 2 - alvo.x, r.y + r.height / 2 - alvo.y) < 24;
+      }, { sigla: siglaToken, alvo: centroToken });
+      if (chegou) break;
+      await P.waitForTimeout(200);
+    }
     await P.mouse.move(centroToken.x + 3, centroToken.y + 3);
     await P.mouse.down();
     await P.mouse.move(centroToken.x + 120, centroToken.y, { steps: 8 });
@@ -1206,7 +1354,11 @@ async function main() {
     await manterNaMesa(P);
     await P.locator('[data-testid="area-recolher"]').click();
     await P.waitForTimeout(150);
-    const recolhidaAntes = await P.locator('[data-testid="painel-areas"]').evaluate((el) => el.className.includes("recolhido"));
+    // A classe é `rv-fp--recolhida` (feminino, da casca comum
+    // `JanelaFerramenta`). O teste procurava "recolhido" — string que
+    // nunca existiu nesse elemento — então dava recolhido=false
+    // independentemente do estado real da janela.
+    const recolhidaAntes = await P.locator('[data-testid="painel-areas"]').evaluate((el) => el.className.includes("rv-fp--recolhida"));
     registrar("29a (janela recolhida antes do teste)", recolhidaAntes, `recolhido=${recolhidaAntes}`);
 
     // Atalho de edição rápida no mapa: entra em edição sem reabrir a
@@ -1217,7 +1369,7 @@ async function main() {
     await P.waitForSelector('[data-testid="area-editar-rapido"]', { timeout: 4000 });
     await P.locator('[data-testid="area-editar-rapido"]').first().click();
     await P.waitForFunction(() => document.querySelector('[data-testid="painel-areas"]')?.getAttribute("data-fase") === "editando", null, { timeout: 6000 });
-    const recolhidaDepois = await P.locator('[data-testid="painel-areas"]').evaluate((el) => el.className.includes("recolhido"));
+    const recolhidaDepois = await P.locator('[data-testid="painel-areas"]').evaluate((el) => el.className.includes("rv-fp--recolhida"));
     registrar("29b (editar pelo atalho do mapa NÃO reabre a janela recolhida)", recolhidaDepois, `recolhido=${recolhidaDepois}`);
     // Mesmo recolhida, a edição continua alcançável no mapa (alças + botões flutuantes).
     const alcasComJanelaRecolhida = await P.locator(".rv-area-alca").count();

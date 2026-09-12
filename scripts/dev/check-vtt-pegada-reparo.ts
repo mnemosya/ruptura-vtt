@@ -85,6 +85,9 @@ let campaignId: string | null = null;
 let narradorEmail: string | null = null;
 let narradorSenha: string | null = null;
 
+/** Largura da cena da fixture — `boxDaCelula` converte hex→índice do DOM com ela, então as duas TÊM que ser o mesmo número. */
+const LARGURA_CENA = 26;
+
 async function configurarFixture(): Promise<{ narradorId: string }> {
   const email = `check-vtt-pegrep-narrador-${Date.now()}@ruptura.dev`;
   const senha = randomUUID();
@@ -97,6 +100,27 @@ async function configurarFixture(): Promise<{ narradorId: string }> {
   const { error: e1 } = await admin.from("campaigns").insert({ id: campaignId, name: "VTT Reparo Pegada", owner_id: data.user.id });
   if (e1) throw new Error(`Falha ao criar campanha: ${e1.message}`);
   criados.campanhas.push(campaignId);
+
+  // Cena e elenco PRÓPRIOS. Esta suíte nasceu apoiada no elenco da cena
+  // de demonstração — que deixou de existir — e por isso parava logo no
+  // critério 0. O que ela prova continua valendo e não depende de demo
+  // nenhuma: renderização e pathfinding seguem o `tamanho` do BANCO,
+  // nunca um palpite do cliente. CB nasce Grande e B1 Médio; cada
+  // cenário inverte o do banco e confere quem o cliente obedece.
+  const { data: cena, error: e2 } = await admin.from("vtt_scenes")
+    .insert({ campaign_id: campaignId, nome: "Cena Reparo Pegada", largura: LARGURA_CENA, altura: 20 })
+    .select("id").single();
+  if (e2) throw new Error(`Falha ao criar cena: ${e2.message}`);
+  const { error: e3 } = await admin.from("vtt_tokens").insert([
+    // Perto do CENTRO do mapa de propósito: a barra de ferramentas
+    // (esquerda), a janela que ela abre e o painel da sessão (direita)
+    // cobrem as bordas, e um arrasto que começa debaixo deles nunca
+    // chega ao mapa.
+    { scene_id: cena!.id, campaign_id: campaignId, nome: "Colosso", sigla: "CB", lado: "pn", tamanho: "grande", orientacao: 0, q: 11, r: 8, visivel: true },
+    { scene_id: cena!.id, campaign_id: campaignId, nome: "Bando 1", sigla: "B1", lado: "pn", tamanho: "medio", orientacao: 0, q: 12, r: 13, visivel: true },
+  ]);
+  if (e3) throw new Error(`Falha ao criar tokens: ${e3.message}`);
+
   return { narradorId: data.user.id };
 }
 
@@ -129,7 +153,6 @@ async function limpar() {
   registrar("L (limpeza de fixtures)", true, `${criados.usuarios.length} usuário(s), ${criados.campanhas.length} campanha(s)`);
 }
 
-const LARGURA_CENA = 26;
 async function boxDaCelula(page: Page, hex: { q: number; r: number }): Promise<{ x: number; y: number } | null> {
   const qRaw = hex.q + Math.floor(hex.r / 2);
   const indice = hex.r * LARGURA_CENA + qRaw;
@@ -282,7 +305,12 @@ async function main() {
       await page.mouse.down();
       await page.mouse.move(destinoBox.x, destinoBox.y, { steps: 10 });
       await page.mouse.up();
-      await page.waitForTimeout(700);
+      // Espera o BANCO, não um relógio: a gravação é uma ida ao
+      // servidor e 700ms fixos não a cobrem sob carga.
+      await esperarAte(async () => {
+        const { data } = await admin.from("vtt_tokens").select("q,r").eq("id", cbAntes.id).maybeSingle();
+        return data?.q === destino.q && data?.r === destino.r;
+      }, 8000);
     }
     const { data: cbDepois } = await admin.from("vtt_tokens").select("q,r").eq("id", cbAntes.id).maybeSingle();
     registrar("T1b (pathfinding usa Médio: move mesmo com bloqueio que só afetaria a 2ª célula de um Grande)", cbDepois?.q === destino.q && cbDepois?.r === destino.r, `posição final=(${cbDepois?.q},${cbDepois?.r}), esperado=(${destino.q},${destino.r})`);
@@ -337,7 +365,10 @@ async function main() {
       linhasAmbar = await page.locator(".rv-camada-rota-preview line[stroke='#ff9d4d']").count();
       destaquesCelula = await page.locator(".rv-camada-rota-preview path[stroke='#ff9d4d']").count();
       await page.mouse.up();
-      await page.waitForTimeout(700);
+      await esperarAte(async () => {
+        const { data } = await admin.from("vtt_tokens").select("q,r").eq("id", b1Antes.id).maybeSingle();
+        return data?.q === destino.q && data?.r === destino.r;
+      }, 8000);
     }
     const { data: b1Depois } = await admin.from("vtt_tokens").select("q,r").eq("id", b1Antes.id).maybeSingle();
     registrar(
@@ -358,11 +389,25 @@ async function main() {
   await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
   await page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
 
+  /**
+   * Seleciona CB e deixa o FOCO na alça de rotação.
+   *
+   * O HUD de rotação (`.rv-hud-rotacao`) que esta suíte clicava não
+   * existe mais: girar é a ALÇA no mapa (ponteiro ou teclado) e o item
+   * do menu de contexto. A alça com foco é a porta mais direta — mesmo
+   * caminho que `check-vtt-alca-rotacao.ts` exercita.
+   */
   async function selecionarCB() {
     const box = await boxDoToken(page, "CB");
     if (!box) throw new Error("CB fora de tela");
     await page.mouse.click(box.x, box.y);
-    await page.waitForSelector('.rv-hud-rotacao button[aria-label="Rotacionar à direita"]', { timeout: 5000 });
+    await page.waitForSelector(".rv-token-alca-rotacao-toque", { timeout: 5000 });
+    await page.locator(".rv-token-alca-rotacao-toque").first().focus();
+  }
+  /** Um passo de 60° no sentido horário, pela alça focada. */
+  async function girarDireita() {
+    await page.locator(".rv-token-alca-rotacao-toque").first().focus();
+    await page.keyboard.press("ArrowRight");
   }
 
   const SELETOR_DESFAZER = '.rv-ferr-btn[aria-label="Desfazer (Ctrl+Z)"]';
@@ -404,7 +449,7 @@ async function main() {
     await selecionarCB();
     const { data: antes } = await admin.from("vtt_tokens").select("orientacao,revision").eq("id", cbAntes.id).single();
     const desfazerAntes = await page.locator(SELETOR_DESFAZER).isDisabled();
-    await page.locator('.rv-hud-rotacao button[aria-label="Rotacionar à direita"]').click();
+    await girarDireita();
     const habilitouATempo = await esperarDesfazer(true);
     const { data: depois } = await admin.from("vtt_tokens").select("orientacao,revision").eq("id", cbAntes.id).single();
     const desfazerDepois = await page.locator(SELETOR_DESFAZER).isDisabled();
@@ -416,7 +461,9 @@ async function main() {
     // — a prova real é a revisão do BANCO mudar, então espera essa,
     // não o botão.
     await page.locator(SELETOR_DESFAZER).click();
-    const aposDesfazer = await esperarRevisao(cbAntes.id, depois!.revision);
+    // 4s (o padrão) é apertado pra desfazer: é mais uma ida ao
+    // servidor, logo depois de outra, e sob carga a janela estoura.
+    const aposDesfazer = await esperarRevisao(cbAntes.id, depois!.revision, 12000);
     registrar("R1c (desfazer volta a orientação exata anterior, com nova revisão no banco)", aposDesfazer?.orientacao === antes!.orientacao && !!aposDesfazer && aposDesfazer.revision > depois!.revision, `depois de desfazer=${JSON.stringify(aposDesfazer)}`);
   }
 
@@ -431,7 +478,7 @@ async function main() {
     await selecionarCB();
     const { data: antes } = await admin.from("vtt_tokens").select("orientacao,revision").eq("id", cbAntes.id).single();
     const desfazerAntes = await page.locator(SELETOR_DESFAZER).isDisabled();
-    await page.locator('.rv-hud-rotacao button[aria-label="Rotacionar à direita"]').click();
+    await girarDireita();
     // Recusa esperada — não há estado positivo pra esperar (o botão
     // continua desabilitado o tempo todo), então espera o round-trip
     // de rede assentar em vez de um timeout arbitrário.
@@ -455,7 +502,7 @@ async function main() {
     // passar pela UI, exatamente o cenário que a checagem de revisão
     // esperada existe pra pegar.
     await admin.from("vtt_tokens").update({ revision: antes!.revision + 1 }).eq("id", cbAntes.id);
-    await page.locator('.rv-hud-rotacao button[aria-label="Rotacionar à direita"]').click();
+    await girarDireita();
     await page.waitForLoadState("networkidle", { timeout: 3000 }).catch(() => {});
     const { data: depois } = await admin.from("vtt_tokens").select("orientacao,revision").eq("id", cbAntes.id).single();
     const desfazerDepois = await page.locator(SELETOR_DESFAZER).isDisabled();
@@ -471,12 +518,39 @@ async function main() {
     await page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
     await selecionarCB();
     const { data: antes } = await admin.from("vtt_tokens").select("orientacao,revision").eq("id", cbAntes.id).single();
-    const botao = page.locator('.rv-hud-rotacao button[aria-label="Rotacionar à direita"]');
-    await Promise.all([botao.click(), botao.click(), botao.click()]);
-    await esperarDesfazer(true);
+    // Três pedidos em rajada. Este critério já cobrou "revisão sobe
+    // EXATAMENTE 1": o produto DESCARTAVA os dois seguintes enquanto o
+    // primeiro estava em voo, e quem pedia três passos ganhava um. Três
+    // pedidos são três passos — o que não pode existir é concorrência
+    // (duas chamadas disputando a mesma revisão), e é isso que a
+    // serialização garante: uma de cada vez, cada uma com a revisão
+    // que a anterior devolveu.
+    await page.locator(".rv-token-alca-rotacao-toque").first().focus();
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("ArrowRight");
+    await esperarAte(async () => {
+      const { data } = await admin.from("vtt_tokens").select("revision").eq("id", cbAntes.id).single();
+      return (data?.revision ?? 0) > antes!.revision;
+    }, 10000);
+    // Deixa a rajada ASSENTAR: se houvesse concorrência, as chamadas
+    // extras chegariam depois desta primeira e apareceriam aqui.
     await page.waitForLoadState("networkidle", { timeout: 3000 }).catch(() => {});
     const { data: depois } = await admin.from("vtt_tokens").select("orientacao,revision").eq("id", cbAntes.id).single();
-    registrar("R4 (clique triplo rápido: revisão sobe EXATAMENTE 1, não 3 concorrentes)", depois?.revision === antes!.revision + 1 && depois?.orientacao === ((antes!.orientacao + 1) % 6), `antes=${JSON.stringify(antes)}, depois=${JSON.stringify(depois)}`);
+    const passos = depois!.revision - antes!.revision;
+    // O que este critério guarda é a AUSÊNCIA DE CONCORRÊNCIA: cada
+    // escrita que aconteceu foi um passo limpo de 60°, com a revisão
+    // subindo na mesma conta — nunca duas chamadas disputando a mesma
+    // revisão (que gravariam a mais nova por cima da mais velha, ou se
+    // recusariam entre si). Quantos passos uma rajada de teclas entrega
+    // depende de o navegador enfileirar os três eventos no mesmo tique,
+    // e é `check-vtt-alca-rotacao.ts` (19b–19e, uma tecla por vez) que
+    // prova que nenhuma tecla se perde.
+    registrar(
+      "R4 (rajada de rotação: cada escrita é um passo limpo de 60°, revisão e orientação na mesma conta — zero concorrência)",
+      passos >= 1 && passos <= 3 && depois?.orientacao === ((antes!.orientacao + passos) % 6),
+      `antes=${JSON.stringify(antes)}, depois=${JSON.stringify(depois)}, passos=${passos}`,
+    );
   }
 
   // ── E1: Enorme com PARTE do footprint (não tudo) sobre terreno difícil — não bloqueia ──

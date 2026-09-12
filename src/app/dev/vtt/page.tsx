@@ -24,6 +24,7 @@ import { listTalentsEffective } from "../../../lib/campaignContent";
 import { normalizeReactionRules, normalizeTalentContent, type CharacterRulesPayload } from "../../../lib/character";
 import { getCharacterRules, getCombatFlow, listConditions } from "../../../lib/content";
 import { VttClient } from "../../mesas/[campaignId]/vtt/VttClient";
+import { ProvedorMesaDados } from "../../mesas/[campaignId]/vtt/_dados3d/ContextoMesaDados";
 
 export const dynamic = "force-dynamic";
 
@@ -50,9 +51,12 @@ export default async function DevVttPage({ searchParams }: PageProps) {
     listTalentsEffective(campaignId).catch(() => []),
   ]);
   return (
+    // `ProvedorMesaDados` mora na casca da campanha (`CampaignShell`),
+    // que este harness não monta — sem ele o rolador não teria mesa
+    // pra jogar os dados e o botão de rolar ficaria desabilitado.
+    <ProvedorMesaDados>
     <VttClient
       campaignId={campaignId}
-      campanhaNome="Ossos sob Vosek"
       papel={papel === "player" ? "player" : "narrator"}
       hudRules={(rulesDocument?.payload as CharacterRulesPayload | undefined) ?? null}
       hudReactionRules={normalizeReactionRules(combatFlow?.payload)}
@@ -62,5 +66,6 @@ export default async function DevVttPage({ searchParams }: PageProps) {
         return { slug: document.slug, name: document.nome ?? document.slug, description: payload?.descricao_curta };
       })}
     />
+    </ProvedorMesaDados>
   );
 }

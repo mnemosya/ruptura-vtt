@@ -1,0 +1,471 @@
+/* MOLDURA da galeria de estilos — e SÓ a moldura.
+ *
+ * Nenhuma regra aqui pode alcançar o interior das peças: a página
+ * existe pra mostrar como elas ficam com o CSS de produção, e um
+ * ajuste "só pra ficar bonito na galeria" transformaria a revisão numa
+ * ficção. Por isso todo seletor começa em `.gal-*` e nenhum desce
+ * para `.rv-*`.
+ */
+
+.gal {
+  /* `.rv-mesa` está no mesmo elemento porque é ela que carrega os
+     tokens do chassi (`--cy`, `--am`, `--rv-panel`…), escopados nessa
+     lista de raízes e nunca em `:root`. Só que ela também É a casca da
+     mesa inteira: `position: fixed; inset: 0; display: grid` com a
+     coluna de 58px do trilho. Estas quatro linhas desligam a CASCA e
+     ficam com os tokens — e não tocam em nenhuma regra das peças. */
+  position: static; inset: auto;
+  display: block; overflow: visible;
+
+  min-height: 100vh;
+  padding: 40px 32px 96px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(53, 199, 216, .06), transparent 42%),
+    linear-gradient(180deg, #070d17, #050910);
+  color: #c3d2e8;
+  font-family: var(--rv-body), system-ui, sans-serif;
+}
+
+.gal-cab { max-width: 760px; margin: 0 auto 40px; text-align: center; }
+.gal-cab h1 {
+  margin: 0 0 10px;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 26px; font-weight: 700; text-transform: uppercase; letter-spacing: .18em;
+  color: #dbe6f5;
+}
+.gal-cab p { margin: 0; font-size: 13px; line-height: 1.6; color: #7f95b3; }
+
+.gal-secao { margin: 0 0 56px; }
+.gal-secao:last-child { margin-bottom: 0; }
+.gal-secao h2 {
+  display: flex; align-items: center; gap: 12px; margin: 0 0 6px;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .22em;
+  color: #4f6285;
+}
+.gal-secao h2::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, #18263f, transparent); }
+.gal-sub { margin: 0 0 24px; font-size: 12px; line-height: 1.6; color: #5f7492; }
+.gal-sub code, .gal-cartao code {
+  font-family: var(--font-mono), monospace; font-size: 11px; color: #7fc9db;
+}
+
+.gal-grade {
+  display: grid; gap: 20px;
+  /* 520px, não 340: a placa reserva 220px de folga lateral pros dois
+     trilhos de facção (`calc(100% - 220px)`), então num palco estreito
+     ela é espremida e o botão sai pelo colchete — um estouro que só
+     existe na galeria, nunca na mesa. */
+  grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
+}
+.gal-cartao { margin: 0; }
+
+/* Palco: pedaço de mesa de mentira. A placa da rodada é
+   `position: absolute` com `left: 50%`, então o palco só precisa ser um
+   bloco posicionado com altura suficiente pra ela caber. */
+.gal-palco {
+  position: relative; overflow: hidden;
+  min-height: 190px; border-radius: 3px;
+  border: 1px solid #14203a;
+  background:
+    linear-gradient(145deg, #0e1524 0%, #121a2c 48%, #0a1019 100%);
+}
+.gal-palco::before {
+  content: ""; position: absolute; inset: 0; opacity: .1;
+  background-image:
+    linear-gradient(30deg, #6c7890 1px, transparent 1px),
+    linear-gradient(150deg, #6c7890 1px, transparent 1px);
+  background-size: 48px 84px;
+}
+/* A janela de ferramenta se ancora no alto e é bem mais alta que a
+   placa — sem isto ela sai pela borda do palco. */
+.gal-palco--alto { min-height: 880px; padding: 16px 0; }
+/* `position: static` (não `relative`): a janela recebe `left`/`top`
+   por estilo INLINE, e inline ganha de qualquer regra daqui. Estática,
+   as duas propriedades deixam de ter efeito e ela flui no centro. */
+.gal-palco--alto .rv-fp { position: static; margin: 0 auto; }
+
+.gal-cartao figcaption {
+  display: flex; flex-direction: column; gap: 3px; padding: 12px 2px 0;
+}
+.gal-cartao figcaption strong {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em;
+  color: #c3d2e8;
+}
+.gal-cartao figcaption span { font-size: 11.5px; line-height: 1.5; color: #5f7492; }
+
+.gal-abas { display: flex; gap: 8px; margin-bottom: 20px; }
+.gal-aba {
+  padding: 9px 16px; cursor: pointer;
+  border: 1px solid #16233a; border-radius: 2px; background: transparent;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .12em;
+  color: #5f7492;
+  transition: color .14s, border-color .14s, background .14s;
+}
+.gal-aba:hover { color: #c3d2e8; border-color: #1c2b45; }
+.gal-aba[aria-selected="true"] {
+  border-color: color-mix(in srgb, #35c7d8 45%, transparent);
+  background: color-mix(in srgb, #35c7d8 9%, transparent);
+  color: #35c7d8;
+}
+.gal-aba:focus-visible { outline: 2px solid #35c7d8; outline-offset: 2px; }
+
+/* ── Estante dos cards do chat log ──────────────────────────────────
+ *
+ * Os cards do feed são desenhados por `painel.css` sob
+ * `.rv-pn-chat` — a casca abaixo existe pra reproduzir esse contexto,
+ * e não pra estilizar card nenhum. Nenhum seletor daqui desce até
+ * `.pn-*`, pelo mesmo motivo de sempre: uma galeria que "melhora" a
+ * peça deixa de provar como ela é na mesa.
+ */
+
+/* Uma aba por componente — são treze, então elas quebram em linha em
+   vez de espremer. */
+.gal-abas--muitas { flex-wrap: wrap; }
+
+.gal-ficha {
+  display: grid; gap: 10px 24px; margin-bottom: 24px; padding: 16px 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, auto);
+  border: 1px solid #16233a; border-radius: 2px;
+  background: linear-gradient(160deg, rgba(13, 23, 40, .8), rgba(8, 14, 25, .8));
+}
+.gal-ficha h3 {
+  margin: 0 0 6px;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .14em;
+  color: #dbe6f5;
+}
+.gal-ficha p { margin: 0; max-width: 68ch; font-size: 12.5px; line-height: 1.6; color: #7f95b3; }
+.gal-ficha dl {
+  display: grid; grid-template-columns: auto 1fr; gap: 4px 12px;
+  margin: 0; align-content: start;
+}
+.gal-ficha dt {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em;
+  color: #4f6285; padding-top: 2px;
+}
+.gal-ficha dd { margin: 0; min-width: 0; }
+.gal-ficha dd code { word-break: break-word; }
+@media (max-width: 900px) { .gal-ficha { grid-template-columns: 1fr; } }
+
+/* Os cards têm largura de coluna de painel; 520px espremeria dois numa
+   tela comum e esticaria o card muito além do que ele vive na mesa. */
+.gal-grade--cards { grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); }
+
+.gal-feed {
+  display: flex; min-height: 150px;
+  border: 1px solid #14203a; border-radius: 3px;
+  /* `.rv-painel` no mesmo elemento traz a regra que pinta o fundo do
+     chat; a altura é do conteúdo, porque um exemplo tem um card e
+     outro tem três. */
+  background: linear-gradient(160deg, rgba(11, 19, 34, .96), rgba(8, 14, 25, .98));
+}
+.gal-feed .rv-pn-chat { flex: 1; min-width: 0; }
+/* Na mesa esta é a única área rolável do painel; aqui o exemplo é
+   curto e fechado, então ele cresce em vez de rolar dentro de si. */
+.gal-feed .rv-pn-chat-scroll { overflow: visible; }
+
+/* ── Navegação em dois níveis ───────────────────────────────────────
+ *
+ * Uma tentativa anterior trocou as abas por um trilho vertical, e isso
+ * só mudou o scroll de lugar: com peça suficiente a coluna fica tão
+ * longa quanto a página era. Abas QUEBRAM EM LINHA, então crescem na
+ * largura antes de crescer na altura — e o primeiro nível (família)
+ * segura o crescimento do segundo, porque componente novo entra numa
+ * família existente em vez de alongar uma lista única.
+ *
+ * Os três níveis de aba da página são visualmente distintos de
+ * propósito, senão a hierarquia some:
+ *   família    — sólida, com contagem
+ *   componente — sublinhada
+ *   estado     — em caixa (`.gal-aba` puro, dentro de uma peça)
+ */
+
+.gal-corpo { max-width: 1260px; margin: 0 auto; }
+
+.gal-nav {
+  display: flex; flex-direction: column; gap: 12px;
+  margin-bottom: 28px; padding-bottom: 18px;
+  border-bottom: 1px solid #14203a;
+}
+
+.gal-abas--familia, .gal-abas--peca { flex-wrap: wrap; margin-bottom: 0; }
+
+.gal-aba--familia {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  font-size: 12px; letter-spacing: .14em;
+  border-color: #1a2942; background: rgba(255, 255, 255, .012);
+}
+.gal-aba--familia[aria-selected="true"] {
+  color: #071019; background: #35c7d8; border-color: #35c7d8;
+}
+.gal-aba-n {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px; font-weight: 700; letter-spacing: 0;
+  opacity: .6;
+}
+
+/* Sublinhada: o segundo nível não pode competir com o primeiro, mas
+   precisa de um estado selecionado tão claro quanto. */
+.gal-aba--peca {
+  padding: 7px 11px;
+  border: 0; border-bottom: 2px solid transparent; border-radius: 0;
+  font-size: 11.5px; letter-spacing: .1em;
+  background: transparent;
+}
+.gal-aba--peca:hover { color: #c3d2e8; border-color: transparent; border-bottom-color: #24405c; }
+.gal-aba--peca[aria-selected="true"] {
+  color: #35c7d8; background: transparent; border-bottom-color: #35c7d8;
+}
+
+.gal-conteudo { min-width: 0; }
+
+/* ── Bancadas do vocabulário ────────────────────────────────────────
+ *
+ * As primitivas não têm palco: elas vivem dentro de card e de aba. A
+ * bancada é só um rótulo e um espaço — `.rv-painel` na raiz porque os
+ * acentos (`--pn-a`) são escopados nessa classe, e sem ela toda peça
+ * desenha com a cor resolvendo pra vazio.
+ */
+.gal-vitrine { display: flex; flex-direction: column; gap: 1px; background: #14203a; border: 1px solid #14203a; }
+.gal-bancada { background: #0a1120; padding: 16px 18px 18px; }
+.gal-bancada-cab { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.gal-bancada-cab code { font-family: var(--font-mono), monospace; font-size: 12px; color: #7fc9db; }
+.gal-bancada-cab span { font-size: 11.5px; color: #5f7492; }
+.gal-bancada-corpo { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+/* Variações lado a lado (acentos) contra variações empilhadas (faixas,
+   barras): a diferença entre comparar na horizontal e na vertical. */
+.gal-linha { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.gal-empilha { display: flex; flex-direction: column; gap: 8px; align-self: stretch; }
+.gal-bancada .rv-pn-lista-moldura { align-self: stretch; border: 1px solid #16233a; }
+
+/* Peça mapeada mas ainda não montada — o mapa não pode ter buraco. */
+.gal-pendente {
+  display: flex; flex-direction: column; gap: 8px; align-items: flex-start;
+  padding: 20px 22px; border: 1px dashed #24405c; border-radius: 2px;
+  background: rgba(255, 255, 255, .012);
+}
+.gal-pendente strong {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: #cf9a3e;
+}
+.gal-pendente p { margin: 0; max-width: 62ch; font-size: 13px; line-height: 1.6; color: #7f95b3; }
+.gal-pendente code { font-family: var(--font-mono), monospace; font-size: 11px; color: #5f7492; }
+
+/* Rolador e mesa lado a lado: quem rola pede a física pro palco, então
+   os dois têm que estar na tela ao mesmo tempo pra peça fazer sentido. */
+.gal-rolagem { display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.gal-rolagem-controles { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.gal-rolagem-palco {
+  position: relative; min-height: 460px; border-radius: 2px; border: 1px solid #18263f;
+  background: radial-gradient(circle at 50% 40%, #0d1a2c 0%, #060a12 72%);
+}
+.gal-rolagem-etiqueta {
+  position: absolute; left: 12px; top: 10px;
+  font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: .2em;
+  text-transform: uppercase; color: #4f6285;
+}
+@media (max-width: 1040px) { .gal-rolagem { grid-template-columns: 1fr; } }
+
+.gal-grade2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-self: stretch; }
+.gal-empilha--largo { align-self: stretch; }
+.gal-nota { font-size: 11px; color: #5f7492; }
+
+/* O harness do HUD é uma TELA (`position: fixed` no palco dele). Aqui
+   ele vira um bloco: a caixa abaixo devolve o fluxo sem tocar em
+   nenhuma regra do HUD em si. */
+.gal-hud { position: relative; min-height: 620px; border: 1px solid #14203a; border-radius: 2px; overflow: hidden; }
+.gal-hud .hud-visual-map { position: absolute; inset: 0; min-height: 0; }
+
+/* Painel de camadas não é janela flutuante: é um popover ancorado no
+   botão da barra. Precisa de menos altura que as janelas. */
+.gal-palco--medio { min-height: 420px; padding: 16px 0; }
+.gal-palco--medio .rv-fp, .gal-palco--medio .rv-flutuante { position: static; margin: 0 auto; }
+
+/* Coluna do painel: a largura real da coluna lateral da mesa. As abas
+   se adaptam a ela (o `container-type: inline-size` de `.rv-pn-chat`
+   depende disso), então mostrá-las largas mentiria sobre o layout. */
+.gal-coluna {
+  display: flex; flex-direction: column; width: 380px; max-width: 100%; height: 640px;
+  border: 1px solid #14203a; border-radius: 2px; overflow: hidden;
+  background: linear-gradient(160deg, rgba(11,19,34,.96), rgba(8,14,25,.98));
+}
+
+/* O mapa preenche o espaço que recebe (é o palco inteiro na mesa), então
+   aqui ele ganha uma janela de tamanho fixo em vez de esticar a página. */
+.gal-palco--mapa { min-height: 560px; overflow: hidden; }
+
+/* A mesa é `position: fixed; inset: 0`. Aqui ela vira um bloco — as
+   quatro linhas desligam a CASCA sem tocar em nenhuma regra interna,
+   igual ao que `.gal` já faz com `.rv-mesa`. */
+.gal-mesa { position: relative; height: 720px; border: 1px solid #14203a; border-radius: 2px; overflow: hidden; }
+.gal-mesa .rv-mesa { position: absolute; inset: 0; }
+
+/* Peça que exige campanha real — distinta do "pendente" de propósito:
+   aquele é trabalho que falta fazer, este é um pré-requisito de quem
+   abre a página. */
+.gal-sem-campanha {
+  display: flex; flex-direction: column; gap: 10px; align-items: flex-start;
+  padding: 22px 24px; border: 1px solid #1c2b45; border-radius: 2px;
+  background: rgba(53, 199, 216, .04);
+}
+.gal-sem-campanha strong {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: #35c7d8;
+}
+.gal-sem-campanha p { margin: 0; max-width: 64ch; font-size: 13px; line-height: 1.6; color: #7f95b3; }
+.gal-sem-campanha code {
+  padding: 6px 10px; border: 1px solid #1c2b45; border-radius: 2px;
+  background: #07101d; font-family: var(--font-mono), monospace; font-size: 12px; color: #7fc9db;
+}
+.gal-sem-campanha-nota { font-size: 12px !important; color: #5f7492 !important; }
+.gal-sem-campanha-nota strong { font-family: inherit; font-size: inherit; letter-spacing: 0; text-transform: none; color: #7f95b3; }
+.gal-sem-campanha-rotulo {
+  margin-top: 4px !important;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 9px !important; font-weight: 600; letter-spacing: .18em; text-transform: uppercase;
+  color: #4f6285 !important;
+}
+
+/* ── Família "Repetidos" ────────────────────────────────────────────
+ *
+ * A moldura tem UMA regra dura: nada aqui pode alcançar o interior de
+ * um espécime. A aba existe pra comparar as peças como elas são, e um
+ * ajuste de "só pra alinhar na galeria" faria a comparação mentir
+ * exatamente sobre o que ela deveria provar. Por isso todo seletor
+ * para em `.gal-esp-palco` e nenhum desce para `.rm-`, `.ra-`, `.rc-`…
+ */
+
+.gal-rep-lede {
+  max-width: 72ch; margin: 0 0 24px; font-size: 13.5px; line-height: 1.65; color: #7f95b3;
+}
+.gal-rep-lede strong { color: #c3d2e8; }
+.gal-rep-lede code { font-size: 12px; }
+
+.gal-rep-secao { margin-bottom: 34px; }
+.gal-rep-cab { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+.gal-rep-cab h3 {
+  margin: 0; font-family: var(--rv-display), sans-serif;
+  font-size: 11px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: #c3d2e8;
+}
+.gal-rep-cab span {
+  font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: .1em;
+  text-transform: uppercase; color: #4f6285;
+}
+.gal-rep-cab::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, #18263f, transparent); }
+
+.gal-rep-grade { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+
+.gal-esp {
+  display: flex; flex-direction: column;
+  border: 1px solid #16233a; border-radius: 2px; background: #0a1120; overflow: hidden;
+}
+.gal-esp-cab {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  padding: 10px 12px; border-bottom: 1px solid #14203a; background: rgba(255, 255, 255, .012);
+}
+.gal-esp-classe { font-family: var(--font-mono), monospace; font-size: 12px; color: #7fc9db; }
+.gal-esp-folha { font-family: var(--font-mono), monospace; font-size: 10px; color: #4f6285; }
+
+/* O palco do espécime carrega a RAIZ de tokens da família (`.rm-root`,
+   `.rc-console`, `.rv-painel`…). Sem ela, a peça desenharia com todas
+   as cores resolvendo pra vazio. A cor de fundo abaixo é só da moldura;
+   cada raiz repinta a sua se precisar. */
+.gal-esp-palco { position: relative; contain: layout paint; overflow: hidden; padding: 16px 14px; background: #070d17; }
+.gal-esp-linha { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.gal-esp-empilha { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+
+.gal-esp-nota {
+  margin: 0; padding: 10px 12px; border-top: 1px solid #14203a;
+  font-size: 12px; line-height: 1.55; color: #5f7492;
+}
+
+/* Espécime isolado: o documento do sistema, embutido. A borda é da
+   moldura; tudo dentro do quadro é da folha daquele sistema. */
+.gal-esp-frame { width: 100%; border: 0; display: block; background: #0a1120; }
+
+/* ── DESLIGA A CASCA DAS RAÍZES DE TOKEN ────────────────────────────
+ *
+ * O espécime precisa da raiz (`.rv-mesa`, `.rv-painel`, `.rc-window-wrap`)
+ * porque é ela que carrega as custom properties. Só que essas classes
+ * são as CASCAS das telas: `.rv-mesa` é `position: fixed; inset: 0;
+ * display: grid` com a coluna de 58px do trilho, e `.rc-window-wrap` é
+ * `position: fixed; z-index: 501`. Usadas como palco, cada espécime
+ * virava uma tela cheia sobreposta — e a aba inteira desmontava, com
+ * botão flutuando por cima do documento.
+ *
+ * As linhas abaixo desligam a CASCA e ficam com os TOKENS. É o mesmo
+ * truque que `.gal` já fazia com `.rv-mesa`; eu só não o tinha estendido
+ * para os palcos dos espécimes. Nenhuma regra aqui alcança o interior
+ * da peça — só a caixa que a segura. */
+.gal-esp-palco.rv-mesa,
+.gal-esp-palco.rv-painel,
+.gal-esp-palco.rc-window-wrap {
+  position: relative; inset: auto; z-index: auto;
+  display: block; overflow: visible;
+  width: auto; height: auto; min-width: 0; min-height: 0;
+  grid-template-columns: none; grid-template-rows: none;
+  flex: none; align-items: initial;
+  background: #070d17;
+  border-left: 0; border-right: 0;
+  box-shadow: none; backdrop-filter: none;
+}
+
+/* ── Inventário completo de botões ─────────────────────────────────
+ *
+ * Grade de células pequenas: são 91 classes, e a pergunta aqui não é
+ * "como esta peça fica" (isso as fileiras de comparação já respondem)
+ * e sim "quantas são, e quais delas ninguém mais usa". Densidade é o
+ * ponto. */
+/* Ocupa a linha inteira da grade de fora — senão o inventário fica
+   espremido numa célula de 340px, que é a largura pensada para o
+   espécime grande, não para 66 células pequenas. */
+.gal-celas { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fill, minmax(206px, 1fr)); gap: 12px; }
+.gal-cel { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+/* O palco carrega a raiz de tokens — e as regras de desligar-a-casca
+   logo abaixo valem aqui do mesmo jeito que no espécime grande. */
+.gal-cel-palco {
+  /* `relative`, não `static`: várias destas classes são `position:
+     absolute` na mesa (o aviso de mensagens novas, o dock da janela).
+     Sem um pai posicionado elas resolvem contra o DOCUMENTO e saem
+     voando por cima da galeria — foi o que aconteceu. O palco é a caixa
+     que, na mesa, as segura. */
+  position: relative;
+  /* `contain` não é otimização aqui, é CONTENÇÃO: `relative` segura
+     filho `absolute`, mas não segura `position: fixed` — que resolve
+     contra a viewport. Algumas destas classes são fixas na mesa (o dock
+     da janela), e sem isto elas saem flutuando por cima da galeria.
+     `contain: layout paint` faz o palco virar o bloco de contenção
+     delas, que é o papel que a tela real cumpre. */
+  contain: layout paint;
+  display: flex; align-items: center; min-height: 46px; padding: 8px 10px;
+  border: 1px solid #16233a; border-radius: 2px; background: #070d17; overflow: hidden;
+}
+/* A ordem da célula é deliberada: primeiro a peça, depois O QUE ELA É
+   em português, e só então a classe. Quem abre esta aba quer reconhecer
+   o botão, não decorar nome de classe — o nome é rastreabilidade, não
+   identificação. */
+.gal-cel-papel { font-size: 11.5px; font-weight: 600; color: #c3d2e8; line-height: 1.35; }
+.gal-cel > code {
+  font-family: var(--font-mono), monospace; font-size: 10px; color: #7fc9db;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.gal-cel-nota { font-size: 11px; font-style: normal; line-height: 1.45; color: #cf9a3e; }
+.gal-cel > span { font-family: var(--font-mono), monospace; font-size: 9.5px; color: #4a5d80; }
+.gal-cel > span b { color: #cf9a3e; }
+.gal-esp--largo { grid-column: 1 / -1; }
+
+.gal-cel-palco.rv-mesa,
+.gal-cel-palco.rv-painel,
+.gal-cel-palco.rc-window-wrap {
+  position: relative; inset: auto; z-index: auto;
+  display: flex; overflow: hidden;
+  width: auto; height: auto; min-width: 0;
+  grid-template-columns: none; grid-template-rows: none;
+  flex: none; background: #070d17;
+  border-left: 1px solid #16233a; border-right: 1px solid #16233a;
+  box-shadow: none; backdrop-filter: none;
+}

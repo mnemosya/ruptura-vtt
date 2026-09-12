@@ -196,16 +196,34 @@ async function main() {
     await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
     await selecionarInteragir(page);
 
+    // A prévia de arrasto é uma TRILHA DESENHADA À MÃO, não um
+    // pathfinding: quem arrasta escolhe por onde passar, célula a
+    // célula (`moverDestino` em `_dominio/arrastoToken.ts`), e terreno
+    // bloqueado é consultivo — atravessar é permitido e AVISADO. Este
+    // critério já cobrou "o pathfinding contornou sozinho", que é um
+    // mecanismo que este gesto não tem (e não deve ter: escolher a rota
+    // é da pessoa). O que importa provar é o outro lado do 2a: quando a
+    // trilha DESVIA do bloqueio, nenhum passo fica âmbar — o aviso é
+    // por passo atravessado, não por "existe uma parede por perto".
     const destino = { q: 7, r: 5 };
     const origemTela = await pontoMundoParaTela(page, hexParaPixel({ q: tok.q, r: tok.r }, TAM));
+    const desvio1 = await pontoMundoParaTela(page, hexParaPixel({ q: 6, r: 4 }, TAM));
+    const desvio2 = await pontoMundoParaTela(page, hexParaPixel({ q: 7, r: 4 }, TAM));
     const alvoTela = await pontoMundoParaTela(page, hexParaPixel(destino, TAM));
 
     await page.mouse.move(origemTela.x, origemTela.y);
     await page.mouse.down();
-    await page.mouse.move(alvoTela.x, alvoTela.y, { steps: 10 });
-    await page.waitForTimeout(200);
+    await page.mouse.move(desvio1.x, desvio1.y, { steps: 4 });
+    await page.mouse.move(desvio2.x, desvio2.y, { steps: 4 });
+    await page.mouse.move(alvoTela.x, alvoTela.y, { steps: 4 });
+    // Espera a prévia MONTAR (a trilha desviada tem 3 passos), em vez
+    // de contar o âmbar num instante em que talvez nem exista rota.
+    await esperarAte(async () => (await page.locator(".rv-camada-rota-preview line").count()) >= 3, 5000);
     const linhasAmbar = await page.locator(".rv-camada-rota-preview line[stroke='#ff9d4d']").count();
-    registrar("1 (com desvio livre disponível, a prévia NUNCA fica âmbar — pathfinding contornou o bloqueio sozinho)", linhasAmbar === 0, `linhasÂmbar=${linhasAmbar}`);
+    registrar(
+      "1 (trilha desviando do bloqueio: nenhum passo fica âmbar — o aviso é do passo atravessado, não da parede existir)",
+      linhasAmbar === 0, `linhasÂmbar=${linhasAmbar}`,
+    );
     await page.mouse.up();
     await esperarAte(async () => {
       const { data } = await admin.from("vtt_tokens").select("revision").eq("id", tok.id).single();
