@@ -122,7 +122,8 @@ export function PainelImagens({
 
                 <span className="rv-imagens-item__rotulo">
                   <span className="rv-imagens-item__papel">
-                    {img.papel === "fundo" ? "Fundo do mapa" : "Tile"}
+                    {/* "Tile" é o nome da coluna no banco; na tela, PEÇA. */}
+                    {img.papel === "fundo" ? "Fundo do mapa" : "Peça"}
                   </span>
                   <span className="rv-imagens-item__medida">
                     {img.larguraM.toFixed(1)} × {altura.toFixed(1)} m
@@ -180,7 +181,7 @@ export function PainelImagens({
       {selecionada && (
         <div className="rv-fp-grupo rv-imagens-ajuste">
           <span className="rv-fp-rotulo">
-            Ajustar {selecionada.papel === "fundo" ? "o fundo" : "o tile"}
+            Ajustar {selecionada.papel === "fundo" ? "o fundo" : "a peça"}
           </span>
 
           <label className="rv-imagens-ajuste__campo">

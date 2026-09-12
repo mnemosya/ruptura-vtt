@@ -3734,29 +3734,47 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-biblioteca__fechar:hover { color: var(--rv-ink); border-color: var(--rv-line-hover, var(--jf-acento, var(--cy))); }
 .rv-biblioteca__fechar:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 2px; }
-/* O segmentado do papel: `.rv-segmentado-item` empilha nome e sub, mas
-   só quando eles são BLOCO — soltos, "FUNDO" e "cobre a cena" saíam
-   colados na mesma linha. As duas regras abaixo são o que faltava. */
-.rv-biblioteca__papel { display: flex; gap: 4px; }
-.rv-biblioteca__papel .rv-segmentado-item {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-}
-.rv-biblioteca__papel .rv-fp-seg-nome {
-  display: block; font-family: var(--rv-display), sans-serif;
-  font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-}
-.rv-biblioteca__papel .rv-fp-seg-sub {
-  display: block; font-family: var(--font-mono), monospace;
-  font-size: 9px; letter-spacing: .06em; text-transform: uppercase; color: var(--rv-ink-faint);
-}
-
-/* Filtro de rostos — caixa de seleção discreta, no registro do rodapé. */
-.rv-biblioteca__filtro {
-  display: flex; align-items: center; gap: 7px; cursor: pointer;
+/* ESCOLHA DE PAPEL — e o desenho tem que gritar que NÃO é uma barra de
+   abas. Dois segmentos do mesmo tamanho por cima de uma grade de
+   conteúdo leem como aba: clica-se esperando o conteúdo de baixo
+   trocar. Então: rótulo em linha à esquerda, chips COMPACTOS (nunca a
+   largura toda) e a frase de instrução logo abaixo, que muda junto. */
+.rv-biblioteca__papel { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rv-biblioteca__papel-rotulo {
   font-family: var(--font-mono), monospace;
-  font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--rv-ink-dim);
+  font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--rv-ink-faint);
 }
-.rv-biblioteca__filtro input { width: 13px; height: 13px; accent-color: var(--jf-acento, var(--cy)); }
+.rv-biblioteca__papel-opcoes { display: flex; gap: 4px; }
+.rv-biblioteca__chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--rv-line-2); border-radius: 2px;
+  background: transparent; color: var(--rv-ink-dim);
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  cursor: pointer; transition: color .14s, border-color .14s, background .14s;
+}
+.rv-biblioteca__chip:hover[aria-checked="false"] { color: var(--rv-ink); border-color: var(--rv-line-strong); }
+.rv-biblioteca__chip[aria-checked="true"] {
+  border-color: color-mix(in srgb, var(--jf-acento, var(--cy)) 53%, transparent);
+  background: color-mix(in srgb, var(--jf-acento, var(--cy)) 12%, transparent);
+  color: var(--jf-acento, var(--cy)); font-weight: 700;
+}
+.rv-biblioteca__chip:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 2px; }
+
+/* A frase que responde ao clique no segmentado: ela muda de texto
+   quando o papel muda, e é o único retorno imediato daquele clique —
+   a colocação em si só acontece na imagem escolhida depois. */
+.rv-biblioteca__instrucao {
+  margin: -8px 0 0; display: flex; align-items: center; gap: 7px;
+  font-family: var(--font-mono), monospace;
+  font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--rv-ink-dim);
+}
+.rv-biblioteca__instrucao::before {
+  content: ""; flex: none; width: 4px; height: 4px; border-radius: 999px;
+  background: var(--jf-acento, var(--cy));
+}
 
 /* Selo de uso sobre a miniatura. */
 .rv-biblioteca__selo {
@@ -3766,8 +3784,8 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   font-family: var(--font-mono), monospace;
   font-size: 8px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
 }
+/* Só "em cena" sobra: rosto não é listado. */
 .rv-biblioteca__selo[data-uso="cena"] { color: var(--rv-ok); border: 1px solid color-mix(in srgb, var(--rv-ok) 40%, transparent); }
-.rv-biblioteca__selo[data-uso="rosto"] { color: var(--rv-am); border: 1px solid color-mix(in srgb, var(--rv-am) 40%, transparent); }
 
 .rv-biblioteca__estado {
   margin: 0; padding: 22px 10px;

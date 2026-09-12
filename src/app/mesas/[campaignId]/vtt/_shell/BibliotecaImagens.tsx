@@ -14,21 +14,22 @@
  * PURAMENTE APRESENTACIONAL, como `PainelImagens`: recebe a lista já
  * lida e devolve a intenção. Nenhuma RPC aqui.
  *
- * ── ROSTO NÃO É MAPA ────────────────────────────────────────────────
+ * ── ROSTO NÃO ENTRA AQUI ────────────────────────────────────────────
  * A campanha guarda num lugar só os mapas, os retratos de token e os
  * avatares de ficha — a deduplicação por `sha256` é o que torna isso
- * barato, e a finalidade não é propriedade do arquivo, é dos USOS.
- * Listar tudo junto, porém, punha avatares de personagem lado a lado
- * com mapas num seletor de imagem de CENA.
+ * barato. Mas isto é o seletor de imagem de CENA: avatar de personagem
+ * não tem nada a ver com mapa, e listar os dois juntos só cria a
+ * pergunta "o que essa cara está fazendo aqui?".
  *
- * A projeção (0108) passou a contar os usos, e esta janela filtra por
- * eles: por padrão esconde o que só serve de rosto. O filtro é
- * visível e reversível — esconder para sempre seria decidir pela
- * pessoa que ela nunca vai querer um retrato como tile.
+ * A projeção (0108) conta os usos por tipo, e esta janela usa isso para
+ * EXCLUIR o que serve de rosto — sem filtro, sem interruptor. Um
+ * arquivo que também está numa cena continua aparecendo: aí ele é
+ * imagem de cena, e o fato de alguém usá-lo como retrato não muda
+ * isso.
  */
 
 import { useMemo, useState } from "react";
-import { Images, Loader2, X } from "lucide-react";
+import { Images, Loader2, Map, Shapes, X } from "lucide-react";
 import { type ImagemBiblioteca, pesoLegivel, usoDaImagem } from "../_dominio/imagemCena";
 
 export interface PropsBibliotecaImagens {
@@ -53,12 +54,13 @@ export function BibliotecaImagens({
   const [papel, setPapel] = useState<"fundo" | "tile">(jaTemFundo ? "tile" : "fundo");
   const papelEfetivo = jaTemFundo ? "tile" : papel;
 
-  const [mostrarRostos, setMostrarRostos] = useState(false);
-  const rostos = useMemo(() => (imagens ?? []).filter((i) => usoDaImagem(i) === "rosto").length, [imagens]);
   const visiveis = useMemo(
-    () => (imagens ?? []).filter((i) => mostrarRostos || usoDaImagem(i) !== "rosto"),
-    [imagens, mostrarRostos],
+    () => (imagens ?? []).filter((i) => usoDaImagem(i) !== "rosto"),
+    [imagens],
   );
+  /* Quantos ficaram de fora por serem rosto — entra no rodapé da
+     janela vazia, para a ausência não parecer defeito. */
+  const rostos = (imagens ?? []).length - visiveis.length;
 
   return (
     <div className="rv-biblioteca" role="dialog" aria-modal="true" aria-label="Biblioteca de imagens" data-testid="biblioteca-imagens">
@@ -79,30 +81,38 @@ export function BibliotecaImagens({
         </button>
       </header>
 
-      {/* Só faz sentido escolher o papel quando há os dois caminhos. */}
+      {/* NÃO é uma barra de abas, e o desenho precisa dizer isso.
+          Dois segmentos do mesmo tamanho, em cima de uma grade de
+          conteúdo, leem como aba — a pessoa clica esperando o conteúdo
+          de baixo trocar, e nada troca, porque isto é um MODO para o
+          próximo clique. Por isso: um rótulo em linha ("Colocar como"),
+          dois chips compactos alinhados à esquerda — nunca ocupando a
+          largura toda — e uma frase que muda junto, para o clique ter
+          resposta imediata.
+
+          "Tile" também saiu: é o nome da coluna no banco, não palavra
+          de quem joga. Na tela é PEÇA. */}
       {!jaTemFundo && (
-        <div className="rv-biblioteca__papel rv-segmentado" role="group" aria-label="Colocar como">
-          <button type="button" className="rv-segmentado-item" aria-checked={papel === "fundo"} role="radio"
-            onClick={() => setPapel("fundo")}>
-            <span className="rv-fp-seg-nome">Fundo</span>
-            <span className="rv-fp-seg-sub">cobre a cena</span>
-          </button>
-          <button type="button" className="rv-segmentado-item" aria-checked={papel === "tile"} role="radio"
-            onClick={() => setPapel("tile")}>
-            <span className="rv-fp-seg-nome">Tile</span>
-            <span className="rv-fp-seg-sub">peça solta</span>
-          </button>
+        <div className="rv-biblioteca__papel">
+          <span className="rv-biblioteca__papel-rotulo" id="rv-biblioteca-papel">Colocar como</span>
+          <div className="rv-biblioteca__papel-opcoes" role="radiogroup" aria-labelledby="rv-biblioteca-papel">
+            <button type="button" className="rv-biblioteca__chip" aria-checked={papel === "fundo"} role="radio"
+              onClick={() => setPapel("fundo")}>
+              <Map size={12} aria-hidden /> Fundo
+            </button>
+            <button type="button" className="rv-biblioteca__chip" aria-checked={papel === "tile"} role="radio"
+              onClick={() => setPapel("tile")}>
+              <Shapes size={12} aria-hidden /> Peça
+            </button>
+          </div>
         </div>
       )}
 
-      {/* O filtro só aparece quando há rostos para esconder — um
-          interruptor que nunca muda nada é ruído. */}
-      {rostos > 0 && (
-        <label className="rv-biblioteca__filtro">
-          <input type="checkbox" checked={mostrarRostos} onChange={(e) => setMostrarRostos(e.target.checked)} />
-          <span>Mostrar também retratos e avatares ({rostos})</span>
-        </label>
-      )}
+      <p className="rv-biblioteca__instrucao" role="status">
+        {papelEfetivo === "fundo"
+          ? "A imagem escolhida vira o mapa: nasce centrada e cobre a cena inteira"
+          : "A imagem escolhida vira uma peça solta no centro do mapa — dá para mover, girar e redimensionar"}
+      </p>
 
       {carregando && imagens === null ? (
         <p className="rv-biblioteca__estado"><Loader2 size={13} className="rv-spin" aria-hidden /> Lendo a biblioteca…</p>
@@ -110,7 +120,7 @@ export function BibliotecaImagens({
         <p className="rv-biblioteca__estado">
           {imagens.length === 0
             ? "Nenhuma imagem enviada nesta campanha ainda"
-            : "Só há retratos e avatares — marque acima para vê-los"}
+            : `Nenhuma imagem de cena — ${rostos} ${rostos === 1 ? "arquivo é retrato/avatar" : "arquivos são retratos/avatares"}`}
         </p>
       ) : (
         <ul className="rv-biblioteca__grade">
@@ -123,7 +133,7 @@ export function BibliotecaImagens({
                   disabled={ocupado}
                   onClick={() => onColocar(img, papelEfetivo)}
                   title={`${img.widthPx}×${img.heightPx} · ${pesoLegivel(img.bytes)}`}
-                  aria-label={`Colocar como ${papelEfetivo === "fundo" ? "fundo" : "tile"} — ${img.widthPx} por ${img.heightPx} pixels`}
+                  aria-label={`Colocar como ${papelEfetivo === "fundo" ? "fundo da cena" : "peça solta"} — ${img.widthPx} por ${img.heightPx} pixels`}
                 >
                   {/* Sem URL assinada a moldura fica vazia, não quebrada:
                       assinatura é renovável, não erro. */}
