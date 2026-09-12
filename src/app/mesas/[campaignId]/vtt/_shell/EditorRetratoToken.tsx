@@ -181,13 +181,9 @@ export function EditorRetratoToken({
   if (arquivoParaRecortar) {
     return (
       <JanelaRecorte
-        titulo="Enquadrar o retrato"
-        codigo="Retrato"
         erro={erro}
         arquivo={arquivoParaRecortar}
-        forma="circulo"
         ocupado={ocupado}
-        rotuloConfirmar="Salvar retrato"
         onConfirmar={(r) => { void recortarEEnviar(r); }}
         onCancelar={() => { setArquivoParaRecortar(null); setErro(null); }}
       />

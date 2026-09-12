@@ -403,13 +403,9 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
           não tem isso. */}
       {avatarParaRecortar && (
         <JanelaRecorte
-          titulo="Enquadrar o avatar"
-          codigo="Avatar"
           erro={avatarErro}
           arquivo={avatarParaRecortar}
-          forma="hexagono"
           ocupado={avatarEnviando}
-          rotuloConfirmar="Salvar avatar"
           onConfirmar={(r) => { void enviarAvatarRecortado(r); }}
           onCancelar={() => { setAvatarParaRecortar(null); setAvatarErro(null); }}
         />

@@ -1,19 +1,17 @@
 "use client";
 
 /**
- * Enquadramento de imagem para as formas do produto — o hexágono do
- * avatar na ficha e o círculo do retrato no mapa.
+ * Enquadramento de imagem — UM só, para a ficha e para o mapa.
  *
  * ── POR QUE ISTO NÃO É POLIMENTO ────────────────────────────────────
- * O avatar é desenhado com `clip-path` hexagonal (`AvatarHexPolygon`) e
- * o token dentro de um círculo (`clip-path` em `_mapa/MapaHex.tsx`). Uma
- * foto retangular jogada numa dessas formas corta cabeça ou queixo em
- * quase todo caso — e a pessoa só descobre DEPOIS de subir, porque o
- * lugar onde ela escolheu o arquivo não tem a forma.
+ * Uma foto retangular jogada num avatar corta cabeça ou queixo em quase
+ * todo caso — e a pessoa só descobre DEPOIS de subir, porque o lugar
+ * onde ela escolheu o arquivo não tem a forma.
  *
- * Então a prévia aqui é recortada pela MESMA forma de destino, e não
- * por um quadrado "que dá pra imaginar". Ver a imagem já hexagonal é a
- * diferença entre enquadrar e adivinhar.
+ * Então a prévia aqui é recortada por um CÍRCULO, e não por um quadrado
+ * "que dá pra imaginar". Um só formato: ficha e mapa pedem a mesma
+ * imagem, e a pessoa não deveria enquadrar duas vezes de jeitos
+ * diferentes para o mesmo rosto.
  *
  * ── O QUE ELE DEVOLVE ───────────────────────────────────────────────
  * Um retângulo de origem em pixels da imagem original. Quem chama passa
@@ -37,20 +35,6 @@ import { RotateCcw, ZoomIn } from "lucide-react";
 
 /** Lado da janela de enquadramento, em pixels de tela. */
 const JANELA = 240;
-
-export type FormaRecorte = "hexagono" | "circulo";
-
-/**
- * O polígono do avatar, COPIADO de `.rc-avatar-fill`
- * (`_design/console.css`) — não um hexágono regular aproximado.
- *
- * A cópia é o ponto do componente: se a prévia usasse uma forma
- * "parecida", ela mentiria justamente sobre a única coisa que ela
- * existe para mostrar. Se aquele `clip-path` mudar, este precisa mudar
- * junto — e é por isso que os dois dizem de onde vieram.
- */
-const CLIP_AVATAR =
-  "polygon(49.93% 0%, 89.97% 19.77%, 99.86% 64.17%, 72.15% 99.78%, 27.71% 99.78%, 0% 64.17%, 9.89% 19.77%)";
 
 export interface RecorteEscolhido {
   x: number;
@@ -91,15 +75,12 @@ const CANTOS = ["tl", "tr", "bl", "br"] as const;
  * janela (o `HudCursor` continua desenhando o anél por baixo).
  */
 export function JanelaRecorte({
-  titulo, codigo, erro, ...props
+  erro, ...props
 }: Parameters<typeof RecorteImagem>[0] & {
-  /** Título da janela: "Enquadrar o avatar", "Enquadrar o retrato". */
-  titulo: string;
-  /** Código vertical da espinha — uma palavra: "Avatar", "Retrato". */
-  codigo: string;
   /** Falha do envio, mostrada no rodapé sem tirar a janela do lugar. */
   erro?: string | null;
 }) {
+  const titulo = "Enquadrar o avatar";
   const [montado, setMontado] = useState(false);
   useEffect(() => { setMontado(true); }, []);
   if (!montado) return null;
@@ -111,13 +92,13 @@ export function JanelaRecorte({
       ))}
       <span className="rc-recorte-janela__espinha" aria-hidden="true">
         <span className="rc-recorte-janela__indice">::</span>
-        <span className="rc-recorte-janela__codigo">{codigo}</span>
+        <span className="rc-recorte-janela__codigo">Avatar</span>
         <span className="rc-recorte-janela__ponto" />
       </span>
       <div className="rc-recorte-janela__corpo">
         <header className="rc-recorte-janela__cab">
           <h2 className="rc-recorte-janela__titulo">{titulo}</h2>
-          <p className="rc-recorte-janela__modo">{props.forma === "hexagono" ? "heptágono do avatar" : "círculo do token"}</p>
+          <p className="rc-recorte-janela__modo">círculo do avatar</p>
         </header>
         <RecorteImagem {...props} />
         {erro && <p className="rc-recorte-janela__erro" role="alert">{erro}</p>}
@@ -128,10 +109,9 @@ export function JanelaRecorte({
 }
 
 export function RecorteImagem({
-  arquivo, forma, onConfirmar, onCancelar, ocupado = false, rotuloConfirmar = "Usar esta imagem",
+  arquivo, onConfirmar, onCancelar, ocupado = false, rotuloConfirmar = "Salvar avatar",
 }: {
   arquivo: File;
-  forma: FormaRecorte;
   onConfirmar: (recorte: RecorteEscolhido) => void;
   onCancelar: () => void;
   ocupado?: boolean;
@@ -243,7 +223,7 @@ export function RecorteImagem({
         </div>
         <div
           className="rc-recorte__dentro"
-          style={{ clipPath: forma === "hexagono" ? CLIP_AVATAR : "circle(50% at 50% 50%)" }}
+          style={{ clipPath: "circle(50% at 50% 50%)" }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={url} alt="Prévia do enquadramento" style={estiloImagem} draggable={false} />
