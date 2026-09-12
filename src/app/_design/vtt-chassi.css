@@ -1,0 +1,316 @@
+/* =====================================================================
+   CHASSI DA MESA — tokens e primitivas compartilhados por TODA
+   superfície do VTT.
+
+   Origem: `chat % dice tray/src/index.css` + `src/components/ui.tsx`,
+   o estudo de design do chat e da bandeja de dados. Os valores aqui são
+   os DE LÁ, não uma reinterpretação:
+
+     ground   #060a12   panel    #0c1420   panel-2  #111d31
+     line     #182338   line-2   #16233a   strong   #1c2b45
+     hover    #243352   max      #2a3b58
+     cyan     #45b8c9   amber    #cf9a3e   danger   #d15068
+     magenta  #c25a8c   arcane   #8878d6   good     #4fae82
+     slate    #6f83a3   ink      #d6e4f5   dim      #7f95b3
+     faint    #4f6285   soft     accent @ 9%        raio 2–3px
+
+   TRÊS CORREÇÕES ESTRUTURAIS que este arquivo carrega, e o motivo:
+
+   1. BORDA DE CHROME É NAVY NEUTRO, não ciano translúcido. A mesa
+      pintava toda borda com `rgba(0,212,255,.1…3)`, e o resultado era
+      uma tela inteiramente ciano onde nada se destacava. Na referência
+      o ciano é INTERATIVO/ESTRUTURAL — barra de acento, ícone, número,
+      botão — e o chrome é `#182338`. É o que devolve hierarquia.
+
+   2. RAIO 2–3px. A mesa usava 6/8/10px e lia como cartão de dashboard.
+      O chassi da referência é reto, com chanfro angular opcional
+      (`rup-clip`), não com canto redondo.
+
+   3. ACENTO SOFT A 9%, não 14%. Preenchimento mais discreto: a cor
+      aparece na linha e no texto, não no fundo.
+
+   Escopo em LISTA DE RAÍZES (nunca `:root`) — mesma convenção de
+   `tokens.css`: `console.css` consome `--font-*` sem redeclarar, e
+   qualquer nome novo em `:root` mudaria o Console sem ninguém tocar
+   nele (`check-console-baseline.ts` reprova exatamente isso).
+   ===================================================================== */
+
+.rv-mesa,
+.pn-jan,
+.pn-menu,
+.rv-modal-fundo,
+.rup-mesa-arena {
+  /* ── Fundos ─────────────────────────────────────────────────── */
+  --rv-ground: #060a12;
+  --rv-ground-2: #0a1120;
+  --rv-sunken: #070d17;
+  --rv-panel: #0c1420;
+  --rv-panel-2: #111d31;
+  --rv-panel-grad: linear-gradient(160deg, #0b1424, #080e19);
+  /* Realce interno usado em spine, rodapé de janela e faixa de opção. */
+  --rv-raise: rgba(255, 255, 255, 0.015);
+
+  /* ── Linhas ─────────────────────────────────────────────────── */
+  --rv-line: #182338;
+  --rv-line-2: #16233a;
+  --rv-line-strong: #1c2b45;
+  --rv-line-hover: #243352;
+  --rv-line-max: #2a3b58;
+
+  /* ── Acentos (dessaturados — ver o cabeçalho) ───────────────── */
+  --rv-cy: #45b8c9;
+  --rv-cy-hi: #6ff0ff;
+  --rv-am: #cf9a3e;
+  --rv-dg: #d15068;
+  --rv-mg: #c25a8c;
+  --rv-ar: #8878d6;
+  --rv-ok: #4fae82;
+  --rv-slate: #6f83a3;
+
+  --rv-cy-soft: rgba(69, 184, 201, 0.09);
+  --rv-am-soft: rgba(207, 154, 62, 0.09);
+  --rv-dg-soft: rgba(209, 80, 104, 0.09);
+  --rv-mg-soft: rgba(194, 90, 140, 0.09);
+  --rv-ar-soft: rgba(136, 120, 214, 0.09);
+  --rv-ok-soft: rgba(79, 174, 130, 0.09);
+  --rv-slate-soft: rgba(111, 131, 163, 0.07);
+
+  /* ── Texto ──────────────────────────────────────────────────── */
+  --rv-ink: #d6e4f5;
+  --rv-ink-dim: #7f95b3;
+  --rv-ink-faint: #4f6285;
+  --rv-ink-mute: #4a5a78;
+
+  /* ── Tipografia ─────────────────────────────────────────────────
+     `display` (Chakra Petch) para título, rótulo e botão em caixa
+     alta; `mono` (JetBrains Mono) para número e metadado; `body`
+     (Inter) para texto corrido. As três já entram por `next/font` no
+     layout raiz — nada é buscado de CDN. Rajdhani continua como
+     fallback para o que a mesa ainda não migrou. */
+  --rv-display: var(--font-chakra), var(--font-rajdhani), system-ui, sans-serif;
+  --rv-body: var(--font-inter), var(--font-rajdhani), system-ui, sans-serif;
+  --rv-mono: var(--font-mono), ui-monospace, monospace;
+
+  /* ── Geometria ──────────────────────────────────────────────── */
+  --rv-r: 2px;
+  --rv-r-lg: 3px;
+  --rv-r-pill: 999px;
+  --rv-notch: 10px;
+  --rv-notch-sm: 6px;
+
+  /* ── Sombra ─────────────────────────────────────────────────── */
+  --rv-shadow-win: 0 30px 70px rgba(0, 0, 0, 0.55);
+  --rv-shadow-pop: 0 18px 40px rgba(0, 0, 0, 0.6);
+  --rv-shadow-card: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+/* =====================================================================
+   UTILITÁRIOS — as regras `rup-*` do estudo, trazidas para o
+   repositório.
+
+   Antes vinham de um `@import` do BUNDLE COMPILADO do estudo
+   (`chat % dice tray/dist/assets/*.css`), o que arrastava o Tailwind
+   inteiro para dentro da mesa: um reset global em `*,::before,::after`
+   e um `@import` remoto de fontes do Google que o `next/font` já
+   carrega. Aqui ficam só as ~30 linhas de fato usadas.
+   ===================================================================== */
+
+/* Barra de rolagem invisível até o hover. */
+.rup-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.rup-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.rup-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; }
+.rup-scroll:hover { scrollbar-color: #2a3f5f transparent; }
+.rup-scroll:hover::-webkit-scrollbar-thumb { background: #223351; }
+
+/* Chanfro angular do chassi. */
+.rup-clip {
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+.rup-clip-sm {
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+}
+
+/* Animações da bandeja de dados. */
+@keyframes rup-land {
+  0% { transform: scale(1.08) rotate(4deg); }
+  45% { transform: scale(0.95) rotate(0deg); }
+  75% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+.rup-land { animation: rup-land 0.24s cubic-bezier(0.2, 1, 0.4, 1) both; transform-origin: center; }
+
+@keyframes rup-settle {
+  0% { transform: scale(0.55) rotate(-6deg); opacity: 0; }
+  55% { transform: scale(1.14) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.rup-settle { animation: rup-settle 0.42s cubic-bezier(0.22, 0.85, 0.3, 1.2) both; }
+
+@keyframes rup-reveal {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.rup-reveal { animation: rup-reveal 0.5s ease 0.12s both; }
+
+@keyframes rup-countpop {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.rup-countpop { animation: rup-countpop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.4) 0.28s both; display: inline-block; }
+
+/* Carregar força — porte literal de `charge dice/src/index.css`
+   (o conjunto vencedor integrado em `dice.tsx`, não as variantes do
+   laboratório). `--shake-x`/`--shake-r` chegam por `style` de quem usa
+   cada instância; os padrões abaixo são os mesmos do estudo. */
+@keyframes rup-charge-shake {
+  0%   { transform: translateX(0) rotate(0deg); }
+  15%  { transform: translateX(calc(var(--shake-x, 3px) * -1)) rotate(calc(var(--shake-r, 1.2deg) * -1)); }
+  30%  { transform: translateX(calc(var(--shake-x, 3px) * 1.3)) rotate(calc(var(--shake-r, 1.2deg) * 1.2)); }
+  45%  { transform: translateX(calc(var(--shake-x, 3px) * -0.7)) rotate(calc(var(--shake-r, 1.2deg) * -0.6)); }
+  60%  { transform: translateX(calc(var(--shake-x, 3px) * 1.1)) rotate(calc(var(--shake-r, 1.2deg) * 0.85)); }
+  75%  { transform: translateX(calc(var(--shake-x, 3px) * -1)) rotate(calc(var(--shake-r, 1.2deg) * -1)); }
+  90%  { transform: translateX(calc(var(--shake-x, 3px) * 0.6)) rotate(calc(var(--shake-r, 1.2deg) * 0.5)); }
+  100% { transform: translateX(0) rotate(0deg); }
+}
+.rup-charge-shake { animation: rup-charge-shake 0.09s linear infinite; }
+
+@keyframes rup-burst-flash {
+  0%   { opacity: 0.55; transform: scale(1); }
+  50%  { opacity: 0.2; }
+  100% { opacity: 0; transform: scale(1.04); }
+}
+.rup-burst-flash { animation: rup-burst-flash 0.38s ease-out forwards; }
+
+@keyframes rup-charge-ring {
+  0%   { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes rup-max-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+.rup-max-pulse { animation: rup-max-pulse 0.28s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rup-land, .rup-settle, .rup-reveal, .rup-countpop,
+  .rup-charge-shake, .rup-burst-flash, .rup-max-pulse { animation: none; }
+}
+
+/* =====================================================================
+   MOLDURA DE JANELA ÚNICA
+
+   A mesa tinha QUATRO molduras diferentes para a mesma ideia — janela
+   de ferramenta (`.rv-fp`), janela interna do painel (`.pn-jan`),
+   modal (`.rv-modal`) e o formulário de token (`.rv-gerenciador-token`)
+   — cada uma com o próprio raio, a própria borda, o próprio botão de
+   fechar e o próprio tamanho de título. Aqui elas passam a compartilhar
+   a mesma anatomia:
+
+     · casca      — `--rv-panel-grad`, borda `--rv-line`, raio 2px
+     · topbar     — título em display/caixa alta, tracking .12em, botões
+                    quadrados de 24px com borda `--rv-line-strong`
+     · corpo      — `rup-scroll`
+     · rodapé     — `--rv-raise` sobre `--rv-line-2`
+
+   As classes ORIGINAIS continuam existindo e são estilizadas por estas
+   regras (`:is(...)`), em vez de trocadas nos componentes: nenhum
+   `data-testid` muda, nenhum browser check quebra, e a padronização é
+   real em vez de cosmética.
+   ===================================================================== */
+
+.rv-jan,
+:is(.rv-fp, .pn-jan, .rv-modal) {
+  background: var(--rv-panel-grad, linear-gradient(160deg, #0b1424, #080e19));
+  border: 1px solid var(--rv-line, #182338);
+  border-radius: var(--rv-r, 2px);
+  box-shadow: var(--rv-shadow-win, 0 30px 70px rgba(0, 0, 0, 0.55));
+  color: var(--rv-ink, #d6e4f5);
+}
+
+/* Topbar — a mesma em todas. */
+.rv-jan-top,
+:is(.rv-fp-cab, .pn-jan-top, .rv-modal-cab) {
+  flex: none;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 10px 10px 14px;
+  border-bottom: 1px solid var(--rv-line-2, #16233a);
+  background: transparent;
+}
+
+/* Título — display, caixa alta, tracking largo. */
+.rv-jan-titulo,
+:is(.rv-fp-titulo, .pn-jan-titulo, .rv-modal-cab h2) {
+  flex: 1; min-width: 0; margin: 0;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  line-height: 1.2; color: var(--rv-ink, #d6e4f5);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Linha de estado sob o título — mono, faint, com um pip de acento. */
+.rv-jan-modo,
+.rv-fp-modo {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--rv-mono), monospace;
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--rv-ink-faint, #4f6285);
+}
+
+/* Botões de janela — quadrados, borda visível, nunca "ghost" invisível. */
+.rv-jan-btn,
+:is(.rv-fp-fechar, .pn-jan-btn, .rv-modal-fechar) {
+  width: 24px; height: 24px; flex: none;
+  display: grid; place-items: center;
+  border: 1px solid var(--rv-line-strong, #1c2b45);
+  border-radius: var(--rv-r, 2px);
+  background: transparent;
+  color: var(--rv-ink-faint, #4f6285);
+  font-size: 14px; line-height: 1; cursor: pointer;
+  transition: color .14s, border-color .14s, background .14s;
+}
+.rv-jan-btn:hover,
+:is(.rv-fp-fechar, .pn-jan-btn, .rv-modal-fechar):hover {
+  color: var(--rv-ink, #d6e4f5);
+  border-color: var(--rv-line-max, #2a3b58);
+  background: var(--rv-raise, rgba(255, 255, 255, 0.015));
+}
+.rv-jan-btn:focus-visible,
+:is(.rv-fp-fechar, .pn-jan-btn, .rv-modal-fechar):focus-visible {
+  outline: 2px solid var(--rv-cy, #45b8c9); outline-offset: 1px;
+}
+/* Fechar destrutivo — só o da janela interna e o do modal. */
+:is(.pn-jan-btn--fechar, .rv-modal-fechar):hover {
+  color: var(--rv-dg, #d15068);
+  border-color: var(--rv-dg, #d15068);
+  background: var(--rv-dg-soft, rgba(209, 80, 104, 0.09));
+}
+
+/* Corpo — rolagem discreta, mesmo respiro. */
+.rv-jan-corpo,
+:is(.rv-fp-corpo, .pn-jan-corpo, .rv-modal-corpo) {
+  flex: 1; min-height: 0; overflow: auto;
+  scrollbar-width: thin; scrollbar-color: transparent transparent;
+}
+:is(.rv-jan-corpo, .rv-fp-corpo, .pn-jan-corpo, .rv-modal-corpo)::-webkit-scrollbar { width: 8px; }
+:is(.rv-jan-corpo, .rv-fp-corpo, .pn-jan-corpo, .rv-modal-corpo)::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; }
+:is(.rv-jan-corpo, .rv-fp-corpo, .pn-jan-corpo, .rv-modal-corpo):hover { scrollbar-color: #2a3f5f transparent; }
+:is(.rv-jan-corpo, .rv-fp-corpo, .pn-jan-corpo, .rv-modal-corpo):hover::-webkit-scrollbar-thumb { background: #223351; }
+
+/* Rodapé de ações. */
+.rv-jan-rodape,
+:is(.rv-modal-rodape, .pn-dialogo-acoes) {
+  flex: none;
+  display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--rv-line-2, #16233a);
+  background: var(--rv-raise, rgba(255, 255, 255, 0.015));
+}
+
+/* Véu — o mesmo para modal, janela interna e diálogo. */
+.rv-modal-fundo,
+.pn-jan-fundo {
+  background: rgba(4, 7, 12, 0.66);
+  backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+}
