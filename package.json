@@ -9,6 +9,9 @@
     "build": "next build",
     "start": "next start",
     "db:migrate": "tsx scripts/apply-migration.ts",
+    "db:replay": "tsx scripts/dev/replay-migrations.mjs",
+    "db:verificar-replay": "tsx scripts/dev/check-replay-vs-remoto.mjs",
+    "db:drift": "tsx scripts/dev/check-migrations-vs-banco.mjs",
     "seed:content": "tsx scripts/seed-content.ts",
     "validate:content": "tsx scripts/validate-content-import.ts",
     "test:content-read": "tsx scripts/test-content-read.ts",
@@ -72,6 +75,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.185.4",
     "playwright": "^1.61.1",
+    "supabase": "^2.117.0",
     "tsx": "^4.19.1",
     "typescript": "^5.6.3"
   },
