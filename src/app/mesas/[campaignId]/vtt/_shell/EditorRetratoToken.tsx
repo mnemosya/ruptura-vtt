@@ -36,12 +36,10 @@
 import { useEffect, useRef, useState } from "react";
 import { ImageUp, Link2, Loader2, Trash2, TriangleAlert } from "lucide-react";
 import {
-  BYTES_MAXIMO_RETRATO,
-  ImagemRecusadaError,
   enviarParaUrlAssinada,
-  prepararImagem,
-  type ImagemPreparada,
+  prepararRecorteQuadrado,
 } from "../../../../../lib/vtt/imagePreparation";
+import { RecorteImagem } from "../../../../ficha/_console/RecorteImagem";
 import {
   definirRetratoImagemAction,
   definirRetratoUrlAction,
@@ -70,38 +68,35 @@ export function EditorRetratoToken({
 }: PropsEditorRetratoToken) {
   const [aba, setAba] = useState<Aba>(temImagemPropria || !retratoUrlAtual ? "arquivo" : "endereco");
   const [url, setUrl] = useState(retratoUrlAtual ?? "");
-  const [preparada, setPreparada] = useState<ImagemPreparada | null>(null);
+  /** Arquivo escolhido, esperando enquadramento. Nada subiu ainda. */
+  const [arquivoParaRecortar, setArquivoParaRecortar] = useState<File | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const inputArquivo = useRef<HTMLInputElement>(null);
 
-  // O preview é um object URL: sem revoke, cada arquivo escolhido
-  // vazaria um blob pelo tempo de vida da aba.
-  useEffect(() => {
-    return () => { if (preparada) URL.revokeObjectURL(preparada.previewUrl); };
-  }, [preparada]);
+  // Não há object URL de longa vida aqui: o blob do recorte é criado e
+  // consumido dentro de `recortarEEnviar`, e o preview do arquivo
+  // escolhido pertence ao `RecorteImagem`, que o revoga sozinho.
 
-  async function escolherArquivo(arquivo: File | null | undefined) {
+  function escolherArquivo(arquivo: File | null | undefined) {
     if (!arquivo) return;
     setErro(null);
-    try {
-      // Prepara em MEMÓRIA e mostra. Nada foi enviado ainda — é isso
-      // que faz "Cancelar" não deixar resíduo nenhum para coletar.
-      const nova = await prepararImagem(arquivo, BYTES_MAXIMO_RETRATO);
-      setPreparada((anterior) => {
-        if (anterior) URL.revokeObjectURL(anterior.previewUrl);
-        return nova;
-      });
-    } catch (e) {
-      setErro(e instanceof ImagemRecusadaError ? e.message : "Não foi possível ler esta imagem.");
-    }
+    // NÃO prepara aqui: o enquadramento é que decide qual pedaço da
+    // imagem vira o arquivo. Preparar antes geraria um blob (e um
+    // `sha256`) que seria descartado no passo seguinte.
+    setArquivoParaRecortar(arquivo);
   }
 
-  async function salvarArquivo() {
-    if (!preparada) return;
+  async function recortarEEnviar(recorte: { x: number; y: number; tamanho: number }) {
+    const arquivo = arquivoParaRecortar;
+    if (!arquivo) return;
     setOcupado(true);
     setErro(null);
     try {
+      // O recorte acontece ANTES do hash: o arquivo que sobe já é o
+      // círculo que o mapa desenha. Ver `prepararRecorteQuadrado`.
+      const preparada = await prepararRecorteQuadrado(arquivo, recorte);
+
       // Passo 1: autoriza pela intenção e reserva quota. É aqui que o
       // servidor decide se ESTA pessoa pode mexer neste token.
       const reserva = await reservarUploadAction(campaignId, preparada.sha256, "retrato", tokenId);
@@ -151,7 +146,32 @@ export function EditorRetratoToken({
     onConcluido();
   }
 
-  const previewMostrado = preparada?.previewUrl ?? previewAtual;
+  const previewMostrado = previewAtual;
+  const temRetrato = temImagemPropria || !!retratoUrlAtual;
+
+  // O enquadramento roda ANTES de qualquer envio, sobre o arquivo
+  // escolhido. Enquanto ele está aberto, o resto do editor sai de cena:
+  // são dois passos de uma coisa só, não duas coisas ao mesmo tempo.
+  if (arquivoParaRecortar) {
+    return (
+      <div className="rv-editor-retrato">
+        <p className="rv-editor-retrato__passo">Enquadrar o retrato</p>
+        <RecorteImagem
+          arquivo={arquivoParaRecortar}
+          forma="circulo"
+          ocupado={ocupado}
+          rotuloConfirmar="Salvar retrato"
+          onConfirmar={(r) => { void recortarEEnviar(r); }}
+          onCancelar={() => { setArquivoParaRecortar(null); setErro(null); }}
+        />
+        {erro && (
+          <p className="rv-editor-retrato__erro" role="alert">
+            <TriangleAlert size={13} aria-hidden /> {erro}
+          </p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="rv-editor-retrato">
@@ -159,20 +179,14 @@ export function EditorRetratoToken({
         <button type="button" role="tab" aria-selected={aba === "arquivo"}
           className={aba === "arquivo" ? "is-ativa" : undefined}
           onClick={() => setAba("arquivo")}>
-          <ImageUp size={14} aria-hidden /> Enviar arquivo
+          <ImageUp size={13} aria-hidden /> Arquivo
         </button>
         <button type="button" role="tab" aria-selected={aba === "endereco"}
           className={aba === "endereco" ? "is-ativa" : undefined}
           onClick={() => setAba("endereco")}>
-          <Link2 size={14} aria-hidden /> Endereço
+          <Link2 size={13} aria-hidden /> Endereço
         </button>
       </div>
-
-      {/* Dito uma vez, no lugar onde a escolha acontece: as duas origens
-          não convivem. */}
-      <p className="rv-editor-retrato__nota">
-        Um retrato tem uma origem só — salvar por aqui substitui a outra.
-      </p>
 
       {aba === "arquivo" ? (
         <>
@@ -180,51 +194,77 @@ export function EditorRetratoToken({
             ref={inputArquivo} type="file" accept="image/png,image/jpeg,image/webp"
             hidden onChange={(e) => void escolherArquivo(e.target.files?.[0])}
           />
-          <div className="rv-editor-retrato__preview">
+          {/* O preview é REDONDO porque o token é redondo. Um quadrado
+              aqui esconderia o corte que o mapa vai fazer — o mesmo
+              erro que o enquadramento existe para resolver. Clicar nele
+              troca a imagem: é o alvo maior e o mais óbvio. */}
+          <button
+            type="button" className="rv-editor-retrato__disco"
+            onClick={() => inputArquivo.current?.click()} disabled={ocupado}
+            aria-label={temRetrato ? "Trocar a imagem do retrato" : "Escolher uma imagem"}
+          >
             {previewMostrado
-              ? <img src={previewMostrado} alt="" width={96} height={96} />
-              : <span>sem retrato</span>}
-          </div>
-          <button type="button" onClick={() => inputArquivo.current?.click()} disabled={ocupado}>
-            {preparada ? "Escolher outra…" : "Escolher imagem…"}
+              ? <img src={previewMostrado} alt="" />
+              : <ImageUp size={20} aria-hidden />}
+            <span className="rv-editor-retrato__disco-acao">
+              {temRetrato ? "Trocar" : "Escolher"}
+            </span>
           </button>
-          {preparada && (
-            <p className="rv-editor-retrato__medida">
-              {preparada.widthPx}×{preparada.heightPx} px · {(preparada.blob.size / 1024).toFixed(0)} KB
-            </p>
-          )}
-          <div className="rv-editor-retrato__acoes">
-            <button type="button" onClick={() => void salvarArquivo()} disabled={!preparada || ocupado}>
-              {ocupado ? <><Loader2 size={14} className="rv-girando" aria-hidden /> Enviando…</> : "Salvar retrato"}
-            </button>
-            <button type="button" onClick={onCancelar} disabled={ocupado}>Cancelar</button>
-          </div>
+          <p className="rv-editor-retrato__nota">
+            PNG, JPEG ou WebP · até 2 MB
+          </p>
         </>
       ) : (
         <>
-          <label>
-            Endereço da imagem
+          <label className="rv-field">
+            <span>Endereço da imagem</span>
             <input type="text" value={url} placeholder="https://…" disabled={ocupado}
               onChange={(e) => setUrl(e.target.value)} />
           </label>
+          {/* Dito só na aba em que a troca de origem acontece — na aba
+              de arquivo o enquadramento já ocupa a atenção. */}
+          <p className="rv-editor-retrato__nota">
+            Um retrato tem uma origem só: salvar aqui apaga o arquivo enviado.
+          </p>
           <div className="rv-editor-retrato__acoes">
-            <button type="button" onClick={() => void salvarUrl()} disabled={ocupado}>
-              {ocupado ? <><Loader2 size={14} className="rv-girando" aria-hidden /> Salvando…</> : "Salvar endereço"}
+            {temRetrato && (
+              <button type="button" className="rv-btn rv-btn--ghost rv-editor-retrato__remover"
+                onClick={() => void remover()} disabled={ocupado}>
+                <Trash2 size={13} aria-hidden /> Remover
+              </button>
+            )}
+            <button type="button" className="rv-btn" onClick={onCancelar} disabled={ocupado}>
+              Cancelar
             </button>
-            <button type="button" onClick={onCancelar} disabled={ocupado}>Cancelar</button>
+            <button type="button" className="rv-btn rv-btn--pri"
+              onClick={() => void salvarUrl()} disabled={ocupado || !url.trim()}>
+              {ocupado ? <Loader2 size={13} className="rv-girando" aria-hidden /> : null}
+              {ocupado ? "Salvando" : "Salvar"}
+            </button>
           </div>
         </>
       )}
 
-      {(temImagemPropria || retratoUrlAtual) && (
-        <button type="button" className="rv-editor-retrato__remover" onClick={() => void remover()} disabled={ocupado}>
-          <Trash2 size={14} aria-hidden /> Remover retrato
-        </button>
+      {/* Na aba de arquivo as ações são só sair e remover: quem salva é
+          o passo de enquadramento, e um "Salvar" aqui que não salvasse
+          nada seria pior que nenhum. */}
+      {aba === "arquivo" && (
+        <div className="rv-editor-retrato__acoes">
+          {temRetrato && (
+            <button type="button" className="rv-btn rv-btn--ghost rv-editor-retrato__remover"
+              onClick={() => void remover()} disabled={ocupado}>
+              <Trash2 size={13} aria-hidden /> Remover
+            </button>
+          )}
+          <button type="button" className="rv-btn" onClick={onCancelar} disabled={ocupado}>
+            Fechar
+          </button>
+        </div>
       )}
 
       {erro && (
         <p className="rv-editor-retrato__erro" role="alert">
-          <TriangleAlert size={14} aria-hidden /> {erro}
+          <TriangleAlert size={13} aria-hidden /> {erro}
         </p>
       )}
     </div>
