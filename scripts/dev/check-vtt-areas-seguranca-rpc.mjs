@@ -65,6 +65,11 @@ async function setup() {
   await client.query(`insert into campaigns (id, name, owner_id) values ($1,'A',$2),($3,'B',$4)`, [campanhaA, narradorA, campanhaB, narradorB]);
   await client.query(`insert into campaign_members (campaign_id, user_id, role, status) values ($1,$2,'player','active'),($1,$3,'player','active')`, [campanhaA, jogadorAutorizado, jogadorSemAutorizacao]);
   await client.query(`insert into vtt_scenes (id, campaign_id, nome, largura, altura) values ($1,$2,'S',10,10),($3,$4,'S',10,10)`, [cenaA, campanhaA, cenaB, campanhaB]);
+  // Palco (migration 0111): desde a 0112, autorização de cena passa por
+  // `vtt_campaign_stage`. Uma cena sem palco não é a cena de ninguém, e
+  // a fixture inteira seria recusada — não por bug, por estar
+  // descrevendo uma campanha que não existe mais.
+  await client.query(`insert into vtt_campaign_stage (campaign_id, presented_scene_id) values ($1,$2),($3,$4)`, [campanhaA, cenaA, campanhaB, cenaB]);
   await client.query(`insert into vtt_tokens (id, scene_id, campaign_id, nome, sigla, q, r, visivel) values
       ($1,$2,$3,'Vis','VI',1,1,true),
       ($4,$2,$3,'Oculto','OC',2,2,false),
@@ -80,6 +85,7 @@ async function limpar() {
   await client.query("delete from vtt_areas where campaign_id in ($1,$2)", [campanhaA, campanhaB]);
   await client.query("delete from vtt_area_permissoes where campaign_id in ($1,$2)", [campanhaA, campanhaB]);
   await client.query("delete from vtt_tokens where campaign_id in ($1,$2)", [campanhaA, campanhaB]);
+  await client.query("delete from vtt_campaign_stage where campaign_id in ($1,$2)", [campanhaA, campanhaB]);
   await client.query("delete from vtt_scenes where campaign_id in ($1,$2)", [campanhaA, campanhaB]);
   await client.query("delete from campaign_members where campaign_id in ($1,$2)", [campanhaA, campanhaB]);
   await client.query("delete from campaigns where id in ($1,$2)", [campanhaA, campanhaB]);

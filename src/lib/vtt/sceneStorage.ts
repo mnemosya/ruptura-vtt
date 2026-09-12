@@ -419,29 +419,196 @@ export class VttStorageError extends Error {
 }
 
 /**
- * Carrega a cena ativa da campanha com tudo que a mesa precisa.
+ * O id da cena onde a MESA está — o palco (`vtt_campaign_stage`, 0111).
  *
- * Devolve `null` quando a campanha ainda não tem cena — quem chama
- * decide se semeia (narrador) ou mostra estado vazio (jogador). Não
- * cria cena implicitamente: criar dado como efeito colateral de uma
- * LEITURA é o tipo de surpresa que depois ninguém consegue rastrear.
+ * Antes da 0111 esta pergunta era "a cena `ativa` da campanha", e era a
+ * mesma pergunta que "a cena que estou olhando". Deixaram de ser: o
+ * narrador pode estar em qualquer outra. Tudo que é da MESA (rodada,
+ * dock, encerrar combate) segue o palco; só a tela do VTT segue a cena
+ * escolhida por quem está olhando.
+ *
+ * Devolve `null` numa campanha ainda sem cena — e, para um jogador de
+ * uma campanha cujo palco não existe, a RLS já devolveria vazio de
+ * qualquer forma.
  */
-export async function carregarCenaAtiva(campaignId: string): Promise<EstadoCena | null> {
+export async function idDaCenaApresentada(campaignId: string): Promise<string | null> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client
+    .from("vtt_campaign_stage")
+    .select("presented_scene_id")
+    .eq("campaign_id", campaignId)
+    .maybeSingle();
+  if (error) throw new VttStorageError(`Falha ao ler o palco da campanha: ${error.message}`, error);
+  return (data?.presented_scene_id as string | undefined) ?? null;
+}
+
+/** Um cartão do catálogo — o que `list_vtt_scenes` (0111) devolve por cena. */
+export interface CartaoCena {
+  id: string;
+  nome: string;
+  local: string | null;
+  resumo: string | null;
+  largura: number;
+  altura: number;
+  ordem: number;
+  revision: number;
+  arquivadaEm: string | null;
+  apresentada: boolean;
+  duplicadaDe: string | null;
+  /** Imagem escolhida a dedo ou, na falta, o fundo da cena. A URL assinada sai do serviço de imagens. */
+  miniaturaImageId: string | null;
+  criadaEm: string;
+  atualizadaEm: string;
+}
+
+/**
+ * O catálogo de cenas da campanha.
+ *
+ * Jogador recebe UMA cena (a apresentada) — não porque a interface
+ * esconde, mas porque `list_vtt_scenes` não tem o que contar a ele.
+ */
+export async function listarCenas(campaignId: string, incluirArquivadas = false): Promise<CartaoCena[]> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("list_vtt_scenes", {
+    p_campaign_id: campaignId,
+    p_incluir_arquivadas: incluirArquivadas,
+  });
+  if (error) throw new VttStorageError(`Falha ao listar as cenas: ${error.message}`, error);
+
+  return (Array.isArray(data) ? (data as Record<string, unknown>[]) : []).map((c) => ({
+    id: c.id as string,
+    nome: c.nome as string,
+    local: (c.local as string | null) ?? null,
+    resumo: (c.resumo as string | null) ?? null,
+    largura: c.largura as number,
+    altura: c.altura as number,
+    ordem: c.ordem as number,
+    revision: c.revision as number,
+    arquivadaEm: (c.arquivada_em as string | null) ?? null,
+    apresentada: c.apresentada === true,
+    duplicadaDe: (c.duplicada_de as string | null) ?? null,
+    miniaturaImageId: (c.miniatura_image_id as string | null) ?? null,
+    criadaEm: c.criada_em as string,
+    atualizadaEm: c.atualizada_em as string,
+  }));
+}
+
+/** Uma cena recém-criada, como `create_vtt_scene` devolve. */
+export interface ResultadoCena {
+  ok: boolean;
+  erro?: string;
+  cena?: CartaoCena;
+}
+
+/**
+ * Cria uma cena vazia no fim do catálogo.
+ *
+ * Não move a mesa — criar e apresentar são gestos separados, e é essa
+ * separação que permite preparar a próxima cena com jogo em andamento.
+ */
+export async function criarCena(params: {
+  campaignId: string;
+  nome: string;
+  local?: string | null;
+  resumo?: string | null;
+  largura?: number;
+  altura?: number;
+}): Promise<ResultadoCena> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("create_vtt_scene", {
+    p_campaign_id: params.campaignId,
+    p_nome: params.nome,
+    p_local: params.local ?? null,
+    p_resumo: params.resumo ?? null,
+    p_largura: params.largura ?? 26,
+    p_altura: params.altura ?? 18,
+  });
+  if (error) return { ok: false, erro: error.message };
+  const linha = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;
+  if (!linha) return { ok: false, erro: "A cena não foi criada." };
+  return {
+    ok: true,
+    cena: {
+      id: linha.id as string,
+      nome: linha.nome as string,
+      local: (linha.local as string | null) ?? null,
+      resumo: (linha.resumo as string | null) ?? null,
+      largura: linha.largura as number,
+      altura: linha.altura as number,
+      ordem: linha.ordem as number,
+      revision: linha.revision as number,
+      arquivadaEm: (linha.archived_at as string | null) ?? null,
+      apresentada: false,
+      duplicadaDe: (linha.duplicated_from_id as string | null) ?? null,
+      miniaturaImageId: (linha.thumbnail_image_id as string | null) ?? null,
+      criadaEm: linha.created_at as string,
+      atualizadaEm: linha.updated_at as string,
+    },
+  };
+}
+
+/**
+ * Move a MESA para outra cena.
+ *
+ * `revisionEsperada` é opcional porque o primeiro "Apresentar" de uma
+ * sessão não tem revisão lida ainda. Quando vem, o servidor recusa o
+ * clique que foi decidido em cima de um palco já mudado — o caso de
+ * duas abas do mesmo narrador.
+ */
+export async function apresentarCena(params: {
+  campaignId: string;
+  sceneId: string;
+  revisionEsperada?: number | null;
+}): Promise<ResultadoEscrita & { presentedSceneId?: string }> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("present_vtt_scene", {
+    p_campaign_id: params.campaignId,
+    p_scene_id: params.sceneId,
+    p_expected_revision: params.revisionEsperada ?? null,
+  });
+  if (error) return { ok: false, erro: error.message };
+  const linha = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;
+  return {
+    ok: true,
+    revision: (linha?.revision as number | undefined) ?? undefined,
+    presentedSceneId: (linha?.presented_scene_id as string | undefined) ?? params.sceneId,
+  };
+}
+
+/** Renumera o catálogo pela ordem da lista. Devolve o catálogo já reordenado. */
+export async function reordenarCenas(params: {
+  campaignId: string;
+  sceneIds: string[];
+}): Promise<ResultadoEscrita> {
+  const client = await getScopedTableClient();
+  const { error } = await client.rpc("reorder_vtt_scenes", {
+    p_campaign_id: params.campaignId,
+    p_scene_ids: params.sceneIds,
+  });
+  if (error) return { ok: false, erro: error.message };
+  return { ok: true };
+}
+
+/**
+ * Carrega UMA cena, por id, com tudo que a mesa precisa.
+ *
+ * Devolve `null` quando a cena não existe OU quando quem pede não pode
+ * vê-la — os dois casos são o mesmo `null` de propósito: distinguir
+ * "não existe" de "existe e não é sua" contaria ao jogador que o
+ * narrador tem uma cena escondida, que é exatamente o que a 0112
+ * passou a impedir.
+ */
+export async function carregarCena(sceneId: string): Promise<EstadoCena | null> {
   const client = await getScopedTableClient();
 
   const { data: cenaRow, error: erroCena } = await client
     .from("vtt_scenes")
     .select("id, campaign_id, nome, local, resumo, largura, altura, revision, camadas")
-    .eq("campaign_id", campaignId)
-    .eq("ativa", true)
-    .order("created_at", { ascending: true })
-    .limit(1)
+    .eq("id", sceneId)
     .maybeSingle();
 
-  if (erroCena) throw new VttStorageError(`Falha ao ler a cena da campanha: ${erroCena.message}`, erroCena);
+  if (erroCena) throw new VttStorageError(`Falha ao ler a cena: ${erroCena.message}`, erroCena);
   if (!cenaRow) return null;
-
-  const sceneId = cenaRow.id as string;
 
   const [tokensRes, terrenoRes, marcasRes, areasRes, objetosRes, medicoesRes, trilhaRes] = await Promise.all([
     client.rpc("read_vtt_scene_tokens", { p_scene_id: sceneId }),
@@ -521,6 +688,28 @@ export async function carregarCenaAtiva(campaignId: string): Promise<EstadoCena 
     })),
   };
 }
+
+/**
+ * Carrega a cena em que os JOGADORES estão.
+ *
+ * É o ponto de entrada de quem não escolhe cena: o jogador ao abrir a
+ * mesa, e o narrador na primeira carga (antes de o catálogo dizer onde
+ * ele parou). Duas idas ao banco em vez de uma — resolver o palco e
+ * depois ler a cena — porque a alternativa seria um join que devolve a
+ * cena inteira só para descobrir o id.
+ */
+export async function carregarCenaApresentada(campaignId: string): Promise<EstadoCena | null> {
+  const sceneId = await idDaCenaApresentada(campaignId);
+  if (!sceneId) return null;
+  return carregarCena(sceneId);
+}
+
+/**
+ * @deprecated Use `carregarCenaApresentada` (mesa) ou `carregarCena`
+ * (uma cena específica). Fica enquanto houver chamador antigo — o nome
+ * mente desde a 0111, porque "ativa" deixou de ser uma cena só.
+ */
+export const carregarCenaAtiva = carregarCenaApresentada;
 
 export interface ResultadoEscrita {
   ok: boolean;
@@ -1310,18 +1499,16 @@ export async function removerArea(areaId: string): Promise<ResultadoEscrita> {
  */
 export async function lerTrilhaDaCenaAtiva(campaignId: string): Promise<unknown | null> {
   const client = await getScopedTableClient();
-  const { data: cena } = await client
-    .from("vtt_scenes")
-    .select("id")
-    .eq("campaign_id", campaignId)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  if (!cena?.id) return null;
+  // O palco, não "a cena mais antiga": esta leitura é da MESA, e a mesa
+  // está onde o narrador a colocou (0111). Antes do catálogo as duas
+  // respostas coincidiam; hoje a mais antiga pode ser uma cena que
+  // ninguém está jogando.
+  const sceneIdPalco = await idDaCenaApresentada(campaignId);
+  if (!sceneIdPalco) return null;
   const { data } = await client
     .from("vtt_turn_tracks")
     .select("estado")
-    .eq("scene_id", cena.id as string)
+    .eq("scene_id", sceneIdPalco)
     .maybeSingle();
   return data?.estado ?? null;
 }
@@ -1333,16 +1520,18 @@ export async function lerTrilhaDaCenaAtiva(campaignId: string): Promise<unknown 
  */
 export async function tokenDoPersonagemNaCenaAtiva(campaignId: string, characterId: string): Promise<string | null> {
   const client = await getScopedTableClient();
-  const { data: cena } = await client
-    .from("vtt_scenes").select("id").eq("campaign_id", campaignId)
-    .order("created_at", { ascending: true }).limit(1).maybeSingle();
-  if (!cena?.id) return null;
+  // O palco, não "a cena mais antiga": esta leitura é da MESA, e a mesa
+  // está onde o narrador a colocou (0111). Antes do catálogo as duas
+  // respostas coincidiam; hoje a mais antiga pode ser uma cena que
+  // ninguém está jogando.
+  const sceneIdPalco = await idDaCenaApresentada(campaignId);
+  if (!sceneIdPalco) return null;
   // Pela RPC, não por `select` direto: `vtt_tokens` teve o SELECT
   // revogado de `authenticated` na 0084 justamente para que ninguém
   // leia as colunas privadas por fora da projeção. E a projeção só
   // devolve `character_id` a quem controla o token — que é exatamente
   // quem pode ganhar um atalho para ele no mapa.
-  const { data } = await client.rpc("read_vtt_scene_tokens", { p_scene_id: cena.id as string });
+  const { data } = await client.rpc("read_vtt_scene_tokens", { p_scene_id: sceneIdPalco });
   const linhas = Array.isArray(data) ? (data as Record<string, unknown>[]) : [];
   const alvo = linhas.find((t) => t.character_id === characterId);
   return (alvo?.id as string | undefined) ?? null;
@@ -1366,11 +1555,13 @@ export async function lerTrilhaDaMesa(campaignId: string): Promise<
   } | null
 > {
   const client = await getScopedTableClient();
-  const { data: cena } = await client
-    .from("vtt_scenes").select("id").eq("campaign_id", campaignId)
-    .order("created_at", { ascending: true }).limit(1).maybeSingle();
-  if (!cena?.id) return null;
-  const sceneId = cena.id as string;
+  // O palco, não "a cena mais antiga": esta leitura é da MESA, e a mesa
+  // está onde o narrador a colocou (0111). Antes do catálogo as duas
+  // respostas coincidiam; hoje a mais antiga pode ser uma cena que
+  // ninguém está jogando.
+  const sceneIdPalco = await idDaCenaApresentada(campaignId);
+  if (!sceneIdPalco) return null;
+  const sceneId = sceneIdPalco;
 
   const [trilhaRes, tokensRes] = await Promise.all([
     client.from("vtt_turn_tracks").select("estado, revision").eq("scene_id", sceneId).maybeSingle(),
@@ -1410,12 +1601,12 @@ export async function lerTrilhaDaMesa(campaignId: string): Promise<
  * encerrado não é erro.
  */
 export async function encerrarTrilhaDaCampanha(campaignId: string): Promise<void> {
-  const client = await getScopedTableClient();
-  const { data: cena } = await client
-    .from("vtt_scenes").select("id").eq("campaign_id", campaignId)
-    .order("created_at", { ascending: true }).limit(1).maybeSingle();
-  if (!cena?.id) return;
-  await encerrarTrilha(cena.id as string);
+  // Encerra o combate da cena onde a MESA está — ver o comentário em
+  // `lerTrilhaDaMesa`. Encerrar a rodada de uma cena que o narrador
+  // está só preparando seria encerrar nada.
+  const sceneIdPalco = await idDaCenaApresentada(campaignId);
+  if (!sceneIdPalco) return;
+  await encerrarTrilha(sceneIdPalco);
 }
 
 /**

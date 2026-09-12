@@ -28,6 +28,12 @@ import { addLog } from "../../../../../lib/table/storage";
 import { diffTrilha, paraComparavel, payloadDoEvento } from "../_painel/feed/eventosCombate";
 import {
   carregarCenaAtiva,
+  carregarCena,
+  carregarCenaApresentada,
+  listarCenas,
+  criarCena,
+  apresentarCena,
+  reordenarCenas,
   carregarObjetosDaCena,
   carregarTrilha,
   iniciarTrilha,
@@ -65,6 +71,7 @@ import {
   type GrauCoberturaObjeto,
   type CategoriaObjeto,
   type EstadoCena,
+  type CartaoCena,
   type TrilhaPersistida,
   type ParametrosAreaEscrita,
   type TipoArea,
@@ -161,6 +168,103 @@ export async function lerCenaAtiva(campaignId: string): Promise<ResultadoAcao<Es
   } catch (e) {
     return { ok: false, erro: e instanceof Error ? e.message : "Falha ao carregar a cena." };
   }
+}
+
+/**
+ * O catálogo de cenas da campanha.
+ *
+ * Sem ramo "se narrador": o servidor já decide o recorte
+ * (`list_vtt_scenes`, 0111), e um jogador recebe exatamente uma cena.
+ * Repetir a regra aqui seria criar um segundo lugar onde ela pode
+ * divergir.
+ */
+export async function listarCenasAction(
+  campaignId: string,
+  incluirArquivadas = false,
+): Promise<ResultadoAcao<{ cenas: CartaoCena[] }>> {
+  const v = await exigirAcesso(campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  try {
+    return { ok: true, dados: { cenas: await listarCenas(campaignId, incluirArquivadas) } };
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : "Falha ao listar as cenas." };
+  }
+}
+
+/**
+ * Carrega UMA cena escolhida — é o que o narrador faz ao clicar num
+ * cartão do catálogo, e não toca no palco.
+ *
+ * `null` quando a cena não existe ou não é dele: a distinção fica no
+ * banco, de propósito (ver `carregarCena`).
+ */
+export async function lerCenaAction(params: {
+  campaignId: string;
+  sceneId: string;
+}): Promise<ResultadoAcao<EstadoCena | null>> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  try {
+    return { ok: true, dados: await carregarCena(params.sceneId) };
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : "Falha ao carregar a cena." };
+  }
+}
+
+/** A cena em que a MESA está. Ponto de entrada de quem não escolhe cena. */
+export async function lerCenaApresentadaAction(campaignId: string): Promise<ResultadoAcao<EstadoCena | null>> {
+  const v = await exigirAcesso(campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  try {
+    return { ok: true, dados: await carregarCenaApresentada(campaignId) };
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : "Falha ao carregar a cena." };
+  }
+}
+
+/** Cria uma cena vazia. Narrador-only decidido no servidor (`create_vtt_scene`). */
+export async function criarCenaAction(params: {
+  campaignId: string;
+  nome: string;
+  local?: string | null;
+  resumo?: string | null;
+  largura?: number;
+  altura?: number;
+}): Promise<ResultadoAcao<{ cena: CartaoCena }>> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const r = await criarCena(params);
+  if (!r.ok || !r.cena) return { ok: false, erro: r.erro ?? "Falha ao criar a cena." };
+  return { ok: true, dados: { cena: r.cena } };
+}
+
+/**
+ * Apresenta uma cena à mesa — a única ação daqui que muda o que os
+ * jogadores veem. Por isso vira log: é um gesto do narrador sobre a
+ * mesa, não um ajuste de tela.
+ */
+export async function apresentarCenaAction(params: {
+  campaignId: string;
+  sceneId: string;
+  revisionEsperada?: number | null;
+}): Promise<ResultadoAcao<{ presentedSceneId: string; revision?: number }>> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const r = await apresentarCena(params);
+  if (!r.ok) return { ok: false, erro: r.erro ?? "Falha ao apresentar a cena." };
+  return { ok: true, dados: { presentedSceneId: r.presentedSceneId ?? params.sceneId, revision: r.revision } };
+}
+
+/** Reordena o catálogo. Narrador-only decidido no servidor. */
+export async function reordenarCenasAction(params: {
+  campaignId: string;
+  sceneIds: string[];
+}): Promise<ResultadoAcao> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const r = await reordenarCenas(params);
+  if (!r.ok) return { ok: false, erro: r.erro ?? "Falha ao reordenar as cenas." };
+  return { ok: true };
 }
 
 /**
