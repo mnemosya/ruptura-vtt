@@ -516,6 +516,49 @@
 .rc-avatar-remover:focus-visible { opacity: 1; pointer-events: auto; outline: 2px solid var(--rc-danger); outline-offset: 2px; }
 .rc-avatar-remover:disabled { opacity: .45; cursor: not-allowed; }
 
+/* CONFIRMAÇÃO — cobre o próprio avatar, porque é dele que se está
+   falando, e fica até uma das duas respostas (sair com o mouse não
+   decide nada). Recortada pelo heptágono? NÃO: aqui o texto precisa de
+   largura reta, então ela é um painel sobre o quadro, com fio próprio. */
+.rc-avatar-confirmar {
+  position: absolute; inset: 12% 4%; z-index: 3;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--rc-danger) 45%, transparent); border-radius: 2px;
+  background: rgba(8, 12, 18, .95);
+}
+.rc-avatar-confirmar p {
+  margin: 0; text-align: center;
+  font-family: var(--font-chakra), sans-serif;
+  font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--rc-text);
+}
+.rc-avatar-confirmar-acoes { display: flex; flex-direction: column; gap: 5px; width: 100%; }
+.rc-avatar-confirmar-acoes button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid transparent; border-radius: 2px;
+  background: transparent; color: var(--rc-dim);
+  font-family: var(--font-chakra), sans-serif;
+  font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  cursor: pointer; transition: color .14s, border-color .14s, background .14s;
+}
+/* Qualificado pelo pai — `.rc-avatar-confirmar-acoes button` tem uma
+   classe E um elemento, então a classe sozinha perderia e o "Remover"
+   sairia cinza como o "Manter". Mesma armadilha da janela de recorte. */
+.rc-avatar-confirmar-acoes button.rc-avatar-confirmar-sim {
+  border-color: color-mix(in srgb, var(--rc-danger) 53%, transparent);
+  background: color-mix(in srgb, var(--rc-danger) 14%, transparent);
+  color: var(--rc-danger); font-weight: 700;
+}
+.rc-avatar-confirmar-acoes button.rc-avatar-confirmar-sim:hover:not(:disabled) {
+  border-color: var(--rc-danger);
+  background: color-mix(in srgb, var(--rc-danger) 24%, transparent); color: #ffb3bd;
+}
+.rc-avatar-confirmar-acoes button.rc-avatar-confirmar-nao:hover:not(:disabled) { color: var(--rc-text); border-color: var(--rc-line); }
+.rc-avatar-confirmar-acoes button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.rc-avatar-confirmar-acoes button:disabled { opacity: .45; cursor: not-allowed; }
+
 .rc-avatar-ico { width: 64px; max-width: 55%; }
 .rc-avatar-ico svg { width: 100%; height: auto; display: block; }
 

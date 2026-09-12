@@ -20,7 +20,7 @@
  * resolvidos e ações que a ficha já implementa).
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ImageUp, Shield, Trash2 } from "lucide-react";
 import { MAX_OVERLOAD_SURGES_PER_DAY, type CharacterAttributes } from "../../../../lib/character";
 import { useClickGuard } from "../useClickGuard";
@@ -343,6 +343,11 @@ export function IdentityAside({
   const sobrecarga = character.sobrecarga_usada_dia ?? 0;
   const ranking = (character.metadados?.ranking_cobalto as string | undefined) ?? null;
 
+  const [confirmandoRemocao, setConfirmandoRemocao] = useState(false);
+  /* Trocar de personagem com a pergunta aberta a deixaria pendurada
+     sobre o avatar do próximo. */
+  useEffect(() => { setConfirmandoRemocao(false); }, [avatarUrl]);
+
   function aoEscolherArquivo(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) onAvatarChange(file);
@@ -387,11 +392,11 @@ export function IdentityAside({
           conteúdo interativo dentro de `label` é inválido. Só aparece
           com imagem e no hover/foco do conjunto, como o lápis de edição
           rápida das áreas no mapa. */}
-      {avatarUrl && onAvatarRemover && (
+      {avatarUrl && onAvatarRemover && !confirmandoRemocao && (
         <button
           type="button"
           className="rc-avatar-remover"
-          onClick={onAvatarRemover}
+          onClick={() => setConfirmandoRemocao(true)}
           disabled={avatarOcupado}
           aria-label="Remover avatar do personagem"
           title="Remover avatar"
@@ -399,6 +404,30 @@ export function IdentityAside({
         >
           <Trash2 size={13} aria-hidden="true" />
         </button>
+      )}
+      {/* CONFIRMAÇÃO em dois passos, como a exclusão de objeto no VTT
+          (`PainelObjetos`): a pergunta cobre o próprio avatar, porque é
+          dele que se está falando, e só sai por uma das duas respostas
+          — tirar o mouse não decide nada. */}
+      {confirmandoRemocao && (
+        <div className="rc-avatar-confirmar" role="alertdialog" aria-label="Confirmar remoção do avatar">
+          <p>Remover o avatar?</p>
+          <div className="rc-avatar-confirmar-acoes">
+            <button
+              type="button" className="rc-avatar-confirmar-sim" disabled={avatarOcupado}
+              onClick={() => { setConfirmandoRemocao(false); onAvatarRemover?.(); }}
+              data-testid="console-avatar-remover-confirmar"
+            >
+              <Trash2 size={12} aria-hidden="true" /> Remover
+            </button>
+            <button
+              type="button" className="rc-avatar-confirmar-nao" disabled={avatarOcupado}
+              onClick={() => setConfirmandoRemocao(false)}
+            >
+              Manter
+            </button>
+          </div>
+        </div>
       )}
       </div>
       {avatarErro && (
