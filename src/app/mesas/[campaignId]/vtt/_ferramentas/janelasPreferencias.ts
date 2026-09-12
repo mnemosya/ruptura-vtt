@@ -21,6 +21,17 @@
 
 import type { FerramentaId } from "./controlador";
 
+/**
+ * Toda janela que a casca de ferramenta abre — não só as FERRAMENTAS.
+ *
+ * Camadas, Adicionar token e Configurações da Cena são janelas do mapa
+ * sem ferramenta correspondente na barra (não têm modo de cursor, não
+ * têm atalho de troca), mas usam a mesma casca e merecem a mesma
+ * memória de posição. Amarrar a chave a `FerramentaId` obrigaria a
+ * inventar ferramentas falsas só pra elas.
+ */
+export type JanelaId = FerramentaId | "camadas" | "token" | "cena";
+
 export interface PosicaoJanela {
   /** Canto superior esquerdo, relativo ao palco (`.rv-palco`). */
   x: number;
@@ -77,11 +88,11 @@ function lerTudo(chave: string): Record<string, PosicaoJanela> {
  * nunca arrastou) é o sinal para quem chama reancorar em vez de usar
  * `x`/`y` — por isso o retorno nunca é `null`.
  */
-export function carregarPosicaoJanela(usuarioId: string | null, campaignId: string, id: FerramentaId): PosicaoJanela {
+export function carregarPosicaoJanela(usuarioId: string | null, campaignId: string, id: JanelaId): PosicaoJanela {
   return lerTudo(chaveJanelas(usuarioId, campaignId))[id] ?? { x: 0, y: MARGEM_TOPO, manual: false };
 }
 
-export function salvarPosicaoJanela(usuarioId: string | null, campaignId: string, id: FerramentaId, pos: PosicaoJanela): void {
+export function salvarPosicaoJanela(usuarioId: string | null, campaignId: string, id: JanelaId, pos: PosicaoJanela): void {
   if (typeof window === "undefined") return;
   const chave = chaveJanelas(usuarioId, campaignId);
   try {

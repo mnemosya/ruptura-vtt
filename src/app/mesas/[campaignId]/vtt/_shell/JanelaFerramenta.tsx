@@ -14,9 +14,12 @@
  *
  * O que esta janela padroniza:
  *
- *  · CASCA: `.rv-fp` + cabeçalho `.rv-fp-cab` (ícone, título, linha de
- *    modo) + corpo rolável `.rv-fp-corpo`. O cabeçalho fica fixo e só
- *    o corpo rola, então estado e ações nunca somem de vista.
+ *  · CASCA: o desenho do ROLADOR DE DADOS, agora para todas —
+ *    espinha vertical à esquerda (índice + código rotacionado +
+ *    ponto de estado no acento), brackets nos quatro cantos,
+ *    título em display caixa alta e linha de modo em mono com pip
+ *    do acento. O cabeçalho fica fixo e só o corpo rola, então
+ *    estado e ações nunca somem de vista.
  *  · POSIÇÃO INICIAL: encostada na barra de ferramentas, com folga
  *    lateral e superior iguais para todas (`GAP_LATERAL`,
  *    `MARGEM_TOPO`). Se a trilha de turnos estiver aberta, a âncora
@@ -41,9 +44,8 @@ import {
   type ReactNode,
 } from "react";
 import { X } from "lucide-react";
-import type { FerramentaId } from "../_ferramentas/controlador";
 import {
-  type PosicaoJanela,
+  type JanelaId, type PosicaoJanela,
   ancoraPadraoJanela, carregarPosicaoJanela, limitarPosicaoJanela, salvarPosicaoJanela,
 } from "../_ferramentas/janelasPreferencias";
 
@@ -66,8 +68,14 @@ export function ProvedorJanelasFerramenta({ campaignId, usuarioId, children }: C
 }
 
 export interface JanelaFerramentaProps {
-  /** Qual ferramenta — é a chave da posição lembrada. */
-  id: FerramentaId;
+  /** Qual janela — é a chave da posição lembrada. */
+  id: JanelaId;
+  /** Índice da espinha ("01"…). Cai no da tabela quando não vem. */
+  indice?: string;
+  /** Código vertical da espinha. Cai no da tabela quando não vem. */
+  codigo?: string;
+  /** Cor do acento (cantos, índice, código, ponto e pip do modo). */
+  acento?: string;
   icone: ReactNode;
   titulo: string;
   /** Linha de estado sob o título ("o que estou fazendo agora"). */
@@ -95,12 +103,35 @@ export interface JanelaFerramentaProps {
   children: ReactNode;
 }
 
+/**
+ * Identidade de espinha por ferramenta.
+ *
+ * Fica aqui, e não em cada painel, porque a numeração só faz sentido
+ * como CONJUNTO: é ela que dá a leitura de "que peça do maquinário
+ * é esta" quando duas janelas estão abertas lado a lado. Espalhada
+ * pelos painéis, viraria seis números que ninguém garante distintos.
+ */
+const ESPINHA: Partial<Record<JanelaId, { indice: string; codigo: string; acento: string }>> = {
+  interagir: { indice: "00", codigo: "Interação", acento: "#45b8c9" },
+  dados:     { indice: "01", codigo: "Rolagem",   acento: "#45b8c9" },
+  medir:     { indice: "02", codigo: "Medida",    acento: "#45b8c9" },
+  marcar:    { indice: "03", codigo: "Marca",     acento: "#c25a8c" },
+  areas:     { indice: "04", codigo: "Área",      acento: "#8878d6" },
+  rodadas:   { indice: "05", codigo: "Turnos",    acento: "#cf9a3e" },
+  terreno:   { indice: "06", codigo: "Terreno",   acento: "#4fae82" },
+  objetos:   { indice: "07", codigo: "Objetos",   acento: "#cf9a3e" },
+};
+
+const CANTOS = ["tl", "tr", "bl", "br"] as const;
+
 export function JanelaFerramenta({
-  id, icone, titulo, modo, modoAtributos, rotulo, rotuloFechar, aoFechar,
+  id, indice, codigo, acento, icone, titulo, modo, modoAtributos, rotulo, rotuloFechar, aoFechar,
   recolhido, aoAlternarRecolhido, rotuloRecolher, acoesCabecalho,
   className, testId, testIdCabecalho, testIdRecolher, testIdFechar, atributos, children,
 }: JanelaFerramentaProps) {
   const ctx = useContext(JanelasContexto);
+  const espinha = ESPINHA[id];
+  const cor = acento ?? espinha?.acento ?? "#45b8c9";
   const asideRef = useRef<HTMLElement | null>(null);
   const arrastoRef = useRef<{ dx: number; dy: number } | null>(null);
   const [posicao, setPosicao] = useState<PosicaoJanela | null>(null);
@@ -194,8 +225,20 @@ export function JanelaFerramenta({
       // Enquanto a posição não foi medida, a janela fica invisível em
       // vez de piscar no canto: um frame no lugar errado é pior que um
       // frame ausente.
-      style={posicao ? { left: posicao.x, top: posicao.y } : { visibility: "hidden" }}
+      style={{
+        ...(posicao ? { left: posicao.x, top: posicao.y } : { visibility: "hidden" }),
+        ["--jf-acento" as string]: cor,
+      }}
     >
+      {CANTOS.map((c) => (
+        <span key={c} className="rv-fp-canto" data-canto={c} aria-hidden="true" />
+      ))}
+      <span className="rv-fp-espinha" aria-hidden="true">
+        <span className="rv-fp-espinha-indice">{indice ?? espinha?.indice ?? "--"}</span>
+        <span className="rv-fp-espinha-codigo">{codigo ?? espinha?.codigo ?? titulo}</span>
+        <span className="rv-fp-espinha-ponto" />
+      </span>
+
       <header
         className="rv-fp-cab"
         data-testid={testIdCabecalho}

@@ -98,7 +98,7 @@ const META_PRESET: Record<PresetObjeto, { Icone: typeof Box; curto: string }> = 
   barricada: { Icone: Construction, curto: "Barricada" },
   coluna: { Icone: RectangleVertical, curto: "Coluna" },
   grade: { Icone: Fence, curto: "Grade" },
-  personalizado: { Icone: Shapes, curto: "Personalizado" },
+  personalizado: { Icone: Shapes, curto: "Livre" },
 };
 
 const ROTULO_GRAU: Record<GrauCoberturaObjeto, string> = {
@@ -537,8 +537,11 @@ export function PainelObjetos(p: PropsPainelObjetos) {
                 {p.criando ? <Loader2 size={14} className="rv-spin" /> : <Box size={14} />}
                 Criar objeto
               </button>
+              {/* Secundária, não primária: descartar a seleção é o oposto
+                  da ação da janela. Dois botões com o mesmo peso faziam
+                  a pessoa escolher entre iguais. */}
               {p.celulasPendentes > 0 && (
-                <button type="button" className="rv-btn rv-btn--ghost rv-fp-primaria" disabled={p.criando} onClick={p.onCancelarSelecao}>
+                <button type="button" className="rv-fp-secundaria rv-fp-secundaria--perigo" disabled={p.criando} onClick={p.onCancelarSelecao}>
                   <Ban size={14} /> Limpar seleção
                 </button>
               )}

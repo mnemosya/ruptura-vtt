@@ -90,13 +90,16 @@ const ROTULO_FASE: Record<EstadoAreas["fase"], string> = {
 };
 
 function CampoNumero({
-  rotulo, valor, min, max, passo = 1, onChange, desabilitado, dica, testid, unidade = "m",
+  rotulo, valor, min, max, passo = 1, onChange, desabilitado, dica, apoio, testid, unidade = "m",
 }: {
   rotulo: string; valor: number; min: number; max: number; passo?: number;
-  onChange: (v: number) => void; desabilitado?: boolean; dica?: string; testid: string; unidade?: string;
+  onChange: (v: number) => void; desabilitado?: boolean; dica?: string;
+  /** Linha de apoio VISÍVEL sob o campo — explicação que não pode depender de hover. */
+  apoio?: string;
+  testid: string; unidade?: string;
 }) {
   return (
-    <label className="rv-area-campo" title={dica}>
+    <label className="rv-area-campo" title={dica} data-com-apoio={apoio ? "true" : undefined}>
       <span>{rotulo}</span>
       <input
         type="number" inputMode="decimal" data-testid={testid}
@@ -104,6 +107,7 @@ function CampoNumero({
         min={min} max={max} step={passo} disabled={desabilitado}
         onChange={(e) => { const v = Number(e.target.value); if (Number.isFinite(v)) onChange(v); }}
       />
+      {apoio && <small className="rv-area-campo-apoio">{apoio}</small>}
       <em>{unidade}</em>
     </label>
   );
@@ -174,7 +178,6 @@ export function PainelAreas(props: PropsPainelAreas) {
   const emEdicao = estado.fase === "editando";
   const persistindo = estado.fase === "persistindo";
   const emPontos = estado.fase === "pontos";
-  const escolhendoTokenAura = estado.fase === "escolhendo_token_da_aura";
   const definindoRaioAura = estado.fase === "definindo_raio_da_aura";
   const editandoParams = emPrevia || emEdicao;
   const p = paramsAtuais;
@@ -215,12 +218,11 @@ export function PainelAreas(props: PropsPainelAreas) {
     dimensoes.push(
       <div key="aura-origem" className="rv-area-campo rv-area-campo--largo">
         <span>Token de origem</span>
+        {/* Sem botão de "escolher no mapa": clicar no token já escolhe a
+            origem direto, então o botão era um segundo caminho pro
+            mesmo gesto — e o único que precisava ser descoberto. Sobra
+            a lista, que serve pra achar por nome numa mesa cheia. */}
         <div className="rv-area-aura-origem">
-          <button type="button" className="rv-btn rv-btn--ghost rv-area-escolher-token" data-testid="area-escolher-token-mapa"
-            aria-pressed={escolhendoTokenAura} onClick={props.onEscolherTokenAura}>
-            <Crosshair size={12} /> {escolhendoTokenAura ? "Clique num token…" : definindoRaioAura ? "Arraste para o raio…" : "Escolher no mapa"}
-          </button>
-          {/* Alternativa acessível e prática em mesas densas — sincronizada com a escolha no mapa. */}
           {props.tokens.length > 8 && (
             <input type="search" className="rv-area-busca" placeholder="Buscar token…" data-testid="area-busca-token"
               value={busca} onChange={(e) => setBusca(e.target.value)} aria-label="Buscar token de origem" />
@@ -246,9 +248,13 @@ export function PainelAreas(props: PropsPainelAreas) {
         onChange={(v) => p && p.tipo === "linha" && onAlterarParams({ ...p, comprimentoM: v })} />,
       <div key="modo" className="rv-area-campo rv-area-campo--largo" role="radiogroup" aria-label="Modo da linha">
         <span>Modo</span>
-        <div className="rv-area-opcoes">
+        {/* Segmentado INLINE — a mesma peça do Lado na janela de token.
+            Estava em `rv-sub-btn`, que é a barra de submenu do mapa: sem
+            borda, em caixa mista e com um ciano fixo, discordando do
+            ladrilho de tipo três campos acima nesta mesma janela. */}
+        <div className="rv-area-opcoes rv-segmentado">
           {(["uma_celula", "traco_fino"] as ModoLinha[]).map((m) => (
-            <button key={m} type="button" className="rv-sub-btn" data-testid={`area-modo-${m}`}
+            <button key={m} type="button" className="rv-segmentado-item" data-testid={`area-modo-${m}`}
               aria-pressed={(p && p.tipo === "linha" ? p.modo : config.modoLinha) === m}
               onClick={() => { onConfig({ modoLinha: m }); if (p && p.tipo === "linha") onAlterarParams({ ...p, modo: m }); }}>
               {m === "uma_celula" ? "Uma célula (1 m)" : "Traço fino"}
@@ -285,16 +291,17 @@ export function PainelAreas(props: PropsPainelAreas) {
 
   if (config.tipo === "cubo") {
     dimensoes.push(
-      <CampoNumero key="lado" testid="area-campo-lado" rotulo="Lado" min={0.5} max={60}
+      // Um campo só, com o que ele faz escrito embaixo. "Lado" mais uma
+      // linha separada de "Altura" fazia parecer duas medidas
+      // independentes — são a mesma: a aresta do cubo.
+      <CampoNumero key="lado" testid="area-campo-lado" rotulo="Tamanho" min={0.5} max={60}
         valor={p && p.tipo === "cubo" ? p.ladoM : 0} desabilitado={!editandoParams}
+        apoio="Aresta do cubo — vale para largura, profundidade e altura."
         dica={editandoParams ? undefined : "Arraste no mapa para definir o tamanho da base."}
         onChange={(v) => p && p.tipo === "cubo" && onAlterarParams({ ...p, ladoM: v })} />,
       <CampoNumero key="dir" testid="area-campo-direcao" rotulo="Orientação" min={0} max={359} passo={PASSO_SNAP_DIRECAO_GRAUS} unidade="°"
         valor={p && p.tipo === "cubo" ? p.direcaoGraus : 0} desabilitado={!editandoParams}
         onChange={(v) => p && p.tipo === "cubo" && onAlterarParams({ ...p, direcaoGraus: v })} />,
-      <div key="fixa" className="rv-area-valor-fixo" data-testid="area-info-altura-cubo">
-        <span>Altura</span><strong>{formatarMetros(p && p.tipo === "cubo" ? p.ladoM : 0)}</strong>
-      </div>,
     );
   }
 
@@ -427,7 +434,14 @@ export function PainelAreas(props: PropsPainelAreas) {
             <label className="rv-area-campo rv-area-campo--largo">
               <span>Opacidade</span>
               <input type="range" min={0.05} max={1} step={0.05} data-testid="area-campo-opacidade"
+                style={{ ["--rv-slider-pct" as string]: `${Math.round(((config.opacidade - 0.05) / 0.95) * 100)}%` }}
                 value={config.opacidade} onChange={(e) => onConfig({ opacidade: Number(e.target.value) })} />
+              {/* O número à direita: um slider sem leitura obriga a
+                  adivinhar onde se está, e opacidade é justamente o
+                  ajuste que se repete até acertar. */}
+              <output className="rv-area-slider-val" htmlFor="area-campo-opacidade">
+                {Math.round(config.opacidade * 100)}%
+              </output>
             </label>
           </Secao>
 

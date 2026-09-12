@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { AbrirFicha } from "../../_shell/AbrirFicha";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Redo2, RotateCcw, RotateCw, Undo2 } from "lucide-react";
 import {
@@ -357,7 +357,9 @@ export function SelectedTokenHud(props: SelectedTokenHudProps) {
             <button type="button" onClick={props.onRedo} disabled={!props.canRedo} aria-label="Refazer movimento"><Redo2 size={13} /></button>
             <button type="button" onClick={() => props.onRotate(-1)} aria-label="Rotacionar token à esquerda"><RotateCcw size={13} /></button>
             <button type="button" onClick={() => props.onRotate(1)} aria-label="Rotacionar token à direita"><RotateCw size={13} /></button>
-            {data?.characterId && <Link href={`/ficha?campaignId=${campaignId}&characterId=${data.characterId}`}>Ficha</Link>}
+            {data?.characterId && (
+              <AbrirFicha campaignId={campaignId} characterId={data.characterId}>Ficha</AbrirFicha>
+            )}
           </div>
         )}
         {resources.length > 0 && (
@@ -421,7 +423,9 @@ export function SelectedTokenHud(props: SelectedTokenHudProps) {
       )}
       {aux === "defense" && <DefensePickerModal onEscolher={chooseDefenseType} onFechar={() => setAux(null)} />}
       {aux === "resist" && <ResistirAtributoModal onEscolher={(skillId) => { void chooseDefense(skillId); }} onFechar={() => setAux(null)} />}
-      {typeof aux === "object" && aux?.type === "roll" && <RollResultModal resultado={aux.result} defesa={aux.defense} onFechar={() => setAux(null)} />}
+      {typeof aux === "object" && aux?.type === "roll" && (
+        <RollResultModal resultado={aux.result} defesa={aux.defense} personagem={name} onFechar={() => setAux(null)} />
+      )}
     </section>
   );
 }

@@ -17,10 +17,11 @@
  * simples, sem tentar mesclar histórias concorrentes).
  */
 
-export type FerramentaId = "interagir" | "medir" | "marcar" | "terreno" | "objetos" | "areas" | "rodadas";
+export type FerramentaId = "interagir" | "dados" | "medir" | "marcar" | "terreno" | "objetos" | "areas" | "rodadas";
 
 export const ROTULO_FERRAMENTA: Record<FerramentaId, string> = {
   interagir: "Interagir",
+  dados: "Rolar Dados",
   medir: "Medir",
   marcar: "Marcar",
   terreno: "Terreno",
@@ -31,6 +32,7 @@ export const ROTULO_FERRAMENTA: Record<FerramentaId, string> = {
 
 export const ATALHO_FERRAMENTA: Record<FerramentaId, string> = {
   interagir: "V",
+  dados: "L",
   medir: "M",
   marcar: "D",
   terreno: "T",
@@ -43,7 +45,7 @@ export const ATALHO_FERRAMENTA: Record<FerramentaId, string> = {
   rodadas: "R",
 };
 
-const TECLA_PARA_FERRAMENTA: Record<string, FerramentaId> = { v: "interagir", m: "medir", d: "marcar", t: "terreno", o: "objetos", a: "areas", r: "rodadas" };
+const TECLA_PARA_FERRAMENTA: Record<string, FerramentaId> = { v: "interagir", l: "dados", m: "medir", d: "marcar", t: "terreno", o: "objetos", a: "areas", r: "rodadas" };
 
 /**
  * Ferramentas visíveis pro papel — Terreno é sempre narrador; ÁREAS e
@@ -66,7 +68,7 @@ const TECLA_PARA_FERRAMENTA: Record<string, FerramentaId> = { v: "interagir", m:
  * `pode_editar_vtt_area`), nunca só por esconder ou mostrar o botão.
  */
 export function ferramentasParaPapel(ehNarrador: boolean): FerramentaId[] {
-  const base: FerramentaId[] = ["interagir", "medir", "marcar", "areas", "rodadas"];
+  const base: FerramentaId[] = ["interagir", "dados", "medir", "marcar", "areas", "rodadas"];
   return ehNarrador ? [...base, "terreno", "objetos"] : base;
 }
 
@@ -212,10 +214,20 @@ export function interpretarAtalho(evento: {
   return null;
 }
 
-/** A checagem "alvo é editável" que `interpretarAtalho` espera já resolvida — separada pra não exigir DOM no teste da lógica de atalho. */
-export function elementoEhEditavel(el: { tagName?: string; isContentEditable?: boolean } | null): boolean {
+/**
+ * A checagem "alvo é editável" que `interpretarAtalho` espera já
+ * resolvida — separada pra não exigir DOM no teste da lógica de
+ * atalho.
+ *
+ * `dataset.carregandoForca === "true"` cobre o botão "Rolar Dados"
+ * carregando força (segurado, mouse/toque/caneta OU `Space`/`Enter`):
+ * enquanto ele está sendo operado, uma tecla de atalho da mesa
+ * (V/L/M/D/A/R/T/O) não pode trocar de ferramenta por baixo do gesto.
+ */
+export function elementoEhEditavel(el: { tagName?: string; isContentEditable?: boolean; dataset?: { carregandoForca?: string } } | null): boolean {
   if (!el) return false;
   if (el.isContentEditable) return true;
+  if (el.dataset?.carregandoForca === "true") return true;
   const tag = el.tagName?.toUpperCase();
   return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
 }

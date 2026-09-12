@@ -35,6 +35,13 @@ export interface TokenApresentacao {
   tamanho: TamanhoCriatura;
   /** Posição da ÂNCORA — pertence à pegada, nunca o centro geométrico. */
   pos: Hex;
+  /**
+   * Deslocamento sub-célula dentro da âncora, em unidades axiais
+   * fracionárias — só DESENHO (migration 0094). Quem ocupa célula é
+   * `pos`; isto é onde dentro dela o token aparece, e é o que faz o
+   * arrasto com a grade escondida parar onde foi solto.
+   */
+  offset: Hex;
   orientacao: number;
   pegadaPersonalizada: Hex[] | null;
   retrato: string | null;
@@ -78,6 +85,8 @@ export function tokenApresentacaoDe(t: {
   tamanho: string;
   q: number;
   r: number;
+  offsetQ?: number;
+  offsetR?: number;
   orientacao: number;
   pegadaPersonalizada: Hex[] | null;
   retratoUrl: string | null;
@@ -101,6 +110,8 @@ export function tokenApresentacaoDe(t: {
     vertente: vertenteValida(t.vertente),
     tamanho: t.tamanho as TamanhoCriatura,
     pos: { q: t.q, r: t.r },
+    /** Onde DENTRO da célula âncora desenhar — ver `TokenVtt.offsetQ`. */
+    offset: { q: t.offsetQ ?? 0, r: t.offsetR ?? 0 },
     orientacao: t.orientacao,
     pegadaPersonalizada: t.pegadaPersonalizada,
     retrato: t.retratoUrl,

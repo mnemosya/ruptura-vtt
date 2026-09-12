@@ -1,7 +1,7 @@
 /**
  * Tabelas de referência do domínio VTT — rótulos e texto de efeito
  * mecânico pra condições, cobertura e terreno, mais os tipos de forma
- * (`ObjetoCena`/`AreaTerreno`) que a camada de mapa desenha.
+ * (`ObjetoCena`) que a camada de mapa desenha.
  *
  * Este arquivo NÃO contém mais conteúdo de cena fictício: a antiga
  * `CENA_DEMO` (elenco de tokens, objetos e terrenos de uma cena
@@ -56,15 +56,6 @@ export interface ObjetoCena {
   /** Aparência do objeto no mapa. */
   tipo: "conteiner" | "veiculo" | "entulho" | "muro" | "barril" | "grade" | "banca";
   rotacao?: number;
-}
-
-export interface AreaTerreno {
-  id: string;
-  tipo: "dificil" | "elevado" | "zona_morta";
-  nome: string;
-  celulas: Hex[];
-  /** Só pra elevado: diferença em metros (3+ dá +1 a ataques de cima). */
-  altura?: number;
 }
 
 export const CATEGORIA_COBERTURA: Record<CategoriaCobertura, { rotulo: string; faixaPd: string }> = {

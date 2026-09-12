@@ -16,7 +16,7 @@
  */
 
 import { JanelaFerramenta } from "./JanelaFerramenta";
-import { Eraser, Loader2, MousePointerClick, Ruler, Timer } from "lucide-react";
+import { AlertTriangle, Eraser, Loader2, MousePointerClick, Ruler, Timer } from "lucide-react";
 import { type ModoMedicao } from "../_dominio/medicaoRegua";
 
 export type { ModoMedicao };
@@ -69,6 +69,43 @@ export function PainelMedir(p: PropsPainelMedir) {
     >
 
       <div className="rv-fp-corpo">
+        {/* INDICADORES — a leitura de relance do estudo: distância,
+            custo e trechos como três placas, cada uma com sua barra de
+            acento. Sem medição na tela elas mostram "—", nunca zero
+            (zero é um resultado; ausência não é). */}
+        <div className="rv-fp-placas" role="status" aria-live="polite">
+          <div className="rv-fp-placa" data-acento="cy">
+            <span className="rv-fp-placa-rot">Distância</span>
+            <span className="rv-fp-placa-val">
+              {p.resumo ? p.resumo.metros : "—"}
+              {p.resumo && <span className="rv-fp-placa-un">m</span>}
+            </span>
+          </div>
+          <div className="rv-fp-placa" data-acento="am">
+            <span className="rv-fp-placa-rot">Custo</span>
+            <span className="rv-fp-placa-val">{p.resumo ? p.resumo.custo : "—"}</span>
+          </div>
+          <div className="rv-fp-placa" data-acento="neutro">
+            <span className="rv-fp-placa-rot">Trechos</span>
+            <span className="rv-fp-placa-val">{p.resumo ? p.resumo.trechos.length : "—"}</span>
+          </div>
+        </div>
+
+        {/* Avisos — só quando o mapa de fato cobra algo. O custo maior
+            que a distância É o terreno difícil no caminho. */}
+        {p.resumo && p.resumo.custo !== p.resumo.metros && (
+          <p className="rv-fp-medida-aviso">
+            <AlertTriangle size={13} />
+            <span>A régua atravessa terreno difícil · +{p.resumo.custo - p.resumo.metros} de custo</span>
+          </p>
+        )}
+        {p.resumo?.atravessaBloqueio && (
+          <p className="rv-fp-medida-aviso" data-grave="true">
+            <AlertTriangle size={13} />
+            <span>A régua atravessa terreno bloqueado.</span>
+          </p>
+        )}
+
         <div className="rv-fp-grupo">
           <span className="rv-fp-rotulo" id="rv-fp-rot-modo-medir">Modo</span>
           <div className="rv-fp-seg" role="group" aria-labelledby="rv-fp-rot-modo-medir">
@@ -86,57 +123,47 @@ export function PainelMedir(p: PropsPainelMedir) {
           </div>
         </div>
 
-        <p className="rv-fp-instrucao">
-          <MousePointerClick size={13} />
-          <span>
-            Pressione e arraste pra medir. <kbd className="rv-fp-tecla">Q</kbd> fixa uma dobra e
-            segue medindo a partir dela; <kbd className="rv-fp-tecla">Backspace</kbd> desfaz a
-            última. <kbd className="rv-fp-tecla">Enter</kbd> conclui, <kbd className="rv-fp-tecla">Esc</kbd> cancela.
-            1 célula = 1 m.
-          </span>
-        </p>
-
-        {/* Total acumulado — `role="status"` porque muda durante o
-            gesto e precisa chegar a leitor de tela sem roubar o foco
-            do mapa (mesmo padrão da contagem de células do Terreno). */}
-        <div
-          className={`rv-fp-medida${medindo ? "" : " rv-fp-medida--vazia"}`}
-          role="status" aria-live="polite"
-        >
-          {p.resumo ? (
-            <>
-              <div className="rv-fp-medida-total">
-                <strong>{p.resumo.metros}</strong>
-                <span className="rv-fp-medida-un">m</span>
-                {p.resumo.custo !== p.resumo.metros && (
-                  <span className="rv-fp-medida-custo">custo {p.resumo.custo}</span>
-                )}
-              </div>
-              {/* Os trechos só aparecem quando há mais de um — com um
-                  trecho só, repetir o total como "parcial" seria ruído. */}
-              {p.resumo.trechos.length > 1 && (
-                <ul className="rv-fp-trechos">
-                  {p.resumo.trechos.map((d, i) => (
-                    <li key={i} className="rv-fp-trecho">
-                      <span className="rv-fp-trecho-n">{i + 1}</span>
-                      <span className="rv-fp-trecho-d">{d} m</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {p.dobras > 0 && (
-                <p className="rv-fp-medida-nota">
-                  {p.dobras} dobra{p.dobras === 1 ? "" : "s"} fixada{p.dobras === 1 ? "" : "s"}
-                </p>
-              )}
-              {p.resumo.atravessaBloqueio && (
-                <p className="rv-fp-medida-aviso">A régua atravessa terreno bloqueado.</p>
-              )}
-            </>
-          ) : (
-            <span className="rv-fp-medida-ocioso">Nenhuma medição em andamento</span>
-          )}
+        {/* ATALHOS — a mesma informação do parágrafo antigo, agora
+            legível de relance: tecla e o que ela faz, em linha. */}
+        <div className="rv-fp-grupo">
+          <span className="rv-fp-rotulo">Atalhos do gesto</span>
+          <ul className="rv-fp-atalhos">
+            <li><kbd className="rv-fp-tecla">Q</kbd><span>dobra</span></li>
+            {/* Palavra, não `⌫` (U+232B): a mono do VTT não tem esse
+                glifo e o navegador desenhava um retângulo vazio. As
+                outras três teclas já eram palavra/letra. */}
+            <li><kbd className="rv-fp-tecla">Backspace</kbd><span>desfaz ponto</span></li>
+            <li><kbd className="rv-fp-tecla">Enter</kbd><span>conclui</span></li>
+            <li><kbd className="rv-fp-tecla">Esc</kbd><span>cancela</span></li>
+          </ul>
+          <p className="rv-fp-nota">
+            <MousePointerClick size={12} />
+            <span>Pressione e arraste pra medir. 1 célula = 1 m.</span>
+          </p>
         </div>
+
+        {/* Detalhe por trecho — só com mais de um, e agora abaixo das
+            placas (que já dão o total). */}
+        {p.resumo && p.resumo.trechos.length > 1 && (
+          <div className="rv-fp-grupo">
+            <span className="rv-fp-rotulo">Trechos</span>
+            <ul className="rv-fp-trechos">
+              {p.resumo.trechos.map((d, i) => (
+                <li key={i} className="rv-fp-trecho">
+                  <span className="rv-fp-trecho-n">{i + 1}</span>
+                  <span className="rv-fp-trecho-d">{d} m</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {p.resumo && p.dobras > 0 && (
+          <p className="rv-fp-nota">
+            {p.dobras} dobra{p.dobras === 1 ? "" : "s"} fixada{p.dobras === 1 ? "" : "s"}
+          </p>
+        )}
+        {!medindo && <p className="rv-fp-medida-ocioso">Nenhuma medição em andamento</p>}
       </div>
 
       {/* Limpar só aparece quando há o que limpar — um botão morto

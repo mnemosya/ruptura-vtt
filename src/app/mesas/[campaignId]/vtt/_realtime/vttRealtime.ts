@@ -180,6 +180,9 @@ export function subscribeToVttScene(params: {
               id: novo.id as string,
               autorId: novo.autor_id as string,
               tipo: novo.tipo as MarcaVtt["tipo"],
+              sinal: (novo.sinal as MarcaVtt["sinal"] | null) ?? "alvo",
+              duracao: (novo.duracao as MarcaVtt["duracao"] | null) ?? "persistente",
+              rodadaCriada: (novo.rodada_criada as number | null) ?? null,
               pontos: (novo.pontos as { q: number; r: number }[]) ?? [],
               texto: (novo.texto as string | null) ?? null,
               cor: novo.cor as MarcaVtt["cor"],
@@ -601,4 +604,86 @@ export function subscribeToVttAreasChanged(params: {
     .subscribe();
 
   return () => { client.removeChannel(channel); };
+}
+
+/**
+ * Assinatura SÓ da trilha de turnos — para quem está fora do VTT.
+ *
+ * O dock da casca precisa do combate ao vivo em qualquer rota da
+ * campanha, e `subscribeToVttScene` não serve: ela exige os sete
+ * manipuladores da cena inteira e usa o canal `:vtt`, que o VTT já
+ * ocupa. Duas inscrições no MESMO canal, do mesmo cliente, é onde
+ * supabase-js começa a devolver evento pra um e não pro outro — por
+ * isso esta tem canal próprio.
+ *
+ * Mesma disciplina da irmã: o `estado` viaja CRU e quem recebe valida
+ * com `_turnos/serializacao.ts`. Um payload de realtime não é mais
+ * confiável que uma linha lida.
+ */
+export function subscribeToTrilhaDaMesa(params: {
+  campaignId: string;
+  sceneId: string;
+  onTrilha: (e: EventoTrilha) => void;
+}): () => void {
+  const client = getBrowserSupabaseClient();
+  if (!client) return () => {};
+
+  const channel: RealtimeChannel = client
+    .channel(`campaign:${params.campaignId}:trilha`)
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "vtt_turn_tracks", filter: `campaign_id=eq.${params.campaignId}` },
+      (payload) => {
+        const novo = payload.new as Record<string, unknown> | null;
+        const velho = payload.old as Record<string, unknown> | null;
+        if (payload.eventType === "DELETE") {
+          // `replica identity full` (0088) é o que traz `scene_id` no "old".
+          if (velho?.scene_id === params.sceneId) params.onTrilha({ tipo: "encerrada" });
+          return;
+        }
+        if (novo && novo.scene_id === params.sceneId) {
+          params.onTrilha({ tipo: "estado", estado: novo.estado as unknown, revision: novo.revision as number });
+        }
+      },
+    )
+    .subscribe();
+
+  return () => { void client.removeChannel(channel); };
+}
+
+/**
+ * Camadas da cena mudaram (migration 0093).
+ *
+ * Canal próprio, pelo mesmo motivo da trilha: `subscribeToVttScene`
+ * exige os sete manipuladores da cena inteira, e o canal `:vtt` já
+ * está ocupado por ela.
+ *
+ * O payload viaja CRU (`unknown`) — quem recebe valida com
+ * `_shell/PainelCamadas.camadasDeJson`, o mesmo validador da leitura
+ * persistida. Duas portas de entrada com validações diferentes é como
+ * estados impossíveis nascem.
+ */
+export function subscribeToCamadasDaCena(params: {
+  campaignId: string;
+  sceneId: string;
+  onCamadas: (e: { camadas: unknown; revision: number }) => void;
+}): () => void {
+  const client = getBrowserSupabaseClient();
+  if (!client) return () => {};
+
+  const channel: RealtimeChannel = client
+    .channel(`campaign:${params.campaignId}:cena`)
+    .on(
+      "postgres_changes",
+      { event: "UPDATE", schema: "public", table: "vtt_scenes", filter: `campaign_id=eq.${params.campaignId}` },
+      (payload) => {
+        const novo = payload.new as Record<string, unknown> | null;
+        if (novo && novo.id === params.sceneId) {
+          params.onCamadas({ camadas: novo.camadas, revision: novo.revision as number });
+        }
+      },
+    )
+    .subscribe();
+
+  return () => { void client.removeChannel(channel); };
 }

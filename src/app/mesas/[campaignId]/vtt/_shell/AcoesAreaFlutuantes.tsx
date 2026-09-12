@@ -13,7 +13,13 @@
  * de zoom continuam do mesmo tamanho e legíveis).
  *
  * O grupo se afasta da âncora e inverte de lado perto das bordas, pra
- * nunca sair do viewport nem cobrir a alça principal da área.
+ * nunca sair da área ÚTIL nem cobrir a alça principal da área.
+ *
+ * "Área útil" e não "viewport": a barra de ferramentas ocupa a faixa
+ * esquerda e o painel de sessão a direita, os dois POR CIMA do mapa.
+ * Encostar o grupo na borda do viewport punha os botões embaixo deles —
+ * visíveis, e impossíveis de clicar. O limite é o retângulo do palco
+ * menos o que está por cima dele.
  */
 
 import { useLayoutEffect, useRef, useState } from "react";
@@ -38,10 +44,10 @@ export interface PropsAcoesAreaFlutuantes {
 const DESLOC_X = 14;
 const DESLOC_Y = -14;
 /** Espaço estimado do grupo — usado só pra decidir de que lado ele cabe. */
-const LARGURA_ESTIMADA = 190;
-const ALTURA_ESTIMADA = 44;
+const LARGURA_ESTIMADA = 158;
+const ALTURA_ESTIMADA = 36;
 /** A régua de medida quebra linha própria (`flex-basis: 100%`) — soma essa altura extra à estimativa quando ela está presente, senão o grupo cresce pra dentro da trilha/HUD sem que o flip perceba. */
-const ALTURA_EXTRA_MEDIDA = 20;
+const ALTURA_EXTRA_MEDIDA = 16;
 const MARGEM = 10;
 
 /**
@@ -49,25 +55,54 @@ const MARGEM = 10;
  * ponteiro quando não cabe à direita/abaixo, e no limite gruda na
  * margem. Função pura e exportada — testável sem DOM.
  */
+export interface AreaUtil {
+  esquerda: number;
+  topo: number;
+  direita: number;
+  base: number;
+}
+
 export function posicaoDasAcoes(
   ancora: { x: number; y: number },
-  viewport: { largura: number; altura: number },
+  area: AreaUtil,
   comMedida = false,
 ): { left: number; top: number } {
   const alturaEstimada = ALTURA_ESTIMADA + (comMedida ? ALTURA_EXTRA_MEDIDA : 0);
   let left = ancora.x + DESLOC_X;
   let top = ancora.y + DESLOC_Y;
-  if (left + LARGURA_ESTIMADA > viewport.largura - MARGEM) left = ancora.x - LARGURA_ESTIMADA - DESLOC_X;
-  if (top + alturaEstimada > viewport.altura - MARGEM) top = ancora.y - alturaEstimada - DESLOC_X;
+  if (left + LARGURA_ESTIMADA > area.direita - MARGEM) left = ancora.x - LARGURA_ESTIMADA - DESLOC_X;
+  if (top + alturaEstimada > area.base - MARGEM) top = ancora.y - alturaEstimada - DESLOC_X;
+  const limiteEsq = area.esquerda + MARGEM;
+  const limiteTopo = area.topo + MARGEM;
   return {
-    left: Math.min(Math.max(left, MARGEM), Math.max(MARGEM, viewport.largura - LARGURA_ESTIMADA - MARGEM)),
-    top: Math.min(Math.max(top, MARGEM), Math.max(MARGEM, viewport.altura - alturaEstimada - MARGEM)),
+    left: Math.min(Math.max(left, limiteEsq), Math.max(limiteEsq, area.direita - LARGURA_ESTIMADA - MARGEM)),
+    top: Math.min(Math.max(top, limiteTopo), Math.max(limiteTopo, area.base - alturaEstimada - MARGEM)),
   };
+}
+
+/**
+ * O retângulo de tela onde um controle flutuante é de fato clicável:
+ * o palco menos a barra de ferramentas e o painel de sessão, que ficam
+ * POR CIMA dele. Cai no viewport inteiro se algum deles não existir
+ * (nenhum é obrigatório).
+ */
+export function areaUtilDoMapa(): AreaUtil {
+  const area: AreaUtil = { esquerda: 0, topo: 0, direita: window.innerWidth, base: window.innerHeight };
+  const palco = document.querySelector(".rv-palco")?.getBoundingClientRect();
+  if (palco) {
+    area.esquerda = palco.left; area.topo = palco.top;
+    area.direita = palco.right; area.base = palco.bottom;
+  }
+  const barra = document.querySelector(".rv-ferramentas")?.getBoundingClientRect();
+  if (barra && barra.right > area.esquerda) area.esquerda = barra.right;
+  const painel = document.querySelector(".rv-painel")?.getBoundingClientRect();
+  if (painel && painel.left < area.direita) area.direita = painel.left;
+  return area;
 }
 
 export function AcoesAreaFlutuantes({ ancoraTela, onManter, onDescartar, persistindo, erro, editando, medida }: PropsAcoesAreaFlutuantes) {
   if (!ancoraTela) return null;
-  const pos = posicaoDasAcoes(ancoraTela, { largura: window.innerWidth, altura: window.innerHeight }, !!medida);
+  const pos = posicaoDasAcoes(ancoraTela, areaUtilDoMapa(), !!medida);
   const rotuloConfirmar = editando ? "Salvar" : "Manter";
 
   return (

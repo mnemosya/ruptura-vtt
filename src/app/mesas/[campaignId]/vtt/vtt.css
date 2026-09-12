@@ -1,12 +1,40 @@
+@import "../../../_design/vtt-chassi.css";
+
+/* ═══════════════════════════════════════════════════════════════════
+   PISO TIPOGRÁFICO: 10px.
+
+   Nenhuma fonte desta folha desce de 10px. As escalas do estudo iam a
+   7px em etiqueta de metadado — legível num mockup ampliado, não numa
+   mesa de jogo real. Onde o estudo pedia 7/8/8,5/9/9,5, aqui é 10.
+
+   Abaixo de 10px passa a ser EXCEÇÃO, com motivo escrito na linha.
+   A tela de acesso (`_design/auth.css`) é exceção de folha inteira —
+   o motivo está escrito lá em cima.
+   ═══════════════════════════════════════════════════════════════════ */
+
+
 /*
  * Mesa de Ruptura — folha da mesa (`rv-*`).
  *
  * COMPOSIÇÃO: o mapa é o fundo, em tela cheia. Todo o resto flutua por
- * cima como superfície escura com profundidade. A versão anterior
- * empilhava faixas de largura total num grid de linhas — o mapa virava
- * uma linha entre outras e o rodapé lia como pilha de tabelas. Aqui só
- * existem três colunas (ferramentas | palco | painel) e tudo dentro do
- * palco é `position: absolute` sobre o mapa.
+ * cima como superfície escura com profundidade. Só existem três colunas
+ * (ferramentas | palco | painel) e tudo dentro do palco é
+ * `position: absolute` sobre o mapa.
+ *
+ * PALETA: os tokens vêm de `_design/vtt-chassi.css`, que traz a
+ * linguagem do estudo `chat % dice tray` — chrome em navy neutro
+ * (`--rv-line`), acento só onde é estrutural/interativo, raio 2–3px,
+ * acento soft a 9%. Os nomes CURTOS abaixo (`--cy`, `--am`, `--dg`,
+ * `--ok`, `--txt`…) continuam existindo porque ~1700 linhas desta folha
+ * os consomem; eles agora APONTAM para os tokens do chassi, então a
+ * mesa inteira mudou de paleta sem uma migração regra a regra.
+ *
+ * O `@import` anterior era o BUNDLE COMPILADO do estudo
+ * (`chat % dice tray/dist/assets/*.css`): trazia o Tailwind inteiro,
+ * com reset global em `*,::before,::after` e um `@import` remoto de
+ * fontes que o `next/font` já carrega. As ~30 linhas de fato usadas
+ * (animações da bandeja, `rup-scroll`, `rup-clip`) moraram para o
+ * chassi.
  *
  * Ciano = Turnos Rápidos, âmbar = Turnos Lentos. Mesmo peso visual: os
  * dois grupos estão sempre ativos e nenhum deve parecer desabilitado —
@@ -15,39 +43,71 @@
  */
 
 .rv-mesa {
-  --cy: #35c8f0;
-  --am: #f0a132;
-  --dg: #ff5f74;
-  --ok: #3ddc9a;
-  --sup: rgba(13, 19, 26, 0.9);
-  --txt: #c3d6e2;
-  --txt-forte: #eef7fc;
-  --txt-dim: rgba(160, 186, 203, 0.62);
-  --sombra: 0 18px 44px rgba(0, 0, 0, 0.62);
-  --raio: 10px;
+  /* Apelidos históricos → tokens do chassi. */
+  --cy: var(--rv-cy);
+  --am: var(--rv-am);
+  --dg: var(--rv-dg);
+  --ok: var(--rv-ok);
+  --ar: var(--rv-ar);
+  --sup: var(--rv-panel);
+  --txt: var(--rv-ink);
+  --txt-forte: #eaf6ff;
+  --txt-dim: var(--rv-ink-dim);
+  --sombra: var(--rv-shadow-win);
+  --raio: var(--rv-r);
+
+  /* Bordas nomeadas — o que substituiu os `rgba(255,255,255,.0X)`
+     espalhados. `linha` é chrome; `linha-forte` é divisor de peso. */
+  --linha: var(--rv-line);
+  --linha-2: var(--rv-line-2);
+  --linha-forte: var(--rv-line-strong);
+  --linha-hover: var(--rv-line-hover);
 
   position: fixed; inset: 0;
   display: grid;
   grid-template-columns: 58px minmax(0, 1fr) auto;
-  background: #06090d;
+  background: var(--rv-ground);
   color: var(--txt);
-  font-family: var(--font-rajdhani), system-ui, sans-serif;
+  font-family: var(--rv-body);
   overflow: hidden;
 }
 .rv-mesa *, .rv-mesa *::before, .rv-mesa *::after { box-sizing: border-box; }
 .rv-eyebrow {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase;
-  color: rgba(53, 200, 240, .8);
+  font-size: 10px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--cy);
 }
 
+/* DICA — o balãozinho de hover/foco. Era uma caixa cinza sem fio e com
+   texto corrido: a única peça flutuante do VTT que não se parecia com
+   o resto. Agora carrega o mesmo chassi do card de decisão (fio de 1px
+   + espinha de acento à esquerda, em `inset box-shadow`) e a mesma
+   tipografia de rótulo das janelas: display, caixa alta, 10px. Dica é
+   ETIQUETA, não frase — a caixa alta é o que diz isso. */
 .rv-dica {
   position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%);
-  display: flex; align-items: center; gap: 7px; padding: 5px 10px; white-space: nowrap; z-index: 40;
-  border-radius: 7px; background: #101a24; color: #dceaf2; font-size: 11.5px;
-  box-shadow: var(--sombra); opacity: 0; pointer-events: none; transition: opacity .12s;
+  display: flex; align-items: center; gap: 7px; padding: 5px 9px 5px 10px; white-space: nowrap; z-index: 40;
+  border-radius: var(--rv-r);
+  background: var(--rv-panel);
+  box-shadow:
+    inset 0 0 0 1px var(--rv-line-strong, #1c2b45),
+    inset 2px 0 0 var(--jf-acento, var(--cy)),
+    var(--sombra);
+  backdrop-filter: blur(9px);
+  color: var(--rv-ink);
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  opacity: 0; pointer-events: none; transition: opacity .12s;
 }
-.rv-dica kbd { font-family: var(--font-mono), monospace; font-size: 9px; padding: 1px 5px; border-radius: 4px; background: rgba(255,255,255,.08); color: var(--txt-dim); }
+/* A tecla de atalho continua sendo a única coisa em mono e em caixa
+   original — ela representa uma tecla física, não um rótulo. */
+.rv-dica kbd {
+  font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700;
+  letter-spacing: 0; text-transform: none;
+  padding: 1px 5px; border-radius: var(--rv-r);
+  border: 1px solid var(--rv-line-2, #16233a); background: var(--rv-sunken, var(--rv-raise));
+  color: var(--jf-acento, var(--cy));
+}
 .rv-ferr-btn:hover .rv-dica, .rv-ferr-btn:focus-visible .rv-dica,
 .rv-aba:hover .rv-dica, .rv-aba:focus-visible .rv-dica { opacity: 1; transition-delay: .35s; }
 .rv-painel .rv-dica { left: auto; right: calc(100% + 10px); }
@@ -55,22 +115,30 @@
    inline): o trilho de facção rola, e um balão `absolute` seria
    recortado pela caixa de rolagem. Ver `BotaoDeclarar` em
    `_turnos/TrilhaFaccoes.tsx`. */
-.rv-dica--fixa { position: fixed; z-index: 60; opacity: 1; transform: translateY(-50%); }
+/* Esta variante carrega a DESCRIÇÃO da ação (uma frase inteira, vinda
+   de `d.descricao`), e não um rótulo curto: frase em caixa alta com
+   `letter-spacing` fica ilegível. Só aqui a tipografia volta ao texto
+   corrido — o chassi (fio + espinha) continua o mesmo. */
+.rv-dica--fixa {
+  position: fixed; z-index: 60; opacity: 1; transform: translateY(-50%);
+  font-family: inherit; font-size: 11.5px; font-weight: 400;
+  letter-spacing: normal; text-transform: none;
+}
 .rv-dica--fixa[data-lado="pn"] { transform: translate(-100%, -50%); }
 
 /* ── Ferramentas ─────────────────────────────────────────── */
 .rv-ferramentas {
   display: flex; flex-direction: column; align-items: center; gap: 3px;
-  padding: 10px 0; background: #0a0f15; border-right: 1px solid rgba(255,255,255,.05); z-index: 20;
+  padding: 10px 0; background: var(--rv-sunken); border-right: 1px solid var(--linha-2); z-index: 20;
 }
 .rv-ferr-btn {
   position: relative; width: 36px; height: 36px; flex: none;
   display: flex; align-items: center; justify-content: center;
-  border: none; border-radius: 8px; background: transparent; color: #63798a; cursor: pointer;
+  border: none; border-radius: var(--rv-r); background: transparent; color: #63798a; cursor: pointer;
   transition: color .14s, background .14s;
 }
 .rv-ferr-btn:hover { color: #cfe6f2; background: rgba(255,255,255,.055); }
-.rv-ferr-btn[aria-pressed="true"] { color: var(--cy); background: rgba(53,200,240,.14); box-shadow: inset 0 0 0 1px rgba(53,200,240,.4); }
+.rv-ferr-btn[aria-pressed="true"] { color: var(--cy); background: var(--rv-cy-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cy) 22%, transparent); }
 .rv-ferr-btn:focus-visible, .rv-aba:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 .rv-ferr-menu { color: #8ba3b4; }
 .rv-ferr-sep { width: 20px; height: 1px; background: rgba(255,255,255,.08); margin: 5px 0; }
@@ -93,10 +161,10 @@
 .rv-cena-local { margin: 1px 0 0; font-size: 11.5px; color: var(--txt-dim); }
 
 .rv-celula { fill: transparent; stroke: rgba(150,190,215,.07); stroke-width: 1; transition: fill .1s; }
-.rv-celula:hover { fill: rgba(53,200,240,.06); stroke: rgba(53,200,240,.28); }
-.rv-celula--realce { fill: rgba(53,200,240,.11); stroke: rgba(53,200,240,.34); }
-.rv-celula--area { fill: rgba(240,161,50,.14); stroke: rgba(240,161,50,.45); }
-.rv-celula--movimento { fill: rgba(61,220,154,.11); stroke: rgba(61,220,154,.4); }
+.rv-celula:hover { fill: var(--rv-cy-soft); stroke: color-mix(in srgb, var(--cy) 22%, transparent); }
+.rv-celula--realce { fill: var(--rv-cy-soft); stroke: color-mix(in srgb, var(--cy) 22%, transparent); }
+.rv-celula--area { fill: var(--rv-am-soft); stroke: color-mix(in srgb, var(--am) 30%, transparent); }
+.rv-celula--movimento { fill: var(--rv-ok-soft); stroke: color-mix(in srgb, var(--ok) 30%, transparent); }
 .rv-celula--objeto { fill: rgba(240,90,90,.16); stroke: rgba(240,90,90,.5); }
 /* Terreno funcional — a HACHURA é fundo (bem discreta, .28) e o
    MARCADOR (×2 / X) é regra, então ele fica mais forte (.4) e legível
@@ -117,8 +185,8 @@
    selecionado"), e precisa se distinguir do terreno já pintado por
    baixo sem escondê-lo. */
 .rv-celula--pincel {
-  fill: rgba(53,200,240,.13);
-  stroke: rgba(53,200,240,.85); stroke-width: 1.6; stroke-dasharray: 3 2.4;
+  fill: var(--rv-cy-soft);
+  stroke: var(--cy); stroke-width: 1.6; stroke-dasharray: 3 2.4;
 }
 
 .rv-token { cursor: pointer; }
@@ -132,7 +200,7 @@
 .rv-token:focus { outline: none; }
 .rv-token:focus-visible circle:nth-of-type(1) { stroke: #fff; stroke-width: 3.5; }
 .rv-token-sigla { font-family: var(--font-mono), monospace; font-weight: 700; fill: #eef7fc; pointer-events: none; }
-.rv-token-cond { font-size: 7px; fill: var(--am); pointer-events: none; }
+.rv-token-cond { font-size: 10px; fill: var(--am); pointer-events: none; }
 .rv-token.is-agiu { opacity: .62; }
 .rv-token-aura { animation: rv-pulso 1.9s ease-in-out infinite; }
 .rv-token-apto { animation: rv-gira 9s linear infinite; }
@@ -142,11 +210,22 @@
 @keyframes rv-pulso { 0%,100% { opacity: .95; } 50% { opacity: .4; } }
 @keyframes rv-gira { to { transform: rotate(360deg); } }
 
-.rv-flutuante { position: absolute; z-index: 12; border-radius: var(--raio); background: var(--sup); box-shadow: var(--sombra); backdrop-filter: blur(9px); }
+/* Toda superfície que flutua sobre o mapa usa a MESMA casca da moldura
+   de janela (`_design/vtt-chassi.css`): gradiente 160°, borda navy de
+   1px, raio 2px, sombra profunda. Antes cada uma tinha a sua — a barra
+   de medição translúcida, a janela de ferramenta com raio 10px, o modal
+   com sombra interna. */
+.rv-flutuante {
+  position: absolute; z-index: 12;
+  border-radius: var(--rv-r);
+  background: var(--rv-panel-grad);
+  border: 1px solid var(--linha);
+  box-shadow: var(--sombra);
+}
 .rv-submenu { left: 18px; top: 74px; display: flex; align-items: center; gap: 6px; padding: 7px 11px; flex-wrap: wrap; max-width: 60%; }
-.rv-sub-btn { display: flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 6px; border: none; background: transparent; color: var(--txt-dim); font: inherit; font-size: 11.5px; cursor: pointer; }
-.rv-sub-btn[aria-pressed="true"] { background: rgba(53,200,240,.16); color: var(--cy); }
-.rv-sub-sep { width: 1px; height: 16px; background: rgba(255,255,255,.1); }
+.rv-sub-btn { display: flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: var(--rv-r); border: none; background: transparent; color: var(--txt-dim); font: inherit; font-size: 11.5px; cursor: pointer; }
+.rv-sub-btn[aria-pressed="true"] { background: var(--rv-cy-soft); color: var(--cy); }
+.rv-sub-sep { width: 1px; height: 16px; background: var(--linha-2); }
 .rv-sub-num { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--txt-dim); }
 .rv-sub-num input { accent-color: var(--cy); }
 .rv-sub-info { font-size: 12px; color: var(--txt); padding: 2px 4px; }
@@ -156,9 +235,9 @@
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   padding: 5px; border-radius: var(--raio); background: var(--sup); box-shadow: var(--sombra);
 }
-.rv-zoom button { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 6px; background: transparent; color: var(--txt-dim); cursor: pointer; }
+.rv-zoom button { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border: none; border-radius: var(--rv-r); background: transparent; color: var(--txt-dim); cursor: pointer; }
 .rv-zoom button:hover { color: var(--cy); background: rgba(255,255,255,.06); }
-.rv-zoom span { font-family: var(--font-mono), monospace; font-size: 9.5px; color: var(--txt-dim); }
+.rv-zoom span { font-family: var(--font-mono), monospace; font-size: 10px; color: var(--txt-dim); }
 
 /* ── TRILHA — FACÇÕES EM CONFRONTO ─────────────────────────
    Três superfícies estreitas encostadas nas bordas do palco, nunca uma
@@ -171,29 +250,111 @@
    âmbar, os Lentos; roxo/rosa (`--dg`) é o narrador — as mesmas cores
    que os tokens e o resto da mesa já usam. */
 
+/* NÚCLEO DA RODADA — Figma 440:1827 (repouso) e 440:2643 (com ação).
+   Placa solta no topo do palco: cantos em colchete, fundo em degradê
+   frio e sombra funda, pra ela pousar SOBRE o mapa em vez de fazer
+   parte da moldura. A cor de acento é a da janela em vigor — ciano nos
+   Rápidos, âmbar nos Lentos — e ela pinta a etiqueta da rodada, os
+   colchetes e o botão de avançar, que é onde o olho encosta. */
 .rv-rodadas {
-  position: absolute; left: 50%; top: 0; transform: translateX(-50%); z-index: 14;
-  min-width: 214px; max-width: min(300px, calc(100% - 220px));
-  display: flex; flex-direction: column; align-items: center; gap: 1px;
-  padding: 8px 16px 9px; border-radius: 0 0 16px 16px;
-  background: rgba(9, 15, 22, .93); backdrop-filter: blur(12px);
-  box-shadow: inset 0 0 0 1px rgba(53,200,240,.26), var(--sombra);
+  --rv-rod-cor: var(--cy);
+  position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 14;
+  /* Largura pelo CONTEÚDO, com teto: o estado de repouso é só duas
+     linhas curtas e o com ação carrega "Janela concluída" + o botão na
+     mesma fileira. Fixar uma largura só faz um dos dois mentir — o
+     primeiro fica largo demais, o segundo estoura (o botão saía por
+     cima do colchete da direita). O teto continua deixando os dois
+     trilhos de facção respirarem nas laterais. */
+  width: max-content;
+  min-width: 268px; max-width: min(430px, calc(100% - 220px));
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 15px 30px 15px; border-radius: 4px;
+  border: 1px solid #1b2a44;
+  background: linear-gradient(160deg, #101b2e, #0a1220);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, .55), 0 4px 12px rgba(0, 0, 0, .4);
   text-align: center;
 }
+.rv-rodadas[data-janela="lentos"] { --rv-rod-cor: var(--am); }
+/* Filete decorativo do topo — o Figma dá 2px, cheio de ponta a ponta,
+   acendendo no meio e apagando nas bordas. Vive como `::before`
+   absoluto (e não como filho flexível) pra encostar nos cantos: com o
+   padding lateral da placa, um filho pararia 30px antes de cada lado e
+   o arredondamento de topo não faria sentido nenhum. */
+.rv-rodadas::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0;
+  height: 2px; border-radius: 2px 2px 0 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--rv-rod-cor) 0%, transparent) 0%,
+    color-mix(in srgb, var(--rv-rod-cor) 38%, transparent) 50%,
+    color-mix(in srgb, var(--rv-rod-cor) 0%, transparent) 100%
+  );
+}
+
+/* Colchetes: quatro cantos, não uma borda inteira. Mesma marca das
+   janelas de ferramenta (`.rv-fp-canto`) — é o que diz "isto é uma
+   peça do sistema" sem desenhar mais uma caixa fechada. */
+.rv-rodadas-canto {
+  position: absolute; width: 10px; height: 10px;
+  border-color: color-mix(in srgb, var(--rv-rod-cor) 55%, transparent);
+  pointer-events: none;
+}
+/* Largura e estilo em LONGHAND, nunca no atalho `border-top: 1px
+   solid`: o atalho sem cor devolve `border-*-color` pro `currentColor`
+   e apaga o acento que a regra acima acabou de definir — era por isso
+   que os colchetes saíam na cor do texto em vez da cor da janela. */
+.rv-rodadas-canto--se { top: 8px; left: 8px; border-top-width: 1px; border-top-style: solid; border-left-width: 1px; border-left-style: solid; }
+.rv-rodadas-canto--sd { top: 8px; right: 8px; border-top-width: 1px; border-top-style: solid; border-right-width: 1px; border-right-style: solid; }
+.rv-rodadas-canto--ie { bottom: 8px; left: 8px; border-bottom-width: 1px; border-bottom-style: solid; border-left-width: 1px; border-left-style: solid; }
+.rv-rodadas-canto--id { bottom: 8px; right: 8px; border-bottom-width: 1px; border-bottom-style: solid; border-right-width: 1px; border-right-style: solid; }
+
 .rv-rodadas p { margin: 0; }
 .rv-rodadas-rodada {
   display: flex; align-items: center; justify-content: center; gap: 7px;
-  font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700;
-  letter-spacing: .18em; text-transform: uppercase; color: var(--txt-dim);
+  font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 600;
+  letter-spacing: .32em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--rv-rod-cor) 78%, transparent);
 }
-.rv-rodadas-modo { padding: 1px 6px; border-radius: 999px; background: rgba(240,161,50,.2); color: var(--am); letter-spacing: .1em; }
-.rv-rodadas-janela { font-size: 13px; font-weight: 600; color: var(--cy); }
-.rv-rodadas-janela[data-janela="lentos"] { color: var(--am); }
-.rv-rodadas-estado { margin-top: 1px; font-size: 11.5px; color: var(--txt); }
-.rv-rodadas-estado[data-lado="pj"] { color: #9fe6fb; }
-.rv-rodadas-estado[data-lado="pn"] { color: #ffb4bf; }
-.rv-rodadas-estado[data-lado="livre"] { color: var(--txt-dim); }
-.rv-rodadas-avanca { margin-top: 7px; }
+.rv-rodadas-modo {
+  padding: 1px 6px; border-radius: 2px; letter-spacing: .1em;
+  background: color-mix(in srgb, var(--am) 22%, transparent); color: var(--am);
+}
+/* A janela é o TÍTULO da placa: é a linha que responde o que pode ser
+   declarado agora, e as outras duas a qualificam. */
+.rv-rodadas-janela {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 14px; font-weight: 400; line-height: 1.15;
+  letter-spacing: .01em; color: #dbe6f5;
+  white-space: nowrap;
+}
+
+/* Rodapé: régua, estado à esquerda, ação à direita. */
+.rv-rodadas-pe {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  align-self: stretch; margin-top: 10px; padding-top: 12px;
+  border-top: 1px solid #1b2a44;
+}
+.rv-rodadas-estado {
+  font-family: var(--font-mono), monospace; font-size: 10px;
+  letter-spacing: .16em; text-transform: uppercase; color: #5f7492;
+  /* Uma linha: quebrado em duas ele empurra a fileira pra baixo e a
+     placa passa a ter duas alturas conforme o texto do estado. */
+  text-align: left; white-space: nowrap;
+}
+.rv-rodadas-estado[data-lado="pj"] { color: #7fc9db; }
+.rv-rodadas-estado[data-lado="pn"] { color: #d98a97; }
+.rv-rodadas-estado[data-lado="livre"] { color: #5f7492; }
+.rv-rodadas-avanca {
+  flex: none; padding: 9px 18px; cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--rv-rod-cor) 55%, transparent);
+  border-radius: 2px; background: transparent;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 400; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--rv-rod-cor);
+  transition: background .14s, border-color .14s;
+}
+.rv-rodadas-avanca:hover { background: color-mix(in srgb, var(--rv-rod-cor) 12%, transparent); border-color: var(--rv-rod-cor); }
+.rv-rodadas-avanca:focus-visible { outline: 2px solid var(--rv-rod-cor); outline-offset: 2px; }
 
 /* ── Trilho de facção ── */
 .rv-faccao {
@@ -210,7 +371,7 @@
 .rv-faccao-cab { display: flex; align-items: center; gap: 7px; padding: 0 4px; }
 .rv-faccao--pn .rv-faccao-cab { flex-direction: row-reverse; }
 .rv-faccao-nome {
-  font-family: var(--font-mono), monospace; font-size: 9.5px; font-weight: 700;
+  font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700;
   letter-spacing: .18em; text-transform: uppercase; color: var(--txt-dim);
   text-shadow: 0 2px 10px rgba(0,0,0,.9); transition: color .16s;
 }
@@ -218,19 +379,19 @@
   min-width: 17px; height: 17px; padding: 0 4px;
   display: grid; place-items: center; border-radius: 999px;
   background: rgba(255,255,255,.07); color: var(--txt-dim);
-  font-family: var(--font-mono), monospace; font-size: 9.5px; transition: background .16s, color .16s;
+  font-family: var(--font-mono), monospace; font-size: 10px; transition: background .16s, color .16s;
 }
 /* Realce EXCLUSIVO da facção que pode agir — cor no rótulo, espinha
    acesa e contagem viva. A facção que espera não é desabilitada nem
    escondida: só perde o realce. */
 .rv-faccao[data-ativa="true"].rv-faccao--pj .rv-faccao-nome { color: var(--cy); }
 .rv-faccao[data-ativa="true"].rv-faccao--pn .rv-faccao-nome { color: var(--dg); }
-.rv-faccao[data-ativa="true"].rv-faccao--pj .rv-faccao-conta { background: rgba(53,200,240,.22); color: var(--cy); }
-.rv-faccao[data-ativa="true"].rv-faccao--pn .rv-faccao-conta { background: rgba(255,95,116,.2); color: var(--dg); }
+.rv-faccao[data-ativa="true"].rv-faccao--pj .rv-faccao-conta { background: color-mix(in srgb, var(--cy) 22%, transparent); color: var(--cy); }
+.rv-faccao[data-ativa="true"].rv-faccao--pn .rv-faccao-conta { background: color-mix(in srgb, var(--dg) 30%, transparent); color: var(--dg); }
 
 .rv-faccao-espinha { width: 1px; flex: 1 1 auto; position: absolute; top: 26px; bottom: 0; opacity: .3; transition: opacity .2s; }
-.rv-faccao--pj .rv-faccao-espinha { left: 27px; background: linear-gradient(180deg, rgba(53,200,240,.7), rgba(53,200,240,0)); }
-.rv-faccao--pn .rv-faccao-espinha { right: 27px; background: linear-gradient(180deg, rgba(255,95,116,.7), rgba(255,95,116,0)); }
+.rv-faccao--pj .rv-faccao-espinha { left: 27px; background: linear-gradient(180deg, var(--cy), transparent); }
+.rv-faccao--pn .rv-faccao-espinha { right: 27px; background: linear-gradient(180deg, color-mix(in srgb, var(--dg) 30%, transparent), rgba(255,95,116,0)); }
 .rv-faccao[data-ativa="true"] .rv-faccao-espinha { opacity: 1; }
 
 .rv-faccao-lista {
@@ -251,7 +412,7 @@
 }
 .rv-faccao--pn .rv-ator { grid-template-columns: auto auto; direction: rtl; }
 .rv-faccao--pn .rv-ator > * { direction: ltr; }
-.rv-ator[data-situacao="agindo"] { grid-template-columns: auto; justify-items: center; background: rgba(240,161,50,.1); border-radius: 14px; padding: 6px; }
+.rv-ator[data-situacao="agindo"] { grid-template-columns: auto; justify-items: center; background: var(--rv-am-soft); border-radius: var(--rv-r); padding: 6px; }
 .rv-ator[data-situacao="aguardando"] { opacity: .74; }
 .rv-ator[data-situacao="agiu"], .rv-ator[data-situacao="fora"] { opacity: .42; }
 .rv-ator[data-situacao="agiu"]:hover, .rv-ator[data-situacao="fora"]:hover,
@@ -260,14 +421,14 @@
 .rv-ator-retrato {
   position: relative; width: 46px; height: 46px; flex: none; padding: 0; overflow: visible;
   display: grid; place-items: center; cursor: pointer;
-  border: 1.5px solid rgba(255,255,255,.16); border-radius: 50%;
+  border: 1.5px solid var(--linha-hover); border-radius: 50%;
   background: #12222d; color: var(--txt-forte);
   font: 700 12px var(--font-mono), monospace;
   transition: border-color .16s, box-shadow .16s, transform .12s;
 }
 .rv-ator-retrato img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-.rv-faccao--pj .rv-ator-retrato { border-color: rgba(53,200,240,.45); }
-.rv-faccao--pn .rv-ator-retrato { border-color: rgba(255,95,116,.4); background: #241520; }
+.rv-faccao--pj .rv-ator-retrato { border-color: color-mix(in srgb, var(--cy) 22%, transparent); }
+.rv-faccao--pn .rv-ator-retrato { border-color: color-mix(in srgb, var(--dg) 30%, transparent); background: #241520; }
 .rv-ator-retrato[data-vertente="energetico"] { background: #0d2732; }
 .rv-ator-retrato[data-vertente="somatico"] { background: #0d2620; }
 .rv-ator-retrato[data-vertente="cognitivo"] { background: #1b1530; }
@@ -277,10 +438,10 @@
 .rv-faccao--pn .rv-ator-retrato:hover { border-color: var(--dg); }
 .rv-ator-retrato:focus-visible { outline: 2px solid var(--cy); outline-offset: 3px; }
 /* Selecionado no mapa (clique no retrato = selecionar + centralizar) */
-.rv-ator[data-sel="true"] .rv-ator-retrato { box-shadow: 0 0 0 3px rgba(53,200,240,.16), 0 0 20px rgba(53,200,240,.22); border-color: #7ce6ff; }
-.rv-faccao--pn .rv-ator[data-sel="true"] .rv-ator-retrato { box-shadow: 0 0 0 3px rgba(255,95,116,.15), 0 0 20px rgba(255,95,116,.2); border-color: #ff9aa8; }
+.rv-ator[data-sel="true"] .rv-ator-retrato { box-shadow: 0 0 0 3px var(--rv-cy-soft), 0 0 20px color-mix(in srgb, var(--cy) 22%, transparent); border-color: #7ce6ff; }
+.rv-faccao--pn .rv-ator[data-sel="true"] .rv-ator-retrato { box-shadow: 0 0 0 3px var(--rv-dg-soft), 0 0 20px color-mix(in srgb, var(--dg) 30%, transparent); border-color: #ff9aa8; }
 /* Em ação agora */
-.rv-ator[data-situacao="agindo"] .rv-ator-retrato { border-color: var(--am); box-shadow: 0 0 0 3px rgba(240,161,50,.18), 0 0 22px rgba(240,161,50,.3); }
+.rv-ator[data-situacao="agindo"] .rv-ator-retrato { border-color: var(--am); box-shadow: 0 0 0 3px var(--rv-am-soft), 0 0 22px color-mix(in srgb, var(--am) 30%, transparent); }
 .rv-ator[data-situacao="agiu"] .rv-ator-retrato, .rv-ator[data-situacao="fora"] .rv-ator-retrato { filter: grayscale(.55); }
 
 /* PA guardado por fragmentação — badge pequeno NO retrato (regra 5). */
@@ -306,21 +467,21 @@
 
 .rv-ator-agir {
   min-height: 24px; padding: 2px 10px; cursor: pointer;
-  border: 1px solid rgba(53,200,240,.36); border-radius: 7px;
-  background: rgba(53,200,240,.14); color: #7ee2fb;
+  border: 1px solid color-mix(in srgb, var(--cy) 22%, transparent); border-radius: var(--rv-r);
+  background: var(--rv-cy-soft); color: #7ee2fb;
   font: 700 10px var(--font-mono), monospace; letter-spacing: .08em; text-transform: uppercase;
   transition: background .14s, border-color .14s, color .14s;
 }
-.rv-ator-agir:hover:not(:disabled) { border-color: rgba(53,200,240,.8); background: rgba(53,200,240,.26); color: #eafcff; }
+.rv-ator-agir:hover:not(:disabled) { border-color: var(--cy); background: color-mix(in srgb, var(--cy) 22%, transparent); color: #eafcff; }
 .rv-ator-agir:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 .rv-ator-agir:disabled { opacity: .34; cursor: not-allowed; }
-.rv-faccao--pn .rv-ator-agir { border-color: rgba(255,95,116,.34); background: rgba(255,95,116,.13); color: #ffa9b5; }
-.rv-faccao--pn .rv-ator-agir:hover:not(:disabled) { border-color: rgba(255,95,116,.75); background: rgba(255,95,116,.24); color: #fff0f2; }
+.rv-faccao--pn .rv-ator-agir { border-color: color-mix(in srgb, var(--dg) 30%, transparent); background: var(--rv-dg-soft); color: #ffa9b5; }
+.rv-faccao--pn .rv-ator-agir:hover:not(:disabled) { border-color: color-mix(in srgb, var(--dg) 30%, transparent); background: color-mix(in srgb, var(--dg) 30%, transparent); color: #fff0f2; }
 .rv-faccao--pn .rv-ator-agir:focus-visible { outline-color: var(--dg); }
 
 .rv-ator-ativo {
-  padding: 2px 9px; border-radius: 999px; background: rgba(240,161,50,.22); color: var(--am);
-  font: 700 9px var(--font-mono), monospace; letter-spacing: .12em; text-transform: uppercase;
+  padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, var(--am) 30%, transparent); color: var(--am);
+  font: 700 10px var(--font-mono), monospace; letter-spacing: .12em; text-transform: uppercase;
 }
 
 /* Declaração de janela (regra: só entra na janela que declarou). Dois
@@ -335,15 +496,15 @@
   flex: 1 1 0;
   height: 18px; padding: 0 4px; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center; gap: 3px;
-  border: 1px solid rgba(255,255,255,.12); border-radius: 5px;
+  border: 1px solid var(--linha); border-radius: var(--rv-r);
   background: transparent; color: var(--txt-dim);
-  font: 700 9px var(--font-mono), monospace; line-height: 1; white-space: nowrap;
+  font: 700 10px var(--font-mono), monospace; line-height: 1; white-space: nowrap;
   transition: background .14s, color .14s, border-color .14s, opacity .14s;
 }
 /* O glifo é decorativo (`aria-hidden`) e não pode empurrar o número:
    fica na mesma altura de caixa, sem herdar a métrica da fonte mono. */
-.rv-ator-declara button > span { font-size: 9.5px; line-height: 1; }
-.rv-ator-declara button:hover:not(:disabled) { color: var(--txt-forte); background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.28); }
+.rv-ator-declara button > span { font-size: 10px; line-height: 1; }
+.rv-ator-declara button:hover:not(:disabled) { color: var(--txt-forte); background: var(--rv-raise); border-color: var(--linha-hover); }
 .rv-ator-declara button:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 .rv-ator-declara button:disabled { opacity: .3; cursor: not-allowed; }
 /* Escolhida: cor da própria janela (ciano = rápidos, âmbar = lentos),
@@ -351,12 +512,12 @@
    escolhida recua, pra que a declaração siga legível de relance depois
    de feita. */
 .rv-ator-declara button[data-janela="rapidos"][aria-pressed="true"] {
-  border-color: rgba(53,200,240,.7); background: rgba(53,200,240,.22); color: var(--cy);
-  box-shadow: 0 0 0 1px rgba(53,200,240,.18);
+  border-color: var(--cy); background: color-mix(in srgb, var(--cy) 22%, transparent); color: var(--cy);
+  box-shadow: 0 0 0 1px var(--rv-cy-soft);
 }
 .rv-ator-declara button[data-janela="lentos"][aria-pressed="true"] {
-  border-color: rgba(240,161,50,.7); background: rgba(240,161,50,.22); color: var(--am);
-  box-shadow: 0 0 0 1px rgba(240,161,50,.18);
+  border-color: color-mix(in srgb, var(--am) 30%, transparent); background: color-mix(in srgb, var(--am) 30%, transparent); color: var(--am);
+  box-shadow: 0 0 0 1px var(--rv-am-soft);
 }
 .rv-ator-declara:has([aria-pressed="true"]) button[aria-pressed="false"]:not(:hover):not(:focus-visible) { opacity: .5; }
 
@@ -367,7 +528,7 @@
 .rv-ator-resolucao {
   grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 5px;
   margin-top: 3px; padding: 6px;
-  border-radius: 10px; background: rgba(10,16,23,.94); box-shadow: inset 0 0 0 1px rgba(240,161,50,.28);
+  border-radius: var(--rv-r); background: rgba(10,16,23,.94); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--am) 30%, transparent);
 }
 .rv-ator-resolucao .rv-btn { padding: 4px 10px; font-size: 11px; }
 
@@ -384,7 +545,7 @@
   .rv-ator-retrato { width: 40px; height: 40px; font-size: 11px; }
   .rv-faccao--pj .rv-faccao-espinha { left: 24px; }
   .rv-faccao--pn .rv-faccao-espinha { right: 24px; }
-  .rv-rodadas { min-width: 190px; padding: 7px 12px 8px; }
+  .rv-rodadas { min-width: 236px; padding: 12px 20px 13px; }
 }
 @media (max-width: 760px) {
   /* Aqui o HUD ocupa a largura toda do rodapé (não só a esquerda),
@@ -396,22 +557,61 @@
   /* Os botões de declaração continuam existindo aqui: sem declarar,
      ninguém pode agir — esconder o controle esconderia a regra. Só
      encolhem, e o teto de PA (a informação da decisão) fica. */
-  .rv-ator-declara button { height: 16px; padding: 0 3px; font-size: 8px; }
-  .rv-ator-declara button > span { font-size: 8.5px; }
-  .rv-rodadas { top: 6px; min-width: 168px; }
-  .rv-rodadas-janela { font-size: 12px; }
+  .rv-ator-declara button { height: 16px; padding: 0 3px; font-size: 10px; }
+  .rv-ator-declara button > span { font-size: 10px; }
+  .rv-rodadas { top: 6px; min-width: 200px; padding: 10px 16px 11px; }
+  .rv-rodadas-janela { font-size: 13px; }
+  .rv-rodadas-pe { flex-direction: column; align-items: stretch; gap: 8px; }
+  .rv-rodadas-estado { text-align: center; }
 }
 
-.rv-btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border: none; border-radius: 7px; background: rgba(255,255,255,.07); color: var(--txt); font: inherit; font-size: 11.5px; cursor: pointer; }
-.rv-btn:hover { background: rgba(255,255,255,.12); }
-.rv-btn--pri { background: rgba(53,200,240,.2); color: var(--cy); font-weight: 600; }
-.rv-btn--pri:hover { background: rgba(53,200,240,.3); }
-.rv-btn--ghost { background: transparent; color: var(--txt-dim); }
+/* ─────────────────────────────────────────────────────────────────
+ * .rv-btn — o botão SECUNDÁRIO do VTT.
+ *
+ * É o degrau do meio de uma escala de três, e a borda é o sinal de
+ * peso, não um enfeite obrigatório:
+ *
+ *   primária  (--pri)    fundo e borda de acento — uma por janela
+ *   secundária (base)    borda fina sobre fundo afundado
+ *   discreta  (--ghost)  SEM borda e sem fundo — nunca compete
+ *
+ * Antes daqui ele era `border: none` + `font: inherit` +
+ * `rgba(255,255,255,.07)`: sem borda, em Inter caixa-mista e com um
+ * clareado genérico no lugar de token. Desenhava como botão padrão de
+ * navegador em 40 usos — a maioria deles dentro das janelas de
+ * ferramenta, que é onde a identidade do chassi mais precisa aparecer.
+ *
+ * A tipografia é a mesma do `.pn-btn` (display, caixa alta, tracking),
+ * que é o vocabulário que o painel e os cards já falam. O tamanho base
+ * caiu de 11.5px para 10.5px porque caixa alta com tracking ocupa mais
+ * largura, e estes botões vivem em janelas estreitas.
+ * ───────────────────────────────────────────────────────────────── */
+.rv-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 11px;
+  border: 1px solid var(--rv-line-strong); border-radius: var(--rv-r);
+  background: var(--rv-sunken); color: var(--rv-ink-dim);
+  font-family: var(--rv-display);
+  font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  cursor: pointer;
+  transition: color .14s, border-color .14s, background .14s;
+}
+.rv-btn:hover:not(:disabled) { color: var(--rv-ink); border-color: var(--rv-line-max); background: var(--rv-raise); }
+
+.rv-btn--pri {
+  border-color: color-mix(in srgb, var(--cy) 53%, transparent);
+  background: var(--rv-cy-soft); color: var(--cy); font-weight: 700;
+}
+.rv-btn--pri:hover:not(:disabled) { border-color: var(--cy); background: color-mix(in srgb, var(--cy) 14%, transparent); color: var(--cy); }
+
+/* Discreta: a ausência de borda É a hierarquia. */
+.rv-btn--ghost { border-color: transparent; background: transparent; color: var(--txt-dim); }
+.rv-btn--ghost:hover:not(:disabled) { border-color: transparent; background: transparent; color: var(--rv-ink); }
 .rv-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 
 /* ── HUD ─────────────────────────────────────────────────── */
 .rv-hud {
-  --hud-line: rgba(0, 212, 255, .16);
+  --hud-line: var(--linha-forte);
   --hud-body-height: 164px;
   position: absolute; left: 68px; bottom: 14px; z-index: 16;
   width: max-content; max-width: calc(100% - 88px); min-height: 292px;
@@ -433,16 +633,16 @@
 .rv-hud-identity {
   position: relative; z-index: 2; align-self: end; height: 292px; min-width: 0;
   display: flex; flex-direction: column; overflow: visible;
-  border: 1px solid var(--hud-line); border-radius: 5px 5px 5px 14px;
+  border: 1px solid var(--hud-line); border-radius: var(--rv-r) 5px 5px 14px;
   background: linear-gradient(155deg, rgba(18,39,52,.98), rgba(8,18,27,.97));
   backdrop-filter: blur(14px);
   clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
   box-shadow: inset 0 1px rgba(255,255,255,.035);
 }
 .rv-hud-namebar { min-height: 40px; padding: 6px 10px; display: flex; flex-direction: column; justify-content: center; border-bottom: 1px solid var(--hud-line); background: rgba(24,49,67,.5); }
-.rv-hud-namebar strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 13px var(--font-rajdhani), sans-serif; color: #eaf7ff; }
-.rv-hud-namebar span { font: 600 8px var(--font-mono), monospace; letter-spacing: .12em; text-transform: uppercase; color: rgba(184,216,232,.5); }
-.rv-hud-portrait { flex: 1; min-height: 0; display: grid; place-items: center; overflow: hidden; background: radial-gradient(circle at 50% 35%, rgba(53,200,240,.15), transparent 62%), #0c1721; }
+.rv-hud-namebar strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 13px var(--rv-display); color: #eaf6ff; }
+.rv-hud-namebar span { font: 600 10px var(--font-mono), monospace; letter-spacing: .12em; text-transform: uppercase; color: rgba(184,216,232,.5); }
+.rv-hud-portrait { flex: 1; min-height: 0; display: grid; place-items: center; overflow: hidden; background: radial-gradient(circle at 50% 35%, var(--rv-cy-soft), transparent 62%), #0c1721; }
 .rv-hud-portrait img { width: 100%; height: 100%; object-fit: cover; }
 .rv-hud-portrait > span { font: 700 32px var(--font-mono), monospace; letter-spacing: .08em; color: rgba(234,247,255,.88); }
 .rv-hud-header-actions {
@@ -451,10 +651,10 @@
 }
 .rv-hud-header-actions button, .rv-hud-header-actions a {
   height: 22px; min-width: 22px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid rgba(0,212,255,.16); background: rgba(7,17,24,.88); color: rgba(184,216,232,.8);
-  font: 600 9px var(--font-mono), monospace; text-decoration: none; cursor: pointer;
+  border: 1px solid var(--linha-forte); background: var(--rv-sunken); color: var(--rv-ink-dim);
+  font: 600 10px var(--font-mono), monospace; text-decoration: none; cursor: pointer;
 }
-.rv-hud-header-actions button:hover:not(:disabled), .rv-hud-header-actions a:hover { color: #eafcff; border-color: rgba(0,212,255,.45); }
+.rv-hud-header-actions button:hover:not(:disabled), .rv-hud-header-actions a:hover { color: #eaf6ff; border-color: var(--rv-line-max); }
 .rv-hud-header-actions button:disabled { opacity: .34; cursor: default; }
 .rv-hud-header-actions button:focus-visible, .rv-hud-header-actions a:focus-visible, .rv-hud-toggle:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 
@@ -475,7 +675,7 @@
 .rv-hud .rc-nres-eye:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 .rv-hud .rc-nres-val[role="status"] { cursor: default; }
 .rv-hud .rc-ncond-card[data-variant="hud"], .rv-hud .rc-ncond-card { padding: 7px; min-height: 38px; }
-.rv-hud .rc-ncond-wrap[data-variant="hud"] .rc-ncond-caption { padding: 3px 7px; font-size: 9px; }
+.rv-hud .rc-ncond-wrap[data-variant="hud"] .rc-ncond-caption { padding: 3px 7px; font-size: 10px; }
 .rv-hud .rc-ncond-wrap[data-variant="hud"] .rc-ncond-tag, .rv-hud .rc-ncond-wrap[data-variant="hud"] .rc-ncond-add { height: 24px; }
 .rv-hud .rc-ncond-wrap[data-variant="hud"] .rc-ncond-vazio { font-size: 12px; }
 
@@ -487,7 +687,7 @@
   backdrop-filter: blur(14px); box-shadow: inset 0 1px rgba(255,255,255,.035);
 }
 .rv-hud-right .rc-npr[data-variant="hud"] { gap: 4px; }
-.rv-hud-right .rc-npr-label { font-size: 9px; letter-spacing: 1.2px; }
+.rv-hud-right .rc-npr-label { font-size: 10px; letter-spacing: 1.2px; }
 .rv-hud-right .rc-npr-row { gap: 6px; }
 .rv-hud-right .rc-npr-defesa { margin-top: 2px; height: 25px; font-size: 12px; }
 .rv-hud-error { position: absolute; left: 174px; right: 10px; bottom: 5px; z-index: 7; margin: 0; padding: 3px 7px; background: rgba(55,17,24,.94); color: #ffc4cf; font-size: 10px; line-height: 1.2; }
@@ -530,10 +730,12 @@
 
 /* ── Painel ──────────────────────────────────────────────────────
    Orientação da barra de abas muda com o estado:
-     · RECOLHIDO (`data-aberto="false"`) — só a faixa de ícones existe
-       (o corpo nem é montado, ver `Painel` em VttClient.tsx); ela fica
-       VERTICAL, como uma continuação natural do trilho de ferramentas
-       à esquerda. Este já era o comportamento — preservado.
+     · RECOLHIDO (`data-aberto="false"`) — só a faixa de ícones aparece;
+       ela fica VERTICAL, como uma continuação natural do trilho de
+       ferramentas à esquerda. Este já era o comportamento — preservado.
+       O corpo continua MONTADO (só `hidden`, ver `PainelVtt.tsx`): é o
+       que preserva o scroll e o estado de cada aba e deixa o Chat
+       seguir contando não lidos com o painel fechado.
      · EXPANDIDO (`data-aberto="true"`) — a barra vira HORIZONTAL, no
        TOPO do painel, acima do corpo. Antes ficava vertical nos dois
        estados (bug corrigido aqui): com o corpo visível, uma faixa
@@ -543,25 +745,44 @@
    O `<nav>` e os `<button>` são os MESMOS elementos nos dois estados —
    só a direção do flex e a posição (`order`) mudam via CSS, então a
    aba selecionada e o estado do React nunca se perdem na troca. */
-.rv-painel { display: flex; background: #0a0f15; border-left: 1px solid rgba(255,255,255,.05); z-index: 20; flex: none; }
+.rv-painel { display: flex; background: var(--rv-sunken); border-left: 1px solid var(--linha-2); z-index: 20; flex: none; }
 .rv-painel[data-aberto="true"] { flex-direction: column; width: 316px; }
 .rv-painel[data-aberto="false"] { flex-direction: row; width: 52px; }
 
 .rv-painel-abas { display: flex; align-items: center; gap: 3px; flex: none; }
 .rv-painel[data-aberto="true"] .rv-painel-abas {
   order: 1; flex-direction: row; width: 100%; height: 52px; padding: 0 8px;
-  border-bottom: 1px solid rgba(255,255,255,.05);
-  /* Rolagem horizontal discreta em vez de estourar/quebrar linha — só
-     entra em jogo se a largura ficar apertada demais pras 5 abas +
-     recolher; no tamanho padrão do painel, cabe tudo sem rolar. */
-  overflow-x: auto; scrollbar-width: thin;
+  border-bottom: 1px solid var(--linha-2);
+  /* Sem `overflow-x: auto` aqui. Ele existia como válvula pro caso das
+     abas não caberem — mas agora elas SE DIVIDEM na largura, então
+     nunca estouram; e, pior, um contêiner com overflow RECORTA o que
+     sai dele: era ele que comia a dica de cada aba, que abre pra baixo,
+     fora da faixa de 52px. */
 }
+/* Expandido, as abas dividem a largura em partes iguais em vez de
+   ficarem espremidas à esquerda com um vazio no resto da barra. */
+.rv-painel[data-aberto="true"] .rv-aba { flex: 1 1 0; width: auto; min-width: 0; }
+/* O espaçador que empurrava o "recolher" pra direita perde a função —
+   com as abas ocupando tudo, ele só roubaria largura delas. */
+.rv-painel[data-aberto="true"] .rv-aba-fim { display: none; }
+/* O "recolher" NÃO é uma aba: mantém o tamanho de ícone e fica no fim. */
+.rv-painel[data-aberto="true"] .rv-aba--recolher { flex: 0 0 auto; width: 36px; }
 .rv-painel[data-aberto="false"] .rv-painel-abas { order: 1; flex-direction: column; width: 52px; padding: 10px 0; }
 
-.rv-aba { position: relative; width: 36px; height: 36px; flex: none; display: flex; align-items: center; justify-content: center; border: none; border-radius: 8px; background: transparent; color: #63798a; cursor: pointer; transition: color .14s, background .14s; }
-.rv-aba:hover { color: #cfe6f2; background: rgba(255,255,255,.055); }
-.rv-aba[aria-pressed="true"] { color: var(--cy); background: rgba(53,200,240,.14); box-shadow: inset 0 0 0 1px rgba(53,200,240,.4); }
-.rv-aba-badge { position: absolute; top: -2px; right: -2px; min-width: 15px; height: 15px; padding: 0 4px; display: flex; align-items: center; justify-content: center; border-radius: 999px; background: var(--am); color: #10202b; font-family: var(--font-mono), monospace; font-size: 9px; font-weight: 700; }
+/* Só a ESTRUTURA da aba mora aqui; cor e estado vivem em
+   `_painel/painel.css`, que é a folha do painel.
+   O bloco antigo tinha as duas coisas — e o estado ativo estava
+   preso a `[aria-pressed="true"]`, atributo que este botão nunca teve
+   (ele é `role="tab"`, marca `aria-selected`). Era regra morta, com
+   dois cinzas fora da paleta (`#63798a`, `#cfe6f2`) e um branco a
+   5,5% de hover. */
+.rv-aba {
+  position: relative; width: 36px; height: 36px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  border: none; border-radius: var(--rv-r); background: transparent;
+  cursor: pointer; transition: color .14s, background .14s;
+}
+.rv-aba-badge { position: absolute; top: -2px; right: -2px; min-width: 15px; height: 15px; padding: 0 4px; display: flex; align-items: center; justify-content: center; border-radius: 999px; background: var(--am); color: #10202b; font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700; }
 .rv-aba-fim { flex: 1; }
 /* A dica (`.rv-dica`) por padrão abre pra ESQUERDA (`.rv-painel .rv-dica`,
    acima) — certo pra faixa vertical na borda direita. Com a barra
@@ -571,44 +792,32 @@
 
 .rv-painel-corpo { width: 100%; display: flex; flex-direction: column; min-height: 0; order: 2; }
 .rv-painel-titulo { margin: 0; padding: 14px 16px 10px; font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--txt-dim); }
-.rv-painel-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 0 12px 12px; scrollbar-width: thin; }
 
 .rv-chat { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.rv-msg { padding: 9px 11px; border-radius: 10px; background: rgba(255,255,255,.04); }
-.rv-msg--narracao { background: rgba(240,161,50,.08); }
+.rv-msg { padding: 9px 11px; border-radius: var(--rv-r); background: rgba(255,255,255,.04); }
+.rv-msg--narracao { background: var(--rv-am-soft); }
 .rv-msg--sistema { background: transparent; font-style: italic; }
 .rv-msg-head { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
 .rv-msg-face { width: 22px; height: 22px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #1c2b38; color: #cfe6f2; font-size: 10px; font-weight: 700; }
 .rv-msg-head strong { font-size: 12px; color: var(--txt-forte); }
-.rv-msg-head time { margin-left: auto; font-family: var(--font-mono), monospace; font-size: 9.5px; color: var(--txt-dim); }
+.rv-msg-head time { margin-left: auto; font-family: var(--font-mono), monospace; font-size: 10px; color: var(--txt-dim); }
 .rv-msg-l { margin: 0 0 2px; font-size: 12.5px; line-height: 1.45; }
 .rv-rol { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 .rv-rol-nome { font-size: 12.5px; color: var(--txt-forte); }
 .rv-rol-dados { display: flex; gap: 3px; }
-.rv-rol-dados i { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 5px; background: rgba(255,255,255,.06); font-family: var(--font-mono), monospace; font-size: 10px; font-style: normal; color: var(--txt-dim); }
-.rv-rol-dados i.is-maior { background: rgba(53,200,240,.22); color: var(--cy); }
+.rv-rol-dados i { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: var(--rv-r); background: rgba(255,255,255,.06); font-family: var(--font-mono), monospace; font-size: 10px; font-style: normal; color: var(--txt-dim); }
+.rv-rol-dados i.is-maior { background: color-mix(in srgb, var(--cy) 22%, transparent); color: var(--cy); }
 .rv-rol-n { font-size: 11px; color: var(--txt-dim); }
-.rv-rol-margem { width: 100%; margin-top: 4px; padding: 3px 9px; border-radius: 999px; background: rgba(61,220,154,.16); color: var(--ok); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-family: var(--font-mono), monospace; text-align: center; }
+.rv-rol-margem { width: 100%; margin-top: 4px; padding: 3px 9px; border-radius: 999px; background: var(--rv-ok-soft); color: var(--ok); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-family: var(--font-mono), monospace; text-align: center; }
 
-.rv-chat-form { display: flex; align-items: center; gap: 7px; padding: 10px 12px 12px; flex: none; }
-.rv-chat-input { flex: 1; min-width: 0; padding: 9px 12px; border: none; border-radius: 999px; background: rgba(255,255,255,.06); color: var(--txt); font: inherit; font-size: 12.5px; }
-.rv-chat-input:focus-visible { outline: 2px solid var(--cy); outline-offset: -1px; }
-.rv-chat-enviar { width: 34px; height: 34px; flex: none; display: flex; align-items: center; justify-content: center; border: none; border-radius: 50%; background: rgba(53,200,240,.2); color: var(--cy); cursor: pointer; }
-.rv-chat-enviar:hover { background: rgba(53,200,240,.32); }
-
-.rv-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.rv-lista-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 9px; background: rgba(255,255,255,.04); }
-.rv-lista-item[data-sel="true"] { background: rgba(53,200,240,.13); }
-.rv-lista-item div { display: flex; flex-direction: column; min-width: 0; }
-.rv-lista-item strong { font-size: 12.5px; color: var(--txt-forte); }
-.rv-lista-item span { font-size: 10.5px; color: var(--txt-dim); }
-.rv-lista-face { width: 30px; height: 30px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: #16222d; color: #eef7fc; font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 700; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.12); }
-.rv-lista-face[data-vertente="energetico"] { box-shadow: inset 0 0 0 1.5px #35c8f0; }
-.rv-lista-face[data-vertente="somatico"] { box-shadow: inset 0 0 0 1.5px #3ddc9a; }
-.rv-lista-face[data-vertente="cognitivo"] { box-shadow: inset 0 0 0 1.5px #a78bfa; }
-.rv-lista-face[data-vertente="material"] { box-shadow: inset 0 0 0 1.5px #f0a132; }
+/* O rodapé de chat e a lista genérica (`.rv-chat-form`, `.rv-lista*`)
+   que moravam aqui saíram com o painel de dados fictícios: o Chat real
+   tem composer próprio (`.rv-pn-chat-*`) e os três diretórios usam a
+   linha compartilhada (`.rv-pn-linha`) — tudo em `_painel/painel.css`.
+   `.rv-chat`/`.rv-msg*`/`.rv-rol*`/`.rv-dot` continuam AQUI porque
+   continuam sendo usados pelo Chat e pela aba Participantes. */
 .rv-dot { width: 9px; height: 9px; border-radius: 50%; background: #33424d; flex: none; }
-.rv-dot[data-on="true"] { background: var(--ok); box-shadow: 0 0 7px rgba(61,220,154,.6); }
+.rv-dot[data-on="true"] { background: var(--ok); box-shadow: 0 0 7px color-mix(in srgb, var(--ok) 30%, transparent); }
 
 /* ── Fundação funcional das ferramentas (estado persistido) ────── */
 .rv-mesa--carregando { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 100vh; background: #0a0e14; color: var(--txt-dim); font-size: 13px; }
@@ -616,7 +825,7 @@
 @keyframes rv-spin { to { transform: rotate(360deg); } }
 
 /* `z-index: 90` explícito — alerta VERDADEIRAMENTE global, precisa ficar acima até da janela flutuante de token (45) e no mesmo patamar do backdrop de confirmação destrutiva (`.rv-modal-fundo`, 80). */
-.rv-erro-acao { bottom: 16px; left: 50%; transform: translateX(-50%); top: auto; padding: 9px 16px; border-radius: 999px; background: rgba(255,95,116,.18); border: 1px solid rgba(255,95,116,.45); color: #ffd7dc; font-size: 12px; cursor: pointer; max-width: 70vw; text-align: center; z-index: 90; }
+.rv-erro-acao { bottom: 16px; left: 50%; transform: translateX(-50%); top: auto; padding: 9px 16px; border-radius: 999px; background: var(--rv-dg-soft); border: 1px solid color-mix(in srgb, var(--dg) 30%, transparent); color: #ffd7dc; font-size: 12px; cursor: pointer; max-width: 70vw; text-align: center; z-index: 90; }
 
 .rv-ferr-btn:disabled { opacity: .35; cursor: not-allowed; }
 
@@ -628,42 +837,100 @@
   position: fixed; z-index: 60; pointer-events: none;
   transform: translate(14px, 14px);
   display: flex; flex-direction: column; gap: 2px; max-width: 210px;
-  padding: 7px 11px; border-radius: 8px;
-  background: rgba(9, 13, 18, 0.96);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), var(--sombra);
+  padding: 7px 10px 7px 11px; border-radius: var(--rv-r);
+  background: var(--rv-panel, rgba(9, 13, 18, 0.96));
+  /* Mesmo chassi da `.rv-dica`: fio de 1px e espinha de acento. Aqui o
+     acento é a cor do PRÓPRIO terreno quando quem desenha a informa
+     (`--rv-op-cor`), senão o ciano do mapa. */
+  box-shadow:
+    inset 0 0 0 1px var(--rv-line-strong, var(--linha)),
+    inset 2px 0 0 var(--rv-op-cor, var(--jf-acento, var(--cy))),
+    var(--sombra);
+  backdrop-filter: blur(9px);
 }
-.rv-tooltip-terreno strong { font-size: 11.5px; color: var(--txt-forte); }
+.rv-tooltip-terreno strong {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--rv-op-cor, var(--txt-forte));
+}
 .rv-tooltip-terreno span { font-size: 10.5px; line-height: 1.35; color: var(--txt-dim); }
 
-.rv-btn--perigo { background: rgba(255,95,116,.16); color: #ffb3bd; }
-.rv-btn--perigo:hover { background: rgba(255,95,116,.28); }
+.rv-btn--perigo { border-color: color-mix(in srgb, var(--dg) 53%, transparent); background: var(--rv-dg-soft); color: var(--rv-dg); }
+.rv-btn--perigo:hover:not(:disabled) { border-color: var(--dg); background: color-mix(in srgb, var(--dg) 16%, transparent); color: #ffb3bd; }
+/* `:disabled` vivia declarado DUAS vezes nesta folha (.45 aqui e .4 mais
+   abaixo) e uma terceira em `globals.css`. Uma só, aqui. */
 .rv-btn:disabled { opacity: .45; cursor: not-allowed; }
-
-.rv-lista-item--acao { background: transparent; padding: 2px 0 6px; }
-.rv-lista-item--acao .rv-btn { width: 100%; justify-content: center; }
-.rv-lista-item[role="button"] { cursor: pointer; }
-.rv-lista-item[role="button"]:hover { background: rgba(255,255,255,.07); }
-.rv-lista-item[role="button"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 
 /* ── Menu contextual (clique direito no mapa) ────────────────────
    `position: fixed` — as coordenadas que `VttClient.tsx` passa já são
    de TELA (`clientX/clientY`), nunca relativas ao palco. */
+/* CHASSI DA JANELA DE FERRAMENTA, literalmente: o menu usa as mesmas
+   classes de bracket e espinha (`.rv-fp-canto`, `.rv-fp-espinha`) e a
+   mesma moldura dos cards do chat — fio de 1px em `--rv-line-2`, raio
+   de 2px e o gradiente vertical do painel. A espinha de 36px é
+   `position: absolute`, daí o `padding-left` aqui (mesma solução do
+   `.rv-fp`: um flex-row quebraria o alinhamento dos itens).
+   Havia DUAS declarações de `box-shadow` no bloco antigo — a primeira
+   nunca teve efeito. Uma só. */
 .rv-menu-contextual {
-  position: fixed; z-index: 70; min-width: 180px; padding: 5px;
-  border-radius: 9px; background: #0e1620; box-shadow: var(--sombra);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.07), var(--sombra);
+  --jf-acento: var(--rv-cy, var(--cy));
+  position: fixed; z-index: 70; min-width: 216px; padding: 6px 6px 6px 42px;
+  border: 1px solid var(--rv-line-2, #16233a); border-radius: 2px;
+  background: linear-gradient(180deg, #0b1322, #080e19);
+  box-shadow: var(--sombra);
   display: flex; flex-direction: column; gap: 1px;
 }
-.rv-menu-sep { display: block; height: 1px; margin: 5px 4px; background: rgba(255,255,255,.08); }
-.rv-menu-item {
-  display: block; width: 100%; text-align: left; padding: 7px 10px; border: none; border-radius: 6px;
-  background: transparent; color: var(--txt); font: inherit; font-size: 12px; cursor: pointer;
+/* Cabeçalho: sobre O QUE o menu age. Mesma régua dos cards do chat —
+   mono 8.5px, caixa alta, `letter-spacing: .12em`, em `--rv-ink-faint`. */
+.rv-menu-cab {
+  margin: 2px 2px 5px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--rv-line-2, #16233a);
+  color: var(--rv-ink-faint); font: 8.5px var(--font-mono), monospace;
+  letter-spacing: .12em; text-transform: uppercase;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.rv-menu-item:hover, .rv-menu-item:focus-visible { background: rgba(53,200,240,.14); color: var(--txt-forte); }
-.rv-menu-item:focus-visible { outline: 2px solid var(--cy); outline-offset: -2px; }
-.rv-menu-item:disabled { opacity: .4; cursor: not-allowed; background: transparent; }
+.rv-menu-sep { display: block; height: 1px; margin: 5px 2px; background: var(--rv-line-2, rgba(255,255,255,.08)); }
+.rv-menu-item {
+  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+  padding: 7px 10px; border: 1px solid transparent; border-radius: var(--rv-r);
+  background: transparent; color: var(--rv-ink-dim, var(--txt));
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
+  cursor: pointer;
+  transition: color .14s, border-color .14s, background .14s;
+}
+.rv-menu-item-icone {
+  display: flex; align-items: center; justify-content: center; flex: none;
+  width: 14px; height: 14px; color: var(--txt-dim);
+}
+.rv-menu-item:hover .rv-menu-item-icone, .rv-menu-item:focus-visible .rv-menu-item-icone { color: var(--jf-acento); }
+/* O ícone do item destrutivo segue o RÓTULO, nunca o acento do menu.
+   A regra de hover acima tem uma classe a mais (`:hover` conta), então
+   vencia esta e pintava a lixeira de ciano justamente no momento em que
+   o item está vermelho — por isso o par mirado/focado vem declarado
+   aqui também, e não só o estado de repouso. */
+.rv-menu-item--perigoso .rv-menu-item-icone,
+.rv-menu-item--perigoso:hover .rv-menu-item-icone,
+.rv-menu-item--perigoso:focus-visible .rv-menu-item-icone { color: inherit; }
+.rv-menu-item:disabled .rv-menu-item-icone { color: var(--txt-dim); }
+/* Item mirado: FIO em volta, a mesma promoção do botão primário — a
+   borda é consequência de estar ativo, não decoração permanente. Era
+   uma espinha curta na borda esquerda; virava um traço solto ao lado
+   do ícone, competindo com a espinha do próprio menu. */
+.rv-menu-item:hover, .rv-menu-item:focus-visible {
+  border-color: color-mix(in srgb, var(--jf-acento) 45%, transparent);
+  background: color-mix(in srgb, var(--jf-acento) 12%, transparent);
+  color: var(--txt-forte);
+}
+.rv-menu-item:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: -2px; }
+.rv-menu-item:disabled { opacity: .4; cursor: not-allowed; background: transparent; border-color: transparent; }
+.rv-menu-item:disabled:hover { background: transparent; border-color: transparent; color: var(--rv-ink-dim, var(--txt)); }
 .rv-menu-item--perigoso { color: #ff8a97; }
-.rv-menu-item--perigoso:hover, .rv-menu-item--perigoso:focus-visible { background: rgba(255,95,116,.16); color: #ffb3bd; }
+.rv-menu-item--perigoso:hover, .rv-menu-item--perigoso:focus-visible {
+  border-color: color-mix(in srgb, var(--dg) 45%, transparent);
+  background: var(--rv-dg-soft); color: #ffb3bd;
+}
+.rv-menu-item--perigoso:focus-visible { outline-color: var(--dg); }
 
 /* ── Modal (formulário de token, confirmação de remoção) ─────────── */
 .rv-modal-fundo {
@@ -672,7 +939,7 @@
 }
 .rv-modal {
   width: 100%; max-width: 480px; max-height: calc(100vh - 40px); overflow: auto;
-  border-radius: var(--raio); background: #0d141c; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), var(--sombra);
+  border-radius: var(--raio); background: var(--rv-panel); box-shadow: inset 0 0 0 1px var(--linha), var(--sombra);
   display: flex; flex-direction: column;
 }
 .rv-modal--confirmar { max-width: 380px; }
@@ -691,29 +958,17 @@
   .rv-gerenciador-token .rv-modal-rodape .rv-btn { flex: 1 1 auto; justify-content: center; min-width: 0; }
 }
 .rv-modal-descricao { margin: 0; padding: 10px 16px 0; font-size: 11.5px; color: var(--txt-dim); line-height: 1.4; }
-.rv-modal-cab {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,.07); flex: none;
-}
-.rv-modal-cab h2 { margin: 0; font-size: 14px; color: var(--txt-forte); font-weight: 700; }
-.rv-modal-fechar {
-  width: 26px; height: 26px; flex: none; display: flex; align-items: center; justify-content: center;
-  border: none; border-radius: 6px; background: transparent; color: var(--txt-dim); font-size: 16px; line-height: 1; cursor: pointer;
-}
-.rv-modal-fechar:hover { background: rgba(255,255,255,.08); color: var(--txt-forte); }
-.rv-modal-fechar:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
-.rv-modal-corpo { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; overflow: auto; }
-.rv-modal-corpo p { margin: 0; font-size: 12.5px; color: var(--txt); line-height: 1.5; }
-.rv-modal-rodape {
-  display: flex; align-items: center; justify-content: flex-end; gap: 8px;
-  padding: 12px 16px; border-top: 1px solid rgba(255,255,255,.07); flex: none;
-}
+/* Cabeçalho/título/fechar/rodapé: MOLDURA ÚNICA
+   (`_design/vtt-chassi.css`). Só o respiro do corpo é próprio do modal
+   — um formulário precisa de mais ar que uma lista. */
+.rv-modal-corpo { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.rv-modal-corpo p { margin: 0; font-size: 12.5px; color: var(--txt); line-height: 1.5; font-family: var(--rv-body); }
 
 .rv-form-linha { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
 .rv-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 100px; }
 .rv-field > span, .rv-field legend { font-size: 10.5px; color: var(--txt-dim); text-transform: uppercase; letter-spacing: .05em; }
 .rv-field input[type="text"], .rv-field input[type="number"], .rv-field select {
-  padding: 7px 9px; border: none; border-radius: 6px; background: rgba(255,255,255,.06); color: var(--txt-forte);
+  padding: 7px 9px; border: none; border-radius: var(--rv-r); background: rgba(255,255,255,.06); color: var(--txt-forte);
   font: inherit; font-size: 12.5px;
 }
 .rv-field input:focus-visible, .rv-field select:focus-visible { outline: 2px solid var(--cy); outline-offset: -1px; }
@@ -722,24 +977,49 @@
 .rv-field--check > span { text-transform: none; letter-spacing: 0; font-size: 12px; color: var(--txt); }
 fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
-.rv-pegada-preview { flex: none; display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 6px; background: rgba(255,255,255,.04); }
+.rv-pegada-preview { flex: none; display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: var(--rv-r); background: rgba(255,255,255,.04); }
 /* Nome ocupa mais espaço que Sigla na mesma linha (~75/25 em telas largas) — Sigla já tem largura fixa via `.rv-field--estreito`, Nome só precisa "crescer mais" que o padrão `flex:1`. */
 .rv-field--nome { flex: 3; }
 .rv-condicoes-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 12px; }
 
-.rv-form-aviso { margin: 0; padding: 7px 10px; border-radius: 6px; background: rgba(255,95,116,.14); color: #ffb3bd; font-size: 11.5px; }
+.rv-form-aviso { margin: 0; padding: 7px 10px; border-radius: var(--rv-r); background: var(--rv-dg-soft); color: #ffb3bd; font-size: 11.5px; }
 
 /* ── Texto auxiliar (campo → explicação em português comum) ──────── */
 .rv-field-ajuda { font-size: 10.5px; color: var(--txt-dim); text-transform: none; letter-spacing: 0; line-height: 1.4; }
 
 /* ── Lado — segmentado (3 opções com rótulo completo, nunca um select escondido) ── */
 .rv-segmentado { display: flex; gap: 4px; flex-wrap: wrap; }
+/* SEGMENTADO INLINE — a versão em LINHA do ladrilho.
+ *
+ * O ladrilho (`.rv-fp-seg-btn`) é alto, com ícone e apoio; serve numa
+ * grade. Este serve onde a escolha mora dentro de uma linha de campo,
+ * ao lado do rótulo — e por isso é baixo e só texto.
+ *
+ * O desenho aqui era `border: none` + `font: inherit`, e o desenho BOM
+ * vivia preso em `.rv-janela-token .rv-segmentado-item`. Trazido pra
+ * cá: qualquer janela alcança, e o acento vem de `--jf-acento`, então
+ * a peça pega a cor da ferramenta em que está.
+ *
+ * Aceita `aria-checked` (radiogroup) e `aria-pressed` (toggle): os dois
+ * padrões existem no produto e a peça é a mesma. */
 .rv-segmentado-item {
-  flex: 1; min-width: 120px; padding: 7px 10px; border: none; border-radius: 6px;
-  background: rgba(255,255,255,.06); color: var(--txt); font: inherit; font-size: 11.5px; cursor: pointer; text-align: center;
+  /* `flex: 1` reparte a largura igualmente; `min-width: 0` permite
+     encolher. O piso de 120px que havia aqui fazia o par estourar a
+     linha e o rótulo longo ("Uma célula (1 m)") quebrar em duas. */
+  flex: 1 1 0; min-width: 0; padding: 10px 12px; text-align: center; cursor: pointer;
+  border: 1px solid var(--rv-line-2, #16233a); border-radius: 2px; background: transparent;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
+  color: #c3d2e8;
+  transition: border-color .14s, background .14s, color .14s;
 }
-.rv-segmentado-item[aria-checked="true"] { background: rgba(53,200,240,.22); color: var(--cy); font-weight: 600; }
-.rv-segmentado-item:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rv-segmentado-item:hover { border-color: color-mix(in srgb, var(--jf-acento, #45b8c9) 40%, transparent); }
+.rv-segmentado-item[aria-checked="true"], .rv-segmentado-item[aria-pressed="true"] {
+  border-color: var(--jf-acento, #45b8c9);
+  background: color-mix(in srgb, var(--jf-acento, #45b8c9) 9%, transparent);
+  color: var(--jf-acento, #45b8c9);
+}
+.rv-segmentado-item:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 1px; }
 
 /* ── Tamanho + preview abstrato ───────────────────────────────── */
 .rv-form-linha--tamanho { align-items: flex-start; }
@@ -750,13 +1030,29 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    o resto do mapa/trilho continua clicável). `data-fase="erro"` troca
    o realce ciano por vermelho, sem depender só de texto pra comunicar
    que a última tentativa falhou. */
+/* Mesmo chassi do card de ações de área: fio de 1px + espinha de acento
+   à esquerda. A pílula de cantos redondos era a única peça arredondada
+   flutuando sobre o mapa — destoava de tudo. Aqui o acento é ciano
+   mesmo: este fluxo é de TOKEN, não da ferramenta Áreas. */
 .rv-escolha-posicao {
+  --jf-acento: var(--cy);
   position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 45;
-  display: flex; align-items: center; gap: 12px; padding: 9px 14px; border-radius: 999px;
-  background: rgba(13,20,28,.96); box-shadow: inset 0 0 0 1px rgba(53,200,240,.35), var(--sombra);
+  display: flex; align-items: center; gap: 12px; padding: 9px 14px 9px 15px; border-radius: var(--rv-r);
+  background: var(--rv-panel, rgba(13,20,28,.96));
+  box-shadow:
+    inset 0 0 0 1px var(--rv-line-strong, #1c2b45),
+    inset 2px 0 0 var(--jf-acento),
+    var(--sombra);
+  backdrop-filter: blur(9px);
   font-size: 12px; color: var(--txt-forte); max-width: min(90vw, 620px); flex-wrap: wrap;
 }
-.rv-escolha-posicao[data-fase="erro"] { box-shadow: inset 0 0 0 1px rgba(255,95,116,.5), var(--sombra); }
+.rv-escolha-posicao[data-fase="erro"] {
+  --jf-acento: var(--dg);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--dg) 30%, var(--rv-line-strong, #1c2b45)),
+    inset 2px 0 0 var(--dg),
+    var(--sombra);
+}
 .rv-escolha-posicao[data-fase="erro"] > span[role="alert"] { color: #ffb3bd; }
 .rv-escolha-posicao-acoes { display: flex; gap: 6px; flex: none; margin-left: auto; }
 
@@ -772,8 +1068,8 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-janela-token {
   position: fixed; z-index: 45; width: 100%; max-width: 560px;
   max-height: calc(100vh - 40px); overflow: hidden;
-  border-radius: var(--raio); background: #0d141c;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), var(--sombra);
+  border-radius: var(--raio); background: var(--rv-panel);
+  box-shadow: inset 0 0 0 1px var(--linha), var(--sombra);
   display: flex; flex-direction: column;
 }
 .rv-janela-token-cab { cursor: grab; user-select: none; touch-action: none; }
@@ -784,7 +1080,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 
 /* ── Mais opções — disclosure nativo ───────────────────────────── */
-.rv-mais-opcoes { border-top: 1px solid rgba(255,255,255,.07); padding-top: 10px; display: flex; flex-direction: column; gap: 12px; }
+.rv-mais-opcoes { border-top: 1px solid var(--linha-2); padding-top: 10px; display: flex; flex-direction: column; gap: 12px; }
 .rv-mais-opcoes > summary {
   cursor: pointer; font-size: 11px; font-weight: 700; color: var(--cy); text-transform: uppercase; letter-spacing: .05em;
   list-style: none; display: flex; align-items: center; gap: 5px;
@@ -797,7 +1093,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* ── Visível/Travado — cartões com texto completo, nunca só o checkbox ── */
 .rv-cartoes-flag { display: flex; flex-direction: column; gap: 6px; }
 .rv-cartao-flag {
-  display: flex; align-items: flex-start; gap: 9px; padding: 8px 10px; border-radius: 8px;
+  display: flex; align-items: flex-start; gap: 9px; padding: 8px 10px; border-radius: var(--rv-r);
   background: rgba(255,255,255,.04); cursor: pointer;
 }
 .rv-cartao-flag:hover { background: rgba(255,255,255,.07); }
@@ -808,39 +1104,20 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
 /* ── Imagem — preview pequeno, nunca quebra o layout se falhar ───── */
 .rv-imagem-preview { display: flex; align-items: center; gap: 8px; }
-.rv-imagem-preview img { border-radius: 6px; object-fit: cover; background: rgba(255,255,255,.06); }
+.rv-imagem-preview img { border-radius: var(--rv-r); object-fit: cover; background: rgba(255,255,255,.06); }
 
 /* ── Condições — grade compacta, item inteiro clicável ────────────── */
 .rv-limpar-condicoes { align-self: flex-start; padding: 3px 9px; font-size: 10.5px; }
 .rv-condicao-item {
-  display: flex; align-items: center; gap: 7px; padding: 5px 6px; border-radius: 6px; cursor: pointer; font-size: 11.5px; color: var(--txt);
+  display: flex; align-items: center; gap: 7px; padding: 5px 6px; border-radius: var(--rv-r); cursor: pointer; font-size: 11.5px; color: var(--txt);
 }
 .rv-condicao-item:hover { background: rgba(255,255,255,.05); }
 .rv-condicao-item input { width: 15px; height: 15px; flex: none; }
 
 /* ── Painel de camadas ─────────────────────────────────────────── */
-.rv-camadas { left: 66px; top: 220px; width: 240px; padding: 0; display: flex; flex-direction: column; z-index: 40; }
-.rv-camadas-cab { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.07); font-size: 12px; font-weight: 700; color: var(--txt-forte); }
-.rv-camadas-fechar { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 5px; background: transparent; color: var(--txt-dim); cursor: pointer; }
-.rv-camadas-fechar:hover { background: rgba(255,255,255,.08); color: var(--txt-forte); }
-.rv-camadas-fechar:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
-.rv-camadas-lista { list-style: none; margin: 0; padding: 6px; display: flex; flex-direction: column; gap: 2px; }
-.rv-camadas-item { display: flex; align-items: center; gap: 6px; padding: 6px 6px; border-radius: 7px; }
-.rv-camadas-item:hover { background: rgba(255,255,255,.04); }
-.rv-camadas-nome { flex: 1; font-size: 12px; color: var(--txt); }
-.rv-camadas-estado { display: flex; gap: 4px; }
-.rv-camadas-tag {
-  font-size: 9px; text-transform: uppercase; letter-spacing: .04em; padding: 2px 6px; border-radius: 999px;
-  background: rgba(255,255,255,.08); color: var(--txt-dim);
-}
-.rv-camadas-tag--bloqueio { background: rgba(245,162,0,.18); color: #f5c877; }
-.rv-camadas-btn {
-  width: 26px; height: 26px; flex: none; display: flex; align-items: center; justify-content: center;
-  border: none; border-radius: 6px; background: transparent; color: var(--txt-dim); cursor: pointer;
-}
-.rv-camadas-btn:hover { background: rgba(255,255,255,.08); color: var(--txt-forte); }
-.rv-camadas-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
-.rv-camadas-restaurar { margin: 6px; justify-content: center; }
+/* Camadas usa a casca comum (`JanelaFerramenta`) desde a transcrição
+   do estudo — posição, moldura e rodapé vêm de lá. O que resta aqui é
+   só a linha da pilha, mais abaixo, em "PILHA DA CENA". */
 
 /* ── Ping (efêmero, nunca persistido) ─────────────────────────────
    `pointerEvents="none"` no grupo pai (`MapaHex.tsx`) — puramente
@@ -862,7 +1139,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   100% { r: 3; opacity: .85; }
 }
 
-.rv-camada-grade--oculta { opacity: .16; }
+/* Esconder a grade esconde a grade — pra todo mundo, narrador
+   incluído. O .16 de antes era a herança de quando isto era
+   preferência de tela: uma grade "quase apagada" ainda é uma grade na
+   tela de quem pediu pra ela sumir. */
+.rv-camada-grade--oculta { opacity: 0; }
 
 @media (prefers-reduced-motion: reduce) {
   .rv-mesa *, .rv-mesa *::before, .rv-mesa *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
@@ -889,7 +1170,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-area-alca circle, .rv-area-alca rect { pointer-events: none; }
 .rv-area-alca [role="slider"] { pointer-events: auto; }
 .rv-area-alca [role="slider"]:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
-.rv-area-contorno-alvo:hover { stroke: rgba(53,200,240,.28); }
+.rv-area-contorno-alvo:hover { stroke: color-mix(in srgb, var(--cy) 22%, transparent); }
 
 /* Painel flutuante — nunca modal: a mesa continua clicável por baixo. */
 /* Áreas usa a casca compartilhada (`.rv-fp`) inteira — largura
@@ -907,33 +1188,106 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    compartilhado `.rv-fp-cab`, como todas as outras ferramentas. */
 
 .rv-area-tipos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+/* BASE de layout do ladrilho de tipo de área. O DESENHO (borda, acento,
+   tipografia, ponto de seleção) vive mais abaixo, em "Grade de tipos" —
+   e aquele bloco depende deste: só ele declara a coluna flex.
+   Não apagar sem levar `display`/`flex-direction`/`align-items` junto.
+   O `box-shadow` que este bloco acendia no estado selecionado já é
+   anulado lá com `box-shadow: none`, senão o ladrilho ficaria com dois
+   anéis — foi o que aconteceu com o segmentado, que tinha o mesmo par
+   de blocos sem essa anulação. */
 .rv-area-tipo {
   display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px;
-  border: none; border-radius: 7px; background: rgba(255,255,255,.04); color: var(--txt-dim);
-  font: inherit; font-size: 9.5px; cursor: pointer;
+  border: none; border-radius: var(--rv-r); background: rgba(255,255,255,.04); color: var(--txt-dim);
+  font: inherit; font-size: 10px; cursor: pointer;
 }
 .rv-area-tipo:hover { background: rgba(255,255,255,.08); color: var(--txt); }
-.rv-area-tipo[aria-pressed="true"] { background: rgba(53,200,240,.16); color: var(--cy); box-shadow: inset 0 0 0 1px rgba(53,200,240,.45); }
+.rv-area-tipo[aria-pressed="true"] { background: var(--rv-cy-soft); color: var(--cy); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cy) 22%, transparent); }
 .rv-area-tipo:disabled { opacity: .45; cursor: default; }
-.rv-area-tipo:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rv-area-tipo:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 1px; }
 .rv-area-glifo { font-size: 15px; line-height: 1; }
 .rv-area-nome { line-height: 1.1; }
 
 .rv-area-instrucao { margin: 0; font-size: 11.5px; color: var(--txt-dim); line-height: 1.35; }
-.rv-area-campos { display: flex; flex-direction: column; gap: 6px; }
+.rv-area-campos { display: flex; flex-direction: column; gap: 12px; }
 .rv-area-campo { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--txt-dim); }
 .rv-area-campo > span { flex: 0 0 96px; }
 .rv-area-campo input[type="number"], .rv-area-campo input[type="text"], .rv-area-campo select {
-  flex: 1 1 auto; min-width: 0; padding: 4px 7px; border-radius: 6px;
-  border: 1px solid rgba(255,255,255,.12); background: rgba(8,13,18,.85); color: var(--txt); font: inherit; font-size: 11.5px;
+  flex: 1 1 auto; min-width: 0; padding: 4px 7px; border-radius: var(--rv-r);
+  border: 1px solid var(--linha); background: rgba(8,13,18,.85); color: var(--txt); font: inherit; font-size: 11.5px;
 }
 .rv-area-campo input:disabled { opacity: .5; }
 .rv-area-campo em { font-style: normal; font-size: 10px; color: var(--txt-dim); }
-.rv-area-campo--largo { align-items: flex-start; flex-wrap: wrap; }
-.rv-area-campo input[type="range"] { flex: 1 1 auto; accent-color: var(--cy); }
-.rv-area-opcoes { display: flex; gap: 4px; flex-wrap: wrap; }
+/* `center`, não `flex-start`: com o input mais alto que o rótulo, o
+   "RÓTULO" ficava colado no topo enquanto o campo ocupava a linha
+   inteira. Quem lê espera os dois na mesma altura. */
+.rv-area-campo--largo { align-items: center; flex-wrap: wrap; }
+/* ── Slider ──────────────────────────────────────────────────────
+   Mesma linguagem do interruptor, e pelo mesmo motivo: trilho SÓLIDO
+   (desligado `#1c2b45`, preenchido no acento cheio) e botão BRANCO com
+   uma sombra curta. Sem gradiente no botão, sem borda colorida, sem
+   brilho externo — foi o que borrou a primeira versão.
+
+   Métrica do Radix/shadcn: trilho de 4px, botão de 16px. O
+   preenchimento é desenhado à mão porque `::-webkit-slider-runnable-track`
+   não tem equivalente a `::-moz-range-progress`: `--rv-slider-pct` vem
+   do componente e diz onde a cor termina. */
+.rv-area-campo input[type="range"] {
+  flex: 1 1 auto; min-width: 0; height: 16px; margin: 0;
+  appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer;
+}
+.rv-area-campo input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--jf-acento, #45b8c9) 0 var(--rv-slider-pct, 50%),
+    #1c2b45 var(--rv-slider-pct, 50%) 100%
+  );
+}
+.rv-area-campo input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 999px; background: #1c2b45;
+}
+.rv-area-campo input[type="range"]::-moz-range-progress {
+  height: 4px; border-radius: 999px; background: var(--jf-acento, #45b8c9);
+}
+.rv-area-campo input[type="range"]::-webkit-slider-thumb {
+  appearance: none; -webkit-appearance: none;
+  width: 16px; height: 16px; margin-top: -6px; border: none; border-radius: 999px;
+  background: #f4f8fc; box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
+}
+.rv-area-campo input[type="range"]::-moz-range-thumb {
+  width: 16px; height: 16px; border: none; border-radius: 999px;
+  background: #f4f8fc; box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
+}
+.rv-area-campo input[type="range"]:focus-visible { outline: none; }
+.rv-area-campo input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 0 0 3px color-mix(in srgb, var(--jf-acento, #45b8c9) 35%, transparent);
+}
+.rv-area-campo input[type="range"]:focus-visible::-moz-range-thumb {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 0 0 3px color-mix(in srgb, var(--jf-acento, #45b8c9) 35%, transparent);
+}
+.rv-area-campo input[type="range"]:disabled { opacity: .4; cursor: not-allowed; }
+/* Linha de apoio de campo — explicação curta que não pode depender de
+   hover (`CampoNumero` com `apoio`). Ocupa a linha inteira abaixo do
+   par rótulo+input. */
+.rv-area-campo-apoio {
+  flex: 1 0 100%; margin-top: 2px;
+  font-size: 11px; line-height: 1.35; color: #4f6285;
+}
+.rv-area-campo[data-com-apoio] { flex-wrap: wrap; }
+
+.rv-area-slider-val {
+  flex: 0 0 auto; min-width: 40px; text-align: right;
+  font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 700;
+  color: var(--jf-acento, #45b8c9);
+}
+
+/* Ocupa o que sobra da linha do campo. Sem `flex: 1` o grupo era
+   dimensionado pelo conteúdo e sobrava um vão à direita do rótulo;
+   `min-width: 0` deixa os itens encolherem em vez de empurrar. */
+.rv-area-opcoes { display: flex; gap: 4px; flex: 1 1 auto; min-width: 0; }
 .rv-area-cores { display: flex; gap: 5px; }
-.rv-area-cor { width: 18px; height: 18px; border-radius: 5px; border: 1px solid rgba(0,0,0,.5); cursor: pointer; }
+.rv-area-cor { width: 18px; height: 18px; border-radius: var(--rv-r); border: 1px solid rgba(0,0,0,.5); cursor: pointer; }
 .rv-area-cor[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--cy); }
 .rv-area-check { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--txt-dim); }
 .rv-area-check input { accent-color: var(--cy); }
@@ -956,31 +1310,44 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-area-acoes { display: flex; flex-wrap: wrap; gap: 6px; }
 .rv-area-acoes .rv-btn { font-size: 11px; padding: 5px 9px; display: inline-flex; align-items: center; gap: 5px; }
 
-.rv-area-lista { display: flex; flex-direction: column; gap: 3px; border-top: 1px solid rgba(255,255,255,.09); padding-top: 8px; }
-.rv-area-lista-titulo { font-family: var(--font-mono), monospace; font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--txt-dim); }
+.rv-area-lista { display: flex; flex-direction: column; gap: 3px; border-top: 1px solid var(--linha-2); padding-top: 8px; }
+.rv-area-lista-titulo { font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--txt-dim); }
 .rv-area-toggle { border: none; background: none; padding: 0; text-align: left; cursor: pointer; }
 .rv-area-vazio { margin: 2px 0; font-size: 10.5px; color: var(--txt-dim); }
-.rv-area-item { display: flex; align-items: center; gap: 4px; border-radius: 6px; padding: 2px 3px; }
-.rv-area-item[data-selecionada="true"] { background: rgba(53,200,240,.14); }
+.rv-area-item { display: flex; align-items: center; gap: 4px; border-radius: var(--rv-r); padding: 2px 3px; }
+.rv-area-item[data-selecionada="true"] { background: var(--rv-cy-soft); }
 .rv-area-item-nome {
   flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px;
   border: none; background: none; color: var(--txt); font: inherit; font-size: 11.5px; cursor: pointer; text-align: left; padding: 3px 2px;
 }
 .rv-area-item-nome > span:nth-of-type(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rv-area-item-nome em { margin-left: auto; font-style: normal; font-size: 9.5px; color: var(--txt-dim); font-family: var(--font-mono), monospace; }
+.rv-area-item-nome em { margin-left: auto; font-style: normal; font-size: 10px; color: var(--txt-dim); font-family: var(--font-mono), monospace; }
 /* Autoria discreta — só diz "é sua", nunca o nome de quem NÃO é você. */
 .rv-area-autoria {
-  flex: none; font-size: 8.5px; text-transform: uppercase; letter-spacing: .06em;
-  padding: 1px 5px; border-radius: 999px; background: rgba(53,200,240,.14); color: var(--cy);
+  flex: none; font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+  padding: 1px 5px; border-radius: 999px; background: var(--rv-cy-soft); color: var(--cy);
 }
 .rv-area-item-acoes { display: flex; gap: 2px; }
 .rv-area-item-acoes button {
   position: relative;
   width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
-  border: none; border-radius: 5px; background: transparent; color: var(--txt-dim); cursor: pointer; font-size: 12px;
+  border: none; border-radius: var(--rv-r); background: transparent; color: var(--txt-dim); cursor: pointer; font-size: 12px;
 }
-.rv-area-item-acoes button:hover { background: rgba(255,255,255,.09); color: var(--cy); }
-.rv-area-item-acoes button:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+/* A classe `.rv-area-item-acao` existe no TSX e só o seletor de
+   descendência acima pintava estes botões — ela é quem deve carregar o
+   estilo, e não `button` solto. Hover no ACENTO da ferramenta (violeta
+   em Áreas), não num branco a 9% que clareia por cima de qualquer
+   fundo; excluir avisa em vermelho, como todo destrutivo do VTT. */
+.rv-area-item-acao:hover, .rv-area-item-acoes button:hover {
+  background: color-mix(in srgb, var(--jf-acento, var(--cy)) 14%, transparent);
+  color: var(--jf-acento, var(--cy));
+}
+.rv-area-item-acao:focus-visible, .rv-area-item-acoes button:focus-visible {
+  outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 1px;
+}
+.rv-area-item-acao[data-testid^="area-excluir"]:hover {
+  background: var(--rv-dg-soft); color: #ffb3bd;
+}
 /* Hint de cada ícone — mesmo padrão de `.rv-ferr-btn`/`.rv-aba` (hover
    + foco por teclado, atraso de .35s). Abre pra CIMA: a lista fica no
    rodapé do painel, então "pra baixo" quase sempre sairia da janela. */
@@ -994,15 +1361,15 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
 
 /* ── Áreas: revisão de UX (janela arrastável, guia, ações contextuais) ── */
-.rv-area-grupo { display: flex; flex-direction: column; gap: 6px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,.07); }
-.rv-area-grupo-titulo { font-family: var(--font-mono), monospace; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--txt-dim); }
+.rv-area-grupo { display: flex; flex-direction: column; gap: 6px; padding-top: 7px; border-top: 1px solid var(--linha-2); }
+.rv-area-grupo-titulo { font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--txt-dim); }
 .rv-area-resumo-forma { margin: 0; font-family: var(--font-mono), monospace; font-size: 11.5px; color: var(--txt-forte); }
 .rv-area-dica { margin: 2px 0 0; font-size: 10.5px; line-height: 1.35; color: var(--txt-dim); }
 
-.rv-area-secao { display: flex; flex-direction: column; gap: 5px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,.07); }
+.rv-area-secao { display: flex; flex-direction: column; gap: 5px; padding-top: 7px; border-top: 1px solid var(--linha-2); }
 .rv-area-secao-cab {
   display: flex; align-items: center; gap: 5px; border: none; background: none; padding: 2px 0; cursor: pointer;
-  font-family: var(--font-mono), monospace; font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--txt-dim); text-align: left;
+  font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--txt-dim); text-align: left;
 }
 .rv-area-secao-cab:hover { color: var(--cy); }
 .rv-area-secao-cab:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
@@ -1010,10 +1377,10 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
 .rv-area-aura-origem { display: flex; flex-direction: column; gap: 5px; width: 100%; }
 .rv-area-escolher-token { justify-content: center; font-size: 11px; }
-.rv-area-escolher-token[aria-pressed="true"] { background: rgba(53,200,240,.2); color: var(--cy); box-shadow: inset 0 0 0 1px rgba(53,200,240,.5); }
-.rv-area-busca { padding: 4px 7px; border-radius: 6px; border: 1px solid rgba(255,255,255,.12); background: rgba(8,13,18,.85); color: var(--txt); font: inherit; font-size: 11.5px; }
+.rv-area-escolher-token[aria-pressed="true"] { background: color-mix(in srgb, var(--cy) 22%, transparent); color: var(--cy); box-shadow: inset 0 0 0 1px var(--cy); }
+.rv-area-busca { padding: 4px 7px; border-radius: var(--rv-r); border: 1px solid var(--linha); background: rgba(8,13,18,.85); color: var(--txt); font: inherit; font-size: 11.5px; }
 
-.rv-area-rodape { display: flex; flex-direction: column; gap: 6px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,.07); }
+.rv-area-rodape { display: flex; flex-direction: column; gap: 6px; padding-top: 7px; border-top: 1px solid var(--linha-2); }
 .rv-area-rodape-texto { font-size: 11px; color: var(--cy); }
 
 /* Guia do gesto — puramente visual, nunca intercepta ponteiro. */
@@ -1022,24 +1389,78 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
 /* Ações contextuais ao lado da geometria — HTML fixo, fora do `<svg>`:
    tamanho constante em qualquer zoom. */
+/* O CARD inteiro fala a mesma língua das janelas de ferramenta: chassi
+   escuro opaco, fio de 1px na borda e uma ESPINHA de acento à esquerda
+   (aqui como `inset box-shadow`, não como pseudo-elemento, pra não
+   competir com o `border-radius` nem exigir markup novo). O acento é
+   `--jf-acento` — o mesmo que a janela de Áreas escreve — e não mais
+   `--cy` fixo: ciano aqui contradizia a ferramenta violeta que abriu o
+   card. Fica declarado no próprio card porque ele é `position: fixed`
+   fora da janela: não herda nada dela. */
 .rv-area-acoes-flutuantes {
-  position: fixed; z-index: 14; display: flex; align-items: center; gap: 5px;
-  padding: 5px; border-radius: var(--raio); background: var(--sup);
-  box-shadow: var(--sombra); backdrop-filter: blur(9px);
+  --jf-acento: var(--rv-areas-acento, #8878d6);
+  position: fixed; z-index: 14;
+  /* GRID, e não flex-wrap: a régua/erro ocupam linha inteira via
+     `flex-basis: 100%`, mas a largura de um `position: fixed` sem
+     `width` é max-content — e max-content ignora a quebra forçada,
+     somando régua + botões numa linha só. Daí a faixa vazia à direita.
+     No grid a linha inteira é declarada (`grid-column: 1 / -1`) e a
+     largura sai do maior CONTEÚDO de linha, sem sobra. */
+  display: grid; grid-template-columns: auto auto; justify-content: start; align-items: center; gap: 6px;
+  padding: 8px 9px 9px 11px; border-radius: var(--rv-r);
+  background: var(--rv-panel, #0e1620);
+  box-shadow:
+    inset 0 0 0 1px var(--rv-line-strong, #1c2b45),
+    inset 2px 0 0 var(--jf-acento),
+    var(--sombra);
+  backdrop-filter: blur(9px);
 }
+/* Mesma receita tipográfica de `.rv-btn` (display, caixa alta, 10.5px):
+   é o que faz o card parecer parte do VTT e não um diálogo genérico.
+   O `rgba(255,255,255,.07)` de antes não era token nenhum — clareava
+   por cima do mapa em vez de pertencer à paleta. */
 .rv-area-acao-flutuante {
-  display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px;
-  border: none; border-radius: 7px; background: rgba(255,255,255,.07); color: var(--txt);
-  font: inherit; font-size: 11.5px; cursor: pointer; white-space: nowrap;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 11px;
+  border: 1px solid transparent; border-radius: var(--rv-r);
+  background: transparent; color: var(--rv-ink-dim, var(--txt-dim));
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  cursor: pointer; white-space: nowrap;
+  transition: color .14s, border-color .14s, background .14s;
 }
-.rv-area-acao-flutuante:disabled { opacity: .6; cursor: default; }
-.rv-area-acao-flutuante:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
-.rv-area-acao-flutuante--confirmar { background: rgba(53,200,240,.2); color: var(--cy); font-weight: 600; }
-.rv-area-acao-flutuante--confirmar:hover:not(:disabled) { background: rgba(53,200,240,.32); }
-.rv-area-acao-flutuante--descartar:hover:not(:disabled) { background: rgba(255,95,116,.22); color: #ffb3bd; }
-.rv-area-acao-erro { flex-basis: 100%; margin: 2px 4px 0; font-size: 10.5px; color: var(--dg); max-width: 220px; }
-/* Medida da área — mesma régua que aparece durante o arrasto de criação, agora também visível editando. */
-.rv-area-acoes-medida { flex-basis: 100%; margin: 0 4px 2px; font-family: var(--font-mono), monospace; font-size: 10.5px; color: var(--cy); }
+.rv-area-acao-flutuante:disabled { opacity: .45; cursor: not-allowed; }
+.rv-area-acao-flutuante:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: 2px; }
+/* Primária: borda + fundo no acento da ferramenta. */
+.rv-area-acao-flutuante--confirmar {
+  border-color: color-mix(in srgb, var(--jf-acento) 53%, transparent);
+  background: color-mix(in srgb, var(--jf-acento) 14%, transparent);
+  color: var(--jf-acento); font-weight: 700;
+}
+.rv-area-acao-flutuante--confirmar:hover:not(:disabled) {
+  border-color: var(--jf-acento);
+  background: color-mix(in srgb, var(--jf-acento) 22%, transparent);
+  color: #fff;
+}
+/* Discreta: sem borda e sem fundo em repouso — descartar nunca deve
+   pesar tanto quanto confirmar — e só vira perigo ao ser mirada. */
+.rv-area-acao-flutuante--descartar:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--dg) 45%, transparent);
+  background: var(--rv-dg-soft, color-mix(in srgb, var(--dg) 14%, transparent));
+  color: #ffb3bd;
+}
+.rv-area-acao-erro {
+  grid-column: 1 / -1; margin: 2px 1px 0; max-width: 220px;
+  font-size: 10.5px; line-height: 1.35; color: #ffb3bd;
+}
+/* Medida da área — mesma régua que aparece durante o arrasto de
+   criação, agora também visível editando. Vira RÓTULO do card (linha
+   própria, caixa alta, acento), não um texto solto entre botões. */
+.rv-area-acoes-medida {
+  grid-column: 1 / -1; margin: 0 1px 2px;
+  font-family: var(--font-mono), monospace; font-size: 9.5px; line-height: 1;
+  font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--jf-acento);
+}
 
 /* Atalho de edição rápida de uma área persistida, direto no mapa —
    mesmo sistema de posicionamento contextual (`posicaoDasAcoes`,
@@ -1048,8 +1469,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    decisão nem com tokens: caixa compacta, sem glow, sem pulso. */
 .rv-area-edicao-rapida { position: fixed; z-index: 13; }
 .rv-area-edicao-rapida-btn {
+  /* Mesmo acento do card de decisão: os dois são da ferramenta Áreas. */
+  --jf-acento: var(--rv-areas-acento, #8878d6);
   position: relative; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
-  border: 1px solid rgba(255,255,255,.14); border-radius: 8px; background: var(--sup); color: var(--txt-forte);
+  border: 1px solid var(--rv-line-strong, var(--linha)); border-radius: var(--rv-r);
+  background: var(--rv-panel, var(--sup)); color: var(--rv-ink-dim, var(--txt-dim));
   box-shadow: 0 2px 6px rgba(0,0,0,.4); cursor: pointer;
   transition: background .12s ease, border-color .12s ease, color .12s ease;
 }
@@ -1058,10 +1482,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    hexes/áreas atravessarem o botão bem no momento em que ele mais
    precisa ser lido. A cor muda, a opacidade efetiva não. */
 .rv-area-edicao-rapida-btn:hover, .rv-area-edicao-rapida-btn:focus-visible {
-  background: rgba(18,42,54,.97); border-color: rgba(53,200,240,.5); color: #7fe3ff;
+  background: color-mix(in srgb, var(--jf-acento) 18%, #0e1620);
+  border-color: var(--jf-acento); color: #fff;
 }
-.rv-area-edicao-rapida-btn:active { background: rgba(15,36,46,.98); }
-.rv-area-edicao-rapida-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.rv-area-edicao-rapida-btn:active { background: color-mix(in srgb, var(--jf-acento) 26%, #0b1119); }
+.rv-area-edicao-rapida-btn:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: 2px; }
 .rv-area-edicao-rapida-btn:hover .rv-dica, .rv-area-edicao-rapida-btn:focus-visible .rv-dica { opacity: 1; transition-delay: .35s; }
 .rv-area-edicao-rapida-btn .rv-dica { left: 50%; top: calc(100% + 8px); transform: translateX(-50%); }
 .rv-area-edicao-rapida-btn .rv-dica--acima { top: auto; bottom: calc(100% + 8px); }
@@ -1124,29 +1549,14 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   transform: rotate(45deg) translate(-1px, -1px); transition: transform .16s;
 }
 .rv-fp-chevron[data-recolhido="true"] { transform: rotate(-45deg) translate(-1px, 1px); }
-.rv-fp-cab {
-  display: flex; align-items: center; gap: 8px; flex: 0 0 auto;
-  padding: 9px 9px 9px 12px; border-bottom: 1px solid rgba(255,255,255,.08);
-}
-.rv-fp-cab-icone { display: flex; color: var(--cy); flex: 0 0 auto; }
-.rv-fp-cab-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1 1 auto; }
-.rv-fp-titulo {
-  font-family: var(--font-orbitron), sans-serif; font-size: 13px;
-  letter-spacing: .06em; color: var(--txt-forte); line-height: 1.1;
-}
-/* Modo atual — a resposta pra "o que estou fazendo agora?". */
-.rv-fp-modo {
-  font-family: var(--font-mono), monospace; font-size: 9px; letter-spacing: .12em;
-  text-transform: uppercase; color: var(--cy); line-height: 1.2;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+/* Cabeçalho, título, modo, botões, espinha e cantos vêm da MOLDURA DA
+   JANELA, mais abaixo neste arquivo. Aqui só a coluna de texto, que é
+   estrutura desta casca e não aparência. */
+.rv-fp-cab-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
 .rv-fp-fechar {
-  width: 26px; height: 26px; flex: 0 0 auto;
-  display: flex; align-items: center; justify-content: center;
-  border: none; border-radius: 6px; background: transparent; color: var(--txt-dim); cursor: pointer;
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
 }
-.rv-fp-fechar:hover { background: rgba(255,255,255,.09); color: var(--cy); }
-.rv-fp-fechar:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 
 .rv-fp-corpo {
   display: flex; flex-direction: column; gap: 12px;
@@ -1158,7 +1568,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* Grupo rotulado — dá a hierarquia que a barra horizontal não tinha. */
 .rv-fp-grupo { display: flex; flex-direction: column; gap: 6px; }
 .rv-fp-rotulo {
-  font-family: var(--font-mono), monospace; font-size: 9.5px; letter-spacing: .14em;
+  font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: .14em;
   text-transform: uppercase; color: var(--txt-dim);
 }
 
@@ -1169,53 +1579,58 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-opcoes { display: flex; flex-direction: column; gap: 4px; }
 .rv-fp-opcao {
   display: flex; align-items: center; gap: 9px; width: 100%;
-  padding: 8px 10px; border: none; border-radius: 8px;
+  padding: 8px 10px; border: none; border-radius: var(--rv-r);
   background: rgba(255,255,255,.04); color: var(--txt-dim);
   font: inherit; text-align: left; cursor: pointer;
   box-shadow: inset 0 0 0 1px transparent;
 }
 .rv-fp-opcao:hover { background: rgba(255,255,255,.08); color: var(--txt); }
-.rv-fp-opcao:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+/* O anel de foco segue a cor DO TIPO de terreno, não um ciano fixo.
+   Este é o caso em que mais destoava: cada opção tem cor própria
+   (`--rv-op-cor`: âmbar no difícil, vermelho no bloqueado, cinza no
+   apagar), e o anel vinha ciano em todas — e como o foco permanece
+   depois do clique, a cor errada ficava na tela. */
+.rv-fp-opcao:focus-visible {
+  outline: 2px solid var(--rv-op-cor, var(--jf-acento, var(--cy)));
+  outline-offset: 1px;
+}
 .rv-fp-opcao[aria-pressed="true"] {
-  background: rgba(53,200,240,.16); color: var(--cy);
-  box-shadow: inset 0 0 0 1px rgba(53,200,240,.5);
+  background: var(--rv-cy-soft); color: var(--cy);
+  box-shadow: inset 0 0 0 1px var(--cy);
 }
 .rv-fp-opcao-ic { display: flex; flex: 0 0 auto; }
 .rv-fp-opcao-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .rv-fp-opcao-nome { font-size: 12px; color: inherit; line-height: 1.15; }
 .rv-fp-opcao-efeito { font-size: 10px; color: var(--txt-dim); line-height: 1.2; }
-.rv-fp-opcao[aria-pressed="true"] .rv-fp-opcao-efeito { color: rgba(53,200,240,.75); }
+.rv-fp-opcao[aria-pressed="true"] .rv-fp-opcao-efeito { color: var(--cy); }
 /* "Apagar" é remoção, não um tipo de terreno — vive no mesmo grupo mas
    com tratamento próprio, nunca a mesma cor de um tipo pintável. */
 .rv-fp-opcao--apagar[aria-pressed="true"] {
-  background: rgba(240,161,50,.15); color: var(--am);
-  box-shadow: inset 0 0 0 1px rgba(240,161,50,.45);
+  background: var(--rv-am-soft); color: var(--am);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--am) 30%, transparent);
 }
-.rv-fp-opcao--apagar[aria-pressed="true"] .rv-fp-opcao-efeito { color: rgba(240,161,50,.75); }
+.rv-fp-opcao--apagar[aria-pressed="true"] .rv-fp-opcao-efeito { color: color-mix(in srgb, var(--am) 30%, transparent); }
 /* Marca de seleção — o estado ativo NÃO depende só de cor. */
 .rv-fp-opcao-marca { margin-left: auto; flex: 0 0 auto; display: flex; opacity: 0; }
 .rv-fp-opcao[aria-pressed="true"] .rv-fp-opcao-marca { opacity: 1; }
 
-/* Segmentado (método, tamanho de pincel) */
-.rv-fp-seg { display: flex; gap: 4px; }
-.rv-fp-seg-btn {
-  flex: 1 1 0; min-width: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  padding: 8px 4px; border: none; border-radius: 8px;
-  background: rgba(255,255,255,.04); color: var(--txt-dim);
-  font: inherit; font-size: 10.5px; cursor: pointer;
-  box-shadow: inset 0 0 0 1px transparent;
-}
-.rv-fp-seg-btn:hover { background: rgba(255,255,255,.08); color: var(--txt); }
-.rv-fp-seg-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
-.rv-fp-seg-btn[aria-pressed="true"] {
-  background: rgba(53,200,240,.16); color: var(--cy);
-  box-shadow: inset 0 0 0 1px rgba(53,200,240,.5);
-}
+/* Segmentado — o desenho vive mais abaixo, em "Segmented / OptionTile".
+ *
+ * O bloco que ficava AQUI foi removido: ele era a versão anterior do
+ * mesmo ladrilho e o de baixo já o sobrescrevia quase inteiro — mas não
+ * o `box-shadow`. O resultado era o ladrilho selecionado recebendo
+ * DOIS anéis de 1px na mesma cor (a borda nova e o inset antigo), 2px
+ * de espessura onde o desenho pede 1. As únicas propriedades que só
+ * existiam aqui (`flex: 1 1 0`, `min-width: 0`) eram do layout flex
+ * anterior; o de baixo usa grid com `grid-auto-columns: 1fr`, que já
+ * distribui as colunas. */
+/* O anel de foco é da FERRAMENTA. `var(--cy)` fixo punha um anel ciano
+   num ladrilho verde ou violeta — e como o foco fica depois do clique,
+   a cor errada permanecia na tela. */
+.rv-fp-seg-btn:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 1px; }
 .rv-fp-seg-btn:disabled { opacity: .45; cursor: default; }
 .rv-fp-seg-nome { line-height: 1.1; }
-.rv-fp-seg-sub { font-size: 9px; color: var(--txt-dim); line-height: 1.1; }
-.rv-fp-seg-btn[aria-pressed="true"] .rv-fp-seg-sub { color: rgba(53,200,240,.75); }
+.rv-fp-seg-sub { line-height: 1.1; }
 /* Tamanhos do pincel — grade de 3 colunas (5 opções não cabem numa
    linha só sem espremer cada alvo abaixo do confortável). */
 .rv-fp-tamanhos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
@@ -1234,16 +1649,16 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
 .rv-fp-preset {
   display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-  gap: 4px; padding: 8px 3px; min-height: 56px;
-  border: none; border-radius: 7px; background: rgba(255,255,255,.04); color: var(--txt-dim);
-  font: inherit; font-size: 9.5px; line-height: 1.15; text-align: center; cursor: pointer;
+  gap: 7px; padding: 8px 3px; min-height: 56px;
+  border: none; border-radius: var(--rv-r); background: rgba(255,255,255,.04); color: var(--txt-dim);
+  font: inherit; font-size: 10px; line-height: 1.15; text-align: center; cursor: pointer;
   box-shadow: inset 0 0 0 1px transparent;
 }
 .rv-fp-preset:hover { background: rgba(255,255,255,.08); color: var(--txt); }
-.rv-fp-preset:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rv-fp-preset:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 1px; }
 .rv-fp-preset[aria-pressed="true"] {
-  background: rgba(53,200,240,.16); color: var(--cy);
-  box-shadow: inset 0 0 0 1px rgba(53,200,240,.5);
+  background: var(--rv-cy-soft); color: var(--cy);
+  box-shadow: inset 0 0 0 1px var(--cy);
 }
 .rv-fp-preset:disabled { opacity: .45; cursor: default; }
 .rv-fp-preset-ic { display: flex; flex: 0 0 auto; }
@@ -1261,7 +1676,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    justamente o caso: não há affordance visual no mapa que o revele). */
 .rv-fp-tecla {
   display: inline-block; min-width: 15px; padding: 0 4px;
-  border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(150,190,215,.3);
+  border-radius: var(--rv-r); box-shadow: inset 0 0 0 1px rgba(150,190,215,.3);
   background: rgba(150,190,215,.1); color: var(--txt);
   font-family: var(--font-mono), monospace; font-size: 10px; line-height: 15px;
   text-align: center;
@@ -1271,8 +1686,8 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    O TOTAL é o número grande: numa mesa, a pergunta é quase sempre
    "dá quanto no fim?", e os trechos são o detalhe de apoio. */
 .rv-fp-medida {
-  padding: 9px 10px; border-radius: 8px;
-  background: rgba(53,200,240,.1); box-shadow: inset 0 0 0 1px rgba(53,200,240,.25);
+  padding: 9px 10px; border-radius: var(--rv-r);
+  background: var(--rv-cy-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cy) 22%, transparent);
 }
 .rv-fp-medida--vazia {
   background: rgba(150,190,215,.05); box-shadow: inset 0 0 0 1px rgba(150,190,215,.14);
@@ -1287,7 +1702,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-fp-trechos {
   list-style: none; margin: 8px 0 0; padding: 8px 0 0;
-  border-top: 1px solid rgba(53,200,240,.18);
+  border-top: 1px solid var(--rv-cy-soft);
   display: flex; flex-wrap: wrap; gap: 4px;
 }
 .rv-fp-trecho {
@@ -1300,8 +1715,8 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-trecho-n {
   display: inline-flex; align-items: center; justify-content: center;
   width: 15px; height: 15px; border-radius: 50%;
-  background: rgba(53,200,240,.2); color: var(--cy);
-  font-family: var(--font-mono), monospace; font-size: 9px;
+  background: color-mix(in srgb, var(--cy) 22%, transparent); color: var(--cy);
+  font-family: var(--font-mono), monospace; font-size: 10px;
 }
 .rv-fp-trecho-d { font-family: var(--font-mono), monospace; }
 .rv-fp-medida-nota { margin: 7px 0 0; font-size: 10.5px; color: var(--txt-dim); }
@@ -1310,12 +1725,12 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* Faixa de status (contagem de gesto, seleção pendente) */
 .rv-fp-status {
   display: flex; align-items: center; gap: 7px;
-  padding: 7px 9px; border-radius: 8px;
-  background: rgba(53,200,240,.1); box-shadow: inset 0 0 0 1px rgba(53,200,240,.25);
+  padding: 7px 9px; border-radius: var(--rv-r);
+  background: var(--rv-cy-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cy) 22%, transparent);
   font-size: 11.5px; color: var(--cy);
 }
 .rv-fp-status--neutro {
-  background: rgba(255,255,255,.05); box-shadow: inset 0 0 0 1px rgba(255,255,255,.09);
+  background: rgba(255,255,255,.05); box-shadow: inset 0 0 0 1px var(--linha);
   color: var(--txt-dim);
 }
 .rv-fp-status strong { font-family: var(--font-mono), monospace; font-weight: 600; color: var(--txt-forte); }
@@ -1324,7 +1739,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    principais por uma borda, pra não parecer "mais um botão de modo". */
 .rv-fp-contextual {
   display: flex; flex-direction: column; gap: 6px;
-  padding-top: 10px; border-top: 1px solid rgba(255,255,255,.09);
+  padding-top: 10px; border-top: 1px solid var(--linha-2);
 }
 
 /* Rodapé fixo — a AÇÃO PRIMÁRIA nunca fica abaixo da dobra. Numa tela
@@ -1332,11 +1747,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    "Salvar" sumia justamente quando havia mais campos preenchidos. */
 .rv-fp-rodape {
   flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px;
-  padding: 10px 12px; border-top: 1px solid rgba(255,255,255,.1);
+  padding: 10px 12px; border-top: 1px solid var(--linha-2);
   background: rgba(9, 14, 20, .55);
 }
 .rv-fp-acoes { display: flex; gap: 6px; }
-.rv-fp-acoes .rv-btn { flex: 1 1 auto; justify-content: center; padding: 8px 10px; font-size: 12px; }
+.rv-fp-acoes .rv-btn { flex: 1 1 auto; justify-content: center; padding: 10px 12px; font-size: 12px; }
 .rv-fp-acoes--col { flex-direction: column; }
 /* Ação primária ocupa a linha inteira: é a resposta pra "qual é a
    próxima ação?" e nunca divide peso com uma secundária ao lado. */
@@ -1346,10 +1761,10 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   flex-direction: column; gap: 3px; padding: 8px 4px; font-size: 10.5px; justify-content: center;
 }
 /* Zona destrutiva — separada, e só ela usa vermelho. */
-.rv-fp-perigo { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid rgba(255,95,116,.2); }
+.rv-fp-perigo { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--dg) 30%, transparent); }
 .rv-fp-confirmar {
-  display: flex; flex-direction: column; gap: 6px; padding: 9px 10px; border-radius: 8px;
-  background: rgba(255,95,116,.1); box-shadow: inset 0 0 0 1px rgba(255,95,116,.3);
+  display: flex; flex-direction: column; gap: 6px; padding: 9px 10px; border-radius: var(--rv-r);
+  background: var(--rv-dg-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dg) 30%, transparent);
 }
 .rv-fp-confirmar p { margin: 0; font-size: 11.5px; line-height: 1.35; color: #ffb3bd; }
 .rv-fp-confirmar-acoes { display: flex; gap: 6px; }
@@ -1361,13 +1776,13 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   text-underline-offset: 2px;
 }
 .rv-fp-discreta:hover { color: var(--cy); }
-.rv-fp-discreta:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; border-radius: 4px; }
+.rv-fp-discreta:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; border-radius: var(--rv-r); }
 
 /* Identidade do objeto selecionado / em movimento */
 .rv-fp-obj {
   display: flex; flex-direction: column; gap: 7px;
-  padding: 9px 10px; border-radius: 8px;
-  background: rgba(255,255,255,.045); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+  padding: 9px 10px; border-radius: var(--rv-r);
+  background: rgba(255,255,255,.045); box-shadow: inset 0 0 0 1px var(--linha);
 }
 .rv-fp-obj-nome {
   font-size: 13px; color: var(--txt-forte); line-height: 1.2;
@@ -1375,18 +1790,18 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-fp-obj-props { display: flex; flex-wrap: wrap; gap: 4px; }
 .rv-fp-tag {
-  font-size: 9.5px; letter-spacing: .04em; padding: 2px 7px; border-radius: 999px;
+  font-size: 10px; letter-spacing: .04em; padding: 2px 7px; border-radius: 999px;
   background: rgba(255,255,255,.08); color: var(--txt-dim);
 }
-.rv-fp-tag--cy { background: rgba(53,200,240,.16); color: var(--cy); }
-.rv-fp-tag--am { background: rgba(240,161,50,.16); color: var(--am); }
-.rv-fp-tag--dg { background: rgba(255,95,116,.16); color: #ffb3bd; }
+.rv-fp-tag--cy { background: var(--rv-cy-soft); color: var(--cy); }
+.rv-fp-tag--am { background: var(--rv-am-soft); color: var(--am); }
+.rv-fp-tag--dg { background: var(--rv-dg-soft); color: #ffb3bd; }
 
 /* PD — barra + números. O número sozinho num campo apertado era
    ilegível de relance no meio de um combate. */
 .rv-fp-pd { display: flex; flex-direction: column; gap: 4px; }
 .rv-fp-pd-topo { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.rv-fp-pd-rot { font-family: var(--font-mono), monospace; font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--txt-dim); }
+.rv-fp-pd-rot { font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--txt-dim); }
 .rv-fp-pd-val { font-family: var(--font-mono), monospace; font-size: 12.5px; color: var(--txt-forte); }
 .rv-fp-pd-barra { height: 6px; border-radius: 999px; background: rgba(255,255,255,.09); overflow: hidden; }
 .rv-fp-pd-fill { height: 100%; border-radius: 999px; background: var(--cy); transition: width .18s; }
@@ -1397,8 +1812,8 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* Linha de dano/reparo */
 .rv-fp-dano { display: flex; gap: 5px; align-items: stretch; }
 .rv-fp-dano input {
-  width: 66px; flex: 0 0 auto; min-width: 0; padding: 6px 8px; border-radius: 7px;
-  border: 1px solid rgba(255,255,255,.12); background: rgba(8,13,18,.85);
+  width: 66px; flex: 0 0 auto; min-width: 0; padding: 6px 8px; border-radius: var(--rv-r);
+  border: 1px solid var(--linha); background: rgba(8,13,18,.85);
   color: var(--txt); font: inherit; font-size: 12px;
 }
 .rv-fp-dano input:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
@@ -1409,14 +1824,14 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-campo { display: flex; flex-direction: column; gap: 4px; }
 .rv-fp-campo > span { font-size: 10.5px; color: var(--txt-dim); }
 .rv-fp-campo input[type="text"], .rv-fp-campo input[type="number"], .rv-fp-campo select {
-  width: 100%; min-width: 0; padding: 7px 9px; border-radius: 7px;
-  border: 1px solid rgba(255,255,255,.12); background: rgba(8,13,18,.85);
+  width: 100%; min-width: 0; padding: 7px 9px; border-radius: var(--rv-r);
+  border: 1px solid var(--linha); background: rgba(8,13,18,.85);
   color: var(--txt); font: inherit; font-size: 12px;
 }
 .rv-fp-campo input:focus-visible, .rv-fp-campo select:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 .rv-fp-campo input:disabled, .rv-fp-campo select:disabled { opacity: .5; }
 .rv-fp-campo-erro { font-size: 10.5px; color: var(--dg); }
-.rv-fp-campo--erro input { border-color: rgba(255,95,116,.6); }
+.rv-fp-campo--erro input { border-color: color-mix(in srgb, var(--dg) 30%, transparent); }
 .rv-fp-par { display: flex; gap: 7px; align-items: flex-end; }
 .rv-fp-par .rv-fp-campo { flex: 1 1 0; min-width: 0; }
 .rv-fp-par-sep { padding-bottom: 8px; color: var(--txt-dim); font-size: 12px; }
@@ -1435,7 +1850,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   content: ""; position: absolute; left: 2px; top: 2px; width: 15px; height: 15px;
   border-radius: 50%; background: var(--txt-dim); transition: transform .14s, background .14s;
 }
-.rv-fp-switch input:checked + .rv-fp-switch-tr { background: rgba(53,200,240,.35); }
+.rv-fp-switch input:checked + .rv-fp-switch-tr { background: color-mix(in srgb, var(--cy) 22%, transparent); }
 .rv-fp-switch input:checked + .rv-fp-switch-tr::after { transform: translateX(15px); background: var(--cy); }
 .rv-fp-switch input:focus-visible + .rv-fp-switch-tr { outline: 2px solid var(--cy); outline-offset: 2px; }
 .rv-fp-switch input:disabled + .rv-fp-switch-tr { opacity: .45; }
@@ -1443,8 +1858,8 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-switch-sub { font-size: 10px; color: var(--txt-dim); line-height: 1.2; }
 
 .rv-fp-erro {
-  margin: 0; padding: 7px 9px; border-radius: 7px; font-size: 11.5px; line-height: 1.35;
-  background: rgba(255,95,116,.12); box-shadow: inset 0 0 0 1px rgba(255,95,116,.3); color: #ffb3bd;
+  margin: 0; padding: 7px 9px; border-radius: var(--rv-r); font-size: 11.5px; line-height: 1.35;
+  background: var(--rv-dg-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dg) 30%, transparent); color: #ffb3bd;
 }
 
 /* Telas mais baixas/estreitas: o painel encolhe e rola por dentro em
@@ -1482,119 +1897,91 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    é estado da mesa, não da ferramenta. Distinto de `aria-pressed`
    (ferramenta selecionada), que continua sendo o realce forte. */
 .rv-ferr-btn[data-ativo="true"] { color: var(--am); }
-.rv-ferr-btn[data-ativo="true"]:not([aria-pressed="true"]) { background: rgba(240,161,50,.1); }
+.rv-ferr-btn[data-ativo="true"]:not([aria-pressed="true"]) { background: var(--rv-am-soft); }
 .rv-ferr-badge {
   position: absolute; right: 1px; top: 1px; min-width: 14px; height: 14px; padding: 0 3px;
   display: grid; place-items: center; border-radius: 999px;
-  background: var(--am); color: #14100a; font: 700 9px var(--font-mono), monospace;
-  box-shadow: 0 0 0 2px #0a0f15;
+  background: var(--am); color: #14100a; font: 700 10px var(--font-mono), monospace;
+  box-shadow: 0 0 0 2px var(--rv-sunken);
 }
 
 .rv-girando { animation: rv-girar 1s linear infinite; }
 @keyframes rv-girar { to { transform: rotate(360deg); } }
 
-.rv-rodadas-erro { margin: 0; padding: 6px 8px; border-radius: 7px; background: rgba(255,95,116,.14); color: #ffb3bd; font-size: 11px; }
+.rv-rodadas-erro { margin: 0; padding: 6px 8px; border-radius: var(--rv-r); background: var(--rv-dg-soft); color: #ffb3bd; font-size: 11px; }
 .rv-rodadas-vazio { margin: 0; font-size: 11.5px; line-height: 1.45; color: var(--txt-dim); }
-.rv-rodadas-nota { margin: 0; font-size: 10.5px; line-height: 1.4; color: var(--txt-dim); }
-.rv-rodadas-nota-mini { font-size: 10px; color: var(--txt-dim); }
 
-.rv-rodadas-secao { display: flex; flex-direction: column; gap: 7px; padding-top: 9px; border-top: 1px solid rgba(255,255,255,.07); }
+.rv-rodadas-secao { display: flex; flex-direction: column; gap: 7px; padding-top: 9px; border-top: 1px solid var(--linha-2); }
 .rv-rodadas-secao:first-child { padding-top: 0; border-top: 0; }
 .rv-rodadas-secao h3 {
   margin: 0; display: flex; align-items: center; gap: 6px;
-  font-family: var(--font-mono), monospace; font-size: 9.5px; font-weight: 700;
+  font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700;
   letter-spacing: .14em; text-transform: uppercase; color: var(--txt-dim);
 }
-.rv-rodadas-secao-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .rv-rodadas-massa { display: flex; gap: 4px; }
 .rv-rodadas-massa .rv-btn { padding: 3px 7px; font-size: 10px; }
-.rv-rodadas-conta { padding: 1px 6px; border-radius: 999px; background: rgba(255,255,255,.08); color: var(--txt-forte); letter-spacing: 0; }
 
-/* Estado corrente — leitura, nunca controle. */
-.rv-rodadas-estado { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0; }
-.rv-rodadas-estado > div { padding: 6px 7px; border-radius: 8px; background: rgba(255,255,255,.04); min-width: 0; }
-.rv-rodadas-estado dt {
-  font-family: var(--font-mono), monospace; font-size: 8.5px; letter-spacing: .12em;
-  text-transform: uppercase; color: var(--txt-dim);
-}
-.rv-rodadas-estado dd {
-  margin: 2px 0 0; font-size: 12px; color: var(--txt-forte);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
 
-.rv-rodadas-grupo { margin: 0; padding: 6px 7px 7px; border: 0; border-radius: 8px; background: rgba(255,255,255,.03); box-shadow: inset 0 0 0 1px rgba(255,255,255,.05); }
-.rv-rodadas-grupo[data-lado="pj"] { box-shadow: inset 0 0 0 1px rgba(53,200,240,.22); }
-.rv-rodadas-grupo[data-lado="pn"] { box-shadow: inset 0 0 0 1px rgba(255,95,116,.2); }
-.rv-rodadas-grupo legend {
-  padding: 0 2px; display: flex; align-items: center; gap: 6px;
-  font-family: var(--font-mono), monospace; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--txt-dim);
-}
-.rv-rodadas-grupo[data-lado="pj"] legend { color: var(--cy); }
-.rv-rodadas-grupo[data-lado="pn"] legend { color: var(--dg); }
-.rv-rodadas-grupo legend span { color: var(--txt-dim); letter-spacing: 0; }
-.rv-rodadas-grupo-vazio { margin: 3px 0 0; font-size: 10.5px; color: var(--txt-dim); }
-
-.rv-rodadas-item { display: flex; align-items: center; gap: 7px; padding: 3px 2px; border-radius: 6px; cursor: pointer; }
+.rv-rodadas-item { display: flex; align-items: center; gap: 7px; padding: 3px 2px; border-radius: var(--rv-r); cursor: pointer; }
 .rv-rodadas-item:hover { background: rgba(255,255,255,.06); }
 .rv-rodadas-item input { accent-color: var(--cy); cursor: pointer; }
 .rv-rodadas-item input:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 
 .rv-rodadas-sigla {
-  width: 24px; height: 24px; flex: none; display: grid; place-items: center; border-radius: 6px;
-  background: #16222d; color: #eef7fc; font: 700 9.5px var(--font-mono), monospace;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+  width: 24px; height: 24px; flex: none; display: grid; place-items: center; border-radius: var(--rv-r);
+  background: #16222d; color: #eef7fc; font: 700 10px var(--font-mono), monospace;
+  box-shadow: inset 0 0 0 1px var(--linha);
 }
-.rv-rodadas-sigla[data-vertente="energetico"] { box-shadow: inset 0 0 0 1px #35c8f0; background: #0d2732; }
-.rv-rodadas-sigla[data-vertente="somatico"] { box-shadow: inset 0 0 0 1px #3ddc9a; background: #0d2620; }
-.rv-rodadas-sigla[data-vertente="cognitivo"] { box-shadow: inset 0 0 0 1px #a78bfa; background: #1b1530; }
-.rv-rodadas-sigla[data-vertente="material"] { box-shadow: inset 0 0 0 1px #f0a132; background: #2b1e08; }
+.rv-rodadas-sigla[data-vertente="energetico"] { box-shadow: inset 0 0 0 1px var(--cy); background: #0d2732; }
+.rv-rodadas-sigla[data-vertente="somatico"] { box-shadow: inset 0 0 0 1px var(--ok); background: #0d2620; }
+.rv-rodadas-sigla[data-vertente="cognitivo"] { box-shadow: inset 0 0 0 1px var(--ar); background: #1b1530; }
+.rv-rodadas-sigla[data-vertente="material"] { box-shadow: inset 0 0 0 1px var(--am); background: #2b1e08; }
 .rv-rodadas-nome {
   flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px;
   font-size: 11.5px; color: var(--txt); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.rv-rodadas-nome small { font-size: 9.5px; color: var(--txt-dim); overflow: hidden; text-overflow: ellipsis; }
-.rv-rodadas-tag { flex: none; padding: 1px 5px; border-radius: 999px; background: rgba(255,255,255,.08); color: var(--txt-dim); font-size: 8.5px; text-transform: uppercase; letter-spacing: .08em; }
+.rv-rodadas-nome small { font-size: 10px; color: var(--txt-dim); overflow: hidden; text-overflow: ellipsis; }
 
 .rv-rodadas-modos { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
 .rv-rodadas-modo {
   display: flex; flex-direction: column; gap: 2px; padding: 7px 8px; text-align: left; cursor: pointer;
-  border: 1px solid rgba(255,255,255,.1); border-radius: 8px; background: transparent; color: var(--txt-dim);
+  border: 1px solid var(--linha); border-radius: var(--rv-r); background: transparent; color: var(--txt-dim);
   font: inherit; transition: border-color .14s, background .14s, color .14s;
 }
 .rv-rodadas-modo strong { font-size: 12px; font-weight: 600; color: var(--txt-forte); }
-.rv-rodadas-modo span { font-size: 9.5px; line-height: 1.3; }
-.rv-rodadas-modo:hover { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.24); }
+.rv-rodadas-modo span { font-size: 10px; line-height: 1.3; }
+.rv-rodadas-modo:hover { background: var(--rv-raise); border-color: var(--linha-hover); }
 .rv-rodadas-modo:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
-.rv-rodadas-modo[aria-checked="true"] { border-color: rgba(53,200,240,.65); background: rgba(53,200,240,.14); color: var(--cy); }
+.rv-rodadas-modo[aria-checked="true"] { border-color: var(--cy); background: var(--rv-cy-soft); color: var(--cy); }
 .rv-rodadas-modo[aria-checked="true"] strong { color: var(--cy); }
 
 .rv-rodadas-surpresa { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.rv-rodadas-rotulo { font-family: var(--font-mono), monospace; font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--am); }
+.rv-rodadas-rotulo { font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--am); }
 .rv-rodadas-lado {
-  padding: 4px 10px; cursor: pointer; border: 1px solid rgba(255,255,255,.12); border-radius: 7px;
+  padding: 4px 10px; cursor: pointer; border: 1px solid var(--linha); border-radius: var(--rv-r);
   background: transparent; color: var(--txt-dim); font: inherit; font-size: 11px;
 }
 .rv-rodadas-lado:hover { background: rgba(255,255,255,.07); color: var(--txt-forte); }
 .rv-rodadas-lado:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
-.rv-rodadas-lado[aria-checked="true"][data-lado="pj"] { border-color: rgba(53,200,240,.6); background: rgba(53,200,240,.18); color: var(--cy); }
-.rv-rodadas-lado[aria-checked="true"][data-lado="pn"] { border-color: rgba(255,95,116,.6); background: rgba(255,95,116,.18); color: var(--dg); }
+.rv-rodadas-lado[aria-checked="true"][data-lado="pj"] { border-color: var(--cy); background: var(--rv-cy-soft); color: var(--cy); }
+.rv-rodadas-lado[aria-checked="true"][data-lado="pn"] { border-color: color-mix(in srgb, var(--dg) 30%, transparent); background: var(--rv-dg-soft); color: var(--dg); }
 
 .rv-rodadas-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
-.rv-rodadas-linha { display: flex; align-items: center; gap: 7px; padding: 4px 3px; border-radius: 7px; }
-.rv-rodadas-linha[data-agindo="true"] { background: rgba(240,161,50,.13); box-shadow: inset 0 0 0 1px rgba(240,161,50,.32); }
+.rv-rodadas-linha { display: flex; align-items: center; gap: 7px; padding: 4px 3px; border-radius: var(--rv-r); }
+.rv-rodadas-linha[data-agindo="true"] { background: var(--rv-am-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--am) 30%, transparent); }
 .rv-rodadas-acoes { display: flex; gap: 3px; flex: none; }
 .rv-rodadas-mini {
-  padding: 2px 6px; cursor: pointer; border: 1px solid rgba(255,255,255,.12); border-radius: 5px;
-  background: transparent; color: var(--txt-dim); font: 600 9px var(--font-mono), monospace;
+  padding: 2px 6px; cursor: pointer; border: 1px solid var(--linha); border-radius: var(--rv-r);
+  background: transparent; color: var(--txt-dim); font: 600 10px var(--font-mono), monospace;
   letter-spacing: .04em; text-transform: uppercase; transition: background .14s, color .14s, border-color .14s;
 }
-.rv-rodadas-mini:hover:not(:disabled) { background: rgba(255,255,255,.1); color: var(--txt-forte); border-color: rgba(255,255,255,.3); }
+.rv-rodadas-mini:hover:not(:disabled) { background: var(--rv-raise); color: var(--txt-forte); border-color: var(--linha-hover); }
 .rv-rodadas-mini:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 .rv-rodadas-mini:disabled { opacity: .35; cursor: not-allowed; }
-.rv-rodadas-mini[aria-pressed="true"] { border-color: rgba(240,161,50,.6); background: rgba(240,161,50,.2); color: var(--am); }
-.rv-rodadas-mini--perigo:hover:not(:disabled) { border-color: rgba(255,95,116,.6); background: rgba(255,95,116,.18); color: #ffb3bd; }
+.rv-rodadas-mini[aria-pressed="true"] { border-color: color-mix(in srgb, var(--am) 30%, transparent); background: color-mix(in srgb, var(--am) 30%, transparent); color: var(--am); }
+.rv-rodadas-mini--perigo:hover:not(:disabled) { border-color: color-mix(in srgb, var(--dg) 30%, transparent); background: var(--rv-dg-soft); color: #ffb3bd; }
 
-.rv-rodadas-rodape { display: flex; flex-direction: column; gap: 6px; padding-top: 9px; border-top: 1px solid rgba(255,255,255,.07); }
+.rv-rodadas-rodape { display: flex; flex-direction: column; gap: 6px; padding-top: 9px; border-top: 1px solid var(--linha-2); }
 .rv-rodadas-resumo { margin: 0; font-size: 11px; color: var(--txt-dim); }
 .rv-rodadas-resumo strong { color: var(--txt-forte); font-family: var(--font-mono), monospace; }
 .rv-rodadas-aviso { margin: 0; font-size: 10.5px; color: var(--am); }
@@ -1602,8 +1989,1317 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* Encerrar é destrutivo e fica LONGE de "ocultar": as duas são as mais
    fáceis de confundir deste painel, e a distância é parte da defesa. */
 .rv-rodadas-encerrar { margin-top: 6px; }
-.rv-btn:disabled { opacity: .4; cursor: not-allowed; }
 
-@media (max-width: 1100px) {
-  .rv-rodadas-estado { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* ═══ PAINEL “ROLAR DADOS” — moldura do design `chat % dice tray` ═══
+   O corpo (abas, paleta, mesa, resultado) é estilo inline no próprio
+   componente: os valores são os do design, não uma tradução. Aqui fica
+   só o CHASSI — espinha, cabeçalho e cantos — porque a janela flutuante
+   é peça do VTT, não do arquivo de design. */
+/* MOLDURA DA JANELA DE FERRAMENTA — o desenho do rolador, para todas.
+   A espinha ocupa uma coluna fixa à esquerda (por isso o `padding-left`
+   na casca, e não um flex-row: o cabeçalho precisa continuar sendo o
+   alvo de arrasto de largura inteira). O acento chega por
+   `--jf-acento`, escrito pela própria janela. */
+.rv-fp {
+  --jf-acento: var(--rv-cy);
+  padding-left: 36px;
 }
+
+/* brackets nos quatro cantos */
+.rv-fp-canto { position: absolute; z-index: 2; width: 11px; height: 11px; pointer-events: none; opacity: .55; border-color: var(--jf-acento); }
+/* Longhand, pelo mesmo motivo do `.rv-rodadas-canto`: `border-left:
+   1px solid` sem cor derruba o `border-color: var(--jf-acento)` da
+   regra acima pro `currentColor`, e o colchete perde o acento da
+   ferramenta. */
+.rv-fp-canto[data-canto="tl"] { left: 6px; top: 6px; border-left-width: 1px; border-left-style: solid; border-top-width: 1px; border-top-style: solid; }
+.rv-fp-canto[data-canto="tr"] { right: 6px; top: 6px; border-right-width: 1px; border-right-style: solid; border-top-width: 1px; border-top-style: solid; }
+.rv-fp-canto[data-canto="bl"] { left: 6px; bottom: 6px; border-left-width: 1px; border-left-style: solid; border-bottom-width: 1px; border-bottom-style: solid; }
+.rv-fp-canto[data-canto="br"] { right: 6px; bottom: 6px; border-right-width: 1px; border-right-style: solid; border-bottom-width: 1px; border-bottom-style: solid; }
+
+.rv-fp-espinha {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 36px;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  padding: 14px 0; border-right: 1px solid var(--rv-line-2); background: var(--rv-raise);
+}
+.rv-fp-espinha-indice { color: var(--jf-acento); font: 700 10px var(--font-mono), monospace; letter-spacing: .1em; }
+.rv-fp-espinha-codigo {
+  color: var(--jf-acento); opacity: .85; font: 700 10px var(--rv-display);
+  letter-spacing: .3em; text-transform: uppercase; writing-mode: vertical-rl; transform: rotate(180deg);
+  /* numa janela baixa a espinha não pode empurrar a casca */
+  max-height: 100%; overflow: hidden;
+}
+.rv-fp-espinha-ponto {
+  width: 6px; height: 6px; border-radius: 999px;
+  background: var(--jf-acento); box-shadow: 0 0 6px var(--jf-acento);
+}
+
+/* Cabeçalho no modelo do rolador: sem ícone, título grande em display,
+   modo em mono com pip do acento. */
+.rv-fp-cab {
+  min-height: 0; gap: 12px; padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--rv-line-2); background: transparent;
+}
+.rv-fp-cab-icone { display: none; }
+.rv-fp-titulo {
+  color: var(--rv-ink); font: 700 16px var(--rv-display);
+  letter-spacing: .12em; text-transform: uppercase; line-height: 1;
+}
+.rv-fp-modo {
+  display: flex; align-items: center; gap: 6px; margin-top: 6px;
+  color: var(--rv-ink-faint); font: 10px var(--font-mono), monospace;
+  letter-spacing: .14em; text-transform: uppercase;
+}
+.rv-fp-modo::before { content: ""; flex: none; width: 4px; height: 4px; border-radius: 999px; background: var(--jf-acento); }
+.rv-fp-fechar {
+  width: 24px; height: 24px; border: 1px solid var(--rv-line-strong);
+  border-radius: var(--rv-r); background: transparent; color: var(--rv-ink-faint);
+}
+.rv-fp-fechar:hover { color: var(--rv-ink); border-color: var(--rv-line-hover); }
+.rv-fp-fechar:focus-visible { outline: 2px solid var(--rv-cy); outline-offset: 2px; }
+
+/* Recolhida, a espinha ficaria alta demais para o código vertical. */
+.rv-fp--recolhida .rv-fp-espinha-codigo { display: none; }
+
+.rv-dados-painel {
+  width: min(470px, calc(100vw - 78px));
+  max-height: min(660px, calc(100dvh - 32px));
+}
+.rv-dados-corpo { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; }
+
+/* MESA DE DADOS — os dados caem sobre o PALCO inteiro (Foundry), não
+   numa caixinha dentro do painel. z-index abaixo do HUD/trilho de
+   turnos (16) e das janelas de ferramenta (17): de propósito — os
+   dados nunca tampam um controle, só a leitura do mapa por um instante. */
+/* Confinada na faixa DIREITA do palco — a janela "Rolar Dados" (e
+   qualquer outra) abre encostada na barra de ferramentas, à ESQUERDA
+   (`ancoraPadraoJanela`, em `janelasPreferencias.ts`); sem isso um
+   dado podia assentar embaixo dela, sem jeito de ver mesmo com o
+   painel recolhido — não tinha scroll que resolvesse, porque não é
+   scroll, é sobreposição real. `clamp` porque o piso em px protege
+   telas estreitas (a janela tem até 470px de largura) e o teto em %
+   evita reservar espaço demais em telas bem largas. */
+.rv-mesa-dados-overlay {
+  position: absolute; top: 0; bottom: 0; right: 0;
+  left: clamp(580px, 42%, 640px);
+  z-index: 15; pointer-events: none;
+}
+.rv-mesa-dados-overlay[data-saindo="true"] { animation: rv-dados-saida .32s ease forwards; }
+@keyframes rv-dados-saida { to { opacity: 0; } }
+
+/* Indicador de pool "esperando a mesa" — os ícones do conjunto pulsam
+   em vez de rolar localmente, porque a rolagem de verdade acontece
+   fora do painel. */
+.rv-dados-rolando { display: inline-flex; animation: rv-dados-pulso 1.05s ease-in-out infinite; }
+@keyframes rv-dados-pulso { 0%, 100% { opacity: .32; } 50% { opacity: .8; } }
+.rv-dados-status { font-family: var(--font-mono), monospace; font-size: 10px; text-transform: uppercase; letter-spacing: .14em; color: var(--txt-dim); }
+
+/* Força carregada até 100% — feedback discreto, não uma festa. Some
+   por completo sob `prefers-reduced-motion` (o preenchimento cheio da
+   barra já entrega a informação, o pulso é só reforço). */
+@media (prefers-reduced-motion: no-preference) {
+  .rv-forca-cheia { animation: rv-forca-pulso .5s ease-in-out 1; }
+}
+.rv-forca-cheia { box-shadow: 0 0 0 1px var(--cy), 0 0 14px rgba(69,184,201,.55); }
+@keyframes rv-forca-pulso { 0% { box-shadow: 0 0 0 1px var(--cy), 0 0 0 rgba(69,184,201,0); } 55% { box-shadow: 0 0 0 1px var(--cy), 0 0 18px rgba(69,184,201,.7); } 100% { box-shadow: 0 0 0 1px var(--cy), 0 0 14px rgba(69,184,201,.55); } }
+
+/* pouso, revelação e contagem — mesmas curvas do design */
+@keyframes rup-land {
+  0%   { transform: scale(1.08) rotate(4deg); }
+  45%  { transform: scale(0.95) rotate(0deg); }
+  75%  { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+.rup-land { animation: rup-land .24s cubic-bezier(.2, 1, .4, 1) both; transform-origin: center; }
+@keyframes rup-reveal {
+  0%   { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.rup-reveal { animation: rup-reveal .5s ease .12s both; }
+@keyframes rup-countpop {
+  0%   { transform: scale(.4); opacity: 0; }
+  60%  { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.rup-countpop { animation: rup-countpop .45s cubic-bezier(.2, .9, .3, 1.4) .28s both; display: inline-block; }
+
+/* O renderer chama `setSize(w, h, false)` (não escreve CSS no canvas):
+   sem estas duas linhas o canvas apareceria no tamanho FÍSICO, isto é,
+   ampliado pelo devicePixelRatio. */
+.rup-mesa-arena { position: relative; z-index: 2; }
+.rup-mesa-arena canvas { display: block; width: 100%; height: 100%; }
+
+/* barra de rolagem discreta, como no design */
+.rup-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.rup-scroll::-webkit-scrollbar { width: 8px; }
+.rup-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: var(--rv-r); }
+.rup-scroll:hover { scrollbar-color: #2a3f5f transparent; }
+.rup-scroll:hover::-webkit-scrollbar-thumb { background: #223351; }
+
+/* ══════════════ JANELAS DE FERRAMENTA — TRANSCRIÇÃO DO ESTUDO ══════════════
+   Valores COPIADOS de `charge dice/src/components/tools.tsx` (as
+   primitivas `PanelShell`, `Section`, `OptionTile`, `Readout`,
+   `Segmented`, `Field`, `CheckRow`, `KeyCap`, `NoteRow`, `MiniTag`,
+   `CommandButton`) e de `index.css` do mesmo estudo. O produto não roda
+   Tailwind, então cada utilitário virou declaração — mesmos números,
+   mesmos hex.
+
+     ink #d6e4f5 · ink-dim #7f95b3 · ink-faint #4f6285
+     linha #16233a · borda de casca #18263f · fundo de placa #0c1420
+     linha forte #1c2b45 / #2a3b58 · rótulo de opção #c3d2e8 · ícone #6f83a3
+
+   O acento continua vindo de `--jf-acento` (a `JanelaFerramenta` define
+   um por ferramenta), no lugar do `accent` que o estudo passa por prop.
+   Ícones seguem sendo os do produto: daqui sai só cor e tamanho. */
+
+/* A CASCA (`.rv-fp`, espinha, cabeçalho, cantos) já é a transcrição
+   deste mesmo estudo — está em "MOLDURA DA JANELA DE FERRAMENTA", mais
+   acima. Aqui entra só o que vai DENTRO do corpo. */
+
+/* ── Corpo (space-y-5, px-4 py-4) ── */
+.rv-fp-corpo { gap: 20px; padding: 16px; counter-reset: rvfpsec; }
+
+/* ── Section ── */
+.rv-fp-grupo { gap: 10px; counter-increment: rvfpsec; }
+.rv-fp-grupo > .rv-fp-rotulo {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .2em; color: #4f6285;
+}
+.rv-fp-grupo > .rv-fp-rotulo::before {
+  content: counter(rvfpsec, decimal-leading-zero);
+  flex: none; font-family: var(--font-mono), monospace;
+  font-size: 10px; font-weight: 700; letter-spacing: .1em;
+  color: color-mix(in srgb, var(--jf-acento, #35c7d8) 70%, transparent);
+}
+.rv-fp-grupo > .rv-fp-rotulo::after {
+  content: ""; flex: 1; height: 1px;
+  background: linear-gradient(90deg, #18263f, transparent);
+}
+
+/* ── Readout (placas de indicador) ── */
+.rv-fp-placas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.rv-fp-placa {
+  position: relative; overflow: hidden; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 5px;
+  background: #0c1420; border: 1px solid #16233a; border-radius: 2px;
+}
+.rv-fp-placa::before {
+  content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 2px;
+  background: var(--rv-placa-cor, var(--jf-acento, #35c7d8));
+}
+.rv-fp-placa[data-acento="am"] { --rv-placa-cor: #e0a53a; }
+.rv-fp-placa[data-acento="neutro"] { --rv-placa-cor: #7f95b3; }
+.rv-fp-placa-rot {
+  display: block; padding-left: 6px;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; color: #4f6285;
+}
+.rv-fp-placa-val {
+  display: block; padding-left: 6px;
+  font-family: var(--font-mono), monospace;
+  font-size: 22px; font-weight: 700; line-height: 1.25;
+  color: var(--rv-placa-cor, var(--jf-acento, #35c7d8));
+}
+.rv-fp-placa-un { margin-left: 4px; font-size: 10px; font-weight: 400; color: #4f6285; }
+
+/* ── Segmented / OptionTile ── */
+.rv-fp-seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
+.rv-fp-seg-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 12px; text-align: center;
+  border: 1px solid #16233a; border-radius: 2px; background: transparent;
+  transition: border-color .14s, background .14s, color .14s;
+}
+/* A borda do hover segue o ACENTO DA FERRAMENTA, não um azul fixo.
+   Com `#1c2b45` aqui, passar o mouse num ladrilho de Terreno (verde) ou
+   de Áreas (violeta) acendia o fundo na cor certa e deixava a borda
+   azul-marinho — duas cores discordando na mesma peça. 40% é o degrau
+   entre o repouso (`#16233a`) e o selecionado (acento cheio). */
+.rv-fp-seg-btn:hover {
+  border-color: color-mix(in srgb, var(--jf-acento, #35c7d8) 40%, transparent);
+  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 9%, transparent);
+}
+.rv-fp-seg-btn[aria-pressed="true"] {
+  border-color: var(--jf-acento, #35c7d8);
+  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 9%, transparent);
+}
+.rv-fp-seg-nome {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #c3d2e8;
+}
+.rv-fp-seg-btn[aria-pressed="true"] .rv-fp-seg-nome { color: var(--jf-acento, #35c7d8); }
+.rv-fp-seg-sub {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+  /* Acompanha o acento da ferramenta (verde em Terreno, a cor da marca
+     em Marcar…). O `#4f6285` fixo que estava aqui puxava tudo pro azul
+     e destoava da janela inteira. */
+  /* Sempre MAIS FRACO que o título: o apoio explica, não compete. No
+     card selecionado o título vai no acento cheio e o apoio fica a
+     60% dele. */
+  color: color-mix(in srgb, var(--jf-acento, #35c7d8) 40%, transparent);
+}
+.rv-fp-seg-btn[aria-pressed="true"] .rv-fp-seg-sub {
+  color: color-mix(in srgb, var(--jf-acento, #35c7d8) 60%, transparent);
+}
+/* O ícone do produto continua o mesmo — daqui sai só a cor. */
+.rv-fp-seg-btn > svg { color: #6f83a3; }
+.rv-fp-seg-btn[aria-pressed="true"] > svg { color: var(--jf-acento, #35c7d8); }
+
+/* Lista alta (tipo de terreno, presets) — o OptionTile em linha. */
+.rv-fp-opcoes { display: flex; flex-direction: column; gap: 8px; }
+.rv-fp-opcao {
+  position: relative; gap: 16px; padding: 12px;
+  border: 1px solid #16233a; border-radius: 2px; background: transparent;
+  box-shadow: none; color: #c3d2e8;
+  transition: border-color .14s, background .14s, color .14s;
+}
+.rv-fp-opcao:hover {
+  border-color: color-mix(in srgb, var(--rv-op-cor, #35c7d8) 40%, transparent);
+  background: color-mix(in srgb, var(--rv-op-cor, var(--jf-acento, #35c7d8)) 9%, transparent);
+}
+.rv-fp-opcao[aria-pressed="true"] {
+  border-color: var(--rv-op-cor, var(--jf-acento, #35c7d8));
+  background: color-mix(in srgb, var(--rv-op-cor, var(--jf-acento, #35c7d8)) 9%, transparent);
+  color: var(--rv-op-cor, var(--jf-acento, #35c7d8));
+  box-shadow: none;
+}
+.rv-fp-opcao[aria-pressed="true"]::before {
+  content: ""; position: absolute; left: 4px; top: 4px;
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--rv-op-cor, var(--jf-acento, #35c7d8));
+}
+.rv-fp-opcao-txt { gap: 4px; }
+.rv-fp-opcao-ic { color: #6f83a3; }
+.rv-fp-opcao[aria-pressed="true"] .rv-fp-opcao-ic { color: var(--rv-op-cor, var(--jf-acento, #35c7d8)); }
+.rv-fp-opcao-nome {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: inherit;
+}
+.rv-fp-opcao-efeito {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #4f6285;
+}
+.rv-fp-opcao[aria-pressed="true"] .rv-fp-opcao-efeito { color: color-mix(in srgb, var(--rv-op-cor, var(--jf-acento, #35c7d8)) 70%, transparent); }
+
+/* TERRENO — cada tipo herda a cor que ele TEM no mapa (âmbar da
+   hachura de `rv-dificil-real`, vermelho de `rv-bloqueado-real`). */
+.rv-fp-opcao[data-tipo="dificil"] { --rv-op-cor: #f5a200; }
+.rv-fp-opcao[data-tipo="bloqueado"] { --rv-op-cor: #e0455f; }
+.rv-fp-opcao[data-tipo="apagar"] { --rv-op-cor: #7f95b3; }
+
+/* ── KeyCap ── */
+.rv-fp-atalhos {
+  /* Uma fileira só: com o rótulo EMBAIXO da tecla cada item fica
+     estreito o bastante pros quatro caberem lado a lado, em vez de
+     quebrar numa segunda linha com um item solto. */
+  display: flex; flex-wrap: nowrap; gap: 8px; margin: 0; padding: 0; list-style: none;
+}
+.rv-fp-atalhos li {
+  flex: 1 1 0; min-width: 0;
+  display: inline-flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+}
+.rv-fp-atalhos li > span {
+  font-family: var(--font-mono), monospace; font-size: 10px; color: #4f6285;
+}
+.rv-fp-tecla {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; padding: 4px 6px;
+  border: 1px solid #2a3b58; border-radius: 2px; background: #0c1420;
+  font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 500; color: #7f95b3;
+}
+
+/* ── NoteRow (instrução e aviso) ── */
+.rv-fp-instrucao, .rv-fp-medida-aviso {
+  display: flex; align-items: center; gap: 10px; margin: 0;
+  padding: 8px 12px; border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--rv-nota-cor, var(--jf-acento, #35c7d8)) 16%, transparent);
+  border-left: 2px solid var(--rv-nota-cor, var(--jf-acento, #35c7d8));
+  background: color-mix(in srgb, var(--rv-nota-cor, var(--jf-acento, #35c7d8)) 6%, transparent);
+  font-size: 11px; line-height: 1.4; color: #7f95b3;
+}
+.rv-fp-instrucao > svg, .rv-fp-medida-aviso > svg { flex: none; color: var(--rv-nota-cor, var(--jf-acento, #35c7d8)); }
+.rv-fp-medida-aviso { --rv-nota-cor: #e0a53a; }
+.rv-fp-medida-aviso[data-grave="true"] { --rv-nota-cor: #e0455f; }
+.rv-fp-nota {
+  display: flex; align-items: center; gap: 6px; margin: 0;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px; letter-spacing: .04em; color: #4f6285;
+}
+.rv-fp-nota > svg { flex: none; opacity: .8; }
+.rv-fp-medida-ocioso {
+  margin: 0; padding: 10px 12px;
+  border: 1px solid #16233a; border-radius: 2px;
+  font-size: 11.5px; color: #4f6285;
+}
+
+/* ── Campos (Field / SelectField) ── */
+.rv-fp-campo > span {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; color: #4f6285;
+}
+.rv-fp-campo input[type="text"], .rv-fp-campo input[type="number"], .rv-fp-campo select {
+  margin-top: 6px; padding: 8px 12px;
+  border: 1px solid #16233a; border-radius: 2px; background: transparent;
+  font-size: 12px; color: #d6e4f5;
+}
+.rv-fp-campo input:focus-visible, .rv-fp-campo select:focus-visible {
+  outline: none; border-color: color-mix(in srgb, var(--jf-acento, #35c7d8) 55%, transparent);
+}
+/* Placeholder na paleta do VTT (`--rv-ink-faint`). O padrão do
+   navegador é um cinza neutro que não pertence a esta folha e destoa
+   de todo o resto do texto secundário. */
+.rv-fp-campo input::placeholder { color: #4f6285; opacity: 1; }
+
+/* ── Rodapé (footer + CommandButton) ── */
+.rv-fp-rodape {
+  padding: 12px 16px; gap: 8px;
+  border-top: 1px solid #16233a; background: rgba(255, 255, 255, .015);
+}
+.rv-fp-rodape .rv-fp-rotulo {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .16em; color: #4f6285;
+}
+.rv-fp-rodape .rv-fp-primaria,
+.rv-fp-rodape .rv-btn.rv-fp-primaria {
+  margin-left: auto;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--jf-acento, #35c7d8) 53%, transparent);
+  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 9%, transparent);
+  color: var(--jf-acento, #35c7d8);
+  font-family: var(--rv-display), sans-serif;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .22em;
+}
+.rv-fp-rodape .rv-fp-primaria::before { content: "▹"; opacity: .7; }
+.rv-fp-rodape .rv-fp-primaria:hover:not(:disabled) { border-color: var(--jf-acento, #35c7d8); }
+
+/* ── Trechos (detalhe da régua) ── */
+.rv-fp-trechos { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.rv-fp-trecho {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 8px; border: 1px solid #16233a; border-radius: 2px; background: #0c1420;
+}
+.rv-fp-trecho-n {
+  font-family: var(--font-mono), monospace; font-size: 10px; color: #4f6285;
+}
+.rv-fp-trecho-d {
+  font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700; color: #7f95b3;
+}
+
+/* ── ÁREAS: a mesma transcrição, sobre a marcação própria do painel ──
+   Áreas nasceu antes da casca comum e tem classes só dela
+   (`.rv-area-*`). Em vez de renomear tudo (e quebrar os ganchos de
+   teste), cada classe daqui recebe os MESMOS valores das primitivas do
+   estudo — `Section`, `OptionTile`, `Field`, `CheckRow`, `NoteRow`. */
+.rv-area-corpo { gap: 20px; padding: 16px; counter-reset: rvfpsec; }
+
+/* Section */
+.rv-area-grupo, .rv-area-secao {
+  gap: 10px; padding-top: 0; border-top: none; counter-increment: rvfpsec;
+}
+.rv-area-grupo-titulo, .rv-area-secao-cab, .rv-area-lista-titulo {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .2em; color: #4f6285;
+}
+.rv-area-grupo-titulo::before, .rv-area-secao-cab::before, .rv-area-lista-titulo::before {
+  content: counter(rvfpsec, decimal-leading-zero);
+  flex: none; font-family: var(--font-mono), monospace;
+  font-size: 10px; font-weight: 700; letter-spacing: .1em;
+  color: color-mix(in srgb, var(--jf-acento, #35c7d8) 70%, transparent);
+}
+.rv-area-grupo-titulo::after, .rv-area-secao-cab::after, .rv-area-lista-titulo::after {
+  content: ""; flex: 1; height: 1px;
+  background: linear-gradient(90deg, #18263f, transparent);
+}
+/* A seta de dobrar vem ANTES da numeração e some do fluxo do rótulo. */
+.rv-area-secao-cab > svg { order: -1; color: #4f6285; }
+.rv-area-secao-cab:hover { color: #d6e4f5; }
+.rv-area-secao-corpo { gap: 10px; padding-top: 2px; }
+.rv-area-lista { border-top: none; padding-top: 0; gap: 6px; }
+
+/* OptionTile — os formatos de área */
+.rv-area-tipos { gap: 8px; }
+.rv-area-tipo {
+  position: relative; gap: 6px; padding: 12px 8px;
+  border: 1px solid #16233a; border-radius: 2px;
+  background: transparent; box-shadow: none; color: #c3d2e8;
+}
+.rv-area-tipo:hover { background: transparent; border-color: color-mix(in srgb, var(--jf-acento, #35c7d8) 40%, transparent); color: #d6e4f5; }
+.rv-area-tipo[aria-pressed="true"] {
+  border-color: var(--jf-acento, #35c7d8); box-shadow: none;
+  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 9%, transparent);
+  color: var(--jf-acento, #35c7d8);
+}
+.rv-area-tipo[aria-pressed="true"]::before {
+  content: ""; position: absolute; left: 4px; top: 4px;
+  width: 4px; height: 4px; border-radius: 50%; background: var(--jf-acento, #35c7d8);
+}
+.rv-area-glifo { font-size: 19px; color: #6f83a3; }
+.rv-area-tipo[aria-pressed="true"] .rv-area-glifo { color: var(--jf-acento, #35c7d8); }
+.rv-area-nome {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
+}
+
+/* Field */
+.rv-area-campo { gap: 10px; font-size: 12px; color: #d6e4f5; }
+.rv-area-campo > span {
+  flex: 0 0 96px;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; color: #4f6285;
+}
+.rv-area-campo input[type="number"], .rv-area-campo input[type="text"],
+.rv-area-campo select, .rv-area-busca {
+  padding: 8px 12px; border: 1px solid #16233a; border-radius: 2px;
+  background: transparent; font-size: 12px; color: #d6e4f5;
+}
+.rv-area-campo input:focus-visible, .rv-area-campo select:focus-visible, .rv-area-busca:focus-visible {
+  outline: none; border-color: color-mix(in srgb, var(--jf-acento, #35c7d8) 55%, transparent);
+}
+.rv-area-campo em {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #4f6285;
+}
+
+/* CheckRow */
+.rv-area-check {
+  gap: 10px; padding: 10px 12px;
+  border: 1px solid #16233a; border-radius: 2px;
+  font-size: 12px; color: #d6e4f5;
+}
+.rv-area-check input { accent-color: var(--jf-acento, #35c7d8); width: 16px; height: 16px; }
+
+/* NoteRow */
+.rv-area-instrucao, .rv-area-dica {
+  margin: 0; padding: 8px 12px; border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--jf-acento, #35c7d8) 16%, transparent);
+  border-left: 2px solid var(--jf-acento, #35c7d8);
+  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 6%, transparent);
+  font-size: 11px; line-height: 1.4; color: #7f95b3;
+}
+.rv-area-aviso, .rv-area-fixo {
+  margin: 0; padding: 8px 12px; border-radius: 2px;
+  border: 1px solid rgba(224, 165, 58, .16); border-left: 2px solid #e0a53a;
+  background: rgba(224, 165, 58, .06);
+  font-size: 11px; line-height: 1.4; color: #7f95b3;
+}
+.rv-area-erro {
+  margin: 0; padding: 8px 12px; border-radius: 2px;
+  border: 1px solid rgba(224, 69, 95, .16); border-left: 2px solid #e0455f;
+  background: rgba(224, 69, 95, .06); font-size: 11px; color: #e0455f;
+}
+
+/* Readout — o resumo da forma */
+.rv-area-resumo-forma, .rv-area-regua, .rv-area-valor-fixo {
+  position: relative; overflow: hidden; margin: 0; padding: 10px 12px 10px 18px;
+  background: #0c1420; border: 1px solid #16233a; border-radius: 2px;
+  font-family: var(--font-mono), monospace; font-size: 12px; color: #d6e4f5;
+}
+.rv-area-resumo-forma::before, .rv-area-regua::before, .rv-area-valor-fixo::before {
+  content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 2px;
+  background: var(--jf-acento, #35c7d8);
+}
+
+.rv-area-rodape { gap: 8px; padding: 12px 0 0; border-top: 1px solid #16233a; }
+
+/* ── Presets de objeto: o mesmo `OptionTile`, e as etiquetas em `MiniTag` ── */
+.rv-fp-presets { gap: 8px; }
+.rv-fp-preset {
+  position: relative; gap: 6px; padding: 12px 8px;
+  border: 1px solid #16233a; border-radius: 2px;
+  background: transparent; box-shadow: none; color: #c3d2e8;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
+}
+.rv-fp-preset:hover { background: transparent; border-color: color-mix(in srgb, var(--jf-acento, #35c7d8) 40%, transparent); color: #d6e4f5; }
+.rv-fp-preset[aria-pressed="true"] {
+  border-color: var(--jf-acento, #35c7d8); box-shadow: none;
+  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 9%, transparent);
+  color: var(--jf-acento, #35c7d8);
+}
+.rv-fp-preset[aria-pressed="true"]::before {
+  content: ""; position: absolute; left: 4px; top: 4px;
+  width: 4px; height: 4px; border-radius: 50%; background: var(--jf-acento, #35c7d8);
+}
+.rv-fp-preset-ic { color: #6f83a3; }
+.rv-fp-preset[aria-pressed="true"] .rv-fp-preset-ic { color: var(--jf-acento, #35c7d8); }
+
+/* MiniTag */
+.rv-fp-tag {
+  padding: 2px 6px; border: 1px solid #1c2b45; border-radius: 2px; background: transparent;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: #7f95b3;
+}
+.rv-fp-tag--cy { border-color: color-mix(in srgb, var(--rv-cy) 40%, transparent); color: var(--rv-cy); background: transparent; }
+.rv-fp-tag--am { border-color: rgba(224, 165, 58, .4); color: #e0a53a; background: transparent; }
+.rv-fp-tag--dg { border-color: rgba(224, 69, 95, .4); color: #e0455f; background: transparent; }
+/* Rótulo curto de preset não é texto corrido: quebrar "BARRICADA" ao
+   meio custa mais legibilidade do que a linha extra economiza. */
+.rv-fp-preset-nome { overflow-wrap: normal; word-break: keep-all; hyphens: none; text-align: center; }
+
+/* A ficha do preset — o painel de leitura do estudo, com a barra de acento. */
+.rv-fp-obj {
+  position: relative; overflow: hidden; gap: 8px; padding: 12px 12px 12px 18px;
+  background: #0c1420; border: 1px solid #16233a; border-radius: 2px;
+}
+.rv-fp-obj::before {
+  content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 2px;
+  background: var(--jf-acento, #35c7d8);
+}
+.rv-fp-obj-nome {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #d6e4f5;
+}
+.rv-fp-obj .rv-fp-switch-sub { font-size: 11px; line-height: 1.4; color: #7f95b3; }
+/* `1fr` é `minmax(auto, 1fr)`: com `keep-all`, uma palavra longa
+   ("PERSONALIZADO") vira o mínimo da coluna e estoura a janela.
+   `minmax(0, 1fr)` devolve o controle da largura à grade. */
+.rv-fp-presets, .rv-fp-tamanhos, .rv-area-tipos { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.rv-fp-preset, .rv-area-nome { font-size: 10px; letter-spacing: .06em; }
+.rv-fp-preset, .rv-area-tipo { padding-inline: 3px; }
+/* O rótulo mais longo do conjunto ("PERSONALIZADO") é quem define o
+   corpo: a alternativa é quebrá-lo ao meio, e "PERSONA / LIZADO" lê
+   pior do que meio ponto a menos de tipo. */
+.rv-fp-preset-nome, .rv-area-nome { font-size: 10.5px; }
+
+/* ── RODADAS: a mesma transcrição, sobre a marcação própria do painel ──
+   Como Áreas, Rodadas tem classes só dela. Os valores abaixo são os
+   mesmos do estudo: `Section` nos títulos, `Readout` no estado do
+   combate, `Segmented` nos modos, `NoteRow` nos avisos, `MiniTag` nas
+   etiquetas. Nada de conteúdo muda — só a aparência. */
+.rv-fp--rodadas .rv-fp-corpo { counter-reset: rvfpsec; }
+
+/* Section */
+.rv-rodadas-secao { gap: 10px; padding-top: 0; border-top: none; counter-increment: rvfpsec; }
+.rv-rodadas-secao h3, .rv-rodadas-rotulo {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .2em; color: #4f6285;
+}
+.rv-rodadas-secao h3::before {
+  content: counter(rvfpsec, decimal-leading-zero);
+  flex: none; font-family: var(--font-mono), monospace;
+  font-size: 10px; font-weight: 700; letter-spacing: .1em;
+  color: color-mix(in srgb, var(--jf-acento, #35c7d8) 70%, transparent);
+}
+.rv-rodadas-secao h3::after {
+  content: ""; flex: 1; height: 1px;
+  background: linear-gradient(90deg, #18263f, transparent);
+}
+
+/* Segmented — modo do combate e lado que emboscou */
+.rv-rodadas-modos { gap: 8px; }
+.rv-rodadas-modo, .rv-rodadas-lado {
+  padding: 10px 12px; border: 1px solid #16233a; border-radius: 2px; background: transparent;
+  /* Sem o texto de apoio (virou dica flutuante) sobrou só o nome:
+     alinhado à esquerda ele ficava encostado numa borda de uma caixa
+     larga. Centralizado, os dois cards do par leem como um segmentado. */
+  align-items: center; justify-content: center; text-align: center;
+}
+.rv-rodadas-modo:hover, .rv-rodadas-lado:hover {
+  border-color: color-mix(in srgb, var(--jf-acento, #35c7d8) 40%, transparent);
+  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 9%, transparent);
+}
+.rv-rodadas-modo strong {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #c3d2e8;
+}
+/* A explicação do modo é uma DICA FLUTUANTE, não conteúdo do card: em
+   repouso o card mostra só o nome — em qualquer estado, inclusive
+   selecionado — e o texto aparece por cima ao passar o mouse ou ao
+   focar pelo teclado. Escolher entre dois modos é comparar dois nomes;
+   quem precisa da regra alcança sem o card mudar de tamanho.
+
+   Quem ancora é o INVÓLUCRO, não o botão: filho posicionado que
+   ultrapassa a caixa de um `<button>` não é pintado no Chromium. */
+/* ── RODADAS · configuração no desenho do estudo ──────────────────
+   Placas de contagem em cima, seções numeradas, lista PLANA com o lado
+   como etiqueta na linha, rodapé com a ação primária à direita. */
+/* Mais larga que as outras, como no estudo: as três placas de
+   contagem, a lista com nome + lado e o rodapé de duas peças não cabem
+   nos 400px padrão sem quebrar linha em tudo. */
+/* Especificidade de propósito: `.rv-fp { width: 400px }` mora mais
+   adiante neste arquivo e, com uma classe só de cada lado, ganhava por
+   ordem — a largura própria de Rodadas nunca chegava a valer. Com
+   combate aberto a janela tem três placas de rótulo longo ("PJ
+   RESTANTES") e linhas com três botões de ação: em 400px o rótulo
+   quebra em duas linhas e o nome trunca. */
+.rv-fp.rv-fp--rodadas { width: 500px; }
+.rv-fp--rodadas .rv-fp-placa[data-acento="dg"] { --rv-placa-cor: #e0455f; }
+/* A etiqueta da placa é uma palavra longa ("PARTICIPANTES") — com o
+   tracking de rótulo ela estourava a coluna. */
+.rv-fp--rodadas .rv-fp-placa-rot { letter-spacing: .1em; }
+/* A etiqueta da seção divide a linha com "Todos/Nenhum": sem isto o
+   título quebrava em duas linhas e empurrava os dois botões pra cima. */
+.rv-fp--rodadas .rv-fp-grupo > .rv-fp-rotulo { flex-wrap: nowrap; white-space: nowrap; }
+.rv-fp--rodadas .rv-fp-grupo > .rv-fp-rotulo::after { display: none; }
+
+/* Ações em massa moram na própria etiqueta da seção — o estudo não tem
+   uma barra separada só pra "todos/nenhum". */
+.rv-rodadas-massa { margin-left: auto; display: inline-flex; gap: 12px; }
+.rv-rodadas-massa-btn {
+  border: none; background: transparent; cursor: pointer;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em;
+  color: color-mix(in srgb, var(--jf-acento, #35c7d8) 70%, transparent);
+}
+.rv-rodadas-massa-btn:hover { color: var(--jf-acento, #35c7d8); }
+.rv-rodadas-massa-btn:focus-visible { outline: 2px solid var(--jf-acento, #35c7d8); outline-offset: 2px; }
+
+.rv-rodadas-lista { display: flex; flex-direction: column; gap: 8px; }
+.rv-rodadas-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border: 1px solid #16233a; border-radius: 2px;
+  background: transparent; cursor: pointer;
+  transition: border-color .14s, background .14s;
+}
+.rv-rodadas-item:hover { border-color: #1c2b45; }
+/* O caixote de marcar CONTINUA caixote aqui: isto é escolha numa
+   lista, não uma configuração liga/desliga. */
+.rv-rodadas-item input[type="checkbox"] {
+  flex: none; width: 16px; height: 16px; margin: 0;
+  accent-color: var(--jf-acento, #35c7d8); cursor: pointer;
+}
+.rv-rodadas-sigla {
+  flex: none; display: grid; place-items: center;
+  width: 30px; height: 30px; border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--jf-acento, #35c7d8) 30%, transparent);
+  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 8%, transparent);
+  font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700;
+  color: var(--jf-acento, #35c7d8);
+}
+.rv-rodadas-item-txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 auto; }
+.rv-rodadas-nome {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #d6e4f5;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rv-rodadas-item-sub {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #4f6285;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Etiqueta do lado — a cor é a do lado, não a da ferramenta. */
+.rv-rodadas-item-lado {
+  flex: none; padding: 3px 8px; border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--rv-lado-cor) 45%, transparent);
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 700; letter-spacing: .14em;
+  color: var(--rv-lado-cor);
+}
+.rv-rodadas-item-lado[data-lado="pj"] { --rv-lado-cor: #45b8c9; }
+.rv-rodadas-item-lado[data-lado="pn"] { --rv-lado-cor: #e0455f; }
+
+/* Rodapé: resumo à esquerda, ação primária à direita (o `.rv-fp-rodape`
+   comum já cuida da moldura e do botão). */
+.rv-rodadas-rodape { flex-direction: row; align-items: center; }
+/* Resumo em UMA linha e curto: as três placas no topo já dão os
+   números por extenso — aqui ele é só a confirmação do que vai ser
+   iniciado, ao lado do botão. */
+.rv-rodadas-resumo {
+  margin: 0; min-width: 0; flex: 1 1 auto;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #4f6285;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rv-rodadas-resumo strong { color: #7f95b3; }
+.rv-rodadas-rodape .rv-fp-primaria { white-space: nowrap; }
+
+.rv-rodadas-modo-caixa { position: relative; display: flex; }
+.rv-rodadas-modo { flex: 1 1 auto; }
+.rv-rodadas-modo-dica {
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 5;
+  padding: 8px 10px; border-radius: 2px;
+  border: 1px solid #2a3b58; background: #0c1420;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .55);
+  /* Frase, não etiqueta: caixa mista, sem tracking, na tipografia das
+     outras notas em prosa das janelas. */
+  font-size: 11px; line-height: 1.4; color: #7f95b3; text-align: left;
+  opacity: 0; visibility: hidden; transform: translateY(-3px);
+  transition: opacity .14s ease, transform .14s ease, visibility .14s;
+  pointer-events: none;
+}
+.rv-rodadas-modo-caixa:hover .rv-rodadas-modo-dica,
+.rv-rodadas-modo:focus-visible + .rv-rodadas-modo-dica {
+  opacity: 1; visibility: visible; transform: translateY(0);
+}
+.rv-rodadas-modo[aria-checked="true"], .rv-rodadas-lado[aria-checked="true"][data-lado="pj"] {
+  border-color: var(--jf-acento, #35c7d8);
+  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 9%, transparent);
+  color: var(--jf-acento, #35c7d8);
+}
+.rv-rodadas-modo[aria-checked="true"] strong { color: var(--jf-acento, #35c7d8); }
+
+/* NoteRow */
+.rv-rodadas-vazio {
+  padding: 8px 12px; border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--jf-acento, #35c7d8) 16%, transparent);
+  border-left: 2px solid var(--jf-acento, #35c7d8);
+  background: color-mix(in srgb, var(--jf-acento, #35c7d8) 6%, transparent);
+  font-size: 11px; line-height: 1.4; color: #7f95b3;
+}
+.rv-rodadas-aviso {
+  margin: 0; padding: 8px 12px; border-radius: 2px;
+  border: 1px solid rgba(224, 165, 58, .16); border-left: 2px solid #e0a53a;
+  background: rgba(224, 165, 58, .06); font-size: 11px; color: #7f95b3;
+}
+.rv-rodadas-erro {
+  padding: 8px 12px; border-radius: 2px;
+  border: 1px solid rgba(224, 69, 95, .16); border-left: 2px solid #e0455f;
+  background: rgba(224, 69, 95, .06); font-size: 11px; color: #e0455f;
+}
+
+.rv-rodadas-rodape { gap: 8px; padding-top: 12px; border-top: 1px solid #16233a; }
+
+/* ── COMBATE ATIVO ────────────────────────────────────────────────
+   O mesmo desenho da configuração, com o conteúdo do combate em curso:
+   placas (rodada e o que resta de cada lado), a REGRA da janela aberta
+   numa nota, a lista de participantes e o rodapé.
+
+   A diferença de linguagem entre os dois estados é a COR: a
+   configuração pergunta (ciano da ferramenta), o combate aberto está em
+   vigor (âmbar, o mesmo da trilha e do turno em aberto). */
+.rv-fp--rodadas-ativo { --jf-acento: #e0a53a; }
+
+/* Regra da janela — nota de duas linhas: o nome e o que ele permite. */
+.rv-rodadas-regra {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 12px 14px; border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--jf-acento, #e0a53a) 22%, transparent);
+  background: color-mix(in srgb, var(--jf-acento, #e0a53a) 7%, transparent);
+}
+.rv-rodadas-regra-nome {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .14em;
+  color: var(--jf-acento, #e0a53a);
+}
+.rv-rodadas-regra-valor {
+  font-family: var(--font-mono), monospace;
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: #7f95b3;
+}
+
+/* Linha de participante — a mesma ficha do item de configuração, mas
+   sem caixote de marcar: aqui não se escolhe elenco, se administra. */
+.rv-rodadas-linha {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--rv-lado-cor) 22%, transparent);
+  background: transparent;
+  transition: border-color .14s, background .14s;
+}
+.rv-rodadas-linha[data-lado="pj"] { --rv-lado-cor: #45b8c9; }
+.rv-rodadas-linha[data-lado="pn"] { --rv-lado-cor: #e0455f; }
+.rv-rodadas-linha:hover { border-color: color-mix(in srgb, var(--rv-lado-cor) 40%, transparent); }
+/* Quem não pode mais agir nesta janela recua — continua legível, mas
+   para de competir com quem ainda está na vez. */
+.rv-rodadas-linha[data-fora="true"] { opacity: .55; }
+/* O turno ABERTO é o único destaque forte da lista. */
+.rv-rodadas-linha[data-agindo="true"] {
+  opacity: 1;
+  border-color: color-mix(in srgb, #e0a53a 45%, transparent);
+  border-left: 2px solid #e0a53a;
+  background: rgba(224, 165, 58, .08);
+}
+.rv-rodadas-linha .rv-rodadas-sigla {
+  border-color: color-mix(in srgb, var(--rv-lado-cor) 32%, transparent);
+  background: color-mix(in srgb, var(--rv-lado-cor) 9%, transparent);
+  color: var(--rv-lado-cor);
+}
+
+/* Ações da linha — ícone, sem rótulo escrito. O quadrado de 26px é o
+   mesmo do X das janelas: alvo real de clique, não um glifo solto. */
+.rv-rodadas-acoes { display: flex; gap: 4px; flex: none; }
+.rv-rodadas-mini, .rv-rodadas-olho {
+  display: grid; place-items: center;
+  width: 26px; height: 26px; padding: 0;
+  border: 1px solid #1c2b45; border-radius: 2px;
+  background: transparent; color: #4f6285; cursor: pointer;
+  transition: color .14s, border-color .14s, background .14s;
+}
+.rv-rodadas-mini:hover:not(:disabled),
+.rv-rodadas-olho:hover:not(:disabled) { color: #d6e4f5; border-color: #2a3b58; background: rgba(255, 255, 255, .04); }
+.rv-rodadas-mini:focus-visible,
+.rv-rodadas-olho:focus-visible { outline: 2px solid var(--jf-acento, #e0a53a); outline-offset: 2px; }
+.rv-rodadas-mini:disabled, .rv-rodadas-olho:disabled { opacity: .35; cursor: not-allowed; }
+/* "Incapaz" é um estado LIGADO, não um clique que passa: quando vale,
+   o botão fica aceso como as outras coisas em vigor deste painel. */
+.rv-rodadas-mini[aria-pressed="true"],
+.rv-rodadas-olho[aria-pressed="true"] {
+  border-color: color-mix(in srgb, #e0a53a 45%, transparent);
+  background: rgba(224, 165, 58, .1); color: #e0a53a;
+}
+.rv-rodadas-mini--perigo:hover:not(:disabled) {
+  border-color: color-mix(in srgb, #e0455f 45%, transparent);
+  background: rgba(224, 69, 95, .1); color: #e0455f;
+}
+
+/* Dica dos botões de ícone. Sem rótulo escrito, o nome da ação PRECISA
+   estar a um hover/foco de distância — e o `title` do navegador demora
+   um segundo e meio e não segue o desenho. Mesma caixa da dica de modo;
+   a diferença é o posicionamento: `fixed`, com coordenadas medidas no
+   próprio botão, porque o corpo da janela rola e recorta. */
+.rv-rodadas-dica {
+  position: fixed; z-index: 60; pointer-events: none;
+  max-width: 220px; padding: 6px 9px; border-radius: 2px;
+  border: 1px solid #2a3b58; background: #0c1420;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .55);
+  font-size: 11px; line-height: 1.35; color: #c3d2e8; text-align: left;
+}
+
+/* Rodapé do combate: encerrar quieto à esquerda, ocultar à direita. */
+.rv-rodadas-rodape--ativo { justify-content: space-between; }
+.rv-rodadas-encerrar-vazio { flex: 1 1 auto; }
+.rv-rodadas-encerrar {
+  flex: 0 1 auto; padding: 0; border: 0; background: transparent; cursor: pointer;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em;
+  color: #4f6285; transition: color .14s;
+}
+.rv-rodadas-encerrar:hover:not(:disabled) { color: #e0455f; }
+.rv-rodadas-encerrar:focus-visible { outline: 2px solid #e0455f; outline-offset: 3px; }
+.rv-rodadas-encerrar:disabled { opacity: .4; cursor: not-allowed; }
+
+/* A largura tinha sido dimensionada para o conteúdo ANTIGO, mais
+   apertado. As primitivas do estudo respiram — placa de 22px, ladrilho
+   com rótulo em caixa alta espaçada, botão de comando com `.22em` de
+   entreletra — e em 320px tudo isso passa a truncar ("DISTÂNCI") e a
+   quebrar em duas linhas. 400px é a largura em que a fileira de três
+   placas e os ladrilhos de duas colunas cabem com folga real, não no
+   limite. */
+.rv-fp { width: 400px; }
+/* O rolador tem largura própria e não entra nesta conta. */
+.rv-dados-painel { width: min(470px, calc(100vw - 78px)); }
+/* O ícone é a etiqueta do ladrilho, não parte do rótulo: colado no
+   texto ele lê como um glifo do começo da palavra. A folga separa as
+   duas leituras — símbolo em cima, nome embaixo.
+
+   É MARGEM no ícone, não `gap` do ladrilho, porque alguns têm três
+   filhos (ícone, nome e uma linha de apoio): subir o `gap` afastaria
+   também o nome do apoio, que são a mesma leitura e devem ficar
+   juntos. A margem separa só o par que interessa.
+
+   As três famílias de ladrilho usam o mesmo valor — `OptionTile` dos
+   modos, os presets de objeto e os formatos de área. Antes só a
+   primeira tinha a folga, e as outras duas ficavam com o ícone
+   grudado no rótulo. */
+.rv-fp-seg-btn > svg,
+.rv-fp-seg-btn > .rv-fp-favo,
+.rv-fp-preset > .rv-fp-preset-ic,
+.rv-area-tipo > .rv-area-glifo { margin-bottom: 6px; }
+
+/* ── PILHA DA CENA (Camadas) — transcrição de `LayersContent` ──
+   Os valores são os do estudo, linha a linha: a caixinha de sigla de
+   32px, o nome em display 12px, a situação em mono 8px e o selo de
+   estado com a cor do acento a 55/soft. Os botões de olho e cadeado
+   são do produto e continuam sendo os mesmos — só a cor mudou. */
+.rv-camadas-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.rv-camadas-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border: 1px solid #16233a; border-radius: 2px;
+}
+.rv-camadas-sigla {
+  flex: none; display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 2px;
+  border: 1px solid rgba(69, 184, 201, .27);
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 700; color: #45b8c9;
+}
+.rv-camadas-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1 1 auto; }
+.rv-camadas-nome {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 12px; font-weight: 600; color: #d6e4f5;
+}
+.rv-camadas-sub {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #4f6285;
+}
+/* O estudo tinha um selo "VISÍVEL/OCULTA" na ponta da linha — lá ele
+   era o ÚNICO indicador, porque nada funcionava. Aqui existe o olho, e
+   dois lugares dizendo a mesma coisa é um a mais. A linha inteira
+   esmaece quando a camada está oculta: é o mesmo recado, sem um
+   segundo elemento pra ler. */
+.rv-camadas-item[data-oculta] .rv-camadas-sigla {
+  color: #6f83a3; border-color: rgba(111, 131, 163, .33);
+}
+.rv-camadas-item[data-oculta] .rv-camadas-nome { color: #6f83a3; }
+.rv-camadas-btn {
+  flex: none; display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border: 1px solid #16233a; border-radius: 2px;
+  background: transparent; color: #6f83a3; cursor: pointer;
+  transition: color .14s, border-color .14s;
+}
+.rv-camadas-btn:hover { color: #d6e4f5; border-color: #1c2b45; }
+.rv-camadas-btn[aria-pressed="false"] { color: #4f6285; }
+.rv-camadas-btn:focus-visible { outline: 2px solid var(--jf-acento, #45b8c9); outline-offset: 1px; }
+
+/* Ação SECUNDÁRIA do rodapé (`PanelShell`): texto, não botão cheio —
+   é o "Restaurar padrão"/"Descartar"/"Cancelar" do estudo, que fica à
+   esquerda enquanto a primária ocupa a direita. */
+.rv-fp-rodape .rv-fp-secundaria {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 12px; border: none; background: transparent; cursor: pointer;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .16em;
+  color: #4f6285; transition: color .14s;
+}
+.rv-fp-rodape .rv-fp-secundaria:hover { color: #7f95b3; }
+/* Secundária DESTRUTIVA — descarta trabalho (limpar seleção). Continua
+   secundária no peso; só a cor avisa. */
+.rv-fp-rodape .rv-fp-secundaria--perigo { color: color-mix(in srgb, #e0455f 70%, transparent); }
+.rv-fp-rodape .rv-fp-secundaria--perigo:hover { color: #e0455f; }
+.rv-fp-rodape .rv-fp-secundaria:focus-visible { outline: 2px solid var(--jf-acento, #45b8c9); outline-offset: 2px; }
+/* O olho é o ÚLTIMO elemento da linha, sempre — é o único controle que
+   toda camada tem, então é o único que pode ocupar a mesma coluna em
+   todas elas. O cadeado, que só existe em três, entra antes. Com o olho
+   em primeiro ele mudava de coluna de linha pra linha; reservar uma
+   caixa vazia pro cadeado ausente era pior ainda, lia como controle
+   quebrado. */
+.rv-camadas-txt { margin-right: auto; }
+
+/* ── MARCAR e CENA — as peças que faltavam do estudo ──
+   `MarkContent` (prévia em losango, fileira de cores), `SceneContent`
+   (campos de identidade e grade) e o `CheckRow` do `PanelShell`. Mesmos
+   números das outras: borda #16233a, raio 2px, display 12px/600 no
+   nome, mono 8px caixa alta em #4f6285 no subtítulo. */
+
+/* Prévia do sinal — o losango do estudo, girado 45° com o ícone
+   desgirado por dentro. É o que deixa escolher a cor OLHANDO. */
+.rv-fp-previa {
+  display: flex; align-items: center; gap: 18px;
+  padding: 16px; border-radius: 2px;
+  /* A cor da MARCA escolhida, não o acento da ferramenta. O rosa que
+     aparecia aqui era o acento da janela Marcar vazando por cima de
+     uma prévia que existe justamente pra mostrar a cor selecionada. */
+  border: 1px solid color-mix(in srgb, var(--marca, #45b8c9) 18%, #16233a);
+  background: color-mix(in srgb, var(--marca, #45b8c9) 4%, transparent);
+}
+.rv-fp-previa-marca {
+  flex: none; display: flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; border-radius: 2px; transform: rotate(45deg);
+  border: 1px solid var(--marca, #45b8c9);
+  background: color-mix(in srgb, var(--marca, #45b8c9) 9%, transparent);
+  color: var(--marca, #45b8c9);
+}
+.rv-fp-previa-marca > svg { transform: rotate(-45deg); }
+.rv-fp-previa-txt { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.rv-fp-previa-nome {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: #d6e4f5;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rv-fp-previa-sub { font-size: 11px; color: #7f95b3; }
+.rv-fp-previa[data-privada] .rv-fp-previa-sub { color: #cf9a3e; }
+
+/* Fileira de cores — barras largas, como no estudo: a selecionada fica
+   opaca e ganha contorno; as outras recuam pra .45. */
+.rv-fp-cores { display: flex; gap: 8px; }
+.rv-fp-cor {
+  flex: 1 1 0; height: 32px; border: none; border-radius: 2px; cursor: pointer;
+  background: var(--marca, #45b8c9); opacity: .45;
+  outline: none; transition: opacity .14s, box-shadow .14s;
+}
+.rv-fp-cor:hover { opacity: .8; }
+.rv-fp-cor[aria-pressed="true"] { opacity: 1; box-shadow: 0 0 0 2px var(--marca, #45b8c9); }
+.rv-fp-cor:focus-visible { box-shadow: 0 0 0 2px #0b1424, 0 0 0 4px var(--marca, #45b8c9); }
+
+/* CheckRow */
+.rv-fp-check {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border: 1px solid #16233a; border-radius: 2px; cursor: pointer;
+}
+.rv-fp-check:hover { border-color: #1c2b45; }
+.rv-fp-check input { width: 16px; height: 16px; flex: none; accent-color: var(--jf-acento, #45b8c9); cursor: pointer; }
+.rv-fp-check-txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 auto; }
+.rv-fp-check-nome { font-size: 12px; color: #d6e4f5; }
+.rv-fp-check-sub {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #4f6285;
+}
+.rv-fp-check-ic { flex: none; color: #4f6285; }
+
+/* ═══ INTERRUPTOR ═══════════════════════════════════════════════════
+   Toda CONFIGURAÇÃO liga/desliga é um interruptor, não um quadradinho:
+   "Visível para todos", "Fixar origem", "Travar posição". O caixote de
+   marcar continua onde ele é certo — ESCOLHA numa lista (elenco da
+   rodada, condições, células de objeto), onde "ligado" não quer dizer
+   nada.
+
+   PROPORÇÕES: trilho 40×22, botão de 18 com 2px de folga, curso de
+   18px — a mesma métrica do switch do iOS, do Radix e do shadcn, que é
+   o desenho que as pessoas já reconhecem. Trilho SÓLIDO (desligado
+   `#1c2b45`, ligado o acento cheio), botão BRANCO com uma sombra curta
+   pra dar relevo. Sem gradiente no botão, sem brilho externo: os dois
+   deixam o controle borrado e foi exatamente o que estragou a primeira
+   tentativa.
+
+   Feito por cima do próprio `<input type="checkbox">` (`appearance:
+   none`): o elemento continua sendo um checkbox pro teclado, pro leitor
+   de tela e pros testes — muda só a pele. */
+.rv-fp-check input[type="checkbox"],
+.rv-area-check input[type="checkbox"],
+.rv-janela-token .rv-cartao-flag input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  flex: none; position: relative; margin: 0;
+  width: 40px; height: 22px; border-radius: 999px;
+  border: none; background: #1c2b45;
+  cursor: pointer;
+  transition: background .2s cubic-bezier(.4, 0, .2, 1);
+}
+.rv-fp-check input[type="checkbox"]::after,
+.rv-area-check input[type="checkbox"]::after,
+.rv-janela-token .rv-cartao-flag input[type="checkbox"]::after {
+  content: ""; position: absolute; left: 2px; top: 2px;
+  width: 18px; height: 18px; border-radius: 999px;
+  background: #f4f8fc;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
+  transition: transform .2s cubic-bezier(.4, 0, .2, 1);
+}
+.rv-fp-check input[type="checkbox"]:checked,
+.rv-area-check input[type="checkbox"]:checked,
+.rv-janela-token .rv-cartao-flag input[type="checkbox"]:checked {
+  background: var(--jf-acento, #45b8c9);
+}
+.rv-fp-check input[type="checkbox"]:checked::after,
+.rv-area-check input[type="checkbox"]:checked::after,
+.rv-janela-token .rv-cartao-flag input[type="checkbox"]:checked::after {
+  transform: translateX(18px);
+}
+.rv-fp-check input[type="checkbox"]:hover,
+.rv-area-check input[type="checkbox"]:hover,
+.rv-janela-token .rv-cartao-flag input[type="checkbox"]:hover { background: #24365a; }
+.rv-fp-check input[type="checkbox"]:checked:hover,
+.rv-area-check input[type="checkbox"]:checked:hover,
+.rv-janela-token .rv-cartao-flag input[type="checkbox"]:checked:hover {
+  background: color-mix(in srgb, var(--jf-acento, #45b8c9) 85%, #fff);
+}
+.rv-fp-check input[type="checkbox"]:focus-visible,
+.rv-area-check input[type="checkbox"]:focus-visible,
+.rv-janela-token .rv-cartao-flag input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--jf-acento, #45b8c9); outline-offset: 2px;
+}
+.rv-fp-check input[type="checkbox"]:disabled,
+.rv-area-check input[type="checkbox"]:disabled,
+.rv-janela-token .rv-cartao-flag input[type="checkbox"]:disabled { opacity: .4; cursor: not-allowed; }
+.rv-janela-token .rv-cartao-flag input[type="checkbox"] { margin-top: 1px; }
+
+/* Campo — o `Field` do estudo: rótulo EM CIMA (display 8px, `.16em`),
+   input logo abaixo com 6px de respiro. A versão em linha que tentei
+   antes empurrava o input pra fora da linha do rótulo e abria um vão
+   grande no meio da janela. */
+.rv-fp-campo { display: flex; flex-direction: column; }
+.rv-fp-campo input[type="text"], .rv-fp-campo input[type="number"], .rv-fp-campo textarea {
+  width: 100%; min-width: 0; margin-top: 6px;
+  padding: 8px 12px; border: 1px solid #16233a; border-radius: 2px;
+  background: transparent; font: inherit; font-size: 12px; color: #d6e4f5;
+}
+.rv-fp-campo textarea { resize: vertical; line-height: 1.4; }
+.rv-fp-campo input:focus-visible, .rv-fp-campo textarea:focus-visible {
+  outline: none; border-color: color-mix(in srgb, var(--jf-acento, #45b8c9) 55%, transparent);
+}
+/* Unidade sob o campo, discreta — não compete com o valor. */
+.rv-fp-campo em {
+  margin-top: 4px; font-family: var(--font-mono), monospace; font-style: normal;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #4f6285;
+}
+.rv-fp-campos-lado { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+
+/* ── ADICIONAR TOKEN — transcrição sobre a marcação própria da janela ──
+   `TokenContent` do estudo (índice 08). Ela nasceu antes da casca comum
+   e tem classes só dela (`.rv-janela-token`, `.rv-modal-*`,
+   `.rv-field-*`, `.rv-form-*`, `.rv-segmentado*`). Trocar a casca aqui
+   mexeria no fluxo de criar/posicionar/editar, que é comportamento —
+   então o caminho é o mesmo de Áreas e Rodadas: as classes ficam, os
+   VALORES passam a ser os do estudo. */
+
+.rv-janela-token {
+  background: linear-gradient(160deg, #0b1424, #080e19);
+  border: 1px solid #18263f;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, .55);
+  border-radius: 2px;
+}
+/* Rótulo de `select` e de linha composta (Tamanho) — mesma etiqueta do
+   `Field`, senão ele herda o corpo do formulário e vira título. */
+.rv-janela-token .rv-form-linha--tamanho .rv-field > label,
+.rv-janela-token .rv-field > label[for] {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; color: #4f6285;
+}
+.rv-janela-token .rv-modal-corpo { padding: 16px; gap: 20px; }
+
+/* Field / SelectField */
+.rv-janela-token .rv-field { gap: 0; }
+/* O rótulo do campo aparece como `span`, `legend` OU `label` conforme
+   o controle — os três recebem o mesmo tratamento do `Field`. */
+.rv-janela-token .rv-field > span,
+.rv-janela-token .rv-field > label,
+.rv-janela-token .rv-field legend {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; color: #4f6285;
+}
+.rv-janela-token .rv-field input[type="text"],
+.rv-janela-token .rv-field input[type="number"],
+.rv-janela-token .rv-field select {
+  margin-top: 6px; padding: 8px 12px;
+  border: 1px solid #16233a; border-radius: 2px; background: transparent;
+  font-size: 12px; color: #d6e4f5;
+}
+.rv-janela-token .rv-field input:focus-visible,
+.rv-janela-token .rv-field select:focus-visible {
+  outline: none; border-color: rgba(69, 184, 201, .55);
+}
+/* Ajuda é FRASE, não etiqueta: fica em corpo pequeno, caixa mista. Em
+   mono 8px caixa alta (o tratamento do subtítulo de ladrilho) uma
+   explicação de duas linhas vira um bloco ilegível. */
+.rv-janela-token .rv-field-ajuda {
+  margin-top: 6px; font-size: 11px; line-height: 1.4;
+  text-transform: none; letter-spacing: 0; color: #7f95b3;
+}
+.rv-janela-token .rv-form-linha { gap: 12px; }
+/* Nome + Sigla partilham a linha, mas a ajuda de cada um tem tamanhos
+   bem diferentes: com `align-items: flex-end` (o padrão da linha) o
+   campo de ajuda curta descia até o rodapé do outro e abria um buraco
+   acima do input. Alinhados pelo topo, os dois inputs ficam na mesma
+   altura, que é o que o estudo mostra. */
+.rv-janela-token .rv-form-linha { align-items: flex-start; }
+/* 84px é estreito demais pra frase de ajuda da sigla em corpo 11px —
+   ela quebrava em seis linhas. 120px cabe a mesma frase em três. */
+.rv-janela-token .rv-field--estreito { flex: 0 0 120px; }
+
+/* Segmented — o Lado (PJ / PN / Neutro) */
+.rv-janela-token .rv-segmentado { gap: 8px; }
+/* O desenho subiu para `.rv-segmentado-item` (busque por "SEGMENTADO
+   INLINE"): era aqui que ele estava preso, e por isso a mesma peça
+   desenhava certo na janela de token e crua em qualquer outra. */
+.rv-janela-token .rv-segmentado-item[aria-checked="true"] {
+  border-color: #45b8c9; background: rgba(69, 184, 201, .09); color: #45b8c9; font-weight: 600;
+}
+
+/* CheckRow — as bandeiras de comportamento (visível, travado…) */
+.rv-janela-token .rv-cartoes-flag { gap: 8px; }
+.rv-janela-token .rv-cartao-flag {
+  gap: 10px; padding: 10px 12px;
+  border: 1px solid #16233a; border-radius: 2px; background: transparent;
+}
+.rv-janela-token .rv-cartao-flag:hover { background: transparent; border-color: #1c2b45; }
+.rv-janela-token .rv-cartao-flag input { width: 16px; height: 16px; accent-color: #45b8c9; }
+.rv-janela-token .rv-cartao-flag strong { font-size: 12px; font-weight: 400; color: #d6e4f5; }
+.rv-janela-token .rv-cartao-flag span {
+  font-size: 11px; line-height: 1.4; color: #7f95b3;
+}
+
+/* Section — "Mais opções" é o disclosure que agrupa o resto */
+.rv-janela-token .rv-mais-opcoes { border-top: none; padding-top: 0; gap: 10px; }
+.rv-janela-token .rv-mais-opcoes > summary {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .2em; color: #4f6285;
+}
+.rv-janela-token .rv-mais-opcoes > summary::after {
+  content: ""; flex: 1; height: 1px;
+  background: linear-gradient(90deg, #18263f, transparent);
+}
+.rv-janela-token .rv-condicoes-grade { gap: 8px 12px; }
+.rv-janela-token .rv-condicao-item { font-size: 12px; color: #d6e4f5; }
+.rv-janela-token .rv-condicao-item input { accent-color: #45b8c9; }
+.rv-janela-token .rv-camadas-tag { flex: none; }
+
+/* Rodapé e CommandButton */
+/* A janela de token passou a usar a MOLDURA das ferramentas (cantos,
+   espinha, cabeçalho). `.rv-fp` traz `padding-left: 36px` pra coluna da
+   espinha; aqui só o acento e o fato de ela ser `position: fixed` (é
+   janela de formulário, não peça do palco). */
+.rv-janela-token.rv-fp {
+  --jf-acento: #45b8c9;
+  /* A largura é a DESTA janela, não a das ferramentas: `.rv-fp` traz
+     320/400px, e o formulário de token tem duas colunas de campo. O
+     `max-height` volta ao viewport (as ferramentas se limitam ao
+     palco). */
+  position: fixed; overflow: hidden;
+  width: 100%; max-width: 560px;
+  max-height: calc(100vh - 40px);
+  /* `.rv-fp` traz z-index 17 (janela de ferramenta, que vive DENTRO do
+     palco e fica atrás do painel da sessão). Esta janela é livre na
+     tela inteira e precisa passar por cima do painel — o 45 é dela e
+     tem que ser reafirmado aqui, senão o chassi das ferramentas, que
+     vem depois no arquivo, rebaixa a janela pra trás do painel. */
+  z-index: 45;
+}
+.rv-janela-token .rv-fp-cab { cursor: grab; touch-action: none; user-select: none; }
+.rv-janela-token .rv-fp-cab:active { cursor: grabbing; }
+.rv-janela-token .rv-fp-cab button { cursor: pointer; }
+/* Numeração das seções: o contador vive no CORPO, como nas outras. */
+.rv-janela-token .rv-modal-corpo { counter-reset: rvfpsec; }
+.rv-janela-token .rv-fp-grupo { counter-increment: rvfpsec; display: flex; flex-direction: column; gap: 10px; }
+.rv-janela-token .rv-fp-rotulo {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .2em; color: #4f6285;
+  cursor: default;
+}
+.rv-janela-token .rv-fp-rotulo::before {
+  content: counter(rvfpsec, decimal-leading-zero);
+  flex: none; font-family: var(--font-mono), monospace;
+  font-size: 10px; font-weight: 700; letter-spacing: .1em;
+  color: color-mix(in srgb, var(--jf-acento) 70%, transparent);
+}
+.rv-janela-token .rv-fp-rotulo::after {
+  content: ""; flex: 1; height: 1px;
+  background: linear-gradient(90deg, #18263f, transparent);
+}
+/* `summary` da seção 04 continua clicável e mostra o estado no fim. */
+.rv-janela-token details.rv-fp-grupo > summary.rv-fp-rotulo { cursor: pointer; list-style: none; }
+.rv-janela-token details.rv-fp-grupo > summary.rv-fp-rotulo::-webkit-details-marker { display: none; }
+
+.rv-janela-token .rv-modal-rodape {
+  padding: 12px 16px; gap: 8px;
+  border-top: 1px solid #16233a; background: rgba(255, 255, 255, .015);
+}
+.rv-janela-token .rv-modal-rodape .rv-btn--ghost {
+  border: none; background: transparent;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .16em; color: #4f6285;
+}
+.rv-janela-token .rv-modal-rodape .rv-btn--ghost:hover { color: #7f95b3; background: transparent; }
+.rv-janela-token .rv-modal-rodape .rv-btn--pri {
+  margin-left: auto;
+  padding: 10px 20px; border-radius: 2px;
+  border: 1px solid rgba(69, 184, 201, .53); background: rgba(69, 184, 201, .09);
+  color: #45b8c9;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .22em;
+}
+.rv-janela-token .rv-modal-rodape .rv-btn--pri::before { content: "▹"; opacity: .7; margin-right: 8px; }
+.rv-janela-token .rv-modal-rodape .rv-btn--pri:hover:not(:disabled) { border-color: #45b8c9; }
+.rv-janela-token .rv-form-aviso {
+  margin: 0; padding: 8px 12px; border-radius: 2px;
+  border: 1px solid rgba(224, 165, 58, .16); border-left: 2px solid #e0a53a;
+  background: rgba(224, 165, 58, .06);
+  font-size: 11px; line-height: 1.4; color: #7f95b3;
+}
+.rv-janela-token .rv-pegada-preview { background: #0c1420; border: 1px solid #16233a; border-radius: 2px; }
+.rv-janela-token .rv-imagem-preview { border: 1px solid #16233a; border-radius: 2px; }
+/* Quatro ladrilhos numa fileira só — o `grid-cols-4` do estudo. */
+.rv-fp-seg--4 { grid-auto-flow: unset; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* Quatro cards numa linha só cabiam espremendo o respiro lateral pra
+   4px. A janela de Marcar é mais larga que as outras justamente por
+   isso — e aí o padding volta a ser o mesmo dos demais OptionTiles. */
+.rv-fp--marcar { width: 468px; }
+.rv-fp-seg--4 .rv-fp-seg-btn { padding: 12px 8px; }
+.rv-fp-seg--4 .rv-fp-seg-nome { font-size: 10px; letter-spacing: .06em; }
+/* Contagem no cabeçalho — o `meta` do `PanelShell`. */
+.rv-fp-meta {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px; text-transform: uppercase; letter-spacing: .14em; color: #4f6285;
+}
+/* `select` dentro de campo segue o mesmo tratamento do input. */
+.rv-fp-campo select {
+  width: 100%; min-width: 0; margin-top: 6px;
+  padding: 8px 12px; border: 1px solid #16233a; border-radius: 2px;
+  background: transparent; font: inherit; font-size: 12px; color: #d6e4f5;
+}
+.rv-fp-campo select:focus-visible {
+  outline: none; border-color: color-mix(in srgb, var(--jf-acento, #45b8c9) 55%, transparent);
+}
+.rv-marca-rotulo { pointer-events: none; font-family: var(--font-mono), monospace; }

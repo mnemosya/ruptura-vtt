@@ -146,6 +146,10 @@ export function PainelTerreno({
                   key={t.nome}
                   type="button"
                   className={`rv-fp-opcao${t.modificador ? ` ${t.modificador}` : ""}`}
+                  // Gancho de cor: cada tipo se pinta com a MESMA cor que
+                  // tem no mapa (difícil = âmbar da hachura, bloqueado =
+                  // vermelho), em vez do acento genérico da janela.
+                  data-tipo={t.valor ?? "apagar"}
                   aria-pressed={ativo}
                   onClick={() => onModoTerreno(t.valor)}
                 >

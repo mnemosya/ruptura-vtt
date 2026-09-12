@@ -162,7 +162,7 @@ export const META_AREA: Record<TipoArea, MetaTipoArea> = {
     descricao: "Parte da origem e abre na direção escolhida com abertura fixa de 45°, até o alcance indicado.",
   },
   personalizada: {
-    rotulo: "Personalizada", glifo: "⬟", instrucao: "Clique para adicionar pontos e fechar a área.", gesto: "pontos", tridimensional: false,
+    rotulo: "Livre", glifo: "⬟", instrucao: "Clique para adicionar pontos e fechar a área.", gesto: "pontos", tridimensional: false,
     descricao: "Não é um formato oficial do livro — é apoio ao narrador para efeitos incomuns. Polígono livre, inclusive côncavo.",
   },
 };

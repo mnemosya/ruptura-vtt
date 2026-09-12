@@ -38,12 +38,13 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { X } from "lucide-react";
 import { type Hex, TAMANHOS, type TamanhoCriatura, hexParaPixel, hexPath } from "../_mapa/hex";
 import { type CondicaoSlug, CONDICOES } from "../_dados/cenaDemo";
 import { type MapaTerreno, dentroDoMapa, pegadaBloqueada } from "../_dominio/movimento";
 import { pegadaEfetiva, projetarPegada, pegadasSobrepoem } from "../_dominio/pegada";
 import { type LadoToken, type VertenteToken } from "../_dominio/tokenApresentacao";
-import { GAP_LATERAL, MARGEM_TOPO } from "../_ferramentas/janelasPreferencias";
+import { GAP_LATERAL } from "../_ferramentas/janelasPreferencias";
 
 export interface ValoresFormularioToken {
   nome: string;
@@ -214,10 +215,17 @@ function usePosicaoJanelaFlutuante(aberto: boolean) {
   // montada (resize, ou o próprio conteúdo crescendo).
   useEffect(() => {
     if (!aberto || pos) return;
+    // CENTRO DA TELA. Esta janela não é uma ferramenta de gesto (as
+    // outras nascem coladas na barra porque a mão fica no mapa): é um
+    // formulário longo que se preenche do começo ao fim, e o lugar
+    // dele é o meio. Encostada na barra ela ficava alta demais, com o
+    // rodapé (Continuar/Cancelar) caindo fora da vista.
     const largura = Math.min(LARGURA_JANELA_PADRAO, window.innerWidth - 32);
-    const barra = document.querySelector(".rv-ferramentas")?.getBoundingClientRect();
-    const xAncorado = (barra?.right ?? 0) + GAP_LATERAL;
-    setPos({ x: Math.min(xAncorado, Math.max(GAP_LATERAL, window.innerWidth - largura - GAP_LATERAL)), y: MARGEM_TOPO });
+    const altura = Math.min(window.innerHeight - 32, 680);
+    setPos({
+      x: Math.max(GAP_LATERAL, Math.round((window.innerWidth - largura) / 2)),
+      y: Math.max(GAP_LATERAL, Math.round((window.innerHeight - altura) / 2)),
+    });
   }, [aberto, pos]);
 
   // Fechou — libera a posição, pra próxima abertura recalcular do zero.
@@ -362,13 +370,20 @@ export function GerenciadorToken({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [valores.nome, siglaEditadaManualmente]);
 
-  // Foco inicial.
+  // Foco inicial. Mesma armadilha do `ResizeObserver` logo acima: na
+  // PRIMEIRA passagem `pos` ainda é `null`, o componente devolve `null`
+  // e `primeiroCampoRef.current` nunca existiu — o rAF focava o vazio e
+  // o foco ficava parado no botão que abriu a janela. Reagir a `pos`
+  // deixar de ser nulo é o que garante que o campo já está no DOM. O
+  // booleano (e não `pos` inteiro) muda uma vez só por abertura: usar
+  // `pos` refocaria o nome a cada pixel de arrasto da janela.
   useEffect(() => {
-    if (aberto) {
+    if (aberto && pos) {
       const id = requestAnimationFrame(() => primeiroCampoRef.current?.focus());
       return () => cancelAnimationFrame(id);
     }
-  }, [aberto]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aberto, pos === null]);
   // Restauração de foco ao FECHAR — `aberto` nunca vira `false` de
   // verdade (quem chama desmonta o componente inteiro em vez de passar
   // `aberto={false}`, ver `VttClient.tsx`), então a restauração precisa
@@ -500,17 +515,35 @@ export function GerenciadorToken({
   return (
     <div
       ref={painelRef}
-      className="rv-janela-token rv-gerenciador-token"
+      className="rv-janela-token rv-gerenciador-token rv-fp"
       style={{ left: pos.x, top: pos.y }}
       aria-labelledby={tituloId} aria-describedby={descricaoId}
     >
-      <header className="rv-modal-cab rv-janela-token-cab" onPointerDown={iniciarArrasto}>
-        <h2 id={tituloId}>{modo === "criar" ? "Adicionar token" : `Editar ${valoresIniciais.nome || "token"}`}</h2>
-        <button type="button" className="rv-modal-fechar" aria-label="Fechar" onClick={pedirFechar}>×</button>
+      {/* Mesma casca das janelas de ferramenta: brackets nos quatro
+          cantos e espinha vertical com índice e código. Esta janela era
+          a única que ainda usava a moldura de modal antiga. */}
+      {(["tl", "tr", "bl", "br"] as const).map((c) => (
+        <span key={c} className="rv-fp-canto" data-canto={c} aria-hidden="true" />
+      ))}
+      <span className="rv-fp-espinha" aria-hidden="true">
+        <span className="rv-fp-espinha-indice">08</span>
+        <span className="rv-fp-espinha-codigo">Token</span>
+        <span className="rv-fp-espinha-ponto" />
+      </span>
+
+      <header className="rv-fp-cab rv-janela-token-cab" onPointerDown={iniciarArrasto}>
+        <span className="rv-fp-cab-txt">
+          <span className="rv-fp-titulo" id={tituloId}>
+            {modo === "criar" ? "Adicionar token" : `Editar ${valoresIniciais.nome || "token"}`}
+          </span>
+          <span className="rv-fp-modo" id={descricaoId}>
+            {modo === "criar" ? "Configuração · posição no próximo passo" : "Edição · altere e salve"}
+          </span>
+        </span>
+        <button type="button" className="rv-fp-fechar" aria-label="Fechar" onClick={pedirFechar}>
+          <X size={13} />
+        </button>
       </header>
-      <p id={descricaoId} className="rv-modal-descricao">
-        {modo === "criar" ? "Configure o token — a posição no mapa é escolhida no próximo passo." : "Altere o que for necessário e salve."}
-      </p>
 
       <div className="rv-modal-corpo rv-janela-token-corpo" onKeyDown={(e) => { if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA" && (e.target as HTMLElement).tagName !== "BUTTON") { e.preventDefault(); confirmar(); } }}>
           {/* ── ESSENCIAL ─────────────────────────────────────────── */}
@@ -531,8 +564,10 @@ export function GerenciadorToken({
             </label>
           </div>
 
-          <fieldset className="rv-field">
-            <legend>Lado</legend>
+          {/* Seções NUMERADAS, como nas outras janelas: o contador do
+              `.rv-fp-grupo` numera sozinho, na ordem em que aparecem. */}
+          <fieldset className="rv-field rv-fp-grupo">
+            <legend className="rv-fp-rotulo">Lado</legend>
             <div className="rv-segmentado" role="radiogroup" aria-label="Lado">
               {([["pj", "Personagem jogador (PJ)"], ["pn", "Personagem do narrador (PN)"], ["neutro", "Neutro"]] as const).map(([valor, rotulo]) => (
                 <button key={valor} type="button" role="radio" aria-checked={valores.lado === valor}
@@ -544,6 +579,8 @@ export function GerenciadorToken({
             <small className="rv-field-ajuda">Define a identificação visual e o grupo do token no combate.</small>
           </fieldset>
 
+          <div className="rv-fp-grupo">
+          <span className="rv-fp-rotulo">Ficha &amp; escala</span>
           <div className="rv-form-linha rv-form-linha--tamanho">
             <div className="rv-field">
               <label htmlFor="rv-campo-tamanho">Tamanho e espaço ocupado</label>
@@ -580,7 +617,10 @@ export function GerenciadorToken({
             </select>
             <small className="rv-field-ajuda">Controladores dessa ficha poderão controlar o token. Sem vínculo, somente o narrador controla.</small>
           </label>
+          </div>
 
+          <div className="rv-fp-grupo">
+          <span className="rv-fp-rotulo">Comportamento</span>
           <div className="rv-cartoes-flag">
             <label className="rv-cartao-flag">
               <input type="checkbox" checked={valores.visivel} onChange={(e) => setValores((v) => ({ ...v, visivel: e.target.checked }))} />
@@ -591,10 +631,11 @@ export function GerenciadorToken({
               <div><strong>Travar posição</strong><span>Impede que jogadores movimentem o token até ele ser destravado.</span></div>
             </label>
           </div>
+          </div>
 
-          {/* ── MAIS OPÇÕES ───────────────────────────────────────── */}
-          <details className="rv-mais-opcoes" open={maisOpcoesAberto} onToggle={(e) => setMaisOpcoesAberto((e.target as HTMLDetailsElement).open)}>
-            <summary>Mais opções</summary>
+          {/* ── IDENTIDADE AMPLIADA (04) ──────────────────────────── */}
+          <details className="rv-mais-opcoes rv-fp-grupo" open={maisOpcoesAberto} onToggle={(e) => setMaisOpcoesAberto((e.target as HTMLDetailsElement).open)}>
+            <summary className="rv-fp-rotulo">Identidade ampliada</summary>
 
             <label className="rv-field">
               <span>Vertente</span>

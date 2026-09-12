@@ -46,11 +46,12 @@
 import { useState } from "react";
 import {
   type EstadoTrilha, type Janela, type Lado, type Participante,
-  DICA_JANELA, PISO_PA, ROTULO_JANELA_CURTO, ROTULO_LADO, TETO_PA,
+  PISO_PA, ROTULO_LADO, TETO_PA,
   elegibilidade, elegiveisAgora, ladoDaVez, paRestante, podeEncerrarJanela,
   sugestaoDesempate, tetoPaAgora,
 } from "./modelo";
 import type { TokenApresentacao } from "../_dominio/tokenApresentacao";
+import { NucleoRodada } from "./NucleoRodada";
 
 export interface TrilhaFaccoesProps {
   trilha: EstadoTrilha;
@@ -105,11 +106,6 @@ function ordenarTrilho(participantes: Participante[], trilha: EstadoTrilha): Par
     .sort((a, b) => ORDEM_SITUACAO[situacaoDe(a, trilha)] - ORDEM_SITUACAO[situacaoDe(b, trilha)]);
 }
 
-/** Teto de PA da janela, curto — derivado das constantes do modelo, nunca digitado à mão. */
-function limiteDaJanela(janela: Janela): string {
-  return janela === "rapidos" ? `até ${TETO_PA.rapidos} PA` : `${PISO_PA.lentos}+ PA`;
-}
-
 /**
  * Rótulo dos botões de declaração.
  *
@@ -153,43 +149,17 @@ export function TrilhaFaccoes(props: TrilhaFaccoesProps) {
    */
   const faccaoAtiva = (lado: Lado) => (agindo ? agindo.lado === lado : aptos.some((p) => p.lado === lado));
 
-  const estado = agindo
-    ? `${agindo.nome} em ação`
-    : vez === "pj" ? "Vez dos jogadores"
-    : vez === "pn" ? "Vez do narrador"
-    : janelaAcabou ? "Janela concluída"
-    : "Qualquer lado pode abrir";
 
   return (
     <>
-      <section className="rv-rodadas" aria-label="Rodada e ativação">
-        <p className="rv-rodadas-rodada">
-          Rodada {trilha.rodada}
-          {trilha.modo !== "combate" && (
-            <span className="rv-rodadas-modo" data-modo={trilha.modo}>
-              {trilha.modo === "emboscada" ? "Emboscada" : trilha.modo === "tregua" ? "Trégua" : "Exploração"}
-            </span>
-          )}
-        </p>
-        <p className="rv-rodadas-janela" data-janela={trilha.janela} title={DICA_JANELA[trilha.janela]}>
-          {ROTULO_JANELA_CURTO[trilha.janela]} · {limiteDaJanela(trilha.janela)}
-        </p>
-        <p className="rv-rodadas-estado" data-lado={agindo ? agindo.lado : vez ?? "livre"} role="status" aria-live="polite">
-          {estado}
-        </p>
-        {/* Avançar janela/rodada só aparece quando o modelo diz que
-            ninguém mais pode agir nela — e nunca no meio de uma
-            ativação aberta (escolha incompatível). */}
-        {janelaAcabou && !agindo && (
-          <button
-            type="button"
-            className="rv-btn rv-btn--pri rv-rodadas-avanca"
-            onClick={trilha.janela === "rapidos" ? props.onAvancarJanela : props.onProximaRodada}
-          >
-            {trilha.janela === "rapidos" ? `Resolver ${ROTULO_JANELA_CURTO.lentos}` : "Encerrar rodada"}
-          </button>
-        )}
-      </section>
+      <NucleoRodada
+        trilha={trilha}
+        agindo={agindo}
+        vez={vez}
+        janelaAcabou={janelaAcabou}
+        onAvancarJanela={props.onAvancarJanela}
+        onProximaRodada={props.onProximaRodada}
+      />
 
       {(["pj", "pn"] as Lado[]).map((lado) => (
         <Faccao

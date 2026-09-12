@@ -219,6 +219,20 @@ export function pixelParaHex(x: number, y: number, tamanho: number): Hex {
   return paraAxial(arredondarCubo({ x: q, y: -q - r, z: r }));
 }
 
+/**
+ * O mesmo inverso, SEM arredondar — a coordenada axial exata do ponto.
+ *
+ * `pixelParaHex` devolve a CÉLULA (arredondada), que é o que quase
+ * tudo no VTT quer. Isto devolve onde o ponto está de verdade, e a
+ * diferença entre os dois é o deslocamento sub-célula que faz um token
+ * parar onde foi solto com a grade escondida (migration 0094).
+ */
+export function pixelParaHexExato(x: number, y: number, tamanho: number): { q: number; r: number } {
+  const q = ((Math.sqrt(3) / 3) * x - (1 / 3) * y) / tamanho;
+  const r = ((2 / 3) * y) / tamanho;
+  return { q, r };
+}
+
 /** Os 6 vértices do hexágono, em pixels relativos ao centro. */
 export function hexVertices(tamanho: number): { x: number; y: number }[] {
   const pts: { x: number; y: number }[] = [];

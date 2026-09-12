@@ -36,7 +36,6 @@ export default async function VttPage({ params }: PageProps) {
   return (
     <VttClient
       campaignId={campaignId}
-      campanhaNome={acesso.campaign.name}
       papel={acesso.role}
       hudRules={rules}
       hudReactionRules={normalizeReactionRules(combatFlow?.payload)}

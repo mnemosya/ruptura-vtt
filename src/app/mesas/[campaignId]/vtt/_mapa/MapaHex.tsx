@@ -17,6 +17,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Crosshair, FileText, Navigation, TriangleAlert } from "lucide-react";
 import {
   type Hex,
   TAMANHOS,
@@ -30,25 +31,32 @@ import {
   hexPath,
   hexRotacionar,
   hexVertices,
-  pixelParaHex,
-} from "./hex";
+  pixelParaHex, pixelParaHexExato } from "./hex";
 import {
-  type AreaTerreno,
   type ObjetoCena,
   CATEGORIA_COBERTURA,
   CONDICOES,
   GRAU_COBERTURA,
 } from "../_dados/cenaDemo";
 import { type TokenApresentacao } from "../_dominio/tokenApresentacao";
+import { ehCamadaDeFerramenta } from "../_shell/PainelCamadas";
 
 /**
  * Cena pronta pra este componente desenhar — `tokens`, `nome`,
  * `largura` e `altura` vêm SEMPRE do banco (`estadoCena.cena`,
  * `VttClient.tsx`; `tokens` derivado via `tokenApresentacaoDe`;
- * `objetos` vem de `estadoCena.objetos` persistido). `terrenos`
- * (decorativo, tipo dificil/elevado/zona_morta) sempre chega vazio
- * hoje — `vtt_scenes` ainda não modela terreno decorativo; não
- * confundir com o terreno FUNCIONAL (`vtt_terrain`), que é real.
+ * `objetos` vem de `estadoCena.objetos` persistido).
+ *
+ * NÃO existe mais terreno "decorativo" aqui. Ele nunca chegou a ser
+ * persistido (`vtt_scenes` não modelava) e os dois casos que ele cobria
+ * já são Objetos: "destroços que encarecem o passo" é um objeto com
+ * `terreno_projetado: 'dificil'` e `bloqueia_movimento: false` (o
+ * preset `entulho`), e "zona morta" é um objeto sem cobertura, só com
+ * nome e efeito no hover. Elevação, o terceiro caso, não é tipo de
+ * terreno: mexe em alcance e linha de visão, e merece desenho próprio.
+ *
+ * O que restou é o terreno FUNCIONAL (`vtt_terrain`, ferramenta
+ * Terreno) — difícil e bloqueado, real e persistido.
  */
 export interface CenaMapa {
   nome: string;
@@ -56,7 +64,6 @@ export interface CenaMapa {
   altura: number;
   tokens: TokenApresentacao[];
   objetos: ObjetoCena[];
-  terrenos: AreaTerreno[];
 }
 import { type MapaTerreno, type Rota, dentroDoMapa, medir, pegadaBloqueada } from "../_dominio/movimento";
 import { type MovimentoVisualToken } from "../_dominio/animacaoToken";
@@ -69,6 +76,18 @@ import {
   origemMecanica, pegadaEfetiva, pegadasSobrepoem, projetarPegada,
 } from "../_dominio/pegada";
 import { elementoEhEditavel } from "../_ferramentas/controlador";
+
+/** Glifo de cada tipo de sinal — a MESMA tabela de ícones que
+    `PainelMarcar` usa nos botões, para que mapa e janela nunca mostrem
+    desenhos diferentes pro mesmo sinal. */
+const GLIFO_DO_SINAL: Record<string, typeof Crosshair> = {
+  alvo: Crosshair,
+  perigo: TriangleAlert,
+  rota: Navigation,
+  nota: FileText,
+};
+/** Lado do glifo em unidades do mapa (o hex tem raio `TAM`). */
+const TAM_GLIFO_SINAL = 19;
 import {
   type EstadoMedicao,
   type ModoMedicao,
@@ -181,28 +200,6 @@ const TOLERANCIA_HOVER_MUNDO = 8;
 // `scripts/test-vtt-medicao-regua.ts`) — aqui só se conectam os
 // eventos de ponteiro/teclado às transições de lá.
 
-/** Conteúdo de hint por tipo de terreno DECORATIVO (`cena.terrenos`) — nunca a área persistida/funcional, que tem seu próprio texto fixo. */
-const HINT_TERRENO_DECORATIVO: Record<AreaTerreno["tipo"], (t: AreaTerreno) => Omit<HintMapa, "x" | "y">> = {
-  dificil: (t) => ({
-    titulo: t.nome,
-    classificacao: "Terreno difícil",
-    efeito: "Cada metro percorrido custa 2 de deslocamento.",
-  }),
-  elevado: (t) => ({
-    titulo: t.nome,
-    classificacao: "Terreno elevado",
-    detalhes: t.altura ? [`Altura: ${t.altura} m`] : undefined,
-    // Só informativo — nenhum bônus é aplicado automaticamente aqui.
-    efeito: "Uma diferença de 3 m ou mais concede +1 em ataques à distância feitos de cima.",
-  }),
-  zona_morta: () => ({
-    titulo: "Zona morta",
-    classificacao: "Jammer ativo",
-    // Não bloqueia movimento — só condução arcana/comunicação digital.
-    efeito: "Bloqueia condução arcana e comunicação digital na área.",
-  }),
-};
-
 function hintParaObjeto(o: ObjetoCena): Omit<HintMapa, "x" | "y"> {
   const grau = GRAU_COBERTURA[o.grau];
   const categoria = CATEGORIA_COBERTURA[o.categoria];
@@ -258,6 +255,16 @@ export interface PropsMapaHex {
    * canônica que o clique de 60° já usa, nunca revalidar de novo.
    */
   onRotacaoAlcaSolta?: (tokenId: string, novaOrientacao: number) => void;
+  /**
+   * Rotação por PASSO (±60°). Existe separada da absoluta porque o
+   * teclado não pode calcular o destino: `t.orientacao` é a orientação
+   * já RENDERIZADA, e duas teclas seguidas chegam antes do servidor
+   * confirmar a primeira — as duas calculariam o mesmo destino a partir
+   * da mesma base velha, e o token giraria um passo pra dois pedidos.
+   * Quem sabe qual é a orientação pendente é o `VttClient`; aqui só se
+   * declara a direção.
+   */
+  onRotacaoAlcaPasso?: (tokenId: string, direcao: 1 | -1) => void;
 
   /**
    * Terreno REAL (persistido) — dificil/bloqueado por célula. Distinto
@@ -268,7 +275,7 @@ export interface PropsMapaHex {
    */
   terrenoReal?: MapaTerreno;
   /** Ferramenta ativa — controla se o mapa aceita arrastar token / pintar célula. */
-  ferramenta?: "interagir" | "medir" | "marcar" | "terreno" | "objetos" | "areas" | "rodadas";
+  ferramenta?: "interagir" | "dados" | "medir" | "marcar" | "terreno" | "objetos" | "areas" | "rodadas";
 
   /**
    * ÁREAS DE EFEITO — desenho (camada visual, `pointer-events: none`) e
@@ -311,6 +318,18 @@ export interface PropsMapaHex {
    */
   onConversorEdicaoRapidaTela?: (conversor: ((mundo: { x: number; y: number }) => { x: number; y: number }) | null) => void;
   /**
+   * Conversor TELA → HEX exposto pra quem precisa reagir a um evento
+   * cujo alvo NÃO é este SVG — hoje só o arrasto HTML5 vindo do painel
+   * lateral (`dragover`/`drop` acontecem no contêiner do mapa, não
+   * dentro do `<svg>`). Mesma ideia (e mesma regra de recálculo) do
+   * conversor de edição rápida acima; a diferença é a direção.
+   *
+   * Existe justamente pra NÃO duplicar a matemática de câmera:
+   * `pontoMundo` + `pixelParaHex` continuam sendo o único caminho de
+   * tela pra hex em toda a Mesa.
+   */
+  onConversorHexDaTela?: (conversor: ((clientX: number, clientY: number) => Hex | null) | null) => void;
+  /**
    * Áreas candidatas ao HOVER do botão de edição rápida — geometria
    * (`regiao`) de cada uma, independente da ferramenta ativa. Ativo
    * (o pointermove abaixo só reage) com "areas" ou "interagir"; outras
@@ -344,7 +363,12 @@ export interface PropsMapaHex {
   /** Quem pode mover CADA token — decide se o arraste começa (a autorização de servidor é quem decide de verdade). */
   podeMoverToken?: (tokenId: string) => boolean;
   /** Arraste concluído: rota inteira (origem incluída), pra revalidação e persistência por quem chama. */
-  onSoltarToken?: (tokenId: string, rota: Rota) => void;
+  /**
+   * `offset` (opcional) é o deslocamento SUB-CÉLULA de onde o token
+   * pousou dentro da célula final — só vem com a grade escondida, e é
+   * só desenho. Ausente = encaixa no centro do hex, como sempre foi.
+   */
+  onSoltarToken?: (tokenId: string, rota: Rota, offset?: { q: number; r: number }) => void;
   /** Pintura de terreno: pressão inicial numa célula. */
   onPressCelula?: (h: Hex) => void;
   /** Pintura de terreno: entrada numa célula com o botão ainda pressionado (arrastar pintando). */
@@ -411,7 +435,7 @@ export interface PropsMapaHex {
    * pro banco. `podeApagar` decide se o clique nesta marcação
    * específica dispara `onClicarMarca` (autor ou narrador).
    */
-  marcas?: { id: string; q: number; r: number; cor: string; podeApagar: boolean }[];
+  marcas?: { id: string; q: number; r: number; cor: string; podeApagar: boolean; sinal: string; texto: string | null }[];
   onClicarMarca?: (id: string) => void;
 
   /**
@@ -466,6 +490,16 @@ export interface PropsMapaHex {
    * visíveis e destravadas (comportamento de sempre).
    */
   camadas?: import("../_shell/PainelCamadas").EstadoCamadas;
+  /**
+   * Quem esconde continua enxergando.
+   *
+   * As camadas são da CENA (0093): o narrador esconde e some pra mesa.
+   * Mas ele precisa ver o que escondeu pra poder trabalhar — mesmo
+   * princípio de `vtt_tokens.visivel`, que já mostra ao narrador, com
+   * marca de oculto, o token que os jogadores não veem. Aqui a camada
+   * escondida aparece atenuada em vez de sumir.
+   */
+  verCamadasOcultas?: boolean;
 
   /**
    * Zoom pela roda do mouse/trackpad — recebe o delta já normalizado
@@ -534,6 +568,7 @@ export function MapaHex({
   camadas,
   contagemSelecionada,
   onRotacaoAlcaSolta,
+  onRotacaoAlcaPasso,
   areas,
   areasMostrarCelulas = true,
   areasMostrarHalos = true,
@@ -543,6 +578,7 @@ export function MapaHex({
   areasAncoraAcoes,
   onAncoraAcoesTela,
   onConversorEdicaoRapidaTela,
+  onConversorHexDaTela,
   areasParaHover,
   onHoverAreaEditavel,
   areasAlcas,
@@ -550,8 +586,22 @@ export function MapaHex({
   onAreaAlcaSoltar,
   onAreaAlcaCancelar,
   areasInteracao,
+  verCamadasOcultas,
 }: PropsMapaHex) {
-  const cVisivel = (id: keyof NonNullable<PropsMapaHex["camadas"]>) => camadas?.[id]?.visivel ?? true;
+  /** Última posição axial EXATA do ponteiro num arrasto — ver `soltar()`. */
+  const pontoExatoRef = useRef<{ q: number; r: number } | null>(null);
+  const cOculta = (id: keyof NonNullable<PropsMapaHex["camadas"]>) => (camadas?.[id]?.visivel ?? true) === false;
+  /**
+   * Camada de FERRAMENTA (grade, marcações, pings) escondida some pra
+   * todo mundo — esconder a grade e continuar vendo a grade não é
+   * esconder nada. Só CONTEÚDO da cena fica visível pro narrador que o
+   * escondeu, e atenuado, igual a um token com `visivel: false`.
+   */
+  const cVisivel = (id: keyof NonNullable<PropsMapaHex["camadas"]>) =>
+    (camadas?.[id]?.visivel ?? true) || (verCamadasOcultas === true && !ehCamadaDeFerramenta(id));
+  /** Opacidade de "escondi isto da mesa, mas continuo vendo". */
+  const cAtenuacao = (id: keyof NonNullable<PropsMapaHex["camadas"]>) =>
+    cOculta(id) && !ehCamadaDeFerramenta(id) ? 0.35 : undefined;
   const cBloqueada = (id: keyof NonNullable<PropsMapaHex["camadas"]>) => camadas?.[id]?.bloqueada ?? false;
   // Grade inteira, memoizada — só muda se a cena mudar de tamanho.
   const celulas = useMemo(() => {
@@ -564,11 +614,6 @@ export function MapaHex({
     return out;
   }, [cena.largura, cena.altura]);
 
-  const celulaPorTerreno = useMemo(() => {
-    const m = new Map<string, AreaTerreno>();
-    for (const t of cena.terrenos) for (const c of t.celulas) m.set(hexKey(c), t);
-    return m;
-  }, [cena.terrenos]);
 
   const realceSet = useMemo(() => new Set(celulasRealce.map(hexKey)), [celulasRealce]);
 
@@ -596,8 +641,21 @@ export function MapaHex({
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [arrasto, setArrasto] = useState<EstadoArrasto | null>(null);
   const [pintando, setPintando] = useState(false);
-  const terrenoParaRota: MapaTerreno = terrenoReal ?? new Map();
+  /* `useMemo` e não `terrenoReal ?? new Map()` solto: sem cena de
+     terreno, cada render criava um Map NOVO, e ele é dependência de um
+     `useCallback` e de um `useMemo` que alimentam efeitos com
+     `setState`. Uma identidade nova por render é a receita do
+     "Maximum update depth exceeded". */
+  const terrenoParaRota: MapaTerreno = useMemo(() => terrenoReal ?? new Map(), [terrenoReal]);
 
+  /* Espelho de zoom/pan lido DENTRO de `pontoMundo`. Antes a função
+     tinha zoom/pan nas dependências, ou seja: identidade nova a cada
+     passo de zoom, e todo efeito que a usa (roda, arrasto de pan,
+     hover de área, medição) desinscrevia e reinscrevia seus listeners
+     a cada tique da roda — o "travado" do gesto. Escrever o espelho no
+     render mantém a leitura sempre atual sem custar identidade nova. */
+  const zoomPanAtualRef = useRef({ zoom, pan });
+  zoomPanAtualRef.current = { zoom, pan };
   const pontoMundo = useCallback((clientX: number, clientY: number): { x: number; y: number } | null => {
     const svg = svgRef.current;
     if (!svg) return null;
@@ -608,8 +666,9 @@ export function MapaHex({
     const p = pt.matrixTransform(ctm.inverse());
     // O `<g>` de conteúdo aplica translate(pan) scale(zoom) — desfaz
     // isso pra chegar nas coordenadas do MUNDO, onde `pixelParaHex` opera.
-    return { x: (p.x - pan.x) / zoom, y: (p.y - pan.y) / zoom };
-  }, [pan.x, pan.y, zoom]);
+    const { zoom: z, pan: pa } = zoomPanAtualRef.current;
+    return { x: (p.x - pa.x) / z, y: (p.y - pa.y) / z };
+  }, []);
 
   // Espelho síncrono do `arrasto` mais recente — `soltar()` precisa
   // dele pra chamar `onSoltarToken` (um efeito colateral real: dispara
@@ -799,15 +858,14 @@ export function MapaHex({
   // handler quem já passou por `mostrarAlca` (autorização/seleção
   // única/ferramenta já resolvidos por quem chama).
   const tecladoRotacaoAlca = useCallback((t: TokenApresentacao, e: React.KeyboardEvent) => {
-    const passo = (delta: number) => ((t.orientacao + delta) % 6 + 6) % 6;
     switch (e.key) {
       case "ArrowRight": case "e": case "E":
         e.preventDefault();
-        onRotacaoAlcaSolta?.(t.id, passo(1));
+        onRotacaoAlcaPasso?.(t.id, 1);
         return;
       case "ArrowLeft": case "q": case "Q":
         e.preventDefault();
-        onRotacaoAlcaSolta?.(t.id, passo(-1));
+        onRotacaoAlcaPasso?.(t.id, -1);
         return;
       case "Home":
         e.preventDefault();
@@ -824,7 +882,7 @@ export function MapaHex({
       default:
         return;
     }
-  }, [onRotacaoAlcaSolta, cancelarRotacaoAlca]);
+  }, [onRotacaoAlcaSolta, onRotacaoAlcaPasso, cancelarRotacaoAlca]);
 
   // Esc durante o gesto: cancela a prévia, restaura a orientação
   // inicial (nunca escreve nada — a orientação exibida já É a
@@ -845,6 +903,12 @@ export function MapaHex({
       const p = pontoMundo(e.clientX, e.clientY);
       if (!p) return;
       const hex = pixelParaHex(p.x, p.y, TAM);
+      // Onde o ponteiro está DE VERDADE, sem arredondar. Com a grade
+      // escondida é isso que decide onde o token para; com a grade à
+      // vista é ignorado. Fica num ref, não no estado: nada aqui muda
+      // o que se desenha durante o gesto (a animação é que manda), e
+      // um setState por pointermove seria só custo.
+      pontoExatoRef.current = pixelParaHexExato(p.x, p.y, TAM);
       setArrasto((a) => {
         if (!a) return a;
         // Pathfinding só entre a ponta de `rotaConfirmada` e este hex
@@ -869,7 +933,18 @@ export function MapaHex({
         // desatualizado" que existia quando o envio dependia de um
         // `useMemo` só atualizado no próximo commit. UMA persistência
         // por gesto: nada é gravado durante o arraste.
-        onSoltarToken?.(a.tokenId, rotaDoEstadoArrasto(a, terrenoParaRota, pegadaEmArrasto));
+        const rota = rotaDoEstadoArrasto(a, terrenoParaRota, pegadaEmArrasto);
+        // Deslocamento sub-célula: a diferença entre onde o ponteiro
+        // largou e o centro da célula onde o token efetivamente parou.
+        // Só quando a GRADE está escondida — com ela à vista, encaixar
+        // no hex é o comportamento certo, e é o que a mesa espera.
+        const destino = rota.pontos[rota.pontos.length - 1];
+        const exato = pontoExatoRef.current;
+        const semGrade = (camadas?.grade?.visivel ?? true) === false;
+        const offset = semGrade && exato && destino
+          ? { q: exato.q - destino.q, r: exato.r - destino.r }
+          : undefined;
+        onSoltarToken?.(a.tokenId, rota, offset);
       }
       arrastoRef.current = null;
       setArrasto(null);
@@ -1122,6 +1197,18 @@ export function MapaHex({
     if (onPan) panRef.current = { x: e.clientX, y: e.clientY };
   }, [onPan]);
 
+  // Espelho síncrono de `pontoMundo` — ele muda de referência a cada
+  // tick de pan (depende de `pan.x/y`), e é EXATAMENTE esse tick que
+  // este efeito reage. Sem o ref, o efeito reinscreveria os listeners
+  // de `window` a cada pixel arrastado: mais que reinscrição
+  // desperdiçada, é a receita de um `pointermove` real acionando
+  // `mover` de uma instância ANTIGA do listener ainda não limpa (visto
+  // em produção: "Maximum update depth exceeded" saindo justamente
+  // deste `onPan`). O efeito abaixo agora só depende do que de fato
+  // muda por GESTO (`onPan`, `onMenuContextual`) — nunca por PIXEL.
+  const pontoMundoRef = useRef(pontoMundo);
+  useEffect(() => { pontoMundoRef.current = pontoMundo; }, [pontoMundo]);
+
   useEffect(() => {
     if (!onPan && !onMenuContextual) return;
     function mover(e: PointerEvent) {
@@ -1129,8 +1216,8 @@ export function MapaHex({
         panDistanciaRef.current = Math.hypot(e.clientX - panOrigemRef.current.x, e.clientY - panOrigemRef.current.y);
       }
       if (!panRef.current || !onPan) return;
-      const antes = pontoMundo(panRef.current.x, panRef.current.y);
-      const agora = pontoMundo(e.clientX, e.clientY);
+      const antes = pontoMundoRef.current(panRef.current.x, panRef.current.y);
+      const agora = pontoMundoRef.current(e.clientX, e.clientY);
       panRef.current = { x: e.clientX, y: e.clientY };
       if (antes && agora) onPan!((agora.x - antes.x) * zoom, (agora.y - antes.y) * zoom);
     }
@@ -1141,7 +1228,7 @@ export function MapaHex({
       if (onMenuContextual && panOrigemRef.current && panDistanciaRef.current < LIMIAR_ARRASTO_PX) {
         const alvo = document.elementFromPoint(e.clientX, e.clientY);
         const tokenId = alvo?.closest(".rv-token")?.getAttribute("data-token-id") ?? null;
-        const p = pontoMundo(e.clientX, e.clientY);
+        const p = pontoMundoRef.current(e.clientX, e.clientY);
         const hex = p ? pixelParaHex(p.x, p.y, TAM) : { q: 0, r: 0 };
         onMenuContextual({ clientX: e.clientX, clientY: e.clientY, tokenId, hex });
       }
@@ -1154,7 +1241,10 @@ export function MapaHex({
       window.removeEventListener("pointermove", mover);
       window.removeEventListener("pointerup", soltar);
     };
-  }, [onPan, onMenuContextual, pontoMundo, zoom]);
+    // `pontoMundo` de propósito FORA desta lista — ver o comentário do
+    // `pontoMundoRef` acima. `zoom` fica: não muda por pixel de pan
+    // (só pela roda), então não gera a mesma reinscrição por tick.
+  }, [onPan, onMenuContextual, zoom]);
 
   // ── Zoom pela roda do mouse/trackpad ─────────────────────────────
   // Listener NATIVO (não `onWheel` do React) — o listener sintético do
@@ -1489,19 +1579,10 @@ export function MapaHex({
 
   const hintParaCelula = useCallback((c: Hex): Omit<HintMapa, "x" | "y"> | null => {
     const real = terrenoReal?.get(hexKey(c));
-    const decorativo = celulaPorTerreno.get(hexKey(c));
-    // Prioriza o elemento funcional persistido — mas ainda apresenta o
-    // terreno decorativo, quando existir na mesma célula, como detalhe
-    // complementar (nunca como título).
-    if (real === "dificil") {
-      return { titulo: "Terreno difícil", detalhes: decorativo ? [decorativo.nome] : undefined, efeito: "Custa o dobro do deslocamento." };
-    }
-    if (real === "bloqueado") {
-      return { titulo: "Área bloqueada", detalhes: decorativo ? [decorativo.nome] : undefined, efeito: "Não permite movimento." };
-    }
-    if (decorativo) return HINT_TERRENO_DECORATIVO[decorativo.tipo](decorativo);
+    if (real === "dificil") return { titulo: "Terreno difícil", efeito: "Custa o dobro do deslocamento." };
+    if (real === "bloqueado") return { titulo: "Área bloqueada", efeito: "Não permite movimento." };
     return null;
-  }, [terrenoReal, celulaPorTerreno]);
+  }, [terrenoReal]);
 
   // ── Ferramenta Áreas — conversão de coordenada e captura de ponteiro
   // Estado LOCAL mínimo: só QUAL alça está sendo arrastada. A geometria
@@ -1624,6 +1705,20 @@ export function MapaHex({
     });
   }, [zoom, pan.x, pan.y, onConversorEdicaoRapidaTela]);
 
+  /**
+   * Conversor TELA → HEX (ver a prop). Reconstruído junto com o de
+   * cima, pelas mesmas dependências — `pontoMundo` já embute zoom/pan,
+   * e o CTM muda com o layout.
+   */
+  useEffect(() => {
+    if (!onConversorHexDaTela) return;
+    onConversorHexDaTela((clientX: number, clientY: number) => {
+      const p = pontoMundo(clientX, clientY);
+      return p ? pixelParaHex(p.x, p.y, TAM) : null;
+    });
+    return () => onConversorHexDaTela(null);
+  }, [pontoMundo, onConversorHexDaTela]);
+
   // Desmontar (ou trocar de ferramenta) com um gesto em curso não pode
   // deixar estado pendurado no dono da ferramenta.
   useEffect(() => {
@@ -1698,26 +1793,6 @@ export function MapaHex({
         <ellipse cx={(minX + maxX) * 0.42} cy={(minY + maxY) * 0.55} rx={280} ry={190} fill="url(#rv-mancha)" />
         <ellipse cx={(minX + maxX) * 0.72} cy={(minY + maxY) * 0.3} rx={200} ry={140} fill="url(#rv-mancha)" />
 
-        {/* ── Terreno (abaixo da grade) ────────────────────────── */}
-        <g className="rv-camada-terreno" style={{ display: cVisivel("terrenoDecorativo") ? undefined : "none" }}>
-          {cena.terrenos.map((t) =>
-            t.celulas.map((c) => {
-              const p = hexParaPixel(c, TAM);
-              const preenchimento =
-                t.tipo === "dificil" ? "url(#rv-hachura)" : t.tipo === "zona_morta" ? "url(#rv-jammer)" : "url(#rv-elevado)";
-              return (
-                <path
-                  key={`${t.id}-${hexKey(c)}`}
-                  d={dHex}
-                  transform={`translate(${p.x} ${p.y})`}
-                  fill={preenchimento}
-                  opacity={t.tipo === "elevado" ? 0.95 : 0.5}
-                />
-              );
-            }),
-          )}
-        </g>
-
         {/* ── Grade ── visibilidade é só opacidade (nunca `display:none`
             nem tira o `<path>` da árvore): Medir/pintura de terreno
             continuam funcionando através da grade mesmo "oculta" — a
@@ -1770,7 +1845,18 @@ export function MapaHex({
                   if (hh) setHint({ ...hh, x: e.clientX, y: e.clientY });
                   if (previaPincelRaio != null) setCelulaSobCursor((a) => (a && hexIguais(a, c) ? a : c));
                 }}
-                onMouseMove={(e) => { const hh = hintParaCelula(c); if (hh) setHint((h) => (h ? { ...h, x: e.clientX, y: e.clientY } : h)); }}
+                // Mover DENTRO da célula também abre a hint, não só
+                // reposiciona uma já aberta. `onMouseEnter` sozinho
+                // deixava um buraco real: se o conteúdo da célula
+                // aparece com o cursor JÁ parado em cima dela — o
+                // narrador pinta terreno debaixo do ponteiro, ou outra
+                // pessoa pinta e o eco chega — não há transição de
+                // entrada pra disparar, e a hint só apareceria depois de
+                // sair e voltar.
+                onMouseMove={(e) => {
+                  const hh = hintParaCelula(c);
+                  if (hh) setHint((h) => (h ? { ...h, x: e.clientX, y: e.clientY } : { ...hh, x: e.clientX, y: e.clientY }));
+                }}
                 onMouseLeave={() => setHint((h) => (h ? null : h))}
               />
             );
@@ -1853,8 +1939,39 @@ export function MapaHex({
                     if (m.podeApagar && onClicarMarca) { e.stopPropagation(); onClicarMarca(m.id); }
                   }}
                 >
-                  <circle r={10} fill="none" stroke={m.cor} strokeWidth="2" opacity="0.9" />
-                  <circle r={3.5} fill={m.cor} />
+                  {/* Área de clique. Os glifos abaixo são de CONTORNO:
+                      sem esta base preenchida, o pixel do meio não é
+                      hit-testável e o clique atravessa pro hex — em
+                      Marcar isso criaria uma segunda marcação em cima
+                      da primeira em vez de apagá-la. Só existe quando o
+                      gesto tem pra onde ir; caso contrário a marcação
+                      não rouba o clique de quem não pode apagá-la. */}
+                  <circle
+                    r={12}
+                    fill={ferramenta === "medir" || (m.podeApagar && !bloqueada) ? "transparent" : "none"}
+                  />
+                  {/* Um glifo por SINAL — alvo, perigo, rota, nota. SÃO
+                      os mesmos componentes `lucide-react` que a janela
+                      Marcar mostra nos botões de tipo de sinal, e não
+                      desenhos à mão que os imitavam: um `<svg>`
+                      aninhado é SVG válido e escala com o zoom do mapa
+                      igual ao resto. Redesenhar aqui era garantir que
+                      as duas versões divergissem — e divergiram. O
+                      `color` alimenta o `stroke="currentColor"` do
+                      lucide. Não há anel em volta: na janela também não
+                      há, e o círculo só competia com o glifo. */}
+                  <g transform={`translate(${-TAM_GLIFO_SINAL / 2} ${-TAM_GLIFO_SINAL / 2})`} style={{ color: m.cor }}>
+                    {(() => {
+                      const Glifo = GLIFO_DO_SINAL[m.sinal] ?? FileText;
+                      return <Glifo width={TAM_GLIFO_SINAL} height={TAM_GLIFO_SINAL} strokeWidth={1.7} />;
+                    })()}
+                  </g>
+                  {m.texto && (
+                    <text
+                      className="rv-marca-rotulo" textAnchor="middle" y={22} fontSize="9" fill={m.cor}
+                      paintOrder="stroke fill" stroke="#0b141c" strokeWidth="3" strokeLinejoin="round"
+                    >{m.texto}</text>
+                  )}
                 </g>
               );
             })}
@@ -1989,6 +2106,7 @@ export function MapaHex({
           className="rv-camada-objetos"
           style={{
             display: cVisivel("objetos") ? undefined : "none",
+            opacity: cAtenuacao("objetos"),
             pointerEvents: ferramenta === "terreno" ? "none" : undefined,
           }}
         >
@@ -2071,6 +2189,7 @@ export function MapaHex({
         <g className={`rv-camada-tokens${areasEscolhendoToken ? " rv-camada-tokens--escolhendo-aura" : ""}`}
           style={{
             display: cVisivel("tokens") ? undefined : "none",
+            opacity: cAtenuacao("tokens"),
             pointerEvents: ferramenta === "terreno" || ferramenta === "objetos" ? "none" : undefined,
           }}>
           {cena.tokens.map((t) => {
@@ -2560,7 +2679,11 @@ function Token({
   // A pegada e a origem mecânica são desenhadas em coordenadas LOCAIS
   // (relativas à âncora), então a animação move a entidade inteira
   // como um corpo rígido de graça, sem saber que existe uma pegada.
-  const p = hexParaPixel(token.pos, TAM);
+  // Âncora + deslocamento sub-célula: com a grade escondida o token
+  // para ONDE foi solto, em vez de saltar pro centro do hex.
+  // `hexParaPixel` já aceita coordenada fracionária (é o que
+  // `origemMecanica` usa), então isto não é um caminho novo de desenho.
+  const p = hexParaPixel({ q: token.pos.q + (token.offset?.q ?? 0), r: token.pos.r + (token.offset?.r ?? 0) }, TAM);
   const pegada = useMemo(
     () => pegadaEfetiva({ categoria: token.tamanho, orientacao: token.orientacao, pegadaPersonalizada: token.pegadaPersonalizada }),
     [token.tamanho, token.orientacao, token.pegadaPersonalizada],

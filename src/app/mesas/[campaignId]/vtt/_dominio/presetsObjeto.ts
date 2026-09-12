@@ -102,14 +102,16 @@ export const PRESETS_OBJETO: Record<PresetObjeto, DefinicaoPreset> = {
     grauCobertura: "parcial", categoria: "resistente", pd: 16,
     nota: "Vê-se através (cobertura parcial), mas portão de ferro é resistente.",
   },
+  // A CHAVE continua `personalizado` — é valor persistido em
+  // `vtt_objects.preset`. Só o rótulo mudou pra "Livre".
   personalizado: {
-    rotulo: "Personalizado", aparencia: "entulho",
+    rotulo: "Livre", aparencia: "entulho",
     bloqueiaMovimento: true, terrenoProjetado: null,
-    // Sem cobertura e sem PD de propósito: quem escolhe "personalizado"
-    // está dizendo que vai preencher à mão. Inventar número aqui só
-    // criaria um valor errado que ninguém pediu.
+    // Sem cobertura e sem PD de propósito: quem escolhe "livre" está
+    // dizendo que vai preencher à mão. Inventar número aqui só criaria
+    // um valor errado que ninguém pediu.
     grauCobertura: null, categoria: null, pd: null,
-    nota: "Sem padrões — defina cobertura e durabilidade à mão.",
+    nota: "Bloqueia a passagem. Cobertura e durabilidade nascem vazias — você define depois de criar.",
   },
 };
 

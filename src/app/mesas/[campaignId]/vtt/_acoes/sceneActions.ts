@@ -24,6 +24,8 @@ import { resolveCampaignAccess } from "../../../../../lib/campaign/access";
 import { getCurrentUser } from "../../../../../lib/auth/session";
 import { fetchControlledCharacterIdsStrict } from "../../../../../lib/campaign/session";
 import { listCharactersForNarratorCampaign } from "../../../../../lib/character/storage";
+import { addLog } from "../../../../../lib/table/storage";
+import { diffTrilha, paraComparavel, payloadDoEvento } from "../_painel/feed/eventosCombate";
 import {
   carregarCenaAtiva,
   carregarObjetosDaCena,
@@ -69,6 +71,13 @@ import {
   type TipoMarca,
   type TipoTerreno,
   type TokenVtt,
+  lerTrilhaDaMesa,
+  definirCamadasDaCena,
+  definirConfigDaCena,
+  type CenaVtt,
+  type SinalMarca,
+  type DuracaoMarca,
+  expirarMarcasDaCena,
 } from "../../../../../lib/vtt/sceneStorage";
 
 /** Dimensões padrão (em células = metros) de uma cena recém-criada, sem conteúdo. */
@@ -159,6 +168,58 @@ export async function lerCenaAtiva(campaignId: string): Promise<ResultadoAcao<Es
  * avisa "mudou" sem payload (objeto vive em duas tabelas). Recarregar a
  * cena inteira só por isso derrubaria tokens/áreas já reconciliados.
  */
+/**
+ * Ajusta as camadas da CENA — visibilidade e bloqueio que valem pra
+ * mesa inteira, não pra tela de quem clicou.
+ *
+ * Narrador-only, decidido no servidor (`set_vtt_scene_camadas`, 0093).
+ * Devolve a revisão nova porque o cliente precisa dela pro próximo
+ * ajuste: dois cliques seguidos com a mesma revisão seriam recusados.
+ */
+export async function definirCamadasCenaAction(params: {
+  campaignId: string;
+  sceneId: string;
+  camadas: Record<string, unknown>;
+  revisionEsperada: number;
+}): Promise<ResultadoAcao<{ camadas: Record<string, unknown>; revision: number }>> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const r = await definirCamadasDaCena({
+    sceneId: params.sceneId, camadas: params.camadas, revisionEsperada: params.revisionEsperada,
+  });
+  if (!r.ok) return { ok: false, erro: r.erro };
+  return { ok: true, dados: { camadas: r.camadas ?? {}, revision: r.revision ?? params.revisionEsperada + 1 } };
+}
+
+/**
+ * Salva as Configurações da Cena. Narrador-only e concorrência
+ * otimista decididos no servidor (`set_vtt_scene_config`, 0097).
+ *
+ * Devolve a cena inteira porque o cliente precisa da revisão nova pro
+ * próximo salvamento — e do que o servidor de fato gravou, que pode
+ * diferir do enviado (nome em branco volta pro anterior, campos
+ * vazios viram `null`).
+ */
+export async function salvarConfigCenaAction(params: {
+  campaignId: string;
+  sceneId: string;
+  nome: string;
+  local: string | null;
+  resumo: string | null;
+  largura: number;
+  altura: number;
+  revisionEsperada: number;
+}): Promise<ResultadoAcao<{ cena: CenaVtt }>> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const r = await definirConfigDaCena({
+    sceneId: params.sceneId, nome: params.nome, local: params.local, resumo: params.resumo,
+    largura: params.largura, altura: params.altura, revisionEsperada: params.revisionEsperada,
+  });
+  if (!r.ok || !r.cena) return { ok: false, erro: r.erro };
+  return { ok: true, dados: { cena: r.cena } };
+}
+
 export async function lerObjetosCenaAction(params: { campaignId: string; sceneId: string }): Promise<ResultadoAcao<{ objetos: ObjetoVtt[] }>> {
   const v = await exigirAcesso(params.campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
@@ -265,11 +326,16 @@ export async function moverTokenAction(params: {
   tokenId: string;
   rota: { q: number; r: number }[];
   revisionEsperada: number;
+  /** Onde dentro da célula final o token pousa — só desenho, e só com a grade escondida. */
+  offset?: { q: number; r: number };
 }): Promise<ResultadoAcao<{ revision: number }>> {
   const v = await exigirAcesso(params.campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
 
-  const r = await moverToken({ tokenId: params.tokenId, rota: params.rota, revisionEsperada: params.revisionEsperada });
+  const r = await moverToken({
+    tokenId: params.tokenId, rota: params.rota,
+    revisionEsperada: params.revisionEsperada, offset: params.offset,
+  });
   if (!r.ok) return { ok: false, erro: r.erro };
   return { ok: true, dados: { revision: r.revision! } };
 }
@@ -318,13 +384,18 @@ export async function criarMarcaAction(params: {
   espessura: number;
   opacidade: number;
   privada: boolean;
+  sinal: SinalMarca;
+  duracao: DuracaoMarca;
+  /** Rodada corrente quando há combate — é o que faz "esta rodada" expirar. */
+  rodadaCriada: number | null;
 }): Promise<ResultadoAcao<{ id: string }>> {
   const v = await exigirAcesso(params.campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
 
   const r = await criarMarca({
     sceneId: params.sceneId, campaignId: params.campaignId, tipo: params.tipo, pontos: params.pontos,
-    texto: params.texto, cor: params.cor, espessura: params.espessura, opacidade: params.opacidade, privada: params.privada,
+    texto: params.texto, cor: params.cor, espessura: params.espessura, opacidade: params.opacidade,
+    privada: params.privada, sinal: params.sinal, duracao: params.duracao, rodadaCriada: params.rodadaCriada,
   });
   if (!r.ok) return { ok: false, erro: r.erro };
   return { ok: true, dados: { id: r.id! } };
@@ -647,6 +718,38 @@ export async function removerAreaAction(params: { campaignId: string; areaId: st
 // servidor. Nenhuma regra de combate atravessa esta fronteira.
 // ─────────────────────────────────────────────────────────────────
 
+/**
+ * A trilha da mesa para quem está FORA do VTT.
+ *
+ * O dock da casca vive em toda rota da campanha e não tem cena, nem
+ * tokens, nem `sceneId` — só o `campaignId`. Esta ação resolve a cena
+ * ativa, devolve a trilha e, junto, quais tokens do elenco são DESTA
+ * pessoa (`pode_controlar`, decidido pelo servidor na projeção). É o
+ * que permite o dock dizer "sua vez" sem reimplementar autorização no
+ * cliente.
+ *
+ * Uma ação só porque as três coisas são inúteis separadas: trilha sem
+ * cena não abre, e trilha sem controle não sabe de quem é a vez.
+ */
+export async function lerTrilhaDaMesaAction(campaignId: string): Promise<
+  ResultadoAcao<{
+    sceneId: string;
+    estado: unknown;
+    revision: number;
+    tokensQueControlo: string[];
+    personagemDoToken: Record<string, string>;
+  } | null>
+> {
+  const v = await exigirAcesso(campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  try {
+    const dados = await lerTrilhaDaMesa(campaignId);
+    return { ok: true, dados };
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : "Falha ao ler as rodadas." };
+  }
+}
+
 export async function lerTrilhaAction(
   campaignId: string,
   sceneId: string,
@@ -660,6 +763,30 @@ export async function lerTrilhaAction(
   }
 }
 
+/**
+ * Registra no log da mesa os eventos SEMÂNTICOS de uma transição da
+ * trilha (combate iniciado/encerrado, rodada, janela, turno encerrado).
+ *
+ * É o que liga o combate REAL do VTT (`vtt_turn_tracks`) ao Chat, sem
+ * jamais expor o estado bruto: `diffTrilha` traduz duas versões do
+ * estado em eventos legíveis, e o feed os projeta como divisores
+ * compactos (`combate_vtt` → `CombatDivider`).
+ *
+ * Best-effort de propósito: a trilha já foi persistida quando isto
+ * roda; falhar o log não pode desfazer nem travar o combate — mesma
+ * decisão de `endRound`/`endScene`.
+ */
+async function registrarEventosDaTrilha(campaignId: string, antes: unknown, depois: unknown): Promise<void> {
+  try {
+    const eventos = diffTrilha(paraComparavel(antes), paraComparavel(depois));
+    for (const evento of eventos) {
+      await addLog({ campaignId, type: "combate_vtt", visibility: "public", payload: payloadDoEvento(evento) });
+    }
+  } catch {
+    // Ver a nota acima.
+  }
+}
+
 export async function iniciarTrilhaAction(params: {
   campaignId: string;
   sceneId: string;
@@ -667,7 +794,9 @@ export async function iniciarTrilhaAction(params: {
 }): Promise<ResultadoAcao<TrilhaPersistida | null>> {
   const v = await exigirAcesso(params.campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
+  const anterior = await carregarTrilha(params.sceneId).catch(() => null);
   const r = await iniciarTrilha({ sceneId: params.sceneId, estado: params.estado });
+  if (r.ok) await registrarEventosDaTrilha(params.campaignId, anterior?.estado ?? null, params.estado);
   return r.ok ? { ok: true, dados: r.trilha ?? null } : { ok: false, erro: r.erro };
 }
 
@@ -679,10 +808,31 @@ export async function atualizarTrilhaAction(params: {
 }): Promise<ResultadoAcao<TrilhaPersistida | null>> {
   const v = await exigirAcesso(params.campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
+  // Lê o estado ANTERIOR antes de gravar — é a única forma de saber o
+  // que MUDOU e emitir evento semântico em vez de despejar a trilha.
+  const anterior = await carregarTrilha(params.sceneId).catch(() => null);
   const r = await atualizarTrilha({
     sceneId: params.sceneId, estado: params.estado, revisionEsperada: params.revisionEsperada,
   });
+  if (r.ok) {
+    await registrarEventosDaTrilha(params.campaignId, anterior?.estado ?? null, params.estado);
+    // Marcações com prazo vencem AQUI, no servidor, junto da transição
+    // que as vence — assim somem no mesmo instante pra mesa inteira.
+    // Best-effort: a trilha já foi persistida, e falhar a limpeza não
+    // pode desfazer o avanço da rodada.
+    const rodada = rodadaDaTrilha(params.estado);
+    if (rodada !== null && rodada !== rodadaDaTrilha(anterior?.estado ?? null)) {
+      await expirarMarcasDaCena({ sceneId: params.sceneId, rodadaAtual: rodada, combateEncerrado: false }).catch(() => 0);
+    }
+  }
   return r.ok ? { ok: true, dados: r.trilha ?? null } : { ok: false, erro: r.erro };
+}
+
+/** Rodada corrente de um estado de trilha cru, ou `null` se ilegível. */
+function rodadaDaTrilha(estado: unknown): number | null {
+  if (!estado || typeof estado !== "object") return null;
+  const r = (estado as { rodada?: unknown }).rodada;
+  return typeof r === "number" && Number.isFinite(r) ? r : null;
 }
 
 export async function encerrarTrilhaAction(params: {
@@ -691,6 +841,16 @@ export async function encerrarTrilhaAction(params: {
 }): Promise<ResultadoAcao<null>> {
   const v = await exigirAcesso(params.campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
+  const anterior = await carregarTrilha(params.sceneId).catch(() => null);
   const r = await encerrarTrilha(params.sceneId);
+  if (r.ok) {
+    await registrarEventosDaTrilha(params.campaignId, anterior?.estado ?? null, null);
+    // "Este combate" acaba aqui — e some pra todo mundo.
+    await expirarMarcasDaCena({
+      sceneId: params.sceneId,
+      rodadaAtual: rodadaDaTrilha(anterior?.estado ?? null) ?? 0,
+      combateEncerrado: true,
+    }).catch(() => 0);
+  }
   return r.ok ? { ok: true, dados: null } : { ok: false, erro: r.erro };
 }
