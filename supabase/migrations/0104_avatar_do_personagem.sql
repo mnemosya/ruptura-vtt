@@ -252,11 +252,16 @@ begin
   update characters set avatar_image_id = p_image_id, updated_at = now()
    where id = p_character_id;
 
-  -- Não há broadcast explícito aqui de propósito:
-  -- `vtt_hud_broadcast_character_changed` é função de TRIGGER, e o
-  -- `update characters` acima já a dispara. Chamá-la à mão seria um
-  -- segundo caminho para o mesmo aviso — e o dia em que o trigger
-  -- mudasse, os dois discordariam.
+  -- Não há broadcast explícito aqui: quem avisa a mesa é o trigger de
+  -- `characters`, e um segundo caminho para o mesmo aviso seria um
+  -- caminho a divergir.
+  --
+  -- ⚠ ERRATA (ver 0107): quando esta migration foi escrita, o trigger
+  -- era `AFTER UPDATE OF payload`, e o update abaixo toca
+  -- `avatar_image_id` — ou seja, ele NÃO disparava, e o avatar só
+  -- aparecia na mesa depois de recarregar a página. A 0107 estende o
+  -- gatilho. O raciocínio acima continua valendo; ele é que estava
+  -- aplicado ao gatilho errado.
 
   return jsonb_build_object('character_id', p_character_id, 'avatar_image_id', p_image_id);
 end;
