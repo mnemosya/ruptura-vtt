@@ -86,6 +86,7 @@ import {
   HEX_COR_AREA, ancoraDaRegiao, caixaDaRegiao, origemDeAura, regiaoDaArea, resolverArea, validarParametros,
 } from "./_dominio/areaEfeito";
 import { type PontoAxial, axialParaMundo } from "./_dominio/escalaMapa";
+import type { ImagemCena } from "./_dominio/imagemCena";
 import { camposDeParametros, corValida, parametrosDaAreaPersistida } from "./_dominio/areaPersistida";
 import {
   type ConfigAreas, type EstadoAreas,
@@ -2975,6 +2976,34 @@ export function VttClient({
   }, [ferramenta, estadoAreas.fase, areaSelecionadaId, configAreas.tipo, areaPorId, ehNarrador, usuarioId, excluirAreaHandler]);
 
   /**
+   * Remover imagem PELO HISTÓRICO — os dois caminhos (lixeira do painel
+   * e Delete no mapa) passam por aqui, porque os dois têm o mesmo
+   * arrependimento.
+   *
+   * O desfazer RECRIA a colocação (ver `restaurar`): a linha some do
+   * banco de verdade, e o que volta é uma linha nova com a mesma
+   * geometria e um id NOVO. Por isso o comando guarda o id numa caixa
+   * mutável em vez de fechar sobre ele — senão o refazer tentaria
+   * remover uma linha que não existe mais e falharia calado.
+   */
+  const removerImagem = useCallback((img: ImagemCena) => {
+    if (!usuarioId) return;
+    const alvo = { id: img.id };
+    const instantaneo = img;
+    const cmd: Comando = {
+      rotulo: "Remover imagem da cena",
+      autorId: usuarioId,
+      executar: async () => { await imgs.removerPorId(alvo.id); },
+      desfazer: async () => {
+        const novoId = await imgs.restaurar(instantaneo);
+        if (novoId) alvo.id = novoId;
+      },
+    };
+    void cmd.executar();
+    executarComando(cmd);
+  }, [imgs, usuarioId, executarComando]);
+
+  /**
    * Imagem SELECIONADA + Delete/Backspace tira ela da cena.
    *
    * Sem confirmar, de propósito: é a mesma escrita do botão de lixeira
@@ -2996,11 +3025,11 @@ export function VttClient({
       const img = imgs.imagens.find((i) => i.id === imgs.selecionadaId);
       if (!img || img.travado) return;
       e.preventDefault();
-      void imgs.remover(img);
+      removerImagem(img);
     }
     window.addEventListener("keydown", aoTeclar);
     return () => window.removeEventListener("keydown", aoTeclar);
-  }, [ferramenta, imgs]);
+  }, [ferramenta, imgs, removerImagem]);
 
   // Liga o ref usado por `ajustarConfigAreas` (declarado antes) ao
   // handler real — sem isto o seletor de Aura não sincronizaria.
@@ -4846,7 +4875,7 @@ export function VttClient({
             onAlternarVisivel={(img) => { void imgs.ajustar(img, { visivel: !img.visivel }); }}
             onAlternarTravado={(img) => { void imgs.ajustar(img, { travado: !img.travado }); }}
             onMudarOrdem={(img, delta) => { void imgs.mudarOrdem(img, delta); }}
-            onRemover={(img) => { void imgs.remover(img); }}
+            onRemover={removerImagem}
             onAjustar={(img, ajuste) => { void imgs.ajustar(img, ajuste); }}
             onEnviarArquivo={escolherArquivoDeImagem}
             onAbrirBiblioteca={() => { setBibliotecaAberta(true); void imgs.carregarBiblioteca(); }}

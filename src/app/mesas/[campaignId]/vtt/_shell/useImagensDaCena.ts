@@ -313,6 +313,63 @@ export function useImagensDaCena(params: {
     setImagens((lista) => lista.filter((i) => i.id !== img.id));
   }, [campaignId, recarregar]);
 
+  /**
+   * RESTAURA uma colocação removida — o desfazer de `remover`.
+   *
+   * Recria pela mesma RPC de colocar (`criar_vtt_scene_image`), não por
+   * um "undelete": a linha antiga não existe mais, e ressuscitá-la por
+   * id exigiria soft-delete no banco inteiro por causa de um gesto. O
+   * asset continua lá (remover da cena nunca apaga arquivo), então
+   * recriar é barato e passa pela MESMA autorização da criação.
+   *
+   * Consequência que o chamador precisa saber: a linha nova tem id
+   * NOVO. Quem guarda o comando de refazer tem que trocar o id que
+   * segura — por isso esta função devolve o id.
+   *
+   * `z`, `visivel` e `travado` não cabem na criação, então voltam numa
+   * segunda escrita, e só quando diferem do padrão: uma imagem que
+   * estava escondida não pode reaparecer visível para a mesa inteira.
+   */
+  const restaurar = useCallback(async (instantaneo: ImagemCena): Promise<string | null> => {
+    if (!sceneId) return null;
+    setOcupado(true);
+    try {
+      const r = await criarImagemCenaAction(campaignId, instantaneo.imageId, {
+        sceneId,
+        papel: instantaneo.papel,
+        centroQ: instantaneo.centroQ,
+        centroR: instantaneo.centroR,
+        larguraM: instantaneo.larguraM,
+        alturaM: instantaneo.alturaM,
+        rotacaoGraus: instantaneo.rotacaoGraus,
+        opacidade: instantaneo.opacidade,
+        camada: instantaneo.camada,
+      });
+      if (!r.ok) { setErro(r.erro ?? "Não foi possível restaurar a imagem."); return null; }
+      setErro(null);
+      const lista = await recarregar();
+      const nova = imagemCenaDeJson(r.dados) ?? (lista ?? []).find((i) => i.imageId === instantaneo.imageId) ?? null;
+      if (!nova) return null;
+      if (!instantaneo.visivel || instantaneo.travado || instantaneo.z !== nova.z) {
+        await aplicar(await atualizarImagemCenaAction(campaignId, nova.id, nova.revision, {
+          visivel: instantaneo.visivel,
+          travado: instantaneo.travado,
+          z: instantaneo.z,
+        }));
+      }
+      setSelecionadaId(nova.id);
+      return nova.id;
+    } finally {
+      setOcupado(false);
+    }
+  }, [campaignId, sceneId, recarregar, aplicar]);
+
+  /** Remover quando só se tem o id — o refazer segura id, não objeto. */
+  const removerPorId = useCallback(async (id: string) => {
+    const img = imagensRef.current.find((i) => i.id === id);
+    if (img) await remover(img);
+  }, [remover]);
+
   const jaTemFundo = useMemo(() => imagens.some((i) => i.papel === "fundo"), [imagens]);
 
   /* ── BIBLIOTECA DA CAMPANHA ────────────────────────────────────────
@@ -409,6 +466,6 @@ export function useImagensDaCena(params: {
     jaTemFundo,
     biblioteca, carregandoBiblioteca, carregarBiblioteca, colocarDaBiblioteca, excluirDaBiblioteca,
     recarregar, prepararArquivo, confirmarColocacao, cancelarPendente,
-    mover, escalar, rotacionar, ajustar, mudarOrdem, remover,
+    mover, escalar, rotacionar, ajustar, mudarOrdem, remover, removerPorId, restaurar,
   };
 }
