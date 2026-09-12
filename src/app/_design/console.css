@@ -1515,15 +1515,22 @@
   padding: 6px 10px; font-size: 13px; max-width: 220px;
 }
 
-/* ── Enquadramento de imagem (`_console/RecorteImagem.tsx`) ───────────
+/* ── Enquadramento de imagem (`_console/RecorteImagem.tsx`) ─────────
    A prévia é recortada pela MESMA forma de destino (o heptágono do
    avatar, o círculo do token) — uma prévia quadrada esconderia
-   exatamente o que este passo existe para mostrar. */
-.rc-recorte { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.rc-recorte--carregando { padding: 24px; font-size: 12px; color: var(--rc-dim); }
+   exatamente o que este passo existe para mostrar.
+
+   Tudo abaixo usa os tokens declarados em `.rc-recorte-janela` (`--jr-*`)
+   e nunca os `--rc-*`: o miolo mora DENTRO da janela fixa, que vive
+   fora de `.rc-window-wrap`. */
+.rc-recorte { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.rc-recorte--carregando {
+  padding: 24px; font-family: var(--font-mono), monospace;
+  font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--jr-tinta-fraca, #4f6285);
+}
 .rc-recorte__janela {
   position: relative; overflow: hidden; touch-action: none; cursor: grab;
-  border: 1px solid var(--rc-line-soft); border-radius: 2px; background: var(--rc-surface);
+  border: 1px solid var(--jr-linha, #16233a); border-radius: 2px; background: var(--jr-fundo, #070d17);
 }
 .rc-recorte__janela:active { cursor: grabbing; }
 /* Camada de baixo: o que FICA DE FORA, escurecido. Sem ela a pessoa não
@@ -1531,70 +1538,130 @@
 .rc-recorte__fora { position: absolute; inset: 0; opacity: .22; filter: grayscale(1); }
 .rc-recorte__dentro { position: absolute; inset: 0; }
 .rc-recorte__janela img { user-select: none; -webkit-user-drag: none; }
-.rc-recorte__zoom { display: flex; align-items: center; gap: 8px; width: 100%; color: var(--rc-dim); }
-.rc-recorte__zoom input[type="range"] { flex: 1; accent-color: var(--cy); }
+
+/* ZOOM — o mesmo slider das ferramentas do VTT (`.rv-area-campo
+   input[type=range]`): trilho de 4px que JÁ VEM preenchido no acento
+   até a posição atual, botão redondo claro. Era o `accent-color`
+   padrão do navegador — um slider de sistema no meio do VTT.
+   O Chrome não tem `::-moz-range-progress`, então o preenchimento vem
+   de um gradiente cuja parada o componente escreve em `--jr-pct`. */
+.rc-recorte__zoom { display: flex; align-items: center; gap: 10px; width: 100%; color: var(--jr-tinta-fraca, #4f6285); }
+.rc-recorte__zoom input[type="range"] {
+  flex: 1; min-width: 0; height: 16px; margin: 0;
+  appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer;
+}
+.rc-recorte__zoom input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--jr-acento, #45b8c9) 0 var(--jr-pct, 0%),
+    var(--jr-linha-forte, #1c2b45) var(--jr-pct, 0%) 100%
+  );
+}
+.rc-recorte__zoom input[type="range"]::-moz-range-track { height: 4px; border-radius: 999px; background: var(--jr-linha-forte, #1c2b45); }
+.rc-recorte__zoom input[type="range"]::-moz-range-progress { height: 4px; border-radius: 999px; background: var(--jr-acento, #45b8c9); }
+.rc-recorte__zoom input[type="range"]::-webkit-slider-thumb {
+  appearance: none; -webkit-appearance: none;
+  width: 16px; height: 16px; margin-top: -6px; border: none; border-radius: 999px;
+  background: #f4f8fc; box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
+}
+.rc-recorte__zoom input[type="range"]::-moz-range-thumb {
+  width: 16px; height: 16px; border: none; border-radius: 999px;
+  background: #f4f8fc; box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
+}
+.rc-recorte__zoom input[type="range"]:focus-visible { outline: none; }
+.rc-recorte__zoom input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 0 0 3px color-mix(in srgb, var(--jr-acento, #45b8c9) 35%, transparent);
+}
+.rc-recorte__zoom input[type="range"]:disabled { opacity: .4; cursor: not-allowed; }
 .rc-recorte__reset {
-  display: grid; place-items: center; width: 24px; height: 24px;
-  border: 1px solid var(--rc-line); border-radius: 2px;
-  background: transparent; color: var(--rc-dim);
+  display: grid; place-items: center; width: 24px; height: 24px; flex: none;
+  border: 1px solid var(--jr-linha-forte, #1c2b45); border-radius: 2px;
+  background: transparent; color: var(--jr-tinta-dim, #7f95b3); cursor: pointer;
   transition: color .14s, border-color .14s;
 }
-.rc-recorte__reset:hover:not(:disabled) { color: var(--cy); border-color: var(--cy); }
+.rc-recorte__reset:hover:not(:disabled) { color: var(--jr-acento, #45b8c9); border-color: var(--jr-acento, #45b8c9); }
+.rc-recorte__reset:focus-visible { outline: 2px solid var(--jr-acento, #45b8c9); outline-offset: 2px; }
+.rc-recorte__reset:disabled { opacity: .45; cursor: not-allowed; }
+
 /* A dica é legenda do gesto: mono, caixa alta, no nível de ruído do
    rodapé — nunca competindo com o título da janela. */
 .rc-recorte__dica {
   margin: 0; font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
-  color: var(--rc-dim); opacity: .8; text-align: center;
+  color: var(--jr-tinta-fraca, #4f6285); text-align: center;
 }
+
 /* Rodapé com a hierarquia de três níveis do VTT: descartar é discreta
    (sem fio, sem fundo) e confirmar é primária (fio + fundo no acento).
    Antes as duas tinham o mesmo fio e o confirmar precisava de
    `!important` pra vencer — sinal de que a regra base fazia demais. */
 .rc-recorte__acoes {
   display: flex; gap: 8px; justify-content: flex-end; width: 100%;
-  padding-top: 12px; border-top: 1px solid var(--rc-line-soft);
+  padding-top: 12px; border-top: 1px solid var(--jr-linha, #16233a);
 }
 .rc-recorte__acoes button {
-  padding: 7px 14px;
+  padding: 7px 12px;
   border: 1px solid transparent; border-radius: 2px;
-  background: transparent; color: var(--rc-dim);
-  font-family: var(--font-rajdhani), sans-serif;
-  font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  background: transparent; color: var(--jr-tinta-dim, #7f95b3);
+  font-family: var(--font-chakra), sans-serif;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
   cursor: pointer;
   transition: color .14s, border-color .14s, background .14s;
 }
-.rc-recorte__acoes button:hover:not(:disabled) { color: var(--rc-text); border-color: var(--rc-line); }
-.rc-recorte__confirmar {
-  border-color: color-mix(in srgb, var(--cy) 55%, transparent);
-  background: color-mix(in srgb, var(--cy) 14%, transparent);
-  color: var(--cy);
+.rc-recorte__acoes button:hover:not(:disabled) { color: var(--jr-tinta, #d6e4f5); border-color: var(--jr-linha-forte, #1c2b45); }
+/* Qualificado por `.rc-recorte__acoes button` — a regra base tem uma
+   classe E um elemento, então a classe do confirmar sozinha PERDIA em
+   especificidade e ele ficava igual ao cancelar. Foi por isso que a
+   versão antiga precisava de `!important`; o certo é empatar o seletor. */
+.rc-recorte__acoes button.rc-recorte__confirmar {
+  border-color: color-mix(in srgb, var(--jr-acento, #45b8c9) 53%, transparent);
+  background: color-mix(in srgb, var(--jr-acento, #45b8c9) 14%, transparent);
+  color: var(--jr-acento, #45b8c9); font-weight: 700;
 }
-.rc-recorte__confirmar:hover:not(:disabled) {
-  border-color: var(--cy); background: color-mix(in srgb, var(--cy) 22%, transparent); color: var(--rc-text);
+.rc-recorte__acoes button.rc-recorte__confirmar:hover:not(:disabled) {
+  border-color: var(--jr-acento, #45b8c9);
+  background: color-mix(in srgb, var(--jr-acento, #45b8c9) 22%, transparent);
+  color: var(--jr-tinta, #d6e4f5);
 }
-.rc-recorte__acoes button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.rc-recorte__acoes button:focus-visible { outline: 2px solid var(--jr-acento, #45b8c9); outline-offset: 2px; }
 .rc-recorte__acoes button:disabled { opacity: .45; cursor: not-allowed; }
 
 /* JANELA DE ENQUADRAMENTO — moldura única dos dois recortes (avatar da
-   ficha e retrato do token). O desenho é o da janela de ferramenta do
-   VTT: espinha com código vertical, brackets nos quatro cantos,
-   cabeçalho em display caixa alta com a linha de modo em mono.
+   ficha e retrato do token), no desenho da janela de ferramenta do VTT.
+
+   ELA DECLARA OS PRÓPRIOS TOKENS, e isso é o ponto: é `position: fixed`
+   e vive FORA de `.rc-window-wrap` (precisa ficar acima do console e do
+   HUD). Os `--rc-*` são declarados naquele seletor, então aqui eles
+   simplesmente NÃO EXISTEM — e `border-color: var(--rc-line-soft)`
+   sem valor cai em `currentColor`, que é por onde os brackets saíram
+   brancos e os botões, crus. Valores do chassi do VTT já resolvidos,
+   pelo mesmo motivo de sempre: `vtt.css` só carrega nas rotas do VTT e
+   este passo também roda em /ficha.
 
    `fixed` + `z-index` acima do console, como `.rc-aux-backdrop` — a
    primeira versão usava `absolute; z-index: 70` e o modal nascia ATRÁS
    da ficha: o console cria o próprio contexto de empilhamento, e um
    número baixo ali dentro não alcança nada. */
 .rc-recorte-janela {
+  --jr-acento: #45b8c9;   /* --rv-cy */
+  --jr-linha: #16233a;    /* --rv-line-2 */
+  --jr-linha-forte: #1c2b45; /* --rv-line-strong */
+  --jr-tinta: #d6e4f5;    /* --rv-ink */
+  --jr-tinta-dim: #7f95b3;/* --rv-ink-dim */
+  --jr-tinta-fraca: #4f6285; /* --rv-ink-faint */
+  --jr-fundo: #070d17;    /* --rv-sunken */
+  --jr-perigo: #d15068;   /* --rv-dg */
+
   position: fixed; z-index: 521; left: 50%; top: 50%; transform: translate(-50%, -50%);
   padding-left: 36px;
-  border: 1px solid var(--rc-line-soft); border-radius: 2px;
+  border: 1px solid var(--jr-linha); border-radius: 2px;
   background: linear-gradient(180deg, #0b1322, #080e19);
   box-shadow: 0 20px 56px rgba(0, 0, 0, .7);
 }
 .rc-recorte-janela__canto {
   position: absolute; z-index: 2; width: 11px; height: 11px;
-  pointer-events: none; opacity: .55; border-color: var(--cy); border-style: solid; border-width: 0;
+  pointer-events: none; opacity: .55; border-color: var(--jr-acento); border-style: solid; border-width: 0;
 }
 .rc-recorte-janela__canto[data-canto="tl"] { left: 6px; top: 6px; border-left-width: 1px; border-top-width: 1px; }
 .rc-recorte-janela__canto[data-canto="tr"] { right: 6px; top: 6px; border-right-width: 1px; border-top-width: 1px; }
@@ -1603,25 +1670,28 @@
 .rc-recorte-janela__espinha {
   position: absolute; left: 0; top: 0; bottom: 0; width: 36px;
   display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-  padding: 14px 0; border-right: 1px solid var(--rc-line-soft);
+  padding: 14px 0; border-right: 1px solid var(--jr-linha);
   background: rgba(255, 255, 255, .015);
 }
-.rc-recorte-janela__indice { color: var(--cy); font: 700 10px var(--font-mono), monospace; letter-spacing: .1em; }
+.rc-recorte-janela__indice { color: var(--jr-acento); font: 700 10px var(--font-mono), monospace; letter-spacing: .1em; }
 .rc-recorte-janela__codigo {
-  color: var(--cy); opacity: .85; font: 700 10px var(--font-rajdhani), sans-serif;
+  color: var(--jr-acento); opacity: .85; font: 700 10px var(--font-chakra), sans-serif;
   letter-spacing: .3em; text-transform: uppercase;
   writing-mode: vertical-rl; transform: rotate(180deg);
   max-height: 100%; overflow: hidden;
 }
 .rc-recorte-janela__ponto {
   width: 6px; height: 6px; border-radius: 999px;
-  background: var(--cy); box-shadow: 0 0 7px color-mix(in srgb, var(--cy) 45%, transparent);
+  background: var(--jr-acento); box-shadow: 0 0 7px color-mix(in srgb, var(--jr-acento) 45%, transparent);
 }
 .rc-recorte-janela__corpo { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px 16px; }
 .rc-recorte-janela__cab { display: flex; flex-direction: column; gap: 5px; }
 .rc-recorte-janela__titulo {
-  margin: 0; color: var(--rc-text);
-  font: 700 16px var(--font-rajdhani), sans-serif;
+  /* MESMO título da janela de ferramenta (`.rv-fp-titulo`): Chakra
+     Petch 16px, `letter-spacing: .12em`. Estava em Rajdhani, que é a
+     fonte de CORPO — por isso não parecia título de janela nenhuma. */
+  margin: 0; color: var(--jr-tinta);
+  font: 700 16px var(--font-chakra), sans-serif;
   letter-spacing: .12em; text-transform: uppercase; line-height: 1;
 }
 /* Linha de modo: o mesmo pípe de acento das janelas de ferramenta —
@@ -1629,13 +1699,13 @@
    passo existir. */
 .rc-recorte-janela__modo {
   display: flex; align-items: center; gap: 6px; margin: 0;
-  color: var(--rc-dim); font: 10px var(--font-mono), monospace;
+  color: var(--jr-tinta-fraca); font: 10px var(--font-mono), monospace;
   letter-spacing: .14em; text-transform: uppercase;
 }
 .rc-recorte-janela__modo::before {
-  content: ""; flex: none; width: 4px; height: 4px; border-radius: 999px; background: var(--cy);
+  content: ""; flex: none; width: 4px; height: 4px; border-radius: 999px; background: var(--jr-acento);
 }
 .rc-recorte-janela__erro {
   margin: 0; max-width: 240px;
-  color: var(--rc-danger); font-size: 11px; line-height: 1.35;
+  color: var(--jr-perigo); font-size: 11px; line-height: 1.35;
 }

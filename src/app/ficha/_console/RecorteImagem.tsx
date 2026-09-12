@@ -239,6 +239,10 @@ export function RecorteImagem({
           value={Math.round(zoom * 100)} disabled={ocupado}
           onChange={(e) => setZoom(Number(e.target.value) / 100)}
           aria-label="Aproximar"
+          /* O trilho preenchido até a posição atual: o Chrome não tem
+             `::-moz-range-progress`, então a parada do gradiente vem
+             daqui — mesma solução dos sliders das ferramentas. */
+          style={{ ["--jr-pct" as string]: `${((zoom * 100 - 100) / 5)}%` }}
         />
         <button
           type="button" className="rc-recorte__reset" disabled={ocupado}

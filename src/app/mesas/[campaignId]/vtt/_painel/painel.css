@@ -347,22 +347,34 @@
 .pn-alvo-acoes { display: flex; gap: 3px; flex: none; }
 
 /* BOTÃO TÉCNICO */
+/* MESMA receita dos botões das janelas de ferramenta (`.rv-btn` em
+   `vtt.css`): secundária é NEUTRA — fio cinza, tinta apagada — e só a
+   primária carrega o acento. Antes toda a família vinha acentuada
+   (`--pn-a-line` no fio, `--pn-a` na tinta), então "Atualizar" gritava
+   tanto quanto "Criar personagem" e a hierarquia do rodapé sumia. */
 .pn-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 5px 10px; min-height: 26px;
-  border: 1px solid var(--pn-a-line); border-radius: var(--pn-radius);
-  background: var(--rv-sunken); color: var(--pn-a);
+  padding: 6px 11px; min-height: 26px;
+  border: 1px solid var(--rv-line-strong); border-radius: 2px;
+  background: var(--rv-sunken); color: var(--rv-ink-dim);
   font-family: var(--rv-display);
-  font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
   cursor: pointer; text-decoration: none;
   transition: background .14s, border-color .14s, color .14s;
 }
-.pn-btn:hover:not(:disabled) { background: var(--pn-a-soft); border-color: var(--pn-a); color: var(--pn-txt-forte); }
+.pn-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--pn-a) 53%, transparent);
+  background: var(--pn-a-soft); color: var(--pn-a);
+}
 .pn-btn:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 2px; }
-.pn-btn:disabled { opacity: .4; cursor: not-allowed; }
+.pn-btn:disabled { opacity: .45; cursor: not-allowed; }
 .pn-btn[data-primario="true"] {
   width: 100%; min-height: 30px;
-  background: var(--pn-a-soft); border-color: var(--pn-a); color: var(--pn-txt-forte);
+  border-color: color-mix(in srgb, var(--pn-a) 53%, transparent);
+  background: var(--pn-a-soft); color: var(--pn-a); font-weight: 700;
+}
+.pn-btn[data-primario="true"]:hover:not(:disabled) {
+  border-color: var(--pn-a); background: color-mix(in srgb, var(--pn-a) 16%, transparent); color: var(--pn-txt-forte);
 }
 .pn-btn[data-ocupado="true"] { cursor: progress; }
 .pn-btn-ico { display: flex; flex: none; }
