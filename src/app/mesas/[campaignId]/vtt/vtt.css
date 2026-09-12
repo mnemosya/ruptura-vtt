@@ -2036,8 +2036,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-espinha-codigo {
   color: var(--jf-acento); opacity: .85; font: 700 10px var(--rv-display);
   letter-spacing: .3em; text-transform: uppercase; writing-mode: vertical-rl; transform: rotate(180deg);
-  /* numa janela baixa a espinha não pode empurrar a casca */
-  max-height: 100%; overflow: hidden;
+  /* Numa janela baixa a espinha não pode empurrar a casca. Agora que o
+     texto é o TÍTULO, ele pode ser longo ("Configurações da Cena"), e
+     corte seco no meio da palavra lê como bug — as reticências dizem
+     que continua. */
+  max-height: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
 .rv-fp-espinha-ponto {
   width: 6px; height: 6px; border-radius: 999px;

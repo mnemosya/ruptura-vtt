@@ -99,7 +99,6 @@ export function PainelMarcar(p: PropsPainelMarcar) {
     <JanelaFerramenta
       id="marcar"
       indice="03"
-      codigo="Sinal"
       icone={<MapPin size={16} />}
       titulo="Marcar"
       modo={`${sinalAtivo.rotulo} · ${corAtiva.rotulo}${p.privada ? " · só pra você" : ""}`}

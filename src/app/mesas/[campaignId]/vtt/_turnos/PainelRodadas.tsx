@@ -79,7 +79,6 @@ export function PainelRodadas(props: PainelRodadasProps) {
     <JanelaFerramenta
       id="rodadas"
       indice="05"
-      codigo="Iniciativa"
       icone={<Swords size={16} />}
       titulo={props.trilha ? "Combate ativo" : "Rodadas"}
       modo={props.trilha

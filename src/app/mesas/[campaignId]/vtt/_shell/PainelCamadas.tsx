@@ -200,7 +200,6 @@ export function PainelCamadas({
     <JanelaFerramenta
       id="camadas"
       indice="09"
-      codigo="Camadas"
       icone={<Layers size={16} />}
       titulo="Camadas"
       modo="Visibilidade e interação"

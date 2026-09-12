@@ -75,7 +75,6 @@ export function PainelCena(p: PropsPainelCena) {
     <JanelaFerramenta
       id="cena"
       indice="10"
-      codigo="Cena"
       icone={<Settings size={16} />}
       titulo="Configurações da Cena"
       modo={mudou ? "Alterações não salvas" : "Alterações persistentes"}

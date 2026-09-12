@@ -72,8 +72,6 @@ export interface JanelaFerramentaProps {
   id: JanelaId;
   /** Índice da espinha ("01"…). Cai no da tabela quando não vem. */
   indice?: string;
-  /** Código vertical da espinha. Cai no da tabela quando não vem. */
-  codigo?: string;
   /** Cor do acento (cantos, índice, código, ponto e pip do modo). */
   acento?: string;
   icone: ReactNode;
@@ -104,33 +102,38 @@ export interface JanelaFerramentaProps {
 }
 
 /**
- * Identidade de espinha por ferramenta.
+ * Identidade de espinha por ferramenta — índice e acento.
  *
  * Fica aqui, e não em cada painel, porque a numeração só faz sentido
  * como CONJUNTO: é ela que dá a leitura de "que peça do maquinário
  * é esta" quando duas janelas estão abertas lado a lado. Espalhada
  * pelos painéis, viraria seis números que ninguém garante distintos.
+ *
+ * O TEXTO da espinha não mora aqui: ele é o próprio título da janela.
+ * Eram dois nomes para a mesma coisa ("Iniciativa" na lateral de uma
+ * janela chamada "Rodadas") e nada obrigava os dois a concordarem — o
+ * da espinha envelhecia sozinho a cada vez que o título mudava.
  */
-const ESPINHA: Partial<Record<JanelaId, { indice: string; codigo: string; acento: string }>> = {
-  interagir: { indice: "00", codigo: "Interação", acento: "#45b8c9" },
-  dados:     { indice: "01", codigo: "Rolagem",   acento: "#45b8c9" },
-  medir:     { indice: "02", codigo: "Medida",    acento: "#45b8c9" },
-  marcar:    { indice: "03", codigo: "Marca",     acento: "#c25a8c" },
-  areas:     { indice: "04", codigo: "Área",      acento: "#8878d6" },
-  rodadas:   { indice: "05", codigo: "Turnos",    acento: "#cf9a3e" },
-  terreno:   { indice: "06", codigo: "Terreno",   acento: "#4fae82" },
-  objetos:   { indice: "07", codigo: "Objetos",   acento: "#cf9a3e" },
+const ESPINHA: Partial<Record<JanelaId, { indice: string; acento: string }>> = {
+  interagir: { indice: "00", acento: "#45b8c9" },
+  dados:     { indice: "01", acento: "#45b8c9" },
+  medir:     { indice: "02", acento: "#45b8c9" },
+  marcar:    { indice: "03", acento: "#c25a8c" },
+  areas:     { indice: "04", acento: "#8878d6" },
+  rodadas:   { indice: "05", acento: "#cf9a3e" },
+  terreno:   { indice: "06", acento: "#4fae82" },
+  objetos:   { indice: "07", acento: "#cf9a3e" },
   // Azul de planta: imagem de cena é a PLANTA por baixo do tabuleiro, e
   // o acento próprio é o que separa, de relance, a janela que mexe no
   // desenho do mapa daquela que mexe em objeto tático (âmbar) — duas
   // coisas que se parecem na tela e não se parecem em nada na regra.
-  imagens:   { indice: "10", codigo: "Imagem",    acento: "#7f9bd1" },
+  imagens:   { indice: "10", acento: "#7f9bd1" },
 };
 
 const CANTOS = ["tl", "tr", "bl", "br"] as const;
 
 export function JanelaFerramenta({
-  id, indice, codigo, acento, icone, titulo, modo, modoAtributos, rotulo, rotuloFechar, aoFechar,
+  id, indice, acento, icone, titulo, modo, modoAtributos, rotulo, rotuloFechar, aoFechar,
   recolhido, aoAlternarRecolhido, rotuloRecolher, acoesCabecalho,
   className, testId, testIdCabecalho, testIdRecolher, testIdFechar, atributos, children,
 }: JanelaFerramentaProps) {
@@ -240,7 +243,7 @@ export function JanelaFerramenta({
       ))}
       <span className="rv-fp-espinha" aria-hidden="true">
         <span className="rv-fp-espinha-indice">{indice ?? espinha?.indice ?? "--"}</span>
-        <span className="rv-fp-espinha-codigo">{codigo ?? espinha?.codigo ?? titulo}</span>
+        <span className="rv-fp-espinha-codigo">{titulo}</span>
         <span className="rv-fp-espinha-ponto" />
       </span>
 
