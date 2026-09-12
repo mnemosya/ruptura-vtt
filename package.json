@@ -2,7 +2,7 @@
   "name": "ruptura-vtt-content-pipeline",
   "version": "0.1.0",
   "private": true,
-  "description": "Pipeline de importa\u00e7\u00e3o da Biblioteca do Sistema do Ruptura VTT (Supabase/Postgres, JSONB-first).",
+  "description": "Pipeline de importação da Biblioteca do Sistema do Ruptura VTT (Supabase/Postgres, JSONB-first).",
   "type": "module",
   "scripts": {
     "dev": "next dev",
@@ -47,7 +47,10 @@
     "check:admin-temporary-effects": "tsx scripts/dev/check-admin-temporary-effects.ts",
     "check:admin-inventory-runes-market": "tsx scripts/dev/check-admin-inventory-runes-market.ts",
     "check:admin-companions-trama": "tsx scripts/dev/check-admin-companions-trama.ts",
-    "check:motion": "tsx scripts/dev/check-motion.ts"
+    "check:motion": "tsx scripts/dev/check-motion.ts",
+    "test:vtt-imagens": "tsx scripts/test-vtt-imagens.ts",
+    "check:vtt-imagens-servidor": "tsx scripts/dev/check-vtt-imagens-servidor.ts",
+    "gc:vtt-imagens": "tsx scripts/dev/gc-vtt-imagens.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
@@ -57,7 +60,8 @@
     "pg": "^8.13.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@types/node": "^22.7.4",

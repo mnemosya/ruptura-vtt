@@ -24,7 +24,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  MousePointer2, Ruler, PaintBucket, MapPin,
+  MousePointer2, Ruler, PaintBucket, MapPin, Images,
   Settings, Layers, Menu, MessageSquare, Users, UsersRound, BookText, Library, ChevronsRight, Hexagon, Swords,
   Plus, Minus, Send, Undo2, Redo2, Loader2,
   UserPlus, Box,
@@ -131,8 +131,8 @@ const COR_MARCA_HEX: Record<string, string> = {
 };
 
 const ICONE_FERRAMENTA: Record<FerramentaId, typeof MousePointer2> = {
-  interagir: MousePointer2, medir: Ruler, marcar: MapPin, terreno: PaintBucket, objetos: Box, areas: Hexagon,
-  rodadas: Swords,
+  interagir: MousePointer2, medir: Ruler, marcar: MapPin, terreno: PaintBucket, objetos: Box, imagens: Images,
+  areas: Hexagon, rodadas: Swords,
 };
 
 
