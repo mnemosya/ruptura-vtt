@@ -173,9 +173,31 @@ try {
     reg("P7 (ninguém escreve em cena ARQUIVADA, nem o narrador)", rows[0].escreve_arquivada === false, `${rows[0].escreve_arquivada}`);
   });
 
+  // O estranho é dono de OUTRA campanha — não é anônimo, é alguém com
+  // sessão válida e nenhum vínculo com esta mesa. É o papel que separa
+  // "a RLS filtra por campanha" de "a RLS filtra por cena": para ele as
+  // duas respostas coincidem, e é bom que coincidam.
   await comoUsuario(estranho, async () => {
     const { rows } = await client.query(`select public.vtt_pode_ver_cena($1) as palco`, [cenaPalco]);
     reg("P8 (estranho não vê nem a cena apresentada)", rows[0].palco === false, `${rows[0].palco}`);
+
+    const cenas = await client.query(`select id from vtt_scenes where campaign_id = $1`, [campanha]);
+    reg("E1 (estranho não lê cena nenhuma desta campanha)", cenas.rows.length === 0, `${cenas.rows.length} linha(s)`);
+
+    const tokens = await client.query(`select id from vtt_tokens where campaign_id = $1`, [campanha]);
+    reg("E2 (estranho não lê tokens)", tokens.rows.length === 0, `${tokens.rows.length} linha(s)`);
+
+    const terreno = await client.query(`select q from vtt_terrain where campaign_id = $1`, [campanha]);
+    reg("E3 (estranho não lê terreno)", terreno.rows.length === 0, `${terreno.rows.length} linha(s)`);
+
+    const palco = await client.query(`select campaign_id from vtt_campaign_stage where campaign_id = $1`, [campanha]);
+    reg("E4 (estranho não lê nem o palco)", palco.rows.length === 0, `${palco.rows.length} linha(s)`);
+
+    const cat = await tentar(`select public.list_vtt_scenes($1) as c`, [campanha]);
+    reg("E5 (catálogo recusa quem não é da campanha)", Boolean(cat.erro), cat.erro ?? "DEVOLVEU");
+
+    const rpc = await tentar(`select public.read_vtt_scene_tokens($1) as t`, [cenaPalco]);
+    reg("E6 (RPC de tokens recusa o estranho)", Boolean(rpc.erro), rpc.erro ?? "DEVOLVEU");
   });
 
   // ── Cena fora do palco: o coração do recurso ───────────────────────
