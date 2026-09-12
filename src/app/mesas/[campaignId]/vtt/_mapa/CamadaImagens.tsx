@@ -83,12 +83,14 @@ export interface PropsCamadaImagens {
   onPressionarCorpo?: (id: string, e: React.PointerEvent) => void;
   /** Pressão sobre um canto — início do gesto de escalar. */
   onPressionarCanto?: (id: string, canto: CantoImagem, e: React.PointerEvent) => void;
+  /** Pressão sobre a haste de giro — início do gesto de rotacionar. */
+  onPressionarGiro?: (id: string, e: React.PointerEvent) => void;
 }
 
 export function CamadaImagens({
   imagens, camada, tamanhoCelula, urls, visivelFundo, visivelTiles, ehNarrador,
   ferramentaAtiva, bloqueadaFundo, bloqueadaTiles,
-  selecionadaId, onSelecionar, onPressionarCorpo, onPressionarCanto,
+  selecionadaId, onSelecionar, onPressionarCorpo, onPressionarCanto, onPressionarGiro,
 }: PropsCamadaImagens) {
   const desta = imagens.filter((i) => i.camada === camada);
   if (desta.length === 0) return null;
@@ -197,6 +199,30 @@ export function CamadaImagens({
                     onPointerDown={(e) => { e.stopPropagation(); onPressionarCanto?.(img.id, c.id, e); }}
                   />
                 ))}
+
+                {/* Haste de GIRO — fora da moldura, no topo. Fica dentro
+                    do mesmo `<g>` girado, então ela acompanha a rotação
+                    e aponta sempre para o "alto" da imagem: é assim que
+                    se enxerga, parada, o quanto já foi girado.
+
+                    Separada das alças de canto de propósito: canto que
+                    às vezes escala e às vezes gira (conforme a distância
+                    do ponteiro) é o tipo de alça que erra sozinha. */}
+                {interativa && !img.travado && (
+                  <>
+                    <line
+                      x1={r.x + r.largura / 2} y1={r.y}
+                      x2={r.x + r.largura / 2} y2={r.y - HASTE}
+                      className="rv-imagem-cena__haste" pointerEvents="none"
+                    />
+                    <circle
+                      cx={r.x + r.largura / 2} cy={r.y - HASTE} r={ALCA / 2 + 1}
+                      className="rv-imagem-cena__giro"
+                      style={{ cursor: "grab" }}
+                      onPointerDown={(e) => { e.stopPropagation(); onPressionarGiro?.(img.id, e); }}
+                    />
+                  </>
+                )}
               </>
             )}
           </g>
@@ -208,3 +234,5 @@ export function CamadaImagens({
 
 /** Lado da alça em pixels de MUNDO — o zoom a escala junto com o mapa. */
 const ALCA = 9;
+/** Quanto a haste de giro se afasta da borda de cima, em pixels de mundo. */
+const HASTE = 22;

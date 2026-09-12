@@ -4685,6 +4685,7 @@ export function VttClient({
             onSelecionarImagem={imgs.setSelecionadaId}
             onMoverImagem={(id, q, r) => { void imgs.mover(id, q, r); }}
             onEscalarImagem={(id, larguraM, centro) => { void imgs.escalar(id, larguraM, centro); }}
+            onRotacionarImagem={(id, graus) => { void imgs.rotacionar(id, graus); }}
             celulasRealce={ferramenta === "objetos" ? celulasObjetoPendente : []}
             tipoRealce={ferramenta === "objetos" ? "objeto" : null}
             onSelecionarToken={onSelecionarToken} onHoverToken={setHoverId}

@@ -3494,6 +3494,16 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-imagem-cena__alca:hover { fill: #7f9bd1; }
 
+/* Haste de giro — mesma paleta das alças de canto, forma redonda pra
+   dizer "isto não redimensiona". A haste é só o fio até a bolinha. */
+.rv-imagem-cena__haste {
+  stroke: #7f9bd1; stroke-width: 1.4; stroke-dasharray: 3 3; opacity: .8;
+}
+.rv-imagem-cena__giro {
+  fill: #0a0e14; stroke: #7f9bd1; stroke-width: 1.6;
+}
+.rv-imagem-cena__giro:hover { fill: #7f9bd1; }
+
 /* ── Realce de "solte aqui" (arraste de arquivo sobre o palco) ─────── */
 .rv-palco { position: relative; }
 .rv-arrastando-imagem {

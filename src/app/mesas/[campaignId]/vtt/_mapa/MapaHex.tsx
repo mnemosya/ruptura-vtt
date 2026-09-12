@@ -544,6 +544,8 @@ export interface PropsMapaHex {
   onSelecionarImagem?: (id: string | null) => void;
   /** Fim do gesto de mover — âncora axial CONTÍNUA (nada encaixa em célula). */
   onMoverImagem?: (id: string, centroQ: number, centroR: number) => void;
+  /** Fim do gesto de giro — o ângulo já normalizado em [0, 360). */
+  onRotacionarImagem?: (id: string, graus: number) => void;
   /** Fim do gesto de escalar — largura em metros; a altura segue a proporção. */
   /** Escalar pelo canto muda largura E centro na mesma escrita (0110). */
   onEscalarImagem?: (id: string, larguraM: number, centro: { q: number; r: number }) => void;
@@ -641,6 +643,7 @@ export function MapaHex({
   imagemSelecionadaId,
   onSelecionarImagem,
   onMoverImagem,
+  onRotacionarImagem,
   onEscalarImagem,
 }: PropsMapaHex) {
   /** Última posição axial EXATA do ponteiro num arrasto — ver `soltar()`. */
@@ -995,14 +998,14 @@ export function MapaHex({
   // SVG sem passar pelo servidor.
   const gestoImagemRef = useRef<{
     id: string;
-    canto: CantoImagem | null;
+    canto: CantoImagem | "girar" | null;
     /** Ponto de mundo onde a pressão começou. */
     origem: { x: number; y: number };
     /** Estado da imagem no início — a prévia é sempre relativa a ele. */
     inicial: ImagemCena;
   } | null>(null);
   const [previaImagem, setPreviaImagem] = useState<
-    { id: string; dx: number; dy: number; escala: number } | null
+    { id: string; dx: number; dy: number; escala: number; giro: number } | null
   >(null);
   /* Mesmo motivo do `arrastoRef`: `soltar()` é efeito colateral real
      (chama o servidor) e precisa do valor do gesto que acabou de
@@ -1035,21 +1038,24 @@ export function MapaHex({
             alturaM: img.alturaM === null ? null : img.alturaM * previaImagem.escala,
           }
         : img;
-      if (previaImagem.dx === 0 && previaImagem.dy === 0) return escalada;
+      const girada = previaImagem.giro === 0
+        ? escalada
+        : { ...escalada, rotacaoGraus: img.rotacaoGraus + previaImagem.giro };
+      if (previaImagem.dx === 0 && previaImagem.dy === 0) return girada;
       const r = retanguloDaImagem(img, TAM);
       const destino = mundoParaAxial(r.centroX + previaImagem.dx, r.centroY + previaImagem.dy, TAM);
-      return { ...escalada, centroQ: destino.q, centroR: destino.r };
+      return { ...girada, centroQ: destino.q, centroR: destino.r };
     });
   }, [imagensCena, previaImagem]);
 
-  const pressionarImagem = useCallback((id: string, canto: CantoImagem | null, e: React.PointerEvent) => {
+  const pressionarImagem = useCallback((id: string, canto: CantoImagem | "girar" | null, e: React.PointerEvent) => {
     const img = imagensCena?.find((i) => i.id === id);
     if (!img || img.travado) return;
     const p = pontoMundo(e.clientX, e.clientY);
     if (!p) return;
     e.stopPropagation();
     gestoImagemRef.current = { id, canto, origem: p, inicial: img };
-    setPreviaImagem({ id, dx: 0, dy: 0, escala: 1 });
+    setPreviaImagem({ id, dx: 0, dy: 0, escala: 1, giro: 0 });
   }, [imagensCena, pontoMundo]);
 
   useEffect(() => {
@@ -1063,7 +1069,28 @@ export function MapaHex({
       const dy = p.y - g.origem.y;
 
       if (g.canto === null) {
-        setPreviaImagem({ id: g.id, dx, dy, escala: 1 });
+        setPreviaImagem({ id: g.id, dx, dy, escala: 1, giro: 0 });
+        return;
+      }
+
+      if (g.canto === "girar") {
+        /* GIRO em torno do CENTRO — o único centro de rotação que não
+           faz a imagem fugir da mão. O ângulo é a diferença entre onde
+           o ponteiro está e onde ele estava, não a direção absoluta:
+           assim a haste não "salta" pro cursor no primeiro pixel.
+
+           Livre por padrão, com Shift travando em passos de 15° —
+           encostar um mapa na ortogonal é o caso comum, e é ele que
+           merece o atalho, não o contrário. */
+        const r = retanguloDaImagem(g.inicial, TAM);
+        const anguloDe = (x: number, y: number) =>
+          (Math.atan2(y - r.centroY, x - r.centroX) * 180) / Math.PI;
+        let giro = anguloDe(p.x, p.y) - anguloDe(g.origem.x, g.origem.y);
+        if (e.shiftKey) {
+          const alvo = Math.round((g.inicial.rotacaoGraus + giro) / 15) * 15;
+          giro = alvo - g.inicial.rotacaoGraus;
+        }
+        setPreviaImagem({ id: g.id, dx: 0, dy: 0, escala: 1, giro });
         return;
       }
 
@@ -1101,6 +1128,7 @@ export function MapaHex({
         dx: novoCentroX - r.centroX,
         dy: novoCentroY - r.centroY,
         escala,
+        giro: 0,
       });
     }
 
@@ -1120,6 +1148,16 @@ export function MapaHex({
         const r = retanguloDaImagem(g.inicial, TAM);
         const destino = mundoParaAxial(r.centroX + previa.dx, r.centroY + previa.dy, TAM);
         onMoverImagem?.(g.id, destino.q, destino.r);
+        return;
+      }
+
+      if (g.canto === "girar") {
+        if (Math.abs(previa.giro) < 0.5) return;
+        // Normalizado em [0, 360): o servidor guarda o ângulo, e um
+        // "-730°" acumulado por gestos sucessivos desenharia igual mas
+        // leria péssimo no painel.
+        const graus = ((g.inicial.rotacaoGraus + previa.giro) % 360 + 360) % 360;
+        onRotacionarImagem?.(g.id, graus);
         return;
       }
 
@@ -1155,7 +1193,7 @@ export function MapaHex({
       window.removeEventListener("blur", cancelar);
       window.removeEventListener("keydown", tecla);
     };
-  }, [previaImagem !== null, pontoMundo, onMoverImagem, onEscalarImagem]);
+  }, [previaImagem !== null, pontoMundo, onMoverImagem, onEscalarImagem, onRotacionarImagem]);
 
   useEffect(() => {
     if (!arrasto) return;
@@ -2078,6 +2116,7 @@ export function MapaHex({
           onSelecionar={onSelecionarImagem}
           onPressionarCorpo={(id, e) => pressionarImagem(id, null, e)}
           onPressionarCanto={(id, canto, e) => pressionarImagem(id, canto, e)}
+          onPressionarGiro={(id, e) => pressionarImagem(id, "girar", e)}
         />
 
         {/* ── Grade ── visibilidade é só opacidade (nunca `display:none`
@@ -2219,6 +2258,7 @@ export function MapaHex({
           onSelecionar={onSelecionarImagem}
           onPressionarCorpo={(id, e) => pressionarImagem(id, null, e)}
           onPressionarCanto={(id, canto, e) => pressionarImagem(id, canto, e)}
+          onPressionarGiro={(id, e) => pressionarImagem(id, "girar", e)}
         />
 
         {/* ── ÁREAS DE EFEITO (visual) ─────────────────────────────

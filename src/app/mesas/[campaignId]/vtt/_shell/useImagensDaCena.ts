@@ -290,6 +290,13 @@ export function useImagensDaCena(params: {
     }));
   }, [campaignId, aplicar]);
 
+  /** Giro pela haste, no mapa. O painel usa `ajustar` — é a mesma escrita. */
+  const rotacionar = useCallback(async (id: string, graus: number) => {
+    const img = imagensRef.current.find((i) => i.id === id);
+    if (!img) return;
+    await aplicar(await atualizarImagemCenaAction(campaignId, id, img.revision, { rotacaoGraus: graus }));
+  }, [campaignId, aplicar]);
+
   const ajustar = useCallback(async (img: ImagemCena, ajuste: AjusteImagemCena) => {
     await aplicar(await atualizarImagemCenaAction(campaignId, img.id, img.revision, ajuste));
   }, [campaignId, aplicar]);
@@ -402,6 +409,6 @@ export function useImagensDaCena(params: {
     jaTemFundo,
     biblioteca, carregandoBiblioteca, carregarBiblioteca, colocarDaBiblioteca, excluirDaBiblioteca,
     recarregar, prepararArquivo, confirmarColocacao, cancelarPendente,
-    mover, escalar, ajustar, mudarOrdem, remover,
+    mover, escalar, rotacionar, ajustar, mudarOrdem, remover,
   };
 }
