@@ -65,17 +65,23 @@ export function PainelImagens({
       rotuloFechar="Fechar imagens"
       aoFechar={onFechar}
     >
-      <div className="rv-editor-retrato__acoes">
-        <button type="button" onClick={onEnviarArquivo}>
+      {/* Classes PRÓPRIAS. Estas duas ações usavam
+          `.rv-editor-retrato__acoes` e `__nota`, emprestadas do editor
+          de retrato do token — a regra de lá só faz layout, então os
+          botões caíam no padrão do navegador, e a nota vinha centrada
+          (certo lá, errado aqui). */}
+      <div className="rv-imagens-acoes">
+        <button type="button" className="rv-btn rv-btn--pri" onClick={onEnviarArquivo}>
           <ImageUp size={14} aria-hidden /> Enviar arquivo…
         </button>
-        <button type="button" onClick={onAbrirBiblioteca}>
+        <button type="button" className="rv-btn" onClick={onAbrirBiblioteca}>
           <Images size={14} aria-hidden /> Biblioteca
         </button>
       </div>
       {/* Dito onde a dúvida aparece: o painel não é o único caminho. */}
-      <p className="rv-editor-retrato__nota">
-        Também dá para colar (Ctrl+V) ou arrastar uma imagem direto sobre o mapa.
+      <p className="rv-imagens-nota">
+        Também dá para colar (<kbd>Ctrl</kbd>+<kbd>V</kbd>) ou arrastar uma imagem
+        direto sobre o mapa.
       </p>
 
       {ordenadas.length === 0 ? (
@@ -112,25 +118,26 @@ export function PainelImagens({
                   {/* Ordem só existe para tile: o fundo é o fundo. */}
                   {img.papel === "tile" && (
                     <>
-                      <button type="button" onClick={() => onMudarOrdem(img, -1)} aria-label="Mandar para trás">
+                      <button type="button" className="rv-imagens-item__acao" onClick={() => onMudarOrdem(img, -1)} aria-label="Mandar para trás">
                         <ChevronDown size={14} aria-hidden />
                       </button>
-                      <button type="button" onClick={() => onMudarOrdem(img, 1)} aria-label="Trazer para frente">
+                      <button type="button" className="rv-imagens-item__acao" onClick={() => onMudarOrdem(img, 1)} aria-label="Trazer para frente">
                         <ChevronUp size={14} aria-hidden />
                       </button>
                     </>
                   )}
-                  <button type="button" onClick={() => onAlternarVisivel(img)}
+                  <button type="button" className="rv-imagens-item__acao" onClick={() => onAlternarVisivel(img)}
                     aria-label={img.visivel ? "Esconder dos jogadores" : "Mostrar aos jogadores"}
                     aria-pressed={!img.visivel}>
                     {img.visivel ? <Eye size={14} aria-hidden /> : <EyeOff size={14} aria-hidden />}
                   </button>
-                  <button type="button" onClick={() => onAlternarTravado(img)}
+                  <button type="button" className="rv-imagens-item__acao" onClick={() => onAlternarTravado(img)}
                     aria-label={img.travado ? "Destravar" : "Travar posição"}
                     aria-pressed={img.travado}>
                     {img.travado ? <Lock size={14} aria-hidden /> : <LockOpen size={14} aria-hidden />}
                   </button>
-                  <button type="button" onClick={() => onRemover(img)} disabled={img.travado}
+                  <button type="button" className="rv-imagens-item__acao rv-imagens-item__acao--perigo"
+                    onClick={() => onRemover(img)} disabled={img.travado}
                     aria-label="Remover da cena">
                     <Trash2 size={14} aria-hidden />
                   </button>
