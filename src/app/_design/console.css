@@ -1697,11 +1697,12 @@
 .rc-recorte-janela__corpo { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px 16px; flex: 1 1 auto; }
 .rc-recorte-janela__cab { display: flex; flex-direction: column; gap: 5px; }
 .rc-recorte-janela__titulo {
-  /* MESMO título da janela de ferramenta (`.rv-fp-titulo`): Chakra
-     Petch 16px, `letter-spacing: .12em`. Estava em Rajdhani, que é a
-     fonte de CORPO — por isso não parecia título de janela nenhuma. */
+  /* MESMO título das janelas de ferramenta, medido na tela: Chakra
+     Petch 12px com `letter-spacing: .12em`. Estava em 16px (o valor que
+     a regra da janela DECLARA, mas que ela mesma não usa na prática) e
+     em Rajdhani, que é a fonte de corpo. */
   margin: 0; color: var(--jr-tinta);
-  font: 700 16px var(--font-chakra), sans-serif;
+  font: 700 12px var(--font-chakra), sans-serif;
   letter-spacing: .12em; text-transform: uppercase; line-height: 1;
 }
 /* Linha de modo: o mesmo pípe de acento das janelas de ferramenta —

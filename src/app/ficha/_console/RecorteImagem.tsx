@@ -45,6 +45,14 @@ export interface RecorteEscolhido {
 /** Cantos em bracket — os mesmos quatro da janela de ferramenta. */
 const CANTOS = ["tl", "tr", "bl", "br"] as const;
 
+/** "RETRATO-MARA.PNG · 132 KB" — nome (cortado se for longo) e peso. */
+function descricaoDoArquivo(arquivo: File): string {
+  const nome = arquivo.name.length > 28 ? `${arquivo.name.slice(0, 25)}…` : arquivo.name;
+  const kb = arquivo.size / 1024;
+  const peso = kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(kb))} KB`;
+  return `${nome} · ${peso}`;
+}
+
 /**
  * JANELA DE ENQUADRAMENTO — a moldura ÚNICA dos dois enquadramentos.
  *
@@ -98,7 +106,12 @@ export function JanelaRecorte({
       <div className="rc-recorte-janela__corpo">
         <header className="rc-recorte-janela__cab">
           <h2 className="rc-recorte-janela__titulo">{titulo}</h2>
-          <p className="rc-recorte-janela__modo">círculo do avatar</p>
+          {/* A linha de modo das janelas de ferramenta diz o ESTADO
+              ("pronto", "medindo"). Aqui o estado útil é QUAL arquivo
+              está na mesa — nome e peso, que é o que a pessoa precisa
+              para saber se pegou o arquivo certo. "Círculo do avatar"
+              só repetia o que a própria prévia mostra. */}
+          <p className="rc-recorte-janela__modo">{descricaoDoArquivo(props.arquivo)}</p>
         </header>
         <RecorteImagem {...props} />
         {erro && <p className="rc-recorte-janela__erro" role="alert">{erro}</p>}
