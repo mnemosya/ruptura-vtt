@@ -76,16 +76,38 @@ async function main() {
   criados.campanhas.push(campaignId);
   await admin.from("campaign_members").insert({ campaign_id: campaignId, user_id: uJ.user.id, role: "player" });
 
-  const { data: cena } = await admin.from("vtt_scenes")
+  // Um fixture quebrado que devolve `null` em silêncio vira um
+  // `TypeError` dez linhas adiante, longe da causa — cada insert diz
+  // logo o que o banco recusou.
+  const exigir = (rot: string, r: { data: { id: string } | null; error: { message: string } | null }): { id: string } => {
+    if (r.error || !r.data) throw new Error(`fixture ${rot}: ${r.error?.message ?? "sem linha"}`);
+    return r.data;
+  };
+
+  const cena = exigir("vtt_scenes", await admin.from("vtt_scenes")
     .insert({ campaign_id: campaignId, nome: "Cena Imagens", largura: 26, altura: 18 })
-    .select("id").single();
-  const sceneId = cena!.id as string;
+    .select("id").single());
+  const sceneId = cena.id;
 
   // Token do jogador (via personagem controlado) e token do narrador.
-  const { data: pers } = await admin.from("characters")
-    .insert({ name: "PJ Imagem", owner_id: uJ.user.id }).select("id").single();
-  const characterId = pers!.id as string;
-  await admin.from("character_controllers").insert({ character_id: characterId, user_id: uJ.user.id });
+  // `characters.payload` é NOT NULL sem default e `campaign_id` amarra
+  // o personagem à mesa — mesmo formato mínimo dos outros checks.
+  const pers = exigir("characters", await admin.from("characters")
+    .insert({
+      name: "PJ Imagem", status: "draft", campaign_id: campaignId, owner_id: uJ.user.id,
+      payload: {
+        nome: "PJ Imagem",
+        atributos: { corpo: 2, mente: 2, animo: 2 },
+        metadados: { schema_version: 1 },
+      },
+    }).select("id").single());
+  const characterId = pers.id;
+  // `character_controllers` é chaveado por (character_id, campaign_id, user_id).
+  {
+    const { error } = await admin.from("character_controllers")
+      .insert({ character_id: characterId, campaign_id: campaignId, user_id: uJ.user.id });
+    if (error) throw new Error(`fixture character_controllers: ${error.message}`);
+  }
 
   const { data: tokJ } = await admin.from("vtt_tokens").insert({
     scene_id: sceneId, campaign_id: campaignId, character_id: characterId,
