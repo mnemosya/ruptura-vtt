@@ -155,6 +155,69 @@ export async function prepararImagem(
 }
 
 /**
+ * Recorte QUADRADO, para as imagens que a interface desenha dentro de
+ * uma forma — o avatar no hexágono da ficha, o retrato no círculo do
+ * token.
+ *
+ * ── POR QUE O RECORTE ACONTECE ANTES DO HASH ────────────────────────
+ * O `sha256` é do blob que SOBE, e é ele que decide dedup e caminho no
+ * Storage. Recortar depois significaria subir a foto inteira e guardar
+ * o enquadramento à parte — dois dados para manter de acordo, e a
+ * imagem original no servidor por nada. Recortando antes, o arquivo
+ * armazenado já é exatamente o que a mesa vê.
+ *
+ * A consequência, dita para não virar surpresa: reenquadrar depois pede
+ * um upload novo. É o preço de não guardar o original, e é o preço
+ * certo — o original é o que mais pesa na quota e o que ninguém olha.
+ *
+ * `origem` está em pixels da imagem decodificada; `lado` é o lado do
+ * quadrado de saída.
+ */
+export async function prepararRecorteQuadrado(
+  arquivo: File,
+  origem: { x: number; y: number; tamanho: number },
+  lado = 512,
+  bytesMaximo = BYTES_MAXIMO_RETRATO,
+): Promise<ImagemPreparada> {
+  validarArquivo(arquivo);
+
+  const bitmap = await decodificar(arquivo);
+  const canvas = document.createElement("canvas");
+  canvas.width = lado;
+  canvas.height = lado;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    bitmap.close();
+    throw new ImagemRecusadaError("Não foi possível processar a imagem neste navegador.");
+  }
+
+  // O recorte é prendido aos limites da imagem: um enquadramento que
+  // escorregou para fora traria faixa transparente em vez de erro, e
+  // faixa transparente num avatar parece defeito.
+  const tamanho = Math.max(1, Math.min(origem.tamanho, bitmap.width, bitmap.height));
+  const x = Math.max(0, Math.min(origem.x, bitmap.width - tamanho));
+  const y = Math.max(0, Math.min(origem.y, bitmap.height - tamanho));
+
+  ctx.drawImage(bitmap, x, y, tamanho, tamanho, 0, 0, lado, lado);
+  bitmap.close();
+
+  let blob = await paraBlobWebp(canvas, 0.86);
+  if (blob.size > bytesMaximo) blob = await paraBlobWebp(canvas, 0.65);
+  if (blob.size > bytesMaximo) {
+    const mb = (bytesMaximo / (1024 * 1024)).toFixed(0);
+    throw new ImagemRecusadaError(`A imagem continua acima de ${mb} MB depois da conversão.`);
+  }
+
+  return {
+    blob,
+    sha256: await sha256Hex(blob),
+    widthPx: lado,
+    heightPx: lado,
+    previewUrl: URL.createObjectURL(blob),
+  };
+}
+
+/**
  * `PUT` direto na signed upload URL. O browser nunca usa credencial
  * própria: a URL é uma capability que o servidor emitiu depois de
  * autorizar e reservar quota.

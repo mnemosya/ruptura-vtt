@@ -1514,3 +1514,60 @@
   border: 1px solid #333; border-radius: 6px;
   padding: 6px 10px; font-size: 13px; max-width: 220px;
 }
+
+/* ── Enquadramento de imagem (`_console/RecorteImagem.tsx`) ───────────
+   A prévia é recortada pela MESMA forma de destino (o heptágono do
+   avatar, o círculo do token) — uma prévia quadrada esconderia
+   exatamente o que este passo existe para mostrar. */
+.rc-recorte { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.rc-recorte--carregando { padding: 24px; font-size: 12px; color: var(--rc-dim); }
+.rc-recorte__janela {
+  position: relative; overflow: hidden; touch-action: none; cursor: grab;
+  border-radius: 4px; background: #070b11;
+}
+.rc-recorte__janela:active { cursor: grabbing; }
+/* Camada de baixo: o que FICA DE FORA, escurecido. Sem ela a pessoa não
+   vê quanto da foto está sendo descartado e enquadra às cegas. */
+.rc-recorte__fora { position: absolute; inset: 0; opacity: .22; filter: grayscale(1); }
+.rc-recorte__dentro { position: absolute; inset: 0; }
+.rc-recorte__janela img { user-select: none; -webkit-user-drag: none; }
+.rc-recorte__zoom { display: flex; align-items: center; gap: 8px; width: 100%; color: var(--rc-dim); }
+.rc-recorte__zoom input[type="range"] { flex: 1; accent-color: var(--cy); }
+.rc-recorte__reset {
+  display: grid; place-items: center; width: 24px; height: 24px;
+  border: 1px solid var(--rc-line); border-radius: 3px;
+  background: transparent; color: var(--rc-dim);
+}
+.rc-recorte__reset:hover:not(:disabled) { color: var(--cy); border-color: var(--cy); }
+.rc-recorte__dica {
+  margin: 0; font-size: 10.5px; color: var(--rc-dim);
+  letter-spacing: .04em; text-align: center;
+}
+.rc-recorte__acoes { display: flex; gap: 8px; justify-content: flex-end; width: 100%; }
+.rc-recorte__acoes button {
+  padding: 6px 14px; font-size: 12px;
+  border: 1px solid var(--rc-line); border-radius: 3px;
+  background: transparent; color: var(--rc-dim);
+}
+.rc-recorte__confirmar {
+  border-color: color-mix(in srgb, var(--cy) 60%, transparent) !important;
+  background: color-mix(in srgb, var(--cy) 16%, transparent) !important;
+  color: var(--cy) !important;
+}
+.rc-recorte__acoes button:disabled { opacity: .5; cursor: not-allowed; }
+
+/* `fixed` + `z-index` acima do console, como `.rc-aux-backdrop` — a
+   primeira versão usava `absolute; z-index: 70` e o modal nascia ATRÁS
+   da ficha: o console cria o próprio contexto de empilhamento, e um
+   número baixo ali dentro não alcança nada. */
+.rc-recorte-modal {
+  position: fixed; z-index: 521; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; gap: 10px; padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--cy) 35%, transparent); border-radius: 4px;
+  background: #0b1119; box-shadow: 0 20px 56px rgba(0,0,0,.7);
+}
+.rc-recorte-modal__titulo {
+  margin: 0; color: var(--cy); font: 700 11px var(--font-rajdhani), sans-serif;
+  letter-spacing: .16em; text-transform: uppercase;
+}
+.rc-recorte-modal__erro { margin: 0; font-size: 11px; color: var(--rc-danger); max-width: 240px; }

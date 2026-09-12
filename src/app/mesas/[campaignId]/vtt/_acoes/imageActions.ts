@@ -57,7 +57,7 @@ function mensagemDeErro(e: unknown, padrao: string): string {
   return padrao;
 }
 
-export type IntencaoUpload = "fundo" | "tile" | "retrato";
+export type IntencaoUpload = "fundo" | "tile" | "retrato" | "avatar";
 
 export interface ReservaUpload {
   /** `true` quando o conteúdo já existia nesta campanha: não há o que enviar. */
@@ -80,6 +80,8 @@ export async function reservarUploadAction(
   sha256: string,
   intencao: IntencaoUpload,
   tokenId: string | null = null,
+  /** Alvo da intenção `avatar` — a ficha cuja cara está sendo trocada. */
+  characterId: string | null = null,
 ): Promise<ResultadoAcao<ReservaUpload>> {
   const v = await exigirAcesso(campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
@@ -91,6 +93,7 @@ export async function reservarUploadAction(
       p_sha256: sha256,
       p_intencao: intencao,
       p_token_id: tokenId,
+      p_character_id: characterId,
     });
     if (error || !data) return { ok: false, erro: error?.message ?? "Não foi possível preparar o envio." };
 
@@ -223,6 +226,94 @@ export async function finalizarUploadRetratoAction(
   } catch (e) {
     return { ok: false, erro: mensagemDeErro(e, "Não foi possível concluir o envio.") };
   }
+}
+
+/**
+ * Passo 4, caminho do AVATAR da ficha (0104). Mesmo rigor dos outros
+ * dois: o servidor decodifica o objeto e grava as medidas REAIS, e a
+ * RPC revalida que esta reserva foi autorizada para ESTA ficha.
+ */
+export async function finalizarUploadAvatarAction(
+  campaignId: string,
+  reservaId: string,
+  storagePathSha: string,
+  characterId: string,
+): Promise<ResultadoAcao<unknown>> {
+  const v = await exigirAcesso(campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+
+  try {
+    const medida = await validarEReencodar(`${campaignId}/${storagePathSha}.webp`);
+    const client = await getScopedTableClient();
+    const { data, error } = await client.rpc("finalizar_upload_e_definir_avatar", {
+      p_reserva_id: reservaId,
+      p_bytes_reais: medida.bytes,
+      p_width_px: medida.widthPx,
+      p_height_px: medida.heightPx,
+      p_character_id: characterId,
+    });
+    if (error) return { ok: false, erro: error.message };
+    return { ok: true, dados: data };
+  } catch (e) {
+    return { ok: false, erro: mensagemDeErro(e, "Não foi possível concluir o envio.") };
+  }
+}
+
+/**
+ * URL assinada do avatar de uma ficha, em uma ida só.
+ *
+ * O id do arquivo é COLUNA de `characters`, não campo do `payload` que
+ * o console carrega — e denormalizá-lo para dentro do payload criaria
+ * duas fontes para o mesmo fato, que é como um avatar "fantasma"
+ * sobrevive a uma troca. Então o console pergunta pela URL, e quem
+ * resolve id → assinatura é o servidor, onde a decisão de acesso mora.
+ *
+ * `null` significa "não há avatar" OU "você não pode ver este" — a
+ * mesma indistinção deliberada do resto da assinatura: confirmar que um
+ * arquivo existe já é contar que ele existe.
+ */
+export async function lerAvatarAssinadoAction(
+  campaignId: string,
+  characterId: string,
+): Promise<ResultadoAcao<{ imageId: string | null; url: string | null }>> {
+  const v = await exigirAcesso(campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const usuario = await getCurrentUser();
+  if (!usuario) return { ok: false, erro: "Sessão expirada." };
+
+  const client = await getScopedTableClient();
+  // A RLS de `characters` já decide quem lê a linha; nada aqui a
+  // contorna.
+  const { data, error } = await client
+    .from("characters").select("avatar_image_id").eq("id", characterId).maybeSingle();
+  if (error) return { ok: false, erro: error.message };
+
+  const imageId = (data?.avatar_image_id as string | null) ?? null;
+  if (!imageId) return { ok: true, dados: { imageId: null, url: null } };
+
+  try {
+    const mapa = await assinarDownloadUrls([imageId], usuario.id);
+    return { ok: true, dados: { imageId, url: mapa.get(imageId) ?? null } };
+  } catch (e) {
+    return { ok: false, erro: mensagemDeErro(e, "Não foi possível carregar o avatar.") };
+  }
+}
+
+/** Ligar/desligar o avatar a partir de um arquivo que já existe (ou remover). */
+export async function definirAvatarPersonagemAction(
+  campaignId: string,
+  characterId: string,
+  imageId: string | null,
+): Promise<ResultadoAcao<unknown>> {
+  const v = await exigirAcesso(campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("set_character_avatar_image", {
+    p_character_id: characterId,
+    p_image_id: imageId,
+  });
+  if (error) return { ok: false, erro: error.message };
+  return { ok: true, dados: data };
 }
 
 /** Retrato vindo de arquivo já existente na campanha (reuso da biblioteca). */

@@ -27,7 +27,21 @@
  * porque o console minimizado precisa mostrar a MESMA imagem.
  */
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  BYTES_ORIGINAL_MAXIMO,
+  ImagemRecusadaError,
+  enviarParaUrlAssinada,
+  prepararRecorteQuadrado,
+} from "../../../lib/vtt/imagePreparation";
+import {
+  cancelarUploadAction,
+  definirAvatarPersonagemAction,
+  finalizarUploadAvatarAction,
+  lerAvatarAssinadoAction,
+  reservarUploadAction,
+} from "../../mesas/[campaignId]/vtt/_acoes/imageActions";
+import { RecorteImagem } from "./RecorteImagem";
 import { ConsoleWindow } from "./ConsoleWindow";
 import { Scrollbar } from "./scrollbar";
 import { DecoTop } from "./deco";
@@ -97,21 +111,107 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
     setViewMode(novo);
   }
 
-  // Avatar: preview local só (ver limitações — sem fluxo de upload real
-  // no projeto). Vive aqui para o console minimizado mostrar a mesma imagem.
+  /**
+   * AVATAR. Até a 0104 isto era só `URL.createObjectURL(file)` — preview
+   * em memória que morria ao fechar o console, porque não havia fluxo
+   * de upload no projeto. Agora tem, e o avatar da ficha é a FONTE: o
+   * token do personagem herda esta imagem quando não tem retrato
+   * próprio (0105).
+   *
+   * O arquivo escolhido não sobe direto: passa pelo enquadramento
+   * (`RecorteImagem`), porque o avatar é desenhado dentro de um
+   * hexágono e foto retangular em hexágono corta rosto. O recorte
+   * acontece ANTES do hash — o arquivo armazenado já é o que se vê.
+   *
+   * Ficha sem mesa (`api.mesa === null`) continua com preview local e
+   * nada mais: o arquivo pertence à CAMPANHA (é dela a quota e o caminho
+   * no Storage), e um rascunho pessoal não tem campanha a que pertencer.
+   */
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarErro, setAvatarErro] = useState<string | null>(null);
+  const [avatarParaRecortar, setAvatarParaRecortar] = useState<File | null>(null);
+  const [avatarEnviando, setAvatarEnviando] = useState(false);
+  const mesa = api.mesa;
+
+  // A URL assinada do avatar já gravado. O id é coluna de `characters`
+  // (não vem no payload do console), então quem resolve id → assinatura
+  // é o servidor, numa ida só. Recarrega ao abrir e a cada 4 min — as
+  // URLs valem 5.
+  const campaignId = mesa?.campaignId ?? null;
+  const characterId = mesa?.characterId ?? null;
+  useEffect(() => {
+    if (!aberto || !campaignId || !characterId) return;
+    let vivo = true;
+    const buscar = () => {
+      void lerAvatarAssinadoAction(campaignId, characterId).then((r) => {
+        if (vivo && r.ok && r.dados?.url) setAvatarUrl(r.dados.url);
+      });
+    };
+    buscar();
+    const timer = setInterval(buscar, 4 * 60 * 1000);
+    return () => { vivo = false; clearInterval(timer); };
+  }, [aberto, campaignId, characterId]);
+
   function onAvatarChange(file: File) {
     setAvatarErro(null);
     if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
       setAvatarErro("Formato inválido — use PNG, JPEG ou WebP.");
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      setAvatarErro("Imagem acima de 2 MB.");
+    // Teto do ORIGINAL, antes de decodificar. O recorte reduz muito, mas
+    // um arquivo gigante trava o navegador antes de chegar lá.
+    if (file.size > BYTES_ORIGINAL_MAXIMO) {
+      setAvatarErro("Imagem grande demais — até 30 MB.");
       return;
     }
-    setAvatarUrl(URL.createObjectURL(file));
+    if (!mesa) {
+      // Sem mesa não há onde guardar; o preview local é o que sempre foi.
+      setAvatarUrl(URL.createObjectURL(file));
+      setAvatarErro("Esta ficha não está numa mesa — a imagem vale só nesta sessão.");
+      return;
+    }
+    setAvatarParaRecortar(file);
+  }
+
+  async function enviarAvatarRecortado(recorte: { x: number; y: number; tamanho: number }) {
+    const arquivo = avatarParaRecortar;
+    if (!arquivo || !mesa) return;
+    setAvatarEnviando(true);
+    setAvatarErro(null);
+    let reservaId: string | null = null;
+    try {
+      const preparada = await prepararRecorteQuadrado(arquivo, recorte);
+      const reserva = await reservarUploadAction(
+        mesa.campaignId, preparada.sha256, "avatar", null, mesa.characterId,
+      );
+      if (!reserva.ok || !reserva.dados) throw new Error(reserva.erro ?? "Não foi possível preparar o envio.");
+      reservaId = reserva.dados.reservaId;
+
+      if (reserva.dados.reutilizado) {
+        // Mesma cara já está na campanha: liga direto, sem subir de novo.
+        const r = await definirAvatarPersonagemAction(mesa.campaignId, mesa.characterId, reserva.dados.assetId);
+        if (!r.ok) throw new Error(r.erro ?? "Não foi possível definir o avatar.");
+      } else {
+        await enviarParaUrlAssinada(reserva.dados.uploadUrl!, preparada.blob);
+        const r = await finalizarUploadAvatarAction(
+          mesa.campaignId, reserva.dados.reservaId!, preparada.sha256, mesa.characterId,
+        );
+        if (!r.ok) throw new Error(r.erro ?? "Não foi possível concluir o envio.");
+      }
+
+      // Mostra o recorte local na hora; a URL assinada chega logo em
+      // seguida pelo efeito acima e substitui esta sem piscar.
+      setAvatarUrl(preparada.previewUrl);
+      setAvatarParaRecortar(null);
+    } catch (e) {
+      // Reserva viva sem uso prende quota até vencer; devolver aqui é
+      // cortesia (a coleta resolve de qualquer jeito).
+      if (reservaId && mesa) void cancelarUploadAction(mesa.campaignId, reservaId).catch(() => {});
+      setAvatarErro(e instanceof ImagemRecusadaError || e instanceof Error
+        ? e.message : "Não foi possível enviar a imagem.");
+    } finally {
+      setAvatarEnviando(false);
+    }
   }
 
   const inventario = useMemo(() => api.character.inventario ?? [], [api.character.inventario]);
@@ -297,6 +397,24 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
           (o HudCursor global continua rastreando a posição normalmente,
           só falta a regra `cursor:none` alcançar este ramo da árvore). */}
       <div className="rc-cursor-scope">
+      {/* Enquadramento do avatar. Fica no mesmo ramo dos modais
+          auxiliares (e não dentro do painel lateral) porque precisa de
+          espaço: a janela de recorte tem 240 px e a coluna da esquerda
+          não tem isso. */}
+      {avatarParaRecortar && (
+        <div className="rc-recorte-modal" role="dialog" aria-modal="true" aria-label="Enquadrar avatar">
+          <p className="rc-recorte-modal__titulo">Enquadrar o avatar</p>
+          <RecorteImagem
+            arquivo={avatarParaRecortar}
+            forma="hexagono"
+            ocupado={avatarEnviando}
+            rotuloConfirmar="Salvar avatar"
+            onConfirmar={(r) => { void enviarAvatarRecortado(r); }}
+            onCancelar={() => { setAvatarParaRecortar(null); setAvatarErro(null); }}
+          />
+          {avatarErro && <p className="rc-recorte-modal__erro" role="alert">{avatarErro}</p>}
+        </div>
+      )}
       {aux?.tipo === "rolagem" && (
         // `key` pelo que foi pedido: sem backdrop, clicar noutra perícia
         // com a ferramenta aberta é um gesto normal — e ela tem que

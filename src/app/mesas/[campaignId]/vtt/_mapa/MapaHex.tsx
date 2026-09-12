@@ -3133,16 +3133,54 @@ function Token({
         <circle r={raio - 3.5} fill="none" stroke={cor} strokeWidth="1.4" strokeDasharray="2 3" opacity="0.9" />
       )}
 
-      {/* retrato procedural: silhueta + inicial */}
+      {/* ── Retrato ───────────────────────────────────────────────────
+          A imagem REAL quando existe; a silhueta procedural quando não.
+          Até aqui o mapa desenhava só a silhueta — o retrato do token
+          aparecia no HUD e em lugar nenhum no tabuleiro, que é onde ele
+          serve para alguma coisa: distinguir cinco tokens de relance é
+          o trabalho da cara, não da sigla.
+
+          `token.retrato` já chega resolvido por `tokenApresentacaoDe`:
+          arquivo próprio, endereço externo, ou o avatar HERDADO da
+          ficha (0105). O mapa não conhece essa precedência e não
+          deveria — para ele é uma URL ou nada. */}
       <clipPath id={`clip-${token.id}`}><circle r={raio - 5} /></clipPath>
       <g clipPath={`url(#clip-${token.id})`}>
         <rect x={-raio} y={-raio} width={raio * 2} height={raio * 2} fill={`${cor}1f`} />
-        <circle cx={0} cy={-raio * 0.18} r={raio * 0.34} fill={cor} opacity="0.55" />
-        <ellipse cx={0} cy={raio * 0.62} rx={raio * 0.58} ry={raio * 0.46} fill={cor} opacity="0.42" />
+        {token.retrato ? (
+          <image
+            href={token.retrato}
+            x={-raio} y={-raio} width={raio * 2} height={raio * 2}
+            // `slice`: o recorte é quadrado e o destino é círculo, então
+            // preencher e cortar é o certo — `meet` deixaria faixa de
+            // fundo aparecendo dentro do disco.
+            preserveAspectRatio="xMidYMid slice"
+            pointerEvents="none"
+          />
+        ) : (
+          <>
+            <circle cx={0} cy={-raio * 0.18} r={raio * 0.34} fill={cor} opacity="0.55" />
+            <ellipse cx={0} cy={raio * 0.62} rx={raio * 0.58} ry={raio * 0.46} fill={cor} opacity="0.42" />
+          </>
+        )}
       </g>
-      <text className="rv-token-sigla" y={raio * 0.16} textAnchor="middle" style={{ fontSize: raio * 0.62 }}>
-        {token.sigla}
-      </text>
+      {/* Com retrato, a sigla vira uma FAIXA no rodapé do disco em vez
+          de um carimbo no meio da cara. Ela não some: é ela que
+          identifica o token quando dois personagens se parecem, e é o
+          que resta legível com o mapa afastado. */}
+      {token.retrato ? (
+        <g clipPath={`url(#clip-${token.id})`} pointerEvents="none">
+          <rect x={-raio} y={raio * 0.34} width={raio * 2} height={raio * 0.66} fill="#050a0fcc" />
+          <text className="rv-token-sigla" y={raio * 0.82} textAnchor="middle"
+            style={{ fontSize: raio * 0.42 }}>
+            {token.sigla}
+          </text>
+        </g>
+      ) : (
+        <text className="rv-token-sigla" y={raio * 0.16} textAnchor="middle" style={{ fontSize: raio * 0.62 }}>
+          {token.sigla}
+        </text>
+      )}
 
       {/* ── Orientação, setor traseiro e alça de rotação — DELIBERADAMENTE
           antes dos rótulos/indicadores abaixo (PV, condições, cadeado,
