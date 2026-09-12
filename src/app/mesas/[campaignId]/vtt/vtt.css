@@ -3784,8 +3784,10 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   font-family: var(--font-mono), monospace;
   font-size: 8px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
 }
-/* Só "em cena" sobra: rosto não é listado. */
+/* Selo por uso: verde para o que já está numa cena, âmbar para o que
+   é rosto (avatar de ficha ou retrato de token). Sem uso, sem selo. */
 .rv-biblioteca__selo[data-uso="cena"] { color: var(--rv-ok); border: 1px solid color-mix(in srgb, var(--rv-ok) 40%, transparent); }
+.rv-biblioteca__selo[data-uso="rosto"] { color: var(--rv-am); border: 1px solid color-mix(in srgb, var(--rv-am) 40%, transparent); }
 
 .rv-biblioteca__estado {
   margin: 0; padding: 22px 10px;

@@ -14,21 +14,19 @@
  * PURAMENTE APRESENTACIONAL, como `PainelImagens`: recebe a lista já
  * lida e devolve a intenção. Nenhuma RPC aqui.
  *
- * ── ROSTO NÃO ENTRA AQUI ────────────────────────────────────────────
- * A campanha guarda num lugar só os mapas, os retratos de token e os
- * avatares de ficha — a deduplicação por `sha256` é o que torna isso
- * barato. Mas isto é o seletor de imagem de CENA: avatar de personagem
- * não tem nada a ver com mapa, e listar os dois juntos só cria a
- * pergunta "o que essa cara está fazendo aqui?".
+ * ── A BIBLIOTECA É DA CAMPANHA INTEIRA ──────────────────────────────
+ * Mapas, retratos de token e avatares de ficha moram no mesmo lugar (a
+ * deduplicação por `sha256` é o que torna isso barato), e TODOS
+ * aparecem aqui: um retrato pode virar peça de cena, um mapa pode
+ * virar avatar. Filtrar por uso seria decidir pela pessoa que ela
+ * nunca vai querer o contrário.
  *
- * A projeção (0108) conta os usos por tipo, e esta janela usa isso para
- * EXCLUIR o que serve de rosto — sem filtro, sem interruptor. Um
- * arquivo que também está numa cena continua aparecendo: aí ele é
- * imagem de cena, e o fato de alguém usá-lo como retrato não muda
- * isso.
+ * O que a projeção (0108) traz é o SELO: o uso que cada arquivo já tem
+ * na campanha ("em cena", "rosto"). Isso responde à pergunta certa —
+ * "o que é este arquivo?" — sem esconder nada.
  */
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Images, Loader2, Map, Shapes, X } from "lucide-react";
 import { type ImagemBiblioteca, pesoLegivel, usoDaImagem } from "../_dominio/imagemCena";
 
@@ -54,13 +52,7 @@ export function BibliotecaImagens({
   const [papel, setPapel] = useState<"fundo" | "tile">(jaTemFundo ? "tile" : "fundo");
   const papelEfetivo = jaTemFundo ? "tile" : papel;
 
-  const visiveis = useMemo(
-    () => (imagens ?? []).filter((i) => usoDaImagem(i) !== "rosto"),
-    [imagens],
-  );
-  /* Quantos ficaram de fora por serem rosto — entra no rodapé da
-     janela vazia, para a ausência não parecer defeito. */
-  const rostos = (imagens ?? []).length - visiveis.length;
+  const visiveis = imagens ?? [];
 
   return (
     <div className="rv-biblioteca" role="dialog" aria-modal="true" aria-label="Biblioteca de imagens" data-testid="biblioteca-imagens">
@@ -117,11 +109,7 @@ export function BibliotecaImagens({
       {carregando && imagens === null ? (
         <p className="rv-biblioteca__estado"><Loader2 size={13} className="rv-spin" aria-hidden /> Lendo a biblioteca…</p>
       ) : imagens !== null && visiveis.length === 0 ? (
-        <p className="rv-biblioteca__estado">
-          {imagens.length === 0
-            ? "Nenhuma imagem enviada nesta campanha ainda"
-            : `Nenhuma imagem de cena — ${rostos} ${rostos === 1 ? "arquivo é retrato/avatar" : "arquivos são retratos/avatares"}`}
-        </p>
+        <p className="rv-biblioteca__estado">Nenhuma imagem enviada nesta campanha ainda</p>
       ) : (
         <ul className="rv-biblioteca__grade">
           {visiveis.map((img) => {
