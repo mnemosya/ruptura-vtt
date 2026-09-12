@@ -2974,6 +2974,34 @@ export function VttClient({
     return () => window.removeEventListener("keydown", aoTeclar);
   }, [ferramenta, estadoAreas.fase, areaSelecionadaId, configAreas.tipo, areaPorId, ehNarrador, usuarioId, excluirAreaHandler]);
 
+  /**
+   * Imagem SELECIONADA + Delete/Backspace tira ela da cena.
+   *
+   * Sem confirmar, de propósito: é a mesma escrita do botão de lixeira
+   * do painel (`onRemover`), e tirar da CENA não apaga o arquivo — ele
+   * continua na biblioteca da campanha e volta em dois cliques. Quem
+   * confirma é a exclusão da BIBLIOTECA, que essa sim é definitiva.
+   *
+   * Travada não sai: travar que ainda deixasse apagar não seria travar
+   * — é a mesma regra que o botão do painel já aplica (`disabled`).
+   */
+  useEffect(() => {
+    if (ferramenta !== "imagens" || !imgs.selecionadaId) return;
+    function aoTeclar(e: KeyboardEvent) {
+      if (e.key !== "Delete" && e.key !== "Backspace") return;
+      if (e.ctrlKey || e.metaKey) return;
+      // Backspace num campo do painel é "apagar caractere", nunca
+      // "apagar imagem".
+      if (elementoEhEditavel(document.activeElement as HTMLElement | null)) return;
+      const img = imgs.imagens.find((i) => i.id === imgs.selecionadaId);
+      if (!img || img.travado) return;
+      e.preventDefault();
+      void imgs.remover(img);
+    }
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  }, [ferramenta, imgs]);
+
   // Liga o ref usado por `ajustarConfigAreas` (declarado antes) ao
   // handler real — sem isto o seletor de Aura não sincronizaria.
   useEffect(() => { sincronizarAuraDoSeletorRef.current = sincronizarAuraDoSeletor; }, [sincronizarAuraDoSeletor]);
