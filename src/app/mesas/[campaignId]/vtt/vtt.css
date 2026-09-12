@@ -3389,6 +3389,8 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    biblioteca é secundária. Ocupam a largura em partes iguais — duas
    caixas encolhidas no canto direito pareciam sobra de layout. */
 .rv-imagens-acoes { display: flex; align-items: stretch; gap: 6px; }
+/* O grupo já tem o gap de 10px do `.rv-fp-grupo`; a nota só precisa
+   não encostar nos botões, e a lista respira pelo corpo da janela. */
 .rv-imagens-acoes .rv-btn { flex: 1 1 0; justify-content: center; }
 /* A nota é rodapé de ajuda, alinhada à esquerda como todo texto de
    janela — centrada ela virava manchete de um aviso que não é. */
@@ -3458,7 +3460,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* Vazio não é erro: fio tracejado e texto discreto, o mesmo tom do
    "sem resultados" do painel. */
 .rv-imagens-vazio {
-  margin: 0; padding: 10px; text-align: center;
+  margin: 0; padding: 14px 10px; text-align: center;
   border: 1px dashed var(--rv-line-2); border-radius: 2px;
   font-family: var(--font-mono), monospace;
   font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
@@ -3578,34 +3580,75 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 @keyframes rv-girar { to { transform: rotate(360deg); } }
 
 /* ── Ajuste fino da imagem selecionada (`_shell/PainelImagens.tsx`) ── */
-.rv-imagens-ajuste {
-  display: flex; flex-direction: column; gap: 7px;
-  margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.1);
-}
-.rv-imagens-ajuste__titulo {
-  margin: 0; color: #7f9bd1; font: 700 10px var(--rv-display);
-  letter-spacing: .16em; text-transform: uppercase;
-}
+/* Bloco de ajuste — agora é um `.rv-fp-grupo` como os outros, então
+   não precisa mais da margem e do fio próprios: o corpo da janela já
+   separa as seções. */
+.rv-imagens-ajuste { gap: 8px; }
+/* `.rv-imagens-ajuste__titulo` saiu: o título do bloco agora é o
+   `.rv-fp-rotulo` das outras janelas. */
 .rv-imagens-ajuste__campo { display: flex; flex-direction: column; gap: 3px; }
 .rv-imagens-ajuste__campo > span {
-  display: flex; justify-content: space-between; font-size: 11px; color: var(--txt-dim);
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--rv-ink-faint);
 }
 .rv-imagens-ajuste__campo em {
-  font-style: normal; color: var(--txt-forte); font-family: var(--font-mono), monospace;
+  font-style: normal; color: var(--rv-ink); font-family: var(--font-mono), monospace;
+  font-size: 11px; letter-spacing: 0; text-transform: none;
 }
-.rv-imagens-ajuste__campo input[type="range"] { width: 100%; accent-color: #7f9bd1; }
+/* Mesmo slider das outras ferramentas (trilho de 4px preenchido no
+   acento), em vez do `accent-color` padrão do navegador. */
+.rv-imagens-ajuste__campo input[type="range"] {
+  width: 100%; height: 16px; margin: 0;
+  appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer;
+}
+.rv-imagens-ajuste__campo input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 999px; background: var(--rv-line-strong);
+}
+.rv-imagens-ajuste__campo input[type="range"]::-moz-range-track { height: 4px; border-radius: 999px; background: var(--rv-line-strong); }
+.rv-imagens-ajuste__campo input[type="range"]::-moz-range-progress { height: 4px; border-radius: 999px; background: var(--jf-acento, var(--cy)); }
+.rv-imagens-ajuste__campo input[type="range"]::-webkit-slider-thumb {
+  appearance: none; -webkit-appearance: none;
+  width: 14px; height: 14px; margin-top: -5px; border: none; border-radius: 999px;
+  background: #f4f8fc; box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
+}
+.rv-imagens-ajuste__campo input[type="range"]::-moz-range-thumb {
+  width: 14px; height: 14px; border: none; border-radius: 999px;
+  background: #f4f8fc; box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
+}
+.rv-imagens-ajuste__campo input[type="range"]:focus-visible { outline: none; }
+.rv-imagens-ajuste__campo input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 0 0 3px color-mix(in srgb, var(--jf-acento, var(--cy)) 35%, transparent);
+}
+/* Sob/sobre a grade é um SEGMENTADO — mesma peça do "modo" das outras
+   ferramentas, em vez de dois botões com fio branco a 12%. */
 .rv-imagens-ajuste__camada { display: flex; gap: 4px; }
 .rv-imagens-ajuste__camada button,
 .rv-imagens-ajuste__proporcao {
-  flex: 1; padding: 5px 8px; font-size: 11px;
-  border: 1px solid rgba(255,255,255,.12); border-radius: 4px;
-  background: transparent; color: var(--txt-dim);
+  flex: 1 1 0; min-width: 0; padding: 7px 10px;
+  border: 1px solid var(--rv-line-2); border-radius: 2px;
+  background: transparent; color: var(--rv-ink-dim);
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  cursor: pointer; transition: color .14s, border-color .14s, background .14s;
+}
+.rv-imagens-ajuste__camada button:hover:not(:disabled),
+.rv-imagens-ajuste__proporcao:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--jf-acento, var(--cy)) 40%, transparent);
+  color: var(--rv-ink);
 }
 .rv-imagens-ajuste__camada button.is-ativo {
-  border-color: rgba(127,155,209,.7); background: rgba(127,155,209,.16); color: #cfe0f7;
+  border-color: var(--jf-acento, var(--cy));
+  background: color-mix(in srgb, var(--jf-acento, var(--cy)) 10%, transparent);
+  color: var(--jf-acento, var(--cy));
 }
-.rv-imagens-ajuste__proporcao:hover:not(:disabled) { border-color: rgba(127,155,209,.5); color: #cfe0f7; }
-.rv-imagens-ajuste__travada { margin: 0; font-size: 10.5px; color: var(--txt-dim); }
+.rv-imagens-ajuste__camada button:focus-visible,
+.rv-imagens-ajuste__proporcao:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 1px; }
+.rv-imagens-ajuste__travada {
+  margin: 0; font-family: var(--font-mono), monospace;
+  font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--rv-am);
+}
 .rv-imagens-ajuste button:disabled,
 .rv-imagens-ajuste input:disabled { opacity: .45; cursor: not-allowed; }
 

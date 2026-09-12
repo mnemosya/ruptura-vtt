@@ -61,31 +61,47 @@ export function PainelImagens({
       id="imagens"
       icone={<Images size={14} aria-hidden />}
       titulo="Imagens"
+      /* Linha de estado, como toda janela de ferramenta tem — esta não
+         tinha, e o cabeçalho ficava com um título solto. */
+      modo={ordenadas.length === 0
+        ? "nenhuma na cena"
+        : `${ordenadas.length} ${ordenadas.length === 1 ? "imagem" : "imagens"} na cena`}
       rotulo="Imagens da cena"
       rotuloFechar="Fechar imagens"
       aoFechar={onFechar}
     >
+      {/* O CORPO da janela. Este painel era o único que despejava o
+          conteúdo direto na casca, sem `.rv-fp-corpo` — e é dela que vem
+          TODO o espaçamento das janelas (padding de 16, gap de 20 entre
+          seções). Daí a impressão de coisa jogada: não havia respiro
+          nenhum, só os elementos empilhados. */}
+      <div className="rv-fp-corpo">
+        <div className="rv-fp-grupo">
+          <span className="rv-fp-rotulo">Adicionar</span>
       {/* Classes PRÓPRIAS. Estas duas ações usavam
           `.rv-editor-retrato__acoes` e `__nota`, emprestadas do editor
           de retrato do token — a regra de lá só faz layout, então os
           botões caíam no padrão do navegador, e a nota vinha centrada
           (certo lá, errado aqui). */}
-      <div className="rv-imagens-acoes">
-        <button type="button" className="rv-btn rv-btn--pri" onClick={onEnviarArquivo}>
-          <ImageUp size={14} aria-hidden /> Enviar arquivo…
-        </button>
-        <button type="button" className="rv-btn" onClick={onAbrirBiblioteca}>
-          <Images size={14} aria-hidden /> Biblioteca
-        </button>
-      </div>
-      {/* Dito onde a dúvida aparece: o painel não é o único caminho. */}
-      <p className="rv-imagens-nota">
-        Também dá para colar (<kbd>Ctrl</kbd>+<kbd>V</kbd>) ou arrastar uma imagem
-        direto sobre o mapa.
-      </p>
+          <div className="rv-imagens-acoes">
+            <button type="button" className="rv-btn rv-btn--pri" onClick={onEnviarArquivo}>
+              <ImageUp size={14} aria-hidden /> Enviar arquivo…
+            </button>
+            <button type="button" className="rv-btn" onClick={onAbrirBiblioteca}>
+              <Images size={14} aria-hidden /> Biblioteca
+            </button>
+          </div>
+          {/* Dito onde a dúvida aparece: o painel não é o único caminho. */}
+          <p className="rv-imagens-nota">
+            Também dá para colar (<kbd>Ctrl</kbd>+<kbd>V</kbd>) ou arrastar uma imagem
+            direto sobre o mapa.
+          </p>
+        </div>
 
+        <div className="rv-fp-grupo">
+          <span className="rv-fp-rotulo">Nesta cena</span>
       {ordenadas.length === 0 ? (
-        <p className="rv-imagens-vazio">Nenhuma imagem nesta cena ainda.</p>
+        <p className="rv-imagens-vazio">Nenhuma imagem ainda</p>
       ) : (
         <ul className="rv-imagens-lista">
           {ordenadas.map((img) => {
@@ -147,6 +163,7 @@ export function PainelImagens({
           })}
         </ul>
       )}
+        </div>
 
       {/* ── Ajuste fino da selecionada ────────────────────────────────
           Mover e escalar são GESTO, no mapa, porque são espaciais: a
@@ -161,10 +178,10 @@ export function PainelImagens({
           pixel: uma escrita por ajuste, a mesma disciplina do arrasto
           de token. ───────────────────────────────────────────────── */}
       {selecionada && (
-        <div className="rv-imagens-ajuste">
-          <p className="rv-imagens-ajuste__titulo">
+        <div className="rv-fp-grupo rv-imagens-ajuste">
+          <span className="rv-fp-rotulo">
             Ajustar {selecionada.papel === "fundo" ? "o fundo" : "o tile"}
-          </p>
+          </span>
 
           <label className="rv-imagens-ajuste__campo">
             <span>Rotação <em>{Math.round(selecionada.rotacaoGraus)}°</em></span>
@@ -233,6 +250,7 @@ export function PainelImagens({
           )}
         </div>
       )}
+      </div>
     </JanelaFerramenta>
   );
 }
