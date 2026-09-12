@@ -33,6 +33,25 @@ export function rollPericia(params: RupturaRollParams): RupturaRollResult {
   // tem precedência sobre o modo de 1 dado (`incluirDadoGatilho`).
   const quantidadeGatilho = Math.max(0, Math.trunc(params.quantidadeDadosGatilho ?? (params.incluirDadoGatilho ? 1 : 0)));
   const dadosGatilhoResultados = quantidadeGatilho > 0 ? Array.from({ length: quantidadeGatilho }, () => rollDie(8)) : undefined;
+  return resolverPericia(params, dados, dadosGatilhoResultados);
+}
+
+/**
+ * A REGRA, separada de quem sorteia os dados.
+ *
+ * `rollPericia` sorteia e resolve; esta função só resolve, a partir de
+ * dados que já existem. É o que permite a mesa do VTT — onde os d8 são
+ * corpos rígidos de verdade e o valor sai da face que ficou pra cima
+ * quando eles param (`ArenaDados`) — usar EXATAMENTE a mesma regra do
+ * Console, em vez de reimplementar "maior dado + perícia + modificador"
+ * e as seis faixas de margem por conta própria. Uma regra, dois
+ * geradores de dado.
+ */
+export function resolverPericia(
+  params: RupturaRollParams,
+  dados: number[],
+  dadosGatilhoResultados?: number[],
+): RupturaRollResult {
   const poolCompleto = dadosGatilhoResultados ? [...dados, ...dadosGatilhoResultados] : dados;
   const maiorDado = poolCompleto.length > 0 ? Math.max(...poolCompleto) : 0;
   const dadoGatilhoResultado = dadosGatilhoResultados && dadosGatilhoResultados.length === 1 ? dadosGatilhoResultados[0] : undefined;

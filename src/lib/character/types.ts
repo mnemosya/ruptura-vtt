@@ -61,7 +61,7 @@ export interface CharacterMetadata {
   /**
    * Classificação de personagem (Fase 4, aditivo §9.1) — só usada para
    * separar os filtros "Sem jogador" (futuro personagem de jogador,
-   * ainda sem controlador) de "PNs" (personagem não-jogador por
+   * ainda sem controlador) de "PNs" (Personagem do Narrador, por
    * desenho) na página Personagens do narrador. Não é autorização:
    * controle de acesso continua vindo inteiramente de
    * `character_controllers` + participação ativa (Fase 1), nunca deste

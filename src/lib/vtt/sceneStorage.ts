@@ -35,6 +35,14 @@ export interface CenaVtt {
   largura: number;
   altura: number;
   revision: number;
+  /**
+   * Visibilidade e bloqueio de cada camada do mapa, DA MESA (migration
+   * 0093) — não preferência de tela. O narrador ajusta e vale pra
+   * todos; o formato é validado no cliente
+   * (`_shell/PainelCamadas.camadasDeJson`), como todo estado que viaja
+   * como jsonb.
+   */
+  camadas: Record<string, unknown>;
 }
 
 export interface TokenVtt {
@@ -55,6 +63,16 @@ export interface TokenVtt {
   pegadaPersonalizada: { q: number; r: number }[] | null;
   bloqueado: boolean;
   visivel: boolean;
+  /**
+   * Deslocamento SUB-CÉLULA dentro da âncora (migration 0094), em
+   * unidades axiais fracionárias — só desenho. O token OCUPA `q`/`r`;
+   * isto é onde ele aparece dentro dela, que é o que faz o movimento
+   * com a grade escondida parar onde foi solto em vez de saltar pro
+   * centro do hex. Terreno, colisão, alcance, área e caminho seguem
+   * enxergando só `q`/`r`.
+   */
+  offsetQ: number;
+  offsetR: number;
   /** Apresentação da presença na cena; recursos vinculados são projetados da ficha canônica. */
   retratoUrl: string | null;
   pvAtual: number | null;
@@ -75,10 +93,19 @@ export interface CelulaTerreno {
   tipo: TipoTerreno;
 }
 
+/** O que a marcação SIGNIFICA — não confundir com `tipo`, que é a geometria. */
+export type SinalMarca = "alvo" | "perigo" | "rota" | "nota";
+/** Quanto tempo ela fica. Expiração real, no servidor (`expirar_marcas_da_cena`). */
+export type DuracaoMarca = "persistente" | "rodada" | "combate";
+
 export interface MarcaVtt {
   id: string;
   autorId: string;
   tipo: TipoMarca;
+  sinal: SinalMarca;
+  duracao: DuracaoMarca;
+  /** Rodada em que nasceu — é o que permite expirar as de uma rodada só. */
+  rodadaCriada: number | null;
   pontos: { q: number; r: number }[];
   texto: string | null;
   cor: CorMarca;
@@ -389,7 +416,7 @@ export async function carregarCenaAtiva(campaignId: string): Promise<EstadoCena 
 
   const { data: cenaRow, error: erroCena } = await client
     .from("vtt_scenes")
-    .select("id, campaign_id, nome, local, resumo, largura, altura, revision")
+    .select("id, campaign_id, nome, local, resumo, largura, altura, revision, camadas")
     .eq("campaign_id", campaignId)
     .eq("ativa", true)
     .order("created_at", { ascending: true })
@@ -405,7 +432,7 @@ export async function carregarCenaAtiva(campaignId: string): Promise<EstadoCena 
     client.rpc("read_vtt_scene_tokens", { p_scene_id: sceneId }),
     client.from("vtt_terrain").select("q, r, tipo").eq("scene_id", sceneId),
     client.from("vtt_marks")
-      .select("id, autor_id, tipo, pontos, texto, cor, espessura, opacidade, privada, created_at")
+      .select("id, autor_id, tipo, sinal, duracao, rodada_criada, pontos, texto, cor, espessura, opacidade, privada, created_at")
       .eq("scene_id", sceneId)
       .order("created_at", { ascending: true }),
     client.from("vtt_areas")
@@ -448,6 +475,7 @@ export async function carregarCenaAtiva(campaignId: string): Promise<EstadoCena 
       largura: cenaRow.largura as number,
       altura: cenaRow.altura as number,
       revision: cenaRow.revision as number,
+      camadas: (cenaRow.camadas as Record<string, unknown> | null) ?? {},
     },
     tokens: (Array.isArray(tokensRes.data) ? tokensRes.data : []).map((t) => linhaParaTokenVtt(t as Record<string, unknown>)),
     terreno: (terrenoRes.data ?? []).map((c) => ({ q: c.q as number, r: c.r as number, tipo: c.tipo as TipoTerreno })),
@@ -465,6 +493,9 @@ export async function carregarCenaAtiva(campaignId: string): Promise<EstadoCena 
       id: m.id as string,
       autorId: m.autor_id as string,
       tipo: m.tipo as TipoMarca,
+      sinal: (m.sinal as SinalMarca | null) ?? "alvo",
+      duracao: (m.duracao as DuracaoMarca | null) ?? "persistente",
+      rodadaCriada: (m.rodada_criada as number | null) ?? null,
       pontos: (m.pontos as { q: number; r: number }[]) ?? [],
       texto: (m.texto as string | null) ?? null,
       cor: m.cor as CorMarca,
@@ -509,12 +540,20 @@ export async function moverToken(params: {
   tokenId: string;
   rota: { q: number; r: number }[];
   revisionEsperada: number;
+  /**
+   * Onde dentro da célula âncora o token pousa (migration 0094). Só
+   * desenho — a célula ocupada continua sendo o fim da rota. Omitido
+   * (ou zero) recentraliza, que é o comportamento com a grade à vista.
+   */
+  offset?: { q: number; r: number };
 }): Promise<ResultadoEscrita> {
   const client = await getScopedTableClient();
   const { data, error } = await client.rpc("move_vtt_token", {
     p_token_id: params.tokenId,
     p_rota: params.rota,
     p_expected_revision: params.revisionEsperada,
+    p_offset_q: params.offset?.q ?? 0,
+    p_offset_r: params.offset?.r ?? 0,
   });
 
   if (error) {
@@ -591,6 +630,8 @@ function linhaParaTokenVtt(linha: Record<string, unknown>): TokenVtt {
     bloqueado: linha.bloqueado as boolean,
     visivel: linha.visivel as boolean,
     retratoUrl: (linha.retrato_url as string | null) ?? null,
+    offsetQ: Number(linha.offset_q ?? 0) || 0,
+    offsetR: Number(linha.offset_r ?? 0) || 0,
     pvAtual: (linha.pv_atual as number | null) ?? null,
     pvMax: (linha.pv_max as number | null) ?? null,
     condicoes: (linha.condicoes as string[] | null) ?? [],
@@ -938,6 +979,10 @@ export async function criarMarca(params: {
   sceneId: string;
   campaignId: string;
   tipo: TipoMarca;
+  sinal: SinalMarca;
+  duracao: DuracaoMarca;
+  /** Rodada corrente do combate, quando há — `null` fora dele. */
+  rodadaCriada: number | null;
   pontos: { q: number; r: number }[];
   texto?: string | null;
   cor: CorMarca;
@@ -956,6 +1001,9 @@ export async function criarMarca(params: {
       campaign_id: params.campaignId,
       autor_id: usuario.id,
       tipo: params.tipo,
+      sinal: params.sinal,
+      duracao: params.duracao,
+      rodada_criada: params.rodadaCriada,
       pontos: params.pontos,
       texto: params.texto ?? null,
       cor: params.cor,
@@ -1234,6 +1282,214 @@ export async function removerArea(areaId: string): Promise<ResultadoEscrita> {
 // demais pra uma policy (narrador inicia/encerra/edita elenco e modo;
 // qualquer participante avança). Ver o cabeçalho da migration.
 // ─────────────────────────────────────────────────────────────────
+
+/**
+ * A trilha da cena ATIVA da campanha, sem carregar a cena inteira.
+ *
+ * Existe para o Console do Personagem: ele precisa saber em que janela
+ * de turno a mesa está (o teto de PA em Rápidos depende disso) e é
+ * caro demais ler tokens, terreno, marcas e áreas só para isso.
+ * Devolve `null` quando não há cena, não há combate ou a RLS filtrou.
+ */
+export async function lerTrilhaDaCenaAtiva(campaignId: string): Promise<unknown | null> {
+  const client = await getScopedTableClient();
+  const { data: cena } = await client
+    .from("vtt_scenes")
+    .select("id")
+    .eq("campaign_id", campaignId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (!cena?.id) return null;
+  const { data } = await client
+    .from("vtt_turn_tracks")
+    .select("estado")
+    .eq("scene_id", cena.id as string)
+    .maybeSingle();
+  return data?.estado ?? null;
+}
+
+/**
+ * O token daquele personagem na cena ATIVA, ou `null` se ele não está
+ * no mapa. Mesmo motivo de `lerTrilhaDaCenaAtiva`: o Console precisa
+ * do dado, não da cena inteira.
+ */
+export async function tokenDoPersonagemNaCenaAtiva(campaignId: string, characterId: string): Promise<string | null> {
+  const client = await getScopedTableClient();
+  const { data: cena } = await client
+    .from("vtt_scenes").select("id").eq("campaign_id", campaignId)
+    .order("created_at", { ascending: true }).limit(1).maybeSingle();
+  if (!cena?.id) return null;
+  // Pela RPC, não por `select` direto: `vtt_tokens` teve o SELECT
+  // revogado de `authenticated` na 0084 justamente para que ninguém
+  // leia as colunas privadas por fora da projeção. E a projeção só
+  // devolve `character_id` a quem controla o token — que é exatamente
+  // quem pode ganhar um atalho para ele no mapa.
+  const { data } = await client.rpc("read_vtt_scene_tokens", { p_scene_id: cena.id as string });
+  const linhas = Array.isArray(data) ? (data as Record<string, unknown>[]) : [];
+  const alvo = linhas.find((t) => t.character_id === characterId);
+  return (alvo?.id as string | undefined) ?? null;
+}
+
+/**
+ * Trilha da cena ativa + quais tokens do elenco são de quem pergunta.
+ *
+ * Serve o dock da casca, que só tem `campaignId`. `pode_controlar` sai
+ * da MESMA projeção que o mapa usa (`read_vtt_scene_tokens`) — quem
+ * decide o que é "meu" continua sendo o servidor, em um lugar só.
+ */
+export async function lerTrilhaDaMesa(campaignId: string): Promise<
+  {
+    sceneId: string;
+    estado: unknown;
+    revision: number;
+    tokensQueControlo: string[];
+    /** tokenId → characterId, só dos tokens que esta pessoa controla. */
+    personagemDoToken: Record<string, string>;
+  } | null
+> {
+  const client = await getScopedTableClient();
+  const { data: cena } = await client
+    .from("vtt_scenes").select("id").eq("campaign_id", campaignId)
+    .order("created_at", { ascending: true }).limit(1).maybeSingle();
+  if (!cena?.id) return null;
+  const sceneId = cena.id as string;
+
+  const [trilhaRes, tokensRes] = await Promise.all([
+    client.from("vtt_turn_tracks").select("estado, revision").eq("scene_id", sceneId).maybeSingle(),
+    client.rpc("read_vtt_scene_tokens", { p_scene_id: sceneId }),
+  ]);
+
+  const meus = (Array.isArray(tokensRes.data) ? (tokensRes.data as Record<string, unknown>[]) : [])
+    .filter((t) => t.pode_controlar === true);
+  const tokensQueControlo = meus.map((t) => t.id as string);
+  // O elenco do combate é feito de TOKENS, mas os cards da Mesa são de
+  // PERSONAGENS. Esta ponte evita que cada tela refaça a tradução — e
+  // ela só existe para os tokens de quem pergunta, porque a projeção
+  // só devolve `character_id` a quem controla.
+  const personagemDoToken: Record<string, string> = {};
+  for (const t of meus) {
+    if (typeof t.character_id === "string") personagemDoToken[t.id as string] = t.character_id;
+  }
+
+  // Sem combate a cena ainda existe — e o dock precisa saber disso pra
+  // oferecer "Iniciar rodada" em vez de sumir.
+  if (!trilhaRes.data) return { sceneId, estado: null, revision: 0, tokensQueControlo, personagemDoToken };
+  return {
+    sceneId,
+    estado: trilhaRes.data.estado as unknown,
+    revision: trilhaRes.data.revision as number,
+    tokensQueControlo,
+    personagemDoToken,
+  };
+}
+
+/**
+ * Encerra o combate da cena ativa da campanha, se houver.
+ *
+ * Serve o "Encerrar rodada" da mesa (`lib/table/endRound.ts`), que
+ * precisa fechar o combate sem conhecer cena nem `sceneId`. Silencioso
+ * quando não há cena ou não há combate: encerrar o que já está
+ * encerrado não é erro.
+ */
+export async function encerrarTrilhaDaCampanha(campaignId: string): Promise<void> {
+  const client = await getScopedTableClient();
+  const { data: cena } = await client
+    .from("vtt_scenes").select("id").eq("campaign_id", campaignId)
+    .order("created_at", { ascending: true }).limit(1).maybeSingle();
+  if (!cena?.id) return;
+  await encerrarTrilha(cena.id as string);
+}
+
+/**
+ * Grava as camadas da cena. Narrador-only e revisão conferida DENTRO
+ * da RPC (0093) — aqui não há checagem própria, como no resto do VTT.
+ */
+export async function definirCamadasDaCena(params: {
+  sceneId: string;
+  camadas: Record<string, unknown>;
+  revisionEsperada: number;
+}): Promise<ResultadoEscrita & { revision?: number; camadas?: Record<string, unknown> }> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("set_vtt_scene_camadas", {
+    p_scene_id: params.sceneId,
+    p_camadas: params.camadas,
+    p_expected_revision: params.revisionEsperada,
+  });
+  if (error) return { ok: false, erro: error.message };
+  const linha = Array.isArray(data) ? data[0] : data;
+  if (!linha) return { ok: false, erro: "Ajuste de camadas recusado pelo servidor." };
+  return {
+    ok: true,
+    revision: linha.revision as number,
+    camadas: (linha.camadas as Record<string, unknown> | null) ?? {},
+  };
+}
+
+/**
+ * Grava a configuração da cena (nome, local, resumo, tamanho da grade).
+ * Narrador-only e revisão conferida DENTRO da RPC (migration 0097) —
+ * `vtt_scenes` só tem SELECT para `authenticated`.
+ */
+export async function definirConfigDaCena(params: {
+  sceneId: string;
+  nome: string;
+  local: string | null;
+  resumo: string | null;
+  largura: number;
+  altura: number;
+  revisionEsperada: number;
+}): Promise<ResultadoEscrita & { cena?: CenaVtt }> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("set_vtt_scene_config", {
+    p_scene_id: params.sceneId,
+    p_nome: params.nome,
+    p_local: params.local,
+    p_resumo: params.resumo,
+    p_largura: params.largura,
+    p_altura: params.altura,
+    p_expected_revision: params.revisionEsperada,
+  });
+  if (error) return { ok: false, erro: error.message };
+  const linha = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;
+  if (!linha) return { ok: false, erro: "Alteração da cena recusada pelo servidor." };
+  return {
+    ok: true,
+    cena: {
+      id: linha.id as string,
+      campaignId: linha.campaign_id as string,
+      nome: linha.nome as string,
+      local: (linha.local as string | null) ?? null,
+      resumo: (linha.resumo as string | null) ?? null,
+      largura: linha.largura as number,
+      altura: linha.altura as number,
+      revision: linha.revision as number,
+      camadas: (linha.camadas as Record<string, unknown> | null) ?? {},
+    },
+  };
+}
+
+/**
+ * Apaga as marcações que expiraram — as de "esta rodada" quando a
+ * rodada vira, as de "este combate" quando as rodadas encerram.
+ *
+ * Roda no SERVIDOR (`expirar_marcas_da_cena`, migration 0098) pra que a
+ * marcação suma no mesmo instante pra todo mundo. Filtrar no cliente
+ * deixaria cada participante com uma tela diferente da do vizinho.
+ */
+export async function expirarMarcasDaCena(params: {
+  sceneId: string;
+  rodadaAtual: number;
+  combateEncerrado: boolean;
+}): Promise<number> {
+  const client = await getScopedTableClient();
+  const { data } = await client.rpc("expirar_marcas_da_cena", {
+    p_scene_id: params.sceneId,
+    p_rodada_atual: params.rodadaAtual,
+    p_combate_encerrado: params.combateEncerrado,
+  });
+  return typeof data === "number" ? data : 0;
+}
 
 /** Relê a trilha da cena — usado pra resolver conflito de revisão sem recarregar a cena inteira. */
 export async function carregarTrilha(sceneId: string): Promise<TrilhaPersistida | null> {

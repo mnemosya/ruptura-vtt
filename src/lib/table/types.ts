@@ -19,7 +19,7 @@ export interface Campaign {
   current_round: number;
   /** Cena atual (checkpoint v0.39, migration 0017). */
   current_scene: number;
-  /** Estado da trilha de turnos (migration 0036) — ver TurnTrackState em turnTrack.ts. Vem como JSON bruto do banco. */
+  /** HERDADO (migration 0036): a trilha de turnos vive em `vtt_turn_tracks` desde a 0088. Sem leitor nem escritor — ver turnTrack.ts. Vem como JSON bruto do banco. */
   turn_track: import("./turnTrack").TurnTrackState;
   /** Versão para concorrência otimista das Server Actions de turno (migration 0036). */
   turn_track_version: number;

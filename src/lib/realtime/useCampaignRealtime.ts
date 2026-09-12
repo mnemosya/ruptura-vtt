@@ -66,7 +66,7 @@ export function aggregateRealtimeStatus(statuses: RealtimeStatus[]): RealtimeSta
   return "connecting";
 }
 
-/** Canais de SESSÃO: a campanha (inclui `turn_track`) e o log da mesa. */
+/** Canais de SESSÃO: a campanha e o log da mesa. (A trilha de turnos tem canal próprio — `subscribeToTrilhaDaMesa`.) */
 export function useCampaignSessionRealtime(
   campaignId: string | null,
   callbacks: CampaignSessionRealtimeCallbacks,
