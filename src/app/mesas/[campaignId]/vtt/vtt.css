@@ -597,6 +597,12 @@
   transition: color .14s, border-color .14s, background .14s;
 }
 .rv-btn:hover:not(:disabled) { color: var(--rv-ink); border-color: var(--rv-line-max); background: var(--rv-raise); }
+/* A classe repetida não é enfeite: `mesa.css` tem `.rm-root button {
+   font-family: inherit }`, que é classe+ELEMENTO e portanto vence
+   `.rv-btn` sozinho. O resultado era silencioso e generalizado — a
+   receita pedia o display e TODO botão do VTT saía em Inter. Duas
+   vezes a mesma classe empata em força e desempata pela ordem. */
+.rv-btn.rv-btn { font-family: var(--rv-display), sans-serif; }
 
 .rv-btn--pri {
   border-color: color-mix(in srgb, var(--cy) 53%, transparent);
@@ -3520,72 +3526,125 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 
 /* ── Confirmação de colocação (`_shell/ColocarImagem.tsx`) ─────────── */
+/* Irmã da Biblioteca no fluxo e no desenho: as duas perguntam "entra
+   como o quê?". Mesma casca, mesmo cabeçalho (ícone + título + linha
+   de modo), mesmos chips, mesma frase de instrução — o que muda é a
+   origem do arquivo, não a decisão. Por isso ela herda a MESMA
+   receita, e não uma parecida. */
 .rv-colocar-imagem {
-  position: absolute; z-index: 60; left: 50%; top: 50%; transform: translate(-50%,-50%);
-  width: min(320px, calc(100% - 32px));
-  display: flex; flex-direction: column; gap: 10px; padding: 12px;
-  border: 1px solid rgba(127,155,209,.4); border-radius: 4px;
-  background: var(--rv-raise, #10161e);
-  box-shadow: 0 18px 48px rgba(0,0,0,.6);
+  position: fixed; z-index: 60; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; gap: 14px;
+  width: min(380px, calc(100vw - 32px)); max-height: calc(100dvh - 48px);
+  padding: 16px;
+  border: 1px solid var(--rv-line-2); border-radius: 2px;
+  background: linear-gradient(180deg, #0b1322, #080e19);
+  box-shadow: 0 20px 56px rgba(0, 0, 0, .7);
 }
-.rv-colocar-imagem__cab { display: flex; align-items: center; justify-content: space-between; }
+.rv-colocar-imagem__cab { display: flex; align-items: center; gap: 10px; }
+.rv-colocar-imagem__ico { display: grid; place-items: center; flex: none; color: var(--jf-acento, var(--cy)); }
+.rv-colocar-imagem__txt { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
 .rv-colocar-imagem__titulo {
-  display: inline-flex; align-items: center; gap: 6px;
-  color: #7f9bd1; font: 700 12px var(--rv-display);
+  margin: 0; color: var(--rv-ink);
+  font: 700 12px var(--rv-display), sans-serif;
+  letter-spacing: .12em; text-transform: uppercase; line-height: 1;
+}
+.rv-colocar-imagem__modo {
+  display: flex; align-items: center; gap: 6px; margin: 0;
+  color: var(--rv-ink-faint); font: 10px var(--font-mono), monospace;
   letter-spacing: .14em; text-transform: uppercase;
 }
-.rv-colocar-imagem__cab button {
-  display: grid; place-items: center; width: 22px; height: 22px;
-  border: 1px solid rgba(255,255,255,.12); border-radius: 3px;
-  background: transparent; color: var(--txt-dim);
+.rv-colocar-imagem__modo::before {
+  content: ""; flex: none; width: 4px; height: 4px; border-radius: 999px; background: var(--jf-acento, var(--cy));
 }
-.rv-colocar-imagem__cab button:hover:not(:disabled) { border-color: rgba(255,95,116,.6); color: #ffb3bd; }
+.rv-colocar-imagem__fechar {
+  width: 24px; height: 24px; flex: none; display: grid; place-items: center;
+  border: 1px solid var(--rv-line-strong); border-radius: 2px;
+  background: transparent; color: var(--rv-ink-faint); cursor: pointer;
+  transition: color .14s, border-color .14s;
+}
+.rv-colocar-imagem__fechar:hover:not(:disabled) { color: var(--rv-ink); border-color: var(--rv-line-hover, var(--jf-acento, var(--cy))); }
+.rv-colocar-imagem__fechar:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 2px; }
+.rv-colocar-imagem__fechar:disabled { opacity: .45; cursor: not-allowed; }
+
 /* Xadrez por baixo: sem ele, não dá pra saber se o PNG tem fundo
    transparente ou fundo branco — e a diferença só aparece no mapa. */
 .rv-colocar-imagem__preview {
-  display: grid; place-items: center; max-height: 180px; overflow: hidden;
-  border: 1px solid rgba(255,255,255,.1); border-radius: 3px;
+  display: grid; place-items: center; max-height: 190px; overflow: hidden;
+  border: 1px solid var(--rv-line-2); border-radius: 2px;
   background-color: #0d1219;
   background-image:
     linear-gradient(45deg, rgba(255,255,255,.04) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.04) 75%),
     linear-gradient(45deg, rgba(255,255,255,.04) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.04) 75%);
   background-size: 16px 16px; background-position: 0 0, 8px 8px;
 }
-.rv-colocar-imagem__preview img { max-width: 100%; max-height: 180px; object-fit: contain; }
-.rv-colocar-imagem__papeis { display: flex; flex-direction: column; gap: 5px; }
-.rv-colocar-imagem__papeis button {
-  display: flex; align-items: center; gap: 8px; padding: 8px 10px; text-align: left;
-  border: 1px solid rgba(255,255,255,.12); border-radius: 4px;
-  background: transparent; color: var(--txt-dim);
-}
-.rv-colocar-imagem__papeis button.is-ativo {
-  border-color: rgba(127,155,209,.7); background: rgba(127,155,209,.14); color: #cfe0f7;
-}
-.rv-colocar-imagem__papeis button:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
-.rv-colocar-imagem__papeis span { display: flex; flex-direction: column; gap: 1px; }
-.rv-colocar-imagem__papeis strong { font-size: 12px; font-weight: 600; }
-.rv-colocar-imagem__papeis em { font-size: 10.5px; font-style: normal; opacity: .72; }
-.rv-colocar-imagem__medida {
-  margin: 0; font-size: 10.5px; line-height: 1.5; color: var(--txt-dim);
+.rv-colocar-imagem__preview img { max-width: 100%; max-height: 190px; object-fit: contain; }
+
+.rv-colocar-imagem__papel { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rv-colocar-imagem__papel-rotulo {
   font-family: var(--font-mono), monospace;
+  font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--rv-ink-faint);
 }
+.rv-colocar-imagem__papel-opcoes { display: flex; gap: 4px; }
+.rv-colocar-imagem__chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--rv-line-2); border-radius: 2px;
+  background: transparent; color: var(--rv-ink-dim);
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  cursor: pointer; transition: color .14s, border-color .14s, background .14s;
+}
+.rv-colocar-imagem__chip:hover:not(:disabled)[aria-checked="false"] { color: var(--rv-ink); border-color: var(--rv-line-strong); }
+.rv-colocar-imagem__chip[aria-checked="true"] {
+  border-color: color-mix(in srgb, var(--jf-acento, var(--cy)) 53%, transparent);
+  background: color-mix(in srgb, var(--jf-acento, var(--cy)) 12%, transparent);
+  color: var(--jf-acento, var(--cy)); font-weight: 700;
+}
+.rv-colocar-imagem__chip:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 2px; }
+.rv-colocar-imagem__chip:disabled { opacity: .4; cursor: not-allowed; }
+/* Mesma armadilha do `.rv-btn`: `.rm-root button` vence uma classe só. */
+.rv-colocar-imagem__chip.rv-colocar-imagem__chip,
+.rv-biblioteca__chip.rv-biblioteca__chip { font-family: var(--rv-display), sans-serif; }
+
+/* A frase que responde ao clique nos chips — o único retorno imediato
+   daquele clique, já que a colocação só acontece em "Colocar". */
+.rv-colocar-imagem__instrucao {
+  margin: -8px 0 0; display: flex; align-items: flex-start; gap: 7px;
+  font-family: var(--font-mono), monospace;
+  font-size: 9.5px; line-height: 1.5; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--rv-ink-dim);
+}
+.rv-colocar-imagem__instrucao::before {
+  content: ""; flex: none; width: 4px; height: 4px; margin-top: 5px; border-radius: 999px;
+  background: var(--jf-acento, var(--cy));
+}
+.rv-colocar-imagem__medida {
+  margin: -8px 0 0; color: var(--rv-ink-faint);
+  font-family: var(--font-mono), monospace;
+  font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
+}
+
+/* Aviso e recusa: mesma caixa de superfície que a Biblioteca usa, só
+   trocando o par de cores — âmbar avisa, vermelho recusa. */
 .rv-colocar-imagem__aviso,
 .rv-colocar-imagem__erro {
-  display: flex; align-items: flex-start; gap: 5px; margin: 0; font-size: 11px; line-height: 1.4;
+  margin: 0; padding: 8px 10px;
+  border-radius: 2px;
+  font-family: var(--font-mono), monospace;
+  font-size: 9.5px; line-height: 1.55; letter-spacing: .06em; text-transform: uppercase;
 }
-.rv-colocar-imagem__aviso { color: #f0c98a; }
-.rv-colocar-imagem__erro { color: #ffb3bd; }
+.rv-colocar-imagem__aviso {
+  border: 1px solid color-mix(in srgb, var(--rv-am) 40%, transparent);
+  background: color-mix(in srgb, var(--rv-am) 10%, transparent);
+  color: var(--rv-am);
+}
+.rv-colocar-imagem__erro {
+  border: 1px solid color-mix(in srgb, var(--rv-dg) 45%, transparent);
+  background: var(--rv-dg-soft);
+  color: var(--rv-dg);
+}
+
 .rv-colocar-imagem__acoes { display: flex; justify-content: flex-end; gap: 6px; }
-.rv-colocar-imagem__acoes button {
-  display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; font-size: 11.5px;
-  border: 1px solid rgba(255,255,255,.14); border-radius: 4px;
-  background: transparent; color: var(--txt-dim);
-}
-.rv-colocar-imagem__confirmar {
-  border-color: rgba(127,155,209,.7) !important;
-  background: rgba(127,155,209,.2) !important; color: #cfe0f7 !important;
-}
-.rv-colocar-imagem__acoes button:disabled { opacity: .5; cursor: not-allowed; }
 .rv-girando { animation: rv-girar 1s linear infinite; }
 @keyframes rv-girar { to { transform: rotate(360deg); } }
 

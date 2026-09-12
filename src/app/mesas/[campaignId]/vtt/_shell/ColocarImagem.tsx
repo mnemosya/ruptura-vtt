@@ -31,9 +31,9 @@
  */
 
 import { useEffect, useState } from "react";
-import { Image as IconeImagem, Layers, Loader2, TriangleAlert, X } from "lucide-react";
+import { Image as IconeImagem, Loader2, Map, Shapes, X } from "lucide-react";
 import type { ImagemPreparada } from "../../../../../lib/vtt/imagePreparation";
-import { larguraInicialM } from "../_dominio/imagemCena";
+import { larguraInicialM, pesoLegivel } from "../_dominio/imagemCena";
 
 export interface PropsColocarImagem {
   preparada: ImagemPreparada;
@@ -71,16 +71,22 @@ export function ColocarImagem({
 
   const larguraM = larguraInicialM(papel, preparada.widthPx, larguraCena);
   const alturaM = (larguraM * preparada.heightPx) / preparada.widthPx;
-  const megabytes = preparada.blob.size / (1024 * 1024);
 
   return (
     <div className="rv-colocar-imagem" role="dialog" aria-modal="true" aria-label="Colocar imagem na cena">
       <header className="rv-colocar-imagem__cab">
-        <span className="rv-colocar-imagem__titulo">
-          <IconeImagem size={14} aria-hidden /> Colocar na cena
-        </span>
-        <button type="button" onClick={onCancelar} disabled={ocupado} aria-label="Cancelar">
-          <X size={14} aria-hidden />
+        <span className="rv-colocar-imagem__ico" aria-hidden><IconeImagem size={15} /></span>
+        <div className="rv-colocar-imagem__txt">
+          <h2 className="rv-colocar-imagem__titulo">Colocar na cena</h2>
+          {/* A linha de modo das janelas de ferramenta: o que ESTA
+              janela está segurando agora. Peso e pixels são o que
+              identifica o arquivo, então é isso que ela diz. */}
+          <p className="rv-colocar-imagem__modo">
+            {preparada.widthPx} × {preparada.heightPx} px · {pesoLegivel(preparada.blob.size)}
+          </p>
+        </div>
+        <button type="button" className="rv-colocar-imagem__fechar" onClick={onCancelar} disabled={ocupado} aria-label="Cancelar">
+          <X size={15} aria-hidden />
         </button>
       </header>
 
@@ -90,60 +96,61 @@ export function ColocarImagem({
         <img src={preparada.previewUrl} alt="" />
       </div>
 
-      <div className="rv-colocar-imagem__papeis" role="radiogroup" aria-label="Papel da imagem">
-        <button
-          type="button" role="radio" aria-checked={papel === "fundo"}
-          className={papel === "fundo" ? "is-ativo" : undefined}
-          onClick={() => setPapel("fundo")} disabled={ocupado}
-        >
-          <Layers size={14} aria-hidden />
-          <span>
-            <strong>{jaTemFundo ? "Trocar o fundo" : "Fundo do mapa"}</strong>
-            <em>nasce cobrindo a cena inteira</em>
-          </span>
-        </button>
-        <button
-          type="button" role="radio" aria-checked={papel === "tile"}
-          className={papel === "tile" ? "is-ativo" : undefined}
-          onClick={() => setPapel("tile")} disabled={ocupado}
-        >
-          <IconeImagem size={14} aria-hidden />
-          <span>
-            <strong>Imagem solta</strong>
-            <em>móvel, mancha, recorte</em>
-          </span>
-        </button>
+      {/* MESMA escolha, MESMO desenho da Biblioteca: rótulo em linha,
+          dois chips compactos e uma frase que muda junto. As duas
+          janelas fazem a mesma pergunta ("entra como o quê?") e são
+          irmãs no fluxo — desenhá-las diferente faria parecer que a
+          decisão é outra. Também é daqui que vem a palavra PEÇA, que é
+          a que aparece na tela; "tile" é nome de coluna. */}
+      <div className="rv-colocar-imagem__papel">
+        <span className="rv-colocar-imagem__papel-rotulo" id="rv-colocar-papel">Colocar como</span>
+        <div className="rv-colocar-imagem__papel-opcoes" role="radiogroup" aria-labelledby="rv-colocar-papel">
+          <button
+            type="button" role="radio" aria-checked={papel === "fundo"}
+            className="rv-colocar-imagem__chip"
+            onClick={() => setPapel("fundo")} disabled={ocupado || jaTemFundo}
+            title={jaTemFundo ? "Esta cena já tem um fundo" : undefined}
+          >
+            <Map size={12} aria-hidden /> Fundo
+          </button>
+          <button
+            type="button" role="radio" aria-checked={papel === "tile"}
+            className="rv-colocar-imagem__chip"
+            onClick={() => setPapel("tile")} disabled={ocupado}
+          >
+            <Shapes size={12} aria-hidden /> Peça
+          </button>
+        </div>
       </div>
+
+      <p className="rv-colocar-imagem__instrucao" role="status">
+        {papel === "fundo"
+          ? "Vira o mapa: nasce centrada e cobre a cena inteira"
+          : "Vira uma peça solta no centro do mapa — dá para mover, girar e redimensionar"}
+      </p>
 
       {/* Dito ANTES de confirmar, porque depois vira surpresa: trocar o
           fundo não é acrescentar um, e a cena só admite um. */}
-      {papel === "fundo" && jaTemFundo && (
-        <p className="rv-colocar-imagem__aviso">
-          <TriangleAlert size={12} aria-hidden />
-          Esta cena já tem um fundo. Remova o atual pelo painel antes de colocar outro.
+      {jaTemFundo && (
+        <p className="rv-colocar-imagem__aviso" role="status">
+          Esta cena já tem um fundo — remova o atual pelo painel para poder trocar
         </p>
       )}
 
       <p className="rv-colocar-imagem__medida">
-        {preparada.widthPx} × {preparada.heightPx} px · {megabytes.toFixed(1)} MB
-        <br />
         entra com {larguraM.toFixed(1)} × {alturaM.toFixed(1)} m no mapa
       </p>
 
-      {erro && (
-        <p className="rv-colocar-imagem__erro">
-          <TriangleAlert size={12} aria-hidden /> {erro}
-        </p>
-      )}
+      {erro && <p className="rv-colocar-imagem__erro" role="alert">{erro}</p>}
 
       <div className="rv-colocar-imagem__acoes">
-        <button type="button" onClick={onCancelar} disabled={ocupado}>Cancelar</button>
+        <button type="button" className="rv-btn" onClick={onCancelar} disabled={ocupado}>Cancelar</button>
         <button
-          type="button" className="rv-colocar-imagem__confirmar"
+          type="button" className="rv-btn rv-btn--pri"
           onClick={() => onConfirmar(papel)}
           disabled={ocupado || (papel === "fundo" && jaTemFundo)}
         >
-          {ocupado ? <Loader2 size={14} className="rv-girando" aria-hidden /> : null}
+          {ocupado ? <Loader2 size={13} className="rv-girando" aria-hidden /> : null}
           {ocupado ? "Enviando…" : "Colocar"}
         </button>
       </div>
