@@ -230,12 +230,13 @@ export interface ImagemBiblioteca {
  * coisas (a deduplicação por `sha256` é o que torna isso barato), e
  * por isso a resposta é o uso PREDOMINANTE, na ordem em que a pessoa
  * pensa quando está montando uma cena: se já está numa cena, é imagem
- * de cena; se só aparece como avatar/retrato, é rosto; sem uso nenhum,
- * é só um arquivo.
+ * de cena; se só aparece como avatar de ficha ou retrato, é imagem de
+ * TOKEN (é assim que ela aparece na mesa); sem uso nenhum, é só um
+ * arquivo.
  */
-export function usoDaImagem(img: ImagemBiblioteca): "cena" | "rosto" | "solta" {
+export function usoDaImagem(img: ImagemBiblioteca): "cena" | "token" | "solta" {
   if (img.usosCena > 0) return "cena";
-  if (img.usosAvatar > 0 || img.usosRetrato > 0) return "rosto";
+  if (img.usosAvatar > 0 || img.usosRetrato > 0) return "token";
   return "solta";
 }
 

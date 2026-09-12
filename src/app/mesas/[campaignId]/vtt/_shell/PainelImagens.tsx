@@ -56,13 +56,16 @@ export function PainelImagens({
     return a.z - b.z;
   });
 
+  // `modo` é a linha de estado que toda janela de ferramenta tem e esta
+  // não tinha — o cabeçalho ficava com um título solto. (Comentário
+  // AQUI e não entre os atributos: dentro da tag de abertura, `//` e
+  // `/* */` não são comentário de JSX, e o compilador recusa o arquivo
+  // inteiro — foi exatamente o que aconteceu.)
   return (
     <JanelaFerramenta
       id="imagens"
       icone={<Images size={14} aria-hidden />}
       titulo="Imagens"
-      // Linha de estado, como toda janela de ferramenta tem — esta não
-      // tinha, e o cabeçalho ficava com um título solto.
       modo={ordenadas.length === 0
         ? "nenhuma na cena"
         : `${ordenadas.length} ${ordenadas.length === 1 ? "imagem" : "imagens"} na cena`}

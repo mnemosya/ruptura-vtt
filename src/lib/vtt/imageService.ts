@@ -225,6 +225,23 @@ export async function assinarDownloadUrls(
 }
 
 /**
+ * Tira do Storage um objeto JÁ marcado `deleting` e confirma a remoção
+ * (a confirmação devolve a quota e apaga a linha).
+ *
+ * A ordem importa e é a mesma da coleta: objeto primeiro, linha depois.
+ * Se a remoção física falhar, a linha continua marcada e a próxima
+ * passada da coleta termina o serviço — o inverso (linha apagada,
+ * objeto órfão) deixaria bytes pagos para sempre sem dono.
+ */
+export async function removerObjetoMarcado(storagePath: string): Promise<boolean> {
+  const client = admin();
+  const { error } = await client.storage.from(BUCKET_IMAGENS_VTT).remove([storagePath]);
+  if (error) return false;
+  await client.rpc("vtt_confirmar_remocao_imagem", { p_storage_path: storagePath });
+  return true;
+}
+
+/**
  * Passada de coleta. A implementação mora em `imageGc.ts`, sem
  * `server-only`, para o script agendável poder chamar a MESMA lógica —
  * duas cópias da regra de limpeza divergiriam no primeiro ajuste.

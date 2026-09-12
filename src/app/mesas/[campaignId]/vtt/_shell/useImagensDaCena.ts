@@ -45,6 +45,7 @@ import {
   atualizarImagemCenaAction,
   cancelarUploadAction,
   criarImagemCenaAction,
+  excluirImagemDaBibliotecaAction,
   finalizarUploadCenaAction,
   lerBibliotecaImagensAction,
   lerImagensCenaAction,
@@ -328,6 +329,25 @@ export function useImagensDaCena(params: {
     }
   }, [campaignId, ehNarrador]);
 
+  /**
+   * Tira um arquivo da biblioteca da campanha. A RPC recusa quando há
+   * uso — e a mensagem dela diz quantos e onde, que é o que a pessoa
+   * precisa para resolver.
+   */
+  const excluirDaBiblioteca = useCallback(async (imagem: ImagemBiblioteca) => {
+    setOcupado(true);
+    setErro(null);
+    try {
+      const r = await excluirImagemDaBibliotecaAction(campaignId, imagem.id);
+      if (!r.ok) throw new Error(r.erro ?? "Não foi possível excluir a imagem.");
+      setBiblioteca((atual) => (atual ?? []).filter((i) => i.id !== imagem.id));
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Não foi possível excluir a imagem.");
+    } finally {
+      setOcupado(false);
+    }
+  }, [campaignId]);
+
   /** Coloca na cena um asset da biblioteca, no mesmo enquadramento do envio. */
   const colocarDaBiblioteca = useCallback(async (
     imagem: ImagemBiblioteca,
@@ -360,7 +380,7 @@ export function useImagensDaCena(params: {
     imagens, urls, selecionadaId, setSelecionadaId,
     pendente, ocupado, erro, limparErro: () => setErro(null),
     jaTemFundo,
-    biblioteca, carregandoBiblioteca, carregarBiblioteca, colocarDaBiblioteca,
+    biblioteca, carregandoBiblioteca, carregarBiblioteca, colocarDaBiblioteca, excluirDaBiblioteca,
     recarregar, prepararArquivo, confirmarColocacao, cancelarPendente,
     mover, escalar, ajustar, mudarOrdem, remover,
   };

@@ -27,7 +27,7 @@
  */
 
 import { useState } from "react";
-import { Images, Loader2, Map, Shapes, X } from "lucide-react";
+import { Images, Loader2, Map, Shapes, Trash2, X } from "lucide-react";
 import { type ImagemBiblioteca, pesoLegivel, usoDaImagem } from "../_dominio/imagemCena";
 
 export interface PropsBibliotecaImagens {
@@ -40,17 +40,32 @@ export interface PropsBibliotecaImagens {
   jaTemFundo: boolean;
   ocupado: boolean;
   onColocar: (imagem: ImagemBiblioteca, papel: "fundo" | "tile") => void;
+  /** Tira o arquivo da campanha. A ação recusa o que está em uso. */
+  onExcluir: (imagem: ImagemBiblioteca) => void;
+  /**
+   * Recusa do servidor — sobretudo "esta imagem está em uso: N em
+   * cena…". Sem mostrar isto aqui, clicar em Excluir numa imagem em
+   * uso não fazia NADA visível: a ação falhava em silêncio.
+   */
+  erro?: string | null;
   onFechar: () => void;
 }
 
 export function BibliotecaImagens({
-  imagens, carregando, urls, jaTemFundo, ocupado, onColocar, onFechar,
+  imagens, carregando, urls, jaTemFundo, ocupado, onColocar, onExcluir, erro, onFechar,
 }: PropsBibliotecaImagens) {
   /* O papel é escolhido ANTES de clicar na imagem: um clique só, e a
      miniatura é o botão. Perguntar depois ("como quer colocar?")
      colocaria um passo entre a escolha e o resultado. */
-  const [papel, setPapel] = useState<"fundo" | "tile">(jaTemFundo ? "tile" : "fundo");
+  /* PEÇA por padrão: trocar o mapa inteiro é o gesto raro (uma vez por
+     cena), pôr uma peça é o gesto de sempre. O padrão tem que ser o
+     que acontece mais, não o que é mais dramático. */
+  const [papel, setPapel] = useState<"fundo" | "tile">("tile");
   const papelEfetivo = jaTemFundo ? "tile" : papel;
+
+  /* Confirmação por ITEM: o alvo da pergunta é aquele arquivo, e uma
+     caixa global ("excluir a imagem?") não diria qual. */
+  const [confirmando, setConfirmando] = useState<string | null>(null);
 
   const visiveis = imagens ?? [];
 
@@ -106,6 +121,8 @@ export function BibliotecaImagens({
           : "A imagem escolhida vira uma peça solta no centro do mapa — dá para mover, girar e redimensionar"}
       </p>
 
+      {erro && <p className="rv-biblioteca__erro" role="alert">{erro}</p>}
+
       {carregando && imagens === null ? (
         <p className="rv-biblioteca__estado"><Loader2 size={13} className="rv-spin" aria-hidden /> Lendo a biblioteca…</p>
       ) : imagens !== null && visiveis.length === 0 ? (
@@ -115,7 +132,7 @@ export function BibliotecaImagens({
           {visiveis.map((img) => {
             const url = urls[img.id];
             return (
-              <li key={img.id}>
+              <li key={img.id} className="rv-biblioteca__celula">
                 <button
                   type="button" className="rv-biblioteca__item"
                   disabled={ocupado}
@@ -132,13 +149,43 @@ export function BibliotecaImagens({
                         meio dos mapas. */}
                     {usoDaImagem(img) !== "solta" && (
                       <span className="rv-biblioteca__selo" data-uso={usoDaImagem(img)}>
-                        {usoDaImagem(img) === "cena" ? "em cena" : "rosto"}
+                        {usoDaImagem(img) === "cena" ? "em cena" : "token"}
                       </span>
                     )}
                   </span>
                   <span className="rv-biblioteca__medida">{img.widthPx}×{img.heightPx}</span>
                   <span className="rv-biblioteca__peso">{pesoLegivel(img.bytes)}</span>
                 </button>
+
+                {/* Excluir aparece no hover do item, como o lápis das
+                    áreas no mapa — e fora do botão de colocar, senão o
+                    clique nele colocaria a imagem na cena. */}
+                {confirmando !== img.id && (
+                  <button
+                    type="button" className="rv-biblioteca__excluir"
+                    disabled={ocupado}
+                    onClick={() => setConfirmando(img.id)}
+                    aria-label="Excluir esta imagem da campanha"
+                    title="Excluir da campanha"
+                  >
+                    <Trash2 size={12} aria-hidden />
+                  </button>
+                )}
+                {confirmando === img.id && (
+                  <div className="rv-biblioteca__confirmar" role="alertdialog" aria-label="Confirmar exclusão">
+                    <p>Excluir?</p>
+                    <div>
+                      <button type="button" className="rv-biblioteca__confirmar-sim" disabled={ocupado}
+                        onClick={() => { setConfirmando(null); onExcluir(img); }}>
+                        Excluir
+                      </button>
+                      <button type="button" className="rv-biblioteca__confirmar-nao" disabled={ocupado}
+                        onClick={() => setConfirmando(null)}>
+                        Manter
+                      </button>
+                    </div>
+                  </div>
+                )}
               </li>
             );
           })}

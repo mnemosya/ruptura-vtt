@@ -4846,6 +4846,8 @@ export function VttClient({
               void imgs.colocarDaBiblioteca(img, papel, centro);
               setBibliotecaAberta(false);
             }}
+            onExcluir={(img) => { void imgs.excluirDaBiblioteca(img); }}
+            erro={imgs.erro}
             onFechar={() => setBibliotecaAberta(false)}
           />
         )}
