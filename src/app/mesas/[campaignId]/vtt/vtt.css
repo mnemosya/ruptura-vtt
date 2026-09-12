@@ -3557,7 +3557,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   content: ""; flex: none; width: 4px; height: 4px; border-radius: 999px; background: var(--jf-acento, var(--cy));
 }
 .rv-colocar-imagem__fechar {
-  width: 24px; height: 24px; flex: none; display: grid; place-items: center;
+  /* `padding: 0` é obrigatório: o padding de fábrica do <button> é
+     `1px 6px`, e num quadrado de 24px isso empurra o ícone 5px para a
+     direita do centro. `place-items: center` centra dentro da CAIXA DE
+     CONTEÚDO, que o padding já deixou torta. */
+  width: 24px; height: 24px; padding: 0; flex: none; display: grid; place-items: center;
   border: 1px solid var(--rv-line-strong); border-radius: 2px;
   background: transparent; color: var(--rv-ink-faint); cursor: pointer;
   transition: color .14s, border-color .14s;
@@ -3796,7 +3800,8 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   content: ""; flex: none; width: 4px; height: 4px; border-radius: 999px; background: var(--jf-acento, var(--cy));
 }
 .rv-biblioteca__fechar {
-  width: 24px; height: 24px; flex: none; display: grid; place-items: center;
+  /* Ver `.rv-colocar-imagem__fechar`: sem `padding: 0` o X sai do centro. */
+  width: 24px; height: 24px; padding: 0; flex: none; display: grid; place-items: center;
   border: 1px solid var(--rv-line-strong); border-radius: 2px;
   background: transparent; color: var(--rv-ink-faint); cursor: pointer;
   transition: color .14s, border-color .14s;
@@ -3864,7 +3869,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-biblioteca__celula { position: relative; }
 .rv-biblioteca__excluir {
   position: absolute; top: 10px; right: 10px; z-index: 2;
-  display: grid; place-items: center; width: 22px; height: 22px;
+  display: grid; place-items: center; width: 22px; height: 22px; padding: 0;
   border: 1px solid color-mix(in srgb, var(--rv-dg) 45%, transparent); border-radius: 2px;
   background: rgba(8, 12, 18, .86); color: var(--rv-dg);
   cursor: pointer; opacity: 0; pointer-events: none;
