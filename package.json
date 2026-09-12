@@ -2,7 +2,7 @@
   "name": "ruptura-vtt-content-pipeline",
   "version": "0.1.0",
   "private": true,
-  "description": "Pipeline de importa\u00e7\u00e3o da Biblioteca do Sistema do Ruptura VTT (Supabase/Postgres, JSONB-first).",
+  "description": "Pipeline de importação da Biblioteca do Sistema do Ruptura VTT (Supabase/Postgres, JSONB-first).",
   "type": "module",
   "scripts": {
     "dev": "next dev",
@@ -51,19 +51,22 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
+    "cannon-es": "^0.20.0",
     "dotenv": "^16.4.5",
     "lucide-react": "^1.28.0",
     "next": "^16.2.9",
     "pg": "^8.13.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@types/node": "^22.7.4",
     "@types/pg": "^8.11.10",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.185.4",
     "playwright": "^1.61.1",
     "tsx": "^4.19.1",
     "typescript": "^5.6.3"
