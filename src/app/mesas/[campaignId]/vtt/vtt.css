@@ -3303,3 +3303,57 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   outline: none; border-color: color-mix(in srgb, var(--jf-acento, #45b8c9) 55%, transparent);
 }
 .rv-marca-rotulo { pointer-events: none; font-family: var(--font-mono), monospace; }
+/* ── Editor de retrato (compartilhado HUD do jogador / gerenciador do
+   narrador, `_shell/EditorRetratoToken.tsx`) ─────────────────────── */
+.rv-editor-retrato { display: flex; flex-direction: column; gap: 8px; }
+.rv-editor-retrato__abas { display: flex; gap: 4px; }
+.rv-editor-retrato__abas button {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px; font-size: 11.5px; border-radius: 5px;
+  border: 1px solid rgba(255,255,255,.14); background: transparent; color: var(--txt-dim);
+}
+.rv-editor-retrato__abas button.is-ativa {
+  border-color: rgba(240,161,50,.55); background: rgba(240,161,50,.16); color: var(--am);
+}
+.rv-editor-retrato__abas button:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rv-editor-retrato__nota { margin: 0; font-size: 10.5px; color: var(--txt-dim); }
+.rv-editor-retrato__preview {
+  display: grid; place-items: center; width: 96px; height: 96px;
+  border-radius: 6px; overflow: hidden;
+  border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04);
+  font-size: 10.5px; color: var(--txt-dim);
+}
+.rv-editor-retrato__preview img { width: 100%; height: 100%; object-fit: cover; }
+.rv-editor-retrato__medida { margin: 0; font-size: 10.5px; color: var(--txt-dim); font-family: var(--font-mono), monospace; }
+.rv-editor-retrato__acoes { display: flex; gap: 6px; }
+.rv-editor-retrato__erro { display: flex; align-items: center; gap: 5px; margin: 0; font-size: 11px; color: #ffb3bd; }
+/* Remover é destrutivo: fica separado das ações de salvar, pela mesma
+   razão que "encerrar rodada" fica longe de "ocultar". */
+.rv-editor-retrato__remover {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 5px;
+  margin-top: 4px; padding: 4px 8px; font-size: 11px;
+  border-radius: 5px; border: 1px solid rgba(255,255,255,.12);
+  background: transparent; color: var(--txt-dim);
+}
+.rv-editor-retrato__remover:hover:not(:disabled) {
+  border-color: rgba(255,95,116,.6); background: rgba(255,95,116,.18); color: #ffb3bd;
+}
+
+/* ── Painel de imagens da cena (`_shell/PainelImagens.tsx`) ──────── */
+.rv-imagens-lista { display: flex; flex-direction: column; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.rv-imagens-item {
+  display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 8px;
+  padding: 5px 6px; border-radius: 5px; border: 1px solid rgba(255,255,255,.08);
+}
+.rv-imagens-item[data-selecionada="true"] { border-color: rgba(240,161,50,.55); background: rgba(240,161,50,.1); }
+.rv-imagens-item[data-invisivel="true"] { opacity: .55; }
+.rv-imagens-item__miniatura {
+  width: 40px; height: 40px; border-radius: 4px; overflow: hidden;
+  background: rgba(255,255,255,.05); display: grid; place-items: center;
+}
+.rv-imagens-item__miniatura img { width: 100%; height: 100%; object-fit: cover; }
+.rv-imagens-item__rotulo { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.rv-imagens-item__papel { font-size: 11.5px; color: var(--txt-forte); }
+.rv-imagens-item__medida { font-size: 10px; color: var(--txt-dim); font-family: var(--font-mono), monospace; }
+.rv-imagens-item__acoes { display: flex; gap: 3px; }
+.rv-imagens-vazio { margin: 0; font-size: 11px; color: var(--txt-dim); }

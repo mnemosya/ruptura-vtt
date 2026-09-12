@@ -17,7 +17,7 @@
  * simples, sem tentar mesclar histórias concorrentes).
  */
 
-export type FerramentaId = "interagir" | "dados" | "medir" | "marcar" | "terreno" | "objetos" | "areas" | "rodadas";
+export type FerramentaId = "interagir" | "dados" | "medir" | "marcar" | "terreno" | "objetos" | "imagens" | "areas" | "rodadas";
 
 export const ROTULO_FERRAMENTA: Record<FerramentaId, string> = {
   interagir: "Interagir",
@@ -26,6 +26,7 @@ export const ROTULO_FERRAMENTA: Record<FerramentaId, string> = {
   marcar: "Marcar",
   terreno: "Terreno",
   objetos: "Objetos",
+  imagens: "Imagens",
   areas: "Áreas",
   rodadas: "Rodadas",
 };
@@ -37,6 +38,8 @@ export const ATALHO_FERRAMENTA: Record<FerramentaId, string> = {
   marcar: "D",
   terreno: "T",
   objetos: "O",
+  // I estava livre — as ferramentas ocupavam V/L/M/D/T/O/A/R.
+  imagens: "I",
   // R estava livre: as outras teclas simples em uso na mesa são
   // V/M/D/T/O/A (ferramentas) e Q/E (girar token em posicionamento).
   // P deixou de ser atalho de ferramenta com a remoção de "Apontar"
@@ -45,7 +48,7 @@ export const ATALHO_FERRAMENTA: Record<FerramentaId, string> = {
   rodadas: "R",
 };
 
-const TECLA_PARA_FERRAMENTA: Record<string, FerramentaId> = { v: "interagir", l: "dados", m: "medir", d: "marcar", t: "terreno", o: "objetos", a: "areas", r: "rodadas" };
+const TECLA_PARA_FERRAMENTA: Record<string, FerramentaId> = { v: "interagir", l: "dados", m: "medir", d: "marcar", t: "terreno", o: "objetos", i: "imagens", a: "areas", r: "rodadas" };
 
 /**
  * Ferramentas visíveis pro papel — Terreno é sempre narrador; ÁREAS e
@@ -69,7 +72,10 @@ const TECLA_PARA_FERRAMENTA: Record<string, FerramentaId> = { v: "interagir", l:
  */
 export function ferramentasParaPapel(ehNarrador: boolean): FerramentaId[] {
   const base: FerramentaId[] = ["interagir", "dados", "medir", "marcar", "areas", "rodadas"];
-  return ehNarrador ? [...base, "terreno", "objetos"] : base;
+  // Imagem de cena é montagem de mesa, mesma categoria de terreno e
+  // objetos. O retrato de token, que o jogador pode trocar, NÃO passa
+  // por esta ferramenta — ele vive no HUD do token selecionado.
+  return ehNarrador ? [...base, "terreno", "objetos", "imagens"] : base;
 }
 
 /**

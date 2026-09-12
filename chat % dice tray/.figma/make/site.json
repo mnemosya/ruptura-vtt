@@ -1,0 +1,10 @@
+{
+  "description": "Generates clear, markdown-free text outputs with attached references, ideal for professionals needing precise and sourced content quickly.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

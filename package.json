@@ -47,7 +47,10 @@
     "check:admin-temporary-effects": "tsx scripts/dev/check-admin-temporary-effects.ts",
     "check:admin-inventory-runes-market": "tsx scripts/dev/check-admin-inventory-runes-market.ts",
     "check:admin-companions-trama": "tsx scripts/dev/check-admin-companions-trama.ts",
-    "check:motion": "tsx scripts/dev/check-motion.ts"
+    "check:motion": "tsx scripts/dev/check-motion.ts",
+    "test:vtt-imagens": "tsx scripts/test-vtt-imagens.ts",
+    "check:vtt-imagens-servidor": "tsx scripts/dev/check-vtt-imagens-servidor.ts",
+    "gc:vtt-imagens": "tsx scripts/dev/gc-vtt-imagens.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
@@ -59,6 +62,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "server-only": "^0.0.1",
+    "sharp": "^0.34.5",
     "three": "^0.185.1"
   },
   "devDependencies": {

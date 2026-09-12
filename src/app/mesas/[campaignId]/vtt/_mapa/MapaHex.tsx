@@ -275,7 +275,9 @@ export interface PropsMapaHex {
    */
   terrenoReal?: MapaTerreno;
   /** Ferramenta ativa — controla se o mapa aceita arrastar token / pintar célula. */
-  ferramenta?: "interagir" | "dados" | "medir" | "marcar" | "terreno" | "objetos" | "areas" | "rodadas";
+  // Espelha `FerramentaId` (`_ferramentas/controlador.ts`) — repetido
+  // como literal para o mapa não depender do módulo de ferramentas.
+  ferramenta?: "interagir" | "dados" | "medir" | "marcar" | "terreno" | "objetos" | "imagens" | "areas" | "rodadas";
 
   /**
    * ÁREAS DE EFEITO — desenho (camada visual, `pointer-events: none`) e
