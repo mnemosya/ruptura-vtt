@@ -3144,9 +3144,13 @@ function Token({
           arquivo próprio, endereço externo, ou o avatar HERDADO da
           ficha (0105). O mapa não conhece essa precedência e não
           deveria — para ele é uma URL ou nada. */}
-      <clipPath id={`clip-${token.id}`}><circle r={raio - 5} /></clipPath>
+      {/* O recorte encosta na borda: `raio - LARGURA_ANEL / 2` é a margem
+          INTERNA do anel, não uma folga arbitrária. Com retrato, cada
+          pixel que sobra de fundo é rosto que não coube — e o disco é
+          pequeno na tela, então não há de onde tirar. A silhueta
+          procedural usa o mesmo recorte e não perde nada com isso. */}
+      <clipPath id={`clip-${token.id}`}><circle r={raio - (estado.selecionado ? 1.5 : 1)} /></clipPath>
       <g clipPath={`url(#clip-${token.id})`}>
-        <rect x={-raio} y={-raio} width={raio * 2} height={raio * 2} fill={`${cor}1f`} />
         {token.retrato ? (
           <image
             href={token.retrato}
@@ -3159,24 +3163,18 @@ function Token({
           />
         ) : (
           <>
+            <rect x={-raio} y={-raio} width={raio * 2} height={raio * 2} fill={`${cor}1f`} />
             <circle cx={0} cy={-raio * 0.18} r={raio * 0.34} fill={cor} opacity="0.55" />
             <ellipse cx={0} cy={raio * 0.62} rx={raio * 0.58} ry={raio * 0.46} fill={cor} opacity="0.42" />
           </>
         )}
       </g>
-      {/* Com retrato, a sigla vira uma FAIXA no rodapé do disco em vez
-          de um carimbo no meio da cara. Ela não some: é ela que
-          identifica o token quando dois personagens se parecem, e é o
-          que resta legível com o mapa afastado. */}
-      {token.retrato ? (
-        <g clipPath={`url(#clip-${token.id})`} pointerEvents="none">
-          <rect x={-raio} y={raio * 0.34} width={raio * 2} height={raio * 0.66} fill="#050a0fcc" />
-          <text className="rv-token-sigla" y={raio * 0.82} textAnchor="middle"
-            style={{ fontSize: raio * 0.42 }}>
-            {token.sigla}
-          </text>
-        </g>
-      ) : (
+      {/* A sigla é o retrato de quem não tem retrato. Com imagem ela sai
+          de cena inteira — nem carimbo no meio da cara, nem faixa no
+          rodapé comendo um terço do disco. Quem precisa do nome tem o
+          rótulo do token, o HUD ao selecionar e o hover; o disco é
+          pequeno demais para carregar as duas coisas. */}
+      {!token.retrato && (
         <text className="rv-token-sigla" y={raio * 0.16} textAnchor="middle" style={{ fontSize: raio * 0.62 }}>
           {token.sigla}
         </text>
