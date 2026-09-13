@@ -17,12 +17,17 @@
  * língua dela. O erro continua indo pro logger central, com escopo
  * próprio — `mesas.vtt` distingue, no log, uma falha da MESA de uma
  * falha de outra rota da campanha.
+ *
+ * NÃO importa `vtt.css` daqui. Quem importa é a `page.tsx` do segmento:
+ * um boundary é um cliente que quase nunca monta, e o chunk de CSS
+ * pendurado nele fica sem `<link>` no documento — o dev derrubava a
+ * mesa inteira com "No link element found for chunk". Importada pela
+ * página, a folha entra no segmento e vale para os dois.
  */
 
 import { useEffect } from "react";
 import Link from "next/link";
 import { logError } from "../../../../lib/logger";
-import "./vtt.css";
 
 export default function VttError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {

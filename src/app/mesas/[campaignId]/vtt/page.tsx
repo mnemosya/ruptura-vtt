@@ -11,6 +11,10 @@
 
 import { resolveCampaignAccess } from "../../../../lib/campaign/access";
 import { VttClient } from "./VttClient";
+// No SEGMENTO, não só no cliente: assim a folha da mesa também vale
+// para o `error.tsx` ao lado, que precisa dela justamente quando o
+// `VttClient` não chegou a montar.
+import "./vtt.css";
 
 export const dynamic = "force-dynamic";
 
