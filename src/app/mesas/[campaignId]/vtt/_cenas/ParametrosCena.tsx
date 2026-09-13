@@ -94,7 +94,10 @@ export function ParametrosCena(p: PropsParametrosCena) {
         <button
           type="button" className="rv-gav-fechar" onClick={p.onFechar}
           aria-label="Fechar os parâmetros"
-        ><X size={15} aria-hidden="true" /></button>
+        >
+          <X size={15} aria-hidden="true" />
+          <span className="rv-dica rv-dica--abaixo">Fechar</span>
+        </button>
       </header>
 
       <div className="rv-gav-folha-corpo">

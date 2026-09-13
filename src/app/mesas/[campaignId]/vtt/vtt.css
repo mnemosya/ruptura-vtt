@@ -4028,6 +4028,27 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    espaço — pastas à esquerda (caminho), mapas no meio (destino),
    jogadores à direita (quem está onde).                              */
 .rv-gaveta {
+  /* Os APELIDOS históricos (`--cy`, `--txt`, `--linha`…) são declarados
+     em `.rv-mesa`, e a gaveta vive fora dela por portal. Sem repeti-los
+     aqui, `.rv-btn--pri` pedia `var(--cy)` e recebia nada: cor e borda
+     caíam no herdado, e todo botão da gaveta saía BRANCO. É a segunda
+     cara da mesma armadilha dos `--rv-*`, e some junto com ela. */
+  --cy: var(--rv-cy);
+  --am: var(--rv-am);
+  --dg: var(--rv-dg);
+  --ok: var(--rv-ok);
+  --ar: var(--rv-ar);
+  --sup: var(--rv-panel);
+  --txt: var(--rv-ink);
+  --txt-forte: #eaf6ff;
+  --txt-dim: var(--rv-ink-dim);
+  --sombra: var(--rv-shadow-win);
+  --raio: var(--rv-r);
+  --linha: var(--rv-line);
+  --linha-2: var(--rv-line-2);
+  --linha-forte: var(--rv-line-strong);
+  --linha-hover: var(--rv-line-hover);
+
   position: fixed; z-index: 70; left: 0; right: 0; top: 0;
   display: flex; flex-direction: column;
   height: min(620px, 72vh);
@@ -4058,10 +4079,19 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-gav-modo::before {
   content: ""; flex: none; width: 4px; height: 4px; border-radius: 999px; background: var(--jf-acento);
 }
-/* A busca cresce e empurra os botões para a direita: numa gaveta larga
-   ela não disputa espaço com ninguém, e por isso deixou de aparecer e
-   sumir conforme o tamanho do catálogo. */
-.rv-gav-cab .rv-cena-busca-casca { flex: 1 1 auto; max-width: 420px; }
+/* A busca tem largura FIXA e quem cresce é o vão depois dela: um campo
+   que estica até onde couber vira uma faixa de 700px num monitor largo,
+   e campo de busca não fica melhor por ser maior. O vão empurra o
+   grupo de botões para a borda direita, que é onde ação de janela
+   mora. */
+.rv-gav-cab .rv-cena-busca-casca { flex: 0 0 auto; width: 320px; }
+.rv-gav-espaco { flex: 1 1 auto; }
+/* Os botões-ícone do cabeçalho também explicam o que são. */
+.rv-gav-cab .rv-btn, .rv-gav-fechar { position: relative; }
+.rv-gav-cab .rv-btn:hover .rv-dica,
+.rv-gav-cab .rv-btn:focus-visible .rv-dica,
+.rv-gav-fechar:hover .rv-dica,
+.rv-gav-fechar:focus-visible .rv-dica { opacity: 1; transition-delay: .35s; }
 .rv-gav-fechar {
   width: 28px; height: 28px; flex: none; padding: 0; display: grid; place-items: center;
   border: 1px solid var(--rv-line-strong); border-radius: 2px;
@@ -4086,11 +4116,12 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   padding: 14px 12px; border-right: 1px solid var(--rv-line-2);
 }
 .rv-gav-pastas { display: flex; flex-direction: column; gap: 3px; margin: 0; padding: 0; list-style: none; }
-/* O recuo é a hierarquia. Quatro níveis é o teto do banco (0117), então
-   o degrau pode ser generoso sem risco de a coluna acabar. */
-.rv-pasta-linha[data-nivel="1"] { margin-left: 14px; }
-.rv-pasta-linha[data-nivel="2"] { margin-left: 28px; }
-.rv-pasta-linha[data-nivel="3"] { margin-left: 42px; }
+/* A hierarquia é o RECUO DO CONTEÚDO, não da caixa: recuar a linha
+   inteira deixava cada nível com uma largura diferente e a coluna
+   virava uma escada de retângulos de tamanhos variados. */
+.rv-pasta-linha[data-nivel="1"] .rv-pasta-icone { margin-left: 14px; }
+.rv-pasta-linha[data-nivel="2"] .rv-pasta-icone { margin-left: 28px; }
+.rv-pasta-linha[data-nivel="3"] .rv-pasta-icone { margin-left: 42px; }
 
 .rv-gav-conteudo {
   flex: 1 1 auto; min-width: 0; overflow-y: auto;
@@ -4114,7 +4145,20 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   background: var(--rv-raise);
   transition: border-color .14s, background .14s, transform .14s;
 }
-.rv-cena-ladrilho:hover { border-color: var(--rv-line-strong); background: var(--rv-sunken); }
+/* O hover CLAREIA o ladrilho inteiro — imagem incluída — no tom da
+   ferramenta, e mais fraco que o estado ativo, que é o mesmo tom mais
+   forte. Antes ele escurecia só a faixa de baixo, o que lia como "a
+   legenda mudou", não como "este cartão está sob o cursor". */
+.rv-cena-ladrilho:hover {
+  border-color: color-mix(in srgb, var(--jf-acento) 45%, transparent);
+  background: color-mix(in srgb, var(--jf-acento) 6%, transparent);
+}
+.rv-cena-ladrilho::after {
+  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: var(--jf-acento); opacity: 0; transition: opacity .14s;
+}
+.rv-cena-ladrilho:hover::after { opacity: .07; }
+.rv-cena-ladrilho[data-vista]:hover::after { opacity: .1; }
 /* A cena ABERTA leva o acento da ferramenta; a do PALCO, o verde de
    quem está lá. São dois fatos diferentes e podem cair em ladrilhos
    diferentes — é a distância entre eles que a gaveta existe pra

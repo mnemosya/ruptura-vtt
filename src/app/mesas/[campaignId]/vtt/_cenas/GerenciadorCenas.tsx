@@ -693,7 +693,14 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
         || (c.local ?? "").toLocaleLowerCase("pt-BR").includes(termo))
     : verArquivo
       ? arquivadas
-      : todas.filter((c) => c.arquivadaEm === null && c.pastaId === pastaAtual);
+      // `null` deixou de significar "as da raiz" e passou a significar
+      // TODAS: a pergunta que se faz ao abrir o catálogo é "que cenas
+      // eu tenho?", e responder com um subconjunto que depende de onde
+      // a pessoa estava obrigava a entrar em cada pasta pra ter
+      // certeza. Pasta é filtro, não esconderijo.
+      : pastaAtual === null
+        ? todas.filter((c) => c.arquivadaEm === null)
+        : todas.filter((c) => c.arquivadaEm === null && c.pastaId === pastaAtual);
 
   /** As subpastas da pasta aberta. Somem na busca e no arquivo. */
   const subpastas = (buscando || verArquivo)
@@ -768,6 +775,8 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
           />
         </span>
 
+        <span className="rv-gav-espaco" />
+
         {/* Criar some na aba de arquivo: uma cena nova nasce em uso, e
             oferecer "Nova cena" ali prometeria criar algo arquivado,
             que não existe. */}
@@ -787,8 +796,15 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
               onClick={() => setCriandoPasta(true)}
             >
               <FolderPlus size={15} aria-hidden="true" />
+              {/* A dica diz ONDE a pasta vai nascer: com o trilho à
+                  esquerda, a pasta selecionada é o destino, e sem isso
+                  "Nova pasta" não conta a metade que importa. */}
               <span className="rv-dica rv-dica--abaixo">
-                {trilha.length >= 4 ? "As pastas vão até quatro níveis" : "Nova pasta"}
+                {trilha.length >= 4
+                  ? "As pastas vão até quatro níveis"
+                  : pastaAtual === null
+                    ? "Nova pasta"
+                    : `Nova pasta dentro de ${trilha[trilha.length - 1]?.nome}`}
               </span>
             </button>
           </>
@@ -808,7 +824,10 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
         <button
           type="button" className="rv-gav-fechar" onClick={p.onFechar}
           aria-label="Fechar o catálogo de cenas"
-        ><X size={16} aria-hidden="true" /></button>
+        >
+          <X size={16} aria-hidden="true" />
+          <span className="rv-dica rv-dica--abaixo">Fechar</span>
+        </button>
       </header>
 
       {(criando || criandoPasta) && (
@@ -888,9 +907,9 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
               onDrop={(e) => { e.preventDefault(); if (arrastandoId) void moverCena(arrastandoId, null); }}
             >
               <Clapperboard size={14} aria-hidden="true" />
-              <span className="rv-pasta-nome-txt">Catálogo</span>
+              <span className="rv-pasta-nome-txt">Todas</span>
               <span className="rv-pasta-contagem">
-                {todas.filter((c) => c.arquivadaEm === null && c.pastaId === null).length}
+                {todas.filter((c) => c.arquivadaEm === null).length}
               </span>
             </button>
 
@@ -933,7 +952,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                 onDragLeave={() => setPastaAlvo(null)}
                 onDrop={(e) => { e.preventDefault(); if (arrastandoId) void moverCena(arrastandoId, null); }}
                 data-alvo={pastaAlvo === "__raiz__" || undefined}
-              >Catálogo</button>
+              >Todas</button>
               {trilha.map((f, i) => (
                 <span key={f.id} className="rv-pasta-degrau-casca">
                   <span className="rv-pasta-sep" aria-hidden="true">/</span>
@@ -1016,7 +1035,9 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                   // Na busca o ladrilho diz ONDE a cena mora — sem isso, o
                   // resultado é um nome solto e a pessoa continua sem
                   // saber onde procurar da próxima vez.
-                  caminhoPasta={buscando && c.pastaId ? pastaPorId.get(c.pastaId)?.caminho ?? null : null}
+                  caminhoPasta={(buscando || pastaAtual === null) && c.pastaId
+                    ? pastaPorId.get(c.pastaId)?.caminho ?? null
+                    : null}
                   alvoDeJogador={alvoJogadorId === c.id}
                   arrasto={{
                     arrastando: arrastandoId === c.id,
