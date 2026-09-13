@@ -363,7 +363,7 @@ function montarPecas(campaignId: string | null): Peca[] { return [
     </Secao>
   ) },
   { chave: "jan-medir", grupo: "Janelas de ferramenta", rotulo: "Medir", render: () => (
-    <Secao titulo="Medir" sub={<>Régua instantânea (só pra você) ou permanente (fica pra mesa), com dobras fixadas em Q. Componente: <code>_shell/PainelMedir.tsx</code>.</>}>
+    <Secao titulo="Medir" sub={<>Duração (some ao concluir ou fica no mapa) e visibilidade (só pra você ou pra mesa) como eixos independentes, com dobras fixadas em Q. Componente: <code>_shell/PainelMedir.tsx</code>.</>}>
       <VitrineMedir />
     </Secao>
   ) },

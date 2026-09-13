@@ -67,7 +67,6 @@ const VISIBILIDADES: { valor: VisibilidadeMedicao; nome: string; sub: string; Ic
 export function PainelMedir(p: PropsPainelMedir) {
   const duracaoAtiva = DURACOES.find((m) => m.valor === p.modo.duracao) ?? DURACOES[0];
   const visibilidadeAtiva = VISIBILIDADES.find((m) => m.valor === p.modo.visibilidade) ?? VISIBILIDADES[0];
-  const medindo = p.resumo !== null;
 
   return (
     <JanelaFerramenta
@@ -200,7 +199,6 @@ export function PainelMedir(p: PropsPainelMedir) {
             {p.dobras} dobra{p.dobras === 1 ? "" : "s"} fixada{p.dobras === 1 ? "" : "s"}
           </p>
         )}
-        {!medindo && <p className="rv-fp-medida-ocioso">Nenhuma medição em andamento</p>}
       </div>
 
       {/* Limpar só aparece quando há o que limpar — um botão morto
