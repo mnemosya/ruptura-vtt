@@ -4030,6 +4030,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    mora. */
 .rv-gav-cab .rv-cena-busca-casca { flex: 0 0 auto; width: 320px; }
 .rv-gav-espaco { flex: 1 1 auto; }
+.rv-gav-acoes { display: flex; align-items: center; gap: 6px; flex: none; }
 /* Os botões-ícone do cabeçalho também explicam o que são. */
 .rv-gav-cab .rv-btn, .rv-gav-fechar { position: relative; }
 .rv-gav-cab .rv-btn:hover .rv-dica,
@@ -4971,3 +4972,21 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
   margin: 0; font-family: var(--font-mono), monospace; font-size: 10px; color: var(--rv-ink-faint);
 }
 .rv-erro-mesa__acoes { display: flex; gap: 8px; margin-top: 6px; }
+
+/* ── Menu do "Nova cena" (cabeçalho da gaveta) ───────────────────────
+   Ao contrário do menu do ladrilho, este NÃO precisa de `fixed` medido:
+   o cabeçalho da gaveta não rola e não recorta, então ancorar no botão
+   basta — e ancorado ele acompanha o botão sem uma medição que possa
+   ficar velha. Alinhado pela ESQUERDA porque o botão é largo e a sobra
+   da janela está do lado de dentro. */
+.rv-gav-menu-casca { position: relative; display: inline-flex; }
+.rv-cena-menu.rv-gav-menu {
+  /* `box-sizing` explícito: a gaveta é montada por PORTAL no `body`, e
+     o reset global do projeto vive dentro de `.rv-mesa` — sem isto, a
+     largura declarada ganhava o padding e a borda por fora. Mesma
+     pegadinha do campo de confirmação da exclusão de pasta. */
+  box-sizing: border-box;
+  position: absolute; top: calc(100% + 4px); left: 0; width: 200px;
+}
+/* O chevron diz que o botão ABRE algo, e é secundário ao rótulo. */
+.rv-btn-chevron { margin-left: 1px; opacity: .7; }

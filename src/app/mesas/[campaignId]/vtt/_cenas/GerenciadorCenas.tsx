@@ -32,7 +32,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  AlertTriangle, Archive, ChevronDown, Clapperboard, FolderPlus, ImagePlus, Loader2, Plus, Search, Undo2, X,
+  AlertTriangle, Archive, ChevronDown, Clapperboard, FilePlus2, FolderPlus, ImagePlus, Loader2, Plus, Search, Undo2, X,
 } from "lucide-react";
 import { CartaoCena } from "./CartaoCena";
 import { MiniCartaoCena } from "./MiniCartaoCena";
@@ -190,6 +190,15 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
   const [criandoDeMapa, setCriandoDeMapa] = useState(false);
   const [erroMapa, setErroMapa] = useState<string | null>(null);
   const campoMapaRef = useRef<HTMLInputElement | null>(null);
+  /**
+   * O menu do "Nova cena". As duas origens de uma cena — do zero e a
+   * partir de um mapa — eram dois botões de peso desigual: um rotulado
+   * e primário, outro um ícone sem nome ao lado. Quem nunca tinha
+   * clicado no ícone não sabia que a segunda opção existia. Uma escolha
+   * só, com as duas saídas nomeadas, é o que o gesto sempre foi.
+   */
+  const [menuNovaAberto, setMenuNovaAberto] = useState(false);
+  const menuNovaRef = useRef<HTMLSpanElement | null>(null);
   const [alvoId, setAlvoId] = useState<string | null>(null);
 
   /**
@@ -1004,6 +1013,21 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
     );
   }
 
+  /** As duas saídas que quem abre um menu espera: clicar fora e Escape. */
+  useEffect(() => {
+    if (!menuNovaAberto) return;
+    const foraDaqui = (e: MouseEvent) => {
+      if (!menuNovaRef.current?.contains(e.target as Node)) setMenuNovaAberto(false);
+    };
+    const escape = (e: KeyboardEvent) => { if (e.key === "Escape") setMenuNovaAberto(false); };
+    document.addEventListener("mousedown", foraDaqui);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("mousedown", foraDaqui);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [menuNovaAberto]);
+
   /** A corrente do breadcrumb, da raiz até a pasta aberta. */
   const trilha: PastaCena[] = [];
   for (let id = pastaAtual; id !== null; ) {
@@ -1062,18 +1086,35 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
             que não existe. */}
         {!verArquivo && (
           <>
-            <button
-              type="button" className="rv-btn rv-btn--pri" data-testid="cena-nova"
-              disabled={criando} onClick={() => setCriando(true)}
-            ><Plus size={15} aria-hidden="true" /> Nova cena</button>
-            <button
-              type="button" className="rv-btn rv-cena-btn-icone" data-testid="cena-de-mapa-abrir"
-              aria-label="Nova cena a partir de um mapa"
-              onClick={() => campoMapaRef.current?.click()}
-            >
-              <ImagePlus size={15} aria-hidden="true" />
-              <span className="rv-dica rv-dica--abaixo">Nova cena a partir de um mapa</span>
-            </button>
+            <span className="rv-gav-menu-casca" ref={menuNovaRef}>
+              <button
+                type="button" className="rv-btn rv-btn--pri" data-testid="cena-nova"
+                aria-haspopup="menu" aria-expanded={menuNovaAberto}
+                disabled={criando}
+                onClick={() => setMenuNovaAberto((a) => !a)}
+              >
+                <Plus size={15} aria-hidden="true" /> Nova cena
+                <ChevronDown size={13} aria-hidden="true" className="rv-btn-chevron" />
+              </button>
+              {menuNovaAberto && (
+                <span className="rv-cena-menu rv-gav-menu" role="menu" data-testid="cena-nova-menu">
+                  <button
+                    type="button" role="menuitem" className="rv-cena-menu-item"
+                    data-testid="cena-nova-do-zero"
+                    onClick={() => { setMenuNovaAberto(false); setCriando(true); }}
+                  >
+                    <FilePlus2 size={14} aria-hidden="true" /> Do zero
+                  </button>
+                  <button
+                    type="button" role="menuitem" className="rv-cena-menu-item"
+                    data-testid="cena-de-mapa-abrir"
+                    onClick={() => { setMenuNovaAberto(false); campoMapaRef.current?.click(); }}
+                  >
+                    <ImagePlus size={14} aria-hidden="true" /> A partir de um mapa
+                  </button>
+                </span>
+              )}
+            </span>
             <button
               type="button" className="rv-btn rv-cena-btn-icone" data-testid="pasta-nova"
               aria-label="Nova pasta"

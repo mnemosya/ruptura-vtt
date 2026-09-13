@@ -74,7 +74,12 @@ export function GavetaCasca(p: PropsGavetaCasca) {
         </span>
 
         <span className="rv-gav-espaco" />
-        {p.acoes}
+        {/* AS AÇÕES SÃO UM GRUPO, e o fechar não é uma delas. Soltos na
+            mesma linha com o mesmo vão, "Nova cena", "Nova pasta",
+            "Arquivo" e o X pareciam quatro botões irmãos — e o X é o
+            único que não faz nada no catálogo, ele descarta a janela
+            inteira. Vão menor entre as ações, vão maior antes do X. */}
+        <span className="rv-gav-acoes">{p.acoes}</span>
 
         <button
           type="button" className="rv-gav-fechar" onClick={p.onFechar}

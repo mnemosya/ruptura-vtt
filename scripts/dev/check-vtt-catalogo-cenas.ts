@@ -193,6 +193,8 @@ async function main() {
     await page.locator('[data-testid="barra-cenas"]').click();
     await page.waitForSelector('[data-testid="cenas-lista"]', { timeout: 5000 });
     await page.locator('[data-testid="cena-nova"]').click();
+    // "Nova cena" virou menu: a criação do zero é o primeiro item.
+    await page.locator('[data-testid="cena-nova-do-zero"]').click();
     await page.locator('[data-testid="cena-nova-nome"]').fill("Porão Alagado");
     await page.locator('[data-testid="cena-nova-confirmar"]').click();
     await page.waitForFunction(
@@ -287,6 +289,8 @@ async function main() {
       return rota.continue();
     });
     await page.locator('[data-testid="cena-nova"]').click();
+    // "Nova cena" virou menu: a criação do zero é o primeiro item.
+    await page.locator('[data-testid="cena-nova-do-zero"]').click();
     await page.locator('[data-testid="cena-nova-nome"]').fill("Cena Que Não Nasce");
     await page.locator('[data-testid="cena-nova-confirmar"]').click();
     let erroVisivel = false;
