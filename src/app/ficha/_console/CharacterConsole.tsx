@@ -52,7 +52,7 @@ import { SkillsGrid } from "./panels/SkillsGrid";
 import { TabRail } from "./panels/TabRail";
 import { MinimizedDockContent } from "./panels/MinimizedDockContent";
 import { PinsRow, ConditionsPanel } from "./panels/PinsAndConditions";
-import { FaixaEvolucao, ModoChip, VerNoMapaChip } from "./panels/ModoEvolucao";
+import { ModoChip, VerNoMapaChip } from "./panels/ModoEvolucao";
 import {
   AttackModal,
   BackpackPickerModal,
@@ -380,7 +380,6 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
         alturaFallbackInicial={viewMode === "foco" ? FOCO_ALTURA_INICIAL : undefined}
         conteudoChave={`${viewMode}:${aba}`}
       >
-        <FaixaEvolucao api={api} />
         {viewMode === "painel" ? (
           <div className="rc-grid">
             <IdentityAside

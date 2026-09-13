@@ -99,13 +99,14 @@ async function main() {
     // 3 — liga o Modo Evolução.
     await chip.click();
     await page.waitForTimeout(400);
-    const faixa = await page.locator('[data-testid="console-modo-faixa"]').isVisible();
     const pressedDepois = await chip.getAttribute("aria-pressed");
-    ok("3 (chip liga o Modo Evolução e a faixa de aviso aparece)", faixa && pressedDepois === "true", `faixa=${faixa}, aria-pressed=${pressedDepois}`);
+    ok("3 (chip liga o Modo Evolução)", pressedDepois === "true", `aria-pressed=${pressedDepois}`);
 
-    // 4 — PM real na faixa (a ficha tem 4/6).
-    const textoFaixa = (await page.locator('[data-testid="console-modo-faixa"]').textContent()) ?? "";
-    ok("4 (a faixa mostra o PM REAL da ficha, não um valor inventado)", textoFaixa.includes("4") && textoFaixa.includes("6"), textoFaixa.replace(/\s+/g, " ").trim().slice(0, 90));
+    // 4 — a faixa de aviso NÃO existe mais: quem diz que o modo está
+    // ligado é o próprio chip, em âmbar. O contador de PM saiu com ela
+    // e ainda não tem outro lugar.
+    const faixa = await page.locator('[data-testid="console-modo-faixa"]').count();
+    ok("4 (não há faixa de aviso — o chip é o único indicador do modo)", faixa === 0, `faixa=${faixa}`);
 
     // 5 — passo aparece e sobe o atributo de verdade.
     const passo = page.locator('[data-testid="console-attr-passo-corpo"]');
@@ -133,8 +134,8 @@ async function main() {
     await chip.click();
     await page.waitForTimeout(400);
     const passoFinal = await page.locator('[data-testid="console-attr-passo-corpo"]').count();
-    const faixaFinal = await page.locator('[data-testid="console-modo-faixa"]').count();
-    ok("7 (voltar ao Modo Jogo retranca a edição e some a faixa)", passoFinal === 0 && faixaFinal === 0, `passos=${passoFinal}, faixa=${faixaFinal}`);
+    const pressedFinal = await chip.getAttribute("aria-pressed");
+    ok("7 (voltar ao Modo Jogo retranca a edição)", passoFinal === 0 && pressedFinal !== "true", `passos=${passoFinal}, aria-pressed=${pressedFinal}`);
 
     // 8 — A MUDANÇA SOBREVIVE AO FECHAR. Este é o critério que faltava:
     // o Console vive dentro do VTT, onde não existe botão "Salvar

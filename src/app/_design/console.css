@@ -63,31 +63,16 @@
 .rc-modo-chip[data-evolucao="true"] {
   color: var(--am); border-color: color-mix(in srgb, var(--am) 55%, transparent); background: color-mix(in srgb, var(--am) 10%, transparent);
 }
+.rc-modo-chip[data-evolucao="true"] .rc-modo-chip-ico { color: inherit; }
 .rc-modo-chip[data-evolucao="true"]:hover { border-color: var(--am); background: color-mix(in srgb, var(--am) 18%, transparent); }
-.rc-modo-chip-ico { display: grid; place-items: center; flex: none; }
+/* O ícone tem a MESMA cor do ícone de "Rolar defesa" (#0485A3, fixado
+   lá no TSX) e não acompanha o texto no hover — igual lá, onde a cor é
+   atributo do SVG e só o rótulo clareia. Os ícones do Console são
+   lucide com `stroke="currentColor"`, então basta pintar o invólucro;
+   a única exceção é o estado LIGADO do Evoluir, logo abaixo, onde o
+   âmbar é o estado e vale pro chip inteiro. */
+.rc-modo-chip-ico { display: grid; place-items: center; flex: none; color: #0485a3; }
 .rc-modo-chip-ico svg { display: block; }
-
-.rc-modo-faixa {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  padding: 6px 12px;
-  border-bottom: 1px solid color-mix(in srgb, var(--am) 28%, transparent);
-  background: color-mix(in srgb, var(--am) 8%, transparent);
-}
-.rc-modo-faixa-selo {
-  flex: none; padding: 1px 6px;
-  border: 1px solid color-mix(in srgb, var(--am) 45%, transparent);
-  color: var(--am);
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
-}
-.rc-modo-faixa-texto { flex: 1 1 auto; min-width: 0; font-size: 11px; line-height: 1.35; color: var(--rc-dim); }
-.rc-modo-faixa-pm {
-  flex: none;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--am);
-}
-.rc-modo-faixa-pm strong { font-size: 13px; }
-.rc-modo-faixa-pm span { color: var(--rc-dim); }
 
 /* Passo −/+ dentro de um card de atributo/perícia. Compacto de
    propósito: divide espaço com o valor e o botão de rolar. */
@@ -662,18 +647,16 @@
 }
 .rc-nric-integ-val { font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; font-weight: 700; color: #d6e4f5; }
 .rc-nric-integ-total { font-weight: 400; color: rgba(214, 228, 245, 0.60); }
-/* GAP CONSTANTE entre os segmentos, e a sobreposição de −1px saiu.
-   O desenho de cada pip (parallelogramo com entalhe diagonal) foi feito
-   pra escala 1:1, mas o SVG renderiza com `preserveAspectRatio: none`
-   numa caixa de ~20,4px vindo de um viewBox de 21,08 — ou seja, ~3%
-   comprimido. O entalhe de um pip encaixava no do vizinho por
-   sobreposição fixa em PIXEL, que não acompanha essa compressão: as
-   caixas do DOM ficavam uniformes (medido: −1px em todos os 11 vãos) e
-   mesmo assim o vão DESENHADO alternava de largura, porque as pontas
-   das diagonais caíam em subpixels diferentes a cada par.
-   Com `gap`, o espaço entre dois vizinhos é o mesmo número inteiro de
-   pixels sempre, e não depende mais de onde a diagonal cai. */
-.rc-nric-pips { display: flex; width: 100%; gap: 2px; }
+/* SEM `gap` e SEM sobreposição — as caixas encostam.
+   O vão entre dois pips não é espaçamento: é o ENTALHE DIAGONAL
+   desenhado dentro de cada um (a ponta de cima recua ~17% da largura).
+   Acrescentar `gap` somava um segundo vão em cima desse, e o conjunto
+   ficava rasgado; a sobreposição de −1px que havia antes fazia o
+   contrário — comia parte do entalhe, e como as caixas começam em
+   posições fracionárias o quanto ela comia mudava de par pra par, que
+   era a irregularidade original. Encostadas, todas as caixas têm a
+   mesma largura e o entalhe é o mesmo em todos os pares. */
+.rc-nric-pips { display: flex; width: 100%; }
 .rc-nric-pip { flex: 1; min-width: 0; height: 14px; padding: 0; border: none; background: none; cursor: pointer; }
 .rc-nric-pip svg { width: 100%; height: 100%; display: block; }
 .rc-nric-pip:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
@@ -985,7 +968,38 @@
   border-top: 1px solid rgba(0, 212, 255, 0.14);
   border-right: 1px solid rgba(0, 212, 255, 0.14);
   border-bottom: 1px solid rgba(0, 212, 255, 0.14);
-  background: rgba(17, 29, 49, 0.70);
+  /* SÓLIDO. Translúcido, o trilho deixava o mapa (ou o que estiver por
+     baixo da janela) atravessar entre os ícones, e as abas ficavam
+     ilegíveis dependendo do que passava por trás. Ele é chassi da
+     janela, não conteúdo dela. */
+  background: #0e1420;
+}
+
+/* ── Trilho do lado ESQUERDO ────────────────────────────────────────
+   Quando a janela é arrastada pra perto da borda direita, o trilho —
+   que fica do lado de FORA da borda — sairia da tela levando junto a
+   navegação do Console. Nesse caso ele troca de lado (ver
+   `ladoDoTrilho`, em `geometry.ts`).
+
+   Duas coisas mudam, e as duas são espelhamento: a ORDEM (o wrap é
+   flex, então `row-reverse` põe o trilho antes da janela) e a BORDA
+   aberta, que precisa ser a do lado que encosta na janela — senão
+   sobra um fio solto de um lado e falta do outro. */
+.rc-window-wrap[data-trilho="esquerda"] { flex-direction: row-reverse; }
+.rc-window-wrap[data-trilho="esquerda"] .rc-tabrail {
+  border-right: none;
+  border-left: 1px solid rgba(0, 212, 255, 0.14);
+}
+/* A dica de cada aba nasce à esquerda do ícone; com o trilho à
+   esquerda ela apontaria pra fora da tela. */
+.rc-window-wrap[data-trilho="esquerda"] .rc-tabrail-hint {
+  right: auto; left: calc(100% + 9px);
+}
+/* O realce da aba de MODO é uma borda só num lado — do lado que
+   encosta na janela, pelo mesmo motivo da borda do trilho. */
+.rc-window-wrap[data-trilho="esquerda"] .rc-tabrail-btn--modo[aria-selected="true"] {
+  border-left: 1px solid rgba(0, 212, 255, 0.15);
+  border-right: 1px solid #108bac;
 }
 .rc-tabrail-group { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .rc-tabrail-divider { height: 1px; align-self: stretch; background: #0e3647; }

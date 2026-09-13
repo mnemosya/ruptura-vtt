@@ -21,6 +21,7 @@ import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 
 import { createPortal } from "react-dom";
 import { Minus, Square, Minimize2, Maximize2, X } from "lucide-react";
 import { useConsoleWindow } from "./useConsoleWindow";
+import { ladoDoTrilho, type LadoTrilho } from "./geometry";
 import { useConsoleAncorado } from "./ConsoleCloseContext";
 import { Scrollbar } from "./scrollbar";
 import { HudCursor } from "../../mesas/_global/GlobalShell";
@@ -201,6 +202,27 @@ export function ConsoleWindow({
     return () => document.removeEventListener("keydown", onKeyDown, true);
   }, [aberto, minimizada, fechar, ancorado]);
 
+  /**
+   * LADO DO TRILHO DE ABAS. Ele é irmão da janela e fica do lado de
+   * FORA da borda — arrastar a janela até a borda direita da tela
+   * levava as abas embora primeiro. Como elas são a navegação do
+   * Console, perdê-las é perder o acesso ao conteúdo.
+   *
+   * Recalculado a cada mudança de geometria e a cada resize do
+   * navegador; a decisão em si é pura e sem memória (`ladoDoTrilho`),
+   * então o trilho volta pra direita assim que a janela para de
+   * escondê-lo.
+   */
+  const [ladoTrilho, setLadoTrilho] = useState<LadoTrilho>("direita");
+  const geoAtual = win.geo;
+  useEffect(() => {
+    if (!aberto || !geoAtual) return;
+    const recalcular = () => setLadoTrilho(ladoDoTrilho(geoAtual, { w: window.innerWidth, h: window.innerHeight }));
+    recalcular();
+    window.addEventListener("resize", recalcular);
+    return () => window.removeEventListener("resize", recalcular);
+  }, [aberto, geoAtual]);
+
   if (!aberto || !win.geo) return null;
 
   const conteudo = (
@@ -213,6 +235,7 @@ export function ConsoleWindow({
         ref={windowRef}
         className="rc-window-wrap"
         data-mode={win.mode}
+        data-trilho={ladoTrilho}
         role="dialog"
         aria-modal={!minimizada && !ancorado}
         aria-labelledby={tituloId}

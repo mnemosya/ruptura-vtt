@@ -82,24 +82,16 @@ export function ModoChip({ modo, onAlternar }: { modo: ConsoleModo; onAlternar: 
   );
 }
 
-/** Faixa sob a barra de título, só em Modo Evolução. */
-export function FaixaEvolucao({ api }: { api: ConsoleApi }) {
-  if (api.modo !== "evolucao") return null;
-  return (
-    <div className="rc-modo-faixa" role="status" data-testid="console-modo-faixa">
-      <span className="rc-modo-faixa-selo">Modo Evolução</span>
-      <span className="rc-modo-faixa-texto">
-        Alterações em atributos, perícias e talentos são permanentes e ficam no histórico da ficha.
-      </span>
-      {api.pm && (
-        <span className="rc-modo-faixa-pm" title={`${api.pm.disponivel} de ${api.pm.total} PM disponíveis`}>
-          PM <strong>{api.pm.disponivel}</strong>
-          <span>/{api.pm.total}</span>
-        </span>
-      )}
-    </div>
-  );
-}
+/* Aqui ficava a FAIXA DE AVISO do Modo Evolução — selo, a frase
+   "alterações são permanentes e ficam no histórico" e o contador de
+   PM. Saiu: o aviso repetia, em uma faixa fixa, o que o próprio chip
+   da barra de título já diz ao ficar âmbar, e custava uma tira inteira
+   de altura da janela em TODA sessão de evolução — a mesma troca ruim
+   que o HUD do token fazia no mapa.
+
+   O que saiu junto e NÃO tem outro lugar hoje: o contador de PM
+   (`api.pm`). O dado continua existindo na API do Console; só não é
+   mostrado em lugar nenhum. */
 
 /**
  * Passo −/+ de um valor permanente. Aparece SÓ em Modo Evolução; em

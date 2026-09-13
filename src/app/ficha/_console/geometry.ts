@@ -179,6 +179,37 @@ function ancoraSuperiorEsquerda(vp: Viewport, w: number, h: number): { x: number
  * de tamanho. Permite que ela saia parcialmente da tela (comportamento
  * normal de janela), mas nunca por completo.
  */
+/**
+ * De que LADO da janela o trilho de abas fica — direita por padrão,
+ * esquerda quando a janela foi arrastada pra tão perto da borda
+ * direita que o trilho sairia da tela.
+ *
+ * O trilho é irmão da janela e some junto com ela: arrastar a janela
+ * pra fora pela direita (o que `limitarPosicao` permite, e deve
+ * permitir — só uma faixa precisa continuar visível) levava as abas
+ * embora primeiro, porque elas ficam do lado de FORA da borda direita.
+ * As abas são a navegação do Console: perdê-las é perder o acesso ao
+ * conteúdo, não só um pedaço de desenho.
+ *
+ * A DIREITA é o lado natural e o trilho volta pra lá assim que couber
+ * de novo — a esquerda é exceção enquanto dura, não um segundo estado
+ * que gruda. Por isso a função é SEM MEMÓRIA: o lado é sempre
+ * calculado da geometria atual, e não existe como ficar "preso" na
+ * esquerda depois que a janela voltou pro meio da tela.
+ *
+ * Quando não cabe de nenhum dos dois lados (janela mais larga que a
+ * viewport), fica na direita: a esquerda não resolveria nada e trocar
+ * de lado sem ganho só embaralha a tela.
+ */
+export type LadoTrilho = "direita" | "esquerda";
+
+export function ladoDoTrilho(geo: Geometry, vp: Viewport): LadoTrilho {
+  const cabeDireita = geo.x + geo.w + TABLIST_W <= vp.w;
+  if (cabeDireita) return "direita";
+  const cabeEsquerda = geo.x - TABLIST_W >= 0;
+  return cabeEsquerda ? "esquerda" : "direita";
+}
+
 export function limitarPosicao(geo: Geometry, vp: Viewport): Geometry {
   const minX = -(geo.w - MARGEM_VISIVEL_X);
   const maxX = vp.w - MARGEM_VISIVEL_X;
