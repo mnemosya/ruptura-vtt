@@ -70,7 +70,8 @@ import {
   decidirNovoMovimento, proximaExpiracao, removerProtecoesExpiradas,
 } from "./_dominio/reconciliacaoPosicao";
 import {
-  garantirCenaSemente, lerCenaAtiva, lerCenaAction, lerPalcoAction, moverTokenAction, obterUsuarioAtualAction,
+  garantirCenaSemente, lerCenaAtiva, lerCenaAction, lerCenaApresentadaAction, lerPalcoAction,
+  moverTokenAction, obterUsuarioAtualAction,
   pintarTerrenoAction, criarMarcaAction, apagarMarcaAction, rotacionarTokenAction,
   criarMedicaoAction, apagarMedicaoAction, limparMedicoesAction,
   obterControleAction, criarTokenAction, editarTokenAction,
@@ -803,6 +804,37 @@ export function VttClient({
     setAvisoPalco("O narrador mudou a cena.");
     trocarParaCena(palco.sceneId, { lembrar: false });
   }, [ehNarrador, trocarParaCena]);
+
+  /**
+   * A cena que o narrador estava olhando foi arquivada ou excluída.
+   *
+   * Ficar nela seria pior que sair: excluída, ela não existe mais;
+   * arquivada, o gatilho da 0115 recusa toda escrita, e as ferramentas
+   * responderiam "restaure antes de editar" a cada gesto sem que nada
+   * na tela explicasse o motivo.
+   *
+   * O destino é o PALCO — a cena que a mesa está usando é o lugar
+   * seguro por definição, e é onde ele estaria se nunca tivesse aberto
+   * o catálogo. A memória local vai junto: insistir na cena que acabou
+   * de sair de uso repetiria o problema na próxima recarga.
+   */
+  const aoCenaSairDeUso = useCallback((sceneId: string) => {
+    if (estadoCenaRef.current?.cena.id !== sceneId) return;
+    esquecerCenaVista(campaignId);
+    const destino = cenaApresentadaRef.current?.sceneId;
+    if (destino && destino !== sceneId) {
+      trocarParaCena(destino, { lembrar: false });
+      return;
+    }
+    // Sem palco conhecido (campanha que nunca apresentou): relê o
+    // caminho de entrada, que sabe escolher sozinho.
+    void lerCenaApresentadaAction(campaignId).then((r) => {
+      if (r.ok && r.dados) {
+        setEstadoCena(r.dados);
+        adotarTrilha(r.dados.trilha ?? null);
+      }
+    }).catch(() => { /* a mensagem de erro da própria escrita já está na janela */ });
+  }, [campaignId, trocarParaCena, adotarTrilha]);
 
   useEffect(() => {
     if (!avisoPalco) return;
@@ -5359,6 +5391,7 @@ export function VttClient({
             campaignId={campaignId}
             cenaVistaId={estadoCena?.cena.id ?? null}
             palcoRevision={cenaApresentadaRef.current?.revision ?? null}
+            onCenaSaiuDeUso={aoCenaSairDeUso}
             // Duas origens de "o catálogo envelheceu": a config da cena
             // aberta (renomear/camadas) e o palco tendo andado. Somadas
             // num número só porque a reação é a mesma — reler.

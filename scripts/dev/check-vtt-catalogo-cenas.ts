@@ -207,7 +207,11 @@ async function main() {
     // `<input>`, e um filtro por texto deixaria de casar exatamente no
     // passo seguinte.
     const cartaoPonte = page.locator(`[data-cena-id="${pontoId}"]`);
-    await cartaoPonte.locator('[data-testid="cena-renomear"]').click();
+    // Renomear mudou de lugar na fase 4: saiu da fila de ícones do
+    // cartão e entrou no menu, junto de duplicar/arquivar/excluir.
+    await cartaoPonte.locator('[data-testid="cena-menu"]').click();
+    await page.locator('[data-testid="cena-menu-lista"]').waitFor({ timeout: 5000 });
+    await page.locator('[data-testid="cena-renomear"]').click();
     const campo = cartaoPonte.locator('[data-testid="cena-campo-nome"]');
     await campo.fill("Ponte Partida");
     await campo.press("Enter");

@@ -30,14 +30,18 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Clapperboard, Loader2, Plus } from "lucide-react";
+import { AlertTriangle, Archive, Clapperboard, Loader2, Plus, Undo2 } from "lucide-react";
 import { JanelaFerramenta } from "../_shell/JanelaFerramenta";
 import { CartaoCena } from "./CartaoCena";
 import {
-  apresentarCenaAction, criarCenaAction, listarCenasAction, reordenarCenasAction,
+  apresentarCenaAction, arquivarCenaAction, criarCenaAction, duplicarCenaAction,
+  excluirCenaAction, listarCenasAction, reordenarCenasAction, restaurarCenaAction,
   salvarConfigCenaAction,
 } from "../_acoes/sceneActions";
-import type { CartaoCena as DadosCartaoCena } from "../../../../../lib/vtt/sceneStorage";
+import { assinarImagensAction } from "../_acoes/imageActions";
+import type {
+  CartaoCena as DadosCartaoCena, ModoDuplicacao,
+} from "../../../../../lib/vtt/sceneStorage";
 
 export interface PropsGerenciadorCenas {
   campaignId: string;
@@ -52,6 +56,12 @@ export interface PropsGerenciadorCenas {
    * já andou seja recusado em vez de aplicado por cima.
    */
   palcoRevision?: number | null;
+  /**
+   * A cena ABERTA pelo narrador acabou de ser arquivada ou excluída.
+   * Quem decide pra onde levá-lo é o `VttClient`: só ele sabe qual cena
+   * carregar e como reassinar o Realtime.
+   */
+  onCenaSaiuDeUso?: (sceneId: string) => void;
   /**
    * Muda quando algo fora daqui alterou uma cena (renomear pela janela
    * de Configurações, por exemplo). Releitura em vez de espelhar o
@@ -72,6 +82,20 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
   const [salvandoNova, setSalvandoNova] = useState(false);
   const campoNovoRef = useRef<HTMLInputElement | null>(null);
 
+  /**
+   * As miniaturas, por id de asset.
+   *
+   * `list_vtt_scenes` devolve o ID da imagem (a escolhida a dedo ou,
+   * na falta, o fundo da cena — 0111), nunca uma URL: quem emite URL
+   * assinada é o servidor, depois de conferir se ESTA pessoa pode ver
+   * AQUELE arquivo. Um mapa separado do catálogo porque as duas coisas
+   * vencem em ritmos diferentes — a listagem é estável, a assinatura
+   * expira em 5 minutos.
+   */
+  const [miniaturas, setMiniaturas] = useState<Record<string, string>>({});
+
+  /** A aba de arquivo. Filtro de apresentação, não outra consulta. */
+  const [verArquivo, setVerArquivo] = useState(false);
   const [arrastandoId, setArrastandoId] = useState<string | null>(null);
   const [alvoId, setAlvoId] = useState<string | null>(null);
 
@@ -130,7 +154,11 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
     const geracao = ++geracaoRef.current;
     setCarregando(true);
     try {
-      const r = await listarCenasAction(p.campaignId);
+      // SEMPRE com as arquivadas: a aba de arquivo é um filtro de
+      // apresentação, não outra consulta. Buscar de novo a cada troca
+      // de aba faria o número do botão ("Arquivo (3)") depender de uma
+      // carga que só acontece depois de clicar nele.
+      const r = await listarCenasAction(p.campaignId, true);
       if (geracao !== geracaoRef.current) return;
       if (!r.ok || !r.dados) {
         setErro(r.erro ?? "Falha ao listar as cenas.");
@@ -149,6 +177,39 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
   useEffect(() => { void recarregar(); }, [recarregar, p.versaoExterna]);
 
   useEffect(() => { if (criando) campoNovoRef.current?.focus(); }, [criando]);
+
+  /**
+   * Assina as miniaturas que ainda não têm URL.
+   *
+   * Só as que faltam: a assinatura é uma ida ao servidor por leva, e
+   * repedir as que já estão na mão a cada releitura do catálogo faria
+   * renomear uma cena recarregar todas as imagens.
+   *
+   * Um id que volta de fora da resposta some em silêncio (a ação
+   * devolve só os autorizados, de propósito) — e aí o cartão mostra a
+   * inicial, que é o que ele já fazia antes de existir miniatura.
+   */
+  const idsMiniatura = (cenas ?? [])
+    .map((c) => c.miniaturaImageId)
+    .filter((id): id is string => id !== null)
+    .join(",");
+  useEffect(() => {
+    const ids = idsMiniatura.length > 0 ? idsMiniatura.split(",") : [];
+    const faltando = ids.filter((id) => !(id in miniaturas));
+    if (faltando.length === 0) return;
+    let cancelado = false;
+    void assinarImagensAction(p.campaignId, faltando)
+      .then((r) => {
+        if (cancelado || !r.ok || !r.dados) return;
+        setMiniaturas((m) => ({ ...m, ...r.dados }));
+      })
+      .catch(() => { /* sem miniatura o cartão cai na inicial */ });
+    return () => { cancelado = true; };
+    // `miniaturas` de propósito FORA das dependências: ele é escrito
+    // por este mesmo efeito, e incluí-lo faria o efeito se disparar em
+    // resposta à própria escrita.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idsMiniatura, p.campaignId]);
 
   function marcarOcupada(id: string, ligado: boolean) {
     setOcupadas((o) => {
@@ -270,6 +331,60 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
   }
 
   /**
+   * As três escritas de ciclo de vida (0116).
+   *
+   * Todas relêem o catálogo no fim, e nenhuma é otimista: duplicar cria
+   * uma cena cujo conteúdo só o servidor conhece, arquivar muda em qual
+   * aba a cena aparece, e excluir some com ela. Adivinhar qualquer um
+   * desses no cliente seria desenhar um catálogo que talvez não exista.
+   */
+  async function comCena(cena: DadosCartaoCena, escrita: () => Promise<{ ok: boolean; erro?: string }>, falha: string) {
+    marcarOcupada(cena.id, true);
+    anotarErro(cena.id, null);
+    try {
+      const r = await escrita();
+      if (!r.ok) { anotarErro(cena.id, r.erro ?? falha); return false; }
+      await recarregar();
+      return true;
+    } catch (e) {
+      anotarErro(cena.id, e instanceof Error ? e.message : falha);
+      return false;
+    } finally {
+      marcarOcupada(cena.id, false);
+    }
+  }
+
+  async function duplicar(cena: DadosCartaoCena, modo: ModoDuplicacao) {
+    await comCena(cena,
+      () => duplicarCenaAction({ campaignId: p.campaignId, sceneId: cena.id, modo }),
+      "Falha ao duplicar a cena.");
+  }
+
+  async function arquivar(cena: DadosCartaoCena) {
+    const ok = await comCena(cena,
+      () => arquivarCenaAction({ campaignId: p.campaignId, sceneId: cena.id }),
+      "Falha ao arquivar a cena.");
+    // Arquivar a cena ABERTA deixaria o narrador numa cena congelada,
+    // com as ferramentas todas respondendo "restaure antes de editar"
+    // sem que nada na tela dissesse o porquê. Quem sabe pra onde levá-lo
+    // é o `VttClient` — daqui só sai o aviso de que a cena saiu de uso.
+    if (ok && cena.id === p.cenaVistaId) p.onCenaSaiuDeUso?.(cena.id);
+  }
+
+  async function restaurar(cena: DadosCartaoCena) {
+    await comCena(cena,
+      () => restaurarCenaAction({ campaignId: p.campaignId, sceneId: cena.id }),
+      "Falha ao restaurar a cena.");
+  }
+
+  async function excluir(cena: DadosCartaoCena, nomeConfirmacao: string) {
+    const ok = await comCena(cena,
+      () => excluirCenaAction({ campaignId: p.campaignId, sceneId: cena.id, nomeConfirmacao }),
+      "Falha ao excluir a cena.");
+    if (ok && cena.id === p.cenaVistaId) p.onCenaSaiuDeUso?.(cena.id);
+  }
+
+  /**
    * Reordena otimista e confirma no servidor, uma de cada vez.
    *
    * Otimista porque arrastar precisa responder no frame do gesto.
@@ -332,7 +447,10 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
     aplicarOrdem(nova);
   }
 
-  const lista = cenas ?? [];
+  const todas = cenas ?? [];
+  const arquivadas = todas.filter((c) => c.arquivadaEm !== null);
+  // A aba de arquivo é um FILTRO da mesma carga, não outra consulta.
+  const lista = verArquivo ? arquivadas : todas.filter((c) => c.arquivadaEm === null);
   const vazio = !carregando && !erro && lista.length === 0;
 
   return (
@@ -347,6 +465,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
           // A fila não trava o gesto, mas também não é invisível: a
           // ordem na tela ainda não é a ordem confirmada.
           : reordenando ? "Salvando a ordem…"
+          : verArquivo ? `Arquivo — ${arquivadas.length === 1 ? "1 cena" : `${arquivadas.length} cenas`}`
           : lista.length === 1 ? "1 cena"
           : `${lista.length} cenas`
       }
@@ -375,7 +494,9 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
 
         {vazio && (
           <p className="rv-cena-estado" data-testid="cenas-vazio">
-            Nenhuma cena ainda. Crie a primeira para começar a preparar.
+            {verArquivo
+              ? "Nada arquivado. Arquivar tira a cena do catálogo sem apagá-la."
+              : "Nenhuma cena ainda. Crie a primeira para começar a preparar."}
           </p>
         )}
 
@@ -390,7 +511,12 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                 erro={errosPorCena[c.id] ?? null}
                 onAbrir={() => p.onAbrir(c.id)}
                 onRenomear={(nome) => void renomear(c, nome)}
+                miniaturaUrl={c.miniaturaImageId ? miniaturas[c.miniaturaImageId] ?? null : null}
                 onApresentar={() => void apresentar(c)}
+                onDuplicar={(modo) => void duplicar(c, modo)}
+                onArquivar={() => void arquivar(c)}
+                onRestaurar={() => void restaurar(c)}
+                onExcluir={(nome) => void excluir(c, nome)}
                 onMover={(d) => mover(c.id, d)}
                 // As setas NÃO travam durante a fila: travar tornaria
                 // "descer duas posições" um gesto que só funciona
@@ -443,12 +569,35 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
             </button>
           </div>
         ) : (
-          <button
-            type="button" className="rv-cena-btn" data-tipo="nova" data-testid="cena-nova"
-            onClick={() => setCriando(true)}
-          >
-            <Plus size={14} aria-hidden="true" /> Nova cena
-          </button>
+          <div className="rv-cena-rodape">
+            {/* Criar some na aba de arquivo: uma cena nova nasce em uso,
+                e oferecer "Nova cena" ali prometeria criar algo
+                arquivado, que não existe. */}
+            {!verArquivo && (
+              <button
+                type="button" className="rv-cena-btn" data-tipo="nova" data-testid="cena-nova"
+                onClick={() => setCriando(true)}
+              >
+                <Plus size={14} aria-hidden="true" /> Nova cena
+              </button>
+            )}
+            {/* O botão do arquivo só aparece quando há arquivo — ou
+                quando já se está nele, pra que exista a porta de volta.
+                Um "Arquivo (0)" permanente seria um item de interface
+                que nunca leva a lugar nenhum. */}
+            {(arquivadas.length > 0 || verArquivo) && (
+              <button
+                type="button" className="rv-cena-btn" data-tipo="arquivo"
+                aria-pressed={verArquivo}
+                data-testid="cenas-ver-arquivo"
+                onClick={() => setVerArquivo((v) => !v)}
+              >
+                {verArquivo
+                  ? <><Undo2 size={13} aria-hidden="true" /> Voltar ao catálogo</>
+                  : <><Archive size={13} aria-hidden="true" /> Arquivo ({arquivadas.length})</>}
+              </button>
+            )}
+          </div>
         )}
       </div>
     </JanelaFerramenta>

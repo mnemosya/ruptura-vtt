@@ -554,24 +554,34 @@ export async function criarCena(params: {
   if (error) return { ok: false, erro: error.message };
   const linha = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;
   if (!linha) return { ok: false, erro: "A cena não foi criada." };
+  return { ok: true, cena: cartaoDeLinhaDeCena(linha) };
+}
+
+/**
+ * Uma linha CRUA de `vtt_scenes` virando cartão.
+ *
+ * Serve a `create_vtt_scene` e `duplicate_vtt_scene`, que devolvem a
+ * linha da tabela — colunas em inglês, sem o `apresentada` e sem a
+ * miniatura derivada que `list_vtt_scenes` calcula. Nenhuma das duas
+ * pode nascer apresentada, então `apresentada` é `false` por
+ * construção, não por suposição.
+ */
+function cartaoDeLinhaDeCena(linha: Record<string, unknown>): CartaoCena {
   return {
-    ok: true,
-    cena: {
-      id: linha.id as string,
-      nome: linha.nome as string,
-      local: (linha.local as string | null) ?? null,
-      resumo: (linha.resumo as string | null) ?? null,
-      largura: linha.largura as number,
-      altura: linha.altura as number,
-      ordem: linha.ordem as number,
-      revision: linha.revision as number,
-      arquivadaEm: (linha.archived_at as string | null) ?? null,
-      apresentada: false,
-      duplicadaDe: (linha.duplicated_from_id as string | null) ?? null,
-      miniaturaImageId: (linha.thumbnail_image_id as string | null) ?? null,
-      criadaEm: linha.created_at as string,
-      atualizadaEm: linha.updated_at as string,
-    },
+    id: linha.id as string,
+    nome: linha.nome as string,
+    local: (linha.local as string | null) ?? null,
+    resumo: (linha.resumo as string | null) ?? null,
+    largura: linha.largura as number,
+    altura: linha.altura as number,
+    ordem: linha.ordem as number,
+    revision: linha.revision as number,
+    arquivadaEm: (linha.archived_at as string | null) ?? null,
+    apresentada: false,
+    duplicadaDe: (linha.duplicated_from_id as string | null) ?? null,
+    miniaturaImageId: (linha.thumbnail_image_id as string | null) ?? null,
+    criadaEm: linha.created_at as string,
+    atualizadaEm: linha.updated_at as string,
   };
 }
 
@@ -601,6 +611,70 @@ export async function apresentarCena(params: {
     revision: (linha?.revision as number | undefined) ?? undefined,
     presentedSceneId: (linha?.presented_scene_id as string | undefined) ?? params.sceneId,
   };
+}
+
+/** Os dois modos que o diálogo de duplicação oferece (0116). */
+export type ModoDuplicacao = "completa" | "mapa";
+
+/**
+ * Copia uma cena inteira. Transação única no servidor, com os ids de
+ * token e objeto remapeados — ver `duplicate_vtt_scene` (0116) para o
+ * que deliberadamente NÃO é copiado.
+ */
+export async function duplicarCena(params: {
+  sceneId: string;
+  nome?: string | null;
+  modo?: ModoDuplicacao;
+}): Promise<ResultadoCena> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("duplicate_vtt_scene", {
+    p_scene_id: params.sceneId,
+    p_nome: params.nome ?? null,
+    p_modo: params.modo ?? "completa",
+  });
+  if (error) return { ok: false, erro: error.message };
+  const linha = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;
+  if (!linha) return { ok: false, erro: "A cena não foi duplicada." };
+  return { ok: true, cena: cartaoDeLinhaDeCena(linha) };
+}
+
+/**
+ * Tira a cena do catálogo principal. Recusada na cena apresentada — a
+ * mesa ficaria numa cena congelada (o gatilho da 0115).
+ */
+export async function arquivarCena(sceneId: string): Promise<ResultadoEscrita> {
+  const client = await getScopedTableClient();
+  const { error } = await client.rpc("archive_vtt_scene", { p_scene_id: sceneId });
+  if (error) return { ok: false, erro: error.message };
+  return { ok: true };
+}
+
+/** Devolve a cena ao catálogo. */
+export async function restaurarCena(sceneId: string): Promise<ResultadoEscrita> {
+  const client = await getScopedTableClient();
+  const { error } = await client.rpc("restore_vtt_scene", { p_scene_id: sceneId });
+  if (error) return { ok: false, erro: error.message };
+  return { ok: true };
+}
+
+/**
+ * Apaga a cena e, em cascata, o conteúdo dela.
+ *
+ * `nomeConfirmacao` é conferido no SERVIDOR contra o nome real. Não é
+ * cerimônia: é o que impede uma chamada errada do cliente de apagar
+ * sessões inteiras de mesa. Arquivar continua sendo o caminho.
+ */
+export async function excluirCena(params: {
+  sceneId: string;
+  nomeConfirmacao: string;
+}): Promise<ResultadoEscrita> {
+  const client = await getScopedTableClient();
+  const { error } = await client.rpc("delete_vtt_scene", {
+    p_scene_id: params.sceneId,
+    p_nome_confirmacao: params.nomeConfirmacao,
+  });
+  if (error) return { ok: false, erro: error.message };
+  return { ok: true };
 }
 
 /** Renumera o catálogo pela ordem da lista. Devolve o catálogo já reordenado. */

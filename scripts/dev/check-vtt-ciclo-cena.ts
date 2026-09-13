@@ -41,7 +41,9 @@ function criterio(nome: string, ok: boolean, detalhe = "") {
 }
 
 /** Espera que a RPC RECUSE, e pela razão certa. */
-async function recusa(nome: string, chamada: Promise<{ error: { message: string } | null }>, trecho: string) {
+// `PromiseLike` e não `Promise`: os builders do supabase-js são
+// thenables, não promises de verdade, e só casam com a assinatura larga.
+async function recusa(nome: string, chamada: PromiseLike<{ error: { message: string } | null }>, trecho: string) {
   const { error } = await chamada;
   if (!error) { criterio(nome, false, "a RPC ACEITOU"); return; }
   criterio(nome, error.message.includes(trecho), `mensagem foi "${error.message}"`);

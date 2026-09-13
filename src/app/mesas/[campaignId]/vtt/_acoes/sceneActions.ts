@@ -35,6 +35,10 @@ import {
   criarCena,
   apresentarCena,
   reordenarCenas,
+  duplicarCena,
+  arquivarCena,
+  restaurarCena,
+  excluirCena,
   carregarObjetosDaCena,
   carregarTrilha,
   iniciarTrilha,
@@ -74,6 +78,7 @@ import {
   type EstadoCena,
   type CartaoCena,
   type Palco,
+  type ModoDuplicacao,
   type TrilhaPersistida,
   type ParametrosAreaEscrita,
   type TipoArea,
@@ -273,6 +278,60 @@ export async function apresentarCenaAction(params: {
   const r = await apresentarCena(params);
   if (!r.ok) return { ok: false, erro: r.erro ?? "Falha ao apresentar a cena." };
   return { ok: true, dados: { presentedSceneId: r.presentedSceneId ?? params.sceneId, revision: r.revision } };
+}
+
+/** Copia uma cena inteira. Transação única no servidor (0116). */
+export async function duplicarCenaAction(params: {
+  campaignId: string;
+  sceneId: string;
+  nome?: string | null;
+  modo?: ModoDuplicacao;
+}): Promise<ResultadoAcao<{ cena: CartaoCena }>> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const r = await duplicarCena(params);
+  if (!r.ok || !r.cena) return { ok: false, erro: r.erro ?? "Falha ao duplicar a cena." };
+  return { ok: true, dados: { cena: r.cena } };
+}
+
+/** Arquiva — reversível, e o caminho preferido no lugar de excluir. */
+export async function arquivarCenaAction(params: {
+  campaignId: string;
+  sceneId: string;
+}): Promise<ResultadoAcao> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const r = await arquivarCena(params.sceneId);
+  if (!r.ok) return { ok: false, erro: r.erro ?? "Falha ao arquivar a cena." };
+  return { ok: true };
+}
+
+export async function restaurarCenaAction(params: {
+  campaignId: string;
+  sceneId: string;
+}): Promise<ResultadoAcao> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const r = await restaurarCena(params.sceneId);
+  if (!r.ok) return { ok: false, erro: r.erro ?? "Falha ao restaurar a cena." };
+  return { ok: true };
+}
+
+/**
+ * Exclui. O `nomeConfirmacao` é conferido no SERVIDOR contra o nome
+ * real da cena — repetir a conferência aqui daria a impressão de que
+ * ela é da UI, e a UI é o lugar onde ela não vale nada.
+ */
+export async function excluirCenaAction(params: {
+  campaignId: string;
+  sceneId: string;
+  nomeConfirmacao: string;
+}): Promise<ResultadoAcao> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const r = await excluirCena({ sceneId: params.sceneId, nomeConfirmacao: params.nomeConfirmacao });
+  if (!r.ok) return { ok: false, erro: r.erro ?? "Falha ao excluir a cena." };
+  return { ok: true };
 }
 
 /** Reordena o catálogo. Narrador-only decidido no servidor. */
