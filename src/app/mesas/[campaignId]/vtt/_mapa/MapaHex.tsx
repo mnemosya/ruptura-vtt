@@ -3473,10 +3473,10 @@ function Token({
   const raio = TAM * 0.82 * escala;
   const cor = COR_VERTENTE[token.vertente];
   const incapaz = token.condicoes.includes("inconsciente");
-  // PV é opcional (`null` = narrador nunca definiu pra este token) —
-  // a barra some por completo em vez de fingir 0/0.
+  // PV é opcional (`null` = narrador nunca definiu pra este token).
+  // Sem ele o `aria-label` não anuncia recurso nenhum, em vez de
+  // fingir 0/0.
   const temPv = token.pv !== null && token.pvMax !== null && token.pvMax > 0;
-  const pctPv = temPv ? Math.max(0, Math.min(1, token.pv! / token.pvMax!)) : 0;
 
   const classes = [
     "rv-token",
@@ -3797,14 +3797,14 @@ function Token({
         );
       })()}
 
-      {/* barra de PV — só quando o narrador definiu um valor pra este token */}
-      {temPv && (
-        <g className="rv-token-pv" transform={`translate(${-raio * 0.8} ${-raio - 8})`}>
-          <rect width={raio * 1.6} height={4} rx={0.5} fill="#0a0f14" stroke="#000" strokeWidth="0.4" />
-          <rect width={raio * 1.6 * pctPv} height={4} rx={0.5}
-            fill={pctPv > 0.6 ? "#22d3aa" : pctPv > 0.3 ? "#f5a200" : "#ff5f74"} />
-        </g>
-      )}
+      {/* Aqui ficava a BARRA DE PV, flutuando acima do token. Saiu: o
+          cartão de hover (`_shell/CartaoTokenHover.tsx`) mostra PV, PE
+          e Mana com número exato, e sob a mesma autorização do
+          servidor — a barra mostrava só PV, só por aproximação, e para
+          QUALQUER um que enxergasse o token, inclusive quando o
+          recurso não estava público. `token.pv` continua chegando aqui
+          e continua sendo anunciado no `aria-label`: pra quem usa
+          leitor de tela, aquele rótulo é o cartão. */}
 
       {/* já agiu: dessaturação + barra diagonal */}
       {estado.jaAgiu && !estado.turnoAtual && (
