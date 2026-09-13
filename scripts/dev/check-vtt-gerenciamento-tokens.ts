@@ -34,6 +34,8 @@ function requireEnv(nome: string): string {
 
 const SUPABASE_URL = requireEnv("SUPABASE_URL");
 const ANON = requireEnv("SUPABASE_ANON_KEY");
+import { limparCampanhasDeTeste } from "./limparCampanhaDeTeste";
+
 const admin = createClient(SUPABASE_URL, requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
   auth: { persistSession: false, autoRefreshToken: false },
 });
@@ -94,6 +96,14 @@ async function main() {
     .insert({ campaign_id: campanhaId, nome: "Cena de teste", largura: 20, altura: 20 })
     .select("id").single();
   const sceneId = cena!.id as string;
+  // O palco. Desde 0111 — e explicitamente desde 0118, em que
+  // `vtt_cena_do_jogador` é `coalesce(atribuição, palco)` — o jogador
+  // não está numa cena "ativa": ele está na cena que a MESA aponta. Sem
+  // linha de palco, o jogador não está em cena nenhuma, e toda RPC de
+  // jogador é recusada com razão. A fixture foi escrita quando a
+  // visibilidade vinha de `vtt_scenes.ativa` e nunca acompanhou.
+  await admin.from("vtt_campaign_stage")
+    .insert({ campaign_id: campanhaId, presented_scene_id: sceneId, updated_by: narrador.id });
   const { data: outraCena } = await admin.from("vtt_scenes")
     .insert({ campaign_id: outraCampanhaId, nome: "Cena de outra campanha", largura: 20, altura: 20 })
     .select("id").single();
@@ -848,7 +858,11 @@ async function main() {
     const comBloqueio = mod.CAMADAS_DEFINICAO.filter((d) => d.temBloqueio).map((d) => d.id).sort();
     ok(
       "camadas-6 (só terrenoFuncional/marcas/tokens têm bloqueio de interação — as demais só visibilidade)",
-      JSON.stringify(comBloqueio) === JSON.stringify(["marcas", "terrenoFuncional", "tokens"]),
+      // `imagemFundo` e `tiles` entraram na lista quando as imagens
+      // passaram a ser arrastadas no canvas: o que se arrasta precisa
+      // poder ser travado. A lista antiga é de antes disso.
+      JSON.stringify(comBloqueio)
+        === JSON.stringify(["imagemFundo", "marcas", "terrenoFuncional", "tiles", "tokens"]),
       JSON.stringify(comBloqueio),
     );
 
@@ -876,24 +890,20 @@ async function main() {
  * de `main`.
  */
 async function limpar(): Promise<string[]> {
-  const restos: string[] = [];
-  for (const cid of criados.campanhas) {
-    await admin.from("vtt_tokens").delete().eq("campaign_id", cid);
-    await admin.from("vtt_terrain").delete().eq("campaign_id", cid);
-    await admin.from("vtt_scenes").delete().eq("campaign_id", cid);
-  }
+  // Ordem canônica e compartilhada — ver `limparCampanhaDeTeste.ts`. A
+  // ordem escrita aqui à mão ignorava o erro de cada `delete` de cena e
+  // de token; com a linha de palco (FK `on delete no action`) ela
+  // passaria a falhar calada, exatamente como falhou nos outros checks.
+  const { restos } = await limparCampanhasDeTeste(admin, {
+    campanhas: criados.campanhas,
+    usuarios: criados.usuarios,
+  });
+  // Personagens fora de campanha não são alcançados pela ordem por
+  // campanha; este check cria alguns soltos.
   for (const id of criados.personagens) {
     await admin.from("character_controllers").delete().eq("character_id", id);
     const { error } = await admin.from("characters").delete().eq("id", id);
-    if (error) restos.push(`personagem ${id}: ${error.message}`);
-  }
-  for (const id of criados.campanhas) {
-    const { error } = await admin.from("campaigns").delete().eq("id", id);
-    if (error) restos.push(`campanha ${id}: ${error.message}`);
-  }
-  for (const id of criados.usuarios) {
-    const { error } = await admin.auth.admin.deleteUser(id);
-    if (error) restos.push(`usuário ${id}: ${error.message}`);
+    if (error && !/0 rows/i.test(error.message)) restos.push(`personagem ${id}: ${error.message}`);
   }
   return restos;
 }

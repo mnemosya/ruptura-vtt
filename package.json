@@ -56,6 +56,7 @@
     "test:vtt-presets-objeto": "tsx scripts/test-vtt-presets-objeto.ts",
     "check:vtt-imagens-servidor": "tsx scripts/dev/check-vtt-imagens-servidor.ts",
     "check:vtt-coleta-confirmacao": "tsx --conditions=react-server scripts/dev/check-vtt-coleta-confirmacao.ts",
+    "check:vtt-gerenciamento-tokens": "tsx scripts/dev/check-vtt-gerenciamento-tokens.ts",
     "check:vtt-catalogo-cenas": "tsx scripts/dev/check-vtt-catalogo-cenas.ts",
     "check:vtt-apresentar-cena": "tsx scripts/dev/check-vtt-apresentar-cena.ts",
     "check:vtt-ciclo-cena": "tsx scripts/dev/check-vtt-ciclo-cena.ts",
