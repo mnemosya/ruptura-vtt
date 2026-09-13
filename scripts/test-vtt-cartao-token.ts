@@ -78,6 +78,13 @@ assert.match(vttClient, /\{cartaoHover && dadosCartao && \(/, "A montagem exige 
 assert.match(cartao, /dados: SelectedTokenHudData;/, "E o tipo do componente proíbe montar sem eles — a regra vira tipo, não convenção.");
 assert.match(vttClient, /CARENCIA_CARTAO_MS/, "E some com carência — sem ela não dá pra levar o mouse até os pips.");
 
+// ABRIR FICHA no menu contextual do token — a porta que o HUD tinha
+// ("Ficha", ao lado de desfazer/refazer) e que precisava de um lugar
+// novo. Mesma condição de lá: ficha ligada E controle.
+assert.match(vttClient, /t\.characterId && t\.podeControlar/, "Abrir ficha exige ficha ligada e controle.");
+assert.match(vttClient, /consoleDaMesa\.abrir\(/, "Abre o Console por cima da mesa, sem navegar.");
+assert.match(vttClient, /consoleDaMesa\?\.aquecer\(\)/, "E aquece o Console quando o menu abre, não quando o item é clicado.");
+
 assert.match(migration, /pv_publico boolean not null default false/);
 assert.match(migration, /pe_publico boolean not null default false/);
 assert.match(migration, /mana_publica boolean not null default false/);

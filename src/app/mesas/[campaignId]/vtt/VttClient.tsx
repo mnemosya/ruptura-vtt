@@ -30,7 +30,7 @@ import {
   UserPlus, Box,
   Radio, Focus, ClipboardPaste, Pencil, Copy, RotateCcw, RotateCw, Eye, EyeOff, Lock, Unlock, Trash2,
   Dices, Clapperboard,
-  ImageUp } from "lucide-react";
+  ImageUp , ScrollText } from "lucide-react";
 import { MapaHex, TAM, type EstadoVisualToken, type CenaMapa } from "./_mapa/MapaHex";
 import { type AlcaArea, type AreaDesenhavel, type EstadoVisualArea, type GuiaGesto } from "./_mapa/CamadaAreas";
 import { type Hex, type TamanhoCriatura, hexDistancia, hexKey, hexNoRaio, hexIguais, hexParaPixel } from "./_mapa/hex";
@@ -135,6 +135,7 @@ import { PainelCena, type ValoresCena } from "./_shell/PainelCena";
 import { GerenciadorCenas } from "./_cenas/GerenciadorCenas";
 import { esquecerCenaVista, gravarCenaVista, lerCenaVista } from "./_cenas/modelo";
 import { CartaoTokenHover } from "./_shell/CartaoTokenHover";
+import { useConsoleDaMesa } from "../_shell/ConsoleDaMesa";
 import { readSelectedTokenHudAction } from "./_acoes/hudActions";
 import type { SelectedTokenHudData } from "../../../../lib/vtt/hudTypes";
 import { EditorRetratoToken } from "./_shell/EditorRetratoToken";
@@ -2137,6 +2138,12 @@ export function VttClient({
   }, []);
 
   const [menuContextual, setMenuContextual] = useState<{ clientX: number; clientY: number; tokenId: string | null; hex: Hex } | null>(null);
+  /**
+   * O Console (ficha) aberto POR CIMA da mesa, sem navegar. `null` fora
+   * da casca da campanha — aí "Abrir ficha" cai no link direto pra
+   * `/ficha`, que continua existindo.
+   */
+  const consoleDaMesa = useConsoleDaMesa();
   const [fluxoToken, setFluxoToken] = useState<FluxoToken | null>(null);
   const fluxoTokenRef = useRef(fluxoToken);
   useEffect(() => { fluxoTokenRef.current = fluxoToken; }, [fluxoToken]);
@@ -4146,8 +4153,13 @@ export function VttClient({
     // da escolha de posição (fora do escopo de "não deve iniciar
     // acidentalmente" da seção 17, mesmo espírito).
     if (fluxoToken && fluxoToken.fase !== "configurando") return;
+    // Aquece o Console assim que o menu ABRE, não quando o item é
+    // clicado: é o que faz a ficha abrir instantânea, e é o mesmo que
+    // `AbrirFicha` faz no hover dos outros quatro pontos de entrada.
+    const t = info.tokenId ? tokenPorId.get(info.tokenId) : null;
+    if (t?.characterId && t.podeControlar) consoleDaMesa?.aquecer();
     setMenuContextual(info);
-  }, [fluxoToken]);
+  }, [fluxoToken, tokenPorId, consoleDaMesa]);
 
   function itensMenuContextual(): ItemMenuContextual[] {
     if (!menuContextual) return [];
@@ -4191,6 +4203,24 @@ export function VttClient({
       { id: "girar-esq", rotulo: "Rotacionar à esquerda", icone: <RotateCcw size={14} />, onSelecionar: () => onRotacionarToken(tokenId, -1) },
       { id: "girar-dir", rotulo: "Rotacionar à direita", icone: <RotateCw size={14} />, onSelecionar: () => onRotacionarToken(tokenId, 1) },
     ];
+    // ABRIR FICHA — só quando ESTE token tem ficha ligada e a pessoa
+    // controla o personagem. É a mesma condição que o HUD usava pra
+    // mostrar o botão "Ficha" (`characterId` + `canControl`), e a
+    // autorização de verdade continua sendo a do Console/servidor:
+    // isto só evita oferecer o que seria recusado.
+    const itemFicha: ItemMenuContextual[] = t.characterId && t.podeControlar
+      ? [{
+          id: "ficha", rotulo: "Abrir ficha", icone: <ScrollText size={14} />,
+          onSelecionar: () => {
+            if (consoleDaMesa) { consoleDaMesa.abrir(t.characterId!); return; }
+            // Fora da casca da campanha não há Console por cima —
+            // sobra o link direto, que é o que `AbrirFicha` também faz
+            // nesse caso.
+            window.location.href = `/ficha?campaignId=${campaignId}&characterId=${t.characterId}`;
+          },
+        }]
+      : [];
+
     // ALTERAR RETRATO — a única porta que o JOGADOR tem pra isso.
     // Ela era o retrato do HUD ("o retrato é o botão"), e sumiu junto
     // com ele; sem este item, `EditorRetratoToken` viraria código
@@ -4204,7 +4234,8 @@ export function VttClient({
     };
     if (ehNarrador) {
       return [
-        { id: "editar", rotulo: "Editar", icone: <Pencil size={14} />, onSelecionar: () => abrirEditarToken(tokenId) },
+        ...itemFicha,
+        { id: "editar", rotulo: "Editar", icone: <Pencil size={14} />, onSelecionar: () => abrirEditarToken(tokenId), separadorAntes: itemFicha.length > 0 },
         itemRetrato,
         { id: "duplicar", rotulo: "Duplicar", icone: <Copy size={14} />, onSelecionar: () => duplicarTokenHandler(tokenId) },
         ...itensGiro.map((item, i) => (i === 0 ? { ...item, separadorAntes: true } : item)),
@@ -4213,8 +4244,8 @@ export function VttClient({
         { id: "remover", rotulo: "Remover", icone: <Trash2 size={14} />, perigoso: true, onSelecionar: () => setConfirmandoRemocao(t), separadorAntes: true },
       ];
     }
-    if (!podeMoverToken(tokenId)) return [];
-    return [...itensGiro, { ...itemRetrato, separadorAntes: true }];
+    if (!podeMoverToken(tokenId)) return itemFicha;
+    return [...itemFicha, ...itensGiro.map((item, i) => (i === 0 && itemFicha.length > 0 ? { ...item, separadorAntes: true } : item)), { ...itemRetrato, separadorAntes: true }];
   }
 
   // ── Terreno (narrador): pincel com raio (1/7/19 células via
