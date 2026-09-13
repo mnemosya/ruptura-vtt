@@ -162,7 +162,16 @@
 .rv-ferr-sep { width: 20px; height: 1px; background: rgba(255,255,255,.08); margin: 5px 0; }
 
 /* ── Palco ───────────────────────────────────────────────── */
-.rv-palco { position: relative; min-width: 0; overflow: hidden; }
+/* O palco é o que aparece EM VOLTA do mapa (o SVG usa
+   `preserveAspectRatio: meet`, então sobra faixa nas laterais ou em
+   cima/embaixo, conforme a proporção da cena) e por baixo dele quando
+   o pan leva o mapa pra longe. Navy bem escuro, no mesmo matiz do piso
+   da cena (`#rv-piso`, em `MapaHex.tsx`) — sem isto a moldura ficava
+   no preto quase neutro de `--rv-ground`, e a emenda entre mapa e
+   moldura aparecia como uma mudança de cor. Token próprio: `--rv-ground`
+   segue servindo o chrome (selects, botões, modais), que não muda. */
+.rv-mesa { --rv-mapa-fundo: #070e1c; }
+.rv-palco { position: relative; min-width: 0; overflow: hidden; background: var(--rv-mapa-fundo); }
 .rv-mapa-camada { position: absolute; inset: 0; }
 .rv-mapa {
   width: 100%; height: 100%; display: block; cursor: crosshair;

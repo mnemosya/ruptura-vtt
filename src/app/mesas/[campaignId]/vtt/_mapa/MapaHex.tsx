@@ -2160,10 +2160,16 @@ export function MapaHex({
     >
       <defs>
         {/* Piso: gradiente + ruído. É o que evita o "cinza vazio". */}
+        {/* Piso da cena — NAVY bem escuro, não preto neutro. O cinza
+            anterior (#1a222c→#0a0e14) lia como "sem cor" ao lado do
+            chrome da mesa, que é navy inteiro (`--rv-line`,
+            `--rv-panel`): a mesa parecia dois materiais diferentes.
+            Mesma escada de luminosidade de antes (claro no foco,
+            escuro na borda) — só o matiz mudou. */}
         <radialGradient id="rv-piso" cx="42%" cy="34%" r="78%">
-          <stop offset="0%" stopColor="#1a222c" />
-          <stop offset="55%" stopColor="#121821" />
-          <stop offset="100%" stopColor="#0a0e14" />
+          <stop offset="0%" stopColor="#17243a" />
+          <stop offset="55%" stopColor="#101a2c" />
+          <stop offset="100%" stopColor="#080f1e" />
         </radialGradient>
         <filter id="rv-ruido" x="0" y="0" width="100%" height="100%">
           <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" seed="7" result="n" />
@@ -2173,11 +2179,6 @@ export function MapaHex({
           </feComponentTransfer>
           <feComposite operator="over" in="na" in2="SourceGraphic" />
         </filter>
-        {/* Mancha de umidade/óleo do pátio. */}
-        <radialGradient id="rv-mancha" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#0b1418" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="#0b1418" stopOpacity="0" />
-        </radialGradient>
         <pattern id="rv-hachura" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
           <line x1="0" y1="0" x2="0" y2="6" stroke="#f5a200" strokeWidth="1.4" opacity="0.5" />
         </pattern>
@@ -2234,8 +2235,15 @@ export function MapaHex({
         <rect x={minX} y={minY} width={maxX - minX} height={maxY - minY} fill="url(#rv-piso)"
           onPointerDown={onSelecionarCaixa ? iniciarCaixa : undefined} />
         <rect x={minX} y={minY} width={maxX - minX} height={maxY - minY} filter="url(#rv-ruido)" fill="none" />
-        <ellipse cx={(minX + maxX) * 0.42} cy={(minY + maxY) * 0.55} rx={280} ry={190} fill="url(#rv-mancha)" />
-        <ellipse cx={(minX + maxX) * 0.72} cy={(minY + maxY) * 0.3} rx={200} ry={140} fill="url(#rv-mancha)" />
+        {/* Aqui viviam duas elipses de "mancha de umidade/óleo do
+            pátio". Removidas: os raios eram FIXOS em unidades de mundo
+            (280×190 e 200×140), então a mesma decoração era um borrão
+            discreto numa cena grande e cobria quase o mapa inteiro numa
+            pequena — e o efeito colateral era pior que o enfeite, porque
+            sombra sem significado num mapa tático compete com as sombras
+            que SIGNIFICAM (terreno difícil, área de efeito, atenuação de
+            camada). O piso continua tendo variação de luz pela vinheta
+            do próprio gradiente `rv-piso`, que é regular e centrada. */}
 
         {/* ── IMAGENS (abaixo da grade) ── o caso normal: a planta é o
             chão, e grade/terreno/tokens se apoiam nela. Fica DEPOIS do
@@ -2340,6 +2348,55 @@ export function MapaHex({
             );
           })}
         </g>
+
+        {/* ── Moldura do mapa ──────────────────────────────────────
+            Onde a cena ACABA. Sem nada aqui, o piso simplesmente
+            desbotava no fundo do palco — e agora que token pode ficar
+            fora da grade (0127), essa emenda virou informação de
+            verdade: é ela que diz "daqui pra fora é área de espera,
+            não é a cena".
+
+            Discreta por regra: navy do próprio chrome, opacidade
+            baixa, traço que NÃO engorda com o zoom
+            (`vectorEffect="non-scaling-stroke"` — sem isso a moldura
+            vira uma tarja preta em zoom alto). Duas linhas em vez de
+            uma mais grossa: a de fora fecha o contorno, a de dentro é
+            só um eco, e o par lê como chanfro em vez de borda de
+            caixa. As cantoneiras em ciano são o único acento, curtas
+            (1,6 célula) e a 40% — marcam o canto sem virar enfeite.
+
+            `pointerEvents="none"` em tudo: ela cruza justamente a
+            faixa onde a seleção por caixa começa (o retângulo
+            `rv-fora-da-grade`), e uma decoração que engolisse gesto
+            seria o pior tipo de bug — invisível na revisão, óbvio na
+            mesa. */}
+        {(() => {
+          const m = 5;                       // respiro entre o piso e a moldura
+          const x0 = minX + m, y0 = minY + m;
+          const x1 = maxX - m, y1 = maxY - m;
+          const eco = 4;                     // distância da segunda linha
+          const braco = TAM * 0.7;           // comprimento de cada perna da cantoneira
+          const cantos = [
+            { x: x0, y: y0, dx: 1, dy: 1 },
+            { x: x1, y: y0, dx: -1, dy: 1 },
+            { x: x1, y: y1, dx: -1, dy: -1 },
+            { x: x0, y: y1, dx: 1, dy: -1 },
+          ];
+          return (
+            <g className="rv-moldura-mapa" pointerEvents="none">
+              <rect x={x0} y={y0} width={x1 - x0} height={y1 - y0}
+                fill="none" stroke="#1c2b45" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+              <rect x={x0 + eco} y={y0 + eco} width={x1 - x0 - eco * 2} height={y1 - y0 - eco * 2}
+                fill="none" stroke="#16233a" strokeWidth={1} opacity={0.75} vectorEffect="non-scaling-stroke" />
+              {cantos.map((c, i) => (
+                <path key={i}
+                  d={`M ${c.x + c.dx * braco} ${c.y} L ${c.x} ${c.y} L ${c.x} ${c.y + c.dy * braco}`}
+                  fill="none" stroke="#45b8c9" strokeWidth={1.5} strokeLinecap="square"
+                  opacity={0.2} vectorEffect="non-scaling-stroke" />
+              ))}
+            </g>
+          );
+        })()}
 
         {/* ── Terreno REAL (persistido) — o que as ferramentas de
             movimento/medição de fato respeitam. Camada própria, visual
