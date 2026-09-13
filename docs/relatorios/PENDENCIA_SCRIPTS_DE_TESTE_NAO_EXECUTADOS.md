@@ -43,7 +43,7 @@ scripts de `test:` / `check:` / `validate:`:
   corrigidos e os nove checks do catálogo de cenas).
 
 Mais `check:vtt-imagens-servidor`, executado depois de conferir a
-limpeza: 32 de 33 critérios.
+limpeza: **35 de 35** depois dos consertos descritos abaixo.
 
 ## O que NÃO foi executado, e por quê
 
@@ -92,7 +92,12 @@ Vale notar que `check:admin-biblioteca` não importa `playwright`
 diretamente: importa `authSession.ts`, que importa. Um classificador
 que olhasse só a primeira camada o chamaria de inofensivo.
 
-## Aberto: o critério 26 de `check:vtt-imagens-servidor`
+## Fechado: os critérios 26 e 27 de `check:vtt-imagens-servidor`
+
+**Resolvido.** O check está em 35 de 35. Ver a seção seguinte para o
+que estava errado — e para o defeito de banco que ele revelou.
+
+## O que estava errado nos critérios 26 e 27 (histórico)
 
 O check estava travando no critério 3 — "jogador reserva retrato do
 PRÓPRIO token" — com "Sem permissão sobre este token". A causa era o
@@ -108,33 +113,98 @@ falha**.
 A falha que resta é o critério 26: esconder a colocação (`visivel =
 false`) deveria tirar a assinatura do jogador, e não tira.
 
-A explicação provável é que o mesmo arquivo tem DOIS usos — ele é o
-retrato do token do jogador (critério 12) e também o fundo da cena
-(critério 18). `vtt_asset_assinavel_para` (0114) tem um ramo para
-retrato de token visível, com a justificativa escrita na própria
-migration: "ver o token é ver a cara dele". Escondido o fundo, esse
-ramo continuaria concedendo — e o critério 26 assumiria que a colocação
-é o único caminho até o arquivo.
+A primeira hipótese — de que o arquivo tinha dois usos e o ramo do
+retrato seguia concedendo — estava ERRADA. Isolar os assets não
+consertou nada, o que a derrubou.
 
-**Mas há uma inconsistência que impede fechar o diagnóstico:** o
-critério 27, que esconde a CAMADA inteira, devolve `false`. Se o ramo
-do retrato concedesse sempre, 27 falharia junto. Suspeita: o `update`
-do 27 substitui o objeto `camadas` inteiro
-(`{ imagemFundo: { … } }`), apagando a configuração da camada de
-tokens junto — e 27 estaria passando pela razão errada.
+A causa real: **o RPC que esconde a colocação estava sendo RECUSADO, e
+o caso não conferia o erro.** A colocação seguia visível e o critério
+media o estado anterior, reportando como se tivesse testado a guarda.
 
-Resolver exige decidir a intenção: um retrato de token deve continuar
-assinável quando a colocação dele na cena é escondida? A 0114 diz que
-sim. Se for isso, o critério 26 é que está velho. Não mexi porque é
-julgamento sobre intenção, não sobre mecânica.
+A recusa vem de um defeito no banco: a 0110 acrescentou uma sobrecarga
+de `atualizar_vtt_scene_image` com 13 parâmetros (`p_centro_q`,
+`p_centro_r`) e **a de 11, da 0100, nunca foi removida**. Chamar com 11
+faz o PostgREST responder "Could not choose the best candidate
+function". O app sempre manda os 13, então nunca esbarrou — ver a
+pendência abaixo.
 
-## O caminho para fechar o resto
+Três consertos, todos pedidos e todos verificados:
 
-1. **Os de navegador (10).** Decidir se rodam contra um ambiente
-   descartável em vez da produção. Hoje não existe esse ambiente — o
-   replay (`scripts/dev/replay-ambiente.sh`) chega perto, mas o stack
-   de serviços não sobe nesta máquina (ver o cabeçalho daquele script).
-2. **O critério 26**, acima.
+1. **assets separados** para o fundo e o retrato do token. O arquivo de
+   fundo é criado pelo caminho real (reserva + finalize como tile) e a
+   colocação temporária é removida, deixando um arquivo existente e sem
+   uso — que é o que o caso 18 precisa. Sem isso, o critério media a
+   SOMA de dois caminhos de concessão, não a guarda que nomeia;
+2. **o caso 27 MESCLA `camadas`** em vez de substituir o JSON. A versão
+   anterior apagava todas as outras camadas junto — inclusive a de
+   tokens — e passava por efeito somado;
+3. **um critério 26a novo** confere que a colocação REALMENTE ficou
+   escondida antes de julgar a assinatura. É o que teria denunciado o
+   problema no dia em que ele apareceu.
+
+Sensibilidade verificada nos dois: neutralizando a guarda de cada um
+(não esconder a colocação; não esconder a camada), o critério
+correspondente falha.
+
+## Aberto: sobrecarga duplicada de `atualizar_vtt_scene_image`
+
+A 0100 criou a função com 11 parâmetros; a 0110 criou uma com 13 e
+deixou a primeira viva. O PostgREST não escolhe entre as duas quando a
+chamada traz só os 11 comuns:
+
+```
+Could not choose the best candidate function between:
+  atualizar_vtt_scene_image(… 11 parâmetros)
+  atualizar_vtt_scene_image(… 13 parâmetros)
+```
+
+**O produto não está quebrado:** `imageActions.ts` sempre manda os 13,
+então resolve sem ambiguidade. Quem quebra é qualquer chamador que
+omita `p_centro_q`/`p_centro_r` — foi o que aconteceu com este teste,
+por dois meses, em silêncio.
+
+O conserto é uma migration de uma linha:
+
+```sql
+drop function if exists public.atualizar_vtt_scene_image(
+  uuid, integer, numeric, numeric, numeric, numeric, text, integer,
+  boolean, boolean, boolean);
+```
+
+Não foi aplicado: é mudança de schema em produção, e derrubar uma
+função é irreversível sem recriá-la. Fica para decisão.
+
+## Bloqueados: os 10 testes de navegador
+
+```
+check:admin-biblioteca             check:admin-content-drafts
+check:admin-effect-builder         check:admin-publication
+check:admin-legacy-conversion      check:admin-composite-effects
+check:admin-temporary-effects      check:admin-inventory-runes-market
+check:admin-companions-trama       check:motion
+```
+
+**Estado: BLOQUEADOS por falta de ambiente descartável.** Não foram
+executados e não devem ser executados contra produção: escrevem através
+da interface — criar rascunho, publicar conteúdo — e o que publicarem
+fica publicado.
+
+O que falta para desbloquear é um ambiente onde errar não custe nada.
+`scripts/dev/replay-ambiente.sh` chega perto: monta um Postgres com
+todas as migrations aplicadas. Mas os checks precisam do app inteiro
+respondendo em `localhost:3000` contra esse banco, e para isso o stack
+de serviços do Supabase teria de subir — o que não acontece nesta
+máquina (o Node das imagens de serviço dá SIGSEGV sob o Docker Desktop
+29.7.2 em arm64; ver o cabeçalho do `replay-ambiente.sh`).
+
+Caminhos possíveis, nenhum barato:
+
+1. destravar o stack local — trocar a versão do Docker Desktop ou as
+   imagens, e conferir se o segfault some;
+2. um projeto Supabase descartável na nuvem, com as migrations
+   aplicadas, e um `.env` alternativo para os checks;
+3. aceitar que são checks manuais, rodados de propósito contra um
+   ambiente escolhido a dedo, e tirá-los da expectativa de automação.
 
 `npm run check:scripts-de-teste` garante o mínimo continuamente: que
 todos CONSEGUEM começar, e o que cada um faz com o mundo.

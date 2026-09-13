@@ -270,11 +270,43 @@ async function main() {
       e !== null && /permiss/i.test(e), e ?? "passou indevidamente");
   }
 
+  // ── Um SEGUNDO arquivo, só para a colocação ──────────────────────
+  //
+  // Sem ele, fundo e retrato compartilhavam o MESMO asset, e os casos
+  // 26/27 deixavam de isolar o que dizem isolar: `vtt_asset_assinavel_para`
+  // concede por vários caminhos independentes (colocação visível,
+  // retrato de token visível, avatar de ficha), e medir um arquivo que
+  // está em dois deles mede a SOMA, não a guarda sob teste.
+  //
+  // Criado pelo caminho real — reserva com intenção `tile`, finalize, e
+  // a colocação temporária é removida em seguida. Fica um arquivo
+  // existente e sem uso, que é exatamente o que o caso 18 precisa
+  // ("colocar a partir de arquivo já existente").
+  let assetFundo: string | null = null;
+  {
+    const { data: r } = await reservar(narrador, hash("fundo-cena"), "tile");
+    const reservaFundo = (r as { reserva_id: string } | null)?.reserva_id ?? null;
+    const { data: temp } = await narrador.rpc("finalizar_upload_e_criar_imagem_cena", {
+      p_reserva_id: reservaFundo, p_bytes_reais: 50_000, p_width_px: 1024, p_height_px: 1024,
+      p_scene_id: sceneId, p_papel: "tile", p_centro_q: 3, p_centro_r: 3, p_largura_m: 5,
+      p_altura_m: null, p_rotacao_graus: 0, p_opacidade: 1, p_camada: "abaixo_grade",
+    });
+    const tempId = (temp as { id: string } | null)?.id ?? null;
+    const { data: colocacao } = await admin.from("vtt_scene_images")
+      .select("image_id, revision").eq("id", tempId!).single();
+    assetFundo = colocacao!.image_id as string;
+    await narrador.rpc("excluir_vtt_scene_image", {
+      p_id: tempId, p_expected_revision: colocacao!.revision,
+    });
+    ok("17b (arquivo de fundo criado e desacoplado, para isolar as guardas de assinatura)",
+      !!assetFundo, `${assetFundo}`);
+  }
+
   // ── Colocação na cena ────────────────────────────────────────────
   let fundoId: string | null = null;
   {
     const { data, error } = await narrador.rpc("criar_vtt_scene_image", {
-      p_scene_id: sceneId, p_image_id: assetRetrato, p_papel: "fundo",
+      p_scene_id: sceneId, p_image_id: assetFundo, p_papel: "fundo",
       p_centro_q: 0, p_centro_r: 0, p_largura_m: 26, p_altura_m: null,
       p_rotacao_graus: 0, p_opacidade: 1, p_camada: "abaixo_grade", p_reserva_id: null,
     });
@@ -283,7 +315,7 @@ async function main() {
   }
   {
     const e = await erroDe(narrador.rpc("criar_vtt_scene_image", {
-      p_scene_id: sceneId, p_image_id: assetRetrato, p_papel: "fundo",
+      p_scene_id: sceneId, p_image_id: assetFundo, p_papel: "fundo",
       p_centro_q: 0, p_centro_r: 0, p_largura_m: 26, p_altura_m: null,
       p_rotacao_graus: 0, p_opacidade: 1, p_camada: "abaixo_grade", p_reserva_id: null,
     }));
@@ -291,7 +323,7 @@ async function main() {
   }
   {
     const e = await erroDe(narrador.rpc("criar_vtt_scene_image", {
-      p_scene_id: sceneId, p_image_id: assetRetrato, p_papel: "tile",
+      p_scene_id: sceneId, p_image_id: assetFundo, p_papel: "tile",
       p_centro_q: 0, p_centro_r: 0, p_largura_m: 500, p_altura_m: null,
       p_rotacao_graus: 0, p_opacidade: 1, p_camada: "abaixo_grade", p_reserva_id: null,
     }));
@@ -322,7 +354,7 @@ async function main() {
     const { data: outraCena } = await admin.from("vtt_scenes")
       .insert({ campaign_id: outraId, nome: "Outra cena", largura: 20, altura: 20 }).select("id").single();
     const e = await erroDe(admin.from("vtt_scene_images").insert({
-      scene_id: outraCena!.id, campaign_id: outraId, image_id: assetRetrato,
+      scene_id: outraCena!.id, campaign_id: outraId, image_id: assetFundo,
       papel: "tile", centro_q: 0, centro_r: 0, largura_m: 5,
     }));
     ok("23 (FK composta barra colocação apontando imagem de OUTRA campanha)",
@@ -332,10 +364,10 @@ async function main() {
   // ── Quem pode receber uma URL assinada ───────────────────────────
   {
     const { data: narradorVe } = await admin.rpc("vtt_asset_assinavel_para", {
-      p_asset_id: assetRetrato, p_user_id: uN.user.id,
+      p_asset_id: assetFundo, p_user_id: uN.user.id,
     });
     const { data: jogadorVe } = await admin.rpc("vtt_asset_assinavel_para", {
-      p_asset_id: assetRetrato, p_user_id: uJ.user.id,
+      p_asset_id: assetFundo, p_user_id: uJ.user.id,
     });
     ok("24 (narrador assina qualquer arquivo da própria campanha)", narradorVe === true, `${narradorVe}`);
     ok("25 (jogador assina o que uma colocação VISÍVEL expõe)", jogadorVe === true, `${jogadorVe}`);
@@ -346,28 +378,52 @@ async function main() {
       p_id: fundoId, p_expected_revision: si!.revision, p_largura_m: null, p_altura_m: null,
       p_rotacao_graus: null, p_opacidade: null, p_camada: null, p_z: null,
       p_visivel: false, p_travado: null, p_limpar_altura: false,
+      // `p_centro_q`/`p_centro_r` entram por um motivo que não é do
+      // teste: a 0110 acrescentou uma sobrecarga de 13 parâmetros e a
+      // 0100 deixou a de 11 viva no banco. Chamar com 11 faz o
+      // PostgREST recusar — "Could not choose the best candidate
+      // function" — e a recusa sumia porque este caso não conferia o
+      // erro: a colocação seguia VISÍVEL e o critério media outra
+      // coisa. O app sempre manda os 13, então nunca esbarrou nisso.
+      p_centro_q: null, p_centro_r: null,
     });
     const { data: jogadorVe } = await admin.rpc("vtt_asset_assinavel_para", {
-      p_asset_id: assetRetrato, p_user_id: uJ.user.id,
+      p_asset_id: assetFundo, p_user_id: uJ.user.id,
     });
+    // Confere que a colocação FICOU escondida antes de julgar a
+    // assinatura. Sem isto, um RPC recusado deixa o caso medindo o
+    // estado anterior e reportando como se tivesse testado a guarda.
+    const { data: apos } = await admin.from("vtt_scene_images")
+      .select("visivel").eq("id", fundoId!).single();
+    ok("26a (a colocação realmente ficou escondida)", apos!.visivel === false, `visivel=${apos!.visivel}`);
     ok("26 (colocação escondida deixa de ser assinável pelo jogador)", jogadorVe === false, `${jogadorVe}`);
     const { data: si2 } = await admin.from("vtt_scene_images").select("revision").eq("id", fundoId!).single();
     await narrador.rpc("atualizar_vtt_scene_image", {
       p_id: fundoId, p_expected_revision: si2!.revision, p_largura_m: null, p_altura_m: null,
       p_rotacao_graus: null, p_opacidade: null, p_camada: null, p_z: null,
       p_visivel: true, p_travado: null, p_limpar_altura: false,
+      p_centro_q: null, p_centro_r: null,
     });
   }
   {
     // A CAMADA inteira escondida (0093) também tira a assinatura: de
     // nada adianta esconder a camada se o arquivo segue assinável.
+    //
+    // MESCLA, nunca substitui. A versão anterior mandava
+    // `{ imagemFundo: … }` e apagava todas as outras camadas junto —
+    // inclusive a de tokens. O caso passava, mas não pela guarda que
+    // ele nomeia: escondia meio mundo e media o efeito somado.
+    const { data: cenaAntes } = await admin.from("vtt_scenes")
+      .select("camadas").eq("id", sceneId).single();
+    const camadasOriginais = (cenaAntes!.camadas ?? {}) as Record<string, unknown>;
     await admin.from("vtt_scenes")
-      .update({ camadas: { imagemFundo: { visivel: false, bloqueada: false } } }).eq("id", sceneId);
+      .update({ camadas: { ...camadasOriginais, imagemFundo: { visivel: false, bloqueada: false } } })
+      .eq("id", sceneId);
     const { data: jogadorVe } = await admin.rpc("vtt_asset_assinavel_para", {
-      p_asset_id: assetRetrato, p_user_id: uJ.user.id,
+      p_asset_id: assetFundo, p_user_id: uJ.user.id,
     });
     ok("27 (camada escondida na cena também tira a assinatura do jogador)", jogadorVe === false, `${jogadorVe}`);
-    await admin.from("vtt_scenes").update({ camadas: {} }).eq("id", sceneId);
+    await admin.from("vtt_scenes").update({ camadas: camadasOriginais }).eq("id", sceneId);
   }
 
   // ── Leitura direta é impossível ──────────────────────────────────
@@ -381,13 +437,13 @@ async function main() {
   {
     const { data: si } = await admin.from("vtt_scene_images").select("revision").eq("id", fundoId!).single();
     await narrador.rpc("excluir_vtt_scene_image", { p_id: fundoId, p_expected_revision: si!.revision });
-    const { data: asset } = await admin.from("vtt_image_assets").select("estado").eq("id", assetRetrato!).single();
+    const { data: asset } = await admin.from("vtt_image_assets").select("estado").eq("id", assetFundo!).single();
     ok("29 (excluir a colocação NÃO apaga o arquivo — outro uso pode apontar para ele)",
       asset!.estado === "ready", `${asset!.estado}`);
 
     // Sem carência: o arquivo agora não tem uso nenhum.
     const { data: coletados } = await admin.rpc("vtt_coletar_imagens_sem_uso", { p_carencia: "0 seconds" });
-    const { data: depois } = await admin.from("vtt_image_assets").select("estado").eq("id", assetRetrato!).single();
+    const { data: depois } = await admin.from("vtt_image_assets").select("estado").eq("id", assetFundo!).single();
     ok("30 (arquivo sem NENHUM uso é marcado para remoção — decidido por `not exists`, sem contador)",
       Array.isArray(coletados) && depois!.estado === "deleting", `${depois!.estado}`);
   }
