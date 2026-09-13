@@ -64,93 +64,41 @@
 import "dotenv/config";
 import { config as loadDotenv } from "dotenv";
 import { randomUUID } from "node:crypto";
-import { createClient } from "@supabase/supabase-js";
+import {
+  clienteAdministrativo, criarContaDeTeste, exigirStubDeCookies, usarSessao,
+} from "./dev/sessaoDeTeste";
 
 loadDotenv({ path: ".env.local" });
 
 const TEST_CHARACTER_NAME = "__TESTE_STORAGE_RUPTURA__";
-const COOKIE_ENV = "RUPTURA_TEST_AUTH_COOKIE";
 
-function requireEnv(nome: string): string {
-  const v = process.env[nome];
-  if (!v) {
-    console.error(`Variável de ambiente ausente: ${nome}`);
-    process.exit(1);
-  }
-  return v;
-}
-
-const supabaseUrl = requireEnv("SUPABASE_URL");
-const anonKey = requireEnv("SUPABASE_ANON_KEY");
-const admin = createClient(supabaseUrl, requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
+const admin = clienteAdministrativo();
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`Falha de asserção: ${message}`);
 }
 
-/**
- * Põe (ou tira) a sessão que o stub de `next/headers` devolve.
- *
- * Trocar de sessão é só trocar o valor: o stub lê a variável no momento
- * da chamada, e `getScopedTableClient` monta um client novo a cada
- * operação — nunca há sessão em cache para vazar de um passo pro outro.
- */
-function usarSessao(tokens: { access_token: string; refresh_token: string } | null): void {
-  if (tokens) process.env[COOKIE_ENV] = JSON.stringify(tokens);
-  else delete process.env[COOKIE_ENV];
-}
-
 async function main(): Promise<void> {
   console.log("=== test-character-storage ===\n");
 
-  // Sem o stub, `cookies()` lança e TODA operação cairia no caminho
-  // anônimo — o teste falharia lá na frente parecendo bug de policy.
-  // Conferir aqui troca esse enigma por uma instrução.
-  const stubAtivo = await import("next/headers")
-    .then(({ cookies }) => cookies())
-    .then(() => true)
-    .catch(() => false);
-  assert(stubAtivo, "rode via `npm run test:character-storage` — o stub de next/headers não está registrado");
+  await exigirStubDeCookies("test:character-storage");
 
   // ── Camada sob teste, importada depois do ambiente estar pronto ─────
   const storage = await import("../src/lib/character/storage");
   const { createInitialCharacter } = await import("../src/lib/character");
 
   // ── Cenário descartável ────────────────────────────────────────────
-  const marca = Date.now();
-  const senha = randomUUID();
-  const emailDono = `teste-storage-dono-${marca}@ruptura.dev`;
-  const emailOutro = `teste-storage-outro-${marca}@ruptura.dev`;
-
-  const { data: uDono } = await admin.auth.admin.createUser({
-    email: emailDono, password: senha, email_confirm: true,
-    user_metadata: { display_name: "Dona do teste" },
-  });
-  const { data: uOutro } = await admin.auth.admin.createUser({
-    email: emailOutro, password: senha, email_confirm: true,
-    user_metadata: { display_name: "Estranho" },
-  });
-  const donoId = uDono!.user!.id;
-  const outroId = uOutro!.user!.id;
+  const dona = await criarContaDeTeste(admin, { prefixo: "teste-storage-dona", nome: "Dona do teste" });
+  const estranho = await criarContaDeTeste(admin, { prefixo: "teste-storage-outro", nome: "Estranho" });
+  const donoId = dona.userId;
+  const outroId = estranho.userId;
+  const tokensDono = dona.tokens;
+  const tokensOutro = estranho.tokens;
 
   const campaignId = randomUUID();
   await admin.from("campaigns").insert({
-    id: campaignId, name: `__TESTE_STORAGE_MESA_${marca}__`, owner_id: donoId,
+    id: campaignId, name: `__TESTE_STORAGE_MESA_${Date.now()}__`, owner_id: donoId,
   });
-
-  const anon = createClient(supabaseUrl, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data: sDono } = await anon.auth.signInWithPassword({ email: emailDono, password: senha });
-  const { data: sOutro } = await anon.auth.signInWithPassword({ email: emailOutro, password: senha });
-  const tokensDono = {
-    access_token: sDono!.session!.access_token,
-    refresh_token: sDono!.session!.refresh_token,
-  };
-  const tokensOutro = {
-    access_token: sOutro!.session!.access_token,
-    refresh_token: sOutro!.session!.refresh_token,
-  };
 
   let soltoId: string | null = null;
   let daMesaId: string | null = null;

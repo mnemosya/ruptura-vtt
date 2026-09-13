@@ -1,43 +1,42 @@
 /**
  * Teste do "Encerrar Rodada" CANÔNICO da mesa (checkpoint v0.44.1).
  *
- * `campaigns` restringe insert/update/delete a `authenticated` desde a
- * migration 0006 (policies `campaigns_owner_*`) — no produto real isso
- * sempre funciona porque o dashboard `/mesas/[campaignId]` só é
- * acessível com narrador logado (cookie de sessão, checkpoint v0.21).
- * Um script Node solto não tem esse cookie/contexto de request
- * (`getScopedTableClient()` cai em anon puro fora de uma request —
- * documentado no próprio `scopedClient.ts`), então não há como este
- * teste autenticar como narrador de verdade sem subir um servidor.
+ * ── Duas coisas que impediam este teste de valer ─────────────────────
  *
- * Solução adotada, só para este processo de teste: apontar
- * `SUPABASE_ANON_KEY` para a service role key ANTES de importar
- * qualquer módulo de storage (nenhum client é cacheado como singleton
- * fora de request — todos leem `process.env` a cada chamada). Isso
- * NÃO altera nenhuma policy de RLS — só troca, dentro deste processo
- * isolado, qual chave o próprio script usa para exercitar o caminho de
- * produção real (`createCampaign`/`endCampaignRound`/`endRound` como
- * estão, sem duplicar lógica). `table_logs.campaign_id` tem `on delete
- * cascade` — apagar a mesa de teste também limpa os logs gerados.
+ * PRIMEIRA, e por muito tempo invisível: ele não CONSEGUIA COMEÇAR. O
+ * grafo de imports chega em `sceneStorage.ts`, que importa
+ * `server-only` — pacote que faz `throw` na primeira linha fora da
+ * condição de exportação `react-server`. O Node não liga essa condição
+ * por padrão, então o script morria no import, antes da primeira linha
+ * de teste. Resolvido com `--conditions=react-server` no comando, que é
+ * o mecanismo que o próprio pacote define para dizer "isto é código de
+ * servidor".
+ *
+ * SEGUNDA, revelada assim que ele passou a rodar: a estratégia de
+ * autenticação não funcionava. A versão anterior apontava
+ * `SUPABASE_ANON_KEY` para a service role key, o que dá PRIVILÉGIO mas
+ * não dá IDENTIDADE — `auth.uid()` fica nulo. E `append_table_log`
+ * exige estar autenticado. Como `endCampaignRound` grava log em modo
+ * best-effort, cada recusa sumia dentro de um `catch`: o teste seguia
+ * em frente afirmando logs que nunca tinham sido escritos. As
+ * asserções dos passos 3 e 6 existiam e nunca haviam sido exercitadas.
+ *
+ * Agora ele autentica de verdade — conta descartável, login real,
+ * tokens injetados onde o app leria o cookie (ver `sessaoDeTeste.ts`).
+ * Além de fazer os logs funcionarem, isso exercita a RLS de verdade,
+ * que a service role key contornava por completo.
+ *
+ * `table_logs.campaign_id` tem `on delete cascade` — apagar a mesa de
+ * teste também limpa os logs gerados.
  */
 
 import { config as loadDotenv } from "dotenv";
 loadDotenv({ path: ".env.local" });
 
-function requireEnv(name: string): string {
-  const v = process.env[name];
-  if (!v) {
-    console.error(`Variável de ambiente obrigatória ausente: ${name}`);
-    process.exit(1);
-  }
-  return v;
-}
-
-// Ver nota acima — só para este processo de teste, nunca em runtime do app.
-process.env.SUPABASE_ANON_KEY = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
-
-import { createClient } from "@supabase/supabase-js";
 import assert from "node:assert/strict";
+import {
+  clienteAdministrativo, criarContaDeTeste, exigirStubDeCookies, usarSessao,
+} from "./dev/sessaoDeTeste";
 import { createCampaign, listLogs } from "../src/lib/table/storage";
 import { endCampaignRound } from "../src/lib/table/endRound";
 import {
@@ -51,9 +50,7 @@ import type { Character } from "../src/lib/character";
 const TEST_CAMPAIGN_NAME = "__TESTE_CAMPAIGN_END_ROUND__";
 const TEST_CHARACTER_PREFIX = "__TESTE_CER__";
 
-const serviceClient = createClient(requireEnv("SUPABASE_URL"), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
-  auth: { persistSession: false },
-});
+const serviceClient = clienteAdministrativo();
 
 async function deleteCampaignRaw(id: string): Promise<void> {
   const { error } = await serviceClient.from("campaigns").delete().eq("id", id);
@@ -83,6 +80,12 @@ function characterWithCondition(nome: string, slug?: string): Character {
 
 async function main(): Promise<void> {
   console.log("=== test-campaign-end-round ===\n");
+
+  await exigirStubDeCookies("test:campaign-end-round");
+  const narradora = await criarContaDeTeste(serviceClient, {
+    prefixo: "teste-end-round", nome: "Narradora do teste",
+  });
+  usarSessao(narradora.tokens);
 
   const campaign = await createCampaign(TEST_CAMPAIGN_NAME);
   const createdCharacterIds: string[] = [];
@@ -212,6 +215,8 @@ async function main(): Promise<void> {
       }
     }
     await deleteCampaignRaw(campaign.id);
+    usarSessao(null);
+    await serviceClient.auth.admin.deleteUser(narradora.userId);
   }
 }
 

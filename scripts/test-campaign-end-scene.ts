@@ -1,32 +1,29 @@
 /**
  * Teste do "Encerrar Cena" CANÔNICO da mesa (checkpoint v0.45).
  *
- * Mesma solução técnica de `test-campaign-end-round.ts` (v0.44.1): só
- * este processo de teste aponta `SUPABASE_ANON_KEY` para a service
- * role key ANTES de qualquer chamada de storage, para poder exercitar
- * `createCampaign`/`endCampaignScene`/`endScene` (que fazem
- * insert/update em `campaigns`, restrito a `authenticated`) sem uma
- * sessão real de narrador — RLS em si nunca é alterado. Ver comentário
- * completo em `test-campaign-end-round.ts`.
+ * Autentica de verdade, como `test-campaign-end-round.ts`.
+ *
+ * A versão anterior apontava `SUPABASE_ANON_KEY` para a service role
+ * key — o que dá PRIVILÉGIO mas não dá IDENTIDADE. `auth.uid()` ficava
+ * nulo, `append_table_log` recusava ("É necessário estar autenticado
+ * para registrar um evento"), e como `endCampaignScene` grava log em
+ * modo best-effort a recusa sumia dentro de um `catch`. O teste
+ * afirmava logs que nunca tinham sido escritos, e falhava no primeiro
+ * que conferia conteúdo.
+ *
+ * Agora: conta descartável, login real, tokens injetados onde o app
+ * leria o cookie (ver `dev/sessaoDeTeste.ts`). Além de fazer os logs
+ * funcionarem, exercita a RLS de verdade — que a service role key
+ * contornava por completo.
  */
 
 import { config as loadDotenv } from "dotenv";
 loadDotenv({ path: ".env.local" });
 
-function requireEnv(name: string): string {
-  const v = process.env[name];
-  if (!v) {
-    console.error(`Variável de ambiente obrigatória ausente: ${name}`);
-    process.exit(1);
-  }
-  return v;
-}
-
-// Ver nota acima — só para este processo de teste, nunca em runtime do app.
-process.env.SUPABASE_ANON_KEY = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
-
-import { createClient } from "@supabase/supabase-js";
 import assert from "node:assert/strict";
+import {
+  clienteAdministrativo, criarContaDeTeste, exigirStubDeCookies, usarSessao,
+} from "./dev/sessaoDeTeste";
 import { createCampaign, listLogs } from "../src/lib/table/storage";
 import { endCampaignScene } from "../src/lib/table/endScene";
 import {
@@ -41,9 +38,7 @@ import type { Character } from "../src/lib/character";
 const TEST_CAMPAIGN_NAME = "__TESTE_CAMPAIGN_END_SCENE__";
 const TEST_CHARACTER_PREFIX = "__TESTE_CES__";
 
-const serviceClient = createClient(requireEnv("SUPABASE_URL"), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
-  auth: { persistSession: false },
-});
+const serviceClient = clienteAdministrativo();
 
 async function deleteCampaignRaw(id: string): Promise<void> {
   const { error } = await serviceClient.from("campaigns").delete().eq("id", id);
@@ -63,6 +58,12 @@ function characterWithRupture(nome: string, opts: { pending?: boolean; level?: n
 
 async function main(): Promise<void> {
   console.log("=== test-campaign-end-scene ===\n");
+
+  await exigirStubDeCookies("test:campaign-end-scene");
+  const narradora = await criarContaDeTeste(serviceClient, {
+    prefixo: "teste-end-scene", nome: "Narradora do teste",
+  });
+  usarSessao(narradora.tokens);
 
   const campaign = await createCampaign(TEST_CAMPAIGN_NAME);
   const createdCharacterIds: string[] = [];
@@ -240,6 +241,8 @@ async function main(): Promise<void> {
       }
     }
     await deleteCampaignRaw(campaign.id);
+    usarSessao(null);
+    await serviceClient.auth.admin.deleteUser(narradora.userId);
   }
 }
 
