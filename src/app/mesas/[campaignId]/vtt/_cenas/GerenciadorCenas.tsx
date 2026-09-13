@@ -56,7 +56,7 @@ import { NovaCenaDeMapa, type ValoresNovaCenaDeMapa } from "./NovaCenaDeMapa";
 import { GavetaCasca } from "./GavetaCasca";
 import { LinhaPasta } from "./LinhaPasta";
 import type {
-  CartaoCena as DadosCartaoCena, ModoDuplicacao, PastaCena, PosicaoJogador,
+  CartaoCena as DadosCartaoCena, CenaVtt, ModoDuplicacao, PastaCena, PosicaoJogador,
 } from "../../../../../lib/vtt/sceneStorage";
 
 export interface PropsGerenciadorCenas {
@@ -86,6 +86,29 @@ export interface PropsGerenciadorCenas {
    * estado do pai: o catálogo tem campos que o `VttClient` não carrega.
    */
   versaoExterna?: number;
+  /** A revisão da cena aberta — o freio contra reler o próprio eco. */
+  cenaVistaRevision?: number;
+  /**
+   * Muda quando o PALCO andou. Separado da revisão de propósito: o
+   * palco andar não mexe na revisão de cena nenhuma, então o freio do
+   * eco não pode valer aqui — foi assim que a primeira versão deste
+   * freio fez o selo "Jogadores aqui" parar de aparecer.
+   */
+  versaoPalco?: number;
+  /**
+   * A configuração de uma cena foi gravada AQUI — o caminho de volta.
+   *
+   * Sem ele, mudar o tamanho ou a grade da cena aberta não aparecia no
+   * mapa: quem desenha lê o `estadoCena` do `VttClient`, e ele não sabe
+   * do que acontece na gaveta. A primeira tentativa foi mandar reabrir
+   * a cena, e ela não funcionou nem devia — `trocarParaCena` sai na
+   * hora quando o id já é o aberto (é o que impede clicar no cartão da
+   * cena atual de recarregar o mapa inteiro).
+   *
+   * Então em vez de RELER, o gerenciador entrega o que a RPC já
+   * devolveu. Custa zero ida ao servidor e aparece no mesmo quadro.
+   */
+  onCenaConfigurada?: (cena: CenaVtt) => void;
 }
 
 export function GerenciadorCenas(p: PropsGerenciadorCenas) {
@@ -230,7 +253,32 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
     }
   }, [p.campaignId]);
 
-  useEffect(() => { void recarregar(); }, [recarregar, p.versaoExterna]);
+  /**
+   * O eco da própria escrita NÃO relê o catálogo.
+   *
+   * `versaoExterna` sobe quando a cena aberta muda de revisão — e ela
+   * muda quando ESTA janela grava, porque o `VttClient` adota a linha
+   * que a gaveta devolveu. Sem este freio, salvar o tamanho disparava
+   * uma releitura completa (cenas + pastas + jogadores + assinaturas):
+   * sete idas ao servidor e dois segundos e meio para uma escrita que
+   * custa quatrocentos milissegundos.
+   *
+   * O freio é preciso, não um sinalizador: se a lista que já está na
+   * tela contém a revisão que chegou, não há o que reler. Qualquer
+   * mudança vinda de FORA traz uma revisão que a lista não tem, e a
+   * releitura acontece como antes.
+   */
+  const palcoVistoRef = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    const primeira = palcoVistoRef.current === undefined;
+    const palcoAndou = !primeira && palcoVistoRef.current !== p.versaoPalco;
+    palcoVistoRef.current = p.versaoPalco;
+    if (!primeira && !palcoAndou && p.cenaVistaId) {
+      const nossa = (cenasRef.current ?? []).find((c) => c.id === p.cenaVistaId);
+      if (nossa && nossa.revision === p.cenaVistaRevision) return;
+    }
+    void recarregar();
+  }, [recarregar, p.versaoExterna, p.versaoPalco, p.cenaVistaId, p.cenaVistaRevision]);
 
   useEffect(() => { if (criando) campoNovoRef.current?.focus(); }, [criando]);
   useEffect(() => { if (criandoPasta) campoPastaRef.current?.focus(); }, [criandoPasta]);
@@ -349,6 +397,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
         return;
       }
       const gravada = r.dados.cena;
+      p.onCenaConfigurada?.(gravada);
       setCenas((c) => (c ?? []).map((x) => (
         x.id === cena.id
           ? { ...x, nome: gravada.nome, local: gravada.local, resumo: gravada.resumo, revision: gravada.revision }
@@ -513,13 +562,10 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
           : x
       )));
       setConfigurandoId(null);
-      /* Se a cena ajustada é a que o narrador tem ABERTA, o mapa
-         precisa relê-la: a grade e o tamanho são desenhados a partir
-         de `estadoCena`, que vive no `VttClient` e não sabe do que
-         acontece aqui. Reabrir é o caminho que já existe pra isso —
-         inventar um segundo seria manter duas verdades sobre "qual é
-         a cena aberta". */
-      if (cena.id === p.cenaVistaId) p.onAbrir(cena.id);
+      // O mapa desenha a partir do `estadoCena` do `VttClient`: entregar
+      // a linha que a RPC devolveu é o que faz a grade nova aparecer
+      // sem uma segunda leitura.
+      p.onCenaConfigurada?.(g);
     } catch (e) {
       anotarErro(cena.id, e instanceof Error ? e.message : "Falha ao salvar os parâmetros.");
     } finally {

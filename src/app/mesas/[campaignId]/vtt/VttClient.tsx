@@ -5457,7 +5457,16 @@ export function VttClient({
             // aberta (renomear/camadas) e o palco tendo andado. Somadas
             // num número só porque a reação é a mesma — reler.
             versaoExterna={(estadoCena?.cena.revision ?? 0) + versaoPalco}
+            cenaVistaRevision={estadoCena?.cena.revision}
+            versaoPalco={versaoPalco}
             onAbrir={abrirCena}
+            /* A cena aberta muda de tamanho/grade SEM reler: a gaveta
+               entrega a linha que a RPC devolveu, e o mapa redesenha no
+               mesmo quadro. Reabrir não serviria — `trocarParaCena` sai
+               na hora quando o id já é o que está aberto. */
+            onCenaConfigurada={(cena) => setEstadoCena((e) => (
+              e && e.cena.id === cena.id ? { ...e, cena } : e
+            ))}
             onFechar={() => setPainelCenasAberto(false)}
           />
         )}
