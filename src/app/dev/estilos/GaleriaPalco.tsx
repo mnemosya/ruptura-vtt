@@ -144,6 +144,11 @@ export function VitrineMapa() {
 
   const areas = useMemo(() => (comAreas ? AREAS : undefined), [comAreas]);
   const selecionar = useCallback((id: string) => setSelecionado(id), []);
+  /* Sem isto a vitrine não exercitava a seleção por CAIXA — e é ela
+     que também responde pelo clique no vazio (caixa 0×0 = desselecionar
+     tudo). A galeria existe pra pegar esse tipo de coisa antes da
+     mesa. */
+  const selecionarCaixa = useCallback((ids: string[]) => setSelecionado(ids[ids.length - 1] ?? null), []);
 
   return (
     <>
@@ -181,6 +186,8 @@ export function VitrineMapa() {
           celulasRealce={celulas}
           tipoRealce={realce === "nenhum" ? null : realce}
           onSelecionarToken={selecionar}
+          onSelecionarCaixa={selecionarCaixa}
+          ferramenta="interagir"
           onHoverToken={setHover}
           areas={areas}
           areasMostrarCelulas={mostrarCelulas}

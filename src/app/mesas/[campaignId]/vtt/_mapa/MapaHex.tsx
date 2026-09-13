@@ -1489,6 +1489,69 @@ export function MapaHex({
     };
   }, [onPingCelula, pontoMundo]);
 
+  // ── Clique no vazio DESSELECIONA — em QUALQUER ferramenta ────────
+  //
+  // Selecionar um token sempre funcionou em qualquer ferramenta (o
+  // `pointerdown` do token chama `onSelecionar` sem olhar qual está
+  // ativa). DESselecionar, não: isso morava só na seleção por caixa,
+  // que sai cedo fora da Interagir. O resultado era uma assimetria que
+  // na mesa lê como bug — dá pra selecionar pintando terreno ou
+  // marcando, mas o clique no vazio não solta, e a seleção fica presa
+  // até trocar de ferramenta ou apertar Esc.
+  //
+  // Mesmo desenho do gesto de ping, e pelo mesmo motivo: captura no
+  // `<svg>` inteiro, sem `preventDefault`/`stopPropagation`, então ele
+  // só OBSERVA — pintar terreno, medir, desenhar área e a própria
+  // caixa continuam acontecendo exatamente como antes. Na Interagir
+  // isto e a caixa 0×0 chegam à mesma conclusão; chamar duas vezes com
+  // a mesma lista vazia é idempotente.
+  //
+  // Não desseleciona quando: o gesto começou sobre um token ou sobre
+  // uma alça (o elemento tem dono), com Shift (alternância), com botão
+  // que não seja o esquerdo, ou quando a mão andou além do limiar de
+  // arrasto — aí foi arrasto, não clique.
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg || !onSelecionarCaixa) return;
+
+    let origem: { x: number; y: number } | null = null;
+
+    function aoPressionar(e: PointerEvent) {
+      origem = null;
+      if (e.button !== 0 || e.shiftKey) return;
+      const alvo = e.target as Element | null;
+      // `closest` sobe a árvore SVG normalmente — é o mesmo mecanismo
+      // que o menu contextual já usa pra descobrir o token sob o
+      // cursor. Alças de área/rotação e imagens têm gesto próprio: um
+      // clique nelas não é "clique no vazio".
+      if (alvo?.closest?.(".rv-token, .rv-area-alca, .rv-token-alca-rotacao, .rv-imagem-cena")) return;
+      origem = { x: e.clientX, y: e.clientY };
+    }
+    function aoSoltar(e: PointerEvent) {
+      const o = origem;
+      origem = null;
+      if (!o) return;
+      if (Math.hypot(e.clientX - o.x, e.clientY - o.y) >= LIMIAR_ARRASTO_PX) return;
+      onSelecionarCaixa!([], false);
+    }
+
+    // Nomeado, não anônimo: um `pointercancel` registrado com função
+    // anônima não tem como ser removido depois — vira listener órfão a
+    // cada reinscrição do efeito.
+    function cancelar() { origem = null; }
+
+    svg.addEventListener("pointerdown", aoPressionar, { capture: true });
+    window.addEventListener("pointerup", aoSoltar);
+    window.addEventListener("pointercancel", cancelar);
+    window.addEventListener("blur", cancelar);
+    return () => {
+      svg.removeEventListener("pointerdown", aoPressionar, { capture: true });
+      window.removeEventListener("pointerup", aoSoltar);
+      window.removeEventListener("pointercancel", cancelar);
+      window.removeEventListener("blur", cancelar);
+    };
+  }, [onSelecionarCaixa]);
+
   // ── Seleção por caixa ────────────────────────────────────────────
   // Só nasce a partir de um pointerdown no PISO (nunca num token — o
   // token já trata o próprio pointerdown como início de seleção/
