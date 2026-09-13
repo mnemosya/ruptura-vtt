@@ -32,9 +32,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  AlertTriangle, Archive, Clapperboard, FolderPlus, ImagePlus, Loader2, Plus, Search, Undo2, X,
+  AlertTriangle, Archive, ChevronDown, Clapperboard, FolderPlus, ImagePlus, Loader2, Plus, Search, Undo2, X,
 } from "lucide-react";
 import { CartaoCena } from "./CartaoCena";
+import { MiniCartaoCena } from "./MiniCartaoCena";
 import { MIME_JOGADOR, TrilhoJogadores } from "./TrilhoJogadores";
 import { ParametrosCena, type ValoresParametros } from "./ParametrosCena";
 import {
@@ -137,6 +138,22 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
 
   /** Onde cada jogador está (0118). Vazio para quem não é narrador. */
   const [jogadores, setJogadores] = useState<PosicaoJogador[]>([]);
+  /**
+   * Quais pastas estão com a lista aberta no trilho. `"__todas__"` é a
+   * linha do topo, que não é pasta nenhuma mas se comporta como uma.
+   *
+   * Estado LOCAL e efêmero de propósito: é um gesto de olhar, não uma
+   * preferência — reabrir a gaveta começa com tudo recolhido, que é o
+   * estado em que ela cabe inteira na tela.
+   */
+  const [expandidas, setExpandidas] = useState<ReadonlySet<string>>(new Set());
+  const alternarExpansao = useCallback((chave: string) => {
+    setExpandidas((atual) => {
+      const novo = new Set(atual);
+      if (novo.has(chave)) novo.delete(chave); else novo.add(chave);
+      return novo;
+    });
+  }, []);
 
   /** As pastas da campanha, com caminho e nível montados pelo banco (0117). */
   const [pastas, setPastas] = useState<PastaCena[]>([]);
@@ -869,6 +886,33 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
     cenasPorPasta.set(c.pastaId, (cenasPorPasta.get(c.pastaId) ?? 0) + 1);
   }
 
+  /**
+   * Os mini-cartões de uma pasta (ou de "Todas", com `pastaId`
+   * indefinido = sem filtro). Uma função só pros dois casos: a linha do
+   * topo e as pastas mostram a MESMA lista, com a mesma aparência e o
+   * mesmo clique — o que muda é o filtro.
+   */
+  function listaDeCenas(pastaId: string | null | undefined) {
+    const cenas = todas.filter((c) => c.arquivadaEm === null && (pastaId === undefined || c.pastaId === pastaId));
+    if (cenas.length === 0) return null;
+    return (
+      <ul className="rv-pasta-cenas" data-testid="pasta-cenas">
+        {cenas.map((c) => (
+          <MiniCartaoCena
+            key={c.id}
+            nome={c.nome}
+            miniaturaUrl={c.miniaturaImageId ? miniaturas[c.miniaturaImageId] ?? null : null}
+            vista={c.id === p.cenaVistaId}
+            jogadoresAqui={jogadores.filter((j) => j.sceneId === c.id)}
+            totalJogadores={jogadores.length}
+            ocupada={ocupadas[c.id] === true}
+            onAbrir={() => p.onAbrir(c.id)}
+          />
+        ))}
+      </ul>
+    );
+  }
+
   /** A corrente do breadcrumb, da raiz até a pasta aberta. */
   const trilha: PastaCena[] = [];
   for (let id = pastaAtual; id !== null; ) {
@@ -1035,23 +1079,48 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
             colunas, não uma lista de coisas equivalentes. */
         !buscando ? (
           <nav className="rv-gav-trilho" aria-label="Pastas do catálogo" data-testid="cenas-trilho">
-            <button
-              type="button"
-              className="rv-pasta-degrau" data-raiz=""
-              aria-current={pastaAtual === null && !verArquivo ? "page" : undefined}
-              data-alvo={pastaAlvo === "__raiz__" || undefined}
-              data-testid="trilho-raiz"
-              onClick={() => { setVerArquivo(false); setPastaAtual(null); }}
-              onDragOver={(e) => { if (arrastandoId) { e.preventDefault(); setPastaAlvo("__raiz__"); } }}
-              onDragLeave={() => setPastaAlvo(null)}
-              onDrop={(e) => { e.preventDefault(); if (arrastandoId) void moverCena(arrastandoId, null); }}
-            >
-              <Clapperboard size={14} aria-hidden="true" />
-              <span className="rv-pasta-nome-txt">Todas</span>
-              <span className="rv-pasta-contagem">
-                {todas.filter((c) => c.arquivadaEm === null).length}
-              </span>
-            </button>
+            {/* "TODAS" não é uma pasta, mas é a mesma COISA pra quem
+                olha: um caminho com uma contagem e uma lista dentro.
+                Por isso usa a casca da linha de pasta (`rv-pasta-linha`)
+                em vez de um botão de estilo próprio — o que muda é não
+                ter renomear/excluir, porque não há o que renomear nem
+                excluir. */}
+            <ul className="rv-gav-pastas">
+              <li
+                className="rv-pasta-linha" data-raiz=""
+                data-aberta={pastaAtual === null && !verArquivo ? "" : undefined}
+                data-alvo={pastaAlvo === "__raiz__" || undefined}
+                onDragOver={(e) => { if (arrastandoId) { e.preventDefault(); setPastaAlvo("__raiz__"); } }}
+                onDragLeave={() => setPastaAlvo(null)}
+                onDrop={(e) => { e.preventDefault(); if (arrastandoId) void moverCena(arrastandoId, null); }}
+              >
+                <span className="rv-pasta-cabeca">
+                  <span className="rv-pasta-icone" aria-hidden="true"><Clapperboard size={15} /></span>
+                  <button
+                    type="button" className="rv-pasta-nome"
+                    aria-current={pastaAtual === null && !verArquivo ? "page" : undefined}
+                    data-testid="trilho-raiz"
+                    onClick={() => { setVerArquivo(false); setPastaAtual(null); }}
+                  >
+                    <span className="rv-pasta-nome-txt">Todas</span>
+                  </button>
+                  <button
+                    type="button" className="rv-pasta-expandir"
+                    data-testid="trilho-raiz-expandir"
+                    aria-expanded={expandidas.has("__todas__")}
+                    aria-label={expandidas.has("__todas__") ? "Recolher todas as cenas" : "Ver todas as cenas"}
+                    disabled={todas.filter((c) => c.arquivadaEm === null).length === 0}
+                    onClick={() => alternarExpansao("__todas__")}
+                  >
+                    <span className="rv-pasta-contagem">
+                      {todas.filter((c) => c.arquivadaEm === null).length}
+                    </span>
+                    <ChevronDown size={13} aria-hidden="true" />
+                  </button>
+                </span>
+                {expandidas.has("__todas__") && listaDeCenas(undefined)}
+              </li>
+            </ul>
 
             {pastas.length > 0 && (
               <ul className="rv-gav-pastas">
@@ -1061,6 +1130,9 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                     pasta={f}
                     aberta={pastaAtual === f.id && !verArquivo}
                     quantidade={cenasPorPasta.get(f.id) ?? 0}
+                    expandida={expandidas.has(f.id)}
+                    onAlternarExpansao={() => alternarExpansao(f.id)}
+                    cenas={listaDeCenas(f.id)}
                     ocupada={ocupadas[f.id] === true}
                     erro={errosPorCena[f.id] ?? null}
                     onAbrir={() => { setVerArquivo(false); setPastaAtual(f.id); }}

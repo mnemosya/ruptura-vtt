@@ -23,6 +23,7 @@ import { Archive, FolderPlus, ImagePlus, Plus } from "lucide-react";
 import { GavetaCasca } from "../../mesas/[campaignId]/vtt/_cenas/GavetaCasca";
 import { CartaoCena } from "../../mesas/[campaignId]/vtt/_cenas/CartaoCena";
 import { LinhaPasta } from "../../mesas/[campaignId]/vtt/_cenas/LinhaPasta";
+import { MiniCartaoCena } from "../../mesas/[campaignId]/vtt/_cenas/MiniCartaoCena";
 import { TrilhoJogadores } from "../../mesas/[campaignId]/vtt/_cenas/TrilhoJogadores";
 import { ParametrosCena } from "../../mesas/[campaignId]/vtt/_cenas/ParametrosCena";
 import type {
@@ -203,6 +204,31 @@ export function VitrineGaveta() {
                   onRenomear={SEM_EFEITO} onExcluir={SEM_EFEITO}
                   alvoDeArrasto={false}
                   onDragOver={SEM_EFEITO} onDragLeave={SEM_EFEITO} onDrop={SEM_EFEITO}
+                  /* A galeria abre a primeira pasta pra mostrar os dois
+                     estados do chevron e o mini-cartão lado a lado com
+                     o cartão grande. */
+                  expandida={f.id === "f1"}
+                  onAlternarExpansao={SEM_EFEITO}
+                  cenas={f.id === "f1" ? (
+                    <ul className="rv-pasta-cenas">
+                      <MiniCartaoCena
+                        nome="Doca 7 — o mercado que se desfez" miniaturaUrl={null}
+                        vista jogadoresAqui={[]} totalJogadores={3} ocupada={false} onAbrir={SEM_EFEITO}
+                      />
+                      <MiniCartaoCena
+                        nome="Galeria inundada" miniaturaUrl={null}
+                        vista={false}
+                        jogadoresAqui={[{ userId: "u1", sceneId: "c2", nome: "Alba" }] as never}
+                        totalJogadores={3} ocupada={false} onAbrir={SEM_EFEITO}
+                      />
+                      <MiniCartaoCena
+                        nome="Salão dos ossos" miniaturaUrl={null}
+                        vista={false}
+                        jogadoresAqui={[{ userId: "u1" }, { userId: "u2" }, { userId: "u3" }] as never}
+                        totalJogadores={3} ocupada={false} onAbrir={SEM_EFEITO}
+                      />
+                    </ul>
+                  ) : undefined}
                 />
               ))}
             </ul>

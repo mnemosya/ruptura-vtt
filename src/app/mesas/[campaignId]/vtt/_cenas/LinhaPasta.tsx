@@ -17,7 +17,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronRight, Folder, FolderOpen, Pencil, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, Folder, FolderOpen, Pencil, Trash2, X } from "lucide-react";
 import type { PastaCena } from "../../../../../lib/vtt/sceneStorage";
 
 export interface PropsLinhaPasta {
@@ -31,6 +31,15 @@ export interface PropsLinhaPasta {
   onAbrir: () => void;
   onRenomear: (nome: string) => void;
   onExcluir: () => void;
+  /**
+   * A lista de cenas desta pasta, aberta pelo chevron. Quem guarda o
+   * estado (e monta os mini-cartões) é o `GerenciadorCenas` — esta
+   * linha só diz SE está aberta e oferece o botão que alterna.
+   */
+  expandida: boolean;
+  onAlternarExpansao: () => void;
+  /** Os mini-cartões, já montados. Só desenhados quando `expandida`. */
+  cenas?: React.ReactNode;
   /** Uma cena está sendo arrastada e paira sobre esta pasta. */
   alvoDeArrasto: boolean;
   onDragOver: (e: React.DragEvent) => void;
@@ -66,6 +75,7 @@ export function LinhaPasta(p: PropsLinhaPasta) {
       onDragLeave={p.onDragLeave}
       onDrop={p.onDrop}
     >
+      <span className="rv-pasta-cabeca">
       <span className="rv-pasta-icone" aria-hidden="true">
         {p.alvoDeArrasto ? <FolderOpen size={15} /> : <Folder size={15} />}
       </span>
@@ -100,10 +110,6 @@ export function LinhaPasta(p: PropsLinhaPasta) {
           disabled={p.ocupada} onClick={p.onAbrir}
         >
           <span className="rv-pasta-nome-txt">{p.pasta.nome}</span>
-          <span className="rv-pasta-contagem">
-            {p.quantidade === 0 ? "vazia" : p.quantidade === 1 ? "1 cena" : `${p.quantidade} cenas`}
-          </span>
-          <ChevronRight size={13} aria-hidden="true" />
         </button>
       )}
 
@@ -147,6 +153,28 @@ export function LinhaPasta(p: PropsLinhaPasta) {
           </>
         )}
       </span>
+
+      {/* EXPANSOR — contagem e chevron são um alvo só, no canto direito,
+          DEPOIS das ações. Ele não abre a pasta: abre a lista dela aqui
+          mesmo. Não pode ser filho do botão de abrir (botão dentro de
+          botão é HTML inválido, e o clique ficaria ambíguo), então são
+          dois irmãos com áreas separadas. */}
+      <button
+        type="button" className="rv-pasta-expandir"
+        data-testid="pasta-expandir"
+        aria-expanded={p.expandida}
+        aria-label={p.expandida ? `Recolher as cenas de "${p.pasta.nome}"` : `Ver as cenas de "${p.pasta.nome}"`}
+        disabled={p.ocupada || p.quantidade === 0}
+        onClick={p.onAlternarExpansao}
+      >
+        <span className="rv-pasta-contagem">
+          {p.quantidade === 0 ? "vazia" : p.quantidade === 1 ? "1 cena" : `${p.quantidade} cenas`}
+        </span>
+        <ChevronDown size={13} aria-hidden="true" />
+      </button>
+      </span>
+
+      {p.expandida && p.cenas}
     </li>
   );
 }
