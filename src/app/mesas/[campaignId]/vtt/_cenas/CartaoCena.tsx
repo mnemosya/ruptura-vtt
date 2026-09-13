@@ -46,6 +46,12 @@ export interface PropsCartaoCena {
    * inicial do nome, que é o que ele sempre fez.
    */
   miniaturaUrl?: string | null;
+  /**
+   * O caminho da pasta, mostrado só na BUSCA. Fora dela o caminho já
+   * está no breadcrumb acima, e repeti-lo em cada cartão seria dizer a
+   * mesma coisa N vezes.
+   */
+  caminhoPasta?: string | null;
   /** Alguma escrita desta cena está em voo — trava os gestos dela. */
   ocupada: boolean;
   /** A última escrita desta cena falhou; a mensagem pertence a ESTE cartão. */
@@ -138,6 +144,8 @@ export function CartaoCena(p: PropsCartaoCena) {
       data-alvo={p.arrasto.alvo || undefined}
       data-testid="cena-cartao"
       data-cena-id={p.cena.id}
+      // Arrastar serve pra reordenar E pra mover entre pastas; nos dois
+      // casos o gesto não faz sentido no meio de uma edição inline.
       draggable={modo === "normal"}
       onDragStart={p.arrasto.onDragStart}
       onDragOver={p.arrasto.onDragOver}
@@ -207,6 +215,7 @@ export function CartaoCena(p: PropsCartaoCena) {
             </span>
           )}
           {arquivada && <span className="rv-cena-selo" data-tipo="arquivo">Arquivada</span>}
+          {p.caminhoPasta && <span className="rv-cena-local" data-tipo="pasta">{p.caminhoPasta}</span>}
           {p.cena.local && <span className="rv-cena-local">{p.cena.local}</span>}
         </span>
 

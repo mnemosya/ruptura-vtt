@@ -485,6 +485,8 @@ export interface CartaoCena {
   duplicadaDe: string | null;
   /** Imagem escolhida a dedo ou, na falta, o fundo da cena. A URL assinada sai do serviço de imagens. */
   miniaturaImageId: string | null;
+  /** Pasta do catálogo (0117). Nula = raiz, que é o caso normal. */
+  pastaId: string | null;
   criadaEm: string;
   atualizadaEm: string;
 }
@@ -516,6 +518,7 @@ export async function listarCenas(campaignId: string, incluirArquivadas = false)
     apresentada: c.apresentada === true,
     duplicadaDe: (c.duplicada_de as string | null) ?? null,
     miniaturaImageId: (c.miniatura_image_id as string | null) ?? null,
+    pastaId: (c.pasta_id as string | null) ?? null,
     criadaEm: c.criada_em as string,
     atualizadaEm: c.atualizada_em as string,
   }));
@@ -580,6 +583,7 @@ function cartaoDeLinhaDeCena(linha: Record<string, unknown>): CartaoCena {
     apresentada: false,
     duplicadaDe: (linha.duplicated_from_id as string | null) ?? null,
     miniaturaImageId: (linha.thumbnail_image_id as string | null) ?? null,
+    pastaId: (linha.folder_id as string | null) ?? null,
     criadaEm: linha.created_at as string,
     atualizadaEm: linha.updated_at as string,
   };
@@ -611,6 +615,112 @@ export async function apresentarCena(params: {
     revision: (linha?.revision as number | undefined) ?? undefined,
     presentedSceneId: (linha?.presented_scene_id as string | undefined) ?? params.sceneId,
   };
+}
+
+/**
+ * Uma pasta do catálogo, com o caminho já montado pelo banco (0117).
+ *
+ * `caminho` e `nivel` vêm prontos porque a recursão é do banco —
+ * remontar a corrente de pais no cliente a cada render seria errar
+ * exatamente no lugar onde errar aparece (o breadcrumb).
+ */
+export interface PastaCena {
+  id: string;
+  parentId: string | null;
+  nome: string;
+  ordem: number;
+  nivel: number;
+  caminho: string;
+}
+
+/** As pastas da campanha. Lista vazia para quem não é narrador. */
+export async function listarPastas(campaignId: string): Promise<PastaCena[]> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("list_vtt_scene_folders", { p_campaign_id: campaignId });
+  if (error) throw new VttStorageError(`Falha ao listar as pastas: ${error.message}`, error);
+  return (Array.isArray(data) ? (data as Record<string, unknown>[]) : []).map((f) => ({
+    id: f.id as string,
+    parentId: (f.parent_id as string | null) ?? null,
+    nome: f.nome as string,
+    ordem: f.ordem as number,
+    nivel: f.nivel as number,
+    caminho: f.caminho as string,
+  }));
+}
+
+function pastaDeLinha(linha: Record<string, unknown>, nivel = 1, caminho?: string): PastaCena {
+  return {
+    id: linha.id as string,
+    parentId: (linha.parent_id as string | null) ?? null,
+    nome: linha.nome as string,
+    ordem: linha.ordem as number,
+    // As RPCs de escrita devolvem a LINHA, que não tem nível nem
+    // caminho (os dois são derivados da árvore). Quem escreve relê a
+    // lista logo em seguida; estes valores são só o preenchimento do
+    // intervalo.
+    nivel,
+    caminho: caminho ?? (linha.nome as string),
+  };
+}
+
+export async function criarPasta(params: {
+  campaignId: string;
+  nome: string;
+  parentId?: string | null;
+}): Promise<{ ok: boolean; erro?: string; pasta?: PastaCena }> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("create_vtt_scene_folder", {
+    p_campaign_id: params.campaignId,
+    p_nome: params.nome,
+    p_parent_id: params.parentId ?? null,
+  });
+  if (error) return { ok: false, erro: error.message };
+  const linha = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;
+  if (!linha) return { ok: false, erro: "A pasta não foi criada." };
+  return { ok: true, pasta: pastaDeLinha(linha) };
+}
+
+export async function renomearPasta(params: { folderId: string; nome: string }): Promise<ResultadoEscrita> {
+  const client = await getScopedTableClient();
+  const { error } = await client.rpc("rename_vtt_scene_folder", {
+    p_folder_id: params.folderId, p_nome: params.nome,
+  });
+  if (error) return { ok: false, erro: error.message };
+  return { ok: true };
+}
+
+/** Reparenta. Ciclo e quinto nível são recusados pelo gatilho (0117). */
+export async function moverPasta(params: {
+  folderId: string;
+  novoParentId: string | null;
+}): Promise<ResultadoEscrita> {
+  const client = await getScopedTableClient();
+  const { error } = await client.rpc("move_vtt_scene_folder", {
+    p_folder_id: params.folderId, p_novo_parent_id: params.novoParentId,
+  });
+  if (error) return { ok: false, erro: error.message };
+  return { ok: true };
+}
+
+/** Apaga a pasta e SOBE os filhos. Nunca apaga cena — ver 0117. */
+export async function excluirPasta(folderId: string): Promise<ResultadoEscrita> {
+  const client = await getScopedTableClient();
+  const { error } = await client.rpc("delete_vtt_scene_folder", { p_folder_id: folderId });
+  if (error) return { ok: false, erro: error.message };
+  return { ok: true };
+}
+
+/** Move uma cena para uma pasta, ou para a raiz com `null`. */
+export async function moverCenaParaPasta(params: {
+  sceneId: string;
+  folderId: string | null;
+}): Promise<ResultadoEscrita> {
+  const client = await getScopedTableClient();
+  const { error } = await client.rpc("move_vtt_scene_to_folder", {
+    p_scene_id: params.sceneId, p_folder_id: params.folderId,
+  });
+  if (error) return { ok: false, erro: error.message };
+  return { ok: true };
 }
 
 /** Os dois modos que o diálogo de duplicação oferece (0116). */

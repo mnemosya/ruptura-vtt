@@ -30,17 +30,19 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Archive, Clapperboard, Loader2, Plus, Undo2 } from "lucide-react";
+import { AlertTriangle, Archive, Clapperboard, FolderPlus, Loader2, Plus, Undo2 } from "lucide-react";
 import { JanelaFerramenta } from "../_shell/JanelaFerramenta";
 import { CartaoCena } from "./CartaoCena";
 import {
-  apresentarCenaAction, arquivarCenaAction, criarCenaAction, duplicarCenaAction,
-  excluirCenaAction, listarCenasAction, reordenarCenasAction, restaurarCenaAction,
-  salvarConfigCenaAction,
+  apresentarCenaAction, arquivarCenaAction, criarCenaAction, criarPastaAction,
+  duplicarCenaAction, excluirCenaAction, excluirPastaAction, listarCenasAction,
+  listarPastasAction, moverCenaParaPastaAction, renomearPastaAction,
+  reordenarCenasAction, restaurarCenaAction, salvarConfigCenaAction,
 } from "../_acoes/sceneActions";
 import { assinarImagensAction } from "../_acoes/imageActions";
+import { LinhaPasta } from "./LinhaPasta";
 import type {
-  CartaoCena as DadosCartaoCena, ModoDuplicacao,
+  CartaoCena as DadosCartaoCena, ModoDuplicacao, PastaCena,
 } from "../../../../../lib/vtt/sceneStorage";
 
 export interface PropsGerenciadorCenas {
@@ -93,6 +95,22 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
    * expira em 5 minutos.
    */
   const [miniaturas, setMiniaturas] = useState<Record<string, string>>({});
+
+  /** As pastas da campanha, com caminho e nível montados pelo banco (0117). */
+  const [pastas, setPastas] = useState<PastaCena[]>([]);
+  /** Onde o narrador está navegando. `null` = raiz. */
+  const [pastaAtual, setPastaAtual] = useState<string | null>(null);
+  const [criandoPasta, setCriandoPasta] = useState(false);
+  const [nomePastaNova, setNomePastaNova] = useState("");
+  const campoPastaRef = useRef<HTMLInputElement | null>(null);
+  /** A pasta sob o arrasto agora — o realce que evita soltar no escuro. */
+  const [pastaAlvo, setPastaAlvo] = useState<string | null>(null);
+  /**
+   * A busca ACHATA a hierarquia de propósito: procurar é justamente o
+   * gesto de quem não sabe em que pasta a cena está, e responder
+   * "nenhum resultado nesta pasta" seria responder a pergunta errada.
+   */
+  const [busca, setBusca] = useState("");
 
   /** A aba de arquivo. Filtro de apresentação, não outra consulta. */
   const [verArquivo, setVerArquivo] = useState(false);
@@ -158,12 +176,19 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
       // apresentação, não outra consulta. Buscar de novo a cada troca
       // de aba faria o número do botão ("Arquivo (3)") depender de uma
       // carga que só acontece depois de clicar nele.
-      const r = await listarCenasAction(p.campaignId, true);
+      // Cenas e pastas na MESMA leva: são as duas metades de uma lista
+      // só, e carregá-las em momentos diferentes deixaria um frame com
+      // cenas órfãs de pastas que ainda não chegaram.
+      const [r, rp] = await Promise.all([
+        listarCenasAction(p.campaignId, true),
+        listarPastasAction(p.campaignId),
+      ]);
       if (geracao !== geracaoRef.current) return;
       if (!r.ok || !r.dados) {
         setErro(r.erro ?? "Falha ao listar as cenas.");
       } else {
         setCenas([...r.dados.cenas].sort((a, b) => a.ordem - b.ordem));
+        setPastas(rp.ok && rp.dados ? rp.dados.pastas : []);
         setErro(null);
       }
     } catch (e) {
@@ -177,6 +202,16 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
   useEffect(() => { void recarregar(); }, [recarregar, p.versaoExterna]);
 
   useEffect(() => { if (criando) campoNovoRef.current?.focus(); }, [criando]);
+  useEffect(() => { if (criandoPasta) campoPastaRef.current?.focus(); }, [criandoPasta]);
+
+  /**
+   * A pasta aberta sumiu (excluída aqui ou noutra aba) — volta pra
+   * raiz. Ficar apontando pra ela mostraria uma lista vazia sem que
+   * nada explicasse que o lugar deixou de existir.
+   */
+  useEffect(() => {
+    if (pastaAtual && !pastas.some((f) => f.id === pastaAtual)) setPastaAtual(null);
+  }, [pastas, pastaAtual]);
 
   /**
    * Assina as miniaturas que ainda não têm URL.
@@ -384,6 +419,68 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
     if (ok && cena.id === p.cenaVistaId) p.onCenaSaiuDeUso?.(cena.id);
   }
 
+  // ── Pastas ─────────────────────────────────────────────────────────
+  async function criarPastaNova() {
+    const nome = nomePastaNova.trim();
+    if (nome.length === 0) return;
+    try {
+      // Nasce DENTRO da pasta aberta: "nova pasta" enquanto se navega
+      // em `Ato I / Porto` significa uma pasta ali, não na raiz.
+      const r = await criarPastaAction({ campaignId: p.campaignId, nome, parentId: pastaAtual });
+      if (!r.ok) { setErro(r.erro ?? "Falha ao criar a pasta."); return; }
+      setNomePastaNova("");
+      setCriandoPasta(false);
+      setErro(null);
+      await recarregar();
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Falha inesperada ao criar a pasta.");
+    }
+  }
+
+  async function renomearPastaPor(pasta: PastaCena, nome: string) {
+    marcarOcupada(pasta.id, true);
+    anotarErro(pasta.id, null);
+    try {
+      const r = await renomearPastaAction({ campaignId: p.campaignId, folderId: pasta.id, nome });
+      if (!r.ok) { anotarErro(pasta.id, r.erro ?? "Não foi possível renomear a pasta."); return; }
+      await recarregar();
+    } finally {
+      marcarOcupada(pasta.id, false);
+    }
+  }
+
+  async function excluirPastaPor(pasta: PastaCena) {
+    marcarOcupada(pasta.id, true);
+    anotarErro(pasta.id, null);
+    try {
+      const r = await excluirPastaAction({ campaignId: p.campaignId, folderId: pasta.id });
+      if (!r.ok) { anotarErro(pasta.id, r.erro ?? "Não foi possível excluir a pasta."); return; }
+      await recarregar();
+    } finally {
+      marcarOcupada(pasta.id, false);
+    }
+  }
+
+  /**
+   * Arrastar uma cena para uma pasta (ou para o breadcrumb, que é a
+   * forma de tirá-la de onde está).
+   */
+  async function moverCena(sceneId: string, destino: string | null) {
+    setPastaAlvo(null);
+    setArrastandoId(null);
+    const cena = (cenasRef.current ?? []).find((c) => c.id === sceneId);
+    if (!cena || cena.pastaId === destino) return;
+    marcarOcupada(sceneId, true);
+    anotarErro(sceneId, null);
+    try {
+      const r = await moverCenaParaPastaAction({ campaignId: p.campaignId, sceneId, folderId: destino });
+      if (!r.ok) { anotarErro(sceneId, r.erro ?? "Não foi possível mover a cena."); return; }
+      await recarregar();
+    } finally {
+      marcarOcupada(sceneId, false);
+    }
+  }
+
   /**
    * Reordena otimista e confirma no servidor, uma de cada vez.
    *
@@ -449,9 +546,49 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
 
   const todas = cenas ?? [];
   const arquivadas = todas.filter((c) => c.arquivadaEm !== null);
-  // A aba de arquivo é um FILTRO da mesma carga, não outra consulta.
-  const lista = verArquivo ? arquivadas : todas.filter((c) => c.arquivadaEm === null);
-  const vazio = !carregando && !erro && lista.length === 0;
+  const termo = busca.trim().toLocaleLowerCase("pt-BR");
+  const buscando = termo.length > 0;
+
+  /**
+   * A lista, em três recortes que NÃO se combinam:
+   *
+   *   · busca — achata tudo, ignora pasta E arquivo. Quem procura quer
+   *     encontrar, e lembrar de conferir duas abas é trabalho do
+   *     programa, não de quem usa;
+   *   · arquivo — as arquivadas, em qualquer pasta. Arquivar é sobre
+   *     estar em uso, não sobre onde está guardado;
+   *   · catálogo — as em uso da pasta ABERTA.
+   */
+  const lista = buscando
+    ? todas.filter((c) =>
+        c.nome.toLocaleLowerCase("pt-BR").includes(termo)
+        || (c.local ?? "").toLocaleLowerCase("pt-BR").includes(termo))
+    : verArquivo
+      ? arquivadas
+      : todas.filter((c) => c.arquivadaEm === null && c.pastaId === pastaAtual);
+
+  /** As subpastas da pasta aberta. Somem na busca e no arquivo. */
+  const subpastas = (buscando || verArquivo)
+    ? []
+    : pastas.filter((f) => f.parentId === pastaAtual).sort((a, b) => a.ordem - b.ordem);
+
+  const pastaPorId = new Map(pastas.map((f) => [f.id, f]));
+  const cenasPorPasta = new Map<string, number>();
+  for (const c of todas) {
+    if (c.arquivadaEm !== null || !c.pastaId) continue;
+    cenasPorPasta.set(c.pastaId, (cenasPorPasta.get(c.pastaId) ?? 0) + 1);
+  }
+
+  /** A corrente do breadcrumb, da raiz até a pasta aberta. */
+  const trilha: PastaCena[] = [];
+  for (let id = pastaAtual; id !== null; ) {
+    const f = pastaPorId.get(id);
+    if (!f) break;
+    trilha.unshift(f);
+    id = f.parentId;
+  }
+
+  const vazio = !carregando && !erro && lista.length === 0 && subpastas.length === 0;
 
   return (
     <JanelaFerramenta
@@ -476,6 +613,63 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
       testId="janela-cenas"
     >
       <div className="rv-fp-corpo">
+        {/* BREADCRUMB — e também alvo de soltura: arrastar uma cena para
+            um degrau acima é a forma de TIRÁ-LA da pasta atual. Sem
+            isso, "mover pra fora" precisaria de um menu com a árvore
+            inteira dentro. */}
+        {!buscando && !verArquivo && (
+          <nav className="rv-pasta-trilha" aria-label="Caminho do catálogo" data-testid="cenas-trilha">
+            <button
+              type="button"
+              className="rv-pasta-degrau"
+              aria-current={pastaAtual === null ? "page" : undefined}
+              data-alvo={pastaAlvo === "__raiz__" || undefined}
+              data-testid="trilha-raiz"
+              onClick={() => setPastaAtual(null)}
+              onDragOver={(e) => { if (arrastandoId) { e.preventDefault(); setPastaAlvo("__raiz__"); } }}
+              onDragLeave={() => setPastaAlvo(null)}
+              onDrop={(e) => { e.preventDefault(); if (arrastandoId) void moverCena(arrastandoId, null); }}
+            >Catálogo</button>
+            {trilha.map((f, i) => (
+              <span key={f.id} className="rv-pasta-degrau-casca">
+                <span className="rv-pasta-sep" aria-hidden="true">/</span>
+                <button
+                  type="button"
+                  className="rv-pasta-degrau"
+                  aria-current={i === trilha.length - 1 ? "page" : undefined}
+                  data-alvo={pastaAlvo === f.id || undefined}
+                  onClick={() => setPastaAtual(f.id)}
+                  onDragOver={(e) => { if (arrastandoId) { e.preventDefault(); setPastaAlvo(f.id); } }}
+                  onDragLeave={() => setPastaAlvo(null)}
+                  onDrop={(e) => { e.preventDefault(); if (arrastandoId) void moverCena(arrastandoId, f.id); }}
+                >{f.nome}</button>
+              </span>
+            ))}
+          </nav>
+        )}
+
+        {/* BUSCA. Aparece quando há o que procurar — num catálogo de três
+            cenas, um campo de busca é ruído ocupando a primeira linha. */}
+        {(todas.length > 4 || buscando) && (
+          <input
+            className="rv-cena-campo rv-cena-busca"
+            type="search"
+            value={busca}
+            placeholder="Procurar cena…"
+            aria-label="Procurar cena pelo nome ou local"
+            data-testid="cenas-busca"
+            onChange={(e) => setBusca(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setBusca(""); } }}
+          />
+        )}
+
+        {buscando && (
+          <p className="rv-cena-estado" data-testid="cenas-busca-modo">
+            {lista.length === 0
+              ? `Nada encontrado para “${busca.trim()}”.`
+              : `${lista.length === 1 ? "1 cena" : `${lista.length} cenas`} em todas as pastas.`}
+          </p>
+        )}
         {/* CARREGANDO — só na PRIMEIRA carga. Uma releitura (depois de
             renomear, por exemplo) não pode apagar a lista da tela: o
             catálogo piscaria a cada escrita. */}
@@ -496,8 +690,31 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
           <p className="rv-cena-estado" data-testid="cenas-vazio">
             {verArquivo
               ? "Nada arquivado. Arquivar tira a cena do catálogo sem apagá-la."
-              : "Nenhuma cena ainda. Crie a primeira para começar a preparar."}
+              : pastaAtual !== null
+                ? "Pasta vazia. Arraste uma cena para cá, ou crie uma."
+                : "Nenhuma cena ainda. Crie a primeira para começar a preparar."}
           </p>
+        )}
+
+        {subpastas.length > 0 && (
+          <ul className="rv-cena-lista" data-testid="pastas-lista">
+            {subpastas.map((f) => (
+              <LinhaPasta
+                key={f.id}
+                pasta={f}
+                quantidade={cenasPorPasta.get(f.id) ?? 0}
+                ocupada={ocupadas[f.id] === true}
+                erro={errosPorCena[f.id] ?? null}
+                onAbrir={() => setPastaAtual(f.id)}
+                onRenomear={(nome) => void renomearPastaPor(f, nome)}
+                onExcluir={() => void excluirPastaPor(f)}
+                alvoDeArrasto={pastaAlvo === f.id && arrastandoId !== null}
+                onDragOver={(e) => { if (arrastandoId) { e.preventDefault(); setPastaAlvo(f.id); } }}
+                onDragLeave={() => setPastaAlvo(null)}
+                onDrop={(e) => { e.preventDefault(); if (arrastandoId) void moverCena(arrastandoId, f.id); }}
+              />
+            ))}
+          </ul>
         )}
 
         {lista.length > 0 && (
@@ -518,12 +735,21 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                 onRestaurar={() => void restaurar(c)}
                 onExcluir={(nome) => void excluir(c, nome)}
                 onMover={(d) => mover(c.id, d)}
+                // Reordenar só faz sentido numa lista que TEM ordem. Na
+                // busca a lista é achatada entre pastas: "subir" ali
+                // significaria trocar a posição de duas cenas que nem
+                // moram no mesmo lugar.
+                //
                 // As setas NÃO travam durante a fila: travar tornaria
                 // "descer duas posições" um gesto que só funciona
                 // esperando o servidor entre um clique e outro. A fila
                 // existe exatamente pra que isso seja seguro.
-                podeSubir={i > 0}
-                podeDescer={i < lista.length - 1}
+                podeSubir={!buscando && i > 0}
+                podeDescer={!buscando && i < lista.length - 1}
+                // Na busca o cartão diz ONDE a cena mora — sem isso, o
+                // resultado é um nome solto e a pessoa continua sem
+                // saber onde procurar da próxima vez.
+                caminhoPasta={buscando && c.pastaId ? pastaPorId.get(c.pastaId)?.caminho ?? null : null}
                 arrasto={{
                   arrastando: arrastandoId === c.id,
                   alvo: alvoId === c.id && arrastandoId !== c.id,
@@ -540,6 +766,32 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
               />
             ))}
           </ul>
+        )}
+
+        {criandoPasta && (
+          <div className="rv-cena-nova">
+            <input
+              ref={campoPastaRef}
+              className="rv-cena-campo"
+              value={nomePastaNova}
+              maxLength={80}
+              placeholder="Nome da pasta"
+              aria-label="Nome da nova pasta"
+              data-testid="pasta-nova-nome"
+              onChange={(e) => setNomePastaNova(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); void criarPastaNova(); }
+                if (e.key === "Escape") { e.preventDefault(); setCriandoPasta(false); setNomePastaNova(""); }
+              }}
+            />
+            <button
+              type="button" className="rv-cena-btn" data-testid="pasta-nova-confirmar"
+              disabled={nomePastaNova.trim().length === 0} onClick={() => void criarPastaNova()}
+            >Criar pasta</button>
+            <button type="button" className="rv-cena-mini-btn" onClick={() => { setCriandoPasta(false); setNomePastaNova(""); }}>
+              Cancelar
+            </button>
+          </div>
         )}
 
         {criando ? (
@@ -573,13 +825,25 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
             {/* Criar some na aba de arquivo: uma cena nova nasce em uso,
                 e oferecer "Nova cena" ali prometeria criar algo
                 arquivado, que não existe. */}
-            {!verArquivo && (
-              <button
-                type="button" className="rv-cena-btn" data-tipo="nova" data-testid="cena-nova"
-                onClick={() => setCriando(true)}
-              >
-                <Plus size={14} aria-hidden="true" /> Nova cena
-              </button>
+            {!verArquivo && !buscando && (
+              <>
+                <button
+                  type="button" className="rv-cena-btn" data-tipo="nova" data-testid="cena-nova"
+                  onClick={() => setCriando(true)}
+                >
+                  <Plus size={14} aria-hidden="true" /> Nova cena
+                </button>
+                <button
+                  type="button" className="rv-cena-btn" data-testid="pasta-nova"
+                  aria-label="Nova pasta"
+                  title={trilha.length >= 4 ? "As pastas vão até quatro níveis" : "Nova pasta"}
+                  // O quarto nível é o último (0117). Oferecer o botão
+                  // ali só pra receber a recusa do servidor seria fazer
+                  // o banco ensinar o que a tela já sabe.
+                  disabled={trilha.length >= 4}
+                  onClick={() => setCriandoPasta(true)}
+                ><FolderPlus size={14} aria-hidden="true" /></button>
+              </>
             )}
             {/* O botão do arquivo só aparece quando há arquivo — ou
                 quando já se está nele, pra que exista a porta de volta.

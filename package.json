@@ -58,6 +58,7 @@
     "check:vtt-ciclo-cena": "tsx scripts/dev/check-vtt-ciclo-cena.ts",
     "check:vtt-arquivo-e-duplicacao": "tsx scripts/dev/check-vtt-arquivo-e-duplicacao.ts",
     "check:vtt-pastas": "tsx scripts/dev/check-vtt-pastas.ts",
+    "check:vtt-pastas-ui": "tsx scripts/dev/check-vtt-pastas-ui.ts",
     "gc:vtt-imagens": "tsx scripts/dev/gc-vtt-imagens.ts"
   },
   "dependencies": {

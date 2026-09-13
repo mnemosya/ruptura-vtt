@@ -4155,3 +4155,60 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    de tamanhos diferentes em cada cartão. */
 .rv-cena-mini { overflow: hidden; }
 .rv-cena-mini-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ── Pastas e busca (fase 5) ──────────────────────────────────────── */
+
+.rv-pasta-trilha {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 2px;
+  font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: .06em;
+}
+.rv-pasta-degrau-casca { display: inline-flex; align-items: center; gap: 2px; }
+.rv-pasta-sep { color: var(--rv-ink-faint); }
+.rv-pasta-degrau {
+  border: none; background: none; padding: 2px 5px; border-radius: 3px;
+  font: inherit; color: var(--rv-ink-faint); cursor: pointer;
+}
+.rv-pasta-degrau:hover { background: rgba(255,255,255,.08); color: var(--txt); }
+.rv-pasta-degrau[aria-current="page"] { color: var(--jf-acento, var(--cy)); }
+/* Realce de soltura: o degrau vira alvo enquanto uma cena paira. */
+.rv-pasta-degrau[data-alvo] {
+  background: color-mix(in srgb, var(--jf-acento, var(--cy)) 22%, transparent);
+  color: var(--txt);
+}
+.rv-pasta-degrau:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 1px; }
+
+.rv-cena-busca { width: 100%; }
+
+/* A pasta é MENOR que o cartão: pasta é caminho, cena é destino. */
+.rv-pasta-linha {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 8px; border-radius: var(--rv-r);
+  background: rgba(255,255,255,.03);
+  box-shadow: inset 0 0 0 1px transparent;
+}
+.rv-pasta-linha:hover { background: rgba(255,255,255,.06); }
+.rv-pasta-linha[data-alvo] {
+  background: color-mix(in srgb, var(--jf-acento, var(--cy)) 16%, transparent);
+  box-shadow: inset 0 0 0 1px var(--jf-acento, var(--cy));
+}
+.rv-pasta-icone { flex: 0 0 auto; display: flex; color: var(--jf-acento, var(--cy)); }
+.rv-pasta-txt { flex: 1 1 auto; min-width: 0; }
+.rv-pasta-nome {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; align-items: center; gap: 7px;
+  border: none; background: none; padding: 0; margin: 0;
+  font: inherit; text-align: left; color: var(--txt); cursor: pointer;
+}
+.rv-pasta-nome:hover .rv-pasta-nome-txt { text-decoration: underline; }
+.rv-pasta-nome:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 2px; }
+.rv-pasta-nome-txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rv-pasta-contagem {
+  flex: 0 0 auto;
+  font-family: var(--font-mono), monospace; font-size: 9px;
+  letter-spacing: .06em; color: var(--rv-ink-faint);
+}
+.rv-pasta-aviso { font-size: 10px; color: var(--rv-ink-faint); }
+
+/* O caminho da pasta no resultado de busca — mesmo peso do "local",
+   porque as duas coisas respondem "onde", não "o quê". */
+.rv-cena-local[data-tipo="pasta"] { color: var(--jf-acento, var(--cy)); opacity: .8; }

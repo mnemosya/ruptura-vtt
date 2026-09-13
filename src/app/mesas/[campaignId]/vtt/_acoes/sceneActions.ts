@@ -39,6 +39,12 @@ import {
   arquivarCena,
   restaurarCena,
   excluirCena,
+  listarPastas,
+  criarPasta,
+  renomearPasta,
+  moverPasta,
+  excluirPasta,
+  moverCenaParaPasta,
   carregarObjetosDaCena,
   carregarTrilha,
   iniciarTrilha,
@@ -79,6 +85,7 @@ import {
   type CartaoCena,
   type Palco,
   type ModoDuplicacao,
+  type PastaCena,
   type TrilhaPersistida,
   type ParametrosAreaEscrita,
   type TipoArea,
@@ -278,6 +285,85 @@ export async function apresentarCenaAction(params: {
   const r = await apresentarCena(params);
   if (!r.ok) return { ok: false, erro: r.erro ?? "Falha ao apresentar a cena." };
   return { ok: true, dados: { presentedSceneId: r.presentedSceneId ?? params.sceneId, revision: r.revision } };
+}
+
+// ── Pastas (0117) ───────────────────────────────────────────────────
+export async function listarPastasAction(
+  campaignId: string,
+): Promise<ResultadoAcao<{ pastas: PastaCena[] }>> {
+  const v = await exigirAcesso(campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  try {
+    return { ok: true, dados: { pastas: await listarPastas(campaignId) } };
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : "Falha ao listar as pastas." };
+  }
+}
+
+export async function criarPastaAction(params: {
+  campaignId: string;
+  nome: string;
+  parentId?: string | null;
+}): Promise<ResultadoAcao<{ pasta: PastaCena }>> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const r = await criarPasta(params);
+  if (!r.ok || !r.pasta) return { ok: false, erro: r.erro ?? "Falha ao criar a pasta." };
+  return { ok: true, dados: { pasta: r.pasta } };
+}
+
+export async function renomearPastaAction(params: {
+  campaignId: string;
+  folderId: string;
+  nome: string;
+}): Promise<ResultadoAcao> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const r = await renomearPasta(params);
+  if (!r.ok) return { ok: false, erro: r.erro ?? "Falha ao renomear a pasta." };
+  return { ok: true };
+}
+
+/**
+ * Reparenta uma pasta. Ciclo e quinto nível são recusados pelo GATILHO
+ * (0117) — não há checagem equivalente aqui, e não deve haver: repetir
+ * a regra de grafo no cliente criaria um segundo lugar onde ela pode
+ * divergir, e o cliente nem sempre tem a árvore inteira na mão.
+ */
+export async function moverPastaAction(params: {
+  campaignId: string;
+  folderId: string;
+  novoParentId: string | null;
+}): Promise<ResultadoAcao> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const r = await moverPasta(params);
+  if (!r.ok) return { ok: false, erro: r.erro ?? "Falha ao mover a pasta." };
+  return { ok: true };
+}
+
+/** Apaga a pasta e sobe os filhos. Nunca apaga cena. */
+export async function excluirPastaAction(params: {
+  campaignId: string;
+  folderId: string;
+}): Promise<ResultadoAcao> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const r = await excluirPasta(params.folderId);
+  if (!r.ok) return { ok: false, erro: r.erro ?? "Falha ao excluir a pasta." };
+  return { ok: true };
+}
+
+export async function moverCenaParaPastaAction(params: {
+  campaignId: string;
+  sceneId: string;
+  folderId: string | null;
+}): Promise<ResultadoAcao> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const r = await moverCenaParaPasta(params);
+  if (!r.ok) return { ok: false, erro: r.erro ?? "Falha ao mover a cena." };
+  return { ok: true };
 }
 
 /** Copia uma cena inteira. Transação única no servidor (0116). */
