@@ -1086,6 +1086,36 @@ export async function moverToken(params: {
 }
 
 /**
+ * Move VÁRIOS tokens como UMA operação — `move_vtt_tokens`
+ * (migration 0126).
+ *
+ * Não é açúcar sobre N chamadas de `moverToken`: chamadas separadas
+ * validam colisão contra a posição persistida dos colegas de grupo,
+ * que ainda não saíram do lugar, então uma formação andando na própria
+ * direção era recusada com "Posição indisponível" (um token ia, o
+ * outro voltava). Aqui os membros do lote não são obstáculo entre si
+ * DURANTE o percurso — só as posições finais precisam ser distintas —
+ * e tudo acontece numa transação: ou todos se movem, ou nenhum.
+ */
+export async function moverTokens(params: {
+  movimentos: { tokenId: string; rota: { q: number; r: number }[]; revisionEsperada: number }[];
+}): Promise<{ ok: boolean; erro?: string; revisoes?: { id: string; revision: number }[] }> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("move_vtt_tokens", {
+    p_movimentos: params.movimentos.map((m) => ({
+      token_id: m.tokenId,
+      rota: m.rota,
+      expected_revision: m.revisionEsperada,
+    })),
+  });
+
+  if (error) return { ok: false, erro: error.message };
+  const linhas = (Array.isArray(data) ? data : data ? [data] : []) as { id: string; revision: number }[];
+  if (linhas.length === 0) return { ok: false, erro: "Movimento recusado pelo servidor." };
+  return { ok: true, revisoes: linhas.map((l) => ({ id: l.id, revision: l.revision })) };
+}
+
+/**
  * Rotaciona um token — `rotacionar_vtt_token` (migration 0071),
  * mesma autorização/concorrência de `moverToken` (narrador ou quem
  * controla o personagem, revisão otimista). O SERVIDOR recalcula a

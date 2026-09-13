@@ -65,6 +65,7 @@ import {
   apagarMedicao,
   limparMedicoesDaCena,
   moverToken,
+  moverTokens,
   pintarTerrenoLote,
   rotacionarToken,
   definirFlagsToken,
@@ -672,6 +673,18 @@ export async function moverTokenAction(params: {
   });
   if (!r.ok) return { ok: false, erro: r.erro };
   return { ok: true, dados: { revision: r.revision! } };
+}
+
+export async function moverTokensAction(params: {
+  campaignId: string;
+  movimentos: { tokenId: string; rota: { q: number; r: number }[]; revisionEsperada: number }[];
+}): Promise<ResultadoAcao<{ revisoes: { id: string; revision: number }[] }>> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+
+  const r = await moverTokens({ movimentos: params.movimentos });
+  if (!r.ok) return { ok: false, erro: r.erro };
+  return { ok: true, dados: { revisoes: r.revisoes! } };
 }
 
 export async function rotacionarTokenAction(params: {

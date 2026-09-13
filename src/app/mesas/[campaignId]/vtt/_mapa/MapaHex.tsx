@@ -65,11 +65,11 @@ export interface CenaMapa {
   tokens: TokenApresentacao[];
   objetos: ObjetoCena[];
 }
-import { type MapaTerreno, type Rota, dentroDoMapa, medir, pegadaBloqueada } from "../_dominio/movimento";
+import { type MapaTerreno, type Rota, medir, pegadaBloqueada } from "../_dominio/movimento";
 import { type MovimentoVisualToken } from "../_dominio/animacaoToken";
 import {
   type EstadoArrasto,
-  adicionarWaypoint, iniciarArrastoToken, moverDestino, posicaoVisual, removerUltimoWaypoint, rotaDoEstadoArrasto, rotaExibida, semMovimento,
+  adicionarWaypoint, arrastoDoAcompanhante, iniciarArrastoToken, moverDestino, posicaoVisual, removerUltimoWaypoint, rotaDoEstadoArrasto, rotaExibida, semMovimento,
 } from "../_dominio/arrastoToken";
 import {
   type Pegada,
@@ -242,14 +242,16 @@ export interface PropsMapaHex {
   onClicarCelula?: (h: Hex) => void;
 
   /**
-   * Quantos tokens estão selecionados AGORA (`selecionadosIds.size`,
-   * `VttClient.tsx`) — a alça de rotação só aparece com seleção
-   * ÚNICA. `estadoPorToken(t).selecionado` já diz SE um token
-   * específico está selecionado; só o total (plural) sabe se a
-   * seleção é única, e só quem chama (dono de `selecionadosIds`) tem
-   * essa contagem pronta — nunca recalculada aqui varrendo `cena.tokens`.
+   * Quem está selecionado AGORA (`selecionadosIds`, `VttClient.tsx`).
+   * Duas coisas dependem disto e nada mais: a alça de rotação (só
+   * aparece com seleção ÚNICA) e o ARRASTO EM GRUPO — arrastar um
+   * token selecionado leva junto todos os outros selecionados.
+   * `estadoPorToken(t).selecionado` já diz SE um token específico está
+   * selecionado; só a lista (plural) sabe quem são os outros, e só
+   * quem chama tem isso pronto — nunca recalculado aqui varrendo
+   * `cena.tokens`.
    */
-  contagemSelecionada?: number;
+  idsSelecionados?: readonly string[];
   /**
    * Alça de rotação (arrastar no mapa) solta numa orientação
    * ABSOLUTA já validada localmente (borda/bloqueio/colisão, próprio
@@ -373,6 +375,14 @@ export interface PropsMapaHex {
    * só desenho. Ausente = encaixa no centro do hex, como sempre foi.
    */
   onSoltarToken?: (tokenId: string, rota: Rota, offset?: { q: number; r: number }) => void;
+  /**
+   * Arraste concluído com MAIS DE UM token selecionado — uma rota por
+   * token, todas com a mesma forma (ver `arrastoDoAcompanhante`), pra
+   * quem chama persistir o conjunto como UMA operação (um só item de
+   * desfazer). Sem esta prop o arrasto em grupo não acontece: o gesto
+   * continua movendo só o token sob o cursor.
+   */
+  onSoltarTokens?: (movimentos: { tokenId: string; rota: Rota }[]) => void;
   /** Pintura de terreno: pressão inicial numa célula. */
   onPressCelula?: (h: Hex) => void;
   /** Pintura de terreno: entrada numa célula com o botão ainda pressionado (arrastar pintando). */
@@ -591,6 +601,7 @@ export function MapaHex({
   ferramenta = "interagir",
   podeMoverToken,
   onSoltarToken,
+  onSoltarTokens,
   onPressCelula,
   onEntrarCelulaPintando,
   onSelecionarCaixa,
@@ -615,7 +626,7 @@ export function MapaHex({
   onMoverPosicionamento,
   onConfirmarPosicionamento,
   camadas,
-  contagemSelecionada,
+  idsSelecionados,
   onRotacaoAlcaSolta,
   onRotacaoAlcaPasso,
   areas,
@@ -684,6 +695,12 @@ export function MapaHex({
   const minY = Math.min(...cantos.map((p) => p.y)) - TAM * 2;
   const maxX = Math.max(...cantos.map((p) => p.x)) + TAM * 2;
   const maxY = Math.max(...cantos.map((p) => p.y)) + TAM * 2;
+  // Folga ALÉM do mundo — o quanto de vazio em volta da grade ainda
+  // conta como "mapa" pra quem arrasta uma seleção por caixa lá fora
+  // (ver o retângulo `rv-fora-da-grade`). Uma vez o tamanho do próprio
+  // mundo pra cada lado cobre com sobra qualquer token que uma grade
+  // encolhida tenha deixado de fora, em qualquer zoom.
+  const folgaFora = Math.max(maxX - minX, maxY - minY);
 
   // ── Arraste de token — CONFIRMAÇÃO INCREMENTAL ──────────────────
   // Estado LOCAL ao mapa de propósito: geometria/snap não precisa
@@ -743,6 +760,25 @@ export function MapaHex({
   // chegar no destino certo).
   const arrastoRef = useRef<typeof arrasto>(null);
 
+  /**
+   * ACOMPANHANTES do arrasto em grupo — congelados no INÍCIO do gesto,
+   * nunca relidos de `idsSelecionados` durante ele: a formação que
+   * começou a se mover é a que termina de se mover, mesmo que a
+   * seleção mude no meio (e ela muda, por exemplo, se o gesto for
+   * cancelado e recomeçado). Cada um guarda o vetor FIXO que o separa
+   * do líder e a pegada na orientação atual — as duas coisas que a
+   * translação precisa e que não mudam durante o deslocamento.
+   */
+  const [acompanhantes, setAcompanhantes] = useState<{ tokenId: string; deslocamento: Hex; pegada: Pegada }[]>([]);
+  const acompanhantesRef = useRef(acompanhantes);
+  useEffect(() => { acompanhantesRef.current = acompanhantes; }, [acompanhantes]);
+  const encerrarArrasto = useCallback(() => {
+    arrastoRef.current = null;
+    acompanhantesRef.current = [];
+    setArrasto(null);
+    setAcompanhantes([]);
+  }, []);
+
   // Todos os OUTROS tokens são obstáculo pro pathfinding — o projeto
   // não distingue token "atravessável" de "bloqueante" hoje, então
   // trata todos uniformemente (decisão explícita, não uma lacuna). É a
@@ -752,13 +788,17 @@ export function MapaHex({
   // da própria pegada sem ela continuar "ocupada por ele mesmo".
   const ocupados = useMemo(() => {
     const s = new Set<string>();
+    // Nem o líder nem os acompanhantes entram: TODOS saem das próprias
+    // células no mesmo instante, e contá-los como obstáculo faria o
+    // grupo colidir consigo mesmo no primeiro passo.
+    const doGrupo = new Set(acompanhantes.map((a) => a.tokenId));
     for (const t of cena.tokens) {
-      if (t.id === arrasto?.tokenId) continue;
+      if (t.id === arrasto?.tokenId || doGrupo.has(t.id)) continue;
       const pegada = pegadaEfetiva({ categoria: t.tamanho, orientacao: t.orientacao, pegadaPersonalizada: t.pegadaPersonalizada });
       for (const c of projetarPegada(t.pos, pegada)) s.add(hexKey(c));
     }
     return s;
-  }, [cena.tokens, arrasto?.tokenId]);
+  }, [cena.tokens, arrasto?.tokenId, acompanhantes]);
 
   // Pegada do token EM ARRASTO, na orientação atual — constante durante
   // todo o deslocamento (a orientação não muda arrastando, ver
@@ -771,13 +811,43 @@ export function MapaHex({
     return pegadaEfetiva({ categoria: tok.tamanho, orientacao: tok.orientacao, pegadaPersonalizada: tok.pegadaPersonalizada });
   }, [arrasto, cena.tokens]);
 
-  const iniciarArrasto = useCallback((tokenId: string, origem: Hex) => {
-    if (ferramenta !== "interagir") return;
-    if (podeMoverToken && !podeMoverToken(tokenId)) return;
+  /** O que o domínio precisa saber sobre os acompanhantes — só vetor e pegada, nunca o token inteiro. */
+  const grupoParaRota = useMemo(
+    () => acompanhantes.map(({ deslocamento, pegada }) => ({ deslocamento, pegada })),
+    [acompanhantes],
+  );
+
+  /**
+   * Começa o arrasto e devolve SE ele começou — quem chama (o
+   * `pointerdown` do token) usa a resposta pra decidir se pode
+   * preservar uma seleção múltipla ou se deve colapsá-la na hora.
+   *
+   * Os acompanhantes são os OUTROS tokens selecionados que esta pessoa
+   * também pode mover. Quem ela não pode mover fica pra trás em vez de
+   * abortar o gesto inteiro: selecionar por caixa costuma pegar token
+   * alheio junto, e perder o gesto por causa disso seria pior que mover
+   * só o que é seu.
+   */
+  const iniciarArrasto = useCallback((tokenId: string, origem: Hex): boolean => {
+    if (ferramenta !== "interagir") return false;
+    if (podeMoverToken && !podeMoverToken(tokenId)) return false;
+    const emGrupo = onSoltarTokens && (idsSelecionados?.includes(tokenId) ?? false)
+      ? cena.tokens.filter((t) => t.id !== tokenId
+          && (idsSelecionados?.includes(t.id) ?? false)
+          && (podeMoverToken?.(t.id) ?? true))
+      : [];
     const inicial = iniciarArrastoToken(tokenId, origem);
     arrastoRef.current = inicial;
+    const seguidores = emGrupo.map((t) => ({
+      tokenId: t.id,
+      deslocamento: { q: t.pos.q - origem.q, r: t.pos.r - origem.r },
+      pegada: pegadaEfetiva({ categoria: t.tamanho, orientacao: t.orientacao, pegadaPersonalizada: t.pegadaPersonalizada }),
+    }));
+    acompanhantesRef.current = seguidores;
+    setAcompanhantes(seguidores);
     setArrasto(inicial);
-  }, [ferramenta, podeMoverToken]);
+    return true;
+  }, [ferramenta, podeMoverToken, onSoltarTokens, idsSelecionados, cena.tokens]);
 
   // ── Alça de rotação (arrastar no mapa) ────────────────────────────
   // Estado LOCAL a este componente, mesmo espírito de `arrasto`: a
@@ -819,11 +889,21 @@ export function MapaHex({
     return melhor;
   }, []);
 
-  /** Borda/bloqueio/colisão pra uma orientação CANDIDATA do token em rotação — mesmas 3 regras de sempre, próprio token excluído da colisão. Nunca reimplementa geometria: só combina `pegadaEfetiva`/`projetarPegada`/`dentroDoMapa`/`pegadaBloqueada`/`pegadasSobrepoem`, todas do domínio. */
+  /**
+   * Bloqueio/colisão pra uma orientação CANDIDATA do token em rotação —
+   * próprio token excluído da colisão. Nunca reimplementa geometria: só
+   * combina `pegadaEfetiva`/`projetarPegada`/`pegadaBloqueada`/
+   * `pegadasSobrepoem`, todas do domínio.
+   *
+   * A BORDA da cena não entra: um token pode estar fora da grade (é
+   * área de trabalho legítima — ver `posicaoDoGrupoValida` em
+   * `_dominio/arrastoToken.ts`), e girar quem está lá tem que
+   * funcionar. Exigir a pegada dentro do mapa deixaria esses tokens
+   * girando só por sorte de posição.
+   */
   const validarOrientacaoAlca = useCallback((t: TokenApresentacao, novaOrientacao: number): boolean => {
     const pegadaCandidata = pegadaEfetiva({ categoria: t.tamanho, orientacao: novaOrientacao, pegadaPersonalizada: t.pegadaPersonalizada });
     const celulas = projetarPegada(t.pos, pegadaCandidata);
-    if (!celulas.every((c) => dentroDoMapa(c, cena.largura, cena.altura))) return false;
     if (terrenoReal && pegadaBloqueada(terrenoReal, celulas)) return false;
     const celulasOutros: Hex[] = [];
     for (const outro of cena.tokens) {
@@ -832,7 +912,7 @@ export function MapaHex({
       celulasOutros.push(...projetarPegada(outro.pos, pegadaOutro));
     }
     return !pegadasSobrepoem(celulas, celulasOutros);
-  }, [cena.tokens, cena.largura, cena.altura, terrenoReal]);
+  }, [cena.tokens, terrenoReal]);
 
   const iniciarRotacaoAlca = useCallback((t: TokenApresentacao, e: React.PointerEvent) => {
     if (ferramenta !== "interagir") return;
@@ -1214,7 +1294,7 @@ export function MapaHex({
         // — nunca da origem (ver doc de `moverDestino`). `pegada`
         // garante que CADA posição candidata valida a pegada inteira,
         // não só a âncora.
-        const novo = moverDestino(a, hex, { terreno: terrenoParaRota, ocupados, largura: cena.largura, altura: cena.altura, pegada: pegadaEmArrasto });
+        const novo = moverDestino(a, hex, { terreno: terrenoParaRota, ocupados, largura: cena.largura, altura: cena.altura, pegada: pegadaEmArrasto, grupo: grupoParaRota });
         // Síncrono, dentro do próprio handler — não esperar o efeito
         // de espelho (que só reflete depois do commit) garante que
         // `soltar()` sempre leia o valor mais recente, mesmo numa
@@ -1225,6 +1305,12 @@ export function MapaHex({
     }
     function soltar() {
       const a = arrastoRef.current;
+      // Gesto que não andou = CLIQUE. É aqui que o clique num token já
+      // selecionado dentro de uma seleção múltipla finalmente colapsa
+      // a seleção nele — o `pointerdown` adiou essa decisão de
+      // propósito, pra não desfazer o grupo antes de saber se era
+      // clique ou arrasto.
+      if (a && semMovimento(a) && acompanhantesRef.current.length > 0) onSelecionarToken(a.tokenId, false);
       if (a && !semMovimento(a)) {
         // `rotaDoEstadoArrasto` só lê `a.rota` — dado puro do ESTADO,
         // sem recalcular nada e sem depender de nenhum valor derivado
@@ -1243,10 +1329,26 @@ export function MapaHex({
         const offset = semGrade && exato && destino
           ? { q: exato.q - destino.q, r: exato.r - destino.r }
           : undefined;
-        onSoltarToken?.(a.tokenId, rota, offset);
+        const seguidores = acompanhantesRef.current;
+        if (seguidores.length > 0 && onSoltarTokens) {
+          // Grupo: UMA chamada com todas as rotas, pra quem chama
+          // persistir tudo como uma operação só (um item de desfazer,
+          // não N). O deslocamento sub-célula fica de fora de
+          // propósito — ele nasce de "onde ESTE ponteiro largou", e não
+          // existe resposta pra isso pros outros tokens do grupo; o
+          // bloco inteiro encaixa na célula.
+          onSoltarTokens([
+            { tokenId: a.tokenId, rota },
+            ...seguidores.map((seg) => ({
+              tokenId: seg.tokenId,
+              rota: rotaDoEstadoArrasto(arrastoDoAcompanhante(a, seg.tokenId, seg.deslocamento), terrenoParaRota, seg.pegada),
+            })),
+          ]);
+        } else {
+          onSoltarToken?.(a.tokenId, rota, offset);
+        }
       }
-      arrastoRef.current = null;
-      setArrasto(null);
+      encerrarArrasto();
     }
     // `pointercancel` (gesto roubado pelo sistema/toque) e `blur` da
     // janela (alt-tab no meio do arraste) CANCELAM — nunca confirmam
@@ -1254,12 +1356,11 @@ export function MapaHex({
     // ficaria preso: o `pointerup` correspondente nunca chega, e o
     // token seguiria "em arraste" depois do gesto ter morrido.
     function cancelar() {
-      arrastoRef.current = null;
-      setArrasto(null);
+      encerrarArrasto();
     }
     function tecla(e: KeyboardEvent) {
       if (elementoEhEditavel(document.activeElement as HTMLElement | null)) return;
-      if (e.key === "Escape") { arrastoRef.current = null; setArrasto(null); return; }
+      if (e.key === "Escape") { encerrarArrasto(); return; }
       if (e.key.toLowerCase() === "q") {
         setArrasto((a) => {
           if (!a) return a;
@@ -1443,16 +1544,35 @@ export function MapaHex({
       const maxCx = Math.max(c.inicio.x, c.atual.x);
       const minCy = Math.min(c.inicio.y, c.atual.y);
       const maxCy = Math.max(c.inicio.y, c.atual.y);
-      // Inclui o token quando a caixa intersecta QUALQUER célula da
-      // pegada — regra visual mais previsível pra multicelulares
-      // (um Colossal quase todo dentro da caixa, mas com a âncora
-      // fora dela, ainda deveria contar como selecionado).
-      const ids = cena.tokens
+      // Inclui o token quando a caixa ENCOSTA em qualquer célula da
+      // pegada — a célula inteira conta, não só o ponto do centro.
+      //
+      // Com o teste antigo (centro do hex dentro do retângulo) uma
+      // caixa que passava visivelmente por cima de um token não o
+      // pegava sempre que o centro dele caía alguns pixels fora: pra
+      // quem arrasta, o resultado é "selecionei em volta dele e ele
+      // ficou de fora". A regra que a pessoa enxerga é a área coberta,
+      // então o teste é área-contra-área: caixa × caixa envolvente da
+      // célula (hexágono de ponta pra cima com `TAM` de raio — largura
+      // `√3·TAM`, altura `2·TAM`). Aproximar o hexágono pela caixa
+      // envolvente inclui de raspão quem só encosta nos cantos
+      // vazios, e isso é de propósito: errar PRA MAIS num gesto de
+      // laço é o que a mão espera; errar pra menos é o bug.
+      const meiaLargura = (Math.sqrt(3) / 2) * TAM;
+      // CLIQUE (caixa degenerada, abaixo do limiar de arrasto em
+      // unidades do mundo) nunca seleciona por área: um clique no piso
+      // é "desselecionar", e um clique num token nem chega aqui (o
+      // token trata o próprio pointerdown). Sem esta guarda, a caixa
+      // envolvente — generosa de propósito no ARRASTO — faria um
+      // clique no vazio a poucos pixels de um token selecioná-lo.
+      const arrastou = maxCx - minCx > 0.5 || maxCy - minCy > 0.5;
+      const ids = !arrastou ? [] : cena.tokens
         .filter((t) => {
           const pegada = pegadaEfetiva({ categoria: t.tamanho, orientacao: t.orientacao, pegadaPersonalizada: t.pegadaPersonalizada });
           return projetarPegada(t.pos, pegada).some((celula) => {
             const p = hexParaPixel(celula, TAM);
-            return p.x >= minCx && p.x <= maxCx && p.y >= minCy && p.y <= maxCy;
+            return p.x + meiaLargura >= minCx && p.x - meiaLargura <= maxCx
+              && p.y + TAM >= minCy && p.y - TAM <= maxCy;
           });
         })
         .map((t) => t.id);
@@ -2085,6 +2205,31 @@ export function MapaHex({
       </defs>
 
       <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
+        {/* ── FORA DA GRADE ────────────────────────────────────────
+            Superfície transparente muito maior que o piso, PRIMEIRA
+            de todas (nada fica escondido atrás dela — tudo é desenhado
+            por cima). Existe por um motivo só: a seleção por caixa
+            nascia apenas no piso e nas células da grade, então o vazio
+            em volta não iniciava gesto nenhum — e é exatamente ali que
+            ficam os tokens que a grade deixou pra trás ao encolher.
+            Sem isto, laçar quem está fora da grade só funcionava
+            começando o arrasto DE DENTRO dela.
+
+            A folga acompanha o tamanho do mundo em vez de um número
+            fixo: o que precisa ser alcançável é "o entorno do mapa",
+            e num mapa grande isso é proporcionalmente maior. Nunca
+            atrapalha pan (botão direito — `iniciarCaixa` só reage ao
+            esquerdo) nem as ferramentas que têm superfície própria
+            mais acima (Áreas), e em qualquer ferramenta que não seja
+            Interagir ela nem recebe handler. */}
+        <rect
+          className="rv-fora-da-grade"
+          x={minX - folgaFora} y={minY - folgaFora}
+          width={maxX - minX + folgaFora * 2} height={maxY - minY + folgaFora * 2}
+          fill="transparent"
+          onPointerDown={ferramenta === "interagir" && onSelecionarCaixa ? iniciarCaixa : undefined}
+        />
+
         {/* ── Piso ─────────────────────────────────────────────── */}
         <rect x={minX} y={minY} width={maxX - minX} height={maxY - minY} fill="url(#rv-piso)"
           onPointerDown={onSelecionarCaixa ? iniciarCaixa : undefined} />
@@ -2281,6 +2426,14 @@ export function MapaHex({
           <g
             className="rv-camada-marcas"
             style={{ pointerEvents: ferramenta === "terreno" || ferramenta === "objetos" ? "none" : undefined }}
+            /* Interagir: a marca não é uma tampa que impeça laçar o que
+               está por baixo dela. O `pointerdown` de uma marca só é
+               consumido quando ela de fato faz algo (apagar, medir);
+               em Interagir ele borbulha até aqui e vira o MESMO início
+               de seleção-por-caixa do piso e da grade. Sem isto,
+               começar o laço em cima de uma marca simplesmente não
+               fazia nada. */
+            onPointerDown={ferramenta === "interagir" && onSelecionarCaixa ? iniciarCaixa : undefined}
           >
             {marcas.map((m) => {
               const p = hexParaPixel({ q: m.q, r: m.r }, TAM);
@@ -2468,6 +2621,13 @@ export function MapaHex({
             opacity: cAtenuacao("objetos"),
             pointerEvents: ferramenta === "terreno" ? "none" : undefined,
           }}
+          /* Mesma razão da camada de marcas: em Interagir um objeto
+             não tem gesto próprio, então o pointerdown que borbulha
+             dele começa a seleção-por-caixa em vez de morrer no
+             caminho. Nas ferramentas Objetos/Medir o objeto continua
+             consumindo o gesto (selecionar/medir), e este handler
+             nunca é montado. */
+          onPointerDown={ferramenta === "interagir" && onSelecionarCaixa ? iniciarCaixa : undefined}
         >
           {cena.objetos.map((o) => {
             const ap = APARENCIA_OBJETO[o.tipo] ?? APARENCIA_OBJETO.entulho;
@@ -2556,7 +2716,9 @@ export function MapaHex({
             // Token sendo arrastado fica visualmente na origem, opaco
             // reduzido — o fantasma na posição atual é desenhado à
             // parte, e é ele que se move de verdade com o cursor.
-            const emArrasto = arrasto?.tokenId === t.id;
+            // O grupo inteiro em arrasto fica apagado na origem: quem
+            // se move de verdade é o fantasma de cada um.
+            const emArrasto = arrasto?.tokenId === t.id || acompanhantes.some((seg) => seg.tokenId === t.id);
             const tokensBloqueados = cBloqueada("tokens");
             const movimentoDesteToken = movimentosVisuais?.get(t.id);
             // Elegibilidade da ALÇA DE ROTAÇÃO — todas as condições do
@@ -2568,7 +2730,7 @@ export function MapaHex({
             // pode mover pode girar). Pegada simétrica também gira —
             // girar só muda a direção "pra frente", nunca esconde a alça.
             const elegívelParaAlca = ferramenta === "interagir" && !posicionamentoToken?.ativo && !movimentoDesteToken
-              && contagemSelecionada === 1 && est.selecionado && (podeMoverToken?.(t.id) ?? false);
+              && (idsSelecionados?.length ?? 0) <= 1 && est.selecionado && (podeMoverToken?.(t.id) ?? false);
             const estadoAlcaDesteToken = rotacaoAlca?.tokenId === t.id
               ? { emGesto: true, orientacaoAtual: rotacaoAlca.orientacaoAtual, valida: rotacaoAlca.valida }
               : null;
@@ -2606,6 +2768,36 @@ export function MapaHex({
               é curto o bastante pra não atrasar a leitura da posição
               (o rótulo e a linha já mudaram) e longo o bastante pra
               tirar o serrilhado de célula a célula num arrasto rápido. */}
+          {/* Um fantasma por acompanhante, na MESMA ponta da trilha
+              transladada pelo vetor dele — o grupo inteiro aparece na
+              posição em que vai pousar, não só o token sob o cursor.
+              Mesma cor do líder (verde/vermelho): a validade é do
+              GRUPO, então mostrar um membro "ok" ao lado de um membro
+              "barrado" seria mentira — quando um não cabe, nenhum anda. */}
+          {arrasto && acompanhantes.map((seg) => {
+            const tok = cena.tokens.find((t) => t.id === seg.tokenId);
+            if (!tok) return null;
+            const ponta = posicaoVisual(arrasto);
+            const p = hexParaPixel({ q: ponta.q + seg.deslocamento.q, r: ponta.r + seg.deslocamento.r }, TAM);
+            const raio = TAM * 0.82 * TAMANHOS[tok.tamanho].escala;
+            const cor = arrasto.destinoAlcancavel ? "#22d3aa" : "#ff5f74";
+            const origemLocal = hexParaPixel(origemMecanica(seg.pegada), TAM);
+            return (
+              <g key={seg.tokenId} transform={`translate(${p.x} ${p.y})`} pointerEvents="none" opacity={0.72}
+                style={{ transition: "transform 90ms linear" }}>
+                {seg.pegada.length > 1 && seg.pegada.map((offset, i) => {
+                  const lp = hexParaPixel(offset, TAM);
+                  return <path key={i} d={hexPath(TAM - 1.5)} transform={`translate(${lp.x} ${lp.y})`} fill={`${cor}1f`} stroke={cor} strokeWidth="1.2" strokeDasharray="4 3" />;
+                })}
+                <g transform={`translate(${origemLocal.x} ${origemLocal.y})`}>
+                  <circle r={raio} fill="#0d141b" stroke={cor} strokeWidth="2.5" strokeDasharray="4 3" />
+                  <text textAnchor="middle" y={raio * 0.16} style={{ fontSize: raio * 0.62, fontFamily: "monospace", fontWeight: 700, fill: "#eafcff" }}>
+                    {tok.sigla}
+                  </text>
+                </g>
+              </g>
+            );
+          })}
           {arrasto && (() => {
             const tok = cena.tokens.find((t) => t.id === arrasto.tokenId);
             if (!tok) return null;
@@ -2970,7 +3162,20 @@ function estadoVisual(
   const base = fn(t);
   return {
     ...base,
-    selecionado: selecionadoId === t.id,
+    // `base.selecionado` vem de `estadoPorToken` (VttClient), que lê o
+    // CONJUNTO inteiro (`selecionadosIds`) — é ele quem sabe de seleção
+    // múltipla. `selecionadoId` é só o token em FOCO (o do HUD, o da
+    // alça de rotação), sempre um só.
+    //
+    // Sobrescrever por `selecionadoId === t.id` — que era o que estava
+    // aqui — jogava o conjunto fora a cada render: shift-clique e
+    // seleção por caixa marcavam N tokens no estado e o mapa desenhava
+    // contorno em UM. Na tela, seleção múltipla simplesmente não
+    // existia. A união é o certo: quem está no conjunto está
+    // selecionado, e o token em foco também (garante o contorno mesmo
+    // para quem chama com um `estadoPorToken` que não conhece o
+    // conjunto — o harness visual, por exemplo).
+    selecionado: base.selecionado || selecionadoId === t.id,
     sobCursor: hoverId === t.id,
     alvo: alvoIds.includes(t.id),
   };
@@ -3010,7 +3215,8 @@ function Token({
   ferramenta?: PropsMapaHex["ferramenta"];
   onSelecionar: (id: string, aditivo: boolean) => void;
   onHover: (id: string | null) => void;
-  onIniciarArrasto?: () => void;
+  /** Devolve SE o arrasto começou — o `pointerdown` precisa disso pra saber se pode adiar a decisão sobre a seleção (ver o handler). */
+  onIniciarArrasto?: () => boolean;
   onIniciarMedicao?: (clientX: number, clientY: number) => void;
   movimentoVisual?: MovimentoVisualToken;
   onAnimacaoConcluida?: (tokenId: string, movementId: string, destino?: Hex) => void;
@@ -3137,8 +3343,17 @@ function Token({
       onPointerDown={(e) => {
         if (e.button !== 0) return;
         if (ferramenta === "medir") { onIniciarMedicao?.(e.clientX, e.clientY); return; }
+        // Pressionar um token QUE JÁ ESTÁ SELECIONADO, dentro de uma
+        // seleção múltipla, NÃO colapsa a seleção aqui: colapsar seria
+        // desfazer o grupo exatamente no gesto que existe pra movê-lo
+        // (o `pointerdown` acontece antes de qualquer arrasto, então
+        // não dá pra "ver depois" que era um arrasto). A decisão fica
+        // pro fim do gesto: soltar SEM ter andado colapsa a seleção
+        // neste token (ver `soltar()`), soltar depois de andar move o
+        // grupo. Shift continua sendo alternância, sempre.
+        const comecouArrasto = !movimentoVisual && (onIniciarArrasto?.() ?? false);
+        if (estado.selecionado && !e.shiftKey && comecouArrasto) return;
         onSelecionar(token.id, e.shiftKey);
-        if (!movimentoVisual) onIniciarArrasto?.();
       }}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelecionar(token.id, e.shiftKey); } }}
       onMouseEnter={() => onHover(token.id)}

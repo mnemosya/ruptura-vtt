@@ -72,7 +72,7 @@ import {
 import {
   garantirCenaSemente, lerCenaAtiva, lerCenaAction, lerCenaApresentadaAction, lerPalcoAction,
   lerMinhaCenaAction,
-  moverTokenAction, obterUsuarioAtualAction,
+  moverTokenAction, moverTokensAction, obterUsuarioAtualAction,
   pintarTerrenoAction, criarMarcaAction, apagarMarcaAction, rotacionarTokenAction,
   criarMedicaoAction, apagarMedicaoAction, limparMedicoesAction,
   obterControleAction, criarTokenAction, editarTokenAction,
@@ -1142,6 +1142,10 @@ export function VttClient({
     setSelecionadosIds(next);
     setSelecionadoId(next.has(id) ? id : ([...next].at(-1) ?? null));
   }, [selecionadosIds]);
+  // Lista estável (identidade só muda quando a SELEÇÃO muda) — o mapa
+  // recebe array, não `Set`, porque um `Set` recriado a cada render
+  // invalidaria memo e efeito de quem depende dele lá dentro.
+  const idsSelecionadosLista = useMemo(() => [...selecionadosIds], [selecionadosIds]);
   const onSelecionarCaixa = useCallback((ids: string[], aditivo: boolean) => {
     setSelecionadoId(ids[ids.length - 1] ?? null);
     setSelecionadosIds((s) => (aditivo ? new Set([...s, ...ids]) : new Set(ids)));
@@ -1605,9 +1609,23 @@ export function VttClient({
     };
   }, [campaignId, estadoCena?.cena.id, iniciarMovimentoVisual, reagendarExpiracaoProtecao, mesclarAreaNoEstado, removerAreaDoEstado, adotarTrilha]);
 
-  const onSoltarToken = useCallback((tokenId: string, rota: ReturnType<typeof montarRota>, offset?: { q: number; r: number }) => {
+  /**
+   * Monta — sem disparar nada — o movimento de UM token: a rota
+   * expandida, a inversa, e o par executar/desfazer que tanto o gesto
+   * quanto o histórico usam.
+   *
+   * Existe separado de `onSoltarToken` por causa do arrasto em GRUPO:
+   * mover N tokens é N movimentos independentes no servidor (cada um
+   * com revisão e animação próprias) mas UMA operação pra quem fez o
+   * gesto — um item de desfazer, não N. Isso só é possível se dá pra
+   * PREPARAR cada movimento e decidir depois como agrupá-los.
+   *
+   * `null` = nada a fazer (token ainda carregando, ou soltou onde
+   * pegou); quem chama simplesmente ignora esse.
+   */
+  const prepararMovimentoDeToken = useCallback((tokenId: string, rota: ReturnType<typeof montarRota>, offset?: { q: number; r: number }): { rotulo: string; executar: () => Promise<void>; desfazer: () => Promise<void> } | null => {
     const token = tokenPorId.get(tokenId);
-    if (!token) { setErroAcao("Este token ainda não terminou de carregar — tente de novo em um instante."); return; }
+    if (!token) { setErroAcao("Este token ainda não terminou de carregar — tente de novo em um instante."); return null; }
     // Regra consultiva: `!rota.valida` significa "atravessa terreno
     // bloqueado" (destaque visual já mostrado durante o arrasto, ver
     // `MapaHex.tsx`), nunca mais um motivo pra recusar a confirmação —
@@ -1625,7 +1643,7 @@ export function VttClient({
     // a rotação já aplicava ao soltar na orientação em que já estava.
     const destino = rota.pontos[rota.pontos.length - 1];
     const offsetIgual = (offset?.q ?? 0) === token.offset.q && (offset?.r ?? 0) === token.offset.r;
-    if (destino && destino.q === token.pos.q && destino.r === token.pos.r && offsetIgual) return;
+    if (destino && destino.q === token.pos.q && destino.r === token.pos.r && offsetIgual) return null;
 
     // Rota EXPANDIDA célula-a-célula, adjacente — a MESMA lista, sem
     // recálculo nenhum, tanto pra animar quanto pro `p_rota` de
@@ -1646,9 +1664,28 @@ export function VttClient({
     // anterior seria posição que ninguém pediu.
     async function moverEAnimar(pontos: Hex[], offsetDoGesto?: { q: number; r: number }): Promise<boolean> {
       const movementId = crypto.randomUUID();
-      const revision = estadoCenaRef.current?.tokens.find((t) => t.id === tokenId)?.revision ?? token!.revision;
+      const atual = estadoCenaRef.current?.tokens.find((t) => t.id === tokenId);
+      const revision = atual?.revision ?? token!.revision;
       const sceneId = estadoCenaRef.current?.cena.id;
       const origemGesto = pontos[0];
+      // ROTA VELHA, TOKEN JÁ SAIU DALI — recusa ANTES de animar.
+      //
+      // Desfazer/refazer replayam uma rota GRAVADA. Se o token mudou de
+      // lugar nesse meio-tempo (outra pessoa moveu, um movimento em
+      // grupo pela metade, um passo que o servidor recusou), a origem
+      // gravada não é mais a posição atual: o servidor recusa com "A
+      // rota precisa começar na posição atual do token", e — porque
+      // tudo aqui é otimista — o token ANIMAVA até o destino antes de
+      // ser puxado de volta. Na mesa isso aparece como token se
+      // mexendo sozinho e uma mensagem de erro que não explica nada.
+      //
+      // Checar aqui não é duplicar a regra do servidor: é não encenar
+      // localmente um movimento que já se sabe que será recusado. O
+      // servidor continua sendo a autoridade.
+      if (atual && origemGesto && (atual.q !== origemGesto.q || atual.r !== origemGesto.r)) {
+        setErroAcao(`${token!.nome} saiu do lugar desde então — desfazer/refazer não se aplica mais a este movimento.`);
+        return false;
+      }
       const destinoGesto = pontos[pontos.length - 1];
 
       // UM `Date.now()` só, pro mesmo movimento — a proteção de posição
@@ -1700,16 +1737,136 @@ export function VttClient({
       return r.ok;
     }
 
-    // Dispara na hora — otimista, sem esperar o servidor.
-    moverEAnimar(rotaExpandida, offset);
-
-    executarComando({
+    return {
       rotulo: `mover ${token.nome}`,
-      autorId: usuarioId ?? "",
       executar: () => moverEAnimar(rotaExpandida, offset).then(() => {}),
       desfazer: () => moverEAnimar(rotaExpandidaInvertida).then(() => {}),
+    };
+  }, [campaignId, iniciarMovimentoVisual, tokenPorId, usuarioId]);
+
+  const onSoltarToken = useCallback((tokenId: string, rota: ReturnType<typeof montarRota>, offset?: { q: number; r: number }) => {
+    const mov = prepararMovimentoDeToken(tokenId, rota, offset);
+    if (!mov) return;
+    // Dispara na hora — otimista, sem esperar o servidor.
+    void mov.executar();
+    executarComando({ rotulo: mov.rotulo, autorId: usuarioId ?? "", executar: mov.executar, desfazer: mov.desfazer });
+  }, [executarComando, prepararMovimentoDeToken, usuarioId]);
+
+  /**
+   * Arrasto em GRUPO (`MapaHex` → `onSoltarTokens`): uma rota por
+   * token, todas com a mesma forma.
+   *
+   * UMA chamada, não N. Chamadas separadas não podiam funcionar: cada
+   * uma valida colisão contra a posição PERSISTIDA das outras, que
+   * ainda não saíram do lugar — numa formação andando na própria
+   * direção, a rota de quem vem atrás atravessa a célula de quem vai
+   * na frente e o servidor recusa ("Posição indisponível"). Era o
+   * sintoma visto na mesa: um token ia, o outro começava a ir e era
+   * puxado de volta. `move_vtt_tokens` (migration 0126) trata o lote
+   * como uma operação só — os membros não são obstáculo entre si
+   * durante o percurso, e ou todos se movem ou nenhum.
+   */
+  const moverGrupoEAnimar = useCallback(async (movimentos: { tokenId: string; pontos: Hex[] }[]): Promise<boolean> => {
+    const sceneId = estadoCenaRef.current?.cena.id;
+    // UM instante pro gesto inteiro: proteção local e broadcast de
+    // TODOS os membros precisam do mesmo `iniciadoEm` — o grupo se move
+    // junto, então não pode haver dois relógios dentro dele.
+    const iniciadoEmOrigem = Date.now();
+    const preparados = movimentos.map((m) => {
+      const atual = estadoCenaRef.current?.tokens.find((t) => t.id === m.tokenId);
+      return { ...m, atual, revision: atual?.revision ?? 0, movementId: crypto.randomUUID() };
     });
-  }, [campaignId, executarComando, iniciarMovimentoVisual, tokenPorId, usuarioId]);
+
+    // Mesma recusa antecipada do movimento único (ver `moverEAnimar`):
+    // se QUALQUER membro já não está na origem gravada, nada é animado
+    // nem enviado. No grupo isso importa em dobro — a RPC é tudo-ou-
+    // nada, então um membro fora do lugar condena o lote inteiro, e
+    // animar N tokens pra depois puxar todos de volta é o pior
+    // resultado possível.
+    const fora = preparados.find((m) => m.atual && m.pontos[0] && (m.atual.q !== m.pontos[0].q || m.atual.r !== m.pontos[0].r));
+    if (fora || preparados.some((m) => !m.atual)) {
+      setErroAcao("Algum token do grupo saiu do lugar desde então — desfazer/refazer não se aplica mais a este movimento.");
+      return false;
+    }
+
+    for (const m of preparados) {
+      const mov = iniciarMovimentoVisual({ tokenId: m.tokenId, rotaExpandida: m.pontos, movementId: m.movementId, iniciadoEmOrigem });
+      if (sceneId) {
+        publicarMovimentoRef.current({
+          movementId: m.movementId, campaignId, sceneId, tokenId: m.tokenId,
+          rota: m.pontos.map((h) => ({ q: h.q, r: h.r })),
+          revisionEsperada: m.revision, autorId: usuarioId ?? "",
+          iniciadoEm: iniciadoEmOrigem, duracao: mov.duracao,
+        });
+      }
+    }
+
+    // Otimista pro grupo inteiro numa atualização só — nunca N
+    // atualizações de estado que renderizariam o grupo meio movido.
+    const destinos = new Map(preparados.map((m) => [m.tokenId, m.pontos[m.pontos.length - 1]]));
+    setEstadoCena((c) => c ? { ...c, tokens: c.tokens.map((t) => {
+      const d = destinos.get(t.id);
+      return d ? { ...t, q: d.q, r: d.r, offsetQ: 0, offsetR: 0 } : t;
+    }) } : c);
+
+    const r = await moverTokensAction({
+      campaignId,
+      movimentos: preparados.map((m) => ({ tokenId: m.tokenId, rota: m.pontos, revisionEsperada: m.revision })),
+    });
+
+    if (r.ok && r.dados) {
+      const revisoes = new Map(r.dados.revisoes.map((x) => [x.id, x.revision]));
+      setEstadoCena((c) => c ? { ...c, tokens: c.tokens.map((t) => {
+        const rev = revisoes.get(t.id);
+        return rev === undefined ? t : { ...t, revision: rev };
+      }) } : c);
+      setErroAcao(null);
+      return true;
+    }
+
+    // Recusado: o servidor é tudo-ou-nada, então a reversão também é —
+    // o grupo inteiro volta pra origem deste gesto, cada um retraindo
+    // de onde estava visualmente (mesma mecânica do movimento único).
+    const origens = new Map(preparados.map((m) => [m.tokenId, m.pontos[0]]));
+    setEstadoCena((c) => c ? { ...c, tokens: c.tokens.map((t) => {
+      const o = origens.get(t.id);
+      return o ? { ...t, q: o.q, r: o.r } : t;
+    }) } : c);
+    for (const m of preparados) {
+      iniciarMovimentoVisual({
+        tokenId: m.tokenId,
+        rotaExpandida: [m.pontos[m.pontos.length - 1], m.pontos[0]],
+        movementId: `${m.movementId}:retreat`,
+        duracaoOverride: DURACAO_RECONCILIACAO,
+      });
+    }
+    setErroAcao(r.erro ?? "Movimento do grupo recusado.");
+    return false;
+  }, [campaignId, iniciarMovimentoVisual, usuarioId]);
+
+  const onSoltarTokens = useCallback((movimentos: { tokenId: string; rota: ReturnType<typeof montarRota> }[]) => {
+    // Mesma guarda do movimento único, aplicada membro a membro: quem
+    // soltou exatamente onde pegou não entra no lote (não gasta revisão
+    // nem entra no histórico). Sobrando um só, o caminho é o de sempre.
+    const uteis = movimentos.filter((m) => {
+      const token = tokenPorId.get(m.tokenId);
+      const destino = m.rota.pontos[m.rota.pontos.length - 1];
+      return !!token && !!destino && !(destino.q === token.pos.q && destino.r === token.pos.r);
+    });
+    if (uteis.length === 0) return;
+    if (uteis.length === 1) { onSoltarToken(uteis[0].tokenId, uteis[0].rota); return; }
+
+    const pontos = uteis.map((m) => ({ tokenId: m.tokenId, pontos: expandirRota(m.rota.pontos) }));
+    const invertidos = pontos.map((m) => ({ tokenId: m.tokenId, pontos: [...m.pontos].reverse() }));
+
+    void moverGrupoEAnimar(pontos);
+    executarComando({
+      rotulo: `mover ${uteis.length} tokens`,
+      autorId: usuarioId ?? "",
+      executar: () => moverGrupoEAnimar(pontos).then(() => {}),
+      desfazer: () => moverGrupoEAnimar(invertidos).then(() => {}),
+    });
+  }, [executarComando, moverGrupoEAnimar, onSoltarToken, tokenPorId, usuarioId]);
 
   // ── Rotação ────────────────────────────────────────────────────
   // A orientação NUNCA muda durante um deslocamento (preserva o
@@ -5055,6 +5212,7 @@ export function VttClient({
             ferramenta={ferramenta}
             podeMoverToken={podeMoverToken}
             onSoltarToken={onSoltarToken}
+            onSoltarTokens={onSoltarTokens}
             onPressCelula={onPressCelula}
             onEntrarCelulaPintando={onEntrarCelulaPintando}
             onClicarCelula={onClicarCelula}
@@ -5089,7 +5247,7 @@ export function VttClient({
             onConfirmarPosicionamento={confirmarPosicionamento}
             camadas={camadas}
           verCamadasOcultas={ehNarrador}
-            contagemSelecionada={selecionadosIds.size}
+            idsSelecionados={idsSelecionadosLista}
             onRotacaoAlcaSolta={onRotacaoAlcaSolta}
             onRotacaoAlcaPasso={onRotacionarToken}
             areas={areasDesenhaveis}

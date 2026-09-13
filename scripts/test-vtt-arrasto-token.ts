@@ -16,7 +16,7 @@ import { type MapaTerreno, type TipoTerreno, custoDeEntrada } from "../src/app/m
 import { pegadaPadrao } from "../src/app/mesas/[campaignId]/vtt/_dominio/pegada";
 import {
   type ContextoArrasto, type EstadoArrasto,
-  adicionarWaypoint, iniciarArrastoToken, moverDestino, posicaoVisual,
+  adicionarWaypoint, arrastoDoAcompanhante, iniciarArrastoToken, moverDestino, posicaoVisual,
   removerUltimoWaypoint, rotaDoEstadoArrasto, rotaExibida, semMovimento,
 } from "../src/app/mesas/[campaignId]/vtt/_dominio/arrastoToken";
 
@@ -197,11 +197,14 @@ function temRepetida(hexes: readonly Hex[]): boolean {
     !rotaExibida(a).some((c) => ocupados.has(hexKey(c))), caminho(rotaExibida(a)));
 }
 
-// ── 16: borda do mapa barra ────────────────────────────────────────
+// ── 16: a borda do mapa NÃO barra ──────────────────────────────────
+// Regra mudada de propósito (ver `posicaoDoGrupoValida`): o vazio em
+// volta da grade é área de trabalho, e a mesa usa isso. O que barra é
+// colisão, e só.
 {
   const a = arrastar(h(0, 0), [h(-1, 0), h(-2, 0)]);
-  ok("16 (não sai pela borda do mapa)",
-    rotaExibida(a).length === 1 && !a.destinoAlcancavel, caminho(rotaExibida(a)));
+  ok("16 (atravessar a borda é permitido)",
+    caminho(rotaExibida(a)) === "0,0 -1,0 -2,0" && a.destinoAlcancavel, caminho(rotaExibida(a)));
 }
 
 // ── 17: pegada multicelular valida a PEGADA INTEIRA, não a âncora ──
@@ -348,6 +351,74 @@ function temRepetida(hexes: readonly Hex[]): boolean {
   const a = iniciarArrastoToken("t1", h(4, 4));
   ok("30 (clique sem arrasto é no-op — nada a gravar)",
     semMovimento(a) && rotaDoEstadoArrasto(a, VAZIO).distanciaTotal === 0, "sem movimento");
+}
+
+// ── 31: token FORA da grade volta pra dentro ──────────────────────
+// Cena encolhida deixa o token na faixa removida; ele precisa poder
+// voltar. (Antes, o primeiro passo já era ilegal e ele ficava preso.)
+{
+  const a = arrastar(h(0, -3), [h(0, -2), h(0, -1), h(0, 0)]);
+  ok("31 (quem está fora da grade entra)",
+    caminho(rotaExibida(a)) === "0,-3 0,-2 0,-1 0,0" && a.destinoAlcancavel,
+    caminho(rotaExibida(a)));
+}
+
+// ── 32: e também SAI — a borda não limita onde um token pode estar ─
+// O vazio em volta da grade é área de trabalho (fila de reforços,
+// inimigos que ainda não entraram). Sair pra lá é tão legítimo quanto
+// voltar de lá.
+{
+  const a = arrastar(h(0, 0), [h(0, -1), h(0, -2)]);
+  ok("32 (sair da grade é permitido)",
+    caminho(rotaExibida(a)) === "0,0 0,-1 0,-2" && a.destinoAlcancavel,
+    caminho(rotaExibida(a)));
+}
+
+// ── 33: fora da grade, colisão com outro token ainda impede ───────
+{
+  const ocupados = new Set([hexKey(h(0, -2))]);
+  const a = arrastar(h(0, -3), [h(0, -2)], ctx(VAZIO, ocupados));
+  ok("33 (a única regra que sobra é colisão, e ela vale fora também)",
+    caminho(rotaExibida(a)) === "0,-3" && !a.destinoAlcancavel,
+    `${caminho(rotaExibida(a))} alcancavel=${a.destinoAlcancavel}`);
+}
+
+// ── 34: o grupo inteiro pode sair junto ───────────────────────────
+{
+  const grupo = [{ deslocamento: h(0, 1), pegada: pegadaPadrao("medio") }];
+  const a = arrastar(h(0, 0), [h(0, -1)], { ...ctx(), grupo });
+  ok("34 (formação inteira atravessa a borda sem se desfazer)",
+    caminho(rotaExibida(a)) === "0,0 0,-1" && a.destinoAlcancavel,
+    caminho(rotaExibida(a)));
+}
+
+// ── 35: o grupo anda como bloco — a trilha do acompanhante é a do
+// líder transladada, célula a célula ────────────────────────────────
+{
+  const a = arrastar(h(0, 0), [h(1, 0), h(2, 0), h(2, 1)]);
+  const seguidor = arrastoDoAcompanhante(a, "t2", h(0, 2));
+  ok("35 (acompanhante percorre a MESMA forma, deslocada)",
+    caminho(rotaExibida(seguidor)) === "0,2 1,2 2,2 2,3" && seguidor.tokenId === "t2",
+    caminho(rotaExibida(seguidor)));
+}
+
+// ── 37: colisão de um acompanhante também segura o grupo ──────────
+{
+  const grupo = [{ deslocamento: h(0, 1), pegada: pegadaPadrao("medio") }];
+  const ocupados = new Set([hexKey(h(1, 1))]);
+  const a = arrastar(h(0, 0), [h(1, 0)], { ...ctx(VAZIO, ocupados), grupo });
+  ok("37 (acompanhante colidindo para o grupo, não só ele)",
+    caminho(rotaExibida(a)) === "0,0" && !a.destinoAlcancavel,
+    `${caminho(rotaExibida(a))} alcancavel=${a.destinoAlcancavel}`);
+}
+
+// ── 38: grupo livre anda igual a um token sozinho ─────────────────
+{
+  const grupo = [{ deslocamento: h(0, 1), pegada: pegadaPadrao("medio") }];
+  const a = arrastar(h(5, 5), [h(6, 5), h(7, 5)], { ...ctx(), grupo });
+  ok("38 (sem obstáculo, o grupo não muda nada da trilha)",
+    caminho(rotaExibida(a)) === "5,5 6,5 7,5" && a.destinoAlcancavel,
+    caminho(rotaExibida(a)));
 }
 
 console.log(`\n${passou} ok, ${falhou} falha(s).`);

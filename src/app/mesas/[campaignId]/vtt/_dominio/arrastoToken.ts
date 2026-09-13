@@ -32,10 +32,10 @@
  * que `MapaHex.tsx` usa nos handlers de `pointermove`/`keydown`.
  */
 
-import { type Hex, hexIguais, hexLinha } from "../_mapa/hex";
+import { type Hex, hexIguais, hexKey, hexLinha } from "../_mapa/hex";
 import { type MapaTerreno, custoDePassoPegada, type Rota } from "./movimento";
 import { type Pegada, pegadaPadrao, projetarPegada } from "./pegada";
-import { bloqueiosNaRota, posicaoDaPegadaValida } from "./pathfindingHex";
+import { bloqueiosNaRota } from "./pathfindingHex";
 
 const PEGADA_UMA_CELULA: Pegada = pegadaPadrao("medio");
 
@@ -92,6 +92,54 @@ export interface ContextoArrasto {
   altura: number;
   /** Pegada do token em arrasto, na orientação ATUAL — constante durante todo o deslocamento (a orientação não muda arrastando). Omitida = 1 célula. */
   pegada?: Pegada;
+  /**
+   * ACOMPANHANTES — os outros tokens selecionados, que se deslocam
+   * JUNTO com o líder, rigidamente: cada um mantém exatamente o mesmo
+   * vetor que tinha pra ele no início do gesto. Numa grade axial uma
+   * translação é soma componente a componente, então a trilha do
+   * acompanhante é a do líder somada ao `deslocamento` dele — mesma
+   * forma, mesma adjacência, sem nenhum caminho próprio a calcular.
+   *
+   * A consequência que importa: uma posição da trilha só é legal
+   * quando cabe pro GRUPO INTEIRO. O líder para na borda porque um
+   * acompanhante lá atrás não caberia — é isso que mantém a formação
+   * intacta em vez de deixar o grupo se deformar na primeira parede.
+   *
+   * `ocupados` (acima) NÃO pode conter as células de quem está no
+   * grupo: eles saem das próprias células no mesmo instante, e se
+   * contassem como obstáculo o grupo colidiria consigo mesmo antes do
+   * primeiro passo.
+   */
+  grupo?: readonly { deslocamento: Hex; pegada: Pegada }[];
+}
+
+function somar(a: Hex, b: Hex): Hex {
+  return { q: a.q + b.q, r: a.r + b.r };
+}
+
+/**
+ * A posição é livre pro GRUPO INTEIRO?
+ *
+ * A ÚNICA coisa que impede uma posição é COLISÃO com um token de fora
+ * do grupo. A borda da cena não impede: o vazio em volta da grade é
+ * área de trabalho legítima (fila de reforços, inimigos que ainda não
+ * entraram, tokens que uma grade encolhida deixou pra trás), e sair
+ * pra lá precisa ser tão possível quanto voltar de lá. Terreno
+ * bloqueado também não impede — é regra consultiva desde sempre, vira
+ * aviso via `celulasBloqueadas`.
+ *
+ * Por isso a checagem é escrita aqui em vez de reusar
+ * `posicaoDaPegadaValida`: aquela função continua valendo os limites do
+ * mapa, e ela é o que o PATHFINDING usa — rota automática e medição
+ * seguem confinadas à grade, que é onde a mecânica de combate vive.
+ * São duas regras de fato diferentes, não a mesma com um parâmetro.
+ */
+function posicaoDoGrupoValida(ancora: Hex, pegada: Pegada, ctx: ContextoArrasto): { valido: boolean; celulas: Hex[] } {
+  const celulas = projetarPegada(ancora, pegada);
+  for (const membro of ctx.grupo ?? []) {
+    celulas.push(...projetarPegada(somar(ancora, membro.deslocamento), membro.pegada));
+  }
+  return { valido: !celulas.some((c) => ctx.ocupados.has(hexKey(c))), celulas };
 }
 
 export function iniciarArrastoToken(tokenId: string, origem: Hex): EstadoArrasto {
@@ -119,10 +167,12 @@ export function iniciarArrastoToken(tokenId: string, origem: Hex): EstadoArrasto
  *    caminho: corta tudo depois dela. É o que desfaz um desvio (e
  *    dissolve zigue-zague de tremor) sem tecla nenhuma, e o que impede
  *    laço acumulado e custo cobrado duas vezes pela mesma ida-e-volta.
- * 2. POSIÇÃO ILEGAL (pegada não cabe: fora do mapa ou sobre outro
- *    token) — para aqui. A trilha fica na última célula boa e
- *    `destinoAlcancavel` vira `false`; o token não entra no obstáculo
- *    mesmo que o cursor entre. Terreno bloqueado NÃO cai neste caso.
+ * 2. POSIÇÃO OCUPADA (a pegada — do token ou de algum acompanhante —
+ *    cairia sobre outro token) — para aqui. A trilha fica na última
+ *    célula boa e `destinoAlcancavel` vira `false`; o token não entra
+ *    no obstáculo mesmo que o cursor entre. Nem a borda da cena nem
+ *    terreno bloqueado caem neste caso: a primeira não limita onde um
+ *    token pode estar, o segundo é regra consultiva.
  * 3. LIVRE — entra na trilha.
  */
 export function moverDestino(a: EstadoArrasto, hex: Hex, ctx: ContextoArrasto): EstadoArrasto {
@@ -148,7 +198,7 @@ export function moverDestino(a: EstadoArrasto, hex: Hex, ctx: ContextoArrasto): 
     // Caso 2 — a pegada INTEIRA precisa caber. `ignorarBloqueioTerreno:
     // true` porque bloqueio de terreno é consultivo: atravessar é
     // permitido (e avisado), só limite de mapa e colisão impedem.
-    if (!posicaoDaPegadaValida(c, pegada, ctx.terreno, ctx.ocupados, ctx.largura, ctx.altura, true).valido) {
+    if (!posicaoDoGrupoValida(c, pegada, ctx).valido) {
       alcancavel = false;
       break;
     }
@@ -196,6 +246,34 @@ export function adicionarWaypoint(a: EstadoArrasto): EstadoArrasto {
 export function removerUltimoWaypoint(a: EstadoArrasto): EstadoArrasto {
   if (a.waypoints.length === 0) return a;
   return { ...a, waypoints: a.waypoints.slice(0, -1) };
+}
+
+/**
+ * A MESMA trilha, vista do lugar de um acompanhante — o gesto do líder
+ * transladado pelo vetor fixo que separa os dois.
+ *
+ * É o que garante que o grupo se move como um bloco: ninguém calcula
+ * caminho próprio (dois caminhos separados divergiriam ao contornar um
+ * obstáculo e a formação se desfaria), e a adjacência célula a célula
+ * que o servidor exige é preservada, porque translação não muda
+ * vizinhança numa grade axial.
+ *
+ * `celulasBloqueadas`/`passosBloqueados` do líder NÃO são transladados:
+ * eles são aviso visual sobre terreno, e o terreno sob o acompanhante é
+ * outro. Vão vazios — quem precisar do aviso por token recalcula com
+ * `bloqueiosNaRota`.
+ */
+export function arrastoDoAcompanhante(a: EstadoArrasto, tokenId: string, deslocamento: Hex): EstadoArrasto {
+  return {
+    ...a,
+    tokenId,
+    origem: somar(a.origem, deslocamento),
+    waypoints: a.waypoints.map((w) => somar(w, deslocamento)),
+    rota: a.rota.map((c) => somar(c, deslocamento)),
+    destinoAtual: somar(a.destinoAtual, deslocamento),
+    celulasBloqueadas: [],
+    passosBloqueados: a.rota.map(() => false),
+  };
 }
 
 /** A trilha percorrida, célula a célula. */
