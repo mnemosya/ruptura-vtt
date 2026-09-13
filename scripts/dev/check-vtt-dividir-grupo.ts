@@ -16,6 +16,7 @@ import { randomUUID } from "node:crypto";
 import { config as loadDotenv } from "dotenv";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { exigirRpc } from "./rpcObrigatoria";
+import { limparCampanhasDeTeste } from "./limparCampanhaDeTeste";
 
 loadDotenv({ path: ".env.local" });
 
@@ -282,16 +283,18 @@ async function main() {
     criterio("o jogador recebe lista vazia",
       Array.isArray(listaJogador) && listaJogador.length === 0);
 
-    console.log(`\n${passou} critérios ok, ${falhou} falhas`);
   } finally {
-    await admin.from("table_logs").delete().eq("campaign_id", campaignId);
-    await admin.from("vtt_player_scene_assignments").delete().eq("campaign_id", campaignId);
-    await admin.from("vtt_campaign_stage").delete().eq("campaign_id", campaignId);
-    await admin.from("vtt_scenes").delete().eq("campaign_id", campaignId);
-    await admin.from("campaign_members").delete().eq("campaign_id", campaignId);
-    await admin.from("campaigns").delete().eq("id", campaignId);
-    for (const id of Object.values(contas)) await admin.auth.admin.deleteUser(id);
-    console.log("limpeza ok");
+    // Ordem canônica e compartilhada — ver `limparCampanhaDeTeste.ts`.
+    // Cada limpeza escrita à mão tinha uma ordem própria, e o schema
+    // mudou por baixo de todas: FKs de palco e de imagem RECUSAM a
+    // exclusão em vez de cascatear, e o erro sumia sem ninguém olhar.
+    const { restos } = await limparCampanhasDeTeste(admin, {
+      campanhas: [campaignId], usuarios: Object.values(contas),
+    });
+    criterio("Z (limpeza de fixtures)", restos.length === 0, restos.join("; "));
+    // O resumo sai DEPOIS da limpeza: antes, ele afirmava "0 falhas"
+    // sem saber o que a limpeza ia encontrar.
+    console.log(`\n${passou} critérios ok, ${falhou} falhas`);
   }
   if (falhou > 0) process.exit(1);
 }

@@ -19,6 +19,7 @@
 import { randomUUID } from "node:crypto";
 import { config as loadDotenv } from "dotenv";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { limparCampanhasDeTeste } from "./limparCampanhaDeTeste";
 
 loadDotenv({ path: ".env.local" });
 
@@ -269,14 +270,12 @@ async function main() {
       await admin.from("campaigns").delete().eq("id", campanhaSemPalco);
     }
 
-    console.log(`\n${passou} critérios ok, ${falhou} falhas`);
   } finally {
-    await admin.from("table_logs").delete().eq("campaign_id", campaignId);
-    await admin.from("vtt_campaign_stage").delete().eq("campaign_id", campaignId);
-    await admin.from("vtt_scenes").delete().eq("campaign_id", campaignId);
-    await admin.from("campaigns").delete().eq("id", campaignId);
-    await admin.auth.admin.deleteUser(narradorId);
-    console.log("limpeza ok");
+    const { restos } = await limparCampanhasDeTeste(admin, {
+      campanhas: [campaignId], usuarios: [narradorId],
+    });
+    criterio("Z (limpeza de fixtures)", restos.length === 0, restos.join("; "));
+    console.log(`\n${passou} critérios ok, ${falhou} falhas`);
   }
   if (falhou > 0) process.exit(1);
 }

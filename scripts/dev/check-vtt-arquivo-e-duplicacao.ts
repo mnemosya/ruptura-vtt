@@ -17,6 +17,7 @@ import { createClient } from "@supabase/supabase-js";
 import { chromium, type Page } from "playwright";
 import sharp from "sharp";
 import { BASE_URL } from "./authSession";
+import { limparCampanhasDeTeste } from "./limparCampanhaDeTeste";
 
 loadDotenv({ path: ".env.local" });
 
@@ -255,13 +256,15 @@ async function main() {
   } finally {
     await ctx.close().catch(() => {});
     await browser.close();
-    await admin.from("table_logs").delete().eq("campaign_id", campaignId);
-    await admin.from("vtt_campaign_stage").delete().eq("campaign_id", campaignId);
     await admin.storage.from("vtt-imagens").remove([storagePath]).catch(() => {});
-    await admin.from("vtt_scenes").delete().eq("campaign_id", campaignId);
-    await admin.from("campaigns").delete().eq("id", campaignId);
-    await admin.auth.admin.deleteUser(narradorId);
-    console.log("limpeza ok");
+    // Ordem canônica e compartilhada — ver `limparCampanhaDeTeste.ts`.
+    // A ordem escrita à mão aqui não apagava colocação de imagem nem
+    // asset, e a campanha ficava viva sem ninguém saber.
+    const { restos } = await limparCampanhasDeTeste(admin, {
+      campanhas: [campaignId], usuarios: [narradorId],
+    });
+    criterio("Z (limpeza de fixtures)", restos.length === 0, restos.join("; "));
+    console.log(`\n${passou} critérios ok, ${falhou} falhas`);
   }
   if (falhou > 0) process.exit(1);
 }

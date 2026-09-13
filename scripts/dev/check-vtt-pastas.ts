@@ -15,6 +15,7 @@
 import { randomUUID } from "node:crypto";
 import { config as loadDotenv } from "dotenv";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { limparCampanhasDeTeste } from "./limparCampanhaDeTeste";
 
 loadDotenv({ path: ".env.local" });
 
@@ -50,6 +51,9 @@ async function main() {
     email, password: senha, email_confirm: true, user_metadata: { display_name: "Narradora" },
   });
   const narradorId = u!.user!.id;
+  // Contas criadas no meio do teste entram aqui para a limpeza
+  // alcançá-las — o jogador do último bloco nasce dentro do `try`.
+  const contasExtras: string[] = [];
   const campaignId = randomUUID();
   await admin.from("campaigns").insert({ id: campaignId, name: "Pastas", owner_id: narradorId });
 
@@ -165,6 +169,7 @@ async function main() {
     });
     await admin.from("campaign_members")
       .insert({ campaign_id: campaignId, user_id: uJ!.user!.id, role: "player" });
+    contasExtras.push(uJ!.user!.id);
     const { data: sJ } = await anon.auth.signInWithPassword({ email: emailJog, password: senha });
     const jogador = createClient(supabaseUrl, anonKey, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -183,19 +188,20 @@ async function main() {
       }),
       "Só o narrador");
 
-    console.log(`\n${passou} critérios ok, ${falhou} falhas`);
   } finally {
-    await admin.from("table_logs").delete().eq("campaign_id", campaignId);
-    await admin.from("vtt_campaign_stage").delete().eq("campaign_id", campaignId);
-    await admin.from("vtt_scenes").delete().eq("campaign_id", campaignId);
-    await admin.from("vtt_scene_folders").delete().eq("campaign_id", campaignId);
-    await admin.from("campaign_members").delete().eq("campaign_id", campaignId);
-    await admin.from("campaigns").delete().eq("id", campaignId);
-    const { data: sobras } = await admin.auth.admin.listUsers();
-    for (const usr of sobras?.users ?? []) {
-      if (usr.email?.startsWith("check-pastas-")) await admin.auth.admin.deleteUser(usr.id);
-    }
-    console.log("limpeza ok");
+    // Ordem canônica e compartilhada — ver `limparCampanhaDeTeste.ts`.
+    // Cada limpeza escrita à mão tinha uma ordem própria, e o schema
+    // mudou por baixo de todas: FKs de palco e de imagem RECUSAM a
+    // exclusão em vez de cascatear, e o erro sumia sem ninguém olhar.
+    const { restos } = await limparCampanhasDeTeste(admin, {
+      campanhas: [campaignId],
+      // As duas contas deste check: narrador e o jogador do último bloco.
+      usuarios: [narradorId, ...(contasExtras)],
+    });
+    criterio("Z (limpeza de fixtures)", restos.length === 0, restos.join("; "));
+    // O resumo sai DEPOIS da limpeza: antes, ele afirmava "0 falhas"
+    // sem saber o que a limpeza ia encontrar.
+    console.log(`\n${passou} critérios ok, ${falhou} falhas`);
   }
   if (falhou > 0) process.exit(1);
 }

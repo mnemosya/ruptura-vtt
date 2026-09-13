@@ -21,6 +21,7 @@ import { config as loadDotenv } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { chromium, type BrowserContext, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
+import { limparCampanhasDeTeste } from "./limparCampanhaDeTeste";
 
 loadDotenv({ path: ".env.local" });
 
@@ -110,7 +111,11 @@ async function main() {
       expires: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
     }]);
     const page = await ctx.newPage();
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    // `domcontentloaded`, não `networkidle`: com TRÊS abas, cada uma
+    // mantendo websockets de realtime abertos, a rede nunca fica ociosa
+    // e o `goto` estoura sem que nada esteja errado. O portão de
+    // verdade é o seletor abaixo, que espera a mesa existir.
+    await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "domcontentloaded" });
     await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 25000 });
     return page;
   }
@@ -203,18 +208,20 @@ async function main() {
     ).then(() => true).catch(() => false));
     criterio("as abas dos jogadores nunca recarregaram", alma.url() === urlAlmaAntes);
 
-    console.log(`\n${passou} critérios ok, ${falhou} falhas`);
   } finally {
     for (const ctx of abas) await ctx.close().catch(() => {});
     await browser.close();
-    await admin.from("table_logs").delete().eq("campaign_id", campaignId);
-    await admin.from("vtt_player_scene_assignments").delete().eq("campaign_id", campaignId);
-    await admin.from("vtt_campaign_stage").delete().eq("campaign_id", campaignId);
-    await admin.from("vtt_scenes").delete().eq("campaign_id", campaignId);
-    await admin.from("campaign_members").delete().eq("campaign_id", campaignId);
-    await admin.from("campaigns").delete().eq("id", campaignId);
-    for (const id of Object.values(contas)) await admin.auth.admin.deleteUser(id);
-    console.log("limpeza ok");
+    // Ordem canônica e compartilhada — ver `limparCampanhaDeTeste.ts`.
+    // Cada limpeza escrita à mão tinha uma ordem própria, e o schema
+    // mudou por baixo de todas: FKs de palco e de imagem RECUSAM a
+    // exclusão em vez de cascatear, e o erro sumia sem ninguém olhar.
+    const { restos } = await limparCampanhasDeTeste(admin, {
+      campanhas: [campaignId], usuarios: Object.values(contas),
+    });
+    criterio("Z (limpeza de fixtures)", restos.length === 0, restos.join("; "));
+    // O resumo sai DEPOIS da limpeza: antes, ele afirmava "0 falhas"
+    // sem saber o que a limpeza ia encontrar.
+    console.log(`\n${passou} critérios ok, ${falhou} falhas`);
   }
   if (falhou > 0) process.exit(1);
 }
