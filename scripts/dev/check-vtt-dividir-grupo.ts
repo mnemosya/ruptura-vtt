@@ -15,6 +15,7 @@
 import { randomUUID } from "node:crypto";
 import { config as loadDotenv } from "dotenv";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { exigirRpc } from "./rpcObrigatoria";
 
 loadDotenv({ path: ".env.local" });
 
@@ -173,12 +174,12 @@ async function main() {
     // de novo e só então a manda para o palco, que neste ponto é a
     // Praça. Depender do que ficou de trás é como um critério passa a
     // testar a ordem dos blocos em vez da regra.
-    await narrador.rpc("move_players_to_scene", {
+    await exigirRpc("separar a Alma", narrador.rpc("move_players_to_scene", {
       p_campaign_id: campaignId, p_user_ids: [almaId], p_scene_id: catacumbas,
-    });
-    await narrador.rpc("move_players_to_scene", {
+    }));
+    await exigirRpc("mandar a Alma para a cena do palco", narrador.rpc("move_players_to_scene", {
       p_campaign_id: campaignId, p_user_ids: [almaId], p_scene_id: praca,
-    });
+    }));
     const { data: atribuicoes } = await admin.from("vtt_player_scene_assignments")
       .select("user_id").eq("campaign_id", campaignId);
     criterio("a atribuição foi REMOVIDA, não gravada",
@@ -193,9 +194,9 @@ async function main() {
     });
 
     console.log("\n— Reagrupar —");
-    await narrador.rpc("move_players_to_scene", {
+    await exigirRpc("separar os dois antes de reagrupar", narrador.rpc("move_players_to_scene", {
       p_campaign_id: campaignId, p_user_ids: [almaId, brunoId], p_scene_id: catacumbas,
-    });
+    }));
     const { data: antesReagrupar } = await admin.from("vtt_player_scene_assignments")
       .select("user_id").eq("campaign_id", campaignId);
     criterio("os dois foram separados", (antesReagrupar ?? []).length === 2);
@@ -205,20 +206,22 @@ async function main() {
     criterio("Bruno também", await tokensVisiveis(bruno, praca) === 1);
 
     console.log("\n— Arquivar devolve quem estava lá —");
-    await narrador.rpc("move_players_to_scene", {
+    await exigirRpc("separar a Alma antes de arquivar", narrador.rpc("move_players_to_scene", {
       p_campaign_id: campaignId, p_user_ids: [almaId], p_scene_id: catacumbas,
-    });
-    await narrador.rpc("archive_vtt_scene", { p_scene_id: catacumbas });
+    }));
+    await exigirRpc("arquivar as Catacumbas", narrador.rpc("archive_vtt_scene", { p_scene_id: catacumbas }));
     const { data: almaAposArquivo } = await alma.rpc("vtt_minha_cena", { p_campaign_id: campaignId });
     criterio("Alma não ficou presa na cena arquivada", almaAposArquivo === praca,
       `ficou em ${almaAposArquivo}`);
-    await narrador.rpc("restore_vtt_scene", { p_scene_id: catacumbas });
+    await exigirRpc("restaurar as Catacumbas", narrador.rpc("restore_vtt_scene", { p_scene_id: catacumbas }));
 
     console.log("\n— Excluir a cena devolve por cascata —");
-    await narrador.rpc("move_players_to_scene", {
+    await exigirRpc("separar a Alma antes de excluir", narrador.rpc("move_players_to_scene", {
       p_campaign_id: campaignId, p_user_ids: [almaId], p_scene_id: catacumbas,
-    });
-    await narrador.rpc("delete_vtt_scene", { p_scene_id: catacumbas, p_nome_confirmacao: "Catacumbas" });
+    }));
+    await exigirRpc("excluir as Catacumbas", narrador.rpc("delete_vtt_scene", {
+      p_scene_id: catacumbas, p_nome_confirmacao: "Catacumbas",
+    }));
     const { data: aposExcluir } = await admin.from("vtt_player_scene_assignments")
       .select("user_id").eq("campaign_id", campaignId);
     criterio("a atribuição saiu junto", (aposExcluir ?? []).length === 0);
@@ -250,9 +253,9 @@ async function main() {
     await narrador.rpc("restore_vtt_scene", { p_scene_id: torre });
 
     console.log("\n— O que cada um enxerga das atribuições —");
-    await narrador.rpc("move_players_to_scene", {
+    await exigirRpc("separar o Bruno", narrador.rpc("move_players_to_scene", {
       p_campaign_id: campaignId, p_user_ids: [brunoId], p_scene_id: torre,
-    });
+    }));
     const { data: almaVeAtribuicoes } = await alma.from("vtt_player_scene_assignments")
       .select("user_id").eq("campaign_id", campaignId);
     criterio("Alma NÃO vê a atribuição do Bruno",

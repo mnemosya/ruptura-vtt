@@ -66,8 +66,16 @@ export async function coletarLixoCom(
     for (const linha of pendentes.data as { storage_path: string }[]) {
       const caminho = linha.storage_path;
       if (await removerObjeto(client, caminho)) {
-        await client.rpc("vtt_confirmar_remocao_imagem", { p_storage_path: caminho });
-        resultado.removidos += 1;
+        // A confirmação é a metade que fecha a conta: ela apaga a linha
+        // e DEVOLVE os bytes (0103). Sem conferir o erro, um objeto que
+        // saiu do bucket e uma confirmação recusada eram contados como
+        // sucesso — a quota ficava presa a um arquivo que não existe
+        // mais, e o número dizia que tudo correu bem.
+        const confirmacao = await client.rpc("vtt_confirmar_remocao_imagem", {
+          p_storage_path: caminho,
+        });
+        if (confirmacao.error) resultado.falhas += 1;
+        else resultado.removidos += 1;
       } else {
         resultado.falhas += 1;
       }
