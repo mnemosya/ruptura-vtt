@@ -30,6 +30,7 @@ import {
   carregarCenaAtiva,
   carregarCena,
   carregarCenaApresentada,
+  lerPalco,
   listarCenas,
   criarCena,
   apresentarCena,
@@ -72,6 +73,7 @@ import {
   type CategoriaObjeto,
   type EstadoCena,
   type CartaoCena,
+  type Palco,
   type TrilhaPersistida,
   type ParametrosAreaEscrita,
   type TipoArea,
@@ -208,6 +210,24 @@ export async function lerCenaAction(params: {
     return { ok: true, dados: await carregarCena(params.sceneId) };
   } catch (e) {
     return { ok: false, erro: e instanceof Error ? e.message : "Falha ao carregar a cena." };
+  }
+}
+
+/**
+ * Onde a MESA está, com a revisão — sem carregar a cena inteira.
+ *
+ * Serve a dois momentos: apresentar (manda a revisão lida, pra que um
+ * clique decidido em cima de um palco velho seja recusado) e
+ * reconciliar depois de uma reconexão (os eventos perdidos enquanto o
+ * canal esteve fora não voltam; reler é a única verdade).
+ */
+export async function lerPalcoAction(campaignId: string): Promise<ResultadoAcao<Palco | null>> {
+  const v = await exigirAcesso(campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  try {
+    return { ok: true, dados: await lerPalco(campaignId) };
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : "Falha ao ler o palco." };
   }
 }
 

@@ -9,9 +9,13 @@
  * vira gesto: clicar num cartão ABRE a cena pra quem prepara, e a mesa
  * não se move.
  *
- * Escopo desta fase — listar, criar, renomear, abrir e reordenar.
- * Apresentar é da Fase 3 (precisa do evento de realtime que leva os
- * jogadores junto); duplicar, arquivar, excluir e miniatura são da 4.
+ * Listar, criar, renomear, abrir e reordenar (fase 2); apresentar
+ * (fase 3). Duplicar, arquivar, excluir e miniatura são da 4.
+ *
+ * ABRIR e APRESENTAR são gestos separados e é essa separação que a
+ * janela inteira existe pra oferecer: o primeiro move só quem prepara,
+ * o segundo move a mesa. Por isso apresentar tem botão próprio em vez
+ * de ser o que acontece ao clicar num cartão.
  *
  * Criar é um formulário DENTRO da janela, não um diálogo por cima.
  * A janela já é uma superfície flutuante; empilhar um modal sobre ela
@@ -30,7 +34,8 @@ import { AlertTriangle, Clapperboard, Loader2, Plus } from "lucide-react";
 import { JanelaFerramenta } from "../_shell/JanelaFerramenta";
 import { CartaoCena } from "./CartaoCena";
 import {
-  criarCenaAction, listarCenasAction, reordenarCenasAction, salvarConfigCenaAction,
+  apresentarCenaAction, criarCenaAction, listarCenasAction, reordenarCenasAction,
+  salvarConfigCenaAction,
 } from "../_acoes/sceneActions";
 import type { CartaoCena as DadosCartaoCena } from "../../../../../lib/vtt/sceneStorage";
 
@@ -41,6 +46,12 @@ export interface PropsGerenciadorCenas {
   /** Trocar de cena é do `VttClient`: é ele que carrega e reassina. */
   onAbrir: (sceneId: string) => void;
   onFechar: () => void;
+  /**
+   * A revisão do palco conhecida pelo cliente, mandada a
+   * `present_vtt_scene` para que um clique decidido sobre um palco que
+   * já andou seja recusado em vez de aplicado por cima.
+   */
+  palcoRevision?: number | null;
   /**
    * Muda quando algo fora daqui alterou uma cena (renomear pela janela
    * de Configurações, por exemplo). Releitura em vez de espelhar o
@@ -224,6 +235,41 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
   }
 
   /**
+   * Leva a MESA para uma cena — o único gesto daqui que muda o que os
+   * jogadores veem.
+   *
+   * Manda a revisão que este cliente conhece. Se o palco andou desde
+   * então (a outra aba do mesmo narrador, um co-narrador),
+   * `present_vtt_scene` recusa em vez de aplicar por cima de uma
+   * decisão tomada sobre estado velho — e aí a releitura mostra onde a
+   * mesa realmente está.
+   *
+   * Não relê o catálogo no sucesso: o evento de palco chega pelo
+   * Realtime e move o selo sozinho. Reler aqui seria uma segunda fonte
+   * para o mesmo fato, e a corrida entre as duas é justamente o tipo de
+   * divergência que essa fase existe pra não ter.
+   */
+  async function apresentar(cena: DadosCartaoCena) {
+    marcarOcupada(cena.id, true);
+    anotarErro(cena.id, null);
+    try {
+      const r = await apresentarCenaAction({
+        campaignId: p.campaignId,
+        sceneId: cena.id,
+        revisionEsperada: p.palcoRevision ?? null,
+      });
+      if (!r.ok) {
+        anotarErro(cena.id, r.erro ?? "Não foi possível apresentar a cena.");
+        void recarregar();
+      }
+    } catch (e) {
+      anotarErro(cena.id, e instanceof Error ? e.message : "Falha inesperada ao apresentar.");
+    } finally {
+      marcarOcupada(cena.id, false);
+    }
+  }
+
+  /**
    * Reordena otimista e confirma no servidor, uma de cada vez.
    *
    * Otimista porque arrastar precisa responder no frame do gesto.
@@ -344,6 +390,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                 erro={errosPorCena[c.id] ?? null}
                 onAbrir={() => p.onAbrir(c.id)}
                 onRenomear={(nome) => void renomear(c, nome)}
+                onApresentar={() => void apresentar(c)}
                 onMover={(d) => mover(c.id, d)}
                 // As setas NÃO travam durante a fila: travar tornaria
                 // "descer duas posições" um gesto que só funciona

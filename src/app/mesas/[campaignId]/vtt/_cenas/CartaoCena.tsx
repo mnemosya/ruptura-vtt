@@ -19,10 +19,6 @@
  *
  * O que NÃO está aqui, de propósito:
  *
- *   · "Apresentar aos jogadores" é da Fase 3 — o botão só deve nascer
- *     junto com o evento de realtime que leva a mesa junto. Um botão
- *     que troca o palco sem avisar quem está online seria pior que
- *     botão nenhum;
  *   · miniatura é da Fase 4. O slot fica reservado no desenho (a
  *     inicial da cena ocupa o lugar) pra que a chegada da imagem não
  *     reorganize o cartão inteiro depois;
@@ -30,7 +26,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Check, GripVertical, Pencil, Users, X } from "lucide-react";
+import { Check, GripVertical, MonitorPlay, Pencil, Users, X } from "lucide-react";
 import type { CartaoCena as DadosCartaoCena } from "../../../../../lib/vtt/sceneStorage";
 
 export interface PropsCartaoCena {
@@ -45,6 +41,8 @@ export interface PropsCartaoCena {
   onRenomear: (nome: string) => void;
   /** Reordenar pelo teclado — o arrasto não é alcançável sem mouse. */
   onMover: (direcao: -1 | 1) => void;
+  /** Levar a MESA para esta cena. Ausente enquanto a cena já é o palco. */
+  onApresentar: () => void;
   podeSubir: boolean;
   podeDescer: boolean;
   /** Ganchos do arrasto, montados pelo gerenciador (ele é quem tem a lista). */
@@ -170,6 +168,20 @@ export function CartaoCena(p: PropsCartaoCena) {
       </span>
 
       <span className="rv-cena-acoes">
+        {/* APRESENTAR — o único gesto do catálogo que mexe no que os
+            jogadores veem, e por isso o único que precisa se distinguir
+            dos outros à primeira vista. Some no cartão que já é o
+            palco: "apresentar a cena que já está apresentada" é um
+            clique sem efeito ocupando o lugar de um com efeito. */}
+        {!p.cena.apresentada && !p.cena.arquivadaEm && (
+          <button
+            type="button" className="rv-cena-mini-btn" data-tipo="apresentar"
+            aria-label={`Apresentar "${p.cena.nome}" aos jogadores`}
+            title="Apresentar aos jogadores"
+            data-testid="cena-apresentar"
+            disabled={p.ocupada} onClick={p.onApresentar}
+          ><MonitorPlay size={13} /></button>
+        )}
         {/* Reordenar pelo teclado. O arrasto continua sendo o gesto
             natural, mas ele não existe pra quem navega por teclado — e
             "reordenar" estava no aceite desta fase pra todo mundo. */}

@@ -321,6 +321,64 @@ export function subscribeToVttScene(params: {
   };
 }
 
+/** O palco mudou: a mesa inteira foi para outra cena. */
+export interface EventoPalco {
+  sceneId: string;
+  revision: number;
+}
+
+/**
+ * Assina a MUDANÇA DE PALCO — a fita dos jogadores.
+ *
+ * Canal PRÓPRIO, e não mais um listener em `subscribeToVttScene`, por
+ * uma razão estrutural: aquele canal é reassinado a cada troca de cena
+ * (depende de `sceneId`), e a mudança de palco é justamente o evento
+ * que CAUSA uma troca de cena. Pendurado lá, ele se derrubaria a si
+ * mesmo, e existiria uma janela — entre remover o canal antigo e o novo
+ * ficar pronto — em que um segundo "Apresentar" simplesmente não
+ * chegaria. O palco é da CAMPANHA; a assinatura dele dura o que a
+ * campanha durar.
+ *
+ * `onReconectado` existe porque o canal não guarda histórico: quem
+ * ficou offline não recebe o que perdeu. Toda vez que a inscrição
+ * (re)estabelece, quem escuta relê o palco e reconcilia — é o único
+ * jeito de um cliente que caiu voltar para a cena certa.
+ */
+export function subscribeToVttPalco(params: {
+  campaignId: string;
+  onPalco: (e: EventoPalco) => void;
+  /** Disparado a cada `SUBSCRIBED`, inclusive o primeiro. */
+  onReconectado?: () => void;
+}): () => void {
+  const client = getBrowserSupabaseClient();
+  if (!client) return () => {};
+
+  const channel: RealtimeChannel = client
+    .channel(`campaign:${params.campaignId}:palco`)
+    .on(
+      "postgres_changes",
+      // INSERT entra junto: a primeira apresentação de uma campanha que
+      // nunca teve palco CRIA a linha em vez de atualizá-la, e escutar
+      // só UPDATE perderia exatamente a estreia.
+      { event: "*", schema: "public", table: "vtt_campaign_stage", filter: `campaign_id=eq.${params.campaignId}` },
+      (payload) => {
+        const novo = payload.new as Record<string, unknown> | null;
+        if (!novo?.presented_scene_id) return;
+        params.onPalco({
+          sceneId: novo.presented_scene_id as string,
+          revision: (novo.revision as number | undefined) ?? 1,
+        });
+      },
+    )
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") params.onReconectado?.();
+    });
+
+  return () => {
+    client.removeChannel(channel);
+  };
+}
+
 /**
  * Evento EFÊMERO de movimento — nunca persistido, existe só pra outros
  * clientes reproduzirem a MESMA animação que o autor está vendo. A

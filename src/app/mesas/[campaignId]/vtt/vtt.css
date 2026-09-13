@@ -3987,7 +3987,10 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    manipula —, então o cartão tem pegador visível à esquerda em vez de
    depender do usuário descobrir que a linha inteira arrasta.
    ═══════════════════════════════════════════════════════════════════ */
-.rv-cenas { width: 340px; max-height: min(560px, calc(100% - 32px)); }
+/* 380px e não 340: com o botão de apresentar (fase 3) a fila de ações
+   passou a quatro, e nomes de cena comuns começavam a truncar. O nome é
+   a informação principal do cartão — quem perde espaço é a margem. */
+.rv-cenas { width: 380px; max-height: min(560px, calc(100% - 32px)); }
 
 .rv-cena-lista { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
 
@@ -4090,3 +4093,14 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   margin: 0; padding: 10px 4px; font-size: 11px; color: var(--rv-ink-faint);
 }
 .rv-cena-estado[data-tipo="erro"] { color: #e0655f; }
+
+/* "O narrador mudou a cena" — irmão de `.rv-erro-acao` na posição e na
+   forma, e diferente na cor: isto não é falha, é a mesa andando. */
+.rv-aviso-palco {
+  bottom: 16px; left: 50%; transform: translateX(-50%); top: auto;
+  padding: 9px 16px; border-radius: 999px;
+  background: color-mix(in srgb, var(--cy) 14%, var(--rv-ground));
+  border: 1px solid color-mix(in srgb, var(--cy) 40%, transparent);
+  color: var(--txt); font-size: 12px; cursor: pointer;
+  max-width: 70vw; text-align: center; z-index: 90;
+}

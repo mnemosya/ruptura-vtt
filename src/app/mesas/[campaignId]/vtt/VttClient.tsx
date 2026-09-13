@@ -70,7 +70,7 @@ import {
   decidirNovoMovimento, proximaExpiracao, removerProtecoesExpiradas,
 } from "./_dominio/reconciliacaoPosicao";
 import {
-  garantirCenaSemente, lerCenaAtiva, lerCenaAction, moverTokenAction, obterUsuarioAtualAction,
+  garantirCenaSemente, lerCenaAtiva, lerCenaAction, lerPalcoAction, moverTokenAction, obterUsuarioAtualAction,
   pintarTerrenoAction, criarMarcaAction, apagarMarcaAction, rotacionarTokenAction,
   criarMedicaoAction, apagarMedicaoAction, limparMedicoesAction,
   obterControleAction, criarTokenAction, editarTokenAction,
@@ -120,7 +120,7 @@ import { type TokenApresentacao, tokenApresentacaoDe } from "./_dominio/tokenApr
 import {
   type EventoMovimentoToken, type EventoPing,
   subscribeToVttScene, subscribeToVttTokenMovement, subscribeToVttPing, subscribeToVttTokensChanged,
-  subscribeToVttAreasChanged, subscribeToCamadasDaCena } from "./_realtime/vttRealtime";
+  subscribeToVttAreasChanged, subscribeToCamadasDaCena, subscribeToVttPalco } from "./_realtime/vttRealtime";
 import { useCampaignCharacterControllersRealtime } from "../../../../lib/realtime/useCampaignRealtime";
 import { GerenciadorToken, type ValoresFormularioToken, sugerirSigla } from "./_shell/GerenciadorToken";
 import { MenuContextual, type ItemMenuContextual } from "./_shell/MenuContextual";
@@ -725,7 +725,7 @@ export function VttClient({
    * anterior antes de assinar o novo, e as imagens seguem o mesmo id
    * pelo `useImagensDaCena`.
    */
-  const abrirCena = useCallback((sceneId: string) => {
+  const trocarParaCena = useCallback((sceneId: string, opcoes: { lembrar: boolean }) => {
     if (estadoCenaRef.current?.cena.id === sceneId) return;
     const geracao = ++geracaoCenaRef.current;
     setCarregandoCena(true);
@@ -737,14 +737,14 @@ export function VttClient({
         // Sumiu, foi arquivada, ou nunca foi dele — a distinção fica no
         // banco de propósito (ver `carregarCena`). A memória local vai
         // junto: insistir nela na próxima recarga repetiria o erro.
-        esquecerCenaVista(campaignId);
+        if (opcoes.lembrar) esquecerCenaVista(campaignId);
         setErroCena("Esta cena não está mais disponível.");
         setCarregandoCena(false);
         return;
       }
       setEstadoCena(r.dados);
       adotarTrilha(r.dados.trilha ?? null);
-      gravarCenaVista(campaignId, sceneId);
+      if (opcoes.lembrar) gravarCenaVista(campaignId, sceneId);
       setCarregandoCena(false);
     }).catch((e) => {
       if (geracao !== geracaoCenaRef.current) return;
@@ -752,6 +752,83 @@ export function VttClient({
       setCarregandoCena(false);
     });
   }, [campaignId, adotarTrilha]);
+
+  /** O gesto do catálogo: abre pro narrador e LEMBRA onde ele estava. */
+  const abrirCena = useCallback(
+    (sceneId: string) => trocarParaCena(sceneId, { lembrar: true }),
+    [trocarParaCena],
+  );
+
+  // ── PALCO (fase 3) ───────────────────────────────────────────────
+  /**
+   * O palco conhecido por este cliente — a cena onde a MESA está.
+   *
+   * `cenaApresentadaRef` e não `palcoRef` porque `palcoRef` já é outra
+   * coisa neste arquivo: o elemento DOM `.rv-palco`. Dois "palcos" a
+   * dez linhas um do outro seriam duas coisas sem relação nenhuma
+   * dividindo um nome.
+   *
+   * Ref e não estado: quem apresenta precisa da revisão no INSTANTE do
+   * clique, e um estado leria a do render anterior — exatamente o valor
+   * velho que `present_vtt_scene` existe pra recusar.
+   */
+  const cenaApresentadaRef = useRef<{ sceneId: string; revision: number } | null>(null);
+  /** Bump = "o catálogo tem um selo velho". Só o narrador se importa. */
+  const [versaoPalco, setVersaoPalco] = useState(0);
+  /** "O narrador mudou a cena" — some sozinho. */
+  const [avisoPalco, setAvisoPalco] = useState<string | null>(null);
+
+  /**
+   * O que este cliente FAZ quando a mesa muda de cena.
+   *
+   * Jogador: vai junto. É a fase inteira — chegar na cena nova sem
+   * recarregar a página.
+   *
+   * Narrador: NÃO vai junto. Ele pode estar montando a cena seguinte
+   * enquanto apresenta outra, e ser arrastado pelo próprio gesto
+   * desfaria a separação que a 0111 construiu. Só o selo do catálogo
+   * se atualiza.
+   */
+  const aplicarPalco = useCallback((palco: { sceneId: string; revision: number }) => {
+    const anterior = cenaApresentadaRef.current;
+    // Evento repetido (eco da própria escrita, reconciliação logo após
+    // o evento) não é motivo pra reprocessar nada.
+    if (anterior && anterior.revision === palco.revision && anterior.sceneId === palco.sceneId) return;
+    cenaApresentadaRef.current = palco;
+    setVersaoPalco((v) => v + 1);
+    if (ehNarrador) return;
+    if (estadoCenaRef.current?.cena.id === palco.sceneId) return;
+    // O aviso vem ANTES da carga: a cena nova pode demorar, e trocar o
+    // mapa sob os pés de alguém sem dizer por quê é o pior dos dois.
+    setAvisoPalco("O narrador mudou a cena.");
+    trocarParaCena(palco.sceneId, { lembrar: false });
+  }, [ehNarrador, trocarParaCena]);
+
+  useEffect(() => {
+    if (!avisoPalco) return;
+    const t = setTimeout(() => setAvisoPalco(null), 5000);
+    return () => clearTimeout(t);
+  }, [avisoPalco]);
+
+  useEffect(() => {
+    return subscribeToVttPalco({
+      campaignId,
+      onPalco: aplicarPalco,
+      /**
+       * Toda vez que a inscrição (re)estabelece — inclusive a primeira.
+       *
+       * O canal não guarda histórico: quem ficou offline não recebe o
+       * que perdeu, e voltaria a jogar numa cena que a mesa abandonou
+       * há dez minutos, sem nada na tela denunciando isso. Reler o
+       * palco é a única reconciliação possível.
+       */
+      onReconectado: () => {
+        void lerPalcoAction(campaignId)
+          .then((r) => { if (r.ok && r.dados) aplicarPalco(r.dados); })
+          .catch(() => { /* a próxima reconexão tenta de novo */ });
+      },
+    });
+  }, [campaignId, aplicarPalco]);
 
   // ── Fonte canônica ────────────────────────────────────────────────
   // `estadoCena.tokens` (persistido) é a ÚNICA fonte da lista de
@@ -3640,6 +3717,32 @@ export function VttClient({
   }, []);
 
   /**
+   * Trocar de cena recentra a câmera no meio da grade nova.
+   *
+   * Sem isto, o pan da cena anterior é herdado: uma cena 60×40 seguida
+   * de uma 20×16 abre com a câmera apontada para fora do mapa, e a
+   * pessoa chega num vazio preto sem entender que a cena carregou. Vale
+   * para o narrador trocando pelo catálogo (fase 2) e para o jogador
+   * sendo levado pelo palco (fase 3) — o mesmo problema nos dois.
+   *
+   * A grade é hexagonal com deslocamento por linha: em `r`, o `q`
+   * começa em `-floor(r/2)` (ver `dentroDoMapa`). O centro tem que
+   * respeitar esse deslocamento, senão "meio da largura" cai cada vez
+   * mais à esquerda conforme a cena é alta.
+   */
+  const cenaIdCamera = estadoCena?.cena.id;
+  const larguraCamera = estadoCena?.cena.largura;
+  const alturaCamera = estadoCena?.cena.altura;
+  useEffect(() => {
+    if (!cenaIdCamera || !larguraCamera || !alturaCamera) return;
+    const r = Math.floor(alturaCamera / 2);
+    centralizarCameraEmHex({ q: -Math.floor(r / 2) + Math.floor(larguraCamera / 2), r });
+    // Só quando a CENA muda — não a cada ajuste de tamanho pela janela
+    // de Configurações, que puxaria a câmera no meio da digitação.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cenaIdCamera]);
+
+  /**
    * Centraliza a câmera num token, a pedido do painel.
    *
    * É a ÚNICA coisa que o painel pode fazer com a cena, e só a partir
@@ -5160,6 +5263,19 @@ export function VttClient({
           </div>
         )}
 
+        {/* A mesa mudou de cena sob os pés de quem está jogando. Não é
+            erro — é a narração acontecendo —, então tem a forma do
+            aviso e não a do alerta, e `role="status"` pra ser anunciado
+            sem interromper o que o leitor de tela estava dizendo. */}
+        {avisoPalco && (
+          <div
+            className="rv-flutuante rv-aviso-palco" role="status" aria-live="polite"
+            data-testid="aviso-palco" onClick={() => setAvisoPalco(null)}
+          >
+            {avisoPalco}
+          </div>
+        )}
+
         <div className="rv-zoom" role="group" aria-label="Zoom">
           <button type="button" onClick={() => setZoom((z) => clampZoom(+(z + 0.15).toFixed(2)))} aria-label="Aproximar"><Plus size={14} /></button>
           <span>{Math.round(zoom * 100)}%</span>
@@ -5242,7 +5358,11 @@ export function VttClient({
           <GerenciadorCenas
             campaignId={campaignId}
             cenaVistaId={estadoCena?.cena.id ?? null}
-            versaoExterna={estadoCena?.cena.revision}
+            palcoRevision={cenaApresentadaRef.current?.revision ?? null}
+            // Duas origens de "o catálogo envelheceu": a config da cena
+            // aberta (renomear/camadas) e o palco tendo andado. Somadas
+            // num número só porque a reação é a mesma — reler.
+            versaoExterna={(estadoCena?.cena.revision ?? 0) + versaoPalco}
             onAbrir={abrirCena}
             onFechar={() => setPainelCenasAberto(false)}
           />

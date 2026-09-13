@@ -432,14 +432,42 @@ export class VttStorageError extends Error {
  * qualquer forma.
  */
 export async function idDaCenaApresentada(campaignId: string): Promise<string | null> {
+  return (await lerPalco(campaignId))?.sceneId ?? null;
+}
+
+/** O palco com a REVISÃO junto. */
+export interface Palco {
+  sceneId: string;
+  /**
+   * A revisão que `present_vtt_scene` confere. Quem apresenta manda a
+   * que leu; se o palco mudou nesse meio-tempo (outra aba do mesmo
+   * narrador, um co-narrador), o clique é recusado em vez de aplicado
+   * por cima de uma decisão que já não era a mais recente.
+   */
+  revision: number;
+}
+
+/**
+ * Onde os JOGADORES estão, com a revisão.
+ *
+ * É também o ponto de reconciliação do Realtime: um cliente que ficou
+ * offline perdeu os eventos de palco daquele intervalo, e reler é a
+ * única forma de descobrir para onde a mesa foi sem depender de um
+ * histórico que o canal não guarda.
+ */
+export async function lerPalco(campaignId: string): Promise<Palco | null> {
   const client = await getScopedTableClient();
   const { data, error } = await client
     .from("vtt_campaign_stage")
-    .select("presented_scene_id")
+    .select("presented_scene_id, revision")
     .eq("campaign_id", campaignId)
     .maybeSingle();
   if (error) throw new VttStorageError(`Falha ao ler o palco da campanha: ${error.message}`, error);
-  return (data?.presented_scene_id as string | undefined) ?? null;
+  if (!data?.presented_scene_id) return null;
+  return {
+    sceneId: data.presented_scene_id as string,
+    revision: (data.revision as number | undefined) ?? 1,
+  };
 }
 
 /** Um cartão do catálogo — o que `list_vtt_scenes` (0111) devolve por cena. */
