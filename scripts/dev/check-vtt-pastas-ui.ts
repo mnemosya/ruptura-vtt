@@ -95,12 +95,14 @@ async function main() {
     await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
     await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
     await page.locator('[data-testid="barra-cenas"]').click();
-    await page.waitForSelector('[data-testid="cenas-lista"]', { timeout: 5000 });
+    await page.waitForSelector('[data-testid="cenas-lista"]', { timeout: 15000 });
 
     console.log("\n— Criar pasta —");
+    // "Todas" e não "Catálogo": a raiz deixou de ser um subconjunto (as
+    // cenas soltas) e passou a ser o catálogo INTEIRO, de qualquer pasta.
     criterio("a raiz é o único degrau no começo",
       (await page.locator('[data-testid="cenas-trilha"] .rv-pasta-degrau').allTextContents())
-        .join("|") === "Catálogo");
+        .join("|") === "Todas");
     await page.locator('[data-testid="pasta-nova"]').click();
     await page.locator('[data-testid="pasta-nova-nome"]').fill("Ato I");
     await page.locator('[data-testid="pasta-nova-confirmar"]').click();
@@ -113,13 +115,15 @@ async function main() {
 
     console.log("\n— Arrastar uma cena PARA a pasta —");
     await cartao(page, "Casa de Máquinas").dragTo(linhaPasta(page, "Ato I"));
+    // Em "Todas" a cena NÃO some ao entrar numa pasta — pasta é filtro,
+    // não esconderijo. O que muda é o ladrilho passar a dizer onde ela
+    // mora, e é isso que prova que o movimento aconteceu na tela.
     await page.waitForFunction(
-      () => ![...document.querySelectorAll('[data-testid="cena-cartao"] .rv-cena-nome')]
-        .some((n) => n.textContent?.includes("Casa de Máquinas")),
+      () => document.querySelector('[data-testid="cena-cartao"] .rv-cena-local[data-tipo="pasta"]') !== null,
       undefined, { timeout: 15000 },
     );
-    criterio("a cena sai da raiz",
-      !(await nomesCenas(page)).includes("Casa de Máquinas"), (await nomesCenas(page)).join(" | "));
+    criterio("a cena continua visível em Todas, agora com a pasta",
+      (await cartao(page, "Casa de Máquinas").locator('.rv-cena-local[data-tipo="pasta"]').textContent()) === "Ato I");
     criterio("a pasta passa a contar 1",
       (await linhaPasta(page, "Ato I").locator(".rv-pasta-contagem").textContent()) === "1 cena");
     const { data: noBanco } = await admin.from("vtt_scenes").select("folder_id").eq("id", maquinas).single();
@@ -136,7 +140,7 @@ async function main() {
       (await nomesCenas(page)).join("|") === "Casa de Máquinas", (await nomesCenas(page)).join(" | "));
     criterio("o breadcrumb ganhou o degrau",
       (await page.locator('[data-testid="cenas-trilha"] .rv-pasta-degrau').allTextContents())
-        .join(" / ") === "Catálogo / Ato I");
+        .join(" / ") === "Todas / Ato I");
 
     console.log("\n— Arrastar de volta PARA FORA, pelo breadcrumb —");
     await cartao(page, "Casa de Máquinas").dragTo(page.locator('[data-testid="trilha-raiz"]'));
@@ -181,9 +185,11 @@ async function main() {
       undefined, { timeout: 10000 },
     );
     await cartao(page, "Torre do Sino").dragTo(linhaPasta(page, "Ato I"));
+    // Em "Todas" ela continua listada; o sinal de que entrou na pasta é
+    // a contagem da pasta subir.
     await page.waitForFunction(
-      () => ![...document.querySelectorAll('[data-testid="cena-cartao"] .rv-cena-nome')]
-        .some((n) => n.textContent?.includes("Torre do Sino")),
+      () => [...document.querySelectorAll('[data-testid="pasta-linha"]')]
+        .some((l) => l.textContent?.includes("1 cena")),
       undefined, { timeout: 15000 },
     );
     await page.locator('[data-testid="cenas-busca"]').fill("torre");

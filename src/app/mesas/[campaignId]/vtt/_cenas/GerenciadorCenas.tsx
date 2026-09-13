@@ -53,6 +53,7 @@ import {
   enviarParaUrlAssinada, prepararImagem,
 } from "../../../../../lib/vtt/imagePreparation";
 import { NovaCenaDeMapa, type ValoresNovaCenaDeMapa } from "./NovaCenaDeMapa";
+import { GavetaCasca } from "./GavetaCasca";
 import { LinhaPasta } from "./LinhaPasta";
 import type {
   CartaoCena as DadosCartaoCena, ModoDuplicacao, PastaCena, PosicaoJogador,
@@ -848,43 +849,32 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
      parar. Um ancestral com `filter`/`transform` também vira bloco
      recipiente de `position: fixed`, e o palco tem os dois. */
   return createPortal(
-    <div className="rv-gaveta" role="dialog" aria-modal="false"
-      aria-label="Catálogo de cenas da campanha" data-testid="janela-cenas">
-      <header className="rv-gav-cab">
-        <span className="rv-gav-ico" aria-hidden="true"><Clapperboard size={17} /></span>
-        <span className="rv-gav-titulo-bloco">
-          <h2 className="rv-gav-titulo">Cenas</h2>
-          <p className="rv-gav-modo">
-            {carregando && cenas === null ? "Carregando o catálogo"
-              // A fila não trava o gesto, mas também não é invisível: a
-              // ordem na tela ainda não é a ordem confirmada.
-              : reordenando ? "Salvando a ordem…"
-              : verArquivo ? `Arquivo — ${arquivadas.length === 1 ? "1 cena" : `${arquivadas.length} cenas`}`
-              : lista.length === 1 ? "1 cena"
-              : `${lista.length} cenas`}
-          </p>
-        </span>
-
-        {/* A busca fica no CABEÇALHO e não some mais com poucas cenas:
-            numa gaveta larga ela não disputa espaço com nada, e um
-            campo que aparece e desaparece conforme o tamanho do
-            catálogo é um controle que não se aprende. */}
-        <span className="rv-cena-busca-casca">
-          <Search size={14} aria-hidden="true" />
-          <input
-            className="rv-cena-campo rv-cena-busca"
-            type="search"
-            value={busca}
-            placeholder="Procurar cena por nome ou local…"
-            aria-label="Procurar cena pelo nome ou local"
-            data-testid="cenas-busca"
-            onChange={(e) => setBusca(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setBusca(""); } }}
-          />
-        </span>
-
-        <span className="rv-gav-espaco" />
-
+    <GavetaCasca
+      modo={
+        carregando && cenas === null ? "Carregando o catálogo"
+          // A fila não trava o gesto, mas também não é invisível: a
+          // ordem na tela ainda não é a ordem confirmada.
+          : reordenando ? "Salvando a ordem…"
+          : verArquivo ? `Arquivo — ${arquivadas.length === 1 ? "1 cena" : `${arquivadas.length} cenas`}`
+          : lista.length === 1 ? "1 cena"
+          : `${lista.length} cenas`
+      }
+      busca={busca}
+      onBusca={setBusca}
+      onFechar={p.onFechar}
+      acoes={<>
+        {/* Fora do fluxo visual: o botão do mapa é quem o aciona. */}
+        <input
+          ref={campoMapaRef} type="file" accept="image/*" hidden
+          data-testid="cena-de-mapa-arquivo"
+          onChange={(e) => {
+            const arquivo = e.target.files?.[0];
+            // Zerar o valor deixa escolher O MESMO arquivo de novo: sem
+            // isto, um segundo clique no mesmo mapa não dispara `change`.
+            e.target.value = "";
+            if (arquivo) void escolherMapa(arquivo);
+          }}
+        />
         {/* Criar some na aba de arquivo: uma cena nova nasce em uso, e
             oferecer "Nova cena" ali prometeria criar algo arquivado,
             que não existe. */}
@@ -937,30 +927,8 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
               : <><Archive size={14} aria-hidden="true" /> Arquivo ({arquivadas.length})</>}
           </button>
         )}
-        {/* Fora do fluxo visual: o botão acima é quem o aciona. */}
-        <input
-          ref={campoMapaRef} type="file" accept="image/*" hidden
-          data-testid="cena-de-mapa-arquivo"
-          onChange={(e) => {
-            const arquivo = e.target.files?.[0];
-            // Zerar o valor deixa escolher O MESMO arquivo de novo: sem
-            // isto, um segundo clique no mesmo mapa não dispara `change`.
-            e.target.value = "";
-            if (arquivo) void escolherMapa(arquivo);
-          }}
-        />
-
-        <button
-          type="button" className="rv-gav-fechar" onClick={p.onFechar}
-          aria-label="Fechar o catálogo de cenas"
-        >
-          <X size={16} aria-hidden="true" />
-          <span className="rv-dica rv-dica--abaixo">Fechar</span>
-        </button>
-      </header>
-
-      {(criando || criandoPasta) && (
-        <div className="rv-gav-linha-nova">
+      </>}
+      linhaNova={(criando || criandoPasta) ? <>
           {criandoPasta && (
             <div className="rv-cena-nova">
               <input
@@ -1013,16 +981,13 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
               </button>
             </div>
           )}
-        </div>
-      )}
-
-      <div className="rv-gav-corpo">
-        {/* TRILHO DE PASTAS — a árvore inteira, sempre visível. Antes as
+        </> : undefined}
+      trilho={/* TRILHO DE PASTAS — a árvore inteira, sempre visível. Antes as
             pastas moravam MISTURADAS às cenas na mesma lista, e a única
             forma de saber que existia uma "Ato II" era entrar na "Ato
             I" e voltar. Pasta é caminho, cena é destino: são duas
-            colunas, não uma lista de coisas equivalentes. */}
-        {!buscando && (
+            colunas, não uma lista de coisas equivalentes. */
+        !buscando ? (
           <nav className="rv-gav-trilho" aria-label="Pastas do catálogo" data-testid="cenas-trilho">
             <button
               type="button"
@@ -1064,9 +1029,8 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
               </ul>
             )}
           </nav>
-        )}
-
-        <div className="rv-gav-conteudo">
+        ) : undefined}
+      conteudo={<>
           {/* A trilha do caminho continua existindo mesmo com o trilho
               ao lado, e não por redundância: ela é o ALVO DE SOLTURA
               que tira uma cena da pasta. Sem ela, "mover pra fora"
@@ -1211,9 +1175,8 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
               ))}
             </ul>
           )}
-        </div>
-
-        <TrilhoJogadores
+        </>}
+      jogadores={<TrilhoJogadores
           jogadores={jogadores}
           nomeDaCena={nomeDaCena}
           separados={separados.length}
@@ -1221,34 +1184,34 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
           arrastandoId={arrastandoJogador}
           onArrastarInicio={setArrastandoJogador}
           onArrastarFim={() => { setArrastandoJogador(null); setAlvoJogadorId(null); }}
-        />
-      </div>
-
-      {mapaPendente && (
-        <NovaCenaDeMapa
+        />}
+      folha={<>
+        {mapaPendente && (
+          <NovaCenaDeMapa
           preparada={mapaPendente.preparada}
           nomeSugerido={mapaPendente.nome}
           ocupado={criandoDeMapa}
           erro={erroMapa}
-          onCriar={(v) => void criarDeMapa(v)}
-          onCancelar={fecharMapa}
-        />
-      )}
+            onCriar={(v) => void criarDeMapa(v)}
+            onCancelar={fecharMapa}
+          />
+        )}
 
-      {erroMapa && !mapaPendente && (
-        <p className="rv-gav-erro-flutuante" role="alert">{erroMapa}</p>
-      )}
+        {erroMapa && !mapaPendente && (
+          <p className="rv-gav-erro-flutuante" role="alert">{erroMapa}</p>
+        )}
 
-      {emEdicao && !mapaPendente && (
-        <ParametrosCena
-          cena={emEdicao}
-          ocupada={ocupadas[emEdicao.id] === true}
-          erro={errosPorCena[emEdicao.id] ?? null}
-          onSalvar={(v) => void salvarParametros(emEdicao, v)}
-          onFechar={() => setConfigurandoId(null)}
-        />
-      )}
-    </div>,
+        {emEdicao && !mapaPendente && (
+          <ParametrosCena
+            cena={emEdicao}
+            ocupada={ocupadas[emEdicao.id] === true}
+            erro={errosPorCena[emEdicao.id] ?? null}
+            onSalvar={(v) => void salvarParametros(emEdicao, v)}
+            onFechar={() => setConfigurandoId(null)}
+          />
+        )}
+      </>}
+    />,
     document.body,
   );
 }

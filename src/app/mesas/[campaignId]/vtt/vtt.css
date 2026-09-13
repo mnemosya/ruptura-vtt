@@ -4052,10 +4052,16 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   position: fixed; z-index: 70; left: 0; right: 0; top: 0;
   display: flex; flex-direction: column;
   height: min(620px, 72vh);
+  /* A galeria monta a gaveta dentro de um bloco da página; colada no
+     topo da tela ela cobriria a galeria inteira. */
   border-bottom: 1px solid var(--rv-line-strong);
   background: linear-gradient(180deg, #0b1322, #070c16);
   box-shadow: 0 24px 64px rgba(0, 0, 0, .72);
   --jf-acento: #cf9a3e;
+}
+.rv-gaveta[data-em-linha] {
+  position: relative; z-index: 0; inset: auto;
+  height: 560px; border: 1px solid var(--rv-line-2); border-radius: 2px;
 }
 
 /* ── Cabeçalho ───────────────────────────────────────────────────── */
@@ -4119,9 +4125,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* A hierarquia é o RECUO DO CONTEÚDO, não da caixa: recuar a linha
    inteira deixava cada nível com uma largura diferente e a coluna
    virava uma escada de retângulos de tamanhos variados. */
-.rv-pasta-linha[data-nivel="1"] .rv-pasta-icone { margin-left: 14px; }
-.rv-pasta-linha[data-nivel="2"] .rv-pasta-icone { margin-left: 28px; }
-.rv-pasta-linha[data-nivel="3"] .rv-pasta-icone { margin-left: 42px; }
+/* `nivel` vem do banco começando em 1 (a pasta de raiz é 1, não 0), e
+   é por isso que o recuo começa no 2. */
+.rv-pasta-linha[data-nivel="2"] .rv-pasta-icone { margin-left: 14px; }
+.rv-pasta-linha[data-nivel="3"] .rv-pasta-icone { margin-left: 28px; }
+.rv-pasta-linha[data-nivel="4"] .rv-pasta-icone { margin-left: 42px; }
 
 .rv-gav-conteudo {
   flex: 1 1 auto; min-width: 0; overflow-y: auto;

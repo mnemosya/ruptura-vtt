@@ -31,6 +31,7 @@ import { TrilhaFaccoes } from "../../mesas/[campaignId]/vtt/_turnos/TrilhaFaccoe
    diferentes, e a que ninguém abre é a que passa a mentir. */
 import { VttHudVisualHarness } from "../vtt-hud/VttHudVisualHarness";
 import { VitrineCamadas, VitrineCena, VitrineDados, VitrineMarcar, VitrineMedir, VitrineMoldura as VitrineMolduraJanela } from "./GaleriaJanelas";
+import { VitrineGaveta, VitrineLadrilho, VitrineParametros } from "./GaleriaCenas";
 import {
   VitrineAreas, VitrineGerenciadorToken, VitrineMenuContextual, VitrineObjetos, VitrineTerreno,
 } from "./GaleriaMapa";
@@ -399,6 +400,22 @@ function montarPecas(campaignId: string | null): Peca[] { return [
   { chave: "jan-dados", grupo: "Janelas de ferramenta", rotulo: "Dados", render: () => (
     <Secao titulo="Dados" sub={<>A moldura com o rolador dentro, e o palco ao lado. <code>campaignId: null</code> é o modo ensaio: rola de verdade, não vira registro. Componente: <code>_shell/PainelDados.tsx</code>.</>}>
       <VitrineDados />
+    </Secao>
+  ) },
+
+  { chave: "cen-gaveta", grupo: "Catálogo de cenas", rotulo: "Gaveta", render: () => (
+    <Secao titulo="Gaveta de cenas" sub={<>A superfície inteira, em oito situações. Três colunas que não disputam espaço: pastas (caminho), mapas (destino) e jogadores (quem está onde). Componentes: <code>_cenas/GavetaCasca.tsx</code> + <code>_cenas/GerenciadorCenas.tsx</code>.</>}>
+      <VitrineGaveta />
+    </Secao>
+  ) },
+  { chave: "cen-ladrilho", grupo: "Catálogo de cenas", rotulo: "Ladrilho", render: () => (
+    <Secao titulo="Ladrilho da cena" sub={<>O mapa É o cartão. Os dois selos ficam separados de propósito — “você está aqui” e “jogadores aqui” podem cair em cenas diferentes, e é essa distância que a gaveta existe pra mostrar. Componente: <code>_cenas/CartaoCena.tsx</code>.</>}>
+      <VitrineLadrilho />
+    </Secao>
+  ) },
+  { chave: "cen-parametros", grupo: "Catálogo de cenas", rotulo: "Parâmetros", render: () => (
+    <Secao titulo="Parâmetros da cena" sub={<>Células e pixels são a mesma medida em duas linguagens, e as duas são escrevíveis. O divisor é conversão, não desenho. Componente: <code>_cenas/ParametrosCena.tsx</code>.</>}>
+      <VitrineParametros />
     </Secao>
   ) },
 

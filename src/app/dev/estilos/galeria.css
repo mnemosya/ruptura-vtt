@@ -469,3 +469,17 @@
   border-left: 1px solid #16233a; border-right: 1px solid #16233a;
   box-shadow: none; backdrop-filter: none;
 }
+
+/* ── Gaveta de cenas ─────────────────────────────────────────────── */
+/* A estante de estados do ladrilho: cada peça com a sua legenda, lado a
+   lado, porque o ponto é COMPARAR — "arquivada" e "normal" só se
+   explicam uma ao lado da outra. */
+.gal-grade-peças {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px; align-items: start;
+}
+.gal-peça { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.gal-peça figcaption {
+  font-family: var(--font-mono), monospace; font-size: 10px; line-height: 1.5;
+  letter-spacing: .04em; color: #7f95b3;
+}

@@ -133,7 +133,10 @@ async function main() {
       && (await cenaNaTela(bruno)).includes("Praça"));
 
     await narrador.locator('[data-testid="barra-cenas"]').click();
-    await narrador.waitForSelector('[data-testid="cenas-lista"]', { timeout: 5000 });
+    // 15s e não 5: a gaveta só desenha a lista depois de TRÊS leituras
+    // (cenas, pastas e posições dos jogadores), e num servidor de
+    // desenvolvimento recém-compilado isso passa folgado de cinco.
+    await narrador.waitForSelector('[data-testid="cenas-lista"]', { timeout: 15000 });
     const naPraca = await jogadoresNoCartao(narrador, "Praça");
     criterio("o cartão da Praça mostra os dois jogadores",
       naPraca.length === 2 && naPraca.includes("Alma") && naPraca.includes("Bruno"),
