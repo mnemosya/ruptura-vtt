@@ -20,6 +20,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, SlidersHorizontal, X } from "lucide-react";
 import type { CartaoCena as DadosCartaoCena } from "../../../../../lib/vtt/sceneStorage";
+import { CampoCorGrade } from "./CampoCorGrade";
 import { CampoNumero, formatarNumero } from "./CampoNumero";
 
 export interface ValoresParametros {
@@ -274,32 +275,31 @@ export function ParametrosCena(p: PropsParametrosCena) {
           "--previa-op": v.gradeOpacidade,
         } as React.CSSProperties} aria-hidden="true" />
 
-        <div className="rv-gav-folha-par">
-          <label className="rv-fp-campo">
-            <span className="rv-fp-rotulo">Cor da linha</span>
-            <span className="rv-gav-cor">
-              <input
-                type="color" value={v.gradeCor}
-                data-testid="parametros-grade-cor"
-                onChange={(e) => setV((a) => ({ ...a, gradeCor: e.target.value }))}
-              />
-              <em>{v.gradeCor}</em>
-            </span>
-          </label>
-          <label className="rv-fp-campo">
-            <span className="rv-fp-rotulo">Opacidade</span>
-            <span className="rv-gav-medida">
-              <input
-                type="range" min={0} max={100} step={1}
-                className="rv-gav-faixa"
-                value={Math.round(v.gradeOpacidade * 100)}
-                data-testid="parametros-grade-opacidade"
-                onChange={(e) => setV((a) => ({ ...a, gradeOpacidade: Number(e.target.value) / 100 }))}
-              />
-              <em>{Math.round(v.gradeOpacidade * 100)}%</em>
-            </span>
-          </label>
-        </div>
+        {/* CADA UMA NA SUA LINHA. Lado a lado, as seis amostras
+            dividiam meia largura com o campo hexadecimal e ficavam com
+            12px cada — alvo pequeno demais para a única coisa que este
+            controle faz, que é ser clicado. */}
+        <label className="rv-fp-campo">
+          <span className="rv-fp-rotulo">Cor da linha</span>
+          <CampoCorGrade
+            valor={v.gradeCor}
+            testid="parametros-grade-cor"
+            onMudar={(hex) => setV((a) => ({ ...a, gradeCor: hex }))}
+          />
+        </label>
+        <label className="rv-fp-campo">
+          <span className="rv-fp-rotulo">Opacidade</span>
+          <span className="rv-gav-medida">
+            <input
+              type="range" min={0} max={100} step={1}
+              className="rv-gav-faixa"
+              value={Math.round(v.gradeOpacidade * 100)}
+              data-testid="parametros-grade-opacidade"
+              onChange={(e) => setV((a) => ({ ...a, gradeOpacidade: Number(e.target.value) / 100 }))}
+            />
+            <em>{Math.round(v.gradeOpacidade * 100)}%</em>
+          </span>
+        </label>
         {/* Zero não é "grade desligada": a geometria continua lá, e é
             por isso que esconder a linha nunca quebra o alcance. */}
         {v.gradeOpacidade === 0 && (
