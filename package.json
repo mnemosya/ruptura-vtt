@@ -34,7 +34,7 @@
     "test:talents": "tsx scripts/test-talents.ts",
     "test:inventory": "tsx scripts/test-inventory.ts",
     "test:spells": "tsx scripts/test-spells.ts",
-    "test:character-storage": "tsx scripts/test-character-storage.ts",
+    "test:character-storage": "tsx --import ./scripts/dev/stub-next-headers/register.mjs scripts/test-character-storage.ts",
     "test:ammunition": "tsx scripts/test-ammunition.ts",
     "test:console": "tsx scripts/test-console.ts",
     "test:canonical-schema": "tsx scripts/test-canonical-content-schema.ts",
