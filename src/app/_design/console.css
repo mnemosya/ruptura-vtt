@@ -434,7 +434,7 @@
   display: block; width: fit-content; margin: 0 auto 10px;
   padding: 4px 22px;
   border: 1px solid var(--rc-line);
-  background: #111d31;
+  background: #123640;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
   color: #d6e4f5;
@@ -727,18 +727,24 @@
    base visual do botão "Adicionar" de Condições (`.rc-ncond-add`) e
    do "Estabilizar" de Colapso (`.rc-ncol-estabilizar`), só que
    ocupando a largura inteira (spec). */
+/* BOTÃO PRIMÁRIO — "Rolar defesa", "Adicionar" (condição) e
+   "Estabilizar" são o MESMO componente do Figma (Button Primary), e as
+   três regras abaixo precisam continuar iguais em tudo menos largura e
+   alinhamento: fundo `#0c1f2b`, fio ciano a 8%, texto na tinta do
+   Console. O fundo tinha virado `#0c1420` (o `--rv-panel` do VTT), que
+   é neutro e faz o botão sumir dentro do painel. */
 .rc-npr-defesa {
   display: flex; height: 28px; padding: 0 6px; justify-content: center; align-items: center; gap: 6px;
   align-self: stretch; width: 100%; margin-top: 6px;
   border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.08);
-  background: #0c1420;
+  background: #0c1f2b;
   font-family: var(--font-rajdhani), sans-serif;
   font-size: 13px; font-style: normal; font-weight: 600; line-height: 18px;
-  color: rgba(214, 228, 245, 0.80);
+  color: rgba(234, 247, 255, 0.80);
   cursor: pointer;
 }
 .rc-npr-defesa svg { width: 14px; height: 14px; flex-shrink: 0; }
-.rc-npr-defesa:hover { border-color: rgba(0, 212, 255, 0.3); color: #d6e4f5; }
+.rc-npr-defesa:hover { border-color: rgba(0, 212, 255, 0.3); color: #eaf7ff; }
 .rc-npr-defesa:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 .rc-npr-defesa:active { background: rgba(0, 212, 255, 0.08); }
 .rc-npr-defesa:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -769,7 +775,7 @@
 .rc-npr-valor {
   display: flex; height: 24px; align-items: stretch;
   border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.14);
-  background: #0c1420;
+  background: #0e2431;
 }
 .rc-npr-btn {
   display: flex; padding: 0 6px; align-items: center; justify-content: center; flex: none;
@@ -787,15 +793,15 @@
   display: flex; flex: 1 0 auto; min-width: 35px; padding: 0 6px;
   flex-direction: column; justify-content: center; align-self: stretch;
   text-align: center; pointer-events: none;
-  background: #0c1420;
+  background: #0c1b27;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 11px; font-weight: 700; line-height: 16px; color: #d6e4f5;
+  font-size: 11px; font-weight: 700; line-height: 16px; color: #eaf7ff;
 }
 /* Valor e "/total" precisam ser UM único filho do `.rc-npr-num`: ele é
    flex-column, então dois filhos (o número e o `<span>` do total)
    viravam duas LINHAS empilhadas em vez de "1/3" na mesma linha. */
 .rc-npr-num-linha { white-space: nowrap; }
-.rc-npr-num-total { font-weight: 400; color: rgba(214, 228, 245, 0.60); }
+.rc-npr-num-total { font-weight: 400; color: rgba(184, 216, 232, 0.60); }
 
 /* ── Colapso + Recursos v2 (spec Figma) ──────────────────────────── */
 .rc-vitals-row { display: flex; gap: 8px; align-items: stretch; }
@@ -848,13 +854,13 @@
   display: flex; height: 28px; padding: 0 6px; align-items: center; justify-content: center; gap: 6px;
   width: 100%;
   border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.08);
-  background: #0c1420;
+  background: #0c1f2b;
   font-family: var(--font-rajdhani), sans-serif;
-  font-size: 13px; font-weight: 600; line-height: 18px; color: rgba(214, 228, 245, 0.65);
+  font-size: 13px; font-weight: 600; line-height: 18px; color: rgba(234, 247, 255, 0.65);
   cursor: pointer;
 }
 .rc-ncol-estabilizar:disabled { opacity: 0.45; cursor: not-allowed; }
-.rc-ncol-estabilizar:not(:disabled):hover { border-color: rgba(0, 212, 255, 0.3); color: #d6e4f5; }
+.rc-ncol-estabilizar:not(:disabled):hover { border-color: rgba(0, 212, 255, 0.3); color: #eaf7ff; }
 .rc-ncol-estabilizar:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 
 /* Recursos — mesmo padrão em 3 camadas de Perícias (externo/box
@@ -904,7 +910,7 @@
   display: flex; width: 106px; height: 24px; padding: 0 4px;
   justify-content: space-between; align-items: center;
   border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.14);
-  background: #0c1420;
+  background: #0e2431;
 }
 /* Área da caixa dedicada a minus/valor/plus — width fixa pra poder
    dividir em duas metades clicáveis (mesma ideia do PA/Reações). */
@@ -926,7 +932,7 @@
   display: grid; place-items: center;
   border: none; background: none;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 11px; font-weight: 700; color: #d6e4f5;
+  font-size: 11px; font-weight: 700; color: #eaf7ff;
   cursor: pointer;
   box-sizing: border-box;
 }
@@ -965,7 +971,7 @@
   background: rgba(17, 29, 49, 0.70);
 }
 .rc-tabrail-group { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.rc-tabrail-divider { height: 1px; align-self: stretch; background: #111d31; }
+.rc-tabrail-divider { height: 1px; align-self: stretch; background: #0e3647; }
 .rc-tabrail-btn {
   position: relative;
   width: 36px; height: 36px; padding: 8.5px 0;
@@ -976,9 +982,9 @@
   cursor: pointer;
   transition: color 0.14s, background 0.14s, border-color 0.14s;
 }
-.rc-tabrail-btn:hover { color: #d6e4f5; border-color: var(--rc-line); background: rgba(0, 212, 255, 0.09); }
+.rc-tabrail-btn:hover { color: #d3f4ff; border-color: var(--rc-line); background: rgba(0, 212, 255, 0.09); }
 .rc-tabrail-btn[aria-selected="true"] {
-  color: #d6e4f5; border-color: #108bac; background: #111d31;
+  color: #eafcff; border-color: #108bac; background: #123640;
   box-shadow: 0 0 9px rgba(0, 212, 255, 0.25);
 }
 .rc-tabrail-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
@@ -1002,7 +1008,7 @@
    modificador aqui). */
 .rc-tabrail-btn--modo[aria-selected="true"] {
   border-left: 1px solid #108bac;
-  background: #111d31;
+  background: #123640;
   box-shadow: none;
 }
 
@@ -1259,11 +1265,11 @@
   /* Borda do CARD é neutra pros 3 atributos — a cor mora no badge do
      ícone e na tag, não aqui. */
   border: 1px solid rgba(0, 212, 255, 0.12);
-  background: rgba(7, 13, 23, 0.5);
+  background: rgba(0, 18, 32, 0.5);
   color: inherit;
   transition: border-color 0.14s, background 0.14s;
 }
-.rc-skill:hover { background: rgba(7, 13, 23, 0.85); border-color: var(--rc-skill-cor, rgba(0, 212, 255, 0.3)); }
+.rc-skill:hover { background: rgba(0, 18, 32, 0.85); border-color: var(--rc-skill-cor, rgba(0, 212, 255, 0.3)); }
 .rc-skill:focus-visible { outline: 2px solid var(--rc-skill-cor, var(--cy)); outline-offset: 1px; }
 .rc-skill[data-vazio="true"] { opacity: 0.28; pointer-events: none; cursor: default; }
 
@@ -1316,24 +1322,27 @@
   .rc-skill { padding-left: 10px; }
 }
 
-/* Corpo: só a cor do ícone foi especificada (fill color-mix(in srgb, var(--rc-ok) 70%, #06121c)) — o
-   badge (borda+fundo) segue o MESMO padrão estrutural de Mente/Ânimo
-   por consistência, com o verde no lugar do roxo/petróleo. Sinalizado
-   porque não veio explícito como os outros dois. */
+/* As TRÊS variantes têm a mesma estrutura — cor da tag, borda do badge
+   e fundo do badge. Só os valores mudam, e eles voltaram a ser os
+   saturados do Console: passar o verde e o roxo pelos acentos
+   dessaturados do chassi do VTT (`--rc-ok`, `--rv-ar`) apagou a
+   distinção entre os três atributos, que é a única função da cor
+   aqui. Verde e petróleo vêm do Figma (nós 190:45082 e 190:45219);
+   o roxo não tem nó e volta ao valor que tinha antes. */
 .rc-skill[data-attr="corpo"] {
-  --rc-skill-cor: color-mix(in srgb, var(--rc-ok) 70%, #06121c);
-  --rc-skill-ico-border: rgba(79, 174, 130, 0.55);
-  --rc-skill-ico-bg: color-mix(in srgb, var(--rc-ok) 18%, #0c1420);
+  --rc-skill-cor: #23903c;
+  --rc-skill-ico-border: rgba(38, 255, 0, 0.14);
+  --rc-skill-ico-bg: #13241a;
 }
 .rc-skill[data-attr="mente"] {
-  --rc-skill-cor: #816fd6;
+  --rc-skill-cor: #6a49bc;
   --rc-skill-ico-border: rgba(106, 74, 189, 0.55);
-  --rc-skill-ico-bg: #111d31;
+  --rc-skill-ico-bg: #1b2339;
 }
 .rc-skill[data-attr="animo"] {
   --rc-skill-cor: #0596b7;
   --rc-skill-ico-border: rgba(0, 212, 255, 0.14);
-  --rc-skill-ico-bg: #0c1420;
+  --rc-skill-ico-bg: #0e2431;
 }
 
 /* ── Pins / Espaço livre v2 (spec Figma para o slot vazio; slot
@@ -1412,11 +1421,11 @@
 .rc-ncond-add {
   display: inline-flex; height: 28px; padding: 0 6px; align-items: center; gap: 6px;
   border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.08);
-  background: #0c1420;
+  background: #0c1f2b;
   font-family: var(--font-rajdhani), sans-serif; font-size: 13px; font-weight: 600; line-height: 18px;
-  color: rgba(214, 228, 245, 0.65); cursor: pointer;
+  color: rgba(234, 247, 255, 0.65); cursor: pointer;
 }
-.rc-ncond-add:hover { border-color: rgba(0, 212, 255, 0.3); color: #d6e4f5; }
+.rc-ncond-add:hover { border-color: rgba(0, 212, 255, 0.3); color: #eaf7ff; }
 .rc-ncond-add:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 .rc-ncond-vazio {
   flex: 1 0 0; align-self: stretch; margin: 0; display: flex; align-items: center;
