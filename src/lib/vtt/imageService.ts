@@ -30,7 +30,6 @@ import sharp from "sharp";
 import { type SupabaseClient } from "@supabase/supabase-js";
 import { getAdminSupabaseClient } from "../supabase/adminClient";
 import { BUCKET_IMAGENS_VTT, type ResultadoColeta, coletarLixoCom } from "./imageGc";
-import { medir, iniciarFluxo } from "./_medicao"; // INSTRUMENTAÇÃO TEMPORÁRIA
 
 export type { ResultadoColeta };
 
@@ -95,12 +94,9 @@ export async function assinarUploadUrl(storagePath: string): Promise<{ url: stri
  * ponto onde "bytes arbitrários com Content-Type mentiroso" morre.
  */
 export async function validarEReencodar(storagePath: string): Promise<MedidaImagem> {
-  const fim = iniciarFluxo("validarEReencodar");
   const client = admin();
 
-  const baixado = await medir("S1. download do Storage", () =>
-    client.storage.from(BUCKET_IMAGENS_VTT).download(storagePath),
-  );
+  const baixado = await client.storage.from(BUCKET_IMAGENS_VTT).download(storagePath);
   if (baixado.error || !baixado.data) {
     throw new Error("O arquivo enviado não chegou ao servidor. Tente de novo.");
   }
@@ -123,7 +119,7 @@ export async function validarEReencodar(storagePath: string): Promise<MedidaImag
 
   let metadados;
   try {
-    metadados = await medir("S2. sharp metadata", () => sharp(original).metadata());
+    metadados = await sharp(original).metadata();
   } catch {
     throw new Error("Não foi possível ler a imagem enviada.");
   }
@@ -139,27 +135,22 @@ export async function validarEReencodar(storagePath: string): Promise<MedidaImag
   // Reencode: o que fica guardado é sempre produto do NOSSO pipeline.
   // `rotate()` sem argumento aplica a orientação EXIF e a descarta, em
   // vez de deixar um retrato deitado para o `<image>` do SVG resolver.
-  const normalizado = await medir("S3. sharp reencode webp", () =>
-    sharp(original).rotate().webp({ quality: 82 }).toBuffer(),
-  );
+  const normalizado = await sharp(original).rotate().webp({ quality: 82 }).toBuffer();
   if (normalizado.byteLength > BYTES_MAXIMO) {
     throw new Error("Arquivo fora do tamanho permitido.");
   }
-  const medidoDepois = await medir("S4. sharp metadata (depois)", () => sharp(normalizado).metadata());
+  const medidoDepois = await sharp(normalizado).metadata();
   if (!medidoDepois.width || !medidoDepois.height) {
     throw new Error("Não foi possível ler a imagem enviada.");
   }
 
-  const regravado = await medir("S5. upload regravado ao Storage", () =>
-    client.storage
-      .from(BUCKET_IMAGENS_VTT)
-      .upload(storagePath, normalizado, { contentType: "image/webp", upsert: true }),
-  );
+  const regravado = await client.storage
+    .from(BUCKET_IMAGENS_VTT)
+    .upload(storagePath, normalizado, { contentType: "image/webp", upsert: true });
   if (regravado.error) {
     throw new Error("Não foi possível guardar a imagem. Tente de novo.");
   }
 
-  fim();
   return {
     bytes: normalizado.byteLength,
     widthPx: medidoDepois.width,

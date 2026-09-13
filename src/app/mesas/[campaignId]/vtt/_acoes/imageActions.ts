@@ -36,7 +36,6 @@ import {
   removerObjetoMarcado,
   validarEReencodar,
 } from "../../../../../lib/vtt/imageService";
-import { medir, iniciarFluxo } from "../../../../../lib/vtt/_medicao"; // INSTRUMENTAÇÃO TEMPORÁRIA
 
 export interface ResultadoAcao<T = undefined> {
   ok: boolean;
@@ -45,9 +44,7 @@ export interface ResultadoAcao<T = undefined> {
 }
 
 async function exigirAcesso(campaignId: string) {
-  const acesso = await medir("A0. exigirAcesso (resolveCampaignAccess)", () =>
-    resolveCampaignAccess(campaignId),
-  );
+  const acesso = await resolveCampaignAccess(campaignId);
   if (acesso.kind !== "ok") {
     return { erro: acesso.kind === "no_session" ? "Sessão expirada." : "Você não tem acesso a esta campanha." };
   }
@@ -87,21 +84,18 @@ export async function reservarUploadAction(
   /** Alvo da intenção `avatar` — a ficha cuja cara está sendo trocada. */
   characterId: string | null = null,
 ): Promise<ResultadoAcao<ReservaUpload>> {
-  const fim = iniciarFluxo("reservarUploadAction");
   const v = await exigirAcesso(campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
 
   try {
-    const client = await medir("A1. getScopedTableClient", () => getScopedTableClient());
-    const { data, error } = await medir("A2. rpc reservar_upload_vtt_imagem", () =>
-      client.rpc("reservar_upload_vtt_imagem", {
+    const client = await getScopedTableClient();
+    const { data, error } = await client.rpc("reservar_upload_vtt_imagem", {
       p_campaign_id: campaignId,
       p_sha256: sha256,
       p_intencao: intencao,
       p_token_id: tokenId,
       p_character_id: characterId,
-      }),
-    );
+    });
     if (error || !data) return { ok: false, erro: error?.message ?? "Não foi possível preparar o envio." };
 
     const bruto = data as {
@@ -112,7 +106,6 @@ export async function reservarUploadAction(
     // Conteúdo repetido não sobe de novo — e, sem upload, não há URL
     // para assinar.
     if (bruto.reutilizado) {
-      fim();
       return {
         ok: true,
         dados: {
@@ -125,8 +118,7 @@ export async function reservarUploadAction(
     // O caminho vem do BANCO (`vtt_imagem_storage_path`), nunca do
     // browser: um caminho enviado por fora apontaria para a pasta de
     // outra campanha.
-    const { url } = await medir("A3. assinarUploadUrl", () => assinarUploadUrl(bruto.storage_path));
-    fim();
+    const { url } = await assinarUploadUrl(bruto.storage_path);
     return {
       ok: true,
       dados: {
@@ -180,15 +172,13 @@ export async function finalizarUploadCenaAction(
   storagePathSha: string,
   colocacao: ColocacaoImagem,
 ): Promise<ResultadoAcao<unknown>> {
-  const fim = iniciarFluxo("finalizarUploadCenaAction");
   const v = await exigirAcesso(campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
 
   try {
     const medida = await validarEReencodar(`${campaignId}/${storagePathSha}.webp`);
-    const client = await medir("A1. getScopedTableClient", () => getScopedTableClient());
-    const { data, error } = await medir("A2. rpc finalizar_upload_e_criar_imagem_cena", () =>
-      client.rpc("finalizar_upload_e_criar_imagem_cena", {
+    const client = await getScopedTableClient();
+    const { data, error } = await client.rpc("finalizar_upload_e_criar_imagem_cena", {
       p_reserva_id: reservaId,
       p_bytes_reais: medida.bytes,
       p_width_px: medida.widthPx,
@@ -202,10 +192,8 @@ export async function finalizarUploadCenaAction(
       p_rotacao_graus: colocacao.rotacaoGraus ?? 0,
       p_opacidade: colocacao.opacidade ?? 1,
       p_camada: colocacao.camada ?? "abaixo_grade",
-      }),
-    );
+    });
     if (error) return { ok: false, erro: error.message };
-    fim();
     return { ok: true, dados: data };
   } catch (e) {
     return { ok: false, erro: mensagemDeErro(e, "Não foi possível concluir o envio.") };
@@ -220,25 +208,21 @@ export async function finalizarUploadRetratoAction(
   tokenId: string,
   expectedRevision: number,
 ): Promise<ResultadoAcao<unknown>> {
-  const fim = iniciarFluxo("finalizarUploadRetratoAction");
   const v = await exigirAcesso(campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
 
   try {
     const medida = await validarEReencodar(`${campaignId}/${storagePathSha}.webp`);
-    const client = await medir("A1. getScopedTableClient", () => getScopedTableClient());
-    const { data, error } = await medir("A2. rpc finalizar_upload_e_definir_retrato", () =>
-      client.rpc("finalizar_upload_e_definir_retrato", {
+    const client = await getScopedTableClient();
+    const { data, error } = await client.rpc("finalizar_upload_e_definir_retrato", {
       p_reserva_id: reservaId,
       p_bytes_reais: medida.bytes,
       p_width_px: medida.widthPx,
       p_height_px: medida.heightPx,
       p_token_id: tokenId,
       p_expected_revision: expectedRevision,
-      }),
-    );
+    });
     if (error) return { ok: false, erro: error.message };
-    fim();
     return { ok: true, dados: data };
   } catch (e) {
     return { ok: false, erro: mensagemDeErro(e, "Não foi possível concluir o envio.") };
@@ -256,24 +240,20 @@ export async function finalizarUploadAvatarAction(
   storagePathSha: string,
   characterId: string,
 ): Promise<ResultadoAcao<unknown>> {
-  const fim = iniciarFluxo("finalizarUploadAvatarAction");
   const v = await exigirAcesso(campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
 
   try {
     const medida = await validarEReencodar(`${campaignId}/${storagePathSha}.webp`);
-    const client = await medir("A1. getScopedTableClient", () => getScopedTableClient());
-    const { data, error } = await medir("A2. rpc finalizar_upload_e_definir_avatar", () =>
-      client.rpc("finalizar_upload_e_definir_avatar", {
+    const client = await getScopedTableClient();
+    const { data, error } = await client.rpc("finalizar_upload_e_definir_avatar", {
       p_reserva_id: reservaId,
       p_bytes_reais: medida.bytes,
       p_width_px: medida.widthPx,
       p_height_px: medida.heightPx,
       p_character_id: characterId,
-      }),
-    );
+    });
     if (error) return { ok: false, erro: error.message };
-    fim();
     return { ok: true, dados: data };
   } catch (e) {
     return { ok: false, erro: mensagemDeErro(e, "Não foi possível concluir o envio.") };
