@@ -53,7 +53,7 @@ import {
   type ImagemPreparada, ImagemRecusadaError,
   enviarParaUrlAssinada, prepararImagem,
 } from "../../../../../lib/vtt/imagePreparation";
-import { NovaCenaDeMapa, type ValoresNovaCenaDeMapa } from "./NovaCenaDeMapa";
+import { NovaCena, type ValoresNovaCena } from "./NovaCena";
 import { GavetaCasca } from "./GavetaCasca";
 import { LinhaPasta } from "./LinhaPasta";
 import type {
@@ -125,10 +125,11 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
   /** Escritas em voo, por cena — trava só o cartão afetado. */
   const [ocupadas, setOcupadas] = useState<Record<string, true>>({});
   const [errosPorCena, setErrosPorCena] = useState<Record<string, string>>({});
+  /** A folha "Nova cena" está aberta — com mapa anexado ou sem. */
   const [criando, setCriando] = useState(false);
-  const [nomeNovo, setNomeNovo] = useState("");
   const [salvandoNova, setSalvandoNova] = useState(false);
-  const campoNovoRef = useRef<HTMLInputElement | null>(null);
+  /** O erro da CRIAÇÃO mora na folha, não na lista atrás dela. */
+  const [erroNova, setErroNova] = useState<string | null>(null);
 
   /**
    * As miniaturas, por id de asset.
@@ -187,8 +188,6 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
   const [configurandoId, setConfigurandoId] = useState<string | null>(null);
   /** O mapa escolhido, decodificado em memória e ainda não enviado. */
   const [mapaPendente, setMapaPendente] = useState<{ preparada: ImagemPreparada; nome: string } | null>(null);
-  const [criandoDeMapa, setCriandoDeMapa] = useState(false);
-  const [erroMapa, setErroMapa] = useState<string | null>(null);
   const campoMapaRef = useRef<HTMLInputElement | null>(null);
   /**
    * O menu do "Nova cena". As duas origens de uma cena — do zero e a
@@ -312,7 +311,6 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
     void recarregar();
   }, [recarregar, p.versaoExterna, p.versaoPalco, p.cenaVistaId, p.cenaVistaRevision]);
 
-  useEffect(() => { if (criando) campoNovoRef.current?.focus(); }, [criando]);
   useEffect(() => { if (criandoPasta) campoPastaRef.current?.focus(); }, [criandoPasta]);
 
   /**
@@ -375,34 +373,91 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
     });
   }
 
-  async function criar() {
-    const nome = nomeNovo.trim();
-    if (nome.length === 0 || salvandoNova) return;
+  /**
+   * CRIA A CENA — com mapa ou sem, pelo mesmo caminho.
+   *
+   * A ordem importa quando há mapa: a cena primeiro, porque é o
+   * `sceneId` dela que a colocação da imagem precisa. Se a segunda
+   * metade falhar, o que sobra é uma cena vazia do tamanho certo —
+   * recuperável, e melhor do que uma imagem órfã consumindo quota sem
+   * cena nenhuma.
+   *
+   * A imagem entra como FUNDO com `larguraM` igual à largura da cena em
+   * células: 1 célula = 1 metro, então cobrir a cena inteira é
+   * literalmente esse número.
+   */
+  async function criar(v: ValoresNovaCena) {
+    if (salvandoNova) return;
+    const mapa = mapaPendente;
     setSalvandoNova(true);
+    setErroNova(null);
+    let reservaId: string | null = null;
     try {
-      const r = await criarCenaAction({ campaignId: p.campaignId, nome });
-      if (!r.ok || !r.dados) {
-        setErro(r.erro ?? "Falha ao criar a cena.");
-        return;
+      const nova = await criarCenaAction({
+        campaignId: p.campaignId,
+        nome: v.nome,
+        local: v.local,
+        resumo: v.resumo,
+        largura: v.largura,
+        altura: v.altura,
+        celulaPx: v.celulaPx,
+      });
+      if (!nova.ok || !nova.dados) throw new Error(nova.erro ?? "Não foi possível criar a cena.");
+      const cena = nova.dados.cena;
+
+      if (mapa) {
+        const colocacao = {
+          sceneId: cena.id,
+          papel: "fundo" as const,
+          centroQ: (v.largura - 1) / 2,
+          centroR: (v.altura - 1) / 2,
+          larguraM: v.largura,
+        };
+
+        const reserva = await reservarUploadAction(p.campaignId, mapa.preparada.sha256, "fundo");
+        if (!reserva.ok || !reserva.dados) throw new Error(reserva.erro ?? "Não foi possível preparar o envio.");
+        reservaId = reserva.dados.reservaId;
+
+        if (reserva.dados.reutilizado) {
+          // Mapa que já está na campanha: só um uso novo do mesmo asset.
+          const r = await criarImagemCenaAction(p.campaignId, reserva.dados.assetId, colocacao);
+          if (!r.ok) throw new Error(r.erro ?? "Não foi possível colocar o mapa.");
+        } else {
+          if (!reserva.dados.uploadUrl || !reserva.dados.reservaId) {
+            throw new Error("O servidor não devolveu um destino de envio.");
+          }
+          await enviarParaUrlAssinada(reserva.dados.uploadUrl, mapa.preparada.blob);
+          const r = await finalizarUploadCenaAction(
+            p.campaignId, reserva.dados.reservaId, mapa.preparada.sha256, colocacao,
+          );
+          if (!r.ok) throw new Error(r.erro ?? "Não foi possível concluir o envio.");
+        }
       }
-      // A cena nasce no FIM do catálogo e NÃO é aberta: criar e abrir
-      // são gestos separados, como criar e apresentar. O narrador que
-      // quiser entrar clica no cartão.
-      setCenas((c) => [...(c ?? []), r.dados!.cena]);
-      setNomeNovo("");
-      setCriando(false);
+
+      fecharNova();
+      if (mapa) {
+        // Com mapa há estado NOVO no servidor que o catálogo não viu (a
+        // imagem colocada, a miniatura): a releitura é o que traz.
+        await recarregar();
+      } else {
+        // A cena nasce no FIM do catálogo e NÃO é aberta: criar e abrir
+        // são gestos separados, como criar e apresentar. O narrador que
+        // quiser entrar clica no cartão.
+        setCenas((c) => [...(c ?? []), cena]);
+      }
       setErro(null);
     } catch (e) {
+      // Reserva viva sem uso é quota presa até vencer. Devolvê-la é
+      // cortesia, não correção: a coleta recolhe de qualquer jeito.
+      if (reservaId) void cancelarUploadAction(p.campaignId, reservaId).catch(() => {});
       // Uma Server Action que REJEITA (em vez de devolver `{ok:false}`)
-      // deixaria o formulário mudo: o botão volta do "salvando" e nada
-      // explica por que a cena não apareceu. Coberto por critério —
-      // sem este `catch`, ele falha.
-      setErro(e instanceof Error ? e.message : "Falha inesperada ao criar a cena.");
+      // deixaria a folha muda: o botão volta do "criando" e nada
+      // explica por que a cena não apareceu. Coberto por critério.
+      setErroNova(e instanceof Error ? e.message : "Falha inesperada ao criar a cena.");
     } finally {
       setSalvandoNova(false);
     }
   }
-
   async function renomear(cena: DadosCartaoCena, nome: string) {
     marcarOcupada(cena.id, true);
     anotarErro(cena.id, null);
@@ -466,97 +521,46 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
   }
 
   /**
+  /**
    * Escolher o arquivo: decodifica e reduz SEM enviar nada. É isto que
    * faz "Cancelar" não deixar resíduo — nenhuma cena criada, nenhuma
    * reserva de quota, nada no Storage para a coleta recolher.
+   *
+   * Anexar um mapa também ABRE a folha: é por aqui que se entra pelo
+   * menu "A partir de um mapa", onde o seletor de arquivo vem primeiro
+   * e a folha nasce já com a imagem dentro.
    */
   async function escolherMapa(arquivo: File) {
-    setErroMapa(null);
+    setErroNova(null);
     try {
       const preparada = await prepararImagem(arquivo);
       setMapaPendente((anterior) => {
         if (anterior) URL.revokeObjectURL(anterior.preparada.previewUrl);
         return { preparada, nome: arquivo.name.replace(/\.[^.]+$/, "") };
       });
+      setCriando(true);
     } catch (e) {
-      setErroMapa(e instanceof ImagemRecusadaError ? e.message : "Não foi possível ler esta imagem.");
+      // A folha NÃO fecha nem abre por um arquivo recusado: trocar o
+      // mapa por um arquivo ruim não pode descartar o que já foi
+      // digitado, e recusar antes de abrir não deve abrir nada.
+      setErroNova(e instanceof ImagemRecusadaError ? e.message : "Não foi possível ler esta imagem.");
     }
   }
 
-  function fecharMapa() {
+  /** Tira o mapa e deixa a folha aberta — a cena volta a ser do zero. */
+  function removerMapa() {
     setMapaPendente((m) => {
       if (m) URL.revokeObjectURL(m.preparada.previewUrl);
       return null;
     });
-    setErroMapa(null);
+    setErroNova(null);
   }
 
-  /**
-   * Cria a cena JÁ COM O MAPA dentro.
-   *
-   * A ordem importa: a cena primeiro, porque é o `sceneId` dela que a
-   * colocação da imagem precisa. Se a segunda metade falhar, o que
-   * sobra é uma cena vazia do tamanho certo — recuperável, e melhor do
-   * que uma imagem órfã consumindo quota sem cena nenhuma.
-   *
-   * A imagem entra como FUNDO com `larguraM` igual à largura da cena em
-   * células: 1 célula = 1 metro, então cobrir a cena inteira é
-   * literalmente esse número.
-   */
-  async function criarDeMapa(v: ValoresNovaCenaDeMapa) {
-    const atual = mapaPendente;
-    if (!atual) return;
-    setCriandoDeMapa(true);
-    setErroMapa(null);
-    let reservaId: string | null = null;
-    try {
-      const nova = await criarCenaAction({
-        campaignId: p.campaignId,
-        nome: v.nome,
-        largura: v.largura,
-        altura: v.altura,
-        celulaPx: v.celulaPx,
-      });
-      if (!nova.ok || !nova.dados) throw new Error(nova.erro ?? "Não foi possível criar a cena.");
-      const cena = nova.dados.cena;
-
-      const colocacao = {
-        sceneId: cena.id,
-        papel: "fundo" as const,
-        centroQ: (v.largura - 1) / 2,
-        centroR: (v.altura - 1) / 2,
-        larguraM: v.largura,
-      };
-
-      const reserva = await reservarUploadAction(p.campaignId, atual.preparada.sha256, "fundo");
-      if (!reserva.ok || !reserva.dados) throw new Error(reserva.erro ?? "Não foi possível preparar o envio.");
-      reservaId = reserva.dados.reservaId;
-
-      if (reserva.dados.reutilizado) {
-        // Mapa que já está na campanha: só um uso novo do mesmo asset.
-        const r = await criarImagemCenaAction(p.campaignId, reserva.dados.assetId, colocacao);
-        if (!r.ok) throw new Error(r.erro ?? "Não foi possível colocar o mapa.");
-      } else {
-        if (!reserva.dados.uploadUrl || !reserva.dados.reservaId) {
-          throw new Error("O servidor não devolveu um destino de envio.");
-        }
-        await enviarParaUrlAssinada(reserva.dados.uploadUrl, atual.preparada.blob);
-        const r = await finalizarUploadCenaAction(
-          p.campaignId, reserva.dados.reservaId, atual.preparada.sha256, colocacao,
-        );
-        if (!r.ok) throw new Error(r.erro ?? "Não foi possível concluir o envio.");
-      }
-
-      fecharMapa();
-      await recarregar();
-    } catch (e) {
-      // Reserva viva sem uso é quota presa até vencer. Devolvê-la é
-      // cortesia, não correção: a coleta recolhe de qualquer jeito.
-      if (reservaId) void cancelarUploadAction(p.campaignId, reservaId).catch(() => {});
-      setErroMapa(e instanceof Error ? e.message : "Não foi possível criar a cena.");
-    } finally {
-      setCriandoDeMapa(false);
-    }
+  /** Fecha a folha inteira, devolvendo o `object URL` do preview. */
+  function fecharNova() {
+    removerMapa();
+    setCriando(false);
+    setErroNova(null);
   }
 
   /** Os parâmetros da cena, gravados pela folha — a mesma RPC do renomear. */
@@ -1160,7 +1164,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
           </button>
         )}
       </>}
-      linhaNova={(criando || criandoPasta) ? <>
+      linhaNova={criandoPasta ? <>
           {criandoPasta && (
             <div className="rv-cena-nova">
               <input
@@ -1182,33 +1186,6 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                 disabled={nomePastaNova.trim().length === 0} onClick={() => void criarPastaNova()}
               >Criar pasta</button>
               <button type="button" className="rv-btn rv-btn--ghost" onClick={() => { setCriandoPasta(false); setNomePastaNova(""); }}>
-                Cancelar
-              </button>
-            </div>
-          )}
-          {criando && (
-            <div className="rv-cena-nova">
-              <input
-                ref={campoNovoRef}
-                className="rv-cena-campo"
-                value={nomeNovo}
-                maxLength={120}
-                placeholder="Nome da cena"
-                aria-label="Nome da nova cena"
-                data-testid="cena-nova-nome"
-                onChange={(e) => setNomeNovo(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") { e.preventDefault(); void criar(); }
-                  if (e.key === "Escape") { e.preventDefault(); setCriando(false); setNomeNovo(""); }
-                }}
-              />
-              <button
-                type="button" className="rv-btn rv-btn--pri" data-testid="cena-nova-confirmar"
-                disabled={nomeNovo.trim().length === 0 || salvandoNova} onClick={() => void criar()}
-              >
-                {salvandoNova ? <Loader2 size={13} className="rv-girando" aria-hidden="true" /> : "Criar"}
-              </button>
-              <button type="button" className="rv-btn rv-btn--ghost" aria-label="Cancelar" onClick={() => { setCriando(false); setNomeNovo(""); }}>
                 Cancelar
               </button>
             </div>
@@ -1489,22 +1466,26 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
           onArrastarFim={() => { setArrastandoJogador(null); setAlvoJogadorId(null); }}
         />}
       folha={<>
-        {mapaPendente && (
-          <NovaCenaDeMapa
-          preparada={mapaPendente.preparada}
-          nomeSugerido={mapaPendente.nome}
-          ocupado={criandoDeMapa}
-          erro={erroMapa}
-            onCriar={(v) => void criarDeMapa(v)}
-            onCancelar={fecharMapa}
+        {criando && (
+          <NovaCena
+            mapa={mapaPendente}
+            ocupado={salvandoNova}
+            erro={erroNova}
+            onEscolherMapa={() => campoMapaRef.current?.click()}
+            onRemoverMapa={removerMapa}
+            onCriar={(v) => void criar(v)}
+            onCancelar={fecharNova}
           />
         )}
 
-        {erroMapa && !mapaPendente && (
-          <p className="rv-gav-erro-flutuante" role="alert">{erroMapa}</p>
+        {/* Um arquivo recusado ANTES de a folha abrir — o caminho "A
+            partir de um mapa", onde o seletor vem primeiro — não teria
+            onde aparecer: a folha não chegou a existir. */}
+        {erroNova && !criando && (
+          <p className="rv-gav-erro-flutuante" role="alert">{erroNova}</p>
         )}
 
-        {emEdicao && !mapaPendente && (
+        {emEdicao && !criando && (
           <ParametrosCena
             cena={emEdicao}
             ocupada={ocupadas[emEdicao.id] === true}

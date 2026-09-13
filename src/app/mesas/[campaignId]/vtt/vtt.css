@@ -4683,6 +4683,35 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-gav-mapa-previa img { max-width: 100%; max-height: 190px; object-fit: contain; }
 
+/* A linha sob a prévia: a medida em pixels à esquerda, trocar e
+   remover empurrados pro fim. O tamanho é o que se LÊ; os botões são o
+   que se faz com ele, e não competem com a leitura. */
+.rv-gav-mapa-linha { display: flex; align-items: center; gap: 6px; }
+.rv-gav-mapa-linha > span:first-child { margin-right: auto; }
+
+/* O SLOT VAZIO do mapa. É um botão do tamanho da prévia que ele vai
+   substituir: sem isso, anexar um mapa reorganizaria a folha inteira a
+   cada clique, e o campo "opcional" pareceria um aviso solto. */
+.rv-gav-mapa-vazio {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  width: 100%; min-height: 108px; padding: 16px;
+  border: 1px dashed var(--rv-line-strong); border-radius: 2px;
+  background: rgba(255,255,255,.015); color: var(--rv-ink-faint);
+  cursor: pointer; text-align: center;
+  transition: border-color .14s, color .14s, background .14s;
+}
+.rv-gav-mapa-vazio:hover:not(:disabled) {
+  border-color: var(--jf-acento); color: var(--rv-ink);
+  background: color-mix(in srgb, var(--jf-acento) 7%, transparent);
+}
+.rv-gav-mapa-vazio:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: 2px; }
+.rv-gav-mapa-vazio:disabled { opacity: .5; cursor: not-allowed; }
+.rv-gav-mapa-vazio strong {
+  font-family: var(--rv-display), sans-serif;
+  font-size: 11px; font-weight: 600; letter-spacing: .06em; color: inherit;
+}
+.rv-gav-mapa-vazio em { font-style: normal; font-size: 10.5px; color: var(--rv-ink-faint); }
+
 .rv-gav-atalhos { display: flex; gap: 4px; flex: none; }
 .rv-gav-atalho {
   padding: 5px 8px; border-radius: 2px;
