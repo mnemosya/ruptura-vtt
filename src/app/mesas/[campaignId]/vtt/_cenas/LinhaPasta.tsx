@@ -24,6 +24,8 @@ export interface PropsLinhaPasta {
   pasta: PastaCena;
   /** Quantas cenas estão DIRETAMENTE nela — o que o narrador acha lá dentro. */
   quantidade: number;
+  /** Esta é a pasta cujo conteúdo está na grade. */
+  aberta: boolean;
   ocupada: boolean;
   erro: string | null;
   onAbrir: () => void;
@@ -55,6 +57,8 @@ export function LinhaPasta(p: PropsLinhaPasta) {
   return (
     <li
       className="rv-pasta-linha"
+      data-aberta={p.aberta || undefined}
+      data-nivel={p.pasta.nivel}
       data-alvo={p.alvoDeArrasto || undefined}
       data-testid="pasta-linha"
       data-pasta-id={p.pasta.id}
@@ -92,6 +96,7 @@ export function LinhaPasta(p: PropsLinhaPasta) {
       ) : (
         <button
           type="button" className="rv-pasta-nome" data-testid="pasta-abrir"
+          aria-current={p.aberta ? "page" : undefined}
           disabled={p.ocupada} onClick={p.onAbrir}
         >
           <span className="rv-pasta-nome-txt">{p.pasta.nome}</span>

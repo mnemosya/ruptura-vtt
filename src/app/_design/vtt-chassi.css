@@ -39,6 +39,11 @@
 .pn-jan,
 .pn-menu,
 .rv-modal-fundo,
+/* A gaveta de cenas é montada por portal no `body`, fora de `.rv-mesa`:
+   ela é do TOPO DA TELA e dentro do palco herdaria a largura dele. Fora
+   desta lista, nenhum `--rv-*` dela resolveria — e uma superfície sem
+   token nenhum não fica "um pouco errada", fica transparente. */
+.rv-gaveta,
 .rup-mesa-arena {
   /* ── Fundos ─────────────────────────────────────────────────── */
   --rv-ground: #060a12;

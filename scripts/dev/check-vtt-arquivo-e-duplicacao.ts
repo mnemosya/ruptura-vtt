@@ -138,8 +138,8 @@ async function main() {
     }).catch(() => 0);
     criterio("e a imagem CARREGA de fato (não é só um src)", largura > 0, `naturalWidth ${largura}`);
     criterio("a cena sem fundo cai na inicial do nome",
-      (await cartao(page, "Casa de Máquinas").locator(".rv-cena-mini").textContent())?.trim() === "C",
-      `veio "${(await cartao(page, "Casa de Máquinas").locator(".rv-cena-mini").textContent())?.trim()}"`);
+      (await cartao(page, "Casa de Máquinas").locator(".rv-cena-inicial").textContent())?.trim() === "C",
+      `veio "${(await cartao(page, "Casa de Máquinas").locator(".rv-cena-inicial").textContent())?.trim()}"`);
 
     console.log("\n— O menu —");
     await cartao(page, "Ponte Quebrada").locator('[data-testid="cena-menu"]').click();

@@ -30,11 +30,13 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
-  AlertTriangle, Archive, Clapperboard, FolderPlus, Loader2, Plus, Search, Undo2, UsersRound,
+  AlertTriangle, Archive, Clapperboard, FolderPlus, Loader2, Plus, Search, Undo2, X,
 } from "lucide-react";
-import { JanelaFerramenta } from "../_shell/JanelaFerramenta";
 import { CartaoCena } from "./CartaoCena";
+import { MIME_JOGADOR, TrilhoJogadores } from "./TrilhoJogadores";
+import { ParametrosCena, type ValoresParametros } from "./ParametrosCena";
 import {
   apresentarCenaAction, arquivarCenaAction, criarCenaAction, criarPastaAction,
   duplicarCenaAction, excluirCenaAction, excluirPastaAction, listarCenasAction,
@@ -123,6 +125,11 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
   /** A aba de arquivo. Filtro de apresentação, não outra consulta. */
   const [verArquivo, setVerArquivo] = useState(false);
   const [arrastandoId, setArrastandoId] = useState<string | null>(null);
+  /** O jogador em arrasto, e o ladrilho sob ele. Gesto DIFERENTE do de cena. */
+  const [arrastandoJogador, setArrastandoJogador] = useState<string | null>(null);
+  const [alvoJogadorId, setAlvoJogadorId] = useState<string | null>(null);
+  /** A cena cujos parâmetros estão abertos na folha da gaveta. */
+  const [configurandoId, setConfigurandoId] = useState<string | null>(null);
   const [alvoId, setAlvoId] = useState<string | null>(null);
 
   /**
@@ -335,6 +342,63 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
       )));
     } catch (e) {
       anotarErro(cena.id, e instanceof Error ? e.message : "Falha inesperada ao renomear.");
+    } finally {
+      marcarOcupada(cena.id, false);
+    }
+  }
+
+  /**
+   * Mandar UM jogador para uma cena, pelo arrasto.
+   *
+   * Soltar na cena da MESA é o gesto de devolvê-lo ao grupo: a RPC
+   * (0118) apaga a atribuição em vez de gravá-la, e é ela quem decide
+   * isso — a diferença entre "está aqui porque mandei" e "está aqui
+   * porque a mesa está" não pode ser inventada no cliente.
+   */
+  async function mandarJogador(userId: string, cena: DadosCartaoCena) {
+    setArrastandoJogador(null);
+    marcarOcupada(cena.id, true);
+    anotarErro(cena.id, null);
+    try {
+      const r = await moverJogadoresAction({ campaignId: p.campaignId, userIds: [userId], sceneId: cena.id });
+      if (!r.ok) { anotarErro(cena.id, r.erro ?? "Não foi possível mover o jogador."); return; }
+      await recarregar();
+    } catch (e) {
+      anotarErro(cena.id, e instanceof Error ? e.message : "Falha ao mover o jogador.");
+    } finally {
+      marcarOcupada(cena.id, false);
+    }
+  }
+
+  /** Os parâmetros da cena, gravados pela folha — a mesma RPC do renomear. */
+  async function salvarParametros(cena: DadosCartaoCena, v: ValoresParametros) {
+    marcarOcupada(cena.id, true);
+    anotarErro(cena.id, null);
+    try {
+      const r = await salvarConfigCenaAction({
+        campaignId: p.campaignId,
+        sceneId: cena.id,
+        nome: v.nome,
+        local: v.local,
+        resumo: v.resumo,
+        largura: v.largura,
+        altura: v.altura,
+        revisionEsperada: cena.revision,
+      });
+      if (!r.ok || !r.dados) {
+        anotarErro(cena.id, r.erro ?? "Não foi possível salvar os parâmetros.");
+        void recarregar();
+        return;
+      }
+      const g = r.dados.cena;
+      setCenas((c) => (c ?? []).map((x) => (
+        x.id === cena.id
+          ? { ...x, nome: g.nome, local: g.local, resumo: g.resumo, largura: g.largura, altura: g.altura, revision: g.revision }
+          : x
+      )));
+      setConfigurandoId(null);
+    } catch (e) {
+      anotarErro(cena.id, e instanceof Error ? e.message : "Falha ao salvar os parâmetros.");
     } finally {
       marcarOcupada(cena.id, false);
     }
@@ -643,306 +707,369 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
 
   const vazio = !carregando && !erro && lista.length === 0 && subpastas.length === 0;
 
-  return (
-    <JanelaFerramenta
-      id="cenas"
-      indice="11"
-      acento="#c9a227"
-      icone={<Clapperboard size={16} />}
-      titulo="Cenas"
-      modo={
-        carregando && cenas === null ? "Carregando o catálogo"
-          // A fila não trava o gesto, mas também não é invisível: a
-          // ordem na tela ainda não é a ordem confirmada.
-          : reordenando ? "Salvando a ordem…"
-          : verArquivo ? `Arquivo — ${arquivadas.length === 1 ? "1 cena" : `${arquivadas.length} cenas`}`
-          : lista.length === 1 ? "1 cena"
-          : `${lista.length} cenas`
-      }
-      rotulo="Catálogo de cenas da campanha"
-      rotuloFechar="Fechar o catálogo de cenas"
-      aoFechar={p.onFechar}
-      className="rv-cenas"
-      testId="janela-cenas"
-    >
-      <div className="rv-fp-corpo">
-        {/* BREADCRUMB — e também alvo de soltura: arrastar uma cena para
-            um degrau acima é a forma de TIRÁ-LA da pasta atual. Sem
-            isso, "mover pra fora" precisaria de um menu com a árvore
-            inteira dentro. */}
-        {!buscando && !verArquivo && (
-          <nav className="rv-pasta-trilha" aria-label="Caminho do catálogo" data-testid="cenas-trilha">
+  /** O nome da cena de um jogador, para o trilho da direita. */
+  const nomeDaCena = (sceneId: string | null) =>
+    sceneId ? todas.find((c) => c.id === sceneId)?.nome ?? null : null;
+
+  const emEdicao = todas.find((c) => c.id === configurandoId) ?? null;
+
+  /* PORTAL para o `body`: a gaveta é do TOPO DA TELA, e montada onde
+     estava (dentro do palco) ela herdava a largura do palco — parava
+     antes do painel lateral, exatamente onde uma gaveta não pode
+     parar. Um ancestral com `filter`/`transform` também vira bloco
+     recipiente de `position: fixed`, e o palco tem os dois. */
+  return createPortal(
+    <div className="rv-gaveta" role="dialog" aria-modal="false"
+      aria-label="Catálogo de cenas da campanha" data-testid="janela-cenas">
+      <header className="rv-gav-cab">
+        <span className="rv-gav-ico" aria-hidden="true"><Clapperboard size={17} /></span>
+        <span className="rv-gav-titulo-bloco">
+          <h2 className="rv-gav-titulo">Cenas</h2>
+          <p className="rv-gav-modo">
+            {carregando && cenas === null ? "Carregando o catálogo"
+              // A fila não trava o gesto, mas também não é invisível: a
+              // ordem na tela ainda não é a ordem confirmada.
+              : reordenando ? "Salvando a ordem…"
+              : verArquivo ? `Arquivo — ${arquivadas.length === 1 ? "1 cena" : `${arquivadas.length} cenas`}`
+              : lista.length === 1 ? "1 cena"
+              : `${lista.length} cenas`}
+          </p>
+        </span>
+
+        {/* A busca fica no CABEÇALHO e não some mais com poucas cenas:
+            numa gaveta larga ela não disputa espaço com nada, e um
+            campo que aparece e desaparece conforme o tamanho do
+            catálogo é um controle que não se aprende. */}
+        <span className="rv-cena-busca-casca">
+          <Search size={14} aria-hidden="true" />
+          <input
+            className="rv-cena-campo rv-cena-busca"
+            type="search"
+            value={busca}
+            placeholder="Procurar cena por nome ou local…"
+            aria-label="Procurar cena pelo nome ou local"
+            data-testid="cenas-busca"
+            onChange={(e) => setBusca(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setBusca(""); } }}
+          />
+        </span>
+
+        {/* Criar some na aba de arquivo: uma cena nova nasce em uso, e
+            oferecer "Nova cena" ali prometeria criar algo arquivado,
+            que não existe. */}
+        {!verArquivo && (
+          <>
+            <button
+              type="button" className="rv-btn rv-btn--pri" data-testid="cena-nova"
+              disabled={criando} onClick={() => setCriando(true)}
+            ><Plus size={15} aria-hidden="true" /> Nova cena</button>
+            <button
+              type="button" className="rv-btn rv-cena-btn-icone" data-testid="pasta-nova"
+              aria-label="Nova pasta"
+              // O quarto nível é o último (0117). Oferecer o botão ali
+              // só pra receber a recusa do servidor seria fazer o banco
+              // ensinar o que a tela já sabe.
+              disabled={trilha.length >= 4 || criandoPasta}
+              onClick={() => setCriandoPasta(true)}
+            >
+              <FolderPlus size={15} aria-hidden="true" />
+              <span className="rv-dica rv-dica--abaixo">
+                {trilha.length >= 4 ? "As pastas vão até quatro níveis" : "Nova pasta"}
+              </span>
+            </button>
+          </>
+        )}
+        {(arquivadas.length > 0 || verArquivo) && (
+          <button
+            type="button" className="rv-btn" data-tipo="arquivo"
+            aria-pressed={verArquivo}
+            data-testid="cenas-ver-arquivo"
+            onClick={() => setVerArquivo((v) => !v)}
+          >
+            {verArquivo
+              ? <><Undo2 size={14} aria-hidden="true" /> Voltar</>
+              : <><Archive size={14} aria-hidden="true" /> Arquivo ({arquivadas.length})</>}
+          </button>
+        )}
+        <button
+          type="button" className="rv-gav-fechar" onClick={p.onFechar}
+          aria-label="Fechar o catálogo de cenas"
+        ><X size={16} aria-hidden="true" /></button>
+      </header>
+
+      {(criando || criandoPasta) && (
+        <div className="rv-gav-linha-nova">
+          {criandoPasta && (
+            <div className="rv-cena-nova">
+              <input
+                ref={campoPastaRef}
+                className="rv-cena-campo"
+                value={nomePastaNova}
+                maxLength={80}
+                placeholder="Nome da pasta"
+                aria-label="Nome da nova pasta"
+                data-testid="pasta-nova-nome"
+                onChange={(e) => setNomePastaNova(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); void criarPastaNova(); }
+                  if (e.key === "Escape") { e.preventDefault(); setCriandoPasta(false); setNomePastaNova(""); }
+                }}
+              />
+              <button
+                type="button" className="rv-btn rv-btn--pri" data-testid="pasta-nova-confirmar"
+                disabled={nomePastaNova.trim().length === 0} onClick={() => void criarPastaNova()}
+              >Criar pasta</button>
+              <button type="button" className="rv-btn rv-btn--ghost" onClick={() => { setCriandoPasta(false); setNomePastaNova(""); }}>
+                Cancelar
+              </button>
+            </div>
+          )}
+          {criando && (
+            <div className="rv-cena-nova">
+              <input
+                ref={campoNovoRef}
+                className="rv-cena-campo"
+                value={nomeNovo}
+                maxLength={120}
+                placeholder="Nome da cena"
+                aria-label="Nome da nova cena"
+                data-testid="cena-nova-nome"
+                onChange={(e) => setNomeNovo(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); void criar(); }
+                  if (e.key === "Escape") { e.preventDefault(); setCriando(false); setNomeNovo(""); }
+                }}
+              />
+              <button
+                type="button" className="rv-btn rv-btn--pri" data-testid="cena-nova-confirmar"
+                disabled={nomeNovo.trim().length === 0 || salvandoNova} onClick={() => void criar()}
+              >
+                {salvandoNova ? <Loader2 size={13} className="rv-girando" aria-hidden="true" /> : "Criar"}
+              </button>
+              <button type="button" className="rv-btn rv-btn--ghost" aria-label="Cancelar" onClick={() => { setCriando(false); setNomeNovo(""); }}>
+                Cancelar
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="rv-gav-corpo">
+        {/* TRILHO DE PASTAS — a árvore inteira, sempre visível. Antes as
+            pastas moravam MISTURADAS às cenas na mesma lista, e a única
+            forma de saber que existia uma "Ato II" era entrar na "Ato
+            I" e voltar. Pasta é caminho, cena é destino: são duas
+            colunas, não uma lista de coisas equivalentes. */}
+        {!buscando && (
+          <nav className="rv-gav-trilho" aria-label="Pastas do catálogo" data-testid="cenas-trilho">
             <button
               type="button"
-              className="rv-pasta-degrau"
-              aria-current={pastaAtual === null ? "page" : undefined}
+              className="rv-pasta-degrau" data-raiz=""
+              aria-current={pastaAtual === null && !verArquivo ? "page" : undefined}
               data-alvo={pastaAlvo === "__raiz__" || undefined}
-              data-testid="trilha-raiz"
-              onClick={() => setPastaAtual(null)}
+              data-testid="trilho-raiz"
+              onClick={() => { setVerArquivo(false); setPastaAtual(null); }}
               onDragOver={(e) => { if (arrastandoId) { e.preventDefault(); setPastaAlvo("__raiz__"); } }}
               onDragLeave={() => setPastaAlvo(null)}
               onDrop={(e) => { e.preventDefault(); if (arrastandoId) void moverCena(arrastandoId, null); }}
-            >Catálogo</button>
-            {trilha.map((f, i) => (
-              <span key={f.id} className="rv-pasta-degrau-casca">
-                <span className="rv-pasta-sep" aria-hidden="true">/</span>
-                <button
-                  type="button"
-                  className="rv-pasta-degrau"
-                  aria-current={i === trilha.length - 1 ? "page" : undefined}
-                  data-alvo={pastaAlvo === f.id || undefined}
-                  onClick={() => setPastaAtual(f.id)}
-                  onDragOver={(e) => { if (arrastandoId) { e.preventDefault(); setPastaAlvo(f.id); } }}
-                  onDragLeave={() => setPastaAlvo(null)}
-                  onDrop={(e) => { e.preventDefault(); if (arrastandoId) void moverCena(arrastandoId, f.id); }}
-                >{f.nome}</button>
+            >
+              <Clapperboard size={14} aria-hidden="true" />
+              <span className="rv-pasta-nome-txt">Catálogo</span>
+              <span className="rv-pasta-contagem">
+                {todas.filter((c) => c.arquivadaEm === null && c.pastaId === null).length}
               </span>
-            ))}
+            </button>
+
+            {pastas.length > 0 && (
+              <ul className="rv-gav-pastas">
+                {pastas.map((f) => (
+                  <LinhaPasta
+                    key={f.id}
+                    pasta={f}
+                    aberta={pastaAtual === f.id && !verArquivo}
+                    quantidade={cenasPorPasta.get(f.id) ?? 0}
+                    ocupada={ocupadas[f.id] === true}
+                    erro={errosPorCena[f.id] ?? null}
+                    onAbrir={() => { setVerArquivo(false); setPastaAtual(f.id); }}
+                    onRenomear={(nome) => void renomearPastaPor(f, nome)}
+                    onExcluir={() => void excluirPastaPor(f)}
+                    alvoDeArrasto={pastaAlvo === f.id && arrastandoId !== null}
+                    onDragOver={(e) => { if (arrastandoId) { e.preventDefault(); setPastaAlvo(f.id); } }}
+                    onDragLeave={() => setPastaAlvo(null)}
+                    onDrop={(e) => { e.preventDefault(); if (arrastandoId) void moverCena(arrastandoId, f.id); }}
+                  />
+                ))}
+              </ul>
+            )}
           </nav>
         )}
 
-        {/* BUSCA. Aparece quando há o que procurar — num catálogo de três
-            cenas, um campo de busca é ruído ocupando a primeira linha. */}
-        {(todas.length > 4 || buscando) && (
-          /* A lupa dentro do campo, e não um rótulo acima: o campo é a
-             primeira linha da janela e um rótulo ali empurraria a lista
-             pra baixo por uma palavra que o ícone já diz. */
-          <span className="rv-cena-busca-casca">
-            <Search size={13} aria-hidden="true" />
-            <input
-              className="rv-cena-campo rv-cena-busca"
-              type="search"
-              value={busca}
-              placeholder="Procurar cena…"
-              aria-label="Procurar cena pelo nome ou local"
-              data-testid="cenas-busca"
-              onChange={(e) => setBusca(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setBusca(""); } }}
-            />
-          </span>
-        )}
-
-        {buscando && (
-          <p className="rv-cena-estado" data-testid="cenas-busca-modo">
-            {lista.length === 0
-              ? `Nada encontrado para “${busca.trim()}”.`
-              : `${lista.length === 1 ? "1 cena" : `${lista.length} cenas`} em todas as pastas.`}
-          </p>
-        )}
-        {/* CARREGANDO — só na PRIMEIRA carga. Uma releitura (depois de
-            renomear, por exemplo) não pode apagar a lista da tela: o
-            catálogo piscaria a cada escrita. */}
-        {carregando && cenas === null && (
-          <p className="rv-cena-estado" data-testid="cenas-carregando">
-            <Loader2 size={14} className="rv-girando" aria-hidden="true" /> Carregando as cenas…
-          </p>
-        )}
-
-        {erro && (
-          <p className="rv-cena-estado" data-tipo="erro" role="alert" data-testid="cenas-erro">
-            <AlertTriangle size={14} aria-hidden="true" /> {erro}
-            <button type="button" className="rv-btn rv-btn--ghost" onClick={() => void recarregar()}>Tentar de novo</button>
-          </p>
-        )}
-
-        {vazio && (
-          <p className="rv-cena-estado" data-testid="cenas-vazio">
-            {verArquivo
-              ? "Nada arquivado. Arquivar tira a cena do catálogo sem apagá-la."
-              : pastaAtual !== null
-                ? "Pasta vazia. Arraste uma cena para cá, ou crie uma."
-                : "Nenhuma cena ainda. Crie a primeira para começar a preparar."}
-          </p>
-        )}
-
-        {subpastas.length > 0 && (
-          <ul className="rv-cena-lista" data-testid="pastas-lista">
-            {subpastas.map((f) => (
-              <LinhaPasta
-                key={f.id}
-                pasta={f}
-                quantidade={cenasPorPasta.get(f.id) ?? 0}
-                ocupada={ocupadas[f.id] === true}
-                erro={errosPorCena[f.id] ?? null}
-                onAbrir={() => setPastaAtual(f.id)}
-                onRenomear={(nome) => void renomearPastaPor(f, nome)}
-                onExcluir={() => void excluirPastaPor(f)}
-                alvoDeArrasto={pastaAlvo === f.id && arrastandoId !== null}
-                onDragOver={(e) => { if (arrastandoId) { e.preventDefault(); setPastaAlvo(f.id); } }}
+        <div className="rv-gav-conteudo">
+          {/* A trilha do caminho continua existindo mesmo com o trilho
+              ao lado, e não por redundância: ela é o ALVO DE SOLTURA
+              que tira uma cena da pasta. Sem ela, "mover pra fora"
+              precisaria de um menu com a árvore inteira dentro. */}
+          {!buscando && (
+            <nav className="rv-pasta-caminho" aria-label="Caminho da pasta aberta" data-testid="cenas-trilha">
+              <button type="button" className="rv-pasta-degrau"
+                aria-current={pastaAtual === null ? "page" : undefined}
+                data-testid="trilha-raiz"
+                onClick={() => setPastaAtual(null)}
+                onDragOver={(e) => { if (arrastandoId) { e.preventDefault(); setPastaAlvo("__raiz__"); } }}
                 onDragLeave={() => setPastaAlvo(null)}
-                onDrop={(e) => { e.preventDefault(); if (arrastandoId) void moverCena(arrastandoId, f.id); }}
-              />
-            ))}
-          </ul>
-        )}
+                onDrop={(e) => { e.preventDefault(); if (arrastandoId) void moverCena(arrastandoId, null); }}
+                data-alvo={pastaAlvo === "__raiz__" || undefined}
+              >Catálogo</button>
+              {trilha.map((f, i) => (
+                <span key={f.id} className="rv-pasta-degrau-casca">
+                  <span className="rv-pasta-sep" aria-hidden="true">/</span>
+                  <button
+                    type="button" className="rv-pasta-degrau"
+                    aria-current={i === trilha.length - 1 ? "page" : undefined}
+                    data-alvo={pastaAlvo === f.id || undefined}
+                    onClick={() => setPastaAtual(f.id)}
+                    onDragOver={(e) => { if (arrastandoId) { e.preventDefault(); setPastaAlvo(f.id); } }}
+                    onDragLeave={() => setPastaAlvo(null)}
+                    onDrop={(e) => { e.preventDefault(); if (arrastandoId) void moverCena(arrastandoId, f.id); }}
+                  >{f.nome}</button>
+                </span>
+              ))}
+            </nav>
+          )}
 
-        {lista.length > 0 && (
-          <ul className="rv-cena-lista" data-testid="cenas-lista">
-            {lista.map((c, i) => (
-              <CartaoCena
-                key={c.id}
-                cena={c}
-                vista={c.id === p.cenaVistaId}
-                ocupada={ocupadas[c.id] === true}
-                erro={errosPorCena[c.id] ?? null}
-                onAbrir={() => p.onAbrir(c.id)}
-                onRenomear={(nome) => void renomear(c, nome)}
-                miniaturaUrl={c.miniaturaImageId ? miniaturas[c.miniaturaImageId] ?? null : null}
-                jogadoresAqui={jogadores.filter((j) => j.sceneId === c.id)}
-                todosJogadores={jogadores}
-                onMoverJogadores={(ids) => void moverJogadoresPara(c, ids)}
-                onApresentar={() => void apresentar(c)}
-                onDuplicar={(modo) => void duplicar(c, modo)}
-                onArquivar={() => void arquivar(c)}
-                onRestaurar={() => void restaurar(c)}
-                onExcluir={(nome) => void excluir(c, nome)}
-                onMover={(d) => mover(c.id, d)}
-                // Reordenar só faz sentido numa lista que TEM ordem. Na
-                // busca a lista é achatada entre pastas: "subir" ali
-                // significaria trocar a posição de duas cenas que nem
-                // moram no mesmo lugar.
-                //
-                // As setas NÃO travam durante a fila: travar tornaria
-                // "descer duas posições" um gesto que só funciona
-                // esperando o servidor entre um clique e outro. A fila
-                // existe exatamente pra que isso seja seguro.
-                podeSubir={!buscando && i > 0}
-                podeDescer={!buscando && i < lista.length - 1}
-                // Na busca o cartão diz ONDE a cena mora — sem isso, o
-                // resultado é um nome solto e a pessoa continua sem
-                // saber onde procurar da próxima vez.
-                caminhoPasta={buscando && c.pastaId ? pastaPorId.get(c.pastaId)?.caminho ?? null : null}
-                arrasto={{
-                  arrastando: arrastandoId === c.id,
-                  alvo: alvoId === c.id && arrastandoId !== c.id,
-                  onDragStart: (e) => {
-                    setArrastandoId(c.id);
-                    e.dataTransfer.effectAllowed = "move";
-                    // Firefox não inicia arrasto sem payload.
-                    e.dataTransfer.setData("text/plain", c.id);
-                  },
-                  onDragOver: (e) => { e.preventDefault(); setAlvoId(c.id); },
-                  onDrop: (e) => { e.preventDefault(); soltarSobre(c.id); },
-                  onDragEnd: () => { setArrastandoId(null); setAlvoId(null); },
-                }}
-              />
-            ))}
-          </ul>
-        )}
+          {buscando && (
+            <p className="rv-cena-estado" data-testid="cenas-busca-modo">
+              {lista.length === 0
+                ? `Nada encontrado para “${busca.trim()}”.`
+                : `${lista.length === 1 ? "1 cena" : `${lista.length} cenas`} em todas as pastas.`}
+            </p>
+          )}
 
-        {criandoPasta && (
-          <div className="rv-cena-nova">
-            <input
-              ref={campoPastaRef}
-              className="rv-cena-campo"
-              value={nomePastaNova}
-              maxLength={80}
-              placeholder="Nome da pasta"
-              aria-label="Nome da nova pasta"
-              data-testid="pasta-nova-nome"
-              onChange={(e) => setNomePastaNova(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") { e.preventDefault(); void criarPastaNova(); }
-                if (e.key === "Escape") { e.preventDefault(); setCriandoPasta(false); setNomePastaNova(""); }
-              }}
-            />
-            <button
-              type="button" className="rv-btn rv-btn--pri" data-testid="pasta-nova-confirmar"
-              disabled={nomePastaNova.trim().length === 0} onClick={() => void criarPastaNova()}
-            >Criar pasta</button>
-            <button type="button" className="rv-btn rv-btn--ghost" onClick={() => { setCriandoPasta(false); setNomePastaNova(""); }}>
-              Cancelar
-            </button>
-          </div>
-        )}
+          {/* CARREGANDO — só na PRIMEIRA carga. Uma releitura (depois de
+              renomear, por exemplo) não pode apagar a lista da tela: o
+              catálogo piscaria a cada escrita. */}
+          {carregando && cenas === null && (
+            <p className="rv-cena-estado" data-testid="cenas-carregando">
+              <Loader2 size={14} className="rv-girando" aria-hidden="true" /> Carregando as cenas…
+            </p>
+          )}
 
-        {criando ? (
-          <div className="rv-cena-nova">
-            <input
-              ref={campoNovoRef}
-              className="rv-cena-campo"
-              value={nomeNovo}
-              maxLength={120}
-              placeholder="Nome da cena"
-              aria-label="Nome da nova cena"
-              data-testid="cena-nova-nome"
-              onChange={(e) => setNomeNovo(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") { e.preventDefault(); void criar(); }
-                if (e.key === "Escape") { e.preventDefault(); setCriando(false); setNomeNovo(""); }
-              }}
-            />
-            <button
-              type="button" className="rv-btn rv-btn--pri" data-testid="cena-nova-confirmar"
-              disabled={nomeNovo.trim().length === 0 || salvandoNova} onClick={() => void criar()}
-            >
-              {salvandoNova ? <Loader2 size={13} className="rv-girando" aria-hidden="true" /> : "Criar"}
-            </button>
-            <button type="button" className="rv-btn rv-btn--ghost" aria-label="Cancelar" onClick={() => { setCriando(false); setNomeNovo(""); }}>
-              Cancelar
-            </button>
-          </div>
-        ) : (
-          <div className="rv-cena-rodape">
-            {/* Criar some na aba de arquivo: uma cena nova nasce em uso,
-                e oferecer "Nova cena" ali prometeria criar algo
-                arquivado, que não existe. */}
-            {!verArquivo && !buscando && (
-              <>
-                <button
-                  type="button" className="rv-btn rv-btn--pri" data-tipo="nova" data-testid="cena-nova"
-                  onClick={() => setCriando(true)}
-                >
-                  <Plus size={14} aria-hidden="true" /> Nova cena
-                </button>
-                <button
-                  type="button" className="rv-btn rv-cena-btn-icone" data-testid="pasta-nova"
-                  aria-label="Nova pasta"
-                  // O quarto nível é o último (0117). Oferecer o botão
-                  // ali só pra receber a recusa do servidor seria fazer
-                  // o banco ensinar o que a tela já sabe.
-                  disabled={trilha.length >= 4}
-                  onClick={() => setCriandoPasta(true)}
-                >
-                  <FolderPlus size={15} aria-hidden="true" />
-                  <span className="rv-dica rv-dica--acima">
-                    {trilha.length >= 4 ? "As pastas vão até quatro níveis" : "Nova pasta"}
-                  </span>
-                </button>
-              </>
-            )}
-            {/* O botão do arquivo só aparece quando há arquivo — ou
-                quando já se está nele, pra que exista a porta de volta.
-                Um "Arquivo (0)" permanente seria um item de interface
-                que nunca leva a lugar nenhum. */}
-            {/* REAGRUPAR só existe quando há grupo dividido. Um botão
-                permanente de "juntar a mesa" numa mesa que nunca se
-                separou é um controle que nunca faz nada. */}
-            {separados.length > 0 && !verArquivo && !buscando && (
-              <button
-                type="button" className="rv-btn" data-tipo="reagrupar"
-                data-testid="cenas-reagrupar"
-                onClick={() => void reagrupar()}
-              >
-                <UsersRound size={14} aria-hidden="true" /> Reagrupar ({separados.length})
-                <span className="rv-dica rv-dica--acima">Todos voltam para a cena da mesa</span>
-              </button>
-            )}
-            {(arquivadas.length > 0 || verArquivo) && (
-              <button
-                type="button" className="rv-btn" data-tipo="arquivo"
-                aria-pressed={verArquivo}
-                data-testid="cenas-ver-arquivo"
-                onClick={() => setVerArquivo((v) => !v)}
-              >
-                {verArquivo
-                  ? <><Undo2 size={14} aria-hidden="true" /> Voltar</>
-                  : <><Archive size={14} aria-hidden="true" /> Arquivo ({arquivadas.length})</>}
-              </button>
-            )}
-          </div>
-        )}
+          {erro && (
+            <p className="rv-cena-estado" data-tipo="erro" role="alert" data-testid="cenas-erro">
+              <AlertTriangle size={14} aria-hidden="true" /> {erro}
+              <button type="button" className="rv-btn rv-btn--ghost" onClick={() => void recarregar()}>Tentar de novo</button>
+            </p>
+          )}
+
+          {vazio && (
+            <p className="rv-cena-estado" data-testid="cenas-vazio">
+              {verArquivo
+                ? "Nada arquivado. Arquivar tira a cena do catálogo sem apagá-la."
+                : pastaAtual !== null
+                  ? "Pasta vazia. Arraste uma cena para cá, ou crie uma."
+                  : "Nenhuma cena ainda. Crie a primeira para começar a preparar."}
+            </p>
+          )}
+
+          {lista.length > 0 && (
+            <ul className="rv-cena-grade" data-testid="cenas-lista">
+              {lista.map((c, i) => (
+                <CartaoCena
+                  key={c.id}
+                  cena={c}
+                  vista={c.id === p.cenaVistaId}
+                  ocupada={ocupadas[c.id] === true}
+                  erro={errosPorCena[c.id] ?? null}
+                  onAbrir={() => p.onAbrir(c.id)}
+                  onRenomear={(nome) => void renomear(c, nome)}
+                  onConfigurar={() => setConfigurandoId(c.id)}
+                  miniaturaUrl={c.miniaturaImageId ? miniaturas[c.miniaturaImageId] ?? null : null}
+                  jogadoresAqui={jogadores.filter((j) => j.sceneId === c.id)}
+                  todosJogadores={jogadores}
+                  onMoverJogadores={(ids) => void moverJogadoresPara(c, ids)}
+                  onApresentar={() => void apresentar(c)}
+                  onDuplicar={(modo) => void duplicar(c, modo)}
+                  onArquivar={() => void arquivar(c)}
+                  onRestaurar={() => void restaurar(c)}
+                  onExcluir={(nome) => void excluir(c, nome)}
+                  onMover={(d) => mover(c.id, d)}
+                  // Reordenar só faz sentido numa lista que TEM ordem. Na
+                  // busca a lista é achatada entre pastas: "subir" ali
+                  // significaria trocar a posição de duas cenas que nem
+                  // moram no mesmo lugar.
+                  podeSubir={!buscando && i > 0}
+                  podeDescer={!buscando && i < lista.length - 1}
+                  // Na busca o ladrilho diz ONDE a cena mora — sem isso, o
+                  // resultado é um nome solto e a pessoa continua sem
+                  // saber onde procurar da próxima vez.
+                  caminhoPasta={buscando && c.pastaId ? pastaPorId.get(c.pastaId)?.caminho ?? null : null}
+                  alvoDeJogador={alvoJogadorId === c.id}
+                  arrasto={{
+                    arrastando: arrastandoId === c.id,
+                    alvo: alvoId === c.id && arrastandoId !== c.id,
+                    onDragStart: (e) => {
+                      setArrastandoId(c.id);
+                      e.dataTransfer.effectAllowed = "move";
+                      // Firefox não inicia arrasto sem payload.
+                      e.dataTransfer.setData("text/plain", c.id);
+                    },
+                    onDragOver: (e) => {
+                      e.preventDefault();
+                      /* Um JOGADOR pairando não é o mesmo gesto que uma
+                         cena pairando: um manda gente pra cá, o outro
+                         reordena. O alvo desenhado tem que dizer qual.
+
+                         `types` e não `getData`: durante o `dragover` o
+                         navegador esconde o CONTEÚDO do arrasto (é o que
+                         impede uma página de ler o que você arrasta só
+                         por você passar por cima dela) e expõe só a
+                         lista de tipos. O estado local é a rede de
+                         segurança para navegadores que normalizam o
+                         tipo. */
+                      const ehJogador =
+                        e.dataTransfer.types.includes(MIME_JOGADOR) || arrastandoJogador !== null;
+                      if (ehJogador) setAlvoJogadorId(c.id);
+                      else setAlvoId(c.id);
+                    },
+                    onDragLeave: () => {
+                      setAlvoJogadorId((a) => (a === c.id ? null : a));
+                    },
+                    onDrop: (e) => {
+                      e.preventDefault();
+                      const jogador = e.dataTransfer.getData(MIME_JOGADOR) || arrastandoJogador;
+                      setAlvoJogadorId(null);
+                      if (jogador) { void mandarJogador(jogador, c); return; }
+                      soltarSobre(c.id);
+                    },
+                    onDragEnd: () => { setArrastandoId(null); setAlvoId(null); setAlvoJogadorId(null); },
+                  }}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <TrilhoJogadores
+          jogadores={jogadores}
+          nomeDaCena={nomeDaCena}
+          separados={separados.length}
+          onReagrupar={() => void reagrupar()}
+          arrastandoId={arrastandoJogador}
+          onArrastarInicio={setArrastandoJogador}
+          onArrastarFim={() => { setArrastandoJogador(null); setAlvoJogadorId(null); }}
+        />
       </div>
-    </JanelaFerramenta>
+
+      {emEdicao && (
+        <ParametrosCena
+          cena={emEdicao}
+          ocupada={ocupadas[emEdicao.id] === true}
+          erro={errosPorCena[emEdicao.id] ?? null}
+          onSalvar={(v) => void salvarParametros(emEdicao, v)}
+          onFechar={() => setConfigurandoId(null)}
+        />
+      )}
+    </div>,
+    document.body,
   );
 }
