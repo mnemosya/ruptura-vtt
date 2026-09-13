@@ -4704,7 +4704,12 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-cartao-token__rot {
   font-family: var(--font-mono), monospace;
   font-size: 10px; font-weight: 700; line-height: 15px;
-  letter-spacing: .04em; text-transform: uppercase; text-align: right;
+  /* ALINHADO À ESQUERDA, os três. Alinhar à direita encostava PV e PE
+     na barra e deixava um buraco antes deles — "Mana" preenche os 26px
+     da coluna, PV e PE não. Com o alinhamento à esquerda os três
+     rótulos começam no mesmo x, que é o que faz a coluna parecer uma
+     coluna. */
+  letter-spacing: .04em; text-transform: uppercase; text-align: left;
   color: var(--rec-txt);
 }
 
