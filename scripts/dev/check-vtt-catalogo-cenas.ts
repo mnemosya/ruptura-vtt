@@ -238,6 +238,54 @@ async function main() {
       ordens.map((o) => `${o.ordem}:${o.nome}`).join(" | "));
     criterio("reordenar não mexeu no palco", await palcoDoBanco(campaignId) === doca);
 
+    console.log("\n— Duas reordenações atropeladas —");
+    // Dois cliques sem esperar resposta, e no fim banco e tela têm que
+    // contar a mesma história.
+    //
+    // O que este critério PROVA: que a sequência converge. O que ele
+    // NÃO prova: que a fila do `GerenciadorCenas` é o que faz isso —
+    // desligando a fila, três rodadas passaram igual, porque o Next
+    // aparentemente já serializa Server Actions do mesmo cliente. Fica
+    // como guarda de convergência, não como teste da fila.
+    const setaDescer = 'button[aria-label^="Mover"][aria-label*="baixo"]';
+    // A primeira da lista: é a única com DUAS posições pra descer, e o
+    // teste precisa de dois cliques válidos em sequência.
+    const alvoRapido = cartao(page, "Casa de Máquinas");
+    await alvoRapido.locator(setaDescer).click();
+    await alvoRapido.locator(setaDescer).click();
+    const naTela = await nomesNaOrdem(page);
+    const noBanco = await esperarBanco(
+      async () => ((await admin.from("vtt_scenes")
+        .select("nome, ordem").eq("campaign_id", campaignId).order("ordem")).data ?? [])
+        .map((o) => o.nome as string),
+      (b) => JSON.stringify(b) === JSON.stringify(naTela),
+    );
+    criterio("banco e tela terminam na MESMA ordem",
+      JSON.stringify(noBanco) === JSON.stringify(naTela),
+      `tela [${naTela.join(" | ")}] banco [${noBanco.join(" | ")}]`);
+
+    console.log("\n— Quando a Server Action REJEITA —");
+    // Uma ação que rejeita (em vez de devolver `{ok:false}`) não passa
+    // pelo caminho de erro normal. Sem `catch`, o botão voltaria do
+    // "salvando" e nada explicaria por que a cena não apareceu. Aqui a
+    // rede é cortada de propósito pra forçar exatamente esse caso.
+    await page.route("**/mesas/**", (rota) => {
+      if (rota.request().method() === "POST") return rota.abort("failed");
+      return rota.continue();
+    });
+    await page.locator('[data-testid="cena-nova"]').click();
+    await page.locator('[data-testid="cena-nova-nome"]').fill("Cena Que Não Nasce");
+    await page.locator('[data-testid="cena-nova-confirmar"]').click();
+    let erroVisivel = false;
+    try {
+      await page.waitForSelector('[data-testid="cenas-erro"]', { timeout: 10000 });
+      erroVisivel = true;
+    } catch { /* segue como falha */ }
+    criterio("a rejeição vira mensagem na janela", erroVisivel);
+    criterio("e o botão de criar volta a responder",
+      await page.locator('[data-testid="cena-nova-confirmar"]').isEnabled());
+    await page.unroute("**/mesas/**");
+
     console.log("\n— O jogador —");
     // O catálogo é do narrador. Não é a UI que garante (é
     // `list_vtt_scenes` que não conta), mas a UI tem que concordar.

@@ -65,6 +65,48 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
   const [alvoId, setAlvoId] = useState<string | null>(null);
 
   /**
+   * A lista corrente, sempre fresca.
+   *
+   * Dois cliques rápidos na seta acontecem no MESMO render: o segundo
+   * leria `cenas` do fechamento do primeiro — a lista de antes — e
+   * mandaria ao servidor uma ordem que desfaz a anterior. O ref é lido
+   * no instante do gesto.
+   */
+  const cenasRef = useRef<DadosCartaoCena[] | null>(null);
+  useEffect(() => { cenasRef.current = cenas; }, [cenas]);
+
+  /**
+   * Reordenar é SERIALIZADO, não concorrente.
+   *
+   * `reorder_vtt_scenes` reescreve o bloco inteiro. Duas chamadas em
+   * voo ao mesmo tempo chegam em ordem que ninguém controla, e a que
+   * chegar por último vence no banco — podendo ser a mais VELHA. A tela
+   * mostraria uma ordem e o catálogo teria outra, sem erro nenhum pra
+   * denunciar.
+   *
+   * A fila resolve sem bloquear o gesto: cada reordenação entra atrás
+   * da anterior e o otimismo continua respondendo no frame do clique.
+   *
+   * NOTA HONESTA: não foi possível reproduzir o atropelamento com a
+   * fila desligada — o Next aparentemente já serializa Server Actions
+   * do mesmo cliente, e três rodadas do check convergiram mesmo sem
+   * ela. A fila fica porque essa serialização é detalhe de
+   * implementação do framework, não contrato: o dia em que duas
+   * chamadas saírem juntas, a mais VELHA pode vencer no banco e nada
+   * denunciaria. Aqui a garantia é nossa e está escrita.
+   */
+  const filaOrdemRef = useRef<Promise<void>>(Promise.resolve());
+  const pendentesOrdemRef = useRef(0);
+  /**
+   * Uma reordenação que FALHA invalida as que foram enfileiradas em
+   * cima dela: elas descrevem posições de uma lista que o servidor
+   * recusou. Quem tem época velha desiste, e a releitura do catálogo
+   * passa a ser a única verdade.
+   */
+  const epocaOrdemRef = useRef(0);
+  const [reordenando, setReordenando] = useState(false);
+
+  /**
    * Toda releitura carrega o número da sua geração. Uma resposta que
    * chega depois de outra releitura ter começado é DESCARTADA — sem
    * isso, uma listagem lenta sobrescreveria o resultado de uma recente
@@ -132,6 +174,12 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
       setNomeNovo("");
       setCriando(false);
       setErro(null);
+    } catch (e) {
+      // Uma Server Action que REJEITA (em vez de devolver `{ok:false}`)
+      // deixaria o formulário mudo: o botão volta do "salvando" e nada
+      // explica por que a cena não apareceu. Coberto por critério —
+      // sem este `catch`, ele falha.
+      setErro(e instanceof Error ? e.message : "Falha inesperada ao criar a cena.");
     } finally {
       setSalvandoNova(false);
     }
@@ -176,38 +224,55 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
   }
 
   /**
-   * Reordena otimista e confirma no servidor.
+   * Reordena otimista e confirma no servidor, uma de cada vez.
    *
-   * Otimista porque arrastar precisa responder no frame do gesto; se a
-   * RPC recusar, a lista ANTERIOR volta inteira — restaurar item a item
-   * deixaria uma ordem que nunca existiu nem no cliente nem no banco.
+   * Otimista porque arrastar precisa responder no frame do gesto.
+   * Enfileirada porque `reorder_vtt_scenes` reescreve o bloco inteiro e
+   * duas em voo se atropelariam no banco.
+   *
+   * Quando o servidor recusa, a reconciliação é uma RELEITURA, não a
+   * lista de antes: com fila, "antes" é ambíguo (qual das enfileiradas?)
+   * e restaurar um instantâneo qualquer deixaria uma ordem que nunca
+   * existiu nem no cliente nem no banco. O catálogo do servidor é a
+   * única resposta que não inventa nada.
    */
-  async function aplicarOrdem(nova: DadosCartaoCena[]) {
-    const anterior = cenas;
+  function aplicarOrdem(nova: DadosCartaoCena[]) {
+    const epoca = epocaOrdemRef.current;
+    const ids = nova.map((c) => c.id);
     setCenas(nova.map((c, i) => ({ ...c, ordem: i })));
     setErro(null);
-    const r = await reordenarCenasAction({
-      campaignId: p.campaignId,
-      sceneIds: nova.map((c) => c.id),
-    }).catch((e) => ({ ok: false as const, erro: e instanceof Error ? e.message : "Falha ao reordenar." }));
-    if (!r.ok) {
-      setCenas(anterior);
-      setErro(r.erro ?? "Falha ao reordenar as cenas.");
-    }
+
+    pendentesOrdemRef.current++;
+    setReordenando(true);
+    filaOrdemRef.current = filaOrdemRef.current
+      .then(async () => {
+        if (epoca !== epocaOrdemRef.current) return; // a fila foi invalidada por uma falha anterior
+        const r = await reordenarCenasAction({ campaignId: p.campaignId, sceneIds: ids })
+          .catch((e) => ({ ok: false as const, erro: e instanceof Error ? e.message : "Falha ao reordenar." }));
+        if (!r.ok) {
+          epocaOrdemRef.current++;
+          setErro(r.erro ?? "Falha ao reordenar as cenas.");
+          await recarregar();
+        }
+      })
+      .finally(() => {
+        pendentesOrdemRef.current--;
+        if (pendentesOrdemRef.current === 0) setReordenando(false);
+      });
   }
 
   function mover(id: string, direcao: -1 | 1) {
-    const lista = cenas ?? [];
+    const lista = cenasRef.current ?? [];
     const de = lista.findIndex((c) => c.id === id);
     const para = de + direcao;
     if (de < 0 || para < 0 || para >= lista.length) return;
     const nova = [...lista];
     [nova[de], nova[para]] = [nova[para], nova[de]];
-    void aplicarOrdem(nova);
+    aplicarOrdem(nova);
   }
 
   function soltarSobre(alvo: string) {
-    const lista = cenas ?? [];
+    const lista = cenasRef.current ?? [];
     const origem = arrastandoId;
     setArrastandoId(null);
     setAlvoId(null);
@@ -218,7 +283,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
     const nova = [...lista];
     const [movida] = nova.splice(de, 1);
     nova.splice(para, 0, movida);
-    void aplicarOrdem(nova);
+    aplicarOrdem(nova);
   }
 
   const lista = cenas ?? [];
@@ -233,6 +298,9 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
       titulo="Cenas"
       modo={
         carregando && cenas === null ? "Carregando o catálogo"
+          // A fila não trava o gesto, mas também não é invisível: a
+          // ordem na tela ainda não é a ordem confirmada.
+          : reordenando ? "Salvando a ordem…"
           : lista.length === 1 ? "1 cena"
           : `${lista.length} cenas`
       }
@@ -277,6 +345,10 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                 onAbrir={() => p.onAbrir(c.id)}
                 onRenomear={(nome) => void renomear(c, nome)}
                 onMover={(d) => mover(c.id, d)}
+                // As setas NÃO travam durante a fila: travar tornaria
+                // "descer duas posições" um gesto que só funciona
+                // esperando o servidor entre um clique e outro. A fila
+                // existe exatamente pra que isso seja seguro.
                 podeSubir={i > 0}
                 podeDescer={i < lista.length - 1}
                 arrasto={{
