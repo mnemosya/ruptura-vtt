@@ -24,6 +24,7 @@ import { config as loadDotenv } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { chromium, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
+import { limparCampanhasDeTeste } from "./limparCampanhaDeTeste";
 
 loadDotenv({ path: ".env.local" });
 
@@ -127,6 +128,9 @@ async function main() {
     expires: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
   }]);
   const page = await context.newPage();
+  // O jogador nasce dentro do `try`; a limpeza precisa alcançá-lo
+  // mesmo quando o teste morre antes de chegar ao fim.
+  const jogadoresCriados: string[] = [];
 
   try {
     await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
@@ -225,7 +229,10 @@ async function main() {
 
     console.log("\n— Reordenar —");
     const antes = await nomesNaOrdem(page);
-    await cartao(page, "Doca Norte").locator('button[aria-label^="Mover"][aria-label*="baixo"]').click();
+    // Reordenar pelo teclado mora no menu do cartão desde o redesenho:
+    // quatro botões-ícone na linha comiam o nome da cena.
+    await cartao(page, "Doca Norte").locator('[data-testid="cena-menu"]').click();
+    await page.locator('[data-testid="cena-descer"]').click();
     await page.waitForFunction(
       (primeiro) => document.querySelector('[data-testid="cena-cartao"] .rv-cena-nome')?.textContent !== primeiro,
       antes[0], { timeout: 10000 },
@@ -251,12 +258,14 @@ async function main() {
     // desligando a fila, três rodadas passaram igual, porque o Next
     // aparentemente já serializa Server Actions do mesmo cliente. Fica
     // como guarda de convergência, não como teste da fila.
-    const setaDescer = 'button[aria-label^="Mover"][aria-label*="baixo"]';
     // A primeira da lista: é a única com DUAS posições pra descer, e o
     // teste precisa de dois cliques válidos em sequência.
-    const alvoRapido = cartao(page, "Casa de Máquinas");
-    await alvoRapido.locator(setaDescer).click();
-    await alvoRapido.locator(setaDescer).click();
+    const descerPeloMenu = async () => {
+      await cartao(page, "Casa de Máquinas").locator('[data-testid="cena-menu"]').click();
+      await page.locator('[data-testid="cena-descer"]').click();
+    };
+    await descerPeloMenu();
+    await descerPeloMenu();
     const naTela = await nomesNaOrdem(page);
     const noBanco = await esperarBanco(
       async () => ((await admin.from("vtt_scenes")
@@ -299,6 +308,7 @@ async function main() {
       email: emailJogador, password: senhaJogador, email_confirm: true,
       user_metadata: { display_name: "Jogador" },
     });
+    jogadoresCriados.push(jog!.user!.id);
     await admin.from("campaign_members").insert({ campaign_id: campaignId, user_id: jog!.user!.id, role: "player" });
     const { data: sJog } = await anon.auth.signInWithPassword({ email: emailJogador, password: senhaJogador });
     const ctxJog = await browser.newContext({ viewport: { width: 1440, height: 950 } });
@@ -317,21 +327,20 @@ async function main() {
       (await pageJog.textContent("body"))?.includes("Doca Norte") === true);
     await ctxJog.close();
 
-    console.log(`\n${passou} critérios ok, ${falhou} falhas`);
   } finally {
     await browser.close();
-    await admin.from("table_logs").delete().eq("campaign_id", campaignId);
-    await admin.from("vtt_campaign_stage").delete().eq("campaign_id", campaignId);
-    await admin.from("vtt_tokens").delete().eq("campaign_id", campaignId);
-    await admin.from("campaign_members").delete().eq("campaign_id", campaignId);
-    await admin.from("vtt_scenes").delete().eq("campaign_id", campaignId);
-    await admin.from("campaigns").delete().eq("id", campaignId);
-    await admin.auth.admin.deleteUser(narradorId);
-    const { data: sobras } = await admin.auth.admin.listUsers();
-    for (const u of sobras?.users ?? []) {
-      if (u.email?.startsWith("check-catalogo-")) await admin.auth.admin.deleteUser(u.id);
-    }
-    console.log("limpeza ok");
+    // Ordem canônica e compartilhada — ver `limparCampanhaDeTeste.ts`.
+    // A limpeza escrita à mão aqui saía na ordem de 2024: o palco e as
+    // colocações de imagem RECUSAM a exclusão em vez de cascatear, e o
+    // erro de cada `delete` sumia sem ninguém olhar.
+    const contas = [narradorId, ...jogadoresCriados];
+    const { restos } = await limparCampanhasDeTeste(admin, {
+      campanhas: [campaignId], usuarios: contas,
+    });
+    criterio("Z (limpeza de fixtures)", restos.length === 0, restos.join("; "));
+    // O resumo sai DEPOIS da limpeza: antes, ele afirmava "0 falhas"
+    // sem saber o que a limpeza ia encontrar.
+    console.log(`\n${passou} critérios ok, ${falhou} falhas`);
   }
   if (falhou > 0) process.exit(1);
 }

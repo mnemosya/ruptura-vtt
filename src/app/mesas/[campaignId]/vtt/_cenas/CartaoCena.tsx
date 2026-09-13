@@ -28,8 +28,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  Archive, ArchiveRestore, Check, Copy, GripVertical, MonitorPlay,
-  MoreVertical, Pencil, Trash2, Users, X,
+  Archive, ArchiveRestore, ArrowDown, ArrowUp, Check, Copy, GripVertical,
+  MonitorPlay, MoreVertical, Pencil, Trash2, Users, X,
 } from "lucide-react";
 import type {
   CartaoCena as DadosCartaoCena, ModoDuplicacao, PosicaoJogador,
@@ -86,6 +86,12 @@ export interface PropsCartaoCena {
   };
 }
 
+/** Medidas do menu — só para escolher onde ele cabe; quem desenha é o CSS. */
+const ALTURA_MENU = 252;
+const LARGURA_MENU = 176;
+/** Quantos nomes de jogador cabem antes de virar contagem. Ver `rv-cena-selos`. */
+const JOGADORES_VISIVEIS = 3;
+
 export function CartaoCena(p: PropsCartaoCena) {
   const [modo, setModo] = useState<Modo>("normal");
   const [rascunho, setRascunho] = useState(p.cena.nome);
@@ -94,6 +100,18 @@ export function CartaoCena(p: PropsCartaoCena) {
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const campoRef = useRef<HTMLInputElement | null>(null);
   const menuRef = useRef<HTMLSpanElement | null>(null);
+  /**
+   * O menu é POSICIONADO POR MEDIÇÃO, e `position: fixed`.
+   *
+   * Como `absolute` ele vivia dentro do corpo da janela, que tem
+   * `overflow-y: auto` — e uma caixa de rolagem RECORTA o que sai dela.
+   * Numa janela de 260px de altura o menu saía cortado exatamente em
+   * Arquivar e Excluir, e não havia lado pra virar: nem acima nem
+   * abaixo cabia. Fixo, ele mede contra a janela do navegador, que é a
+   * única superfície grande o bastante. Mesma saída que `.rv-dica--fixa`
+   * já usa no trilho de facções, e pelo mesmo motivo.
+   */
+  const [menuCaixa, setMenuCaixa] = useState<{ left: number; top: number } | null>(null);
 
   const arquivada = p.cena.arquivadaEm !== null;
 
@@ -118,6 +136,17 @@ export function CartaoCena(p: PropsCartaoCena) {
   /** Fechar o menu por clique fora e por Escape — as duas saídas que quem usa menu espera. */
   useEffect(() => {
     if (!menuAberto) return;
+    const botao = menuRef.current;
+    if (botao) {
+      const b = botao.getBoundingClientRect();
+      const cabeEmbaixo = window.innerHeight - b.bottom > ALTURA_MENU + 8;
+      setMenuCaixa({
+        // Alinhado pela direita do botão: o menu nasce no canto do
+        // cartão, e alinhar pela esquerda o jogaria pra fora da janela.
+        left: b.right - LARGURA_MENU,
+        top: cabeEmbaixo ? b.bottom + 4 : Math.max(8, b.top - ALTURA_MENU - 4),
+      });
+    }
     const foraDaqui = (e: MouseEvent) => {
       if (!menuRef.current?.contains(e.target as Node)) setMenuAberto(false);
     };
@@ -199,10 +228,10 @@ export function CartaoCena(p: PropsCartaoCena) {
               onBlur={confirmarNome}
             />
             <button type="button" className="rv-cena-mini-btn" aria-label="Confirmar nome" onMouseDown={(e) => e.preventDefault()} onClick={confirmarNome}>
-              <Check size={13} />
+              <Check size={15} aria-hidden />
             </button>
             <button type="button" className="rv-cena-mini-btn" aria-label="Cancelar" onMouseDown={(e) => e.preventDefault()} onClick={() => setModo("normal")}>
-              <X size={13} />
+              <X size={15} aria-hidden />
             </button>
           </span>
         ) : (
@@ -228,7 +257,12 @@ export function CartaoCena(p: PropsCartaoCena) {
             </span>
           )}
           {arquivada && <span className="rv-cena-selo" data-tipo="arquivo">Arquivada</span>}
-          {p.jogadoresAqui.map((j) => (
+          {/* Os nomes param no quarto. A faixa mora num cartão de ~270px
+              e não tinha teto: com a mesa dividida, seis nomes empurravam
+              o resto do cartão pra baixo e o NOME DA CENA — a informação
+              principal — virava a menor coisa ali. A contagem restante
+              carrega os nomes no título, então nada se perde. */}
+          {p.jogadoresAqui.slice(0, JOGADORES_VISIVEIS).map((j) => (
             <span
               key={j.userId}
               className="rv-cena-jogador"
@@ -241,6 +275,12 @@ export function CartaoCena(p: PropsCartaoCena) {
                 : `${j.nome} está aqui porque a mesa está`}
             >{j.nome}</span>
           ))}
+          {p.jogadoresAqui.length > JOGADORES_VISIVEIS && (
+            <span
+              className="rv-cena-jogador" data-mais=""
+              title={p.jogadoresAqui.slice(JOGADORES_VISIVEIS).map((j) => j.nome).join(", ")}
+            >+{p.jogadoresAqui.length - JOGADORES_VISIVEIS}</span>
+          )}
           {p.caminhoPasta && <span className="rv-cena-local" data-tipo="pasta">{p.caminhoPasta}</span>}
           {p.cena.local && <span className="rv-cena-local">{p.cena.local}</span>}
         </span>
@@ -252,14 +292,14 @@ export function CartaoCena(p: PropsCartaoCena) {
         {modo === "duplicando" && (
           <span className="rv-cena-linha-acao" data-testid="cena-duplicar-opcoes">
             <button
-              type="button" className="rv-cena-btn" data-testid="cena-duplicar-completa"
+              type="button" className="rv-btn rv-btn--pri" data-testid="cena-duplicar-completa"
               onClick={() => { setModo("normal"); p.onDuplicar("completa"); }}
             >Tudo reusável</button>
             <button
-              type="button" className="rv-cena-btn" data-testid="cena-duplicar-mapa"
+              type="button" className="rv-btn" data-testid="cena-duplicar-mapa"
               onClick={() => { setModo("normal"); p.onDuplicar("mapa"); }}
             >Só mapa</button>
-            <button type="button" className="rv-cena-mini-btn" onClick={() => setModo("normal")}>Cancelar</button>
+            <button type="button" className="rv-btn rv-btn--ghost" onClick={() => setModo("normal")}>Cancelar</button>
           </span>
         )}
 
@@ -288,7 +328,7 @@ export function CartaoCena(p: PropsCartaoCena) {
               }}
             />
             <button
-              type="button" className="rv-cena-btn" data-tipo="perigo"
+              type="button" className="rv-btn rv-btn--perigo"
               data-testid="cena-excluir-confirmar"
               // Desabilitado até bater: a RPC recusaria de todo jeito, e
               // deixar clicar só pra receber erro seria fazer o servidor
@@ -296,7 +336,7 @@ export function CartaoCena(p: PropsCartaoCena) {
               disabled={confirmacao !== p.cena.nome}
               onClick={() => { setModo("normal"); p.onExcluir(confirmacao); }}
             >Excluir</button>
-            <button type="button" className="rv-cena-mini-btn" onClick={() => setModo("normal")}>Cancelar</button>
+            <button type="button" className="rv-btn rv-btn--ghost" onClick={() => setModo("normal")}>Cancelar</button>
           </span>
         )}
 
@@ -322,12 +362,12 @@ export function CartaoCena(p: PropsCartaoCena) {
                   </label>
                 ))}
                 <button
-                  type="button" className="rv-cena-btn" data-testid="cena-jogadores-confirmar"
+                  type="button" className="rv-btn rv-btn--pri" data-testid="cena-jogadores-confirmar"
                   onClick={() => { setModo("normal"); p.onMoverJogadores([...selecionados]); }}
                 >Mandar para cá</button>
               </>
             )}
-            <button type="button" className="rv-cena-mini-btn" onClick={() => setModo("normal")}>Cancelar</button>
+            <button type="button" className="rv-btn rv-btn--ghost" onClick={() => setModo("normal")}>Cancelar</button>
           </span>
         )}
 
@@ -346,20 +386,14 @@ export function CartaoCena(p: PropsCartaoCena) {
             title="Apresentar aos jogadores"
             data-testid="cena-apresentar"
             disabled={p.ocupada} onClick={p.onApresentar}
-          ><MonitorPlay size={13} /></button>
+          >
+            <MonitorPlay size={15} aria-hidden />
+            <span className="rv-dica rv-dica--esq">Apresentar aos jogadores</span>
+          </button>
         )}
         {/* Reordenar pelo teclado. O arrasto continua sendo o gesto
             natural, mas ele não existe pra quem navega por teclado — e
             "reordenar" estava no aceite da fase 2 pra todo mundo. */}
-        <button
-          type="button" className="rv-cena-mini-btn" aria-label={`Mover "${p.cena.nome}" para cima`}
-          disabled={!p.podeSubir || p.ocupada} onClick={() => p.onMover(-1)}
-        >↑</button>
-        <button
-          type="button" className="rv-cena-mini-btn" aria-label={`Mover "${p.cena.nome}" para baixo`}
-          disabled={!p.podeDescer || p.ocupada} onClick={() => p.onMover(1)}
-        >↓</button>
-
         <span className="rv-cena-menu-casca" ref={menuRef}>
           <button
             type="button" className="rv-cena-mini-btn"
@@ -369,10 +403,36 @@ export function CartaoCena(p: PropsCartaoCena) {
             data-testid="cena-menu"
             disabled={p.ocupada}
             onClick={() => setMenuAberto((a) => !a)}
-          ><MoreVertical size={13} /></button>
+          >
+            <MoreVertical size={15} aria-hidden />
+            {!menuAberto && <span className="rv-dica rv-dica--esq">Mais ações</span>}
+          </button>
 
           {menuAberto && (
-            <span className="rv-cena-menu" role="menu" data-testid="cena-menu-lista">
+            <span
+              className="rv-cena-menu" role="menu" data-testid="cena-menu-lista"
+              style={menuCaixa ? { left: menuCaixa.left, top: menuCaixa.top } : { visibility: "hidden" }}
+            >
+              {/* Reordenar pelo teclado — o arrasto é o gesto natural mas
+                  não existe pra quem navega sem mouse. Saíram da fila de
+                  ações por espaço: quatro botões de 26px ao lado de um
+                  cartão de 420px comiam o NOME da cena, que é a razão de
+                  o cartão existir. Aqui continuam alcançáveis, rotulados
+                  e com o mesmo atalho de sempre. */}
+              <button
+                type="button" role="menuitem" className="rv-cena-menu-item"
+                data-testid="cena-subir"
+                disabled={!p.podeSubir}
+                onClick={() => doMenu(() => p.onMover(-1))}
+              ><ArrowUp size={12} aria-hidden="true" /> Subir na ordem</button>
+              <button
+                type="button" role="menuitem" className="rv-cena-menu-item"
+                data-testid="cena-descer"
+                disabled={!p.podeDescer}
+                onClick={() => doMenu(() => p.onMover(1))}
+              ><ArrowDown size={12} aria-hidden="true" /> Descer na ordem</button>
+              <span className="rv-cena-menu-fio" aria-hidden="true" />
+
               {!arquivada && (
                 <button
                   type="button" role="menuitem" className="rv-cena-menu-item"

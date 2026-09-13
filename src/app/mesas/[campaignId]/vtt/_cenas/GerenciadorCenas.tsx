@@ -31,7 +31,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  AlertTriangle, Archive, Clapperboard, FolderPlus, Loader2, Plus, Undo2, UsersRound,
+  AlertTriangle, Archive, Clapperboard, FolderPlus, Loader2, Plus, Search, Undo2, UsersRound,
 } from "lucide-react";
 import { JanelaFerramenta } from "../_shell/JanelaFerramenta";
 import { CartaoCena } from "./CartaoCena";
@@ -704,16 +704,22 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
         {/* BUSCA. Aparece quando há o que procurar — num catálogo de três
             cenas, um campo de busca é ruído ocupando a primeira linha. */}
         {(todas.length > 4 || buscando) && (
-          <input
-            className="rv-cena-campo rv-cena-busca"
-            type="search"
-            value={busca}
-            placeholder="Procurar cena…"
-            aria-label="Procurar cena pelo nome ou local"
-            data-testid="cenas-busca"
-            onChange={(e) => setBusca(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setBusca(""); } }}
-          />
+          /* A lupa dentro do campo, e não um rótulo acima: o campo é a
+             primeira linha da janela e um rótulo ali empurraria a lista
+             pra baixo por uma palavra que o ícone já diz. */
+          <span className="rv-cena-busca-casca">
+            <Search size={13} aria-hidden="true" />
+            <input
+              className="rv-cena-campo rv-cena-busca"
+              type="search"
+              value={busca}
+              placeholder="Procurar cena…"
+              aria-label="Procurar cena pelo nome ou local"
+              data-testid="cenas-busca"
+              onChange={(e) => setBusca(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setBusca(""); } }}
+            />
+          </span>
         )}
 
         {buscando && (
@@ -735,7 +741,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
         {erro && (
           <p className="rv-cena-estado" data-tipo="erro" role="alert" data-testid="cenas-erro">
             <AlertTriangle size={14} aria-hidden="true" /> {erro}
-            <button type="button" className="rv-cena-mini-btn" onClick={() => void recarregar()}>Tentar de novo</button>
+            <button type="button" className="rv-btn rv-btn--ghost" onClick={() => void recarregar()}>Tentar de novo</button>
           </p>
         )}
 
@@ -841,10 +847,10 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
               }}
             />
             <button
-              type="button" className="rv-cena-btn" data-testid="pasta-nova-confirmar"
+              type="button" className="rv-btn rv-btn--pri" data-testid="pasta-nova-confirmar"
               disabled={nomePastaNova.trim().length === 0} onClick={() => void criarPastaNova()}
             >Criar pasta</button>
-            <button type="button" className="rv-cena-mini-btn" onClick={() => { setCriandoPasta(false); setNomePastaNova(""); }}>
+            <button type="button" className="rv-btn rv-btn--ghost" onClick={() => { setCriandoPasta(false); setNomePastaNova(""); }}>
               Cancelar
             </button>
           </div>
@@ -867,12 +873,12 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
               }}
             />
             <button
-              type="button" className="rv-cena-btn" data-testid="cena-nova-confirmar"
+              type="button" className="rv-btn rv-btn--pri" data-testid="cena-nova-confirmar"
               disabled={nomeNovo.trim().length === 0 || salvandoNova} onClick={() => void criar()}
             >
               {salvandoNova ? <Loader2 size={13} className="rv-girando" aria-hidden="true" /> : "Criar"}
             </button>
-            <button type="button" className="rv-cena-mini-btn" aria-label="Cancelar" onClick={() => { setCriando(false); setNomeNovo(""); }}>
+            <button type="button" className="rv-btn rv-btn--ghost" aria-label="Cancelar" onClick={() => { setCriando(false); setNomeNovo(""); }}>
               Cancelar
             </button>
           </div>
@@ -884,21 +890,25 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
             {!verArquivo && !buscando && (
               <>
                 <button
-                  type="button" className="rv-cena-btn" data-tipo="nova" data-testid="cena-nova"
+                  type="button" className="rv-btn rv-btn--pri" data-tipo="nova" data-testid="cena-nova"
                   onClick={() => setCriando(true)}
                 >
                   <Plus size={14} aria-hidden="true" /> Nova cena
                 </button>
                 <button
-                  type="button" className="rv-cena-btn" data-testid="pasta-nova"
+                  type="button" className="rv-btn rv-cena-btn-icone" data-testid="pasta-nova"
                   aria-label="Nova pasta"
-                  title={trilha.length >= 4 ? "As pastas vão até quatro níveis" : "Nova pasta"}
                   // O quarto nível é o último (0117). Oferecer o botão
                   // ali só pra receber a recusa do servidor seria fazer
                   // o banco ensinar o que a tela já sabe.
                   disabled={trilha.length >= 4}
                   onClick={() => setCriandoPasta(true)}
-                ><FolderPlus size={14} aria-hidden="true" /></button>
+                >
+                  <FolderPlus size={15} aria-hidden="true" />
+                  <span className="rv-dica rv-dica--acima">
+                    {trilha.length >= 4 ? "As pastas vão até quatro níveis" : "Nova pasta"}
+                  </span>
+                </button>
               </>
             )}
             {/* O botão do arquivo só aparece quando há arquivo — ou
@@ -910,24 +920,24 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                 separou é um controle que nunca faz nada. */}
             {separados.length > 0 && !verArquivo && !buscando && (
               <button
-                type="button" className="rv-cena-btn" data-tipo="reagrupar"
+                type="button" className="rv-btn" data-tipo="reagrupar"
                 data-testid="cenas-reagrupar"
-                title="Todos voltam para a cena da mesa"
                 onClick={() => void reagrupar()}
               >
-                <UsersRound size={13} aria-hidden="true" /> Reagrupar ({separados.length})
+                <UsersRound size={14} aria-hidden="true" /> Reagrupar ({separados.length})
+                <span className="rv-dica rv-dica--acima">Todos voltam para a cena da mesa</span>
               </button>
             )}
             {(arquivadas.length > 0 || verArquivo) && (
               <button
-                type="button" className="rv-cena-btn" data-tipo="arquivo"
+                type="button" className="rv-btn" data-tipo="arquivo"
                 aria-pressed={verArquivo}
                 data-testid="cenas-ver-arquivo"
                 onClick={() => setVerArquivo((v) => !v)}
               >
                 {verArquivo
-                  ? <><Undo2 size={13} aria-hidden="true" /> Voltar ao catálogo</>
-                  : <><Archive size={13} aria-hidden="true" /> Arquivo ({arquivadas.length})</>}
+                  ? <><Undo2 size={14} aria-hidden="true" /> Voltar</>
+                  : <><Archive size={14} aria-hidden="true" /> Arquivo ({arquivadas.length})</>}
               </button>
             )}
           </div>

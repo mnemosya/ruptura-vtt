@@ -83,10 +83,10 @@ export function LinhaPasta(p: PropsLinhaPasta) {
             onBlur={confirmar}
           />
           <button type="button" className="rv-cena-mini-btn" aria-label="Confirmar nome" onMouseDown={(e) => e.preventDefault()} onClick={confirmar}>
-            <Check size={13} />
+            <Check size={15} aria-hidden />
           </button>
           <button type="button" className="rv-cena-mini-btn" aria-label="Cancelar" onMouseDown={(e) => e.preventDefault()} onClick={() => setEditando(false)}>
-            <X size={13} />
+            <X size={15} aria-hidden />
           </button>
         </span>
       ) : (
@@ -113,11 +113,11 @@ export function LinhaPasta(p: PropsLinhaPasta) {
           <>
             <span className="rv-pasta-aviso">Os itens sobem um nível.</span>
             <button
-              type="button" className="rv-cena-btn" data-tipo="perigo"
+              type="button" className="rv-btn rv-btn--perigo"
               data-testid="pasta-excluir-confirmar"
               onClick={() => { setConfirmandoExclusao(false); p.onExcluir(); }}
             >Excluir</button>
-            <button type="button" className="rv-cena-mini-btn" onClick={() => setConfirmandoExclusao(false)}>
+            <button type="button" className="rv-btn rv-btn--ghost" onClick={() => setConfirmandoExclusao(false)}>
               Cancelar
             </button>
           </>
@@ -127,13 +127,18 @@ export function LinhaPasta(p: PropsLinhaPasta) {
               type="button" className="rv-cena-mini-btn" data-testid="pasta-renomear"
               aria-label={`Renomear a pasta "${p.pasta.nome}"`}
               disabled={p.ocupada} onClick={() => setEditando(true)}
-            ><Pencil size={13} /></button>
+            >
+              <Pencil size={15} aria-hidden />
+              <span className="rv-dica rv-dica--esq">Renomear a pasta</span>
+            </button>
             <button
               type="button" className="rv-cena-mini-btn" data-testid="pasta-excluir"
               aria-label={`Excluir a pasta "${p.pasta.nome}"`}
-              title="Excluir a pasta — as cenas dentro dela sobem um nível"
               disabled={p.ocupada} onClick={() => setConfirmandoExclusao(true)}
-            ><Trash2 size={13} /></button>
+            >
+              <Trash2 size={15} aria-hidden />
+              <span className="rv-dica rv-dica--esq">Excluir — o conteúdo sobe um nível</span>
+            </button>
           </>
         )}
       </span>

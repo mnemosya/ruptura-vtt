@@ -5112,8 +5112,8 @@ export function VttClient({
         {/* cabeçalho sobreposto, pequeno — nome/local SEMPRE da cena persistida. */}
         <header className="rv-cena">
           <span className="rv-eyebrow">Cena ativa</span>
-          <h1 className="rv-cena-nome">{estadoCena?.cena.nome}</h1>
-          {estadoCena?.cena.local && <p className="rv-cena-local">{estadoCena.cena.local}</p>}
+          <h1 className="rv-hud-cena-nome">{estadoCena?.cena.nome}</h1>
+          {estadoCena?.cena.local && <p className="rv-hud-cena-local">{estadoCena.cena.local}</p>}
         </header>
 
         {ferramenta === "terreno" && ehNarrador && (

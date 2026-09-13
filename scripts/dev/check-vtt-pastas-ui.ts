@@ -19,6 +19,7 @@ import { config as loadDotenv } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { chromium, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
+import { limparCampanhasDeTeste } from "./limparCampanhaDeTeste";
 
 loadDotenv({ path: ".env.local" });
 
@@ -194,8 +195,12 @@ async function main() {
       (await nomesCenas(page)).join("|") === "Torre do Sino", (await nomesCenas(page)).join(" | "));
     criterio("e o resultado diz em que pasta a cena está",
       (await cartao(page, "Torre do Sino").locator('.rv-cena-local[data-tipo="pasta"]').textContent()) === "Ato I");
+    // Reordenar mora no menu do cartão desde o redesenho.
+    await cartao(page, "Torre do Sino").locator('[data-testid="cena-menu"]').click();
     criterio("reordenar fica indisponível na busca",
-      await cartao(page, "Torre do Sino").locator('button[aria-label^="Mover"]').first().isDisabled());
+      await page.locator('[data-testid="cena-subir"]').isDisabled()
+        && await page.locator('[data-testid="cena-descer"]').isDisabled());
+    await page.keyboard.press("Escape");
 
     await page.locator('[data-testid="cenas-busca"]').fill("");
     await page.waitForFunction(
@@ -217,17 +222,20 @@ async function main() {
     criterio("e a cena que estava dentro voltou para a raiz",
       (await nomesCenas(page)).includes("Torre do Sino"), (await nomesCenas(page)).join(" | "));
 
-    console.log(`\n${passou} critérios ok, ${falhou} falhas`);
   } finally {
     await ctx.close().catch(() => {});
     await browser.close();
-    await admin.from("table_logs").delete().eq("campaign_id", campaignId);
-    await admin.from("vtt_campaign_stage").delete().eq("campaign_id", campaignId);
-    await admin.from("vtt_scenes").delete().eq("campaign_id", campaignId);
-    await admin.from("vtt_scene_folders").delete().eq("campaign_id", campaignId);
-    await admin.from("campaigns").delete().eq("id", campaignId);
-    await admin.auth.admin.deleteUser(narradorId);
-    console.log("limpeza ok");
+    // Ordem canônica e compartilhada — ver `limparCampanhaDeTeste.ts`.
+    // Cada limpeza escrita à mão tinha uma ordem própria, e o schema
+    // mudou por baixo de todas: FKs de palco e de imagem RECUSAM a
+    // exclusão em vez de cascatear, e o erro sumia sem ninguém olhar.
+    const { restos } = await limparCampanhasDeTeste(admin, {
+      campanhas: [campaignId], usuarios: [narradorId],
+    });
+    criterio("Z (limpeza de fixtures)", restos.length === 0, restos.join("; "));
+    // O resumo sai DEPOIS da limpeza: antes, ele afirmava "0 falhas"
+    // sem saber o que a limpeza ia encontrar.
+    console.log(`\n${passou} critérios ok, ${falhou} falhas`);
   }
   if (falhou > 0) process.exit(1);
 }
