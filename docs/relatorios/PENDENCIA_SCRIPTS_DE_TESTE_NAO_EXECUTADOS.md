@@ -209,6 +209,37 @@ Caminhos possíveis, nenhum barato:
 `npm run check:scripts-de-teste` garante o mínimo continuamente: que
 todos CONSEGUEM começar, e o que cada um faz com o mundo.
 
+
+## Os 42 scripts órfãos do `scripts/dev/`
+
+Além dos scripts registrados no `package.json`, o diretório guarda 47
+arquivos `check-*` que nenhum comando invoca. Eles não são lixo: são
+checks escritos ao longo do projeto e deixados onde caíram. A varredura
+os separou por efeito sobre o mundo.
+
+**Registrados agora (5)** — rodados, verdes, e sem resíduo depois:
+
+| script | o que cobre |
+| --- | --- |
+| `check:vtt-reconciliacao-token` | reconciliação de posição de token (21 casos, lógica pura) |
+| `check:vtt-areas-desempenho` | custo de desenhar 20…160 áreas |
+| `check:vtt-areas-seguranca` | RLS e RPC de áreas (36 casos) |
+| `check:vtt-cenas-seguranca` | RLS e RPC de cenas e palco (51 casos) |
+| `check:residuo-de-fixtures` | portão de resíduo: fixtures recentes e órfãos estruturais |
+
+Os dois últimos de segurança escrevem no banco, mas limpam o que criam —
+conferido pelo portão de resíduo logo depois de cada execução.
+
+**Quatro que escrevem e ainda não foram auditados**:
+`check-vtt-autorizacao.ts`, `check-vtt-canal-forjado.ts`,
+`check-vtt-medicoes.ts`, `check-vtt-objetos-servidor.ts`. Precisam da
+mesma leitura de `try/finally` antes de rodar contra produção.
+
+**Trinta e oito dirigem navegador** e caem no mesmo bloqueio dos dez
+acima: precisam do app respondendo contra um banco descartável. Vários
+são de fases antigas da campanha e da ficha, e alguns provavelmente já
+não correspondem à interface atual — o que só se descobre rodando.
+
 ## Relacionado
 
 - `docs/relatorios/PENDENCIA_CICLO_DE_VIDA_PERSONAGEM_SOLTO.md`
