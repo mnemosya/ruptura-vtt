@@ -145,21 +145,52 @@ async function main() {
     const { data: brunoAposPalco } = await bruno.rpc("vtt_minha_cena", { p_campaign_id: campaignId });
     criterio("Bruno acompanhou a mesa até a Torre", brunoAposPalco === torre);
 
+    console.log("\n— O palco ALCANÇANDO quem foi separado (0119) —");
+    // A invariante: uma linha de atribuição significa "esta pessoa não
+    // está onde a mesa está". Levar a mesa até a cena dela torna a
+    // frase falsa, e a linha tem que sumir — senão ela ficaria para
+    // trás na PRÓXIMA apresentação, por uma decisão tomada antes, para
+    // outra situação. Foi o caso que o check de interface montou sem
+    // querer e que a 0118 deixava passar.
+    await narrador.rpc("present_vtt_scene", {
+      p_campaign_id: campaignId, p_scene_id: catacumbas, p_expected_revision: null,
+    });
+    const { data: aposAlcance } = await admin.from("vtt_player_scene_assignments")
+      .select("user_id").eq("campaign_id", campaignId);
+    criterio("apresentar a cena de quem estava separado apaga a atribuição",
+      (aposAlcance ?? []).length === 0, JSON.stringify(aposAlcance));
+    await narrador.rpc("present_vtt_scene", {
+      p_campaign_id: campaignId, p_scene_id: praca, p_expected_revision: null,
+    });
+    criterio("e a partir daí ela acompanha a mesa de novo",
+      await tokensVisiveis(alma, praca) === 1);
+
     console.log("\n— Mandar para a cena do palco é reagrupar —");
     // Uma atribuição apontando para o palco pareceria inofensiva, e
     // prenderia a pessoa ali na próxima apresentação.
+    //
+    // O bloco não assume o estado que sobrou do anterior: separa a Alma
+    // de novo e só então a manda para o palco, que neste ponto é a
+    // Praça. Depender do que ficou de trás é como um critério passa a
+    // testar a ordem dos blocos em vez da regra.
     await narrador.rpc("move_players_to_scene", {
-      p_campaign_id: campaignId, p_user_ids: [almaId], p_scene_id: torre,
+      p_campaign_id: campaignId, p_user_ids: [almaId], p_scene_id: catacumbas,
+    });
+    await narrador.rpc("move_players_to_scene", {
+      p_campaign_id: campaignId, p_user_ids: [almaId], p_scene_id: praca,
     });
     const { data: atribuicoes } = await admin.from("vtt_player_scene_assignments")
       .select("user_id").eq("campaign_id", campaignId);
     criterio("a atribuição foi REMOVIDA, não gravada",
       (atribuicoes ?? []).length === 0, JSON.stringify(atribuicoes));
     await narrador.rpc("present_vtt_scene", {
-      p_campaign_id: campaignId, p_scene_id: praca, p_expected_revision: null,
+      p_campaign_id: campaignId, p_scene_id: torre, p_expected_revision: null,
     });
     const { data: almaLivre } = await alma.rpc("vtt_minha_cena", { p_campaign_id: campaignId });
-    criterio("e ela volta a acompanhar a mesa", almaLivre === praca);
+    criterio("e ela volta a acompanhar a mesa", almaLivre === torre);
+    await narrador.rpc("present_vtt_scene", {
+      p_campaign_id: campaignId, p_scene_id: praca, p_expected_revision: null,
+    });
 
     console.log("\n— Reagrupar —");
     await narrador.rpc("move_players_to_scene", {
