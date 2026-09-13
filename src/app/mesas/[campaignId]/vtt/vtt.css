@@ -3975,3 +3975,118 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   font-family: var(--font-mono), monospace; font-size: 9px;
   letter-spacing: .06em; color: var(--rv-ink-faint);
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CATÁLOGO DE CENAS (Fase 2)
+
+   A janela é larga porque cada linha carrega nome, dois selos e três
+   ações; no corpo estreito das ferramentas os selos quebravam pra
+   baixo do nome e o cartão virava três linhas.
+
+   A ORDEM é a informação principal da lista — é ela que o arrasto
+   manipula —, então o cartão tem pegador visível à esquerda em vez de
+   depender do usuário descobrir que a linha inteira arrasta.
+   ═══════════════════════════════════════════════════════════════════ */
+.rv-cenas { width: 340px; max-height: min(560px, calc(100% - 32px)); }
+
+.rv-cena-lista { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+
+.rv-cena-cartao {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 8px; border-radius: var(--rv-r);
+  background: rgba(255,255,255,.04);
+  box-shadow: inset 0 0 0 1px transparent;
+}
+.rv-cena-cartao:hover { background: rgba(255,255,255,.07); }
+/* A cena aberta fica marcada pelo acento da janela — é o "você está
+   aqui" lido de relance, antes do selo em texto. */
+.rv-cena-cartao[data-vista] {
+  background: rgba(255,255,255,.08);
+  box-shadow: inset 0 0 0 1px var(--jf-acento, var(--cy));
+}
+.rv-cena-cartao[data-arrastando] { opacity: .4; }
+/* Linha de inserção no alvo do arrasto: mostra ONDE vai cair, em vez
+   de só destacar o cartão sobrevoado. */
+.rv-cena-cartao[data-alvo] { box-shadow: inset 0 2px 0 0 var(--jf-acento, var(--cy)); }
+
+.rv-cena-pegador { flex: 0 0 auto; display: flex; color: var(--rv-ink-faint); cursor: grab; }
+.rv-cena-cartao[data-arrastando] .rv-cena-pegador { cursor: grabbing; }
+
+.rv-cena-mini {
+  flex: 0 0 auto; width: 30px; height: 30px; border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--rv-ground); color: var(--rv-ink-faint);
+  font-family: var(--rv-display), sans-serif; font-size: 13px; font-weight: 600;
+}
+
+.rv-cena-txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; }
+
+.rv-cena-nome {
+  border: none; background: none; padding: 0; margin: 0;
+  font: inherit; text-align: left; color: var(--txt); cursor: pointer;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rv-cena-nome:hover { text-decoration: underline; }
+.rv-cena-nome:disabled { cursor: default; opacity: .6; text-decoration: none; }
+.rv-cena-nome:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 2px; }
+
+.rv-cena-selos { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+.rv-cena-selo {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 1px 5px; border-radius: 999px;
+  font-family: var(--font-mono), monospace; font-size: 9px;
+  letter-spacing: .06em; text-transform: uppercase;
+}
+.rv-cena-selo[data-tipo="vista"] { color: var(--jf-acento, var(--cy)); box-shadow: inset 0 0 0 1px currentColor; }
+/* Os jogadores são OUTRA cor, nunca a do "você está aqui": o ponto da
+   fase é que os dois podem apontar pra cenas diferentes, e duas cores
+   iguais desfariam a distinção no exato lugar onde ela importa. */
+.rv-cena-selo[data-tipo="mesa"] { color: #4fae82; box-shadow: inset 0 0 0 1px currentColor; }
+
+.rv-cena-local {
+  font-family: var(--font-mono), monospace; font-size: 9px;
+  color: var(--rv-ink-faint); letter-spacing: .06em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.rv-cena-erro { font-size: 10px; color: #e0655f; }
+
+.rv-cena-acoes { flex: 0 0 auto; display: flex; align-items: center; gap: 2px; }
+
+.rv-cena-mini-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 4px;
+  border: none; border-radius: 3px; background: none;
+  color: var(--rv-ink-faint); font: inherit; font-size: 10px; cursor: pointer;
+}
+.rv-cena-mini-btn:hover:not(:disabled) { background: rgba(255,255,255,.1); color: var(--txt); }
+.rv-cena-mini-btn:disabled { opacity: .3; cursor: not-allowed; }
+.rv-cena-mini-btn:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 1px; }
+
+.rv-cena-editar { display: flex; align-items: center; gap: 3px; }
+.rv-cena-campo {
+  flex: 1 1 auto; min-width: 0;
+  padding: 3px 6px; border-radius: 3px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: var(--rv-ground); color: var(--txt); font: inherit;
+}
+.rv-cena-campo:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 1px; border-color: transparent; }
+
+.rv-cena-nova { display: flex; align-items: center; gap: 5px; }
+
+.rv-cena-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 6px 10px; border: none; border-radius: var(--rv-r);
+  background: rgba(255,255,255,.07); color: var(--txt);
+  font: inherit; font-size: 11px; cursor: pointer;
+}
+.rv-cena-btn[data-tipo="nova"] { width: 100%; box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }
+.rv-cena-btn:hover:not(:disabled) { background: rgba(255,255,255,.12); }
+.rv-cena-btn:disabled { opacity: .45; cursor: not-allowed; }
+.rv-cena-btn:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 1px; }
+
+.rv-cena-estado {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin: 0; padding: 10px 4px; font-size: 11px; color: var(--rv-ink-faint);
+}
+.rv-cena-estado[data-tipo="erro"] { color: #e0655f; }

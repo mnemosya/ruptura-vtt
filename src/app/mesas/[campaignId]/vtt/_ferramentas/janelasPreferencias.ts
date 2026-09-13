@@ -24,13 +24,17 @@ import type { FerramentaId } from "./controlador";
 /**
  * Toda janela que a casca de ferramenta abre — não só as FERRAMENTAS.
  *
- * Camadas, Adicionar token e Configurações da Cena são janelas do mapa
- * sem ferramenta correspondente na barra (não têm modo de cursor, não
- * têm atalho de troca), mas usam a mesma casca e merecem a mesma
- * memória de posição. Amarrar a chave a `FerramentaId` obrigaria a
- * inventar ferramentas falsas só pra elas.
+ * Camadas, Adicionar token, Configurações da Cena e o Catálogo de
+ * Cenas são janelas do mapa sem ferramenta correspondente na barra
+ * (não têm modo de cursor, não têm atalho de troca), mas usam a mesma
+ * casca e merecem a mesma memória de posição. Amarrar a chave a
+ * `FerramentaId` obrigaria a inventar ferramentas falsas só pra elas.
+ *
+ * `"cena"` e `"cenas"` são janelas DIFERENTES e o plural não é
+ * descuido: a primeira configura a cena aberta (nome, local, grade), a
+ * segunda é o catálogo da campanha inteira.
  */
-export type JanelaId = FerramentaId | "camadas" | "token" | "cena";
+export type JanelaId = FerramentaId | "camadas" | "token" | "cena" | "cenas";
 
 export interface PosicaoJanela {
   /** Canto superior esquerdo, relativo ao palco (`.rv-palco`). */

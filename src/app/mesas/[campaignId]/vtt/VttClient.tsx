@@ -29,7 +29,7 @@ import {
   Plus, Minus, Undo2, Redo2, Loader2,
   UserPlus, Box,
   Radio, Focus, ClipboardPaste, Pencil, Copy, RotateCcw, RotateCw, Eye, EyeOff, Lock, Unlock, Trash2,
-  Dices,
+  Dices, Clapperboard,
 } from "lucide-react";
 import { MapaHex, TAM, type EstadoVisualToken, type CenaMapa } from "./_mapa/MapaHex";
 import { type AlcaArea, type AreaDesenhavel, type EstadoVisualArea, type GuiaGesto } from "./_mapa/CamadaAreas";
@@ -70,7 +70,7 @@ import {
   decidirNovoMovimento, proximaExpiracao, removerProtecoesExpiradas,
 } from "./_dominio/reconciliacaoPosicao";
 import {
-  garantirCenaSemente, lerCenaAtiva, moverTokenAction, obterUsuarioAtualAction,
+  garantirCenaSemente, lerCenaAtiva, lerCenaAction, moverTokenAction, obterUsuarioAtualAction,
   pintarTerrenoAction, criarMarcaAction, apagarMarcaAction, rotacionarTokenAction,
   criarMedicaoAction, apagarMedicaoAction, limparMedicoesAction,
   obterControleAction, criarTokenAction, editarTokenAction,
@@ -128,6 +128,8 @@ import { ProvedorJanelasFerramenta } from "./_shell/JanelaFerramenta";
 import { PainelCamadas, type EstadoCamadas, CAMADAS_PADRAO, camadasDeJson } from "./_shell/PainelCamadas";
 import { PainelMarcar, type CorMarcaUi, type SinalMarcaUi, type DuracaoMarcaUi } from "./_shell/PainelMarcar";
 import { PainelCena, type ValoresCena } from "./_shell/PainelCena";
+import { GerenciadorCenas } from "./_cenas/GerenciadorCenas";
+import { esquecerCenaVista, gravarCenaVista, lerCenaVista } from "./_cenas/modelo";
 import { SelectedTokenHud, type HudConditionOption } from "./_shell/SelectedTokenHud";
 import { PainelVtt } from "./_painel/PainelVtt";
 import {
@@ -642,11 +644,54 @@ export function VttClient({
     return () => { cancelado = true; };
   }, []);
 
+  /**
+   * A geração da carga de cena CORRENTE.
+   *
+   * Trocar de cena é assíncrono, e as respostas não voltam na ordem em
+   * que foram pedidas: A → B → C com a resposta de B chegando por
+   * último deixaria o narrador na cena B com o catálogo marcando C.
+   * Todo caminho que substitui `estadoCena` — a carga de entrada e cada
+   * clique de cartão — leva um número, e só escreve se ele ainda for o
+   * corrente. Um `cancelado` por efeito não bastaria: os cliques não
+   * são efeitos, e nada os cancelaria entre si.
+   */
+  const geracaoCenaRef = useRef(0);
+
+  /**
+   * Por onde a mesa ABRE.
+   *
+   * JOGADOR: a cena apresentada, sempre — `presented_scene_id` é a
+   * única resposta, e é do servidor. Nenhuma memória local participa;
+   * se participasse, uma aba velha manteria o jogador numa cena da
+   * qual o narrador já o tirou.
+   *
+   * NARRADOR: a última cena que ELE abriu, quando ainda existe e ainda
+   * é dele. É o que permite fechar o navegador no meio da preparação e
+   * voltar onde parou, em vez de ser jogado de volta pra cena da mesa
+   * a cada recarga.
+   *
+   * O id lembrado não é autoridade: `lerCenaAction` responde `null`
+   * quando a cena sumiu, foi arquivada ou nunca foi dele — e aí a
+   * memória é descartada e a mesa abre como sempre abriu.
+   */
+  const carregarCenaDeEntrada = useCallback(async () => {
+    if (!ehNarrador) return lerCenaAtiva(campaignId);
+
+    const lembrada = lerCenaVista(campaignId);
+    if (lembrada) {
+      const r = await lerCenaAction({ campaignId, sceneId: lembrada });
+      if (r.ok && r.dados) return r;
+      esquecerCenaVista(campaignId);
+    }
+    return garantirCenaSemente(campaignId);
+  }, [campaignId, ehNarrador]);
+
   useEffect(() => {
-    let cancelado = false;
+    const geracao = ++geracaoCenaRef.current;
+    const cancelou = () => geracao !== geracaoCenaRef.current;
     setCarregandoCena(true);
-    (ehNarrador ? garantirCenaSemente(campaignId) : lerCenaAtiva(campaignId)).then((r) => {
-      if (cancelado) return;
+    carregarCenaDeEntrada().then((r) => {
+      if (cancelou()) return;
       if (!r.ok) { setErroCena(r.erro ?? "Falha ao carregar a cena."); setCarregandoCena(false); return; }
       setEstadoCena(r.dados ?? null);
       // A trilha vem na MESMA carga (`carregarCenaAtiva`): recarregar a
@@ -659,12 +704,54 @@ export function VttClient({
       // Uma Server Action que REJEITA (em vez de devolver `{ok:false}`)
       // nunca deveria travar a tela em "carregando" pra sempre — mesmo
       // sendo um caso inesperado, precisa virar mensagem visível.
-      if (cancelado) return;
+      if (cancelou()) return;
       setErroCena(e instanceof Error ? e.message : "Falha inesperada ao carregar a cena.");
       setCarregandoCena(false);
     });
-    return () => { cancelado = true; };
-  }, [campaignId, ehNarrador, adotarTrilha]);
+    // Desmontar invalida a geração: uma resposta que chegue depois não
+    // escreve num componente que já saiu.
+    return () => { geracaoCenaRef.current++; };
+  }, [carregarCenaDeEntrada, adotarTrilha]);
+
+  /**
+   * ABRIR outra cena — o gesto do catálogo.
+   *
+   * Não toca no palco: `vtt_campaign_stage` continua onde estava e os
+   * jogadores não se movem. Essa é a Fase 2 inteira em uma função, e é
+   * a razão de a Fase 1 ter separado as duas colunas.
+   *
+   * Substituir `estadoCena` basta pra religar a mesa: o efeito do
+   * Realtime depende de `estadoCena?.cena.id` e já derruba o canal
+   * anterior antes de assinar o novo, e as imagens seguem o mesmo id
+   * pelo `useImagensDaCena`.
+   */
+  const abrirCena = useCallback((sceneId: string) => {
+    if (estadoCenaRef.current?.cena.id === sceneId) return;
+    const geracao = ++geracaoCenaRef.current;
+    setCarregandoCena(true);
+    setErroCena(null);
+    lerCenaAction({ campaignId, sceneId }).then((r) => {
+      if (geracao !== geracaoCenaRef.current) return;
+      if (!r.ok) { setErroCena(r.erro ?? "Falha ao abrir a cena."); setCarregandoCena(false); return; }
+      if (!r.dados) {
+        // Sumiu, foi arquivada, ou nunca foi dele — a distinção fica no
+        // banco de propósito (ver `carregarCena`). A memória local vai
+        // junto: insistir nela na próxima recarga repetiria o erro.
+        esquecerCenaVista(campaignId);
+        setErroCena("Esta cena não está mais disponível.");
+        setCarregandoCena(false);
+        return;
+      }
+      setEstadoCena(r.dados);
+      adotarTrilha(r.dados.trilha ?? null);
+      gravarCenaVista(campaignId, sceneId);
+      setCarregandoCena(false);
+    }).catch((e) => {
+      if (geracao !== geracaoCenaRef.current) return;
+      setErroCena(e instanceof Error ? e.message : "Falha inesperada ao abrir a cena.");
+      setCarregandoCena(false);
+    });
+  }, [campaignId, adotarTrilha]);
 
   // ── Fonte canônica ────────────────────────────────────────────────
   // `estadoCena.tokens` (persistido) é a ÚNICA fonte da lista de
@@ -1681,6 +1768,7 @@ export function VttClient({
   const fecharJanelasDeBotao = useCallback(() => {
     setPainelCamadasAberto(false);
     setPainelCenaAberto(false);
+    setPainelCenasAberto(false);
   }, []);
 
   const abrirCriarToken = useCallback(() => {
@@ -1905,11 +1993,12 @@ export function VttClient({
     if (nova !== "imagens") imgs.setSelecionadaId(null);
     if (nova !== "terreno") setUltimoGestoTerrenoCelulas(null);
     // UMA JANELA POR VEZ: entre ferramentas isso já era automático (a
-    // janela é a ferramenta ativa), mas Camadas e Configurações da cena
-    // são janelas de BOTÃO e ficavam abertas por cima. Abrir uma
-    // ferramenta fecha as duas.
+    // janela é a ferramenta ativa), mas Camadas, Configurações da cena
+    // e o Catálogo são janelas de BOTÃO e ficavam abertas por cima.
+    // Abrir uma ferramenta fecha as três.
     setPainelCamadasAberto(false);
     setPainelCenaAberto(false);
+    setPainelCenasAberto(false);
     setFerramenta(nova);
   }, [ferramenta, cancelarPosicionamento]);
 
@@ -3464,6 +3553,7 @@ export function VttClient({
   // janela, e a escrita passa por `set_vtt_scene_config` (migration
   // 0097): narrador-only e revisão conferida no servidor.
   const [painelCenaAberto, setPainelCenaAberto] = useState(false);
+  const [painelCenasAberto, setPainelCenasAberto] = useState(false);
   const [salvandoCena, setSalvandoCena] = useState(false);
   const [erroConfigCena, setErroConfigCena] = useState<string | null>(null);
   /** Tamanho em EDIÇÃO — só pra contar o que ficaria fora da grade. */
@@ -4692,9 +4782,28 @@ export function VttClient({
               const abrir = !painelCamadasAberto;
               if (abrir) trocarFerramenta("interagir");
               setPainelCenaAberto(false);
+              setPainelCenasAberto(false);
               setPainelCamadasAberto(abrir);
             }}
           ><Layers size={17} /></button>
+        )}
+        {/* CATÁLOGO DE CENAS — só o narrador. O jogador não tem o botão
+            porque não tem o catálogo: `list_vtt_scenes` não conta a ele
+            que existem outras cenas, e esconder o botão é só a UI
+            concordando com o que o servidor já decidiu. */}
+        {ehNarrador && (
+          <button
+            type="button" className="rv-ferr-btn" data-tipo="janela"
+            aria-pressed={painelCenasAberto} aria-label="Catálogo de cenas"
+            data-testid="barra-cenas"
+            onClick={() => {
+              const abrir = !painelCenasAberto;
+              if (abrir) trocarFerramenta("interagir");
+              setPainelCamadasAberto(false);
+              setPainelCenaAberto(false);
+              setPainelCenasAberto(abrir);
+            }}
+          ><Clapperboard size={17} /></button>
         )}
         {/* Configurar a cena é do narrador — nome, local e tamanho da
             grade valem pra mesa inteira. O botão ficou sem `onClick`
@@ -4707,6 +4816,7 @@ export function VttClient({
               const abrir = !painelCenaAberto;
               if (abrir) trocarFerramenta("interagir");
               setPainelCamadasAberto(false);
+              setPainelCenasAberto(false);
               setPainelCenaAberto(abrir);
             }}
           >
@@ -5120,6 +5230,21 @@ export function VttClient({
             onSalvar={(v) => void salvarCena(v)}
             onMudarTamanho={(largura, altura) => setTamanhoEmEdicao({ largura, altura })}
             onFechar={() => { setPainelCenaAberto(false); setTamanhoEmEdicao(null); setErroConfigCena(null); }}
+          />
+        )}
+
+        {/* CATÁLOGO. `versaoExterna` é a revisão da cena ABERTA: quando
+            ela muda, foi `set_vtt_scene_config` (renomear pela janela de
+            Configurações, ou camadas) — e o cartão dela no catálogo
+            acabou de ficar velho. Os movimentos de token não passam por
+            ali, então isto não relê a cada gesto do mapa. */}
+        {painelCenasAberto && ehNarrador && (
+          <GerenciadorCenas
+            campaignId={campaignId}
+            cenaVistaId={estadoCena?.cena.id ?? null}
+            versaoExterna={estadoCena?.cena.revision}
+            onAbrir={abrirCena}
+            onFechar={() => setPainelCenasAberto(false)}
           />
         )}
 

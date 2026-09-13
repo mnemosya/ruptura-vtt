@@ -53,6 +53,7 @@
     "check:motion": "tsx scripts/dev/check-motion.ts",
     "test:vtt-imagens": "tsx scripts/test-vtt-imagens.ts",
     "check:vtt-imagens-servidor": "tsx scripts/dev/check-vtt-imagens-servidor.ts",
+    "check:vtt-catalogo-cenas": "tsx scripts/dev/check-vtt-catalogo-cenas.ts",
     "gc:vtt-imagens": "tsx scripts/dev/gc-vtt-imagens.ts"
   },
   "dependencies": {
