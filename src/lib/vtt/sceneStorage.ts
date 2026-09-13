@@ -33,6 +33,11 @@ export type CorMarca = "ciano" | "ambar" | "verde" | "vermelho" | "roxo" | "bran
  */
 export const GRADE_COR_PADRAO = "#96bed7";
 export const GRADE_OPACIDADE_PADRAO = 0.07;
+/**
+ * Pixels por célula (0123) — unidade de CONVERSÃO, não de desenho. 70 é
+ * o padrão do Roll20 e o mais comum nos mapas prontos.
+ */
+export const CELULA_PX_PADRAO = 70;
 
 export interface CenaVtt {
   id: string;
@@ -45,6 +50,8 @@ export interface CenaVtt {
   /** Aparência da GRADE (0122). Decoração: não muda alcance, custo nem visão. */
   gradeCor: string;
   gradeOpacidade: number;
+  /** Pixels por célula (0123) — só conversão, para encaixar mapas prontos. */
+  celulaPx: number;
   revision: number;
   /**
    * Visibilidade e bloqueio de cada camada do mapa, DA MESA (migration
@@ -506,6 +513,8 @@ export interface CartaoCena {
   /** Aparência da GRADE (0122) — editável por qualquer cena, pela folha da gaveta. */
   gradeCor: string;
   gradeOpacidade: number;
+  /** Pixels por célula (0123) — só conversão, para encaixar mapas prontos. */
+  celulaPx: number;
   ordem: number;
   revision: number;
   arquivadaEm: string | null;
@@ -542,6 +551,7 @@ export async function listarCenas(campaignId: string, incluirArquivadas = false)
     altura: c.altura as number,
     gradeCor: (c.grade_cor as string | null) ?? GRADE_COR_PADRAO,
     gradeOpacidade: Number(c.grade_opacidade ?? GRADE_OPACIDADE_PADRAO),
+    celulaPx: Number(c.celula_px ?? CELULA_PX_PADRAO),
     ordem: c.ordem as number,
     revision: c.revision as number,
     arquivadaEm: (c.arquivada_em as string | null) ?? null,
@@ -574,6 +584,8 @@ export async function criarCena(params: {
   resumo?: string | null;
   largura?: number;
   altura?: number;
+  /** Pixels por célula — o divisor que produziu `largura`/`altura` (0123). */
+  celulaPx?: number;
 }): Promise<ResultadoCena> {
   const client = await getScopedTableClient();
   const { data, error } = await client.rpc("create_vtt_scene", {
@@ -583,6 +595,7 @@ export async function criarCena(params: {
     p_resumo: params.resumo ?? null,
     p_largura: params.largura ?? 26,
     p_altura: params.altura ?? 18,
+    p_celula_px: params.celulaPx ?? CELULA_PX_PADRAO,
   });
   if (error) return { ok: false, erro: error.message };
   const linha = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;
@@ -609,6 +622,7 @@ function cartaoDeLinhaDeCena(linha: Record<string, unknown>): CartaoCena {
     altura: linha.altura as number,
     gradeCor: (linha.grade_cor as string | null) ?? GRADE_COR_PADRAO,
     gradeOpacidade: Number(linha.grade_opacidade ?? GRADE_OPACIDADE_PADRAO),
+    celulaPx: Number(linha.celula_px ?? CELULA_PX_PADRAO),
     ordem: linha.ordem as number,
     revision: linha.revision as number,
     arquivadaEm: (linha.archived_at as string | null) ?? null,
@@ -900,7 +914,7 @@ export async function carregarCena(sceneId: string): Promise<EstadoCena | null> 
 
   const { data: cenaRow, error: erroCena } = await client
     .from("vtt_scenes")
-    .select("id, campaign_id, nome, local, resumo, largura, altura, grade_cor, grade_opacidade, revision, camadas")
+    .select("id, campaign_id, nome, local, resumo, largura, altura, grade_cor, grade_opacidade, celula_px, revision, camadas")
     .eq("id", sceneId)
     .maybeSingle();
 
@@ -954,6 +968,7 @@ export async function carregarCena(sceneId: string): Promise<EstadoCena | null> 
       largura: cenaRow.largura as number,
       gradeCor: (cenaRow.grade_cor as string | null) ?? GRADE_COR_PADRAO,
       gradeOpacidade: Number(cenaRow.grade_opacidade ?? GRADE_OPACIDADE_PADRAO),
+      celulaPx: Number(cenaRow.celula_px ?? CELULA_PX_PADRAO),
       altura: cenaRow.altura as number,
       revision: cenaRow.revision as number,
       camadas: (cenaRow.camadas as Record<string, unknown> | null) ?? {},
@@ -1948,6 +1963,7 @@ export async function definirConfigDaCena(params: {
   /** `undefined` mantém o que está lá — a RPC trata `null` como "não mexa". */
   gradeCor?: string;
   gradeOpacidade?: number;
+  celulaPx?: number;
   revisionEsperada: number;
 }): Promise<ResultadoEscrita & { cena?: CenaVtt }> {
   const client = await getScopedTableClient();
@@ -1961,6 +1977,7 @@ export async function definirConfigDaCena(params: {
     p_expected_revision: params.revisionEsperada,
     p_grade_cor: params.gradeCor ?? null,
     p_grade_opacidade: params.gradeOpacidade ?? null,
+    p_celula_px: params.celulaPx ?? null,
   });
   if (error) return { ok: false, erro: error.message };
   const linha = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;
@@ -1977,6 +1994,7 @@ export async function definirConfigDaCena(params: {
       altura: linha.altura as number,
       gradeCor: (linha.grade_cor as string | null) ?? GRADE_COR_PADRAO,
       gradeOpacidade: Number(linha.grade_opacidade ?? GRADE_OPACIDADE_PADRAO),
+      celulaPx: Number(linha.celula_px ?? CELULA_PX_PADRAO),
       revision: linha.revision as number,
       camadas: (linha.camadas as Record<string, unknown> | null) ?? {},
     },

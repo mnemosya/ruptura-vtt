@@ -29,6 +29,7 @@ export interface ValoresParametros {
   altura: number;
   gradeCor: string;
   gradeOpacidade: number;
+  celulaPx: number;
 }
 
 export interface PropsParametrosCena {
@@ -42,6 +43,9 @@ export interface PropsParametrosCena {
 /** Os limites são os do banco (0065): `check (largura between 1 and 200)`. */
 const MIN = 1;
 const MAX = 200;
+/** Idem (0123): `check (celula_px between 8 and 512)`. */
+const CELULA_MIN = 8;
+const CELULA_MAX = 512;
 
 export function ParametrosCena(p: PropsParametrosCena) {
   const [v, setV] = useState<ValoresParametros>({
@@ -52,6 +56,7 @@ export function ParametrosCena(p: PropsParametrosCena) {
     altura: p.cena.altura,
     gradeCor: p.cena.gradeCor,
     gradeOpacidade: p.cena.gradeOpacidade,
+    celulaPx: p.cena.celulaPx,
   });
 
   // Trocar de cena com a folha aberta recarrega os campos. Sem isto, a
@@ -61,9 +66,10 @@ export function ParametrosCena(p: PropsParametrosCena) {
       nome: p.cena.nome, local: p.cena.local, resumo: p.cena.resumo,
       largura: p.cena.largura, altura: p.cena.altura,
       gradeCor: p.cena.gradeCor, gradeOpacidade: p.cena.gradeOpacidade,
+      celulaPx: p.cena.celulaPx,
     });
   }, [p.cena.id, p.cena.nome, p.cena.local, p.cena.resumo, p.cena.largura, p.cena.altura,
-      p.cena.gradeCor, p.cena.gradeOpacidade]);
+      p.cena.gradeCor, p.cena.gradeOpacidade, p.cena.celulaPx]);
 
   useEffect(() => {
     function aoTeclar(e: KeyboardEvent) {
@@ -76,7 +82,8 @@ export function ParametrosCena(p: PropsParametrosCena) {
   const mudou =
     v.nome !== p.cena.nome || v.local !== p.cena.local || v.resumo !== p.cena.resumo
     || v.largura !== p.cena.largura || v.altura !== p.cena.altura
-    || v.gradeCor !== p.cena.gradeCor || v.gradeOpacidade !== p.cena.gradeOpacidade;
+    || v.gradeCor !== p.cena.gradeCor || v.gradeOpacidade !== p.cena.gradeOpacidade
+    || v.celulaPx !== p.cena.celulaPx;
   const nomeValido = v.nome.trim().length > 0;
 
   /** Célula fora da faixa é recusada pelo banco: a tela prende antes. */
@@ -84,6 +91,19 @@ export function ParametrosCena(p: PropsParametrosCena) {
     const n = Number.parseInt(bruto, 10);
     if (Number.isNaN(n)) return MIN;
     return Math.max(MIN, Math.min(MAX, n));
+  };
+  const celula = (bruto: string) => {
+    const n = Number.parseInt(bruto, 10);
+    if (Number.isNaN(n)) return CELULA_MIN;
+    return Math.max(CELULA_MIN, Math.min(CELULA_MAX, n));
+  };
+  /* Pixels → células, ARREDONDANDO: meia célula não existe na grade, e
+     deixar o campo aceitar 31,74 (como o Roll20 deixa) só empurra o
+     arredondamento para o próximo lugar, onde ninguém está olhando. */
+  const emCelulas = (bruto: string, px: number) => {
+    const n = Number.parseInt(bruto, 10);
+    if (Number.isNaN(n) || px <= 0) return MIN;
+    return Math.max(MIN, Math.min(MAX, Math.round(n / px)));
   };
 
   return (
@@ -131,37 +151,81 @@ export function ParametrosCena(p: PropsParametrosCena) {
         </label>
 
         <p className="rv-gav-folha-secao">Tamanho da grade</p>
-        <div className="rv-gav-folha-par">
-          <label className="rv-fp-campo">
-            <span className="rv-fp-rotulo">Largura</span>
-            <span className="rv-gav-medida">
-              <input
-                className="rv-cena-campo" type="number" min={MIN} max={MAX}
-                value={v.largura}
-                data-testid="parametros-largura"
-                onChange={(e) => setV((a) => ({ ...a, largura: numero(e.target.value) }))}
-              />
-              <em>células</em>
-            </span>
-          </label>
-          <label className="rv-fp-campo">
-            <span className="rv-fp-rotulo">Altura</span>
-            <span className="rv-gav-medida">
-              <input
-                className="rv-cena-campo" type="number" min={MIN} max={MAX}
-                value={v.altura}
-                data-testid="parametros-altura"
-                onChange={(e) => setV((a) => ({ ...a, altura: numero(e.target.value) }))}
-              />
-              <em>células</em>
-            </span>
-          </label>
+        {/* CÉLULAS e PIXELS são a mesma medida em duas linguagens, e as
+            duas precisam ser escrevíveis: quem desenha a cena do zero
+            pensa em quadrados; quem tem um mapa pronto tem 2000 px e
+            um divisor. Editar um lado recalcula o outro na hora — sem
+            "aplicar", que só existiria pra dar chance de errar. */}
+        <div className="rv-gav-eixo">
+          <span className="rv-fp-rotulo">Largura</span>
+          <span className="rv-gav-medida">
+            <input
+              className="rv-cena-campo" type="number" min={MIN} max={MAX}
+              value={v.largura}
+              data-testid="parametros-largura"
+              onChange={(e) => setV((a) => ({ ...a, largura: numero(e.target.value) }))}
+              aria-label="Largura em células"
+            />
+            <em>células</em>
+          </span>
+          <span className="rv-gav-sinal" aria-hidden="true">=</span>
+          <span className="rv-gav-medida">
+            <input
+              className="rv-cena-campo" type="number" min={MIN * v.celulaPx} max={MAX * v.celulaPx}
+              value={Math.round(v.largura * v.celulaPx)}
+              data-testid="parametros-largura-px"
+              onChange={(e) => setV((a) => ({ ...a, largura: emCelulas(e.target.value, a.celulaPx) }))}
+              aria-label="Largura em pixels"
+            />
+            <em>px</em>
+          </span>
         </div>
-        {/* A conversão é a mesma do mapa: 1 célula = 1 metro. Dito aqui
-            porque quem pensa em "quantos quadrados" precisa saber o que
-            isso vira em distância de regra. */}
+
+        <div className="rv-gav-eixo">
+          <span className="rv-fp-rotulo">Altura</span>
+          <span className="rv-gav-medida">
+            <input
+              className="rv-cena-campo" type="number" min={MIN} max={MAX}
+              value={v.altura}
+              data-testid="parametros-altura"
+              onChange={(e) => setV((a) => ({ ...a, altura: numero(e.target.value) }))}
+              aria-label="Altura em células"
+            />
+            <em>células</em>
+          </span>
+          <span className="rv-gav-sinal" aria-hidden="true">=</span>
+          <span className="rv-gav-medida">
+            <input
+              className="rv-cena-campo" type="number" min={MIN * v.celulaPx} max={MAX * v.celulaPx}
+              value={Math.round(v.altura * v.celulaPx)}
+              data-testid="parametros-altura-px"
+              onChange={(e) => setV((a) => ({ ...a, altura: emCelulas(e.target.value, a.celulaPx) }))}
+              aria-label="Altura em pixels"
+            />
+            <em>px</em>
+          </span>
+        </div>
+
+        <div className="rv-gav-eixo">
+          <span className="rv-fp-rotulo">Célula</span>
+          <span className="rv-gav-medida">
+            <input
+              className="rv-cena-campo" type="number" min={CELULA_MIN} max={CELULA_MAX}
+              value={v.celulaPx}
+              data-testid="parametros-celula-px"
+              onChange={(e) => setV((a) => ({ ...a, celulaPx: celula(e.target.value) }))}
+              aria-label="Pixels por célula"
+            />
+            <em>px por célula</em>
+          </span>
+        </div>
+
+        {/* O divisor é CONVERSÃO, não desenho — o mapa continua sendo
+            desenhado em metros, e mexer aqui não move nada do que já
+            está na cena. Vale dizer, porque o campo parece que mexe. */}
         <p className="rv-gav-folha-nota">
-          {v.largura} × {v.altura} células — {v.largura} × {v.altura} metros de terreno
+          {v.largura} × {v.altura} células = {v.largura} × {v.altura} metros de terreno.
+          Os pixels só servem para encaixar um mapa pronto.
         </p>
 
         <p className="rv-gav-folha-secao">Aparência da grade</p>

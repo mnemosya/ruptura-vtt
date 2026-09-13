@@ -267,6 +267,7 @@ export async function criarCenaAction(params: {
   resumo?: string | null;
   largura?: number;
   altura?: number;
+  celulaPx?: number;
 }): Promise<ResultadoAcao<{ cena: CartaoCena }>> {
   const v = await exigirAcesso(params.campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
@@ -537,6 +538,7 @@ export async function salvarConfigCenaAction(params: {
   altura: number;
   gradeCor?: string;
   gradeOpacidade?: number;
+  celulaPx?: number;
   revisionEsperada: number;
 }): Promise<ResultadoAcao<{ cena: CenaVtt }>> {
   const v = await exigirAcesso(params.campaignId);
@@ -545,6 +547,7 @@ export async function salvarConfigCenaAction(params: {
     sceneId: params.sceneId, nome: params.nome, local: params.local, resumo: params.resumo,
     largura: params.largura, altura: params.altura,
     gradeCor: params.gradeCor, gradeOpacidade: params.gradeOpacidade,
+    celulaPx: params.celulaPx,
     revisionEsperada: params.revisionEsperada,
   });
   if (!r.ok || !r.cena) return { ok: false, erro: r.erro };

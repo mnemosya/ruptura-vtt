@@ -32,7 +32,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  AlertTriangle, Archive, Clapperboard, FolderPlus, Loader2, Plus, Search, Undo2, X,
+  AlertTriangle, Archive, Clapperboard, FolderPlus, ImagePlus, Loader2, Plus, Search, Undo2, X,
 } from "lucide-react";
 import { CartaoCena } from "./CartaoCena";
 import { MIME_JOGADOR, TrilhoJogadores } from "./TrilhoJogadores";
@@ -44,7 +44,15 @@ import {
   moverJogadoresAction, reagruparJogadoresAction, renomearPastaAction,
   reordenarCenasAction, restaurarCenaAction, salvarConfigCenaAction,
 } from "../_acoes/sceneActions";
-import { assinarImagensAction } from "../_acoes/imageActions";
+import {
+  assinarImagensAction, cancelarUploadAction, criarImagemCenaAction,
+  finalizarUploadCenaAction, reservarUploadAction,
+} from "../_acoes/imageActions";
+import {
+  type ImagemPreparada, ImagemRecusadaError,
+  enviarParaUrlAssinada, prepararImagem,
+} from "../../../../../lib/vtt/imagePreparation";
+import { NovaCenaDeMapa, type ValoresNovaCenaDeMapa } from "./NovaCenaDeMapa";
 import { LinhaPasta } from "./LinhaPasta";
 import type {
   CartaoCena as DadosCartaoCena, ModoDuplicacao, PastaCena, PosicaoJogador,
@@ -130,6 +138,11 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
   const [alvoJogadorId, setAlvoJogadorId] = useState<string | null>(null);
   /** A cena cujos parâmetros estão abertos na folha da gaveta. */
   const [configurandoId, setConfigurandoId] = useState<string | null>(null);
+  /** O mapa escolhido, decodificado em memória e ainda não enviado. */
+  const [mapaPendente, setMapaPendente] = useState<{ preparada: ImagemPreparada; nome: string } | null>(null);
+  const [criandoDeMapa, setCriandoDeMapa] = useState(false);
+  const [erroMapa, setErroMapa] = useState<string | null>(null);
+  const campoMapaRef = useRef<HTMLInputElement | null>(null);
   const [alvoId, setAlvoId] = useState<string | null>(null);
 
   /**
@@ -370,6 +383,100 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
     }
   }
 
+  /**
+   * Escolher o arquivo: decodifica e reduz SEM enviar nada. É isto que
+   * faz "Cancelar" não deixar resíduo — nenhuma cena criada, nenhuma
+   * reserva de quota, nada no Storage para a coleta recolher.
+   */
+  async function escolherMapa(arquivo: File) {
+    setErroMapa(null);
+    try {
+      const preparada = await prepararImagem(arquivo);
+      setMapaPendente((anterior) => {
+        if (anterior) URL.revokeObjectURL(anterior.preparada.previewUrl);
+        return { preparada, nome: arquivo.name.replace(/\.[^.]+$/, "") };
+      });
+    } catch (e) {
+      setErroMapa(e instanceof ImagemRecusadaError ? e.message : "Não foi possível ler esta imagem.");
+    }
+  }
+
+  function fecharMapa() {
+    setMapaPendente((m) => {
+      if (m) URL.revokeObjectURL(m.preparada.previewUrl);
+      return null;
+    });
+    setErroMapa(null);
+  }
+
+  /**
+   * Cria a cena JÁ COM O MAPA dentro.
+   *
+   * A ordem importa: a cena primeiro, porque é o `sceneId` dela que a
+   * colocação da imagem precisa. Se a segunda metade falhar, o que
+   * sobra é uma cena vazia do tamanho certo — recuperável, e melhor do
+   * que uma imagem órfã consumindo quota sem cena nenhuma.
+   *
+   * A imagem entra como FUNDO com `larguraM` igual à largura da cena em
+   * células: 1 célula = 1 metro, então cobrir a cena inteira é
+   * literalmente esse número.
+   */
+  async function criarDeMapa(v: ValoresNovaCenaDeMapa) {
+    const atual = mapaPendente;
+    if (!atual) return;
+    setCriandoDeMapa(true);
+    setErroMapa(null);
+    let reservaId: string | null = null;
+    try {
+      const nova = await criarCenaAction({
+        campaignId: p.campaignId,
+        nome: v.nome,
+        largura: v.largura,
+        altura: v.altura,
+        celulaPx: v.celulaPx,
+      });
+      if (!nova.ok || !nova.dados) throw new Error(nova.erro ?? "Não foi possível criar a cena.");
+      const cena = nova.dados.cena;
+
+      const colocacao = {
+        sceneId: cena.id,
+        papel: "fundo" as const,
+        centroQ: (v.largura - 1) / 2,
+        centroR: (v.altura - 1) / 2,
+        larguraM: v.largura,
+      };
+
+      const reserva = await reservarUploadAction(p.campaignId, atual.preparada.sha256, "fundo");
+      if (!reserva.ok || !reserva.dados) throw new Error(reserva.erro ?? "Não foi possível preparar o envio.");
+      reservaId = reserva.dados.reservaId;
+
+      if (reserva.dados.reutilizado) {
+        // Mapa que já está na campanha: só um uso novo do mesmo asset.
+        const r = await criarImagemCenaAction(p.campaignId, reserva.dados.assetId, colocacao);
+        if (!r.ok) throw new Error(r.erro ?? "Não foi possível colocar o mapa.");
+      } else {
+        if (!reserva.dados.uploadUrl || !reserva.dados.reservaId) {
+          throw new Error("O servidor não devolveu um destino de envio.");
+        }
+        await enviarParaUrlAssinada(reserva.dados.uploadUrl, atual.preparada.blob);
+        const r = await finalizarUploadCenaAction(
+          p.campaignId, reserva.dados.reservaId, atual.preparada.sha256, colocacao,
+        );
+        if (!r.ok) throw new Error(r.erro ?? "Não foi possível concluir o envio.");
+      }
+
+      fecharMapa();
+      await recarregar();
+    } catch (e) {
+      // Reserva viva sem uso é quota presa até vencer. Devolvê-la é
+      // cortesia, não correção: a coleta recolhe de qualquer jeito.
+      if (reservaId) void cancelarUploadAction(p.campaignId, reservaId).catch(() => {});
+      setErroMapa(e instanceof Error ? e.message : "Não foi possível criar a cena.");
+    } finally {
+      setCriandoDeMapa(false);
+    }
+  }
+
   /** Os parâmetros da cena, gravados pela folha — a mesma RPC do renomear. */
   async function salvarParametros(cena: DadosCartaoCena, v: ValoresParametros) {
     marcarOcupada(cena.id, true);
@@ -385,6 +492,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
         altura: v.altura,
         gradeCor: v.gradeCor,
         gradeOpacidade: v.gradeOpacidade,
+        celulaPx: v.celulaPx,
         revisionEsperada: cena.revision,
       });
       if (!r.ok || !r.dados) {
@@ -398,7 +506,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
           ? {
               ...x, nome: g.nome, local: g.local, resumo: g.resumo,
               largura: g.largura, altura: g.altura,
-              gradeCor: g.gradeCor, gradeOpacidade: g.gradeOpacidade,
+              gradeCor: g.gradeCor, gradeOpacidade: g.gradeOpacidade, celulaPx: g.celulaPx,
               revision: g.revision,
             }
           : x
@@ -787,6 +895,14 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
               disabled={criando} onClick={() => setCriando(true)}
             ><Plus size={15} aria-hidden="true" /> Nova cena</button>
             <button
+              type="button" className="rv-btn rv-cena-btn-icone" data-testid="cena-de-mapa-abrir"
+              aria-label="Nova cena a partir de um mapa"
+              onClick={() => campoMapaRef.current?.click()}
+            >
+              <ImagePlus size={15} aria-hidden="true" />
+              <span className="rv-dica rv-dica--abaixo">Nova cena a partir de um mapa</span>
+            </button>
+            <button
               type="button" className="rv-btn rv-cena-btn-icone" data-testid="pasta-nova"
               aria-label="Nova pasta"
               // O quarto nível é o último (0117). Oferecer o botão ali
@@ -821,6 +937,19 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
               : <><Archive size={14} aria-hidden="true" /> Arquivo ({arquivadas.length})</>}
           </button>
         )}
+        {/* Fora do fluxo visual: o botão acima é quem o aciona. */}
+        <input
+          ref={campoMapaRef} type="file" accept="image/*" hidden
+          data-testid="cena-de-mapa-arquivo"
+          onChange={(e) => {
+            const arquivo = e.target.files?.[0];
+            // Zerar o valor deixa escolher O MESMO arquivo de novo: sem
+            // isto, um segundo clique no mesmo mapa não dispara `change`.
+            e.target.value = "";
+            if (arquivo) void escolherMapa(arquivo);
+          }}
+        />
+
         <button
           type="button" className="rv-gav-fechar" onClick={p.onFechar}
           aria-label="Fechar o catálogo de cenas"
@@ -1095,7 +1224,22 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
         />
       </div>
 
-      {emEdicao && (
+      {mapaPendente && (
+        <NovaCenaDeMapa
+          preparada={mapaPendente.preparada}
+          nomeSugerido={mapaPendente.nome}
+          ocupado={criandoDeMapa}
+          erro={erroMapa}
+          onCriar={(v) => void criarDeMapa(v)}
+          onCancelar={fecharMapa}
+        />
+      )}
+
+      {erroMapa && !mapaPendente && (
+        <p className="rv-gav-erro-flutuante" role="alert">{erroMapa}</p>
+      )}
+
+      {emEdicao && !mapaPendente && (
         <ParametrosCena
           cena={emEdicao}
           ocupada={ocupadas[emEdicao.id] === true}
