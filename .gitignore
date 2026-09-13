@@ -17,3 +17,4 @@ build/
 # Material de referência/fonte de design do Console (não servido pelo app —
 # os assets usados de fato ficam em public/console/ e public/humanbody/).
 /images/
+.tmp-validadores/

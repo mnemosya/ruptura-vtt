@@ -511,22 +511,48 @@ async function main() {
     }
   }
 
-  console.log(`\n${passou} ok, ${falhou} falha(s).`);
 }
 
 main()
   .catch((e) => { console.error(e); falhou++; })
   .finally(async () => {
+    const restos: string[] = [];
     for (const cid of criados.campanhas) {
-      await admin.from("vtt_scene_images").delete().eq("campaign_id", cid);
-      await admin.from("vtt_tokens").delete().eq("campaign_id", cid);
-      await admin.from("vtt_image_upload_reservations").delete().eq("campaign_id", cid);
-      await admin.from("vtt_image_assets").delete().eq("campaign_id", cid);
-      await admin.from("vtt_campaign_storage_usage").delete().eq("campaign_id", cid);
-      await admin.from("vtt_scenes").delete().eq("campaign_id", cid);
-      await admin.from("campaigns").delete().eq("id", cid);
+      // O PALCO sai antes das cenas. A FK `vtt_campaign_stage_cena_da_campanha`
+      // é `on delete no action` (0111, deliberado), então apagar a cena
+      // com uma linha de palco apontando para ela é RECUSADO — e a
+      // recusa sumia aqui, porque nenhum destes deletes conferia erro.
+      // Resultado: 28 campanhas de teste acumuladas na produção antes
+      // de alguém olhar.
+      const passos: [string, () => PromiseLike<{ error: { message: string } | null }>][] = [
+        ["vtt_scene_images", () => admin.from("vtt_scene_images").delete().eq("campaign_id", cid)],
+        ["vtt_tokens", () => admin.from("vtt_tokens").delete().eq("campaign_id", cid)],
+        ["vtt_image_upload_reservations", () => admin.from("vtt_image_upload_reservations").delete().eq("campaign_id", cid)],
+        ["vtt_image_assets", () => admin.from("vtt_image_assets").delete().eq("campaign_id", cid)],
+        ["vtt_campaign_storage_usage", () => admin.from("vtt_campaign_storage_usage").delete().eq("campaign_id", cid)],
+        ["vtt_campaign_stage", () => admin.from("vtt_campaign_stage").delete().eq("campaign_id", cid)],
+        // Controlador antes do personagem, e personagem antes da
+        // campanha: `character_controllers` referencia os dois, e sem
+        // esta ordem a campanha não sai. Descoberto pelo critério Z no
+        // primeiro segundo em que ele existiu.
+        ["character_controllers", () => admin.from("character_controllers").delete().eq("campaign_id", cid)],
+        ["characters", () => admin.from("characters").delete().eq("campaign_id", cid)],
+        ["vtt_scenes", () => admin.from("vtt_scenes").delete().eq("campaign_id", cid)],
+        ["campaigns", () => admin.from("campaigns").delete().eq("id", cid)],
+      ];
+      for (const [tabela, passo] of passos) {
+        const { error } = await passo();
+        if (error) restos.push(`${tabela} (${cid}): ${error.message}`);
+      }
     }
-    for (const uid of criados.usuarios) await admin.auth.admin.deleteUser(uid);
-    console.log("limpeza de fixtures concluída");
+    for (const uid of criados.usuarios) {
+      const { error } = await admin.auth.admin.deleteUser(uid);
+      if (error) restos.push(`usuário ${uid}: ${error.message}`);
+    }
+    // A limpeza vira um CRITÉRIO. Silenciosa, ela some do relatório
+    // exatamente quando para de funcionar.
+    ok("Z (limpeza de fixtures)", restos.length === 0,
+      restos.length ? `PENDENTE: ${restos.join("; ")}` : `${criados.campanhas.length} campanha(s) e ${criados.usuarios.length} conta(s)`);
+    console.log(`\n${passou} ok, ${falhou} falha(s).`);
     if (falhou > 0) process.exit(1);
   });
