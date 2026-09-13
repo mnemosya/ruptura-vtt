@@ -23,7 +23,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Map as IconeMapa, X } from "lucide-react";
 import type { ImagemPreparada } from "../../../../../lib/vtt/imagePreparation";
-import { CampoNumero } from "./CampoNumero";
+import { CampoNumero, formatarNumero } from "./CampoNumero";
 
 export interface ValoresNovaCenaDeMapa {
   nome: string;
@@ -114,6 +114,7 @@ export function NovaCenaDeMapa(p: PropsNovaCenaDeMapa) {
           <span className="rv-gav-medida">
             <CampoNumero
               className="rv-cena-campo" min={CELULA_MIN} max={CELULA_MAX}
+              decimais={4}
               valor={celulaPx}
               data-testid="mapa-celula-px"
               aria-label="Pixels por célula"
@@ -133,10 +134,24 @@ export function NovaCenaDeMapa(p: PropsNovaCenaDeMapa) {
         </div>
 
         <p className="rv-gav-conta" data-encaixa={encaixaCertinho || undefined} data-testid="mapa-conta">
-          A cena nasce com <strong>{largura} × {altura}</strong> células
-          {encaixaCertinho
-            ? " — o mapa encaixa exato"
-            : ` — sobram ${sobraX} px na largura e ${sobraY} px na altura`}
+          <span>
+            A cena nasce com <strong>{largura} × {altura}</strong> células
+            {encaixaCertinho
+              ? " — o mapa encaixa exato"
+              : ` — sobram ${sobraX} px na largura e ${sobraY} px na altura`}
+          </span>
+          {/* A sobra some dividindo o mapa pelas células que ele já tem.
+              O número resultante quase nunca é redondo, e é por isso que
+              é um botão e não uma instrução. */}
+          {!encaixaCertinho && (
+            <button
+              type="button" className="rv-btn rv-btn--ghost"
+              data-testid="mapa-encaixar"
+              onClick={() => setCelulaPx(Math.round((p.preparada.widthPx / largura) * 10000) / 10000)}
+            >
+              Encaixar em {formatarNumero(p.preparada.widthPx / largura, 4)} px por célula
+            </button>
+          )}
         </p>
 
         {p.erro && <p className="rv-cena-estado" data-tipo="erro" role="alert">{p.erro}</p>}

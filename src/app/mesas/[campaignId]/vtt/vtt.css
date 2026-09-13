@@ -4646,6 +4646,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    encaixa exato, que é o alvo; neutro quando sobra, que é aceitável e
    precisa ser visível pra ser aceito de propósito. */
 .rv-gav-conta {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
   margin: 0; padding: 9px 10px; border-radius: 2px;
   border: 1px solid var(--rv-line-2); background: var(--rv-raise);
   font-family: var(--font-mono), monospace; font-size: 9.5px; line-height: 1.6;
@@ -4672,12 +4673,23 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* O aviso de arredondamento: âmbar, porque não é recusa — é o número
    dizendo que virou outro e por quê. */
 .rv-gav-folha-ajuste {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
   margin: 0; padding: 8px 10px; border-radius: 2px;
   border: 1px solid color-mix(in srgb, var(--rv-am) 40%, transparent);
   background: color-mix(in srgb, var(--rv-am) 10%, transparent);
   color: var(--rv-am);
   font-family: var(--font-mono), monospace; font-size: 9px; line-height: 1.6;
   letter-spacing: .06em; text-transform: uppercase;
+}
+/* O botão do aviso herda o âmbar dele: é a saída DAQUELE problema, não
+   mais uma ação da folha. */
+.rv-gav-folha-ajuste .rv-btn {
+  color: var(--rv-am);
+  border-color: color-mix(in srgb, var(--rv-am) 45%, transparent);
+}
+.rv-gav-folha-ajuste .rv-btn:hover:not(:disabled) {
+  color: var(--rv-am); border-color: var(--rv-am);
+  background: color-mix(in srgb, var(--rv-am) 16%, transparent);
 }
 
 .rv-gav-folha-nota {

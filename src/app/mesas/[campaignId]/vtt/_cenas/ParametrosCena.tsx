@@ -20,7 +20,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, SlidersHorizontal, X } from "lucide-react";
 import type { CartaoCena as DadosCartaoCena } from "../../../../../lib/vtt/sceneStorage";
-import { CampoNumero } from "./CampoNumero";
+import { CampoNumero, formatarNumero } from "./CampoNumero";
 
 export interface ValoresParametros {
   nome: string;
@@ -52,13 +52,15 @@ export function ParametrosCena(p: PropsParametrosCena) {
   /**
    * O último pedido em pixels que NÃO coube na grade.
    *
-   * 2000 px com células de 70 não existe: a grade só sabe múltiplos do
-   * tamanho da célula, e o campo vira 2030. Sem dizer isso, o número
-   * muda sozinho depois de confirmar e parece defeito — que é
-   * exatamente como isto foi relatado. A nota some quando o pedido
-   * seguinte encaixa.
+   * 2000 px em 29 células dá 68,9655 px por célula — um número que a
+   * grade aceita, mas que ninguém vai digitar de cabeça. Então o aviso
+   * não é só aviso: ele traz o botão que faz essa divisão. Guardar o
+   * PEDIDO e as CÉLULAS é o que permite calcular o divisor exato
+   * depois, sem refazer a conta pela metade.
+   *
+   * Some quando o pedido seguinte encaixa sozinho.
    */
-  const [ajuste, setAjuste] = useState<{ pedido: number; virou: number } | null>(null);
+  const [ajuste, setAjuste] = useState<{ pedido: number; celulas: number; virou: number } | null>(null);
 
   const [v, setV] = useState<ValoresParametros>({
     nome: p.cena.nome,
@@ -177,7 +179,8 @@ export function ParametrosCena(p: PropsParametrosCena) {
               data-testid="parametros-largura-px"
               onConfirmar={(px) => setV((a) => {
                 const celulas = emCelulas(px, a.celulaPx);
-                setAjuste(celulas * a.celulaPx === px ? null : { pedido: px, virou: celulas * a.celulaPx });
+                const virou = Math.round(celulas * a.celulaPx);
+                setAjuste(virou === px ? null : { pedido: px, celulas, virou });
                 return { ...a, largura: celulas };
               })}
               aria-label="Largura em pixels"
@@ -206,7 +209,8 @@ export function ParametrosCena(p: PropsParametrosCena) {
               data-testid="parametros-altura-px"
               onConfirmar={(px) => setV((a) => {
                 const celulas = emCelulas(px, a.celulaPx);
-                setAjuste(celulas * a.celulaPx === px ? null : { pedido: px, virou: celulas * a.celulaPx });
+                const virou = Math.round(celulas * a.celulaPx);
+                setAjuste(virou === px ? null : { pedido: px, celulas, virou });
                 return { ...a, altura: celulas };
               })}
               aria-label="Altura em pixels"
@@ -220,6 +224,7 @@ export function ParametrosCena(p: PropsParametrosCena) {
           <span className="rv-gav-medida">
             <CampoNumero
               className="rv-cena-campo" min={CELULA_MIN} max={CELULA_MAX}
+              decimais={4}
               valor={v.celulaPx}
               data-testid="parametros-celula-px"
               onConfirmar={(n) => { setAjuste(null); setV((a) => ({ ...a, celulaPx: n })); }}
@@ -234,8 +239,24 @@ export function ParametrosCena(p: PropsParametrosCena) {
             está na cena. Vale dizer, porque o campo parece que mexe. */}
         {ajuste && (
           <p className="rv-gav-folha-ajuste" role="status" data-testid="parametros-ajuste">
-            {ajuste.pedido} px não é múltiplo de {v.celulaPx} — virou {ajuste.virou}.
-            Para fechar exato, use uma célula que divida {ajuste.pedido}.
+            <span>
+              {ajuste.pedido} px não fecha em células de {formatarNumero(v.celulaPx, 4)} —
+              ficou {ajuste.virou}.
+            </span>
+            {/* O botão faz a única conta que resolve: manter as células
+                e derivar o divisor exato. Não é atalho de digitação —
+                68,9655 é um número que ninguém tira de cabeça. */}
+            <button
+              type="button" className="rv-btn rv-btn--ghost"
+              data-testid="parametros-ajustar-celula"
+              onClick={() => {
+                const exato = Math.round((ajuste.pedido / ajuste.celulas) * 10000) / 10000;
+                setAjuste(null);
+                setV((a) => ({ ...a, celulaPx: Math.max(CELULA_MIN, Math.min(CELULA_MAX, exato)) }));
+              }}
+            >
+              Ajustar a célula para {formatarNumero(ajuste.pedido / ajuste.celulas, 4)} px
+            </button>
           </p>
         )}
         <p className="rv-gav-folha-nota">

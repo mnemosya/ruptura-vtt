@@ -27,6 +27,24 @@
 
 import { useState } from "react";
 
+/**
+ * O texto que o campo mostra para um número.
+ *
+ * Vírgula porque a mesa é em português, e sem casas sobrando: 70 é
+ * "70", nunca "70,0000". O zero à direita não informa nada e faz um
+ * campo de tamanho parecer um campo de precisão.
+ */
+export function formatarNumero(n: number, decimais: number): string {
+  if (decimais <= 0) return String(Math.round(n));
+  const texto = n.toFixed(decimais).replace(/\.?0+$/, "");
+  return texto.replace(".", ",");
+}
+
+/** Aceita os dois separadores: teclado numérico brasileiro dá vírgula. */
+export function lerNumero(bruto: string): number {
+  return Number.parseFloat(bruto.replace(",", "."));
+}
+
 export interface PropsCampoNumero {
   /** O valor canônico, já na unidade deste campo. */
   valor: number;
@@ -35,11 +53,20 @@ export interface PropsCampoNumero {
   min: number;
   max: number;
   className?: string;
+  /**
+   * Casas decimais aceitas. Acima de zero o campo deixa de ser
+   * `type="number"`: em locale pt-BR o navegador RECUSA a vírgula num
+   * campo numérico (ele só aceita o separador do locale do SO, que
+   * varia), e o valor chega vazio ao `onChange`. Texto com
+   * `inputMode="decimal"` abre o teclado certo no celular e aceita os
+   * dois separadores.
+   */
+  decimais?: number;
   "aria-label": string;
   "data-testid"?: string;
 }
 
-export function CampoNumero({ valor, onConfirmar, min, max, className, ...resto }: PropsCampoNumero) {
+export function CampoNumero({ valor, onConfirmar, min, max, className, decimais = 0, ...resto }: PropsCampoNumero) {
   /** `null` = ninguém está digitando; o canônico manda. */
   const [rascunho, setRascunho] = useState<string | null>(null);
 
@@ -47,24 +74,24 @@ export function CampoNumero({ valor, onConfirmar, min, max, className, ...resto 
     const bruto = rascunho;
     setRascunho(null);
     if (bruto === null) return;
-    const n = Number.parseInt(bruto, 10);
+    const n = lerNumero(bruto);
     // Campo vazio ou lixo não é um pedido: é uma edição abandonada, e
     // abandonar devolve o que estava lá. Prender em `min` transformaria
     // um apagão acidental numa alteração.
     if (Number.isNaN(n)) return;
-    const preso = Math.max(min, Math.min(max, n));
+    const fator = 10 ** decimais;
+    const preso = Math.max(min, Math.min(max, Math.round(n * fator) / fator));
     if (preso !== valor) onConfirmar(preso);
   }
 
   return (
     <input
       {...resto}
-      type="number"
-      inputMode="numeric"
-      min={min}
-      max={max}
+      type={decimais > 0 ? "text" : "number"}
+      inputMode={decimais > 0 ? "decimal" : "numeric"}
+      {...(decimais > 0 ? {} : { min, max })}
       className={className}
-      value={rascunho ?? String(valor)}
+      value={rascunho ?? formatarNumero(valor, decimais)}
       onChange={(e) => setRascunho(e.target.value)}
       onBlur={confirmar}
       onKeyDown={(e) => {
