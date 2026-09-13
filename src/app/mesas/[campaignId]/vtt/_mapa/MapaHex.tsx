@@ -3547,7 +3547,12 @@ function Token({
       }}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelecionar(token.id, e.shiftKey); } }}
       onMouseEnter={(e) => {
-        const r = e.currentTarget.getBoundingClientRect();
+        // Mede o DISCO, não o grupo (ver o comentário na `<circle>` da
+        // base). `getBoundingClientRect` de um elemento SVG já devolve
+        // a caixa em coordenadas de tela, com zoom e pan aplicados —
+        // por isso medir, em vez de refazer a conta de mundo→tela.
+        const alvo = e.currentTarget.querySelector("[data-token-disco]") ?? e.currentTarget;
+        const r = alvo.getBoundingClientRect();
         onHover(token.id, { x: r.x, y: r.y, width: r.width, height: r.height });
       }}
       onMouseLeave={() => onHover(null)}
@@ -3616,8 +3621,13 @@ function Token({
         </>
       )}
 
-      {/* base */}
-      <circle r={raio} fill="#0d141b" stroke={cor} strokeWidth={estado.selecionado ? 3 : 2}
+      {/* base — e a ÂNCORA de quem precisa apontar pro token na tela
+          (o cartão de hover). É este disco, não o `<g>` inteiro: o
+          grupo inclui rótulo de nome, ícones de condição, aura de
+          turno e o selo "OCULTO", então a caixa dele é bem maior que o
+          token e o centro dela não é o centro do token — ancorar ali
+          deixava o cartão visivelmente torto. */}
+      <circle data-token-disco="" r={raio} fill="#0d141b" stroke={cor} strokeWidth={estado.selecionado ? 3 : 2}
         strokeDasharray={token.lado === "neutro" ? "5 4" : undefined} />
       {/* PN: anel serrilhado por FORMA (não só cor) */}
       {token.lado === "pn" && (

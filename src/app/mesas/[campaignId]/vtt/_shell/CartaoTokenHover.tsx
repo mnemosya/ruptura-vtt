@@ -39,7 +39,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ResourceValueCard } from "../../../../ficha/_console/panels/ResourceValueCard";
 import type { HudResourceId, SelectedTokenHudData } from "../../../../../lib/vtt/hudTypes";
-import { mutateSelectedTokenHudAction, readSelectedTokenHudAction } from "../_acoes/hudActions";
+import { mutateSelectedTokenHudAction } from "../_acoes/hudActions";
 
 /** Ordem e identidade visual de cada linha — a mesma do Figma, e os acentos são os do chassi do VTT. */
 const RECURSOS: { id: HudResourceId; rotulo: string }[] = [
@@ -53,7 +53,17 @@ export interface PropsCartaoTokenHover {
   tokenId: string;
   /** Nome já conhecido pelo mapa — evita o cartão nascer sem cabeçalho enquanto a leitura não volta. */
   nomeInicial: string;
-  /** Retângulo do token na TELA (do `getBoundingClientRect` do próprio `<g>`), pra ancorar o cartão. */
+  /**
+   * Recursos já lidos pelo mapa. Quem busca é `VttClient`, no instante
+   * em que o ponteiro ENTRA no token — não aqui, quando o cartão abre:
+   * buscar na abertura fazia o cartão nascer só com o nome e CRESCER
+   * quando a resposta chegava. `null` = ainda não voltou (ou o token
+   * não tem recurso nenhum visível pra esta pessoa).
+   */
+  dados: SelectedTokenHudData | null;
+  /** Uma escrita voltou do servidor — o mapa guarda o valor novo no cache dele. */
+  onDadosAtualizados: (d: SelectedTokenHudData) => void;
+  /** Retângulo do DISCO do token na tela, pra ancorar o cartão. */
   ancora: { x: number; y: number; width: number; height: number };
   /** O ponteiro entrou no cartão / saiu dele — quem controla o ciclo de vida é quem chama. */
   onEntrar: () => void;
@@ -70,7 +80,7 @@ export interface PropsCartaoTokenHover {
 const MARGEM_TELA = 8;
 
 export function CartaoTokenHover(p: PropsCartaoTokenHover) {
-  const [dados, setDados] = useState<SelectedTokenHudData | null>(null);
+  const [dados, setDados] = useState<SelectedTokenHudData | null>(p.dados ?? p.dadosFixos ?? null);
   const [pendente, setPendente] = useState<Set<string>>(new Set());
   const dadosRef = useRef<SelectedTokenHudData | null>(null);
   const montado = useRef(true);
@@ -86,22 +96,11 @@ export function CartaoTokenHover(p: PropsCartaoTokenHover) {
   }, []);
 
   useEffect(() => {
-    let vivo = true;
-    if (p.dadosFixos) {
-      dadosRef.current = p.dadosFixos;
-      setDados(p.dadosFixos);
-      return () => { vivo = false; };
-    }
-    setDados(null);
-    dadosRef.current = null;
-    void readSelectedTokenHudAction({ campaignId: p.campaignId, tokenId: p.tokenId }).then((r) => {
-      if (!vivo || !montado.current) return;
-      const d = r.ok ? r.data ?? null : null;
-      dadosRef.current = d;
-      setDados(d);
-    });
-    return () => { vivo = false; };
-  }, [p.campaignId, p.tokenId, p.dadosFixos]);
+    const d = p.dadosFixos ?? p.dados;
+    if (!d) return;
+    dadosRef.current = d;
+    setDados(d);
+  }, [p.dados, p.dadosFixos]);
 
   const gravar = useCallback((recurso: HudResourceId, valor: number) => {
     const atual = dadosRef.current;
@@ -129,9 +128,10 @@ export function CartaoTokenHover(p: PropsCartaoTokenHover) {
         mutation: { type: "resource", resource: recurso, value: valor },
       });
       if (!montado.current) return;
-      if (r.ok && r.data) { dadosRef.current = r.data; setDados(r.data); }
+      if (r.ok && r.data) { dadosRef.current = r.data; setDados(r.data); p.onDadosAtualizados(r.data); }
       setPendente((s) => { const novo = new Set(s); novo.delete(recurso); return novo; });
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.campaignId, p.tokenId, p.dadosFixos]);
 
   // Posição: acima do token quando cabe, abaixo quando não cabe, e

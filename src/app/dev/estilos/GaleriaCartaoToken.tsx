@@ -80,7 +80,9 @@ function Slot({ caso }: { caso: (typeof CASOS)[number] }) {
           campaignId="c1" tokenId={caso.chave}
           nomeInicial={caso.dados.name}
           ancora={ancora}
+          dados={caso.dados}
           dadosFixos={caso.dados}
+          onDadosAtualizados={() => {}}
           onEntrar={() => {}}
           onSair={() => {}}
         />

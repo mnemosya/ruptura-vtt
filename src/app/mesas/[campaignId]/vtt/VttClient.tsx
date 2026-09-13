@@ -135,6 +135,8 @@ import { PainelCena, type ValoresCena } from "./_shell/PainelCena";
 import { GerenciadorCenas } from "./_cenas/GerenciadorCenas";
 import { esquecerCenaVista, gravarCenaVista, lerCenaVista } from "./_cenas/modelo";
 import { CartaoTokenHover } from "./_shell/CartaoTokenHover";
+import { readSelectedTokenHudAction } from "./_acoes/hudActions";
+import type { SelectedTokenHudData } from "../../../../lib/vtt/hudTypes";
 import { EditorRetratoToken } from "./_shell/EditorRetratoToken";
 import { PainelVtt } from "./_painel/PainelVtt";
 import {
@@ -318,6 +320,32 @@ export function VttClient({
   const [cartaoHover, setCartaoHover] = useState<{ tokenId: string; ancora: { x: number; y: number; width: number; height: number } } | null>(null);
   const timerCartaoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sobreCartaoRef = useRef(false);
+  /**
+   * Recursos por token, já lidos. Existe por causa de uma coisa que se
+   * vê na mesa e não no código: o cartão abria com o NOME e as barras
+   * entravam depois, quando a leitura voltava — o cartão crescia na
+   * cara de quem olhava.
+   *
+   * A busca agora começa no instante em que o ponteiro ENTRA no token,
+   * não quando o cartão abre: os 420ms de espera do hover viram tempo
+   * de rede grátis. E o que já foi lido fica guardado, então voltar a
+   * um token que você já olhou é instantâneo — com uma releitura em
+   * segundo plano, porque o valor pode ter mudado desde então.
+   */
+  const dadosCartaoRef = useRef<Map<string, SelectedTokenHudData>>(new Map());
+  const [dadosCartao, setDadosCartao] = useState<SelectedTokenHudData | null>(null);
+
+  const buscarRecursosDoToken = useCallback((tokenId: string) => {
+    void readSelectedTokenHudAction({ campaignId, tokenId }).then((r) => {
+      const d = r.ok ? r.data ?? null : null;
+      if (!d) return;
+      dadosCartaoRef.current.set(tokenId, d);
+      // Só empurra pra tela se o cartão ABERTO for deste token — uma
+      // resposta atrasada de um token que o ponteiro já deixou não pode
+      // repintar o cartão de outro.
+      setCartaoHover((c) => { if (c?.tokenId === tokenId) setDadosCartao(d); return c; });
+    });
+  }, [campaignId]);
 
   const limparTimerCartao = useCallback(() => {
     if (timerCartaoRef.current) { clearTimeout(timerCartaoRef.current); timerCartaoRef.current = null; }
@@ -327,7 +355,11 @@ export function VttClient({
     setHoverId(id);
     limparTimerCartao();
     if (id && ancora) {
-      timerCartaoRef.current = setTimeout(() => setCartaoHover({ tokenId: id, ancora }), ATRASO_CARTAO_MS);
+      buscarRecursosDoToken(id);
+      timerCartaoRef.current = setTimeout(() => {
+        setDadosCartao(dadosCartaoRef.current.get(id) ?? null);
+        setCartaoHover({ tokenId: id, ancora });
+      }, ATRASO_CARTAO_MS);
       return;
     }
     // Saiu do token: o cartão só fecha se o ponteiro também não estiver
@@ -335,7 +367,7 @@ export function VttClient({
     timerCartaoRef.current = setTimeout(() => {
       if (!sobreCartaoRef.current) setCartaoHover(null);
     }, CARENCIA_CARTAO_MS);
-  }, [limparTimerCartao]);
+  }, [limparTimerCartao, buscarRecursosDoToken]);
 
   // Um gesto de mapa (arrastar token, pan, zoom, abrir menu) tira o
   // cartão da frente na hora: ele é ajuda passiva, nunca obstáculo.
@@ -5780,6 +5812,8 @@ export function VttClient({
               tokenId={cartaoHover.tokenId}
               nomeInicial={t.nome}
               ancora={cartaoHover.ancora}
+              dados={dadosCartao}
+              onDadosAtualizados={(d) => { dadosCartaoRef.current.set(cartaoHover.tokenId, d); setDadosCartao(d); }}
               onEntrar={() => { sobreCartaoRef.current = true; limparTimerCartao(); }}
               onSair={() => {
                 sobreCartaoRef.current = false;

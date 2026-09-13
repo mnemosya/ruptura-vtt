@@ -56,12 +56,18 @@ assert.match(conditions, /<ConditionsControls/);
 // matemática de recurso continuam as mesmas —, mas a tela que as
 // consome, sim.
 assert.match(cartao, /ResourceValueCard/, "O valor editável tem que ser o MESMO componente da ficha — é o que garante a regra de \"-5\" sem uma segunda implementação.");
-assert.match(cartao, /readSelectedTokenHudAction/, "A leitura continua sendo a projeção autorizada do servidor.");
+assert.match(vttClient, /readSelectedTokenHudAction/, "A leitura continua sendo a projeção autorizada do servidor — feita pelo mapa, no hover, pra o cartão já abrir com os recursos.");
 assert.match(cartao, /mutateSelectedTokenHudAction/, "A escrita continua passando pela action, nunca direto na tabela.");
 assert.doesNotMatch(cartao, /PointResourceControls|ConditionsControls/, "PA, reações e condições saíram do mapa de propósito: elas vivem na ficha.");
 
 assert.match(vttClient, /<CartaoTokenHover/, "A mesa monta o cartão de hover.");
-assert.doesNotMatch(vttClient, /SelectedTokenHud/, "O HUD antigo não pode voltar a ser montado.");
+// A MONTAGEM (`<SelectedTokenHud`), não a palavra: a mesa continua
+// chamando `readSelectedTokenHudAction` e tipando com
+// `SelectedTokenHudData` — o pipeline de dados do HUD sobreviveu ao
+// componente, e é ele que alimenta o cartão.
+// O delimitador no fim importa: `useState<SelectedTokenHudData>` casa
+// com `<SelectedTokenHud` e não é montagem nenhuma.
+assert.doesNotMatch(vttClient, /<SelectedTokenHud[\s/>]/, "O HUD antigo não pode voltar a ser montado.");
 assert.match(vttClient, /ATRASO_CARTAO_MS/, "O cartão só aparece depois de uma parada deliberada do ponteiro.");
 assert.match(vttClient, /CARENCIA_CARTAO_MS/, "E some com carência — sem ela não dá pra levar o mouse até os pips.");
 
