@@ -53,6 +53,7 @@
     "check:motion": "tsx scripts/dev/check-motion.ts",
     "check:scripts-de-teste": "node scripts/dev/auditar-scripts-de-teste.mjs",
     "test:vtt-imagens": "tsx scripts/test-vtt-imagens.ts",
+    "test:vtt-presets-objeto": "tsx scripts/test-vtt-presets-objeto.ts",
     "check:vtt-imagens-servidor": "tsx scripts/dev/check-vtt-imagens-servidor.ts",
     "check:vtt-catalogo-cenas": "tsx scripts/dev/check-vtt-catalogo-cenas.ts",
     "check:vtt-apresentar-cena": "tsx scripts/dev/check-vtt-apresentar-cena.ts",
