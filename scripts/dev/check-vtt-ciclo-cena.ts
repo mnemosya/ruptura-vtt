@@ -227,6 +227,10 @@ async function main() {
       (await admin.from("vtt_scenes").select("id").eq("id", soMapaId).maybeSingle()).data === null);
     criterio("o conteúdo dela saiu em cascata", await contar("vtt_terrain", soMapaId) === 0);
 
+    // TEARDOWN, não pré-condição: o bloco seguinte monta a própria
+    // campanha, e o `finally` apaga tudo por `campaign_id` de qualquer
+    // jeito. Por isso ficam sem `exigirRpc` — uma falha aqui não faz
+    // asserção nenhuma medir outra coisa.
     await narrador.rpc("delete_vtt_scene", { p_scene_id: copiaId, p_nome_confirmacao: "Casa de Máquinas (cópia)" });
     await narrador.rpc("delete_vtt_scene", { p_scene_id: origem, p_nome_confirmacao: "Casa de Máquinas" });
 

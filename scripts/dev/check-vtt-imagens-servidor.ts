@@ -20,6 +20,7 @@
 import { randomUUID, createHash } from "node:crypto";
 import { config as loadDotenv } from "dotenv";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { exigirRpc } from "./rpcObrigatoria";
 
 loadDotenv({ path: ".env.local" });
 function req(n: string): string {
@@ -295,9 +296,13 @@ async function main() {
     const { data: colocacao } = await admin.from("vtt_scene_images")
       .select("image_id, revision").eq("id", tempId!).single();
     assetFundo = colocacao!.image_id as string;
-    await narrador.rpc("excluir_vtt_scene_image", {
+    // Desacoplar é PRÉ-CONDIÇÃO: o caso 18 coloca "a partir de arquivo
+    // já existente", e o 26 depende de a única colocação do arquivo ser
+    // a que ele esconde. Uma exclusão falha deixaria as duas premissas
+    // falsas em silêncio.
+    await exigirRpc("desacoplar a colocação temporária", narrador.rpc("excluir_vtt_scene_image", {
       p_id: tempId, p_expected_revision: colocacao!.revision,
-    });
+    }));
     ok("17b (arquivo de fundo criado e desacoplado, para isolar as guardas de assinatura)",
       !!assetFundo, `${assetFundo}`);
   }
@@ -475,20 +480,34 @@ async function main() {
     if (!alvo) {
       ok("32 (a coleta devolve a quota)", false, "nenhum asset em `deleting` para exercitar o caso");
     } else {
-      await admin.rpc("vtt_confirmar_remocao_imagem", { p_storage_path: alvo.storage_path });
+      // Aqui a confirmação é a AÇÃO sob teste, não montagem — por isso
+      // não usa `exigirRpc`: uma recusa deve reprovar o caso, não
+      // abortar o check. Mas o erro entra no relato, senão a falha
+      // aparece como "a quota não voltou" sem dizer que a RPC foi
+      // recusada.
+      const { error: eConf } = await admin.rpc("vtt_confirmar_remocao_imagem", {
+        p_storage_path: alvo.storage_path,
+      });
       const { data: depois } = await admin.from("vtt_campaign_storage_usage")
         .select("bytes_usados").eq("campaign_id", campaignId).single();
       const esperado = Number(antes!.bytes_usados) - Number(alvo.bytes);
       ok("32 (confirmar a remoção DEVOLVE os bytes — senão a quota vaza pra sempre)",
-        Number(depois!.bytes_usados) === esperado,
-        `${antes!.bytes_usados} − ${alvo.bytes} = ${depois!.bytes_usados} (esperado ${esperado})`);
+        !eConf && Number(depois!.bytes_usados) === esperado,
+        eConf ? `RPC recusada: ${eConf.message}`
+              : `${antes!.bytes_usados} − ${alvo.bytes} = ${depois!.bytes_usados} (esperado ${esperado})`);
 
       // Idempotência da devolução: repetir não pode descontar de novo.
-      await admin.rpc("vtt_confirmar_remocao_imagem", { p_storage_path: alvo.storage_path });
+      // A repetição tem que ser ACEITA e não descontar de novo. Sem
+      // conferir o erro, uma recusa satisfazia a asserção pelo motivo
+      // errado: os bytes ficavam iguais porque nada aconteceu.
+      const { error: eRepete } = await admin.rpc("vtt_confirmar_remocao_imagem", {
+        p_storage_path: alvo.storage_path,
+      });
       const { data: terceira } = await admin.from("vtt_campaign_storage_usage")
         .select("bytes_usados").eq("campaign_id", campaignId).single();
-      ok("33 (repetir a confirmação não desconta duas vezes)",
-        Number(terceira!.bytes_usados) === esperado, `${terceira!.bytes_usados}`);
+      ok("33 (repetir a confirmação é aceita e não desconta duas vezes)",
+        !eRepete && Number(terceira!.bytes_usados) === esperado,
+        eRepete ? `RPC recusada: ${eRepete.message}` : `${terceira!.bytes_usados}`);
     }
   }
 

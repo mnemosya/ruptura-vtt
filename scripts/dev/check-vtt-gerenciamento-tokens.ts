@@ -22,6 +22,7 @@
 import { randomUUID } from "node:crypto";
 import { config as loadDotenv } from "dotenv";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { exigirRpc } from "./rpcObrigatoria";
 
 loadDotenv({ path: ".env.local" });
 
@@ -677,7 +678,12 @@ async function main() {
       "visibilidade-1 (jogador NÃO chama set_vtt_token_flags; narrador precisa ocultar pra confirmar o efeito)",
       !!error, error ? "recusado" : "PASSOU (FALHA)",
     );
-    await cliNarrador.rpc("set_vtt_token_flags", { p_token_id: tokenNovoId, p_visivel: false, p_bloqueado: false });
+    // Esconder é PRÉ-CONDIÇÃO: o caso seguinte afirma que a RLS remove
+    // a linha do jogador. Se o ocultamento falhasse, ele reportaria
+    // "jogador ainda vê" culpando a RLS por algo que nunca aconteceu.
+    await exigirRpc("ocultar o token", cliNarrador.rpc("set_vtt_token_flags", {
+      p_token_id: tokenNovoId, p_visivel: false, p_bloqueado: false,
+    }));
     const { data: vistoJogador2 } = await cliJogador.from("vtt_tokens").select("id, nome").eq("id", tokenNovoId).maybeSingle();
     const { data: vistoNarrador2 } = await cliNarrador.from("vtt_tokens").select("id").eq("id", tokenNovoId).maybeSingle();
     ok(
@@ -854,13 +860,28 @@ async function main() {
     );
   }
 
-  // ── Limpeza ────────────────────────────────────────────────────
+}
+
+/**
+ * Limpeza dos fixtures.
+ *
+ * Saiu de dentro de `main` e passou a rodar num `.finally()`: antes
+ * ficava no FIM do corpo, então qualquer exceção no meio a pulava e
+ * deixava conta, campanha e cena de teste vivas na produção. Enquanto
+ * nada lançava isso não aparecia — e `exigirRpc`, que passou a abortar
+ * montagem falha, lança de propósito.
+ *
+ * Itera `criados.campanhas` em vez de repetir os dois ids à mão: quem
+ * cria já registra ali, e uma lista é o que sobrevive a sair do escopo
+ * de `main`.
+ */
+async function limpar(): Promise<string[]> {
   const restos: string[] = [];
-  await admin.from("vtt_tokens").delete().eq("campaign_id", campanhaId);
-  await admin.from("vtt_tokens").delete().eq("campaign_id", outraCampanhaId);
-  await admin.from("vtt_terrain").delete().eq("campaign_id", campanhaId);
-  await admin.from("vtt_scenes").delete().eq("campaign_id", campanhaId);
-  await admin.from("vtt_scenes").delete().eq("campaign_id", outraCampanhaId);
+  for (const cid of criados.campanhas) {
+    await admin.from("vtt_tokens").delete().eq("campaign_id", cid);
+    await admin.from("vtt_terrain").delete().eq("campaign_id", cid);
+    await admin.from("vtt_scenes").delete().eq("campaign_id", cid);
+  }
   for (const id of criados.personagens) {
     await admin.from("character_controllers").delete().eq("character_id", id);
     const { error } = await admin.from("characters").delete().eq("id", id);
@@ -874,10 +895,16 @@ async function main() {
     const { error } = await admin.auth.admin.deleteUser(id);
     if (error) restos.push(`usuário ${id}: ${error.message}`);
   }
-  ok("L (limpeza de fixtures)", restos.length === 0, restos.length ? `PENDENTE: ${restos.join("; ")}` : `${criados.usuarios.length} usuário(s) e ${criados.campanhas.length} campanha(s) removidos`);
-
-  console.log(`\n${passou} ok, ${falhou} falha(s).`);
-  if (falhou > 0) process.exit(1);
+  return restos;
 }
 
-main().catch((e) => { console.error("Erro fatal:", e); process.exit(1); });
+main()
+  .catch((e) => { console.error("Erro fatal:", e instanceof Error ? e.message : e); falhou++; })
+  .finally(async () => {
+    const restos = await limpar();
+    ok("L (limpeza de fixtures)", restos.length === 0,
+      restos.length ? `PENDENTE: ${restos.join("; ")}`
+                    : `${criados.usuarios.length} usuário(s) e ${criados.campanhas.length} campanha(s) removidos`);
+    console.log(`\n${passou} ok, ${falhou} falha(s).`);
+    if (falhou > 0) process.exit(1);
+  });

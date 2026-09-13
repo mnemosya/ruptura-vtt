@@ -138,9 +138,9 @@ async function main() {
     criterio("mas cria nas Catacumbas", !eEscreve, eEscreve?.message ?? "");
 
     console.log("\n— Apresentar não arrasta quem foi separado —");
-    await narrador.rpc("present_vtt_scene", {
+    await exigirRpc("levar a mesa para a Torre", narrador.rpc("present_vtt_scene", {
       p_campaign_id: campaignId, p_scene_id: torre, p_expected_revision: null,
-    });
+    }));
     const { data: almaAposPalco } = await alma.rpc("vtt_minha_cena", { p_campaign_id: campaignId });
     criterio("Alma continua nas Catacumbas", almaAposPalco === catacumbas);
     const { data: brunoAposPalco } = await bruno.rpc("vtt_minha_cena", { p_campaign_id: campaignId });
@@ -153,16 +153,16 @@ async function main() {
     // trás na PRÓXIMA apresentação, por uma decisão tomada antes, para
     // outra situação. Foi o caso que o check de interface montou sem
     // querer e que a 0118 deixava passar.
-    await narrador.rpc("present_vtt_scene", {
+    await exigirRpc("levar a mesa até a cena da Alma", narrador.rpc("present_vtt_scene", {
       p_campaign_id: campaignId, p_scene_id: catacumbas, p_expected_revision: null,
-    });
+    }));
     const { data: aposAlcance } = await admin.from("vtt_player_scene_assignments")
       .select("user_id").eq("campaign_id", campaignId);
     criterio("apresentar a cena de quem estava separado apaga a atribuição",
       (aposAlcance ?? []).length === 0, JSON.stringify(aposAlcance));
-    await narrador.rpc("present_vtt_scene", {
+    await exigirRpc("devolver a mesa à Praça", narrador.rpc("present_vtt_scene", {
       p_campaign_id: campaignId, p_scene_id: praca, p_expected_revision: null,
-    });
+    }));
     criterio("e a partir daí ela acompanha a mesa de novo",
       await tokensVisiveis(alma, praca) === 1);
 
@@ -184,14 +184,14 @@ async function main() {
       .select("user_id").eq("campaign_id", campaignId);
     criterio("a atribuição foi REMOVIDA, não gravada",
       (atribuicoes ?? []).length === 0, JSON.stringify(atribuicoes));
-    await narrador.rpc("present_vtt_scene", {
+    await exigirRpc("levar a mesa para a Torre", narrador.rpc("present_vtt_scene", {
       p_campaign_id: campaignId, p_scene_id: torre, p_expected_revision: null,
-    });
+    }));
     const { data: almaLivre } = await alma.rpc("vtt_minha_cena", { p_campaign_id: campaignId });
     criterio("e ela volta a acompanhar a mesa", almaLivre === torre);
-    await narrador.rpc("present_vtt_scene", {
+    await exigirRpc("devolver a mesa à Praça antes de reagrupar", narrador.rpc("present_vtt_scene", {
       p_campaign_id: campaignId, p_scene_id: praca, p_expected_revision: null,
-    });
+    }));
 
     console.log("\n— Reagrupar —");
     await exigirRpc("separar os dois antes de reagrupar", narrador.rpc("move_players_to_scene", {
@@ -244,13 +244,17 @@ async function main() {
       "não participa desta campanha");
     await recusa("nem para cena arquivada",
       (async () => {
-        await narrador.rpc("archive_vtt_scene", { p_scene_id: torre });
+        // A Torre PRECISA estar arquivada para a recusa significar o que
+        // o caso diz. Se o arquivamento falhasse, a recusa viria por
+        // outro motivo — ou não viria, e o caso reportaria "ACEITOU"
+        // culpando a regra errada.
+        await exigirRpc("arquivar a Torre", narrador.rpc("archive_vtt_scene", { p_scene_id: torre }));
         return narrador.rpc("move_players_to_scene", {
           p_campaign_id: campaignId, p_user_ids: [almaId], p_scene_id: torre,
         });
       })(),
       "cena arquivada");
-    await narrador.rpc("restore_vtt_scene", { p_scene_id: torre });
+    await exigirRpc("restaurar a Torre", narrador.rpc("restore_vtt_scene", { p_scene_id: torre }));
 
     console.log("\n— O que cada um enxerga das atribuições —");
     await exigirRpc("separar o Bruno", narrador.rpc("move_players_to_scene", {

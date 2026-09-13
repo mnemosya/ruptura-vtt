@@ -30,6 +30,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { ConsoleMessage } from "playwright";
 import { chromium, type BrowserContext, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
+import { exigirRpc } from "./rpcObrigatoria";
 
 loadDotenv({ path: ".env.local" });
 function requireEnv(nome: string): string {
@@ -195,12 +196,15 @@ async function main() {
     await page.waitForTimeout(1500); // assenta via canal de terreno normal, ANTES da invalidação de token
     const cliNarrador = createClient(supabaseUrl, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
     await cliNarrador.auth.signInWithPassword({ email: narradorEmail!, password: narradorSenha! });
-    await cliNarrador.rpc("create_vtt_token", {
+    // Criar o token é PRÉ-CONDIÇÃO da invalidação que se quer observar.
+    // Se a criação falhasse, a UI não mostraria nada — e o caso acusaria
+    // o Realtime por um evento que nunca teve o que anunciar.
+    await exigirRpc("criar o token da concorrência", cliNarrador.rpc("create_vtt_token", {
       p_scene_id: sceneId, p_campaign_id: campaignId, p_nome: "Concorrência C", p_sigla: "CC",
       p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_pegada_personalizada: null,
       p_q: 2, p_r: 2, p_character_id: null, p_visivel: true, p_bloqueado: false,
       p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
-    });
+    }));
     await page.waitForTimeout(2000);
     const { data: aindaLa } = await admin.from("vtt_terrain").select("tipo").eq("scene_id", sceneId).eq("q", 7).eq("r", 7).maybeSingle();
     registrar("3 (ordem inversa: terreno já existente antes da invalidação continua depois dela)", aindaLa?.tipo === "bloqueado", `tipo=${aindaLa?.tipo}`);
