@@ -72,11 +72,6 @@
   overflow: hidden;
 }
 .rv-mesa *, .rv-mesa *::before, .rv-mesa *::after { box-sizing: border-box; }
-.rv-eyebrow {
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase;
-  color: var(--cy);
-}
 
 /* DICA — o balãozinho de hover/foco. Era uma caixa cinza sem fio e com
    texto corrido: a única peça flutuante do VTT que não se parecia com
@@ -183,12 +178,37 @@
   user-select: none; -webkit-user-select: none;
 }
 
-/* O nome da cena no canto do palco. Prefixo `rv-hud-` porque `.rv-cena-nome`
-   e `.rv-cena-local` JÁ existiam no catálogo de cenas, mais abaixo neste
-   arquivo: duas peças sem relação disputando dois nomes, e a de baixo
-   ganhando. O resultado era invisível na revisão e gritante na tela — este
-   título vinha renderizando em Inter 12px em vez de Orbitron 17px. */
-.rv-cena { position: absolute; left: 18px; top: 12px; z-index: 10; pointer-events: none; text-shadow: 0 2px 12px rgba(0,0,0,.9); }
+/* CENA ATIVA — chip no RODAPÉ do palco (Figma 467:5999).
+   Substituiu o título sobreposto no canto superior esquerdo, que
+   ocupava a faixa onde a mesa mais olha pra repetir um dado de
+   contexto. Aqui cabe numa linha e ainda é o atalho pra trocar de
+   cena.
+
+   Fica acima do mapa (`z-index`) mas abaixo das janelas de ferramenta,
+   e nunca cobre os trilhos de facção — eles terminam em
+   `bottom: 108px`, este começa em 12. */
+.rv-cena-chip {
+  position: absolute; left: 10px; bottom: 12px; z-index: 14;
+  display: inline-flex; align-items: center; gap: 8px;
+  max-width: min(520px, calc(100% - 40px));
+  margin: 0; padding: 8px 12px;
+  border: 1px solid var(--rv-line); border-radius: 2px;
+  background: var(--rv-panel);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px; line-height: 15px;
+  color: var(--rv-ink-dim);
+  cursor: pointer;
+  transition: border-color .14s, background .14s;
+}
+.rv-cena-chip[data-estatico="true"] { cursor: default; }
+.rv-cena-chip:not([data-estatico]):hover { border-color: var(--rv-line-hover); background: var(--rv-panel-2); }
+.rv-cena-chip:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.rv-cena-chip__rot { flex: none; color: #637a9d; }
+/* O nome é o que pode ser longo — é ele que corta, nunca o rótulo nem
+   o chevron (que some primeiro se a janela for estreita demais). */
+.rv-cena-chip__nome { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #abbfdf; }
+.rv-cena-chip svg { flex: none; color: var(--rv-ink-faint); }
+.rv-cena-chip:not([data-estatico]):hover svg { color: var(--rv-ink-dim); }
 
 /* A cor e a opacidade da linha vêm da CENA (0122), por variável: elas
    mudam por cena e o CSS não pode saber qual está aberta. Os padrões

@@ -17,6 +17,7 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { MapaHex, type CenaMapa, type EstadoVisualToken } from "../../mesas/[campaignId]/vtt/_mapa/MapaHex";
 import type { AreaDesenhavel } from "../../mesas/[campaignId]/vtt/_mapa/CamadaAreas";
 import { AcoesAreaFlutuantes } from "../../mesas/[campaignId]/vtt/_shell/AcoesAreaFlutuantes";
@@ -175,6 +176,14 @@ export function VitrineMapa() {
         cobertura e PD. Clique num token para selecionar; o realce muda de cor conforme o tipo.
       </span>
       <div className="gal-palco gal-palco--mapa">
+        {/* Chip "Cena ativa" — peça do palco (`VttClient`), montada aqui
+            só pra poder ser vista sem sessão. Os dois estados: narrador
+            (botão que abre o catálogo) e jogador (texto). */}
+        <button type="button" className="rv-cena-chip" style={{ position: "absolute", left: 10, bottom: 12 }}>
+          <span className="rv-cena-chip__rot">Cena ativa:</span>
+          <span className="rv-cena-chip__nome">Doca 7 — o mercado que se desfez</span>
+          <ChevronDown size={14} aria-hidden="true" />
+        </button>
         <MapaHex
           cena={CENA}
           zoom={zoom}

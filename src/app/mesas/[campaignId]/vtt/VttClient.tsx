@@ -30,7 +30,7 @@ import {
   UserPlus, Box,
   Radio, Focus, ClipboardPaste, Pencil, Copy, RotateCcw, RotateCw, Eye, EyeOff, Lock, Unlock, Trash2,
   Dices, Clapperboard,
-  ImageUp , ScrollText } from "lucide-react";
+  ImageUp , ScrollText , ChevronDown } from "lucide-react";
 import { MapaHex, TAM, type EstadoVisualToken, type CenaMapa } from "./_mapa/MapaHex";
 import { type AlcaArea, type AreaDesenhavel, type EstadoVisualArea, type GuiaGesto } from "./_mapa/CamadaAreas";
 import { type Hex, type TamanhoCriatura, hexDistancia, hexKey, hexNoRaio, hexIguais, hexParaPixel } from "./_mapa/hex";
@@ -3969,6 +3969,21 @@ export function VttClient({
   // 0097): narrador-only e revisão conferida no servidor.
   const [painelCenaAberto, setPainelCenaAberto] = useState(false);
   const [painelCenasAberto, setPainelCenasAberto] = useState(false);
+  /**
+   * Abrir/fechar o catálogo de cenas — DOIS gatilhos, um caminho só: o
+   * botão da barra de ferramentas e o chip "Cena ativa" no rodapé do
+   * palco. Duplicar a sequência (fechar as outras janelas, voltar pra
+   * Interagir) em dois lugares é como elas divergem.
+   */
+  const alternarCatalogoCenas = useCallback(() => {
+    setPainelCenasAberto((aberto) => {
+      const abrir = !aberto;
+      if (abrir) trocarFerramenta("interagir");
+      setPainelCamadasAberto(false);
+      setPainelCenaAberto(false);
+      return abrir;
+    });
+  }, []);
   const [salvandoCena, setSalvandoCena] = useState(false);
   const [erroConfigCena, setErroConfigCena] = useState<string | null>(null);
   /** Tamanho em EDIÇÃO — só pra contar o que ficaria fora da grade. */
@@ -5414,13 +5429,7 @@ export function VttClient({
             type="button" className="rv-ferr-btn" data-tipo="janela"
             aria-pressed={painelCenasAberto} aria-label="Catálogo de cenas"
             data-testid="barra-cenas"
-            onClick={() => {
-              const abrir = !painelCenasAberto;
-              if (abrir) trocarFerramenta("interagir");
-              setPainelCamadasAberto(false);
-              setPainelCenaAberto(false);
-              setPainelCenasAberto(abrir);
-            }}
+            onClick={alternarCatalogoCenas}
           ><Clapperboard size={17} /></button>
         )}
         {/* Configurar a cena é do narrador — nome, local e tamanho da
@@ -5544,12 +5553,35 @@ export function VttClient({
           />
         </div>
 
-        {/* cabeçalho sobreposto, pequeno — nome/local SEMPRE da cena persistida. */}
-        <header className="rv-cena">
-          <span className="rv-eyebrow">Cena ativa</span>
-          <h1 className="rv-hud-cena-nome">{estadoCena?.cena.nome}</h1>
-          {estadoCena?.cena.local && <p className="rv-hud-cena-local">{estadoCena.cena.local}</p>}
-        </header>
+        {/* CENA ATIVA — no rodapé do palco, não mais como título
+            sobreposto no canto superior. O título ocupava a faixa onde
+            a mesa mais olha (o alto do mapa) pra repetir um dado que é
+            de contexto, não de jogo; aqui ele cabe numa linha e ainda
+            vira o atalho pra TROCAR de cena.
+
+            Pro narrador é um botão que abre o catálogo — a mesma janela
+            do botão da barra, pelo mesmo caminho (`alternarCatalogoCenas`).
+            Pro jogador é texto: `list_vtt_scenes` não conta a ele que
+            existem outras cenas, e oferecer um seletor que não abre nada
+            seria a UI prometendo o que o servidor nega. */}
+        {estadoCena && (ehNarrador ? (
+          <button
+            type="button" className="rv-cena-chip"
+            onClick={alternarCatalogoCenas}
+            aria-haspopup="dialog" aria-expanded={painelCenasAberto}
+            title="Trocar de cena"
+            data-testid="cena-chip"
+          >
+            <span className="rv-cena-chip__rot">Cena ativa:</span>
+            <span className="rv-cena-chip__nome">{estadoCena.cena.nome}</span>
+            <ChevronDown size={14} aria-hidden="true" />
+          </button>
+        ) : (
+          <p className="rv-cena-chip" data-estatico="true" data-testid="cena-chip">
+            <span className="rv-cena-chip__rot">Cena ativa:</span>
+            <span className="rv-cena-chip__nome">{estadoCena.cena.nome}</span>
+          </p>
+        ))}
 
         {ferramenta === "terreno" && ehNarrador && (
           <PainelTerreno
