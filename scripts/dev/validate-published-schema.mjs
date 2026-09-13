@@ -192,6 +192,25 @@ function draftSpellDano() {
           ],
         },
       },
+      // Este caso É o caminho de legado da Etapa 6: um documento antigo
+      // aberto para edição. Sem esta marca o serializador trata o
+      // rascunho como REEDIÇÃO normal, e aí substituir o
+      // `efeito_com_resistencia` pela árvore editável é o comportamento
+      // correto e deliberado (ver `ehEfeitoLegadoSubstituivel`). A
+      // fixture foi escrita antes de `origemLegado` existir e descrevia
+      // um cenário que já não era o que ela afirmava testar.
+      origemLegado: {
+        adapterId: "spell",
+        adapterVersion: "1.0.0",
+        classificacaoLegado: "conversao_direta",
+        decisoesConfirmadas: {},
+        camposSomenteLeitura: [],
+        camposDesconhecidos: [],
+        efeitosPreservados: ["efeito_com_resistencia"],
+        avisos: [],
+        convertidoEm: "2026-01-01T00:00:00.000Z",
+        convertidoPor: "validador",
+      },
       preservado: {
         // Efeito legado preservado (teste_resistencia/outro) — precisa sobreviver intacto.
         rawOriginal: {
