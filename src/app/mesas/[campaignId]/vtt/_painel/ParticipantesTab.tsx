@@ -57,8 +57,8 @@ export function ParticipantesTab({
   onAbrirJanela?: () => void;
   /**
    * Controles prontos, só para a galeria visual em `/dev/estilos` —
-   * nunca usado pela mesa real. Mesmo padrão do `visualFixtureData` do
-   * `SelectedTokenHud`: o roster e a presença vêm do contexto de
+   * nunca usado pela mesa real. Mesmo padrão do `dadosFixos` do
+   * `CartaoTokenHover`: o roster e a presença vêm do contexto de
    * sessão, mas quem controla qual personagem vem do servidor, e sem
    * isso a aba mostraria só o erro de autorização.
    */

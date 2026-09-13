@@ -38,7 +38,7 @@ const removed = applyConsoleMutation(added.character, { type: "condition_remove"
 assert.equal(removed.character.condicoes_ativas?.at(-1)?.ativa, false);
 
 const vttClient = readFileSync("src/app/mesas/[campaignId]/vtt/VttClient.tsx", "utf8");
-const hud = readFileSync("src/app/mesas/[campaignId]/vtt/_shell/SelectedTokenHud.tsx", "utf8");
+const cartao = readFileSync("src/app/mesas/[campaignId]/vtt/_shell/CartaoTokenHover.tsx", "utf8");
 const vitals = readFileSync("src/app/ficha/_console/panels/VitalsRow.tsx", "utf8");
 const identity = readFileSync("src/app/ficha/_console/panels/IdentityAside.tsx", "utf8");
 const conditions = readFileSync("src/app/ficha/_console/panels/PinsAndConditions.tsx", "utf8");
@@ -51,14 +51,19 @@ assert.match(identity, /export function PointResourceControls/);
 assert.match(identity, /<PointResourceControls/);
 assert.match(conditions, /export function ConditionsControls/);
 assert.match(conditions, /<ConditionsControls/);
-assert.match(hud, /<ResourceControls/);
-assert.match(hud, /<PointResourceControls/);
-assert.match(hud, /<ConditionsControls/);
-assert.match(hud, /applyConsoleMutation/);
+// O CARTÃO DE HOVER substituiu o HUD de token selecionado. O que este
+// arquivo cobre não mudou de natureza — a projeção de servidor e a
+// matemática de recurso continuam as mesmas —, mas a tela que as
+// consome, sim.
+assert.match(cartao, /ResourceValueCard/, "O valor editável tem que ser o MESMO componente da ficha — é o que garante a regra de \"-5\" sem uma segunda implementação.");
+assert.match(cartao, /readSelectedTokenHudAction/, "A leitura continua sendo a projeção autorizada do servidor.");
+assert.match(cartao, /mutateSelectedTokenHudAction/, "A escrita continua passando pela action, nunca direto na tabela.");
+assert.doesNotMatch(cartao, /PointResourceControls|ConditionsControls/, "PA, reações e condições saíram do mapa de propósito: elas vivem na ficha.");
 
-assert.match(vttClient, /const tokenDoHud = tokenSelecionado;/, "HUD deve seguir só a seleção explícita.");
-assert.doesNotMatch(vttClient, /function Hud\(/, "Dock antigo não pode permanecer montável.");
-assert.match(vttClient, /setSelecionadoId\(null\)/, "Limpar seleção deve desmontar o HUD.");
+assert.match(vttClient, /<CartaoTokenHover/, "A mesa monta o cartão de hover.");
+assert.doesNotMatch(vttClient, /SelectedTokenHud/, "O HUD antigo não pode voltar a ser montado.");
+assert.match(vttClient, /ATRASO_CARTAO_MS/, "O cartão só aparece depois de uma parada deliberada do ponteiro.");
+assert.match(vttClient, /CARENCIA_CARTAO_MS/, "E some com carência — sem ela não dá pra levar o mouse até os pips.");
 
 assert.match(migration, /pv_publico boolean not null default false/);
 assert.match(migration, /pe_publico boolean not null default false/);
@@ -69,4 +74,4 @@ assert.match(migration, /create or replace function public\.update_linked_vtt_hu
 assert.match(migration, /public\.is_campaign_member\(t\.campaign_id, check_user_id\)/);
 assert.doesNotMatch(realtime, /table: "vtt_tokens"/, "Linha privada de token não deve entrar no payload Realtime do cliente.");
 
-console.log("test-vtt-selected-hud: recursos, pontos, defesa, condições, seleção, autorização e projeção — OK");
+console.log("test-vtt-cartao-token: recursos, pontos, defesa, condições, seleção, autorização e projeção — OK");

@@ -6,7 +6,6 @@ import "../../mesas/[campaignId]/vtt/vtt.css";
 import "../../mesas/[campaignId]/vtt/_painel/painel.css";
 // O HUD do token entra reaproveitando o harness de `/dev/vtt-hud`, que
 // traz a própria folha de estilo do palco de mentira dele.
-import "../vtt-hud/visual-harness.css";
 import "../../_design/console.css";
 // NÃO importar mesa.css / app.css / auth.css aqui. Cada uma dessas
 // folhas assume que é DONA do documento — `.rv-seg-btn` é `flex: 1`,

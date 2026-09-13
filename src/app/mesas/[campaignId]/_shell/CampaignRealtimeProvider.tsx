@@ -173,8 +173,8 @@ export interface CampaignSessionValue {
 /**
  * O contexto é EXPORTADO só para a galeria de estilos (`/dev/estilos`),
  * que monta as abas do painel com uma sessão fabricada em vez de abrir
- * uma campanha de verdade. Mesma ideia do `visualFixtureData` do
- * `SelectedTokenHud`: a mesa real nunca usa isto, e quem consome a
+ * uma campanha de verdade. Mesma ideia do `dadosFixos` do
+ * `CartaoTokenHover`: a mesa real nunca usa isto, e quem consome a
  * sessão continua fazendo por `useCampaignSession`.
  */
 export const CampaignSessionContext = createContext<CampaignSessionValue | null>(null);

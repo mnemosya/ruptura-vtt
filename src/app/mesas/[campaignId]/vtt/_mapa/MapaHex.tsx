@@ -238,7 +238,14 @@ export interface PropsMapaHex {
   celulasRealce: Hex[];
   tipoRealce: "alcance" | "area" | "movimento" | "objeto" | null;
   onSelecionarToken: (id: string, aditivo: boolean) => void;
-  onHoverToken: (id: string | null) => void;
+  /**
+   * Hover de token. A ÂNCORA (retângulo do token na tela, do
+   * `getBoundingClientRect` do próprio `<g>`) vem junto porque quem
+   * desenha o cartão de hover (`VttClient`) precisa ancorá-lo no token
+   * — e medir o elemento é exato, enquanto refazer a conta de
+   * mundo→tela aqui fora seria uma segunda implementação do zoom/pan.
+   */
+  onHoverToken: (id: string | null, ancora?: { x: number; y: number; width: number; height: number }) => void;
   onClicarCelula?: (h: Hex) => void;
 
   /**
@@ -3397,7 +3404,7 @@ function Token({
   opacoReduzido?: boolean;
   ferramenta?: PropsMapaHex["ferramenta"];
   onSelecionar: (id: string, aditivo: boolean) => void;
-  onHover: (id: string | null) => void;
+  onHover: (id: string | null, ancora?: { x: number; y: number; width: number; height: number }) => void;
   /** Devolve SE o arrasto começou — o `pointerdown` precisa disso pra saber se pode adiar a decisão sobre a seleção (ver o handler). */
   onIniciarArrasto?: () => boolean;
   onIniciarMedicao?: (clientX: number, clientY: number) => void;
@@ -3539,7 +3546,10 @@ function Token({
         onSelecionar(token.id, e.shiftKey);
       }}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelecionar(token.id, e.shiftKey); } }}
-      onMouseEnter={() => onHover(token.id)}
+      onMouseEnter={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        onHover(token.id, { x: r.x, y: r.y, width: r.width, height: r.height });
+      }}
       onMouseLeave={() => onHover(null)}
     >
       {/* Pegada: realce discreto de TODA célula ocupada, em coordenadas

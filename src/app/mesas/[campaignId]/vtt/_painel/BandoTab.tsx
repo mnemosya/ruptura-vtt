@@ -57,8 +57,8 @@ export function BandoTab({
   onAbrirJanela?: () => void;
   /**
    * Dados prontos, só para a galeria visual em `/dev/estilos` — nunca
-   * usado pela mesa real. Mesmo padrão do `visualFixtureData` do
-   * `SelectedTokenHud`: sem ele, a única forma de ver esta aba fora de
+   * usado pela mesa real. Mesmo padrão do `dadosFixos` do
+   * `CartaoTokenHover`: sem ele, a única forma de ver esta aba fora de
    * uma campanha seria o estado de erro.
    */
   fixtureVisual?: BandoPainel;

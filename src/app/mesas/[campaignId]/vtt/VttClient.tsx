@@ -30,7 +30,7 @@ import {
   UserPlus, Box,
   Radio, Focus, ClipboardPaste, Pencil, Copy, RotateCcw, RotateCw, Eye, EyeOff, Lock, Unlock, Trash2,
   Dices, Clapperboard,
-} from "lucide-react";
+  ImageUp } from "lucide-react";
 import { MapaHex, TAM, type EstadoVisualToken, type CenaMapa } from "./_mapa/MapaHex";
 import { type AlcaArea, type AreaDesenhavel, type EstadoVisualArea, type GuiaGesto } from "./_mapa/CamadaAreas";
 import { type Hex, type TamanhoCriatura, hexDistancia, hexKey, hexNoRaio, hexIguais, hexParaPixel } from "./_mapa/hex";
@@ -134,7 +134,8 @@ import { PainelMarcar, type CorMarcaUi, type SinalMarcaUi, type DuracaoMarcaUi }
 import { PainelCena, type ValoresCena } from "./_shell/PainelCena";
 import { GerenciadorCenas } from "./_cenas/GerenciadorCenas";
 import { esquecerCenaVista, gravarCenaVista, lerCenaVista } from "./_cenas/modelo";
-import { SelectedTokenHud, type HudConditionOption } from "./_shell/SelectedTokenHud";
+import { CartaoTokenHover } from "./_shell/CartaoTokenHover";
+import { EditorRetratoToken } from "./_shell/EditorRetratoToken";
 import { PainelVtt } from "./_painel/PainelVtt";
 import {
   MIME_PERSONAGEM_ARRASTADO,
@@ -238,17 +239,9 @@ function validarPosicaoToken(params: {
 export function VttClient({
   campaignId,
   papel,
-  hudRules,
-  hudReactionRules,
-  hudTalents,
-  hudConditions,
 }: {
   campaignId: string;
   papel: "narrator" | "player";
-  hudRules: CharacterRulesPayload | null;
-  hudReactionRules: ReactionRules;
-  hudTalents: TalentContent[];
-  hudConditions: HudConditionOption[];
 }) {
   const ehNarrador = papel === "narrator";
 
@@ -309,7 +302,44 @@ export function VttClient({
   const [selecionadoId, setSelecionadoId] = useState<string | null>(null);
   const [selecionadosIds, setSelecionadosIds] = useState<Set<string>>(new Set());
   const [hoverId, setHoverId] = useState<string | null>(null);
-  const [hudInvalidationKey, setHudInvalidationKey] = useState(0);
+  /** Token cujo retrato está sendo trocado — aberto pelo menu contextual (ver `itensMenuContextual`). */
+  const [editandoRetratoDe, setEditandoRetratoDe] = useState<string | null>(null);
+  /**
+   * CARTÃO DE HOVER do token (substituto do HUD de seleção).
+   *
+   * Aparece depois de uma PARADA deliberada do ponteiro sobre o token
+   * — passar por cima a caminho de outra coisa não abre nada. E some
+   * com uma carência, não na hora: sem ela seria impossível levar o
+   * mouse do token até o cartão pra clicar num pip, porque o caminho
+   * entre os dois passa por fora dos dois.
+   */
+  const ATRASO_CARTAO_MS = 420;
+  const CARENCIA_CARTAO_MS = 200;
+  const [cartaoHover, setCartaoHover] = useState<{ tokenId: string; ancora: { x: number; y: number; width: number; height: number } } | null>(null);
+  const timerCartaoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sobreCartaoRef = useRef(false);
+
+  const limparTimerCartao = useCallback(() => {
+    if (timerCartaoRef.current) { clearTimeout(timerCartaoRef.current); timerCartaoRef.current = null; }
+  }, []);
+
+  const aoHoverToken = useCallback((id: string | null, ancora?: { x: number; y: number; width: number; height: number }) => {
+    setHoverId(id);
+    limparTimerCartao();
+    if (id && ancora) {
+      timerCartaoRef.current = setTimeout(() => setCartaoHover({ tokenId: id, ancora }), ATRASO_CARTAO_MS);
+      return;
+    }
+    // Saiu do token: o cartão só fecha se o ponteiro também não estiver
+    // dentro DELE — é o que permite ir do token até os pips.
+    timerCartaoRef.current = setTimeout(() => {
+      if (!sobreCartaoRef.current) setCartaoHover(null);
+    }, CARENCIA_CARTAO_MS);
+  }, [limparTimerCartao]);
+
+  // Um gesto de mapa (arrastar token, pan, zoom, abrir menu) tira o
+  // cartão da frente na hora: ele é ajuda passiva, nunca obstáculo.
+  useEffect(() => () => limparTimerCartao(), [limparTimerCartao]);
   const [modoTerreno, setModoTerreno] = useState<TipoTerreno | null>("dificil");
   const [raioPincelTerreno, setRaioPincelTerreno] = useState(0); // 0/1/2 → 1/7/19 células (hexNoRaio)
   const [modoPincelTerreno, setModoPincelTerreno] = useState<"pincel" | "balde">("pincel");
@@ -2678,7 +2708,6 @@ export function VttClient({
       campaignId,
       sceneId,
       onChanged: () => {
-        setHudInvalidationKey((key) => key + 1);
         recarregarTokensAutorizados();
       },
     });
@@ -4100,9 +4129,21 @@ export function VttClient({
       { id: "girar-esq", rotulo: "Rotacionar à esquerda", icone: <RotateCcw size={14} />, onSelecionar: () => onRotacionarToken(tokenId, -1) },
       { id: "girar-dir", rotulo: "Rotacionar à direita", icone: <RotateCw size={14} />, onSelecionar: () => onRotacionarToken(tokenId, 1) },
     ];
+    // ALTERAR RETRATO — a única porta que o JOGADOR tem pra isso.
+    // Ela era o retrato do HUD ("o retrato é o botão"), e sumiu junto
+    // com ele; sem este item, `EditorRetratoToken` viraria código
+    // inalcançável e a 0101, que existe justamente pra dar esse
+    // caminho a quem controla o token sem conduzir a mesa, deixaria de
+    // ter efeito. Aparece pra quem pode mover o token — a mesma
+    // autorização que o HUD usava (`canControl`).
+    const itemRetrato: ItemMenuContextual = {
+      id: "retrato", rotulo: "Alterar retrato", icone: <ImageUp size={14} />,
+      onSelecionar: () => setEditandoRetratoDe(tokenId),
+    };
     if (ehNarrador) {
       return [
         { id: "editar", rotulo: "Editar", icone: <Pencil size={14} />, onSelecionar: () => abrirEditarToken(tokenId) },
+        itemRetrato,
         { id: "duplicar", rotulo: "Duplicar", icone: <Copy size={14} />, onSelecionar: () => duplicarTokenHandler(tokenId) },
         ...itensGiro.map((item, i) => (i === 0 ? { ...item, separadorAntes: true } : item)),
         { id: "ocultar", rotulo: t.visivel ? "Ocultar" : "Revelar", icone: t.visivel ? <EyeOff size={14} /> : <Eye size={14} />, onSelecionar: () => definirFlagsHandler(tokenId, "visivel"), separadorAntes: true },
@@ -4111,7 +4152,7 @@ export function VttClient({
       ];
     }
     if (!podeMoverToken(tokenId)) return [];
-    return itensGiro;
+    return [...itensGiro, { ...itemRetrato, separadorAntes: true }];
   }
 
   // ── Terreno (narrador): pincel com raio (1/7/19 células via
@@ -5339,7 +5380,7 @@ export function VttClient({
             onRotacionarImagem={(id, graus) => { void imgs.rotacionar(id, graus); }}
             celulasRealce={ferramenta === "objetos" ? celulasObjetoPendente : []}
             tipoRealce={ferramenta === "objetos" ? "objeto" : null}
-            onSelecionarToken={onSelecionarToken} onHoverToken={setHoverId}
+            onSelecionarToken={onSelecionarToken} onHoverToken={aoHoverToken}
             terrenoReal={terrenoReal}
             ferramenta={ferramenta}
             podeMoverToken={podeMoverToken}
@@ -5701,24 +5742,53 @@ export function VttClient({
           />
         )}
 
-        {/* ── HUD persistente da seleção, separado da trilha ── */}
-        {tokenDoHud && (
-          <SelectedTokenHud
-            key={tokenDoHud.id}
-            campaignId={campaignId}
-            token={tokenDoHud}
-            invalidationKey={hudInvalidationKey}
-            rules={hudRules}
-            reactionRules={hudReactionRules}
-            talents={hudTalents}
-            conditions={hudConditions}
-            canUndo={historico.desfazer.length > 0}
-            canRedo={historico.refazer.length > 0}
-            onUndo={desfazer}
-            onRedo={refazer}
-            onRotate={(direction) => onRotacionarToken(tokenDoHud.id, direction)}
-          />
-        )}
+        {editandoRetratoDe && (() => {
+          const t = tokenPorId.get(editandoRetratoDe);
+          if (!t) return null;
+          return (
+            <div className="rv-retrato-editor-flutuante">
+              <EditorRetratoToken
+                campaignId={campaignId}
+                tokenId={t.id}
+                revision={t.revision}
+                retratoUrlAtual={t.retrato}
+                previewAtual={t.retrato}
+                origem={t.origemRetrato}
+                nomePersonagem={null}
+                onConcluido={(o) => { if (!o?.manterAberto) setEditandoRetratoDe(null); }}
+                onCancelar={() => setEditandoRetratoDe(null)}
+              />
+            </div>
+          );
+        })()}
+
+        {/* ── Cartão de hover do token ──────────────────────────
+            Aqui vivia o HUD de token selecionado: uma faixa fixa na
+            base do palco com retrato, recursos, condições, PA, reações
+            e defesa. A premissa era que a mesa vive no mapa; na prática
+            o jogador fica com a FICHA aberta durante o combate, e o HUD
+            passou a tapar mapa pra repetir o que já estava na tela ao
+            lado. O que sobrou é o que só o mapa responde: quem é este
+            token e como ele está — e só enquanto se olha pra ele. */}
+        {cartaoHover && (() => {
+          const t = tokenPorId.get(cartaoHover.tokenId);
+          if (!t) return null;
+          return (
+            <CartaoTokenHover
+              key={cartaoHover.tokenId}
+              campaignId={campaignId}
+              tokenId={cartaoHover.tokenId}
+              nomeInicial={t.nome}
+              ancora={cartaoHover.ancora}
+              onEntrar={() => { sobreCartaoRef.current = true; limparTimerCartao(); }}
+              onSair={() => {
+                sobreCartaoRef.current = false;
+                limparTimerCartao();
+                timerCartaoRef.current = setTimeout(() => setCartaoHover(null), CARENCIA_CARTAO_MS);
+              }}
+            />
+          );
+        })()}
 
         {painelCenaAberto && ehNarrador && estadoCena && (
           <PainelCena

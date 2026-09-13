@@ -29,7 +29,7 @@ import { TrilhaFaccoes } from "../../mesas/[campaignId]/vtt/_turnos/TrilhaFaccoe
    montadas (`/dev/vtt-hud`). Ele entra na galeria REAPROVEITADO, não
    copiado: duas fixtures do mesmo HUD envelheceriam em ritmos
    diferentes, e a que ninguém abre é a que passa a mentir. */
-import { VttHudVisualHarness } from "../vtt-hud/VttHudVisualHarness";
+import { VitrineCartaoToken } from "./GaleriaCartaoToken";
 import { VitrineCamadas, VitrineCena, VitrineDados, VitrineMarcar, VitrineMedir, VitrineMoldura as VitrineMolduraJanela } from "./GaleriaJanelas";
 import { VitrineGaveta, VitrineLadrilho, VitrineParametros } from "./GaleriaCenas";
 import {
@@ -429,12 +429,12 @@ function montarPecas(campaignId: string | null): Peca[] { return [
       <VitrineMapa />
     </Secao>
   ) },
-  { chave: "hud-token", grupo: "Mapa e HUD", rotulo: "HUD do token", render: () => (
+  { chave: "hud-token", grupo: "Mapa e HUD", rotulo: "Cartão do token", render: () => (
     <Secao
-      titulo="HUD do token"
-      sub={<>As quatro situações do HUD: controlador com ficha, observador, narrador sem ficha e personagem sem recursos. O componente aceita <code>visualFixtureData</code> justamente pra isto — nenhuma action é chamada. Componente: <code>_shell/SelectedTokenHud.tsx</code>.</>}
+      titulo="Cartão do token"
+      sub={<>Os três estados do cartão que aparece ao parar o ponteiro sobre um token: sem permissão nenhuma (só o nome), podendo ver, e controlando. Quem decide é o servidor — a galeria usa <code>dadosFixos</code> e não chama action nenhuma. Componente: <code>_shell/CartaoTokenHover.tsx</code>.</>}
     >
-      <div className="gal-hud"><VttHudVisualHarness /></div>
+      <VitrineCartaoToken />
     </Secao>
   ) },
   { chave: "mapa-token", grupo: "Mapa e HUD", rotulo: "Gerenciador de token", render: () => (

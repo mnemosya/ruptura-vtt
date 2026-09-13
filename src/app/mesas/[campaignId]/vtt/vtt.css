@@ -189,8 +189,6 @@
    ganhando. O resultado era invisível na revisão e gritante na tela — este
    título vinha renderizando em Inter 12px em vez de Orbitron 17px. */
 .rv-cena { position: absolute; left: 18px; top: 12px; z-index: 10; pointer-events: none; text-shadow: 0 2px 12px rgba(0,0,0,.9); }
-.rv-hud-cena-nome { margin: 1px 0 0; font-family: var(--font-orbitron), sans-serif; font-size: 17px; font-weight: 700; color: var(--txt-forte); }
-.rv-hud-cena-local { margin: 1px 0 0; font-size: 11.5px; color: var(--txt-dim); }
 
 /* A cor e a opacidade da linha vêm da CENA (0122), por variável: elas
    mudam por cena e o CSS não pode saber qual está aberta. Os padrões
@@ -660,123 +658,10 @@
 .rv-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 
 /* ── HUD ─────────────────────────────────────────────────── */
-.rv-hud {
-  --hud-line: var(--linha-forte);
-  --hud-body-height: 164px;
-  position: absolute; left: 68px; bottom: 14px; z-index: 16;
-  width: max-content; max-width: calc(100% - 88px); min-height: 292px;
-  display: grid; grid-template-columns: 164px minmax(420px, 480px) 178px; align-items: end;
-  filter: drop-shadow(0 16px 24px rgba(0,0,0,.46)); color: #b8d8e8;
-}
-.rv-hud[data-has-points="false"] { grid-template-columns: 164px minmax(360px, 480px); }
-.rv-hud[data-has-center="false"] { grid-template-columns: 164px; }
-.rv-hud[data-has-resources="false"][data-has-center="true"] { --hud-body-height: 92px; }
-.rv-hud[data-collapsed="true"] { --hud-body-height: 108px; grid-template-columns: 132px minmax(330px, 430px); min-height: 132px; }
-.rv-hud[data-collapsed="true"][data-has-center="false"] { grid-template-columns: 132px; }
-.rv-hud-toggle {
-  position: absolute; right: 10px; top: -12px; width: 24px; height: 24px; z-index: 5;
-  display: flex; align-items: center; justify-content: center;
-  border: 1px solid var(--hud-line); border-radius: 50%; background: #10232f; color: var(--txt-dim); cursor: pointer; box-shadow: var(--sombra);
-}
-.rv-hud-toggle:hover { color: var(--cy); }
-.rv-hud[data-collapsed="true"] .rv-hud-toggle { transform: rotate(180deg); }
-.rv-hud-identity {
-  position: relative; z-index: 2; align-self: end; height: 292px; min-width: 0;
-  display: flex; flex-direction: column; overflow: visible;
-  border: 1px solid var(--hud-line); border-radius: var(--rv-r) 5px 5px 14px;
-  background: linear-gradient(155deg, rgba(18,39,52,.98), rgba(8,18,27,.97));
-  backdrop-filter: blur(14px);
-  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
-  box-shadow: inset 0 1px rgba(255,255,255,.035);
-}
-.rv-hud-namebar { min-height: 40px; padding: 6px 10px; display: flex; flex-direction: column; justify-content: center; border-bottom: 1px solid var(--hud-line); background: rgba(24,49,67,.5); }
-.rv-hud-namebar strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 13px var(--rv-display); color: #eaf6ff; }
-.rv-hud-namebar span { font: 600 10px var(--font-mono), monospace; letter-spacing: .12em; text-transform: uppercase; color: rgba(184,216,232,.5); }
-.rv-hud-portrait { flex: 1; min-height: 0; display: grid; place-items: center; overflow: hidden; background: radial-gradient(circle at 50% 35%, var(--rv-cy-soft), transparent 62%), #0c1721; }
-.rv-hud-portrait img { width: 100%; height: 100%; object-fit: cover; }
-.rv-hud-portrait > span { font: 700 32px var(--font-mono), monospace; letter-spacing: .08em; color: rgba(234,247,255,.88); }
-.rv-hud-header-actions {
-  position: absolute; z-index: 6; left: 8px; top: -23px;
-  width: max-content; display: flex; gap: 3px;
-}
-.rv-hud-header-actions button, .rv-hud-header-actions a {
-  height: 22px; min-width: 22px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid var(--linha-forte); background: var(--rv-sunken); color: var(--rv-ink-dim);
-  font: 600 10px var(--font-mono), monospace; text-decoration: none; cursor: pointer;
-}
-.rv-hud-header-actions button:hover:not(:disabled), .rv-hud-header-actions a:hover { color: #eaf6ff; border-color: var(--rv-line-max); }
-.rv-hud-header-actions button:disabled { opacity: .34; cursor: default; }
-.rv-hud-header-actions button:focus-visible, .rv-hud-header-actions a:focus-visible, .rv-hud-toggle:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 
-.rv-hud-center {
-  position: relative; align-self: end; min-width: 0; min-height: var(--hud-body-height); margin-left: -1px; padding: 8px 10px;
-  display: flex; flex-direction: column; justify-content: center; gap: 7px;
-  border: 1px solid var(--hud-line); background: linear-gradient(145deg, rgba(11,21,31,.97), rgba(7,13,20,.95));
-  backdrop-filter: blur(14px); box-shadow: inset 0 1px rgba(255,255,255,.035);
-}
-.rv-hud[data-has-resources="false"] .rv-hud-center { min-height: 92px; padding-block: 8px; }
-.rv-hud .rc-nres-card[data-variant="hud"] { padding: 7px; gap: 6px; background: rgba(16,26,38,.46); }
-.rv-hud .rc-nres-row { align-items: center; }
-.rv-hud .rc-nres-track { min-width: 82px; }
-.rv-hud .rc-nres-adj { width: 126px; }
-.rv-hud .rc-nres-eye { width: 20px; height: 20px; flex: none; display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: #6b91a0; cursor: pointer; }
-.rv-hud .rc-nres-eye[aria-pressed="true"] { color: #67defc; }
-.rv-hud .rc-nres-eye:disabled { opacity: .4; cursor: default; }
-.rv-hud .rc-nres-eye:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
-.rv-hud .rc-nres-val[role="status"] { cursor: default; }
-.rv-hud .rc-ncond-card[data-variant="hud"], .rv-hud .rc-ncond-card { padding: 7px; min-height: 38px; }
-.rv-hud .rc-ncond-wrap[data-variant="hud"] .rc-ncond-caption { padding: 3px 7px; font-size: 10px; }
-.rv-hud .rc-ncond-wrap[data-variant="hud"] .rc-ncond-tag, .rv-hud .rc-ncond-wrap[data-variant="hud"] .rc-ncond-add { height: 24px; }
-.rv-hud .rc-ncond-wrap[data-variant="hud"] .rc-ncond-vazio { font-size: 12px; }
 
-.rv-hud-right {
-  position: relative; align-self: end; min-height: var(--hud-body-height); margin-left: -1px; padding: 10px;
-  display: flex; flex-direction: column; justify-content: center; gap: 11px;
-  border: 1px solid var(--hud-line); border-radius: 0 5px 5px 0;
-  background: linear-gradient(145deg, rgba(9,20,29,.98), rgba(6,13,20,.96));
-  backdrop-filter: blur(14px); box-shadow: inset 0 1px rgba(255,255,255,.035);
-}
-.rv-hud-right .rc-npr[data-variant="hud"] { gap: 4px; }
-.rv-hud-right .rc-npr-label { font-size: 10px; letter-spacing: 1.2px; }
-.rv-hud-right .rc-npr-row { gap: 6px; }
-.rv-hud-right .rc-npr-defesa { margin-top: 2px; height: 25px; font-size: 12px; }
-.rv-hud-error { position: absolute; left: 174px; right: 10px; bottom: 5px; z-index: 7; margin: 0; padding: 3px 7px; background: rgba(55,17,24,.94); color: #ffc4cf; font-size: 10px; line-height: 1.2; }
-.rv-hud[data-collapsed="true"] .rv-hud-identity { height: 132px; }
-.rv-hud[data-collapsed="true"] .rv-hud-namebar { min-height: 34px; }
-.rv-hud[data-collapsed="true"] .rv-hud-header-actions { display: none; }
 /* O HUD é ancorado embaixo à esquerda: o trilho dos jogadores para
    acima dele em vez de disputar o mesmo pixel. */
-.rv-palco:has(.rv-hud) .rv-faccao--pj { bottom: 312px; }
-
-@media (max-width: 1040px) {
-  .rv-hud { left: 62px; max-width: calc(100% - 76px); min-height: 252px; grid-template-columns: 146px minmax(330px, 430px) 166px; }
-  .rv-hud-identity { height: 252px; }
-  .rv-hud[data-has-points="false"] { grid-template-columns: 146px minmax(320px, 430px); }
-  .rv-hud[data-has-center="false"] { grid-template-columns: 146px; }
-  .rv-hud-namebar strong { font-size: 12px; }
-  .rv-hud .rc-nres-adj { width: 120px; }
-}
-
-@media (max-width: 760px) {
-  .rv-hud, .rv-hud[data-controller="false"], .rv-hud[data-collapsed="true"] {
-    --hud-body-height: 124px; left: 58px; bottom: 8px; width: calc(100% - 66px); max-width: none; max-height: 48vh; overflow-y: auto;
-    grid-template-columns: 104px minmax(220px, 1fr); min-height: 154px;
-  }
-  .rv-hud[data-has-center="false"] { width: 104px; grid-template-columns: 104px; }
-  .rv-hud-identity { height: 154px; }
-  .rv-hud-right { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; padding: 8px 10px; border-top: 0; }
-  .rv-hud-center { min-height: var(--hud-body-height); }
-  .rv-hud-header-actions { left: 6px; top: -23px; }
-  .rv-hud .rc-nres-track { min-width: 60px; }
-  .rv-hud .rc-nres-adj { width: 116px; }
-  .rv-hud-error { left: 112px; right: 8px; }
-  /* Aqui o HUD ocupa a largura toda do rodapé (não só a esquerda), e é
-     mais alto: os DOIS trilhos param acima dele. Fica DEPOIS da regra
-     desktop de `--pj` de propósito — mesma especificidade, e é a
-     ordem que decide. */
-  .rv-palco:has(.rv-hud) .rv-faccao--pj,
-  .rv-palco:has(.rv-hud) .rv-faccao--pn { bottom: min(54vh, 440px); }
-}
 
 /* ── Painel ──────────────────────────────────────────────────────
    Orientação da barra de abas muda com o estado:
@@ -1405,9 +1290,6 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   opacity: 1; transition-delay: .35s;
 }
 .rv-area-item-acoes button .rv-dica { left: 50%; top: auto; bottom: calc(100% + 8px); transform: translateX(-50%); }
-
-@media (max-width: 900px) {
-}
 
 
 /* ── Áreas: revisão de UX (janela arrastável, guia, ações contextuais) ── */
@@ -3772,34 +3654,8 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-imagens-ajuste button:disabled,
 .rv-imagens-ajuste input:disabled { opacity: .45; cursor: not-allowed; }
 
-/* ── Retrato do HUD como botão (`_shell/SelectedTokenHud.tsx`) ────────
-   O retrato É o alvo: trocar a imagem do token clicando na imagem do
-   token dispensa mais um ícone na fileira de ações, que já tem seis.
-   O lápis só aparece no hover/foco — um selo permanente sobre o rosto
-   competiria com o próprio retrato, que é a informação. */
-.rv-hud-portrait--editavel { position: relative; padding: 0; border: none; cursor: pointer; }
-.rv-hud-portrait__lapis {
-  position: absolute; inset: 0; display: grid; place-items: center;
-  background: rgba(10,14,20,.66); color: #cfe0f7;
-  opacity: 0; transition: opacity .12s ease;
-}
-.rv-hud-portrait--editavel:hover .rv-hud-portrait__lapis,
-.rv-hud-portrait--editavel:focus-visible .rv-hud-portrait__lapis { opacity: 1; }
-.rv-hud-portrait--editavel:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 /* O editor abre ANCORADO no HUD, não no centro da tela: a pessoa está
    olhando o token, e um modal central a faria perder de vista qual. */
-.rv-hud-retrato-editor {
-  position: absolute; bottom: calc(100% + 8px); left: 0; z-index: 50;
-  width: min(300px, 92vw); padding: 12px;
-  /* `--rv-panel-grad` e `--rv-line`, a casca das janelas do VTT. A
-     primeira versão usava `--rv-raise`, que é um TINGIMENTO de
-     superfície (`rgba(255,255,255,.015)`), não um fundo — o painel
-     ficava praticamente transparente e o mapa aparecia através dele.
-     O fallback `#10161e` nunca entrava, porque a variável existe. */
-  border: 1px solid var(--rv-line); border-radius: var(--rv-r, 2px);
-  background: var(--rv-panel-grad, linear-gradient(160deg, #0b1424, #080e19));
-  box-shadow: 0 16px 44px rgba(0,0,0,.72);
-}
 
 /* Origem herdada: a cara vem da ficha, e este editor não manda nela. */
 .rv-editor-retrato__origem {
@@ -4779,4 +4635,139 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   color: var(--rv-ok);
   border-color: var(--rv-ok);
   background: color-mix(in srgb, var(--rv-ok) 20%, transparent);
+}
+
+/* ── Cartão de hover do token (`_shell/CartaoTokenHover.tsx`) ────────
+   Substituiu o HUD de token selecionado (a faixa fixa na base do
+   palco). Geometria vinda do Figma (nó 478:1619); cores e tipografia
+   NÃO — essas saem do chassi, e o design já tinha sido desenhado em
+   cima dele: os glows do Figma são exatamente `--rv-dg`, `--rv-ar` e
+   `--rv-cy`, o fundo é `--rv-panel-grad` e as bordas são
+   `--rv-line-2`/`--rv-line-strong`. Só os PREENCHIMENTOS das barras
+   são variantes mais escuras dos acentos, e ficam declarados aqui
+   porque é o único lugar que os usa.
+
+   `position: fixed` e fora do `<svg>`: dentro do mapa o texto
+   encolheria com o zoom — mesma razão pela qual a hint do mapa já vive
+   fora dele. */
+.rv-cartao-token {
+  position: fixed; z-index: 60;
+  /* Largura por CONTEÚDO: o cartão de "só o nome" tem metade da
+     largura do completo, e forçar os dois ao mesmo tamanho deixaria o
+     primeiro com um vazio à direita do nome. */
+  width: max-content; max-width: 300px;
+  display: flex; flex-direction: column;
+  padding: 8px 10px;
+  border: 1px solid #18263f; border-radius: var(--rv-r);
+  background: var(--rv-panel-grad);
+  box-shadow: 0 16px 20px rgba(0, 0, 0, .5);
+  /* A entrada é curta de propósito: o cartão já custou a espera do
+     hover, e uma animação longa em cima disso leria como lentidão. */
+  animation: rv-cartao-token-entra .12s ease-out;
+}
+@keyframes rv-cartao-token-entra {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rv-cartao-token { animation: none; }
+}
+
+.rv-cartao-token__nome {
+  margin: 0;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 12px; font-weight: 600; line-height: 18px;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: rgba(211, 244, 255, .88);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.rv-cartao-token__recursos { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; }
+
+.rv-cartao-token__linha {
+  display: grid; align-items: center; gap: 6px;
+  /* 26 / 80 / 40 são as medidas do Figma, e são fixas de propósito: as
+     três linhas precisam alinhar rótulo, barra e número em coluna, e
+     uma barra elástica faria a coluna do número dançar conforme o
+     rótulo ("Mana" é mais largo que "PV"). */
+  grid-template-columns: 26px 80px 40px auto;
+}
+.rv-cartao-token__linha[aria-busy="true"] { opacity: .72; }
+
+/* Cada linha carrega o próprio acento; o resto da folha lê só as duas
+   variáveis, então acrescentar um recurso novo é uma regra de três
+   linhas, não uma cascata paralela. */
+.rv-cartao-token__linha[data-recurso="pv"] { --rec: #ab3141; --rec-glow: rgba(209, 80, 104, .47); --rec-txt: var(--rv-dg); }
+.rv-cartao-token__linha[data-recurso="pe"] { --rec: #6a49bc; --rec-glow: rgba(136, 120, 214, .47); --rec-txt: var(--rv-ar); }
+.rv-cartao-token__linha[data-recurso="mana"] { --rec: #05a1c3; --rec-glow: rgba(69, 184, 201, .47); --rec-txt: var(--rv-cy); }
+
+.rv-cartao-token__rot {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px; font-weight: 700; line-height: 15px;
+  letter-spacing: .04em; text-transform: uppercase; text-align: right;
+  color: var(--rec-txt);
+}
+
+.rv-cartao-token__trilho {
+  position: relative; display: block; height: 4px; border-radius: 999px;
+  background: rgba(150, 190, 215, .1);
+  overflow: hidden;
+}
+.rv-cartao-token__barra {
+  display: block; height: 100%; border-radius: 999px;
+  background: var(--rec); box-shadow: 0 0 6px 0 var(--rec-glow);
+  transition: width .18s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rv-cartao-token__barra { transition: none; }
+}
+
+/* O valor é o mesmo componente da ficha (`ResourceValueCard`): clicar
+   abre o campo, e "-5"/"+3"/"7" seguem a MESMA regra
+   (`parseResourceEdit`). Ele aplica a classe NO PRÓPRIO elemento —
+   `<button>` quando editável, `<span>` quando só leitura ou quando
+   embrulha o input — então esta regra precisa servir aos três e
+   começar zerando a aparência de botão do navegador. */
+.rv-cartao-token__val {
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; border: none; background: none;
+  font-family: var(--font-mono), monospace; font-size: 10px; line-height: 15px;
+  color: var(--rv-ink-dim);
+}
+button.rv-cartao-token__val { cursor: text; }
+button.rv-cartao-token__val:hover:not(:disabled) { color: var(--rv-ink); }
+button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; border-radius: var(--rv-r); }
+.rv-cartao-token__val[data-invalido="true"] { color: var(--rv-dg); }
+.rv-cartao-token__input {
+  width: 40px; padding: 0; text-align: center;
+  border: 1px solid var(--rv-line-hover); border-radius: var(--rv-r);
+  background: var(--rv-sunken); color: var(--rv-ink);
+  font-family: var(--font-mono), monospace; font-size: 10px; line-height: 15px;
+}
+.rv-cartao-token__input:focus-visible { outline: 1px solid var(--rv-cy); outline-offset: 0; }
+
+.rv-cartao-token__pips { display: flex; gap: 3px; }
+.rv-cartao-token__pip {
+  display: flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; padding: 0;
+  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
+  background: var(--rv-panel); color: var(--rv-ink-dim); cursor: pointer;
+  transition: color .12s, border-color .12s;
+}
+.rv-cartao-token__pip:hover:not(:disabled) { color: var(--rv-ink); border-color: var(--rv-line-hover); }
+.rv-cartao-token__pip:disabled { opacity: .4; cursor: not-allowed; }
+.rv-cartao-token__pip:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rv-cartao-token__pip svg {
+  width: 9px; height: 9px; fill: none;
+  stroke: currentColor; stroke-width: 1.5; stroke-linecap: round;
+}
+
+/* O editor de retrato do token, agora aberto pelo menu contextual (o
+   retrato do HUD era a porta antiga). Centralizado sobre o palco: sem
+   o HUD não existe mais um canto ao qual ancorá-lo, e o editor é uma
+   tarefa de foco — enquanto ele está aberto, é o que a pessoa está
+   fazendo. */
+.rv-retrato-editor-flutuante {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  z-index: 70; max-width: min(520px, calc(100% - 32px));
 }

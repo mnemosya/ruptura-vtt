@@ -9,7 +9,7 @@
  * estado real, mas não o que se quer revisar.
  *
  * A saída segue o padrão que o projeto já tinha adotado no
- * `SelectedTokenHud` (`visualFixtureData`): uma prop opcional de dados
+ * `CartaoTokenHover` (`dadosFixos`): uma prop opcional de dados
  * prontos, documentada como exclusiva de `/dev`, que curto-circuita a
  * leitura. A mesa real nunca a passa.
  *
@@ -495,10 +495,6 @@ export function VitrineMesaInteira({ campaignId }: { campaignId: string | null }
             key={papel}
             campaignId={campaignId}
             papel={papel}
-            hudRules={null}
-            hudReactionRules={normalizeReactionRules(null)}
-            hudTalents={[]}
-            hudConditions={[]}
           />
         </CampaignSessionContext.Provider>
       </div>

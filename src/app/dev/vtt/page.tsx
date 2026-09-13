@@ -58,13 +58,6 @@ export default async function DevVttPage({ searchParams }: PageProps) {
     <VttClient
       campaignId={campaignId}
       papel={papel === "player" ? "player" : "narrator"}
-      hudRules={(rulesDocument?.payload as CharacterRulesPayload | undefined) ?? null}
-      hudReactionRules={normalizeReactionRules(combatFlow?.payload)}
-      hudTalents={talentDocuments.map((document) => normalizeTalentContent(document.payload as Record<string, unknown>))}
-      hudConditions={conditionDocuments.map((document) => {
-        const payload = document.payload as { descricao_curta?: string } | null;
-        return { slug: document.slug, name: document.nome ?? document.slug, description: payload?.descricao_curta };
-      })}
     />
     </ProvedorMesaDados>
   );

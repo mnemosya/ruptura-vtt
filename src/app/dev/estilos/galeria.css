@@ -483,3 +483,18 @@
   font-family: var(--font-mono), monospace; font-size: 10px; line-height: 1.5;
   letter-spacing: .04em; color: #7f95b3;
 }
+
+/* Vitrine do cartão de hover do token: o cartão é `position: fixed` e
+   se ancora num retângulo de tela, então cada exemplo precisa de um
+   alvo VISÍVEL no fluxo pra medir — e de espaço reservado embaixo, já
+   que o cartão flutua fora do fluxo e não empurra nada. */
+.gal-cartao-grade {
+  display: grid; gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+.gal-cartao-slot { display: flex; flex-direction: column; gap: 8px; padding-bottom: 150px; }
+.gal-cartao-alvo {
+  width: 44px; height: 44px; border-radius: 999px;
+  border: 1px dashed var(--rv-line-hover, #243352);
+  background: rgba(69, 184, 201, .06);
+}

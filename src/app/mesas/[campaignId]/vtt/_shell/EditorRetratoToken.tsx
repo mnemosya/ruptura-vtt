@@ -11,7 +11,7 @@
  * seria backend sem porta.
  *
  * Então este componente é montado nos DOIS caminhos:
- *   • `SelectedTokenHud`, na ação "Alterar retrato", quando a pessoa
+ *   • o menu contextual do token, em "Alterar retrato", quando a pessoa
  *     controla o token — é por aqui que o jogador entra;
  *   • `GerenciadorToken`, no lugar do antigo campo de URL solto — é por
  *     aqui que o narrador entra.

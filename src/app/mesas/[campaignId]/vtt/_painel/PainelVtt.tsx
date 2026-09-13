@@ -90,7 +90,7 @@ export function PainelVtt({
    * O painel é COMPOSIÇÃO: ele não lê nada do servidor por conta
    * própria, só monta as abas. Então o repasse é literal — cada chave
    * vai para a aba correspondente, que já sabe o que fazer com ela
-   * (mesmo padrão do `visualFixtureData` do `SelectedTokenHud`).
+   * (mesmo padrão do `dadosFixos` do `CartaoTokenHover`).
    *
    * É isto que permite revisar o painel como NARRADOR e como JOGADOR
    * sem campanha nenhuma: com campanha real o papel é o que o servidor
