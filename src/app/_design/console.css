@@ -39,18 +39,25 @@
    aqui a mesma receita dos controles de janela (`.rc-winbtn`), com o
    ÂMBAR reservado ao estado ligado: evolução é ação deliberada, não
    perigo, e âmbar é o que esta folha já usa para "atenção". */
+/* "Ver no mapa" e "Evoluir" são o BOTÃO PRIMÁRIO da folha — a mesma
+   receita de "Rolar defesa", "Adicionar" e "Estabilizar": fundo
+   #0c1f2b, fio ciano a 8%, Rajdhani 13/600 em caixa normal. Eles eram
+   a exceção (fundo transparente, texto em ciano cheio, caixa alta com
+   `letter-spacing`), o que os fazia ler como link de barra de título e
+   não como os botões que são. O ESTADO LIGADO do Evoluir continua
+   sendo âmbar — aí a cor significa alguma coisa. */
 .rc-modo-chip {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   height: 28px; padding: 0 10px;
-  border: 1px solid var(--rc-line);
-  background: transparent;
-  color: var(--cy);
+  border-radius: 1px; border: 1px solid rgba(0, 212, 255, 0.08);
+  background: #0c1f2b;
+  color: rgba(234, 247, 255, 0.80);
   font-family: var(--font-rajdhani), sans-serif;
-  font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  font-size: 13px; font-weight: 600; line-height: 18px;
   white-space: nowrap; cursor: pointer;
   transition: color 0.14s, background 0.14s, border-color 0.14s;
 }
-.rc-modo-chip:hover { color: var(--rc-text); border-color: var(--cy); background: rgba(0, 212, 255, 0.08); }
+.rc-modo-chip:hover { border-color: rgba(0, 212, 255, 0.3); color: #eaf7ff; }
 .rc-modo-chip:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 /* Ligado: o chip vira o estado, não só um botão apertado. */
 .rc-modo-chip[data-evolucao="true"] {
@@ -655,9 +662,19 @@
 }
 .rc-nric-integ-val { font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; font-weight: 700; color: #d6e4f5; }
 .rc-nric-integ-total { font-weight: 400; color: rgba(214, 228, 245, 0.60); }
-.rc-nric-pips { display: flex; width: 100%; }
+/* GAP CONSTANTE entre os segmentos, e a sobreposição de −1px saiu.
+   O desenho de cada pip (parallelogramo com entalhe diagonal) foi feito
+   pra escala 1:1, mas o SVG renderiza com `preserveAspectRatio: none`
+   numa caixa de ~20,4px vindo de um viewBox de 21,08 — ou seja, ~3%
+   comprimido. O entalhe de um pip encaixava no do vizinho por
+   sobreposição fixa em PIXEL, que não acompanha essa compressão: as
+   caixas do DOM ficavam uniformes (medido: −1px em todos os 11 vãos) e
+   mesmo assim o vão DESENHADO alternava de largura, porque as pontas
+   das diagonais caíam em subpixels diferentes a cada par.
+   Com `gap`, o espaço entre dois vizinhos é o mesmo número inteiro de
+   pixels sempre, e não depende mais de onde a diagonal cai. */
+.rc-nric-pips { display: flex; width: 100%; gap: 2px; }
 .rc-nric-pip { flex: 1; min-width: 0; height: 14px; padding: 0; border: none; background: none; cursor: pointer; }
-.rc-nric-pip:not(:first-child) { margin-left: -1px; }
 .rc-nric-pip svg { width: 100%; height: 100%; display: block; }
 .rc-nric-pip:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 
@@ -1282,7 +1299,10 @@
   padding: 0 8px;
   border-radius: 1px;
   border: 1px solid var(--rc-skill-ico-border, transparent);
-  background: var(--rc-skill-ico-bg, transparent);
+  /* SEM FUNDO: o badge é só o fio em volta do ícone. Um preenchimento
+     próprio criava um segundo retângulo dentro do card e competia com
+     ele — e a cor do atributo já é dita pela borda e pela tag. */
+  background: none;
   color: var(--rc-skill-cor, var(--cy));
 }
 .rc-skill-ico svg { width: 15px; height: 15px; }
@@ -1332,17 +1352,14 @@
 .rc-skill[data-attr="corpo"] {
   --rc-skill-cor: #23903c;
   --rc-skill-ico-border: rgba(38, 255, 0, 0.14);
-  --rc-skill-ico-bg: #13241a;
 }
 .rc-skill[data-attr="mente"] {
   --rc-skill-cor: #6a49bc;
   --rc-skill-ico-border: rgba(106, 74, 189, 0.55);
-  --rc-skill-ico-bg: #1b2339;
 }
 .rc-skill[data-attr="animo"] {
   --rc-skill-cor: #0596b7;
   --rc-skill-ico-border: rgba(0, 212, 255, 0.14);
-  --rc-skill-ico-bg: #0e2431;
 }
 
 /* ── Pins / Espaço livre v2 (spec Figma para o slot vazio; slot
