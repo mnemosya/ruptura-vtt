@@ -4064,6 +4064,31 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   height: 560px; border: 1px solid var(--rv-line-2); border-radius: 2px;
 }
 
+/* A alça: metade dentro, metade fora, encostada na borda de baixo. O
+   fio de cima é o da própria gaveta, então ela lê como uma dobra da
+   borda e não como um botão que pousou ali. */
+.rv-gav-alca {
+  position: absolute; left: 50%; bottom: -21px; transform: translateX(-50%);
+  z-index: 2;
+  display: grid; place-items: center;
+  width: 54px; height: 22px; padding: 0;
+  border: 1px solid var(--rv-line-strong); border-top: none;
+  border-radius: 0 0 3px 3px;
+  background: linear-gradient(180deg, #0b1322, #070c16);
+  color: var(--rv-ink-faint); cursor: pointer;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, .45);
+  transition: color .14s, border-color .14s, background .14s;
+}
+.rv-gav-alca:hover {
+  color: var(--jf-acento);
+  border-color: color-mix(in srgb, var(--jf-acento) 55%, transparent);
+}
+.rv-gav-alca:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: 2px; }
+.rv-gav-alca:hover .rv-dica,
+.rv-gav-alca:focus-visible .rv-dica { opacity: 1; transition-delay: .35s; }
+/* Na galeria a gaveta tem borda nos quatro lados; a alça acompanha. */
+.rv-gaveta[data-em-linha] .rv-gav-alca { bottom: -22px; }
+
 /* ── Cabeçalho ───────────────────────────────────────────────────── */
 .rv-gav-cab {
   flex: none; display: flex; align-items: center; gap: 12px;

@@ -15,7 +15,7 @@
  */
 
 import type { ReactNode } from "react";
-import { Clapperboard, Search, X } from "lucide-react";
+import { ChevronUp, Clapperboard, Search, X } from "lucide-react";
 
 export interface PropsGavetaCasca {
   /** A linha de modo do cabeçalho: "3 cenas", "Salvando a ordem…". */
@@ -94,6 +94,23 @@ export function GavetaCasca(p: PropsGavetaCasca) {
       </div>
 
       {p.folha}
+
+      {/* A ALÇA. O X do cabeçalho fica no canto oposto de onde o olho
+          está: a gaveta é larga, e quem terminou de mexer num mapa
+          está no meio da tela, não a mil pixels à direita. A alça
+          encostada na borda de baixo fecha de onde quer que se esteja —
+          e é a forma que gaveta tem em toda interface que usa gaveta.
+
+          Não substitui o X: teclado e leitor de tela chegam nos dois, e
+          o do cabeçalho é o que segue a convenção de janela. */}
+      <button
+        type="button" className="rv-gav-alca" onClick={p.onFechar}
+        aria-label="Fechar o catálogo de cenas"
+        data-testid="gaveta-alca"
+      >
+        <ChevronUp size={16} aria-hidden="true" />
+        <span className="rv-dica rv-dica--abaixo">Fechar</span>
+      </button>
     </div>
   );
 }
