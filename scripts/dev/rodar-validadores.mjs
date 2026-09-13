@@ -66,7 +66,30 @@ function compilar(rootDir, destino) {
   if (!existsSync(destino)) throw new Error(`compilação não produziu ${destino}`);
 }
 
+/**
+ * Com `--rootDir src/lib`, um arquivo importado de fora dessa raiz não
+ * cabe no `--outDir`, e o `tsc` o emite ao LADO do fonte — `.js`
+ * aparecendo dentro de `src/`, no meio do código de verdade. Já
+ * aconteceu duas vezes; são arquivos que o Next carregaria.
+ *
+ * A varredura guarda o que já existia e apaga só o que apareceu. Um
+ * `.js` legítimo em `src/` (não há nenhum hoje) sobreviveria.
+ */
+function jsEmSrc() {
+  const achados = new Set();
+  const andar = (d) => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const caminho = join(d, e.name);
+      if (e.isDirectory()) andar(caminho);
+      else if (e.name.endsWith(".js")) achados.add(caminho);
+    }
+  };
+  andar("src");
+  return achados;
+}
+
 console.log("Compilando os módulos que os validadores injetam…");
+const jsAntes = jsEmSrc();
 rmSync(SAIDA, { recursive: true, force: true });
 mkdirSync(SAIDA, { recursive: true });
 // O marcador que faz o Node ler os `.js` emitidos como CommonJS mesmo
@@ -74,6 +97,12 @@ mkdirSync(SAIDA, { recursive: true });
 writeFileSync(join(SAIDA, "package.json"), '{"type":"commonjs"}\n');
 compilar("src", join(SAIDA, "raiz-src"));
 compilar("src/lib", join(SAIDA, "raiz-lib"));
+
+for (const caminho of jsEmSrc()) {
+  if (jsAntes.has(caminho)) continue;
+  rmSync(caminho);
+  console.log(`  (removido ${caminho}, emitido fora do outDir)`);
+}
 
 /**
  * Por padrão só rodam os validadores INERTES — os que carregam módulos
