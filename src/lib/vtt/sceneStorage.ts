@@ -26,6 +26,14 @@ export type TipoTerreno = "dificil" | "bloqueado";
 export type TipoMarca = "linha" | "seta" | "desenho" | "texto";
 export type CorMarca = "ciano" | "ambar" | "verde" | "vermelho" | "roxo" | "branco";
 
+/**
+ * Os padrões da grade (0122) — os MESMOS que a constante de CSS tinha
+ * antes de a cor virar coluna. Uma cena que nunca foi ajustada precisa
+ * desenhar exatamente como desenhava.
+ */
+export const GRADE_COR_PADRAO = "#96bed7";
+export const GRADE_OPACIDADE_PADRAO = 0.07;
+
 export interface CenaVtt {
   id: string;
   campaignId: string;
@@ -34,6 +42,9 @@ export interface CenaVtt {
   resumo: string | null;
   largura: number;
   altura: number;
+  /** Aparência da GRADE (0122). Decoração: não muda alcance, custo nem visão. */
+  gradeCor: string;
+  gradeOpacidade: number;
   revision: number;
   /**
    * Visibilidade e bloqueio de cada camada do mapa, DA MESA (migration
@@ -492,6 +503,9 @@ export interface CartaoCena {
   resumo: string | null;
   largura: number;
   altura: number;
+  /** Aparência da GRADE (0122) — editável por qualquer cena, pela folha da gaveta. */
+  gradeCor: string;
+  gradeOpacidade: number;
   ordem: number;
   revision: number;
   arquivadaEm: string | null;
@@ -526,6 +540,8 @@ export async function listarCenas(campaignId: string, incluirArquivadas = false)
     resumo: (c.resumo as string | null) ?? null,
     largura: c.largura as number,
     altura: c.altura as number,
+    gradeCor: (c.grade_cor as string | null) ?? GRADE_COR_PADRAO,
+    gradeOpacidade: Number(c.grade_opacidade ?? GRADE_OPACIDADE_PADRAO),
     ordem: c.ordem as number,
     revision: c.revision as number,
     arquivadaEm: (c.arquivada_em as string | null) ?? null,
@@ -591,6 +607,8 @@ function cartaoDeLinhaDeCena(linha: Record<string, unknown>): CartaoCena {
     resumo: (linha.resumo as string | null) ?? null,
     largura: linha.largura as number,
     altura: linha.altura as number,
+    gradeCor: (linha.grade_cor as string | null) ?? GRADE_COR_PADRAO,
+    gradeOpacidade: Number(linha.grade_opacidade ?? GRADE_OPACIDADE_PADRAO),
     ordem: linha.ordem as number,
     revision: linha.revision as number,
     arquivadaEm: (linha.archived_at as string | null) ?? null,
@@ -882,7 +900,7 @@ export async function carregarCena(sceneId: string): Promise<EstadoCena | null> 
 
   const { data: cenaRow, error: erroCena } = await client
     .from("vtt_scenes")
-    .select("id, campaign_id, nome, local, resumo, largura, altura, revision, camadas")
+    .select("id, campaign_id, nome, local, resumo, largura, altura, grade_cor, grade_opacidade, revision, camadas")
     .eq("id", sceneId)
     .maybeSingle();
 
@@ -934,6 +952,8 @@ export async function carregarCena(sceneId: string): Promise<EstadoCena | null> 
       local: (cenaRow.local as string | null) ?? null,
       resumo: (cenaRow.resumo as string | null) ?? null,
       largura: cenaRow.largura as number,
+      gradeCor: (cenaRow.grade_cor as string | null) ?? GRADE_COR_PADRAO,
+      gradeOpacidade: Number(cenaRow.grade_opacidade ?? GRADE_OPACIDADE_PADRAO),
       altura: cenaRow.altura as number,
       revision: cenaRow.revision as number,
       camadas: (cenaRow.camadas as Record<string, unknown> | null) ?? {},
@@ -1925,6 +1945,9 @@ export async function definirConfigDaCena(params: {
   resumo: string | null;
   largura: number;
   altura: number;
+  /** `undefined` mantém o que está lá — a RPC trata `null` como "não mexa". */
+  gradeCor?: string;
+  gradeOpacidade?: number;
   revisionEsperada: number;
 }): Promise<ResultadoEscrita & { cena?: CenaVtt }> {
   const client = await getScopedTableClient();
@@ -1936,6 +1959,8 @@ export async function definirConfigDaCena(params: {
     p_largura: params.largura,
     p_altura: params.altura,
     p_expected_revision: params.revisionEsperada,
+    p_grade_cor: params.gradeCor ?? null,
+    p_grade_opacidade: params.gradeOpacidade ?? null,
   });
   if (error) return { ok: false, erro: error.message };
   const linha = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;
@@ -1950,6 +1975,8 @@ export async function definirConfigDaCena(params: {
       resumo: (linha.resumo as string | null) ?? null,
       largura: linha.largura as number,
       altura: linha.altura as number,
+      gradeCor: (linha.grade_cor as string | null) ?? GRADE_COR_PADRAO,
+      gradeOpacidade: Number(linha.grade_opacidade ?? GRADE_OPACIDADE_PADRAO),
       revision: linha.revision as number,
       camadas: (linha.camadas as Record<string, unknown> | null) ?? {},
     },

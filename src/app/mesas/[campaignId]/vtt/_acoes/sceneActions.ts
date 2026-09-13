@@ -535,13 +535,17 @@ export async function salvarConfigCenaAction(params: {
   resumo: string | null;
   largura: number;
   altura: number;
+  gradeCor?: string;
+  gradeOpacidade?: number;
   revisionEsperada: number;
 }): Promise<ResultadoAcao<{ cena: CenaVtt }>> {
   const v = await exigirAcesso(params.campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
   const r = await definirConfigDaCena({
     sceneId: params.sceneId, nome: params.nome, local: params.local, resumo: params.resumo,
-    largura: params.largura, altura: params.altura, revisionEsperada: params.revisionEsperada,
+    largura: params.largura, altura: params.altura,
+    gradeCor: params.gradeCor, gradeOpacidade: params.gradeOpacidade,
+    revisionEsperada: params.revisionEsperada,
   });
   if (!r.ok || !r.cena) return { ok: false, erro: r.erro };
   return { ok: true, dados: { cena: r.cena } };

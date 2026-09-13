@@ -383,6 +383,8 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
         resumo: v.resumo,
         largura: v.largura,
         altura: v.altura,
+        gradeCor: v.gradeCor,
+        gradeOpacidade: v.gradeOpacidade,
         revisionEsperada: cena.revision,
       });
       if (!r.ok || !r.dados) {
@@ -393,10 +395,22 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
       const g = r.dados.cena;
       setCenas((c) => (c ?? []).map((x) => (
         x.id === cena.id
-          ? { ...x, nome: g.nome, local: g.local, resumo: g.resumo, largura: g.largura, altura: g.altura, revision: g.revision }
+          ? {
+              ...x, nome: g.nome, local: g.local, resumo: g.resumo,
+              largura: g.largura, altura: g.altura,
+              gradeCor: g.gradeCor, gradeOpacidade: g.gradeOpacidade,
+              revision: g.revision,
+            }
           : x
       )));
       setConfigurandoId(null);
+      /* Se a cena ajustada é a que o narrador tem ABERTA, o mapa
+         precisa relê-la: a grade e o tamanho são desenhados a partir
+         de `estadoCena`, que vive no `VttClient` e não sabe do que
+         acontece aqui. Reabrir é o caminho que já existe pra isso —
+         inventar um segundo seria manter duas verdades sobre "qual é
+         a cena aberta". */
+      if (cena.id === p.cenaVistaId) p.onAbrir(cena.id);
     } catch (e) {
       anotarErro(cena.id, e instanceof Error ? e.message : "Falha ao salvar os parâmetros.");
     } finally {

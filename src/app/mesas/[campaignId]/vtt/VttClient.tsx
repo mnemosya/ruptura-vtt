@@ -4911,7 +4911,17 @@ export function VttClient({
     // rola na mesa, e ele é janela da casca, não do VTT. Aqui fica só
     // o PALCO (`MesaDadosOverlay`, mais abaixo), que é o que desenha.
     <ProvedorJanelasFerramenta campaignId={campaignId} usuarioId={usuarioId}>
-    <div className="rv-mesa">
+    <div
+      className="rv-mesa"
+      /* A aparência da GRADE é da cena (0122) e chega ao SVG por
+         variável: `.rv-celula` é desenhada por `MapaHex` num loop de
+         centenas de nós, e mandar cor e opacidade em cada `<path>`
+         seria repetir o mesmo par milhares de vezes por render. */
+      style={{
+        "--rv-grade-cor": estadoCena?.cena.gradeCor ?? undefined,
+        "--rv-grade-opacidade": estadoCena?.cena.gradeOpacidade ?? undefined,
+      } as React.CSSProperties}
+    >
       {/* ═══ ESQUERDA — 4 ferramentas por papel ═══ */}
       <aside ref={ferramentasRef} className="rv-ferramentas" aria-label="Ferramentas do mapa">
         <button type="button" className="rv-ferr-btn rv-ferr-menu" aria-label="Menu da mesa"><Menu size={17} /></button>

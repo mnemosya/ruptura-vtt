@@ -27,6 +27,8 @@ export interface ValoresParametros {
   resumo: string | null;
   largura: number;
   altura: number;
+  gradeCor: string;
+  gradeOpacidade: number;
 }
 
 export interface PropsParametrosCena {
@@ -48,6 +50,8 @@ export function ParametrosCena(p: PropsParametrosCena) {
     resumo: p.cena.resumo,
     largura: p.cena.largura,
     altura: p.cena.altura,
+    gradeCor: p.cena.gradeCor,
+    gradeOpacidade: p.cena.gradeOpacidade,
   });
 
   // Trocar de cena com a folha aberta recarrega os campos. Sem isto, a
@@ -56,8 +60,10 @@ export function ParametrosCena(p: PropsParametrosCena) {
     setV({
       nome: p.cena.nome, local: p.cena.local, resumo: p.cena.resumo,
       largura: p.cena.largura, altura: p.cena.altura,
+      gradeCor: p.cena.gradeCor, gradeOpacidade: p.cena.gradeOpacidade,
     });
-  }, [p.cena.id, p.cena.nome, p.cena.local, p.cena.resumo, p.cena.largura, p.cena.altura]);
+  }, [p.cena.id, p.cena.nome, p.cena.local, p.cena.resumo, p.cena.largura, p.cena.altura,
+      p.cena.gradeCor, p.cena.gradeOpacidade]);
 
   useEffect(() => {
     function aoTeclar(e: KeyboardEvent) {
@@ -69,7 +75,8 @@ export function ParametrosCena(p: PropsParametrosCena) {
 
   const mudou =
     v.nome !== p.cena.nome || v.local !== p.cena.local || v.resumo !== p.cena.resumo
-    || v.largura !== p.cena.largura || v.altura !== p.cena.altura;
+    || v.largura !== p.cena.largura || v.altura !== p.cena.altura
+    || v.gradeCor !== p.cena.gradeCor || v.gradeOpacidade !== p.cena.gradeOpacidade;
   const nomeValido = v.nome.trim().length > 0;
 
   /** Célula fora da faixa é recusada pelo banco: a tela prende antes. */
@@ -153,6 +160,48 @@ export function ParametrosCena(p: PropsParametrosCena) {
         <p className="rv-gav-folha-nota">
           {v.largura} × {v.altura} células — {v.largura} × {v.altura} metros de terreno
         </p>
+
+        <p className="rv-gav-folha-secao">Aparência da grade</p>
+        {/* A prévia é a razão de este bloco existir aqui e não num
+            menu: cor de linha não se escolhe por nome, se escolhe
+            olhando. O quadriculado atrás mostra a linha sobre claro E
+            sobre escuro, que é onde 7% e 50% se comportam diferente. */}
+        <div className="rv-gav-grade-previa" style={{
+          "--previa-cor": v.gradeCor,
+          "--previa-op": v.gradeOpacidade,
+        } as React.CSSProperties} aria-hidden="true" />
+
+        <div className="rv-gav-folha-par">
+          <label className="rv-fp-campo">
+            <span className="rv-fp-rotulo">Cor da linha</span>
+            <span className="rv-gav-cor">
+              <input
+                type="color" value={v.gradeCor}
+                data-testid="parametros-grade-cor"
+                onChange={(e) => setV((a) => ({ ...a, gradeCor: e.target.value }))}
+              />
+              <em>{v.gradeCor}</em>
+            </span>
+          </label>
+          <label className="rv-fp-campo">
+            <span className="rv-fp-rotulo">Opacidade</span>
+            <span className="rv-gav-medida">
+              <input
+                type="range" min={0} max={100} step={1}
+                className="rv-gav-faixa"
+                value={Math.round(v.gradeOpacidade * 100)}
+                data-testid="parametros-grade-opacidade"
+                onChange={(e) => setV((a) => ({ ...a, gradeOpacidade: Number(e.target.value) / 100 }))}
+              />
+              <em>{Math.round(v.gradeOpacidade * 100)}%</em>
+            </span>
+          </label>
+        </div>
+        {/* Zero não é "grade desligada": a geometria continua lá, e é
+            por isso que esconder a linha nunca quebra o alcance. */}
+        {v.gradeOpacidade === 0 && (
+          <p className="rv-gav-folha-nota">Linha invisível — os hexágonos continuam valendo</p>
+        )}
 
         {p.erro && <p className="rv-cena-estado" data-tipo="erro" role="alert">{p.erro}</p>}
       </div>

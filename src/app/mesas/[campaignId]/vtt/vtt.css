@@ -183,7 +183,19 @@
 .rv-hud-cena-nome { margin: 1px 0 0; font-family: var(--font-orbitron), sans-serif; font-size: 17px; font-weight: 700; color: var(--txt-forte); }
 .rv-hud-cena-local { margin: 1px 0 0; font-size: 11.5px; color: var(--txt-dim); }
 
-.rv-celula { fill: transparent; stroke: rgba(150,190,215,.07); stroke-width: 1; transition: fill .1s; }
+/* A cor e a opacidade da linha vêm da CENA (0122), por variável: elas
+   mudam por cena e o CSS não pode saber qual está aberta. Os padrões
+   aqui são os mesmos que a constante antiga tinha — uma cena nunca
+   ajustada desenha exatamente como desenhava. */
+.rv-celula {
+  fill: transparent; stroke-width: 1; transition: fill .1s;
+  stroke: var(--rv-grade-cor, #96bed7);
+  stroke-opacity: var(--rv-grade-opacidade, .07);
+}
+/* Hover e realce falam por si e não obedecem à cor da cena: eles são
+   RESPOSTA a um gesto, não desenho de fundo. */
+.rv-celula:hover, .rv-celula--realce, .rv-celula--area,
+.rv-celula--rota, .rv-celula--pincel { stroke-opacity: 1; }
 .rv-celula:hover { fill: var(--rv-cy-soft); stroke: color-mix(in srgb, var(--cy) 22%, transparent); }
 .rv-celula--realce { fill: var(--rv-cy-soft); stroke: color-mix(in srgb, var(--cy) 22%, transparent); }
 .rv-celula--area { fill: var(--rv-am-soft); stroke: color-mix(in srgb, var(--am) 30%, transparent); }
@@ -4517,6 +4529,30 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   font-family: var(--font-mono), monospace; font-size: 9px;
   letter-spacing: .08em; text-transform: uppercase; color: var(--rv-ink-faint);
 }
+/* Prévia da grade: a linha escolhida sobre claro E sobre escuro, que é
+   onde 7% e 50% se comportam diferente. */
+.rv-gav-grade-previa {
+  height: 54px; border-radius: 2px; border: 1px solid var(--rv-line-2);
+  background-color: #0d1219;
+  background-image:
+    linear-gradient(45deg, rgba(255,255,255,.05) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.05) 75%),
+    linear-gradient(45deg, rgba(255,255,255,.05) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.05) 75%),
+    repeating-linear-gradient(0deg, transparent 0 17px, color-mix(in srgb, var(--previa-cor) calc(var(--previa-op) * 100%), transparent) 17px 18px),
+    repeating-linear-gradient(90deg, transparent 0 17px, color-mix(in srgb, var(--previa-cor) calc(var(--previa-op) * 100%), transparent) 17px 18px);
+  background-size: 20px 20px, 20px 20px, auto, auto;
+  background-position: 0 0, 10px 10px, 0 0, 0 0;
+}
+.rv-gav-cor { display: flex; align-items: center; gap: 8px; }
+.rv-gav-cor input[type="color"] {
+  width: 34px; height: 30px; padding: 2px; flex: none; cursor: pointer;
+  border: 1px solid var(--rv-line-strong); border-radius: 2px; background: var(--rv-ground);
+}
+.rv-gav-cor em {
+  font-style: normal; font-family: var(--font-mono), monospace; font-size: 9.5px;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--rv-ink-faint);
+}
+.rv-gav-faixa { flex: 1 1 auto; min-width: 0; accent-color: var(--jf-acento); }
+
 .rv-gav-folha-nota {
   margin: 0; color: var(--rv-ink-faint);
   font-family: var(--font-mono), monospace; font-size: 9px;
