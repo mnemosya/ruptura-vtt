@@ -146,7 +146,11 @@ Sensibilidade verificada nos dois: neutralizando a guarda de cada um
 (não esconder a colocação; não esconder a camada), o critério
 correspondente falha.
 
-## Aberto: sobrecarga duplicada de `atualizar_vtt_scene_image`
+## Fechado: sobrecarga duplicada de `atualizar_vtt_scene_image`
+
+**Resolvido pela migration 0121.** Restou só a versão de 13
+parâmetros, confirmado no catálogo. O texto abaixo fica como registro
+do que era.
 
 A 0100 criou a função com 11 parâmetros; a 0110 criou uma com 13 e
 deixou a primeira viva. O PostgREST não escolhe entre as duas quando a
@@ -163,16 +167,12 @@ então resolve sem ambiguidade. Quem quebra é qualquer chamador que
 omita `p_centro_q`/`p_centro_r` — foi o que aconteceu com este teste,
 por dois meses, em silêncio.
 
-O conserto é uma migration de uma linha:
-
-```sql
-drop function if exists public.atualizar_vtt_scene_image(
-  uuid, integer, numeric, numeric, numeric, numeric, text, integer,
-  boolean, boolean, boolean);
-```
-
-Não foi aplicado: é mudança de schema em produção, e derrubar uma
-função é irreversível sem recriá-la. Fica para decisão.
+Conferido antes de derrubar: os três chamadores do repositório passam
+os 13 parâmetros, nenhuma função do banco cita o nome no corpo, e
+`pg_depend` não registrava nenhum objeto dependente. A migration usa a
+assinatura COMPLETA — `drop function` só pelo nome derrubaria as duas —
+e `restrict`, para falhar em vez de arrastar junto uma dependência que
+tivesse aparecido no intervalo.
 
 ## Bloqueados: os 10 testes de navegador
 
