@@ -51,16 +51,17 @@ const RECURSOS: { id: HudResourceId; rotulo: string }[] = [
 export interface PropsCartaoTokenHover {
   campaignId: string;
   tokenId: string;
-  /** Nome já conhecido pelo mapa — evita o cartão nascer sem cabeçalho enquanto a leitura não volta. */
-  nomeInicial: string;
   /**
-   * Recursos já lidos pelo mapa. Quem busca é `VttClient`, no instante
-   * em que o ponteiro ENTRA no token — não aqui, quando o cartão abre:
-   * buscar na abertura fazia o cartão nascer só com o nome e CRESCER
-   * quando a resposta chegava. `null` = ainda não voltou (ou o token
-   * não tem recurso nenhum visível pra esta pessoa).
+   * Recursos já lidos pelo mapa — NUNCA nulo, e é isso que o tipo diz.
+   * Quem busca é `VttClient`, no instante em que o ponteiro ENTRA no
+   * token, e ele só monta este componente quando a resposta chegou.
+   *
+   * A obrigatoriedade é a regra escrita como tipo: o cartão de "só o
+   * nome" é um estado REAL (o de quem não tem permissão nenhuma), e
+   * mostrá-lo enquanto a leitura está em voo diria a quem TEM permissão
+   * que ela não tem, por um instante, antes de se corrigir.
    */
-  dados: SelectedTokenHudData | null;
+  dados: SelectedTokenHudData;
   /** Uma escrita voltou do servidor — o mapa guarda o valor novo no cache dele. */
   onDadosAtualizados: (d: SelectedTokenHudData) => void;
   /** Retângulo do DISCO do token na tela, pra ancorar o cartão. */
@@ -80,7 +81,7 @@ export interface PropsCartaoTokenHover {
 const MARGEM_TELA = 8;
 
 export function CartaoTokenHover(p: PropsCartaoTokenHover) {
-  const [dados, setDados] = useState<SelectedTokenHudData | null>(p.dados ?? p.dadosFixos ?? null);
+  const [dados, setDados] = useState<SelectedTokenHudData>(p.dadosFixos ?? p.dados);
   const [pendente, setPendente] = useState<Set<string>>(new Set());
   const dadosRef = useRef<SelectedTokenHudData | null>(null);
   const montado = useRef(true);
@@ -160,9 +161,9 @@ export function CartaoTokenHover(p: PropsCartaoTokenHover) {
     });
   }, [p.ancora, dados]);
 
-  const nome = dados?.name ?? p.nomeInicial;
-  const podeEditar = dados?.canControl === true;
-  const recursosVisiveis = RECURSOS.filter(({ id }) => dados?.resources[id]);
+  const nome = dados.name;
+  const podeEditar = dados.canControl === true;
+  const recursosVisiveis = RECURSOS.filter(({ id }) => dados.resources[id]);
 
   return (
     <div
@@ -180,7 +181,7 @@ export function CartaoTokenHover(p: PropsCartaoTokenHover) {
 
       {recursosVisiveis.length > 0 && <div className="rv-cartao-token__recursos">
         {recursosVisiveis.map(({ id, rotulo }) => {
-          const r = dados!.resources[id]!;
+          const r = dados.resources[id]!;
           const pct = r.max > 0 ? Math.max(0, Math.min(100, (r.atual / r.max) * 100)) : 0;
           const ocupado = pendente.has(id);
           return (

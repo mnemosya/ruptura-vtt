@@ -78,7 +78,6 @@ function Slot({ caso }: { caso: (typeof CASOS)[number] }) {
       {ancora && (
         <CartaoTokenHover
           campaignId="c1" tokenId={caso.chave}
-          nomeInicial={caso.dados.name}
           ancora={ancora}
           dados={caso.dados}
           dadosFixos={caso.dados}

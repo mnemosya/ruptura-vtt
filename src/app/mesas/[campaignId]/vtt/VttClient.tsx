@@ -335,14 +335,34 @@ export function VttClient({
   const dadosCartaoRef = useRef<Map<string, SelectedTokenHudData>>(new Map());
   const [dadosCartao, setDadosCartao] = useState<SelectedTokenHudData | null>(null);
 
+  /**
+   * Gesto que já cumpriu a espera do hover mas ainda não tem os dados —
+   * o cartão fica ESPERANDO, sem aparecer.
+   *
+   * O cartão de "só o nome" é um estado REAL (quem não tem permissão
+   * nenhuma vê exatamente isso), então mostrá-lo enquanto a leitura
+   * está em voo é dizer uma coisa errada sobre o token e depois se
+   * corrigir. Quem tem permissão via, por um instante, a tela de quem
+   * não tem. Melhor não aparecer nada até saber o que mostrar.
+   */
+  const aguardandoCartaoRef = useRef<{ tokenId: string; ancora: { x: number; y: number; width: number; height: number } } | null>(null);
+
   const buscarRecursosDoToken = useCallback((tokenId: string) => {
     void readSelectedTokenHudAction({ campaignId, tokenId }).then((r) => {
       const d = r.ok ? r.data ?? null : null;
       if (!d) return;
       dadosCartaoRef.current.set(tokenId, d);
-      // Só empurra pra tela se o cartão ABERTO for deste token — uma
-      // resposta atrasada de um token que o ponteiro já deixou não pode
-      // repintar o cartão de outro.
+      // Chegou o que o gesto estava esperando: abre agora.
+      const esperando = aguardandoCartaoRef.current;
+      if (esperando?.tokenId === tokenId) {
+        aguardandoCartaoRef.current = null;
+        setDadosCartao(d);
+        setCartaoHover(esperando);
+        return;
+      }
+      // Ou é uma releitura de um cartão JÁ aberto — atualiza só se for
+      // dele: uma resposta atrasada de um token que o ponteiro já
+      // deixou não pode repintar o cartão de outro.
       setCartaoHover((c) => { if (c?.tokenId === tokenId) setDadosCartao(d); return c; });
     });
   }, [campaignId]);
@@ -357,13 +377,23 @@ export function VttClient({
     if (id && ancora) {
       buscarRecursosDoToken(id);
       timerCartaoRef.current = setTimeout(() => {
-        setDadosCartao(dadosCartaoRef.current.get(id) ?? null);
-        setCartaoHover({ tokenId: id, ancora });
+        const jaTem = dadosCartaoRef.current.get(id);
+        if (jaTem) {
+          setDadosCartao(jaTem);
+          setCartaoHover({ tokenId: id, ancora });
+          return;
+        }
+        // Sem dados ainda: o cartão NÃO abre — fica esperando a
+        // resposta (ver `aguardandoCartaoRef`).
+        aguardandoCartaoRef.current = { tokenId: id, ancora };
       }, ATRASO_CARTAO_MS);
       return;
     }
-    // Saiu do token: o cartão só fecha se o ponteiro também não estiver
-    // dentro DELE — é o que permite ir do token até os pips.
+    // Saiu do token: desiste de qualquer abertura pendente (senão uma
+    // resposta atrasada abriria o cartão de um token que o ponteiro já
+    // deixou) e fecha o aberto — mas só se o ponteiro também não
+    // estiver dentro DELE, que é o que permite ir do token até os pips.
+    aguardandoCartaoRef.current = null;
     timerCartaoRef.current = setTimeout(() => {
       if (!sobreCartaoRef.current) setCartaoHover(null);
     }, CARENCIA_CARTAO_MS);
@@ -5802,27 +5832,22 @@ export function VttClient({
             passou a tapar mapa pra repetir o que já estava na tela ao
             lado. O que sobrou é o que só o mapa responde: quem é este
             token e como ele está — e só enquanto se olha pra ele. */}
-        {cartaoHover && (() => {
-          const t = tokenPorId.get(cartaoHover.tokenId);
-          if (!t) return null;
-          return (
-            <CartaoTokenHover
-              key={cartaoHover.tokenId}
-              campaignId={campaignId}
-              tokenId={cartaoHover.tokenId}
-              nomeInicial={t.nome}
-              ancora={cartaoHover.ancora}
-              dados={dadosCartao}
-              onDadosAtualizados={(d) => { dadosCartaoRef.current.set(cartaoHover.tokenId, d); setDadosCartao(d); }}
-              onEntrar={() => { sobreCartaoRef.current = true; limparTimerCartao(); }}
-              onSair={() => {
-                sobreCartaoRef.current = false;
-                limparTimerCartao();
-                timerCartaoRef.current = setTimeout(() => setCartaoHover(null), CARENCIA_CARTAO_MS);
-              }}
-            />
-          );
-        })()}
+        {cartaoHover && dadosCartao && (
+          <CartaoTokenHover
+            key={cartaoHover.tokenId}
+            campaignId={campaignId}
+            tokenId={cartaoHover.tokenId}
+            ancora={cartaoHover.ancora}
+            dados={dadosCartao}
+            onDadosAtualizados={(d) => { dadosCartaoRef.current.set(cartaoHover.tokenId, d); setDadosCartao(d); }}
+            onEntrar={() => { sobreCartaoRef.current = true; limparTimerCartao(); }}
+            onSair={() => {
+              sobreCartaoRef.current = false;
+              limparTimerCartao();
+              timerCartaoRef.current = setTimeout(() => setCartaoHover(null), CARENCIA_CARTAO_MS);
+            }}
+          />
+        )}
 
         {painelCenaAberto && ehNarrador && estadoCena && (
           <PainelCena
