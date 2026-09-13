@@ -125,7 +125,7 @@ function buildPayloadForSave(character: Character): Character {
 async function insertCharacterScoped(
   client: Awaited<ReturnType<typeof getScopedTableClient>>,
   character: Character,
-  options: { campaignId?: string | null; ownerLabel?: string } = {},
+  options: SaveCharacterOptions = {},
 ): Promise<CharacterRecord> {
   const payload = buildPayloadForSave(character);
   const ownerId = await currentOwnerId();
@@ -134,7 +134,12 @@ async function insertCharacterScoped(
     id,
     name: payload.nome,
     owner_label: options.ownerLabel ?? null,
-    status: "draft",
+    // `status` passou a ser respeitado quando `createCharacter` (seção
+    // 5) passou a usar esta função: ele sempre aceitou a opção, e
+    // fixá-la em "draft" aqui teria mudado o comportamento dele
+    // silenciosamente. O padrão continua "draft" para quem não pede
+    // nada — que é o caso de todos os chamadores de hoje.
+    status: options.status ?? "draft",
     payload,
     campaign_id: options.campaignId ?? null,
     owner_id: ownerId,
@@ -658,26 +663,19 @@ export async function createCharacter(
   character: Character,
   options: SaveCharacterOptions = {},
 ): Promise<CharacterRecord> {
-  const payload = buildPayloadForSave(character);
+  // Passa por `insertCharacterScoped` como todo o resto da criação.
+  // Antes fazia `.insert().select()` na mão, e `INSERT … RETURNING`
+  // nesta tabela é recusado para qualquer conta que não seja service
+  // role: a policy de SELECT é `can_read_character(id)`, função STABLE
+  // que reconsulta `characters` e, no RETURNING, roda com o snapshot da
+  // consulta — não enxerga a linha sendo inserida e devolve falso. O
+  // Postgres reporta isso como violação de RLS.
+  //
+  // O contorno já existia (ver o cabeçalho de `insertCharacterScoped`);
+  // esta função é que tinha ficado de fora dele, e quebrava para
+  // qualquer usuário autenticado — `/dev/character-sheet` inclusive.
   const client = await getScopedTableClient();
-  const ownerId = await currentOwnerId();
-  const { data, error } = await client
-    .from(TABLE)
-    .insert({
-      name: payload.nome,
-      owner_label: options.ownerLabel ?? null,
-      status: options.status ?? "draft",
-      payload,
-      campaign_id: options.campaignId ?? null,
-      owner_id: ownerId,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    throw new CharacterStorageError(`Falha ao criar personagem: ${error.message}`, error);
-  }
-  return data as CharacterRecord;
+  return insertCharacterScoped(client, character, options);
 }
 
 /**

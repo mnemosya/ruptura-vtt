@@ -37,22 +37,23 @@
  *   DELETE:        SÓ (campanha E você é o narrador dela)
  *
  * Um personagem SOLTO pode ser criado e editado pelo dono e NÃO pode
- * ser apagado por ninguém através da policy.
+ * ser apagado por ninguém através da policy. Isso é pendência de
+ * PRODUTO, não bug a consertar aqui — ver
+ * `docs/relatorios/PENDENCIA_CICLO_DE_VIDA_PERSONAGEM_SOLTO.md`.
  *
  * SEGUNDA: `INSERT … RETURNING` é recusado nesta tabela para qualquer
  * conta real. A policy de SELECT é `can_read_character(id)`, uma função
  * STABLE que RECONSULTA `characters`; no RETURNING ela roda com o
  * snapshot da consulta e não enxerga a linha sendo inserida, devolve
- * falso, e o Postgres reporta como violação de RLS. O projeto já
- * conhecia isto — `insertCharacterScoped` existe exatamente para
- * contornar (id gerado no cliente, SELECT como comando separado), e o
- * comentário dela descreve o bug. O que ninguém tinha notado é que o
- * `createCharacter` LEGADO nunca recebeu essa correção e ainda faz
- * `.insert().select()`.
+ * falso, e o Postgres reporta como violação de RLS.
  *
- * Os dois fatos viram critério aqui. Não são o teste "aceitando" o
- * defeito: são o teste fixando o comportamento de hoje, para que
- * qualquer mudança apareça como falha apontando para este arquivo.
+ * O contorno é `insertCharacterScoped` (id gerado no cliente, SELECT
+ * como comando separado). Quando este teste passou a autenticar, ele
+ * revelou que o `createCharacter` LEGADO tinha ficado de fora desse
+ * contorno e quebrava para qualquer usuário autenticado. Já foi
+ * corrigido — e o critério 8 agora guarda a correção: ele afirma que os
+ * DOIS caminhos de criação funcionam, então uma regressão que devolva o
+ * `.insert().select()` falha aqui.
  *
  * Cria e apaga SOMENTE dados marcados com TEST_CHARACTER_NAME e uma
  * campanha descartável. A limpeza final usa service role — não porque o
@@ -228,33 +229,20 @@ async function main(): Promise<void> {
     daMesaId = null;
     console.log("7. Apagado pela narradora e confirmado ausente.");
 
-    // ── 5. O defeito conhecido do RETURNING, fixado como critério ────
-    // `createCharacter` (legado) ainda faz `.insert().select()`, que a
-    // policy de SELECT recusa sobre a linha nova. Se alguém aplicar a
-    // ele o mesmo tratamento de `insertCharacterScoped`, ESTE critério
-    // falha — e é o aviso de que o cabeçalho deste arquivo precisa ser
-    // atualizado junto.
-    const erroLegado = await recusa(() =>
-      storage.createCharacter(createInitialCharacter(null, TEST_CHARACTER_NAME)));
-    assert(
-      erroLegado?.includes("violates row-level security"),
-      `createCharacter legado deveria esbarrar no RETURNING — veio: ${erroLegado}`,
-    );
-    console.log("8. `createCharacter` legado ainda esbarra no RETURNING (ver cabeçalho).");
+    // ── 5. O caminho LEGADO, agora que ele também passa pelo contorno ─
+    // `createCharacter` fazia `.insert().select()` e esbarrava no
+    // RETURNING; hoje delega a `insertCharacterScoped` como os demais.
+    // Este critério guarda a correção: uma regressão que devolva o
+    // `.insert().select()` volta a falhar aqui.
+    const solto = await storage.createCharacter(createInitialCharacter(null, TEST_CHARACTER_NAME));
+    soltoId = solto.id;
+    assert(solto.owner_id === donoId, "o legado deve carimbar a dona em `owner_id`");
+    assert(solto.status === "draft", "sem `status` explícito, o legado continua criando como rascunho");
+    console.log(`8. \`createCharacter\` legado funciona e devolve a linha: id=${solto.id}`);
 
     // ── 6. A assimetria do personagem SOLTO ──────────────────────────
-    // Criado com service role justamente porque o caminho autenticado
-    // de criação SOLTA é o legado quebrado acima. O que está sob teste
-    // aqui são as policies de UPDATE e DELETE, não a de INSERT.
-    const soltoBase = createInitialCharacter(null, TEST_CHARACTER_NAME);
-    const { data: soltoRaw } = await admin.from("characters").insert({
-      name: TEST_CHARACTER_NAME, payload: soltoBase, status: "draft",
-      campaign_id: null, owner_id: donoId,
-    }).select().single();
-    const solto = soltoRaw as { id: string; campaign_id: string | null; owner_id: string; payload: typeof soltoBase };
-    soltoId = solto.id;
+    // O recém-criado acima é solto (sem mesa) — serve de sujeito.
     assert(solto.campaign_id === null, "o personagem solto não deve ter mesa");
-    assert(solto.owner_id === donoId, "o personagem solto deve ser da dona");
 
     const soltoEditado = await storage.updateCharacter(solto.id, {
       ...solto.payload,
@@ -267,7 +255,7 @@ async function main(): Promise<void> {
     // afirma é o EFEITO, não a exceção.
     await storage.deleteCharacter(solto.id);
     const aindaLa = await storage.getCharacter(solto.id);
-    assert(aindaLa !== null, "personagem SEM mesa não é apagável pela policy atual — ver cabeçalho");
+    assert(aindaLa !== null, "personagem SEM mesa não é apagável pela policy atual — ver PENDENCIA_CICLO_DE_VIDA_PERSONAGEM_SOLTO.md");
     console.log("9. Personagem solto: editável pela dona e NÃO apagável (policy de DELETE exige mesa).");
 
     console.log("\n=== test-character-storage: TODOS OS PASSOS PASSARAM ===");
