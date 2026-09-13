@@ -4,6 +4,7 @@
  * Uso: npx tsx scripts/test-vtt-controlador.ts
  */
 
+import { readFileSync } from "node:fs";
 import {
   type Comando,
   type EstadoHistorico,
@@ -154,6 +155,26 @@ function comandoFake(rotulo: string, autorId: string, log: string[]): Comando {
   const u = prepararUndo(h, "jogador1", false);
   const r = prepararRedo(u.historico, "jogador1", false);
   ok("17 (redo devolve o comando desfeito à pilha de desfazer)", r.comando?.rotulo === "A" && r.historico.desfazer.length === 1 && r.historico.refazer.length === 0, "ok");
+}
+
+{
+  // UMA JANELA POR VEZ, e a ORDEM que isso impõe. `trocarFerramenta`
+  // termina fechando o catálogo de cenas (`setPainelCenasAberto(false)`);
+  // quem ABRE o catálogo precisa, portanto, falar DEPOIS dele — senão
+  // o "abrir" é sobrescrito pelo "fechar" e o clique não faz nada.
+  //
+  // Já quebrou uma vez, ao extrair o handler que o botão da barra e o
+  // chip "Cena ativa" compartilham: o `trocarFerramenta` foi parar
+  // DENTRO do updater de `setPainelCenasAberto`, e o catálogo deixou de
+  // abrir pelos dois caminhos. Por isso a ordem virou asserção.
+  const fonte = readFileSync("src/app/mesas/[campaignId]/vtt/VttClient.tsx", "utf8");
+  const corpo = fonte.slice(fonte.indexOf("const alternarCatalogoCenas"), fonte.indexOf("const [salvandoCena"));
+  const posTroca = corpo.indexOf('trocarFerramenta("interagir")');
+  const posAbrir = corpo.indexOf("setPainelCenasAberto(abrir)");
+  ok("18 (abrir o catálogo vem DEPOIS de trocar de ferramenta, que o fecha)",
+    posTroca > -1 && posAbrir > posTroca, `troca=${posTroca}, abrir=${posAbrir}`);
+  ok("19 (nenhum efeito colateral dentro do updater de setPainelCenasAberto)",
+    !/setPainelCenasAberto\(\s*\(/.test(corpo), "updater com efeito dentro é o que quebrou antes");
 }
 
 console.log(`\n${passou} ok, ${falhou} falha(s).`);

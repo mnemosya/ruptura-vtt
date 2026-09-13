@@ -3976,14 +3976,23 @@ export function VttClient({
    * Interagir) em dois lugares é como elas divergem.
    */
   const alternarCatalogoCenas = useCallback(() => {
-    setPainelCenasAberto((aberto) => {
-      const abrir = !aberto;
-      if (abrir) trocarFerramenta("interagir");
-      setPainelCamadasAberto(false);
-      setPainelCenaAberto(false);
-      return abrir;
-    });
-  }, []);
+    // A ORDEM É A REGRA, e ela não é arbitrária: `trocarFerramenta`
+    // termina com `setPainelCenasAberto(false)` (uma janela por vez), e
+    // quem fala por último ganha. Abrir o catálogo TEM que ser a última
+    // linha.
+    //
+    // Foi exatamente isso que eu quebrei ao extrair esta função: pus o
+    // `trocarFerramenta` DENTRO do updater de `setPainelCenasAberto`,
+    // então o `false` dele era enfileirado DEPOIS do `true` que o
+    // updater devolvia — e o catálogo nunca abria, nem pelo chip nem
+    // pelo botão da barra. Nada de efeito colateral dentro de updater,
+    // que é o que esta base de código repete em todo lugar.
+    const abrir = !painelCenasAberto;
+    if (abrir) trocarFerramenta("interagir");
+    setPainelCamadasAberto(false);
+    setPainelCenaAberto(false);
+    setPainelCenasAberto(abrir);
+  }, [painelCenasAberto, trocarFerramenta]);
   const [salvandoCena, setSalvandoCena] = useState(false);
   const [erroConfigCena, setErroConfigCena] = useState<string | null>(null);
   /** Tamanho em EDIÇÃO — só pra contar o que ficaria fora da grade. */
