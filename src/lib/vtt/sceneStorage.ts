@@ -431,8 +431,22 @@ export class VttStorageError extends Error {
  * uma campanha cujo palco não existe, a RLS já devolveria vazio de
  * qualquer forma.
  */
-export async function idDaCenaApresentada(campaignId: string): Promise<string | null> {
-  return (await lerPalco(campaignId))?.sceneId ?? null;
+/**
+ * A cena de QUEM PERGUNTA — não necessariamente a da mesa.
+ *
+ * Desde a 0118 as duas podem divergir: um jogador mandado para outra
+ * cena tem a dele. A regra (`atribuição ?? palco`) mora no banco
+ * (`vtt_minha_cena`), e é de propósito que este cliente não a
+ * reimplemente — duas cópias divergem no primeiro caso difícil.
+ *
+ * Para o narrador, que não tem atribuição, isto continua devolvendo o
+ * palco, que é o que todo chamador daqui sempre esperou.
+ */
+export async function idDaCenaDoUsuario(campaignId: string): Promise<string | null> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("vtt_minha_cena", { p_campaign_id: campaignId });
+  if (error) throw new VttStorageError(`Falha ao descobrir a cena: ${error.message}`, error);
+  return (data as string | null) ?? null;
 }
 
 /** O palco com a REVISÃO junto. */
@@ -723,6 +737,59 @@ export async function moverCenaParaPasta(params: {
   return { ok: true };
 }
 
+// ── Dividir o grupo (0118) ──────────────────────────────────────────
+/** Onde cada jogador está, para os indicadores do catálogo. */
+export interface PosicaoJogador {
+  userId: string;
+  nome: string;
+  sceneId: string | null;
+  /** Foi MANDADO para lá (decisão de alguém) ou só segue o palco (padrão). */
+  atribuido: boolean;
+}
+
+export async function listarPosicoesJogadores(campaignId: string): Promise<PosicaoJogador[]> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("list_vtt_player_placements", { p_campaign_id: campaignId });
+  if (error) throw new VttStorageError(`Falha ao listar os jogadores: ${error.message}`, error);
+  return (Array.isArray(data) ? (data as Record<string, unknown>[]) : []).map((j) => ({
+    userId: j.user_id as string,
+    nome: j.nome as string,
+    sceneId: (j.scene_id as string | null) ?? null,
+    atribuido: j.atribuido === true,
+  }));
+}
+
+/**
+ * Manda jogadores para uma cena.
+ *
+ * Mandar para a cena do PALCO remove a atribuição em vez de gravá-la —
+ * decidido no servidor (0118), não aqui: é a diferença entre "está aqui
+ * porque mandei" e "está aqui porque a mesa está", e só a segunda
+ * acompanha a próxima apresentação.
+ */
+export async function moverJogadores(params: {
+  campaignId: string;
+  userIds: string[];
+  sceneId: string;
+}): Promise<ResultadoEscrita & { total?: number }> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("move_players_to_scene", {
+    p_campaign_id: params.campaignId,
+    p_user_ids: params.userIds,
+    p_scene_id: params.sceneId,
+  });
+  if (error) return { ok: false, erro: error.message };
+  return { ok: true, total: typeof data === "number" ? data : undefined };
+}
+
+/** Todo mundo volta a seguir o palco. */
+export async function reagruparJogadores(campaignId: string): Promise<ResultadoEscrita & { total?: number }> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("regroup_vtt_players", { p_campaign_id: campaignId });
+  if (error) return { ok: false, erro: error.message };
+  return { ok: true, total: typeof data === "number" ? data : undefined };
+}
+
 /** Os dois modos que o diálogo de duplicação oferece (0116). */
 export type ModoDuplicacao = "completa" | "mapa";
 
@@ -911,7 +978,7 @@ export async function carregarCena(sceneId: string): Promise<EstadoCena | null> 
  * cena inteira só para descobrir o id.
  */
 export async function carregarCenaApresentada(campaignId: string): Promise<EstadoCena | null> {
-  const sceneId = await idDaCenaApresentada(campaignId);
+  const sceneId = await idDaCenaDoUsuario(campaignId);
   if (!sceneId) return null;
   return carregarCena(sceneId);
 }
@@ -1715,7 +1782,7 @@ export async function lerTrilhaDaCenaAtiva(campaignId: string): Promise<unknown 
   // está onde o narrador a colocou (0111). Antes do catálogo as duas
   // respostas coincidiam; hoje a mais antiga pode ser uma cena que
   // ninguém está jogando.
-  const sceneIdPalco = await idDaCenaApresentada(campaignId);
+  const sceneIdPalco = await idDaCenaDoUsuario(campaignId);
   if (!sceneIdPalco) return null;
   const { data } = await client
     .from("vtt_turn_tracks")
@@ -1736,7 +1803,7 @@ export async function tokenDoPersonagemNaCenaAtiva(campaignId: string, character
   // está onde o narrador a colocou (0111). Antes do catálogo as duas
   // respostas coincidiam; hoje a mais antiga pode ser uma cena que
   // ninguém está jogando.
-  const sceneIdPalco = await idDaCenaApresentada(campaignId);
+  const sceneIdPalco = await idDaCenaDoUsuario(campaignId);
   if (!sceneIdPalco) return null;
   // Pela RPC, não por `select` direto: `vtt_tokens` teve o SELECT
   // revogado de `authenticated` na 0084 justamente para que ninguém
@@ -1771,7 +1838,7 @@ export async function lerTrilhaDaMesa(campaignId: string): Promise<
   // está onde o narrador a colocou (0111). Antes do catálogo as duas
   // respostas coincidiam; hoje a mais antiga pode ser uma cena que
   // ninguém está jogando.
-  const sceneIdPalco = await idDaCenaApresentada(campaignId);
+  const sceneIdPalco = await idDaCenaDoUsuario(campaignId);
   if (!sceneIdPalco) return null;
   const sceneId = sceneIdPalco;
 
@@ -1816,7 +1883,7 @@ export async function encerrarTrilhaDaCampanha(campaignId: string): Promise<void
   // Encerra o combate da cena onde a MESA está — ver o comentário em
   // `lerTrilhaDaMesa`. Encerrar a rodada de uma cena que o narrador
   // está só preparando seria encerrar nada.
-  const sceneIdPalco = await idDaCenaApresentada(campaignId);
+  const sceneIdPalco = await idDaCenaDoUsuario(campaignId);
   if (!sceneIdPalco) return;
   await encerrarTrilha(sceneIdPalco);
 }

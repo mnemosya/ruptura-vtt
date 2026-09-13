@@ -30,19 +30,22 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Archive, Clapperboard, FolderPlus, Loader2, Plus, Undo2 } from "lucide-react";
+import {
+  AlertTriangle, Archive, Clapperboard, FolderPlus, Loader2, Plus, Undo2, UsersRound,
+} from "lucide-react";
 import { JanelaFerramenta } from "../_shell/JanelaFerramenta";
 import { CartaoCena } from "./CartaoCena";
 import {
   apresentarCenaAction, arquivarCenaAction, criarCenaAction, criarPastaAction,
   duplicarCenaAction, excluirCenaAction, excluirPastaAction, listarCenasAction,
-  listarPastasAction, moverCenaParaPastaAction, renomearPastaAction,
+  listarPastasAction, listarPosicoesJogadoresAction, moverCenaParaPastaAction,
+  moverJogadoresAction, reagruparJogadoresAction, renomearPastaAction,
   reordenarCenasAction, restaurarCenaAction, salvarConfigCenaAction,
 } from "../_acoes/sceneActions";
 import { assinarImagensAction } from "../_acoes/imageActions";
 import { LinhaPasta } from "./LinhaPasta";
 import type {
-  CartaoCena as DadosCartaoCena, ModoDuplicacao, PastaCena,
+  CartaoCena as DadosCartaoCena, ModoDuplicacao, PastaCena, PosicaoJogador,
 } from "../../../../../lib/vtt/sceneStorage";
 
 export interface PropsGerenciadorCenas {
@@ -64,6 +67,8 @@ export interface PropsGerenciadorCenas {
    * carregar e como reassinar o Realtime.
    */
   onCenaSaiuDeUso?: (sceneId: string) => void;
+  /** A cena onde a MESA está — destino de quem é devolvido ao grupo. */
+  cenaApresentadaId?: string | null;
   /**
    * Muda quando algo fora daqui alterou uma cena (renomear pela janela
    * de Configurações, por exemplo). Releitura em vez de espelhar o
@@ -95,6 +100,9 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
    * expira em 5 minutos.
    */
   const [miniaturas, setMiniaturas] = useState<Record<string, string>>({});
+
+  /** Onde cada jogador está (0118). Vazio para quem não é narrador. */
+  const [jogadores, setJogadores] = useState<PosicaoJogador[]>([]);
 
   /** As pastas da campanha, com caminho e nível montados pelo banco (0117). */
   const [pastas, setPastas] = useState<PastaCena[]>([]);
@@ -179,9 +187,10 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
       // Cenas e pastas na MESMA leva: são as duas metades de uma lista
       // só, e carregá-las em momentos diferentes deixaria um frame com
       // cenas órfãs de pastas que ainda não chegaram.
-      const [r, rp] = await Promise.all([
+      const [r, rp, rj] = await Promise.all([
         listarCenasAction(p.campaignId, true),
         listarPastasAction(p.campaignId),
+        listarPosicoesJogadoresAction(p.campaignId),
       ]);
       if (geracao !== geracaoRef.current) return;
       if (!r.ok || !r.dados) {
@@ -189,6 +198,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
       } else {
         setCenas([...r.dados.cenas].sort((a, b) => a.ordem - b.ordem));
         setPastas(rp.ok && rp.dados ? rp.dados.pastas : []);
+        setJogadores(rj.ok && rj.dados ? rj.dados.jogadores : []);
         setErro(null);
       }
     } catch (e) {
@@ -449,6 +459,46 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
     }
   }
 
+  async function moverJogadoresPara(cena: DadosCartaoCena, userIds: string[]) {
+    // Desmarcar todo mundo significa "ninguém aqui" — e a forma de
+    // dizer isso ao servidor é mandar os removidos de volta ao palco,
+    // não mandar uma lista vazia (que a RPC recusa, e com razão: lista
+    // vazia é quase sempre engano).
+    const aqui = new Set(jogadores.filter((j) => j.sceneId === cena.id).map((j) => j.userId));
+    const paraCa = userIds.filter((id) => !aqui.has(id));
+    const paraFora = [...aqui].filter((id) => !userIds.includes(id));
+    const palco = p.cenaApresentadaId ?? null;
+
+    marcarOcupada(cena.id, true);
+    anotarErro(cena.id, null);
+    try {
+      if (paraCa.length > 0) {
+        const r = await moverJogadoresAction({ campaignId: p.campaignId, userIds: paraCa, sceneId: cena.id });
+        if (!r.ok) { anotarErro(cena.id, r.erro ?? "Não foi possível mover os jogadores."); return; }
+      }
+      if (paraFora.length > 0 && palco) {
+        const r = await moverJogadoresAction({ campaignId: p.campaignId, userIds: paraFora, sceneId: palco });
+        if (!r.ok) { anotarErro(cena.id, r.erro ?? "Não foi possível devolver os jogadores."); return; }
+      }
+      await recarregar();
+    } catch (e) {
+      anotarErro(cena.id, e instanceof Error ? e.message : "Falha inesperada ao mover jogadores.");
+    } finally {
+      marcarOcupada(cena.id, false);
+    }
+  }
+
+  async function reagrupar() {
+    try {
+      const r = await reagruparJogadoresAction({ campaignId: p.campaignId });
+      if (!r.ok) { setErro(r.erro ?? "Falha ao reagrupar a mesa."); return; }
+      setErro(null);
+      await recarregar();
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Falha inesperada ao reagrupar.");
+    }
+  }
+
   async function excluirPastaPor(pasta: PastaCena) {
     marcarOcupada(pasta.id, true);
     anotarErro(pasta.id, null);
@@ -587,6 +637,9 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
     trilha.unshift(f);
     id = f.parentId;
   }
+
+  /** Quem foi MANDADO para algum lugar — só esses precisam de reagrupar. */
+  const separados = jogadores.filter((j) => j.atribuido);
 
   const vazio = !carregando && !erro && lista.length === 0 && subpastas.length === 0;
 
@@ -729,6 +782,9 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                 onAbrir={() => p.onAbrir(c.id)}
                 onRenomear={(nome) => void renomear(c, nome)}
                 miniaturaUrl={c.miniaturaImageId ? miniaturas[c.miniaturaImageId] ?? null : null}
+                jogadoresAqui={jogadores.filter((j) => j.sceneId === c.id)}
+                todosJogadores={jogadores}
+                onMoverJogadores={(ids) => void moverJogadoresPara(c, ids)}
                 onApresentar={() => void apresentar(c)}
                 onDuplicar={(modo) => void duplicar(c, modo)}
                 onArquivar={() => void arquivar(c)}
@@ -849,6 +905,19 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                 quando já se está nele, pra que exista a porta de volta.
                 Um "Arquivo (0)" permanente seria um item de interface
                 que nunca leva a lugar nenhum. */}
+            {/* REAGRUPAR só existe quando há grupo dividido. Um botão
+                permanente de "juntar a mesa" numa mesa que nunca se
+                separou é um controle que nunca faz nada. */}
+            {separados.length > 0 && !verArquivo && !buscando && (
+              <button
+                type="button" className="rv-cena-btn" data-tipo="reagrupar"
+                data-testid="cenas-reagrupar"
+                title="Todos voltam para a cena da mesa"
+                onClick={() => void reagrupar()}
+              >
+                <UsersRound size={13} aria-hidden="true" /> Reagrupar ({separados.length})
+              </button>
+            )}
             {(arquivadas.length > 0 || verArquivo) && (
               <button
                 type="button" className="rv-cena-btn" data-tipo="arquivo"

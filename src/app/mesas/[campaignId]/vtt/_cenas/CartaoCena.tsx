@@ -31,9 +31,11 @@ import {
   Archive, ArchiveRestore, Check, Copy, GripVertical, MonitorPlay,
   MoreVertical, Pencil, Trash2, Users, X,
 } from "lucide-react";
-import type { CartaoCena as DadosCartaoCena, ModoDuplicacao } from "../../../../../lib/vtt/sceneStorage";
+import type {
+  CartaoCena as DadosCartaoCena, ModoDuplicacao, PosicaoJogador,
+} from "../../../../../lib/vtt/sceneStorage";
 
-type Modo = "normal" | "renomeando" | "duplicando" | "excluindo";
+type Modo = "normal" | "renomeando" | "duplicando" | "excluindo" | "jogadores";
 
 export interface PropsCartaoCena {
   cena: DadosCartaoCena;
@@ -64,6 +66,11 @@ export interface PropsCartaoCena {
   onArquivar: () => void;
   onRestaurar: () => void;
   onExcluir: (nomeConfirmacao: string) => void;
+  /** Quem está NESTA cena agora (atribuído ou porque a mesa está aqui). */
+  jogadoresAqui: PosicaoJogador[];
+  /** Todos os jogadores da campanha, para a lista de "trazer para cá". */
+  todosJogadores: PosicaoJogador[];
+  onMoverJogadores: (userIds: string[]) => void;
   /** Reordenar pelo teclado — o arrasto não é alcançável sem mouse. */
   onMover: (direcao: -1 | 1) => void;
   podeSubir: boolean;
@@ -84,6 +91,7 @@ export function CartaoCena(p: PropsCartaoCena) {
   const [rascunho, setRascunho] = useState(p.cena.nome);
   const [confirmacao, setConfirmacao] = useState("");
   const [menuAberto, setMenuAberto] = useState(false);
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const campoRef = useRef<HTMLInputElement | null>(null);
   const menuRef = useRef<HTMLSpanElement | null>(null);
 
@@ -99,7 +107,12 @@ export function CartaoCena(p: PropsCartaoCena) {
   useEffect(() => {
     if (modo === "renomeando") campoRef.current?.select();
     if (modo === "excluindo") campoRef.current?.focus();
-    if (modo === "normal") setConfirmacao("");
+    if (modo === "normal") { setConfirmacao(""); setSelecionados(new Set()); }
+    // Quem já está aqui vem pré-marcado: o gesto comum é ACRESCENTAR
+    // alguém ao grupo que está nesta cena, e obrigar a remarcar os que
+    // já estavam faria cada ajuste parecer um recomeço.
+    if (modo === "jogadores") setSelecionados(new Set(p.jogadoresAqui.map((j) => j.userId)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modo]);
 
   /** Fechar o menu por clique fora e por Escape — as duas saídas que quem usa menu espera. */
@@ -215,6 +228,19 @@ export function CartaoCena(p: PropsCartaoCena) {
             </span>
           )}
           {arquivada && <span className="rv-cena-selo" data-tipo="arquivo">Arquivada</span>}
+          {p.jogadoresAqui.map((j) => (
+            <span
+              key={j.userId}
+              className="rv-cena-jogador"
+              data-atribuido={j.atribuido || undefined}
+              // O título distingue os dois motivos de estar aqui —
+              // sem ele, "mandei o Bruno" e "o Bruno está onde a mesa
+              // está" seriam a mesma etiqueta.
+              title={j.atribuido
+                ? `${j.nome} foi mandado para esta cena`
+                : `${j.nome} está aqui porque a mesa está`}
+            >{j.nome}</span>
+          ))}
           {p.caminhoPasta && <span className="rv-cena-local" data-tipo="pasta">{p.caminhoPasta}</span>}
           {p.cena.local && <span className="rv-cena-local">{p.cena.local}</span>}
         </span>
@@ -274,6 +300,37 @@ export function CartaoCena(p: PropsCartaoCena) {
           </span>
         )}
 
+        {modo === "jogadores" && (
+          <span className="rv-cena-linha-acao" data-testid="cena-jogadores-lista">
+            {p.todosJogadores.length === 0 ? (
+              <span className="rv-pasta-aviso">Ninguém mais na campanha.</span>
+            ) : (
+              <>
+                {p.todosJogadores.map((j) => (
+                  <label key={j.userId} className="rv-cena-jogador-opcao">
+                    <input
+                      type="checkbox"
+                      checked={selecionados.has(j.userId)}
+                      data-testid={`cena-jogador-${j.userId}`}
+                      onChange={(e) => setSelecionados((s) => {
+                        const novo = new Set(s);
+                        if (e.target.checked) novo.add(j.userId); else novo.delete(j.userId);
+                        return novo;
+                      })}
+                    />
+                    {j.nome}
+                  </label>
+                ))}
+                <button
+                  type="button" className="rv-cena-btn" data-testid="cena-jogadores-confirmar"
+                  onClick={() => { setModo("normal"); p.onMoverJogadores([...selecionados]); }}
+                >Mandar para cá</button>
+              </>
+            )}
+            <button type="button" className="rv-cena-mini-btn" onClick={() => setModo("normal")}>Cancelar</button>
+          </span>
+        )}
+
         {p.erro && <span className="rv-cena-erro" role="alert">{p.erro}</span>}
       </span>
 
@@ -322,6 +379,13 @@ export function CartaoCena(p: PropsCartaoCena) {
                   data-testid="cena-renomear"
                   onClick={() => doMenu(() => setModo("renomeando"))}
                 ><Pencil size={12} aria-hidden="true" /> Renomear</button>
+              )}
+              {!arquivada && (
+                <button
+                  type="button" role="menuitem" className="rv-cena-menu-item"
+                  data-testid="cena-jogadores"
+                  onClick={() => doMenu(() => setModo("jogadores"))}
+                ><Users size={12} aria-hidden="true" /> Quem joga aqui…</button>
               )}
               <button
                 type="button" role="menuitem" className="rv-cena-menu-item"

@@ -39,6 +39,10 @@ import {
   arquivarCena,
   restaurarCena,
   excluirCena,
+  idDaCenaDoUsuario,
+  listarPosicoesJogadores,
+  moverJogadores,
+  reagruparJogadores,
   listarPastas,
   criarPasta,
   renomearPasta,
@@ -86,6 +90,7 @@ import {
   type Palco,
   type ModoDuplicacao,
   type PastaCena,
+  type PosicaoJogador,
   type TrilhaPersistida,
   type ParametrosAreaEscrita,
   type TipoArea,
@@ -285,6 +290,59 @@ export async function apresentarCenaAction(params: {
   const r = await apresentarCena(params);
   if (!r.ok) return { ok: false, erro: r.erro ?? "Falha ao apresentar a cena." };
   return { ok: true, dados: { presentedSceneId: r.presentedSceneId ?? params.sceneId, revision: r.revision } };
+}
+
+// ── Dividir o grupo (0118) ──────────────────────────────────────────
+/**
+ * A cena em que QUEM PERGUNTA está — atribuição individual ou, na
+ * falta, o palco. O cliente chama isto e obedece; a regra fica no
+ * banco (`vtt_minha_cena`), num lugar só.
+ *
+ * É o ponto de reconciliação do jogador: tanto uma troca de palco
+ * quanto uma atribuição nova levam à mesma pergunta, e uma resposta só.
+ */
+export async function lerMinhaCenaAction(campaignId: string): Promise<ResultadoAcao<{ sceneId: string | null }>> {
+  const v = await exigirAcesso(campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  try {
+    return { ok: true, dados: { sceneId: await idDaCenaDoUsuario(campaignId) } };
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : "Falha ao descobrir a cena." };
+  }
+}
+
+export async function listarPosicoesJogadoresAction(
+  campaignId: string,
+): Promise<ResultadoAcao<{ jogadores: PosicaoJogador[] }>> {
+  const v = await exigirAcesso(campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  try {
+    return { ok: true, dados: { jogadores: await listarPosicoesJogadores(campaignId) } };
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : "Falha ao listar os jogadores." };
+  }
+}
+
+export async function moverJogadoresAction(params: {
+  campaignId: string;
+  userIds: string[];
+  sceneId: string;
+}): Promise<ResultadoAcao<{ total?: number }>> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const r = await moverJogadores(params);
+  if (!r.ok) return { ok: false, erro: r.erro ?? "Falha ao mover os jogadores." };
+  return { ok: true, dados: { total: r.total } };
+}
+
+export async function reagruparJogadoresAction(params: {
+  campaignId: string;
+}): Promise<ResultadoAcao<{ total?: number }>> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const r = await reagruparJogadores(params.campaignId);
+  if (!r.ok) return { ok: false, erro: r.erro ?? "Falha ao reagrupar a mesa." };
+  return { ok: true, dados: { total: r.total } };
 }
 
 // ── Pastas (0117) ───────────────────────────────────────────────────

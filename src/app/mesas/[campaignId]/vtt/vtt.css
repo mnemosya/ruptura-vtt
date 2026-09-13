@@ -4212,3 +4212,34 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* O caminho da pasta no resultado de busca — mesmo peso do "local",
    porque as duas coisas respondem "onde", não "o quê". */
 .rv-cena-local[data-tipo="pasta"] { color: var(--jf-acento, var(--cy)); opacity: .8; }
+
+/* ── Dividir o grupo (fase 6) ─────────────────────────────────────── */
+
+/* Quem está na cena. Duas aparências porque são dois fatos: quem foi
+   MANDADO para cá (decisão de alguém, desfazível) e quem está aqui
+   porque a mesa está (o padrão). Uma etiqueta só faria as duas coisas
+   parecerem a mesma. */
+.rv-cena-jogador {
+  display: inline-flex; align-items: center;
+  padding: 1px 6px; border-radius: 999px;
+  font-family: var(--font-mono), monospace; font-size: 9px;
+  letter-spacing: .04em; color: var(--rv-ink-faint);
+  background: rgba(255,255,255,.06);
+  max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rv-cena-jogador[data-atribuido] {
+  color: #c9a227; box-shadow: inset 0 0 0 1px currentColor; background: none;
+}
+
+.rv-cena-jogador-opcao {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--txt-dim); cursor: pointer;
+}
+.rv-cena-jogador-opcao input { accent-color: var(--jf-acento, var(--cy)); }
+
+.rv-cena-btn[data-tipo="reagrupar"] {
+  flex: 0 0 auto;
+  color: #c9a227; box-shadow: inset 0 0 0 1px rgba(201,162,39,.42);
+  background: rgba(201,162,39,.12);
+}
+.rv-cena-btn[data-tipo="reagrupar"]:hover:not(:disabled) { background: rgba(201,162,39,.2); }

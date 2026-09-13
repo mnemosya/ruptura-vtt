@@ -380,6 +380,48 @@ export function subscribeToVttPalco(params: {
 }
 
 /**
+ * Assina as ATRIBUIÇÕES individuais de cena (0118).
+ *
+ * Canal próprio pelo mesmo motivo do palco: é informação da CAMPANHA,
+ * e a assinatura precisa durar mais que a cena aberta.
+ *
+ * Sem payload de propósito. O evento diz "mudou"; quem recebe pergunta
+ * ao servidor onde ele está agora (`vtt_minha_cena`). Mandar o
+ * `scene_id` pelo canal tentaria o cliente a decidir sozinho se aquilo
+ * vale para ele — e a RLS já resolve isso melhor: o jogador só recebe a
+ * PRÓPRIA linha, então qualquer evento que chegue até ele é dele.
+ *
+ * O narrador recebe todas, e usa para atualizar os indicadores.
+ */
+export function subscribeToVttAtribuicoes(params: {
+  campaignId: string;
+  onAtribuicoesMudaram: () => void;
+  /** Disparado a cada `SUBSCRIBED`, inclusive o primeiro. */
+  onReconectado?: () => void;
+}): () => void {
+  const client = getBrowserSupabaseClient();
+  if (!client) return () => {};
+
+  const channel: RealtimeChannel = client
+    .channel(`campaign:${params.campaignId}:atribuicoes`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*", schema: "public", table: "vtt_player_scene_assignments",
+        filter: `campaign_id=eq.${params.campaignId}`,
+      },
+      () => params.onAtribuicoesMudaram(),
+    )
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") params.onReconectado?.();
+    });
+
+  return () => {
+    client.removeChannel(channel);
+  };
+}
+
+/**
  * Evento EFÊMERO de movimento — nunca persistido, existe só pra outros
  * clientes reproduzirem a MESMA animação que o autor está vendo. A
  * releitura sanitizada disparada por `tokens_changed` carrega só a

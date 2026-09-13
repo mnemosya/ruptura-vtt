@@ -71,6 +71,7 @@ import {
 } from "./_dominio/reconciliacaoPosicao";
 import {
   garantirCenaSemente, lerCenaAtiva, lerCenaAction, lerCenaApresentadaAction, lerPalcoAction,
+  lerMinhaCenaAction,
   moverTokenAction, obterUsuarioAtualAction,
   pintarTerrenoAction, criarMarcaAction, apagarMarcaAction, rotacionarTokenAction,
   criarMedicaoAction, apagarMedicaoAction, limparMedicoesAction,
@@ -121,7 +122,8 @@ import { type TokenApresentacao, tokenApresentacaoDe } from "./_dominio/tokenApr
 import {
   type EventoMovimentoToken, type EventoPing,
   subscribeToVttScene, subscribeToVttTokenMovement, subscribeToVttPing, subscribeToVttTokensChanged,
-  subscribeToVttAreasChanged, subscribeToCamadasDaCena, subscribeToVttPalco } from "./_realtime/vttRealtime";
+  subscribeToVttAreasChanged, subscribeToCamadasDaCena, subscribeToVttPalco,
+  subscribeToVttAtribuicoes } from "./_realtime/vttRealtime";
 import { useCampaignCharacterControllersRealtime } from "../../../../lib/realtime/useCampaignRealtime";
 import { GerenciadorToken, type ValoresFormularioToken, sugerirSigla } from "./_shell/GerenciadorToken";
 import { MenuContextual, type ItemMenuContextual } from "./_shell/MenuContextual";
@@ -790,6 +792,33 @@ export function VttClient({
    * desfaria a separação que a 0111 construiu. Só o selo do catálogo
    * se atualiza.
    */
+  /**
+   * Onde EU deveria estar — perguntado ao servidor, nunca calculado
+   * aqui.
+   *
+   * Desde a 0118 a resposta é `atribuição ?? palco`, e essa regra mora
+   * no banco. Recalculá-la no navegador seria uma segunda
+   * implementação, divergindo no primeiro caso difícil — "fui
+   * atribuído e o palco mudou no mesmo segundo". Perguntar custa um
+   * round-trip por evento, e esses eventos são raros.
+   *
+   * O NARRADOR nunca é arrastado: ele pode estar montando a cena
+   * seguinte, e ser movido pelo próprio gesto desfaria a separação que
+   * a 0111 construiu.
+   */
+  const reavaliarMinhaCena = useCallback((motivo: string) => {
+    if (ehNarrador) return;
+    void lerMinhaCenaAction(campaignId).then((r) => {
+      if (!r.ok || !r.dados?.sceneId) return;
+      const destino = r.dados.sceneId;
+      if (estadoCenaRef.current?.cena.id === destino) return;
+      // O aviso vem ANTES da carga: a cena nova pode demorar, e trocar
+      // o mapa sob os pés de alguém sem dizer por quê é o pior dos dois.
+      setAvisoPalco(motivo);
+      trocarParaCena(destino, { lembrar: false });
+    }).catch(() => { /* a próxima reconexão reconcilia */ });
+  }, [campaignId, ehNarrador, trocarParaCena]);
+
   const aplicarPalco = useCallback((palco: { sceneId: string; revision: number }) => {
     const anterior = cenaApresentadaRef.current;
     // Evento repetido (eco da própria escrita, reconciliação logo após
@@ -797,13 +826,10 @@ export function VttClient({
     if (anterior && anterior.revision === palco.revision && anterior.sceneId === palco.sceneId) return;
     cenaApresentadaRef.current = palco;
     setVersaoPalco((v) => v + 1);
-    if (ehNarrador) return;
-    if (estadoCenaRef.current?.cena.id === palco.sceneId) return;
-    // O aviso vem ANTES da carga: a cena nova pode demorar, e trocar o
-    // mapa sob os pés de alguém sem dizer por quê é o pior dos dois.
-    setAvisoPalco("O narrador mudou a cena.");
-    trocarParaCena(palco.sceneId, { lembrar: false });
-  }, [ehNarrador, trocarParaCena]);
+    // O palco ter mudado NÃO significa que este jogador se move: ele
+    // pode estar atribuído a outra cena. Quem decide é o servidor.
+    reavaliarMinhaCena("O narrador mudou a cena.");
+  }, [reavaliarMinhaCena]);
 
   /**
    * A cena que o narrador estava olhando foi arquivada ou excluída.
@@ -861,6 +887,30 @@ export function VttClient({
       },
     });
   }, [campaignId, aplicarPalco]);
+
+  /**
+   * As ATRIBUIÇÕES individuais (0118).
+   *
+   * Canal separado do palco porque são fatos diferentes: o palco move a
+   * mesa, a atribuição move UMA pessoa. Para o jogador, a RLS garante
+   * que só a própria linha chega — então qualquer evento aqui é sobre
+   * ele. Para o narrador, chegam todas, e servem aos indicadores.
+   */
+  useEffect(() => {
+    return subscribeToVttAtribuicoes({
+      campaignId,
+      onAtribuicoesMudaram: () => {
+        setVersaoPalco((v) => v + 1); // o catálogo mostra quem está onde
+        reavaliarMinhaCena("O narrador levou você para outra cena.");
+      },
+      onReconectado: () => {
+        // Reconciliação: quem ficou offline pode ter sido movido sem
+        // receber o evento, e continuaria numa cena que já não é a dele.
+        setVersaoPalco((v) => v + 1);
+        reavaliarMinhaCena("O narrador levou você para outra cena.");
+      },
+    });
+  }, [campaignId, reavaliarMinhaCena]);
 
   // ── Fonte canônica ────────────────────────────────────────────────
   // `estadoCena.tokens` (persistido) é a ÚNICA fonte da lista de
@@ -5391,6 +5441,7 @@ export function VttClient({
             campaignId={campaignId}
             cenaVistaId={estadoCena?.cena.id ?? null}
             palcoRevision={cenaApresentadaRef.current?.revision ?? null}
+            cenaApresentadaId={cenaApresentadaRef.current?.sceneId ?? null}
             onCenaSaiuDeUso={aoCenaSairDeUso}
             // Duas origens de "o catálogo envelheceu": a config da cena
             // aberta (renomear/camadas) e o palco tendo andado. Somadas

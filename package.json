@@ -60,6 +60,7 @@
     "check:vtt-pastas": "tsx scripts/dev/check-vtt-pastas.ts",
     "check:vtt-pastas-ui": "tsx scripts/dev/check-vtt-pastas-ui.ts",
     "check:vtt-dividir-grupo": "tsx scripts/dev/check-vtt-dividir-grupo.ts",
+    "check:vtt-dividir-grupo-ui": "tsx scripts/dev/check-vtt-dividir-grupo-ui.ts",
     "gc:vtt-imagens": "tsx scripts/dev/gc-vtt-imagens.ts"
   },
   "dependencies": {
