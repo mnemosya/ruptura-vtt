@@ -41,7 +41,7 @@ import { ParametrosCena, type ValoresParametros } from "./ParametrosCena";
 import {
   apresentarCenaAction, arquivarCenaAction, criarCenaAction, criarPastaAction,
   duplicarCenaAction, excluirCenaAction, excluirPastaAction, listarCenasAction,
-  listarPastasAction, listarPosicoesJogadoresAction, moverCenaParaPastaAction,
+  arquivarPastaAction, desarquivarPastaAction, listarPastasAction, listarPosicoesJogadoresAction, moverCenaParaPastaAction,
   moverJogadoresAction, reagruparJogadoresAction, renomearPastaAction,
   reordenarCenasAction, restaurarCenaAction, salvarConfigCenaAction,
 } from "../_acoes/sceneActions";
@@ -773,6 +773,39 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
     }
   }
 
+  async function arquivarPastaPor(pasta: PastaCena) {
+    marcarOcupada(pasta.id, true);
+    anotarErro(pasta.id, null);
+    try {
+      const r = await arquivarPastaAction({ campaignId: p.campaignId, folderId: pasta.id });
+      if (!r.ok) { anotarErro(pasta.id, r.erro ?? "Não foi possível arquivar a pasta."); return; }
+      // Mesma regra da exclusão (0129/0130): a cena APRESENTADA não vai
+      // junto, porque arquivar a cena em uso deixaria a mesa numa cena
+      // congelada. Se ficou pra trás, isso tem que ser dito.
+      if (r.dados?.preservada) {
+        setAviso(`"${r.dados.preservada}" continua no catálogo: a mesa está nela.`);
+      }
+      // Estar DENTRO da pasta que acabou de sair do catálogo deixaria a
+      // grade apontando pra um lugar que já não é navegável.
+      if (pastaAtual === pasta.id) setPastaAtual(pasta.parentId);
+      await recarregar();
+    } finally {
+      marcarOcupada(pasta.id, false);
+    }
+  }
+
+  async function desarquivarPastaPor(pasta: PastaCena) {
+    marcarOcupada(pasta.id, true);
+    anotarErro(pasta.id, null);
+    try {
+      const r = await desarquivarPastaAction({ campaignId: p.campaignId, folderId: pasta.id });
+      if (!r.ok) { anotarErro(pasta.id, r.erro ?? "Não foi possível devolver a pasta."); return; }
+      await recarregar();
+    } finally {
+      marcarOcupada(pasta.id, false);
+    }
+  }
+
   /**
    * Quantas cenas e subpastas vão junto com esta pasta — o número que a
    * confirmação mostra. Calculado aqui, com os dados que a gaveta já
@@ -879,6 +912,15 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
 
   const todas = cenas ?? [];
   const arquivadas = todas.filter((c) => c.arquivadaEm !== null);
+  /**
+   * Pastas ARQUIVADAS (0130). Elas saem do trilho do catálogo e vão
+   * pra aba Arquivo com as cenas dentro — a lista de lá deixou de ser
+   * plana justamente pra não desmanchar o conjunto que foi arquivado
+   * junto.
+   */
+  const pastasArquivadas = (pastas ?? []).filter((f) => f.arquivadaEm !== null);
+  const pastasAtivas = (pastas ?? []).filter((f) => f.arquivadaEm === null);
+  const idsPastasArquivadas = new Set(pastasArquivadas.map((f) => f.id));
   const termo = busca.trim().toLocaleLowerCase("pt-BR");
   const buscando = termo.length > 0;
 
@@ -897,7 +939,10 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
         c.nome.toLocaleLowerCase("pt-BR").includes(termo)
         || (c.local ?? "").toLocaleLowerCase("pt-BR").includes(termo))
     : verArquivo
-      ? arquivadas
+      // Sob uma pasta arquivada, a cena aparece DENTRO dela (logo
+      // abaixo) — não também solta na grade. Repetir a mesma cena nos
+      // dois lugares faria a aba Arquivo mentir na contagem.
+      ? arquivadas.filter((c) => !(c.pastaId && idsPastasArquivadas.has(c.pastaId)))
       // `null` deixou de significar "as da raiz" e passou a significar
       // TODAS: a pergunta que se faz ao abrir o catálogo é "que cenas
       // eu tenho?", e responder com um subconjunto que depende de onde
@@ -926,7 +971,19 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
    * mesmo clique — o que muda é o filtro.
    */
   function listaDeCenas(pastaId: string | null | undefined) {
-    const cenas = todas.filter((c) => c.arquivadaEm === null && (pastaId === undefined || c.pastaId === pastaId));
+    return miniCartoes(todas.filter((c) => c.arquivadaEm === null && (pastaId === undefined || c.pastaId === pastaId)));
+  }
+
+  /**
+   * O mesmo, para a aba Arquivo: as cenas ARQUIVADAS de uma pasta
+   * arquivada. Mesma aparência de propósito — quem devolve a pasta
+   * precisa reconhecer, aqui, o conjunto que arquivou lá.
+   */
+  function listaDeCenasArquivadas(pastaId: string) {
+    return miniCartoes(arquivadas.filter((c) => c.pastaId === pastaId));
+  }
+
+  function miniCartoes(cenas: DadosCartaoCena[]) {
     if (cenas.length === 0) return null;
     return (
       <ul className="rv-pasta-cenas" data-testid="pasta-cenas">
@@ -959,7 +1016,8 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
   /** Quem foi MANDADO para algum lugar — só esses precisam de reagrupar. */
   const separados = jogadores.filter((j) => j.atribuido);
 
-  const vazio = !carregando && !erro && lista.length === 0 && subpastas.length === 0;
+  const vazio = !carregando && !erro && lista.length === 0 && subpastas.length === 0
+    && !(verArquivo && pastasArquivadas.length > 0);
 
   /** O nome da cena de um jogador, para o trilho da direita. */
   const nomeDaCena = (sceneId: string | null) =>
@@ -1039,16 +1097,25 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
             </button>
           </>
         )}
-        {(arquivadas.length > 0 || verArquivo) && (
+        {/* SEMPRE VISÍVEL, mesmo com o arquivo vazio. Ele só aparecia
+            depois que algo já tinha sido arquivado — o que funcionava
+            enquanto arquivar era ação do CARTÃO (descobre-se lá, o
+            botão aparece depois). Com pasta também arquivando, isso
+            escondia a saída justamente de quem está decidindo entre
+            arquivar e apagar. Desabilitado quando não há nada: a
+            função fica visível sem prometer uma lista vazia. */}
+        {(
           <button
             type="button" className="rv-btn" data-tipo="arquivo"
             aria-pressed={verArquivo}
             data-testid="cenas-ver-arquivo"
+            disabled={arquivadas.length === 0 && pastasArquivadas.length === 0 && !verArquivo}
+            title={arquivadas.length === 0 && pastasArquivadas.length === 0 ? "Nada arquivado ainda" : undefined}
             onClick={() => setVerArquivo((v) => !v)}
           >
             {verArquivo
               ? <><Undo2 size={14} aria-hidden="true" /> Voltar</>
-              : <><Archive size={14} aria-hidden="true" /> Arquivo ({arquivadas.length})</>}
+              : <><Archive size={14} aria-hidden="true" /> Arquivo ({arquivadas.length + pastasArquivadas.length})</>}
           </button>
         )}
       </>}
@@ -1156,9 +1223,9 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
               </li>
             </ul>
 
-            {pastas.length > 0 && (
+            {pastasAtivas.length > 0 && (
               <ul className="rv-gav-pastas">
-                {pastas.map((f) => (
+                {pastasAtivas.map((f) => (
                   <LinhaPasta
                     key={f.id}
                     pasta={f}
@@ -1172,6 +1239,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                     onAbrir={() => { setVerArquivo(false); setPastaAtual(f.id); }}
                     onRenomear={(nome) => void renomearPastaPor(f, nome)}
                     onExcluir={(nomeConfirmacao) => void excluirPastaPor(f, nomeConfirmacao)}
+                    onArquivar={() => void arquivarPastaPor(f)}
                     peso={pesoDaPasta(f.id)}
                     alvoDeArrasto={pastaAlvo === f.id && arrastandoId !== null}
                     onDragOver={(e) => { if (arrastandoId) { e.preventDefault(); setPastaAlvo(f.id); } }}
@@ -1255,6 +1323,40 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                   ? "Pasta vazia. Arraste uma cena para cá, ou crie uma."
                   : "Nenhuma cena ainda. Crie a primeira para começar a preparar."}
             </p>
+          )}
+
+          {/* As pastas arquivadas, com as cenas DELAS dentro. A aba
+              Arquivo deixou de ser uma lista plana porque arquivar uma
+              pasta arquiva um CONJUNTO: desmanchá-lo aqui obrigaria a
+              remontar à mão o que se quisesse devolver. */}
+          {verArquivo && pastasArquivadas.length > 0 && (
+            <ul className="rv-gav-pastas" data-testid="cenas-pastas-arquivadas">
+              {pastasArquivadas.map((f) => (
+                <LinhaPasta
+                  key={f.id}
+                  pasta={f}
+                  aberta={false}
+                  arquivada
+                  quantidade={arquivadas.filter((c) => c.pastaId === f.id).length}
+                  expandida={expandidas.has(f.id)}
+                  onAlternarExpansao={() => alternarExpansao(f.id)}
+                  cenas={listaDeCenasArquivadas(f.id)}
+                  ocupada={ocupadas[f.id] === true}
+                  erro={errosPorCena[f.id] ?? null}
+                  // Arquivada, a pasta não é caminho: não há pra onde
+                  // navegar enquanto ela estiver fora do catálogo.
+                  onAbrir={() => alternarExpansao(f.id)}
+                  onRenomear={(nome) => void renomearPastaPor(f, nome)}
+                  onDesarquivar={() => void desarquivarPastaPor(f)}
+                  onExcluir={(nomeConfirmacao) => void excluirPastaPor(f, nomeConfirmacao)}
+                  peso={pesoDaPasta(f.id)}
+                  alvoDeArrasto={false}
+                  onDragOver={() => {}}
+                  onDragLeave={() => {}}
+                  onDrop={() => {}}
+                />
+              ))}
+            </ul>
           )}
 
           {lista.length > 0 && (

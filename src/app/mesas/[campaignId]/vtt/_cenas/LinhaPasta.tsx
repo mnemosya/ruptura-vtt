@@ -17,7 +17,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, Folder, FolderOpen, Pencil, Trash2, X } from "lucide-react";
+import { Archive, Check, ChevronDown, Folder, FolderOpen, Pencil, Trash2, Undo2, X } from "lucide-react";
 import type { PastaCena } from "../../../../../lib/vtt/sceneStorage";
 import { useDicaFlutuante } from "../_shell/DicaFlutuante";
 
@@ -36,6 +36,15 @@ export interface PropsLinhaPasta {
   /** Quantas cenas e subpastas vão junto — o que a confirmação mostra ANTES de apagar. */
   peso?: { cenas: number; subpastas: number };
   /**
+   * A SAÍDA QUE NÃO DESTRÓI (0130): tira a pasta e o conteúdo do
+   * catálogo sem apagar nada. Ausente = a linha não oferece o gesto
+   * (é o caso da linha "Todas", que não é pasta).
+   */
+  onArquivar?: () => void;
+  /** Esta linha está DENTRO da aba Arquivo — aí o gesto é devolver. */
+  arquivada?: boolean;
+  onDesarquivar?: () => void;
+  /**
    * A lista de cenas desta pasta, aberta pelo chevron. Quem guarda o
    * estado (e monta os mini-cartões) é o `GerenciadorCenas` — esta
    * linha só diz SE está aberta e oferece o botão que alterna.
@@ -53,6 +62,8 @@ export interface PropsLinhaPasta {
 
 export function LinhaPasta(p: PropsLinhaPasta) {
   const dicaRenomear = useDicaFlutuante("Renomear a pasta");
+  const dicaArquivar = useDicaFlutuante("Arquivar a pasta e o conteúdo — dá pra voltar");
+  const dicaDesarquivar = useDicaFlutuante("Devolver a pasta ao catálogo");
   const dicaExcluir = useDicaFlutuante("Excluir a pasta e tudo dentro dela");
   const [editando, setEditando] = useState(false);
   const [rascunho, setRascunho] = useState(p.pasta.nome);
@@ -131,6 +142,28 @@ export function LinhaPasta(p: PropsLinhaPasta) {
           MESMO visual da folha (o `title` nativo resolvia o recorte mas
           trazia o desenho do sistema). */}
       <span className="rv-cena-acoes">
+        {p.arquivada && p.onDesarquivar && (
+          <button
+            type="button" className="rv-cena-mini-btn" data-testid="pasta-desarquivar"
+            aria-label={`Devolver a pasta "${p.pasta.nome}" ao catálogo`}
+            disabled={p.ocupada} onClick={p.onDesarquivar}
+            {...dicaDesarquivar.alvo}
+          >
+            <Undo2 size={15} aria-hidden />
+            {dicaDesarquivar.dica}
+          </button>
+        )}
+        {!p.arquivada && p.onArquivar && (
+          <button
+            type="button" className="rv-cena-mini-btn" data-testid="pasta-arquivar"
+            aria-label={`Arquivar a pasta "${p.pasta.nome}" e o conteúdo dela`}
+            disabled={p.ocupada} onClick={p.onArquivar}
+            {...dicaArquivar.alvo}
+          >
+            <Archive size={15} aria-hidden />
+            {dicaArquivar.dica}
+          </button>
+        )}
         <button
           type="button" className="rv-cena-mini-btn" data-testid="pasta-renomear"
           aria-label={`Renomear a pasta "${p.pasta.nome}"`}

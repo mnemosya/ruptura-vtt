@@ -4946,3 +4946,28 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   z-index: 70; max-width: min(520px, calc(100% - 32px));
 }
+
+/* ── Boundary de erro da mesa (`vtt/error.tsx`) ──────────────────────
+   Ocupa a tela inteira porque a MESA ocupa: se esta tela não cobrisse
+   tudo, o que apareceria por baixo seria a casca da campanha, e a
+   falha da mesa pareceria uma troca de produto. */
+.rv-mesa--erro { display: grid; place-items: center; padding: 24px; }
+.rv-erro-mesa {
+  max-width: 460px; display: flex; flex-direction: column; gap: 10px;
+  padding: 22px 24px;
+  border: 1px solid var(--rv-line); border-radius: 2px;
+  background: var(--rv-panel-grad); box-shadow: var(--rv-shadow-win);
+}
+.rv-erro-mesa__selo {
+  margin: 0; font-family: var(--font-mono), monospace;
+  font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--rv-dg);
+}
+.rv-erro-mesa__titulo {
+  margin: 0; font-family: var(--rv-display), sans-serif;
+  font-size: 20px; font-weight: 600; color: var(--rv-ink);
+}
+.rv-erro-mesa__texto { margin: 0; font-size: 13px; line-height: 1.5; color: var(--rv-ink-dim); }
+.rv-erro-mesa__digest {
+  margin: 0; font-family: var(--font-mono), monospace; font-size: 10px; color: var(--rv-ink-faint);
+}
+.rv-erro-mesa__acoes { display: flex; gap: 8px; margin-top: 6px; }

@@ -58,9 +58,9 @@ const CENAS: DadosCartaoCena[] = [
 ];
 
 const PASTAS: PastaCena[] = [
-  { id: "f1", nome: "Ato I", parentId: null, ordem: 0, caminho: "Ato I", nivel: 1 },
-  { id: "f2", nome: "Esgotos", parentId: "f1", ordem: 0, caminho: "Ato I / Esgotos", nivel: 2 },
-  { id: "f3", nome: "Ato II", parentId: null, ordem: 1, caminho: "Ato II", nivel: 1 },
+  { id: "f1", nome: "Ato I", parentId: null, ordem: 0, caminho: "Ato I", nivel: 1, arquivadaEm: null },
+  { id: "f2", nome: "Esgotos", parentId: "f1", ordem: 0, caminho: "Ato I / Esgotos", nivel: 2, arquivadaEm: null },
+  { id: "f3", nome: "Ato II", parentId: null, ordem: 1, caminho: "Ato II", nivel: 1, arquivadaEm: null },
 ];
 
 const JOGADORES: PosicaoJogador[] = [

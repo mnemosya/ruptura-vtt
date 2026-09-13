@@ -47,6 +47,8 @@ import {
   criarPasta,
   renomearPasta,
   moverPasta,
+  arquivarPasta,
+  desarquivarPasta,
   excluirPasta,
   type ResumoExclusaoPasta,
   moverCenaParaPasta,
@@ -418,6 +420,39 @@ export async function excluirPastaAction(params: {
   const r = await excluirPasta(params.folderId, params.nomeConfirmacao);
   if (!r.ok) return { ok: false, erro: r.erro ?? "Falha ao excluir a pasta." };
   return { ok: true, dados: r.resumo };
+}
+
+/**
+ * A saída REVERSÍVEL da pasta (0130): tira a pasta, as subpastas e as
+ * cenas delas do catálogo sem apagar nada. Existe porque excluir pasta
+ * é irreversível e leva conteúdo junto — quem só quer "tirar da frente"
+ * não deveria precisar do gesto destrutivo.
+ */
+export async function arquivarPastaAction(params: {
+  campaignId: string;
+  folderId: string;
+}): Promise<ResultadoAcao<{ cenas: number; preservada: string | null }>> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const r = await arquivarPasta(params.folderId);
+  if (!r.ok) return { ok: false, erro: r.erro ?? "Falha ao arquivar a pasta." };
+  return { ok: true, dados: { cenas: r.cenas ?? 0, preservada: r.preservada ?? null } };
+}
+
+/**
+ * Devolve ao catálogo. Volta SÓ o que esta pasta arquivou — uma cena
+ * que já estava arquivada sozinha antes continua arquivada, senão
+ * desarquivar a pasta desfaria decisões que ninguém pediu pra desfazer.
+ */
+export async function desarquivarPastaAction(params: {
+  campaignId: string;
+  folderId: string;
+}): Promise<ResultadoAcao<{ cenas: number }>> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+  const r = await desarquivarPasta(params.folderId);
+  if (!r.ok) return { ok: false, erro: r.erro ?? "Falha ao devolver a pasta." };
+  return { ok: true, dados: { cenas: r.cenas ?? 0 } };
 }
 
 export async function moverCenaParaPastaAction(params: {

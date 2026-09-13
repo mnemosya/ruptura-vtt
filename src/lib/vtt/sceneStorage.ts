@@ -677,6 +677,8 @@ export interface PastaCena {
   ordem: number;
   nivel: number;
   caminho: string;
+  /** Arquivada (0130) — sai do catálogo e aparece na aba Arquivo, com as cenas dentro. */
+  arquivadaEm: string | null;
 }
 
 /** As pastas da campanha. Lista vazia para quem não é narrador. */
@@ -691,6 +693,7 @@ export async function listarPastas(campaignId: string): Promise<PastaCena[]> {
     ordem: f.ordem as number,
     nivel: f.nivel as number,
     caminho: f.caminho as string,
+    arquivadaEm: typeof f.archived_at === "string" ? f.archived_at : null,
   }));
 }
 
@@ -706,6 +709,7 @@ function pastaDeLinha(linha: Record<string, unknown>, nivel = 1, caminho?: strin
     // intervalo.
     nivel,
     caminho: caminho ?? (linha.nome as string),
+    arquivadaEm: typeof linha.archived_at === "string" ? linha.archived_at : null,
   };
 }
 
@@ -777,6 +781,24 @@ export async function excluirPasta(folderId: string, nomeConfirmacao: string): P
       preservada: typeof bruto.preservada === "string" ? bruto.preservada : null,
     },
   };
+}
+
+/** Arquiva a pasta, as subpastas e as cenas delas (0130). */
+export async function arquivarPasta(folderId: string): Promise<ResultadoEscrita & { cenas?: number; preservada?: string | null }> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("archive_vtt_scene_folder", { p_folder_id: folderId });
+  if (error) return { ok: false, erro: error.message };
+  const d = (data ?? {}) as Record<string, unknown>;
+  return { ok: true, cenas: typeof d.cenas === "number" ? d.cenas : 0, preservada: typeof d.preservada === "string" ? d.preservada : null };
+}
+
+/** Devolve a pasta ao catálogo, com as cenas que ELA arquivou (0130). */
+export async function desarquivarPasta(folderId: string): Promise<ResultadoEscrita & { cenas?: number }> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("unarchive_vtt_scene_folder", { p_folder_id: folderId });
+  if (error) return { ok: false, erro: error.message };
+  const d = (data ?? {}) as Record<string, unknown>;
+  return { ok: true, cenas: typeof d.cenas === "number" ? d.cenas : 0 };
 }
 
 /** Move uma cena para uma pasta, ou para a raiz com `null`. */
