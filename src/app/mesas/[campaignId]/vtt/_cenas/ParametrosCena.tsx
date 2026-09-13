@@ -20,6 +20,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, SlidersHorizontal, X } from "lucide-react";
 import type { CartaoCena as DadosCartaoCena } from "../../../../../lib/vtt/sceneStorage";
+import { CampoNumero } from "./CampoNumero";
 
 export interface ValoresParametros {
   nome: string;
@@ -48,6 +49,17 @@ const CELULA_MIN = 8;
 const CELULA_MAX = 512;
 
 export function ParametrosCena(p: PropsParametrosCena) {
+  /**
+   * O último pedido em pixels que NÃO coube na grade.
+   *
+   * 2000 px com células de 70 não existe: a grade só sabe múltiplos do
+   * tamanho da célula, e o campo vira 2030. Sem dizer isso, o número
+   * muda sozinho depois de confirmar e parece defeito — que é
+   * exatamente como isto foi relatado. A nota some quando o pedido
+   * seguinte encaixa.
+   */
+  const [ajuste, setAjuste] = useState<{ pedido: number; virou: number } | null>(null);
+
   const [v, setV] = useState<ValoresParametros>({
     nome: p.cena.nome,
     local: p.cena.local,
@@ -86,24 +98,13 @@ export function ParametrosCena(p: PropsParametrosCena) {
     || v.celulaPx !== p.cena.celulaPx;
   const nomeValido = v.nome.trim().length > 0;
 
-  /** Célula fora da faixa é recusada pelo banco: a tela prende antes. */
-  const numero = (bruto: string) => {
-    const n = Number.parseInt(bruto, 10);
-    if (Number.isNaN(n)) return MIN;
-    return Math.max(MIN, Math.min(MAX, n));
-  };
-  const celula = (bruto: string) => {
-    const n = Number.parseInt(bruto, 10);
-    if (Number.isNaN(n)) return CELULA_MIN;
-    return Math.max(CELULA_MIN, Math.min(CELULA_MAX, n));
-  };
   /* Pixels → células, ARREDONDANDO: meia célula não existe na grade, e
      deixar o campo aceitar 31,74 (como o Roll20 deixa) só empurra o
-     arredondamento para o próximo lugar, onde ninguém está olhando. */
-  const emCelulas = (bruto: string, px: number) => {
-    const n = Number.parseInt(bruto, 10);
-    if (Number.isNaN(n) || px <= 0) return MIN;
-    return Math.max(MIN, Math.min(MAX, Math.round(n / px)));
+     arredondamento para o próximo lugar, onde ninguém está olhando.
+     Quem prende na faixa é o `CampoNumero`; aqui só a conversão. */
+  const emCelulas = (px: number, porCelula: number) => {
+    if (porCelula <= 0) return MIN;
+    return Math.max(MIN, Math.min(MAX, Math.round(px / porCelula)));
   };
 
   return (
@@ -159,22 +160,26 @@ export function ParametrosCena(p: PropsParametrosCena) {
         <div className="rv-gav-eixo">
           <span className="rv-fp-rotulo">Largura</span>
           <span className="rv-gav-medida">
-            <input
-              className="rv-cena-campo" type="number" min={MIN} max={MAX}
-              value={v.largura}
+            <CampoNumero
+              className="rv-cena-campo" min={MIN} max={MAX}
+              valor={v.largura}
               data-testid="parametros-largura"
-              onChange={(e) => setV((a) => ({ ...a, largura: numero(e.target.value) }))}
+              onConfirmar={(n) => setV((a) => ({ ...a, largura: n }))}
               aria-label="Largura em células"
             />
             <em>células</em>
           </span>
           <span className="rv-gav-sinal" aria-hidden="true">=</span>
           <span className="rv-gav-medida">
-            <input
-              className="rv-cena-campo" type="number" min={MIN * v.celulaPx} max={MAX * v.celulaPx}
-              value={Math.round(v.largura * v.celulaPx)}
+            <CampoNumero
+              className="rv-cena-campo" min={MIN * v.celulaPx} max={MAX * v.celulaPx}
+              valor={Math.round(v.largura * v.celulaPx)}
               data-testid="parametros-largura-px"
-              onChange={(e) => setV((a) => ({ ...a, largura: emCelulas(e.target.value, a.celulaPx) }))}
+              onConfirmar={(px) => setV((a) => {
+                const celulas = emCelulas(px, a.celulaPx);
+                setAjuste(celulas * a.celulaPx === px ? null : { pedido: px, virou: celulas * a.celulaPx });
+                return { ...a, largura: celulas };
+              })}
               aria-label="Largura em pixels"
             />
             <em>px</em>
@@ -184,22 +189,26 @@ export function ParametrosCena(p: PropsParametrosCena) {
         <div className="rv-gav-eixo">
           <span className="rv-fp-rotulo">Altura</span>
           <span className="rv-gav-medida">
-            <input
-              className="rv-cena-campo" type="number" min={MIN} max={MAX}
-              value={v.altura}
+            <CampoNumero
+              className="rv-cena-campo" min={MIN} max={MAX}
+              valor={v.altura}
               data-testid="parametros-altura"
-              onChange={(e) => setV((a) => ({ ...a, altura: numero(e.target.value) }))}
+              onConfirmar={(n) => setV((a) => ({ ...a, altura: n }))}
               aria-label="Altura em células"
             />
             <em>células</em>
           </span>
           <span className="rv-gav-sinal" aria-hidden="true">=</span>
           <span className="rv-gav-medida">
-            <input
-              className="rv-cena-campo" type="number" min={MIN * v.celulaPx} max={MAX * v.celulaPx}
-              value={Math.round(v.altura * v.celulaPx)}
+            <CampoNumero
+              className="rv-cena-campo" min={MIN * v.celulaPx} max={MAX * v.celulaPx}
+              valor={Math.round(v.altura * v.celulaPx)}
               data-testid="parametros-altura-px"
-              onChange={(e) => setV((a) => ({ ...a, altura: emCelulas(e.target.value, a.celulaPx) }))}
+              onConfirmar={(px) => setV((a) => {
+                const celulas = emCelulas(px, a.celulaPx);
+                setAjuste(celulas * a.celulaPx === px ? null : { pedido: px, virou: celulas * a.celulaPx });
+                return { ...a, altura: celulas };
+              })}
               aria-label="Altura em pixels"
             />
             <em>px</em>
@@ -209,11 +218,11 @@ export function ParametrosCena(p: PropsParametrosCena) {
         <div className="rv-gav-eixo">
           <span className="rv-fp-rotulo">Célula</span>
           <span className="rv-gav-medida">
-            <input
-              className="rv-cena-campo" type="number" min={CELULA_MIN} max={CELULA_MAX}
-              value={v.celulaPx}
+            <CampoNumero
+              className="rv-cena-campo" min={CELULA_MIN} max={CELULA_MAX}
+              valor={v.celulaPx}
               data-testid="parametros-celula-px"
-              onChange={(e) => setV((a) => ({ ...a, celulaPx: celula(e.target.value) }))}
+              onConfirmar={(n) => { setAjuste(null); setV((a) => ({ ...a, celulaPx: n })); }}
               aria-label="Pixels por célula"
             />
             <em>px por célula</em>
@@ -223,6 +232,12 @@ export function ParametrosCena(p: PropsParametrosCena) {
         {/* O divisor é CONVERSÃO, não desenho — o mapa continua sendo
             desenhado em metros, e mexer aqui não move nada do que já
             está na cena. Vale dizer, porque o campo parece que mexe. */}
+        {ajuste && (
+          <p className="rv-gav-folha-ajuste" role="status" data-testid="parametros-ajuste">
+            {ajuste.pedido} px não é múltiplo de {v.celulaPx} — virou {ajuste.virou}.
+            Para fechar exato, use uma célula que divida {ajuste.pedido}.
+          </p>
+        )}
         <p className="rv-gav-folha-nota">
           {v.largura} × {v.altura} células = {v.largura} × {v.altura} metros de terreno.
           Os pixels só servem para encaixar um mapa pronto.

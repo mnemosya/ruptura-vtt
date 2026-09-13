@@ -23,6 +23,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Map as IconeMapa, X } from "lucide-react";
 import type { ImagemPreparada } from "../../../../../lib/vtt/imagePreparation";
+import { CampoNumero } from "./CampoNumero";
 
 export interface ValoresNovaCenaDeMapa {
   nome: string;
@@ -111,15 +112,12 @@ export function NovaCenaDeMapa(p: PropsNovaCenaDeMapa) {
         <p className="rv-gav-folha-secao">Quantos pixels tem um quadrado do mapa</p>
         <div className="rv-gav-eixo">
           <span className="rv-gav-medida">
-            <input
-              className="rv-cena-campo" type="number" min={CELULA_MIN} max={CELULA_MAX}
-              value={celulaPx}
+            <CampoNumero
+              className="rv-cena-campo" min={CELULA_MIN} max={CELULA_MAX}
+              valor={celulaPx}
               data-testid="mapa-celula-px"
               aria-label="Pixels por célula"
-              onChange={(e) => {
-                const n = Number.parseInt(e.target.value, 10);
-                setCelulaPx(Number.isNaN(n) ? CELULA_MIN : Math.max(CELULA_MIN, Math.min(CELULA_MAX, n)));
-              }}
+              onConfirmar={setCelulaPx}
             />
             <em>px</em>
           </span>

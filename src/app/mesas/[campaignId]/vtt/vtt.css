@@ -4669,6 +4669,17 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   letter-spacing: .04em; line-height: 1.5; max-width: 320px;
 }
 
+/* O aviso de arredondamento: âmbar, porque não é recusa — é o número
+   dizendo que virou outro e por quê. */
+.rv-gav-folha-ajuste {
+  margin: 0; padding: 8px 10px; border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--rv-am) 40%, transparent);
+  background: color-mix(in srgb, var(--rv-am) 10%, transparent);
+  color: var(--rv-am);
+  font-family: var(--font-mono), monospace; font-size: 9px; line-height: 1.6;
+  letter-spacing: .06em; text-transform: uppercase;
+}
+
 .rv-gav-folha-nota {
   margin: 0; color: var(--rv-ink-faint);
   font-family: var(--font-mono), monospace; font-size: 9px;
