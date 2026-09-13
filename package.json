@@ -55,6 +55,7 @@
     "check:vtt-imagens-servidor": "tsx scripts/dev/check-vtt-imagens-servidor.ts",
     "check:vtt-catalogo-cenas": "tsx scripts/dev/check-vtt-catalogo-cenas.ts",
     "check:vtt-apresentar-cena": "tsx scripts/dev/check-vtt-apresentar-cena.ts",
+    "check:vtt-ciclo-cena": "tsx scripts/dev/check-vtt-ciclo-cena.ts",
     "gc:vtt-imagens": "tsx scripts/dev/gc-vtt-imagens.ts"
   },
   "dependencies": {
