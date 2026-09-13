@@ -586,6 +586,9 @@ export async function criarCena(params: {
   altura?: number;
   /** Pixels por célula — o divisor que produziu `largura`/`altura` (0123). */
   celulaPx?: number;
+  /** Aparência da grade já no nascimento (0131). Ausente = o default da coluna. */
+  gradeCor?: string;
+  gradeOpacidade?: number;
 }): Promise<ResultadoCena> {
   const client = await getScopedTableClient();
   const { data, error } = await client.rpc("create_vtt_scene", {
@@ -596,6 +599,8 @@ export async function criarCena(params: {
     p_largura: params.largura ?? 26,
     p_altura: params.altura ?? 18,
     p_celula_px: params.celulaPx ?? CELULA_PX_PADRAO,
+    p_grade_cor: params.gradeCor ?? null,
+    p_grade_opacidade: params.gradeOpacidade ?? null,
   });
   if (error) return { ok: false, erro: error.message };
   const linha = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;

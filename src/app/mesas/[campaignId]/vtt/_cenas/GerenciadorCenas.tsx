@@ -401,6 +401,8 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
         largura: v.largura,
         altura: v.altura,
         celulaPx: v.celulaPx,
+        gradeCor: v.gradeCor,
+        gradeOpacidade: v.gradeOpacidade,
       });
       if (!nova.ok || !nova.dados) throw new Error(nova.erro ?? "Não foi possível criar a cena.");
       const cena = nova.dados.cena;

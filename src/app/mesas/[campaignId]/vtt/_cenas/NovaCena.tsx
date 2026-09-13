@@ -39,6 +39,8 @@ export interface ValoresNovaCena {
   celulaPx: number;
   largura: number;
   altura: number;
+  gradeCor: string;
+  gradeOpacidade: number;
 }
 
 export interface MapaPendente {
@@ -69,6 +71,9 @@ const CELULA_MAX = 512;
 const LARGURA_PADRAO = 26;
 const ALTURA_PADRAO = 18;
 const CELULA_PADRAO = 70;
+/** Os mesmos de `vtt_scenes` (0122) — o que a cena teria sem esta folha. */
+const GRADE_COR_PADRAO = "#96bed7";
+const GRADE_OPACIDADE_PADRAO = 0.07;
 /** Os mesmos de sempre nos mapas prontos — atalho, não regra. */
 const ATALHOS_PX = [50, 70, 100, 140];
 
@@ -86,6 +91,8 @@ export function NovaCena(p: PropsNovaCena) {
   /** Só valem sem mapa: com mapa, o tamanho é derivado dos pixels. */
   const [largura, setLargura] = useState(LARGURA_PADRAO);
   const [altura, setAltura] = useState(ALTURA_PADRAO);
+  const [gradeCor, setGradeCor] = useState(GRADE_COR_PADRAO);
+  const [gradeOpacidade, setGradeOpacidade] = useState(GRADE_OPACIDADE_PADRAO);
 
   /**
    * O nome do arquivo é SUGESTÃO, não imposição: anexar um mapa depois
@@ -311,6 +318,48 @@ export function NovaCena(p: PropsNovaCena) {
           </>
         )}
 
+        <p className="rv-gav-folha-secao">Aparência da grade</p>
+        {/* A prévia é a razão de este bloco existir aqui e não num
+            menu: cor de linha não se escolhe por nome, se escolhe
+            olhando. O quadriculado atrás mostra a linha sobre claro E
+            sobre escuro, que é onde 7% e 50% se comportam diferente. */}
+        <div className="rv-gav-grade-previa" style={{
+          "--previa-cor": gradeCor,
+          "--previa-op": gradeOpacidade,
+        } as React.CSSProperties} aria-hidden="true" />
+
+        <div className="rv-gav-folha-par">
+          <label className="rv-fp-campo">
+            <span className="rv-fp-rotulo">Cor da linha</span>
+            <span className="rv-gav-cor">
+              <input
+                type="color" value={gradeCor}
+                data-testid="cena-nova-grade-cor"
+                onChange={(e) => setGradeCor(e.target.value)}
+              />
+              <em>{gradeCor}</em>
+            </span>
+          </label>
+          <label className="rv-fp-campo">
+            <span className="rv-fp-rotulo">Opacidade</span>
+            <span className="rv-gav-medida">
+              <input
+                type="range" min={0} max={100} step={1}
+                className="rv-gav-faixa"
+                value={Math.round(gradeOpacidade * 100)}
+                data-testid="cena-nova-grade-opacidade"
+                onChange={(e) => setGradeOpacidade(Number(e.target.value) / 100)}
+              />
+              <em>{Math.round(gradeOpacidade * 100)}%</em>
+            </span>
+          </label>
+        </div>
+        {/* Zero não é "grade desligada": a geometria continua lá, e é
+            por isso que esconder a linha nunca quebra o alcance. */}
+        {gradeOpacidade === 0 && (
+          <p className="rv-gav-folha-nota">Linha invisível — os hexágonos continuam valendo</p>
+        )}
+
         {p.erro && <p className="rv-cena-estado" data-tipo="erro" role="alert">{p.erro}</p>}
       </div>
 
@@ -329,6 +378,8 @@ export function NovaCena(p: PropsNovaCena) {
             celulaPx,
             largura: larguraFinal,
             altura: alturaFinal,
+            gradeCor,
+            gradeOpacidade,
           })}
         >
           {p.ocupado ? <Loader2 size={13} className="rv-girando" aria-hidden="true" /> : null}

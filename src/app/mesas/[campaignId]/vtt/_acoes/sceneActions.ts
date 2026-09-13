@@ -272,6 +272,8 @@ export async function criarCenaAction(params: {
   largura?: number;
   altura?: number;
   celulaPx?: number;
+  gradeCor?: string;
+  gradeOpacidade?: number;
 }): Promise<ResultadoAcao<{ cena: CartaoCena }>> {
   const v = await exigirAcesso(params.campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
