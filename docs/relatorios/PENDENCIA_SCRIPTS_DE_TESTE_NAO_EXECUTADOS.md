@@ -230,10 +230,29 @@ os separou por efeito sobre o mundo.
 Os dois últimos de segurança escrevem no banco, mas limpam o que criam —
 conferido pelo portão de resíduo logo depois de cada execução.
 
-**Quatro que escrevem e ainda não foram auditados**:
-`check-vtt-autorizacao.ts`, `check-vtt-canal-forjado.ts`,
-`check-vtt-medicoes.ts`, `check-vtt-objetos-servidor.ts`. Precisam da
-mesma leitura de `try/finally` antes de rodar contra produção.
+**Quatro que escrevem, auditados e registrados**:
+`check:vtt-autorizacao` (33), `check:vtt-canal-forjado` (24),
+`check:vtt-medicoes` (17) e `check:vtt-objetos-servidor` (29). Três
+limpavam no fim do `main` em vez de num `finally` — qualquer asserção
+que lançasse deixava a campanha viva — e todos ignoravam o erro de cada
+`delete`. Passaram para a ordem canônica. Três também não tinham linha
+de palco e por isso reprovavam doze critérios de jogador; ver a seção
+seguinte.
+
+### A fixture sem palco
+
+Doze critérios em três checks diferentes reprovavam pela mesma causa, e
+nenhuma era defeito de produção: a fixture nunca criava linha em
+`vtt_campaign_stage`. Desde 0111 — e explicitamente desde 0118, em que
+`vtt_cena_do_jogador` é `coalesce(atribuição, palco)` — o jogador não
+está numa cena "ativa": está na cena que a MESA aponta. Sem palco ele
+não está em cena nenhuma, e a RLS recusa criar medição, criar marcação e
+mover token, com razão. As fixtures são de quando a visibilidade vinha
+de `vtt_scenes.ativa`.
+
+O mesmo aconteceu em `check-vtt-imagens-servidor` e em
+`check-vtt-gerenciamento-tokens`. Vale como sinal: um check de VTT que
+reprova só os critérios de JOGADOR provavelmente não tem palco.
 
 **Trinta e oito dirigem navegador** e caem no mesmo bloqueio dos dez
 acima: precisam do app respondendo contra um banco descartável. Vários

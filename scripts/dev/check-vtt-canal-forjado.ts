@@ -30,6 +30,8 @@ function requireEnv(nome: string): string {
 }
 const SUPABASE_URL = requireEnv("SUPABASE_URL");
 const ANON = requireEnv("SUPABASE_ANON_KEY");
+import { limparCampanhasDeTeste } from "./limparCampanhaDeTeste";
+
 const admin = createClient(SUPABASE_URL, requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
   auth: { persistSession: false, autoRefreshToken: false },
 });
@@ -70,6 +72,16 @@ async function main() {
   await admin.from("campaign_members").insert({ campaign_id: campanhaId, user_id: jogador.id, role: "player", status: "active", origem: "check_vtt_canal" });
   const { data: cena } = await admin.from("vtt_scenes").insert({ campaign_id: campanhaId, nome: "Cena canal", largura: 20, altura: 20 }).select("id").single();
   const sceneId = cena!.id as string;
+
+  // O palco. Desde 0111 — e explicitamente desde 0118, em que
+  // `vtt_cena_do_jogador` é `coalesce(atribuição, palco)` — o jogador
+  // não está numa cena "ativa": está na cena que a MESA aponta. Sem
+  // linha de palco ele não está em cena nenhuma, e a RLS o recusa com
+  // razão. A fixture é de quando a visibilidade vinha de
+  // `vtt_scenes.ativa` e nunca acompanhou o schema.
+  await admin.from("vtt_campaign_stage")
+    .insert({ campaign_id: campanhaId, presented_scene_id: sceneId, updated_by: narrador.id });
+
 
   const cliNarrador = await clienteDe(narrador.email, narrador.senha);
   const cliJogador = await clienteDe(jogador.email, jogador.senha);
@@ -196,16 +208,31 @@ async function main() {
   ok("payload-16 (ts suspeito demais no futuro é rejeitado)", validarPayloadPing({ ...pingValido, ts: Date.now() + 60000 }, esperado) === null, "ok");
   ok("payload-17 (campo extra desconhecido não quebra a validação)", validarPayloadPing({ ...pingValido, campoInventado: "x" }, esperado) !== null, "ok");
 
-  // ── Limpeza ────────────────────────────────────────────────────
-  const restos: string[] = [];
-  await admin.from("vtt_tokens").delete().eq("campaign_id", campanhaId);
-  await admin.from("vtt_scenes").delete().eq("campaign_id", campanhaId);
-  for (const id of criados.campanhas) { const { error } = await admin.from("campaigns").delete().eq("id", id); if (error) restos.push(`campanha ${id}: ${error.message}`); }
-  for (const id of criados.usuarios) { const { error } = await admin.auth.admin.deleteUser(id); if (error) restos.push(`usuário ${id}: ${error.message}`); }
-  ok("L (limpeza de fixtures)", restos.length === 0, restos.length ? `PENDENTE: ${restos.join("; ")}` : `${criados.usuarios.length} usuário(s), ${criados.campanhas.length} campanha(s)`);
-
-  console.log(`\n${passou} ok, ${falhou} falha(s).`);
-  process.exit(falhou > 0 ? 1 : 0);
 }
 
-main().catch((e) => { console.error("Erro fatal:", e); process.exit(1); });
+/**
+ * A limpeza roda num `.finally()`, não no fim do `main`: no fim do
+ * `main` ela só acontece quando tudo dá certo, que é exatamente quando
+ * ela menos importa. Uma asserção que lançasse deixava a campanha viva
+ * em produção.
+ *
+ * Ordem canônica e compartilhada — ver `limparCampanhaDeTeste.ts`. As
+ * ordens escritas à mão ignoravam o erro de cada `delete`, e duas FKs
+ * (palco e colocação de imagem) RECUSAM a exclusão em vez de cascatear.
+ */
+async function limparTudo(): Promise<void> {
+  const { restos } = await limparCampanhasDeTeste(admin, {
+    campanhas: criados.campanhas, usuarios: criados.usuarios,
+  });
+  ok("L (limpeza de fixtures)", restos.length === 0,
+    restos.length ? `PENDENTE: ${restos.join("; ")}`
+      : `${criados.usuarios.length} usuário(s) e ${criados.campanhas.length} campanha(s) removidos`);
+  console.log(`\n${passou} ok, ${falhou} falha(s).`);
+}
+
+main()
+  .catch((e) => { console.error(e); falhou++; })
+  .finally(async () => {
+    await limparTudo();
+    if (falhou > 0) process.exit(1);
+  });

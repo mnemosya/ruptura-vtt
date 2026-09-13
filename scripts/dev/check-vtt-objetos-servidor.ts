@@ -28,6 +28,8 @@ function req(n: string): string {
   if (!v) { console.error(`Variável ausente: ${n}`); process.exit(1); }
   return v;
 }
+import { limparCampanhasDeTeste } from "./limparCampanhaDeTeste";
+
 const admin = createClient(req("SUPABASE_URL"), req("SUPABASE_SERVICE_ROLE_KEY"), {
   auth: { persistSession: false, autoRefreshToken: false },
 });
@@ -317,20 +319,19 @@ async function main() {
       erroDel === null && (count ?? 0) === 0 && livre === false, `${erroDel ?? ""} células=${count} bloqueada=${livre}`);
   }
 
-  console.log(`\n${passou} ok, ${falhou} falha(s).`);
 }
 
 main()
   .catch((e) => { console.error(e); falhou++; })
   .finally(async () => {
-    for (const cid of criados.campanhas) {
-      await admin.from("vtt_object_cells").delete().eq("scene_id", (await admin.from("vtt_scenes").select("id").eq("campaign_id", cid).maybeSingle()).data?.id ?? "00000000-0000-0000-0000-000000000000");
-      await admin.from("vtt_objects").delete().eq("campaign_id", cid);
-      await admin.from("vtt_tokens").delete().eq("campaign_id", cid);
-      await admin.from("vtt_scenes").delete().eq("campaign_id", cid);
-      await admin.from("campaigns").delete().eq("id", cid);
-    }
-    for (const uid of criados.usuarios) await admin.auth.admin.deleteUser(uid);
-    console.log("limpeza de fixtures concluída");
+    // Ordem canônica e compartilhada — ver `limparCampanhaDeTeste.ts`.
+    // A ordem escrita aqui ignorava o erro de cada `delete` e só
+    // alcançava a PRIMEIRA cena de cada campanha (`maybeSingle`), o que
+    // deixava células de objeto de qualquer cena seguinte.
+    const { restos } = await limparCampanhasDeTeste(admin, {
+      campanhas: criados.campanhas, usuarios: criados.usuarios,
+    });
+    ok("L (limpeza de fixtures)", restos.length === 0, restos.join("; "));
+    console.log(`\n${passou} ok, ${falhou} falha(s).`);
     if (falhou > 0) process.exit(1);
   });
