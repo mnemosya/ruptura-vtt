@@ -116,6 +116,12 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
   const [cenas, setCenas] = useState<DadosCartaoCena[] | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  /**
+   * Recado que não é erro — hoje, só um: a cena que a cascata POUPOU
+   * por estar apresentada. Separado de `erro` porque nada falhou; o que
+   * houve foi uma exceção deliberada que precisa ser dita.
+   */
+  const [aviso, setAviso] = useState<string | null>(null);
   /** Escritas em voo, por cena — trava só o cartão afetado. */
   const [ocupadas, setOcupadas] = useState<Record<string, true>>({});
   const [errosPorCena, setErrosPorCena] = useState<Record<string, string>>({});
@@ -749,16 +755,43 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
     }
   }
 
-  async function excluirPastaPor(pasta: PastaCena) {
+  async function excluirPastaPor(pasta: PastaCena, nomeConfirmacao: string) {
     marcarOcupada(pasta.id, true);
     anotarErro(pasta.id, null);
     try {
-      const r = await excluirPastaAction({ campaignId: p.campaignId, folderId: pasta.id });
+      const r = await excluirPastaAction({ campaignId: p.campaignId, folderId: pasta.id, nomeConfirmacao });
       if (!r.ok) { anotarErro(pasta.id, r.erro ?? "Não foi possível excluir a pasta."); return; }
+      // A cena APRESENTADA sobrevive à cascata e sobe um nível (0129).
+      // Isso precisa ser DITO: quem apagou "Ato I" e vê uma cena dele
+      // reaparecer na raiz merece saber que não foi engano.
+      if (r.dados?.preservada) {
+        setAviso(`"${r.dados.preservada}" não foi apagada: a mesa está nela. Ela subiu um nível.`);
+      }
       await recarregar();
     } finally {
       marcarOcupada(pasta.id, false);
     }
+  }
+
+  /**
+   * Quantas cenas e subpastas vão junto com esta pasta — o número que a
+   * confirmação mostra. Calculado aqui, com os dados que a gaveta já
+   * tem, e não pedido ao servidor: é informação pra DECIDIR, e ela
+   * precisa aparecer antes de qualquer chamada.
+   */
+  function pesoDaPasta(pastaId: string): { cenas: number; subpastas: number } {
+    const dentro = new Set<string>([pastaId]);
+    let mudou = true;
+    while (mudou) {
+      mudou = false;
+      for (const f of pastas) {
+        if (f.parentId && dentro.has(f.parentId) && !dentro.has(f.id)) { dentro.add(f.id); mudou = true; }
+      }
+    }
+    return {
+      cenas: todas.filter((c) => c.pastaId && dentro.has(c.pastaId)).length,
+      subpastas: dentro.size - 1,
+    };
   }
 
   /**
@@ -903,6 +936,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
             nome={c.nome}
             miniaturaUrl={c.miniaturaImageId ? miniaturas[c.miniaturaImageId] ?? null : null}
             vista={c.id === p.cenaVistaId}
+            apresentada={c.apresentada}
             jogadoresAqui={jogadores.filter((j) => j.sceneId === c.id)}
             totalJogadores={jogadores.length}
             ocupada={ocupadas[c.id] === true}
@@ -1137,7 +1171,8 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                     erro={errosPorCena[f.id] ?? null}
                     onAbrir={() => { setVerArquivo(false); setPastaAtual(f.id); }}
                     onRenomear={(nome) => void renomearPastaPor(f, nome)}
-                    onExcluir={() => void excluirPastaPor(f)}
+                    onExcluir={(nomeConfirmacao) => void excluirPastaPor(f, nomeConfirmacao)}
+                    peso={pesoDaPasta(f.id)}
                     alvoDeArrasto={pastaAlvo === f.id && arrastandoId !== null}
                     onDragOver={(e) => { if (arrastandoId) { e.preventDefault(); setPastaAlvo(f.id); } }}
                     onDragLeave={() => setPastaAlvo(null)}
@@ -1195,6 +1230,13 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
           {carregando && cenas === null && (
             <p className="rv-cena-estado" data-testid="cenas-carregando">
               <Loader2 size={14} className="rv-girando" aria-hidden="true" /> Carregando as cenas…
+            </p>
+          )}
+
+          {aviso && (
+            <p className="rv-cena-estado" data-tipo="aviso" role="status" data-testid="cenas-aviso">
+              <AlertTriangle size={14} aria-hidden="true" /> {aviso}
+              <button type="button" className="rv-btn rv-btn--ghost" onClick={() => setAviso(null)}>Entendi</button>
             </p>
           )}
 

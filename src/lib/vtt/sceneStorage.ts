@@ -748,12 +748,35 @@ export async function moverPasta(params: {
   return { ok: true };
 }
 
-/** Apaga a pasta e SOBE os filhos. Nunca apaga cena — ver 0117. */
-export async function excluirPasta(folderId: string): Promise<ResultadoEscrita> {
+/** O que a exclusão em cascata levou — e o que ela poupou. */
+export interface ResumoExclusaoPasta {
+  cenas: number;
+  subpastas: number;
+  /** Nome da cena APRESENTADA, quando ela estava na pasta e foi poupada (0129). */
+  preservada: string | null;
+}
+
+/**
+ * Apaga a pasta, as subpastas e as cenas delas (migration 0129). Exige
+ * o nome da pasta digitado — mesmo preço de apagar UMA cena, pra uma
+ * ação que apaga várias.
+ */
+export async function excluirPasta(folderId: string, nomeConfirmacao: string): Promise<ResultadoEscrita & { resumo?: ResumoExclusaoPasta }> {
   const client = await getScopedTableClient();
-  const { error } = await client.rpc("delete_vtt_scene_folder", { p_folder_id: folderId });
+  const { data, error } = await client.rpc("delete_vtt_scene_folder", {
+    p_folder_id: folderId,
+    p_nome_confirmacao: nomeConfirmacao,
+  });
   if (error) return { ok: false, erro: error.message };
-  return { ok: true };
+  const bruto = (data ?? {}) as Partial<Record<keyof ResumoExclusaoPasta, unknown>>;
+  return {
+    ok: true,
+    resumo: {
+      cenas: typeof bruto.cenas === "number" ? bruto.cenas : 0,
+      subpastas: typeof bruto.subpastas === "number" ? bruto.subpastas : 0,
+      preservada: typeof bruto.preservada === "string" ? bruto.preservada : null,
+    },
+  };
 }
 
 /** Move uma cena para uma pasta, ou para a raiz com `null`. */

@@ -19,6 +19,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, Folder, FolderOpen, Pencil, Trash2, X } from "lucide-react";
 import type { PastaCena } from "../../../../../lib/vtt/sceneStorage";
+import { useDicaFlutuante } from "../_shell/DicaFlutuante";
 
 export interface PropsLinhaPasta {
   pasta: PastaCena;
@@ -30,7 +31,10 @@ export interface PropsLinhaPasta {
   erro: string | null;
   onAbrir: () => void;
   onRenomear: (nome: string) => void;
-  onExcluir: () => void;
+  /** O nome digitado vai junto: é ele que o servidor confere (0129). */
+  onExcluir: (nomeConfirmacao: string) => void;
+  /** Quantas cenas e subpastas vão junto — o que a confirmação mostra ANTES de apagar. */
+  peso?: { cenas: number; subpastas: number };
   /**
    * A lista de cenas desta pasta, aberta pelo chevron. Quem guarda o
    * estado (e monta os mini-cartões) é o `GerenciadorCenas` — esta
@@ -48,13 +52,17 @@ export interface PropsLinhaPasta {
 }
 
 export function LinhaPasta(p: PropsLinhaPasta) {
+  const dicaRenomear = useDicaFlutuante("Renomear a pasta");
+  const dicaExcluir = useDicaFlutuante("Excluir a pasta e tudo dentro dela");
   const [editando, setEditando] = useState(false);
   const [rascunho, setRascunho] = useState(p.pasta.nome);
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
+  const [confirmacao, setConfirmacao] = useState("");
   const campoRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => { if (!editando) setRascunho(p.pasta.nome); }, [p.pasta.nome, editando]);
   useEffect(() => { if (editando) campoRef.current?.select(); }, [editando]);
+  useEffect(() => { if (!confirmandoExclusao) setConfirmacao(""); }, [confirmandoExclusao]);
 
   function confirmar() {
     const limpo = rascunho.trim();
@@ -115,28 +123,31 @@ export function LinhaPasta(p: PropsLinhaPasta) {
 
       {p.erro && <span className="rv-cena-erro" role="alert">{p.erro}</span>}
 
-      {/* DICA NATIVA (`title`), não a `.rv-dica` da folha: o trilho é
+      {/* DICA FLUTUANTE, não a `.rv-dica` presa ao botão: o trilho é
           uma coluna com `overflow-y: auto`, e overflow num eixo recorta
           nos DOIS — a dica abria pra esquerda e era cortada pela borda
-          da coluna. A nativa não tem caixa que possa ser recortada.
-          O texto é o QUE O BOTÃO FAZ; a consequência (o conteúdo sobe
-          um nível) mora na confirmação, que é onde ela importa. */}
+          da coluna. `useDicaFlutuante` mede o alvo e desenha em
+          `position: fixed`, fora de qualquer caixa que recorte, com o
+          MESMO visual da folha (o `title` nativo resolvia o recorte mas
+          trazia o desenho do sistema). */}
       <span className="rv-cena-acoes">
         <button
           type="button" className="rv-cena-mini-btn" data-testid="pasta-renomear"
           aria-label={`Renomear a pasta "${p.pasta.nome}"`}
-          title="Renomear a pasta"
           disabled={p.ocupada} onClick={() => setEditando(true)}
+          {...dicaRenomear.alvo}
         >
           <Pencil size={15} aria-hidden />
+          {dicaRenomear.dica}
         </button>
         <button
           type="button" className="rv-cena-mini-btn" data-testid="pasta-excluir"
-          aria-label={`Excluir a pasta "${p.pasta.nome}"`}
-          title="Excluir a pasta"
+          aria-label={`Excluir a pasta "${p.pasta.nome}" e tudo dentro dela`}
           disabled={p.ocupada} onClick={() => setConfirmandoExclusao(true)}
+          {...dicaExcluir.alvo}
         >
           <Trash2 size={15} aria-hidden />
+          {dicaExcluir.dica}
         </button>
       </span>
 
@@ -169,12 +180,44 @@ export function LinhaPasta(p: PropsLinhaPasta) {
           perde — uma etiqueta. */}
       {confirmandoExclusao && (
         <span className="rv-pasta-confirma">
-          <span className="rv-pasta-aviso">Excluir a pasta? Os itens sobem um nível.</span>
+          <span className="rv-pasta-aviso" data-perigo="true">
+            {(() => {
+              const cenas = p.peso?.cenas ?? p.quantidade;
+              const subs = p.peso?.subpastas ?? 0;
+              const partes = [cenas === 1 ? "1 cena" : `${cenas} cenas`];
+              if (subs > 0) partes.push(subs === 1 ? "1 subpasta" : `${subs} subpastas`);
+              return cenas === 0 && subs === 0
+                ? "Esta pasta está vazia. Digite o nome dela para confirmar."
+                : `Apagar esta pasta APAGA ${partes.join(" e ")}. Digite o nome da pasta para confirmar.`;
+            })()}
+          </span>
+          {/* DIGITAR O NOME — o mesmo preço que apagar UMA cena já
+              cobrava (0116), pra uma ação que apaga várias. O servidor
+              confere de novo: isto aqui é só pra ninguém apagar por
+              reflexo. */}
+          <input
+            className="rv-cena-campo"
+            value={confirmacao}
+            placeholder={p.pasta.nome}
+            aria-label={`Digite "${p.pasta.nome}" para confirmar a exclusão`}
+            data-testid="pasta-excluir-campo"
+            onChange={(e) => setConfirmacao(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") { e.preventDefault(); setConfirmandoExclusao(false); }
+              if (e.key === "Enter" && confirmacao.trim() === p.pasta.nome) {
+                e.preventDefault();
+                setConfirmandoExclusao(false);
+                p.onExcluir(confirmacao.trim());
+              }
+            }}
+          />
           <span className="rv-pasta-confirma-acoes">
             <button
               type="button" className="rv-btn rv-btn--perigo"
               data-testid="pasta-excluir-confirmar"
-              onClick={() => { setConfirmandoExclusao(false); p.onExcluir(); }}
+              disabled={confirmacao.trim() !== p.pasta.nome}
+              title={confirmacao.trim() !== p.pasta.nome ? `Digite "${p.pasta.nome}" para liberar` : undefined}
+              onClick={() => { setConfirmandoExclusao(false); p.onExcluir(confirmacao.trim()); }}
             >Excluir</button>
             <button type="button" className="rv-btn rv-btn--ghost" onClick={() => setConfirmandoExclusao(false)}>
               Cancelar

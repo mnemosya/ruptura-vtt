@@ -202,6 +202,7 @@ export function VitrineGaveta() {
                   ocupada={false} erro={null}
                   onAbrir={() => setPastaAtual(f.id)}
                   onRenomear={SEM_EFEITO} onExcluir={SEM_EFEITO}
+                  peso={f.id === "f1" ? { cenas: 3, subpastas: 1 } : { cenas: 0, subpastas: 0 }}
                   alvoDeArrasto={false}
                   onDragOver={SEM_EFEITO} onDragLeave={SEM_EFEITO} onDrop={SEM_EFEITO}
                   /* A galeria abre a primeira pasta pra mostrar os dois
@@ -213,17 +214,17 @@ export function VitrineGaveta() {
                     <ul className="rv-pasta-cenas">
                       <MiniCartaoCena
                         nome="Doca 7 — o mercado que se desfez" miniaturaUrl={null}
-                        vista jogadoresAqui={[]} totalJogadores={3} ocupada={false} onAbrir={SEM_EFEITO}
+                        vista apresentada jogadoresAqui={[]} totalJogadores={3} ocupada={false} onAbrir={SEM_EFEITO}
                       />
                       <MiniCartaoCena
                         nome="Galeria inundada" miniaturaUrl={null}
-                        vista={false}
+                        vista={false} apresentada={false}
                         jogadoresAqui={[{ userId: "u1", sceneId: "c2", nome: "Alba" }] as never}
                         totalJogadores={3} ocupada={false} onAbrir={SEM_EFEITO}
                       />
                       <MiniCartaoCena
                         nome="Salão dos ossos" miniaturaUrl={null}
-                        vista={false}
+                        vista={false} apresentada={false}
                         jogadoresAqui={[{ userId: "u1" }, { userId: "u2" }, { userId: "u3" }] as never}
                         totalJogadores={3} ocupada={false} onAbrir={SEM_EFEITO}
                       />

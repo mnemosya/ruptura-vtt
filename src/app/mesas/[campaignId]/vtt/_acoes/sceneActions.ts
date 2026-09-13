@@ -48,6 +48,7 @@ import {
   renomearPasta,
   moverPasta,
   excluirPasta,
+  type ResumoExclusaoPasta,
   moverCenaParaPasta,
   carregarObjetosDaCena,
   carregarTrilha,
@@ -402,16 +403,21 @@ export async function moverPastaAction(params: {
   return { ok: true };
 }
 
-/** Apaga a pasta e sobe os filhos. Nunca apaga cena. */
+/**
+ * Apaga a pasta, as subpastas e as cenas delas (0129), com o nome da
+ * pasta como confirmação. Devolve o resumo pra quem chama poder avisar
+ * o que foi e o que foi POUPADO (a cena apresentada).
+ */
 export async function excluirPastaAction(params: {
   campaignId: string;
   folderId: string;
-}): Promise<ResultadoAcao> {
+  nomeConfirmacao: string;
+}): Promise<ResultadoAcao<ResumoExclusaoPasta>> {
   const v = await exigirAcesso(params.campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
-  const r = await excluirPasta(params.folderId);
+  const r = await excluirPasta(params.folderId, params.nomeConfirmacao);
   if (!r.ok) return { ok: false, erro: r.erro ?? "Falha ao excluir a pasta." };
-  return { ok: true };
+  return { ok: true, dados: r.resumo };
 }
 
 export async function moverCenaParaPastaAction(params: {

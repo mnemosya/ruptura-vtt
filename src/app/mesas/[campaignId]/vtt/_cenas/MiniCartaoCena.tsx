@@ -17,6 +17,7 @@
  */
 
 import type { PosicaoJogador } from "../../../../../lib/vtt/sceneStorage";
+import { useDicaFlutuante } from "../_shell/DicaFlutuante";
 
 export interface PropsMiniCartaoCena {
   nome: string;
@@ -24,7 +25,14 @@ export interface PropsMiniCartaoCena {
   miniaturaUrl: string | null;
   /** Esta é a cena que o narrador está olhando. */
   vista: boolean;
-  /** Jogadores que estão NESTA cena. */
+  /**
+   * A MESA está aqui — é a cena apresentada no palco. Vem da cena, não
+   * da contagem de jogadores: é o mesmo dado que o cartão grande usa
+   * pro selo "Jogadores aqui", e é o que responde "pra onde a mesa está
+   * olhando" mesmo quando ninguém foi individualmente atribuído.
+   */
+  apresentada: boolean;
+  /** Jogadores MANDADOS especificamente pra esta cena (ver `PosicaoJogador`). */
   jogadoresAqui: PosicaoJogador[];
   /** Quantos jogadores a campanha tem — é o que distingue "todos" de "alguns". */
   totalJogadores: number;
@@ -39,14 +47,26 @@ export interface PropsMiniCartaoCena {
  * uma cena vazia, e um selo só de "tem gente" esconderia justamente
  * isso.
  */
-function presenca(aqui: number, total: number): "nenhum" | "alguns" | "todos" {
+function presenca(apresentada: boolean, aqui: number, total: number): "nenhum" | "alguns" | "todos" {
+  // A cena APRESENTADA é onde a mesa está, por definição — é o palco.
+  // Contar jogadores só distingue o caso em que alguns foram mandados
+  // pra OUTRA cena (0118, "dividir o grupo").
+  if (apresentada) return total > 0 && aqui > 0 && aqui < total ? "alguns" : "todos";
   if (aqui <= 0) return "nenhum";
   return total > 0 && aqui >= total ? "todos" : "alguns";
 }
 
 export function MiniCartaoCena(p: PropsMiniCartaoCena) {
   const quantos = p.jogadoresAqui.length;
-  const estado = presenca(quantos, p.totalJogadores);
+  const estado = presenca(p.apresentada, quantos, p.totalJogadores);
+  const textoMesa = estado === "todos"
+    ? "A mesa está aqui"
+    : `${quantos} de ${p.totalJogadores} jogadores aqui`;
+  // A dica sai na COR do selo que ela explica — ver `useDicaFlutuante`.
+  const dicaVoce = useDicaFlutuante("Você está aqui", { acento: "var(--rv-am)" });
+  const dicaMesa = useDicaFlutuante(textoMesa, {
+    acento: estado === "todos" ? "var(--rv-ok)" : "var(--rv-cy)",
+  });
 
   return (
     <li className="rv-minicena" data-vista={p.vista || undefined}>
@@ -68,14 +88,18 @@ export function MiniCartaoCena(p: PropsMiniCartaoCena) {
               juntos — são fatos independentes, e o dia em que você está
               numa cena e a mesa está em outra é exatamente quando isto
               precisa ser lido de relance. */}
-          {p.vista && <span className="rv-minicena-selo" data-tipo="vista" title="Você está aqui" />}
+          {p.vista && (
+            <span className="rv-minicena-selo" data-tipo="vista" aria-label="Você está aqui" {...dicaVoce.alvo}>
+              {dicaVoce.dica}
+            </span>
+          )}
           {estado !== "nenhum" && (
             <span
               className="rv-minicena-selo" data-tipo={estado === "todos" ? "mesa" : "parcial"}
-              title={estado === "todos"
-                ? `Todos os jogadores (${quantos}) estão aqui`
-                : `${quantos} de ${p.totalJogadores} jogadores aqui`}
-            />
+              aria-label={textoMesa} {...dicaMesa.alvo}
+            >
+              {dicaMesa.dica}
+            </span>
           )}
         </span>
       </button>
