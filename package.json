@@ -59,6 +59,7 @@
     "check:vtt-arquivo-e-duplicacao": "tsx scripts/dev/check-vtt-arquivo-e-duplicacao.ts",
     "check:vtt-pastas": "tsx scripts/dev/check-vtt-pastas.ts",
     "check:vtt-pastas-ui": "tsx scripts/dev/check-vtt-pastas-ui.ts",
+    "check:vtt-dividir-grupo": "tsx scripts/dev/check-vtt-dividir-grupo.ts",
     "gc:vtt-imagens": "tsx scripts/dev/gc-vtt-imagens.ts"
   },
   "dependencies": {
