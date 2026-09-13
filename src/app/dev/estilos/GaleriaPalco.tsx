@@ -17,7 +17,7 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Minus, Plus } from "lucide-react";
 import { MapaHex, type CenaMapa, type EstadoVisualToken } from "../../mesas/[campaignId]/vtt/_mapa/MapaHex";
 import type { AreaDesenhavel } from "../../mesas/[campaignId]/vtt/_mapa/CamadaAreas";
 import { AcoesAreaFlutuantes } from "../../mesas/[campaignId]/vtt/_shell/AcoesAreaFlutuantes";
@@ -176,6 +176,14 @@ export function VitrineMapa() {
         cobertura e PD. Clique num token para selecionar; o realce muda de cor conforme o tipo.
       </span>
       <div className="gal-palco gal-palco--mapa">
+        {/* Zoom — a outra peça flutuante do rodapé, no canto oposto ao
+            chip. Mesma casca, e é isso que a vitrine deixa conferir. */}
+        <div className="rv-zoom" role="group" aria-label="Zoom" style={{ position: "absolute", right: 16, bottom: 16 }}>
+          <button type="button" aria-label="Aproximar"><Plus size={14} /></button>
+          <span>100%</span>
+          <button type="button" aria-label="Afastar"><Minus size={14} /></button>
+        </div>
+
         {/* Chip "Cena ativa" — peça do palco (`VttClient`), montada aqui
             só pra poder ser vista sem sessão. Os dois estados: narrador
             (botão que abre o catálogo) e jogador (texto). */}

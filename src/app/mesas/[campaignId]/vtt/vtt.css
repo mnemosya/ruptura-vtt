@@ -292,14 +292,45 @@
 .rv-sub-num input { accent-color: var(--cy); }
 .rv-sub-info { font-size: 12px; color: var(--txt); padding: 2px 4px; }
 
+/* ZOOM — mesma casca do chip "Cena ativa" (fundo `--rv-panel`, fio
+   `--rv-line`, raio 2, mono 10px): são as duas peças flutuantes do
+   rodapé do palco, uma em cada canto, e não havia razão pra serem de
+   materiais diferentes.
+
+   As DIVISÓRIAS atravessam a largura inteira — é o que faz os três
+   controles lerem como um bloco segmentado em vez de três botões
+   soltos dentro de uma caixa. Pra isso o padding saiu do contêiner e
+   foi pra cada célula: com padding no pai, a linha pararia antes da
+   borda. `overflow: hidden` é o que deixa o raio recortar a primeira e
+   a última célula. */
 .rv-zoom {
   position: absolute; right: 16px; bottom: 16px; z-index: 12;
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  padding: 5px; border-radius: var(--raio); background: var(--sup); box-shadow: var(--sombra);
+  display: flex; flex-direction: column; align-items: stretch;
+  border: 1px solid var(--rv-line); border-radius: 2px;
+  background: var(--rv-panel);
+  box-shadow: var(--sombra);
+  overflow: hidden;
 }
-.rv-zoom button { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border: none; border-radius: var(--rv-r); background: transparent; color: var(--txt-dim); cursor: pointer; }
+.rv-zoom button {
+  width: 40px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: transparent; color: var(--rv-ink-dim); cursor: pointer;
+  transition: color .12s, background .12s;
+}
+/* A divisória é de cada célula MENOS a primeira — assim ela nunca
+   sobra no topo nem falta na última.
+   `:not(:first-child)` e não `* + *`: o reset do botão (`border: none`)
+   tem especificidade (0,1,1) e ganharia de `> * + *` (0,1,0) em
+   qualquer ordem, apagando a linha do botão de baixo. O resultado era
+   um separador só — o do `<span>`, que nenhum reset alcança. Com
+   `:not()`, a regra passa a (0,2,0) e vale pros três. */
+.rv-zoom > :not(:first-child) { border-top: 1px solid var(--rv-line); }
 .rv-zoom button:hover { color: var(--cy); background: rgba(255,255,255,.06); }
-.rv-zoom span { font-family: var(--font-mono), monospace; font-size: 10px; color: var(--txt-dim); }
+.rv-zoom button:focus-visible { outline: 2px solid var(--cy); outline-offset: -2px; }
+.rv-zoom span {
+  display: grid; place-items: center; height: 24px;
+  font-family: var(--font-mono), monospace; font-size: 10px; color: var(--rv-ink-dim);
+}
 
 /* ── TRILHA — FACÇÕES EM CONFRONTO ─────────────────────────
    Três superfícies estreitas encostadas nas bordas do palco, nunca uma
