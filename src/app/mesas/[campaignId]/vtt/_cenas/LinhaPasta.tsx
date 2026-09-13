@@ -115,43 +115,29 @@ export function LinhaPasta(p: PropsLinhaPasta) {
 
       {p.erro && <span className="rv-cena-erro" role="alert">{p.erro}</span>}
 
+      {/* DICA NATIVA (`title`), não a `.rv-dica` da folha: o trilho é
+          uma coluna com `overflow-y: auto`, e overflow num eixo recorta
+          nos DOIS — a dica abria pra esquerda e era cortada pela borda
+          da coluna. A nativa não tem caixa que possa ser recortada.
+          O texto é o QUE O BOTÃO FAZ; a consequência (o conteúdo sobe
+          um nível) mora na confirmação, que é onde ela importa. */}
       <span className="rv-cena-acoes">
-        {confirmandoExclusao ? (
-          // Sem digitar o nome, ao contrário de excluir CENA: apagar uma
-          // pasta não apaga conteúdo nenhum (0117 sobe os filhos pro
-          // pai), então a cerimônia de digitar seria desproporcional ao
-          // que se perde — uma etiqueta.
-          <>
-            <span className="rv-pasta-aviso">Os itens sobem um nível.</span>
-            <button
-              type="button" className="rv-btn rv-btn--perigo"
-              data-testid="pasta-excluir-confirmar"
-              onClick={() => { setConfirmandoExclusao(false); p.onExcluir(); }}
-            >Excluir</button>
-            <button type="button" className="rv-btn rv-btn--ghost" onClick={() => setConfirmandoExclusao(false)}>
-              Cancelar
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button" className="rv-cena-mini-btn" data-testid="pasta-renomear"
-              aria-label={`Renomear a pasta "${p.pasta.nome}"`}
-              disabled={p.ocupada} onClick={() => setEditando(true)}
-            >
-              <Pencil size={15} aria-hidden />
-              <span className="rv-dica rv-dica--esq">Renomear a pasta</span>
-            </button>
-            <button
-              type="button" className="rv-cena-mini-btn" data-testid="pasta-excluir"
-              aria-label={`Excluir a pasta "${p.pasta.nome}"`}
-              disabled={p.ocupada} onClick={() => setConfirmandoExclusao(true)}
-            >
-              <Trash2 size={15} aria-hidden />
-              <span className="rv-dica rv-dica--esq">Excluir — o conteúdo sobe um nível</span>
-            </button>
-          </>
-        )}
+        <button
+          type="button" className="rv-cena-mini-btn" data-testid="pasta-renomear"
+          aria-label={`Renomear a pasta "${p.pasta.nome}"`}
+          title="Renomear a pasta"
+          disabled={p.ocupada} onClick={() => setEditando(true)}
+        >
+          <Pencil size={15} aria-hidden />
+        </button>
+        <button
+          type="button" className="rv-cena-mini-btn" data-testid="pasta-excluir"
+          aria-label={`Excluir a pasta "${p.pasta.nome}"`}
+          title="Excluir a pasta"
+          disabled={p.ocupada} onClick={() => setConfirmandoExclusao(true)}
+        >
+          <Trash2 size={15} aria-hidden />
+        </button>
       </span>
 
       {/* EXPANSOR — contagem e chevron são um alvo só, no canto direito,
@@ -173,6 +159,29 @@ export function LinhaPasta(p: PropsLinhaPasta) {
         <ChevronDown size={13} aria-hidden="true" />
       </button>
       </span>
+
+      {/* CONFIRMAÇÃO em bloco próprio, abaixo do cabeçalho — não mais
+          espremida na mesma linha dos ícones, onde a frase e os dois
+          botões disputavam uns 90px de coluna e saíam quebrados.
+          Sem digitar o nome, ao contrário de excluir CENA: apagar uma
+          pasta não apaga conteúdo nenhum (0117 sobe os filhos pro pai),
+          então a cerimônia de digitar seria desproporcional ao que se
+          perde — uma etiqueta. */}
+      {confirmandoExclusao && (
+        <span className="rv-pasta-confirma">
+          <span className="rv-pasta-aviso">Excluir a pasta? Os itens sobem um nível.</span>
+          <span className="rv-pasta-confirma-acoes">
+            <button
+              type="button" className="rv-btn rv-btn--perigo"
+              data-testid="pasta-excluir-confirmar"
+              onClick={() => { setConfirmandoExclusao(false); p.onExcluir(); }}
+            >Excluir</button>
+            <button type="button" className="rv-btn rv-btn--ghost" onClick={() => setConfirmandoExclusao(false)}>
+              Cancelar
+            </button>
+          </span>
+        </span>
+      )}
 
       {p.expandida && p.cenas}
     </li>

@@ -4477,14 +4477,33 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    parte dela. Três estados e não dois: mandar o grupo pra uma cena
    onde metade já está não é a mesma decisão que mandar pra uma vazia. */
 .rv-minicena-selos { flex: 0 0 auto; display: flex; align-items: center; gap: 3px; }
-.rv-minicena-selo { width: 6px; height: 6px; border-radius: 50%; display: block; }
+/* O ponto tem 6px; o ALVO tem 18. Sem isso a dica só aparecia quando o
+   ponteiro acertava exatamente o ponto — e acertar 6px é pontaria, não
+   uso. O `::after` cresce a área sensível sem mexer no desenho nem
+   empurrar o vizinho (é `position: absolute`, fora do fluxo). */
+.rv-minicena-selo {
+  position: relative; width: 6px; height: 6px; border-radius: 50%; display: block;
+}
+.rv-minicena-selo::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; }
 .rv-minicena-selo[data-tipo="vista"] { background: var(--rv-am); }
 .rv-minicena-selo[data-tipo="mesa"] { background: var(--rv-ok); }
 .rv-minicena-selo[data-tipo="parcial"] { background: var(--rv-cy); }
 
+/* A confirmação de excluir pasta ocupa a LARGURA da linha, empilhada:
+   aviso em cima, os dois botões embaixo. Inline, na mesma faixa dos
+   ícones, a frase e os botões disputavam uns 90px e saíam quebrados
+   letra a letra. */
+.rv-pasta-confirma {
+  display: flex; flex-direction: column; gap: 6px;
+  margin-top: 6px; padding: 6px 8px;
+  border: 1px solid color-mix(in srgb, var(--rv-dg) 45%, transparent); border-radius: 2px;
+  background: color-mix(in srgb, var(--rv-dg) 10%, transparent);
+}
+.rv-pasta-confirma-acoes { display: flex; gap: 6px; }
+.rv-pasta-confirma-acoes .rv-btn { flex: 1 1 0; justify-content: center; }
 .rv-pasta-aviso {
-  font-family: var(--font-mono), monospace; font-size: 9px;
-  letter-spacing: .06em; text-transform: uppercase; color: var(--rv-ink-faint);
+  font-family: var(--font-mono), monospace; font-size: 9px; line-height: 1.4;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--rv-ink-dim);
 }
 
 /* ── Trilho de jogadores ─────────────────────────────────────────── */
