@@ -17,11 +17,41 @@
 import { type Hex, hexIguais } from "../_mapa/hex";
 
 /**
- * Instantânea = local e efêmera, some assim que a medição conclui
- * (soltar sem dobra, ou `Enter` com dobra) — nunca persiste. Permanente
- * = persistida e compartilhada com a mesa, some só quando alguém apaga.
+ * DURAÇÃO — quanto tempo a régua existe.
+ *
+ * Instantânea: some assim que a medição conclui (soltar sem dobra, ou
+ * `Enter` com dobra), nunca persiste. Permanente: vira linha em
+ * `vtt_measurements` e some só quando alguém apaga.
  */
-export type ModoMedicao = "instantanea" | "permanente";
+export type DuracaoMedicao = "instantanea" | "permanente";
+
+/**
+ * VISIBILIDADE — quem enxerga a régua.
+ *
+ * Privada: só o autor, nem o narrador (migration 0128). Mesa: todos os
+ * participantes da campanha.
+ */
+export type VisibilidadeMedicao = "privada" | "mesa";
+
+/**
+ * Os dois eixos, juntos — e são de fato INDEPENDENTES, o que o painel
+ * antigo escondia ao oferecer só "instantânea (só pra você)" ou
+ * "permanente (fica pra mesa)". As quatro combinações têm uso:
+ *
+ *   instantânea + privada  — conferir alcance sem telegrafar nada.
+ *   instantânea + mesa     — "olha, daqui até ali não alcança": a mesa
+ *                            vê a régua AO VIVO e ela some no fim do
+ *                            gesto (broadcast, nada persistido).
+ *   permanente  + mesa     — deixar a medida no mapa pra todos.
+ *   permanente  + privada  — anotação de distância que só o autor vê.
+ */
+export interface ModoMedicao {
+  duracao: DuracaoMedicao;
+  visibilidade: VisibilidadeMedicao;
+}
+
+/** Começo de sessão: efêmera e privada — o modo que não deixa rastro nem interrompe ninguém. */
+export const MODO_MEDICAO_PADRAO: ModoMedicao = { duracao: "instantanea", visibilidade: "privada" };
 
 /**
  * Máquina de estados explícita — um só `useState`, nunca vários

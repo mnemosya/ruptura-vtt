@@ -938,7 +938,7 @@ export async function carregarCena(sceneId: string): Promise<EstadoCena | null> 
     // regra de quem enxerga o quê no cliente.
     client.rpc("read_vtt_scene_objects", { p_scene_id: sceneId }),
     client.from("vtt_measurements")
-      .select("id, autor_id, pontos, cor, rotulo, created_at")
+      .select("id, autor_id, pontos, cor, rotulo, privada, created_at")
       .eq("scene_id", sceneId)
       .order("created_at", { ascending: true }),
     // Trilha na MESMA carga da cena: é o que faz um F5 no meio do
@@ -983,6 +983,7 @@ export async function carregarCena(sceneId: string): Promise<EstadoCena | null> 
       pontos: (m.pontos as { q: number; r: number }[]) ?? [],
       cor: m.cor as CorMarca,
       rotulo: (m.rotulo as string | null) ?? null,
+      privada: m.privada === true,
       criadaEm: m.created_at as string,
     })),
     marcas: (marcasRes.data ?? []).map((m) => ({
@@ -1603,6 +1604,8 @@ export interface MedicaoVtt {
   pontos: { q: number; r: number }[];
   cor: CorMarca;
   rotulo: string | null;
+  /** Régua salva que só o AUTOR enxerga (migration 0128) — a RLS já filtra na leitura; isto existe pra UI poder DIZER que é privada. */
+  privada: boolean;
   criadaEm: string;
 }
 
@@ -1618,6 +1621,8 @@ export async function criarMedicao(params: {
   pontos: { q: number; r: number }[];
   cor?: CorMarca;
   rotulo?: string | null;
+  /** Só o autor vê (migration 0128). Omitido = da mesa, que é o padrão desde a 0087. */
+  privada?: boolean;
 }): Promise<ResultadoEscrita & { id?: string }> {
   const usuario = await getCurrentUser();
   if (!usuario) return { ok: false, erro: "Sessão expirada — faça login novamente." };
@@ -1636,6 +1641,7 @@ export async function criarMedicao(params: {
       pontos: params.pontos,
       cor: params.cor ?? "ciano",
       rotulo: params.rotulo ?? null,
+      privada: params.privada ?? false,
     })
     .select("id")
     .maybeSingle();

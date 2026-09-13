@@ -403,7 +403,7 @@ export interface PropsMapaHex {
    * régua na tela. O painel é só leitura — a máquina de estados
    * continua morando aqui, nunca duplicada lá.
    */
-  onMedicaoMudou?: (r: { trechos: number[]; metros: number; custo: number; atravessaBloqueio: boolean; dobras: number } | null) => void;
+  onMedicaoMudou?: (r: { trechos: number[]; metros: number; custo: number; atravessaBloqueio: boolean; dobras: number; pontos: Hex[] } | null) => void;
   /**
    * Modo corrente da ferramenta Medir. Em "instantanea", ao CONCLUIR
    * (soltar sem dobra, ou `Enter` com dobra) a régua some da tela na
@@ -427,7 +427,14 @@ export interface PropsMapaHex {
    * narrador): quem não pode não recebe alvo de clique nenhum, em vez
    * de receber uma ação que sempre falharia no servidor.
    */
-  medicoesPermanentes?: { id: string; pontos: Hex[]; autorId: string; podeApagar: boolean }[];
+  medicoesPermanentes?: { id: string; pontos: Hex[]; autorId: string; podeApagar: boolean; privada?: boolean }[];
+  /**
+   * Réguas AO VIVO de outros participantes (migration 0128) — puro
+   * desenho: não são clicáveis, não persistem, e somem quando quem as
+   * publicou termina o gesto. Quem assina o canal e decide o que ainda
+   * está vivo é `VttClient`; aqui só se desenha o que chegar.
+   */
+  reguasAoVivo?: { autorId: string; autorNome: string; pontos: Hex[] }[];
   /** Clique numa régua permanente que o usuário pode apagar. */
   onApagarMedicao?: (id: string) => void;
   /** Ferramenta "Objetos" ativa + clique num objeto já persistido — seleciona pra excluir (não pra criar). */
@@ -610,6 +617,7 @@ export function MapaHex({
   modoMedicao,
   onMedicaoConcluida,
   medicoesPermanentes,
+  reguasAoVivo,
   onApagarMedicao,
   onSelecionarObjeto,
   objetoEmMovimentoId,
@@ -2009,6 +2017,12 @@ export function MapaHex({
           custo: medicaoCalc.custo,
           atravessaBloqueio: medicaoCalc.atravessaBloqueio,
           dobras: totalDobras(medicaoAtiva),
+          // Os PONTOS vêm junto pra quem chama poder transmitir a régua
+          // ao vivo ("instantânea + pra mesa", migration 0128) sem
+          // precisar de um segundo canal de aviso a cada movimento —
+          // este resumo já muda exatamente quando a régua muda, e o
+          // dedupe abaixo já evita repetir o que não mudou.
+          pontos: pontosDaMedicao(medicaoAtiva),
         }
       : null;
     const chave = resumo ? JSON.stringify(resumo) : null;
@@ -2034,7 +2048,7 @@ export function MapaHex({
     // confirmar a gravação e a camada de réguas persistidas assumir —
     // sumir daqui na mesma hora abriria um intervalo sem nada visível
     // até o servidor responder.
-    if (modoMedicao !== "permanente") setEstadoMedicao({ fase: "ociosa" });
+    if (modoMedicao?.duracao !== "permanente") setEstadoMedicao({ fase: "ociosa" });
   }, [medicaoAtiva, tentarPersistirPontos, modoMedicao]);
 
   // ── Hint unificada de mapa (hover) ────────────────────────────────
@@ -3043,6 +3057,46 @@ export function MapaHex({
             agora tem que ficar por cima das que já estavam lá. Traço
             contínuo (a ativa é tracejada) — a diferença entre "salva"
             e "em andamento" não pode depender só de cor. */}
+        {/* RÉGUAS AO VIVO de outros participantes — "instantânea +
+            pra mesa". Tracejadas e com o nome de quem mede, porque a
+            pergunta que elas respondem na tela é "quem está medindo
+            isso, e por que apareceu sozinho?". Nunca clicáveis: não
+            são objeto da cena, são o gesto de outra pessoa acontecendo
+            agora. Desenhadas ANTES das permanentes pra uma régua salva
+            nunca ficar escondida por uma que vai sumir em segundos. */}
+        {reguasAoVivo && reguasAoVivo.length > 0 && (
+          <g className="rv-camada-reguas-ao-vivo" pointerEvents="none">
+            {reguasAoVivo.map((r) => {
+              if (r.pontos.length < 2) return null;
+              const pts = r.pontos.map((h) => hexParaPixel(h, TAM));
+              const calc = medir(r.pontos, terrenoParaRota);
+              const pFim = pts[pts.length - 1];
+              const texto = `${r.autorNome ? `${r.autorNome} · ` : ""}${calc.metros} m`;
+              const larg = Math.max(52, texto.length * 6.4 + 16);
+              return (
+                <g key={r.autorId} className="rv-regua-ao-vivo">
+                  <polyline points={pts.map((p) => `${p.x},${p.y}`).join(" ")}
+                    fill="none" stroke="#0b141c" strokeWidth="5" strokeLinejoin="round" opacity="0.5" />
+                  <polyline points={pts.map((p) => `${p.x},${p.y}`).join(" ")}
+                    fill="none" stroke="#c9a6ff" strokeWidth="2" strokeLinejoin="round" strokeDasharray="6 4" opacity="0.9" />
+                  {pts.map((p, i) => (
+                    <circle key={i} cx={p.x} cy={p.y} r={i === 0 || i === pts.length - 1 ? 3.5 : 2.5}
+                      fill="#c9a6ff" stroke="#0b141c" strokeWidth="1.2" />
+                  ))}
+                  <g transform={`translate(${pFim.x} ${pFim.y - 16})`}>
+                    <rect x={-larg / 2} y={-9} width={larg} height={18} rx={2}
+                      fill="#0b141c" stroke="#c9a6ff" strokeWidth="1" opacity="0.92" />
+                    <text textAnchor="middle" y={4}
+                      style={{ fontSize: 11, fontFamily: "monospace", fontWeight: 700, fill: "#eadcff" }}>
+                      {texto}
+                    </text>
+                  </g>
+                </g>
+              );
+            })}
+          </g>
+        )}
+
         {medicoesPermanentes && medicoesPermanentes.length > 0 && (
           <g className="rv-camada-medicoes-fixas">
             {medicoesPermanentes.map((m) => {
@@ -3051,10 +3105,18 @@ export function MapaHex({
               const calc = medir(m.pontos, terrenoParaRota);
               const pFim = pts[pts.length - 1];
               const texto = calc.metros === calc.custo ? `${calc.metros} m` : `${calc.metros} m · custo ${calc.custo}`;
-              const larg = Math.max(46, texto.length * 6.4 + 16);
+              // Régua PRIVADA (0128) desenha com o mesmo traço, em
+              // tracejado curto e com um prefixo no rótulo. Não é
+              // decoração: se nada distingue, o autor não tem como
+              // saber quais das próprias réguas a mesa está vendo — e
+              // ele vê as duas coisas na mesma tela. Quem não é o autor
+              // nunca recebe esta linha (a RLS filtra na leitura), então
+              // este estilo só existe pros olhos de quem criou.
+              const rotuloTexto = m.privada ? `◆ ${texto}` : texto;
+              const larg = Math.max(46, rotuloTexto.length * 6.4 + 16);
               const clicavel = m.podeApagar && !!onApagarMedicao;
               return (
-                <g key={m.id} className="rv-medicao-fixa">
+                <g key={m.id} className="rv-medicao-fixa" data-privada={m.privada || undefined}>
                   {/* Faixa larga e invisível por baixo: alvo de clique
                       generoso pra apagar. Sem ela, acertar uma linha de
                       2px é um teste de pontaria. Só existe pra quem
@@ -3073,11 +3135,12 @@ export function MapaHex({
                         onApagarMedicao(m.id);
                       }}
                     >
-                      <title>Clique pra apagar esta medição ({texto})</title>
+                      <title>Clique pra apagar esta medição ({texto}{m.privada ? " · só você vê" : ""})</title>
                     </polyline>
                   )}
                   <polyline points={pts.map((p) => `${p.x},${p.y}`).join(" ")}
-                    fill="none" stroke="#7fb2ff" strokeWidth="2" strokeLinejoin="round" opacity="0.75" pointerEvents="none" />
+                    fill="none" stroke="#7fb2ff" strokeWidth="2" strokeLinejoin="round" opacity="0.75"
+                    strokeDasharray={m.privada ? "3 3" : undefined} pointerEvents="none" />
                   <circle cx={pts[0].x} cy={pts[0].y} r={3.5} fill="#7fb2ff" stroke="#0b141c" strokeWidth="1.2" pointerEvents="none" />
                   {pts.slice(1, -1).map((p, i) => (
                     <rect key={i} x={p.x - 3.2} y={p.y - 3.2} width={6.4} height={6.4}
@@ -3088,7 +3151,7 @@ export function MapaHex({
                   <g transform={`translate(${pFim.x} ${pFim.y - 15})`} pointerEvents="none">
                     <rect x={-larg / 2} y={-9} width={larg} height={17} rx={4} fill="#0b141c" opacity="0.9" />
                     <text textAnchor="middle" y={3} fontSize="9.5" fontFamily="monospace" fill="#bcd8ff" style={{ userSelect: "none" }}>
-                      {texto}
+                      {rotuloTexto}
                     </text>
                   </g>
                 </g>

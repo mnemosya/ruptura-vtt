@@ -232,6 +232,9 @@ export function subscribeToVttScene(params: {
               pontos: (novo.pontos as { q: number; r: number }[]) ?? [],
               cor: novo.cor as MedicaoVtt["cor"],
               rotulo: (novo.rotulo as string | null) ?? null,
+              // A RLS (0128) já não entrega régua privada alheia; este
+              // campo existe pra UI poder DIZER que a sua é privada.
+              privada: novo.privada === true,
               criadaEm: novo.created_at as string,
             },
           });
@@ -493,6 +496,108 @@ export function subscribeToVttTokenMovement(params: {
   };
 }
 
+/** Usado pela validação de payload da régua e do ping — declarado antes das duas. */
+const REGEX_UUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+/**
+ * RÉGUA AO VIVO — a combinação "instantânea + pra mesa" da ferramenta
+ * Medir (migration 0128). Efêmera de ponta a ponta: nada é gravado, e
+ * o que os outros veem existe só enquanto o gesto existe.
+ *
+ * Cliente publica DIRETO no canal, como o de movimento de token e ao
+ * contrário do ping (que passa por RPC). O motivo é volume: um ping é
+ * um evento por gesto, uma régua ao vivo é uma dezena por segundo
+ * enquanto a mão se move — um round-trip de RPC por quadro seria
+ * absurdo. A policy da 0128 é o que autoriza o `send` direto, por
+ * tópico de CENA.
+ *
+ * Mesma ressalva do canal de movimento: o payload é escolhido pelo
+ * cliente, então um participante pode publicar uma régua inventada.
+ * Aqui isso custa ainda menos que lá — uma régua não move nada, não
+ * altera cena, e some sozinha. É desenho na tela dos outros, pelo
+ * tempo do gesto.
+ */
+export interface EventoRegua {
+  v: number;
+  campaignId: string;
+  sceneId: string;
+  /** Quem está medindo. Autodeclarado (o cliente publica direto) — serve pra agrupar/rotular, nunca pra autorizar. */
+  autorId: string;
+  /** Nome curto pra rotular a régua alheia no mapa. */
+  autorNome: string;
+  /** Pontos axiais na ordem: origem, dobras, ponta viva. Vazio = a régua ACABOU (fim do gesto). */
+  pontos: { q: number; r: number }[];
+  /** `Date.now()` do autor — quem recebe descarta o que estiver velho demais (ver `REGUA_VALIDADE_MS`). */
+  ts: number;
+}
+
+function nomeCanalRegua(campaignId: string, sceneId: string): string {
+  return `campaign:${campaignId}:scene:${sceneId}:vtt:regua`;
+}
+
+/**
+ * Régua alheia sem notícia há mais que isto é considerada morta e sai
+ * da tela. É a rede de segurança pro caso de o "fim" (pontos vazios)
+ * se perder — sem ela, uma aba fechada no meio de uma medição deixaria
+ * a régua daquela pessoa congelada no mapa de todo mundo pra sempre.
+ */
+export const REGUA_VALIDADE_MS = 5000;
+
+/** Mesma disciplina de `validarPayloadPing`: nada entra no estado React sem passar por aqui. */
+export function validarPayloadRegua(bruto: unknown, esperado: { campaignId: string; sceneId: string }): EventoRegua | null {
+  if (typeof bruto !== "object" || bruto === null || Array.isArray(bruto)) return null;
+  const p = bruto as Record<string, unknown>;
+
+  if (p.v !== 1) return null;
+  if (typeof p.autorId !== "string" || !REGEX_UUID.test(p.autorId)) return null;
+  if (typeof p.campaignId !== "string" || p.campaignId !== esperado.campaignId) return null;
+  if (typeof p.sceneId !== "string" || p.sceneId !== esperado.sceneId) return null;
+  if (typeof p.ts !== "number" || !Number.isFinite(p.ts)) return null;
+  if (!Array.isArray(p.pontos)) return null;
+  // Mesmo teto do CHECK de `vtt_measurements` (0087): a UI limita pelo
+  // gesto, mas o payload vem da rede e vira desenho na tela de todo
+  // mundo na mesa.
+  if (p.pontos.length > 64) return null;
+
+  const pontos: { q: number; r: number }[] = [];
+  for (const bruto of p.pontos) {
+    if (typeof bruto !== "object" || bruto === null) return null;
+    const ponto = bruto as Record<string, unknown>;
+    if (typeof ponto.q !== "number" || !Number.isInteger(ponto.q)) return null;
+    if (typeof ponto.r !== "number" || !Number.isInteger(ponto.r)) return null;
+    pontos.push({ q: ponto.q, r: ponto.r });
+  }
+  // Sem checagem de `dentroDoMapa`: desde a 0127 um token pode estar
+  // fora da grade, e medir até ele é legítimo.
+
+  const nome = typeof p.autorNome === "string" ? p.autorNome.slice(0, 40) : "";
+  return { v: 1, campaignId: p.campaignId, sceneId: p.sceneId, autorId: p.autorId, autorNome: nome, pontos, ts: p.ts };
+}
+
+export function subscribeToVttRegua(params: {
+  campaignId: string;
+  sceneId: string;
+  onRegua: (e: EventoRegua) => void;
+}): { publicar: (e: EventoRegua) => void; unsubscribe: () => void } {
+  const client = getBrowserSupabaseClient();
+  if (!client) return { publicar: () => {}, unsubscribe: () => {} };
+
+  const esperado = { campaignId: params.campaignId, sceneId: params.sceneId };
+  const channel: RealtimeChannel = client
+    .channel(nomeCanalRegua(params.campaignId, params.sceneId), { config: { private: true } })
+    .on("broadcast", { event: "regua" }, (payload) => {
+      const e = validarPayloadRegua(payload.payload, esperado);
+      if (!e) return;
+      params.onRegua(e);
+    })
+    .subscribe();
+
+  return {
+    publicar: (e) => { void channel.send({ type: "broadcast", event: "regua", payload: e }); },
+    unsubscribe: () => { client.removeChannel(channel); },
+  };
+}
+
 /**
  * Evento de PING — efêmero, nunca persistido. Diferente do canal de
  * movimento acima (o cliente publica direto), este canal é SÓ DE
@@ -538,7 +643,6 @@ export const PING_VALIDADE_MS = 4000;
 /** Tolerância de relógio pra frente — um `ts` mais adiantado que isto em relação ao relógio local é tratado como suspeito, nunca aceito às cegas. */
 const PING_TOLERANCIA_FUTURO_MS = 5000;
 
-const REGEX_UUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
 /**
  * Valida o payload bruto de um broadcast de ping em RUNTIME — nunca um

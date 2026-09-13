@@ -23,6 +23,7 @@ import {
   soltarBotao,
   totalDobras,
 } from "../src/app/mesas/[campaignId]/vtt/_dominio/medicaoRegua";
+import { validarPayloadRegua } from "../src/app/mesas/[campaignId]/vtt/_realtime/vttRealtime";
 import { medir } from "../src/app/mesas/[campaignId]/vtt/_dominio/movimento";
 
 let passou = 0, falhou = 0;
@@ -204,6 +205,41 @@ function medindo(atual: Hex, pontos: Hex[] = [h(0, 0)], livre = false): EstadoMe
   const c: EstadoMedicao = { fase: "concluida", pontos: [h(0, 0)], atual: h(3, 0) };
   ok("18 (concluída ignora Q e Backspace — gesto acabou)",
     fixarDobra(c) === c && removerUltimaDobra(c) === c, "mesma ref nos dois");
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Régua AO VIVO — validação do payload que chega pela REDE
+//
+// O canal é publicado DIRETO pelo cliente (migration 0128), então o
+// conteúdo do broadcast é dado de rede, não valor confiável por
+// construção. Nada entra no estado React sem passar por aqui.
+// ══════════════════════════════════════════════════════════════════
+{
+  const campaignId = "11111111-1111-4111-8111-111111111111";
+  const sceneId = "22222222-2222-4222-8222-222222222222";
+  const autorId = "33333333-3333-4333-8333-333333333333";
+  const esperado = { campaignId, sceneId };
+  const valido = { v: 1, campaignId, sceneId, autorId, autorNome: "Gabi", pontos: [{ q: 0, r: 0 }, { q: 3, r: 0 }], ts: Date.now() };
+
+  ok("19 (payload íntegro passa)", validarPayloadRegua(valido, esperado) !== null, "ok");
+  ok("20 (versão diferente é rejeitada)", validarPayloadRegua({ ...valido, v: 2 }, esperado) === null, "ok");
+  ok("21 (cena de outra sessão é rejeitada)",
+    validarPayloadRegua({ ...valido, sceneId: "44444444-4444-4444-8444-444444444444" }, esperado) === null, "ok");
+  ok("22 (autor que não é UUID é rejeitado)", validarPayloadRegua({ ...valido, autorId: "eu" }, esperado) === null, "ok");
+  ok("23 (ponto com coordenada fracionária é rejeitado)",
+    validarPayloadRegua({ ...valido, pontos: [{ q: 0, r: 0 }, { q: 1.5, r: 2 }] }, esperado) === null, "ok");
+  ok("24 (ponto malformado é rejeitado)",
+    validarPayloadRegua({ ...valido, pontos: [{ q: 0, r: 0 }, { x: 1 }] }, esperado) === null, "ok");
+  ok("25 (régua com mais de 64 pontos é rejeitada — mesmo teto do banco)",
+    validarPayloadRegua({ ...valido, pontos: Array.from({ length: 65 }, (_, i) => ({ q: i, r: 0 })) }, esperado) === null, "ok");
+  ok("26 (lista vazia passa — é o evento de FIM do gesto)",
+    validarPayloadRegua({ ...valido, pontos: [] }, esperado)?.pontos.length === 0, "ok");
+  ok("27 (ponto FORA da grade passa — token pode estar fora dela desde a 0127)",
+    validarPayloadRegua({ ...valido, pontos: [{ q: -40, r: -9 }, { q: 0, r: 0 }] }, esperado) !== null, "ok");
+  ok("28 (nome de autor gigante é truncado, não rejeitado)",
+    validarPayloadRegua({ ...valido, autorNome: "x".repeat(300) }, esperado)?.autorNome.length === 40, "ok");
+  ok("29 (nome de autor não-string vira vazio)",
+    validarPayloadRegua({ ...valido, autorNome: 42 }, esperado)?.autorNome === "", "ok");
 }
 
 console.log(`\n${passou} ok, ${falhou} falha(s).`);

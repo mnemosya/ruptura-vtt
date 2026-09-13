@@ -107,6 +107,7 @@ import { BibliotecaImagens } from "./_shell/BibliotecaImagens";
 import { ColocarImagem } from "./_shell/ColocarImagem";
 import { useImagensDaCena } from "./_shell/useImagensDaCena";
 import { PainelMedir, type ModoMedicao } from "./_shell/PainelMedir";
+import { MODO_MEDICAO_PADRAO } from "./_dominio/medicaoRegua";
 import { PainelDados } from "./_shell/PainelDados";
 import { MesaDadosOverlay } from "./_dados3d/MesaDadosOverlay";
 import { AcoesAreaFlutuantes, BotaoEdicaoRapidaArea, usePosicoesEdicaoRapida } from "./_shell/AcoesAreaFlutuantes";
@@ -120,8 +121,8 @@ import {
 } from "./_ferramentas/areasSnap";
 import { type TokenApresentacao, tokenApresentacaoDe } from "./_dominio/tokenApresentacao";
 import {
-  type EventoMovimentoToken, type EventoPing,
-  subscribeToVttScene, subscribeToVttTokenMovement, subscribeToVttPing, subscribeToVttTokensChanged,
+  type EventoMovimentoToken, type EventoPing, type EventoRegua, REGUA_VALIDADE_MS,
+  subscribeToVttScene, subscribeToVttTokenMovement, subscribeToVttPing, subscribeToVttRegua, subscribeToVttTokensChanged,
   subscribeToVttAreasChanged, subscribeToCamadasDaCena, subscribeToVttPalco,
   subscribeToVttAtribuicoes } from "./_realtime/vttRealtime";
 import { useCampaignCharacterControllersRealtime } from "../../../../lib/realtime/useCampaignRealtime";
@@ -4275,16 +4276,16 @@ export function VttClient({
   // persistido) e a persistência em si. O resumo que o painel mostra
   // chega pronto por `onMedicaoMudou`; nunca há uma segunda máquina de
   // estados de régua deste lado.
-  const [modoMedicao, setModoMedicao] = useState<ModoMedicao>("instantanea");
+  const [modoMedicao, setModoMedicao] = useState<ModoMedicao>(MODO_MEDICAO_PADRAO);
   const [resumoMedicao, setResumoMedicao] = useState<
-    { trechos: number[]; metros: number; custo: number; atravessaBloqueio: boolean; dobras: number } | null
+    { trechos: number[]; metros: number; custo: number; atravessaBloqueio: boolean; dobras: number; pontos: Hex[] } | null
   >(null);
   const [limpandoMedicoes, setLimpandoMedicoes] = useState(false);
 
   // `modoMedicaoRef` pelo mesmo motivo de `modoTerrenoRef`: o callback
   // de conclusão é passado a `MapaHex` e não pode se reinscrever a
   // cada troca de modo — lê o valor corrente na hora de gravar.
-  const modoMedicaoRef = useRef<ModoMedicao>("instantanea");
+  const modoMedicaoRef = useRef<ModoMedicao>(MODO_MEDICAO_PADRAO);
   useEffect(() => { modoMedicaoRef.current = modoMedicao; }, [modoMedicao]);
 
   const medicoes = useMemo(() => estadoCena?.medicoes ?? [], [estadoCena?.medicoes]);
@@ -4294,7 +4295,7 @@ export function VttClient({
   // servidor recusaria.
   const medicoesParaMapa = useMemo(
     () => medicoes.map((m) => ({
-      id: m.id, pontos: m.pontos, autorId: m.autorId,
+      id: m.id, pontos: m.pontos, autorId: m.autorId, privada: m.privada,
       podeApagar: ehNarrador || m.autorId === usuarioId,
     })),
     [medicoes, ehNarrador, usuarioId],
@@ -4308,8 +4309,133 @@ export function VttClient({
     [medicoes, ehNarrador, usuarioId],
   );
 
+  // ── Régua AO VIVO (visibilidade "pra mesa") ─────────────────────
+  // Broadcast puro: nada é gravado, e o que os outros veem existe só
+  // enquanto o gesto existe. O canal é publicado direto pelo cliente
+  // (migration 0128) porque isto é uma dezena de eventos por segundo —
+  // passar por RPC, como o ping faz, seria um round-trip por quadro.
+  const [reguasAoVivo, setReguasAoVivo] = useState<Map<string, { autorNome: string; pontos: Hex[]; ts: number }>>(new Map());
+  const publicarReguaRef = useRef<(e: EventoRegua) => void>(() => {});
+  // Limite de TAXA: a mão gera movimento a cada quadro, e a mesa não
+  // ganha nada com 60 réguas por segundo. 80ms mantém a linha colada
+  // no cursor de quem assiste e corta ~80% do tráfego.
+  const INTERVALO_REGUA_MS = 80;
+  const ultimoEnvioReguaRef = useRef(0);
+  const envioReguaPendenteRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const sceneId = estadoCena?.cena.id;
+    if (!sceneId) return;
+    const canal = subscribeToVttRegua({
+      campaignId, sceneId,
+      onRegua: (e) => {
+        // O próprio eco volta pelo canal — quem mede já vê a própria
+        // régua desenhada pelo gesto local, então desenhar o eco por
+        // cima seria a mesma linha duas vezes.
+        if (e.autorId === usuarioIdRef.current) return;
+        setReguasAoVivo((m) => {
+          const novo = new Map(m);
+          // Lista vazia = fim do gesto daquela pessoa.
+          if (e.pontos.length < 2) novo.delete(e.autorId);
+          else novo.set(e.autorId, { autorNome: e.autorNome, pontos: e.pontos, ts: Date.now() });
+          return novo;
+        });
+      },
+    });
+    publicarReguaRef.current = canal.publicar;
+    return () => {
+      publicarReguaRef.current = () => {};
+      canal.unsubscribe();
+    };
+  }, [campaignId, estadoCena?.cena.id]);
+
+  // Rede de segurança contra régua órfã: se o "fim" se perder (aba
+  // fechada no meio da medição, queda de rede), a linha daquela pessoa
+  // ficaria congelada no mapa de todo mundo pra sempre. Varre por
+  // idade, nunca por confiança de que o evento final chegou.
+  useEffect(() => {
+    if (reguasAoVivo.size === 0) return;
+    const timer = setInterval(() => {
+      const limite = Date.now() - REGUA_VALIDADE_MS;
+      setReguasAoVivo((m) => {
+        let mudou = false;
+        const novo = new Map(m);
+        for (const [id, r] of novo) if (r.ts < limite) { novo.delete(id); mudou = true; }
+        return mudou ? novo : m;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [reguasAoVivo.size]);
+
+  /**
+   * Chega a cada mudança da régua local (`MapaHex` → `onMedicaoMudou`).
+   * Guarda o resumo pro painel e, quando a visibilidade é "pra mesa",
+   * transmite os pontos.
+   *
+   * A transmissão acontece nas DUAS durações: em "permanente + pra
+   * mesa" a mesa acompanha o traçado e depois a régua salva aparece no
+   * lugar, sem um salto de "não tinha nada" pra "apareceu pronta".
+   */
+  const aoMedicaoMudou = useCallback((resumo: { trechos: number[]; metros: number; custo: number; atravessaBloqueio: boolean; dobras: number; pontos: Hex[] } | null) => {
+    setResumoMedicao(resumo);
+
+    const sceneId = estadoCenaRef.current?.cena.id;
+    if (!sceneId) return;
+    const pontos = resumo?.pontos ?? [];
+    const paraMesa = modoMedicaoRef.current.visibilidade === "mesa";
+
+    // O FIM é sempre transmitido na hora e sem limite de taxa: atrasar
+    // "acabou" deixa a régua alheia pendurada na tela dos outros; e
+    // quando a visibilidade é privada, o fim é o único evento que sai
+    // daqui — e só se algo já tiver sido transmitido antes (trocar pra
+    // privada no meio do gesto precisa apagar o que a mesa já viu).
+    const enviar = (agora: number) => {
+      ultimoEnvioReguaRef.current = agora;
+      publicarReguaRef.current({
+        v: 1, campaignId, sceneId,
+        autorId: usuarioIdRef.current ?? "",
+        // O protocolo já carrega o nome; o VTT ainda não tem o nome de
+        // exibição do usuário à mão (só o id), então vai vazio e a
+        // etiqueta mostra só a distância. Ligar isto depois é preencher
+        // este campo, nada mais.
+        autorNome: "",
+        pontos: pontos.map((h) => ({ q: h.q, r: h.r })),
+        ts: agora,
+      });
+    };
+
+    if (envioReguaPendenteRef.current) {
+      clearTimeout(envioReguaPendenteRef.current);
+      envioReguaPendenteRef.current = null;
+    }
+    if (pontos.length < 2) {
+      if (ultimoEnvioReguaRef.current > 0) { enviar(Date.now()); ultimoEnvioReguaRef.current = 0; }
+      return;
+    }
+    if (!paraMesa) return;
+
+    const agora = Date.now();
+    const desdeUltimo = agora - ultimoEnvioReguaRef.current;
+    if (desdeUltimo >= INTERVALO_REGUA_MS) { enviar(agora); return; }
+    // Nunca DESCARTA o último movimento: agenda o resto do intervalo.
+    // Sem isto, parar o cursor logo depois de um envio deixaria a
+    // régua dos outros parada num ponto que já não é o atual.
+    envioReguaPendenteRef.current = setTimeout(() => {
+      envioReguaPendenteRef.current = null;
+      enviar(Date.now());
+    }, INTERVALO_REGUA_MS - desdeUltimo);
+  }, [campaignId]);
+
+  // Lista estável pro mapa — o `Map` de estado é a estrutura certa pra
+  // indexar por autor, mas recriá-lo em array a cada render faria o
+  // `MapaHex` remontar a camada à toa.
+  const reguasAoVivoParaMapa = useMemo(
+    () => [...reguasAoVivo.entries()].map(([autorId, r]) => ({ autorId, autorNome: r.autorNome, pontos: r.pontos })),
+    [reguasAoVivo],
+  );
+
   const persistirMedicao = useCallback((pontos: Hex[]) => {
-    if (modoMedicaoRef.current !== "permanente") return;
+    if (modoMedicaoRef.current.duracao !== "permanente") return;
     const sceneId = estadoCenaRef.current?.cena.id;
     if (!sceneId) return;
     const pontosNormalizados = pontos.map((p) => ({ q: p.q, r: p.r }));
@@ -4330,11 +4456,15 @@ export function VttClient({
       medicoes: [...c.medicoes, {
         id: idTemporario, autorId: usuarioIdRef.current ?? "",
         pontos: pontosNormalizados, cor: "ciano" as const, rotulo: null,
+        privada: modoMedicaoRef.current.visibilidade === "privada",
         criadaEm: new Date().toISOString(),
       }],
     } : c));
 
-    criarMedicaoAction({ campaignId, sceneId, pontos: pontosNormalizados }).then((r) => {
+    criarMedicaoAction({
+      campaignId, sceneId, pontos: pontosNormalizados,
+      privada: modoMedicaoRef.current.visibilidade === "privada",
+    }).then((r) => {
       if (!r.ok) {
         setErroAcao(r.erro ?? "Não foi possível salvar a medição.");
         // Rollback: tira só o placeholder, nunca uma linha real que
@@ -4354,7 +4484,9 @@ export function VttClient({
           ...c,
           medicoes: [...semPlaceholder, {
             id: r.dados!.id, autorId: usuarioIdRef.current ?? "",
-            pontos: pontosNormalizados, cor: "ciano" as const, rotulo: null, criadaEm: new Date().toISOString(),
+            pontos: pontosNormalizados, cor: "ciano" as const, rotulo: null,
+            privada: modoMedicaoRef.current.visibilidade === "privada",
+            criadaEm: new Date().toISOString(),
           }],
         };
       });
@@ -5219,11 +5351,12 @@ export function VttClient({
             onSelecionarCaixa={onSelecionarCaixa}
             onSelecionarObjeto={selecionarObjetoNoMapa}
             objetoEmMovimentoId={objetoMovendoId}
-            onMedicaoMudou={setResumoMedicao}
+            onMedicaoMudou={aoMedicaoMudou}
             modoMedicao={modoMedicao}
             onMedicaoConcluida={persistirMedicao}
             medicoesPermanentes={medicoesParaMapa}
             onApagarMedicao={apagarMedicao}
+            reguasAoVivo={reguasAoVivoParaMapa}
             // Prévia só no PINCEL: o balde depende de flood-fill da
             // região contígua, que muda conforme o terreno já pintado —
             // pré-calcular isso a cada célula sob o cursor seria caro e,

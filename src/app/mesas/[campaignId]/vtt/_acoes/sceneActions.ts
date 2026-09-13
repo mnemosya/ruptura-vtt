@@ -766,6 +766,8 @@ export async function criarMedicaoAction(params: {
   campaignId: string;
   sceneId: string;
   pontos: { q: number; r: number }[];
+  /** Só o autor vê (migration 0128). */
+  privada?: boolean;
   cor?: CorMarca;
   rotulo?: string | null;
 }): Promise<ResultadoAcao<{ id: string }>> {
@@ -774,7 +776,7 @@ export async function criarMedicaoAction(params: {
 
   const r = await criarMedicao({
     sceneId: params.sceneId, campaignId: params.campaignId,
-    pontos: params.pontos, cor: params.cor, rotulo: params.rotulo,
+    pontos: params.pontos, privada: params.privada, cor: params.cor, rotulo: params.rotulo,
   });
   if (!r.ok) return { ok: false, erro: r.erro };
   return { ok: true, dados: { id: r.id! } };

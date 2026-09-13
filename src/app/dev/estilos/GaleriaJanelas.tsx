@@ -20,6 +20,7 @@
 import { useState } from "react";
 import { ProvedorJanelasFerramenta } from "../../mesas/[campaignId]/vtt/_shell/JanelaFerramenta";
 import { PainelMedir } from "../../mesas/[campaignId]/vtt/_shell/PainelMedir";
+import { type ModoMedicao, MODO_MEDICAO_PADRAO } from "../../mesas/[campaignId]/vtt/_dominio/medicaoRegua";
 import { PainelMarcar } from "../../mesas/[campaignId]/vtt/_shell/PainelMarcar";
 import { CAMADAS_PADRAO, PainelCamadas } from "../../mesas/[campaignId]/vtt/_shell/PainelCamadas";
 import { PainelCena } from "../../mesas/[campaignId]/vtt/_shell/PainelCena";
@@ -51,7 +52,7 @@ function PalcoJanela({ chave, children }: { chave: string; children: React.React
 /* ── medir ───────────────────────────────────────────────────────── */
 
 export function VitrineMedir() {
-  const [modo, setModo] = useState<"instantanea" | "permanente">("instantanea");
+  const [modo, setModo] = useState<ModoMedicao>(MODO_MEDICAO_PADRAO);
   const [medindo, setMedindo] = useState(true);
 
   return (

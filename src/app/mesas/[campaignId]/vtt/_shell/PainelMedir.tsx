@@ -16,8 +16,8 @@
  */
 
 import { JanelaFerramenta } from "./JanelaFerramenta";
-import { AlertTriangle, Eraser, Loader2, MousePointerClick, Ruler, Timer } from "lucide-react";
-import { type ModoMedicao } from "../_dominio/medicaoRegua";
+import { AlertTriangle, Eraser, Eye, EyeOff, Loader2, MousePointerClick, Ruler, Timer } from "lucide-react";
+import { type DuracaoMedicao, type ModoMedicao, type VisibilidadeMedicao } from "../_dominio/medicaoRegua";
 
 export type { ModoMedicao };
 
@@ -48,13 +48,25 @@ export interface PropsPainelMedir {
   onFechar: () => void;
 }
 
-const MODOS: { valor: ModoMedicao; nome: string; sub: string; Icone: typeof Timer }[] = [
-  { valor: "instantanea", nome: "Instantânea", sub: "só pra você", Icone: Timer },
-  { valor: "permanente", nome: "Permanente", sub: "fica pra mesa", Icone: Ruler },
+/* DOIS EIXOS, dois grupos. Eles eram um só ("Instantânea / só pra
+   você" contra "Permanente / fica pra mesa"), o que tornava
+   inalcançáveis as duas combinações que a mesa mais pede: mostrar uma
+   medida ao vivo sem deixar régua no mapa, e salvar uma régua que só eu
+   vejo. Cada eixo responde uma pergunta, e o subtítulo diz a
+   CONSEQUÊNCIA, nunca repete o nome. */
+const DURACOES: { valor: DuracaoMedicao; nome: string; sub: string; Icone: typeof Timer }[] = [
+  { valor: "instantanea", nome: "Instantânea", sub: "some ao concluir", Icone: Timer },
+  { valor: "permanente", nome: "Permanente", sub: "fica no mapa", Icone: Ruler },
+];
+
+const VISIBILIDADES: { valor: VisibilidadeMedicao; nome: string; sub: string; Icone: typeof Eye }[] = [
+  { valor: "privada", nome: "Só pra você", sub: "nem o narrador vê", Icone: EyeOff },
+  { valor: "mesa", nome: "Pra mesa", sub: "todos veem", Icone: Eye },
 ];
 
 export function PainelMedir(p: PropsPainelMedir) {
-  const modoAtivo = MODOS.find((m) => m.valor === p.modo) ?? MODOS[0];
+  const duracaoAtiva = DURACOES.find((m) => m.valor === p.modo.duracao) ?? DURACOES[0];
+  const visibilidadeAtiva = VISIBILIDADES.find((m) => m.valor === p.modo.visibilidade) ?? VISIBILIDADES[0];
   const medindo = p.resumo !== null;
 
   return (
@@ -62,7 +74,7 @@ export function PainelMedir(p: PropsPainelMedir) {
       id="medir"
       icone={<Ruler size={16} />}
       titulo="Medir"
-      modo={modoAtivo.nome}
+      modo={`${duracaoAtiva.nome} · ${visibilidadeAtiva.nome.toLowerCase()}`}
       rotulo="Ferramenta Medir"
       rotuloFechar="Fechar ferramenta Medir"
       aoFechar={p.onFechar}
@@ -107,13 +119,13 @@ export function PainelMedir(p: PropsPainelMedir) {
         )}
 
         <div className="rv-fp-grupo">
-          <span className="rv-fp-rotulo" id="rv-fp-rot-modo-medir">Modo</span>
-          <div className="rv-fp-seg" role="group" aria-labelledby="rv-fp-rot-modo-medir">
-            {MODOS.map((m) => (
+          <span className="rv-fp-rotulo" id="rv-fp-rot-duracao-medir">Duração</span>
+          <div className="rv-fp-seg" role="group" aria-labelledby="rv-fp-rot-duracao-medir">
+            {DURACOES.map((m) => (
               <button
                 key={m.valor}
-                type="button" className="rv-fp-seg-btn" aria-pressed={p.modo === m.valor}
-                onClick={() => p.onModo(m.valor)}
+                type="button" className="rv-fp-seg-btn" aria-pressed={p.modo.duracao === m.valor}
+                onClick={() => p.onModo({ ...p.modo, duracao: m.valor })}
               >
                 <m.Icone size={15} />
                 <span className="rv-fp-seg-nome">{m.nome}</span>
@@ -121,6 +133,31 @@ export function PainelMedir(p: PropsPainelMedir) {
               </button>
             ))}
           </div>
+        </div>
+
+        <div className="rv-fp-grupo">
+          <span className="rv-fp-rotulo" id="rv-fp-rot-visib-medir">Visibilidade</span>
+          <div className="rv-fp-seg" role="group" aria-labelledby="rv-fp-rot-visib-medir">
+            {VISIBILIDADES.map((m) => (
+              <button
+                key={m.valor}
+                type="button" className="rv-fp-seg-btn" aria-pressed={p.modo.visibilidade === m.valor}
+                onClick={() => p.onModo({ ...p.modo, visibilidade: m.valor })}
+              >
+                <m.Icone size={15} />
+                <span className="rv-fp-seg-nome">{m.nome}</span>
+                <span className="rv-fp-seg-sub">{m.sub}</span>
+              </button>
+            ))}
+          </div>
+          {/* A combinação que não existia — e a única cujo comportamento
+              não se deduz do nome dos dois botões. */}
+          {p.modo.duracao === "instantanea" && p.modo.visibilidade === "mesa" && (
+            <p className="rv-fp-nota">
+              <Eye size={12} />
+              <span>A mesa vê a régua ao vivo enquanto você mede, e ela some no fim.</span>
+            </p>
+          )}
         </div>
 
         {/* ATALHOS — a mesma informação do parágrafo antigo, agora
