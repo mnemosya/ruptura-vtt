@@ -89,6 +89,17 @@ async function main() {
     .select("id").single());
   const sceneId = cena.id;
 
+  // O PALCO da campanha. Sem esta linha o jogador não está em cena
+  // nenhuma: desde a 0111 "onde o jogador está" é
+  // `vtt_campaign_stage.presented_scene_id`, e a 0112 plantou
+  // `vtt_pode_interagir_cena` dentro de `can_move_vtt_token`. Um
+  // fixture sem palco faz o jogador perder permissão até sobre o
+  // PRÓPRIO token — que é como o critério 3 passou a falhar, sem que
+  // nada no caminho de imagens tivesse mudado.
+  exigir("vtt_campaign_stage", await admin.from("vtt_campaign_stage")
+    .insert({ campaign_id: campaignId, presented_scene_id: sceneId, updated_by: uN.user.id })
+    .select("campaign_id").single());
+
   // Token do jogador (via personagem controlado) e token do narrador.
   // `characters.payload` é NOT NULL sem default e `campaign_id` amarra
   // o personagem à mesa — mesmo formato mínimo dos outros checks.

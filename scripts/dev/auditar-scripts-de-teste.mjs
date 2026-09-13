@@ -110,7 +110,16 @@ function dirigeNavegador(arquivo) {
 }
 
 function importesDe(arquivo) {
-  const src = readFileSync(arquivo, "utf8");
+  // `import type { … } from "x"` é APAGADO em runtime — não importa
+  // nada, não executa nada, e o módulo do outro lado nunca é carregado.
+  // Contá-lo dava falso positivo: `test:vtt-presets-objeto` pega só um
+  // TIPO de `sceneStorage.ts` e era acusado de não conseguir começar,
+  // quando roda perfeitamente.
+  //
+  // LIMITE: a forma inline (`import { type A } from "x"`) continua
+  // contando. Ela pode ou não ser elidida dependendo do compilador, e
+  // supor que some seria errar para o lado inseguro.
+  const src = readFileSync(arquivo, "utf8").replace(/\bimport\s+type\s+[^;]*?;/g, "");
   const achados = new Set();
   const padroes = [
     /\bfrom\s+["']([^"']+)["']/g,
