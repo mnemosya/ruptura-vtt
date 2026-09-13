@@ -328,7 +328,11 @@
 .rv-zoom button:hover { color: var(--cy); background: rgba(255,255,255,.06); }
 .rv-zoom button:focus-visible { outline: 2px solid var(--cy); outline-offset: -2px; }
 .rv-zoom span {
-  display: grid; place-items: center; height: 24px;
+  /* 26 = os 24 de antes + 1px em cima e embaixo. É altura e não
+     `padding` porque `box-sizing: border-box` vale pra folha inteira
+     (`.rv-mesa *`): padding dentro de uma altura fixa não afasta nada,
+     só espreme o conteúdo. */
+  display: grid; place-items: center; height: 26px;
   font-family: var(--font-mono), monospace; font-size: 10px; color: var(--rv-ink-dim);
 }
 
