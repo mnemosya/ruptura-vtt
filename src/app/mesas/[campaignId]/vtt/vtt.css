@@ -4689,8 +4689,22 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-gav-faixa:focus { outline: none; }
 .rv-gav-faixa:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: 2px; border-radius: 2px; }
 
+/* O TRECHO PERCORRIDO, no WebKit, não tem pseudo-elemento próprio — o
+   trilho é um só. Então é o próprio trilho que vira um gradiente de
+   duas paradas na mesma posição: cor até a marca, linha depois dela.
+   `--faixa-pct` vem do React, que é quem sabe o valor.
+
+   A conta desconta a largura do polegar porque ele não passeia de 0 a
+   100% da pista: o centro dele vai de 6px a (largura − 6px). Sem o
+   desconto, o preenchimento adianta o polegar no começo e atrasa no
+   fim — visível justamente nos extremos, onde se confere. */
 .rv-gav-faixa::-webkit-slider-runnable-track {
-  height: 3px; border: none; border-radius: 999px; background: var(--rv-line-strong);
+  height: 3px; border: none; border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--jf-acento) 0 calc(6px + var(--faixa-pct, 0%) * 0.01 * (100% - 12px)),
+    var(--rv-line-strong) calc(6px + var(--faixa-pct, 0%) * 0.01 * (100% - 12px)) 100%
+  );
 }
 .rv-gav-faixa::-moz-range-track {
   height: 3px; border: none; border-radius: 999px; background: var(--rv-line-strong);

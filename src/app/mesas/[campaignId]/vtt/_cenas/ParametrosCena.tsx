@@ -293,6 +293,9 @@ export function ParametrosCena(p: PropsParametrosCena) {
             <input
               type="range" min={0} max={100} step={1}
               className="rv-gav-faixa"
+              // O trilho do WebKit precisa saber a posição pra pintar o
+              // trecho percorrido — ver `.rv-gav-faixa` em `vtt.css`.
+              style={{ ["--faixa-pct" as string]: Math.round(v.gradeOpacidade * 100) }}
               value={Math.round(v.gradeOpacidade * 100)}
               data-testid="parametros-grade-opacidade"
               onChange={(e) => setV((a) => ({ ...a, gradeOpacidade: Number(e.target.value) / 100 }))}

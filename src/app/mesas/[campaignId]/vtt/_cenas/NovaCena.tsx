@@ -347,6 +347,9 @@ export function NovaCena(p: PropsNovaCena) {
             <input
               type="range" min={0} max={100} step={1}
               className="rv-gav-faixa"
+              // O trilho do WebKit precisa saber a posição pra pintar o
+              // trecho percorrido — ver `.rv-gav-faixa` em `vtt.css`.
+              style={{ ["--faixa-pct" as string]: Math.round(gradeOpacidade * 100) }}
               value={Math.round(gradeOpacidade * 100)}
               data-testid="cena-nova-grade-opacidade"
               onChange={(e) => setGradeOpacidade(Number(e.target.value) / 100)}
