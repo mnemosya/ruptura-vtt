@@ -5372,11 +5372,14 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 
 /* CABEÇALHO — nome e lado nas pontas. */
-/* O FIO fecha o cabeçalho. Sem ele o nome e a etiqueta flutuavam no
-   mesmo bloco das barras, e o cartão lia como uma lista de quatro
-   linhas em vez de um título com um corpo embaixo. */
-.rv-cartao-token__cab {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+.rv-cartao-token__cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* O FIO SÓ EXISTE QUANDO HÁ O QUE SEPARAR. Ele fecha o cabeçalho do
+   bloco de barras — e no cartão de quem não vê recurso nenhum não há
+   bloco: sobra o nome, e uma linha embaixo dele seria a moldura de um
+   conteúdo que não existe.
+   `:not(:only-child)` porque é exatamente essa a condição: sem
+   recursos, o cabeçalho é filho único do cartão. */
+.rv-cartao-token__cab:not(:only-child) {
   padding-bottom: 8px; border-bottom: 1px solid #18263f;
 }
 /* A ETIQUETA DE LADO fica no MESMO tamanho e entreletra do nome, um
