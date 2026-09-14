@@ -4807,6 +4807,24 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   color: var(--rv-ok);
 }
 .rv-gav-conta[data-encaixa] strong { color: var(--rv-ok); }
+/* A SAÍDA da conta é um botão SECUNDÁRIO, não um texto clicável. Como
+   `--ghost` (sem borda, sem fundo) ele lia como mais uma linha do
+   bloco, e a única ação que o aviso oferece ficava invisível até
+   alguém passar o mouse por cima. Borda e fundo próprios, mas sem
+   competir com "Criar cena" lá embaixo: a hierarquia continua sendo a
+   do rodapé. A caixa está em 9,5px monoespaçado — o botão volta pra
+   fonte de interface e pro seu próprio tamanho. */
+.rv-gav-conta-btn {
+  align-self: stretch; justify-content: center;
+  padding: 7px 10px;
+  border-color: var(--rv-line-strong); background: rgba(255,255,255,.03);
+  color: var(--rv-ink-dim);
+  font-size: 10px; letter-spacing: .06em; text-transform: none;
+}
+.rv-gav-conta-btn:hover:not(:disabled) {
+  border-color: var(--jf-acento); color: var(--rv-ink);
+  background: color-mix(in srgb, var(--jf-acento) 10%, transparent);
+}
 
 /* Recusa da leitura do arquivo — acontece ANTES de existir folha. */
 .rv-gav-erro-flutuante {

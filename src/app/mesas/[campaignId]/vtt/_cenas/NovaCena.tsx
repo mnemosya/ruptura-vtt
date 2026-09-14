@@ -119,8 +119,14 @@ export function NovaCena(p: PropsNovaCena) {
      células de 70 sobra 40 px, e é esse sobrando que vira a faixa de
      mapa cortada na borda. Dizer quanto sobra é o que permite escolher
      outro número com conhecimento de causa. */
-  const sobraX = comMapa ? Math.abs(p.mapa!.preparada.widthPx - larguraFinal * celulaPx) : 0;
-  const sobraY = comMapa ? Math.abs(p.mapa!.preparada.heightPx - alturaFinal * celulaPx) : 0;
+  /* ARREDONDADO, e não só formatado: o divisor é fracionário (68,9655),
+     e a subtração devolve coisas como 0,0004999999998744897 px. Meio
+     milésimo de pixel não é sobra — é o binário aparecendo. Sem isto o
+     botão "Encaixar" produzia um estado absurdo: a conta continuava
+     dizendo que sobrava, com um número que ninguém consegue ler, logo
+     depois de a pessoa clicar justamente para zerar a sobra. */
+  const sobraX = comMapa ? Math.round(Math.abs(p.mapa!.preparada.widthPx - larguraFinal * celulaPx)) : 0;
+  const sobraY = comMapa ? Math.round(Math.abs(p.mapa!.preparada.heightPx - alturaFinal * celulaPx)) : 0;
   const encaixaCertinho = sobraX === 0 && sobraY === 0;
 
   /* Pixels → células, ARREDONDANDO: meia célula não existe na grade.
@@ -249,7 +255,7 @@ export function NovaCena(p: PropsNovaCena) {
                   por isso que é um botão e não uma instrução. */}
               {!encaixaCertinho && (
                 <button
-                  type="button" className="rv-btn rv-btn--ghost"
+                  type="button" className="rv-btn rv-gav-conta-btn"
                   data-testid="mapa-encaixar"
                   onClick={() => setCelulaPx(
                     Math.round((p.mapa!.preparada.widthPx / larguraFinal) * 10000) / 10000,
