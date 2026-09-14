@@ -244,16 +244,20 @@ export function DadosLivres({ termos, maior, size = 40, landed = false }: {
                a mesma fileira é desenhada a 40px no feed e menor na
                bandeja, e um valor fixo sumia do lado do dado grande.
 
-               A COR é a do CONTORNO do dado parado (`#43597c`, de
-               `PolyDie`) — o sinal é do mesmo traço que desenha os
-               dados, não uma tinta de acento por cima deles. Por isso
-               também sai sem `opacity`: o contorno já é essa cor. */
-            <span aria-hidden="true" style={{ flex: "none", fontFamily: MONO, fontSize: Math.round(size * 0.6), fontWeight: 400, lineHeight: 1, color: "#43597c" }}>+</span>
+               A COR é a do CONTORNO dos dados — que na soma é o acento,
+               porque na soma todos eles contam. O sinal é do mesmo
+               traço que desenha os dados, não uma tinta por cima. */
+            <span aria-hidden="true" style={{ flex: "none", fontFamily: MONO, fontSize: Math.round(size * 0.6), fontWeight: 400, lineHeight: 1, color: cor.hex }}>+</span>
           )}
           <PolyDie
             sides={t.faces}
             value={t.valor}
-            active={i === maiorIdx}
+            /* NA SOMA TODOS CONTAM, então todos ficam acesos — o mesmo
+               realce que o vencedor recebe no modo maior. Apagados, os
+               dados diziam "nenhum destes importa" bem em cima da conta
+               que o total à direita acabou de fazer com eles. No modo
+               maior segue só o vencedor: ali um dado de fato vence. */
+            active={somando || i === maiorIdx}
             landed={landed}
             rollIndex={i}
             accent={cor.hex}
