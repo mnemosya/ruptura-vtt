@@ -158,6 +158,16 @@ export function PersonagensTab({
   const [consulta, setConsulta] = useState("");
   const [ordenacao, setOrdenacao] = useState<Ordenacao>("alfabetica");
   const [incluirArquivados, setIncluirArquivados] = useState(false);
+  /**
+   * PV e PE ficam ESCONDIDOS por padrão.
+   *
+   * A lista responde "quem existe nesta campanha"; os números são a
+   * pergunta seguinte, e só durante o combate. Ligados sempre, eles
+   * dobravam a altura de cada linha e enchiam a coluna de barras
+   * coloridas que ninguém estava lendo — e ainda mostravam o PV de
+   * todo mundo pra quem só queria achar um nome.
+   */
+  const [mostrarRecursos, setMostrarRecursos] = useState(false);
   const [recolhidas, setRecolhidas] = useState<Set<string>>(new Set());
   const [menu, setMenu] = useState<{ x: number; y: number; itens: ItemMenuContextual[] } | null>(null);
   const [pastaAlvo, setPastaAlvo] = useState<string | null | undefined>(undefined);
@@ -487,10 +497,15 @@ export function PersonagensTab({
                     acento={acento}
                     subtitulo={entrada.tipo === "pn" ? "PN" : undefined}
                     rodape={
-                      pv ? (
+                      (mostrarRecursos && pv) || entrada.condicoes ? (
                         <>
-                          <BarraRecurso id="pv" atual={pv.atual} max={pv.max} />
-                          {entrada.pe && <BarraRecurso id="pe" atual={entrada.pe.atual} max={entrada.pe.max} />}
+                          {mostrarRecursos && pv && <BarraRecurso id="pv" atual={pv.atual} max={pv.max} />}
+                          {mostrarRecursos && entrada.pe && (
+                            <BarraRecurso id="pe" atual={entrada.pe.atual} max={entrada.pe.max} />
+                          )}
+                          {/* As CONDIÇÕES não são recurso: são estado que
+                              muda a decisão de quem olha a lista, e
+                              continuam visíveis com o switch desligado. */}
                           {!!entrada.condicoes && (
                             <span className="rv-pn-linha-cond">{entrada.condicoes} cond.</span>
                           )}
@@ -610,7 +625,24 @@ export function PersonagensTab({
             )}
           </div>
 
-          <div className="rv-pn-scroll" data-testid="painel-personagens-scroll">
+          <label className="rv-fp-switch rv-pn-switch">
+            <input
+              type="checkbox"
+              checked={mostrarRecursos}
+              onChange={(e) => setMostrarRecursos(e.target.checked)}
+              data-testid="painel-personagens-recursos"
+            />
+            <span className="rv-fp-switch-tr" aria-hidden="true" />
+            <span className="rv-fp-switch-txt">Mostrar recursos</span>
+          </label>
+
+          <div
+            className="rv-pn-scroll rv-pn-scroll--pers"
+            /* A largura do avatar acompanha o modo — ver `.rv-pn-face`
+               em `painel.css`, que explica por que não é `aspect-ratio`. */
+            data-recursos={mostrarRecursos ? "true" : undefined}
+            data-testid="painel-personagens-scroll"
+          >
             {estado.fase === "carregando" && <EstadoCarregando testId="painel-personagens-carregando" />}
             {estado.fase === "erro" && (
               <EstadoErro

@@ -169,7 +169,12 @@ export function LinhaDiretorio({
   return (
     <li
       className="rv-pn-linha"
-      style={{ paddingLeft: 12 + nivel * 12, "--fg-a": acento } as React.CSSProperties}
+      /* A indentação vai como VARIÁVEL, não como `paddingLeft` inline:
+         estilo inline vence qualquer folha, e a aba Personagens precisa
+         zerar o padding pra encostar o avatar na borda do cartão. Quem
+         decide onde o recuo entra é o CSS — aqui só se diz de quanto
+         ele é. */
+      style={{ "--pn-recuo": `${12 + nivel * 12}px`, "--fg-a": acento } as React.CSSProperties}
       data-sel={selecionado ? "true" : undefined}
       data-alvo={alvoDeSolta ? "true" : undefined}
       role={onAbrir ? "button" : undefined}

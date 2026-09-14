@@ -855,12 +855,29 @@
 /* As ações empurradas pra direita: a ordenação é do lado da lista, o
    que se CRIA fica no canto oposto. */
 .rv-pn-filtros-acoes { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+
+/* O switch de recursos herda o interruptor do VTT (`.rv-fp-switch`) e
+   só encolhe: a coluna do painel é estreita, e o alvo de 34×19 do
+   formulário come metade da largura útil. */
+.rv-pn-switch { padding: 0 8px 8px; font-size: 11px; gap: 7px; }
+.rv-pn-switch .rv-fp-switch-tr { width: 26px; height: 15px; }
+.rv-pn-switch .rv-fp-switch-tr::after { width: 11px; height: 11px; }
+.rv-pn-switch input:checked + .rv-fp-switch-tr::after { transform: translateX(11px); }
+.rv-pn-switch .rv-fp-switch-txt {
+  font-family: var(--rv-display);
+  font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--pn-dim);
+}
+.rv-pn-switch input:checked ~ .rv-fp-switch-txt { color: var(--pn-txt-forte); }
 .rv-pn-select, .rv-pn-input {
   padding: 3px 6px; border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
   background: var(--pn-inset); color: var(--pn-txt-forte);
   font-family: var(--font-mono), ui-monospace, monospace; font-size: 10px;
 }
 .rv-pn-select:focus-visible, .rv-pn-input:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 1px; }
+/* No RODAPÉ ele vai pra borda direita: "Abrir Personagens" é a ação da
+   faixa, o filtro é o acessório — separados pelas pontas, ninguém
+   procura um achando que é o outro. */
+.rv-pn-rodape .rv-pn-check { margin-left: auto; }
 .rv-pn-check {
   display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
   font-family: var(--rv-display);
@@ -1156,7 +1173,8 @@
 /* Linha — avatar + nome/subtítulo + marca, com barra de acento quando selecionada. */
 .rv-pn-linha {
   position: relative; display: flex; width: 100%; align-items: center; gap: 12px;
-  padding: 10px 12px; border-radius: 2px; border: 1px solid #16233a; background: transparent;
+  /* `--pn-recuo` vem do componente e carrega o nível da árvore. */
+  padding: 10px 12px 10px var(--pn-recuo, 12px); border-radius: 2px; border: 1px solid #16233a; background: transparent;
   text-align: left; cursor: pointer; transition: background .14s, border-color .14s;
 }
 .rv-pn-linha:hover { border-color: #1c2b45; }
@@ -1174,6 +1192,45 @@
   border-radius: 2px; font-family: var(--rv-display); font-size: 11px; font-weight: 700;
   border: 1px solid #1c2b45; color: #4f6285; background: transparent;
 }
+/* ── A LINHA DA ABA PERSONAGENS ──────────────────────────────────────
+   Escopada em `.rv-pn-scroll--pers` de propósito: `LinhaDiretorio` é a
+   mesma de Bando e Compêndio, e ali a face pequena continua certa —
+   são listas de ITENS, não de rostos.
+
+   O avatar passa a ocupar a ALTURA INTEIRA do cartão, quadrado por
+   `aspect-ratio`, encostado nas bordas. Pra isso o padding sai da
+   linha e vai pro conteúdo: padding na linha deixaria uma faixa de
+   fundo em volta do rosto, e "altura inteira" viraria "quase". */
+.rv-pn-scroll--pers .rv-pn-linha {
+  align-items: stretch; gap: 0; padding: 0; overflow: hidden;
+}
+/* O recuo da árvore vira MARGEM do cartão inteiro. Como padding, ele
+   empurrava o avatar pra dentro e deixava uma faixa de fundo à
+   esquerda do rosto — o cartão precisa começar no avatar. */
+.rv-pn-scroll--pers .rv-pn-linha { margin-left: calc(var(--pn-recuo, 12px) - 12px); }
+/* A altura vem do `stretch`; a LARGURA é um número por modo, e não
+   `aspect-ratio`, porque aspect-ratio num item esticado é circular: a
+   altura sai do esticamento, a largura sairia da altura, e a altura da
+   linha sai da largura do conteúdo. O navegador resolveu esse laço com
+   um avatar de 513px. Os dois números são as alturas medidas da linha
+   menos as bordas: 41px com o switch desligado, 69px com ele ligado.
+
+   Uma linha com aviso de condições fica alguns pixels mais alta, e ali
+   o avatar sai levemente retangular — a altura cheia é a regra, o
+   quadrado é a proporção no caso comum. */
+.rv-pn-scroll--pers .rv-pn-face {
+  align-self: stretch; width: 39px; height: auto;
+  border: none; border-right: 1px solid #1c2b45; border-radius: 0;
+}
+.rv-pn-scroll--pers[data-recursos="true"] .rv-pn-face { width: 67px; }
+.rv-pn-scroll--pers .rv-pn-linha[data-sel="true"] .rv-pn-face {
+  border-right-color: color-mix(in srgb, var(--fg-a, #45b8c9) 55%, transparent);
+}
+/* Os 8px pedidos ficam DEPOIS da borda do avatar — é ela que separa,
+   e o vão é o respiro entre a divisória e o texto. */
+.rv-pn-scroll--pers .rv-pn-linha-texto { padding: 9px 0 9px 8px; }
+.rv-pn-scroll--pers .rv-pn-linha-marca { padding: 9px 12px 9px 0; }
+
 /* O avatar PREENCHE a face inteira; a borda da face vira a moldura. */
 .rv-pn-face:has(.rv-pn-face-img) { padding: 0; overflow: hidden; }
 .rv-pn-face-img { width: 100%; height: 100%; object-fit: cover; display: block; }
