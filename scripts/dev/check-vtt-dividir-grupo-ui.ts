@@ -132,7 +132,7 @@ async function main() {
       && (await cenaNaTela(alma)).includes("Praça")
       && (await cenaNaTela(bruno)).includes("Praça"));
 
-    await narrador.locator('[data-testid="barra-cenas"]').click();
+    await narrador.locator('[data-testid="cena-chip"]').click();
     // 15s e não 5: a gaveta só desenha a lista depois de TRÊS leituras
     // (cenas, pastas e posições dos jogadores), e num servidor de
     // desenvolvimento recém-compilado isso passa folgado de cinco.

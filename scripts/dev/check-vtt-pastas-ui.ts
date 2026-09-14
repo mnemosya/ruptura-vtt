@@ -94,7 +94,7 @@ async function main() {
   try {
     await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
     await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
-    await page.locator('[data-testid="barra-cenas"]').click();
+    await page.locator('[data-testid="cena-chip"]').click();
     await page.waitForSelector('[data-testid="cenas-lista"]', { timeout: 15000 });
 
     console.log("\n— Criar pasta —");

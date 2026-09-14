@@ -141,7 +141,7 @@ async function main() {
     // É o que torna o teste seguinte honesto: se ele estivesse na
     // mesma cena que vai apresentar, "o narrador não se moveu" passaria
     // sozinho.
-    await narrador.page.locator('[data-testid="barra-cenas"]').click();
+    await narrador.page.locator('[data-testid="cena-chip"]').click();
     await narrador.page.waitForSelector('[data-testid="cenas-lista"]', { timeout: 5000 });
     await narrador.page.locator('[data-testid="cena-cartao"]').filter({ hasText: "Ponte Quebrada" })
       .locator('[data-testid="cena-abrir"]').click();

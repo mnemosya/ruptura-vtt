@@ -137,7 +137,7 @@ async function main() {
     await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
 
     console.log("\n— A janela —");
-    const botao = page.locator('[data-testid="barra-cenas"]');
+    const botao = page.locator('[data-testid="cena-chip"]');
     criterio("o narrador tem o botão do catálogo", await botao.count() === 1);
     await botao.click();
     await page.waitForSelector('[data-testid="janela-cenas"]', { timeout: 5000 });
@@ -190,7 +190,7 @@ async function main() {
     criterio("e o palco continua onde estava", await palcoDoBanco(campaignId) === doca);
 
     console.log("\n— Criar —");
-    await page.locator('[data-testid="barra-cenas"]').click();
+    await page.locator('[data-testid="cena-chip"]').click();
     await page.waitForSelector('[data-testid="cenas-lista"]', { timeout: 5000 });
     await page.locator('[data-testid="cena-nova"]').click();
     // "Nova cena" virou menu: a criação do zero é o primeiro item.
@@ -325,8 +325,11 @@ async function main() {
     const pageJog = await ctxJog.newPage();
     await pageJog.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
     await pageJog.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
+    // O jogador TEM o chip da cena ativa — como texto. O que ele não
+    // tem é a versão clicável: `list_vtt_scenes` não conta a ele que
+    // existem outras cenas, então não há catálogo pra abrir.
     criterio("o jogador não tem o botão do catálogo",
-      await pageJog.locator('[data-testid="barra-cenas"]').count() === 0);
+      await pageJog.locator('button[data-testid="cena-chip"]').count() === 0);
     criterio("e continua na cena apresentada, não na do narrador",
       (await pageJog.textContent("body"))?.includes("Doca Norte") === true);
     await ctxJog.close();

@@ -25,11 +25,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   MousePointer2, Ruler, PaintBucket, MapPin, Images,
-  Settings, Layers, Menu, Hexagon, Swords,
+  Layers, Menu, Hexagon, Swords,
   Plus, Minus, Undo2, Redo2, Loader2,
   UserPlus, Box,
   Radio, Focus, ClipboardPaste, Pencil, Copy, RotateCcw, RotateCw, Eye, EyeOff, Lock, Unlock, Trash2,
-  Dices, Clapperboard,
+  Dices,
   ImageUp , ScrollText , ChevronDown } from "lucide-react";
 import { MapaHex, TAM, type EstadoVisualToken, type CenaMapa } from "./_mapa/MapaHex";
 import { type AlcaArea, type AreaDesenhavel, type EstadoVisualArea, type GuiaGesto } from "./_mapa/CamadaAreas";
@@ -5394,6 +5394,41 @@ export function VttClient({
     return <div className="rv-mesa rv-mesa--carregando"><span>{erroCena}</span></div>;
   }
 
+  /* AS FERRAMENTAS DE JANELA DESCEM. "Imagens" e "Rodadas" abrem um
+     painel; não mudam o que o clique no mapa faz. O lugar delas é o
+     último grupo, junto de "Adicionar token" e "Camadas" — que também
+     abrem coisa. O grupo de cima volta a ser só o ponteiro.
+
+     Elas continuam sendo FERRAMENTAS de verdade (`aria-pressed`, atalho
+     I e R, e o realce de rodada em andamento), então o botão é o mesmo
+     — só muda de vizinho. */
+  const FERRAMENTAS_DE_JANELA: readonly FerramentaId[] = ["imagens", "rodadas"];
+  const ferramentasDoPonteiro = ferramentasDisponiveis.filter((id) => !FERRAMENTAS_DE_JANELA.includes(id));
+  const ferramentasDeJanela = ferramentasDisponiveis.filter((id) => FERRAMENTAS_DE_JANELA.includes(id));
+  const botaoDeFerramenta = (id: FerramentaId) => {
+    const Icone = ICONE_FERRAMENTA[id];
+    return (
+      <button key={id} type="button" className="rv-ferr-btn" aria-pressed={ferramenta === id}
+        // Rodadas em andamento deixam o ícone ACESO mesmo com
+        // outra ferramenta ativa: é estado da mesa, não da
+        // ferramenta — e é o que responde "tem combate rolando?"
+        // sem abrir nada.
+        data-ativo={id === "rodadas" && trilha !== null}
+        aria-label={id === "rodadas" && trilha
+          ? `${ROTULO_FERRAMENTA[id]} (${ATALHO_FERRAMENTA[id]}) — rodada ${trilha.rodada} em andamento`
+          : `${ROTULO_FERRAMENTA[id]} (${ATALHO_FERRAMENTA[id]})`}
+        onClick={() => trocarFerramenta(id)}>
+        <Icone size={17} strokeWidth={1.6} />
+        {id === "rodadas" && trilha && <span className="rv-ferr-badge" aria-hidden="true">{trilha.rodada}</span>}
+        <span className="rv-dica">
+          {ROTULO_FERRAMENTA[id]}
+          {id === "rodadas" && trilha ? ` · rodada ${trilha.rodada}` : ""}
+          <kbd>{ATALHO_FERRAMENTA[id]}</kbd>
+        </span>
+      </button>
+    );
+  };
+
   return (
     // `ProvedorMesaDados` subiu pra `CampaignShell`: o Console também
     // rola na mesa, e ele é janela da casca, não do VTT. Aqui fica só
@@ -5414,36 +5449,12 @@ export function VttClient({
       <aside ref={ferramentasRef} className="rv-ferramentas" aria-label="Ferramentas do mapa">
         <button type="button" className="rv-ferr-btn rv-ferr-menu" aria-label="Menu da mesa"><Menu size={17} /></button>
         <span className="rv-ferr-sep" />
-        {ferramentasDisponiveis.map((id) => {
-          const Icone = ICONE_FERRAMENTA[id];
-          return (
-            <button key={id} type="button" className="rv-ferr-btn" aria-pressed={ferramenta === id}
-              // Rodadas em andamento deixam o ícone ACESO mesmo com
-              // outra ferramenta ativa: é estado da mesa, não da
-              // ferramenta — e é o que responde "tem combate rolando?"
-              // sem abrir nada.
-              data-ativo={id === "rodadas" && trilha !== null}
-              aria-label={id === "rodadas" && trilha
-                ? `${ROTULO_FERRAMENTA[id]} (${ATALHO_FERRAMENTA[id]}) — rodada ${trilha.rodada} em andamento`
-                : `${ROTULO_FERRAMENTA[id]} (${ATALHO_FERRAMENTA[id]})`}
-              onClick={() => trocarFerramenta(id)}>
-              <Icone size={17} strokeWidth={1.6} />
-              {id === "rodadas" && trilha && <span className="rv-ferr-badge" aria-hidden="true">{trilha.rodada}</span>}
-              <span className="rv-dica">
-                {ROTULO_FERRAMENTA[id]}
-                {id === "rodadas" && trilha ? ` · rodada ${trilha.rodada}` : ""}
-                <kbd>{ATALHO_FERRAMENTA[id]}</kbd>
-              </span>
-            </button>
-          );
-        })}
-        <span className="rv-ferr-sep" />
-        <button type="button" className="rv-ferr-btn" aria-label="Desfazer (Ctrl+Z)" disabled={historico.desfazer.length === 0} onClick={desfazer}><Undo2 size={17} /></button>
-        <button type="button" className="rv-ferr-btn" aria-label="Refazer (Ctrl+Shift+Z)" disabled={historico.refazer.length === 0} onClick={refazer}><Redo2 size={17} /></button>
+        {ferramentasDoPonteiro.map(botaoDeFerramenta)}
         <span className="rv-ferr-sep" />
         {ehNarrador && (
           <button type="button" className="rv-ferr-btn" aria-label="Adicionar token" onClick={() => estadoCena && abrirCriarToken()}>
             <UserPlus size={17} />
+            <span className="rv-dica">Adicionar token</span>
           </button>
         )}
         {/* Camadas é decisão de quem conduz a cena: o narrador dita o
@@ -5468,38 +5479,34 @@ export function VttClient({
               setPainelCenasAberto(false);
               setPainelCamadasAberto(abrir);
             }}
-          ><Layers size={17} /></button>
-        )}
-        {/* CATÁLOGO DE CENAS — só o narrador. O jogador não tem o botão
-            porque não tem o catálogo: `list_vtt_scenes` não conta a ele
-            que existem outras cenas, e esconder o botão é só a UI
-            concordando com o que o servidor já decidiu. */}
-        {ehNarrador && (
-          <button
-            type="button" className="rv-ferr-btn" data-tipo="janela"
-            aria-pressed={painelCenasAberto} aria-label="Catálogo de cenas"
-            data-testid="barra-cenas"
-            onClick={alternarCatalogoCenas}
-          ><Clapperboard size={17} /></button>
-        )}
-        {/* Configurar a cena é do narrador — nome, local e tamanho da
-            grade valem pra mesa inteira. O botão ficou sem `onClick`
-            desde que existe; agora abre a janela. */}
-        {ehNarrador && (
-          <button
-            type="button" className="rv-ferr-btn" data-tipo="janela"
-            aria-pressed={painelCenaAberto} aria-label="Configurações da cena"
-            onClick={() => {
-              const abrir = !painelCenaAberto;
-              if (abrir) trocarFerramenta("interagir");
-              setPainelCamadasAberto(false);
-              setPainelCenasAberto(false);
-              setPainelCenaAberto(abrir);
-            }}
           >
-            <Settings size={17} />
+            <Layers size={17} />
+            <span className="rv-dica">Camadas do mapa</span>
           </button>
         )}
+        {ferramentasDeJanela.map(botaoDeFerramenta)}
+        <span className="rv-ferr-sep" />
+        {/* DESFAZER/REFAZER POR ÚLTIMO. Eles não escolhem nada — desfazem
+            o que as outras fizeram —, e no meio do trilho separavam dois
+            grupos que pertencem juntos.
+
+            A dica é DESENHADA (`.rv-dica`), não o `title` do navegador:
+            os botões de ferramenta sempre tiveram a sua, e sem ela estes
+            ficavam mudos no hover — só o leitor de tela sabia o que eram. */}
+        <button type="button" className="rv-ferr-btn" aria-label="Desfazer (Ctrl+Z)" disabled={historico.desfazer.length === 0} onClick={desfazer}>
+          <Undo2 size={17} />
+          <span className="rv-dica">Desfazer<kbd>Ctrl+Z</kbd></span>
+        </button>
+        <button type="button" className="rv-ferr-btn" aria-label="Refazer (Ctrl+Shift+Z)" disabled={historico.refazer.length === 0} onClick={refazer}>
+          <Redo2 size={17} />
+          <span className="rv-dica">Refazer<kbd>Ctrl+Shift+Z</kbd></span>
+        </button>
+        {/* CENAS e CONFIGURAÇÕES DA CENA saíram daqui. Nenhuma das duas
+            é uma ferramenta do ponteiro, e as duas já tinham porta
+            própria mais perto de onde se usa: o catálogo abre pelo chip
+            da cena ativa no rodapé do palco, e os parâmetros de cada
+            cena abrem pelo "Configurar" do cartão dela, dentro do
+            catálogo. O trilho volta a ser só o que age sobre o mapa. */}
       </aside>
 
       {/* ═══ PALCO — mapa em tela cheia, tudo flutua por cima ═══ */}
