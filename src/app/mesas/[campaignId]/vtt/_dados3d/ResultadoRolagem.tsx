@@ -248,7 +248,7 @@ export function DadosLivres({ termos, maior, size = 40, landed = false }: {
                `PolyDie`) — o sinal é do mesmo traço que desenha os
                dados, não uma tinta de acento por cima deles. Por isso
                também sai sem `opacity`: o contorno já é essa cor. */
-            <span aria-hidden="true" style={{ flex: "none", fontFamily: MONO, fontSize: Math.round(size * 0.6), fontWeight: 700, lineHeight: 1, color: "#43597c" }}>+</span>
+            <span aria-hidden="true" style={{ flex: "none", fontFamily: MONO, fontSize: Math.round(size * 0.6), fontWeight: 400, lineHeight: 1, color: "#43597c" }}>+</span>
           )}
           <PolyDie
             sides={t.faces}
