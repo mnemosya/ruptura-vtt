@@ -1119,7 +1119,9 @@
      cartão de verdade — alvo de arrasto e container — e cartão
      apertado não parece que cabe coisa dentro. */
   flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 12px;
-  border: none; background: transparent; color: var(--pn-txt-forte);
+  /* `--pn-txt` como o nome do personagem: a pasta nomeia um conjunto
+     deles e não pode gritar mais alto que o conjunto. */
+  border: none; background: transparent; color: var(--pn-txt);
   font-family: var(--rv-display);
   font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
   text-align: left; cursor: pointer;
@@ -1492,7 +1494,12 @@
 .rv-pn-linha-nome {
   display: flex; align-items: baseline; gap: 8px;
   font-family: var(--rv-body); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
-  color: var(--pn-txt-forte); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  /* `--pn-txt`, e não `--pn-txt-forte`: uma lista inteira no branco mais
+     alto do painel vira uma parede de texto de mesmo peso, e o realce
+     deixa de realçar nada. Um degrau abaixo continua sendo CONTEÚDO —
+     bem longe do `--pn-dim` dos rótulos e botões em volta, que é o que
+     separa o que se lê do que se opera. */
+  color: var(--pn-txt); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .rv-pn-linha-sub {
   margin-top: 4px; font-family: var(--font-mono), ui-monospace, monospace;
