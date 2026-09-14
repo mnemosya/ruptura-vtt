@@ -251,10 +251,12 @@ export function DadosLivres({ termos, maior, size = 40, landed = false, acento }
                a mesma fileira é desenhada a 40px no feed e menor na
                bandeja, e um valor fixo sumia do lado do dado grande.
 
-               A COR é a do CONTORNO dos dados — que na soma é o acento,
-               porque na soma todos eles contam. O sinal é do mesmo
-               traço que desenha os dados, não uma tinta por cima. */
-            <span aria-hidden="true" style={{ flex: "none", fontFamily: MONO, fontSize: Math.round(size * 0.6), fontWeight: 400, lineHeight: 1, color: cor.hex }}>+</span>
+               A COR é `#43597c`, o contorno do dado PARADO em
+               `PolyDie` — de propósito mais apagada que os dados, que
+               na soma ficam todos acesos. O "+" é pontuação: liga os
+               números sem competir com eles. Acompanhando o acento ele
+               virava mais um elemento aceso na fileira. */
+            <span aria-hidden="true" style={{ flex: "none", fontFamily: MONO, fontSize: Math.round(size * 0.6), fontWeight: 400, lineHeight: 1, color: "#43597c" }}>+</span>
           )}
           <PolyDie
             sides={t.faces}
