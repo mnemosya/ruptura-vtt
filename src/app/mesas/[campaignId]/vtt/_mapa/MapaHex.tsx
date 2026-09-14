@@ -924,7 +924,14 @@ export function MapaHex({
     // o `pointerdown` ainda passaria pela árvore normal de eventos
     // antes da captura entrar em vigor.
     e.stopPropagation();
-    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    /* A CAPTURA PODE FALHAR e não é motivo pra derrubar a mesa: o
+       ponteiro some entre o `pointerdown` e esta linha (um `pointercancel`
+       do sistema, uma caneta levantada, um evento sintético de teste) e
+       o navegador lança `NotFoundError`. O gesto sem captura ainda
+       funciona enquanto o cursor ficar sobre a alça; sem o `try`, a
+       exceção subia até o boundary e a página inteira virava tela de
+       erro. */
+    try { (e.currentTarget as Element).setPointerCapture(e.pointerId); } catch { /* segue sem captura */ }
     const inicial: EstadoRotacaoAlca = {
       tokenId: t.id, orientacaoInicial: t.direcao, orientacaoAtual: t.direcao, valida: true,
       inicioClientXY: { x: e.clientX, y: e.clientY }, moveuSignificativamente: false,
@@ -978,7 +985,9 @@ export function MapaHex({
   }, [onRotacaoAlcaSolta]);
 
   const soltarRotacaoAlca = useCallback((e: React.PointerEvent) => {
-    (e.currentTarget as Element).releasePointerCapture(e.pointerId);
+    // Mesma razão do `setPointerCapture`: soltar uma captura que já não
+    // existe lança, e o gesto já terminou de qualquer forma.
+    try { (e.currentTarget as Element).releasePointerCapture(e.pointerId); } catch { /* já solta */ }
     finalizarRotacaoAlca(true);
   }, [finalizarRotacaoAlca]);
   // `pointercancel`/perda de captura — encerra com segurança, SEM
@@ -2092,7 +2101,7 @@ export function MapaHex({
     if (!areasInteracao || e.button !== 0) return;
     const axial = axialDoEvento(e.clientX, e.clientY);
     if (!axial) return;
-    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    try { (e.currentTarget as Element).setPointerCapture(e.pointerId); } catch { /* segue sem captura */ }
     gestoAreaRef.current = true;
     areasInteracao.onPressionar(axial, { x: e.clientX, y: e.clientY }, { altKey: e.altKey, metaKey: e.metaKey, pointerId: e.pointerId });
   }, [areasInteracao, axialDoEvento]);
@@ -2107,7 +2116,7 @@ export function MapaHex({
   const areaPointerUp = useCallback((e: React.PointerEvent) => {
     if (!areasInteracao) return;
     if ((e.currentTarget as Element).hasPointerCapture?.(e.pointerId)) {
-      (e.currentTarget as Element).releasePointerCapture(e.pointerId);
+      try { (e.currentTarget as Element).releasePointerCapture(e.pointerId); } catch { /* já solta */ }
     }
     if (!gestoAreaRef.current) return;
     gestoAreaRef.current = false;
@@ -2125,7 +2134,7 @@ export function MapaHex({
 
   const alcaPointerDown = useCallback((id: string, e: React.PointerEvent) => {
     if (!onAreaAlcaMover) return;
-    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    try { (e.currentTarget as Element).setPointerCapture(e.pointerId); } catch { /* segue sem captura */ }
     alcaAtivaRef.current = id;
   }, [onAreaAlcaMover]);
 
@@ -2140,7 +2149,7 @@ export function MapaHex({
 
   const alcaPointerUp = useCallback((e: React.PointerEvent) => {
     if ((e.currentTarget as Element).hasPointerCapture?.(e.pointerId)) {
-      (e.currentTarget as Element).releasePointerCapture(e.pointerId);
+      try { (e.currentTarget as Element).releasePointerCapture(e.pointerId); } catch { /* já solta */ }
     }
     if (!alcaAtivaRef.current) return;
     alcaAtivaRef.current = null;
