@@ -1299,8 +1299,18 @@
 }
 /* O recuo da árvore vira MARGEM do cartão inteiro. Como padding, ele
    empurrava o avatar pra dentro e deixava uma faixa de fundo à
-   esquerda do rosto — o cartão precisa começar no avatar. */
-.rv-pn-scroll--pers .rv-pn-linha { margin-left: calc(var(--pn-recuo, 12px) - 12px); }
+   esquerda do rosto — o cartão precisa começar no avatar.
+
+   `width: auto` junto, e não é detalhe: a base declara `width: 100%`,
+   que num item esticado resolve pra largura CHEIA do container — a
+   margem então era somada por fora e o cartão de dentro da pasta
+   vazava 12px pela direita. Com `auto`, o esticamento do flex dá a
+   largura e desconta as margens, que é o que "ocupar o que sobra"
+   quer dizer. */
+.rv-pn-scroll--pers .rv-pn-linha {
+  margin-left: calc(var(--pn-recuo, 12px) - 12px);
+  width: auto;
+}
 /* A PASTA NÃO RECUA. Ela é o cabeçalho do bloco, não um item dentro
    dele: recuada, ficava mais estreita que os cartões que anuncia e
    parecia subordinada a eles. O nível se lê pelo aninhamento do bloco
