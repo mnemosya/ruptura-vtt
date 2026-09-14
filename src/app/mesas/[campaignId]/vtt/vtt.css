@@ -1301,6 +1301,32 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-field--num { flex: 0 1 108px; }
 .rv-token-recursos { gap: 10px; flex-wrap: wrap; }
 
+/* ── OS TRÊS RECURSOS, LADO A LADO ───────────────────────────────────
+   Uma linha só: PV, PE e Mana, cada um com o par atual/máximo. Seis
+   campos empilhados custavam a altura de um formulário inteiro para
+   guardar seis números de três dígitos — e os três recursos são a
+   MESMA informação repetida, que lê melhor em coluna paralela do que
+   em lista. */
+.rv-token-recursos-linha { display: flex; gap: 14px; flex-wrap: wrap; }
+.rv-token-rec { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+/* O rótulo leva a COR do recurso — a mesma da barra que ele vira no
+   mapa e no cartão do token. É ela que liga o campo ao que se vê. */
+.rv-token-rec__rot {
+  font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--rec, var(--rv-ink-dim));
+}
+.rv-token-rec__rot[data-recurso="pv"] { --rec: #ab3141; }
+.rv-token-rec__rot[data-recurso="pe"] { --rec: #6a49bc; }
+.rv-token-rec__rot[data-recurso="mana"] { --rec: #05a1c3; }
+/* A BARRA entre os dois campos diz "atual de máximo" sem gastar dois
+   rótulos — é a mesma fração que o cartão do token mostra. */
+.rv-token-rec__par { display: flex; align-items: center; gap: 4px; }
+.rv-token-rec__barra { color: var(--rv-ink-faint); font-family: var(--font-mono), monospace; font-size: 11px; }
+.rv-janela-token .rv-token-rec input[type="number"] {
+  width: 56px; margin-top: 0; padding: 8px 6px; text-align: center;
+}
+.rv-token-recursos-linha[data-desabilitada] { opacity: .5; }
+
 /* VERTENTE — ficha com a marca da cor, a mesma que o token leva pro
    mapa (`COR_VERTENTE`, em `_mapa/MapaHex.tsx`). Num `select` a cor não
    aparecia: escolhia-se um nome e descobria-se a cor depois. */

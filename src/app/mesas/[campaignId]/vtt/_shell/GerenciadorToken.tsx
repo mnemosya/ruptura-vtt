@@ -778,31 +778,34 @@ export function GerenciadorToken({
                 PV em toda parte, e o nome por extenso só aparecia aqui.
                 Os campos são estreitos porque são números de até três
                 dígitos — a largura de antes cabia um CEP. */}
-            {/* OS TRÊS RECURSOS, um por linha: atual e máximo lado a
-                lado. Eles só existem pra token SEM ficha — com ficha
-                vinculada os números vêm da ficha canônica, e dois
-                lugares guardando o mesmo PV é a receita de eles
-                discordarem. */}
-            {RECURSOS_DO_TOKEN.map(({ chaveAtual, chaveMax, rotulo, maxima }) => (
-              <div className="rv-form-linha rv-token-recursos" key={rotulo}>
-                <label className="rv-field rv-field--num">
-                  <span>{rotulo} atual</span>
-                  <input
-                    type="number" min={0} value={valores[chaveAtual] ?? ""}
-                    disabled={temFicha}
-                    onChange={(e) => setValores((v) => ({ ...v, [chaveAtual]: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) }))}
-                  />
-                </label>
-                <label className="rv-field rv-field--num">
-                  <span>{rotulo} {maxima ? "máxima" : "máximo"}</span>
-                  <input
-                    type="number" min={0} value={valores[chaveMax] ?? ""}
-                    disabled={temFicha}
-                    onChange={(e) => setValores((v) => ({ ...v, [chaveMax]: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) }))}
-                  />
-                </label>
-              </div>
-            ))}
+            {/* OS TRÊS RECURSOS NUMA LINHA SÓ — cada um com o par
+                atual/máximo lado a lado. Empilhados, os seis campos
+                ocupavam a altura de um formulário inteiro pra guardar
+                seis números de três dígitos.
+
+                Só existem pra token SEM ficha: com ficha vinculada os
+                números vêm da ficha canônica, e dois lugares guardando
+                o mesmo PV é a receita de eles discordarem. */}
+            <div className="rv-token-recursos-linha" data-desabilitada={temFicha || undefined}>
+              {RECURSOS_DO_TOKEN.map(({ chaveAtual, chaveMax, rotulo }) => (
+                <div className="rv-token-rec" key={rotulo}>
+                  <span className="rv-token-rec__rot" data-recurso={chaveAtual.slice(0, -5)}>{rotulo}</span>
+                  <span className="rv-token-rec__par">
+                    <input
+                      type="number" min={0} value={valores[chaveAtual] ?? ""}
+                      aria-label={`${rotulo} atual`} title={`${rotulo} atual`} disabled={temFicha}
+                      onChange={(e) => setValores((v) => ({ ...v, [chaveAtual]: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) }))}
+                    />
+                    <span className="rv-token-rec__barra" aria-hidden="true">/</span>
+                    <input
+                      type="number" min={0} value={valores[chaveMax] ?? ""}
+                      aria-label={`${rotulo} máximo`} title={`${rotulo} máximo`} disabled={temFicha}
+                      onChange={(e) => setValores((v) => ({ ...v, [chaveMax]: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) }))}
+                    />
+                  </span>
+                </div>
+              ))}
+            </div>
             {temFicha && (
               <small className="rv-field-ajuda">
                 Os recursos vêm da ficha vinculada — é lá que eles mudam.
