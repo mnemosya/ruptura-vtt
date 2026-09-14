@@ -21,7 +21,6 @@ import { Crosshair, FileText, Navigation, TriangleAlert } from "lucide-react";
 import {
   type Hex,
   TAMANHOS,
-  ancoraFrontalDaPegada,
   contornoDaPegada,
   hexIguais,
   hexKey,
@@ -3463,15 +3462,7 @@ function Token({
   const pegadaExibida = pegada;
   /* Nunca vermelho: virar não pode ser recusado. */
   const corGestoRotacao = emGestoDeRotacao ? "#35c8f0" : null;
-  // Âncora frontal: ANCORADA numa aresta real da pegada exibida (nunca
-  // um ângulo solto ao redor do corpo) — indicador, halo e alça de
-  // rotação todos derivam daqui, então giram e trocam de aresta juntos
-  // conforme a pegada muda (tamanho, orientação, prévia de rotação).
   const origemMecanicaExibida = useMemo(() => origemMecanica(pegadaExibida), [pegadaExibida]);
-  const ancoraFrontal = useMemo(
-    () => ancoraFrontalDaPegada(pegadaExibida, origemMecanicaExibida, orientacaoExibida, TAM),
-    [pegadaExibida, origemMecanicaExibida, orientacaoExibida],
-  );
   const escala = TAMANHOS[token.tamanho].escala;
   const raio = TAM * 0.82 * escala;
   const cor = COR_VERTENTE[token.vertente];
@@ -3690,29 +3681,39 @@ function Token({
           token virado pro sul não pode ter a cunha ou a alça cobrindo
           a fileira de condições. */}
       {(() => {
-        // Fallback defensivo — só acionado se `ancoraFrontalDaPegada`
-        // devolver `null` (pegada vazia, o que nunca deveria acontecer
-        // na prática: todo token tem ao menos a própria célula). Mesma
-        // conta antiga, só pra nunca deixar de renderizar nada.
+        // A direção canônica em pixels — `hexRotacionar({q:1,r:0}, d)` é
+        // a MESMA rotação que o domínio usa pra pegada e pro movimento
+        // entre vizinhos, então as 6 direções do indicador são
+        // exatamente as 6 dos hexes adjacentes.
         const direcaoBruta = hexParaPixel(hexRotacionar({ q: 1, r: 0 }, orientacaoExibida), TAM);
         const normaBruta = Math.hypot(direcaoBruta.x, direcaoBruta.y) || 1;
         const angBruto = Math.atan2(direcaoBruta.y / normaBruta, direcaoBruta.x / normaBruta);
 
-        // Ângulo visual: da ARESTA real escolhida (indicador/halo/alça
-        // giram e trocam de aresta juntos), nunca de um ângulo solto
-        // ao redor do corpo — ver `ancoraFrontalDaPegada` em `hex.ts`.
-        const ang = ancoraFrontal?.anguloVisual ?? angBruto;
+        /* A DIREÇÃO GIRA AO REDOR DO DISCO, não do contorno da pegada.
+           Isto antes se ancorava numa QUINA REAL da pegada
+           (`ancoraFrontalDaPegada`), e fazia sentido enquanto girar
+           significava girar a FORMA: a farpa marcava a aresta que tinha
+           acabado de mudar de lugar. Agora que a direção é só o olhar
+           (0135), as junções atrapalham de duas formas:
+
+           · elas não seguem a grade das 6 direções, então duas direções
+             canônicas diferentes caíam na MESMA junção — arrastar a
+             alça parecia não alcançar todas as seis;
+           · numa pegada grande a junção fica longe do corpo, e a alça
+             ia parar num canto do contorno enquanto o halo continuava
+             desenhado em volta do disco. Os dois diziam direções
+             diferentes ao mesmo tempo.
+
+           Com o ângulo canônico, farpa, halo e alça saem do mesmo
+           ponto e cobrem as 6 direções de hexes vizinhos. */
+        const ang = angBruto;
         const ux = Math.cos(ang), uy = Math.sin(ang);
         const perpX = Math.cos(ang + Math.PI / 2) * 3.5, perpY = Math.sin(ang + Math.PI / 2) * 3.5;
         // Ponto médio da aresta frontal, convertido pro referencial
         // LOCAL deste `<g>` (que já está transladado pra `origemLocal`
         // — ver o `<g transform=...>` logo acima na árvore).
-        const meioLocal = ancoraFrontal
-          ? { x: ancoraFrontal.pontoMedio.x - origemLocal.x, y: ancoraFrontal.pontoMedio.y - origemLocal.y }
-          : { x: ux * (raio + 5), y: uy * (raio + 5) };
-        const alcaLocal = ancoraFrontal
-          ? { x: ancoraFrontal.posicaoAlca.x - origemLocal.x, y: ancoraFrontal.posicaoAlca.y - origemLocal.y }
-          : { x: ux * (raio + 22), y: uy * (raio + 22) };
+        const meioLocal = { x: ux * (raio + 5), y: uy * (raio + 5) };
+        const alcaLocal = { x: ux * (raio + 22), y: uy * (raio + 22) };
         // Indicador: pequena farpa saindo da própria aresta, apontando
         // pela normal — nunca mais o "raio do corpo + 5px" solto.
         const pontaX = meioLocal.x + ux * 5, pontaY = meioLocal.y + uy * 5;
