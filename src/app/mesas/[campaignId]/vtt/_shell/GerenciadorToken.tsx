@@ -67,6 +67,12 @@ export interface ValoresFormularioToken {
 }
 
 const CATEGORIAS: TamanhoCriatura[] = ["pequeno", "medio", "grande", "enorme", "colossal"];
+/** Os três lados: valor, rótulo curto (o que aparece na ficha) e o longo (título e prévia). */
+const LADOS: readonly (readonly [LadoToken, string, string])[] = [
+  ["pj", "PJ", "Personagem jogador"],
+  ["pn", "PN", "Personagem do narrador"],
+  ["neutro", "Neutro", "Neutro"],
+];
 const CONDICOES_LISTA = Object.keys(CONDICOES) as CondicaoSlug[];
 /**
  * Responde SÓ "a pegada muda de FORMA ao girar" (grande/colossal — as
@@ -546,180 +552,224 @@ export function GerenciadorToken({
       </header>
 
       <div className="rv-modal-corpo rv-janela-token-corpo" onKeyDown={(e) => { if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA" && (e.target as HTMLElement).tagName !== "BUTTON") { e.preventDefault(); confirmar(); } }}>
-          {/* ── ESSENCIAL ─────────────────────────────────────────── */}
-          <div className="rv-form-linha">
-            <label className="rv-field rv-field--nome">
-              <span>Nome do token</span>
-              <input ref={primeiroCampoRef} type="text" value={valores.nome} placeholder="Ex.: Sentinela da Doca"
-                onChange={(e) => setValores((v) => ({ ...v, nome: e.target.value }))} />
-              <small className="rv-field-ajuda">Nome exibido no mapa, painel e informações do token. Se ficar vazio, será gerado um nome como #1.</small>
-            </label>
-            <label className="rv-field rv-field--estreito">
-              <span>Sigla</span>
-              <input
-                type="text" maxLength={3} value={valores.sigla} placeholder="SEN"
-                onChange={(e) => { setSiglaEditadaManualmente(true); setValores((v) => ({ ...v, sigla: e.target.value.toUpperCase().trimStart() })); }}
-              />
-              <small className="rv-field-ajuda">Até 3 caracteres exibidos quando o token não possui imagem.</small>
-            </label>
+
+        {/* ══ O TOKEN, COMO ELE VAI FICAR ══════════════════════════════
+            A peça que faltava. Criar token é criar uma COISA VISUAL —
+            um disco no mapa com cor de lado, retrato ou sigla, barra de
+            vida — e o formulário mostrava só a forma abstrata da pegada
+            num quadrado de 100px. Quem estava preparando uma cena
+            escolhia às cegas e só via o resultado depois de posicionar.
+
+            A prévia fica GRUDADA no topo enquanto o resto rola: ela é o
+            que muda a cada campo, e um preview que sai de vista é um
+            preview que não serve. */}
+        <div className="rv-token-previa" aria-hidden="true">
+          <div className="rv-token-disco" data-lado={valores.lado}>
+            {valores.retratoUrl && validacaoImagem.ok && !imagemFalhou
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={valores.retratoUrl} alt="" onError={() => setImagemFalhou(true)} />
+              : <span className="rv-token-disco-sigla">{valores.sigla || sugerirSigla(valores.nome) || "?"}</span>}
           </div>
-
-          {/* Seções NUMERADAS, como nas outras janelas: o contador do
-              `.rv-fp-grupo` numera sozinho, na ordem em que aparecem. */}
-          <fieldset className="rv-field rv-fp-grupo">
-            <legend className="rv-fp-rotulo">Lado</legend>
-            <div className="rv-segmentado" role="radiogroup" aria-label="Lado">
-              {([["pj", "Personagem jogador (PJ)"], ["pn", "Personagem do narrador (PN)"], ["neutro", "Neutro"]] as const).map(([valor, rotulo]) => (
-                <button key={valor} type="button" role="radio" aria-checked={valores.lado === valor}
-                  className="rv-segmentado-item" onClick={() => setValores((v) => ({ ...v, lado: valor as LadoToken }))}>
-                  {rotulo}
-                </button>
-              ))}
-            </div>
-            <small className="rv-field-ajuda">Define a identificação visual e o grupo do token no combate.</small>
-          </fieldset>
-
-          <div className="rv-fp-grupo">
-          <span className="rv-fp-rotulo">Ficha &amp; escala</span>
-          <div className="rv-form-linha rv-form-linha--tamanho">
-            <div className="rv-field">
-              <label htmlFor="rv-campo-tamanho">Tamanho e espaço ocupado</label>
-              <select id="rv-campo-tamanho" value={valores.tamanho} onChange={(e) => setValores((v) => ({ ...v, tamanho: e.target.value as TamanhoCriatura }))}>
-                {CATEGORIAS.map((c) => <option key={c} value={c}>{TAMANHOS[c].rotulo} — {TAMANHOS[c].metros}</option>)}
-              </select>
-              <small className="rv-field-ajuda">Ocupa {pegadaAbstrata.length} hex{pegadaAbstrata.length === 1 ? "" : "es"}.</small>
-              {podeGirar && (
-                <small className="rv-field-ajuda">A orientação da pegada poderá ser ajustada durante o posicionamento no mapa.</small>
-              )}
-              {!cabeAposRedimensionar && (
-                <p className="rv-form-aviso" role="alert">O novo tamanho não cabe na posição atual. Mova ou rotacione o token no mapa antes de alterar o tamanho.</p>
-              )}
-            </div>
-
-            <div className="rv-pegada-preview" aria-hidden="true">
-              <svg viewBox={`${minX} ${minY} ${maxX - minX} ${maxY - minY}`} width={100} height={100}>
-                {previewPontos.map((p, i) => {
-                  const ehAncora = pegadaAbstrata[i].q === 0 && pegadaAbstrata[i].r === 0;
-                  return (
-                    <path key={i} d={hexPath(raioPreview - 1.5)} transform={`translate(${p.x} ${p.y})`}
-                      fill="rgba(53,200,240,0.16)" stroke="#35c8f0" strokeWidth={ehAncora ? 3 : 1.3} />
-                  );
-                })}
-              </svg>
-            </div>
+          <div className="rv-token-previa-txt">
+            <strong className="rv-token-previa-nome">{valores.nome.trim() || "Sem nome"}</strong>
+            <span className="rv-token-previa-meta">
+              {LADOS.find(([v]) => v === valores.lado)?.[2]} · {TAMANHOS[valores.tamanho].rotulo} · {TAMANHOS[valores.tamanho].metros}
+            </span>
+            {valores.pvMax !== null && (
+              <span className="rv-token-previa-pv">
+                <span className="rv-token-previa-pv-trilha">
+                  <span style={{ width: `${Math.min(100, Math.round(((valores.pvAtual ?? valores.pvMax) / Math.max(1, valores.pvMax)) * 100))}%` }} />
+                </span>
+                {valores.pvAtual ?? valores.pvMax}/{valores.pvMax}
+              </span>
+            )}
           </div>
+          {/* A PEGADA vive aqui, ao lado do disco, e não perdida num
+              campo: ela é parte do retrato da peça — quantos hexes ela
+              come no mapa —, não uma ilustração do campo "tamanho". */}
+          <div className="rv-token-pegada">
+            <svg viewBox={`${minX} ${minY} ${maxX - minX} ${maxY - minY}`} width={58} height={58}>
+              {previewPontos.map((p, i) => {
+                const ehAncora = pegadaAbstrata[i].q === 0 && pegadaAbstrata[i].r === 0;
+                return (
+                  <path key={i} d={hexPath(raioPreview - 1.5)} transform={`translate(${p.x} ${p.y})`}
+                    fill="rgba(53,200,240,0.16)" stroke="#35c8f0" strokeWidth={ehAncora ? 3 : 1.3} />
+                );
+              })}
+            </svg>
+            <span>{pegadaAbstrata.length} hex{pegadaAbstrata.length === 1 ? "" : "es"}</span>
+          </div>
+        </div>
 
+        {/* ══ IDENTIDADE ═══════════════════════════════════════════════
+            Nome e sigla numa linha só. A sigla se escreve sozinha a
+            partir do nome — é campo de EXCEÇÃO, e por isso estreito e
+            sem instrução: o que ela faz aparece na prévia ao lado. */}
+        <div className="rv-form-linha">
+          <label className="rv-field rv-field--nome">
+            <span>Nome</span>
+            <input ref={primeiroCampoRef} type="text" value={valores.nome} placeholder="Ex.: Sentinela da Doca"
+              onChange={(e) => setValores((v) => ({ ...v, nome: e.target.value }))} />
+          </label>
+          <label className="rv-field rv-field--estreito">
+            <span>Sigla</span>
+            <input
+              type="text" maxLength={3} value={valores.sigla} placeholder={sugerirSigla(valores.nome) || "SEN"}
+              onChange={(e) => { setSiglaEditadaManualmente(true); setValores((v) => ({ ...v, sigla: e.target.value.toUpperCase().trimStart() })); }}
+            />
+          </label>
+        </div>
+
+        {/* LADO em três fichas coloridas, uma linha. Era um segmentado
+            de rótulos em duas linhas ("Personagem do narrador (PN)")
+            que comia duas alturas de campo pra dizer três palavras — e
+            a cor, que é o que de fato distingue os três no mapa, não
+            aparecia em lugar nenhum. */}
+        <fieldset className="rv-field rv-fp-grupo">
+          <legend className="rv-fp-rotulo">Lado</legend>
+          <div className="rv-segmentado rv-token-lados" role="radiogroup" aria-label="Lado">
+            {LADOS.map(([valor, curto, longo]) => (
+              <button key={valor} type="button" role="radio" aria-checked={valores.lado === valor}
+                className="rv-segmentado-item rv-token-lado" data-lado={valor} title={longo}
+                onClick={() => setValores((v) => ({ ...v, lado: valor }))}>
+                <span className="rv-token-lado-marca" aria-hidden="true" />
+                {curto}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
+        {/* TAMANHO em fichas, não num `select`: são cinco opções fixas,
+            é o campo que mais mexe na prévia, e escolher entre cinco
+            coisas visíveis é um clique — dentro de um select são três
+            (abrir, procurar, escolher). */}
+        <fieldset className="rv-field rv-fp-grupo">
+          <legend className="rv-fp-rotulo">Tamanho</legend>
+          <div className="rv-segmentado" role="radiogroup" aria-label="Tamanho">
+            {CATEGORIAS.map((c) => (
+              <button key={c} type="button" role="radio" aria-checked={valores.tamanho === c}
+                className="rv-segmentado-item rv-token-tamanho" title={`${TAMANHOS[c].rotulo} — ${TAMANHOS[c].metros}`}
+                onClick={() => setValores((v) => ({ ...v, tamanho: c }))}>
+                <strong>{TAMANHOS[c].rotulo}</strong>
+                <span>{TAMANHOS[c].metros}</span>
+              </button>
+            ))}
+          </div>
+          {podeGirar && (
+            <small className="rv-field-ajuda">A orientação da pegada é escolhida no mapa, no próximo passo.</small>
+          )}
+          {!cabeAposRedimensionar && (
+            <p className="rv-form-aviso" role="alert">O novo tamanho não cabe na posição atual. Mova ou rotacione o token no mapa antes de alterar o tamanho.</p>
+          )}
+        </fieldset>
+
+        {/* CONTROLE — quem manda no token. A ficha e as duas travas são
+            a MESMA pergunta ("quem pode mexer nisto?"), e estavam em
+            dois grupos distantes: a ficha dentro de "Ficha & escala",
+            as travas em "Comportamento", com um bloco de tamanho no
+            meio. */}
+        <div className="rv-fp-grupo">
+          <span className="rv-fp-rotulo">Controle</span>
           <label className="rv-field">
-            <span>Vincular a uma ficha</span>
+            <span>Ficha vinculada</span>
             <select value={valores.characterId ?? ""} onChange={(e) => setValores((v) => ({ ...v, characterId: e.target.value || null }))}>
-              <option value="">Nenhuma ficha — somente narrador</option>
+              <option value="">Nenhuma — somente o narrador controla</option>
               {personagensRotulados.map((p) => <option key={p.id} value={p.id}>{p.rotulo}</option>)}
             </select>
-            <small className="rv-field-ajuda">Controladores dessa ficha poderão controlar o token. Sem vínculo, somente o narrador controla.</small>
           </label>
-          </div>
-
-          <div className="rv-fp-grupo">
-          <span className="rv-fp-rotulo">Comportamento</span>
-          <div className="rv-cartoes-flag">
-            <label className="rv-cartao-flag">
+          {/* Os dois interruptores lado a lado, no lugar dos cartões de
+              duas linhas: são duas chaves de liga/desliga, não duas
+              decisões que precisem de parágrafo. O que cada uma faz
+              cabe no rótulo. */}
+          <div className="rv-token-chaves">
+            <label className="rv-fp-switch rv-token-chave">
               <input type="checkbox" checked={valores.visivel} onChange={(e) => setValores((v) => ({ ...v, visivel: e.target.checked }))} />
-              <div><strong>Visível para jogadores</strong><span>Quando desativado, somente o narrador pode ver este token.</span></div>
+              <span className="rv-fp-switch-tr" aria-hidden="true" />
+              <span className="rv-fp-switch-txt">Visível para jogadores</span>
             </label>
-            <label className="rv-cartao-flag">
+            <label className="rv-fp-switch rv-token-chave">
               <input type="checkbox" checked={valores.bloqueado} onChange={(e) => setValores((v) => ({ ...v, bloqueado: e.target.checked }))} />
-              <div><strong>Travar posição</strong><span>Impede que jogadores movimentem o token até ele ser destravado.</span></div>
+              <span className="rv-fp-switch-tr" aria-hidden="true" />
+              <span className="rv-fp-switch-txt">Posição travada</span>
             </label>
           </div>
-          </div>
-
-          {/* ── IDENTIDADE AMPLIADA (04) ──────────────────────────── */}
-          <details className="rv-mais-opcoes rv-fp-grupo" open={maisOpcoesAberto} onToggle={(e) => setMaisOpcoesAberto((e.target as HTMLDetailsElement).open)}>
-            <summary className="rv-fp-rotulo">Identidade ampliada</summary>
-
-            <label className="rv-field">
-              <span>Vertente</span>
-              <select value={valores.vertente} onChange={(e) => setValores((v) => ({ ...v, vertente: e.target.value as VertenteToken }))}>
-                <option value="nenhuma">Nenhuma</option>
-                <option value="somatico">Somático</option>
-                <option value="cognitivo">Cognitivo</option>
-                <option value="material">Material</option>
-                <option value="energetico">Energético</option>
-              </select>
-              <small className="rv-field-ajuda">Classificação do personagem e cor temática do token. Use &ldquo;Nenhuma&rdquo; quando não se aplicar.</small>
-            </label>
-
-            <label className="rv-field">
-              <span>Imagem do token</span>
-              <input
-                type="text" value={valores.retratoUrl ?? ""} placeholder="https://…"
-                onChange={(e) => { setImagemFalhou(false); setValores((v) => ({ ...v, retratoUrl: e.target.value || null })); }}
-              />
-              <small className="rv-field-ajuda">Cole o endereço de uma imagem já hospedada. Se ficar vazio, o token usará a sigla.</small>
-              {!validacaoImagem.ok && <p className="rv-form-aviso" role="alert">{validacaoImagem.erro}</p>}
-              {validacaoImagem.ok && valores.retratoUrl && (
-                <div className="rv-imagem-preview">
-                  {imagemCarregando && !imagemFalhou && <span className="rv-field-ajuda">Carregando prévia…</span>}
-                  {imagemFalhou && <span className="rv-form-aviso" role="alert">Não foi possível carregar esta imagem.</span>}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={valores.retratoUrl} alt="" width={48} height={48}
-                    onLoadStart={() => { setImagemCarregando(true); setImagemFalhou(false); }}
-                    onLoad={() => setImagemCarregando(false)}
-                    onError={() => { setImagemCarregando(false); setImagemFalhou(true); }}
-                    style={{ display: imagemFalhou ? "none" : undefined }}
-                  />
-                </div>
-              )}
-            </label>
-
-            <fieldset className="rv-field">
-              <legend>Pontos de Vida</legend>
-              <div className="rv-form-linha">
-                <label className="rv-field rv-field--estreito">
-                  <span>Atual</span>
-                  <input type="number" min={0} value={valores.pvAtual ?? ""} onChange={(e) => setValores((v) => ({ ...v, pvAtual: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) }))} />
-                </label>
-                <label className="rv-field rv-field--estreito">
-                  <span>Máximo</span>
-                  <input type="number" min={0} value={valores.pvMax ?? ""} onChange={(e) => setValores((v) => ({ ...v, pvMax: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) }))} />
-                </label>
-              </div>
-              {pvInvalido && (
-                <p className="rv-form-aviso" role="alert">PV atual não pode ser maior que o PV máximo.</p>
-              )}
-              {valores.pvAtual !== null && valores.pvMax === null && (
-                <p className="rv-field-ajuda">Sem um PV máximo, o token não mostrará barra de vida.</p>
-              )}
-            </fieldset>
-
-            <fieldset className="rv-field">
-              <legend>
-                Condições {valores.condicoes.length > 0 && <span className="rv-camadas-tag">{valores.condicoes.length} selecionada{valores.condicoes.length === 1 ? "" : "s"}</span>}
-              </legend>
-              {valores.condicoes.length > 0 && (
-                <button type="button" className="rv-btn rv-btn--ghost rv-limpar-condicoes" onClick={() => setValores((v) => ({ ...v, condicoes: [] }))}>Limpar condições</button>
-              )}
-              <div className="rv-condicoes-grade">
-                {[...CONDICOES_LISTA].sort((a, b) => Number(valores.condicoes.includes(b)) - Number(valores.condicoes.includes(a))).map((c) => (
-                  <label key={c} className="rv-condicao-item" title={CONDICOES[c].rotulo}>
-                    <input
-                      type="checkbox"
-                      checked={valores.condicoes.includes(c)}
-                      onChange={(e) => setValores((v) => ({
-                        ...v,
-                        condicoes: e.target.checked ? [...v.condicoes, c] : v.condicoes.filter((x) => x !== c),
-                      }))}
-                    />
-                    <span>{CONDICOES[c].glifo} {CONDICOES[c].rotulo}</span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          </details>
-
-          {erro && <p className="rv-form-aviso" role="alert">{erro}</p>}
         </div>
+
+        {/* ══ O RESTO ══════════════════════════════════════════════════
+            Vertente, imagem, PV e condições: existem, mas não é por
+            elas que se cria um token no meio de uma sessão. Ficam a um
+            clique — e abertas de saída quando já têm conteúdo (modo
+            editar). */}
+        <details className="rv-mais-opcoes rv-fp-grupo" open={maisOpcoesAberto} onToggle={(e) => setMaisOpcoesAberto((e.target as HTMLDetailsElement).open)}>
+          <summary className="rv-fp-rotulo">Retrato, vida e estado</summary>
+
+          <label className="rv-field">
+            <span>Imagem do token</span>
+            <input
+              type="text" value={valores.retratoUrl ?? ""} placeholder="https://…"
+              onChange={(e) => { setImagemFalhou(false); setValores((v) => ({ ...v, retratoUrl: e.target.value || null })); }}
+            />
+            {!validacaoImagem.ok && <p className="rv-form-aviso" role="alert">{validacaoImagem.erro}</p>}
+            {imagemFalhou && <p className="rv-form-aviso" role="alert">Não foi possível carregar esta imagem.</p>}
+            {!valores.retratoUrl && <small className="rv-field-ajuda">Sem imagem, o token usa a sigla.</small>}
+          </label>
+
+          <fieldset className="rv-field">
+            <legend>Pontos de Vida</legend>
+            <div className="rv-form-linha">
+              <label className="rv-field rv-field--estreito">
+                <span>Atual</span>
+                <input type="number" min={0} value={valores.pvAtual ?? ""} onChange={(e) => setValores((v) => ({ ...v, pvAtual: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) }))} />
+              </label>
+              <label className="rv-field rv-field--estreito">
+                <span>Máximo</span>
+                <input type="number" min={0} value={valores.pvMax ?? ""} onChange={(e) => setValores((v) => ({ ...v, pvMax: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) }))} />
+              </label>
+            </div>
+            {pvInvalido && <p className="rv-form-aviso" role="alert">PV atual não pode ser maior que o PV máximo.</p>}
+            {valores.pvAtual !== null && valores.pvMax === null && (
+              <p className="rv-field-ajuda">Sem um PV máximo, o token não mostra barra de vida.</p>
+            )}
+          </fieldset>
+
+          <label className="rv-field">
+            <span>Vertente</span>
+            <select value={valores.vertente} onChange={(e) => setValores((v) => ({ ...v, vertente: e.target.value as VertenteToken }))}>
+              <option value="nenhuma">Nenhuma</option>
+              <option value="somatico">Somático</option>
+              <option value="cognitivo">Cognitivo</option>
+              <option value="material">Material</option>
+              <option value="energetico">Energético</option>
+            </select>
+          </label>
+
+          <fieldset className="rv-field">
+            <legend>
+              Condições {valores.condicoes.length > 0 && <span className="rv-camadas-tag">{valores.condicoes.length}</span>}
+            </legend>
+            {valores.condicoes.length > 0 && (
+              <button type="button" className="rv-btn rv-btn--ghost rv-limpar-condicoes" onClick={() => setValores((v) => ({ ...v, condicoes: [] }))}>Limpar</button>
+            )}
+            <div className="rv-condicoes-grade">
+              {[...CONDICOES_LISTA].sort((a, b) => Number(valores.condicoes.includes(b)) - Number(valores.condicoes.includes(a))).map((c) => (
+                <label key={c} className="rv-condicao-item" title={CONDICOES[c].rotulo}>
+                  <input
+                    type="checkbox"
+                    checked={valores.condicoes.includes(c)}
+                    onChange={(e) => setValores((v) => ({
+                      ...v,
+                      condicoes: e.target.checked ? [...v.condicoes, c] : v.condicoes.filter((x) => x !== c),
+                    }))}
+                  />
+                  <span>{CONDICOES[c].glifo} {CONDICOES[c].rotulo}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </details>
+
+        {erro && <p className="rv-form-aviso" role="alert">{erro}</p>}
+      </div>
 
       <footer className="rv-modal-rodape">
         <button type="button" className="rv-btn rv-btn--ghost" onClick={pedirFechar} disabled={enviando}>Cancelar</button>

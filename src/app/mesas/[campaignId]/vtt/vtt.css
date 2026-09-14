@@ -1074,8 +1074,6 @@
 @media (max-width: 560px) {
   .rv-gerenciador-token .rv-field--nome,
   .rv-gerenciador-token .rv-field--estreito { flex: 1 1 100%; }
-  .rv-gerenciador-token .rv-form-linha--tamanho { align-items: stretch; }
-  .rv-gerenciador-token .rv-pegada-preview { align-self: center; }
   .rv-gerenciador-token .rv-modal-rodape { flex-wrap: wrap; }
   .rv-gerenciador-token .rv-modal-rodape .rv-btn { flex: 1 1 auto; justify-content: center; min-width: 0; }
 }
@@ -1099,7 +1097,6 @@
 .rv-field--check > span { text-transform: none; letter-spacing: 0; font-size: 12px; color: var(--txt); }
 fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
-.rv-pegada-preview { flex: none; display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: var(--rv-r); background: rgba(255,255,255,.04); }
 /* Nome ocupa mais espaço que Sigla na mesma linha (~75/25 em telas largas) — Sigla já tem largura fixa via `.rv-field--estreito`, Nome só precisa "crescer mais" que o padrão `flex:1`. */
 .rv-field--nome { flex: 3; }
 .rv-condicoes-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 12px; }
@@ -1144,7 +1141,6 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-segmentado-item:focus-visible { outline: 2px solid var(--jf-acento, var(--cy)); outline-offset: 1px; }
 
 /* ── Tamanho + preview abstrato ───────────────────────────────── */
-.rv-form-linha--tamanho { align-items: flex-start; }
 
 /* Aviso não-bloqueante durante o POSICIONAMENTO de um token novo no
    mapa (fluxo de criação em duas etapas) — sem `.rv-modal-fundo`
@@ -1197,6 +1193,87 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-janela-token-cab { cursor: grab; user-select: none; touch-action: none; }
 .rv-janela-token-cab:active { cursor: grabbing; }
 .rv-janela-token-corpo { flex: 1 1 auto; min-height: 0; }
+
+/* ── A PRÉVIA DO TOKEN ───────────────────────────────────────────────
+   Criar token é criar uma COISA VISUAL, e o formulário não mostrava
+   nenhuma: o único desenho era a forma abstrata da pegada, que só diz
+   algo pros tamanhos de vários hexes. Aqui o disco sai como vai sair no
+   mapa — anel na cor do lado, retrato ou sigla, nome, tamanho e barra
+   de vida quando há PV.
+
+   GRUDADA NO TOPO (`sticky`): é ela que muda a cada campo, e uma prévia
+   que sai de vista enquanto se rola o formulário não é prévia. */
+.rv-token-previa {
+  position: sticky; top: 0; z-index: 3;
+  display: flex; align-items: center; gap: 12px;
+  margin: -2px -2px 4px; padding: 10px 12px;
+  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
+  background: #0c1526;
+}
+.rv-token-disco {
+  flex: none; width: 52px; height: 52px; display: grid; place-items: center;
+  border-radius: var(--rv-r-pill); overflow: hidden;
+  border: 2px solid var(--rv-lado-cor, var(--rv-slate));
+  background: color-mix(in srgb, var(--rv-lado-cor, var(--rv-slate)) 12%, #070d17);
+  color: var(--rv-lado-cor, var(--rv-slate));
+}
+/* As MESMAS cores da etiqueta de lado na trilha de rodadas — o token é
+   a mesma criatura nos dois lugares. */
+.rv-token-disco[data-lado="pj"], .rv-token-lado[data-lado="pj"] { --rv-lado-cor: #45b8c9; }
+.rv-token-disco[data-lado="pn"], .rv-token-lado[data-lado="pn"] { --rv-lado-cor: #e0455f; }
+.rv-token-disco[data-lado="neutro"], .rv-token-lado[data-lado="neutro"] { --rv-lado-cor: #8ea0bd; }
+.rv-token-disco img { width: 100%; height: 100%; object-fit: cover; }
+.rv-token-disco-sigla { font-family: var(--rv-display), sans-serif; font-size: 15px; font-weight: 700; letter-spacing: .04em; }
+.rv-token-previa-txt { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.rv-token-previa-nome {
+  font-family: var(--rv-display), sans-serif; font-size: 13px; font-weight: 700;
+  letter-spacing: .04em; text-transform: uppercase; color: var(--rv-ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rv-token-previa-meta {
+  font-family: var(--font-mono), monospace; font-size: 9.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--rv-ink-faint);
+}
+.rv-token-previa-pv {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono), monospace; font-size: 10px; color: var(--rv-ink-dim);
+}
+.rv-token-previa-pv-trilha {
+  flex: 1; max-width: 96px; height: 4px; border-radius: var(--rv-r-pill);
+  background: var(--rv-line-strong); overflow: hidden;
+}
+.rv-token-previa-pv-trilha > span { display: block; height: 100%; background: #e0455e; }
+/* A PEGADA fica na prévia, e não perdida ao lado do campo de tamanho:
+   ela é parte do retrato da peça — quantos hexes ela come no mapa. */
+.rv-token-pegada {
+  flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-family: var(--font-mono), monospace; font-size: 9px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--rv-ink-faint);
+}
+
+/* LADO — ficha com a marca da cor. É a cor que distingue os três no
+   mapa, e ela não aparecia em lugar nenhum do formulário. */
+.rv-token-lado { display: flex; align-items: center; justify-content: center; gap: 7px; }
+.rv-token-lado-marca {
+  width: 9px; height: 9px; flex: none; border-radius: var(--rv-r-pill);
+  background: var(--rv-lado-cor);
+}
+.rv-token-lado[aria-checked="true"] { border-color: var(--rv-lado-cor); color: var(--rv-ink); }
+
+/* TAMANHO — rótulo e medida empilhados na mesma ficha: o nome diz a
+   categoria, a medida diz o que ela significa em metros. */
+.rv-token-tamanho { display: flex; flex-direction: column; gap: 2px; padding: 8px 6px; }
+.rv-token-tamanho strong { font-size: 11px; }
+.rv-token-tamanho span {
+  font-family: var(--font-mono), monospace; font-size: 8.5px; letter-spacing: .06em;
+  color: var(--rv-ink-faint);
+}
+.rv-token-tamanho[aria-checked="true"] span { color: inherit; }
+
+/* As duas travas viram CHAVES lado a lado: eram cartões de duas linhas
+   com parágrafo de apoio, pra dizer o que cabe no rótulo. */
+.rv-token-chaves { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.rv-token-chave { padding: 0; }
 @media (max-width: 560px) {
   .rv-janela-token { max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); }
 }
@@ -1213,16 +1290,6 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-mais-opcoes > summary:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 
 /* ── Visível/Travado — cartões com texto completo, nunca só o checkbox ── */
-.rv-cartoes-flag { display: flex; flex-direction: column; gap: 6px; }
-.rv-cartao-flag {
-  display: flex; align-items: flex-start; gap: 9px; padding: 8px 10px; border-radius: var(--rv-r);
-  background: rgba(255,255,255,.04); cursor: pointer;
-}
-.rv-cartao-flag:hover { background: rgba(255,255,255,.07); }
-.rv-cartao-flag input { margin-top: 2px; width: 15px; height: 15px; flex: none; }
-.rv-cartao-flag div { display: flex; flex-direction: column; gap: 1px; }
-.rv-cartao-flag strong { font-size: 12px; color: var(--txt-forte); }
-.rv-cartao-flag span { font-size: 10.5px; color: var(--txt-dim); line-height: 1.35; }
 
 /* ── Imagem — preview pequeno, nunca quebra o layout se falhar ───── */
 .rv-imagem-preview { display: flex; align-items: center; gap: 8px; }
@@ -3158,50 +3225,20 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    de tela e pros testes — muda só a pele. */
 .rv-fp-check input[type="checkbox"],
 .rv-area-check input[type="checkbox"],
-.rv-janela-token .rv-cartao-flag input[type="checkbox"] {
-  appearance: none; -webkit-appearance: none;
-  flex: none; position: relative; margin: 0;
-  width: 40px; height: 22px; border-radius: var(--rv-r-pill);
-  border: none; background: #1c2b45;
-  cursor: pointer;
-  transition: background .2s cubic-bezier(.4, 0, .2, 1);
-}
 .rv-fp-check input[type="checkbox"]::after,
 .rv-area-check input[type="checkbox"]::after,
-.rv-janela-token .rv-cartao-flag input[type="checkbox"]::after {
-  content: ""; position: absolute; left: 2px; top: 2px;
-  width: 18px; height: 18px; border-radius: var(--rv-r-pill);
-  background: #f4f8fc;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
-  transition: transform .2s cubic-bezier(.4, 0, .2, 1);
-}
 .rv-fp-check input[type="checkbox"]:checked,
 .rv-area-check input[type="checkbox"]:checked,
-.rv-janela-token .rv-cartao-flag input[type="checkbox"]:checked {
-  background: var(--jf-acento, #45b8c9);
-}
 .rv-fp-check input[type="checkbox"]:checked::after,
 .rv-area-check input[type="checkbox"]:checked::after,
-.rv-janela-token .rv-cartao-flag input[type="checkbox"]:checked::after {
-  transform: translateX(18px);
-}
 .rv-fp-check input[type="checkbox"]:hover,
 .rv-area-check input[type="checkbox"]:hover,
-.rv-janela-token .rv-cartao-flag input[type="checkbox"]:hover { background: #24365a; }
 .rv-fp-check input[type="checkbox"]:checked:hover,
 .rv-area-check input[type="checkbox"]:checked:hover,
-.rv-janela-token .rv-cartao-flag input[type="checkbox"]:checked:hover {
-  background: color-mix(in srgb, var(--jf-acento, #45b8c9) 85%, #fff);
-}
 .rv-fp-check input[type="checkbox"]:focus-visible,
 .rv-area-check input[type="checkbox"]:focus-visible,
-.rv-janela-token .rv-cartao-flag input[type="checkbox"]:focus-visible {
-  outline: 2px solid var(--jf-acento, #45b8c9); outline-offset: 2px;
-}
 .rv-fp-check input[type="checkbox"]:disabled,
 .rv-area-check input[type="checkbox"]:disabled,
-.rv-janela-token .rv-cartao-flag input[type="checkbox"]:disabled { opacity: .4; cursor: not-allowed; }
-.rv-janela-token .rv-cartao-flag input[type="checkbox"] { margin-top: 1px; }
 
 /* Campo — o `Field` do estudo: rótulo EM CIMA (display 8px, `.16em`),
    input logo abaixo com 6px de respiro. A versão em linha que tentei
@@ -3240,11 +3277,6 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 /* Rótulo de `select` e de linha composta (Tamanho) — mesma etiqueta do
    `Field`, senão ele herda o corpo do formulário e vira título. */
-.rv-janela-token .rv-form-linha--tamanho .rv-field > label,
-.rv-janela-token .rv-field > label[for] {
-  font-family: var(--rv-display), sans-serif;
-  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; color: #4f6285;
-}
 .rv-janela-token .rv-modal-corpo { padding: 16px; gap: 20px; }
 
 /* Field / SelectField */
@@ -3297,16 +3329,6 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
 /* CheckRow — as bandeiras de comportamento (visível, travado…) */
 .rv-janela-token .rv-cartoes-flag { gap: 8px; }
-.rv-janela-token .rv-cartao-flag {
-  gap: 10px; padding: 10px 12px;
-  border: 1px solid #16233a; border-radius: var(--rv-r); background: transparent;
-}
-.rv-janela-token .rv-cartao-flag:hover { background: transparent; border-color: #1c2b45; }
-.rv-janela-token .rv-cartao-flag input { width: 16px; height: 16px; accent-color: #45b8c9; }
-.rv-janela-token .rv-cartao-flag strong { font-size: 12px; font-weight: 400; color: #d6e4f5; }
-.rv-janela-token .rv-cartao-flag span {
-  font-size: 11px; line-height: 1.4; color: #7f95b3;
-}
 
 /* Section — "Mais opções" é o disclosure que agrupa o resto */
 .rv-janela-token .rv-mais-opcoes { border-top: none; padding-top: 0; gap: 10px; }
@@ -3397,7 +3419,6 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   background: rgba(224, 165, 58, .06);
   font-size: 11px; line-height: 1.4; color: #7f95b3;
 }
-.rv-janela-token .rv-pegada-preview { background: #0c1420; border: 1px solid #16233a; border-radius: var(--rv-r); }
 .rv-janela-token .rv-imagem-preview { border: 1px solid #16233a; border-radius: var(--rv-r); }
 /* Quatro ladrilhos numa fileira só — o `grid-cols-4` do estudo. */
 .rv-fp-seg--4 { grid-auto-flow: unset; grid-template-columns: repeat(4, minmax(0, 1fr)); }
