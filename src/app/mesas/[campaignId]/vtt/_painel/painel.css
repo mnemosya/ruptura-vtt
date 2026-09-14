@@ -728,7 +728,16 @@
   flex: none;
   gap: 0; padding: 0; overflow: hidden;
   border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
-  background: linear-gradient(180deg, #0b1322, #080e19); clip-path: none;
+  /* O MESMO FUNDO DOS CARTÕES DE PERSONAGEM (`#0c1526`, o da aba
+     parada). Era um gradiente escurecendo pro pé (`#0b1322`→`#080e19`),
+     de quando o feed tinha fundo próprio; no painel de hoje ele deixava
+     os cartões do chat mais escuros que os do diretório, e as duas
+     listas parecem peças do mesmo painel.
+
+     A ESPINHA e o cabeçalho continuam um degrau acima porque usam
+     `--rv-raise` — um clareado TRANSLÚCIDO, não um hex —, então a
+     proporção entre os dois se mantém sozinha sobre o fundo novo. */
+  background: #0c1526; clip-path: none;
 }
 /* O desenho não tem fio de acento; ele sobrevive SÓ onde carrega
    informação que o cabeçalho não dá: narração e mensagem privada. */
@@ -784,7 +793,7 @@
    era inversão minha, não do design. */
 
 /* Chat · B original — ShellB/dossiê, sem reaproveitar o card compacto anterior. */
-.rv-pn-chat .pn-cartao { display:block; padding:0; border:1px solid var(--rv-line-2); border-radius:var(--rv-r); background:linear-gradient(180deg,#0b1322,#080e19); clip-path:none; overflow:visible; }
+.rv-pn-chat .pn-cartao { display:block; padding:0; border:1px solid var(--rv-line-2); border-radius:var(--rv-r); background:#0c1526; clip-path:none; overflow:visible; }
 .rv-pn-chat .pn-cartao::before,.rv-pn-chat .pn-cartao::after { content:none; }
 .pn-cartao-layout { display:flex; min-width:0; }
 /* Fundo da espinha: o MESMO TOKEN da espinha das janelas de ferramenta
