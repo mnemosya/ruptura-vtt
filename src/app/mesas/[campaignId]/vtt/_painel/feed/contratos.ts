@@ -1142,7 +1142,7 @@ const ACENTO_DA_FAIXA: Record<ResultKey, AcentoCartao> = {
   sucesso_critico: "ok",
   sucesso_padrao: "cy",
   sucesso_limitado: "am",
-  falha_limitada: "magenta",
+  falha_limitada: "am",
   falha: "perigo",
   falha_critica: "perigo",
 };

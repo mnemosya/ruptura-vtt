@@ -325,7 +325,9 @@ ok(
   })) as CartaoRolagem;
   const acentos = [
     ["sucesso_critico", "ok"], ["sucesso_padrao", "cy"], ["sucesso_limitado", "am"],
-    ["falha_limitada", "magenta"], ["falha", "perigo"], ["falha_critica", "perigo"],
+    // As duas LIMITADAS dividem o âmbar: são o mesmo degrau da régua,
+    // e o que as separa é o ícone e a palavra.
+    ["falha_limitada", "am"], ["falha", "perigo"], ["falha_critica", "perigo"],
   ] as const;
   const errados = acentos.filter(([k, esperado]) => acentoDoCartao(faixa(k, k.startsWith("sucesso"))) !== esperado);
   ok(

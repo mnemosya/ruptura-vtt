@@ -73,7 +73,12 @@ export const RESULTS: Record<ResultKey, { label: string; accent: Accent; Icon: t
   sucesso_critico: { label: "Sucesso Crítico", accent: ACCENTS.good, Icon: DoubleCheck },
   sucesso_padrao: { label: "Sucesso Padrão", accent: ACCENTS.cyan, Icon: Check },
   sucesso_limitado: { label: "Sucesso Limitado", accent: ACCENTS.amber, Icon: Half },
-  falha_limitada: { label: "Falha Limitada", accent: ACCENTS.magenta, Icon: Warn },
+  /* ÂMBAR, e não magenta: as duas faixas LIMITADAS são o mesmo lugar da
+     régua — o meio, onde nada se resolve de vez —, e o magenta punha a
+     falha limitada numa família de cor que não aparece em mais nada da
+     leitura de resultado. O que separa uma da outra é o ícone (meia
+     marca no sucesso, aviso na falha) e a palavra. */
+  falha_limitada: { label: "Falha Limitada", accent: ACCENTS.amber, Icon: Warn },
   falha: { label: "Falha", accent: ACCENTS.danger, Icon: Cross },
   falha_critica: { label: "Falha Crítica", accent: ACCENTS.danger, Icon: Cross },
 };
