@@ -577,7 +577,12 @@ export function PersonagensTab({
                   nome={entrada.nome}
                   nivel={nivel}
                   acento={acento}
-                  subtitulo={entrada.tipo === "pn" ? "PN" : undefined}
+                  /* PJ e PN, sempre — os dois. Só o PN era marcado, e
+                     isso fazia a ausência de etiqueta significar "é do
+                     jogador": informação por omissão, que quem chega
+                     depois não tem como ler. Com as duas à vista, a
+                     coluna responde de quem é cada personagem. */
+                  subtitulo={entrada.tipo === "pn" ? "PN" : "PJ"}
                   rodape={
                     (mostrarRecursos && pv) || entrada.condicoes ? (
                       <>
