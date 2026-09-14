@@ -4210,8 +4210,15 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-cena-ladrilho {
   position: relative;
   display: flex; flex-direction: column;
-  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
+  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r-md);
   background: var(--rv-raise);
+  /* SEM ISTO O CANTO ERA RETO. O `.rv-cena-palco` é um filho de canto
+     reto encostado nas quatro bordas do topo, e filho não respeita o
+     raio do pai sozinho — a imagem passava por cima do arredondamento
+     e o cartão inteiro parecia quadrado.
+     O menu do cartão não é clipado por isto: ele é `position: fixed`,
+     posicionado por medição justamente porque a coluna rola. */
+  overflow: hidden;
   transition: border-color .14s, background .14s, transform .14s;
 }
 /* O hover CLAREIA o ladrilho inteiro — imagem incluída — no tom da
@@ -4584,9 +4591,14 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-minicena { min-width: 0; }
 .rv-minicena-btn {
-  width: 100%; min-width: 0;
-  display: flex; align-items: center; gap: 7px;
-  padding: 3px 5px; border: 1px solid transparent; border-radius: var(--rv-r);
+  width: 100%; min-width: 0; min-height: 30px;
+  display: flex; align-items: center; gap: 0;
+  /* SEM PADDING na linha: o mapa encosta nas bordas e ocupa a altura
+     inteira, como o avatar do cartão de personagem. Padding aqui
+     deixaria uma faixa de fundo em volta dele, e "altura inteira"
+     viraria "quase". O respiro passa pro NOME. */
+  padding: 0; overflow: hidden;
+  border: 1px solid transparent; border-radius: var(--rv-r);
   background: none; color: var(--rv-ink-dim); cursor: pointer; text-align: left;
   font-family: var(--rv-display), sans-serif; font-size: 11px;
   transition: background .12s, border-color .12s, color .12s;
@@ -4598,12 +4610,21 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* O RETÂNGULO é a cena: mesma ideia do cartão grande, onde o mapa é a
    superfície inteira. Aqui ele encolhe pra um selo de 26×18 — o
    bastante pra reconhecer um mapa já visto. */
+/* ALTURA INTEIRA e encostado à esquerda, com a divisória à direita
+   fazendo o corte — a mesma regra do avatar em `.rv-pn-scroll--pers`.
+   A largura é um número (34px), e não `aspect-ratio`: proporção num
+   item esticado é circular (a altura vem do esticamento, a largura
+   viria da altura, e a altura da linha viria do conteúdo). */
 .rv-minicena-mapa {
-  flex: 0 0 auto; width: 26px; height: 18px; overflow: hidden;
+  flex: 0 0 auto; align-self: stretch; width: 34px; overflow: hidden;
   display: grid; place-items: center;
-  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r-sm);
+  border: none; border-right: 1px solid var(--rv-line-2); border-radius: 0;
   background: var(--rv-sunken);
 }
+/* O respiro que saiu da linha entra aqui. */
+.rv-minicena-nome, .rv-minicena-selos { margin-right: 0; }
+.rv-minicena-nome { padding: 4px 0 4px 8px; }
+.rv-minicena-selos { padding-right: 6px; margin-left: 6px; }
 .rv-minicena-mapa img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .rv-minicena-inicial {
   font-family: var(--rv-display), sans-serif; font-size: 9px; font-weight: 700;

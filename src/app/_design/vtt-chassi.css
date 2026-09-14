@@ -108,6 +108,9 @@
   /* As "peças" flutuantes do VTT — trilhos, palco, painel — e tudo que
      acompanha o canto delas. Um degrau acima do raio dos controles. */
   --rv-r-peca: 4px;
+  /* O raio do CARTÃO — superfície grande com imagem sangrando até a
+     borda, onde 4px ainda lê como canto reto. */
+  --rv-r-md: 6px;
   --rv-r-xl: 8px;
   --rv-r-pill: 999px;
   --rv-notch: 10px;
