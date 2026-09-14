@@ -129,7 +129,7 @@
    `height: 100%` acima vale pro painel docado, que É a lateral da
    janela. Sem isto a coluna de 6 abas esticava os 900px da tela com um
    vazio embaixo. */
-.rv-painel[data-aberto="false"] { overflow: visible; height: auto; }
+.rv-painel[data-aberto="false"] { overflow: visible; height: auto; background: transparent; border-left: none; }
 .rv-painel[data-hidratado="true"] { transition: width var(--mo-dur-enter, .18s) var(--mo-ease-out, ease); }
 .rv-painel[data-redimensionando="true"] { transition: none; user-select: none; }
 @media (prefers-reduced-motion: reduce) {
