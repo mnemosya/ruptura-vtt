@@ -115,15 +115,18 @@ function shapeFor(sides: number): Shape {
 }
 
 /**
- * Escurece um hex mantendo o matiz — multiplica os três canais. Aceita
- * só `#rrggbb`; qualquer outra coisa volta como veio, porque `accent`
- * é uma prop pública e um dia pode chegar como `rgba()` ou token.
+ * Clareia um hex na direção do branco, mantendo o matiz. Aceita só
+ * `#rrggbb`; qualquer outra coisa volta como veio, porque `accent` é
+ * uma prop pública e um dia pode chegar como `rgba()` ou token.
  */
-function escurecer(cor: string, fator: number): string {
+function clarear(cor: string, quanto: number): string {
   const m = /^#([0-9a-f]{6})$/i.exec(cor.trim());
   if (!m) return cor;
   const n = Number.parseInt(m[1], 16);
-  const canal = (deslocamento: number) => Math.round(((n >> deslocamento) & 0xff) * fator);
+  const canal = (deslocamento: number) => {
+    const v = (n >> deslocamento) & 0xff;
+    return Math.round(v + (255 - v) * quanto);
+  };
   return `rgb(${canal(16)}, ${canal(8)}, ${canal(0)})`;
 }
 
@@ -164,13 +167,16 @@ export function PolyDie({
   const s = shapeFor(sides);
   const stroke = active ? accent : dim ? "#2a3b58" : "#43597c";
   const fill = active ? soft : "transparent";
-  /* O NÚMERO um degrau ABAIXO do contorno, não na mesma tinta. No dado
+  /* O NÚMERO um degrau ACIMA do contorno, não na mesma tinta. No dado
      aceso o dígito saía exatamente na cor do traço que o cerca, e as
-     duas coisas se misturavam — principalmente no d100, onde três
-     dígitos encostam nas facetas. Escurecer separa o que se LÊ do que
-     só desenha a peça, e o miolo lavado (`fillOpacity`) continua claro
-     o bastante pra sustentar o contraste. */
-  const textColor = active ? escurecer(accent, 0.78) : dim ? "#42597c" : "#a9b9d4";
+     duas coisas se misturavam — pior no d100, onde três dígitos
+     encostam nas facetas.
+
+     CLAREIA, não escurece: o dado vive sobre fundo quase preto, então
+     puxar pro branco é o que ganha contraste. Escurecer separava as
+     duas tintas, mas contra o preto por baixo, e o número ficava menos
+     legível do que estava — foi testado e desfeito. */
+  const textColor = active ? clarear(accent, 0.34) : dim ? "#42597c" : "#a9b9d4";
   const landAnim = landed ? { animationDelay: `${Math.min(rollIndex, 6) * 0.04}s` } : undefined;
   /* face padrão = valor máximo do dado */
   const displayValue = value ?? sides;
