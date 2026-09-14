@@ -815,7 +815,11 @@
 .rv-painel[data-aberto="true"] .rv-aba-fim { display: none; }
 /* O "recolher" NÃO é uma aba: mantém o tamanho de ícone e fica no fim. */
 .rv-painel[data-aberto="true"] .rv-aba--recolher { flex: 0 0 auto; width: 36px; }
-.rv-painel[data-aberto="false"] .rv-painel-abas { order: 1; flex-direction: column; width: 52px; padding: 10px 0; }
+/* RECOLHIDO, a faixa é um trilho vertical como o das ferramentas — e
+   usa o mesmo vão de 6px. Sem ele as abas ficavam encostadas umas nas
+   outras, e com borda própria isso vira uma coluna de caixas coladas
+   em vez de peças separadas. */
+.rv-painel[data-aberto="false"] .rv-painel-abas { order: 1; flex-direction: column; gap: 6px; width: 52px; padding: 10px 0; }
 
 /* Só a ESTRUTURA da aba mora aqui; cor e estado vivem em
    `_painel/painel.css`, que é a folha do painel.
