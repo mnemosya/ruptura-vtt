@@ -373,7 +373,7 @@
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   padding: 6px 11px; min-height: 26px;
   border: 1px solid var(--rv-line-strong); border-radius: 2px;
-  background: var(--rv-sunken); color: var(--rv-ink-dim);
+  background: #0c1526; color: var(--rv-ink-dim);
   /* CORPO, e não display: em caixa alta e com espaçamento, o Chakra
      Petch pesava demais pra um botão secundário de painel — ele
      competia com o nome do personagem ao lado. A classe segue
@@ -859,7 +859,11 @@
 .rv-pn-busca {
   flex: none; display: flex; align-items: center; gap: 6px; margin: 6px 8px; padding: 5px 8px;
   border: 1px solid var(--pn-line-soft); border-radius: var(--pn-radius);
-  background: var(--pn-inset); color: var(--pn-dim); transition: border-color .14s;
+  /* `#0c1526` como as abas e os cartões: no painel flutuante, tudo que
+     se clica ou se digita é PEÇA, e peça tem a mesma superfície.
+     `--pn-inset` era o tom de campo rebaixado, de quando o painel era
+     uma coluna e o campo um sulco dentro dela. */
+  background: #0c1526; color: var(--pn-dim); transition: border-color .14s;
 }
 .rv-pn-busca:focus-within { border-color: var(--pn-cy); }
 .rv-pn-busca-input {
@@ -937,7 +941,7 @@
 .rv-pn-switch input:checked ~ .rv-fp-switch-txt { color: var(--pn-txt-forte); }
 .rv-pn-select.rv-pn-select, .rv-pn-input.rv-pn-input {
   padding: 3px 6px; border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
-  background: var(--pn-inset); color: var(--pn-txt-forte);
+  background: #0c1526; color: var(--pn-txt-forte);
   /* CORPO. Monoespaçado é a fonte de NÚMERO e metadado; "A–Z" e
      "Manual" são palavras, e em JetBrains elas ficavam largas e
      técnicas demais pro que o controle faz. */
@@ -1011,7 +1015,7 @@
 .rv-pn-chip.rv-pn-chip {
   display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px;
   border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
-  background: var(--pn-inset); color: var(--pn-dim);
+  background: #0c1526; color: var(--pn-dim);
   font-family: var(--rv-display);
   font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
 }
@@ -1033,10 +1037,11 @@
 .rv-pn-scroll--pers .rv-pn-no:has(> [data-testid="painel-personagens-pasta"]) {
   margin-top: 7px; margin-bottom: 14px;
   border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
-  /* O MESMO FUNDO dos cartões e das abas paradas. `--pn-inset` era o
-     tom de campo REBAIXADO — certo quando a pasta era um sulco na
-     lista, errado agora que ela é uma peça como as outras. */
-  background: #0c1526;
+  /* UM DEGRAU ABAIXO das peças (`#0c1526`): a pasta CONTÉM cartões, e
+     container mais escuro que o conteúdo é o que faz o conteúdo
+     parecer estar dentro dele. Igual aos dois, a pasta e os cartões
+     dela viravam uma mancha só. */
+  background: #0a1120;
   overflow: hidden;
   transition: border-color .14s, background .14s;
 }
