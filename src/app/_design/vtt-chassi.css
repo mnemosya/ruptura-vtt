@@ -102,8 +102,13 @@
   --rv-mono: var(--font-mono), ui-monospace, monospace;
 
   /* ── Geometria ──────────────────────────────────────────────── */
+  --rv-r-sm: 1px;
   --rv-r: 2px;
   --rv-r-lg: 3px;
+  /* As "peças" flutuantes do VTT — trilhos, palco, painel — e tudo que
+     acompanha o canto delas. Um degrau acima do raio dos controles. */
+  --rv-r-peca: 4px;
+  --rv-r-xl: 8px;
   --rv-r-pill: 999px;
   --rv-notch: 10px;
   --rv-notch-sm: 6px;
@@ -128,7 +133,7 @@
 /* Barra de rolagem invisível até o hover. */
 .rup-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; }
 .rup-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
-.rup-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; }
+.rup-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: var(--rv-r-peca); }
 .rup-scroll:hover { scrollbar-color: #2a3f5f transparent; }
 .rup-scroll:hover::-webkit-scrollbar-thumb { background: #223351; }
 
@@ -304,7 +309,7 @@
   scrollbar-width: thin; scrollbar-color: transparent transparent;
 }
 :is(.rv-jan-corpo, .rv-fp-corpo, .pn-jan-corpo, .rv-modal-corpo)::-webkit-scrollbar { width: 8px; }
-:is(.rv-jan-corpo, .rv-fp-corpo, .pn-jan-corpo, .rv-modal-corpo)::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; }
+:is(.rv-jan-corpo, .rv-fp-corpo, .pn-jan-corpo, .rv-modal-corpo)::-webkit-scrollbar-thumb { background: transparent; border-radius: var(--rv-r-peca); }
 :is(.rv-jan-corpo, .rv-fp-corpo, .pn-jan-corpo, .rv-modal-corpo):hover { scrollbar-color: #2a3f5f transparent; }
 :is(.rv-jan-corpo, .rv-fp-corpo, .pn-jan-corpo, .rv-modal-corpo):hover::-webkit-scrollbar-thumb { background: #223351; }
 
