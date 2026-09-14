@@ -824,7 +824,13 @@
    O `<nav>` e os `<button>` são os MESMOS elementos nos dois estados —
    só a direção do flex e a posição (`order`) mudam via CSS, então a
    aba selecionada e o estado do React nunca se perdem na troca. */
-.rv-painel { display: flex; background: var(--rv-sunken); z-index: 20; flex: none; }
+/* O FUNDO É O MESMO DAS PEÇAS (`#0c1526`), não o `--rv-sunken`
+   (`#070d17`). Encostado na janela, o painel era o "fundo" e podia ser
+   o tom mais escuro de todos; solto ao lado do mapa (`#070e1c`), ele
+   ficava mais escuro E menos azul que a superfície vizinha, e lia como
+   um buraco preto. Peça que flutua tem que estar ACIMA do que está
+   embaixo dela. */
+.rv-painel { display: flex; background: #0c1526; z-index: 20; flex: none; }
 /* ABERTO ele é uma PEÇA, como as abas e como o mapa: solto 8px das
    bordas e com o mesmo canto de 4px. Era uma coluna colada na janela
    com um fio à esquerda — ao lado de um mapa arredondado e flutuante,
