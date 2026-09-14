@@ -170,6 +170,8 @@ export interface LinhaDiretorioProps {
   /** A linha aceita algo sendo solto sobre ela (item do Bando caindo num personagem). */
   onSoltar?: (e: React.DragEvent) => void;
   onArrastarSobre?: (e: React.DragEvent) => void;
+  /** O arrasto SAIU desta linha — sem isto o realce fica aceso pra trás. */
+  onArrastarSaiu?: () => void;
   alvoDeSolta?: boolean;
   testId?: string;
   atributos?: Record<string, string>;
@@ -197,6 +199,7 @@ export function LinhaDiretorio({
   onArrastarFim,
   onSoltar,
   onArrastarSobre,
+  onArrastarSaiu,
   alvoDeSolta,
   testId,
   atributos,
@@ -230,6 +233,7 @@ export function LinhaDiretorio({
       onDragStart={onArrastarInicio}
       onDragEnd={onArrastarFim}
       onDragOver={onArrastarSobre}
+      onDragLeave={onArrastarSaiu}
       onDrop={onSoltar}
       data-testid={testId}
       {...atributos}

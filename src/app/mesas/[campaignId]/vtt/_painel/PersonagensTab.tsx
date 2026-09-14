@@ -613,7 +613,9 @@ export function PersonagensTab({
                        origem só declara o que é permitido. */
                     e.dataTransfer.effectAllowed = "copyMove";
                   }}
+                  onArrastarFim={() => { setEntradaSobre(null); setPastaSobre(null); }}
                   alvoDeSolta={entradaSobre === entrada.characterId}
+                  onArrastarSaiu={() => setEntradaSobre((atual) => (atual === entrada.characterId ? null : atual))}
                   onArrastarSobre={(e) => {
                     // DOIS arrastos chegam nesta linha: um item do
                     // Bando (vira posse do personagem) e outro

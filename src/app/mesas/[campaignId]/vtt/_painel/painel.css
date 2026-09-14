@@ -990,6 +990,17 @@
 .rv-pn-scroll--pers .rv-pn-no > [data-testid="painel-personagens-pasta"] ~ * {
   margin: 8px;
 }
+/* ALVO DE SOLTA NO CARTÃO — o mesmo realce da pasta, de propósito.
+   O atributo já era escrito, e nada o pintava: soltar um personagem
+   sobre outro (pra reordenar, ou pra TIRAR ele da pasta) não dava
+   resposta nenhuma, e o gesto parecia não ter destino. Se entrar na
+   pasta acende, sair dela tem que acender igual — é o mesmo movimento
+   ao contrário. */
+.rv-pn-scroll--pers .rv-pn-linha[data-alvo="true"] {
+  border-color: var(--pn-cy);
+  background: color-mix(in srgb, var(--pn-cy) 12%, transparent);
+}
+
 /* O realce de alvo é do BLOCO agora: era do cabeçalho, que não tem mais
    borda pra acender. */
 .rv-pn-scroll--pers .rv-pn-no:has(> [data-testid="painel-personagens-pasta"][data-alvo="true"]) {
