@@ -188,7 +188,18 @@ export type AcaoAtalho =
   | { tipo: "cancelar" }
   | { tipo: "apagar" }
   | { tipo: "undo" }
-  | { tipo: "redo" };
+  | { tipo: "redo" }
+  /**
+   * Os dois vizinhos das ferramentas no trilho que NÃO são ferramentas:
+   * "Adicionar token" (N, de novo token) e "Camadas" (C). Ambos são do
+   * narrador, mas quem sabe disso é o `VttClient` — aqui a interpretação
+   * é só do teclado, como o resto deste módulo.
+   *
+   * N e C estavam livres: as teclas simples em uso são V/L/M/D/T/O/I/A/R
+   * (ferramentas) e Q/E (girar token em posicionamento).
+   */
+  | { tipo: "adicionar-token" }
+  | { tipo: "camadas" };
 
 /**
  * Interpreta um evento de teclado em uma ação, ou `null` se não for
@@ -214,6 +225,8 @@ export function interpretarAtalho(evento: {
   if (mod && tecla === "y") return { tipo: "redo" }; // convenção alternativa comum, sem conflito conhecido no projeto
 
   if (!mod && !evento.shiftKey) {
+    if (tecla === "n") return { tipo: "adicionar-token" };
+    if (tecla === "c") return { tipo: "camadas" };
     const ferramenta = TECLA_PARA_FERRAMENTA[tecla];
     if (ferramenta && ferramentasDisponiveis.includes(ferramenta)) return { tipo: "ferramenta", id: ferramenta };
   }
@@ -228,7 +241,7 @@ export function interpretarAtalho(evento: {
  * `dataset.carregandoForca === "true"` cobre o botão "Rolar Dados"
  * carregando força (segurado, mouse/toque/caneta OU `Space`/`Enter`):
  * enquanto ele está sendo operado, uma tecla de atalho da mesa
- * (V/L/M/D/A/R/T/O) não pode trocar de ferramenta por baixo do gesto.
+ * (V/L/M/D/A/R/T/O/I, e N/C) não pode agir por baixo do gesto.
  */
 export function elementoEhEditavel(el: { tagName?: string; isContentEditable?: boolean; dataset?: { carregandoForca?: string } } | null): boolean {
   if (!el) return false;

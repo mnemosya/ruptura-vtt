@@ -4031,6 +4031,23 @@ export function VttClient({
     setPainelCamadasAberto(false);
     setPainelCenasAberto(abrir);
   }, [painelCenasAberto, trocarFerramenta]);
+
+  /**
+   * Camadas, pelo botão OU pelo atalho C — uma porta só, pra que as
+   * duas façam exatamente a mesma coisa.
+   *
+   * Ordem importa: `trocarFerramenta` também fecha as janelas de botão,
+   * então ele vem ANTES — senão o `false` dele chegaria depois e a
+   * janela nunca abriria. E nada de efeito colateral dentro do updater
+   * de `setState`: o de `setPainelCenasAberto` foi o que quebrou antes
+   * (ver o critério 19 de `test-vtt-controlador.ts`).
+   */
+  const alternarCamadas = useCallback(() => {
+    const abrir = !painelCamadasAberto;
+    if (abrir) trocarFerramenta("interagir");
+    setPainelCenasAberto(false);
+    setPainelCamadasAberto(abrir);
+  }, [painelCamadasAberto, trocarFerramenta]);
   /** Tamanho em EDIÇÃO — só pra contar o que ficaria fora da grade. */
   const [tamanhoEmEdicao, setTamanhoEmEdicao] = useState<{ largura: number; altura: number } | null>(null);
 
@@ -5297,10 +5314,15 @@ export function VttClient({
       }
       else if (acao.tipo === "undo") desfazer();
       else if (acao.tipo === "redo") refazer();
+      // Os dois são do NARRADOR — mesma regra dos botões, que também não
+      // aparecem pro jogador. O servidor recusa de qualquer jeito; isto
+      // é só o teclado concordando com a tela.
+      else if (acao.tipo === "adicionar-token") { if (ehNarrador && estadoCenaRef.current) abrirCriarToken(); }
+      else if (acao.tipo === "camadas") { if (ehNarrador) alternarCamadas(); }
     }
     window.addEventListener("keydown", ouvir);
     return () => window.removeEventListener("keydown", ouvir);
-  }, [ferramentasDisponiveis, desfazer, refazer, trocarFerramenta]);
+  }, [ferramentasDisponiveis, desfazer, refazer, trocarFerramenta, ehNarrador, abrirCriarToken, alternarCamadas]);
 
   // Ferramenta ativa some da barra (ex.: papel mudou) — nunca fica presa numa ferramenta invisível. Passa por `trocarFerramenta` como qualquer outra troca — nunca um `setFerramenta` divergente.
   useEffect(() => { if (!ferramentasDisponiveis.includes(ferramenta)) trocarFerramenta("interagir"); }, [ferramentasDisponiveis, ferramenta, trocarFerramenta]);
@@ -5424,9 +5446,9 @@ export function VttClient({
         {ferramentasDoPonteiro.map(botaoDeFerramenta)}
         <span className="rv-ferr-sep" />
         {ehNarrador && (
-          <button type="button" className="rv-ferr-btn" aria-label="Adicionar token" onClick={() => estadoCena && abrirCriarToken()}>
+          <button type="button" className="rv-ferr-btn" aria-label="Adicionar token (N)" onClick={() => estadoCena && abrirCriarToken()}>
             <UserPlus size={17} />
-            <span className="rv-dica">Adicionar token</span>
+            <span className="rv-dica">Adicionar token<kbd>N</kbd></span>
           </button>
         )}
         {/* Camadas é decisão de quem conduz a cena: o narrador dita o
@@ -5440,19 +5462,11 @@ export function VttClient({
         {ehNarrador && (
           <button
             ref={botaoCamadasRef} type="button" className="rv-ferr-btn" data-tipo="janela"
-            aria-pressed={painelCamadasAberto} aria-label="Camadas do mapa"
-            // Ordem importa: `trocarFerramenta` também fecha as janelas
-            // de botão, então ele vem ANTES — senão o `false` dele
-            // chegaria depois e a janela nunca abriria.
-            onClick={() => {
-              const abrir = !painelCamadasAberto;
-              if (abrir) trocarFerramenta("interagir");
-              setPainelCenasAberto(false);
-              setPainelCamadasAberto(abrir);
-            }}
+            aria-pressed={painelCamadasAberto} aria-label="Camadas do mapa (C)"
+            onClick={alternarCamadas}
           >
             <Layers size={17} />
-            <span className="rv-dica">Camadas do mapa</span>
+            <span className="rv-dica">Camadas do mapa<kbd>C</kbd></span>
           </button>
         )}
         {ferramentasDeJanela.map(botaoDeFerramenta)}

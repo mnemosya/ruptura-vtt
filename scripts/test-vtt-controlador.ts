@@ -6,6 +6,7 @@
 
 import { readFileSync } from "node:fs";
 import {
+  ATALHO_FERRAMENTA,
   type Comando,
   type EstadoHistorico,
   HISTORICO_VAZIO,
@@ -175,6 +176,26 @@ function comandoFake(rotulo: string, autorId: string, log: string[]): Comando {
     posTroca > -1 && posAbrir > posTroca, `troca=${posTroca}, abrir=${posAbrir}`);
   ok("19 (nenhum efeito colateral dentro do updater de setPainelCenasAberto)",
     !/setPainelCenasAberto\(\s*\(/.test(corpo), "updater com efeito dentro é o que quebrou antes");
+}
+
+// ── N e C: os dois vizinhos que não são ferramenta ────────────────
+{
+  const disp = ferramentasParaPapel(true);
+  const ev = (key: string, extra: Partial<{ ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; alvoEhEditavel: boolean }> = {}) =>
+    interpretarAtalho({ key, ctrlKey: false, metaKey: false, shiftKey: false, alvoEhEditavel: false, ...extra }, disp);
+
+  ok("20 (N adiciona token)", ev("n")?.tipo === "adicionar-token", String(ev("n")?.tipo));
+  ok("21 (C abre camadas)", ev("c")?.tipo === "camadas", String(ev("c")?.tipo));
+  // Os dois têm que morrer nas mesmas guardas de sempre: nada dispara
+  // com foco em campo de texto, nem com modificador (Cmd+N abre janela
+  // do navegador, Ctrl+C copia).
+  ok("22 (N não dispara com foco em campo)", ev("n", { alvoEhEditavel: true }) === null, "null com foco editável");
+  ok("23 (Ctrl+C não vira camadas)", ev("c", { ctrlKey: true })?.tipo !== "camadas", String(ev("c", { ctrlKey: true })?.tipo));
+  ok("24 (Cmd+N não vira adicionar token)", ev("n", { metaKey: true })?.tipo !== "adicionar-token", String(ev("n", { metaKey: true })?.tipo));
+  // E não podem ter roubado a tecla de nenhuma ferramenta.
+  ok("25 (as teclas de ferramenta seguem intactas)",
+    disp.every((f) => ev(ATALHO_FERRAMENTA[f].toLowerCase())?.tipo === "ferramenta"),
+    disp.map((f) => `${ATALHO_FERRAMENTA[f]}=${ev(ATALHO_FERRAMENTA[f].toLowerCase())?.tipo}`).join(" "));
 }
 
 console.log(`\n${passou} ok, ${falhou} falha(s).`);
