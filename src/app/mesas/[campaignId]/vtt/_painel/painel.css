@@ -732,12 +732,17 @@
   --rv-veu-cor: #080f1e;
   --rv-veu-recuo: 8px;
 }
-/* O VÉU DE BAIXO PARA NA BANDEJA, não na borda da coluna: embaixo dela
-   não há conversa pra velar, e o degradê continuando por baixo virava
-   uma faixa solta entre as duas peças. Encostado no topo da bandeja,
-   ele é a beirada de onde o feed some. */
-.rv-pn-chat .rv-pn-chat-scroll[data-rolavel]::after {
-  bottom: var(--pn-bandeja-altura);
+/* O VÉU VAI ATÉ O FIM DO FEED — onde ele encosta no composer —, e não
+   para no topo da bandeja: parando ali, o degradê acabava no meio da
+   coluna e a faixa entre ele e o composer ficava chapada, que é o que
+   dava o ar de bug.
+   Em compensação ele CRESCE: a altura soma a bandeja RECOLHIDA, pra
+   que o desvanecer comece acima dela e não atrás. Recolhida, e não a
+   medida: aberta ela é um painel de 300px, e um véu desse tamanho
+   apagaria metade da conversa. */
+.rv-pn-chat .rv-pn-chat-scroll {
+  --pn-bandeja-recolhida: 45px;
+  --rv-veu-altura: calc(var(--pn-bandeja-recolhida) + 26px);
 }
 .rv-pn-chat .pn-cartao {
   padding: 8px 9px 8px 34px;
