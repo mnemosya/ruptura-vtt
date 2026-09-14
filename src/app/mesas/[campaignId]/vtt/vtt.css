@@ -1307,7 +1307,16 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    guardar seis números de três dígitos — e os três recursos são a
    MESMA informação repetida, que lê melhor em coluna paralela do que
    em lista. */
-.rv-token-recursos-linha { display: flex; gap: 14px; flex-wrap: wrap; }
+/* O VÃO É O QUE SOBRA. `space-between` reparte a folga entre os três
+   em vez de deixá-la toda no fim da linha: os grupos encostam nas duas
+   bordas do formulário e o bloco lê como uma faixa, não como três
+   coisas amontoadas à esquerda. `gap` vira o PISO — na janela estreita,
+   quando não há folga pra repartir, ele é o que impede os campos de se
+   tocarem. */
+.rv-token-recursos-linha {
+  display: flex; flex-wrap: wrap;
+  justify-content: space-between; gap: 14px;
+}
 .rv-token-rec { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 /* O rótulo leva a COR do recurso — a mesma da barra que ele vira no
    mapa e no cartão do token. É ela que liga o campo ao que se vê. */
