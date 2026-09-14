@@ -5450,9 +5450,19 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
    o HUD não existe mais um canto ao qual ancorá-lo, e o editor é uma
    tarefa de foco — enquanto ele está aberto, é o que a pessoa está
    fazendo. */
+/* A CASCA FALTAVA. Isto aqui só posicionava: o editor era desenhado
+   direto sobre o mapa, sem fundo, sem fio e sem respiro — os hexágonos
+   apareciam por trás do conteúdo e as peças dele pareciam soltas na
+   tela. É uma JANELA, e janela do VTT tem superfície própria: o mesmo
+   fundo, o mesmo fio e a mesma sombra das outras (`.rv-janela-token`,
+   `.rv-fp`). */
 .rv-retrato-editor-flutuante {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  z-index: 70; max-width: min(520px, calc(100% - 32px));
+  z-index: 70; width: min(340px, calc(100% - 32px));
+  padding: 16px;
+  border: 1px solid #18263f; border-radius: var(--rv-r-peca);
+  background: linear-gradient(160deg, #0b1424, #080e19);
+  box-shadow: var(--rv-shadow-win, 0 30px 70px rgba(0, 0, 0, .55));
 }
 
 /* ── Boundary de erro da mesa (`vtt/error.tsx`) ──────────────────────
