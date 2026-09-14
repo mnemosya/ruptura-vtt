@@ -153,7 +153,14 @@ ok(
     c.kind === "rolagem" && rotulos === "Mente,Percepção,MOD,ND" && c.total === 8,
     rotulos,
   );
-  ok("R2 (falha usa acento vermelho; sucesso usa verde)", acentoDoCartao(c) === "perigo", acentoDoCartao(c));
+  ok("R2 (falha usa acento vermelho)", acentoDoCartao(c) === "perigo", acentoDoCartao(c));
+  // O sucesso da rolagem LIVRE é ciano, não verde: verde é o topo
+  // (crítico), e uma soma contra CD não tem crítico — a mesma regra que
+  // `FaixaSoma` aplica na faixa do mesmo card.
+  {
+    const ganhou = { ...c, sucesso: true } as typeof c;
+    ok("R2b (sucesso da rolagem livre é ciano — verde fica pro crítico)", acentoDoCartao(ganhou) === "cy", acentoDoCartao(ganhou));
+  }
   ok("R3 (dados individuais ficam disponíveis para o bloco recolhível)", c.dados.length === 3 && c.maior === 7, JSON.stringify(c.dados));
   ok("R4 (o tipo do teste sai do que o payload de fato tem)", c.tipoTeste === "TESTE DE PERÍCIA", c.tipoTeste);
 
