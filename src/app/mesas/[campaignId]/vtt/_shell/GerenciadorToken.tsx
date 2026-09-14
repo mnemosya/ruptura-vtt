@@ -451,7 +451,16 @@ export function GerenciadorToken({
   const sujo = useMemo(() => JSON.stringify(valores) !== JSON.stringify(valoresIniciais), [valores, valoresIniciais]);
 
   function pedirFechar() {
-    if (sujo && !window.confirm("Descartar as alterações não salvas deste token?")) return;
+    /* O AVISO É SÓ DA EDIÇÃO. Ali existe um token salvo, e fechar sem
+       querer perde o que já estava no mundo — o preço da pergunta se
+       paga.
+       Na CRIAÇÃO não há nada a perder: o token não existe, e quem
+       clica em Cancelar ou no X está dizendo justamente "não quero
+       criar". Perguntar "descartar as alterações?" ali é pedir
+       confirmação de uma desistência explícita — e bastava escolher um
+       avatar pra janela passar a insistir, porque qualquer campo
+       preenchido deixa o formulário "sujo". */
+    if (modo === "editar" && sujo && !window.confirm("Descartar as alterações não salvas deste token?")) return;
     onFechar();
   }
 
