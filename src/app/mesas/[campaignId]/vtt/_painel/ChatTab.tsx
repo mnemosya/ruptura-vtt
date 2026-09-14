@@ -95,6 +95,27 @@ export function ChatTab({
    * trabalho, e o atalho passa a valer mais que o silêncio.
    */
   const [rolagem, setRolagem] = useState({ rolavel: false, inicio: true, fim: true, longe: false });
+  /**
+   * A ALTURA DA BANDEJA, medida.
+   *
+   * O feed precisa dela em dois lugares — o respiro de baixo e o ponto
+   * onde o véu descansa — e ela MUDA: recolhida são ~37px, aberta
+   * passa de 300. Com o número cravado na folha, abrir a bandeja punha
+   * o véu no meio dela e o fim da conversa debaixo dela.
+   */
+  const bandejaRef = useRef<HTMLDivElement>(null);
+  const [alturaBandeja, setAlturaBandeja] = useState(45);
+  useEffect(() => {
+    const el = bandejaRef.current;
+    if (!el) return;
+    const observador = new ResizeObserver(() => {
+      // +8 do vão até o composer, que é parte do que o feed tem que
+      // desviar.
+      setAlturaBandeja(Math.round(el.getBoundingClientRect().height) + 8);
+    });
+    observador.observe(el);
+    return () => observador.disconnect();
+  }, []);
   const [ultimoIdVisto, setUltimoIdVisto] = useState<string | null>(null);
   const [aplicandoId, setAplicandoId] = useState<string | null>(null);
   const [errosPorCartao, setErrosPorCartao] = useState<Record<string, string>>({});
@@ -445,6 +466,7 @@ export function ChatTab({
       <div className="rv-pn-chat-feedwrap">
       <div
         className="rv-pn-chat-scroll" ref={scrollRef} onScroll={aoRolar}
+        style={{ "--pn-bandeja-altura": `${alturaBandeja}px` } as React.CSSProperties}
         data-rolavel={rolagem.rolavel || undefined}
         data-inicio={rolagem.inicio || undefined}
         data-fim={rolagem.fim || undefined}
@@ -497,7 +519,7 @@ export function ChatTab({
             <ChevronsDown size={15} aria-hidden="true" /> Ir para o fim
           </button>
         )}
-        <div className="pn-bandeja-dados">
+        <div className="pn-bandeja-dados" ref={bandejaRef}>
           <BandejaDados campaignId={campaignId} personagemSugerido={personagemDoTokenSelecionado} />
         </div>
       </div>

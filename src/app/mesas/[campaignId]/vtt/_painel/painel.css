@@ -719,15 +719,25 @@
    a lista de personagens usa. Eram 9/10/10 de padding e 7 de gap: três
    números para dizer "um respiro", e nenhum deles igual ao do lado. */
 .rv-pn-chat .rv-pn-chat-scroll {
-  /* O RESPIRO DE BAIXO reserva o lugar da bandeja recolhida (38px de
-     cabeçalho mais os 8 de folga): sem ele o último cartão nascia
-     debaixo dela, e chegar ao fim da conversa não mostrava o fim. */
-  padding: 8px 8px 54px; gap: 8px;
+  /* A BANDEJA RECOLHIDA ocupa o pé da coluna e o feed tem que contar
+     com ela em dois lugares: no respiro de baixo (senão o último
+     cartão nasce debaixo dela) e no ponto onde o véu descansa. Um
+     número só pros dois — `--pn-bandeja-altura` é a altura dela mais
+     o vão até o composer. */
+  --pn-bandeja-altura: 45px;
+  padding: 8px 8px calc(var(--pn-bandeja-altura) + 8px); gap: 8px;
   /* O véu das pontas (`[data-rolavel]`, no chassi) — mesma marca da
      lista de personagens, e a mesma razão: o feed é alto e a barra de
      rolagem passa despercebida. */
   --rv-veu-cor: #080f1e;
   --rv-veu-recuo: 8px;
+}
+/* O VÉU DE BAIXO PARA NA BANDEJA, não na borda da coluna: embaixo dela
+   não há conversa pra velar, e o degradê continuando por baixo virava
+   uma faixa solta entre as duas peças. Encostado no topo da bandeja,
+   ele é a beirada de onde o feed some. */
+.rv-pn-chat .rv-pn-chat-scroll[data-rolavel]::after {
+  bottom: var(--pn-bandeja-altura);
 }
 .rv-pn-chat .pn-cartao {
   padding: 8px 9px 8px 34px;
