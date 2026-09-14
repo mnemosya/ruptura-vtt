@@ -919,18 +919,18 @@ export async function restaurarCena(sceneId: string): Promise<ResultadoEscrita> 
 /**
  * Apaga a cena e, em cascata, o conteúdo dela.
  *
- * `nomeConfirmacao` é conferido no SERVIDOR contra o nome real. Não é
- * cerimônia: é o que impede uma chamada errada do cliente de apagar
- * sessões inteiras de mesa. Arquivar continua sendo o caminho.
+ * SEM confirmação por nome desde 0132: a exigência ficou só em pasta,
+ * que apaga em cascata coisas que não estão à vista. As guardas que
+ * importam são do servidor e continuam lá — só o narrador, nunca a
+ * cena apresentada, nunca a última utilizável. Arquivar continua sendo
+ * o caminho de quem só quer tirar da frente.
  */
 export async function excluirCena(params: {
   sceneId: string;
-  nomeConfirmacao: string;
 }): Promise<ResultadoEscrita> {
   const client = await getScopedTableClient();
   const { error } = await client.rpc("delete_vtt_scene", {
     p_scene_id: params.sceneId,
-    p_nome_confirmacao: params.nomeConfirmacao,
   });
   if (error) return { ok: false, erro: error.message };
   return { ok: true };

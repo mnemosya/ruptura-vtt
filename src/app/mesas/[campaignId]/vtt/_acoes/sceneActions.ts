@@ -506,19 +506,14 @@ export async function restaurarCenaAction(params: {
   return { ok: true };
 }
 
-/**
- * Exclui. O `nomeConfirmacao` é conferido no SERVIDOR contra o nome
- * real da cena — repetir a conferência aqui daria a impressão de que
- * ela é da UI, e a UI é o lugar onde ela não vale nada.
- */
+/** Exclui. As guardas são todas do servidor (0132). */
 export async function excluirCenaAction(params: {
   campaignId: string;
   sceneId: string;
-  nomeConfirmacao: string;
 }): Promise<ResultadoAcao> {
   const v = await exigirAcesso(params.campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
-  const r = await excluirCena({ sceneId: params.sceneId, nomeConfirmacao: params.nomeConfirmacao });
+  const r = await excluirCena({ sceneId: params.sceneId });
   if (!r.ok) return { ok: false, erro: r.erro ?? "Falha ao excluir a cena." };
   return { ok: true };
 }

@@ -230,13 +230,11 @@ async function main() {
     await noMenu(page, "Ponte Quebrada (cópia)", "cena-excluir");
     criterio("pede confirmação",
       await page.locator('[data-testid="cena-excluir-confirma"]').isVisible());
-    criterio("o botão nasce desabilitado",
-      await page.locator('[data-testid="cena-excluir-confirmar"]').isDisabled());
-    await page.locator('[data-testid="cena-excluir-campo"]').fill("nome errado");
-    criterio("continua desabilitado com o nome errado",
-      await page.locator('[data-testid="cena-excluir-confirmar"]').isDisabled());
-    await page.locator('[data-testid="cena-excluir-campo"]').fill("Ponte Quebrada (cópia)");
-    criterio("habilita com o nome certo",
+    // Desde 0132 a cena não pede o nome digitado — isso ficou só em
+    // pasta, que apaga em cascata. A confirmação é um passo só.
+    criterio("sem campo de nome: a confirmação é um passo só",
+      await page.locator('[data-testid="cena-excluir-campo"]').count() === 0);
+    criterio("o botão de excluir está pronto",
       await page.locator('[data-testid="cena-excluir-confirmar"]').isEnabled());
     await page.locator('[data-testid="cena-excluir-confirmar"]').click();
     await page.waitForFunction(

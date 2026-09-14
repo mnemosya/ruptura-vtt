@@ -710,9 +710,9 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
       "Falha ao restaurar a cena.");
   }
 
-  async function excluir(cena: DadosCartaoCena, nomeConfirmacao: string) {
+  async function excluir(cena: DadosCartaoCena) {
     const ok = await comCena(cena,
-      () => excluirCenaAction({ campaignId: p.campaignId, sceneId: cena.id, nomeConfirmacao }),
+      () => excluirCenaAction({ campaignId: p.campaignId, sceneId: cena.id }),
       "Falha ao excluir a cena.");
     if (ok && cena.id === p.cenaVistaId) p.onCenaSaiuDeUso?.(cena.id);
   }
@@ -1416,7 +1416,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                   onDuplicar={(modo) => void duplicar(c, modo)}
                   onArquivar={() => void arquivar(c)}
                   onRestaurar={() => void restaurar(c)}
-                  onExcluir={(nome) => void excluir(c, nome)}
+                  onExcluir={() => void excluir(c)}
                   onMover={(d) => mover(c.id, d)}
                   // Reordenar só faz sentido numa lista que TEM ordem. Na
                   // busca a lista é achatada entre pastas: "subir" ali

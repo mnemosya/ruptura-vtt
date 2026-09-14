@@ -69,7 +69,7 @@ export interface PropsCartaoCena {
   onDuplicar: (modo: ModoDuplicacao) => void;
   onArquivar: () => void;
   onRestaurar: () => void;
-  onExcluir: (nomeConfirmacao: string) => void;
+  onExcluir: () => void;
   /** Quem está NESTA cena agora (atribuído ou porque a mesa está aqui). */
   jogadoresAqui: PosicaoJogador[];
   /** Todos os jogadores da campanha, para a lista de "trazer para cá". */
@@ -117,10 +117,11 @@ const JOGADORES_VISIVEIS = 3;
 export function CartaoCena(p: PropsCartaoCena) {
   const [modo, setModo] = useState<Modo>("normal");
   const [rascunho, setRascunho] = useState(p.cena.nome);
-  const [confirmacao, setConfirmacao] = useState("");
   const [menuAberto, setMenuAberto] = useState(false);
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const campoRef = useRef<HTMLInputElement | null>(null);
+  /** O foco da confirmação de exclusão mora no CANCELAR — ver o bloco `excluindo`. */
+  const cancelarRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLSpanElement | null>(null);
   /**
    * O menu é POSICIONADO POR MEDIÇÃO, e `position: fixed`.
@@ -146,8 +147,8 @@ export function CartaoCena(p: PropsCartaoCena) {
 
   useEffect(() => {
     if (modo === "renomeando") campoRef.current?.select();
-    if (modo === "excluindo") campoRef.current?.focus();
-    if (modo === "normal") { setConfirmacao(""); setSelecionados(new Set()); }
+    if (modo === "excluindo") cancelarRef.current?.focus();
+    if (modo === "normal") setSelecionados(new Set());
     // Quem já está aqui vem pré-marcado: o gesto comum é ACRESCENTAR
     // alguém ao grupo que está nesta cena, e obrigar a remarcar os que
     // já estavam faria cada ajuste parecer um recomeço.
@@ -320,40 +321,30 @@ export function CartaoCena(p: PropsCartaoCena) {
           </span>
         )}
 
-        {/* EXCLUIR — o nome digitado é exigência da RPC, não teatro da
-            UI: `delete_vtt_scene` confere no servidor. Aqui o campo
-            existe pra que a exigência seja cumprível, e o nome fica à
-            vista logo acima pra que cumpri-la não vire adivinhação. */}
+        {/* EXCLUIR — uma pergunta, duas saídas, sem digitação (0132).
+            O nome digitado ficou só em PASTA, que apaga em cascata
+            coisas fora da vista. Aqui o alvo é um item só, está à vista
+            no cartão, e quem abriu o menu daquele cartão já apontou pra
+            ele duas vezes: digitar o nome não acrescentava decisão, só
+            custo — e custo que aparece justo quando se está arrumando o
+            catálogo, ou seja, muitas vezes seguidas.
+
+            O foco vai pro CANCELAR, não pro excluir: quem chegou aqui
+            sem querer sai apertando Enter, e quem quer mesmo tem um
+            botão vermelho à vista. */}
         {modo === "excluindo" && (
           <span className="rv-cena-linha-acao" data-testid="cena-excluir-confirma">
-            <input
-              ref={campoRef}
-              className="rv-cena-campo"
-              value={confirmacao}
-              maxLength={120}
-              placeholder={`Digite "${p.cena.nome}"`}
-              aria-label={`Digite o nome da cena para confirmar a exclusão de ${p.cena.nome}`}
-              data-testid="cena-excluir-campo"
-              onChange={(e) => setConfirmacao(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") { e.preventDefault(); setModo("normal"); }
-                if (e.key === "Enter" && confirmacao === p.cena.nome) {
-                  e.preventDefault();
-                  setModo("normal");
-                  p.onExcluir(confirmacao);
-                }
-              }}
-            />
+            <span className="rv-pasta-aviso">Excluir “{p.cena.nome}” e todo o conteúdo dela?</span>
             <button
               type="button" className="rv-btn rv-btn--perigo"
               data-testid="cena-excluir-confirmar"
-              // Desabilitado até bater: a RPC recusaria de todo jeito, e
-              // deixar clicar só pra receber erro seria fazer o servidor
-              // ensinar o que a tela já sabe.
-              disabled={confirmacao !== p.cena.nome}
-              onClick={() => { setModo("normal"); p.onExcluir(confirmacao); }}
+              onClick={() => { setModo("normal"); p.onExcluir(); }}
             >Excluir</button>
-            <button type="button" className="rv-btn rv-btn--ghost" onClick={() => setModo("normal")}>Cancelar</button>
+            <button
+              ref={cancelarRef}
+              type="button" className="rv-btn rv-btn--ghost"
+              onClick={() => setModo("normal")}
+            >Cancelar</button>
           </span>
         )}
 
