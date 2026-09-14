@@ -49,14 +49,12 @@ const ACENTO_ROLAGEM_CHAT = "#35c7d8";
 export function ChatTab({
   visivel,
   personagemDoTokenSelecionado,
-  onContador,
   onFocarToken,
   fixtureVisual,
 }: {
   visivel: boolean;
   /** Personagem do token selecionado no mapa, só quando a conta pode controlá-lo. Nunca autoriza nada sozinho. */
   personagemDoTokenSelecionado: { id: string; nome: string } | null;
-  onContador: (n: number | null) => void;
   /** Ação EXPLÍCITA de centralizar a câmera — a única exceção ao invariante de não mexer na cena. */
   onFocarToken?: (tokenId: string) => void;
   /**
@@ -148,9 +146,6 @@ export function ChatTab({
 
   const naoLidos = useMemo(() => contarNaoLidos(cartoes, ultimoIdVisto), [cartoes, ultimoIdVisto]);
 
-  useEffect(() => {
-    onContador(naoLidos > 0 ? naoLidos : null);
-  }, [naoLidos, onContador]);
 
   // ── Scroll ─────────────────────────────────────────────────────
   //

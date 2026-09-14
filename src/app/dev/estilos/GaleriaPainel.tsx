@@ -143,7 +143,6 @@ export function VitrineAbas() {
         <PainelAbas
           abaAtiva={aba}
           aberto={aberto}
-          contadores={{ chat: 3, personagens: 4, bando: 12, participantes: null }}
           onSelecionar={setAba}
           onRecolher={() => setAberto((v) => !v)}
           idPainelDe={(a) => `gal-painel-${a}`}
@@ -170,7 +169,6 @@ export function VitrineChat() {
           key={papel}
           visivel
           personagemDoTokenSelecionado={{ id: "p1", nome: "Mara Venn" }}
-          onContador={SEM_EFEITO}
           fixtureVisual={{
             ...f.chat,
           } as Parameters<typeof ChatTab>[0]["fixtureVisual"]}
@@ -287,7 +285,6 @@ export function VitrineBando() {
           key={String(vazio)}
           campaignId="galeria"
           visivel
-          onContador={SEM_EFEITO}
           onEnviarParaPersonagem={SEM_EFEITO}
           recarregarSinal={0}
           fixtureVisual={(vazio ? BANDO_VAZIO : BANDO) as Parameters<typeof BandoTab>[0]["fixtureVisual"]}
@@ -312,7 +309,6 @@ export function VitrineCompendio() {
       <CompendioTab
         campaignId="galeria"
         visivel
-        onContador={SEM_EFEITO}
         fixtureVisual={COMPENDIO as Parameters<typeof CompendioTab>[0]["fixtureVisual"]}
       />
     </ColunaDoPainel>
@@ -348,7 +344,6 @@ export function VitrinePersonagens() {
           campaignId="galeria"
           visivel
           ehNarrador={papel === "narrator"}
-          onContador={SEM_EFEITO}
           onAbrirConsole={SEM_EFEITO}
           onConfigurarAcesso={SEM_EFEITO}
           onPrecarregarConsole={SEM_EFEITO}
@@ -380,7 +375,6 @@ export function VitrineParticipantes() {
           campaignId="galeria"
           visivel
           ehNarrador={papel === "narrator"}
-          onContador={SEM_EFEITO}
           onAbrirConvites={SEM_EFEITO}
           fixtureVisual={f.participantes}
         />

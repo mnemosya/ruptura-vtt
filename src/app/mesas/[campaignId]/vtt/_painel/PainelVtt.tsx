@@ -137,18 +137,6 @@ export function PainelVtt({
     return () => mq.removeEventListener("change", aplicar);
   }, []);
 
-  const [contadores, setContadores] = useState<Partial<Record<AbaId, number | null>>>({});
-  const definirContador = useCallback((aba: AbaId, n: number | null) => {
-    setContadores((c) => (c[aba] === n ? c : { ...c, [aba]: n }));
-  }, []);
-  // Uma referência ESTÁVEL por aba — passar `(n) => definirContador("chat", n)`
-  // inline recriaria a função a cada render e o `useEffect` de cada aba
-  // dispararia em loop.
-  const contadorChat = useCallback((n: number | null) => definirContador("chat", n), [definirContador]);
-  const contadorPersonagens = useCallback((n: number | null) => definirContador("personagens", n), [definirContador]);
-  const contadorParticipantes = useCallback((n: number | null) => definirContador("participantes", n), [definirContador]);
-  const contadorBando = useCallback((n: number | null) => definirContador("bando", n), [definirContador]);
-  const contadorCompendio = useCallback((n: number | null) => definirContador("compendio", n), [definirContador]);
 
   const asideRef = useRef<HTMLElement | null>(null);
   const idBase = useId();
@@ -307,7 +295,6 @@ export function PainelVtt({
       <ChatTab
         visivel={aberto && abaAtiva === "chat"}
         personagemDoTokenSelecionado={personagemDoTokenSelecionado}
-        onContador={contadorChat}
         onFocarToken={onFocarToken}
         fixtureVisual={fixtureVisual?.chat}
       />
@@ -317,7 +304,6 @@ export function PainelVtt({
         campaignId={campaignId}
         visivel={aberto && abaAtiva === "personagens"}
         ehNarrador={ehNarrador}
-        onContador={contadorPersonagens}
         onAdicionarACena={onAdicionarPersonagemACena}
         onAbrirConsole={abrirConsole}
         onConfigurarAcesso={setAcessoDe}
@@ -332,7 +318,6 @@ export function PainelVtt({
         campaignId={campaignId}
         visivel={aberto && abaAtiva === "participantes"}
         ehNarrador={ehNarrador}
-        onContador={contadorParticipantes}
         onAbrirConvites={() => setConvitesAberto(true)}
         onAbrirConsole={abrirConsole}
         onAbrirJanela={() => setParticipantesAberto(true)}
@@ -343,7 +328,6 @@ export function PainelVtt({
       <BandoTab
         campaignId={campaignId}
         visivel={aberto && abaAtiva === "bando"}
-        onContador={contadorBando}
         onEnviarParaPersonagem={(item: ItemTransferivel) => setTransferencia({ item, personagem: null })}
         recarregarSinal={sinalRecarregarBando}
         onAbrirJanela={() => setBandoAberto(true)}
@@ -354,7 +338,6 @@ export function PainelVtt({
       <CompendioTab
         campaignId={campaignId}
         visivel={aberto && abaAtiva === "compendio"}
-        onContador={contadorCompendio}
         onAbrirJanela={() => setCompendioAberto(true)}
         fixtureVisual={fixtureVisual?.compendio}
       />
@@ -416,7 +399,6 @@ export function PainelVtt({
         <PainelAbas
           abaAtiva={abaAtiva}
           aberto={aberto}
-          contadores={contadores}
           onSelecionar={selecionar}
           onRecolher={recolher}
           idPainelDe={idPainelDe}
@@ -468,7 +450,6 @@ export function PainelVtt({
             <BandoTab
               campaignId={campaignId}
               visivel
-              onContador={() => {}}
               onEnviarParaPersonagem={(item: ItemTransferivel) => setTransferencia({ item, personagem: null })}
               recarregarSinal={sinalRecarregarBando}
             />
@@ -479,7 +460,7 @@ export function PainelVtt({
         <JanelaInterna aberta titulo="Compêndio" largura={680} altura={620} onFechar={() => setCompendioAberto(false)} testId="painel-janela-compendio">
           {/* Mesma aba, com mais espaço — nada de uma segunda implementação do Compêndio. */}
           <div className="rv-pn-aba" style={{ height: "100%" }}>
-            <CompendioTab campaignId={campaignId} visivel onContador={() => {}} />
+            <CompendioTab campaignId={campaignId} visivel />
           </div>
         </JanelaInterna>
       )}
@@ -491,7 +472,6 @@ export function PainelVtt({
               campaignId={campaignId}
               visivel
               ehNarrador={ehNarrador}
-              onContador={() => {}}
               onAbrirConvites={() => setConvitesAberto(true)}
               onAbrirConsole={abrirConsole}
             />
@@ -506,7 +486,6 @@ export function PainelVtt({
               campaignId={campaignId}
               visivel
               ehNarrador={ehNarrador}
-              onContador={() => {}}
               onAdicionarACena={onAdicionarPersonagemACena}
               onAbrirConsole={abrirConsole}
               onConfigurarAcesso={setAcessoDe}

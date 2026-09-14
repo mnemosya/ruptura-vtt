@@ -60,13 +60,11 @@ const ATRASO_BUSCA_MS = 250;
 export function CompendioTab({
   campaignId,
   visivel,
-  onContador,
   onAbrirJanela,
   fixtureVisual,
 }: {
   campaignId: string;
   visivel: boolean;
-  onContador: (n: number | null) => void;
   /** Abre o Compêndio completo em JANELA INTERNA. `undefined` quando ESTA instância já é a janela. */
   onAbrirJanela?: () => void;
   /**
@@ -106,10 +104,6 @@ export function CompendioTab({
   // jogo e não pede ação nenhuma — um "99+" permanente na faixa de
   // ícones seria exatamente o badge decorativo que este trabalho
   // veio remover (o "3" fixo do Chat). Chat conta não lidos,
-  // Participantes conta quem está online; aqui não há o que contar.
-  useEffect(() => {
-    onContador(null);
-  }, [onContador]);
 
   // Busca com atraso, cache e descarte de resposta velha. O `seq`
   // garante que uma resposta mais LENTA de uma consulta anterior nunca

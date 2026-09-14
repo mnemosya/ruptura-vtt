@@ -39,14 +39,12 @@ const ICONE: Record<AbaId, typeof MessageSquare> = {
 export function PainelAbas({
   abaAtiva,
   aberto,
-  contadores,
   onSelecionar,
   onRecolher,
   idPainelDe,
 }: {
   abaAtiva: AbaId;
   aberto: boolean;
-  contadores: Partial<Record<AbaId, number | null>>;
   onSelecionar: (aba: AbaId) => void;
   onRecolher: () => void;
   /** `id` do `tabpanel` de cada aba — o alvo do `aria-controls`. */
@@ -69,7 +67,6 @@ export function PainelAbas({
       {ABAS_ORDEM.map((id) => {
         const Icone = ICONE[id];
         const ativa = aberto && abaAtiva === id;
-        const contador = contadores[id];
         return (
           <button
             key={id}
@@ -88,11 +85,6 @@ export function PainelAbas({
             data-testid={`painel-aba-${id}`}
           >
             <Icone size={17} strokeWidth={1.6} aria-hidden="true" />
-            {typeof contador === "number" && contador > 0 && !ativa && (
-              <span className="rv-aba-badge" data-testid={`painel-aba-badge-${id}`}>
-                {contador > 99 ? "99+" : contador}
-              </span>
-            )}
             <span className="rv-dica">{ROTULO_ABA[id]}</span>
           </button>
         );

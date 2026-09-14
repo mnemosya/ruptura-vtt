@@ -834,7 +834,6 @@
   border: none; border-radius: var(--rv-r); background: transparent;
   cursor: pointer; transition: color .14s, background .14s;
 }
-.rv-aba-badge { position: absolute; top: -2px; right: -2px; min-width: 15px; height: 15px; padding: 0 4px; display: flex; align-items: center; justify-content: center; border-radius: 999px; background: var(--am); color: #10202b; font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700; }
 .rv-aba-fim { flex: 1; }
 /* A dica (`.rv-dica`) por padrão abre pra ESQUERDA (`.rv-painel .rv-dica`,
    acima) — certo pra faixa vertical na borda direita. Com a barra

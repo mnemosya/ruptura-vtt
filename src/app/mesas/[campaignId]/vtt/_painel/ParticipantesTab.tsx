@@ -39,7 +39,6 @@ export function ParticipantesTab({
   campaignId,
   visivel,
   ehNarrador,
-  onContador,
   onAbrirConvites,
   onAbrirConsole,
   onAbrirJanela,
@@ -48,7 +47,6 @@ export function ParticipantesTab({
   campaignId: string;
   visivel: boolean;
   ehNarrador: boolean;
-  onContador: (n: number | null) => void;
   /** Abre "Jogadores e convites" em janela interna — nunca navega. */
   onAbrirConvites: () => void;
   /** Abre a ficha de um personagem controlado, dentro do VTT. */
@@ -115,10 +113,6 @@ export function ParticipantesTab({
 
   // O contador da aba representa QUEM ESTÁ ONLINE — e só existe quando
   // a presença é confiável. Sem presença, a aba não mostra número
-  // nenhum (nunca o total do roster fingindo ser "online").
-  useEffect(() => {
-    onContador(online);
-  }, [online, onContador]);
 
   const temPresenca = presencaDisponivel(presenceSyncStatus);
 

@@ -124,7 +124,6 @@ export function PersonagensTab({
   campaignId,
   visivel,
   ehNarrador,
-  onContador,
   onAdicionarACena,
   onReceberItemDoBando,
   onAbrirConsole,
@@ -136,7 +135,6 @@ export function PersonagensTab({
   campaignId: string;
   visivel: boolean;
   ehNarrador: boolean;
-  onContador: (n: number | null) => void;
   /** Abre o Console do Personagem numa janela interna — nunca navega. */
   onAbrirConsole: (characterId: string) => void;
   /** Abre a janela interna de acesso (conceder/remover controle). */
@@ -286,9 +284,6 @@ export function PersonagensTab({
     [dados, consulta, ordenacao, incluirArquivados],
   );
 
-  useEffect(() => {
-    onContador(arvore ? contarEntradas(arvore) : null);
-  }, [arvore, onContador]);
 
   const podeAdministrar = !!dados?.podeAdministrar && ehNarrador;
 

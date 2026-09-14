@@ -454,7 +454,7 @@ export function RepetidosAbas() {
         <EspecimeIsolado classe="rm-session-tab" folha="_design/mesa.css" sistema="mesa" familia="abas" altura={80} />
         <Especime classe="rv-aba" folha="vtt-chassi.css" raiz="rv-mesa">
           <div className="gal-esp-linha">
-            <button type="button" className="rv-aba" aria-selected="true">Aba<span className="rv-aba-badge">2</span></button>
+            <button type="button" className="rv-aba" aria-selected="true">Aba</button>
             <button type="button" className="rv-aba">Outra</button>
           </div>
         </Especime>

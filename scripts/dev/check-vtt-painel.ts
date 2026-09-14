@@ -387,11 +387,13 @@ async function main() {
     );
   }
   {
-    const badgeEstatico = await narrador.locator('[data-testid="painel-aba-badge-chat"]').textContent().catch(() => null);
+    // As badges de contagem saíram das abas. O critério vira o
+    // contrário do que era: nenhuma pode existir.
+    const badges = await narrador.locator('[data-testid^="painel-aba-badge-"]').count();
     registrar(
-      "1a2 (o badge estático '3' do Chat sumiu — contador é real ou ausente)",
-      badgeEstatico === null || badgeEstatico !== "3",
-      `badge=${badgeEstatico ?? "(nenhum)"}`,
+      "1a2 (nenhuma badge de contagem nas abas)",
+      badges === 0,
+      `badges=${badges}`,
     );
   }
   {
@@ -614,15 +616,16 @@ async function main() {
     // reassinar o canal depois de tudo que esta suíte já fez. O
     // diagnóstico inclui o estado de sincronização mostrado pela
     // própria aba, pra distinguir "lento" de "canal caído".
-    const badgeApareceu =
-      gravouDoJogador &&
-      (await esperarAte(async () => (await narrador.locator('[data-testid="painel-aba-badge-chat"]').count()) > 0, 40000));
-    const badge = badgeApareceu ? await narrador.locator('[data-testid="painel-aba-badge-chat"]').textContent() : null;
+    // O critério 2h checava a BADGE de não lidos aparecendo com outra
+    // aba à frente. Sem badge não há sinal observável nesse estado — o
+    // que a entrega por Realtime tem de verificável é a mensagem
+    // CHEGAR, e é isso que 2c2 faz logo abaixo. Um critério sem
+    // observável é um critério que passa sozinho.
     const sincDegradada = (await narrador.locator(".rv-pn-estado--indisponivel").count()) > 0;
     registrar(
-      "2h (contador REAL de não lidos aparece na aba Chat quando outra aba está à frente)",
-      badgeApareceu,
-      `badge=${badge ?? "(nenhum)"}, gravou=${gravouDoJogador}, sincDegradada=${sincDegradada}`,
+      "2h (a gravação do jogador foi aceita, pré-requisito da entrega por Realtime)",
+      gravouDoJogador,
+      `gravou=${gravouDoJogador}, sincDegradada=${sincDegradada}`,
     );
 
     await irParaAba(narrador, "chat");
@@ -630,12 +633,11 @@ async function main() {
       async () => ((await narrador.locator('[data-testid="painel-chat-scroll"]').textContent()) ?? "").includes(novaDoJogador),
       40000,
     );
-    const badgeZerou = await esperarAte(async () => (await narrador.locator('[data-testid="painel-aba-badge-chat"]').count()) === 0, 15000);
     const dupes = await narrador.locator('[data-testid="painel-feed-mensagem"]').filter({ hasText: novaDoJogador }).count();
     registrar(
-      "2c2 (realtime entre duas sessões: chega uma vez só, e ler zera o contador)",
-      chegou && badgeZerou && dupes === 1,
-      `chegou=${chegou}, zerou=${badgeZerou}, ocorrencias=${dupes}`,
+      "2c2 (realtime entre duas sessões: chega uma vez só)",
+      chegou && dupes === 1,
+      `chegou=${chegou}, ocorrencias=${dupes}`,
     );
 
     // ═══════════════ 3c/5d — visão do JOGADOR ═══════════════

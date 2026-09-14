@@ -40,7 +40,6 @@ import { DialogoConfirmar } from "./ui/Dialogo";
 export function BandoTab({
   campaignId,
   visivel,
-  onContador,
   onEnviarParaPersonagem,
   recarregarSinal,
   onAbrirJanela,
@@ -48,7 +47,6 @@ export function BandoTab({
 }: {
   campaignId: string;
   visivel: boolean;
-  onContador: (n: number | null) => void;
   /** Abre a escolha explícita de personagem autorizado (o painel não adivinha destino). */
   onEnviarParaPersonagem: (item: ItemTransferivel) => void;
   /** Muda quando uma transferência concluída lá fora exige releitura desta aba. */
@@ -104,9 +102,6 @@ export function BandoTab({
   const grupos = useMemo(() => (dados ? agruparPorCategoria(dados.itens, consulta) : []), [dados, consulta]);
   const totalVisivel = useMemo(() => grupos.reduce((n, g) => n + g.itens.length, 0), [grupos]);
 
-  useEffect(() => {
-    onContador(dados ? totalDeUnidades(dados.itens) : null);
-  }, [dados, onContador]);
 
   const detalhe = useMemo(
     () => (detalheId ? (dados?.itens.find((i) => i.id === detalheId) ?? null) : null),
