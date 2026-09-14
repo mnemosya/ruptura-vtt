@@ -581,11 +581,10 @@
 }
 
 /* OS DOIS BOTÕES FLUTUANTES DO FEED — "novas mensagens" e "ir para o
-   fim" — são a MESMA peça: mesmo tamanho, mesmo respiro, mesmo canto.
-   Eles ocupam o mesmo lugar na tela e levam ao mesmo lugar no feed;
-   com desenhos diferentes, pareciam dois componentes de origens
-   diferentes disputando o rodapé. O que muda entre eles é só a
-   INTENSIDADE do ciano — ver a variante `voltar` logo abaixo.
+   fim" — são A MESMA PEÇA, sem variante nenhuma: mesmo tamanho, mesmo
+   respiro, mesmo canto, mesmo fio, mesma tinta. Eles ocupam o mesmo
+   lugar na tela e levam ao mesmo lugar no feed; o que muda é só a
+   FRASE, que é o que de fato difere entre os dois casos.
 
    RAIO PRÓPRIO nos quatro cantos: a peça flutua solta sobre o feed, e
    o 4px do chassi — pensado pra peça encostada em outra — deixava cara
@@ -609,17 +608,7 @@
    não no TAMANHO: ele é a saída de quem se perdeu no meio de um feed
    longo, e no corpo do aviso de novas (3px de respiro, 10px de fonte)
    ficava uma etiqueta que não se lia como botão. */
-/* A ÚNICA diferença: o fio. "Chegou algo" acende a borda inteira no
-   ciano; "você subiu muito" fica com a linha neutra do painel. O texto
-   e o ícone seguem cianos nos dois — é o mesmo destino. */
-.rv-pn-chat-novas[data-tipo="voltar"] {
-  border-color: var(--pn-line-soft);
-  color: color-mix(in srgb, var(--pn-cy) 78%, var(--pn-txt-forte));
-}
-.rv-pn-chat-novas[data-tipo="voltar"]:hover {
-  border-color: color-mix(in srgb, var(--pn-cy) 45%, transparent);
-  color: var(--pn-cy);
-}
+
 
 /* ── COMPOSER ─────────────────────────────────────────────────── */
 .pn-composer {

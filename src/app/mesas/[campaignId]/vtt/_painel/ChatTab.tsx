@@ -473,12 +473,12 @@ export function ChatTab({
           <ChevronDown size={12} aria-hidden="true" /> Novas mensagens
         </button>
       ) : rolagem.longe && (
-        /* MESMO BOTÃO, outro recado: aqui não chegou nada novo, só se
-           subiu muito. Por isso é neutro (`data-tipo="voltar"`) e não
-           tem o acento de "novas" — anunciar novidade que não existe
-           faria a pessoa descer achando que perdeu alguma coisa. */
+        /* O MESMO BOTÃO, sem variante de estilo: os dois ocupam o mesmo
+           lugar e levam ao mesmo lugar. O que muda é a FRASE — "novas
+           mensagens" quando chegou algo, "ir para o fim" quando só se
+           subiu muito —, que é a única diferença real entre os casos. */
         <button
-          type="button" className="rv-pn-chat-novas" data-tipo="voltar"
+          type="button" className="rv-pn-chat-novas"
           onClick={irParaOFim} data-testid="painel-chat-voltar-fim"
         >
           <ChevronsDown size={15} aria-hidden="true" /> Ir para o fim
