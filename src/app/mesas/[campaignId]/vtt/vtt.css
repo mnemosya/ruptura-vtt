@@ -3399,7 +3399,14 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    TEM as duas e a regra de `.rv-fp-grupo` vem depois nesta folha: com
    uma classe só, o `gap: 8px` dela ganhava por ordem e as quatro
    seções ficavam coladas. */
-.rv-janela-token .rv-mais-opcoes.rv-fp-grupo { border-top: none; padding-top: 0; gap: 32px; }
+/* `gap` NÃO CHEGA NO CONTEÚDO DE UM `<details>`: o navegador embrulha
+   tudo que vem depois do `<summary>` numa caixa anônima, então o
+   container de flex tem DOIS itens (o resumo e esse embrulho) — o vão
+   caía entre os dois e nunca entre as seções lá dentro. Era isso que
+   fazia o número não ter efeito por mais que eu aumentasse.
+   Com margem nos filhos, o vão volta a ser entre eles. */
+.rv-janela-token .rv-mais-opcoes.rv-fp-grupo { border-top: none; padding-top: 0; gap: 0; }
+.rv-janela-token .rv-mais-opcoes > :not(summary) { margin-top: 32px; }
 .rv-janela-token .rv-mais-opcoes-chevron { margin-left: auto; transition: transform .16s; }
 .rv-mais-opcoes[open] > summary .rv-mais-opcoes-chevron { transform: rotate(180deg); }
 .rv-mais-opcoes > summary {
@@ -3443,6 +3450,17 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* Numeração das seções: o contador vive no CORPO, como nas outras. */
 .rv-janela-token .rv-modal-corpo { counter-reset: rvfpsec; }
 .rv-janela-token .rv-fp-grupo { counter-increment: rvfpsec; display: flex; flex-direction: column; gap: 8px; }
+/* O `<legend>` VOLTA PRO FLUXO. `float: left; width: 100%` é o truque
+   antigo e ainda o único que funciona: por padrão o navegador tira o
+   legend do fluxo e o desenha POR CIMA da borda do fieldset — e é ele
+   que engolia o vão de 32px entre uma seção e a anterior. O vão
+   existia; o título subia pra dentro dele.
+
+   Com o float, o legend passa a ocupar a própria linha, o fieldset
+   começa onde o título começa, e o vão aparece ONDE se pede: entre a
+   última coisa de uma seção e o título da seguinte. */
+.rv-janela-token fieldset.rv-field > legend { float: left; width: 100%; padding: 0; }
+
 /* LEGEND NÃO É ITEM DE FLEX. Num `<fieldset>`, o `<legend>` é
    posicionado pelo navegador acima da caixa e fica FORA do fluxo de
    flex — o `gap` do grupo simplesmente não se aplica a ele. Era por
