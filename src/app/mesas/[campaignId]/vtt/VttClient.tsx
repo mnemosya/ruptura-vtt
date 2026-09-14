@@ -241,6 +241,10 @@ function rascunhoDePersonagem(p: PersonagemArrastado): ValoresFormularioToken {
     retratoUrl: null,
     pvAtual: null,
     pvMax: null,
+    peAtual: null,
+    peMax: null,
+    manaAtual: null,
+    manaMax: null,
     condicoes: [],
   };
 }
@@ -2217,7 +2221,9 @@ export function VttClient({
       nome: "", sigla: "", lado: "pn", vertente: "nenhuma",
       tamanho: "medio", orientacao: 0, q: 0, r: 0,
       characterId: null, visivel: true, bloqueado: false, retratoUrl: null,
-      pvAtual: null, pvMax: null, condicoes: [],
+      pvAtual: null, pvMax: null,
+      peAtual: null, peMax: null, manaAtual: null, manaMax: null,
+      condicoes: [],
     };
   }
   function valoresDeToken(t: TokenApresentacao): ValoresFormularioToken {
@@ -2225,7 +2231,9 @@ export function VttClient({
       nome: t.nome, sigla: t.sigla, lado: t.lado, vertente: t.vertente,
       tamanho: t.tamanho, orientacao: t.orientacao, q: t.pos.q, r: t.pos.r,
       characterId: t.characterId, visivel: t.visivel, bloqueado: t.bloqueado, retratoUrl: t.retrato,
-      pvAtual: t.pv, pvMax: t.pvMax, condicoes: [...t.condicoes],
+      pvAtual: t.pv, pvMax: t.pvMax,
+      peAtual: t.pe, peMax: t.peMax, manaAtual: t.mana, manaMax: t.manaMax,
+      condicoes: [...t.condicoes],
     };
   }
 
@@ -2322,7 +2330,10 @@ export function VttClient({
       const revisaoAtual = estadoCenaRef.current?.tokens.find((t) => t.id === tokenId)?.revision ?? tokenAtual!.revision;
       const r = await editarTokenAction({
         campaignId, tokenId, nome: v.nome, sigla: v.sigla, lado: v.lado, vertente: v.vertente,
-        characterId: v.characterId, retratoUrl: v.retratoUrl, pvAtual: v.pvAtual, pvMax: v.pvMax,
+        characterId: v.characterId, retratoUrl: v.retratoUrl,
+        pvAtual: v.pvAtual, pvMax: v.pvMax,
+        peAtual: v.peAtual, peMax: v.peMax,
+        manaAtual: v.manaAtual, manaMax: v.manaMax,
         condicoes: v.condicoes, tamanho: v.tamanho, revisionEsperada: revisaoAtual,
       });
       if (!r.ok || !r.dados) return { ok: false, erro: r.erro };
@@ -2532,7 +2543,10 @@ export function VttClient({
       tamanho: f.rascunho.tamanho, orientacao: f.orientacao, pegadaPersonalizada: null,
       q: hex.q, r: hex.r, characterId: f.rascunho.characterId,
       visivel: f.rascunho.visivel, bloqueado: f.rascunho.bloqueado, retratoUrl: f.rascunho.retratoUrl,
-      pvAtual: f.rascunho.pvAtual, pvMax: f.rascunho.pvMax, condicoes: f.rascunho.condicoes,
+      pvAtual: f.rascunho.pvAtual, pvMax: f.rascunho.pvMax,
+      peAtual: f.rascunho.peAtual, peMax: f.rascunho.peMax,
+      manaAtual: f.rascunho.manaAtual, manaMax: f.rascunho.manaMax,
+      condicoes: f.rascunho.condicoes,
     }).then((r) => {
       confirmandoPosicaoRef.current = false;
       if (!r.ok || !r.dados) {

@@ -59,6 +59,11 @@ export interface TokenApresentacao {
   /** `null` = sem PV definido (a UI deve tratar como "sem barra de vida", não como 0). */
   pv: number | null;
   pvMax: number | null;
+  /** PE e Mana PRÓPRIOS (migration 0133); nulos quando o token tem ficha. */
+  pe: number | null;
+  peMax: number | null;
+  mana: number | null;
+  manaMax: number | null;
   condicoes: CondicaoSlug[];
   visivel: boolean;
   bloqueado: boolean;
@@ -107,6 +112,10 @@ export function tokenApresentacaoDe(t: {
   retratoEfetivoId: string | null;
   pvAtual: number | null;
   pvMax: number | null;
+  peAtual: number | null;
+  peMax: number | null;
+  manaAtual: number | null;
+  manaMax: number | null;
   condicoes: string[];
   visivel: boolean;
   bloqueado: boolean;
@@ -150,6 +159,10 @@ export function tokenApresentacaoDe(t: {
       : "nenhum",
     pv: t.pvAtual,
     pvMax: t.pvMax,
+    pe: t.peAtual,
+    peMax: t.peMax,
+    mana: t.manaAtual,
+    manaMax: t.manaMax,
     condicoes: condicoesValidas(t.condicoes),
     visivel: t.visivel,
     bloqueado: t.bloqueado,

@@ -35,7 +35,7 @@ function token(id: string, nome: string, sigla: string, lado: "pj" | "pn", q: nu
   return {
     id, nome, sigla, lado, vertente: "energetico", tamanho: "medio",
     pos: { q, r }, offset: { q: 0, r: 0 }, orientacao: 0,
-    pegadaPersonalizada: null, retrato: null, pv: 20, pvMax: 20,
+    pegadaPersonalizada: null, retrato: null, pv: 20, pvMax: 20, pe: null, peMax: null, mana: null, manaMax: null,
     condicoes: [], visivel: true, bloqueado: false, characterId: null,
     pvPublico: true, pePublico: false, manaPublica: true, podeControlar: true, revision: 1,
     ...extra,

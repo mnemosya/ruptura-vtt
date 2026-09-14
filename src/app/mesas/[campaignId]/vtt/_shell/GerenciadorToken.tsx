@@ -63,10 +63,27 @@ export interface ValoresFormularioToken {
   retratoUrl: string | null;
   pvAtual: number | null;
   pvMax: number | null;
+  /** PE e Mana PRÓPRIOS do token (migration 0133) — só valem sem ficha vinculada. */
+  peAtual: number | null;
+  peMax: number | null;
+  manaAtual: number | null;
+  manaMax: number | null;
   condicoes: CondicaoSlug[];
 }
 
 const CATEGORIAS: TamanhoCriatura[] = ["pequeno", "medio", "grande", "enorme", "colossal"];
+/**
+ * Os três recursos que um token SEM ficha guarda por conta própria
+ * (migration 0133). Com ficha vinculada, os números são os da ficha
+ * canônica e estes campos ficam desabilitados: dois lugares guardando o
+ * mesmo PV é a receita de eles discordarem.
+ */
+const RECURSOS_DO_TOKEN = [
+  { chaveAtual: "pvAtual", chaveMax: "pvMax", rotulo: "PV", maxima: false },
+  { chaveAtual: "peAtual", chaveMax: "peMax", rotulo: "PE", maxima: false },
+  { chaveAtual: "manaAtual", chaveMax: "manaMax", rotulo: "Mana", maxima: true },
+] as const;
+
 /** As vertentes na ordem do sistema; a cor de cada uma vive na folha (`--rv-vertente-cor`). */
 const VERTENTES: readonly (readonly [VertenteToken, string])[] = [
   ["nenhuma", "Nenhuma"],
@@ -437,7 +454,15 @@ export function GerenciadorToken({
 
   // Validação de imagem, reativa ao valor atual.
   const validacaoImagem = validarUrlImagem(valores.retratoUrl ?? "");
-  const pvInvalido = valores.pvAtual !== null && valores.pvMax !== null && valores.pvAtual > valores.pvMax;
+  /* A mesma regra vale pros três: atual não passa do máximo. Guardar
+     só o PV deixava PE e Mana entrarem inconsistentes pela mesma porta
+     que o PV tinha fechada. */
+  const recursoInvalido = RECURSOS_DO_TOKEN.find(({ chaveAtual, chaveMax }) => {
+    const atual = valores[chaveAtual];
+    const max = valores[chaveMax];
+    return atual !== null && max !== null && atual > max;
+  });
+  const pvInvalido = recursoInvalido !== undefined;
 
   const tamanhoMudou = modo === "editar" && valores.tamanho !== valoresIniciais.tamanho;
   const cabeAposRedimensionar = !tamanhoMudou || cabeAoRedimensionar({
@@ -456,7 +481,16 @@ export function GerenciadorToken({
   async function confirmar() {
     if (!podeConfirmar || enviandoRef.current) return;
     if (!validacaoImagem.ok) { setErro(validacaoImagem.erro); return; }
-    if (pvInvalido) { setErro("PV atual não pode ser maior que o PV máximo."); return; }
+    /* Recalculado aqui, e não lido de `recursoInvalido`: depois do
+       `if (!podeConfirmar) return` o TypeScript já sabe que aquele é
+       `undefined`, e o teste viraria código morto que nunca protege
+       nada. Este relê os valores no instante do envio. */
+    const invalidoAgora = RECURSOS_DO_TOKEN.find(({ chaveAtual, chaveMax }) => {
+      const atual = valores[chaveAtual];
+      const max = valores[chaveMax];
+      return atual !== null && max !== null && atual > max;
+    });
+    if (invalidoAgora) { setErro(`${invalidoAgora.rotulo} atual não pode ser maior que o máximo.`); return; }
     if (!cabeAposRedimensionar) {
       setErro("O novo tamanho não cabe na posição atual. Mova ou rotacione o token no mapa antes de alterar o tamanho.");
       return;
@@ -499,6 +533,9 @@ export function GerenciadorToken({
   // existe a partir do posicionamento no mapa; a de um token existente
   // nunca é editável por aqui). Nunca projeta sobre uma âncora real,
   // nunca sabe de terreno/colisão/bordas — é só "que forma é essa".
+  /** Token com ficha não guarda recurso próprio — quem manda é a ficha. */
+  const temFicha = valores.characterId !== null;
+
   const pegadaAbstrata = useMemo(() => pegadaEfetiva({ categoria: valores.tamanho, orientacao: 0, pegadaPersonalizada: null }), [valores.tamanho]);
   const raioPreview = 22;
   const previewPontos = pegadaAbstrata.map((c) => hexParaPixel(c, raioPreview));
@@ -741,19 +778,47 @@ export function GerenciadorToken({
                 PV em toda parte, e o nome por extenso só aparecia aqui.
                 Os campos são estreitos porque são números de até três
                 dígitos — a largura de antes cabia um CEP. */}
-            <div className="rv-form-linha rv-token-recursos">
-              <label className="rv-field rv-field--num">
-                <span>PV atual</span>
-                <input type="number" min={0} value={valores.pvAtual ?? ""} onChange={(e) => setValores((v) => ({ ...v, pvAtual: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) }))} />
-              </label>
-              <label className="rv-field rv-field--num">
-                <span>PV máximo</span>
-                <input type="number" min={0} value={valores.pvMax ?? ""} onChange={(e) => setValores((v) => ({ ...v, pvMax: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) }))} />
-              </label>
-            </div>
-            {pvInvalido && <p className="rv-form-aviso" role="alert">PV atual não pode ser maior que o PV máximo.</p>}
-            {valores.pvAtual !== null && valores.pvMax === null && (
-              <p className="rv-field-ajuda">Sem um PV máximo, o token não mostra barra de vida.</p>
+            {/* OS TRÊS RECURSOS, um por linha: atual e máximo lado a
+                lado. Eles só existem pra token SEM ficha — com ficha
+                vinculada os números vêm da ficha canônica, e dois
+                lugares guardando o mesmo PV é a receita de eles
+                discordarem. */}
+            {RECURSOS_DO_TOKEN.map(({ chaveAtual, chaveMax, rotulo, maxima }) => (
+              <div className="rv-form-linha rv-token-recursos" key={rotulo}>
+                <label className="rv-field rv-field--num">
+                  <span>{rotulo} atual</span>
+                  <input
+                    type="number" min={0} value={valores[chaveAtual] ?? ""}
+                    disabled={temFicha}
+                    onChange={(e) => setValores((v) => ({ ...v, [chaveAtual]: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) }))}
+                  />
+                </label>
+                <label className="rv-field rv-field--num">
+                  <span>{rotulo} {maxima ? "máxima" : "máximo"}</span>
+                  <input
+                    type="number" min={0} value={valores[chaveMax] ?? ""}
+                    disabled={temFicha}
+                    onChange={(e) => setValores((v) => ({ ...v, [chaveMax]: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) }))}
+                  />
+                </label>
+              </div>
+            ))}
+            {temFicha && (
+              <small className="rv-field-ajuda">
+                Os recursos vêm da ficha vinculada — é lá que eles mudam.
+              </small>
+            )}
+            {recursoInvalido && (
+              <p className="rv-form-aviso" role="alert">
+                {recursoInvalido.rotulo} atual não pode ser maior que o máximo.
+              </p>
+            )}
+            {/* O MÁXIMO É QUE LIGA A BARRA — o servidor só projeta o
+                recurso quando os dois números existem (0133). Sem ele,
+                o atual fica guardado e invisível, e é melhor dizer isso
+                do que deixar a barra simplesmente não aparecer. */}
+            {RECURSOS_DO_TOKEN.some(({ chaveAtual, chaveMax }) => valores[chaveAtual] !== null && valores[chaveMax] === null) && (
+              <p className="rv-field-ajuda">Sem o máximo, o recurso não vira barra no token.</p>
             )}
           </fieldset>
 

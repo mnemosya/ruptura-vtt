@@ -906,6 +906,10 @@ export interface CriarTokenParams {
   retratoUrl: string | null;
   pvAtual: number | null;
   pvMax: number | null;
+  peAtual: number | null;
+  peMax: number | null;
+  manaAtual: number | null;
+  manaMax: number | null;
   condicoes: string[];
 }
 
@@ -930,6 +934,10 @@ export interface AtualizarTokenParams {
   retratoUrl: string | null;
   pvAtual: number | null;
   pvMax: number | null;
+  peAtual: number | null;
+  peMax: number | null;
+  manaAtual: number | null;
+  manaMax: number | null;
   condicoes: string[];
   revisionEsperada: number;
 }
@@ -955,6 +963,10 @@ export interface EditarTokenParams {
   retratoUrl: string | null;
   pvAtual: number | null;
   pvMax: number | null;
+  peAtual: number | null;
+  peMax: number | null;
+  manaAtual: number | null;
+  manaMax: number | null;
   condicoes: string[];
   tamanho: TokenVtt["tamanho"];
   revisionEsperada: number;
