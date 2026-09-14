@@ -729,10 +729,22 @@
      o composer, que a medida não inclui. */
   padding: 8px 8px calc(var(--pn-bandeja-altura) + 16px); gap: 8px;
 }
-/* SEM VÉU NAS PONTAS aqui, ao contrário das outras listas: a bandeja
-   de dados flutua no pé do feed, e o degradê caía em cima dela — não
-   havia posição que não lesse como erro. Quem diz que há mais conversa
-   é o atalho "ir para o fim", que além de avisar leva. */
+/* O VÉU DO FEED — só o de baixo, e fechando no TOPO DA BANDEJA, que é
+   onde a conversa acaba na tela.
+
+   A COR não é a mesma das outras listas: o painel ganhou um degradê e
+   no pé dele o fundo é `#060b16`, não `#080f1e`. Com a cor do topo, o
+   véu terminava num tom mais claro que o fundo atrás dele e se via
+   como um retângulo solto — era esse o "lugar errado" que ele parecia
+   ocupar, não a posição. */
+.rv-pn-chat .rv-pn-chat-scroll {
+  --rv-veu-cor: #060b16;
+  --rv-veu-altura: 44px;
+}
+.rv-pn-chat .rv-pn-chat-scroll[data-rolavel]::before { content: none; }
+.rv-pn-chat .rv-pn-chat-scroll[data-rolavel]::after {
+  bottom: var(--pn-bandeja-altura);
+}
 .rv-pn-chat .pn-cartao {
   padding: 8px 9px 8px 34px;
   border-color: rgba(43,63,94,.72);
