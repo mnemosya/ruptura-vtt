@@ -672,7 +672,10 @@
 
 /* ═══ CHAT B — dossiê de campo do protótipo, sobre dados reais ═══ */
 .rv-painel .rv-pn-chat { background: linear-gradient(160deg, rgba(11,19,34,.96), rgba(8,14,25,.98)); }
-.rv-pn-chat .rv-pn-chat-scroll { padding: 9px 10px 10px; gap: 7px; }
+/* UM VÃO SÓ, 8px — o mesmo número do padding do container e o mesmo que
+   a lista de personagens usa. Eram 9/10/10 de padding e 7 de gap: três
+   números para dizer "um respiro", e nenhum deles igual ao do lado. */
+.rv-pn-chat .rv-pn-chat-scroll { padding: 8px; gap: 8px; }
 .rv-pn-chat .pn-cartao {
   padding: 8px 9px 8px 34px;
   border-color: rgba(43,63,94,.72);
