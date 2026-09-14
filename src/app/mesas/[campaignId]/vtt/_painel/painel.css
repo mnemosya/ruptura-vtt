@@ -851,10 +851,17 @@
 .rv-pn-busca-limpar { flex: none; display: flex; border: none; background: transparent; color: var(--pn-dim); cursor: pointer; padding: 1px; }
 .rv-pn-busca-limpar:hover { color: var(--pn-txt-forte); }
 
+/* LINHA 1: a busca ocupa o que sobra, a ordenação tem largura própria
+   e fica encostada na direita. A busca traz a própria margem
+   (`.rv-pn-busca`), então a linha só acrescenta a margem da direita. */
+.rv-pn-linha-busca { flex: none; display: flex; align-items: center; gap: 6px; padding-right: 8px; }
+.rv-pn-linha-busca .rv-pn-busca { flex: 1; min-width: 0; }
+.rv-pn-linha-busca .rv-pn-select { flex: none; }
+
+/* LINHA 2: criar à esquerda, switch à direita. */
 .rv-pn-filtros { flex: none; display: flex; align-items: center; gap: 6px; padding: 0 8px 6px; flex-wrap: wrap; }
-/* As ações empurradas pra direita: a ordenação é do lado da lista, o
-   que se CRIA fica no canto oposto. */
-.rv-pn-filtros-acoes { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+/* Criar ancora na ESQUERDA — é a ação principal da faixa. */
+.rv-pn-filtros-acoes { display: flex; align-items: center; gap: 6px; }
 
 /* O switch de recursos herda o interruptor do VTT (`.rv-fp-switch`) e
    só encolhe: a coluna do painel é estreita, e o alvo de 34×19 do
@@ -865,9 +872,11 @@
    2px` do formulário voltava e colava o switch na borda esquerda.
    Repetir a classe desempata sem inventar um seletor falso.
 
-   O alinhamento à esquerda é o da busca e o dos filtros logo acima:
-   8px, a margem da coluna. */
-.rv-pn-switch.rv-pn-switch { padding: 0 8px 8px; font-size: 11px; gap: 7px; }
+   Ele vive na linha dos botões de criar, encostado na direita: os dois
+   lados da faixa são "o que eu faço com a lista", e o switch é o único
+   que não cria nada. O `padding` zerado deixa a margem por conta da
+   linha (`.rv-pn-filtros`), pra ele encostar onde os outros encostam. */
+.rv-pn-switch.rv-pn-switch { padding: 0; margin-left: auto; font-size: 11px; gap: 7px; }
 .rv-pn-switch .rv-fp-switch-tr { width: 26px; height: 15px; }
 .rv-pn-switch .rv-fp-switch-tr::after { width: 11px; height: 11px; }
 .rv-pn-switch input:checked + .rv-fp-switch-tr::after { transform: translateX(11px); }

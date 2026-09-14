@@ -567,20 +567,18 @@ export function PersonagensTab({
     <div className="rv-pn-aba">
       <div className="rv-pn-dossie">
         <div className="rv-pn-dossie-lista">
-          <BuscaDiretorio
-            valor={consulta}
-            onMudar={setConsulta}
-            rotulo="Buscar personagem por nome"
-            placeholder="Buscar personagem…"
-            testId="painel-personagens-busca"
-          />
-
-          {/* CRIAR MORA EM CIMA, junto da busca e da ordenação: é o que
-              se faz COM a lista, e estava no rodapé, longe de onde o
-              olho já estava. "Arquivados" fez o caminho inverso — é
-              filtro de exceção, consultado uma vez a cada muitas, e
-              ocupava o lugar nobre ao lado da ordenação. */}
-          <div className="rv-pn-filtros">
+          {/* LINHA 1 — achar. A busca cresce, a ordenação fica no canto:
+              as duas respondem "como eu chego no personagem certo", e
+              separá-las em duas faixas gastava uma linha inteira num
+              seletor de dois valores. */}
+          <div className="rv-pn-linha-busca">
+            <BuscaDiretorio
+              valor={consulta}
+              onMudar={setConsulta}
+              rotulo="Buscar personagem por nome"
+              placeholder="Buscar personagem…"
+              testId="painel-personagens-busca"
+            />
             <label className="rv-sr-only" htmlFor="rv-pers-ordem">Ordenação</label>
             <select
               id="rv-pers-ordem"
@@ -592,6 +590,13 @@ export function PersonagensTab({
               <option value="alfabetica">A–Z</option>
               <option value="manual">Manual</option>
             </select>
+          </div>
+
+          {/* LINHA 2 — o que se FAZ com a lista: criar à esquerda, o
+              switch de recursos no canto oposto. Criar estava no
+              rodapé, longe de onde o olho já está; "Arquivados" fez o
+              caminho inverso, porque é filtro de exceção. */}
+          <div className="rv-pn-filtros">
             {podeAdministrar && (
               <span className="rv-pn-filtros-acoes">
                 <BotaoAba
@@ -623,9 +628,7 @@ export function PersonagensTab({
                 </BotaoAba>
               </span>
             )}
-          </div>
-
-          <label className="rv-fp-switch rv-pn-switch">
+            <label className="rv-fp-switch rv-pn-switch">
             <input
               type="checkbox"
               checked={mostrarRecursos}
@@ -633,8 +636,9 @@ export function PersonagensTab({
               data-testid="painel-personagens-recursos"
             />
             <span className="rv-fp-switch-tr" aria-hidden="true" />
-            <span className="rv-fp-switch-txt">Mostrar recursos</span>
-          </label>
+              <span className="rv-fp-switch-txt">Mostrar recursos</span>
+            </label>
+          </div>
 
           <div
             className="rv-pn-scroll rv-pn-scroll--pers"
