@@ -1014,8 +1014,12 @@
   transition: color 0.14s, background 0.14s, border-color 0.14s;
 }
 .rc-tabrail-btn:hover { color: #d3f4ff; border-color: var(--rc-line); background: rgba(0, 212, 255, 0.09); }
+/* O ícone da aba ATIVA é CIANO, não branco: a cor da marca é o que diz
+   "é esta", e um branco mais forte que o dos vizinhos exigia comparar
+   dois cinzas pra descobrir qual estava selecionada. Mesma regra no
+   trilho de ferramentas do VTT (`.rv-ferr-btn`). */
 .rc-tabrail-btn[aria-selected="true"] {
-  color: #eafcff; border-color: #108bac; background: #123640;
+  color: var(--cy); border-color: #108bac; background: #123640;
   box-shadow: 0 0 9px rgba(0, 212, 255, 0.25);
 }
 .rc-tabrail-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
