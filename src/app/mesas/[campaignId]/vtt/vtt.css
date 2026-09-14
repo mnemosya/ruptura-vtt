@@ -1222,7 +1222,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   color: var(--rv-lado-cor, var(--rv-slate));
 }
 .rv-token-disco[data-lado="neutro"] { border-style: dashed; }
-.rv-token-pegada { color: var(--rv-vertente-cor, #35c8f0); }
+
 /* A paleta, uma vez só — vale pro disco, pra pegada e pras fichas. */
 [data-vertente="somatico"] { --rv-vertente-cor: #2f9e56; }
 [data-vertente="cognitivo"] { --rv-vertente-cor: #8b5cf6; }
@@ -1264,6 +1264,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   font-family: var(--font-mono), monospace; font-size: 9px; letter-spacing: .08em;
   text-transform: uppercase; color: var(--rv-ink-faint);
 }
+/* A COR DA VERTENTE vai no SVG, não no container: o container também
+   pinta o rótulo ("1 hex"), e ele é legenda — fica no cinza. O `color`
+   do container vinha depois na folha e apagava o da vertente; era por
+   isso que o hexágono não mudava de cor. */
+.rv-token-pegada svg { color: var(--rv-vertente-cor, #35c8f0); }
 
 /* LADO — ficha com a marca da cor. É a cor que distingue os três no
    mapa, e ela não aparecia em lugar nenhum do formulário. */
@@ -3337,6 +3342,13 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   font-family: var(--rv-display), sans-serif;
   font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .16em; color: #4f6285;
 }
+/* O PLACEHOLDER É DO VTT, não do navegador: sem regra ele herdava o
+   cinza e a fonte do agente do usuário — outro peso, outro tom, e o
+   campo parecia de outro produto. */
+.rv-janela-token .rv-field input::placeholder {
+  color: #4f6285; opacity: 1;
+  font-family: var(--rv-body); font-size: 12px; letter-spacing: 0;
+}
 .rv-janela-token .rv-field input[type="text"],
 .rv-janela-token .rv-field input[type="number"],
 .rv-janela-token .rv-field select {
@@ -3383,7 +3395,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    campos, é quatro SEÇÕES com título próprio (imagem, recursos,
    vertente, condições). Os 10px que estavam aqui — herdados de quando
    ele era uma lista de campos soltos — colavam uma na outra. */
-.rv-janela-token .rv-mais-opcoes { border-top: none; padding-top: 0; gap: 18px; }
+.rv-janela-token .rv-mais-opcoes { border-top: none; padding-top: 0; gap: 24px; }
 .rv-janela-token .rv-mais-opcoes-chevron { margin-left: auto; transition: transform .16s; }
 .rv-mais-opcoes[open] > summary .rv-mais-opcoes-chevron { transform: rotate(180deg); }
 .rv-mais-opcoes > summary {
@@ -3436,8 +3448,13 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* E `margin-bottom` NO LEGEND não resolve: fora do fluxo, a margem
    dele não empurra o conteúdo do fieldset de forma confiável. Quem
    ganha o vão é o PRIMEIRO IRMÃO depois dele. */
-.rv-janela-token .rv-fp-grupo > legend + * { margin-top: 10px; }
-.rv-janela-token fieldset.rv-field > legend + * { margin-top: 8px; }
+/* 14px do título ao conteúdo, e 24 entre uma seção e a seguinte: os
+   8/18 de antes eram perto demais um do outro pra dizer o que é
+   "dentro" e o que é "depois". A distância entre blocos tem que ser
+   visivelmente maior que a de dentro do bloco, senão a coluna vira uma
+   lista de linhas igualmente espaçadas. */
+.rv-janela-token .rv-fp-grupo > legend + *,
+.rv-janela-token fieldset.rv-field > legend + * { margin-top: 14px; }
 .rv-janela-token .rv-fp-rotulo {
   display: flex; align-items: center; gap: 10px;
   font-family: var(--rv-display), sans-serif;
