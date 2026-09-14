@@ -151,7 +151,9 @@
    e um import cruzado só pra seis declarações traria a cascata inteira
    de uma pra dentro da outra. */
 .rv-ferramentas {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  display: flex; flex-direction: column; align-items: center;
+  /* O VÃO É CALCULADO, não escolhido — ver o bloco abaixo. */
+  gap: clamp(3px, (100vh - 640px) / 18, 8px);
   padding: 10px 0; background: var(--rv-sunken); border-right: 1px solid var(--linha-2); z-index: 20;
   /* SEM `overflow`, e isso é regra, não descuido. As dicas de cada
      ferramenta são filhas do botão e saem PELO LADO; uma caixa de
@@ -161,13 +163,22 @@
      trilho inteiro.
 
      Como não há rolagem, o trilho precisa CABER — e é por isso que o
-     VÃO é a única medida que NÃO copia o Console. Lá são nove abas com
-     12px entre grupos; aqui são dezesseis ferramentas, e a conta não
-     sobrevive: com os 8px do Console o conteúdo dá 761px, com 6px dá
-     737px, e uma janela de 700px de altura (notebook comum) corta a
-     última ferramenta nos dois casos. Em 3px dá 698px e passa. O botão
-     é igual ao do Console; a distância entre eles é o que o espaço
-     permite. Ferramenta nova pede refazer esta conta. */
+     VÃO é a única medida que não copia o Console direto. Lá são nove
+     abas; aqui são dezesseis ferramentas e três divisórias.
+
+     Em vez de fixar o vão no pior caso (3px, que servia à tela mais
+     baixa e apertava todas as outras), ele sai do espaço que sobra:
+
+       base = 579px de filhos + 20px de padding = 599px
+       vãos = 18
+
+     `clamp(3px, (100vh - 640px) / 18, 8px)` dá os 8px do Console em
+     tela cheia, encolhe sozinho conforme a janela baixa, e nunca desce
+     dos 3px de antes. Os 640 no lugar dos 599 são margem de segurança:
+     com 620 o último botão fechava a 1px da borda numa janela de
+     700px — cabia, mas sem folga nenhuma pra qualquer coisa que
+     encoste ali embaixo. Ferramenta nova muda a base — recalcule os
+     dois números, não chute. */
 }
 .rv-ferr-btn {
   position: relative; width: 36px; height: 36px; flex: none;
