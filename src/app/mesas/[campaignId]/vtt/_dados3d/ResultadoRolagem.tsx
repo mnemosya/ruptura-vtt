@@ -217,14 +217,21 @@ export function DadosRolados({ dados, maiorDado, size = 46, landed = false, dim 
  * dados são somados e nenhum vale mais que o outro — por isso nenhum
  * acende, a menos que a rolagem diga que o modo foi "maior".
  */
-export function DadosLivres({ termos, maior, size = 40, landed = false }: {
+export function DadosLivres({ termos, maior, size = 40, landed = false, acento }: {
   termos: readonly { faces: number; valor: number }[];
   /** Valor que "venceu" no modo maior-dado; `null`/ausente na soma. */
   maior?: number | null;
   size?: number;
   landed?: boolean;
+  /**
+   * Acento dos dados que VALEM — a mesma regra de `DadosRolados`: quem
+   * tem veredito passa o acento da faixa, pra que o dado aceso e o
+   * veredito não discordem. Sem veredito (rolagem sem CD) fica o
+   * arcano, que é a cor da rolagem livre em repouso.
+   */
+  acento?: Accent;
 }) {
-  const cor = ACCENTS.arcane;
+  const cor = acento ?? ACCENTS.arcane;
   const maiorIdx = maior == null ? -1 : termos.findIndex((t) => t.valor === maior);
   /* SOMA leva "+" entre os dados; MAIOR não. Na soma os dados formam
      uma conta, e o "+" é o que diz que o número grande à direita saiu

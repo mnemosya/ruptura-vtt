@@ -142,7 +142,18 @@ export function RollCard({
     >
       {termos.length > 0 && (
         <div data-testid="painel-feed-dados">
-          <DadosLivres termos={termos} maior={cartao.modo === "high" ? cartao.maior : null} size={40} landed />
+          {/* Os dados seguem o VEREDITO, como no card de teste: com CD
+              eles saem na cor da faixa (ciano no sucesso, vermelho na
+              falha); sem CD, no arcano da rolagem em repouso. Dado
+              aceso numa cor e faixa em outra é o olho lendo duas
+              respostas pra mesma pergunta. */}
+          <DadosLivres
+            termos={termos}
+            maior={cartao.modo === "high" ? cartao.maior : null}
+            acento={cartao.sucesso == null ? undefined : cartao.sucesso ? ACCENTS.cyan : ACCENTS.danger}
+            size={40}
+            landed
+          />
         </div>
       )}
 
