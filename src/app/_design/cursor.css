@@ -53,12 +53,19 @@
   transform: translate(-300px, -300px);
   transition: border-color 0.18s, width 0.18s, height 0.18s, box-shadow 0.18s;
 }
-.ra-cursor-ring::after { content: ''; position: absolute; inset: 5px; border: 1px solid rgba(0, 212, 255, 0.15); border-radius: 50%; }
+.ra-cursor-ring::after {
+  content: ''; position: absolute; inset: 5px;
+  border: 1px solid rgba(0, 212, 255, 0.15); border-radius: 50%;
+  transition: border-color 0.18s;
+}
 .ra-cursor-ring--hover { width: 50px; height: 50px; border-color: rgba(0, 212, 255, 0.85); box-shadow: 0 0 12px rgba(0, 212, 255, 0.2); }
 .ra-cursor-ring--click { width: 22px; height: 22px; border-color: var(--am); box-shadow: 0 0 10px rgba(245, 162, 0, 0.4); }
 /* O ponto acompanha o anel no clique — o halo junto, senão ele continua
    sangrando ciano em volta de um ponto âmbar. */
 .ra-cursor-dot--click { background: var(--am); box-shadow: 0 0 8px var(--am), 0 0 16px rgba(245, 162, 0, 0.6); }
+/* O anel INTERNO fecha o conjunto: no clique o cursor inteiro é âmbar,
+   e um fio ciano sobrando lá dentro era a única peça fora do gesto. */
+.ra-cursor-ring--click::after { border-color: color-mix(in srgb, var(--am) 30%, transparent); }
 
 @media (prefers-reduced-motion: reduce) {
   .ra-cursor-dot, .ra-cursor-ring { display: none !important; }
