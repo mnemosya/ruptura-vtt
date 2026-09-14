@@ -213,7 +213,7 @@
      translúcido, ele deixava a arte do mapa atravessar e cada botão
      mudava de tom conforme o que passava por baixo. Um pouco mais claro
      que o mapa, a peça se separa dele sem precisar de moldura. */
-  border: 1px solid rgba(0, 212, 255, .15); border-radius: 6px;
+  border: 1px solid rgba(0, 212, 255, .15); border-radius: 4px;
   background: #0c1526; color: #7f95b3; cursor: pointer;
   transition: color .14s, background .14s, border-color .14s;
 }
