@@ -728,28 +728,11 @@
   /* 16 = os 8 do respiro da coluna mais os 8 do vão entre a bandeja e
      o composer, que a medida não inclui. */
   padding: 8px 8px calc(var(--pn-bandeja-altura) + 16px); gap: 8px;
-  /* O véu das pontas (`[data-rolavel]`, no chassi) — mesma marca da
-     lista de personagens, e a mesma razão: o feed é alto e a barra de
-     rolagem passa despercebida. */
-  --rv-veu-cor: #080f1e;
-  --rv-veu-recuo: 8px;
 }
-/* ONDE O CHAT ACABA é o TOPO DA BANDEJA: dali pra baixo quem está na
-   tela é ela, não a conversa. É nessa linha que o véu tem que chegar
-   ao fim — opaco, fechado. Terminando embaixo dela, o degradê era
-   cortado no meio pela bandeja e ficava um desvanecer pela metade; e
-   terminando no topo mas com 26px, ele era curto demais pra se ler
-   como beirada.
-
-   `--pn-bandeja-altura` é MEDIDA (ver `ChatTab`), então a linha
-   acompanha a bandeja aberta também — que é quando o fim do chat sobe
-   de verdade. */
-.rv-pn-chat .rv-pn-chat-scroll {
-  --rv-veu-altura: 44px;
-}
-.rv-pn-chat .rv-pn-chat-scroll[data-rolavel]::after {
-  bottom: var(--pn-bandeja-altura);
-}
+/* SEM VÉU NAS PONTAS aqui, ao contrário das outras listas: a bandeja
+   de dados flutua no pé do feed, e o degradê caía em cima dela — não
+   havia posição que não lesse como erro. Quem diz que há mais conversa
+   é o atalho "ir para o fim", que além de avisar leva. */
 .rv-pn-chat .pn-cartao {
   padding: 8px 9px 8px 34px;
   border-color: rgba(43,63,94,.72);

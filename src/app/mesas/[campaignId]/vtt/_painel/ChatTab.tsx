@@ -85,8 +85,13 @@ export function ChatTab({
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
   const [temNovas, setTemNovas] = useState(false);
   /**
-   * ESTADO DA ROLAGEM DO FEED — o véu das pontas e o atalho de voltar
-   * pro fim saem daqui.
+   * ESTADO DA ROLAGEM DO FEED — daqui sai o atalho de voltar pro fim.
+   *
+   * O feed NÃO tem véu nas pontas, ao contrário das outras listas: com
+   * a bandeja de dados flutuando no pé dele, o degradê caía em cima
+   * dela e não havia posição que não parecesse errada. O que o feed
+   * tem pra dizer que há mais coisa é o atalho — que é mais direto,
+   * porque além de avisar, leva.
    *
    * `longe` não é "não está no fim": subir dois cartões pra reler algo
    * e continuar lendo não pede atalho nenhum, e um botão aparecendo ao
@@ -469,9 +474,6 @@ export function ChatTab({
       <div
         className="rv-pn-chat-scroll" ref={scrollRef} onScroll={aoRolar}
         style={{ "--pn-bandeja-altura": `${alturaBandeja}px` } as React.CSSProperties}
-        data-rolavel={rolagem.rolavel || undefined}
-        data-inicio={rolagem.inicio || undefined}
-        data-fim={rolagem.fim || undefined}
         data-testid="painel-chat-scroll"
       >
         {todos.length === 0 ? (
