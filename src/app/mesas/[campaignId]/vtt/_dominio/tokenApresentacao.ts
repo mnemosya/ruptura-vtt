@@ -23,7 +23,8 @@ import type { Hex, TamanhoCriatura } from "../_mapa/hex";
 import type { CondicaoSlug } from "../_dados/cenaDemo";
 
 export type LadoToken = "pj" | "pn" | "neutro";
-export type VertenteToken = "somatico" | "cognitivo" | "material" | "energetico" | "nenhuma";
+export type VertenteToken =
+  | "somatico" | "cognitivo" | "material" | "energetico" | "cinetica" | "sinaptica" | "nenhuma";
 
 export interface TokenApresentacao {
   /** `vtt_tokens.id` — identidade canônica. Nunca casado por sigla/nome. */
@@ -69,7 +70,9 @@ export interface TokenApresentacao {
   revision: number;
 }
 
-const VERTENTES_VALIDAS: readonly VertenteToken[] = ["somatico", "cognitivo", "material", "energetico", "nenhuma"];
+const VERTENTES_VALIDAS: readonly VertenteToken[] = [
+  "somatico", "cognitivo", "material", "energetico", "cinetica", "sinaptica", "nenhuma",
+];
 const CONDICOES_VALIDAS: readonly CondicaoSlug[] = [
   "atordoado", "caido", "cego", "surdo", "lento", "sangrando", "queimando",
   "envenenado", "saturado", "insaturado", "imobilizado", "agarrado",

@@ -67,6 +67,17 @@ export interface ValoresFormularioToken {
 }
 
 const CATEGORIAS: TamanhoCriatura[] = ["pequeno", "medio", "grande", "enorme", "colossal"];
+/** As vertentes na ordem do sistema; a cor de cada uma vive na folha (`--rv-vertente-cor`). */
+const VERTENTES: readonly (readonly [VertenteToken, string])[] = [
+  ["nenhuma", "Nenhuma"],
+  ["somatico", "Somática"],
+  ["cognitivo", "Cognitiva"],
+  ["material", "Material"],
+  ["energetico", "Energética"],
+  ["cinetica", "Cinética"],
+  ["sinaptica", "Sináptica"],
+];
+
 /** Os três lados: valor, rótulo curto (o que aparece na ficha) e o longo (título e prévia). */
 const LADOS: readonly (readonly [LadoToken, string, string])[] = [
   ["pj", "PJ", "Personagem jogador"],
@@ -715,14 +726,18 @@ export function GerenciadorToken({
           </label>
 
           <fieldset className="rv-field">
-            <legend>Pontos de Vida</legend>
-            <div className="rv-form-linha">
-              <label className="rv-field rv-field--estreito">
-                <span>Atual</span>
+            <legend>Recursos</legend>
+            {/* PV, e não "Pontos de Vida": a ficha e o painel escrevem
+                PV em toda parte, e o nome por extenso só aparecia aqui.
+                Os campos são estreitos porque são números de até três
+                dígitos — a largura de antes cabia um CEP. */}
+            <div className="rv-form-linha rv-token-recursos">
+              <label className="rv-field rv-field--num">
+                <span>PV atual</span>
                 <input type="number" min={0} value={valores.pvAtual ?? ""} onChange={(e) => setValores((v) => ({ ...v, pvAtual: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) }))} />
               </label>
-              <label className="rv-field rv-field--estreito">
-                <span>Máximo</span>
+              <label className="rv-field rv-field--num">
+                <span>PV máximo</span>
                 <input type="number" min={0} value={valores.pvMax ?? ""} onChange={(e) => setValores((v) => ({ ...v, pvMax: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) }))} />
               </label>
             </div>
@@ -732,16 +747,22 @@ export function GerenciadorToken({
             )}
           </fieldset>
 
-          <label className="rv-field">
-            <span>Vertente</span>
-            <select value={valores.vertente} onChange={(e) => setValores((v) => ({ ...v, vertente: e.target.value as VertenteToken }))}>
-              <option value="nenhuma">Nenhuma</option>
-              <option value="somatico">Somático</option>
-              <option value="cognitivo">Cognitivo</option>
-              <option value="material">Material</option>
-              <option value="energetico">Energético</option>
-            </select>
-          </label>
+          {/* VERTENTE em fichas com a cor: é a cor que o token leva pro
+              mapa, e num `select` ela não aparecia — escolhia-se um
+              nome e descobria-se a cor depois. */}
+          <fieldset className="rv-field">
+            <legend>Vertente</legend>
+            <div className="rv-segmentado rv-token-vertentes" role="radiogroup" aria-label="Vertente">
+              {VERTENTES.map(([valor, rotulo]) => (
+                <button key={valor} type="button" role="radio" aria-checked={valores.vertente === valor}
+                  className="rv-segmentado-item rv-token-vertente" data-vertente={valor}
+                  onClick={() => setValores((v) => ({ ...v, vertente: valor }))}>
+                  <span className="rv-token-lado-marca" aria-hidden="true" />
+                  {rotulo}
+                </button>
+              ))}
+            </div>
+          </fieldset>
 
           <fieldset className="rv-field">
             <legend>
@@ -750,9 +771,12 @@ export function GerenciadorToken({
             {valores.condicoes.length > 0 && (
               <button type="button" className="rv-btn rv-btn--ghost rv-limpar-condicoes" onClick={() => setValores((v) => ({ ...v, condicoes: [] }))}>Limpar</button>
             )}
+            {/* O MESMO INTERRUPTOR das janelas de ferramenta
+                (`.rv-fp-switch`): o checkbox era a única caixa de
+                marcar que sobrava no VTT, e ela vinha do navegador. */}
             <div className="rv-condicoes-grade">
               {[...CONDICOES_LISTA].sort((a, b) => Number(valores.condicoes.includes(b)) - Number(valores.condicoes.includes(a))).map((c) => (
-                <label key={c} className="rv-condicao-item" title={CONDICOES[c].rotulo}>
+                <label key={c} className="rv-fp-switch rv-condicao-item" title={CONDICOES[c].rotulo}>
                   <input
                     type="checkbox"
                     checked={valores.condicoes.includes(c)}
@@ -761,7 +785,8 @@ export function GerenciadorToken({
                       condicoes: e.target.checked ? [...v.condicoes, c] : v.condicoes.filter((x) => x !== c),
                     }))}
                   />
-                  <span>{CONDICOES[c].glifo} {CONDICOES[c].rotulo}</span>
+                  <span className="rv-fp-switch-tr" aria-hidden="true" />
+                  <span className="rv-fp-switch-txt">{CONDICOES[c].glifo} {CONDICOES[c].rotulo}</span>
                 </label>
               ))}
             </div>

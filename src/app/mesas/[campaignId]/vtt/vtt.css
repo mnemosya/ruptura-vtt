@@ -1099,7 +1099,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
 /* Nome ocupa mais espaço que Sigla na mesma linha (~75/25 em telas largas) — Sigla já tem largura fixa via `.rv-field--estreito`, Nome só precisa "crescer mais" que o padrão `flex:1`. */
 .rv-field--nome { flex: 3; }
-.rv-condicoes-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 12px; }
+.rv-condicoes-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; }
 
 .rv-form-aviso { margin: 0; padding: 7px 10px; border-radius: var(--rv-r); background: var(--rv-dg-soft); color: #ffb3bd; font-size: 11.5px; }
 
@@ -1274,6 +1274,28 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    com parágrafo de apoio, pra dizer o que cabe no rótulo. */
 .rv-token-chaves { display: flex; flex-wrap: wrap; gap: 8px 20px; }
 .rv-token-chave { padding: 0; }
+
+/* Campo de NÚMERO — três dígitos, não um CEP. A largura de campo de
+   texto fazia dois PVs ocuparem a linha inteira. */
+.rv-field--num { flex: 0 1 108px; }
+.rv-token-recursos { gap: 10px; flex-wrap: wrap; }
+
+/* VERTENTE — ficha com a marca da cor, a mesma que o token leva pro
+   mapa (`COR_VERTENTE`, em `_mapa/MapaHex.tsx`). Num `select` a cor não
+   aparecia: escolhia-se um nome e descobria-se a cor depois. */
+.rv-token-vertentes { gap: 6px; }
+.rv-token-vertente {
+  flex: 0 1 auto; display: flex; align-items: center; gap: 6px; padding: 7px 10px;
+  --rv-lado-cor: var(--rv-vertente-cor, var(--rv-slate));
+}
+.rv-token-vertente[aria-checked="true"] { border-color: var(--rv-vertente-cor); color: var(--rv-ink); }
+.rv-token-vertente[data-vertente="somatico"] { --rv-vertente-cor: #2f9e56; }
+.rv-token-vertente[data-vertente="cognitivo"] { --rv-vertente-cor: #8b5cf6; }
+.rv-token-vertente[data-vertente="material"] { --rv-vertente-cor: #f5a200; }
+.rv-token-vertente[data-vertente="energetico"] { --rv-vertente-cor: #f07a1f; }
+.rv-token-vertente[data-vertente="cinetica"] { --rv-vertente-cor: #e0455f; }
+.rv-token-vertente[data-vertente="sinaptica"] { --rv-vertente-cor: #35c7d8; }
+.rv-token-vertente[data-vertente="nenhuma"] { --rv-vertente-cor: #6b7f8c; }
 @media (max-width: 560px) {
   .rv-janela-token { max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); }
 }
@@ -1297,11 +1319,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
 /* ── Condições — grade compacta, item inteiro clicável ────────────── */
 .rv-limpar-condicoes { align-self: flex-start; padding: 3px 9px; font-size: 10.5px; }
-.rv-condicao-item {
-  display: flex; align-items: center; gap: 7px; padding: 5px 6px; border-radius: var(--rv-r); cursor: pointer; font-size: 11.5px; color: var(--txt);
-}
-.rv-condicao-item:hover { background: rgba(255,255,255,.05); }
-.rv-condicao-item input { width: 15px; height: 15px; flex: none; }
+/* A condição é um INTERRUPTOR (`.rv-fp-switch`), como nas janelas de
+   ferramenta — o tamanho e a trilha vêm de lá; daqui sai só o respiro
+   da linha e o tom do rótulo desligado. */
+.rv-condicao-item { padding: 2px 0; font-size: 11.5px; }
+.rv-condicao-item .rv-fp-switch-txt { text-transform: none; letter-spacing: 0; font-size: 11.5px; }
 
 /* ── Painel de camadas ─────────────────────────────────────────── */
 /* Camadas usa a casca comum (`JanelaFerramenta`) desde a transcrição
