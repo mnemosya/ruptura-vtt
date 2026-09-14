@@ -947,7 +947,7 @@
    atenção com os cabeçalhos sem ser um. */
 .rv-pn-switch .rv-fp-switch-txt {
   font-family: var(--rv-body);
-  font-size: 12.5px; letter-spacing: normal; text-transform: none; color: var(--pn-dim);
+  font-size: 12.5px; font-weight: 600; letter-spacing: normal; text-transform: none; color: var(--pn-dim);
 }
 .rv-pn-switch input:checked ~ .rv-fp-switch-txt { color: var(--pn-txt-forte); }
 .rv-pn-select.rv-pn-select, .rv-pn-input.rv-pn-input {
