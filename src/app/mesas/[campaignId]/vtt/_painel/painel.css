@@ -1135,7 +1135,14 @@
   background: var(--pn-inset);
   transition: border-color .14s, background .14s, opacity .14s;
 }
-.rv-pn-grupo:hover { border-color: var(--pn-line-soft); }
+/* HOVER: fundo e borda acendem junto com o nome. A lavagem é a mesma
+   do alvo de arrasto em 6% — metade dela, e sem o `box-shadow` que
+   marca o alvo —, pra que passar o mouse nunca se confunda com "solta
+   aqui". */
+.rv-pn-grupo:hover {
+  border-color: color-mix(in srgb, var(--pn-cy) 35%, var(--pn-line-soft));
+  background: color-mix(in srgb, var(--pn-cy) 6%, var(--pn-inset));
+}
 /* A pasta em trânsito fica translúcida — o lugar de onde ela saiu
    continua visível enquanto se escolhe onde ela entra. */
 .rv-pn-grupo[data-arrastando="true"] { opacity: .45; }
