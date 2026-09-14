@@ -590,6 +590,20 @@
   cursor: pointer; box-shadow: 0 4px 14px rgba(0, 0, 0, .5);
 }
 .rv-pn-chat-novas:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 2px; }
+/* VOLTAR PRO FIM é o mesmo botão com outro recado: ninguém chegou, só
+   se subiu muito. Neutro no TOM — o ciano é do aviso de NOVIDADE, e
+   usá-lo aqui mandaria a pessoa descer achando que perdeu algo — mas
+   não no TAMANHO: ele é a saída de quem se perdeu no meio de um feed
+   longo, e no corpo do aviso de novas (3px de respiro, 10px de fonte)
+   ficava uma etiqueta que não se lia como botão. */
+.rv-pn-chat-novas[data-tipo="voltar"] {
+  gap: 7px; padding: 8px 16px;
+  border-color: var(--pn-line-soft); color: var(--pn-txt-forte); background: #101b33;
+  font-size: 11px; letter-spacing: .1em;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .6);
+}
+.rv-pn-chat-novas[data-tipo="voltar"] svg { width: 15px; height: 15px; }
+.rv-pn-chat-novas[data-tipo="voltar"]:hover { border-color: #2a3b58; background: #16233f; }
 
 /* ── COMPOSER ─────────────────────────────────────────────────── */
 .pn-composer {
@@ -692,7 +706,14 @@
 /* UM VÃO SÓ, 8px — o mesmo número do padding do container e o mesmo que
    a lista de personagens usa. Eram 9/10/10 de padding e 7 de gap: três
    números para dizer "um respiro", e nenhum deles igual ao do lado. */
-.rv-pn-chat .rv-pn-chat-scroll { padding: 8px; gap: 8px; }
+.rv-pn-chat .rv-pn-chat-scroll {
+  padding: 8px; gap: 8px;
+  /* O véu das pontas (`[data-rolavel]`, no chassi) — mesma marca da
+     lista de personagens, e a mesma razão: o feed é alto e a barra de
+     rolagem passa despercebida. */
+  --rv-veu-cor: #080f1e;
+  --rv-veu-recuo: 8px;
+}
 .rv-pn-chat .pn-cartao {
   padding: 8px 9px 8px 34px;
   border-color: rgba(43,63,94,.72);

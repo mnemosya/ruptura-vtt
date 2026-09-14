@@ -20,7 +20,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronsDown } from "lucide-react";
 import { useCampaignSession } from "../../_shell/CampaignRealtimeProvider";
 import type { TableLogVisibility } from "../../../../../lib/table";
 import {
@@ -44,6 +44,13 @@ import { aplicarDanoDoAtaqueAction } from "./acoes/combatePainel";
 import { EstadoErro, EstadoVazio } from "./Estados";
 
 /** Acento das rolagens feitas pelo chat — o mesmo ciano do composer. */
+/**
+ * A partir de quanto o atalho "Ir para o fim" aparece — o MAIOR entre
+ * este número e uma tela cheia do feed. Fixo sozinho, ele aparecia
+ * cedo demais num painel alto e tarde demais num baixo.
+ */
+const DISTANCIA_ATALHO = 600;
+
 const ACENTO_ROLAGEM_CHAT = "#35c7d8";
 
 export function ChatTab({
@@ -77,6 +84,17 @@ export function ChatTab({
   const [visibilidade, setVisibilidade] = useState<TableLogVisibility>("public");
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
   const [temNovas, setTemNovas] = useState(false);
+  /**
+   * ESTADO DA ROLAGEM DO FEED — o véu das pontas e o atalho de voltar
+   * pro fim saem daqui.
+   *
+   * `longe` não é "não está no fim": subir dois cartões pra reler algo
+   * e continuar lendo não pede atalho nenhum, e um botão aparecendo ao
+   * primeiro giro da roda vira ruído. A partir de uma tela inteira de
+   * distância (`DISTANCIA_ATALHO`) a coisa muda: aí voltar rolando é
+   * trabalho, e o atalho passa a valer mais que o silêncio.
+   */
+  const [rolagem, setRolagem] = useState({ rolavel: false, inicio: true, fim: true, longe: false });
   const [ultimoIdVisto, setUltimoIdVisto] = useState<string | null>(null);
   const [aplicandoId, setAplicandoId] = useState<string | null>(null);
   const [errosPorCartao, setErrosPorCartao] = useState<Record<string, string>>({});
@@ -185,9 +203,36 @@ export function ChatTab({
     }
   }, [visivel, idDoFim]);
 
+  /* O que a folha e o atalho precisam saber — medido de verdade, nunca
+     deduzido da contagem de cartões (um cartão expandido muda a altura
+     sem mudar a contagem). */
+  function medirRolagem(el: HTMLDivElement) {
+    const faltando = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const proximo = {
+      // 1px de folga: alturas fracionárias fazem a conta parar a meio
+      // pixel do fim, e sem ela o véu de baixo nunca sumia.
+      rolavel: el.scrollHeight - el.clientHeight > 1,
+      inicio: el.scrollTop <= 1,
+      fim: faltando <= 1,
+      longe: faltando > Math.max(DISTANCIA_ATALHO, el.clientHeight),
+    };
+    setRolagem((a) => (
+      a.rolavel === proximo.rolavel && a.inicio === proximo.inicio
+      && a.fim === proximo.fim && a.longe === proximo.longe ? a : proximo
+    ));
+  }
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) medirRolagem(el);
+    // Uma medida por render: cartão que expande, aba que volta e feed
+    // que cresce são todos "a altura agora é outra".
+  });
+
   function aoRolar() {
     const el = scrollRef.current;
     if (!el) return;
+    medirRolagem(el);
     noFimRef.current = estaNoFim(el.scrollTop, el.scrollHeight, el.clientHeight);
     scrollSalvoRef.current = el.scrollTop;
     if (noFimRef.current) {
@@ -398,7 +443,13 @@ export function ChatTab({
           é o que ancora o botão logo acima do composer sem depender de
           adivinhar a altura dele (que muda quando os chips quebram). */}
       <div className="rv-pn-chat-feedwrap">
-      <div className="rv-pn-chat-scroll" ref={scrollRef} onScroll={aoRolar} data-testid="painel-chat-scroll">
+      <div
+        className="rv-pn-chat-scroll" ref={scrollRef} onScroll={aoRolar}
+        data-rolavel={rolagem.rolavel || undefined}
+        data-inicio={rolagem.inicio || undefined}
+        data-fim={rolagem.fim || undefined}
+        data-testid="painel-chat-scroll"
+      >
         {todos.length === 0 ? (
           <EstadoVazio testId="painel-chat-vazio">Nenhum evento nesta campanha ainda.</EstadoVazio>
         ) : (
@@ -417,9 +468,20 @@ export function ChatTab({
         )}
       </div>
 
-      {temNovas && (
+      {temNovas ? (
         <button type="button" className="rv-pn-chat-novas" onClick={irParaOFim} data-testid="painel-chat-novas">
           <ChevronDown size={12} aria-hidden="true" /> Novas mensagens
+        </button>
+      ) : rolagem.longe && (
+        /* MESMO BOTÃO, outro recado: aqui não chegou nada novo, só se
+           subiu muito. Por isso é neutro (`data-tipo="voltar"`) e não
+           tem o acento de "novas" — anunciar novidade que não existe
+           faria a pessoa descer achando que perdeu alguma coisa. */
+        <button
+          type="button" className="rv-pn-chat-novas" data-tipo="voltar"
+          onClick={irParaOFim} data-testid="painel-chat-voltar-fim"
+        >
+          <ChevronsDown size={15} aria-hidden="true" /> Ir para o fim
         </button>
       )}
       </div>

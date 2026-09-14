@@ -830,7 +830,17 @@
    mapa, que é francamente azul, ele lia como preto sujo. `#080f1e`
    mantém a hierarquia (continua bem abaixo das peças, em `#0c1526`) e
    pertence à mesma família de cor da superfície vizinha. */
-.rv-painel { display: flex; background: #080f1e; z-index: 20; flex: none; }
+/* DEGRADÊ, e não uma cor chapada: o painel é uma coluna alta, e o pé
+   dela é onde ficam as coisas que se operam (o composer do Chat, a
+   faixa de "Abrir personagens"). Escurecendo pro fim, a coluna ganha
+   um chão — e o que flutua por cima dele, inclusive o véu de rolagem,
+   passa a ter de onde emergir. 88% do percurso é onde a mudança começa
+   a se ver: mais cedo, o fundo dos cartões do meio já divergia do
+   fundo da coluna. */
+.rv-painel {
+  display: flex; z-index: 20; flex: none;
+  background: linear-gradient(180deg, #080f1e 0%, #080f1e 55%, #060b16 100%);
+}
 /* ABERTO ele é uma PEÇA, como as abas e como o mapa: solto 8px das
    bordas e com o mesmo canto de 4px. Era uma coluna colada na janela
    com um fio à esquerda — ao lado de um mapa arredondado e flutuante,
