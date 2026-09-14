@@ -17,7 +17,7 @@
  * um resultado, e um resultado se desenha de um jeito só.
  */
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { PolyDie } from "./PolyDie";
 import { CARGA_MAX_MS } from "./lancamento";
 import { Check, Chevron, Cross, Dice, DoubleCheck, Half, Warn } from "./icones";
@@ -226,20 +226,33 @@ export function DadosLivres({ termos, maior, size = 40, landed = false }: {
 }) {
   const cor = ACCENTS.arcane;
   const maiorIdx = maior == null ? -1 : termos.findIndex((t) => t.valor === maior);
+  /* SOMA leva "+" entre os dados; MAIOR não. Na soma os dados formam
+     uma conta, e o "+" é o que diz que o número grande à direita saiu
+     dali — sem ele a fileira lia como uma coleção de resultados soltos.
+     No modo maior não há conta nenhuma: um dado vence, e um "+" ali
+     afirmaria uma soma que não vai acontecer.
+
+     O vão encolhe de 8 pra 5 quando o sinal entra: com 8 de cada lado o
+     "+" ficava boiando entre os dados em vez de ligar os dois. */
+  const somando = maior == null;
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: somando ? 5 : 8 }}>
       {termos.map((t, i) => (
-        <PolyDie
-          key={i}
-          sides={t.faces}
-          value={t.valor}
-          active={i === maiorIdx}
-          landed={landed}
-          rollIndex={i}
-          accent={cor.hex}
-          soft={cor.soft}
-          size={size}
-        />
+        <Fragment key={i}>
+          {somando && i > 0 && (
+            <span aria-hidden="true" style={{ flex: "none", fontFamily: MONO, fontSize: 13, fontWeight: 700, lineHeight: 1, color: cor.hex, opacity: .55 }}>+</span>
+          )}
+          <PolyDie
+            sides={t.faces}
+            value={t.valor}
+            active={i === maiorIdx}
+            landed={landed}
+            rollIndex={i}
+            accent={cor.hex}
+            soft={cor.soft}
+            size={size}
+          />
+        </Fragment>
       ))}
     </div>
   );
