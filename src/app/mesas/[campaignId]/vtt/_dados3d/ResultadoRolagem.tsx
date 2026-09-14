@@ -28,7 +28,7 @@ import type { TableLogVisibility } from "../../../../../lib/table";
 
 export const DISPLAY = "var(--font-chakra), 'Chakra Petch', sans-serif";
 export const MONO = "var(--font-mono), 'JetBrains Mono', monospace";
-export const BODY = "var(--font-inter), Inter, sans-serif";
+export const BODY = "var(--font-rajdhani), Rajdhani, sans-serif";
 
 export const INK = "#d6e4f5";
 export const INK_DIM = "#7f95b3";

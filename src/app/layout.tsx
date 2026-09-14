@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Chakra_Petch, Inter, Orbitron, Rajdhani, JetBrains_Mono } from "next/font/google";
+import { Chakra_Petch, Orbitron, Rajdhani, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 /**
@@ -35,20 +35,17 @@ const jetbrainsMono = JetBrains_Mono({
 
 /**
  * Tipografia do design de dados (`chat % dice tray`): Chakra Petch para
- * display e Inter para corpo. Só a bandeja/rolador as referenciam — o
- * resto da mesa segue em Rajdhani.
+ * display, Rajdhani para corpo — a mesma do resto da mesa e do Console.
+ *
+ * Inter saía daqui e foi REMOVIDA do produto: ela era o corpo do VTT
+ * enquanto o Console escrevia em Rajdhani, e as duas apareciam lado a
+ * lado toda vez que alguém abria a ficha por cima do mapa. Uma fonte a
+ * menos pra baixar também.
  */
 const chakraPetch = Chakra_Petch({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-chakra",
-  display: "swap",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-inter",
   display: "swap",
 });
 
@@ -59,7 +56,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${orbitron.variable} ${rajdhani.variable} ${jetbrainsMono.variable} ${chakraPetch.variable} ${inter.variable}`}>
+    <html lang="pt-BR" className={`${orbitron.variable} ${rajdhani.variable} ${jetbrainsMono.variable} ${chakraPetch.variable}`}>
       {/* suppressHydrationWarning: extensões de navegador (ex.: ColorZilla/Grammarly)
           injetam atributos no <body> antes do React hidratar (ex.: cz-shortcut-listen) —
           falso positivo de mismatch, não um bug do app. Ver https://react.dev/link/hydration-mismatch */}

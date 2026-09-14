@@ -89,11 +89,16 @@
   /* ── Tipografia ─────────────────────────────────────────────────
      `display` (Chakra Petch) para título, rótulo e botão em caixa
      alta; `mono` (JetBrains Mono) para número e metadado; `body`
-     (Inter) para texto corrido. As três já entram por `next/font` no
-     layout raiz — nada é buscado de CDN. Rajdhani continua como
-     fallback para o que a mesa ainda não migrou. */
+     (Rajdhani) para texto corrido. As três entram por `next/font` no
+     layout raiz — nada é buscado de CDN.
+
+     O corpo era INTER, e saiu do produto: o Console da ficha sempre
+     escreveu em Rajdhani, então a mesa e a ficha usavam duas fontes de
+     texto diferentes pela mesma razão nenhuma — e quem abre o Console
+     por cima do mapa via as duas lado a lado. Rajdhani já era o
+     fallback declarado aqui; virou a escolha. */
   --rv-display: var(--font-chakra), var(--font-rajdhani), system-ui, sans-serif;
-  --rv-body: var(--font-inter), var(--font-rajdhani), system-ui, sans-serif;
+  --rv-body: var(--font-rajdhani), system-ui, sans-serif;
   --rv-mono: var(--font-mono), ui-monospace, monospace;
 
   /* ── Geometria ──────────────────────────────────────────────── */
