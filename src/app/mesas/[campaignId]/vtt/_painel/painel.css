@@ -626,7 +626,7 @@
   padding: 8px 12px;
   border: 1px solid var(--rv-line, #182338); border-radius: var(--rv-r);
   background: var(--rv-panel, #0c1420);
-  transition: border-color .14s;
+  transition: border-color .14s, background .14s;
 }
 .pn-composer-campo::before {
   content: "\203a"; flex: none;
@@ -636,9 +636,17 @@
 }
 /* HOVER antes do foco: o campo é um alvo grande e mudo, e sem resposta
    nenhuma ao passar o mouse ele lia como uma caixa desenhada, não como
-   algo em que se clica pra escrever. Só o fio, um degrau — o ciano fica
-   reservado pro FOCO, que é o estado que importa aqui. */
-.pn-composer-campo:hover { border-color: var(--rv-line-strong); }
+   algo em que se clica pra escrever.
+
+   O MESMO tratamento dos cartões do feed — borda `#2a3b58` e um sopro
+   de 1,5% de branco no fundo —, porque o composer está logo abaixo
+   deles na mesma coluna. `--rv-line-strong` sozinho não dava: é um
+   degrau só acima do fio parado, e num campo desta largura a diferença
+   não se lê. O ciano continua reservado pro FOCO. */
+.pn-composer-campo:hover {
+  border-color: #2a3b58;
+  background: linear-gradient(rgba(255, 255, 255, .015), rgba(255, 255, 255, .015)), var(--rv-panel, #0c1420);
+}
 .pn-composer-campo:focus-within { border-color: color-mix(in srgb, #35c7d8 55%, transparent); }
 /* `.rv-painel textarea { font-family: inherit }` (lá em cima nesta
    folha) tem uma classe E um elemento — especificidade maior que uma
