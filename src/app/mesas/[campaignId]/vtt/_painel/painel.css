@@ -598,12 +598,23 @@
    ficava uma etiqueta que não se lia como botão. */
 .rv-pn-chat-novas[data-tipo="voltar"] {
   gap: 7px; padding: 8px 16px;
-  border-color: var(--pn-line-soft); color: var(--pn-txt-forte); background: #101b33;
+  /* RAIO PRÓPRIO nos quatro cantos: o botão flutua sobre o feed, solto
+     de qualquer borda, e o 4px do chassi (pensado pra peça encostada em
+     outra) o deixava com cara de retângulo cortado. */
+  border-radius: var(--rv-r-md);
+  border-color: var(--pn-line-soft); background: #101b33;
+  /* CIANO, um degrau abaixo do `--pn-cy` do aviso de novas: a família
+     é a mesma (os dois levam ao mesmo lugar), e o degrau é o que
+     mantém "chegou algo" mais alto que "você subiu muito". */
+  color: color-mix(in srgb, var(--pn-cy) 78%, var(--pn-txt-forte));
   font-size: 11px; letter-spacing: .1em;
   box-shadow: 0 6px 18px rgba(0, 0, 0, .6);
 }
 .rv-pn-chat-novas[data-tipo="voltar"] svg { width: 15px; height: 15px; }
-.rv-pn-chat-novas[data-tipo="voltar"]:hover { border-color: #2a3b58; background: #16233f; }
+.rv-pn-chat-novas[data-tipo="voltar"]:hover {
+  border-color: color-mix(in srgb, var(--pn-cy) 45%, transparent);
+  background: #16233f; color: var(--pn-cy);
+}
 
 /* ── COMPOSER ─────────────────────────────────────────────────── */
 .pn-composer {
