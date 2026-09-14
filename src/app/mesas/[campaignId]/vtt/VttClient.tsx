@@ -219,6 +219,32 @@ type FluxoToken =
  * posicionamento o token ainda não existe, então a mensagem nunca pode
  * soar como se ele já estivesse ali.
  */
+/**
+ * O rascunho de token que nasce de um personagem arrastado do painel.
+ * Fora do componente porque é uma CONVERSÃO — personagem em token —, e
+ * porque dois caminhos a usam: soltar no mapa (que cria na hora) e
+ * abrir o formulário.
+ */
+function rascunhoDePersonagem(p: PersonagemArrastado): ValoresFormularioToken {
+  return {
+    nome: p.nome,
+    sigla: p.sigla || sugerirSigla(p.nome),
+    lado: p.tipo === "pn" ? "pn" : "pj",
+    vertente: "nenhuma",
+    tamanho: "medio",
+    orientacao: 0,
+    q: 0,
+    r: 0,
+    characterId: p.characterId,
+    visivel: true,
+    bloqueado: false,
+    retratoUrl: null,
+    pvAtual: null,
+    pvMax: null,
+    condicoes: [],
+  };
+}
+
 function validarPosicaoToken(params: {
   tamanho: TamanhoCriatura; orientacao: number; ancora: Hex; largura: number; altura: number;
   terreno: MapaTerreno; ocupadosPorOutros: ReadonlySet<string>;
@@ -2236,25 +2262,8 @@ export function VttClient({
    */
   const iniciarTokenDePersonagem = useCallback((p: PersonagemArrastado, ancora: Hex | null = null) => {
     if (!estadoCena || !ehNarrador) return;
-    const rascunho: ValoresFormularioToken = {
-      nome: p.nome,
-      sigla: p.sigla || sugerirSigla(p.nome),
-      lado: p.tipo === "pn" ? "pn" : "pj",
-      vertente: "nenhuma",
-      tamanho: "medio",
-      orientacao: 0,
-      q: 0,
-      r: 0,
-      characterId: p.characterId,
-      visivel: true,
-      bloqueado: false,
-      retratoUrl: null,
-      pvAtual: null,
-      pvMax: null,
-      condicoes: [],
-    };
     setFerramenta("interagir");
-    setFluxoToken({ fase: "posicionando", rascunho, ancora, orientacao: 0 });
+    setFluxoToken({ fase: "posicionando", rascunho: rascunhoDePersonagem(p), ancora, orientacao: 0 });
   }, [estadoCena, ehNarrador]);
 
 
@@ -2469,39 +2478,17 @@ export function VttClient({
     if (hex) moverPosicionamento(hex);
   }, [ehNarrador, moverPosicionamento]);
 
-  const aoSoltarNoMapa = useCallback((e: React.DragEvent) => {
-    setArrastandoPersonagem(false);
-    if (!ehNarrador) return;
-    const bruto = e.dataTransfer.getData(MIME_PERSONAGEM_ARRASTADO);
-    const personagem = bruto ? desserializarPersonagemArrastado(bruto) : null;
-    if (!personagem) return;
-    e.preventDefault();
-    const hex = conversorHexRef.current?.(e.clientX, e.clientY) ?? null;
-    iniciarTokenDePersonagem(personagem, hex);
-  }, [ehNarrador, iniciarTokenDePersonagem]);
-
-  const girarPosicionamento = useCallback((direcao: 1 | -1) => {
-    setFluxoToken((f) => {
-      if (!f || (f.fase !== "posicionando" && f.fase !== "erro")) return f;
-      // Todo token tem orientação — mesmo pegada simétrica só muda pra
-      // qual direção o token olha, nunca as células ocupadas. Nunca
-      // gatear isto por "a forma muda ao girar" (`tamanhoTemOrientacaoVariavel`
-      // responde uma pergunta diferente: se a pegada é simétrica, não
-      // se o token PODE girar).
-      return { ...f, orientacao: ((f.orientacao + direcao) % 6 + 6) % 6 };
-    });
-  }, []);
-
-  // Guarda contra duplo clique — a SEGUNDA chamada, disparada antes do
-  // primeiro `setFluxoToken({fase:"enviando",...})` sequer commitar,
-  // precisa ser descartada; a checagem de fase sozinha não bastaria
-  // porque as duas chamadas podem rodar no MESMO evento de clique
-  // duplo, antes de qualquer re-render.
-  const confirmandoPosicaoRef = useRef(false);
-
-  const confirmarPosicionamento = useCallback((hex: Hex) => {
-    const f = fluxoTokenRef.current;
-    if (!f || (f.fase !== "posicionando" && f.fase !== "erro")) return;
+  /**
+   * CRIA O TOKEN numa âncora — a única porta pra `create_vtt_token`.
+   *
+   * Recebe o rascunho em vez de lê-lo do estado porque quem solta um
+   * personagem no mapa cria NA HORA, sem passar pela fase de
+   * posicionamento: naquele instante o rascunho ainda não foi pro
+   * estado, e esperar um render pra ler de volta o que já se tem em
+   * mãos seria inventar uma ida e volta.
+   */
+  const criarTokenEm = useCallback((rascunho: ValoresFormularioToken, hex: Hex, orientacao: number) => {
+    const f = { rascunho, orientacao };
     if (!estadoCena) return;
     if (confirmandoPosicaoRef.current) return;
 
@@ -2558,6 +2545,56 @@ export function VttClient({
       setFluxoToken({ fase: "erro", rascunho: f.rascunho, ancora: hex, orientacao: f.orientacao, mensagem: e instanceof Error ? `Falha de rede: ${e.message}` : "Falha de rede ao criar o token. Tente novamente." });
     });
   }, [campaignId, estadoCena, terrenoReal, ocupadosExcluindo, mesclarTokenNoEstado]);
+
+  const aoSoltarNoMapa = useCallback((e: React.DragEvent) => {
+    setArrastandoPersonagem(false);
+    if (!ehNarrador) return;
+    const bruto = e.dataTransfer.getData(MIME_PERSONAGEM_ARRASTADO);
+    const personagem = bruto ? desserializarPersonagemArrastado(bruto) : null;
+    if (!personagem) return;
+    e.preventDefault();
+    const hex = conversorHexRef.current?.(e.clientX, e.clientY) ?? null;
+    /* SOLTOU, ESTÁ POSTO. O arrasto JÁ é a escolha do lugar: o cursor
+       muda ao entrar no mapa, o fantasma segue o ponteiro e o hex sob
+       ele é o destino. Pedir um clique depois disso era perguntar de
+       novo o que a pessoa acabou de responder — e a fase de girar,
+       ali, valia pra um token médio que não tem lado nenhum pra onde
+       olhar.
+
+       Sem hex (soltou fora da grade) cai no fluxo de sempre: o
+       fantasma aparece e o clique escolhe. */
+    if (hex) {
+      setFerramenta("interagir");
+      criarTokenEm(rascunhoDePersonagem(personagem), hex, 0);
+      return;
+    }
+    iniciarTokenDePersonagem(personagem, hex);
+  }, [ehNarrador, iniciarTokenDePersonagem, criarTokenEm]);
+
+  const girarPosicionamento = useCallback((direcao: 1 | -1) => {
+    setFluxoToken((f) => {
+      if (!f || (f.fase !== "posicionando" && f.fase !== "erro")) return f;
+      // Todo token tem orientação — mesmo pegada simétrica só muda pra
+      // qual direção o token olha, nunca as células ocupadas. Nunca
+      // gatear isto por "a forma muda ao girar" (`tamanhoTemOrientacaoVariavel`
+      // responde uma pergunta diferente: se a pegada é simétrica, não
+      // se o token PODE girar).
+      return { ...f, orientacao: ((f.orientacao + direcao) % 6 + 6) % 6 };
+    });
+  }, []);
+
+  // Guarda contra duplo clique — a SEGUNDA chamada, disparada antes do
+  // primeiro `setFluxoToken({fase:"enviando",...})` sequer commitar,
+  // precisa ser descartada; a checagem de fase sozinha não bastaria
+  // porque as duas chamadas podem rodar no MESMO evento de clique
+  // duplo, antes de qualquer re-render.
+  const confirmandoPosicaoRef = useRef(false);
+
+  const confirmarPosicionamento = useCallback((hex: Hex) => {
+    const f = fluxoTokenRef.current;
+    if (!f || (f.fase !== "posicionando" && f.fase !== "erro")) return;
+    criarTokenEm(f.rascunho, hex, f.orientacao);
+  }, [criarTokenEm]);
 
   // Esc cancela; Q/E gira (só quando a pegada é assimétrica) — ativo
   // só durante "posicionando"/"erro" (nunca durante "enviando": uma
