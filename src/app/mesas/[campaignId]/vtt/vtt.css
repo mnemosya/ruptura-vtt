@@ -153,7 +153,7 @@
 .rv-ferramentas {
   display: flex; flex-direction: column; align-items: center;
   /* O VÃO É CALCULADO, não escolhido — ver o bloco abaixo. */
-  gap: clamp(3px, (100vh - 640px) / 18, 8px);
+  gap: clamp(3px, (100vh - 640px) / 18, 6px);
   padding: 10px 0; background: var(--rv-sunken); border-right: 1px solid var(--linha-2); z-index: 20;
   /* SEM `overflow`, e isso é regra, não descuido. As dicas de cada
      ferramenta são filhas do botão e saem PELO LADO; uma caixa de
@@ -172,13 +172,18 @@
        base = 579px de filhos + 20px de padding = 599px
        vãos = 18
 
-     `clamp(3px, (100vh - 640px) / 18, 8px)` dá os 8px do Console em
-     tela cheia, encolhe sozinho conforme a janela baixa, e nunca desce
-     dos 3px de antes. Os 640 no lugar dos 599 são margem de segurança:
-     com 620 o último botão fechava a 1px da borda numa janela de
-     700px — cabia, mas sem folga nenhuma pra qualquer coisa que
-     encoste ali embaixo. Ferramenta nova muda a base — recalcule os
-     dois números, não chute. */
+     `clamp(3px, (100vh - 640px) / 18, 6px)` dá 6px em tela cheia,
+     encolhe sozinho conforme a janela baixa, e nunca desce dos 3px de
+     antes. O teto é 6px, e não os 8px do Console, porque lá são nove
+     abas e aqui dezesseis ferramentas: o vão que areja uma coluna
+     curta estica demais uma coluna longa.
+
+     Os 640 no lugar dos 599 são margem de segurança: com 620 o último
+     botão fechava a 1px da borda numa janela de 700px — cabia, e sem
+     folga nenhuma pra qualquer coisa que encoste ali embaixo.
+
+     Ferramenta nova muda a base — recalcule os dois números, não
+     chute. */
 }
 .rv-ferr-btn {
   position: relative; width: 36px; height: 36px; flex: none;
