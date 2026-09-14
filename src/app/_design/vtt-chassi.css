@@ -158,6 +158,12 @@
 [data-rolavel]::after {
   content: ""; position: sticky; z-index: 2; pointer-events: none;
   display: block; height: var(--rv-veu-altura, 26px);
+  /* `flex: none` porque num container FLEX-COLUNA o véu vira item, e
+     item encolhe no eixo principal quando o conteúdo transborda — que
+     é justamente o caso de toda lista que rola. A altura de 26px ia a
+     ZERO e o véu existia sem aparecer. Foi assim que ele sumiu no feed
+     do chat. */
+  flex: none;
   transition: opacity .14s;
 }
 /* Altura ZERO no fluxo: o véu "empresta" a faixa da ponta e devolve

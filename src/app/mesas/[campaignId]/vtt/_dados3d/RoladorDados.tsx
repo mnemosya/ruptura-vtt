@@ -718,8 +718,11 @@ export function BandejaDados({ campaignId = null, personagemSugerido = null }: {
   return (
     /* A CAIXA responde ao mouse como os cartões do feed: o peso na
        borda, o fundo só um sopro. Ela é o vizinho deles na coluna. */
-    <div {...aoPassarMouse({ "border-color": "#2a3b58" })}
-      style={{ borderRadius: 2, background: "linear-gradient(160deg,#0b1322,#080e19)", border: "1px solid #16233a", transition: "border-color .14s" }}>
+    /* `className` e não só estilo inline: encostada no composer (no
+       Chat) ela perde os cantos de baixo, e isso é decisão de LAYOUT de
+       quem a hospeda — o raio sai daqui pra que a folha possa mandar. */
+    <div className="rv-bandeja-casca" {...aoPassarMouse({ "border-color": "#2a3b58" })}
+      style={{ background: "linear-gradient(160deg,#0b1322,#080e19)", border: "1px solid #16233a", transition: "border-color .14s" }}>
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} data-testid="painel-bandeja-dados"
         {...aoPassarMouse({ background: "rgba(255,255,255,.015)" })}
         style={{ display: "flex", width: "100%", alignItems: "center", gap: 10, padding: "10px 14px", border: 0, background: "transparent", cursor: "pointer", transition: "background .14s" }}>

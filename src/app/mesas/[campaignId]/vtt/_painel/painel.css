@@ -592,7 +592,11 @@
 .rv-pn-chat-novas {
   position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 2;
   display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px;
-  border: 1px solid var(--pn-cy); border-radius: var(--rv-r-md);
+  /* FIO NEUTRO, tinta ciana. O fio ciano veio do aviso de novas e era
+     o que sobrava quando os dois viraram a mesma peça: uma moldura
+     acesa em volta de um botão que só leva ao fim da lista. O ciano
+     fica no texto e no ícone, que é onde ele diz "clique aqui". */
+  border: 1px solid var(--pn-line-soft); border-radius: var(--rv-r-md);
   background: #101b33; color: var(--pn-cy);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
@@ -600,7 +604,7 @@
   transition: border-color .14s, background .14s, color .14s;
 }
 .rv-pn-chat-novas svg { width: 15px; height: 15px; }
-.rv-pn-chat-novas:hover { background: #16233f; }
+.rv-pn-chat-novas:hover { background: #16233f; border-color: color-mix(in srgb, var(--pn-cy) 45%, transparent); }
 .rv-pn-chat-novas:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 2px; }
 /* VOLTAR PRO FIM é o mesmo botão com outro recado: ninguém chegou, só
    se subiu muito. Neutro no TOM — o ciano é do aviso de NOVIDADE, e
@@ -715,7 +719,10 @@
    a lista de personagens usa. Eram 9/10/10 de padding e 7 de gap: três
    números para dizer "um respiro", e nenhum deles igual ao do lado. */
 .rv-pn-chat .rv-pn-chat-scroll {
-  padding: 8px; gap: 8px;
+  /* O RESPIRO DE BAIXO reserva o lugar da bandeja recolhida (38px de
+     cabeçalho mais os 8 de folga): sem ele o último cartão nascia
+     debaixo dela, e chegar ao fim da conversa não mostrava o fim. */
+  padding: 8px 8px 54px; gap: 8px;
   /* O véu das pontas (`[data-rolavel]`, no chassi) — mesma marca da
      lista de personagens, e a mesma razão: o feed é alto e a barra de
      rolagem passa despercebida. */
@@ -902,9 +909,44 @@
 .pn-cartao-canto--br{bottom:4px;right:4px;border-bottom-width:1px;border-right-width:1px}
 .rv-pn-chat .pn-modulos { gap:8px; }.rv-pn-chat .pn-modulo { background:transparent; border-color:transparent; padding:3px 0; }.rv-pn-chat .pn-modulo-rotulo { font-size:8.5px; letter-spacing:.16em; }.rv-pn-chat .pn-modulo-valor { font-size:14px; }
 .rv-pn-chat .pn-faixa { border-radius:0; }
-/* Bandeja de Dados — a moldura é do design (`chat % dice tray`), que a
-   desenha inteira no componente; aqui só reservamos a faixa do chat. */
-.pn-bandeja-dados { flex: none; margin: 10px 10px 0; }
+/* ── O QUE FLUTUA SOBRE O FEED ───────────────────────────────────────
+   O atalho de rolagem e a Bandeja de Dados, empilhados no pé da
+   conversa e POR CIMA dela.
+
+   A bandeja era uma faixa fixa entre o feed e o composer: uma barra
+   cortando a coluna em dois, roubando altura da leitura o tempo todo
+   por um painel que se abre de vez em quando. Sobreposta, ela só ocupa
+   espaço enquanto interessa.
+
+   A casca é transparente ao clique; só os filhos recebem. Senão a
+   faixa vazia em volta da bandeja bloquearia o cartão embaixo dela. */
+.rv-pn-chat-sobreposto {
+  /* ENCOSTADA NO PÉ: a bandeja é a peça de cima do composer, não uma
+     caixa boiando sobre o feed. Grudada, as duas leem como um bloco só
+     de "o que eu faço", e o feed fica inteiro acima delas. */
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  pointer-events: none;
+}
+.rv-pn-chat-sobreposto > * { pointer-events: auto; }
+/* Dentro da pilha o botão não se posiciona sozinho — quem ancora é a
+   casca, e é ela que garante que ele fique ACIMA da bandeja. */
+.rv-pn-chat-sobreposto .rv-pn-chat-novas { position: static; transform: none; margin-bottom: 0; }
+/* A moldura da bandeja é do design (`chat % dice tray`), desenhada
+   inteira no componente; daqui sai só a largura e a sombra que a
+   descola do feed. */
+.pn-bandeja-dados {
+  flex: none; width: 100%; margin: 0;
+  /* A sombra sobe, não desce: embaixo dela está o composer, encostado.
+     Uma sombra pra baixo cairia sobre a peça que ela toca. */
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, .55);
+}
+/* Encostada, ela perde os cantos e o fio de baixo — é ali que ela se
+   funde com o composer. */
+.rv-pn-chat-sobreposto .rv-bandeja-casca {
+  border-radius: var(--rv-r) var(--rv-r) 0 0;
+  border-bottom: none;
+}
 
 /* Menu compacto ancorado (autoria/visibilidade/contexto) — popover
    próprio, nunca um <select> nativo. */

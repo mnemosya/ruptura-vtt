@@ -2212,6 +2212,10 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    fora do painel. */
 .rv-dados-rolando { display: inline-flex; animation: rv-dados-pulso 1.05s ease-in-out infinite; }
 @keyframes rv-dados-pulso { 0%, 100% { opacity: .32; } 50% { opacity: .8; } }
+/* A casca da Bandeja de Dados — o raio saiu do estilo inline pra que
+   quem a hospeda possa encostá-la em outra peça (ver `.pn-bandeja-dados`
+   no painel). Fora do chat ela é uma caixa solta e arredondada. */
+.rv-bandeja-casca { border-radius: var(--rv-r); }
 .rv-dados-status { font-family: var(--font-mono), monospace; font-size: 10px; text-transform: uppercase; letter-spacing: .14em; color: var(--txt-dim); }
 
 /* Força carregada até 100% — feedback discreto, não uma festa. Some

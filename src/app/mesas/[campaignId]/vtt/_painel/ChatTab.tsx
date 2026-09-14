@@ -468,27 +468,41 @@ export function ChatTab({
         )}
       </div>
 
-      {temNovas ? (
-        <button type="button" className="rv-pn-chat-novas" onClick={irParaOFim} data-testid="painel-chat-novas">
-          <ChevronDown size={12} aria-hidden="true" /> Novas mensagens
-        </button>
-      ) : rolagem.longe && (
-        /* O MESMO BOTÃO, sem variante de estilo: os dois ocupam o mesmo
-           lugar e levam ao mesmo lugar. O que muda é a FRASE — "novas
-           mensagens" quando chegou algo, "ir para o fim" quando só se
-           subiu muito —, que é a única diferença real entre os casos. */
-        <button
-          type="button" className="rv-pn-chat-novas"
-          onClick={irParaOFim} data-testid="painel-chat-voltar-fim"
-        >
-          <ChevronsDown size={15} aria-hidden="true" /> Ir para o fim
-        </button>
-      )}
+      {/* O QUE FLUTUA SOBRE O FEED — o atalho de rolagem e a bandeja de
+          dados, nesta ordem, empilhados no pé da conversa.
+
+          A bandeja era uma FAIXA entre o feed e o composer: uma barra
+          fixa cortando a coluna em dois, que roubava altura da leitura
+          o tempo todo pra um painel que se usa de vez em quando. Por
+          cima, ela ocupa o lugar dela só enquanto interessa — e o feed
+          volta a ser a coluna inteira.
+
+          A casca não recebe clique (`pointer-events: none`), só os
+          filhos: senão a faixa transparente em volta da bandeja
+          bloquearia o cartão que estivesse embaixo. */}
+      <div className="rv-pn-chat-sobreposto">
+        {temNovas ? (
+          <button type="button" className="rv-pn-chat-novas" onClick={irParaOFim} data-testid="painel-chat-novas">
+            <ChevronDown size={12} aria-hidden="true" /> Novas mensagens
+          </button>
+        ) : rolagem.longe && (
+          /* O MESMO BOTÃO, sem variante de estilo: os dois ocupam o mesmo
+             lugar e levam ao mesmo lugar. O que muda é a FRASE — "novas
+             mensagens" quando chegou algo, "ir para o fim" quando só se
+             subiu muito —, que é a única diferença real entre os casos. */
+          <button
+            type="button" className="rv-pn-chat-novas"
+            onClick={irParaOFim} data-testid="painel-chat-voltar-fim"
+          >
+            <ChevronsDown size={15} aria-hidden="true" /> Ir para o fim
+          </button>
+        )}
+        <div className="pn-bandeja-dados">
+          <BandejaDados campaignId={campaignId} personagemSugerido={personagemDoTokenSelecionado} />
+        </div>
+      </div>
       </div>
 
-      <div className="pn-bandeja-dados">
-        <BandejaDados campaignId={campaignId} personagemSugerido={personagemDoTokenSelecionado} />
-      </div>
 
       <Composer
         papel={role}
