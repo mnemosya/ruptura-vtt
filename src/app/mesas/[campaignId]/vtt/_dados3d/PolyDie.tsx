@@ -114,6 +114,19 @@ function shapeFor(sides: number): Shape {
   }
 }
 
+/**
+ * Escurece um hex mantendo o matiz — multiplica os três canais. Aceita
+ * só `#rrggbb`; qualquer outra coisa volta como veio, porque `accent`
+ * é uma prop pública e um dia pode chegar como `rgba()` ou token.
+ */
+function escurecer(cor: string, fator: number): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(cor.trim());
+  if (!m) return cor;
+  const n = Number.parseInt(m[1], 16);
+  const canal = (deslocamento: number) => Math.round(((n >> deslocamento) & 0xff) * fator);
+  return `rgb(${canal(16)}, ${canal(8)}, ${canal(0)})`;
+}
+
 export function PolyDie({
   sides,
   value,
@@ -151,7 +164,13 @@ export function PolyDie({
   const s = shapeFor(sides);
   const stroke = active ? accent : dim ? "#2a3b58" : "#43597c";
   const fill = active ? soft : "transparent";
-  const textColor = active ? accent : dim ? "#42597c" : "#a9b9d4";
+  /* O NÚMERO um degrau ABAIXO do contorno, não na mesma tinta. No dado
+     aceso o dígito saía exatamente na cor do traço que o cerca, e as
+     duas coisas se misturavam — principalmente no d100, onde três
+     dígitos encostam nas facetas. Escurecer separa o que se LÊ do que
+     só desenha a peça, e o miolo lavado (`fillOpacity`) continua claro
+     o bastante pra sustentar o contraste. */
+  const textColor = active ? escurecer(accent, 0.78) : dim ? "#42597c" : "#a9b9d4";
   const landAnim = landed ? { animationDelay: `${Math.min(rollIndex, 6) * 0.04}s` } : undefined;
   /* face padrão = valor máximo do dado */
   const displayValue = value ?? sides;
