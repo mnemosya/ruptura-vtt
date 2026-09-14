@@ -737,13 +737,21 @@
    véu terminava num tom mais claro que o fundo atrás dele e se via
    como um retângulo solto — era esse o "lugar errado" que ele parecia
    ocupar, não a posição. */
-.rv-pn-chat .rv-pn-chat-scroll {
-  --rv-veu-cor: #060b16;
-  --rv-veu-altura: 44px;
-}
+.rv-pn-chat .rv-pn-chat-scroll { --rv-veu-cor: #060b16; }
 .rv-pn-chat .rv-pn-chat-scroll[data-rolavel]::before { content: none; }
 .rv-pn-chat .rv-pn-chat-scroll[data-rolavel]::after {
-  bottom: var(--pn-bandeja-altura);
+  /* ANCORADO NO PÉ DO CHAT — a linha onde o composer começa, que é o
+     chão de tudo que flutua aqui (a bandeja inclusive). `bottom: 0`,
+     sem desconto nenhum.
+
+     A ALTURA atravessa a bandeja: 44px de desvanecer MAIS a altura
+     dela. E o degradê fecha nos primeiros 44 — daí pra baixo ele é
+     cor cheia, escondida atrás da bandeja. É isso que faz a faixa
+     visível (a que sobra acima dela) ser um desvanecer COMPLETO em vez
+     de um gradiente cortado no meio. */
+  bottom: 0;
+  height: calc(var(--pn-bandeja-altura) + 44px);
+  background: linear-gradient(transparent 0, var(--rv-veu-cor) 44px, var(--rv-veu-cor) 100%);
 }
 .rv-pn-chat .pn-cartao {
   padding: 8px 9px 8px 34px;
