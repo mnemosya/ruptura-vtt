@@ -181,7 +181,7 @@ export function PolyDie({
             resultado, e mexer nele lá fora escureceria as duas coisas.
             Aqui o miolo pede menos peso — com o alfa cheio, uma fileira
             inteira de dados acesos virava uma mancha de cor. */}
-        <g fill={fill} fillOpacity={active ? 0.6 : 1} stroke={stroke} strokeWidth={4.5 / k} strokeLinejoin="round">{s.outer}</g>
+        <g fill={fill} fillOpacity={active ? 0.35 : 1} stroke={stroke} strokeWidth={4.5 / k} strokeLinejoin="round">{s.outer}</g>
         <g fill="none" stroke={stroke} strokeWidth={2.5 / k} strokeLinejoin="round" strokeLinecap="round" opacity={0.45}>{s.facets}</g>
         {!semValor && (
           <text x="50" y={s.ty} textAnchor="middle" dominantBaseline="central" fontFamily="var(--font-mono), 'JetBrains Mono', monospace" fontSize={30 / k} fontWeight="700" fill={textColor}>
