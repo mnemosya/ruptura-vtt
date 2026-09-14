@@ -1022,6 +1022,15 @@
 .rv-pn-grupo-btn:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 2px; }
 .rv-pn-grupo-rotulo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rv-pn-grupo-contagem { font-size: 10px; opacity: .7; }
+/* `margin-left: auto` joga o chevron pra borda: entre o nome e ele fica
+   o vazio, que é o que deixa claro que os dois não são a mesma coisa —
+   um diz QUAL pasta, o outro diz se ela está aberta. */
+.rv-pn-grupo-chevron {
+  display: flex; flex: none; margin-left: auto; color: var(--pn-dim);
+  transform: rotate(-90deg); transition: transform .16s, color .14s;
+}
+.rv-pn-grupo-chevron[data-aberto="true"] { transform: rotate(0deg); }
+.rv-pn-grupo-btn:hover .rv-pn-grupo-chevron { color: var(--pn-cy); }
 .rv-pn-grupo-glifo { display: flex; flex: none; }
 .rv-pn-grupo-acoes { display: flex; gap: 2px; flex: none; padding-right: 6px; }
 

@@ -18,7 +18,7 @@
  * cena é outra entidade, com HUD próprio).
  */
 
-import { Search, X } from "lucide-react";
+import { ChevronDown, Search, X } from "lucide-react";
 import type { KeyboardEvent, ReactNode } from "react";
 import { BotaoTecnico } from "./ui/primitivas";
 
@@ -104,6 +104,16 @@ export function CabecalhoGrupo({
       {glifo && <span className="rv-pn-grupo-glifo" aria-hidden="true">{glifo}</span>}
       <span className="rv-pn-grupo-rotulo">{rotulo}</span>
       {contagem != null && <span className="rv-pn-grupo-contagem">{contagem}</span>}
+      {/* O CHEVRON só existe quando a pasta RECOLHE. Fica no fim, e
+          gira: apontando pra baixo quando está aberta, pra direita
+          quando fechada — a mesma leitura de toda árvore. O
+          `aria-expanded` do botão já dizia isso pro leitor de tela; o
+          chevron é a metade que faltava pra quem enxerga. */}
+      {onAlternar && (
+        <span className="rv-pn-grupo-chevron" data-aberto={aberto ? "true" : undefined} aria-hidden="true">
+          <ChevronDown size={13} />
+        </span>
+      )}
     </>
   );
   return (
