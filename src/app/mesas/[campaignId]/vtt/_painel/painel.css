@@ -357,8 +357,13 @@
   padding: 6px 11px; min-height: 26px;
   border: 1px solid var(--rv-line-strong); border-radius: 2px;
   background: var(--rv-sunken); color: var(--rv-ink-dim);
-  font-family: var(--rv-display);
-  font-size: 12.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  /* CORPO, e não display: em caixa alta e com espaçamento, o Chakra
+     Petch pesava demais pra um botão secundário de painel — ele
+     competia com o nome do personagem ao lado. A classe segue
+     duplicada porque `.rm-root button` continua lá; o que mudou foi a
+     família pedida, não o mecanismo. */
+  font-family: var(--rv-body);
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
   cursor: pointer; text-decoration: none;
   transition: background .14s, border-color .14s, color .14s;
 }
@@ -916,7 +921,10 @@
 .rv-pn-select.rv-pn-select, .rv-pn-input.rv-pn-input {
   padding: 3px 6px; border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
   background: var(--pn-inset); color: var(--pn-txt-forte);
-  font-family: var(--font-mono), ui-monospace, monospace; font-size: 12px;
+  /* CORPO. Monoespaçado é a fonte de NÚMERO e metadado; "A–Z" e
+     "Manual" são palavras, e em JetBrains elas ficavam largas e
+     técnicas demais pro que o controle faz. */
+  font-family: var(--rv-body); font-size: 11px;
 }
 /* `appearance: none` pelo mesmo motivo do checkbox: com `auto`, o
    select é desenhado pelo SISTEMA — caixa clara, seta própria, cantos
