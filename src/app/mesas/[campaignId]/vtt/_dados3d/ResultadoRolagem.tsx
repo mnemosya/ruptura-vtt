@@ -270,7 +270,13 @@ export function FaixaSoma({ base, modificador, total, cd, modo = "sum", nota, te
 }) {
   const temCd = cd != null;
   const passou = temCd && total >= cd;
-  const acento = !temCd ? ACCENTS.slate : passou ? ACCENTS.good : ACCENTS.danger;
+  /* CIANO no sucesso, e não verde. É a mesma regra do teste de Ruptura
+     logo acima (`RESULTS`): o VERDE é o TOPO — `sucesso_critico` —, e o
+     sucesso comum fica com o ciano estrutural. Uma soma contra CD não
+     tem crítico, então ela nunca chega no verde: passar da CD aqui é
+     sucesso padrão, e pintá-lo de verde dizia "crítico" pra qualquer
+     acerto raspado. A falha continua vermelha, como lá. */
+  const acento = !temCd ? ACCENTS.slate : passou ? ACCENTS.cyan : ACCENTS.danger;
   return (
     <FaixaChassi
       acento={acento}
