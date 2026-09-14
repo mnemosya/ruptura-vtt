@@ -211,19 +211,13 @@ export function CartaoTokenHover(p: PropsCartaoTokenHover) {
               >
                 <span className="rv-cartao-token__barra" style={{ width: `${pct}%` }} />
               </span>
-              <ResourceValueCard
-                atual={r.atual}
-                max={r.max}
-                rotulo={rotulo}
-                className="rv-cartao-token__val"
-                inputClassName="rv-cartao-token__input"
-                readOnly={!podeEditar}
-                disabled={ocupado}
-                onGravar={(valor) => gravar(id, valor)}
-                testIdPrefix="cartao-token-res"
-              />
-              {podeEditar && (
-                <span className="rv-cartao-token__pips">
+              {/* OS BOTÕES FLANQUEIAM O NÚMERO: menos à esquerda, mais à
+                  direita, os três colados. Antes o par vinha DEPOIS da
+                  fração, e a relação entre o que se aperta e o que muda
+                  ficava a 40px de distância. Sem controle (só leitura),
+                  sobra a fração sozinha nesta coluna. */}
+              <span className="rv-cartao-token__ctrl">
+                {podeEditar && (
                   <button
                     type="button" className="rv-cartao-token__pip"
                     onClick={() => gravar(id, Math.max(0, r.atual - 1))}
@@ -232,6 +226,19 @@ export function CartaoTokenHover(p: PropsCartaoTokenHover) {
                   >
                     <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 5h6" /></svg>
                   </button>
+                )}
+                <ResourceValueCard
+                  atual={r.atual}
+                  max={r.max}
+                  rotulo={rotulo}
+                  className="rv-cartao-token__val"
+                  inputClassName="rv-cartao-token__input"
+                  readOnly={!podeEditar}
+                  disabled={ocupado}
+                  onGravar={(valor) => gravar(id, valor)}
+                  testIdPrefix="cartao-token-res"
+                />
+                {podeEditar && (
                   <button
                     type="button" className="rv-cartao-token__pip"
                     onClick={() => gravar(id, Math.min(r.max, r.atual + 1))}
@@ -240,8 +247,8 @@ export function CartaoTokenHover(p: PropsCartaoTokenHover) {
                   >
                     <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 5h6M5 2v6" /></svg>
                   </button>
-                </span>
-              )}
+                )}
+              </span>
             </div>
           );
         })}

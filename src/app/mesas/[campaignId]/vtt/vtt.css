@@ -5372,7 +5372,13 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 
 /* CABEÇALHO — nome e lado nas pontas. */
-.rv-cartao-token__cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* O FIO fecha o cabeçalho. Sem ele o nome e a etiqueta flutuavam no
+   mesmo bloco das barras, e o cartão lia como uma lista de quatro
+   linhas em vez de um título com um corpo embaixo. */
+.rv-cartao-token__cab {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding-bottom: 8px; border-bottom: 1px solid #18263f;
+}
 /* A ETIQUETA DE LADO fica no MESMO tamanho e entreletra do nome, um
    degrau abaixo na tinta (47% contra 88%): ela qualifica o nome, não
    disputa com ele. Corpo e não display — o nome é o que tem peso de
@@ -5393,16 +5399,22 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
-.rv-cartao-token__recursos { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; }
+/* 8px acima, agora que o fio do cabeçalho é quem separa — os 12 de
+   antes faziam o trabalho que a linha faz melhor. */
+.rv-cartao-token__recursos { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; }
 
 .rv-cartao-token__linha {
-  display: grid; align-items: center; gap: 6px;
-  /* 26 / 80 / 40 são as medidas do Figma, e são fixas de propósito: as
-     três linhas precisam alinhar rótulo, barra e número em coluna, e
-     uma barra elástica faria a coluna do número dançar conforme o
-     rótulo ("Mana" é mais largo que "PV"). */
-  grid-template-columns: 26px 80px 40px auto;
+  display: grid; align-items: center; gap: 8px;
+  /* 26 e 80 são as medidas do Figma, e são fixas de propósito: as três
+     linhas precisam alinhar rótulo e barra em coluna, e uma barra
+     elástica faria o resto dançar conforme o rótulo ("Mana" é mais
+     largo que "PV"). A terceira coluna é o GRUPO de controle — menos,
+     número e mais —, que tem largura própria. */
+  grid-template-columns: 26px 80px auto;
 }
+/* O grupo é COLADO: os dois botões tocam o número, e é esse toque que
+   diz que eles mexem naquele valor e não em outro. */
+.rv-cartao-token__ctrl { display: flex; align-items: center; }
 .rv-cartao-token__linha[aria-busy="true"] { opacity: .72; }
 
 /* Cada linha carrega o próprio acento; o resto da folha lê só as duas
@@ -5468,7 +5480,6 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
 }
 .rv-cartao-token__input:focus-visible { outline: 1px solid var(--rv-cy); outline-offset: 0; }
 
-.rv-cartao-token__pips { display: flex; gap: 3px; }
 .rv-cartao-token__pip {
   display: flex; align-items: center; justify-content: center;
   width: 16px; height: 16px; padding: 0;
@@ -5476,7 +5487,15 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
   background: var(--rv-panel); color: var(--rv-ink-dim); cursor: pointer;
   transition: color .12s, border-color .12s;
 }
-.rv-cartao-token__pip:hover:not(:disabled) { color: var(--rv-ink); border-color: var(--rv-line-hover); }
+/* HOVER EM CIANO — a caixa e o glifo juntos. O fio neutro que ele
+   tinha dizia "isto é clicável" com a mesma voz da borda parada; o
+   ciano é a cor de ação do chassi, e é ela que responde ao ponteiro no
+   resto do VTT. */
+.rv-cartao-token__pip:hover:not(:disabled) {
+  color: var(--rv-cy);
+  border-color: color-mix(in srgb, var(--rv-cy) 55%, transparent);
+  background: color-mix(in srgb, var(--rv-cy) 10%, var(--rv-panel));
+}
 .rv-cartao-token__pip:disabled { opacity: .4; cursor: not-allowed; }
 .rv-cartao-token__pip:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
 /* 10px, e não 9: o botão tem 16 com 1 de borda, então sobram 14 de
