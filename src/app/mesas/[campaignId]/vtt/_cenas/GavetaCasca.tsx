@@ -56,9 +56,20 @@ export function GavetaCasca(p: PropsGavetaCasca) {
           <p className="rv-gav-modo">{p.modo}</p>
         </span>
 
+        <span className="rv-gav-espaco" />
+        {/* AS AÇÕES SÃO UM GRUPO, e o fechar não é uma delas. Soltos na
+            mesma linha com o mesmo vão, "Nova cena", "Nova pasta",
+            "Arquivo" e o X pareciam quatro botões irmãos — e o X é o
+            único que não faz nada no catálogo, ele descarta a janela
+            inteira. Vão menor entre as ações, vão maior antes do X. */}
         {/* A busca fica no CABEÇALHO e com largura fixa: numa gaveta
             larga um campo que estica até onde couber vira uma faixa de
-            700px, e busca não fica melhor por ser maior. */}
+            700px, e busca não fica melhor por ser maior.
+
+            E fica À DIREITA, colada nas ações: encostada no título ela
+            abria um vão enorme no meio do cabeçalho, e o olho tinha que
+            atravessar a gaveta inteira pra ir de "procurar" a "criar" —
+            que é o par de coisas que se faz aqui. */}
         <span className="rv-cena-busca-casca">
           <Search size={14} aria-hidden="true" />
           <input
@@ -73,12 +84,6 @@ export function GavetaCasca(p: PropsGavetaCasca) {
           />
         </span>
 
-        <span className="rv-gav-espaco" />
-        {/* AS AÇÕES SÃO UM GRUPO, e o fechar não é uma delas. Soltos na
-            mesma linha com o mesmo vão, "Nova cena", "Nova pasta",
-            "Arquivo" e o X pareciam quatro botões irmãos — e o X é o
-            único que não faz nada no catálogo, ele descarta a janela
-            inteira. Vão menor entre as ações, vão maior antes do X. */}
         <span className="rv-gav-acoes">{p.acoes}</span>
 
         <button
