@@ -862,14 +862,27 @@ export async function obterControleAction(campaignId: string): Promise<Resultado
   }
 }
 
-/** Personagens da campanha pro seletor de "vincular personagem" do formulário de token — narrador-only (quem cria/edita token). */
-export async function listarPersonagensAction(campaignId: string): Promise<ResultadoAcao<{ id: string; nome: string }[]>> {
+/**
+ * Personagens da campanha pro seletor de "vincular personagem" do
+ * formulário de token — narrador-only (quem cria/edita token).
+ *
+ * Vai junto o `avatarImageId`, que a leitura já trazia e esta ação
+ * jogava fora. É ele que deixa o FANTASMA de posicionamento mostrar a
+ * cara do personagem: sem o campo, o token só ganhava rosto depois de
+ * criado, e escolher a célula era feito olhando uma sigla.
+ */
+export async function listarPersonagensAction(campaignId: string): Promise<ResultadoAcao<{ id: string; nome: string; avatarImageId: string | null }[]>> {
   const v = await exigirAcesso(campaignId);
   if (v.erro) return { ok: false, erro: v.erro };
   if (v.acesso!.role !== "narrator") return { ok: false, erro: "Só o narrador vincula personagens a tokens." };
   try {
     const personagens = await listCharactersForNarratorCampaign(campaignId);
-    return { ok: true, dados: personagens.filter((p) => !p.archived_at).map((p) => ({ id: p.id, nome: p.name })) };
+    return {
+      ok: true,
+      dados: personagens
+        .filter((p) => !p.archived_at)
+        .map((p) => ({ id: p.id, nome: p.name, avatarImageId: p.avatar_image_id ?? null })),
+    };
   } catch (e) {
     return { ok: false, erro: e instanceof Error ? e.message : "Falha ao listar personagens." };
   }

@@ -1054,6 +1054,12 @@ export interface CharacterRecord {
   owner_id: string | null;
   /** Momento em que foi arquivado (migration 0012). Null = ativo/vivo. */
   archived_at: string | null;
+  /**
+   * Avatar da ficha (0105). Opcional no tipo porque nem toda leitura
+   * pede a coluna — quem faz `select()` inteiro recebe, e é dela que o
+   * token herda a cara quando não tem retrato próprio.
+   */
+  avatar_image_id?: string | null;
 }
 
 // ---------------------------------------------------------------------

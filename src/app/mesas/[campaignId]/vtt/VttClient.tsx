@@ -439,6 +439,20 @@ export function VttClient({
    * memória e as escritas — vive no hook; aqui só se liga o resultado
    * na barra, no mapa e no painel.
    */
+  /* DECLARADOS AQUI EM CIMA, e não junto do resto do fluxo de token:
+     a leva de assinatura de imagens (logo abaixo) precisa saber qual
+     avatar o token EM POSICIONAMENTO usa, e hook não lê estado que
+     ainda não foi declarado. Subir dois `useState` custa menos que
+     abrir uma segunda leva de assinatura só pro fantasma. */
+  const [fluxoToken, setFluxoToken] = useState<FluxoToken | null>(null);
+  const [personagensNarrador, setPersonagensNarrador] = useState<{ id: string; nome: string; avatarImageId: string | null }[]>([]);
+  /** O avatar da ficha vinculada no rascunho — ver `imagemDoFantasma`. */
+  const avatarDoRascunho = useMemo(() => {
+    const id = fluxoToken && "rascunho" in fluxoToken ? fluxoToken.rascunho.characterId : null;
+    if (!id) return null;
+    return personagensNarrador.find((p) => p.id === id)?.avatarImageId ?? null;
+  }, [fluxoToken, personagensNarrador]);
+
   /**
    * Retratos de ARQUIVO em cena. Entram na mesma leva de assinatura das
    * imagens de cena — são o mesmo bucket, a mesma autorização e o mesmo
@@ -455,13 +469,25 @@ export function VttClient({
       .filter((id): id is string => id !== null),
     [estadoCena?.tokens],
   );
+  /**
+   * O avatar do token que está SENDO POSICIONADO entra na mesma leva.
+   * Ele ainda não é token de cena — não está em `estadoCena.tokens` —,
+   * então sem esta linha o fantasma teria o id da imagem e nenhuma URL
+   * pra desenhar, que é a sigla de volta por outro caminho.
+   */
+  const idsParaAssinar = useMemo(
+    () => (avatarDoRascunho && !idsRetratoEmCena.includes(avatarDoRascunho)
+      ? [...idsRetratoEmCena, avatarDoRascunho]
+      : idsRetratoEmCena),
+    [idsRetratoEmCena, avatarDoRascunho],
+  );
   const imgs = useImagensDaCena({
     campaignId,
     sceneId: estadoCena?.cena.id ?? null,
     ehNarrador,
     larguraCena: estadoCena?.cena.largura ?? 0,
     alturaCena: estadoCena?.cena.altura ?? 0,
-    idsExtras: idsRetratoEmCena,
+    idsExtras: idsParaAssinar,
   });
   /** Último ponto do ponteiro sobre o mapa — escrito pelo `MapaHex`. */
   const ancoraPonteiroRef = useRef<PontoAxial | null>(null);
@@ -2144,10 +2170,8 @@ export function VttClient({
    * `/ficha`, que continua existindo.
    */
   const consoleDaMesa = useConsoleDaMesa();
-  const [fluxoToken, setFluxoToken] = useState<FluxoToken | null>(null);
   const fluxoTokenRef = useRef(fluxoToken);
   useEffect(() => { fluxoTokenRef.current = fluxoToken; }, [fluxoToken]);
-  const [personagensNarrador, setPersonagensNarrador] = useState<{ id: string; nome: string }[]>([]);
   const [confirmandoRemocao, setConfirmandoRemocao] = useState<TokenApresentacao | null>(null);
 
   useEffect(() => {
@@ -2557,6 +2581,23 @@ export function VttClient({
     return () => window.removeEventListener("keydown", aoTeclar);
   }, [fluxoToken?.fase, cancelarPosicionamento, girarPosicionamento]);
 
+  /**
+   * O QUE O FANTASMA MOSTRA enquanto a célula não foi escolhida.
+   *
+   * A precedência é a mesma de `vtt_token_imagem_efetiva`, que é quem
+   * manda depois que o token existe: endereço externo vence a herança,
+   * e sem endereço vale o avatar da ficha vinculada. Repetir a ordem
+   * aqui é o preço de o fantasma não existir no banco — ele é um
+   * rascunho, não tem projeção pra consultar.
+   *
+   * Sem isto, escolher a célula era feito olhando uma sigla: a decisão
+   * de ONDE colocar o token era tomada sem a informação que diz QUEM
+   * ele é, e o rosto só aparecia depois de criado.
+   */
+  const imagemDoFantasma =
+    (fluxoToken && "rascunho" in fluxoToken ? fluxoToken.rascunho.retratoUrl : null)
+    ?? (avatarDoRascunho ? imgs.urls[avatarDoRascunho] ?? null : null);
+
   // Fantasma pro mapa (`MapaHex.posicionamentoToken`) — recomputado a
   // cada mudança de âncora/orientação/terreno, nunca calculado dentro
   // de `MapaHex` (que só desenha o que o domínio já decidiu).
@@ -2567,7 +2608,7 @@ export function VttClient({
     // aponta, nunca as células ocupadas.
     const podeGirar = true;
     if (!fluxoToken.ancora) {
-      return { ativo: true, ancora: null, celulas: [], valida: false, orientacao: fluxoToken.orientacao, podeGirar, sigla: fluxoToken.rascunho.sigla, imagemUrl: fluxoToken.rascunho.retratoUrl };
+      return { ativo: true, ancora: null, celulas: [], valida: false, orientacao: fluxoToken.orientacao, podeGirar, sigla: fluxoToken.rascunho.sigla, imagemUrl: imagemDoFantasma };
     }
     const v = validarPosicaoToken({
       tamanho: fluxoToken.rascunho.tamanho, orientacao: fluxoToken.orientacao, ancora: fluxoToken.ancora,
@@ -2575,9 +2616,9 @@ export function VttClient({
     });
     return {
       ativo: true, ancora: fluxoToken.ancora, celulas: v.celulas, valida: v.valida, orientacao: fluxoToken.orientacao, podeGirar,
-      sigla: fluxoToken.rascunho.sigla, imagemUrl: fluxoToken.rascunho.retratoUrl,
+      sigla: fluxoToken.rascunho.sigla, imagemUrl: imagemDoFantasma,
     };
-  }, [fluxoToken, estadoCena, terrenoReal, ocupadosPorOutros]);
+  }, [fluxoToken, estadoCena, terrenoReal, ocupadosPorOutros, imagemDoFantasma]);
 
   // ── Duplicar — busca DETERMINÍSTICA de posição livre por anéis
   // hexagonais crescentes a partir da âncora original (`hexNoRaio`), a
