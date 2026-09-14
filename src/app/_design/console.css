@@ -493,7 +493,7 @@
 .rc-avatar-remover {
   position: absolute; top: 8%; right: 12%; z-index: 2;
   display: grid; place-items: center; width: 26px; height: 26px;
-  border: 1px solid color-mix(in srgb, var(--rc-danger) 45%, transparent); border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--rc-danger) 45%, transparent); border-radius: 4px;
   background: rgba(10, 14, 20, .82); color: var(--rc-danger);
   cursor: pointer; opacity: 0; pointer-events: none;
   transition: opacity .12s ease, background .14s, border-color .14s, color .14s;
@@ -516,7 +516,7 @@
   position: absolute; inset: 12% 4%; z-index: 3;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
   padding: 10px;
-  border: 1px solid color-mix(in srgb, var(--rc-danger) 45%, transparent); border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--rc-danger) 45%, transparent); border-radius: 4px;
   background: rgba(8, 12, 18, .95);
 }
 .rc-avatar-confirmar p {
@@ -529,7 +529,7 @@
 .rc-avatar-confirmar-acoes button {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   padding: 6px 10px;
-  border: 1px solid transparent; border-radius: 2px;
+  border: 1px solid transparent; border-radius: 4px;
   background: transparent; color: var(--rc-dim);
   font-family: var(--font-chakra), sans-serif;
   font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
@@ -1674,7 +1674,7 @@
 }
 .rc-recorte__janela {
   position: relative; overflow: hidden; touch-action: none; cursor: grab;
-  border: 1px solid var(--jr-linha, #16233a); border-radius: 2px; background: var(--jr-fundo, #070d17);
+  border: 1px solid var(--jr-linha, #16233a); border-radius: 4px; background: var(--jr-fundo, #070d17);
 }
 .rc-recorte__janela:active { cursor: grabbing; }
 /* Camada de baixo: o que FICA DE FORA, escurecido. Sem ela a pessoa não
@@ -1720,7 +1720,7 @@
 .rc-recorte__zoom input[type="range"]:disabled { opacity: .4; cursor: not-allowed; }
 .rc-recorte__reset {
   display: grid; place-items: center; width: 24px; height: 24px; flex: none;
-  border: 1px solid var(--jr-linha-forte, #1c2b45); border-radius: 2px;
+  border: 1px solid var(--jr-linha-forte, #1c2b45); border-radius: 4px;
   background: transparent; color: var(--jr-tinta-dim, #7f95b3); cursor: pointer;
   transition: color .14s, border-color .14s;
 }
@@ -1746,7 +1746,7 @@
 }
 .rc-recorte__acoes button {
   padding: 7px 12px;
-  border: 1px solid transparent; border-radius: 2px;
+  border: 1px solid transparent; border-radius: 4px;
   background: transparent; color: var(--jr-tinta-dim, #7f95b3);
   font-family: var(--font-chakra), sans-serif;
   font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
@@ -1799,7 +1799,7 @@
 
   position: fixed; z-index: 521; left: 50%; top: 50%; transform: translate(-50%, -50%);
   padding-left: 36px;
-  border: 1px solid var(--jr-linha); border-radius: 2px;
+  border: 1px solid var(--jr-linha); border-radius: 4px;
   background: linear-gradient(180deg, #0b1322, #080e19);
   box-shadow: 0 20px 56px rgba(0, 0, 0, .7);
   /* Nunca mais alta que a tela: a janela de recorte tem 240px fixos e,

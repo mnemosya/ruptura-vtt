@@ -103,7 +103,7 @@
 
   /* ── Geometria ──────────────────────────────────────────────── */
   --rv-r-sm: 1px;
-  --rv-r: 2px;
+  --rv-r: 4px;
   --rv-r-lg: 3px;
   /* As "peças" flutuantes do VTT — trilhos, palco, painel — e tudo que
      acompanha o canto delas. Um degrau acima do raio dos controles. */
