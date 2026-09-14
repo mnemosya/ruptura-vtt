@@ -613,11 +613,15 @@ export function GerenciadorToken({
   // visivelmente no canto errado).
   if (!pos) return null;
 
-  /* O RECORTE toma a tela inteira do formulário: escolher o
-     enquadramento é decidir o que a imagem É, e fazer isso numa caixinha
-     ao lado dos campos seria pedir duas atenções ao mesmo tempo. */
-  if (arquivoParaRecortar) {
-    return (
+  return (
+    <>
+    {/* O RECORTE VEM POR CIMA, não no lugar. Trocar o formulário pela
+        janela de enquadramento fazia a janela de token sumir da tela —
+        e com ela a posição arrastada, o rascunho à vista e o próprio
+        contexto do que se estava criando. Ela é `position: fixed` com
+        z-index bem acima (521, em `console.css`), então basta existir
+        ao lado. */}
+    {arquivoParaRecortar && (
       <JanelaRecorte
         erro={erroArquivo}
         arquivo={arquivoParaRecortar}
@@ -625,10 +629,7 @@ export function GerenciadorToken({
         onConfirmar={(r) => { void prepararArquivo(r); }}
         onCancelar={() => { setArquivoParaRecortar(null); setErroArquivo(null); }}
       />
-    );
-  }
-
-  return (
+    )}
     <div
       ref={painelRef}
       className="rv-janela-token rv-gerenciador-token rv-fp"
@@ -997,5 +998,6 @@ export function GerenciadorToken({
         </button>
       </footer>
     </div>
+    </>
   );
 }
