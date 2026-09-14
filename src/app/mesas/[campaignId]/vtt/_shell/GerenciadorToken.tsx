@@ -575,7 +575,7 @@ export function GerenciadorToken({
             que muda a cada campo, e um preview que sai de vista é um
             preview que não serve. */}
         <div className="rv-token-previa" aria-hidden="true">
-          <div className="rv-token-disco" data-lado={valores.lado}>
+          <div className="rv-token-disco" data-lado={valores.lado} data-vertente={valores.vertente}>
             {valores.retratoUrl && validacaoImagem.ok && !imagemFalhou
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={valores.retratoUrl} alt="" onError={() => setImagemFalhou(true)} />
@@ -598,13 +598,17 @@ export function GerenciadorToken({
           {/* A PEGADA vive aqui, ao lado do disco, e não perdida num
               campo: ela é parte do retrato da peça — quantos hexes ela
               come no mapa —, não uma ilustração do campo "tamanho". */}
-          <div className="rv-token-pegada">
+          <div className="rv-token-pegada" data-vertente={valores.vertente}>
+            {/* `currentColor`, e não um ciano cravado: a cor vem da
+                VERTENTE, como no mapa — lá o anel do disco é
+                `COR_VERTENTE`. Escolher "Somática" e ver a pegada azul
+                era a prévia contradizendo o campo logo abaixo dela. */}
             <svg viewBox={`${minX} ${minY} ${maxX - minX} ${maxY - minY}`} width={58} height={58}>
               {previewPontos.map((p, i) => {
                 const ehAncora = pegadaAbstrata[i].q === 0 && pegadaAbstrata[i].r === 0;
                 return (
                   <path key={i} d={hexPath(raioPreview - 1.5)} transform={`translate(${p.x} ${p.y})`}
-                    fill="rgba(53,200,240,0.16)" stroke="#35c8f0" strokeWidth={ehAncora ? 3 : 1.3} />
+                    fill="currentColor" fillOpacity={0.16} stroke="currentColor" strokeWidth={ehAncora ? 3 : 1.3} />
                 );
               })}
             </svg>
@@ -775,7 +779,12 @@ export function GerenciadorToken({
                 (`.rv-fp-switch`): o checkbox era a única caixa de
                 marcar que sobrava no VTT, e ela vinha do navegador. */}
             <div className="rv-condicoes-grade">
-              {[...CONDICOES_LISTA].sort((a, b) => Number(valores.condicoes.includes(b)) - Number(valores.condicoes.includes(a))).map((c) => (
+              {/* ORDEM FIXA. Antes as marcadas subiam pro topo, e cada
+                  clique reembaralhava a grade debaixo do cursor — o
+                  item que se acabou de ligar saía do lugar e o próximo
+                  que se ia clicar mudava de posição. Uma lista de
+                  marcar tem que ficar parada. */}
+              {CONDICOES_LISTA.map((c) => (
                 <label key={c} className="rv-fp-switch rv-condicao-item" title={CONDICOES[c].rotulo}>
                   <input
                     type="checkbox"
