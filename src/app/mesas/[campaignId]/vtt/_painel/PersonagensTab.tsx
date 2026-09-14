@@ -55,6 +55,7 @@ import { EstadoCarregando, EstadoErro, EstadoVazio } from "./Estados";
 import { BotaoTecnico, SecaoDossie } from "./ui/primitivas";
 import { COR_RECURSO, ROTULO_RECURSO } from "../../../../ficha/_console/coresRecurso";
 import {
+  MIME_PASTA_ARRASTADA,
   MIME_PERSONAGEM_ARRASTADO,
   contarEntradas,
   montarArvore,
@@ -74,6 +75,8 @@ import {
   moverPersonagemParaPastaAction,
   removerPastaAction,
   renomearPastaAction,
+  reordenarPastasAction,
+  reordenarPersonagensAction,
   renomearPersonagemPainelAction,
   restaurarPersonagemPainelAction,
   type DiretorioPersonagens,
@@ -168,6 +171,11 @@ export function PersonagensTab({
    * todo mundo pra quem só queria achar um nome.
    */
   const [mostrarRecursos, setMostrarRecursos] = useState(false);
+  /** Pasta sendo arrastada, e a irmã sob o cursor. */
+  const [pastaArrastada, setPastaArrastada] = useState<string | null>(null);
+  const [pastaSobre, setPastaSobre] = useState<string | null>(null);
+  /** Personagem sendo arrastado para REORDENAR, e a linha sob o cursor. */
+  const [entradaSobre, setEntradaSobre] = useState<string | null>(null);
   const [recolhidas, setRecolhidas] = useState<Set<string>>(new Set());
   const [menu, setMenu] = useState<{ x: number; y: number; itens: ItemMenuContextual[] } | null>(null);
   const [pastaAlvo, setPastaAlvo] = useState<string | null | undefined>(undefined);
@@ -432,6 +440,65 @@ export function PersonagensTab({
     });
   }
 
+  /**
+   * Soltar uma pasta sobre outra IRMÃ troca as duas de lugar na ordem.
+   *
+   * Só entre irmãs: arrastar pra dentro de outra pasta seria REANINHAR,
+   * que é outro gesto e mexe no `parent_id` — misturar os dois no mesmo
+   * arrasto faria a mesma ação significar duas coisas dependendo de
+   * onde o cursor parou.
+   */
+  async function soltarPastaSobre(alvoId: string) {
+    const origemId = pastaArrastada;
+    setPastaArrastada(null);
+    setPastaSobre(null);
+    if (!origemId || origemId === alvoId || !dados) return;
+    const origem = dados.pastas.find((p) => p.id === origemId);
+    const alvo = dados.pastas.find((p) => p.id === alvoId);
+    if (!origem || !alvo || origem.parentId !== alvo.parentId) return;
+
+    const irmas = dados.pastas
+      .filter((p) => p.parentId === origem.parentId)
+      .sort((a, b) => (a.posicao !== b.posicao ? a.posicao - b.posicao : a.nome.localeCompare(b.nome, "pt-BR")));
+    const sem = irmas.filter((p) => p.id !== origemId);
+    const destino = sem.findIndex((p) => p.id === alvoId);
+    sem.splice(destino, 0, origem);
+    await executar(() => reordenarPastasAction(campaignId, sem.map((p) => p.id)));
+  }
+
+  /**
+   * Soltar um personagem sobre outro reordena — e LIGA a ordenação
+   * manual sozinho.
+   *
+   * Sem isso o gesto era mudo: a ordem ia pro banco e a lista continuava
+   * em A–Z, porque é o alfabeto que manda enquanto "Manual" não está
+   * escolhido. Arrastar É a declaração de que a ordem passa a ser sua;
+   * pedir pra trocar o seletor antes seria cobrar duas ações pela
+   * mesma intenção.
+   */
+  async function soltarEntradaSobre(alvo: EntradaDiretorio, arrastadoId: string) {
+    setEntradaSobre(null);
+    if (!dados || arrastadoId === alvo.characterId) return;
+    const arrastado = dados.entradas.find((e) => e.characterId === arrastadoId);
+    if (!arrastado) return;
+
+    // A lista visível DAQUELA pasta, na ordem em que está na tela.
+    const irmaos = dados.entradas
+      .filter((e) => (e.pastaId ?? null) === (alvo.pastaId ?? null) && !e.arquivado)
+      .sort((a, b) => (a.posicao !== b.posicao ? a.posicao - b.posicao : a.nome.localeCompare(b.nome, "pt-BR")));
+    const sem = irmaos.filter((e) => e.characterId !== arrastadoId);
+    const destino = sem.findIndex((e) => e.characterId === alvo.characterId);
+    sem.splice(destino, 0, { ...arrastado, pastaId: alvo.pastaId ?? null });
+
+    setOrdenacao("manual");
+    await executar(() =>
+      reordenarPersonagensAction(
+        campaignId,
+        sem.map((e) => ({ characterId: e.characterId, pastaId: alvo.pastaId ?? null })),
+      ),
+    );
+  }
+
   function renderizarNo(no: NoDiretorio, nivel: number): React.ReactNode {
     const idPasta = no.pasta?.id ?? null;
     const recolhida = idPasta !== null && recolhidas.has(idPasta);
@@ -447,6 +514,26 @@ export function PersonagensTab({
             onAlternar={() => alternarPasta(no.pasta!.id)}
             onMenuContextual={(e) => menuDaPasta(e, no.pasta!.id, no.pasta!.nome)}
             testId="painel-personagens-pasta"
+            arrastavel={podeAdministrar}
+            arrastando={pastaArrastada === no.pasta.id}
+            alvoDeSolta={pastaSobre === no.pasta.id}
+            onArrastarInicio={(e) => {
+              setPastaArrastada(no.pasta!.id);
+              e.dataTransfer.setData(MIME_PASTA_ARRASTADA, no.pasta!.id);
+              e.dataTransfer.effectAllowed = "move";
+            }}
+            onArrastarFim={() => { setPastaArrastada(null); setPastaSobre(null); }}
+            onArrastarSobre={(e) => {
+              if (!e.dataTransfer.types.includes(MIME_PASTA_ARRASTADA)) return;
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+              setPastaSobre(no.pasta!.id);
+            }}
+            onSoltar={(e) => {
+              if (!e.dataTransfer.types.includes(MIME_PASTA_ARRASTADA)) return;
+              e.preventDefault();
+              void soltarPastaSobre(no.pasta!.id);
+            }}
           />
         )}
         {!recolhida && (
@@ -537,12 +624,32 @@ export function PersonagensTab({
                       e.dataTransfer.setData(MIME_PERSONAGEM_ARRASTADO, serializarPersonagemArrastado(carga));
                       e.dataTransfer.effectAllowed = "copy";
                     }}
+                    alvoDeSolta={entradaSobre === entrada.characterId}
                     onArrastarSobre={(e) => {
+                      // DOIS arrastos chegam nesta linha: um item do
+                      // Bando (vira posse do personagem) e outro
+                      // personagem (reordena). O tipo do dado decide —
+                      // e é ele que é lido, não a aparência do cursor.
+                      if (e.dataTransfer.types.includes(MIME_PERSONAGEM_ARRASTADO) && podeAdministrar) {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                        setEntradaSobre(entrada.characterId);
+                        return;
+                      }
                       if (!e.dataTransfer.types.includes(MIME_ITEM_BANDO)) return;
                       e.preventDefault();
                       e.dataTransfer.dropEffect = "move";
                     }}
                     onSoltar={(e) => {
+                      const arrastado = e.dataTransfer.getData(MIME_PERSONAGEM_ARRASTADO);
+                      if (arrastado && podeAdministrar) {
+                        e.preventDefault();
+                        try {
+                          const carga = JSON.parse(arrastado) as { characterId?: string };
+                          if (carga.characterId) void soltarEntradaSobre(entrada, carga.characterId);
+                        } catch { /* arrasto de outro tipo — ignorado */ }
+                        return;
+                      }
                       const bruto = e.dataTransfer.getData(MIME_ITEM_BANDO);
                       const item = bruto ? desserializarItemBando(bruto) : null;
                       if (!item) return;

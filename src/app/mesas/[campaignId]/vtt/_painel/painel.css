@@ -964,21 +964,44 @@
 .rv-pn-chip-n { font-size: 10px; opacity: .75; }
 
 .rv-pn-no { display: flex; flex-direction: column; }
-.rv-pn-grupo { display: flex; align-items: center; gap: 4px; margin-top: 7px; }
+/* A PASTA TEM CORPO. Ela era texto pálido solto sobre o fundo, sem
+   caixa nem linha — do lado de cartões com borda e avatar, lia como
+   legenda, não como o container que é. E agora ela é ARRASTÁVEL:
+   alvo de arrasto precisa parecer uma peça que se pega, senão não se
+   descobre que dá pra pegar.
+
+   Continua mais discreta que os cartões — é caminho, não destino. */
+.rv-pn-grupo {
+  display: flex; align-items: center; gap: 4px; margin-top: 7px;
+  border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
+  background: var(--pn-inset);
+  transition: border-color .14s, background .14s, opacity .14s;
+}
+.rv-pn-grupo:hover { border-color: var(--pn-line-soft); }
+/* A pasta em trânsito fica translúcida — o lugar de onde ela saiu
+   continua visível enquanto se escolhe onde ela entra. */
+.rv-pn-grupo[data-arrastando="true"] { opacity: .45; }
+/* O ALVO do arrasto: a linha de cima acende, porque é ali que a pasta
+   vai entrar — a de baixo desce. */
+.rv-pn-grupo[data-alvo="true"] {
+  border-color: var(--pn-cy);
+  box-shadow: inset 0 2px 0 -1px var(--pn-cy);
+}
 .rv-pn-grupo-btn {
-  flex: 1; min-width: 0; display: flex; align-items: center; gap: 5px; padding: 3px 2px;
-  border: none; background: transparent; color: var(--pn-dim);
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; padding: 6px 8px;
+  border: none; background: transparent; color: var(--pn-txt-forte);
   font-family: var(--rv-display);
   font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
   text-align: left; cursor: pointer;
 }
 .rv-pn-grupo-btn--estatico { cursor: default; }
+.rv-pn-grupo-glifo { color: var(--pn-cy); }
 .rv-pn-grupo-btn:hover { color: var(--pn-cy); }
 .rv-pn-grupo-btn:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 2px; }
 .rv-pn-grupo-rotulo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rv-pn-grupo-contagem { font-size: 10px; opacity: .7; }
 .rv-pn-grupo-glifo { display: flex; flex: none; }
-.rv-pn-grupo-acoes { display: flex; gap: 2px; flex: none; }
+.rv-pn-grupo-acoes { display: flex; gap: 2px; flex: none; padding-right: 6px; }
 
 .rv-pn-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .rv-pn-personagens { opacity: .85; text-transform: none; letter-spacing: 0; }

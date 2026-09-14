@@ -125,6 +125,8 @@ export function siglaDoNome(nome: string): string {
 
 /** Tipo de arrasto do diretório para o mapa — o `dataTransfer` carrega isto, e o mapa só aceita este formato. */
 export const MIME_PERSONAGEM_ARRASTADO = "application/x-ruptura-personagem";
+/** Pasta sendo arrastada para mudar de posição entre as irmãs. */
+export const MIME_PASTA_ARRASTADA = "application/x-ruptura-pasta-personagens";
 
 export interface PersonagemArrastado {
   characterId: string;

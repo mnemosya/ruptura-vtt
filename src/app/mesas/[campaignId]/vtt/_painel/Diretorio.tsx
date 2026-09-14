@@ -71,6 +71,13 @@ export function CabecalhoGrupo({
   nivel = 0,
   onMenuContextual,
   testId,
+  arrastavel,
+  onArrastarInicio,
+  onArrastarFim,
+  onArrastarSobre,
+  onSoltar,
+  alvoDeSolta,
+  arrastando,
 }: {
   rotulo: string;
   contagem?: number;
@@ -81,6 +88,16 @@ export function CabecalhoGrupo({
   nivel?: number;
   onMenuContextual?: (e: React.MouseEvent) => void;
   testId?: string;
+  /* ARRASTO DA PRÓPRIA PASTA — pra mudar de posição entre as irmãs.
+     Opcional porque o Bando usa este mesmo cabeçalho pra grupos por
+     categoria, que não têm ordem própria pra mexer. */
+  arrastavel?: boolean;
+  onArrastarInicio?: (e: React.DragEvent) => void;
+  onArrastarFim?: () => void;
+  onArrastarSobre?: (e: React.DragEvent) => void;
+  onSoltar?: (e: React.DragEvent) => void;
+  alvoDeSolta?: boolean;
+  arrastando?: boolean;
 }) {
   const conteudo = (
     <>
@@ -90,7 +107,19 @@ export function CabecalhoGrupo({
     </>
   );
   return (
-    <div className="rv-pn-grupo" style={{ paddingLeft: 6 + nivel * 12 }} onContextMenu={onMenuContextual} data-testid={testId}>
+    <div
+      className="rv-pn-grupo"
+      style={{ paddingLeft: 6 + nivel * 12 }}
+      onContextMenu={onMenuContextual}
+      data-testid={testId}
+      draggable={arrastavel}
+      onDragStart={onArrastarInicio}
+      onDragEnd={onArrastarFim}
+      onDragOver={onArrastarSobre}
+      onDrop={onSoltar}
+      data-alvo={alvoDeSolta ? "true" : undefined}
+      data-arrastando={arrastando ? "true" : undefined}
+    >
       {onAlternar ? (
         <button type="button" className="rv-pn-grupo-btn" aria-expanded={aberto} onClick={onAlternar}>
           {conteudo}

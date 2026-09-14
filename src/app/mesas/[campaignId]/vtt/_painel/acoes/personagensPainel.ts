@@ -413,6 +413,39 @@ export async function moverPersonagemParaPastaAction(
   }
 }
 
+/**
+ * Ordem das PASTAS dentro do mesmo pai.
+ *
+ * `update` linha a linha, e não `upsert` em lote como nas colocações:
+ * `campaign_character_folders` tem `nome` obrigatório, e um upsert
+ * precisaria reenviar o nome de cada pasta só pra gravar um inteiro —
+ * qualquer renomeação concorrente seria desfeita pelo nome velho que
+ * viajou junto. São poucas pastas, e cada `update` toca só a coluna
+ * que mudou.
+ */
+export async function reordenarPastasAction(
+  campaignId: string,
+  ordem: string[],
+): Promise<ResultadoPainel> {
+  const v = await exigirNarradorPainel(campaignId);
+  if (!v.ok) return { ok: false, erro: v.erro };
+  if (ordem.length === 0) return { ok: true };
+  try {
+    const client = await getScopedTableClient();
+    for (const [i, pastaId] of ordem.entries()) {
+      const { error } = await client
+        .from(TABELA_PASTAS)
+        .update({ posicao: i })
+        .eq("id", pastaId)
+        .eq("campaign_id", campaignId);
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, erro: mensagemDeErro(e, "Falha a reordenar as pastas.") };
+  }
+}
+
 /** Ordem manual dentro de uma pasta — uma escrita por entrada, na ordem em que a lista ficou. */
 export async function reordenarPersonagensAction(
   campaignId: string,
