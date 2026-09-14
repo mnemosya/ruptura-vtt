@@ -65,7 +65,11 @@
 
   position: fixed; inset: 0;
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr) auto;
+  /* A COLUNA DAS FERRAMENTAS SUMIU do grid (era 58px). O trilho agora
+     FLUTUA sobre o mapa, e reservar uma faixa pra ele deixaria uma
+     tira morta à esquerda — o mapa é quem tem que ocupar a largura
+     inteira, com as peças por cima. */
+  grid-template-columns: minmax(0, 1fr) auto;
   background: var(--rv-ground);
   color: var(--txt);
   font-family: var(--rv-body);
@@ -150,11 +154,18 @@
    são independentes (`console.css` roda também fora do VTT, na ficha),
    e um import cruzado só pra seis declarações traria a cascata inteira
    de uma pra dentro da outra. */
+/* COLUNA FLUTUANTE. Era uma faixa colada na borda, de cima a baixo,
+   com o mapa começando depois dela. Agora é uma peça sobre o mapa:
+   solta das bordas, com altura do CONTEÚDO e canto de 8px. O mapa
+   aparece em volta, que é o que faz dela um objeto na mesa em vez de
+   uma parede da janela. */
 .rv-ferramentas {
+  position: absolute; left: 16px; top: 16px; z-index: 20;
+  border: 1px solid var(--linha-2); border-radius: 8px;
   display: flex; flex-direction: column; align-items: center;
   /* O VÃO É CALCULADO, não escolhido — ver o bloco abaixo. */
-  gap: clamp(3px, (100vh - 640px) / 18, 6px);
-  padding: 10px 0; background: var(--rv-sunken); border-right: 1px solid var(--linha-2); z-index: 20;
+  gap: clamp(3px, (100vh - 672px) / 18, 6px);
+  padding: 8px; background: var(--rv-sunken);
   /* SEM `overflow`, e isso é regra, não descuido. As dicas de cada
      ferramenta são filhas do botão e saem PELO LADO; uma caixa de
      rolagem recortaria todas elas — e `overflow-y` sozinho não existe:
@@ -795,7 +806,13 @@
    aba selecionada e o estado do React nunca se perdem na troca. */
 .rv-painel { display: flex; background: var(--rv-sunken); border-left: 1px solid var(--linha-2); z-index: 20; flex: none; }
 .rv-painel[data-aberto="true"] { flex-direction: column; width: 316px; }
-.rv-painel[data-aberto="false"] { flex-direction: row; width: 52px; }
+.rv-painel[data-aberto="false"] {
+  /* Mesma peça do trilho de ferramentas, do outro lado: flutua sobre o
+     mapa, altura do conteúdo, canto de 8px. Expandido ela volta a ser
+     coluna docada — ali ela É a lateral da janela, não um objeto. */
+  position: absolute; right: 16px; top: 16px; width: auto;
+  flex-direction: row; border: 1px solid var(--linha-2); border-radius: 8px;
+}
 
 .rv-painel-abas { display: flex; align-items: center; gap: 3px; flex: none; }
 .rv-painel[data-aberto="true"] .rv-painel-abas {
@@ -819,7 +836,7 @@
    usa o mesmo vão de 6px. Sem ele as abas ficavam encostadas umas nas
    outras, e com borda própria isso vira uma coluna de caixas coladas
    em vez de peças separadas. */
-.rv-painel[data-aberto="false"] .rv-painel-abas { order: 1; flex-direction: column; gap: 6px; width: 52px; padding: 10px 0; }
+.rv-painel[data-aberto="false"] .rv-painel-abas { order: 1; flex-direction: column; gap: 6px; width: auto; padding: 8px; }
 
 /* Só a ESTRUTURA da aba mora aqui; cor e estado vivem em
    `_painel/painel.css`, que é a folha do painel.
