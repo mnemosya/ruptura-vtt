@@ -277,10 +277,20 @@ export function FaixaSoma({ base, modificador, total, cd, modo = "sum", nota, te
      sucesso padrão, e pintá-lo de verde dizia "crítico" pra qualquer
      acerto raspado. A falha continua vermelha, como lá. */
   const acento = !temCd ? ACCENTS.slate : passou ? ACCENTS.cyan : ACCENTS.danger;
+  /* O MESMO ÍCONE DE VEREDITO do teste (`RESULTS`): ✓ pra sucesso, ✗ pra
+     falha. O dado fica só pro caso SEM CD, que é o único aqui que não
+     tem veredito nenhum — e aí ele diz "isto é uma rolagem, não um
+     resultado", que é exatamente o que a faixa neutra significa.
+
+     Antes a soma trazia o dado sempre: ao lado de um teste no feed, o
+     mesmo "passou da CD" aparecia com dois desenhos diferentes, como se
+     fossem respostas de naturezas distintas. São a mesma resposta — o
+     teste só tem mais degraus. */
+  const Icone = !temCd ? Dice : passou ? Check : Cross;
   return (
     <FaixaChassi
       acento={acento}
-      icone={<Dice width={17} height={17} style={{ color: acento.hex, flexShrink: 0 }} />}
+      icone={<Icone width={17} height={17} style={{ color: acento.hex, flexShrink: 0 }} />}
       titulo={temCd ? (passou ? "Sucesso" : "Falha") : "Sem CD definida"}
       nota={nota}
       total={total}
