@@ -5350,11 +5350,12 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
      flutua sobre o mapa, onde um degradê de 160° só rende uma mancha
      mais clara num canto.
 
-     `#0e1420` é o valor lido a conta-gotas na peça do Figma. O
-     `get_design_context` tinha devolvido `#0b1424`: o frame que a
-     ferramenta leu estava uma versão atrás do que estava na tela. */
+     `#111b2c` — um degrau acima do que o Figma trazia (`#0e1420`).
+     Sobre o mapa, que é quase preto, aquele tom se dissolvia no fundo
+     e o cartão perdia a borda de leitura; o desenho pede uma peça que
+     POUSA sobre a mesa, não que afunda nela. */
   border: 1px solid #18263f; border-radius: 6px;
-  background: #0e1420;
+  background: #111b2c;
   box-shadow: 0 16px 20px rgba(0, 0, 0, .5);
   /* A entrada é curta de propósito: o cartão já custou a espera do
      hover, e uma animação longa em cima disso leria como lentidão. */
