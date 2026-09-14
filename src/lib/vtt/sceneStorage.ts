@@ -1239,7 +1239,23 @@ function linhaParaTokenVtt(linha: Record<string, unknown>): TokenVtt {
     pvPublico: typeof linha.pv_publico === "boolean" ? linha.pv_publico : null,
     pePublico: typeof linha.pe_publico === "boolean" ? linha.pe_publico : null,
     manaPublica: typeof linha.mana_publica === "boolean" ? linha.mana_publica : null,
-    podeControlar: linha.pode_controlar === true,
+    /* AUSENTE ≠ FALSO.
+       `pode_controlar` não é COLUNA: é um campo que só a projeção
+       (`read_vtt_scene_tokens`) calcula, com `can_move_vtt_token`. As
+       RPCs de escrita devolvem `returns vtt_tokens` — a linha da
+       tabela, sem esse campo. Ler `undefined === true` como `false`
+       fazia todo token recém-criado entrar no estado como se a pessoa
+       não o controlasse, e era isso que escondia "Abrir ficha" logo
+       depois de colocar um token: o item pede `characterId &&
+       podeControlar`. Sumia até a próxima leitura da cena, o que fazia
+       o defeito parecer intermitente.
+
+       Quando o campo não veio, a resposta certa é `true`, e não por
+       otimismo: toda RPC que devolve a linha crua já exigiu, no
+       servidor, ou `can_move_vtt_token` (o MESMO predicado) ou
+       `is_campaign_owner`, que o implica. Uma escrita ACEITA é, por
+       definição, de um token que esta pessoa controla. */
+    podeControlar: "pode_controlar" in linha ? linha.pode_controlar === true : true,
     revision: linha.revision as number,
   };
 }
