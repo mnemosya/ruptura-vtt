@@ -142,7 +142,7 @@
    ferramentas e do Console, mas DEITADAS e com mais espaço, porque
    aqui a largura sobra e é a altura que é escassa. */
 .rv-painel[data-aberto="true"] .rv-painel-abas {
-  height: 48px; padding: 0 8px; gap: 6px;
+  height: 48px; padding: 0 8px; gap: 8px;
   background: var(--pn-cab);
   border-bottom: 1px solid var(--pn-line);
   overflow: visible;

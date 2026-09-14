@@ -156,18 +156,18 @@
    de uma pra dentro da outra. */
 /* COLUNA FLUTUANTE. Era uma faixa colada na borda, de cima a baixo,
    com o mapa começando depois dela. Agora é uma peça sobre o mapa:
-   solta das bordas, com altura do CONTEÚDO e canto de 8px. O mapa
+   solta 8px das bordas, com altura do CONTEÚDO e canto de 8px. O mapa
    aparece em volta, que é o que faz dela um objeto na mesa em vez de
    uma parede da janela. */
 .rv-ferramentas {
-  position: absolute; left: 16px; top: 16px; z-index: 20;
+  position: absolute; left: 8px; top: 8px; z-index: 20;
   /* SEM CAIXA — teste. Cada botão já tem borda e fundo próprios; a
      caixa em volta era uma segunda moldura em cima de uma coluna que
      já se lê sozinha. */
   border: none; border-radius: 8px;
   display: flex; flex-direction: column; align-items: center;
   /* O VÃO É CALCULADO, não escolhido — ver o bloco abaixo. */
-  gap: clamp(3px, (100vh - 672px) / 18, 6px);
+  gap: clamp(3px, (100vh - 625px) / 18, 8px);
   padding: 0; background: transparent;
   /* SEM `overflow`, e isso é regra, não descuido. As dicas de cada
      ferramenta são filhas do botão e saem PELO LADO; uma caixa de
@@ -183,10 +183,14 @@
      Em vez de fixar o vão no pior caso (3px, que servia à tela mais
      baixa e apertava todas as outras), ele sai do espaço que sobra:
 
-       base = 579px de filhos + 20px de padding = 599px
+       base = 579px de filhos MAIS ~30px que as divisórias carregam em
+              margem própria (o padding do trilho foi a zero quando a
+              caixa saiu) — o número foi MEDIDO na tela, não somado no
+              papel, justamente porque essa margem não aparece na conta
        vãos = 18
+       margens = 8px em cima + 8px embaixo, agora que o trilho flutua
 
-     `clamp(3px, (100vh - 640px) / 18, 6px)` dá 6px em tela cheia,
+     `clamp(3px, (100vh - 625px) / 18, 8px)` dá 8px em tela cheia,
      encolhe sozinho conforme a janela baixa, e nunca desce dos 3px de
      antes. O teto é 6px, e não os 8px do Console, porque lá são nove
      abas e aqui dezesseis ferramentas: o vão que areja uma coluna
@@ -813,7 +817,7 @@
   /* Mesma peça do trilho de ferramentas, do outro lado: flutua sobre o
      mapa, altura do conteúdo, canto de 8px. Expandido ela volta a ser
      coluna docada — ali ela É a lateral da janela, não um objeto. */
-  position: absolute; right: 16px; top: 16px; width: auto;
+  position: absolute; right: 8px; top: 8px; width: auto;
   flex-direction: row; border: none; border-radius: 8px; background: transparent;
 }
 
@@ -839,7 +843,7 @@
    usa o mesmo vão de 6px. Sem ele as abas ficavam encostadas umas nas
    outras, e com borda própria isso vira uma coluna de caixas coladas
    em vez de peças separadas. */
-.rv-painel[data-aberto="false"] .rv-painel-abas { order: 1; flex-direction: column; gap: 6px; width: auto; padding: 0; }
+.rv-painel[data-aberto="false"] .rv-painel-abas { order: 1; flex-direction: column; gap: 8px; width: auto; padding: 0; }
 
 /* Só a ESTRUTURA da aba mora aqui; cor e estado vivem em
    `_painel/painel.css`, que é a folha do painel.
