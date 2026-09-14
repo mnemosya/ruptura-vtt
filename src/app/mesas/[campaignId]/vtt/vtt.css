@@ -1357,6 +1357,10 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-token-imagem__disco:focus-visible { outline: 2px solid var(--rv-cy); outline-offset: 2px; }
 .rv-token-imagem__disco img { width: 100%; height: 100%; object-fit: cover; }
 .rv-token-imagem__lado { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+/* O "ou um endereço" é a OUTRA origem, não a continuação do bloco de
+   cima: ele precisa do mesmo respiro que separa duas seções, senão o
+   rótulo cola no disco e os dois leem como uma coisa só. */
+.rv-token-imagem + .rv-field { margin-top: 16px; }
 
 /* VERTENTE — ficha com a marca da cor, a mesma que o token leva pro
    mapa (`COR_VERTENTE`, em `_mapa/MapaHex.tsx`). Num `select` a cor não
