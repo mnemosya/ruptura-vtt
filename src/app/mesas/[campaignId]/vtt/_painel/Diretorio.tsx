@@ -109,7 +109,10 @@ export function CabecalhoGrupo({
   return (
     <div
       className="rv-pn-grupo"
-      style={{ paddingLeft: 6 + nivel * 12 }}
+      /* O recuo da árvore vai como VARIÁVEL, pelo mesmo motivo da linha:
+         `paddingLeft` inline vence a folha, e aí o padding do cabeçalho
+         não tem como ser igual nos dois eixos. */
+      style={{ "--pn-recuo-grupo": `${nivel * 12}px` } as React.CSSProperties}
       onContextMenu={onMenuContextual}
       data-testid={testId}
       draggable={arrastavel}

@@ -973,6 +973,9 @@
    Continua mais discreta que os cartões — é caminho, não destino. */
 .rv-pn-grupo {
   display: flex; align-items: center; gap: 4px; margin-top: 7px;
+  /* O recuo da árvore é MARGEM, não padding: como padding ele somava ao
+     do botão e o respiro da esquerda ficava maior que o de cima. */
+  margin-left: var(--pn-recuo-grupo, 0px);
   border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
   background: var(--pn-inset);
   transition: border-color .14s, background .14s, opacity .14s;
@@ -988,7 +991,10 @@
   box-shadow: inset 0 2px 0 -1px var(--pn-cy);
 }
 .rv-pn-grupo-btn {
-  flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; padding: 6px 8px;
+  /* MESMO respiro nos quatro lados. Antes eram 6px em cima e 14px na
+     esquerda (8 do botão + 6 do recuo base), e a caixa parecia achatada
+     — agora que a pasta TEM caixa, a diferença entre os eixos aparece. */
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; padding: 8px;
   border: none; background: transparent; color: var(--pn-txt-forte);
   font-family: var(--rv-display);
   font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
