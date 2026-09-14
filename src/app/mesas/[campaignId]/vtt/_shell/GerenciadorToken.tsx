@@ -38,13 +38,15 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown, ImageUp, X } from "lucide-react";
 import { type Hex, TAMANHOS, type TamanhoCriatura, hexParaPixel, hexPath } from "../_mapa/hex";
 import { type CondicaoSlug, CONDICOES } from "../_dados/cenaDemo";
 import { type MapaTerreno, dentroDoMapa, pegadaBloqueada } from "../_dominio/movimento";
 import { pegadaEfetiva, projetarPegada, pegadasSobrepoem } from "../_dominio/pegada";
 import { type LadoToken, type VertenteToken } from "../_dominio/tokenApresentacao";
 import { GAP_LATERAL } from "../_ferramentas/janelasPreferencias";
+import { prepararRecorteQuadrado, type ImagemPreparada } from "../../../../../lib/vtt/imagePreparation";
+import { JanelaRecorte } from "../../../../ficha/_console/RecorteImagem";
 
 export interface ValoresFormularioToken {
   nome: string;
@@ -63,6 +65,17 @@ export interface ValoresFormularioToken {
   retratoUrl: string | null;
   pvAtual: number | null;
   pvMax: number | null;
+  /**
+   * ARQUIVO DE RETRATO escolhido na CRIAÇÃO, ainda não enviado.
+   *
+   * O upload precisa de um `tokenId` — a RPC liga o arquivo a um token
+   * que já existe —, e na criação ele ainda não foi criado. Então o
+   * recorte fica aqui, em memória, e quem envia é o `VttClient` depois
+   * que `create_vtt_token` devolve o id. Nunca chega ao servidor por
+   * este objeto: ele morre com o formulário se a criação for cancelada,
+   * sem cota reservada nem arquivo órfão.
+   */
+  retratoArquivo: ImagemPreparada | null;
   /** PE e Mana PRÓPRIOS do token (migration 0133) — só valem sem ficha vinculada. */
   peAtual: number | null;
   peMax: number | null;
@@ -374,6 +387,13 @@ export function GerenciadorToken({
   const [erroImagem, setErroImagem] = useState<string | null>(null);
   const [imagemCarregando, setImagemCarregando] = useState(false);
   const [imagemFalhou, setImagemFalhou] = useState(false);
+  /* O recorte é um PASSO, não uma janela paralela: enquanto ele está
+     aberto, o formulário sai de cena — mesma regra do editor de
+     retrato. */
+  const [arquivoParaRecortar, setArquivoParaRecortar] = useState<File | null>(null);
+  const [erroArquivo, setErroArquivo] = useState<string | null>(null);
+  const [preparandoArquivo, setPreparandoArquivo] = useState(false);
+  const campoArquivoRef = useRef<HTMLInputElement>(null);
   const enviandoRef = useRef(false);
 
   const primeiroCampoRef = useRef<HTMLInputElement>(null);
@@ -478,6 +498,33 @@ export function GerenciadorToken({
   // manda vazio pra frente.
   const podeConfirmar = validacaoImagem.ok && !pvInvalido && cabeAposRedimensionar;
 
+  /**
+   * Recorta e guarda EM MEMÓRIA — não envia nada.
+   *
+   * O envio depende de um token que ainda não existe; até lá o blob
+   * vive no rascunho. Cancelar o formulário não deixa resíduo: nenhuma
+   * cota reservada, nenhum objeto no Storage, nada pra coleta recolher.
+   */
+  async function prepararArquivo(origem: { x: number; y: number; tamanho: number }) {
+    const arquivo = arquivoParaRecortar;
+    if (!arquivo) return;
+    setPreparandoArquivo(true);
+    setErroArquivo(null);
+    try {
+      const preparada = await prepararRecorteQuadrado(arquivo, origem);
+      setValores((v) => {
+        if (v.retratoArquivo) URL.revokeObjectURL(v.retratoArquivo.previewUrl);
+        // Arquivo e endereço são exclusivos — escolher um limpa o outro.
+        return { ...v, retratoArquivo: preparada, retratoUrl: null };
+      });
+      setArquivoParaRecortar(null);
+    } catch (e) {
+      setErroArquivo(e instanceof Error ? e.message : "Não foi possível ler esta imagem.");
+    } finally {
+      setPreparandoArquivo(false);
+    }
+  }
+
   async function confirmar() {
     if (!podeConfirmar || enviandoRef.current) return;
     if (!validacaoImagem.ok) { setErro(validacaoImagem.erro); return; }
@@ -565,6 +612,21 @@ export function GerenciadorToken({
   // vem com `pos` definido (efeito síncrono o bastante pra nunca piscar
   // visivelmente no canto errado).
   if (!pos) return null;
+
+  /* O RECORTE toma a tela inteira do formulário: escolher o
+     enquadramento é decidir o que a imagem É, e fazer isso numa caixinha
+     ao lado dos campos seria pedir duas atenções ao mesmo tempo. */
+  if (arquivoParaRecortar) {
+    return (
+      <JanelaRecorte
+        erro={erroArquivo}
+        arquivo={arquivoParaRecortar}
+        ocupado={preparandoArquivo}
+        onConfirmar={(r) => { void prepararArquivo(r); }}
+        onCancelar={() => { setArquivoParaRecortar(null); setErroArquivo(null); }}
+      />
+    );
+  }
 
   return (
     <div
@@ -761,16 +823,65 @@ export function GerenciadorToken({
             <ChevronDown size={13} className="rv-mais-opcoes-chevron" aria-hidden="true" />
           </summary>
 
-          <label className="rv-field">
-            <span>Imagem do token</span>
-            <input
-              type="text" value={valores.retratoUrl ?? ""} placeholder="https://…"
-              onChange={(e) => { setImagemFalhou(false); setValores((v) => ({ ...v, retratoUrl: e.target.value || null })); }}
-            />
-            {!validacaoImagem.ok && <p className="rv-form-aviso" role="alert">{validacaoImagem.erro}</p>}
-            {imagemFalhou && <p className="rv-form-aviso" role="alert">Não foi possível carregar esta imagem.</p>}
-            {!valores.retratoUrl && <small className="rv-field-ajuda">Sem imagem, o token usa a sigla.</small>}
-          </label>
+          {/* IMAGEM — arquivo OU endereço, nunca os dois. É a mesma
+              regra do editor de retrato (`EditorRetratoToken`), e ela
+              vem do banco: gravar um limpa o outro. Guardar os dois com
+              precedência silenciosa faria ninguém saber qual está
+              valendo. */}
+          <fieldset className="rv-field">
+            <legend>Imagem do token</legend>
+            <div className="rv-token-imagem">
+              <button
+                type="button" className="rv-token-imagem__disco"
+                onClick={() => campoArquivoRef.current?.click()}
+                aria-label={valores.retratoArquivo ? "Trocar a imagem escolhida" : "Escolher uma imagem do computador"}
+              >
+                {valores.retratoArquivo
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={valores.retratoArquivo.previewUrl} alt="" />
+                  : <ImageUp size={18} aria-hidden />}
+              </button>
+              <div className="rv-token-imagem__lado">
+                <span className="rv-field-ajuda">
+                  {valores.retratoArquivo
+                    ? "Enviada quando o token for criado."
+                    : "PNG, JPEG ou WebP · até 2 MB. Sem imagem, o token usa a sigla."}
+                </span>
+                {valores.retratoArquivo && (
+                  <button
+                    type="button" className="rv-btn rv-btn--ghost"
+                    onClick={() => setValores((v) => {
+                      if (v.retratoArquivo) URL.revokeObjectURL(v.retratoArquivo.previewUrl);
+                      return { ...v, retratoArquivo: null };
+                    })}
+                  >Remover</button>
+                )}
+                <input
+                  ref={campoArquivoRef} type="file" accept="image/png,image/jpeg,image/webp" hidden
+                  onChange={(e) => {
+                    const arquivo = e.target.files?.[0];
+                    e.target.value = ""; // permite reescolher o MESMO arquivo
+                    if (arquivo) { setErroArquivo(null); setArquivoParaRecortar(arquivo); }
+                  }}
+                />
+              </div>
+            </div>
+            {erroArquivo && <p className="rv-form-aviso" role="alert">{erroArquivo}</p>}
+            {/* O ENDEREÇO some quando há arquivo: um retrato tem uma
+                origem só, e deixar o campo ali sugeriria que os dois
+                convivem. */}
+            {!valores.retratoArquivo && (
+              <label className="rv-field">
+                <span>Ou um endereço</span>
+                <input
+                  type="text" value={valores.retratoUrl ?? ""} placeholder="https://…"
+                  onChange={(e) => { setImagemFalhou(false); setValores((v) => ({ ...v, retratoUrl: e.target.value || null })); }}
+                />
+                {!validacaoImagem.ok && <p className="rv-form-aviso" role="alert">{validacaoImagem.erro}</p>}
+                {imagemFalhou && <p className="rv-form-aviso" role="alert">Não foi possível carregar esta imagem.</p>}
+              </label>
+            )}
+          </fieldset>
 
           <fieldset className="rv-field">
             <legend>Recursos</legend>

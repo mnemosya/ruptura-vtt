@@ -138,6 +138,12 @@ import { useConsoleDaMesa } from "../_shell/ConsoleDaMesa";
 import { readSelectedTokenHudAction } from "./_acoes/hudActions";
 import type { SelectedTokenHudData } from "../../../../lib/vtt/hudTypes";
 import { EditorRetratoToken } from "./_shell/EditorRetratoToken";
+import {
+  definirRetratoImagemAction,
+  finalizarUploadRetratoAction,
+  reservarUploadAction,
+} from "./_acoes/imageActions";
+import { enviarParaUrlAssinada, type ImagemPreparada } from "../../../../lib/vtt/imagePreparation";
 import { PainelVtt } from "./_painel/PainelVtt";
 import {
   MIME_PERSONAGEM_ARRASTADO,
@@ -239,6 +245,7 @@ function rascunhoDePersonagem(p: PersonagemArrastado): ValoresFormularioToken {
     visivel: true,
     bloqueado: false,
     retratoUrl: null,
+    retratoArquivo: null,
     pvAtual: null,
     pvMax: null,
     peAtual: null,
@@ -2220,7 +2227,7 @@ export function VttClient({
     return {
       nome: "", sigla: "", lado: "pn", vertente: "nenhuma",
       tamanho: "medio", orientacao: 0, q: 0, r: 0,
-      characterId: null, visivel: true, bloqueado: false, retratoUrl: null,
+      characterId: null, visivel: true, bloqueado: false, retratoUrl: null, retratoArquivo: null,
       pvAtual: null, pvMax: null,
       peAtual: null, peMax: null, manaAtual: null, manaMax: null,
       condicoes: [],
@@ -2231,6 +2238,9 @@ export function VttClient({
       nome: t.nome, sigla: t.sigla, lado: t.lado, vertente: t.vertente,
       tamanho: t.tamanho, orientacao: t.orientacao, q: t.pos.q, r: t.pos.r,
       characterId: t.characterId, visivel: t.visivel, bloqueado: t.bloqueado, retratoUrl: t.retrato,
+      // Editar não sobe arquivo: o retrato de um token que já existe se
+      // troca pelo editor próprio, que tem o id e a revisão em mãos.
+      retratoArquivo: null,
       pvAtual: t.pv, pvMax: t.pvMax,
       peAtual: t.pe, peMax: t.peMax, manaAtual: t.mana, manaMax: t.manaMax,
       condicoes: [...t.condicoes],
@@ -2514,6 +2524,52 @@ export function VttClient({
   }, [ehNarrador, moverPosicionamento]);
 
   /**
+   * ENVIA O RETRATO de um token recém-criado — os mesmos três passos do
+   * editor (`EditorRetratoToken`): reservar pela intenção, `PUT` na
+   * capability, finalizar. Aqui eles rodam DEPOIS da criação porque a
+   * autorização da reserva é sobre um token que precisa existir.
+   *
+   * Não bloqueia nem desfaz nada: se o envio falhar, o token continua
+   * no mapa com a sigla e o aviso conta o que aconteceu. Desfazer a
+   * criação por causa da imagem seria perder o gesto inteiro por causa
+   * do acessório.
+   */
+  const enviarRetratoDoRascunho = useCallback(async (tokenId: string, revision: number, imagem: ImagemPreparada) => {
+    try {
+      const reserva = await reservarUploadAction(campaignId, imagem.sha256, "retrato", tokenId);
+      if (!reserva.ok || !reserva.dados) throw new Error(reserva.erro ?? "Não foi possível preparar o envio.");
+
+      // Conteúdo repetido já está lá: liga direto, sem subir de novo.
+      let fim;
+      if (reserva.dados.reutilizado) {
+        fim = await definirRetratoImagemAction(campaignId, tokenId, reserva.dados.assetId, revision);
+      } else {
+        await enviarParaUrlAssinada(reserva.dados.uploadUrl!, imagem.blob);
+        fim = await finalizarUploadRetratoAction(campaignId, reserva.dados.reservaId!, imagem.sha256, tokenId, revision);
+      }
+      if (!fim.ok) throw new Error(fim.erro ?? "Não foi possível concluir o envio.");
+
+      const salvo = fim.dados as { revision?: number; retrato_image_id?: string | null } | null;
+      if (salvo && typeof salvo.revision === "number") {
+        const novaRevisao = salvo.revision;
+        const novoId = salvo.retrato_image_id ?? null;
+        setEstadoCena((c) => (c ? {
+          ...c,
+          tokens: c.tokens.map((tk) => (tk.id === tokenId ? {
+            ...tk, revision: novaRevisao, retratoImageId: novoId, retratoEfetivoId: novoId ?? tk.retratoEfetivoId,
+          } : tk)),
+        } : c));
+      }
+    } catch (e) {
+      setErroAcao(e instanceof Error
+        ? `O token foi criado, mas a imagem não subiu: ${e.message}`
+        : "O token foi criado, mas a imagem não subiu.");
+    } finally {
+      URL.revokeObjectURL(imagem.previewUrl);
+    }
+  }, [campaignId]);
+
+  /**
    * CRIA O TOKEN numa âncora — a única porta pra `create_vtt_token`.
    *
    * Recebe o rascunho em vez de lê-lo do estado porque quem solta um
@@ -2557,6 +2613,12 @@ export function VttClient({
         return;
       }
       mesclarTokenNoEstado(r.dados.token);
+      // O RETRATO SOBE DEPOIS, porque só agora existe um id pra ligá-lo.
+      // Falhar aqui não desfaz o token: ele nasceu, está no mapa, e o
+      // que faltou é a cara — que se troca pelo menu quando quiser.
+      if (f.rascunho.retratoArquivo) {
+        void enviarRetratoDoRascunho(r.dados.token.id, r.dados.token.revision, f.rascunho.retratoArquivo);
+      }
       // Criação NÃO entra em undo/redo: `create_vtt_token` sempre gera
       // um id NOVO — um "redo" depois de desfazer via remoção criaria
       // outro token com OUTRO id, quebrando qualquer coisa que tenha

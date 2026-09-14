@@ -1336,6 +1336,28 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-token-recursos-linha[data-desabilitada] { opacity: .5; }
 
+/* ── A IMAGEM NA CRIAÇÃO ─────────────────────────────────────────────
+   O mesmo disco do editor de retrato, e pelo mesmo motivo: é a forma
+   do token no mapa, e o alvo de troca é ele próprio. Xadrez por baixo
+   pra transparência não passar por fundo branco. */
+.rv-token-imagem { display: flex; align-items: center; gap: 12px; }
+.rv-token-imagem__disco {
+  flex: none; width: 56px; height: 56px; padding: 0;
+  display: grid; place-items: center; overflow: hidden; cursor: pointer;
+  border: 2px solid var(--rv-line-strong); border-radius: var(--rv-r-pill);
+  color: var(--rv-ink-faint);
+  background-color: var(--rv-sunken);
+  background-image:
+    linear-gradient(45deg, rgba(255,255,255,.035) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.035) 75%),
+    linear-gradient(45deg, rgba(255,255,255,.035) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.035) 75%);
+  background-size: 14px 14px; background-position: 0 0, 7px 7px;
+  transition: border-color .14s, color .14s;
+}
+.rv-token-imagem__disco:hover { border-color: var(--rv-cy); color: var(--rv-cy); }
+.rv-token-imagem__disco:focus-visible { outline: 2px solid var(--rv-cy); outline-offset: 2px; }
+.rv-token-imagem__disco img { width: 100%; height: 100%; object-fit: cover; }
+.rv-token-imagem__lado { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+
 /* VERTENTE — ficha com a marca da cor, a mesma que o token leva pro
    mapa (`COR_VERTENTE`, em `_mapa/MapaHex.tsx`). Num `select` a cor não
    aparecia: escolhia-se um nome e descobria-se a cor depois. */
