@@ -1007,14 +1007,22 @@
    container responde "onde vai parar", isto responde "em que posição".
    Fica no topo do cartão sob o cursor, porque soltar insere ANTES dele.
 
-   `::after` absoluto pra não ocupar espaço: como borda ou margem, ela
-   empurraria a lista 2px a cada passagem do cursor e a fila tremeria
-   durante o arrasto. Vale igual na raiz e dentro da pasta — é a mesma
-   fila nos dois lugares. */
+   ELA ABRE ESPAÇO, e é isso que a torna visível. A primeira versão era
+   um fio de 2px espremido no vão de 6px entre cartões, pra não empurrar
+   a lista — e ficou invisível, que é o pior desfecho possível pra um
+   indicador. O empurrão de 10px É a resposta: a fila se abre onde o
+   cartão vai entrar, que é a mesma coisa que o gesto vai fazer.
+
+   Os 10px viram 4px de respiro, a linha, e mais 4px — ela fica no meio
+   do vão que criou, não colada num dos cartões. Pontilhada porque marca
+   uma posição PREVISTA: tracejado lê como "aqui vai entrar algo",
+   contínuo lê como "isto termina aqui".
+
+   Vale igual na raiz e dentro da pasta — é a mesma fila nos dois. */
+.rv-pn-scroll--pers .rv-pn-linha[data-insercao="true"] { margin-top: 10px; }
 .rv-pn-scroll--pers .rv-pn-linha[data-insercao="true"]::after {
-  content: ""; position: absolute; left: 0; right: 0; top: -4px; height: 2px;
-  border-radius: 1px; background: var(--pn-cy);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--pn-cy) 60%, transparent);
+  content: ""; position: absolute; left: 0; right: 0; top: -6px; height: 0;
+  border-top: 2px dashed var(--pn-cy);
 }
 
 /* O realce de alvo é do BLOCO agora: era do cabeçalho, que não tem mais
