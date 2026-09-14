@@ -859,19 +859,25 @@
    linha e o `stretch` do select copiava os 41px em vez dos 29px do
    campo. Zerada, os dois esticam para a mesma altura — a do campo, que
    é o mais alto — e ela continua acompanhando se o campo mudar. */
-.rv-pn-linha-busca { flex: none; display: flex; align-items: stretch; gap: 6px; padding: 6px 8px; }
-.rv-pn-linha-busca .rv-pn-busca { flex: 1; min-width: 0; margin: 0; }
+.rv-pn-linha-busca { flex: none; display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px; padding: 6px 8px; }
+/* QUEBRA EM VEZ DE ESPREMER. Na janela larga de Personagens a coluna da
+   lista tem 200px — lá a busca e a ordenação lado a lado sobravam 98px
+   pro campo, com o texto cortado no meio. A base de 150px é o ponto em
+   que o campo ainda lê "Buscar personagem"; abaixo disso a ordenação
+   desce pra linha de baixo, que é o mesmo arranjo de antes. */
+.rv-pn-linha-busca .rv-pn-busca { flex: 1 1 150px; min-width: 0; margin: 0; }
 /* MESMA ALTURA da busca. O select vem do bloco de filtros, que é mais
    baixo (22px contra 29px); lado a lado na mesma faixa, a diferença
    lia como desalinhamento. `align-self: stretch` copia a altura em vez
    de repetir o número — se o campo de busca mudar de tamanho, o select
    acompanha sozinho. */
-.rv-pn-linha-busca .rv-pn-select { flex: none; padding-block: 0; }
+.rv-pn-linha-busca .rv-pn-select { flex: 0 1 auto; padding-block: 0; }
 
 /* LINHA 2: criar à esquerda, switch à direita. */
 .rv-pn-filtros { flex: none; display: flex; align-items: center; gap: 6px; padding: 0 8px 6px; flex-wrap: wrap; }
-/* Criar ancora na ESQUERDA — é a ação principal da faixa. */
-.rv-pn-filtros-acoes { display: flex; align-items: center; gap: 6px; }
+/* Criar ancora na ESQUERDA — é a ação principal da faixa. Quebra junto
+   com ela: em coluna estreita os dois botões não cabem lado a lado. */
+.rv-pn-filtros-acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 
 /* O switch de recursos herda o interruptor do VTT (`.rv-fp-switch`) e
    só encolhe: a coluna do painel é estreita, e o alvo de 34×19 do
@@ -1289,6 +1295,12 @@
    Bando e Compêndio usam a mesma `.rv-pn-lista` e o mesmo rodapé de
    linha, mas com face pequena e sem barras — o respiro que esta aba
    pede lá só afastaria itens que já estão espaçados. */
+/* O NOME CORTA COM RETICÊNCIAS. `.rv-pn-linha-nome` é `display: flex`
+   — herança de quando o subtítulo morava dentro dele —, e
+   `text-overflow` não vale pra caixa flex: na janela estreita o nome
+   era decepado no meio da letra, sem sinal de que continuava. Hoje o
+   subtítulo é irmão, então bloco basta. */
+.rv-pn-scroll--pers .rv-pn-linha-nome { display: block; }
 .rv-pn-scroll--pers .rv-pn-lista { gap: 6px; }
 .rv-pn-scroll--pers .rv-pn-linha-rodape { margin-top: 8px; }
 
