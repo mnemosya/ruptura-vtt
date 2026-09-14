@@ -65,11 +65,12 @@
 
   position: fixed; inset: 0;
   display: grid;
-  /* A COLUNA DAS FERRAMENTAS SUMIU do grid (era 58px). O trilho agora
-     FLUTUA sobre o mapa, e reservar uma faixa pra ele deixaria uma
-     tira morta à esquerda — o mapa é quem tem que ocupar a largura
-     inteira, com as peças por cima. */
-  grid-template-columns: minmax(0, 1fr) auto;
+  /* UMA COLUNA SÓ: o mapa. As duas faixas que o grid reservava — 58px
+     pras ferramentas e `auto` pro painel — sumiram junto com o fato de
+     elas serem docadas. Tudo FLUTUA sobre o mapa agora, e reservar
+     espaço deixava uma tira do fundo da mesa entre o mapa e a peça: era
+     ela a faixa preta ao lado do painel. */
+  grid-template-columns: minmax(0, 1fr);
   background: var(--rv-ground);
   color: var(--txt);
   font-family: var(--rv-body);
@@ -837,8 +838,12 @@
    `height: auto` porque `painel.css` fixa `height: 100%` — que somado
    às margens de cima e de baixo estourava 16px pra fora da tela. */
 .rv-painel[data-aberto="true"] {
-  flex-direction: column; width: 316px;
-  margin: 8px; height: auto; border: 1px solid var(--linha-2); border-radius: 4px;
+  /* FLUTUA, como o recolhido e como o trilho de ferramentas. Docado, o
+     espaço dele saía da largura do mapa e a margem virava uma tira do
+     fundo da mesa; por cima, a folga de 8px mostra MAPA. */
+  position: absolute; right: 8px; top: 8px; bottom: 8px;
+  flex-direction: column; width: 316px; height: auto;
+  border: 1px solid var(--linha-2); border-radius: 4px;
 }
 .rv-painel[data-aberto="false"] {
   /* Mesma peça do trilho de ferramentas, do outro lado: flutua sobre o
