@@ -5332,8 +5332,15 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   position: fixed; z-index: 60;
   /* Largura por CONTEÚDO: o cartão de "só o nome" tem metade da
      largura do completo, e forçar os dois ao mesmo tamanho deixaria o
-     primeiro com um vazio à direita do nome. */
-  width: max-content; max-width: 300px;
+     primeiro com um vazio à direita do nome.
+
+     O TETO é a largura da linha de recurso, que é a peça mais larga
+     que ele hospeda: 26 (rótulo) + 80 (barra) + 40 (fração) + 35 (os
+     dois botões de 16 com 3 de vão) + 18 (três vãos de 6) = 199, mais
+     os 24 de padding = 223. Arredondado pra 225. Acima disso só cresce
+     o NOME, e um cartão que estica pelo nome faz a coluna de números
+     dançar de token pra token. */
+  width: max-content; max-width: 225px;
   display: flex; flex-direction: column;
   /* 12px NOS QUATRO LADOS (Figma 478:1619). Eram 8/10 — respiro de
      etiqueta, e este cartão virou um painel com três barras editáveis
@@ -5346,7 +5353,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   /* O raio com FALLBACK: este cartão é `position: fixed` e pode ser
      desenhado fora de `.rv-mesa` (a galeria de estilos monta ele solto
      no corpo da página), e ali os tokens do chassi não existem. */
-  border: 1px solid #18263f; border-radius: var(--rv-r-peca, 4px);
+  border: 1px solid #18263f; border-radius: 6px;
   background: #0b1424;
   box-shadow: 0 16px 20px rgba(0, 0, 0, .5);
   /* A entrada é curta de propósito: o cartão já custou a espera do
