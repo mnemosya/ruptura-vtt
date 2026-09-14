@@ -352,13 +352,13 @@
    primária carrega o acento. Antes toda a família vinha acentuada
    (`--pn-a-line` no fio, `--pn-a` na tinta), então "Atualizar" gritava
    tanto quanto "Criar personagem" e a hierarquia do rodapé sumia. */
-.pn-btn {
+.pn-btn.pn-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   padding: 6px 11px; min-height: 26px;
   border: 1px solid var(--rv-line-strong); border-radius: 2px;
   background: var(--rv-sunken); color: var(--rv-ink-dim);
   font-family: var(--rv-display);
-  font-size: 11.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  font-size: 12.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
   cursor: pointer; text-decoration: none;
   transition: background .14s, border-color .14s, color .14s;
 }
@@ -570,12 +570,12 @@
 /* `padding: 2px 6px` com fonte em caixa alta e `letter-spacing` deixava
    o texto encostado no fio dos dois lados — o chip parecia recortado.
    Altura própria (`min-height`) em vez de depender só da linha. */
-.pn-chipbtn {
+.pn-chipbtn.pn-chipbtn {
   display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; min-height: 26px; max-width: 100%;
   border: 1px solid var(--pn-a-line); border-radius: 2px;
   background: var(--pn-a-soft); color: var(--pn-a);
   font-family: var(--rv-display);
-  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
   transition: border-color .14s, background .14s;
 }
 .pn-chipbtn:hover { border-color: var(--pn-a); }
@@ -913,10 +913,10 @@
   font-size: 12.5px; letter-spacing: normal; text-transform: none; color: var(--pn-dim);
 }
 .rv-pn-switch input:checked ~ .rv-fp-switch-txt { color: var(--pn-txt-forte); }
-.rv-pn-select, .rv-pn-input {
+.rv-pn-select.rv-pn-select, .rv-pn-input.rv-pn-input {
   padding: 3px 6px; border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
   background: var(--pn-inset); color: var(--pn-txt-forte);
-  font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px;
+  font-family: var(--font-mono), ui-monospace, monospace; font-size: 12px;
 }
 /* `appearance: none` pelo mesmo motivo do checkbox: com `auto`, o
    select é desenhado pelo SISTEMA — caixa clara, seta própria, cantos
@@ -979,12 +979,12 @@
 }
 
 .rv-pn-chips { flex: none; display: flex; flex-wrap: wrap; gap: 3px; padding: 0 8px 6px; }
-.rv-pn-chip {
+.rv-pn-chip.rv-pn-chip {
   display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px;
   border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
   background: var(--pn-inset); color: var(--pn-dim);
   font-family: var(--rv-display);
-  font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
 }
 .rv-pn-chip:hover { color: var(--pn-txt-forte); border-color: var(--pn-line-soft); }
 .rv-pn-chip[aria-pressed="true"] { background: var(--rv-cy-soft); color: var(--pn-cy); border-color: var(--pn-line); }
@@ -1102,14 +1102,14 @@
   background: color-mix(in srgb, var(--pn-cy) 12%, var(--pn-inset));
   box-shadow: inset 0 0 0 1px var(--pn-cy);
 }
-.rv-pn-grupo-btn {
+.rv-pn-grupo-btn.rv-pn-grupo-btn {
   /* MESMO respiro nos quatro lados, e generoso: a pasta virou um
      cartão de verdade — alvo de arrasto e container — e cartão
      apertado não parece que cabe coisa dentro. */
   flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 12px;
   border: none; background: transparent; color: var(--pn-txt-forte);
   font-family: var(--rv-display);
-  font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
   text-align: left; cursor: pointer;
 }
 .rv-pn-grupo-btn--estatico { cursor: default; }
@@ -1117,7 +1117,7 @@
 .rv-pn-grupo-btn:hover { color: var(--pn-cy); }
 .rv-pn-grupo-btn:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 2px; }
 .rv-pn-grupo-rotulo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rv-pn-grupo-contagem { font-size: 11px; opacity: .7; }
+.rv-pn-grupo-contagem { font-size: 12px; opacity: .7; }
 /* `margin-left: auto` joga o chevron pra borda: entre o nome e ele fica
    o vazio, que é o que deixa claro que os dois não são a mesma coisa —
    um diz QUAL pasta, o outro diz se ela está aberta. */

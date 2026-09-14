@@ -239,7 +239,11 @@
    Fica acima do mapa (`z-index`) mas abaixo das janelas de ferramenta,
    e nunca cobre os trilhos de facção — eles terminam em
    `bottom: 108px`, este começa em 12. */
-.rv-cena-chip {
+/* CLASSE DUPLICADA — mesma armadilha do `.rv-btn` logo abaixo:
+   `.rm-root button` (classe + ELEMENTO) vence uma classe sozinha e
+   força `font-family: inherit`, então a fonte pedida aqui nunca valia.
+   Duas vezes a mesma classe empata em força e desempata pela ordem. */
+.rv-cena-chip.rv-cena-chip {
   position: absolute; left: 10px; bottom: 12px; z-index: 14;
   display: inline-flex; align-items: center; gap: 8px;
   max-width: min(520px, calc(100% - 40px));
@@ -247,7 +251,9 @@
   border: 1px solid var(--rv-line); border-radius: 2px;
   background: var(--rv-panel);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; line-height: 15px;
+  /* +1px como o resto do que trocou de fonte — ver a nota de tamanhos
+     no `painel.css`. */
+  font-size: 11px; line-height: 15px;
   color: var(--rv-ink-dim);
   cursor: pointer;
   transition: border-color .14s, background .14s;
