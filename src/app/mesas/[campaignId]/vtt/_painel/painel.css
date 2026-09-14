@@ -1005,24 +1005,32 @@
 
 /* A LINHA DE INSERÇÃO diz em que LUGAR DA FILA o arrastado entra — o
    container responde "onde vai parar", isto responde "em que posição".
-   Fica no topo do cartão sob o cursor, porque soltar insere ANTES dele.
+   Marca o cartão sob o cursor, porque soltar insere ANTES dele.
 
-   ELA ABRE ESPAÇO, e é isso que a torna visível. A primeira versão era
-   um fio de 2px espremido no vão de 6px entre cartões, pra não empurrar
-   a lista — e ficou invisível, que é o pior desfecho possível pra um
-   indicador. O empurrão de 10px É a resposta: a fila se abre onde o
-   cartão vai entrar, que é a mesma coisa que o gesto vai fazer.
+   DUAS TENTATIVAS ERRADAS, e as duas valem registro porque a segunda
+   nasceu de consertar a primeira pelo lado errado:
 
-   Os 10px viram 4px de respiro, a linha, e mais 4px — ela fica no meio
-   do vão que criou, não colada num dos cartões. Pontilhada porque marca
-   uma posição PREVISTA: tracejado lê como "aqui vai entrar algo",
-   contínuo lê como "isto termina aqui".
+   1. Fio absoluto em `top: -4px`, "pra não ocupar espaço". Invisível —
+      e não por ser fino: o cartão tem `overflow: hidden` (é o que faz o
+      avatar encostar na borda), então qualquer coisa desenhada FORA da
+      caixa é recortada. Estava lá, e o navegador cortava.
+   2. Empurrar a lista 10px pra abrir espaço. Aí a caixa crescia e
+      encolhia a cada tremida do mouse — a lista inteira pulava
+      enquanto se arrasta, que é pior que um indicador discreto.
+
+   O que funciona é desenhar POR DENTRO da borda de cima do cartão:
+   visível porque não é recortada, e sem mexer no layout porque não
+   ocupa espaço. Tracejada porque marca uma posição PREVISTA — contínuo
+   leria como "isto termina aqui".
 
    Vale igual na raiz e dentro da pasta — é a mesma fila nos dois. */
-.rv-pn-scroll--pers .rv-pn-linha[data-insercao="true"] { margin-top: 10px; }
+.rv-pn-scroll--pers .rv-pn-linha[data-insercao="true"] {
+  border-top-color: transparent;
+}
 .rv-pn-scroll--pers .rv-pn-linha[data-insercao="true"]::after {
-  content: ""; position: absolute; left: 0; right: 0; top: -6px; height: 0;
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 0;
   border-top: 2px dashed var(--pn-cy);
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--pn-cy) 70%, transparent));
 }
 
 /* O realce de alvo é do BLOCO agora: era do cabeçalho, que não tem mais
