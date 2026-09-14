@@ -174,8 +174,16 @@ export function PersonagensTab({
   /** Pasta sendo arrastada, e a irmã sob o cursor. */
   const [pastaArrastada, setPastaArrastada] = useState<string | null>(null);
   const [pastaSobre, setPastaSobre] = useState<string | null>(null);
-  /** Personagem sendo arrastado para REORDENAR, e a linha sob o cursor. */
-  const [entradaSobre, setEntradaSobre] = useState<string | null>(null);
+  /**
+   * O CONTAINER sob o cursor durante um arrasto — `"__raiz__"` ou o id
+   * da pasta.
+   *
+   * O realce é do container, e não do cartão sob o cursor, porque é ele
+   * que responde a pergunta do gesto: "onde isto vai parar?". Acender
+   * um personagem específico dizia outra coisa, e uma coisa que não
+   * existe — que o arrastado entraria DENTRO daquele personagem.
+   */
+  const [containerSobre, setContainerSobre] = useState<string | null>(null);
   const [recolhidas, setRecolhidas] = useState<Set<string>>(new Set());
   const [menu, setMenu] = useState<{ x: number; y: number; itens: ItemMenuContextual[] } | null>(null);
   const [ocupado, setOcupado] = useState(false);
@@ -613,9 +621,8 @@ export function PersonagensTab({
                        origem só declara o que é permitido. */
                     e.dataTransfer.effectAllowed = "copyMove";
                   }}
-                  onArrastarFim={() => { setEntradaSobre(null); setPastaSobre(null); }}
-                  alvoDeSolta={entradaSobre === entrada.characterId}
-                  onArrastarSaiu={() => setEntradaSobre((atual) => (atual === entrada.characterId ? null : atual))}
+                  onArrastarFim={() => { setContainerSobre(null); setPastaSobre(null); }}
+                  onArrastarSaiu={() => setContainerSobre(null)}
                   onArrastarSobre={(e) => {
                     // DOIS arrastos chegam nesta linha: um item do
                     // Bando (vira posse do personagem) e outro
@@ -630,7 +637,7 @@ export function PersonagensTab({
                         || e.dataTransfer.types.includes(MIME_PASTA_ARRASTADA))) {
                       e.preventDefault();
                       e.dataTransfer.dropEffect = "move";
-                      setEntradaSobre(entrada.characterId);
+                      setContainerSobre(no.pasta?.id ?? "__raiz__");
                       return;
                     }
                     if (!e.dataTransfer.types.includes(MIME_ITEM_BANDO)) return;
@@ -638,7 +645,7 @@ export function PersonagensTab({
                     e.dataTransfer.dropEffect = "move";
                   }}
                   onSoltar={(e) => {
-                    setEntradaSobre(null);
+                    setContainerSobre(null);
                     const pastaVindo = e.dataTransfer.getData(MIME_PASTA_ARRASTADA);
                     if (pastaVindo && podeAdministrar) {
                       e.preventDefault();
@@ -688,13 +695,13 @@ export function PersonagensTab({
             testId="painel-personagens-pasta"
             arrastavel={podeAdministrar}
             arrastando={pastaArrastada === no.pasta.id}
-            alvoDeSolta={pastaSobre === no.pasta.id}
+            alvoDeSolta={pastaSobre === no.pasta.id || containerSobre === no.pasta.id}
             onArrastarInicio={(e) => {
               setPastaArrastada(no.pasta!.id);
               e.dataTransfer.setData(MIME_PASTA_ARRASTADA, no.pasta!.id);
               e.dataTransfer.effectAllowed = "move";
             }}
-            onArrastarFim={() => { setPastaArrastada(null); setPastaSobre(null); }}
+            onArrastarFim={() => { setPastaArrastada(null); setPastaSobre(null); setContainerSobre(null); }}
             onArrastarSobre={(e) => {
               if (!podeAdministrar) return;
               if (!e.dataTransfer.types.includes(MIME_PASTA_ARRASTADA)
@@ -838,6 +845,10 @@ export function PersonagensTab({
 
           <div
             className="rv-pn-scroll rv-pn-scroll--pers"
+            /* A RAIZ também é um container, e precisa acender como as
+               pastas — é pra ela que o personagem volta quando sai de
+               uma. Não tendo caixa própria, quem acende é a área. */
+            data-alvo-raiz={containerSobre === "__raiz__" ? "true" : undefined}
             /* A largura do avatar acompanha o modo — ver `.rv-pn-face`
                em `painel.css`, que explica por que não é `aspect-ratio`. */
             data-recursos={mostrarRecursos ? "true" : undefined}
