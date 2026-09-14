@@ -335,9 +335,10 @@ export function FaixaSoma({ base, modificador, total, cd, modo = "sum", nota, te
       total={total}
       testIdTotal={testId}
       parcelas={<>
-        <Parcela>{modo === "high" ? "maior" : "soma"} {seg(String(base), ACCENTS.cyan.hex)}</Parcela>
-        <Parcela>+ mod {seg(modificador >= 0 ? `+${modificador}` : String(modificador))}</Parcela>
-        {temCd && <Parcela>· cd {seg(String(cd), ACCENTS.amber.hex)}</Parcela>}
+        {/* Mesma regra do teste: a base e a CD seguem o acento da faixa. */}
+        <Parcela>{modo === "high" ? "maior" : "soma"} {seg(String(base), acento.hex)}</Parcela>
+        <Parcela>+ mod {seg(modificador >= 0 ? `+${modificador}` : String(modificador), acento.hex)}</Parcela>
+        {temCd && <Parcela>· cd {seg(String(cd), acento.hex)}</Parcela>}
       </>}
     />
   );
@@ -449,12 +450,19 @@ export function FaixaResultado({ r, nota, testIdTotal }: {
       total={r.total}
       testIdTotal={testIdTotal}
       parcelas={<>
-        <Parcela>maior {seg(String(r.maiorDado), ACCENTS.cyan.hex)}</Parcela>
+        {/* TODA a conta sai no acento da FAIXA, não num ciano e num
+            âmbar fixos. Os números são de onde o veredito nasce —
+            pintados de outra cor, a faixa dizia "falha limitada" em
+            âmbar com um "5" ciano de sucesso logo abaixo. Os RÓTULOS
+            ("maior", "+ mod", "· cd") ficam no cinza: é o contraste
+            entre eles e os números que faz a linha ser lida como uma
+            conta, e não como um bloco colorido. */}
+        <Parcela>maior {seg(String(r.maiorDado), acento.hex)}</Parcela>
         {r.pericia
-          ? <Parcela>+ {r.pericia.toLowerCase()} {seg(`+${r.periciaValor}`)}</Parcela>
+          ? <Parcela>+ {r.pericia.toLowerCase()} {seg(`+${r.periciaValor}`, acento.hex)}</Parcela>
           : <Parcela>· sem perícia</Parcela>}
-        <Parcela>+ mod {seg(r.modificador >= 0 ? `+${r.modificador}` : String(r.modificador))}</Parcela>
-        {r.cd != null && <Parcela>· cd {seg(String(r.cd), ACCENTS.amber.hex)}</Parcela>}
+        <Parcela>+ mod {seg(r.modificador >= 0 ? `+${r.modificador}` : String(r.modificador), acento.hex)}</Parcela>
+        {r.cd != null && <Parcela>· cd {seg(String(r.cd), acento.hex)}</Parcela>}
       </>}
     />
   );
