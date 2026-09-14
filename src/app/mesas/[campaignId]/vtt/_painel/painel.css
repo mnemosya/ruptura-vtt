@@ -964,6 +964,17 @@
 .rv-pn-chip-n { font-size: 10px; opacity: .75; }
 
 .rv-pn-no { display: flex; flex-direction: column; }
+/* O CONTEÚDO DA PASTA respira mais que o resto da lista: sem isso o
+   primeiro item de dentro encostava no cabeçalho e o último ficava
+   colado no que vem DEPOIS da pasta, e não dava pra ver onde a pasta
+   acabava.
+
+   SEM RECUO à esquerda: os cartões de dentro ficam alinhados com os de
+   fora. Recuar encolheria justamente o cartão que tem avatar, nome e
+   barras, e o pertencimento à pasta já está dito pelo respiro em cima e
+   embaixo — e pelo cabeçalho logo acima. */
+.rv-pn-scroll--pers .rv-pn-no > [data-testid="painel-personagens-pasta"] + * { margin-top: 8px; }
+.rv-pn-scroll--pers .rv-pn-no:has(> [data-testid="painel-personagens-pasta"]) { margin-bottom: 14px; }
 /* A PASTA TEM CORPO. Ela era texto pálido solto sobre o fundo, sem
    caixa nem linha — do lado de cartões com borda e avatar, lia como
    legenda, não como o container que é. E agora ela é ARRASTÁVEL:
@@ -986,15 +997,20 @@
 .rv-pn-grupo[data-arrastando="true"] { opacity: .45; }
 /* O ALVO do arrasto: a linha de cima acende, porque é ali que a pasta
    vai entrar — a de baixo desce. */
+/* ALVO. Serve pros dois arrastos que chegam aqui — outra pasta (muda de
+   posição) e um personagem (entra na pasta) —, e é o mesmo realce de
+   propósito: o que muda é o que se está arrastando, não o que a pasta
+   vira. */
 .rv-pn-grupo[data-alvo="true"] {
   border-color: var(--pn-cy);
-  box-shadow: inset 0 2px 0 -1px var(--pn-cy);
+  background: color-mix(in srgb, var(--pn-cy) 12%, var(--pn-inset));
+  box-shadow: inset 0 0 0 1px var(--pn-cy);
 }
 .rv-pn-grupo-btn {
-  /* MESMO respiro nos quatro lados. Antes eram 6px em cima e 14px na
-     esquerda (8 do botão + 6 do recuo base), e a caixa parecia achatada
-     — agora que a pasta TEM caixa, a diferença entre os eixos aparece. */
-  flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; padding: 8px;
+  /* MESMO respiro nos quatro lados, e generoso: a pasta virou um
+     cartão de verdade — alvo de arrasto e container — e cartão
+     apertado não parece que cabe coisa dentro. */
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 12px;
   border: none; background: transparent; color: var(--pn-txt-forte);
   font-family: var(--rv-display);
   font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
@@ -1012,13 +1028,10 @@
 .rv-pn-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .rv-pn-personagens { opacity: .85; text-transform: none; letter-spacing: 0; }
 
-.rv-pn-solta-pasta {
-  margin: 2px 0 3px; padding: 3px 7px;
-  border: 1px dashed var(--pn-line-hair); border-radius: var(--pn-radius); color: var(--pn-dim);
-  font-family: var(--rv-display);
-  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; text-align: center; opacity: .4;
-}
-.rv-pn-solta-pasta[data-ativo="true"] { opacity: 1; border-color: var(--pn-cy); color: var(--pn-cy); }
+/* A faixa "Soltar aqui para mover" saiu: a PASTA é o alvo, e uma zona
+   separada pra dizer isso era uma segunda porta pro mesmo cômodo —
+   ocupava uma linha embaixo de cada pasta aberta, permanentemente, pra
+   um gesto que acontece de vez em quando. */
 
 /* ═══════════════════════ ESTADOS ═══════════════════════ */
 
@@ -1279,6 +1292,11 @@
    empurrava o avatar pra dentro e deixava uma faixa de fundo à
    esquerda do rosto — o cartão precisa começar no avatar. */
 .rv-pn-scroll--pers .rv-pn-linha { margin-left: calc(var(--pn-recuo, 12px) - 12px); }
+/* A PASTA NÃO RECUA. Ela é o cabeçalho do bloco, não um item dentro
+   dele: recuada, ficava mais estreita que os cartões que anuncia e
+   parecia subordinada a eles. O nível se lê pelo aninhamento do bloco
+   inteiro — que continua recuando pelos itens. */
+.rv-pn-scroll--pers .rv-pn-grupo { margin-left: 0; }
 /* A altura vem do `stretch`; a LARGURA é um número por modo, e não
    `aspect-ratio`, porque aspect-ratio num item esticado é circular: a
    altura sai do esticamento, a largura sairia da altura, e a altura da

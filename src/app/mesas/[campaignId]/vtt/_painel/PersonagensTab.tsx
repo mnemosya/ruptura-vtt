@@ -178,7 +178,6 @@ export function PersonagensTab({
   const [entradaSobre, setEntradaSobre] = useState<string | null>(null);
   const [recolhidas, setRecolhidas] = useState<Set<string>>(new Set());
   const [menu, setMenu] = useState<{ x: number; y: number; itens: ItemMenuContextual[] } | null>(null);
-  const [pastaAlvo, setPastaAlvo] = useState<string | null | undefined>(undefined);
   const [ocupado, setOcupado] = useState(false);
   /**
    * Pedidos de texto e confirmações vivem em ESTADO, não em
@@ -715,32 +714,6 @@ export function PersonagensTab({
         )}
         {!recolhida && (
           <>
-            {podeAdministrar && idPasta !== null && (
-              <div
-                className="rv-pn-solta-pasta"
-                data-ativo={pastaAlvo === idPasta ? "true" : undefined}
-                onDragOver={(e) => {
-                  if (!e.dataTransfer.types.includes(MIME_PERSONAGEM_ARRASTADO)) return;
-                  e.preventDefault();
-                  setPastaAlvo(idPasta);
-                }}
-                onDragLeave={() => setPastaAlvo(undefined)}
-                onDrop={(e) => {
-                  const bruto = e.dataTransfer.getData(MIME_PERSONAGEM_ARRASTADO);
-                  if (!bruto) return;
-                  e.preventDefault();
-                  setPastaAlvo(undefined);
-                  try {
-                    const p = JSON.parse(bruto) as { characterId?: string };
-                    if (p.characterId) executar(() => moverPersonagemParaPastaAction(campaignId, p.characterId!, idPasta));
-                  } catch {
-                    /* arrasto de outro tipo — ignorado */
-                  }
-                }}
-              >
-                Soltar aqui para mover
-              </div>
-            )}
             {/* A FILA COMBINADA na tela. Corridas de personagens viram
                 uma `<ul>` cada; a pasta que aparece no meio corta a
                 lista e recomeça a próxima. É isto que dá à pasta uma
