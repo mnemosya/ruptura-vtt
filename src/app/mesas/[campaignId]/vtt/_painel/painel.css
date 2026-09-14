@@ -1258,7 +1258,7 @@
   align-self: stretch; width: 54px; height: auto;
   border: none; border-right: 1px solid #1c2b45; border-radius: 0;
 }
-.rv-pn-scroll--pers[data-recursos="true"] .rv-pn-face { width: 67px; }
+.rv-pn-scroll--pers[data-recursos="true"] .rv-pn-face { width: 70px; }
 /* A sigla acompanha a caixa maior: 11px num quadrado de 54 ficava
    perdida no meio, e ela é o substituto do rosto pra quem não tem
    avatar — precisa ter o mesmo peso de leitura. */
@@ -1285,6 +1285,12 @@
   display: flex; flex-direction: column; justify-content: center;
 }
 .rv-pn-scroll--pers .rv-pn-linha-marca { padding: 9px 12px 9px 0; }
+/* Os dois vãos do RITMO da lista, escopados como o resto do cartão:
+   Bando e Compêndio usam a mesma `.rv-pn-lista` e o mesmo rodapé de
+   linha, mas com face pequena e sem barras — o respiro que esta aba
+   pede lá só afastaria itens que já estão espaçados. */
+.rv-pn-scroll--pers .rv-pn-lista { gap: 6px; }
+.rv-pn-scroll--pers .rv-pn-linha-rodape { margin-top: 8px; }
 
 /* O avatar PREENCHE a face inteira; a borda da face vira a moldura. */
 .rv-pn-face:has(.rv-pn-face-img) { padding: 0; overflow: hidden; }
