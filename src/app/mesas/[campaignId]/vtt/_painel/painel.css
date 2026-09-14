@@ -127,39 +127,49 @@
   .rv-painel *, .rv-painel *::before, .rv-painel *::after { transition: none !important; animation: none !important; }
 }
 
-/* Faixa de abas — cabeçalho técnico, como a topbar do Console. */
+/* Faixa de abas — cabeçalho técnico, como a topbar do Console. Mais
+   alta e com vão entre as abas: elas são a mesma peça dos trilhos de
+   ferramentas e do Console, mas DEITADAS e com mais espaço, porque
+   aqui a largura sobra e é a altura que é escassa. */
 .rv-painel[data-aberto="true"] .rv-painel-abas {
-  height: 42px; padding: 0 6px;
+  height: 48px; padding: 0 8px; gap: 6px;
   background: var(--pn-cab);
   border-bottom: 1px solid var(--pn-line);
   overflow: visible;
 }
 .rv-painel[data-aberto="false"] .rv-painel-abas { background: transparent; }
 
-.rv-aba {
-  width: 34px; height: 34px; border-radius: 2px;
-  color: var(--rv-ink-faint);
-  border: 1px solid transparent; background: transparent;
+/* A MESMA PEÇA dos outros dois trilhos (`.rv-ferr-btn` no mapa,
+   `.rc-tabrail-btn` no Console): caixa de canto reto, borda própria,
+   fundo escuro. Elas já tinham sido igualadas uma vez — ao estado
+   ANTIGO da barra de ferramentas, que depois mudou e deixou estas
+   para trás. Selecionado é selecionado: não faz sentido cada trilho
+   da mesa dizer isso de um jeito.
+
+   O que muda aqui é a FORMA, não a linguagem: deitadas, mais altas e
+   dividindo a largura, porque nesta faixa sobra largura e falta
+   altura. */
+/* CLASSE DUPLICADA: `.rv-aba` também existe no `vtt.css` (a ESTRUTURA
+   mora lá, cor e estado moram aqui), e com a mesma especificidade quem
+   vence é a ordem das folhas — que era a de lá. Sem a duplicata, borda,
+   fundo e raio declarados aqui não chegavam à tela. */
+.rv-aba.rv-aba {
+  width: 34px; height: 38px; border-radius: 0;
+  color: #7f95b3;
+  border: 1px solid rgba(0, 212, 255, .15);
+  background: rgba(12, 20, 32, .70);
   transition: color .14s, background .14s, border-color .14s;
 }
-/* Hover é NEUTRO: só a tinta acende e a superfície sobe um degrau
-   (`--rv-raise`, o mesmo clareado translúcido das espinhas). Antes ele
-   usava o mesmo `--rv-cy-soft` da aba ATIVA, e as duas ficavam quase
-   idênticas — passar o mouse parecia selecionar. O acento fica
-   reservado à seleção, que é o único estado que precisa gritar. */
-.rv-aba:hover { color: var(--rv-ink); background: var(--rv-raise); }
-/* Aba ativa: EXATAMENTE o mesmo estado de uma ferramenta selecionada na
-   barra da esquerda (`.rv-ferr-btn[aria-pressed="true"]`) — tinta
-   ciano, fundo `--rv-cy-soft` e o fio de 1px em volta. Selecionado é
-   selecionado: não faz sentido a barra de ferramentas dizer isso de um
-   jeito e a barra de abas de outro. */
-.rv-aba[aria-selected="true"] {
+/* Hover e ativo compartilham a borda; o que os separa é o fundo
+   (translúcido contra sólido) e o brilho — mesma regra dos outros. */
+.rv-aba.rv-aba:hover { color: #d3f4ff; border-color: #108bac; background: rgba(0, 212, 255, .09); }
+.rv-aba.rv-aba[aria-selected="true"] {
   color: var(--pn-cy);
-  background: var(--rv-cy-soft);
-  border-color: color-mix(in srgb, var(--pn-cy) 22%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pn-cy) 22%, transparent);
+  border-color: #108bac;
+  background: #123640;
+  box-shadow: 0 0 9px rgba(0, 212, 255, .25);
 }
-.rv-aba[aria-selected="true"]:hover { color: var(--pn-cy); background: color-mix(in srgb, var(--pn-cy) 14%, transparent); }
+.rv-aba.rv-aba[aria-selected="true"]:hover { color: var(--pn-cy); background: #123640; }
 /* A barra grossa de seleção (2px colada na borda da faixa) saiu: com o
    fio em volta da aba ela virava um segundo anúncio do mesmo estado. */
 .rv-aba:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 2px; }
