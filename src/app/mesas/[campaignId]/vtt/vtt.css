@@ -3330,7 +3330,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 /* Rótulo de `select` e de linha composta (Tamanho) — mesma etiqueta do
    `Field`, senão ele herda o corpo do formulário e vira título. */
-.rv-janela-token .rv-modal-corpo { padding: 16px; gap: 20px; }
+.rv-janela-token .rv-modal-corpo { padding: 16px; gap: 32px; }
 
 /* Field / SelectField */
 .rv-janela-token .rv-field { gap: 0; }
@@ -3395,7 +3395,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    campos, é quatro SEÇÕES com título próprio (imagem, recursos,
    vertente, condições). Os 10px que estavam aqui — herdados de quando
    ele era uma lista de campos soltos — colavam uma na outra. */
-.rv-janela-token .rv-mais-opcoes { border-top: none; padding-top: 0; gap: 24px; }
+/* `.rv-mais-opcoes.rv-fp-grupo` — as duas classes, porque o elemento
+   TEM as duas e a regra de `.rv-fp-grupo` vem depois nesta folha: com
+   uma classe só, o `gap: 8px` dela ganhava por ordem e as quatro
+   seções ficavam coladas. */
+.rv-janela-token .rv-mais-opcoes.rv-fp-grupo { border-top: none; padding-top: 0; gap: 32px; }
 .rv-janela-token .rv-mais-opcoes-chevron { margin-left: auto; transition: transform .16s; }
 .rv-mais-opcoes[open] > summary .rv-mais-opcoes-chevron { transform: rotate(180deg); }
 .rv-mais-opcoes > summary {
@@ -3438,7 +3442,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-janela-token .rv-fp-cab button { cursor: pointer; }
 /* Numeração das seções: o contador vive no CORPO, como nas outras. */
 .rv-janela-token .rv-modal-corpo { counter-reset: rvfpsec; }
-.rv-janela-token .rv-fp-grupo { counter-increment: rvfpsec; display: flex; flex-direction: column; gap: 10px; }
+.rv-janela-token .rv-fp-grupo { counter-increment: rvfpsec; display: flex; flex-direction: column; gap: 8px; }
 /* LEGEND NÃO É ITEM DE FLEX. Num `<fieldset>`, o `<legend>` é
    posicionado pelo navegador acima da caixa e fica FORA do fluxo de
    flex — o `gap` do grupo simplesmente não se aplica a ele. Era por
@@ -3448,13 +3452,12 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* E `margin-bottom` NO LEGEND não resolve: fora do fluxo, a margem
    dele não empurra o conteúdo do fieldset de forma confiável. Quem
    ganha o vão é o PRIMEIRO IRMÃO depois dele. */
-/* 14px do título ao conteúdo, e 24 entre uma seção e a seguinte: os
-   8/18 de antes eram perto demais um do outro pra dizer o que é
-   "dentro" e o que é "depois". A distância entre blocos tem que ser
-   visivelmente maior que a de dentro do bloco, senão a coluna vira uma
-   lista de linhas igualmente espaçadas. */
+/* DENTRO do bloco, curto: 8px do título ao conteúdo. Título e conteúdo
+   são a mesma coisa, e afastá-los desfaz o par. O que separa uma seção
+   da outra é o vão de FORA (32px no corpo da janela) — é a diferença
+   entre os dois números que faz a coluna ter blocos em vez de linhas. */
 .rv-janela-token .rv-fp-grupo > legend + *,
-.rv-janela-token fieldset.rv-field > legend + * { margin-top: 14px; }
+.rv-janela-token fieldset.rv-field > legend + * { margin-top: 8px; }
 .rv-janela-token .rv-fp-rotulo {
   display: flex; align-items: center; gap: 10px;
   font-family: var(--rv-display), sans-serif;
