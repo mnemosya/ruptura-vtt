@@ -1003,6 +1003,20 @@
   background: color-mix(in srgb, var(--pn-cy) 6%, transparent);
 }
 
+/* A LINHA DE INSERÇÃO diz em que LUGAR DA FILA o arrastado entra — o
+   container responde "onde vai parar", isto responde "em que posição".
+   Fica no topo do cartão sob o cursor, porque soltar insere ANTES dele.
+
+   `::after` absoluto pra não ocupar espaço: como borda ou margem, ela
+   empurraria a lista 2px a cada passagem do cursor e a fila tremeria
+   durante o arrasto. Vale igual na raiz e dentro da pasta — é a mesma
+   fila nos dois lugares. */
+.rv-pn-scroll--pers .rv-pn-linha[data-insercao="true"]::after {
+  content: ""; position: absolute; left: 0; right: 0; top: -4px; height: 2px;
+  border-radius: 1px; background: var(--pn-cy);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--pn-cy) 60%, transparent);
+}
+
 /* O realce de alvo é do BLOCO agora: era do cabeçalho, que não tem mais
    borda pra acender. */
 .rv-pn-scroll--pers .rv-pn-no:has(> [data-testid="painel-personagens-pasta"][data-alvo="true"]) {

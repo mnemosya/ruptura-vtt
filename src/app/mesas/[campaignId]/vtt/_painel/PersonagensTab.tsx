@@ -184,6 +184,16 @@ export function PersonagensTab({
    * existe — que o arrastado entraria DENTRO daquele personagem.
    */
   const [containerSobre, setContainerSobre] = useState<string | null>(null);
+  /**
+   * O cartão ANTES do qual o arrastado vai entrar.
+   *
+   * O container responde "onde vai parar"; isto responde "em que
+   * lugar da fila". Sem os dois, soltar no meio de uma lista de quinze
+   * era uma aposta — dava pra saber que ia pra raiz, não em que linha.
+   * Vale igual dentro da pasta e fora dela, porque a fila é a mesma
+   * ideia nos dois lugares.
+   */
+  const [linhaAlvo, setLinhaAlvo] = useState<string | null>(null);
   const [recolhidas, setRecolhidas] = useState<Set<string>>(new Set());
   const [menu, setMenu] = useState<{ x: number; y: number; itens: ItemMenuContextual[] } | null>(null);
   const [ocupado, setOcupado] = useState(false);
@@ -621,8 +631,8 @@ export function PersonagensTab({
                        origem só declara o que é permitido. */
                     e.dataTransfer.effectAllowed = "copyMove";
                   }}
-                  onArrastarFim={() => { setContainerSobre(null); setPastaSobre(null); }}
-                  onArrastarSaiu={() => setContainerSobre(null)}
+                  onArrastarFim={() => { setContainerSobre(null); setPastaSobre(null); setLinhaAlvo(null); }}
+                  onArrastarSaiu={() => { setContainerSobre(null); setLinhaAlvo(null); }}
                   onArrastarSobre={(e) => {
                     // DOIS arrastos chegam nesta linha: um item do
                     // Bando (vira posse do personagem) e outro
@@ -638,6 +648,7 @@ export function PersonagensTab({
                       e.preventDefault();
                       e.dataTransfer.dropEffect = "move";
                       setContainerSobre(no.pasta?.id ?? "__raiz__");
+                      setLinhaAlvo(entrada.characterId);
                       return;
                     }
                     if (!e.dataTransfer.types.includes(MIME_ITEM_BANDO)) return;
@@ -646,6 +657,7 @@ export function PersonagensTab({
                   }}
                   onSoltar={(e) => {
                     setContainerSobre(null);
+                    setLinhaAlvo(null);
                     const pastaVindo = e.dataTransfer.getData(MIME_PASTA_ARRASTADA);
                     if (pastaVindo && podeAdministrar) {
                       e.preventDefault();
@@ -669,7 +681,14 @@ export function PersonagensTab({
                     onReceberItemDoBando(item, { id: entrada.characterId, nome: entrada.nome });
                   }}
                   testId="painel-personagens-linha"
-                  atributos={{ "data-character-id": entrada.characterId, "data-tipo": entrada.tipo }}
+                  atributos={{
+                    "data-character-id": entrada.characterId,
+                    "data-tipo": entrada.tipo,
+                    // A marca da linha vai por `atributos` em vez de
+                    // virar prop nova: é decoração desta aba, e
+                    // `LinhaDiretorio` serve outras três.
+                    "data-insercao": linhaAlvo === entrada.characterId ? "true" : undefined,
+                  }}
                 />
     );
   }
@@ -701,7 +720,7 @@ export function PersonagensTab({
               e.dataTransfer.setData(MIME_PASTA_ARRASTADA, no.pasta!.id);
               e.dataTransfer.effectAllowed = "move";
             }}
-            onArrastarFim={() => { setPastaArrastada(null); setPastaSobre(null); setContainerSobre(null); }}
+            onArrastarFim={() => { setPastaArrastada(null); setPastaSobre(null); setContainerSobre(null); setLinhaAlvo(null); }}
             onArrastarSobre={(e) => {
               if (!podeAdministrar) return;
               if (!e.dataTransfer.types.includes(MIME_PASTA_ARRASTADA)

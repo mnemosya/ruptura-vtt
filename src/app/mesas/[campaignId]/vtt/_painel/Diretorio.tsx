@@ -174,7 +174,9 @@ export interface LinhaDiretorioProps {
   onArrastarSaiu?: () => void;
   alvoDeSolta?: boolean;
   testId?: string;
-  atributos?: Record<string, string>;
+  /** `undefined` num valor OMITE o atributo — é como se liga e desliga
+      uma marca de estado sem precisar de prop nova pra cada uma. */
+  atributos?: Record<string, string | undefined>;
 }
 
 /**
