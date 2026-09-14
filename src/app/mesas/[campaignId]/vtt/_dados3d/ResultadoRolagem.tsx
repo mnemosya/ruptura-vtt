@@ -240,10 +240,15 @@ export function DadosLivres({ termos, maior, size = 40, landed = false }: {
       {termos.map((t, i) => (
         <Fragment key={i}>
           {somando && i > 0 && (
-            /* O TAMANHO ACOMPANHA O DADO (42% dele), e não um px fixo:
+            /* O TAMANHO ACOMPANHA O DADO (60% dele), e não um px fixo:
                a mesma fileira é desenhada a 40px no feed e menor na
-               bandeja, e um 13 fixo sumia do lado do dado grande. */
-            <span aria-hidden="true" style={{ flex: "none", fontFamily: MONO, fontSize: Math.round(size * 0.42), fontWeight: 700, lineHeight: 1, color: cor.hex, opacity: .7 }}>+</span>
+               bandeja, e um valor fixo sumia do lado do dado grande.
+
+               A COR é a do CONTORNO do dado parado (`#43597c`, de
+               `PolyDie`) — o sinal é do mesmo traço que desenha os
+               dados, não uma tinta de acento por cima deles. Por isso
+               também sai sem `opacity`: o contorno já é essa cor. */
+            <span aria-hidden="true" style={{ flex: "none", fontFamily: MONO, fontSize: Math.round(size * 0.6), fontWeight: 700, lineHeight: 1, color: "#43597c" }}>+</span>
           )}
           <PolyDie
             sides={t.faces}
