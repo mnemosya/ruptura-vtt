@@ -599,7 +599,19 @@ export function PersonagensTab({
                       tipo: entrada.tipo,
                     };
                     e.dataTransfer.setData(MIME_PERSONAGEM_ARRASTADO, serializarPersonagemArrastado(carga));
-                    e.dataTransfer.effectAllowed = "copy";
+                    /* `copyMove`, e isto NÃO é detalhe: o mesmo arrasto
+                       termina de duas formas — soltar no MAPA cria um
+                       token (cópia, o personagem continua na lista) e
+                       soltar numa PASTA ou noutro cartão move.
+
+                       Com `effectAllowed = "copy"`, como estava, o
+                       destino que pedia `dropEffect = "move"` formava um
+                       par inválido e o navegador RECUSAVA o drop antes
+                       de ele existir: o `onDrop` da pasta nunca
+                       disparava, e arrastar pra dentro dela não fazia
+                       nada. Quem escolhe o efeito é cada destino; a
+                       origem só declara o que é permitido. */
+                    e.dataTransfer.effectAllowed = "copyMove";
                   }}
                   alvoDeSolta={entradaSobre === entrada.characterId}
                   onArrastarSobre={(e) => {
