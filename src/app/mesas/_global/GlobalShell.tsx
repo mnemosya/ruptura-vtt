@@ -110,8 +110,16 @@ export function HudCursor({ enabled }: { enabled: boolean }) {
       if (ringRef.current) ringRef.current.style.transform = `translate(${ring.current.x - 17}px, ${ring.current.y - 17}px)`;
       raf.current = requestAnimationFrame(tick);
     };
-    const onDown = () => ringRef.current?.classList.add("ra-cursor-ring--click");
-    const onUp = () => ringRef.current?.classList.remove("ra-cursor-ring--click");
+    // O anel e o PONTO viram âmbar juntos: o clique é um só gesto, e o
+    // ponto é a parte do cursor que se olha.
+    const onDown = () => {
+      ringRef.current?.classList.add("ra-cursor-ring--click");
+      dotRef.current?.classList.add("ra-cursor-dot--click");
+    };
+    const onUp = () => {
+      ringRef.current?.classList.remove("ra-cursor-ring--click");
+      dotRef.current?.classList.remove("ra-cursor-dot--click");
+    };
 
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mousedown", onDown);
