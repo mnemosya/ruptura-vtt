@@ -890,9 +890,12 @@
 .rv-pn-switch .rv-fp-switch-tr { width: 26px; height: 15px; }
 .rv-pn-switch .rv-fp-switch-tr::after { width: 11px; height: 11px; }
 .rv-pn-switch input:checked + .rv-fp-switch-tr::after { transform: translateX(11px); }
+/* SEM CAIXA ALTA. Os rótulos em versalete do painel nomeiam SEÇÕES; um
+   interruptor é controle, e gritar o nome dele o fazia disputar
+   atenção com os cabeçalhos sem ser um. */
 .rv-pn-switch .rv-fp-switch-txt {
-  font-family: var(--rv-display);
-  font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--pn-dim);
+  font-family: var(--rv-body);
+  font-size: 11.5px; letter-spacing: normal; text-transform: none; color: var(--pn-dim);
 }
 .rv-pn-switch input:checked ~ .rv-fp-switch-txt { color: var(--pn-txt-forte); }
 .rv-pn-select, .rv-pn-input {
