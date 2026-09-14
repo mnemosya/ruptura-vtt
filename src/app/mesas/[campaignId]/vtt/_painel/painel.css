@@ -634,6 +634,11 @@
   color: #35c7d8; font: 400 10px/15px var(--font-mono), monospace;
   pointer-events: none;
 }
+/* HOVER antes do foco: o campo é um alvo grande e mudo, e sem resposta
+   nenhuma ao passar o mouse ele lia como uma caixa desenhada, não como
+   algo em que se clica pra escrever. Só o fio, um degrau — o ciano fica
+   reservado pro FOCO, que é o estado que importa aqui. */
+.pn-composer-campo:hover { border-color: var(--rv-line-strong); }
 .pn-composer-campo:focus-within { border-color: color-mix(in srgb, #35c7d8 55%, transparent); }
 /* `.rv-painel textarea { font-family: inherit }` (lá em cima nesta
    folha) tem uma classe E um elemento — especificidade maior que uma
@@ -741,14 +746,25 @@
      `--rv-raise` — um clareado TRANSLÚCIDO, não um hex —, então a
      proporção entre os dois se mantém sozinha sobre o fundo novo. */
   background: #0c1526; clip-path: none;
-  transition: border-color .14s;
+  transition: border-color .14s, background .14s;
 }
-/* HOVER DISCRETO: só o fio, e o mesmo `#1c2b45` do hover do cartão de
-   personagem. Sem lavagem de fundo de propósito — o cartão do chat não
-   é clicável nem abre nada, então acender como um botão prometeria uma
-   ação que não existe. O que ele precisa dizer é "esta é a mensagem sob
-   o seu cursor", e num feed denso a borda basta. */
-.rv-pn-chat .pn-msg:hover, .rv-pn-chat .pn-cartao:hover { border-color: #1c2b45; }
+/* HOVER: o fio sobe pro `--rv-line-strong` e o fundo ganha um degrau —
+   o mesmo `--rv-raise` (clareado translúcido) que a espinha e o
+   cabeçalho do cartão já usam, então o cartão inteiro sobe junto sem
+   inventar cor nova.
+
+   Só a borda não bastava: num feed de cartões empilhados, uma linha de
+   1px mudando de tom some no meio das outras bordas. Ainda assim fica
+   longe de um botão — nada de acento, nada de ciano: o cartão do chat
+   não é clicável, e o hover só diz qual mensagem está sob o cursor. */
+.rv-pn-chat .pn-msg:hover, .rv-pn-chat .pn-cartao:hover {
+  /* O PESO FICA NA BORDA. O fundo é só um sopro — 1,5% de branco por
+     cima do fundo do cartão (duas paradas iguais num gradiente é como
+     se sobrepõe uma camada translúcida a um hex). Com 4% a mancha
+     chamava mais atenção que a mensagem que ela deveria destacar. */
+  border-color: #2a3b58;
+  background: linear-gradient(rgba(255, 255, 255, .015), rgba(255, 255, 255, .015)), #0c1526;
+}
 /* O desenho não tem fio de acento; ele sobrevive SÓ onde carrega
    informação que o cabeçalho não dá: narração e mensagem privada. */
 .rv-pn-chat .pn-msg::before { content: none; }
@@ -803,7 +819,7 @@
    era inversão minha, não do design. */
 
 /* Chat · B original — ShellB/dossiê, sem reaproveitar o card compacto anterior. */
-.rv-pn-chat .pn-cartao { display:block; padding:0; border:1px solid var(--rv-line-2); border-radius:var(--rv-r); background:#0c1526; clip-path:none; overflow:visible; transition:border-color .14s; }
+.rv-pn-chat .pn-cartao { display:block; padding:0; border:1px solid var(--rv-line-2); border-radius:var(--rv-r); background:#0c1526; clip-path:none; overflow:visible; transition:border-color .14s, background .14s; }
 .rv-pn-chat .pn-cartao::before,.rv-pn-chat .pn-cartao::after { content:none; }
 .pn-cartao-layout { display:flex; min-width:0; }
 /* Fundo da espinha: o MESMO TOKEN da espinha das janelas de ferramenta

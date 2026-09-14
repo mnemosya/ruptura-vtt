@@ -31,7 +31,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { PolyDie } from "./PolyDie";
 import {
-  ACCENTS, BODY, CampoCD, DISPLAY, DadosRolados, FaixaResultado, FaixaSoma, GroupLabel, INK, INK_DIM, INK_FAINT, MONO,
+  ACCENTS, BODY, CampoCD, DISPLAY, aoPassarMouse, DadosRolados, FaixaResultado, FaixaSoma, GroupLabel, INK, INK_DIM, INK_FAINT, MONO,
   RESULTS, RollButton, Select, SeletorVisibilidade, Stack, Stepper, VISIBILIDADES,
   type Accent, type ResultKey,
 } from "./ResultadoRolagem";
@@ -256,7 +256,9 @@ function FreePool({
                 </button>
               );
             })}
-            <button type="button" onClick={clear} disabled={rolling} style={{ marginLeft: 4, border: 0, background: "transparent", cursor: rolling ? "default" : "pointer", fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: INK_FAINT }}>limpar</button>
+            <button type="button" onClick={clear} disabled={rolling}
+              {...(rolling ? {} : aoPassarMouse({ color: ACCENTS.danger.hex }))}
+              style={{ marginLeft: 4, border: 0, background: "transparent", cursor: rolling ? "default" : "pointer", fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: INK_FAINT, transition: "color .14s" }}>limpar</button>
           </div>
         )}
       </div>
@@ -288,7 +290,8 @@ function FreePool({
           d8, não de uma soma qualquer de dados. */}
       <div>
         <button type="button" onClick={() => setCdAberto((v) => !v)}
-          style={{ display: "flex", width: "100%", alignItems: "center", border: 0, padding: 0, background: "transparent", cursor: "pointer" }}>
+          {...aoPassarMouse({ opacity: "1" })}
+          style={{ display: "flex", width: "100%", alignItems: "center", border: 0, padding: 0, background: "transparent", cursor: "pointer", opacity: .82, transition: "opacity .14s" }}>
           <GroupLabel right={<Chevron width={13} height={13} style={{ color: INK_FAINT, transform: cdAberto ? "rotate(180deg)" : "none" }} />}>
             Definir CD
           </GroupLabel>
@@ -713,9 +716,13 @@ export function BandejaDados({ campaignId = null, personagemSugerido = null }: {
   const [visibilidade, setVisibilidade] = useState<TableLogVisibility>("public");
   const { ctx } = useContextoRolagem(open ? campaignId : null, personagemSugerido?.id ?? null);
   return (
-    <div style={{ borderRadius: 2, background: "linear-gradient(160deg,#0b1322,#080e19)", border: "1px solid #16233a" }}>
+    /* A CAIXA responde ao mouse como os cartões do feed: o peso na
+       borda, o fundo só um sopro. Ela é o vizinho deles na coluna. */
+    <div {...aoPassarMouse({ "border-color": "#2a3b58" })}
+      style={{ borderRadius: 2, background: "linear-gradient(160deg,#0b1322,#080e19)", border: "1px solid #16233a", transition: "border-color .14s" }}>
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} data-testid="painel-bandeja-dados"
-        style={{ display: "flex", width: "100%", alignItems: "center", gap: 10, padding: "10px 14px", border: 0, background: "transparent", cursor: "pointer" }}>
+        {...aoPassarMouse({ background: "rgba(255,255,255,.015)" })}
+        style={{ display: "flex", width: "100%", alignItems: "center", gap: 10, padding: "10px 14px", border: 0, background: "transparent", cursor: "pointer", transition: "background .14s" }}>
         <Dice width={15} height={15} style={{ color: "#35c7d8", flexShrink: 0 }} />
         <span style={{ fontFamily: DISPLAY, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.16em", color: INK }}>Bandeja de Dados</span>
         <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: INK_FAINT }}>livre · d4 a d100</span>

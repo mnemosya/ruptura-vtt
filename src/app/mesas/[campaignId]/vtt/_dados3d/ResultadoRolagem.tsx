@@ -78,6 +78,40 @@ export const RESULTS: Record<ResultKey, { label: string; accent: Accent; Icon: t
   falha_critica: { label: "Falha Crítica", accent: ACCENTS.danger, Icon: Cross },
 };
 
+/**
+ * HOVER para quem é desenhado INLINE.
+ *
+ * A bandeja e seus controles não têm folha de estilo própria: são
+ * estilos inline, porque os mesmos componentes rodam no VTT, no Console
+ * da ficha e na página `/dev/dados`, e nenhuma folha cobre as três. Sem
+ * um `:hover` possível, tudo ali era mudo ao mouse — só os dados
+ * respondiam, e por um `onMouseEnter` escrito à mão (o mesmo truque,
+ * repetido).
+ *
+ * Guarda o valor anterior NO ELEMENTO (via `WeakMap`) e o devolve na
+ * saída — apagar a propriedade não serviria: ela veio do `style` do
+ * React, que não a reescreve se as props não mudaram.
+ */
+const estiloAnterior = new WeakMap<HTMLElement, Record<string, string>>();
+export function aoPassarMouse(estilos: Record<string, string>) {
+  return {
+    onMouseEnter: (e: { currentTarget: HTMLElement }) => {
+      const el = e.currentTarget;
+      const antes: Record<string, string> = {};
+      for (const [prop, valor] of Object.entries(estilos)) {
+        antes[prop] = el.style.getPropertyValue(prop);
+        el.style.setProperty(prop, valor);
+      }
+      estiloAnterior.set(el, antes);
+    },
+    onMouseLeave: (e: { currentTarget: HTMLElement }) => {
+      const el = e.currentTarget;
+      const antes = estiloAnterior.get(el);
+      for (const prop of Object.keys(estilos)) el.style.setProperty(prop, antes?.[prop] ?? "");
+    },
+  };
+}
+
 /** Pilha vertical (equivalente ao `space-y-*` do design). */
 export function Stack({ gap, children, style }: { gap: number; children: ReactNode; style?: CSSProperties }) {
   return <div style={{ display: "flex", flexDirection: "column", gap, ...style }}>{children}</div>;
@@ -636,9 +670,11 @@ export function Stepper({ value, onChange }: { value: number; onChange: (n: numb
   const fmt = value > 0 ? `+${value}` : `${value}`;
   return (
     <div style={{ display: "inline-flex", alignItems: "center", borderRadius: 2, border: "1px solid #1c2b45" }}>
-      <button type="button" onClick={() => onChange(value - 1)} style={{ padding: "6px 12px", border: 0, background: "transparent", cursor: "pointer", fontFamily: MONO, fontSize: 14, color: INK_DIM }}>−</button>
+      <button type="button" onClick={() => onChange(value - 1)} {...aoPassarMouse({ background: "rgba(255,255,255,.05)", color: INK })}
+        style={{ padding: "6px 12px", border: 0, background: "transparent", cursor: "pointer", fontFamily: MONO, fontSize: 14, color: INK_DIM, transition: "background .14s, color .14s" }}>−</button>
       <span style={{ minWidth: 40, textAlign: "center", fontFamily: MONO, fontSize: 13, fontWeight: 700, color: value === 0 ? "#8ea0bd" : value > 0 ? ACCENTS.good.hex : ACCENTS.danger.hex }}>{fmt}</span>
-      <button type="button" onClick={() => onChange(value + 1)} style={{ padding: "6px 12px", border: 0, background: "transparent", cursor: "pointer", fontFamily: MONO, fontSize: 14, color: INK_DIM }}>+</button>
+      <button type="button" onClick={() => onChange(value + 1)} {...aoPassarMouse({ background: "rgba(255,255,255,.05)", color: INK })}
+        style={{ padding: "6px 12px", border: 0, background: "transparent", cursor: "pointer", fontFamily: MONO, fontSize: 14, color: INK_DIM, transition: "background .14s, color .14s" }}>+</button>
     </div>
   );
 }
@@ -656,7 +692,8 @@ export function CampoCD({ value, onChange }: { value: string; onChange: (v: stri
       </span>
       <input type="number" inputMode="numeric" min={1} max={99} value={value} placeholder="—"
         onChange={(e) => onChange(e.target.value)}
-        style={{ width: 80, borderRadius: 2, background: "transparent", padding: "6px 8px", textAlign: "right", fontFamily: MONO, fontSize: 13, fontWeight: 700, border: "1px solid #1c2b45", color: ACCENTS.amber.hex, outline: "none" }} />
+        {...aoPassarMouse({ "border-color": "#2a3b58" })}
+        style={{ width: 80, borderRadius: 2, background: "transparent", padding: "6px 8px", textAlign: "right", fontFamily: MONO, fontSize: 13, fontWeight: 700, border: "1px solid #1c2b45", color: ACCENTS.amber.hex, outline: "none", transition: "border-color .14s" }} />
     </label>
   );
 }
@@ -888,7 +925,12 @@ export function SeletorVisibilidade({ valor, onChange, ehNarrador }: {
         const on = o.v === valor;
         return (
           <button key={o.v} type="button" onClick={() => onChange(o.v)} aria-pressed={on} title={o.dica}
+            /* O LIGADO não reage: ele já está aceso no ciano, e mexer
+               nele no hover só embaralharia "selecionado" com "sob o
+               cursor". */
+            {...(on ? {} : aoPassarMouse({ "border-color": "#2a3b58", color: "#9fb3d1", background: "rgba(255,255,255,.04)" }))}
             style={{
+              transition: "border-color .14s, color .14s, background .14s",
               flex: 1, borderRadius: 2, padding: "5px 6px", cursor: "pointer",
               fontFamily: DISPLAY, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.14em",
               color: on ? ACCENTS.cyan.hex : "#6f83a3", background: on ? ACCENTS.cyan.soft : "transparent",
