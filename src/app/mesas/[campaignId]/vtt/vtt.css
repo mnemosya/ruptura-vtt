@@ -3330,7 +3330,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 /* Rótulo de `select` e de linha composta (Tamanho) — mesma etiqueta do
    `Field`, senão ele herda o corpo do formulário e vira título. */
-.rv-janela-token .rv-modal-corpo { padding: 16px; gap: 20px; }
+.rv-janela-token .rv-modal-corpo { padding: 16px; gap: 16px; }
 
 /* Field / SelectField */
 .rv-janela-token .rv-field { gap: 0; }
@@ -3406,7 +3406,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    fazia o número não ter efeito por mais que eu aumentasse.
    Com margem nos filhos, o vão volta a ser entre eles. */
 .rv-janela-token .rv-mais-opcoes.rv-fp-grupo { border-top: none; padding-top: 0; gap: 0; }
-.rv-janela-token .rv-mais-opcoes > :not(summary) { margin-top: 20px; }
+.rv-janela-token .rv-mais-opcoes > :not(summary) { margin-top: 16px; }
 .rv-janela-token .rv-mais-opcoes-chevron { margin-left: auto; transition: transform .16s; }
 .rv-mais-opcoes[open] > summary .rv-mais-opcoes-chevron { transform: rotate(180deg); }
 .rv-mais-opcoes > summary {
