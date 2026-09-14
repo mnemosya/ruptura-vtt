@@ -358,7 +358,7 @@
   border: 1px solid var(--rv-line-strong); border-radius: 2px;
   background: var(--rv-sunken); color: var(--rv-ink-dim);
   font-family: var(--rv-display);
-  font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
   cursor: pointer; text-decoration: none;
   transition: background .14s, border-color .14s, color .14s;
 }
@@ -829,6 +829,11 @@
 
 /* ═══════════════════════ DIRETÓRIOS ═══════════════════════ */
 
+/* ── Tamanhos do diretório: +1px depois da troca de Inter por Rajdhani.
+   Rajdhani tem altura-de-x menor, então o MESMO `font-size` lê menor na
+   tela — o texto não encolheu, a fonte é que ocupa menos. O passo
+   repõe a leitura de antes sem mexer no ritmo entre os elementos, que
+   subiram todos juntos. */
 .rv-pn-busca {
   flex: none; display: flex; align-items: center; gap: 6px; margin: 6px 8px; padding: 5px 8px;
   border: 1px solid var(--pn-line-soft); border-radius: var(--pn-radius);
@@ -837,14 +842,14 @@
 .rv-pn-busca:focus-within { border-color: var(--pn-cy); }
 .rv-pn-busca-input {
   flex: 1; min-width: 0; border: none; background: transparent; color: var(--pn-txt-forte);
-  font-family: var(--rv-body); font-size: 12.5px;
+  font-family: var(--rv-body); font-size: 13.5px;
 }
 /* O PLACEHOLDER É DO VTT, não do navegador. Sem regra, ele herdava o
    cinza-padrão do agente do usuário — mais claro e com outro peso que
    todo o resto do painel, o que fazia o campo parecer de outro
    produto. `--pn-dim` é o mesmo tom dos rótulos vizinhos. */
 .rv-pn-busca-input::placeholder {
-  color: var(--pn-dim); opacity: 1; font-family: var(--rv-body); font-size: 12.5px;
+  color: var(--pn-dim); opacity: 1; font-family: var(--rv-body); font-size: 13.5px;
 }
 .rv-pn-busca-input:focus-visible { outline: none; }
 .rv-pn-busca-input::-webkit-search-cancel-button { display: none; }
@@ -896,7 +901,7 @@
    lados da faixa são "o que eu faço com a lista", e o switch é o único
    que não cria nada. O `padding` zerado deixa a margem por conta da
    linha (`.rv-pn-filtros`), pra ele encostar onde os outros encostam. */
-.rv-pn-switch.rv-pn-switch { padding: 0; margin-left: auto; font-size: 11px; gap: 7px; }
+.rv-pn-switch.rv-pn-switch { padding: 0; margin-left: auto; font-size: 12px; gap: 7px; }
 .rv-pn-switch .rv-fp-switch-tr { width: 26px; height: 15px; }
 .rv-pn-switch .rv-fp-switch-tr::after { width: 11px; height: 11px; }
 .rv-pn-switch input:checked + .rv-fp-switch-tr::after { transform: translateX(11px); }
@@ -905,13 +910,13 @@
    atenção com os cabeçalhos sem ser um. */
 .rv-pn-switch .rv-fp-switch-txt {
   font-family: var(--rv-body);
-  font-size: 11.5px; letter-spacing: normal; text-transform: none; color: var(--pn-dim);
+  font-size: 12.5px; letter-spacing: normal; text-transform: none; color: var(--pn-dim);
 }
 .rv-pn-switch input:checked ~ .rv-fp-switch-txt { color: var(--pn-txt-forte); }
 .rv-pn-select, .rv-pn-input {
   padding: 3px 6px; border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
   background: var(--pn-inset); color: var(--pn-txt-forte);
-  font-family: var(--font-mono), ui-monospace, monospace; font-size: 10px;
+  font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px;
 }
 /* `appearance: none` pelo mesmo motivo do checkbox: com `auto`, o
    select é desenhado pelo SISTEMA — caixa clara, seta própria, cantos
@@ -940,7 +945,7 @@
 .rv-pn-check {
   display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
   font-family: var(--rv-display);
-  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--pn-dim);
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--pn-dim);
 }
 /* A CAIXA É DESENHADA. `accent-color` só tinge o controle nativo, que
    continua com o quadrado arredondado e o contorno claro do sistema —
@@ -1104,7 +1109,7 @@
   flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 12px;
   border: none; background: transparent; color: var(--pn-txt-forte);
   font-family: var(--rv-display);
-  font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
   text-align: left; cursor: pointer;
 }
 .rv-pn-grupo-btn--estatico { cursor: default; }
@@ -1112,7 +1117,7 @@
 .rv-pn-grupo-btn:hover { color: var(--pn-cy); }
 .rv-pn-grupo-btn:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 2px; }
 .rv-pn-grupo-rotulo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rv-pn-grupo-contagem { font-size: 10px; opacity: .7; }
+.rv-pn-grupo-contagem { font-size: 11px; opacity: .7; }
 /* `margin-left: auto` joga o chevron pra borda: entre o nome e ele fica
    o vazio, que é o que deixa claro que os dois não são a mesma coisa —
    um diz QUAL pasta, o outro diz se ela está aberta. */
@@ -1474,12 +1479,12 @@
 .rv-pn-linha-texto { min-width: 0; flex: 1; }
 .rv-pn-linha-nome {
   display: flex; align-items: baseline; gap: 8px;
-  font-family: var(--rv-body); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  font-family: var(--rv-body); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
   color: var(--pn-txt-forte); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .rv-pn-linha-sub {
   margin-top: 4px; font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--pn-dim);
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--pn-dim);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .rv-pn-linha-marca { flex: none; }
