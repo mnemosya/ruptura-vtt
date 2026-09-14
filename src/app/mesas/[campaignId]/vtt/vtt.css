@@ -5405,12 +5405,17 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
 .rv-cartao-token__linha {
   display: grid; align-items: center; gap: 8px;
-  /* 26 e 80 são as medidas do Figma, e são fixas de propósito: as três
-     linhas precisam alinhar rótulo e barra em coluna, e uma barra
-     elástica faria o resto dançar conforme o rótulo ("Mana" é mais
-     largo que "PV"). A terceira coluna é o GRUPO de controle — menos,
-     número e mais —, que tem largura própria. */
-  grid-template-columns: 26px 80px auto;
+  /* 26 pro rótulo e 72 pro grupo de controle (16 + 40 + 16) — FIXOS,
+     porque são eles que precisam ficar parados: o número não pode
+     mudar de largura quando o PV vai de "8/11" pra "12/12", e o "+"
+     não pode sair de debaixo do dedo de quem está clicando nele.
+
+     Quem estica é a BARRA. O nome no cabeçalho às vezes é mais largo
+     que a linha de recurso e empurra o cartão até o teto de 225 — com
+     a terceira coluna em `auto`, era ela que absorvia a sobra, e o
+     grupo de controle deslizava pra direita conforme o nome do token.
+     Barra elástica é inofensiva: ela já é uma régua proporcional. */
+  grid-template-columns: 26px minmax(80px, 1fr) 72px;
 }
 /* O grupo é COLADO: os dois botões tocam o número, e é esse toque que
    diz que eles mexem naquele valor e não em outro. */
@@ -5458,6 +5463,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    começar zerando a aparência de botão do navegador. */
 .rv-cartao-token__val {
   display: flex; align-items: center; justify-content: center;
+  /* 40px FIXOS, como no desenho: a fração cresce de "8/11" pra "12/12"
+     conforme se joga, e uma largura por conteúdo empurraria os botões
+     de lugar a cada ponto de vida — o "+" mudaria de posição debaixo do
+     dedo de quem está clicando nele. */
+  width: 40px; flex: none;
   padding: 0; border: none; background: none;
   font-family: var(--font-mono), monospace; font-size: 10px; line-height: 15px;
   color: var(--rv-ink-dim);
