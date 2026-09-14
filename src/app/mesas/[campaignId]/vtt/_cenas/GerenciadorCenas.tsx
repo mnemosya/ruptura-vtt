@@ -32,11 +32,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  AlertTriangle, Archive, Check, ChevronDown, Clapperboard, FilePlus2, FolderPlus, ImagePlus, Loader2, Plus, Search, Undo2, X,
+  AlertTriangle, Archive, Check, ChevronDown, Clapperboard, FilePlus2, FolderPlus, ImagePlus, Loader2, MoreVertical, Plus, Search, Undo2, X,
 } from "lucide-react";
 import { CartaoCena } from "./CartaoCena";
 import { ListaRolavel } from "./ListaRolavel";
-import { MenuPasta, posicaoNoCursor, type PosicaoMenu } from "./MenuPasta";
+import { MenuPasta, posicaoAbaixoDe, posicaoNoCursor, type PosicaoMenu } from "./MenuPasta";
 import { MiniCartaoCena } from "./MiniCartaoCena";
 import { MIME_JOGADOR, TrilhoJogadores } from "./TrilhoJogadores";
 import { ParametrosCena, type ValoresParametros } from "./ParametrosCena";
@@ -188,6 +188,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
    * aparecem na própria trilha.
    */
   const [menuAberta, setMenuAberta] = useState<PosicaoMenu | null>(null);
+  const botaoMenuPastaRef = useRef<HTMLButtonElement | null>(null);
   const [renomeandoAberta, setRenomeandoAberta] = useState<string | null>(null);
   const [excluindoAberta, setExcluindoAberta] = useState(false);
   const [confirmaExclusaoAberta, setConfirmaExclusaoAberta] = useState("");
@@ -1355,6 +1356,26 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                   >{f.nome}</button>
                 </span>
               ))}
+
+              {/* AS AÇÕES DA PASTA ABERTA, VISÍVEIS. O botão direito
+                  continua funcionando em toda a área, mas não pode ser
+                  a ÚNICA porta: gesto escondido é gesto que só existe
+                  pra quem já sabe que ele existe. Aqui, ao lado do nome
+                  da pasta em que se está, ele é o lugar óbvio. */}
+              {pastaAberta && !verArquivo && (
+                <button
+                  type="button" className="rv-cena-mini-btn"
+                  ref={botaoMenuPastaRef}
+                  aria-label={`Ações da pasta "${pastaAberta.nome}"`}
+                  aria-haspopup="menu" aria-expanded={menuAberta !== null}
+                  data-testid="pasta-aberta-menu-btn"
+                  onClick={() => setMenuAberta(
+                    (a) => (a ? null : posicaoAbaixoDe(botaoMenuPastaRef.current)),
+                  )}
+                >
+                  <MoreVertical size={15} aria-hidden />
+                </button>
+              )}
             </nav>
           )}
 
@@ -1608,6 +1629,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
             <MenuPasta
               posicao={menuAberta} dentro ocupada={ocupadas[pastaAberta.id] === true}
               testId="pasta-aberta-menu"
+              disparadorRef={botaoMenuPastaRef}
               onFechar={() => setMenuAberta(null)}
               onRenomear={() => setRenomeandoAberta(pastaAberta.nome)}
               onExcluir={() => setExcluindoAberta(true)}

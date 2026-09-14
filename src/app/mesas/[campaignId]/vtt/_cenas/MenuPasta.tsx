@@ -22,6 +22,17 @@ export const ALTURA_MENU = 148;
 
 export interface PosicaoMenu { left: number; top: number }
 
+/** Onde o menu cabe quando vem de um BOTÃO: colado nele, à direita. */
+export function posicaoAbaixoDe(el: HTMLElement | null): PosicaoMenu {
+  if (!el) return { left: 8, top: 8 };
+  const b = el.getBoundingClientRect();
+  const cabeEmbaixo = window.innerHeight - b.bottom > ALTURA_MENU + 8;
+  return {
+    left: Math.max(8, Math.min(b.left, window.innerWidth - LARGURA_MENU - 8)),
+    top: cabeEmbaixo ? b.bottom + 4 : Math.max(8, b.top - ALTURA_MENU - 4),
+  };
+}
+
 /** Onde o menu cabe, a partir do clique que o abriu. */
 export function posicaoNoCursor(e: { clientX: number; clientY: number }): PosicaoMenu {
   return {
@@ -45,6 +56,16 @@ export interface PropsMenuPasta {
   onArquivar?: () => void;
   onDesarquivar?: () => void;
   testId?: string;
+  /**
+   * O botão que abriu o menu, quando houve um.
+   *
+   * O `mousedown` do próprio disparador conta como "clique fora" e
+   * fechava o menu ANTES de o clique chegar ao `onClick` que o
+   * alternaria — resultado: clicar no botão com o menu aberto o fechava
+   * e reabria, e ele parecia não fechar nunca. Ignorando o disparador,
+   * o alternar volta a ser alternar.
+   */
+  disparadorRef?: React.RefObject<HTMLElement | null>;
 }
 
 export function MenuPasta(p: PropsMenuPasta) {
@@ -53,7 +74,10 @@ export function MenuPasta(p: PropsMenuPasta) {
   /* As duas saídas que quem abre menu espera: clique fora e Escape. */
   useEffect(() => {
     const foraDaqui = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) p.onFechar();
+      const alvo = e.target as Node;
+      if (ref.current?.contains(alvo)) return;
+      if (p.disparadorRef?.current?.contains(alvo)) return;
+      p.onFechar();
     };
     const escape = (e: KeyboardEvent) => { if (e.key === "Escape") p.onFechar(); };
     document.addEventListener("mousedown", foraDaqui);
