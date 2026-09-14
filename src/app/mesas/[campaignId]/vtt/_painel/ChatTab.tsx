@@ -87,10 +87,10 @@ export function ChatTab({
   /**
    * ESTADO DA ROLAGEM DO FEED — daqui sai o atalho de voltar pro fim.
    *
-   * Aqui só o véu DE BAIXO existe (`data-fim`), e ele fecha no topo da
-   * bandeja de dados — é ali que a conversa acaba na tela. Em cima não
-   * há véu: o alto do feed encosta na barra de abas, que já é uma
-   * borda.
+   * O feed NÃO tem véu nas pontas, ao contrário das outras listas. Foi
+   * tentado e removido: com a bandeja de dados flutuando no pé dele,
+   * nenhuma posição do degradê ficou boa. Quem diz que há mais
+   * conversa é o atalho "ir para o fim".
    *
    * `longe` não é "não está no fim": subir dois cartões pra reler algo
    * e continuar lendo não pede atalho nenhum, e um botão aparecendo ao
@@ -472,8 +472,6 @@ export function ChatTab({
       <div className="rv-pn-chat-feedwrap">
       <div
         className="rv-pn-chat-scroll" ref={scrollRef} onScroll={aoRolar}
-        data-rolavel={rolagem.rolavel || undefined}
-        data-fim={rolagem.fim || undefined}
         style={{ "--pn-bandeja-altura": `${alturaBandeja}px` } as React.CSSProperties}
         data-testid="painel-chat-scroll"
       >

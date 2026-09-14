@@ -729,30 +729,9 @@
      o composer, que a medida não inclui. */
   padding: 8px 8px calc(var(--pn-bandeja-altura) + 16px); gap: 8px;
 }
-/* O VÉU DO FEED — só o de baixo, e fechando no TOPO DA BANDEJA, que é
-   onde a conversa acaba na tela.
-
-   A COR não é a mesma das outras listas: o painel ganhou um degradê e
-   no pé dele o fundo é `#060b16`, não `#080f1e`. Com a cor do topo, o
-   véu terminava num tom mais claro que o fundo atrás dele e se via
-   como um retângulo solto — era esse o "lugar errado" que ele parecia
-   ocupar, não a posição. */
-.rv-pn-chat .rv-pn-chat-scroll { --rv-veu-cor: #060b16; }
-.rv-pn-chat .rv-pn-chat-scroll[data-rolavel]::before { content: none; }
-.rv-pn-chat .rv-pn-chat-scroll[data-rolavel]::after {
-  /* ANCORADO NO PÉ DO CHAT — a linha onde o composer começa, que é o
-     chão de tudo que flutua aqui (a bandeja inclusive). `bottom: 0`,
-     sem desconto nenhum.
-
-     A ALTURA atravessa a bandeja: 44px de desvanecer MAIS a altura
-     dela. E o degradê fecha nos primeiros 44 — daí pra baixo ele é
-     cor cheia, escondida atrás da bandeja. É isso que faz a faixa
-     visível (a que sobra acima dela) ser um desvanecer COMPLETO em vez
-     de um gradiente cortado no meio. */
-  bottom: 0;
-  height: calc(var(--pn-bandeja-altura) + 44px);
-  background: linear-gradient(transparent 0, var(--rv-veu-cor) 44px, var(--rv-veu-cor) 100%);
-}
+/* SEM VÉU no feed. Tentado e removido: a bandeja de dados flutua no pé
+   dele e nenhuma posição do degradê ficou boa. O atalho "ir para o
+   fim" é o que avisa que há mais conversa. */
 .rv-pn-chat .pn-cartao {
   padding: 8px 9px 8px 34px;
   border-color: rgba(43,63,94,.72);
