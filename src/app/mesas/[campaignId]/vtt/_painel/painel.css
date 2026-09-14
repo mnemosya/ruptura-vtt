@@ -1245,9 +1245,9 @@
   border-right-color: color-mix(in srgb, var(--fg-a, #45b8c9) 55%, transparent);
 }
 /* O vão fica DEPOIS da borda do avatar — é ela que separa, e o espaço
-   é o respiro entre a divisória e o texto. 12px: com 8px o nome ainda
-   encostava na linha, porque a divisória já é um traço forte e pede
-   mais ar do que um vão entre elementos soltos.
+   é o respiro entre a divisória e o texto. 16px: a divisória já é um
+   traço forte e pede mais ar do que um vão entre elementos soltos —
+   com 8px o nome encostava nela, e com 12px ainda ficava apertado.
 
    CENTRADO na vertical: com os recursos desligados o texto é uma linha
    só dentro de um cartão de 56px, e encostado no topo ele ficava
@@ -1255,7 +1255,11 @@
    preenche a altura e centrar não muda nada — por isso vale sempre, em
    vez de depender do modo. */
 .rv-pn-scroll--pers .rv-pn-linha-texto {
-  padding: 9px 0 9px 12px;
+  /* O 12 da direita não é simetria: sem ele a barra e a fração
+     encostavam na borda do cartão, porque tirar o padding da LINHA
+     (pro avatar encostar) tirou junto o respiro do outro lado. Quando
+     há marca, este mesmo espaço vira o vão entre texto e marca. */
+  padding: 9px 12px 9px 16px;
   display: flex; flex-direction: column; justify-content: center;
 }
 .rv-pn-scroll--pers .rv-pn-linha-marca { padding: 9px 12px 9px 0; }
