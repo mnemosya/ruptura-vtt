@@ -1059,13 +1059,20 @@
 /* Mesma regra dentro da paleta âmbar: a borda do hover é a do ativo. */
 .rc-tabrail-btn--personagem:hover {
   border-color: color-mix(in srgb, var(--am) 60%, #06121c);
-  background: rgba(207, 154, 62, 0.16);
+  /* Abaixo do ativo, que baixou junto: hover é um passo INTERMEDIÁRIO
+     entre parado e selecionado, e empatado com ele deixava de dizer
+     qual aba está aberta. */
+  background: rgba(207, 154, 62, 0.09);
   color: var(--am);
 }
+/* O FUNDO É DISCRETO. A 32% o âmbar virava um bloco sólido e o ícone
+   se perdia dentro dele — quem carregava a seleção era a mancha, não a
+   aba. Quem diz "é esta" continua sendo a borda mais viva, o brilho e
+   o ícone em âmbar cheio; o fundo só sustenta os três. */
 .rc-tabrail-btn--personagem[aria-selected="true"] {
   border-color: color-mix(in srgb, var(--am) 60%, #06121c);
-  background: rgba(207, 154, 62, 0.32);
-  box-shadow: 0 0 9px rgba(207, 154, 62, 0.25);
+  background: rgba(207, 154, 62, 0.16);
+  box-shadow: 0 0 9px rgba(207, 154, 62, 0.2);
   color: var(--am);
 }
 
