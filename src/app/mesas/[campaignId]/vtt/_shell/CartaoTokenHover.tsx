@@ -230,7 +230,7 @@ export function CartaoTokenHover(p: PropsCartaoTokenHover) {
                     disabled={ocupado || r.atual <= 0}
                     aria-label={`Reduzir ${rotulo} em 1`}
                   >
-                    <svg viewBox="0 0 9 9" aria-hidden="true"><path d="M1 4.5h7" /></svg>
+                    <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 5h6" /></svg>
                   </button>
                   <button
                     type="button" className="rv-cartao-token__pip"
@@ -238,7 +238,7 @@ export function CartaoTokenHover(p: PropsCartaoTokenHover) {
                     disabled={ocupado || r.atual >= r.max}
                     aria-label={`Aumentar ${rotulo} em 1`}
                   >
-                    <svg viewBox="0 0 9 9" aria-hidden="true"><path d="M1 4.5h7M4.5 1v7" /></svg>
+                    <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 5h6M5 2v6" /></svg>
                   </button>
                 </span>
               )}

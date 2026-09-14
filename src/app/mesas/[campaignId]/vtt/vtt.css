@@ -5350,12 +5350,14 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
      flutua sobre o mapa, onde um degradê de 160° só rende uma mancha
      mais clara num canto.
 
-     `#111b2c` — um degrau acima do que o Figma trazia (`#0e1420`).
-     Sobre o mapa, que é quase preto, aquele tom se dissolvia no fundo
-     e o cartão perdia a borda de leitura; o desenho pede uma peça que
-     POUSA sobre a mesa, não que afunda nela. */
+     `#101c32` é COMPENSADO, não o valor do desenho: o alvo é
+     `#111b2c`, e o conta-gotas lia `#121a26` na tela — o navegador
+     converte sRGB pro perfil do monitor e o Figma não, então o mesmo
+     hex sai mais escuro e menos azul aqui. Somando de volta o desvio
+     medido (R −1, G +1, B +6), este é o número que RENDERIZA como o
+     do desenho. */
   border: 1px solid #18263f; border-radius: 6px;
-  background: #111b2c;
+  background: #101c32;
   box-shadow: 0 16px 20px rgba(0, 0, 0, .5);
   /* A entrada é curta de propósito: o cartão já custou a espera do
      hover, e uma animação longa em cima disso leria como lentidão. */
@@ -5448,6 +5450,12 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   font-family: var(--font-mono), monospace; font-size: 10px; line-height: 15px;
   color: var(--rv-ink-dim);
 }
+/* CLASSE DUPLICADA pra empatar com `.rm-root button { font-family:
+   inherit }` (classe + elemento), que vinha DEPOIS e trocava o mono da
+   fração pela fonte do corpo — o rótulo "PV" ao lado saía em JetBrains
+   e o "8/11" em Rajdhani, na mesma linha. Mesma armadilha que o painel
+   já tinha documentado. */
+.rv-cartao-token__val.rv-cartao-token__val { font-family: var(--font-mono), monospace; }
 button.rv-cartao-token__val { cursor: text; }
 button.rv-cartao-token__val:hover:not(:disabled) { color: var(--rv-ink); }
 button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; border-radius: var(--rv-r); }
@@ -5471,8 +5479,14 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
 .rv-cartao-token__pip:hover:not(:disabled) { color: var(--rv-ink); border-color: var(--rv-line-hover); }
 .rv-cartao-token__pip:disabled { opacity: .4; cursor: not-allowed; }
 .rv-cartao-token__pip:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+/* 10px, e não 9: o botão tem 16 com 1 de borda, então sobram 14 de
+   conteúdo — um ícone ímpar ali é centrado em 3,5px de cada lado, e
+   meio pixel de deslocamento borra o traço de forma assimétrica. É o
+   que fazia o − e o + parecerem fora do lugar dentro da caixa. Com 10,
+   a folga é 2 inteiro dos dois lados. A geometria do desenho
+   acompanhou (viewBox 0 0 10 10). */
 .rv-cartao-token__pip svg {
-  width: 9px; height: 9px; fill: none;
+  width: 10px; height: 10px; fill: none;
   stroke: currentColor; stroke-width: 1.5; stroke-linecap: round;
 }
 
