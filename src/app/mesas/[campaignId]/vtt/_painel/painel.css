@@ -924,7 +924,11 @@
   /* ENCOSTADA NO PÉ: a bandeja é a peça de cima do composer, não uma
      caixa boiando sobre o feed. Grudada, as duas leem como um bloco só
      de "o que eu faço", e o feed fica inteiro acima delas. */
-  position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+  /* MARGEM LATERAL de 8px, alinhada com o padding do feed: a bandeja
+     nasce na mesma coluna dos cartões, e não sangrando de borda a
+     borda. Embaixo ela continua encostada — é ali que ela se junta ao
+     composer. */
+  position: absolute; left: 8px; right: 8px; bottom: 0; z-index: 3;
   display: flex; flex-direction: column; align-items: center; gap: 8px;
   pointer-events: none;
 }
