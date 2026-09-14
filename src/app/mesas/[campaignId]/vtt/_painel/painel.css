@@ -1029,8 +1029,12 @@
 }
 .rv-pn-scroll--pers .rv-pn-linha[data-insercao="true"]::after {
   content: ""; position: absolute; left: 0; right: 0; top: 0; height: 0;
-  border-top: 2px dashed var(--pn-cy);
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--pn-cy) 70%, transparent));
+  /* Fina e translúcida: ela acompanha o cursor e some no instante
+     seguinte, então precisa ser lida de relance sem competir com o
+     cartão que marca. O brilho compensa a transparência — sem ele,
+     1,5px a 65% sumiria contra o fundo escuro. */
+  border-top: 1.5px dashed color-mix(in srgb, var(--pn-cy) 65%, transparent);
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--pn-cy) 45%, transparent));
 }
 
 /* O realce de alvo é do BLOCO agora: era do cabeçalho, que não tem mais
