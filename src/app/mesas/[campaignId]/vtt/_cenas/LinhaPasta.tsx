@@ -17,8 +17,9 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Archive, Check, ChevronDown, Folder, FolderOpen, Pencil, Trash2, Undo2, X } from "lucide-react";
+import { Check, ChevronDown, Folder, FolderOpen, X } from "lucide-react";
 import type { PastaCena } from "../../../../../lib/vtt/sceneStorage";
+import { MenuPasta, posicaoNoCursor, type PosicaoMenu } from "./MenuPasta";
 
 export interface PropsLinhaPasta {
   pasta: PastaCena;
@@ -59,10 +60,6 @@ export interface PropsLinhaPasta {
   onDrop: (e: React.DragEvent) => void;
 }
 
-/** Medidas do menu de contexto — o `fixed` precisa delas pra não sair da janela. */
-const LARGURA_MENU = 176;
-const ALTURA_MENU = 148;
-
 export function LinhaPasta(p: PropsLinhaPasta) {
   const [editando, setEditando] = useState(false);
   const [rascunho, setRascunho] = useState(p.pasta.nome);
@@ -84,36 +81,17 @@ export function LinhaPasta(p: PropsLinhaPasta) {
    * `overflow-y: auto`, e caixa de rolagem recorta o que sai dela —
    * mesma razão do menu do cartão de cena.
    */
-  const [menu, setMenu] = useState<{ left: number; top: number } | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [menu, setMenu] = useState<PosicaoMenu | null>(null);
 
   useEffect(() => { if (!editando) setRascunho(p.pasta.nome); }, [p.pasta.nome, editando]);
   useEffect(() => { if (editando) campoRef.current?.select(); }, [editando]);
   useEffect(() => { if (!confirmandoExclusao) setConfirmacao(""); }, [confirmandoExclusao]);
 
-  /* As duas saídas que quem abre menu espera: clique fora e Escape. */
-  useEffect(() => {
-    if (!menu) return;
-    const foraDaqui = (e: MouseEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setMenu(null);
-    };
-    const escape = (e: KeyboardEvent) => { if (e.key === "Escape") setMenu(null); };
-    document.addEventListener("mousedown", foraDaqui);
-    document.addEventListener("keydown", escape);
-    return () => {
-      document.removeEventListener("mousedown", foraDaqui);
-      document.removeEventListener("keydown", escape);
-    };
-  }, [menu]);
-
   /* O menu nasce no cursor, corrigido pra não sair da janela. */
   function abrirMenu(e: React.MouseEvent) {
     if (p.ocupada || editando) return;
     e.preventDefault();
-    setMenu({
-      left: Math.min(e.clientX, window.innerWidth - LARGURA_MENU - 8),
-      top: Math.min(e.clientY, window.innerHeight - ALTURA_MENU - 8),
-    });
+    setMenu(posicaoNoCursor(e));
   }
 
   function confirmar() {
@@ -253,70 +231,20 @@ export function LinhaPasta(p: PropsLinhaPasta) {
 
       {p.expandida && p.cenas}
 
-      {/* O MENU. Mesmo desenho do menu do cartão de cena (`.rv-cena-menu`)
-          — são a mesma coisa pra quem usa, e duas folhas pra isso seria
-          inventar diferença. */}
       {menu && (
-        <div
-          ref={menuRef}
-          className="rv-cena-menu" role="menu" data-testid="pasta-menu"
-          style={{ left: menu.left, top: menu.top }}
-        >
-          <button
-            type="button" role="menuitem" className="rv-cena-menu-item"
-            data-testid="pasta-menu-abrir"
-            disabled={p.ocupada}
-            onClick={() => { setMenu(null); p.onAbrir(); }}
-          >
-            <FolderOpen size={13} aria-hidden /> Abrir a pasta
-          </button>
-          <button
-            type="button" role="menuitem" className="rv-cena-menu-item"
-            data-testid="pasta-menu-expandir"
-            disabled={p.ocupada || p.quantidade === 0}
-            onClick={() => { setMenu(null); p.onAlternarExpansao(); }}
-          >
-            <ChevronDown size={13} aria-hidden /> {p.expandida ? "Recolher as cenas" : "Ver as cenas"}
-          </button>
-          <span className="rv-cena-menu-fio" aria-hidden="true" />
-          <button
-            type="button" role="menuitem" className="rv-cena-menu-item"
-            data-testid="pasta-renomear"
-            disabled={p.ocupada}
-            onClick={() => { setMenu(null); setEditando(true); }}
-          >
-            <Pencil size={13} aria-hidden /> Renomear
-          </button>
-          {p.arquivada && p.onDesarquivar && (
-            <button
-              type="button" role="menuitem" className="rv-cena-menu-item"
-              data-testid="pasta-desarquivar"
-              disabled={p.ocupada}
-              onClick={() => { setMenu(null); p.onDesarquivar?.(); }}
-            >
-              <Undo2 size={13} aria-hidden /> Devolver ao catálogo
-            </button>
-          )}
-          {!p.arquivada && p.onArquivar && (
-            <button
-              type="button" role="menuitem" className="rv-cena-menu-item"
-              data-testid="pasta-arquivar"
-              disabled={p.ocupada}
-              onClick={() => { setMenu(null); p.onArquivar?.(); }}
-            >
-              <Archive size={13} aria-hidden /> Arquivar
-            </button>
-          )}
-          <span className="rv-cena-menu-fio" aria-hidden="true" />
-          <button
-            type="button" role="menuitem" className="rv-cena-menu-item" data-tipo="perigo"
-            data-testid="pasta-excluir"
-            disabled={p.ocupada}
-            onClick={() => { setMenu(null); setConfirmandoExclusao(true); }}
-          >
-            <Trash2 size={13} aria-hidden /> Excluir
-          </button>
-        </div>
+        <MenuPasta
+          posicao={menu}
+          ocupada={p.ocupada}
+          expandida={p.expandida}
+          quantidade={p.quantidade}
+          onFechar={() => setMenu(null)}
+          onAbrir={p.onAbrir}
+          onAlternarExpansao={p.onAlternarExpansao}
+          onRenomear={() => setEditando(true)}
+          onExcluir={() => setConfirmandoExclusao(true)}
+          onArquivar={!p.arquivada ? p.onArquivar : undefined}
+          onDesarquivar={p.arquivada ? p.onDesarquivar : undefined}
+        />
       )}
     </li>
   );

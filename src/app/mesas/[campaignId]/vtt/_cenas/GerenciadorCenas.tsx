@@ -32,9 +32,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  AlertTriangle, Archive, ChevronDown, Clapperboard, FilePlus2, FolderPlus, ImagePlus, Loader2, Plus, Search, Undo2, X,
+  AlertTriangle, Archive, Check, ChevronDown, Clapperboard, FilePlus2, FolderPlus, ImagePlus, Loader2, Plus, Search, Undo2, X,
 } from "lucide-react";
 import { CartaoCena } from "./CartaoCena";
+import { ListaRolavel } from "./ListaRolavel";
+import { MenuPasta, posicaoNoCursor, type PosicaoMenu } from "./MenuPasta";
 import { MiniCartaoCena } from "./MiniCartaoCena";
 import { MIME_JOGADOR, TrilhoJogadores } from "./TrilhoJogadores";
 import { ParametrosCena, type ValoresParametros } from "./ParametrosCena";
@@ -175,6 +177,20 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
   const [pastas, setPastas] = useState<PastaCena[]>([]);
   /** Onde o narrador está navegando. `null` = raiz. */
   const [pastaAtual, setPastaAtual] = useState<string | null>(null);
+  /**
+   * O MENU DA PASTA ABERTA — o mesmo do botão direito na linha do
+   * trilho, disponível também aqui dentro. Quem já está dentro da pasta
+   * decidindo o que fazer com o conjunto não deveria ter que voltar ao
+   * trilho, achar a linha e clicar nela de novo.
+   *
+   * `renomeandoAberta` e `excluindoAberta` são os dois gestos que
+   * pedem mais do que um clique — o campo de nome e a confirmação
+   * aparecem na própria trilha.
+   */
+  const [menuAberta, setMenuAberta] = useState<PosicaoMenu | null>(null);
+  const [renomeandoAberta, setRenomeandoAberta] = useState<string | null>(null);
+  const [excluindoAberta, setExcluindoAberta] = useState(false);
+  const [confirmaExclusaoAberta, setConfirmaExclusaoAberta] = useState("");
   const [criandoPasta, setCriandoPasta] = useState(false);
   const [nomePastaNova, setNomePastaNova] = useState("");
   const campoPastaRef = useRef<HTMLInputElement | null>(null);
@@ -1026,7 +1042,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
   function miniCartoes(cenas: DadosCartaoCena[]) {
     if (cenas.length === 0) return null;
     return (
-      <ul className="rv-pasta-cenas" data-testid="pasta-cenas">
+      <ListaRolavel className="rv-pasta-cenas" data-testid="pasta-cenas">
         {cenas.map((c) => (
           <MiniCartaoCena
             key={c.id}
@@ -1040,7 +1056,7 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
             onAbrir={() => p.onAbrir(c.id)}
           />
         ))}
-      </ul>
+      </ListaRolavel>
     );
   }
 
@@ -1058,6 +1074,9 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
       document.removeEventListener("keydown", escape);
     };
   }, [menuNovaAberto]);
+
+  /** A pasta aberta, quando há uma — o alvo do menu da área de conteúdo. */
+  const pastaAberta = pastaAtual !== null ? pastaPorId.get(pastaAtual) ?? null : null;
 
   /** A corrente do breadcrumb, da raiz até a pasta aberta. */
   const trilha: PastaCena[] = [];
@@ -1296,7 +1315,17 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
             )}
           </nav>
         ) : undefined}
-      conteudo={<>
+      conteudo={<div
+        className="rv-gav-area"
+        /* A ÁREA INTEIRA da pasta aberta é alvo do botão direito, não
+           só a trilha: dentro de uma pasta, "esta pasta" é o lugar onde
+           se está — inclusive o vazio entre os cartões. */
+        onContextMenu={(e) => {
+          if (!pastaAberta || verArquivo) return;
+          e.preventDefault();
+          setMenuAberta(posicaoNoCursor(e));
+        }}
+      >
           {/* A trilha do caminho continua existindo mesmo com o trilho
               ao lado, e não por redundância: ela é o ALVO DE SOLTURA
               que tira uma cena da pasta. Sem ela, "mover pra fora"
@@ -1327,6 +1356,95 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                 </span>
               ))}
             </nav>
+          )}
+
+          {/* RENOMEAR de dentro da pasta: o campo aparece embaixo da
+              trilha, e não no último degrau dela — degrau é botão de
+              navegação, e trocá-lo por um input mexeria na largura da
+              linha inteira a cada tecla. */}
+          {renomeandoAberta !== null && pastaAberta && (
+            <span className="rv-cena-editar" data-testid="pasta-aberta-renomear">
+              <input
+                className="rv-cena-campo"
+                autoFocus
+                value={renomeandoAberta}
+                maxLength={80}
+                aria-label={`Novo nome da pasta "${pastaAberta.nome}"`}
+                onChange={(e) => setRenomeandoAberta(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") { e.preventDefault(); setRenomeandoAberta(null); }
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    const limpo = renomeandoAberta.trim();
+                    setRenomeandoAberta(null);
+                    if (limpo && limpo !== pastaAberta.nome) void renomearPastaPor(pastaAberta, limpo);
+                  }
+                }}
+              />
+              <button
+                type="button" className="rv-cena-mini-btn" aria-label="Confirmar nome"
+                onClick={() => {
+                  const limpo = renomeandoAberta.trim();
+                  setRenomeandoAberta(null);
+                  if (limpo && limpo !== pastaAberta.nome) void renomearPastaPor(pastaAberta, limpo);
+                }}
+              ><Check size={15} aria-hidden /></button>
+              <button
+                type="button" className="rv-cena-mini-btn" aria-label="Cancelar"
+                onClick={() => setRenomeandoAberta(null)}
+              ><X size={15} aria-hidden /></button>
+            </span>
+          )}
+
+          {/* EXCLUIR de dentro: a MESMA cerimônia da linha do trilho —
+              digitar o nome. O preço não pode depender de por onde se
+              chegou ao gesto. */}
+          {excluindoAberta && pastaAberta && (
+            <span className="rv-pasta-confirma" data-testid="pasta-aberta-excluir">
+              <span className="rv-pasta-aviso" data-perigo="true">
+                {(() => {
+                  const peso = pesoDaPasta(pastaAberta.id);
+                  const partes = [peso.cenas === 1 ? "1 cena" : `${peso.cenas} cenas`];
+                  if (peso.subpastas > 0) partes.push(peso.subpastas === 1 ? "1 subpasta" : `${peso.subpastas} subpastas`);
+                  return peso.cenas === 0 && peso.subpastas === 0
+                    ? "Esta pasta está vazia. Digite o nome dela para confirmar."
+                    : `Apagar esta pasta APAGA ${partes.join(" e ")}. Digite o nome da pasta para confirmar.`;
+                })()}
+              </span>
+              <input
+                className="rv-cena-campo"
+                autoFocus
+                value={confirmaExclusaoAberta}
+                placeholder={pastaAberta.nome}
+                aria-label={`Digite "${pastaAberta.nome}" para confirmar a exclusão`}
+                data-testid="pasta-aberta-excluir-campo"
+                onChange={(e) => setConfirmaExclusaoAberta(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") { e.preventDefault(); setExcluindoAberta(false); setConfirmaExclusaoAberta(""); }
+                }}
+              />
+              <span className="rv-pasta-confirma-acoes">
+                <button
+                  type="button" className="rv-btn rv-btn--perigo"
+                  data-testid="pasta-aberta-excluir-confirmar"
+                  disabled={confirmaExclusaoAberta.trim() !== pastaAberta.nome}
+                  onClick={() => {
+                    const nome = confirmaExclusaoAberta.trim();
+                    setExcluindoAberta(false);
+                    setConfirmaExclusaoAberta("");
+                    // Some a pasta que estava aberta: continuar "dentro"
+                    // de uma pasta que não existe mais deixaria a grade
+                    // vazia sem explicação.
+                    setPastaAtual(pastaAberta.parentId);
+                    void excluirPastaPor(pastaAberta, nome);
+                  }}
+                >Excluir</button>
+                <button
+                  type="button" className="rv-btn rv-btn--ghost"
+                  onClick={() => { setExcluindoAberta(false); setConfirmaExclusaoAberta(""); }}
+                >Cancelar</button>
+              </span>
+            </span>
           )}
 
           {buscando && (
@@ -1482,7 +1600,21 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
               ))}
             </ul>
           )}
-        </>}
+
+          {/* O MENU DA PASTA ABERTA — os mesmos itens do botão direito
+              na linha do trilho, menos "Abrir" e "Ver as cenas", que
+              não têm o que fazer de dentro dela. */}
+          {menuAberta && pastaAberta && (
+            <MenuPasta
+              posicao={menuAberta} dentro ocupada={ocupadas[pastaAberta.id] === true}
+              testId="pasta-aberta-menu"
+              onFechar={() => setMenuAberta(null)}
+              onRenomear={() => setRenomeandoAberta(pastaAberta.nome)}
+              onExcluir={() => setExcluindoAberta(true)}
+              onArquivar={() => void arquivarPastaPor(pastaAberta)}
+            />
+          )}
+        </div>}
       jogadores={<TrilhoJogadores
           jogadores={jogadores}
           nomeDaCena={nomeDaCena}

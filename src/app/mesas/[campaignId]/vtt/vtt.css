@@ -4234,8 +4234,16 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
 .rv-gav-conteudo {
   flex: 1 1 auto; min-width: 0; overflow-y: auto;
-  display: flex; flex-direction: column; gap: 12px;
+  display: flex; flex-direction: column;
   padding: 14px 16px;
+}
+/* A ÁREA da pasta aberta — uma caixa só, porque ela é o alvo do botão
+   direito que abre o menu da pasta. Ela é que carrega a coluna (o
+   `.rv-gav-conteudo` ficou só com a rolagem e o respiro), senão o
+   `gap` se aplicaria a um filho único e a grade não esticaria. */
+.rv-gav-area {
+  flex: 1 1 auto; min-height: 0; min-width: 0;
+  display: flex; flex-direction: column; gap: 12px;
 }
 
 /* ── A grade de mapas ────────────────────────────────────────────── */
@@ -4654,29 +4662,51 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
      debaixo dela e some junto), e o recuo só comia largura de uma
      coluna que já é estreita. A margem de 8px é o respiro POR DENTRO
      da borda da pasta — o mesmo da lista engolida em Personagens. */
+  /* BLOCO, e não flex com `gap`: os véus de rolagem abaixo são
+     pseudo-elementos em fluxo, e num flex eles viravam itens — cada um
+     ganhando o `gap` de 8px e deslocando a lista inteira. Com o vão
+     feito por margem entre irmãos, eles não custam espaço nenhum. */
   list-style: none; margin: 0 8px 8px; padding: 0;
-  display: flex; flex-direction: column; gap: 8px;
+  display: block;
   /* O TETO CORTA UM CARTÃO NO MEIO, de propósito: 3 cartões inteiros
      (56 + 8 de vão = 64 cada) mais 32px do quarto. Meio cartão à mostra
      é o sinal mais direto de "tem mais coisa aqui embaixo" que uma
      lista pode dar — com a lista terminando rente à borda, quem não
      reparou na barra de rolagem conclui que aquilo é tudo. */
   max-height: 224px; overflow-y: auto;
-  /* SOMBRAS DE ROLAGEM, sem JavaScript: as duas primeiras camadas
-     acompanham o CONTEÚDO (`local`) e as duas de sombra ficam presas à
-     caixa (`scroll`). No topo da lista a camada de fundo cobre a
-     sombra; assim que se rola, ela sobe junto com o conteúdo e a
-     sombra aparece — e some de novo ao chegar no fim. É o mesmo
-     princípio dos "scroll shadows" clássicos. */
-  background:
-    linear-gradient(var(--rv-ground-2) 40%, rgba(6, 10, 18, 0)) center top,
-    linear-gradient(rgba(6, 10, 18, 0), var(--rv-ground-2) 60%) center bottom,
-    radial-gradient(farthest-side at 50% 0, rgba(0, 0, 0, .5), rgba(0, 0, 0, 0)) center top,
-    radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, .5), rgba(0, 0, 0, 0)) center bottom;
-  background-repeat: no-repeat;
-  background-size: 100% 28px, 100% 28px, 100% 10px, 100% 10px;
-  background-attachment: local, local, scroll, scroll;
+  /* O VÉU precisa ser desenhado POR CIMA dos cartões, e por isso é
+     `position: sticky` e não camada de `background`: os cartões têm
+     fundo opaco próprio, e a sombra clássica de `background-attachment:
+     local` ficava atrás deles — só aparecia nos 8px de vão. Foi
+     tentado e não se via.
+     Quem liga e desliga é `ListaRolavel`, que mede: sem
+     `data-rolavel` não há véu nenhum numa lista que cabe inteira. */
+  position: relative;
 }
+.rv-pasta-cenas > .rv-minicena + .rv-minicena { margin-top: 8px; }
+.rv-pasta-cenas[data-rolavel]::before,
+.rv-pasta-cenas[data-rolavel]::after {
+  /* Sticky, e não `fixed`/`absolute`: o véu tem que acompanhar a JANELA
+     de rolagem, e sticky é a única posição que existe em relação a ela
+     sem sair do fluxo do conteúdo que rola. */
+  content: ""; position: sticky; z-index: 2; pointer-events: none;
+  display: block; height: 26px;
+  transition: opacity .14s;
+}
+/* Altura ZERO no fluxo: o véu de cima "empresta" 26px do topo da lista
+   e devolve com a margem negativa; o de baixo faz o mesmo por cima. */
+.rv-pasta-cenas[data-rolavel]::before {
+  top: 0; margin-bottom: -26px;
+  background: linear-gradient(var(--rv-ground-2), rgba(10, 17, 32, 0));
+}
+.rv-pasta-cenas[data-rolavel]::after {
+  bottom: 0; margin-top: -26px;
+  background: linear-gradient(rgba(10, 17, 32, 0), var(--rv-ground-2));
+}
+/* Nas pontas o véu daquele lado some: no início não há nada acima, no
+   fim não há nada abaixo — e um véu permanente ali vira vinheta. */
+.rv-pasta-cenas[data-inicio]::before,
+.rv-pasta-cenas[data-fim]::after { opacity: 0; }
 .rv-minicena { min-width: 0; }
 .rv-minicena-btn {
   /* 56px como o cartão de personagem: é a IMAGEM que identifica a cena
