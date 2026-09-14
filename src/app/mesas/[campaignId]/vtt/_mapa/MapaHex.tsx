@@ -881,6 +881,7 @@ export function MapaHex({
   // `pointerId` é roteado pra ele, não importa onde o cursor esteja).
   type EstadoRotacaoAlca = {
     tokenId: string;
+    /** DIREÇÃO (olhar), não pegada — ver o comentário da alça. */
     orientacaoInicial: number;
     orientacaoAtual: number;
     valida: boolean;
@@ -910,30 +911,12 @@ export function MapaHex({
     return melhor;
   }, []);
 
-  /**
-   * Bloqueio/colisão pra uma orientação CANDIDATA do token em rotação —
-   * próprio token excluído da colisão. Nunca reimplementa geometria: só
-   * combina `pegadaEfetiva`/`projetarPegada`/`pegadaBloqueada`/
-   * `pegadasSobrepoem`, todas do domínio.
-   *
-   * A BORDA da cena não entra: um token pode estar fora da grade (é
-   * área de trabalho legítima — ver `posicaoDoGrupoValida` em
-   * `_dominio/arrastoToken.ts`), e girar quem está lá tem que
-   * funcionar. Exigir a pegada dentro do mapa deixaria esses tokens
-   * girando só por sorte de posição.
-   */
-  const validarOrientacaoAlca = useCallback((t: TokenApresentacao, novaOrientacao: number): boolean => {
-    const pegadaCandidata = pegadaEfetiva({ categoria: t.tamanho, orientacao: novaOrientacao, pegadaPersonalizada: t.pegadaPersonalizada });
-    const celulas = projetarPegada(t.pos, pegadaCandidata);
-    if (terrenoReal && pegadaBloqueada(terrenoReal, celulas)) return false;
-    const celulasOutros: Hex[] = [];
-    for (const outro of cena.tokens) {
-      if (outro.id === t.id) continue;
-      const pegadaOutro = pegadaEfetiva({ categoria: outro.tamanho, orientacao: outro.orientacao, pegadaPersonalizada: outro.pegadaPersonalizada });
-      celulasOutros.push(...projetarPegada(outro.pos, pegadaOutro));
-    }
-    return !pegadasSobrepoem(celulas, celulasOutros);
-  }, [cena.tokens, terrenoReal]);
+  /* SEM VALIDAÇÃO AQUI (0135). A alça virou o OLHAR, e olhar não ocupa
+     célula nenhuma: não há terreno pra bloquear nem token pra
+     atropelar, e por isso nenhuma direção pode ser recusada. Girar a
+     FORMA — que de fato muda o que o token ocupa — saiu deste gesto e
+     virou uma ação própria no menu do token, onde a recusa faz
+     sentido. */
 
   const iniciarRotacaoAlca = useCallback((t: TokenApresentacao, e: React.PointerEvent) => {
     if (ferramenta !== "interagir") return;
@@ -944,7 +927,7 @@ export function MapaHex({
     e.stopPropagation();
     (e.currentTarget as Element).setPointerCapture(e.pointerId);
     const inicial: EstadoRotacaoAlca = {
-      tokenId: t.id, orientacaoInicial: t.orientacao, orientacaoAtual: t.orientacao, valida: true,
+      tokenId: t.id, orientacaoInicial: t.direcao, orientacaoAtual: t.direcao, valida: true,
       inicioClientXY: { x: e.clientX, y: e.clientY }, moveuSignificativamente: false,
     };
     rotacaoAlcaRef.current = inicial;
@@ -970,11 +953,10 @@ export function MapaHex({
     // ainda; é exatamente o que permite distinguir clique de arrasto
     // no soltar (ver `soltarRotacaoAlca`).
     const novaOrientacao = moveuSignificativamente ? anguloParaOrientacao(dx, dy) : atual.orientacaoAtual;
-    const valida = validarOrientacaoAlca(t, novaOrientacao);
-    const novo: EstadoRotacaoAlca = { ...atual, orientacaoAtual: novaOrientacao, valida, moveuSignificativamente };
+    const novo: EstadoRotacaoAlca = { ...atual, orientacaoAtual: novaOrientacao, valida: true, moveuSignificativamente };
     rotacaoAlcaRef.current = novo;
     setRotacaoAlca(novo);
-  }, [cena.tokens, pontoMundo, anguloParaOrientacao, validarOrientacaoAlca]);
+  }, [cena.tokens, pontoMundo, anguloParaOrientacao]);
 
   const finalizarRotacaoAlca = useCallback((confirmar: boolean) => {
     const atual = rotacaoAlcaRef.current;
@@ -987,16 +969,14 @@ export function MapaHex({
     // célula; um clique nunca cruzou o limiar, então `orientacaoAtual`
     // ainda é igual à inicial — o passo de 60° é aplicado por cima
     // dela aqui, não durante o movimento.
-    const t = cena.tokens.find((x) => x.id === atual.tokenId);
     if (!atual.moveuSignificativamente) {
       const passoClique = ((atual.orientacaoInicial + 1) % 6 + 6) % 6;
-      if (t && validarOrientacaoAlca(t, passoClique)) onRotacaoAlcaSolta?.(atual.tokenId, passoClique);
+      onRotacaoAlcaSolta?.(atual.tokenId, passoClique);
       return;
     }
-    if (!atual.valida) return; // prévia inválida — nunca persiste
     if (atual.orientacaoAtual === atual.orientacaoInicial) return; // sem mudança real — nunca chama RPC
     onRotacaoAlcaSolta?.(atual.tokenId, atual.orientacaoAtual);
-  }, [cena.tokens, validarOrientacaoAlca, onRotacaoAlcaSolta]);
+  }, [onRotacaoAlcaSolta]);
 
   const soltarRotacaoAlca = useCallback((e: React.PointerEvent) => {
     (e.currentTarget as Element).releasePointerCapture(e.pointerId);
@@ -3475,11 +3455,14 @@ function Token({
   // orientação (pegada desenhada, indicador de direção, a própria
   // alça) usa a CANDIDATA local — nunca a persistida — sem tocar
   // `token.orientacao` de verdade até o servidor confirmar.
-  const orientacaoExibida = emGestoDeRotacao ? estadoAlcaRotacao!.orientacaoAtual : token.orientacao;
-  const pegadaExibida = emGestoDeRotacao
-    ? pegadaEfetiva({ categoria: token.tamanho, orientacao: orientacaoExibida, pegadaPersonalizada: token.pegadaPersonalizada })
-    : pegada;
-  const corGestoRotacao = emGestoDeRotacao ? (estadoAlcaRotacao!.valida ? "#22d3aa" : "#ff5f74") : null;
+  /* A PEGADA NÃO GIRA COM A ALÇA (0135): as células que o token ocupa
+     são decisão de posicionamento, e mexer nelas por causa de um olhar
+     empurrava criatura grande pra fora do corredor. O que gira é a
+     DIREÇÃO — a seta, o halo e a própria alça. */
+  const orientacaoExibida = emGestoDeRotacao ? estadoAlcaRotacao!.orientacaoAtual : token.direcao;
+  const pegadaExibida = pegada;
+  /* Nunca vermelho: virar não pode ser recusado. */
+  const corGestoRotacao = emGestoDeRotacao ? "#35c8f0" : null;
   // Âncora frontal: ANCORADA numa aresta real da pegada exibida (nunca
   // um ângulo solto ao redor do corpo) — indicador, halo e alça de
   // rotação todos derivam daqui, então giram e trocam de aresta juntos

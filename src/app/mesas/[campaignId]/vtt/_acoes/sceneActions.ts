@@ -70,6 +70,7 @@ import {
   moverToken,
   moverTokens,
   pintarTerrenoLote,
+  apontarToken,
   rotacionarToken,
   definirFlagsToken,
   criarToken,
@@ -725,6 +726,21 @@ export async function moverTokensAction(params: {
   return { ok: true, dados: { revisoes: r.revisoes! } };
 }
 
+/** VIRAR o token — só o olhar, sem colisão (0135). */
+export async function apontarTokenAction(params: {
+  campaignId: string;
+  tokenId: string;
+  direcao: number;
+  revisionEsperada: number;
+}): Promise<ResultadoAcao<{ revision: number }>> {
+  const v = await exigirAcesso(params.campaignId);
+  if (v.erro) return { ok: false, erro: v.erro };
+
+  const r = await apontarToken({ tokenId: params.tokenId, direcao: params.direcao, revisionEsperada: params.revisionEsperada });
+  if (!r.ok) return { ok: false, erro: r.erro };
+  return { ok: true, dados: { revision: r.revision! } };
+}
+
 export async function rotacionarTokenAction(params: {
   campaignId: string;
   tokenId: string;
@@ -897,6 +913,7 @@ export interface CriarTokenParams {
   vertente: string;
   tamanho: TokenVtt["tamanho"];
   orientacao: number;
+  direcao: number;
   pegadaPersonalizada: { q: number; r: number }[] | null;
   q: number;
   r: number;

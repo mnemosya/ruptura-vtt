@@ -77,6 +77,12 @@ export interface TokenVtt {
   tamanho: "pequeno" | "medio" | "grande" | "enorme" | "colossal";
   /** Rotação em passos de 60°, 0-5. Presets padrão são rotacionados a partir disto no domínio — nunca persistidos já rotacionados. */
   orientacao: number;
+  /**
+   * Para onde o token OLHA (0–5). Separada de `orientacao` (0135): a
+   * pegada é regra — muda o que ele ocupa e pode ser recusada —, o
+   * olhar é ficção, livre e sem colisão.
+   */
+  direcao: number;
   /** Offsets axiais relativos à âncora — só quando a pegada NÃO é o preset da categoria. `null` = usa o preset de `tamanho`. */
   pegadaPersonalizada: { q: number; r: number }[] | null;
   bloqueado: boolean;
@@ -1182,6 +1188,29 @@ export async function moverTokens(params: {
  * pegada na orientação nova e valida limites/bloqueio/colisão contra
  * ela — o cliente nunca decide sozinho que uma rotação é válida.
  */
+/**
+ * VIRAR o token — só o olhar. Sem colisão: mudar de direção não move
+ * célula nenhuma, e por isso esta escrita nunca é recusada por
+ * "posição indisponível" (0135). Girar a FORMA continua em
+ * `rotacionarToken`, que valida.
+ */
+export async function apontarToken(params: {
+  tokenId: string;
+  direcao: number;
+  revisionEsperada: number;
+}): Promise<ResultadoEscritaToken> {
+  const client = await getScopedTableClient();
+  const { data, error } = await client.rpc("apontar_vtt_token", {
+    p_token_id: params.tokenId,
+    p_direcao: params.direcao,
+    p_expected_revision: params.revisionEsperada,
+  }).single();
+  if (error) return { ok: false, erro: error.message };
+  if (!data) return { ok: false, erro: "Giro recusado pelo servidor." };
+  const token = linhaParaTokenVtt(data as Record<string, unknown>);
+  return { ok: true, revision: token.revision, token };
+}
+
 export async function rotacionarToken(params: {
   tokenId: string;
   orientacao: number;
@@ -1234,6 +1263,7 @@ function linhaParaTokenVtt(linha: Record<string, unknown>): TokenVtt {
     r: linha.r as number,
     tamanho: linha.tamanho as TokenVtt["tamanho"],
     orientacao: linha.orientacao as number,
+    direcao: (linha.direcao as number | null) ?? 0,
     pegadaPersonalizada: (linha.pegada_personalizada as { q: number; r: number }[] | null) ?? null,
     bloqueado: linha.bloqueado as boolean,
     visivel: linha.visivel as boolean,
@@ -1327,6 +1357,8 @@ export async function criarToken(params: {
   vertente: string;
   tamanho: TokenVtt["tamanho"];
   orientacao: number;
+  /** Para onde ele nasce olhando (0–5) — livre, nunca valida colisão. */
+  direcao: number;
   pegadaPersonalizada: { q: number; r: number }[] | null;
   q: number;
   r: number;
@@ -1352,6 +1384,7 @@ export async function criarToken(params: {
     p_vertente: params.vertente,
     p_tamanho: params.tamanho,
     p_orientacao: params.orientacao,
+    p_direcao: params.direcao,
     p_pegada_personalizada: params.pegadaPersonalizada,
     p_q: params.q,
     p_r: params.r,

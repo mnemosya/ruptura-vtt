@@ -126,7 +126,11 @@ const CONDICOES_LISTA = Object.keys(CONDICOES) as CondicaoSlug[];
  * real é "a forma muda" (ex.: se vale a pena reafirmar a orientação
  * escolhida como algo que muda ocupação).
  */
-const CATEGORIAS_COM_FORMA_VARIAVEL: ReadonlySet<TamanhoCriatura> = new Set(["grande", "colossal"]);
+/* SÓ O GRANDE sobrou. O colossal virou a estrela de 13 (0135), que é
+   simétrica como o enorme — girar só permuta as direções e o conjunto
+   ocupado é o mesmo. O triângulo do Grande é a única forma do produto
+   que muda de células ao rodar. */
+const CATEGORIAS_COM_FORMA_VARIAVEL: ReadonlySet<TamanhoCriatura> = new Set(["grande"]);
 export function tamanhoTemOrientacaoVariavel(tamanho: TamanhoCriatura): boolean {
   return CATEGORIAS_COM_FORMA_VARIAVEL.has(tamanho);
 }

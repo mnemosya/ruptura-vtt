@@ -73,7 +73,7 @@ import {
   garantirCenaSemente, lerCenaAtiva, lerCenaAction, lerCenaApresentadaAction, lerPalcoAction,
   lerMinhaCenaAction,
   moverTokenAction, moverTokensAction, obterUsuarioAtualAction,
-  pintarTerrenoAction, criarMarcaAction, apagarMarcaAction, rotacionarTokenAction,
+  pintarTerrenoAction, criarMarcaAction, apagarMarcaAction, rotacionarTokenAction, apontarTokenAction,
   criarMedicaoAction, apagarMedicaoAction, limparMedicoesAction,
   obterControleAction, criarTokenAction, editarTokenAction,
   duplicarTokenAction, removerTokenAction, definirFlagsTokenAction, enviarPingAction, listarPersonagensAction,
@@ -126,7 +126,7 @@ import {
   subscribeToVttAreasChanged, subscribeToCamadasDaCena, subscribeToVttPalco,
   subscribeToVttAtribuicoes } from "./_realtime/vttRealtime";
 import { useCampaignCharacterControllersRealtime } from "../../../../lib/realtime/useCampaignRealtime";
-import { GerenciadorToken, type ValoresFormularioToken, sugerirSigla } from "./_shell/GerenciadorToken";
+import { GerenciadorToken, type ValoresFormularioToken, sugerirSigla, tamanhoTemOrientacaoVariavel } from "./_shell/GerenciadorToken";
 import { MenuContextual, type ItemMenuContextual } from "./_shell/MenuContextual";
 import { ProvedorJanelasFerramenta } from "./_shell/JanelaFerramenta";
 import { PainelCamadas, type EstadoCamadas, CAMADAS_PADRAO, camadasDeJson } from "./_shell/PainelCamadas";
@@ -2069,7 +2069,7 @@ export function VttClient({
     if (rotacoesPendentesRef.current.has(tokenId)) {
       rotacaoEnfileiradaRef.current.set(tokenId, novaOrientacao);
       const anterior = orientacaoPedidaRef.current.get(tokenId);
-      orientacaoPedidaRef.current.set(tokenId, { de: anterior?.de ?? token.orientacao, para: novaOrientacao });
+      orientacaoPedidaRef.current.set(tokenId, { de: anterior?.de ?? token.direcao, para: novaOrientacao });
       return;
     }
 
@@ -2078,7 +2078,7 @@ export function VttClient({
     // em qualquer um deles enquanto o eco do banco não chegou faz a
     // chamada partir de um ponto que já não é o atual — a RPC é
     // recusada por concorrência, e o undo volta pro lugar errado.
-    const orientacaoAtual = orientacaoBase(tokenId, token.orientacao);
+    const orientacaoAtual = orientacaoBase(tokenId, token.direcao);
     // Orientação igual à que já foi pedida: nunca chama RPC à toa (vale
     // tanto pro clique de 60° quanto pra alça, soltar onde já estava).
     if (novaOrientacao === orientacaoAtual) return;
@@ -2089,8 +2089,8 @@ export function VttClient({
       rotacoesPendentesRef.current.add(tokenId);
       try {
         const revision = estadoCenaRef.current?.tokens.find((t) => t.id === tokenId)?.revision ?? token!.revision;
-        setEstadoCena((c) => c ? { ...c, tokens: c.tokens.map((t) => t.id === tokenId ? { ...t, orientacao: para } : t) } : c);
-        const r = await rotacionarTokenAction({ campaignId, tokenId, orientacao: para, revisionEsperada: revision });
+        setEstadoCena((c) => c ? { ...c, tokens: c.tokens.map((t) => t.id === tokenId ? { ...t, direcao: para } : t) } : c);
+        const r = await apontarTokenAction({ campaignId, tokenId, direcao: para, revisionEsperada: revision });
         if (r.ok && r.dados) {
           setEstadoCena((c) => c ? { ...c, tokens: c.tokens.map((t) => t.id === tokenId ? { ...t, revision: r.dados!.revision } : t) } : c);
           setErroAcao(null);
@@ -2099,7 +2099,7 @@ export function VttClient({
         // Recusado: reverte a orientação otimista pra onde ESTA chamada
         // específica começou — nunca um valor fixo, senão desfazer/
         // refazer reverteria pro lugar errado quando a chamada falha.
-        setEstadoCena((c) => c ? { ...c, tokens: c.tokens.map((t) => t.id === tokenId ? { ...t, orientacao: desde } : t) } : c);
+        setEstadoCena((c) => c ? { ...c, tokens: c.tokens.map((t) => t.id === tokenId ? { ...t, direcao: desde } : t) } : c);
         // Recusa: o desenho já voltou pra `desde`, que é a verdade —
         // manter uma base "pedida" aqui só faria o próximo passo sair
         // de um lugar que o servidor negou.
@@ -2130,7 +2130,7 @@ export function VttClient({
     aplicar(orientacaoAtual, novaOrientacao).then((sucesso) => {
       if (sucesso) {
         executarComando({
-          rotulo: `rotacionar ${token.nome}`,
+          rotulo: `virar ${token.nome}`,
           autorId: usuarioId ?? "",
           executar: () => aplicar(orientacaoAtual, novaOrientacao).then(() => {}),
           desfazer: () => aplicar(novaOrientacao, orientacaoAtual).then(() => {}),
@@ -2148,7 +2148,7 @@ export function VttClient({
       // `escoarFila` só roda no caminho de sucesso do `.then`.
       rotacaoEnfileiradaRef.current.delete(tokenId);
       orientacaoPedidaRef.current.delete(tokenId);
-      setErroAcao("Falha de rede: a rotação não foi salva.");
+      setErroAcao("Falha de rede: a direção não foi salva.");
     });
   }, [campaignId, executarComando, orientacaoBase, tokenPorId, usuarioId]);
 
@@ -2168,9 +2168,31 @@ export function VttClient({
     // Base = a última orientação PEDIDA, se houver uma em voo/na fila.
     // Segurar E gira seis vezes e volta ao início, em vez de girar uma
     // vez só porque as outras cinco partiram todas da mesma base velha.
-    const novaOrientacao = ((orientacaoBase(tokenId, token.orientacao) + direcao) % 6 + 6) % 6;
+    const novaOrientacao = ((orientacaoBase(tokenId, token.direcao) + direcao) % 6 + 6) % 6;
     aplicarRotacaoAbsoluta(tokenId, novaOrientacao);
   }, [tokenPorId, orientacaoBase, aplicarRotacaoAbsoluta]);
+
+  /**
+   * GIRAR A FORMA — a pegada, não o olhar.
+   *
+   * Um passo de 60° na `orientacao`, pela RPC que VALIDA
+   * (`rotacionar_vtt_token`): mudar a forma muda as células ocupadas e
+   * pode esbarrar em terreno ou noutro token. É por isso que ela ficou
+   * fora da alça e virou ação de menu — ali a recusa é uma resposta
+   * legítima, e não uma surpresa no meio de um gesto contínuo.
+   */
+  const girarFormaDoToken = useCallback(async (tokenId: string) => {
+    const token = estadoCenaRef.current?.tokens.find((t) => t.id === tokenId);
+    if (!token) return;
+    const nova = (token.orientacao + 1) % 6;
+    const r = await rotacionarTokenAction({ campaignId, tokenId, orientacao: nova, revisionEsperada: token.revision });
+    if (!r.ok || !r.dados) { setErroAcao(r.erro ?? "A forma não cabe girada nesta posição."); return; }
+    setEstadoCena((c) => (c ? {
+      ...c,
+      tokens: c.tokens.map((t) => (t.id === tokenId ? { ...t, orientacao: nova, revision: r.dados!.revision } : t)),
+    } : c));
+    setErroAcao(null);
+  }, [campaignId]);
 
   // Alça de rotação arrastada no mapa (`MapaHex`, gesto local com
   // `setPointerCapture`) — solta numa orientação ABSOLUTA já validada
@@ -2596,7 +2618,13 @@ export function VttClient({
     criarTokenAction({
       campaignId, sceneId: estadoCena.cena.id,
       nome: f.rascunho.nome, sigla: f.rascunho.sigla, lado: f.rascunho.lado, vertente: f.rascunho.vertente,
-      tamanho: f.rascunho.tamanho, orientacao: f.orientacao, pegadaPersonalizada: null,
+      tamanho: f.rascunho.tamanho, orientacao: f.orientacao,
+      // Nasce OLHANDO pro mesmo lado que a forma aponta: no
+      // posicionamento o Q/E gira a criatura inteira — forma e olhar
+      // juntos —, e separá-los ali faria o token nascer torto em
+      // relação ao fantasma que a pessoa acabou de mirar.
+      direcao: f.orientacao,
+      pegadaPersonalizada: null,
       q: hex.q, r: hex.r, characterId: f.rascunho.characterId,
       visivel: f.rascunho.visivel, bloqueado: f.rascunho.bloqueado, retratoUrl: f.rascunho.retratoUrl,
       pvAtual: f.rascunho.pvAtual, pvMax: f.rascunho.pvMax,
@@ -4387,13 +4415,27 @@ export function VttClient({
     }
     const t = tokenPorId.get(tokenId);
     if (!t) return [];
-    // Rotacionar aparece pra TODO token — mesmo pegada simétrica
-    // (Pequeno/Médio/Enorme) tem orientação, só que girar muda pra
-    // qual direção ele está "olhando" em vez de mudar células ocupadas.
+    // VIRAR aparece pra TODO token: é só o olhar, não move célula
+    // nenhuma, e por isso nunca é recusado (0135).
     const itensGiro: ItemMenuContextual[] = [
-      { id: "girar-esq", rotulo: "Rotacionar à esquerda", icone: <RotateCcw size={14} />, onSelecionar: () => onRotacionarToken(tokenId, -1) },
-      { id: "girar-dir", rotulo: "Rotacionar à direita", icone: <RotateCw size={14} />, onSelecionar: () => onRotacionarToken(tokenId, 1) },
+      { id: "girar-esq", rotulo: "Virar à esquerda", icone: <RotateCcw size={14} />, onSelecionar: () => onRotacionarToken(tokenId, -1) },
+      { id: "girar-dir", rotulo: "Virar à direita", icone: <RotateCw size={14} />, onSelecionar: () => onRotacionarToken(tokenId, 1) },
     ];
+    /* GIRAR A FORMA é outra coisa, e só existe onde muda alguma: o
+       triângulo do Grande (e pegadas personalizadas) é a única forma
+       que ocupa células diferentes ao rodar — pequeno/médio/enorme/
+       colossal são simétricos, e ali a ação seria um botão que não faz
+       nada. Aqui a recusa faz sentido: mudar a forma pode esbarrar em
+       terreno ou noutro token, e o servidor valida. */
+    const formaGira = t.pegadaPersonalizada !== null || tamanhoTemOrientacaoVariavel(t.tamanho);
+    const itensForma: ItemMenuContextual[] = formaGira && ehNarrador
+      ? [{
+          id: "girar-forma",
+          rotulo: "Girar a forma",
+          icone: <Hexagon size={14} />,
+          onSelecionar: () => void girarFormaDoToken(tokenId),
+        }]
+      : [];
     // ABRIR FICHA — só quando ESTE token tem ficha ligada e a pessoa
     // controla o personagem. É a mesma condição que o HUD usava pra
     // mostrar o botão "Ficha" (`characterId` + `canControl`), e a
@@ -4430,6 +4472,7 @@ export function VttClient({
         itemRetrato,
         { id: "duplicar", rotulo: "Duplicar", icone: <Copy size={14} />, onSelecionar: () => duplicarTokenHandler(tokenId) },
         ...itensGiro.map((item, i) => (i === 0 ? { ...item, separadorAntes: true } : item)),
+        ...itensForma,
         { id: "ocultar", rotulo: t.visivel ? "Ocultar" : "Revelar", icone: t.visivel ? <EyeOff size={14} /> : <Eye size={14} />, onSelecionar: () => definirFlagsHandler(tokenId, "visivel"), separadorAntes: true },
         { id: "bloquear", rotulo: t.bloqueado ? "Desbloquear" : "Bloquear", icone: t.bloqueado ? <Unlock size={14} /> : <Lock size={14} />, onSelecionar: () => definirFlagsHandler(tokenId, "bloqueado") },
         { id: "remover", rotulo: "Remover", icone: <Trash2 size={14} />, perigoso: true, onSelecionar: () => setConfirmandoRemocao(t), separadorAntes: true },

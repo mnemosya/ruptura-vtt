@@ -44,6 +44,8 @@ export interface TokenApresentacao {
    */
   offset: Hex;
   orientacao: number;
+  /** Para onde ele OLHA (0–5) — livre, não muda as células ocupadas. */
+  direcao: number;
   pegadaPersonalizada: Hex[] | null;
   retrato: string | null;
   /** Id do arquivo PRÓPRIO do token — `null` quando o retrato é herdado, externo, ou não existe. */
@@ -106,6 +108,8 @@ export function tokenApresentacaoDe(t: {
   offsetQ?: number;
   offsetR?: number;
   orientacao: number;
+  /** Para onde ele OLHA (0–5) — livre, não muda as células ocupadas. */
+  direcao: number;
   pegadaPersonalizada: Hex[] | null;
   retratoUrl: string | null;
   retratoImageId: string | null;
@@ -144,6 +148,7 @@ export function tokenApresentacaoDe(t: {
     /** Onde DENTRO da célula âncora desenhar — ver `TokenVtt.offsetQ`. */
     offset: { q: t.offsetQ ?? 0, r: t.offsetR ?? 0 },
     orientacao: t.orientacao,
+    direcao: t.direcao ?? t.orientacao,
     pegadaPersonalizada: t.pegadaPersonalizada,
     // A precedência é do BANCO, não daqui: a 0101 garante que só uma
     // das duas origens está preenchida por vez. Resolver na ordem é

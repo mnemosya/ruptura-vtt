@@ -237,7 +237,7 @@ export function VitrineAreas() {
 
 const VALORES_TOKEN = {
   nome: "", sigla: "", lado: "pn" as const, vertente: "nenhuma" as const,
-  tamanho: "medio" as const, orientacao: 0, q: 0, r: 0,
+  tamanho: "medio" as const, orientacao: 0, direcao: 0, q: 0, r: 0,
   characterId: null, visivel: true, bloqueado: false, retratoUrl: null,
   pvAtual: null, pvMax: null, pe: null, peMax: null, mana: null, manaMax: null, condicoes: [],
 };
@@ -245,7 +245,7 @@ const VALORES_TOKEN = {
 const VALORES_EDICAO = {
   ...VALORES_TOKEN,
   nome: "Mara Venn", sigla: "MV", lado: "pj" as const, vertente: "energetico" as const,
-  tamanho: "grande" as const, orientacao: 2, q: 4, r: 3,
+  tamanho: "grande" as const, orientacao: 2, direcao: 0, q: 4, r: 3,
   characterId: "p1", pvAtual: 14, pvMax: 20,
 };
 

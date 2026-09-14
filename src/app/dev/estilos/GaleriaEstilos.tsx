@@ -77,7 +77,7 @@ function trilha(over: Partial<EstadoTrilha> = {}): EstadoTrilha {
 function token(id: string, nome: string, sigla: string, lado: Lado): TokenApresentacao {
   return {
     id, nome, sigla, lado, vertente: "energetico", tamanho: "medio",
-    pos: { q: 0, r: 0 }, offset: { q: 0, r: 0 }, orientacao: 0,
+    pos: { q: 0, r: 0 }, offset: { q: 0, r: 0 }, orientacao: 0, direcao: 0,
     pegadaPersonalizada: null, retrato: null, retratoImageId: null, origemRetrato: "nenhum", pv: null, pvMax: null, pe: null, peMax: null, mana: null, manaMax: null,
     condicoes: [], visivel: true, bloqueado: false, characterId: null,
     pvPublico: true, pePublico: false, manaPublica: true, podeControlar: true, revision: 1,
