@@ -81,6 +81,9 @@ function Slot({ caso }: { caso: (typeof CASOS)[number] }) {
           ancora={ancora}
           dados={caso.dados}
           dadosFixos={caso.dados}
+          /* A galeria mostra o cartão COMPLETO, e desde o Figma 478:1619
+             o cabeçalho tem a etiqueta de lado. */
+          lado="pj"
           onDadosAtualizados={() => {}}
           onEntrar={() => {}}
           onSair={() => {}}

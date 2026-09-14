@@ -5976,6 +5976,7 @@ export function VttClient({
             tokenId={cartaoHover.tokenId}
             ancora={cartaoHover.ancora}
             dados={dadosCartao}
+            lado={tokenPorId.get(cartaoHover.tokenId)?.lado}
             onDadosAtualizados={(d) => { dadosCartaoRef.current.set(cartaoHover.tokenId, d); setDadosCartao(d); }}
             onEntrar={() => { sobreCartaoRef.current = true; limparTimerCartao(); }}
             onSair={() => {

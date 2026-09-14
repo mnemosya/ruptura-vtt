@@ -40,6 +40,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { ResourceValueCard } from "../../../../ficha/_console/panels/ResourceValueCard";
 import type { HudResourceId, SelectedTokenHudData } from "../../../../../lib/vtt/hudTypes";
 import { mutateSelectedTokenHudAction } from "../_acoes/hudActions";
+import type { LadoToken } from "../_dominio/tokenApresentacao";
 
 /** Ordem e identidade visual de cada linha — a mesma do Figma, e os acentos são os do chassi do VTT. */
 const RECURSOS: { id: HudResourceId; rotulo: string }[] = [
@@ -62,6 +63,14 @@ export interface PropsCartaoTokenHover {
    * que ela não tem, por um instante, antes de se corrigir.
    */
   dados: SelectedTokenHudData;
+  /**
+   * O LADO do token (PJ/PN/neutro) — etiqueta à direita do nome no
+   * cabeçalho. Vem por PROP, e não pela projeção do HUD: `lado` já está
+   * no token que o mapa desenha, e levá-lo pro DTO significaria mexer
+   * na RPC de leitura pra transportar um dado que o cliente tem em
+   * mãos. `neutro` não vira etiqueta — não há o que dizer.
+   */
+  lado?: LadoToken;
   /** Uma escrita voltou do servidor — o mapa guarda o valor novo no cache dele. */
   onDadosAtualizados: (d: SelectedTokenHudData) => void;
   /** Retângulo do DISCO do token na tela, pra ancorar o cartão. */
@@ -177,7 +186,15 @@ export function CartaoTokenHover(p: PropsCartaoTokenHover) {
       role="dialog"
       aria-label={`Recursos de ${nome}`}
     >
-      <p className="rv-cartao-token__nome">{nome}</p>
+      {/* CABEÇALHO: nome à esquerda, lado à direita. O nome não é mais
+          sozinho na linha — a etiqueta é o que diz de quem é o token
+          sem precisar procurar a cor do disco no mapa. */}
+      <div className="rv-cartao-token__cab">
+        <p className="rv-cartao-token__nome">{nome}</p>
+        {(p.lado === "pj" || p.lado === "pn") && (
+          <span className="rv-cartao-token__lado">{p.lado === "pj" ? "PJ" : "PN"}</span>
+        )}
+      </div>
 
       {recursosVisiveis.length > 0 && <div className="rv-cartao-token__recursos">
         {recursosVisiveis.map(({ id, rotulo }) => {
