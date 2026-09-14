@@ -824,8 +824,22 @@
    O `<nav>` e os `<button>` são os MESMOS elementos nos dois estados —
    só a direção do flex e a posição (`order`) mudam via CSS, então a
    aba selecionada e o estado do React nunca se perdem na troca. */
-.rv-painel { display: flex; background: var(--rv-sunken); border-left: 1px solid var(--linha-2); z-index: 20; flex: none; }
-.rv-painel[data-aberto="true"] { flex-direction: column; width: 316px; }
+.rv-painel { display: flex; background: var(--rv-sunken); z-index: 20; flex: none; }
+/* ABERTO ele é uma PEÇA, como as abas e como o mapa: solto 8px das
+   bordas e com o mesmo canto de 4px. Era uma coluna colada na janela
+   com um fio à esquerda — ao lado de um mapa arredondado e flutuante,
+   ele virava a única superfície que ainda encostava na borda.
+
+   A borda passa a ser inteira: `border-left` sozinho é fio de divisa
+   entre colunas coladas, e não sobra divisa nenhuma quando as duas se
+   separam.
+
+   `height: auto` porque `painel.css` fixa `height: 100%` — que somado
+   às margens de cima e de baixo estourava 16px pra fora da tela. */
+.rv-painel[data-aberto="true"] {
+  flex-direction: column; width: 316px;
+  margin: 8px; height: auto; border: 1px solid var(--linha-2); border-radius: 4px;
+}
 .rv-painel[data-aberto="false"] {
   /* Mesma peça do trilho de ferramentas, do outro lado: flutua sobre o
      mapa, altura do conteúdo, canto de 8px. Expandido ela volta a ser
