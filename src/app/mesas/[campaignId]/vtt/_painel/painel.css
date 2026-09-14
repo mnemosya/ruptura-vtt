@@ -964,17 +964,40 @@
 .rv-pn-chip-n { font-size: 10px; opacity: .75; }
 
 .rv-pn-no { display: flex; flex-direction: column; }
-/* O CONTEÚDO DA PASTA respira mais que o resto da lista: sem isso o
-   primeiro item de dentro encostava no cabeçalho e o último ficava
-   colado no que vem DEPOIS da pasta, e não dava pra ver onde a pasta
-   acabava.
+/* ── A PASTA ENGOLE O CONTEÚDO ───────────────────────────────────────
+   A borda deixa de ser do cabeçalho e passa a ser do BLOCO INTEIRO: o
+   cartão da pasta cresce e os personagens ficam dentro dele. Antes a
+   pasta era um cartão e os personagens outros, empilhados logo abaixo —
+   "estar dentro" era uma informação que só o respiro contava, e respiro
+   não é contenção.
 
-   SEM RECUO à esquerda: os cartões de dentro ficam alinhados com os de
-   fora. Recuar encolheria justamente o cartão que tem avatar, nome e
-   barras, e o pertencimento à pasta já está dito pelo respiro em cima e
-   embaixo — e pelo cabeçalho logo acima. */
-.rv-pn-scroll--pers .rv-pn-no > [data-testid="painel-personagens-pasta"] + * { margin-top: 8px; }
-.rv-pn-scroll--pers .rv-pn-no:has(> [data-testid="painel-personagens-pasta"]) { margin-bottom: 14px; }
+   O cabeçalho perde caixa própria porque ele passou a SER o topo desta:
+   duas bordas aninhadas a 1px de distância viram uma linha dupla. */
+.rv-pn-scroll--pers .rv-pn-no:has(> [data-testid="painel-personagens-pasta"]) {
+  margin-top: 7px; margin-bottom: 14px;
+  border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
+  background: var(--pn-inset);
+  overflow: hidden;
+  transition: border-color .14s, background .14s;
+}
+.rv-pn-scroll--pers .rv-pn-no > [data-testid="painel-personagens-pasta"] {
+  margin-top: 0; border: none; border-radius: 0; background: transparent;
+}
+/* O fio só existe com a pasta ABERTA — fechada, ele seria a borda de
+   baixo do cartão desenhada duas vezes. */
+.rv-pn-scroll--pers .rv-pn-no > [data-testid="painel-personagens-pasta"]:not(:last-child) {
+  border-bottom: 1px solid var(--pn-line-hair);
+}
+/* O conteúdo engolido ganha o respiro POR DENTRO da borda. */
+.rv-pn-scroll--pers .rv-pn-no > [data-testid="painel-personagens-pasta"] ~ * {
+  margin: 8px;
+}
+/* O realce de alvo é do BLOCO agora: era do cabeçalho, que não tem mais
+   borda pra acender. */
+.rv-pn-scroll--pers .rv-pn-no:has(> [data-testid="painel-personagens-pasta"][data-alvo="true"]) {
+  border-color: var(--pn-cy);
+  background: color-mix(in srgb, var(--pn-cy) 12%, var(--pn-inset));
+}
 /* A PASTA TEM CORPO. Ela era texto pálido solto sobre o fundo, sem
    caixa nem linha — do lado de cartões com borda e avatar, lia como
    legenda, não como o container que é. E agora ela é ARRASTÁVEL:
@@ -1307,10 +1330,12 @@
    vazava 12px pela direita. Com `auto`, o esticamento do flex dá a
    largura e desconta as margens, que é o que "ocupar o que sobra"
    quer dizer. */
-.rv-pn-scroll--pers .rv-pn-linha {
-  margin-left: calc(var(--pn-recuo, 12px) - 12px);
-  width: auto;
-}
+/* DENTRO da pasta o recuo é a própria caixa: a borda e os 8px de
+   respiro já dizem "isto está aninhado", e somar a escada de 12px por
+   nível empurraria o cartão pra dentro duas vezes. Fora dela não há
+   caixa, e aí o recuo é o que resta pra contar o nível — mas na raiz
+   ele é zero de qualquer jeito. */
+.rv-pn-scroll--pers .rv-pn-linha { width: auto; }
 /* A PASTA NÃO RECUA. Ela é o cabeçalho do bloco, não um item dentro
    dele: recuada, ficava mais estreita que os cartões que anuncia e
    parecia subordinada a eles. O nível se lê pelo aninhamento do bloco
