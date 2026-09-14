@@ -1466,13 +1466,24 @@
      (pro avatar encostar) tirou junto o respiro do outro lado. Quando
      há marca, este mesmo espaço vira o vão entre texto e marca. */
   padding: 9px 12px 9px 16px;
-  display: flex; flex-direction: column; justify-content: center;
+  /* GRADE de duas colunas, e não pilha: o "PN" é uma etiqueta do NOME,
+     não uma segunda linha de informação — embaixo, ele roubava altura
+     do cartão e parecia um subtítulo com conteúdo próprio. Na mesma
+     linha, encostado à direita, ele qualifica o nome sem disputar com
+     ele. A terceira faixa (recursos) atravessa as duas colunas. */
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: center;
 }
 .rv-pn-scroll--pers .rv-pn-linha-marca { padding: 9px 12px 9px 0; }
 /* Os dois vãos do RITMO da lista, escopados como o resto do cartão:
    Bando e Compêndio usam a mesma `.rv-pn-lista` e o mesmo rodapé de
    linha, mas com face pequena e sem barras — o respiro que esta aba
    pede lá só afastaria itens que já estão espaçados. */
+.rv-pn-scroll--pers .rv-pn-linha-sub {
+  grid-column: 2; grid-row: 1; align-self: center;
+  margin-top: 0; margin-left: 10px; white-space: nowrap;
+}
+.rv-pn-scroll--pers .rv-pn-linha-rodape { grid-column: 1 / -1; }
+
 /* O NOME CORTA COM RETICÊNCIAS. `.rv-pn-linha-nome` é `display: flex`
    — herança de quando o subtítulo morava dentro dele —, e
    `text-overflow` não vale pra caixa flex: na janela estreita o nome
