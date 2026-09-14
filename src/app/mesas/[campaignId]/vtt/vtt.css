@@ -4641,12 +4641,9 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-pasta-expandir[aria-expanded="true"] svg { transform: rotate(180deg); }
 /* As ações da pasta também são de hover: a coluna fica limpa, e o que
    se faz com pasta o tempo todo é ENTRAR nela. */
-.rv-pasta-linha .rv-cena-acoes {
-  position: static; opacity: 0; padding: 0; border: none; background: none;
-}
-.rv-pasta-linha:hover .rv-cena-acoes,
-.rv-pasta-linha:focus-within .rv-cena-acoes { opacity: 1; }
-.rv-pasta-linha .rv-cena-mini-btn { width: 22px; height: 22px; }
+/* A fila de ícones de ação SAIU da pasta: virou menu de contexto
+   (botão direito), que alcança também a lista de cenas aberta. Ver
+   `_cenas/LinhaPasta.tsx`. */
 /* ── Lista de cenas dentro da pasta ──────────────────────────────
    ROLAGEM PRÓPRIA com teto: o trilho já é uma coluna rolável, e uma
    pasta com trinta cenas empurraria as pastas seguintes pra fora do
@@ -4659,7 +4656,26 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
      da borda da pasta — o mesmo da lista engolida em Personagens. */
   list-style: none; margin: 0 8px 8px; padding: 0;
   display: flex; flex-direction: column; gap: 8px;
-  max-height: 260px; overflow-y: auto;
+  /* O TETO CORTA UM CARTÃO NO MEIO, de propósito: 3 cartões inteiros
+     (56 + 8 de vão = 64 cada) mais 32px do quarto. Meio cartão à mostra
+     é o sinal mais direto de "tem mais coisa aqui embaixo" que uma
+     lista pode dar — com a lista terminando rente à borda, quem não
+     reparou na barra de rolagem conclui que aquilo é tudo. */
+  max-height: 224px; overflow-y: auto;
+  /* SOMBRAS DE ROLAGEM, sem JavaScript: as duas primeiras camadas
+     acompanham o CONTEÚDO (`local`) e as duas de sombra ficam presas à
+     caixa (`scroll`). No topo da lista a camada de fundo cobre a
+     sombra; assim que se rola, ela sobe junto com o conteúdo e a
+     sombra aparece — e some de novo ao chegar no fim. É o mesmo
+     princípio dos "scroll shadows" clássicos. */
+  background:
+    linear-gradient(var(--rv-ground-2) 40%, rgba(6, 10, 18, 0)) center top,
+    linear-gradient(rgba(6, 10, 18, 0), var(--rv-ground-2) 60%) center bottom,
+    radial-gradient(farthest-side at 50% 0, rgba(0, 0, 0, .5), rgba(0, 0, 0, 0)) center top,
+    radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, .5), rgba(0, 0, 0, 0)) center bottom;
+  background-repeat: no-repeat;
+  background-size: 100% 28px, 100% 28px, 100% 10px, 100% 10px;
+  background-attachment: local, local, scroll, scroll;
 }
 .rv-minicena { min-width: 0; }
 .rv-minicena-btn {

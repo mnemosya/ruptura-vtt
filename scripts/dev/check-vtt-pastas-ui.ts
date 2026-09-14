@@ -218,7 +218,11 @@ async function main() {
       .screenshot({ path: "scripts/dev/.artefatos-visuais/catalogo-cenas-pastas.png" });
 
     console.log("\n— Excluir a pasta não apaga a cena —");
-    await linhaPasta(page, "Ato I").locator('[data-testid="pasta-excluir"]').click();
+    // As ações da pasta saíram da fila de ícones de hover e viraram
+    // MENU DE CONTEXTO: o gesto agora é botão direito na linha.
+    await linhaPasta(page, "Ato I").click({ button: "right" });
+    await page.locator('[data-testid="pasta-menu"] [data-testid="pasta-excluir"]').click();
+    await page.locator('[data-testid="pasta-excluir-campo"]').fill("Ato I");
     await page.locator('[data-testid="pasta-excluir-confirmar"]').click();
     await page.waitForFunction(
       () => document.querySelectorAll('[data-testid="pasta-linha"]').length === 0,
