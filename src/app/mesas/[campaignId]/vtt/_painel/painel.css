@@ -983,11 +983,9 @@
 .rv-pn-scroll--pers .rv-pn-no > [data-testid="painel-personagens-pasta"] {
   margin-top: 0; border: none; border-radius: 0; background: transparent;
 }
-/* O fio só existe com a pasta ABERTA — fechada, ele seria a borda de
-   baixo do cartão desenhada duas vezes. */
-.rv-pn-scroll--pers .rv-pn-no > [data-testid="painel-personagens-pasta"]:not(:last-child) {
-  border-bottom: 1px solid var(--pn-line-hair);
-}
+/* SEM FIO separando cabeçalho e conteúdo. A borda do bloco já fecha o
+   conjunto, e uma linha atravessando por dentro dividia em dois o que
+   a mudança inteira existiu pra unir. O respiro de 8px basta. */
 /* O conteúdo engolido ganha o respiro POR DENTRO da borda. */
 .rv-pn-scroll--pers .rv-pn-no > [data-testid="painel-personagens-pasta"] ~ * {
   margin: 8px;
