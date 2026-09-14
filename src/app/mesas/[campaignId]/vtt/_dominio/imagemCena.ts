@@ -98,6 +98,82 @@ export function retanguloDaImagem(img: ImagemCena, tamanhoCelula: number): Retan
 }
 
 /**
+ * A CAIXA DA GRADE, em metros euclidianos e com o centro em axial —
+ * tudo o que um fundo precisa saber para cobrir a cena exatamente.
+ *
+ * Existe porque a grade NÃO é um retângulo de `largura × altura`
+ * metros, e tratá-la como se fosse foi o defeito que punha o mapa
+ * torto. Três coisas atrapalham, e todas são geometria de hexágono:
+ *
+ * 1. As FILEIRAS ÍMPARES são deslocadas meio hexágono para a direita
+ *    (`MapaHex` monta a grade como `{q: coluna − ⌊r/2⌋, r}`). A caixa
+ *    é, portanto, meio metro mais larga do que o número de colunas.
+ * 2. Uma fileira avança `1,5·tam` px, mas um metro vale `√3·tam` px.
+ *    A altura da caixa é `(1,5·altura + 0,5)/√3` metros, ≈ 87% do
+ *    número de fileiras — e não o número de fileiras.
+ * 3. O CENTRO em axial não é `((largura−1)/2, (altura−1)/2)`: como
+ *    `x = √3·tam·(q + r/2)`, o `r` do centro empurra o `q` do centro.
+ *    Era esse termo que faltava, e o erro crescia com a altura da cena.
+ *
+ * Medida nas pontas dos hexágonos das bordas, não nos centros: o mapa
+ * tem que passar POR BAIXO da fileira inteira, não parar no meio dela.
+ */
+export interface CaixaDaGrade {
+  larguraM: number;
+  alturaM: number;
+  /** Centro da caixa em axial CONTÍNUO — pronto para `centroQ`/`centroR`. */
+  centroQ: number;
+  centroR: number;
+}
+
+export function caixaDaGrade(largura: number, altura: number): CaixaDaGrade {
+  const RAIZ3 = Math.sqrt(3);
+  // Em px de mundo com `tam = 1`: meia largura do hexágono é √3/2, e
+  // meia altura é 1 (ponta pra cima).
+  const temFileiraImpar = altura >= 2;
+  const xMaxCentro = RAIZ3 * (largura - 1) + (temFileiraImpar ? RAIZ3 / 2 : 0);
+  const xMin = -RAIZ3 / 2;
+  const xMax = xMaxCentro + RAIZ3 / 2;
+  const yMin = -1;
+  const yMax = 1.5 * (altura - 1) + 1;
+
+  const centroR = ((yMin + yMax) / 2) / 1.5;
+  const centroQ = ((xMin + xMax) / 2) / RAIZ3 - centroR / 2;
+  return {
+    larguraM: (xMax - xMin) / RAIZ3,
+    alturaM: (yMax - yMin) / RAIZ3,
+    centroQ,
+    centroR,
+  };
+}
+
+/**
+ * O INVERSO: quantas células pede um mapa de tantos pixels, com tantos
+ * pixels por metro.
+ *
+ * Serve à criação de cena a partir de um mapa, e é a mesma conta de
+ * `caixaDaGrade` resolvida para `largura` e `altura`. Fazer as duas
+ * pontas pela mesma geometria é o que faz o mapa nascer alinhado em vez
+ * de nascer quase alinhado.
+ */
+export function gradeParaMapa(
+  widthPx: number,
+  heightPx: number,
+  celulaPx: number,
+  { min = 1, max = 200 }: { min?: number; max?: number } = {},
+): { largura: number; altura: number } {
+  const RAIZ3 = Math.sqrt(3);
+  if (celulaPx <= 0) return { largura: min, altura: min };
+  const prender = (n: number) => Math.max(min, Math.min(max, Math.round(n)));
+  // `− 0,5` desconta o deslocamento das fileiras ímpares; a altura
+  // desfaz o `(1,5·altura + 0,5)/√3` da caixa.
+  return {
+    largura: prender(widthPx / celulaPx - 0.5),
+    altura: prender(((heightPx / celulaPx) * RAIZ3 - 0.5) / 1.5),
+  };
+}
+
+/**
  * Tamanho de destino do downscale, preservando proporção. Devolve o
  * original quando ele já cabe — reescalar para cima só perderia
  * nitidez e ganharia bytes.

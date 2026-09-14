@@ -54,6 +54,7 @@ import {
   enviarParaUrlAssinada, prepararImagem,
 } from "../../../../../lib/vtt/imagePreparation";
 import { NovaCena, type ValoresNovaCena } from "./NovaCena";
+import { caixaDaGrade } from "../_dominio/imagemCena";
 import { GavetaCasca } from "./GavetaCasca";
 import { LinhaPasta } from "./LinhaPasta";
 import type {
@@ -408,12 +409,28 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
       const cena = nova.dados.cena;
 
       if (mapa) {
+        /* A CAIXA DA GRADE, não `largura × altura`.
+           A conta antiga tratava a grade como um retângulo de tantos
+           metros por tantos: punha o centro em ((largura−1)/2,
+           (altura−1)/2) e a largura em `largura` metros. Nenhum dos
+           três está certo num mapa de hexágonos — as fileiras ímpares
+           deslocam meio hexágono, uma fileira avança 87% de um metro, e
+           `x = √3·tam·(q + r/2)` faz o `r` do centro empurrar o `q`. O
+           fundo nascia deslocado pra direita (o erro crescia com a
+           altura da cena) e 15% mais alto que a grade.
+
+           `alturaM` vai EXPLÍCITA: derivada da proporção do arquivo ela
+           ignoraria a geometria de novo. O esticão que sobra é o
+           arredondamento pra células inteiras — o mesmo que a folha
+           anuncia no "sobram N px". */
+        const caixa = caixaDaGrade(v.largura, v.altura);
         const colocacao = {
           sceneId: cena.id,
           papel: "fundo" as const,
-          centroQ: (v.largura - 1) / 2,
-          centroR: (v.altura - 1) / 2,
-          larguraM: v.largura,
+          centroQ: caixa.centroQ,
+          centroR: caixa.centroR,
+          larguraM: caixa.larguraM,
+          alturaM: caixa.alturaM,
         };
 
         const reserva = await reservarUploadAction(p.campaignId, mapa.preparada.sha256, "fundo");

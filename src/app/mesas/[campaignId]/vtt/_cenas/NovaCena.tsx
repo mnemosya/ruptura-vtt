@@ -30,6 +30,7 @@
 import { useEffect, useState } from "react";
 import { Image as IconeImagem, ImagePlus, Loader2, Trash2, X } from "lucide-react";
 import type { ImagemPreparada } from "../../../../../lib/vtt/imagePreparation";
+import { caixaDaGrade, gradeParaMapa } from "../_dominio/imagemCena";
 import { CampoCorGrade } from "./CampoCorGrade";
 import { CampoNumero, formatarNumero } from "./CampoNumero";
 
@@ -112,8 +113,19 @@ export function NovaCena(p: PropsNovaCena) {
   }, [p]);
 
   const comMapa = p.mapa !== null;
-  const larguraFinal = comMapa ? celulas(p.mapa!.preparada.widthPx, celulaPx) : largura;
-  const alturaFinal = comMapa ? celulas(p.mapa!.preparada.heightPx, celulaPx) : altura;
+  /* A GRADE É HEXAGONAL, e a conta ingênua (pixels ÷ divisor nos dois
+     eixos) mentia na altura: uma fileira avança 1,5·tam px, mas um
+     metro vale √3·tam — cada fileira cobre ≈87% de um metro. Um mapa
+     quadrado de 2048 px a 70 px/m não é 29 × 29 células, é 29 × 33.
+     Tratá-lo como 29 × 29 fazia o fundo nascer 15% mais alto que a
+     grade. A conta agora é a mesma de `caixaDaGrade`, ao contrário. */
+  const grade = comMapa
+    ? gradeParaMapa(p.mapa!.preparada.widthPx, p.mapa!.preparada.heightPx, celulaPx, { min: MIN, max: MAX })
+    : { largura, altura };
+  const larguraFinal = grade.largura;
+  const alturaFinal = grade.altura;
+  /** A caixa que o fundo vai cobrir — a mesma que o mapa desenha. */
+  const caixa = caixaDaGrade(larguraFinal, alturaFinal);
 
   /* O resto da divisão é a informação que decide o divisor: 2000 px com
      células de 70 sobra 40 px, e é esse sobrando que vira a faixa de
@@ -125,8 +137,8 @@ export function NovaCena(p: PropsNovaCena) {
      botão "Encaixar" produzia um estado absurdo: a conta continuava
      dizendo que sobrava, com um número que ninguém consegue ler, logo
      depois de a pessoa clicar justamente para zerar a sobra. */
-  const sobraX = comMapa ? Math.round(Math.abs(p.mapa!.preparada.widthPx - larguraFinal * celulaPx)) : 0;
-  const sobraY = comMapa ? Math.round(Math.abs(p.mapa!.preparada.heightPx - alturaFinal * celulaPx)) : 0;
+  const sobraX = comMapa ? Math.round(Math.abs(p.mapa!.preparada.widthPx - caixa.larguraM * celulaPx)) : 0;
+  const sobraY = comMapa ? Math.round(Math.abs(p.mapa!.preparada.heightPx - caixa.alturaM * celulaPx)) : 0;
   const encaixaCertinho = sobraX === 0 && sobraY === 0;
 
   /* Pixels → células, ARREDONDANDO: meia célula não existe na grade.
@@ -258,10 +270,10 @@ export function NovaCena(p: PropsNovaCena) {
                   type="button" className="rv-btn rv-gav-conta-btn"
                   data-testid="mapa-encaixar"
                   onClick={() => setCelulaPx(
-                    Math.round((p.mapa!.preparada.widthPx / larguraFinal) * 10000) / 10000,
+                    Math.round((p.mapa!.preparada.widthPx / caixa.larguraM) * 10000) / 10000,
                   )}
                 >
-                  Encaixar em {formatarNumero(p.mapa!.preparada.widthPx / larguraFinal, 4)} px por célula
+                  Encaixar em {formatarNumero(p.mapa!.preparada.widthPx / caixa.larguraM, 4)} px por célula
                 </button>
               )}
             </p>

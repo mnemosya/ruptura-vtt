@@ -18,14 +18,16 @@
 import {
   LADO_MAXIMO_PX,
   alturaEfetivaM,
+  caixaDaGrade,
   dimensaoDentroDoTeto,
   dimensoesAposDownscale,
+  gradeParaMapa,
   larguraInicialM,
   pxPorMetro,
   retanguloDaImagem,
   type ImagemCena,
 } from "../src/app/mesas/[campaignId]/vtt/_dominio/imagemCena";
-import { hexParaPixel } from "../src/app/mesas/[campaignId]/vtt/_mapa/hex";
+import { hexParaPixel, type Hex } from "../src/app/mesas/[campaignId]/vtt/_mapa/hex";
 
 let passou = 0, falhou = 0;
 function ok(criterio: string, cond: boolean, detalhe: string) {
@@ -129,6 +131,70 @@ ok("16 (teto de 4× a maior dimensão da cena: sangrar sim, cobrir dezesseis map
   dimensaoDentroDoTeto(104, 26, 18) && !dimensaoDentroDoTeto(105, 26, 18), "104 passa, 105 não");
 ok("17 (dimensão não-positiva nunca passa no teto)",
   !dimensaoDentroDoTeto(0, 26, 18) && !dimensaoDentroDoTeto(-1, 26, 18), "0 e -1 recusados");
+
+// ── A caixa da grade ──────────────────────────────────────────────
+// Verificada contra a grade DE VERDADE: as mesmas células que
+// `MapaHex` monta, medidas pelos mesmos `hexParaPixel`. Uma fórmula
+// conferida contra si mesma não prova nada.
+function caixaMedida(largura: number, altura: number, tam = 40) {
+  const RAIZ3 = Math.sqrt(3);
+  let xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+  for (let r = 0; r < altura; r++) {
+    for (let q = 0; q < largura; q++) {
+      const c: Hex = { q: q - Math.floor(r / 2), r };
+      const { x, y } = hexParaPixel(c, tam);
+      xMin = Math.min(xMin, x - (RAIZ3 * tam) / 2);
+      xMax = Math.max(xMax, x + (RAIZ3 * tam) / 2);
+      yMin = Math.min(yMin, y - tam);
+      yMax = Math.max(yMax, y + tam);
+    }
+  }
+  return { xMin, xMax, yMin, yMax, tam };
+}
+
+for (const [largura, altura] of [[1, 1], [29, 29], [26, 18], [200, 1], [3, 2]]) {
+  const tam = 40;
+  const escala = pxPorMetro(tam);
+  const c = caixaDaGrade(largura, altura);
+  const m = caixaMedida(largura, altura, tam);
+  const centro = hexParaPixel({ q: c.centroQ, r: c.centroR } as Hex, tam);
+  const bate =
+    perto(c.larguraM * escala, m.xMax - m.xMin)
+    && perto(c.alturaM * escala, m.yMax - m.yMin)
+    && perto(centro.x, (m.xMin + m.xMax) / 2)
+    && perto(centro.y, (m.yMin + m.yMax) / 2);
+  ok(`18 (a caixa de ${largura}×${altura} bate com a grade que MapaHex monta)`, bate,
+    `${(c.larguraM * escala).toFixed(2)}×${(c.alturaM * escala).toFixed(2)} px`);
+}
+
+ok("19 (uma cena de 1×1 é um hexágono: √3·tam de largura, 2·tam de altura)",
+  perto(caixaDaGrade(1, 1).larguraM, 1) && perto(caixaDaGrade(1, 1).alturaM, 2 / Math.sqrt(3)),
+  `${caixaDaGrade(1, 1).larguraM} × ${caixaDaGrade(1, 1).alturaM} m`);
+
+ok("20 (as fileiras ímpares alargam a caixa em meio metro)",
+  perto(caixaDaGrade(10, 2).larguraM, 10.5) && perto(caixaDaGrade(10, 1).larguraM, 10),
+  "10,5 m com duas fileiras; 10 m com uma");
+
+// ── A volta: mapa → células → caixa ───────────────────────────────
+// O que a folha "Nova cena" faz. Se a ida e a volta não fecharem, o
+// mapa nasce torto — que é exatamente o defeito que isto corrige.
+for (const [w, h, px] of [[2048, 2048, 70], [2000, 1400, 50], [3000, 1000, 100]]) {
+  const { largura, altura } = gradeParaMapa(w, h, px);
+  const c = caixaDaGrade(largura, altura);
+  // A caixa, em pixels do arquivo, tem que bater com o arquivo a menos
+  // do arredondamento para células inteiras — meia célula em cada eixo.
+  const folgaX = Math.abs(c.larguraM * px - w);
+  const folgaY = Math.abs(c.alturaM * px - h);
+  ok(`21 (${w}×${h} px a ${px} px/m vira ${largura}×${altura} células sem sobrar mais que meia)`,
+    folgaX <= px / 2 + 0.001 && folgaY <= px / 2 + 0.001,
+    `sobra ${folgaX.toFixed(1)} × ${folgaY.toFixed(1)} px`);
+}
+
+ok("22 (a grade nunca sai da faixa do banco, por maior que seja o mapa)",
+  (() => {
+    const g = gradeParaMapa(40000, 40000, 8);
+    return g.largura === 200 && g.altura === 200;
+  })(), "presa em 200×200");
 
 console.log(`\n${passou} ok, ${falhou} falha(s)`);
 process.exit(falhou === 0 ? 0 : 1);
