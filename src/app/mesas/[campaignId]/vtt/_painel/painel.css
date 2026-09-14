@@ -1411,6 +1411,10 @@
   text-align: left; cursor: pointer; transition: background .14s, border-color .14s;
 }
 .rv-pn-linha:hover { border-color: #1c2b45; }
+/* O NOME acompanha o hover, igual ao do cartão de pasta
+   (`.rv-pn-grupo-btn:hover`): o cartão inteiro é clicável, e só a
+   borda mudando não dizia que aquilo abre alguma coisa. */
+.rv-pn-linha:hover .rv-pn-linha-nome { color: var(--pn-cy); }
 .rv-pn-linha:focus-visible { outline: 2px solid var(--rv-cy); outline-offset: 1px; }
 .rv-pn-linha[data-sel="true"] {
   border-color: color-mix(in srgb, var(--fg-a, #45b8c9) 47%, transparent);
@@ -1560,6 +1564,7 @@
      bem longe do `--pn-dim` dos rótulos e botões em volta, que é o que
      separa o que se lê do que se opera. */
   color: var(--pn-txt); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: color .14s;
 }
 .rv-pn-linha-sub {
   margin-top: 4px; font-family: var(--font-mono), ui-monospace, monospace;
