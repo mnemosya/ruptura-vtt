@@ -636,7 +636,7 @@ export function PersonagensTab({
               data-testid="painel-personagens-recursos"
             />
             <span className="rv-fp-switch-tr" aria-hidden="true" />
-              <span className="rv-fp-switch-txt">Mostrar recursos</span>
+              <span className="rv-fp-switch-txt">Recursos</span>
             </label>
           </div>
 

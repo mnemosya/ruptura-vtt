@@ -852,11 +852,21 @@
 .rv-pn-busca-limpar:hover { color: var(--pn-txt-forte); }
 
 /* LINHA 1: a busca ocupa o que sobra, a ordenação tem largura própria
-   e fica encostada na direita. A busca traz a própria margem
-   (`.rv-pn-busca`), então a linha só acrescenta a margem da direita. */
-.rv-pn-linha-busca { flex: none; display: flex; align-items: center; gap: 6px; padding-right: 8px; }
-.rv-pn-linha-busca .rv-pn-busca { flex: 1; min-width: 0; }
-.rv-pn-linha-busca .rv-pn-select { flex: none; }
+   e fica encostada na direita.
+
+   A MARGEM É DA LINHA, não da busca. `.rv-pn-busca` traz `margin: 6px
+   8px` de quando vivia sozinha; mantida aqui, ela virava altura da
+   linha e o `stretch` do select copiava os 41px em vez dos 29px do
+   campo. Zerada, os dois esticam para a mesma altura — a do campo, que
+   é o mais alto — e ela continua acompanhando se o campo mudar. */
+.rv-pn-linha-busca { flex: none; display: flex; align-items: stretch; gap: 6px; padding: 6px 8px; }
+.rv-pn-linha-busca .rv-pn-busca { flex: 1; min-width: 0; margin: 0; }
+/* MESMA ALTURA da busca. O select vem do bloco de filtros, que é mais
+   baixo (22px contra 29px); lado a lado na mesma faixa, a diferença
+   lia como desalinhamento. `align-self: stretch` copia a altura em vez
+   de repetir o número — se o campo de busca mudar de tamanho, o select
+   acompanha sozinho. */
+.rv-pn-linha-busca .rv-pn-select { flex: none; padding-block: 0; }
 
 /* LINHA 2: criar à esquerda, switch à direita. */
 .rv-pn-filtros { flex: none; display: flex; align-items: center; gap: 6px; padding: 0 8px 6px; flex-wrap: wrap; }
