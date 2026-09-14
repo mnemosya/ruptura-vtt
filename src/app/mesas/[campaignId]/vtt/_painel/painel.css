@@ -936,7 +936,11 @@
    select é controle, como os botões de criar, o switch e o placeholder
    ao lado, e todos estão em `--pn-dim`; sozinho em branco, ele pesava
    mais que a lista que ordena. */
-.rv-pn-select {
+/* CLASSE DUPLICADA aqui também, e por um motivo diferente do de cima:
+   a regra base usa o ATALHO `background`, que zera `background-image`
+   junto. Duplicada lá e não aqui, ela vencia e apagava a seta — o
+   select ficava sem indicação de que abre. */
+.rv-pn-select.rv-pn-select {
   appearance: none; -webkit-appearance: none;
   color: var(--pn-dim);
   padding-right: 20px;
@@ -944,7 +948,7 @@
   background-repeat: no-repeat;
   background-position: right 7px center;
 }
-.rv-pn-select:hover { border-color: var(--pn-line-soft); }
+.rv-pn-select.rv-pn-select:hover { border-color: var(--pn-line-soft); }
 .rv-pn-select:focus-visible, .rv-pn-input:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 1px; }
 /* No RODAPÉ ele vai pra borda direita: "Abrir Personagens" é a ação da
    faixa, o filtro é o acessório — separados pelas pontas, ninguém
