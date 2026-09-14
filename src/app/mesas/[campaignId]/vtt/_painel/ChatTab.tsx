@@ -104,14 +104,16 @@ export function ChatTab({
    * o véu no meio dela e o fim da conversa debaixo dela.
    */
   const bandejaRef = useRef<HTMLDivElement>(null);
-  const [alturaBandeja, setAlturaBandeja] = useState(45);
+  const [alturaBandeja, setAlturaBandeja] = useState(37);
   useEffect(() => {
     const el = bandejaRef.current;
     if (!el) return;
+    // A altura CRUA da bandeja, sem folga somada: é a linha do topo
+    // dela que o véu tem que encostar, e qualquer acréscimo aqui vira
+    // uma faixa chapada entre os dois. O respiro do feed soma a folga
+    // por conta própria, na folha.
     const observador = new ResizeObserver(() => {
-      // +8 do vão até o composer, que é parte do que o feed tem que
-      // desviar.
-      setAlturaBandeja(Math.round(el.getBoundingClientRect().height) + 8);
+      setAlturaBandeja(Math.round(el.getBoundingClientRect().height));
     });
     observador.observe(el);
     return () => observador.disconnect();

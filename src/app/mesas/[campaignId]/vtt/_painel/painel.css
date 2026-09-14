@@ -724,25 +724,31 @@
      cartão nasce debaixo dela) e no ponto onde o véu descansa. Um
      número só pros dois — `--pn-bandeja-altura` é a altura dela mais
      o vão até o composer. */
-  --pn-bandeja-altura: 45px;
-  padding: 8px 8px calc(var(--pn-bandeja-altura) + 8px); gap: 8px;
+  --pn-bandeja-altura: 37px;
+  /* 16 = os 8 do respiro da coluna mais os 8 do vão entre a bandeja e
+     o composer, que a medida não inclui. */
+  padding: 8px 8px calc(var(--pn-bandeja-altura) + 16px); gap: 8px;
   /* O véu das pontas (`[data-rolavel]`, no chassi) — mesma marca da
      lista de personagens, e a mesma razão: o feed é alto e a barra de
      rolagem passa despercebida. */
   --rv-veu-cor: #080f1e;
   --rv-veu-recuo: 8px;
 }
-/* O VÉU VAI ATÉ O FIM DO FEED — onde ele encosta no composer —, e não
-   para no topo da bandeja: parando ali, o degradê acabava no meio da
-   coluna e a faixa entre ele e o composer ficava chapada, que é o que
-   dava o ar de bug.
-   Em compensação ele CRESCE: a altura soma a bandeja RECOLHIDA, pra
-   que o desvanecer comece acima dela e não atrás. Recolhida, e não a
-   medida: aberta ela é um painel de 300px, e um véu desse tamanho
-   apagaria metade da conversa. */
+/* ONDE O CHAT ACABA é o TOPO DA BANDEJA: dali pra baixo quem está na
+   tela é ela, não a conversa. É nessa linha que o véu tem que chegar
+   ao fim — opaco, fechado. Terminando embaixo dela, o degradê era
+   cortado no meio pela bandeja e ficava um desvanecer pela metade; e
+   terminando no topo mas com 26px, ele era curto demais pra se ler
+   como beirada.
+
+   `--pn-bandeja-altura` é MEDIDA (ver `ChatTab`), então a linha
+   acompanha a bandeja aberta também — que é quando o fim do chat sobe
+   de verdade. */
 .rv-pn-chat .rv-pn-chat-scroll {
-  --pn-bandeja-recolhida: 45px;
-  --rv-veu-altura: calc(var(--pn-bandeja-recolhida) + 26px);
+  --rv-veu-altura: 44px;
+}
+.rv-pn-chat .rv-pn-chat-scroll[data-rolavel]::after {
+  bottom: var(--pn-bandeja-altura);
 }
 .rv-pn-chat .pn-cartao {
   padding: 8px 9px 8px 34px;
