@@ -441,65 +441,224 @@ export function PersonagensTab({
   }
 
   /**
-   * Soltar uma pasta sobre outra IRMÃ troca as duas de lugar na ordem.
+   * A SEQUÊNCIA COMBINADA de um nó: pastas e personagens numa fila só,
+   * ordenados pela `posicao` que cada um guarda.
    *
-   * Só entre irmãs: arrastar pra dentro de outra pasta seria REANINHAR,
-   * que é outro gesto e mexe no `parent_id` — misturar os dois no mesmo
-   * arrasto faria a mesma ação significar duas coisas dependendo de
-   * onde o cursor parou.
-   */
-  async function soltarPastaSobre(alvoId: string) {
-    const origemId = pastaArrastada;
-    setPastaArrastada(null);
-    setPastaSobre(null);
-    if (!origemId || origemId === alvoId || !dados) return;
-    const origem = dados.pastas.find((p) => p.id === origemId);
-    const alvo = dados.pastas.find((p) => p.id === alvoId);
-    if (!origem || !alvo || origem.parentId !== alvo.parentId) return;
-
-    const irmas = dados.pastas
-      .filter((p) => p.parentId === origem.parentId)
-      .sort((a, b) => (a.posicao !== b.posicao ? a.posicao - b.posicao : a.nome.localeCompare(b.nome, "pt-BR")));
-    const sem = irmas.filter((p) => p.id !== origemId);
-    const destino = sem.findIndex((p) => p.id === alvoId);
-    sem.splice(destino, 0, origem);
-    await executar(() => reordenarPastasAction(campaignId, sem.map((p) => p.id)));
-  }
-
-  /**
-   * Soltar um personagem sobre outro reordena — e LIGA a ordenação
-   * manual sozinho.
+   * Antes as pastas eram desenhadas DEPOIS de todas as entradas, como
+   * dois blocos. Isso não é uma escolha de layout, é uma limitação que
+   * vazava pro gesto: a pasta ficava presa no fim da lista e arrastá-la
+   * pra cima era impossível — não havia posição acima dos cartões pra
+   * ela ocupar.
    *
-   * Sem isso o gesto era mudo: a ordem ia pro banco e a lista continuava
-   * em A–Z, porque é o alfabeto que manda enquanto "Manual" não está
-   * escolhido. Arrastar É a declaração de que a ordem passa a ser sua;
-   * pedir pra trocar o seletor antes seria cobrar duas ações pela
-   * mesma intenção.
+   * Os dois `posicao` vivem em tabelas diferentes
+   * (`campaign_character_folders` e `campaign_character_placements`) e
+   * não conhecem um ao outro. O que os junta é serem escritos SEMPRE
+   * com o índice da fila combinada — quem reordena grava os dois lados,
+   * então a fila que a tela mostra é a fila que o banco guarda. Empate
+   * resolve com a pasta antes, por ser container.
+   *
+   * Só vale na ordem MANUAL: em A–Z o alfabeto manda e pastas voltam a
+   * vir primeiro, que é o agrupamento que se espera de uma lista
+   * alfabética.
    */
-  async function soltarEntradaSobre(alvo: EntradaDiretorio, arrastadoId: string) {
-    setEntradaSobre(null);
-    if (!dados || arrastadoId === alvo.characterId) return;
-    const arrastado = dados.entradas.find((e) => e.characterId === arrastadoId);
-    if (!arrastado) return;
+  type ItemDoNo =
+    | { tipo: "pasta"; posicao: number; pasta: NoDiretorio }
+    | { tipo: "entrada"; posicao: number; entrada: EntradaDiretorio };
 
-    // A lista visível DAQUELA pasta, na ordem em que está na tela.
-    const irmaos = dados.entradas
-      .filter((e) => (e.pastaId ?? null) === (alvo.pastaId ?? null) && !e.arquivado)
-      .sort((a, b) => (a.posicao !== b.posicao ? a.posicao - b.posicao : a.nome.localeCompare(b.nome, "pt-BR")));
-    const sem = irmaos.filter((e) => e.characterId !== arrastadoId);
-    const destino = sem.findIndex((e) => e.characterId === alvo.characterId);
-    sem.splice(destino, 0, { ...arrastado, pastaId: alvo.pastaId ?? null });
-
-    setOrdenacao("manual");
-    await executar(() =>
-      reordenarPersonagensAction(
-        campaignId,
-        sem.map((e) => ({ characterId: e.characterId, pastaId: alvo.pastaId ?? null })),
-      ),
+  function filhosDoNo(no: NoDiretorio): ItemDoNo[] {
+    const pastas: ItemDoNo[] = no.subpastas.map((sub) => ({
+      tipo: "pasta" as const, posicao: sub.pasta?.posicao ?? 0, pasta: sub,
+    }));
+    const entradas: ItemDoNo[] = no.entradas.map((e) => ({
+      tipo: "entrada" as const, posicao: e.posicao ?? 0, entrada: e,
+    }));
+    if (ordenacao !== "manual") return [...pastas, ...entradas];
+    return [...pastas, ...entradas].sort((a, b) =>
+      a.posicao !== b.posicao ? a.posicao - b.posicao : (a.tipo === "pasta" ? -1 : 1),
     );
   }
 
-  function renderizarNo(no: NoDiretorio, nivel: number): React.ReactNode {
+  /**
+   * Grava a fila combinada: cada item recebe o índice dela, pastas por
+   * uma ação e personagens por outra. Duas escritas, uma ordem só.
+   */
+  async function gravarFila(no: NoDiretorio, fila: ItemDoNo[]) {
+    const pastaDoNo = no.pasta?.id ?? null;
+    const pastas: { pastaId: string; posicao: number }[] = [];
+    const entradas: { characterId: string; pastaId: string | null; posicao: number }[] = [];
+    fila.forEach((item, i) => {
+      if (item.tipo === "pasta") {
+        if (item.pasta.pasta) pastas.push({ pastaId: item.pasta.pasta.id, posicao: i });
+      } else {
+        entradas.push({ characterId: item.entrada.characterId, pastaId: pastaDoNo, posicao: i });
+      }
+    });
+    // Arrastar É a declaração de que a ordem passa a ser sua. Sem isto o
+    // gesto era mudo: a ordem ia pro banco e a lista continuava em A–Z.
+    setOrdenacao("manual");
+    await executar(async () => {
+      const r = await reordenarPastasAction(campaignId, pastas);
+      if (!r.ok) return r;
+      return reordenarPersonagensAction(campaignId, entradas);
+    });
+  }
+
+  /** O id de um item da fila, seja pasta ou personagem. */
+  function idDoItem(i: ItemDoNo): string {
+    return i.tipo === "pasta" ? i.pasta.pasta!.id : i.entrada.characterId;
+  }
+
+  /**
+   * Move um item da fila pra posição de outro — o gesto único desta
+   * lista, valendo igual pra pasta e pra personagem.
+   *
+   * Quando o arrastado NÃO está nesta fila, ele vem de outra pasta: aí
+   * o movimento é de entrada, e ele entra na posição do alvo. Isso só
+   * vale pra personagem; pasta muda de pai por outro caminho, e
+   * reaninhar num arrasto que também reordena faria o mesmo gesto
+   * significar duas coisas.
+   */
+  function moverNaFila(no: NoDiretorio, idArrastado: string, idAlvo: string) {
+    if (idArrastado === idAlvo) return;
+    const fila = filhosDoNo(no);
+    const destino = fila.findIndex((i) => idDoItem(i) === idAlvo);
+    if (destino < 0) return;
+
+    const origem = fila.find((i) => idDoItem(i) === idArrastado);
+    if (origem) {
+      const sem = fila.filter((i) => idDoItem(i) !== idArrastado);
+      sem.splice(sem.findIndex((i) => idDoItem(i) === idAlvo), 0, origem);
+      void gravarFila(no, sem);
+      return;
+    }
+
+    const deFora = dados?.entradas.find((e) => e.characterId === idArrastado);
+    if (!deFora) return;
+    const comEle = [...fila];
+    comEle.splice(destino, 0, { tipo: "entrada", posicao: destino, entrada: deFora });
+    void gravarFila(no, comEle);
+  }
+
+  /**
+   * Uma linha de personagem. Extraída do `map` porque a lista deixou
+   * de ser um bloco só: pastas e personagens se intercalam, e cada
+   * corrida de personagens vira uma `<ul>` própria.
+   */
+  function renderizarEntrada(entrada: EntradaDiretorio, no: NoDiretorio, nivel: number): React.ReactNode {
+                const acento = entrada.tipo === "pn" ? "var(--rv-dg)" : "var(--rv-cy)";
+                const pv = entrada.pv;
+                return (
+                <LinhaDiretorio
+                  key={entrada.characterId}
+                  /* O ROSTO quando existe, a sigla quando não. A ficha
+                     já tem avatar e a mesa já o mostra no token;
+                     reconhecer o personagem por três letras era o
+                     painel sendo o único lugar que não o usava. */
+                  face={entrada.avatarUrl
+                    ? <img className="rv-pn-face-img" src={entrada.avatarUrl} alt="" />
+                    : (siglaDoNome(entrada.nome) || "?")}
+                  nome={entrada.nome}
+                  nivel={nivel}
+                  acento={acento}
+                  subtitulo={entrada.tipo === "pn" ? "PN" : undefined}
+                  rodape={
+                    (mostrarRecursos && pv) || entrada.condicoes ? (
+                      <>
+                        {mostrarRecursos && pv && <BarraRecurso id="pv" atual={pv.atual} max={pv.max} />}
+                        {mostrarRecursos && entrada.pe && (
+                          <BarraRecurso id="pe" atual={entrada.pe.atual} max={entrada.pe.max} />
+                        )}
+                        {/* As CONDIÇÕES não são recurso: são estado que
+                            muda a decisão de quem olha a lista, e
+                            continuam visíveis com o switch desligado. */}
+                        {!!entrada.condicoes && (
+                          <span className="rv-pn-linha-cond">{entrada.condicoes} cond.</span>
+                        )}
+                      </>
+                    ) : undefined
+                  }
+                  marca={
+                    entrada.arquivado ? (
+                      <span className="rv-pn-tag">arquivado</span>
+                    ) : entrada.controladores != null && entrada.controladores > 0 ? (
+                      <span className="rv-pn-tag" title="Controlado por um jogador">controlado</span>
+                    ) : undefined
+                  }
+                  selecionado={previaId === entrada.characterId}
+                  onAbrir={() => onAbrirConsole(entrada.characterId)}
+                  onAquecer={() => {
+                    onPrecarregarConsole();
+                    previsualizar(entrada.characterId);
+                  }}
+                  onMenuContextual={(e) => menuDaEntrada(e, entrada)}
+                  arrastavel={podeAdministrar && !entrada.arquivado}
+                  onArrastarInicio={(e) => {
+                    const carga: PersonagemArrastado = {
+                      characterId: entrada.characterId,
+                      nome: entrada.nome,
+                      sigla: siglaDoNome(entrada.nome),
+                      tipo: entrada.tipo,
+                    };
+                    e.dataTransfer.setData(MIME_PERSONAGEM_ARRASTADO, serializarPersonagemArrastado(carga));
+                    e.dataTransfer.effectAllowed = "copy";
+                  }}
+                  alvoDeSolta={entradaSobre === entrada.characterId}
+                  onArrastarSobre={(e) => {
+                    // DOIS arrastos chegam nesta linha: um item do
+                    // Bando (vira posse do personagem) e outro
+                    // personagem (reordena). O tipo do dado decide —
+                    // e é ele que é lido, não a aparência do cursor.
+                    // A PASTA TAMBÉM ATRAVESSA. Sem isto ela ficava
+                    // presa no fim da lista: os cartões recusavam o
+                    // arrasto, e não havia posição acima deles pra ela
+                    // ocupar.
+                    if (podeAdministrar
+                      && (e.dataTransfer.types.includes(MIME_PERSONAGEM_ARRASTADO)
+                        || e.dataTransfer.types.includes(MIME_PASTA_ARRASTADA))) {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      setEntradaSobre(entrada.characterId);
+                      return;
+                    }
+                    if (!e.dataTransfer.types.includes(MIME_ITEM_BANDO)) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                  }}
+                  onSoltar={(e) => {
+                    setEntradaSobre(null);
+                    const pastaVindo = e.dataTransfer.getData(MIME_PASTA_ARRASTADA);
+                    if (pastaVindo && podeAdministrar) {
+                      e.preventDefault();
+                      setPastaArrastada(null);
+                      moverNaFila(no, pastaVindo, entrada.characterId);
+                      return;
+                    }
+                    const arrastado = e.dataTransfer.getData(MIME_PERSONAGEM_ARRASTADO);
+                    if (arrastado && podeAdministrar) {
+                      e.preventDefault();
+                      try {
+                        const carga = JSON.parse(arrastado) as { characterId?: string };
+                        if (carga.characterId) moverNaFila(no, carga.characterId, entrada.characterId);
+                      } catch { /* arrasto de outro tipo — ignorado */ }
+                      return;
+                    }
+                    const bruto = e.dataTransfer.getData(MIME_ITEM_BANDO);
+                    const item = bruto ? desserializarItemBando(bruto) : null;
+                    if (!item) return;
+                    e.preventDefault();
+                    onReceberItemDoBando(item, { id: entrada.characterId, nome: entrada.nome });
+                  }}
+                  testId="painel-personagens-linha"
+                  atributos={{ "data-character-id": entrada.characterId, "data-tipo": entrada.tipo }}
+                />
+    );
+  }
+  /**
+   * `pai` é quem tem a FILA onde o cabeçalho deste nó vive: uma pasta
+   * se ordena entre as irmãs, e as irmãs são filhas do pai. A raiz não
+   * desenha cabeçalho, então lá ele nunca é usado.
+   */
+  function renderizarNo(no: NoDiretorio, nivel: number, pai?: NoDiretorio): React.ReactNode {
     const idPasta = no.pasta?.id ?? null;
     const recolhida = idPasta !== null && recolhidas.has(idPasta);
     return (
@@ -524,15 +683,33 @@ export function PersonagensTab({
             }}
             onArrastarFim={() => { setPastaArrastada(null); setPastaSobre(null); }}
             onArrastarSobre={(e) => {
-              if (!e.dataTransfer.types.includes(MIME_PASTA_ARRASTADA)) return;
+              if (!podeAdministrar) return;
+              if (!e.dataTransfer.types.includes(MIME_PASTA_ARRASTADA)
+                && !e.dataTransfer.types.includes(MIME_PERSONAGEM_ARRASTADO)) return;
               e.preventDefault();
               e.dataTransfer.dropEffect = "move";
               setPastaSobre(no.pasta!.id);
             }}
             onSoltar={(e) => {
-              if (!e.dataTransfer.types.includes(MIME_PASTA_ARRASTADA)) return;
+              if (!podeAdministrar) return;
+              setPastaArrastada(null);
+              setPastaSobre(null);
+              const idPastaArrastada = e.dataTransfer.getData(MIME_PASTA_ARRASTADA);
+              if (idPastaArrastada) {
+                e.preventDefault();
+                if (pai) moverNaFila(pai, idPastaArrastada, no.pasta!.id);
+                return;
+              }
+              // Personagem solto NA PASTA continua significando "entra
+              // nela" — é o gesto que já existia, e o cabeçalho é a
+              // porta dela.
+              const bruto = e.dataTransfer.getData(MIME_PERSONAGEM_ARRASTADO);
+              if (!bruto) return;
               e.preventDefault();
-              void soltarPastaSobre(no.pasta!.id);
+              try {
+                const c = JSON.parse(bruto) as { characterId?: string };
+                if (c.characterId) executar(() => moverPersonagemParaPastaAction(campaignId, c.characterId!, no.pasta!.id));
+              } catch { /* arrasto de outro tipo — ignorado */ }
             }}
           />
         )}
@@ -564,106 +741,31 @@ export function PersonagensTab({
                 Soltar aqui para mover
               </div>
             )}
-            {no.entradas.length > 0 && (
-              <ul className="rv-pn-lista">
-                {no.entradas.map((entrada) => {
-                  const acento = entrada.tipo === "pn" ? "var(--rv-dg)" : "var(--rv-cy)";
-                  const pv = entrada.pv;
-                  return (
-                  <LinhaDiretorio
-                    key={entrada.characterId}
-                    /* O ROSTO quando existe, a sigla quando não. A ficha
-                       já tem avatar e a mesa já o mostra no token;
-                       reconhecer o personagem por três letras era o
-                       painel sendo o único lugar que não o usava. */
-                    face={entrada.avatarUrl
-                      ? <img className="rv-pn-face-img" src={entrada.avatarUrl} alt="" />
-                      : (siglaDoNome(entrada.nome) || "?")}
-                    nome={entrada.nome}
-                    nivel={nivel}
-                    acento={acento}
-                    subtitulo={entrada.tipo === "pn" ? "PN" : undefined}
-                    rodape={
-                      (mostrarRecursos && pv) || entrada.condicoes ? (
-                        <>
-                          {mostrarRecursos && pv && <BarraRecurso id="pv" atual={pv.atual} max={pv.max} />}
-                          {mostrarRecursos && entrada.pe && (
-                            <BarraRecurso id="pe" atual={entrada.pe.atual} max={entrada.pe.max} />
-                          )}
-                          {/* As CONDIÇÕES não são recurso: são estado que
-                              muda a decisão de quem olha a lista, e
-                              continuam visíveis com o switch desligado. */}
-                          {!!entrada.condicoes && (
-                            <span className="rv-pn-linha-cond">{entrada.condicoes} cond.</span>
-                          )}
-                        </>
-                      ) : undefined
-                    }
-                    marca={
-                      entrada.arquivado ? (
-                        <span className="rv-pn-tag">arquivado</span>
-                      ) : entrada.controladores != null && entrada.controladores > 0 ? (
-                        <span className="rv-pn-tag" title="Controlado por um jogador">controlado</span>
-                      ) : undefined
-                    }
-                    selecionado={previaId === entrada.characterId}
-                    onAbrir={() => onAbrirConsole(entrada.characterId)}
-                    onAquecer={() => {
-                      onPrecarregarConsole();
-                      previsualizar(entrada.characterId);
-                    }}
-                    onMenuContextual={(e) => menuDaEntrada(e, entrada)}
-                    arrastavel={podeAdministrar && !entrada.arquivado}
-                    onArrastarInicio={(e) => {
-                      const carga: PersonagemArrastado = {
-                        characterId: entrada.characterId,
-                        nome: entrada.nome,
-                        sigla: siglaDoNome(entrada.nome),
-                        tipo: entrada.tipo,
-                      };
-                      e.dataTransfer.setData(MIME_PERSONAGEM_ARRASTADO, serializarPersonagemArrastado(carga));
-                      e.dataTransfer.effectAllowed = "copy";
-                    }}
-                    alvoDeSolta={entradaSobre === entrada.characterId}
-                    onArrastarSobre={(e) => {
-                      // DOIS arrastos chegam nesta linha: um item do
-                      // Bando (vira posse do personagem) e outro
-                      // personagem (reordena). O tipo do dado decide —
-                      // e é ele que é lido, não a aparência do cursor.
-                      if (e.dataTransfer.types.includes(MIME_PERSONAGEM_ARRASTADO) && podeAdministrar) {
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = "move";
-                        setEntradaSobre(entrada.characterId);
-                        return;
-                      }
-                      if (!e.dataTransfer.types.includes(MIME_ITEM_BANDO)) return;
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = "move";
-                    }}
-                    onSoltar={(e) => {
-                      const arrastado = e.dataTransfer.getData(MIME_PERSONAGEM_ARRASTADO);
-                      if (arrastado && podeAdministrar) {
-                        e.preventDefault();
-                        try {
-                          const carga = JSON.parse(arrastado) as { characterId?: string };
-                          if (carga.characterId) void soltarEntradaSobre(entrada, carga.characterId);
-                        } catch { /* arrasto de outro tipo — ignorado */ }
-                        return;
-                      }
-                      const bruto = e.dataTransfer.getData(MIME_ITEM_BANDO);
-                      const item = bruto ? desserializarItemBando(bruto) : null;
-                      if (!item) return;
-                      e.preventDefault();
-                      onReceberItemDoBando(item, { id: entrada.characterId, nome: entrada.nome });
-                    }}
-                    testId="painel-personagens-linha"
-                    atributos={{ "data-character-id": entrada.characterId, "data-tipo": entrada.tipo }}
-                  />
-                  );
-                })}
-              </ul>
-            )}
-            {no.subpastas.map((sub) => renderizarNo(sub, nivel + 1))}
+            {/* A FILA COMBINADA na tela. Corridas de personagens viram
+                uma `<ul>` cada; a pasta que aparece no meio corta a
+                lista e recomeça a próxima. É isto que dá à pasta uma
+                posição ACIMA dos cartões pra ocupar. */}
+            {(() => {
+              const blocos: React.ReactNode[] = [];
+              let corrida: EntradaDiretorio[] = [];
+              const fecharCorrida = () => {
+                if (corrida.length === 0) return;
+                const desta = corrida;
+                blocos.push(
+                  <ul className="rv-pn-lista" key={`lista-${desta[0].characterId}`}>
+                    {desta.map((e) => renderizarEntrada(e, no, nivel))}
+                  </ul>,
+                );
+                corrida = [];
+              };
+              for (const item of filhosDoNo(no)) {
+                if (item.tipo === "entrada") { corrida.push(item.entrada); continue; }
+                fecharCorrida();
+                blocos.push(renderizarNo(item.pasta, nivel + 1, no));
+              }
+              fecharCorrida();
+              return blocos;
+            })()}
           </>
         )}
       </div>

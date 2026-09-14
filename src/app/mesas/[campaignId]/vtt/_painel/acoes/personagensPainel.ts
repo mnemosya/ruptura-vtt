@@ -425,31 +425,39 @@ export async function moverPersonagemParaPastaAction(
  */
 export async function reordenarPastasAction(
   campaignId: string,
-  ordem: string[],
+  ordem: { pastaId: string; posicao: number }[],
 ): Promise<ResultadoPainel> {
   const v = await exigirNarradorPainel(campaignId);
   if (!v.ok) return { ok: false, erro: v.erro };
   if (ordem.length === 0) return { ok: true };
   try {
     const client = await getScopedTableClient();
-    for (const [i, pastaId] of ordem.entries()) {
+    for (const { pastaId, posicao } of ordem) {
       const { error } = await client
         .from(TABELA_PASTAS)
-        .update({ posicao: i })
+        .update({ posicao: Math.max(0, Math.trunc(posicao)) })
         .eq("id", pastaId)
         .eq("campaign_id", campaignId);
       if (error) throw new Error(error.message);
     }
     return { ok: true };
   } catch (e) {
-    return { ok: false, erro: mensagemDeErro(e, "Falha a reordenar as pastas.") };
+    return { ok: false, erro: mensagemDeErro(e, "Falha ao reordenar as pastas.") };
   }
 }
 
-/** Ordem manual dentro de uma pasta — uma escrita por entrada, na ordem em que a lista ficou. */
+/**
+ * Ordem manual dentro de uma pasta.
+ *
+ * A `posicao` vem EXPLÍCITA, e não do índice do array: pastas e
+ * personagens dividem uma fila só na tela, e a posição de um
+ * personagem é a dele NAQUELA fila — não a dele entre os personagens.
+ * Derivar do índice aqui embaralharia a intercalação na primeira
+ * releitura.
+ */
 export async function reordenarPersonagensAction(
   campaignId: string,
-  ordem: { characterId: string; pastaId: string | null }[],
+  ordem: { characterId: string; pastaId: string | null; posicao: number }[],
 ): Promise<ResultadoPainel> {
   const v = await exigirNarradorPainel(campaignId);
   if (!v.ok) return { ok: false, erro: v.erro };
@@ -457,7 +465,12 @@ export async function reordenarPersonagensAction(
   try {
     const client = await getScopedTableClient();
     const { error } = await client.from(TABELA_COLOCACOES).upsert(
-      ordem.map((o, i) => ({ character_id: o.characterId, campaign_id: campaignId, folder_id: o.pastaId, posicao: i })),
+      ordem.map((o) => ({
+        character_id: o.characterId,
+        campaign_id: campaignId,
+        folder_id: o.pastaId,
+        posicao: Math.max(0, Math.trunc(o.posicao)),
+      })),
       { onConflict: "character_id" },
     );
     if (error) throw new Error(error.message);
