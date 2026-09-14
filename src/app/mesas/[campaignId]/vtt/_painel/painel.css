@@ -741,7 +741,14 @@
      `--rv-raise` — um clareado TRANSLÚCIDO, não um hex —, então a
      proporção entre os dois se mantém sozinha sobre o fundo novo. */
   background: #0c1526; clip-path: none;
+  transition: border-color .14s;
 }
+/* HOVER DISCRETO: só o fio, e o mesmo `#1c2b45` do hover do cartão de
+   personagem. Sem lavagem de fundo de propósito — o cartão do chat não
+   é clicável nem abre nada, então acender como um botão prometeria uma
+   ação que não existe. O que ele precisa dizer é "esta é a mensagem sob
+   o seu cursor", e num feed denso a borda basta. */
+.rv-pn-chat .pn-msg:hover, .rv-pn-chat .pn-cartao:hover { border-color: #1c2b45; }
 /* O desenho não tem fio de acento; ele sobrevive SÓ onde carrega
    informação que o cabeçalho não dá: narração e mensagem privada. */
 .rv-pn-chat .pn-msg::before { content: none; }
@@ -796,7 +803,7 @@
    era inversão minha, não do design. */
 
 /* Chat · B original — ShellB/dossiê, sem reaproveitar o card compacto anterior. */
-.rv-pn-chat .pn-cartao { display:block; padding:0; border:1px solid var(--rv-line-2); border-radius:var(--rv-r); background:#0c1526; clip-path:none; overflow:visible; }
+.rv-pn-chat .pn-cartao { display:block; padding:0; border:1px solid var(--rv-line-2); border-radius:var(--rv-r); background:#0c1526; clip-path:none; overflow:visible; transition:border-color .14s; }
 .rv-pn-chat .pn-cartao::before,.rv-pn-chat .pn-cartao::after { content:none; }
 .pn-cartao-layout { display:flex; min-width:0; }
 /* Fundo da espinha: o MESMO TOKEN da espinha das janelas de ferramenta
