@@ -206,8 +206,16 @@
 .rv-ferr-btn {
   position: relative; width: 36px; height: 36px; flex: none;
   display: flex; align-items: center; justify-content: center;
-  border: 1px solid rgba(0, 212, 255, .15); border-radius: 0;
-  background: rgba(12, 20, 32, .70); color: #7f95b3; cursor: pointer;
+  /* Sem fundo nem borda no container, são ELES as peças visíveis — a
+     forma e a cor da peça é que carregam a linguagem.
+
+     O fundo é um degrau ABAIXO do fundo do VTT (`#070e1c`), e sólido:
+     translúcido, ele deixava a arte do mapa atravessar e cada botão
+     mudava de tom conforme o que passava por baixo. Mais escuro que o
+     mapa, a peça "afunda" na mesa em vez de boiar como um retângulo
+     claro. */
+  border: 1px solid rgba(0, 212, 255, .15); border-radius: 6px;
+  background: #050a14; color: #7f95b3; cursor: pointer;
   transition: color .14s, background .14s, border-color .14s;
 }
 /* A BORDA DO HOVER É A DO ATIVO. O que separa "estou passando por
