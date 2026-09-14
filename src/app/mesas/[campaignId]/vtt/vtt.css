@@ -243,7 +243,13 @@
    moldura aparecia como uma mudança de cor. Token próprio: `--rv-ground`
    segue servindo o chrome (selects, botões, modais), que não muda. */
 .rv-mesa { --rv-mapa-fundo: #070e1c; }
-.rv-palco { position: relative; min-width: 0; overflow: hidden; background: var(--rv-mapa-fundo); }
+/* O MAPA TEM CANTO, como as peças que flutuam sobre ele. Com os
+   trilhos soltos das bordas, o palco deixou de ser "o que sobra entre
+   as barras" e virou uma superfície própria — e superfície com canto
+   reto encostada na janela lê como fundo da página, não como peça. O
+   `overflow: hidden` que já existia é quem recorta o conteúdo na
+   curva. */
+.rv-palco { position: relative; min-width: 0; overflow: hidden; border-radius: 4px; background: var(--rv-mapa-fundo); }
 .rv-mapa-camada { position: absolute; inset: 0; }
 .rv-mapa {
   width: 100%; height: 100%; display: block; cursor: crosshair;
