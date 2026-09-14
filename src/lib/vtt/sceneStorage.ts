@@ -1260,6 +1260,42 @@ function linhaParaTokenVtt(linha: Record<string, unknown>): TokenVtt {
   };
 }
 
+/**
+ * Completa o RETRATO EFETIVO numa linha vinda de ESCRITA.
+ *
+ * Mesmo buraco de `pode_controlar`, e do mesmo tamanho:
+ * `retrato_efetivo_id` não é coluna de `vtt_tokens`. É a herança do
+ * avatar da ficha (0105/0106), calculada por `vtt_token_imagem_efetiva`
+ * e só presente nas PROJEÇÕES. As RPCs de escrita devolvem a linha da
+ * tabela, então o token entrava no estado com o efetivo nulo — e como
+ * é ele que a assinatura de URL percorre (ver `idsRetratoEmCena`, no
+ * `VttClient`), o token voltava pra sigla com a cara existindo no
+ * banco. Até a próxima leitura da cena.
+ *
+ * A regra de precedência fica onde sempre esteve, no BANCO: em vez de
+ * repetir "próprio vence herança, endereço externo cancela" aqui,
+ * chamamos a mesma função que a projeção chama. Duas cópias dessa
+ * ordem discordariam no primeiro caso de borda.
+ *
+ * Só as escritas que MEXEM no retrato pagam esta ida: criar, editar e
+ * duplicar. Mover, girar e trancar não alteram nenhuma das três
+ * entradas da conta.
+ */
+async function comRetratoEfetivo(
+  client: Awaited<ReturnType<typeof getScopedTableClient>>,
+  token: TokenVtt,
+): Promise<TokenVtt> {
+  const { data, error } = await client.rpc("vtt_token_imagem_efetiva", {
+    p_retrato_image_id: token.retratoImageId,
+    p_retrato_url: token.retratoUrl,
+    p_character_id: token.characterId,
+  });
+  // Falhar aqui não invalida a escrita, que já foi aceita: o token
+  // aparece com a sigla, como aparecia antes desta função existir.
+  if (error) return token;
+  return { ...token, retratoEfetivoId: (data as string | null) ?? null };
+}
+
 export interface ResultadoEscritaToken extends ResultadoEscrita {
   token?: TokenVtt;
 }
@@ -1313,7 +1349,8 @@ export async function criarToken(params: {
   if (error) return { ok: false, erro: error.message };
   if (!data) return { ok: false, erro: "Criação recusada pelo servidor." };
   const token = linhaParaTokenVtt(data as Record<string, unknown>);
-  return { ok: true, revision: token.revision, token };
+  const completo = await comRetratoEfetivo(client, token);
+  return { ok: true, revision: completo.revision, token: completo };
 }
 
 /** Edita campos não-geométricos de um token — narrador-only, revisão otimista. */
@@ -1347,7 +1384,8 @@ export async function atualizarToken(params: {
   if (error) return { ok: false, erro: error.message };
   if (!data) return { ok: false, erro: "Edição recusada pelo servidor." };
   const token = linhaParaTokenVtt(data as Record<string, unknown>);
-  return { ok: true, revision: token.revision, token };
+  const completo = await comRetratoEfetivo(client, token);
+  return { ok: true, revision: completo.revision, token: completo };
 }
 
 /**
@@ -1394,7 +1432,8 @@ export async function editarToken(params: {
   if (error) return { ok: false, erro: error.message };
   if (!data) return { ok: false, erro: "Edição recusada pelo servidor." };
   const token = linhaParaTokenVtt(data as Record<string, unknown>);
-  return { ok: true, revision: token.revision, token };
+  const completo = await comRetratoEfetivo(client, token);
+  return { ok: true, revision: completo.revision, token: completo };
 }
 
 /**
@@ -1448,7 +1487,8 @@ export async function duplicarToken(params: {
   if (error) return { ok: false, erro: error.message };
   if (!data) return { ok: false, erro: "Duplicação recusada pelo servidor." };
   const token = linhaParaTokenVtt(data as Record<string, unknown>);
-  return { ok: true, revision: token.revision, token };
+  const completo = await comRetratoEfetivo(client, token);
+  return { ok: true, revision: completo.revision, token: completo };
 }
 
 /**
