@@ -151,19 +151,24 @@
    e um import cruzado só pra seis declarações traria a cascata inteira
    de uma pra dentro da outra. */
 .rv-ferramentas {
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
   padding: 10px 0; background: var(--rv-sunken); border-right: 1px solid var(--linha-2); z-index: 20;
-  /* ROLA QUANDO NÃO CABE. Com o vão de 3px, dezesseis ferramentas
-     ocupavam 698px e passavam raspando numa janela de 700 — o vão do
-     Console, maior, estourou isso e cortava a última. Cortar em
-     silêncio é o pior dos desfechos: a ferramenta existe, responde a
-     atalho, e não está na tela. A barra fina só aparece quando falta
-     espaço de verdade, e o mesmo valia pra qualquer ferramenta nova
-     que entrasse no trilho. */
-  overflow-y: auto; overflow-x: hidden; scrollbar-width: thin;
+  /* SEM `overflow`, e isso é regra, não descuido. As dicas de cada
+     ferramenta são filhas do botão e saem PELO LADO; uma caixa de
+     rolagem recortaria todas elas — e `overflow-y` sozinho não existe:
+     quando um eixo deixa de ser `visible`, o outro vira `auto` junto.
+     Foi assim que a rolagem que eu tinha posto aqui apagou as dicas do
+     trilho inteiro.
+
+     Como não há rolagem, o trilho precisa CABER — e é por isso que o
+     VÃO é a única medida que NÃO copia o Console. Lá são nove abas com
+     12px entre grupos; aqui são dezesseis ferramentas, e a conta não
+     sobrevive: com os 8px do Console o conteúdo dá 761px, com 6px dá
+     737px, e uma janela de 700px de altura (notebook comum) corta a
+     última ferramenta nos dois casos. Em 3px dá 698px e passa. O botão
+     é igual ao do Console; a distância entre eles é o que o espaço
+     permite. Ferramenta nova pede refazer esta conta. */
 }
-.rv-ferramentas::-webkit-scrollbar { width: 4px; }
-.rv-ferramentas::-webkit-scrollbar-thumb { background: rgba(255,255,255,.16); border-radius: 999px; }
 .rv-ferr-btn {
   position: relative; width: 36px; height: 36px; flex: none;
   display: flex; align-items: center; justify-content: center;
