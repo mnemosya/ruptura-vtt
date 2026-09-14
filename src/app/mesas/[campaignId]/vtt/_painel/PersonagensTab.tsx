@@ -121,6 +121,21 @@ function BarraRecurso({ id, atual, max }: { id: "pv" | "pe"; atual: number; max:
 }
 
 
+/**
+ * A "imagem de arrasto" vazia — 1×1 transparente.
+ *
+ * Criada uma vez e no MÓDULO porque `setDragImage` exige um elemento já
+ * carregado no instante do `dragstart`: um `<img>` criado ali na hora
+ * ainda não decodificou, e o navegador cai de volta na miniatura
+ * padrão. Fora do navegador (SSR) não existe `Image`, daí a guarda.
+ */
+const IMAGEM_ARRASTO_VAZIA = (() => {
+  if (typeof window === "undefined") return undefined as unknown as HTMLImageElement;
+  const img = new Image();
+  img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+  return img;
+})();
+
 export function PersonagensTab({
   campaignId,
   visivel,
@@ -642,6 +657,14 @@ export function PersonagensTab({
                        nada. Quem escolhe o efeito é cada destino; a
                        origem só declara o que é permitido. */
                     e.dataTransfer.effectAllowed = "copyMove";
+                    /* SEM A MINIATURA DO NAVEGADOR. Arrastando pro
+                       mapa, o cartão semitransparente ficava colado no
+                       cursor EM CIMA da prévia do token — duas imagens
+                       do mesmo gesto, e a de cima era a que não
+                       importa. Uma imagem 1×1 transparente é a forma
+                       padrão de desligar isso; o cursor e a prévia no
+                       mapa bastam pra dizer o que está sendo levado. */
+                    e.dataTransfer.setDragImage(IMAGEM_ARRASTO_VAZIA, 0, 0);
                     /* QUEM está sendo arrastado, pra fora do painel. O
                        mapa precisa disso pra desenhar a prévia do token
                        enquanto o arrasto passa por cima dele: durante o

@@ -6158,33 +6158,24 @@ export function VttClient({
         />
       )}
 
-      {/* ── Posicionamento de token novo — aviso pequeno, não-bloqueante
-          (nunca `.rv-modal-fundo`: cliques no mapa/trilho continuam
-          passando, só a célula clicada é interceptada por
-          `MapaHex.posicionamentoToken`). ── */}
-      {/* A BARRA NÃO APARECE DURANTE O ARRASTO: ali a prévia já é a
-          instrução inteira — o token está na célula sob o ponteiro e
-          soltar o põe lá. Uma faixa dizendo "clique para confirmar,
-          Q/E para girar" no meio de um arrasto descreve um gesto que
-          não é o que está acontecendo. Ela volta quando o
-          posicionamento vem do formulário, que é onde o clique e a
-          rotação existem. */}
-      {fluxoToken && !arrastandoPersonagem
-        && (fluxoToken.fase === "posicionando" || fluxoToken.fase === "enviando" || fluxoToken.fase === "erro") && (
-        <div className="rv-escolha-posicao" role="status" aria-live="polite" data-fase={fluxoToken.fase}>
-          {fluxoToken.fase === "erro" ? (
-            <span role="alert">{fluxoToken.mensagem} Escolha outra posição ou tente de novo.</span>
-          ) : (
-            <span>
-              {fluxoToken.rascunho.nome.trim()
-                ? <>Escolha uma posição para <strong>{fluxoToken.rascunho.nome}</strong>.</>
-                : "Escolha uma posição para o novo token."}
-              {" "}Clique para confirmar. Esc para cancelar. Q/E para girar.
-            </span>
-          )}
+      {/* A FAIXA DE POSICIONAMENTO SAIU. Ela narrava o gesto — "clique
+          para confirmar, Esc para cancelar, Q/E para girar" — enquanto
+          o mapa já mostrava o token na célula sob o ponteiro. A prévia
+          É a instrução: ela diz o que vai ser posto e onde, que é tudo
+          o que a frase dizia em palavras.
+
+          Esc continua cancelando (o listener é global, nunca foi da
+          faixa) e o clique continua confirmando no caminho do
+          formulário. */}
+      {/* O ERRO FICA. Ele não narra gesto nenhum: diz que o servidor
+          recusou a criação, e sem ele a falha seria um token que
+          simplesmente não aparece. */}
+      {fluxoToken?.fase === "erro" && (
+        <div className="rv-escolha-posicao" role="status" aria-live="polite" data-fase="erro">
+          <span role="alert">{fluxoToken.mensagem} Escolha outra posição ou tente de novo.</span>
           <div className="rv-escolha-posicao-acoes">
-            <button type="button" className="rv-btn rv-btn--ghost" onClick={voltarParaEditarToken} disabled={fluxoToken.fase === "enviando"}>Voltar para editar</button>
-            <button type="button" className="rv-btn rv-btn--ghost" onClick={cancelarPosicionamento} disabled={fluxoToken.fase === "enviando"}>Cancelar (Esc)</button>
+            <button type="button" className="rv-btn rv-btn--ghost" onClick={voltarParaEditarToken}>Voltar para editar</button>
+            <button type="button" className="rv-btn rv-btn--ghost" onClick={cancelarPosicionamento}>Cancelar (Esc)</button>
           </div>
         </div>
       )}

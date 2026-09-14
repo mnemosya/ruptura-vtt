@@ -120,13 +120,15 @@ async function abrirCriarConfigurando(page: Page, indiceCelula = 40) {
     // o menu do hex vazio deixa de ser uma porta possível. O botão da
     // barra é a outra porta real, e é a que o cenário precisa — ele
     // testa o LAYOUT do formulário, não por onde ele foi aberto.
-    await page.locator('.rv-ferr-btn[aria-label="Adicionar token"]').click();
+    await page.locator('.rv-ferr-btn[aria-label^="Adicionar token"]').click();
   }
   await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
 }
 async function continuarParaPosicionar(page: Page) {
   await page.locator(".rv-gerenciador-token .rv-btn--pri", { hasText: "Continuar para posicionar" }).click();
-  await page.waitForSelector(".rv-escolha-posicao", { timeout: 5000 });
+  // A faixa "Escolha uma posição" saiu — quem diz que o posicionamento
+  // começou é a CAMADA do fantasma no mapa, que é o que a pessoa vê.
+  await page.waitForSelector(".rv-camada-posicionamento-token", { timeout: 5000 });
   await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 });
 }
 async function celulaBox(page: Page, indice: number) {
@@ -239,13 +241,13 @@ async function main() {
     const idx = await encontrarCelulaValida(page, 100);
     await page.screenshot({ path: path.join(DIR_SHOTS, "05-preview-valido.png") });
     const valida = await page.locator(".rv-camada-posicionamento-token").getAttribute("data-valida");
-    const barraBox = await page.locator(".rv-escolha-posicao").boundingBox();
-    const fantasmaBox = await page.locator(".rv-camada-posicionamento-token").boundingBox();
-    const semSobreposicaoComBarra = !barraBox || !fantasmaBox || !sobrepoe(barraBox, fantasmaBox);
-    registrar("5 (preview válido no mapa: verde, sem sobrepor a barra de instrução)", valida === "true" && semSobreposicaoComBarra, `valida=${valida}, semSobreposicaoComBarra=${semSobreposicaoComBarra}`);
+    // A faixa de instrução saiu do fluxo (só o ERRO ainda usa aquela
+    // casca), então não há mais o que não sobrepor: o critério é o
+    // preview existir e estar válido.
+    registrar("5 (preview válido no mapa: verde)", valida === "true", `valida=${valida}`);
     void idx;
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
+    await page.waitForSelector(".rv-camada-posicionamento-token", { state: "detached", timeout: 3000 });
   }
 
   // ── 6: preview sobre token ───────────────────────────────────────
@@ -268,7 +270,7 @@ async function main() {
     const valida = await page.locator(".rv-camada-posicionamento-token").getAttribute("data-valida");
     registrar("6 (preview sobre token existente: inválido/vermelho)", valida === "false", `valida=${valida}`);
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
+    await page.waitForSelector(".rv-camada-posicionamento-token", { state: "detached", timeout: 3000 });
     await admin.from("vtt_tokens").delete().eq("sigla", "OB").eq("campaign_id", campaignId);
   }
 
@@ -304,7 +306,7 @@ async function main() {
     const valida = await page.locator(".rv-camada-posicionamento-token").getAttribute("data-valida");
     registrar("7 (preview em terreno bloqueado: inválido/vermelho)", achou && valida === "false", `achouCelula66=${achou}, valida=${valida}`);
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
+    await page.waitForSelector(".rv-camada-posicionamento-token", { state: "detached", timeout: 3000 });
     await admin.from("vtt_terrain").delete().eq("scene_id", sceneId).eq("q", 6).eq("r", 6);
   }
 
@@ -320,7 +322,7 @@ async function main() {
     const celulasFantasma = await page.locator(".rv-camada-posicionamento-token path").count();
     registrar("8 (preview fora da borda: inválido, mesmo com pegada Colossal completa desenhada)", valida === "false" && celulasFantasma > 0, `valida=${valida}, célulasDesenhadas=${celulasFantasma}`);
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
+    await page.waitForSelector(".rv-camada-posicionamento-token", { state: "detached", timeout: 3000 });
   }
 
   // ── 9: Grande rotacionado ────────────────────────────────────────
@@ -338,7 +340,7 @@ async function main() {
     registrar("9 (Grande rotacionado: orientação mudou, seta de direção visível)", orientacao === "1" && setaPresente > 0, `orientacao=${orientacao}, seta=${setaPresente}`);
     void idx;
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
+    await page.waitForSelector(".rv-camada-posicionamento-token", { state: "detached", timeout: 3000 });
   }
 
   // ── 10: Colossal rotacionado ─────────────────────────────────────
@@ -360,7 +362,7 @@ async function main() {
     registrar("10 (Colossal rotacionado: orientação mudou, 12 células ainda desenhadas)", orientacao === "2" && celulas === 12, `orientacao=${orientacao}, células=${celulas}`);
     void idx;
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
+    await page.waitForSelector(".rv-camada-posicionamento-token", { state: "detached", timeout: 3000 });
   }
 
   // ── 11: erro de servidor sem perda do rascunho ───────────────────

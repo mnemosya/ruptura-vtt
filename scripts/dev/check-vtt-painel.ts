@@ -815,23 +815,19 @@ async function main() {
       narrador.locator('[data-testid="painel-personagens-linha"]').filter({ hasText: "Mara Venn" }).first(),
       narrador.locator(".rv-mapa-camada").first(),
     );
-    const entrouNoFluxo = await esperarAte(async () => (await narrador.locator(".rv-escolha-posicao").count()) === 1);
-    registrar("3g1 (soltar no mapa entra no fluxo CANÔNICO de posicionamento, não cria token direto)", entrouNoFluxo, `fluxo=${entrouNoFluxo}`);
+    // SOLTAR JÁ CRIA. A fase de posicionamento saiu deste caminho: o
+    // arrasto é a escolha do lugar, e a prévia sob o ponteiro é o que
+    // diz onde. O que se confere aqui é o EFEITO — a linha no banco —,
+    // e não mais uma faixa de interface no meio do gesto.
+    const confirmou = await esperarAte(async () => {
+      const { data } = await admin
+        .from("vtt_tokens").select("id")
+        .eq("campaign_id", campaignId).eq("character_id", personagemDoJogador);
+      return (data?.length ?? 0) === (antes.data?.length ?? 0) + 1;
+    }, 8000);
+    registrar("3g1 (soltar no mapa cria o token na célula solta, sem segunda etapa)", confirmou, `criou=${confirmou}`);
 
-    if (entrouNoFluxo) {
-      // Confirma numa célula livre — o mesmo clique de sempre.
-      const celulas = narrador.locator(".rv-celula");
-      const total = await celulas.count();
-      let confirmou = false;
-      for (let i = 0; i < Math.min(total, 40) && !confirmou; i++) {
-        const box = await celulas.nth(i).boundingBox();
-        if (!box) continue;
-        await narrador.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-        const valida = await narrador.locator(".rv-camada-posicionamento-token").getAttribute("data-valida");
-        if (valida !== "true") continue;
-        await narrador.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-        confirmou = await esperarAte(async () => (await narrador.locator(".rv-escolha-posicao").count()) === 0, 6000);
-      }
+    {
       const { data: depois } = await admin
         .from("vtt_tokens")
         .select("id, character_id, nome")
