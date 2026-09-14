@@ -4159,10 +4159,16 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-gav-cab .rv-btn:focus-visible .rv-dica,
 .rv-gav-fechar:hover .rv-dica,
 .rv-gav-fechar:focus-visible .rv-dica { opacity: 1; transition-delay: .35s; }
+/* O FUNDO DAS PEÇAS (`#0c1526`) nos botões do cabeçalho — "Nova
+   pasta", "Arquivo" e o X. Transparentes, eles eram só um fio no vazio
+   ao lado de uma busca e de cartões com superfície própria; no painel a
+   regra já é essa (aba, cartão, busca e botão dividem a mesma
+   superfície). */
+.rv-gav-cab .rv-btn:not(.rv-btn--pri) { background: #0c1526; }
 .rv-gav-fechar {
   width: 28px; height: 28px; flex: none; padding: 0; display: grid; place-items: center;
   border: 1px solid var(--rv-line-strong); border-radius: var(--rv-r);
-  background: transparent; color: var(--rv-ink-faint); cursor: pointer;
+  background: #0c1526; color: var(--rv-ink-faint); cursor: pointer;
   transition: color .14s, border-color .14s;
 }
 .rv-gav-fechar:hover { color: var(--rv-ink); border-color: var(--rv-line-hover, var(--jf-acento)); }
@@ -4177,12 +4183,46 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* ── Três colunas ────────────────────────────────────────────────── */
 .rv-gav-corpo { flex: 1 1 auto; min-height: 0; display: flex; }
 
+/* ── A BARRA DE ROLAGEM DA GAVETA ────────────────────────────────────
+   SEMPRE VISÍVEL, e não só no hover como a do chassi (`.rup-scroll`):
+   aqui a coluna de pastas e a grade de mapas passam do fim da tela sem
+   nenhum outro sinal de que há mais coisa embaixo — e uma barra que só
+   aparece quando o mouse já está lá dentro não avisa ninguém.
+
+   Fina (5px), no tom da ferramenta, e SEM TRILHO: o sulco cinza atrás
+   do polegar desenhava uma segunda coluna ao lado do conteúdo. */
+.rv-gav-trilho, .rv-gav-conteudo, .rv-pasta-cenas {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--jf-acento) 45%, transparent) transparent;
+}
+.rv-gav-trilho::-webkit-scrollbar,
+.rv-gav-conteudo::-webkit-scrollbar,
+.rv-pasta-cenas::-webkit-scrollbar { width: 5px; }
+.rv-gav-trilho::-webkit-scrollbar-track,
+.rv-gav-conteudo::-webkit-scrollbar-track,
+.rv-pasta-cenas::-webkit-scrollbar-track { background: transparent; }
+.rv-gav-trilho::-webkit-scrollbar-thumb,
+.rv-gav-conteudo::-webkit-scrollbar-thumb,
+.rv-pasta-cenas::-webkit-scrollbar-thumb {
+  border-radius: var(--rv-r-pill);
+  background: color-mix(in srgb, var(--jf-acento) 45%, transparent);
+}
+.rv-gav-trilho:hover::-webkit-scrollbar-thumb,
+.rv-gav-conteudo:hover::-webkit-scrollbar-thumb,
+.rv-pasta-cenas:hover::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--jf-acento) 70%, transparent);
+}
+
 .rv-gav-trilho {
   flex: 0 0 230px; min-width: 0; overflow-y: auto;
-  display: flex; flex-direction: column; gap: 3px;
-  padding: 14px 12px; border-right: 1px solid var(--rv-line-2);
+  display: flex; flex-direction: column; gap: 8px;
+  /* Mais ar em cima e embaixo: as pastas viraram CARTÕES, e cartão
+     encostado na borda da coluna parece cortado. */
+  padding: 20px 12px; border-right: 1px solid var(--rv-line-2);
 }
-.rv-gav-pastas { display: flex; flex-direction: column; gap: 3px; margin: 0; padding: 0; list-style: none; }
+/* 8px entre pastas — o mesmo vão que o painel usa entre cartões. Com 3
+   elas se tocavam e o fio de uma parecia a borda de baixo da outra. */
+.rv-gav-pastas { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
 /* A hierarquia é o RECUO DO CONTEÚDO, não da caixa: recuar a linha
    inteira deixava cada nível com uma largura diferente e a coluna
    virava uma escada de retângulos de tamanhos variados. */
@@ -4250,13 +4290,20 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 
 .rv-cena-palco {
   position: relative; display: block; width: 100%; padding: 0;
+  /* O RAIO TAMBÉM AQUI, além do `overflow: hidden` do ladrilho. Duas
+     defesas pro mesmo canto: o clip do pai resolve no caso normal, mas
+     basta um filho com `transform`, `filter` ou camada própria pra
+     escapar dele — e a imagem do mapa tem os três em jogo (hover
+     clareia, arquivada aplica `grayscale`). O raio próprio não depende
+     de clip nenhum. */
+  border-radius: var(--rv-r-md) var(--rv-r-md) 0 0;
   border: none; border-bottom: 1px solid var(--rv-line-2);
   background: var(--rv-ground); cursor: pointer;
   aspect-ratio: 16 / 10; overflow: hidden;
 }
 .rv-cena-palco:disabled { cursor: default; }
 .rv-cena-palco:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: -2px; }
-.rv-cena-mini-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rv-cena-mini-img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: inherit; }
 .rv-cena-inicial {
   position: absolute; inset: 0; display: grid; place-items: center;
   color: var(--rv-line-strong);
@@ -4502,14 +4549,23 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 }
 .rv-pasta-degrau:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: 1px; }
 
+/* A MESMA BUSCA DA ABA PERSONAGENS (`.rv-pn-busca`): mesmo respiro
+   (5/8), mesmo vão de 6, e o fundo `#0c1526` das PEÇAS — no painel e na
+   gaveta, tudo que se clica ou se digita tem a mesma superfície. Aqui
+   ela vinha rebaixada (`--rv-ground`), de quando campo era sulco. */
 .rv-cena-busca-casca {
-  display: flex; align-items: center; gap: 8px;
-  padding: 0 10px; border-radius: var(--rv-r);
-  border: 1px solid var(--rv-line-strong); background: var(--rv-ground);
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 8px; border-radius: var(--rv-r);
+  border: 1px solid var(--rv-line-strong); background: #0c1526;
   color: var(--rv-ink-faint);
 }
 .rv-cena-busca-casca:focus-within { border-color: var(--jf-acento); color: var(--jf-acento); }
-.rv-cena-busca { width: 100%; border: none; background: none; padding: 8px 0; }
+.rv-cena-busca {
+  width: 100%; border: none; background: none; padding: 0;
+  color: var(--rv-ink); font-family: var(--rv-body); font-size: 13.5px;
+}
+/* O PLACEHOLDER É DO VTT, não do navegador — mesma regra da busca do painel. */
+.rv-cena-busca::placeholder { color: var(--rv-ink-faint); opacity: 1; font-family: var(--rv-body); font-size: 13.5px; }
 .rv-cena-busca:focus-visible { outline: none; }
 .rv-cena-busca::-webkit-search-cancel-button { filter: grayscale(1) opacity(.5); cursor: pointer; }
 
@@ -4517,14 +4573,26 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* A linha da pasta virou DUAS coisas empilhadas: o cabeçalho (ícone,
    nome, ações e expansor) e, quando aberta, a lista de cenas dela. Por
    isso o `<li>` é coluna e o cabeçalho é que é a linha. */
+/* O MESMO CARTÃO DA PASTA DE PERSONAGENS (`.rv-pn-grupo`): caixa
+   própria com fio e fundo um degrau abaixo das peças, e a lista de
+   cenas ENGOLIDA por ela — o respiro por dentro da borda, não embaixo
+   dela. Aqui a pasta era um fantasma (fundo e borda transparentes até
+   o hover) do lado de mini cartões com imagem: lia como texto solto,
+   não como o container que ela é. */
 .rv-pasta-linha {
   display: flex; flex-direction: column; align-items: stretch;
-  padding: 6px 8px; border-radius: var(--rv-r);
-  background: transparent; border: 1px solid transparent;
+  padding: 0; border-radius: var(--rv-r);
+  background: var(--rv-ground-2); border: 1px solid var(--rv-line-2);
   transition: background .14s, border-color .14s;
 }
-.rv-pasta-cabeca { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.rv-pasta-linha:hover { background: var(--rv-raise); border-color: var(--rv-line-2); }
+/* O respiro de 12px é do CABEÇALHO, não da caixa: a lista de cenas
+   precisa encostar na borda pra ficar "dentro", e padding na caixa
+   deixaria uma faixa em volta dela. */
+.rv-pasta-cabeca { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 12px; }
+.rv-pasta-linha:hover {
+  border-color: color-mix(in srgb, var(--jf-acento) 35%, var(--rv-line-strong));
+  background: color-mix(in srgb, var(--jf-acento) 6%, var(--rv-ground-2));
+}
 .rv-pasta-linha[data-aberta] { border-color: color-mix(in srgb, var(--jf-acento) 40%, transparent); }
 .rv-pasta-linha[data-alvo] {
   background: color-mix(in srgb, var(--jf-acento) 16%, transparent);
@@ -4537,7 +4605,10 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   display: flex; align-items: center; gap: 8px;
   border: none; background: none; padding: 0; margin: 0;
   text-align: left; color: var(--rv-ink-dim); cursor: pointer;
-  font-family: var(--rv-display), sans-serif; font-size: 11.5px; font-weight: 600;
+  /* MESMA TIPOGRAFIA do nome da pasta de personagens: display, 12px,
+     700, caixa alta e `letter-spacing` largo. */
+  font-family: var(--rv-display), sans-serif; font-size: 12px; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase;
   transition: color .14s;
 }
 .rv-pasta-nome:hover, .rv-pasta-nome[aria-current="page"] { color: var(--rv-ink); }
@@ -4584,29 +4655,52 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-pasta-cenas {
   /* Sem recuo: a lista já está VISUALMENTE dentro da pasta (ela abre
      debaixo dela e some junto), e o recuo só comia largura de uma
-     coluna que já é estreita. */
-  list-style: none; margin: 6px 0 2px; padding: 0;
-  display: flex; flex-direction: column; gap: 2px;
-  max-height: 200px; overflow-y: auto;
+     coluna que já é estreita. A margem de 8px é o respiro POR DENTRO
+     da borda da pasta — o mesmo da lista engolida em Personagens. */
+  list-style: none; margin: 0 8px 8px; padding: 0;
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: 260px; overflow-y: auto;
 }
 .rv-minicena { min-width: 0; }
 .rv-minicena-btn {
-  width: 100%; min-width: 0; min-height: 30px;
+  /* 56px como o cartão de personagem: é a IMAGEM que identifica a cena
+     aqui, e numa linha do tamanho do texto o mapa saía pequeno demais
+     pra reconhecer de relance. */
+  width: 100%; min-width: 0; min-height: 56px;
   display: flex; align-items: center; gap: 0;
   /* SEM PADDING na linha: o mapa encosta nas bordas e ocupa a altura
      inteira, como o avatar do cartão de personagem. Padding aqui
      deixaria uma faixa de fundo em volta dele, e "altura inteira"
      viraria "quase". O respiro passa pro NOME. */
   padding: 0; overflow: hidden;
-  border: 1px solid transparent; border-radius: var(--rv-r);
-  background: none; color: var(--rv-ink-dim); cursor: pointer; text-align: left;
+  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
+  /* `#0c1526`, o fundo das peças — o mesmo do cartão de personagem. */
+  background: #0c1526; color: var(--rv-ink-dim); cursor: pointer; text-align: left;
   font-family: var(--rv-display), sans-serif; font-size: 11px;
   transition: background .12s, border-color .12s, color .12s;
 }
-.rv-minicena-btn:hover { background: var(--rv-raise); border-color: var(--rv-line-2); color: var(--rv-ink); }
+.rv-minicena-btn:hover {
+  background: color-mix(in srgb, var(--jf-acento) 16%, #0c1526);
+  border-color: color-mix(in srgb, var(--jf-acento) 45%, transparent);
+  color: var(--rv-ink);
+}
+/* Na cena aberta o hover continua sendo do TEMA DELA (âmbar), não o da
+   ferramenta: ela já é âmbar parada, e trocar de família no hover leria
+   como outro estado. */
+.rv-minicena[data-vista] .rv-minicena-btn:hover {
+  background: color-mix(in srgb, var(--rv-am) 16%, #0c1526);
+  border-color: color-mix(in srgb, var(--rv-am) 60%, transparent);
+}
 .rv-minicena-btn:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: 1px; }
 .rv-minicena-btn:disabled { opacity: .5; cursor: not-allowed; }
-.rv-minicena[data-vista] .rv-minicena-btn { border-color: color-mix(in srgb, var(--rv-am) 40%, transparent); }
+/* A CENA EM QUE SE ESTÁ: fundo do tema a 8%, metade do hover (16%). O
+   hover é passageiro e pode ser mais forte; este é permanente e fica
+   embaixo do cursor o tempo todo — se os dois tivessem o mesmo peso,
+   passar o mouse por cima dela não diria nada. */
+.rv-minicena[data-vista] .rv-minicena-btn {
+  border-color: color-mix(in srgb, var(--rv-am) 40%, transparent);
+  background: color-mix(in srgb, var(--rv-am) 8%, #0c1526);
+}
 /* O RETÂNGULO é a cena: mesma ideia do cartão grande, onde o mapa é a
    superfície inteira. Aqui ele encolhe pra um selo de 26×18 — o
    bastante pra reconhecer um mapa já visto. */
@@ -4616,14 +4710,16 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    item esticado é circular (a altura vem do esticamento, a largura
    viria da altura, e a altura da linha viria do conteúdo). */
 .rv-minicena-mapa {
-  flex: 0 0 auto; align-self: stretch; width: 34px; overflow: hidden;
+  flex: 0 0 auto; align-self: stretch; width: 54px; overflow: hidden;
   display: grid; place-items: center;
   border: none; border-right: 1px solid var(--rv-line-2); border-radius: 0;
   background: var(--rv-sunken);
 }
 /* O respiro que saiu da linha entra aqui. */
 .rv-minicena-nome, .rv-minicena-selos { margin-right: 0; }
-.rv-minicena-nome { padding: 4px 0 4px 8px; }
+/* 16px depois da divisória, como em Personagens: a divisória já é um
+   traço forte e pede mais ar do que um vão entre elementos soltos. */
+.rv-minicena-nome { padding: 9px 0 9px 16px; font-size: 13px; }
 .rv-minicena-selos { padding-right: 6px; margin-left: 6px; }
 .rv-minicena-mapa img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .rv-minicena-inicial {
