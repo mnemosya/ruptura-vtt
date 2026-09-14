@@ -2460,6 +2460,13 @@ export function MapaHex({
           const x1 = maxX - m, y1 = maxY - m;
           const eco = 4;                     // distância da segunda linha
           const braco = TAM * 0.7;           // comprimento de cada perna da cantoneira
+          /* RAIO EM PIXELS DE TELA, como o palco. Dividir por `zoom` é
+             o mesmo que `vector-effect: non-scaling-stroke` faz com a
+             espessura: a moldura vive dentro do `<g>` que escala, e um
+             raio em unidades de mundo viraria um canto enorme com zoom
+             alto e reto com zoom baixo — o canto tem que ser o mesmo
+             que o do palco em qualquer aproximação. */
+          const r = 4 / zoom;
           const cantos = [
             { x: x0, y: y0, dx: 1, dy: 1 },
             { x: x1, y: y0, dx: -1, dy: 1 },
@@ -2468,14 +2475,21 @@ export function MapaHex({
           ];
           return (
             <g className="rv-moldura-mapa" pointerEvents="none">
-              <rect x={x0} y={y0} width={x1 - x0} height={y1 - y0}
+              <rect x={x0} y={y0} width={x1 - x0} height={y1 - y0} rx={r} ry={r}
                 fill="none" stroke="#1c2b45" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
-              <rect x={x0 + eco} y={y0 + eco} width={x1 - x0 - eco * 2} height={y1 - y0 - eco * 2}
+              <rect x={x0 + eco} y={y0 + eco} width={x1 - x0 - eco * 2} height={y1 - y0 - eco * 2} rx={r} ry={r}
                 fill="none" stroke="#16233a" strokeWidth={1} opacity={0.75} vectorEffect="non-scaling-stroke" />
+              {/* A CANTONEIRA acompanha a curva: as duas pernas param
+                  onde o arco começa e um `A` de raio `r` costura as
+                  duas. Reta sobre um canto arredondado, ela cruzaria a
+                  moldura por fora e o L ficaria "solto" da caixa. */}
               {cantos.map((c, i) => (
                 <path key={i}
-                  d={`M ${c.x + c.dx * braco} ${c.y} L ${c.x} ${c.y} L ${c.x} ${c.y + c.dy * braco}`}
-                  fill="none" stroke="#45b8c9" strokeWidth={1.5} strokeLinecap="square"
+                  d={`M ${c.x + c.dx * braco} ${c.y}`
+                    + ` L ${c.x + c.dx * r} ${c.y}`
+                    + ` A ${r} ${r} 0 0 ${c.dx * c.dy > 0 ? 0 : 1} ${c.x} ${c.y + c.dy * r}`
+                    + ` L ${c.x} ${c.y + c.dy * braco}`}
+                  fill="none" stroke="#45b8c9" strokeWidth={1.5} strokeLinecap="round"
                   opacity={0.2} vectorEffect="non-scaling-stroke" />
               ))}
             </g>
