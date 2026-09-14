@@ -580,15 +580,28 @@
   text-align: center; overflow-wrap: anywhere;
 }
 
+/* OS DOIS BOTÕES FLUTUANTES DO FEED — "novas mensagens" e "ir para o
+   fim" — são a MESMA peça: mesmo tamanho, mesmo respiro, mesmo canto.
+   Eles ocupam o mesmo lugar na tela e levam ao mesmo lugar no feed;
+   com desenhos diferentes, pareciam dois componentes de origens
+   diferentes disputando o rodapé. O que muda entre eles é só a
+   INTENSIDADE do ciano — ver a variante `voltar` logo abaixo.
+
+   RAIO PRÓPRIO nos quatro cantos: a peça flutua solta sobre o feed, e
+   o 4px do chassi — pensado pra peça encostada em outra — deixava cara
+   de retângulo cortado. */
 .rv-pn-chat-novas {
   position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 2;
-  display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px;
-  border: 1px solid var(--pn-cy); border-radius: var(--pn-radius);
-  background: var(--rv-panel); color: var(--pn-cy);
+  display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px;
+  border: 1px solid var(--pn-cy); border-radius: var(--rv-r-md);
+  background: #101b33; color: var(--pn-cy);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
-  cursor: pointer; box-shadow: 0 4px 14px rgba(0, 0, 0, .5);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  cursor: pointer; box-shadow: 0 6px 18px rgba(0, 0, 0, .6);
+  transition: border-color .14s, background .14s, color .14s;
 }
+.rv-pn-chat-novas svg { width: 15px; height: 15px; }
+.rv-pn-chat-novas:hover { background: #16233f; }
 .rv-pn-chat-novas:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 2px; }
 /* VOLTAR PRO FIM é o mesmo botão com outro recado: ninguém chegou, só
    se subiu muito. Neutro no TOM — o ciano é do aviso de NOVIDADE, e
@@ -596,24 +609,16 @@
    não no TAMANHO: ele é a saída de quem se perdeu no meio de um feed
    longo, e no corpo do aviso de novas (3px de respiro, 10px de fonte)
    ficava uma etiqueta que não se lia como botão. */
+/* A ÚNICA diferença: o fio. "Chegou algo" acende a borda inteira no
+   ciano; "você subiu muito" fica com a linha neutra do painel. O texto
+   e o ícone seguem cianos nos dois — é o mesmo destino. */
 .rv-pn-chat-novas[data-tipo="voltar"] {
-  gap: 7px; padding: 8px 16px;
-  /* RAIO PRÓPRIO nos quatro cantos: o botão flutua sobre o feed, solto
-     de qualquer borda, e o 4px do chassi (pensado pra peça encostada em
-     outra) o deixava com cara de retângulo cortado. */
-  border-radius: var(--rv-r-md);
-  border-color: var(--pn-line-soft); background: #101b33;
-  /* CIANO, um degrau abaixo do `--pn-cy` do aviso de novas: a família
-     é a mesma (os dois levam ao mesmo lugar), e o degrau é o que
-     mantém "chegou algo" mais alto que "você subiu muito". */
+  border-color: var(--pn-line-soft);
   color: color-mix(in srgb, var(--pn-cy) 78%, var(--pn-txt-forte));
-  font-size: 11px; letter-spacing: .1em;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, .6);
 }
-.rv-pn-chat-novas[data-tipo="voltar"] svg { width: 15px; height: 15px; }
 .rv-pn-chat-novas[data-tipo="voltar"]:hover {
   border-color: color-mix(in srgb, var(--pn-cy) 45%, transparent);
-  background: #16233f; color: var(--pn-cy);
+  color: var(--pn-cy);
 }
 
 /* ── COMPOSER ─────────────────────────────────────────────────── */
@@ -621,7 +626,10 @@
   flex: none; display: flex; flex-direction: column; gap: 5px;
   padding: 6px 8px 8px;
   border-top: 1px solid var(--pn-line);
-  background: var(--rv-sunken);
+  /* O fundo das PEÇAS, o mesmo dos cartões — `--rv-sunken` era o tom
+     de sulco, de quando o painel era uma coluna e o composer um rebaixo
+     dentro dela. */
+  background: #0c1526;
 }
 .pn-composer-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 /* `padding: 2px 6px` com fonte em caixa alta e `letter-spacing` deixava
@@ -855,7 +863,10 @@
 
 .rv-pn-chat .pn-composer {
   padding: 8px 10px 10px; border-top-color: rgba(28,43,69,.9);
-  background: linear-gradient(180deg, rgba(8,14,25,.92), rgba(6,11,20,.98));
+  /* O FUNDO DOS CARTÕES (`#0c1526`): o composer é a peça de baixo da
+     mesma coluna, e o degradê quase preto que ele tinha o afundava —
+     lia como o fim do painel, não como o campo em que se escreve. */
+  background: #0c1526;
 }
 /* Campo e botão de enviar NÃO têm mais sobrescrita aqui: as cores do
    Figma (`#0c1420`/`#182338` no campo, `#0b1924`/`#1c4a52` no botão)
