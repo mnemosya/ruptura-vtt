@@ -141,6 +141,47 @@
 .rup-scroll:hover::-webkit-scrollbar-thumb { background: #223351; }
 
 /* Chanfro angular do chassi. */
+/* ── VÉU DE ROLAGEM ──────────────────────────────────────────────────
+   O degradê nas pontas de uma lista que rola: diz que há mais conteúdo
+   sem depender de a barra de rolagem ser notada.
+
+   `position: sticky` e não camada de `background`: as listas do produto
+   têm cartões de fundo OPACO, e a sombra clássica de
+   `background-attachment: local` fica atrás deles — só aparece nos vãos.
+   Foi tentado e não se via.
+
+   Quem liga e desliga é `useRolagemVelada` (mede de verdade): numa
+   lista que cabe inteira não aparece véu nenhum, e cada ponta some ao
+   se chegar nela. `--rv-veu-cor` é o fundo de quem hospeda — sem ele o
+   degradê iria pro fundo errado. */
+[data-rolavel]::before,
+[data-rolavel]::after {
+  content: ""; position: sticky; z-index: 2; pointer-events: none;
+  display: block; height: var(--rv-veu-altura, 26px);
+  transition: opacity .14s;
+}
+/* Altura ZERO no fluxo: o véu "empresta" a faixa da ponta e devolve
+   com a margem negativa. */
+/* `--rv-veu-recuo` é o PADDING VERTICAL de quem rola. Sem ele o véu
+   gruda na borda do conteúdo e sobra uma faixa do padding por baixo —
+   um fio de cartão aparecendo embaixo do degradê, que é exatamente o
+   que ele existe pra não deixar acontecer. Puxando o sticky pra fora
+   pelo tamanho do padding, o véu encosta na borda de verdade. */
+[data-rolavel]::before {
+  top: calc(var(--rv-veu-recuo, 0px) * -1);
+  margin-bottom: calc(var(--rv-veu-altura, 26px) * -1);
+  background: linear-gradient(var(--rv-veu-cor, var(--rv-ground)), transparent);
+}
+[data-rolavel]::after {
+  bottom: calc(var(--rv-veu-recuo, 0px) * -1);
+  margin-top: calc(var(--rv-veu-altura, 26px) * -1);
+  background: linear-gradient(transparent, var(--rv-veu-cor, var(--rv-ground)));
+}
+/* Nas pontas o véu daquele lado some: no início não há nada acima, no
+   fim não há nada abaixo — e um véu permanente ali vira vinheta. */
+[data-inicio]::before,
+[data-fim]::after { opacity: 0; }
+
 .rup-clip {
   clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
 }

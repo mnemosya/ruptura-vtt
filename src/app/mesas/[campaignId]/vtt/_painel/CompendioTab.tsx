@@ -52,6 +52,7 @@ import {
   type DetalheCompendio,
   type ResumoCompendio,
 } from "./acoes/compendioPainel";
+import { useRolagemVelada } from "../_shell/useRolagemVelada";
 import { comecarLeitura, dadosDoEstado, falharLeitura, type EstadoAba } from "./tipos";
 
 /** Espera antes de disparar a busca no servidor — evita uma ida por tecla digitada. */
@@ -75,6 +76,8 @@ export function CompendioTab({
    */
   fixtureVisual?: ResumoCompendio[];
 }) {
+  /* O degradê nas pontas da lista — ver `useRolagemVelada`. */
+  const veuDaLista = useRolagemVelada<HTMLDivElement>();
   const [resumo, setResumo] = useState<EstadoAba<ResumoCompendio[]>>({ fase: "ocioso" });
   const [categoria, setCategoria] = useState<CategoriaCompendio | null>(null);
   const [consulta, setConsulta] = useState("");
@@ -204,7 +207,7 @@ export function CompendioTab({
             })}
           </div>
 
-          <div className="rv-pn-scroll" data-testid="painel-compendio-scroll">
+          <div {...veuDaLista.atributos} className="rv-pn-scroll" data-testid="painel-compendio-scroll">
             {resumo.fase === "carregando" && <EstadoCarregando testId="painel-compendio-carregando" />}
             {resumo.fase === "erro" && <EstadoErro mensagem={resumo.mensagem} onTentarDeNovo={carregarResumo} testId="painel-compendio-erro" />}
 

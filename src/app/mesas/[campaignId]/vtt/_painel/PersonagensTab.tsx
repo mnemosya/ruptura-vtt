@@ -83,6 +83,7 @@ import {
   type EntradaDiretorio,
   type ResumoPersonagem,
 } from "./acoes/personagensPainel";
+import { useRolagemVelada } from "../_shell/useRolagemVelada";
 import { comecarLeitura, dadosDoEstado, falharLeitura, type EstadoAba } from "./tipos";
 import { DialogoConfirmar, DialogoTexto } from "./ui/Dialogo";
 import { MIME_ITEM_BANDO, desserializarItemBando, type ItemTransferivel } from "./bandoModelo";
@@ -169,6 +170,9 @@ export function PersonagensTab({
    * todo mundo pra quem só queria achar um nome.
    */
   const [mostrarRecursos, setMostrarRecursos] = useState(false);
+  /* O degradê nas pontas da lista — a coluna é alta e a rolagem passa
+     despercebida sem ele. Ver `useRolagemVelada`. */
+  const veuDaLista = useRolagemVelada<HTMLDivElement>();
   /** Pasta sendo arrastada, e a irmã sob o cursor. */
   const [pastaArrastada, setPastaArrastada] = useState<string | null>(null);
   const [pastaSobre, setPastaSobre] = useState<string | null>(null);
@@ -863,6 +867,7 @@ export function PersonagensTab({
           </div>
 
           <div
+            {...veuDaLista.atributos}
             className="rv-pn-scroll rv-pn-scroll--pers"
             /* A RAIZ também é um container, e precisa acender como as
                pastas — é pra ela que o personagem volta quando sai de

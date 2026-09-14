@@ -4674,39 +4674,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
      lista pode dar — com a lista terminando rente à borda, quem não
      reparou na barra de rolagem conclui que aquilo é tudo. */
   max-height: 224px; overflow-y: auto;
-  /* O VÉU precisa ser desenhado POR CIMA dos cartões, e por isso é
-     `position: sticky` e não camada de `background`: os cartões têm
-     fundo opaco próprio, e a sombra clássica de `background-attachment:
-     local` ficava atrás deles — só aparecia nos 8px de vão. Foi
-     tentado e não se via.
-     Quem liga e desliga é `ListaRolavel`, que mede: sem
-     `data-rolavel` não há véu nenhum numa lista que cabe inteira. */
-  position: relative;
+  /* O véu vem do chassi (`[data-rolavel]`); daqui só sai a cor com que
+     ele se funde, que é o fundo da pasta. */
+  --rv-veu-cor: var(--rv-ground-2);
 }
 .rv-pasta-cenas > .rv-minicena + .rv-minicena { margin-top: 8px; }
-.rv-pasta-cenas[data-rolavel]::before,
-.rv-pasta-cenas[data-rolavel]::after {
-  /* Sticky, e não `fixed`/`absolute`: o véu tem que acompanhar a JANELA
-     de rolagem, e sticky é a única posição que existe em relação a ela
-     sem sair do fluxo do conteúdo que rola. */
-  content: ""; position: sticky; z-index: 2; pointer-events: none;
-  display: block; height: 26px;
-  transition: opacity .14s;
-}
-/* Altura ZERO no fluxo: o véu de cima "empresta" 26px do topo da lista
-   e devolve com a margem negativa; o de baixo faz o mesmo por cima. */
-.rv-pasta-cenas[data-rolavel]::before {
-  top: 0; margin-bottom: -26px;
-  background: linear-gradient(var(--rv-ground-2), rgba(10, 17, 32, 0));
-}
-.rv-pasta-cenas[data-rolavel]::after {
-  bottom: 0; margin-top: -26px;
-  background: linear-gradient(rgba(10, 17, 32, 0), var(--rv-ground-2));
-}
-/* Nas pontas o véu daquele lado some: no início não há nada acima, no
-   fim não há nada abaixo — e um véu permanente ali vira vinheta. */
-.rv-pasta-cenas[data-inicio]::before,
-.rv-pasta-cenas[data-fim]::after { opacity: 0; }
 .rv-minicena { min-width: 0; }
 .rv-minicena-btn {
   /* 56px como o cartão de personagem: é a IMAGEM que identifica a cena

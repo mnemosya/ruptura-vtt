@@ -249,6 +249,10 @@
   container-type: inline-size; container-name: pnaba;
 }
 .rv-pn-scroll {
+  /* A cor com que o véu de rolagem se funde (`[data-rolavel]` no
+     chassi) — o fundo do próprio painel. */
+  --rv-veu-cor: #080f1e;   /* o fundo do painel (`.rv-painel`) */
+  --rv-veu-recuo: 8px;     /* o padding abaixo, que o véu precisa cobrir */
   flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden;
   /* 8px nos quatro lados — o mesmo número do vão entre os cartões. Era
      6px em cima e 8 nos outros, diferença que ninguém pediu e que

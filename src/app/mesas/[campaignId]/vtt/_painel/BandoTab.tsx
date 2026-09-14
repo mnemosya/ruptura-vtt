@@ -34,6 +34,7 @@ import {
   type ItemTransferivel,
 } from "./bandoModelo";
 import { lerBandoPainelAction, removerItemBandoAction, type BandoPainel, type ItemBandoPainel } from "./acoes/bandoPainel";
+import { useRolagemVelada } from "../_shell/useRolagemVelada";
 import { comecarLeitura, dadosDoEstado, falharLeitura, type EstadoAba } from "./tipos";
 import { DialogoConfirmar } from "./ui/Dialogo";
 
@@ -61,6 +62,8 @@ export function BandoTab({
    */
   fixtureVisual?: BandoPainel;
 }) {
+  /* O degradê nas pontas da lista — ver `useRolagemVelada`. */
+  const veuDaLista = useRolagemVelada<HTMLDivElement>();
   const [estado, setEstado] = useState<EstadoAba<BandoPainel>>({ fase: "ocioso" });
   const [consulta, setConsulta] = useState("");
   const [detalheId, setDetalheId] = useState<string | null>(null);
@@ -155,7 +158,7 @@ export function BandoTab({
             testId="painel-bando-busca"
           />
 
-          <div className="rv-pn-scroll" data-testid="painel-bando-scroll">
+          <div {...veuDaLista.atributos} className="rv-pn-scroll" data-testid="painel-bando-scroll">
             {estado.fase === "carregando" && <EstadoCarregando testId="painel-bando-carregando" />}
             {estado.fase === "erro" && (
               <EstadoErro mensagem={estado.mensagem} onTentarDeNovo={carregar} testId="painel-bando-erro" />
