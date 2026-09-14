@@ -45,7 +45,6 @@ import {
   KeyRound,
   MapPin,
   Pencil,
-  RefreshCw,
   Trash2,
   UserPlus,
   UserRound,
@@ -54,6 +53,7 @@ import { MenuContextual, type ItemMenuContextual } from "../_shell/MenuContextua
 import { BotaoAba, BuscaDiretorio, CabecalhoGrupo, LinhaDiretorio, RodapeAcoes } from "./Diretorio";
 import { EstadoCarregando, EstadoErro, EstadoVazio } from "./Estados";
 import { BotaoTecnico, SecaoDossie } from "./ui/primitivas";
+import { COR_RECURSO, ROTULO_RECURSO } from "../../../../ficha/_console/coresRecurso";
 import {
   MIME_PERSONAGEM_ARRASTADO,
   contarEntradas,
@@ -83,6 +83,39 @@ import {
 import { comecarLeitura, dadosDoEstado, falharLeitura, type EstadoAba } from "./tipos";
 import { DialogoConfirmar, DialogoTexto } from "./ui/Dialogo";
 import { MIME_ITEM_BANDO, desserializarItemBando, type ItemTransferivel } from "./bandoModelo";
+
+/**
+ * Uma barra de recurso na linha do diretório — PV e PE, com o RÓTULO à
+ * vista.
+ *
+ * A barra antiga era anônima e ciano: não dizia o que media, e um
+ * personagem com PV cheio parecia ter uma barra de "alguma coisa". As
+ * cores vêm de `coresRecurso.ts`, as mesmas do Console — o vermelho do
+ * PV na mesa é o vermelho do PV na ficha, e não um vermelho parecido.
+ *
+ * PV BAIXO não muda a cor da BARRA: ela já é vermelha, e escurecer um
+ * vermelho pra dizer "agora é grave" não se lê. Quem avisa é a fração,
+ * que passa a âmbar — o mesmo tom que o resto da mesa usa pra alerta.
+ */
+function BarraRecurso({ id, atual, max }: { id: "pv" | "pe"; atual: number; max: number }) {
+  const fracao = max > 0 ? Math.max(0, Math.min(1, atual / max)) : 0;
+  const baixo = id === "pv" && max > 0 && fracao < 0.35;
+  return (
+    <span
+      className="rv-pn-linha-rec"
+      style={{ ["--rec-cor" as string]: COR_RECURSO[id] }}
+      role="img"
+      aria-label={`${ROTULO_RECURSO[id]} ${atual} de ${max}`}
+    >
+      <span className="rv-pn-linha-rec-tag" aria-hidden="true">{ROTULO_RECURSO[id]}</span>
+      <span className="rv-pn-linha-rec-trilha" aria-hidden="true"><i style={{ width: `${fracao * 100}%` }} /></span>
+      <span className="rv-pn-linha-rec-fracao" data-baixo={baixo ? "true" : undefined} aria-hidden="true">
+        {atual}/{max}
+      </span>
+    </span>
+  );
+}
+
 
 export function PersonagensTab({
   campaignId,
@@ -439,12 +472,16 @@ export function PersonagensTab({
                 {no.entradas.map((entrada) => {
                   const acento = entrada.tipo === "pn" ? "var(--rv-dg)" : "var(--rv-cy)";
                   const pv = entrada.pv;
-                  const fracaoPv = pv && pv.max > 0 ? Math.max(0, Math.min(1, pv.atual / pv.max)) : null;
-                  const pvBaixo = fracaoPv != null && fracaoPv < 0.35;
                   return (
                   <LinhaDiretorio
                     key={entrada.characterId}
-                    face={siglaDoNome(entrada.nome) || "?"}
+                    /* O ROSTO quando existe, a sigla quando não. A ficha
+                       já tem avatar e a mesa já o mostra no token;
+                       reconhecer o personagem por três letras era o
+                       painel sendo o único lugar que não o usava. */
+                    face={entrada.avatarUrl
+                      ? <img className="rv-pn-face-img" src={entrada.avatarUrl} alt="" />
+                      : (siglaDoNome(entrada.nome) || "?")}
                     nome={entrada.nome}
                     nivel={nivel}
                     acento={acento}
@@ -452,10 +489,8 @@ export function PersonagensTab({
                     rodape={
                       pv ? (
                         <>
-                          <span className="rv-pn-linha-pv" style={pvBaixo ? ({ "--fg-a": "var(--rv-dg)" } as React.CSSProperties) : undefined}>
-                            <span className="rv-pn-linha-pv-trilha"><i style={{ width: `${(fracaoPv ?? 0) * 100}%` }} /></span>
-                            <span className="rv-pn-linha-pv-fracao" data-baixo={pvBaixo ? "true" : undefined}>{pv.atual}/{pv.max}</span>
-                          </span>
+                          <BarraRecurso id="pv" atual={pv.atual} max={pv.max} />
+                          {entrada.pe && <BarraRecurso id="pe" atual={entrada.pe.atual} max={entrada.pe.max} />}
                           {!!entrada.condicoes && (
                             <span className="rv-pn-linha-cond">{entrada.condicoes} cond.</span>
                           )}
@@ -525,6 +560,11 @@ export function PersonagensTab({
             testId="painel-personagens-busca"
           />
 
+          {/* CRIAR MORA EM CIMA, junto da busca e da ordenação: é o que
+              se faz COM a lista, e estava no rodapé, longe de onde o
+              olho já estava. "Arquivados" fez o caminho inverso — é
+              filtro de exceção, consultado uma vez a cada muitas, e
+              ocupava o lugar nobre ao lado da ordenação. */}
           <div className="rv-pn-filtros">
             <label className="rv-sr-only" htmlFor="rv-pers-ordem">Ordenação</label>
             <select
@@ -538,50 +578,7 @@ export function PersonagensTab({
               <option value="manual">Manual</option>
             </select>
             {podeAdministrar && (
-              <label className="rv-pn-check">
-                <input
-                  type="checkbox"
-                  checked={incluirArquivados}
-                  onChange={(e) => {
-                    setIncluirArquivados(e.target.checked);
-                    carregar(e.target.checked);
-                  }}
-                  data-testid="painel-personagens-arquivados"
-                />
-                Arquivados
-              </label>
-            )}
-          </div>
-
-          <div className="rv-pn-scroll" data-testid="painel-personagens-scroll">
-            {estado.fase === "carregando" && <EstadoCarregando testId="painel-personagens-carregando" />}
-            {estado.fase === "erro" && (
-              <EstadoErro
-                mensagem={estado.mensagem}
-                onTentarDeNovo={() => carregar(incluirArquivados)}
-                testId="painel-personagens-erro"
-              />
-            )}
-            {arvore && contarEntradas(arvore) === 0 && estado.fase !== "carregando" && (
-              <EstadoVazio testId="painel-personagens-vazio">
-                {consulta.trim()
-                  ? "Nenhum personagem com esse nome."
-                  : ehNarrador
-                    ? "Nenhum personagem nesta campanha ainda."
-                    : "Você ainda não controla um personagem nesta campanha."}
-              </EstadoVazio>
-            )}
-            {arvore && renderizarNo(arvore, 0)}
-          </div>
-
-          <RodapeAcoes>
-            {onAbrirJanela && (
-              <BotaoAba onClick={onAbrirJanela} testId="painel-personagens-abrir">
-                <ExternalLink size={13} /> Abrir Personagens
-              </BotaoAba>
-            )}
-            {podeAdministrar && (
-              <>
+              <span className="rv-pn-filtros-acoes">
                 <BotaoAba
                   desabilitado={ocupado}
                   testId="painel-personagens-criar"
@@ -609,12 +606,57 @@ export function PersonagensTab({
                 >
                   <FolderPlus size={13} /> Pasta
                 </BotaoAba>
-              </>
+              </span>
             )}
-            <BotaoAba desabilitado={estado.fase === "carregando"} onClick={() => carregar(incluirArquivados)} testId="painel-personagens-atualizar">
-              <RefreshCw size={13} /> Atualizar
-            </BotaoAba>
-          </RodapeAcoes>
+          </div>
+
+          <div className="rv-pn-scroll" data-testid="painel-personagens-scroll">
+            {estado.fase === "carregando" && <EstadoCarregando testId="painel-personagens-carregando" />}
+            {estado.fase === "erro" && (
+              <EstadoErro
+                mensagem={estado.mensagem}
+                onTentarDeNovo={() => carregar(incluirArquivados)}
+                testId="painel-personagens-erro"
+              />
+            )}
+            {arvore && contarEntradas(arvore) === 0 && estado.fase !== "carregando" && (
+              <EstadoVazio testId="painel-personagens-vazio">
+                {consulta.trim()
+                  ? "Nenhum personagem com esse nome."
+                  : ehNarrador
+                    ? "Nenhum personagem nesta campanha ainda."
+                    : "Você ainda não controla um personagem nesta campanha."}
+              </EstadoVazio>
+            )}
+            {arvore && renderizarNo(arvore, 0)}
+          </div>
+
+          {/* O RODAPÉ é do narrador. Pro jogador sobrava uma faixa com
+              um botão só ("Atualizar"), que agora não existe: a lista
+              recarrega sozinha a cada ação e a cada abertura, então o
+              botão só dava a entender que ela poderia estar velha.
+              "Abrir Personagens" continua, porque leva pra outra tela. */}
+          {podeAdministrar && (
+            <RodapeAcoes>
+              {onAbrirJanela && (
+                <BotaoAba onClick={onAbrirJanela} testId="painel-personagens-abrir">
+                  <ExternalLink size={13} /> Abrir Personagens
+                </BotaoAba>
+              )}
+              <label className="rv-pn-check">
+                <input
+                  type="checkbox"
+                  checked={incluirArquivados}
+                  onChange={(e) => {
+                    setIncluirArquivados(e.target.checked);
+                    carregar(e.target.checked);
+                  }}
+                  data-testid="painel-personagens-arquivados"
+                />
+                Arquivados
+              </label>
+            </RodapeAcoes>
+          )}
         </div>
 
         {/* Só aparece na janela larga (ver `painel.css`) — na coluna

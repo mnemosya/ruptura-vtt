@@ -839,12 +839,22 @@
   flex: 1; min-width: 0; border: none; background: transparent; color: var(--pn-txt-forte);
   font-family: var(--rv-body); font-size: 12.5px;
 }
+/* O PLACEHOLDER É DO VTT, não do navegador. Sem regra, ele herdava o
+   cinza-padrão do agente do usuário — mais claro e com outro peso que
+   todo o resto do painel, o que fazia o campo parecer de outro
+   produto. `--pn-dim` é o mesmo tom dos rótulos vizinhos. */
+.rv-pn-busca-input::placeholder {
+  color: var(--pn-dim); opacity: 1; font-family: var(--rv-body); font-size: 12.5px;
+}
 .rv-pn-busca-input:focus-visible { outline: none; }
 .rv-pn-busca-input::-webkit-search-cancel-button { display: none; }
 .rv-pn-busca-limpar { flex: none; display: flex; border: none; background: transparent; color: var(--pn-dim); cursor: pointer; padding: 1px; }
 .rv-pn-busca-limpar:hover { color: var(--pn-txt-forte); }
 
 .rv-pn-filtros { flex: none; display: flex; align-items: center; gap: 6px; padding: 0 8px 6px; flex-wrap: wrap; }
+/* As ações empurradas pra direita: a ordenação é do lado da lista, o
+   que se CRIA fica no canto oposto. */
+.rv-pn-filtros-acoes { display: flex; align-items: center; gap: 6px; margin-left: auto; }
 .rv-pn-select, .rv-pn-input {
   padding: 3px 6px; border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
   background: var(--pn-inset); color: var(--pn-txt-forte);
@@ -856,7 +866,31 @@
   font-family: var(--rv-display);
   font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--pn-dim);
 }
-.rv-pn-check input { accent-color: var(--pn-cy); width: 12px; height: 12px; }
+/* A CAIXA É DESENHADA. `accent-color` só tinge o controle nativo, que
+   continua com o quadrado arredondado e o contorno claro do sistema —
+   o único elemento do painel que não parecia do painel. Aqui ela vira
+   um quadrado de canto reto com a linha e o ciano do resto. */
+.rv-pn-check input {
+  appearance: none; -webkit-appearance: none;
+  flex: none; width: 13px; height: 13px; margin: 0;
+  border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
+  background: var(--pn-inset); cursor: pointer;
+  display: grid; place-items: center;
+  transition: border-color .14s, background .14s;
+}
+.rv-pn-check:hover input { border-color: var(--pn-cy); }
+.rv-pn-check input:checked {
+  border-color: var(--pn-cy);
+  background: color-mix(in srgb, var(--pn-cy) 18%, var(--pn-inset));
+}
+/* O tique é desenhado com borda, não com glifo: fonte de ícone aqui
+   traria mais uma família tipográfica só pra este caractere. */
+.rv-pn-check input:checked::after {
+  content: ""; width: 3px; height: 6px; margin-top: -1px;
+  border: solid var(--pn-cy); border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+.rv-pn-check input:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 1px; }
 .rv-pn-campo { display: flex; flex-direction: column; gap: 4px; margin-top: 9px; }
 .rv-pn-campo > span {
   font-family: var(--rv-display);
@@ -1140,6 +1174,9 @@
   border-radius: 2px; font-family: var(--rv-display); font-size: 11px; font-weight: 700;
   border: 1px solid #1c2b45; color: #4f6285; background: transparent;
 }
+/* O avatar PREENCHE a face inteira; a borda da face vira a moldura. */
+.rv-pn-face:has(.rv-pn-face-img) { padding: 0; overflow: hidden; }
+.rv-pn-face-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .rv-pn-linha[data-sel="true"] .rv-pn-face {
   color: var(--fg-a, #45b8c9);
   border-color: color-mix(in srgb, var(--fg-a, #45b8c9) 55%, transparent);
@@ -1159,19 +1196,30 @@
 .rv-pn-linha-marca { flex: none; }
 .rv-pn-linha-rodape { display: block; margin-top: 5px; }
 
-/* Barra de PV compacta DENTRO da linha do diretório — mesma anatomia da
-   `.rv-fg-barra` do dossiê, só mais fina, com a fração ao lado. */
-.rv-pn-linha-pv { display: flex; align-items: center; gap: 6px; }
-.rv-pn-linha-pv-trilha { position: relative; height: 4px; flex: 1; min-width: 0; overflow: hidden; border-radius: 1px; background: #16233a; }
-.rv-pn-linha-pv-trilha i {
-  display: block; height: 100%; border-radius: 1px; background: var(--fg-a, #45b8c9);
-  box-shadow: 0 0 5px color-mix(in srgb, var(--fg-a, #45b8c9) 53%, transparent);
+/* Barras de recurso DENTRO da linha do diretório — mesma anatomia da
+   `.rv-fg-barra` do dossiê, só mais fina, com o rótulo antes e a fração
+   depois. A cor vem de `--rec-cor`, que o componente define a partir de
+   `coresRecurso.ts` — as mesmas do Console. */
+.rv-pn-linha-rec { display: flex; align-items: center; gap: 6px; }
+.rv-pn-linha-rec + .rv-pn-linha-rec { margin-top: 3px; }
+.rv-pn-linha-rec-tag {
+  flex: none; width: 20px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9px; font-weight: 700; letter-spacing: .08em;
+  color: var(--rec-cor);
 }
-.rv-pn-linha-pv-fracao {
+.rv-pn-linha-rec-trilha { position: relative; height: 4px; flex: 1; min-width: 0; overflow: hidden; border-radius: 1px; background: #16233a; }
+.rv-pn-linha-rec-trilha i {
+  display: block; height: 100%; border-radius: 1px; background: var(--rec-cor);
+  box-shadow: 0 0 5px color-mix(in srgb, var(--rec-cor) 53%, transparent);
+}
+.rv-pn-linha-rec-fracao {
   flex: none; font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px; font-weight: 700; color: var(--pn-dim);
 }
-.rv-pn-linha-pv-fracao[data-baixo="true"] { color: var(--rv-dg); }
+/* PV baixo avisa pela FRAÇÃO, em âmbar: a barra já é vermelha, e
+   escurecer um vermelho pra dizer "agora é grave" não se lê. */
+.rv-pn-linha-rec-fracao[data-baixo="true"] { color: var(--rv-am); }
 .rv-pn-linha-cond {
   display: block; margin-top: 3px;
   font-family: var(--font-mono), ui-monospace, monospace;

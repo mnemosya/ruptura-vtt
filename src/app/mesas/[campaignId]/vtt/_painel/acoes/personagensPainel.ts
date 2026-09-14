@@ -40,6 +40,8 @@ import {
   type CharacterRulesPayload,
 } from "../../../../../../lib/character";
 import { getCharacterRules } from "../../../../../../lib/content";
+import { assinarDownloadUrls } from "../../../../../../lib/vtt/imageService";
+import { getCurrentUser } from "../../../../../../lib/auth/session";
 import { exigirAcessoPainel, exigirNarradorPainel, mensagemDeErro, type ResultadoPainel } from "./comum";
 
 const TABELA_PASTAS = "campaign_character_folders";
@@ -77,19 +79,58 @@ export interface EntradaDiretorio {
    * simplesmente não desenha a barra.
    */
   pv?: { atual: number; max: number };
+  /** PE atual/máximo — mesmo cálculo e mesma opcionalidade do `pv`. */
+  pe?: { atual: number; max: number };
   /** Quantas condições ATIVAS o personagem tem agora. Mesmo caso de opcionalidade do `pv`. */
   condicoes?: number;
+  /**
+   * Avatar da ficha JÁ ASSINADO. Assinar em lote aqui, com a lista
+   * inteira numa ida só, é o que evita uma chamada por linha — a
+   * alternativa seria cada `LinhaDiretorio` pedir o próprio endereço e
+   * a abertura do painel virar N requisições.
+   *
+   * `null` quando a ficha não tem avatar: aí a linha cai na sigla, que
+   * é o mesmo desfecho de sempre.
+   */
+  avatarUrl?: string | null;
 }
 
 /** Igual ao par normalizeCharacter→computeDerivedStats→normalizeCharacter de `lerResumoPersonagemAction`, mas achatado pra rodar em lote sobre a lista inteira sem repetir a leitura de regras. */
-function resumoLeveDoPersonagem(c: CharacterRecord, regras: CharacterRulesPayload | null): { pv: { atual: number; max: number }; condicoes: number } {
+function resumoLeveDoPersonagem(
+  c: CharacterRecord,
+  regras: CharacterRulesPayload | null,
+): { pv: { atual: number; max: number }; pe: { atual: number; max: number }; condicoes: number } {
   const primeiraLeitura = normalizeCharacter(c.payload);
   const derived = computeDerivedStats(primeiraLeitura.atributos, regras, primeiraLeitura.mana_bonus_ruptura ?? 0);
   const personagem = normalizeCharacter(primeiraLeitura, derived);
   return {
     pv: { atual: personagem.recursos_atuais?.pv ?? derived.pv_max, max: derived.pv_max },
+    pe: { atual: personagem.recursos_atuais?.pe ?? derived.pe_max, max: derived.pe_max },
     condicoes: (personagem.condicoes_ativas ?? []).filter((cond) => cond.ativa).length,
   };
+}
+
+/**
+ * Assina os avatares da lista INTEIRA numa ida só.
+ *
+ * Por que aqui e não em cada linha: a alternativa natural — cada
+ * `LinhaDiretorio` pedir o próprio endereço — transformaria abrir o
+ * painel em N requisições, uma por personagem. Aqui é uma, com todos os
+ * ids de uma vez.
+ *
+ * Falhar não derruba o diretório: sem endereço, a linha desenha a
+ * sigla, que é exatamente o que ela fazia antes de existir avatar.
+ */
+async function avataresAssinados(registros: CharacterRecord[]): Promise<Map<string, string>> {
+  const ids = registros.map((c) => c.avatar_image_id ?? null).filter((id): id is string => !!id);
+  if (ids.length === 0) return new Map();
+  try {
+    const usuario = await getCurrentUser();
+    if (!usuario) return new Map();
+    return await assinarDownloadUrls(ids, usuario.id);
+  } catch {
+    return new Map();
+  }
 }
 
 export interface DiretorioPersonagens {
@@ -199,6 +240,7 @@ export async function lerDiretorioPersonagensAction(
         getCharacterRules().catch(() => null),
       ]);
       const regras = (regrasDoc?.payload as CharacterRulesPayload | undefined) ?? null;
+      const avatares = await avataresAssinados(controlados);
       return {
         ok: true,
         dados: {
@@ -214,6 +256,7 @@ export async function lerDiretorioPersonagensAction(
               posicao: i,
               arquivado: false,
               controladores: null,
+              avatarUrl: (c.avatar_image_id && avatares.get(c.avatar_image_id)) || null,
               ...resumoLeveDoPersonagem(c, regras),
             })),
         },
@@ -248,6 +291,7 @@ export async function lerDiretorioPersonagensAction(
     // (não filtra); o diretório normal só mostra os ativos, e a lista
     // de arquivados vem da leitura dedicada quando pedida.
     const registros = [...ativos.filter((c) => !c.archived_at), ...arquivados];
+    const avatares = await avataresAssinados(registros);
 
     return {
       ok: true,
@@ -269,6 +313,7 @@ export async function lerDiretorioPersonagensAction(
             posicao: colocacao?.posicao ?? 0,
             arquivado: !!c.archived_at,
             controladores: controladoresPorPersonagem.get(c.id) ?? 0,
+            avatarUrl: (c.avatar_image_id && avatares.get(c.avatar_image_id)) || null,
             ...resumoLeveDoPersonagem(c, regras),
           };
         }),

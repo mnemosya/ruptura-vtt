@@ -13,12 +13,16 @@
 import { User } from "lucide-react";
 import type { ConsoleApi, RecursoEditavel } from "../types";
 import { ResourceValueCard } from "./ResourceValueCard";
+import { COR_RECURSO, ROTULO_RECURSO } from "../coresRecurso";
 
-const RECURSOS: { id: RecursoEditavel; tag: string; cor: string }[] = [
-  { id: "pv", tag: "PV", cor: "#e0455e" },
-  { id: "pe", tag: "PE", cor: "#9a6cff" },
-  { id: "mana", tag: "MANA", cor: "#3aa6f0" },
-];
+/* As cores e os rótulos vêm de `coresRecurso.ts` — a aba Personagens
+   do VTT desenha as mesmas barras, e dois hexadecimais iguais em
+   arquivos diferentes viram dois diferentes na primeira mudança. */
+const RECURSOS: { id: RecursoEditavel; tag: string; cor: string }[] = (["pv", "pe", "mana"] as const).map((id) => ({
+  id,
+  tag: ROTULO_RECURSO[id],
+  cor: COR_RECURSO[id],
+}));
 
 export function MinimizedDockContent({ api, avatarUrl }: { api: ConsoleApi; avatarUrl: string | null }) {
   const { character, derivados } = api;
