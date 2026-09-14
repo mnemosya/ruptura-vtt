@@ -66,6 +66,7 @@ export function PainelVtt({
   ehNarrador,
   personagemDoTokenSelecionado,
   onAdicionarPersonagemACena,
+  onArrastarPersonagem,
   onFocarToken,
   fixtureVisual,
 }: {
@@ -76,6 +77,8 @@ export function PainelVtt({
   personagemDoTokenSelecionado: { id: string; nome: string } | null;
   /** Inicia o fluxo CANÔNICO de criação de token vinculado (posicionamento no mapa). */
   onAdicionarPersonagemACena: (p: PersonagemArrastado) => void;
+  /** Repassado ao diretório: quem está sendo arrastado pro mapa. */
+  onArrastarPersonagem?: (p: PersonagemArrastado | null) => void;
   /**
    * Centraliza a câmera num token. É a ÚNICA ação do painel autorizada
    * a mexer na cena, e só a partir de um controle explicitamente
@@ -305,6 +308,7 @@ export function PainelVtt({
         visivel={aberto && abaAtiva === "personagens"}
         ehNarrador={ehNarrador}
         onAdicionarACena={onAdicionarPersonagemACena}
+        onArrastarPersonagem={onArrastarPersonagem}
         onAbrirConsole={abrirConsole}
         onConfigurarAcesso={setAcessoDe}
         onPrecarregarConsole={aquecerConsole}
@@ -487,6 +491,7 @@ export function PainelVtt({
               visivel
               ehNarrador={ehNarrador}
               onAdicionarACena={onAdicionarPersonagemACena}
+              onArrastarPersonagem={onArrastarPersonagem}
               onAbrirConsole={abrirConsole}
               onConfigurarAcesso={setAcessoDe}
               onPrecarregarConsole={aquecerConsole}

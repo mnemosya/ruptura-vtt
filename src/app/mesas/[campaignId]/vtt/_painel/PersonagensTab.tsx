@@ -126,6 +126,7 @@ export function PersonagensTab({
   visivel,
   ehNarrador,
   onAdicionarACena,
+  onArrastarPersonagem,
   onReceberItemDoBando,
   onAbrirConsole,
   onConfigurarAcesso,
@@ -144,6 +145,13 @@ export function PersonagensTab({
   onPrecarregarConsole: () => void;
   /** Cria um token vinculado a este personagem pelo fluxo canônico (posicionamento no mapa). */
   onAdicionarACena: (p: PersonagemArrastado) => void;
+  /**
+   * Avisa o MAPA de quem está sendo arrastado (e `null` ao terminar).
+   * Durante o `dragover` o navegador não deixa ler o `dataTransfer` —
+   * só os tipos —, então a prévia do token no mapa depende de a carga
+   * chegar por este caminho.
+   */
+  onArrastarPersonagem?: (p: PersonagemArrastado | null) => void;
   /** Um item do Bando foi solto sobre este personagem — abre a confirmação de transferência. */
   onReceberItemDoBando: (item: ItemTransferivel, personagem: { id: string; nome: string }) => void;
   /** Abre Personagens completo em JANELA INTERNA. `undefined` quando ESTA instância já é a janela. */
@@ -634,8 +642,15 @@ export function PersonagensTab({
                        nada. Quem escolhe o efeito é cada destino; a
                        origem só declara o que é permitido. */
                     e.dataTransfer.effectAllowed = "copyMove";
+                    /* QUEM está sendo arrastado, pra fora do painel. O
+                       mapa precisa disso pra desenhar a prévia do token
+                       enquanto o arrasto passa por cima dele: durante o
+                       `dragover` o navegador não deixa LER o
+                       `dataTransfer` (só os tipos), então a carga tem
+                       que chegar por outro caminho. */
+                    onArrastarPersonagem?.(carga);
                   }}
-                  onArrastarFim={() => { setContainerSobre(null); setPastaSobre(null); setLinhaAlvo(null); }}
+                  onArrastarFim={() => { setContainerSobre(null); setPastaSobre(null); setLinhaAlvo(null); onArrastarPersonagem?.(null); }}
                   onArrastarSaiu={() => { setContainerSobre(null); setLinhaAlvo(null); }}
                   onArrastarSobre={(e) => {
                     // DOIS arrastos chegam nesta linha: um item do

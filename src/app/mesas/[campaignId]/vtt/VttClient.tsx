@@ -2260,6 +2260,15 @@ export function VttClient({
    * persistência de token — e o documento do diretório não é movido
    * nem substituído: o token é uma instância da cena vinculada a ele.
    */
+  /**
+   * Quem está sendo arrastado do painel, enquanto o arrasto dura.
+   *
+   * É REF e não estado: só o `dragover` lê, e ele já dispara dezenas de
+   * vezes por segundo — um `setState` por quadro do gesto rerenderizaria
+   * a mesa inteira pra não mudar nada na tela.
+   */
+  const personagemArrastadoRef = useRef<PersonagemArrastado | null>(null);
+
   const iniciarTokenDePersonagem = useCallback((p: PersonagemArrastado, ancora: Hex | null = null) => {
     if (!estadoCena || !ehNarrador) return;
     setFerramenta("interagir");
@@ -2472,10 +2481,25 @@ export function VttClient({
     e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
     setArrastandoPersonagem(true);
-    // Feedback ao vivo: o fantasma de posicionamento (se já estiver
-    // ativo) segue o cursor pelo mesmo caminho de sempre.
     const hex = conversorHexRef.current?.(e.clientX, e.clientY) ?? null;
-    if (hex) moverPosicionamento(hex);
+    if (!hex) return;
+    /* A PRÉVIA COMEÇA AQUI, não no clique. Enquanto o arrasto passa
+       por cima do mapa, o token já aparece na célula sob o ponteiro —
+       com a cor, o tamanho e a validação de sempre. Antes isto só
+       movia um fantasma que ainda não existia: a fase de posicionar
+       começava ao SOLTAR, e durante o arrasto o mapa não dizia nada
+       sobre o que ia acontecer nem onde.
+
+       A carga vem do painel por prop (`personagemArrastadoRef`): no
+       `dragover` o navegador não deixa ler o `dataTransfer`, só os
+       tipos. */
+    const arrastado = personagemArrastadoRef.current;
+    if (!fluxoTokenRef.current && arrastado) {
+      setFerramenta("interagir");
+      setFluxoToken({ fase: "posicionando", rascunho: rascunhoDePersonagem(arrastado), ancora: hex, orientacao: 0 });
+      return;
+    }
+    moverPosicionamento(hex);
   }, [ehNarrador, moverPosicionamento]);
 
   /**
@@ -5543,7 +5567,14 @@ export function VttClient({
           className="rv-mapa-camada"
           data-arrastando-personagem={arrastandoPersonagem ? "true" : undefined}
           onDragOver={aoArrastarSobreMapa}
-          onDragLeave={() => setArrastandoPersonagem(false)}
+          /* SAIU DO MAPA sem soltar: a prévia vai junto. Deixá-la
+             acesa prenderia a mesa numa fase de posicionamento que
+             ninguém pediu — o arrasto continua vivo e pode terminar
+             numa pasta do painel, que é outro destino legítimo. */
+          onDragLeave={() => {
+            setArrastandoPersonagem(false);
+            if (personagemArrastadoRef.current && fluxoTokenRef.current?.fase === "posicionando") setFluxoToken(null);
+          }}
           onDrop={aoSoltarNoMapa}
         >
           <MapaHex
@@ -6092,6 +6123,13 @@ export function VttClient({
         ehNarrador={ehNarrador}
         personagemDoTokenSelecionado={personagemDoTokenSelecionado}
         onAdicionarPersonagemACena={iniciarTokenDePersonagem}
+        onArrastarPersonagem={(p) => {
+          personagemArrastadoRef.current = p;
+          // Fim do arrasto sem drop no mapa (soltou no painel, ou
+          // cancelou com Esc): a prévia que o `dragover` acendeu não
+          // pode ficar para trás.
+          if (!p && fluxoTokenRef.current?.fase === "posicionando") setFluxoToken(null);
+        }}
         onFocarToken={focarTokenPeloPainel}
       />
 
@@ -6124,7 +6162,15 @@ export function VttClient({
           (nunca `.rv-modal-fundo`: cliques no mapa/trilho continuam
           passando, só a célula clicada é interceptada por
           `MapaHex.posicionamentoToken`). ── */}
-      {fluxoToken && (fluxoToken.fase === "posicionando" || fluxoToken.fase === "enviando" || fluxoToken.fase === "erro") && (
+      {/* A BARRA NÃO APARECE DURANTE O ARRASTO: ali a prévia já é a
+          instrução inteira — o token está na célula sob o ponteiro e
+          soltar o põe lá. Uma faixa dizendo "clique para confirmar,
+          Q/E para girar" no meio de um arrasto descreve um gesto que
+          não é o que está acontecendo. Ela volta quando o
+          posicionamento vem do formulário, que é onde o clique e a
+          rotação existem. */}
+      {fluxoToken && !arrastandoPersonagem
+        && (fluxoToken.fase === "posicionando" || fluxoToken.fase === "enviando" || fluxoToken.fase === "erro") && (
         <div className="rv-escolha-posicao" role="status" aria-live="polite" data-fase={fluxoToken.fase}>
           {fluxoToken.fase === "erro" ? (
             <span role="alert">{fluxoToken.mensagem} Escolha outra posição ou tente de novo.</span>
