@@ -1033,7 +1033,10 @@
 .rv-pn-scroll--pers .rv-pn-no:has(> [data-testid="painel-personagens-pasta"]) {
   margin-top: 7px; margin-bottom: 14px;
   border: 1px solid var(--pn-line-hair); border-radius: var(--pn-radius);
-  background: var(--pn-inset);
+  /* O MESMO FUNDO dos cartões e das abas paradas. `--pn-inset` era o
+     tom de campo REBAIXADO — certo quando a pasta era um sulco na
+     lista, errado agora que ela é uma peça como as outras. */
+  background: #0c1526;
   overflow: hidden;
   transition: border-color .14s, background .14s;
 }
@@ -1421,8 +1424,21 @@
    é justamente a imagem com que se compara. 56px deixa o rosto no
    mesmo porte do token. Com os recursos ligados a linha passa disso
    sozinha e o mínimo não pesa. */
+/* O MESMO FUNDO DA ABA PARADA (`#0c1526`). Transparente, o cartão era
+   um vazio com borda — a lista lia como uma grade desenhada sobre o
+   painel, não como uma pilha de peças. Cartão e aba são a mesma coisa
+   aqui: superfície que se clica. */
 .rv-pn-scroll--pers .rv-pn-linha {
   align-items: stretch; gap: 0; padding: 0; overflow: hidden; min-height: 56px;
+  background: #0c1526;
+}
+/* O SELECIONADO tem que vencer o fundo acima — as duas regras empatam
+   em especificidade (`.rv-pn-scroll--pers .rv-pn-linha` contra
+   `.rv-pn-linha[data-sel]`) e, empatadas, ganha a que vem depois: o
+   realce sumia. O acento agora é misturado SOBRE a cor do cartão, e
+   não sobre transparente, que era o que ele supunha antes. */
+.rv-pn-scroll--pers .rv-pn-linha[data-sel="true"] {
+  background: color-mix(in srgb, var(--fg-a, #45b8c9) 12%, #0c1526);
 }
 /* O recuo da árvore vira MARGEM do cartão inteiro. Como padding, ele
    empurrava o avatar pra dentro e deixava uma faixa de fundo à
