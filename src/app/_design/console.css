@@ -1013,7 +1013,8 @@
   cursor: pointer;
   transition: color 0.14s, background 0.14s, border-color 0.14s;
 }
-.rc-tabrail-btn:hover { color: #d3f4ff; border-color: var(--rc-line); background: rgba(0, 212, 255, 0.09); }
+/* A borda do hover é a MESMA do ativo — ver `.rv-ferr-btn` no VTT. */
+.rc-tabrail-btn:hover { color: #d3f4ff; border-color: #108bac; background: rgba(0, 212, 255, 0.09); }
 /* O ícone da aba ATIVA é CIANO, não branco: a cor da marca é o que diz
    "é esta", e um branco mais forte que o dos vizinhos exigia comparar
    dois cinzas pra descobrir qual estava selecionada. Mesma regra no
@@ -1055,8 +1056,9 @@
   background: rgba(12, 20, 32, 0.70);
   color: color-mix(in srgb, var(--am) 70%, #06121c);
 }
+/* Mesma regra dentro da paleta âmbar: a borda do hover é a do ativo. */
 .rc-tabrail-btn--personagem:hover {
-  border-color: color-mix(in srgb, var(--am) 45%, #06121c);
+  border-color: color-mix(in srgb, var(--am) 60%, #06121c);
   background: rgba(207, 154, 62, 0.16);
   color: var(--am);
 }

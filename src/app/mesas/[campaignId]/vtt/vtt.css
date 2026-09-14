@@ -176,7 +176,11 @@
   background: rgba(12, 20, 32, .70); color: #7f95b3; cursor: pointer;
   transition: color .14s, background .14s, border-color .14s;
 }
-.rv-ferr-btn:hover { color: #d3f4ff; border-color: var(--rv-line-strong); background: rgba(0, 212, 255, .09); }
+/* A BORDA DO HOVER É A DO ATIVO. O que separa "estou passando por
+   cima" de "é esta" passa a ser o fundo e o brilho, não uma terceira
+   borda — antes o trilho tinha três tons de contorno, e o do meio não
+   significava nada que os outros dois já não dissessem. */
+.rv-ferr-btn:hover { color: #d3f4ff; border-color: #108bac; background: rgba(0, 212, 255, .09); }
 /* ATIVO EM CIANO. O realce continua sendo borda + fundo + brilho, como
    no Console; o que muda é o ícone, que era quase branco e agora é a
    cor da marca — a mesma leitura à distância nas duas superfícies. */
