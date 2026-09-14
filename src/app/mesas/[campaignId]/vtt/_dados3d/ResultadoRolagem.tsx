@@ -240,7 +240,10 @@ export function DadosLivres({ termos, maior, size = 40, landed = false }: {
       {termos.map((t, i) => (
         <Fragment key={i}>
           {somando && i > 0 && (
-            <span aria-hidden="true" style={{ flex: "none", fontFamily: MONO, fontSize: 13, fontWeight: 700, lineHeight: 1, color: cor.hex, opacity: .55 }}>+</span>
+            /* O TAMANHO ACOMPANHA O DADO (42% dele), e não um px fixo:
+               a mesma fileira é desenhada a 40px no feed e menor na
+               bandeja, e um 13 fixo sumia do lado do dado grande. */
+            <span aria-hidden="true" style={{ flex: "none", fontFamily: MONO, fontSize: Math.round(size * 0.42), fontWeight: 700, lineHeight: 1, color: cor.hex, opacity: .7 }}>+</span>
           )}
           <PolyDie
             sides={t.faces}
