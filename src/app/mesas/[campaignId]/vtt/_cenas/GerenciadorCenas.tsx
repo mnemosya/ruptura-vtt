@@ -83,6 +83,14 @@ export interface PropsGerenciadorCenas {
   /** A cena onde a MESA está — destino de quem é devolvido ao grupo. */
   cenaApresentadaId?: string | null;
   /**
+   * Quantas peças ficariam fora da grade com o tamanho em edição, e o
+   * aviso do tamanho que alimenta essa conta. Só o `VttClient` sabe contar,
+   * e só da cena ABERTA — por isso os dois passam adiante apenas quando
+   * é ela que está sendo configurada (ver o uso de `ParametrosCena`).
+   */
+  foraDaGrade?: number;
+  onMudarTamanho?: (largura: number, altura: number) => void;
+  /**
    * Muda quando algo fora daqui alterou uma cena (renomear pela janela
    * de Configurações, por exemplo). Releitura em vez de espelhar o
    * estado do pai: o catálogo tem campos que o `VttClient` não carrega.
@@ -1509,6 +1517,8 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
             cena={emEdicao}
             ocupada={ocupadas[emEdicao.id] === true}
             erro={errosPorCena[emEdicao.id] ?? null}
+            foraDaGrade={emEdicao.id === p.cenaVistaId ? p.foraDaGrade : undefined}
+            onMudarTamanho={emEdicao.id === p.cenaVistaId ? p.onMudarTamanho : undefined}
             onSalvar={(v) => void salvarParametros(emEdicao, v)}
             onFechar={() => setConfigurandoId(null)}
           />

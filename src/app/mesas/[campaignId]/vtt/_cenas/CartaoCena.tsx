@@ -3,7 +3,7 @@
 /**
  * UM CARTÃO DO CATÁLOGO.
  *
- * Puramente apresentacional, como `PainelCena`: recebe valores e
+ * Puramente apresentacional, como `ParametrosCena`: recebe valores e
  * devolve intenções. Quem chama a Server Action, guarda revisão e
  * reconcilia conflito é o `GerenciadorCenas`.
  *

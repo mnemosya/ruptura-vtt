@@ -23,7 +23,6 @@ import { PainelMedir } from "../../mesas/[campaignId]/vtt/_shell/PainelMedir";
 import { type ModoMedicao, MODO_MEDICAO_PADRAO } from "../../mesas/[campaignId]/vtt/_dominio/medicaoRegua";
 import { PainelMarcar } from "../../mesas/[campaignId]/vtt/_shell/PainelMarcar";
 import { CAMADAS_PADRAO, PainelCamadas } from "../../mesas/[campaignId]/vtt/_shell/PainelCamadas";
-import { PainelCena } from "../../mesas/[campaignId]/vtt/_shell/PainelCena";
 import { PainelDados } from "../../mesas/[campaignId]/vtt/_shell/PainelDados";
 import { JanelaFerramenta } from "../../mesas/[campaignId]/vtt/_shell/JanelaFerramenta";
 import { ProvedorMesaDados } from "../../mesas/[campaignId]/vtt/_dados3d/ContextoMesaDados";
@@ -150,38 +149,6 @@ export function VitrineCamadas() {
           botaoRef={{ current: null }}
         />
       </div>
-    </>
-  );
-}
-
-/* ── cena ────────────────────────────────────────────────────────── */
-
-export function VitrineCena() {
-  const [caso, setCaso] = useState<"normal" | "fora" | "erro">("normal");
-  const valores = { nome: "Doca 7 — o mercado que se desfez", local: "Pátio de carga", resumo: "Submundo de Vosek", largura: 24, altura: 18 };
-  return (
-    <>
-      <div className="gal-abas" role="group" aria-label="Estado do painel de cena">
-        {(["normal", "fora", "erro"] as const).map((c) => (
-          <button key={c} type="button" className="gal-aba" aria-selected={caso === c} onClick={() => setCaso(c)}>
-            {c === "normal" ? "Normal" : c === "fora" ? "Encolhendo a grade" : "Recusa do servidor"}
-          </button>
-        ))}
-      </div>
-      <span className="gal-nota">
-        “Encolhendo a grade” é o aviso de quantos tokens e objetos ficariam de fora com o tamanho em edição.
-      </span>
-      <PalcoJanela chave={`cena-${caso}`}>
-        <PainelCena
-          valoresIniciais={valores as Parameters<typeof PainelCena>[0]["valoresIniciais"]}
-          foraDaGrade={caso === "fora" ? 3 : 0}
-          salvando={false}
-          erro={caso === "erro" ? "A cena foi alterada por outra pessoa; recarregue antes de salvar." : null}
-          onSalvar={SEM_EFEITO}
-          onMudarTamanho={SEM_EFEITO}
-          onFechar={SEM_EFEITO}
-        />
-      </PalcoJanela>
     </>
   );
 }

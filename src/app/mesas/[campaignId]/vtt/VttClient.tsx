@@ -80,7 +80,7 @@ import {
   criarAreaAction, atualizarAreaAction, duplicarAreaAction, removerAreaAction, lerObjetosCenaAction,
   iniciarTrilhaAction, atualizarTrilhaAction, encerrarTrilhaAction, lerTrilhaAction,
   criarObjetoAction, removerObjetoAction, atualizarObjetoAction, moverObjetoAction, danificarObjetoAction,
-  type AtualizarObjetoParams, definirCamadasCenaAction, salvarConfigCenaAction } from "./_acoes/sceneActions";
+  type AtualizarObjetoParams, definirCamadasCenaAction } from "./_acoes/sceneActions";
 import { refreshAccessToken } from "../../../../lib/auth/actions";
 import { pegadaEfetiva, projetarPegada, pegadasSobrepoem, origemMecanica } from "./_dominio/pegada";
 import {
@@ -131,7 +131,6 @@ import { MenuContextual, type ItemMenuContextual } from "./_shell/MenuContextual
 import { ProvedorJanelasFerramenta } from "./_shell/JanelaFerramenta";
 import { PainelCamadas, type EstadoCamadas, CAMADAS_PADRAO, camadasDeJson } from "./_shell/PainelCamadas";
 import { PainelMarcar, type CorMarcaUi, type SinalMarcaUi, type DuracaoMarcaUi } from "./_shell/PainelMarcar";
-import { PainelCena, type ValoresCena } from "./_shell/PainelCena";
 import { GerenciadorCenas } from "./_cenas/GerenciadorCenas";
 import { esquecerCenaVista, gravarCenaVista, lerCenaVista } from "./_cenas/modelo";
 import { CartaoTokenHover } from "./_shell/CartaoTokenHover";
@@ -2207,7 +2206,6 @@ export function VttClient({
   /** Fecha as janelas de botão — parte da regra de UMA JANELA POR VEZ. */
   const fecharJanelasDeBotao = useCallback(() => {
     setPainelCamadasAberto(false);
-    setPainelCenaAberto(false);
     setPainelCenasAberto(false);
   }, []);
 
@@ -2433,11 +2431,10 @@ export function VttClient({
     if (nova !== "imagens") imgs.setSelecionadaId(null);
     if (nova !== "terreno") setUltimoGestoTerrenoCelulas(null);
     // UMA JANELA POR VEZ: entre ferramentas isso já era automático (a
-    // janela é a ferramenta ativa), mas Camadas, Configurações da cena
-    // e o Catálogo são janelas de BOTÃO e ficavam abertas por cima.
-    // Abrir uma ferramenta fecha as três.
+    // janela é a ferramenta ativa), mas Camadas e o Catálogo são
+    // janelas de BOTÃO e ficavam abertas por cima. Abrir uma
+    // ferramenta fecha as duas.
     setPainelCamadasAberto(false);
-    setPainelCenaAberto(false);
     setPainelCenasAberto(false);
     setFerramenta(nova);
   }, [ferramenta, cancelarPosicionamento]);
@@ -4005,10 +4002,11 @@ export function VttClient({
   const restaurarCamadasPadrao = useCallback(() => { void aplicarCamadas(CAMADAS_PADRAO); }, [aplicarCamadas]);
 
   // ── CONFIGURAÇÕES DA CENA ────────────────────────────────────────
-  // O botão da barra existia sem `onClick` desde sempre. Agora abre a
-  // janela, e a escrita passa por `set_vtt_scene_config` (migration
-  // 0097): narrador-only e revisão conferida no servidor.
-  const [painelCenaAberto, setPainelCenaAberto] = useState(false);
+  // A janela própria saiu junto com o botão do trilho: os parâmetros de
+  // QUALQUER cena — inclusive a aberta — se editam pelo cartão dela no
+  // catálogo, que já fazia tudo o que ela fazia e mais (cor, opacidade
+  // e tamanho de célula). A escrita continua em `set_vtt_scene_config`
+  // (migration 0097): narrador-only e revisão conferida no servidor.
   const [painelCenasAberto, setPainelCenasAberto] = useState(false);
   /**
    * Abrir/fechar o catálogo de cenas — DOIS gatilhos, um caminho só: o
@@ -4031,21 +4029,10 @@ export function VttClient({
     const abrir = !painelCenasAberto;
     if (abrir) trocarFerramenta("interagir");
     setPainelCamadasAberto(false);
-    setPainelCenaAberto(false);
     setPainelCenasAberto(abrir);
   }, [painelCenasAberto, trocarFerramenta]);
-  const [salvandoCena, setSalvandoCena] = useState(false);
-  const [erroConfigCena, setErroConfigCena] = useState<string | null>(null);
   /** Tamanho em EDIÇÃO — só pra contar o que ficaria fora da grade. */
   const [tamanhoEmEdicao, setTamanhoEmEdicao] = useState<{ largura: number; altura: number } | null>(null);
-
-  const valoresCena: ValoresCena = useMemo(() => ({
-    nome: estadoCena?.cena.nome ?? "",
-    local: estadoCena?.cena.local ?? "",
-    resumo: estadoCena?.cena.resumo ?? "",
-    largura: estadoCena?.cena.largura ?? 0,
-    altura: estadoCena?.cena.altura ?? 0,
-  }), [estadoCena?.cena.nome, estadoCena?.cena.local, estadoCena?.cena.resumo, estadoCena?.cena.largura, estadoCena?.cena.altura]);
 
   /**
    * Quantas peças ficariam fora da grade com o tamanho em edição.
@@ -4067,27 +4054,12 @@ export function VttClient({
     return tokensFora + objetosFora;
   }, [estadoCena, tamanhoEmEdicao]);
 
-  const salvarCena = useCallback(async (v: ValoresCena) => {
-    if (!estadoCena) return;
-    setSalvandoCena(true);
-    setErroConfigCena(null);
-    try {
-      const r = await salvarConfigCenaAction({
-        campaignId, sceneId: estadoCena.cena.id,
-        nome: v.nome, local: v.local.trim() || null, resumo: v.resumo.trim() || null,
-        largura: v.largura, altura: v.altura,
-        revisionEsperada: estadoCena.cena.revision,
-      });
-      if (r.ok && r.dados) {
-        setEstadoCena((atual) => (atual ? { ...atual, cena: r.dados!.cena } : atual));
-        setTamanhoEmEdicao(null);
-      } else {
-        setErroConfigCena(r.erro ?? "Não foi possível salvar a cena.");
-      }
-    } finally {
-      setSalvandoCena(false);
-    }
-  }, [campaignId, estadoCena]);
+  /* A ESCRITA da config saiu daqui junto com a janela: quem salva
+     nome, local, resumo, tamanho, cor, opacidade e célula é o catálogo
+     (`salvarParametros`, em `_cenas/GerenciadorCenas.tsx`), pela mesma
+     RPC `set_vtt_scene_config` e com a mesma revisão otimista. O que
+     restou deste lado é só a PRÉVIA: o tamanho em edição chega pelo
+     `onMudarTamanho` do catálogo e alimenta a contagem acima. */
 
   // ── Ping — efêmero: nunca persistido, nunca entra em undo/redo, nunca
   // cria marca. `autorId` de cada evento vem do SERVIDOR (`vtt_ping` RPC
@@ -5475,7 +5447,6 @@ export function VttClient({
             onClick={() => {
               const abrir = !painelCamadasAberto;
               if (abrir) trocarFerramenta("interagir");
-              setPainelCenaAberto(false);
               setPainelCenasAberto(false);
               setPainelCamadasAberto(abrir);
             }}
@@ -5969,18 +5940,6 @@ export function VttClient({
           />
         )}
 
-        {painelCenaAberto && ehNarrador && estadoCena && (
-          <PainelCena
-            valoresIniciais={valoresCena}
-            foraDaGrade={pecasForaDaGrade}
-            salvando={salvandoCena}
-            erro={erroConfigCena}
-            onSalvar={(v) => void salvarCena(v)}
-            onMudarTamanho={(largura, altura) => setTamanhoEmEdicao({ largura, altura })}
-            onFechar={() => { setPainelCenaAberto(false); setTamanhoEmEdicao(null); setErroConfigCena(null); }}
-          />
-        )}
-
         {/* CATÁLOGO. `versaoExterna` é a revisão da cena ABERTA: quando
             ela muda, foi `set_vtt_scene_config` (renomear pela janela de
             Configurações, ou camadas) — e o cartão dela no catálogo
@@ -6000,6 +5959,13 @@ export function VttClient({
             cenaVistaRevision={estadoCena?.cena.revision}
             versaoPalco={versaoPalco}
             onAbrir={abrirCena}
+            /* O AVISO DE ENCOLHER veio da janela "Configurações da
+               Cena", que saiu. Ele só existe pra cena ABERTA: contar
+               peças fora da grade exige os tokens e objetos dela, e o
+               cliente não carrega os das outras. `onMudarTamanho` é o
+               que alimenta essa contagem — não mexe no mapa. */
+            foraDaGrade={pecasForaDaGrade}
+            onMudarTamanho={(largura, altura) => setTamanhoEmEdicao({ largura, altura })}
             /* A cena aberta muda de tamanho/grade SEM reler: a gaveta
                entrega a linha que a RPC devolveu, e o mapa redesenha no
                mesmo quadro. Reabrir não serviria — `trocarParaCena` sai
@@ -6007,7 +5973,7 @@ export function VttClient({
             onCenaConfigurada={(cena) => setEstadoCena((e) => (
               e && e.cena.id === cena.id ? { ...e, cena } : e
             ))}
-            onFechar={() => setPainelCenasAberto(false)}
+            onFechar={() => { setPainelCenasAberto(false); setTamanhoEmEdicao(null); }}
           />
         )}
 

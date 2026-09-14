@@ -30,7 +30,7 @@ import { TrilhaFaccoes } from "../../mesas/[campaignId]/vtt/_turnos/TrilhaFaccoe
    copiado: duas fixtures do mesmo HUD envelheceriam em ritmos
    diferentes, e a que ninguém abre é a que passa a mentir. */
 import { VitrineCartaoToken } from "./GaleriaCartaoToken";
-import { VitrineCamadas, VitrineCena, VitrineDados, VitrineMarcar, VitrineMedir, VitrineMoldura as VitrineMolduraJanela } from "./GaleriaJanelas";
+import { VitrineCamadas, VitrineDados, VitrineMarcar, VitrineMedir, VitrineMoldura as VitrineMolduraJanela } from "./GaleriaJanelas";
 import { VitrineGaveta, VitrineLadrilho, VitrineParametros } from "./GaleriaCenas";
 import {
   VitrineAreas, VitrineGerenciadorToken, VitrineMenuContextual, VitrineObjetos, VitrineTerreno,
@@ -375,11 +375,6 @@ function montarPecas(campaignId: string | null): Peca[] { return [
   { chave: "jan-camadas", grupo: "Janelas de ferramenta", rotulo: "Camadas", render: () => (
     <Secao titulo="Camadas do mapa" sub={<>Visível e bloqueada por camada, separadas em cena e ferramentas — conteúdo escondido some pra mesa mas o narrador continua vendo; ferramenta escondida some pra todo mundo. Componente: <code>_shell/PainelCamadas.tsx</code>.</>}>
       <VitrineCamadas />
-    </Secao>
-  ) },
-  { chave: "jan-cena", grupo: "Janelas de ferramenta", rotulo: "Cena", render: () => (
-    <Secao titulo="Cena" sub={<>Nome, local, resumo e tamanho da grade, com o aviso do que ficaria de fora ao encolher. Componente: <code>_shell/PainelCena.tsx</code>.</>}>
-      <VitrineCena />
     </Secao>
   ) },
   { chave: "jan-terreno", grupo: "Janelas de ferramenta", rotulo: "Terreno", render: () => (
