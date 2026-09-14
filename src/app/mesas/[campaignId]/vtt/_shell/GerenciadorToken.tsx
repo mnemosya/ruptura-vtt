@@ -38,7 +38,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { type Hex, TAMANHOS, type TamanhoCriatura, hexParaPixel, hexPath } from "../_mapa/hex";
 import { type CondicaoSlug, CONDICOES } from "../_dados/cenaDemo";
 import { type MapaTerreno, dentroDoMapa, pegadaBloqueada } from "../_dominio/movimento";
@@ -575,7 +575,7 @@ export function GerenciadorToken({
             que muda a cada campo, e um preview que sai de vista é um
             preview que não serve. */}
         <div className="rv-token-previa" aria-hidden="true">
-          <div className="rv-token-disco" data-lado={valores.lado} data-vertente={valores.vertente}>
+          <div className="rv-token-disco" data-lado={valores.lado}>
             {valores.retratoUrl && validacaoImagem.ok && !imagemFalhou
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={valores.retratoUrl} alt="" onError={() => setImagemFalhou(true)} />
@@ -716,7 +716,13 @@ export function GerenciadorToken({
             clique — e abertas de saída quando já têm conteúdo (modo
             editar). */}
         <details className="rv-mais-opcoes rv-fp-grupo" open={maisOpcoesAberto} onToggle={(e) => setMaisOpcoesAberto((e.target as HTMLDetailsElement).open)}>
-          <summary className="rv-fp-rotulo">Retrato, vida e estado</summary>
+          {/* O CHEVRON diz que o bloco abre e fecha. Sem ele, "Retrato,
+              vida e estado" era só mais um título de seção como os três
+              de cima — e os três de cima não abrem nada. */}
+          <summary className="rv-fp-rotulo">
+            Retrato, vida e estado
+            <ChevronDown size={13} className="rv-mais-opcoes-chevron" aria-hidden="true" />
+          </summary>
 
           <label className="rv-field">
             <span>Imagem do token</span>

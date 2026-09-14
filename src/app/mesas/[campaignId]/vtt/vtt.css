@@ -1210,19 +1210,18 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
   background: #0c1526;
 }
-/* A COR É DA VERTENTE, como no mapa (`COR_VERTENTE`): lá o anel do
-   disco sai dela, e o LADO aparece pelo TRAÇO — neutro tracejado, PN
-   com anel serrilhado por dentro. A prévia repete os dois códigos em
-   vez de inventar um terceiro. */
+/* DUAS PERGUNTAS, DOIS DESENHOS: o disco responde "de que lado ele
+   está" (PJ/PN/neutro, a cor do lado) e a PEGADA responde "de que
+   vertente ele é" (a cor que o token leva pro mapa). Vestir os dois da
+   mesma cor faria a prévia responder duas vezes a mesma coisa. */
 .rv-token-disco {
   flex: none; width: 52px; height: 52px; display: grid; place-items: center;
   border-radius: var(--rv-r-pill); overflow: hidden;
-  border: 2px solid var(--rv-vertente-cor, var(--rv-slate));
-  background: color-mix(in srgb, var(--rv-vertente-cor, var(--rv-slate)) 12%, #070d17);
-  color: var(--rv-vertente-cor, var(--rv-slate));
+  border: 2px solid var(--rv-lado-cor, var(--rv-slate));
+  background: color-mix(in srgb, var(--rv-lado-cor, var(--rv-slate)) 12%, #070d17);
+  color: var(--rv-lado-cor, var(--rv-slate));
 }
 .rv-token-disco[data-lado="neutro"] { border-style: dashed; }
-.rv-token-disco[data-lado="pn"] { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rv-vertente-cor) 55%, transparent); }
 .rv-token-pegada { color: var(--rv-vertente-cor, #35c8f0); }
 /* A paleta, uma vez só — vale pro disco, pra pegada e pras fichas. */
 [data-vertente="somatico"] { --rv-vertente-cor: #2f9e56; }
@@ -1319,6 +1318,8 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-mais-opcoes { border-top: 1px solid var(--linha-2); padding-top: 14px; display: flex; flex-direction: column; gap: 18px; }
 /* O vão entre título e conteúdo vem da regra de `legend` mais abaixo
    (`.rv-janela-token .rv-field > legend`), que vale pros dois níveis. */
+.rv-mais-opcoes-chevron { margin-left: auto; transition: transform .16s; }
+.rv-mais-opcoes[open] > summary .rv-mais-opcoes-chevron { transform: rotate(180deg); }
 .rv-mais-opcoes > summary {
   cursor: pointer; font-size: 11px; font-weight: 700; color: var(--cy); text-transform: uppercase; letter-spacing: .05em;
   list-style: none; display: flex; align-items: center; gap: 5px;
@@ -3378,8 +3379,14 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-janela-token .rv-cartoes-flag { gap: 8px; }
 
 /* Section — "Mais opções" é o disclosure que agrupa o resto */
-.rv-janela-token .rv-mais-opcoes { border-top: none; padding-top: 0; gap: 10px; }
-.rv-janela-token .rv-mais-opcoes > summary {
+/* 18px, como os grupos de cima: este bloco NÃO é um grupo com quatro
+   campos, é quatro SEÇÕES com título próprio (imagem, recursos,
+   vertente, condições). Os 10px que estavam aqui — herdados de quando
+   ele era uma lista de campos soltos — colavam uma na outra. */
+.rv-janela-token .rv-mais-opcoes { border-top: none; padding-top: 0; gap: 18px; }
+.rv-janela-token .rv-mais-opcoes-chevron { margin-left: auto; transition: transform .16s; }
+.rv-mais-opcoes[open] > summary .rv-mais-opcoes-chevron { transform: rotate(180deg); }
+.rv-mais-opcoes > summary {
   display: flex; align-items: center; gap: 10px;
   font-family: var(--rv-display), sans-serif;
   font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .2em; color: #4f6285;
@@ -3426,8 +3433,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    isso que "01 LADO" e "02 TAMANHO" (que são fieldsets) apareciam
    colados nas fichas, enquanto "03 CONTROLE" (um div com span)
    respirava. A margem devolve o vão a eles. */
-.rv-janela-token .rv-fp-grupo > legend { margin-bottom: 10px; }
-.rv-janela-token .rv-field > legend { margin-bottom: 8px; }
+/* E `margin-bottom` NO LEGEND não resolve: fora do fluxo, a margem
+   dele não empurra o conteúdo do fieldset de forma confiável. Quem
+   ganha o vão é o PRIMEIRO IRMÃO depois dele. */
+.rv-janela-token .rv-fp-grupo > legend + * { margin-top: 10px; }
+.rv-janela-token fieldset.rv-field > legend + * { margin-top: 8px; }
 .rv-janela-token .rv-fp-rotulo {
   display: flex; align-items: center; gap: 10px;
   font-family: var(--rv-display), sans-serif;
