@@ -1056,6 +1056,17 @@
   overflow: hidden;
   transition: border-color .14s, background .14s;
 }
+/* HOVER: quem acende é o BLOCO, mas só quando o mouse está no
+   CABEÇALHO. O cabeçalho não tem mais caixa própria — a borda e o
+   fundo são do bloco —, então o `:hover` dele precisa subir até aqui.
+   E `:hover` no bloco inteiro acenderia a pasta quando o mouse passa
+   por um personagem lá dentro, que é o cartão do personagem, não o
+   dela. A lavagem é metade da do alvo de arrasto e sem o fio interno
+   dele: hover e "solta aqui" continuam dizendo coisas diferentes. */
+.rv-pn-scroll--pers .rv-pn-no:has(> [data-testid="painel-personagens-pasta"]:hover) {
+  border-color: color-mix(in srgb, var(--pn-cy) 35%, var(--pn-line-soft));
+  background: color-mix(in srgb, var(--pn-cy) 6%, #0a1120);
+}
 .rv-pn-scroll--pers .rv-pn-no > [data-testid="painel-personagens-pasta"] {
   margin-top: 0; border: none; border-radius: 0; background: transparent;
 }
