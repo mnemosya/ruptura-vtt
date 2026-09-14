@@ -5922,7 +5922,39 @@ export function VttClient({
                 previewAtual={t.retrato}
                 origem={t.origemRetrato}
                 nomePersonagem={null}
-                onConcluido={(o) => { if (!o?.manterAberto) setEditandoRetratoDe(null); }}
+                onConcluido={(o) => {
+                  /* APLICA NA HORA o que a RPC devolveu. O canal de
+                     Realtime (`tokens_changed`) também avisa, e continua
+                     valendo pros OUTROS na mesa — mas quem acabou de
+                     salvar não pode ficar esperando o próprio eco pra
+                     ver a cara que escolheu. Era esse o sintoma: o
+                     retrato só aparecia depois de recarregar a página.
+
+                     `retratoEfetivoId` entra junto: é ele que o mapa
+                     desenha e o que entra na leva de assinatura — sem
+                     ele, o token ficaria com a sigla mesmo com o id
+                     novo no lugar certo. */
+                  if (o?.salvo) {
+                    const s = o.salvo;
+                    setEstadoCena((c) => (c ? {
+                      ...c,
+                      tokens: c.tokens.map((tk) => (tk.id === t.id ? {
+                        ...tk,
+                        revision: s.revision,
+                        retratoImageId: s.retratoImageId,
+                        retratoUrl: s.retratoUrl,
+                        /* Ao REMOVER: se o efetivo era o retrato do
+                           próprio token, ele some; se era herdado da
+                           ficha, continua valendo. A RPC não devolve o
+                           efetivo — esta é a única conta possível aqui,
+                           e o eco do Realtime reconcilia o resto. */
+                        retratoEfetivoId: s.retratoImageId
+                          ?? (tk.retratoEfetivoId === tk.retratoImageId ? null : tk.retratoEfetivoId),
+                      } : tk)),
+                    } : c));
+                  }
+                  if (!o?.manterAberto) setEditandoRetratoDe(null);
+                }}
                 onCancelar={() => setEditandoRetratoDe(null)}
               />
             </div>

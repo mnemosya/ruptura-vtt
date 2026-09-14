@@ -64,11 +64,36 @@ export interface PropsEditorRetratoToken {
   origem: "arquivo" | "endereco" | "herdado" | "nenhum";
   /** Nome do personagem, para dizer de onde a herança vem. */
   nomePersonagem: string | null;
-  onConcluido: (opcoes?: { manterAberto?: boolean }) => void;
+  /**
+   * `salvo` é o que a RPC devolveu — id do arquivo, endereço e a
+   * REVISÃO nova. Quem hospeda aplica isso no token em memória: o canal
+   * de Realtime também avisa, mas quem acabou de salvar não pode ficar
+   * esperando o próprio eco pra ver o que fez.
+   */
+  onConcluido: (opcoes?: {
+    manterAberto?: boolean;
+    salvo?: { revision: number; retratoImageId: string | null; retratoUrl: string | null };
+  }) => void;
   onCancelar: () => void;
 }
 
 type Aba = "arquivo" | "endereco";
+
+/**
+ * O `jsonb` que as três RPCs de retrato devolvem, em forma tipada.
+ * Devolve `undefined` quando o formato não é o esperado — aí quem
+ * hospeda cai no caminho do Realtime, que continua valendo.
+ */
+function lerRetratoSalvo(dados: unknown) {
+  if (!dados || typeof dados !== "object") return undefined;
+  const d = dados as Record<string, unknown>;
+  if (typeof d.revision !== "number") return undefined;
+  return {
+    revision: d.revision,
+    retratoImageId: typeof d.retrato_image_id === "string" ? d.retrato_image_id : null,
+    retratoUrl: typeof d.retrato_url === "string" ? d.retrato_url : null,
+  };
+}
 
 export function EditorRetratoToken({
   campaignId, tokenId, revision, retratoUrlAtual, previewAtual,
@@ -114,7 +139,7 @@ export function EditorRetratoToken({
       if (reserva.dados.reutilizado) {
         const r = await definirRetratoImagemAction(campaignId, tokenId, reserva.dados.assetId, revision);
         if (!r.ok) throw new Error(r.erro ?? "Não foi possível definir o retrato.");
-        onConcluido();
+        onConcluido({ salvo: lerRetratoSalvo(r.dados) });
         return;
       }
 
@@ -128,7 +153,7 @@ export function EditorRetratoToken({
         campaignId, reserva.dados.reservaId!, preparada.sha256, tokenId, revision,
       );
       if (!fim.ok) throw new Error(fim.erro ?? "Não foi possível concluir o envio.");
-      onConcluido();
+      onConcluido({ salvo: lerRetratoSalvo(fim.dados) });
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Falha ao enviar a imagem.");
     } finally {
@@ -142,7 +167,7 @@ export function EditorRetratoToken({
     const r = await definirRetratoUrlAction(campaignId, tokenId, url.trim() || null, revision);
     setOcupado(false);
     if (!r.ok) { setErro(r.erro ?? "Não foi possível salvar o endereço."); return; }
-    onConcluido();
+    onConcluido({ salvo: lerRetratoSalvo(r.dados) });
   }
 
   /**
@@ -160,7 +185,7 @@ export function EditorRetratoToken({
     const r = await definirRetratoImagemAction(campaignId, tokenId, null, revision);
     setOcupado(false);
     if (!r.ok) { setErro(r.erro ?? "Não foi possível remover o retrato."); return; }
-    onConcluido({ manterAberto: true });
+    onConcluido({ manterAberto: true, salvo: lerRetratoSalvo(r.dados) });
   }
 
   const previewMostrado = previewAtual;
