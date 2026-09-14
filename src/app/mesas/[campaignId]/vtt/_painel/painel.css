@@ -871,7 +871,11 @@
    lia como desalinhamento. `align-self: stretch` copia a altura em vez
    de repetir o número — se o campo de busca mudar de tamanho, o select
    acompanha sozinho. */
-.rv-pn-linha-busca .rv-pn-select { flex: 0 1 auto; padding-block: 0; }
+/* NUNCA ENCOLHE. Com `flex: 0 1 auto` ele cedia largura pro campo de
+   busca e "Manual" virava "Ma" — um seletor que não deixa ler a opção
+   escolhida não é um seletor. Quem cede é a busca, que tem base de
+   150px e quebra de linha quando não cabe. */
+.rv-pn-linha-busca .rv-pn-select { flex: none; padding-block: 0; }
 
 /* LINHA 2: criar à esquerda, switch à direita. */
 .rv-pn-filtros { flex: none; display: flex; align-items: center; gap: 6px; padding: 0 8px 6px; flex-wrap: wrap; }
@@ -914,8 +918,14 @@
    arredondados — e a borda e o fundo daqui viram sugestão que o macOS
    ignora. Era o último controle do painel com cara de outro produto.
    A seta passa a ser nossa, em SVG no fundo, na cor dos rótulos. */
+/* A COR É A DOS VIZINHOS. Branco (`--pn-txt-forte`) é o tom do
+   CONTEÚDO — o nome do personagem, o texto digitado na busca. Este
+   select é controle, como os botões de criar, o switch e o placeholder
+   ao lado, e todos estão em `--pn-dim`; sozinho em branco, ele pesava
+   mais que a lista que ordena. */
 .rv-pn-select {
   appearance: none; -webkit-appearance: none;
+  color: var(--pn-dim);
   padding-right: 20px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%237f95b3' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
