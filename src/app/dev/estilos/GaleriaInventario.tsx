@@ -9,9 +9,13 @@
  * verdade ligado nela. São os mesmos itens do desenho, pra que a
  * comparação com o Figma seja direta.
  *
- * `.rc-root` em volta não é enfeite: os tokens do Console (`--rc-*`,
- * `--cy`, `--am`) são declarados naquele escopo, e sem ele as cores
- * caem no valor inicial — a vitrine mostraria uma aba sem paleta.
+ * `.rc-window-wrap` em volta não é enfeite, e o nome importa: os
+ * tokens do Console (`--rc-line`, `--rc-text`, `--cy`, `--am`) são
+ * declarados NAQUELE seletor, não em `.rc-root`. Montar a vitrine sem
+ * ele não deixa a aba "sem paleta" de um jeito óbvio — `border-color`
+ * inválido cai em `currentColor`, e os fios saem da cor do TEXTO de
+ * cada caixa (o ladrilho do explosivo ficou com fio âmbar). Foi o que
+ * aconteceu na primeira tentativa.
  */
 
 import { InventarioPanel, type ItemDoInventario } from "../../ficha/_console/panels/InventarioPanel";
@@ -74,7 +78,7 @@ const ITENS: ItemDoInventario[] = [
 
 export function VitrineInventario() {
   return (
-    <div className="rc-root gal-inv-palco">
+    <div className="rc-window-wrap gal-inv-palco">
       <InventarioPanel itens={ITENS} capacidadeTotal={15} />
     </div>
   );

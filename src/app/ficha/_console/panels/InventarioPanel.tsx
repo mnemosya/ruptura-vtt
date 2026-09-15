@@ -176,8 +176,10 @@ export function InventarioPanel({
                       vira ruído, e o que interessa é o que TEM MAIS DE UM. */}
                   {item.quantidade > 1 && <span className="rc-inv-cartao-qtd">x{item.quantidade}</span>}
                 </span>
-                <span className="rc-inv-cartao-nome">{item.nome}</span>
-                <span className="rc-inv-cartao-cat">{item.categoria}</span>
+                <span className="rc-inv-cartao-txt">
+                  <span className="rc-inv-cartao-nome">{item.nome}</span>
+                  <span className="rc-inv-cartao-cat">{item.categoria}</span>
+                </span>
               </button>
             );
           })}
@@ -207,7 +209,7 @@ export function InventarioPanel({
 
             {selecionado.descricao && <p className="rc-inv-desc">{selecionado.descricao}</p>}
 
-            <div className="rc-inv-numeros">
+            <dl className="rc-inv-numeros">
               <div className="rc-inv-pa">
                 <span className="rc-inv-num-rotulo">PA</span>
                 <span className="rc-inv-pa-valor">
@@ -222,11 +224,15 @@ export function InventarioPanel({
                   )}
                 </span>
               </div>
-              <dl className="rc-inv-num-lista">
-                <div><dt>Espaços/item</dt><dd>{selecionado.espacos}</dd></div>
-                <div><dt>Preço base</dt><dd>{selecionado.precoBase != null ? `₳ ${selecionado.precoBase}` : "—"}</dd></div>
-              </dl>
-            </div>
+              <div className="rc-inv-num-cel">
+                <span className="rc-inv-num-rotulo">Espaços/item</span>
+                <dd>{selecionado.espacos}</dd>
+              </div>
+              <div className="rc-inv-num-cel">
+                <span className="rc-inv-num-rotulo">Preço base</span>
+                <dd>{selecionado.precoBase != null ? `₳ ${selecionado.precoBase}` : "—"}</dd>
+              </div>
+            </dl>
 
             {selecionado.propriedades && selecionado.propriedades.length > 0 && (
               <dl className="rc-inv-props">

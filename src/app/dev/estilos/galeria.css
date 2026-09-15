@@ -504,7 +504,12 @@
    aqui ela precisa de uma caixa com altura de verdade, senão a grade
    (que é quem rola) não tem contra o que rolar e a coluna estica sem
    fim. */
-.gal-inv-palco {
+/* `.rc-window-wrap` é `position: fixed` na janela de verdade (é ela que
+   flutua sobre a mesa); na vitrine ele precisa voltar pro fluxo, senão
+   a aba sai da página. O resto do que aquele seletor traz — os tokens
+   `--rc-*` — é justamente o que a vitrine quer. */
+.gal-inv-palco.gal-inv-palco {
+  position: static; display: block; animation: none;
   height: 560px; padding: 12px; border-radius: 8px;
   border: 1px solid var(--rc-line-soft, #16233a);
   background: rgba(12, 20, 32, .96);
