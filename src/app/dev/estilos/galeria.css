@@ -498,3 +498,14 @@
   border: 1px dashed var(--rv-line-hover, #243352);
   background: rgba(69, 184, 201, .06);
 }
+
+/* O PALCO DA ABA DE INVENTÁRIO. A aba mora dentro do painel de conteúdo
+   da janela do Console, que tem altura própria e rola por dentro —
+   aqui ela precisa de uma caixa com altura de verdade, senão a grade
+   (que é quem rola) não tem contra o que rolar e a coluna estica sem
+   fim. */
+.gal-inv-palco {
+  height: 560px; padding: 12px; border-radius: 8px;
+  border: 1px solid var(--rc-line-soft, #16233a);
+  background: rgba(12, 20, 32, .96);
+}

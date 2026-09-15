@@ -1864,3 +1864,256 @@
   margin: 0; max-width: 240px;
   color: var(--jr-perigo); font-size: 11px; line-height: 1.35;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ABA INVENTÁRIO — estrutura do desenho (Figma 159:40519), paleta e
+   tipografia do Console.
+
+   Duas colunas fixas em proporção, não um grid que se reorganiza: a
+   grade da esquerda é varredura (quantos, de que tipo) e a ficha da
+   direita é leitura (o que é, quanto custa, o que faz). Empilhá-las em
+   telas estreitas transformaria "escolher e ler" em "escolher, rolar,
+   ler" — e a janela do Console tem tamanho próprio, que quem usa
+   controla.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.rc-inv {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px; height: 100%; min-height: 0; padding: 4px;
+  font-family: var(--font-rajdhani), sans-serif;
+}
+.rc-inv-col-esq { display: flex; flex-direction: column; gap: 10px; min-height: 0; min-width: 0; }
+.rc-inv-col-dir {
+  display: flex; flex-direction: column; gap: 12px; min-height: 0; min-width: 0;
+  padding: 12px; border: 1px solid var(--rc-line-soft); border-radius: 6px;
+  background: var(--rc-panel);
+}
+
+/* ── Onde o item está ─────────────────────────────────────────────── */
+.rc-inv-abas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.rc-inv-aba {
+  padding: 8px 6px; border: 1px solid var(--rc-line-soft); border-radius: 4px;
+  background: rgba(17, 29, 49, .5); color: var(--rc-dim);
+  font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  transition: color .14s, border-color .14s, background .14s;
+}
+.rc-inv-aba:hover { color: var(--rc-text); border-color: color-mix(in srgb, var(--cy) 35%, var(--rc-line)); }
+/* A aba ativa acende como tudo que está ligado no Console: fio ciano,
+   lavagem fraca e o texto na cor do acento. */
+.rc-inv-aba[aria-selected="true"] {
+  border-color: color-mix(in srgb, var(--cy) 55%, transparent);
+  background: rgba(0, 212, 255, .10);
+  color: #d3f4ff;
+}
+
+/* ── Achar ────────────────────────────────────────────────────────── */
+.rc-inv-busca-linha { display: flex; gap: 6px; }
+.rc-inv-busca {
+  flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 7px;
+  padding: 7px 9px; border: 1px solid var(--rc-line-soft); border-radius: 4px;
+  background: rgba(10, 17, 28, .72); color: var(--rc-dim);
+}
+.rc-inv-busca:focus-within { border-color: color-mix(in srgb, var(--cy) 50%, transparent); color: var(--cy); }
+.rc-inv-busca input {
+  flex: 1 1 auto; min-width: 0; border: none; background: none; outline: none;
+  color: var(--rc-text); font-family: inherit; font-size: 13px;
+}
+.rc-inv-busca input::placeholder { color: var(--rc-dim); opacity: 1; }
+.rc-inv-filtro {
+  flex: none; width: 32px; display: grid; place-items: center;
+  border: 1px solid var(--rc-line-soft); border-radius: 4px;
+  background: rgba(10, 17, 28, .72); color: var(--rc-dim); cursor: pointer;
+  transition: color .14s, border-color .14s;
+}
+.rc-inv-filtro:hover { color: var(--cy); border-color: color-mix(in srgb, var(--cy) 40%, transparent); }
+
+/* ── Capacidade ───────────────────────────────────────────────────── */
+.rc-inv-capacidade { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.rc-inv-cap-rotulo { font-size: 12.5px; font-weight: 600; color: var(--rc-text); }
+.rc-inv-cap-valor { font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; color: var(--rc-dim); }
+.rc-inv-cap-valor strong { color: var(--rc-text); font-weight: 700; }
+/* Blocos, não barra contínua: espaço se conta inteiro, e uma barra
+   lisa insinuaria meio espaço. O âmbar é o mesmo que o Console usa
+   para consumo/carga. */
+.rc-inv-cap-barra { display: flex; gap: 2px; height: 8px; }
+.rc-inv-cap-bloco {
+  flex: 1 1 0; border-radius: 1px;
+  background: rgba(17, 29, 49, .9);
+  box-shadow: inset 0 0 0 1px var(--rc-line-soft);
+}
+.rc-inv-cap-bloco[data-cheio] {
+  background: color-mix(in srgb, var(--am) 62%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--am) 70%, transparent);
+}
+
+/* ── A grade ──────────────────────────────────────────────────────── */
+.rc-inv-grade {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 8px; align-content: start; padding-right: 2px;
+}
+.rc-inv-cartao {
+  display: flex; flex-direction: column; gap: 2px; padding: 8px;
+  border: 1px solid var(--rc-line-soft); border-radius: 5px;
+  background: rgba(17, 29, 49, .55); cursor: pointer; text-align: center;
+  font-family: inherit; transition: border-color .14s, background .14s;
+}
+.rc-inv-cartao:hover { border-color: color-mix(in srgb, var(--cy) 35%, var(--rc-line)); }
+/* O selecionado é o que a coluna da direita está descrevendo — daí o
+   fio à esquerda, que aponta pra ela. */
+.rc-inv-cartao[data-sel] {
+  border-color: color-mix(in srgb, var(--cy) 55%, transparent);
+  background: rgba(0, 212, 255, .07);
+  box-shadow: inset 2px 0 0 var(--cy);
+}
+.rc-inv-cartao-ladrilho {
+  position: relative; display: grid; place-items: center;
+  height: 62px; margin-bottom: 4px; border-radius: 4px;
+  background: rgba(10, 17, 28, .6);
+  color: var(--rc-dim);
+}
+/* A COR É DA FAMÍLIA do item: explosivo âmbar, arma vermelha, vertina
+   roxa… É o que deixa a grade legível de relance, antes de ler nome
+   nenhum. */
+.rc-inv-cartao[data-familia="explosivo"] .rc-inv-cartao-ladrilho,
+.rc-inv-cabeca-ladrilho[data-familia="explosivo"] { color: var(--am); background: color-mix(in srgb, var(--am) 12%, rgba(10, 17, 28, .6)); }
+.rc-inv-cartao[data-familia="arma"] .rc-inv-cartao-ladrilho,
+.rc-inv-cabeca-ladrilho[data-familia="arma"] { color: var(--rc-danger); background: color-mix(in srgb, var(--rc-danger) 12%, rgba(10, 17, 28, .6)); }
+.rc-inv-cartao[data-familia="vertina"] .rc-inv-cartao-ladrilho,
+.rc-inv-cabeca-ladrilho[data-familia="vertina"] { color: #8f7ae6; background: rgba(143, 122, 230, .12); }
+.rc-inv-cartao[data-familia="escudo"] .rc-inv-cartao-ladrilho,
+.rc-inv-cabeca-ladrilho[data-familia="escudo"] { color: var(--am); background: color-mix(in srgb, var(--am) 10%, rgba(10, 17, 28, .6)); }
+.rc-inv-cartao[data-familia="farmacia"] .rc-inv-cartao-ladrilho,
+.rc-inv-cabeca-ladrilho[data-familia="farmacia"] { color: var(--rc-ok); background: color-mix(in srgb, var(--rc-ok) 12%, rgba(10, 17, 28, .6)); }
+.rc-inv-cartao[data-familia="utilitario"] .rc-inv-cartao-ladrilho,
+.rc-inv-cabeca-ladrilho[data-familia="utilitario"] { color: var(--cy); background: rgba(0, 212, 255, .10); }
+/* A quantidade fica no CANTO do ladrilho, não embaixo do nome: ela é
+   propriedade da pilha, não do item. */
+.rc-inv-cartao-qtd {
+  position: absolute; right: 4px; bottom: 4px;
+  padding: 1px 4px; border-radius: 3px;
+  background: rgba(10, 17, 28, .85); color: var(--rc-text);
+  font-family: var(--font-mono), ui-monospace, monospace; font-size: 9.5px;
+}
+.rc-inv-cartao-nome {
+  color: var(--rc-text); font-size: 12px; font-weight: 600; line-height: 15px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rc-inv-cartao-cat { color: var(--rc-dim); font-size: 11px; line-height: 14px; }
+.rc-inv-cartao--novo {
+  align-items: center; justify-content: center; min-height: 92px;
+  border-style: dashed; color: var(--rc-dim);
+}
+.rc-inv-cartao--novo:hover { color: var(--cy); }
+
+/* ── A ficha do item ──────────────────────────────────────────────── */
+.rc-inv-cabeca { display: flex; align-items: center; gap: 10px; }
+.rc-inv-cabeca-ladrilho {
+  flex: none; display: grid; place-items: center;
+  width: 54px; height: 54px; border-radius: 5px;
+  background: rgba(10, 17, 28, .6); color: var(--rc-dim);
+}
+.rc-inv-cabeca-txt { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.rc-inv-nome { margin: 0; color: #d3f4ff; font-size: 17px; font-weight: 600; line-height: 20px; }
+.rc-inv-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.rc-inv-tag {
+  padding: 2px 7px; border-radius: 3px;
+  background: rgba(0, 212, 255, .10); color: var(--cy);
+  font-family: var(--font-mono), ui-monospace, monospace; font-size: 10px;
+}
+/* Raridade em âmbar — é escala de valor, não de tipo. */
+.rc-inv-tag[data-raridade] { background: color-mix(in srgb, var(--am) 14%, transparent); color: var(--am); }
+.rc-inv-desc { margin: 0; color: var(--rc-dim); font-size: 13px; line-height: 19px; }
+
+/* Os NÚMEROS numa caixa só, com o PA destacado à esquerda: ele é o que
+   se consulta no meio do turno; o resto é consulta de bolso. */
+.rc-inv-numeros {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  border: 1px solid var(--rc-line-soft); border-radius: 5px; overflow: hidden;
+}
+.rc-inv-pa { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; background: rgba(10, 17, 28, .45); }
+.rc-inv-num-rotulo {
+  font-family: var(--font-mono), ui-monospace, monospace; font-size: 10px;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--rc-dim);
+}
+.rc-inv-pa-valor { display: flex; align-items: center; gap: 8px; color: var(--rc-text); font-size: 19px; font-weight: 700; }
+.rc-inv-pips { display: flex; gap: 3px; }
+.rc-inv-pips i {
+  width: 9px; height: 9px; background: var(--cy);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+.rc-inv-num-lista { display: flex; flex-direction: column; margin: 0; border-left: 1px solid var(--rc-line-soft); }
+.rc-inv-num-lista > div {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 7px 12px;
+}
+.rc-inv-num-lista > div + div { border-top: 1px solid var(--rc-line-soft); }
+.rc-inv-num-lista dt {
+  font-family: var(--font-mono), ui-monospace, monospace; font-size: 10px;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--rc-dim);
+}
+.rc-inv-num-lista dd { margin: 0; color: var(--rc-text); font-size: 13px; }
+
+.rc-inv-props { display: flex; flex-direction: column; margin: 0; border: 1px solid var(--rc-line-soft); border-radius: 5px; }
+.rc-inv-props > div { display: flex; align-items: center; gap: 12px; padding: 7px 12px; }
+.rc-inv-props > div + div { border-top: 1px solid var(--rc-line-soft); }
+.rc-inv-props dt {
+  flex: 0 0 96px;
+  font-family: var(--font-mono), ui-monospace, monospace; font-size: 10px;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--rc-dim);
+}
+.rc-inv-props dd { margin: 0; color: var(--rc-text); font-size: 13px; }
+
+/* O EFEITO é texto corrido com os termos de regra virando chip — quem
+   lê no meio do turno precisa achar "Atordoados" sem ler a frase. */
+.rc-inv-efeito {
+  margin: 0; padding: 10px 12px; border-radius: 5px;
+  background: rgba(10, 17, 28, .45);
+  color: var(--rc-text); font-size: 13px; line-height: 21px;
+}
+.rc-inv-chip {
+  display: inline-block; margin: 0 1px; padding: 1px 6px; border-radius: 3px;
+  font-size: 12px; font-weight: 600;
+  background: rgba(0, 212, 255, .12); color: var(--cy);
+}
+.rc-inv-chip[data-tom="condicao"] {
+  background: color-mix(in srgb, var(--rc-danger) 16%, transparent); color: #ff9fae;
+}
+
+/* ── O que fazer com ele ──────────────────────────────────────────── */
+/* `margin-top: auto` cola o rodapé no pé da coluna: as ações ficam no
+   mesmo lugar independentemente do tamanho da ficha do item. */
+.rc-inv-rodape { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+.rc-inv-stepper {
+  display: grid; grid-template-columns: 40px 1fr 40px; align-items: center;
+  border: 1px solid var(--rc-line-soft); border-radius: 4px; overflow: hidden;
+}
+.rc-inv-stepper button {
+  height: 34px; display: grid; place-items: center;
+  border: none; background: rgba(10, 17, 28, .5); color: var(--rc-dim); cursor: pointer;
+}
+.rc-inv-stepper button:hover:not(:disabled) { color: var(--cy); }
+.rc-inv-stepper button:disabled { opacity: .35; cursor: not-allowed; }
+.rc-inv-stepper span {
+  text-align: center; color: var(--rc-text);
+  font-family: var(--font-mono), ui-monospace, monospace; font-size: 13px;
+}
+.rc-inv-acoes { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 8px; }
+.rc-inv-btn {
+  padding: 10px; border: 1px solid var(--rc-line-soft); border-radius: 4px;
+  background: rgba(17, 29, 49, .6); color: var(--rc-dim);
+  font-family: inherit; font-size: 12.5px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+  transition: color .14s, border-color .14s, background .14s;
+}
+.rc-inv-btn:hover { color: var(--rc-text); border-color: var(--rc-line); }
+.rc-inv-btn--pri {
+  border-color: color-mix(in srgb, var(--cy) 50%, transparent);
+  background: rgba(0, 212, 255, .10); color: #d3f4ff;
+}
+.rc-inv-btn--pri:hover { border-color: var(--cy); background: rgba(0, 212, 255, .16); }
+
+.rc-inv-sem-selecao {
+  margin: auto; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: var(--rc-dim); font-size: 13px;
+}

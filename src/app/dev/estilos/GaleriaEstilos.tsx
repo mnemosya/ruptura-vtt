@@ -30,6 +30,7 @@ import { TrilhaFaccoes } from "../../mesas/[campaignId]/vtt/_turnos/TrilhaFaccoe
    copiado: duas fixtures do mesmo HUD envelheceriam em ritmos
    diferentes, e a que ninguém abre é a que passa a mentir. */
 import { VitrineCartaoToken } from "./GaleriaCartaoToken";
+import { VitrineInventario } from "./GaleriaInventario";
 import { VitrineCamadas, VitrineDados, VitrineMarcar, VitrineMedir, VitrineMoldura as VitrineMolduraJanela } from "./GaleriaJanelas";
 import { VitrineGaveta, VitrineLadrilho, VitrineParametros } from "./GaleriaCenas";
 import {
@@ -287,6 +288,14 @@ function TrilhaDeFaccoes() {
 }
 
 function montarPecas(campaignId: string | null): Peca[] { return [
+  { chave: "inventario", grupo: "Console do personagem", rotulo: "Inventário", render: () => (
+    <Secao
+      titulo="Aba Inventário"
+      sub={<>Estrutura do desenho (Figma <code>159:40519</code>) na paleta do Console. Itens são fixture — a aba precisa ser vista cheia antes de existir inventário ligado nela. Componente: <code>ficha/_console/panels/InventarioPanel.tsx</code>.</>}
+    >
+      <VitrineInventario />
+    </Secao>
+  ) },
   { chave: "primitivas", grupo: "Vocabulário", rotulo: "Primitivas", render: () => (
     <Secao titulo="Primitivas do painel" sub={<>O vocabulário compartilhado por cards, abas e janelas. Componente: <code>_painel/ui/primitivas.tsx</code>.</>}>
       <VitrinePrimitivas />
