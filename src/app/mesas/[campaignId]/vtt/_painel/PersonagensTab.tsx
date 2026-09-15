@@ -223,7 +223,7 @@ export function PersonagensTab({
    * está no painel e some quando ele sai — que é exatamente onde a
    * prévia do mapa assume.
    */
-  const [cartaoArrastado, setCartaoArrastado] = useState<PersonagemArrastado | null>(null);
+  const [cartaoArrastado, setCartaoArrastado] = useState<(PersonagemArrastado & { avatarUrl?: string | null }) | null>(null);
   const [posicaoArrasto, setPosicaoArrasto] = useState<{ x: number; y: number } | null>(null);
 
   /**
@@ -717,7 +717,10 @@ export function PersonagensTab({
                        que chegar por outro caminho. */
                     onArrastarPersonagem?.(carga);
                     // A prévia de dentro do painel nasce com o gesto.
-                    setCartaoArrastado(carga);
+                    // O ROSTO vai junto — só na prévia, não na carga
+                    // que atravessa pro mapa: lá o token desenha o
+                    // retrato por conta própria, a partir da ficha.
+                    setCartaoArrastado({ ...carga, avatarUrl: entrada.avatarUrl ?? null });
                     setPosicaoArrasto({ x: e.clientX, y: e.clientY });
                   }}
                   onArrastarFim={() => {
@@ -890,7 +893,16 @@ export function PersonagensTab({
           aria-hidden="true"
           data-testid="painel-personagens-previa-arrasto"
         >
-          <span className="rv-pn-arrasto-sigla" data-tipo={cartaoArrastado.tipo}>{cartaoArrastado.sigla}</span>
+          {/* O MESMO ROSTO DA LINHA. Com a sigla no lugar dele, a peça
+              em trânsito não parecia a que saiu da lista — e numa lista
+              de nomes parecidos ("Fixture Wizard Fase6 178889…") o
+              retrato é justamente o que distingue um do outro. A sigla
+              continua sendo o fallback, como na linha. */}
+          <span className="rv-pn-arrasto-face" data-tipo={cartaoArrastado.tipo}>
+            {cartaoArrastado.avatarUrl
+              ? <img className="rv-pn-arrasto-face-img" src={cartaoArrastado.avatarUrl} alt="" />
+              : cartaoArrastado.sigla}
+          </span>
           <span className="rv-pn-arrasto-nome">{cartaoArrastado.nome}</span>
         </div>
       )}
