@@ -1992,19 +1992,31 @@
 /* Uma célula POR ESPAÇO: todas do mesmo tamanho, e o fio entre elas é
    a divisória. Contar as cheias tem que dar o número escrito ao lado —
    por isso não é uma barra contínua com marcas decorativas por cima. */
+/* O medidor fala a língua do que está em volta. O âmbar vinha do
+   arquivo do Figma, onde ele era o único acento quente da tela; aqui
+   ele ficava sendo o único bloco quente num painel inteiro em navy e
+   ciano, e chamava mais atenção que os itens. Agora: mesmo fio do
+   campo de busca e das tabelas, chapa funda no vazio, e o ciano do
+   chassi marcando o que está ocupado. */
 .rc-inv-medidor {
   display: flex; height: 12px; overflow: hidden; border-radius: 1px;
-  border: 1px solid #846021; background: #261b09;
+  border: 1px solid var(--rc-line); background: rgba(12, 20, 32, 0.6);
 }
 .rc-inv-medidor-un {
   flex: 1 1 0; min-width: 0;
-  border-right: 1px solid #846021;
+  /* A divisória é ciano de baixa opacidade, não `--rc-line`: o fio
+     navy sumia contra a chapa funda E contra o preenchimento, e um
+     medidor de traços sem traços visíveis vira barra contínua — que é
+     exatamente o que ele deixou de ser. Mesma cor do fio em repouso
+     dos cartões, então continua na família. */
+  border-right: 1px solid rgba(0, 212, 255, 0.28);
   transition: background .18s ease-out;
 }
 .rc-inv-medidor-un:last-child { border-right: 0; }
-.rc-inv-medidor-un[data-cheio] { background: #453211; }
+.rc-inv-medidor-un[data-cheio] { background: rgba(0, 212, 255, 0.22); }
 .rc-inv-medidor[data-excedido] { border-color: var(--rc-danger); }
 .rc-inv-medidor[data-excedido] .rc-inv-medidor-un { border-right-color: rgba(209, 80, 104, .5); }
+.rc-inv-medidor[data-excedido] .rc-inv-medidor-un:last-child { border-right: 0; }
 .rc-inv-medidor[data-excedido] .rc-inv-medidor-un[data-cheio] { background: rgba(209, 80, 104, .45); }
 
 /* ── Grade de itens ──────────────────────────────────────────────── */
