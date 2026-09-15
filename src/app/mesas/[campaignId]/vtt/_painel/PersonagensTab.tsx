@@ -210,6 +210,50 @@ export function PersonagensTab({
    */
   const [containerSobre, setContainerSobre] = useState<string | null>(null);
   /**
+   * A PRÉVIA QUE ACOMPANHA O CURSOR dentro do painel.
+   *
+   * O arrasto desliga a miniatura do navegador (`setDragImage` com um
+   * gif 1×1) porque sobre o MAPA ela ficava colada no cursor em cima da
+   * prévia do token — duas imagens do mesmo gesto. Só que
+   * `setDragImage` vale pro arrasto inteiro e não pode ser trocado no
+   * meio, então desligá-la pro mapa apagou também a de DENTRO da lista,
+   * onde ela era a única coisa dizendo o que estava sendo levado.
+   *
+   * Esta é a mesma imagem, desenhada por nós: aparece enquanto o cursor
+   * está no painel e some quando ele sai — que é exatamente onde a
+   * prévia do mapa assume.
+   */
+  const [cartaoArrastado, setCartaoArrastado] = useState<PersonagemArrastado | null>(null);
+  const [posicaoArrasto, setPosicaoArrasto] = useState<{ x: number; y: number } | null>(null);
+
+  /**
+   * ONDE ESTÁ O CURSOR durante o arrasto.
+   *
+   * `dragover` no DOCUMENTO, e não `drag` no elemento: o `drag` do
+   * arrastado devolve coordenadas zeradas em alguns navegadores no fim
+   * do gesto, e não diz nada sobre o que está POR BAIXO. O
+   * `dragover` diz as duas coisas — e é ele que revela quando o cursor
+   * saiu do painel e entrou no mapa, que é o momento de a prévia daqui
+   * sair de cena e a de lá assumir.
+   */
+  useEffect(() => {
+    if (!cartaoArrastado) return;
+    const mover = (e: DragEvent) => {
+      const alvo = e.target as HTMLElement | null;
+      const noPainel = Boolean(alvo?.closest?.(".rv-painel"));
+      setPosicaoArrasto(noPainel ? { x: e.clientX, y: e.clientY } : null);
+    };
+    const encerrar = () => { setCartaoArrastado(null); setPosicaoArrasto(null); };
+    document.addEventListener("dragover", mover);
+    document.addEventListener("drop", encerrar);
+    document.addEventListener("dragend", encerrar);
+    return () => {
+      document.removeEventListener("dragover", mover);
+      document.removeEventListener("drop", encerrar);
+      document.removeEventListener("dragend", encerrar);
+    };
+  }, [cartaoArrastado]);
+  /**
    * O cartão ANTES do qual o arrastado vai entrar.
    *
    * O container responde "onde vai parar"; isto responde "em que
@@ -672,8 +716,15 @@ export function PersonagensTab({
                        `dataTransfer` (só os tipos), então a carga tem
                        que chegar por outro caminho. */
                     onArrastarPersonagem?.(carga);
+                    // A prévia de dentro do painel nasce com o gesto.
+                    setCartaoArrastado(carga);
+                    setPosicaoArrasto({ x: e.clientX, y: e.clientY });
                   }}
-                  onArrastarFim={() => { setContainerSobre(null); setPastaSobre(null); setLinhaAlvo(null); onArrastarPersonagem?.(null); }}
+                  onArrastarFim={() => {
+                    setContainerSobre(null); setPastaSobre(null); setLinhaAlvo(null);
+                    setCartaoArrastado(null); setPosicaoArrasto(null);
+                    onArrastarPersonagem?.(null);
+                  }}
                   onArrastarSaiu={() => { setContainerSobre(null); setLinhaAlvo(null); }}
                   onArrastarSobre={(e) => {
                     // DOIS arrastos chegam nesta linha: um item do
@@ -829,6 +880,20 @@ export function PersonagensTab({
 
   return (
     <div className="rv-pn-aba">
+      {/* A PRÉVIA, colada no cursor. `fixed` e sem eventos: ela não pode
+          entrar na conta de quem está sob o ponteiro, senão o próprio
+          cartão viraria o alvo do arrasto. */}
+      {cartaoArrastado && posicaoArrasto && (
+        <div
+          className="rv-pn-arrasto-previa"
+          style={{ left: posicaoArrasto.x + 12, top: posicaoArrasto.y + 10 }}
+          aria-hidden="true"
+          data-testid="painel-personagens-previa-arrasto"
+        >
+          <span className="rv-pn-arrasto-sigla" data-tipo={cartaoArrastado.tipo}>{cartaoArrastado.sigla}</span>
+          <span className="rv-pn-arrasto-nome">{cartaoArrastado.nome}</span>
+        </div>
+      )}
       <div className="rv-pn-dossie">
         <div className="rv-pn-dossie-lista">
           {/* LINHA 1 — achar. A busca cresce, a ordenação fica no canto:

@@ -1350,6 +1350,42 @@
 .rv-pn-grupo-glifo { display: flex; flex: none; }
 .rv-pn-grupo-acoes { display: flex; gap: 2px; flex: none; padding-right: 6px; }
 
+/* A PRÉVIA DE ARRASTO do painel — o cartão que acompanha o cursor.
+   É a miniatura que o navegador desenharia sozinho, e que precisou ser
+   desligada por causa do mapa (ver o comentário em `PersonagensTab`).
+   Desenhada por nós, ela pode existir SÓ AQUI: sobre o mapa, quem diz o
+   que está sendo levado é a prévia do token na grade.
+
+   `pointer-events: none` é obrigatório, não enfeite: sem isso o próprio
+   cartão vira o elemento sob o cursor e o alvo do arrasto passa a ser
+   ele. E `z-index` acima do painel porque ele sai da coluna. */
+.rv-pn-arrasto-previa {
+  position: fixed; z-index: 120; pointer-events: none;
+  display: flex; align-items: center; gap: 8px;
+  max-width: 260px; padding: 7px 10px 7px 7px;
+  border: 1px solid color-mix(in srgb, var(--pn-cy) 45%, transparent);
+  border-radius: var(--pn-radius);
+  background: color-mix(in srgb, var(--pn-cy) 10%, #0a1120);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .5);
+  /* Levemente translúcido: é uma peça EM TRÂNSITO, não uma que chegou. */
+  opacity: .92;
+}
+.rv-pn-arrasto-sigla {
+  flex: none; display: grid; place-items: center;
+  width: 26px; height: 26px; border-radius: var(--pn-radius);
+  background: color-mix(in srgb, var(--pn-cy) 18%, transparent);
+  color: var(--pn-cy);
+  font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700;
+}
+/* PN é do narrador — mesma distinção de cor que a lista faz. */
+.rv-pn-arrasto-sigla[data-tipo="pn"] {
+  background: color-mix(in srgb, var(--rv-dg) 18%, transparent); color: var(--rv-dg);
+}
+.rv-pn-arrasto-nome {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--rv-ink); font-size: 12.5px;
+}
+
 .rv-pn-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .rv-pn-personagens { opacity: .85; text-transform: none; letter-spacing: 0; }
 
