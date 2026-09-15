@@ -19,6 +19,7 @@ import {
   type ItemContent,
 } from "../src/lib/character";
 import {
+  ESPACOS_MOCHILA_BASICA,
   capacidadeDeEspacos,
   espacosDoItem,
   ocupaEspaco,
@@ -26,7 +27,6 @@ import {
 } from "../src/lib/character/carga";
 import { separarTermos } from "../src/app/ficha/_console/termosDeRegra";
 import type { TermoDeRegra } from "../src/app/ficha/_console/types";
-import type { CharacterRulesPayload } from "../src/lib/character/types";
 
 function readJson<T>(path: string): T {
   return JSON.parse(readFileSync(path, "utf8")) as T;
@@ -56,26 +56,21 @@ for (const slug of ["espada_longa", "espada_curta", "adaga"]) {
 assert.equal(espacosDoItem(undefined), 1, "Item sem modelo também conta 1.");
 console.log(`✓ espaços por item: 1 pra todos (classe_porte lido em ${comPorte.length} itens, mas não é a fonte)`);
 
-// ── 3. capacidade: padrão e derivado publicado ────────────────────
-const atributos = { corpo: 4, mente: 2, animo: 2 };
-assert.equal(capacidadeDeEspacos(atributos, null), 14, "Padrão documentado é 10 + Corpo.");
-
-/* Quando a regra EXISTIR publicada, ela manda — é o ponto todo de
-   procurar antes de cair no padrão. Aqui um payload com `espacos_max`
-   próprio prova que o padrão sai de cena sozinho. */
-const regrasComEspacos = {
-  atributos: [],
-  pericias: [],
-  derivados: [
-    { id: "espacos_max", nome: "Espaços", formula: { op: "*", args: [{ ref: "atributo", id: "corpo" }, { const: 5 }] } },
-  ],
-} as unknown as CharacterRulesPayload;
-assert.equal(
-  capacidadeDeEspacos(atributos, regrasComEspacos),
-  20,
-  "Com `espacos_max` publicado, a fórmula do conteúdo deve vencer o padrão.",
-);
-console.log("✓ capacidade: padrão 10+Corpo, e o derivado publicado vence quando existe");
+// ── 3. capacidade: é da MOCHILA, não do personagem ────────────────
+/* A básica tem 10. Nenhum item de mochila existe publicado ainda, e o
+   único item de armazenamento (Aljava) guarda flecha, não carga geral
+   — então hoje todo personagem carrega o básico, independente de
+   atributo. Este teste trava isso: se alguém voltar a derivar
+   capacidade de Corpo, ele cai. */
+{
+  const forte = createInitialCharacter(null, "Forte");
+  const fraco = createInitialCharacter(null, "Fraco");
+  const comCorpo = (c: typeof forte, n: number) => ({ ...c, atributos: { ...c.atributos, corpo: n } });
+  assert.equal(capacidadeDeEspacos(comCorpo(forte, 8), porSlug), ESPACOS_MOCHILA_BASICA);
+  assert.equal(capacidadeDeEspacos(comCorpo(fraco, 1), porSlug), ESPACOS_MOCHILA_BASICA);
+  assert.equal(ESPACOS_MOCHILA_BASICA, 10, "A mochila básica tem 10 espaços.");
+}
+console.log("✓ capacidade: 10 da mochila básica, e não muda com atributo");
 
 // ── 4. o que pesa e o que não pesa ────────────────────────────────
 assert.equal(ocupaEspaco("mochila"), true);
@@ -103,15 +98,15 @@ for (const slug of ["espada_longa", "espada_curta", "adaga"]) {
   personagem = compra.character;
 }
 
-let carga = resumoDeCarga(personagem, porSlug, null);
-assert.equal(carga.capacidade, 15, "Corpo 5 → 15 espaços pelo padrão.");
+let carga = resumoDeCarga(personagem, porSlug);
+assert.equal(carga.capacidade, 10, "Mochila básica: 10 espaços.");
 assert.equal(carga.ocupados, 3, "Três itens, 1 espaço cada.");
 assert.equal(carga.excedido, false);
 
 // Mandar a espada longa pro abrigo tira os 3 espaços da conta.
 const longa = personagem.inventario!.find((i) => i.itemSlug === "espada_longa")!;
 personagem = setItemLoadoutState(personagem, longa.id, "abrigo");
-carga = resumoDeCarga(personagem, porSlug, null);
+carga = resumoDeCarga(personagem, porSlug);
 assert.equal(carga.ocupados, 2, "No abrigo, a espada longa não pesa mais.");
 console.log("✓ carga: soma por porte, e o abrigo não entra na conta");
 
@@ -121,7 +116,7 @@ personagem = {
   ...personagem,
   inventario: personagem.inventario!.map((i) => (i.id === adagaInst.id ? { ...i, quantidade: 4 } : i)),
 };
-carga = resumoDeCarga(personagem, porSlug, null);
+carga = resumoDeCarga(personagem, porSlug);
 assert.equal(carga.ocupados, 1 + 4 * 1, "4 adagas = 4 espaços.");
 console.log("✓ carga: quantidade multiplica o custo do item");
 
@@ -130,7 +125,7 @@ personagem = {
   ...personagem,
   inventario: personagem.inventario!.map((i) => (i.id === adagaInst.id ? { ...i, quantidade: 40 } : i)),
 };
-assert.equal(resumoDeCarga(personagem, porSlug, null).excedido, true);
+assert.equal(resumoDeCarga(personagem, porSlug).excedido, true);
 console.log("✓ carga: excedido é reportado");
 
 // ── 5. termos de regra dentro de um texto ─────────────────────────

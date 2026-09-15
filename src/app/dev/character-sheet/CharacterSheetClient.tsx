@@ -5382,8 +5382,8 @@ export default function CharacterSheetClient({
      capacidade total, o que pesa e o que não pesa) vive em
      `lib/character/carga.ts`; aqui é só a leitura memoizada. */
   const cargaAtual = useMemo(
-    () => resumoDeCarga(character, catalogoItens, regras),
-    [character, catalogoItens, regras],
+    () => resumoDeCarga(character, catalogoItens),
+    [character, catalogoItens],
   );
 
   /* Glossário para os tooltips de regra dentro de textos: as ações de

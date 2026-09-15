@@ -11,25 +11,16 @@
  *     ocupa de mochila. Enquanto a regra não existir, todo item conta
  *     1 — ver `espacosDoItem`.
  *
- *   - a capacidade total NÃO existia. `regras_personagem.derivados` tem
- *     oito entradas (pv_max, pe_max, mana_max, integridade_max,
- *     reacoes_por_rodada, andar_m, correr_m, pa_max) e nenhuma delas é
- *     capacidade de carga.
+ *   - a capacidade é da MOCHILA, não do personagem: cada modelo tem a
+ *     sua e a básica tem 10. Nenhum item de mochila existe publicado
+ *     ainda — ver `capacidadeDeEspacos`.
  *
  * Nenhuma das duas é decisão de front-end, então elas ficam isoladas e
- * anotadas em vez de diluídas no componente. E a capacidade PROCURA a
- * regra publicada antes de usar o padrão: no dia em que um derivado
- * `espacos_max` for publicado em `regras_personagem.derivados`, este
- * módulo passa a obedecê-lo sozinho, sem ninguém precisar voltar aqui.
- * O padrão só existe enquanto esse derivado não existir.
+ * anotadas em vez de diluídas no componente.
  */
 
-import { computeDerivedById } from "./derived";
-import type { Character, CharacterAttributes, CharacterRulesPayload } from "./types";
+import type { Character } from "./types";
 import type { InventoryItemInstance, ItemContent, ItemLoadoutState } from "./inventory";
-
-/** Id do derivado que, se um dia existir no conteúdo, manda aqui. */
-export const DERIVADO_ESPACOS_MAX = "espacos_max";
 
 /**
  * QUANTOS ESPAÇOS UM ITEM OCUPA — e o buraco que isso ainda é.
@@ -79,23 +70,38 @@ export interface ResumoDeCarga {
 }
 
 /**
- * Capacidade de carga, em espaços.
+ * Espaços da MOCHILA BÁSICA. A capacidade é da mochila, não do
+ * personagem: cada modelo tem a sua, e a básica tem 10.
+ */
+export const ESPACOS_MOCHILA_BASICA = 10;
+
+/**
+ * Capacidade de carga, em espaços — a da mochila EQUIPADA.
  *
- * Ordem: derivado publicado > padrão documentado. O padrão é
- * `10 + Corpo`, que é a forma de TODO derivado físico já publicado
- * (`pv_max` = 10 + Corpo, `andar_m` = 10 + Corpo) — escolhido por
- * coerência com o sistema que existe, não por balanceamento, que não
- * é decisão deste arquivo.
+ * A regra é por mochila, não por atributo: cada modelo declara quantos
+ * espaços oferece, e só UMA pode estar equipada por vez. Quem ainda
+ * não tem mochila nenhuma carrega o básico, `ESPACOS_MOCHILA_BASICA`.
+ *
+ * ESTADO ATUAL: nenhum item de mochila existe no conteúdo publicado —
+ * o único item de armazenamento é a Aljava (`tipo_armazenamento:
+ * "flechas"`, capacidade 15), que guarda flecha, não carga geral. Por
+ * isso esta função hoje sempre devolve o básico. Quando a mochila
+ * existir como item, o que muda aqui é só de onde vem o número: achar
+ * a instância equipada e ler a capacidade declarada no modelo dela.
+ *
+ * EM ABERTO — COMO SE TROCA DE MOCHILA. A pergunta é onde a mochila
+ * que NÃO está em uso fica, já que ela própria não pode ocupar espaço
+ * da mochila em uso. O "abrigo" é o candidato natural (é o único
+ * estado que não pesa, ver `ESTADOS_QUE_OCUPAM`), mas isso levanta o
+ * caso de trocar longe do abrigo — e a regra de o que acontece com o
+ * que não couber na mochila menor também não existe. Nada disso está
+ * decidido; não invente aqui.
  */
 export function capacidadeDeEspacos(
-  atributos: CharacterAttributes,
-  regras: CharacterRulesPayload | null,
+  _character: Character,
+  _catalogo: Map<string, ItemContent>,
 ): number {
-  // Reusa o interpretador de fórmulas em vez de reimplementá-lo: se a
-  // fórmula publicada referenciar outro derivado, ele resolve.
-  const publicado = computeDerivedById(DERIVADO_ESPACOS_MAX, atributos, regras);
-  if (publicado != null) return publicado;
-  return 10 + (atributos.corpo ?? 0);
+  return ESPACOS_MOCHILA_BASICA;
 }
 
 /** Espaços ocupados por uma instância (quantidade × porte). */
@@ -110,12 +116,11 @@ export function espacosDaInstancia(
 export function resumoDeCarga(
   character: Character,
   catalogo: Map<string, ItemContent>,
-  regras: CharacterRulesPayload | null,
 ): ResumoDeCarga {
   let ocupados = 0;
   for (const instancia of character.inventario ?? []) {
     ocupados += espacosDaInstancia(instancia, catalogo.get(instancia.itemSlug));
   }
-  const capacidade = capacidadeDeEspacos(character.atributos, regras);
+  const capacidade = capacidadeDeEspacos(character, catalogo);
   return { ocupados, capacidade, excedido: ocupados > capacidade };
 }

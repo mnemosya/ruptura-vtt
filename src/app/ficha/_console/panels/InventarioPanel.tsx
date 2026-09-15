@@ -147,6 +147,13 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
   const { ocupados, capacidade, excedido } = api.carga;
 
   return (
+    /* MESMA moldura da aba de Equipamentos (`.rc-eq-outer` +
+       `.rc-eq-caption` + `.rc-eq-card-outer`): as duas abas são o par
+       "o que eu tenho" e sem a moldura esta flutuava solta dentro do
+       tabpanel. Só o título muda. */
+    <section aria-label="Inventário" className="rc-eq-outer">
+      <span className="rc-eq-caption">Inventário</span>
+      <div className="rc-eq-card-outer rc-inv-moldura">
     <div className="rc-inv" data-testid="console-inventario">
       {/* As abas ATRAVESSAM as duas colunas, como no desenho: elas
           dizem o recorte da tela inteira, não só da lista. */}
@@ -198,24 +205,24 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
                   <span className="rc-inv-cap-resto">/{capacidade} espaços</span>
                 </span>
               </div>
+              {/* UM TRAÇO POR ESPAÇO. Antes o medidor era uma barra
+                  contínua com marcas por cima em `space-between`, e as
+                  marcas não coincidiam com unidade nenhuma — eram
+                  decoração. Agora cada célula É um espaço: todas do
+                  mesmo tamanho, e contar as cheias dá o número que está
+                  escrito ao lado. */}
               <div
                 className="rc-inv-medidor"
                 role="meter"
                 aria-valuenow={ocupados}
                 aria-valuemin={0}
                 aria-valuemax={capacidade}
-                aria-label="Espaços ocupados"
+                aria-label={`${ocupados} de ${capacidade} espaços ocupados`}
                 data-excedido={excedido || undefined}
               >
-                <div
-                  className="rc-inv-medidor-fill"
-                  style={{ width: `${Math.min(100, capacidade ? (ocupados / capacidade) * 100 : 0)}%` }}
-                />
-                <div className="rc-inv-medidor-marcas" aria-hidden="true">
-                  {Array.from({ length: Math.max(0, capacidade - 1) }, (_, i) => (
-                    <span key={i} />
-                  ))}
-                </div>
+                {Array.from({ length: capacidade }, (_, i) => (
+                  <span key={i} className="rc-inv-medidor-un" data-cheio={i < ocupados || undefined} />
+                ))}
               </div>
             </div>
 
@@ -283,7 +290,30 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
         </div>
       </div>
     </div>
+      </div>
+    </section>
   );
+}
+
+/**
+ * O dano como o sistema o escreve: "1d6 cortante ou perfurante".
+ *
+ * Três casos, nesta ordem. Subtipo FIXO (`subtipo_dano`, ex.: a
+ * carabina é perfurante) manda. Senão, os subtipos que o portador
+ * ESCOLHE na hora (`subtipos_dano_possiveis`, ex.: a adaga corta ou
+ * perfura) entram unidos por "ou". Só quando não há nenhum subtipo é
+ * que o tipo aparece — "físico" e "energético" são a família, e dizer
+ * "1d6 físico cortante" seria dizer duas vezes a mesma coisa, sendo a
+ * primeira a menos informativa.
+ */
+function descricaoDoDano(modelo: ItemContent | undefined): string | null {
+  if (!modelo?.danoBase) return null;
+  if (modelo.subtipoDano) return `${modelo.danoBase} ${modelo.subtipoDano}`;
+  if (modelo.subtiposDanoPossiveis.length > 0) {
+    return `${modelo.danoBase} ${modelo.subtiposDanoPossiveis.join(" ou ")}`;
+  }
+  if (modelo.tipoDano) return `${modelo.danoBase} ${modelo.tipoDano}`;
+  return modelo.danoBase;
 }
 
 function DetalheDoItem({
@@ -297,6 +327,11 @@ function DetalheDoItem({
 }) {
   const categoria = modelo?.categoria ?? instancia.categoria;
   const destino = PROXIMO_ESTADO[instancia.estado];
+  /* Descartar é irreversível e fica a um clique do contador — pedir
+     confirmação é o mínimo. O estado é local ao item selecionado
+     (`key` no pai reinicia ao trocar de item), então trocar de item
+     com a confirmação aberta não deixa ela pendurada no próximo. */
+  const [confirmandoDescarte, setConfirmandoDescarte] = useState(false);
 
   /* "Usar" só existe pra item que o conteúdo declara como usável —
      custo de PA estruturado ou cargas. Botão que não faz nada é pior
@@ -306,9 +341,10 @@ function DetalheDoItem({
   /* O destaque é a estatística que define o item: dano pra arma, custo
      de PA pra consumível. Sem nenhuma das duas o bloco não aparece —
      uma célula grande com um traço dentro é pior que nada. */
+  const dano = descricaoDoDano(modelo);
   const principal =
-    modelo?.danoBase != null
-      ? { rot: "Dano", val: modelo.danoBase }
+    dano != null
+      ? { rot: "Dano", val: dano }
       : modelo?.custoPaUso != null
         ? { rot: "PA", val: String(modelo.custoPaUso) }
         : null;
@@ -323,9 +359,10 @@ function DetalheDoItem({
     linhas.push({ rot: "Alcance", val: `${modelo.alcanceArremessoMetros} metros` });
   if (modelo?.areaMetros != null) linhas.push({ rot: "Alvo", val: `${modelo.areaMetros} m de raio` });
   if (modelo?.custoPaUsoTexto) linhas.push({ rot: "Duração", val: modelo.custoPaUsoTexto });
-  if (modelo?.tipoDano) linhas.push({ rot: "Tipo de dano", val: modelo.tipoDano });
   if (modelo?.municaoMax != null) linhas.push({ rot: "Munição", val: String(modelo.municaoMax) });
-  linhas.push({ rot: "Onde está", val: ROTULO_DO_ESTADO[instancia.estado] });
+  /* "Tipo de dano" saiu: ele agora vive junto do dado, onde se lê de
+     uma vez ("1d6 cortante ou perfurante"). "Onde está" saiu porque as
+     abas já respondem isso, e o botão de mover diz o destino. */
 
   return (
     <div className="rc-inv-det" data-vertente={VERTENTE_DA_CATEGORIA[categoria] ?? "nenhuma"}>
@@ -375,6 +412,7 @@ function DetalheDoItem({
           </div>
         )}
 
+        {(linhas.length > 0 || !principal) && (
         <dl className="rc-inv-linhas">
           {!principal &&
             lado.map((l) => (
@@ -390,6 +428,7 @@ function DetalheDoItem({
             </div>
           ))}
         </dl>
+        )}
       </div>
 
       {/* Preso embaixo: a descrição pode rolar, e as ações do item não
@@ -398,6 +437,7 @@ function DetalheDoItem({
         <div className="rc-inv-stepper">
           <button
             type="button"
+            className="rc-inv-passo"
             onClick={() => api.ajustarQuantidade(instancia.id, -1)}
             disabled={instancia.quantidade <= 1}
             aria-label="Diminuir quantidade"
@@ -407,6 +447,7 @@ function DetalheDoItem({
           <span aria-live="polite">{instancia.quantidade}</span>
           <button
             type="button"
+            className="rc-inv-passo"
             onClick={() => api.ajustarQuantidade(instancia.id, +1)}
             aria-label="Aumentar quantidade"
           >
@@ -420,13 +461,38 @@ function DetalheDoItem({
           <button
             type="button"
             className="rc-inv-stepper-descartar"
-            onClick={() => api.descartarItem(instancia.id)}
+            onClick={() => setConfirmandoDescarte(true)}
             aria-label={`Descartar ${instancia.itemNome}`}
             title="Descartar o item inteiro"
           >
             <Trash2 size={14} aria-hidden="true" />
           </button>
         </div>
+
+        {confirmandoDescarte && (
+          <div className="rc-inv-confirma" role="alertdialog" aria-label="Confirmar descarte">
+            <p>
+              Descartar <strong>{instancia.itemNome}</strong>
+              {instancia.quantidade > 1 ? ` (${instancia.quantidade} unidades)` : ""}? Não dá para desfazer.
+            </p>
+            <div className="rc-inv-confirma-acoes">
+              <button type="button" className="rc-inv-btn" onClick={() => setConfirmandoDescarte(false)}>
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="rc-inv-btn rc-inv-btn--perigo"
+                autoFocus
+                onClick={() => {
+                  setConfirmandoDescarte(false);
+                  api.descartarItem(instancia.id);
+                }}
+              >
+                Descartar
+              </button>
+            </div>
+          </div>
+        )}
         <div className="rc-inv-det-acoes">
           <button
             type="button"

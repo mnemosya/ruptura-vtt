@@ -125,6 +125,14 @@ export interface ItemContent {
   tipoDano: string | null;
   /** `estatisticas.subtipo_dano` (ex.: "perfurante"). `null` se ausente. */
   subtipoDano: string | null;
+  /**
+   * `estatisticas.subtipos_dano_possiveis` — armas que o portador
+   * ESCOLHE como golpeia (adaga, espada, alabarda: "cortante" ou
+   * "perfurante"). Vazio quando o item não dá escolha. Complementa
+   * `subtipoDano`, que é o subtipo FIXO: um item tem um ou outro,
+   * nunca os dois.
+   */
+  subtiposDanoPossiveis: string[];
   /** `estatisticas.pericia_teste` (ex.: "luta", "balistica", "precisao") — perícia declarada pelo conteúdo para o teste de ataque. `null` se ausente. */
   periciaAtaque: string | null;
   /** `estatisticas.soma_atributo` (ex.: "corpo") — atributo somado ao teste de ataque, se o conteúdo declarar. `null` se ausente/não aplicável. */
@@ -196,6 +204,7 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
     danoBase: typeof estatisticas?.dado_dano === "string" ? estatisticas.dado_dano : null,
     tipoDano: typeof estatisticas?.tipo_dano === "string" ? estatisticas.tipo_dano : null,
     subtipoDano: typeof estatisticas?.subtipo_dano === "string" ? estatisticas.subtipo_dano : null,
+    subtiposDanoPossiveis: asStringArray(estatisticas?.subtipos_dano_possiveis),
     periciaAtaque: typeof estatisticas?.pericia_teste === "string" ? estatisticas.pericia_teste : null,
     atributoAtaque: typeof estatisticas?.soma_atributo === "string" ? estatisticas.soma_atributo : null,
     custoPaUso: typeof estatisticas?.custo_pa === "number" ? estatisticas.custo_pa : null,

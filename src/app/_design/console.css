@@ -1905,7 +1905,11 @@
 .rc-window-wrap [data-vertente="sinaptica"] { --rv-vertente-cor: #35c7d8; }
 .rc-window-wrap [data-vertente="nenhuma"] { --rv-vertente-cor: #6b7f8c; }
 
-.rc-inv { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+/* A moldura é a de Equipamentos, mas o respiro dela não: lá o padding
+   generoso centraliza a silhueta, aqui ele só roubaria linha da grade. */
+.rc-inv-moldura { padding: 0; justify-content: flex-start; overflow: hidden; }
+
+.rc-inv { display: flex; flex-direction: column; height: 100%; width: 100%; min-height: 0; }
 
 /* ── Abas: atravessam as duas colunas ────────────────────────────── */
 .rc-inv-abas {
@@ -1979,20 +1983,23 @@
 .rc-inv-cap-num strong { font-weight: 700; color: rgba(214, 228, 245, 0.8); }
 .rc-inv-cap-resto { font-weight: 400; }
 
+/* Uma célula POR ESPAÇO: todas do mesmo tamanho, e o fio entre elas é
+   a divisória. Contar as cheias tem que dar o número escrito ao lado —
+   por isso não é uma barra contínua com marcas decorativas por cima. */
 .rc-inv-medidor {
-  position: relative; height: 12px; overflow: hidden; border-radius: 1px;
+  display: flex; height: 12px; overflow: hidden; border-radius: 1px;
   border: 1px solid #846021; background: #261b09;
 }
-.rc-inv-medidor-fill {
-  position: absolute; inset: 0 auto 0 0; background: #453211; transition: width .18s ease-out;
+.rc-inv-medidor-un {
+  flex: 1 1 0; min-width: 0;
+  border-right: 1px solid #846021;
+  transition: background .18s ease-out;
 }
-.rc-inv-medidor-marcas {
-  position: absolute; inset: 0; display: flex; justify-content: space-between;
-  padding: 0 11px; opacity: .44; pointer-events: none;
-}
-.rc-inv-medidor-marcas span { width: 1px; background: #846021; }
+.rc-inv-medidor-un:last-child { border-right: 0; }
+.rc-inv-medidor-un[data-cheio] { background: #453211; }
 .rc-inv-medidor[data-excedido] { border-color: var(--rc-danger); }
-.rc-inv-medidor[data-excedido] .rc-inv-medidor-fill { background: rgba(209, 80, 104, .45); }
+.rc-inv-medidor[data-excedido] .rc-inv-medidor-un { border-right-color: rgba(209, 80, 104, .5); }
+.rc-inv-medidor[data-excedido] .rc-inv-medidor-un[data-cheio] { background: rgba(209, 80, 104, .45); }
 
 /* ── Grade de itens ──────────────────────────────────────────────── */
 /* Três colunas. No desenho são 116px fixos, que é exatamente o que
@@ -2130,9 +2137,15 @@
 .rc-inv-val {
   color: rgba(214, 228, 245, 0.8);
   font-family: var(--font-mono), monospace; font-size: 16px; line-height: 24px;
+}
+/* O dano principal QUEBRA em vez de cortar: "1d6 cortante ou
+   perfurante" não cabe numa linha na largura do detalhe, e cortá-lo em
+   "1d6 cortante ou …" esconde metade da regra. */
+.rc-inv-destaque-principal .rc-inv-val { font-size: 15px; line-height: 20px; }
+.rc-inv-mini .rc-inv-val {
+  font-size: 12px; line-height: 16px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.rc-inv-mini .rc-inv-val { font-size: 12px; line-height: 16px; }
 
 /* Linhas: rótulo à esquerda em chapa clara, valor à direita em chapa
    funda, divididos por fio — e uma divisória entre linhas. */
@@ -2168,17 +2181,19 @@
   border-top: 1px solid var(--rc-line); background: rgba(17, 29, 49, 0.45);
 }
 .rc-inv-stepper { display: flex; align-items: stretch; height: 38px; }
-.rc-inv-stepper button {
+.rc-inv-passo {
   flex: none; width: 33px; display: flex; align-items: center; justify-content: center;
   cursor: pointer; border: 1px solid var(--rc-line); background: rgba(17, 29, 49, 0.45);
-  color: var(--rc-text); font: inherit; font-size: 15px; line-height: 1;
+  color: var(--cy); font: inherit; font-size: 15px; line-height: 1;
   transition: background .14s, color .14s;
 }
-.rc-inv-stepper button:first-child { border-right: 0; }
-.rc-inv-stepper button:last-child { border-left: 0; }
-.rc-inv-stepper button:hover:not(:disabled) { background: rgba(0, 212, 255, .12); color: var(--cy); }
-.rc-inv-stepper button:focus-visible { outline: 1px solid var(--cy); outline-offset: -2px; }
-.rc-inv-stepper button:disabled { opacity: .35; cursor: not-allowed; }
+.rc-inv-passo:first-child { border-right: 0; }
+.rc-inv-passo:hover:not(:disabled) { background: rgba(0, 212, 255, .12); }
+.rc-inv-passo:focus-visible { outline: 1px solid var(--cy); outline-offset: -2px; }
+/* Desabilitado apaga o GLIFO, nunca a moldura: a caixa faz parte do
+   desenho do contador e some junto se a opacidade for do botão
+   inteiro — o campo do número fica com um buraco na ponta. */
+.rc-inv-passo:disabled { cursor: not-allowed; color: rgba(0, 212, 255, 0.3); }
 .rc-inv-stepper span {
   flex: 1 0 0; display: flex; align-items: center; justify-content: center; padding: 10px;
   border-top: 1px solid var(--rc-line); border-bottom: 1px solid var(--rc-line);
@@ -2186,6 +2201,36 @@
   color: rgba(214, 228, 245, 0.65);
   font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 700; line-height: 16px;
 }
+
+/* Descarte: ícone no fim do contador, não um terceiro botão na linha
+   das ações. Tem moldura INTEIRA — ele não é continuação do contador,
+   é um vizinho: por isso o respiro antes e os quatro fios. */
+.rc-inv-stepper-descartar {
+  flex: none; width: 38px; display: flex; align-items: center; justify-content: center;
+  margin-left: 8px; cursor: pointer;
+  border: 1px solid var(--rc-line); background: rgba(17, 29, 49, 0.45);
+  color: var(--cy);
+  transition: background .14s, border-color .14s, color .14s;
+}
+.rc-inv-stepper-descartar:hover {
+  border-color: var(--rc-danger); color: var(--rc-danger); background: rgba(209, 80, 104, .12);
+}
+.rc-inv-stepper-descartar:focus-visible { outline: 1px solid var(--rc-danger); outline-offset: 1px; }
+
+/* Confirmação de descarte: some sobre o rodapé em vez de virar diálogo
+   do sistema — a ação nasceu ali e a resposta fica ali. */
+.rc-inv-confirma {
+  display: flex; flex-direction: column; gap: 8px; padding: 10px;
+  border: 1px solid rgba(209, 80, 104, .5); border-radius: 1px;
+  background: rgba(36, 14, 20, 0.92);
+}
+.rc-inv-confirma p {
+  margin: 0; color: rgba(214, 228, 245, 0.8);
+  font: 500 13px/16px var(--font-rajdhani), sans-serif;
+}
+.rc-inv-confirma p strong { font-weight: 700; color: var(--rc-text); }
+.rc-inv-confirma-acoes { display: flex; gap: 8px; }
+.rc-inv-confirma-acoes .rc-inv-btn { height: 34px; padding: 8px 12px; letter-spacing: 1.2px; }
 
 .rc-inv-det-acoes { display: flex; align-items: center; gap: 8px; }
 .rc-inv-btn {
@@ -2204,20 +2249,8 @@
 /* A primária é a larga do desenho (230 de 365): ela não divide espaço
    igual com as outras, ela domina a linha. */
 .rc-inv-btn--primaria { flex: 0 1 230px; border-color: rgba(0, 212, 255, 0.45); background: rgba(0, 212, 255, 0.10); }
-/* Descarte: ícone no fim do contador, não um terceiro botão na linha
-   das ações (ver o comentário no componente). */
-.rc-inv-stepper-descartar {
-  flex: none; width: 38px; display: flex; align-items: center; justify-content: center;
-  margin-left: 8px; cursor: pointer;
-  border: 1px solid var(--rc-line); background: rgba(17, 29, 49, 0.45);
-  color: var(--rc-dim);
-  transition: background .14s, border-color .14s, color .14s;
-}
-.rc-inv-stepper-descartar:hover {
-  border-color: var(--rc-danger); color: var(--rc-danger); background: rgba(209, 80, 104, .12);
-}
-.rc-inv-stepper-descartar:focus-visible { outline: 1px solid var(--rc-danger); outline-offset: 1px; }
-
+.rc-inv-btn--perigo { border-color: rgba(209, 80, 104, .5); color: var(--rc-danger); }
+.rc-inv-btn--perigo:hover:not(:disabled) { border-color: var(--rc-danger); background: rgba(209, 80, 104, .14); color: var(--rc-danger); }
 /* ── Termo de regra dentro de um texto ───────────────────────────── */
 /* Estilo DO TEXTO, não caixa por cima dele: peso, cor e um pontilhado
    discreto. Assim acompanha a quebra de linha, o tamanho da fonte e a
@@ -2252,5 +2285,5 @@
 .rc-termo-dica-txt--vazio { font-style: italic; color: var(--rc-dim); }
 
 @media (prefers-reduced-motion: reduce) {
-  .rc-inv-card, .rc-inv-aba, .rc-inv-btn, .rc-inv-medidor-fill, .rc-inv-stepper button { transition: none; }
+  .rc-inv-card, .rc-inv-aba, .rc-inv-btn, .rc-inv-medidor-un, .rc-inv-passo { transition: none; }
 }
