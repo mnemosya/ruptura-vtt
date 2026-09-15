@@ -48,6 +48,7 @@ import { DecoTop } from "./deco";
 import { IdentityAside } from "./panels/IdentityAside";
 import { VitalsRow } from "./panels/VitalsRow";
 import { EquipmentPanel } from "./panels/EquipmentPanel";
+import { InventarioPanel } from "./panels/InventarioPanel";
 import { SkillsGrid } from "./panels/SkillsGrid";
 import { TabRail } from "./panels/TabRail";
 import { MinimizedDockContent } from "./panels/MinimizedDockContent";
@@ -297,9 +298,13 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
               é o primeiro filho, então `top: 0` daqui cai exatamente na
               borda de cima dele. A aba de Equipamentos tem a sua
               própria, no `.rc-eq-card-outer`. */}
-          {aba !== "equipamentos" && <DecoTop />}
+          {aba !== "equipamentos" && aba !== "mochila" && <DecoTop />}
           <div className="rc-tabpanel" role="tabpanel" ref={tabpanelRef}>
-            {aba === "equipamentos" ? (
+            {aba === "mochila" ? (
+              /* A aba Inventário é a única além de Equipamentos que já
+                 tem conteúdo real; o resto segue no aviso de etapa. */
+              <InventarioPanel api={api} />
+            ) : aba === "equipamentos" ? (
               <EquipmentPanel
                 slots={projecao.slots}
                 api={api}

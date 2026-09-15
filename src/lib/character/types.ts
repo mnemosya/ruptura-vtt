@@ -842,7 +842,10 @@ export interface Character {
     /** subtipo do modelo no momento da compra (ex.: "corpo_a_corpo") — checkpoint v0.56, usado só para checar compatibilidade de runa. */
     subtipo?: string;
     quantidade: number;
-    estado: "equipado" | "empunhado" | "acesso_rapido" | "mochila";
+    /** Mesmo vocabulário de `ItemLoadoutState` (inventory.ts), repetido
+        aqui porque `Character` não importa daquele módulo. "abrigo" =
+        guardado fora do corpo (não pesa) — ver carga.ts. */
+    estado: "equipado" | "empunhado" | "acesso_rapido" | "mochila" | "abrigo";
     adquiridoEm: string;
     precoPago?: number;
     /**

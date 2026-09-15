@@ -202,6 +202,7 @@ import {
   getToqueDeMidasModifiersForTarget,
   markToqueDeMidasUsed,
   removeItemFromInventory,
+  adjustItemQuantity,
   removeQuantityFromInventory,
   useItemOnCharacter,
   useItemOnAlly,
@@ -300,7 +301,8 @@ import { ConsoleErrorBoundary } from "../../ficha/_console/ConsoleErrorBoundary"
 import { useConsoleCloseOverride } from "../../ficha/_console/ConsoleCloseContext";
 import { registrarRolagemPericiaAction } from "../../mesas/[campaignId]/vtt/_painel/acoes/rolagemPainel";
 import type { TurnWindow } from "../../../lib/table/turnTrack";
-import type { ConsoleApi, ConsolePin } from "../../ficha/_console/types";
+import type { ConsoleApi, ConsolePin, TermoDeRegra } from "../../ficha/_console/types";
+import { resumoDeCarga } from "../../../lib/character/carga";
 import type { BodySlotId } from "../../ficha/_console/slots";
 import { GeneralTab } from "./components/GeneralTab";
 import { AttributesTab } from "./components/AttributesTab";
@@ -5375,6 +5377,35 @@ export default function CharacterSheetClient({
   // personagem real (nunca aparecia em /dev/character-sheet, que nunca
   // passa por esse bloqueio: lá `mode` é sempre "dev").
   const catalogoItens = useMemo(() => new Map(itemsIniciais.map((i) => [i.slug, i])), [itemsIniciais]);
+
+  /* Espaços ocupados/capacidade. A regra inteira (porte → espaços,
+     capacidade total, o que pesa e o que não pesa) vive em
+     `lib/character/carga.ts`; aqui é só a leitura memoizada. */
+  const cargaAtual = useMemo(
+    () => resumoDeCarga(character, catalogoItens, regras),
+    [character, catalogoItens, regras],
+  );
+
+  /* Glossário para os tooltips de regra dentro de textos: as ações de
+     combate e as condições publicadas, achatadas num formato só. Vem
+     de conteúdo real — nada é escrito à mão aqui. */
+  const glossarioDeRegras = useMemo<TermoDeRegra[]>(
+    () => [
+      ...combatActionsIniciais.map((a) => ({
+        tipo: "acao" as const,
+        slug: a.slug,
+        nome: a.nome,
+        descricao: a.descricao_curta ?? a.descricao_longa ?? null,
+      })),
+      ...condicoesDisponiveis.map((c) => ({
+        tipo: "condicao" as const,
+        slug: c.slug,
+        nome: c.nome,
+        descricao: c.descricao_curta ?? null,
+      })),
+    ],
+    [combatActionsIniciais, condicoesDisponiveis],
+  );
   // Também precisa vir antes do return de bloqueio — mesma regra acima.
   // `null` na rota /ficha normal; vira `router.back()` só quando esta
   // árvore está montada dentro da rota interceptada do modal.
@@ -5616,6 +5647,27 @@ export default function CharacterSheetClient({
     definirMit: handleSetMitAtual,
     definirPd: handleSetPdAtual,
     recarregar: handleReloadWeapon,
+
+    /* Inventário. Nenhuma regra nova mora aqui: cada uma destas é a
+       porta para um fluxo que já existia e já loga/salva. */
+    moverItemPara: (instanceId, estado) => {
+      const instancia = character.inventario?.find((i) => i.id === instanceId);
+      // Armadura/escudo ATIVOS têm MIT/PD vivos; tirá-los do corpo passa
+      // pelo fluxo defensivo, senão a fonte de MIT some sem desligar.
+      if (instancia?.equipadoDefensivo && estado !== "equipado") {
+        handleUnequipDefensive(instanceId);
+      }
+      handleSetItemEstado(instanceId, estado);
+    },
+    usarItem: (instanceId) => void handleUseItem(instanceId),
+    ajustarQuantidade: (instanceId, delta) => {
+      const next = adjustItemQuantity(characterRef.current, instanceId, delta);
+      characterRef.current = next;
+      setCharacter(next);
+    },
+    descartarItem: handleRemoveItem,
+    carga: cargaAtual,
+    glossario: glossarioDeRegras,
 
     adicionarCondicao: (input) => void handleAddCondition(input),
     removerCondicao: (id) => void handleRemoveCondition(id),

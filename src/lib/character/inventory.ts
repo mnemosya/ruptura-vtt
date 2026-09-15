@@ -69,6 +69,14 @@ export interface ItemContent {
   categoria_label?: string;
   /** subtipo do modelo (ex.: "corpo_a_corpo" em armas) — usado só para checar `restricao_subtipo` de runa. */
   subtipo?: string;
+  /**
+   * `estatisticas.classe_porte` — vocabulário canônico M46 ("leve" |
+   * "media" | "pesada"), presente em 55 dos 120 itens publicados.
+   * `null` nos outros (consumíveis, munição, kits, veículos). É o
+   * insumo da conversão porte → espaços, que vive em `carga.ts` — este
+   * campo só LÊ o dado, não decide quanto ele custa.
+   */
+  classePorte: string | null;
   raridade?: string;
   preco: number;
   descricao_curta?: string;
@@ -197,6 +205,7 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
     cargasMax: typeof estatisticas?.cargas_max === "number" ? estatisticas.cargas_max : null,
     periciaUso: typeof estatisticas?.pericia_teste === "string" ? estatisticas.pericia_teste : null,
     alvoUso: typeof estatisticas?.alvo === "string" ? estatisticas.alvo : null,
+    classePorte: typeof estatisticas?.classe_porte === "string" ? estatisticas.classe_porte : null,
     payloadAutomacao: raw.payload_automacao,
     status: String(raw.status ?? "published"),
   };
@@ -224,9 +233,24 @@ export const WALLET_LABELS: Record<WalletId, string> = {
 // Instância de item no inventário — loadout simples (PRD 13.3).
 // ---------------------------------------------------------------------
 
-export type ItemLoadoutState = "equipado" | "empunhado" | "acesso_rapido" | "mochila";
+/**
+ * Onde a instância está. Os quatro primeiros são formas de CARREGAR
+ * (todos pesam — ver `ESTADOS_QUE_OCUPAM` em carga.ts); "abrigo" é o
+ * que ficou guardado fora do corpo e por isso não pesa.
+ *
+ * "abrigo" entrou junto com a aba Inventário do Console, que tem
+ * Mochila / Equipado / Abrigo / Todos como filtros. Sem ele o terceiro
+ * filtro não teria o que filtrar. Instâncias antigas nunca têm esse
+ * valor, então nada precisa de migração: o default continua "mochila".
+ *
+ * NÃO foi adicionado ao vocabulário de efeitos
+ * (`effectDraftTypes.ts`): lá o enum descreve o que um EFEITO pode
+ * exigir do loadout, e "guardado em casa" não é estado que efeito
+ * consulte.
+ */
+export type ItemLoadoutState = "equipado" | "empunhado" | "acesso_rapido" | "mochila" | "abrigo";
 
-export const ITEM_LOADOUT_STATES: readonly ItemLoadoutState[] = ["equipado", "empunhado", "acesso_rapido", "mochila"];
+export const ITEM_LOADOUT_STATES: readonly ItemLoadoutState[] = ["equipado", "empunhado", "acesso_rapido", "mochila", "abrigo"];
 
 export interface InstalledRune {
   id: string;

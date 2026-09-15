@@ -22,6 +22,8 @@ import type {
 import type { RupturaRollResult } from "../../../lib/dice/types";
 import type { TableLogVisibility } from "../../../lib/table";
 import type { BodySlotId } from "./slots";
+import type { ItemLoadoutState } from "../../../lib/character/inventory";
+import type { ResumoDeCarga } from "../../../lib/character/carga";
 
 export type RecursoEditavel = "pv" | "pe" | "mana";
 
@@ -121,6 +123,31 @@ export interface ConsoleApi {
   /** Recarga real (carregador ou aljava compartilhada). */
   recarregar: (instanceId: string) => void;
 
+  // ── Inventário (aba Inventário) ───────────────────────────────────
+  /**
+   * Move a instância entre os CINCO estados de loadout, incluindo
+   * "abrigo". Difere de `equiparNoSlot`/`desequipar`, que existem para
+   * o paper doll e decidem o estado a partir do slot do corpo; aqui
+   * quem escolhe o estado é quem chama, porque a aba Inventário mexe
+   * em estados que não têm slot (mochila, abrigo).
+   */
+  moverItemPara: (instanceId: string, estado: ItemLoadoutState) => void;
+  /** Usa o item — consome carga/quantidade e aplica o que o conteúdo automatiza. */
+  usarItem: (instanceId: string) => void;
+  /** Ajusta a quantidade da pilha. Nunca abaixo de 1 — para zerar, `descartarItem`. */
+  ajustarQuantidade: (instanceId: string, delta: number) => void;
+  /** Remove a instância inteira do inventário. */
+  descartarItem: (instanceId: string) => void;
+  /** Espaços ocupados e capacidade — a regra vive em `lib/character/carga.ts`. */
+  carga: ResumoDeCarga;
+  /**
+   * Termos de regra citáveis dentro de um texto — ações de combate e
+   * condições publicadas. É o que alimenta o tooltip de "Resistir" ou
+   * "Atordoado" no meio da descrição de um item. Vem do conteúdo
+   * real; o Console não mantém glossário próprio.
+   */
+  glossario: TermoDeRegra[];
+
   adicionarCondicao: (input: { conditionId: string | null; nome: string; descricao: string; origem: string; duracao: string }) => void;
   removerCondicao: (id: string) => void;
   /** Condições publicadas na Biblioteca, para o seletor. */
@@ -169,6 +196,19 @@ export interface ConsolePin {
   ref: string;
   nome: string;
   info?: string;
+}
+
+/**
+ * Um termo que pode aparecer GRIFADO dentro de um texto de regra. Os
+ * dois tipos vêm de conteúdo publicado: `combat_action` (28) e
+ * `condition` (17). O `nome` é o que se procura no texto; a
+ * `descricao` é o que o tooltip mostra.
+ */
+export interface TermoDeRegra {
+  tipo: "acao" | "condicao";
+  slug: string;
+  nome: string;
+  descricao: string | null;
 }
 
 export interface SlotOcupado {
