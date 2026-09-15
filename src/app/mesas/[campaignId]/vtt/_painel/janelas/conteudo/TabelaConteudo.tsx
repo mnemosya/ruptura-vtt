@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import type { DraftContentType } from "../../../../lib/contentSchema";
-import type { CampaignContentDraftRow, ConteudoEfetivo } from "../../../../lib/campaignContent";
+import type { DraftContentType } from "../../../../../../../lib/contentSchema";
+import type { CampaignContentDraftRow, ConteudoEfetivo } from "../../../../../../../lib/campaignContent";
 import {
   arquivarHomebrewCampanha,
   criarRascunhoCopiaHomebrew,
@@ -12,7 +11,7 @@ import {
   excluirRascunhoCampanha,
   previewImpactoRemocao,
   removerOverrideCampanha,
-} from "../../../../lib/campaignContent/campaignContentServerActions";
+} from "../../../../../../../lib/campaignContent/campaignContentServerActions";
 
 const IMPACTO_LABEL: Record<string, string> = {
   sem_impacto_detectado: "Sem impacto detectado",
@@ -46,10 +45,18 @@ interface Props {
   rascunhos: CampaignContentDraftRow[];
   /** Falha REAL ao ler os rascunhos — distinta de "nenhum rascunho aberto" (auditoria da Fase 5). */
   rascunhosErro: string | null;
+  /**
+   * O que eram LINKS pra sub-rotas (`/rascunho/[id]`, `/comparar/[id]`)
+   * viraram trocas de vista DENTRO da janela. `onRecarregar` substitui
+   * o `router.refresh()`: sem rota, não há Server Component pra
+   * remontar — quem relê é a ação.
+   */
+  onAbrirRascunho: (draftId: string) => void;
+  onComparar: (docId: string) => void;
+  onRecarregar: () => Promise<void> | void;
 }
 
-export function BibliotecaCampanhaClient({ campaignId, tipos, efetivos, rascunhos, rascunhosErro }: Props) {
-  const router = useRouter();
+export function TabelaConteudo({ campaignId, tipos, efetivos, rascunhos, rascunhosErro, onAbrirRascunho, onComparar, onRecarregar }: Props) {
   const [filtroTipo, setFiltroTipo] = useState<DraftContentType | "todos">("todos");
   const [carregando, setCarregando] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -68,8 +75,8 @@ export function BibliotecaCampanhaClient({ campaignId, tipos, efetivos, rascunho
         setErro(resultado.erro ?? "Falha na operação.");
         return;
       }
-      if (resultado.draftId) router.push(`/mesas/${campaignId}/biblioteca/rascunho/${resultado.draftId}`);
-      else router.refresh();
+      if (resultado.draftId) onAbrirRascunho(resultado.draftId);
+      else void onRecarregar();
     } finally {
       setCarregando(null);
     }
@@ -126,7 +133,7 @@ export function BibliotecaCampanhaClient({ campaignId, tipos, efetivos, rascunho
       {rascunhosErro && (
         <div className="rm-note rm-note--danger" role="alert" data-testid="biblioteca-erro-rascunhos" style={{ marginBottom: 16 }}>
           Não foi possível carregar os rascunhos abertos: {rascunhosErro}{" "}
-          <button type="button" onClick={() => router.refresh()} className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable" style={{ marginLeft: 6 }}>
+          <button type="button" onClick={() => void onRecarregar()} className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable" style={{ marginLeft: 6 }}>
             Tentar de novo
           </button>
         </div>
@@ -138,9 +145,9 @@ export function BibliotecaCampanhaClient({ campaignId, tipos, efetivos, rascunho
           <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5 }}>
             {rascunhos.map((d) => (
               <li key={d.id} style={{ marginBottom: 4 }}>
-                <a href={`/mesas/${campaignId}/biblioteca/rascunho/${d.id}`} style={{ color: "var(--cy)" }}>
+                <button type="button" className="rv-conteudo-link" onClick={() => onAbrirRascunho(d.id)}>
                   {d.content_type}:{d.slug} — {d.operation}
-                </a>{" "}
+                </button>{" "}
                 <button
                   disabled={carregando !== null}
                   onClick={() => rodar(`excluir-${d.id}`, () => excluirRascunhoCampanha(d.id))}
@@ -198,9 +205,9 @@ export function BibliotecaCampanhaClient({ campaignId, tipos, efetivos, rascunho
                   {e.origem === "modificado_pela_mesa" && e.campaignContentDocumentId && (
                     <>
                       {e.estadoAtualizacao && e.estadoAtualizacao !== "atualizado" && (
-                        <a href={`/mesas/${campaignId}/biblioteca/comparar/${e.campaignContentDocumentId}`} className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable">
+                        <button type="button" className="rm-btn rm-btn-ghost rm-btn-sm rv-focusable" onClick={() => onComparar(e.campaignContentDocumentId!)}>
                           Comparar com oficial
-                        </a>
+                        </button>
                       )}
                       <button
                         disabled={carregando !== null}

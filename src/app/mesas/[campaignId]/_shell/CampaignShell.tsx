@@ -412,6 +412,31 @@ export function CampaignShell({
         cima da página. */}
     <ProvedorMesaDados>
     <ProvedorConsoleDaMesa campaignId={campaignId}>
+    {naMesaVtt ? (
+      /* NA MESA A CASCA NÃO DESENHA NADA. Ela continuava montando
+         trilho, cabeçalho, dock e fundo DEBAIXO do VTT, que é
+         `position: fixed; inset: 0` — nenhum pixel deles chegava à
+         tela e nenhum clique chegava a eles, mas o Tab passava por
+         nove links invisíveis e o leitor de tela os anunciava.
+
+         O que fica são os PROVEDORES, que não desenham e que o VTT
+         usa de verdade: Console (janela desta casca, aberta de três
+         lugares do VTT), mesa de dados, trilha de turnos, e o
+         `CampaignRealtimeProvider` lá do `layout.tsx` — de onde o
+         Chat tira o log e Participantes tira o roster.
+
+         O que se perde de VISUAL, some porque já estava invisível: a
+         navegação (que o menu da mesa assume), o nome da campanha e a
+         etiqueta de papel, a barra de combate da casca (o VTT tem a
+         própria trilha e o painel de Rodadas) e o fundo decorativo,
+         que pintava três camadas atrás de um mapa opaco. `avisoSync`
+         virou peça do VTT (`AvisoSincronizacao`), porque era a única
+         coisa aqui que ainda tinha o que dizer. */
+      <div className="rm-root rm-root--vtt">
+        <HudCursor enabled={cursorHabilitado} />
+        {children}
+      </div>
+    ) : (
     <div className="rm-root">
       <HudCursor enabled={cursorHabilitado} />
 
@@ -461,6 +486,7 @@ export function CampaignShell({
         {painelSessao && !naMesaVtt && <PainelSessaoSeLivre rotulo="Sessão">{painelSessao}</PainelSessaoSeLivre>}
       </div>
     </div>
+    )}
     </ProvedorConsoleDaMesa>
     </ProvedorMesaDados>
     </ProvedorTrilhaDaMesa>

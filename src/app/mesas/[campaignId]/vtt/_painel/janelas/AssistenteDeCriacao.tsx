@@ -10,17 +10,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useConsoleDaMesa } from "../../_shell/ConsoleDaMesa";
+import { useConsoleDaMesa } from "../../../_shell/ConsoleDaMesa";
 import Link from "next/link";
-import { Spinner } from "../../../../_design/icons";
+import { Spinner } from "../../../../../_design/icons";
 import {
   createCharacterFromWizard,
   loadCharacterCreationDraft,
   saveCharacterCreationDraft,
   deleteCharacterCreationDraft,
   type LoadDraftResult,
-} from "../../../../../lib/character/storage";
-import type { Campaign } from "../../../../../lib/table";
+} from "../../../../../../lib/character/storage";
+import type { Campaign } from "../../../../../../lib/table";
 import {
   learnSpell,
   acquireTalentLevel,
@@ -31,10 +31,10 @@ import {
   type TalentContent,
   type SpellContent,
   type ItemContent,
-} from "../../../../../lib/character";
-import { PONTOS_VERTENTE_CRIACAO } from "../../../../../lib/character/createCharacterValidation";
-import type { DraftPayload, DraftItemEscolhido } from "../../../../../lib/character/draftValidation";
-import { logError } from "../../../../../lib/logger";
+} from "../../../../../../lib/character";
+import { PONTOS_VERTENTE_CRIACAO } from "../../../../../../lib/character/createCharacterValidation";
+import type { DraftPayload, DraftItemEscolhido } from "../../../../../../lib/character/draftValidation";
+import { logError } from "../../../../../../lib/logger";
 
 /** ~800ms — janela do autosave por debounce (rede de segurança; troca de etapa e "Salvar e sair" salvam imediatamente). */
 const AUTOSAVE_DEBOUNCE_MS = 800;
@@ -60,7 +60,7 @@ interface Identidade {
   afiliacao: string;
 }
 
-export default function CreateCharacterWizardClient({
+export default function AssistenteDeCriacao({
   campaign,
   regras,
   talentos,
@@ -69,6 +69,8 @@ export default function CreateCharacterWizardClient({
   magiasErro,
   itensLoja,
   itensLojaErro,
+  onSair,
+  onConcluir,
 }: {
   campaign: Campaign;
   regras: CharacterRulesPayload;
@@ -79,6 +81,10 @@ export default function CreateCharacterWizardClient({
   magiasErro: string | null;
   itensLoja: ItemContent[];
   itensLojaErro: string | null;
+  /** Fechar sem terminar — salvando o rascunho ou descartando. */
+  onSair: () => void;
+  /** Terminou: a ficha abre por cima, e a janela sai de cena. */
+  onConcluir: (characterId: string) => void;
 }) {
   const router = useRouter();
   const consoleDaMesa = useConsoleDaMesa();
@@ -92,16 +98,17 @@ export default function CreateCharacterWizardClient({
    * da casca (não deveria acontecer aqui) sobra a rota `/ficha`, que
    * continua existindo pra link direto.
    */
+  /**
+   * Terminado o assistente, a ficha abre POR CIMA — sem navegar.
+   *
+   * Isto era `router.push` pra `/personagens?ficha=…`: uma rota que não
+   * existe mais, e que existia só pra carregar o pedido de abrir a
+   * ficha através de uma navegação. Aqui o Console já está montado ao
+   * lado; abrir é dizer a ele qual personagem, e fechar esta janela.
+   */
   const abrirFicha = useCallback((characterId: string) => {
-    if (consoleDaMesa) {
-      // UMA navegação, e o pedido de abrir vai NELA (`?ficha=`). Navegar
-      // e mexer no estado do provider no mesmo tick descartava a
-      // transição do router — o wizard ficava parado em "Criando…".
-      router.push(`/mesas/${campaign.id}/personagens?ficha=${characterId}`);
-      return;
-    }
-    router.push(`/ficha?campaignId=${campaign.id}&characterId=${characterId}`);
-  }, [consoleDaMesa, router, campaign.id]);
+    onConcluir(characterId);
+  }, [onConcluir]);
   const [step, setStep] = useState(1);
   const [identidade, setIdentidade] = useState<Identidade>({
     nome: "",
@@ -424,7 +431,7 @@ export default function CreateCharacterWizardClient({
     try {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
       await triggerSave();
-      router.push("/mesas");
+      onSair();
     } catch {
       setErrorMessage("Não foi possível salvar o rascunho agora — tente novamente antes de sair.");
     } finally {
@@ -441,7 +448,7 @@ export default function CreateCharacterWizardClient({
     } catch (err) {
       logError("wizard.draft.cancel", err);
     }
-    router.push("/mesas");
+    onSair();
   }
 
   function ajustarAtributo(id: string, delta: number) {
@@ -629,9 +636,7 @@ export default function CreateCharacterWizardClient({
   if (loadState === "loading") {
     return (
       <main className="rm-page" style={{ maxWidth: 720 }}>
-        <Link href={`/mesas/${campaign.id}/vtt`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12 }}>← {campaign.name}</Link>
-        <h1 className="rm-page-title" style={{ margin: "8px 0 16px" }}>Novo personagem</h1>
-        <p role="status" className="rm-faint">Restaurando rascunho…</p>
+                <p role="status" className="rm-faint">Restaurando rascunho…</p>
       </main>
     );
   }
@@ -639,9 +644,7 @@ export default function CreateCharacterWizardClient({
   if (loadState === "error") {
     return (
       <main className="rm-page" style={{ maxWidth: 720 }}>
-        <Link href={`/mesas/${campaign.id}/vtt`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12 }}>← {campaign.name}</Link>
-        <h1 className="rm-page-title" style={{ margin: "8px 0 16px" }}>Novo personagem</h1>
-        <p role="alert" className="rm-erro" style={{ marginBottom: 12 }}>
+                <p role="alert" className="rm-erro" style={{ marginBottom: 12 }}>
           Não foi possível verificar se você tem um rascunho salvo: {loadMessage}
         </p>
         <button onClick={handleTentarCarregarNovamente} className="rm-btn rm-btn-ghost rv-focusable">Tentar novamente</button>
@@ -652,9 +655,7 @@ export default function CreateCharacterWizardClient({
   if (loadState === "confirm_discard") {
     return (
       <main className="rm-page" style={{ maxWidth: 720 }}>
-        <Link href={`/mesas/${campaign.id}/vtt`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12 }}>← {campaign.name}</Link>
-        <h1 className="rm-page-title" style={{ margin: "8px 0 16px" }}>Novo personagem</h1>
-        <p role="alert" className="rm-note rm-note--warn" style={{ marginBottom: 12 }}>
+                <p role="alert" className="rm-note rm-note--warn" style={{ marginBottom: 12 }}>
           Não foi possível restaurar seu rascunho anterior (formato incompatível). Deseja descartá-lo e começar do zero?
         </p>
         <div style={{ display: "flex", gap: 8 }}>
@@ -667,9 +668,7 @@ export default function CreateCharacterWizardClient({
 
   return (
     <main className="rm-page" style={{ maxWidth: 720 }}>
-      <Link href={`/mesas/${campaign.id}/vtt`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12 }}>← {campaign.name}</Link>
-      <h1 className="rm-page-title" style={{ margin: "8px 0 16px" }}>Novo personagem</h1>
-
+      
       {errorMessage && <p role="alert" className="rm-erro" style={{ marginBottom: 16 }}>Erro: {errorMessage}</p>}
       {itensRemovidosAoRestaurar > 0 && (
         <p className="rm-note rm-note--warn" style={{ marginBottom: 16 }}>

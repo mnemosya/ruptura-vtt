@@ -82,7 +82,7 @@ export default async function DevJoinPage({ params }: PageProps) {
       {personagens.length === 0 ? (
         <>
           <p style={{ fontSize: 13, opacity: 0.8, marginBottom: 12 }}>Você não controla nenhum personagem nesta campanha.</p>
-          <Link href={`/mesas/${campaign.id}/personagens/novo`} style={{ color: "#5ec8ff", fontSize: 13 }}>Criar personagem →</Link>
+          <Link href={`/mesas/${campaign.id}/vtt`} style={{ color: "#5ec8ff", fontSize: 13 }}>Criar personagem →</Link>
         </>
       ) : (
         <ul style={{ display: "flex", flexDirection: "column", gap: 8, listStyle: "none", padding: 0 }}>

@@ -107,7 +107,7 @@ async function inserirRascunho(
     .select("id")
     .single();
   if (error) return { ok: false, erro: `Falha ao criar rascunho de campanha: ${error.message}` };
-  revalidatePath(`/mesas/${campaignId}/biblioteca`);
+  revalidatePath(`/mesas/${campaignId}/vtt`);
   return { ok: true, draftId: data.id as string };
 }
 
@@ -253,7 +253,7 @@ export async function atualizarRascunhoCampanha(
     if (error) return { ok: false, erro: `Falha ao salvar: ${error.message}` };
     if (!data) return { ok: false, conflito: true, erro: "Conflito de versão detectado ao salvar — recarregue e tente novamente." };
 
-    revalidatePath(`/mesas/${draft.campaign_id}/biblioteca`);
+    revalidatePath(`/mesas/${draft.campaign_id}/vtt`);
     return { ok: true, avisos: validacao.avisos, novaVersao: data.version as number };
   } catch (err) {
     return { ok: false, erro: err instanceof Error ? err.message : "Erro desconhecido." };
@@ -326,7 +326,7 @@ export async function publicarRascunhoCampanha(draftId: string, expectedDraftVer
     });
     if (error) return { ok: false, erro: `Falha ao publicar na campanha: ${error.message}` };
 
-    revalidatePath(`/mesas/${draft.campaign_id}/biblioteca`);
+    revalidatePath(`/mesas/${draft.campaign_id}/vtt`);
     const resultado = data as { campaignContentDocumentId: string; localVersion: number };
     return { ok: true, campaignContentDocumentId: resultado.campaignContentDocumentId, localVersion: resultado.localVersion };
   } catch (err) {
@@ -380,7 +380,7 @@ export async function removerOverrideCampanha(campaignContentDocumentId: string,
     });
     if (error) return { ok: false, erro: `Falha ao remover override: ${error.message}` };
 
-    revalidatePath(`/mesas/${doc.campaign_id}/biblioteca`);
+    revalidatePath(`/mesas/${doc.campaign_id}/vtt`);
     return { ok: true };
   } catch (err) {
     return { ok: false, erro: err instanceof Error ? err.message : "Erro desconhecido." };
@@ -413,7 +413,7 @@ export async function arquivarHomebrewCampanha(campaignContentDocumentId: string
     });
     if (error) return { ok: false, erro: `Falha ao arquivar homebrew: ${error.message}` };
 
-    revalidatePath(`/mesas/${doc.campaign_id}/biblioteca`);
+    revalidatePath(`/mesas/${doc.campaign_id}/vtt`);
     return { ok: true };
   } catch (err) {
     return { ok: false, erro: err instanceof Error ? err.message : "Erro desconhecido." };
@@ -431,7 +431,7 @@ export async function excluirRascunhoCampanha(draftId: string): Promise<AcaoCamp
     const client = await getScopedTableClient();
     const { error } = await client.from("campaign_content_drafts").delete().eq("id", draftId);
     if (error) return { ok: false, erro: `Falha ao excluir rascunho: ${error.message}` };
-    revalidatePath(`/mesas/${draft.campaign_id}/biblioteca`);
+    revalidatePath(`/mesas/${draft.campaign_id}/vtt`);
     return { ok: true };
   } catch (err) {
     return { ok: false, erro: err instanceof Error ? err.message : "Erro desconhecido." };
@@ -462,7 +462,7 @@ export async function manterOverrideAposRevisao(campaignContentDocumentId: strin
       summary: "Narrador manteve o override atual após revisão contra o oficial.",
     });
     if (error) return { ok: false, erro: `Falha ao registrar revisão: ${error.message}` };
-    revalidatePath(`/mesas/${doc.campaign_id}/biblioteca`);
+    revalidatePath(`/mesas/${doc.campaign_id}/vtt`);
     return { ok: true };
   } catch (err) {
     return { ok: false, erro: err instanceof Error ? err.message : "Erro desconhecido." };

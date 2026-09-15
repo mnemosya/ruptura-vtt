@@ -18,22 +18,20 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import type { OpcoesDeRegras } from "../../../../../../lib/contentSchema/characterRuleOptions";
-import type { CamposItem, CamposMagia, CamposRuna, CamposTalento } from "../../../../../../lib/contentSchema/draftTypes";
-import { CONTENT_TYPE_REGISTRY } from "../../../../../../lib/contentSchema/contentTypeRegistry";
-import type { BaseDocumentoStatus, DraftEfeitosPreservados } from "../../../../../../lib/contentSchema/draftView";
-import { CamposComunsSection } from "../../../../../admin/biblioteca/rascunhos/_shared/CamposComunsSection";
-import { CamposItemSection } from "../../../../../admin/biblioteca/rascunhos/_shared/CamposItemSection";
-import { CamposMagiaSection } from "../../../../../admin/biblioteca/rascunhos/_shared/CamposMagiaSection";
-import { CamposRunaSection } from "../../../../../admin/biblioteca/rascunhos/_shared/CamposRunaSection";
-import { CamposTalentoSection } from "../../../../../admin/biblioteca/rascunhos/_shared/CamposTalentoSection";
-import { EffectsEditorSection } from "../../../../../admin/biblioteca/rascunhos/_shared/EffectsEditorSection";
-import { EffectsPreviewList } from "../../../../../admin/biblioteca/rascunhos/_shared/EffectsPreviewList";
-import { PreviewPreservado } from "../../../../../admin/biblioteca/rascunhos/_shared/PreviewPreservado";
-import type { CampaignContentDraftRow } from "../../../../../../lib/campaignContent";
-import { atualizarRascunhoCampanha, excluirRascunhoCampanha, publicarRascunhoCampanha } from "../../../../../../lib/campaignContent/campaignContentServerActions";
+import type { OpcoesDeRegras } from "../../../../../../../lib/contentSchema/characterRuleOptions";
+import type { CamposItem, CamposMagia, CamposRuna, CamposTalento } from "../../../../../../../lib/contentSchema/draftTypes";
+import { CONTENT_TYPE_REGISTRY } from "../../../../../../../lib/contentSchema/contentTypeRegistry";
+import type { BaseDocumentoStatus, DraftEfeitosPreservados } from "../../../../../../../lib/contentSchema/draftView";
+import { CamposComunsSection } from "../../../../../../admin/biblioteca/rascunhos/_shared/CamposComunsSection";
+import { CamposItemSection } from "../../../../../../admin/biblioteca/rascunhos/_shared/CamposItemSection";
+import { CamposMagiaSection } from "../../../../../../admin/biblioteca/rascunhos/_shared/CamposMagiaSection";
+import { CamposRunaSection } from "../../../../../../admin/biblioteca/rascunhos/_shared/CamposRunaSection";
+import { CamposTalentoSection } from "../../../../../../admin/biblioteca/rascunhos/_shared/CamposTalentoSection";
+import { EffectsEditorSection } from "../../../../../../admin/biblioteca/rascunhos/_shared/EffectsEditorSection";
+import { EffectsPreviewList } from "../../../../../../admin/biblioteca/rascunhos/_shared/EffectsPreviewList";
+import { PreviewPreservado } from "../../../../../../admin/biblioteca/rascunhos/_shared/PreviewPreservado";
+import type { CampaignContentDraftRow } from "../../../../../../../lib/campaignContent";
+import { atualizarRascunhoCampanha, excluirRascunhoCampanha, publicarRascunhoCampanha } from "../../../../../../../lib/campaignContent/campaignContentServerActions";
 
 type CamposUniao = CamposMagia | CamposItem | CamposRuna | CamposTalento;
 
@@ -46,13 +44,15 @@ const OPERACAO_LABEL: Record<string, string> = {
   resolucao_atualizacao: "Resolução de atualização oficial",
 };
 
-export function CampaignDraftEditorClient({
+export function EditorDeRascunho({
   campaignId,
   draft,
   efeitosPreservados,
   baseDocumentoStatus,
   opcoes,
   condicoesDisponiveis,
+  onVoltar,
+  onRecarregar,
 }: {
   campaignId: string;
   draft: CampaignContentDraftRow;
@@ -60,8 +60,10 @@ export function CampaignDraftEditorClient({
   baseDocumentoStatus: BaseDocumentoStatus;
   opcoes: OpcoesDeRegras;
   condicoesDisponiveis: { slug: string; nome: string }[];
+  /** Publicar, excluir ou desistir devolve à lista — sem navegar. */
+  onVoltar: () => void;
+  onRecarregar: () => Promise<void> | void;
 }) {
-  const router = useRouter();
   // "capitulo" (Etapa 11, correção do drag) nunca é um content_type de
   // homebrew de campanha — a UI de criação (`/mesas/[campaignId]/biblioteca`)
   // nunca oferece essa opção (é um conceito editorial da Biblioteca do
@@ -107,7 +109,7 @@ export function CampaignDraftEditorClient({
       if (resultado.novaVersao) setVersion(resultado.novaVersao);
       setSujo(false);
       camposIniciaisRef.current = campos;
-      router.refresh();
+      void onRecarregar();
     } else {
       setErros(resultado.erros ?? (resultado.erro ? [resultado.erro] : []));
       setAvisos(resultado.avisos ?? []);
@@ -124,7 +126,7 @@ export function CampaignDraftEditorClient({
     const resultado = await publicarRascunhoCampanha(draft.id, version, resumo);
     setPublicando(false);
     if (resultado.ok) {
-      router.push(`/mesas/${campaignId}/biblioteca`);
+      onVoltar();
     } else {
       setErros(resultado.erros ?? (resultado.erro ? [resultado.erro] : []));
       setConflito(resultado.conflito ?? false);
@@ -133,7 +135,7 @@ export function CampaignDraftEditorClient({
 
   function cancelar() {
     if (sujo && !window.confirm("Você tem alterações não salvas neste rascunho. Sair sem salvar?")) return;
-    router.push(`/mesas/${campaignId}/biblioteca`);
+    onVoltar();
   }
 
   async function excluirEVoltar() {
@@ -141,7 +143,7 @@ export function CampaignDraftEditorClient({
     setExcluindo(true);
     const resultado = await excluirRascunhoCampanha(draft.id);
     setExcluindo(false);
-    if (resultado.ok) router.push(`/mesas/${campaignId}/biblioteca`);
+    if (resultado.ok) onVoltar();
     else setErros([resultado.erro ?? "Falha ao excluir."]);
   }
 
@@ -149,12 +151,12 @@ export function CampaignDraftEditorClient({
 
   return (
     <main className="rm-page">
-      {/* Sub-rota de "Conteúdo da campanha" — o trilho leva à lista, não a
-          este rascunho; o link de volta continua útil aqui. */}
+      {/* Voltar é ESTADO, não rota: a lista está atrás desta vista, na
+          mesma janela. */}
       <p style={{ marginBottom: 16 }}>
-        <Link href={`/mesas/${campaignId}/biblioteca`} className="rv-focusable" style={{ color: "var(--cy)", fontSize: 12.5 }}>
+        <button type="button" className="rv-conteudo-link" onClick={onVoltar}>
           ← Conteúdo da campanha
-        </Link>
+        </button>
       </p>
 
       <header style={{ marginBottom: 16 }}>

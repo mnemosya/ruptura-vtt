@@ -25,8 +25,17 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ConsoleNoVtt, precarregarConsole } from "../vtt/_painel/janelas/ConsoleNoVtt";
 
 interface ApiConsoleDaMesa {
-  /** Abre a ficha daquele personagem por cima da tela atual. */
-  abrir: (characterId: string) => void;
+  /**
+   * Abre a ficha daquele personagem por cima da tela atual.
+   *
+   * `aba` diz em QUAL aba a ficha abre. Existe por causa do Mercado:
+   * a loja sempre viveu dentro da ficha (aba Inventário), e a página
+   * `/mercado` era só um seletor de personagem na frente dela. Sem
+   * este parâmetro, "abrir o Mercado" cairia na aba padrão e a pessoa
+   * teria que procurar a loja — a página velha, que passava `?tab=`,
+   * fazia melhor que a janela.
+   */
+  abrir: (characterId: string, aba?: string) => void;
   /** Aquecimento (hover/foco) — baixa bundle e catálogos antes do clique. */
   aquecer: () => void;
   /** Há uma ficha aberta agora. */
@@ -78,7 +87,11 @@ export function ProvedorConsoleDaMesa({ campaignId, children }: { campaignId: st
     setFocoNoMapa(() => fn);
   }, []);
 
-  const abrir = useCallback((characterId: string) => setDe(characterId), []);
+  const [abaInicial, setAbaInicial] = useState<string | null>(null);
+  const abrir = useCallback((characterId: string, aba?: string) => {
+    setAbaInicial(aba ?? null);
+    setDe(characterId);
+  }, []);
 
   /**
    * Fechar a ficha revalida a página de baixo.
@@ -156,7 +169,7 @@ export function ProvedorConsoleDaMesa({ campaignId, children }: { campaignId: st
   return (
     <Contexto.Provider value={api}>
       {children}
-      <ConsoleNoVtt campaignId={campaignId} characterId={de} onFechar={fechar} />
+      <ConsoleNoVtt campaignId={campaignId} characterId={de} abaInicial={abaInicial} onFechar={fechar} />
     </Contexto.Provider>
   );
 }

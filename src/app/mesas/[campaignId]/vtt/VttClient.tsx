@@ -135,6 +135,9 @@ import { GerenciadorCenas } from "./_cenas/GerenciadorCenas";
 import { esquecerCenaVista, gravarCenaVista, lerCenaVista } from "./_cenas/modelo";
 import { CartaoTokenHover } from "./_shell/CartaoTokenHover";
 import { useConsoleDaMesa } from "../_shell/ConsoleDaMesa";
+import { AvisoSincronizacao } from "./_shell/AvisoSincronizacao";
+import { MenuDaMesa, posicaoAoLadoDe, type PosicaoMenuMesa } from "./_shell/MenuDaMesa";
+import { ProvedorJanelasDaMesa } from "./_shell/JanelasDaMesa";
 import { readSelectedTokenHudAction } from "./_acoes/hudActions";
 import type { SelectedTokenHudData } from "../../../../lib/vtt/hudTypes";
 import { EditorRetratoToken } from "./_shell/EditorRetratoToken";
@@ -555,6 +558,13 @@ export function VttClient({
   // excluir/duplicar continua exigindo narrador OU autoria, decidido
   // sempre no servidor (`pode_editar_vtt_area`).
   const ferramentasDisponiveis = useMemo(() => ferramentasParaPapel(ehNarrador), [ehNarrador]);
+
+  /**
+   * O MENU DA MESA. Com a casca da campanha fora desta rota, ele é a
+   * porta pra tudo que não é o mapa — inclusive pra fora da mesa.
+   */
+  const [menuMesa, setMenuMesa] = useState<PosicaoMenuMesa | null>(null);
+  const botaoMenuMesaRef = useRef<HTMLButtonElement | null>(null);
 
   // A cena inteira, sempre fresca — lida por comandos de undo/redo/
   // movimento NO MOMENTO em que rodam, nunca capturada no fechamento
@@ -5622,6 +5632,11 @@ export function VttClient({
     // rola na mesa, e ele é janela da casca, não do VTT. Aqui fica só
     // o PALCO (`MesaDadosOverlay`, mais abaixo), que é o que desenha.
     <ProvedorJanelasFerramenta campaignId={campaignId} usuarioId={usuarioId}>
+    {/* As janelas da mesa (Personagens, Bando, Compêndio, Participantes,
+        Jogadores e convites) são abertas de DOIS lugares — do painel e
+        do menu da mesa, em lados opostos da tela. O estado fica aqui em
+        cima, onde os dois alcançam. */}
+    <ProvedorJanelasDaMesa>
     <div
       className="rv-mesa"
       /* A aparência da GRADE é da cena (0122) e chega ao SVG por
@@ -5639,7 +5654,19 @@ export function VttClient({
                longe das ferramentas, porque o que ela vai fazer (sair
                pra "Minhas campanhas", voltar pro início) não age sobre
                o mapa. */}
-        <button type="button" className="rv-ferr-btn rv-ferr-menu" aria-label="Menu da mesa"><Menu size={17} /></button>
+        <button
+          ref={botaoMenuMesaRef}
+          type="button" className="rv-ferr-btn rv-ferr-menu"
+          aria-label="Menu da mesa" aria-haspopup="menu" aria-expanded={menuMesa !== null}
+          data-testid="vtt-menu-mesa-btn"
+          onClick={() => setMenuMesa((a) => (a ? null : posicaoAoLadoDe(botaoMenuMesaRef.current)))}
+        >
+          <Menu size={17} />
+          <span className="rv-dica">Menu da mesa</span>
+        </button>
+        {menuMesa && (
+          <MenuDaMesa posicao={menuMesa} onFechar={() => setMenuMesa(null)} disparadorRef={botaoMenuMesaRef} />
+        )}
         <span className="rv-ferr-sep" />
 
         {/* 2. O QUE TODO MUNDO USA. */}
@@ -6080,6 +6107,12 @@ export function VttClient({
           </div>
         )}
 
+        {/* NO TOPO, centralizado: o rodapé já é do chip da cena e do
+            aviso comum, e o topo é pra onde o olho vai quando algo
+            está errado. Fora do trilho (esquerda) e do painel
+            (direita). */}
+        <AvisoSincronizacao />
+
         <div className="rv-zoom" role="group" aria-label="Zoom">
           <button type="button" onClick={() => setZoom((z) => clampZoom(+(z + 0.15).toFixed(2)))} aria-label="Aproximar"><Plus size={14} /></button>
           <span>{Math.round(zoom * 100)}%</span>
@@ -6345,6 +6378,7 @@ export function VttClient({
         </div>
       )}
     </div>
+    </ProvedorJanelasDaMesa>
     </ProvedorJanelasFerramenta>
   );
 }

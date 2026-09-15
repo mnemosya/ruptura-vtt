@@ -42,6 +42,12 @@ import { CompendioTab } from "./CompendioTab";
 import { LimiteErroAba } from "./LimiteErroAba";
 import { TransferenciaBando, type AlvoTransferencia } from "./TransferenciaBando";
 import { useConsoleDaMesa } from "../../_shell/ConsoleDaMesa";
+import { useJanelasDaMesa } from "../_shell/JanelasDaMesa";
+import { JanelaMercado } from "./janelas/JanelaMercado";
+import { JanelaLivro } from "./janelas/JanelaLivro";
+import { JanelaConfiguracoes } from "./janelas/JanelaConfiguracoes";
+import { JanelaConteudo } from "./janelas/JanelaConteudo";
+import { JanelaNovoPersonagem } from "./janelas/JanelaNovoPersonagem";
 import { JanelaAcessoPersonagem, JanelaJogadoresConvites } from "./janelas/JanelasAdmin";
 import { JanelaInterna } from "./ui/JanelaInterna";
 import type { ItemTransferivel } from "./bandoModelo";
@@ -375,11 +381,20 @@ export function PainelVtt({
   // Todo destino que ANTES era `router.push`/`<Link>` virou uma destas.
   // Nenhuma troca a URL, nenhuma remonta o VTT.
   const [acessoDe, setAcessoDe] = useState<string | null>(null);
-  const [convitesAberto, setConvitesAberto] = useState(false);
-  const [bandoAberto, setBandoAberto] = useState(false);
-  const [compendioAberto, setCompendioAberto] = useState(false);
-  const [participantesAberto, setParticipantesAberto] = useState(false);
-  const [personagensAberto, setPersonagensAberto] = useState(false);
+  /* QUEM ESTÁ ABERTO mora no contexto, não aqui: o menu da mesa abre
+     as mesmas janelas do outro lado da tela (ver `JanelasDaMesa`). O
+     painel continua sendo quem as DESENHA. */
+  const janelas = useJanelasDaMesa();
+  const convitesAberto = janelas.aberta("convites");
+  const bandoAberto = janelas.aberta("bando");
+  const compendioAberto = janelas.aberta("compendio");
+  const participantesAberto = janelas.aberta("participantes");
+  const personagensAberto = janelas.aberta("personagens");
+  const setConvitesAberto = (v: boolean) => (v ? janelas.abrir("convites") : janelas.fechar("convites"));
+  const setBandoAberto = (v: boolean) => (v ? janelas.abrir("bando") : janelas.fechar("bando"));
+  const setCompendioAberto = (v: boolean) => (v ? janelas.abrir("compendio") : janelas.fechar("compendio"));
+  const setParticipantesAberto = (v: boolean) => (v ? janelas.abrir("participantes") : janelas.fechar("participantes"));
+  const setPersonagensAberto = (v: boolean) => (v ? janelas.abrir("personagens") : janelas.fechar("personagens"));
 
   /**
    * A ficha não é mais janela DO PAINEL: quem a hospeda é a casca da
@@ -579,6 +594,35 @@ export function PainelVtt({
 
       {/* Janelas internas — o que antes era navegação. */}
       <JanelaJogadoresConvites campaignId={campaignId} aberta={convitesAberto} onFechar={() => setConvitesAberto(false)} />
+
+      {/* AS QUE ERAM PÁGINA. Mesmo lugar das outras: montadas aqui,
+          abertas de qualquer porta (painel ou menu da mesa). */}
+      {janelas.aberta("mercado") && (
+        <JanelaMercado
+          campaignId={campaignId}
+          ehNarrador={ehNarrador}
+          // A loja é a aba Inventário da ficha — o Mercado sempre foi
+          // isto com um seletor na frente.
+          onAbrirFicha={(id) => consoleDaMesa?.abrir(id, "inventario")}
+          onFechar={() => janelas.fechar("mercado")}
+        />
+      )}
+      {janelas.aberta("novo-personagem") && (
+        <JanelaNovoPersonagem
+          campaignId={campaignId}
+          onAbrirFicha={(id) => consoleDaMesa?.abrir(id)}
+          onFechar={() => janelas.fechar("novo-personagem")}
+        />
+      )}
+      {janelas.aberta("livro") && (
+        <JanelaLivro campaignId={campaignId} onFechar={() => janelas.fechar("livro")} />
+      )}
+      {ehNarrador && janelas.aberta("conteudo") && (
+        <JanelaConteudo campaignId={campaignId} onFechar={() => janelas.fechar("conteudo")} />
+      )}
+      {ehNarrador && janelas.aberta("configuracoes") && (
+        <JanelaConfiguracoes campaignId={campaignId} onFechar={() => janelas.fechar("configuracoes")} />
+      )}
       <JanelaAcessoPersonagem campaignId={campaignId} characterId={acessoDe} onFechar={() => setAcessoDe(null)} />
       {bandoAberto && (
         <JanelaInterna aberta titulo="Bando" largura={620} altura={620} onFechar={() => setBandoAberto(false)} testId="painel-janela-bando">

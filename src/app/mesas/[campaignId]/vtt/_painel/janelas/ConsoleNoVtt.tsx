@@ -121,14 +121,35 @@ function EsqueletoConsole() {
   );
 }
 
+/**
+ * A aba pedida, se ela existir de verdade — string de fora nunca vira
+ * `TabId` no grito. A lista é COPIADA (e não importada de
+ * `dev/character-sheet/components/CharacterSheetTabs`) de propósito:
+ * aquele módulo arrasta a árvore inteira do console de desenvolvimento
+ * pra dentro do pacote da mesa, e o preço é alto pra uma validação de
+ * quinze strings. A ficha valida de novo do lado dela.
+ */
+const ABAS_DA_FICHA = [
+  "geral", "atributos", "pericias", "recursos", "condicoes", "talentos", "magias",
+  "inventario", "biblioteca", "acoes", "rolagens", "log", "mesa", "personagens", "debug",
+] as const;
+
+function abaValida(aba: string | null | undefined): string | undefined {
+  if (!aba) return undefined;
+  return (ABAS_DA_FICHA as readonly string[]).includes(aba) ? aba : undefined;
+}
+
 export function ConsoleNoVtt({
   campaignId,
   characterId,
+  abaInicial,
   onFechar,
 }: {
   campaignId: string;
   /** `null` = janela fechada. */
   characterId: string | null;
+  /** Em qual aba a ficha abre — ver `ApiConsoleDaMesa.abrir`. */
+  abaInicial?: string | null;
   onFechar: () => void;
 }) {
   const consoleDaMesa = useConsoleDaMesa();
@@ -212,6 +233,7 @@ export function ConsoleNoVtt({
             escalposError={catalogos.escalposError}
             companionModelsIniciais={catalogos.companionModels}
             companionModelsError={catalogos.companionModelsError}
+            initialTab={abaValida(abaInicial) as never}
             initialCampaignId={campaignId}
             initialCharacterId={characterId}
             janelaDeTurno={abertura.janelaDeTurno}

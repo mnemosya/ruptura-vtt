@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import type { CampaignContentDocumentRow } from "../../../../../../lib/campaignContent";
-import type { ComparacaoTresVias } from "../../../../../../lib/campaignContent/campaignContentDiff";
+import type { CampaignContentDocumentRow } from "../../../../../../../lib/campaignContent";
+import type { ComparacaoTresVias } from "../../../../../../../lib/campaignContent/campaignContentDiff";
 import {
   adotarOficialAtual,
   criarRascunhoReconciliacao,
   manterOverrideAposRevisao,
-} from "../../../../../../lib/campaignContent/campaignContentServerActions";
+} from "../../../../../../../lib/campaignContent/campaignContentServerActions";
 
 function ListaAlteracoes({ titulo, itens }: { titulo: string; itens: { caminho: string; valorAnterior?: unknown; valorNovo: unknown }[] }) {
   if (itens.length === 0) return <p className="rm-faint">{titulo}: nenhuma alteração.</p>;
@@ -26,18 +25,22 @@ function ListaAlteracoes({ titulo, itens }: { titulo: string; itens: { caminho: 
   );
 }
 
-export function ComparacaoTresViasClient({
+export function ComparacaoTresViasVista({
   campaignId,
   doc,
   comparacao,
   oficialExiste,
+  onVoltar,
+  onAbrirRascunho,
 }: {
   campaignId: string;
   doc: CampaignContentDocumentRow;
   comparacao: ComparacaoTresVias;
   oficialExiste: boolean;
+  /** Fim da comparação: volta à lista, dentro da mesma janela. */
+  onVoltar: () => void;
+  onAbrirRascunho: (draftId: string) => void;
 }) {
-  const router = useRouter();
   const [carregando, setCarregando] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [feito, setFeito] = useState<string | null>(null);
@@ -58,7 +61,7 @@ export function ComparacaoTresViasClient({
     const resultado = await adotarOficialAtual(doc.id, doc.local_version);
     setCarregando(null);
     if (!resultado.ok) setErro(resultado.erro ?? "Falha ao adotar o oficial.");
-    else router.push(`/mesas/${campaignId}/biblioteca`);
+    else onVoltar();
   }
 
   async function reconciliar() {
@@ -67,7 +70,7 @@ export function ComparacaoTresViasClient({
     const resultado = await criarRascunhoReconciliacao(doc.id);
     setCarregando(null);
     if (!resultado.ok) setErro(resultado.erro ?? "Falha ao criar rascunho de reconciliação.");
-    else if (resultado.draftId) router.push(`/mesas/${campaignId}/biblioteca/rascunho/${resultado.draftId}`);
+    else if (resultado.draftId) onAbrirRascunho(resultado.draftId);
   }
 
   return (

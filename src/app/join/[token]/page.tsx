@@ -135,7 +135,7 @@ export default async function InviteJoinPage({ params }: PageProps) {
             Você ainda não controla um personagem nesta campanha.
           </p>
           <Link
-            href={`/mesas/${campaign.id}/personagens/novo`}
+            href={`/mesas/${campaign.id}/vtt`}
             data-testid="join-criar-personagem"
             style={{ color: "#5ec8ff", fontSize: 13 }}
           >

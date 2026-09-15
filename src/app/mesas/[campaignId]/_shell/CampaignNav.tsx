@@ -31,41 +31,36 @@ import { usePathname } from "next/navigation";
 import { LinkPending } from "../../../_design/NavPending";
 import type { CampaignRole } from "../../../../lib/campaign/access";
 import {
-  Backpack,
-  BookText,
   ChevronLeft,
   type IconProps,
   Monitor,
-  ScrollText,
-  Settings,
-  Store,
-  Ticket,
-  Users,
 } from "../../../_design/icons";
 
-interface NavItem {
+/**
+ * Um destino da campanha. Exportado junto com os dois grupos porque o
+ * MENU DA MESA (no VTT) mostra exatamente esta lista: lá a casca não é
+ * desenhada, e duas listas dos mesmos destinos divergiriam na primeira
+ * página nova.
+ */
+export interface NavItem {
   href: string;
   label: string;
   Icone: (p: IconProps) => React.ReactElement;
   exact?: boolean;
 }
 
-function grupoJogo(campaignId: string): NavItem[] {
+export function grupoJogo(campaignId: string): NavItem[] {
   return [
     { href: `/mesas/${campaignId}/vtt`, label: "Mesa", Icone: Monitor, exact: true },
-    { href: `/mesas/${campaignId}/personagens`, label: "Personagens", Icone: Users },
-    { href: `/mesas/${campaignId}/bando`, label: "Bando", Icone: Backpack },
-    { href: `/mesas/${campaignId}/mercado`, label: "Mercado", Icone: Store },
-    { href: `/mesas/${campaignId}/livro`, label: "Livro", Icone: BookText },
   ];
 }
 
-function grupoGerenciar(campaignId: string): NavItem[] {
-  return [
-    { href: `/mesas/${campaignId}/biblioteca`, label: "Conteúdo da campanha", Icone: ScrollText },
-    { href: `/mesas/${campaignId}/jogadores-e-convites`, label: "Jogadores e convites", Icone: Ticket },
-    { href: `/mesas/${campaignId}/configuracoes`, label: "Configurações", Icone: Settings },
-  ];
+export function grupoGerenciar(_campaignId: string): NavItem[] {
+  // VAZIO, e de propósito: tudo que era rota de administração da
+  // campanha virou janela DENTRO da mesa (ver `MenuDaMesa`). O grupo
+  // continua existindo porque o trilho ainda serve outras telas fora
+  // da mesa, e porque encher de novo é uma linha.
+  return [];
 }
 
 /**
