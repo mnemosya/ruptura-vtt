@@ -42,12 +42,28 @@ import { CompendioTab } from "./CompendioTab";
 import { LimiteErroAba } from "./LimiteErroAba";
 import { TransferenciaBando, type AlvoTransferencia } from "./TransferenciaBando";
 import { useConsoleDaMesa } from "../../_shell/ConsoleDaMesa";
+import dynamic from "next/dynamic";
 import { useJanelasDaMesa } from "../_shell/JanelasDaMesa";
-import { JanelaMercado } from "./janelas/JanelaMercado";
-import { JanelaLivro } from "./janelas/JanelaLivro";
-import { JanelaConfiguracoes } from "./janelas/JanelaConfiguracoes";
-import { JanelaConteudo } from "./janelas/JanelaConteudo";
-import { JanelaNovoPersonagem } from "./janelas/JanelaNovoPersonagem";
+/**
+ * AS JANELAS QUE VIERAM DAS PÁGINAS CHEGAM SOB DEMANDA.
+ *
+ * Elas eram rotas: cada uma só baixava quando alguém ia até lá. Ao
+ * virarem janelas com `import` normal, o código passou a viajar JUNTO
+ * COM A MESA — e medido, não suposto: o editor de rascunhos arrasta a
+ * árvore de `admin/biblioteca` (0,69 MB em dev) para dentro do pacote
+ * de quem só quer abrir o mapa.
+ *
+ * `dynamic` devolve o que a rota dava de graça, sem mudar o
+ * comportamento: elas já só RENDERIZAM quando abertas
+ * (`janelas.aberta(...)`), então o carregamento acompanha exatamente o
+ * mesmo gesto. `ssr: false` porque nenhuma delas tem o que dizer no
+ * servidor — todas leem por ação depois de montar.
+ */
+const JanelaMercado = dynamic(() => import("./janelas/JanelaMercado").then((m) => m.JanelaMercado), { ssr: false });
+const JanelaLivro = dynamic(() => import("./janelas/JanelaLivro").then((m) => m.JanelaLivro), { ssr: false });
+const JanelaConfiguracoes = dynamic(() => import("./janelas/JanelaConfiguracoes").then((m) => m.JanelaConfiguracoes), { ssr: false });
+const JanelaConteudo = dynamic(() => import("./janelas/JanelaConteudo").then((m) => m.JanelaConteudo), { ssr: false });
+const JanelaNovoPersonagem = dynamic(() => import("./janelas/JanelaNovoPersonagem").then((m) => m.JanelaNovoPersonagem), { ssr: false });
 import { JanelaAcessoPersonagem, JanelaJogadoresConvites } from "./janelas/JanelasAdmin";
 import { JanelaInterna } from "./ui/JanelaInterna";
 import type { ItemTransferivel } from "./bandoModelo";
