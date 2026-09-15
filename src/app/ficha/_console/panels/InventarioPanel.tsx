@@ -267,8 +267,11 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
           </div>
 
           <div className="rc-inv-rolo">
-            {/* Capacidade. O número da ESQUERDA é o que muda, e por isso
-                é o que pesa; "/15 espaços" é a moldura da informação. */}
+            {/* SÓ NA MOCHILA. O medidor mede a mochila; sob "Equipado",
+                "Abrigo" ou "Todos" ele mostraria um número que não é
+                daquela lista — em Abrigo chega a ser o contrário do que
+                a aba diz, já que o abrigo é justamente o que NÃO pesa. */}
+            {filtro === "mochila" && (
             <div className="rc-inv-cap">
               <div className="rc-inv-cap-cab">
                 <span className="rc-inv-cap-rot">Capacidade</span>
@@ -297,6 +300,7 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
                 ))}
               </div>
             </div>
+            )}
 
             <div className="rc-inv-grade">
               {visiveis.map((instancia) => {
