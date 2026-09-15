@@ -499,21 +499,7 @@
   background: rgba(69, 184, 201, .06);
 }
 
-/* O PALCO DA ABA DE INVENTÁRIO. A aba mora dentro do painel de conteúdo
-   da janela do Console, que tem altura própria e rola por dentro —
-   aqui ela precisa de uma caixa com altura de verdade, senão a grade
-   (que é quem rola) não tem contra o que rolar e a coluna estica sem
-   fim. */
-/* `.rc-window-wrap` é `position: fixed` na janela de verdade (é ela que
-   flutua sobre a mesa); na vitrine ele precisa voltar pro fluxo, senão
-   a aba sai da página. O resto do que aquele seletor traz — os tokens
-   `--rc-*` — é justamente o que a vitrine quer. */
-.gal-inv-palco.gal-inv-palco {
-  position: static; display: block; animation: none;
-  height: 560px; padding: 12px; border-radius: 8px;
-  border: 1px solid var(--rc-line-soft, #16233a);
-  background: rgba(12, 20, 32, .96);
-}
+
 
 /* A cópia fiel do Figma tem geometria ABSOLUTA e nasce do tamanho do
    quadro original (1010×1000 no arquivo). O palco só dá a ela essa
@@ -524,7 +510,11 @@
    quem manda na medida é a caixa de fora. Com o palco maior, a cópia
    esticava e a única coisa que ela existe pra provar — as medidas —
    deixava de valer. */
-.gal-figma-palco { width: 818px; height: 726px; max-width: 100%; overflow: auto; }
+/* A caixa ROLA, não encolhe: `max-width: 100%` fazia o Dialog cair de
+   818 pra largura da coluna da galeria, e com `size-full` ele seguia
+   junto — a cópia deixava de medir o que promete. */
+.gal-figma-palco-scroll { overflow: auto; max-width: 100%; }
+.gal-figma-palco { width: 818px; height: 726px; }
 
 /* O CÓDIGO DO FIGMA PRESSUPÕE O PREFLIGHT DO TAILWIND, e o projeto não
    tem Tailwind. Sem esta base a cópia sai torta de um jeito que parece
