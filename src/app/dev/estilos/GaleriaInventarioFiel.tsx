@@ -226,25 +226,25 @@ export function InventarioFiel() {
                             </p>
                           </div>
                         </div>
-                        <div style={{ background: "rgba(207,154,62,0.08)", borderColor: "rgba(207,154,62,0.45)", borderWidth: "1px", borderStyle: "solid", alignContent: "stretch", display: "flex", flexDirection: "column", gap: "12px", height: "12px", alignItems: "center", overflow: "clip", paddingLeft: "11px", paddingRight: "11px", position: "relative", borderRadius: "1px", flexShrink: "0", width: "100%" }} data-node-id="166:43236">
-                          <div style={{ position: "absolute", background: "rgba(207,154,62,0.55)", height: "12px", left: "-1px", top: "-1px", width: "293px" }} data-node-id="166:43248" />
+                        <div style={{ background: "#261b09", borderColor: "#846021", borderWidth: "1px", borderStyle: "solid", alignContent: "stretch", display: "flex", flexDirection: "column", gap: "12px", height: "12px", alignItems: "center", overflow: "clip", paddingLeft: "11px", paddingRight: "11px", position: "relative", borderRadius: "1px", flexShrink: "0", width: "100%" }} data-node-id="166:43236">
+                          <div style={{ position: "absolute", background: "#453211", height: "12px", left: "-1px", top: "-1px", width: "293px" }} data-node-id="166:43248" />
                           <div style={{ position: "absolute", left: "-2px", opacity: ".44", top: "0", width: "343px" }} data-node-id="166:43308">
                             <div style={{ backgroundClip: "padding-box", borderWidth: "0", borderColor: "transparent", borderStyle: "solid", alignContent: "stretch", display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative", width: "100%", height: "100%" }}>
-                              <div style={{ borderWidth: "1px", borderColor: "rgba(207,154,62,0.45)", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43309" />
-                              <div style={{ borderWidth: "1px", borderColor: "rgba(207,154,62,0.45)", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43310" />
-                              <div style={{ borderWidth: "1px", borderColor: "rgba(207,154,62,0.45)", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43311" />
-                              <div style={{ borderWidth: "1px", borderColor: "rgba(207,154,62,0.45)", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43312" />
-                              <div style={{ borderWidth: "1px", borderColor: "rgba(207,154,62,0.45)", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43313" />
-                              <div style={{ borderWidth: "1px", borderColor: "rgba(207,154,62,0.45)", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43314" />
-                              <div style={{ borderWidth: "1px", borderColor: "rgba(207,154,62,0.45)", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43315" />
-                              <div style={{ borderWidth: "1px", borderColor: "rgba(207,154,62,0.45)", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43316" />
-                              <div style={{ borderWidth: "1px", borderColor: "rgba(207,154,62,0.45)", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43317" />
-                              <div style={{ borderWidth: "1px", borderColor: "rgba(207,154,62,0.45)", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43318" />
-                              <div style={{ borderWidth: "1px", borderColor: "rgba(207,154,62,0.45)", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43319" />
-                              <div style={{ borderWidth: "1px", borderColor: "rgba(207,154,62,0.45)", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43320" />
-                              <div style={{ borderWidth: "1px", borderColor: "rgba(207,154,62,0.45)", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43321" />
-                              <div style={{ borderWidth: "1px", borderColor: "rgba(207,154,62,0.45)", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43322" />
-                              <div style={{ borderWidth: "1px", borderColor: "rgba(207,154,62,0.45)", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43323" />
+                              <div style={{ borderWidth: "1px", borderColor: "#846021", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43309" />
+                              <div style={{ borderWidth: "1px", borderColor: "#846021", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43310" />
+                              <div style={{ borderWidth: "1px", borderColor: "#846021", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43311" />
+                              <div style={{ borderWidth: "1px", borderColor: "#846021", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43312" />
+                              <div style={{ borderWidth: "1px", borderColor: "#846021", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43313" />
+                              <div style={{ borderWidth: "1px", borderColor: "#846021", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43314" />
+                              <div style={{ borderWidth: "1px", borderColor: "#846021", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43315" />
+                              <div style={{ borderWidth: "1px", borderColor: "#846021", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43316" />
+                              <div style={{ borderWidth: "1px", borderColor: "#846021", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43317" />
+                              <div style={{ borderWidth: "1px", borderColor: "#846021", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43318" />
+                              <div style={{ borderWidth: "1px", borderColor: "#846021", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43319" />
+                              <div style={{ borderWidth: "1px", borderColor: "#846021", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43320" />
+                              <div style={{ borderWidth: "1px", borderColor: "#846021", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43321" />
+                              <div style={{ borderWidth: "1px", borderColor: "#846021", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43322" />
+                              <div style={{ borderWidth: "1px", borderColor: "#846021", borderStyle: "solid", height: "10px", position: "relative", flexShrink: "0", width: "1px" }} data-node-id="166:43323" />
                             </div>
                           </div>
                         </div>
@@ -257,9 +257,9 @@ export function InventarioFiel() {
                             </div>
                           </div>
                         </div>
-                        <div style={{ background: "rgba(17,29,49,0.7)", borderColor: "#1c2b45", borderWidth: "1px", borderStyle: "solid", gridColumn: "1", alignContent: "stretch", filter: "drop-shadow(0px 16px 2.5px rgba(6,12,19,0.01),0px 10px 2px rgba(6,12,19,0.05),0px 6px 2px rgba(6,12,19,0.17),0px 3px 1.5px rgba(6,12,19,0.3),0px 1px 0.5px rgba(6,12,19,0.34))", display: "flex", flexDirection: "column", gap: "10px", alignItems: "center", justifySelf: "stretch", paddingLeft: "10px", paddingRight: "10px", paddingTop: "12px", paddingBottom: "12px", position: "relative", borderRadius: "1px", gridRow: "1", alignSelf: "stretch", flexShrink: "0" }} data-node-id="161:42250" data-name="Container">
+                        <div style={{ background: "linear-gradient(rgba(207,154,62,0.10),rgba(207,154,62,0.10)), rgba(17,29,49,0.7)", borderColor: "#1c2b45", borderWidth: "1px", borderStyle: "solid", gridColumn: "1", alignContent: "stretch", filter: "drop-shadow(0px 16px 2.5px rgba(6,12,19,0.01),0px 10px 2px rgba(6,12,19,0.05),0px 6px 2px rgba(6,12,19,0.17),0px 3px 1.5px rgba(6,12,19,0.3),0px 1px 0.5px rgba(6,12,19,0.34))", display: "flex", flexDirection: "column", gap: "10px", alignItems: "center", justifySelf: "stretch", paddingLeft: "10px", paddingRight: "10px", paddingTop: "12px", paddingBottom: "12px", position: "relative", borderRadius: "1px", gridRow: "1", alignSelf: "stretch", flexShrink: "0" }} data-node-id="161:42250" data-name="Container">
                           <div style={{ borderWidth: "1px", borderColor: "#16233a", borderStyle: "solid", alignContent: "stretch", display: "flex", height: "64px", alignItems: "center", justifyContent: "center", overflow: "clip", paddingLeft: "4px", paddingRight: "4px", paddingTop: "12px", paddingBottom: "12px", position: "relative", flexShrink: "0", width: "100%" }} data-node-id="161:42251" data-name="Text">
-                            <div aria-hidden style={{ position: "absolute", background: "rgba(209,80,104,0.08)", inset: "0", pointerEvents: "none" }} />
+                            <div aria-hidden style={{ position: "absolute", background: "rgba(31,13,10,0.43)", inset: "0", pointerEvents: "none" }} />
                             <div style={{ display: "flex", height: "36.175px", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: "0", width: "35.003px" }} data-node-id="177:43604">
                               <div style={{ flex: "none", transform: "rotate(-30deg)" }}>
                                 <div style={{ height: "27.653px", position: "relative", width: "24.453px" }} data-name="Vector">
@@ -278,17 +278,17 @@ export function InventarioFiel() {
                             </p>
                           </div>
                           <div style={{ position: "absolute", borderColor: "#16233a", borderLeftWidth: "1px", borderStyle: "solid", borderTopWidth: "1px", bottom: "51.33px", overflow: "clip", right: "10px", width: "24px", height: "24px" }} data-node-id="161:42457">
-                            <div style={{ position: "absolute", background: "rgba(17,29,49,0.7)", borderWidth: "1px", borderColor: "rgba(17,29,49,0.7)", borderStyle: "solid", bottom: "0", alignContent: "stretch", filter: "drop-shadow(-10px -10px 2px rgba(0,0,0,0),-7px -7px 2px rgba(0,0,0,0.03),-4px -4px 1.5px rgba(0,0,0,0.11),-2px -2px 1px rgba(0,0,0,0.19),0px 0px 0.5px rgba(0,0,0,0.21))", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "5px", right: "0", width: "24px" }} data-node-id="161:42458" data-name="Tab - Ações">
+                            <div style={{ position: "absolute", background: "linear-gradient(rgba(207,154,62,0.10),rgba(207,154,62,0.10)), rgba(17,29,49,0.7)", borderWidth: "1px", borderColor: "rgba(207,154,62,0.10)", borderStyle: "solid", bottom: "0", alignContent: "stretch", filter: "drop-shadow(-10px -10px 2px rgba(0,0,0,0),-7px -7px 2px rgba(0,0,0,0.03),-4px -4px 1.5px rgba(0,0,0,0.11),-2px -2px 1px rgba(0,0,0,0.19),0px 0px 0.5px rgba(0,0,0,0.21))", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "5px", right: "0", width: "24px" }} data-node-id="161:42458" data-name="Tab - Ações">
                               <p style={{ wordBreak: "break-word", fontWeight: "600", lineHeight: "14px", fontStyle: "normal", position: "relative", flexShrink: "0", fontSize: "12px", color: "rgba(214,228,245,0.65)", textAlign: "center", width: "100%", fontFamily: "var(--font-rajdhani), sans-serif" }} data-node-id="161:42459">
                                 x1
                               </p>
                             </div>
                           </div>
-                          <div style={{ position: "absolute", background: "rgba(207,154,62,0.6)", height: "128px", left: "-1px", top: "-1px", width: "2px" }} data-node-id="161:42441" />
+                          <div style={{ position: "absolute", background: "#cf9a3e", height: "128px", left: "-1px", top: "-1px", width: "2px" }} data-node-id="161:42441" />
                         </div>
                         <div style={{ background: "rgba(17,29,49,0.45)", borderColor: "#1c2b45", borderWidth: "1px", borderStyle: "solid", gridColumn: "2", alignContent: "stretch", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", justifySelf: "stretch", paddingLeft: "10px", paddingRight: "10px", paddingTop: "12px", paddingBottom: "12px", position: "relative", borderRadius: "1px", gridRow: "1", alignSelf: "stretch", flexShrink: "0" }} data-node-id="159:41097" data-name="Container">
                           <div style={{ borderWidth: "1px", borderColor: "#16233a", borderStyle: "solid", alignContent: "stretch", display: "flex", height: "64px", alignItems: "center", justifyContent: "center", overflow: "clip", paddingLeft: "4px", paddingRight: "4px", paddingTop: "12px", paddingBottom: "12px", position: "relative", flexShrink: "0", width: "100%" }} data-node-id="159:41098" data-name="Text">
-                            <div aria-hidden style={{ position: "absolute", background: "rgba(209,80,104,0.10)", inset: "0", pointerEvents: "none" }} />
+                            <div aria-hidden style={{ position: "absolute", background: "rgba(36,8,8,0.43)", inset: "0", pointerEvents: "none" }} />
                             <div style={{ height: "24px", position: "relative", flexShrink: "0", width: "28px" }} data-node-id="177:43568" data-name="Vector">
                               <img alt="" style={{ position: "absolute", display: "block", inset: "0", maxWidth: "none", width: "100%", height: "100%" }} src={imgVector1} />
                             </div>
@@ -336,7 +336,7 @@ export function InventarioFiel() {
                         </div>
                         <div style={{ background: "rgba(17,29,49,0.45)", borderColor: "#1c2b45", borderWidth: "1px", borderStyle: "solid", gridColumn: "1", alignContent: "stretch", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", justifySelf: "stretch", paddingLeft: "10px", paddingRight: "10px", paddingTop: "12px", paddingBottom: "12px", position: "relative", borderRadius: "1px", gridRow: "2", alignSelf: "stretch", flexShrink: "0" }} data-node-id="159:41325" data-name="Container">
                           <div style={{ borderWidth: "1px", borderColor: "#16233a", borderStyle: "solid", alignContent: "stretch", display: "flex", height: "64px", alignItems: "center", justifyContent: "center", overflow: "clip", paddingLeft: "4px", paddingRight: "4px", paddingTop: "12px", paddingBottom: "12px", position: "relative", flexShrink: "0", width: "100%" }} data-node-id="159:41326" data-name="Text">
-                            <div aria-hidden style={{ position: "absolute", background: "rgba(207,154,62,0.10)", inset: "0", pointerEvents: "none" }} />
+                            <div aria-hidden style={{ position: "absolute", background: "rgba(18,15,6,0.43)", inset: "0", pointerEvents: "none" }} />
                             <div style={{ height: "27px", position: "relative", flexShrink: "0", width: "23px" }} data-node-id="177:43550" data-name="Vector">
                               <img alt="" style={{ position: "absolute", display: "block", inset: "0", maxWidth: "none", width: "100%", height: "100%" }} src={imgVector3} />
                             </div>
@@ -408,7 +408,7 @@ export function InventarioFiel() {
                         </div>
                         <div style={{ background: "rgba(17,29,49,0.45)", borderColor: "#1c2b45", borderWidth: "1px", borderStyle: "solid", gridColumn: "1/span 2", alignContent: "stretch", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", justifySelf: "stretch", paddingLeft: "10px", paddingRight: "10px", paddingTop: "12px", paddingBottom: "12px", position: "relative", borderRadius: "1px", gridRow: "3", alignSelf: "stretch", flexShrink: "0" }} data-node-id="161:42505" data-name="Container">
                           <div style={{ borderWidth: "1px", borderColor: "#16233a", borderStyle: "solid", alignContent: "stretch", display: "flex", height: "64px", alignItems: "center", justifyContent: "center", overflow: "clip", paddingLeft: "4px", paddingRight: "4px", paddingTop: "12px", paddingBottom: "12px", position: "relative", flexShrink: "0", width: "100%" }} data-node-id="161:42506" data-name="Text">
-                            <div aria-hidden style={{ position: "absolute", background: "rgba(209,80,104,0.10)", inset: "0", pointerEvents: "none" }} />
+                            <div aria-hidden style={{ position: "absolute", background: "rgba(36,8,8,0.43)", inset: "0", pointerEvents: "none" }} />
                             <div style={{ display: "flex", height: "43.926px", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: "0", width: "40.258px" }} data-node-id="176:43534">
                               <div style={{ flex: "none", transform: "rotate(15deg)" }}>
                                 <div style={{ height: "36.961px", position: "relative", width: "31.775px" }} data-name="06- Katana">
@@ -457,7 +457,7 @@ export function InventarioFiel() {
                             Granada de choque
                           </p>
                           <div style={{ alignContent: "stretch", display: "flex", gap: "4px", alignItems: "flex-start", position: "relative", flexShrink: "0" }} data-node-id="159:40723">
-                            <div style={{ background: "rgba(209,80,104,0.12)", borderWidth: "1px", borderColor: "rgba(207,154,62,0.35)", borderStyle: "solid", alignContent: "stretch", display: "flex", gap: "6px", alignItems: "center", overflow: "clip", paddingLeft: "5px", paddingRight: "5px", paddingTop: "3px", paddingBottom: "3px", position: "relative", flexShrink: "0" }} data-node-id="159:40724" data-name="Button Primary">
+                            <div style={{ background: "rgba(207,154,62,0.12)", borderWidth: "1px", borderColor: "rgba(207,154,62,0.35)", borderStyle: "solid", alignContent: "stretch", display: "flex", gap: "6px", alignItems: "center", overflow: "clip", paddingLeft: "5px", paddingRight: "5px", paddingTop: "3px", paddingBottom: "3px", position: "relative", flexShrink: "0" }} data-node-id="159:40724" data-name="Button Primary">
                               <div style={{ position: "relative", flexShrink: "0" }} data-node-id="159:40727">
                                 <div style={{ backgroundClip: "padding-box", borderWidth: "0", borderColor: "transparent", borderStyle: "solid", alignContent: "stretch", display: "flex", alignItems: "center", position: "relative", width: "100%", height: "100%" }}>
                                   <div style={{ wordBreak: "break-word", display: "flex", flexDirection: "column", fontWeight: "400", justifyContent: "center", lineHeight: "0", position: "relative", flexShrink: "0", color: "#cf9a3e", fontSize: "10px", letterSpacing: "0.8px", whiteSpace: "nowrap", fontFamily: "var(--font-mono), sans-serif" }} data-node-id="159:40728">
@@ -466,7 +466,7 @@ export function InventarioFiel() {
                                 </div>
                               </div>
                             </div>
-                            <div style={{ background: "rgba(209,80,104,0.12)", borderWidth: "1px", borderColor: "rgba(207,154,62,0.35)", borderStyle: "solid", alignContent: "stretch", display: "flex", gap: "6px", alignItems: "center", overflow: "clip", paddingLeft: "5px", paddingRight: "5px", paddingTop: "3px", paddingBottom: "3px", position: "relative", flexShrink: "0" }} data-node-id="166:42639" data-name="Button Primary">
+                            <div style={{ background: "rgba(207,154,62,0.12)", borderWidth: "1px", borderColor: "rgba(207,154,62,0.35)", borderStyle: "solid", alignContent: "stretch", display: "flex", gap: "6px", alignItems: "center", overflow: "clip", paddingLeft: "5px", paddingRight: "5px", paddingTop: "3px", paddingBottom: "3px", position: "relative", flexShrink: "0" }} data-node-id="166:42639" data-name="Button Primary">
                               <div style={{ position: "relative", flexShrink: "0" }} data-node-id="166:42642">
                                 <div style={{ backgroundClip: "padding-box", borderWidth: "0", borderColor: "transparent", borderStyle: "solid", alignContent: "stretch", display: "flex", alignItems: "center", position: "relative", width: "100%", height: "100%" }}>
                                   <div style={{ wordBreak: "break-word", display: "flex", flexDirection: "column", fontWeight: "400", justifyContent: "center", lineHeight: "0", position: "relative", flexShrink: "0", color: "#cf9a3e", fontSize: "10px", letterSpacing: "0.8px", whiteSpace: "nowrap", fontFamily: "var(--font-mono), sans-serif" }} data-node-id="166:42643">
@@ -580,19 +580,23 @@ export function InventarioFiel() {
                         <div style={{ alignContent: "stretch", display: "flex", flexDirection: "column", alignItems: "flex-start", position: "relative", flexShrink: "0", width: "100%" }} data-node-id="166:42645">
                           <div style={{ borderWidth: "1px", borderColor: "#1c2b45", borderStyle: "solid", alignContent: "stretch", display: "flex", alignItems: "center", position: "relative", borderRadius: "1px", flexShrink: "0", width: "100%" }} data-node-id="166:42646">
                             <div style={{ background: "rgba(17,29,49,0.45)", alignContent: "stretch", display: "flex", flex: "1 0 0", flexDirection: "column", gap: "4px", alignItems: "flex-start", minWidth: "1px", padding: "10px", position: "relative", borderRadius: "1px" }} data-node-id="166:42647">
+                              {/* AÇÃO e CONDIÇÃO são estilos DO TEXTO, não caixas
+                                  por cima dele. No Figma as duas eram `position:
+                                  absolute` em left/top fixos — funcionava só
+                                  naquela quebra de linha, e cobria a frase (que
+                                  por isso estava embaralhada por baixo: "Reistiir",
+                                  "AtordioLdo"). Aqui são <span> na própria frase:
+                                  acompanham a quebra, o tamanho e a seleção do
+                                  texto. A marca é peso + cor + um pontilhado
+                                  discreto — ciano para a ação, vermelho para a
+                                  condição, as mesmas cores do Console. */}
                               <p style={{ wordBreak: "break-word", fontWeight: "500", lineHeight: "16px", minWidth: "100%", fontStyle: "normal", position: "relative", flexShrink: "0", fontSize: "14px", color: "rgba(214,228,245,0.65)", width: "min-content", fontFamily: "var(--font-rajdhani), sans-serif" }} data-node-id="166:42648">
-                                Todos em um raio de 3 m fazem teste de Reistiir CD 8; em falha, ficam AtordioLdo até o fim do próximo turno deles.
+                                Todos em um raio de 3 m fazem teste de{" "}
+                                <span style={{ fontWeight: "600", color: "#00d4ff", textDecoration: "underline dotted", textUnderlineOffset: "2px", textDecorationColor: "rgba(0,212,255,0.45)" }} data-termo="acao">Resistir</span>{" "}
+                                CD 8; em falha, ficam{" "}
+                                <span style={{ fontWeight: "600", color: "#d15068", textDecoration: "underline dotted", textUnderlineOffset: "2px", textDecorationColor: "rgba(209,80,104,0.45)" }} data-termo="condicao">Atordoados</span>{" "}
+                                até o fim do próximo turno deles.
                               </p>
-                              <div style={{ position: "absolute", background: "rgba(17,29,49,0.95)", borderWidth: "1px", borderColor: "rgba(209,80,104,0.5)", borderStyle: "solid", alignContent: "stretch", display: "flex", alignItems: "center", left: "79px", paddingLeft: "2px", paddingRight: "2px", paddingTop: "1px", paddingBottom: "1px", top: "26px" }} data-node-id="166:42649">
-                                <p style={{ wordBreak: "break-word", fontWeight: "600", lineHeight: "12px", fontStyle: "normal", position: "relative", flexShrink: "0", color: "#d15068", fontSize: "12px", whiteSpace: "nowrap", fontFamily: "var(--font-rajdhani), sans-serif" }} data-node-id="166:42650">
-                                  Atordoados
-                                </p>
-                              </div>
-                              <div style={{ position: "absolute", background: "rgba(0,212,255,0.06)", borderColor: "rgba(0,212,255,0.25)", borderWidth: "1px", borderStyle: "solid", alignContent: "stretch", display: "flex", alignItems: "center", left: "245px", paddingLeft: "2px", paddingRight: "2px", paddingTop: "1px", paddingBottom: "1px", top: "9px" }} data-node-id="166:42651">
-                                <p style={{ wordBreak: "break-word", fontWeight: "600", lineHeight: "12px", fontStyle: "normal", position: "relative", flexShrink: "0", color: "#00d4ff", fontSize: "12px", whiteSpace: "nowrap", fontFamily: "var(--font-rajdhani), sans-serif" }} data-node-id="166:42652">
-                                  Resistir
-                                </p>
-                              </div>
                             </div>
                           </div>
                         </div>

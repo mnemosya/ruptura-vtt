@@ -49,21 +49,21 @@ CORES = {
   "rgba(84,172,190,0.6)": "rgba(214,228,245,0.45)",   # placeholder da busca → --rc-dim
 
   # ── Âmbar: #f5a200 virou #cf9a3e no commit; os tons seguem junto ──
-  "#775b2e": "rgba(207,154,62,0.45)",       # fio do medidor
-  "#1d1a12": "rgba(207,154,62,0.08)",       # trilho do medidor
-  "#372e1f": "rgba(207,154,62,0.55)",       # preenchimento do medidor
-  "#7b3e28": "rgba(207,154,62,0.6)",        # fio do cartão selecionado
+  "#775b2e": "#846021",                     # fio do medidor e as marcas
+  "#1d1a12": "#261b09",                     # trilho do medidor
+  "#372e1f": "#453211",                     # preenchimento do medidor
+  "#7b3e28": "#cf9a3e",                     # acento do TIPO do item (fio do cartão)
   "#d77649": "#cf9a3e",                     # etiquetas de categoria/raridade → --am
   "rgba(123,62,40,0.6)": "rgba(207,154,62,0.35)",
-  "rgba(18,15,6,0.43)": "rgba(207,154,62,0.10)",
+  "rgba(18,15,6,0.43)": "rgba(18,15,6,0.43)",     # ladrilho: escurece, não tinge
 
   # ── Vermelho: #ff5f74 virou #d15068 ───────────────────────────────
   "#c5455a": "#d15068",                     # chip de condição → --rc-danger
   "rgba(255,95,116,0.6)": "rgba(209,80,104,0.6)",
   "rgba(255,95,116,0.5)": "rgba(209,80,104,0.5)",
-  "rgba(36,8,8,0.43)": "rgba(209,80,104,0.10)",
-  "rgba(31,13,10,0.43)": "rgba(209,80,104,0.08)",
-  "rgba(38,29,32,0.6)": "rgba(209,80,104,0.12)",
+  "rgba(36,8,8,0.43)": "rgba(36,8,8,0.43)",       # idem
+  "rgba(31,13,10,0.43)": "rgba(31,13,10,0.43)",   # idem
+  "rgba(38,29,32,0.6)": "rgba(207,154,62,0.12)",  # etiqueta: segue o tipo
 
   # ── Texto: #eaf7ff virou #d6e4f5, mantidos os mesmos alfas ────────
   "#d3f4ff": "#d6e4f5",
