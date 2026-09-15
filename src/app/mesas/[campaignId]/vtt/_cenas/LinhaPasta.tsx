@@ -25,6 +25,8 @@ export interface PropsLinhaPasta {
   pasta: PastaCena;
   /** Quantas cenas estão DIRETAMENTE nela — o que o narrador acha lá dentro. */
   quantidade: number;
+  /** Quantas subpastas ela tem — elas moram DENTRO dela, junto das cenas. */
+  subpastas?: number;
   /** Esta é a pasta cujo conteúdo está na grade. */
   aberta: boolean;
   ocupada: boolean;
@@ -56,8 +58,13 @@ export interface PropsLinhaPasta {
   /** Uma cena está sendo arrastada e paira sobre esta pasta. */
   alvoDeArrasto: boolean;
   onDragOver: (e: React.DragEvent) => void;
-  onDragLeave: () => void;
+  onDragLeave: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
+  /** Arrastar a PASTA — pra dentro de outra, ou pra fora (raiz). */
+  arrastavel?: boolean;
+  arrastando?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragEnd?: () => void;
 }
 
 export function LinhaPasta(p: PropsLinhaPasta) {
@@ -107,6 +114,10 @@ export function LinhaPasta(p: PropsLinhaPasta) {
       data-aberta={p.aberta || undefined}
       data-nivel={p.pasta.nivel}
       data-alvo={p.alvoDeArrasto || undefined}
+      data-arrastando={p.arrastando || undefined}
+      draggable={p.arrastavel && !editando ? true : undefined}
+      onDragStart={p.onDragStart}
+      onDragEnd={p.onDragEnd}
       data-testid="pasta-linha"
       data-pasta-id={p.pasta.id}
       onDragOver={p.onDragOver}
@@ -115,8 +126,15 @@ export function LinhaPasta(p: PropsLinhaPasta) {
       onContextMenu={abrirMenu}
     >
       <span className="rv-pasta-cabeca">
+      {/* O GLIFO DIZ O ESTADO, como na pasta de personagens: fechado
+          enquanto ela é só um nome na coluna, ABERTO quando o conteúdo
+          dela está à vista — seja porque a lista expandiu aqui mesmo,
+          seja porque ela é a pasta em que se está. E aberto também sob
+          um arrasto que paira: é a pasta que vai receber.
+          Sem isto o ícone era o mesmo nos três casos, e a única marca
+          de "estou aqui" era a borda âmbar da caixa. */}
       <span className="rv-pasta-icone" aria-hidden="true">
-        {p.alvoDeArrasto ? <FolderOpen size={15} /> : <Folder size={15} />}
+        {p.alvoDeArrasto || p.aberta || p.expandida ? <FolderOpen size={15} /> : <Folder size={15} />}
       </span>
 
       {editando ? (
@@ -164,14 +182,21 @@ export function LinhaPasta(p: PropsLinhaPasta) {
         data-testid="pasta-expandir"
         aria-expanded={p.expandida}
         aria-label={p.expandida ? `Recolher as cenas de "${p.pasta.nome}"` : `Ver as cenas de "${p.pasta.nome}"`}
-        disabled={p.ocupada || p.quantidade === 0}
+        disabled={p.ocupada || (p.quantidade === 0 && (p.subpastas ?? 0) === 0)}
         onClick={p.onAlternarExpansao}
       >
         <span className="rv-pasta-contagem">
-          {p.quantidade === 0 ? "vazia" : p.quantidade === 1 ? "1 cena" : `${p.quantidade} cenas`}
+          {(() => {
+            const subs = p.subpastas ?? 0;
+            const partes: string[] = [];
+            if (p.quantidade > 0) partes.push(p.quantidade === 1 ? "1 cena" : `${p.quantidade} cenas`);
+            if (subs > 0) partes.push(subs === 1 ? "1 pasta" : `${subs} pastas`);
+            return partes.length === 0 ? "vazia" : partes.join(" · ");
+          })()}
         </span>
         <ChevronDown size={13} aria-hidden="true" />
       </button>
+
       </span>
 
       {/* CONFIRMAÇÃO em bloco próprio, abaixo do cabeçalho — não mais

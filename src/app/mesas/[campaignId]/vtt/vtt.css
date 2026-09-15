@@ -222,12 +222,25 @@
    cima" de "é esta" passa a ser o fundo e o brilho, não uma terceira
    borda — antes o trilho tinha três tons de contorno, e o do meio não
    significava nada que os outros dois já não dissessem. */
-.rv-ferr-btn:hover { color: #d3f4ff; border-color: #108bac; background: rgba(0, 212, 255, .09); }
+/* A LAVAGEM VEM POR CIMA DO FUNDO, não no lugar dele. `background`
+   com uma cor translúcida SUBSTITUI o `#0c1526` da peça, e o trilho
+   flutua sobre o mapa: o botão realçado virava uma janela para os
+   hexágonos. Duas camadas — gradiente chapado da lavagem sobre a cor
+   sólida — dão o mesmo tom com a peça ainda opaca. */
+.rv-ferr-btn:hover {
+  color: #d3f4ff; border-color: #108bac;
+  background: linear-gradient(rgba(0, 212, 255, .09), rgba(0, 212, 255, .09)), #0c1526;
+}
 /* ATIVO EM CIANO. O realce continua sendo borda + fundo + brilho, como
    no Console; o que muda é o ícone, que era quase branco e agora é a
    cor da marca — a mesma leitura à distância nas duas superfícies. */
 .rv-ferr-btn[aria-pressed="true"] {
-  color: var(--cy); border-color: #108bac; background: #123640;
+  /* TRANSLÚCIDO, como a aba selecionada do painel. `#123640` chapado
+     não era o mesmo azul mais forte: era outra superfície, e num trilho
+     de doze botões a peça ligada pesava mais que o mapa atrás dela.
+     .14 contra os .09 do hover mantém a hierarquia com um gesto só. */
+  color: var(--cy); border-color: #108bac;
+  background: linear-gradient(rgba(0, 212, 255, .14), rgba(0, 212, 255, .14)), #0c1526;
   box-shadow: 0 0 9px rgba(0, 212, 255, .25);
 }
 .rv-ferr-btn:focus-visible, .rv-aba:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
@@ -879,13 +892,18 @@
      fora da faixa de 52px. */
 }
 /* Expandido, as abas dividem a largura em partes iguais em vez de
-   ficarem espremidas à esquerda com um vazio no resto da barra. */
+   ficarem espremidas à esquerda com um vazio no resto da barra. Elas
+   crescem, mas só até onde o "recolher" começa: é o conjunto que ocupa
+   a barra, não os cinco botões mais ele. */
 .rv-painel[data-aberto="true"] .rv-aba { flex: 1 1 0; width: auto; min-width: 0; }
 /* O espaçador que empurrava o "recolher" pra direita perde a função —
    com as abas ocupando tudo, ele só roubaria largura delas. */
 .rv-painel[data-aberto="true"] .rv-aba-fim { display: none; }
-/* O "recolher" NÃO é uma aba: mantém o tamanho de ícone e fica no fim. */
-.rv-painel[data-aberto="true"] .rv-aba--recolher { flex: 0 0 auto; width: 36px; }
+/* O "recolher" NÃO é uma aba: mantém o tamanho de ícone e fica no fim.
+   O vão até o grupo é MEDIDO (16px de margem sobre os 8px de `gap` da
+   fileira = 24px): colado, ele lia como a sexta aba; empurrado pela
+   sobra, ia parar longe demais pra ainda ser a mesma fileira. */
+.rv-painel[data-aberto="true"] .rv-aba--recolher { flex: 0 0 auto; width: 36px; margin-left: 16px; }
 /* RECOLHIDO, a faixa é um trilho vertical como o das ferramentas — e
    usa o mesmo vão de 6px. Sem ele as abas ficavam encostadas umas nas
    outras, e com borda própria isso vira uma coluna de caixas coladas
@@ -905,15 +923,22 @@
   border: none; border-radius: var(--rv-r); background: transparent;
   cursor: pointer; transition: color .14s, background .14s;
 }
+/* Mesmos valores de `.rv-ferr-sep`, e não por acaso: ver o comentário
+   em `PainelAbas`. */
+.rv-aba-sep { width: 20px; height: 1px; flex: none; background: rgba(255,255,255,.08); margin: 5px 0; }
 .rv-aba-fim { flex: 1; }
 /* A dica (`.rv-dica`) por padrão abre pra ESQUERDA (`.rv-painel .rv-dica`,
    acima) — certo pra faixa vertical na borda direita. Com a barra
    horizontal no topo (expandido), abrir pra baixo é o que faz sentido
    geometricamente; mais específico que a regra padrão, então vence. */
 .rv-painel[data-aberto="true"] .rv-aba .rv-dica { left: 50%; right: auto; top: calc(100% + 10px); transform: translateX(-50%); }
+/* O ÚLTIMO BOTÃO DA FILEIRA é a exceção: centrada nele, a dica vaza 33px
+   pela borda direita da tela — o painel encosta ali, e metade de uma
+   caixa de 120px não tem onde caber. Ela se alinha pela DIREITA do
+   botão, que é a única borda que não sai. */
+.rv-painel[data-aberto="true"] .rv-aba--recolher .rv-dica { left: auto; right: 0; transform: none; }
 
 .rv-painel-corpo { width: 100%; display: flex; flex-direction: column; min-height: 0; order: 2; }
-.rv-painel-titulo { margin: 0; padding: 14px 16px 10px; font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--txt-dim); }
 
 .rv-chat { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .rv-msg { padding: 9px 11px; border-radius: var(--rv-r); background: rgba(255,255,255,.04); }
@@ -2196,7 +2221,9 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    é estado da mesa, não da ferramenta. Distinto de `aria-pressed`
    (ferramenta selecionada), que continua sendo o realce forte. */
 .rv-ferr-btn[data-ativo="true"] { color: var(--am); }
-.rv-ferr-btn[data-ativo="true"]:not([aria-pressed="true"]) { background: var(--rv-am-soft); }
+.rv-ferr-btn[data-ativo="true"]:not([aria-pressed="true"]) {
+  background: linear-gradient(var(--rv-am-soft), var(--rv-am-soft)), #0c1526;
+}
 .rv-ferr-badge {
   position: absolute; right: 1px; top: 1px; min-width: 14px; height: 14px; padding: 0 3px;
   display: grid; place-items: center; border-radius: var(--rv-r-pill);
@@ -4293,6 +4320,23 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   box-shadow: 0 24px 64px rgba(0, 0, 0, .72);
   --jf-acento: #cf9a3e;
 }
+/* O BOTÃO PRINCIPAL DA GAVETA É ÂMBAR. `.rv-btn--pri` nasce ciano
+   porque ciano é a cor da mesa; aqui dentro a cor é `--jf-acento`, e
+   "Nova cena" e "Criar pasta" eram as duas únicas peças que ainda
+   falavam a língua de fora — bem no alto da janela, que é onde o tema
+   se declara. */
+.rv-gaveta .rv-btn--pri {
+  border-color: color-mix(in srgb, var(--jf-acento) 53%, transparent);
+  background: color-mix(in srgb, var(--jf-acento) 9%, transparent);
+  color: var(--jf-acento);
+}
+.rv-gaveta .rv-btn--pri:hover:not(:disabled) {
+  border-color: var(--jf-acento);
+  background: color-mix(in srgb, var(--jf-acento) 14%, transparent);
+  color: var(--jf-acento);
+}
+.rv-gaveta .rv-btn--pri:focus-visible { outline-color: var(--jf-acento); }
+
 .rv-gaveta[data-em-linha] {
   position: relative; z-index: 0; inset: auto;
   height: 560px; border: 1px solid var(--rv-line-2); border-radius: var(--rv-r);
@@ -4422,20 +4466,50 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* 8px entre pastas — o mesmo vão que o painel usa entre cartões. Com 3
    elas se tocavam e o fio de uma parecia a borda de baixo da outra. */
 .rv-gav-pastas { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
-/* A hierarquia é o RECUO DO CONTEÚDO, não da caixa: recuar a linha
-   inteira deixava cada nível com uma largura diferente e a coluna
-   virava uma escada de retângulos de tamanhos variados. */
-/* `nivel` vem do banco começando em 1 (a pasta de raiz é 1, não 0), e
-   é por isso que o recuo começa no 2. */
-.rv-pasta-linha[data-nivel="2"] .rv-pasta-icone { margin-left: 14px; }
-.rv-pasta-linha[data-nivel="3"] .rv-pasta-icone { margin-left: 28px; }
-.rv-pasta-linha[data-nivel="4"] .rv-pasta-icone { margin-left: 42px; }
+/* SEM RECUO. A hierarquia era um `margin-left` crescente no ícone, com
+   as subpastas na MESMA lista das de raiz — "dentro" dito só por 14px
+   de escada. Não era dentro de nada: a caixa da mãe terminava acima
+   delas, e uma subpasta lia como pasta de raiz mal alinhada.
+   Agora a subpasta mora DENTRO da caixa da mãe, no mesmo lugar dos
+   mini-cartões de cena, e o recuo não tem mais o que dizer. */
+.rv-pasta-subpastas {
+  /* Mesmo respiro por dentro da borda que `.rv-pasta-cenas` usa — as
+     duas coisas que vivem dentro de uma pasta se alinham entre si. */
+  list-style: none; margin: 0 8px 8px; padding: 0;
+  display: flex; flex-direction: column; gap: 8px;
+}
+/* A subpasta é mais discreta que a mãe: fundo um degrau acima do dela,
+   pra que a caixa de dentro se leia como conteúdo e não como uma
+   segunda pasta de raiz que por acaso caiu ali. */
+.rv-pasta-subpastas > .rv-pasta-linha { background: var(--rv-raise); }
+/* O cabeçalho aperta um pouco: caixa dentro de caixa com o mesmo
+   respiro dos dois lados fica com o dobro de ar na borda. */
+.rv-pasta-subpastas > .rv-pasta-linha > .rv-pasta-cabeca { padding: 9px 10px; }
+
+/* A RAIZ ACENDE INTEIRA. Ela não tem caixa própria — é o vazio à volta
+   dos cartões —, então quem acende é a área, por dentro: o mesmo
+   recurso que a lista de Personagens usa pro container de raiz. É por
+   aqui que se tira algo de uma pasta. */
+.rv-gav-trilho[data-alvo-raiz] {
+  box-shadow: inset 0 0 0 1px var(--jf-acento);
+  background: color-mix(in srgb, var(--jf-acento) 6%, transparent);
+}
 
 .rv-gav-conteudo {
   flex: 1 1 auto; min-width: 0; overflow-y: auto;
   display: flex; flex-direction: column;
   padding: 14px 16px;
 }
+/* A ÁREA DA PASTA ABERTA como alvo: soltar no vazio entre os cartões
+   põe a cena (ou a pasta) DENTRO da pasta que está aberta. Mesmo
+   vocabulário da raiz — fio por dentro e lavagem —, porque é a mesma
+   pergunta respondida do outro lado. */
+.rv-gav-area[data-alvo] {
+  box-shadow: inset 0 0 0 1px var(--jf-acento);
+  background: color-mix(in srgb, var(--jf-acento) 6%, transparent);
+  border-radius: var(--rv-r);
+}
+
 /* A ÁREA da pasta aberta — uma caixa só, porque ela é o alvo do botão
    direito que abre o menu da pasta. Ela é que carrega a coluna (o
    `.rv-gav-conteudo` ficou só com a rolagem e o respiro), senão o
@@ -4452,6 +4526,57 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-cena-grade {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 12px; margin: 0; padding: 0; list-style: none; align-content: start;
+}
+
+/* A GRADE DE SUBPASTAS — o que está dentro da pasta aberta e leva a
+   outro lugar. Mesma coluna da grade de cenas, altura menor: pasta é
+   caminho, cena é destino, e dois cartões do mesmo tamanho fariam as
+   duas coisas parecerem equivalentes. Vem antes das cenas, e o vão de
+   16px embaixo é o que separa "onde dá pra ir" de "o que tem aqui". */
+.rv-subpasta-grade {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px; margin: 0 0 16px; padding: 0; list-style: none; align-content: start;
+}
+.rv-subpasta-cartao {
+  border: 1px solid var(--rv-line-2); border-radius: var(--rv-r-md);
+  background: var(--rv-ground-2);
+  transition: border-color .14s, background .14s, opacity .14s, box-shadow .14s;
+  cursor: grab;
+}
+.rv-subpasta-cartao:active { cursor: grabbing; }
+.rv-subpasta-cartao:hover {
+  border-color: color-mix(in srgb, var(--jf-acento) 35%, var(--rv-line-strong));
+  background: color-mix(in srgb, var(--jf-acento) 6%, var(--rv-ground-2));
+}
+/* Em trânsito, e ALVO: as mesmas duas respostas da linha do trilho e da
+   aba Personagens — translúcido de onde saiu, fio interno onde entra. */
+.rv-subpasta-cartao[data-arrastando] { opacity: .45; }
+.rv-subpasta-cartao[data-alvo] {
+  border-color: var(--jf-acento);
+  background: color-mix(in srgb, var(--jf-acento) 16%, transparent);
+  box-shadow: inset 0 0 0 1px var(--jf-acento);
+}
+.rv-subpasta-cartao[data-alvo] .rv-subpasta-icone { color: var(--jf-acento); }
+.rv-subpasta-btn {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 12px; border: none; background: none; cursor: pointer;
+  text-align: left; color: var(--rv-ink-dim);
+}
+.rv-subpasta-btn:disabled { opacity: .5; cursor: default; }
+.rv-subpasta-btn:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: -2px; border-radius: var(--rv-r-md); }
+.rv-subpasta-icone { flex: none; display: flex; color: var(--jf-acento); transition: color .14s; }
+/* Mesma tipografia do nome no trilho — é a mesma coisa em outro lugar. */
+.rv-subpasta-nome {
+  flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--rv-display), sans-serif; font-size: 12px; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase;
+  transition: color .14s;
+}
+.rv-subpasta-btn:hover .rv-subpasta-nome { color: var(--rv-ink); }
+.rv-subpasta-contagem {
+  flex: none;
+  font-family: var(--font-mono), monospace; font-size: 9px;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--rv-ink-faint);
 }
 
 .rv-cena-ladrilho {
@@ -4488,7 +4613,24 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    mostrar, e duas cores iguais a desfariam. */
 .rv-cena-ladrilho[data-vista] { border-color: var(--jf-acento); }
 .rv-cena-ladrilho[data-arrastando] { opacity: .4; }
-.rv-cena-ladrilho[data-alvo] { border-color: var(--jf-acento); box-shadow: inset 3px 0 0 0 var(--jf-acento); }
+/* A LINHA DE INSERÇÃO — a mesma da aba Personagens, virada de lado
+   porque aqui a fila é uma GRADE: soltar insere ANTES deste ladrilho,
+   então ela marca a borda ESQUERDA dele.
+
+   Pontilhada porque marca uma posição PREVISTA — contínua leria como
+   "isto termina aqui". Desenhada POR DENTRO da borda: o ladrilho tem
+   `overflow: hidden` (é o que faz a miniatura encostar), e qualquer
+   coisa desenhada fora da caixa seria recortada. O brilho compensa a
+   transparência: 1,5px a 65% sumiria contra o fundo escuro. */
+.rv-cena-ladrilho[data-alvo] { border-color: color-mix(in srgb, var(--jf-acento) 45%, var(--rv-line-2)); }
+/* `::before` porque o `::after` do ladrilho já é a lavagem de hover —
+   duas coisas diferentes não cabem no mesmo pseudo-elemento. */
+.rv-cena-ladrilho[data-alvo]::before {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 0;
+  border-left: 1.5px dashed color-mix(in srgb, var(--jf-acento) 65%, transparent);
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--jf-acento) 45%, transparent));
+  pointer-events: none; z-index: 2;
+}
 /* Jogador pairando: alvo VERDE, nunca o âmbar de reordenar. Os dois
    gestos passam pelo mesmo ladrilho e fazem coisas incomparáveis. */
 .rv-cena-ladrilho[data-alvo-jogador] {
@@ -4647,8 +4789,30 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-cena-campo::placeholder { color: var(--rv-ink-faint); }
 .rv-cena-campo:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: 1px; border-color: transparent; }
 
-.rv-cena-nova { display: flex; align-items: center; gap: 5px; }
-.rv-cena-nova .rv-cena-campo { min-width: 200px; }
+/* O CAMPO E O BOTÃO NÃO SÃO A MESMA COISA: um é onde se digita, o
+   outro é o que decide. 5px os deixava colados como se fossem um
+   controle só; 12px é o mesmo vão que separa os botões do cabeçalho de
+   um grupo para o outro. "Cancelar" continua ao lado de "Criar pasta" —
+   os dois SÃO a mesma decisão, em dois sentidos. */
+.rv-cena-nova { display: flex; align-items: center; gap: 12px; }
+.rv-cena-nova .rv-btn + .rv-btn { margin-left: -6px; }
+/* MESMA CAIXA DA BUSCA. O campo de nome usava o cinza dos campos de
+   formulário e a fonte de display a 12px, do lado de uma busca em
+   Rajdhani 13,5px sobre `#0c1526` — dois campos de texto, na mesma
+   janela, dizendo que eram coisas diferentes. São o mesmo gesto:
+   escrever um nome. */
+.rv-cena-nova .rv-cena-campo {
+  min-width: 260px;
+  padding: 5px 9px;
+  background: #0c1526; border-color: var(--rv-line-strong);
+  color: var(--rv-ink);
+  font-family: var(--rv-body); font-size: 13.5px;
+}
+.rv-cena-nova .rv-cena-campo::placeholder {
+  color: var(--rv-ink-faint); opacity: 1;
+  font-family: var(--rv-body); font-size: 13.5px;
+}
+.rv-cena-nova .rv-cena-campo:focus-visible { outline: none; border-color: var(--jf-acento); }
 
 /* A linha que duplicar, excluir e "quem joga aqui" abrem DENTRO do
    ladrilho. Separada por um fio: é uma pergunta nova, não mais um
@@ -4749,10 +4913,25 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    linha de pasta como as outras (ver `GerenciadorCenas`), então estas
    duas regras não têm mais alvo lá. O degrau segue existindo no
    BREADCRUMB, onde nunca teve `data-raiz`. */
+/* ENQUANTO ALGO É ARRASTADO, a trilha se anuncia. Ela sempre foi a
+   saída — é por ela que uma cena (e agora uma pasta) sai de onde está —
+   mas um degrau de 9,5px parado não se oferece como alvo, e quem
+   arrastava não tinha onde soltar: o gesto existia e não aparecia.
+   Pontilhado, o mesmo vocabulário da linha de inserção: "cabe aqui". */
+.rv-pasta-caminho[data-recebendo] .rv-pasta-degrau {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--jf-acento) 45%, transparent);
+  color: var(--rv-ink-dim);
+}
 /* Realce de soltura: o degrau vira alvo enquanto uma cena paira. */
-.rv-pasta-degrau[data-alvo] {
+/* O ALVO escolhido tem que ganhar do "cabe aqui" pontilhado que a
+   trilha inteira veste durante o arrasto — e o pontilhado nasce de um
+   seletor com uma classe a mais, então este precisa alcançá-lo. */
+.rv-pasta-degrau[data-alvo],
+.rv-pasta-caminho[data-recebendo] .rv-pasta-degrau[data-alvo] {
   background: color-mix(in srgb, var(--jf-acento) 22%, transparent);
-  border-color: var(--jf-acento); color: var(--rv-ink);
+  border-color: var(--jf-acento); border-style: solid; color: var(--rv-ink);
+  box-shadow: inset 0 0 0 1px var(--jf-acento);
 }
 .rv-pasta-degrau:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: 1px; }
 
@@ -4846,6 +5025,35 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    estados está valendo. */
 .rv-pasta-expandir svg { transition: transform .16s; }
 .rv-pasta-expandir[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+/* AS AÇÕES DA PASTA ABERTA — nova subpasta e o ⋮ — encostadas na
+   DIREITA da trilha. `margin-left: auto` no primeiro dos dois abre o
+   vazio entre eles e o caminho: caminho é navegação, aquilo é o que se
+   faz com a pasta, e coladas as duas coisas leriam como uma lista só.
+   Elas ficam VISÍVEIS, não de hover — criar subpasta não tem outro
+   caminho, e gesto escondido é gesto que só existe pra quem já sabe. */
+.rv-pasta-acao-dentro { margin-left: auto; }
+
+/* ARRASTO DE PASTA — mesmas regras da aba Personagens, na cor deste
+   catálogo. A pasta em trânsito fica translúcida (o lugar de onde ela
+   saiu continua visível enquanto se escolhe onde ela entra) e o alvo
+   ganha o fio interno que o hover não tem, pra que passar o mouse nunca
+   se confunda com "solta aqui". */
+/* A pasta em trânsito fica translúcida — o lugar de onde ela saiu
+   continua visível enquanto se escolhe onde ela entra. */
+.rv-pasta-linha[data-arrastando] { opacity: .45; }
+/* E ela vira alvo de PEGAR: o cursor precisa dizer que dá pra arrastar
+   antes de alguém tentar. */
+.rv-pasta-linha[draggable="true"] { cursor: grab; }
+.rv-pasta-linha[draggable="true"]:active { cursor: grabbing; }
+/* O ALVO. O fio interno é o que o hover NÃO tem: passar o mouse e
+   "solta aqui" precisam continuar dizendo coisas diferentes, e é essa
+   a diferença — a mesma regra da aba Personagens, na cor daqui. */
+.rv-pasta-linha[data-alvo] { box-shadow: inset 0 0 0 1px var(--jf-acento); }
+/* O ícone abre junto (a linha já troca Folder por FolderOpen) e acende:
+   a pasta que vai receber é a que está de boca aberta. */
+.rv-pasta-linha[data-alvo] .rv-pasta-icone { color: var(--jf-acento); }
+.rv-pasta-linha[data-alvo] .rv-pasta-nome { color: var(--rv-ink); }
 /* As ações da pasta também são de hover: a coluna fica limpa, e o que
    se faz com pasta o tempo todo é ENTRAR nela. */
 /* A fila de ícones de ação SAIU da pasta: virou menu de contexto
@@ -4877,7 +5085,12 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
      ele se funde, que é o fundo da pasta. */
   --rv-veu-cor: var(--rv-ground-2);
 }
-.rv-pasta-cenas > .rv-minicena + .rv-minicena { margin-top: 8px; }
+.rv-pasta-cenas > .rv-minicena + /* A miniatura agora se pega — e responde como todo o resto do
+   catálogo: translúcida em trânsito, cursor de pegar em repouso. */
+.rv-minicena[draggable="true"] { cursor: grab; }
+.rv-minicena[draggable="true"]:active { cursor: grabbing; }
+.rv-minicena[data-arrastando] { opacity: .45; }
+.rv-minicena { margin-top: 8px; }
 .rv-minicena { min-width: 0; }
 .rv-minicena-btn {
   /* 56px como o cartão de personagem: é a IMAGEM que identifica a cena

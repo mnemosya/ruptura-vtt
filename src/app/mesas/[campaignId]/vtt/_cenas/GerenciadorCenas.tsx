@@ -32,7 +32,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  AlertTriangle, Archive, Check, ChevronDown, Clapperboard, FilePlus2, FolderPlus, ImagePlus, Loader2, MoreVertical, Plus, Search, Undo2, X,
+  AlertTriangle, Archive, Check, ChevronDown, Clapperboard, FilePlus2, Folder, FolderOpen, FolderPlus, ImagePlus, Loader2, MoreVertical, Plus, Search, Undo2, X,
 } from "lucide-react";
 import { CartaoCena } from "./CartaoCena";
 import { ListaRolavel } from "./ListaRolavel";
@@ -43,7 +43,7 @@ import { ParametrosCena, type ValoresParametros } from "./ParametrosCena";
 import {
   apresentarCenaAction, arquivarCenaAction, criarCenaAction, criarPastaAction,
   duplicarCenaAction, excluirCenaAction, excluirPastaAction, listarCenasAction,
-  arquivarPastaAction, desarquivarPastaAction, listarPastasAction, listarPosicoesJogadoresAction, moverCenaParaPastaAction,
+  arquivarPastaAction, desarquivarPastaAction, listarPastasAction, listarPosicoesJogadoresAction, moverCenaParaPastaAction, moverPastaAction,
   moverJogadoresAction, reagruparJogadoresAction, renomearPastaAction,
   reordenarCenasAction, restaurarCenaAction, salvarConfigCenaAction,
 } from "../_acoes/sceneActions";
@@ -62,6 +62,14 @@ import { LinhaPasta } from "./LinhaPasta";
 import type {
   CartaoCena as DadosCartaoCena, CenaVtt, ModoDuplicacao, PastaCena, PosicaoJogador,
 } from "../../../../../lib/vtt/sceneStorage";
+
+/**
+ * O arrasto de PASTA. Tipo próprio, separado do de cena e do de
+ * jogador: durante o `dragover` o navegador só deixa ler os TIPOS, e é
+ * por eles que o alvo decide se aceita — sem um tipo só pra pasta, a
+ * lista não teria como distinguir o que está chegando.
+ */
+const MIME_PASTA_CENA = "ruptura/vtt-pasta-cena";
 
 export interface PropsGerenciadorCenas {
   campaignId: string;
@@ -197,6 +205,20 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
   const campoPastaRef = useRef<HTMLInputElement | null>(null);
   /** A pasta sob o arrasto agora — o realce que evita soltar no escuro. */
   const [pastaAlvo, setPastaAlvo] = useState<string | null>(null);
+  /**
+   * A PASTA em trânsito. Arrasto diferente do de cena e por isso com
+   * estado próprio: soltar uma pasta sobre outra REANINHA (muda o pai),
+   * soltar uma cena move a cena. O alvo (`pastaAlvo`) é o mesmo, porque
+   * o que ele responde — "é aqui que vai parar" — também é.
+   */
+  const [pastaArrastada, setPastaArrastada] = useState<string | null>(null);
+  /**
+   * ONDE a pasta nova vai nascer. `null` = raiz, que é o que o botão do
+   * cabeçalho sempre manda: "nova pasta" ali não deveria depender de
+   * qual pasta o narrador abriu por último. Subpasta só pelo botão de
+   * dentro da linha, que manda o id dela.
+   */
+  const [paiDaPastaNova, setPaiDaPastaNova] = useState<string | null>(null);
   /**
    * A busca ACHATA a hierarquia de propósito: procurar é justamente o
    * gesto de quem não sabe em que pasta a cena está, e responder
@@ -747,12 +769,16 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
     const nome = nomePastaNova.trim();
     if (nome.length === 0) return;
     try {
-      // Nasce DENTRO da pasta aberta: "nova pasta" enquanto se navega
-      // em `Ato I / Porto` significa uma pasta ali, não na raiz.
-      const r = await criarPastaAction({ campaignId: p.campaignId, nome, parentId: pastaAtual });
+      // O PAI É EXPLÍCITO, nunca "onde eu estava": quem quer subpasta
+      // pede pelo botão de dentro da pasta, e o de cima cria na raiz.
+      const r = await criarPastaAction({ campaignId: p.campaignId, nome, parentId: paiDaPastaNova });
       if (!r.ok) { setErro(r.erro ?? "Falha ao criar a pasta."); return; }
       setNomePastaNova("");
       setCriandoPasta(false);
+      setPaiDaPastaNova(null);
+      // A pasta nova nasce DENTRO de outra: abre a de cima, senão ela
+      // aparece fechada e parece que nada aconteceu.
+      if (paiDaPastaNova) setExpandidas((e) => new Set(e).add(paiDaPastaNova));
       setErro(null);
       await recarregar();
     } catch (e) {
@@ -882,6 +908,62 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
       cenas: todas.filter((c) => c.pastaId && dentro.has(c.pastaId)).length,
       subpastas: dentro.size - 1,
     };
+  }
+
+  /**
+   * A DESCENDÊNCIA de uma pasta, ela inclusa. Serve pro arrasto: soltar
+   * uma pasta dentro da própria descendência é o ciclo que a 0117
+   * recusa no banco — e recusa certo, mas deixar o alvo acender pra
+   * depois responder erro é ensinar pela negativa.
+   */
+  function descendencia(pastaId: string): ReadonlySet<string> {
+    const dentro = new Set<string>([pastaId]);
+    let mudou = true;
+    while (mudou) {
+      mudou = false;
+      for (const f of pastas) {
+        if (f.parentId && dentro.has(f.parentId) && !dentro.has(f.id)) { dentro.add(f.id); mudou = true; }
+      }
+    }
+    return dentro;
+  }
+
+  /** Este arrasto de pasta pode terminar aqui? */
+  function podeSoltarPastaEm(destino: string | null): boolean {
+    const id = pastaArrastada;
+    if (!id) return false;
+    const origem = pastas.find((f) => f.id === id);
+    if (!origem || origem.parentId === destino) return false;
+    return destino === null || !descendencia(id).has(destino);
+  }
+
+  /**
+   * REANINHAR uma pasta: pra dentro de outra, ou pra fora (raiz, pelo
+   * "Todas" e pela trilha). A profundidade e o ciclo são regra de
+   * servidor (0117) — aqui só não se oferece o que ele recusaria.
+   */
+  async function moverPasta(folderId: string, destino: string | null) {
+    setPastaAlvo(null);
+    setPastaArrastada(null);
+    if (!podeSoltarPastaEmDado(folderId, destino)) return;
+    marcarOcupada(folderId, true);
+    anotarErro(folderId, null);
+    try {
+      const r = await moverPastaAction({ campaignId: p.campaignId, folderId, novoParentId: destino });
+      if (!r.ok) { anotarErro(folderId, r.erro ?? "Não foi possível mover a pasta."); return; }
+      if (destino) setExpandidas((e) => new Set(e).add(destino));
+      await recarregar();
+    } finally {
+      marcarOcupada(folderId, false);
+    }
+  }
+
+  /** Mesma regra de `podeSoltarPastaEm`, mas para um id explícito — o
+      estado já foi limpo quando o `drop` chega. */
+  function podeSoltarPastaEmDado(folderId: string, destino: string | null): boolean {
+    const origem = pastas.find((f) => f.id === folderId);
+    if (!origem || origem.parentId === destino) return false;
+    return destino === null || !descendencia(folderId).has(destino);
   }
 
   /**
@@ -1027,6 +1109,78 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
    * topo e as pastas mostram a MESMA lista, com a mesma aparência e o
    * mesmo clique — o que muda é o filtro.
    */
+  /**
+   * UM RAMO DA ÁRVORE. As subpastas moram DENTRO da caixa da pasta-mãe,
+   * no mesmo lugar em que os mini-cartões de cena moram — porque é onde
+   * elas estão de verdade. Antes eram irmãs na mesma lista, "dentro"
+   * dito só por um recuo de 14px: recuo é uma promessa que a caixa não
+   * cumpria, e uma subpasta lia como pasta de raiz mal alinhada.
+   */
+  function ramoDePasta(f: PastaCena): React.ReactNode {
+    const filhas = pastasAtivas.filter((x) => x.parentId === f.id);
+    const cenasDaPasta = cenasPorPasta.get(f.id) ?? 0;
+    return (
+      <LinhaPasta
+        key={f.id}
+        pasta={f}
+        aberta={pastaAtual === f.id && !verArquivo}
+        quantidade={cenasDaPasta}
+        subpastas={filhas.length}
+        expandida={expandidas.has(f.id)}
+        onAlternarExpansao={() => alternarExpansao(f.id)}
+        cenas={<>
+          {filhas.length > 0 && (
+            <ul className="rv-pasta-subpastas">{filhas.map(ramoDePasta)}</ul>
+          )}
+          {listaDeCenas(f.id)}
+        </>}
+        ocupada={ocupadas[f.id] === true}
+        erro={errosPorCena[f.id] ?? null}
+        onAbrir={() => { setVerArquivo(false); setPastaAtual(f.id); }}
+        onRenomear={(nome) => void renomearPastaPor(f, nome)}
+        onExcluir={(nomeConfirmacao) => void excluirPastaPor(f, nomeConfirmacao)}
+        onArquivar={() => void arquivarPastaPor(f)}
+        peso={pesoDaPasta(f.id)}
+        arrastavel
+        arrastando={pastaArrastada === f.id}
+        onDragStart={(e) => {
+          // SÓ ESTA CAIXA. `dragstart` borbulha, e dentro da pasta há
+          // outras coisas que se arrastam — um mini-cartão de cena, uma
+          // subpasta. Sem a checagem, pegar uma delas anunciava a pasta
+          // de fora como a coisa em trânsito.
+          if (e.target !== e.currentTarget) return;
+          e.stopPropagation();
+          setPastaArrastada(f.id);
+          e.dataTransfer.setData(MIME_PASTA_CENA, f.id);
+          e.dataTransfer.effectAllowed = "move";
+        }}
+        onDragEnd={() => { setPastaArrastada(null); setPastaAlvo(null); }}
+        alvoDeArrasto={pastaAlvo === f.id && (arrastandoId !== null || pastaArrastada !== null)}
+        onDragOver={(e) => {
+          if (!arrastandoId && !podeSoltarPastaEm(f.id)) return;
+          // PARA AQUI. Sem isto o `dragover` sobe até a pasta-mãe, e o
+          // realce acendia nas duas — ou só na de fora, que é a errada.
+          e.stopPropagation();
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          setPastaAlvo(f.id);
+        }}
+        onDragLeave={(e) => {
+          // Só quando o cursor sai DA CAIXA. Entrar num filho dispara
+          // `dragleave` no pai, e limpar ali fazia o realce piscar.
+          if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+          setPastaAlvo((a) => (a === f.id ? null : a));
+        }}
+        onDrop={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          if (pastaArrastada) { void moverPasta(pastaArrastada, f.id); return; }
+          if (arrastandoId) void moverCena(arrastandoId, f.id);
+        }}
+      />
+    );
+  }
+
   function listaDeCenas(pastaId: string | null | undefined) {
     return miniCartoes(todas.filter((c) => c.arquivadaEm === null && (pastaId === undefined || c.pastaId === pastaId)));
   }
@@ -1055,6 +1209,15 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
             totalJogadores={jogadores.length}
             ocupada={ocupadas[c.id] === true}
             onAbrir={() => p.onAbrir(c.id)}
+            arrastavel={!verArquivo}
+            arrastando={arrastandoId === c.id}
+            onArrastarInicio={(e) => {
+              setArrastandoId(c.id);
+              e.dataTransfer.effectAllowed = "move";
+              // Firefox não inicia arrasto sem carga.
+              e.dataTransfer.setData("text/plain", c.id);
+            }}
+            onArrastarFim={() => { setArrastandoId(null); setPastaAlvo(null); }}
           />
         ))}
       </ListaRolavel>
@@ -1169,23 +1332,18 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
             <button
               type="button" className="rv-btn rv-cena-btn-icone" data-testid="pasta-nova"
               aria-label="Nova pasta"
-              // O quarto nível é o último (0117). Oferecer o botão ali
-              // só pra receber a recusa do servidor seria fazer o banco
-              // ensinar o que a tela já sabe.
-              disabled={trilha.length >= 4 || criandoPasta}
-              onClick={() => setCriandoPasta(true)}
+              // Sem trava de nível: este botão cria SEMPRE na raiz, e a
+              // raiz nunca está cheia. O quarto nível (0117) é problema
+              // do botão de dentro da pasta, que é quem aninha.
+              disabled={criandoPasta}
+              onClick={() => { setPaiDaPastaNova(null); setCriandoPasta(true); }}
             >
               <FolderPlus size={15} aria-hidden="true" />
               {/* A dica diz ONDE a pasta vai nascer: com o trilho à
                   esquerda, a pasta selecionada é o destino, e sem isso
                   "Nova pasta" não conta a metade que importa. */}
-              <span className="rv-dica rv-dica--abaixo">
-                {trilha.length >= 4
-                  ? "As pastas vão até quatro níveis"
-                  : pastaAtual === null
-                    ? "Nova pasta"
-                    : `Nova pasta dentro de ${trilha[trilha.length - 1]?.nome}`}
-              </span>
+              {/* A dica diz ONDE — e aqui o onde é sempre o mesmo. */}
+              <span className="rv-dica rv-dica--abaixo">Nova pasta no catálogo</span>
             </button>
           </>
         )}
@@ -1219,20 +1377,22 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                 className="rv-cena-campo"
                 value={nomePastaNova}
                 maxLength={80}
-                placeholder="Nome da pasta"
+                placeholder={paiDaPastaNova
+                  ? `Nome da pasta dentro de ${pastas.find((f) => f.id === paiDaPastaNova)?.nome ?? ""}`
+                  : "Nome da pasta"}
                 aria-label="Nome da nova pasta"
                 data-testid="pasta-nova-nome"
                 onChange={(e) => setNomePastaNova(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") { e.preventDefault(); void criarPastaNova(); }
-                  if (e.key === "Escape") { e.preventDefault(); setCriandoPasta(false); setNomePastaNova(""); }
+                  if (e.key === "Escape") { e.preventDefault(); setCriandoPasta(false); setNomePastaNova(""); setPaiDaPastaNova(null); }
                 }}
               />
               <button
                 type="button" className="rv-btn rv-btn--pri" data-testid="pasta-nova-confirmar"
                 disabled={nomePastaNova.trim().length === 0} onClick={() => void criarPastaNova()}
               >Criar pasta</button>
-              <button type="button" className="rv-btn rv-btn--ghost" onClick={() => { setCriandoPasta(false); setNomePastaNova(""); }}>
+              <button type="button" className="rv-btn rv-btn--ghost" onClick={() => { setCriandoPasta(false); setNomePastaNova(""); setPaiDaPastaNova(null); }}>
                 Cancelar
               </button>
             </div>
@@ -1244,7 +1404,35 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
             I" e voltar. Pasta é caminho, cena é destino: são duas
             colunas, não uma lista de coisas equivalentes. */
         !buscando ? (
-          <nav className="rv-gav-trilho" aria-label="Pastas do catálogo" data-testid="cenas-trilho">
+          <nav
+            className="rv-gav-trilho" aria-label="Pastas do catálogo" data-testid="cenas-trilho"
+            /* A ÁREA VAZIA DO TRILHO É A RAIZ. Ela era só o fundo atrás
+               dos cartões, e tirar algo de uma pasta exigia acertar o
+               cartão "Todas" ou um degrau de 9,5px na trilha — alvos
+               que ninguém tenta. "Fora da pasta" é o vazio à volta
+               dela, e é onde a mão vai. Mesma ideia da área da lista em
+               Personagens, que acende inteira como container de raiz. */
+            data-alvo-raiz={pastaAlvo === "__raiz__" && (arrastandoId !== null || pastaArrastada !== null) ? "" : undefined}
+            onDragOver={(e) => {
+              // O que já tem dono não sobe: cada cartão do trilho é um
+              // destino próprio, e sem isto o vazio roubaria todos.
+              if ((e.target as HTMLElement).closest(".rv-pasta-linha")) return;
+              if (!arrastandoId && !podeSoltarPastaEm(null)) return;
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+              setPastaAlvo("__raiz__");
+            }}
+            onDragLeave={(e) => {
+              if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+              setPastaAlvo((a) => (a === "__raiz__" ? null : a));
+            }}
+            onDrop={(e) => {
+              if ((e.target as HTMLElement).closest(".rv-pasta-linha")) return;
+              e.preventDefault();
+              if (pastaArrastada) { void moverPasta(pastaArrastada, null); return; }
+              if (arrastandoId) void moverCena(arrastandoId, null);
+            }}
+          >
             {/* "TODAS" não é uma pasta, mas é a mesma COISA pra quem
                 olha: um caminho com uma contagem e uma lista dentro.
                 Por isso usa a casca da linha de pasta (`rv-pasta-linha`)
@@ -1256,9 +1444,22 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                 className="rv-pasta-linha" data-raiz=""
                 data-aberta={pastaAtual === null && !verArquivo ? "" : undefined}
                 data-alvo={pastaAlvo === "__raiz__" || undefined}
-                onDragOver={(e) => { if (arrastandoId) { e.preventDefault(); setPastaAlvo("__raiz__"); } }}
-                onDragLeave={() => setPastaAlvo(null)}
-                onDrop={(e) => { e.preventDefault(); if (arrastandoId) void moverCena(arrastandoId, null); }}
+                onDragOver={(e) => {
+                  // "Todas" é a SAÍDA: é aqui que se solta o que se quer
+                  // tirar de dentro de alguma pasta — cena ou pasta.
+                  if (!arrastandoId && !podeSoltarPastaEm(null)) return;
+                  e.preventDefault();
+                  setPastaAlvo("__raiz__");
+                }}
+                onDragLeave={(e) => {
+                  if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+                  setPastaAlvo((a) => (a === "__raiz__" ? null : a));
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (pastaArrastada) { void moverPasta(pastaArrastada, null); return; }
+                  if (arrastandoId) void moverCena(arrastandoId, null);
+                }}
               >
                 <span className="rv-pasta-cabeca">
                   <span className="rv-pasta-icone" aria-hidden="true"><Clapperboard size={15} /></span>
@@ -1288,36 +1489,39 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
               </li>
             </ul>
 
-            {pastasAtivas.length > 0 && (
+            {pastasAtivas.some((f) => f.parentId === null) && (
               <ul className="rv-gav-pastas">
-                {pastasAtivas.map((f) => (
-                  <LinhaPasta
-                    key={f.id}
-                    pasta={f}
-                    aberta={pastaAtual === f.id && !verArquivo}
-                    quantidade={cenasPorPasta.get(f.id) ?? 0}
-                    expandida={expandidas.has(f.id)}
-                    onAlternarExpansao={() => alternarExpansao(f.id)}
-                    cenas={listaDeCenas(f.id)}
-                    ocupada={ocupadas[f.id] === true}
-                    erro={errosPorCena[f.id] ?? null}
-                    onAbrir={() => { setVerArquivo(false); setPastaAtual(f.id); }}
-                    onRenomear={(nome) => void renomearPastaPor(f, nome)}
-                    onExcluir={(nomeConfirmacao) => void excluirPastaPor(f, nomeConfirmacao)}
-                    onArquivar={() => void arquivarPastaPor(f)}
-                    peso={pesoDaPasta(f.id)}
-                    alvoDeArrasto={pastaAlvo === f.id && arrastandoId !== null}
-                    onDragOver={(e) => { if (arrastandoId) { e.preventDefault(); setPastaAlvo(f.id); } }}
-                    onDragLeave={() => setPastaAlvo(null)}
-                    onDrop={(e) => { e.preventDefault(); if (arrastandoId) void moverCena(arrastandoId, f.id); }}
-                  />
-                ))}
+                {pastasAtivas.filter((f) => f.parentId === null).map(ramoDePasta)}
               </ul>
             )}
           </nav>
         ) : undefined}
       conteudo={<div
         className="rv-gav-area"
+        /* A ÁREA DA PASTA ABERTA É A PRÓPRIA PASTA. Arrastar uma cena
+           de "Todas" pra dentro da pasta que está aberta não tinha onde
+           terminar: o destino estava na tela inteira à frente, e o
+           único alvo era a linha dela no trilho, do outro lado.
+           O vazio entre os cartões é o lugar mais óbvio pra soltar, e
+           agora é ele mesmo. */
+        data-alvo={pastaAlvo === "__area__" ? "" : undefined}
+        onDragOver={(e) => {
+          if ((e.target as HTMLElement).closest(".rv-cena-ladrilho, .rv-subpasta-cartao, .rv-pasta-degrau")) return;
+          if (!arrastandoId && !podeSoltarPastaEm(pastaAtual)) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          setPastaAlvo("__area__");
+        }}
+        onDragLeave={(e) => {
+          if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+          setPastaAlvo((a) => (a === "__area__" ? null : a));
+        }}
+        onDrop={(e) => {
+          if ((e.target as HTMLElement).closest(".rv-cena-ladrilho, .rv-subpasta-cartao, .rv-pasta-degrau")) return;
+          e.preventDefault();
+          if (pastaArrastada) { void moverPasta(pastaArrastada, pastaAtual); return; }
+          if (arrastandoId) void moverCena(arrastandoId, pastaAtual);
+        }}
         /* A ÁREA INTEIRA da pasta aberta é alvo do botão direito, não
            só a trilha: dentro de uma pasta, "esta pasta" é o lugar onde
            se está — inclusive o vazio entre os cartões. */
@@ -1332,14 +1536,28 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
               que tira uma cena da pasta. Sem ela, "mover pra fora"
               precisaria de um menu com a árvore inteira dentro. */}
           {!buscando && (
-            <nav className="rv-pasta-caminho" aria-label="Caminho da pasta aberta" data-testid="cenas-trilha">
+            <nav
+              className="rv-pasta-caminho"
+              aria-label="Caminho da pasta aberta"
+              data-testid="cenas-trilha"
+              /* A trilha só se anuncia como saída quando há o que sair
+                 — fora do arrasto ela volta a ser só o caminho. */
+              data-recebendo={arrastandoId !== null || pastaArrastada !== null ? "" : undefined}
+            >
               <button type="button" className="rv-pasta-degrau"
                 aria-current={pastaAtual === null ? "page" : undefined}
                 data-testid="trilha-raiz"
                 onClick={() => setPastaAtual(null)}
-                onDragOver={(e) => { if (arrastandoId) { e.preventDefault(); setPastaAlvo("__raiz__"); } }}
+                onDragOver={(e) => {
+                  if (!arrastandoId && !podeSoltarPastaEm(null)) return;
+                  e.preventDefault(); setPastaAlvo("__raiz__");
+                }}
                 onDragLeave={() => setPastaAlvo(null)}
-                onDrop={(e) => { e.preventDefault(); if (arrastandoId) void moverCena(arrastandoId, null); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (pastaArrastada) { void moverPasta(pastaArrastada, null); return; }
+                  if (arrastandoId) void moverCena(arrastandoId, null);
+                }}
                 data-alvo={pastaAlvo === "__raiz__" || undefined}
               >Todas</button>
               {trilha.map((f, i) => (
@@ -1350,9 +1568,16 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                     aria-current={i === trilha.length - 1 ? "page" : undefined}
                     data-alvo={pastaAlvo === f.id || undefined}
                     onClick={() => setPastaAtual(f.id)}
-                    onDragOver={(e) => { if (arrastandoId) { e.preventDefault(); setPastaAlvo(f.id); } }}
+                    onDragOver={(e) => {
+                      if (!arrastandoId && !podeSoltarPastaEm(f.id)) return;
+                      e.preventDefault(); setPastaAlvo(f.id);
+                    }}
                     onDragLeave={() => setPastaAlvo(null)}
-                    onDrop={(e) => { e.preventDefault(); if (arrastandoId) void moverCena(arrastandoId, f.id); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (pastaArrastada) { void moverPasta(pastaArrastada, f.id); return; }
+                      if (arrastandoId) void moverCena(arrastandoId, f.id);
+                    }}
                   >{f.nome}</button>
                 </span>
               ))}
@@ -1362,6 +1587,23 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                   a ÚNICA porta: gesto escondido é gesto que só existe
                   pra quem já sabe que ele existe. Aqui, ao lado do nome
                   da pasta em que se está, ele é o lugar óbvio. */}
+              {/* NOVA PASTA AQUI DENTRO — o único caminho pra subpasta:
+                  o botão de cima do catálogo cria sempre na raiz.
+                  Vem antes do ⋮ porque é ação, e o ⋮ é o resto; os dois
+                  encostados na direita, longe da trilha, que é
+                  navegação. */}
+              {pastaAberta && !verArquivo && (
+                <button
+                  type="button" className="rv-cena-mini-btn rv-pasta-acao-dentro"
+                  data-testid="pasta-nova-dentro"
+                  aria-label={`Nova pasta dentro de "${pastaAberta.nome}"`}
+                  disabled={pastaAberta.nivel >= 4 || criandoPasta}
+                  title={pastaAberta.nivel >= 4 ? "As pastas vão até quatro níveis" : undefined}
+                  onClick={() => { setPaiDaPastaNova(pastaAberta.id); setNomePastaNova(""); setCriandoPasta(true); }}
+                >
+                  <FolderPlus size={15} aria-hidden />
+                </button>
+              )}
               {pastaAberta && !verArquivo && (
                 <button
                   type="button" className="rv-cena-mini-btn"
@@ -1539,6 +1781,72 @@ export function GerenciadorCenas(p: PropsGerenciadorCenas) {
                   onDragLeave={() => {}}
                   onDrop={() => {}}
                 />
+              ))}
+            </ul>
+          )}
+
+          {/* AS SUBPASTAS DA PASTA ABERTA, na grade, ANTES das cenas.
+              Elas existiam só no trilho da esquerda: entrar numa pasta
+              mostrava as cenas dela e nada mais, e uma pasta que só tem
+              subpastas aparecia VAZIA — inclusive com o texto "Pasta
+              vazia" por cima de um conjunto que estava lá.
+              Pastas primeiro porque é assim que se lê um diretório: o
+              que leva a outro lugar antes do que é destino. */}
+          {!buscando && !verArquivo && pastaAtual !== null && subpastas.length > 0 && (
+            <ul className="rv-subpasta-grade" data-testid="cenas-subpastas">
+              {subpastas.map((f) => (
+                <li
+                  key={f.id}
+                  className="rv-subpasta-cartao"
+                  data-alvo={pastaAlvo === f.id && (arrastandoId !== null || pastaArrastada !== null) ? "" : undefined}
+                  data-arrastando={pastaArrastada === f.id ? "" : undefined}
+                  data-testid="subpasta-cartao"
+                  draggable
+                  onDragStart={(e) => {
+                    if (e.target !== e.currentTarget) return;
+                    setPastaArrastada(f.id);
+                    e.dataTransfer.setData(MIME_PASTA_CENA, f.id);
+                    e.dataTransfer.effectAllowed = "move";
+                  }}
+                  onDragEnd={() => { setPastaArrastada(null); setPastaAlvo(null); }}
+                  onDragOver={(e) => {
+                    if (!arrastandoId && !podeSoltarPastaEm(f.id)) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    setPastaAlvo(f.id);
+                  }}
+                  onDragLeave={(e) => {
+                    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+                    setPastaAlvo((a) => (a === f.id ? null : a));
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (pastaArrastada) { void moverPasta(pastaArrastada, f.id); return; }
+                    if (arrastandoId) void moverCena(arrastandoId, f.id);
+                  }}
+                >
+                  <button
+                    type="button" className="rv-subpasta-btn"
+                    data-testid="subpasta-abrir"
+                    disabled={ocupadas[f.id] === true}
+                    onClick={() => setPastaAtual(f.id)}
+                  >
+                    <span className="rv-subpasta-icone" aria-hidden="true">
+                      {pastaAlvo === f.id && (arrastandoId || pastaArrastada) ? <FolderOpen size={17} /> : <Folder size={17} />}
+                    </span>
+                    <span className="rv-subpasta-nome">{f.nome}</span>
+                    <span className="rv-subpasta-contagem">
+                      {(() => {
+                        const c = cenasPorPasta.get(f.id) ?? 0;
+                        const sub = pastasAtivas.filter((x) => x.parentId === f.id).length;
+                        const partes: string[] = [];
+                        if (c > 0) partes.push(c === 1 ? "1 cena" : `${c} cenas`);
+                        if (sub > 0) partes.push(sub === 1 ? "1 pasta" : `${sub} pastas`);
+                        return partes.length === 0 ? "vazia" : partes.join(" · ");
+                      })()}
+                    </span>
+                  </button>
+                </li>
               ))}
             </ul>
           )}
