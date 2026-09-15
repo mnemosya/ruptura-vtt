@@ -1630,8 +1630,12 @@
 .rv-pn-linha:hover { border-color: #1c2b45; }
 /* O NOME acompanha o hover, igual ao do cartão de pasta
    (`.rv-pn-grupo-btn:hover`): o cartão inteiro é clicável, e só a
-   borda mudando não dizia que aquilo abre alguma coisa. */
-.rv-pn-linha:hover .rv-pn-linha-nome { color: var(--pn-cy); }
+   borda mudando não dizia que aquilo abre alguma coisa.
+   E acompanha no ACENTO DA LINHA (`--fg-a`), não num ciano fixo: o PN
+   é vermelho na etiqueta, na barra de seleção e no avatar — o nome
+   virando ciano no hover era a única peça da linha trocando de
+   família bem na hora em que o olho está nela. */
+.rv-pn-linha:hover .rv-pn-linha-nome { color: var(--fg-a, var(--pn-cy)); }
 .rv-pn-linha:focus-visible { outline: 2px solid var(--rv-cy); outline-offset: 1px; }
 .rv-pn-linha[data-sel="true"] {
   border-color: color-mix(in srgb, var(--fg-a, #45b8c9) 47%, transparent);
