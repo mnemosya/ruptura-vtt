@@ -194,6 +194,11 @@ export function InventarioPanel({
       <div className="rc-inv-col-dir">
         {selecionado ? (
           <>
+            {/* O QUE ROLA é só a ficha. O rodapé (quantidade + ações)
+                fica fixo no pé da coluna: é a parte que se usa, e um
+                item de descrição longa não pode empurrá-la pra fora da
+                vista. */}
+            <div className="rc-inv-ficha">
             <div className="rc-inv-cabeca">
               <span className="rc-inv-cabeca-ladrilho" data-familia={selecionado.familia}>
                 {(() => { const I = ICONE[selecionado.familia]; return <I size={26} aria-hidden="true" />; })()}
@@ -254,6 +259,8 @@ export function InventarioPanel({
                 )}
               </p>
             )}
+
+            </div>
 
             <div className="rc-inv-rodape">
               <div className="rc-inv-stepper">

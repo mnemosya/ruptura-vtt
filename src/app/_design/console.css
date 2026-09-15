@@ -1908,9 +1908,11 @@
 
 /* ── Onde o item está ─────────────────────────────────────────────── */
 .rc-inv-abas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+/* 28px de ALTURA, medido no desenho — com o respiro de 12px que eu
+   tinha posto, elas ficavam com 42px e dominavam a coluna. */
 .rc-inv-aba {
-  padding: 12px 10px; border: 1px solid var(--rc-line); border-radius: 1px;
-  background: transparent; color: rgba(214, 228, 245, .65);
+  height: 28px; padding: 0 10px; border: 1px solid var(--rc-line); border-radius: 1px;
+  background: rgba(17, 29, 49, .45); color: rgba(214, 228, 245, .65);
   font-family: inherit; font-size: 13px; font-weight: 600; line-height: 16px; cursor: pointer;
   transition: color .14s, border-color .14s, background .14s;
 }
@@ -1919,7 +1921,7 @@
    tudo que está ligado (`#0e6b7f` do desenho vira o ciano de hoje). */
 .rc-inv-aba[aria-selected="true"] {
   border-color: rgba(0, 212, 255, .45);
-  background: rgba(0, 212, 255, .08);
+  background: rgba(0, 212, 255, .09);
   color: var(--rc-text);
 }
 
@@ -1929,6 +1931,7 @@
   flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 8px;
   padding: 0 10px; height: 28px;
   border: 1px solid var(--rc-line); border-radius: 1px;
+  background: rgba(17, 29, 49, .45);
   color: rgba(214, 228, 245, .45);
 }
 .rc-inv-busca:focus-within { border-color: rgba(0, 212, 255, .45); color: var(--cy); }
@@ -1941,7 +1944,7 @@
 .rc-inv-filtro {
   flex: none; width: 28px; height: 28px; display: grid; place-items: center;
   border: 1px solid var(--rc-line); border-radius: 1px;
-  background: transparent; color: rgba(214, 228, 245, .45); cursor: pointer;
+  background: rgba(12, 20, 32, .7); color: rgba(214, 228, 245, .45); cursor: pointer;
   transition: color .14s, border-color .14s;
 }
 .rc-inv-filtro:hover { color: var(--cy); border-color: rgba(0, 212, 255, .45); }
@@ -1957,7 +1960,11 @@
 /* Blocos com fio âmbar, 10px de altura — espaço se conta inteiro, e a
    barra lisa insinuaria fração. */
 .rc-inv-cap-barra { display: flex; gap: 2px; height: 10px; }
-.rc-inv-cap-bloco { flex: 1 1 0; box-shadow: inset 0 0 0 1px var(--rc-line); }
+.rc-inv-cap-bloco {
+  flex: 1 1 0;
+  background: color-mix(in srgb, var(--am) 8%, rgba(12, 20, 32, .6));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--am) 22%, transparent);
+}
 .rc-inv-cap-bloco[data-cheio] {
   background: color-mix(in srgb, var(--am) 55%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--am) 70%, transparent);
@@ -1975,7 +1982,7 @@
 .rc-inv-cartao {
   display: flex; flex-direction: column; gap: 10px; padding: 12px 10px;
   border: 1px solid var(--rc-line); border-radius: 1px;
-  background: transparent; cursor: pointer; text-align: center; font-family: inherit;
+  background: rgba(17, 29, 49, .35); cursor: pointer; text-align: center; font-family: inherit;
   transition: border-color .14s, background .14s;
 }
 .rc-inv-cartao:hover { border-color: var(--rc-line); }
@@ -1988,7 +1995,9 @@
 .rc-inv-cartao-ladrilho {
   position: relative; display: grid; place-items: center;
   height: 64px; border: 1px solid var(--rc-line); border-radius: 1px;
-  background: rgba(12, 20, 32, .5);
+  background: rgba(8, 14, 24, .8);
+  /* A etiqueta de quantidade SAI do ladrilho (ver `.rc-inv-cartao-qtd`). */
+  overflow: visible;
   color: rgba(214, 228, 245, .45);
 }
 /* A cor do ícone é da FAMÍLIA — é o que deixa a grade legível antes de
@@ -2007,11 +2016,26 @@
 .rc-inv-cabeca-ladrilho[data-familia="utilitario"] { color: var(--cy); }
 /* A quantidade fica DENTRO do ladrilho, no canto — ela é da pilha, não
    do item, e sai da linha do nome. */
+/* A ETIQUETA É UM RECORTE, não um selo por cima. Ela toma o canto
+   inferior direito do ladrilho vestindo o FUNDO DO CARTÃO — e os dois
+   fios (em cima e à esquerda) fazem o contorno do ladrilho contornar
+   ela, como se ele tivesse uma mordida. Um selo flutuando com fundo
+   próprio seria outra peça; isto é o mesmo ladrilho com um pedaço a
+   menos.
+   Os -1px comem a borda do ladrilho embaixo dela: sem isso sobraria um
+   fio duplo no canto. */
 .rc-inv-cartao-qtd {
-  position: absolute; right: 6px; bottom: 4px;
+  position: absolute; right: -1px; bottom: -1px;
+  padding: 2px 6px 0 7px;
+  background: rgba(17, 29, 49, .35);
+  border-top: 1px solid var(--rc-line);
+  border-left: 1px solid var(--rc-line);
   color: rgba(214, 228, 245, .65);
-  font-size: 12px; font-weight: 600; line-height: 14px;
+  font-size: 12px; font-weight: 600; line-height: 16px;
 }
+/* Selecionado, o cartão muda de fundo — a mordida acompanha, senão a
+   etiqueta vira um retângulo destacado no canto. */
+.rc-inv-cartao[data-sel] .rc-inv-cartao-qtd { background: rgba(10, 26, 40, .9); }
 .rc-inv-cartao-txt { display: flex; flex-direction: column; gap: 2px; }
 .rc-inv-cartao-nome {
   color: rgba(214, 228, 245, .65); font-size: 13px; font-weight: 600; line-height: 16px;
@@ -2019,7 +2043,8 @@
 }
 .rc-inv-cartao-cat { color: rgba(214, 228, 245, .45); font-size: 12px; font-weight: 500; line-height: 15px; }
 .rc-inv-cartao--novo {
-  align-items: center; justify-content: center;
+  align-items: center; justify-content: center; min-height: 64px;
+  background: rgba(8, 14, 24, .5);
   color: rgba(214, 228, 245, .45);
 }
 .rc-inv-cartao--novo:hover { color: var(--cy); }
@@ -2029,7 +2054,7 @@
 .rc-inv-cabeca-ladrilho {
   flex: none; display: grid; place-items: center;
   width: 56px; height: 56px; border: 1px solid var(--rc-line); border-radius: 1px;
-  background: rgba(12, 20, 32, .5);
+  background: rgba(16, 26, 38, .7);
   color: rgba(214, 228, 245, .45);
 }
 .rc-inv-cabeca-txt { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -2052,10 +2077,12 @@
 .rc-inv-numeros {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   border: 1px solid var(--rc-line); border-radius: 1px;
+  background: rgba(12, 20, 32, .6);
 }
 .rc-inv-pa {
   grid-row: span 2; display: flex; flex-direction: column; gap: 6px;
   padding: 10px; border-right: 1px solid var(--rc-line);
+  background: rgba(17, 29, 49, .45);
 }
 .rc-inv-num-rotulo {
   font-size: 12px; font-weight: 600; line-height: 14px;
@@ -2064,13 +2091,23 @@
 .rc-inv-pa .rc-inv-num-rotulo { font-size: 14px; line-height: 16px; }
 .rc-inv-pa-valor { display: flex; align-items: center; gap: 8px; color: var(--rc-text); font-size: 20px; font-weight: 700; line-height: 24px; }
 .rc-inv-pips { display: flex; gap: 4px; }
+/* O PIP tem CENTRO: é um losango de contorno ciano com o miolo na cor
+   da caixa, não um losango chapado — a mesma peça que o resto do
+   Console usa pra contar recurso. O gradiente cônico desenha os dois
+   em um elemento só, sem um filho por pip. */
 .rc-inv-pips i {
   width: 10px; height: 10px; background: var(--cy);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  position: relative;
+}
+.rc-inv-pips i::after {
+  content: ""; position: absolute; inset: 2.5px;
+  background: rgba(17, 29, 49, .95);
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
 }
 .rc-inv-num-cel {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  padding: 10px;
+  padding: 6px 10px;
 }
 .rc-inv-num-cel + .rc-inv-num-cel { border-top: 1px solid var(--rc-line); }
 .rc-inv-num-cel dd { margin: 0; color: rgba(214, 228, 245, .8); font-size: 12px; font-weight: 500; line-height: 14px; }
@@ -2078,19 +2115,27 @@
 /* ── Propriedades ─────────────────────────────────────────────────── */
 /* Rótulo numa coluna fixa com fio: sem ele, "Instantâneo" e "10
    metros" começariam em lugares diferentes e a tabela viraria lista. */
-.rc-inv-props { margin: 0; border: 1px solid var(--rc-line); border-radius: 1px; }
+.rc-inv-props {
+  margin: 0; border: 1px solid var(--rc-line); border-radius: 1px;
+  background: rgba(12, 20, 32, .6);
+}
 .rc-inv-props > div { display: grid; grid-template-columns: 110px minmax(0, 1fr); }
 .rc-inv-props > div + div { border-top: 1px solid var(--rc-line); }
+/* O rótulo tem FUNDO PRÓPRIO, um degrau acima do valor: é o que faz a
+   coluna da esquerda ler como cabeçalho da linha, e não como mais um
+   texto. */
 .rc-inv-props dt {
-  padding: 10px; border-right: 1px solid var(--rc-line);
+  padding: 6px 10px; border-right: 1px solid var(--rc-line);
+  background: rgba(17, 29, 49, .45);
   font-size: 12px; font-weight: 600; line-height: 14px;
   letter-spacing: .04em; text-transform: uppercase; color: rgba(214, 228, 245, .65);
 }
-.rc-inv-props dd { margin: 0; padding: 10px; color: rgba(214, 228, 245, .8); font-size: 12px; font-weight: 500; line-height: 14px; }
+.rc-inv-props dd { margin: 0; padding: 6px 10px; color: rgba(214, 228, 245, .8); font-size: 12px; font-weight: 500; line-height: 14px; }
 
 /* ── Efeito ───────────────────────────────────────────────────────── */
 .rc-inv-efeito {
   margin: 0; padding: 10px; border: 1px solid var(--rc-line); border-radius: 1px;
+  background: rgba(8, 20, 32, .7);
   color: rgba(214, 228, 245, .8); font-size: 12px; font-weight: 500; line-height: 18px;
 }
 /* O chip não tem caixa: é a PALAVRA colorida com uma lavagem atrás —
@@ -2105,10 +2150,24 @@
 }
 
 /* ── O que fazer com ele ──────────────────────────────────────────── */
-.rc-inv-rodape { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+/* A FICHA ROLA, O RODAPÉ NÃO. Quantidade e ações são o que se usa; um
+   item de descrição longa não pode empurrá-las pra fora da vista. A
+   divisória e o fundo são o que diz que ele está POR CIMA do que rola
+   atrás — sem eles, o texto passaria por baixo e pareceria cortado. */
+.rc-inv-ficha {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.rc-inv-rodape {
+  flex: none; display: flex; flex-direction: column; gap: 8px;
+  margin: 0 -10px -10px; padding: 10px;
+  border-top: 1px solid var(--rc-line);
+  background: rgba(17, 29, 49, .45);
+}
 .rc-inv-stepper {
   display: grid; grid-template-columns: 40px minmax(0, 1fr) 40px; align-items: center;
-  border: 1px solid rgba(0, 212, 255, .22); border-radius: 1px;
+  border: 1px solid rgba(0, 212, 255, .25); border-radius: 1px;
+  background: rgba(0, 212, 255, .06);
 }
 .rc-inv-stepper button {
   height: 34px; display: grid; place-items: center;
@@ -2125,7 +2184,7 @@
 .rc-inv-acoes { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 8px; }
 .rc-inv-btn {
   padding: 13px 17px; border: 1px solid var(--rc-line); border-radius: 1px;
-  background: transparent; color: rgba(214, 228, 245, .65);
+  background: rgba(12, 20, 32, .6); color: rgba(214, 228, 245, .65);
   font-family: var(--font-mono), ui-monospace, monospace; font-size: 12px; font-weight: 700;
   letter-spacing: .1em; text-transform: uppercase; cursor: pointer; line-height: 14px;
   transition: color .14s, border-color .14s, background .14s;
