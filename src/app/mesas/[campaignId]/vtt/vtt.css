@@ -967,7 +967,11 @@
 .rv-dot[data-on="true"] { background: var(--ok); box-shadow: 0 0 7px color-mix(in srgb, var(--ok) 30%, transparent); }
 
 /* ── Fundação funcional das ferramentas (estado persistido) ────── */
-.rv-mesa--carregando { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 100vh; background: #0a0e14; color: var(--txt-dim); font-size: 13px; }
+/* A tela de espera da mesa: só o palco escuro e, no meio, o painel de
+   carga compartilhado (`BootPanel`) — o `.mo-boot-stage` de dentro é
+   quem centraliza. */
+.rv-mesa--carregando { display: flex; align-items: center; justify-content: center; width: 100%; height: 100vh; background: #0a0e14; color: var(--txt-dim); font-size: 13px; }
+.rv-mesa-erro { max-width: 40ch; text-align: center; line-height: 1.5; }
 .rv-spin { animation: rv-spin 1s linear infinite; color: var(--cy); }
 @keyframes rv-spin { to { transform: rotate(360deg); } }
 
@@ -5007,7 +5011,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-menu-mesa-sep { height: 1px; margin: 2px 6px; background: var(--linha-2); }
 .rv-menu-mesa-item {
   width: 100%; display: flex; align-items: center; gap: 10px;
-  padding: 7px 8px; border: none; border-radius: var(--rv-r);
+  padding: 7px 8px; border-radius: var(--rv-r);
   background: none; text-align: left;
   color: var(--txt-dim); text-decoration: none; cursor: pointer;
   font-family: var(--rv-body); font-size: 13px;
@@ -5027,7 +5031,17 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   opacity: .8;
 }
 .rv-menu-mesa-item svg { flex: none; color: var(--txt-dim); transition: color .14s; }
-.rv-menu-mesa-item:hover { background: color-mix(in srgb, var(--cy) 10%, transparent); color: var(--txt-forte); }
+/* HOVER NO VOCABULÁRIO DA MESA: borda, lavagem e TEXTO no ciano — o
+   mesmo par que ferramenta, aba e menu de cartão usam. O item ganhava
+   só a lavagem, com o texto indo pro branco: lia como "selecionado",
+   não como "é aqui que o cursor está". A borda transparente em repouso
+   é o que deixa a troca não mexer no layout. */
+.rv-menu-mesa-item { border: 1px solid transparent; }
+.rv-menu-mesa-item:hover {
+  border-color: color-mix(in srgb, var(--cy) 45%, transparent);
+  background: color-mix(in srgb, var(--cy) 10%, transparent);
+  color: var(--cy);
+}
 .rv-menu-mesa-item:hover svg { color: var(--cy); }
 .rv-menu-mesa-item:focus-visible { outline: 2px solid var(--cy); outline-offset: -2px; }
 /* A Mesa é onde já se está — marcada, e sem o convite de hover. */

@@ -135,6 +135,7 @@ import { GerenciadorCenas } from "./_cenas/GerenciadorCenas";
 import { esquecerCenaVista, gravarCenaVista, lerCenaVista } from "./_cenas/modelo";
 import { CartaoTokenHover } from "./_shell/CartaoTokenHover";
 import { useConsoleDaMesa } from "../_shell/ConsoleDaMesa";
+import { BootPanel } from "../../../_boundaries/BootPanel";
 import { AvisoSincronizacao } from "./_shell/AvisoSincronizacao";
 import { MenuDaMesa, posicaoAoLadoDe, type PosicaoMenuMesa } from "./_shell/MenuDaMesa";
 import { ProvedorJanelasDaMesa } from "./_shell/JanelasDaMesa";
@@ -5572,10 +5573,25 @@ export function VttClient({
   }, [marcarZoomPan]);
 
   if (carregandoCena) {
-    return <div className="rv-mesa rv-mesa--carregando"><Loader2 className="rv-spin" size={28} /><span>Carregando cena…</span></div>;
+    /* O MESMO PAINEL DE CARGA DO RESTO DO PRODUTO (`BootPanel`), e não
+       um spinner só desta tela. A mesa mostrava um círculo girando com
+       legenda enquanto a campanha inteira — inclusive o "Abrindo
+       console", que abre POR CIMA desta mesma tela — usa o painel
+       angular com barra que cresce. Duas linguagens de espera na mesma
+       sessão, uma delas exclusiva de uma tela.
+       `mo-scope` no palco porque as escalas `--mo-*` são declaradas por
+       escopo, nunca em `:root`. */
+    return (
+      <div className="rv-mesa rv-mesa--carregando">
+        <div className="mo-boot-stage mo-scope">
+          <BootPanel label="Carregando cena" />
+        </div>
+      </div>
+    );
   }
   if (erroCena) {
-    return <div className="rv-mesa rv-mesa--carregando"><span>{erroCena}</span></div>;
+    // O erro NÃO usa o painel de carga: ele não é espera, é desfecho.
+    return <div className="rv-mesa rv-mesa--carregando"><span className="rv-mesa-erro">{erroCena}</span></div>;
   }
 
   /* AS FERRAMENTAS DE JANELA DESCEM. "Imagens" e "Rodadas" abrem um
