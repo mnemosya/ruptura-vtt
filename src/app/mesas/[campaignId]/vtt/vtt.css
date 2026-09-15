@@ -5014,7 +5014,13 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   padding: 7px 8px; border-radius: var(--rv-r);
   background: none; text-align: left;
   color: var(--txt-dim); text-decoration: none; cursor: pointer;
-  font-family: var(--rv-body); font-size: 13px;
+  /* MESMO tratamento do item do menu contextual (`.rv-menu-item`):
+     são os dois menus da mesa, e a diferença de voz entre eles — um
+     em corpo de texto 13px, o outro em display caixa-alta — fazia
+     parecerem de produtos diferentes. Um passo acima dos 10px de lá,
+     porque este menu é o da moldura e sustenta rótulos mais longos. */
+  font-family: var(--rv-display), sans-serif;
+  font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
   transition: background .14s, color .14s;
 }
 /* O QUE AINDA NÃO TEM JANELA aparece, apagado, com o selo. Esconder
