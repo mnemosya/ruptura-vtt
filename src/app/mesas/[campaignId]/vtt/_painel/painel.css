@@ -1263,10 +1263,10 @@
    leria como "isto termina aqui".
 
    Vale igual na raiz e dentro da pasta — é a mesma fila nos dois. */
-.rv-pn-scroll--pers .rv-pn-linha[data-insercao="true"] {
+.rv-pn-scroll--pers .rv-pn-linha[data-insercao] {
   border-top-color: transparent;
 }
-.rv-pn-scroll--pers .rv-pn-linha[data-insercao="true"]::after {
+.rv-pn-scroll--pers .rv-pn-linha[data-insercao]::after {
   content: ""; position: absolute; left: 0; right: 0; top: 0; height: 0;
   /* Fina e translúcida: ela acompanha o cursor e some no instante
      seguinte, então precisa ser lida de relance sem competir com o
@@ -1275,6 +1275,13 @@
   border-top: 1.5px dashed color-mix(in srgb, var(--pn-cy) 65%, transparent);
   filter: drop-shadow(0 0 3px color-mix(in srgb, var(--pn-cy) 45%, transparent));
 }
+/* DESCENDO, o fio vai pro pé do cartão: a peça entra DEPOIS dele (ver
+   `moverNaFila`). Desenhar sempre no topo faria o indicador apontar um
+   lugar e a solta entregar outro. */
+.rv-pn-scroll--pers .rv-pn-linha[data-insercao="depois"]::after {
+  top: auto; bottom: 0;
+}
+
 
 /* O realce de alvo é do BLOCO agora: era do cabeçalho, que não tem mais
    borda pra acender. */

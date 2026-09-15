@@ -601,16 +601,46 @@ export function PersonagensTab({
    * reaninhar num arrasto que também reordena faria o mesmo gesto
    * significar duas coisas.
    */
+  /**
+   * De que lado do alvo a peça vai cair — só para DESENHAR o fio.
+   * A decisão de verdade é do `moverNaFila`, no momento do drop; isto
+   * aqui é a mesma conta feita antes, pra que o indicador não prometa
+   * um lugar e a solta entregue outro.
+   */
+  function direcaoDaInsercao(no: NoDiretorio, idArrastado: string | null | undefined, idAlvo: string): "antes" | "depois" {
+    if (!idArrastado) return "antes";
+    const fila = filhosDoNo(no);
+    const partida = fila.findIndex((i) => idDoItem(i) === idArrastado);
+    const destino = fila.findIndex((i) => idDoItem(i) === idAlvo);
+    return partida >= 0 && destino >= 0 && partida < destino ? "depois" : "antes";
+  }
+
   function moverNaFila(no: NoDiretorio, idArrastado: string, idAlvo: string) {
     if (idArrastado === idAlvo) return;
     const fila = filhosDoNo(no);
     const destino = fila.findIndex((i) => idDoItem(i) === idAlvo);
     if (destino < 0) return;
 
-    const origem = fila.find((i) => idDoItem(i) === idArrastado);
+    const partida = fila.findIndex((i) => idDoItem(i) === idArrastado);
+    const origem = partida >= 0 ? fila[partida] : undefined;
     if (origem) {
+      /**
+       * DESCENDO, ENTRA DEPOIS DO ALVO.
+       *
+       * A regra era sempre "insere ANTES do alvo", e com ela DESCER UM
+       * LUGAR era impossível: tirar o item e recolocá-lo antes do
+       * vizinho de baixo devolve exatamente a mesma fila. Com dois
+       * cartões o efeito era gritante — subir funcionava, descer não
+       * fazia nada, e parecia que o de cima "não se deixava arrastar".
+       *
+       * Quem vem de CIMA, então, entra depois; quem vem de baixo
+       * continua entrando antes. Nos dois casos a peça acaba do lado do
+       * alvo por onde ela chegou, que é o que o gesto promete.
+       */
       const sem = fila.filter((i) => idDoItem(i) !== idArrastado);
-      sem.splice(sem.findIndex((i) => idDoItem(i) === idAlvo), 0, origem);
+      const alvo = sem.findIndex((i) => idDoItem(i) === idAlvo);
+      const descendo = partida < destino;
+      sem.splice(descendo ? alvo + 1 : alvo, 0, origem);
       void gravarFila(no, sem);
       return;
     }
@@ -783,7 +813,12 @@ export function PersonagensTab({
                     // A marca da linha vai por `atributos` em vez de
                     // virar prop nova: é decoração desta aba, e
                     // `LinhaDiretorio` serve outras três.
-                    "data-insercao": linhaAlvo === entrada.characterId ? "true" : undefined,
+                    /* O fio marca o LADO por onde a peça entra — e
+                       "antes" ou "depois" segue a mesma regra do
+                       `moverNaFila`: quem desce entra depois do alvo. */
+                    "data-insercao": linhaAlvo === entrada.characterId
+                      ? (direcaoDaInsercao(no, cartaoArrastado?.characterId ?? pastaArrastada, entrada.characterId) === "depois" ? "depois" : "true")
+                      : undefined,
                   }}
                 />
     );
