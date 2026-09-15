@@ -514,3 +514,33 @@
   border: 1px solid var(--rc-line-soft, #16233a);
   background: rgba(12, 20, 32, .96);
 }
+
+/* A cópia fiel do Figma tem geometria ABSOLUTA e nasce do tamanho do
+   quadro original (1010×1000 no arquivo). O palco só dá a ela essa
+   caixa e deixa rolar — esticar ou encolher desmontaria a única coisa
+   que ela existe pra provar: as medidas. */
+/* 818×726 é o tamanho do nó `159:40520` no arquivo, e o palco tem que
+   ser exatamente isso: o Dialog é `size-full` (preenche o pai), então
+   quem manda na medida é a caixa de fora. Com o palco maior, a cópia
+   esticava e a única coisa que ela existe pra provar — as medidas —
+   deixava de valer. */
+.gal-figma-palco { width: 818px; height: 726px; max-width: 100%; overflow: auto; }
+
+/* O CÓDIGO DO FIGMA PRESSUPÕE O PREFLIGHT DO TAILWIND, e o projeto não
+   tem Tailwind. Sem esta base a cópia sai torta de um jeito que parece
+   erro de conversão e não é: `<p>` vem com margem do navegador (o texto
+   empurra vizinho e some atrás de caixa), `box-sizing` volta a
+   `content-box` (todo `width` com padding estoura), e `border-width`
+   sem `border-style` não desenha nada.
+
+   Só o necessário, e ESCOPADO no palco — um reset global quebraria o
+   resto da galeria. */
+.gal-figma-palco *,
+.gal-figma-palco *::before,
+.gal-figma-palco *::after {
+  box-sizing: border-box;
+  margin: 0; padding: 0;
+  border: 0 solid;
+  font: inherit; line-height: normal;
+}
+.gal-figma-palco img, .gal-figma-palco svg { display: block; max-width: none; }

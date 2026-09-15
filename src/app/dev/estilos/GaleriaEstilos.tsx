@@ -31,6 +31,7 @@ import { TrilhaFaccoes } from "../../mesas/[campaignId]/vtt/_turnos/TrilhaFaccoe
    diferentes, e a que ninguém abre é a que passa a mentir. */
 import { VitrineCartaoToken } from "./GaleriaCartaoToken";
 import { VitrineInventario } from "./GaleriaInventario";
+import { DialogFigma } from "./GaleriaInventarioFigma";
 import { VitrineCamadas, VitrineDados, VitrineMarcar, VitrineMedir, VitrineMoldura as VitrineMolduraJanela } from "./GaleriaJanelas";
 import { VitrineGaveta, VitrineLadrilho, VitrineParametros } from "./GaleriaCenas";
 import {
@@ -288,6 +289,14 @@ function TrilhaDeFaccoes() {
 }
 
 function montarPecas(campaignId: string | null): Peca[] { return [
+  { chave: "inventario-figma", grupo: "Console do personagem", rotulo: "Inventário (Figma)", render: () => (
+    <Secao
+      titulo="Aba Inventário — cópia fiel do Figma"
+      sub={<>Transcrição do nó <code>159:40520</code> sem nenhuma conversão: cores do arquivo (a paleta ANTIGA do Console), medidas absolutas e os ícones exportados do próprio desenho. É RÉGUA de comparação, não peça de produto — ver <code>GaleriaInventarioFigma.tsx</code>.</>}
+    >
+      <div className="gal-figma-palco"><DialogFigma /></div>
+    </Secao>
+  ) },
   { chave: "inventario", grupo: "Console do personagem", rotulo: "Inventário", render: () => (
     <Secao
       titulo="Aba Inventário"
