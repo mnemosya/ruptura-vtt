@@ -315,7 +315,7 @@ function FeaturedCampaign({ data }: { data: CampaignCardData }) {
 
         <div style={{ maxWidth: 280, marginTop: "auto" }}>
           <Link
-            href={`/mesas/${campaign.id}/vtt`}
+            href={`/mesas/${campaign.id}`}
             data-testid={`dash-abrir-${campaign.id}`}
             className="ra2-primary ra2-btn-block"
             aria-label={`${role === "narrator" ? "Entrar na" : "Abrir"} campanha ${campaign.name}`}
@@ -351,7 +351,7 @@ function CampaignCard({ data }: { data: CampaignCardData }) {
             </span>
           </div>
           <Link
-            href={`/mesas/${campaign.id}/vtt`}
+            href={`/mesas/${campaign.id}`}
             data-testid={`dash-abrir-${campaign.id}`}
             className="ra2-primary ra2-btn-block"
             aria-label={`${role === "narrator" ? "Entrar na" : "Abrir"} campanha ${campaign.name}`}

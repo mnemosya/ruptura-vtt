@@ -121,7 +121,7 @@ export function FichaHeader({
   const conteudo = (
     <header className="rc-fichaheader">
       <div className="rc-fichaheader-crumbs">
-        <Link href={`/mesas/${campaignId}/vtt`} data-testid="ficha-voltar-personagens" className="rc-fichaheader-voltar rv-focusable">
+        <Link href={`/mesas/${campaignId}`} data-testid="ficha-voltar-personagens" className="rc-fichaheader-voltar rv-focusable">
           ← Personagens
         </Link>
         <span className="rc-fichaheader-sep">/</span>

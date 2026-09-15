@@ -9,12 +9,12 @@
  * precisa por token e sob demanda), e elas saíram com ele.
  */
 
-import { resolveCampaignAccess } from "../../../../lib/campaign/access";
-import { VttClient } from "./VttClient";
+import { resolveCampaignAccess } from "../../../lib/campaign/access";
+import { VttClient } from "./vtt/VttClient";
 // No SEGMENTO, não só no cliente: assim a folha da mesa também vale
 // para o `error.tsx` ao lado, que precisa dela justamente quando o
 // `VttClient` não chegou a montar.
-import "./vtt.css";
+import "./vtt/vtt.css";
 
 export const dynamic = "force-dynamic";
 
