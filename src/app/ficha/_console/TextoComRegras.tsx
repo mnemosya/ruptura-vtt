@@ -21,14 +21,10 @@
  * pra mostrar seria pior que não grifar).
  */
 
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
+import { TermoComDica } from "./TermoComDica";
 import { separarTermos } from "./termosDeRegra";
 import type { TermoDeRegra } from "./types";
-
-interface Posicao {
-  x: number;
-  y: number;
-}
 
 export function TextoComRegras({
   texto,
@@ -39,71 +35,19 @@ export function TextoComRegras({
   glossario: TermoDeRegra[];
   className?: string;
 }) {
-  const [ativo, setAtivo] = useState<{ termo: TermoDeRegra; em: Posicao } | null>(null);
-  const timerRef = useRef<number | null>(null);
-
-  const pedacos = useMemo<ReactNode[]>(() => {
-    return separarTermos(texto, glossario).map((p, i) => {
-      if (!p.termo) return p.texto;
-      const termo = p.termo;
-      return (
-        <span
-          key={`${i}-${termo.slug}`}
-          className="rc-termo"
-          data-tipo={termo.tipo}
-          tabIndex={0}
-          role="button"
-          onMouseEnter={(e) => {
-            const r = e.currentTarget.getBoundingClientRect();
-            if (timerRef.current) window.clearTimeout(timerRef.current);
-            setAtivo({ termo, em: { x: r.left + r.width / 2, y: r.top } });
-          }}
-          onMouseLeave={() => {
-            /* Um respiro antes de sumir: sem isso, atravessar o termo
-               com o mouse pisca o tooltip a cada passagem. */
-            timerRef.current = window.setTimeout(() => setAtivo(null), 80);
-          }}
-          onFocus={(e) => {
-            const r = e.currentTarget.getBoundingClientRect();
-            setAtivo({ termo, em: { x: r.left + r.width / 2, y: r.top } });
-          }}
-          onBlur={() => setAtivo(null)}
-        >
-          {p.texto}
-        </span>
-      );
-    });
-  }, [texto, glossario]);
-
-  return (
-    <>
-      <p className={className}>{pedacos}</p>
-      {ativo && (
-        <span
-          id="rc-termo-dica"
-          role="tooltip"
-          className="rc-termo-dica"
-          data-tipo={ativo.termo.tipo}
-          /* `fixed` + coordenadas de viewport: o tabpanel rola por
-             dentro (`overflow: auto`), então um tooltip absoluto dentro
-             dele seria recortado na primeira linha. */
-          style={{ left: `${ativo.em.x}px`, top: `${ativo.em.y}px` }}
-        >
-          <span className="rc-termo-dica-cab">
-            {ativo.termo.nome}
-            <em>{ativo.termo.tipo === "acao" ? "ação" : "condição"}</em>
-          </span>
-          {ativo.termo.descricao ? (
-            <span className="rc-termo-dica-txt">{ativo.termo.descricao}</span>
-          ) : (
-            /* O termo existe publicado mas sem descrição curta. Dizer
-               isso é melhor que um tooltip vazio ou que inventar texto. */
-            <span className="rc-termo-dica-txt rc-termo-dica-txt--vazio">
-              Sem descrição publicada para este termo.
-            </span>
-          )}
-        </span>
-      )}
-    </>
+  const pedacos = useMemo<ReactNode[]>(
+    () =>
+      separarTermos(texto, glossario).map((p, i) =>
+        p.termo ? (
+          <TermoComDica key={`${i}-${p.termo.slug}`} termo={p.termo}>
+            {p.texto}
+          </TermoComDica>
+        ) : (
+          p.texto
+        ),
+      ),
+    [texto, glossario],
   );
+
+  return <p className={className}>{pedacos}</p>;
 }

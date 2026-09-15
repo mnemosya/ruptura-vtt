@@ -203,6 +203,7 @@ import {
   markToqueDeMidasUsed,
   removeItemFromInventory,
   adjustItemQuantity,
+  deriveItemProperties,
   removeQuantityFromInventory,
   useItemOnCharacter,
   useItemOnAlly,
@@ -5668,6 +5669,24 @@ export default function CharacterSheetClient({
     descartarItem: handleRemoveItem,
     carga: cargaAtual,
     glossario: glossarioDeRegras,
+    /* As propriedades saem inteiras de `deriveItemProperties` — modelo,
+       runas instaladas e técnicas juntas, já resolvidas. Aqui só vira
+       termo com dica; o Console não interpreta propriedade. */
+    propriedadesDoItem: (instanceId: string) => {
+      const instancia = character.inventario?.find((i) => i.id === instanceId);
+      if (!instancia) return [];
+      return deriveItemProperties({
+        instance: instancia,
+        item: itemsIniciais.find((m) => m.slug === instancia.itemSlug),
+        properties: propertiesIniciais,
+        runes: runesIniciais,
+      }).map((p) => ({
+        tipo: "propriedade" as const,
+        slug: p.slug,
+        nome: p.label,
+        descricao: p.description ?? null,
+      }));
+    },
 
     adicionarCondicao: (input) => void handleAddCondition(input),
     removerCondicao: (id) => void handleRemoveCondition(id),

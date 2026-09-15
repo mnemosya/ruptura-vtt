@@ -43,6 +43,9 @@ import {
 import { espacosDoItem } from "../../../../lib/character/carga";
 import type { InventoryItemInstance, ItemContent, ItemLoadoutState } from "../../../../lib/character";
 import { TextoComRegras } from "../TextoComRegras";
+import { TermoComDica } from "../TermoComDica";
+import { DecoTop } from "../deco";
+import { BODY_SLOT_LABELS, itemCabeNoSlot, type BodySlotId } from "../slots";
 import type { ConsoleApi } from "../types";
 
 /**
@@ -102,13 +105,50 @@ const ROTULO_DO_ESTADO: Record<ItemLoadoutState, string> = {
   abrigo: "Abrigo",
 };
 
-/** Para onde o botão "Mover" manda, a partir de onde o item está. */
-const PROXIMO_ESTADO: Record<ItemLoadoutState, ItemLoadoutState> = {
-  mochila: "acesso_rapido",
-  acesso_rapido: "equipado",
-  equipado: "abrigo",
-  empunhado: "mochila",
-  abrigo: "mochila",
+/**
+ * Para onde "Mover" pode mandar um item.
+ *
+ * `slot` presente = vai pelo paper doll (`api.equiparNoSlot`), que já
+ * trata armadura/escudo pelo fluxo defensivo; a compatibilidade sai de
+ * `itemCabeNoSlot`, a MESMA regra que a aba de Equipamentos usa (uma
+ * vertina não cabe em arma primária porque a categoria dela não é
+ * "arma"). `estado` presente = mudança direta de loadout.
+ *
+ * Os slots de ARMADURA (cabeça, tronco, braços, pernas) e o de escudo
+ * não estão aqui de propósito: quem veste armadura é o paper doll, que
+ * mostra o corpo e a sobreposição. Repetir isso numa lista sem corpo
+ * seria uma segunda porta pior para a mesma coisa.
+ *
+ * "Mochila" não estava na lista pedida, mas entrou: sem ela um item
+ * mandado ao abrigo não teria como voltar.
+ */
+const DESTINOS: {
+  id: string;
+  label: string;
+  slot?: BodySlotId;
+  estado?: ItemLoadoutState;
+  /** Sem caminho no servidor ainda — aparece, mas não clica. */
+  indisponivel?: string;
+}[] = [
+  { id: "arma_primaria", label: "Arma primária", slot: "arma_primaria" },
+  { id: "arma_secundaria", label: "Arma secundária", slot: "arma_secundaria" },
+  { id: "acesso_rapido_1", label: "Acesso rápido 1", slot: "acesso_rapido_1" },
+  { id: "acesso_rapido_2", label: "Acesso rápido 2", slot: "acesso_rapido_2" },
+  { id: "mochila", label: "Mochila", estado: "mochila" },
+  { id: "abrigo", label: "Abrigo", estado: "abrigo" },
+  /* O BANDO ainda não recebe item do personagem. O servidor tem só o
+     caminho inverso (`transferirItemBandoAction`, bando → personagem, e
+     só para o narrador); mandar item PARA o bando não existe em ação
+     nenhuma. Fica visível e travado com o motivo — esconder daria a
+     entender que o destino não existe no jogo, quando o que falta é a
+     ação. */
+  { id: "bando", label: "Bando", indisponivel: "O bando ainda não recebe item do personagem." },
+];
+
+const OCULTAVEL_ROTULO: Record<string, string> = {
+  sim: "Sim",
+  parcial: "Parcialmente",
+  nao: "Não",
 };
 
 function IconeDaCategoria({ categoria }: { categoria: string }) {
@@ -154,6 +194,7 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
     <section aria-label="Inventário" className="rc-eq-outer">
       <span className="rc-eq-caption">Inventário</span>
       <div className="rc-eq-card-outer rc-inv-moldura">
+        <DecoTop />
     <div className="rc-inv" data-testid="console-inventario">
       {/* As abas ATRAVESSAM as duas colunas, como no desenho: elas
           dizem o recorte da tela inteira, não só da lista. */}
@@ -249,9 +290,10 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
                   >
                     <span className="rc-inv-ladrilho">
                       <IconeDaCategoria categoria={categoria} />
-                      {instancia.quantidade > 1 && (
-                        <span className="rc-inv-qtd">x{instancia.quantidade}</span>
-                      )}
+                      {/* A quantidade aparece SEMPRE, inclusive no 1: a
+                          caixinha é parte do desenho do cartão, e fazê-la
+                          sumir deixa um canto vazio que se lê como falha. */}
+                      <span className="rc-inv-qtd">x{instancia.quantidade}</span>
                     </span>
                     {/* Nome e categoria num bloco só: no desenho eles são
                         um par colado, e o `gap: 10px` do cartão vale entre
@@ -306,14 +348,27 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
  * "1d6 físico cortante" seria dizer duas vezes a mesma coisa, sendo a
  * primeira a menos informativa.
  */
-function descricaoDoDano(modelo: ItemContent | undefined): string | null {
+function descricaoDoDano(modelo: ItemContent | undefined): { dado: string; tipo: string | null } | null {
   if (!modelo?.danoBase) return null;
-  if (modelo.subtipoDano) return `${modelo.danoBase} ${modelo.subtipoDano}`;
+  const dado = modelo.danoBase;
+  if (modelo.subtipoDano) return { dado, tipo: modelo.subtipoDano };
   if (modelo.subtiposDanoPossiveis.length > 0) {
-    return `${modelo.danoBase} ${modelo.subtiposDanoPossiveis.join(" ou ")}`;
+    return { dado, tipo: modelo.subtiposDanoPossiveis.join(" ou ") };
   }
-  if (modelo.tipoDano) return `${modelo.danoBase} ${modelo.tipoDano}`;
-  return modelo.danoBase;
+  return { dado, tipo: modelo.tipoDano };
+}
+
+/** O alcance como se lê: "Adjacente", "Adjacente (até 2 m)", "10 m (máx 20 m)". */
+function descricaoDoAlcance(modelo: ItemContent | undefined): string | null {
+  const a = modelo?.alcance;
+  if (!a) return null;
+  if (a.tipo === "adjacente") {
+    return a.estendidoM != null ? `Adjacente (até ${a.estendidoM} m)` : "Adjacente";
+  }
+  if (a.tipo === "distancia" && a.eficazM != null) {
+    return a.maxM != null ? `${a.eficazM} m (máx ${a.maxM} m)` : `${a.eficazM} m`;
+  }
+  return a.tipo;
 }
 
 function DetalheDoItem({
@@ -326,12 +381,12 @@ function DetalheDoItem({
   modelo: ItemContent | undefined;
 }) {
   const categoria = modelo?.categoria ?? instancia.categoria;
-  const destino = PROXIMO_ESTADO[instancia.estado];
   /* Descartar é irreversível e fica a um clique do contador — pedir
      confirmação é o mínimo. O estado é local ao item selecionado
      (`key` no pai reinicia ao trocar de item), então trocar de item
      com a confirmação aberta não deixa ela pendurada no próximo. */
   const [confirmandoDescarte, setConfirmandoDescarte] = useState(false);
+  const [movendo, setMovendo] = useState(false);
 
   /* "Usar" só existe pra item que o conteúdo declara como usável —
      custo de PA estruturado ou cargas. Botão que não faz nada é pior
@@ -344,10 +399,17 @@ function DetalheDoItem({
   const dano = descricaoDoDano(modelo);
   const principal =
     dano != null
-      ? { rot: "Dano", val: dano }
+      ? { rot: "Dano", val: dano.dado, sufixo: dano.tipo }
       : modelo?.custoPaUso != null
-        ? { rot: "PA", val: String(modelo.custoPaUso) }
+        ? { rot: "PA", val: String(modelo.custoPaUso), sufixo: null }
         : null;
+
+  /* Propriedades, alcance e ocultável são a segunda tabela: o que a
+     arma FAZ, separado do que ela custa. As propriedades vêm com dica,
+     como ação e condição — só que soltas, não dentro de uma frase. */
+  const propriedades = api.propriedadesDoItem(instancia.id);
+  const alcance = descricaoDoAlcance(modelo);
+  const temSegundaTabela = propriedades.length > 0 || alcance != null || modelo?.ocultavel != null;
 
   const lado: { rot: string; val: string }[] = [
     { rot: "Espaços/item", val: String(espacosDoItem(modelo)) },
@@ -399,7 +461,12 @@ function DetalheDoItem({
           <div className="rc-inv-destaque">
             <div className="rc-inv-destaque-principal">
               <span className="rc-inv-rot">{principal.rot}</span>
-              <span className="rc-inv-val">{principal.val}</span>
+              <span className="rc-inv-val">
+                {principal.val}
+                {/* O tipo de dano é qualificador do dado, não outro dado:
+                    entra menor e mais apagado pra não competir com ele. */}
+                {principal.sufixo && <em className="rc-inv-val-sufixo">{principal.sufixo}</em>}
+              </span>
             </div>
             <div className="rc-inv-destaque-lado">
               {lado.map((l) => (
@@ -428,6 +495,35 @@ function DetalheDoItem({
             </div>
           ))}
         </dl>
+        )}
+
+        {temSegundaTabela && (
+          <dl className="rc-inv-linhas">
+            {propriedades.length > 0 && (
+              <div className="rc-inv-linha">
+                <dt>Propriedades</dt>
+                <dd className="rc-inv-linha-termos">
+                  {propriedades.map((p) => (
+                    <TermoComDica key={p.slug} termo={p} className="rc-termo rc-termo--prop">
+                      {p.nome}
+                    </TermoComDica>
+                  ))}
+                </dd>
+              </div>
+            )}
+            {alcance && (
+              <div className="rc-inv-linha">
+                <dt>Alcance</dt>
+                <dd>{alcance}</dd>
+              </div>
+            )}
+            {modelo?.ocultavel != null && (
+              <div className="rc-inv-linha">
+                <dt>Ocultável?</dt>
+                <dd>{OCULTAVEL_ROTULO[modelo.ocultavel] ?? modelo.ocultavel}</dd>
+              </div>
+            )}
+          </dl>
         )}
       </div>
 
@@ -469,6 +565,45 @@ function DetalheDoItem({
           </button>
         </div>
 
+        {movendo && (
+          <div className="rc-inv-mover" role="dialog" aria-label="Mover item para">
+            <p className="rc-inv-mover-cab">Mover para</p>
+            <div className="rc-inv-mover-lista">
+              {DESTINOS.map((d) => {
+                const cabe = d.slot ? itemCabeNoSlot(modelo, d.slot) : true;
+                const jaEsta = d.estado != null && instancia.estado === d.estado;
+                const motivo = d.indisponivel
+                  ? d.indisponivel
+                  : !cabe
+                    ? `${modelo?.categoria_label ?? categoria} não vai para ${d.label.toLocaleLowerCase("pt-BR")}.`
+                    : jaEsta
+                      ? "O item já está aqui."
+                      : null;
+                return (
+                  <button
+                    key={d.id}
+                    type="button"
+                    className="rc-inv-mover-op"
+                    disabled={motivo != null}
+                    title={motivo ?? undefined}
+                    onClick={() => {
+                      setMovendo(false);
+                      if (d.slot) api.equiparNoSlot(instancia.id, d.slot);
+                      else if (d.estado) api.moverItemPara(instancia.id, d.estado);
+                    }}
+                  >
+                    {d.label}
+                    {motivo && <span className="rc-inv-mover-motivo">{motivo}</span>}
+                  </button>
+                );
+              })}
+            </div>
+            <button type="button" className="rc-inv-btn" onClick={() => setMovendo(false)}>
+              Cancelar
+            </button>
+          </div>
+        )}
+
         {confirmandoDescarte && (
           <div className="rc-inv-confirma" role="alertdialog" aria-label="Confirmar descarte">
             <p>
@@ -506,8 +641,9 @@ function DetalheDoItem({
           <button
             type="button"
             className="rc-inv-btn"
-            title={`Mover para ${ROTULO_DO_ESTADO[destino]}`}
-            onClick={() => api.moverItemPara(instancia.id, destino)}
+            aria-haspopup="dialog"
+            aria-expanded={movendo}
+            onClick={() => setMovendo((v) => !v)}
           >
             Mover
           </button>

@@ -141,6 +141,12 @@ export interface ConsoleApi {
   /** Espaços ocupados e capacidade — a regra vive em `lib/character/carga.ts`. */
   carga: ResumoDeCarga;
   /**
+   * Propriedades resolvidas de UMA instância (do modelo, das runas
+   * instaladas e das técnicas) já no formato de termo com dica. Sai de
+   * `deriveItemProperties`; o Console não interpreta propriedade.
+   */
+  propriedadesDoItem: (instanceId: string) => TermoDeRegra[];
+  /**
    * Termos de regra citáveis dentro de um texto — ações de combate e
    * condições publicadas. É o que alimenta o tooltip de "Resistir" ou
    * "Atordoado" no meio da descrição de um item. Vem do conteúdo
@@ -199,13 +205,15 @@ export interface ConsolePin {
 }
 
 /**
- * Um termo que pode aparecer GRIFADO dentro de um texto de regra. Os
- * dois tipos vêm de conteúdo publicado: `combat_action` (28) e
- * `condition` (17). O `nome` é o que se procura no texto; a
- * `descricao` é o que o tooltip mostra.
+ * Um termo de regra com dica. Os três tipos vêm de conteúdo
+ * publicado: `combat_action` (28), `condition` (17) e `property` (14).
+ * Ação e condição são procuradas DENTRO de um texto (ver
+ * `termosDeRegra.ts`); propriedade aparece solta, listada no item que
+ * a tem. O `nome` é o que se lê; a `descricao` é o que o tooltip
+ * mostra.
  */
 export interface TermoDeRegra {
-  tipo: "acao" | "condicao";
+  tipo: "acao" | "condicao" | "propriedade";
   slug: string;
   nome: string;
   descricao: string | null;

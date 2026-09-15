@@ -145,6 +145,19 @@ export interface ItemContent {
   areaMetros: number | null;
   /** `estatisticas.alcance_arremesso_m` (granadas) — alcance de arremesso em metros, só para exibição. `null` se ausente. */
   alcanceArremessoMetros: number | null;
+  /**
+   * `estatisticas.alcance` das armas — objeto, não número:
+   * `{tipo:"adjacente", estendido_m?}` para corpo a corpo, ou
+   * `{tipo:"distancia", eficaz_m, max_m, penalidade_alem_eficaz}` para
+   * as de distância. `null` quando o item não declara alcance.
+   */
+  alcance: {
+    tipo: string;
+    estendidoM: number | null;
+    eficazM: number | null;
+    maxM: number | null;
+    penalidadeAlemEficaz: number | null;
+  } | null;
   /** `estatisticas.cargas_max` (consumíveis de farmácia/granadas com carga própria) — `null` = item usa `quantidade` da instância como consumo direto. */
   cargasMax: number | null;
   /** `estatisticas.pericia_teste` no contexto de USO do item (ex.: "biologia" em farmácia) — mesmo campo bruto de `periciaAtaque`, mas nomeado para o contexto de uso, nunca inferido. `null` se ausente. */
@@ -211,6 +224,18 @@ export function normalizeItemContent(raw: Record<string, unknown>): ItemContent 
     custoPaUsoTexto: typeof estatisticas?.custo_pa === "string" ? estatisticas.custo_pa : null,
     areaMetros: typeof estatisticas?.area_m === "number" ? estatisticas.area_m : null,
     alcanceArremessoMetros: typeof estatisticas?.alcance_arremesso_m === "number" ? estatisticas.alcance_arremesso_m : null,
+    alcance: (() => {
+      const bruto = estatisticas?.alcance as Record<string, unknown> | undefined;
+      if (!bruto || typeof bruto !== "object" || typeof bruto.tipo !== "string") return null;
+      const num = (v: unknown) => (typeof v === "number" ? v : null);
+      return {
+        tipo: bruto.tipo,
+        estendidoM: num(bruto.estendido_m),
+        eficazM: num(bruto.eficaz_m),
+        maxM: num(bruto.max_m),
+        penalidadeAlemEficaz: num(bruto.penalidade_alem_eficaz),
+      };
+    })(),
     cargasMax: typeof estatisticas?.cargas_max === "number" ? estatisticas.cargas_max : null,
     periciaUso: typeof estatisticas?.pericia_teste === "string" ? estatisticas.pericia_teste : null,
     alvoUso: typeof estatisticas?.alvo === "string" ? estatisticas.alvo : null,
