@@ -19,7 +19,6 @@ import {
   type ItemContent,
 } from "../src/lib/character";
 import {
-  ESPACOS_POR_PORTE,
   capacidadeDeEspacos,
   espacosDoItem,
   ocupaEspaco,
@@ -39,36 +38,23 @@ const db = readJson<{ itens: Record<string, unknown>[] }>("content/db_equipament
 const items: ItemContent[] = db.itens.map(normalizeItemContent);
 const porSlug = new Map(items.map((i) => [i.slug, i]));
 
-// ── 1. classe_porte é lido do payload real ────────────────────────
+// ── 1-2. espaços por item: hoje, 1 pra todo mundo ─────────────────
+/* `classe_porte` continua sendo lido do payload (é dado real e
+   vocabulário canônico M46), mas NÃO é a fonte do custo em espaços:
+   porte diz como a arma se maneja, não quanto ela ocupa de mochila.
+   Enquanto a regra não existir, todo item conta 1 — e este teste
+   existe justamente pra travar isso, pra ninguém reintroduzir uma
+   derivação inventada sem perceber. */
 const comPorte = items.filter((i) => i.classePorte != null);
 assert.ok(comPorte.length >= 50, `classe_porte deve vir do payload real (achados: ${comPorte.length}).`);
-const portesVistos = new Set(comPorte.map((i) => i.classePorte));
-for (const p of portesVistos) {
-  assert.ok(p! in ESPACOS_POR_PORTE, `Porte "${p}" do DB real não tem conversão em ESPACOS_POR_PORTE.`);
+
+for (const slug of ["espada_longa", "espada_curta", "adaga"]) {
+  const m = porSlug.get(slug);
+  assert.ok(m, `Item '${slug}' deve existir no DB real.`);
+  assert.equal(espacosDoItem(m), 1, `Sem regra de espaços publicada, ${slug} conta 1.`);
 }
-console.log(`✓ classe_porte lido em ${comPorte.length} itens; portes: ${[...portesVistos].sort().join(", ")}`);
-
-// ── 2. porte → espaços, incluindo o item sem porte ────────────────
-const espadaLonga = porSlug.get("espada_longa");
-assert.ok(espadaLonga, "Item 'espada_longa' deve existir no DB real.");
-assert.equal(espadaLonga!.classePorte, "pesada");
-assert.equal(espacosDoItem(espadaLonga), 3);
-
-const espadaCurta = porSlug.get("espada_curta");
-assert.equal(espadaCurta!.classePorte, "media");
-assert.equal(espacosDoItem(espadaCurta), 2);
-
-const adaga = porSlug.get("adaga");
-assert.equal(adaga!.classePorte, "leve");
-assert.equal(espacosDoItem(adaga), 1);
-
-// Sem classe_porte declarada o item conta 1 — nunca 0, senão ele seria
-// de graça, e nunca um chute maior, que puniria sem regra.
-const semPorte = items.find((i) => i.classePorte == null);
-assert.ok(semPorte, "O DB real deve ter itens sem classe_porte.");
-assert.equal(espacosDoItem(semPorte), 1);
-assert.equal(espacosDoItem(undefined), 1);
-console.log("✓ porte → espaços: pesada=3, media=2, leve=1, ausente=1");
+assert.equal(espacosDoItem(undefined), 1, "Item sem modelo também conta 1.");
+console.log(`✓ espaços por item: 1 pra todos (classe_porte lido em ${comPorte.length} itens, mas não é a fonte)`);
 
 // ── 3. capacidade: padrão e derivado publicado ────────────────────
 const atributos = { corpo: 4, mente: 2, animo: 2 };
@@ -119,14 +105,14 @@ for (const slug of ["espada_longa", "espada_curta", "adaga"]) {
 
 let carga = resumoDeCarga(personagem, porSlug, null);
 assert.equal(carga.capacidade, 15, "Corpo 5 → 15 espaços pelo padrão.");
-assert.equal(carga.ocupados, 3 + 2 + 1, "Espada longa + curta + adaga = 6 espaços.");
+assert.equal(carga.ocupados, 3, "Três itens, 1 espaço cada.");
 assert.equal(carga.excedido, false);
 
 // Mandar a espada longa pro abrigo tira os 3 espaços da conta.
 const longa = personagem.inventario!.find((i) => i.itemSlug === "espada_longa")!;
 personagem = setItemLoadoutState(personagem, longa.id, "abrigo");
 carga = resumoDeCarga(personagem, porSlug, null);
-assert.equal(carga.ocupados, 3, "No abrigo, a espada longa não pesa mais.");
+assert.equal(carga.ocupados, 2, "No abrigo, a espada longa não pesa mais.");
 console.log("✓ carga: soma por porte, e o abrigo não entra na conta");
 
 // Quantidade multiplica.
@@ -136,7 +122,7 @@ personagem = {
   inventario: personagem.inventario!.map((i) => (i.id === adagaInst.id ? { ...i, quantidade: 4 } : i)),
 };
 carga = resumoDeCarga(personagem, porSlug, null);
-assert.equal(carga.ocupados, 2 + 4 * 1, "4 adagas leves = 4 espaços.");
+assert.equal(carga.ocupados, 1 + 4 * 1, "4 adagas = 4 espaços.");
 console.log("✓ carga: quantidade multiplica o custo do item");
 
 // Excedido é reportado, não impedido — a regra de penalidade não existe.

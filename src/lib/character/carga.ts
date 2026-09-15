@@ -5,12 +5,11 @@
  * quem mexer aqui saiba exatamente qual é o tamanho dela. Antes deste
  * arquivo:
  *
- *   - o custo em espaços de um item NÃO existia em lugar nenhum. O que
- *     existe, e está em 55 dos 120 itens publicados, é
- *     `estatisticas.classe_porte` — vocabulário canônico M46 das
- *     Tabelas Mestre, com exatamente três valores: leve, media, pesada.
- *     A conversão porte → espaços é a peça que falta, e ela está aqui
- *     em UMA constante (`ESPACOS_POR_PORTE`), não espalhada pela UI.
+ *   - o custo em espaços de um item NÃO existe em campo nenhum. Cheguei
+ *     a derivá-lo de `estatisticas.classe_porte` (leve/media/pesada) e
+ *     estava errado: porte é como a arma se maneja, não quanto ela
+ *     ocupa de mochila. Enquanto a regra não existir, todo item conta
+ *     1 — ver `espacosDoItem`.
  *
  *   - a capacidade total NÃO existia. `regras_personagem.derivados` tem
  *     oito entradas (pv_max, pe_max, mana_max, integridade_max,
@@ -33,27 +32,23 @@ import type { InventoryItemInstance, ItemContent, ItemLoadoutState } from "./inv
 export const DERIVADO_ESPACOS_MAX = "espacos_max";
 
 /**
- * Porte → espaços. Os três valores de M46 caem em 1/2/3 na ordem
- * óbvia; itens SEM `classe_porte` (consumíveis, munição, kits,
- * veículos — 65 dos 120) contam 1.
+ * QUANTOS ESPAÇOS UM ITEM OCUPA — e o buraco que isso ainda é.
  *
- * ATENÇÃO, valor a confirmar: com esta tabela uma Espada longa
- * (`pesada`) custa 3, e no desenho do Figma ela aparece ocupando 2.
- * O desenho é mockado, então tratei como ilustração de "o que ocupa
- * mais de um espaço se estende no grid" e não como afirmação sobre a
- * espada. Se a intenção era leve/media/pesada = 1/1/2, é esta linha
- * que muda — e só ela.
+ * Eu tinha ligado isto a `estatisticas.classe_porte` (leve/media/
+ * pesada), e estava ERRADO: classe de porte diz como a arma ou a
+ * armadura se maneja, não quanto ela ocupa de mochila. São dois eixos
+ * diferentes e o campo não é fonte para este.
+ *
+ * Nenhum outro campo do conteúdo publicado diz o custo em espaços.
+ * Então, até a regra existir, TODO item conta 1 — que é o único valor
+ * que não inventa nada: não dá desconto e não pune. A função existe
+ * assim mesmo, com este nome, porque é ela que o resto do sistema
+ * chama; no dia em que a fonte aparecer (campo novo por item, tabela
+ * por categoria, o que for), é só este corpo que muda, e a grade já
+ * sabe estender o cartão que ocupar mais de um.
  */
-export const ESPACOS_POR_PORTE: Record<string, number> = {
-  leve: 1,
-  media: 2,
-  pesada: 3,
-};
-
-/** Espaços que UMA unidade do item ocupa. Sem porte declarado, 1. */
-export function espacosDoItem(modelo: Pick<ItemContent, "classePorte"> | undefined): number {
-  if (!modelo?.classePorte) return 1;
-  return ESPACOS_POR_PORTE[modelo.classePorte] ?? 1;
+export function espacosDoItem(_modelo: ItemContent | undefined): number {
+  return 1;
 }
 
 /**
@@ -106,7 +101,7 @@ export function capacidadeDeEspacos(
 /** Espaços ocupados por uma instância (quantidade × porte). */
 export function espacosDaInstancia(
   instancia: Pick<InventoryItemInstance, "quantidade" | "estado">,
-  modelo: Pick<ItemContent, "classePorte"> | undefined,
+  modelo: ItemContent | undefined,
 ): number {
   if (!ocupaEspaco(instancia.estado)) return 0;
   return Math.max(1, instancia.quantidade) * espacosDoItem(modelo);

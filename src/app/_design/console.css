@@ -1866,39 +1866,36 @@
 }
 
 
-
 /* =====================================================================
    ABA INVENTÁRIO
    ---------------------------------------------------------------------
-   A disposição vem do nó 159:40520 do Figma (cópia fiel e leitura
-   convertida lado a lado em /dev/estilos). Duas regras estruturam tudo
-   que vem abaixo:
+   PORTE DIRETO do nó 159:40520 do Figma. A régua é a cópia fiel em
+   /dev/estilos ("Inventário (Figma)") e a leitura convertida ao lado;
+   os números abaixo foram MEDIDOS nela, não reconstruídos de memória —
+   caixa, respiro, fio, peso e tamanho de fonte de cada bloco.
 
-   1. A COR DO ITEM É A VERTENTE DELE. Nenhum hexadecimal de tipo mora
-      aqui: o acento sai de `--rv-vertente-cor`, que já é canônica no
-      VTT (vtt.css) e serve o disco do token e a trilha de rodadas. O
-      componente marca `data-vertente` no cartão e o CSS deriva tudo
-      por `color-mix`.
+   A estrutura do desenho, que é o que dá a cara da aba:
 
-   2. A VERTENTE ENTRA ESCURECIDA, nunca em brilho cheio. O desenho usa
-      o acento rebaixado (o trilho do selecionado é #7b3e28 contra o
-      #f07a1f da vertente); acento cru vira bastão fluorescente.
+     .rc-inv                       coluna
+     ├── .rc-inv-abas              48px, ATRAVESSA as duas colunas
+     └── .rc-inv-corpo             linha
+         ├── .rc-inv-lista         380px
+         │   ├── .rc-inv-busca-linha   48px
+         │   └── .rc-inv-rolo          capacidade + grade
+         └── .rc-inv-detalhe       o resto, com rodapé preso embaixo
+
+   Duas regras de cor governam tudo (ver o bloco de vertentes acima):
+   a cor de um item é a VERTENTE dele, e ela entra ESCURECIDA.
    ===================================================================== */
 
-/* O tabpanel tem moldura e respiro próprios; o inventário traz os
-   dele (a divisória lista|detalhe vai de ponta a ponta). Mesmo acordo
-   que a aba de Equipamentos já tinha. */
 .rc-tabpanel:has(.rc-inv) { border: none; background: none; padding: 0; }
 
 /* A PALETA DAS VERTENTES, repetida aqui pelo mesmo motivo dos outros
-   tokens do Console (ver o bloco de `--rc-*` lá em cima): ela mora em
-   `vtt.css`, e aquela folha só carrega nas rotas do VTT — o Console
-   também roda em /ficha e no harness. Sem esta cópia, a variável vem
-   vazia; e `color-mix()` com variável vazia é declaração inválida, o
-   que apagaria o fundo do ladrilho inteiro em vez de só perder a cor.
-   Valores idênticos aos de vtt.css: mudou um, muda nos dois.
-   O default em `.rc-window-wrap` é o cinza de "nenhuma", e serve de
-   rede para qualquer categoria que ainda não tenha vertente. */
+   tokens do Console: ela mora em `vtt.css`, que só carrega nas rotas do
+   VTT — o Console também roda em /ficha e no harness. Sem esta cópia a
+   variável vem vazia, e `color-mix()` com variável vazia é declaração
+   inválida: apagaria o fundo do ladrilho inteiro, não só a cor.
+   Valores idênticos aos de vtt.css. O default é o cinza de "nenhuma". */
 .rc-window-wrap { --rv-vertente-cor: #6b7f8c; }
 .rc-window-wrap [data-vertente="somatico"] { --rv-vertente-cor: #2f9e56; }
 .rc-window-wrap [data-vertente="cognitivo"] { --rv-vertente-cor: #8b5cf6; }
@@ -1908,144 +1905,165 @@
 .rc-window-wrap [data-vertente="sinaptica"] { --rv-vertente-cor: #35c7d8; }
 .rc-window-wrap [data-vertente="nenhuma"] { --rv-vertente-cor: #6b7f8c; }
 
-.rc-inv {
-  /* 385px é a largura do detalhe no desenho, mas a janela do Console é
-     redimensionável: fixo, ele come a lista e corta os filtros nas
-     larguras menores. Teto no valor do desenho, piso no que o detalhe
-     ainda lê, e o resto é da lista. */
-  display: grid; grid-template-columns: minmax(0, 1fr) clamp(240px, 40%, 385px);
-  align-items: stretch; height: 100%; min-height: 0;
-}
-.rc-inv-lista {
-  display: flex; flex-direction: column; gap: 12px;
-  min-width: 0; min-height: 0; padding: 10px; overflow: auto;
-}
-.rc-inv-detalhe {
-  border-left: 1px solid var(--rc-line); background: rgba(12, 20, 32, 0.7);
-  min-width: 0; min-height: 0; overflow: auto;
-}
+.rc-inv { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 
-/* ── Filtros ─────────────────────────────────────────────────────── */
-.rc-inv-filtros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
-.rc-inv-filtro {
+/* ── Abas: atravessam as duas colunas ────────────────────────────── */
+.rc-inv-abas {
+  display: flex; gap: 6px; flex: none; height: 48px;
+  padding: 8px 9px 9px 8px;
+  border-bottom: 1px solid var(--rc-line);
+  background: rgba(16, 26, 38, 0.7);
+}
+.rc-inv-aba {
+  flex: 1 0 0; min-width: 0; height: 30px; padding: 5px 9px; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  height: 28px; padding: 0 8px; cursor: pointer;
-  border: 1px solid var(--rc-line-soft); border-radius: 1px;
-  background: rgba(17, 29, 49, 0.45);
-  color: var(--rc-dim); font: inherit; font-size: 12px; font-weight: 600;
-  transition: background 0.14s, border-color 0.14s, color 0.14s;
+  border: 1px solid transparent; background: none;
+  color: rgba(214, 228, 245, 0.45);
+  font: 600 13px/18px var(--font-rajdhani), sans-serif;
+  transition: background .14s, border-color .14s, color .14s;
 }
-.rc-inv-filtro:hover { color: var(--rc-text); border-color: rgba(0, 212, 255, 0.35); }
-.rc-inv-filtro:focus-visible { outline: 1px solid var(--cy); outline-offset: 1px; }
-.rc-inv-filtro[data-ativo] {
-  background: rgba(0, 212, 255, 0.10); border-color: rgba(0, 212, 255, 0.28); color: var(--rc-text);
+.rc-inv-aba:hover { color: rgba(214, 228, 245, 0.83); border-color: var(--rc-line); }
+.rc-inv-aba:focus-visible { outline: 1px solid var(--cy); outline-offset: -2px; }
+.rc-inv-aba[data-ativo] {
+  background: var(--rc-line); border-color: #108bac; color: rgba(214, 228, 245, 0.83);
 }
-.rc-inv-filtro-n {
-  min-width: 16px; padding: 0 3px; border-radius: 1px;
-  background: rgba(8, 14, 24, 0.55);
-  font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700;
+.rc-inv-aba-n {
+  flex: none; font-family: var(--font-mono), monospace; font-size: 10px; font-weight: 700;
+  opacity: .65;
 }
 
-/* ── Busca ───────────────────────────────────────────────────────── */
+.rc-inv-corpo { display: flex; flex: 1 0 0; min-height: 0; }
+
+/* ── Coluna da lista ─────────────────────────────────────────────── */
+.rc-inv-lista {
+  display: flex; flex-direction: column;
+  flex: 0 0 380px; min-width: 240px; min-height: 0;
+}
+.rc-inv-busca-linha {
+  flex: none; height: 48px; padding: 8px 12px 9px;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.15);
+  background: rgba(12, 20, 32, 0.7);
+}
 .rc-inv-busca {
-  display: flex; align-items: center; gap: 8px;
-  padding: 0 10px; height: 32px;
-  border: 1px solid var(--rc-line-soft); border-radius: 1px;
-  background: rgba(17, 29, 49, 0.45); color: var(--rc-dim);
-  transition: border-color 0.14s;
+  display: flex; align-items: center; gap: 8px; height: 30px; padding: 5px 9px;
+  border: 1px solid var(--rc-line); border-radius: 1px;
+  background: rgba(17, 29, 49, 0.45); color: rgba(214, 228, 245, 0.45);
+  transition: border-color .14s;
 }
 .rc-inv-busca:focus-within { border-color: rgba(0, 212, 255, 0.45); }
 .rc-inv-busca input {
   flex: 1 0 0; min-width: 0; border: 0; background: none; outline: none;
-  color: var(--rc-text); font: inherit; font-size: 13px;
+  color: var(--rc-text); font: 500 13px/18px var(--font-rajdhani), sans-serif;
 }
-.rc-inv-busca input::placeholder { color: var(--rc-dim); }
-.rc-inv-busca input::-webkit-search-cancel-button { filter: grayscale(1) opacity(0.5); }
+.rc-inv-busca input::placeholder { color: rgba(214, 228, 245, 0.45); }
+.rc-inv-busca input::-webkit-search-cancel-button { filter: grayscale(1) opacity(.5); }
+
+.rc-inv-rolo {
+  display: flex; flex-direction: column; gap: 12px;
+  flex: 1 0 0; min-height: 0; padding: 8px; overflow: auto;
+}
 
 /* ── Capacidade ──────────────────────────────────────────────────── */
-.rc-inv-cap { display: flex; flex-direction: column; gap: 4px; }
-.rc-inv-cap-cab { display: flex; align-items: baseline; gap: 4px; height: 18px; }
-.rc-inv-cap-rot { flex: 1 0 0; font-size: 13px; font-weight: 600; color: rgba(214, 228, 245, 0.65); }
-.rc-inv-cap-num { font-family: var(--font-mono), monospace; font-size: 12px; line-height: 18px; }
-/* Só o número QUE MUDA é negrito. "/15 espaços" é a moldura da
-   informação: em bold, competia com o dado. */
+.rc-inv-cap { display: flex; flex-direction: column; gap: 4px; flex: none; }
+.rc-inv-cap-cab { display: flex; align-items: flex-start; gap: 4px; height: 18px; }
+.rc-inv-cap-rot {
+  flex: 1 0 0; color: rgba(214, 228, 245, 0.65);
+  font: 600 13px/18px var(--font-rajdhani), sans-serif;
+}
+.rc-inv-cap-num {
+  font-family: var(--font-mono), monospace; font-size: 12px; line-height: 18px;
+  color: rgba(214, 228, 245, 0.65);
+}
+/* Só o número QUE MUDA é negrito; "/15 espaços" é a moldura da
+   informação e em bold competia com o dado. */
 .rc-inv-cap-num strong { font-weight: 700; color: rgba(214, 228, 245, 0.8); }
-.rc-inv-cap-resto { font-weight: 400; color: rgba(214, 228, 245, 0.65); }
+.rc-inv-cap-resto { font-weight: 400; }
 
 .rc-inv-medidor {
   position: relative; height: 12px; overflow: hidden; border-radius: 1px;
   border: 1px solid #846021; background: #261b09;
 }
 .rc-inv-medidor-fill {
-  position: absolute; inset: 0 auto 0 0; background: #453211;
-  transition: width 0.18s ease-out;
+  position: absolute; inset: 0 auto 0 0; background: #453211; transition: width .18s ease-out;
 }
 .rc-inv-medidor-marcas {
   position: absolute; inset: 0; display: flex; justify-content: space-between;
-  padding: 0 1px; opacity: 0.44; pointer-events: none;
+  padding: 0 11px; opacity: .44; pointer-events: none;
 }
 .rc-inv-medidor-marcas span { width: 1px; background: #846021; }
 .rc-inv-medidor[data-excedido] { border-color: var(--rc-danger); }
-.rc-inv-medidor[data-excedido] .rc-inv-medidor-fill { background: rgba(209, 80, 104, 0.45); }
+.rc-inv-medidor[data-excedido] .rc-inv-medidor-fill { background: rgba(209, 80, 104, .45); }
 
 /* ── Grade de itens ──────────────────────────────────────────────── */
+/* Três colunas. No desenho são 116px fixos, que é exatamente o que
+   `1fr` dá na largura de lá (380 − 16 de respiro − 2×8 de vão = 348…
+   3×116 + 2×8 = 364): fração em vez de fixo mantém o desenho na
+   largura dele e sobrevive à janela redimensionável. */
 .rc-inv-grade {
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px; align-content: start;
+  gap: 9px 8px; align-content: start;
 }
 .rc-inv-card {
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
-  padding: 12px 10px; cursor: pointer; position: relative;
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 12px 10px; cursor: pointer;
   border: 1px solid var(--rc-line-soft); border-radius: 1px;
   background: rgba(17, 29, 49, 0.45);
   color: inherit; font: inherit; text-align: center;
-  transition: background 0.14s, border-color 0.14s, transform 0.14s;
+  transition: background .14s, border-color .14s;
 }
 .rc-inv-card:hover { background: rgba(17, 29, 49, 0.7); border-color: rgba(0, 212, 255, 0.28); }
 .rc-inv-card:focus-visible { outline: 1px solid var(--cy); outline-offset: 1px; }
-.rc-inv-card:active { transform: translateY(1px); }
 /* Selecionado: o degrau do desenho é em DOIS eixos — a superfície sobe
-   um passo e o fio sobe junto. Só um dos dois não se lê. */
+   um passo e o fio sobe junto. Um só não se lê. */
 .rc-inv-card[data-selecionado] { background: #18283f; border-color: rgba(0, 212, 255, 0.12); }
 /* O fio da esquerda é o acento do TIPO: é ele que diz a vertente. */
 .rc-inv-card[data-selecionado]::before {
   content: ""; position: absolute; left: -1px; top: -1px; bottom: -1px; width: 2px;
   background: color-mix(in srgb, var(--rv-vertente-cor) 52%, #0a0d12);
 }
+.rc-inv-card-rotulos {
+  display: flex; flex-direction: column; align-items: center; width: 100%; min-width: 0;
+}
 .rc-inv-card-nome {
   width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 13px; font-weight: 600; color: rgba(214, 228, 245, 0.65);
+  color: rgba(214, 228, 245, 0.65);
+  font: 600 13px/14px var(--font-rajdhani), sans-serif;
 }
-.rc-inv-card-cat { font-size: 12px; font-weight: 500; color: rgba(214, 228, 245, 0.45); }
+.rc-inv-card-cat {
+  color: rgba(214, 228, 245, 0.45);
+  font: 500 12px/14px var(--font-rajdhani), sans-serif;
+}
 
 /* Ladrilho do ícone. A tinta da vertente ESCURECE com um sussurro de
    matiz — não colore. `--rc-inv-tinta` é o volume dessa tinta: a
    energética fica no cheio porque o laranja é o tom mais apagado da
-   paleta; as outras cinco leem mais forte na mesma porcentagem e por
-   isso entram um degrau abaixo. */
+   paleta; as outras cinco leem mais forte na mesma porcentagem. */
 .rc-inv-ladrilho {
   --rc-inv-tinta: 6%;
   position: relative; display: flex; align-items: center; justify-content: center;
-  width: 100%; height: 64px; overflow: hidden;
+  width: 100%; height: 64px; padding: 12px 4px; overflow: hidden;
   border: 1px solid var(--rc-line-soft);
   background: color-mix(in srgb, var(--rv-vertente-cor) var(--rc-inv-tinta), #0d1520);
-  box-shadow: inset 0 0 13px 6px rgba(8, 14, 24, 0.3);
+  box-shadow: inset 0 0 13px 6px rgba(8, 14, 24, .3);
   color: var(--rv-vertente-cor);
 }
-[data-vertente="energetico"] .rc-inv-ladrilho, .rc-inv-ladrilho[data-vertente="energetico"] { --rc-inv-tinta: 9%; }
-.rc-inv-ladrilho--grande { width: 56px; height: 56px; flex: 0 0 56px; }
+[data-vertente="energetico"] .rc-inv-ladrilho { --rc-inv-tinta: 9%; }
+.rc-inv-ladrilho--grande { width: 56px; height: 56px; flex: 0 0 56px; padding: 0; }
 
-/* A caixinha de quantidade é um RECORTE no canto do cartão: fio só à
+/* A caixinha de quantidade é um RECORTE no canto do ladrilho: fio só à
    esquerda e no topo, e fundo do cartão EXTERNO (opaco — com alfa,
-   quem apareceria por baixo era o ladrilho em que ela se apoia). */
+   quem apareceria por baixo era o próprio ladrilho em que ela se
+   apoia). */
 .rc-inv-qtd {
   position: absolute; right: 0; bottom: 0;
   display: flex; align-items: center; justify-content: center;
-  min-width: 24px; padding: 4px 5px;
+  width: 24px; height: 24px; padding: 5px;
   border-left: 1px solid var(--rc-line-soft); border-top: 1px solid var(--rc-line-soft);
-  background: #0e1828;
-  font-size: 12px; font-weight: 600; line-height: 14px; color: rgba(214, 228, 245, 0.65);
+  background: rgba(17, 29, 49, 0.45);
+  color: rgba(214, 228, 245, 0.65);
+  font: 600 12px/14px var(--font-rajdhani), sans-serif;
 }
+.rc-inv-card:hover .rc-inv-qtd { background: rgba(17, 29, 49, 0.7); }
 .rc-inv-card[data-selecionado] .rc-inv-qtd { background: #18283f; }
 
 .rc-inv-vazio {
@@ -2053,86 +2071,152 @@
   color: var(--rc-dim); font-size: 12px; text-align: center;
 }
 
-/* ── Detalhe ─────────────────────────────────────────────────────── */
-.rc-inv-det { display: flex; flex-direction: column; gap: 16px; padding: 12px; }
-.rc-inv-det-cab { display: flex; align-items: center; gap: 12px; }
+/* ── Coluna do detalhe ───────────────────────────────────────────── */
+.rc-inv-detalhe {
+  position: relative; flex: 1 0 0; min-width: 0; min-height: 0;
+  border-left: 1px solid var(--rc-line); background: rgba(12, 20, 32, 0.7);
+}
+.rc-inv-det {
+  display: flex; flex-direction: column; gap: 16px;
+  height: 100%; padding: 12px; overflow: auto;
+}
+.rc-inv-det-cab { display: flex; align-items: center; gap: 12px; flex: none; }
 .rc-inv-det-titulo { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .rc-inv-det-titulo h3 {
   margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 20px; font-weight: 600; line-height: 24px; color: rgba(214, 228, 245, 0.8);
+  color: rgba(214, 228, 245, 0.8);
+  font: 600 20px/24px var(--font-rajdhani), sans-serif;
 }
 .rc-inv-etiquetas { display: flex; gap: 4px; flex-wrap: wrap; }
 /* As três camadas da etiqueta (fundo, fio, texto) seguem a MESMA cor —
    a do tipo. Com fundo de um lado e fio de outro ela contava duas
    histórias. */
 .rc-inv-etiqueta {
-  padding: 3px 5px; border-radius: 1px;
+  display: flex; align-items: center; height: 21px; padding: 3px 5px;
   border: 1px solid color-mix(in srgb, var(--rv-vertente-cor) 35%, transparent);
   background: color-mix(in srgb, var(--rv-vertente-cor) 12%, transparent);
   color: var(--rv-vertente-cor);
-  font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: 0.8px;
-  text-transform: lowercase;
+  font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: .8px;
 }
-.rc-inv-det-desc { margin: 0; font-size: 14px; line-height: 16px; color: rgba(214, 228, 245, 0.65); }
+.rc-inv-det-desc {
+  margin: 0; flex: none; color: rgba(214, 228, 245, 0.65);
+  font: 500 14px/16px var(--font-rajdhani), sans-serif;
+}
 
-.rc-inv-det-tabela {
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; margin: 0;
-  border: 1px solid var(--rc-line); border-radius: 1px;
+.rc-inv-det-blocos { display: flex; flex-direction: column; gap: 8px; flex: none; }
+
+/* Destaque: a estatística principal numa célula larga, e até duas
+   secundárias empilhadas ao lado. */
+.rc-inv-destaque {
+  display: flex; align-items: stretch;
+  border: 1px solid var(--rc-line); border-radius: 1px; overflow: hidden;
 }
-.rc-inv-det-celula {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding: 8px 10px; min-width: 0;
-  border-right: 1px solid var(--rc-line); border-bottom: 1px solid var(--rc-line);
-  background: rgba(17, 29, 49, 0.45);
+.rc-inv-destaque-principal {
+  flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: 4px;
+  padding: 10px; background: rgba(17, 29, 49, 0.45);
 }
-.rc-inv-det-celula:nth-child(2n) { border-right: 0; }
-.rc-inv-det-celula dt { font-size: 12px; font-weight: 600; text-transform: uppercase; color: rgba(214, 228, 245, 0.65); }
-.rc-inv-det-celula dd {
-  margin: 0; font-family: var(--font-mono), monospace; font-size: 12px;
-  color: rgba(214, 228, 245, 0.8); text-align: right;
+.rc-inv-destaque-lado { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; }
+.rc-inv-destaque-lado > * + * { border-top: 1px solid var(--rc-line); }
+.rc-inv-destaque-lado { border-left: 1px solid var(--rc-line); }
+.rc-inv-mini {
+  flex: 1 0 0; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 6px 10px; min-width: 0;
+}
+.rc-inv-rot {
+  color: rgba(214, 228, 245, 0.65); text-transform: uppercase;
+  font: 600 14px/16px var(--font-rajdhani), sans-serif;
+}
+.rc-inv-mini .rc-inv-rot { font-size: 12px; }
+.rc-inv-val {
+  color: rgba(214, 228, 245, 0.8);
+  font-family: var(--font-mono), monospace; font-size: 16px; line-height: 24px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.rc-inv-mini .rc-inv-val { font-size: 12px; line-height: 16px; }
 
-.rc-inv-det-rodape {
-  margin-top: auto; display: flex; flex-direction: column; gap: 8px;
-  padding-top: 10px; border-top: 1px solid var(--rc-line);
+/* Linhas: rótulo à esquerda em chapa clara, valor à direita em chapa
+   funda, divididos por fio — e uma divisória entre linhas. */
+.rc-inv-linhas {
+  display: flex; flex-direction: column;
+  border: 1px solid var(--rc-line); border-radius: 1px; overflow: hidden;
 }
-.rc-inv-stepper {
-  display: grid; grid-template-columns: 36px 1fr 36px; align-items: stretch;
-  border: 1px solid var(--rc-line); border-radius: 1px;
-}
-.rc-inv-stepper button {
-  display: flex; align-items: center; justify-content: center; cursor: pointer;
-  border: 0; background: rgba(17, 29, 49, 0.45); color: var(--rc-text);
-  font: inherit; font-size: 15px; line-height: 1;
-  transition: background 0.14s, color 0.14s;
-}
-.rc-inv-stepper button:hover:not(:disabled) { background: rgba(0, 212, 255, 0.12); color: var(--cy); }
-.rc-inv-stepper button:focus-visible { outline: 1px solid var(--cy); outline-offset: -2px; }
-.rc-inv-stepper button:disabled { opacity: 0.35; cursor: not-allowed; }
-.rc-inv-stepper span {
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(8, 20, 32, 0.7);
-  border-left: 1px solid var(--rc-line); border-right: 1px solid var(--rc-line);
-  font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 700;
+.rc-inv-linha { display: flex; align-items: stretch; min-height: 26px; }
+.rc-inv-linha + .rc-inv-linha { border-top: 1px solid var(--rc-line); }
+.rc-inv-linha dt {
+  flex: 0 0 110px; padding: 6px 10px;
+  border-right: 1px solid var(--rc-line);
+  background: rgba(17, 29, 49, 0.45);
   color: rgba(214, 228, 245, 0.65);
+  font: 600 13px/14px var(--font-rajdhani), sans-serif;
+}
+.rc-inv-linha dd {
+  flex: 1 0 0; min-width: 0; margin: 0; padding: 6px 10px;
+  background: rgba(12, 20, 32, 0.6);
+  color: rgba(214, 228, 245, 0.8);
+  font: 500 13px/14px var(--font-rajdhani), sans-serif;
 }
 
-.rc-inv-det-acoes { display: flex; gap: 8px; flex-wrap: wrap; }
+.rc-inv-efeito { border: 1px solid var(--rc-line); border-radius: 1px; }
+.rc-inv-efeito-corpo { padding: 10px; background: rgba(17, 29, 49, 0.45); }
+
+/* ── Rodapé do detalhe ───────────────────────────────────────────── */
+/* Preso embaixo, como no desenho: a descrição pode ser longa e rolar,
+   e as ações do item não podem sumir junto com ela. */
+.rc-inv-det-rodape {
+  position: absolute; inset: auto 0 0 0;
+  display: flex; flex-direction: column; gap: 8px; padding: 10px;
+  border-top: 1px solid var(--rc-line); background: rgba(17, 29, 49, 0.45);
+}
+.rc-inv-stepper { display: flex; align-items: stretch; height: 38px; }
+.rc-inv-stepper button {
+  flex: none; width: 33px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border: 1px solid var(--rc-line); background: rgba(17, 29, 49, 0.45);
+  color: var(--rc-text); font: inherit; font-size: 15px; line-height: 1;
+  transition: background .14s, color .14s;
+}
+.rc-inv-stepper button:first-child { border-right: 0; }
+.rc-inv-stepper button:last-child { border-left: 0; }
+.rc-inv-stepper button:hover:not(:disabled) { background: rgba(0, 212, 255, .12); color: var(--cy); }
+.rc-inv-stepper button:focus-visible { outline: 1px solid var(--cy); outline-offset: -2px; }
+.rc-inv-stepper button:disabled { opacity: .35; cursor: not-allowed; }
+.rc-inv-stepper span {
+  flex: 1 0 0; display: flex; align-items: center; justify-content: center; padding: 10px;
+  border-top: 1px solid var(--rc-line); border-bottom: 1px solid var(--rc-line);
+  background: rgba(8, 20, 32, 0.7);
+  color: rgba(214, 228, 245, 0.65);
+  font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 700; line-height: 16px;
+}
+
+.rc-inv-det-acoes { display: flex; align-items: center; gap: 8px; }
 .rc-inv-btn {
-  flex: 1 0 auto; min-height: 34px; padding: 0 12px; cursor: pointer;
+  flex: 1 0 0; min-width: 0; height: 44px; padding: 13px 17px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
   border: 1px solid var(--rc-line); border-radius: 1px;
-  background: rgba(17, 29, 49, 0.45); color: var(--rc-text);
-  font: inherit; font-size: 12px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase;
-  transition: background 0.14s, border-color 0.14s, color 0.14s;
+  background: none; color: rgba(214, 228, 245, 0.88);
+  font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 700;
+  letter-spacing: 2.42px; text-transform: uppercase; white-space: nowrap;
+  transition: background .14s, border-color .14s, color .14s;
 }
 .rc-inv-btn:hover:not(:disabled) { border-color: rgba(0, 212, 255, 0.45); color: var(--cy); }
 .rc-inv-btn:focus-visible { outline: 1px solid var(--cy); outline-offset: 1px; }
-.rc-inv-btn:active:not(:disabled) { background: rgba(0, 212, 255, 0.14); }
-.rc-inv-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.rc-inv-btn--primaria { border-color: rgba(0, 212, 255, 0.45); background: rgba(0, 212, 255, 0.10); }
-.rc-inv-btn--perigo { flex: 0 0 auto; }
-.rc-inv-btn--perigo:hover:not(:disabled) { border-color: var(--rc-danger); color: var(--rc-danger); }
+.rc-inv-btn:active:not(:disabled) { background: rgba(0, 212, 255, .14); }
+.rc-inv-btn:disabled { opacity: .4; cursor: not-allowed; }
+/* A primária é a larga do desenho (230 de 365): ela não divide espaço
+   igual com as outras, ela domina a linha. */
+.rc-inv-btn--primaria { flex: 0 1 230px; border-color: rgba(0, 212, 255, 0.45); background: rgba(0, 212, 255, 0.10); }
+/* Descarte: ícone no fim do contador, não um terceiro botão na linha
+   das ações (ver o comentário no componente). */
+.rc-inv-stepper-descartar {
+  flex: none; width: 38px; display: flex; align-items: center; justify-content: center;
+  margin-left: 8px; cursor: pointer;
+  border: 1px solid var(--rc-line); background: rgba(17, 29, 49, 0.45);
+  color: var(--rc-dim);
+  transition: background .14s, border-color .14s, color .14s;
+}
+.rc-inv-stepper-descartar:hover {
+  border-color: var(--rc-danger); color: var(--rc-danger); background: rgba(209, 80, 104, .12);
+}
+.rc-inv-stepper-descartar:focus-visible { outline: 1px solid var(--rc-danger); outline-offset: 1px; }
 
 /* ── Termo de regra dentro de um texto ───────────────────────────── */
 /* Estilo DO TEXTO, não caixa por cima dele: peso, cor e um pontilhado
@@ -2152,21 +2236,21 @@
   max-width: 280px; padding: 8px 10px; pointer-events: none;
   border: 1px solid var(--rc-line); border-radius: 1px;
   background: rgba(8, 14, 24, 0.97);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .55);
 }
-.rc-termo-dica[data-tipo="acao"] { border-color: rgba(0, 212, 255, 0.4); }
-.rc-termo-dica[data-tipo="condicao"] { border-color: rgba(209, 80, 104, 0.4); }
+.rc-termo-dica[data-tipo="acao"] { border-color: rgba(0, 212, 255, .4); }
+.rc-termo-dica[data-tipo="condicao"] { border-color: rgba(209, 80, 104, .4); }
 .rc-termo-dica-cab {
   display: flex; align-items: baseline; gap: 6px;
-  font-size: 13px; font-weight: 600; color: var(--rc-text);
+  color: var(--rc-text); font: 600 13px/16px var(--font-rajdhani), sans-serif;
 }
 .rc-termo-dica-cab em {
   font-style: normal; font-family: var(--font-mono), monospace;
-  font-size: 9.5px; letter-spacing: 0.7px; text-transform: uppercase; color: var(--rc-dim);
+  font-size: 9.5px; letter-spacing: .7px; text-transform: uppercase; color: var(--rc-dim);
 }
 .rc-termo-dica-txt { font-size: 12px; line-height: 1.4; color: rgba(214, 228, 245, 0.75); }
 .rc-termo-dica-txt--vazio { font-style: italic; color: var(--rc-dim); }
 
 @media (prefers-reduced-motion: reduce) {
-  .rc-inv-card, .rc-inv-filtro, .rc-inv-btn, .rc-inv-medidor-fill { transition: none; }
+  .rc-inv-card, .rc-inv-aba, .rc-inv-btn, .rc-inv-medidor-fill, .rc-inv-stepper button { transition: none; }
 }
