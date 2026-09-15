@@ -33,7 +33,6 @@
  */
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { X } from "lucide-react";
 import { PainelAbas } from "./PainelAbas";
 import { ChatTab } from "./ChatTab";
 import { PersonagensTab } from "./PersonagensTab";
@@ -59,6 +58,24 @@ import "./painel.css";
 
 /** Abaixo disto o painel deixa de ser coluna e vira drawer sobre o mapa. */
 const LARGURA_DRAWER_PX = 1100;
+/**
+ * Quanto é preciso passar ALÉM do mínimo, arrastando a alça pra
+ * direita, pra que soltar recolha o painel.
+ *
+ * 8px — o bastante pra separar um empurrão de um tremor de mão, e nada
+ * além disso. Era 40, e 40 criava um limbo: o painel já estava
+ * deslizando e desbotando (o gesto já dizia "vou fechar") mas soltar
+ * ali não fechava nada. Quem arrastou e parou no meio não mudou de
+ * ideia — só não sabia que faltava chão. Agora o MOVIMENTO é o
+ * compromisso: se ele começou, soltar recolhe.
+ */
+const LIMIAR_RECOLHER = 8;
+/**
+ * Até quantos pixels de movimento um gesto na alça ainda conta como
+ * CLIQUE. Acima disso ele é arrasto, e quem decide é a distância
+ * percorrida — não o tempo, que castigaria quem clica devagar.
+ */
+const MOVIMENTO_CLIQUE = 4;
 
 export function PainelVtt({
   campaignId,
@@ -163,6 +180,16 @@ export function PainelVtt({
     focarAbaAtiva(prefs.aba);
   }, [atualizarPrefs, focarAbaAtiva, prefs.aba]);
 
+  /**
+   * REABRIR ONDE PAROU. Não passa por `selecionar` de propósito: aquilo
+   * é "vá para esta seção", e aqui não há seção nova — só o painel
+   * voltando ao tamanho que tinha.
+   */
+  const expandir = useCallback(() => {
+    atualizarPrefs({ aberto: true });
+    focarAbaAtiva(prefs.aba);
+  }, [atualizarPrefs, focarAbaAtiva, prefs.aba]);
+
   const selecionar = useCallback(
     (aba: AbaId) => {
       // Clicar de novo na aba JÁ ativa é INERTE. A versão anterior
@@ -201,41 +228,130 @@ export function PainelVtt({
   // ── Redimensionamento por arrasto ──────────────────────────────
   const arrastandoRef = useRef(false);
   const inicioRef = useRef({ x: 0, largura: 0 });
+  /** O quanto o ponteiro andou neste gesto — é isto que separa clique de arrasto. */
+  const andouRef = useRef(0);
   const [redimensionando, setRedimensionando] = useState(false);
+  /**
+   * O arrasto já passou do ponto em que soltar RECOLHE.
+   *
+   * DOIS lugares pro mesmo fato, e não por descuido: o estado pinta o
+   * aviso, a REF decide. `pointerup` pode chegar no mesmo lote do
+   * `pointermove` que cruzou o limiar — aí o handler ainda enxerga o
+   * estado ANTERIOR e não recolhe nada, que é exatamente o "às vezes
+   * não fecha, fica parado e volta pro ciano". A ref é escrita na hora,
+   * sem esperar render.
+   */
+  const vaiRecolherRef = useRef(false);
+  const [vaiRecolher, setVaiRecolher] = useState(false);
+  /**
+   * QUANTO O ARRASTO JÁ PASSOU DO MÍNIMO, em pixels.
+   *
+   * No batente o painel simplesmente parava, e continuar puxando não
+   * fazia nada — a mão andava e a tela não, que é a sensação de coisa
+   * travada. Daqui pra frente a largura continua presa (é o que fica
+   * salvo), mas o painel ACOMPANHA: desliza pra fora e desbota junto,
+   * até sumir. O gesto passa a mostrar o que vai acontecer enquanto
+   * acontece, em vez de anunciar por um fio de 1px.
+   */
+  const [excedente, setExcedente] = useState(0);
 
+  /** Como desligar os ouvintes do arrasto em curso — nulo fora dele. */
+  const desligarArrastoRef = useRef<(() => void) | null>(null);
+  /* Se o painel sair de cena no meio de um arrasto, os ouvintes vão junto. */
+  useEffect(() => () => desligarArrastoRef.current?.(), []);
+
+  /**
+   * O GESTO INTEIRO VIVE NA JANELA, não na alça, e os ouvintes são
+   * presos JÁ no `pointerdown`.
+   *
+   * Duas correções na mesma decisão:
+   *
+   *   1. antes o gesto morava nos handlers React do elemento, com
+   *      `setPointerCapture` segurando o ponteiro. Quando essa captura
+   *      se perde — e ela se perde: o elemento re-renderiza, o ponteiro
+   *      sai da janela, o sistema entrega o gesto a outra coisa — o
+   *      `pointerup` nunca chega. Como é ele quem limpa tudo, o painel
+   *      FICAVA no meio do caminho: deslizado, translúcido, nem aberto
+   *      nem recolhido, e sem nada que o trouxesse de volta. O
+   *      fantasma. No `window` não há captura a perder: o `pointerup`
+   *      acontece em algum lugar, sempre;
+   *   2. e a inscrição é aqui, não num `useEffect` que reage ao estado:
+   *      o efeito só rodaria no render seguinte, e todo movimento antes
+   *      dele se perderia — o arrasto começava mudo.
+   */
   const aoPressionarAlca = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       e.preventDefault();
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      desligarArrastoRef.current?.();
       arrastandoRef.current = true;
       inicioRef.current = { x: e.clientX, largura: prefs.largura };
+      andouRef.current = 0;
       setRedimensionando(true);
-    },
-    [prefs.largura],
-  );
 
-  const aoMoverAlca = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!arrastandoRef.current) return;
-    // A alça fica na borda ESQUERDA do painel: arrastar pra esquerda
-    // AUMENTA a largura, daí o sinal invertido.
-    const proposta = inicioRef.current.largura - (e.clientX - inicioRef.current.x);
-    setPrefs((atual) => ({ ...atual, largura: limitarLarguraPainel(proposta) }));
-  }, []);
+      const mover = (ev: PointerEvent) => {
+        // A alça fica na borda ESQUERDA do painel: arrastar pra esquerda
+        // AUMENTA a largura, daí o sinal invertido.
+        andouRef.current = Math.max(andouRef.current, Math.abs(ev.clientX - inicioRef.current.x));
+        const proposta = inicioRef.current.largura - (ev.clientX - inicioRef.current.x);
+        // PASSAR DO MÍNIMO É O GESTO DE FECHAR: o menor painel que
+        // existe é nenhum painel. Daí pra frente a largura fica presa e
+        // o que anda é o painel inteiro, deslizando e desbotando.
+        vaiRecolherRef.current = proposta < LARGURA_MIN - LIMIAR_RECOLHER;
+        setVaiRecolher(vaiRecolherRef.current);
+        setExcedente(Math.max(0, LARGURA_MIN - proposta));
+        setPrefs((atual) => ({ ...atual, largura: limitarLarguraPainel(proposta) }));
+      };
 
-  const aoSoltarAlca = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!arrastandoRef.current) return;
-      arrastandoRef.current = false;
-      setRedimensionando(false);
-      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
-      // Só grava no fim do gesto — não uma escrita em `localStorage`
-      // por frame de arrasto.
-      setPrefs((atual) => {
-        salvarPreferenciasPainel(chave, atual);
-        return atual;
-      });
+      /** `confirmar` = o gesto terminou por vontade de quem arrasta. */
+      const encerrar = (confirmar: boolean) => {
+        desligar();
+        arrastandoRef.current = false;
+        setRedimensionando(false);
+        setExcedente(0);
+        // CLIQUE SIMPLES TAMBÉM RECOLHE. A alça é a borda do painel, e
+        // clicar numa borda pra fechar o que ela delimita é o gesto
+        // curto da mesma intenção do arrasto longo — quem só quer o
+        // mapa inteiro não deveria ter que percorrer 400px pra pedir
+        // isso. O arrasto continua sendo arrasto: só conta como clique
+        // o que andou menos de `MOVIMENTO_CLIQUE`.
+        const recolhe = confirmar
+          && (vaiRecolherRef.current || andouRef.current < MOVIMENTO_CLIQUE);
+        vaiRecolherRef.current = false;
+        setVaiRecolher(false);
+        setPrefs((atual) => {
+          // Recolhendo, a largura gravada é a de ANTES do arrasto:
+          // reabrir devolve o painel como ele era, não espremido no
+          // mínimo. Nos dois casos a escrita é uma só, no fim do gesto
+          // — não uma por frame.
+          const proximo = recolhe
+            ? { ...atual, largura: inicioRef.current.largura, aberto: false }
+            : atual;
+          salvarPreferenciasPainel(chave, proximo);
+          return proximo;
+        });
+        if (recolhe) focarAbaAtiva(prefs.aba);
+      };
+
+      const soltou = () => encerrar(true);
+      // CANCELAR não é soltar: o sistema abortou o gesto e a intenção
+      // nunca foi declarada — fechar ali seria fechar por acidente.
+      const abortou = () => encerrar(false);
+
+      function desligar() {
+        window.removeEventListener("pointermove", mover);
+        window.removeEventListener("pointerup", soltou);
+        window.removeEventListener("pointercancel", abortou);
+        window.removeEventListener("blur", abortou);
+        desligarArrastoRef.current = null;
+      }
+
+      window.addEventListener("pointermove", mover);
+      window.addEventListener("pointerup", soltou);
+      window.addEventListener("pointercancel", abortou);
+      window.addEventListener("blur", abortou);
+      desligarArrastoRef.current = desligar;
     },
-    [chave],
+    [prefs.largura, prefs.aba, chave, focarAbaAtiva, setPrefs],
   );
 
   /** Teclado na alça: setas ajustam de 10 em 10 px, Home/End vão aos limites. */
@@ -366,6 +482,7 @@ export function PainelVtt({
         data-drawer={ehDrawer ? "true" : undefined}
         data-hidratado={hidratado ? "true" : undefined}
         data-redimensionando={redimensionando ? "true" : undefined}
+        data-vai-recolher={vaiRecolher ? "true" : undefined}
         // Largura INLINE, não por classe: `vtt.css` já declara
         // `.rv-painel[data-aberto="true"] { width: 316px }` com a mesma
         // especificidade da regra equivalente de `painel.css`, e qual
@@ -375,13 +492,38 @@ export function PainelVtt({
         // ele ainda respeita o teto de viewport.
         style={
           aberto
-            ? { width: ehDrawer ? `min(${prefs.largura}px, 88vw)` : `${prefs.largura}px` }
+            ? {
+                width: ehDrawer ? `min(${prefs.largura}px, 88vw)` : `${prefs.largura}px`,
+                // O painel sai de cena PELO LADO em que está sendo
+                // empurrado, e some no caminho. A opacidade cai mais
+                // devagar que o deslize (o teto é .78 de perda): some o
+                // bastante pra dizer "já era", não tanto que o conteúdo
+                // desapareça antes de a decisão ser tomada.
+                ...(excedente > 0
+                  ? {
+                      transform: `translateX(${excedente}px)`,
+                      // O desbotamento acompanha o arrasto INTEIRO, sem
+                      // piso que o faça parecer emperrado no meio: quem
+                      // continua puxando continua vendo o painel ir
+                      // embora. 170px é a distância em que ele some de
+                      // vez — larga o bastante pra ser um gradiente, e
+                      // não um corte.
+                      opacity: Math.max(0.04, 1 - excedente / 170),
+                    }
+                  : null),
+              }
             : undefined
         }
         aria-label="Painel da sessão"
         data-testid="painel-vtt"
       >
-        {aberto && !ehDrawer && (
+        {/* A ALÇA VALE TAMBÉM NO MODO GAVETA. Ela era exclusiva do painel
+            ancorado, e numa janela estreita — justamente onde a largura
+            do painel mais custa — simplesmente não existia: não havia
+            como encolher nem como puxar. O drawer já respeita o teto de
+            88vw, então arrastar aqui continua não tendo como estourar a
+            tela. */}
+        {aberto && (
           <div
             className="rv-painel-alca"
             role="separator"
@@ -392,9 +534,6 @@ export function PainelVtt({
             aria-valuemax={LARGURA_MAX}
             tabIndex={0}
             onPointerDown={aoPressionarAlca}
-            onPointerMove={aoMoverAlca}
-            onPointerUp={aoSoltarAlca}
-            onPointerCancel={aoSoltarAlca}
             onKeyDown={aoTeclarAlca}
             data-testid="painel-alca"
           />
@@ -405,6 +544,7 @@ export function PainelVtt({
           aberto={aberto}
           onSelecionar={selecionar}
           onRecolher={recolher}
+          onExpandir={expandir}
           idPainelDe={idPainelDe}
         />
 
@@ -421,20 +561,14 @@ export function PainelVtt({
               hidden={!aberto || abaAtiva !== id}
               data-testid={`painel-tabpanel-${id}`}
             >
-              {/* Sem título: a aba selecionada já diz onde você está —
-                  repetir "CHAT LOG" logo abaixo dela era uma linha de
-                  altura gasta pra não dizer nada de novo. O nome
-                  acessível do painel continua vindo da própria aba
-                  (`aria-labelledby`), então nada se perde pra quem usa
-                  leitor de tela. O cabeçalho sobrevive SÓ no modo
-                  gaveta, onde ele carrega o botão de fechar. */}
-              {ehDrawer && (
-                <header className="rv-painel-cab">
-                  <button type="button" className="rv-painel-fechar" onClick={recolher} aria-label="Fechar painel">
-                    <X size={15} />
-                  </button>
-                </header>
-              )}
+              {/* SEM CABEÇALHO, em nenhum modo. Ele já tinha perdido o
+                  título (a aba selecionada diz onde você está, e
+                  repetir "CHAT LOG" abaixo dela gastava uma linha pra
+                  não dizer nada novo) e sobrevivia só no modo gaveta
+                  pra carregar um × de fechar — um segundo botão pro que
+                  o "recolher" da fileira de abas já faz, sozinho numa
+                  faixa de largura inteira. O nome acessível do painel
+                  continua vindo da própria aba (`aria-labelledby`). */}
               <LimiteErroAba chaveReset={id} rotuloAba={ROTULO_ABA[id]}>
                 {conteudoAba[id]}
               </LimiteErroAba>

@@ -25,7 +25,7 @@
  */
 
 import { useRef } from "react";
-import { ChevronsRight, Library, MessageSquare, UsersRound, Users, BookText } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, Library, MessageSquare, UsersRound, Users, BookText } from "lucide-react";
 import { ABAS_ORDEM, ROTULO_ABA, proximaAbaPorSeta, type AbaId } from "./tipos";
 
 const ICONE: Record<AbaId, typeof MessageSquare> = {
@@ -41,12 +41,15 @@ export function PainelAbas({
   aberto,
   onSelecionar,
   onRecolher,
+  onExpandir,
   idPainelDe,
 }: {
   abaAtiva: AbaId;
   aberto: boolean;
   onSelecionar: (aba: AbaId) => void;
   onRecolher: () => void;
+  /** Reabre o painel na aba em que ele parou — sem trocar de seção. */
+  onExpandir: () => void;
   /** `id` do `tabpanel` de cada aba — o alvo do `aria-controls`. */
   idPainelDe: (aba: AbaId) => string;
 }) {
@@ -64,6 +67,34 @@ export function PainelAbas({
 
   return (
     <nav className="rv-painel-abas" role="tablist" aria-label="Seções do painel" aria-orientation={aberto ? "horizontal" : "vertical"} onKeyDown={aoTeclar}>
+      {/* O PAR DO "RECOLHER", no topo da faixa vertical. Reabrir só
+          acontecia clicando numa ABA — o que funciona, mas obriga a
+          ESCOLHER uma seção para executar uma ação que não é sobre
+          seção nenhuma: quem quer o painel de volta como estava não
+          quer decidir nada. Este botão devolve exatamente onde parou.
+          Fica no topo porque é o primeiro lugar onde o olho encosta na
+          faixa, e porque o "recolher" mora no fim da fileira aberta —
+          o gesto de ida e o de volta em pontas opostas. */}
+      {!aberto && (
+        <button
+          type="button"
+          className="rv-aba rv-aba--expandir"
+          onClick={onExpandir}
+          aria-label={`Expandir painel em ${ROTULO_ABA[abaAtiva]}`}
+          aria-expanded={false}
+          data-testid="painel-expandir"
+        >
+          <ChevronsLeft size={17} aria-hidden="true" />
+          <span className="rv-dica">Expandir painel</span>
+        </button>
+      )}
+      {/* A MESMA DIVISÓRIA DO TRILHO DE FERRAMENTAS (`.rv-ferr-sep`): as
+          duas faixas são a mesma coisa em lados opostos da tela, e
+          separar grupos com dois traços diferentes seria inventar uma
+          distinção que não existe. Ela separa o que ABRE o painel do
+          que escolhe a SEÇÃO — dois tipos de decisão. Só no recolhido:
+          deitada, a fileira não tem esse primeiro grupo. */}
+      {!aberto && <span className="rv-aba-sep" aria-hidden="true" />}
       {ABAS_ORDEM.map((id) => {
         const Icone = ICONE[id];
         const ativa = aberto && abaAtiva === id;

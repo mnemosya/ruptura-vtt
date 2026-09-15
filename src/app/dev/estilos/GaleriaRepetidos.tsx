@@ -183,7 +183,6 @@ const BOTOES: Botao[] = [
   { c: "rv-area-item-nome", n: 1, sis: "rv", folha: "vtt.css", papel: "Nome clicável na lista de áreas", rotulo: "Cone de Compressão" },
   { c: "rv-area-edicao-rapida-btn", n: 1, sis: "rv", folha: "vtt.css", papel: "Editar área, flutuando sobre o mapa", icone: "Pencil" },
   { c: "rv-aba", n: 1, sis: "rv", folha: "vtt-chassi.css", papel: "Aba do chassi", rotulo: "Chat" },
-  { c: "rv-painel-fechar", n: 1, sis: "rv", folha: "painel.css", papel: "Recolher o painel lateral", icone: "X" },
   { c: "rv-pn-chat-novas", n: 1, sis: "rv", folha: "painel.css", papel: "Aviso flutuante sobre o feed", rotulo: "Novas mensagens", icone: "ChevronDown" },
   { c: "rv-pn-chip", n: 1, sis: "rv", folha: "painel.css", papel: "Chip clicável na lista", rotulo: "Arcana" },
   { c: "rv-pn-busca-limpar", n: 1, sis: "rv", folha: "painel.css", papel: "Limpar a busca", icone: "X" },

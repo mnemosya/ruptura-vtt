@@ -5576,9 +5576,23 @@ export function VttClient({
      Elas continuam sendo FERRAMENTAS de verdade (`aria-pressed`, atalho
      I e R, e o realce de rodada em andamento), então o botão é o mesmo
      — só muda de vizinho. */
-  const FERRAMENTAS_DE_JANELA: readonly FerramentaId[] = ["imagens", "rodadas"];
-  const ferramentasDoPonteiro = ferramentasDisponiveis.filter((id) => !FERRAMENTAS_DE_JANELA.includes(id));
-  const ferramentasDeJanela = ferramentasDisponiveis.filter((id) => FERRAMENTAS_DE_JANELA.includes(id));
+  /**
+   * O TRILHO É DIVIDIDO POR PAPEL, não por tipo de gesto.
+   *
+   * Ele separava "ferramentas do ponteiro" de "ferramentas que abrem
+   * janela" — distinção verdadeira, mas que não é a pergunta de quem
+   * olha o trilho. A pergunta é QUEM PODE O QUÊ: o jogador via dois
+   * grupos, um cheio e outro com uma peça só, e a divisória entre eles
+   * separava coisas que, pra ele, eram a mesma coisa.
+   *
+   * Agora são quatro seções: o menu da mesa, o que TODO MUNDO usa, o
+   * que é SÓ DO NARRADOR, e desfazer/refazer. Pro jogador a terceira
+   * não existe — nem ela, nem a divisória dela, senão sobrariam dois
+   * traços seguidos anunciando um grupo vazio.
+   */
+  const FERRAMENTAS_SO_DO_NARRADOR: readonly FerramentaId[] = ["terreno", "objetos", "imagens"];
+  const ferramentasDeTodos = ferramentasDisponiveis.filter((id) => !FERRAMENTAS_SO_DO_NARRADOR.includes(id));
+  const ferramentasDoNarrador = ferramentasDisponiveis.filter((id) => FERRAMENTAS_SO_DO_NARRADOR.includes(id));
   const botaoDeFerramenta = (id: FerramentaId) => {
     const Icone = ICONE_FERRAMENTA[id];
     return (
@@ -5619,45 +5633,57 @@ export function VttClient({
         "--rv-grade-opacidade": estadoCena?.cena.gradeOpacidade ?? undefined,
       } as React.CSSProperties}
     >
-      {/* ═══ ESQUERDA — 4 ferramentas por papel ═══ */}
+      {/* ═══ ESQUERDA — quatro seções, divididas por PAPEL ═══ */}
       <aside ref={ferramentasRef} className="rv-ferramentas" aria-label="Ferramentas do mapa">
+        {/* 1. A MESA. Ainda sem função definida — o lugar dela é este,
+               longe das ferramentas, porque o que ela vai fazer (sair
+               pra "Minhas campanhas", voltar pro início) não age sobre
+               o mapa. */}
         <button type="button" className="rv-ferr-btn rv-ferr-menu" aria-label="Menu da mesa"><Menu size={17} /></button>
         <span className="rv-ferr-sep" />
-        {ferramentasDoPonteiro.map(botaoDeFerramenta)}
-        <span className="rv-ferr-sep" />
-        {ehNarrador && (
-          <button type="button" className="rv-ferr-btn" aria-label="Adicionar token (N)" onClick={() => estadoCena && abrirCriarToken()}>
-            <UserPlus size={17} />
-            <span className="rv-dica">Adicionar token<kbd>N</kbd></span>
-          </button>
-        )}
-        {/* Camadas é decisão de quem conduz a cena: o narrador dita o
-            que está no mapa e o que dá pra mexer. Não aparece pro
-            jogador — nem o botão, nem a janela.
 
-            `data-tipo="janela"`: os dois botões abaixo ABREM UMA JANELA,
-            não trocam a ferramenta do ponteiro. Compartilham `aria-pressed`
-            com as ferramentas (os dois são alternáveis), então sem esta
-            marca a única forma de distinguir seria pelo rótulo. */}
-        {ehNarrador && (
-          <button
-            ref={botaoCamadasRef} type="button" className="rv-ferr-btn" data-tipo="janela"
-            aria-pressed={painelCamadasAberto} aria-label="Camadas do mapa (C)"
-            onClick={alternarCamadas}
-          >
-            <Layers size={17} />
-            <span className="rv-dica">Camadas do mapa<kbd>C</kbd></span>
-          </button>
-        )}
-        {ferramentasDeJanela.map(botaoDeFerramenta)}
-        <span className="rv-ferr-sep" />
-        {/* DESFAZER/REFAZER POR ÚLTIMO. Eles não escolhem nada — desfazem
-            o que as outras fizeram —, e no meio do trilho separavam dois
-            grupos que pertencem juntos.
+        {/* 2. O QUE TODO MUNDO USA. */}
+        {ferramentasDeTodos.map(botaoDeFerramenta)}
 
-            A dica é DESENHADA (`.rv-dica`), não o `title` do navegador:
-            os botões de ferramenta sempre tiveram a sua, e sem ela estes
-            ficavam mudos no hover — só o leitor de tela sabia o que eram. */}
+        {/* 3. SÓ O NARRADOR — e a divisória vem JUNTO, dentro da mesma
+               condição: sem isso o jogador via dois traços colados,
+               anunciando um grupo que não existe pra ele. */}
+        {ehNarrador && (
+          <>
+            <span className="rv-ferr-sep" />
+            <button type="button" className="rv-ferr-btn" aria-label="Adicionar token (N)" onClick={() => estadoCena && abrirCriarToken()}>
+              <UserPlus size={17} />
+              <span className="rv-dica">Adicionar token<kbd>N</kbd></span>
+            </button>
+            {/* Camadas é decisão de quem conduz a cena: o narrador dita
+                o que está no mapa e o que dá pra mexer.
+
+                `data-tipo="janela"`: este botão ABRE UMA JANELA, não
+                troca a ferramenta do ponteiro. Compartilha
+                `aria-pressed` com as ferramentas (os dois são
+                alternáveis), então sem esta marca a única forma de
+                distinguir seria pelo rótulo. */}
+            <button
+              ref={botaoCamadasRef} type="button" className="rv-ferr-btn" data-tipo="janela"
+              aria-pressed={painelCamadasAberto} aria-label="Camadas do mapa (C)"
+              onClick={alternarCamadas}
+            >
+              <Layers size={17} />
+              <span className="rv-dica">Camadas do mapa<kbd>C</kbd></span>
+            </button>
+            {ferramentasDoNarrador.map(botaoDeFerramenta)}
+          </>
+        )}
+
+        <span className="rv-ferr-sep" />
+        {/* 4. DESFAZER/REFAZER POR ÚLTIMO. Eles não escolhem nada —
+               desfazem o que as outras fizeram —, e no meio do trilho
+               separavam dois grupos que pertencem juntos.
+
+               A dica é DESENHADA (`.rv-dica`), não o `title` do
+               navegador: os botões de ferramenta sempre tiveram a sua,
+               e sem ela estes ficavam mudos no hover — só o leitor de
+               tela sabia o que eram. */}
         <button type="button" className="rv-ferr-btn" aria-label="Desfazer (Ctrl+Z)" disabled={historico.desfazer.length === 0} onClick={desfazer}>
           <Undo2 size={17} />
           <span className="rv-dica">Desfazer<kbd>Ctrl+Z</kbd></span>

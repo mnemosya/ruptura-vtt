@@ -144,7 +144,8 @@ export function VitrineAbas() {
           abaAtiva={aba}
           aberto={aberto}
           onSelecionar={setAba}
-          onRecolher={() => setAberto((v) => !v)}
+          onRecolher={() => setAberto(false)}
+          onExpandir={() => setAberto(true)}
           idPainelDe={(a) => `gal-painel-${a}`}
         />
       </ColunaDoPainel>

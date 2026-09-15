@@ -171,7 +171,12 @@
    como retângulo. A altura de 38 e a largura dividida valem só no modo
    expandido, onde a faixa é deitada (ver a regra logo abaixo). */
 .rv-aba.rv-aba {
-  width: 34px; height: 34px; border-radius: var(--rv-r-peca);
+  /* 36×36 — EXATAMENTE `.rv-ferr-btn`. Era 34, e os 2px de diferença
+     não se liam como escolha: ícone, raio, borda e vão já eram os
+     mesmos, então a aba parecia o botão de ferramenta ligeiramente
+     encolhido. Duas faixas de ícones em lados opostos da mesma tela
+     são a mesma peça. */
+  width: 36px; height: 36px; border-radius: var(--rv-r-peca);
   color: #7f95b3;
   border: 1px solid rgba(0, 212, 255, .15);
   background: #0c1526;
@@ -180,31 +185,68 @@
 /* Deitadas, elas esticam: a altura sobe pra 38 e a largura se divide
    (a divisão vem do `vtt.css`, que já faz `flex: 1 1 0` no aberto). */
 .rv-painel[data-aberto="true"] .rv-aba.rv-aba { height: 38px; }
-/* Hover e ativo compartilham a borda; o que os separa é o fundo
-   (translúcido contra sólido) e o brilho — mesma regra dos outros. */
-.rv-aba.rv-aba:hover { color: #d3f4ff; border-color: #108bac; background: rgba(0, 212, 255, .09); }
+/* Hover e ativo compartilham a borda; o que os separa é a FORÇA do
+   mesmo fundo (.09 contra .14) e o brilho.
+   O ativo era `#123640` CHAPADO — opaco, ele não era o mesmo azul mais
+   forte, era outra superfície, e puxava o olho mais que a aba merece
+   num painel onde o conteúdo é que importa. Translúcido, os dois
+   estados passam a ser o mesmo gesto em duas intensidades. */
+/* Duas camadas, pelo mesmo motivo do trilho de ferramentas: recolhido,
+   o painel é uma fileira de peças SOBRE O MAPA, e uma lavagem posta no
+   lugar do `#0c1526` deixaria os hexágonos aparecerem por dentro da
+   aba. A lavagem vai por cima; a peça continua opaca. */
+.rv-aba.rv-aba:hover {
+  color: #d3f4ff; border-color: #108bac;
+  background: linear-gradient(rgba(0, 212, 255, .09), rgba(0, 212, 255, .09)), #0c1526;
+}
 .rv-aba.rv-aba[aria-selected="true"] {
   color: var(--pn-cy);
   border-color: #108bac;
-  background: #123640;
+  background: linear-gradient(rgba(0, 212, 255, .14), rgba(0, 212, 255, .14)), #0c1526;
   box-shadow: 0 0 9px rgba(0, 212, 255, .25);
 }
-.rv-aba.rv-aba[aria-selected="true"]:hover { color: var(--pn-cy); background: #123640; }
+.rv-aba.rv-aba[aria-selected="true"]:hover {
+  color: var(--pn-cy);
+  background: linear-gradient(rgba(0, 212, 255, .14), rgba(0, 212, 255, .14)), #0c1526;
+}
 /* A barra grossa de seleção (2px colada na borda da faixa) saiu: com o
    fio em volta da aba ela virava um segundo anúncio do mesmo estado. */
 .rv-aba:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 2px; }
+/* EXPANDIR — mesma casca das abas, mas não é uma delas: não seleciona
+   nada, devolve o painel. Fica um pouco apagado em repouso pra não
+   disputar com a aba ativa, que é quem diz ONDE você vai voltar. */
+.rv-aba.rv-aba--expandir { color: var(--pn-dim); }
+.rv-aba.rv-aba--expandir:hover { color: var(--pn-cy); }
 
 
+/* A ALÇA É INVISÍVEL ATÉ O HOVER, então o que ela tem pra ser achada é
+   o TAMANHO e o cursor. Ela ficava 3px pra FORA do painel, e esses 3px
+   caem sobre o mapa — que desenha por cima: de uma faixa de 7px,
+   sobravam 4 que respondiam ao clique. Agora ela mora inteira dentro da
+   borda, e são 10px que nenhum outro elemento disputa. */
 .rv-painel-alca {
-  position: absolute; left: -3px; top: 0; bottom: 0; width: 7px; z-index: 3;
+  position: absolute; left: 0; top: 0; bottom: 0; width: 10px; z-index: 3;
   cursor: col-resize; background: transparent; touch-action: none;
 }
 .rv-painel-alca::after {
-  content: ""; position: absolute; left: 3px; top: 0; bottom: 0; width: 1px;
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 1px;
   background: transparent; transition: background .14s;
 }
 .rv-painel-alca:hover::after, .rv-painel-alca:focus-visible::after { background: var(--pn-cy); }
 .rv-painel-alca:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: -2px; }
+/* ARRASTOU ALÉM DO LIMIAR: soltar aqui RECOLHE. O fio da alça troca de
+   cor antes de o gesto terminar — sem esse aviso, o painel sumiria de
+   repente e pareceria um bug, não uma escolha. `--pn-perigo` é a mesma
+   cor que o × de fechar já usava no hover: é a cor de "isto some". */
+.rv-painel[data-vai-recolher="true"] .rv-painel-alca::after { background: var(--pn-perigo); }
+/* O recuo do painel NÃO é um degrau fixo: ele acompanha o arrasto,
+   deslizando e desbotando pixel a pixel (o `transform` e a `opacity`
+   vêm inline, de `PainelVtt`). Aqui só fica a VOLTA: soltar antes do
+   limiar devolve o painel ao lugar com um respiro, senão ele salta.
+   Durante o arrasto a transição é desligada — ela ia atrasar o painel
+   em relação à mão, que é justamente o que se quer evitar. */
+.rv-painel { transition: transform .16s ease-out, opacity .16s ease-out; }
+.rv-painel[data-redimensionando="true"] { transition: none; }
 
 /* Drawer — flutua sobre a borda direita, SEM véu (o mapa continua
    clicável). `100dvh` é o que sobrevive ao teclado virtual no celular. */
@@ -221,24 +263,6 @@
 .rv-painel-tabpanel { display: flex; flex: 1; flex-direction: column; height: 100%; min-height: 0; overflow: hidden; }
 .rv-painel-tabpanel[hidden] { display: none; }
 
-.rv-painel-cab {
-  flex: none; display: flex; align-items: center; gap: 8px;
-  padding: 8px 9px 6px;
-  border-bottom: 1px solid var(--pn-line-hair);
-}
-.rv-painel-titulo {
-  flex: 1; margin: 0; padding: 0;
-  font-family: var(--rv-display);
-  font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
-  color: var(--rv-cy);
-}
-.rv-painel-fechar {
-  width: 24px; height: 24px; flex: none; display: grid; place-items: center;
-  border: 1px solid var(--pn-line-soft); border-radius: var(--pn-radius);
-  background: transparent; color: var(--pn-dim); cursor: pointer;
-}
-.rv-painel-fechar:hover { border-color: var(--pn-perigo); color: var(--pn-perigo); }
-.rv-painel-fechar:focus-visible { outline: 2px solid var(--pn-cy); outline-offset: 2px; }
 
 /* Estrutura interna de cada aba: cabeçalho e rodapé fixos, só o miolo
    rola. É a regra que mantém o composer sempre inteiramente visível.
