@@ -7,6 +7,12 @@ superfície, fio vira fio, âmbar vira âmbar. Cada linha diz o papel, pra
 que a próxima pessoa possa discordar de uma sem desmontar as outras.
 """
 
+# NÃO ENTRA NESTA TABELA: a cor do TIPO do item (a vertente). Ela não
+# é chrome, é conteúdo, e já tem paleta canônica em vtt.css
+# (`--rv-vertente-cor`). Traduzir essas cores aqui achata as seis
+# vertentes num âmbar só. Quem consome deve marcar `data-vertente` e
+# usar a variável.
+
 CORES = {
   # ── Superfícies, do fundo pra frente ──────────────────────────────
   "#090f1a": "#070c16",                     # fundo atrás da janela

@@ -14,6 +14,22 @@
  * As duas ficam lado a lado na galeria de propósito: a fiel é a régua,
  * esta é a leitura. Divergência entre elas que não seja cor é erro.
  *
+ * COR DE ITEM NÃO É COR DE CHASSI. A tabela traduz o chrome — as
+ * superfícies, os fios, o texto. O acento de cada item é outra coisa:
+ * é a VERTENTE dele, e essa paleta já existe e já é canônica no VTT
+ * (`--rv-vertente-cor`, em vtt.css, a mesma do disco do token e da
+ * trilha de rodadas). Explosivo é energética (laranja), arma é
+ * cinética (vermelho), vertina é cognitiva (roxo), escudo é material
+ * (amarelo), farmácia é somática (verde), utilitário é sináptica
+ * (azul). Passar essas cores pela tabela do chrome achatava as seis
+ * num âmbar só — que foi exatamente o que aconteceu.
+ *
+ * Por isso os cartões carregam `data-vertente` e tudo que é acento
+ * (ladrilho do ícone, fio do selecionado, etiquetas) sai de
+ * `var(--rv-vertente-cor)`: nenhum hexadecimal de tipo mora aqui, e
+ * mudar a paleta num lugar muda em todos. O medidor de capacidade
+ * segue âmbar de propósito — ele mede a mochila, não um tipo.
+ *
  * Ainda ESTÁTICA: o conteúdo é o do desenho. Ligar inventário de
  * verdade é o próximo passo, e é ele que vai trocar os nós fixos por
  * dados — a estrutura não precisa mudar pra isso.
@@ -257,9 +273,9 @@ export function InventarioFiel() {
                             </div>
                           </div>
                         </div>
-                        <div style={{ background: "linear-gradient(rgba(207,154,62,0.10),rgba(207,154,62,0.10)), rgba(17,29,49,0.7)", borderColor: "#1c2b45", borderWidth: "1px", borderStyle: "solid", gridColumn: "1", alignContent: "stretch", filter: "drop-shadow(0px 16px 2.5px rgba(6,12,19,0.01),0px 10px 2px rgba(6,12,19,0.05),0px 6px 2px rgba(6,12,19,0.17),0px 3px 1.5px rgba(6,12,19,0.3),0px 1px 0.5px rgba(6,12,19,0.34))", display: "flex", flexDirection: "column", gap: "10px", alignItems: "center", justifySelf: "stretch", paddingLeft: "10px", paddingRight: "10px", paddingTop: "12px", paddingBottom: "12px", position: "relative", borderRadius: "1px", gridRow: "1", alignSelf: "stretch", flexShrink: "0" }} data-node-id="161:42250" data-name="Container">
+                        <div style={{ background: "linear-gradient(color-mix(in srgb, var(--rv-vertente-cor) 10%, transparent),color-mix(in srgb, var(--rv-vertente-cor) 10%, transparent)), rgba(17,29,49,0.7)", borderColor: "#1c2b45", borderWidth: "1px", borderStyle: "solid", gridColumn: "1", alignContent: "stretch", filter: "drop-shadow(0px 16px 2.5px rgba(6,12,19,0.01),0px 10px 2px rgba(6,12,19,0.05),0px 6px 2px rgba(6,12,19,0.17),0px 3px 1.5px rgba(6,12,19,0.3),0px 1px 0.5px rgba(6,12,19,0.34))", display: "flex", flexDirection: "column", gap: "10px", alignItems: "center", justifySelf: "stretch", paddingLeft: "10px", paddingRight: "10px", paddingTop: "12px", paddingBottom: "12px", position: "relative", borderRadius: "1px", gridRow: "1", alignSelf: "stretch", flexShrink: "0" }} data-node-id="161:42250" data-name="Container" data-vertente="energetico">
                           <div style={{ borderWidth: "1px", borderColor: "#16233a", borderStyle: "solid", alignContent: "stretch", display: "flex", height: "64px", alignItems: "center", justifyContent: "center", overflow: "clip", paddingLeft: "4px", paddingRight: "4px", paddingTop: "12px", paddingBottom: "12px", position: "relative", flexShrink: "0", width: "100%" }} data-node-id="161:42251" data-name="Text">
-                            <div aria-hidden style={{ position: "absolute", background: "rgba(31,13,10,0.43)", inset: "0", pointerEvents: "none" }} />
+                            <div aria-hidden style={{ position: "absolute", background: "color-mix(in srgb, var(--rv-vertente-cor) 13%, #050a10)", inset: "0", pointerEvents: "none" }} />
                             <div style={{ display: "flex", height: "36.175px", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: "0", width: "35.003px" }} data-node-id="177:43604">
                               <div style={{ flex: "none", transform: "rotate(-30deg)" }}>
                                 <div style={{ height: "27.653px", position: "relative", width: "24.453px" }} data-name="Vector">
@@ -278,17 +294,17 @@ export function InventarioFiel() {
                             </p>
                           </div>
                           <div style={{ position: "absolute", borderColor: "#16233a", borderLeftWidth: "1px", borderStyle: "solid", borderTopWidth: "1px", bottom: "51.33px", overflow: "clip", right: "10px", width: "24px", height: "24px" }} data-node-id="161:42457">
-                            <div style={{ position: "absolute", background: "linear-gradient(rgba(207,154,62,0.10),rgba(207,154,62,0.10)), rgba(17,29,49,0.7)", borderWidth: "1px", borderColor: "rgba(207,154,62,0.10)", borderStyle: "solid", bottom: "0", alignContent: "stretch", filter: "drop-shadow(-10px -10px 2px rgba(0,0,0,0),-7px -7px 2px rgba(0,0,0,0.03),-4px -4px 1.5px rgba(0,0,0,0.11),-2px -2px 1px rgba(0,0,0,0.19),0px 0px 0.5px rgba(0,0,0,0.21))", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "5px", right: "0", width: "24px" }} data-node-id="161:42458" data-name="Tab - Ações">
+                            <div style={{ position: "absolute", background: "linear-gradient(color-mix(in srgb, var(--rv-vertente-cor) 10%, transparent),color-mix(in srgb, var(--rv-vertente-cor) 10%, transparent)), rgba(17,29,49,0.7)", borderWidth: "1px", borderColor: "color-mix(in srgb, var(--rv-vertente-cor) 10%, transparent)", borderStyle: "solid", bottom: "0", alignContent: "stretch", filter: "drop-shadow(-10px -10px 2px rgba(0,0,0,0),-7px -7px 2px rgba(0,0,0,0.03),-4px -4px 1.5px rgba(0,0,0,0.11),-2px -2px 1px rgba(0,0,0,0.19),0px 0px 0.5px rgba(0,0,0,0.21))", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "5px", right: "0", width: "24px" }} data-node-id="161:42458" data-name="Tab - Ações">
                               <p style={{ wordBreak: "break-word", fontWeight: "600", lineHeight: "14px", fontStyle: "normal", position: "relative", flexShrink: "0", fontSize: "12px", color: "rgba(214,228,245,0.65)", textAlign: "center", width: "100%", fontFamily: "var(--font-rajdhani), sans-serif" }} data-node-id="161:42459">
                                 x1
                               </p>
                             </div>
                           </div>
-                          <div style={{ position: "absolute", background: "#cf9a3e", height: "128px", left: "-1px", top: "-1px", width: "2px" }} data-node-id="161:42441" />
+                          <div style={{ position: "absolute", background: "var(--rv-vertente-cor)", height: "128px", left: "-1px", top: "-1px", width: "2px" }} data-node-id="161:42441" />
                         </div>
-                        <div style={{ background: "rgba(17,29,49,0.45)", borderColor: "#1c2b45", borderWidth: "1px", borderStyle: "solid", gridColumn: "2", alignContent: "stretch", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", justifySelf: "stretch", paddingLeft: "10px", paddingRight: "10px", paddingTop: "12px", paddingBottom: "12px", position: "relative", borderRadius: "1px", gridRow: "1", alignSelf: "stretch", flexShrink: "0" }} data-node-id="159:41097" data-name="Container">
+                        <div style={{ background: "rgba(17,29,49,0.45)", borderColor: "#1c2b45", borderWidth: "1px", borderStyle: "solid", gridColumn: "2", alignContent: "stretch", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", justifySelf: "stretch", paddingLeft: "10px", paddingRight: "10px", paddingTop: "12px", paddingBottom: "12px", position: "relative", borderRadius: "1px", gridRow: "1", alignSelf: "stretch", flexShrink: "0" }} data-node-id="159:41097" data-name="Container" data-vertente="cinetica">
                           <div style={{ borderWidth: "1px", borderColor: "#16233a", borderStyle: "solid", alignContent: "stretch", display: "flex", height: "64px", alignItems: "center", justifyContent: "center", overflow: "clip", paddingLeft: "4px", paddingRight: "4px", paddingTop: "12px", paddingBottom: "12px", position: "relative", flexShrink: "0", width: "100%" }} data-node-id="159:41098" data-name="Text">
-                            <div aria-hidden style={{ position: "absolute", background: "rgba(36,8,8,0.43)", inset: "0", pointerEvents: "none" }} />
+                            <div aria-hidden style={{ position: "absolute", background: "color-mix(in srgb, var(--rv-vertente-cor) 13%, #050a10)", inset: "0", pointerEvents: "none" }} />
                             <div style={{ height: "24px", position: "relative", flexShrink: "0", width: "28px" }} data-node-id="177:43568" data-name="Vector">
                               <img alt="" style={{ position: "absolute", display: "block", inset: "0", maxWidth: "none", width: "100%", height: "100%" }} src={imgVector1} />
                             </div>
@@ -310,9 +326,9 @@ export function InventarioFiel() {
                             </div>
                           </div>
                         </div>
-                        <div style={{ background: "rgba(17,29,49,0.45)", borderColor: "#1c2b45", borderWidth: "1px", borderStyle: "solid", gridColumn: "3", alignContent: "stretch", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", justifySelf: "stretch", paddingLeft: "10px", paddingRight: "10px", paddingTop: "12px", paddingBottom: "12px", position: "relative", borderRadius: "1px", gridRow: "1", alignSelf: "stretch", flexShrink: "0" }} data-node-id="161:42320" data-name="Container">
+                        <div style={{ background: "rgba(17,29,49,0.45)", borderColor: "#1c2b45", borderWidth: "1px", borderStyle: "solid", gridColumn: "3", alignContent: "stretch", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", justifySelf: "stretch", paddingLeft: "10px", paddingRight: "10px", paddingTop: "12px", paddingBottom: "12px", position: "relative", borderRadius: "1px", gridRow: "1", alignSelf: "stretch", flexShrink: "0" }} data-node-id="161:42320" data-name="Container" data-vertente="cognitivo">
                           <div style={{ borderWidth: "1px", borderColor: "#16233a", borderStyle: "solid", alignContent: "stretch", display: "flex", height: "64px", alignItems: "center", justifyContent: "center", overflow: "clip", paddingLeft: "4px", paddingRight: "4px", paddingTop: "12px", paddingBottom: "12px", position: "relative", flexShrink: "0", width: "100%" }} data-node-id="161:42321" data-name="Text">
-                            <div aria-hidden style={{ position: "absolute", background: "rgba(12,20,32,0.66)", inset: "0", pointerEvents: "none" }} />
+                            <div aria-hidden style={{ position: "absolute", background: "color-mix(in srgb, var(--rv-vertente-cor) 13%, #050a10)", inset: "0", pointerEvents: "none" }} />
                             <div style={{ position: "relative", flexShrink: "0", width: "26px", height: "26px" }} data-node-id="177:43652" data-name="Vector">
                               <img alt="" style={{ position: "absolute", display: "block", inset: "0", maxWidth: "none", width: "100%", height: "100%" }} src={imgVector2} />
                             </div>
@@ -334,9 +350,9 @@ export function InventarioFiel() {
                             </div>
                           </div>
                         </div>
-                        <div style={{ background: "rgba(17,29,49,0.45)", borderColor: "#1c2b45", borderWidth: "1px", borderStyle: "solid", gridColumn: "1", alignContent: "stretch", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", justifySelf: "stretch", paddingLeft: "10px", paddingRight: "10px", paddingTop: "12px", paddingBottom: "12px", position: "relative", borderRadius: "1px", gridRow: "2", alignSelf: "stretch", flexShrink: "0" }} data-node-id="159:41325" data-name="Container">
+                        <div style={{ background: "rgba(17,29,49,0.45)", borderColor: "#1c2b45", borderWidth: "1px", borderStyle: "solid", gridColumn: "1", alignContent: "stretch", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", justifySelf: "stretch", paddingLeft: "10px", paddingRight: "10px", paddingTop: "12px", paddingBottom: "12px", position: "relative", borderRadius: "1px", gridRow: "2", alignSelf: "stretch", flexShrink: "0" }} data-node-id="159:41325" data-name="Container" data-vertente="material">
                           <div style={{ borderWidth: "1px", borderColor: "#16233a", borderStyle: "solid", alignContent: "stretch", display: "flex", height: "64px", alignItems: "center", justifyContent: "center", overflow: "clip", paddingLeft: "4px", paddingRight: "4px", paddingTop: "12px", paddingBottom: "12px", position: "relative", flexShrink: "0", width: "100%" }} data-node-id="159:41326" data-name="Text">
-                            <div aria-hidden style={{ position: "absolute", background: "rgba(18,15,6,0.43)", inset: "0", pointerEvents: "none" }} />
+                            <div aria-hidden style={{ position: "absolute", background: "color-mix(in srgb, var(--rv-vertente-cor) 13%, #050a10)", inset: "0", pointerEvents: "none" }} />
                             <div style={{ height: "27px", position: "relative", flexShrink: "0", width: "23px" }} data-node-id="177:43550" data-name="Vector">
                               <img alt="" style={{ position: "absolute", display: "block", inset: "0", maxWidth: "none", width: "100%", height: "100%" }} src={imgVector3} />
                             </div>
@@ -358,9 +374,9 @@ export function InventarioFiel() {
                             </div>
                           </div>
                         </div>
-                        <div style={{ background: "rgba(17,29,49,0.45)", borderColor: "#1c2b45", borderWidth: "1px", borderStyle: "solid", gridColumn: "2", alignContent: "stretch", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", justifySelf: "stretch", paddingLeft: "10px", paddingRight: "10px", paddingTop: "12px", paddingBottom: "12px", position: "relative", borderRadius: "1px", gridRow: "2", alignSelf: "stretch", flexShrink: "0" }} data-node-id="159:41314" data-name="Container">
+                        <div style={{ background: "rgba(17,29,49,0.45)", borderColor: "#1c2b45", borderWidth: "1px", borderStyle: "solid", gridColumn: "2", alignContent: "stretch", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", justifySelf: "stretch", paddingLeft: "10px", paddingRight: "10px", paddingTop: "12px", paddingBottom: "12px", position: "relative", borderRadius: "1px", gridRow: "2", alignSelf: "stretch", flexShrink: "0" }} data-node-id="159:41314" data-name="Container" data-vertente="somatico">
                           <div style={{ borderWidth: "1px", borderColor: "#16233a", borderStyle: "solid", alignContent: "stretch", display: "flex", height: "64px", alignItems: "center", justifyContent: "center", overflow: "clip", paddingLeft: "4px", paddingRight: "4px", paddingTop: "12px", paddingBottom: "12px", position: "relative", flexShrink: "0", width: "100%" }} data-node-id="159:41315" data-name="Text">
-                            <div aria-hidden style={{ position: "absolute", background: "rgba(8,20,32,0.76)", inset: "0", pointerEvents: "none" }} />
+                            <div aria-hidden style={{ position: "absolute", background: "color-mix(in srgb, var(--rv-vertente-cor) 13%, #050a10)", inset: "0", pointerEvents: "none" }} />
                             <div style={{ height: "23px", position: "relative", flexShrink: "0", width: "26px" }} data-node-id="177:43661" data-name="Vector">
                               <img alt="" style={{ position: "absolute", display: "block", inset: "0", maxWidth: "none", width: "100%", height: "100%" }} src={imgVector4} />
                             </div>
@@ -382,9 +398,9 @@ export function InventarioFiel() {
                             </div>
                           </div>
                         </div>
-                        <div style={{ background: "rgba(17,29,49,0.45)", borderColor: "#1c2b45", borderWidth: "1px", borderStyle: "solid", gridColumn: "3", alignContent: "stretch", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", justifySelf: "stretch", paddingLeft: "10px", paddingRight: "10px", paddingTop: "12px", paddingBottom: "12px", position: "relative", borderRadius: "1px", gridRow: "2", alignSelf: "stretch", flexShrink: "0" }} data-node-id="161:42237" data-name="Container">
+                        <div style={{ background: "rgba(17,29,49,0.45)", borderColor: "#1c2b45", borderWidth: "1px", borderStyle: "solid", gridColumn: "3", alignContent: "stretch", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", justifySelf: "stretch", paddingLeft: "10px", paddingRight: "10px", paddingTop: "12px", paddingBottom: "12px", position: "relative", borderRadius: "1px", gridRow: "2", alignSelf: "stretch", flexShrink: "0" }} data-node-id="161:42237" data-name="Container" data-vertente="sinaptica">
                           <div style={{ borderWidth: "1px", borderColor: "#16233a", borderStyle: "solid", alignContent: "stretch", display: "flex", height: "64px", alignItems: "center", justifyContent: "center", overflow: "clip", paddingLeft: "4px", paddingRight: "4px", paddingTop: "12px", paddingBottom: "12px", position: "relative", flexShrink: "0", width: "100%" }} data-node-id="161:42238" data-name="Text">
-                            <div aria-hidden style={{ position: "absolute", background: "rgba(8,14,24,0.8)", inset: "0", pointerEvents: "none" }} />
+                            <div aria-hidden style={{ position: "absolute", background: "color-mix(in srgb, var(--rv-vertente-cor) 13%, #050a10)", inset: "0", pointerEvents: "none" }} />
                             <div style={{ height: "21px", position: "relative", flexShrink: "0", width: "26px" }} data-node-id="177:43685" data-name="Vector">
                               <img alt="" style={{ position: "absolute", display: "block", inset: "0", maxWidth: "none", width: "100%", height: "100%" }} src={imgVector5} />
                             </div>
@@ -406,9 +422,9 @@ export function InventarioFiel() {
                             </div>
                           </div>
                         </div>
-                        <div style={{ background: "rgba(17,29,49,0.45)", borderColor: "#1c2b45", borderWidth: "1px", borderStyle: "solid", gridColumn: "1/span 2", alignContent: "stretch", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", justifySelf: "stretch", paddingLeft: "10px", paddingRight: "10px", paddingTop: "12px", paddingBottom: "12px", position: "relative", borderRadius: "1px", gridRow: "3", alignSelf: "stretch", flexShrink: "0" }} data-node-id="161:42505" data-name="Container">
+                        <div style={{ background: "rgba(17,29,49,0.45)", borderColor: "#1c2b45", borderWidth: "1px", borderStyle: "solid", gridColumn: "1/span 2", alignContent: "stretch", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", justifySelf: "stretch", paddingLeft: "10px", paddingRight: "10px", paddingTop: "12px", paddingBottom: "12px", position: "relative", borderRadius: "1px", gridRow: "3", alignSelf: "stretch", flexShrink: "0" }} data-node-id="161:42505" data-name="Container" data-vertente="cinetica">
                           <div style={{ borderWidth: "1px", borderColor: "#16233a", borderStyle: "solid", alignContent: "stretch", display: "flex", height: "64px", alignItems: "center", justifyContent: "center", overflow: "clip", paddingLeft: "4px", paddingRight: "4px", paddingTop: "12px", paddingBottom: "12px", position: "relative", flexShrink: "0", width: "100%" }} data-node-id="161:42506" data-name="Text">
-                            <div aria-hidden style={{ position: "absolute", background: "rgba(36,8,8,0.43)", inset: "0", pointerEvents: "none" }} />
+                            <div aria-hidden style={{ position: "absolute", background: "color-mix(in srgb, var(--rv-vertente-cor) 13%, #050a10)", inset: "0", pointerEvents: "none" }} />
                             <div style={{ display: "flex", height: "43.926px", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: "0", width: "40.258px" }} data-node-id="176:43534">
                               <div style={{ flex: "none", transform: "rotate(15deg)" }}>
                                 <div style={{ height: "36.961px", position: "relative", width: "31.775px" }} data-name="06- Katana">
@@ -444,7 +460,7 @@ export function InventarioFiel() {
                       </div>
                     </div>
                   </div>
-                  <div style={{ background: "rgba(12,20,32,0.7)", borderColor: "#1c2b45", borderLeftWidth: "1px", borderStyle: "solid", alignContent: "stretch", display: "flex", flex: "1 0 0", flexDirection: "column", height: "100%", alignItems: "flex-start", minWidth: "1px", overflow: "clip", position: "relative" }} data-node-id="159:40716">
+                  <div style={{ background: "rgba(12,20,32,0.7)", borderColor: "#1c2b45", borderLeftWidth: "1px", borderStyle: "solid", alignContent: "stretch", display: "flex", flex: "1 0 0", flexDirection: "column", height: "100%", alignItems: "flex-start", minWidth: "1px", overflow: "clip", position: "relative" }} data-node-id="159:40716" data-vertente="energetico">
                     <div style={{ alignContent: "stretch", display: "flex", flex: "1 0 0", flexDirection: "column", gap: "16px", alignItems: "flex-start", minHeight: "1px", padding: "12px", position: "relative", width: "100%" }} data-node-id="159:40717">
                       <div style={{ alignContent: "stretch", display: "flex", gap: "12px", alignItems: "center", position: "relative", flexShrink: "0", width: "100%" }} data-node-id="159:40718">
                         <div style={{ position: "relative", flexShrink: "0", width: "56px", height: "56px" }} data-node-id="159:40719" data-name="Text">
@@ -457,19 +473,19 @@ export function InventarioFiel() {
                             Granada de choque
                           </p>
                           <div style={{ alignContent: "stretch", display: "flex", gap: "4px", alignItems: "flex-start", position: "relative", flexShrink: "0" }} data-node-id="159:40723">
-                            <div style={{ background: "rgba(207,154,62,0.12)", borderWidth: "1px", borderColor: "rgba(207,154,62,0.35)", borderStyle: "solid", alignContent: "stretch", display: "flex", gap: "6px", alignItems: "center", overflow: "clip", paddingLeft: "5px", paddingRight: "5px", paddingTop: "3px", paddingBottom: "3px", position: "relative", flexShrink: "0" }} data-node-id="159:40724" data-name="Button Primary">
+                            <div style={{ background: "color-mix(in srgb, var(--rv-vertente-cor) 12%, transparent)", borderWidth: "1px", borderColor: "color-mix(in srgb, var(--rv-vertente-cor) 35%, transparent)", borderStyle: "solid", alignContent: "stretch", display: "flex", gap: "6px", alignItems: "center", overflow: "clip", paddingLeft: "5px", paddingRight: "5px", paddingTop: "3px", paddingBottom: "3px", position: "relative", flexShrink: "0" }} data-node-id="159:40724" data-name="Button Primary">
                               <div style={{ position: "relative", flexShrink: "0" }} data-node-id="159:40727">
                                 <div style={{ backgroundClip: "padding-box", borderWidth: "0", borderColor: "transparent", borderStyle: "solid", alignContent: "stretch", display: "flex", alignItems: "center", position: "relative", width: "100%", height: "100%" }}>
-                                  <div style={{ wordBreak: "break-word", display: "flex", flexDirection: "column", fontWeight: "400", justifyContent: "center", lineHeight: "0", position: "relative", flexShrink: "0", color: "#cf9a3e", fontSize: "10px", letterSpacing: "0.8px", whiteSpace: "nowrap", fontFamily: "var(--font-mono), sans-serif" }} data-node-id="159:40728">
+                                  <div style={{ wordBreak: "break-word", display: "flex", flexDirection: "column", fontWeight: "400", justifyContent: "center", lineHeight: "0", position: "relative", flexShrink: "0", color: "var(--rv-vertente-cor)", fontSize: "10px", letterSpacing: "0.8px", whiteSpace: "nowrap", fontFamily: "var(--font-mono), sans-serif" }} data-node-id="159:40728">
                                     <p style={{ lineHeight: "normal" }}>Explosivo</p>
                                   </div>
                                 </div>
                               </div>
                             </div>
-                            <div style={{ background: "rgba(207,154,62,0.12)", borderWidth: "1px", borderColor: "rgba(207,154,62,0.35)", borderStyle: "solid", alignContent: "stretch", display: "flex", gap: "6px", alignItems: "center", overflow: "clip", paddingLeft: "5px", paddingRight: "5px", paddingTop: "3px", paddingBottom: "3px", position: "relative", flexShrink: "0" }} data-node-id="166:42639" data-name="Button Primary">
+                            <div style={{ background: "color-mix(in srgb, var(--rv-vertente-cor) 12%, transparent)", borderWidth: "1px", borderColor: "color-mix(in srgb, var(--rv-vertente-cor) 35%, transparent)", borderStyle: "solid", alignContent: "stretch", display: "flex", gap: "6px", alignItems: "center", overflow: "clip", paddingLeft: "5px", paddingRight: "5px", paddingTop: "3px", paddingBottom: "3px", position: "relative", flexShrink: "0" }} data-node-id="166:42639" data-name="Button Primary">
                               <div style={{ position: "relative", flexShrink: "0" }} data-node-id="166:42642">
                                 <div style={{ backgroundClip: "padding-box", borderWidth: "0", borderColor: "transparent", borderStyle: "solid", alignContent: "stretch", display: "flex", alignItems: "center", position: "relative", width: "100%", height: "100%" }}>
-                                  <div style={{ wordBreak: "break-word", display: "flex", flexDirection: "column", fontWeight: "400", justifyContent: "center", lineHeight: "0", position: "relative", flexShrink: "0", color: "#cf9a3e", fontSize: "10px", letterSpacing: "0.8px", whiteSpace: "nowrap", fontFamily: "var(--font-mono), sans-serif" }} data-node-id="166:42643">
+                                  <div style={{ wordBreak: "break-word", display: "flex", flexDirection: "column", fontWeight: "400", justifyContent: "center", lineHeight: "0", position: "relative", flexShrink: "0", color: "var(--rv-vertente-cor)", fontSize: "10px", letterSpacing: "0.8px", whiteSpace: "nowrap", fontFamily: "var(--font-mono), sans-serif" }} data-node-id="166:42643">
                                     <p style={{ lineHeight: "normal" }}>Incomum</p>
                                   </div>
                                 </div>
