@@ -151,6 +151,37 @@ const OCULTAVEL_ROTULO: Record<string, string> = {
   nao: "Não",
 };
 
+/**
+ * Ocultável? — e a lacuna de conteúdo por trás disto.
+ *
+ * `ocultavel` existe no payload SÓ de armadura e escudo. Nenhuma arma
+ * declara o campo, e a linha precisa aparecer para elas.
+ *
+ * ⚠ REGRA A CONFIRMAR: na ausência do campo, a resposta sai da
+ * `classe_porte`. Ocultar é uma pergunta de TAMANHO, e porte é o único
+ * dado de tamanho que o item tem — leve esconde, pesada não esconde,
+ * média esconde mal. Isso devolve Adaga (leve) = "Sim", que é o que o
+ * dono do sistema afirmou, e Metralhadora (pesada) = "Não". Mas é
+ * DERIVAÇÃO, não dado: no dia em que as armas declararem `ocultavel`,
+ * o campo manda e esta tabela sai de cena.
+ *
+ * `null` = não dá para responder (item sem porte e sem o campo, caso
+ * dos consumíveis) — e aí a linha não aparece, em vez de mostrar um
+ * traço que não informa nada.
+ */
+const OCULTAVEL_POR_PORTE: Record<string, string> = {
+  leve: "Sim",
+  media: "Parcialmente",
+  pesada: "Não",
+};
+
+function descricaoDeOcultavel(modelo: ItemContent | undefined): string | null {
+  if (!modelo) return null;
+  if (modelo.ocultavel) return OCULTAVEL_ROTULO[modelo.ocultavel] ?? modelo.ocultavel;
+  if (modelo.classePorte) return OCULTAVEL_POR_PORTE[modelo.classePorte] ?? null;
+  return null;
+}
+
 function IconeDaCategoria({ categoria }: { categoria: string }) {
   const Icone = ICONE_DA_CATEGORIA[categoria] ?? Package;
   return <Icone size={30} strokeWidth={1.5} aria-hidden="true" />;
@@ -409,7 +440,8 @@ function DetalheDoItem({
      como ação e condição — só que soltas, não dentro de uma frase. */
   const propriedades = api.propriedadesDoItem(instancia.id);
   const alcance = descricaoDoAlcance(modelo);
-  const temSegundaTabela = propriedades.length > 0 || alcance != null || modelo?.ocultavel != null;
+  const ocultavel = descricaoDeOcultavel(modelo);
+  const temSegundaTabela = propriedades.length > 0 || alcance != null || ocultavel != null;
 
   const lado: { rot: string; val: string }[] = [
     { rot: "Espaços/item", val: String(espacosDoItem(modelo)) },
@@ -517,10 +549,10 @@ function DetalheDoItem({
                 <dd>{alcance}</dd>
               </div>
             )}
-            {modelo?.ocultavel != null && (
+            {ocultavel && (
               <div className="rc-inv-linha">
                 <dt>Ocultável?</dt>
-                <dd>{OCULTAVEL_ROTULO[modelo.ocultavel] ?? modelo.ocultavel}</dd>
+                <dd>{ocultavel}</dd>
               </div>
             )}
           </dl>

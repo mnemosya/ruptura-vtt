@@ -1924,12 +1924,15 @@
 .rc-inv-aba {
   flex: 1 0 0; min-width: 0; height: 30px; padding: 5px 9px; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  border: 1px solid transparent; background: none;
+  /* A aba inativa TEM fio: sem ele as quatro viram texto solto numa
+     faixa e some a noção de que são quatro caixas. O ativo troca a cor
+     do fio e ganha fundo — não é ele que estreia a borda. */
+  border: 1px solid var(--rc-line); background: none;
   color: rgba(214, 228, 245, 0.45);
   font: 600 13px/18px var(--font-rajdhani), sans-serif;
   transition: background .14s, border-color .14s, color .14s;
 }
-.rc-inv-aba:hover { color: rgba(214, 228, 245, 0.83); border-color: var(--rc-line); }
+.rc-inv-aba:hover { color: rgba(214, 228, 245, 0.83); border-color: rgba(0, 212, 255, 0.35); }
 .rc-inv-aba:focus-visible { outline: 1px solid var(--cy); outline-offset: -2px; }
 .rc-inv-aba[data-ativo] {
   background: var(--rc-line); border-color: #108bac; color: rgba(214, 228, 245, 0.83);
@@ -2029,7 +2032,10 @@
 .rc-inv-card:focus-visible { outline: 1px solid var(--cy); outline-offset: 1px; }
 /* Selecionado: o degrau do desenho é em DOIS eixos — a superfície sobe
    um passo e o fio sobe junto. Um só não se lê. */
-.rc-inv-card[data-selecionado] { background: #18283f; border-color: rgba(0, 212, 255, 0.65); }
+/* O selecionado NÃO é o fio mais forte da grade — quem diz "este" é o
+   fundo mais claro e o trilho da vertente. O fio forte é do hover, que
+   é estado de passagem e precisa saltar. */
+.rc-inv-card[data-selecionado] { background: #18283f; border-color: rgba(0, 212, 255, 0.12); }
 /* O fio da esquerda é o acento do TIPO: é ele que diz a vertente. */
 .rc-inv-card[data-selecionado]::before {
   content: ""; position: absolute; left: -1px; top: -1px; bottom: -1px; width: 2px;
@@ -2151,11 +2157,11 @@
 /* O dano principal QUEBRA em vez de cortar: "1d6 cortante ou
    perfurante" não cabe numa linha na largura do detalhe, e cortá-lo em
    "1d6 cortante ou …" esconde metade da regra. */
-.rc-inv-destaque-principal .rc-inv-val { font-size: 16px; line-height: 22px; }
+.rc-inv-destaque-principal .rc-inv-val { font-size: 16px; line-height: 18px; }
 /* O tipo qualifica o dado, não concorre com ele: menor, regular e mais
    apagado. */
 .rc-inv-val-sufixo {
-  font-style: normal; font-size: 12px; font-weight: 400;
+  font-style: normal; font-size: 12px; font-weight: 400; line-height: 16px;
   color: rgba(214, 228, 245, 0.65);
 }
 .rc-inv-val-sufixo::before { content: " "; }
@@ -2167,6 +2173,9 @@
 /* Linhas: rótulo à esquerda em chapa clara, valor à direita em chapa
    funda, divididos por fio — e uma divisória entre linhas. */
 .rc-inv-linhas {
+  /* `<dl>` nasce com `margin: 1em 0` do navegador: eram 16px somados
+     aos 8 do `gap`, e o vão entre as duas tabelas saía 24. */
+  margin: 0;
   display: flex; flex-direction: column;
   border: 1px solid var(--rc-line); border-radius: 1px; overflow: hidden;
 }
