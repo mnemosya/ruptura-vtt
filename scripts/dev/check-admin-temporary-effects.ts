@@ -34,6 +34,7 @@ import assert from "node:assert/strict";
 import { chromium, type Page } from "playwright";
 import { BASE_URL, SESSION_FILE, assertAdminSessionValid, requireSessaoSalva, sessaoSalvaExiste } from "./authSession";
 import { limparEAnunciar } from "./residuoDeConteudo";
+import { salvarRascunho } from "./rascunhoDeEdicao";
 
 async function excluirRascunhoSeExistir(page: Page, draftId: string): Promise<void> {
   const resp = await page.goto(`${BASE_URL}/admin/biblioteca/rascunhos/${draftId}`, { waitUntil: "domcontentloaded" });
@@ -75,7 +76,7 @@ async function main(): Promise<void> {
     await page.locator('[data-testid="efeito-temporario-acumulavel"]').check();
     await page.locator('[data-testid="efeito-temporario-max-pilhas"]').fill("3");
     await page.locator('[data-testid="efeito-temporario-politica-reaplicacao"]').selectOption("acumular_pilha");
-    await page.locator('[data-testid="rascunho-salvar"]').click();
+    await salvarRascunho(page);
     await page.reload({ waitUntil: "domcontentloaded" });
     assert.equal(await page.locator('[data-testid="efeito-temporario-max-pilhas"]').inputValue(), "3", "Máximo de pilhas deveria persistir após recarregar.");
     console.log("1-7. Efeito temporário (item): criado, +1/Luta, 1 rodada, máx. 3 pilhas, acumular_pilha, persiste após reload — OK");

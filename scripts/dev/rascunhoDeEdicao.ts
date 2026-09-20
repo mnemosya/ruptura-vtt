@@ -54,3 +54,31 @@ export async function abrirRascunhoDeEdicaoDe(page: Page, contentType: string, s
   await page.goto(`${BASE_URL}/admin/biblioteca/${contentType}/${slug}`, { waitUntil: "domcontentloaded" });
   return abrirRascunhoDeEdicao(page);
 }
+
+/**
+ * Salva o rascunho e ESPERA o salvamento terminar.
+ *
+ * Três checks faziam `click()` em "Salvar rascunho" e, na linha
+ * seguinte, `page.reload()`. Entre as duas não havia espera nenhuma: o
+ * reload podia chegar antes de a ação de servidor completar, e aí o
+ * campo recém-preenchido sumia — não porque o app não persistiu, mas
+ * porque o teste recarregou antes de ele ter chance.
+ *
+ * O sintoma acusava o app de um defeito que era do teste: "Tipo de
+ * companheiro deveria persistir após recarregar".
+ *
+ * A espera é por CONDIÇÃO, não por tempo: o próprio botão fica
+ * desabilitado e escreve "Salvando..." enquanto a ação corre, então
+ * esperar ele voltar a ficar habilitado é esperar exatamente o fim do
+ * salvamento — em qualquer máquina, sob qualquer carga.
+ */
+export async function salvarRascunho(page: Page): Promise<void> {
+  const botao = page.locator('[data-testid="rascunho-salvar"]');
+  await botao.click();
+  // As DUAS bordas, nesta ordem. A primeira versão disto esperava só
+  // "não está salvando" e `:not([disabled])` — as duas condições já são
+  // verdadeiras com o botão em repouso, então a função retornava antes
+  // de o salvamento sequer começar: uma espera que não esperava nada.
+  await botao.filter({ hasText: "Salvando" }).waitFor({ timeout: 15000 });
+  await botao.filter({ hasText: "Salvar rascunho" }).waitFor({ timeout: 30000 });
+}

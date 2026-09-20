@@ -33,6 +33,7 @@ import assert from "node:assert/strict";
 import { chromium, type Page } from "playwright";
 import { BASE_URL, SESSION_FILE, assertAdminSessionValid, requireSessaoSalva, sessaoSalvaExiste } from "./authSession";
 import { limparEAnunciar } from "./residuoDeConteudo";
+import { salvarRascunho } from "./rascunhoDeEdicao";
 
 async function excluirRascunhoSeExistir(page: Page, draftId: string): Promise<void> {
   const resp = await page.goto(`${BASE_URL}/admin/biblioteca/rascunhos/${draftId}`, { waitUntil: "domcontentloaded" });
@@ -71,7 +72,7 @@ async function main(): Promise<void> {
     await page.locator('[data-testid="novo-efeito-adicionar-nivel-1"]').click();
     await page.locator('[data-testid="companheiro-tipo"]').selectOption("drone");
     await page.locator('[data-testid="companheiro-quantidade"]').fill("1");
-    await page.locator('[data-testid="rascunho-salvar"]').click();
+    await salvarRascunho(page);
     await page.reload({ waitUntil: "domcontentloaded" });
     assert.equal(await page.locator('[data-testid="companheiro-tipo"]').inputValue(), "drone", "Tipo de companheiro deveria persistir após recarregar.");
     console.log("1-5. Companheiro (drone) criado, salvo, persiste após reload — OK");

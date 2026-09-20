@@ -20,6 +20,7 @@ import assert from "node:assert/strict";
 import { chromium, type Page } from "playwright";
 import { BASE_URL, SESSION_FILE, assertAdminSessionValid, requireSessaoSalva, sessaoSalvaExiste } from "./authSession";
 import { limparEAnunciar } from "./residuoDeConteudo";
+import { salvarRascunho } from "./rascunhoDeEdicao";
 
 async function excluirRascunhoSeExistir(page: Page, draftId: string): Promise<void> {
   const resp = await page.goto(`${BASE_URL}/admin/biblioteca/rascunhos/${draftId}`, { waitUntil: "domcontentloaded" });
@@ -84,7 +85,7 @@ async function main(): Promise<void> {
 
     console.log("6/7. Condição em falha e dano em falha crítica — cobertura mínima via campos já testados na Etapa 4");
 
-    await page.locator('[data-testid="rascunho-salvar"]').click();
+    await salvarRascunho(page);
     await page.waitForTimeout(500);
     await page.reload({ waitUntil: "domcontentloaded" });
     assert.equal(await page.locator('[data-testid="efeito-editor-card"][data-effect-type="teste_resistencia"]').count(), 1, "8/9. Deveria manter exatamente 1 card após salvar/recarregar.");
