@@ -11,8 +11,9 @@ try {
   assert.ok(process.env.SUPABASE_DB_URL, 'SUPABASE_DB_URL ausente');
   await db.connect();
   await db.query('begin');
-  const { rows: [existe] } = await db.query("select to_regclass('public.campaign_narrative_entries') as t");
-  if (!existe.t) await db.query(readFileSync('supabase/migrations/0142_conteudo_narrativo.sql', 'utf8').replace(/^begin;\s*/i, '').replace(/commit;\s*$/i, ''));
+  const sem = async alvo => !(await db.query(`select to_regclass('${alvo}') as t`)).rows[0].t;
+  if (await sem('public.campaign_narrative_entries')) await db.query(readFileSync('supabase/migrations/0142_conteudo_narrativo.sql', 'utf8').replace(/^begin;\s*/i, '').replace(/commit;\s*$/i, ''));
+  if (await sem('public.campaign_narrative_visibility_log')) await db.query(readFileSync('supabase/migrations/0143_narrativa_visibilidade_atomica.sql', 'utf8').replace(/^begin;\s*/i, '').replace(/commit;\s*$/i, ''));
 
   const { rows: users } = await db.query('select id from auth.users limit 4');
   assert.ok(users.length >= 4, 'Necessárias quatro contas');
@@ -187,6 +188,53 @@ try {
   assert.equal(vivo.estado, 'arquivado', 'Arquivado continua existindo');
   assert.deepEqual(await visiveisPara(jogadorA), [ids.handout], 'Arquivado sai da vista do jogador');
   console.log('ok - 15 arquivar tira da vista sem apagar, e exige a data');
+
+  // 16. Trocar visibilidade é UMA operação — e o caminho de falha
+  //     esconde, em vez de revelar.
+  await identity(narrador);
+  await db.query("update public.campaign_narrative_entries set estado='publicado' where id=$1", [ids.npc]);
+  await db.query('select public.set_narrative_visibility($1,$2)', [ids.npc, [jogadorA]]);
+  assert.ok((await visiveisPara(jogadorA)).includes(ids.npc));
+  assert.ok(!(await visiveisPara(jogadorB)).includes(ids.npc));
+  await identity(narrador);
+  // Revelar para alguém de FORA da campanha é recusado, e a recusa não
+  // pode deixar a lista vazia pelo caminho — que revelaria para todos.
+  assert.ok(await recusado(() => db.query('select public.set_narrative_visibility($1,$2)', [ids.npc, [estranho]])),
+    'Revelar para quem não é da campanha tinha de ser recusado');
+  assert.ok((await visiveisPara(jogadorA)).includes(ids.npc), 'A exceção anterior sobreviveu à recusa');
+  await identity(narrador);
+  assert.ok(!(await visiveisPara(jogadorB)).includes(ids.npc), 'E a recusa não revelou para a mesa toda');
+  console.log('ok - 16 troca de visibilidade é atômica; a recusa esconde em vez de revelar');
+
+  // 17. Revelar para todos é apagar as exceções, não listar cada um.
+  await identity(narrador);
+  await db.query('select public.set_narrative_visibility($1,null)', [ids.npc]);
+  await db.query('reset role');
+  assert.equal((await db.query('select count(*)::int as n from public.campaign_narrative_visibility where entry_id=$1', [ids.npc])).rows[0].n, 0,
+    'Revelar para todos deixa a tabela de exceções vazia');
+  assert.ok((await visiveisPara(jogadorB)).includes(ids.npc), 'E agora B também vê');
+  console.log('ok - 17 revelar para a mesa toda limpa as exceções, sem listar jogador por jogador');
+
+  // 18. O histórico registra quem, quando e de quê para quê — e é só do narrador.
+  await identity(narrador);
+  const { rows: log } = await db.query(
+    'select antes, depois, alterado_por from public.campaign_narrative_visibility_log where entry_id=$1 order by alterado_em', [ids.npc]);
+  assert.equal(log.length, 2, 'As duas trocas bem-sucedidas foram registradas');
+  assert.equal(log[0].antes, null);
+  assert.deepEqual(log[0].depois, [jogadorA]);
+  assert.deepEqual(log[1].antes, [jogadorA]);
+  assert.equal(log[1].depois, null, '"Todos" é registrado como null, igual ao significado da lista vazia');
+  assert.equal(log[0].alterado_por, narrador);
+  await identity(jogadorA);
+  assert.equal((await db.query('select count(*)::int as n from public.campaign_narrative_visibility_log')).rows[0].n, 0,
+    'O histórico contém quem viu o quê — é do narrador');
+  console.log('ok - 18 histórico de revelação é completo, legível e exclusivo do narrador');
+
+  // 19. Jogador não altera visibilidade pela RPC.
+  await identity(jogadorA);
+  assert.ok(await recusado(() => db.query('select public.set_narrative_visibility($1,$2)', [ids.npc, [jogadorA]])),
+    'Jogador não revela nada para si mesmo');
+  console.log('ok - 19 só o narrador altera visibilidade, também pela RPC');
 
   console.log('\nTodos os critérios passaram.');
 } finally {

@@ -339,7 +339,10 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
   - **Arquivar não apaga**, e `check ((estado = 'arquivado') = (arquivado_em is not null))` impede arquivado sem data.
   - Anexo é ponte para `vtt_image_assets` com FK composta `(id, campaign_id)` — sem bucket novo, sem mime novo, e sem aceitar imagem de outra campanha.
   - Quinze critérios transacionais aprovados em `scripts/dev/check-conteudo-narrativo.mjs`, incluindo recusa do tipo `loja` pelo enum, isolamento entre campanhas nos dois sentidos e os negativos de comentário.
+  - **Correção durante a própria tarefa:** a 0142 deixava a troca de visibilidade a cargo do cliente — apagar as exceções e inserir as novas, em duas instruções. Falhar entre elas deixa a lista vazia, que nesta modelagem significa “a mesa toda vê”: a falha REVELAVA. A migration `0143_narrativa_visibilidade_atomica.sql` transforma as duas numa RPC só e acrescenta o histórico que o critério “atômica e auditável” pedia — quem mudou, quando, e de quê para quê, legível só pelo narrador, porque o histórico contém exatamente a lista que os jogadores não podem ver. Revelar para quem não é da campanha passou a ser recusa explícita, e a recusa preserva a exceção anterior em vez de esvaziar a lista.
+  - Dezenove critérios transacionais no total, aprovados contra as migrations aplicadas.
   - Server Actions em `src/lib/campaign/narrativeActions.ts`, prontas para CONT-03.
+- **Pendente:** aplicar a 0143 ao Supabase. As Server Actions só serão exercitadas de ponta a ponta quando CONT-03 lhes der interface; a autorização, que é o risco desta tarefa, está coberta pelos testes transacionais.
 - **Fora de escopo, registrado:** notificação de comentário novo não existe; o comentário aparece quando a pessoa abre o item. Se virar necessidade, é entrada própria.
 
 ### CONT-03 — Criar interface de organização para o narrador

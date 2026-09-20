@@ -147,9 +147,16 @@ export async function setNarrativeEstado(
 }
 
 /**
- * Exceção de visibilidade. Lista VAZIA significa "a mesa toda vê" —
- * não "ninguém vê". Por isso revelar para todos é apagar as exceções, e
- * não inserir uma linha por jogador: com linhas por jogador, quem
+ * Exceção de visibilidade, numa transação só (RPC `set_narrative_visibility`,
+ * 0143).
+ *
+ * Antes isto eram duas instruções, apagar e inserir. Falhar entre elas
+ * deixava a lista vazia — que nesta modelagem significa "a mesa toda
+ * vê". A falha revelava. Num recurso cujo propósito é o segredo, o erro
+ * tem de cair para o lado de esconder.
+ *
+ * `null` ou lista vazia = revelar para a mesa toda. Não se insere uma
+ * linha por jogador para dizer "todos": com linhas por jogador, quem
  * entrasse na campanha depois ficaria de fora sem ninguém perceber.
  */
 export async function setNarrativeVisibility(
@@ -158,13 +165,11 @@ export async function setNarrativeVisibility(
   try {
     await exigirNarrador(campaignId);
     const client = await getScopedTableClient();
-    const { error: erroApagar } = await client.from("campaign_narrative_visibility").delete().eq("entry_id", entryId);
-    if (erroApagar) throw erroApagar;
-    if (userIds && userIds.length > 0) {
-      const { error } = await client.from("campaign_narrative_visibility")
-        .insert(userIds.map((user_id) => ({ entry_id: entryId, campaign_id: campaignId, user_id })));
-      if (error) throw error;
-    }
+    const { error } = await client.rpc("set_narrative_visibility", {
+      p_entry_id: entryId,
+      p_user_ids: userIds && userIds.length > 0 ? userIds : null,
+    });
+    if (error) throw error;
     return { ok: true, data: null };
   } catch {
     return { ok: false, error: FALHA };
