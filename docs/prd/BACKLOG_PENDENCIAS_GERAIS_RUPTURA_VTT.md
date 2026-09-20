@@ -49,10 +49,10 @@ Esta triagem considera o código existente, não apenas a lista de desejos:
 | Recorte | Quantidade |
 |---|---:|
 | Total de tarefas | 70 |
-| Prontas | 20 |
+| Prontas | 21 |
 | Prontas após dependência | 4 |
 | Bloqueadas por regra, contrato ou referência indispensável | 45 |
-| Em validação | 1 |
+| Em validação | 0 |
 | P0 | 14 |
 | P1 | 41 |
 | P2 | 14 |
@@ -211,10 +211,10 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 
 ### NET-01 — Tornar itens da Rede navegáveis para perfis
 
-- **Status:** Em validação
+- **Status:** Pronta (concluída)
 - **Correção de premissa (2026-09-20):** a dependência “localizar e extrair o abridor de perfil do VTT” partia de algo inexistente. Não havia perfil de usuário em lugar nenhum do projeto: o VTT só tinha a lista de “Jogadores e convites”, com nome, papel e remover, nada clicável. Não havia o que extrair; houve o que criar. O padrão de “modal com URL” foi reaproveitado da ficha (rota interceptada em `@modal`), em vez de inventado.
 - **Decisões de produto (2026-09-20):** o perfil mostra nome, presença real, campanhas EM COMUM e os personagens da pessoa nelas — nada de biografia ou avatar, que exigiriam coluna, upload e moderação. A própria linha abre o próprio perfil, como os outros o veem, com atalho para “Conta e preferências”. O perfil tem URL própria e abre em modal dentro de /mesas.
-- **Andamento:** migration `0141_perfil_de_usuario.sql` acrescenta `read_user_profile` e `read_network_presence`, ambas aditivas. A regra de quem vê quem mora na RPC: só se vê o perfil de quem compartilha ao menos uma campanha, e só as campanhas compartilhadas com quem pergunta aparecem — o perfil não vira índice das outras mesas da pessoa. E-mail não sai por ali; segue exclusivo do narrador em `get_campaign_participant_info`. A presença respeita “Aparecer offline”. O painel Rede deixa de mostrar “Online” fixo para a própria conta e “offline” fixo para o resto, e cada linha vira link de verdade. Dez critérios transacionais aprovados em `scripts/dev/check-perfil-de-usuario.mjs`. **Pendente:** aplicar a 0141 ao Supabase e rodar `scripts/dev/check-perfil-rede-live.ts`.
+- **Andamento:** migration `0141_perfil_de_usuario.sql` acrescenta `read_user_profile` e `read_network_presence`, ambas aditivas. A regra de quem vê quem mora na RPC: só se vê o perfil de quem compartilha ao menos uma campanha, e só as campanhas compartilhadas com quem pergunta aparecem — o perfil não vira índice das outras mesas da pessoa. E-mail não sai por ali; segue exclusivo do narrador em `get_campaign_participant_info`. A presença respeita “Aparecer offline”. O painel Rede deixa de mostrar “Online” fixo para a própria conta e “offline” fixo para o resto, e cada linha vira link de verdade. Dez critérios transacionais aprovados em `scripts/dev/check-perfil-de-usuario.mjs`. Migration 0141 aplicada ao Supabase pelo usuário em 2026-09-20 e os dez critérios transacionais repetidos contra ela. Verificação em navegadores reais aprovada em `scripts/dev/check-perfil-rede-live.ts` (11 critérios): a Rede lista com presença real; a própria conta aparece uma vez só, marcada; clicar abre modal com a URL mudando e o dashboard montado por baixo; o perfil traz campanha, papel, personagem e presença; voltar fecha; o mesmo endereço numa aba nova abre página cheia; o próprio perfil abre igual, com atalho para Conta; a linha inteira responde a Enter; “Aparecer offline” chega à Rede e ao perfil; e quem não compartilha campanha recebe recusa explícita, não um perfil vazio. As suítes de SESS-02, DASH-01 e PRES-02 foram repetidas sem regressão.
 - **Descrição:** transformar cada pessoa em elemento interativo, mantendo a composição atual, com hover/focus claro e abertura do mesmo perfil usado pelo VTT.
 - **Área afetada:** painel Rede do dashboard; modal/rota de perfil compartilhado.
 - **Prioridade sugerida:** P1

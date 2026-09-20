@@ -142,6 +142,11 @@ async function main() {
         `linha="${linha}", presenca=${presenca}`);
     }
 
+    if (process.argv.includes("--captura")) {
+      await pn.locator('[data-testid="perfil-modal"]').screenshot({ path: "/tmp/perfil-modal.png" });
+      console.log("captura: /tmp/perfil-modal.png");
+    }
+
     // --- 5. Voltar fecha o modal (o histórico é de verdade) ---
     {
       await pn.goBack();
