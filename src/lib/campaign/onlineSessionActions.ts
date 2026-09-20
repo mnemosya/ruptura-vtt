@@ -12,18 +12,32 @@ export interface OnlineSession {
   confirmation_deadline: string | null;
 }
 
-export async function readOnlineSession(campaignId: string): Promise<{ session: OnlineSession | null; error?: string }> {
+export interface CampaignSessionPresence {
+  session: OnlineSession | null;
+  /** Conexão real, medida pelos batimentos autenticados — não é presença decorativa. */
+  narratorOnline: boolean;
+  playerCount: number;
+}
+
+/**
+ * Sessão mais recente da campanha JUNTO da contagem de quem está
+ * conectado agora (RPC `read_campaign_session_presence`, migration
+ * 0139) — uma consulta só por campanha, em vez de uma para a sessão e
+ * outra para a presença.
+ *
+ * Em falha devolve `error` e NUNCA zeros: "não deu para saber" não pode
+ * chegar à interface parecendo "não tem ninguém".
+ */
+export async function readOnlineSession(campaignId: string): Promise<CampaignSessionPresence & { error?: string }> {
   try {
     const access = await resolveCampaignAccess(campaignId);
     if (access.kind !== "ok") throw new Error("Você não tem acesso a esta campanha.");
     const client = await getScopedTableClient();
-    const { data, error } = await client.from("campaign_online_sessions")
-      .select("id,campaign_id,started_at,ended_at,empty_since,confirmation_deadline").eq("campaign_id", campaignId)
-      .order("started_at", { ascending: false }).limit(1).maybeSingle();
+    const { data, error } = await client.rpc("read_campaign_session_presence", { p_campaign_id: campaignId });
     if (error) throw error;
-    return { session: data };
+    return { session: data.session, narratorOnline: !!data.narrator_online, playerCount: data.player_count ?? 0 };
   } catch {
-    return { session: null, error: "Não foi possível consultar a sessão online." };
+    return { session: null, narratorOnline: false, playerCount: 0, error: "Não foi possível consultar a sessão online." };
   }
 }
 

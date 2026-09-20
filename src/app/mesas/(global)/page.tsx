@@ -67,7 +67,12 @@ export default async function MesasPage() {
     minhasCampanhas = await Promise.all(
       todas.map(async (campaign): Promise<CampaignCardData> => {
         const sessionResult = await readOnlineSession(campaign.id);
-        const sessionFields = { latestSession: sessionResult.session, sessionError: sessionResult.error };
+        const sessionFields = {
+          latestSession: sessionResult.session,
+          sessionError: sessionResult.error,
+          narratorOnline: sessionResult.narratorOnline,
+          playerCount: sessionResult.playerCount,
+        };
         if (campaign.owner_id === user.id) {
           const extras = await loadNarratorExtras(campaign.id);
           return { campaign, role: "narrator", controlledCharacterCount: null, ...extras, ...sessionFields };

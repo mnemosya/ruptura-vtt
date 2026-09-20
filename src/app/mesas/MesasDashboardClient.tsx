@@ -12,8 +12,10 @@
  * capa e cor de acento não existem no banco e por isso não foram
  * fingidas aqui.
  *
- * Hero e atividade derivam de campaign_online_sessions. A contagem de
- * presença aguarda integração; não exibimos números simulados.
+ * Hero e atividade derivam de campaign_online_sessions, e a contagem de
+ * participantes vem dos batimentos autenticados (0139) — conexão real,
+ * nunca número simulado. Quando a consulta falha, o hero diz que não
+ * sabe; "não deu para saber" jamais é exibido como "não tem ninguém".
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -28,6 +30,7 @@ import {
   DecoBottom, DecoTop, OnlineTag, PageHead, RoleBadge, SectionHead,
   campaignCoverStyle, relativeTime,
 } from "./_global/parts";
+import { textoDeParticipantes } from "./_global/participantes";
 import {
   Activity, AlertTriangle, ChevronRight, Clock, Plus, RotateCw, ScrollText, Search, Spinner, User, Users, X,
 } from "../_design/icons";
@@ -35,6 +38,10 @@ import {
 export interface CampaignCardData {
   latestSession?: OnlineSession | null;
   sessionError?: string;
+  /** Narrador com batimento recente (2 min). Ausente quando a leitura falhou. */
+  narratorOnline?: boolean;
+  /** Jogadores ativos com batimento recente, sem contar o narrador. */
+  playerCount?: number;
   campaign: Campaign;
   role: "narrator" | "player";
   /** Só relevante para role="player" — quantos personagens a conta controla nesta campanha. null para narrador (não se aplica). */
@@ -290,7 +297,10 @@ export default function MesasDashboardClient({
 
 // ── Destaque ────────────────────────────────────────────────────────
 function FeaturedCampaign({ data }: { data: CampaignCardData }) {
-  const { campaign, role } = data;
+  const { campaign, role, narratorOnline, playerCount } = data;
+  const sabido = narratorOnline !== undefined && playerCount !== undefined;
+  const total = sabido ? playerCount + (narratorOnline ? 1 : 0) : null;
+  const descricao = textoDeParticipantes(narratorOnline, playerCount);
   return (
     <section className="ra2-featured" aria-label="Campanha em destaque" data-testid="dash-mesa-destaque">
       <DecoTop />
@@ -307,6 +317,11 @@ function FeaturedCampaign({ data }: { data: CampaignCardData }) {
             <OnlineTag />
             <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
               <h2 className="ra2-featured-title">{campaign.name}</h2>
+              <span className="ra2-featured-pessoas" data-testid="dash-destaque-participantes"
+                title={descricao} aria-label={descricao}>
+                <Users size={14} strokeWidth={1.4} aria-hidden="true" />
+                <span aria-hidden="true">{sabido ? total : "—"}</span>
+              </span>
             </div>
           </div>
           <p className="ra2-featured-desc">Sessão iniciada em <time dateTime={data.latestSession!.started_at}>{new Date(data.latestSession!.started_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</time></p>

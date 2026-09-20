@@ -472,6 +472,14 @@
   font-family: var(--font-orbitron), sans-serif; font-weight: 900; font-size: 32px; line-height: 44px;
   letter-spacing: 0.056em; color: rgba(216, 238, 248, 0.9); margin: 0;
 }
+/* Contador de quem está na mesa agora — acompanha o título do hero sem
+   competir com ele; o texto gramatical vive no title/aria-label. */
+.ra2-featured-pessoas {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 3px;
+  background: rgba(0, 212, 255, 0.08); border: 1px solid rgba(84, 172, 190, 0.22);
+  font-family: var(--font-orbitron), sans-serif; font-weight: 500; font-size: 13px;
+  letter-spacing: 0.08em; color: rgba(207, 234, 246, 0.88); cursor: default;
+}
 .ra2-featured-desc {
   font-family: var(--font-rajdhani), sans-serif; font-weight: 500; font-size: 16px; line-height: 24px;
   color: rgba(184, 216, 232, 0.82); max-width: 480px; margin: 0;
