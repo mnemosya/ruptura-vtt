@@ -150,6 +150,18 @@
   --rc-r-sm: 1px;   /* = --rv-r-sm */
   --rc-r-lg: 3px;   /* = --rv-r-lg */
   --rc-r: 4px;      /* = --rv-r    */
+
+  /* ACENTO DO TRILHO — o ciano dessaturado do chassi (`--rv-cy`), não o
+     `#00d4ff` do Console.
+     O trilho de abas fica encostado no trilho de FERRAMENTAS do VTT
+     quando o Console abre sobre a mesa, e os dois marcam o item ativo
+     do mesmo jeito. Com acentos diferentes, o do Console puxava a
+     atenção como se dissesse algo a mais — e não diz: são dois "está
+     aqui" lado a lado.
+     O resto do Console continua no `#00d4ff`. Trocar o acento INTEIRO
+     já foi tentado e desfeito (ver a nota em `.rc-window-wrap`); o que
+     muda aqui é só a peça que fica ombro a ombro com o VTT. */
+  --rc-trilho-ativo: #45b8c9;  /* = --rv-cy */
 }
 
 /* Os TOKENS valem também para o cabeçalho de /ficha, que é irmão da
@@ -1113,7 +1125,7 @@
    dois cinzas pra descobrir qual estava selecionada. Mesma regra no
    trilho de ferramentas do VTT (`.rv-ferr-btn`). */
 .rc-tabrail-btn[aria-selected="true"] {
-  color: var(--cy); border-color: #108bac;
+  color: var(--rc-trilho-ativo); border-color: #108bac;
   /* .14 contra os .09 do hover — a mesma hierarquia por lavagem do
      `.rv-ferr-btn`. Antes era `#123640`, uma cor sólida que não
      pertencia à escala e não mantinha relação com o passo do hover. */

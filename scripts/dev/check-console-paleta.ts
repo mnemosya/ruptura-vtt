@@ -169,6 +169,27 @@ async function main() {
         semBase.length === 0, semBase.length ? `${semBase.length} sem base` : "todos sobre #0c1526");
     }
 
+    // --- 3d. O ícone da aba ativa usa o acento do VTT ---
+    //     O trilho de abas fica ombro a ombro com o de ferramentas
+    //     quando o Console abre sobre a mesa, e os dois marcam o ativo
+    //     do mesmo jeito. Acentos diferentes faziam o do Console puxar
+    //     a atenção como se dissesse algo a mais — e não diz.
+    {
+      const acento = css.match(/--rc-trilho-ativo:\s*(#[0-9a-fA-F]{6})/)?.[1]?.toLowerCase();
+      const usa = /\.rc-tabrail-btn\[aria-selected="true"\]\s*\{[\s\S]*?color:\s*var\(--rc-trilho-ativo\)/.test(css);
+      registrar("3d (o ícone da aba ativa usa o ciano do chassi, não o do Console)",
+        acento === "#45b8c9" && usa, `acento=${acento}, usado=${usa}`);
+    }
+
+    // --- 3e. O resto do Console mantém o acento próprio ---
+    //     A troca do acento INTEIRO já foi tentada e desfeita. O que
+    //     mudou é só a peça que fica lado a lado com o VTT.
+    {
+      const proprio = /--cy:\s*#00d4ff/.test(css);
+      registrar("3e (o acento do Console segue sendo o próprio)",
+        proprio, `--cy: #00d4ff = ${proprio}`);
+    }
+
     // --- 4. O cabeçalho continua com a tinta do Console ---
     {
       const cor = await page.evaluate(() => {
