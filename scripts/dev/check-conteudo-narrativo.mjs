@@ -14,6 +14,8 @@ try {
   const sem = async alvo => !(await db.query(`select to_regclass('${alvo}') as t`)).rows[0].t;
   if (await sem('public.campaign_narrative_entries')) await db.query(readFileSync('supabase/migrations/0142_conteudo_narrativo.sql', 'utf8').replace(/^begin;\s*/i, '').replace(/commit;\s*$/i, ''));
   if (await sem('public.campaign_narrative_visibility_log')) await db.query(readFileSync('supabase/migrations/0143_narrativa_visibilidade_atomica.sql', 'utf8').replace(/^begin;\s*/i, '').replace(/commit;\s*$/i, ''));
+  const { rows: [temValores] } = await db.query("select to_regprocedure('public.narrativa_pode_ver_valores(uuid,narrativa_estado,uuid)') as fn");
+  if (!temValores.fn) await db.query(readFileSync('supabase/migrations/0145_narrativa_ver_por_valores.sql', 'utf8').replace(/^begin;\s*/i, '').replace(/commit;\s*$/i, ''));
 
   const { rows: users } = await db.query('select id from auth.users limit 4');
   assert.ok(users.length >= 4, 'Necessárias quatro contas');
@@ -235,6 +237,26 @@ try {
   assert.ok(await recusado(() => db.query('select public.set_narrative_visibility($1,$2)', [ids.npc, [jogadorA]])),
     'Jogador não revela nada para si mesmo');
   console.log('ok - 19 só o narrador altera visibilidade, também pela RPC');
+
+  // 20. INSERT ... RETURNING — o caminho que o cliente usa de verdade.
+  //     A política de leitura não pode depender de reler a própria
+  //     tabela: durante o insert, a linha nova ainda não está visível
+  //     para uma subconsulta do mesmo comando, e o narrador acabava
+  //     barrado da própria criação.
+  await identity(narrador);
+  const { rows: devolvida } = await db.query(
+    "insert into public.campaign_narrative_entries(campaign_id,tipo,titulo) values($1,'anotacao','Com RETURNING') returning id, titulo",
+    [campanha]);
+  assert.equal(devolvida.length, 1, 'O insert precisa devolver a linha criada');
+  assert.equal(devolvida[0].titulo, 'Com RETURNING');
+  console.log('ok - 20 criar devolvendo a linha (INSERT ... RETURNING) funciona para o narrador');
+
+  // 21. E o jogador continua sem conseguir criar por esse caminho.
+  await identity(jogadorA);
+  assert.ok(await recusado(() => db.query(
+    "insert into public.campaign_narrative_entries(campaign_id,tipo,titulo) values($1,'anotacao','Não') returning id", [campanha])),
+    'RETURNING não pode virar brecha de escrita');
+  console.log('ok - 21 RETURNING não abriu brecha: jogador segue sem criar');
 
   console.log('\nTodos os critérios passaram.');
 } finally {

@@ -49,10 +49,10 @@ Esta triagem considera o código existente, não apenas a lista de desejos:
 | Recorte | Quantidade |
 |---|---:|
 | Total de tarefas | 72 |
-| Prontas | 23 |
+| Prontas | 25 |
 | Prontas após dependência | 4 |
-| Bloqueadas por regra, contrato ou referência indispensável | 44 |
-| Em validação | 1 |
+| Bloqueadas por regra, contrato ou referência indispensável | 43 |
+| Em validação | 0 |
 | P0 | 14 |
 | P1 | 42 |
 | P2 | 15 |
@@ -322,7 +322,7 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 
 ### CONT-02 — Implementar armazenamento e autorização do conteúdo narrativo
 
-- **Status:** Em validação
+- **Status:** Pronta (concluída)
 - **Descrição:** criar o modelo persistente, queries e mutações para itens narrativos, relações, anexos e visibilidade, com isolamento entre campanhas.
 - **Área afetada:** banco, RLS, Server Actions, realtime e storage.
 - **Prioridade sugerida:** P0
@@ -342,18 +342,22 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
   - **Correção durante a própria tarefa:** a 0142 deixava a troca de visibilidade a cargo do cliente — apagar as exceções e inserir as novas, em duas instruções. Falhar entre elas deixa a lista vazia, que nesta modelagem significa “a mesa toda vê”: a falha REVELAVA. A migration `0143_narrativa_visibilidade_atomica.sql` transforma as duas numa RPC só e acrescenta o histórico que o critério “atômica e auditável” pedia — quem mudou, quando, e de quê para quê, legível só pelo narrador, porque o histórico contém exatamente a lista que os jogadores não podem ver. Revelar para quem não é da campanha passou a ser recusa explícita, e a recusa preserva a exceção anterior em vez de esvaziar a lista.
   - Dezenove critérios transacionais no total, aprovados contra as migrations aplicadas.
   - Server Actions em `src/lib/campaign/narrativeActions.ts`, prontas para CONT-03.
-- **Pendente:** aplicar a 0143 ao Supabase. As Server Actions só serão exercitadas de ponta a ponta quando CONT-03 lhes der interface; a autorização, que é o risco desta tarefa, está coberta pelos testes transacionais.
+- **Correção descoberta por CONT-03 (0145):** a política de leitura da 0142 chamava `narrativa_pode_ver(id)`, que relê a própria tabela. Num `INSERT ... RETURNING` — que é como o cliente cria e recebe a linha de volta — a linha em inserção ainda não está visível para uma subconsulta do mesmo comando: a função não a encontrava e a política concluía que ninguém podia vê-la. **O narrador era barrado da própria criação.** Os testes transacionais não pegaram porque inseriam sem RETURNING. A regra continua num lugar só: passou a viver em `narrativa_pode_ver_valores`, que recebe os valores da linha em vez de procurá-la, e `narrativa_pode_ver(id)` virou casca fina para as tabelas de relação, anexo e comentário, onde a busca é legítima porque a linha é de outra tabela. O check agora cria das duas formas — 21 critérios.
+- **Concluída em 2026-09-20:** migrations 0142, 0143 e 0145 aplicadas; 21 critérios transacionais aprovados; Server Actions exercitadas de ponta a ponta pela interface de CONT-03.
 - **Fora de escopo, registrado:** notificação de comentário novo não existe; o comentário aparece quando a pessoa abre o item. Se virar necessidade, é entrada própria.
 
 ### CONT-03 — Criar interface de organização para o narrador
 
-- **Status:** Bloqueada
+- **Status:** Pronta (concluída)
 - **Descrição:** substituir a lista genérica pela ferramenta de organização baseada na taxonomia aprovada, sem perder o editor técnico de regras já existente — ele deve ficar em destino explicitamente separado.
 - **Área afetada:** janela Conteúdo da campanha, navegação interna, busca e editor.
 - **Prioridade sugerida:** P1
 - **Dependências:** CONT-01, CONT-02, NAV-01.
 - **Critérios de aceite:** criar, editar, filtrar, relacionar, arquivar e localizar itens; estados de visibilidade evidentes; ação revelar/ocultar disponível na lista e no detalhe; confirmação para ações destrutivas; editor de regras continua acessível sem ambiguidade.
-- **Dúvidas antes da implementação:** qual visual desejado — árvore, banco de notas, cards ou híbrido? É necessário drag-and-drop/pastas no primeiro corte? Deve haver templates por tipo?
+- **Decisões de produto (2026-09-20):** **lista com filtros** (tipo, etiqueta, estado, busca) e detalhe ao lado — não árvore, porque a taxonomia de CONT-01 não tem hierarquia e desenhar uma obrigaria a inventar um pai para cada item. **Sem modelos por tipo** no primeiro corte: os campos por tipo já guiam, e texto pré-preenchido é palpite sobre como o narrador escreve. **Sem ordenação manual**: por atualização, título ou data da sessão, como CONT-01 especificou. A pergunta sobre pastas já estava respondida em CONT-01 e não foi re-litigada.
+- **Fatia de NAV-01 decidida aqui:** “Conteúdo da campanha” era o editor TÉCNICO de regras — biblioteca, homebrew, override, diff de três vias — e o nome não dizia isso. Com o organizador ao lado, a ambiguidade viraria engano toda vez. São **duas janelas com nomes distintos**: `Organizador` e `Regras da campanha`. Isso não resolve NAV-01, que segue bloqueada por COMP-01, BANDO-01 e SET-01 — resolve só a ambiguidade que CONT-03 criaria.
+- **Andamento:** janela em `_painel/janelas/organizador/`, exclusiva do narrador. Criar os cinco tipos, editar com salvamento explícito, filtrar, buscar por título e corpo, relacionar, revelar à mesa ou só a pessoas escolhidas, arquivar, desarquivar e excluir com confirmação que distingue de arquivar. O selo de estado aparece em cada linha, não só no detalhe: o narrador vê rascunho e publicado na mesma lista, e sem o selo não dá para saber o que a mesa já leu. Dezesseis critérios aprovados em navegador real (`scripts/dev/check-organizador-live.ts`), incluindo que o editor de regras continua abrindo em janela própria e que o jogador não tem o organizador no menu. Suítes de SESS-02, NET-01 e PRES-02 repetidas sem regressão.
+- **Defeito corrigido durante a tarefa:** a janela engolia os erros das ações — `agir` recarregava a lista logo depois, e o recarregamento limpava a mensagem antes de alguém ler. Foi o que escondeu o defeito de RLS acima por várias execuções. Agora a operação devolve a falha e o erro é gravado depois do recarregamento.
 
 ### CONT-04 — Gerar registro automático de sessão
 

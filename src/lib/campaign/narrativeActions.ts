@@ -176,6 +176,24 @@ export async function setNarrativeVisibility(
   }
 }
 
+/**
+ * Excluir de vez — diferente de arquivar, e por isso função própria. As
+ * relações e os comentários vão junto por cascata do banco; o texto da
+ * confirmação na interface é que precisa dizer isso a quem clica.
+ */
+export async function deleteNarrativeEntry(campaignId: string, entryId: string): Promise<Resultado<null>> {
+  try {
+    await exigirNarrador(campaignId);
+    const client = await getScopedTableClient();
+    const { error } = await client.from("campaign_narrative_entries")
+      .delete().eq("id", entryId).eq("campaign_id", campaignId);
+    if (error) throw error;
+    return { ok: true, data: null };
+  } catch {
+    return { ok: false, error: FALHA };
+  }
+}
+
 /** Relação simétrica: o par é ordenado aqui para bater com o check do banco. */
 export async function linkNarrativeEntries(
   campaignId: string, a: string, b: string, ligar: boolean,

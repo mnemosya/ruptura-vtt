@@ -27,6 +27,7 @@ export type JanelaDaMesa =
   | "mercado"
   | "livro"
   | "conteudo"
+  | "organizador"
   | "configuracoes"
   | "novo-personagem";
 

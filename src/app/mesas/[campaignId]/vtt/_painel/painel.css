@@ -1997,3 +1997,97 @@
 @media (max-width: 820px), (max-height: 640px) {
   .pn-jan:not(.pn-dialogo) { inset: 8px !important; width: auto !important; height: auto !important; }
 }
+
+/* ── Organizador da campanha (CONT-03) ──────────────────────────────
+   Lista à esquerda, detalhe à direita. Sem árvore e sem pastas: a
+   taxonomia de CONT-01 não tem hierarquia, e desenhar uma obrigaria a
+   inventar um pai para cada item. */
+.rv-org { display: grid; grid-template-columns: minmax(280px, 360px) 1fr; gap: 0; height: 100%; min-height: 0; }
+.rv-org-lista {
+  display: flex; flex-direction: column; min-height: 0; gap: 10px;
+  padding-right: 14px; border-right: 1px solid rgba(84, 172, 190, 0.16);
+}
+.rv-org-criar, .rv-org-filtros { display: flex; flex-direction: column; gap: 7px; flex: none; }
+
+.rv-org-busca {
+  display: flex; align-items: center; gap: 7px; padding: 6px 9px; border-radius: 3px;
+  background: rgba(0, 212, 255, 0.05); border: 1px solid rgba(84, 172, 190, 0.22); color: var(--txt-dim);
+}
+.rv-org-busca input {
+  flex: 1; min-width: 0; background: none; border: 0; outline: none; color: var(--txt);
+  font: inherit; font-size: 12px;
+}
+.rv-org-busca:focus-within { border-color: rgba(0, 212, 255, 0.55); }
+
+.rv-org-chip {
+  padding: 3px 9px; border-radius: 999px; cursor: pointer; font-size: 11px; letter-spacing: 0.04em;
+  background: rgba(0, 212, 255, 0.05); border: 1px solid rgba(84, 172, 190, 0.22); color: var(--txt-dim);
+}
+.rv-org-chip:hover { border-color: rgba(84, 172, 190, 0.45); color: var(--txt); }
+.rv-org-chip:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.6); outline-offset: 1px; }
+.rv-org-chip[data-ativo] { background: rgba(0, 212, 255, 0.16); border-color: rgba(0, 212, 255, 0.6); color: #d8eef8; }
+.rv-org-chip[data-ativo][data-acento="am"] { background: rgba(240, 190, 90, 0.16); border-color: rgba(240, 190, 90, 0.6); color: #f6e6c6; }
+
+.rv-org-itens { list-style: none; margin: 0; padding: 0; overflow-y: auto; min-height: 0; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.rv-org-vazio { padding: 16px 4px; font-size: 12px; color: var(--txt-dim); line-height: 1.6; }
+.rv-org-item {
+  width: 100%; display: grid; grid-template-columns: auto 1fr auto; gap: 4px 8px; align-items: baseline;
+  padding: 8px 10px; border-radius: 3px; cursor: pointer; text-align: left;
+  background: transparent; border: 1px solid transparent; color: var(--txt);
+}
+.rv-org-item:hover { background: rgba(0, 212, 255, 0.06); border-color: rgba(84, 172, 190, 0.22); }
+.rv-org-item:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.6); outline-offset: -2px; }
+.rv-org-item--sel { background: rgba(0, 212, 255, 0.1); border-color: rgba(0, 212, 255, 0.45); }
+.rv-org-item-tipo {
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(150, 174, 186, 0.9);
+}
+.rv-org-item-titulo { font-size: 13px; overflow-wrap: anywhere; }
+.rv-org-item-etiquetas { grid-column: 2 / -1; font-size: 11px; color: rgba(150, 174, 186, 0.75); }
+
+/* O selo de estado não é decoração: o narrador vê rascunho e publicado
+   na mesma lista, e sem ele não dá para saber o que a mesa já leu. */
+.rv-org-selo {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 999px;
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
+}
+.rv-org-selo[data-estado="rascunho"] { background: rgba(240, 190, 90, 0.14); color: rgba(240, 200, 120, 0.95); }
+.rv-org-selo[data-estado="publicado"] { background: rgba(0, 212, 255, 0.14); color: rgba(150, 224, 250, 0.95); }
+.rv-org-selo[data-estado="arquivado"] { background: rgba(150, 174, 186, 0.14); color: rgba(180, 198, 208, 0.9); }
+
+.rv-org-detalhe { padding-left: 16px; overflow-y: auto; min-height: 0; }
+.rv-org-nenhuma { display: flex; align-items: center; gap: 8px; padding-top: 24px; font-size: 13px; color: var(--txt-dim); }
+.rv-org-det { display: flex; flex-direction: column; gap: 10px; }
+.rv-org-det-cab { display: flex; flex-direction: column; gap: 3px; }
+.rv-org-det-tipo { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(150, 174, 186, 0.9); }
+.rv-org-det-titulo { margin: 0; font-size: 17px; font-weight: 600; overflow-wrap: anywhere; }
+
+.rv-org-campo { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--txt-dim); }
+.rv-org-campo input, .rv-org-campo textarea {
+  padding: 7px 9px; border-radius: 3px; font: inherit; font-size: 13px; color: var(--txt);
+  background: rgba(0, 212, 255, 0.04); border: 1px solid rgba(84, 172, 190, 0.22); resize: vertical;
+}
+.rv-org-campo input:focus, .rv-org-campo textarea:focus { outline: none; border-color: rgba(0, 212, 255, 0.55); }
+
+.rv-org-det-acoes { display: flex; flex-wrap: wrap; gap: 7px; }
+.rv-org-det-acoes--fim { margin-top: 6px; padding-top: 12px; border-top: 1px solid rgba(84, 172, 190, 0.16); }
+.rv-org-vis { display: flex; flex-direction: column; gap: 8px; }
+.rv-org-nota { margin: 0; font-size: 11.5px; line-height: 1.55; color: var(--txt-dim); }
+.rv-org-segredo summary { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: var(--txt-dim); }
+.rv-org-segredo summary:hover { color: var(--txt); }
+.rv-org-pessoas { list-style: none; margin: 8px 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.rv-org-pessoas label { display: flex; align-items: center; gap: 7px; font-size: 12.5px; cursor: pointer; }
+
+.rv-org-relacoes { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.rv-org-relacao {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 3px; cursor: pointer;
+  font-size: 12px; background: rgba(0, 212, 255, 0.05);
+  border: 1px solid rgba(84, 172, 190, 0.22); color: var(--txt);
+}
+.rv-org-relacao:hover { border-color: rgba(0, 212, 255, 0.5); }
+.rv-org-relacao:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.6); outline-offset: 1px; }
+
+@media (max-width: 860px) {
+  .rv-org { grid-template-columns: 1fr; }
+  .rv-org-lista { border-right: 0; padding-right: 0; }
+  .rv-org-detalhe { padding-left: 0; border-top: 1px solid rgba(84, 172, 190, 0.16); padding-top: 12px; }
+}

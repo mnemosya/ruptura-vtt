@@ -23,6 +23,7 @@ import { Fragment, useEffect, useRef } from "react";
 import {
   Backpack,
   BookText,
+  FolderTree,
   Library,
   LogOut,
   ScrollText,
@@ -79,7 +80,11 @@ const ITENS: readonly ItemMenu[] = [
   { janela: "mercado", rotulo: "Mercado", Icone: Store },
   { janela: "livro", rotulo: "Livro", Icone: BookText },
   { janela: "convites", rotulo: "Jogadores e convites", Icone: Ticket, soNarrador: true },
-  { janela: "conteudo", rotulo: "Conteúdo da campanha", Icone: ScrollText, soNarrador: true },
+  { janela: "organizador", rotulo: "Organizador", Icone: FolderTree, soNarrador: true },
+  // "Conteúdo da campanha" era o editor TÉCNICO de regras e o nome
+  // não dizia isso — com o organizador ao lado, a ambiguidade viraria
+  // engano toda vez.
+  { janela: "conteudo", rotulo: "Regras da campanha", Icone: ScrollText, soNarrador: true },
   { janela: "configuracoes", rotulo: "Configurações da mesa", Icone: Settings, soNarrador: true },
 ];
 

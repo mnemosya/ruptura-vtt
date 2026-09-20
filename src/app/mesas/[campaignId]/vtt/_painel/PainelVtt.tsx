@@ -63,6 +63,7 @@ const JanelaMercado = dynamic(() => import("./janelas/JanelaMercado").then((m) =
 const JanelaLivro = dynamic(() => import("./janelas/JanelaLivro").then((m) => m.JanelaLivro), { ssr: false });
 const JanelaConfiguracoes = dynamic(() => import("./janelas/JanelaConfiguracoes").then((m) => m.JanelaConfiguracoes), { ssr: false });
 const JanelaConteudo = dynamic(() => import("./janelas/JanelaConteudo").then((m) => m.JanelaConteudo), { ssr: false });
+const JanelaOrganizador = dynamic(() => import("./janelas/organizador/JanelaOrganizador").then((m) => m.JanelaOrganizador), { ssr: false });
 const JanelaNovoPersonagem = dynamic(() => import("./janelas/JanelaNovoPersonagem").then((m) => m.JanelaNovoPersonagem), { ssr: false });
 import { JanelaAcessoPersonagem, JanelaJogadoresConvites } from "./janelas/JanelasAdmin";
 import { JanelaInterna } from "./ui/JanelaInterna";
@@ -635,6 +636,9 @@ export function PainelVtt({
       )}
       {ehNarrador && janelas.aberta("conteudo") && (
         <JanelaConteudo campaignId={campaignId} onFechar={() => janelas.fechar("conteudo")} />
+      )}
+      {ehNarrador && janelas.aberta("organizador") && (
+        <JanelaOrganizador campaignId={campaignId} onFechar={() => janelas.fechar("organizador")} />
       )}
       {ehNarrador && janelas.aberta("configuracoes") && (
         <JanelaConfiguracoes campaignId={campaignId} onFechar={() => janelas.fechar("configuracoes")} />
