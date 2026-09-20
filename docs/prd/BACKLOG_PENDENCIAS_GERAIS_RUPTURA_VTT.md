@@ -499,7 +499,12 @@ verificação de navegador majoritariamente morta.
 
 ### CON-02 — Harmonizar paleta e tab rail do console
 
-- **Status:** Pronta
+- **Status:** Pronta (paleta concluída; tab rail pendente)
+- **Andamento (2026-09-20):** o critério “tokens sem cores mágicas duplicadas” era mensurável e estava sendo violado em **73 lugares**: `#d6e4f5` aparecia 24 vezes e É `--rc-text`; `#1c2b45` nove vezes e É `--rc-line`. Trocados por token, mais quatro tokens novos para as recorrentes que não tinham nome (`--rc-text-forte`, `--rc-teal`, `--rc-surface-2`, `--rc-surface-3`).
+- **Regressão introduzida e apanhada pela medição:** os tokens eram declarados em `.rc-window-wrap`, e o cabeçalho de `/ficha` é **irmão** da janela, não descendente — ao trocar literais por token, oito elementos do cabeçalho caíram na cor padrão do navegador. Só apareceu porque as cores computadas foram fotografadas antes e comparadas depois. Os tokens passaram a ser declarados também para o cabeçalho; o layout continua só na janela.
+- **Segundo erro, sobre token contextual:** `--rc-skill-cor` vale verde em Corpo e roxo em Mente, e só recebe valor dentro de `.rc-skill`. Troquei por ele um `#0596B7` de `.rc-nric-badge`, que está fora desse escopo — o `var()` não resolveria ali, e o próprio arquivo já dizia que aquela era “cor PRÓPRIA”. Revertido, e o check passou a **ignorar tokens declarados com mais de um valor**: igualdade de valor não é duplicação quando o token é contextual.
+- Cinco critérios em `scripts/dev/check-console-paleta.ts`.
+- **Pendente:** a segunda metade da tarefa — alinhar o **tab rail** ao padrão das janelas de ferramentas e definir os estados normal/hover/pressed/disabled. A dúvida em aberto (“tabs seguem exatamente o painel VTT ou apenas seus tokens?”) continua sem resposta e é decisão de design.
 - **Descrição:** revisar cores de defesa, adicionar, pips, PV/mana e alinhar as tabs ao padrão das janelas de ferramentas/painel.
 - **Área afetada:** CSS do console, recursos, ações e `TabRail`.
 - **Prioridade sugerida:** P1
