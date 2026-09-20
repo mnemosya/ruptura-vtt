@@ -142,6 +142,14 @@
   animation: rc-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes rc-in { from { opacity: 0; transform: translateY(12px) scale(0.985); } to { opacity: 1; transform: none; } }
+/* MAXIMIZADA a janela cobre a viewport inteira — inclusive a faixa do
+   cabeçalho de /ficha, que está em z-index 510 contra os 501 daqui. O
+   resultado era os controles de janela ficarem SOB o cabeçalho: com a
+   janela maximizada não havia como restaurar nem fechar pelo botão,
+   porque o clique nunca chegava neles.
+   Maximizar significa cobrir; então a janela passa à frente, e os
+   próprios controles dela voltam a ser o caminho de saída. */
+.rc-window-wrap[data-mode="maximized"] { z-index: 520; }
 .rc-window-wrap[data-mode="minimized"] { visibility: hidden; pointer-events: none; }
 .rc-window-wrap *, .rc-window-wrap *::before, .rc-window-wrap *::after { box-sizing: border-box; }
 .rc-window-wrap button, .rc-window-wrap input, .rc-window-wrap select { font-family: inherit; }
@@ -160,10 +168,17 @@
   position: relative;
   display: flex; flex-direction: column;
   padding: 1px;
+  /* Maximizada a janela encosta nas bordas da tela e o raio só produz
+     quinas vazadas — por isso o zero logo abaixo, e não aqui. */
+  border-radius: 4px;
   border: 1px solid var(--rc-line);
   background: url("/console/bg-console-do-personagem.svg") center / cover no-repeat, var(--rc-surface);
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.72), inset 0 0 60px rgba(17, 29, 49, 0.1);
 }
+.rc-window-wrap[data-mode="maximized"] .rc-window { border-radius: 0; }
+/* O corpo precisa do mesmo recorte, senão o fundo quadrado aparece por
+   baixo do canto arredondado da moldura. */
+.rc-window { overflow: hidden; }
 
 /* ── Topbar ────────────────────────────────────────────────────── */
 .rc-topbar {
@@ -199,9 +214,16 @@
 .rc-winbtn {
   display: grid; place-items: center;
   width: 28px; height: 28px;
+  /* CON-01 — cantos vivos viravam degrau contra a moldura arredondada
+     da janela. 3px é o mesmo raio dos controles das janelas do painel
+     do VTT, para os dois conjuntos de botão de janela coincidirem. */
+  border-radius: 3px;
   border: 1px solid var(--rc-line);
   background: transparent;
-  color: var(--cy);
+  /* O ciano cheio fazia três ícones utilitários competirem com o
+     conteúdo da ficha, que é onde a atenção deve estar. Atenuado no
+     repouso e cheio no hover, quando a intenção já é de mexer. */
+  color: rgba(0, 212, 255, 0.62);
   cursor: pointer;
   transition: color 0.14s, background 0.14s, border-color 0.14s;
 }

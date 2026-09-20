@@ -2183,7 +2183,17 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-fp-switch input:focus-visible + .rv-fp-switch-tr { outline: 2px solid var(--cy); outline-offset: 2px; }
 .rv-fp-switch input:disabled + .rv-fp-switch-tr { opacity: .45; }
 .rv-fp-switch-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.rv-fp-switch-sub { font-size: 10px; color: var(--txt-dim); line-height: 1.2; }
+/* VIS-01 — o rótulo do interruptor entra na mesma voz dos outros
+   rótulos do VTT: display, caixa alta, espaçado. É `text-transform`, e
+   não texto em maiúsculas no TSX, para que o nome acessível continue
+   sendo lido como palavra e não soletrado por leitor de tela.
+   A legenda (`--sub`) fica de fora: ela é frase, não rótulo.
+   Nomes próprios têm exceção já declarada em `.rv-condicao-item`. */
+.rv-fp-switch-txt > span:not(.rv-fp-switch-sub) {
+  font-family: var(--rv-display), sans-serif; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.rv-fp-switch-sub { font-size: 10px; color: var(--txt-dim); line-height: 1.2; text-transform: none; letter-spacing: 0; }
 
 .rv-fp-erro {
   margin: 0; padding: 7px 9px; border-radius: var(--rv-r); font-size: 11.5px; line-height: 1.35;
@@ -3240,7 +3250,11 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-camadas-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1 1 auto; }
 .rv-camadas-nome {
   font-family: var(--rv-display), sans-serif;
-  font-size: 12px; font-weight: 600; color: #d6e4f5;
+  font-size: 11px; font-weight: 600; color: #d6e4f5;
+  /* Mesma caixa alta dos demais rótulos do VTT. O tamanho cai 1px
+     porque caixa alta ocupa mais largura, e a lista tem nomes longos
+     ("OBJETOS / COBERTURAS") que não podem truncar. */
+  text-transform: uppercase; letter-spacing: .07em;
 }
 .rv-camadas-sub {
   font-family: var(--font-mono), monospace;

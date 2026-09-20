@@ -80,7 +80,45 @@ export function usePushToast() {
  * implementação paralela — o Console não passa por `GlobalShell`, mas
  * precisa do mesmo cursor HUD do resto do VTT.
  */
+/**
+ * SÓ UM cursor HUD desenha por vez, em toda a aplicação.
+ *
+ * O Console monta o seu próprio porque também roda sozinho em `/ficha`,
+ * onde não há casca de campanha. Aberto dentro da campanha — ou sobre
+ * Personagens, pelo modal interceptado — já existe outro, e dois anéis
+ * perseguindo o mesmo ponteiro com a mesma interpolação aparecem como
+ * cursor duplicado.
+ *
+ * O registro é de MÓDULO, e não um contexto de React, porque o modal de
+ * ficha vive no slot paralelo `@modal`: ele não é descendente da casca
+ * que desenhou o primeiro cursor, e nenhum contexto desceria até lá.
+ *
+ * Quem chega primeiro desenha. Se esse sair, os demais são avisados e o
+ * próximo assume — senão fechar a casca deixaria todo mundo sem cursor.
+ */
+const instanciasDeCursor: symbol[] = [];
+const ouvintesDeCursor = new Set<() => void>();
+function avisarCursores() { for (const f of [...ouvintesDeCursor]) f(); }
+
 export function HudCursor({ enabled }: { enabled: boolean }) {
+  const id = useRef<symbol>(undefined as unknown as symbol);
+  if (id.current === undefined) id.current = Symbol("hud-cursor");
+  const [desenha, setDesenha] = useState(false);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const meu = id.current;
+    instanciasDeCursor.push(meu);
+    const recalcular = () => setDesenha(instanciasDeCursor[0] === meu);
+    ouvintesDeCursor.add(recalcular);
+    avisarCursores();
+    return () => {
+      ouvintesDeCursor.delete(recalcular);
+      const i = instanciasDeCursor.indexOf(meu);
+      if (i >= 0) instanciasDeCursor.splice(i, 1);
+      avisarCursores();
+    };
+  }, [enabled]);
   const dotRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
   const mouse = useRef({ x: -300, y: -300 });
@@ -89,7 +127,7 @@ export function HudCursor({ enabled }: { enabled: boolean }) {
   const hovering = useRef(false);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !desenha) return;
     if (!window.matchMedia("(pointer: fine)").matches) return;
 
     const onMove = (e: MouseEvent) => {
@@ -132,9 +170,9 @@ export function HudCursor({ enabled }: { enabled: boolean }) {
       window.removeEventListener("mouseup", onUp);
       cancelAnimationFrame(raf.current);
     };
-  }, [enabled]);
+  }, [enabled, desenha]);
 
-  if (!enabled) return null;
+  if (!enabled || !desenha) return null;
   return (
     <>
       <div ref={dotRef} className="ra-cursor-dot" aria-hidden="true" />
@@ -142,6 +180,7 @@ export function HudCursor({ enabled }: { enabled: boolean }) {
     </>
   );
 }
+
 
 function useParallax(ref: React.RefObject<HTMLDivElement | null>, strength: number, enabled: boolean) {
   useEffect(() => {
@@ -365,7 +404,9 @@ export function GlobalShell({
                   ) : (
                     <span className="ra2-brand-full">
                       <span className="ra2-brand-name">RUPTURA</span>
-                      <span className="ra2-brand-sub" style={{ display: "block" }}>VTT ENGINE v0.0.1</span>
+                      <span className="ra2-brand-sub" style={{ display: "block" }}>
+                        VTT ENGINE v{process.env.NEXT_PUBLIC_APP_VERSION ?? "0.0.0"}
+                      </span>
                     </span>
                   )}
                 </Link>

@@ -93,7 +93,7 @@ export const CAMADAS_DEFINICAO: DefinicaoCamada[] = [
   // E separar as duas é o que torna a camada útil: um mapa de fundo e
   // os móveis por cima quase nunca se escondem juntos. Revelar a planta
   // sem revelar onde estão as coisas é um gesto de narração comum.
-  { id: "imagemFundo", rotulo: "Fundo do mapa", temBloqueio: true, grupo: "cena", descricao: "a planta por baixo de tudo" },
+  { id: "imagemFundo", rotulo: "Mapa", temBloqueio: true, grupo: "cena", descricao: "a planta por baixo de tudo" },
   { id: "tiles", rotulo: "Imagens soltas", temBloqueio: true, grupo: "cena", descricao: "móveis, manchas, recortes" },
   { id: "terrenoFuncional", rotulo: "Terreno", temBloqueio: true, grupo: "cena", descricao: "difícil e bloqueado" },
   { id: "objetos", rotulo: "Objetos / coberturas", temBloqueio: false, grupo: "cena", descricao: "cobertura e colisão" },
