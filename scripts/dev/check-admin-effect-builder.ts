@@ -30,6 +30,7 @@
 import assert from "node:assert/strict";
 import { chromium, type Locator, type Page } from "playwright";
 import { BASE_URL, SESSION_FILE, assertAdminSessionValid, requireSessaoSalva, sessaoSalvaExiste } from "./authSession";
+import { limparEAnunciar } from "./residuoDeConteudo";
 
 const PREFIXO_TESTE = "zz_e2e_etapa4_";
 const NOME_MESA_FIXTURE = "Mesa CP7 Bando";
@@ -130,6 +131,7 @@ async function main(): Promise<void> {
     requireSessaoSalva();
     return;
   }
+  await limparEAnunciar();
 
   const idsCriados: string[] = [];
   const errosDeConsole: string[] = [];

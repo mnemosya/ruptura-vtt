@@ -19,6 +19,7 @@
 import assert from "node:assert/strict";
 import { chromium, type Page } from "playwright";
 import { BASE_URL, SESSION_FILE, assertAdminSessionValid, requireSessaoSalva, sessaoSalvaExiste } from "./authSession";
+import { limparEAnunciar } from "./residuoDeConteudo";
 
 async function excluirRascunhoSeExistir(page: Page, draftId: string): Promise<void> {
   const resp = await page.goto(`${BASE_URL}/admin/biblioteca/rascunhos/${draftId}`, { waitUntil: "domcontentloaded" });
@@ -33,6 +34,7 @@ async function main(): Promise<void> {
     requireSessaoSalva();
     return;
   }
+  await limparEAnunciar();
   const browser = await chromium.launch({ headless: true });
   const draftsCriados: string[] = [];
 

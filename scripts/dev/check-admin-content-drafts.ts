@@ -20,6 +20,7 @@
 import assert from "node:assert/strict";
 import { chromium, type Page } from "playwright";
 import { BASE_URL, SESSION_FILE, assertAdminSessionValid, requireSessaoSalva, sessaoSalvaExiste } from "./authSession";
+import { limparEAnunciar } from "./residuoDeConteudo";
 
 const PREFIXO_TESTE = "zz_e2e_etapa3_";
 const SLUGS_ORIGEM_PARA_LIMPAR = ["energetica_bola_de_fogo", "artifice"];
@@ -62,6 +63,8 @@ async function main(): Promise<void> {
     requireSessaoSalva(); // lança com a instrução de rodar npm run auth:save-session
     return;
   }
+
+  await limparEAnunciar();
 
   const errosDeConsole: string[] = [];
   const idsCriadosNesteRun: string[] = [];

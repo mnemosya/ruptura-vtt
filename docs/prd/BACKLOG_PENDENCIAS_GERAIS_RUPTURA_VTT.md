@@ -470,7 +470,8 @@ Os que passam se concentram no que foi escrito ou reparado recentemente, mais os
 
 ### CHAR-03 — Integrar criação guiada de PJ
 
-- **Status:** Pronta
+- **Status:** Pronta após dependência
+- **Correção de status (2026-09-20):** estava marcada como “Pronta”, contradizendo a própria linha de dependências — ela pede CHAR-01, que espera CHAR-04 e CHAR-05, as duas bloqueadas. Não é implementável hoje.
 - **Descrição:** abrir o assistente completo já existente a partir do novo menu, preservando rascunho, validação canônica e retorno ao painel do VTT.
 - **Área afetada:** `AssistenteDeCriacao`, painel Personagens e domínio de criação.
 - **Prioridade sugerida:** P1
