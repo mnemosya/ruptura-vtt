@@ -2422,9 +2422,16 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    telas estreitas (a janela tem até 470px de largura) e o teto em %
    evita reservar espaço demais em telas bem largas. */
 .rv-mesa-dados-overlay {
-  position: absolute; top: 0; bottom: 0; right: 0;
-  left: clamp(580px, 42%, 640px);
-  z-index: 15; pointer-events: none;
+  /* DICE-01 — viewport inteira, acima de tudo, e atravessável.
+     A faixa à direita existia para o dado não assentar embaixo da
+     janela "Rolar Dados"; agora ele cai SOBRE ela, e a restrição
+     perdeu o motivo. `fixed` porque o overlay passou a ser filho do
+     `body` (portal), não mais do palco recortado.
+     900 fica acima do Console maximizado (520) e do cabeçalho de
+     /ficha (510). `pointer-events: none` é o que separa "cobrir por um
+     instante" de "impedir o clique": nada abaixo deixa de responder. */
+  position: fixed; inset: 0;
+  z-index: 900; pointer-events: none;
 }
 .rv-mesa-dados-overlay[data-saindo="true"] { animation: rv-dados-saida .32s ease forwards; }
 @keyframes rv-dados-saida { to { opacity: 0; } }

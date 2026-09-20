@@ -103,8 +103,12 @@ function addFaceLabels(
       depthWrite: false,
       side: THREE.FrontSide,
     });
-    const plane = new THREE.Mesh(new THREE.PlaneGeometry(0.42 * escala, 0.42 * escala), mat);
-    plane.position.copy(centroid).addScaledVector(normal, 0.06 * escala);
+    // O rótulo acompanha o porte NORMALIZADO, não o `escala` cru: os
+    // centróides já vêm da geometria redimensionada, e um plano preso à
+    // escala antiga transbordaria a face no d10, que encolheu 30%.
+    const porte = (geo.boundingSphere?.radius ?? CIRCUNRAIO_ALVO * escala) / CIRCUNRAIO_ALVO;
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(0.42 * porte, 0.42 * porte), mat);
+    plane.position.copy(centroid).addScaledVector(normal, 0.06 * porte);
     plane.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
     parent.add(plane);
   }
@@ -178,6 +182,37 @@ function createD10(escala = 1): THREE.BufferGeometry {
   return geo;
 }
 
+/**
+ * DICE-01 — porte aparente igual entre os sólidos.
+ *
+ * Cada geometria era construída com um raio escolhido à mão, e os
+ * números não davam o mesmo tamanho na tela: medido, o circunraio ia de
+ * 0,82 (d12) a 1,265 (d10) — o d10 saía 54% maior que o menor, que é
+ * exatamente a queixa registrada.
+ *
+ * A referência adotada é o CIRCUNRAIO (a esfera que envolve o sólido),
+ * e não altura nem volume: altura depende de como o dado caiu, e volume
+ * igual deixaria o d4 enorme, porque um tetraedro aproveita mal a
+ * esfera que o contém. Circunraio é o que decide quanto espaço o dado
+ * ocupa na mesa, caia como cair.
+ *
+ * Normalizar aqui, e não corrigir número por número, faz a regra valer
+ * para qualquer sólido que entre depois.
+ */
+const CIRCUNRAIO_ALVO = 0.88; // o do d20, que já era a referência visual
+
+function normalizarPorte(geo: THREE.BufferGeometry, escala: number): number {
+  geo.computeBoundingSphere();
+  const r = geo.boundingSphere?.radius ?? 0;
+  if (!r) return 1;
+  const fator = (CIRCUNRAIO_ALVO * escala) / r;
+  geo.scale(fator, fator, fator);
+  // `scale()` não recomputa a esfera: sem isto, quem ler
+  // `boundingSphere` depois receberia o raio de ANTES do ajuste.
+  geo.computeBoundingSphere();
+  return fator;
+}
+
 function makeGeo(sides: number, escala = 1): THREE.BufferGeometry {
   let geo: THREE.BufferGeometry;
   switch (sides) {
@@ -192,8 +227,9 @@ function makeGeo(sides: number, escala = 1): THREE.BufferGeometry {
     case 20:
     default: geo = new THREE.IcosahedronGeometry(0.88 * escala, 0); break;
   }
-  if ((geo as THREE.BufferGeometry & { index: unknown }).index) return geo.toNonIndexed();
-  return geo;
+  const plano = (geo as THREE.BufferGeometry & { index: unknown }).index ? geo.toNonIndexed() : geo;
+  normalizarPorte(plano, escala);
+  return plano;
 }
 
 /* ---- physical dice arena (Three.js + cannon-es) ----------------- */
