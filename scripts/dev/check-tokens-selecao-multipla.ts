@@ -146,8 +146,16 @@ async function main() {
       await selecionar(pn, ["AU", "BD", "GT"]);
       await abrirMenuEm(pn, "BD");
       await pn.locator(".rv-menu-item", { hasText: "Virar à direita" }).click();
-      await pn.waitForTimeout(2500);
-      const depois = await admin.from("vtt_tokens").select("id,direcao,q,r").eq("campaign_id", campaignId);
+      // Espera pela CONDIÇÃO, não pelo relógio: o lote são N idas ao
+      // servidor, e um tempo fixo que basta na máquina ociosa falha
+      // quando ela está ocupada — este check já deu falso negativo
+      // assim, rodando junto com a triagem.
+      const depois = await esperarNoBanco(
+        async () => (await admin.from("vtt_tokens").select("id,direcao,q,r").eq("campaign_id", campaignId)),
+        (r) => (r.data ?? []).every((d) => {
+          const a = antes.data?.find((x) => x.id === d.id);
+          return a && d.direcao !== a.direcao;
+        }));
       const todosGiraram = (depois.data ?? []).every((d) => {
         const a = antes.data?.find((x) => x.id === d.id);
         return a && d.direcao !== a.direcao;

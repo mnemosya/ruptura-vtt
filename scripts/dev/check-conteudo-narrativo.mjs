@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { config } from 'dotenv';
 import { Client } from 'pg';
+import { criarContasDeFixture } from './contasDeFixture.mjs';
 config({ path: '.env.local', quiet: true });
 const db = new Client({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 15000 });
 try {
@@ -17,9 +18,9 @@ try {
   const { rows: [temValores] } = await db.query("select to_regprocedure('public.narrativa_pode_ver_valores(uuid,narrativa_estado,uuid)') as fn");
   if (!temValores.fn) await db.query(readFileSync('supabase/migrations/0145_narrativa_ver_por_valores.sql', 'utf8').replace(/^begin;\s*/i, '').replace(/commit;\s*$/i, ''));
 
-  const { rows: users } = await db.query('select id from auth.users limit 4');
-  assert.ok(users.length >= 4, 'Necessárias quatro contas');
-  const [narrador, jogadorA, jogadorB, estranho] = users.map(u => u.id);
+  // Contas LIMPAS, criadas na própria transação: emprestar contas
+  // existentes fazia o resultado depender do conteúdo do banco.
+  const [narrador, jogadorA, jogadorB, estranho] = await criarContasDeFixture(db, 4, 'narrativa');
   const campanha = randomUUID(), outraCampanha = randomUUID();
   await db.query('insert into public.campaigns(id,name,owner_id) values($1,$2,$3),($4,$5,$6)',
     [campanha, 'Mesa narrativa', narrador, outraCampanha, 'Outra mesa', estranho]);

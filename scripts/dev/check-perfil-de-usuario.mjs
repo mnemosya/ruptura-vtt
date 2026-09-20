@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { config } from 'dotenv';
 import { Client } from 'pg';
+import { criarContasDeFixture } from './contasDeFixture.mjs';
 config({ path: '.env.local', quiet: true });
 const db = new Client({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 15000 });
 try {
@@ -13,9 +14,9 @@ try {
   const { rows: [existe] } = await db.query("select to_regprocedure('public.read_user_profile(uuid)') as fn");
   if (!existe.fn) await db.query(readFileSync('supabase/migrations/0141_perfil_de_usuario.sql', 'utf8').replace(/^begin;\s*/i, '').replace(/commit;\s*$/i, ''));
 
-  const { rows: users } = await db.query('select id from auth.users limit 3');
-  assert.ok(users.length >= 3, 'Necessárias três contas');
-  const [narrador, jogador, estranho] = users.map(u => u.id);
+  // Contas LIMPAS, criadas na própria transação: emprestar contas
+  // existentes fazia o resultado depender do conteúdo do banco.
+  const [narrador, jogador, estranho] = await criarContasDeFixture(db, 3, 'perfil');
   // Duas campanhas do narrador: só UMA tem o jogador.
   const compartilhada = randomUUID(), privada = randomUUID();
   await db.query('insert into public.campaigns(id,name,owner_id) values($1,$2,$3),($4,$5,$6)',
@@ -77,9 +78,11 @@ try {
   await identity(estranho);
   p = await perfil(estranho);
   assert.equal(p.is_self, true);
-  // As contas do fixture são contas REAIS do banco e podem ter outras
-  // campanhas próprias; o que importa é que a criada aqui esteja lá.
-  assert.ok(p.campaigns.some(c => c.campaign_id === deOutro), 'O estranho vê a própria mesa');
+  // Agora a conta nasce limpa, então a asserção pode ser EXATA: a
+  // única campanha dela é a criada aqui. Antes era um `some()`, porque
+  // a conta emprestada podia ter outras — e um `some()` passa mesmo que
+  // a leitura devolva campanhas alheias junto.
+  assert.deepEqual(p.campaigns.map(c => c.campaign_id), [deOutro], 'O estranho vê exatamente a própria mesa');
   console.log('ok - 5 o próprio perfil sempre abre, e é marcado como self');
 
   // 6. E-mail nunca sai no perfil.
