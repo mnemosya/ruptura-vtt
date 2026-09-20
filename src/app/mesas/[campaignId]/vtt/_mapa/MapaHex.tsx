@@ -17,7 +17,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Crosshair, FileText, Navigation, TriangleAlert } from "lucide-react";
+import { GLIFO_DO_SINAL, SINAIS_MARCA } from "../_dominio/sinaisDeMarca";
 import {
   type Hex,
   TAMANHOS,
@@ -78,13 +78,9 @@ import { elementoEhEditavel } from "../_ferramentas/controlador";
 
 /** Glifo de cada tipo de sinal — a MESMA tabela de ícones que
     `PainelMarcar` usa nos botões, para que mapa e janela nunca mostrem
-    desenhos diferentes pro mesmo sinal. */
-const GLIFO_DO_SINAL: Record<string, typeof Crosshair> = {
-  alvo: Crosshair,
-  perigo: TriangleAlert,
-  rota: Navigation,
-  nota: FileText,
-};
+    desenhos diferentes pro mesmo sinal — agora de verdade: a tabela é
+    a mesma, importada de `_dominio/sinaisDeMarca`, e não mais uma cópia
+    ao lado da outra. */
 /** Lado do glifo em unidades do mapa (o hex tem raio `TAM`). */
 const TAM_GLIFO_SINAL = 19;
 import {
@@ -2623,7 +2619,9 @@ export function MapaHex({
                       há, e o círculo só competia com o glifo. */}
                   <g transform={`translate(${-TAM_GLIFO_SINAL / 2} ${-TAM_GLIFO_SINAL / 2})`} style={{ color: m.cor }}>
                     {(() => {
-                      const Glifo = GLIFO_DO_SINAL[m.sinal] ?? FileText;
+                      // Sinal desconhecido cai no primeiro da tabela em vez de sumir:
+                      // uma marca que existe no banco precisa aparecer no mapa.
+                      const Glifo = GLIFO_DO_SINAL[m.sinal] ?? SINAIS_MARCA[0].Icone;
                       return <Glifo width={TAM_GLIFO_SINAL} height={TAM_GLIFO_SINAL} strokeWidth={1.7} />;
                     })()}
                   </g>

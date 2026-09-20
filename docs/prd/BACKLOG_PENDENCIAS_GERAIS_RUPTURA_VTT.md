@@ -49,9 +49,9 @@ Esta triagem considera o código existente, não apenas a lista de desejos:
 | Recorte | Quantidade |
 |---|---:|
 | Total de tarefas | 72 |
-| Prontas | 34 |
+| Prontas | 35 |
 | Prontas após dependência | 3 |
-| Bloqueadas por regra, contrato ou referência indispensável | 35 |
+| Bloqueadas por regra, contrato ou referência indispensável | 34 |
 | Em validação | 0 |
 | P0 | 14 |
 | P1 | 42 |
@@ -710,7 +710,11 @@ verificação de navegador majoritariamente morta.
 
 ### TOOL-01 — Atualizar iconografia da ferramenta de marcação
 
-- **Status:** Pronta
+- **Status:** Pronta (concluída)
+- **Andamento (2026-09-20):** **o conjunto não era escolha de interface** — são os quatro valores que `vtt_marks.sinal` aceita, e acrescentar um quinto é mudança de banco. Isso responde “quais marcas fazem parte do primeiro conjunto”.
+- **Achado estrutural:** o mapeamento sinal→glifo existia em DUAS cópias — `PainelMarcar` e `MapaHex`. O próprio `MapaHex` trazia escrito que mapa e janela “nunca mostram desenhos diferentes pro mesmo sinal”, e mantinha a cópia ao lado assim mesmo. Unificado em `_dominio/sinaisDeMarca.ts`.
+- **Decisão sobre os glifos** (a dúvida em aberto era Figma ou família nova): família nova, dentro do lucide que o projeto já usa. O critério foi a silhueta a 16–24px, onde o detalhe interno some: `Navigation` saiu de **rota** porque a seta é a forma do cursor, e a mesma silhueta em dois papéis é o que confunde num mapa cheio; `FileText` saiu de **nota** porque um documento com linhas, reduzido, vira um retângulo listrado difícil de separar de qualquer outro retângulo. Entraram `Route` (linha sinuosa) e `StickyNote` (quadrado com dobra). Os quatro passam a ter contornos distintos: círculo com cruz, triângulo, linha sinuosa, quadrado com dobra.
+- Sete critérios verificados em `scripts/dev/check-iconografia-marcacao.ts`, incluindo que os quatro desenham geometrias diferentes no mapa e que abrir a ferramenta ou trocar de sinal não desloca a barra nem redimensiona o painel.
 - **Descrição:** substituir os ícones atuais por um conjunto coerente e distinguível nos tamanhos reais, mantendo rótulos e atalhos.
 - **Área afetada:** PainelMarcar, toolbar e ícones.
 - **Prioridade sugerida:** P2

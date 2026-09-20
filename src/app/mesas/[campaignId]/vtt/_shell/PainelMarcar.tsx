@@ -28,7 +28,8 @@
  * intenção. Quem grava é `VttClient`.
  */
 
-import { Crosshair, Eraser, FileText, Loader2, MapPin, MousePointerClick, Navigation, TriangleAlert, Users } from "lucide-react";
+import { Eraser, Loader2, MapPin, MousePointerClick, Users } from "lucide-react";
+import { SINAIS_MARCA, type SinalMarcaUi } from "../_dominio/sinaisDeMarca";
 import { JanelaFerramenta } from "./JanelaFerramenta";
 
 /** As seis cores que `vtt_marks.cor` aceita — nem uma a mais. */
@@ -43,15 +44,10 @@ export const CORES_MARCA = [
 
 export type CorMarcaUi = (typeof CORES_MARCA)[number]["valor"];
 
-/** Os quatro sinais que `vtt_marks.sinal` aceita. Ícones do PRODUTO. */
-export const SINAIS_MARCA = [
-  { valor: "alvo", rotulo: "Alvo", sub: "prioridade", Icone: Crosshair },
-  { valor: "perigo", rotulo: "Perigo", sub: "ameaça", Icone: TriangleAlert },
-  { valor: "rota", rotulo: "Rota", sub: "deslocam.", Icone: Navigation },
-  { valor: "nota", rotulo: "Nota", sub: "informação", Icone: FileText },
-] as const;
-
-export type SinalMarcaUi = (typeof SINAIS_MARCA)[number]["valor"];
+/* Os quatro sinais vivem em `_dominio/sinaisDeMarca` — mapa e janela
+   leem a MESMA tabela, em vez de manterem cópias que divergem. A
+   reexportação mantém quem já importava daqui. */
+export { SINAIS_MARCA, type SinalMarcaUi };
 
 /**
  * As durações que o servidor sabe EXPIRAR.
