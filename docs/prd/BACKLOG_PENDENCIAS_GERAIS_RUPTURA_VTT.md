@@ -51,8 +51,8 @@ Esta triagem considera o código existente, não apenas a lista de desejos:
 | Total de tarefas | 71 |
 | Prontas | 22 |
 | Prontas após dependência | 4 |
-| Bloqueadas por regra, contrato ou referência indispensável | 45 |
-| Em validação | 0 |
+| Bloqueadas por regra, contrato ou referência indispensável | 44 |
+| Em validação | 1 |
 | P0 | 14 |
 | P1 | 41 |
 | P2 | 15 |
@@ -322,14 +322,25 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 
 ### CONT-02 — Implementar armazenamento e autorização do conteúdo narrativo
 
-- **Status:** Bloqueada
+- **Status:** Em validação
 - **Descrição:** criar o modelo persistente, queries e mutações para itens narrativos, relações, anexos e visibilidade, com isolamento entre campanhas.
 - **Área afetada:** banco, RLS, Server Actions, realtime e storage.
 - **Prioridade sugerida:** P0
 - **Dependências:** CONT-01.
 - **Nota (2026-09-20):** CONT-01 está concluída — a taxonomia deixou de ser o bloqueio. O que falta aqui são as dúvidas próprias listadas abaixo.
 - **Critérios de aceite:** narrador cria/edita/arquiva; jogadores leem somente conteúdo revelado e suas próprias notas quando aplicável; mudança de visibilidade é atômica e auditável; anexos seguem a mesma autorização; testes negativos entre campanhas.
-- **Dúvidas antes da implementação:** visibilidade é binária, por jogador ou por grupo? Existe publicação agendada? Jogador pode comentar em handout ou apenas ler?
+- **Dúvidas antes da implementação:** respondidas em 2026-09-20. **Visibilidade:** binária por padrão — publicado é da mesa toda — com exceção por jogador quando o narrador quer o segredo de um só. Não se inventou entidade “grupo”: ela não existe no projeto (“dividir o grupo”, 0118, é atribuição individual a cenas), e `campaign_members` já bastava. Isso responde também a parte de CONT-05. **Agendamento:** não existe; revelar é gesto da cena, não relojoaria. **Comentários:** o jogador PODE comentar, e as regras de autoria vão junto (abaixo).
+- **Andamento (2026-09-20):** migration `0142_conteudo_narrativo.sql`, aditiva — cinco tabelas, dois enums e uma função, sem tocar em nada existente. Decisões que o schema aplica, e não apenas documenta:
+  - **Uma pergunta, uma função:** `narrativa_pode_ver` é o único lugar onde “quem vê o quê” é decidido, e toda política daqui a consulta. Repetir o predicado por tabela é como as regras divergem (mesma lição da 0118). As Server Actions também não refiltram: filtrar de novo na aplicação seria uma segunda implementação da regra.
+  - **Lista de exceções vazia = a mesa toda vê**, e não “ninguém vê”. Por isso revelar para todos é apagar as exceções, e não inserir uma linha por jogador: com linhas por jogador, quem entrasse na campanha depois ficaria de fora sem ninguém perceber.
+  - **O jogador não lê a lista de exceções** — saber quem mais recebeu o segredo já é parte do segredo.
+  - **Relação simétrica de verdade:** o par é guardado ordenado com `check (entry_a < entry_b)`, então (a,b) e (b,a) são a mesma linha. E só aparece quando os DOIS lados são visíveis, senão a ponta visível denunciaria a existência do rascunho do outro lado.
+  - **Comentário:** comenta e lê quem enxerga o item. A autoria não vem do cliente (`autor_id = auth.uid()` no insert). O autor edita e apaga o que é seu; o narrador apaga qualquer um, porque a mesa é dele, mas **não edita** a fala de ninguém.
+  - **Arquivar não apaga**, e `check ((estado = 'arquivado') = (arquivado_em is not null))` impede arquivado sem data.
+  - Anexo é ponte para `vtt_image_assets` com FK composta `(id, campaign_id)` — sem bucket novo, sem mime novo, e sem aceitar imagem de outra campanha.
+  - Quinze critérios transacionais aprovados em `scripts/dev/check-conteudo-narrativo.mjs`, incluindo recusa do tipo `loja` pelo enum, isolamento entre campanhas nos dois sentidos e os negativos de comentário.
+  - Server Actions em `src/lib/campaign/narrativeActions.ts`, prontas para CONT-03.
+- **Fora de escopo, registrado:** notificação de comentário novo não existe; o comentário aparece quando a pessoa abre o item. Se virar necessidade, é entrada própria.
 
 ### CONT-03 — Criar interface de organização para o narrador
 
