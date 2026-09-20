@@ -4989,12 +4989,19 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* O cabeçalho é IDENTIDADE, não ação: nome da mesa e papel, que
    perderam o lugar junto com o cabeçalho da casca. */
 .rv-menu-mesa-cab {
-  display: flex; align-items: center; gap: 8px;
-  padding: 4px 8px 8px; border-bottom: 1px solid var(--linha-2);
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 10px 8px 0;
+  background: linear-gradient(140deg, color-mix(in srgb, var(--cy) 5%, transparent), transparent 85%);
 }
+.rv-menu-mesa-identidade { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rv-menu-mesa-eyebrow, .rv-menu-mesa-section {
+  font-family: var(--rv-display), sans-serif; font-size: 11px; font-weight: 600;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--txt-dim);
+}
+.rv-menu-mesa-section { padding: 10px 8px 3px; }
 .rv-menu-mesa-nome {
   flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-family: var(--rv-display), sans-serif; font-size: 12px; font-weight: 700;
+  font-family: var(--rv-display), sans-serif; font-size: 20px; font-weight: 700;
   letter-spacing: .1em; text-transform: uppercase; color: var(--txt-forte);
 }
 .rv-menu-mesa-papel {
@@ -5008,6 +5015,27 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   border-color: color-mix(in srgb, var(--am) 45%, transparent); color: var(--am);
 }
 .rv-menu-mesa-grupo { display: flex; flex-direction: column; gap: 2px; }
+.rv-session { border-top: 1px solid var(--linha-2); border-bottom: 1px solid var(--linha-2); padding: 12px 0; }
+.rv-session-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rv-session-status { display: flex; align-items: center; gap: 7px; font-family: var(--rv-display), sans-serif; font-size: 13px; font-weight: 600; letter-spacing: .06em; color: var(--txt-dim); }
+.rv-session-status[data-online="true"] { color: #77cdb5; }
+.rv-session-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex: none; }
+.rv-session-time { margin: 4px 0 0 12px; color: var(--txt-dim); font-size: 11px; }
+.rv-session-toggle, .rv-session-button { font-family: var(--rv-display), sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; color: #a9b9cb; }
+.rv-session-toggle { display: flex; align-items: center; gap: 6px; border: 1px solid #3a4b60; background: transparent; padding: 7px 8px; border-radius: var(--rv-r); white-space: nowrap; }
+.rv-session-toggle:hover { color: #f5a5ad; border-color: #8a505c; }
+.rv-session-toggle--start { padding: 7px 8px; border-color: color-mix(in srgb, var(--am) 40%, transparent); background: color-mix(in srgb, var(--am) 12%, transparent); color: var(--am); }
+.rv-session-toggle--start:hover { color: var(--am); background: color-mix(in srgb, var(--am) 20%, transparent); }
+.rv-session-question { margin: 0 0 7px; color: var(--txt-forte); font-size: 14px; font-weight: 500; }
+.rv-session-note { margin: 8px 0 12px; font-size: 12px; line-height: 1.6; color: var(--txt-dim); }
+.rv-session-actions { display: flex; gap: 8px; }
+.rv-session-button { padding: 8px; border: 1px solid var(--linha-forte); border-radius: var(--rv-r); background: var(--rv-panel-grad); white-space: nowrap; }
+.rv-session-actions .rv-session-button { flex: 1; }
+.rv-session-button:not(:disabled):hover { background: #1b2b3e; border-color: #647e9c; color: #dce6f3; }
+.rv-session-button--danger { background: #44262f; color: #ffd4db; border-color: #8a505c; }
+.rv-session-button--danger:not(:disabled):hover { background: #5b303c; border-color: #ba7383; color: #ffe5ea; }
+.rv-session button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.rv-session button:disabled { opacity: .55; cursor: wait; }
 .rv-menu-mesa-sep { height: 1px; margin: 2px 6px; background: var(--linha-2); }
 .rv-menu-mesa-item {
   width: 100%; display: flex; align-items: center; gap: 10px;

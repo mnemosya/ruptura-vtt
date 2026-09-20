@@ -19,7 +19,7 @@
  * fica no alto de um trilho que flutua sobre o mapa.
  */
 
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import {
   Backpack,
   BookText,
@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { useCampaignSession } from "../../_shell/CampaignRealtimeProvider";
 import { useJanelasDaMesa, type JanelaDaMesa } from "./JanelasDaMesa";
+import { SessionControl } from "./SessionControl";
 
 /** Medidas usadas pra manter o menu inteiro dentro da janela. */
 const LARGURA_MENU = 244;
@@ -140,14 +141,20 @@ export function MenuDaMesa({
           não é mais desenhado aqui — e são a única resposta pra "em que
           mesa eu estou, e como?". */}
       <div className="rv-menu-mesa-cab">
-        <span className="rv-menu-mesa-nome" title={campaign.name}>{campaign.name}</span>
+        <div className="rv-menu-mesa-identidade">
+        <span className="rv-menu-mesa-eyebrow">Campanha</span>
         <span className="rv-menu-mesa-papel" data-papel={role}>
           {ehNarrador ? "Narrador" : "Jogador"}
         </span>
+        </div>
+        <span className="rv-menu-mesa-nome" title={campaign.name}>{campaign.name}</span>
+        <SessionControl />
       </div>
 
       <div className="rv-menu-mesa-grupo">
         {visiveis.map(({ janela, rotulo, Icone, porVir }) => (
+          <Fragment key={rotulo}>
+          {(janela === "personagens" || janela === "convites") && <div className="rv-menu-mesa-section">{janela === "personagens" ? "Jogo" : "Campanha"}</div>}
           <button
             key={rotulo}
             type="button"
@@ -166,6 +173,7 @@ export function MenuDaMesa({
             {rotulo}
             {porVir && <span className="rv-menu-mesa-selo">em breve</span>}
           </button>
+          </Fragment>
         ))}
       </div>
 

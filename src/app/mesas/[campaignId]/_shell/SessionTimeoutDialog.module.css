@@ -1,0 +1,14 @@
+.dialog { margin: auto; width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; box-sizing: border-box; padding: 24px; border: 1px solid #35465b; border-radius: 10px; background: #0c1724; color: #dce6f3; box-shadow: 0 24px 80px #0008; font-family: var(--rv-display, sans-serif); }
+.dialog::backdrop { background: #020811b8; }
+.label { color: #77cdb5; font-size: 12px; font-weight: 600; letter-spacing: .06em; }
+.dialog h2 { font-size: 20px; font-weight: 500; margin: 12px 0; }
+.dialog p { font-size: 14px; line-height: 1.6; color: #a9b9cb; }
+.dialog .countdown { color: #e5c58b; font-variant-numeric: tabular-nums; }
+.dialog .hint { font-size: 12px; }
+.actions { display: flex; gap: 12px; margin-top: 20px; }
+.actions button { flex: 1; padding: 10px 12px; border: 1px solid #465d78; border-radius: 6px; background: #142235; color: #dce6f3; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+.actions button:not(:disabled):hover { background: #1b2b3e; border-color: #647e9c; }
+.actions .danger { background: #44262f; color: #ffd4db; border-color: #8a505c; }
+.actions .danger:not(:disabled):hover { background: #5b303c; border-color: #ba7383; }
+.actions button:focus-visible { outline: 2px solid #77cdb5; outline-offset: 3px; }
+.actions button:disabled { opacity: .55; cursor: default; }

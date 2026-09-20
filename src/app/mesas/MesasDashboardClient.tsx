@@ -12,13 +12,8 @@
  * capa e cor de acento não existem no banco e por isso não foram
  * fingidas aqui.
  *
- * Exceção deliberada, só no card em destaque: status "ONLINE" (sempre
- * mostrado ali, incondicional), contagem online/total e descrição da
- * campanha usam MOCKS temporários (`OnlineTag`/`mockOnlineCount`/
- * `mockCampaignDescription` em `_global/parts.tsx`) — pedido explícito
- * do usuário para a interface bater com o design antes do backend
- * (presença real, coluna de descrição) existir. Ver o comentário na
- * origem dessas funções.
+ * Hero e atividade derivam de campaign_online_sessions. A contagem de
+ * presença aguarda integração; não exibimos números simulados.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -26,17 +21,20 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createCampaign } from "../../lib/table/storage";
 import type { Campaign } from "../../lib/table";
+import type { OnlineSession } from "../../lib/campaign/onlineSessionActions";
 import { usePushToast } from "./_global/GlobalShell";
 import { usePresence } from "../_design/usePresence";
 import {
   DecoBottom, DecoTop, OnlineTag, PageHead, RoleBadge, SectionHead,
-  campaignCoverStyle, mockCampaignDescription, mockOnlineCount, relativeTime,
+  campaignCoverStyle, relativeTime,
 } from "./_global/parts";
 import {
   Activity, AlertTriangle, ChevronRight, Clock, Plus, RotateCw, ScrollText, Search, Spinner, User, Users, X,
 } from "../_design/icons";
 
 export interface CampaignCardData {
+  latestSession?: OnlineSession | null;
+  sessionError?: string;
   campaign: Campaign;
   role: "narrator" | "player";
   /** Só relevante para role="player" — quantos personagens a conta controla nesta campanha. null para narrador (não se aplica). */
@@ -126,7 +124,22 @@ export default function MesasDashboardClient({
     });
   }, [campanhas, filter, search]);
 
-  const [destaque, ...resto] = filtradas;
+  const destaque = [...filtradas]
+    .filter((item) => !item.sessionError && item.latestSession?.ended_at === null)
+    .sort((a, b) => b.latestSession!.started_at.localeCompare(a.latestSession!.started_at) || a.campaign.id.localeCompare(b.campaign.id))[0];
+  const resto = filtradas.filter((item) => item.campaign.id !== destaque?.campaign.id);
+
+  useEffect(() => {
+    const refresh = () => { if (document.visibilityState === "visible") router.refresh(); };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    const timer = window.setInterval(refresh, 30000);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+      window.clearInterval(timer);
+    };
+  }, [router]);
 
   function handleCreated(data: CampaignCardData) {
     setCampanhas((prev) => [data, ...prev]);
@@ -236,6 +249,7 @@ export default function MesasDashboardClient({
       {!error && filtradas.length > 0 && (
         <div className="ra2-home-cols">
           <div className="ra2-col">
+            {campanhas.some((item) => item.sessionError) && <p role="status" className="ra-muted">Não foi possível atualizar o estado de algumas sessões. Tentaremos novamente automaticamente.</p>}
             {destaque && <FeaturedCampaign data={destaque} />}
             {resto.length > 0 && (
               <>
@@ -276,7 +290,7 @@ export default function MesasDashboardClient({
 
 // ── Destaque ────────────────────────────────────────────────────────
 function FeaturedCampaign({ data }: { data: CampaignCardData }) {
-  const { campaign, role, memberCount } = data;
+  const { campaign, role } = data;
   return (
     <section className="ra2-featured" aria-label="Campanha em destaque" data-testid="dash-mesa-destaque">
       <DecoTop />
@@ -290,27 +304,12 @@ function FeaturedCampaign({ data }: { data: CampaignCardData }) {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 560 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {/* MOCK temporário — o card em destaque sempre mostra "online"
-                (é o que a referência de design mostra); não depende da
-                contagem do chip abaixo, que pode legitimamente ser 0/0
-                numa campanha nova. Ver comentário na origem de
-                mockOnlineCount em _global/parts.tsx (sem Presence real
-                ainda). */}
             <OnlineTag />
             <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
               <h2 className="ra2-featured-title">{campaign.name}</h2>
-              {memberCount !== null && (
-                <span className="ra2-count-chip">
-                  <User size={12} strokeWidth={1.5} />
-                  <span style={{ color: "#cfeaf6" }}>{mockOnlineCount(campaign.id, memberCount)}</span>
-                  <em>/{memberCount}</em>
-                </span>
-              )}
             </div>
           </div>
-          {/* MOCK temporário — `campaigns` não tem coluna de descrição
-              ainda; ver mockCampaignDescription em _global/parts.tsx. */}
-          <p className="ra2-featured-desc">{mockCampaignDescription()}</p>
+          <p className="ra2-featured-desc">Sessão iniciada em <time dateTime={data.latestSession!.started_at}>{new Date(data.latestSession!.started_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</time></p>
         </div>
 
         <div style={{ maxWidth: 280, marginTop: "auto" }}>
@@ -369,8 +368,8 @@ function CampaignCard({ data }: { data: CampaignCardData }) {
 // ── Painéis laterais ────────────────────────────────────────────────
 function ActivityPanel({ campanhas }: { campanhas: CampaignCardData[] }) {
   const rows = useMemo(
-    () => [...campanhas]
-      .sort((a, b) => (b.campaign.updated_at ?? "").localeCompare(a.campaign.updated_at ?? ""))
+    () => campanhas.filter((item) => !item.sessionError && item.latestSession)
+      .sort((a, b) => b.latestSession!.started_at.localeCompare(a.latestSession!.started_at) || a.campaign.id.localeCompare(b.campaign.id))
       .slice(0, 4),
     [campanhas],
   );
@@ -391,7 +390,7 @@ function ActivityPanel({ campanhas }: { campanhas: CampaignCardData[] }) {
                 <span style={{ paddingTop: 6 }}><span className="ra-diamond" aria-hidden="true" /></span>
                 <div className="ra2-panel-row-main">
                   <strong title={row.campaign.name}>{row.campaign.name}</strong>
-                  <span>última sessão {relativeTime(row.campaign.updated_at)}</span>
+                  <span>Última sessão: <time dateTime={row.latestSession!.started_at}>{new Date(row.latestSession!.started_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</time></span>
                 </div>
               </div>
             </div>

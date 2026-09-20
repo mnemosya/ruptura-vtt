@@ -21,6 +21,7 @@
  */
 
 import { redirect } from "next/navigation";
+import { readOnlineSession } from "../../../lib/campaign/onlineSessionActions";
 import { getCurrentUser } from "../../../lib/auth/session";
 import {
   getCampaignParticipantInfo,
@@ -65,9 +66,11 @@ export default async function MesasPage() {
     const todas: Campaign[] = await listCampaigns();
     minhasCampanhas = await Promise.all(
       todas.map(async (campaign): Promise<CampaignCardData> => {
+        const sessionResult = await readOnlineSession(campaign.id);
+        const sessionFields = { latestSession: sessionResult.session, sessionError: sessionResult.error };
         if (campaign.owner_id === user.id) {
           const extras = await loadNarratorExtras(campaign.id);
-          return { campaign, role: "narrator", controlledCharacterCount: null, ...extras };
+          return { campaign, role: "narrator", controlledCharacterCount: null, ...extras, ...sessionFields };
         }
         let controlledCharacterCount = 0;
         try {
@@ -77,6 +80,7 @@ export default async function MesasPage() {
         }
         return {
           campaign,
+          ...sessionFields,
           role: "player",
           controlledCharacterCount,
           // RLS: quem é só jogador enxerga apenas a própria linha em

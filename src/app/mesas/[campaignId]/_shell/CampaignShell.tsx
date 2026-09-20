@@ -34,6 +34,7 @@ import { HudCursor } from "../../_global/GlobalShell";
 import { ProvedorConsoleDaMesa } from "./ConsoleDaMesa";
 import { ProvedorMesaDados } from "../vtt/_dados3d/ContextoMesaDados";
 import { ProvedorTrilhaDaMesa } from "./TrilhaDaMesa";
+import { OnlineSessionProvider } from "./OnlineSessionProvider";
 import "../../../_design/mesa.css";
 
 /** O cursor HUD sai de cena para quem pediu menos movimento. */
@@ -53,7 +54,7 @@ export function CampaignShell({ campaignId, children }: { campaignId: string; ch
   const cursorHabilitado = useCursorHabilitado();
 
   return (
-    <ProvedorTrilhaDaMesa campaignId={campaignId}>
+    <OnlineSessionProvider><ProvedorTrilhaDaMesa campaignId={campaignId}>
       {/* A mesa de dados envolve a campanha INTEIRA, não só o mapa: o
           Console é uma janela desta casca e rola pelos mesmos d8 de
           verdade que a ferramenta do mapa. Quem DESENHA a física é quem
@@ -66,6 +67,6 @@ export function CampaignShell({ campaignId, children }: { campaignId: string; ch
           </div>
         </ProvedorConsoleDaMesa>
       </ProvedorMesaDados>
-    </ProvedorTrilhaDaMesa>
+    </ProvedorTrilhaDaMesa></OnlineSessionProvider>
   );
 }
