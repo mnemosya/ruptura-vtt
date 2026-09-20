@@ -49,9 +49,9 @@ Esta triagem considera o código existente, não apenas a lista de desejos:
 | Recorte | Quantidade |
 |---|---:|
 | Total de tarefas | 70 |
-| Prontas | 18 |
+| Prontas | 20 |
 | Prontas após dependência | 5 |
-| Bloqueadas por regra, contrato ou referência indispensável | 47 |
+| Bloqueadas por regra, contrato ou referência indispensável | 45 |
 | Em validação | 0 |
 | P0 | 14 |
 | P1 | 41 |
@@ -164,17 +164,43 @@ PLOT-01 ──> PLOT-02
 
 ### PRES-01 — Definir semântica de “Aparecer offline”
 
-- **Status:** Bloqueada
+- **Status:** Pronta (matriz aprovada em 2026-09-20)
 - **Descrição:** produzir e aprovar uma matriz de comportamento para preferência global, sessão ativa, lista de participantes, Rede, contadores, convite, autoria de chat e ações do narrador. Separar privacidade visual de autorização e de conexão real.
 - **Área afetada:** produto, privacidade, presença global e por campanha.
 - **Prioridade sugerida:** P0
 - **Dependências:** respostas do responsável de produto.
 - **Critérios de aceite:** matriz aprovada para narrador e jogador; definição de persistência por conta; definição de quem ainda pode ver o status real, se alguém; regras para alteração durante uma sessão; texto de interface aprovado.
-- **Dúvidas antes da implementação:** modo invisível oculta o usuário também do narrador? O usuário aparece na lista como offline ou desaparece? Ainda conta como participante da sessão? A preferência é imediata em todas as abas/dispositivos? Existe exceção de segurança/moderação?
+- **Dúvidas antes da implementação:** respondidas pelo responsável de produto em 2026-09-20; a matriz abaixo é a regra aprovada.
+
+#### Matriz aprovada de “Aparecer offline”
+
+O princípio: **a preferência filtra a projeção pública de presença, e nada além dela.** Não muda autorização, não muda vínculo com a campanha, não muda o que a pessoa pode fazer.
+
+| Superfície | Com “Aparecer offline” ligado |
+|---|---|
+| Preferência em si | Global por conta, no menu superior. Vale em todas as campanhas, abas e dispositivos, com efeito imediato. |
+| Conexão real (batimentos) | Inalterada. A pessoa continua batendo normalmente; o que muda é quem enxerga o resultado. |
+| Quem vê o status real | **Ninguém**, nem o narrador. Não há exceção de moderação nesta versão; qualquer apuração é administrativa, fora do produto. |
+| Lista de participantes da campanha | Continua aparecendo, **como offline**. Segue membro; nada some do elenco. |
+| Rede (dashboard) | Mesma regra: presente, como offline. |
+| Contadores (hero e `player_count`) | **Não conta**, nem para quem está invisível. Existe uma contagem só, a pública. |
+| Encerramento automático da sessão | **Não segura o prazo.** Se só restam pessoas invisíveis, a sessão entra nos 30 minutos normalmente. |
+| Convite e vínculo | Inalterados. Convite é autorização, não presença. |
+| Autoria de chat | Inalterada. Quem fala aparece com o próprio nome — falar é uma escolha, e a mensagem revela a presença. |
+| Ações do narrador (controle, ficha, token) | Inalteradas. Autorização nunca depende de presença; esconder alguém não o desautoriza nem o autoriza. |
+| Alterar durante uma sessão ativa | Permitido a qualquer momento, com efeito imediato. Ligar a preferência pode iniciar o prazo de encerramento se não sobrar nenhum jogador visível. |
+| O que a própria pessoa vê | A projeção pública (sem si mesma) mais um aviso de que está aparecendo offline. |
+
+**Consequência aceita:** quem está invisível pode ver a sessão encerrar por inatividade enquanto assiste. É o preço de esconder de todos sem abrir um canal de inferência — como a presença invisível não segura o prazo, a visão do narrador e o encerramento automático concordam. O aviso de interface precisa dizer isso, não só que a pessoa está escondida.
+
+**Texto de interface aprovado:**
+
+- Menu superior: `Aparecer offline`
+- Aviso na mesa, para quem está com a preferência ligada: `Você está aparecendo offline. Ninguém vê que você está aqui — nem o narrador — e sua presença não segura a sessão aberta.`
 
 ### PRES-02 — Implementar preferência global e filtro de presença
 
-- **Status:** Bloqueada
+- **Status:** Pronta (desbloqueada pela matriz de PRES-01)
 - **Descrição:** adicionar “Aparecer offline” ao menu superior, persistir por conta e aplicar a preferência às projeções públicas de Presence sem usar esse estado para autorização ou gameplay.
 - **Área afetada:** conta/preferências, menu global, Supabase Presence, dashboard, participantes e Rede.
 - **Prioridade sugerida:** P0
