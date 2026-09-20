@@ -65,11 +65,18 @@ const FILTERS: { id: Filter; label: string }[] = [
 export default function MesasDashboardClient({
   campanhasIniciais,
   errorInicial,
+  currentUserId,
   currentUserName,
+  presencaDaRede,
+  presencaIndisponivel,
 }: {
   campanhasIniciais: CampaignCardData[];
   errorInicial: string | null;
+  currentUserId: string;
   currentUserName: string;
+  /** Presença real por conta. Vazio quando a leitura falhou. */
+  presencaDaRede: Record<string, boolean>;
+  presencaIndisponivel: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -280,7 +287,8 @@ export default function MesasDashboardClient({
 
           <aside className="ra2-side" aria-label="Painel lateral">
             <ActivityPanel campanhas={campanhas} />
-            <NetworkPanel campanhas={campanhas} currentUserName={currentUserName} />
+            <NetworkPanel campanhas={campanhas} currentUserId={currentUserId} currentUserName={currentUserName}
+              presenca={presencaDaRede} indisponivel={presencaIndisponivel} />
           </aside>
         </div>
       )}
@@ -417,12 +425,19 @@ function ActivityPanel({ campanhas }: { campanhas: CampaignCardData[] }) {
   );
 }
 
-function NetworkPanel({ campanhas, currentUserName }: { campanhas: CampaignCardData[]; currentUserName: string }) {
+function NetworkPanel({ campanhas, currentUserId, currentUserName, presenca, indisponivel }: {
+  campanhas: CampaignCardData[];
+  currentUserId: string;
+  currentUserName: string;
+  presenca: Record<string, boolean>;
+  indisponivel: boolean;
+}) {
   const people = useMemo(() => {
     const map = new Map<string, string>();
-    campanhas.forEach((c) => c.people.forEach((p) => map.set(p.userId, p.name)));
+    // A própria conta já é a primeira linha; sem isto o narrador apareceria duas vezes.
+    campanhas.forEach((c) => c.people.forEach((p) => { if (p.userId !== currentUserId) map.set(p.userId, p.name); }));
     return Array.from(map.entries()).map(([userId, name]) => ({ userId, name }));
-  }, [campanhas]);
+  }, [campanhas, currentUserId]);
 
   const somenteJogador = campanhas.length > 0 && campanhas.every((c) => c.role === "player");
 
@@ -431,27 +446,34 @@ function NetworkPanel({ campanhas, currentUserName }: { campanhas: CampaignCardD
       <div className="ra2-panel-title">
         <Users size={12} strokeWidth={1.4} /> Rede
       </div>
+      {/* Cada pessoa vira um link de verdade para o perfil: dentro de
+          /mesas a navegação é interceptada e abre em modal, e o mesmo
+          endereço colado numa aba nova abre a página cheia. A linha
+          inteira é o alvo, então Enter e Espaço funcionam sem
+          `onKeyDown` improvisado. */}
       <div className="ra2-people">
-        <div className="ra2-person">
-          <span className="ra2-person-avatar" aria-hidden="true"><User size={14} strokeWidth={1.3} /></span>
-          <div className="ra2-person-main">
-            <span className="ra2-person-name">{currentUserName}</span>
-            <span className="ra-online">
-              <span className="ra-online-dot" aria-hidden="true" />
-              <span className="ra-online-txt">Online</span>
-            </span>
-          </div>
-        </div>
-
-        {people.map((p) => (
-          <div key={p.userId} className="ra2-person ra2-person--off">
-            <span className="ra2-person-avatar" aria-hidden="true"><User size={14} strokeWidth={1.3} /></span>
-            <div className="ra2-person-main">
-              <span className="ra2-person-name">{p.name}</span>
-              <span className="ra2-person-off">offline</span>
-            </div>
-          </div>
-        ))}
+        {[{ userId: currentUserId, name: currentUserName, eu: true },
+          ...people.map((p) => ({ ...p, eu: false }))].map((p) => {
+          const online = presenca[p.userId] === true;
+          return (
+            <Link key={p.userId} href={`/perfil?userId=${p.userId}`}
+              className={`ra2-person ra2-person--link${online ? "" : " ra2-person--off"}`}
+              data-testid={p.eu ? "rede-pessoa-eu" : "rede-pessoa"}>
+              <span className="ra2-person-avatar" aria-hidden="true"><User size={14} strokeWidth={1.3} /></span>
+              <div className="ra2-person-main">
+                <span className="ra2-person-name">{p.name}{p.eu ? " (você)" : ""}</span>
+                {indisponivel
+                  ? <span className="ra2-person-off">status indisponível</span>
+                  : online
+                    ? <span className="ra-online">
+                        <span className="ra-online-dot" aria-hidden="true" />
+                        <span className="ra-online-txt">Online</span>
+                      </span>
+                    : <span className="ra2-person-off">offline</span>}
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
       {people.length === 0 && (

@@ -478,6 +478,11 @@
    vê o próprio ponto apagado, em vez de um "Online" que mente para ele. */
 .ra-online[data-offline] .ra-online-dot { background: rgba(150, 174, 186, 0.55); box-shadow: none; }
 .ra-online[data-offline] .ra-online-txt { color: rgba(150, 174, 186, 0.75); }
+/* A linha da Rede virou link: alvo inteiro clicável, com hover e foco
+   que não mexem no layout (só fundo e borda, nada de tamanho). */
+.ra2-person--link { text-decoration: none; color: inherit; border: 1px solid transparent; border-radius: 3px; }
+.ra2-person--link:hover { background: rgba(0, 212, 255, 0.07); border-color: rgba(84, 172, 190, 0.28); }
+.ra2-person--link:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.6); outline-offset: 1px; }
 .ra-menu-estado {
   margin-left: auto; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
   color: rgba(150, 174, 186, 0.7);

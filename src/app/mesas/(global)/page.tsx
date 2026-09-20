@@ -22,6 +22,7 @@
 
 import { redirect } from "next/navigation";
 import { readOnlineSession } from "../../../lib/campaign/onlineSessionActions";
+import { readNetworkPresence } from "../../../lib/campaign/userProfileActions";
 import { getCurrentUser } from "../../../lib/auth/session";
 import {
   getCampaignParticipantInfo,
@@ -101,11 +102,18 @@ export default async function MesasPage() {
     errorMessage = err instanceof Error ? err.message : "Erro desconhecido ao carregar campanhas.";
   }
 
+  // Presença de toda a Rede numa consulta só — antes o painel mostrava
+  // "Online" fixo para a própria conta e "offline" fixo para o resto.
+  const rede = await readNetworkPresence();
+
   return (
     <MesasDashboardClient
       campanhasIniciais={minhasCampanhas}
       errorInicial={errorMessage}
+      currentUserId={user.id}
       currentUserName={user.displayName ?? (user.email ?? "Você").split("@")[0]}
+      presencaDaRede={rede.presence}
+      presencaIndisponivel={!!rede.error}
     />
   );
 }
