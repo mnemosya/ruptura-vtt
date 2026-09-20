@@ -49,9 +49,9 @@ Esta triagem considera o código existente, não apenas a lista de desejos:
 | Recorte | Quantidade |
 |---|---:|
 | Total de tarefas | 72 |
-| Prontas | 26 |
+| Prontas | 33 |
 | Prontas após dependência | 3 |
-| Bloqueadas por regra, contrato ou referência indispensável | 43 |
+| Bloqueadas por regra, contrato ou referência indispensável | 36 |
 | Em validação | 0 |
 | P0 | 14 |
 | P1 | 42 |
@@ -89,7 +89,8 @@ PLOT-01 ──> PLOT-02
 
 ### AUTH-01 — Remover traçado do identificador de versão
 
-- **Status:** Pronta
+- **Status:** Pronta (concluída)
+- **Andamento (2026-09-20):** a premissa não se aplica mais — não há `text-stroke` nem `text-shadow` no identificador; o computado dá `0px`/`none`, e o que parece contorno é a Orbitron 900 espaçada. Dois achados reais no lugar: o subtítulo estava em **4.45:1** de contraste, abaixo do 4.5 que AA pede para texto pequeno (e ele está em 10px) — corrigido para 7.11:1; e a interface dizia `v0.0.1` enquanto o `package.json` já estava em `0.1.0`. **Decisão tomada** sobre a dúvida em aberto: a versão passa a vir do `package.json` via `next.config`, porque versão exibida que não corresponde ao que roda é pior que nenhuma — é o que se usa para relatar bug.
 - **Descrição:** remover o efeito de traçado aplicado a “RUPTURA VTT ENGINE V0.0.1” no menu lateral, preservando legibilidade e hierarquia.
 - **Área afetada:** shell global autenticado; CSS de identidade visual.
 - **Prioridade sugerida:** P2
@@ -422,7 +423,8 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 
 ### CHAR-02 — Consolidar criação rápida de PJ
 
-- **Status:** Pronta
+- **Status:** Pronta (concluída)
+- **Andamento (2026-09-20):** o defeito sério não era a fonte — **confirmar duas vezes criava dois personagens**. Quem fecha o diálogo é o chamador, num `setState`, e o React só aplica isso ao DOM depois da tarefa atual: dois cliques rápidos acertam o mesmo botão ainda presente. O teste clicou três vezes e nasceram três. A guarda ficou no próprio `DialogoTexto`, então vale também para a criação de pasta. A fonte reduzida era real, mas `.rv-pn-input` é 11px porque serve aos seletores compactos dos filtros — a correção vale dentro do modal. E `executar()` descartava o retorno da ação, então o personagem recém-criado caía na lista e o narrador tinha de procurá-lo; agora é selecionado. Foco, Escape e devolução de foco já funcionavam. Oito critérios (`scripts/dev/check-criacao-rapida-pj.ts`).
 - **Descrição:** manter o fluxo atual de nome único dentro de um modal definitivo, corrigir a fonte reduzida do input e padronizar loading, erros, foco e retorno à lista.
 - **Área afetada:** `JanelaNovoPersonagem`, formulário e CSS do painel.
 - **Prioridade sugerida:** P1
@@ -462,7 +464,8 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 
 ### CON-01 — Corrigir moldura e controles da janela do console
 
-- **Status:** Pronta
+- **Status:** Pronta (concluída)
+- **Andamento (2026-09-20):** tooltips e `aria-label` **já existiam** nos três controles. Dois defeitos reais apareceram: (1) **maximizada, a janela (z 501) ficava sob o cabeçalho de /ficha (z 510)** — os controles não recebiam clique e não havia como restaurar nem fechar pelo botão; só apareceu porque o teste clicou de verdade em vez de conferir o DOM; (2) **cursor duplicado**, porque o Console monta o próprio `HudCursor` e a casca da campanha monta outro. **Decisões tomadas:** o HUD continua dentro do Console, mas só um desenha por ponteiro, com registro de módulo e não contexto de React — o modal de ficha vive no slot `@modal`, fora da árvore da casca, e contexto não desceria até lá; raio de 3px nos botões, igual ao das janelas do painel do VTT; ciano atenuado para 0.62 (4.45:1, acima do 3.0 que AA pede para ícone). Oito critérios verificados em navegador (`scripts/dev/check-console-moldura.ts`).
 - **Descrição:** eliminar cursor duplicado, arredondar bordas, atenuar ciano dos ícones e adicionar tooltips a minimizar, maximizar e fechar.
 - **Área afetada:** `CharacterConsole`, `ConsoleWindow`, cursor e CSS do console.
 - **Prioridade sugerida:** P1
@@ -542,7 +545,8 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 
 ### INV-03 — Exibir carteira e saldo em aretz
 
-- **Status:** Pronta
+- **Status:** Pronta (concluída)
+- **Andamento (2026-09-20):** carteira lê o contrato `carteira` que já existia (PRD 13.1). **Decisões tomadas:** aretz em destaque e CDI/CDI craqueada só quando há saldo, porque três zeros lado a lado dariam a impressão de três carteiras vazias quando a pessoa só nunca encostou nas outras duas; **somente leitura**, porque a mutação pertence aos fluxos de compra e recompensa e um campo editável ali seria uma quarta porta sem servidor validando; inteiro com separador de milhar pt-BR. Carteira ausente mostra traço, não zero — zero exibido antes de a ficha carregar é o número que alguém usa para decidir uma compra. Oito critérios em navegador (`scripts/dev/check-carteira-inventario.ts`).
 - **Descrição:** criar área de carteira na aba Inventário usando o contrato de `carteira` já existente, com destaque para aretz e sem inventar mutação de saldo fora dos fluxos autorizados.
 - **Área afetada:** Inventário, carteira e Mercado.
 - **Prioridade sugerida:** P1
@@ -594,7 +598,8 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 
 ### CHAT-01 — Catalogar e padronizar cards do chat
 
-- **Status:** Pronta
+- **Status:** Pronta (concluída)
+- **Andamento (2026-09-20):** o inventário é **gerado do código**, não escrito à mão: tabela manual envelhece no primeiro tipo novo e ninguém descobre, porque `formatGenericLog` engole o desconhecido com elegância — o card sai legível, só que montado por despejo de campos em vez de frase. Documento em `docs/prd/CATALOGO_CARDS_DO_CHAT.md`, gerado por `scripts/dev/check-chat-catalogo.mjs --tabela`. **Três lacunas reais encontradas e corrigidas:** `attack_damage_applied`, `turn_ended` e `turn_track_narrator_update` eram escritos sem card próprio. Sem `--tabela`, o check **falha** quando o próximo aparecer. Limite escrito no documento: só enxerga escrita estática.
 - **Descrição:** criar inventário de todos os `table_logs.type` e respectivos renderizadores/fallbacks; padronizar cabeçalho, autor, horário, visibilidade, corpo, ações e estados de erro.
 - **Área afetada:** ChatTab, feed, `logPresentation` e geradores de log.
 - **Prioridade sugerida:** P1
@@ -760,7 +765,8 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 
 ### TOK-04 — Criar menu contextual para seleção múltipla
 
-- **Status:** Pronta
+- **Status:** Pronta (concluída)
+- **Andamento (2026-09-20):** menu de lote com virar, duplicar, ocultar/revelar, bloquear/desbloquear e remover, cada um com a quantidade no rótulo. **Decisões tomadas:** virar gira **cada token no próprio eixo**, não a formação — virar é só o olhar e nunca move célula (0135), enquanto girar a formação moveria tokens de célula, que é operação de movimento com colisão e autorização próprias; duplicar e bloquear mantêm exatamente a semântica da ação de token único, porque um menu de lote que inventasse semântica faria o mesmo verbo significar duas coisas conforme quantos tokens estivessem marcados. O valor pedido é **absoluto**, não alternância: numa seleção misturada, alternar mandaria metade para o lado oposto da outra. Falha é **nomeada**, não contada. Remover confirma listando nomes. Onze critérios (`scripts/dev/check-tokens-selecao-multipla.ts`).
 - **Descrição:** ao clicar com botão direito numa seleção de vários tokens, oferecer duplicar, virar esquerda/direita, ocultar, bloquear e remover, operando o conjunto de forma coerente.
 - **Área afetada:** seleção em grupo, MenuContextual, mutações de token e autorização.
 - **Prioridade sugerida:** P1
@@ -783,7 +789,8 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 
 ### VIS-01 — Padronizar switches e títulos da aba Camadas
 
-- **Status:** Pronta
+- **Status:** Pronta (concluída)
+- **Andamento (2026-09-20):** os títulos de grupo da aba Camadas **já eram** caixa alta (`.rv-fp-rotulo`). Faltavam os rótulos de interruptor e os nomes de camada. **Decisão tomada** sobre a dúvida em aberto: `text-transform`, não texto em maiúsculas no TSX — assim o nome acessível continua sendo lido como palavra, não soletrado. Nome de camada caiu de 12px para 11px porque caixa alta ocupa mais largura e a lista tem nomes longos que não podem truncar. “Fundo do mapa” virou “Mapa”; o rótulo homônimo em `PainelImagens` **não** mudou, porque ali significa outra coisa (papel da imagem: fundo vs peça).
 - **Descrição:** trocar textos de switches pela fonte em caixa alta adotada no VTT; usar títulos em caixa alta na aba Camadas; renomear “Fundo do mapa” para “MAPA”.
 - **Área afetada:** CSS VTT, PainelCamadas e componentes de switch.
 - **Prioridade sugerida:** P2
@@ -793,7 +800,8 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 
 ### VIS-02 — Permitir extravasamento das linhas de botões de rolagem
 
-- **Status:** Pronta
+- **Status:** Bloqueada (falta referência)
+- **Tentativa em 2026-09-20:** não consegui localizar com confiança quais são “as linhas decorativas dos botões de rolagem”. Procurei nos botões de rolagem do Console (`.rc-npr-defesa` e família) e no painel de dados do VTT, e nenhum deles tem linha decorativa que esteja sendo cortada. Somado a isso, a dúvida já registrada (“qual extensão exata e em quais variantes de botão”) é decisão de design. **Preciso de um print ou o nome da tela** para seguir sem chutar.
 - **Descrição:** ajustar stacking/overflow para que linhas decorativas ultrapassem o container sem serem cortadas e sem ampliar a área clicável.
 - **Área afetada:** botões e painéis de rolagem.
 - **Prioridade sugerida:** P2
@@ -805,7 +813,8 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 
 ### DICE-01 — Corrigir camada, área e escala dos dados 3D
 
-- **Status:** Pronta
+- **Status:** Pronta (concluída)
+- **Andamento (2026-09-20):** escala **medida**, não estimada: o circunraio ia de 0,82 (d12) a 1,265 (d10) — o d10 saía **54% maior** que o menor, confirmando a queixa. Depois da normalização, variação de 0,00%. **Decisão tomada** sobre a dúvida em aberto: a referência é o **circunraio**, não altura nem volume — altura depende de como o dado caiu, e volume igual deixaria o d4 enorme porque um tetraedro aproveita mal a esfera que o contém. A normalização mede e escala, em vez de usar fatores fixos, para valer a qualquer sólido futuro. Achado no caminho: `geo.scale()` do three não recomputa a esfera envolvente. A arena saiu do palco (que é `overflow: hidden`) para o `body`, por portal, em z 900 — a faixa reservada à direita existia para o dado não assentar embaixo da janela “Rolar Dados”, e acima de tudo o motivo desapareceu. **Isto contraria um comentário de projeto** que dizia que os dados nunca tampam um controle; `pointer-events: none` mantém a diferença entre cobrir e bloquear, e o check clica num controle com a arena por cima.
 - **Descrição:** renderizar a arena acima de modal, painéis e overlays; remover a restrição da área esquerda; calibrar a escala aparente por sólido, especialmente o d10.
 - **Área afetada:** MesaDadosOverlay, ArenaDados, PolyDie, layout e z-index do VTT.
 - **Prioridade sugerida:** P1
