@@ -21,10 +21,62 @@
  */
 
 import assert from "node:assert/strict";
+import { config as loadDotenv } from "dotenv";
+import { Client } from "pg";
 import { chromium, type Page } from "playwright";
 import { BASE_URL, SESSION_FILE, assertAdminSessionValid, requireSessaoSalva, sessaoSalvaExiste } from "./authSession";
 
 const PREFIXO = "zz_e2e_etapa5_";
+
+loadDotenv({ path: ".env.local" });
+
+/**
+ * Apaga o que execuções anteriores deixaram publicado com o prefixo de
+ * teste, ANTES de começar.
+ *
+ * O check publica conteúdo, e publicar não tem desfazer pela interface —
+ * a limpeza no fim só conseguia ARQUIVAR, e imprimia um SQL para a
+ * pessoa rodar à mão. Ninguém rodava. Na execução seguinte o slug já
+ * existia, a criação era recusada, e o check morria num
+ * `waitForURL` que nunca chegava: falhava por causa de si mesmo.
+ *
+ * Limpar no INÍCIO, e não no fim, é o que torna isso irrelevante — não
+ * importa como a execução anterior terminou.
+ */
+/** Quantos rascunhos com o prefixo de teste ainda existem. */
+async function contarRascunhosDeTeste(): Promise<number> {
+  const url = process.env.SUPABASE_DB_URL;
+  if (!url) return -1;
+  const db = new Client({ connectionString: url, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 15000 });
+  await db.connect();
+  try {
+    const r = await db.query("select count(*)::int as n from content_drafts where slug like $1", [`${PREFIXO}%`]);
+    return r.rows[0]?.n ?? 0;
+  } catch {
+    return -1;
+  } finally {
+    await db.end();
+  }
+}
+
+async function limparPublicadoDeTeste(): Promise<number> {
+  const url = process.env.SUPABASE_DB_URL;
+  if (!url) return 0;
+  const db = new Client({ connectionString: url, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 15000 });
+  await db.connect();
+  try {
+    let total = 0;
+    for (const tabela of ["content_documents", "content_drafts"]) {
+      try {
+        const r = await db.query(`delete from ${tabela} where slug like $1`, [`${PREFIXO}%`]);
+        total += r.rowCount ?? 0;
+      } catch { /* tabela pode não existir nesta versão do schema */ }
+    }
+    return total;
+  } finally {
+    await db.end();
+  }
+}
 
 async function criarRascunhoNovoSpell(page: Page, slug: string): Promise<string> {
   await page.goto(`${BASE_URL}/admin/biblioteca/rascunhos/novo`, { waitUntil: "domcontentloaded" });
@@ -56,6 +108,9 @@ async function main(): Promise<void> {
     requireSessaoSalva();
     return;
   }
+  const restos = await limparPublicadoDeTeste();
+  if (restos > 0) console.log(`0. Resíduo de execução anterior removido (${restos} linha(s))`);
+
   const slug = `${PREFIXO}magia`;
   const browser = await chromium.launch({ headless: true });
   const draftsCriados: string[] = [];
@@ -129,13 +184,20 @@ async function main(): Promise<void> {
 
     console.log("\n=== CHECKS DE PUBLICAÇÃO PASSARAM ===");
   } finally {
-    // 20. Limpeza — exclui rascunhos criados. Conteúdo publicado de teste
-    // fica arquivado (sem hard-delete no admin); use o SQL do rodapé.
+    /* 20. Limpeza. O conteúdo PUBLICADO não sai por aqui — publicar não
+       tem desfazer no admin —, e por isso a limpeza de verdade acontece
+       no INÍCIO da próxima execução (`limparPublicadoDeTeste`), direto no
+       banco. Aqui só saem os rascunhos. */
     try {
       const ctx = await browser.newContext({ storageState: SESSION_FILE });
       const page = await ctx.newPage();
       for (const id of draftsCriados) await excluirRascunhoSeExistir(page, id);
-      console.log(`20. Rascunhos de teste removidos (${draftsCriados.length}). Conteúdo publicado de teste ficou arquivado — rode o SQL abaixo para remover de vez.`);
+      // Conta o que REALMENTE sobrou, em vez do tamanho da lista de
+      // criados: o log anterior dizia "removidos (1)" mesmo quando o
+      // rascunho já tinha sido consumido pela publicação, e eu quase
+      // concluí, a partir dele, que publicar não estava apagando nada.
+      const sobraram = await contarRascunhosDeTeste();
+      console.log(`20. Limpeza: ${draftsCriados.length} rascunho(s) criados nesta execução, ${sobraram} ainda no banco.`);
     } catch {
       /* best-effort */
     }
