@@ -4,18 +4,13 @@
  * (`authSession.ts`, `.auth/admin-session.json`), roda headless, usa
  * `data-testid` estáveis e limpa o que criou.
  *
- * ⚠️ EXECUÇÃO BLOQUEADA NESTE AMBIENTE (mesmo conflito de arquitetura do
- * esbuild das etapas anteriores). O núcleo transacional (publicar,
- * incrementar versão, changelog, consumir rascunho, conflito de hash,
- * versão otimista, arquivar) foi verificado DIRETAMENTE por SQL contra o
- * banco (função `publish_content_draft`/`archive_content_document`), com
- * rollback forçado e zero resíduo — ver checkpoint §Verificações. Este
- * script existe para quando o ambiente puder rodar `tsx`/Playwright.
+ * LIMPEZA: automática e completa no INÍCIO de cada execução
+ * (`limparPublicadoDeTeste`): changelog, documentos e rascunhos com o
+ * prefixo de teste. Não sobra SQL para rodar à mão.
  *
- * LIMPEZA: rascunhos criados são excluídos pela UI. Conteúdo PUBLICADO de
+ * Rascunhos criados são excluídos pela UI. Conteúdo PUBLICADO de
  * teste é ARQUIVADO (a superfície RLS admin não tem hard-delete de
- * publicado, por design). Para remover de vez as linhas de teste e o
- * changelog, rode o SQL no rodapé deste arquivo com o prefixo abaixo.
+ * publicado, por design) e some na limpeza da execução seguinte.
  *
  * Uso: npm run check:admin-publication
  */
@@ -66,6 +61,15 @@ async function limparPublicadoDeTeste(): Promise<number> {
   await db.connect();
   try {
     let total = 0;
+    // O changelog sai PRIMEIRO, e por `document_id` (`<tipo>:<slug>`) em
+    // vez de `slug`: ele não tem essa coluna. Ficava de fora até aqui —
+    // o rodapé deste arquivo mandava apagá-lo à mão, e ninguém apagava.
+    // Três linhas de execuções antigas sobreviviam a cada limpeza e
+    // derrubavam a publicação da execução seguinte.
+    try {
+      const r = await db.query("delete from content_changelog where document_id like $1", [`%${PREFIXO}%`]);
+      total += r.rowCount ?? 0;
+    } catch { /* tabela pode não existir nesta versão do schema */ }
     for (const tabela of ["content_documents", "content_drafts"]) {
       try {
         const r = await db.query(`delete from ${tabela} where slug like $1`, [`${PREFIXO}%`]);
@@ -127,7 +131,17 @@ async function main(): Promise<void> {
     const ctx = await browser.newContext({ storageState: SESSION_FILE });
     const page = await ctx.newPage();
     const erros: string[] = [];
-    page.on("console", (m) => m.type() === "error" && erros.push(m.text()));
+    /* O passo 8 navega de propósito para um rascunho que não existe, e a
+       rota responde 404 de verdade — o navegador registra isso como erro
+       de console. Contar esse 404 como "console sujo" reprovaria o check
+       justamente por ele ter funcionado. Só este, e só ali. */
+    let esperando404 = false;
+    page.on("console", (m) => {
+      if (m.type() !== "error") return;
+      const texto = m.text();
+      if (esperando404 && texto.includes("404")) return;
+      erros.push(texto);
+    });
     page.on("dialog", (d) => d.accept());
     await assertAdminSessionValid(page);
 
@@ -147,7 +161,9 @@ async function main(): Promise<void> {
     console.log("2-7. Rascunho novo publicado como 1.0.0 e aparece na Biblioteca — OK");
 
     // 8. Rascunho deixou de existir após publicação.
+    esperando404 = true;
     const respDraft = await page.goto(`${BASE_URL}/admin/biblioteca/rascunhos/${draft1}`, { waitUntil: "domcontentloaded" });
+    esperando404 = false;
     assert.ok(respDraft && respDraft.status() === 404, "8. Rascunho deveria ter sido consumido (404) após publicar.");
     console.log("8. Rascunho consumido após publicação — OK");
 
@@ -211,9 +227,3 @@ main().catch((err) => {
   process.exit(1);
 });
 
-/*
--- Limpeza definitiva das linhas de teste (rode no SQL editor / psql):
-delete from content_changelog where document_id like 'spell:zz_e2e_etapa5_%';
-delete from content_documents  where slug like 'zz_e2e_etapa5_%';
-delete from content_drafts     where slug like 'zz_e2e_etapa5_%';
-*/
