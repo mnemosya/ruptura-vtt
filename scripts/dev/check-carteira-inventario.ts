@@ -151,6 +151,51 @@ async function main() {
         somou === "1.150" && (await saldo(page))?.trim() === "1.000", `após +250: ${somou}, após -150: ${await saldo(page)}`);
     }
 
+    // --- 5e. A CONTA escrita por cima do saldo, que é o gesto real:
+    //     o campo abre com o valor dentro, e continuar digitando
+    //     produz "3000-555". Era o caso que a primeira versão recusava. ---
+    {
+      await page.locator('[data-testid="console-carteira-aretz"]').click();
+      // Sem limpar: vai para o fim e continua digitando, como quem usa.
+      await page.locator('[data-testid="console-carteira-campo"]').press("End");
+      await page.locator('[data-testid="console-carteira-campo"]').pressSequentially("-555");
+      const digitado = await page.locator('[data-testid="console-carteira-campo"]').inputValue();
+      await page.keyboard.press("Enter");
+      await page.waitForFunction(() =>
+        document.querySelector('[data-testid="console-carteira-aretz"]')?.textContent?.trim() === "445",
+        null, { timeout: 10000 }).catch(() => {});
+      registrar("5e (conta escrita por cima do saldo: 1000-555 vira 445)",
+        digitado === "1000-555" && (await saldo(page))?.trim() === "445",
+        `campo tinha "${digitado}", virou ${await saldo(page)}`);
+    }
+
+    // --- 5f. Somar por cima também: "445+3000" ---
+    {
+      await page.locator('[data-testid="console-carteira-aretz"]').click();
+      await page.locator('[data-testid="console-carteira-campo"]').press("End");
+      await page.locator('[data-testid="console-carteira-campo"]').pressSequentially("+3000");
+      await page.keyboard.press("Enter");
+      await page.waitForFunction(() =>
+        document.querySelector('[data-testid="console-carteira-aretz"]')?.textContent?.trim() === "3.445",
+        null, { timeout: 10000 }).catch(() => {});
+      registrar("5f (somar por cima do saldo: 445+3000 vira 3.445)",
+        (await saldo(page))?.trim() === "3.445", `"${await saldo(page)}"`);
+    }
+
+    // --- 5g. Digitar um número com o campo aberto SUBSTITUI ---
+    {
+      await page.locator('[data-testid="console-carteira-aretz"]').click();
+      // Sem End: o conteúdo vem selecionado, então digitar troca tudo.
+      await page.locator('[data-testid="console-carteira-campo"]').pressSequentially("77");
+      const digitado = await page.locator('[data-testid="console-carteira-campo"]').inputValue();
+      await page.keyboard.press("Enter");
+      await page.waitForFunction(() =>
+        document.querySelector('[data-testid="console-carteira-aretz"]')?.textContent?.trim() === "77",
+        null, { timeout: 10000 }).catch(() => {});
+      registrar("5g (com o conteúdo selecionado, digitar um número substitui)",
+        digitado === "77" && (await saldo(page))?.trim() === "77", `campo "${digitado}", saldo ${await saldo(page)}`);
+    }
+
     // --- 5c. Entrada inválida avisa, em vez de recusar em silêncio ---
     {
       await page.locator('[data-testid="console-carteira-aretz"]').click();
@@ -158,7 +203,8 @@ async function main() {
       await page.keyboard.press("Enter");
       const aviso = await page.locator(".rc-inv-carteira-aviso").textContent().catch(() => null);
       await page.keyboard.press("Escape");
-      registrar("5c (texto inválido explica o formato aceito)", !!aviso && /\+N/.test(aviso), `"${aviso}"`);
+      registrar("5c (texto inválido explica o formato aceito)",
+        !!aviso && /\+250|some e subtraia/i.test(aviso), `"${aviso}"`);
     }
 
     // --- 5d. Saldo não fica negativo ---

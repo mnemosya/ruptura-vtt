@@ -192,15 +192,19 @@ function IconeDaCategoria({ categoria }: { categoria: string }) {
  * CARTEIRA (INV-03) — leitura e edição do contrato `carteira` que já
  * existe (PRD 13.1: três saldos separados, nunca uma soma única).
  *
- * O campo aceita as duas formas de mexer no saldo: digitar o valor
- * final, ou digitar `+50` / `-20` para somar e subtrair. Um campo só,
- * porque são o mesmo gesto com pontos de partida diferentes — e porque
- * somar 50 é o que se faz na mesa, enquanto saber o total exato é o que
- * se faz ao conferir.
+ * O campo aceita as três formas de mexer no saldo, porque as três são
+ * gestos reais: o valor final (`900`), um delta (`+250`, `-150`) e uma
+ * conta escrita por cima do que já estava lá (`3000-555`).
  *
- * A soma é resolvida NO ENVIO, contra o saldo que está na ficha naquele
- * instante, e o que vai para o servidor é o valor absoluto. Mandar o
- * delta faria o resultado depender de quando a tela renderizou.
+ * A terceira existe porque o campo abre COM o saldo dentro: clicar no
+ * valor e continuar digitando produz `3000-555` naturalmente, e a
+ * primeira versão recusava justamente esse caso — o mais provável de
+ * todos.
+ *
+ * A conta é resolvida NO ENVIO, contra o saldo que está na ficha
+ * naquele instante, e o que vai para o servidor é o valor absoluto.
+ * Mandar o delta faria o resultado depender de quando a tela
+ * renderizou.
  *
  * A escrita segue o caminho de qualquer alteração de ficha, que
  * revalida controle no servidor — nenhuma porta nova.
@@ -233,19 +237,26 @@ function Carteira({ carteira, onDefinir }: {
 
   function confirmar() {
     if (!carteira) { setEditando(false); return; }
-    const bruto = texto.trim().replace(/\./g, "").replace(",", ".");
-    const m = bruto.match(/^([+-])?\s*(\d+(?:\.\d+)?)$/);
-    if (!m) {
+    // Separador de milhar do que já estava na tela sai fora; espaços
+    // também, para `3000 - 555` valer o mesmo que `3000-555`.
+    const bruto = texto.trim().replace(/\./g, "").replace(/\s+/g, "");
+    if (!/^[+-]?\d+([+-]\d+)*$/.test(bruto)) {
       // Recusa em silêncio seria pior: quem digitou "50 aretz" precisa
       // saber por que o número não mudou.
-      setAviso("Use um número, ou +N / -N para somar e subtrair.");
+      setAviso("Use um número, ou some e subtraia: +250, -150, 3000-555.");
       return;
     }
-    const n = Number(m[2]);
-    const sinal = m[1];
-    const alvo = sinal === "+" ? carteira.aretz_informal + n
-      : sinal === "-" ? carteira.aretz_informal - n
-      : n;
+    /* Duas leituras, e as duas precisam funcionar porque as duas são
+       gestos reais.
+       Começando com sinal (`+250`), é DELTA sobre o saldo: é o que se
+       digita depois de limpar o campo.
+       Sem sinal inicial (`3000-555`), é uma CONTA a resolver: é o que
+       sai naturalmente de clicar no valor e continuar digitando, já que
+       o campo abre com o saldo dentro. A versão anterior recusava esse
+       caso, que é justamente o mais provável. */
+    const termos = (bruto.match(/[+-]?\d+/g) ?? []).map(Number);
+    const soma = termos.reduce((a, b) => a + b, 0);
+    const alvo = /^[+-]/.test(bruto) ? carteira.aretz_informal + soma : soma;
     onDefinir("aretz_informal", alvo);
     setEditando(false);
     setAviso(null);
@@ -259,9 +270,13 @@ function Carteira({ carteira, onDefinir }: {
           <input
             className="rc-inv-carteira-campo"
             autoFocus
+            /* Conteúdo selecionado ao abrir: digitar um número novo
+               substitui, em vez de grudar no saldo que já estava lá. E
+               quem preferir continuar a conta é só apertar End. */
+            onFocus={(e) => e.currentTarget.select()}
             value={texto}
             inputMode="text"
-            aria-label="Saldo em aretz — número, ou +N e -N para somar e subtrair"
+            aria-label="Saldo em aretz — um número, ou uma conta como +250, -150 ou 3000-555"
             data-testid="console-carteira-campo"
             onChange={(e) => { setTexto(e.target.value); setAviso(null); }}
             onBlur={confirmar}
@@ -273,7 +288,7 @@ function Carteira({ carteira, onDefinir }: {
         ) : (
           <button type="button" className="rc-inv-carteira-val" onClick={abrir}
             disabled={!carteira} data-vazio={carteira ? undefined : true}
-            title={carteira ? "Editar saldo — aceita +N e -N" : undefined}
+            title={carteira ? "Editar saldo — aceita contas: +250, -150, 3000-555" : undefined}
             data-testid="console-carteira-aretz">
             {carteira ? fmt(carteira.aretz_informal) : "—"}
           </button>
