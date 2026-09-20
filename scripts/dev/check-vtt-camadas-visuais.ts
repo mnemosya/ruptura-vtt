@@ -170,7 +170,7 @@ async function main() {
   const erros: string[] = [];
   page.on("console", (m) => { if (erroRelevante(m)) erros.push(m.text().slice(0, 400)); });
   page.on("pageerror", (e) => erros.push(`pageerror: ${e.message}`));
-  await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
   await page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
 
@@ -317,7 +317,7 @@ async function main() {
   // pela porta dos fundos — então nem o botão da barra existe pra ele.
   {
     const jog = await contextoDe(jogadorEmail!, jogadorSenha!);
-    await jog.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await jog.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await jog.page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
     const botaoJogador = await jog.page.locator('button[aria-label="Camadas do mapa"]').count();
     const janelaJogador = await jog.page.locator('section[aria-label="Camadas do mapa"]').count();
@@ -337,7 +337,7 @@ async function main() {
   // `vtt_tokens.visivel`.
   {
     const nar = await contextoDe(narradorEmail!, narradorSenha!);
-    await nar.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await nar.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await nar.page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
     await nar.page.locator('button[aria-label="Camadas do mapa"]').click();
     await nar.page.waitForSelector('section[aria-label="Camadas do mapa"]', { timeout: 10000 });
@@ -378,7 +378,7 @@ async function main() {
     await nar.close();
 
     const jog2 = await contextoDe(jogadorEmail!, jogadorSenha!);
-    await jog2.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await jog2.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await jog2.page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
     await jog2.page.waitForTimeout(800);
     const displayJogador = await jog2.page.locator(".rv-camada-tokens").first()
@@ -398,7 +398,7 @@ async function main() {
   // âncora, e é ela que terreno, colisão e alcance enxergam.
   {
     const nar = await contextoDe(narradorEmail!, narradorSenha!);
-    await nar.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await nar.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await nar.page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
 
     const { data: antes } = await admin

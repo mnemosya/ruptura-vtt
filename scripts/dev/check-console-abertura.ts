@@ -68,7 +68,7 @@ async function main() {
   const page = await context.newPage();
 
   try {
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
     await page.locator('[data-testid="painel-aba-personagens"]').click();
     await page.waitForSelector('[data-testid="painel-personagens-linha"]', { timeout: 15000 });

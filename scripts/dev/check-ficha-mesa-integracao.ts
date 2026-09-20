@@ -240,7 +240,7 @@ async function main() {
     // alguém "otimizar" a RPC lendo a coluna pra ficha e mapa
     // divergirem sem nenhum teste reclamar.
     // A cena é semeada na primeira visita ao VTT (`garantirCenaSemente`).
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
     const cena = await admin.from("vtt_scenes").select("id").eq("campaign_id", campaignId).limit(1).maybeSingle();
     if (cena.data?.id) {
@@ -341,7 +341,7 @@ async function main() {
       );
 
       // No VTT, com o personagem em cena: a ação aparece e funciona.
-      await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+      await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
       await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
       await page.locator('[data-testid="painel-aba-personagens"]').click();
       await page.locator('[data-testid="painel-personagens-linha"]').first().click();

@@ -122,9 +122,11 @@ async function main() {
   {
     const { data, error } = await cliNarrador.rpc("create_vtt_token", {
       p_scene_id: sceneId, p_campaign_id: campanhaId, p_nome: "Recém-criado", p_sigla: "ZZ",
-      p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_pegada_personalizada: null,
+      p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_direcao: 0,
+      p_pegada_personalizada: null,
       p_q: 0, p_r: 0, p_character_id: null, p_visivel: true, p_bloqueado: false,
-      p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
+      p_retrato_url: null, p_pv_atual: null, p_pv_max: null,
+      p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null, p_condicoes: [],
     }).single();
     tokenNovoId = (data as { id: string } | null)?.id ?? "";
     ok(
@@ -181,9 +183,11 @@ async function main() {
   {
     const { data, error } = await cliJogador.rpc("create_vtt_token", {
       p_scene_id: sceneId, p_campaign_id: campanhaId, p_nome: "Não devia existir", p_sigla: "XX",
-      p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_pegada_personalizada: null,
+      p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_direcao: 0,
+      p_pegada_personalizada: null,
       p_q: 1, p_r: 1, p_character_id: null, p_visivel: true, p_bloqueado: false,
-      p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
+      p_retrato_url: null, p_pv_atual: null, p_pv_max: null,
+      p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null, p_condicoes: [],
     });
     ok("criar-1 (jogador NÃO cria token — narrador-only)", !!error && !data, error ? "recusado" : "PASSOU (FALHA)");
   }
@@ -193,6 +197,7 @@ async function main() {
       p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_pegada_personalizada: null,
       p_q: 500, p_r: 500, p_character_id: null, p_visivel: true, p_bloqueado: false,
       p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
+     p_direcao: 0, p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     });
     ok("criar-2 (RPC rejeita criação fora dos limites do mapa)", !!error && !data, error ? `recusado: ${error.message.slice(0, 60)}` : "PASSOU (FALHA)");
   }
@@ -203,6 +208,7 @@ async function main() {
       p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_pegada_personalizada: null,
       p_q: 5, p_r: 5, p_character_id: null, p_visivel: true, p_bloqueado: false,
       p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
+     p_direcao: 0, p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     });
     ok("criar-3 (RPC rejeita criação sobre terreno bloqueado)", !!error && !data, error ? `recusado: ${error.message.slice(0, 70)}` : "PASSOU (FALHA)");
     await admin.from("vtt_terrain").delete().eq("scene_id", sceneId).eq("q", 5).eq("r", 5);
@@ -213,6 +219,7 @@ async function main() {
       p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_pegada_personalizada: null,
       p_q: 0, p_r: 0, p_character_id: null, p_visivel: true, p_bloqueado: false, // mesma célula do "ZZ" criado acima
       p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
+     p_direcao: 0, p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     });
     ok("criar-4 (RPC rejeita criação sobrepondo outro token)", !!error && !data, error ? `recusado: ${error.message.slice(0, 70)}` : "PASSOU (FALHA)");
   }
@@ -298,6 +305,7 @@ async function main() {
       p_token_id: tokenNovoId, p_nome: "NÃO DEVE FICAR SALVO", p_sigla: "ZZ", p_lado: "pn", p_vertente: "nenhuma",
       p_character_id: null, p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
       p_tamanho: "colossal", p_expected_revision: antes!.revision,
+     p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     });
     const { data: depois } = await admin.from("vtt_tokens").select("nome, tamanho, revision, q, r").eq("id", tokenNovoId).single();
     ok(
@@ -316,6 +324,7 @@ async function main() {
       p_token_id: tokenNovoId, p_nome: "Editado Atômico", p_sigla: "ZZ", p_lado: "pn", p_vertente: "nenhuma",
       p_character_id: null, p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
       p_tamanho: "medio", p_expected_revision: antes!.revision,
+     p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     }).single();
     const linha = data as { nome: string; tamanho: string; revision: number } | null;
     ok(
@@ -331,6 +340,7 @@ async function main() {
       p_token_id: tokenNovoId, p_nome: "Só nome de novo", p_sigla: "ZZ", p_lado: "pn", p_vertente: "nenhuma",
       p_character_id: null, p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
       p_tamanho: antes!.tamanho, p_expected_revision: antes!.revision,
+     p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     }).single();
     const linha = data as { nome: string; tamanho: string; revision: number } | null;
     ok(
@@ -344,6 +354,7 @@ async function main() {
       p_token_id: tokenNovoId, p_nome: "Hack Atômico", p_sigla: "ZZ", p_lado: "pn", p_vertente: "nenhuma",
       p_character_id: null, p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
       p_tamanho: "medio", p_expected_revision: 999,
+     p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     });
     ok("editar-atomico-4 (jogador NÃO chama edit_vtt_token — narrador-only)", !!error && !data, error ? "recusado" : "PASSOU (FALHA)");
   }
@@ -367,6 +378,7 @@ async function main() {
       p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "grande", p_orientacao: 0, p_pegada_personalizada: pegada6x1,
       p_q: 9, p_r: 10, p_character_id: null, p_visivel: true, p_bloqueado: false,
       p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
+     p_direcao: 0, p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     }).single();
     tokenPegadaId = (data as { id: string } | null)?.id ?? "";
     ok("pegada-0 (fixture: token com pegada personalizada 6×1 criado)", !error && !!tokenPegadaId, error ? error.message : `id=${tokenPegadaId.slice(0, 8)}`);
@@ -378,7 +390,8 @@ async function main() {
     const { data, error } = await cliNarrador.rpc("edit_vtt_token", {
       p_token_id: tokenPegadaId, p_nome: "Pegada Personalizada — Nome Só", p_sigla: "PP", p_lado: "pn", p_vertente: "nenhuma",
       p_character_id: null, p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
-      p_tamanho: "grande", p_expected_revision: antes!.revision, // mesma categoria — nada de tamanho muda
+      p_tamanho: "grande", p_expected_revision: antes!.revision, // mesma categoria — nada de tamanho muda,
+     p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     }).single();
     const linha = data as { nome: string; pegada_personalizada: unknown; revision: number } | null;
     ok(
@@ -397,6 +410,7 @@ async function main() {
       p_token_id: tokenPegadaId, p_nome: "Pegada Virou Médio", p_sigla: "PP", p_lado: "pn", p_vertente: "nenhuma",
       p_character_id: null, p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
       p_tamanho: "medio", p_expected_revision: antes!.revision,
+     p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     }).single();
     const linha = data as { nome: string; tamanho: string; pegada_personalizada: unknown; q: number; r: number; orientacao: number; revision: number } | null;
     ok(
@@ -419,6 +433,7 @@ async function main() {
       p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "grande", p_orientacao: 0, p_pegada_personalizada: pegada6x1,
       p_q: 8, p_r: 12, p_character_id: null, p_visivel: true, p_bloqueado: false,
       p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
+     p_direcao: 0, p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     }).single();
     const idColide = (criado as { id: string }).id;
     // Bloqueia a célula (11,12) — pertence à pegada ANTIGA (offset
@@ -430,6 +445,7 @@ async function main() {
       p_token_id: idColide, p_nome: "Pegada Antiga Colide", p_sigla: "PC", p_lado: "pn", p_vertente: "nenhuma",
       p_character_id: null, p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
       p_tamanho: "medio", p_expected_revision: antes!.revision,
+     p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     }).single();
     const linha = data as { tamanho: string; pegada_personalizada: unknown } | null;
     ok(
@@ -450,6 +466,7 @@ async function main() {
       p_pegada_personalizada: [{ q: 0, r: 0 }, { q: -1, r: 0 }], // âncora + vizinho à esquerda — cabe fácil na borda direita
       p_q: 19, p_r: 0, p_character_id: null, p_visivel: true, p_bloqueado: false,
       p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
+     p_direcao: 0, p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     }).single();
     const idBorda = (criado as { id: string } | null)?.id ?? "";
     const { data: antes } = await admin.from("vtt_tokens").select("nome, tamanho, pegada_personalizada, revision").eq("id", idBorda).single();
@@ -457,6 +474,7 @@ async function main() {
       p_token_id: idBorda, p_nome: "NÃO DEVE FICAR SALVO", p_sigla: "CM", p_lado: "pn", p_vertente: "nenhuma",
       p_character_id: null, p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
       p_tamanho: "colossal", p_expected_revision: antes!.revision,
+     p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     });
     const { data: depois } = await admin.from("vtt_tokens").select("nome, tamanho, pegada_personalizada, revision").eq("id", idBorda).single();
     ok(
@@ -484,6 +502,7 @@ async function main() {
       p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_pegada_personalizada: null,
       p_q: q, p_r: r, p_character_id: null, p_visivel: true, p_bloqueado: false,
       p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
+     p_direcao: 0, p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     }).single();
   }
 
@@ -562,6 +581,7 @@ async function main() {
       p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_pegada_personalizada: null,
       p_q: 0, p_r: 0, p_character_id: null, p_visivel: true, p_bloqueado: false,
       p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
+     p_direcao: 0, p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     }).single();
     const lOutraCampanha = cenaDeOutraCampanha as { nome: string } | null;
     ok("nome-8b (cena de OUTRA campanha começa em #1 também — numeração é por cena, nunca por campanha)", !eOutraCampanha && lOutraCampanha?.nome === "#1", eOutraCampanha ? eOutraCampanha.message : `nome="${lOutraCampanha?.nome}"`);
@@ -587,6 +607,7 @@ async function main() {
       p_token_id: lCriado!.id, p_nome: "", p_sigla: "", p_lado: "pn", p_vertente: "nenhuma",
       p_character_id: null, p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
       p_tamanho: "medio", p_expected_revision: lCriado!.revision,
+     p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     }).single();
     const lEditado = editado as { nome: string; sigla: string; revision: number } | null;
     ok("nome-10a (edição com nome vazio também gera automático — mesma regra)", !eEditado && lEditado?.nome === "#1" && lEditado?.sigla === "1", eEditado ? eEditado.message : `nome="${lEditado?.nome}", sigla="${lEditado?.sigla}"`);
@@ -596,6 +617,7 @@ async function main() {
       p_token_id: lCriado!.id, p_nome: "", p_sigla: "", p_lado: "pn", p_vertente: "nenhuma",
       p_character_id: null, p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
       p_tamanho: "medio", p_expected_revision: lEditado!.revision,
+     p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     }).single();
     const lDeNovo = editadoDeNovo as { nome: string } | null;
     ok("nome-10b (token que já é '#1' reclama '#1' de novo ao ter o nome limpo — nunca pula por causa de si mesmo)", !eDeNovo && lDeNovo?.nome === "#1", eDeNovo ? eDeNovo.message : `nome="${lDeNovo?.nome}"`);
@@ -635,6 +657,7 @@ async function main() {
       p_lado: "pn", p_vertente: "nenhuma", p_tamanho: "medio", p_orientacao: 0, p_pegada_personalizada: null,
       p_q: 3, p_r: 3, p_character_id: null, p_visivel: true, p_bloqueado: false,
       p_retrato_url: null, p_pv_atual: null, p_pv_max: null, p_condicoes: [],
+     p_direcao: 0, p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null,
     }).single();
     const lCriadoHelper = criado as { nome: string; sigla: string } | null;
     ok(

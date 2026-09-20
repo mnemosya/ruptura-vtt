@@ -301,7 +301,7 @@ async function main() {
   const errosNarrador: string[] = [];
   narradorPage.on("console", (m) => { if (erroRelevante(m)) errosNarrador.push(m.text().slice(0, 400)); });
 
-  await narradorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await narradorPage.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await narradorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
   {
     const { data } = await admin.from("vtt_scenes").select("id").eq("campaign_id", campaignId).maybeSingle();
@@ -356,7 +356,7 @@ async function main() {
   // antes de ele existir.
   await narradorPage.reload({ waitUntil: "networkidle" });
   await narradorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
-  await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await jogadorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
   registrar("0c (token pj da fixture criado e vinculado)", true, `sigla=${tokenJogador.sigla}, pos=(${tokenJogador.q},${tokenJogador.r})`);
 
@@ -911,7 +911,7 @@ async function main() {
       expires: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
     }]);
     const pageReduzido = await contextoReduzido.newPage();
-    await pageReduzido.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await pageReduzido.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await pageReduzido.waitForSelector(".rv-ferramentas", { timeout: 15000 });
     await pageReduzido.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
 

@@ -183,7 +183,7 @@ async function main() {
   const erros: string[] = [];
   page.on("console", (m) => { if (erroRelevante(m)) erros.push(m.text().slice(0, 400)); });
   page.on("pageerror", (e) => erros.push(`pageerror: ${e.message}`));
-  await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
   await selecionarInteragir(page);
 
@@ -331,7 +331,7 @@ async function main() {
   {
     const tok = await criarTokenFixture("SemPermissao", "SP", 10, 15);
     const { page: jogadorPage, close: closeJogador } = await contextoDe(jogadorEmail!, jogadorSenha!);
-    await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await jogadorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
     await jogadorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
 
@@ -360,7 +360,7 @@ async function main() {
     // margem é bem maior, eliminando a ambiguidade.
     const tok = await criarTokenFixture("Sincroniza", "SY", 15, 2);
     const { page: jogadorPage, close: closeJogador } = await contextoDe(jogadorEmail!, jogadorSenha!);
-    await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await jogadorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
 
     // Nunca dar reload no narrador aqui: a página dele já está aberta e

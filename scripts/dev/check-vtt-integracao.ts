@@ -1,7 +1,7 @@
 /**
  * Browser check da fundação funcional das ferramentas do VTT —
  * confirma que o estado PERSISTIDO está de fato ligado à rota real
- * `/mesas/[campaignId]/vtt`, não só testado por baixo (as 25 checagens
+ * `/mesas/[campaignId]`, não só testado por baixo (as 25 checagens
  * de `check-vtt-autorizacao.ts` falam direto com o banco, nunca
  * passaram pela UI).
  *
@@ -48,7 +48,7 @@
  *      PD, "Danificado", efeito — o exemplo exato do pedido original,
  *      Van de transporte); a hint some ao tirar o mouse; nunca mais de
  *      uma hint simultânea.
- *  13. Console limpo nas duas sessões, na rota `/vtt`.
+ *  13. Console limpo nas duas sessões, na rota da mesa.
  *
  * Fora de cobertura automatizada nesta suíte, verificado por leitura
  * de código + browser manual (ver relatório da rodada que introduziu
@@ -230,7 +230,7 @@ async function main() {
   }
 
   // --- 1. Narrador abre a mesa: cena semeia sozinha ---
-  await narradorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await narradorPage.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await narradorPage.waitForSelector(".rv-mesa", { timeout: 15000 }).catch(() => {});
   {
     const temCarregando = (await narradorPage.locator(".rv-mesa--carregando").count()) > 0;
@@ -303,7 +303,7 @@ async function main() {
   const { page: jogadorPage, close: closeJogador } = await contextoDe(jogadorEmail!, jogadorSenha!);
   const errosJogador: string[] = [];
   jogadorPage.on("console", (m) => { if (erroRelevante(m)) errosJogador.push(m.text().slice(0, 600)); });
-  await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await jogadorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
   {
     const botoes = (await jogadorPage.locator(".rv-ferramentas .rv-ferr-btn[aria-pressed]:not([data-tipo='janela'])").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label"))));

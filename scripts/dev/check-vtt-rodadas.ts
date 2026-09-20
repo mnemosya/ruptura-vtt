@@ -152,7 +152,7 @@ async function contextoDe(email: string, senha: string): Promise<{ context: Brow
 }
 
 async function abrirVtt(page: Page) {
-  await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await page.waitForSelector(".rv-ferramentas", { timeout: 20000 });
   await page.waitForTimeout(1200);
 }

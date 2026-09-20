@@ -118,7 +118,7 @@ async function main() {
   const page = await ctx.newPage();
 
   try {
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
     await page.locator('[data-testid="cena-chip"]').click();
     await page.waitForSelector('[data-testid="cenas-lista"]', { timeout: 5000 });

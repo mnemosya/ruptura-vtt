@@ -210,7 +210,7 @@ async function main() {
   let ignorarErrosDeProposito = false;
   page.on("console", (m) => { if (!ignorarErrosDeProposito && erroRelevante(m)) erros.push(m.text().slice(0, 500)); });
   page.on("pageerror", (e) => { if (!ignorarErrosDeProposito) erros.push(`pageerror: ${e.message}`); });
-  await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
 
   // --- 1/2: alça aparece em assimétrico único selecionado, não aparece em simétrico ---
@@ -246,7 +246,7 @@ async function main() {
   // --- 3: sem permissão (sessão jogador, token narrador-only) ---
   {
     const { page: jogadorPage, close: closeJogador } = await contextoDe(jogadorEmail!, jogadorSenha!);
-    await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await jogadorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
     await selecionarToken(jogadorPage, tokGrande.id);
     const semPermissao = (await jogadorPage.locator(".rv-token-alca-rotacao-toque").count()) === 0;
@@ -782,7 +782,7 @@ async function main() {
   {
     const { data: simetrico } = await admin.from("vtt_tokens").select("id, orientacao").eq("campaign_id", campaignId).eq("nome", "Simetrico").single();
     const { page: jogadorPage, close: closeJogador } = await contextoDe(jogadorEmail!, jogadorSenha!);
-    await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await jogadorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
     await admin.from("vtt_tokens").update({ orientacao: 3, revision: (await admin.from("vtt_tokens").select("revision").eq("id", simetrico!.id).single()).data!.revision }).eq("id", simetrico!.id);
     // Realtime deveria propagar sozinho — não é uma RPC real (é um UPDATE direto), mas o eco de `postgres_changes` é o mesmo canal que uma rotação de verdade usaria.

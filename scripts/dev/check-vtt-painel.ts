@@ -1,7 +1,7 @@
 /**
  * Browser check do PAINEL LATERAL da Mesa (`vtt/_painel/`) — moldura,
  * Chat, Personagens, Participantes, Bando e Compêndio contra a rota
- * real `/mesas/[campaignId]/vtt`, com duas sessões autenticadas
+ * real `/mesas/[campaignId]`, com duas sessões autenticadas
  * (narrador e jogador) e dados reais no banco.
  *
  * É o par do teste determinístico `scripts/test-vtt-painel.ts` (lógica
@@ -287,7 +287,7 @@ async function limpar() {
 
 /** Abre a Mesa e espera o painel existir. */
 async function abrirMesa(page: Page, id = campaignId) {
-  await page.goto(`${BASE_URL}/mesas/${id}/vtt`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas/${id}`, { waitUntil: "networkidle" });
   await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
 }
 

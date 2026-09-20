@@ -146,7 +146,7 @@ async function main() {
   const page = await context.newPage();
 
   try {
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
     for (const j of JANELAS) await capturar(page, j);
     await capturarRodadasAtivo(page);

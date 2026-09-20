@@ -132,7 +132,7 @@ async function main() {
 
   const narrador = await contextoDe(narradorEmail!, narradorSenha!);
   const P = narrador.page;
-  await P.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await P.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await P.waitForSelector(".rv-ferramentas", { timeout: 20000 });
   await P.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Áreas"]').click();
   await P.waitForSelector('[data-testid="painel-areas"]', { timeout: 8000 });
@@ -172,7 +172,7 @@ async function main() {
 
   // ── 3. Outra sessão recebe a cor/opacidade sem reload ────────────
   const jogador = await contextoDe(jogadorEmail!, jogadorSenha!);
-  await jogador.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await jogador.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await jogador.page.waitForSelector(".rv-camada-areas .rv-area", { timeout: 20000 });
   const fillJogador = await jogador.page.locator('.rv-camada-areas .rv-area path').first().getAttribute("fill");
   registrar("3 (outra sessão recebe a MESMA cor persistida)", fillJogador === "#8b5cf6", `fill=${fillJogador}`);

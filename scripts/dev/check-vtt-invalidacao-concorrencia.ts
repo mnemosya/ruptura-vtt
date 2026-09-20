@@ -115,7 +115,7 @@ async function main() {
   page.on("console", (m) => { if (erroRelevante(m)) erros.push(m.text().slice(0, 600)); });
   page.on("pageerror", (e) => erros.push(`pageerror: ${e.message}`));
 
-  await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
   {
     const { data } = await admin.from("vtt_scenes").select("id").eq("campaign_id", campaignId).maybeSingle();

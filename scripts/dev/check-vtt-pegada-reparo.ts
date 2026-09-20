@@ -266,7 +266,7 @@ async function main() {
   const erros: string[] = [];
   page.on("console", (m) => { if (erroRelevante(m)) erros.push(m.text().slice(0, 400)); });
 
-  await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
 
   const { data: cbAntes } = await admin.from("vtt_tokens").select("id,sigla,q,r,tamanho,orientacao,revision").eq("campaign_id", campaignId).eq("sigla", "CB").maybeSingle();

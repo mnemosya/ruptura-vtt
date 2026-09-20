@@ -133,7 +133,7 @@ async function main() {
   const jogadoresCriados: string[] = [];
 
   try {
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
 
     console.log("\n— A janela —");
@@ -323,7 +323,7 @@ async function main() {
       expires: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
     }]);
     const pageJog = await ctxJog.newPage();
-    await pageJog.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await pageJog.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await pageJog.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
     // O jogador TEM o chip da cena ativa — como texto. O que ele não
     // tem é a versão clicável: `list_vtt_scenes` não conta a ele que

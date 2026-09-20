@@ -279,7 +279,7 @@ async function main() {
   page.on("console", (m) => { if (erroRelevante(m)) erros.push(m.text().slice(0, 600)); });
   page.on("pageerror", (e) => erros.push(`pageerror: ${e.message}`));
 
-  await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
   const { data: sceneRow } = await admin.from("vtt_scenes").select("id").eq("campaign_id", campaignId).single();
   sceneId = sceneRow!.id;
@@ -675,7 +675,7 @@ async function main() {
   //     campo sozinho, nunca dois passos de histórico pra uma edição só. ---
   {
     const { page: jogadorPage, close: closeJogador } = await contextoDe(jogadorEmail!, jogadorSenha!);
-    await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await jogadorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
 
     const { data: antesDoUndo } = await admin.from("vtt_tokens").select("nome, tamanho, revision").eq("id", tokenEditarId!).single();

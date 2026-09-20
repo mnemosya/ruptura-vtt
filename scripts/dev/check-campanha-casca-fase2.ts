@@ -91,7 +91,7 @@ async function main() {
     });
 
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await page.waitForTimeout(1200);
 
     // --- 1. Casca HUD presente ---
@@ -205,7 +205,7 @@ async function main() {
 
     // --- 6. Teclado: Tab percorre o trilho com foco visível ---
     {
-      await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+      await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
       await page.waitForTimeout(800);
       await page.keyboard.press("Tab");
       const primeiro = await page.evaluate(() => {

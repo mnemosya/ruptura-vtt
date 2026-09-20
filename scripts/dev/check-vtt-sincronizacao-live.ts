@@ -138,7 +138,7 @@ async function main() {
   const { page: narradorPage, close: closeNarrador } = await contextoDe(narradorEmail!, narradorSenha!);
   const errosNarrador: string[] = [];
   narradorPage.on("console", (m) => { if (erroRelevante(m)) errosNarrador.push(m.text().slice(0, 600)); });
-  await narradorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await narradorPage.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await narradorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
   {
     const { data } = await admin.from("vtt_scenes").select("id").eq("campaign_id", campaignId).maybeSingle();
@@ -149,7 +149,7 @@ async function main() {
   const { page: jogadorPage, close: closeJogador } = await contextoDe(jogadorEmail!, jogadorSenha!);
   const errosJogador: string[] = [];
   jogadorPage.on("console", (m) => { if (erroRelevante(m)) errosJogador.push(m.text().slice(0, 600)); });
-  await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await jogadorPage.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await jogadorPage.waitForSelector(".rv-ferramentas", { timeout: 15000 });
 
   // --- 1. Criar: narrador cria um token pelo menu contextual — jogador vê aparecer sem reload ---

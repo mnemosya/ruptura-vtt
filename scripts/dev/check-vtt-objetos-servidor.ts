@@ -89,14 +89,16 @@ async function main() {
     return objectId;
   }
 
-  /** Argumentos completos de `create_vtt_token` — assinatura real (18 params). */
+  /** Argumentos completos de `create_vtt_token` — assinatura real (23 params, desde a 0135). */
   function novoToken(p: { nome: string; sigla: string; q: number; r: number; tamanho?: string }) {
     return {
       p_scene_id: sceneId, p_campaign_id: campaignId, p_nome: p.nome, p_sigla: p.sigla,
       p_lado: "pn", p_vertente: "ferro", p_tamanho: p.tamanho ?? "medio", p_orientacao: 0,
+      p_direcao: 0,
       p_pegada_personalizada: null, p_q: p.q, p_r: p.r, p_character_id: null,
       p_visivel: true, p_bloqueado: false, p_retrato_url: null,
-      p_pv_atual: null, p_pv_max: null, p_condicoes: [],
+      p_pv_atual: null, p_pv_max: null,
+      p_pe_atual: null, p_pe_max: null, p_mana_atual: null, p_mana_max: null, p_condicoes: [],
     };
   }
 

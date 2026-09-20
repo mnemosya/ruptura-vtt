@@ -192,7 +192,7 @@ async function main() {
   registrar("0 (fixture: campanha, narrador, 2 jogadores, 1 token)", true, `campanha=${campaignId}`);
 
   const N = await contextoDe(narrador.email, narrador.senha);
-  await N.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await N.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await N.page.waitForSelector(".rv-ferramentas", { timeout: 20000 });
   const P = N.page;
 
@@ -316,7 +316,7 @@ async function main() {
 
   // Jogador A cria a própria área.
   const A = await contextoDe(jogadorA.email, jogadorA.senha);
-  await A.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await A.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await A.page.waitForSelector(".rv-ferramentas", { timeout: 20000 });
   let areaEsferaJogadorA: string;
   {
@@ -340,7 +340,7 @@ async function main() {
 
   // Jogador B — outro jogador — não vê botão de editar em NENHUMA área alheia.
   const B = await contextoDe(jogadorB.email, jogadorB.senha);
-  await B.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await B.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await B.page.waitForSelector(".rv-ferramentas", { timeout: 20000 });
   {
     await abrirAreas(B.page);

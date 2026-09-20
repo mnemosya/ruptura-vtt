@@ -115,7 +115,7 @@ async function main() {
     // mantendo websockets de realtime abertos, a rede nunca fica ociosa
     // e o `goto` estoura sem que nada esteja errado. O portão de
     // verdade é o seletor abaixo, que espera a mesa existir.
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "domcontentloaded" });
     await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 25000 });
     return page;
   }

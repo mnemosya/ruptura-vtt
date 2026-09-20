@@ -120,7 +120,7 @@ async function main() {
   const page = await context.newPage();
   const erros: string[] = [];
   page.on("console", (m) => { if (m.type() === "error" && !m.text().includes("favicon")) erros.push(m.text().slice(0, 400)); });
-  await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
 
   // --- 1: clicar noutra ferramenta durante o posicionamento cancela e troca ---

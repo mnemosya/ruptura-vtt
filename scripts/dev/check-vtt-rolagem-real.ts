@@ -176,7 +176,7 @@ async function main() {
   page.on("console", (m) => { if (erroRelevante(m)) errosConsole.push(m.text()); });
 
   try {
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
 
     // ── 9 — sem token selecionado, o teste não inventa ficha ────────

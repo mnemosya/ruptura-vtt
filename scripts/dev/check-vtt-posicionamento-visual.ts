@@ -165,7 +165,7 @@ async function main() {
     expires: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
   }]);
   const page = await context.newPage();
-  await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
   const { data: sceneRow } = await admin.from("vtt_scenes").select("id, largura, altura").eq("campaign_id", campaignId).single();
   sceneId = sceneRow!.id;

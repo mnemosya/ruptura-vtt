@@ -167,7 +167,7 @@ async function main() {
     const quadro = stack.split("\n").slice(1, 3).map((l) => l.trim()).join(" ← ");
     erros.push(`pageerror: ${e.message}${quadro ? ` @ ${quadro}` : ""}`);
   });
-  const url = `${BASE_URL}/mesas/${campaignId}/vtt`;
+  const url = `${BASE_URL}/mesas/${campaignId}`;
   await page.goto(url, { waitUntil: "networkidle" });
   await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
 

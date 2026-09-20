@@ -79,7 +79,7 @@ async function abrirMesa(
     expires: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
   }]);
   const page = await ctx.newPage();
-  await page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
   return { ctx, page };
 }

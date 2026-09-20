@@ -2,7 +2,7 @@
  * Browser check da ferramenta ÁREAS do VTT — interações REAIS de mouse
  * e teclado do Playwright (nunca só `dispatchEvent`, que não
  * representa captura de ponteiro nem o caminho de eventos do React),
- * contra a rota real `/mesas/[campaignId]/vtt`.
+ * contra a rota real `/mesas/[campaignId]`.
  *
  * Cobre:
  *   1.  Ferramenta Áreas visível pro narrador; INVISÍVEL pro jogador
@@ -297,7 +297,7 @@ async function main() {
   registrar("0 (fixture: campanha + narrador + jogador)", true, `campanha=${campaignId}`);
 
   const narrador = await contextoDe(narradorEmail!, narradorSenha!);
-  await narrador.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await narrador.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await narrador.page.waitForSelector(".rv-ferramentas", { timeout: 20000 });
   const P = narrador.page;
 
@@ -347,7 +347,7 @@ async function main() {
   }
 
   const jogador = await contextoDe(jogadorEmail!, jogadorSenha!);
-  await jogador.page.goto(`${BASE_URL}/mesas/${campaignId}/vtt`, { waitUntil: "networkidle" });
+  await jogador.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await jogador.page.waitForSelector(".rv-ferramentas", { timeout: 20000 });
   {
     // Migration 0083: criação é aberta a qualquer participante da
