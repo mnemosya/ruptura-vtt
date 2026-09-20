@@ -31,6 +31,7 @@ import assert from "node:assert/strict";
 import { chromium, type Locator, type Page } from "playwright";
 import { BASE_URL, SESSION_FILE, assertAdminSessionValid, requireSessaoSalva, sessaoSalvaExiste } from "./authSession";
 import { limparEAnunciar } from "./residuoDeConteudo";
+import { abrirRascunhoDeEdicaoDe } from "./rascunhoDeEdicao";
 import { garantirMesaDeFixture, removerMesaDeFixture, NOME_MESA_FIXTURE, NOME_PERSONAGEM_FIXTURE, type MesaDeFixture } from "./fixtureDeMesa";
 
 const PREFIXO_TESTE = "zz_e2e_etapa4_";
@@ -273,16 +274,8 @@ async function main(): Promise<void> {
     //    A magia continua tendo o efeito; só o nome no comentário estava
     //    velho.
     // ------------------------------------------------------------------
-    await page.goto(`${BASE_URL}/admin/biblioteca/spell/energetica_bola_de_fogo`, { waitUntil: "domcontentloaded" });
-    await page.getByRole("button", { name: "Criar rascunho de edição" }).click();
-    await page.waitForURL(/\/admin\/biblioteca\/rascunhos\/legado\//, { timeout: 10000 });
-    assert.ok(
-      (await page.textContent("body"))?.includes("Diagnóstico de conversão"),
-      "18. Conteúdo seedado (sem metadata editorial) deveria passar pelo diagnóstico de conversão.",
-    );
-    await page.getByRole("button", { name: "Iniciar rascunho de edição" }).click();
-    await page.waitForURL(/\/admin\/biblioteca\/rascunhos\/[0-9a-f-]{36}/, { timeout: 15000 });
-    const idMagiaLegado = page.url().split("/").pop()!;
+    const { id: idMagiaLegado, viaLegado } = await abrirRascunhoDeEdicaoDe(page, "spell", "energetica_bola_de_fogo");
+    assert.ok(viaLegado, "18. Conteúdo seedado (sem metadata editorial) deveria passar pelo diagnóstico de conversão.");
     idsCriados.push(idMagiaLegado);
     const containerPreservados = page.locator('[data-testid="efeitos-preservados-container"]');
     await containerPreservados.waitFor();

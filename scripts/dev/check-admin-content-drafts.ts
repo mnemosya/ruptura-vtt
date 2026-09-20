@@ -21,6 +21,7 @@ import assert from "node:assert/strict";
 import { chromium, type Page } from "playwright";
 import { BASE_URL, SESSION_FILE, assertAdminSessionValid, requireSessaoSalva, sessaoSalvaExiste } from "./authSession";
 import { limparEAnunciar } from "./residuoDeConteudo";
+import { abrirRascunhoDeEdicao, abrirRascunhoDeEdicaoDe } from "./rascunhoDeEdicao";
 
 const PREFIXO_TESTE = "zz_e2e_etapa3_";
 const SLUGS_ORIGEM_PARA_LIMPAR = ["energetica_bola_de_fogo", "artifice"];
@@ -134,9 +135,10 @@ async function main(): Promise<void> {
     const corpoAntes = await page.textContent("body");
     assert.ok(corpoAntes?.includes("3d6"), "Magia publicada deveria mostrar o dado original (3d6) antes de qualquer edição.");
 
-    await page.getByRole("button", { name: "Criar rascunho de edição" }).click();
-    await page.waitForURL(/\/admin\/biblioteca\/rascunhos\/[0-9a-f-]{36}/, { timeout: 10000 });
-    const idMagiaEdicao = page.url().split("/").pop()!;
+    // Conteúdo seedado não tem metadata editorial e passa pelo
+    // diagnóstico de conversão antes do rascunho (Etapa 6) — o helper
+    // atravessa os dois caminhos.
+    const { id: idMagiaEdicao } = await abrirRascunhoDeEdicao(page);
     idsCriadosNesteRun.push(idMagiaEdicao);
     const corpoRascunhoEdicao = await page.textContent("body");
     assert.ok(corpoRascunhoEdicao?.includes("condensa energia"), "Rascunho de edição deveria herdar a descrição do conteúdo publicado.");
@@ -165,22 +167,43 @@ async function main(): Promise<void> {
     const idItemDuplicado = page.url().split("/").pop()!;
     idsCriadosNesteRun.push(idItemDuplicado);
     assert.notEqual(idItemDuplicado, "ansiolitico", "O rascunho duplicado precisa ter um ID próprio, nunca o do original.");
-    const slugCampoDuplicado = await page.getByLabel("Slug").inputValue();
+    // "Slug" sozinho virou ambíguo: o formulário de item ganhou um campo
+    // "Munição compatível (slug)", e o seletor passou a casar com dois.
+    // O do conteúdo é obrigatório, e é o asterisco que o distingue.
+    const slugCampoDuplicado = await page.getByLabel("Slug *", { exact: true }).inputValue();
     assert.equal(slugCampoDuplicado, novoSlugItem, "Rascunho duplicado deveria mostrar o novo slug no campo Slug.");
     console.log(`8/9. Item duplicado como novo rascunho com novo slug/ID — OK (slug=${novoSlugItem}, id=${idItemDuplicado})`);
 
     // ------------------------------------------------------------------
     // 10+11. Talento mantém os 3 níveis; campos desconhecidos/efeitos preservados.
     // ------------------------------------------------------------------
-    await page.goto(`${BASE_URL}/admin/biblioteca/talent/artifice`, { waitUntil: "domcontentloaded" });
-    await page.getByRole("button", { name: "Criar rascunho de edição" }).click();
-    await page.waitForURL(/\/admin\/biblioteca\/rascunhos\/[0-9a-f-]{36}/, { timeout: 10000 });
-    const idTalento = page.url().split("/").pop()!;
+    const { id: idTalento } = await abrirRascunhoDeEdicaoDe(page, "talent", "artifice");
     idsCriadosNesteRun.push(idTalento);
     const corpoTalento = await page.textContent("body");
     assert.ok(corpoTalento?.includes("Nível 1") && corpoTalento?.includes("Nível 2") && corpoTalento?.includes("Nível 3"), "Rascunho de talento deveria manter os 3 níveis.");
-    assert.ok(corpoTalento?.includes("Efeitos preservados") || corpoTalento?.includes("efeitos preservados"), "Deveria haver seção de efeitos preservados.");
-    console.log(`10/11. Rascunho de talento mantém os 3 níveis com efeitos/campos preservados — OK (id=${idTalento})`);
+    // A asserção anterior exigia uma seção de "efeitos preservados"
+    // neste talento. `artifice` não tem efeito nenhum — seus níveis são
+    // descritivos —, então a seção não aparece, e nem deve: sem efeitos
+    // fora do Construtor, a interface diz isso com todas as letras em
+    // vez de desenhar uma seção vazia.
+    //
+    // O que dá para afirmar aqui, e é o que passou a ser afirmado, é que
+    // a preservação se PRONUNCIA sobre o conteúdo — em vez de omitir.
+    // O caso não-vazio (conteúdo COM efeito fora do Construtor) é
+    // coberto pelo passo 18 de `check-admin-effect-builder`, numa magia
+    // que de fato tem um. Um talento com efeito desconhecido para testar
+    // o não-vazio POR TALENTO não existe no acervo.
+    // Pelo `data-testid`, não por texto: quando HÁ efeitos preservados a
+    // seção é um container sem título — as palavras "Efeitos
+    // preservados" não existem na página, e a asserção antiga procurava
+    // justamente por elas. Quando não há, a interface diz com todas as
+    // letras. As duas formas são respostas válidas; nenhuma resposta não é.
+    const temContainerPreservado = (await page.locator('[data-testid="efeitos-preservados-container"]').count()) > 0;
+    assert.ok(
+      temContainerPreservado || corpoTalento?.includes("Nenhum efeito fora do Construtor"),
+      "Rascunho de talento deveria se pronunciar sobre efeitos preservados (a seção, ou a frase explícita de que não há).",
+    );
+    console.log(`10/11. Rascunho de talento mantém os 3 níveis e reporta a preservação — OK (id=${idTalento})`);
 
     // ------------------------------------------------------------------
     // 12. Cancelar não salva.
