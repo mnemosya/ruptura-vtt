@@ -140,6 +140,18 @@ elementos de DOM que não existem mais (halo frontal, alça de rotação, rótul
 de PV). Cada um precisa ser julgado: **consertar ou apagar**, porque alguns
 testam telas que já não existem.
 
+**O número que consegui medir é pior do que eu esperava: um em doze passa.**
+Triei doze scripts (os primeiros em ordem alfabética, não uma amostra
+aleatória): um passa, cinco travam em espera, seis falham. A leitura da tarefa
+muda com isso — não são "alguns checks defasados", é uma suíte de verificação de
+navegador majoritariamente morta. A tabela está no backlog, em TEST-01.
+
+Registro também um erro meu de leitura no meio disso: classifiquei quatro
+scripts como "saída não reconhecida" e supus que tivessem passado com outro
+formato de banner. Ao conferir, **três dos quatro tinham falhado**. Supor
+aprovação a partir de silêncio foi exatamente o tipo de otimismo que esta tarefa
+existe para corrigir.
+
 **AUTH-02, CON-02, EQP-01, TOOL-01, CMB-01 — não comecei.** As quatro primeiras
 dependem de escolhas visuais que não são minhas (qual superfície do VTT é a
 referência, qual ícone substitui qual, como agrupar a aba Equipamentos).

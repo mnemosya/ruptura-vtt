@@ -404,6 +404,29 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
   - Reparados e verificados: `check-vtt-gerenciamento-tokens` (de 1 ok / 2 falhas para **66 ok**), `check-vtt-objetos-servidor` (**29 ok**), `check-vtt-canal-forjado` (**24 ok**).
 - **O que falta:** a rota era o bloqueio comum, não o único. Os checks de navegador acumularam outras defasagens — `check-console-abertura`, por exemplo, agora avança bastante e morre num `data-testid` que mudou de nome. São **59 scripts que dirigem navegador**, de 83 checks no total, e cada um tem dívida própria. A tarefa é passar por eles um a um: rodar, classificar e decidir. Alguns podem estar verificando telas que não existem mais — nesses, apagar é a resposta certa, não consertar.
 - **Achado de 2026-09-20 (tentativa de triagem em lote):** os checks defasados **travam em vez de falhar**. `check-campanha-fase4-gameplay` ficou mais de meia hora preso num seletor inexistente, porque cada espera do Playwright tem timeout próprio e elas se somam. Uma triagem em lote portanto precisa de **teto de tempo por script**; e o `timeout` do GNU não existe no macOS, o que derrubou a primeira tentativa em silêncio (todo script saiu como “sem veredito”). O classificador também precisa reconhecer mais de um formato de saída: parte dos scripts imprime `N ok, M falha(s)` e parte imprime banners como `=== TODOS OS CHECKS PASSARAM ===`.
+
+#### Triagem parcial (12 de 66, em 2026-09-20)
+
+| script | veredito |
+|---|---|
+| `check-admin-biblioteca` | **passa** |
+| `check-admin-composite-effects` | falha |
+| `check-admin-content-drafts` | trava (timeout 10s) |
+| `check-admin-companions-trama` | trava (timeout 30s) |
+| `check-admin-effect-builder` | trava (timeout 10s) |
+| `check-admin-inventory-runes-market` | falha (asserção) |
+| `check-admin-legacy-conversion` | falha |
+| `check-admin-publication` | falha |
+| `check-admin-temporary-effects` | trava (timeout 30s) |
+| `check-campaign-shell-drawer` | trava (timeout 30s) |
+| `check-campanha-admin-fase5` | trava (timeout 30s) |
+| `check-campanha-casca-fase2` | falha |
+
+**Um em doze passa.** A amostra é dos doze primeiros em ordem alfabética, não é
+aleatória, e pode não valer para os 54 restantes — mas é grave o bastante para
+mudar a leitura da tarefa: não são “alguns checks defasados”, é uma suíte de
+verificação de navegador majoritariamente morta.
+
 - **Área afetada:** `scripts/dev/`, confiança em toda verificação de navegador.
 - **Prioridade sugerida:** P1
 - **Dependências:** nenhuma.
