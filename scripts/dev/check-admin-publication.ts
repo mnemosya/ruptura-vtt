@@ -20,6 +20,7 @@ import { config as loadDotenv } from "dotenv";
 import { Client } from "pg";
 import { chromium, type Page } from "playwright";
 import { BASE_URL, SESSION_FILE, assertAdminSessionValid, requireSessaoSalva, sessaoSalvaExiste } from "./authSession";
+import { aceitarDialogos } from "./rascunhoDeEdicao";
 
 const PREFIXO = "zz_e2e_etapa5_";
 
@@ -102,9 +103,10 @@ async function publicar(page: Page, draftId: string, resumo: string): Promise<vo
 async function excluirRascunhoSeExistir(page: Page, draftId: string): Promise<void> {
   const resp = await page.goto(`${BASE_URL}/admin/biblioteca/rascunhos/${draftId}`, { waitUntil: "domcontentloaded" });
   if (!resp || resp.status() === 404) return;
-  page.on("dialog", (d) => d.accept());
+  aceitarDialogos(page);
   const botao = page.locator('[data-testid="rascunho-excluir"]');
-  if ((await botao.count()) > 0) await botao.click();
+  if ((await botao.count()) === 0) return;
+  await botao.click();
 }
 
 async function main(): Promise<void> {
@@ -142,7 +144,11 @@ async function main(): Promise<void> {
       if (esperando404 && texto.includes("404")) return;
       erros.push(texto);
     });
-    page.on("dialog", (d) => d.accept());
+    // `once`, não `on`: registrado DENTRO desta função, cada chamada
+  // acrescentava mais um handler à página, e o segundo estourava com
+  // "Cannot accept dialog which is already handled". Um handler por
+  // exclusão é exatamente o que se quer, e é o que `once` dá.
+  page.once("dialog", (d) => d.accept());
     await assertAdminSessionValid(page);
 
     // 2/3. Cria rascunho novo e publica como 1.0.0.

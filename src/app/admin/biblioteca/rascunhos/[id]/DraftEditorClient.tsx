@@ -165,7 +165,14 @@ export function DraftEditorClient({
       )}
 
       {(erros.length > 0 || avisos.length > 0) && (
-        <div style={{ ...sectionStyle, borderColor: erros.length > 0 ? "#5a2424" : "#5a4a24", background: erros.length > 0 ? "#241414" : "#241f14" }}>
+        <div
+          /* O painel não tem título — renderiza "✕ <mensagem>" direto —,
+             então quem verifica de fora só tinha o texto das mensagens
+             para se agarrar, e errava a cada frase nova ("precisa de"
+             em vez de "obrigatório"). O testid dá um alvo estável. */
+          data-testid={erros.length > 0 ? "rascunho-erros" : "rascunho-avisos"}
+          style={{ ...sectionStyle, borderColor: erros.length > 0 ? "#5a2424" : "#5a4a24", background: erros.length > 0 ? "#241414" : "#241f14" }}
+        >
           {conflito && <p style={{ ...dangerTextStyle, fontWeight: 600 }}>Conflito de edição concorrente — recarregue a página antes de tentar de novo.</p>}
           {erros.map((e, i) => (
             <div key={i} style={dangerTextStyle}>

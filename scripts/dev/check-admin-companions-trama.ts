@@ -33,14 +33,15 @@ import assert from "node:assert/strict";
 import { chromium, type Page } from "playwright";
 import { BASE_URL, SESSION_FILE, assertAdminSessionValid, requireSessaoSalva, sessaoSalvaExiste } from "./authSession";
 import { limparEAnunciar } from "./residuoDeConteudo";
-import { salvarRascunho } from "./rascunhoDeEdicao";
+import { salvarRascunho, aceitarDialogos } from "./rascunhoDeEdicao";
 
 async function excluirRascunhoSeExistir(page: Page, draftId: string): Promise<void> {
   const resp = await page.goto(`${BASE_URL}/admin/biblioteca/rascunhos/${draftId}`, { waitUntil: "domcontentloaded" });
   if (!resp || resp.status() === 404) return;
-  page.on("dialog", (d) => d.accept());
+  aceitarDialogos(page);
   const botao = page.locator('[data-testid="rascunho-excluir"]');
-  if ((await botao.count()) > 0) await botao.click();
+  if ((await botao.count()) === 0) return;
+  await botao.click();
 }
 
 async function main(): Promise<void> {
@@ -70,6 +71,12 @@ async function main(): Promise<void> {
 
     await page.locator('[data-testid="novo-efeito-tipo-nivel-1"]').selectOption("companheiro");
     await page.locator('[data-testid="novo-efeito-adicionar-nivel-1"]').click();
+    // Gatilho e alvo são obrigatórios em QUALQUER efeito. Sem eles o
+    // salvamento é RECUSADO — e a falha aparecia dois passos adiante,
+    // com a cara de "o campo não persistiu", acusando o app de perder
+    // dados que ele nunca chegou a aceitar.
+    await page.locator('[data-testid="efeito-gatilho"]').selectOption("ao_usar");
+    await page.locator('[data-testid="efeito-alvo"]').selectOption("alvo_principal");
     await page.locator('[data-testid="companheiro-tipo"]').selectOption("drone");
     await page.locator('[data-testid="companheiro-quantidade"]').fill("1");
     await salvarRascunho(page);

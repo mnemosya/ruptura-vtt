@@ -81,4 +81,68 @@ export async function salvarRascunho(page: Page): Promise<void> {
   // de o salvamento sequer começar: uma espera que não esperava nada.
   await botao.filter({ hasText: "Salvando" }).waitFor({ timeout: 15000 });
   await botao.filter({ hasText: "Salvar rascunho" }).waitFor({ timeout: 30000 });
+
+  // E LÊ A RECUSA, se houver. Sem isto, um salvamento recusado vira uma
+  // falha três passos adiante, com a cara errada: "campo deveria
+  // persistir após recarregar" — que acusa o app de perder dados quando
+  // ele, na verdade, explicou em detalhe o que faltava e não salvou nada
+  // justamente por isso. Foi assim que eu cheguei a abrir uma tarefa P0
+  // falsa; a mensagem estava na tela o tempo todo.
+  const recusas = await mensagensDeErro(page);
+  if (recusas.length > 0) {
+    throw new Error(`Salvamento recusado pelo app:\n  - ${recusas.join("\n  - ")}`);
+  }
+}
+
+/**
+ * As mensagens de erro do editor de rascunho, como a pessoa as lê.
+ *
+ * Pelo `data-testid` do painel, não por palavras da mensagem. A versão
+ * anterior varria o corpo da página atrás de "✕" e filtrava por termos
+ * esperados ("obrigatório", "ausente", "inválido"). Perdia qualquer
+ * frase escrita de outro jeito — "Runa precisa de ao menos um slot
+ * possível" passou batida —, e um salvamento recusado voltava a parecer
+ * bem-sucedido, que é exatamente o engano que esta função existe para
+ * impedir. Filtro por vocabulário é uma lista que envelhece sozinha.
+ */
+export async function mensagensDeErro(page: Page): Promise<string[]> {
+  const painel = page.locator('[data-testid="rascunho-erros"]');
+  if ((await painel.count()) === 0) return [];
+  const texto = (await painel.textContent()) ?? "";
+  return texto
+    .split("✕")
+    .slice(1)
+    .map((t) => t.split("⚠")[0].trim())
+    .filter(Boolean);
+}
+
+/** Páginas que já têm o handler — registrar duas vezes é o próprio bug. */
+const paginasComAceite = new WeakSet<Page>();
+
+/**
+ * Garante que os `window.confirm` da página sejam aceitos, uma vez só.
+ *
+ * Três tentativas antes desta, todas erradas por motivos diferentes, e
+ * vale registrar porque o erro era sempre o mesmo texto:
+ *
+ *   1. `page.on(...)` DENTRO da função de exclusão: cada chamada
+ *      acrescentava um handler permanente. O segundo estourava com
+ *      "Cannot accept dialog which is already handled".
+ *   2. Trocar por `once`: quando o botão não existia, o handler ficava
+ *      pendurado sem consumir, e a chamada seguinte empilhava outro.
+ *   3. Registrar só antes do clique: excluir um rascunho SUJO abre DOIS
+ *      diálogos (a confirmação da exclusão e o "alterações não salvas"),
+ *      e um `once` cobre só o primeiro.
+ *
+ * O que fecha os três: um handler por página, permanente, e um
+ * `accept()` tolerante — se o diálogo já foi tratado, não há nada a
+ * fazer e nada a relatar. O teste não está verificando diálogo nenhum
+ * aqui; está tentando limpar o que criou.
+ */
+export function aceitarDialogos(page: Page): void {
+  if (paginasComAceite.has(page)) return;
+  paginasComAceite.add(page);
+  page.on("dialog", (d) => {
+    void d.accept().catch(() => {});
+  });
 }

@@ -21,13 +21,15 @@ import assert from "node:assert/strict";
 import { chromium, type Page } from "playwright";
 import { BASE_URL, SESSION_FILE, assertAdminSessionValid, requireSessaoSalva, sessaoSalvaExiste } from "./authSession";
 import { limparEAnunciar } from "./residuoDeConteudo";
+import { aceitarDialogos } from "./rascunhoDeEdicao";
 
 async function excluirRascunhoSeExistir(page: Page, draftId: string): Promise<void> {
   const resp = await page.goto(`${BASE_URL}/admin/biblioteca/rascunhos/${draftId}`, { waitUntil: "domcontentloaded" });
   if (!resp || resp.status() === 404) return;
-  page.on("dialog", (d) => d.accept());
+  aceitarDialogos(page);
   const botao = page.locator('[data-testid="rascunho-excluir"]');
-  if ((await botao.count()) > 0) await botao.click();
+  if ((await botao.count()) === 0) return;
+  await botao.click();
 }
 
 async function main(): Promise<void> {
