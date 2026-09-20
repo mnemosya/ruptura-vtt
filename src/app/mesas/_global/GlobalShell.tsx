@@ -371,10 +371,6 @@ export function GlobalShell({
             <div className="ra-bg-grid" />
             <div className="ra-bg-vignette" />
           </div>
-          <div className="ra-vp-corner ra-vp-tl" aria-hidden="true" />
-          <div className="ra-vp-corner ra-vp-tr" aria-hidden="true" />
-          <div className="ra-vp-corner ra-vp-bl" aria-hidden="true" />
-          <div className="ra-vp-corner ra-vp-br" aria-hidden="true" />
 
           <div className="ra2-shell">
             {/*

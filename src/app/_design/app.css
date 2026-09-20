@@ -109,11 +109,6 @@
 }
 
 /* ── Cantos da viewport ────────────────────────────────────────── */
-.ra-vp-corner { position: fixed; width: 18px; height: 18px; z-index: 40; pointer-events: none; }
-.ra-vp-tl { top: 14px; left: 14px; border-top: 1.5px solid rgba(0, 212, 255, 0.3); border-left: 1.5px solid rgba(0, 212, 255, 0.3); }
-.ra-vp-tr { top: 14px; right: 14px; border-top: 1.5px solid rgba(0, 212, 255, 0.3); border-right: 1.5px solid rgba(0, 212, 255, 0.3); }
-.ra-vp-bl { bottom: 14px; left: 14px; border-bottom: 1.5px solid rgba(0, 212, 255, 0.3); border-left: 1.5px solid rgba(0, 212, 255, 0.3); }
-.ra-vp-br { bottom: 14px; right: 14px; border-bottom: 1.5px solid rgba(0, 212, 255, 0.3); border-right: 1.5px solid rgba(0, 212, 255, 0.3); }
 
 /* ── Tipografia ────────────────────────────────────────────────── */
 .ra-mono { font-family: var(--font-mono), monospace; }
@@ -184,7 +179,14 @@
 }
 .ra2-sidebar--collapsed { width: 76px; padding: 20px 12px; }
 
-.ra2-brand { display: flex; flex-direction: column; min-height: 34px; overflow: hidden; }
+/* A marca é um link, e sem reset o navegador desenhava o sublinhado e a
+   tinta de link nela. Os filhos sobrescreviam a COR do texto, mas não a
+   do sublinhado — daí a linha roxa por baixo de texto ciano, sob a
+   versão. */
+.ra2-brand {
+  display: flex; flex-direction: column; min-height: 34px; overflow: hidden;
+  color: inherit; text-decoration: none;
+}
 .ra2-brand-name {
   font-family: var(--font-orbitron), sans-serif; font-weight: 900; font-size: 16px; line-height: 16px;
   letter-spacing: 0.22em; color: #cfeaf6; white-space: nowrap;
@@ -889,8 +891,7 @@
      junto com o drawer em vez de ser removido do DOM no frame do
      clique. Ver a mesma decisão em `CampaignShell.tsx`. */
   .ra2-scrim { display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); z-index: 55; }
-  .ra-vp-corner { display: none; }
-}
+  }
 
 /* ── Preferências de acessibilidade ────────────────────────────── */
 .ra-hc .ra-module,
