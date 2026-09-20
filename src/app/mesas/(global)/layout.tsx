@@ -47,14 +47,17 @@
  */
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "../../../lib/auth/session";
+import { readAppearOffline } from "../../../lib/campaign/presencePreferenceActions";
 import { GlobalShell } from "../_global/GlobalShell";
 
 export default async function AreaGlobalLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  const presenca = await readAppearOffline();
 
   return (
-    <GlobalShell userEmail={user.email ?? "(sem email)"} displayName={user.displayName}>
+    <GlobalShell userEmail={user.email ?? "(sem email)"} displayName={user.displayName}
+      aparecerOfflineInicial={presenca.appearOffline}>
       {children}
     </GlobalShell>
   );

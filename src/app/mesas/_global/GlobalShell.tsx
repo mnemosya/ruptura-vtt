@@ -28,9 +28,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LinkPending, NavPendingProvider } from "../../_design/NavPending";
 import { BootMinDurationOverlay } from "../../_boundaries/BootMinDurationOverlay";
+import { setAppearOffline } from "../../../lib/campaign/presencePreferenceActions";
 import { signOut } from "../../../lib/auth/actions";
 import {
-  AlertTriangle, BookText, CheckCircle, ChevronDown, LayoutGrid, LogOut, Menu,
+  AlertTriangle, BookText, CheckCircle, ChevronDown, Eye, EyeOff, LayoutGrid, LogOut, Menu,
   PanelLeftClose, PanelLeftOpen, Plus, Spinner, Ticket, User, UserCog, Users, X,
 } from "../../_design/icons";
 import "../../_design/app.css";
@@ -189,10 +190,13 @@ function rotaAtiva(pathname: string): NavKey | null {
 export function GlobalShell({
   userEmail,
   displayName,
+  aparecerOfflineInicial = false,
   children,
 }: {
   userEmail: string;
   displayName: string | null;
+  /** "Aparecer offline" lido no servidor — é preferência de CONTA, não deste navegador. */
+  aparecerOfflineInicial?: boolean;
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -203,6 +207,8 @@ export function GlobalShell({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [aparecerOffline, setAparecerOffline] = useState(aparecerOfflineInicial);
+  const [presencaOcupada, setPresencaOcupada] = useState(false);
   const [prefs, setPrefs] = useState<VisualPrefs>({ reduceMotion: false, highContrast: false });
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastSeq = useRef(0);
@@ -266,6 +272,28 @@ export function GlobalShell({
 
   // Navegar fecha o drawer (o Link já trocou a rota).
   useEffect(() => { setDrawerOpen(false); setMenuOpen(false); }, [pathname]);
+
+  /**
+   * A preferência é da CONTA, não deste navegador — por isso não vai
+   * para o localStorage junto das preferências visuais, e por isso um
+   * `router.refresh()` no fim: as projeções de presença são calculadas
+   * no servidor e precisam ser recalculadas com o novo valor.
+   */
+  async function handleAparecerOffline() {
+    if (presencaOcupada) return;
+    const proximo = !aparecerOffline;
+    setPresencaOcupada(true);
+    setAparecerOffline(proximo); // otimista: o menu responde na hora
+    const resultado = await setAppearOffline(proximo);
+    setPresencaOcupada(false);
+    if (!resultado.ok) {
+      setAparecerOffline(!proximo);
+      pushToast("error", resultado.error);
+      return;
+    }
+    pushToast("success", proximo ? "Você está aparecendo offline." : "Você voltou a aparecer online.");
+    router.refresh();
+  }
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -426,9 +454,12 @@ export function GlobalShell({
                   >
                     <span className="ra2-profile-avatar" aria-hidden="true"><User size={15} strokeWidth={1.4} /></span>
                     <span className="ra2-profile-name">{shortName}</span>
-                    <span className="ra-online">
+                    {/* A etiqueta era "Online" fixo — dizia a mesma coisa
+                        para quem tinha acabado de se esconder. */}
+                    <span className="ra-online" data-offline={aparecerOffline || undefined}
+                      data-testid="topbar-presenca">
                       <span className="ra-online-dot" aria-hidden="true" />
-                      <span className="ra-online-txt">Online</span>
+                      <span className="ra-online-txt">{aparecerOffline ? "Offline" : "Online"}</span>
                     </span>
                     <ChevronDown size={14} className={`ra2-chevron${menuOpen ? " ra2-chevron--up" : ""}`} />
                   </button>
@@ -448,6 +479,19 @@ export function GlobalShell({
                       <Link href="/mesas/conta" role="menuitem" className="ra-menu-item" data-testid="account-nav-conta">
                         <UserCog size={15} /> Conta e preferências
                       </Link>
+                      <button
+                        type="button"
+                        role="menuitemcheckbox"
+                        aria-checked={aparecerOffline}
+                        className="ra-menu-item"
+                        data-testid="account-aparecer-offline"
+                        onClick={handleAparecerOffline}
+                        disabled={presencaOcupada}
+                      >
+                        {aparecerOffline ? <EyeOff size={15} /> : <Eye size={15} />}
+                        Aparecer offline
+                        <span className="ra-menu-estado" aria-hidden="true">{aparecerOffline ? "Ligado" : "Desligado"}</span>
+                      </button>
                       <button
                         type="button"
                         role="menuitem"

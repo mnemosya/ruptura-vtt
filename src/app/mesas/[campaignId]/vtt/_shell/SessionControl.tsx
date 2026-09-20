@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Play, Square } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { EyeOff, Play, Square } from "lucide-react";
 import { useCampaignSession } from "../../_shell/CampaignRealtimeProvider";
 import { useOnlineSession } from "../../_shell/OnlineSessionProvider";
 import { changeOnlineSession } from "../../../../../lib/campaign/onlineSessionActions";
+import { readAppearOffline } from "../../../../../lib/campaign/presencePreferenceActions";
 
 export function SessionControl() {
   const { campaignId, isNarrator, realtimeAuthDegradado, sessionSyncStatus } = useCampaignSession();
@@ -13,6 +14,16 @@ export function SessionControl() {
   const pending = useRef(false);
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  /**
+   * `null` enquanto não se sabe: a ausência de resposta não pode
+   * aparecer como "você está visível" para quem pediu para se esconder.
+   */
+  const [aparecerOffline, setAparecerOffline] = useState<boolean | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    void readAppearOffline().then((r) => { if (vivo && !r.error) setAparecerOffline(r.appearOffline); });
+    return () => { vivo = false; };
+  }, []);
   const online = !!session && session.ended_at === null;
   const degraded = realtimeAuthDegradado || sessionSyncStatus === "error";
 
@@ -58,6 +69,13 @@ export function SessionControl() {
         {busy ? "Iniciando…" : online ? "Encerrar" : "Iniciar sessão"}
       </button>}
     </div>}
+    {/* Diz as DUAS coisas de propósito. Saber que está escondido sem
+        saber que a presença escondida não segura a sessão é como se vê
+        a mesa fechar sozinha sem entender por quê. */}
+    {aparecerOffline && <p role="status" className="rv-session-aviso" data-testid="vtt-aviso-offline">
+      <EyeOff size={13} aria-hidden="true" />
+      Você está aparecendo offline. Ninguém vê que você está aqui — nem o narrador — e sua presença não segura a sessão aberta.
+    </p>}
     {degraded && <p role="status" className="rv-session-note">Sincronização interrompida. Atualize o estado da sessão.</p>}
     {(error || actionError) && <p role="alert" className="rv-session-note">{actionError ?? error}</p>}
     {(error || actionError || degraded) && <button type="button" role="menuitem" className="rv-session-button" disabled={busy} onClick={() => void reload()}>Atualizar sessão</button>}

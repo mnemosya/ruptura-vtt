@@ -49,10 +49,10 @@ Esta triagem considera o código existente, não apenas a lista de desejos:
 | Recorte | Quantidade |
 |---|---:|
 | Total de tarefas | 70 |
-| Prontas | 20 |
+| Prontas | 19 |
 | Prontas após dependência | 5 |
 | Bloqueadas por regra, contrato ou referência indispensável | 45 |
-| Em validação | 0 |
+| Em validação | 1 |
 | P0 | 14 |
 | P1 | 41 |
 | P2 | 14 |
@@ -200,7 +200,8 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 
 ### PRES-02 — Implementar preferência global e filtro de presença
 
-- **Status:** Pronta (desbloqueada pela matriz de PRES-01)
+- **Status:** Em validação
+- **Andamento (2026-09-20):** migration `0140_aparecer_offline.sql` cria `user_presence_preferences` (uma linha por conta, RLS que só alcança a própria linha) e a função interna `presence_hidden`, não concedida a `authenticated` — saber quem está escondido nunca vira consulta que um cliente possa fazer sobre outra pessoa. `read_campaign_session_presence` passa a filtrar narrador e jogadores; `evaluate_campaign_session_timeout` deixa de contar jogadores invisíveis no prazo. O ramo do narrador continua medido pela conexão real de propósito: ele não projeta presença para ninguém, só decide se há alguém para confirmar “Continuar”, e um narrador invisível que perdesse o próprio aviso veria a sessão morrer sem ser perguntado. Interface: item `Aparecer offline` no menu de perfil, etiqueta do topo deixando de dizer “Online” fixo, e aviso na mesa com as duas frases da matriz. Dez critérios transacionais aprovados em `scripts/dev/check-aparecer-offline.mjs`, incluindo não-regressão do prazo com jogador visível. **Pendente:** aplicar a 0140 ao Supabase e rodar `scripts/dev/check-aparecer-offline-live.ts`.
 - **Descrição:** adicionar “Aparecer offline” ao menu superior, persistir por conta e aplicar a preferência às projeções públicas de Presence sem usar esse estado para autorização ou gameplay.
 - **Área afetada:** conta/preferências, menu global, Supabase Presence, dashboard, participantes e Rede.
 - **Prioridade sugerida:** P0

@@ -474,6 +474,14 @@
 }
 /* Contador de quem está na mesa agora — acompanha o título do hero sem
    competir com ele; o texto gramatical vive no title/aria-label. */
+/* A mesma etiqueta serve aos dois estados: quem está aparecendo offline
+   vê o próprio ponto apagado, em vez de um "Online" que mente para ele. */
+.ra-online[data-offline] .ra-online-dot { background: rgba(150, 174, 186, 0.55); box-shadow: none; }
+.ra-online[data-offline] .ra-online-txt { color: rgba(150, 174, 186, 0.75); }
+.ra-menu-estado {
+  margin-left: auto; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: rgba(150, 174, 186, 0.7);
+}
 .ra2-featured-pessoas {
   display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 3px;
   background: rgba(0, 212, 255, 0.08); border: 1px solid rgba(84, 172, 190, 0.22);
