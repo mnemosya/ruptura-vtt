@@ -59,6 +59,17 @@ async function contextoDe(email: string, senha: string) {
   return { page: await context.newPage(), close: () => browser.close() };
 }
 
+/**
+ * Clica no item e espera a CONFIRMAÇÃO do servidor, não o estado
+ * otimista: o item marca na hora do clique, então esperar por ele não
+ * prova que a preferência foi gravada — e navegar cedo demais lê a
+ * página antes de o upsert commitar.
+ */
+async function alternarPresenca(page: Page, esperado: string) {
+  await page.locator('[data-testid="account-aparecer-offline"]').click();
+  await page.locator(".ra-toast", { hasText: esperado }).waitFor({ timeout: 15000 });
+}
+
 async function abrirMenuPerfil(page: Page) {
   await page.goto(`${BASE_URL}/mesas`, { waitUntil: "networkidle" });
   await page.locator('[data-testid="topbar-perfil"]').click();
@@ -128,13 +139,10 @@ async function main() {
     // --- 2. Ligar pelo menu muda o item e a etiqueta do topo ---
     {
       await abrirMenuPerfil(pj);
-      await pj.locator('[data-testid="account-aparecer-offline"]').click();
-      await pj.waitForFunction(() =>
-        document.querySelector('[data-testid="topbar-presenca"] .ra-online-txt')?.textContent?.trim() === "Offline",
-        null, { timeout: 10000 });
+      await alternarPresenca(pj, "Você está aparecendo offline.");
       await abrirMenuPerfil(pj);
       const estado = await pj.locator('[data-testid="account-aparecer-offline"]').getAttribute("aria-checked");
-      registrar("2 (ligar pelo menu marca o item e apaga a etiqueta do topo)",
+      registrar("2 (ligar pelo menu grava, marca o item e apaga a etiqueta do topo)",
         estado === "true" && (await etiqueta(pj).textContent())?.trim() === "Offline",
         `aria-checked=${estado}, etiqueta=${(await etiqueta(pj).textContent())?.trim()}`);
     }
@@ -192,10 +200,7 @@ async function main() {
     // --- 8. Desligar devolve a presença ---
     {
       await abrirMenuPerfil(pj);
-      await pj.locator('[data-testid="account-aparecer-offline"]').click();
-      await pj.waitForFunction(() =>
-        document.querySelector('[data-testid="topbar-presenca"] .ra-online-txt')?.textContent?.trim() === "Online",
-        null, { timeout: 10000 });
+      await alternarPresenca(pj, "Você voltou a aparecer online.");
       await pj.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
       await pj.waitForSelector(".rv-ferramentas", { timeout: 20000 });
       const hero = await contagemDoHero(pn);
