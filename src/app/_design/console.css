@@ -1084,14 +1084,40 @@
   cursor: pointer;
   transition: color 0.14s, background 0.14s, border-color 0.14s;
 }
-/* A borda do hover é a MESMA do ativo — ver `.rv-ferr-btn` no VTT. */
-.rc-tabrail-btn:hover { color: #d3f4ff; border-color: #108bac; background: rgba(0, 212, 255, 0.09); }
+/* A borda do hover é a MESMA do ativo — ver `.rv-ferr-btn` no VTT.
+   E a LAVAGEM VEM POR CIMA DO FUNDO, não no lugar dele: substituindo,
+   o botão perdia a própria base (`#0c1526`) e ficava translúcido sobre
+   o que estivesse atrás — em cima do mapa isso muda de cor conforme a
+   cena. É a mesma receita do trilho de ferramentas do VTT, que já
+   trazia essa nota escrita. */
+.rc-tabrail-btn:hover {
+  color: #d3f4ff; border-color: #108bac;
+  background: linear-gradient(rgba(0, 212, 255, 0.09), rgba(0, 212, 255, 0.09)), #0c1526;
+}
+/* PRESSIONADO — um degrau acima do selecionado, sem brilho: o brilho
+   diz "é esta", e enquanto o dedo está em cima a informação é outra,
+   "estou apertando". Dura o gesto e acaba com ele.
+   O trilho de ferramentas do VTT não define este estado; aqui ele
+   existe porque CON-02 pede os quatro. */
+.rc-tabrail-btn:active:not(:disabled) {
+  background: linear-gradient(rgba(0, 212, 255, 0.2), rgba(0, 212, 255, 0.2)), #0c1526;
+  border-color: #108bac;
+}
+/* DESABILITADO — mesma receita do VTT (`.rv-ferr-btn:disabled`). Hoje o
+   trilho não desabilita aba nenhuma; a regra existe para que a primeira
+   que precisar não invente um tratamento próprio. */
+.rc-tabrail-btn:disabled { opacity: .35; cursor: not-allowed; }
+.rc-tabrail-btn:disabled:hover { background: #0c1526; border-color: rgba(0, 212, 255, 0.15); color: var(--rc-dim); }
 /* O ícone da aba ATIVA é CIANO, não branco: a cor da marca é o que diz
    "é esta", e um branco mais forte que o dos vizinhos exigia comparar
    dois cinzas pra descobrir qual estava selecionada. Mesma regra no
    trilho de ferramentas do VTT (`.rv-ferr-btn`). */
 .rc-tabrail-btn[aria-selected="true"] {
-  color: var(--cy); border-color: #108bac; background: #123640;
+  color: var(--cy); border-color: #108bac;
+  /* .14 contra os .09 do hover — a mesma hierarquia por lavagem do
+     `.rv-ferr-btn`. Antes era `#123640`, uma cor sólida que não
+     pertencia à escala e não mantinha relação com o passo do hover. */
+  background: linear-gradient(rgba(0, 212, 255, 0.14), rgba(0, 212, 255, 0.14)), #0c1526;
   box-shadow: 0 0 9px rgba(0, 212, 255, 0.25);
 }
 .rc-tabrail-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
@@ -1115,7 +1141,7 @@
    modificador aqui). */
 .rc-tabrail-btn--modo[aria-selected="true"] {
   border-left: 1px solid #108bac;
-  background: #123640;
+  background: linear-gradient(rgba(0, 212, 255, 0.14), rgba(0, 212, 255, 0.14)), #0c1526;
   box-shadow: none;
 }
 

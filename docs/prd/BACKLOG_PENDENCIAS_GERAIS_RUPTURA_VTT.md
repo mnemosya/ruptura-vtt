@@ -511,14 +511,17 @@ Os que passam se concentram no que foi escrito ou reparado recentemente, mais os
 
 ### CON-02 — Harmonizar paleta e tab rail do console
 
-- **Status:** Pronta (paleta concluída; tab rail pendente)
+- **Status:** Pronta (concluída)
 - **Andamento (2026-09-20):** o critério “tokens sem cores mágicas duplicadas” era mensurável e estava sendo violado em **73 lugares**: `#d6e4f5` aparecia 24 vezes e É `--rc-text`; `#1c2b45` nove vezes e É `--rc-line`. Trocados por token, mais quatro tokens novos para as recorrentes que não tinham nome (`--rc-text-forte`, `--rc-teal`, `--rc-surface-2`, `--rc-surface-3`).
 - **Regressão introduzida e apanhada pela medição:** os tokens eram declarados em `.rc-window-wrap`, e o cabeçalho de `/ficha` é **irmão** da janela, não descendente — ao trocar literais por token, oito elementos do cabeçalho caíram na cor padrão do navegador. Só apareceu porque as cores computadas foram fotografadas antes e comparadas depois. Os tokens passaram a ser declarados também para o cabeçalho; o layout continua só na janela.
 - **Segundo erro, sobre token contextual:** `--rc-skill-cor` vale verde em Corpo e roxo em Mente, e só recebe valor dentro de `.rc-skill`. Troquei por ele um `#0596B7` de `.rc-nric-badge`, que está fora desse escopo — o `var()` não resolveria ali, e o próprio arquivo já dizia que aquela era “cor PRÓPRIA”. Revertido, e o check passou a **ignorar tokens declarados com mais de um valor**: igualdade de valor não é duplicação quando o token é contextual.
 - Cinco critérios em `scripts/dev/check-console-paleta.ts`.
 - **Dúvida respondida pelo usuário (2026-09-20):** “o visual padrão que o Console deve seguir é o visual dentro da mesa”. Então não é só herdar tokens: a referência é o painel do VTT.
 - **Raios alinhados:** o Console tinha **51 raios em número solto** enquanto o painel do VTT já usava token em 42 de 55 lugares. Passaram a `--rc-r-sm`/`--rc-r-lg`/`--rc-r`, que espelham `--rv-r-sm`/`--rv-r-lg`/`--rv-r` do chassi. Ficaram em número apenas `0` (canto reto deliberado, como a janela maximizada) e `999px` (pílula) — nenhum dos dois pertence à escala. Três valores fora de escala foram encaixados nela: dois `2px` que eu mesmo tinha introduzido no campo da carteira, e um `6px` do seletor do cabeçalho.
-- **Pendente:** o **tab rail** e os estados normal/hover/pressed/disabled.
+- **Tab rail alinhado (2026-09-20):** o trilho já citava `.rv-ferr-btn` como referência nos comentários, mas divergia dele em três pontos concretos. **Hover** substituía o fundo em vez de lavar por cima — substituindo, o botão perde a própria base (`#0c1526`) e fica translúcido sobre o que estiver atrás, o que em cima do mapa muda de cor conforme a cena; o VTT já trazia essa nota escrita. **Ativo** usava `#123640`, uma cor sólida fora da escala, que não guardava relação com o passo do hover; virou a lavagem de `.14` contra os `.09` do hover, a mesma hierarquia do VTT. E faltavam dois dos quatro estados que o critério pede: **pressionado** (lavagem de `.2`, sem brilho — o brilho diz “é esta”, e enquanto o dedo está em cima a informação é outra) e **desabilitado** (`opacity .35`, receita do VTT; hoje nenhuma aba desabilita, mas a regra existe para a primeira que precisar não inventar tratamento próprio).
+- **Não tocado de propósito:** a aba **Personagem** tem paleta âmbar própria, documentada como diferenciação deliberada, e usa cor sólida em vez de lavagem. Alinhá-la seria apagar a distinção.
+- **Assimetria registrada:** o trilho de ferramentas do VTT **não** define estado pressionado. Ele existe aqui porque CON-02 pede os quatro; se a intenção for que os dois sejam idênticos, falta acrescentá-lo lá.
+- Sete critérios em `scripts/dev/check-console-paleta.ts`.
 - **Descrição:** revisar cores de defesa, adicionar, pips, PV/mana e alinhar as tabs ao padrão das janelas de ferramentas/painel.
 - **Área afetada:** CSS do console, recursos, ações e `TabRail`.
 - **Prioridade sugerida:** P1

@@ -137,6 +137,38 @@ async function main() {
     registrar("3 (os `var(--rc-*)` resolvem para o valor do token)",
       todosOk, JSON.stringify(resolucao));
 
+    // --- 3b. TAB RAIL: os quatro estados existem e seguem o VTT ---
+    //     O trilho é a peça que CON-02 manda alinhar ao padrão das
+    //     janelas de ferramentas. O que se mede é a RECEITA: lavagem
+    //     por cima da mesma base, com a hierarquia hover < ativo, em
+    //     vez de cores soltas que não guardam relação entre si.
+    {
+      const regras = css.match(/\.rc-tabrail-btn[^{]*\{[^}]*\}/g) ?? [];
+      const tem = (padrao: RegExp) => regras.some((r) => padrao.test(r));
+      const estados = {
+        hover: tem(/:hover\s*\{[\s\S]*linear-gradient\(rgba\(0, 212, 255, 0\.09\)/),
+        pressed: tem(/:active[^{]*\{[\s\S]*linear-gradient\(rgba\(0, 212, 255, 0\.2\)/),
+        selecionado: tem(/aria-selected="true"\]\s*\{[\s\S]*linear-gradient\(rgba\(0, 212, 255, 0\.14\)/),
+        desabilitado: tem(/:disabled\s*\{[\s\S]*opacity/),
+      };
+      const faltam = Object.entries(estados).filter(([, v]) => !v).map(([k]) => k);
+      registrar("3b (o trilho define normal, hover, pressionado e desabilitado)",
+        faltam.length === 0, faltam.length ? `faltam: ${faltam.join(", ")}` : JSON.stringify(estados));
+    }
+
+    // --- 3c. A lavagem vem POR CIMA da base, não no lugar dela ---
+    //     Substituindo o fundo, o botão perde a própria base e fica
+    //     translúcido sobre o que estiver atrás — em cima do mapa isso
+    //     muda de cor conforme a cena.
+    {
+      const semBase = (css.match(/\.rc-tabrail-btn[^{]*(?::hover|:active|\[aria-selected="true"\])[^{]*\{[^}]*\}/g) ?? [])
+        .filter((r) => /background:/.test(r))
+        .filter((r) => !/#0c1526/.test(r))
+        .filter((r) => !/--personagem/.test(r)); // paleta âmbar tem base própria
+      registrar("3c (hover, pressionado e ativo lavam sobre a mesma base)",
+        semBase.length === 0, semBase.length ? `${semBase.length} sem base` : "todos sobre #0c1526");
+    }
+
     // --- 4. O cabeçalho continua com a tinta do Console ---
     {
       const cor = await page.evaluate(() => {
