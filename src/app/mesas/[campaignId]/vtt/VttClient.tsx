@@ -2242,6 +2242,8 @@ export function VttClient({
   const fluxoTokenRef = useRef(fluxoToken);
   useEffect(() => { fluxoTokenRef.current = fluxoToken; }, [fluxoToken]);
   const [confirmandoRemocao, setConfirmandoRemocao] = useState<TokenApresentacao | null>(null);
+  /** Remoção em LOTE (TOK-04) — separada da única para o texto poder dizer quantos. */
+  const [confirmandoRemocaoLote, setConfirmandoRemocaoLote] = useState<TokenApresentacao[] | null>(null);
 
   useEffect(() => {
     if (!ehNarrador) return;
@@ -2831,9 +2833,19 @@ export function VttClient({
   // ── Ocultar/revelar e travar/destravar — `set_vtt_token_flags`
   // (narrador-only). Entram em undo/redo (reversão exata: flag volta
   // ao valor de antes, sempre revalidado pelo servidor).
-  const definirFlagsHandler = useCallback((tokenId: string, campo: "visivel" | "bloqueado") => {
+  const definirFlagsHandler = useCallback((
+    tokenId: string,
+    campo: "visivel" | "bloqueado",
+    /**
+     * Valor ALVO. Omitido, alterna — que é o gesto de um token só.
+     * Aplicado a VÁRIOS, alternar é errado: numa seleção mista, metade
+     * iria para o lado oposto da outra e o resultado dependeria do
+     * estado anterior de cada um, não do que foi pedido.
+     */
+    alvo?: boolean,
+  ): Promise<boolean> => {
     const t = tokenPorId.get(tokenId);
-    if (!t) return;
+    if (!t) return Promise.resolve(false);
     async function aplicar(visivel: boolean, bloqueado: boolean): Promise<boolean> {
       const r = await definirFlagsTokenAction({ campaignId, tokenId, visivel, bloqueado });
       if (!r.ok) { setErroAcao(r.erro ?? "Alteração recusada."); return false; }
@@ -2842,17 +2854,48 @@ export function VttClient({
       return true;
     }
     const antes = { visivel: t.visivel, bloqueado: t.bloqueado };
-    const depois = { ...antes, [campo]: !antes[campo] };
-    aplicar(depois.visivel, depois.bloqueado).then((sucesso) => {
-      if (!sucesso) return;
+    const depois = { ...antes, [campo]: alvo ?? !antes[campo] };
+    if (depois[campo] === antes[campo]) return Promise.resolve(true); // já está como se quer
+    // Devolve a promessa: quem aplica a VÁRIOS tokens precisa esperar
+    // um terminar antes do próximo, senão as chamadas partem todas do
+    // mesmo instantâneo e só a última sobrevive no estado.
+    return aplicar(depois.visivel, depois.bloqueado).then((sucesso) => {
+      if (!sucesso) return false;
       executarComando({
         rotulo: `${campo === "visivel" ? (depois.visivel ? "revelar" : "ocultar") : (depois.bloqueado ? "travar" : "destravar")} ${t.nome}`,
         autorId: usuarioId ?? "",
         executar: () => aplicar(depois.visivel, depois.bloqueado).then(() => {}),
         desfazer: () => aplicar(antes.visivel, antes.bloqueado).then(() => {}),
       });
+      return true;
     });
   }, [campaignId, tokenPorId, executarComando, usuarioId]);
+
+  /**
+   * Flags em LOTE (TOK-04). Fala com o servidor direto, em vez de
+   * reusar `definirFlagsHandler`.
+   *
+   * Aquele é feito para um token: alterna, registra um comando de
+   * desfazer por token e resolve depois disso. Encadeado numa seleção,
+   * a segunda chamada ficava pendente sem nunca resolver — o lote
+   * parava no primeiro, silenciosamente. Aqui o estado ALVO é
+   * explícito, o resultado de cada token é observável, e quem falha é
+   * nomeado.
+   */
+  const aplicarFlagsLote = useCallback(async (
+    alvo: TokenApresentacao,
+    campos: { visivel?: boolean; bloqueado?: boolean },
+  ): Promise<boolean> => {
+    const visivel = campos.visivel ?? alvo.visivel;
+    const bloqueado = campos.bloqueado ?? alvo.bloqueado;
+    if (visivel === alvo.visivel && bloqueado === alvo.bloqueado) return true;
+    const r = await definirFlagsTokenAction({ campaignId, tokenId: alvo.id, visivel, bloqueado });
+    if (!r.ok) return false;
+    setEstadoCena((c) => c
+      ? { ...c, tokens: c.tokens.map((x) => x.id === alvo.id ? { ...x, visivel, bloqueado, revision: r.dados!.revision } : x) }
+      : c);
+    return true;
+  }, [campaignId]);
 
   // Limpa TODA referência solta a um token que deixou de existir pra
   // este cliente (removido de verdade, OU ocultado — pro jogador as
@@ -4426,6 +4469,80 @@ export function VttClient({
     }
     const t = tokenPorId.get(tokenId);
     if (!t) return [];
+
+    /* SELEÇÃO MÚLTIPLA (TOK-04). Clicar com o direito sobre um token
+       que faz parte de uma seleção opera o CONJUNTO — clicar num item
+       selecionado e ver o menu de um só era o engano mais provável.
+
+       As ações são as mesmas de um token, aplicadas a cada um: um menu
+       de lote que inventasse semântica própria (girar a formação,
+       bloquear "de outro jeito") faria o mesmo verbo significar duas
+       coisas conforme quantos tokens estivessem marcados.
+
+       Em particular VIRAR gira cada token no próprio eixo, não a
+       formação: virar é só o olhar e nunca move célula (0135); girar a
+       formação MOVERIA tokens de célula, o que é operação de movimento,
+       com colisão e autorização próprias.
+
+       Não é atômico no servidor — são N chamadas. Por isso o erro é
+       relatado por token, e não como um "falhou" genérico que deixaria
+       o narrador sem saber quais passaram. */
+    const doLote = selecionadosIds.has(tokenId) && selecionadosIds.size > 1;
+    if (doLote) {
+      const alvos = [...selecionadosIds].map((id) => tokenPorId.get(id)).filter((x): x is TokenApresentacao => !!x);
+      const n = alvos.length;
+      const todosOcultos = alvos.every((a) => !a.visivel);
+      const todosBloqueados = alvos.every((a) => a.bloqueado);
+      const emLote = async (rotulo: string, fn: (t: TokenApresentacao) => Promise<boolean | void> | void) => {
+        /* EM PARALELO, e isso é consequência de uma decisão anterior:
+           cada ação do lote pede um estado ABSOLUTO ("fique oculto"),
+           não uma alternância ("inverta"). Com valor absoluto a ordem
+           deixa de importar, e duas chamadas para o mesmo token dariam
+           o mesmo resultado.
+
+           Sequencial foi tentado e não serve: encadeadas, a segunda
+           chamada ficava pendente sem nunca resolver e o lote parava no
+           primeiro token, em silêncio. `allSettled` também garante que
+           uma recusa não interrompa as outras — quem falhou é nomeado
+           no fim, e o resto foi aplicado. */
+        const falhas: string[] = [];
+        const resultados = await Promise.allSettled(alvos.map((alvo) => fn(alvo)));
+        resultados.forEach((r, i) => {
+          if (r.status === "rejected" || r.value === false) falhas.push(alvos[i].nome);
+        });
+        // Nomes, não contagem: "falhou em 2 de 7" não diz quais ficaram
+        // para trás, e é justamente isso que precisa ser refeito à mão.
+        if (falhas.length) {
+          setErroAcao(`${rotulo}: recusado em ${falhas.length} de ${n} — ${falhas.join(", ")}.`);
+        }
+      };
+      const itensLote: ItemMenuContextual[] = [
+        { id: "lote-girar-esq", rotulo: `Virar à esquerda (${n})`, icone: <RotateCcw size={14} />,
+          onSelecionar: () => void emLote("Virar", (a) => onRotacionarToken(a.id, -1)) },
+        { id: "lote-girar-dir", rotulo: `Virar à direita (${n})`, icone: <RotateCw size={14} />,
+          onSelecionar: () => void emLote("Virar", (a) => onRotacionarToken(a.id, 1)) },
+      ];
+      if (ehNarrador) {
+        itensLote.push(
+          { id: "lote-duplicar", rotulo: `Duplicar (${n})`, icone: <Copy size={14} />, separadorAntes: true,
+            onSelecionar: () => void emLote("Duplicar", (a) => duplicarTokenHandler(a.id)) },
+          /* O rótulo diz o que VAI acontecer, não o estado atual: com
+             a seleção misturada, "Ocultar" some com todos em vez de
+             inverter cada um — inverter faria o resultado depender do
+             estado anterior de cada token, não do que foi pedido. */
+          { id: "lote-ocultar", rotulo: `${todosOcultos ? "Revelar" : "Ocultar"} (${n})`,
+            icone: todosOcultos ? <Eye size={14} /> : <EyeOff size={14} />, separadorAntes: true,
+            onSelecionar: () => void emLote("Visibilidade", (a) => aplicarFlagsLote(a, { visivel: todosOcultos })) },
+          { id: "lote-bloquear", rotulo: `${todosBloqueados ? "Desbloquear" : "Bloquear"} (${n})`,
+            icone: todosBloqueados ? <Unlock size={14} /> : <Lock size={14} />,
+            onSelecionar: () => void emLote("Bloqueio", (a) => aplicarFlagsLote(a, { bloqueado: !todosBloqueados })) },
+          { id: "lote-remover", rotulo: `Remover (${n})`, icone: <Trash2 size={14} />, perigoso: true, separadorAntes: true,
+            onSelecionar: () => setConfirmandoRemocaoLote(alvos) },
+        );
+      }
+      return itensLote;
+    }
+
     // VIRAR aparece pra TODO token: é só o olhar, não move célula
     // nenhuma, e por isso nunca é recusado (0135).
     const itensGiro: ItemMenuContextual[] = [
@@ -6374,6 +6491,36 @@ export function VttClient({
         </div>
       )}
 
+      {confirmandoRemocaoLote && (
+        <div className="rv-modal-fundo" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setConfirmandoRemocaoLote(null); }}>
+          <div className="rv-modal rv-modal--confirmar" role="alertdialog" aria-modal="true"
+            aria-label={`Remover ${confirmandoRemocaoLote.length} tokens`} data-testid="vtt-confirmar-remocao-lote">
+            <header className="rv-modal-cab">
+              <h2>Remover {confirmandoRemocaoLote.length} tokens</h2>
+              <button type="button" className="rv-modal-fechar" aria-label="Fechar" onClick={() => setConfirmandoRemocaoLote(null)}>×</button>
+            </header>
+            <div className="rv-modal-corpo">
+              {/* Nomear quem sai: "remover 7 tokens" não deixa conferir
+                  se a seleção é a que se pensava. */}
+              <p>Remover da cena? Esta ação não pode ser desfeita.</p>
+              <p className="rv-modal-lista">{confirmandoRemocaoLote.map((x) => x.nome).join(", ")}</p>
+            </div>
+            <footer className="rv-modal-rodape">
+              <button type="button" className="rv-btn rv-btn--ghost" onClick={() => setConfirmandoRemocaoLote(null)}>Cancelar</button>
+              <button type="button" className="rv-btn rv-btn--perigo" data-testid="vtt-confirmar-remocao-lote-ok"
+                onClick={() => {
+                  const ts = confirmandoRemocaoLote;
+                  setConfirmandoRemocaoLote(null);
+                  // Uma de cada vez: disparadas juntas, as remoções não
+                  // surtiam efeito (ver a nota de ocultar/bloquear acima).
+                  void (async () => { for (const x of ts) await removerTokenHandler(x.id); })();
+                }}>
+                Remover
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
       {confirmandoRemocao && (
         <div className="rv-modal-fundo" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setConfirmandoRemocao(null); }}>
           <div className="rv-modal rv-modal--confirmar" role="alertdialog" aria-modal="true" aria-label={`Remover ${confirmandoRemocao.nome}`}>

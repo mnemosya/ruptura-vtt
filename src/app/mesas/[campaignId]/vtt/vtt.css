@@ -6156,3 +6156,11 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
 }
 /* O chevron diz que o botão ABRE algo, e é secundário ao rótulo. */
 .rv-btn-chevron { margin-left: 1px; opacity: .7; }
+
+/* Lista de nomes na confirmação de remoção em lote (TOK-04). "Remover 7
+   tokens" não deixa conferir se a seleção é a que se pensava. */
+.rv-modal-lista {
+  margin: 8px 0 0; padding: 8px 10px; border-radius: var(--rv-r);
+  background: rgba(255, 255, 255, .04); font-size: 12px; line-height: 1.5;
+  color: var(--txt-dim); max-height: 140px; overflow-y: auto;
+}
