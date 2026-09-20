@@ -410,7 +410,15 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 - **O que falta:** a rota era o bloqueio comum, não o único. Os checks de navegador acumularam outras defasagens — `check-console-abertura`, por exemplo, agora avança bastante e morre num `data-testid` que mudou de nome. São **59 scripts que dirigem navegador**, de 83 checks no total, e cada um tem dívida própria. A tarefa é passar por eles um a um: rodar, classificar e decidir. Alguns podem estar verificando telas que não existem mais — nesses, apagar é a resposta certa, não consertar.
 - **Achado de 2026-09-20 (tentativa de triagem em lote):** os checks defasados **travam em vez de falhar**. `check-campanha-fase4-gameplay` ficou mais de meia hora preso num seletor inexistente, porque cada espera do Playwright tem timeout próprio e elas se somam. Uma triagem em lote portanto precisa de **teto de tempo por script**; e o `timeout` do GNU não existe no macOS, o que derrubou a primeira tentativa em silêncio (todo script saiu como “sem veredito”). O classificador também precisa reconhecer mais de um formato de saída: parte dos scripts imprime `N ok, M falha(s)` e parte imprime banners como `=== TODOS OS CHECKS PASSARAM ===`.
 
-#### Triagem parcial (12 de 66, em 2026-09-20)
+#### Triagem COMPLETA (94 scripts, 2026-09-20)
+
+**38 passam · 55 falham · 1 trava.** Menos de 40% da suíte funciona. Resultado completo, script a script, em `docs/prd/TRIAGEM_CHECKS_2026-09-20.md`; executor em `scripts/dev/triar-checks.mjs` (teto de 180s por script, porque os defasados travam em vez de falhar).
+
+Os que passam se concentram no que foi escrito ou reparado recentemente, mais os checks de segurança e autorização do VTT. A tarefa que resta não é “consertar 55 scripts”: é decidir, um a um, entre **consertar** (envelheceu), **apagar** (verifica tela que não existe mais) e **reescrever** (o comportamento mudou de forma). Um check morto que ninguém apaga é pior que nenhum — aparece na lista e dá impressão de cobertura.
+
+**Resíduo:** matar script antes da limpeza dele deixa conta e campanha no banco. `scripts/dev/varrer-residuo-de-teste.ts` varre (lista sem `--apply`), identificando fixture pelo domínio reservado `@ruptura.dev` e ignorando o que tem menos de 20 minutos. Ao ser criada, a varredura encontrou **25 contas e 9 campanhas órfãs**, a mais antiga de julho — o problema que `limparCampanhaDeTeste.ts` documenta continuava acontecendo.
+
+#### Triagem parcial anterior (12 de 66) — amostra enviesada, mantida como registro
 
 | script | veredito |
 |---|---|
@@ -427,10 +435,7 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 | `check-campanha-admin-fase5` | trava (timeout 30s) |
 | `check-campanha-casca-fase2` | falha |
 
-**Um em doze passa.** A amostra é dos doze primeiros em ordem alfabética, não é
-aleatória, e pode não valer para os 54 restantes — mas é grave o bastante para
-mudar a leitura da tarefa: não são “alguns checks defasados”, é uma suíte de
-verificação de navegador majoritariamente morta.
+**Um em doze passa** — número que a triagem completa desmentiu. A amostra eram os doze primeiros em ordem alfabética, todos do bloco `check-admin-*`, que falham em conjunto. O real é 38 em 94. A leitura de fundo continua valendo: boa parte da suíte está morta.
 
 - **Área afetada:** `scripts/dev/`, confiança em toda verificação de navegador.
 - **Prioridade sugerida:** P1
@@ -509,7 +514,9 @@ verificação de navegador majoritariamente morta.
 - **Regressão introduzida e apanhada pela medição:** os tokens eram declarados em `.rc-window-wrap`, e o cabeçalho de `/ficha` é **irmão** da janela, não descendente — ao trocar literais por token, oito elementos do cabeçalho caíram na cor padrão do navegador. Só apareceu porque as cores computadas foram fotografadas antes e comparadas depois. Os tokens passaram a ser declarados também para o cabeçalho; o layout continua só na janela.
 - **Segundo erro, sobre token contextual:** `--rc-skill-cor` vale verde em Corpo e roxo em Mente, e só recebe valor dentro de `.rc-skill`. Troquei por ele um `#0596B7` de `.rc-nric-badge`, que está fora desse escopo — o `var()` não resolveria ali, e o próprio arquivo já dizia que aquela era “cor PRÓPRIA”. Revertido, e o check passou a **ignorar tokens declarados com mais de um valor**: igualdade de valor não é duplicação quando o token é contextual.
 - Cinco critérios em `scripts/dev/check-console-paleta.ts`.
-- **Pendente:** a segunda metade da tarefa — alinhar o **tab rail** ao padrão das janelas de ferramentas e definir os estados normal/hover/pressed/disabled. A dúvida em aberto (“tabs seguem exatamente o painel VTT ou apenas seus tokens?”) continua sem resposta e é decisão de design.
+- **Dúvida respondida pelo usuário (2026-09-20):** “o visual padrão que o Console deve seguir é o visual dentro da mesa”. Então não é só herdar tokens: a referência é o painel do VTT.
+- **Raios alinhados:** o Console tinha **51 raios em número solto** enquanto o painel do VTT já usava token em 42 de 55 lugares. Passaram a `--rc-r-sm`/`--rc-r-lg`/`--rc-r`, que espelham `--rv-r-sm`/`--rv-r-lg`/`--rv-r` do chassi. Ficaram em número apenas `0` (canto reto deliberado, como a janela maximizada) e `999px` (pílula) — nenhum dos dois pertence à escala. Três valores fora de escala foram encaixados nela: dois `2px` que eu mesmo tinha introduzido no campo da carteira, e um `6px` do seletor do cabeçalho.
+- **Pendente:** o **tab rail** e os estados normal/hover/pressed/disabled.
 - **Descrição:** revisar cores de defesa, adicionar, pips, PV/mana e alinhar as tabs ao padrão das janelas de ferramentas/painel.
 - **Área afetada:** CSS do console, recursos, ações e `TabRail`.
 - **Prioridade sugerida:** P1

@@ -21,7 +21,8 @@
  * Uso: node scripts/dev/check-auth-tokens-visuais.mjs
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 
 let passou = 0, falhou = 0;
 function registrar(c, ok, d) {
@@ -103,6 +104,34 @@ const CONTROLES = [".ra-btn", ".ra-iconbtn", ".ra-switch", ".ra-input", ".ra-tex
     .map((r) => r.seletor);
   registrar("5 (nenhum controle traz raio em número cru)",
     soltos.length === 0, soltos.length ? soltos.join(", ") : "nenhum");
+}
+
+// --- 6. Nem no TSX: chanfro inline escapa de quem só varre CSS ---
+//     Foi o que aconteceu com o avatar de Conta e Preferências — a
+//     folha estava limpa e a tela continuava chanfrada.
+{
+  const arquivos = [];
+  (function andar(dir) {
+    for (const nome of readdirSync(dir)) {
+      const p = join(dir, nome);
+      if (statSync(p).isDirectory()) { if (nome !== "node_modules") andar(p); }
+      else if (nome.endsWith(".tsx")) arquivos.push(p);
+    }
+  })("src/app/mesas");
+
+  const ruins = [];
+  for (const f of arquivos) {
+    const texto = readFileSync(f, "utf8");
+    // Chanfro = polígono cujos vértices são só cantos do retângulo com
+    // recorte. Forma (hexágono, círculo) e `inset()` de progresso ficam.
+    for (const m of texto.matchAll(/clipPath:\s*[`"']polygon\(([^`"']*)\)[`"']/g)) {
+      const pontos = m[1];
+      const ehChanfro = /calc\(100% - \d+px\)/.test(pontos) && !/%\s+\d|\d+%\s*,/.test(pontos.replace(/calc\([^)]*\)/g, ""));
+      if (ehChanfro) ruins.push(`${f.replace("src/app/", "")}: ${pontos.slice(0, 50)}…`);
+    }
+  }
+  registrar("6 (nenhum chanfro inline no TSX da área autenticada)",
+    ruins.length === 0, ruins.length ? ruins.join(" | ") : "nenhum");
 }
 
 console.log(`\n${passou} ok, ${falhou} falha(s)`);
