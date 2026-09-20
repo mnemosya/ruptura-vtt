@@ -401,26 +401,6 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 - **Critérios de aceite:** narrador cria loja com catálogo próprio; preço e estoque são do narrador; compra debita carteira e credita inventário numa operação só; estoque esgotado é recusado no servidor; loja se relaciona com um `lugar` do organizador; isolamento entre campanhas testado.
 - **Dúvidas antes da implementação:** estoque é finito ou ilimitado por padrão? Preço pode divergir do preço base do item? Jogador compra sozinho ou o narrador aprova? Loja pode vender item homebrew da campanha? Vender de volta existe, e a que preço?
 
-### BIB-01 — Efeito incompleto é descartado em silêncio ao salvar rascunho
-
-- **Status:** Bloqueada (aguarda decisão de produto sobre qual dos três comportamentos adotar)
-- **Prioridade sugerida:** P0 — perda de trabalho sem aviso.
-- **Descrição:** no editor de rascunho da Biblioteca, adicionar um efeito e salvar sem preencher os campos obrigatórios dele faz o efeito **desaparecer**, sem erro nenhum.
-- **Como foi encontrado (2026-09-20):** três checks (`companions-trama`, `temporary-effects`, `inventory-runes-market`) falhavam com "campo deveria persistir após recarregar". Parecia defeito dos testes. Sonda direta contra o banco, esperando o salvamento começar E terminar, mostrou o contrário.
-- **O que foi observado, reproduzível:**
-  - a ação roda: o botão vira "Salvando...", o POST devolve 200, o botão volta;
-  - `camposEditaveis.campos.efeitos` no banco continua `[]`;
-  - **nenhum erro aparece** — o painel de erros de `DraftEditorClient` só rende com `erros.length > 0`, e a validação não devolve nada aqui;
-  - o único vestígio é o marcador "● alterações não salvas", que não some — pequeno, e fácil de ler como atraso de interface.
-- **Delimitação:** efeitos com os campos PREENCHIDOS persistem normalmente — `check-admin-effect-builder` preenche todos e passa. O descarte atinge o efeito recém-adicionado, ainda em branco.
-- **Por que é P0:** quem monta um talento com vários efeitos preenche um, salva, e perde os outros sem nunca ver um aviso. A interface se comporta como se tivesse salvado.
-- **Decisão necessária — qual dos três:**
-  1. **Recusar o salvamento com erro visível**, dizendo qual efeito e qual campo (mais próximo do resto do editor, que já tem painel de erros);
-  2. **Salvar o efeito incompleto como rascunho**, marcado como pendente, e recusar só na publicação;
-  3. **Impedir adicionar** um efeito antes dos campos obrigatórios (muda o fluxo de montagem).
-- **Dependências:** nenhuma técnica. Depende só da decisão acima.
-- **Critérios de aceite:** nenhum caminho descarta trabalho sem dizer; os três checks acima voltam a passar sem precisar preencher campos que o teste não queria exercitar.
-
 ### TEST-01 — Inventariar e reparar os checks defasados
 
 - **Status:** Pronta
@@ -431,6 +411,26 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
   - Reparados e verificados: `check-vtt-gerenciamento-tokens` (de 1 ok / 2 falhas para **66 ok**), `check-vtt-objetos-servidor` (**29 ok**), `check-vtt-canal-forjado` (**24 ok**).
 - **O que falta:** a rota era o bloqueio comum, não o único. Os checks de navegador acumularam outras defasagens — `check-console-abertura`, por exemplo, agora avança bastante e morre num `data-testid` que mudou de nome. São **59 scripts que dirigem navegador**, de 83 checks no total, e cada um tem dívida própria. A tarefa é passar por eles um a um: rodar, classificar e decidir. Alguns podem estar verificando telas que não existem mais — nesses, apagar é a resposta certa, não consertar.
 - **Achado de 2026-09-20 (tentativa de triagem em lote):** os checks defasados **travam em vez de falhar**. `check-campanha-fase4-gameplay` ficou mais de meia hora preso num seletor inexistente, porque cada espera do Playwright tem timeout próprio e elas se somam. Uma triagem em lote portanto precisa de **teto de tempo por script**; e o `timeout` do GNU não existe no macOS, o que derrubou a primeira tentativa em silêncio (todo script saiu como “sem veredito”). O classificador também precisa reconhecer mais de um formato de saída: parte dos scripts imprime `N ok, M falha(s)` e parte imprime banners como `=== TODOS OS CHECKS PASSARAM ===`.
+
+#### Alarme falso registrado (2026-09-20)
+
+Cheguei a abrir uma tarefa P0 — "efeito incompleto é descartado em silêncio ao
+salvar" — a partir de três checks que falhavam com "deveria persistir após
+recarregar". Era falso. O app **recusa** o salvamento e diz exatamente o que
+falta, nomeando efeito e campo:
+
+> ✕ Efeitos: Efeito #1 (aplicar_condicao): gatilho obrigatório ausente.
+
+A sonda que "provou" o silêncio procurava um cabeçalho "Erros" no painel. O
+painel não tem cabeçalho: ele renderiza `✕ <mensagem>` direto. Procurar texto
+de título onde só existe conteúdo já tinha produzido um engano igual no mesmo
+dia (a seção "Efeitos preservados", que também não tem título). Quando a
+asserção for sobre "a interface disse alguma coisa", o alvo é o `data-testid`
+ou o texto da mensagem — nunca um título presumido.
+
+Os três checks (`companions-trama`, `temporary-effects`,
+`inventory-runes-market`) estão errados de verdade: adicionam um efeito e
+salvam sem preencher os campos obrigatórios dele.
 
 #### Triagem COMPLETA (94 scripts, 2026-09-20)
 
