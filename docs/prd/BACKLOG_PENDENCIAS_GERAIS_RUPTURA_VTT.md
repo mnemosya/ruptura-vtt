@@ -48,13 +48,13 @@ Esta triagem considera o código existente, não apenas a lista de desejos:
 
 | Recorte | Quantidade |
 |---|---:|
-| Total de tarefas | 71 |
-| Prontas | 22 |
+| Total de tarefas | 72 |
+| Prontas | 23 |
 | Prontas após dependência | 4 |
 | Bloqueadas por regra, contrato ou referência indispensável | 44 |
 | Em validação | 1 |
 | P0 | 14 |
-| P1 | 41 |
+| P1 | 42 |
 | P2 | 15 |
 | P3 | 1 |
 
@@ -385,6 +385,21 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 - **Dependências:** INV-01 (taxonomia e regras de mochila) e INV-02; a loja movimenta o inventário que essas tarefas definem.
 - **Critérios de aceite:** narrador cria loja com catálogo próprio; preço e estoque são do narrador; compra debita carteira e credita inventário numa operação só; estoque esgotado é recusado no servidor; loja se relaciona com um `lugar` do organizador; isolamento entre campanhas testado.
 - **Dúvidas antes da implementação:** estoque é finito ou ilimitado por padrão? Preço pode divergir do preço base do item? Jogador compra sozinho ou o narrador aprova? Loja pode vender item homebrew da campanha? Vender de volta existe, e a que preço?
+
+### TEST-01 — Inventariar e reparar os checks defasados
+
+- **Status:** Pronta
+- **Origem:** descoberta em 2026-09-20 ao investigar duas funções que `check-migrations-vs-banco.mjs` acusava. As funções eram um problema pequeno (acentuação, corrigida na 0144); o problema grande apareceu ao rodar as suítes vizinhas para conferir regressão.
+- **Descrição:** o repositório mudou e os checks não acompanharam. Dois vetores confirmados, ambos já corrigidos na parte mecânica:
+  - **Rota morta:** o commit `0d3c30d` (14/09) — “a campanha É a mesa — a URL perde o /vtt” — removeu `/mesas/[campaignId]/vtt`, e **32 scripts** continuavam navegando para lá. Todos morriam antes da primeira asserção, por seis dias, sem ninguém notar.
+  - **Assinatura mudada:** a 0135 acrescentou `direcao` e os medidores de PE/mana a `create_vtt_token` e `edit_vtt_token`; quatro scripts seguiam chamando a assinatura antiga.
+  - Reparados e verificados: `check-vtt-gerenciamento-tokens` (de 1 ok / 2 falhas para **66 ok**), `check-vtt-objetos-servidor` (**29 ok**), `check-vtt-canal-forjado` (**24 ok**).
+- **O que falta:** a rota era o bloqueio comum, não o único. Os checks de navegador acumularam outras defasagens — `check-console-abertura`, por exemplo, agora avança bastante e morre num `data-testid` que mudou de nome. São **59 scripts que dirigem navegador**, de 83 checks no total, e cada um tem dívida própria. A tarefa é passar por eles um a um: rodar, classificar e decidir. Alguns podem estar verificando telas que não existem mais — nesses, apagar é a resposta certa, não consertar.
+- **Área afetada:** `scripts/dev/`, confiança em toda verificação de navegador.
+- **Prioridade sugerida:** P1
+- **Dependências:** nenhuma.
+- **Critérios de aceite:** todo check em `package.json` ou roda verde, ou está removido com justificativa escrita; nenhum check falha por rota, assinatura de RPC ou `data-testid` obsoletos; o inventário registra, por script, se ele ainda descreve comportamento desejado.
+- **Nota sobre o auditor existente:** `npm run check:scripts-de-teste` (`auditar-scripts-de-teste.mjs`) audita 60 scripts, mas é **estático de propósito** — percorre o grafo de imports sem executar, justamente para não deixar resíduo no Supabase real. Por isso não podia ver esta classe de apodrecimento: um script que importa tudo certo e navega para uma rota inexistente passa na auditoria dele e falha na primeira linha do teste. Fechar TEST-01 provavelmente pede uma segunda auditoria, de execução, com fixtures descartáveis — o que os checks desta sessão já fazem (criam conta e campanha próprias e revertem no fim).
 
 ## 7. Personagens e console
 
