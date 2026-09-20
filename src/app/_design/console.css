@@ -2385,10 +2385,17 @@
    Saldo é leitura: a mutação pertence aos fluxos de compra e
    recompensa, e um campo editável aqui seria uma quarta porta para o
    mesmo número sem servidor validando nada. */
+/* FAIXA, não caixa. `.rc-inv-lista` não tem padding horizontal, então
+   uma caixa com borda encostava a lateral dela na moldura do painel e
+   o fio aparecia em dobro. O vizinho de cima (`.rc-inv-busca-linha`) já
+   resolve isso do jeito certo: sem borda ao redor, só um fio embaixo
+   separando do que vem depois. A carteira passa a seguir o mesmo
+   padrão — some a borda duplicada e as duas faixas ficam irmãs. */
 .rc-inv-carteira {
   display: flex; flex-direction: column; gap: 3px;
-  margin: 0 0 8px; padding: 8px 10px; border-radius: 2px;
-  border: 1px solid rgba(0, 212, 255, 0.10); background: #0c1f2b;
+  padding: 8px 12px 9px;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.15);
+  background: #0c1f2b;
 }
 .rc-inv-carteira-linha { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .rc-inv-carteira-rot {

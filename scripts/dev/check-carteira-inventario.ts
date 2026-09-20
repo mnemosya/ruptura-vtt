@@ -223,6 +223,18 @@ async function main() {
         (await saldo(page))?.trim() === "0", `"${await saldo(page)}"`);
     }
 
+    // --- 5h. Sem borda duplicada: a faixa não repete o fio da moldura ---
+    //     `.rc-inv-lista` não tem padding horizontal, então uma caixa
+    //     com borda encostaria a lateral na moldura do painel.
+    {
+      const b = await page.evaluate(() => {
+        const c = getComputedStyle(document.querySelector('[data-testid="console-carteira"]')!);
+        return { top: c.borderTopWidth, right: c.borderRightWidth, bottom: c.borderBottomWidth, left: c.borderLeftWidth };
+      });
+      registrar("5h (faixa com fio só embaixo, sem duplicar a borda da moldura)",
+        b.left === "0px" && b.right === "0px" && b.top === "0px" && b.bottom !== "0px", JSON.stringify(b));
+    }
+
     // --- 6. Rótulo acessível legível, sem depender só de cor ---
     {
       await abrirInventario(page, campaignId, comSaldo);
