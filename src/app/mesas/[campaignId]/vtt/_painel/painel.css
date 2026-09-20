@@ -2091,3 +2091,31 @@
   .rv-org-lista { border-right: 0; padding-right: 0; }
   .rv-org-detalhe { padding-left: 0; border-top: 1px solid rgba(84, 172, 190, 0.16); padding-top: 12px; }
 }
+
+/* Participantes do registro de sessão (CONT-04). Quem foi excluído à
+   mão continua visível, apagado — some da lista revelada, não da
+   ferramenta de quem corrige. */
+.rv-org-participantes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.rv-org-participantes li {
+  display: flex; align-items: center; gap: 9px; padding: 6px 9px; border-radius: 3px;
+  background: rgba(0, 212, 255, 0.04); border: 1px solid rgba(84, 172, 190, 0.18); font-size: 12.5px;
+}
+.rv-org-participantes li[data-incluido="false"] { opacity: 0.5; }
+.rv-org-participantes li[data-incluido="false"] .rv-org-part-nome { text-decoration: line-through; }
+.rv-org-part-nome { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.rv-org-part-horas {
+  display: inline-flex; align-items: center; gap: 4px; flex: none;
+  font-size: 11px; color: rgba(150, 174, 186, 0.85); font-variant-numeric: tabular-nums;
+}
+.rv-org-part-manual {
+  display: inline-flex; align-items: center; gap: 3px; flex: none; padding: 1px 6px; border-radius: 999px;
+  font-size: 10px; letter-spacing: 0.06em; background: rgba(240, 190, 90, 0.14); color: rgba(240, 200, 120, 0.95);
+}
+.rv-org-part-btn {
+  flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 3px; cursor: pointer;
+  background: transparent; border: 1px solid rgba(84, 172, 190, 0.28); color: var(--txt-dim);
+}
+.rv-org-part-btn:hover:not(:disabled) { border-color: rgba(0, 212, 255, 0.55); color: var(--txt); }
+.rv-org-part-btn:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.6); outline-offset: 1px; }
+.rv-org-part-btn:disabled { opacity: 0.45; cursor: default; }
+.rv-org-part-nome[data-carregando] { color: rgba(150, 174, 186, 0.5); }

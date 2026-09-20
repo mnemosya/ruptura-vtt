@@ -16,6 +16,7 @@ import { BotaoTecnico, Caption } from "../../ui/primitivas";
 import type { NarrativeEntry, NarrativeEstado } from "../../../../../../../lib/campaign/narrativeActions";
 import { lerJogadoresConvitesAction, type ParticipanteAdmin } from "../../acoes/administracaoPainel";
 import { rotuloDoTipo, tituloVisivel } from "./tipos";
+import { ParticipantesDaSessao } from "./ParticipantesDaSessao";
 
 interface Props {
   campaignId: string;
@@ -37,6 +38,15 @@ export function DetalheDaEntrada({
   const [etiquetas, setEtiquetas] = useState(entrada.etiquetas.join(", "));
   const [quando, setQuando] = useState(entrada.acontecida_em?.slice(0, 16) ?? "");
   const [participantes, setParticipantes] = useState<{ userId: string; displayName: string }[]>([]);
+  /**
+   * `null` enquanto o elenco não chegou. Não é o mesmo que "mapa vazio":
+   * sem essa distinção, a lista de participantes exibia "Conta sem nome"
+   * durante o carregamento — um nome de verdade, dito sobre alguém que
+   * tem nome, só porque a resposta ainda estava em trânsito.
+   *
+   * Inclui o narrador, que entra no registro como autor.
+   */
+  const [nomes, setNomes] = useState<Map<string, string> | null>(null);
   const [escolhidos, setEscolhidos] = useState<string[] | null>(null);
 
   // Só busca o elenco quando ele é necessário — a janela abre muitas
@@ -48,6 +58,7 @@ export function DetalheDaEntrada({
       setParticipantes(r.dados.participantes
         .filter((p: ParticipanteAdmin) => p.role === "player")
         .map((p: ParticipanteAdmin) => ({ userId: p.userId, displayName: p.displayName })));
+      setNomes(new Map(r.dados.participantes.map((p: ParticipanteAdmin) => [p.userId, p.displayName])));
     });
     return () => { vivo = false; };
   }, [campaignId]);
@@ -169,6 +180,13 @@ export function DetalheDaEntrada({
           </details>
         )}
       </div>
+
+      {/* Só o registro de sessão tem participantes — é o que o vínculo
+          com a sessão canônica significa. */}
+      {entrada.tipo === "sessao" && entrada.online_session_id && (
+        <ParticipantesDaSessao campaignId={campaignId} sessionId={entrada.online_session_id}
+          pessoas={nomes} ocupado={ocupado} />
+      )}
 
       {relacionadas.length > 0 && (
         <>

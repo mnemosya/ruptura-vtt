@@ -283,3 +283,53 @@ function normalizarEtiquetas(etiquetas?: string[]): string[] {
   if (!etiquetas) return [];
   return Array.from(new Set(etiquetas.map((e) => e.trim().toLowerCase()).filter(Boolean)));
 }
+
+export interface SessionParticipant {
+  user_id: string;
+  primeiro_visto: string;
+  ultimo_visto: string;
+  origem: "automatico" | "manual";
+  incluido: boolean;
+}
+
+/**
+ * Participantes de uma sessão registrada (CONT-04).
+ *
+ * A lista é acumulada pelos batimentos durante a sessão — não é uma
+ * foto do fim, que registraria só quem ficou até o fim. Quem estava com
+ * "Aparecer offline" não está aqui, por PRES-01.
+ *
+ * A RLS segue a visibilidade da própria entrada: enquanto o registro é
+ * rascunho, só o narrador lê.
+ */
+export async function listSessionParticipants(sessionId: string): Promise<{
+  participants: SessionParticipant[]; error?: string;
+}> {
+  try {
+    const client = await getScopedTableClient();
+    const { data, error } = await client.from("campaign_session_participants")
+      .select("user_id,primeiro_visto,ultimo_visto,origem,incluido")
+      .eq("session_id", sessionId).order("primeiro_visto");
+    if (error) throw error;
+    return { participants: (data ?? []) as SessionParticipant[] };
+  } catch {
+    return { participants: [], error: "Não foi possível carregar os participantes." };
+  }
+}
+
+/** Correção manual da lista — só do narrador, e auditada no banco. */
+export async function setSessionParticipant(
+  campaignId: string, sessionId: string, userId: string, incluir: boolean,
+): Promise<Resultado<null>> {
+  try {
+    await exigirNarrador(campaignId);
+    const client = await getScopedTableClient();
+    const { error } = await client.rpc("set_session_participant", {
+      p_session_id: sessionId, p_user_id: userId, p_incluir: incluir,
+    });
+    if (error) throw error;
+    return { ok: true, data: null };
+  } catch {
+    return { ok: false, error: FALHA };
+  }
+}

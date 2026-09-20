@@ -60,11 +60,24 @@ async function contextoDe(email: string, senha: string) {
 }
 
 async function abrirMenu(page: Page) {
+  await fecharJanela(page);
   if (await page.locator(".rv-menu-mesa").count() === 0) {
     await page.locator('[data-testid="vtt-menu-mesa-btn"]').click();
   }
   await page.waitForSelector(".rv-menu-mesa", { timeout: 10000 });
 }
+/**
+ * A janela é modal: o fundo dela (`pn-jan-fundo`) intercepta cliques, e
+ * por isso o menu da mesa não é alcançável enquanto ela estiver aberta.
+ */
+async function fecharJanela(page: Page) {
+  const fechar = page.locator('[data-testid="painel-janela-fechar"]');
+  if (await fechar.count() > 0) {
+    await fechar.first().click();
+    await page.waitForSelector(".pn-jan-fundo", { state: "detached", timeout: 10000 }).catch(() => {});
+  }
+}
+
 async function abrirOrganizador(page: Page) {
   await abrirMenu(page);
   await page.locator(".rv-menu-mesa-item", { hasText: "Organizador" }).first().click();
@@ -278,7 +291,6 @@ async function main() {
 
     // --- 14. O editor de regras continua abrindo, e é outra janela ---
     {
-      await pn.locator('[data-testid="painel-janela-organizador"] [aria-label="Fechar"]').click().catch(() => {});
       await abrirMenu(pn);
       await pn.locator(".rv-menu-mesa-item", { hasText: "Regras da campanha" }).first().click();
       const abriu = await pn.waitForSelector('[data-testid="painel-janela-conteudo"], .rv-pn-janela', { timeout: 15000 })

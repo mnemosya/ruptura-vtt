@@ -49,8 +49,8 @@ Esta triagem considera o código existente, não apenas a lista de desejos:
 | Recorte | Quantidade |
 |---|---:|
 | Total de tarefas | 72 |
-| Prontas | 25 |
-| Prontas após dependência | 4 |
+| Prontas | 26 |
+| Prontas após dependência | 3 |
 | Bloqueadas por regra, contrato ou referência indispensável | 43 |
 | Em validação | 0 |
 | P0 | 14 |
@@ -361,13 +361,16 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 
 ### CONT-04 — Gerar registro automático de sessão
 
-- **Status:** Pronta após dependência
+- **Status:** Pronta (concluída)
 - **Descrição:** ao iniciar uma sessão online, criar exatamente uma entrada narrativa de sessão; ao encerrar, completar datas e participantes efetivos segundo regra aprovada.
 - **Área afetada:** sessão online, conteúdo narrativo, presença/roster e logs.
 - **Prioridade sugerida:** P0
 - **Dependências:** SESS-01, CONT-02, PRES-01.
 - **Critérios de aceite:** criação idempotente; início/fim vinculados à sessão canônica; participantes registrados sem depender apenas do snapshot final; entrada não duplica em reconexão; correção manual pelo narrador fica auditada; privacidade respeita a regra de presença.
-- **Dúvidas antes da implementação:** participante é quem esteve online em qualquer momento, por tempo mínimo ou marcado pelo narrador? Narrador sempre entra na lista? O registro nasce privado e depois é revelado?
+- **Decisões de produto (2026-09-20):** participante é **quem esteve conectado em qualquer momento**, com primeiro e último visto guardados — em vez de um tempo mínimo arbitrário decidir por quem passou rápido. **Quem está com “Aparecer offline” não entra**, por coerência com PRES-01: se a pessoa se escondeu de todos, o registro não pode contá-la depois, senão esconder-se ao vivo apenas adiaria a revelação até o fim da sessão. **O registro nasce rascunho**, revelado quando o narrador quiser.
+- **O narrador entra sempre**, mesmo invisível, porque entra como AUTOR e não como presença — uma sessão sem narrador não aconteceu. Consequência registrada: se ele estiver invisível e depois revelar o registro, os jogadores saberão que estava lá. Como controla as duas pontas, a invisibilidade e a revelação, é escolha dele e não vazamento imposto.
+- **Andamento:** migration `0146_registro_automatico_de_sessao.sql`. **Por que acumular em vez de fotografar no fim:** `campaign_session_heartbeats` guarda uma linha por pessoa, sobrescrita a cada batimento — depois que a sessão acaba, quem passou por ela não está em lugar nenhum, e uma foto do fim registraria só quem ficou até o fim, que é o que o critério proíbe. A participação passa a ser acumulada em `campaign_session_participants` a cada batimento. A entrada nasce dentro de `set_campaign_online_session`, e a unicidade é garantida por índice — não por disciplina de quem chama. Correção manual do narrador marca `origem = 'manual'` e escreve em `campaign_session_participants_log`: distinguir o que o sistema VIU do que alguém afirmou depois é o que dá valor ao registro. A lista segue a visibilidade da própria entrada, pela mesma `narrativa_pode_ver` — rascunho é só do narrador. Quinze critérios transacionais (`scripts/dev/check-registro-de-sessao.mjs`) e dez em navegador real (`scripts/dev/check-registro-sessao-live.ts`). Suítes de CONT-02, CONT-03 e SESS-02 repetidas sem regressão.
+- **Defeito corrigido durante a tarefa:** a lista de participantes exibia “Conta sem nome” enquanto o elenco estava em trânsito. “Conta sem nome” é um nome REAL, que o servidor devolve para quem nunca escolheu um — dizê-lo sobre alguém que tem nome, só porque a resposta não chegou, é afirmar algo falso. O componente passou a distinguir “ainda não sei” de “não tem nome”.
 
 ### CONT-05 — Integrar material privado do narrador e material revelado
 
