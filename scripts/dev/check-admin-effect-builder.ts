@@ -31,19 +31,21 @@ import assert from "node:assert/strict";
 import { chromium, type Locator, type Page } from "playwright";
 import { BASE_URL, SESSION_FILE, assertAdminSessionValid, requireSessaoSalva, sessaoSalvaExiste } from "./authSession";
 import { limparEAnunciar } from "./residuoDeConteudo";
+import { garantirMesaDeFixture, removerMesaDeFixture, NOME_MESA_FIXTURE, NOME_PERSONAGEM_FIXTURE, type MesaDeFixture } from "./fixtureDeMesa";
 
 const PREFIXO_TESTE = "zz_e2e_etapa4_";
-const NOME_MESA_FIXTURE = "Mesa CP7 Bando";
-const NOME_PERSONAGEM_FIXTURE = "Personagem A (CP7)";
 /**
- * ID real (characters.id) do fixture "Personagem A (CP7)" na "Mesa CP7
- * Bando" — usado em vez de filtrar por nome porque o texto do painel
- * de UM personagem pode conter o NOME de outro (ex.: autoria de
- * Contágio renderiza "Contágio (Personagem A (CP7))" dentro do painel
- * de Personagem B), o que quebra `.filter({ hasText })` em modo
- * estrito (resolve para mais de um elemento).
+ * A mesa e o personagem deixaram de ser presumidos e passaram a ser
+ * CRIADOS por este check (`fixtureDeMesa.ts`).
+ *
+ * Antes eram uma campanha "Mesa CP7 Bando" e um personagem de UUID
+ * fixo, feitos à mão no banco de desenvolvimento. Quando sumiram, o
+ * check passou a falhar com "Mesa de fixtures deveria existir" — mas a
+ * fragilidade era anterior ao sumiço: estado criado à mão nunca
+ * passaria num banco novo, nem no de outra pessoa, nem em CI. O UUID
+ * literal era o sintoma: ele só significava algo em UM banco no mundo.
  */
-const ID_PERSONAGEM_FIXTURE_A = "0b377e78-eb42-401b-81cf-220ff917299c";
+let mesaFixture: MesaDeFixture | null = null;
 const CONDICAO_TESTE = "atordoado";
 const CONDICAO_TESTE_LABEL = "Atordoado";
 
@@ -78,9 +80,11 @@ async function idsDosCards(escopo: Locator): Promise<string[]> {
  * chamado de novo depois de todo `page.reload()`, não só uma vez.
  */
 async function selecionarMesaFixture(page: Page): Promise<boolean> {
-  const linhaMesa = page.locator('[data-testid^="mesa-linha-"]').filter({ hasText: NOME_MESA_FIXTURE });
-  if ((await linhaMesa.count()) === 0) return false;
-  await linhaMesa.locator('[data-testid^="selecionar-mesa-"]').click();
+  // Por ID, não por texto: o check agora CRIA a mesa e conhece o id
+  // dela. Filtrar por nome dependia de o nome ser único na lista.
+  const botao = page.locator(`[data-testid="selecionar-mesa-${mesaFixture!.campanhaId}"]`);
+  if ((await botao.count()) === 0) return false;
+  await botao.click();
   return true;
 }
 
@@ -105,25 +109,6 @@ async function limparResiduosDeExecucoesAnteriores(page: Page): Promise<void> {
   }
   for (const id of ids) await excluirRascunhoPorId(page, id);
   if (ids.length > 0) console.log(`0. Limpeza prévia: ${ids.length} rascunho(s) residual(is) removido(s).`);
-}
-
-/** Remove qualquer resíduo da condição de teste na mesa de fixtures compartilhada, de uma execução anterior que tenha travado. */
-async function limparResiduoNaTabelaDev(page: Page): Promise<void> {
-  await page.goto(`${BASE_URL}/dev/table`, { waitUntil: "domcontentloaded" });
-  if (!(await selecionarMesaFixture(page))) return;
-  const painel = page.locator(`[data-testid="estado-personagem-${ID_PERSONAGEM_FIXTURE_A}"]`);
-  try {
-    await painel.waitFor({ timeout: 15000 });
-  } catch {
-    return; // personagem não carregou — nada para limpar aqui.
-  }
-  const condicoes = painel.locator('[data-testid^="estado-condicoes-"]');
-  if ((await condicoes.count()) === 0) return;
-  const textoCondicoes = await condicoes.textContent();
-  if (!textoCondicoes?.includes(CONDICAO_TESTE_LABEL)) return;
-  await painel.locator('[data-testid^="estado-remover-condicao-"]').first().click();
-  await page.waitForTimeout(300);
-  console.log("0b. Limpeza prévia: resíduo de condição de teste removido da mesa de fixtures compartilhada.");
 }
 
 async function main(): Promise<void> {
@@ -157,7 +142,6 @@ async function main(): Promise<void> {
 
     await assertAdminSessionValid(page);
     await limparResiduosDeExecucoesAnteriores(page);
-    await limparResiduoNaTabelaDev(page);
 
     // ------------------------------------------------------------------
     // 2. Admin abre um rascunho de magia.
@@ -440,10 +424,15 @@ async function main(): Promise<void> {
     });
     let painelPersonagemA: Locator | null = null;
     try {
+      // A fixture nasce aqui, imediatamente antes de ser usada, e some
+      // na limpeza final. Nova a cada execução: o passo 23a afirma que o
+      // personagem começa SEM condição nenhuma, e uma mesa reaproveitada
+      // poderia trazer condição pendurada de uma execução que travou.
+      mesaFixture = await garantirMesaDeFixture();
       await paginaTabela.goto(`${BASE_URL}/dev/table`, { waitUntil: "domcontentloaded" });
-      assert.ok(await selecionarMesaFixture(paginaTabela), `Mesa de fixtures "${NOME_MESA_FIXTURE}" deveria existir.`);
+      assert.ok(await selecionarMesaFixture(paginaTabela), `Mesa de fixtures "${NOME_MESA_FIXTURE}" deveria existir (criada por este check).`);
 
-      painelPersonagemA = paginaTabela.locator(`[data-testid="estado-personagem-${ID_PERSONAGEM_FIXTURE_A}"]`);
+      painelPersonagemA = paginaTabela.locator(`[data-testid="estado-personagem-${mesaFixture!.personagemId}"]`);
       await painelPersonagemA.waitFor();
 
       // 23a. Nenhum recurso consumido antes da validação: personagem começa sem a condição de teste.
@@ -462,7 +451,7 @@ async function main(): Promise<void> {
       await paginaTabela.reload({ waitUntil: "domcontentloaded" });
       // Reload real zera o estado React de mesa selecionada (não há URL nem localStorage) — reseleciona.
       assert.ok(await selecionarMesaFixture(paginaTabela), `Mesa de fixtures "${NOME_MESA_FIXTURE}" deveria continuar existindo após reload.`);
-      const painelAposReload = paginaTabela.locator(`[data-testid="estado-personagem-${ID_PERSONAGEM_FIXTURE_A}"]`);
+      const painelAposReload = paginaTabela.locator(`[data-testid="estado-personagem-${mesaFixture!.personagemId}"]`);
       await painelAposReload.waitFor();
       assert.ok(
         (await painelAposReload.locator('[data-testid^="estado-condicoes-"]').textContent())?.includes(CONDICAO_TESTE_LABEL),
@@ -512,7 +501,8 @@ async function main(): Promise<void> {
       const context = await browser.newContext({ storageState: SESSION_FILE });
       const page = await context.newPage();
       for (const id of idsCriados) await excluirRascunhoPorId(page, id);
-      console.log(`25. Dados de teste removidos (${idsCriados.length} rascunho(s)) — OK`);
+      const mesasRemovidas = await removerMesaDeFixture();
+      console.log(`25. Dados de teste removidos (${idsCriados.length} rascunho(s), ${mesasRemovidas} mesa(s) de fixture) — OK`);
     } catch {
       // best-effort — não mascara erro anterior.
     }
