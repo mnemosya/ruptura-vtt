@@ -185,9 +185,25 @@ async function main() {
     //     A troca do acento INTEIRO já foi tentada e desfeita. O que
     //     mudou é só a peça que fica lado a lado com o VTT.
     {
-      const proprio = /--cy:\s*#00d4ff/.test(css);
+      const proprio = /--rc-cy:\s*#00d4ff/.test(css);
       registrar("3e (o acento do Console segue sendo o próprio)",
-        proprio, `--cy: #00d4ff = ${proprio}`);
+        proprio, `--rc-cy: #00d4ff = ${proprio}`);
+    }
+
+    // --- 3f. O Console não reaproveita nomes de token do VTT ---
+    //     `--cy` valia `#00d4ff` aqui e `var(--rv-cy)` (#45b8c9) no
+    //     VTT: o mesmo nome, dois valores conforme o escopo. Lendo o
+    //     CSS dos dois lados via-se a MESMA linha e concluía-se que
+    //     estavam alinhados. Uma peça nova do Console que usasse
+    //     `var(--cy)` nasceria com o acento errado sem ninguém notar —
+    //     e do outro lado, dentro da mesa, herdaria o do VTT.
+    //     Com nomes próprios (`--rc-cy`, `--rc-am`), a colisão não tem
+    //     como acontecer: ou o nome existe no escopo, ou não resolve.
+    {
+      const colide = /(^|\n)\s*--(cy|am):/.test(css);
+      const usaAlheio = /var\(--(cy|am)[,)]/.test(css);
+      registrar("3f (o Console usa nomes próprios, sem sombrear os do VTT)",
+        !colide && !usaAlheio, `declara --cy/--am=${colide}, usa var(--cy)/var(--am)=${usaAlheio}`);
     }
 
     // --- 4. O cabeçalho continua com a tinta do Console ---

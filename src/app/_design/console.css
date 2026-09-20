@@ -3,7 +3,7 @@
  *
  * Terceira folha da linguagem HUD, ao lado de `auth.css` (autenticação)
  * e `app.css` (área autenticada global). Reusa os mesmos tokens
- * (--cy #00d4ff, --am var(--am)), a mesma tipografia (next/font) e o
+ * (--cy #00d4ff, --am var(--rc-am)), a mesma tipografia (next/font) e o
  * mesmo vocabulário de canto cortado das outras telas.
  *
  * Regra herdada do fix dos botões (app.css `.ra2-primary`): SUPERFÍCIE
@@ -58,13 +58,13 @@
   transition: color 0.14s, background 0.14s, border-color 0.14s;
 }
 .rc-modo-chip:hover { border-color: rgba(0, 212, 255, 0.3); color: var(--rc-text-forte); }
-.rc-modo-chip:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.rc-modo-chip:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 2px; }
 /* Ligado: o chip vira o estado, não só um botão apertado. */
 .rc-modo-chip[data-evolucao="true"] {
-  color: var(--am); border-color: color-mix(in srgb, var(--am) 55%, transparent); background: color-mix(in srgb, var(--am) 10%, transparent);
+  color: var(--rc-am); border-color: color-mix(in srgb, var(--rc-am) 55%, transparent); background: color-mix(in srgb, var(--rc-am) 10%, transparent);
 }
 .rc-modo-chip[data-evolucao="true"] .rc-modo-chip-ico { color: inherit; }
-.rc-modo-chip[data-evolucao="true"]:hover { border-color: var(--am); background: color-mix(in srgb, var(--am) 18%, transparent); }
+.rc-modo-chip[data-evolucao="true"]:hover { border-color: var(--rc-am); background: color-mix(in srgb, var(--rc-am) 18%, transparent); }
 /* O ícone tem a MESMA cor do ícone de "Rolar defesa" (#0485A3, fixado
    lá no TSX) e não acompanha o texto no hover — igual lá, onde a cor é
    atributo do SVG e só o rótulo clareia. Os ícones do Console são
@@ -80,14 +80,14 @@
 .rc-passo-btn {
   display: grid; place-items: center;
   width: 18px; height: 18px;
-  border: 1px solid color-mix(in srgb, var(--am) 33%, transparent);
-  background: transparent; color: var(--am);
+  border: 1px solid color-mix(in srgb, var(--rc-am) 33%, transparent);
+  background: transparent; color: var(--rc-am);
   font-family: var(--font-mono), ui-monospace, monospace; font-size: 12px; line-height: 1;
   cursor: pointer;
   transition: color 0.14s, background 0.14s, border-color 0.14s;
 }
-.rc-passo-btn:hover:not(:disabled) { border-color: var(--am); background: color-mix(in srgb, var(--am) 14%, transparent); }
-.rc-passo-btn:focus-visible { outline: 2px solid var(--am); outline-offset: 1px; }
+.rc-passo-btn:hover:not(:disabled) { border-color: var(--rc-am); background: color-mix(in srgb, var(--rc-am) 14%, transparent); }
+.rc-passo-btn:focus-visible { outline: 2px solid var(--rc-am); outline-offset: 1px; }
 .rc-passo-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .rc-passo-val {
   min-width: 2ch; text-align: center;
@@ -120,12 +120,12 @@
      no harness (mesmo motivo da moldura inline de
      `_dados3d/ResultadoRolagem.tsx`).
 
-     O ACENTO (`--cy`) fica como sempre foi: `#00d4ff`, e com ele todas
+     O ACENTO fica como sempre foi: `#00d4ff`, e com ele todas
      as lavagens `rgba(0, 212, 255, α)` e os SVGs de pip, ícone e barra.
      Trocar o ciano foi tentado e desfeito — é ele que dá identidade ao
      Console; o que destoava era a moldura em volta. */
-  --cy: #00d4ff;
-  --am: #cf9a3e;          /* --rv-am */
+  --rc-cy: #00d4ff;
+  --rc-am: #cf9a3e;          /* --rv-am */
   --rc-line: #1c2b45;     /* --rv-line-strong */
   --rc-line-soft: #16233a;/* --rv-line-2 */
   --rc-surface: rgba(12, 20, 32, 0.96);  /* --rv-panel, com alfa: a janela é flutuante */
@@ -171,8 +171,8 @@
    computadas foram comparadas antes e depois.
    Só as cores são compartilhadas — o layout continua sendo da janela. */
 .rc-fichaheader {
-  --cy: #00d4ff;
-  --am: #cf9a3e;
+  --rc-cy: #00d4ff;
+  --rc-am: #cf9a3e;
   --rc-line: #1c2b45;
   --rc-line-soft: #16233a;
   --rc-surface: rgba(12, 20, 32, 0.96);
@@ -282,7 +282,7 @@
 }
 .rc-winbtn:hover { color: var(--rc-text); background: rgba(0, 212, 255, 0.14); border-color: #6fe0ff; }
 .rc-winbtn:active { background: rgba(0, 212, 255, 0.24); }
-.rc-winbtn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.rc-winbtn:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 2px; }
 /* Fechar já nasce na paleta de perigo — não só no hover. */
 .rc-winbtn--close { border-color: rgba(209, 80, 104, 0.6); color: var(--rc-danger); }
 .rc-winbtn--close:hover { color: color-mix(in srgb, var(--rc-danger) 75%, #fff); background: rgba(209, 80, 104, 0.18); border-color: color-mix(in srgb, var(--rc-danger) 75%, #fff); }
@@ -308,7 +308,7 @@
   background: repeating-linear-gradient(
     -135deg, transparent 0 3px, rgba(0, 212, 255, 0.55) 3px 4px, transparent 4px 7px);
 }
-.rc-resize:focus-visible { outline: 2px solid var(--cy); outline-offset: -3px; }
+.rc-resize:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: -3px; }
 
 /* ── Corpo ─────────────────────────────────────────────────────── */
 .rc-body {
@@ -491,7 +491,7 @@
   color: rgba(0, 212, 255, 0.72);
 }
 .rc-label--danger { color: var(--rc-danger); }
-.rc-label--am { color: var(--am); }
+.rc-label--am { color: var(--rc-am); }
 .rc-num {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10.5px; color: var(--rc-dim);
@@ -623,7 +623,7 @@
   background: color-mix(in srgb, var(--rc-danger) 24%, transparent); color: #ffb3bd;
 }
 .rc-avatar-confirmar-acoes button.rc-avatar-confirmar-nao:hover:not(:disabled) { color: var(--rc-text); border-color: var(--rc-line); }
-.rc-avatar-confirmar-acoes button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.rc-avatar-confirmar-acoes button:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 2px; }
 .rc-avatar-confirmar-acoes button:disabled { opacity: .45; cursor: not-allowed; }
 
 .rc-avatar-ico { width: 64px; max-width: 55%; }
@@ -738,7 +738,7 @@
 .rc-nric-pips { display: flex; width: 100%; }
 .rc-nric-pip { flex: 1; min-width: 0; height: 14px; padding: 0; border: none; background: none; cursor: pointer; }
 .rc-nric-pip svg { width: 100%; height: 100%; display: block; }
-.rc-nric-pip:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-nric-pip:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 1px; }
 
 /* ── Card Sobrecarga v2 (spec Figma) — mesma lógica de diagonais da
    Integridade, paleta âmbar, overlap de -10px (bem mais acentuado). */
@@ -751,7 +751,7 @@
 .rc-nsob-head { display: flex; justify-content: space-between; align-items: baseline; align-self: stretch; }
 .rc-nsob-label {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: var(--am);
+  font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: var(--rc-am);
 }
 .rc-nsob-val { font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; font-weight: 700; color: var(--rc-text); }
 .rc-nsob-total { font-weight: 400; color: rgba(214, 228, 245, 0.60); }
@@ -761,8 +761,8 @@
 .rc-nsob-pip svg { width: 100%; height: 100%; display: block; }
 .rc-nsob-pip:disabled { cursor: not-allowed; }
 .rc-nsob-pip svg path:first-child { transition: fill 0.14s; }
-.rc-nsob-pip:not(:disabled):hover svg path:first-child { fill: color-mix(in srgb, var(--am) 28%, transparent); }
-.rc-nsob-pip:focus-visible { outline: 2px solid var(--am); outline-offset: 1px; }
+.rc-nsob-pip:not(:disabled):hover svg path:first-child { fill: color-mix(in srgb, var(--rc-am) 28%, transparent); }
+.rc-nsob-pip:focus-visible { outline: 2px solid var(--rc-am); outline-offset: 1px; }
 
 /* ── Card Deslocamento v2 (spec Figma) ───────────────────────────── */
 .rc-ndesl-card {
@@ -797,7 +797,7 @@
 .rc-npr-row { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 1px 0; }
 .rc-npr-pips { display: flex; align-items: flex-start; gap: 2px; flex-wrap: wrap; }
 .rc-npr-pip { width: 19px; height: 18px; padding: 0; border: none; background: none; cursor: pointer; }
-.rc-npr-pip:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-npr-pip:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 1px; }
 
 /* Botão "Rolar defesa" — só no bloco de Reações (spec). `.rc-npr` já
    tem `gap: 6px` entre label/row; os 6px de `margin-top` aqui somam
@@ -824,7 +824,7 @@
 }
 .rc-npr-defesa svg { width: 14px; height: 14px; flex-shrink: 0; }
 .rc-npr-defesa:hover { border-color: rgba(0, 212, 255, 0.3); color: var(--rc-text-forte); }
-.rc-npr-defesa:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-npr-defesa:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 1px; }
 .rc-npr-defesa:active { background: rgba(0, 212, 255, 0.08); }
 .rc-npr-defesa:disabled { opacity: 0.45; cursor: not-allowed; }
 
@@ -867,7 +867,7 @@
 .rc-npr-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .rc-npr-btn:hover:not(:disabled) { background: rgba(0, 212, 255, 0.10); }
 .rc-npr-btn:hover:not(:disabled) svg path { stroke: #6fe0ff; }
-.rc-npr-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: -2px; }
+.rc-npr-btn:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: -2px; }
 .rc-npr-num {
   display: flex; flex: 1 0 auto; min-width: 35px; padding: 0 6px;
   flex-direction: column; justify-content: center; align-self: stretch;
@@ -940,7 +940,7 @@
 }
 .rc-ncol-estabilizar:disabled { opacity: 0.45; cursor: not-allowed; }
 .rc-ncol-estabilizar:not(:disabled):hover { border-color: rgba(0, 212, 255, 0.3); color: var(--rc-text-forte); }
-.rc-ncol-estabilizar:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-ncol-estabilizar:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 1px; }
 
 /* Recursos — mesmo padrão em 3 camadas de Perícias (externo/box
    título/interno). */
@@ -1004,7 +1004,7 @@
 .rc-nres-btn svg { width: 11px; height: 11px; display: block; }
 .rc-nres-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .rc-nres-btn:hover:not(:disabled) svg path { stroke: #6fe0ff; }
-.rc-nres-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: -2px; }
+.rc-nres-btn:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: -2px; }
 .rc-nres-val {
   position: relative; z-index: 1;
   flex: none; width: 30px; height: 16px; padding: 0;
@@ -1016,7 +1016,7 @@
   box-sizing: border-box;
 }
 .rc-nres-val:hover { color: #fff; }
-.rc-nres-val:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-nres-val:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 1px; }
 .rc-nres-val[data-invalido="true"] { color: var(--rc-danger); }
 .rc-nres-input {
   width: 100%; height: 100%; min-width: 0; padding: 0;
@@ -1132,7 +1132,7 @@
   background: linear-gradient(rgba(0, 212, 255, 0.14), rgba(0, 212, 255, 0.14)), #0c1526;
   box-shadow: 0 0 9px rgba(0, 212, 255, 0.25);
 }
-.rc-tabrail-btn:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.rc-tabrail-btn:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 2px; }
 .rc-tabrail-hint {
   position: absolute; right: calc(100% + 9px); top: 50%; transform: translateY(-50%);
   padding: 5px 10px; white-space: nowrap;
@@ -1161,28 +1161,28 @@
    se diferenciar das abas de conteúdo (spec "Aba Personagem"). Hover é
    um passo intermediário ENTRE default e active, não os mesmos tons. */
 .rc-tabrail-btn--personagem {
-  border: 1px solid color-mix(in srgb, var(--am) 35%, var(--rc-surface-3));
+  border: 1px solid color-mix(in srgb, var(--rc-am) 35%, var(--rc-surface-3));
   background: rgba(12, 20, 32, 0.70);
-  color: color-mix(in srgb, var(--am) 70%, var(--rc-surface-3));
+  color: color-mix(in srgb, var(--rc-am) 70%, var(--rc-surface-3));
 }
 /* Mesma regra dentro da paleta âmbar: a borda do hover é a do ativo. */
 .rc-tabrail-btn--personagem:hover {
-  border-color: color-mix(in srgb, var(--am) 60%, var(--rc-surface-3));
+  border-color: color-mix(in srgb, var(--rc-am) 60%, var(--rc-surface-3));
   /* Abaixo do ativo, que baixou junto: hover é um passo INTERMEDIÁRIO
      entre parado e selecionado, e empatado com ele deixava de dizer
      qual aba está aberta. */
   background: rgba(207, 154, 62, 0.09);
-  color: var(--am);
+  color: var(--rc-am);
 }
 /* O FUNDO É DISCRETO. A 32% o âmbar virava um bloco sólido e o ícone
    se perdia dentro dele — quem carregava a seleção era a mancha, não a
    aba. Quem diz "é esta" continua sendo a borda mais viva, o brilho e
    o ícone em âmbar cheio; o fundo só sustenta os três. */
 .rc-tabrail-btn--personagem[aria-selected="true"] {
-  border-color: color-mix(in srgb, var(--am) 60%, var(--rc-surface-3));
+  border-color: color-mix(in srgb, var(--rc-am) 60%, var(--rc-surface-3));
   background: rgba(207, 154, 62, 0.16);
   box-shadow: 0 0 9px rgba(207, 154, 62, 0.2);
-  color: var(--am);
+  color: var(--rc-am);
 }
 
 .rc-tabpanel {
@@ -1328,7 +1328,7 @@
   box-sizing: border-box;
   transition: border-color 0.14s, background 0.14s;
 }
-.rc-eq-quick:hover { border-color: color-mix(in srgb, var(--am) 55%, transparent); background: rgba(230, 165, 46, 0.13); }
+.rc-eq-quick:hover { border-color: color-mix(in srgb, var(--rc-am) 55%, transparent); background: rgba(230, 165, 46, 0.13); }
 /* Card interno + ícone do Acesso rápido — MESMA estrutura/hover dos
    cards normais (o hover troca de cor no BOTÃO, não só no badge do
    ícone), só que na paleta âmbar — cada tom cyan tem seu par âmbar de
@@ -1345,8 +1345,8 @@
   border-color: rgba(207, 154, 62, 0.8);
   background: rgba(207, 154, 62, 0.50);
 }
-.rc-eq-ico--quick { background: rgba(228, 171, 39, 0.09); color: var(--am); }
-.rc-eq-quick-inner:hover .rc-eq-ico--quick, .rc-eq-quick-inner:focus-visible .rc-eq-ico--quick { color: var(--am); }
+.rc-eq-ico--quick { background: rgba(228, 171, 39, 0.09); color: var(--rc-am); }
+.rc-eq-quick-inner:hover .rc-eq-ico--quick, .rc-eq-quick-inner:focus-visible .rc-eq-ico--quick { color: var(--rc-am); }
 
 /* ── Perícias v2 (spec Figma) ─────────────────────────────────────
    3 camadas: Card externo (wrapper, alinhado à esquerda) → Box título
@@ -1423,7 +1423,7 @@
   transition: border-color 0.14s, background 0.14s;
 }
 .rc-skill:hover { background: rgba(0, 18, 32, 0.85); border-color: var(--rc-skill-cor, rgba(0, 212, 255, 0.3)); }
-.rc-skill:focus-visible { outline: 2px solid var(--rc-skill-cor, var(--cy)); outline-offset: 1px; }
+.rc-skill:focus-visible { outline: 2px solid var(--rc-skill-cor, var(--rc-cy)); outline-offset: 1px; }
 .rc-skill[data-vazio="true"] { opacity: 0.28; pointer-events: none; cursor: default; }
 
 /* Badge do ícone: borda+fundo PRÓPRIOS, por atributo — "align-self:
@@ -1439,7 +1439,7 @@
      próprio criava um segundo retângulo dentro do card e competia com
      ele — e a cor do atributo já é dita pela borda e pela tag. */
   background: none;
-  color: var(--rc-skill-cor, var(--cy));
+  color: var(--rc-skill-cor, var(--rc-cy));
 }
 .rc-skill-ico svg { width: 15px; height: 15px; }
 /* flex:1 (fill) — é o que empurra o valor da perícia pra ponta direita
@@ -1454,7 +1454,7 @@
 .rc-skill-tag {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px; font-weight: 400; letter-spacing: 0.8px; text-transform: uppercase;
-  color: var(--rc-skill-cor, var(--cy));
+  color: var(--rc-skill-cor, var(--rc-cy));
 }
 .rc-skill-dado {
   text-transform: none;
@@ -1512,11 +1512,11 @@
   transition: border-color 0.14s, background 0.14s;
 }
 .rc-pin[data-preenchido="true"] { border-style: solid; border-color: rgba(0, 212, 255, 0.5); background: rgba(0, 212, 255, 0.08); cursor: default; }
-/* Hover discreto de propósito: `var(--cy)` cheio deixava o tracejado
+/* Hover discreto de propósito: `var(--rc-cy)` cheio deixava o tracejado
    do slot vazio mais forte que a borda dos slots PREENCHIDOS ao lado,
    invertendo a hierarquia visual. */
 .rc-pin:hover { border-color: rgba(0, 212, 255, 0.42); }
-.rc-pin:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-pin:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 1px; }
 .rc-pin-nome { font-size: 12px; font-weight: 600; color: var(--rc-text); text-align: center; }
 .rc-pin-sub {
   font-family: var(--font-mono), ui-monospace, monospace;
@@ -1532,7 +1532,7 @@
   border: none; background: transparent; color: rgba(214, 228, 245, 0.5);
 }
 .rc-pin-x:hover { color: color-mix(in srgb, var(--rc-danger) 45%, #fff); }
-.rc-pin-x:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-pin-x:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 1px; }
 
 /* ── Condições v2 (spec Figma) — mesmo padrão em 3 camadas de
    Perícias/Recursos (externo/box título/interno). */
@@ -1564,13 +1564,13 @@
   font-family: var(--font-rajdhani), sans-serif; font-size: 13px; font-weight: 600; line-height: 18px;
 }
 .rc-ncond-abrir:hover { text-decoration: underline; }
-.rc-ncond-abrir:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+.rc-ncond-abrir:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 2px; }
 .rc-ncond-x {
   display: grid; place-items: center; width: 14px; height: 14px; cursor: pointer;
   border: none; background: transparent; color: color-mix(in srgb, var(--rc-danger) 70%, var(--rc-surface-3));
 }
 .rc-ncond-x:hover { color: color-mix(in srgb, var(--rc-danger) 75%, #fff); }
-.rc-ncond-x:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-ncond-x:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 1px; }
 .rc-ncond-add {
   display: inline-flex; height: 28px; padding: 0 6px; align-items: center; gap: 6px;
   border-radius: var(--rc-r-sm); border: 1px solid rgba(0, 212, 255, 0.08);
@@ -1579,7 +1579,7 @@
   color: rgba(234, 247, 255, 0.65); cursor: pointer;
 }
 .rc-ncond-add:hover { border-color: rgba(0, 212, 255, 0.3); color: var(--rc-text-forte); }
-.rc-ncond-add:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-ncond-add:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 1px; }
 .rc-ncond-vazio {
   flex: 1 0 0; align-self: stretch; margin: 0; display: flex; align-items: center;
   color: rgba(214, 228, 245, 0.70);
@@ -1596,9 +1596,9 @@
   font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(0, 212, 255, 0.85);
   transition: background 0.14s, border-color 0.14s, color 0.14s;
 }
-.rc-ghost:hover:not(:disabled) { background: rgba(0, 212, 255, 0.14); border-color: var(--cy); color: var(--rc-text); }
+.rc-ghost:hover:not(:disabled) { background: rgba(0, 212, 255, 0.14); border-color: var(--rc-cy); color: var(--rc-text); }
 .rc-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
-.rc-ghost:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-ghost:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 1px; }
 
 /* ── Dock (janela minimizada) — "console compacto de recursos", não
    uma pill genérica: nome, avatar e as três trilhas REAIS de PV/PE/
@@ -1647,8 +1647,8 @@
   font-size: 10px; font-weight: 600; color: var(--rc-text);
   cursor: pointer; box-sizing: border-box;
 }
-.rc-dock-val:hover { border-color: var(--cy); }
-.rc-dock-val:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-dock-val:hover { border-color: var(--rc-cy); }
+.rc-dock-val:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 1px; }
 .rc-dock-val[data-invalido="true"] { border-color: var(--rc-danger); color: color-mix(in srgb, var(--rc-danger) 45%, #fff); }
 .rc-dock-input {
   width: 100%; height: 100%; min-width: 0; padding: 0 3px;
@@ -1685,8 +1685,8 @@
   border: 1px solid rgba(0, 212, 255, 0.2); background: rgba(0, 212, 255, 0.04);
   color: inherit; font-size: 12px;
 }
-.rc-aux-item:hover { border-color: var(--cy, var(--cy)); background: rgba(0, 212, 255, 0.12); }
-.rc-aux-item:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-aux-item:hover { border-color: var(--rc-cy, var(--rc-cy)); background: rgba(0, 212, 255, 0.12); }
+.rc-aux-item:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 1px; }
 .rc-aux-acoes { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
 .rc-aux-dados { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
 .rc-aux-dado {
@@ -1694,7 +1694,7 @@
   border: 1px solid rgba(0, 212, 255, 0.35);
   font-family: var(--font-mono), ui-monospace, monospace; font-size: 12px; color: var(--rc-text);
 }
-.rc-aux-dado[data-maior="true"] { border-color: var(--cy, var(--cy)); background: #111d31; color: var(--rc-text); font-weight: 700; }
+.rc-aux-dado[data-maior="true"] { border-color: var(--rc-cy, var(--rc-cy)); background: #111d31; color: var(--rc-text); font-weight: 700; }
 .rc-aux-total {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 20px; font-weight: 700; color: var(--rc-text);
@@ -1708,12 +1708,12 @@
   display: flex; align-items: flex-start; gap: 8px;
   padding: 8px 10px; margin-bottom: 10px;
   border: 1px solid rgba(207, 154, 62, 0.35);
-  background: color-mix(in srgb, var(--am) 8%, transparent);
+  background: color-mix(in srgb, var(--rc-am) 8%, transparent);
   border-radius: var(--rc-r-sm);
   font-size: 12px; line-height: 16px; color: rgba(238, 203, 143, 0.92);
 }
-.rc-aux-defesa-aviso svg { flex-shrink: 0; margin-top: 1px; color: var(--am, var(--am)); }
-.rc-aux-defesa-aviso strong { color: var(--am); }
+.rc-aux-defesa-aviso svg { flex-shrink: 0; margin-top: 1px; color: var(--rc-am, var(--rc-am)); }
+.rc-aux-defesa-aviso strong { color: var(--rc-am); }
 
 /* ── FichaHeader (/ficha) ──────────────────────────────────────────
    Cabeçalho que envolve o Console por FORA (ver docblock de
@@ -1754,7 +1754,7 @@
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px;
 }
-.rc-fichaheader-badge--narrator { background: color-mix(in srgb, var(--am) 20%, #0c1420); border: 1px solid color-mix(in srgb, var(--am) 45%, var(--rc-surface-3)); color: color-mix(in srgb, var(--am) 75%, #fff); }
+.rc-fichaheader-badge--narrator { background: color-mix(in srgb, var(--rc-am) 20%, #0c1420); border: 1px solid color-mix(in srgb, var(--rc-am) 45%, var(--rc-surface-3)); color: color-mix(in srgb, var(--rc-am) 75%, #fff); }
 .rc-fichaheader-badge--player { background: #111d31; border: 1px solid var(--rc-line); color: #5ec8ff; }
 .rc-fichaheader-seletor { display: flex; align-items: center; gap: 6px; font-size: 12px; }
 .rc-fichaheader-seletor-rotulo { opacity: 0.6; }
@@ -2038,7 +2038,7 @@
   transition: background .14s, border-color .14s, color .14s;
 }
 .rc-inv-aba:hover { color: rgba(214, 228, 245, 0.83); border-color: rgba(0, 212, 255, 0.35); }
-.rc-inv-aba:focus-visible { outline: 1px solid var(--cy); outline-offset: -2px; }
+.rc-inv-aba:focus-visible { outline: 1px solid var(--rc-cy); outline-offset: -2px; }
 .rc-inv-aba[data-ativo] {
   background: var(--rc-line); border-color: #108bac; color: rgba(214, 228, 245, 0.83);
 }
@@ -2134,7 +2134,7 @@
   transition: background .14s, border-color .14s;
 }
 .rc-inv-card:hover { background: rgba(17, 29, 49, 0.7); border-color: rgba(0, 212, 255, 0.65); }
-.rc-inv-card:focus-visible { outline: 1px solid var(--cy); outline-offset: 1px; }
+.rc-inv-card:focus-visible { outline: 1px solid var(--rc-cy); outline-offset: 1px; }
 /* Selecionado: o degrau do desenho é em DOIS eixos — a superfície sobe
    um passo e o fio sobe junto. Um só não se lê. */
 /* O selecionado NÃO é o fio mais forte da grade — quem diz "este" é o
@@ -2330,11 +2330,11 @@
 .rc-inv-passo {
   flex: none; width: 33px; display: flex; align-items: center; justify-content: center;
   cursor: pointer; border: 1px solid var(--rc-line); background: rgba(17, 29, 49, 0.45);
-  color: var(--cy); font: inherit; font-size: 15px; line-height: 1;
+  color: var(--rc-cy); font: inherit; font-size: 15px; line-height: 1;
   transition: background .14s, color .14s;
 }
 .rc-inv-passo:hover:not(:disabled) { background: rgba(0, 212, 255, .12); }
-.rc-inv-passo:focus-visible { outline: 1px solid var(--cy); outline-offset: -2px; }
+.rc-inv-passo:focus-visible { outline: 1px solid var(--rc-cy); outline-offset: -2px; }
 /* Desabilitado apaga o GLIFO, nunca a moldura: a caixa faz parte do
    desenho do contador e some junto se a opacidade for do botão
    inteiro — o campo do número fica com um buraco na ponta. */
@@ -2354,7 +2354,7 @@
   flex: none; width: 38px; display: flex; align-items: center; justify-content: center;
   margin-left: 8px; cursor: pointer;
   border: 1px solid var(--rc-line); background: rgba(17, 29, 49, 0.45);
-  color: var(--cy);
+  color: var(--rc-cy);
   transition: background .14s, border-color .14s, color .14s;
 }
 .rc-inv-stepper-descartar:hover {
@@ -2385,8 +2385,8 @@
   font: 600 12px/16px var(--font-rajdhani), sans-serif;
   transition: background .14s, border-color .14s, color .14s;
 }
-.rc-inv-mover-op:hover:not(:disabled) { border-color: rgba(0, 212, 255, .65); color: var(--cy); }
-.rc-inv-mover-op:focus-visible { outline: 1px solid var(--cy); outline-offset: 1px; }
+.rc-inv-mover-op:hover:not(:disabled) { border-color: rgba(0, 212, 255, .65); color: var(--rc-cy); }
+.rc-inv-mover-op:focus-visible { outline: 1px solid var(--rc-cy); outline-offset: 1px; }
 .rc-inv-mover-op:disabled { cursor: not-allowed; color: var(--rc-dim); background: rgba(12, 20, 32, .5); }
 .rc-inv-mover-motivo {
   font-size: 10px; font-weight: 400; line-height: 12px; color: var(--rc-dim);
@@ -2418,8 +2418,8 @@
   letter-spacing: 2.42px; text-transform: uppercase; white-space: nowrap;
   transition: background .14s, border-color .14s, color .14s;
 }
-.rc-inv-btn:hover:not(:disabled) { border-color: rgba(0, 212, 255, 0.45); color: var(--cy); }
-.rc-inv-btn:focus-visible { outline: 1px solid var(--cy); outline-offset: 1px; }
+.rc-inv-btn:hover:not(:disabled) { border-color: rgba(0, 212, 255, 0.45); color: var(--rc-cy); }
+.rc-inv-btn:focus-visible { outline: 1px solid var(--rc-cy); outline-offset: 1px; }
 .rc-inv-btn:active:not(:disabled) { background: rgba(0, 212, 255, .14); }
 .rc-inv-btn:disabled { opacity: .4; cursor: not-allowed; }
 /* A primária é a larga do desenho (230 de 365): ela não divide espaço
@@ -2435,7 +2435,7 @@
   font-weight: 600; cursor: help;
   text-decoration: underline dotted; text-underline-offset: 2px;
 }
-.rc-termo[data-tipo="acao"] { color: var(--cy); text-decoration-color: rgba(0, 212, 255, 0.45); }
+.rc-termo[data-tipo="acao"] { color: var(--rc-cy); text-decoration-color: rgba(0, 212, 255, 0.45); }
 .rc-termo[data-tipo="condicao"] { color: var(--rc-danger); text-decoration-color: rgba(209, 80, 104, 0.45); }
 .rc-termo:hover, .rc-termo:focus-visible { text-decoration-style: solid; outline: none; }
 
@@ -2494,7 +2494,7 @@
   padding: 1px 6px; cursor: pointer; text-align: right;
 }
 .rc-inv-carteira-val:hover:not(:disabled) { border-color: rgba(0, 212, 255, 0.35); }
-.rc-inv-carteira-val:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-inv-carteira-val:focus-visible { outline: 2px solid var(--rc-cy); outline-offset: 1px; }
 .rc-inv-carteira-val:disabled { cursor: default; }
 .rc-inv-carteira-campo {
   width: 120px; padding: 1px 6px; border-radius: var(--rc-r-sm); text-align: right;
@@ -2502,7 +2502,7 @@
   font-variant-numeric: tabular-nums; color: var(--rc-text-forte);
   background: #08141c; border: 1px solid rgba(0, 212, 255, 0.55);
 }
-.rc-inv-carteira-campo:focus { outline: none; border-color: var(--cy); }
+.rc-inv-carteira-campo:focus { outline: none; border-color: var(--rc-cy); }
 .rc-inv-carteira-aviso {
   margin: 4px 0 0; font-size: 11px; line-height: 1.4; color: #ffb3bd;
 }
