@@ -100,7 +100,12 @@ PLOT-01 ──> PLOT-02
 
 ### AUTH-02 — Unificar linguagem visual da área autenticada com o VTT
 
-- **Status:** Pronta
+- **Status:** Pronta (parte estática concluída)
+- **Decisão tomada (2026-09-20)** sobre “qual superfície do VTT é a referência”: o **chassi** (`_design/vtt-chassi.css`). Não foi escolha de gosto — `console.css` já documenta os próprios tokens como espelho dos `--rv-*` do chassi, então ele já era a fonte de fato.
+- **`clip-path` em controle não era estilo, era defeito de acessibilidade.** Ele recorta TODA a pintura do elemento, inclusive o contorno de foco; os controles da área autenticada desenham o foco com `outline-offset` positivo, isto é, **fora** da região recortada. O canto chanfrado apagava o único sinal de onde o teclado está. Saiu de `.ra-btn`, `.ra-iconbtn`, `.ra-switch` e dos campos de formulário, substituído por `border-radius: var(--ra-r)`. As **11 regras decorativas** (selo da marca, cards, modal, moldura, vazio) continuam com o chanfro: ali ele é identidade visual e não há foco para comer.
+- Raio em token (`--ra-r`, `--ra-r-sm`), com o comentário apontando a origem no chassi — a área autenticada não carrega aquela folha, então os valores são repetidos com o nome dizendo de onde vieram.
+- Cinco critérios estáticos em `scripts/dev/check-auth-tokens-visuais.mjs`. O verificador remove comentários antes de contar: contar menção em comentário já produziu falso positivo duas vezes neste repositório.
+- **Pendente:** a regressão visual nas rotas globais, que ainda não rodei, e a redução de duplicação de estilos entre `app.css` e o VTT além do raio (a paleta em si continua com literais dos dois lados).
 - **Descrição:** inventariar cores, raios, botões e superfícies de `app.css` e do VTT; criar ou reutilizar tokens/primitivos compartilhados; remover `clip-path` dos botões da área autenticada sem remover recortes decorativos que não sejam botões.
 - **Área afetada:** `src/app/_design`, shell global, dashboard, conta, personagens e compêndio globais.
 - **Prioridade sugerida:** P1
