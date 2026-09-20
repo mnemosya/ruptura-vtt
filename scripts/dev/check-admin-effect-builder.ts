@@ -270,18 +270,41 @@ async function main(): Promise<void> {
     console.log("12. Cancelar alterações não salva — OK");
 
     // ------------------------------------------------------------------
-    // 18. Efeito legado desconhecido permanece preservado (magia real com teste_resistencia).
+    // 18. Efeito legado desconhecido permanece preservado (magia real).
+    //
+    // Duas coisas envelheceram aqui, e nenhuma delas era defeito do app:
+    //
+    // 1. O passo ia direto de "Criar rascunho de edição" para um rascunho
+    //    com id. Não vai mais: conteúdo SEM `content_editor_metadata`
+    //    (tabela da migration 0023) passa antes pelo diagnóstico de
+    //    conversão, em /rascunhos/legado/<tipo>/<slug> — comportamento
+    //    deliberado da Etapa 6. E TODO o acervo publicado é assim: 450
+    //    documentos, zero linhas de metadata editorial, porque o conteúdo
+    //    foi seedado antes de o Editor existir e a conversão acontece sob
+    //    demanda, quando alguém edita. O check esperava a URL do caminho
+    //    rápido e morria num `waitForURL` que nunca chegava.
+    //
+    // 2. O efeito procurado se chamava `teste_resistencia` e não existe em
+    //    documento nenhum — foi RENOMEADO para `efeito_com_resistencia`.
+    //    A magia continua tendo o efeito; só o nome no comentário estava
+    //    velho.
     // ------------------------------------------------------------------
     await page.goto(`${BASE_URL}/admin/biblioteca/spell/energetica_bola_de_fogo`, { waitUntil: "domcontentloaded" });
     await page.getByRole("button", { name: "Criar rascunho de edição" }).click();
-    await page.waitForURL(/\/admin\/biblioteca\/rascunhos\/[0-9a-f-]{36}/, { timeout: 10000 });
+    await page.waitForURL(/\/admin\/biblioteca\/rascunhos\/legado\//, { timeout: 10000 });
+    assert.ok(
+      (await page.textContent("body"))?.includes("Diagnóstico de conversão"),
+      "18. Conteúdo seedado (sem metadata editorial) deveria passar pelo diagnóstico de conversão.",
+    );
+    await page.getByRole("button", { name: "Iniciar rascunho de edição" }).click();
+    await page.waitForURL(/\/admin\/biblioteca\/rascunhos\/[0-9a-f-]{36}/, { timeout: 15000 });
     const idMagiaLegado = page.url().split("/").pop()!;
     idsCriados.push(idMagiaLegado);
     const containerPreservados = page.locator('[data-testid="efeitos-preservados-container"]');
     await containerPreservados.waitFor();
     const textoPreservados = await containerPreservados.textContent();
-    assert.ok(!textoPreservados?.includes("Nenhum efeito fora do Construtor"), "Deveria haver ao menos um efeito preservado (teste_resistencia) para esta magia real.");
-    console.log("18. Efeito legado (teste_resistencia) permanece preservado — OK");
+    assert.ok(!textoPreservados?.includes("Nenhum efeito fora do Construtor"), "18. Deveria haver ao menos um efeito preservado (efeito_com_resistencia) para esta magia real.");
+    console.log("18. Efeito legado (efeito_com_resistencia) permanece preservado — OK");
 
     // ------------------------------------------------------------------
     // 19. Nenhum JSON bruto aparece no fluxo principal.
