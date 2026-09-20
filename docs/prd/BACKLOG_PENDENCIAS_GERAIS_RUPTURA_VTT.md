@@ -48,14 +48,14 @@ Esta triagem considera o código existente, não apenas a lista de desejos:
 
 | Recorte | Quantidade |
 |---|---:|
-| Total de tarefas | 70 |
-| Prontas | 21 |
+| Total de tarefas | 71 |
+| Prontas | 22 |
 | Prontas após dependência | 4 |
 | Bloqueadas por regra, contrato ou referência indispensável | 45 |
 | Em validação | 0 |
 | P0 | 14 |
 | P1 | 41 |
-| P2 | 14 |
+| P2 | 15 |
 | P3 | 1 |
 
 ## 3. Dependências críticas
@@ -258,13 +258,67 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 
 ### CONT-01 — Definir taxonomia do organizador de campanha
 
-- **Status:** Bloqueada
+- **Status:** Pronta (taxonomia aprovada em 2026-09-20)
 - **Descrição:** especificar os tipos narrativos — sessão, anotação, handout, NPC, lugar, loja e “outros” — e separar esse domínio do conteúdo de regras oficial/override/homebrew já existente.
 - **Área afetada:** produto, modelo de dados, Conteúdo da campanha e Compêndio.
 - **Prioridade sugerida:** P0
 - **Dependências:** aprovação do responsável de produto.
 - **Critérios de aceite:** campos comuns e específicos por tipo; relações permitidas; política de anexos; estados de rascunho/publicação/arquivamento; busca, ordenação e categorias; estratégia de migração/convivência com `campaignContent` atual.
-- **Dúvidas antes da implementação:** NPC referencia uma ficha PN ou pode ser só texto? Loja referencia o Mercado? “Outros” é tipo livre ou categoria? Handout aceita arquivos além de imagem? Conteúdo pode pertencer a várias sessões/lugares?
+- **Dúvidas antes da implementação:** respondidas pelo responsável de produto em 2026-09-20; a especificação abaixo é a regra aprovada.
+
+#### Taxonomia aprovada do organizador de campanha
+
+**Achados do código que moldaram estas decisões:**
+
+- `content_type` (0001) é enum de **regras** — item, magia, runa, talento, condição. O domínio narrativo não entra ali, e a separação que esta tarefa pedia já é natural: tabelas próprias, sem tocar `campaign_content_documents`.
+- **Não existe entidade de loja.** O Mercado nunca foi tela nem catálogo: é a Loja do Mercado Noturno dentro da aba Inventário da ficha, operando sobre a carteira de um personagem. Não havia o que “referenciar”.
+- **PN não é tabela separada:** é `characters` com `payload.metadados.tipo_personagem === "pn"`.
+- Anexo de imagem já tem pipeline: bucket privado por campanha, WebP, teto de 10MB, SVG e GIF recusados por decisão explícita (0099).
+
+**Tipos (cinco):** `sessao`, `anotacao`, `handout`, `npc`, `lugar`.
+
+- **“Outros” não existe.** Tipo curinga vira maioria e deixa de classificar. O que não se encaixa é `anotacao` com **etiquetas livres** criadas pelo narrador (`regra-caseira`, `nomes`, `trilha`), e se filtra por etiqueta.
+- **Loja fica de fora** e vira tarefa própria (ver SHOP-01). Loja de verdade quer catálogo, estoque, preço e vínculo com carteira — do tamanho de INV, não um tipo de texto.
+
+**Campos comuns a todos os tipos:**
+
+| Campo | Regra |
+|---|---|
+| `id`, `campaign_id` | Isolamento por campanha, como todo o resto. |
+| `tipo` | Um dos cinco. Não muda depois de criado (mudar tipo é criar outro item). |
+| `titulo` | Obrigatório, exceto em `handout`, que pode ser só a imagem. |
+| `corpo` | Texto longo, opcional. |
+| `etiquetas` | Lista livre de texto, criada pelo narrador. É o que substitui “outros”. |
+| `estado` | `rascunho`, `publicado` ou `arquivado`. |
+| `criado_por`, `criado_em`, `atualizado_em`, `arquivado_em` | Auditoria mínima. |
+
+**Campos específicos por tipo:**
+
+| Tipo | Específico |
+|---|---|
+| `sessao` | `acontecida_em` (data/hora, passada ou futura) e `online_session_id` opcional, apontando para `campaign_online_sessions` — é o encaixe que CONT-04 vai usar para gerar o registro automático. |
+| `anotacao` | Nenhum. É o tipo genérico, e é de propósito que ele não tenha campo próprio. |
+| `handout` | Título opcional; existe para carregar anexo. |
+| `npc` | `character_id` opcional, apontando para uma ficha PN. Todo NPC é texto; quem merece ficha ganha o vínculo. |
+| `lugar` | Nenhum. Hierarquia (bairro dentro de cidade) se resolve por relação, não por campo. |
+
+**Relações:** muitos-para-muitos, **simétricas e sem papel** — qualquer item se relaciona com qualquer item, inclusive do mesmo tipo (`lugar` com `lugar` aninha; `npc` com `lugar` situa; `sessao` com qualquer coisa registra o que apareceu). Uma matriz de pares permitidos seria decorada por ninguém e viraria obstáculo na hora de anotar.
+
+**Anexos:** só imagem, reusando inteiramente o pipeline do VTT — bucket privado por campanha, conversão para WebP, teto de 10MB, SVG e GIF recusados. Qualquer tipo pode ter anexo (um `lugar` com mapa), e `handout` é o tipo cujo sentido é o anexo. PDF e arquivo arbitrário ficam fora: PDF é formato ativo, como o SVG já recusado, e aceitá-lo exigiria bucket novo e refazer o raciocínio de segurança.
+
+**Estados:**
+
+- `rascunho` — só o narrador vê, sempre, independentemente de qualquer regra de visibilidade;
+- `publicado` — sujeito à visibilidade que CONT-02 definir;
+- `arquivado` — sai das listas, continua achável com filtro explícito, e volta atrás. Arquivar **não** apaga. Excluir de vez existe à parte, só para o narrador, com confirmação, e leva as relações junto.
+
+**Busca, ordenação e categorias:**
+
+- busca por título e corpo; filtros por tipo, etiqueta e estado;
+- ordenação padrão por `atualizado_em` decrescente; alternativas por título e, em `sessao`, por `acontecida_em`;
+- não há pastas. As “categorias” são os cinco tipos mais as etiquetas livres — duas formas de organizar já são uma a mais do que o necessário.
+
+**Convivência com `campaignContent`:** domínios separados, sem migração de dados — nada de narrativo existe hoje, então não há o que converter. O organizador narrativo **não** entra em `content_type` nem em `campaign_content_documents`, e nesta primeira versão também não referencia conteúdo de regras: citar um item homebrew dentro de uma anotação fica para depois, quando houver demanda real.
 
 ### CONT-02 — Implementar armazenamento e autorização do conteúdo narrativo
 
@@ -273,6 +327,7 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 - **Área afetada:** banco, RLS, Server Actions, realtime e storage.
 - **Prioridade sugerida:** P0
 - **Dependências:** CONT-01.
+- **Nota (2026-09-20):** CONT-01 está concluída — a taxonomia deixou de ser o bloqueio. O que falta aqui são as dúvidas próprias listadas abaixo.
 - **Critérios de aceite:** narrador cria/edita/arquiva; jogadores leem somente conteúdo revelado e suas próprias notas quando aplicável; mudança de visibilidade é atômica e auditável; anexos seguem a mesma autorização; testes negativos entre campanhas.
 - **Dúvidas antes da implementação:** visibilidade é binária, por jogador ou por grupo? Existe publicação agendada? Jogador pode comentar em handout ou apenas ler?
 
@@ -305,6 +360,17 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 - **Dependências:** CONT-01, CONT-02, COMP-01.
 - **Critérios de aceite:** revelar não duplica o item; ocultar remove acesso futuro sem apagar histórico autorizado, conforme regra aprovada; alterações posteriores seguem política explícita; interface mostra exatamente o que cada público verá.
 - **Dúvidas antes da implementação:** jogadores veem atualização automática depois da revelação? Ocultar remove acesso a um item já visto? O narrador pode revelar só parte de um item ou para jogadores selecionados?
+
+### SHOP-01 — Especificar e implementar lojas da campanha
+
+- **Status:** Bloqueada
+- **Origem:** desdobrada de CONT-01 em 2026-09-20. “Loja” estava na lista de tipos narrativos, mas não havia entidade alguma para referenciar: o Mercado é a Loja do Mercado Noturno dentro da aba Inventário da ficha, operando sobre a carteira de um personagem — não é tela, catálogo nem cadastro. Tratar loja como texto criaria um tipo que parece funcional e não é, e que brigaria com a loja de verdade depois.
+- **Descrição:** definir e implementar loja como entidade própria: catálogo de itens, estoque, preço, disponibilidade e a relação com inventário e carteira.
+- **Área afetada:** banco, inventário, carteira, Mercado, organizador de campanha.
+- **Prioridade sugerida:** P2
+- **Dependências:** INV-01 (taxonomia e regras de mochila) e INV-02; a loja movimenta o inventário que essas tarefas definem.
+- **Critérios de aceite:** narrador cria loja com catálogo próprio; preço e estoque são do narrador; compra debita carteira e credita inventário numa operação só; estoque esgotado é recusado no servidor; loja se relaciona com um `lugar` do organizador; isolamento entre campanhas testado.
+- **Dúvidas antes da implementação:** estoque é finito ou ilimitado por padrão? Preço pode divergir do preço base do item? Jogador compra sozinho ou o narrador aprova? Loja pode vender item homebrew da campanha? Vender de volta existe, e a que preço?
 
 ## 7. Personagens e console
 
