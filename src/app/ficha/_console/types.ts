@@ -10,6 +10,7 @@
  * removido sem levar lógica junto.
  */
 
+import type { WalletId } from "../../../lib/character/inventory";
 import type {
   ActiveCondition,
   Character,
@@ -170,6 +171,17 @@ export interface ConsoleApi {
    * Em Modo Jogo o próprio handler recusa — a UI só esconde o controle.
    */
   editarAtributo: (id: keyof CharacterAttributes, valor: number) => void;
+  /**
+   * Define o saldo de uma carteira (INV-03). Valor ABSOLUTO — a soma e
+   * a subtração são resolvidas por quem chama, para que o resultado
+   * dependa do que foi pedido e não do estado que o campo tinha quando
+   * a tela renderizou.
+   *
+   * A escrita vai pelo mesmo caminho de qualquer outra alteração da
+   * ficha (`update_character_sheet_payload`), que revalida controle e
+   * participação ativa no servidor.
+   */
+  definirCarteira: (walletId: WalletId, valor: number) => void;
   editarPericia: (id: string, valor: number) => void;
   /** PM de evolução — `null` quando a ficha nunca registrou PM. */
   pm: { disponivel: number; total: number } | null;

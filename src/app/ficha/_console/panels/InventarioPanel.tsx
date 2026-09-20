@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { espacosDoItem } from "../../../../lib/character/carga";
 import type { InventoryItemInstance, ItemContent, ItemLoadoutState } from "../../../../lib/character";
+import type { WalletId } from "../../../../lib/character/inventory";
 import { TextoComRegras } from "../TextoComRegras";
 import { TermoComDica } from "../TermoComDica";
 import { DecoTop } from "../deco";
@@ -188,40 +189,101 @@ function IconeDaCategoria({ categoria }: { categoria: string }) {
 }
 
 /**
- * CARTEIRA (INV-03) — leitura do contrato `carteira` que já existe
- * (PRD 13.1: três saldos separados, nunca uma soma única).
+ * CARTEIRA (INV-03) — leitura e edição do contrato `carteira` que já
+ * existe (PRD 13.1: três saldos separados, nunca uma soma única).
  *
- * Só leitura. A mutação de saldo pertence aos fluxos autorizados de
- * compra e recompensa; um campo editável aqui seria uma quarta porta
- * para o mesmo número, sem servidor validando nada.
+ * O campo aceita as duas formas de mexer no saldo: digitar o valor
+ * final, ou digitar `+50` / `-20` para somar e subtrair. Um campo só,
+ * porque são o mesmo gesto com pontos de partida diferentes — e porque
+ * somar 50 é o que se faz na mesa, enquanto saber o total exato é o que
+ * se faz ao conferir.
+ *
+ * A soma é resolvida NO ENVIO, contra o saldo que está na ficha naquele
+ * instante, e o que vai para o servidor é o valor absoluto. Mandar o
+ * delta faria o resultado depender de quando a tela renderizou.
+ *
+ * A escrita segue o caminho de qualquer alteração de ficha, que
+ * revalida controle no servidor — nenhuma porta nova.
  *
  * Aretz em destaque, porque é a moeda corrente. CDI e CDI craqueada só
- * aparecem quando há saldo — três zeros lado a lado dariam a impressão
- * de que o personagem tem três carteiras vazias, quando na verdade ele
- * só nunca encostou nas outras duas.
- *
- * Carteira AUSENTE não é carteira zerada: o contrato diz "ausente = 0",
- * mas enquanto a ficha não carregou não se sabe, e um zero exibido cedo
- * demais é o tipo de número que se usa para decidir uma compra.
+ * aparecem quando há saldo: três zeros lado a lado dariam a impressão
+ * de três carteiras vazias, quando na verdade a pessoa só nunca
+ * encostou nas outras duas.
  */
-function Carteira({ carteira }: { carteira?: { aretz_informal: number; cdi: number; cdi_craqueada: number } }) {
+function Carteira({ carteira, onDefinir }: {
+  carteira?: { aretz_informal: number; cdi: number; cdi_craqueada: number };
+  onDefinir: (walletId: WalletId, valor: number) => void;
+}) {
   const fmt = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+  const [editando, setEditando] = useState(false);
+  const [texto, setTexto] = useState("");
+  const [aviso, setAviso] = useState<string | null>(null);
+
   const secundarias = carteira
-    ? ([["CDI", carteira.cdi], ["CDI craqueada", carteira.cdi_craqueada]] as const).filter(([, v]) => v > 0)
+    ? ([["CDI", "cdi"], ["CDI craqueada", "cdi_craqueada"]] as const)
+        .filter(([, id]) => carteira[id] > 0)
     : [];
+
+  function abrir() {
+    if (!carteira) return;
+    setTexto(String(carteira.aretz_informal));
+    setAviso(null);
+    setEditando(true);
+  }
+
+  function confirmar() {
+    if (!carteira) { setEditando(false); return; }
+    const bruto = texto.trim().replace(/\./g, "").replace(",", ".");
+    const m = bruto.match(/^([+-])?\s*(\d+(?:\.\d+)?)$/);
+    if (!m) {
+      // Recusa em silêncio seria pior: quem digitou "50 aretz" precisa
+      // saber por que o número não mudou.
+      setAviso("Use um número, ou +N / -N para somar e subtrair.");
+      return;
+    }
+    const n = Number(m[2]);
+    const sinal = m[1];
+    const alvo = sinal === "+" ? carteira.aretz_informal + n
+      : sinal === "-" ? carteira.aretz_informal - n
+      : n;
+    onDefinir("aretz_informal", alvo);
+    setEditando(false);
+    setAviso(null);
+  }
+
   return (
     <div className="rc-inv-carteira" data-testid="console-carteira">
       <div className="rc-inv-carteira-linha">
         <span className="rc-inv-carteira-rot">Aretz</span>
-        <strong className="rc-inv-carteira-val" data-vazio={carteira ? undefined : true}
-          data-testid="console-carteira-aretz">
-          {carteira ? fmt(carteira.aretz_informal) : "—"}
-        </strong>
+        {editando ? (
+          <input
+            className="rc-inv-carteira-campo"
+            autoFocus
+            value={texto}
+            inputMode="text"
+            aria-label="Saldo em aretz — número, ou +N e -N para somar e subtrair"
+            data-testid="console-carteira-campo"
+            onChange={(e) => { setTexto(e.target.value); setAviso(null); }}
+            onBlur={confirmar}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); confirmar(); }
+              if (e.key === "Escape") { e.preventDefault(); setEditando(false); setAviso(null); }
+            }}
+          />
+        ) : (
+          <button type="button" className="rc-inv-carteira-val" onClick={abrir}
+            disabled={!carteira} data-vazio={carteira ? undefined : true}
+            title={carteira ? "Editar saldo — aceita +N e -N" : undefined}
+            data-testid="console-carteira-aretz">
+            {carteira ? fmt(carteira.aretz_informal) : "—"}
+          </button>
+        )}
       </div>
+      {aviso && <p className="rc-inv-carteira-aviso" role="alert">{aviso}</p>}
       {secundarias.length > 0 && (
         <div className="rc-inv-carteira-outras">
-          {secundarias.map(([rotulo, valor]) => (
-            <span key={rotulo}><span className="rc-inv-carteira-rot">{rotulo}</span> {fmt(valor)}</span>
+          {secundarias.map(([rotulo, id]) => (
+            <span key={id}><span className="rc-inv-carteira-rot">{rotulo}</span> {fmt(carteira![id])}</span>
           ))}
         </div>
       )}
@@ -311,7 +373,7 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
             </div>
           </div>
 
-          <Carteira carteira={api.character.carteira} />
+          <Carteira carteira={api.character.carteira} onDefinir={api.definirCarteira} />
 
           <div className="rc-inv-rolo">
             {/* SÓ NA MOCHILA. O medidor mede a mochila; sob "Equipado",

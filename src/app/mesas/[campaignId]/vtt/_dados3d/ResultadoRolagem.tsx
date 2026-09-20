@@ -18,6 +18,7 @@
  */
 
 import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { PolyDie } from "./PolyDie";
 import { CARGA_MAX_MS } from "./lancamento";
 import { Check, Chevron, Cross, Dice, DoubleCheck, Half, Warn } from "./icones";
@@ -790,6 +791,17 @@ export function RollButton({ label, solid = false, disabled = false, onRoll, onC
   const [carregando, setCarregando] = useState(false);
   const [batendo, setBatendo] = useState(false);
   const [aneis, setAneis] = useState<{ id: number }[]>([]);
+  /**
+   * VIS-02 — os anéis do charge crescem 1,5× e eram cortados.
+   *
+   * Eles nasciam dentro do próprio botão, e qualquer ancestral que
+   * rolasse (`.rc-body`, `.rv-dados-corpo`) recorta o que passa da
+   * borda. Desenhá-los no `body`, sobre a caixa medida do botão, tira o
+   * recorte sem mexer no scroll de quem os hospeda — e sem ampliar área
+   * clicável, porque a camada inteira é `pointer-events: none`.
+   */
+  const botaoRef = useRef<HTMLButtonElement>(null);
+  const [caixaBotao, setCaixaBotao] = useState<DOMRect | null>(null);
   const [estourando, setEstourando] = useState(false);
   const carregandoRef = useRef(false);
   const disparadoRef = useRef(true); // começa "já disparado": nada solto sem antes ter pressionado
@@ -827,6 +839,7 @@ export function RollButton({ label, solid = false, disabled = false, onRoll, onC
       setBatendo(true);
       setTimeout(() => setBatendo(false), 80);
       const id = idAnelRef.current++;
+      setCaixaBotao(botaoRef.current?.getBoundingClientRect() ?? null);
       setAneis((r) => [...r, { id }]);
       setTimeout(() => setAneis((r) => r.filter((x) => x.id !== id)), 900);
       timerBatidaRef.current = setTimeout(bater, intervalo);
@@ -925,17 +938,26 @@ export function RollButton({ label, solid = false, disabled = false, onRoll, onC
       {estourando && (
         <div className="rup-burst-flash" aria-hidden="true" style={{ position: "absolute", inset: 0, borderRadius: 2, background: corDaCarga(cargaRef.current), zIndex: 20, pointerEvents: "none" }} />
       )}
-      {/* anéis de batimento emanando do botão */}
-      {aneis.map((anel) => (
-        <div key={anel.id} aria-hidden="true"
-          style={{
-            position: "absolute", inset: -2, borderRadius: 2, pointerEvents: "none",
-            border: `1px solid ${corCarga}`,
-            animation: `rup-charge-ring ${Math.max(0.38, 0.75 - carga * 0.37)}s ease-out forwards`,
-          }}
-        />
-      ))}
-      <button type="button" disabled={disabled}
+      {/* Anéis de batimento — desenhados no `body`, sobre a caixa do
+          botão, para não serem cortados pelo container que rola. */}
+      {aneis.length > 0 && caixaBotao && typeof document !== "undefined" && createPortal(
+        <div aria-hidden="true" style={{
+          position: "fixed", left: caixaBotao.left - 2, top: caixaBotao.top - 2,
+          width: caixaBotao.width + 4, height: caixaBotao.height + 4,
+          pointerEvents: "none", zIndex: 940,
+        }}>
+          {aneis.map((anel) => (
+            <div key={anel.id} style={{
+              position: "absolute", inset: 0, borderRadius: 2, pointerEvents: "none",
+              border: `1px solid ${corCarga}`,
+              animation: `rup-charge-ring ${Math.max(0.38, 0.75 - carga * 0.37)}s ease-out forwards`,
+            }} />
+          ))}
+        </div>,
+        document.body,
+      )}
+      <button type="button" disabled={disabled} ref={botaoRef}
+        data-testid="charge-lancar"
         data-carregando-forca={carregando ? "true" : undefined}
         onPointerDown={aoPressionar} onPointerUp={aoSoltarPonteiro}
         onPointerCancel={aoCancelarPonteiro} onLostPointerCapture={aoCancelarPonteiro}

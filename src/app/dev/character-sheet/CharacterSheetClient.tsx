@@ -5661,6 +5661,24 @@ export default function CharacterSheetClient({
       handleSetItemEstado(instanceId, estado);
     },
     usarItem: (instanceId) => void handleUseItem(instanceId),
+    /**
+     * Saldo de carteira (INV-03). Mesmo padrão das demais mutações da
+     * ficha: altera o personagem em memória e deixa a persistência
+     * para o salvamento, que passa por `update_character_sheet_payload`
+     * — a RPC revalida controle e participação ativa no servidor.
+     *
+     * Nunca negativo: saldo devedor não existe no contrato (PRD 13.1),
+     * e deixar um número abaixo de zero aqui criaria um estado que o
+     * resto do sistema não sabe ler.
+     */
+    definirCarteira: (walletId, valor) => {
+      const atual = characterRef.current.carteira ?? { aretz_informal: 0, cdi: 0, cdi_craqueada: 0 };
+      const novo = Math.max(0, Math.round(valor));
+      if (atual[walletId] === novo) return;
+      const next = { ...characterRef.current, carteira: { ...atual, [walletId]: novo } };
+      characterRef.current = next;
+      setCharacter(next);
+    },
     ajustarQuantidade: (instanceId, delta) => {
       const next = adjustItemQuantity(characterRef.current, instanceId, delta);
       characterRef.current = next;

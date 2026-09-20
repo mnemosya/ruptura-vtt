@@ -49,9 +49,9 @@ Esta triagem considera o código existente, não apenas a lista de desejos:
 | Recorte | Quantidade |
 |---|---:|
 | Total de tarefas | 72 |
-| Prontas | 33 |
+| Prontas | 34 |
 | Prontas após dependência | 3 |
-| Bloqueadas por regra, contrato ou referência indispensável | 36 |
+| Bloqueadas por regra, contrato ou referência indispensável | 35 |
 | Em validação | 0 |
 | P0 | 14 |
 | P1 | 42 |
@@ -570,7 +570,9 @@ verificação de navegador majoritariamente morta.
 ### INV-03 — Exibir carteira e saldo em aretz
 
 - **Status:** Pronta (concluída)
-- **Andamento (2026-09-20):** carteira lê o contrato `carteira` que já existia (PRD 13.1). **Decisões tomadas:** aretz em destaque e CDI/CDI craqueada só quando há saldo, porque três zeros lado a lado dariam a impressão de três carteiras vazias quando a pessoa só nunca encostou nas outras duas; **somente leitura**, porque a mutação pertence aos fluxos de compra e recompensa e um campo editável ali seria uma quarta porta sem servidor validando; inteiro com separador de milhar pt-BR. Carteira ausente mostra traço, não zero — zero exibido antes de a ficha carregar é o número que alguém usa para decidir uma compra. Oito critérios em navegador (`scripts/dev/check-carteira-inventario.ts`).
+- **Andamento (2026-09-20):** carteira lê o contrato `carteira` que já existia (PRD 13.1). **Mudança pedida pelo usuário em 2026-09-20:** o campo de aretz passou a ser **editável**, aceitando valor absoluto ou `+N` / `-N` para somar e subtrair. Um campo só, porque são o mesmo gesto com pontos de partida diferentes. A soma é resolvida no envio contra o saldo do momento, e o que vai ao servidor é o valor absoluto — mandar o delta faria o resultado depender de quando a tela renderizou. A escrita usa `update_character_sheet_payload`, o mesmo caminho de qualquer alteração de ficha, que revalida controle e participação ativa no servidor: **nenhuma porta nova**. Saldo não fica negativo. Entrada inválida explica o formato em vez de recusar em silêncio. Onze critérios verificados.
+- **Consequência de autorização, para você decidir:** por esse caminho, **quem controla o personagem pode editar o próprio saldo** — inclusive um jogador. Se a intenção era que só o narrador mexesse, isso pede um caminho diferente (RPC própria com `is_campaign_owner`), e vira tarefa nova.
+- **Decisões anteriores mantidas:** aretz em destaque e CDI/CDI craqueada só quando há saldo, porque três zeros lado a lado dariam a impressão de três carteiras vazias quando a pessoa só nunca encostou nas outras duas; inteiro com separador de milhar pt-BR. Carteira ausente mostra traço, não zero — zero exibido antes de a ficha carregar é o número que alguém usa para decidir uma compra. Oito critérios em navegador (`scripts/dev/check-carteira-inventario.ts`).
 - **Descrição:** criar área de carteira na aba Inventário usando o contrato de `carteira` já existente, com destaque para aretz e sem inventar mutação de saldo fora dos fluxos autorizados.
 - **Área afetada:** Inventário, carteira e Mercado.
 - **Prioridade sugerida:** P1
@@ -824,8 +826,10 @@ verificação de navegador majoritariamente morta.
 
 ### VIS-02 — Permitir extravasamento das linhas de botões de rolagem
 
-- **Status:** Bloqueada (falta referência)
-- **Tentativa em 2026-09-20:** não consegui localizar com confiança quais são “as linhas decorativas dos botões de rolagem”. Procurei nos botões de rolagem do Console (`.rc-npr-defesa` e família) e no painel de dados do VTT, e nenhum deles tem linha decorativa que esteja sendo cortada. Somado a isso, a dúvida já registrada (“qual extensão exata e em quais variantes de botão”) é decisão de design. **Preciso de um print ou o nome da tela** para seguir sem chutar.
+- **Status:** Pronta (concluída, com conferência visual pendente)
+- **Alvo identificado pelo usuário (2026-09-20):** são os **anéis do botão de carga** (`RollButton`, “Solte para lançar”), do painel de rolagem do Console. Eles crescem 1,5× pela animação `rup-charge-ring` e nasciam dentro do próprio botão — qualquer ancestral que role (`.rc-body`, `.rv-dados-corpo`) recorta o que passa da borda.
+- **Andamento:** os anéis passaram a ser desenhados no `body`, por portal, sobre a caixa medida do botão. O recorte deixa de existir por construção, e a camada inteira é `pointer-events: none`, então a área clicável não cresce. Mesma solução usada em DICE-01.
+- **Pendente:** **conferência a olho.** Não consegui disparar a carga em teste automatizado — o botão só habilita com `rolarNaMesa` presente, que vem do provedor de dados da mesa, e o caminho até o Console aberto de dentro da campanha tem etapas demais para ser estável. O check cobre o que dá (o botão existe; a camada decorativa não rouba o clique) e diz isso explicitamente. Basta segurar o botão e ver se os anéis saem inteiros.
 - **Descrição:** ajustar stacking/overflow para que linhas decorativas ultrapassem o container sem serem cortadas e sem ampliar a área clicável.
 - **Área afetada:** botões e painéis de rolagem.
 - **Prioridade sugerida:** P2
@@ -838,7 +842,8 @@ verificação de navegador majoritariamente morta.
 ### DICE-01 — Corrigir camada, área e escala dos dados 3D
 
 - **Status:** Pronta (concluída)
-- **Andamento (2026-09-20):** escala **medida**, não estimada: o circunraio ia de 0,82 (d12) a 1,265 (d10) — o d10 saía **54% maior** que o menor, confirmando a queixa. Depois da normalização, variação de 0,00%. **Decisão tomada** sobre a dúvida em aberto: a referência é o **circunraio**, não altura nem volume — altura depende de como o dado caiu, e volume igual deixaria o d4 enorme porque um tetraedro aproveita mal a esfera que o contém. A normalização mede e escala, em vez de usar fatores fixos, para valer a qualquer sólido futuro. Achado no caminho: `geo.scale()` do three não recomputa a esfera envolvente. A arena saiu do palco (que é `overflow: hidden`) para o `body`, por portal, em z 900 — a faixa reservada à direita existia para o dado não assentar embaixo da janela “Rolar Dados”, e acima de tudo o motivo desapareceu. **Isto contraria um comentário de projeto** que dizia que os dados nunca tampam um controle; `pointer-events: none` mantém a diferença entre cobrir e bloquear, e o check clica num controle com a arena por cima.
+- **Andamento (2026-09-20):** escala **medida**, não estimada: o circunraio ia de 0,82 (d12) a 1,265 (d10) — o d10 saía **54% maior** que o menor, confirmando a queixa. Depois da normalização, variação de 0,00%. **Decisão tomada** sobre a dúvida em aberto: a referência é o **circunraio**, não altura nem volume — altura depende de como o dado caiu, e volume igual deixaria o d4 enorme porque um tetraedro aproveita mal a esfera que o contém. A normalização mede e escala, em vez de usar fatores fixos, para valer a qualquer sólido futuro. Achado no caminho: `geo.scale()` do three não recomputa a esfera envolvente. A arena saiu do palco (que é `overflow: hidden`) para o `body`, por portal, em z 900 — a faixa reservada à direita existia para o dado não assentar embaixo da janela “Rolar Dados”, e acima de tudo o motivo desapareceu. **Isto contraria um comentário de projeto** que dizia que os dados nunca tampam um controle; `pointer-events: none` mantém a diferença entre cobrir e bloquear, e o check clica num controle com a arena por cima. **Confirmado pelo usuário em 2026-09-20.**
+- **Dúvida respondida (2026-09-20):** os dados **devem** cobrir também menus e tooltips. Os do produto são DOM e já ficam por baixo da arena. Menu de contexto e tooltip **nativos do sistema operacional** são desenhados fora da página e nenhum `z-index` os alcança — limite físico, registrado para não virar bug reaberto.
 - **Descrição:** renderizar a arena acima de modal, painéis e overlays; remover a restrição da área esquerda; calibrar a escala aparente por sólido, especialmente o d10.
 - **Área afetada:** MesaDadosOverlay, ArenaDados, PolyDie, layout e z-index do VTT.
 - **Prioridade sugerida:** P1

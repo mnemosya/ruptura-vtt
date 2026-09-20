@@ -120,10 +120,57 @@ async function main() {
       registrar("4 (ficha sem carteira no payload não quebra a leitura)", t === "0" || t === "—", `"${t}"`);
     }
 
-    // --- 5. Somente leitura: não há campo editável de saldo ---
+    // --- 5. Editar o saldo: valor absoluto ---
     {
-      const editaveis = await page.locator('[data-testid="console-carteira"] input, [data-testid="console-carteira"] button').count();
-      registrar("5 (a carteira é leitura; nenhum controle muda saldo por aqui)", editaveis === 0, `controles=${editaveis}`);
+      await abrirInventario(page, campaignId, comSaldo);
+      await page.locator('[data-testid="console-carteira-aretz"]').click();
+      await page.locator('[data-testid="console-carteira-campo"]').fill("900");
+      await page.keyboard.press("Enter");
+      await page.waitForFunction(() =>
+        document.querySelector('[data-testid="console-carteira-aretz"]')?.textContent?.trim() === "900",
+        null, { timeout: 10000 }).catch(() => {});
+      registrar("5 (digitar um número define o saldo)", (await saldo(page))?.trim() === "900", `"${await saldo(page)}"`);
+    }
+
+    // --- 5b. Somar e subtrair com +N / -N ---
+    {
+      await page.locator('[data-testid="console-carteira-aretz"]').click();
+      await page.locator('[data-testid="console-carteira-campo"]').fill("+250");
+      await page.keyboard.press("Enter");
+      await page.waitForFunction(() =>
+        document.querySelector('[data-testid="console-carteira-aretz"]')?.textContent?.trim() === "1.150",
+        null, { timeout: 10000 }).catch(() => {});
+      const somou = (await saldo(page))?.trim();
+      await page.locator('[data-testid="console-carteira-aretz"]').click();
+      await page.locator('[data-testid="console-carteira-campo"]').fill("-150");
+      await page.keyboard.press("Enter");
+      await page.waitForFunction(() =>
+        document.querySelector('[data-testid="console-carteira-aretz"]')?.textContent?.trim() === "1.000",
+        null, { timeout: 10000 }).catch(() => {});
+      registrar("5b (+N soma e -N subtrai, sobre o saldo do momento)",
+        somou === "1.150" && (await saldo(page))?.trim() === "1.000", `após +250: ${somou}, após -150: ${await saldo(page)}`);
+    }
+
+    // --- 5c. Entrada inválida avisa, em vez de recusar em silêncio ---
+    {
+      await page.locator('[data-testid="console-carteira-aretz"]').click();
+      await page.locator('[data-testid="console-carteira-campo"]').fill("50 aretz");
+      await page.keyboard.press("Enter");
+      const aviso = await page.locator(".rc-inv-carteira-aviso").textContent().catch(() => null);
+      await page.keyboard.press("Escape");
+      registrar("5c (texto inválido explica o formato aceito)", !!aviso && /\+N/.test(aviso), `"${aviso}"`);
+    }
+
+    // --- 5d. Saldo não fica negativo ---
+    {
+      await page.locator('[data-testid="console-carteira-aretz"]').click();
+      await page.locator('[data-testid="console-carteira-campo"]').fill("-99999");
+      await page.keyboard.press("Enter");
+      await page.waitForFunction(() =>
+        document.querySelector('[data-testid="console-carteira-aretz"]')?.textContent?.trim() === "0",
+        null, { timeout: 10000 }).catch(() => {});
+      registrar("5d (subtrair além do saldo para em zero, não vira dívida)",
+        (await saldo(page))?.trim() === "0", `"${await saldo(page)}"`);
     }
 
     // --- 6. Rótulo acessível legível, sem depender só de cor ---

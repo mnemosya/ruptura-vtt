@@ -2398,6 +2398,23 @@
 .rc-inv-carteira-val {
   font-family: var(--font-orbitron), sans-serif; font-weight: 700; font-size: 17px;
   color: #eaf7ff; font-variant-numeric: tabular-nums;
+  /* É botão: abre a edição. Sem cara de botão no repouso, porque o
+     saldo é primeiro um número que se lê. */
+  background: none; border: 1px solid transparent; border-radius: 2px;
+  padding: 1px 6px; cursor: pointer; text-align: right;
+}
+.rc-inv-carteira-val:hover:not(:disabled) { border-color: rgba(0, 212, 255, 0.35); }
+.rc-inv-carteira-val:focus-visible { outline: 2px solid var(--cy); outline-offset: 1px; }
+.rc-inv-carteira-val:disabled { cursor: default; }
+.rc-inv-carteira-campo {
+  width: 120px; padding: 1px 6px; border-radius: 2px; text-align: right;
+  font-family: var(--font-orbitron), sans-serif; font-weight: 700; font-size: 17px;
+  font-variant-numeric: tabular-nums; color: #eaf7ff;
+  background: #08141c; border: 1px solid rgba(0, 212, 255, 0.55);
+}
+.rc-inv-carteira-campo:focus { outline: none; border-color: var(--cy); }
+.rc-inv-carteira-aviso {
+  margin: 4px 0 0; font-size: 11px; line-height: 1.4; color: #ffb3bd;
 }
 /* Traço, não zero: enquanto a ficha não carregou não se sabe o saldo, e
    um zero exibido cedo é o número que se usa para decidir uma compra. */
