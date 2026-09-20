@@ -994,6 +994,38 @@ function formatProfileEvent(payload: Record<string, unknown>): string {
  * formatadores acima. Nunca cai em JSON cru — tipos não reconhecidos
  * usam `formatGenericLog`.
  */
+/**
+ * CHAT-01 — três tipos que eram ESCRITOS e caíam no genérico.
+ *
+ * `formatGenericLog` degrada com elegância, e por isso a falta não
+ * aparecia: o card saía legível, só que montado por despejo de campos
+ * em vez de frase. O inventário executável
+ * (`scripts/dev/check-chat-catalogo.mjs`) é que trouxe os três à tona.
+ */
+function formatAttackDamageApplied(payload: Record<string, unknown>): string {
+  const alvo = typeof payload.alvoNome === "string" ? payload.alvoNome : "Alvo";
+  const dano = typeof payload.dano === "number" ? payload.dano : null;
+  const antes = typeof payload.pvAntes === "number" ? payload.pvAntes : null;
+  const depois = typeof payload.pvDepois === "number" ? payload.pvDepois : null;
+  const pv = antes !== null && depois !== null ? ` — PV ${antes} → ${depois}` : "";
+  if (dano === null) return `Dano aplicado em ${alvo}${pv}.`;
+  // Zero é resultado, não ausência: mitigação que segurou tudo é
+  // informação de combate, e some se o texto disser só "dano aplicado".
+  if (dano === 0) return `${alvo} não perdeu PV: o dano foi inteiramente mitigado${pv}.`;
+  return `${alvo} sofreu ${dano} de dano${pv}.`;
+}
+
+function formatTurnEnded(payload: Record<string, unknown>): string {
+  const janela = typeof payload.window === "number" ? payload.window : null;
+  return janela !== null ? `Turno encerrado (janela ${janela}).` : "Turno encerrado.";
+}
+
+function formatTurnTrackNarratorUpdate(payload: Record<string, unknown>): string {
+  const proxima = payload.nextTurnTrack;
+  if (proxima === null || proxima === undefined) return "O narrador limpou a trilha de turnos.";
+  return `O narrador ajustou a trilha de turnos.`;
+}
+
 export function formatTableLogEntry(entry: TableLogEntry): string {
   if (entry.type === "chat") return chatText(entry.payload);
   if (entry.type === "rolagem_pericia" || entry.type === "rolagem_expressao") return formatRolagem(entry.payload);
@@ -1032,5 +1064,8 @@ export function formatTableLogEntry(entry: TableLogEntry): string {
     return formatTemporaryEffectLog(entry.type, entry.payload);
   }
   if (entry.type === "compendio_compartilhado") return formatCompendioCompartilhado(entry.payload);
+  if (entry.type === "attack_damage_applied") return formatAttackDamageApplied(entry.payload);
+  if (entry.type === "turn_ended") return formatTurnEnded(entry.payload);
+  if (entry.type === "turn_track_narrator_update") return formatTurnTrackNarratorUpdate(entry.payload);
   return formatGenericLog(entry.type, entry.payload);
 }

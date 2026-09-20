@@ -187,6 +187,48 @@ function IconeDaCategoria({ categoria }: { categoria: string }) {
   return <Icone size={30} strokeWidth={1.5} aria-hidden="true" />;
 }
 
+/**
+ * CARTEIRA (INV-03) — leitura do contrato `carteira` que já existe
+ * (PRD 13.1: três saldos separados, nunca uma soma única).
+ *
+ * Só leitura. A mutação de saldo pertence aos fluxos autorizados de
+ * compra e recompensa; um campo editável aqui seria uma quarta porta
+ * para o mesmo número, sem servidor validando nada.
+ *
+ * Aretz em destaque, porque é a moeda corrente. CDI e CDI craqueada só
+ * aparecem quando há saldo — três zeros lado a lado dariam a impressão
+ * de que o personagem tem três carteiras vazias, quando na verdade ele
+ * só nunca encostou nas outras duas.
+ *
+ * Carteira AUSENTE não é carteira zerada: o contrato diz "ausente = 0",
+ * mas enquanto a ficha não carregou não se sabe, e um zero exibido cedo
+ * demais é o tipo de número que se usa para decidir uma compra.
+ */
+function Carteira({ carteira }: { carteira?: { aretz_informal: number; cdi: number; cdi_craqueada: number } }) {
+  const fmt = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+  const secundarias = carteira
+    ? ([["CDI", carteira.cdi], ["CDI craqueada", carteira.cdi_craqueada]] as const).filter(([, v]) => v > 0)
+    : [];
+  return (
+    <div className="rc-inv-carteira" data-testid="console-carteira">
+      <div className="rc-inv-carteira-linha">
+        <span className="rc-inv-carteira-rot">Aretz</span>
+        <strong className="rc-inv-carteira-val" data-vazio={carteira ? undefined : true}
+          data-testid="console-carteira-aretz">
+          {carteira ? fmt(carteira.aretz_informal) : "—"}
+        </strong>
+      </div>
+      {secundarias.length > 0 && (
+        <div className="rc-inv-carteira-outras">
+          {secundarias.map(([rotulo, valor]) => (
+            <span key={rotulo}><span className="rc-inv-carteira-rot">{rotulo}</span> {fmt(valor)}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function InventarioPanel({ api }: { api: ConsoleApi }) {
   const [filtro, setFiltro] = useState<FiltroId>("mochila");
   const [busca, setBusca] = useState("");
@@ -254,6 +296,9 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
       <div className="rc-inv-corpo">
         <div className="rc-inv-lista">
           <div className="rc-inv-busca-linha">
+            {/* Fora do bloco de Capacidade de propósito: aquele só
+                aparece na Mochila, e o saldo não muda conforme a aba de
+                onde o item está. */}
             <div className="rc-inv-busca">
               <Search size={14} aria-hidden="true" />
               <input
@@ -265,6 +310,8 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
               />
             </div>
           </div>
+
+          <Carteira carteira={api.character.carteira} />
 
           <div className="rc-inv-rolo">
             {/* SÓ NA MOCHILA. O medidor mede a mochila; sob "Equipado",
