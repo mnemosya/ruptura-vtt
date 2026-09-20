@@ -182,18 +182,22 @@ async function main() {
         (await saldo(page))?.trim() === "3.445", `"${await saldo(page)}"`);
     }
 
-    // --- 5g. Digitar um número com o campo aberto SUBSTITUI ---
+    // --- 5g. O saldo anterior NÃO some ao começar a digitar ---
+    //     Selecionar tudo ao abrir faria o valor desaparecer no primeiro
+    //     caractere, e quem digita "+500" poderia achar que o perdeu.
     {
       await page.locator('[data-testid="console-carteira-aretz"]').click();
-      // Sem End: o conteúdo vem selecionado, então digitar troca tudo.
-      await page.locator('[data-testid="console-carteira-campo"]').pressSequentially("77");
-      const digitado = await page.locator('[data-testid="console-carteira-campo"]').inputValue();
+      const aoAbrir = await page.locator('[data-testid="console-carteira-campo"]').inputValue();
+      // Digita SEM apertar End: o cursor já deve estar no fim.
+      await page.locator('[data-testid="console-carteira-campo"]').pressSequentially("+500");
+      const depoisDeDigitar = await page.locator('[data-testid="console-carteira-campo"]').inputValue();
       await page.keyboard.press("Enter");
       await page.waitForFunction(() =>
-        document.querySelector('[data-testid="console-carteira-aretz"]')?.textContent?.trim() === "77",
+        document.querySelector('[data-testid="console-carteira-aretz"]')?.textContent?.trim() === "3.945",
         null, { timeout: 10000 }).catch(() => {});
-      registrar("5g (com o conteúdo selecionado, digitar um número substitui)",
-        digitado === "77" && (await saldo(page))?.trim() === "77", `campo "${digitado}", saldo ${await saldo(page)}`);
+      registrar("5g (o saldo anterior continua à vista enquanto se digita a conta)",
+        aoAbrir === "3445" && depoisDeDigitar === "3445+500" && (await saldo(page))?.trim() === "3.945",
+        `abriu com "${aoAbrir}", virou "${depoisDeDigitar}", saldo ${await saldo(page)}`);
     }
 
     // --- 5c. Entrada inválida avisa, em vez de recusar em silêncio ---

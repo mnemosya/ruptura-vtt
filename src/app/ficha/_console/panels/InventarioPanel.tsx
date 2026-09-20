@@ -270,10 +270,16 @@ function Carteira({ carteira, onDefinir }: {
           <input
             className="rc-inv-carteira-campo"
             autoFocus
-            /* Conteúdo selecionado ao abrir: digitar um número novo
-               substitui, em vez de grudar no saldo que já estava lá. E
-               quem preferir continuar a conta é só apertar End. */
-            onFocus={(e) => e.currentTarget.select()}
+            /* Cursor no FIM, e nada selecionado.
+               Selecionar tudo faria o saldo desaparecer no primeiro
+               caractere digitado — quem digita `+500` veria o `3485`
+               sumir e poderia achar que perdeu o valor. Com o cursor no
+               fim, o saldo anterior fica à vista e a conta se escreve
+               por cima dele: `3485+500`. */
+            onFocus={(e) => {
+              const n = e.currentTarget.value.length;
+              e.currentTarget.setSelectionRange(n, n);
+            }}
             value={texto}
             inputMode="text"
             aria-label="Saldo em aretz — um número, ou uma conta como +250, -150 ou 3000-555"
