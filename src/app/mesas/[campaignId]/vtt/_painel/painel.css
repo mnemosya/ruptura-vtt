@@ -2119,3 +2119,12 @@
 .rv-org-part-btn:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.6); outline-offset: 1px; }
 .rv-org-part-btn:disabled { opacity: 0.45; cursor: default; }
 .rv-org-part-nome[data-carregando] { color: rgba(150, 174, 186, 0.5); }
+
+/* CHAR-02 — o campo do DIÁLOGO usa corpo de leitura, não o corpo
+   compacto dos filtros. `.rv-pn-input` está em 11px porque serve aos
+   seletores da faixa de filtros, onde a densidade é o ponto; num modal
+   em que a pessoa digita o nome de um personagem, 11px é pequeno
+   demais para o que se está escrevendo. */
+.pn-dialogo .rv-pn-input.rv-pn-input {
+  font-size: 13px; padding: 6px 8px;
+}

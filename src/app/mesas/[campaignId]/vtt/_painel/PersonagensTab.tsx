@@ -360,15 +360,21 @@ export function PersonagensTab({
 
 
 
-  async function executar(acao: () => Promise<{ ok: boolean; erro?: string }>) {
+  /**
+   * Devolve o resultado em vez de engoli-lo: quem cria precisa do id
+   * para mostrar o que acabou de criar — sem isso o personagem novo
+   * caía na lista e o narrador tinha de procurá-lo.
+   */
+  async function executar<T>(acao: () => Promise<{ ok: boolean; erro?: string; dados?: T }>) {
     setOcupado(true);
     try {
       const r = await acao();
       if (!r.ok) {
         setEstado((e) => falharLeitura(e, r.erro ?? "A operação foi recusada."));
-        return;
+        return null;
       }
       await carregar(incluirArquivados);
+      return r.dados ?? null;
     } finally {
       setOcupado(false);
     }
@@ -983,7 +989,14 @@ export function PersonagensTab({
                       titulo: "Novo personagem",
                       rotulo: "Nome",
                       marcacao: { rotulo: "É um PN (personagem do narrador)" },
-                      onConfirmar: (nome, ehPn) => executar(() => criarPersonagemPainelAction(campaignId, nome, ehPn ? "pn" : "jogador")),
+                      // Criado, o personagem é SELECIONADO: quem acabou de
+                      // dar um nome a alguém quer ver esse alguém, não a
+                      // lista inteira de volta com um item a mais no meio.
+                      onConfirmar: (nome, ehPn) => {
+                        void executar(() =>
+                          criarPersonagemPainelAction(campaignId, nome, ehPn ? "pn" : "jogador"),
+                        ).then((dados) => { if (dados?.id) setPreviaId(dados.id); });
+                      },
                     })
                   }
                 >
