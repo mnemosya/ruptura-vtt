@@ -53,11 +53,24 @@ const CONTROLES = [".ra-btn", ".ra-iconbtn", ".ra-switch", ".ra-input", ".ra-tex
     ruins.length === 0, ruins.length ? ruins.join(" | ") : "nenhum");
 }
 
-// --- 2. O recorte decorativo continua ---
+// --- 2. Nenhum CHANFRO sobrou, em nenhuma superfície ---
+//     Chanfro é o polígono que começa em `0 0` e corta cantos. FORMA é
+//     outra coisa: o glifo hexagonal do estado vazio não tem canto
+//     cortado, ele É um hexágono, e removê-lo o transformaria num
+//     quadrado. Por isso o critério mede chanfro, não `clip-path`.
 {
-  const decorativos = todas.filter((r) => /clip-path\s*:/.test(r.corpo)).map((r) => r.seletor);
-  registrar("2 (o recorte decorativo foi preservado)",
-    decorativos.length > 0, `${decorativos.length} regra(s): ${decorativos.slice(0, 5).join(", ")}…`);
+  const chanfros = todas
+    .filter((r) => /clip-path:\s*polygon\(0 0,/.test(r.corpo))
+    .map((r) => r.seletor);
+  registrar("2 (nenhum canto chanfrado sobrou na área autenticada)",
+    chanfros.length === 0, chanfros.length ? chanfros.join(", ") : "nenhum");
+}
+
+// --- 2b. As FORMAS continuam ---
+{
+  const formas = todas.filter((r) => /clip-path:\s*polygon\((?!0 0,)/.test(r.corpo)).map((r) => r.seletor);
+  registrar("2b (as formas, que não são cantos, foram preservadas)",
+    formas.length > 0, formas.join(", ") || "nenhuma");
 }
 
 // --- 3. Todo controle que perdeu o recorte ganhou raio por TOKEN ---

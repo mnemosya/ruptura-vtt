@@ -30,6 +30,12 @@
      nome dizendo de onde vieram — um número solto em cada regra é o
      que faz duas telas do mesmo produto divergirem sem ninguém decidir
      que deviam divergir. */
+  /* O chanfro (`clip-path: polygon(...)`) saiu de TODA a área
+     autenticada, a pedido: ele recortava o contorno de foco nos
+     controles e, nas superfícies, misturava dois tratamentos de canto
+     na mesma tela. O raio do chassi passa a valer para tudo.
+     Continuam por `clip-path` apenas as FORMAS — o glifo hexagonal do
+     estado vazio não é um canto cortado, é um hexágono. */
   --ra-r: 4px;      /* = --rv-r  · superfícies e controles */
   --ra-r-sm: 1px;   /* = --rv-r-sm · peças pequenas */
   position: relative;
@@ -195,8 +201,8 @@
   width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
   font-family: var(--font-orbitron), sans-serif; font-weight: 900; font-size: 18px; color: #07121a;
   background: linear-gradient(135deg, var(--cy), #0088c0);
-  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
   box-shadow: 0 0 18px rgba(0, 212, 255, 0.35);
+  border-radius: var(--ra-r);
 }
 
 .ra2-nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
@@ -308,12 +314,12 @@
   position: absolute; top: 46px; right: 0; width: 240px; z-index: 200;
   background: rgb(15, 19, 27); border: 1px solid rgba(0, 212, 255, 0.28);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), inset 0 0 30px rgba(0, 60, 90, 0.14);
-  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
   /* `mo-pop-in` (motion.css) no lugar do keyframe local `ra-pop`, que
      era uma cópia com outra duração e outra curva. Menu ancorado não
      leva escala: ele é extensão do botão que o abriu, não uma camada
      nova — quem leva escala é modal/overlay (`mo-surface-in`). */
   animation: mo-pop-in var(--mo-dur-micro) var(--mo-ease-out) both; padding: 6px;
+  border-radius: var(--ra-r);
 }
 .ra-menu-head { padding: 12px 12px 10px; border-bottom: 1px solid rgba(0, 212, 255, 0.12); margin-bottom: 6px; }
 .ra-menu-name { font-weight: 600; color: #cfeaf6; font-size: 14px; }
@@ -599,7 +605,7 @@
 .ra-tag {
   display: inline-flex; align-items: center; padding: 3px 7px;
   font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
-  clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px));
+  border-radius: var(--ra-r);
 }
 .ra-tag--cyan { color: #a9e9ff; background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.35); }
 .ra-tag--amber { color: #ffdca0; background: rgba(245, 162, 0, 0.12); border: 1px solid rgba(245, 162, 0, 0.4); }
@@ -610,8 +616,8 @@
   position: relative; padding: 70px 40px; text-align: center; overflow: hidden;
   border: 1px solid rgba(0, 212, 255, 0.16);
   background: radial-gradient(ellipse 70% 90% at 50% 20%, rgba(0, 60, 90, 0.28), rgba(11, 15, 23, 0.9));
-  clip-path: polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px));
   animation: mo-view-in var(--mo-dur-view) var(--mo-ease-out) both;
+  border-radius: var(--ra-r);
 }
 .ra-empty-glyph {
   width: 96px; height: 96px; margin: 0 auto 24px; display: flex; align-items: center; justify-content: center;
@@ -625,7 +631,7 @@
 
 .ra-state-box {
   padding: 56px 40px; text-align: center; border: 1px solid rgba(0, 212, 255, 0.14); background: rgba(11, 15, 23, 0.7);
-  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+  border-radius: var(--ra-r);
 }
 .ra-state-box--error { border-color: rgba(255, 60, 80, 0.3); }
 .ra-state-icon { display: flex; justify-content: center; margin-bottom: 16px; }
@@ -643,7 +649,7 @@
 /* ── Módulos e formulários ─────────────────────────────────────── */
 .ra-module {
   position: relative; background: rgba(11, 15, 23, 0.9); border: 1px solid rgba(0, 212, 255, 0.14); padding: 18px 20px;
-  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  border-radius: var(--ra-r);
 }
 .ra-module-title {
   font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: 0.2em; color: rgba(0, 212, 255, 0.55);
@@ -718,7 +724,6 @@
   margin: auto; width: 520px; max-width: 100%; max-height: 88vh; overflow-y: auto; position: relative;
   background: rgb(15, 19, 27); border: 1px solid rgba(0, 212, 255, 0.28);
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7), inset 0 0 40px rgba(0, 60, 90, 0.12);
-  clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 22px 100%, 0 calc(100% - 22px));
   /* 300ms → `--mo-dur-enter` (200ms), e o deslocamento de 18px → 10px:
      era a animação mais longa e mais deslocada do app inteiro, e um
      modal que "sobe" quase 20px lê como lentidão, não como cuidado.
@@ -731,6 +736,7 @@
   transition:
     opacity var(--mo-dur-exit) var(--mo-ease-in),
     transform var(--mo-dur-exit) var(--mo-ease-in);
+  border-radius: var(--ra-r);
 }
 .ra-overlay[data-open="true"] .ra-modal {
   opacity: 1;
@@ -748,7 +754,7 @@
   border: 1px solid rgba(0, 212, 255, 0.35); font-family: var(--font-mono), monospace; font-size: 11px;
   letter-spacing: 0.06em; color: #cdeaf6; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
   animation: mo-surface-in var(--mo-dur-enter) var(--mo-ease-out) both;
-  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  border-radius: var(--ra-r);
 }
 .ra-toast--success { border-color: rgba(34, 211, 170, 0.5); color: #7ff0d0; }
 .ra-toast--error { border-color: rgba(255, 60, 80, 0.5); color: #ffa0b0; }
@@ -766,15 +772,15 @@
      chega no fade da rota, com a tela inteira. A versão anterior
      animava cada card por 450ms — todos ao mesmo tempo, pelo dobro do
      tempo do resto do app, e ainda por cima duplicando a entrada que a
-     própria página já fazia. */
-  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+     própria página já fazia. */;
+  border-radius: var(--ra-r);
 }
 .ra-charcard:hover { border-color: rgba(0, 212, 255, 0.42); transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5); }
 .ra-charcard:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.7); outline-offset: 3px; }
 .ra-char-portrait {
   width: 64px; height: 64px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
   border: 1px solid rgba(0, 212, 255, 0.28); background: rgba(0, 212, 255, 0.05); color: #418292;
-  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+  border-radius: var(--ra-r);
 }
 .ra-char-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .ra-char-name { font-family: var(--font-orbitron), sans-serif; font-weight: 700; font-size: 14px; color: #eaf7ff; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

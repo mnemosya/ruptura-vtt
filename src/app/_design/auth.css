@@ -316,7 +316,6 @@
      uma vez, no primeiro carregamento da tela de acesso. */
   font-size: 9.5px; letter-spacing: 0.06em; line-height: 1.5;
   animation: mo-view-in var(--mo-dur-enter) var(--mo-ease-out) both;
-  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
 }
 .rv-alert--error { background: rgba(255, 50, 70, 0.07); border: 1px solid rgba(255, 50, 70, 0.22); color: rgba(255, 110, 130, 0.95); }
 .rv-alert--success { background: rgba(0, 220, 130, 0.06); border: 1px solid rgba(0, 220, 130, 0.22); color: rgba(0, 220, 140, 0.9); }
