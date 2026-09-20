@@ -125,12 +125,17 @@ ação, então o narrador tinha de procurar quem acabara de nomear. *(CHAR-02)*
 
 ## 4. O que ficou incompleto
 
-**TEST-01 — reparo dos checks defasados.** Rodei uma triagem dos 66 scripts de
-verificação, que continua em andamento. O padrão já conhecido: o commit
+**TEST-01 — reparo dos checks defasados.** Tentei triar os 66 scripts em lote e
+**parei no meio**, por um motivo que vale registrar: os checks defasados
+**travam em vez de falhar**. `check-campanha-fase4-gameplay` ficou mais de meia
+hora preso num seletor que não existe mais, porque cada espera do Playwright tem
+timeout próprio e elas se somam. Uma triagem em lote precisa de teto de tempo
+por script — e o `timeout` do GNU não existe no macOS, o que derrubou minha
+primeira tentativa em silêncio. O padrão já conhecido: o commit
 `0d3c30d` (14/09) removeu a rota `/mesas/[id]/vtt` e 32 scripts continuavam
 navegando para lá; a migration 0135 mudou duas assinaturas de RPC e quatro
 scripts chamavam as antigas. Isso foi corrigido na sessão anterior. O que
-resta é dívida individual: `check-vtt-camadas-visuais`, por exemplo, procura
+resta é dívida individual, e é maior do que parecia: `check-vtt-camadas-visuais`, por exemplo, procura
 elementos de DOM que não existem mais (halo frontal, alça de rotação, rótulos
 de PV). Cada um precisa ser julgado: **consertar ou apagar**, porque alguns
 testam telas que já não existem.
