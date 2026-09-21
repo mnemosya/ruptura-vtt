@@ -401,6 +401,33 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 - **Critérios de aceite:** narrador cria loja com catálogo próprio; preço e estoque são do narrador; compra debita carteira e credita inventário numa operação só; estoque esgotado é recusado no servidor; loja se relaciona com um `lugar` do organizador; isolamento entre campanhas testado.
 - **Dúvidas antes da implementação:** estoque é finito ou ilimitado por padrão? Preço pode divergir do preço base do item? Jogador compra sozinho ou o narrador aprova? Loja pode vender item homebrew da campanha? Vender de volta existe, e a que preço?
 
+### RT-01 — Terreno pintado não chega pelo Realtime
+
+- **Status:** Pronta (defeito reproduzível; falta decidir a correção)
+- **Prioridade sugerida:** P1 — a regra consultiva de movimento para de avisar durante a sessão, em silêncio.
+- **Descrição:** uma célula de terreno inserida durante uma sessão ao vivo **não chega** ao cliente conectado. Depois de um reload ela aparece e tudo funciona.
+
+**Reprodução isolada (2026-09-20),** numa única página, mesma sessão, mesmo canal:
+
+| evento | resultado |
+|---|---|
+| `update` em `vtt_tokens` (mover token) | **chega em 10ms** |
+| `insert` em `vtt_terrain` (pintar bloqueio) | **não chega em 8s** |
+
+O Realtime está funcionando; o terreno especificamente não chega.
+
+**Como apareceu:** o critério T2b de `check-vtt-pegada-reparo` acusava a regra consultiva de não desenhar a linha âmbar nem o aviso ao atravessar bloqueio. A regra está certa — `bloqueiosNaRota` detecta corretamente a célula secundária da pegada Grande, verificado chamando a função direto. O cliente é que nunca soube do bloqueio. Forçar o terreno a vir por SSR (um reload antes do arrasto) faz os três indicadores aparecerem: `⚠ atravessa área normalmente bloqueada`, 1 linha âmbar, 1 destaque de célula.
+
+**O que já foi descartado:**
+- `vtt_terrain` **está** na publicação `supabase_realtime`, com replica identity FULL;
+- a assinatura existe (`_realtime/vttRealtime.ts`), filtra por `scene_id` no cliente, e os ids batem;
+- as políticas de SELECT de `vtt_terrain` e `vtt_tokens` usam a mesma `vtt_pode_ver_cena(scene_id)`;
+- o handler `onTerreno` em `VttClient.tsx` atualiza `estadoCena.terreno`, que alimenta `terrenoPintado` → `terrenoReal` → `terrenoParaRota`. A cadeia de estado parece correta.
+
+**O que ainda NÃO foi determinado, e importa para dimensionar o impacto:** a reprodução inseriu terreno direto no banco com service role. **Falta testar o caminho do produto** — o narrador pintando terreno pela ferramenta Terreno, com outra pessoa na mesa. Se o app atualiza o estado local de quem pinta, o narrador não veria problema nenhum e só os OUTROS participantes ficariam sem o terreno, o que é pior e mais difícil de notar.
+
+- **Critérios de aceite:** terreno pintado durante a sessão aparece para todos os participantes sem reload, e entra no cálculo de rota (a linha âmbar aparece). `check-vtt-pegada-reparo` passa com o critério `T2b-pre` afirmando a chegada por Realtime.
+
 ### TEST-01 — Inventariar e reparar os checks defasados
 
 - **Status:** Pronta

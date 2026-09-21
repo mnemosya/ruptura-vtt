@@ -345,7 +345,14 @@ async function main() {
     // bloqueio nenhum), o que faria a rota estrita "achar caminho" de
     // cara e nunca exercitar a camada de relaxamento — mascarando
     // exatamente o comportamento que este teste existe pra provar.
-    await esperarAte(async () => (await page.locator(".rv-terreno-real--bloqueado").count()) >= 1, 5000);
+    // ASSERÇÃO, não espera muda: `await esperarAte(...)` sem verificar o
+    // retorno deixa o teste seguir como se o terreno tivesse chegado.
+    // Se ele não chegou, o arrasto acontece sobre um mapa sem bloqueio
+    // nenhum e a falha aparece adiante como "a regra consultiva não
+    // desenhou o aviso" — culpando a regra por um bloqueio que o
+    // cliente nunca viu.
+    const terrenoChegou = await esperarAte(async () => (await page.locator(".rv-terreno-real--bloqueado").count()) >= 1, 5000);
+    registrar("T2b-pre (o bloqueio pintado chega ao cliente por Realtime, sem reload)", terrenoChegou, `chegou=${terrenoChegou}`);
     const origemBox = await boxDoToken(page, "B1");
     const destinoBox = await boxDaCelula(page, destino);
     let avisoTexto: string | null = null;
@@ -361,7 +368,12 @@ async function main() {
       await page.mouse.move(origemBox.x, origemBox.y);
       await page.mouse.down();
       await page.mouse.move(destinoBox.x, destinoBox.y, { steps: 10 });
-      await page.waitForTimeout(200);
+      // Espera a prévia da rota EXISTIR antes de ler os indicadores.
+      // Eram 200ms fixos: quando a rota demorava mais que isso, a
+      // leitura pegava a tela antes de o cliente ter desenhado
+      // qualquer coisa, e os três indicadores davam zero — o que se
+      // parece exatamente com "a regra consultiva não funciona".
+      await page.locator(".rv-camada-rota-preview line").first().waitFor({ state: "attached", timeout: 5000 });
       // A pegada INTEIRA agora é projetada por passo (`bloqueiosNaRota`,
       // `_dominio/pathfindingHex.ts`) — o segmento fica âmbar mesmo
       // quando só uma célula SECUNDÁRIA do footprint (não a âncora)
