@@ -1109,8 +1109,9 @@
 /* PRESSIONADO — um degrau acima do selecionado, sem brilho: o brilho
    diz "é esta", e enquanto o dedo está em cima a informação é outra,
    "estou apertando". Dura o gesto e acaba com ele.
-   O trilho de ferramentas do VTT não define este estado; aqui ele
-   existe porque CON-02 pede os quatro. */
+   O trilho do VTT define o mesmo estado, com a mesma receita
+   (`.rv-ferr-btn:active`) — por um tempo não definia, e esta era a
+   última diferença entre os dois trilhos. */
 .rc-tabrail-btn:active:not(:disabled) {
   background: linear-gradient(rgba(0, 212, 255, 0.2), rgba(0, 212, 255, 0.2)), #0c1526;
   border-color: #108bac;

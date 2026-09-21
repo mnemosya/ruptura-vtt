@@ -243,6 +243,19 @@
   background: linear-gradient(rgba(0, 212, 255, .14), rgba(0, 212, 255, .14)), #0c1526;
   box-shadow: 0 0 9px rgba(0, 212, 255, .25);
 }
+/* PRESSIONADO — dura o gesto e acaba com ele.
+   Distinto de `[aria-pressed="true"]`, que é ESTADO: aquele diz "a
+   ferramenta é esta", e enquanto o dedo está em cima a informação é
+   outra, "estou apertando". Sem ele, apertar um botão do trilho não
+   dava retorno nenhum até a ferramenta trocar.
+   .20 sobre os .14 do ligado e os .09 do hover — a mesma escada, e a
+   mesma receita que `.rc-tabrail-btn:active` já usava no Console.
+   Era a última assimetria entre os dois trilhos: o Console tinha os
+   quatro estados por exigência do CON-02, o VTT tinha três. */
+.rv-ferr-btn:active:not(:disabled) {
+  border-color: #108bac;
+  background: linear-gradient(rgba(0, 212, 255, .2), rgba(0, 212, 255, .2)), #0c1526;
+}
 .rv-ferr-btn:focus-visible, .rv-aba:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
 .rv-ferr-menu { color: #8ba3b4; }
 .rv-ferr-sep { width: 20px; height: 1px; background: rgba(255,255,255,.08); margin: 5px 0; }
