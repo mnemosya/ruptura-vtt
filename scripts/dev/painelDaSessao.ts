@@ -69,3 +69,43 @@ export async function oQueEstaSob(page: Page, ponto: { x: number; y: number }): 
     return el.getAttribute("class") || el.tagName;
   }, [ponto.x, ponto.y]);
 }
+
+/**
+ * Garante que um ponto do mapa esteja ALCANÇÁVEL pelo mouse.
+ *
+ * Duas coisas tiram um token do alcance, e as duas produzem a mesma
+ * falha silenciosa — o gesto acontece no vazio, nada se move, e o
+ * critério acusa o que vem depois:
+ *
+ *   · o painel da sessão flutua POR CIMA do mapa (o `pointerdown` vai
+ *     parar no chat);
+ *   · o enquadramento inicial pode deixar a célula FORA da viewport, e
+ *     `mouse.move` é limitado à janela.
+ *
+ * Medido em `check-vtt-animacao-movimento`: o token do jogador, que a
+ * fixture põe em (7,2) — centro de uma cena de 12 colunas, de propósito
+ * —, caía em x≈1489 numa viewport de 1280. Recolher o painel não movia
+ * a caixa, e recarregar também não: não era estado herdado, era
+ * enquadramento. A falha aparecia como "o jogador não move o próprio
+ * token", que sugere autorização.
+ *
+ * A condição de parada é o token estar alcançável, não um número fixo
+ * de cliques de zoom.
+ */
+export async function garantirTokenAlcancavel(page: Page, sigla: string, tentativas = 5): Promise<boolean> {
+  await recolherPainelDaSessao(page);
+  for (let i = 0; i <= tentativas; i++) {
+    const caixa = await page.evaluate((sig) => {
+      const els = Array.from(document.querySelectorAll(".rv-camada-tokens .rv-token text.rv-token-sigla"));
+      const el = els.find((e) => e.textContent === sig)?.closest("g");
+      const r = el?.getBoundingClientRect();
+      return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null;
+    }, sigla);
+    const vp = page.viewportSize();
+    if (caixa && vp && caixa.x > 0 && caixa.x < vp.width && caixa.y > 0 && caixa.y < vp.height) return true;
+    if (i === tentativas) return false;
+    await page.locator('.rv-zoom button[aria-label="Afastar"]').click();
+    await page.waitForTimeout(120);
+  }
+  return false;
+}
