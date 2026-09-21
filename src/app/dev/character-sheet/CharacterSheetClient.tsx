@@ -5896,6 +5896,27 @@ export default function CharacterSheetClient({
           </button>
         </div>
       )}
+      {/* ══ A FICHA ANTIGA ═════════════════════════════════════════
+          Só em `dev`. Em PRODUTO ela não é mais renderizada.
+
+          Ela ficava montada EMBAIXO do Console, que abre automaticamente
+          em `/ficha` — e isso não era neutro: 18 controles interativos
+          ficavam cobertos pela janela, entre eles "Salvar personagem",
+          medido em (440,413), dentro da área do Console. Quem editava PV
+          não tinha como salvar sem fechar a ficha para salvar a ficha, e
+          nada avisava que havia mudança pendente.
+
+          O Console é a ficha hoje. A de baixo é trabalho antigo, e
+          mantê-la montada só criava uma segunda interface invisível
+          competindo com a primeira.
+
+          O que NÃO vem aqui dentro, de propósito: o estado de
+          sincronização, o aviso de erro de gravação, o banner de
+          auto-heal e o diálogo de conflito remoto. Aqueles não são "a
+          página velha" — são retorno sobre o que está acontecendo com
+          ESTE personagem, e sumir com eles devolveria a falha silenciosa
+          que o autosave acabou de resolver. ══ */}
+      {mode !== "product" && (<>
 
       <ActiveStateStrip
         condicoes={character.condicoes_ativas ?? []}
@@ -5913,7 +5934,7 @@ export default function CharacterSheetClient({
         activeTab={activeTab}
         personagensCount={personagens.length}
         onChange={setActiveTab}
-        hiddenTabs={mode === "product" ? (["personagens", "debug"] as const) : undefined}
+
       />
 
       {activeTab === "geral" && (
@@ -6323,6 +6344,7 @@ export default function CharacterSheetClient({
           usandoFallback={usandoFallback}
         />
       )}
+      </>)}
     </main>
   );
 }

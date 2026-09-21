@@ -471,27 +471,22 @@ Recomendação: (1), quando houver tempo — a cobertura de undo/redo por gesto 
 
 ### CON-05 — Controles presos atrás do Console
 
-- **Status:** Bloqueada (decisão de produto: o que migra, o que morre)
-- **Prioridade sugerida:** P2 — nada é inalcançável, mas há função sem porta no Console.
+- **Status:** Pronta (a página antiga saiu em 2026-09-21; resta uma faixa)
+- **Prioridade sugerida:** P3 — o que sobrou é pequeno, mas é da mesma família.
 
-**O arranjo.** Em `/ficha` (modo produto) o Console abre AUTOMATICAMENTE por cima da página da ficha antiga, e isso é deliberado: *"clicar num personagem precisa levar direto ao Console, não a uma tela intermediária"*. A ficha antiga continua montada embaixo.
+**O que era.** Em `/ficha` o Console abre automaticamente por cima, e a ficha antiga continuava montada embaixo. Medido: **18 controles interativos cobertos** pela janela, entre eles "Salvar personagem" — em (440,413), dentro da área do Console. Era preciso fechar a ficha para salvar a ficha, e nada avisava que havia mudança pendente.
 
-**Medido (2026-09-21):** 18 controles interativos ficam cobertos pelo Console. Nenhum está perdido — fechar ou minimizar o Console alcança todos —, mas alguns não têm equivalente nenhum na janela que cobre.
+**Decisão do usuário (2026-09-21):** *"pode excluir essa pagina que fica abaixo. aquilo lá é trabalho antigo e deprecated"*. A ficha antiga deixou de ser renderizada em modo produto — segue existindo em `dev`.
 
-| seção da ficha antiga | equivalente no Console |
-|---|---|
-| Atributos, Perícias, Recursos, Condições | sim — painel principal |
-| Equipamentos, Inventário, Magias, Escalpos, Identidade, Ações | sim — as seis abas do trilho |
-| Biblioteca | não fica presa (está fora da área do Console) |
-| **Geral, Talentos, Rolagens, Log, Mesa** | **nenhum** |
+**Medido depois: 18 → 4 controles cobertos.** Abas antigas fora da tela, status de sincronização preservado, autosave intacto (647ms), console do navegador limpo.
 
-Mais dois sem equivalente: **"Recarregar personagem"** e **"Atualizar agora"**.
+**O que NÃO foi removido, de propósito:** status de sincronização, aviso de erro de gravação, banner de auto-heal e o diálogo de conflito remoto. Não são "a página velha" — são retorno sobre o que está acontecendo com o personagem, e sumir com eles devolveria a falha silenciosa que o autosave acabou de resolver.
 
-**O caso mais concreto é Talentos** — seção de ficha de verdade, sem porta no Console. E o painel principal tem três blocos "ESPAÇO LIVRE", o que sugere que o lugar existe e está vazio (ver CON-04).
+**O que resta (os 4):** a faixa de status fica no topo da página, e o Console cobre essa área. São "Atualizar agora" (`ficha-recarregar`) e três botões sem rótulo ao lado.
 
-**Foi assim que "Salvar personagem" ficou inalcançável** e a ficha perdia dados em silêncio, até o autosave de 2026-09-21. O mesmo arranjo pode estar escondendo outras funções — a diferença é que aquela perdia dados, e estas só somem da vista.
+Isso importa mais do que parece: **agora que a ficha grava sozinha, ela depende da sincronização estar viva** — e é exatamente o aviso de que ela NÃO está que fica escondido. Vale mover a faixa para dentro do Console, ou para acima dele.
 
-**A decisão, por item:** migrar para o Console, deixar explicitamente só na ficha antiga (e então dar um caminho visível até ela), ou aposentar. Não é uma decisão só: "Log" e "Talentos" têm respostas provavelmente diferentes.
+**Fora de escopo, registrado a pedido:** "Talentos nem existe mais" — a seção some junto com a página antiga e não precisa de porta no Console.
 
 ### TEST-01 — Inventariar e reparar os checks defasados
 
