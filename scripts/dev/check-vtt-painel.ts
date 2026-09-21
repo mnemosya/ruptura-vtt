@@ -430,10 +430,34 @@ async function main() {
   {
     // Painel recolhido não pode cobrir o mapa: o SVG tem que continuar
     // recebendo o clique na sua área.
-    const svgBox = await narrador.locator(".rv-mapa").boundingBox();
+    // O critério mudou de pergunta, porque a resposta antiga virou
+    // mentira sobre o desenho.
+    //
+    // Ele exigia que o mapa terminasse antes de onde o painel começa.
+    // Isso descrevia o layout DOCADO, que não existe mais: o painel
+    // flutua sobre o mapa de propósito, aberto e recolhido, e o CSS diz
+    // por quê ("docado, o espaço dele saía da largura do mapa e a
+    // margem virava uma tira do fundo da mesa"). Sobrepor é o desenho.
+    //
+    // O que o comentário original de fato queria garantir continua
+    // valendo e está escrito ali: "o SVG tem que continuar recebendo o
+    // clique na sua área". Com o painel recolhido, a área que ele
+    // ocupava aberto tem que voltar a ser mapa clicável — e é isso que
+    // se afirma agora, perguntando à página quem está no ponto.
+    //
+    // A pergunta não é acadêmica: medido em
+    // `check-vtt-movimento-consultivo`, um token em q=15 ficava debaixo
+    // do painel ABERTO e o `pointerdown` ia para o chat, não para o
+    // token.
     const painelBox = await narrador.locator('[data-testid="painel-vtt"]').boundingBox();
-    const naoSobrepoe = !!svgBox && !!painelBox && svgBox.x + svgBox.width <= painelBox.x + 2;
-    registrar("1f (painel recolhido não fica por cima do mapa)", naoSobrepoe, `mapaFim=${Math.round((svgBox?.x ?? 0) + (svgBox?.width ?? 0))}, painelIni=${Math.round(painelBox?.x ?? 0)}`);
+    const pontoLiberado = { x: Math.round((painelBox?.x ?? 0) - 40), y: Math.round((painelBox?.y ?? 0) + 120) };
+    const quemEsta = await narrador.evaluate(([x, y]) => {
+      const el = document.elementFromPoint(x, y) as Element | null;
+      return { mapa: !!el?.closest?.(".rv-mapa"), painel: !!el?.closest?.(".rv-painel"), cls: (el?.getAttribute("class") ?? "").slice(0, 40) };
+    }, [pontoLiberado.x, pontoLiberado.y]);
+    registrar("1f (recolhido, a área que o painel ocupava volta a ser mapa clicável)",
+      quemEsta.mapa && !quemEsta.painel,
+      `ponto=(${pontoLiberado.x},${pontoLiberado.y}), mapa=${quemEsta.mapa}, painel=${quemEsta.painel}, elemento="${quemEsta.cls}"`);
   }
   {
     // Reabre pela própria aba (a faixa recolhida é o que reabre) e

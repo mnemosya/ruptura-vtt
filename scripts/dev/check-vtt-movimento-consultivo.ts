@@ -381,9 +381,43 @@ async function main() {
     const destino = { q: 17, r: 2 };
     const origemTela = await pontoMundoParaTela(page, hexParaPixel({ q: tok.q, r: tok.r }, TAM));
     const alvoTela = await pontoMundoParaTela(page, hexParaPixel(destino, TAM));
+    // RECOLHE O PAINEL antes de arrastar.
+    //
+    // O painel da sessão FLUTUA sobre o mapa (`.rv-painel`,
+    // `position: absolute`, por decisão registrada no CSS), e este
+    // token nasce em q=15 — debaixo dele. Medido com
+    // `elementFromPoint` no ponto de origem do arraste: o que estava
+    // ali não era o token, era `rv-pn-chat-scroll`.
+    //
+    // O `pointerdown` ia para o chat. Nenhuma rota era montada, nada
+    // era salvo, e a falha aparecia lá na frente como "a outra sessão
+    // não recebeu a posição" — acusando o Realtime de não entregar um
+    // movimento que nunca aconteceu.
+    const recolher = page.locator('[data-testid="painel-recolher"]');
+    if ((await recolher.count()) > 0) {
+      await recolher.click();
+      await page.waitForFunction(
+        ([x, y]) => !document.elementFromPoint(x, y)?.closest?.(".rv-painel"),
+        [origemTela.x, origemTela.y],
+        { timeout: 5000 },
+      );
+    }
     await page.mouse.move(origemTela.x, origemTela.y);
     await page.mouse.down();
     await page.mouse.move(alvoTela.x, alvoTela.y, { steps: 8 });
+    // ESPERA A ROTA EXISTIR antes de soltar.
+    //
+    // Este era o único arraste do arquivo que soltava o botão na linha
+    // seguinte ao movimento, sem esperar nada — os outros esperam a
+    // prévia da rota aparecer. Soltando antes de a rota ser montada,
+    // não há o que confirmar: o token ficava onde estava, o banco não
+    // mudava, e a falha aparecia como "a outra sessão não recebeu a
+    // posição" — acusando o Realtime de não entregar um movimento que
+    // nunca aconteceu.
+    //
+    // Por condição, não por tempo: espera a prévia da rota ter
+    // segmento, que é o sinal de que o cliente já sabe para onde vai.
+    await page.locator(".rv-camada-rota-preview line").first().waitFor({ state: "attached", timeout: 5000 });
     await page.mouse.up();
     await esperarAte(async () => {
       const { data } = await admin.from("vtt_tokens").select("q").eq("id", tok.id).single();
@@ -395,7 +429,13 @@ async function main() {
       const transform = await jogadorPage.locator(`.rv-token[data-token-id="${tok.id}"]`).getAttribute("transform").catch(() => null);
       return transformBateComPonto(transform, pEsperado);
     }, 6000);
-    registrar("5 (outra sessão recebe a posição final atravessando bloqueio sem reload)", sincronizou, `sincronizou=${sincronizou}`);
+    // Detalhe COMPLETO quando falha: sem ele, "sincronizou=false" não
+    // distingue "o Realtime não entregou" de "entregou e o teste
+    // comparou pixels contra outro enquadramento".
+    const transformFinal = await jogadorPage.locator(`.rv-token[data-token-id="${tok.id}"]`).getAttribute("transform").catch(() => null);
+    const { data: noBanco } = await admin.from("vtt_tokens").select("q, r").eq("id", tok.id).single();
+    registrar("5 (outra sessão recebe a posição final atravessando bloqueio sem reload)", sincronizou,
+      `sincronizou=${sincronizou}, banco=(${noBanco?.q},${noBanco?.r}), esperado=(${destino.q},${destino.r}), esperadoPx=${JSON.stringify(pEsperado)}, transformDoJogador=${transformFinal}`);
     await closeJogador();
   }
 
