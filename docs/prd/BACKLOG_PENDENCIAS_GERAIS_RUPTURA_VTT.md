@@ -403,40 +403,30 @@ O princípio: **a preferência filtra a projeção pública de presença, e nada
 
 ### RT-01 — Terreno pintado não chega pelo Realtime
 
-- **Status:** Pronta (defeito reproduzível; falta decidir a correção)
-- **Prioridade sugerida:** P1 — a regra consultiva de movimento para de avisar durante a sessão, em silêncio.
-- **Descrição:** uma célula de terreno inserida durante uma sessão ao vivo **não chega** ao cliente conectado. Depois de um reload ela aparece e tudo funciona.
+- **Status:** Pronta (concluída — causa encontrada e corrigida em 2026-09-20)
+- **Prioridade:** era P1.
 
-**Reprodução isolada (2026-09-20),** numa única página, mesma sessão, mesmo canal:
+**O defeito.** Terreno pintado durante a sessão não chegava a ninguém além de quem pintou. Medido pelo caminho do produto — narrador pinta pela ferramenta Terreno, jogador com a mesa já aberta:
 
-| evento | resultado |
-|---|---|
-| `update` em `vtt_tokens` (mover token) | **chega em 10ms** |
-| `insert` em `vtt_terrain` (pintar bloqueio) | **não chega em 8s** |
+| quem | antes | depois |
+|---|---|---|
+| narrador (quem pintou) | vê em 502ms | vê |
+| jogador, sessão já aberta | **não vê em 10s** | **vê em 1176ms** |
+| jogador após recarregar | vê em 8ms | vê |
 
-O Realtime está funcionando; o terreno especificamente não chega.
+Era o pior arranjo: quem pinta vê, e por isso não desconfia. O narrador bloqueava um corredor, enxergava o bloqueio, e os jogadores seguiam movendo tokens por ali — a regra consultiva de movimento depende de um terreno que o cliente deles não tinha.
 
-**Como apareceu:** o critério T2b de `check-vtt-pegada-reparo` acusava a regra consultiva de não desenhar a linha âmbar nem o aviso ao atravessar bloqueio. A regra está certa — `bloqueiosNaRota` detecta corretamente a célula secundária da pegada Grande, verificado chamando a função direto. O cliente é que nunca soube do bloqueio. Forçar o terreno a vir por SSR (um reload antes do arrasto) faz os três indicadores aparecerem: `⚠ atravessa área normalmente bloqueada`, 1 linha âmbar, 1 destaque de célula.
+**A causa.** O Realtime recusa QUALQUER filtro em `vtt_scene_images`:
 
-**O que já foi descartado:**
-- `vtt_terrain` **está** na publicação `supabase_realtime`, com replica identity FULL;
-- a assinatura existe (`_realtime/vttRealtime.ts`), filtra por `scene_id` no cliente, e os ids batem;
-- as políticas de SELECT de `vtt_terrain` e `vtt_tokens` usam a mesma `vtt_pode_ver_cena(scene_id)`;
-- o handler `onTerreno` em `VttClient.tsx` atualiza `estadoCena.terreno`, que alimenta `terrenoPintado` → `terrenoReal` → `terrenoParaRota`. A cadeia de estado parece correta.
+> `Unable to subscribe to changes with given parameters. Exception: ERROR P0001 (raise_exception) invalid column for filter scene_id`
 
-**Confirmado pelo caminho do produto (2026-09-20).** Narrador pinta pela ferramenta Terreno; jogador com a mesa JÁ ABERTA, sem reload:
+O mesmo erro sai com `campaign_id`, então não é a coluna — é a tabela. As duas colunas existem, estão publicadas e a tabela tem replica identity FULL, o que aponta para o cache de esquema do serviço de Realtime, não para o banco.
 
-| quem | vê o terreno? |
-|---|---|
-| narrador (quem pintou) | **sim, em 502ms** |
-| jogador, outra sessão já aberta | **NÃO, em 10s** |
-| jogador depois de recarregar | sim, em 8ms |
+**E o estrago não ficava nessa ligação.** Todas as assinaturas de `postgres_changes` do canal `campaign:<id>:vtt` vivem no MESMO canal, e uma ligação recusada derruba o canal inteiro: terreno, marcas, medições, áreas, objetos e cenas paravam juntos, sem erro visível em lugar nenhum.
 
-É o pior arranjo possível: **quem pinta vê, e por isso não desconfia de nada.** O narrador bloqueia um corredor, enxerga o bloqueio na própria tela, e os jogadores continuam vendo o mapa antigo — movendo tokens por ali sem aviso nenhum, porque a regra consultiva depende de um terreno que o cliente deles não tem. Só um reload conserta, e ninguém tem motivo para dar um.
+**A correção.** A ligação de `vtt_scene_images` perde o filtro do servidor e passa a recortar a cena no cliente — o mesmo padrão que o handler de terreno já usava. Verificado: zero erros de assinatura, terreno em 1176ms e área em 319ms, sem reload. `check-vtt-pegada-reparo`: 35 ok, 0 falhas.
 
-Nenhum check cobria isto. O critério 6 de `check-vtt-integracao` parece cobrir ("segunda sessão enxerga o terreno") e **recarrega a página do jogador antes de olhar** — mede persistência por SSR, não entrega ao vivo.
-
-- **Critérios de aceite:** terreno pintado durante a sessão aparece para todos os participantes sem reload, e entra no cálculo de rota (a linha âmbar aparece). `check-vtt-pegada-reparo` passa com o critério `T2b-pre` afirmando a chegada por Realtime.
+**Risco que fica registrado, e ainda não endereçado:** um canal único com nove ligações de `postgres_changes` é frágil por construção — qualquer ligação futura que o Realtime recuse volta a derrubar tudo, em silêncio. Vale separar por assunto, ou pelo menos afirmar num check que o canal assinou sem erro. Fica como candidato a tarefa própria.
 
 ### TEST-01 — Inventariar e reparar os checks defasados
 
