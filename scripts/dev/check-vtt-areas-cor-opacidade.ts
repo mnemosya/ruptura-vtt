@@ -197,6 +197,16 @@ async function main() {
   // rola dentro do corpo. Rolar até o item ANTES de clicar é o que
   // torna o clique determinístico (em vez de depender de o item já
   // estar na faixa visível).
+  // "Áreas na cena" abre RECOLHIDA por padrão, mesmo já havendo áreas —
+  // os ícones da lista não existem no DOM até alguém expandir. Sem
+  // isto, o clique esperava por um elemento que o painel ainda não
+  // tinha desenhado, e o sintoma (um `waitForSelector` num testid com
+  // uuid) não diz nada sobre a lista estar fechada.
+  const listaFechada = (await P.locator('[data-testid="area-lista"]').count()) === 0;
+  if (listaFechada) {
+    await P.locator('[data-testid="area-lista-toggle"]').click();
+    await P.waitForSelector('[data-testid="area-lista"]', { timeout: 5000 });
+  }
   await P.locator(`[data-testid="area-editar-${id}"]`).scrollIntoViewIfNeeded();
   await P.locator(`[data-testid="area-editar-${id}"]`).click();
   await P.waitForFunction(() => document.querySelector('[data-testid="painel-areas"]')?.getAttribute("data-fase") === "editando", null, { timeout: 6000 });

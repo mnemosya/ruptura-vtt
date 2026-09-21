@@ -32,6 +32,27 @@
  * Uso: npx tsx scripts/dev/check-vtt-alca-rotacao.ts (servidor dev já
  * rodando em localhost:3000).
  */
+/*
+ * ⚠️ ESTE CHECK VERIFICA A COLUNA ERRADA — ver ALCA-01 no backlog.
+ *
+ * Ele afirma, em 54 critérios, que a alça muda `orientacao` (a FORMA da
+ * pegada). Ela não muda mais: hoje a alça chama `apontar_vtt_token` e
+ * mexe em `direcao` (o OLHAR). Girar a forma virou ação de menu
+ * (`girarFormaDoToken` → `rotacionar_vtt_token`), e o motivo está
+ * escrito em `VttClient.tsx`: mudar a forma altera as células ocupadas
+ * e pode esbarrar em terreno ou noutro token, então a recusa precisa ser
+ * uma resposta legítima e não uma surpresa no meio de um gesto.
+ *
+ * Medido: depois de um clique na alça, `orientacao=0` (intocada) e
+ * `direcao=1`. A revisão sobe, o que faz parecer que a rotação foi
+ * salva e revertida.
+ *
+ * O resto do arquivo é bom e vale reaproveitar — uma RPC por gesto,
+ * undo/redo como operação única, teclado, toque, alvo exato. Todos
+ * valem igual para `direcao`. São 88 referências a `orientacao` para
+ * revisar uma a uma; a decisão de reescrever ou aposentar é de produto.
+ */
+
 
 import { randomUUID } from "node:crypto";
 import { config as loadDotenv } from "dotenv";
@@ -260,13 +281,16 @@ async function main() {
     const tok = await criarTokenFixture({ nome: "Girável", sigla: "GV", tamanho: "grande", q: 15, r: 12 });
     await page.reload({ waitUntil: "networkidle" });
     await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
-    await selecionarToken(page, tok.id);
-    // O token nasce em (15,12) e pode cair fora da viewport — e aí
-    // `centroDoToken` devolve null, o acesso a `.x` estoura, e a
-    // execução morre com "Cannot read properties of null", que não diz
-    // nada sobre a causa. Garantir alcance antes de medir resolve o
-    // erro E a razão dele.
+    // ALCANCE ANTES DE SELECIONAR, nesta ordem.
+    //
+    // O token nasce em (15,12) e pode cair fora da viewport, ou debaixo
+    // do painel da sessão. Selecionar primeiro significa clicar onde ele
+    // não está: a seleção não acontece, a alça — que só é desenhada para
+    // token selecionado — nunca aparece, e o erro saía três linhas
+    // adiante como "Cannot read properties of null (reading 'x')",
+    // apontando para a leitura e não para o clique que falhou.
     await garantirTokenAlcancavel(page, "GV");
+    await selecionarToken(page, tok.id);
 
     const centroTok = await centroDoToken(page, tok.id);
     if (!centroTok) {

@@ -432,6 +432,26 @@ O mesmo erro sai com `campaign_id`, então não é a coluna — é a tabela. As 
 
 **Risco que fica registrado, e ainda não endereçado:** um canal único com nove ligações de `postgres_changes` é frágil por construção — qualquer ligação futura que o Realtime recuse volta a derrubar tudo, em silêncio. Vale separar por assunto, ou pelo menos afirmar num check que o canal assinou sem erro. Fica como candidato a tarefa própria.
 
+### ALCA-01 — `check-vtt-alca-rotacao` verifica a coluna errada
+
+- **Status:** Bloqueada (decisão: reescrever ou aposentar)
+- **Prioridade sugerida:** P2 — não há defeito de produto aqui; o custo é 54 critérios sem cobertura real.
+- **O que acontece:** o check afirma, em 54 critérios, que a alça de rotação muda `orientacao` (a FORMA da pegada). Ela não muda mais.
+
+**Medido (2026-09-21):** depois de um clique na alça, `orientacao=0` (intocada) e `direcao=1`. A revisão sobe, o que faz parecer que a rotação foi salva e revertida — o sintoma mais cruel possível.
+
+**Por que mudou, e a mudança é boa:** a alça hoje chama `apontar_vtt_token` e mexe em `direcao` (o olhar). Girar a FORMA virou ação de menu (`girarFormaDoToken` → `rotacionar_vtt_token`), e o motivo está escrito em `VttClient.tsx`: *"mudar a forma muda as células ocupadas e pode esbarrar em terreno ou noutro token. É por isso que ela ficou FORA da alça e virou ação de menu — ali a recusa é uma resposta legítima, e não uma surpresa no meio de um gesto contínuo."*
+
+**O mesmo já apareceu em `check-vtt-pegada-reparo`** (critérios R1a e R4), onde foi corrigido para `direcao` — lá eram dois critérios, aqui são 54.
+
+**A decisão:**
+1. **Reescrever para `direcao`.** O resto do arquivo é bom e vale reaproveitar: uma RPC por gesto, undo/redo como operação única, teclado, toque, alvo exato — tudo isso vale igual para `direcao`. São 88 referências a `orientacao` para revisar uma a uma, e algumas são legitimamente sobre a forma (o `data-orientacao` da camada de prévia), então não é find/replace.
+2. **Aposentar**, já que `pegada-reparo` cobre o essencial do apontar. Perde-se a cobertura de undo/redo e toque na alça.
+
+Recomendação: (1), quando houver tempo — a cobertura de undo/redo por gesto não existe em nenhum outro lugar.
+
+- **Andamento:** o check já foi reparado no que era alcance de ponteiro (ele selecionava o token ANTES de garantir que estava na tela, e por isso morria com 5 critérios). Hoje roda até o fim: **34 ok, 20 falhas**, e as 20 são todas desta causa.
+
 ### TEST-01 — Inventariar e reparar os checks defasados
 
 - **Status:** Pronta
