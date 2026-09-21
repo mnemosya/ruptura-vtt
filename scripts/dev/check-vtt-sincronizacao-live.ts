@@ -17,6 +17,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { ConsoleMessage } from "playwright";
 import { chromium, type BrowserContext, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
+import { continuarParaPosicionar, escolherTamanhoDoToken } from "./gerenciadorDeToken";
 
 loadDotenv({ path: ".env.local" });
 function requireEnv(nome: string): string {
@@ -164,12 +165,10 @@ async function main() {
     // formulário e abre o fantasma no mapa — a criação de verdade só
     // acontece no clique da célula, abaixo.
     await narradorPage.locator('.rv-gerenciador-token .rv-btn--pri', { hasText: "Continuar para posicionar" }).click();
-    await narradorPage.waitForSelector(".rv-escolha-posicao", { timeout: 5000 });
     await narradorPage.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 });
     await narradorPage.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2, { steps: 3 });
     await narradorPage.waitForTimeout(150);
     await narradorPage.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
-    await narradorPage.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 5000 });
     const { data } = await admin.from("vtt_tokens").select("id").eq("campaign_id", campaignId).eq("nome", "Sentinela Sync").maybeSingle();
     tokenId = data?.id ?? "";
     const apareceuNoJogador = await esperarAte(async () => (await contarSiglas(jogadorPage)).includes("SS"), 6000);
@@ -196,7 +195,7 @@ async function main() {
     const nomeInput = narradorPage.locator(".rv-gerenciador-token input[type=text]").first();
     await nomeInput.fill("");
     await nomeInput.fill("Sentinela Editada");
-    await narradorPage.selectOption("#rv-campo-tamanho", "grande"); // muda tamanho JUNTO com o nome, na mesma confirmação
+    await escolherTamanhoDoToken(narradorPage, "grande"); // muda tamanho JUNTO com o nome, na mesma confirmação
     await narradorPage.locator('.rv-gerenciador-token .rv-btn--pri', { hasText: "Salvar" }).click();
     await narradorPage.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 5000 });
     const { data: linha } = await admin.from("vtt_tokens").select("nome, tamanho, revision").eq("id", tokenId).single();
@@ -219,7 +218,7 @@ async function main() {
     await narradorPage.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2, { button: "right" });
     await narradorPage.locator(".rv-menu-item", { hasText: "Editar" }).click();
     await narradorPage.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
-    await narradorPage.selectOption("#rv-campo-tamanho", "medio");
+    await escolherTamanhoDoToken(narradorPage, "medio");
     await narradorPage.locator('.rv-gerenciador-token .rv-btn--pri', { hasText: "Salvar" }).click();
     await narradorPage.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 5000 });
     const { data: depoisDeVoltar } = await admin.from("vtt_tokens").select("tamanho, revision").eq("id", tokenId).single();
@@ -354,7 +353,7 @@ async function main() {
     await narradorPage.locator(`.rv-token[data-token-id="${tokenPegadaId}"]`).click({ button: "right" });
     await narradorPage.locator(".rv-menu-item", { hasText: "Editar" }).click();
     await narradorPage.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
-    await narradorPage.selectOption("#rv-campo-tamanho", "medio");
+    await escolherTamanhoDoToken(narradorPage, "medio");
     await narradorPage.locator(".rv-gerenciador-token .rv-btn--pri", { hasText: "Salvar" }).click();
     await narradorPage.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 5000 });
 
@@ -384,11 +383,9 @@ async function main() {
     await narradorPage.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
     // Nome/sigla ficam vazios de propósito — não preenche nada.
     await narradorPage.locator('.rv-gerenciador-token .rv-btn--pri', { hasText: "Continuar para posicionar" }).click();
-    await narradorPage.waitForSelector(".rv-escolha-posicao", { timeout: 5000 });
     await narradorPage.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2, { steps: 3 });
     await narradorPage.waitForTimeout(150);
     await narradorPage.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
-    await narradorPage.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 5000 });
 
     const { data: criado } = await admin.from("vtt_tokens").select("id, nome, sigla").eq("campaign_id", campaignId).like("nome", "#%").order("created_at", { ascending: false }).limit(1).single();
     registrar("nome-auto-live-1 (banco: nome automático '#N' de verdade, sigla derivada)", /^#\d+$/.test(criado!.nome) && criado!.sigla === criado!.nome.slice(1), `nome="${criado!.nome}", sigla="${criado!.sigla}"`);

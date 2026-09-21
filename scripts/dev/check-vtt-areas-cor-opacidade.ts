@@ -29,6 +29,7 @@ import type { ConsoleMessage } from "playwright";
 import { chromium, type BrowserContext, type Page } from "playwright";
 import { Client } from "pg";
 import { BASE_URL } from "./authSession";
+import { garantirAlcancavel, recolherPainelDaSessao } from "./painelDaSessao";
 
 loadDotenv({ path: ".env.local" });
 
@@ -134,6 +135,12 @@ async function main() {
   const P = narrador.page;
   await P.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await P.waitForSelector(".rv-ferramentas", { timeout: 20000 });
+  // O PAINEL DA SESSÃO SAI DA FRENTE antes de qualquer gesto no mapa.
+  // Ele flutua sobre a metade direita, e as células de coluna alta que
+  // estes critérios usam ficam debaixo dele — o helper de célula
+  // empurra o mapa, mas não tem para onde empurrar contra um painel
+  // fixo. Medido: "Célula (20,5) está coberta por DIV.rv-pn-chat-scroll".
+  await recolherPainelDaSessao(P);
   await P.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Áreas"]').click();
   await P.waitForSelector('[data-testid="painel-areas"]', { timeout: 8000 });
 
@@ -151,7 +158,14 @@ async function main() {
   await garantirAparenciaAberta();
   await P.locator('[data-testid="area-cor-roxo"]').click();
   await P.locator('[data-testid="area-campo-opacidade"]').fill("0.6");
-  const c0 = await celula(P, 10, 5), c1 = await celula(P, 14, 5);
+  // As duas pontas do arrasto precisam estar ALCANÇÁVEIS: o painel da
+  // sessão flutua sobre o mapa e a coluna 14 pode cair fora da
+  // viewport. Sem isso o gesto acontece no vazio, prévia nenhuma é
+  // desenhada, e a falha aparece como "a cor escolhida não aparece na
+  // prévia" — culpando a cor por uma prévia que nunca existiu.
+  const c1 = await garantirAlcancavel(P, () => celula(P, 14, 5).catch(() => null));
+  if (!c1) throw new Error("célula (14,5) inalcançável mesmo afastando o zoom");
+  const c0 = await celula(P, 10, 5);
   await arrastar(P, c0, c1);
   const fillPrevia = await P.locator('.rv-camada-areas .rv-area--previa path').first().getAttribute("fill");
   const opacidadePrevia = await P.locator('.rv-camada-areas .rv-area--previa path').first().getAttribute("fill-opacity");

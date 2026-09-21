@@ -321,7 +321,7 @@ async function main() {
   // --- H: erro de validação (PV inválido) e depois fechar ---
   {
     await abrirPorBotaoBarra();
-    await page.locator("summary", { hasText: "Identidade ampliada" }).click();
+    await page.locator("summary", { hasText: "Retrato, vida e estado" }).click();
     const pvAtual = page.locator('.rv-gerenciador-token fieldset:has-text("Pontos de Vida") input').first();
     const pvMax = page.locator('.rv-gerenciador-token fieldset:has-text("Pontos de Vida") input').nth(1);
     await pvAtual.fill("50");
@@ -502,7 +502,7 @@ async function main() {
 
     await abrirPorBotaoBarra();
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Config Sem Rede");
-    await page.locator("summary", { hasText: "Identidade ampliada" }).click();
+    await page.locator("summary", { hasText: "Retrato, vida e estado" }).click();
     await page.locator('.rv-gerenciador-token select[value], .rv-gerenciador-token select').first().selectOption({ index: 1 }).catch(() => {});
     await page.locator('.rv-gerenciador-token input[type=checkbox]').first().click().catch(() => {});
     await page.waitForTimeout(150);
@@ -588,7 +588,7 @@ async function main() {
   // --- T: scroll dentro do corpo funciona; pan do mapa (botão direito) continua fora da janela ---
   {
     await abrirPorBotaoBarra();
-    await page.locator("summary", { hasText: "Identidade ampliada" }).click();
+    await page.locator("summary", { hasText: "Retrato, vida e estado" }).click();
     const corpo = page.locator(".rv-janela-token-corpo");
     const scrollAntes = await corpo.evaluate((el) => el.scrollTop);
     const box = (await corpo.boundingBox())!;

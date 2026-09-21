@@ -38,6 +38,9 @@ import { createClient } from "@supabase/supabase-js";
 import type { ConsoleMessage } from "playwright";
 import { chromium, type BrowserContext, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
+import { continuarParaPosicionar, escolherTamanhoDoToken } from "./gerenciadorDeToken";
+
+
 
 loadDotenv({ path: ".env.local" });
 function requireEnv(nome: string): string {
@@ -165,12 +168,6 @@ async function preencherNomeMinimo(page: Page, nome: string) {
   await page.locator(".rv-gerenciador-token input[type=text]").first().fill(nome);
 }
 
-async function continuarParaPosicionar(page: Page) {
-  const botao = page.locator(".rv-gerenciador-token .rv-btn--pri", { hasText: "Continuar para posicionar" });
-  await botao.click();
-  await page.waitForSelector(".rv-escolha-posicao", { timeout: 5000 });
-  await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 });
-}
 
 async function celulaBox(page: Page, indice: number) {
   return page.locator(".rv-camada-grade path").nth(indice).boundingBox();
@@ -328,30 +325,42 @@ async function main() {
   // --- 7: "Mais opções" começa fechada (modo criar) ---
   {
     const aberto = await page.locator(".rv-gerenciador-token details.rv-mais-opcoes").getAttribute("open");
-    registrar('7 ("Identidade ampliada" começa fechada)', aberto === null, `open=${aberto}`);
+    registrar('7 ("Retrato, vida e estado" começa fechada)', aberto === null, `open=${aberto}`);
   }
 
   // --- 8: tamanho mostra quantidade correta de hexes ---
   {
-    const ajudaTamanho = () => page.locator('.rv-gerenciador-token div.rv-field:has(#rv-campo-tamanho) > .rv-field-ajuda').first().textContent();
-    await page.selectOption("#rv-campo-tamanho", "medio");
-    const medio = await ajudaTamanho();
-    await page.selectOption("#rv-campo-tamanho", "grande");
-    const grande = await ajudaTamanho();
-    await page.selectOption("#rv-campo-tamanho", "enorme");
-    const enorme = await ajudaTamanho();
-    await page.selectOption("#rv-campo-tamanho", "colossal");
-    const colossal = await ajudaTamanho();
+    // O CONTROLE MUDOU DE TIPO, e o contador mudou de lugar.
+    //
+    // Tamanho era um `<select id="rv-campo-tamanho">` e virou um
+    // segmentado (`role="radiogroup"`, um `role="radio"` por categoria),
+    // então `selectOption` não tem o que operar — o id não existe mais
+    // em lugar nenhum do app. E a contagem de hexes saiu do texto de
+    // ajuda do campo: hoje ela faz parte do RETRATO da peça
+    // (`.rv-token-pegada`), ao lado da prévia desenhada.
+    //
+    // O que o critério afirma continua valendo — escolher um tamanho
+    // mostra quantos hexes ele ocupa —, e é por isso que ele foi
+    // reescrito em vez de removido.
+    const hexesNaPrevia = () => page.locator(".rv-token-pegada span").first().textContent();
+    await escolherTamanhoDoToken(page, "medio");
+    const medio = await hexesNaPrevia();
+    await escolherTamanhoDoToken(page, "grande");
+    const grande = await hexesNaPrevia();
+    await escolherTamanhoDoToken(page, "enorme");
+    const enorme = await hexesNaPrevia();
+    await escolherTamanhoDoToken(page, "colossal");
+    const colossal = await hexesNaPrevia();
     registrar(
-      "8 (tamanho mostra a quantidade correta de hexes: médio=1, grande=3, enorme=7, colossal=12)",
-      medio?.includes("1 hex") === true && grande?.includes("3 hexes") === true && enorme?.includes("7 hexes") === true && colossal?.includes("12 hexes") === true,
+      "8 (tamanho mostra a quantidade correta de hexes: médio=1, grande=3, enorme=7, colossal=13)",
+      medio?.includes("1 hex") === true && grande?.includes("3 hexes") === true && enorme?.includes("7 hexes") === true && colossal?.includes("13 hexes") === true,
       `médio="${medio}", grande="${grande}", enorme="${enorme}", colossal="${colossal}"`,
     );
   }
 
   // --- 9: formulário não mostra rotação ---
   {
-    await page.selectOption("#rv-campo-tamanho", "grande");
+    await escolherTamanhoDoToken(page, "grande");
     const semBotoesGirar = await page.locator(".rv-gerenciador-token button", { hasText: /[Gg]irar/ }).count();
     const semSetaDirecao = await page.locator(".rv-gerenciador-token .rv-pegada-preview line").count();
     registrar("9 (formulário não mostra rotação)", semBotoesGirar === 0 && semSetaDirecao === 0, `botõesGirar=${semBotoesGirar}, setaDirecao=${semSetaDirecao}`);
@@ -359,7 +368,7 @@ async function main() {
 
   // --- 10/21: continuar não chama RPC; criação só aparece no banco após confirmação ---
   {
-    await page.selectOption("#rv-campo-tamanho", "medio");
+    await escolherTamanhoDoToken(page, "medio");
     await preencherNomeMinimo(page, "Sentinela Etapas");
     await continuarParaPosicionar(page);
     const { data: antesDeConfirmar } = await admin.from("vtt_tokens").select("id").eq("campaign_id", campaignId).eq("nome", "Sentinela Etapas");
@@ -391,7 +400,6 @@ async function main() {
     // --- 15: posição válida confirma UMA RPC ---
     const box = await celulaBox(page, indiceValido);
     await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 5000 });
     const { data: criadosSentinela } = await admin.from("vtt_tokens").select("id").eq("campaign_id", campaignId).eq("nome", "Sentinela Etapas");
     registrar("15 (posição válida confirma exatamente uma RPC de criação)", (criadosSentinela ?? []).length === 1, `linhas=${(criadosSentinela ?? []).length}`);
 
@@ -425,7 +433,6 @@ async function main() {
     const idx = await encontrarCelulaValida(page, 195);
     const box = await celulaBox(page, idx);
     await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 5000 });
 
     const { data: criadosAutomaticos } = await admin.from("vtt_tokens").select("nome, sigla").eq("campaign_id", campaignId).like("nome", "#%").order("created_at", { ascending: false }).limit(1);
     const nomeAutomatico = criadosAutomaticos?.[0]?.nome ?? "";
@@ -470,7 +477,6 @@ async function main() {
 
     // --- 17: Esc cancela sem persistir ---
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
     const { data: aindaNaoCriados } = await admin.from("vtt_tokens").select("id").eq("campaign_id", campaignId).eq("nome", "Nunca Sobrepõe");
     registrar("17 (Esc cancela o posicionamento sem persistir nada)", (aindaNaoCriados ?? []).length === 0, `linhas=${(aindaNaoCriados ?? []).length}`);
   }
@@ -479,7 +485,7 @@ async function main() {
   {
     await abrirCriarConfigurando(page, 60);
     await preencherNomeMinimo(page, "Girador");
-    await page.selectOption("#rv-campo-tamanho", "grande");
+    await escolherTamanhoDoToken(page, "grande");
     await continuarParaPosicionar(page);
     const indiceValido = await encontrarCelulaValida(page, 60);
     const orientacaoAntesGrande = await page.locator(".rv-camada-posicionamento-token").getAttribute("data-orientacao");
@@ -488,12 +494,11 @@ async function main() {
     const orientacaoDepoisGrande = await page.locator(".rv-camada-posicionamento-token").getAttribute("data-orientacao");
     registrar("13 (Grande gira no mapa via Q/E)", orientacaoAntesGrande !== orientacaoDepoisGrande, `antes=${orientacaoAntesGrande}, depois=${orientacaoDepoisGrande}`);
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
 
     for (const tamanho of ["pequeno", "medio", "enorme"] as const) {
       await abrirCriarConfigurando(page, 65);
       await preencherNomeMinimo(page, `Não Gira ${tamanho}`);
-      await page.selectOption("#rv-campo-tamanho", tamanho);
+      await escolherTamanhoDoToken(page, tamanho);
       await continuarParaPosicionar(page);
       const idx = await encontrarCelulaValida(page, 65);
       const antes = await page.locator(".rv-camada-posicionamento-token").getAttribute("data-orientacao");
@@ -503,7 +508,6 @@ async function main() {
       const depois = await page.locator(".rv-camada-posicionamento-token").getAttribute("data-orientacao");
       registrar(`14 (${tamanho} não oferece rotação — Q/E não muda orientação)`, antes === depois && antes === "0", `antes=${antes}, depois=${depois}`);
       await page.keyboard.press("Escape");
-      await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
       void idx;
     }
   }
@@ -564,7 +568,6 @@ async function main() {
     registrar("19c (posição escolhida sobrevive à falha, via 'voltar para editar' → continuar)", ancoraDepoisDeVoltar === ancoraEscolhida, `antes="${ancoraEscolhida}", depois="${ancoraDepoisDeVoltar}"`);
 
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
     await admin.from("vtt_tokens").delete().eq("sigla", "BQ").eq("campaign_id", campaignId);
   }
 
@@ -580,7 +583,6 @@ async function main() {
     // pra estressar o guard de duplo clique.
     await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
     await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 5000 });
     await page.waitForTimeout(500);
     const { data: criadosDuplo } = await admin.from("vtt_tokens").select("id").eq("campaign_id", campaignId).eq("nome", "Duplo Clique");
     registrar("20 (duplo clique no mapa cria só UM token)", (criadosDuplo ?? []).length === 1, `criados=${(criadosDuplo ?? []).length}`);
@@ -624,7 +626,6 @@ async function main() {
     );
 
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
   }
 
   // --- 13/14 (personagem vinculado) reaproveitado do formulário de configuração — confere junto com 26-29 abaixo, que exercitam o modo EDITAR ---
@@ -634,12 +635,11 @@ async function main() {
   {
     await abrirCriarConfigurando(page, 200);
     await preencherNomeMinimo(page, "Editável");
-    await page.selectOption("#rv-campo-tamanho", "medio");
+    await escolherTamanhoDoToken(page, "medio");
     await continuarParaPosicionar(page);
     const idx = await encontrarCelulaValida(page, 200);
     const box = await celulaBox(page, idx);
     await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 5000 });
     const { data } = await admin.from("vtt_tokens").select("id, q, r, orientacao").eq("campaign_id", campaignId).eq("nome", "Editável").single();
     tokenEditarId = data!.id;
 
@@ -683,7 +683,7 @@ async function main() {
     await page.locator(".rv-menu-item", { hasText: "Editar" }).click();
     await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
     await page.locator(".rv-gerenciador-token input[type=text]").first().fill("Editável Undo Redo");
-    await page.selectOption("#rv-campo-tamanho", "grande");
+    await escolherTamanhoDoToken(page, "grande");
     await page.locator(".rv-btn--pri", { hasText: "Salvar alterações" }).click();
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 5000 });
     const { data: depoisDeEditar2 } = await admin.from("vtt_tokens").select("nome, tamanho, revision").eq("id", tokenEditarId!).single();
@@ -755,7 +755,7 @@ async function main() {
     await page.locator(`.rv-token[data-token-id="${tokenEditarId}"]`).click({ button: "right" });
     await page.locator(".rv-menu-item", { hasText: "Editar" }).click();
     await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
-    await page.selectOption("#rv-campo-tamanho", "grande");
+    await escolherTamanhoDoToken(page, "grande");
     const avisoResize = await page.locator(".rv-gerenciador-token .rv-form-aviso", { hasText: "não cabe na posição atual" }).count();
     const botaoDesabilitado = await page.locator(".rv-btn--pri", { hasText: "Salvar alterações" }).isDisabled();
     registrar("27 (redimensionar sem couber é recusado, com a mensagem certa)", avisoResize > 0 && botaoDesabilitado, `aviso=${avisoResize > 0}, desabilitado=${botaoDesabilitado}`);
@@ -763,7 +763,7 @@ async function main() {
     registrar("27b (tamanho não muda no banco enquanto a recusa persistir)", naoMudou!.tamanho === "medio", `tamanho="${naoMudou!.tamanho}"`);
 
     // limpa o cerco de terreno e volta pro tamanho original antes de fechar.
-    await page.selectOption("#rv-campo-tamanho", "medio");
+    await escolherTamanhoDoToken(page, "medio");
     page.once("dialog", (d) => d.accept());
     await page.keyboard.press("Escape");
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
@@ -777,7 +777,7 @@ async function main() {
     await page.locator(`.rv-token[data-token-id="${tokenEditarId}"]`).click({ button: "right" });
     await page.locator(".rv-menu-item", { hasText: "Editar" }).click();
     await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
-    await page.locator("summary", { hasText: "Identidade ampliada" }).click();
+    await page.locator("summary", { hasText: "Retrato, vida e estado" }).click();
     const imagemInput = page.locator('.rv-gerenciador-token label:has-text("Imagem do token") input');
     await imagemInput.fill("javascript:alert(1)");
     const avisoPerigosa = await page.locator(".rv-gerenciador-token .rv-form-aviso", { hasText: "http" }).count();

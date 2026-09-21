@@ -36,6 +36,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { ConsoleMessage } from "playwright";
 import { chromium, type BrowserContext, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
+import { recolherPainelDaSessao } from "./painelDaSessao";
 
 loadDotenv({ path: ".env.local" });
 
@@ -196,6 +197,35 @@ async function celula(page: Page, col: number, row: number): Promise<{ x: number
 }
 
 /**
+ * As DUAS pontas de um arrasto, medidas contra o MESMO enquadramento.
+ *
+ * `celula()` empurra o mapa quando a célula está coberta ou fora da
+ * tela — e é isso que torna medir duas em sequência uma armadilha: a
+ * segunda medição pode mover o mapa e deixar a primeira apontando para
+ * onde a célula NÃO está mais. O arrasto então começa no lugar errado.
+ *
+ * Achado assim: um arrasto de quatro células mostrava "0 m" na régua, e
+ * o painel ficava numa fase sem o botão que o passo seguinte esperava.
+ * Parecia bug do desenho de área; era um ponto velho.
+ *
+ * Aqui as duas são remedidas até o mapa não se mexer entre elas.
+ */
+async function duasCelulas(
+  page: Page,
+  a: { col: number; row: number },
+  b: { col: number; row: number },
+): Promise<[{ x: number; y: number }, { x: number; y: number }]> {
+  for (let tentativa = 0; tentativa < 4; tentativa++) {
+    const antes = await page.locator("svg.rv-mapa > g").getAttribute("transform");
+    const pa = await celula(page, a.col, a.row);
+    const pb = await celula(page, b.col, b.row);
+    const depois = await page.locator("svg.rv-mapa > g").getAttribute("transform");
+    if (antes === depois) return [pa, pb];
+  }
+  throw new Error(`Não foi possível medir (${a.col},${a.row}) e (${b.col},${b.row}) no mesmo enquadramento`);
+}
+
+/**
  * Pan com o botão direito, por um deslocamento EXATO.
  *
  * O gesto começa num ponto do mapa que esteja livre e cabe na janela
@@ -231,6 +261,13 @@ async function arrastar(page: Page, de: { x: number; y: number }, ate: { x: numb
 }
 
 async function abrirAreas(page: Page) {
+  // O PAINEL DA SESSÃO SAI DA FRENTE antes de qualquer gesto no mapa.
+  // Ele flutua sobre a metade direita, e as células de coluna alta que
+  // estes critérios usam ficam debaixo dele — o helper de célula
+  // empurra o mapa, mas não tem para onde empurrar contra um painel
+  // fixo. Medido: "Célula (20,5) está coberta por DIV.rv-pn-chat-scroll".
+  await recolherPainelDaSessao(page);
+
   await page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Áreas"]').click();
   await page.waitForSelector('[data-testid="painel-areas"]', { timeout: 8000 });
 }
@@ -349,6 +386,11 @@ async function main() {
   const jogador = await contextoDe(jogadorEmail!, jogadorSenha!);
   await jogador.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await jogador.page.waitForSelector(".rv-ferramentas", { timeout: 20000 });
+  // O painel também sai da frente NA SESSÃO DO JOGADOR: os critérios de
+  // sincronização medem células na página dele, e `abrirAreas` só
+  // recolhia o do narrador. Medido: "Célula (16,6) segue coberta por
+  // DIV.rv-pn-chat-scroll" — a célula era do jogador.
+  await recolherPainelDaSessao(jogador.page);
   {
     // Migration 0083: criação é aberta a qualquer participante da
     // campanha — sem autorização explícita, o jogador já vê a ferramenta.
@@ -417,8 +459,7 @@ async function main() {
     // Traço fino: mesma origem/direção, células ATRAVESSADAS.
     await escolherTipo(P, "linha");
     await P.locator('[data-testid="area-modo-traco_fino"]').click();
-    const a = await celula(P, 9, 7);
-    const b = await celula(P, 15, 7);
+    const [a, b] = await duasCelulas(P, { col: 9, row: 7 }, { col: 15, row: 7 });
     await arrastar(P, a, b);
     const celulasFino = await P.locator('.rv-camada-areas .rv-area--previa').getAttribute("data-celulas-afetadas");
     registrar("6 (exceção da Linha — traço fino destaca as células ATRAVESSADAS, sem exigir 50%)", Number(celulasFino) >= 6, `${celulasFino} células atravessadas`);
@@ -925,8 +966,7 @@ async function main() {
   // ── 20. Guia visual durante o arraste ───────────────────────────
   {
     await escolherTipo(P, "esfera");
-    const a = await celula(P, 14, 4);
-    const b = await celula(P, 18, 4);
+    const [a, b] = await duasCelulas(P, { col: 14, row: 4 }, { col: 18, row: 4 });
     await P.mouse.move(a.x, a.y);
     await P.mouse.down();
     await P.mouse.move(b.x, b.y, { steps: 8 });
@@ -954,8 +994,7 @@ async function main() {
     const marcado = await P.locator('[data-testid="area-campo-snap"]').isChecked();
     registrar("21 (snap angular de 15° vem LIGADO por padrão)", marcado, `marcado=${marcado}`);
 
-    const a = await celula(P, 12, 6);
-    const b = await celula(P, 17, 7);
+    const [a, b] = await duasCelulas(P, { col: 12, row: 6 }, { col: 17, row: 7 });
     await arrastar(P, a, b);
     await P.waitForTimeout(120);
     const dir = Number(await P.locator('[data-testid="area-campo-direcao"]').inputValue());
@@ -980,8 +1019,7 @@ async function main() {
   // ── 22. Modificador de precisão livre (Alt / Meta) ──────────────
   {
     await escolherTipo(P, "esfera");
-    const a = await celula(P, 12, 9);
-    const b = await celula(P, 16, 10);
+    const [a, b] = await duasCelulas(P, { col: 12, row: 9 }, { col: 16, row: 10 });
 
     // Sem modificador → inteiro.
     await arrastar(P, a, b);

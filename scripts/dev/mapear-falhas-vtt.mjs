@@ -52,9 +52,14 @@ for (const nome of scripts) {
   // Ignora o critério de limpeza: ele roda no `finally`, DEPOIS da
   // falha, e como "último critério que passou" mentia sobre onde o
   // script chegou — dizia "limpeza de fixtures" para todo mundo.
-  const oks = (saida.match(/^ok - ([^\n:]{0,60})/gm) ?? []).filter((l) => !/^ok - L \(/.test(l));
-  const ultimo = oks.length ? oks[oks.length - 1].replace("ok - ", "") : "(nenhum)";
-  const passou = /TODOS OS CHECKS PASSARAM|0 falha\(s\)|, 0 falha/.test(saida);
+  // DOIS formatos de saída no repositório, e ignorar um deles fazia o
+  // coletor reportar "0 ok, sem assinatura" para checks que estavam
+  // apenas escrevendo diferente: `ok - nome` e `  ok   nome`. O
+  // instrumento mentia, e a mentira tinha a cara exata de um check que
+  // morre no setup.
+  const oks = (saida.match(/^(?:ok - |\s+ok\s{2,})([^\n:]{0,60})/gm) ?? []).filter((l) => !/ok\s+-?\s*L \(/.test(l));
+  const ultimo = oks.length ? oks[oks.length - 1].replace(/^(?:ok - |\s+ok\s+)/, "").trim() : "(nenhum)";
+  const passou = /TODOS OS CHECKS PASSARAM|0 falha\(s\)|, 0 falha|0 falhas\b/.test(saida);
   const linha = passou
     ? `${nome} | PASSA`
     : `${nome} | ${assinatura(saida)} | chegou até: ${ultimo} (${oks.length} ok)`;

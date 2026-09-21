@@ -40,6 +40,7 @@ import type { ConsoleMessage } from "playwright";
 import { chromium, type BrowserContext, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
 import { hexParaPixel, hexRotacionar } from "../../src/app/mesas/[campaignId]/vtt/_mapa/hex";
+import { garantirTokenAlcancavel } from "./painelDaSessao";
 
 loadDotenv({ path: ".env.local" });
 function requireEnv(nome: string): string {
@@ -260,11 +261,29 @@ async function main() {
     await page.reload({ waitUntil: "networkidle" });
     await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
     await selecionarToken(page, tok.id);
+    // O token nasce em (15,12) e pode cair fora da viewport — e aí
+    // `centroDoToken` devolve null, o acesso a `.x` estoura, e a
+    // execução morre com "Cannot read properties of null", que não diz
+    // nada sobre a causa. Garantir alcance antes de medir resolve o
+    // erro E a razão dele.
+    await garantirTokenAlcancavel(page, "GV");
 
     const centroTok = await centroDoToken(page, tok.id);
+    if (!centroTok) {
+      registrar("5-18 (geometria da alça)", false, "token fora de alcance mesmo após afastar o zoom");
+      throw new Error("token GV inalcançável");
+    }
     const posAlcaRepouso = await centroDaAlca(page);
     registrar("18 (alvo de toque presente e maior que o círculo visível)", !!posAlcaRepouso, `presente=${!!posAlcaRepouso}`);
-    const v0 = { x: posAlcaRepouso!.x - centroTok.x, y: posAlcaRepouso!.y - centroTok.y };
+    // A alça pode não existir — e aí o `!` logo abaixo estourava com
+    // "Cannot read properties of null (reading 'x')", que não diz QUAL
+    // coisa faltou. Falhar aqui, nomeando, vale mais que um TypeError
+    // três linhas adiante.
+    if (!posAlcaRepouso) {
+      registrar("5-18 (geometria da alça)", false, "alça de rotação ausente — token selecionado? narrador controla este token?");
+      throw new Error("alça de rotação ausente");
+    }
+    const v0 = { x: posAlcaRepouso.x - centroTok.x, y: posAlcaRepouso.y - centroTok.y };
 
     async function posParaOrientacaoRelativa(passos: number) {
       const v = rotacionarVetor(v0, passos);
@@ -273,7 +292,7 @@ async function main() {
 
     // 5/6: arrastar ao redor encaixa numa das 6 orientações; o token NÃO se move.
     const alvo2 = await posParaOrientacaoRelativa(2);
-    await page.mouse.move(posAlcaRepouso!.x, posAlcaRepouso!.y);
+    await page.mouse.move(posAlcaRepouso.x, posAlcaRepouso.y);
     await page.mouse.down();
     await page.mouse.move(centroTok.x + (alvo2.x - centroTok.x) * 0.5, centroTok.y + (alvo2.y - centroTok.y) * 0.5, { steps: 5 });
     await page.mouse.move(alvo2.x, alvo2.y, { steps: 8 });

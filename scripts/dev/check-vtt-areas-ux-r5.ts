@@ -23,6 +23,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { ConsoleMessage } from "playwright";
 import { chromium, type BrowserContext, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
+import { garantirAlcancavel, recolherPainelDaSessao } from "./painelDaSessao";
 
 loadDotenv({ path: ".env.local" });
 
@@ -129,6 +130,30 @@ async function posicaoDoToken(page: Page, id: string): Promise<{ x: number; y: n
   return { x: caixa.x + caixa.width / 2, y: caixa.y + caixa.height / 2 };
 }
 
+/**
+ * Afasta o zoom até a célula caber na tela.
+ *
+ * Com o painel recolhido as células deixaram de estar COBERTAS e
+ * passaram a estar FORA: medido, a (24,5) caía em x≈1466 numa viewport
+ * de 1440. `elementFromPoint` devolve null ali, e a mensagem vira
+ * "coberta por nada" — que descreve o sintoma sem nomear a causa.
+ *
+ * A condição de parada é a célula ser medível, nunca um número fixo de
+ * cliques: quantos são depende da largura da cena e da viewport.
+ */
+async function comCelulaNaTela(page: Page, col: number, row: number, tentativas = 4): Promise<{ x: number; y: number }> {
+  for (let i = 0; i <= tentativas; i++) {
+    try {
+      return await celula(page, col, row);
+    } catch (erro) {
+      if (i === tentativas) throw erro;
+      await page.locator('.rv-zoom button[aria-label="Afastar"]').click();
+      await page.waitForTimeout(150);
+    }
+  }
+  throw new Error("inalcançável");
+}
+
 async function celula(page: Page, col: number, row: number): Promise<{ x: number; y: number }> {
   const largura = await page.locator(".rv-mapa").getAttribute("aria-label").then((r) => Number(/de (\d+) por/.exec(r ?? "")?.[1] ?? 26));
   const caixa = await page.locator(".rv-camada-grade path").nth(row * largura + col).boundingBox();
@@ -199,6 +224,10 @@ async function main() {
   // ══════════════════════════════════════════════════════════════
   // 4. Seção "Quem pode criar áreas" nunca mais aparece
   // ══════════════════════════════════════════════════════════════
+  // O painel da sessão flutua sobre a metade direita do mapa, e as
+  // células que este check usa ficam debaixo dele — medido: "Célula
+  // (20,5) está coberta por DIV.rv-pn-chat-scroll".
+  await recolherPainelDaSessao(P);
   await abrirAreas(P);
   {
     const secao = await P.locator('[data-testid="area-abrir-autorizacoes"]').count();
@@ -214,7 +243,13 @@ async function main() {
     await escolherTipo(P, "aura");
     await P.waitForSelector('[data-testid="painel-areas"][data-fase="escolhendo_token_da_aura"]', { timeout: 5000 });
 
-    const c = await posicaoDoToken(P, tokenId!);
+    // O clique precisa CHEGAR ao token: o painel da sessão flutua sobre
+    // o mapa e o token pode estar fora da viewport. Sem isso o clique
+    // cai no chat ou no vazio, a fase nunca avança, e a falha aparece
+    // como um `waitForSelector` estourando numa fase que o app sabe
+    // fazer perfeitamente.
+    const c = await garantirAlcancavel(P, () => posicaoDoToken(P, tokenId!).catch(() => null));
+    if (!c) throw new Error("token da aura inalcançável mesmo afastando o zoom");
     // Clique-e-solta simples (sem arrastar) — escolhe o token, entra em `definindo_raio_da_aura`.
     await P.mouse.move(c.x, c.y);
     await P.mouse.down();
@@ -318,13 +353,17 @@ async function main() {
   const A = await contextoDe(jogadorA.email, jogadorA.senha);
   await A.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await A.page.waitForSelector(".rv-ferramentas", { timeout: 20000 });
+  // Cada sessão nova nasce com o painel aberto: recolher só no narrador
+  // não ajuda quem mede células na página de OUTRA pessoa — e era daí
+  // que vinha "Célula (20,5) está coberta por DIV.rv-pn-chat-scroll".
+  await recolherPainelDaSessao(A.page);
   let areaEsferaJogadorA: string;
   {
     const temFerramenta = await A.page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Áreas"]').count();
     registrar("5a (jogador SEM autorização antiga já vê e usa a ferramenta Áreas)", temFerramenta === 1, `${temFerramenta}`);
     await abrirAreas(A.page);
     await escolherTipo(A.page, "esfera");
-    const a = await celula(A.page, 20, 5), b = await celula(A.page, 24, 5);
+    const a = await comCelulaNaTela(A.page, 20, 5), b = await comCelulaNaTela(A.page, 24, 5);
     await A.page.mouse.move(a.x, a.y); await A.page.mouse.down();
     await A.page.mouse.move(b.x, b.y, { steps: 6 }); await A.page.mouse.up();
     await manterNaMesa(A.page);
@@ -342,17 +381,18 @@ async function main() {
   const B = await contextoDe(jogadorB.email, jogadorB.senha);
   await B.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
   await B.page.waitForSelector(".rv-ferramentas", { timeout: 20000 });
+  await recolherPainelDaSessao(B.page);
   {
     await abrirAreas(B.page);
     // Área do narrador.
-    const cN = await celula(B.page, 18, 5); // borda da esfera do narrador
+    const cN = await comCelulaNaTela(B.page, 18, 5); // borda da esfera do narrador
     await B.page.mouse.move(cN.x, cN.y);
     await B.page.waitForTimeout(400);
     const botaoNaAreaDoNarrador = await B.page.locator('[data-testid="area-editar-rapido"]').count();
     registrar("5d (outro jogador NÃO vê botão de editar na área do narrador)", botaoNaAreaDoNarrador === 0, `${botaoNaAreaDoNarrador}`);
 
     // Área do jogador A.
-    const cA = await celula(B.page, 24, 5); // borda da esfera do jogador A
+    const cA = await comCelulaNaTela(B.page, 24, 5); // borda da esfera do jogador A
     await B.page.mouse.move(cA.x, cA.y);
     await B.page.waitForTimeout(400);
     const botaoNaAreaDoJogadorA = await B.page.locator('[data-testid="area-editar-rapido"]').count();
@@ -380,8 +420,11 @@ async function main() {
     await P.waitForTimeout(600);
     const dicaVisivelHover = await editarBtn.locator(".rv-dica").evaluate((el) => getComputedStyle(el).opacity);
     registrar("3a (hover no ícone Editar mostra o hint com o atraso padrão)", dicaVisivelHover === "1", `opacity=${dicaVisivelHover}`);
+    // `innerText` devolve o texto RENDERIZADO, e o CSS desenha a dica em
+    // caixa alta — chegava "EDITAR ÁREA". O critério é sobre O QUE a
+    // dica diz, não sobre como o CSS a desenha.
     const textoDica = await editarBtn.locator(".rv-dica").innerText();
-    registrar("3b (texto do hint é 'Editar área')", textoDica === "Editar área", `"${textoDica}"`);
+    registrar("3b (texto do hint é 'Editar área')", textoDica.trim().toLowerCase() === "editar área", `"${textoDica}"`);
 
     await P.mouse.move(0, 0);
     await P.waitForTimeout(150);

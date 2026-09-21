@@ -45,6 +45,20 @@ export async function recolherPainelDaSessao(
   const recolher = page.locator('[data-testid="painel-recolher"]');
   if ((await recolher.count()) === 0) return; // já recolhido
   await recolher.click();
+
+  // ESPERA O PAINEL ESTAR RECOLHIDO — sempre, mesmo sem ponto.
+  //
+  // A primeira versão retornava aqui quando não recebia ponto, com o
+  // clique apenas despachado: quem chamava seguia medindo células com o
+  // painel ainda na tela, e as mensagens continuavam dizendo "coberta
+  // por DIV.rv-pn-chat-scroll" depois de um recolhimento que parecia ter
+  // acontecido. Uma espera que não esperava, dentro do helper escrito
+  // para consertar esperas ruins.
+  //
+  // O sinal é exato, não aproximado: `painel-expandir` só é renderizado
+  // quando o painel está recolhido (`{!aberto && ...}` em `PainelAbas`).
+  await page.locator('[data-testid="painel-expandir"]').waitFor({ timeout: 5000 });
+
   if (!pontoQuePrecisaFicarLivre) return;
   await page.waitForFunction(
     ([x, y]) => !document.elementFromPoint(x, y)?.closest?.(".rv-painel"),
@@ -108,4 +122,39 @@ export async function garantirTokenAlcancavel(page: Page, sigla: string, tentati
     await page.waitForTimeout(120);
   }
   return false;
+}
+
+/**
+ * Versão geral de `garantirTokenAlcancavel`: serve para qualquer ponto
+ * do mapa, não só para um token.
+ *
+ * Recebe uma FUNÇÃO de medir, e não um ponto pronto, porque afastar o
+ * zoom move tudo: um par de coordenadas medido antes do primeiro clique
+ * de "Afastar" já não vale depois dele. Quem chama sabe como achar o
+ * alvo (a célula (14,5), a alça de largura, o canto de uma área) e
+ * remede a cada tentativa.
+ *
+ * Devolve o ponto alcançável, ou `null` se nem afastando ele couber —
+ * e nesse caso quem chama deve FALHAR dizendo isso, em vez de arrastar
+ * no vazio e culpar o que vier depois.
+ */
+export async function garantirAlcancavel(
+  page: Page,
+  medir: () => Promise<{ x: number; y: number } | null>,
+  tentativas = 5,
+): Promise<{ x: number; y: number } | null> {
+  const primeiro = await medir();
+  await recolherPainelDaSessao(page, primeiro ?? undefined);
+  for (let i = 0; i <= tentativas; i++) {
+    const ponto = await medir();
+    const vp = page.viewportSize();
+    if (ponto && vp && ponto.x > 0 && ponto.x < vp.width && ponto.y > 0 && ponto.y < vp.height) {
+      const emCima = await oQueEstaSob(page, ponto);
+      if (!emCima.startsWith("painel")) return ponto;
+    }
+    if (i === tentativas) return null;
+    await page.locator('.rv-zoom button[aria-label="Afastar"]').click();
+    await page.waitForTimeout(120);
+  }
+  return null;
 }

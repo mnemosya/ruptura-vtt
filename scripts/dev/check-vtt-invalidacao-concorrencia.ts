@@ -252,7 +252,14 @@ async function main() {
     });
     // Navega ANTES da releitura provavelmente ter terminado — o
     // `montadoRef` precisa impedir a aplicação da resposta tardia.
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "domcontentloaded" });
+    //
+    // O destino é `/mesas`, não `/mesas/<id>/personagens`: aquela rota
+    // NÃO EXISTE (não há segmento `personagens` sob `[campaignId]`), e
+    // o 404 dela sujava o console — justamente o que este critério
+    // afirma estar limpo. O critério é sobre DESMONTAR com uma
+    // releitura em voo; qualquer rota válida serve, e sair da mesa
+    // desmonta tanto quanto.
+    await page.goto(`${BASE_URL}/mesas`, { waitUntil: "domcontentloaded" });
     await disparo;
     await page.waitForTimeout(2000);
     const novosErros = erros.slice(errosAntes);

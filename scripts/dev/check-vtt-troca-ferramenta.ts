@@ -26,6 +26,7 @@ import { createClient } from "@supabase/supabase-js";
 import { chromium, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
 import { decidirTrocaFerramenta } from "../../src/app/mesas/[campaignId]/vtt/_ferramentas/controlador";
+import { continuarParaPosicionar, escolherTamanhoDoToken } from "./gerenciadorDeToken";
 
 loadDotenv({ path: ".env.local" });
 function requireEnv(nome: string): string {
@@ -93,12 +94,6 @@ async function abrirCriarConfigurando(page: Page, indiceCelula: number) {
   await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2, { button: "right" });
   await page.locator(".rv-menu-item", { hasText: "Adicionar token" }).click();
   await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
-}
-async function continuarParaPosicionar(page: Page, nome: string) {
-  await page.locator(".rv-gerenciador-token input[type=text]").first().fill(nome);
-  await page.locator(".rv-gerenciador-token .rv-btn--pri", { hasText: "Continuar para posicionar" }).click();
-  await page.waitForSelector(".rv-escolha-posicao", { timeout: 5000 });
-  await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 });
 }
 
 async function main() {
@@ -170,7 +165,6 @@ async function main() {
       `aindaPosicionando=${aindaPosicionando === 1 ? "sim" : "não"}, ferramentaAtiva="${ferramentaAtiva}"`,
     );
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
   }
 
   // --- 4: Esc continua cancelando (regressão) ---
@@ -178,7 +172,6 @@ async function main() {
     await abrirCriarConfigurando(page, 85);
     await continuarParaPosicionar(page, "Esc Continua");
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
     const { data: naoCriado } = await admin.from("vtt_tokens").select("id").eq("campaign_id", campaignId).eq("nome", "Esc Continua");
     registrar("4 (Esc continua cancelando o posicionamento, sem persistir nada)", (naoCriado ?? []).length === 0, `criados=${(naoCriado ?? []).length}`);
   }
@@ -186,7 +179,7 @@ async function main() {
   // --- 5: Q/E continuam reservados à rotação (não trocam de ferramenta) ---
   {
     await abrirCriarConfigurando(page, 95);
-    await page.selectOption("#rv-campo-tamanho", "grande");
+    await escolherTamanhoDoToken(page, "grande");
     await continuarParaPosicionar(page, "Q E Rotacao");
     const box = await page.locator(".rv-camada-grade path").nth(95).boundingBox();
     await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2, { steps: 3 });
@@ -202,7 +195,6 @@ async function main() {
       `orientação ${orientacaoAntes}→${orientacaoDepois}, aindaPosicionando=${aindaPosicionando === 1}`,
     );
     await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-escolha-posicao", { state: "detached", timeout: 3000 });
   }
 
   registrar("6 (nenhum warning/erro novo no console durante toda a sessão)", erros.length === 0, JSON.stringify(erros));

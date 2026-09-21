@@ -739,9 +739,20 @@ async function main() {
     }
 
     await irParaAba(narrador, "personagens");
-    await narrador.locator('[data-testid="painel-personagens-atualizar"]').click();
-    await narrador.waitForTimeout(600);
-    const nomes = await narrador.locator('[data-testid="painel-personagens-linha"] .rv-pn-linha-nome').allTextContents();
+    // O botão "Atualizar" foi REMOVIDO de propósito, e o comentário do
+    // `PersonagensTab` diz por quê: "a lista recarrega sozinha a cada
+    // ação e a cada abertura, então o botão só dava a entender que ela
+    // poderia estar velha".
+    //
+    // O critério é sobre o que a lista MOSTRA, não sobre como ela
+    // recarrega — então ele passa a reabrir a aba, que é o gesto que
+    // uma pessoa faria hoje, e espera os nomes aparecerem por condição
+    // em vez de por um tempo fixo que não significa nada.
+    await irParaAba(narrador, "chat");
+    await irParaAba(narrador, "personagens");
+    const linhas = narrador.locator('[data-testid="painel-personagens-linha"] .rv-pn-linha-nome');
+    await linhas.first().waitFor({ timeout: 8000 });
+    const nomes = await linhas.allTextContents();
     registrar(
       "3a (diretório lista DOCUMENTOS persistentes — os dois personagens da campanha)",
       nomes.includes("Mara Venn") && nomes.includes("Corvo do Jammer"),

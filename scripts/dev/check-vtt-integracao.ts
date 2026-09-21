@@ -295,8 +295,14 @@ async function main() {
     // junto com a contagem, em vez de só um número que ninguém consegue
     // interpretar quando quebra.
     const temObjetos = botoes.some((b) => b?.startsWith("Objetos"));
-    registrar("2 (narrador vê as 8 ferramentas — Terreno, Áreas, Rodadas e Objetos incluídas, Apontar não é mais botão)",
-      botoes.length === 8 && temTerreno && temAreas && temRodadas && temObjetos && semApontar, JSON.stringify(botoes));
+    // ...e de 8 pra 9 com IMAGENS. Mesma história das outras: capacidade
+    // nova, não regressão. O número sobe sozinho a cada ferramenta e
+    // por isso ele é o que menos importa aqui — o que o critério
+    // protege é que nenhuma das nomeadas SUMA, e que Apontar continue
+    // sendo gesto e não botão.
+    const temImagens = botoes.some((b) => b?.startsWith("Imagens"));
+    registrar("2 (narrador vê as 9 ferramentas — Terreno, Áreas, Rodadas, Objetos e Imagens incluídas, Apontar não é mais botão)",
+      botoes.length === 9 && temTerreno && temAreas && temRodadas && temObjetos && temImagens && semApontar, JSON.stringify(botoes));
   }
 
   // --- 3. Jogador vê só 4 ferramentas (sem Terreno) ---
