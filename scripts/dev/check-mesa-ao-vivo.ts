@@ -183,9 +183,40 @@ async function main(): Promise<void> {
     const msArea = await esperarAte(async () => (await sessaoJ!.page.locator(".rv-camada-areas .rv-area").count()) > 0);
     registrar("4 (área criada aparece para o jogador, sem reload)", msArea !== null, msArea !== null ? `${msArea}ms` : "não chegou em 10s");
 
-    // ── 5. Nada disso deixou erro de canal para trás ──────────────
+    // ── 5. Mensagem do jogador chega ao narrador ─────────────────
+    // O chat é a outra metade da mesa ao vivo: sem ele, duas pessoas
+    // veem o mesmo mapa e não conversam. E ele passa por um canal
+    // diferente do mapa — cobrir só o mapa deixaria metade sem rede.
+    //
+    // Quem ENVIA é o jogador, de propósito: o painel dele está aberto
+    // (o do narrador foi recolhido para liberar o mapa), e o caminho
+    // testado é o de digitar e mandar, não o de inserir no banco.
+    const frase = `ping ao vivo ${Date.now()}`;
+    await sessaoJ.page.locator('[data-testid="painel-chat-input"]').fill(frase);
+    await sessaoJ.page.locator('[data-testid="painel-chat-enviar"]').click();
+
+    // O narrador precisa do painel de volta para ler.
+    const expandir = sessaoN.page.locator('[data-testid="painel-expandir"]');
+    if ((await expandir.count()) > 0) await expandir.click();
+    const msChat = await esperarAte(async () => ((await sessaoN!.page.locator('[data-testid="painel-chat-scroll"]').textContent().catch(() => "")) ?? "").includes(frase));
+    registrar("5 (mensagem do jogador aparece no chat do narrador, sem reload)", msChat !== null, msChat !== null ? `${msChat}ms` : "não chegou em 10s");
+
+    // ── 6. Rolagem de dados chega aos dois ───────────────────────
+    // `/r` é o caminho real de rolar no chat, e o resultado precisa
+    // chegar aos DOIS: uma rolagem que só o autor vê não resolve
+    // disputa nenhuma na mesa.
+    await sessaoJ.page.locator('[data-testid="painel-chat-input"]').fill("/r 1d20");
+    await sessaoJ.page.locator('[data-testid="painel-chat-enviar"]').click();
+    // Teto maior SÓ aqui: o resultado da rolagem aparece depois da
+    // animação dos dados 3D, e medido levou 8,6s — a 1,4s do teto
+    // padrão de 10s. Um teto que quase estoura não é um teste estável,
+    // é um alarme falso agendado. 25s dá folga sem esconder travamento.
+    const msRolagemNarrador = await esperarAte(async () => ((await sessaoN!.page.locator('[data-testid="painel-chat-scroll"]').textContent().catch(() => "")) ?? "").includes("1d20"), 25000);
+    registrar("6 (rolagem feita pelo jogador aparece para o narrador, sem reload)", msRolagemNarrador !== null, msRolagemNarrador !== null ? `${msRolagemNarrador}ms` : "não chegou em 10s");
+
+    // ── 7. Nada disso deixou erro de canal para trás ──────────────
     const recusasDepois = [...sessaoN.errosDeCanal, ...sessaoJ.errosDeCanal];
-    registrar("5 (nenhuma recusa de assinatura durante a sessão inteira)", recusasDepois.length === 0, recusasDepois[0] ?? "nenhuma");
+    registrar("7 (nenhuma recusa de assinatura durante a sessão inteira)", recusasDepois.length === 0, recusasDepois[0] ?? "nenhuma");
   } finally {
     await sessaoN?.fechar();
     await sessaoJ?.fechar();
