@@ -469,6 +469,30 @@ Recomendação: (1), quando houver tempo — a cobertura de undo/redo por gesto 
 
 **O que isso diz sobre o RT-01:** não era um caso isolado. **Toda assinatura de `postgres_changes` com filtro neste projeto é suspeita**, e o modo de falha é sempre o mesmo — silencioso, e derruba o canal inteiro junto. Vale uma varredura: hoje há filtros em `vtt_terrain`, `vtt_marks`, `vtt_measurements`, `vtt_areas`, `vtt_objects`, `vtt_object_cells`, `vtt_scenes`, `vtt_turn_tracks`, `vtt_campaign_stage`, `vtt_player_scene_assignments` e `character_controllers`. Os checks de mesa e ficha ao vivo cobrem os canais que eles usam; os demais não têm ninguém olhando.
 
+### CON-05 — Controles presos atrás do Console
+
+- **Status:** Bloqueada (decisão de produto: o que migra, o que morre)
+- **Prioridade sugerida:** P2 — nada é inalcançável, mas há função sem porta no Console.
+
+**O arranjo.** Em `/ficha` (modo produto) o Console abre AUTOMATICAMENTE por cima da página da ficha antiga, e isso é deliberado: *"clicar num personagem precisa levar direto ao Console, não a uma tela intermediária"*. A ficha antiga continua montada embaixo.
+
+**Medido (2026-09-21):** 18 controles interativos ficam cobertos pelo Console. Nenhum está perdido — fechar ou minimizar o Console alcança todos —, mas alguns não têm equivalente nenhum na janela que cobre.
+
+| seção da ficha antiga | equivalente no Console |
+|---|---|
+| Atributos, Perícias, Recursos, Condições | sim — painel principal |
+| Equipamentos, Inventário, Magias, Escalpos, Identidade, Ações | sim — as seis abas do trilho |
+| Biblioteca | não fica presa (está fora da área do Console) |
+| **Geral, Talentos, Rolagens, Log, Mesa** | **nenhum** |
+
+Mais dois sem equivalente: **"Recarregar personagem"** e **"Atualizar agora"**.
+
+**O caso mais concreto é Talentos** — seção de ficha de verdade, sem porta no Console. E o painel principal tem três blocos "ESPAÇO LIVRE", o que sugere que o lugar existe e está vazio (ver CON-04).
+
+**Foi assim que "Salvar personagem" ficou inalcançável** e a ficha perdia dados em silêncio, até o autosave de 2026-09-21. O mesmo arranjo pode estar escondendo outras funções — a diferença é que aquela perdia dados, e estas só somem da vista.
+
+**A decisão, por item:** migrar para o Console, deixar explicitamente só na ficha antiga (e então dar um caminho visível até ela), ou aposentar. Não é uma decisão só: "Log" e "Talentos" têm respostas provavelmente diferentes.
+
 ### TEST-01 — Inventariar e reparar os checks defasados
 
 - **Status:** Pronta
