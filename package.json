@@ -74,6 +74,7 @@
     "check:vtt-arquivo-e-duplicacao": "tsx scripts/dev/check-vtt-arquivo-e-duplicacao.ts",
     "check:vtt-pastas": "tsx scripts/dev/check-vtt-pastas.ts",
     "check:mesa-ao-vivo": "tsx scripts/dev/check-mesa-ao-vivo.ts",
+    "check:sessao-ao-vivo": "tsx scripts/dev/check-sessao-ao-vivo.ts",
     "check:vtt-pastas-ui": "tsx scripts/dev/check-vtt-pastas-ui.ts",
     "check:vtt-dividir-grupo": "tsx scripts/dev/check-vtt-dividir-grupo.ts",
     "check:vtt-dividir-grupo-ui": "tsx scripts/dev/check-vtt-dividir-grupo-ui.ts",
