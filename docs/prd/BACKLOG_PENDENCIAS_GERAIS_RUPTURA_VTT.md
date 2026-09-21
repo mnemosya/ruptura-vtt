@@ -452,6 +452,23 @@ Recomendação: (1), quando houver tempo — a cobertura de undo/redo por gesto 
 
 - **Andamento:** o check já foi reparado no que era alcance de ponteiro (ele selecionava o token ANTES de garantir que estava na tela, e por isso morria com 5 critérios). Hoje roda até o fim: **34 ok, 20 falhas**, e as 20 são todas desta causa.
 
+### RT-02 — Realtime da ficha morto pelo mesmo motivo do RT-01
+
+- **Status:** Pronta (concluída — 2026-09-21)
+- **Prioridade:** era P1.
+
+**Encontrado pelo `check-ficha-ao-vivo` na PRIMEIRA execução dele.** O canal do personagem era recusado pelo servidor:
+
+> `realtime:character:<id>` — `Unable to subscribe to changes with given parameters. [event: UPDATE, schema: public, table: characters, filters: [{"id","eq",...}]]`
+
+**Mesma causa do RT-01, outra tabela.** O Realtime recusa qualquer filtro em `characters` — a coluna existe, a tabela está publicada e tem replica identity FULL, o que aponta para o cache de esquema do serviço e não para o schema do banco. E a recusa mata o canal inteiro em silêncio: chega como frame `system` no WebSocket, o cliente não lança nada, e a ficha segue com cara de saudável enquanto deixa de sincronizar.
+
+**Duas assinaturas afetadas**, as duas corrigidas em `src/lib/realtime/tableRealtime.ts`: a do personagem (`id=eq.`) e a de todos os personagens da campanha (`campaign_id=eq.`). As duas perderam o filtro do servidor e passaram a recortar no cliente.
+
+**Validado:** com a correção revertida, o check vai de 8 ok para 6 ok e 2 falhas, e o critério 1b aponta a recusa com o texto do servidor.
+
+**O que isso diz sobre o RT-01:** não era um caso isolado. **Toda assinatura de `postgres_changes` com filtro neste projeto é suspeita**, e o modo de falha é sempre o mesmo — silencioso, e derruba o canal inteiro junto. Vale uma varredura: hoje há filtros em `vtt_terrain`, `vtt_marks`, `vtt_measurements`, `vtt_areas`, `vtt_objects`, `vtt_object_cells`, `vtt_scenes`, `vtt_turn_tracks`, `vtt_campaign_stage`, `vtt_player_scene_assignments` e `character_controllers`. Os checks de mesa e ficha ao vivo cobrem os canais que eles usam; os demais não têm ninguém olhando.
+
 ### TEST-01 — Inventariar e reparar os checks defasados
 
 - **Status:** Pronta
