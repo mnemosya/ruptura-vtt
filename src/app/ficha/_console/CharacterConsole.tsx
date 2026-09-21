@@ -53,7 +53,7 @@ import { SkillsGrid } from "./panels/SkillsGrid";
 import { TabRail } from "./panels/TabRail";
 import { MinimizedDockContent } from "./panels/MinimizedDockContent";
 import { PinsRow, ConditionsPanel } from "./panels/PinsAndConditions";
-import { ModoChip, VerNoMapaChip } from "./panels/ModoEvolucao";
+import { ModoChip, VerNoMapaChip, GravacaoChip } from "./panels/ModoEvolucao";
 import {
   AttackModal,
   BackpackPickerModal,
@@ -375,6 +375,7 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
         titulo="Console do Personagem"
         titlebarExtra={
           <>
+            <GravacaoChip estado={api.gravacao.estado} erro={api.gravacao.erro} />
             <VerNoMapaChip />
             <ModoChip modo={api.modo} onAlternar={api.definirModo} />
           </>

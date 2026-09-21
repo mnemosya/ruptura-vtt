@@ -5493,6 +5493,7 @@ export default function CharacterSheetClient({
   const estocarStatusFicha = getEstocarAvailability(character, talentsIniciais);
 
   const consoleApi: ConsoleApi = {
+    gravacao: { estado: saveState, erro: errorMessage },
     character,
     derivados,
     regras,
@@ -5806,12 +5807,15 @@ export default function CharacterSheetClient({
       >
         Abrir Console do Personagem
       </button>
-      <p style={{ opacity: 0.6, fontSize: 13, marginBottom: 4 }}>
-        {mode === "dev"
-          ? '/dev/character-sheet — ficha mínima (dev). Edição é local até clicar em "Salvar personagem".'
-          : 'Ficha. Edição é local até clicar em "Salvar personagem".'}
-      </p>
-      {characterId && (
+      {/* A legenda dizia 'Edição é local até clicar em "Salvar
+          personagem"'. Desde o autosave isso é falso, e o botão não
+          existe mais. Só sobrou o aviso do ambiente de dev. */}
+      {mode === "dev" && (
+        <p style={{ opacity: 0.6, fontSize: 13, marginBottom: 4 }}>
+          /dev/character-sheet — ficha mínima (dev).
+        </p>
+      )}
+      {mode === "dev" && characterId && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
           <span data-testid="ficha-sync-status" style={{ fontSize: 11, color: describeRealtimeStatus(characterSyncStatus, "ficha").cor }}>
             ● {describeRealtimeStatus(characterSyncStatus, "ficha").texto}
@@ -5824,7 +5828,7 @@ export default function CharacterSheetClient({
           </button>
         </div>
       )}
-      {saveState === "error" && errorMessage && (
+      {mode === "dev" && saveState === "error" && errorMessage && (
         // Checkpoint v0.65 — visível em QUALQUER aba (não só Geral), já
         // que a persistência automática de ações do Console pode falhar
         // enquanto o jogador está na aba Ações. A mudança local já
@@ -5859,12 +5863,12 @@ export default function CharacterSheetClient({
           </button>
         </div>
       )}
-      {usandoFallback && (
+      {mode === "dev" && usandoFallback && (
         <p style={{ color: "#f5a623", fontSize: 13, marginBottom: 16 }}>
           ⚠ regras_personagem não veio do banco — usando fórmulas de fallback temporárias.
         </p>
       )}
-      {autoHealBanner && (
+      {mode === "dev" && autoHealBanner && (
         <div
           data-testid="auto-heal-banner"
           style={{

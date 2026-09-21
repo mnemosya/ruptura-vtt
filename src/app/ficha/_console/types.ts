@@ -46,6 +46,19 @@ export interface ConsoleApi {
   /** Catálogo publicado, indexado por slug — para ler dados do modelo do item. */
   catalogo: Map<string, ItemContent>;
 
+  /**
+   * Estado da gravação automática, para o Console poder DIZER quando
+   * falhou.
+   *
+   * Não é enfeite: desde que a ficha passou a gravar sozinha, não há
+   * mais um "Salvar personagem" para a pessoa apertar de novo quando dá
+   * errado. Antes esse retorno vivia numa faixa na página de baixo —
+   * que o Console cobria, e que foi removida junto com ela. Sem trazer
+   * o estado para cá, uma gravação que falha some sem deixar rastro, e
+   * a pessoa continua jogando achando que a ficha está salva.
+   */
+  gravacao: { estado: "idle" | "saving" | "saved" | "error"; erro: string | null };
+
   /** Rola um atributo (Nd8, maior dado) usando o motor real e registra no log. */
   rolarAtributo: (id: keyof CharacterAttributes) => RupturaRollResult;
   /** Rola uma perícia usando o motor real e registra no log. */

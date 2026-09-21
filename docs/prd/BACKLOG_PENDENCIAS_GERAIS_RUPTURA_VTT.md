@@ -471,22 +471,21 @@ Recomendação: (1), quando houver tempo — a cobertura de undo/redo por gesto 
 
 ### CON-05 — Controles presos atrás do Console
 
-- **Status:** Pronta (a página antiga saiu em 2026-09-21; resta uma faixa)
-- **Prioridade sugerida:** P3 — o que sobrou é pequeno, mas é da mesma família.
+- **Status:** Pronta (concluída — 2026-09-21)
 
-**O que era.** Em `/ficha` o Console abre automaticamente por cima, e a ficha antiga continuava montada embaixo. Medido: **18 controles interativos cobertos** pela janela, entre eles "Salvar personagem" — em (440,413), dentro da área do Console. Era preciso fechar a ficha para salvar a ficha, e nada avisava que havia mudança pendente.
+**O que era.** Em `/ficha` o Console abre automaticamente por cima, e a ficha antiga continuava montada embaixo: **18 controles interativos cobertos**, entre eles "Salvar personagem" — em (440,413), dentro da área do Console. Era preciso fechar a ficha para salvar a ficha, e nada avisava que havia mudança pendente.
 
-**Decisão do usuário (2026-09-21):** *"pode excluir essa pagina que fica abaixo. aquilo lá é trabalho antigo e deprecated"*. A ficha antiga deixou de ser renderizada em modo produto — segue existindo em `dev`.
+**Correção de um engano registrado aqui antes:** esta entrada dizia que a faixa de status aparecia atrás "na página de personagens". Não era só ali. Ela vive em `CharacterSheetClient`, que renderiza em **todas** as entradas — a rota direta `/ficha` e a modal interceptada que abre dentro da mesa usam o MESMO `FichaPageContent`.
 
-**Medido depois: 18 → 4 controles cobertos.** Abas antigas fora da tela, status de sincronização preservado, autosave intacto (647ms), console do navegador limpo.
+**O que foi feito.** A ficha antiga inteira passou a renderizar só em `mode === "dev"`: as abas, o cabeçalho, a legenda (que ainda dizia *"Edição é local até clicar em Salvar personagem"*, falso desde o autosave), a faixa de sincronização, o aviso de erro de gravação, o banner de auto-heal.
 
-**O que NÃO foi removido, de propósito:** status de sincronização, aviso de erro de gravação, banner de auto-heal e o diálogo de conflito remoto. Não são "a página velha" — são retorno sobre o que está acontecendo com o personagem, e sumir com eles devolveria a falha silenciosa que o autosave acabou de resolver.
+**O retorno que a faixa dava não foi perdido — mudou de lugar.** `ConsoleApi` ganhou `gravacao: { estado, erro }`, e o `GravacaoChip` mora na barra de título do Console. Ele é CALADO no caminho feliz de propósito: um selo permanente de "salvo" vira ruído e deixa de ser lido justamente quando muda. O que precisa chamar atenção é a falha.
 
-**O que resta (os 4):** a faixa de status fica no topo da página, e o Console cobre essa área. São "Atualizar agora" (`ficha-recarregar`) e três botões sem rótulo ao lado.
+**Medido depois:** zero controles da página antiga cobertos (os 3 que o detector ainda acusa são botões do PRÓPRIO Console, `rc-nres-btn`); autosave em 175ms; console do navegador limpo; três checks ao vivo verdes (28 critérios). Com a gravação forçada a falhar, o Console mostra **"não salvou"**, com o motivo no `title`.
 
-Isso importa mais do que parece: **agora que a ficha grava sozinha, ela depende da sincronização estar viva** — e é exatamente o aviso de que ela NÃO está que fica escondido. Vale mover a faixa para dentro do Console, ou para acima dele.
+**O que NÃO saiu, de propósito:** o diálogo de conflito remoto (`pendingRemoteCharacter`). Ele não é "a página velha" — é a escolha que a pessoa precisa fazer quando a mesa mudou o personagem enquanto ela editava, e some-lo devolveria sobrescrita silenciosa.
 
-**Fora de escopo, registrado a pedido:** "Talentos nem existe mais" — a seção some junto com a página antiga e não precisa de porta no Console.
+**Fora de escopo, registrado a pedido:** "Talentos nem existe mais" — a seção saiu junto e não precisa de porta no Console.
 
 ### TEST-01 — Inventariar e reparar os checks defasados
 
