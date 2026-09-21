@@ -752,6 +752,13 @@ async function main() {
   // --- 15/16. Pan continua funcionando durante a animação; o token animado não inicia outro arrasto ---
   {
     await narradorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
+    // A esta altura o critério 13 já recarregou e mexeu no enquadramento
+    // desta sessão. Sem garantir alcance, o arrasto de tokF acontecia no
+    // vazio e o token ficava na origem — e a falha aparecia só no 16b,
+    // como "o token não chega no destino apesar da tentativa de novo
+    // arrasto", culpando a proteção contra arrasto duplo por um
+    // movimento que nunca começou.
+    await garantirTokenAlcancavel(narradorPage, tokF.sigla);
     const box = await boxDoToken(narradorPage, tokF.sigla);
     const destino = { q: tokF.q + 6 * direcaoQSegura(tokF, 6), r: tokF.r };
     const pDestinoMundo = hexParaPixel(destino, TAM);
@@ -794,7 +801,7 @@ async function main() {
       registrar(
         "16b (apesar da tentativa de novo arrasto, o token chega no destino original certo)",
         linhaFinal?.q === destino.q && linhaFinal?.r === destino.r && !!fimVisual && perto(fimVisual, pDestinoMundo, 0.5),
-        `banco=(${linhaFinal?.q},${linhaFinal?.r}), visual=${JSON.stringify(fimVisual)}`,
+        `banco=(${linhaFinal?.q},${linhaFinal?.r}) esperado=(${destino.q},${destino.r}), visual=${JSON.stringify(fimVisual)} esperadoPx=${JSON.stringify(pDestinoMundo)}`,
       );
     } else {
       registrar("15/16 (pan + arrasto bloqueado durante animação)", false, "token/célula sem bounding box");
@@ -1014,6 +1021,11 @@ async function main() {
     const { data: tokAAtual } = await admin.from("vtt_tokens").select("id,sigla,q,r").eq("id", tokA.id).maybeSingle();
     const destino = { q: tokAAtual!.q + 5 * direcaoQSegura(tokAAtual!, 5), r: tokAAtual!.r };
     const pDestinoMundo = hexParaPixel(destino, TAM);
+    // Mesma garantia das outras sessões: esta página é NOVA (contexto
+    // próprio, com `prefers-reduced-motion`), então nasce com o painel
+    // aberto e o enquadramento padrão — as duas coisas que tiram o
+    // token do alcance do mouse.
+    await garantirTokenAlcancavel(pageReduzido, tokAAtual!.sigla);
     const box = await boxDoToken(pageReduzido, tokAAtual!.sigla);
     const boxDestino = await boxDaCelula(pageReduzido, destino);
     if (box && boxDestino) {
