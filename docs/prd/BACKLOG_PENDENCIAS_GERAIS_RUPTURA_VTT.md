@@ -424,7 +424,17 @@ O Realtime está funcionando; o terreno especificamente não chega.
 - as políticas de SELECT de `vtt_terrain` e `vtt_tokens` usam a mesma `vtt_pode_ver_cena(scene_id)`;
 - o handler `onTerreno` em `VttClient.tsx` atualiza `estadoCena.terreno`, que alimenta `terrenoPintado` → `terrenoReal` → `terrenoParaRota`. A cadeia de estado parece correta.
 
-**O que ainda NÃO foi determinado, e importa para dimensionar o impacto:** a reprodução inseriu terreno direto no banco com service role. **Falta testar o caminho do produto** — o narrador pintando terreno pela ferramenta Terreno, com outra pessoa na mesa. Se o app atualiza o estado local de quem pinta, o narrador não veria problema nenhum e só os OUTROS participantes ficariam sem o terreno, o que é pior e mais difícil de notar.
+**Confirmado pelo caminho do produto (2026-09-20).** Narrador pinta pela ferramenta Terreno; jogador com a mesa JÁ ABERTA, sem reload:
+
+| quem | vê o terreno? |
+|---|---|
+| narrador (quem pintou) | **sim, em 502ms** |
+| jogador, outra sessão já aberta | **NÃO, em 10s** |
+| jogador depois de recarregar | sim, em 8ms |
+
+É o pior arranjo possível: **quem pinta vê, e por isso não desconfia de nada.** O narrador bloqueia um corredor, enxerga o bloqueio na própria tela, e os jogadores continuam vendo o mapa antigo — movendo tokens por ali sem aviso nenhum, porque a regra consultiva depende de um terreno que o cliente deles não tem. Só um reload conserta, e ninguém tem motivo para dar um.
+
+Nenhum check cobria isto. O critério 6 de `check-vtt-integracao` parece cobrir ("segunda sessão enxerga o terreno") e **recarrega a página do jogador antes de olhar** — mede persistência por SSR, não entrega ao vivo.
 
 - **Critérios de aceite:** terreno pintado durante a sessão aparece para todos os participantes sem reload, e entra no cálculo de rota (a linha âmbar aparece). `check-vtt-pegada-reparo` passa com o critério `T2b-pre` afirmando a chegada por Realtime.
 
