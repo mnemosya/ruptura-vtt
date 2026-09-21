@@ -319,8 +319,8 @@ async function main() {
     const jog = await contextoDe(jogadorEmail!, jogadorSenha!);
     await jog.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await jog.page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
-    const botaoJogador = await jog.page.locator('button[aria-label="Camadas do mapa"]').count();
-    const janelaJogador = await jog.page.locator('section[aria-label="Camadas do mapa"]').count();
+    const botaoJogador = await jog.page.locator('button[aria-label^="Camadas do mapa"]').count();
+    const janelaJogador = await jog.page.locator('section[aria-label^="Camadas do mapa"]').count();
     registrar(
       "5 (Camadas não existe pro jogador — nem botão, nem janela)",
       botaoJogador === 0 && janelaJogador === 0,
@@ -339,8 +339,8 @@ async function main() {
     const nar = await contextoDe(narradorEmail!, narradorSenha!);
     await nar.page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await nar.page.waitForSelector('[data-testid="painel-vtt"]', { timeout: 20000 });
-    await nar.page.locator('button[aria-label="Camadas do mapa"]').click();
-    await nar.page.waitForSelector('section[aria-label="Camadas do mapa"]', { timeout: 10000 });
+    await nar.page.locator('button[aria-label^="Camadas do mapa"]').click();
+    await nar.page.waitForSelector('section[aria-label^="Camadas do mapa"]', { timeout: 10000 });
     await nar.page.locator('button[aria-label="Ocultar camada Tokens"]').click();
     await nar.page.waitForTimeout(1200);
 

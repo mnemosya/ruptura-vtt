@@ -172,7 +172,7 @@ async function main() {
   await page.waitForSelector(".rv-ferramentas", { timeout: 15000 });
 
   async function abrirPorBotaoBarra() {
-    await page.locator('.rv-ferr-btn[aria-label="Adicionar token"]').click();
+    await page.locator('.rv-ferr-btn[aria-label^="Adicionar token"]').click();
     await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
   }
   // O painel lateral NUNCA teve um "Adicionar token" — a aba
@@ -335,7 +335,7 @@ async function main() {
 
   // --- I: duplo clique no botão da barra ---
   {
-    const botaoAbrir = page.locator('.rv-ferr-btn[aria-label="Adicionar token"]');
+    const botaoAbrir = page.locator('.rv-ferr-btn[aria-label^="Adicionar token"]');
     await botaoAbrir.evaluate((el) => { (el as HTMLButtonElement).click(); (el as HTMLButtonElement).click(); });
     await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
     const quantos = await page.locator(".rv-gerenciador-token").count();

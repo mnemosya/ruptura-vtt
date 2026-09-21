@@ -455,7 +455,7 @@ async function main() {
   // mesa esconde pra mesa. O narrador segue vendo o que escondeu, só
   // atenuado — ele precisa saber o que está lá; o jogador não vê.
   {
-    await narradorPage.locator('.rv-ferr-btn[aria-label="Camadas do mapa"]').click();
+    await narradorPage.locator('.rv-ferr-btn[aria-label^="Camadas do mapa"]').click();
     await narradorPage.evaluate(() => {
       const b = [...document.querySelectorAll(".rv-camadas-item")].find((li) => li.querySelector(".rv-camadas-nome")?.textContent === "Tokens")?.querySelector('button[aria-label^="Ocultar"], button[aria-label^="Mostrar"]') as HTMLButtonElement | undefined;
       b?.click();

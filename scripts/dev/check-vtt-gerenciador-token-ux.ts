@@ -815,7 +815,7 @@ async function main() {
     await page.keyboard.press("Escape");
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
 
-    const botaoAbrir = page.locator('.rv-ferr-btn[aria-label="Adicionar token"]');
+    const botaoAbrir = page.locator('.rv-ferr-btn[aria-label^="Adicionar token"]');
     await botaoAbrir.focus();
     await botaoAbrir.click();
     await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });

@@ -46,7 +46,12 @@ async function capturar(page: Page, j: { nome: string; tecla: string; rotulo: st
   await page.waitForTimeout(150);
   // Nem toda janela é ferramenta: Camadas, Adicionar token e
   // Configurações da Cena abrem por botão da barra, não por atalho.
-  if (j.botao) await page.locator(`button[aria-label="${j.botao}"]`).click();
+  // Casamento por PREFIXO, não por igualdade: todo botão do trilho
+  // carrega o atalho de teclado no rótulo ("Camadas do mapa (C)",
+  // "Adicionar token (N)"). O sufixo é apresentação — o teste quer o
+  // botão, não a tecla que o aciona — e exigir igualdade fazia o
+  // seletor não casar com nada.
+  if (j.botao) await page.locator(`button[aria-label^="${j.botao}"]`).click();
   else await page.keyboard.press(j.tecla);
   const janela = j.seletor ? page.locator(j.seletor) : page.locator(`section[aria-label="${j.rotulo}"]`);
   try {
@@ -60,7 +65,7 @@ async function capturar(page: Page, j: { nome: string; tecla: string; rotulo: st
   // As janelas de BOTÃO são alternadas, não trocadas: sem fechar aqui,
   // a próxima abre por cima e a captura pega a de baixo.
   if (j.botao && !j.seletor) {
-    await page.locator(`button[aria-label="${j.botao}"]`).click();
+    await page.locator(`button[aria-label^="${j.botao}"]`).click();
     await page.waitForTimeout(200);
   }
   console.log(`ok - ${j.nome}`);

@@ -655,6 +655,24 @@ async function main() {
     registrar("16a (zoom não muda NENHUM resultado da regra dos 50%)", antes === zoomAlto && antes === zoomBaixo, `${antes} | ${zoomAlto} | ${zoomBaixo}`);
     const arcoAindaArco = await P.locator('.rv-camada-areas .rv-area[data-area-tipo="esfera"] path').first().getAttribute("d");
     registrar("16b (em zoom baixo a esfera continua um círculo verdadeiro, não degraus)", !!arcoAindaArco && arcoAindaArco.includes("A"), (arcoAindaArco ?? "").slice(0, 40));
+
+    // RESTAURA A VISTA antes de seguir.
+    //
+    // Este bloco deixa o mapa deslocado (o critério 13b panoramiza e
+    // afirma que o transform deixou de ser `translate(0 0)`) e com três
+    // passos líquidos de zoom para fora. Tudo que vem depois calcula
+    // coordenadas de ponteiro supondo a vista inicial — e passou a
+    // errar o alvo: alças caíam fora da viewport, e arrastes que
+    // deveriam desenhar metros desenhavam "0 m", levando o painel a
+    // uma fase que não tem o botão esperado. Três sintomas diferentes,
+    // uma causa só, e nenhuma delas defeito do app.
+    //
+    // Recarregar é o reset mais confiável: zoom e pan vivem em estado
+    // de React e não são persistidos (só as preferências de ferramenta
+    // vão para o `localStorage`), então a página volta enquadrada.
+    await P.reload({ waitUntil: "domcontentloaded" });
+    await P.waitForSelector(".rv-ferramentas", { timeout: 20000 });
+    await abrirAreas(P);
   }
 
   // ── 14. Edição, visibilidade, duplicação e exclusão ──────────────
@@ -676,8 +694,14 @@ async function main() {
     // Editando também mostra os botões flutuantes e a régua de medida —
     // MESMO comportamento de quando está criando.
     await P.waitForSelector('[data-testid="area-acoes-flutuantes"]', { timeout: 5000 });
-    const rotulosEditando = await P.locator('[data-testid="area-acoes-flutuantes"] .rv-area-acao-rotulo').allInnerTexts();
-    registrar("14b2 (editando mostra os botões flutuantes com rótulos Salvar/Cancelar)", rotulosEditando.includes("Salvar") && rotulosEditando.includes("Cancelar"), JSON.stringify(rotulosEditando));
+    // Comparação sem caixa: `allInnerTexts` devolve o texto RENDERIZADO,
+    // e o CSS desenha estes rótulos em caixa alta — chegava
+    // ["SALVAR","CANCELAR"] e a comparação com "Salvar" reprovava um
+    // botão que estava certo. O critério é sobre QUAIS botões aparecem,
+    // não sobre como o CSS os desenha.
+    const rotulosEditando = (await P.locator('[data-testid="area-acoes-flutuantes"] .rv-area-acao-rotulo').allInnerTexts())
+      .map((t) => t.trim().toLowerCase());
+    registrar("14b2 (editando mostra os botões flutuantes com rótulos Salvar/Cancelar)", rotulosEditando.includes("salvar") && rotulosEditando.includes("cancelar"), JSON.stringify(rotulosEditando));
     const medidaVisivel = await P.locator('[data-testid="area-acoes-medida"]').count();
     registrar("14b3 (a régua de medida fica visível editando, igual ao criar)", medidaVisivel === 1, `${medidaVisivel}`);
 
@@ -810,7 +834,22 @@ async function main() {
     // Clica na alça de "largura" pra focá-la (mesmo elemento que o
     // arraste de ponteiro usa) e usa Shift+Seta (passo maior) — sem
     // NENHUM arraste de mouse.
-    await P.locator('.rv-area-alca--largura [role="slider"]').click();
+    // `focus()`, não `click()`.
+    //
+    // O critério é "a alça responde a Shift+Seta SEM nenhum arraste de
+    // ponteiro", e o clique existia só para dar foco — mas trazia junto
+    // uma dependência que não é do critério: o elemento precisa estar
+    // dentro da viewport. E a esta altura ele não está, por culpa deste
+    // mesmo teste: o critério 13b panoramiza o mapa e o 16 dá três
+    // passos líquidos de zoom para fora, sem restaurar a vista.
+    //
+    // Medido: com o mapa no estado inicial a alça fica em x≈1253, y≈487
+    // numa viewport de 1760×1000 — no meio da tela, clicável. Não há
+    // defeito de posicionamento; havia estado herdado.
+    //
+    // Focar sem ponteiro é mais fiel ao que o critério afirma do que
+    // clicar, além de não depender de onde o mapa parou.
+    await P.locator('.rv-area-alca--largura [role="slider"]').focus();
     const focoAntes = await P.evaluate(() => document.activeElement?.getAttribute("aria-label"));
     await P.keyboard.press("Shift+ArrowUp");
     await P.waitForTimeout(150);
