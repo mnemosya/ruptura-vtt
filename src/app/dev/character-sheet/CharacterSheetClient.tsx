@@ -1180,7 +1180,6 @@ export default function CharacterSheetClient({
     );
     setCharacter(proximo);
     addLogEntry("recurso", `Evolução — ${descricao}.`);
-    void persistEvolucao(proximo);
     void persistEvolutionEvent(proximo, "ajuste", 0, descricao, antes, depois);
   }
 
@@ -1207,7 +1206,6 @@ export default function CharacterSheetClient({
     );
     setCharacter(proximo);
     addLogEntry("recurso", `Evolução — ${descricao}.`);
-    void persistEvolucao(proximo);
     void persistEvolutionEvent(proximo, "ajuste", 0, descricao, antes, depois);
   }
 
@@ -1217,7 +1215,6 @@ export default function CharacterSheetClient({
     const result = gainPm(character, quantidade, descricao, nowIso);
     setCharacter(result.character);
     addLogEntry("recurso", `PM recebido: +${result.entry.quantidade} (${result.entry.descricao}).`);
-    void persistEvolucao(result.character);
     void persistEvolutionEvent(result.character, "ganho", result.entry.quantidade, result.entry.descricao, result.entry.antes, result.entry.depois);
   }
 
@@ -1228,7 +1225,6 @@ export default function CharacterSheetClient({
     setCharacter(result.character);
     addLogEntry("recurso", `PM gasto: -${result.entry.quantidade} (${result.entry.descricao}).`);
     if (result.warnings.length > 0) addLogEntry("recurso", result.warnings[0]);
-    void persistEvolucao(result.character);
     void persistEvolutionEvent(result.character, "gasto", result.entry.quantidade, result.entry.descricao, result.entry.antes, result.entry.depois);
   }
 
@@ -4957,8 +4953,70 @@ export default function CharacterSheetClient({
    * escrito, então o histórico registrava uma mudança que o personagem
    * não tinha.
    */
+  /**
+   * AUTOSAVE DO CONSOLE — tudo que muda a ficha grava sozinho.
+   *
+   * ── Por que virou automático ────────────────────────────────────
+   * O modelo antigo era "local até Salvar personagem". Ele não se
+   * sustentava: o Console é uma JANELA sobre a página da ficha, e o
+   * botão "Salvar personagem" fica na página DE BAIXO — coberto.
+   * Medido: o botão existe em (440,413), dentro da área que o Console
+   * ocupa. Para salvar era preciso fechar a ficha para salvar a ficha.
+   *
+   * O resultado era perda silenciosa: editar PV mostrava 8/11 no card,
+   * o banco seguia em 11, e recarregar devolvia 11/11 — sem aviso
+   * nenhum de que havia algo pendente. O `persistEvolucao` já era um
+   * remendo disso ("o Console vive dentro do VTT e da ficha, onde não
+   * existe botão Salvar personagem nenhum"); isto estende a mesma
+   * conclusão ao resto.
+   *
+   * ── Por que um efeito, e não 148 chamadas ───────────────────────
+   * São 148 pontos que chamam `setCharacter`. Passar por cada um é
+   * convite a esquecer um — e o que se esquece é justamente o que
+   * perde dados em silêncio. Um lugar só, olhando o resultado.
+   *
+   * ── A guarda ────────────────────────────────────────────────────
+   * `lastSyncedCharacterRef` é o último payload conhecido como igual ao
+   * banco, e já era mantido por leitura e gravação canônicas. Comparar
+   * contra ele evita regravar o que acabou de CHEGAR do servidor
+   * (carga inicial, refetch por Realtime) — sem isso, cada eco viraria
+   * uma escrita nova, e duas fichas abertas ficariam se regravando em
+   * looping.
+   *
+   * ── O Modo Evolução fica de fora, de propósito ──────────────────
+   * Subir atributo e perícia é mudança PERMANENTE e cara. Ela continua
+   * pedindo confirmação — sair do modo pelo ✓ é o commit.
+   */
+  useEffect(() => {
+    if (sheetMode === "evolucao") return;
+    if (JSON.stringify(character) === JSON.stringify(lastSyncedCharacterRef.current)) return;
+    const id = setTimeout(() => { void persistCharacterAuto(characterRef.current, "Mudança na ficha"); }, 400);
+    return () => clearTimeout(id);
+    // `character` é a única dependência de verdade: o resto é lido de
+    // refs, que não disparam efeito e sempre trazem o valor atual.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character, sheetMode]);
+
   async function persistEvolucao(nextCharacter: Character) {
     await persistCharacterAuto(nextCharacter, "Evolução aplicada");
+  }
+
+  /**
+   * SAIR DO MODO EVOLUÇÃO É O COMMIT.
+   *
+   * Antes cada passo de +/− gravava sozinho, e não havia como recuar:
+   * clicar errado num atributo já era permanente. Subir atributo e
+   * perícia é a mudança mais cara da ficha — ela merece um gesto de
+   * confirmação, e o ✓ do chip já era esse gesto na cabeça de quem usa.
+   *
+   * Entrar no modo não grava nada. Os passos ficam no estado local, o
+   * autosave geral não toca neles (ele para em `sheetMode === "evolucao"`),
+   * e sair pelo ✓ grava tudo de uma vez.
+   */
+  function alternarModo(proximo: SheetMode) {
+    const saindoDaEvolucao = sheetMode === "evolucao" && proximo !== "evolucao";
+    setSheetMode(proximo);
+    if (saindoDaEvolucao) void persistEvolucao(characterRef.current);
   }
 
   async function handleUseAction(actionId: string) {
@@ -5868,7 +5926,7 @@ export default function CharacterSheetClient({
           saveState={saveState}
           errorMessage={errorMessage}
           sheetMode={sheetMode}
-          onModeChange={setSheetMode}
+          onModeChange={alternarModo}
           onNomeChange={(value) => setCharacter((prev) => ({ ...prev, nome: value }))}
           onSave={handleSave}
           onNew={handleNew}

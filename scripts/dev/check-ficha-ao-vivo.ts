@@ -186,23 +186,32 @@ async function main(): Promise<void> {
     const pvAntes = await esperarAte(async () => (await pvNoCartao(sN!.page)) !== null).then(async (ms) => (ms === null ? null : pvNoCartao(sN!.page)));
     registrar("2 (o cartão do token mostra PV para o narrador)", pvAntes !== null, pvAntes ?? "cartão sem linha de PV");
 
-    // ── 3. O PV do personagem muda ───────────────────────────────
+    // ── 3. O jogador tira PV pela FICHA ──────────────────────────
     //
-    // Pelo BANCO, e não pela ficha, por uma razão de desenho do
-    // produto: o Console é "local até Salvar personagem" — o próprio
-    // código diz que "isto não é um auto-save geral do console", e só
-    // ações automatizadas gravam sozinhas. Dirigir esse fluxo pela
-    // interface acrescentaria aba, botão e estado de salvamento a um
-    // check cuja pergunta é OUTRA: o que está no banco chega à outra
-    // pessoa sem reload?
+    // Pelo caminho real: clicar no card abre o editor, digitar e Enter
+    // confirma. É o que uma pessoa faz no meio de uma luta.
     //
-    // Cheguei a medir a edição pela ficha como se fosse perda de dados
-    // — card em 8/11, banco em 11, reload voltando a 11/11. Era o
-    // desenho, e o comentário do código explicava.
+    // Isto só virou possível quando o Console passou a gravar sozinho.
+    // Antes era "local até Salvar personagem", e o botão de salvar
+    // ficava na página DE BAIXO, coberto pela janela do Console —
+    // medido em (440,413), dentro da área que o Console ocupa. Editar
+    // PV mostrava 8/11 no card, o banco seguia em 11, e recarregar
+    // devolvia 11/11, sem aviso nenhum.
     const pvOriginal = (payload.recursos_atuais as { pv: number }).pv;
-    const payloadNovo = { ...payload, recursos_atuais: { ...payload.recursos_atuais, pv: pvOriginal - 3 } };
-    const { error: erroUpdate } = await admin.from("characters").update({ payload: payloadNovo }).eq("id", personagemId);
-    registrar("3 (o PV do personagem cai 3 no banco)", !erroUpdate, erroUpdate?.message ?? `${pvOriginal} → ${pvOriginal - 3}`);
+    const cardPv = sJ.page.locator('[data-testid="console-res-pv"]');
+    await cardPv.click();
+    const campo = sJ.page.locator('input[aria-label^="PV"]').first();
+    await campo.waitFor({ timeout: 5000 });
+    await campo.fill("-3");
+    await campo.press("Enter");
+
+    const msBanco = await esperarAte(async () => {
+      const { data } = await admin.from("characters").select("payload").eq("id", personagemId).single();
+      const pv = (data?.payload as { recursos_atuais?: { pv?: number } } | null)?.recursos_atuais?.pv;
+      return pv === pvOriginal - 3;
+    });
+    registrar("3 (o jogador tira 3 de PV pela ficha e grava SOZINHO, sem botão)", msBanco !== null,
+      msBanco !== null ? `${msBanco}ms (${pvOriginal} → ${pvOriginal - 3})` : "banco não mudou em 12s");
 
     // ── 4. E o narrador vê, sem reload ───────────────────────────
     //
