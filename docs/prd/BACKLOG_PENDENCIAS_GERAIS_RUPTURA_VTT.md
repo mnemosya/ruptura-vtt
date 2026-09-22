@@ -480,6 +480,32 @@ A regra já estava escrita em `VttClient` e só não valia para a alça: *"um ge
 
 **Fica registrado, sem tarefa aberta:** nenhum outro controle do mapa foi auditado contra o cartão. A alça foi a que apareceu porque tinha check; marcos de medição, alças de área e o menu contextual ocupam regiões parecidas.
 
+### SESS-01 — Provocar falha na sessão não produz mais o erro visível
+
+- **Status:** Bloqueada (precisa de investigação — pode ser teste, pode ser produto)
+- **Prioridade sugerida:** P1 se for produto, P2 se for só a técnica de teste.
+- **Origem:** três critérios de `check-campanha-painel-turndock-fase3` falhando do mesmo jeito, em 2026-09-22.
+
+**O padrão.** Três features diferentes, a mesma forma de falhar:
+
+| critério | o que provoca | o que deveria aparecer | o que aparece |
+|---|---|---|---|
+| 9 | aborta a ação do roster | `EstadoErro` na aba Participantes | nada |
+| 11 | aborta a ação do viewer | banner de erro | nada |
+| 14 | aborta `refreshAccessToken` | `AvisoSincronizacao` na mesa | nada |
+
+Nos três a interceptação FUNCIONA — os abortos foram contados (dois no 9, um no 14). E nos três o caminho de erro do `CampaignRealtimeProvider` está correto lendo o código: `reloadMembers`, `reloadViewer` e `renovarRealtimeAuth` têm `catch` que escreve o estado de erro, e os componentes renderizam nesse estado.
+
+**As duas leituras possíveis, e por que não dá pra escolher sem medir:**
+
+1. **É a técnica de teste.** Ao abortar um Server Action, o Next rejeita internamente em `fetchServerAction`, e essa rejeição pode não chegar em quem chamou — `check-vtt-modal-diagnostico` já documentou esse comportamento de outro ângulo. Se for isso, o caminho certo é fazer a AÇÃO falhar (erro do servidor), não a REQUISIÇÃO, e os três critérios voltam com outra provocação.
+
+2. **É o produto.** E aí é sério, principalmente no 14: uma renovação que falha sem avisar é exatamente o silêncio que `AvisoSincronizacao` foi escrito pra quebrar — *"não há erro na tela, nada pisca; parece mesa parada, não conexão caída"*. A pessoa ficaria sem receber eventos e sem saber.
+
+**Como decidir:** fazer a Server Action falhar de verdade (derrubar a dependência que ela usa, ou devolver erro do servidor) e ver se o estado de erro aparece. Se aparecer, é (1). Se não, é (2).
+
+**Nota operacional, encontrada no caminho:** este check RENOVA o token de propósito (critério 13) e o critério 15 é quem regrava `.auth/admin-session.json` com o refresh token rotacionado. Um erro fatal entre os dois deixa a sessão salva com um token já consumido, e o próximo check autenticado falha com "Nenhuma campanha encontrada em /mesas" — que não parece sessão quebrada. Na maioria das vezes `npx tsx scripts/dev/refresh-admin-session.ts` recupera; se o refresh token tiver sido usado duas vezes, aí é login manual (`save-admin-session.ts`). O critério 14 passou a clicar no retry com timeout curto e tolerante justamente pra não derrubar o 15.
+
 ### FICHA-02 — O link "← Personagens" da ficha não vai para Personagens
 
 - **Status:** Bloqueada (precisa de decisão de produto)
@@ -691,7 +717,7 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 
 ### CON-02 — Harmonizar paleta e tab rail do console
 
-- **Status:** Pronta (concluída)
+- **Status:** Em andamento
 - **Andamento (2026-09-20):** o critério “tokens sem cores mágicas duplicadas” era mensurável e estava sendo violado em **73 lugares**: `#d6e4f5` aparecia 24 vezes e É `--rc-text`; `#1c2b45` nove vezes e É `--rc-line`. Trocados por token, mais quatro tokens novos para as recorrentes que não tinham nome (`--rc-text-forte`, `--rc-teal`, `--rc-surface-2`, `--rc-surface-3`).
 - **Regressão introduzida e apanhada pela medição:** os tokens eram declarados em `.rc-window-wrap`, e o cabeçalho de `/ficha` é **irmão** da janela, não descendente — ao trocar literais por token, oito elementos do cabeçalho caíram na cor padrão do navegador. Só apareceu porque as cores computadas foram fotografadas antes e comparadas depois. Os tokens passaram a ser declarados também para o cabeçalho; o layout continua só na janela.
 - **Segundo erro, sobre token contextual:** `--rc-skill-cor` vale verde em Corpo e roxo em Mente, e só recebe valor dentro de `.rc-skill`. Troquei por ele um `#0596B7` de `.rc-nric-badge`, que está fora desse escopo — o `var()` não resolveria ali, e o próprio arquivo já dizia que aquela era “cor PRÓPRIA”. Revertido, e o check passou a **ignorar tokens declarados com mais de um valor**: igualdade de valor não é duplicação quando o token é contextual.

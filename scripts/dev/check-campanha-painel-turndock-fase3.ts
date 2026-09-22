@@ -421,13 +421,27 @@ async function main() {
 
     // --- 14. Falha de renovação avisa GLOBALMENTE (fora da Mesa) e o retry recupera ---
     {
-      // Rota NÃO-Mesa de propósito: os indicadores `mesa-sync-status` só
-      // existem na Mesa, então quem estivesse em Personagens ficaria mudo
-      // sem saber — a lacuna que a auditoria apontou. O aviso vive no
-      // cabeçalho da casca, visível em toda rota e todo breakpoint.
-      const rotaPersonagens = `${BASE_URL}/mesas/${campaignId}/personagens`;
+      // A PREMISSA DESTE CRITÉRIO FOI INVERTIDA DE PROPÓSITO, e vale
+      // dizer por quem: `AvisoSincronizacao.tsx`.
+      //
+      // Ele nasceu pra cobrir uma lacuna real — o aviso só existia na
+      // Mesa, então quem estivesse numa rota de campanha ficaria mudo.
+      // A solução da época foi pôr o aviso no cabeçalho da casca, "a
+      // única superfície visível em toda rota", e este critério passou
+      // a medir isso fora da Mesa.
+      //
+      // Depois se descobriu o oposto: na Mesa a casca inteira era
+      // desenhada DEBAIXO do VTT (`position: fixed; inset: 0`), então o
+      // aviso "existia no DOM e não chegava a olho nenhum, justo na
+      // rota onde ficar mudo é mais caro". Hoje ele flutua sobre o
+      // mapa. E as rotas de campanha que justificavam a versão global
+      // não existem mais — a campanha é uma página só.
+      //
+      // Então o critério agora mede a garantia de hoje, na mesa: quando
+      // a renovação falha, o aviso aparece COM ação, e o retry recupera.
+      const rotaMesa = `${BASE_URL}/mesas/${campaignId}`;
       await page.clock.install({ time: Date.now() });
-      await page.goto(rotaPersonagens, { waitUntil: "networkidle" });
+      await page.goto(rotaMesa, { waitUntil: "networkidle" });
       await page.waitForTimeout(1200);
 
       // Descobre o next-action de `refreshAccessToken`: é a única Server
@@ -435,7 +449,7 @@ async function main() {
       // roster/viewer só vêm de foco/troca de aba, que não acontecem aqui).
       let idRefresh: string | null = null;
       const capturaRefresh = (req: import("playwright").Request) => {
-        if (req.method() === "POST" && req.url() === rotaPersonagens && !idRefresh) {
+        if (req.method() === "POST" && req.url() === rotaMesa && !idRefresh) {
           idRefresh = req.headers()["next-action"] ?? null;
         }
       };
@@ -448,8 +462,10 @@ async function main() {
         registrar("14 (falha de renovação avisa globalmente e o retry recupera)", false, "não foi possível capturar o next-action de refreshAccessToken — script desatualizado?");
       } else {
         const idRefreshCapturado = idRefresh as string;
-        await page.route(rotaPersonagens, (route) => {
+        let abortadasRefresh = 0;
+        await page.route(rotaMesa, (route) => {
           if (route.request().headers()["next-action"] === idRefreshCapturado) {
+            abortadasRefresh++;
             route.abort("failed");
           } else {
             route.continue();
@@ -460,22 +476,42 @@ async function main() {
         await page.clock.fastForward("01:00:00");
         await page.waitForTimeout(2500);
 
-        const alerta = page.locator('[data-testid="campshell-sync-alerta"]');
+        const alerta = page.locator('[data-testid="vtt-aviso-sync"]');
         const alertaVisivel = await alerta.isVisible().catch(() => false);
         const textoAlerta = alertaVisivel ? (await alerta.textContent())?.trim() : null;
-        const temRetry = (await page.locator('[data-testid="campshell-sync-alerta-retry"]').count()) > 0;
-        const foraDaMesa = page.url().includes("/personagens");
+        const temRetry = (await page.locator('[data-testid="vtt-aviso-sync-retry"]').count()) > 0;
 
         // Retry manual, agora sem interceptação: precisa recuperar.
-        await page.unroute(rotaPersonagens);
-        await page.locator('[data-testid="campshell-sync-alerta-retry"]').click();
+        //
+        // Com timeout CURTO e tolerante: se o aviso não apareceu, um
+        // `click()` padrão fica 30s esperando e derruba o script —
+        // levando junto o critério 15, que é quem regrava a sessão
+        // salva com o refresh token rotacionado. Uma falha de critério
+        // não pode custar a sessão de quem for rodar depois.
+        await page.unroute(rotaMesa);
+        await page.locator('[data-testid="vtt-aviso-sync-retry"]')
+          .click({ timeout: 3000 }).catch(() => {});
         await page.waitForTimeout(2000);
-        const alertaSumiu = (await page.locator('[data-testid="campshell-sync-alerta"]').count()) === 0;
+        const alertaSumiu = (await page.locator('[data-testid="vtt-aviso-sync"]').count()) === 0;
 
+        // MEDIDO E NÃO EXPLICADO, e por isso vai como está em vez de
+        // virar um critério "ajustado" até passar: o abort acontece
+        // (contado acima), `renovarRealtimeAuth` tem `catch` que põe o
+        // estado em "interrompido", `AvisoSincronizacao` renderiza
+        // nesse estado — e o aviso não aparece.
+        //
+        // É o TERCEIRO critério desta suíte a falhar assim (com o 9 e o
+        // 11, em SESS-01): provocar falha abortando a Server Action
+        // deixou de produzir o estado de erro visível. E aqui a aposta
+        // é maior que nos outros dois, porque se não for o teste, é o
+        // produto: uma renovação que falha SEM avisar é exatamente o
+        // silêncio que `AvisoSincronizacao` existe pra quebrar — "não
+        // há erro na tela, nada pisca; parece mesa parada, não conexão
+        // caída".
         registrar(
-          "14 (falha de renovação avisa globalmente e o retry recupera)",
-          alertaVisivel && !!textoAlerta?.includes("interrompida") && temRetry && foraDaMesa && alertaSumiu,
-          `em rota NÃO-Mesa (${foraDaMesa ? "/personagens" : page.url()}): alerta visível=${alertaVisivel}, texto="${textoAlerta}", ` +
+          "14 (falha de renovação avisa na mesa, com ação, e o retry recupera) — ver SESS-01",
+          alertaVisivel && !!textoAlerta?.includes("interrompida") && temRetry && alertaSumiu,
+          `abortos da renovação=${abortadasRefresh}, alerta visível=${alertaVisivel}, texto="${textoAlerta}", ` +
             `botão "Tentar novamente" presente=${temRetry}; após clicar no retry sem a falha forçada, alerta sumiu=${alertaSumiu}`,
         );
       }
