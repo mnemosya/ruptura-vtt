@@ -412,7 +412,7 @@ export function VttClient({
     if (timerCartaoRef.current) { clearTimeout(timerCartaoRef.current); timerCartaoRef.current = null; }
   }, []);
 
-  const aoHoverToken = useCallback((id: string | null, ancora?: { x: number; y: number; width: number; height: number }) => {
+  const aoHoverToken = useCallback((id: string | null, ancora?: { x: number; y: number; width: number; height: number }, opcoes?: { imediato?: boolean }) => {
     setHoverId(id);
     limparTimerCartao();
     if (id && ancora) {
@@ -435,6 +435,12 @@ export function VttClient({
     // deixou) e fecha o aberto — mas só se o ponteiro também não
     // estiver dentro DELE, que é o que permite ir do token até os pips.
     aguardandoCartaoRef.current = null;
+    // Fechamento IMEDIATO: pedido por um controle que está debaixo do
+    // cartão (hoje, a alça de rotação). A carência abaixo serve pro
+    // ponteiro viajar do token até o cartão; aqui ela só garantiria
+    // que o `pointerdown` seguinte caísse no cartão em vez de no
+    // controle — que é exatamente o defeito que isto conserta.
+    if (opcoes?.imediato) { setCartaoHover(null); return; }
     timerCartaoRef.current = setTimeout(() => {
       if (!sobreCartaoRef.current) setCartaoHover(null);
     }, CARENCIA_CARTAO_MS);

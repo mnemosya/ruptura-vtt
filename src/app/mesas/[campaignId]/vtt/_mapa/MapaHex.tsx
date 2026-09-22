@@ -246,7 +246,7 @@ export interface PropsMapaHex {
    * — e medir o elemento é exato, enquanto refazer a conta de
    * mundo→tela aqui fora seria uma segunda implementação do zoom/pan.
    */
-  onHoverToken: (id: string | null, ancora?: { x: number; y: number; width: number; height: number }) => void;
+  onHoverToken: (id: string | null, ancora?: { x: number; y: number; width: number; height: number }, opcoes?: { imediato?: boolean }) => void;
   onClicarCelula?: (h: Hex) => void;
 
   /**
@@ -3410,7 +3410,14 @@ function Token({
   opacoReduzido?: boolean;
   ferramenta?: PropsMapaHex["ferramenta"];
   onSelecionar: (id: string, aditivo: boolean) => void;
-  onHover: (id: string | null, ancora?: { x: number; y: number; width: number; height: number }) => void;
+  /**
+   * `opcoes.imediato` pula a carência de fechamento do cartão. A
+   * carência existe pra deixar o ponteiro viajar do token até o cartão
+   * (o caminho entre os dois passa por fora dos dois); quando quem
+   * pediu o fechamento é um CONTROLE que está debaixo do cartão, como
+   * a alça de rotação, esperar 200ms é esperar o clique ser comido.
+   */
+  onHover: (id: string | null, ancora?: { x: number; y: number; width: number; height: number }, opcoes?: { imediato?: boolean }) => void;
   /** Devolve SE o arrasto começou — o `pointerdown` precisa disso pra saber se pode adiar a decisão sobre a seleção (ver o handler). */
   onIniciarArrasto?: () => boolean;
   onIniciarMedicao?: (clientX: number, clientY: number) => void;
@@ -3790,7 +3797,35 @@ function Token({
                 transparente) — mouse, caneta, touch E teclado (foco +
                 setas/E/Q/Home) usam o MESMO elemento. */}
             {mostrarAlca && onIniciarAlcaRotacao && (
-              <g className="rv-token-alca-rotacao" data-valida={emGestoDeRotacao ? estadoAlcaRotacao!.valida : undefined}>
+              <g
+                className="rv-token-alca-rotacao"
+                data-valida={emGestoDeRotacao ? estadoAlcaRotacao!.valida : undefined}
+                /* O CARTÃO DE HOVER SAI DA FRENTE DA ALÇA.
+                   
+                   A alça fica DENTRO do `<g>` do token, então pousar
+                   nela conta como pousar no token e abre o cartão. E o
+                   cartão é ancorado acima do disco — que é exatamente
+                   onde a alça está quando o token olha pra cima. Ele
+                   abria em cima dela e comia o `pointerdown`: girar
+                   com o mouse ficava impossível, e como o cartão tem
+                   os botões de PV/PE/Mana, a pressão podia cair num
+                   deles e MUDAR um recurso no lugar de girar.
+                   
+                   A regra já estava escrita em `VttClient` ("um gesto
+                   de mapa tira o cartão da frente na hora: ele é ajuda
+                   passiva, nunca obstáculo"); faltava a alça ser
+                   tratada como o controle que é. Sair dela devolve o
+                   cartão, reancorado no disco — quem só passou por
+                   cima a caminho do token não perde nada. */
+                onMouseEnter={() => onHover(null, undefined, { imediato: true })}
+                onMouseLeave={(e) => {
+                  const g = e.currentTarget.closest(".rv-token");
+                  const disco = g?.querySelector("[data-token-disco]") ?? g;
+                  if (!disco) return;
+                  const r = disco.getBoundingClientRect();
+                  onHover(token.id, { x: r.x, y: r.y, width: r.width, height: r.height });
+                }}
+              >
                 <line x1={meioLocal.x} y1={meioLocal.y} x2={alcaLocal.x} y2={alcaLocal.y}
                   stroke={corAlca} strokeWidth="1.5" strokeDasharray="2 2" opacity="0.85" pointerEvents="none" />
                 <circle cx={alcaLocal.x} cy={alcaLocal.y} r={4.5} fill={corAlca} stroke="#0b141c" strokeWidth="1.2" pointerEvents="none" />

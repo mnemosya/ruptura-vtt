@@ -160,13 +160,46 @@ export function CartaoTokenHover(p: PropsCartaoTokenHover) {
     const el = cartaoRef.current;
     if (!el) return;
     const { width, height } = el.getBoundingClientRect();
-    const acimaCabe = p.ancora.y - height - 10 > MARGEM_TELA;
+    const left = Math.min(
+      Math.max(MARGEM_TELA, p.ancora.x + p.ancora.width / 2 - width / 2),
+      window.innerWidth - width - MARGEM_TELA,
+    );
+    const acima = p.ancora.y - height - 10;
+    const abaixo = p.ancora.y + p.ancora.height + 10;
+
+    // O CARTÃO NUNCA FICA EM CIMA DA ALÇA DE ROTAÇÃO.
+    //
+    // A alça mora além da aresta frontal do token; quando o token olha
+    // pra cima ela cai exatamente onde o cartão é ancorado. E o cartão
+    // é HTML `position: fixed` sobre um mapa em SVG, então ele ganha
+    // sempre: o `pointerdown` destinado à alça chegava no cartão.
+    // Girar com o mouse ficava impossível, e como o cartão tem os
+    // botões de PV/PE/Mana a pressão ainda podia MUDAR um recurso no
+    // lugar de girar o token.
+    //
+    // A alça é lida do DOM em vez de vir por prop porque só existe uma
+    // na tela (ela só aparece no token único selecionado), e porque
+    // quem precisa dessa informação é só esta conta.
+    const alca = document.querySelector(".rv-token-alca-rotacao-toque")?.getBoundingClientRect() ?? null;
+    const colide = (topo: number) =>
+      !!alca && alca.right > left && alca.left < left + width
+        && alca.bottom > topo && alca.top < topo + height;
+
+    // Preferência de sempre: acima, se couber na tela. Se o lado
+    // preferido bater na alça e o outro não, vai pro outro — uma
+    // dispensa passiva não desloca um controle, é o contrário.
+    const acimaCabe = acima > MARGEM_TELA;
+    const preferido = acimaCabe ? acima : abaixo;
+    const alternativo = acimaCabe ? abaixo : acima;
+    const alternativoCabeNaTela = acimaCabe
+      ? abaixo + height < window.innerHeight - MARGEM_TELA
+      : acima > MARGEM_TELA;
+
     setPosicao({
-      left: Math.min(
-        Math.max(MARGEM_TELA, p.ancora.x + p.ancora.width / 2 - width / 2),
-        window.innerWidth - width - MARGEM_TELA,
-      ),
-      top: acimaCabe ? p.ancora.y - height - 10 : p.ancora.y + p.ancora.height + 10,
+      left,
+      top: colide(preferido) && alternativoCabeNaTela && !colide(alternativo)
+        ? alternativo
+        : preferido,
     });
   }, [p.ancora, dados]);
 
