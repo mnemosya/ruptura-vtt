@@ -159,14 +159,36 @@ async function contextoAutenticadoComo(email: string, password: string): Promise
   return context;
 }
 
-async function statusOnlineNoRoster(page: Page, nomeParcial: string): Promise<"true" | "false" | "ausente"> {
-  await page.locator('[data-testid="session-tab-participantes"]').click();
+/**
+ * A PRESENÇA DEIXOU DE SER BOOLEANA, e isso é o assunto inteiro desta
+ * parte do produto.
+ *
+ * O check lia `data-online="true"|"false"` num item
+ * `session-roster-item`. Nenhum dos dois existe: a linha é
+ * `painel-participantes-linha` e o que ela carrega é
+ * `data-presenca`, com QUATRO estados — online, offline, conectando,
+ * indisponivel.
+ *
+ * A troca não foi cosmética. `participantesModelo.ts` explica por quê:
+ * um `onlineUserIds` vazio é AMBÍGUO — pode ser "ninguém online" ou "o
+ * canal ainda não sincronizou". Tratar o segundo como o primeiro é
+ * exatamente o estado enganoso que o provider foi escrito pra não
+ * produzir, e um booleano não tem como não produzi-lo.
+ *
+ * Então este helper devolve o estado de verdade, e os critérios abaixo
+ * passam a falar nele.
+ */
+type EstadoPresenca = "online" | "offline" | "conectando" | "indisponivel" | "ausente";
+
+async function presencaNoRoster(page: Page, nomeParcial: string): Promise<EstadoPresenca> {
+  await page.locator('[data-testid="painel-aba-participantes"]').click();
   await page.waitForTimeout(200);
-  const item = page.locator(`[data-testid="session-roster-item"]:has-text("${nomeParcial}")`);
-  const existe = (await item.count()) > 0;
-  if (!existe) return "ausente";
-  const attr = await item.getAttribute("data-online");
-  return attr === "true" ? "true" : attr === "false" ? "false" : "ausente";
+  const item = page.locator(`[data-testid="painel-participantes-linha"]:has-text("${nomeParcial}")`);
+  if ((await item.count()) === 0) return "ausente";
+  const attr = await item.first().getAttribute("data-presenca");
+  return attr === "online" || attr === "offline" || attr === "conectando" || attr === "indisponivel"
+    ? attr
+    : "ausente";
 }
 
 async function main() {
@@ -191,8 +213,8 @@ async function main() {
     // --- 1. Narrador vê a própria presença ---
     await narradorPage.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await narradorPage.waitForTimeout(1500);
-    const statusNarrador = await statusOnlineNoRoster(narradorPage, "Narrador");
-    registrar("1 (narrador vê a própria presença online)", statusNarrador === "true", `status do narrador no próprio roster="${statusNarrador}"`);
+    const statusNarrador = await presencaNoRoster(narradorPage, "Narrador");
+    registrar("1 (narrador vê a própria presença online)", statusNarrador === "online", `status do narrador no próprio roster="${statusNarrador}"`);
 
     // --- 5. Sem estado enganoso — prova ESTRUTURAL, canal bloqueado de propósito ---
     {
@@ -208,20 +230,31 @@ async function main() {
         // fica preso em "connecting" para sempre, de propósito.
       });
       await pageBloqueada.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
-      await pageBloqueada.locator('[data-testid="session-tab-participantes"]').click();
+      await pageBloqueada.locator('[data-testid="painel-aba-participantes"]').click();
       // Bem além do que uma sincronização normal levaria (~1-2s medido
       // à mão) — se o bloqueio estiver funcionando, nada muda depois
       // deste tempo; se a garantia estiver quebrada, isto dá tempo de
       // sobra pra `data-online` aparecer errado.
       await pageBloqueada.waitForTimeout(5000);
-      const semDataOnline = await pageBloqueada.evaluate(() => {
-        const itens = document.querySelectorAll('[data-testid="session-roster-item"]');
-        return itens.length > 0 && [...itens].every((el) => !el.hasAttribute("data-online"));
-      });
+      // A GARANTIA FICOU MAIS FORTE com o modelo de quatro estados, e
+      // é ela que se afirma aqui: com o canal preso, ninguém pode
+      // aparecer como "offline". Offline é uma AFIRMAÇÃO sobre a
+      // pessoa, e o cliente não tem como fazê-la sem um canal que
+      // sincronizou — `estadoPresenca` só devolve online/offline
+      // quando o status é `subscribed`, e devolve "conectando" ou
+      // "indisponivel" em todo o resto.
+      //
+      // O critério antigo pedia AUSÊNCIA de atributo, que era como o
+      // booleano evitava mentir. Pedir ausência agora seria pedir menos:
+      // o atributo existe sempre, e o que importa é o que ele diz.
+      const estados = await pageBloqueada.evaluate(() =>
+        [...document.querySelectorAll('[data-testid="painel-participantes-linha"]')]
+          .map((el) => el.getAttribute("data-presenca") ?? "(sem atributo)"));
+      const nenhumOffline = estados.length > 0 && estados.every((e) => e === "conectando" || e === "indisponivel");
       registrar(
-        "5 (sem data-online em nenhum item com o canal bloqueado — prova estrutural)",
-        semDataOnline,
-        `WebSocket de Realtime bloqueado por completo, esperado 5s: nenhum item com data-online=${semDataOnline}`,
+        "5 (com o canal bloqueado, ninguém é declarado offline — o cliente não afirma o que não sabe)",
+        nenhumOffline,
+        `WebSocket de Realtime bloqueado por completo, esperado 5s: estados=${JSON.stringify(estados)}`,
       );
       await pageBloqueada.close();
     }
@@ -235,13 +268,13 @@ async function main() {
     // (script `_debug-presence-timing.ts`) leva ~1.4s, mas duas conexões
     // concorrentes num ambiente headless podem variar; poll é mais
     // robusto que apostar num número fixo.
-    let statusJogadorOnline: "true" | "false" | "ausente" = "ausente";
+    let statusJogadorOnline: EstadoPresenca = "ausente";
     for (let i = 0; i < 10; i++) {
       await narradorPage.waitForTimeout(1000);
-      statusJogadorOnline = await statusOnlineNoRoster(narradorPage, "Jogador Presence Fixture");
-      if (statusJogadorOnline === "true") break;
+      statusJogadorOnline = await presencaNoRoster(narradorPage, "Jogador Presence Fixture");
+      if (statusJogadorOnline === "online") break;
     }
-    registrar("2 (segundo participante real aparece online pro narrador, sem reload)", statusJogadorOnline === "true", `status do jogador fixture no roster do narrador="${statusJogadorOnline}"`);
+    registrar("2 (segundo participante real aparece online pro narrador, sem reload)", statusJogadorOnline === "online", `status do jogador fixture no roster do narrador="${statusJogadorOnline}"`);
 
     // --- 3. Múltiplas abas do mesmo usuário contam como 1 ---
     const abaJogador2 = await contextoJogador.newPage();
@@ -250,11 +283,11 @@ async function main() {
 
     await abaJogador1.close();
     await narradorPage.waitForTimeout(2000);
-    const statusComUmaAbaFechada = await statusOnlineNoRoster(narradorPage, "Jogador Presence Fixture");
+    const statusComUmaAbaFechada = await presencaNoRoster(narradorPage, "Jogador Presence Fixture");
     registrar(
       "3 (múltiplas abas contam como 1 — fechar uma, outra ainda rastreando, continua online)",
-      statusComUmaAbaFechada === "true",
-      `fechou a 1ª aba do jogador (2ª ainda aberta): status no roster do narrador="${statusComUmaAbaFechada}" (esperado "true")`,
+      statusComUmaAbaFechada === "online",
+      `fechou a 1ª aba do jogador (2ª ainda aberta): status no roster do narrador="${statusComUmaAbaFechada}" (esperado "online")`,
     );
 
     // --- 4. Desconexão reflete em tempo razoável (fecha a última aba) ---
@@ -266,17 +299,17 @@ async function main() {
     // (múltiplas conexões, ambiente headless) sem esconder uma
     // regressão real — se o Realtime nunca soltar a presença, isto
     // reprova, não passa silenciosamente esperando pouco.
-    let statusFinal: "true" | "false" | "ausente" = "true";
+    let statusFinal: EstadoPresenca = "online";
     const inicioEspera = Date.now();
     const LIMITE_MS = 40_000;
     while (Date.now() - inicioEspera < LIMITE_MS) {
       await narradorPage.waitForTimeout(2000);
-      statusFinal = await statusOnlineNoRoster(narradorPage, "Jogador Presence Fixture");
-      if (statusFinal === "false") break;
+      statusFinal = await presencaNoRoster(narradorPage, "Jogador Presence Fixture");
+      if (statusFinal === "offline") break;
     }
     registrar(
       "4 (desconexão reflete em tempo razoável, sem ação do narrador)",
-      statusFinal === "false",
+      statusFinal === "offline",
       `status final após fechar as duas abas do jogador (esperando até ${LIMITE_MS / 1000}s)="${statusFinal}"`,
     );
 
