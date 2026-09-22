@@ -1357,8 +1357,8 @@
    Cor por atributo, não por perícia: verde=Corpo (color-mix(in srgb, var(--rc-ok) 70%, var(--rc-surface-3))), roxo=Mente
    (#816fd6), cyan-petróleo=Ânimo (var(--rc-skill-cor) — cor PRÓPRIA, não o --cy
    geral do resto do Console; correção depois de eu ter presumido
-   errado da primeira vez). A cor mora no BADGE do ícone (borda+fundo
-   próprios) e na tag — a borda do CARD em si é neutra, igual pros 3
+   errado da primeira vez). A cor mora no ícone e na tag — a borda do
+   CARD e o separador interno são neutros, iguais pros 3
    atributos (rgba(0,212,255,0.12), confirmado pela spec E pelas
    imagens de referência lado a lado). As larguras/paddings do frame do
    Figma ("450px" etc.) foram adaptadas para preencher o painel real,
@@ -1416,26 +1416,30 @@
      padding do `.rc-skills-card` em vez de encolher. */
   width: 100%; min-width: 0; text-align: left; cursor: pointer;
   border-radius: var(--rc-r-sm);
-  /* Borda do CARD é neutra pros 3 atributos — a cor mora no badge do
-     ícone e na tag, não aqui. */
+  /* Borda do CARD é neutra pros 3 atributos — a cor mora no ícone e na
+     tag, não aqui. */
   border: 1px solid rgba(0, 212, 255, 0.12);
   background: rgba(0, 18, 32, 0.5);
   color: inherit;
   transition: border-color 0.14s, background 0.14s;
 }
-.rc-skill:hover { background: rgba(0, 18, 32, 0.85); border-color: var(--rc-skill-cor, rgba(0, 212, 255, 0.3)); }
+.rc-skill:hover {
+  background: color-mix(in srgb, var(--rc-skill-cor, var(--rc-cy)) 10%, transparent);
+  border-color: var(--rc-skill-cor, rgba(0, 212, 255, 0.3));
+}
 .rc-skill:focus-visible { outline: 2px solid var(--rc-skill-cor, var(--rc-cy)); outline-offset: 1px; }
 .rc-skill[data-vazio="true"] { opacity: 0.28; pointer-events: none; cursor: default; }
 
-/* Badge do ícone: borda+fundo PRÓPRIOS, por atributo — "align-self:
-   stretch" no Figma = preenche a altura inteira do card. */
+/* Badge do ícone: apenas a borda direita separa o ícone do conteúdo.
+   O card já desenha as bordas esquerda, superior e inferior; repeti-las
+   aqui criava um segundo fio encostado nessas três arestas. */
 .rc-skill-ico {
   flex: none;
   display: flex; justify-content: center; align-items: center;
   align-self: stretch;
   padding: 0 8px;
-  border-radius: var(--rc-r-sm);
-  border: 1px solid var(--rc-skill-ico-border, transparent);
+  border: 0;
+  border-right: 1px solid rgba(0, 212, 255, 0.12);
   /* SEM FUNDO: o badge é só o fio em volta do ícone. Um preenchimento
      próprio criava um segundo retângulo dentro do card e competia com
      ele — e a cor do atributo já é dita pela borda e pela tag. */
@@ -1479,8 +1483,8 @@
   .rc-skill { padding-left: 10px; }
 }
 
-/* As TRÊS variantes têm a mesma estrutura — cor da tag, borda do badge
-   e fundo do badge. Só os valores mudam, e eles voltaram a ser os
+/* As TRÊS variantes têm a mesma estrutura — cor da tag e do ícone.
+   Só os valores mudam, e eles voltaram a ser os
    saturados do Console: passar o verde e o roxo pelos acentos
    dessaturados do chassi do VTT (`--rc-ok`, `--rv-ar`) apagou a
    distinção entre os três atributos, que é a única função da cor
@@ -1488,15 +1492,12 @@
    o roxo não tem nó e volta ao valor que tinha antes. */
 .rc-skill[data-attr="corpo"] {
   --rc-skill-cor: #23903c;
-  --rc-skill-ico-border: rgba(38, 255, 0, 0.14);
 }
 .rc-skill[data-attr="mente"] {
   --rc-skill-cor: #6a49bc;
-  --rc-skill-ico-border: rgba(106, 74, 189, 0.55);
 }
 .rc-skill[data-attr="animo"] {
   --rc-skill-cor: #0596b7;
-  --rc-skill-ico-border: rgba(0, 212, 255, 0.14);
 }
 
 /* ── Pins / Espaço livre v2 (spec Figma para o slot vazio; slot

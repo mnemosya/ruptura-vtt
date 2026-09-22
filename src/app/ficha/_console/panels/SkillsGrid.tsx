@@ -15,8 +15,8 @@
  *
  * Cada perícia usa a cor do atributo que a governa — verde (Corpo),
  * roxo (Mente), cyan (Ânimo, reaproveita `--cy`, já existente) — via
- * `data-attr` no card, e um ícone próprio (`skillIcons.tsx`), nunca um
- * ícone genérico igual para as 21.
+ * `data-attr` no card, além de um ícone próprio (`skillIcons.tsx`),
+ * nunca um ícone genérico igual para as 21.
  *
  * Nenhuma perícia é hardcoded: a lista e o atributo primário vêm de
  * `regras_personagem`, nunca de uma tabela local.
