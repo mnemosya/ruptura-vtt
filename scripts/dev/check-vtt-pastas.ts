@@ -149,18 +149,49 @@ async function main() {
       sub?.caminho === "Ato I / Porto / Subterrâneo", `veio "${sub?.caminho}"`);
     criterio("com o nível junto", sub?.nivel === 3, `veio ${sub?.nivel}`);
 
-    console.log("\n— Apagar pasta não apaga cena —");
-    // `Porto` tem a Casa de Máquinas dentro e `Subterrâneo` como filha.
-    const { error: eDel } = await narrador.rpc("delete_vtt_scene_folder", { p_folder_id: n2 });
-    criterio("apaga a pasta", !eDel, eDel?.message ?? "");
-    const { data: cenaSobreviveu } = await admin.from("vtt_scenes")
-      .select("id, folder_id").eq("id", maquinas).maybeSingle();
-    criterio("a CENA sobreviveu", cenaSobreviveu !== null);
-    criterio("e subiu para a pasta-mãe", cenaSobreviveu?.folder_id === n1,
-      `ficou em ${cenaSobreviveu?.folder_id}, esperado ${n1}`);
+    console.log("\n— Apagar pasta apaga o que está dentro —");
+    // A 0117 tinha o desenho oposto ("pasta é etiqueta") e este bloco
+    // ainda testava aquele. A 0129 inverteu de propósito: quem apaga
+    // "Ato I" quer o Ato I inteiro fora, e o que acontecia era as cenas
+    // reaparecerem soltas na raiz pra serem apagadas de novo à mão.
+    //
+    // Com a inversão vieram três freios, e são eles que valem teste: o
+    // nome digitado como confirmação, a cena APRESENTADA que nunca é
+    // apagada, e a última cena utilizável da campanha.
+    //
+    // `Porto` (n2) tem a Casa de Máquinas dentro e `Subterrâneo` (n3)
+    // como filha. O palco vai pra dentro de n3 agora, para a exclusão
+    // de n2 ter que poupá-lo de dentro da própria subárvore — é o caso
+    // que a regra existe pra cobrir.
+    await narrador.rpc("move_vtt_scene_to_folder", { p_scene_id: doca, p_folder_id: n3 });
+
+    await recusa("sem o nome certo, recusa",
+      narrador.rpc("delete_vtt_scene_folder", { p_folder_id: n2, p_nome_confirmacao: "porto" }),
+      "confirmação não corresponde");
+
+    const { data: resumo, error: eDel } = await narrador.rpc("delete_vtt_scene_folder", {
+      p_folder_id: n2, p_nome_confirmacao: "Porto",
+    });
+    criterio("com o nome certo, apaga", !eDel, eDel?.message ?? "");
+    const r = (resumo ?? {}) as Record<string, unknown>;
+    criterio("o resumo conta as cenas apagadas", r.cenas === 1, `veio ${JSON.stringify(r.cenas)}`);
+    criterio("e as subpastas", r.subpastas === 1, `veio ${JSON.stringify(r.subpastas)}`);
+
+    const { data: cenaDeDentro } = await admin.from("vtt_scenes")
+      .select("id").eq("id", maquinas).maybeSingle();
+    criterio("a cena de dentro foi junto", cenaDeDentro === null);
     const { data: subpasta } = await admin.from("vtt_scene_folders")
-      .select("parent_id").eq("id", n3).maybeSingle();
-    criterio("a subpasta também subiu", subpasta?.parent_id === n1);
+      .select("id").eq("id", n3).maybeSingle();
+    criterio("a subpasta também", subpasta === null);
+
+    // O palco estava DENTRO da subárvore e mesmo assim sobrevive.
+    const { data: palco } = await admin.from("vtt_scenes")
+      .select("id, folder_id").eq("id", doca).maybeSingle();
+    criterio("o PALCO foi poupado", palco !== null);
+    criterio("e subiu pro pai da pasta apagada", palco?.folder_id === n1,
+      `ficou em ${palco?.folder_id}, esperado ${n1}`);
+    criterio("e a RPC avisa quem foi poupada", r.preservada === "Doca Norte",
+      `veio ${JSON.stringify(r.preservada)}`);
 
     console.log("\n— Quem não é narrador —");
     const emailJog = `check-pastas-jog-${Date.now()}@ruptura.dev`;
