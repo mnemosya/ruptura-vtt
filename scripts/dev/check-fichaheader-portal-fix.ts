@@ -181,7 +181,14 @@ async function main() {
       });
 
       // --- Setup: página Personagens longa + filtro de busca aplicado (estado a preservar) ---
-      await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "networkidle" });
+      // A página de Personagens deixou de ser por campanha: hoje ela é
+      // GLOBAL (`/mesas/personagens`, em `mesas/(global)/personagens`) e
+      // lista os personagens de todas as mesas da pessoa. A rota antiga
+      // não existe mais, então as três navegações daqui caíam em página
+      // nenhuma — `main.scrollHeight=0` é o que sobra quando não há
+      // main. O `waitFor` do campo de busca depois esperava 20s e
+      // matava o resto do arquivo.
+      await page.goto(`${BASE_URL}/mesas/personagens`, { waitUntil: "networkidle" });
       // Mede `.rm-shell-main`, não o documento (F1 do redesign): o shell
       // passou a ser travado na viewport (`height: 100dvh; overflow:
       // hidden`) e a região rolável virou o `main`. Medir
@@ -189,20 +196,35 @@ async function main() {
       // sempre a altura da viewport — o critério reprovou de verdade na
       // varredura, apontando não um bug de produto, mas que ESTE teste
       // tinha virado uma medida do elemento errado.
+      // E QUEM ROLA muda junto com a rota. Dentro de uma mesa o shell é
+      // travado na viewport (`height: 100dvh; overflow: hidden`) e a
+      // região rolável é `.rm-shell-main` — foi por isso que este
+      // critério parou de medir o documento um dia. Na área autenticada
+      // global, onde Personagens mora agora, não há esse travamento:
+      // quem rola é o documento, como numa página comum.
+      //
+      // Então não se escolhe o elemento por nome — pergunta-se qual
+      // está rolando. Um critério que finge saber a resposta volta a
+      // quebrar na próxima mudança de casca; este acompanha.
       const alturas = await page.evaluate(() => {
-        const main = document.querySelector(".rm-shell-main") as HTMLElement | null;
-        return { scroll: main?.scrollHeight ?? 0, visivel: main?.clientHeight ?? 0 };
+        const candidatos = [
+          document.querySelector(".rm-shell-main"),
+          document.querySelector(".ra2-content"),
+          document.scrollingElement ?? document.documentElement,
+        ].filter(Boolean) as HTMLElement[];
+        const rolando = candidatos.find((e) => e.scrollHeight > e.clientHeight + 100) ?? candidatos[0];
+        return { scroll: rolando?.scrollHeight ?? 0, visivel: rolando?.clientHeight ?? 0, quem: rolando?.tagName ?? "?" };
       });
       registrar(
         "1a (página Personagens é genuinamente longa, rolável dentro do main)",
         alturas.scroll > alturas.visivel + 200,
-        `main.scrollHeight=${alturas.scroll}, main.clientHeight=${alturas.visivel}`,
+        `quem rola=${alturas.quem}, scrollHeight=${alturas.scroll}, clientHeight=${alturas.visivel}`,
       );
 
       // Primeiro o filtro ÚNICO, só pra provar que filtrar funciona.
       await page.locator('[data-testid="personagens-busca"]').fill(MARCADOR_BUSCA);
       await page.waitForTimeout(150); // filtro é síncrono (useState local), só dando tempo do React re-renderizar
-      const contagemFiltrada = await page.locator('[data-testid="personagens-item-narrador"]').count();
+      const contagemFiltrada = await page.locator('[data-testid="personagem-item"]').count();
       registrar(
         "1b (filtro de busca reduz a lista ao personagem-alvo)",
         contagemFiltrada === 1,
@@ -227,18 +249,29 @@ async function main() {
       const alvoTestId = paddingCharacterIds[0]; // "Padding 0 personagem" — visível sob o filtro largo
       const outroId = paddingCharacterIds[1];
 
-      // Rola o MAIN, não a janela: com o shell travado na viewport (F1)
-      // quem rola é `.rm-shell-main`, e `window.scrollY` seria sempre 0.
+      // Rola QUEM ROLA. Dentro de uma mesa é `.rm-shell-main` (shell
+      // travado na viewport, F1); na área global é o documento. O
+      // seletor fixo estourava com "Cannot set properties of null" fora
+      // da campanha — e como era um `page.evaluate`, o erro vinha sem
+      // dizer que elemento faltava.
+      const QUEM_ROLA = `(document.querySelector(".rm-shell-main") ?? document.scrollingElement ?? document.documentElement)`;
       await page.evaluate(() => {
-        const main = document.querySelector(".rm-shell-main") as HTMLElement;
-        main.scrollTop = 300;
+        const alvo = (document.querySelector(".rm-shell-main") ?? document.scrollingElement ?? document.documentElement) as HTMLElement;
+        alvo.scrollTop = 300;
       });
+      void QUEM_ROLA;
       const scrollYAntes = await page.evaluate(
-        () => (document.querySelector(".rm-shell-main") as HTMLElement).scrollTop,
+        () => ((document.querySelector(".rm-shell-main") ?? document.scrollingElement ?? document.documentElement) as HTMLElement).scrollTop,
       );
 
       // --- 1. Abrir A via modal sobre a página longa: header visível no topo ---
-      await page.locator(`[data-testid="personagens-abrir-ficha-${alvoTestId}"]`).click();
+      // O cartão do personagem não carrega mais um `data-testid` por
+      // ID — todos compartilham `personagem-item`, e o que distingue um
+      // do outro é o `href` (`/ficha?campaignId=…&characterId=…`), que
+      // é o endereço de verdade e não um apoio de teste. Selecionar por
+      // ele é mais honesto: se o link mudar, o teste falha porque a
+      // navegação mudou, não porque um atributo saiu.
+      await page.locator(`a.ra-charcard[href*="characterId=${alvoTestId}"]`).click();
       await page.waitForURL(/\/ficha\?/, { timeout: 20000 });
       await page.waitForSelector(".rc-fichaheader", { state: "visible", timeout: 20000 });
       {
@@ -278,7 +311,13 @@ async function main() {
       await page.locator('[data-testid="ficha-seletor-personagem"]').selectOption(outroId);
       await page.waitForURL(new RegExp(`characterId=${outroId}`), { timeout: 20000 });
       {
-        const aindaModal = (await page.locator(".rm-navrail").count()) > 0;
+      // `.rm-navrail` NÃO EXISTE MAIS — sobrou só no CSS, nenhum
+      // componente a renderiza. A casca que fica por baixo do modal
+      // agora é `.ra2-shell` (a área autenticada global, onde
+      // Personagens mora). Contar um seletor morto dava zero sempre, o
+      // que aqui significava "não é modal, é página cheia" — o critério
+      // afirmava o contrário do que via.
+        const aindaModal = (await page.locator(".ra2-shell").count()) > 0;
         registrar(
           "2a (seletor de personagem no modal navega pro personagem escolhido)",
           aindaModal,
@@ -305,10 +344,10 @@ async function main() {
       {
         const semHeaderPortal = (await page.locator(".rc-fichaheader").count()) === 0;
         const buscaAindaPreenchida = await page.locator('[data-testid="personagens-busca"]').inputValue();
-        const contagemAindaFiltrada = await page.locator('[data-testid="personagens-item-narrador"]').count();
+        const contagemAindaFiltrada = await page.locator('[data-testid="personagem-item"]').count();
         const totalSemFiltro = paddingCharacterIds.length + 2; // fixtures + os 2 personagens reais da campanha
         const scrollYDepois = await page.evaluate(
-          () => (document.querySelector(".rm-shell-main") as HTMLElement).scrollTop,
+          () => ((document.querySelector(".rm-shell-main") ?? document.scrollingElement ?? document.documentElement) as HTMLElement).scrollTop,
         );
         /*
          * `scrollTop` idêntico NÃO é a propriedade certa aqui, e afirmar
@@ -324,12 +363,12 @@ async function main() {
          * voltou ao topo, e o item que você abriu continua à vista —
          * ou seja, você volta a trabalhar de onde parou.
          */
-        const gatilhoVisivel = await page.evaluate((tid) => {
-          const el = document.querySelector(`[data-testid="${tid}"]`);
+        const gatilhoVisivel = await page.evaluate((id) => {
+          const el = document.querySelector(`a.ra-charcard[href*="characterId=${id}"]`);
           if (!el) return false;
           const r = el.getBoundingClientRect();
           return r.top >= 0 && r.bottom <= window.innerHeight;
-        }, `personagens-abrir-ficha-${alvoTestId}`);
+        }, alvoTestId);
         registrar(
           "3a (portal do header desmonta ao fechar)",
           semHeaderPortal,
@@ -352,13 +391,13 @@ async function main() {
       await page.goto(`${BASE_URL}/ficha?campaignId=${campaignId}&characterId=${alvoTestId}`, { waitUntil: "domcontentloaded" });
       await page.locator(".rc-fichaheader").waitFor({ state: "visible", timeout: 20000 });
       {
-        const semCasca = (await page.locator(".rm-navrail").count()) === 0;
+        const semCasca = (await page.locator(".ra2-shell").count()) === 0;
         const box = await page.locator(".rc-fichaheader").boundingBox();
         const top = box?.y ?? -1;
         registrar(
           "4a (/ficha direta é página cheia, .rc-fichaheader no topo)",
           semCasca && top >= -1 && top <= 2,
-          `.rm-navrail ausente=${semCasca}, boundingBox.y=${top}`,
+          `.ra2-shell ausente=${semCasca}, boundingBox.y=${top}`,
         );
       }
       {
@@ -366,17 +405,30 @@ async function main() {
         // aqui com "waiting for element to be visible, enabled and
         // stable" porque .rc-backdrop capturava o clique.
         let clicouComSucesso = false;
+        let destino = "";
         try {
           await page.locator('[data-testid="ficha-voltar-personagens"]').click({ timeout: 5000 });
-          await page.waitForURL(/\/personagens$/, { timeout: 20000 });
+          // O destino deixou de ser `/personagens`: o link aponta pra
+          // `/mesas/${campaignId}` (ver `FichaHeader.tsx`), embora o
+          // texto continue dizendo "← Personagens". Esse desencontro
+          // entre rótulo e destino está registrado no backlog como
+          // FICHA-02 — é decisão de produto qual dos dois está certo, e
+          // um check não deve escolher por ela.
+          //
+          // O que ESTE critério existe pra guardar é outra coisa, e
+          // continua valendo inteira: o clique não pode ser engolido
+          // pelo `.rc-backdrop`. Então a afirmação é "saiu da ficha",
+          // não "chegou num endereço específico".
+          await page.waitForURL((u) => !u.pathname.startsWith("/ficha"), { timeout: 20000 });
           clicouComSucesso = true;
+          destino = new URL(page.url()).pathname;
         } catch {
           clicouComSucesso = false;
         }
         registrar(
-          "4b (link '← Personagens' na rota direta é genuinamente clicável, não só visível)",
+          "4b (link '← Personagens' na rota direta é genuinamente clicável — o clique não é engolido pelo backdrop)",
           clicouComSucesso,
-          `clique real completou e navegou=${clicouComSucesso}`,
+          `clique real completou e saiu da ficha=${clicouComSucesso}${destino ? `, foi para ${destino}` : ""}`,
         );
       }
 
@@ -384,7 +436,7 @@ async function main() {
       // — precisa levar pra onde o usuário estava ANTES de abrir a
       // ficha (Personagens, entrada de navegação real), não pra uma
       // versão anterior da própria ficha. ---
-      await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "domcontentloaded" });
+      await page.goto(`${BASE_URL}/mesas/personagens`, { waitUntil: "domcontentloaded" });
       await page.locator('[data-testid="personagens-busca"]').waitFor({ state: "visible", timeout: 20000 });
       await page.goto(`${BASE_URL}/ficha?campaignId=${campaignId}&characterId=${alvoTestId}`, { waitUntil: "domcontentloaded" });
       await page.locator(".rc-fichaheader").waitFor({ state: "visible", timeout: 20000 });

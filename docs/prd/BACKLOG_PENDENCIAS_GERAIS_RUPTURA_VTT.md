@@ -480,6 +480,23 @@ A regra já estava escrita em `VttClient` e só não valia para a alça: *"um ge
 
 **Fica registrado, sem tarefa aberta:** nenhum outro controle do mapa foi auditado contra o cartão. A alça foi a que apareceu porque tinha check; marcos de medição, alças de área e o menu contextual ocupam regiões parecidas.
 
+### FICHA-02 — O link "← Personagens" da ficha não vai para Personagens
+
+- **Status:** Bloqueada (precisa de decisão de produto)
+- **Prioridade sugerida:** P3
+- **Origem:** encontrada em 2026-09-22 ao reparar `check-fichaheader-portal-fix`.
+
+**O que é.** No cabeçalho da ficha, a migalha diz `← Personagens` e o link aponta para `/mesas/${campaignId}` — a mesa, não a lista de personagens (`FichaHeader.tsx`). Rótulo e destino discordam.
+
+Não dá para saber qual dos dois está certo sem decidir o que a volta deve significar, e por isso está bloqueada em vez de corrigida:
+
+- se a volta é "sair da ficha e voltar pra mesa de onde vim", o destino está certo e o **texto** é que envelheceu (viraria `← Mesa`, ou o nome da campanha);
+- se a volta é "voltar pra lista de personagens", o texto está certo e o **destino** é que envelheceu — Personagens deixou de ser por campanha e virou global (`/mesas/personagens`).
+
+**Por que é pequeno mas não é nada:** a migalha é a única saída anunciada da ficha em rota direta, e ela promete um lugar e entrega outro.
+
+**Nota sobre o check:** `check-fichaheader-portal-fix` afirmava o destino `/personagens` e por isso reprovava. O critério foi reescrito para guardar o que ele realmente existe para guardar — que o clique não é engolido pelo `.rc-backdrop` —, e não para escolher um dos dois lados desta decisão.
+
 ### TEST-01 — Inventariar e reparar os checks defasados
 
 - **Status:** Pronta
