@@ -27,6 +27,7 @@ import { chromium, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
 import { decidirTrocaFerramenta } from "../../src/app/mesas/[campaignId]/vtt/_ferramentas/controlador";
 import { continuarParaPosicionar, escolherTamanhoDoToken } from "./gerenciadorDeToken";
+import { garantirAlcancavel } from "./painelDaSessao";
 
 loadDotenv({ path: ".env.local" });
 function requireEnv(nome: string): string {
@@ -90,8 +91,17 @@ async function limpar() {
 
 async function abrirCriarConfigurando(page: Page, indiceCelula: number) {
   await page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
-  const box = await page.locator(".rv-camada-grade path").nth(indiceCelula).boundingBox();
-  await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2, { button: "right" });
+  // O clique DIREITO precisa chegar ao mapa: o painel da sessão flutua
+  // sobre a metade direita, e a célula pode cair fora da viewport de
+  // 1280. Caindo no painel, nenhum menu de contexto abre — e a falha
+  // aparecia como "esperando o item 'Adicionar token'", que sugere item
+  // renomeado e não gesto perdido.
+  const ponto = await garantirAlcancavel(page, async () => {
+    const caixa = await page.locator(".rv-camada-grade path").nth(indiceCelula).boundingBox();
+    return caixa ? { x: caixa.x + caixa.width / 2, y: caixa.y + caixa.height / 2 } : null;
+  });
+  if (!ponto) throw new Error(`Célula ${indiceCelula} inalcançável mesmo afastando o zoom`);
+  await page.mouse.click(ponto.x, ponto.y, { button: "right" });
   await page.locator(".rv-menu-item", { hasText: "Adicionar token" }).click();
   await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
 }

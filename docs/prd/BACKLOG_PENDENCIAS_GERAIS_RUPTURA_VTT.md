@@ -487,6 +487,27 @@ Recomendação: (1), quando houver tempo — a cobertura de undo/redo por gesto 
 
 **Fora de escopo, registrado a pedido:** "Talentos nem existe mais" — a seção saiu junto e não precisa de porta no Console.
 
+### TOK-06 — "Voltar para editar" não existe durante o posicionamento
+
+- **Status:** Pronta (é acrescentar a porta; o motor já existe)
+- **Prioridade sugerida:** P2 — perda de trabalho pequena, mas evitável e já prevista no código.
+
+**O que acontece.** Ao criar um token, depois de "Continuar para posicionar" a pessoa só tem duas saídas: confirmar a posição, ou **Esc**, que cancela tudo e perde o que ela preencheu (nome, sigla, tamanho, vertente, PV…). Não há como voltar ao formulário.
+
+**E a capacidade existe.** `voltarParaEditarToken` (`VttClient.tsx`) aceita explicitamente as duas fases:
+
+```
+if (!f || (f.fase !== "posicionando" && f.fase !== "erro")) return f;
+```
+
+…e o comentário dele descreve o comportamento pretendido: *"reabre o formulário com os dados do rascunho preservados, e lembra a âncora/orientação já escolhidas (se houver) pra devolver ao continuar de novo. 'Continuar retorna ao posicionamento' (pedido explícito) — nunca reseta o progresso."*
+
+**Falta só quem o chame.** O único chamador é um botão dentro do bloco `fluxoToken?.fase === "erro"` — ou seja, a porta só aparece quando o servidor recusa a posição. No caminho feliz ela não existe.
+
+**Onde encaixar é decisão de desenho:** a barra que hospedava esse botão (`.rv-escolha-posicao`) virou exclusiva do erro. Voltar a mostrá-la durante o posicionamento é uma opção; pôr o botão em outro lugar é outra.
+
+**Encontrado por:** o critério 18 de `check-vtt-gerenciador-token-ux`, que clicava nesse botão e reprovava. O critério foi aposentado com um comentário apontando para cá — um check que testa uma porta inexistente reprova para sempre e vira ruído.
+
 ### TEST-01 — Inventariar e reparar os checks defasados
 
 - **Status:** Pronta

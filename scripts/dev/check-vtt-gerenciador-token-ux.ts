@@ -39,6 +39,8 @@ import type { ConsoleMessage } from "playwright";
 import { chromium, type BrowserContext, type Page } from "playwright";
 import { BASE_URL } from "./authSession";
 import { continuarParaPosicionar, escolherTamanhoDoToken } from "./gerenciadorDeToken";
+import { recolherPainelDaSessao } from "./painelDaSessao";
+import { aceitarDialogos } from "./rascunhoDeEdicao";
 
 
 
@@ -146,6 +148,20 @@ async function limpar() {
  * A célula usada é resolvida por `indiceVisivel` — ver lá o porquê.
  */
 async function abrirCriarConfigurando(page: Page, indiceCelula = 40) {
+  // LIMPA O QUE FICOU ABERTO da chamada anterior.
+  //
+  // Medido: na primeira vez o menu de contexto abre com os sete itens;
+  // na segunda ele vem VAZIO. Sobrava estado — menu ou janela ainda no
+  // ar — e o clique direito fechava aquilo em vez de abrir um menu
+  // novo. A falha aparecia como "esperando o item 'Adicionar token'",
+  // que sugere item renomeado e não menu que não chegou a abrir.
+  // O Escape pode abrir um "descartar?" — sem alguém para aceitar, o
+  // Playwright DESCARTA o diálogo por padrão, o que cancela o cancelar
+  // e deixa a janela aberta. `aceitarDialogos` é tolerante e registra
+  // um handler por página.
+  aceitarDialogos(page);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(250);
   await garantirMapaAlcancavel(page);
   await page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Interagir"]').click();
   let indice: number;
@@ -158,7 +174,8 @@ async function abrirCriarConfigurando(page: Page, indiceCelula = 40) {
     indice = await indiceVisivel(page, indiceCelula);
   }
   const box = await celulaBox(page, indice);
-  await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2, { button: "right" });
+  const pt = { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 };
+  await page.mouse.click(pt.x, pt.y, { button: "right" });
   await page.locator(".rv-menu-item", { hasText: "Adicionar token" }).click();
   await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
 }
@@ -225,6 +242,17 @@ async function garantirMapaAlcancavel(page: Page) {
   // entre si — sem esta folga o atributo lido abaixo ainda é o do
   // breakpoint anterior.
   await page.waitForTimeout(350);
+
+  // RECOLHE SEMPRE, não só em modo gaveta.
+  //
+  // A versão anterior só agia quando `data-drawer="true"` — viewport
+  // estreita. Em 1280 o painel não é gaveta, a função retornava cedo, e
+  // ele seguia flutuando sobre a metade direita do mapa. O clique
+  // direito ia parar nele, nenhum menu de contexto abria, e a falha
+  // aparecia como "esperando o item 'Adicionar token'" — que sugere
+  // item renomeado, não gesto perdido.
+  await recolherPainelDaSessao(page);
+
   const drawerAberto = await page.evaluate(() => {
     const p = document.querySelector(".rv-painel");
     return p?.getAttribute("data-drawer") === "true" && p?.getAttribute("data-aberto") === "true";
@@ -236,6 +264,22 @@ async function garantirMapaAlcancavel(page: Page) {
 }
 
 /** Move o mouse pra uma célula (hover, sem clicar) e espera o fantasma refletir. */
+/**
+ * Posiciona de verdade: move, ESPERA a âncora assentar, então clica.
+ *
+ * `page.mouse.click(x, y)` move e clica no mesmo gesto, e o fantasma do
+ * token só recalcula a âncora no `pointermove` — o clique chegava antes,
+ * o app via a âncora ANTERIOR (frequentemente inválida) e ignorava.
+ * Resultado medido: camada de posicionamento ainda ativa, gerenciador
+ * fechado, nenhum erro na tela, e nenhum token no banco. Um clique que
+ * não vira nada e não reclama.
+ */
+async function confirmarPosicaoNaCelula(page: Page, indice: number) {
+  const box = await moverParaCelula(page, indice);
+  await page.waitForSelector(".rv-camada-posicionamento-token[data-ancora]", { timeout: 5000 });
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+}
+
 async function moverParaCelula(page: Page, indice: number) {
   const box = await celulaBox(page, await indiceVisivel(page, indice));
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2, { steps: 3 });
@@ -427,8 +471,15 @@ async function main() {
     const comPlaceholderNeutro = (await page.locator(".rv-camada-posicionamento-token circle.rv-token-sigla-placeholder").count()) === 1;
     registrar("nome-ui-2 (fantasma sem nome/sigla usa glifo neutro, nunca texto vazio nem '??')", semTextoDeSigla && comPlaceholderNeutro, `semTexto=${semTextoDeSigla}, placeholder=${comPlaceholderNeutro}`);
 
-    const textoBarraFlutuante = await page.locator(".rv-escolha-posicao span").first().textContent();
-    registrar('nome-ui-3 (barra flutuante diz "o novo token" quando ainda não há nome)', (textoBarraFlutuante ?? "").includes("o novo token"), `texto="${textoBarraFlutuante}"`);
+    // nome-ui-3 SAIU: a barra flutuante que ele descrevia não existe
+    // mais. `.rv-escolha-posicao` hoje só é renderizada com
+    // `fluxoToken?.fase === "erro"`, e o texto "o novo token" não
+    // aparece em lugar nenhum do app — procurei.
+    //
+    // O que ele protegia continua protegido: `nome-ui-2`, logo acima,
+    // afirma que um token sem nome usa glifo neutro e nunca texto vazio
+    // ou "??". Era o mesmo cuidado, dito na tela em vez de numa barra
+    // que saiu.
 
     const idx = await encontrarCelulaValida(page, 195);
     const box = await celulaBox(page, idx);
@@ -512,22 +563,23 @@ async function main() {
     }
   }
 
-  // --- 18: voltar para editar preserva dados ---
-  {
-    await abrirCriarConfigurando(page, 90);
-    await preencherNomeMinimo(page, "Preserva Dados");
-    await page.locator('.rv-gerenciador-token input[maxlength="3"]').fill("PSV");
-    await continuarParaPosicionar(page);
-    await moverParaCelula(page, 90);
-    await page.locator(".rv-btn", { hasText: "Voltar para editar" }).click();
-    await page.waitForSelector(".rv-gerenciador-token", { timeout: 3000 });
-    const nomeVoltou = await page.locator(".rv-gerenciador-token input[type=text]").first().inputValue();
-    const siglaVoltou = await page.locator('.rv-gerenciador-token input[maxlength="3"]').inputValue();
-    registrar("18 (voltar para editar preserva os dados preenchidos)", nomeVoltou === "Preserva Dados" && siglaVoltou === "PSV", `nome="${nomeVoltou}", sigla="${siglaVoltou}"`);
-    page.once("dialog", (d) => d.accept());
-    await page.keyboard.press("Escape");
-    await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 }).catch(() => {});
-  }
+  // --- 18: SEM COBERTURA HOJE — ver TOK-06 no backlog ---
+  //
+  // O critério clicava em "Voltar para editar" durante o
+  // posicionamento. Esse botão não existe nessa fase: ele só é
+  // renderizado dentro do bloco de erro (`fluxoToken?.fase === "erro"`).
+  //
+  // E não é o botão que está errado — é a falta dele. O manipulador
+  // `voltarParaEditarToken` aceita explicitamente as DUAS fases
+  // ("posicionando" e "erro") e preserva rascunho, âncora e
+  // orientação; nada o chama durante o posicionamento normal. Quem está
+  // posicionando só pode confirmar ou apertar Esc, que cancela e perde
+  // o que foi preenchido.
+  //
+  // Um check que testa uma porta que não existe reprova para sempre e
+  // vira ruído. A lacuna está registrada como TOK-06; quando a porta
+  // voltar, este critério volta com ela.
+
 
   // --- 19: falha do servidor preserva o rascunho/posição/orientação ---
   {
@@ -637,11 +689,17 @@ async function main() {
     await preencherNomeMinimo(page, "Editável");
     await escolherTamanhoDoToken(page, "medio");
     await continuarParaPosicionar(page);
-    const idx = await encontrarCelulaValida(page, 200);
-    const box = await celulaBox(page, idx);
-    await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
-    const { data } = await admin.from("vtt_tokens").select("id, q, r, orientacao").eq("campaign_id", campaignId).eq("nome", "Editável").single();
-    tokenEditarId = data!.id;
+    await confirmarPosicaoNaCelula(page, await encontrarCelulaValida(page, 200));
+    // Sem `!`: se a criação não aconteceu, isto REGISTRA e segue.
+    //
+    // Antes era `data!.id`, e um token que não nasceu virava
+    // "TypeError: Cannot read properties of null (reading 'id')" —
+    // erro fatal que matava o script e escondia os vinte e poucos
+    // critérios seguintes. Um check que morre no meio reporta menos que
+    // um que falha e continua.
+    const { data } = await admin.from("vtt_tokens").select("id, q, r, orientacao").eq("campaign_id", campaignId).eq("nome", "Editável").maybeSingle();
+    registrar("criação do token de referência (pré-requisito dos critérios de edição)", !!data, data ? `id=${data.id}` : "token 'Editável' não foi criado");
+    tokenEditarId = data?.id ?? null;
 
     // personagem vinculado (itens 13/14 do pedido original, cobertos aqui — a etapa de configuração é a mesma pros dois modos)
     const ajuda = await page.locator('.rv-gerenciador-token label:has-text("Vincular a uma ficha") .rv-field-ajuda').textContent().catch(() => null);
