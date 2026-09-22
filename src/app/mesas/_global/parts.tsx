@@ -60,7 +60,13 @@ export function campaignCoverStyle(id: string): CSSProperties {
   const posY = 20 + ((h >> 3) % 60);
   const scale = 130 + ((h >> 6) % 60);
   return {
-    backgroundImage: `linear-gradient(140deg, ${campaignAccent(id)}, rgba(7,9,15,0.1)), url('/brand/app-hud.png')`,
+    // `.jpg`, não `.png`: o arquivo em `public/brand/` sempre foi
+    // `app-hud.jpg`, e os outros dois lugares que usam essa textura
+    // (`app.css`, `mesa.css`) já pediam a extensão certa. Só aqui pedia
+    // `.png` — a textura não carregava nos cards de campanha, e cada
+    // render deixava um 404 no console. Achado por um check que
+    // afirmava "console sem erros" e vinha reprovando por isto.
+    backgroundImage: `linear-gradient(140deg, ${campaignAccent(id)}, rgba(7,9,15,0.1)), url('/brand/app-hud.jpg')`,
     backgroundSize: `auto, ${scale}% auto`,
     backgroundPosition: `center, ${posX}% ${posY}%`,
   };

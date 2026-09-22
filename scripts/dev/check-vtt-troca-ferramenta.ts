@@ -133,7 +133,14 @@ async function main() {
     await abrirCriarConfigurando(page, 40);
     await continuarParaPosicionar(page, "Troca Botão");
     await page.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Medir"]').click();
-    const aindaPosicionando = await page.locator(".rv-escolha-posicao").count();
+    // O sinal de "ainda posicionando" é a CAMADA NO MAPA, não a barra.
+    //
+    // Era `.rv-escolha-posicao`, que hoje só é renderizada com
+    // `fluxoToken?.fase === "erro"` — no caminho normal ela nunca
+    // existe, então a contagem dava zero tanto com o posicionamento
+    // vivo quanto cancelado. O critério não conseguia distinguir os
+    // dois estados que ele existe para distinguir.
+    const aindaPosicionando = await page.locator(".rv-camada-posicionamento-token").count();
     const ferramentaAtiva = await page.locator('.rv-ferramentas .rv-ferr-btn[aria-pressed="true"]').getAttribute("aria-label");
     const { data: naoCriado } = await admin.from("vtt_tokens").select("id").eq("campaign_id", campaignId).eq("nome", "Troca Botão");
     registrar(
@@ -149,7 +156,7 @@ async function main() {
     await abrirCriarConfigurando(page, 55);
     await continuarParaPosicionar(page, "Troca Teclado");
     await page.keyboard.press("d"); // atalho de Marcar
-    const aindaPosicionando = await page.locator(".rv-escolha-posicao").count();
+    const aindaPosicionando = await page.locator(".rv-camada-posicionamento-token").count();
     const ferramentaAtiva = await page.locator('.rv-ferramentas .rv-ferr-btn[aria-pressed="true"]').getAttribute("aria-label");
     const { data: naoCriado } = await admin.from("vtt_tokens").select("id").eq("campaign_id", campaignId).eq("nome", "Troca Teclado");
     registrar(
@@ -167,7 +174,7 @@ async function main() {
     // "Interagir" já é a ferramenta ativa (setada logo acima) — pressionar "v" de novo não deve cancelar.
     await page.keyboard.press("v");
     await page.waitForTimeout(200);
-    const aindaPosicionando = await page.locator(".rv-escolha-posicao").count();
+    const aindaPosicionando = await page.locator(".rv-camada-posicionamento-token").count();
     const ferramentaAtiva = await page.locator('.rv-ferramentas .rv-ferr-btn[aria-pressed="true"]').getAttribute("aria-label");
     registrar(
       "3 (atalho da ferramenta já ativa não cancela o posicionamento)",
@@ -198,7 +205,7 @@ async function main() {
     await page.keyboard.press("e");
     await page.waitForTimeout(150);
     const orientacaoDepois = await page.locator(".rv-camada-posicionamento-token").getAttribute("data-orientacao");
-    const aindaPosicionando = await page.locator(".rv-escolha-posicao").count();
+    const aindaPosicionando = await page.locator(".rv-camada-posicionamento-token").count();
     registrar(
       "5 (Q/E rotaciona o fantasma sem trocar de ferramenta nem cancelar)",
       orientacaoAntes !== orientacaoDepois && aindaPosicionando === 1,
