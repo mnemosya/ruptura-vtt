@@ -641,6 +641,23 @@ Os 35 checks `check-vtt-*` foram passados um a um. **Todos verdes.** Os números
 | `janelas-ferramenta` | morria numa janela que não existe mais | **todas as janelas** |
 | `arquivo-e-duplicacao` | 10 ok e morria depois de imprimir o veredito | **27 ok** |
 
+#### A família "AO VIVO", e por que ela rende mais
+
+Cinco checks em 2026-09-22 — `mesa`, `sessao`, `ficha`, `cena`, `combate` —, **45 critérios**, **três defeitos de produto** encontrados: RT-01 (terreno não chegava), o 404 da textura dos cards, e RT-03 (imagem de cena não chegava). Todos corrigidos.
+
+Comparar com o bloco de reparo logo abaixo é o argumento inteiro: ~70 reparos de suíte antiga renderam dois defeitos; 45 critérios novos renderam três.
+
+**A regra que todos seguem**, e é ela que faz a diferença:
+
+- duas sessões de VERDADE, com contas distintas;
+- **nenhum reload** depois que as duas abrem — recarregar mede persistência por SSR, não entrega ao vivo, e foi assim que o RT-01 passou por verde durante meses;
+- toda espera é por CONDIÇÃO, com o relógio como teto e não como medida;
+- o primeiro critério é sempre "o canal assinou sem recusa do servidor" — sem isso, todo o resto falha por consequência, e saber disso primeiro é a diferença entre um diagnóstico e cinco sintomas soltos.
+
+**Os critérios de SIGILO têm duas metades de propósito** — "chega a quem pode ver" E "não chega a quem não pode". A segunda sozinha passa verde com a encanação inteira quebrada: enquanto o RT-03 estava de pé, "o jogador não viu a imagem oculta" era verdade porque ele não via imagem nenhuma. Hoje há dois desses: a imagem oculta (`cena`) e a condição de um token que a pessoa não controla (`combate`).
+
+**Lacunas que ficam, para quem for escrever o sexto:** o fluxo de ataque com dano aplicado de ponta a ponta, a regra consultiva de movimento vista dos dois lados, e o compêndio/bando.
+
 **O que o bloco inteiro rendeu em defeito de produto: dois.** O 404 da textura dos cards de campanha (`parts.tsx` pedia `.png` num arquivo `.jpg`) e o cartão de hover cobrindo a alça de rotação (CART-01). O resto foi teste envelhecido.
 
 **As causas, agrupadas** — vale mais que a lista de scripts, porque elas se repetem:
