@@ -432,81 +432,27 @@ O mesmo erro sai com `campaign_id`, então não é a coluna — é a tabela. As 
 
 **Risco que fica registrado, e ainda não endereçado:** um canal único com nove ligações de `postgres_changes` é frágil por construção — qualquer ligação futura que o Realtime recuse volta a derrubar tudo, em silêncio. Vale separar por assunto, ou pelo menos afirmar num check que o canal assinou sem erro. Fica como candidato a tarefa própria.
 
-### ALCA-01 — `check-vtt-alca-rotacao` verifica a coluna errada
+### ALCA-01 — `check-vtt-alca-rotacao` verificava a coluna errada
 
-- **Status:** Bloqueada (decisão: reescrever ou aposentar)
-- **Prioridade sugerida:** P2 — não há defeito de produto aqui; o custo é 54 critérios sem cobertura real.
-- **O que acontece:** o check afirma, em 54 critérios, que a alça de rotação muda `orientacao` (a FORMA da pegada). Ela não muda mais.
+- **Status:** Pronta (reescrito em 2026-09-21; 3 critérios seguem falhando por outra causa)
 
-**Medido (2026-09-21):** depois de um clique na alça, `orientacao=0` (intocada) e `direcao=1`. A revisão sobe, o que faz parecer que a rotação foi salva e revertida — o sintoma mais cruel possível.
+**O que era.** O check afirmava, em 54 critérios, que a alça muda `orientacao` (a FORMA da pegada). Medido: depois de um clique, `orientacao=0` intacta e `direcao=1`. A revisão sobe, o que fazia parecer rotação salva e revertida.
 
-**Por que mudou, e a mudança é boa:** a alça hoje chama `apontar_vtt_token` e mexe em `direcao` (o olhar). Girar a FORMA virou ação de menu (`girarFormaDoToken` → `rotacionar_vtt_token`), e o motivo está escrito em `VttClient.tsx`: *"mudar a forma muda as células ocupadas e pode esbarrar em terreno ou noutro token. É por isso que ela ficou FORA da alça e virou ação de menu — ali a recusa é uma resposta legítima, e não uma surpresa no meio de um gesto contínuo."*
+**Decisão do usuário:** reescrever, não aposentar — a cobertura de undo/redo por gesto, teclado e alvo de toque não existe em nenhum outro lugar.
 
-**O mesmo já apareceu em `check-vtt-pegada-reparo`** (critérios R1a e R4), onde foi corrigido para `direcao` — lá eram dois critérios, aqui são 54.
+**O que a reescrita fez:**
 
-**A decisão:**
-1. **Reescrever para `direcao`.** O resto do arquivo é bom e vale reaproveitar: uma RPC por gesto, undo/redo como operação única, teclado, toque, alvo exato — tudo isso vale igual para `direcao`. São 88 referências a `orientacao` para revisar uma a uma, e algumas são legitimamente sobre a forma (o `data-orientacao` da camada de prévia), então não é find/replace.
-2. **Aposentar**, já que `pegada-reparo` cobre o essencial do apontar. Perde-se a cobertura de undo/redo e toque na alça.
+1. Toda leitura do resultado do gesto passou para `direcao`, inclusive as escritas diretas que simulam "alguém mudou por fora". O halo lê `token.direcao` (`orientacaoExibida` em `MapaHex`), então é essa coluna que ele reflete.
 
-Recomendação: (1), quando houver tempo — a cobertura de undo/redo por gesto não existe em nenhum outro lugar.
+2. **Seis critérios foram APOSENTADOS**, e não por ajuste de coluna: a alça **não tem mais estado inválido**. `MapaHex` monta o gesto com `valida: true` fixo, ao iniciar e a cada passo, e o comentário ao lado diz por quê — *"Nunca vermelho: virar não pode ser recusado"*. Eram os critérios de prévia inválida por colisão (10/10b), por borda (11/11b) e por terreno bloqueado (12/12b). Girar a FORMA continua podendo ser recusado, mas isso é ação de menu e quem cobre é `check-vtt-pegada-reparo`.
 
-- **Andamento:** o check já foi reparado no que era alcance de ponteiro (ele selecionava o token ANTES de garantir que estava na tela, e por isso morria com 5 critérios). Hoje roda até o fim: **34 ok, 20 falhas**, e as 20 são todas desta causa.
+3. O critério 22-9 parou de **refazer a conta do produto**. Ele derivava o alvo como "origem + 2 passos" e comparava com o ângulo do halo; quando os dois discordavam não dava para saber quem errou. Agora lê `aria-valuenow` da alça — que é o que o app diz estar desenhando — e compara com isso.
 
-### RT-02 — Realtime da ficha morto pelo mesmo motivo do RT-01
+4. `girarPorTecla` passou a devolver `gravou`. O teto de espera era 5s e, ao estourar, a função devolvia valores velhos calada: a comparação falhava com "revisão 3→3", que parece tecla ignorada pelo produto e era o teste desistindo de esperar.
 
-- **Status:** Pronta (concluída — 2026-09-21)
-- **Prioridade:** era P1.
+**Resultado:** de 34 ok / 20 falhas para **43–46 ok / 2–5 falhas**, oscilando entre execuções.
 
-**Encontrado pelo `check-ficha-ao-vivo` na PRIMEIRA execução dele.** O canal do personagem era recusado pelo servidor:
-
-> `realtime:character:<id>` — `Unable to subscribe to changes with given parameters. [event: UPDATE, schema: public, table: characters, filters: [{"id","eq",...}]]`
-
-**Mesma causa do RT-01, outra tabela.** O Realtime recusa qualquer filtro em `characters` — a coluna existe, a tabela está publicada e tem replica identity FULL, o que aponta para o cache de esquema do serviço e não para o schema do banco. E a recusa mata o canal inteiro em silêncio: chega como frame `system` no WebSocket, o cliente não lança nada, e a ficha segue com cara de saudável enquanto deixa de sincronizar.
-
-**Duas assinaturas afetadas**, as duas corrigidas em `src/lib/realtime/tableRealtime.ts`: a do personagem (`id=eq.`) e a de todos os personagens da campanha (`campaign_id=eq.`). As duas perderam o filtro do servidor e passaram a recortar no cliente.
-
-**Validado:** com a correção revertida, o check vai de 8 ok para 6 ok e 2 falhas, e o critério 1b aponta a recusa com o texto do servidor.
-
-**O que isso diz sobre o RT-01:** não era um caso isolado. **Toda assinatura de `postgres_changes` com filtro neste projeto é suspeita**, e o modo de falha é sempre o mesmo — silencioso, e derruba o canal inteiro junto. Vale uma varredura: hoje há filtros em `vtt_terrain`, `vtt_marks`, `vtt_measurements`, `vtt_areas`, `vtt_objects`, `vtt_object_cells`, `vtt_scenes`, `vtt_turn_tracks`, `vtt_campaign_stage`, `vtt_player_scene_assignments` e `character_controllers`. Os checks de mesa e ficha ao vivo cobrem os canais que eles usam; os demais não têm ninguém olhando.
-
-### CON-05 — Controles presos atrás do Console
-
-- **Status:** Pronta (concluída — 2026-09-21)
-
-**O que era.** Em `/ficha` o Console abre automaticamente por cima, e a ficha antiga continuava montada embaixo: **18 controles interativos cobertos**, entre eles "Salvar personagem" — em (440,413), dentro da área do Console. Era preciso fechar a ficha para salvar a ficha, e nada avisava que havia mudança pendente.
-
-**Correção de um engano registrado aqui antes:** esta entrada dizia que a faixa de status aparecia atrás "na página de personagens". Não era só ali. Ela vive em `CharacterSheetClient`, que renderiza em **todas** as entradas — a rota direta `/ficha` e a modal interceptada que abre dentro da mesa usam o MESMO `FichaPageContent`.
-
-**O que foi feito.** A ficha antiga inteira passou a renderizar só em `mode === "dev"`: as abas, o cabeçalho, a legenda (que ainda dizia *"Edição é local até clicar em Salvar personagem"*, falso desde o autosave), a faixa de sincronização, o aviso de erro de gravação, o banner de auto-heal.
-
-**O retorno que a faixa dava não foi perdido — mudou de lugar.** `ConsoleApi` ganhou `gravacao: { estado, erro }`, e o `GravacaoChip` mora na barra de título do Console. Ele é CALADO no caminho feliz de propósito: um selo permanente de "salvo" vira ruído e deixa de ser lido justamente quando muda. O que precisa chamar atenção é a falha.
-
-**Medido depois:** zero controles da página antiga cobertos (os 3 que o detector ainda acusa são botões do PRÓPRIO Console, `rc-nres-btn`); autosave em 175ms; console do navegador limpo; três checks ao vivo verdes (28 critérios). Com a gravação forçada a falhar, o Console mostra **"não salvou"**, com o motivo no `title`.
-
-**O que NÃO saiu, de propósito:** o diálogo de conflito remoto (`pendingRemoteCharacter`). Ele não é "a página velha" — é a escolha que a pessoa precisa fazer quando a mesa mudou o personagem enquanto ela editava, e some-lo devolveria sobrescrita silenciosa.
-
-**Fora de escopo, registrado a pedido:** "Talentos nem existe mais" — a seção saiu junto e não precisa de porta no Console.
-
-### TOK-06 — "Voltar para editar" não existe durante o posicionamento
-
-- **Status:** Pronta (é acrescentar a porta; o motor já existe)
-- **Prioridade sugerida:** P2 — perda de trabalho pequena, mas evitável e já prevista no código.
-
-**O que acontece.** Ao criar um token, depois de "Continuar para posicionar" a pessoa só tem duas saídas: confirmar a posição, ou **Esc**, que cancela tudo e perde o que ela preencheu (nome, sigla, tamanho, vertente, PV…). Não há como voltar ao formulário.
-
-**E a capacidade existe.** `voltarParaEditarToken` (`VttClient.tsx`) aceita explicitamente as duas fases:
-
-```
-if (!f || (f.fase !== "posicionando" && f.fase !== "erro")) return f;
-```
-
-…e o comentário dele descreve o comportamento pretendido: *"reabre o formulário com os dados do rascunho preservados, e lembra a âncora/orientação já escolhidas (se houver) pra devolver ao continuar de novo. 'Continuar retorna ao posicionamento' (pedido explícito) — nunca reseta o progresso."*
-
-**Falta só quem o chame.** O único chamador é um botão dentro do bloco `fluxoToken?.fase === "erro"` — ou seja, a porta só aparece quando o servidor recusa a posição. No caminho feliz ela não existe.
-
-**Onde encaixar é decisão de desenho:** a barra que hospedava esse botão (`.rv-escolha-posicao`) virou exclusiva do erro. Voltar a mostrá-la durante o posicionamento é uma opção; pôr o botão em outro lugar é outra.
-
-**Encontrado por:** o critério 18 de `check-vtt-gerenciador-token-ux`, que clicava nesse botão e reprovava. O critério foi aposentado com um comentário apontando para cá — um check que testa uma porta inexistente reprova para sempre e vira ruído.
+**O que falta, e não é coluna:** três critérios de mecânica de gesto — o 8 (vários ângulos antes de soltar), o 22-9 (a prévia não muda durante o arrasto: medido `prévia=1, origem=1`, com o halo concordando corretamente com ela) e o 22-15/16 (hover disparando requisição). A oscilação entre execuções sugere que parte é tempo, não comportamento.
 
 ### TEST-01 — Inventariar e reparar os checks defasados
 
