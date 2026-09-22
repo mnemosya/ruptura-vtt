@@ -229,8 +229,22 @@ async function main() {
       undefined, { timeout: 15000 },
     );
     criterio("a pasta some", (await nomesPastas(page)).length === 0);
-    criterio("e a cena que estava dentro voltou para a raiz",
-      (await nomesCenas(page)).includes("Torre do Sino"), (await nomesCenas(page)).join(" | "));
+    // EXCLUIR A PASTA APAGA AS CENAS DE DENTRO — e isso é o desenho,
+    // não um efeito colateral.
+    //
+    // O critério antigo esperava que a cena "voltasse para a raiz".
+    // `delete_vtt_scene_folder` faz outra coisa, de propósito: apaga as
+    // cenas da pasta e poupa APENAS o palco, que sobe para a pasta-mãe
+    // ("O PALCO é poupado e sobe pro pai da pasta apagada"). Há até uma
+    // guarda que recusa a exclusão se ela apagaria a última cena
+    // utilizável da campanha.
+    //
+    // É por isso que a confirmação pede o NOME da pasta digitado: a
+    // ação é destrutiva. Um critério que espera preservação estaria
+    // dando à pessoa a impressão oposta da verdadeira.
+    const cenasDepois = await nomesCenas(page);
+    criterio("e a cena que estava dentro foi apagada junto (ação destrutiva, por desenho)",
+      !cenasDepois.includes("Torre do Sino"), cenasDepois.join(" | "));
 
   } finally {
     await ctx.close().catch(() => {});

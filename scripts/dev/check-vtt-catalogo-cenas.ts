@@ -293,9 +293,18 @@ async function main() {
     await page.locator('[data-testid="cena-nova-do-zero"]').click();
     await page.locator('[data-testid="cena-nova-nome"]').fill("Cena Que Não Nasce");
     await page.locator('[data-testid="cena-nova-confirmar"]').click();
+    // O erro aparece NA FOLHA de nova cena, não no catálogo.
+    //
+    // O check esperava `cenas-erro`, que é o estado de erro do
+    // CATÁLOGO (recarregar a lista falhou). A rejeição ao criar cai em
+    // `setErroNova`, e isso é desenhado em dois lugares: dentro da
+    // folha (`.rv-cena-estado[data-tipo="erro"]`) e como aviso
+    // flutuante (`.rv-gav-erro-flutuante`). Esperar o elemento errado
+    // fazia um `catch` que existe e funciona parecer ausente.
+    const alvoErro = '.rv-gav-erro-flutuante, .rv-cena-estado[data-tipo="erro"], [data-testid="cenas-erro"]';
     let erroVisivel = false;
     try {
-      await page.waitForSelector('[data-testid="cenas-erro"]', { timeout: 10000 });
+      await page.waitForSelector(alvoErro, { timeout: 10000 });
       erroVisivel = true;
     } catch { /* segue como falha */ }
     criterio("a rejeição vira mensagem na janela", erroVisivel);
