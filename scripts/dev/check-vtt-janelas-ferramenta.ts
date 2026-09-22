@@ -37,7 +37,16 @@ const JANELAS: { nome: string; tecla: string; rotulo: string; botao?: string; se
   { nome: "rodadas", tecla: "r", rotulo: "Ferramenta Rodadas" },
   { nome: "marcar", tecla: "d", rotulo: "Ferramenta Marcar" },
   { nome: "camadas", tecla: "", rotulo: "Camadas do mapa", botao: "Camadas do mapa" },
-  { nome: "cena", tecla: "", rotulo: "Configurações da cena", botao: "Configurações da cena" },
+  // "Configurações da cena" SAIU — a janela não existe mais, e o que
+  // ela fazia (renomear, tamanho, camadas) mora hoje no cartão da cena
+  // dentro do catálogo. `VttClient` registra a saída ao explicar de
+  // onde veio o aviso de encolher: "veio da janela 'Configurações da
+  // Cena', que saiu".
+  //
+  // Enquanto a linha ficou aqui, o check clicava num botão inexistente,
+  // esperava 30s e morria — levando junto as janelas listadas depois
+  // dela, que existem e funcionam. Um alvo morto numa lista não é
+  // neutro: ele mata os vizinhos.
   { nome: "token", tecla: "", rotulo: "", botao: "Adicionar token", seletor: '.rv-janela-token' },
 ];
 

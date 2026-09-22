@@ -538,6 +538,9 @@ Os 35 checks `check-vtt-*` foram passados um a um. **Todos verdes.** Os números
 | `rolagem-real` | morria no clique do token | **17 ok** |
 | `sincronizacao-live` | morria no primeiro vínculo | **30 ok** |
 | `troca-ferramenta` | 13 ok, 2 falhas | **15 ok** |
+| `apresentar-cena` | morria no bloco de cena | **13 ok** |
+| `dividir-grupo-ui` | idem | **20 ok** |
+| `janelas-ferramenta` | morria numa janela que não existe mais | **todas as janelas** |
 
 **O que o bloco inteiro rendeu em defeito de produto: dois.** O 404 da textura dos cards de campanha (`parts.tsx` pedia `.png` num arquivo `.jpg`) e o cartão de hover cobrindo a alça de rotação (CART-01). O resto foi teste envelhecido.
 
@@ -547,7 +550,8 @@ Os 35 checks `check-vtt-*` foram passados um a um. **Todos verdes.** Os números
 2. **Corrida de leitura.** Ler o banco no instante seguinte ao clique que dispara a escrita. Quando perdida, produz "linhas=0" ou `null`, que se lê como "o produto não gravou".
 3. **Assinatura de RPC que mudou** e foi DERRUBADA em vez de sobrecarregada (0129, 0132) — de propósito, porque duas funções de mesmo nome com aridades diferentes já quebrou `move_vtt_token` na 0094/0096.
 4. **Seletor de peça que mudou de forma** — e, nos casos mais interessantes, de DESENHO: `.rv-escolha-posicao` que só existe no caso de erro, o HUD de token selecionado que virou cartão de hover, os "módulos" do cartão de rolagem que viraram faixa de resultado.
-5. **Critério que defendia uma decisão revogada.** A confirmação por nome ao excluir cena (removida na 0132), a preservação da cena ao apagar pasta (invertida na 0129), a barra de PV no token (removida porque vazava recurso não-público), "zero requisições no hover" (o cartão passou a ler recursos de propósito). Nestes o conserto certo é aposentar ou reescrever, nunca fazer o produto voltar.
+5. **Alvo morto numa LISTA.** `janelas-ferramenta` percorria as janelas uma a uma e "Configurações da cena" já não existe (o que ela fazia mora no cartão do catálogo). O check clicava num botão inexistente, esperava 30s e morria — levando junto as janelas listadas DEPOIS dela, que funcionam. Um alvo morto numa lista não é neutro: ele mata os vizinhos.
+6. **Critério que defendia uma decisão revogada.** A confirmação por nome ao excluir cena (removida na 0132), a preservação da cena ao apagar pasta (invertida na 0129), a barra de PV no token (removida porque vazava recurso não-público), "zero requisições no hover" (o cartão passou a ler recursos de propósito). Nestes o conserto certo é aposentar ou reescrever, nunca fazer o produto voltar.
 
 #### Triagem parcial anterior (12 de 66) — amostra enviesada, mantida como registro
 

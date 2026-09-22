@@ -205,7 +205,8 @@ async function main() {
   // antiga.
   const pontoAncora = await garantirAlcancavel(page, () =>
     pontoMundoParaTela(page, hexParaPixel({ q: 8, r: 7 }, TAM)));
-  registrar("2a0 (a âncora do token está livre do painel da sessão)", pontoAncora !== null);
+  registrar("2a0 (a âncora do token está livre do painel da sessão)", pontoAncora !== null,
+    pontoAncora ? `x=${Math.round(pontoAncora.x)}, y=${Math.round(pontoAncora.y)}` : "coberta ou fora da viewport");
   await page.mouse.click(pontoAncora!.x, pontoAncora!.y);
   await page.waitForFunction(
     (tid) => !!document.querySelector(`.rv-token[data-token-id="${tid}"].is-sel`),
