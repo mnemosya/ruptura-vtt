@@ -519,6 +519,36 @@ Os que passam se concentram no que foi escrito ou reparado recentemente, mais os
 
 **Resíduo:** matar script antes da limpeza dele deixa conta e campanha no banco. `scripts/dev/varrer-residuo-de-teste.ts` varre (lista sem `--apply`), identificando fixture pelo domínio reservado `@ruptura.dev` e ignorando o que tem menos de 20 minutos. Ao ser criada, a varredura encontrou **25 contas e 9 campanhas órfãs**, a mais antiga de julho — o problema que `limparCampanhaDeTeste.ts` documenta continuava acontecendo.
 
+#### O bloco VTT, fechado (2026-09-21 e 22)
+
+Os 35 checks `check-vtt-*` foram passados um a um. **Todos verdes.** Os números, pros que estavam quebrados:
+
+| check | antes | depois |
+|---|---|---|
+| `alca-rotacao` | 43–46 ok, 2–5 falhas (oscilando) | **48 ok** |
+| `camadas-visuais` | não rodava | **22 ok** |
+| `ciclo-cena` | 32 ok, 7 falhas | **38 ok** |
+| `dividir-grupo` | morria no meio | **36 ok** |
+| `gerenciador-token-ux` | parava no critério 15 | **50 ok** |
+| `integracao` | 26 ok, 4 falhas | **32 ok** |
+| `invalidacao-concorrencia` | 7 ok, 2 falhas | **9 ok** |
+| `modal-diagnostico` | morria no primeiro terço | **43 ok** |
+| `painel` | morria no arrasto pra pasta | **75 ok** |
+| `pastas` | 19 ok, 3 falhas | **27 ok** |
+| `rolagem-real` | morria no clique do token | **17 ok** |
+| `sincronizacao-live` | morria no primeiro vínculo | **30 ok** |
+| `troca-ferramenta` | 13 ok, 2 falhas | **15 ok** |
+
+**O que o bloco inteiro rendeu em defeito de produto: dois.** O 404 da textura dos cards de campanha (`parts.tsx` pedia `.png` num arquivo `.jpg`) e o cartão de hover cobrindo a alça de rotação (CART-01). O resto foi teste envelhecido.
+
+**As causas, agrupadas** — vale mais que a lista de scripts, porque elas se repetem:
+
+1. **Enquadramento e sobreposição.** Ponto fora da viewport, ou debaixo do painel da sessão que flutua sobre o mapa. Apareceu em sete checks. Sempre com a mesma assinatura: o gesto acontece sem erro nenhum, no vazio, e o critério seguinte acusa o produto de outra coisa. `scripts/dev/painelDaSessao.ts` existe por causa disso e resolve os dois casos.
+2. **Corrida de leitura.** Ler o banco no instante seguinte ao clique que dispara a escrita. Quando perdida, produz "linhas=0" ou `null`, que se lê como "o produto não gravou".
+3. **Assinatura de RPC que mudou** e foi DERRUBADA em vez de sobrecarregada (0129, 0132) — de propósito, porque duas funções de mesmo nome com aridades diferentes já quebrou `move_vtt_token` na 0094/0096.
+4. **Seletor de peça que mudou de forma** — e, nos casos mais interessantes, de DESENHO: `.rv-escolha-posicao` que só existe no caso de erro, o HUD de token selecionado que virou cartão de hover, os "módulos" do cartão de rolagem que viraram faixa de resultado.
+5. **Critério que defendia uma decisão revogada.** A confirmação por nome ao excluir cena (removida na 0132), a preservação da cena ao apagar pasta (invertida na 0129), a barra de PV no token (removida porque vazava recurso não-público), "zero requisições no hover" (o cartão passou a ler recursos de propósito). Nestes o conserto certo é aposentar ou reescrever, nunca fazer o produto voltar.
+
 #### Triagem parcial anterior (12 de 66) — amostra enviesada, mantida como registro
 
 | script | veredito |
