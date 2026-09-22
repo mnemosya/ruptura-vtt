@@ -69,6 +69,7 @@
 
 import { randomUUID } from "node:crypto";
 import { config as loadDotenv } from "dotenv";
+import { recolherPainelDaSessao, garantirAlcancavel } from "./painelDaSessao";
 import { createClient } from "@supabase/supabase-js";
 import type { ConsoleMessage } from "playwright";
 import { chromium, type BrowserContext, type Page } from "playwright";
@@ -372,11 +373,36 @@ async function main() {
   //     as colunas 0..8 ficam POR BAIXO dela, e o arrasto acontecia na
   //     janela, não no mapa. Era o que derrubava os sete critérios de
   //     Medir de uma vez.
+  // Mesma armadilha do bloco de hints, do outro lado da mesa: o painel
+  // flutua sobre a faixa direita do mapa, e a coluna 18 (o ponto de
+  // partida do 7f) caía debaixo dele. O `mouse.down` acontecia sem erro
+  // e ia pro painel — a régua simplesmente não nascia, e o critério
+  // dizia "medir de novo não funciona", acusando a ferramenta.
+  //
+  // Recolhe ANTES de medir as células: as caixas são lidas logo abaixo
+  // e o recolhimento muda o layout.
+  await recolherPainelDaSessao(jogadorPage);
+
   await jogadorPage.locator('.rv-ferramentas .rv-ferr-btn[aria-label^="Medir"]').click();
   await jogadorPage.waitForSelector('section[aria-label="Ferramenta Medir"]', { timeout: 8000 });
   const celulas = jogadorPage.locator(".rv-camada-grade path");
   const LARGURA_MAPA = 20;
   const idxDe = (col: number, row: number) => row * LARGURA_MAPA + col;
+  // A coluna 18 (ponto de partida do 7f) nascia FORA da viewport:
+  // x≈1348 numa janela de 1280. `mouse.move` é limitado à janela, então
+  // o gesto inteiro acontecia no vazio — sem erro, sem sintoma — e o
+  // critério concluía "medir de novo não funciona", acusando a
+  // ferramenta de um defeito de enquadramento. É a segunda causa
+  // descrita em `painelDaSessao.ts`, e a razão de `garantirAlcancavel`
+  // receber a medição como função: afastar o zoom move tudo, então as
+  // três células precisam ser remedidas DEPOIS.
+  const alcancavel = await garantirAlcancavel(jogadorPage, async () => {
+    const b = await celulas.nth(idxDe(18, 5)).boundingBox();
+    return b ? { x: b.x + b.width / 2, y: b.y + b.height / 2 } : null;
+  });
+  registrar("7.0 (a célula mais à direita cabe na viewport)", alcancavel !== null,
+    "sem isso, todo gesto que começa nela acontece fora da janela");
+
   const boxOrigem = await celulas.nth(idxDe(10, 5)).boundingBox();
   const boxDestino = await celulas.nth(idxDe(14, 5)).boundingBox();
   const boxOutra = await celulas.nth(idxDe(18, 5)).boundingBox();
@@ -479,6 +505,45 @@ async function main() {
       medicoesGravadas.length === 1 && fixaNoMapa,
       `no banco=${medicoesGravadas.length}, camada fixa no mapa=${fixaNoMapa}`,
     );
+    // 7e2 — a régua salva sai com um clique em cima dela, e sai do
+    // banco junto.
+    //
+    // Este critério nasceu de um diagnóstico errado. O 7g reprovava com
+    // "não havia medição em andamento", e a suspeita óbvia era a
+    // ferramenta Medir não conseguir começar duas medições seguidas.
+    // Não era: a régua PERMANENTE que o 7e acabou de gravar ficava
+    // desenhada EXATAMENTE sobre o ponto de onde o 7g começava o
+    // arrasto, e a faixa invisível de clique dela (`pointer-events:
+    // stroke`, 16px, em `MapaHex.tsx`) engolia o `pointerdown` de
+    // propósito — "clicar numa medição salva é apagar, não medir".
+    //
+    // O primeiro arrasto apagava a régua em vez de medir, e o segundo
+    // funcionava. Daí o sintoma ser sempre UM gesto perdido, sempre o
+    // primeiro, e nunca se repetir — o que parecia flakiness e era
+    // determinismo.
+    //
+    // Então o resíduo do 7e vira critério: apagar é uma das coisas que
+    // se espera poder fazer com uma régua fixa, e apagando aqui os
+    // critérios seguintes medem num mapa limpo.
+    await jogadorPage.mouse.move(oX, oY);
+    await jogadorPage.mouse.down();
+    await jogadorPage.mouse.up();
+    const sumiuDoMapa = await jogadorPage.locator(".rv-medicao-fixa")
+      .first().waitFor({ state: "detached", timeout: 5000 })
+      .then(() => true).catch(() => false);
+    let sobrouNoBanco: unknown[] = [];
+    for (let i = 0; i < 40; i++) {
+      const { data } = await admin.from("vtt_measurements").select("id").eq("campaign_id", campaignId);
+      sobrouNoBanco = data ?? [];
+      if (sobrouNoBanco.length === 0) break;
+      await jogadorPage.waitForTimeout(150);
+    }
+    registrar(
+      "7e2 (clicar na régua salva apaga ela — do mapa e do banco)",
+      sumiuDoMapa && sobrouNoBanco.length === 0,
+      `sumiu do mapa=${sumiuDoMapa}, ainda no banco=${sobrouNoBanco.length}`,
+    );
+
     // Volta pra instantânea — os critérios seguintes assumem o padrão.
     await jogadorPage.locator('section[aria-label="Ferramenta Medir"] .rv-fp-seg-btn:has-text("Instantânea")').click();
     await jogadorPage.waitForTimeout(150);
@@ -497,7 +562,14 @@ async function main() {
     await jogadorPage.mouse.move(oX, oY);
     await jogadorPage.mouse.down();
     await jogadorPage.mouse.move(dX, dY, { steps: 8 });
-    await jogadorPage.waitForTimeout(150);
+    // Espera a camada NASCER em vez de olhar uma vez depois de 150ms.
+    // Logo depois do 7f esse intervalo não bastava e o critério dizia
+    // "não havia medição em andamento" — reprovando o Esc por um atraso
+    // que não era dele. Se a camada de fato nunca aparecer, a espera
+    // estoura e o critério reprova igual: esperar por condição não
+    // transforma falha em aprovação, só tira o relógio do meio.
+    await jogadorPage.locator(".rv-camada-medicao").first()
+      .waitFor({ state: "attached", timeout: 3000 }).catch(() => {});
     const emAndamento7g = (await jogadorPage.locator(".rv-camada-medicao").count()) > 0;
     await jogadorPage.keyboard.press("Escape");
     await jogadorPage.waitForTimeout(150);
@@ -736,6 +808,14 @@ async function main() {
   // ainda por vir — então fica registrado aqui em vez de removido de
   // surpresa.
 
+  // O painel da sessão FLUTUA sobre a metade direita do mapa. A hint é
+  // lida com ponteiro de VERDADE (é hover que a dispara), então tudo o
+  // que cair debaixo do painel devolve `null` — sem erro, sem sintoma,
+  // como se a hint não existisse. Era o caso da célula do meio (12e) e
+  // da Van (12f/12g); 12d passava só porque a primeira célula da grade
+  // fica na borda esquerda.
+  await recolherPainelDaSessao(narradorPage);
+
   // 12d — terreno FUNCIONAL persistido (dificil, pintado no critério 4) preserva o texto original.
   {
     const box = await narradorPage.locator(".rv-camada-grade path").first().boundingBox();
@@ -787,9 +867,16 @@ async function main() {
 
   // 12f — objeto/cobertura: conteúdo completo (nome, grau, categoria, PD, danificado, efeito) — mesmo exemplo do pedido original.
   {
-    const van = narradorPage.locator('.rv-camada-objetos .rv-objeto[aria-label="Van de transporte"]');
-    const box = await van.boundingBox();
-    const texto = box ? await lerTooltip(narradorPage, box.x + box.width / 2, box.y + box.height / 2) : null;
+    // A Van também nascia fora da viewport (x≈1348 numa janela de
+    // 1280): `elementFromPoint` no centro dela devolvia nada, o hover
+    // nunca acontecia e a hint vinha `null`. Mesma causa do 7f.
+    const centroDaVan = await garantirAlcancavel(narradorPage, async () => {
+      const b = await narradorPage
+        .locator('.rv-camada-objetos .rv-objeto[aria-label="Van de transporte"]')
+        .boundingBox();
+      return b ? { x: b.x + b.width / 2, y: b.y + b.height / 2 } : null;
+    });
+    const texto = centroDaVan ? await lerTooltip(narradorPage, centroDaVan.x, centroDaVan.y) : null;
     const ok = !!texto
       && texto.includes("Van de transporte")
       && texto.includes("Cobertura maior")
@@ -802,9 +889,13 @@ async function main() {
 
   // 12g — some ao tirar o mouse.
   {
-    const van = narradorPage.locator('.rv-camada-objetos .rv-objeto[aria-label="Van de transporte"]');
-    const box = await van.boundingBox();
-    if (box) await narradorPage.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    const centroDaVan = await garantirAlcancavel(narradorPage, async () => {
+      const b = await narradorPage
+        .locator('.rv-camada-objetos .rv-objeto[aria-label="Van de transporte"]')
+        .boundingBox();
+      return b ? { x: b.x + b.width / 2, y: b.y + b.height / 2 } : null;
+    });
+    if (centroDaVan) await narradorPage.mouse.move(centroDaVan.x, centroDaVan.y);
     await narradorPage.waitForTimeout(150);
     const presenteAntes = (await narradorPage.locator(".rv-tooltip-terreno").count()) > 0;
     await narradorPage.mouse.move(5, 5);
