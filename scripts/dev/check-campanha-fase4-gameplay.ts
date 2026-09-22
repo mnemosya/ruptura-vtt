@@ -392,10 +392,10 @@ async function main() {
         }
       };
       jogadorPage.on("request", capturaReloadMembers);
-      await jogadorPage.locator('[data-testid="session-tab-participantes"]').click();
+      await jogadorPage.locator('[data-testid="painel-aba-participantes"]').click();
       await jogadorPage.waitForTimeout(700);
       jogadorPage.off("request", capturaReloadMembers);
-      await jogadorPage.locator('[data-testid="session-tab-log"]').click();
+      await jogadorPage.locator('[data-testid="painel-aba-chat"]').click();
       await jogadorPage.waitForTimeout(300);
 
       // Um reload cheio da Mesa dispara `reloadMembers` (mount do

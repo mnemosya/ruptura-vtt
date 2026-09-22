@@ -492,6 +492,8 @@ As três viraram JANELAS dentro da mesa, e ali o sistema de design é `rv-*`: a 
 
 **A pergunta de produto:** essas janelas devem conformar a um sistema de design verificável (e a qual), ou o que vale afirmar ali é só comportamento? A resposta muda o que o arquivo deve ser.
 
+**`check-campanha-fase4-gameplay` está no mesmo caso** (5 aprovados, 7 reprovados): ele afirma "Resolver Ataque com controles `rm-*`", "Personagens com pills `rm-*`", a seção "Bando", e navega pra `/mesas/<id>/personagens`. Mesmas três causas — sistema de design que mudou junto com a superfície, seções que viraram janelas, sub-rotas que não existem (os 404 do critério de console são delas). Vale reescrever os dois juntos, com a mesma decisão.
+
 **O que já foi medido, pra quem for reescrever:**
 
 - as janelas ABREM e funcionam — o caminho é o menu da mesa (`button[aria-label="Menu da mesa"]` → `[data-testid="vtt-menu-mesa"]` → o item);
