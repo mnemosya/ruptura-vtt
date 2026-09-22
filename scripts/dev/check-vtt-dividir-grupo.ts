@@ -220,8 +220,11 @@ async function main() {
     await exigirRpc("separar a Alma antes de excluir", narrador.rpc("move_players_to_scene", {
       p_campaign_id: campaignId, p_user_ids: [almaId], p_scene_id: catacumbas,
     }));
+    // `p_nome_confirmacao` saiu em 0132 (a assinatura foi DERRUBADA,
+    // não sobrecarregada), então a chamada antiga não achava função
+    // nenhuma.
     await exigirRpc("excluir as Catacumbas", narrador.rpc("delete_vtt_scene", {
-      p_scene_id: catacumbas, p_nome_confirmacao: "Catacumbas",
+      p_scene_id: catacumbas,
     }));
     const { data: aposExcluir } = await admin.from("vtt_player_scene_assignments")
       .select("user_id").eq("campaign_id", campaignId);

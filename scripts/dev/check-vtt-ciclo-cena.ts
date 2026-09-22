@@ -213,15 +213,25 @@ async function main() {
     criterio("limpou archived_at", restaurada?.archived_at === null);
 
     console.log("\n— Excluir —");
-    await recusa("recusa confirmação errada",
-      narrador.rpc("delete_vtt_scene", { p_scene_id: soMapaId, p_nome_confirmacao: "nome errado" }),
-      "confirmação não corresponde");
+    // A confirmação por nome SAIU em 0132, e a migration explica: ela
+    // nasceu pra uma exclusão que leva conteúdo junto, e continua
+    // valendo em PASTA (0129), onde o gesto destrói o que não está à
+    // vista. Numa cena é atrito sem o mesmo lastro — o alvo é um item
+    // só, à vista no cartão, e quem abriu o menu daquele cartão já
+    // apontou pra ele duas vezes.
+    //
+    // Então o critério "recusa confirmação errada" não foi consertado,
+    // foi APOSENTADO: ele defendia a exigência que a 0132 removeu de
+    // propósito. O que continua sendo testado é onde a proteção real
+    // sempre esteve, e a própria migration diz quais são — só o
+    // narrador exclui, a apresentada não sai debaixo da mesa, e a
+    // última cena utilizável não some.
     await recusa("não exclui a cena apresentada",
-      narrador.rpc("delete_vtt_scene", { p_scene_id: doca, p_nome_confirmacao: "Doca Norte" }),
+      narrador.rpc("delete_vtt_scene", { p_scene_id: doca }),
       "apresentada aos jogadores");
 
     const { error: eDel } = await narrador.rpc("delete_vtt_scene", {
-      p_scene_id: soMapaId, p_nome_confirmacao: "Só o cenário",
+      p_scene_id: soMapaId,
     });
     criterio("exclui com o nome certo", !eDel, eDel?.message ?? "");
     criterio("a cena sumiu",
@@ -232,8 +242,8 @@ async function main() {
     // campanha, e o `finally` apaga tudo por `campaign_id` de qualquer
     // jeito. Por isso ficam sem `exigirRpc` — uma falha aqui não faz
     // asserção nenhuma medir outra coisa.
-    await narrador.rpc("delete_vtt_scene", { p_scene_id: copiaId, p_nome_confirmacao: "Casa de Máquinas (cópia)" });
-    await narrador.rpc("delete_vtt_scene", { p_scene_id: origem, p_nome_confirmacao: "Casa de Máquinas" });
+    await narrador.rpc("delete_vtt_scene", { p_scene_id: copiaId });
+    await narrador.rpc("delete_vtt_scene", { p_scene_id: origem });
 
     console.log("\n— A última cena utilizável —");
     // Esta guarda precisa de uma campanha SEM palco pra ser alcançada, e
@@ -253,7 +263,7 @@ async function main() {
     }).select("id").single();
     try {
       await recusa("não exclui a última cena utilizável",
-        narrador.rpc("delete_vtt_scene", { p_scene_id: unica!.id, p_nome_confirmacao: "Única" }),
+        narrador.rpc("delete_vtt_scene", { p_scene_id: unica!.id }),
         "última cena utilizável");
 
       // E com uma segunda cena, a mesma exclusão passa — a guarda é
@@ -262,7 +272,7 @@ async function main() {
         campaign_id: campanhaSemPalco, nome: "Companhia", largura: 10, altura: 10, ordem: 1, ativa: false,
       });
       const { error: eAgora } = await narrador.rpc("delete_vtt_scene", {
-        p_scene_id: unica!.id, p_nome_confirmacao: "Única",
+        p_scene_id: unica!.id,
       });
       criterio("com uma segunda cena, a mesma exclusão passa", !eAgora, eAgora?.message ?? "");
     } finally {
