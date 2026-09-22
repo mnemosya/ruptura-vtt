@@ -434,7 +434,7 @@ O mesmo erro sai com `campaign_id`, então não é a coluna — é a tabela. As 
 
 ### ALCA-01 — `check-vtt-alca-rotacao` verificava a coluna errada
 
-- **Status:** Pronta (reescrito em 2026-09-21; 3 critérios seguem falhando por outra causa)
+- **Status:** Concluída (reescrito em 2026-09-21; os 3 critérios restantes fechados em 2026-09-22, e um deles era defeito de produto — ver CART-01)
 
 **O que era.** O check afirmava, em 54 critérios, que a alça muda `orientacao` (a FORMA da pegada). Medido: depois de um clique, `orientacao=0` intacta e `direcao=1`. A revisão sobe, o que fazia parecer rotação salva e revertida.
 
@@ -452,7 +452,33 @@ O mesmo erro sai com `campaign_id`, então não é a coluna — é a tabela. As 
 
 **Resultado:** de 34 ok / 20 falhas para **43–46 ok / 2–5 falhas**, oscilando entre execuções.
 
-**O que falta, e não é coluna:** três critérios de mecânica de gesto — o 8 (vários ângulos antes de soltar), o 22-9 (a prévia não muda durante o arrasto: medido `prévia=1, origem=1`, com o halo concordando corretamente com ela) e o 22-15/16 (hover disparando requisição). A oscilação entre execuções sugere que parte é tempo, não comportamento.
+**Os três que faltavam (fechados em 2026-09-22).** A oscilação entre execuções não era tempo — era o cartão de hover:
+
+- **8 e 22-9** tinham a mesma causa, e era **defeito de produto**: o cartão de hover se posicionava em cima da alça de rotação e engolia o `pointerdown`. Está descrito em CART-01. Os dois critérios estavam certos e o produto estava errado; a intermitência vinha de o cartão cobrir ou não a alça conforme a orientação do token no momento.
+- **22-15/16** media a coisa errada. O critério contava requisições de rede durante o hover e exigia zero, mas o cartão passou a LER os recursos do token no instante em que o ponteiro entra, de propósito ("os 420ms de espera do hover viram tempo de rede grátis"). Contar requisição não distingue leitura de escrita. O que o critério existe pra garantir é que passar o mouse não MUDE o token — agora é isso que ele mede, comparando a linha do token antes e depois.
+
+**Resultado final:** 48 ok, 0 falhas, estável em execuções seguidas.
+
+### CART-01 — Cartão de hover cobria a alça de rotação
+
+- **Status:** Concluída (encontrada e corrigida em 2026-09-22)
+- **Prioridade:** era P1.
+
+**O defeito.** A alça de rotação fica além da aresta frontal do token; o cartão de hover é ancorado acima do disco. Quando o token olha pra cima, os dois ocupam o mesmo lugar — e o cartão é HTML `position: fixed` (z-index 60) sobre um mapa em SVG, então ele ganha sempre.
+
+Com o cartão aberto, **girar aquele token com o mouse era impossível**: o `pointerdown` destinado à alça chegava no cartão. E como o cartão tem os botões de PV/PE/Mana, a pressão podia cair num deles e **mudar um recurso no lugar de girar o token**.
+
+A regra já estava escrita em `VttClient` e só não valia para a alça: *"um gesto de mapa tira o cartão da frente na hora: ele é ajuda passiva, nunca obstáculo"*.
+
+**A correção, em três partes** — há dois caminhos até a alça e eles falham diferente:
+
+1. `CartaoTokenHover` não se posiciona mais em cima da alça: já escolhia entre acima/abaixo por espaço de tela, agora também desvia por colisão.
+2. Pousar na alça fecha o cartão. Sem isso, chegar pela alça abria o cartão em cima dela, e o ponteiro passava a estar sobre o cartão — que se mantinha aberto sozinho.
+3. Esse fechamento é imediato. A carência de 200ms existe pra deixar o ponteiro viajar do token até o cartão; num controle que está debaixo dele, 200ms basta pro clique ser comido — foi o que aconteceu na primeira tentativa de conserto.
+
+**Como apareceu.** O critério 8 de `check-vtt-alca-rotacao` dizia "revisão 2→2", que se lê como a RPC de rotação não ter sido chamada. `elementFromPoint` no centro da alça devolvia `rv-cartao-token`.
+
+**Fica registrado, sem tarefa aberta:** nenhum outro controle do mapa foi auditado contra o cartão. A alça foi a que apareceu porque tinha check; marcos de medição, alças de área e o menu contextual ocupam regiões parecidas.
 
 ### TEST-01 — Inventariar e reparar os checks defasados
 

@@ -1026,17 +1026,32 @@ async function main() {
     await page.mouse.move(20, 20);
     await page.waitForTimeout(150);
 
-    // 15/16: zero requisições de rede durante o hover — puramente visual, nenhuma vantagem aplicada sozinha.
-    let requisicoesDuranteHover = 0;
-    const onReq = () => { requisicoesDuranteHover++; };
-    page.on("request", onReq);
+    // 15/16: passar o mouse não APLICA nada — o halo é puramente visual.
+    //
+    // A medição era "zero requisições de rede durante o hover", e ela
+    // parou de dizer a verdade quando o cartão de hover passou a ler os
+    // recursos do token no instante em que o ponteiro entra (de
+    // propósito: "os 420ms de espera do hover viram tempo de rede
+    // grátis"). Essa é uma LEITURA, e contar requisição não distingue
+    // leitura de escrita — o critério reprovava um prefetch enquanto
+    // dizia estar protegendo contra vantagem aplicada sozinha.
+    //
+    // O que ele existe pra garantir é que o hover não MUDE o token.
+    // Isso se mede no token, não no tráfego.
+    const { data: antesHover } = await admin.from("vtt_tokens")
+      .select("direcao, revision, q, r").eq("id", tok.id).single();
     await page.mouse.move(20, 20);
     await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(700); // além dos 420ms do cartão
     await page.mouse.move(20, 20);
-    await page.waitForTimeout(200);
-    page.off("request", onReq);
-    registrar("22-15/16 (hover do halo nunca dispara requisição nenhuma — nenhuma vantagem aplicada automaticamente)", requisicoesDuranteHover === 0, `requisições=${requisicoesDuranteHover}`);
+    await page.waitForTimeout(300);
+    const { data: depoisHover } = await admin.from("vtt_tokens")
+      .select("direcao, revision, q, r").eq("id", tok.id).single();
+    registrar(
+      "22-15/16 (passar o mouse não muda o token — nenhuma vantagem aplicada automaticamente)",
+      JSON.stringify(antesHover) === JSON.stringify(depoisHover),
+      `antes=${JSON.stringify(antesHover)}, depois=${JSON.stringify(depoisHover)}`,
+    );
 
     // 17: o halo nunca intercepta clique/arrasto/teclado da alça — a alça continua girando normalmente com o halo visível.
     // Reload antes — o teste anterior (22-11) deixa um banner de erro
