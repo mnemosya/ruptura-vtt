@@ -94,54 +94,50 @@ async function main() {
     await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
     await page.waitForTimeout(1200);
 
-    // --- 1. Casca HUD presente ---
+    // --- 1. O QUE A CASCA AINDA DESENHA ---
+    //
+    // Este critério pedia a atmosfera inteira: fundo, grade, vinheta,
+    // quatro cantos, decoração e cursor. `CampaignShell` parou de
+    // desenhar quase tudo isso, e explica por quê: a campanha tem UMA
+    // rota, a mesa, e o VTT é `position: fixed; inset: 0` — tudo que a
+    // casca desenhava ficava DEBAIXO dele, "ocupando DOM, recebendo Tab
+    // e sendo anunciado por leitor de tela sem nunca chegar a um
+    // pixel".
+    //
+    // O que ela mantém está listado lá, e é isto que se afirma agora:
+    //
+    //   · `.rm-root`, que é o ESCOPO dos tokens `rm-*`. As janelas que
+    //     vieram das páginas antigas (Conteúdo da campanha, o
+    //     assistente de criação) trouxeram as classes daquela paleta
+    //     junto; sem este escopo, as cores caem no valor inicial. É a
+    //     regressão silenciosa que este critério passa a guardar;
+    //   · o cursor HUD.
+    //
+    // Pedir o resto seria pedir a volta de uma casca que foi apagada de
+    // propósito.
     {
-      const c = await page.evaluate(() => ({
-        root: !!document.querySelector(".rm-root"),
-        bg: !!document.querySelector(".rm-bg-img"),
-        grid: !!document.querySelector(".rm-bg-grid"),
-        vinheta: !!document.querySelector(".rm-bg-vignette"),
-        cantos: document.querySelectorAll(".rm-vp-corner").length,
-        deco: !!document.querySelector(".rm-deco-top .rm-deco-a") && !!document.querySelector(".rm-deco-top .rm-deco-b"),
-        cursor: !!document.querySelector(".ra-cursor-dot") && !!document.querySelector(".ra-cursor-ring"),
-      }));
-      // Sem `scanlines`: o campo de listras horizontais foi removido da
-      // atmosfera dos três níveis (global, campanha, acesso).
-      const ok = c.root && c.bg && c.grid && c.vinheta && c.cantos === 4 && c.deco && c.cursor;
-      registrar("1 (casca HUD completa)", ok, JSON.stringify(c));
+      const c = await page.evaluate(() => {
+        const root = document.querySelector(".rm-root");
+        return {
+          root: !!root,
+          // Prova que o escopo FUNCIONA, não só que a classe existe: um
+          // token `rm-*` precisa resolver dentro dele.
+          tokenResolve: root ? getComputedStyle(root).getPropertyValue("--rm-text").trim() !== "" : false,
+          cursor: !!document.querySelector(".ra-cursor-dot") && !!document.querySelector(".ra-cursor-ring"),
+        };
+      });
+      registrar("1 (a casca mantém o escopo `rm-*` e o cursor HUD)", c.root && c.tokenResolve && c.cursor, JSON.stringify(c));
     }
 
-    // --- 2. Trilho: destinos, aria-current, ausência de aria-selected ---
-    {
-      const t = await page.evaluate(() => ({
-        labels: [...document.querySelectorAll(".rm-navrail-btn")].map((a) => a.getAttribute("aria-label") ?? ""),
-        current: [...document.querySelectorAll('.rm-navrail-btn[aria-current="page"]')].map((a) => a.getAttribute("aria-label")),
-        comAriaSelected: document.querySelectorAll(".rm-navrail-btn[aria-selected]").length,
-        divisores: document.querySelectorAll(".rm-navrail-divider").length,
-      }));
-      const temTodos = DESTINOS_ESPERADOS.every((d) => t.labels.includes(d));
-      const voltaPresente = t.labels.includes("Minhas Campanhas");
-      const ativoCerto = t.current.length === 1 && t.current[0] === "Mesa";
-      const ok = temTodos && voltaPresente && ativoCerto && t.comAriaSelected === 0;
-      registrar(
-        "2 (trilho: destinos + aria-current, sem aria-selected)",
-        ok,
-        `destinos=${t.labels.length}, ativo=${JSON.stringify(t.current)}, aria-selected=${t.comAriaSelected}, divisores=${t.divisores}`,
-      );
-    }
-
-    // --- 3. Livro e Conteúdo da campanha são destinos distintos ---
-    {
-      // Sem funções auxiliares nomeadas dentro de `evaluate`: o esbuild
-      // do tsx injeta um wrapper `__name` que não existe no browser, e o
-      // callback quebra com "ReferenceError: __name is not defined".
-      const r = await page.evaluate(() => ({
-        livro: document.querySelector('.rm-navrail-btn[aria-label="Livro"]')?.getAttribute("href") ?? null,
-        conteudo: document.querySelector('.rm-navrail-btn[aria-label="Conteúdo da campanha"]')?.getAttribute("href") ?? null,
-      }));
-      const ok = !!r.livro && !!r.conteudo && r.livro !== r.conteudo && r.livro.endsWith("/livro") && r.conteudo.endsWith("/biblioteca");
-      registrar("3 (Livro ≠ Conteúdo da campanha)", ok, `livro=${r.livro} | conteúdo=${r.conteudo}`);
-    }
+    // --- 2 e 3 SAÍRAM: o TRILHO de navegação não existe ---
+    //
+    // Eles mediam os destinos do trilho, o `aria-current` do ativo, a
+    // ausência de `aria-selected` (trilho é navegação, não abas), os
+    // divisores, e a distinção entre "Livro" e "Conteúdo da campanha".
+    // O trilho inteiro foi apagado junto com a casca — com oito rotas
+    // ele fazia sentido, com uma não há entre o que navegar. Os
+    // destinos viraram JANELAS dentro da mesa, e quem as abre é o menu
+    // da mesa e o painel, cobertos em `check-vtt-janelas-ferramenta`.
 
     // --- 4. Todo item do trilho tem nome acessível ---
     {
@@ -151,87 +147,29 @@ async function main() {
       registrar("4 (nome acessível em todo item)", semNome === 0, `itens sem aria-label: ${semNome}`);
     }
 
-    // --- 5. Grid reserva a coluna do painel SÓ quando ele existe ---
-    // Atualizado na Fase 3: agora que `layout.tsx` sempre passa
-    // `painelSessao={<SessionPanel />}` de verdade em toda rota real,
-    // "sem painel" deixou de acontecer em produção — o critério 5a
-    // testava justamente essa ausência. A garantia estrutural que
-    // importa agora é a oposta: com o painel presente, a 3ª coluna
-    // aparece com a largura certa (--rm-panel-w) e o conteúdo principal
-    // não fica espremido por conta disso. A lógica CSS de "sem coluna
-    // reservada quando `painelSessao` está ausente" (`:has()` em
-    // mesa.css) continua existindo e intocada — só não há mais rota
-    // real que a exercite. O harness que testava isso
-    // (`check-campaign-shell-drawer.ts`) foi apagado junto com a
-    // superfície: `CampaignShell` "parou de desenhar, e o que desenhava
-    // foi apagado junto: trilho, cabeçalho, dock de turno, fundo
-    // decorativo e painel de sessão".
+    // --- 5 e 6 SAÍRAM com o trilho e o grid da casca ---
     //
-    // Exceção NOVA (correção pedida pelo usuário: "Mesa" virou a VTT):
-    // a VTT suprime `painelSessao` de propósito (tem painel próprio,
-    // `rv-painel`, que o drawer geral só sobrepunha) — navega pra uma
-    // rota comum (`/personagens`) pra testar a asserção que este
-    // critério é sobre ("painel presente → coluna certa"), não a
-    // exceção deliberada da Mesa.
-    await page.goto(`${BASE_URL}/mesas/${campaignId}/personagens`, { waitUntil: "networkidle" });
-    await page.waitForTimeout(400);
-    {
-      const amplo = await page.evaluate(() => ({
-        cols: getComputedStyle(document.querySelector(".rm-shell")!).gridTemplateColumns,
-        temPainel: !!document.querySelector(".rm-shell-panel"),
-        larguraMain: Math.round(document.querySelector(".rm-shell-main")!.getBoundingClientRect().width),
-      }));
-      const colunas = amplo.cols.split(/\s+/);
-      const treColunas = colunas.length === 3;
-      const larguraPainelOk = Math.abs(parseFloat(colunas[2] ?? "0") - 320) < 2;
-      registrar(
-        "5a (amplo: painel real ocupa a 3ª coluna, sem espremer o conteúdo)",
-        treColunas && amplo.temPainel && larguraPainelOk && amplo.larguraMain >= 900,
-        `cols="${amplo.cols}", painel montado=${amplo.temPainel}, main=${amplo.larguraMain}px`,
-      );
+    // O 5 media o GRID de três colunas (trilho | conteúdo | painel) e a
+    // regra de só reservar a coluna do painel quando ele existe. O 6
+    // media o Tab chegando no trilho com `:focus-visible`.
+    //
+    // Não há mais grid nem trilho: `.rm-navrail` e `.rm-shell-main` só
+    // aparecem no CSS e nos boundaries de carregamento; a mesa é o VTT
+    // em tela cheia, com o painel da sessão flutuando sobre ela. O
+    // equivalente de hoje — o painel ocupar seu espaço sem espremer o
+    // mapa, e o teclado alcançar as abas — é afirmado em
+    // `check-vtt-painel` (75 critérios) e em `PainelAbas`, que
+    // implementa tablist com tabindex roving e setas.
 
-      await page.setViewportSize({ width: 1024, height: 800 });
-      await page.waitForTimeout(500);
-      const inter = await page.evaluate(() => ({
-        cols: getComputedStyle(document.querySelector(".rm-shell")!).gridTemplateColumns,
-        larguraMain: Math.round(document.querySelector(".rm-shell-main")!.getBoundingClientRect().width),
-        railVisivel: getComputedStyle(document.querySelector(".rm-navrail")!).display !== "none",
-      }));
-      registrar(
-        "5b (intermediário: trilho mantido, conteúdo com largura útil)",
-        inter.railVisivel && inter.larguraMain >= 720,
-        `cols="${inter.cols}", main=${inter.larguraMain}px, trilho visível=${inter.railVisivel}`,
-      );
-      await page.setViewportSize({ width: 1440, height: 900 });
-      await page.waitForTimeout(400);
-    }
-
-    // --- 6. Teclado: Tab percorre o trilho com foco visível ---
+    // --- 7. A rota da campanha: sem erro de console, sem 404 ---
     {
+      // Eram CINCO rotas ("/personagens", "/bando", "/livro",
+      // "/configuracoes" e a raiz). As quatro primeiras não existem —
+      // viraram janelas dentro da mesa —, e visitá-las produzia 404 de
+      // propósito, o que fazia o critério 7a reprovar por cumprir o
+      // desenho. Sobrou a que existe.
       await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
       await page.waitForTimeout(800);
-      await page.keyboard.press("Tab");
-      const primeiro = await page.evaluate(() => {
-        const el = document.activeElement as HTMLElement | null;
-        return {
-          noTrilho: !!el?.closest(".rm-navrail"),
-          label: el?.getAttribute("aria-label") ?? null,
-          focusVisible: !!el?.matches(":focus-visible"),
-        };
-      });
-      registrar(
-        "6 (teclado alcança o trilho com :focus-visible)",
-        primeiro.noTrilho && primeiro.focusVisible,
-        `foco em "${primeiro.label}", dentro do trilho=${primeiro.noTrilho}, :focus-visible=${primeiro.focusVisible}`,
-      );
-    }
-
-    // --- 7. Rotas da campanha: sem erro de console, sem 404 ---
-    {
-      for (const rota of ["/personagens", "/bando", "/livro", "/configuracoes"]) {
-        await page.goto(`${BASE_URL}/mesas/${campaignId}${rota}`, { waitUntil: "networkidle" });
-        await page.waitForTimeout(500);
-      }
       const unicos404 = [...new Set(naoEncontrados)];
       registrar("7a (sem 404 nas rotas da campanha)", unicos404.length === 0, unicos404.length ? JSON.stringify(unicos404) : "nenhum");
       registrar("7b (console limpo nas rotas da campanha)", erros.length === 0, erros.length ? JSON.stringify(erros.slice(0, 3)) : "nenhum");
