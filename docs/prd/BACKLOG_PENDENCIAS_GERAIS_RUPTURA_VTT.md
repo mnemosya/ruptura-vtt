@@ -572,6 +572,33 @@ Os 35 checks `check-vtt-*` foram passados um a um. **Todos verdes.** Os números
 6. **Alvo morto numa LISTA.** `janelas-ferramenta` percorria as janelas uma a uma e "Configurações da cena" já não existe (o que ela fazia mora no cartão do catálogo). O check clicava num botão inexistente, esperava 30s e morria — levando junto as janelas listadas DEPOIS dela, que funcionam. Um alvo morto numa lista não é neutro: ele mata os vizinhos.
 7. **Critério que defendia uma decisão revogada.** A confirmação por nome ao excluir cena (removida na 0132), a preservação da cena ao apagar pasta (invertida na 0129), a barra de PV no token (removida porque vazava recurso não-público), "zero requisições no hover" (o cartão passou a ler recursos de propósito). Nestes o conserto certo é aposentar ou reescrever, nunca fazer o produto voltar.
 
+#### O bloco NÃO-VTT, triado (62 scripts, 2026-09-22)
+
+Varredura com teto de 200s por script e **veredito pelo código de saída**, não pela linha impressa — a diferença importa: `check-vtt-arquivo-e-duplicacao` imprimia "10 critérios ok, 0 falhas" e morria logo depois, e por duas varreduras passou por verde.
+
+**41 passam · 20 falham · 1 trava.**
+
+Vários dos que "passam" não imprimem `N ok, M falhas` — usam banners próprios. Isso não é problema de veredito (o código de saída resolve), mas atrapalha quem lê a saída no terminal.
+
+Os que falham, agrupados pelo que aparentam:
+
+| grupo | scripts | leitura |
+|---|---|---|
+| casca de campanha / sessão | `campanha-provider-fase1`, `campanha-presence-fase3b`, `campanha-painel-turndock-fase3`, `campanha-wizard-fase6`, `campanha-admin-fase5`, `campanha-casca-fase2`, `campaign-shell-drawer`, `campanha-fase4-gameplay` (trava) | superfícies inteiras que mudaram ou saíram — abas de sessão, dock de turno, wizard. Cada um precisa de decisão própria entre consertar, reescrever e apagar |
+| console da ficha | `console-abertura`, `console-baseline`, `console-rolagem-visual` | o console foi bastante reescrito nesta rodada |
+| resto | `admin-publication`, `dados-lado-direito`, `ficha-mesa-integracao`, `motion`, `realtime-auth-renovacao`, `redesign-densidade`, `replay-vs-remoto` | sem padrão comum aparente |
+
+Já fechados desta lista: `console-modo-evolucao` (**10 ok** — era corrida de leitura, a gravação existia) e `fichaheader-portal-fix` (**15 ok** — ver FICHA-02).
+
+**`check-residuo-de-fixtures` reprova por um motivo legítimo e é a única falha que NÃO é do check:** há resíduo real no banco. Quinze contas `@ruptura.dev` e seis campanhas ficaram para trás de execuções mortas no meio (parte delas desta sessão, ao usar teto de tempo na triagem, que é exatamente o cenário que `varrer-residuo-de-teste.ts` documenta). A varredura existe e está pronta:
+
+```
+npx tsx scripts/dev/varrer-residuo-de-teste.ts            # lista
+npx tsx scripts/dev/varrer-residuo-de-teste.ts --apply    # apaga
+```
+
+Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas campanhas de julho e junho que o próprio check classifica como "arqueologia, não falha", e apagar coisa antiga de um banco alheio não é decisão de quem está só consertando teste.
+
 #### Triagem parcial anterior (12 de 66) — amostra enviesada, mantida como registro
 
 | script | veredito |
