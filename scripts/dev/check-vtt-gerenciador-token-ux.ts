@@ -444,8 +444,19 @@ async function main() {
     // --- 15: posição válida confirma UMA RPC ---
     const box = await celulaBox(page, indiceValido);
     await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
-    const { data: criadosSentinela } = await admin.from("vtt_tokens").select("id").eq("campaign_id", campaignId).eq("nome", "Sentinela Etapas");
-    registrar("15 (posição válida confirma exatamente uma RPC de criação)", (criadosSentinela ?? []).length === 1, `linhas=${(criadosSentinela ?? []).length}`);
+    // O clique DISPARA a criação; ler o banco no instante seguinte é
+    // uma corrida. Perdida, ela reprovava aqui com "linhas=0" e
+    // derrubava tudo o que vem depois — seleção, nome automático,
+    // edição —, porque os critérios seguintes precisam do token que
+    // este bloco cria. Espera a linha existir; se ela nunca existir, a
+    // espera estoura e o critério reprova do mesmo jeito.
+    let criadosSentinela: { id: string }[] = [];
+    await esperarAte(async () => {
+      const { data } = await admin.from("vtt_tokens").select("id").eq("campaign_id", campaignId).eq("nome", "Sentinela Etapas");
+      criadosSentinela = (data ?? []) as { id: string }[];
+      return criadosSentinela.length >= 1;
+    }, 10000);
+    registrar("15 (posição válida confirma exatamente uma RPC de criação)", criadosSentinela.length === 1, `linhas=${criadosSentinela.length}`);
 
     // --- 22: sucesso seleciona o token criado ---
     if (criadosSentinela && criadosSentinela.length === 1) {
@@ -485,8 +496,14 @@ async function main() {
     const box = await celulaBox(page, idx);
     await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
 
-    const { data: criadosAutomaticos } = await admin.from("vtt_tokens").select("nome, sigla").eq("campaign_id", campaignId).like("nome", "#%").order("created_at", { ascending: false }).limit(1);
-    const nomeAutomatico = criadosAutomaticos?.[0]?.nome ?? "";
+    let nomeAutomatico = "";
+    await esperarAte(async () => {
+      const { data } = await admin.from("vtt_tokens").select("nome, sigla")
+        .eq("campaign_id", campaignId).like("nome", "#%")
+        .order("created_at", { ascending: false }).limit(1);
+      nomeAutomatico = data?.[0]?.nome ?? "";
+      return !!nomeAutomatico;
+    }, 10000);
     registrar("nome-ui-4 (servidor gerou um nome '#N' de verdade pro token criado sem nome)", /^#\d+$/.test(nomeAutomatico), `nome="${nomeAutomatico}"`);
 
     // A interface mostra o nome DEFINITIVO devolvido pelo servidor —
@@ -496,11 +513,23 @@ async function main() {
     // da cena, de propósito): quem mostra o nome do token selecionado
     // agora é o HUD da seleção, que a criação já deixa selecionado
     // (critério 22, acima).
-    const nomeNoHud = (await page.locator(".rv-hud-namebar strong").first().textContent().catch(() => null)) ?? "";
+    // O alvo mudou DE NOVO, e por uma boa razão: o HUD de token
+    // selecionado (a faixa fixa na base do palco, `.rv-hud-namebar`)
+    // também não existe mais. Quem mostra nome e recursos hoje é o
+    // CARTÃO DE HOVER, sob a mesma autorização do servidor.
+    //
+    // Então lê-se onde a pessoa lê: passando o mouse no token. E de
+    // quebra confere o `aria-label`, que é por onde quem usa leitor de
+    // tela recebe o mesmo nome — dois caminhos, uma fonte só.
+    const tokenNovo = page.locator(".rv-camada-tokens .rv-token").filter({
+      has: page.locator("text.rv-token-sigla", { hasText: nomeAutomatico.slice(1) }),
+    }).first();
+    const siglaDesenhada = (await tokenNovo.locator("text.rv-token-sigla").textContent().catch(() => null)) ?? "";
+    const rotuloAcessivel = (await tokenNovo.getAttribute("aria-label").catch(() => null)) ?? "";
     registrar(
-      "nome-ui-5 (HUD do token selecionado mostra o nome automático definitivo devolvido pela RPC)",
-      nomeNoHud.trim() === nomeAutomatico,
-      `hud="${nomeNoHud.trim()}", esperado="${nomeAutomatico}"`,
+      "nome-ui-5 (a interface mostra o nome definitivo devolvido pela RPC — sigla no mapa e nome no rótulo acessível)",
+      siglaDesenhada.trim() === nomeAutomatico.slice(1) && rotuloAcessivel.startsWith(nomeAutomatico),
+      `sigla="${siglaDesenhada.trim()}", aria-label="${rotuloAcessivel}", esperado="${nomeAutomatico}"`,
     );
   }
 
@@ -522,7 +551,13 @@ async function main() {
     const box = await celulaBox(page, 0);
     await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
     await page.waitForTimeout(500);
-    const aindaPosicionando = await page.locator(".rv-escolha-posicao").count();
+    // "Ainda posicionando" não se mede por `.rv-escolha-posicao`: esse
+    // elemento só existe com `fluxoToken?.fase === "erro"`. No caminho
+    // normal ele nunca é renderizado, então a contagem dava zero tanto
+    // com o posicionamento VIVO quanto CANCELADO — o critério não
+    // conseguia distinguir os dois estados que existe pra distinguir.
+    // Quem sinaliza o modo é a camada no mapa.
+    const aindaPosicionando = await page.locator(".rv-camada-posicionamento-token").count();
     const { data: naoCriados } = await admin.from("vtt_tokens").select("id").eq("campaign_id", campaignId).eq("nome", "Nunca Sobrepõe");
     registrar("16 (posição inválida não chama create_vtt_token)", (naoCriados ?? []).length === 0 && aindaPosicionando === 1, `linhas=${(naoCriados ?? []).length}, aindaPosicionando=${aindaPosicionando === 1}`);
 
@@ -615,7 +650,21 @@ async function main() {
 
     // Orientação/posição preservadas: "Continuar" de novo deve voltar
     // exatamente pra mesma âncora escolhida antes da falha.
-    await continuarParaPosicionar(page);
+    // AQUI NÃO DÁ PRA USAR `continuarParaPosicionar`. O helper move o
+    // ponteiro pra primeira célula da grade de propósito — no caminho
+    // comum a camada só nasce quando há âncora, e a âncora vem do
+    // hover. Só que a âncora PRESERVADA também é sobrescrita pelo
+    // primeiro movimento do ponteiro (o fantasma segue o cursor), então
+    // usar o helper aqui apagava exatamente o que este critério mede: o
+    // "depois" vinha sempre "0,0", a célula pra onde o helper tinha
+    // acabado de levar o mouse.
+    //
+    // Na volta a camada já tem âncora sem hover nenhum — é esse o ponto
+    // de `ancoraPreservada` em `VttClient` —, então basta confirmar e
+    // ler antes de mexer no mouse.
+    await page.locator(".rv-gerenciador-token .rv-btn--pri", { hasText: "Continuar para posicionar" }).click();
+    await page.locator(".rv-gerenciador-token").waitFor({ state: "detached", timeout: 8000 });
+    await page.waitForSelector(".rv-camada-posicionamento-token", { timeout: 8000 });
     const ancoraDepoisDeVoltar = await page.locator(".rv-camada-posicionamento-token").getAttribute("data-ancora");
     registrar("19c (posição escolhida sobrevive à falha, via 'voltar para editar' → continuar)", ancoraDepoisDeVoltar === ancoraEscolhida, `antes="${ancoraEscolhida}", depois="${ancoraDepoisDeVoltar}"`);
 
@@ -669,7 +718,7 @@ async function main() {
     await page.mouse.up({ button: "right" });
     await page.waitForTimeout(300);
     const menuAberto = await page.locator(".rv-menu-contextual").count();
-    const aindaPosicionando = await page.locator(".rv-escolha-posicao").count();
+    const aindaPosicionando = await page.locator(".rv-camada-posicionamento-token").count();
     const { data: naoCriadoPorBotaoDireito } = await admin.from("vtt_tokens").select("id").eq("campaign_id", campaignId).eq("nome", "Pan Zoom");
     registrar(
       "25 (botão direito não confirma posição nem abre menu contextual durante o posicionamento)",
@@ -697,12 +746,18 @@ async function main() {
     // erro fatal que matava o script e escondia os vinte e poucos
     // critérios seguintes. Um check que morre no meio reporta menos que
     // um que falha e continua.
-    const { data } = await admin.from("vtt_tokens").select("id, q, r, orientacao").eq("campaign_id", campaignId).eq("nome", "Editável").maybeSingle();
-    registrar("criação do token de referência (pré-requisito dos critérios de edição)", !!data, data ? `id=${data.id}` : "token 'Editável' não foi criado");
-    tokenEditarId = data?.id ?? null;
+    let data: { id: string; q: number; r: number; orientacao: number } | null = null;
+    await esperarAte(async () => {
+      const { data: linha } = await admin.from("vtt_tokens").select("id, q, r, orientacao")
+        .eq("campaign_id", campaignId).eq("nome", "Editável").maybeSingle();
+      data = (linha as { id: string; q: number; r: number; orientacao: number } | null) ?? null;
+      return !!data;
+    }, 10000);
+    registrar("criação do token de referência (pré-requisito dos critérios de edição)", !!data, data ? `id=${(data as { id: string }).id}` : "token 'Editável' não foi criado");
+    tokenEditarId = data ? (data as { id: string }).id : null;
 
     // personagem vinculado (itens 13/14 do pedido original, cobertos aqui — a etapa de configuração é a mesma pros dois modos)
-    const ajuda = await page.locator('.rv-gerenciador-token label:has-text("Vincular a uma ficha") .rv-field-ajuda').textContent().catch(() => null);
+    const ajuda = await page.locator('.rv-gerenciador-token label:has-text("Ficha vinculada") .rv-field-ajuda').textContent().catch(() => null);
     void ajuda; // modal já fechou (criação concluída) — checagem real do vínculo abaixo, reabrindo em modo editar
 
     // --- 26: edição preserva posição/orientação ---
@@ -710,7 +765,7 @@ async function main() {
     await page.locator(".rv-menu-item", { hasText: "Editar" }).click();
     await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
 
-    const opcoesPersonagem = await page.locator('.rv-gerenciador-token label:has-text("Vincular a uma ficha") select option').allTextContents();
+    const opcoesPersonagem = await page.locator('.rv-gerenciador-token label:has-text("Ficha vinculada") select option').allTextContents();
     registrar(
       "personagem vinculado (só lista da MESMA campanha, nunca de outra)",
       opcoesPersonagem.some((o) => o.includes("PJ da campanha certa")) && !opcoesPersonagem.some((o) => o.includes("PJ de outra campanha")),
@@ -836,7 +891,13 @@ async function main() {
     await page.locator(".rv-menu-item", { hasText: "Editar" }).click();
     await page.waitForSelector(".rv-gerenciador-token", { timeout: 5000 });
     await page.locator("summary", { hasText: "Retrato, vida e estado" }).click();
-    const imagemInput = page.locator('.rv-gerenciador-token label:has-text("Imagem do token") input');
+    // "Imagem do token" virou LEGENDA de um `fieldset` (o campo passou
+    // a ter dois caminhos, arquivo OU endereço, e um fieldset é o que
+    // agrupa os dois). O `label` que sobrou é o do endereço — "Ou um
+    // endereço" —, e é nele que mora o `input` de texto. O seletor
+    // antigo casava com nada e o `fill` esperava 30s antes de derrubar
+    // a suíte.
+    const imagemInput = page.locator('.rv-gerenciador-token label:has-text("Ou um endereço") input');
     await imagemInput.fill("javascript:alert(1)");
     const avisoPerigosa = await page.locator(".rv-gerenciador-token .rv-form-aviso", { hasText: "http" }).count();
     await imagemInput.fill("não é uma url");
@@ -893,7 +954,12 @@ async function main() {
 
     await page.keyboard.press("Escape");
     await page.waitForSelector(".rv-gerenciador-token", { state: "detached", timeout: 3000 });
-    const focoRestaurado = await page.evaluate(() => document.activeElement?.getAttribute("aria-label") === "Adicionar token");
+    // O rótulo do botão ganhou o atalho: "Adicionar token (N)". A
+    // comparação era por igualdade exata, então o foco voltava pro
+    // lugar certo e o critério dizia que não — o mesmo `^=` que o
+    // locator logo acima já usava resolve.
+    const focoRestaurado = await page.evaluate(() =>
+      (document.activeElement?.getAttribute("aria-label") ?? "").startsWith("Adicionar token"));
     registrar("30 (foco entra na janela ao abrir, sai por Tab e volta pro botão que abriu no Esc)",
       focoInicialNoPrimeiroCampo && saiuPorTab && focoRestaurado,
       `focoInicial=${focoInicialNoPrimeiroCampo}, saiuPorTab=${saiuPorTab}, focoRestaurado=${focoRestaurado}`);
