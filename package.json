@@ -78,6 +78,7 @@
     "check:ficha-ao-vivo": "tsx scripts/dev/check-ficha-ao-vivo.ts",
     "check:cena-ao-vivo": "tsx scripts/dev/check-cena-ao-vivo.ts",
     "check:combate-ao-vivo": "tsx scripts/dev/check-combate-ao-vivo.ts",
+    "check:ataque-ao-vivo": "tsx scripts/dev/check-ataque-ao-vivo.ts",
     "check:vtt-pastas-ui": "tsx scripts/dev/check-vtt-pastas-ui.ts",
     "check:vtt-dividir-grupo": "tsx scripts/dev/check-vtt-dividir-grupo.ts",
     "check:vtt-dividir-grupo-ui": "tsx scripts/dev/check-vtt-dividir-grupo-ui.ts",

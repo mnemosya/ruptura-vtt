@@ -643,7 +643,7 @@ Os 35 checks `check-vtt-*` foram passados um a um. **Todos verdes.** Os números
 
 #### A família "AO VIVO", e por que ela rende mais
 
-Cinco checks em 2026-09-22 — `mesa`, `sessao`, `ficha`, `cena`, `combate` —, **45 critérios**, **três defeitos de produto** encontrados: RT-01 (terreno não chegava), o 404 da textura dos cards, e RT-03 (imagem de cena não chegava). Todos corrigidos.
+Seis checks em 2026-09-22 — `mesa`, `sessao`, `ficha`, `cena`, `combate`, `ataque` —, **55 critérios**, **três defeitos de produto** encontrados: RT-01 (terreno não chegava), o 404 da textura dos cards, e RT-03 (imagem de cena não chegava). Todos corrigidos.
 
 Comparar com o bloco de reparo logo abaixo é o argumento inteiro: ~70 reparos de suíte antiga renderam dois defeitos; 45 critérios novos renderam três.
 
@@ -656,7 +656,9 @@ Comparar com o bloco de reparo logo abaixo é o argumento inteiro: ~70 reparos d
 
 **Os critérios de SIGILO têm duas metades de propósito** — "chega a quem pode ver" E "não chega a quem não pode". A segunda sozinha passa verde com a encanação inteira quebrada: enquanto o RT-03 estava de pé, "o jogador não viu a imagem oculta" era verdade porque ele não via imagem nenhuma. Hoje há dois desses: a imagem oculta (`cena`) e a condição de um token que a pessoa não controla (`combate`).
 
-**Lacunas que ficam, para quem for escrever o sexto:** o fluxo de ataque com dano aplicado de ponta a ponta, a regra consultiva de movimento vista dos dois lados, e o compêndio/bando.
+**O `ataque` é o primeiro que percorre um FLUXO inteiro** em vez de uma entrega só: o golpe nasce no log, vira cartão nos dois painéis, espera a decisão que só o narrador pode tomar, escreve no personagem canônico, e o resultado volta para o cartão do jogador e para o cartão do token no mapa. Cada passo tinha cobertura em algum lugar; a corrente ligada não tinha nenhuma.
+
+**Lacunas que ficam, para quem for escrever o sétimo:** a regra consultiva de movimento vista dos dois lados, o compêndio/bando, e a magia (que tem fluxo próprio, com mais estados que o ataque).
 
 **O que o bloco inteiro rendeu em defeito de produto: dois.** O 404 da textura dos cards de campanha (`parts.tsx` pedia `.png` num arquivo `.jpg`) e o cartão de hover cobrindo a alça de rotação (CART-01). O resto foi teste envelhecido.
 
