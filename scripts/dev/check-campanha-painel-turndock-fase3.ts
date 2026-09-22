@@ -266,35 +266,102 @@ async function main() {
     // que ainda não existe. Ficam registrados aqui, e voltam quando o
     // contador das abas for construído.
 
-    // --- 9, 11 e 12 SAÍRAM daqui; 9 e 11 viraram tarefa (SESS-01) ---
+    // --- 9. Erro POR RECURSO: o sucesso de um não apaga o erro de outro ---
     //
-    // O 12 é o badge de não lidos, que não existe — mesmo caso do 8 e
+    // O `CampaignRealtimeProvider` guarda erro por recurso
+    // (`erros.campaign ?? erros.logs ?? erros.roster ?? erros.viewer`)
+    // exatamente pra isso — um `sessionError` único e compartilhado
+    // seria apagado pelo primeiro recurso que desse certo, e a pessoa
+    // pararia de ver o aviso de um problema que continua de pé.
+    //
+    // A PROVOCAÇÃO MUDOU, e aqui está a lição que custou o dia. A
+    // versão anterior derrubava só a Server Action identificada por um
+    // `next-action` capturado no mount — e essa mira estava errada:
+    // várias ações disparam na mesma janela, e falhar a errada nunca
+    // exercitava o recurso que o critério queria quebrar. O check então
+    // reprovava dizendo que o erro não aparece, o que se lê como
+    // produto quebrado.
+    //
+    // Agora derruba TODAS as Server Actions da janela, e o recurso que
+    // dá certo no meio disso é o LOG — que não chega por Server Action
+    // nenhuma, e sim pelo Realtime. É o par perfeito pro critério: um
+    // caminho falhando, outro passando, ao mesmo tempo e de verdade.
+    {
+      await page.goto(`${BASE_URL}/mesas/${campaignId}`, { waitUntil: "networkidle" });
+      await page.waitForTimeout(800);
+      await page.locator('[data-testid="painel-aba-participantes"]').click();
+      await page.waitForTimeout(300);
+
+      let derrubadas = 0;
+      const rotaMesaErro = `${BASE_URL}/mesas/${campaignId}`;
+      await page.route(rotaMesaErro, (route) => {
+        if (route.request().headers()["next-action"]) {
+          derrubadas++;
+          void route.fulfill({ status: 500, contentType: "text/plain", body: "erro forcado" });
+        } else {
+          void route.continue();
+        }
+      });
+
+      // Quem dispara a releitura do roster é o efeito de FOCO do
+      // provider — trocar de aba não chama mais.
+      await page.evaluate(() => {
+        document.dispatchEvent(new Event("visibilitychange"));
+        window.dispatchEvent(new Event("focus"));
+      });
+      await page.waitForTimeout(1500);
+      const erroAppareceu = await page.locator('[data-testid="painel-participantes-erro-sessao"]')
+        .isVisible().catch(() => false);
+
+      // SOLTA A INTERCEPTAÇÃO ANTES DE PROVOCAR O SUCESSO, e não é
+      // detalhe de arranjo: o log não chega "puro" pelo Realtime. O
+      // Realtime só AVISA que mudou; quem busca é `reloadLogs`, que é
+      // Server Action — derrubada junto com todas as outras. Medido: com
+      // a interceptação de pé, o log nunca aparecia, e o critério
+      // reprovava por uma razão que não tinha nada a ver com isolamento.
+      //
+      // O erro do roster já está setado e ninguém o relê (o efeito de
+      // foco não dispara de novo), então ele continua de pé enquanto o
+      // outro recurso passa — que é exatamente a situação que o
+      // critério existe pra descrever.
+      await page.unroute(rotaMesaErro);
+      const marcadorErro = `check-fase3-isolamento-${Date.now()}`;
+      await inserirLogDeTeste(campaignId, marcadorErro);
+      await page.waitForTimeout(2500);
+      await page.locator('[data-testid="painel-aba-chat"]').click();
+      await page.waitForTimeout(500);
+      const logChegou = ((await page.locator('[data-testid="painel-chat-scroll"]').textContent().catch(() => "")) ?? "")
+        .includes(marcadorErro);
+      await page.locator('[data-testid="painel-aba-participantes"]').click();
+      await page.waitForTimeout(400);
+      const erroContinua = await page.locator('[data-testid="painel-participantes-erro-sessao"]')
+        .isVisible().catch(() => false);
+
+      await page.locator('[data-testid="painel-participantes-erro-sessao"] .rv-pn-retry')
+        .click({ timeout: 3000 }).catch(() => {});
+      await page.waitForTimeout(1000);
+
+      registrar(
+        "9 (erro por recurso: o log chegar pelo Realtime não apaga o erro do roster)",
+        erroAppareceu && logChegou && erroContinua,
+        `ações derrubadas=${derrubadas}, erro do roster apareceu=${erroAppareceu}, ` +
+          `log novo chegou durante o erro=${logChegou}, erro do roster continua=${erroContinua}`,
+      );
+    }
+
+    // --- 11 e 12 ficam fora ---
+    //
+    // O 12 era o badge de não lidos, que não existe — mesmo caso do 8 e
     // do 10, acima.
     //
-    // O 9 e o 11 guardam algo REAL e vivo: o `CampaignRealtimeProvider`
-    // mantém erro POR RECURSO (`erros.campaign ?? erros.logs ??
-    // erros.roster ?? erros.viewer`), justamente pra que o sucesso de um
-    // não apague o erro de outro. Isso continua no código e merece
-    // teste.
-    //
-    // O que não funciona mais é a TÉCNICA. Os dois provocavam a falha
-    // abortando a Server Action do recurso, e isso deixou de chegar no
-    // `catch` do provider. Medido, não suposto: a interceptação dispara
-    // (contei dois abortos da ação do roster, com a releitura chamada
-    // pelo efeito de foco — trocar de aba não chama mais), o caminho de
-    // erro do provider está correto lendo o código, e mesmo assim o
-    // `EstadoErro` da aba Participantes nunca aparece.
-    //
-    // A suspeita é a mesma coisa que `check-vtt-modal-diagnostico` já
-    // documentou de outro ângulo: ao abortar um Server Action, o Next
-    // rejeita internamente em `fetchServerAction`, e essa rejeição não
-    // necessariamente chega em quem chamou. Se for isso, provocar a
-    // falha por abort testa o framework, não o provider — e o caminho
-    // certo é fazer a AÇÃO falhar (erro do servidor), não a requisição.
-    //
-    // Deixar os dois reprovando aqui transformaria o arquivo em ruído
-    // permanente; consertá-los às pressas seria adivinhar. Ficam
-    // registrados como SESS-01.
+    // O 11 (`reloadViewer` estrito não engole falha) precisa do oposto
+    // do que o 9 faz: derrubar UM recurso e deixar OUTRO Server Action
+    // passar, pra provar que o erro do viewer aparece mesmo com o
+    // roster tendo sucesso. Isso exige mirar numa ação específica com
+    // confiança — e foi justamente a mira por `next-action` capturado
+    // que se mostrou não confiável aqui. Fica pra quando houver um jeito
+    // firme de identificar a ação (um gesto que chame SÓ ela, e a
+    // captura do id a partir dele).
 
     // --- 13. Renovação SILENCIOSA do Realtime, sem reload e sem perder estado ---
     {
@@ -462,11 +529,27 @@ async function main() {
         registrar("14 (falha de renovação avisa globalmente e o retry recupera)", false, "não foi possível capturar o next-action de refreshAccessToken — script desatualizado?");
       } else {
         const idRefreshCapturado = idRefresh as string;
+        // FALHA TODA SERVER ACTION DA JANELA, em vez de só a que o
+        // `next-action` capturado identificava.
+        //
+        // Essa mira por id era o defeito, e ele custou caro: o check
+        // capturava "o primeiro POST depois do salto de relógio" e
+        // assumia que era `refreshAccessToken`. Não é — três ações
+        // disparam nessa janela, e falhar a errada nunca exercitava a
+        // renovação. O critério então reprovava dizendo que o aviso não
+        // aparece, o que se lê como uma renovação falhando em SILÊNCIO:
+        // exatamente o defeito que `AvisoSincronizacao` existe pra
+        // impedir. Um teste acusando de mudez justo o componente que
+        // quebra a mudez.
+        //
+        // Aqui não há o que isolar — a pergunta é "quando a renovação
+        // falha, a pessoa fica sabendo?" —, então derrubar tudo é a
+        // provocação certa e a mais honesta.
         let abortadasRefresh = 0;
         await page.route(rotaMesa, (route) => {
-          if (route.request().headers()["next-action"] === idRefreshCapturado) {
+          if (route.request().headers()["next-action"]) {
             abortadasRefresh++;
-            route.abort("failed");
+            void route.fulfill({ status: 500, contentType: "text/plain", body: "erro forcado" });
           } else {
             route.continue();
           }
@@ -494,24 +577,10 @@ async function main() {
         await page.waitForTimeout(2000);
         const alertaSumiu = (await page.locator('[data-testid="vtt-aviso-sync"]').count()) === 0;
 
-        // MEDIDO E NÃO EXPLICADO, e por isso vai como está em vez de
-        // virar um critério "ajustado" até passar: o abort acontece
-        // (contado acima), `renovarRealtimeAuth` tem `catch` que põe o
-        // estado em "interrompido", `AvisoSincronizacao` renderiza
-        // nesse estado — e o aviso não aparece.
-        //
-        // É o TERCEIRO critério desta suíte a falhar assim (com o 9 e o
-        // 11, em SESS-01): provocar falha abortando a Server Action
-        // deixou de produzir o estado de erro visível. E aqui a aposta
-        // é maior que nos outros dois, porque se não for o teste, é o
-        // produto: uma renovação que falha SEM avisar é exatamente o
-        // silêncio que `AvisoSincronizacao` existe pra quebrar — "não
-        // há erro na tela, nada pisca; parece mesa parada, não conexão
-        // caída".
         registrar(
-          "14 (falha de renovação avisa na mesa, com ação, e o retry recupera) — ver SESS-01",
+          "14 (falha de renovação avisa na mesa, com ação, e o retry recupera)",
           alertaVisivel && !!textoAlerta?.includes("interrompida") && temRetry && alertaSumiu,
-          `abortos da renovação=${abortadasRefresh}, alerta visível=${alertaVisivel}, texto="${textoAlerta}", ` +
+          `ações derrubadas na janela=${abortadasRefresh}, alerta visível=${alertaVisivel}, texto="${textoAlerta}", ` +
             `botão "Tentar novamente" presente=${temRetry}; após clicar no retry sem a falha forçada, alerta sumiu=${alertaSumiu}`,
         );
       }

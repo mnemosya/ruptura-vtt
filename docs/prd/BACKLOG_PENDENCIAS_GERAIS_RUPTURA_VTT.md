@@ -501,31 +501,23 @@ As três viraram JANELAS dentro da mesa, e ali o sistema de design é `rv-*`: a 
 - é preciso FECHAR a janela aberta (Esc) antes de abrir a próxima: ela cobre o botão do menu, e o clique fica esperando "visible, enabled and stable" até o timeout;
 - as rotas antigas (`/biblioteca`, `/livro`, `/jogadores-e-convites`, `/configuracoes`) não existem: navegar pra elas dá 404 e o check reprovava em cascata com "rm-table=false", que é o que sobra quando não há página.
 
-### SESS-01 — Provocar falha na sessão não produz mais o erro visível
+### SESS-01 — Fechada: era a mira do teste, não o produto
 
-- **Status:** Bloqueada (precisa de investigação — pode ser teste, pode ser produto)
-- **Prioridade sugerida:** P1 se for produto, P2 se for só a técnica de teste.
-- **Origem:** três critérios de `check-campanha-painel-turndock-fase3` falhando do mesmo jeito, em 2026-09-22.
+- **Status:** Concluída (2026-09-22)
+- **Prioridade:** era P1 enquanto havia a hipótese de ser produto.
 
-**O padrão.** Três features diferentes, a mesma forma de falhar:
+**A suspeita era séria.** Três critérios de `check-campanha-painel-turndock-fase3` falhavam do mesmo jeito: a interceptação disparava, o caminho de erro do `CampaignRealtimeProvider` estava correto lendo o código, e nenhum aviso aparecia. O pior caso seria uma renovação de sessão falhando **em silêncio** — exatamente o que `AvisoSincronizacao` foi escrito pra impedir: *"não há erro na tela, nada pisca; parece mesa parada, não conexão caída"*.
 
-| critério | o que provoca | o que deveria aparecer | o que aparece |
-|---|---|---|---|
-| 9 | aborta a ação do roster | `EstadoErro` na aba Participantes | nada |
-| 11 | aborta a ação do viewer | banner de erro | nada |
-| 14 | aborta `refreshAccessToken` | `AvisoSincronizacao` na mesa | nada |
+**Era o teste.** Os três provocavam a falha derrubando a Server Action identificada por um `next-action` capturado no mount ou logo após o salto de relógio, assumindo que aquele primeiro POST era a ação do recurso em questão. Não era: várias ações disparam na mesma janela, e falhar a errada nunca exercitava o recurso que o critério queria quebrar.
 
-Nos três a interceptação FUNCIONA — os abortos foram contados (dois no 9, um no 14). E nos três o caminho de erro do `CampaignRealtimeProvider` está correto lendo o código: `reloadMembers`, `reloadViewer` e `renovarRealtimeAuth` têm `catch` que escreve o estado de erro, e os componentes renderizam nesse estado.
+Derrubando TODAS as ações da janela, o aviso aparece com o texto certo — *"Sincronização interrompida: a mesa parou de receber eventos"* —, com o botão de tentar de novo, e o retry recupera.
 
-**As duas leituras possíveis, e por que não dá pra escolher sem medir:**
+**Duas coisas aprendidas, que valem além deste arquivo:**
 
-1. **É a técnica de teste.** Ao abortar um Server Action, o Next rejeita internamente em `fetchServerAction`, e essa rejeição pode não chegar em quem chamou — `check-vtt-modal-diagnostico` já documentou esse comportamento de outro ângulo. Se for isso, o caminho certo é fazer a AÇÃO falhar (erro do servidor), não a REQUISIÇÃO, e os três critérios voltam com outra provocação.
+1. **Mirar Server Action por `next-action` capturado é frágil.** O id é estável por build, mas *qual* ação é a primeira numa janela não é. Onde não há o que isolar, derrubar tudo é mais honesto e mais simples.
+2. **O log não chega "puro" pelo Realtime.** O Realtime só avisa que mudou; quem busca é `reloadLogs`, que é Server Action. Isso importa pra qualquer teste que use "o log chegou" como prova de que outro caminho segue vivo — com as ações derrubadas, ele não chega, e não é falha de isolamento.
 
-2. **É o produto.** E aí é sério, principalmente no 14: uma renovação que falha sem avisar é exatamente o silêncio que `AvisoSincronizacao` foi escrito pra quebrar — *"não há erro na tela, nada pisca; parece mesa parada, não conexão caída"*. A pessoa ficaria sem receber eventos e sem saber.
-
-**Como decidir:** fazer a Server Action falhar de verdade (derrubar a dependência que ela usa, ou devolver erro do servidor) e ver se o estado de erro aparece. Se aparecer, é (1). Se não, é (2).
-
-**Nota operacional, encontrada no caminho:** este check RENOVA o token de propósito (critério 13) e o critério 15 é quem regrava `.auth/admin-session.json` com o refresh token rotacionado. Um erro fatal entre os dois deixa a sessão salva com um token já consumido, e o próximo check autenticado falha com "Nenhuma campanha encontrada em /mesas" — que não parece sessão quebrada. Na maioria das vezes `npx tsx scripts/dev/refresh-admin-session.ts` recupera; se o refresh token tiver sido usado duas vezes, aí é login manual (`save-admin-session.ts`). O critério 14 passou a clicar no retry com timeout curto e tolerante justamente pra não derrubar o 15.
+**Resultado:** `check-campanha-painel-turndock-fase3` fecha em **8 critérios aprovados, 0 reprovados**, estável em três execuções. O critério 9 (erro por recurso) e o 14 (aviso de renovação) voltaram; o 11 fica de fora por precisar do oposto — derrubar UM recurso e deixar outro passar —, o que exige um jeito firme de identificar a ação, e é justamente o que se mostrou não confiável.
 
 ### FICHA-02 — O link "← Personagens" da ficha não vai para Personagens
 
