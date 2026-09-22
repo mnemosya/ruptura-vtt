@@ -432,6 +432,36 @@ O mesmo erro sai com `campaign_id`, então não é a coluna — é a tabela. As 
 
 **Risco que fica registrado, e ainda não endereçado:** um canal único com nove ligações de `postgres_changes` é frágil por construção — qualquer ligação futura que o Realtime recuse volta a derrubar tudo, em silêncio. Vale separar por assunto, ou pelo menos afirmar num check que o canal assinou sem erro. Fica como candidato a tarefa própria.
 
+### RT-03 — Imagem de cena não chega ao vivo: `vtt_scene_images` não tem política de SELECT
+
+- **Status:** Pronta (causa encontrada; a correção é uma migration, e precisa de revisão porque mexe em RLS)
+- **Prioridade sugerida:** P1
+- **Origem:** encontrada em 2026-09-22 pelo `check-cena-ao-vivo`, na primeira execução dele.
+
+**O defeito.** O narrador coloca uma imagem na cena — planta, mapa, handout — e **ninguém na mesa vê até recarregar a página**. O narrador também não vê, se a colocação não veio do navegador dele.
+
+Medido: a colocação existe no banco, `read_vtt_scene_images` devolve ela normalmente, e depois de um reload ela aparece. Ao vivo, nada.
+
+**A causa.** `vtt_scene_images` tem **RLS ligada e ZERO políticas**. Todas as outras tabelas do canal têm exatamente uma política de SELECT:
+
+| tabela | políticas de SELECT |
+|---|---:|
+| `vtt_areas`, `vtt_marks`, `vtt_measurements`, `vtt_objects`, `vtt_scenes`, `vtt_terrain`, `vtt_tokens` | 1 |
+| **`vtt_scene_images`** | **0** |
+
+O app lê essa tabela por RPC `security definer` (`read_vtt_scene_images`), então a ausência de política nunca incomodou ninguém no caminho normal. Mas o **Realtime entrega uma linha só se o assinante puder SELECIONÁ-la sob RLS**. Sem política, nenhuma linha é entregue — nunca.
+
+**Por que passou despercebido, e por que é o RT-01 pela metade.** A assinatura é ACEITA (o servidor responde `status: ok`), então não há erro em lugar nenhum: nem exceção, nem log, nem tela vermelha. O RT-01 foi a mesma tabela — lá o filtro no servidor era recusado e isso derrubava o canal inteiro. A correção removeu o filtro e curou o dano colateral (terreno, marcas, medições e áreas voltaram a chegar), mas **a imagem em si continuou sem chegar**, e nada percebeu porque não havia verificação ao vivo dessa camada. Agora há.
+
+**As duas saídas:**
+
+1. **Criar a política de SELECT**, espelhando as regras que `read_vtt_scene_images` já aplica (quem é da campanha, cena visível para a pessoa, camada não escondida, colocação visível — com o narrador vendo tudo). É a menor mudança e alinha a tabela com as outras seis.
+2. **Parar de usar `postgres_changes` nessa tabela** e avisar por broadcast a partir das RPCs que escrevem.
+
+A (1) é a que eu recomendo, mas **não apliquei**: é migration que mexe em RLS, e uma política mal escrita aqui vira vazamento — é justamente a tabela que guarda o que o narrador ainda não revelou. Precisa de revisão antes de ir.
+
+**Cobertura:** `check-cena-ao-vivo`, critérios 2 e 6, reprovam enquanto isto estiver de pé. O critério 6 (a imagem oculta não pode vazar) só volta a ter significado quando o 2 passar — hoje o jogador não vê a oculta, mas também não veria uma visível.
+
 ### ALCA-01 — `check-vtt-alca-rotacao` verificava a coluna errada
 
 - **Status:** Concluída (reescrito em 2026-09-21; os 3 critérios restantes fechados em 2026-09-22, e um deles era defeito de produto — ver CART-01)
