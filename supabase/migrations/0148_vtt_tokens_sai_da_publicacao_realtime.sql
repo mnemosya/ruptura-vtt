@@ -1,0 +1,63 @@
+-- =====================================================================
+-- 0148 — `vtt_tokens` sai da publicação do Realtime (IO-01).
+--
+-- ── Por que ──────────────────────────────────────────────────────────
+--
+-- O Supabase avisou que o projeto está esgotando o orçamento de Disk
+-- IO. Medido: o banco tem 29 MB e acerta 100% do cache (2.278 leituras
+-- de disco desde sempre), então LER não é o problema. O gasto é de
+-- escrita, e o maior consumidor é o processamento do WAL pelo Realtime
+-- — 2.130.336 chamadas, ~15h de CPU acumulada.
+--
+-- `vtt_tokens` é a tabela mais escrita do banco, 29.575 escritas contra
+-- 10.125 da segunda colocada. É esperado: mover token é o gesto mais
+-- frequente de um VTT, e cada movimento é um UPDATE.
+--
+-- E ela estava publicada com REPLICA IDENTITY FULL, que grava a LINHA
+-- ANTIGA INTEIRA no WAL a cada update e delete. Tudo isso era
+-- decodificado pelo Realtime e descartado.
+--
+-- ── Descartado porque NINGUÉM ASSINA ─────────────────────────────────
+--
+-- Token não sincroniza por `postgres_changes`. Sincroniza por dois
+-- broadcasts:
+--
+--   · o efêmero de movimento, durante o arrasto;
+--   · `tokens_changed` (migration 0084), publicado por gatilho a cada
+--     insert/update/delete e pelas RPCs de CRUD, que avisa "a lista
+--     autorizada desta cena mudou" sem dizer o quê — e quem recebe relê
+--     a cena pela leitura sanitizada (`read_vtt_scene_tokens`).
+--
+-- O segundo existe justamente porque `postgres_changes` NÃO servia:
+-- quando o narrador oculta um token que um jogador via, o UPDATE falha
+-- a checagem de RLS no momento da entrega e o Realtime simplesmente não
+-- entrega — sem virar um DELETE sintético. O comentário em
+-- `vttRealtime.ts` descreve isso em detalhe.
+--
+-- A migração para o broadcast foi concluída: `onToken`, o callback que
+-- recebia os eventos de `postgres_changes` de token, continua declarado
+-- na interface e em `VttClient`, mas NUNCA É CHAMADO — não há nenhuma
+-- ligação `table: "vtt_tokens"` em lugar nenhum do código. A publicação
+-- ficou para trás.
+--
+-- ── O que foi conferido antes ────────────────────────────────────────
+--
+-- `realtime.messages` não está na publicação, então o broadcast não
+-- depende dela — nem o de movimento, nem o `tokens_changed`.
+--
+-- E os três checks ao vivo que exercitam token de ponta a ponta foram
+-- rodados antes e depois: `check-mesa-ao-vivo` (token movido chega ao
+-- jogador), `check-combate-ao-vivo` (condição por broadcast) e
+-- `check-vtt-sincronizacao-live` (ocultar, revelar, conceder e revogar
+-- controle, mover com e sem permissão) — 50 critérios no total.
+--
+-- ── Como desfazer ────────────────────────────────────────────────────
+--
+--   alter publication supabase_realtime add table public.vtt_tokens;
+-- =====================================================================
+
+begin;
+
+alter publication supabase_realtime drop table public.vtt_tokens;
+
+commit;

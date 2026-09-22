@@ -432,6 +432,49 @@ O mesmo erro sai com `campaign_id`, então não é a coluna — é a tabela. As 
 
 **Risco que fica registrado, e ainda não endereçado:** um canal único com nove ligações de `postgres_changes` é frágil por construção — qualquer ligação futura que o Realtime recuse volta a derrubar tudo, em silêncio. Vale separar por assunto, ou pelo menos afirmar num check que o canal assinou sem erro. Fica como candidato a tarefa própria.
 
+### IO-01 — `vtt_tokens` pagava WAL de Realtime para ninguém
+
+- **Status:** Concluída (migration 0148, em 2026-09-22)
+- **Prioridade:** era P1 — o Supabase avisou que o projeto estava esgotando o orçamento de Disk IO.
+
+**O alarme.** E-mail do Supabase: "Your project is depleting its Disk IO Budget". Quando o orçamento zera, as respostas ficam lentas, a CPU sobe por espera de IO e a instância pode parar de responder.
+
+**Onde NÃO estava o gasto.** O banco tem 29 MB e acerta 100% do cache — 2.278 leituras de disco desde sempre. Ler não é o problema; o gasto é de escrita.
+
+**Onde estava.** O maior consumidor do banco, disparado, é o processamento do WAL pelo Realtime: **2.130.336 chamadas, ~15h de CPU acumulada**. Toda alteração numa tabela publicada é lida do log, decodificada e comparada com quem assina.
+
+E `vtt_tokens` era a tabela mais escrita do banco — **29.575 escritas contra 10.125 da segunda** —, publicada com `REPLICA IDENTITY FULL`, que grava a linha antiga INTEIRA no WAL a cada update e delete.
+
+**O desperdício: ninguém assinava.** Token não sincroniza por `postgres_changes`. Sincroniza por dois broadcasts — o efêmero de movimento, durante o arrasto, e o `tokens_changed` (migration 0084), publicado por gatilho e pelas RPCs de CRUD.
+
+O segundo existe justamente porque `postgres_changes` **não servia**: quando o narrador oculta um token que um jogador via, o UPDATE falha a checagem de RLS na hora da entrega e o Realtime simplesmente não entrega — sem virar um DELETE sintético. A migração para broadcast foi concluída, mas a publicação ficou para trás. `onToken`, o callback que recebia esses eventos, continua declarado em `vttRealtime.ts` e em `VttClient` e **nunca é chamado**; não há nenhuma ligação `table: "vtt_tokens"` em lugar nenhum do código.
+
+**O que foi conferido antes de mexer**, pensando no uso prático de uma mesa:
+
+| gesto de sessão | como sincroniza | coberto por |
+|---|---|---|
+| arrastar e soltar token | broadcast de movimento + `tokens_changed` | `mesa-ao-vivo`, `animacao-movimento` |
+| criar / remover token | RPC publica `tokens_changed` | `sincronizacao-live` 1 e 5 |
+| editar nome e tamanho | idem | `sincronizacao-live` 2 |
+| ocultar / revelar | idem — é o caso que o `postgres_changes` **não** entregava | `sincronizacao-live` 3 e 4 |
+| conceder / revogar controle | idem | `sincronizacao-live` 6 e 7 |
+| condição no token | gatilho → broadcast | `combate-ao-vivo` 6 |
+| PV chegando ao cartão | ficha canônica → broadcast | `ficha-ao-vivo`, `ataque-ao-vivo` |
+
+Mais: `realtime.messages` **não** está na publicação, então nenhum broadcast depende dela.
+
+**Medido antes e depois**, os mesmos quatro checks, com os mesmos critérios na mesma ordem: `mesa-ao-vivo` 10 ok, `combate-ao-vivo` 10 ok, `sincronizacao-live` 30 ok, `animacao-movimento` 32 ok — **82 critérios, zero diferença**.
+
+**Como desfazer, se algum dia precisar:**
+
+```sql
+alter publication supabase_realtime add table public.vtt_tokens;
+```
+
+**Fica em aberto:** 17.566 arquivos temporários e 38 GB escritos, cuja origem não aparece em `pg_stat_statements` (nenhuma consulta do app registra escrita temporária). Não investigado ainda.
+
+**E uma parte do alarme é de teste, não de produto:** a suíte cria e apaga campanhas inteiras a cada execução — 10.160 tokens inseridos e 9.988 apagados, com 76 vivos; 3.278 campanhas inseridas e 3.249 apagadas. O padrão criar-e-apagar é o pior possível para Disk IO, porque cada linha é escrita duas vezes no log e decodificada nas duas. Varredura completa da suíte passa a ser exceção, não rotina.
+
 ### RT-03 — Imagem de cena não chega ao vivo: `vtt_scene_images` não tem política de SELECT
 
 - **Status:** Concluída (corrigida pela migration 0147, em 2026-09-22)
