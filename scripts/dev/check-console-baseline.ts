@@ -252,6 +252,22 @@ async function main() {
       // --- Cena A: rota DIRETA /ficha (sem mesa.css na árvore) ---
       await page.goto(`${BASE_URL}/ficha?campaignId=${campaignId}&characterId=${characterId}`, { waitUntil: "domcontentloaded" });
       await page.waitForSelector(".rc-window", { state: "visible", timeout: 10000 });
+      // O CABEÇALHO CHEGA DEPOIS DA JANELA, e esperar só por `.rc-window`
+      // capturava a cena no intervalo entre as duas: `.rc-fichaheader`
+      // saía como AUSENTE nas três viewports da rota direta, embora ele
+      // exista ali (`check-fichaheader-portal-fix`, critério 4a, mede a
+      // caixa dele em y=0 no mesmo endereço).
+      //
+      // Isso é pior que um número errado. Uma linha de base que afirma
+      // "este elemento não existe nesta cena" PARA de acusar o dia em
+      // que ele sumir de verdade — o check continuaria verde
+      // exatamente na regressão que ele foi escrito pra pegar.
+      //
+      // O header é montado por PORTAL (é o assunto inteiro de
+      // `FichaHeader.tsx`), então ele não nasce junto com a janela:
+      // esperar por ele é esperar pela cena estar montada, não por um
+      // atraso arbitrário.
+      await page.waitForSelector(".rc-fichaheader", { state: "attached", timeout: 10000 });
       await esperarAnimacoes(page);
       retratos[`${vp.nome}/direta`] = await capturar(page, SELETORES, PROPRIEDADES, CUSTOM_PROPS);
 
