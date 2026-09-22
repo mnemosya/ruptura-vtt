@@ -480,6 +480,25 @@ A regra já estava escrita em `VttClient` e só não valia para a alça: *"um ge
 
 **Fica registrado, sem tarefa aberta:** nenhum outro controle do mapa foi auditado contra o cartão. A alça foi a que apareceu porque tinha check; marcos de medição, alças de área e o menu contextual ocupam regiões parecidas.
 
+### TEST-02 — `check-campanha-admin-fase5` precisa ser reescrito, não consertado
+
+- **Status:** Bloqueada (precisa de decisão de design)
+- **Prioridade sugerida:** P2
+- **Origem:** tentativa de reparo em 2026-09-22, revertida de propósito.
+
+**Por que não dá pra consertar mecanicamente.** O check afirma CONFORMIDADE DE DESIGN nas três telas de administração da campanha: a tabela de regras é `rm-table`, a busca do Livro é `rm-input`, os itens são `rm-doclist-item`, o capítulo abre em `rm-prose`. Isso fazia sentido quando eram PÁGINAS dentro da casca `rm-*`.
+
+As três viraram JANELAS dentro da mesa, e ali o sistema de design é `rv-*`: a busca do Livro é `rv-cena-campo rv-cena-busca`, os itens são `rv-livro-item`, o capítulo é `rv-livro-texto`. Trocar classe por classe seria transcrever o CSS de hoje para dentro do teste — ele passaria a reprovar a cada ajuste de estilo sem que nada tivesse quebrado para quem usa.
+
+**A pergunta de produto:** essas janelas devem conformar a um sistema de design verificável (e a qual), ou o que vale afirmar ali é só comportamento? A resposta muda o que o arquivo deve ser.
+
+**O que já foi medido, pra quem for reescrever:**
+
+- as janelas ABREM e funcionam — o caminho é o menu da mesa (`button[aria-label="Menu da mesa"]` → `[data-testid="vtt-menu-mesa"]` → o item);
+- o `data-testid` do item vem do rótulo por `rotulo.toLowerCase().replace(/[^a-z]+/g, "-")`, **sem normalizar acento** — o acento é substituído, não removido, então "Compêndio" é `vtt-menu-comp-ndio` e "Configurações da mesa" é `vtt-menu-configura-es-da-mesa`;
+- é preciso FECHAR a janela aberta (Esc) antes de abrir a próxima: ela cobre o botão do menu, e o clique fica esperando "visible, enabled and stable" até o timeout;
+- as rotas antigas (`/biblioteca`, `/livro`, `/jogadores-e-convites`, `/configuracoes`) não existem: navegar pra elas dá 404 e o check reprovava em cascata com "rm-table=false", que é o que sobra quando não há página.
+
 ### SESS-01 — Provocar falha na sessão não produz mais o erro visível
 
 - **Status:** Bloqueada (precisa de investigação — pode ser teste, pode ser produto)
