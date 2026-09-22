@@ -847,8 +847,12 @@ async function main() {
 
   // --- 29: PV inválido é recusado ---
   {
-    const pvAtual = page.locator('.rv-gerenciador-token fieldset:has-text("Pontos de Vida") input').first();
-    const pvMax = page.locator('.rv-gerenciador-token fieldset:has-text("Pontos de Vida") input').nth(1);
+    // "Pontos de Vida" virou "Recursos" (PV, PE e Mana na mesma linha),
+    // e por posição os campos agora são seis. `aria-label` é o que
+    // sobrevive a esse tipo de rearranjo — e é o mesmo rótulo que um
+    // leitor de tela usa pra achar o campo.
+    const pvAtual = page.locator('.rv-gerenciador-token input[aria-label="PV atual"]');
+    const pvMax = page.locator('.rv-gerenciador-token input[aria-label="PV máximo"]');
     await pvAtual.fill("50");
     await pvMax.fill("10");
     const avisoPv = await page.locator(".rv-gerenciador-token .rv-form-aviso", { hasText: "PV atual não pode ser maior" }).count();
