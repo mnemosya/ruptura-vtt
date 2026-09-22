@@ -434,8 +434,8 @@ O mesmo erro sai com `campaign_id`, então não é a coluna — é a tabela. As 
 
 ### RT-03 — Imagem de cena não chega ao vivo: `vtt_scene_images` não tem política de SELECT
 
-- **Status:** Pronta (causa encontrada; a correção é uma migration, e precisa de revisão porque mexe em RLS)
-- **Prioridade sugerida:** P1
+- **Status:** Concluída (corrigida pela migration 0147, em 2026-09-22)
+- **Prioridade:** era P1.
 - **Origem:** encontrada em 2026-09-22 pelo `check-cena-ao-vivo`, na primeira execução dele.
 
 **O defeito.** O narrador coloca uma imagem na cena — planta, mapa, handout — e **ninguém na mesa vê até recarregar a página**. O narrador também não vê, se a colocação não veio do navegador dele.
@@ -453,14 +453,26 @@ O app lê essa tabela por RPC `security definer` (`read_vtt_scene_images`), ent�
 
 **Por que passou despercebido, e por que é o RT-01 pela metade.** A assinatura é ACEITA (o servidor responde `status: ok`), então não há erro em lugar nenhum: nem exceção, nem log, nem tela vermelha. O RT-01 foi a mesma tabela — lá o filtro no servidor era recusado e isso derrubava o canal inteiro. A correção removeu o filtro e curou o dano colateral (terreno, marcas, medições e áreas voltaram a chegar), mas **a imagem em si continuou sem chegar**, e nada percebeu porque não havia verificação ao vivo dessa camada. Agora há.
 
-**As duas saídas:**
+**A correção (migration 0147).** Grant de `select` para `authenticated` mais uma política que espelha, linha por linha, o que `read_vtt_scene_images` já aplicava:
 
-1. **Criar a política de SELECT**, espelhando as regras que `read_vtt_scene_images` já aplica (quem é da campanha, cena visível para a pessoa, camada não escondida, colocação visível — com o narrador vendo tudo). É a menor mudança e alinha a tabela com as outras seis.
-2. **Parar de usar `postgres_changes` nessa tabela** e avisar por broadcast a partir das RPCs que escrevem.
+```sql
+using (
+  vtt_pode_ver_cena(scene_id)
+  and (visivel or is_campaign_owner(campaign_id))
+)
+```
 
-A (1) é a que eu recomendo, mas **não apliquei**: é migration que mexe em RLS, e uma política mal escrita aqui vira vazamento — é justamente a tabela que guarda o que o narrador ainda não revelou. Precisa de revisão antes de ir.
+Idêntica em forma à de `vtt_objects`. **Não é mais permissiva que o caminho que já existia** — quem passa nela já recebia estas mesmas colocações pela RPC. O que mudou foi a porta, não o conteúdo, e é a porta que o Realtime precisa enxergar. Escrita continua fechada: insert, update e delete seguem sem grant e sem política, exclusividade das RPCs onde moram quota, revalidação de intenção e controle de revisão.
 
-**Cobertura:** `check-cena-ao-vivo`, critérios 2 e 6, reprovam enquanto isto estiver de pé. O critério 6 (a imagem oculta não pode vazar) só volta a ter significado quando o 2 passar — hoje o jogador não vê a oculta, mas também não veria uma visível.
+A outra saída considerada era parar de usar `postgres_changes` nessa tabela e avisar por broadcast desde as RPCs. Ficou de fora por ser mais código para o mesmo efeito, e por deixar esta tabela diferente das outras sete do canal.
+
+**Verificado depois de aplicar:**
+
+- `check-cena-ao-vivo`: **9 ok, 0 falhas** — a imagem chega em 1526ms, e a oculta chega ao narrador sem vazar para o jogador;
+- o advisor de segurança do Supabase não lista mais `vtt_scene_images` em "RLS enabled, no policy";
+- sem regressão nos checks que mexem com imagem e autorização: `imagens-servidor` 36 ok, `autorizacao` 33 ok, `canal-forjado` 24 ok, `arquivo-e-duplicacao` 27 ok.
+
+**O que o critério 6 passou a provar de verdade.** Enquanto o defeito estava de pé, "o jogador não viu a imagem oculta" era verdade por um motivo errado — ele não veria uma visível tampouco. É por isso que o critério exige as duas metades: o narrador PRECISA ver o que escondeu. Sem essa exigência, ele teria passado verde durante todo o período em que a entrega estava quebrada.
 
 ### ALCA-01 — `check-vtt-alca-rotacao` verificava a coluna errada
 

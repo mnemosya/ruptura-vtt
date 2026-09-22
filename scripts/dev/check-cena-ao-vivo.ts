@@ -189,24 +189,21 @@ async function main(): Promise<void> {
       if (eFim) throw new Error(`finalizar upload falhou: ${eFim.message}`);
 
       const ms = await esperarAte(async () => (await sessaoJ!.page.locator(".rv-imagem-cena").count()) > 0);
-      // ESTE CRITÉRIO REPROVA, e o defeito é de produto — está em
-      // RT-03. Diagnóstico, pra ninguém repetir o caminho:
+      // ESTE CRITÉRIO REPROVOU NA PRIMEIRA EXECUÇÃO, e o defeito era de
+      // produto: RT-03, corrigido pela migration 0147.
       //
-      //   · a assinatura é ACEITA (o servidor responde `status: ok`),
-      //     então nada parece errado;
-      //   · nenhum payload de `vtt_scene_images` chega pelo WebSocket;
-      //   · a colocação existe no banco e `read_vtt_scene_images`
-      //     devolve ela normalmente;
-      //   · depois de um reload, a imagem aparece.
+      // `vtt_scene_images` tinha RLS ligada, ZERO políticas e nenhum
+      // grant de select. O app lê a tabela por RPC `security definer`,
+      // então o fechamento total nunca incomodou ninguém no caminho
+      // normal — mas o Realtime entrega uma linha só se o assinante
+      // puder SELECIONÁ-la sob RLS. Sem política, nenhuma linha era
+      // entregue, nunca.
       //
-      // A causa é RLS: `vtt_scene_images` tem RLS ligada e ZERO
-      // políticas. O app lê por RPC `security definer`, então a
-      // ausência de política nunca incomodou ninguém — mas o Realtime
-      // entrega uma linha só se o assinante puder SELECIONÁ-la sob RLS.
-      // Sem política de SELECT, nenhuma linha é entregue, nunca. Todas
-      // as outras tabelas deste canal têm exatamente uma.
+      // O sintoma era mudo em todos os níveis: a assinatura era ACEITA
+      // (`status: ok`), nenhum payload chegava, e depois de um reload a
+      // imagem aparecia. Se voltar a falhar aqui, é por onde começar.
       registrar("2 (imagem colocada pelo narrador aparece para o jogador, sem reload)",
-        ms !== null, ms !== null ? `${ms}ms` : "não chegou em 10s — ver RT-03 (vtt_scene_images sem política de SELECT)");
+        ms !== null, ms !== null ? `${ms}ms` : "não chegou em 10s — conferir a política de SELECT de vtt_scene_images (RT-03)");
     }
 
     // ── 3. OBJETO ────────────────────────────────────────────────
@@ -286,15 +283,12 @@ async function main(): Promise<void> {
         (await sessaoN!.page.locator(".rv-imagem-cena").count()) > antes);
       await new Promise((r) => setTimeout(r, 4000)); // folga generosa para um vazamento aparecer
       const depoisJogador = await sessaoJ.page.locator(".rv-imagem-cena").count();
-      // REPROVA HOJE PELO MESMO RT-03, e de um jeito que vale
-      // registrar: o jogador de fato não vê a imagem oculta — só que
-      // ele também não veria uma VISÍVEL, porque nenhuma linha desta
-      // tabela é entregue. O critério só volta a ter significado
-      // quando o 2 passar; até lá, a metade "não vazou" é verdadeira
-      // por um motivo errado, e é a metade "o narrador vê" que o
-      // segura honesto.
+      // As duas metades importam, e a primeira é que segura a segunda
+      // honesta: enquanto o RT-03 estava de pé, "o jogador não viu" era
+      // verdade por um motivo errado — ele não veria uma visível
+      // tampouco. Exigir que o NARRADOR veja impede esse falso verde.
       registrar(
-        "6 (imagem OCULTA chega ao narrador e NÃO vaza para o jogador) — ver RT-03",
+        "6 (imagem OCULTA chega ao narrador e NÃO vaza para o jogador)",
         chegouNoNarrador !== null && depoisJogador === antes,
         `narrador passou a ver=${chegouNoNarrador !== null}, jogador antes=${antes} depois=${depoisJogador}`,
       );
