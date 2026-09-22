@@ -783,7 +783,13 @@ async function main() {
     await arrastarPara(
       narrador,
       narrador.locator('[data-testid="painel-personagens-linha"][data-tipo="pn"]').first(),
-      narrador.locator('[data-testid="painel-tabpanel-personagens"] .rv-pn-solta-pasta').first(),
+      // A zona de solta deixou de ser um elemento próprio: hoje quem
+      // aceita o arrasto é o CABEÇALHO da pasta
+      // (`painel-personagens-pasta`, com `onArrastarSobre`/`onSoltar`
+      // em `PersonagensTab`). `.rv-pn-solta-pasta` não existe mais em
+      // lugar nenhum do app — só aqui —, e o check ficava 30s esperando
+      // por ele antes de derrubar a suíte inteira.
+      narrador.locator('[data-testid="painel-personagens-pasta"]').first(),
     );
     const moveu = await esperarAte(async () => {
       const { data } = await admin
@@ -1210,7 +1216,15 @@ async function main() {
         campaign_id: campaignId,
         type: "rolagem_pericia",
         visibility: "public",
-        payload: { characterNome: "Mara Venn", atributo: "Mente", atributoValor: 6, pericia: "Percepção", periciaValor: 3, modificador: 0, dificuldade: 10, total: 8, sucesso: false, dados: [7, 3, 6] },
+        // `maiorDado` e `classificacaoMargem` são o que faz o cartão
+        // desenhar a FAIXA DE TESTE em vez de cair no desenho de soma.
+        // O payload daqui era anterior a eles (a regra está escrita em
+        // `contratos.ts`: "sem isso — bandeja livre, ou um log antigo
+        // anterior a `maiorDado` — o card cai no desenho de módulos"),
+        // então o critério media o caminho de compatibilidade achando
+        // que media o principal. Os números agora fecham entre si:
+        // maior 7 + perícia 3 + mod 0 = 10... contra CD 12, falha.
+        payload: { characterNome: "Mara Venn", atributo: "Mente", atributoValor: 6, pericia: "Percepção", periciaValor: 3, modificador: 0, dificuldade: 12, maiorDado: 7, classificacaoMargem: "falha", total: 10, sucesso: false, dados: [7, 3, 6] },
       },
       {
         campaign_id: campaignId,
@@ -1222,12 +1236,27 @@ async function main() {
     await narrador.waitForTimeout(2500);
     const temRolagem = (await narrador.locator('[data-testid="painel-feed-rolagem"]').count()) >= 1;
     const temDivisor = (await narrador.locator('[data-testid="painel-feed-divisor"]').count()) >= 1;
+    // O cartão de rolagem deixou de ser montado com "módulos"
+    // (`.pn-modulo-rotulo`, um bloquinho por parcela) e passou a usar a
+    // FAIXA DE RESULTADO do rolador — a mesma peça que a ferramenta de
+    // dados desenha, com o veredito no título, a conta numa linha de
+    // parcelas e o total à direita.
+    //
+    // Duas consequências pro critério. Os módulos não existem mais, e
+    // `painel-feed-resultado` marca SÓ O NÚMERO, de propósito ("quem lê
+    // espera só o número", em `ResultadoRolagem.tsx`) — procurar
+    // "falha" dentro dele era procurar no lugar errado. O veredito e a
+    // conta são lidos do cartão inteiro.
     const resultado = (await narrador.locator('[data-testid="painel-feed-resultado"]').first().textContent()) ?? "";
-    const modulos = await narrador.locator('[data-testid="painel-feed-rolagem"] .pn-modulo-rotulo').allTextContents();
+    const cartao = ((await narrador.locator('[data-testid="painel-feed-rolagem"]').first().textContent()) ?? "")
+      .replace(/\s+/g, " ").trim();
     registrar(
-      "9b (rolagem usa RollCard com módulos e faixa de resultado)",
-      temRolagem && resultado.includes("8") && resultado.toLowerCase().includes("falha") && modulos.length >= 3,
-      `resultado="${resultado.replace(/\s+/g, " ").trim()}", modulos=${modulos.join(",")}`,
+      "9b (rolagem usa a faixa de resultado: total, veredito e a conta que o produziu)",
+      temRolagem
+        && resultado.trim() === "10"
+        && /falha/i.test(cartao)
+        && /maior/i.test(cartao) && /percep/i.test(cartao) && /cd/i.test(cartao),
+      `total="${resultado.trim()}", cartão="${cartao.slice(0, 160)}"`,
     );
     registrar("9c (evento de combate usa DIVISOR compacto)", temDivisor, `divisores=${await narrador.locator('[data-testid="painel-feed-divisor"]').count()}`);
     // O divisor precisa ser MENOR que um card — é ritmo, não evento.
