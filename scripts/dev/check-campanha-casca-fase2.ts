@@ -161,8 +161,11 @@ async function main() {
     // não fica espremido por conta disso. A lógica CSS de "sem coluna
     // reservada quando `painelSessao` está ausente" (`:has()` em
     // mesa.css) continua existindo e intocada — só não há mais rota
-    // real que a exercite; `check-campaign-shell-drawer.ts` (harness)
-    // é onde ausência de conteúdo é testada de propósito.
+    // real que a exercite. O harness que testava isso
+    // (`check-campaign-shell-drawer.ts`) foi apagado junto com a
+    // superfície: `CampaignShell` "parou de desenhar, e o que desenhava
+    // foi apagado junto: trilho, cabeçalho, dock de turno, fundo
+    // decorativo e painel de sessão".
     //
     // Exceção NOVA (correção pedida pelo usuário: "Mesa" virou a VTT):
     // a VTT suprime `painelSessao` de propósito (tem painel próprio,
