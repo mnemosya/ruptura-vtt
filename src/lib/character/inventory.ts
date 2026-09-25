@@ -1485,6 +1485,15 @@ export function getItemMitAtual(instance: InventoryItemInstance, item?: Pick<Ite
  * checkpoint não modela; nunca soma MIT/PD de dois itens). Inicializa
  * `mitAtual`/`pdAtual` no máximo do modelo só se a instância ainda não
  * tiver um valor próprio (preserva dano já registrado ao reequipar).
+ *
+ * ARMADURA TAMBÉM MUDA DE `estado`, e isso não é detalhe: a projeção
+ * dos slots do corpo (`projectBodySlots`, no Console) filtra armadura
+ * por `estado === "equipado"`, enquanto o escudo ela acha por
+ * `equipadoDefensivo`. Como esta função só marcava a flag defensiva,
+ * a armadura virava fonte de MIT mas NUNCA aparecia em Cabeça/Tronco/
+ * Braços/Pernas — o slot continuava dizendo "Equipar" depois de
+ * equipar. Vestir é as duas coisas ao mesmo tempo: a peça está no
+ * corpo (estado) e é a que conta para a defesa (flag).
  */
 export function equipDefensiveItem(character: Character, instanceId: string, item: ItemContent): Character {
   const slot: DefensiveEquipmentSlot | null =
@@ -1500,12 +1509,21 @@ export function equipDefensiveItem(character: Character, instanceId: string, ite
         ...i,
         equipadoDefensivo: true,
         equipamentoSlot: slot,
+        // Só a ARMADURA passa a "equipado": escudo é empunhado, e o
+        // estado dele é resolvido pelo loadout (mão secundária).
+        estado: slot === "armadura" ? ("equipado" as ItemLoadoutState) : i.estado,
         mitAtual: slot === "armadura" ? i.mitAtual ?? item.mitMax ?? undefined : i.mitAtual,
         pdAtual: slot === "escudo" ? i.pdAtual ?? item.pdMax ?? undefined : i.pdAtual,
       };
     }
     if (i.equipamentoSlot === slot && i.equipadoDefensivo) {
-      return { ...i, equipadoDefensivo: false };
+      // A peça deslocada sai do corpo junto com a flag — senão ela
+      // continuaria ocupando a região na projeção dos slots.
+      return {
+        ...i,
+        equipadoDefensivo: false,
+        estado: slot === "armadura" ? ("mochila" as ItemLoadoutState) : i.estado,
+      };
     }
     return i;
   });
@@ -1513,10 +1531,24 @@ export function equipDefensiveItem(character: Character, instanceId: string, ite
   return { ...character, inventario: nextInventario };
 }
 
-/** Desequipa uma instância — nunca apaga `mitAtual`/`pdAtual` (histórico de dano preservado até reequipar). */
+/**
+ * Desequipa uma instância — nunca apaga `mitAtual`/`pdAtual` (histórico
+ * de dano preservado até reequipar). A ARMADURA volta para a mochila
+ * no mesmo gesto, pelo mesmo motivo de `equipDefensiveItem`: se só a
+ * flag caísse, a peça sumiria da defesa mas continuaria desenhada no
+ * slot do corpo.
+ */
 export function unequipDefensiveItem(character: Character, instanceId: string): Character {
   const inventario = character.inventario ?? [];
-  const next = inventario.map((i) => (i.id === instanceId ? { ...i, equipadoDefensivo: false } : i));
+  const next = inventario.map((i) =>
+    i.id === instanceId
+      ? {
+          ...i,
+          equipadoDefensivo: false,
+          estado: i.equipamentoSlot === "armadura" ? ("mochila" as ItemLoadoutState) : i.estado,
+        }
+      : i,
+  );
   return { ...character, inventario: next };
 }
 
