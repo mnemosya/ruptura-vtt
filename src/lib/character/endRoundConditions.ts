@@ -22,6 +22,7 @@
 
 import { normalizeConditionSlug } from "./actionConsole";
 import { detectCollapseOnResourceChange, resolveCollapseAdditionalDamage } from "./collapse";
+import { applyDamageThroughTemporaryPv } from "./temporaryPv";
 import type { ActiveCondition, Character, CollapseRulesPayload, ConditionEffectHistoryEntry, ConditionResistanceCheck } from "./types";
 
 // ---------------------------------------------------------------------
@@ -226,14 +227,11 @@ export function applyConditionEndRoundDamage(params: {
 }): ApplyConditionDamageResult {
   const rng = params.rng ?? Math.random;
   const rollResult = rollConditionFormula(params.formula, rng);
-  const pvBefore = params.character.recursos_atuais?.pv ?? 0;
+  const damage = applyDamageThroughTemporaryPv(params.character, rollResult);
+  const pvBefore = damage.pvBefore;
   const peAtual = params.character.recursos_atuais?.pe ?? 0;
-  const pvAfter = Math.max(0, pvBefore - rollResult);
-
-  const withDamage: Character = {
-    ...params.character,
-    recursos_atuais: { ...params.character.recursos_atuais, pv: pvAfter },
-  };
+  const pvAfter = damage.pvAfter;
+  const withDamage = damage.character;
   const collapse = detectCollapseOnResourceChange(
     withDamage,
     { pv: pvBefore, pe: peAtual },
@@ -244,11 +242,11 @@ export function applyConditionEndRoundDamage(params: {
   let finalCharacter = collapse.character;
   let collapseAdvanceLogs: string[] = [];
   let collapseAdvanceTableLogs: EndRoundTableLog[] = [];
-  if (!collapse.started && !collapse.ended && rollResult > 0) {
+  if (!collapse.started && !collapse.ended && damage.appliedToPv > 0) {
     const additional = resolveCollapseAdditionalDamage({
       character: finalCharacter,
       resource: "pv",
-      damageAmount: rollResult,
+      damageAmount: damage.appliedToPv,
       rules: params.collapseRules,
       round: params.round,
       scene: params.scene,

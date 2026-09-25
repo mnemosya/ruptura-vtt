@@ -72,6 +72,17 @@ export function detectCollapseOnResourceChange(
   before: ResourceSnapshot,
   after: ResourceSnapshot,
   nowIso: string,
+  /**
+   * PISO do PE — o valor negativo em que o Colapso mental dispara.
+   * PE pode ficar negativo até −⌈pe_max/2⌉, e é ao ATINGIR esse limite
+   * (não ao cruzar o zero) que o Colapso começa: entre 0 e o piso o
+   * personagem está se arrebentando, não desmaiado.
+   *
+   * Zero por padrão, que é o comportamento antigo — os caminhos que
+   * só mexem em PV (ataque, condições de fim de rodada, talentos)
+   * passam o PE inalterado e nunca chegam nesta comparação.
+   */
+  pisoPe = 0,
 ): CollapseDetectionResult {
   const colapso = character.colapso;
   const warnings: string[] = [];
@@ -90,7 +101,7 @@ export function detectCollapseOnResourceChange(
         warnings,
       };
     }
-    if (before.pe > 0 && after.pe <= 0) {
+    if (before.pe > pisoPe && after.pe <= pisoPe) {
       return {
         character: {
           ...character,
@@ -110,11 +121,11 @@ export function detectCollapseOnResourceChange(
   if (colapso.tipo === "pv" && before.pv <= 0 && after.pv >= 1) {
     return { character: endCollapseByHealing(character, nowIso), started: false, ended: true, tipo: "pv", warnings };
   }
-  if (colapso.tipo === "pe" && before.pe <= 0 && after.pe >= 1) {
+  if (colapso.tipo === "pe" && before.pe <= pisoPe && after.pe >= pisoPe + 1) {
     return { character: endCollapseByHealing(character, nowIso), started: false, ended: true, tipo: "pe", warnings };
   }
 
-  if (colapso.tipo === "pv" && before.pe > 0 && after.pe <= 0) {
+  if (colapso.tipo === "pv" && before.pe > pisoPe && after.pe <= pisoPe) {
     warnings.push("PE também caiu a 0 durante um colapso de PV já ativo — sem regra de colapso duplo no PRD; nada foi alterado além do registrado.");
   }
   if (colapso.tipo === "pe" && before.pv > 0 && after.pv <= 0) {
