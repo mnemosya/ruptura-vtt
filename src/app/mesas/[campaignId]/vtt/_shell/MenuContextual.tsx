@@ -35,9 +35,6 @@ export interface ItemMenuContextual {
 const LARGURA_ESTIMADA = 216;
 const MARGEM = 8;
 
-/** Cantos em bracket — os mesmos quatro da janela de ferramenta (`.rv-fp-canto`). */
-const CANTOS = ["tl", "tr", "bl", "br"] as const;
-
 export function MenuContextual({
   posicao, itens, onFechar, retornarFocoPara, codigo = "A\u00e7\u00f5es", alvo,
 }: {
@@ -103,12 +100,8 @@ export function MenuContextual({
       role="menu"
       style={{ left: Math.max(MARGEM, left), top: Math.max(MARGEM, top) }}
     >
-      {/* Brackets e espinha s\u00e3o LITERALMENTE as classes da janela de
-          ferramenta (`.rv-fp-canto`, `.rv-fp-espinha`): o menu passa a
-          ser a mesma pe\u00e7a de m\u00f3vel, n\u00e3o um primo parecido. */}
-      {CANTOS.map((c) => (
-        <span key={c} className="rv-fp-canto" data-canto={c} aria-hidden="true" />
-      ))}
+      {/* A espinha usa literalmente a classe da janela de ferramenta:
+          o menu passa a ser a mesma peça de móvel, não um primo parecido. */}
       <span className="rv-fp-espinha" aria-hidden="true">
         <span className="rv-fp-espinha-indice">::</span>
         <span className="rv-fp-espinha-codigo">{codigo}</span>

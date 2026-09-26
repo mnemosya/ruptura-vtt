@@ -23,6 +23,9 @@ export function ResourceValueCard({
   onGravar,
   testIdPrefix = "console-res",
   readOnly = false,
+  min = 0,
+  mostrarMax = true,
+  maxClassName,
   disabled = false,
 }: {
   atual: number;
@@ -39,6 +42,17 @@ export function ResourceValueCard({
   testIdPrefix?: string;
   /** Observadores do VTT recebem o mesmo card sem transformar o valor em controle focavel. */
   readOnly?: boolean;
+  /** Piso do valor — negativo no PE. */
+  min?: number;
+  /** `false` mostra SÓ o valor atual — para quem já desenha o máximo
+      por fora. O rótulo acessível continua dizendo "X de Y" nos dois
+      casos. */
+  mostrarMax?: boolean;
+  /** Classe do "/máximo". Com ela, o máximo entra DENTRO do card (num
+      span próprio, com desenho próprio) em vez de ficar do lado de
+      fora — é o que faz o bloco inteiro do número ser um alvo só de
+      clique, sem cantos mortos. */
+  maxClassName?: string;
   /** Bloqueio pontual durante uma gravacao; nao bloqueia o restante do HUD. */
   disabled?: boolean;
 }) {
@@ -59,7 +73,7 @@ export function ResourceValueCard({
   }
 
   function confirmar(): boolean {
-    const r = parseResourceEdit(texto, atual, max);
+    const r = parseResourceEdit(texto, atual, max, min);
     if (!r.ok) {
       setInvalido(true);
       return false;
@@ -102,10 +116,21 @@ export function ResourceValueCard({
     );
   }
 
+  const conteudo = !mostrarMax ? (
+    atual
+  ) : maxClassName ? (
+    <>
+      {atual}
+      <span className={maxClassName}>/{max}</span>
+    </>
+  ) : (
+    `${atual}/${max}`
+  );
+
   if (readOnly) {
     return (
       <span className={className} aria-label={`${rotulo} ${atual} de ${max}`}>
-        {atual}/{max}
+        {conteudo}
       </span>
     );
   }
@@ -119,7 +144,7 @@ export function ResourceValueCard({
       data-testid={`${testIdPrefix}-${rotulo.toLowerCase()}`}
       aria-label={`${rotulo} ${atual} de ${max}. Editar`}
     >
-      {atual}/{max}
+      {conteudo}
     </button>
   );
 }

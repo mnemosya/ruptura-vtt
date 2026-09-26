@@ -31,9 +31,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import {
-  AlertTriangle, Archive, Check, ChevronDown, Clapperboard, FilePlus2, Folder, FolderOpen, FolderPlus, ImagePlus, Loader2, MoreVertical, Plus, Search, Undo2, X,
-} from "lucide-react";
+import { AlertTriangle, Archive, Check, ChevronDown, Clapperboard, FilePlus2, Folder, FolderOpen, FolderPlus, ImagePlus, Loader2, MoreVertical, Search, Undo2, X } from "lucide-react";
+import { Plus } from "../../../../_design/icons";
 import { CartaoCena } from "./CartaoCena";
 import { ListaRolavel } from "./ListaRolavel";
 import { MenuPasta, posicaoAbaixoDe, posicaoNoCursor, type PosicaoMenu } from "./MenuPasta";

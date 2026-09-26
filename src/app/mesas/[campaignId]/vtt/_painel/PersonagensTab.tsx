@@ -317,6 +317,14 @@ export function PersonagensTab({
       });
   }, [campaignId]);
 
+  const encerrarPrevisualizacao = useCallback(() => {
+    /* Invalida também uma resposta ainda em voo: sair do cartão não
+       pode deixar uma leitura lenta reacender a prévia que acabou. */
+    previaSeqRef.current += 1;
+    setPreviaId(null);
+    setPreviaEstado({ fase: "ocioso" });
+  }, []);
+
   const previaAtual = dadosDoEstado(previaEstado);
 
   const carregar = useCallback(
@@ -686,17 +694,11 @@ export function PersonagensTab({
                      coluna responde de quem é cada personagem. */
                   subtitulo={entrada.tipo === "pn" ? "PN" : "PJ"}
                   rodape={
-                    (mostrarRecursos && pv) || entrada.condicoes ? (
+                    mostrarRecursos && pv ? (
                       <>
-                        {mostrarRecursos && pv && <BarraRecurso id="pv" atual={pv.atual} max={pv.max} />}
-                        {mostrarRecursos && entrada.pe && (
+                        <BarraRecurso id="pv" atual={pv.atual} max={pv.max} />
+                        {entrada.pe && (
                           <BarraRecurso id="pe" atual={entrada.pe.atual} max={entrada.pe.max} />
-                        )}
-                        {/* As CONDIÇÕES não são recurso: são estado que
-                            muda a decisão de quem olha a lista, e
-                            continuam visíveis com o switch desligado. */}
-                        {!!entrada.condicoes && (
-                          <span className="rv-pn-linha-cond">{entrada.condicoes} cond.</span>
                         )}
                       </>
                     ) : undefined
@@ -708,12 +710,12 @@ export function PersonagensTab({
                       <span className="rv-pn-tag" title="Controlado por um jogador">controlado</span>
                     ) : undefined
                   }
-                  selecionado={previaId === entrada.characterId}
                   onAbrir={() => onAbrirConsole(entrada.characterId)}
                   onAquecer={() => {
                     onPrecarregarConsole();
                     previsualizar(entrada.characterId);
                   }}
+                  onEsfriar={encerrarPrevisualizacao}
                   onMenuContextual={(e) => menuDaEntrada(e, entrada)}
                   arrastavel={podeAdministrar && !entrada.arquivado}
                   onArrastarInicio={(e) => {
@@ -1115,9 +1117,6 @@ export function PersonagensTab({
                   data-testid="painel-personagens-previa"
                   style={{ "--fg-a": previaAtual.tipo === "pn" ? "var(--rv-dg)" : "var(--rv-cy)" } as React.CSSProperties}
                 >
-                  <div className="rv-fg-brackets" aria-hidden="true">
-                    <span className="rv-fg-bk-tl" /><span className="rv-fg-bk-tr" /><span className="rv-fg-bk-bl" /><span className="rv-fg-bk-br" />
-                  </div>
                   <div className="rv-fg-espinha">
                     <span className="rv-fg-espinha-topo">{siglaDoNome(previaAtual.nome) || "?"}</span>
                     <span className="rv-fg-espinha-rotulo">Ficha</span>

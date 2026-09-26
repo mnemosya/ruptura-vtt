@@ -85,8 +85,6 @@ function Slot({ caso }: { caso: (typeof CASOS)[number] }) {
              o cabeçalho tem a etiqueta de lado. */
           lado="pj"
           onDadosAtualizados={() => {}}
-          onEntrar={() => {}}
-          onSair={() => {}}
         />
       )}
       <p className="gal-nota">{caso.nota}</p>

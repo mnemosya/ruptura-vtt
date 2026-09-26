@@ -22,7 +22,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Archive, Eye, EyeOff, FileText, Link2, Plus, Search, Trash2, Undo2 } from "lucide-react";
+import { Archive, Eye, EyeOff, FileText, Link2, Search, Trash2, Undo2 } from "lucide-react";
+import { Plus } from "../../../../../../_design/icons";
 import { JanelaInterna } from "../../ui/JanelaInterna";
 import { DialogoConfirmar } from "../../ui/Dialogo";
 import { BotaoTecnico, Caption, Chips } from "../../ui/primitivas";

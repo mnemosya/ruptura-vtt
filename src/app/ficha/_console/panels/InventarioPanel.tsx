@@ -18,36 +18,23 @@
  *   - não mantém glossário. Os termos grifados dentro dos textos saem
  *     de `api.glossario`, que é conteúdo publicado.
  *
- *   - não tem arte por item. O desenho usa uma ilustração por item, e
- *     esse acervo não existe: cada categoria recebe um ícone da mesma
- *     família que o resto do Console usa. No dia em que houver arte,
- *     é só trocar `IconeDaCategoria` por uma imagem.
+ *   - não tem arte por item. O desenho usa uma ilustração por item, mas
+ *     esse acervo ainda não existe.
  */
 
 import { useMemo, useState } from "react";
 import {
-  Bomb,
-  Car,
-  Cpu,
-  FlaskConical,
-  Package,
   Search,
-  Shield,
-  Shirt,
-  Swords,
-  Syringe,
   Trash2,
-  Wrench,
-  type LucideIcon,
 } from "lucide-react";
 import { espacosDoItem } from "../../../../lib/character/carga";
 import type { InventoryItemInstance, ItemContent, ItemLoadoutState } from "../../../../lib/character";
 import type { WalletId } from "../../../../lib/character/inventory";
 import { TextoComRegras } from "../TextoComRegras";
 import { TermoComDica } from "../TermoComDica";
-import { DecoTop } from "../deco";
 import { BODY_SLOT_LABELS, itemCabeNoSlot, type BodySlotId } from "../slots";
 import type { ConsoleApi } from "../types";
+import { CabecalhoModulo } from "./CabecalhoModulo";
 
 /**
  * Categoria → VERTENTE. A cor de um item é a vertente dele, e essa
@@ -71,19 +58,6 @@ const VERTENTE_DA_CATEGORIA: Record<string, string> = {
   ferramenta: "sinaptica",
   dispositivo: "sinaptica",
   veiculo: "sinaptica",
-};
-
-const ICONE_DA_CATEGORIA: Record<string, LucideIcon> = {
-  arma: Swords,
-  municao: Package,
-  explosivo: Bomb,
-  vertina: FlaskConical,
-  escudo: Shield,
-  armadura: Shirt,
-  farmacia: Syringe,
-  ferramenta: Wrench,
-  dispositivo: Cpu,
-  veiculo: Car,
 };
 
 /** Os quatro filtros do desenho. "Equipado" junta os três estados de porte no corpo. */
@@ -181,11 +155,6 @@ function descricaoDeOcultavel(modelo: ItemContent | undefined): string | null {
   if (modelo.ocultavel) return OCULTAVEL_ROTULO[modelo.ocultavel] ?? modelo.ocultavel;
   if (modelo.classePorte) return OCULTAVEL_POR_PORTE[modelo.classePorte] ?? null;
   return null;
-}
-
-function IconeDaCategoria({ categoria }: { categoria: string }) {
-  const Icone = ICONE_DA_CATEGORIA[categoria] ?? Package;
-  return <Icone size={30} strokeWidth={1.5} aria-hidden="true" />;
 }
 
 /**
@@ -296,6 +265,7 @@ function Carteira({ carteira, onDefinir }: {
             disabled={!carteira} data-vazio={carteira ? undefined : true}
             title={carteira ? "Editar saldo — aceita contas: +250, -150, 3000-555" : undefined}
             data-testid="console-carteira-aretz">
+            {carteira && <span className="rc-inv-carteira-simbolo" aria-hidden="true">₳</span>}
             {carteira ? fmt(carteira.aretz_informal) : "—"}
           </button>
         )}
@@ -343,14 +313,13 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
   const { ocupados, capacidade, excedido } = api.carga;
 
   return (
-    /* MESMA moldura da aba de Equipamentos (`.rc-eq-outer` +
-       `.rc-eq-caption` + `.rc-eq-card-outer`): as duas abas são o par
-       "o que eu tenho" e sem a moldura esta flutuava solta dentro do
-       tabpanel. Só o título muda. */
+    /* MESMA moldura e mesmo cabeçalho canônico da aba de Equipamentos:
+       as duas abas são o par "o que eu tenho". O antigo
+       `.rc-eq-caption` já não existe no CSS e deixava "Inventário"
+       solto acima da moldura. */
     <section aria-label="Inventário" className="rc-eq-outer">
-      <span className="rc-eq-caption">Inventário</span>
       <div className="rc-eq-card-outer rc-inv-moldura">
-        <DecoTop />
+        <CabecalhoModulo id="ID://INVENTÁRIO" mod="MOD.INV // 05" />
     <div className="rc-inv" data-testid="console-inventario">
       {/* As abas ATRAVESSAM as duas colunas, como no desenho: elas
           dizem o recorte da tela inteira, não só da lista. */}
@@ -376,12 +345,34 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
         })}
       </div>
 
+      {/* A capacidade pertence à Mochila e ocupa uma faixa própria sob
+          as abas. Assim ela não parece parte da busca nem da grade, e
+          some por inteiro nos estados que não participam da carga. */}
+      {filtro === "mochila" && (
+        <div className="rc-inv-cap">
+          <div
+            className="rc-inv-medidor"
+            role="meter"
+            aria-valuenow={ocupados}
+            aria-valuemin={0}
+            aria-valuemax={capacidade}
+            aria-label={`${ocupados} de ${capacidade} espaços ocupados`}
+            data-excedido={excedido || undefined}
+          >
+            {Array.from({ length: capacidade }, (_, i) => (
+              <span key={i} className="rc-inv-medidor-un" data-cheio={i < ocupados || undefined} />
+            ))}
+          </div>
+          <span className="rc-inv-cap-num">
+            <strong>{ocupados}</strong>
+            <span className="rc-inv-cap-resto">/{capacidade} espaços</span>
+          </span>
+        </div>
+      )}
+
       <div className="rc-inv-corpo">
         <div className="rc-inv-lista">
           <div className="rc-inv-busca-linha">
-            {/* Fora do bloco de Capacidade de propósito: aquele só
-                aparece na Mochila, e o saldo não muda conforme a aba de
-                onde o item está. */}
             <div className="rc-inv-busca">
               <Search size={14} aria-hidden="true" />
               <input
@@ -394,44 +385,7 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
             </div>
           </div>
 
-          <Carteira carteira={api.character.carteira} onDefinir={api.definirCarteira} />
-
           <div className="rc-inv-rolo">
-            {/* SÓ NA MOCHILA. O medidor mede a mochila; sob "Equipado",
-                "Abrigo" ou "Todos" ele mostraria um número que não é
-                daquela lista — em Abrigo chega a ser o contrário do que
-                a aba diz, já que o abrigo é justamente o que NÃO pesa. */}
-            {filtro === "mochila" && (
-            <div className="rc-inv-cap">
-              <div className="rc-inv-cap-cab">
-                <span className="rc-inv-cap-rot">Capacidade</span>
-                <span className="rc-inv-cap-num">
-                  <strong>{ocupados}</strong>
-                  <span className="rc-inv-cap-resto">/{capacidade} espaços</span>
-                </span>
-              </div>
-              {/* UM TRAÇO POR ESPAÇO. Antes o medidor era uma barra
-                  contínua com marcas por cima em `space-between`, e as
-                  marcas não coincidiam com unidade nenhuma — eram
-                  decoração. Agora cada célula É um espaço: todas do
-                  mesmo tamanho, e contar as cheias dá o número que está
-                  escrito ao lado. */}
-              <div
-                className="rc-inv-medidor"
-                role="meter"
-                aria-valuenow={ocupados}
-                aria-valuemin={0}
-                aria-valuemax={capacidade}
-                aria-label={`${ocupados} de ${capacidade} espaços ocupados`}
-                data-excedido={excedido || undefined}
-              >
-                {Array.from({ length: capacidade }, (_, i) => (
-                  <span key={i} className="rc-inv-medidor-un" data-cheio={i < ocupados || undefined} />
-                ))}
-              </div>
-            </div>
-            )}
-
             <div className="rc-inv-grade">
               {visiveis.map((instancia) => {
                 const modelo = api.catalogo.get(instancia.itemSlug);
@@ -444,28 +398,27 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
                     className="rc-inv-card"
                     data-vertente={VERTENTE_DA_CATEGORIA[categoria] ?? "nenhuma"}
                     data-selecionado={selecionado?.id === instancia.id || undefined}
-                    /* Um item de 2 ou 3 espaços SE ESTENDE na grade: o
-                       custo é a informação, e mostrá-lo como área
-                       ocupada dispensa repeti-lo em texto. Hoje isso
-                       nunca acontece — `espacosDoItem` devolve 1 pra
-                       tudo enquanto a regra não existir (ver carga.ts). */
-                    style={espacos > 1 ? { gridColumn: `span ${Math.min(espacos, 3)}` } : undefined}
                     aria-pressed={selecionado?.id === instancia.id}
                     onClick={() => setSelecionadoId(instancia.id)}
                   >
-                    <span className="rc-inv-ladrilho">
-                      <IconeDaCategoria categoria={categoria} />
-                      {/* A quantidade aparece SEMPRE, inclusive no 1: a
-                          caixinha é parte do desenho do cartão, e fazê-la
-                          sumir deixa um canto vazio que se lê como falha. */}
-                      <span className="rc-inv-qtd">x{instancia.quantidade}</span>
-                    </span>
-                    {/* Nome e categoria num bloco só: no desenho eles são
-                        um par colado, e o `gap: 10px` do cartão vale entre
-                        ladrilho e par, não entre as duas linhas de texto. */}
-                    <span className="rc-inv-card-rotulos">
+                    {/* Na grade, o item é identificado pelo texto. O ícone
+                        aparece apenas no painel de detalhe, depois que o
+                        item é selecionado. */}
+                    <span className="rc-inv-card-face">
                       <span className="rc-inv-card-nome">{instancia.itemNome}</span>
-                      <span className="rc-inv-card-cat">{modelo?.categoria_label ?? categoria}</span>
+                      <span className="rc-inv-card-footer">
+                        <span className="rc-inv-card-cat">
+                          <span
+                            className="rc-inv-card-espacos"
+                            role="img"
+                            aria-label={`${espacos} ${espacos === 1 ? "espaço" : "espaços"} por item`}
+                          >
+                            {Array.from({ length: espacos }, (_, i) => <i key={i} aria-hidden="true" />)}
+                          </span>
+                          <span>{modelo?.categoria_label ?? categoria}</span>
+                        </span>
+                        <span className="rc-inv-qtd"><small>×</small>{instancia.quantidade}</span>
+                      </span>
                     </span>
                   </button>
                 );
@@ -481,6 +434,8 @@ export function InventarioPanel({ api }: { api: ConsoleApi }) {
               )}
             </div>
           </div>
+
+          <Carteira carteira={api.character.carteira} onDefinir={api.definirCarteira} />
         </div>
 
         <div className="rc-inv-detalhe">
@@ -595,9 +550,6 @@ function DetalheDoItem({
   return (
     <div className="rc-inv-det" data-vertente={VERTENTE_DA_CATEGORIA[categoria] ?? "nenhuma"}>
       <div className="rc-inv-det-cab">
-        <span className="rc-inv-ladrilho rc-inv-ladrilho--grande">
-          <IconeDaCategoria categoria={categoria} />
-        </span>
         <div className="rc-inv-det-titulo">
           <h3>{instancia.itemNome}</h3>
           <div className="rc-inv-etiquetas">
@@ -806,7 +758,7 @@ function DetalheDoItem({
           </button>
           <button
             type="button"
-            className="rc-inv-btn"
+            className="rc-inv-btn rc-inv-btn--mover"
             aria-haspopup="dialog"
             aria-expanded={movendo}
             onClick={() => setMovendo((v) => !v)}

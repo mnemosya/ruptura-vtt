@@ -23,14 +23,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  MousePointer2, Ruler, PaintBucket, MapPin, Images,
-  Layers, Menu, Hexagon, Swords,
-  Plus, Minus, Undo2, Redo2, Loader2,
-  UserPlus, Box,
-  Radio, Focus, ClipboardPaste, Pencil, Copy, RotateCcw, RotateCw, Eye, EyeOff, Lock, Unlock, Trash2,
-  Dices,
-  ImageUp , ScrollText , ChevronDown } from "lucide-react";
+import { MousePointer2, Ruler, PaintBucket, MapPin, Images, Layers, Menu, Hexagon, Swords, Minus, Undo2, Redo2, Loader2, UserPlus, Box, Radio, Focus, ClipboardPaste, Pencil, Copy, RotateCcw, RotateCw, Eye, EyeOff, Lock, Unlock, Trash2, Dices, ImageUp, ScrollText, ChevronDown } from "lucide-react";
+import { Plus } from "../../../_design/icons";
 import { MapaHex, TAM, type EstadoVisualToken, type CenaMapa } from "./_mapa/MapaHex";
 import { type AlcaArea, type AreaDesenhavel, type EstadoVisualArea, type GuiaGesto } from "./_mapa/CamadaAreas";
 import { type Hex, type TamanhoCriatura, hexDistancia, hexKey, hexNoRaio, hexIguais, hexParaPixel } from "./_mapa/hex";
@@ -347,38 +341,24 @@ export function VttClient({
   const [hoverId, setHoverId] = useState<string | null>(null);
   /** Token cujo retrato está sendo trocado — aberto pelo menu contextual (ver `itensMenuContextual`). */
   const [editandoRetratoDe, setEditandoRetratoDe] = useState<string | null>(null);
-  /**
-   * CARTÃO DE HOVER do token (substituto do HUD de seleção).
-   *
-   * Aparece depois de uma PARADA deliberada do ponteiro sobre o token
-   * — passar por cima a caminho de outra coisa não abre nada. E some
-   * com uma carência, não na hora: sem ela seria impossível levar o
-   * mouse do token até o cartão pra clicar num pip, porque o caminho
-   * entre os dois passa por fora dos dois.
-   */
-  const ATRASO_CARTAO_MS = 420;
-  const CARENCIA_CARTAO_MS = 200;
+  /** Cartão de detalhes do token — aberto por clique, nunca por hover. */
   const [cartaoHover, setCartaoHover] = useState<{ tokenId: string; ancora: { x: number; y: number; width: number; height: number } } | null>(null);
-  const timerCartaoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sobreCartaoRef = useRef(false);
   /**
    * Recursos por token, já lidos. Existe por causa de uma coisa que se
    * vê na mesa e não no código: o cartão abria com o NOME e as barras
    * entravam depois, quando a leitura voltava — o cartão crescia na
    * cara de quem olhava.
    *
-   * A busca agora começa no instante em que o ponteiro ENTRA no token,
-   * não quando o cartão abre: os 420ms de espera do hover viram tempo
-   * de rede grátis. E o que já foi lido fica guardado, então voltar a
-   * um token que você já olhou é instantâneo — com uma releitura em
-   * segundo plano, porque o valor pode ter mudado desde então.
+   * O que já foi lido fica guardado, então voltar a um token que você
+   * já abriu é instantâneo — com releitura em segundo plano, porque o
+   * valor pode ter mudado desde então.
    */
   const dadosCartaoRef = useRef<Map<string, SelectedTokenHudData>>(new Map());
   const [dadosCartao, setDadosCartao] = useState<SelectedTokenHudData | null>(null);
 
   /**
-   * Gesto que já cumpriu a espera do hover mas ainda não tem os dados —
-   * o cartão fica ESPERANDO, sem aparecer.
+   * Clique que ainda não tem os dados — o cartão fica esperando, sem
+   * aparecer.
    *
    * O cartão de "só o nome" é um estado REAL (quem não tem permissão
    * nenhuma vê exatamente isso), então mostrá-lo enquanto a leitura
@@ -408,47 +388,48 @@ export function VttClient({
     });
   }, [campaignId]);
 
-  const limparTimerCartao = useCallback(() => {
-    if (timerCartaoRef.current) { clearTimeout(timerCartaoRef.current); timerCartaoRef.current = null; }
+  const aoHoverToken = useCallback((id: string | null) => setHoverId(id), []);
+
+  const fecharCartaoToken = useCallback(() => {
+    aguardandoCartaoRef.current = null;
+    setCartaoHover(null);
+    setDadosCartao(null);
   }, []);
 
-  const aoHoverToken = useCallback((id: string | null, ancora?: { x: number; y: number; width: number; height: number }, opcoes?: { imediato?: boolean }) => {
-    setHoverId(id);
-    limparTimerCartao();
-    if (id && ancora) {
-      buscarRecursosDoToken(id);
-      timerCartaoRef.current = setTimeout(() => {
-        const jaTem = dadosCartaoRef.current.get(id);
-        if (jaTem) {
-          setDadosCartao(jaTem);
-          setCartaoHover({ tokenId: id, ancora });
-          return;
-        }
-        // Sem dados ainda: o cartão NÃO abre — fica esperando a
-        // resposta (ver `aguardandoCartaoRef`).
-        aguardandoCartaoRef.current = { tokenId: id, ancora };
-      }, ATRASO_CARTAO_MS);
+  const aoAtivarCartaoToken = useCallback((id: string, ancora: { x: number; y: number; width: number; height: number }) => {
+    if (cartaoHover?.tokenId === id) {
+      fecharCartaoToken();
       return;
     }
-    // Saiu do token: desiste de qualquer abertura pendente (senão uma
-    // resposta atrasada abriria o cartão de um token que o ponteiro já
-    // deixou) e fecha o aberto — mas só se o ponteiro também não
-    // estiver dentro DELE, que é o que permite ir do token até os pips.
-    aguardandoCartaoRef.current = null;
-    // Fechamento IMEDIATO: pedido por um controle que está debaixo do
-    // cartão (hoje, a alça de rotação). A carência abaixo serve pro
-    // ponteiro viajar do token até o cartão; aqui ela só garantiria
-    // que o `pointerdown` seguinte caísse no cartão em vez de no
-    // controle — que é exatamente o defeito que isto conserta.
-    if (opcoes?.imediato) { setCartaoHover(null); return; }
-    timerCartaoRef.current = setTimeout(() => {
-      if (!sobreCartaoRef.current) setCartaoHover(null);
-    }, CARENCIA_CARTAO_MS);
-  }, [limparTimerCartao, buscarRecursosDoToken]);
 
-  // Um gesto de mapa (arrastar token, pan, zoom, abrir menu) tira o
-  // cartão da frente na hora: ele é ajuda passiva, nunca obstáculo.
-  useEffect(() => () => limparTimerCartao(), [limparTimerCartao]);
+    const jaTem = dadosCartaoRef.current.get(id);
+    if (jaTem) {
+      aguardandoCartaoRef.current = null;
+      setDadosCartao(jaTem);
+      setCartaoHover({ tokenId: id, ancora });
+    } else {
+      setCartaoHover(null);
+      setDadosCartao(null);
+      aguardandoCartaoRef.current = { tokenId: id, ancora };
+    }
+    buscarRecursosDoToken(id);
+  }, [cartaoHover?.tokenId, buscarRecursosDoToken, fecharCartaoToken]);
+
+  useEffect(() => {
+    const aoPointerDown = (e: PointerEvent) => {
+      const alvo = e.target as Element | null;
+      if (alvo?.closest?.(".rv-cartao-token, .rv-token")) return;
+      fecharCartaoToken();
+    };
+    const aoTeclar = (e: KeyboardEvent) => { if (e.key === "Escape") fecharCartaoToken(); };
+    document.addEventListener("pointerdown", aoPointerDown, true);
+    window.addEventListener("keydown", aoTeclar);
+    return () => {
+      document.removeEventListener("pointerdown", aoPointerDown, true);
+      window.removeEventListener("keydown", aoTeclar);
+    };
+  }, [fecharCartaoToken]);
+
   const [modoTerreno, setModoTerreno] = useState<TipoTerreno | null>("dificil");
   const [raioPincelTerreno, setRaioPincelTerreno] = useState(0); // 0/1/2 → 1/7/19 células (hexNoRaio)
   const [modoPincelTerreno, setModoPincelTerreno] = useState<"pincel" | "balde">("pincel");
@@ -479,6 +460,13 @@ export function VttClient({
 
   // ── Estado persistido (banco) ────────────────────────────────────
   const [estadoCena, setEstadoCena] = useState<EstadoCenaVtt>(null);
+  // O cartão é uma sobreposição do modo de interação e de uma cena
+  // específica. Trocar qualquer um dos dois invalida tanto o conteúdo
+  // quanto a posição usada como âncora, inclusive quando a troca vem
+  // de realtime e não de um clique local.
+  useEffect(() => {
+    fecharCartaoToken();
+  }, [ferramenta, estadoCena?.cena.id, fecharCartaoToken]);
 
   /**
    * IMAGENS da cena. Todo o assunto — lista, URLs assinadas, preparo em
@@ -1102,6 +1090,12 @@ export function VttClient({
     [estadoCena, imgs.urls],
   );
   const tokenPorId = useMemo(() => new Map(tokensApresentacao.map((t) => [t.id, t])), [tokensApresentacao]);
+  // Realtime pode remover/ocultar um token enquanto o cartão dele está
+  // aberto. Sem esta guarda, sobrava um cartão órfão ancorado onde o
+  // token existia antes.
+  useEffect(() => {
+    if (cartaoHover && !tokenPorId.has(cartaoHover.tokenId)) fecharCartaoToken();
+  }, [cartaoHover, tokenPorId, fecharCartaoToken]);
   /**
    * Objetos PERSISTIDOS no formato que a camada de mapa já desenha
    * (sombra, faces, rachadura de dano, hint) — reaproveitar aquele
@@ -5696,18 +5690,16 @@ export function VttClient({
   }, [marcarZoomPan]);
 
   if (carregandoCena) {
-    /* O MESMO PAINEL DE CARGA DO RESTO DO PRODUTO (`BootPanel`), e não
-       um spinner só desta tela. A mesa mostrava um círculo girando com
-       legenda enquanto a campanha inteira — inclusive o "Abrindo
-       console", que abre POR CIMA desta mesma tela — usa o painel
-       angular com barra que cresce. Duas linguagens de espera na mesma
-       sessão, uma delas exclusiva de uma tela.
+    /* O mesmo componente de carga do resto do produto (`BootPanel`),
+       usando aqui a variante terminal exclusiva da campanha. A mesa
+       mostrava um círculo girando com legenda, uma segunda linguagem de
+       espera sem relação com a casca em que aparecia.
        `mo-scope` no palco porque as escalas `--mo-*` são declaradas por
        escopo, nunca em `:root`. */
     return (
       <div className="rv-mesa rv-mesa--carregando">
-        <div className="mo-boot-stage mo-scope">
-          <BootPanel label="Carregando cena" />
+        <div className="mo-boot-stage mo-boot-stage--campaign mo-scope">
+          <BootPanel label="Carregando cena" variante="campaign-terminal" />
         </div>
       </div>
     );
@@ -5904,6 +5896,8 @@ export function VttClient({
             celulasRealce={ferramenta === "objetos" ? celulasObjetoPendente : []}
             tipoRealce={ferramenta === "objetos" ? "objeto" : null}
             onSelecionarToken={onSelecionarToken} onHoverToken={aoHoverToken}
+            onAtivarCartaoToken={aoAtivarCartaoToken}
+            onFecharCartaoToken={fecharCartaoToken}
             terrenoReal={terrenoReal}
             ferramenta={ferramenta}
             podeMoverToken={podeMoverToken}
@@ -6362,13 +6356,8 @@ export function VttClient({
             ancora={cartaoHover.ancora}
             dados={dadosCartao}
             lado={tokenPorId.get(cartaoHover.tokenId)?.lado}
+            condicoes={tokenPorId.get(cartaoHover.tokenId)?.condicoes}
             onDadosAtualizados={(d) => { dadosCartaoRef.current.set(cartaoHover.tokenId, d); setDadosCartao(d); }}
-            onEntrar={() => { sobreCartaoRef.current = true; limparTimerCartao(); }}
-            onSair={() => {
-              sobreCartaoRef.current = false;
-              limparTimerCartao();
-              timerCartaoRef.current = setTimeout(() => setCartaoHover(null), CARENCIA_CARTAO_MS);
-            }}
           />
         )}
 

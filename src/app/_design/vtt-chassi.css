@@ -123,6 +123,118 @@
 }
 
 /* =====================================================================
+   CHANFRO GLOBAL DO VTT
+
+   As superfícies reais do VTT — controles, cards, menus, modais e
+   janelas — usam a geometria de `.rup-clip`: superior esquerdo e
+   inferior direito com raio de 4px; superior direito e inferior
+   esquerdo cortados. Filhos internos (ícones, SVGs, imagens, texto e wrappers)
+   ficam deliberadamente fora: chanfro pertence à CASCA, nunca ao seu
+   conteúdo. A dimensão continua vindo da escala consolidada entre
+   `rup-clip` e `rup-clip-sm`.
+   `corner-shape` faz a própria borda acompanhar o mesmo polígono;
+   diferente de aplicar `clip-path` cegamente, não amputa o fio, o
+   outline de foco nem a pintura dos estados hover/selecionado.
+
+   A lista repete as raízes acima porque menus, janelas, gavetas, modais
+   e dados são portais montados diretamente no `body`. Sem elas, só o
+   palco receberia a geometria e o mesmo componente mudaria de linguagem
+   ao sair para um portal.
+
+   Os recortes assimétricos já consolidados (`rup-clip` e os cards do
+   Console) continuam usando seu polígono próprio; esta regra não os
+   reinterpreta nem substitui suas diagonais reconstruídas. */
+:is(.pn-jan, .pn-menu, .rv-gaveta),
+:is(
+  .rv-mesa,
+  .pn-jan,
+  .pn-menu,
+  .rv-modal-fundo,
+  .rv-gaveta,
+  .rup-mesa-arena,
+  .rv-mesa-dados-overlay
+) :is(
+  button,
+  input:not([type="range"]):not([type="radio"]):not([type="checkbox"]):not([type="color"]):not([type="file"]),
+  select,
+  textarea,
+  [role="button"],
+  [role="tab"],
+  [role="menu"],
+  [role="menuitem"],
+  [role="menuitemradio"],
+  [role="dialog"],
+  [role="alertdialog"],
+  .rv-card,
+  .rv-modal,
+  .rv-fp,
+  .rv-gaveta,
+  .pn-cartao,
+  .pn-card,
+  .pn-jan,
+  .pn-menu
+):not(:is(
+  .rv-ferr-btn,
+  .rc-tabrail-btn,
+  .rc-winbtn,
+  .rv-jan-btn,
+  .rv-fp-fechar,
+  .pn-jan-btn,
+  .rv-modal-fechar,
+  .rv-colocar-imagem__fechar,
+  .rv-biblioteca__fechar,
+  .rv-gav-fechar,
+  .rv-cena-btn-icone,
+  .rv-cena-palco,
+  .rc-picker-fechar,
+  .rc-arma-swap,
+  .rc-arma-fechar
+)):not(button[aria-label]:has(svg)) {
+  /* ordem: superior esquerdo, superior direito, inferior direito,
+     inferior esquerdo — exatamente `rup-clip`. */
+  border-radius: 4px var(--rv-notch, 10px) 4px var(--rv-notch, 10px) !important;
+  corner-shape: round bevel round bevel;
+}
+
+/* Caixas compostas só por ícone são exceção deliberada. O pictograma
+   já concentra toda a leitura dentro de uma área pequena; chanfrar a
+   caixa em volta reduz área útil e cria ruído. Inclui os dois trilhos,
+   controles de janela e ações quadradas de fechar/trocar. */
+.rv-ferr-btn,
+.rc-tabrail-btn,
+.rc-winbtn,
+.rv-jan-btn,
+.rv-fp-fechar,
+.pn-jan-btn,
+.rv-modal-fechar,
+.rv-colocar-imagem__fechar,
+.rv-biblioteca__fechar,
+.rv-gav-fechar,
+.rv-cena-btn-icone,
+.rc-picker-fechar,
+.rc-arma-swap,
+.rc-arma-fechar,
+button[aria-label]:has(svg) {
+  border-radius: var(--rv-r-peca, 4px) !important;
+  corner-shape: round !important;
+}
+
+/* A variante compacta já consolidada continua em 6px. A especificidade
+   e o `!important` existem somente para vencer a normalização global
+   acima sem depender da ordem em que a folha do componente é carregada. */
+:is(
+  .rv-mesa,
+  .pn-jan,
+  .pn-menu,
+  .rv-modal-fundo,
+  .rv-gaveta,
+  .rup-mesa-arena,
+  .rv-mesa-dados-overlay
+) .rup-clip-sm {
+  border-radius: 2px var(--rv-notch-sm, 6px) 2px var(--rv-notch-sm, 6px) !important;
+}
+
+/* =====================================================================
    UTILITÁRIOS — as regras `rup-*` do estudo, trazidas para o
    repositório.
 
@@ -189,9 +301,11 @@
 [data-fim]::after { opacity: 0; }
 
 .rup-clip {
+  border-radius: 4px 0 4px 0;
   clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
 }
 .rup-clip-sm {
+  border-radius: 2px 0 2px 0;
   clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
 }
 

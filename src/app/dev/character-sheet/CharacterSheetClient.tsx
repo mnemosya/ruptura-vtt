@@ -37,6 +37,7 @@ import {
   getOverloadWillTestRule,
   applyStunFromFailedWillTest,
   detectCollapseOnResourceChange,
+  pisoPeNegativo,
   advanceCollapseSegment,
   stabilizeCollapse,
   resolveCollapseEndRound,
@@ -435,9 +436,14 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /** Recurso atual: inteiro, sem teto (pode passar do máximo), nunca negativo. */
-function parseRecursoAtual(rawValue: number): number {
-  if (!Number.isFinite(rawValue)) return 0;
-  return Math.max(0, Math.trunc(rawValue));
+/**
+ * `piso` existe por causa do PE: ele é o único recurso que continua
+ * contando abaixo de zero (até −⌈pe_max/2⌉, ver `pisoPeNegativo`).
+ * PV e Mana seguem parando em zero.
+ */
+function parseRecursoAtual(rawValue: number, piso = 0): number {
+  if (!Number.isFinite(rawValue)) return piso;
+  return Math.max(piso, Math.trunc(rawValue));
 }
 
 export default function CharacterSheetClient({
@@ -1569,7 +1575,13 @@ export default function CharacterSheetClient({
       nowIso,
     );
     const baseAposCura: Character = { ...base, condicoes_ativas: condsAposCura };
-    const colapso = detectCollapseOnResourceChange(baseAposCura, beforePvPe, afterPvPe, nowIso);
+    const colapso = detectCollapseOnResourceChange(
+      baseAposCura,
+      beforePvPe,
+      afterPvPe,
+      nowIso,
+      pisoPeNegativo(derivados.pe_max),
+    );
 
     let finalCharacter = colapso.character;
     let collapseAdvance: ReturnType<typeof resolveCollapseAdditionalDamage> | null = null;
@@ -1612,7 +1624,7 @@ export default function CharacterSheetClient({
    */
   function updateRecursoAtual(id: keyof CharacterResources, rawValue: number) {
     const anterior = character.recursos_atuais?.[id] ?? 0;
-    const novo = parseRecursoAtual(rawValue);
+    const novo = parseRecursoAtual(rawValue, id === "pe" ? pisoPeNegativo(derivados.pe_max) : 0);
 
     if (id === "pv" || id === "pe" || id === "mana") {
       const nowIso = new Date().toISOString();
@@ -5508,6 +5520,7 @@ export default function CharacterSheetClient({
     definirModo: setSheetMode,
     editarAtributo: updateAtributo,
     editarPericia: updatePericia,
+    editarNome: (nome) => setCharacter((prev) => ({ ...prev, nome })),
     pm:
       character.pm_total == null && character.pm_disponivel == null
         ? null

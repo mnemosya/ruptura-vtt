@@ -41,6 +41,7 @@ import { ResourceValueCard } from "../../../../ficha/_console/panels/ResourceVal
 import type { HudResourceId, SelectedTokenHudData } from "../../../../../lib/vtt/hudTypes";
 import { mutateSelectedTokenHudAction } from "../_acoes/hudActions";
 import type { LadoToken } from "../_dominio/tokenApresentacao";
+import { CONDICOES, type CondicaoSlug } from "../_dados/cenaDemo";
 
 /** Ordem e identidade visual de cada linha — a mesma do Figma, e os acentos são os do chassi do VTT. */
 const RECURSOS: { id: HudResourceId; rotulo: string }[] = [
@@ -71,13 +72,12 @@ export interface PropsCartaoTokenHover {
    * mãos. `neutro` não vira etiqueta — não há o que dizer.
    */
   lado?: LadoToken;
+  /** Condições públicas já presentes na projeção do token do mapa. */
+  condicoes?: CondicaoSlug[];
   /** Uma escrita voltou do servidor — o mapa guarda o valor novo no cache dele. */
   onDadosAtualizados: (d: SelectedTokenHudData) => void;
   /** Retângulo do DISCO do token na tela, pra ancorar o cartão. */
   ancora: { x: number; y: number; width: number; height: number };
-  /** O ponteiro entrou no cartão / saiu dele — quem controla o ciclo de vida é quem chama. */
-  onEntrar: () => void;
-  onSair: () => void;
   /**
    * Só pro harness visual protegido em /dev — nunca usado pela mesa
    * real. Mesma prop de fixtura que o HUD antigo aceitava, e pelo
@@ -92,6 +92,7 @@ const MARGEM_TELA = 8;
 export function CartaoTokenHover(p: PropsCartaoTokenHover) {
   const [dados, setDados] = useState<SelectedTokenHudData>(p.dadosFixos ?? p.dados);
   const [pendente, setPendente] = useState<Set<string>>(new Set());
+  const [condicoesExpandidas, setCondicoesExpandidas] = useState(false);
   const dadosRef = useRef<SelectedTokenHudData | null>(null);
   const montado = useRef(true);
   // Uma escrita de cada vez, na ordem — mesma disciplina do HUD antigo:
@@ -155,7 +156,12 @@ export function CartaoTokenHover(p: PropsCartaoTokenHover) {
   // acertaria um dos três casos e erraria os outros dois — pondo o
   // cartão por cima do token ou fora da tela.
   const cartaoRef = useRef<HTMLDivElement>(null);
-  const [posicao, setPosicao] = useState<{ left: number; top: number } | null>(null);
+  const [posicao, setPosicao] = useState<{
+    left: number;
+    top: number;
+    setaX: number;
+    lado: "acima" | "abaixo";
+  } | null>(null);
   useLayoutEffect(() => {
     const el = cartaoRef.current;
     if (!el) return;
@@ -195,17 +201,19 @@ export function CartaoTokenHover(p: PropsCartaoTokenHover) {
       ? abaixo + height < window.innerHeight - MARGEM_TELA
       : acima > MARGEM_TELA;
 
-    setPosicao({
-      left,
-      top: colide(preferido) && alternativoCabeNaTela && !colide(alternativo)
-        ? alternativo
-        : preferido,
-    });
-  }, [p.ancora, dados]);
+    const top = colide(preferido) && alternativoCabeNaTela && !colide(alternativo)
+      ? alternativo
+      : preferido;
+    const centroToken = p.ancora.x + p.ancora.width / 2;
+    const setaX = Math.min(Math.max(16, centroToken - left), width - 16);
+
+    setPosicao({ left, top, setaX, lado: top === acima ? "acima" : "abaixo" });
+  }, [p.ancora, p.condicoes, dados, condicoesExpandidas]);
 
   const nome = dados.name;
   const podeEditar = dados.canControl === true;
   const recursosVisiveis = RECURSOS.filter(({ id }) => dados.resources[id]);
+  const condicoes = p.condicoes ?? [];
 
   return (
     <div
@@ -214,15 +222,19 @@ export function CartaoTokenHover(p: PropsCartaoTokenHover) {
       // Invisível até estar MEDIDO e posicionado: um quadro no canto
       // errado da tela, mesmo que só um, lê como salto.
       style={{ left: posicao?.left ?? -9999, top: posicao?.top ?? -9999, visibility: posicao ? undefined : "hidden" }}
-      onPointerEnter={p.onEntrar}
-      onPointerLeave={p.onSair}
       role="dialog"
-      aria-label={`Recursos de ${nome}`}
+      aria-label={`Detalhes de ${nome}`}
+      data-seta-lado={posicao?.lado}
     >
+      <span
+        className="rv-cartao-token__seta"
+        style={{ left: posicao?.setaX ?? "50%" }}
+        aria-hidden="true"
+      />
       {/* CABEÇALHO: nome à esquerda, lado à direita. O nome não é mais
           sozinho na linha — a etiqueta é o que diz de quem é o token
           sem precisar procurar a cor do disco no mapa. */}
-      <div className="rv-cartao-token__cab">
+      <div className="rv-cartao-token__cab" data-com-conteudo={(recursosVisiveis.length > 0 || condicoes.length > 0) || undefined}>
         <p className="rv-cartao-token__nome">{nome}</p>
         {(p.lado === "pj" || p.lado === "pn") && (
           <span className="rv-cartao-token__lado">{p.lado === "pj" ? "PJ" : "PN"}</span>
@@ -286,6 +298,36 @@ export function CartaoTokenHover(p: PropsCartaoTokenHover) {
           );
         })}
       </div>}
+
+      {condicoes.length > 0 && (
+        <section className="rv-cartao-token__condicoes" aria-label="Condições" data-expandida={condicoesExpandidas || undefined}>
+          <button
+            type="button"
+            className="rv-cartao-token__secao-cab"
+            aria-expanded={condicoesExpandidas}
+            aria-controls={`condicoes-token-${p.tokenId}`}
+            onClick={() => setCondicoesExpandidas((aberta) => !aberta)}
+          >
+            <span>Condições</span>
+            <span className="rv-cartao-token__secao-meta">
+              <span>{condicoes.length}</span>
+              <svg viewBox="0 0 10 10" aria-hidden="true"><path d="m2.5 3.5 2.5 2.5 2.5-2.5" /></svg>
+            </span>
+          </button>
+          {condicoesExpandidas && (
+            <div className="rv-cartao-token__condicoes-lista" id={`condicoes-token-${p.tokenId}`}>
+              {condicoes.map((condicao) => (
+                <div className="rv-cartao-token__condicao" key={condicao}>
+                  <span className="rv-cartao-token__condicao-icone" aria-hidden="true">
+                    {CONDICOES[condicao].glifo}
+                  </span>
+                  <span>{CONDICOES[condicao].rotulo}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }

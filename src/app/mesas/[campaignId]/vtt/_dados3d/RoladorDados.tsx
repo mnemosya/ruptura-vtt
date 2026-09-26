@@ -64,7 +64,7 @@ function ModeToggle({ value, onChange }: { value: CountMode; onChange: (m: Count
     { k: "high", label: "Maior" },
   ];
   return (
-    <div style={{ display: "inline-flex", borderRadius: 2, border: "1px solid #1c2b45" }}>
+    <div className="rv-dados-modo" style={{ display: "inline-flex", borderRadius: 2, border: "1px solid #1c2b45" }}>
       {opts.map((o) => {
         const on = o.k === value;
         return (
@@ -576,7 +576,7 @@ function DiceTabs({ tab, onChange }: { tab: "test" | "free"; onChange: (t: "test
     { k: "free", label: "Livre", hint: "d4 a d100" },
   ];
   return (
-    <div role="tablist" aria-label="Tipo de rolagem" style={{ display: "flex", gap: 4, borderRadius: 2, padding: 4, background: "#0a1220", border: "1px solid #16233a" }}>
+    <div className="rv-dados-tabs" role="tablist" aria-label="Tipo de rolagem" style={{ display: "flex", gap: 4, borderRadius: 2, padding: 4, background: "#0a1220", border: "1px solid #16233a" }}>
       {tabs.map((t) => {
         const on = t.k === tab;
         return (

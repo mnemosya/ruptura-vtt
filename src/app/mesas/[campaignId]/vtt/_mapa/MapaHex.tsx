@@ -239,14 +239,11 @@ export interface PropsMapaHex {
   celulasRealce: Hex[];
   tipoRealce: "alcance" | "area" | "movimento" | "objeto" | null;
   onSelecionarToken: (id: string, aditivo: boolean) => void;
-  /**
-   * Hover de token. A ÂNCORA (retângulo do token na tela, do
-   * `getBoundingClientRect` do próprio `<g>`) vem junto porque quem
-   * desenha o cartão de hover (`VttClient`) precisa ancorá-lo no token
-   * — e medir o elemento é exato, enquanto refazer a conta de
-   * mundo→tela aqui fora seria uma segunda implementação do zoom/pan.
-   */
-  onHoverToken: (id: string | null, ancora?: { x: number; y: number; width: number; height: number }, opcoes?: { imediato?: boolean }) => void;
+  onHoverToken: (id: string | null) => void;
+  /** Clique concluído sem arrasto. A âncora medida mantém o cartão
+   * alinhado ao disco mesmo com zoom/pan. */
+  onAtivarCartaoToken: (id: string, ancora: { x: number; y: number; width: number; height: number }) => void;
+  onFecharCartaoToken: () => void;
   onClicarCelula?: (h: Hex) => void;
 
   /**
@@ -611,6 +608,8 @@ export function MapaHex({
   tipoRealce,
   onSelecionarToken,
   onHoverToken,
+  onAtivarCartaoToken,
+  onFecharCartaoToken,
   onClicarCelula,
   terrenoReal,
   ferramenta = "interagir",
@@ -775,6 +774,11 @@ export function MapaHex({
   // puxar o token visivelmente de volta pra origem logo depois dele
   // chegar no destino certo).
   const arrastoRef = useRef<typeof arrasto>(null);
+  // Coordenada de tela em que o gesto começou. O cartão do token só
+  // fecha quando o ponteiro realmente cruza o limiar de arrasto — não
+  // no pointerdown — para o clique simples continuar alternando o
+  // cartão normalmente.
+  const inicioArrastoTelaRef = useRef<{ x: number; y: number; cartaoFechado: boolean } | null>(null);
 
   /**
    * ACOMPANHANTES do arrasto em grupo — congelados no INÍCIO do gesto,
@@ -790,6 +794,7 @@ export function MapaHex({
   useEffect(() => { acompanhantesRef.current = acompanhantes; }, [acompanhantes]);
   const encerrarArrasto = useCallback(() => {
     arrastoRef.current = null;
+    inicioArrastoTelaRef.current = null;
     acompanhantesRef.current = [];
     setArrasto(null);
     setAcompanhantes([]);
@@ -844,7 +849,7 @@ export function MapaHex({
    * alheio junto, e perder o gesto por causa disso seria pior que mover
    * só o que é seu.
    */
-  const iniciarArrasto = useCallback((tokenId: string, origem: Hex): boolean => {
+  const iniciarArrasto = useCallback((tokenId: string, origem: Hex, clientX: number, clientY: number): boolean => {
     if (ferramenta !== "interagir") return false;
     if (podeMoverToken && !podeMoverToken(tokenId)) return false;
     const emGrupo = onSoltarTokens && (idsSelecionados?.includes(tokenId) ?? false)
@@ -854,6 +859,7 @@ export function MapaHex({
       : [];
     const inicial = iniciarArrastoToken(tokenId, origem);
     arrastoRef.current = inicial;
+    inicioArrastoTelaRef.current = { x: clientX, y: clientY, cartaoFechado: false };
     const seguidores = emGrupo.map((t) => ({
       tokenId: t.id,
       deslocamento: { q: t.pos.q - origem.q, r: t.pos.r - origem.r },
@@ -1284,6 +1290,12 @@ export function MapaHex({
     if (!arrasto) return;
 
     function mover(e: PointerEvent) {
+      const inicioTela = inicioArrastoTelaRef.current;
+      if (inicioTela && !inicioTela.cartaoFechado
+        && Math.hypot(e.clientX - inicioTela.x, e.clientY - inicioTela.y) >= LIMIAR_ARRASTO_PX) {
+        inicioTela.cartaoFechado = true;
+        onFecharCartaoToken();
+      }
       const p = pontoMundo(e.clientX, e.clientY);
       if (!p) return;
       const hex = pixelParaHex(p.x, p.y, TAM);
@@ -1679,10 +1691,11 @@ export function MapaHex({
   const onPointerDownSvg = useCallback((e: React.PointerEvent) => {
     if (e.button !== 2) return;
     e.preventDefault();
+    onFecharCartaoToken();
     panOrigemRef.current = { x: e.clientX, y: e.clientY };
     panDistanciaRef.current = 0;
     if (onPan) panRef.current = { x: e.clientX, y: e.clientY };
-  }, [onPan]);
+  }, [onPan, onFecharCartaoToken]);
 
   // Espelho síncrono de `pontoMundo` — ele muda de referência a cada
   // tick de pan (depende de `pan.x/y`), e é EXATAMENTE esse tick que
@@ -1758,11 +1771,12 @@ export function MapaHex({
       e.preventDefault();
       const p = pontoMundo(e.clientX, e.clientY);
       if (!p) return;
+      onFecharCartaoToken();
       onWheelZoom!(normalizarDeltaWheel(e), p);
     }
     svg.addEventListener("wheel", aoRolar, { passive: false });
     return () => svg.removeEventListener("wheel", aoRolar);
-  }, [onWheelZoom, pontoMundo]);
+  }, [onWheelZoom, pontoMundo, onFecharCartaoToken]);
 
   /**
    * Hover do botão de edição rápida — geometria REAL de cada área
@@ -2449,7 +2463,6 @@ export function MapaHex({
           const x0 = minX + m, y0 = minY + m;
           const x1 = maxX - m, y1 = maxY - m;
           const eco = 4;                     // distância da segunda linha
-          const braco = TAM * 0.7;           // comprimento de cada perna da cantoneira
           /* RAIO EM PIXELS DE TELA, como o palco. Dividir por `zoom` é
              o mesmo que `vector-effect: non-scaling-stroke` faz com a
              espessura: a moldura vive dentro do `<g>` que escala, e um
@@ -2457,31 +2470,12 @@ export function MapaHex({
              alto e reto com zoom baixo — o canto tem que ser o mesmo
              que o do palco em qualquer aproximação. */
           const r = 4 / zoom;
-          const cantos = [
-            { x: x0, y: y0, dx: 1, dy: 1 },
-            { x: x1, y: y0, dx: -1, dy: 1 },
-            { x: x1, y: y1, dx: -1, dy: -1 },
-            { x: x0, y: y1, dx: 1, dy: -1 },
-          ];
           return (
             <g className="rv-moldura-mapa" pointerEvents="none">
               <rect x={x0} y={y0} width={x1 - x0} height={y1 - y0} rx={r} ry={r}
                 fill="none" stroke="#1c2b45" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
               <rect x={x0 + eco} y={y0 + eco} width={x1 - x0 - eco * 2} height={y1 - y0 - eco * 2} rx={r} ry={r}
                 fill="none" stroke="#16233a" strokeWidth={1} opacity={0.75} vectorEffect="non-scaling-stroke" />
-              {/* A CANTONEIRA acompanha a curva: as duas pernas param
-                  onde o arco começa e um `A` de raio `r` costura as
-                  duas. Reta sobre um canto arredondado, ela cruzaria a
-                  moldura por fora e o L ficaria "solto" da caixa. */}
-              {cantos.map((c, i) => (
-                <path key={i}
-                  d={`M ${c.x + c.dx * braco} ${c.y}`
-                    + ` L ${c.x + c.dx * r} ${c.y}`
-                    + ` A ${r} ${r} 0 0 ${c.dx * c.dy > 0 ? 0 : 1} ${c.x} ${c.y + c.dy * r}`
-                    + ` L ${c.x} ${c.y + c.dy * braco}`}
-                  fill="none" stroke="#45b8c9" strokeWidth={1.5} strokeLinecap="round"
-                  opacity={0.2} vectorEffect="non-scaling-stroke" />
-              ))}
             </g>
           );
         })()}
@@ -2890,7 +2884,9 @@ export function MapaHex({
                 ferramenta={ferramenta}
                 onSelecionar={tokensBloqueados ? () => {} : onSelecionarToken}
                 onHover={onHoverToken}
-                onIniciarArrasto={tokensBloqueados ? undefined : () => iniciarArrasto(t.id, t.pos)}
+                onAtivarCartao={onAtivarCartaoToken}
+                onFecharCartao={onFecharCartaoToken}
+                onIniciarArrasto={tokensBloqueados ? undefined : (clientX, clientY) => iniciarArrasto(t.id, t.pos, clientX, clientY)}
                 onIniciarMedicao={(clientX, clientY) => iniciarMedicao(t.pos, clientX, clientY, 0)}
                 movimentoVisual={movimentoDesteToken}
                 onAnimacaoConcluida={onAnimacaoConcluida}
@@ -2987,7 +2983,7 @@ export function MapaHex({
           <rect
             className="rv-captura-posicionamento"
             x={minX} y={minY} width={maxX - minX} height={maxY - minY}
-            fill="transparent" style={{ cursor: "crosshair" }}
+            fill="transparent"
             onPointerMove={onMoverPosicionamento ? (e) => {
               const p = pontoMundo(e.clientX, e.clientY);
               if (p) onMoverPosicionamento(pixelParaHex(p.x, p.y, TAM));
@@ -3393,6 +3389,8 @@ function Token({
   ferramenta,
   onSelecionar,
   onHover,
+  onAtivarCartao,
+  onFecharCartao,
   onIniciarArrasto,
   onIniciarMedicao,
   movimentoVisual,
@@ -3417,9 +3415,11 @@ function Token({
    * pediu o fechamento é um CONTROLE que está debaixo do cartão, como
    * a alça de rotação, esperar 200ms é esperar o clique ser comido.
    */
-  onHover: (id: string | null, ancora?: { x: number; y: number; width: number; height: number }, opcoes?: { imediato?: boolean }) => void;
+  onHover: (id: string | null) => void;
+  onAtivarCartao: (id: string, ancora: { x: number; y: number; width: number; height: number }) => void;
+  onFecharCartao: () => void;
   /** Devolve SE o arrasto começou — o `pointerdown` precisa disso pra saber se pode adiar a decisão sobre a seleção (ver o handler). */
-  onIniciarArrasto?: () => boolean;
+  onIniciarArrasto?: (clientX: number, clientY: number) => boolean;
   onIniciarMedicao?: (clientX: number, clientY: number) => void;
   movimentoVisual?: MovimentoVisualToken;
   onAnimacaoConcluida?: (tokenId: string, movementId: string, destino?: Hex) => void;
@@ -3435,6 +3435,7 @@ function Token({
   onTeclaAlcaRotacao?: (e: React.KeyboardEvent) => void;
 }) {
   const gRef = useRef<SVGGElement>(null);
+  const inicioCliqueRef = useRef<{ x: number; y: number } | null>(null);
   useAnimacaoToken({
     gRef,
     movimento: movimentoVisual,
@@ -3540,6 +3541,7 @@ function Token({
       // competindo pelo mesmo token ao mesmo tempo.
       onPointerDown={(e) => {
         if (e.button !== 0) return;
+        inicioCliqueRef.current = { x: e.clientX, y: e.clientY };
         if (ferramenta === "medir") { onIniciarMedicao?.(e.clientX, e.clientY); return; }
         // Pressionar um token QUE JÁ ESTÁ SELECIONADO, dentro de uma
         // seleção múltipla, NÃO colapsa a seleção aqui: colapsar seria
@@ -3549,20 +3551,29 @@ function Token({
         // pro fim do gesto: soltar SEM ter andado colapsa a seleção
         // neste token (ver `soltar()`), soltar depois de andar move o
         // grupo. Shift continua sendo alternância, sempre.
-        const comecouArrasto = !movimentoVisual && (onIniciarArrasto?.() ?? false);
+        const comecouArrasto = !movimentoVisual && (onIniciarArrasto?.(e.clientX, e.clientY) ?? false);
         if (estado.selecionado && !e.shiftKey && comecouArrasto) return;
         onSelecionar(token.id, e.shiftKey);
       }}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelecionar(token.id, e.shiftKey); } }}
-      onMouseEnter={(e) => {
-        // Mede o DISCO, não o grupo (ver o comentário na `<circle>` da
-        // base). `getBoundingClientRect` de um elemento SVG já devolve
-        // a caixa em coordenadas de tela, com zoom e pan aplicados —
-        // por isso medir, em vez de refazer a conta de mundo→tela.
+      onClick={(e) => {
+        const inicio = inicioCliqueRef.current;
+        inicioCliqueRef.current = null;
+        if (ferramenta !== "interagir" || e.shiftKey || !inicio) return;
+        if (Math.hypot(e.clientX - inicio.x, e.clientY - inicio.y) > 4) return;
         const alvo = e.currentTarget.querySelector("[data-token-disco]") ?? e.currentTarget;
         const r = alvo.getBoundingClientRect();
-        onHover(token.id, { x: r.x, y: r.y, width: r.width, height: r.height });
+        onAtivarCartao(token.id, { x: r.x, y: r.y, width: r.width, height: r.height });
       }}
+      onKeyDown={(e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        onSelecionar(token.id, e.shiftKey);
+        if (ferramenta !== "interagir" || e.shiftKey) return;
+        const alvo = e.currentTarget.querySelector("[data-token-disco]") ?? e.currentTarget;
+        const r = alvo.getBoundingClientRect();
+        onAtivarCartao(token.id, { x: r.x, y: r.y, width: r.width, height: r.height });
+      }}
+      onMouseEnter={() => onHover(token.id)}
       onMouseLeave={() => onHover(null)}
     >
       {/* Pegada: realce discreto de TODA célula ocupada, em coordenadas
@@ -3763,7 +3774,9 @@ function Token({
                   transform={`rotate(${anguloHaloGraus})`}
                 />
                 <circle
-                  r={raioHalo} fill="none" stroke={corGestoRotacao ?? cor} strokeWidth={4} opacity={0.55}
+                  r={raioHalo} fill="none" stroke={corGestoRotacao ?? cor}
+                  strokeWidth={estado.sobCursor ? 4.5 : 4}
+                  opacity={estado.sobCursor ? 0.68 : 0.55}
                   strokeDasharray={dashHalo} strokeLinecap="round"
                   transform={`rotate(${anguloHaloGraus})`}
                 />
@@ -3817,14 +3830,8 @@ function Token({
                    tratada como o controle que é. Sair dela devolve o
                    cartão, reancorado no disco — quem só passou por
                    cima a caminho do token não perde nada. */
-                onMouseEnter={() => onHover(null, undefined, { imediato: true })}
-                onMouseLeave={(e) => {
-                  const g = e.currentTarget.closest(".rv-token");
-                  const disco = g?.querySelector("[data-token-disco]") ?? g;
-                  if (!disco) return;
-                  const r = disco.getBoundingClientRect();
-                  onHover(token.id, { x: r.x, y: r.y, width: r.width, height: r.height });
-                }}
+                onMouseEnter={() => onHover(null)}
+                onMouseLeave={() => onHover(token.id)}
               >
                 <line x1={meioLocal.x} y1={meioLocal.y} x2={alcaLocal.x} y2={alcaLocal.y}
                   stroke={corAlca} strokeWidth="1.5" strokeDasharray="2 2" opacity="0.85" pointerEvents="none" />
@@ -3840,7 +3847,11 @@ function Token({
                   aria-valuemin={0} aria-valuemax={5} aria-valuenow={orientacaoExibida}
                   aria-valuetext={`Orientação ${orientacaoExibida + 1} de 6`}
                   style={{ cursor: emGestoDeRotacao ? "grabbing" : "grab" }}
-                  onPointerDown={(e) => { if (e.button === 0) onIniciarAlcaRotacao(e); }}
+                  onPointerDown={(e) => {
+                    if (e.button !== 0) return;
+                    onFecharCartao();
+                    onIniciarAlcaRotacao(e);
+                  }}
                   onPointerMove={onMoverAlcaRotacao}
                   onPointerUp={onSoltarAlcaRotacao}
                   onPointerCancel={onCancelarAlcaRotacao}
@@ -3936,19 +3947,16 @@ function Token({
         </g>
       )}
 
-      {/* condições: glifos em arco embaixo */}
+      {/* O mapa mostra só o resumo. A lista detalhada vive no cartão
+          HTML de hover do token, fora do SVG, e portanto não encolhe
+          nem cresce com o zoom do mapa. */}
       {token.condicoes.length > 0 && (
-        <g className="rv-token-condicoes" transform={`translate(0 ${raio + 11})`}>
-          {token.condicoes.slice(0, 4).map((c, i, arr) => {
-            const larg = 13;
-            const x = (i - (arr.length - 1) / 2) * larg;
-            return (
-              <g key={c} transform={`translate(${x} 0)`}>
-                <circle r={5.6} fill="#0d141b" stroke="#f5a200" strokeWidth="1" />
-                <text className="rv-token-cond" textAnchor="middle" y={2.4}>{CONDICOES[c].glifo}</text>
-              </g>
-            );
-          })}
+        <g
+          className="rv-token-condicao-resumo"
+          transform={`translate(${raio * 0.72} ${raio * 0.72})`}
+          aria-label={`${token.condicoes.length} ${token.condicoes.length === 1 ? "condição" : "condições"}: ${token.condicoes.map((c) => CONDICOES[c].rotulo).join(", ")}`}
+        >
+          <circle className="rv-token-condicao-badge" r={4.5} />
         </g>
       )}
 

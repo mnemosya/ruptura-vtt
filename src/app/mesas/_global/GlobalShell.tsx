@@ -134,7 +134,7 @@ export function HudCursor({ enabled }: { enabled: boolean }) {
       mouse.current = { x: e.clientX, y: e.clientY };
       if (dotRef.current) dotRef.current.style.transform = `translate(${e.clientX - 3}px, ${e.clientY - 3}px)`;
       const target = e.target as HTMLElement | null;
-      const hoverable = target?.closest?.("button, a, input, select, textarea, [role='tab'], [role='button'], label");
+      const hoverable = target?.closest?.("button, a, input, select, textarea, [role='tab'], [role='button'], [data-cursor-action='true'], label");
       if (hoverable && !hovering.current) {
         hovering.current = true;
         ringRef.current?.classList.add("ra-cursor-ring--hover");

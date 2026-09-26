@@ -47,6 +47,7 @@ import {
   type ResultKey,
 } from "../../../mesas/[campaignId]/vtt/_dados3d/ResultadoRolagem";
 import type { ConsoleApi } from "../types";
+import { useCentroDoConsole } from "../useCentroDoConsole";
 
 const SEM_PERICIA = "";
 
@@ -102,6 +103,9 @@ export function PainelRolagem({ api, prefill, onFechar }: {
 
   const rolarNaMesa = useRolarNaMesa();
   const centro = useCentroDoConsole();
+  const posicao = centro
+    ? { position: "absolute" as const, left: centro.x, top: centro.y, transform: "translate(-50%, -50%)", maxHeight: "100%" }
+    : { position: "absolute" as const, inset: 0, display: "grid", placeItems: "center", padding: 24 };
 
   const valorAtributo = api.character.atributos[atributoId as keyof CharacterAttributes] ?? 0;
   const nd8 = valorAtributo;
@@ -161,7 +165,7 @@ export function PainelRolagem({ api, prefill, onFechar }: {
 
   return (
     <div style={CAMADA} data-testid="console-rolagem-camada">
-      <div style={{ ...centro, pointerEvents: "auto" }}>
+      <div style={{ ...posicao, pointerEvents: "auto" }}>
       <MolduraRolagem
         indice="01"
         codigo="Rolagem"
@@ -183,7 +187,7 @@ export function PainelRolagem({ api, prefill, onFechar }: {
             </div>
           </div>
 
-          <div style={{ borderRadius: 2, padding: 14, background: "#0c1420", border: "1px solid #16233a" }}>
+          <div style={{ borderRadius: 4, padding: 14, background: "#0c1420", border: "1px solid #16233a" }}>
             <div style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontFamily: MONO, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.14em", color: INK_FAINT }}>
                 Pool · <span style={{ color: "#35c7d8" }}>{nd8}d8</span> · maior dado
@@ -235,7 +239,7 @@ export function PainelRolagem({ api, prefill, onFechar }: {
 
           {defesa && !defesa.usouReacao && (
             <p role="status" style={{
-              margin: 0, borderRadius: 2, border: `1px solid ${ACCENTS.amber.hex}55`, background: ACCENTS.amber.soft,
+              margin: 0, borderRadius: 4, border: `1px solid ${ACCENTS.amber.hex}55`, background: ACCENTS.amber.soft,
               padding: "8px 10px", fontFamily: BODY, fontSize: 11.5, lineHeight: 1.45, color: "#e5c187",
             }}>
               Sem Reação disponível — {defesa.defesasSemReacao}ª defesa sem Reação nesta rodada, penalidade cumulativa
@@ -291,26 +295,3 @@ const CAMADA: React.CSSProperties = {
   position: "fixed", inset: 0, zIndex: 520,
   pointerEvents: "none",
 };
-
-/** Centro do Console, seguido enquanto ele mudar de tamanho ou lugar. */
-function useCentroDoConsole(): React.CSSProperties {
-  const [centro, setCentro] = useState<{ x: number; y: number } | null>(null);
-  useEffect(() => {
-    const alvo = document.querySelector<HTMLElement>(".rc-window");
-    if (!alvo) return;
-    const medir = () => {
-      const r = alvo.getBoundingClientRect();
-      setCentro({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
-    };
-    medir();
-    const obs = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(medir);
-    obs?.observe(alvo);
-    window.addEventListener("resize", medir);
-    return () => { obs?.disconnect(); window.removeEventListener("resize", medir); };
-  }, []);
-  // Sem Console por perto (não deveria acontecer — este painel é dele),
-  // cai no centro da tela em vez de sumir num canto.
-  return centro
-    ? { position: "absolute", left: centro.x, top: centro.y, transform: "translate(-50%, -50%)", maxHeight: "100%" }
-    : { position: "absolute", inset: 0, display: "grid", placeItems: "center", padding: 24 };
-}

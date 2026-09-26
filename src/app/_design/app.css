@@ -30,14 +30,10 @@
      nome dizendo de onde vieram — um número solto em cada regra é o
      que faz duas telas do mesmo produto divergirem sem ninguém decidir
      que deviam divergir. */
-  /* O chanfro (`clip-path: polygon(...)`) saiu de TODA a área
-     autenticada, a pedido: ele recortava o contorno de foco nos
-     controles e, nas superfícies, misturava dois tratamentos de canto
-     na mesma tela. O raio do chassi passa a valer para tudo.
-     Continuam por `clip-path` apenas as FORMAS — o glifo hexagonal do
-     estado vazio não é um canto cortado, é um hexágono. */
-  --ra-r: 4px;      /* = --rv-r  · superfícies e controles */
-  --ra-r-sm: 1px;   /* = --rv-r-sm · peças pequenas */
+  /* Peças chanfradas recebem `border-radius: 0` na regra compartilhada
+     mais abaixo. Todo o restante usa este raio curto e constante. */
+  --ra-r: 2px;
+  --ra-r-sm: 2px;
   position: relative;
   min-height: 100vh;
   background: #07090f;
@@ -386,11 +382,6 @@
   border: 1px solid #3a94ac; background: linear-gradient(95.6deg, #123640 0%, #1f5464 100%); color: #d3f4ff;
   position: relative; overflow: hidden; text-transform: uppercase; text-decoration: none;
   transition: filter 0.2s, border-color 0.2s, transform 0.12s, box-shadow 0.2s;
-  /* Sem `clip-path`: ele recorta TODA a pintura do elemento, inclusive o
-     contorno de foco — e este botão desenha o foco com
-     `outline-offset: 3px`, ou seja, fora da região recortada. O canto
-     chanfrado apagava o único sinal de onde o teclado está. O raio do
-     chassi dá o mesmo arredondamento sem cortar nada. */
   border-radius: var(--ra-r);
 }
 .ra-btn:hover:not(:disabled) { filter: brightness(1.15); border-color: #6fe0ff; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 212, 255, 0.18); }
@@ -410,7 +401,6 @@
   width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;
   color: rgba(0, 212, 255, 0.6); background: rgba(0, 20, 35, 0.4); border: 1px solid rgba(0, 212, 255, 0.16);
   transition: color 0.16s, border-color 0.16s, background 0.16s;
-  /* Mesmo motivo de `.ra-btn`: o foco tem `outline-offset: 2px`. */
   border-radius: var(--ra-r);
 }
 .ra-iconbtn:hover { color: #eaf7ff; border-color: rgba(0, 212, 255, 0.45); background: rgba(0, 30, 50, 0.6); }
@@ -665,9 +655,6 @@
   width: 100%; background: rgba(0, 18, 32, 0.65); border: 1px solid rgba(0, 212, 255, 0.16); color: #cdeaf6;
   font-family: var(--font-rajdhani), sans-serif; font-size: 14px; padding: 11px 14px; outline: none;
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-  /* Campo de formulário também é controle: o `clip-path` cortava o
-     realce de foco (`box-shadow` do `:focus`, logo abaixo) exatamente
-     nos cantos chanfrados. */
   border-radius: var(--ra-r);
 }
 .ra-select { appearance: none; }
@@ -684,9 +671,6 @@
 .ra-switch {
   width: 44px; height: 24px; flex-shrink: 0; border: 1px solid rgba(0, 212, 255, 0.3); background: rgba(0, 18, 32, 0.7);
   position: relative; transition: background 0.2s, border-color 0.2s;
-  /* O interruptor desenha o foco com `outline-offset: 2px`, fora do
-     recorte. E num controle de 44×24 o chanfro de 6px comia um quarto
-     da largura de cada canto. */
   border-radius: var(--ra-r);
 }
 .ra-switch-knob { border-radius: var(--ra-r-sm); }
@@ -807,6 +791,185 @@
 .ra-comp-type:hover { color: rgba(195, 245, 255, 0.9); border-color: rgba(0, 212, 255, 0.3); }
 .ra-comp-type--active { color: #eafcff; border-color: #3a94ac; background: linear-gradient(92.7deg, #123640, #1f5464); box-shadow: 0 0 10px rgba(0, 212, 255, 0.18); }
 .ra-comp-type:focus-visible { outline: 2px solid rgba(0, 212, 255, 0.7); outline-offset: 1px; }
+
+/* ── Chanfro compartilhado da área autenticada ────────────────────
+   O recorte apaga o trecho diagonal de uma `border` normal. A forma e
+   o fio ficam separados como no Console: `clip-path` recorta a peça e
+   `::after` redesenha somente as duas diagonais. */
+:is(
+  .ra2-nav-item,
+  .ra2-brand-mark,
+  .ra2-collapse-btn,
+  .ra2-profile,
+  .ra2-profile-avatar,
+  .ra-menu,
+  .ra2-primary,
+  .ra2-secondary,
+  .ra-btn,
+  .ra-iconbtn,
+  .ra2-search,
+  .ra2-segmented,
+  .ra2-seg,
+  .ra2-featured,
+  .ra2-featured-pessoas,
+  .ra2-count-chip,
+  .ra2-card-inner,
+  .ra2-panel,
+  .ra2-person--link,
+  .ra2-person-avatar,
+  .ra-role,
+  .ra-tag,
+  .ra-empty,
+  .ra-state-box,
+  .ra-skel-card,
+  .ra-module,
+  .ra-modal,
+  .ra-toast,
+  .ra-charcard,
+  .ra-char-portrait,
+  .ra-comp-row,
+  .ra-comp-type
+) {
+  --ra-chanfro: 9px;
+  --ra-chanfro-fio: rgba(0, 212, 255, 0.16);
+  position: relative;
+  border-radius: 4px 0 4px 0;
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--ra-chanfro)) 0,
+    100% var(--ra-chanfro),
+    100% 100%,
+    var(--ra-chanfro) 100%,
+    0 calc(100% - var(--ra-chanfro))
+  );
+}
+:is(
+  .ra2-nav-item,
+  .ra2-brand-mark,
+  .ra2-collapse-btn,
+  .ra2-profile,
+  .ra2-profile-avatar,
+  .ra-menu,
+  .ra2-primary,
+  .ra2-secondary,
+  .ra-btn,
+  .ra-iconbtn,
+  .ra2-search,
+  .ra2-segmented,
+  .ra2-seg,
+  .ra2-featured,
+  .ra2-featured-pessoas,
+  .ra2-count-chip,
+  .ra2-card-inner,
+  .ra2-panel,
+  .ra2-person--link,
+  .ra2-person-avatar,
+  .ra-role,
+  .ra-tag,
+  .ra-empty,
+  .ra-state-box,
+  .ra-skel-card,
+  .ra-module,
+  .ra-modal,
+  .ra-toast,
+  .ra-charcard,
+  .ra-char-portrait,
+  .ra-comp-row,
+  .ra-comp-type
+)::after {
+  content: "";
+  position: absolute; inset: -1px;
+  pointer-events: none;
+  background:
+    linear-gradient(45deg,
+      transparent calc(50% - 1px),
+      var(--ra-chanfro-fio) calc(50% - 1px) 50%,
+      transparent 50%
+    ) top right / var(--ra-chanfro) var(--ra-chanfro) no-repeat,
+    linear-gradient(45deg,
+      transparent 50%,
+      var(--ra-chanfro-fio) 50% calc(50% + 1px),
+      transparent calc(50% + 1px)
+    ) bottom left / var(--ra-chanfro) var(--ra-chanfro) no-repeat;
+}
+
+/* Peças compactas não comportam o raio de 4px sem competir com o
+   chanfro. Mantêm a normalização mínima de 2px. */
+:is(
+  .ra2-brand-mark,
+  .ra2-profile-avatar,
+  .ra2-person-avatar,
+  .ra2-count-chip,
+  .ra2-seg,
+  .ra2-person--link,
+  .ra-role,
+  .ra-tag,
+  .ra-comp-type
+) { border-radius: 2px 0 2px 0; }
+
+/* O fio diagonal acompanha a borda real em repouso e nos estados. */
+.ra2-nav-item { --ra-chanfro-fio: transparent; }
+.ra2-nav-item--active { --ra-chanfro-fio: rgba(0, 212, 255, 0.5); }
+.ra2-brand-mark { --ra-chanfro: 7px; --ra-chanfro-fio: transparent; }
+.ra2-collapse-btn { --ra-chanfro-fio: rgba(0, 212, 255, 0.16); }
+.ra2-collapse-btn:hover { --ra-chanfro-fio: rgba(0, 212, 255, 0.45); }
+.ra2-profile { --ra-chanfro: 7px; --ra-chanfro-fio: rgba(0, 212, 255, 0.16); }
+.ra2-profile:hover { --ra-chanfro-fio: rgba(0, 212, 255, 0.4); }
+.ra2-profile-avatar, .ra2-person-avatar { --ra-chanfro: 5px; --ra-chanfro-fio: rgba(0, 212, 255, 0.3); }
+.ra-menu { --ra-chanfro-fio: rgba(0, 212, 255, 0.28); }
+.ra2-primary, .ra-btn { --ra-chanfro-fio: #3a94ac; }
+.ra2-primary:hover:not(:disabled), .ra-btn:hover:not(:disabled) { --ra-chanfro-fio: #6fe0ff; }
+.ra2-primary:active:not(:disabled) { --ra-chanfro-fio: #1db3ce; }
+.ra2-secondary, .ra-btn--amber { --ra-chanfro-fio: #a97a30; }
+.ra2-secondary:hover:not(:disabled) { --ra-chanfro-fio: rgba(245, 180, 70, 0.9); }
+.ra-btn--amber:hover:not(:disabled) { --ra-chanfro-fio: #ffcf8a; }
+.ra-btn--ghost { --ra-chanfro-fio: rgba(0, 212, 255, 0.2); }
+.ra-btn--ghost:hover:not(:disabled) { --ra-chanfro-fio: rgba(0, 212, 255, 0.45); }
+.ra-btn--danger { --ra-chanfro-fio: #c94f63; }
+.ra-btn--danger:hover:not(:disabled) { --ra-chanfro-fio: #ff96a8; }
+.ra-iconbtn { --ra-chanfro: 7px; --ra-chanfro-fio: rgba(0, 212, 255, 0.16); }
+.ra-iconbtn:hover { --ra-chanfro-fio: rgba(0, 212, 255, 0.45); }
+.ra2-search { --ra-chanfro-fio: rgba(0, 212, 255, 0.14); }
+.ra2-search:hover { --ra-chanfro-fio: rgba(0, 212, 255, 0.28); }
+.ra2-search:focus-within { --ra-chanfro-fio: rgba(0, 212, 255, 0.6); box-shadow: inset 0 0 0 1px rgba(0, 212, 255, 0.25); }
+.ra2-segmented { --ra-chanfro-fio: rgba(0, 212, 255, 0.1); }
+.ra2-seg { --ra-chanfro: 6px; --ra-chanfro-fio: transparent; }
+.ra2-seg--active { --ra-chanfro-fio: #3a94ac; }
+.ra2-featured { --ra-chanfro: 12px; --ra-chanfro-fio: rgba(0, 212, 255, 0.35); border: 1px solid rgba(0, 212, 255, 0.35); }
+.ra2-featured-frame { border: 0; }
+.ra2-featured-pessoas, .ra2-count-chip { --ra-chanfro: 5px; --ra-chanfro-fio: rgba(84, 172, 190, 0.22); }
+.ra2-card-inner { --ra-chanfro-fio: rgba(0, 212, 255, 0.16); }
+.ra2-card:hover .ra2-card-inner { --ra-chanfro-fio: rgba(0, 212, 255, 0.4); }
+.ra2-panel { --ra-chanfro-fio: rgba(0, 212, 255, 0.14); }
+.ra2-person--link { --ra-chanfro: 6px; --ra-chanfro-fio: transparent; }
+.ra2-person--link:hover { --ra-chanfro-fio: rgba(84, 172, 190, 0.28); }
+.ra-role, .ra-tag, .ra-comp-type { --ra-chanfro: 6px; }
+.ra-role--narrator, .ra-tag--amber { --ra-chanfro-fio: rgba(245, 162, 0, 0.5); }
+.ra-role--player, .ra-tag--cyan { --ra-chanfro-fio: rgba(0, 212, 255, 0.45); }
+.ra-tag--muted { --ra-chanfro-fio: rgba(184, 216, 232, 0.2); }
+.ra-state-box--error { --ra-chanfro-fio: rgba(255, 60, 80, 0.3); }
+.ra-toast--success { --ra-chanfro-fio: rgba(34, 211, 170, 0.5); }
+.ra-toast--error { --ra-chanfro-fio: rgba(255, 60, 80, 0.5); }
+.ra-charcard:hover { --ra-chanfro-fio: rgba(0, 212, 255, 0.42); }
+.ra-char-portrait { --ra-chanfro: 7px; --ra-chanfro-fio: rgba(0, 212, 255, 0.28); }
+.ra-comp-row { --ra-chanfro-fio: rgba(0, 212, 255, 0.1); }
+.ra-comp-row:hover { --ra-chanfro-fio: rgba(0, 212, 255, 0.3); }
+.ra-comp-type--active { --ra-chanfro-fio: #3a94ac; }
+
+/* O foco precisa viver dentro da área recortada. */
+:is(
+  .ra2-nav-item,
+  .ra2-collapse-btn,
+  .ra2-profile,
+  .ra2-person--link,
+  .ra2-primary,
+  .ra2-secondary,
+  .ra-btn,
+  .ra-iconbtn,
+  .ra2-seg,
+  .ra-charcard,
+  .ra-comp-type
+):focus-visible { outline-offset: -3px; }
 
 /* ── Animações de entrada ──────────────────────────────────────── */
 /* 500ms/`ease`/10px → o degrau de ROTA do sistema (260ms, curva de

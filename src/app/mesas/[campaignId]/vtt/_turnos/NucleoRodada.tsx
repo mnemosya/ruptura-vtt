@@ -68,11 +68,6 @@ export function NucleoRodada({
 
   return (
     <section className="rv-rodadas" aria-label="Rodada e ativação" data-janela={trilha.janela}>
-      <span className="rv-rodadas-canto rv-rodadas-canto--se" aria-hidden="true" />
-      <span className="rv-rodadas-canto rv-rodadas-canto--sd" aria-hidden="true" />
-      <span className="rv-rodadas-canto rv-rodadas-canto--ie" aria-hidden="true" />
-      <span className="rv-rodadas-canto rv-rodadas-canto--id" aria-hidden="true" />
-
       <p className="rv-rodadas-rodada">
         Rodada {trilha.rodada}
         {trilha.modo !== "combate" && (

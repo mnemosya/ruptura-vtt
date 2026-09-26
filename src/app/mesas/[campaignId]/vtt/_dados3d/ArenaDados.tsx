@@ -366,7 +366,6 @@ export function PhysicsDiceArena({
   className,
   perfil = "bandeja",
   forca,
-  zoomMapa,
 }: {
   dice: PhysicsDieSpec[];
   rollToken: number;
@@ -383,10 +382,8 @@ export function PhysicsDiceArena({
   /** 0–1: quanto o botão "Rolar" foi carregado. Só afeta as condições
    *  INICIAIS do lançamento (impulso, giro) — nunca a face lida no fim. */
   forca?: number;
-  /** Zoom ATUAL do mapa (`VttClient`, 0.5–2.4, padrão 1). Só em modo
-   *  `mesa`: escala o TAMANHO do dado — mapa mais zoomado, dado maior,
-   *  pra continuar do tamanho de hexágono/token que está na tela. Não
-   *  mexe na área/câmera, só na geometria. */
+  /** Compatibilidade com o chamador. O overlay tem escala própria em
+   * pixels e não acompanha o zoom do mapa. */
   zoomMapa?: number;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -403,6 +400,10 @@ export function PhysicsDiceArena({
     renderer.setClearColor(0x000000, 0);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
+    // setSize(..., false) altera o buffer em pixels físicos. O CSS
+    // precisa continuar no tamanho do container, inclusive em Retina
+    // e nos overlays que não usam a antiga classe rup-mesa-arena.
+    Object.assign(renderer.domElement.style, { display: "block", width: "100%", height: "100%" });
     el.appendChild(renderer.domElement);
 
     const mesa = perfil === "mesa";
@@ -410,51 +411,26 @@ export function PhysicsDiceArena({
     // aqui, não espalhado pelos pontos abaixo, pra continuar sendo UMA
     // conversão, testável isolada de `three`/`cannon-es`.
     const lancamento = parametrosDeLancamento(forca ?? 0);
-    // Na mesa os dados precisam se LER a distância — um pouco maiores
-    // que na bandeja, mas sem exagero: a câmera segue a MESMA razão
-    // distância/extensão da bandeja (só a extensão cresce), então o
-    // enquadramento não fecha em cima de um dado só.
-    //
-    // Zoom do MAPA entra aqui, só na mesa: dado maior com o mapa mais
-    // zoomado (acompanha o hexágono/token que cresceu na tela), menor
-    // com o mapa mais afastado. Faixa deliberadamente comprimida
-    // (0,8×–1,56× em cima da base 1.3, não o 0,5–2,4 cru do zoom) —
-    // um dado 2,4× maior escaparia da folga de parede medida pra
-    // escala 1.3 (ver `espessuraParede` abaixo).
-    const zoomClampado = Math.max(0.5, Math.min(2.4, zoomMapa ?? 1));
-    const fatorZoom = mesa ? 0.6 + zoomClampado * 0.4 : 1;
-    const escala = mesa ? 1.3 * fatorZoom : 1;
+    // Mesmo porte em todos os pontos de entrada do overlay.
+    const escala = mesa ? 1.3 : 1;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+    // Projeção paralela: subir no lançamento não aumenta o dado.
+    // 54 px/unidade recupera o porte aparente anterior no piso:
+    // aproximadamente 124 CSS px de diâmetro, sem voltar a variar com
+    // a altura do lançamento.
+    const pixelsPorUnidadeAlvo = 54;
+    let pixelsPorUnidade = Math.min(pixelsPorUnidadeAlvo, Math.max(1, Math.min(el.clientWidth, el.clientHeight)) / 8);
+    let arenaHalfX = Math.max(el.clientWidth, 1) / (2 * pixelsPorUnidade);
+    let arenaHalfZ = Math.max(el.clientHeight, 1) / (2 * pixelsPorUnidade);
+    const camera = new THREE.OrthographicCamera(-arenaHalfX, arenaHalfX, arenaHalfZ, -arenaHalfZ, 0.1, 200);
 
     const columns = Math.max(2, Math.ceil(Math.sqrt(dice.length)));
     const rows = Math.max(1, Math.ceil(dice.length / columns));
-    const arenaHalfZ = mesa ? Math.max(5.5, rows * 1.7) : Math.max(2.25, Math.ceil(dice.length / columns) * 0.9);
-    // Na mesa a largura da arena segue a PROPORÇÃO real do contêiner
-    // (agora só a faixa direita do palco, não mais o palco inteiro) —
-    // um valor fixo assumia um contêiner largo e cortava dado na borda
-    // assim que o espaço ficou mais estreito. `1.29` vem da própria
-    // geometria da câmera (FOV vertical 34°, distância proporcional a
-    // `arenaHalfZ`): é quanto de meia-largura do mundo cabe no quadro
-    // por unidade de proporção largura/altura do contêiner, com uma
-    // margem de 15% pra não colar dado na borda.
-    const proporcaoContainer = el.clientWidth / Math.max(el.clientHeight, 1);
-    const arenaHalfX = mesa
-      ? Math.max(4.5, Math.min(arenaHalfZ * proporcaoContainer * 1.29 * 0.85, columns * 2.6))
-      : Math.max(3.2, columns * 0.92);
-    // TESTE — câmera vertical (vista de cima pra baixo), só pra
-    // comparar com o ângulo atual. `false` volta pro ângulo original.
-    const CAMERA_DE_CIMA = true;
-    if (CAMERA_DE_CIMA) {
-      // Olhando reto pra baixo, o `up` padrão (0,1,0) fica paralelo à
-      // direção do olhar — degenerado, a câmera não sabe pra onde é
-      // "topo da tela". Trocar o `up` pra um eixo do PLANO resolve.
-      camera.up.set(0, 0, -1);
-      camera.position.set(0, arenaHalfZ * 4.965, 0);
-    } else {
-      camera.position.set(0, arenaHalfZ * 4.1, arenaHalfZ * 2.8);
-    }
+    // Vista vertical: X/Z do mundo correspondem aos limites da tela,
+    // independentemente da altura Y alcançada durante o lançamento.
+    camera.up.set(0, 0, -1);
+    camera.position.set(0, 100, 0);
     camera.lookAt(0, 0, 0);
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.32));
@@ -464,7 +440,7 @@ export function PhysicsDiceArena({
     // (luz vindo de +X/+Z, sombra na direção oposta), tampando
     // exatamente o lado que a mesa precisa livre. Vista de cima, a luz
     // vem de cima-esquerda do MUNDO — sombra cai pra baixo-direita.
-    keyLight.position.set(CAMERA_DE_CIMA ? -3 : 4, CAMERA_DE_CIMA ? 9 : 8, CAMERA_DE_CIMA ? -4 : 5);
+    keyLight.position.set(-3, 9, -4);
     keyLight.castShadow = true;
     scene.add(keyLight);
     const rimLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -528,21 +504,26 @@ export function PhysicsDiceArena({
     floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
     world.addBody(floorBody);
 
-    // Espessura da parede: achada por medição, não por estética (ela é
-    // invisível). Com 0.12 um dado maior (escala > 1), vindo rápido,
-    // atravessava — o `world.step` de um frame mais pesado dá conta de
-    // cruzar uma parede fina antes de registrar a colisão.
-    const espessuraParede = 0.5;
-    const addWall = (x: number, z: number, halfX: number, halfZ: number) => {
+    // As quatro bordas visíveis são superfícies de colisão do Cannon.
+    const addWall = (x: number, z: number, normal: CANNON.Vec3) => {
       const wall = new CANNON.Body({ mass: 0, material: trayMaterial });
-      wall.addShape(new CANNON.Box(new CANNON.Vec3(halfX, 6, halfZ)));
-      wall.position.set(x, 5.5, z);
+      // Semiespaços infinitos: não há topo por onde saltar nem uma
+      // espessura finita que um dado rápido possa atravessar.
+      wall.addShape(new CANNON.Plane());
+      wall.quaternion.setFromVectors(new CANNON.Vec3(0, 0, 1), normal);
+      wall.position.set(x, 0, z);
       world.addBody(wall);
+      return wall;
     };
-    addWall(-arenaHalfX - espessuraParede, 0, espessuraParede, arenaHalfZ + espessuraParede * 2);
-    addWall(arenaHalfX + espessuraParede, 0, espessuraParede, arenaHalfZ + espessuraParede * 2);
-    addWall(0, -arenaHalfZ - espessuraParede, arenaHalfX + espessuraParede * 2, espessuraParede);
-    addWall(0, arenaHalfZ + espessuraParede, arenaHalfX + espessuraParede * 2, espessuraParede);
+    const walls = [
+      addWall(-arenaHalfX, 0, new CANNON.Vec3(1, 0, 0)),
+      addWall(arenaHalfX, 0, new CANNON.Vec3(-1, 0, 0)),
+      addWall(0, -arenaHalfZ, new CANNON.Vec3(0, 0, 1)),
+      addWall(0, arenaHalfZ, new CANNON.Vec3(0, 0, -1)),
+    ];
+    const margem = CIRCUNRAIO_ALVO * escala + 0.15;
+    const dentro = (valor: number, metade: number) =>
+      Math.max(-Math.max(0, metade - margem), Math.min(Math.max(0, metade - margem), valor));
 
     const physicalDice = dice.map((die, index) => {
       const model = buildDieModel(die.sides, escala);
@@ -590,9 +571,9 @@ export function PhysicsDiceArena({
       const jx = randomBetween(-lancamento.jitterPosicao, lancamento.jitterPosicao);
       const jz = randomBetween(-lancamento.jitterPosicao, lancamento.jitterPosicao);
       body.position.set(
-        columns === 1 ? 0 : -arenaHalfX * 0.72 + column * xStep + jx * escala,
+        dentro(columns === 1 ? 0 : -arenaHalfX * 0.72 + column * xStep + jx * escala, arenaHalfX),
         (mesa ? 4.4 : 3.1) + row * 0.45 * escala + randomBetween(0, 1.2),
-        rows === 1 ? 0 : -arenaHalfZ * 0.59 + row * zStep + jz * escala,
+        dentro(rows === 1 ? 0 : -arenaHalfZ * 0.59 + row * zStep + jz * escala, arenaHalfZ),
       );
       body.quaternion.setFromEuler(
         randomBetween(0, Math.PI * 2),
@@ -627,8 +608,29 @@ export function PhysicsDiceArena({
       const width = Math.max(el.clientWidth, 1);
       const nextHeight = Math.max(el.clientHeight, 1);
       renderer.setSize(width, nextHeight, false);
-      camera.aspect = width / nextHeight;
+      pixelsPorUnidade = Math.min(pixelsPorUnidadeAlvo, Math.min(width, nextHeight) / 8);
+      arenaHalfX = width / (2 * pixelsPorUnidade);
+      arenaHalfZ = nextHeight / (2 * pixelsPorUnidade);
+      camera.left = -arenaHalfX; camera.right = arenaHalfX;
+      camera.top = arenaHalfZ; camera.bottom = -arenaHalfZ;
       camera.updateProjectionMatrix();
+      // Margem de 4px absorve a pequena penetração numérica do solver.
+      const folga = 4 / pixelsPorUnidade;
+      walls[0].position.x = -arenaHalfX + folga;
+      walls[1].position.x = arenaHalfX - folga;
+      walls[2].position.z = -arenaHalfZ + folga;
+      walls[3].position.z = arenaHalfZ - folga;
+      walls.forEach((wall) => { wall.aabbNeedsUpdate = true; });
+      world.broadphase.dirty = true;
+      physicalDice.forEach(({ body, group }) => {
+        body.position.x = dentro(body.position.x, arenaHalfX - folga);
+        body.position.z = dentro(body.position.z, arenaHalfZ - folga);
+        body.aabbNeedsUpdate = true;
+        group.position.set(body.position.x, body.position.y, body.position.z);
+        group.quaternion.set(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w);
+      });
+      floorMesh.scale.set(arenaHalfX / (floorMesh.geometry.parameters.width / 2), arenaHalfZ / (floorMesh.geometry.parameters.height / 2), 1);
+      renderer.render(scene, camera);
     };
     resize();
     const observer = new ResizeObserver(resize);
@@ -643,7 +645,7 @@ export function PhysicsDiceArena({
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
       elapsed += dt;
-      world.step(1 / 60, dt, 4);
+      world.step(1 / 120, dt, 8);
 
       physicalDice.forEach(({ body, group }) => {
         group.position.set(body.position.x, body.position.y, body.position.z);
@@ -693,7 +695,7 @@ export function PhysicsDiceArena({
       if (el.contains(renderer.domElement)) el.removeChild(renderer.domElement);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accent, diceSignature, height, rollToken, perfil, forca, zoomMapa]);
+  }, [accent, diceSignature, height, rollToken, perfil, forca]);
 
   return (
     <div

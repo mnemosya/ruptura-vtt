@@ -196,6 +196,12 @@ export interface ConsoleApi {
    */
   definirCarteira: (walletId: WalletId, valor: number) => void;
   editarPericia: (id: string, valor: number) => void;
+  /**
+   * Renomeia a personagem. Vale em qualquer modo — nome não é evolução,
+   * é identificação, e corrigir um erro de digitação não devia exigir
+   * destravar a ficha.
+   */
+  editarNome: (nome: string) => void;
   /** PM de evolução — `null` quando a ficha nunca registrou PM. */
   pm: { disponivel: number; total: number } | null;
 

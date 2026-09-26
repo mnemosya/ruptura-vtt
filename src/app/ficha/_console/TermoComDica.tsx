@@ -11,7 +11,8 @@
  * daria dois tooltips que divergem no primeiro ajuste.
  */
 
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import type { TermoDeRegra } from "./types";
 
 export function TermoComDica({
@@ -23,13 +24,24 @@ export function TermoComDica({
   className?: string;
   children: ReactNode;
 }) {
-  const [em, setEm] = useState<{ x: number; y: number } | null>(null);
+  const [em, setEm] = useState<{
+    x: number;
+    y: number;
+    vertenteCor: string;
+  } | null>(null);
   const timerRef = useRef<number | null>(null);
 
   const abrir = (el: HTMLElement) => {
     const r = el.getBoundingClientRect();
+    const estilo = window.getComputedStyle(el);
     if (timerRef.current) window.clearTimeout(timerRef.current);
-    setEm({ x: r.left + r.width / 2, y: r.top });
+    setEm({
+      x: r.left + r.width / 2,
+      y: r.top,
+      /* Esta variável nasce no item selecionado. Ao portar a dica para
+         o body, ela precisa viajar junto para preservar a vertente. */
+      vertenteCor: estilo.getPropertyValue("--rv-vertente-cor").trim(),
+    });
   };
 
   return (
@@ -50,15 +62,18 @@ export function TermoComDica({
       >
         {children}
       </span>
-      {em && (
+      {em && typeof document !== "undefined" && createPortal(
         <span
           role="tooltip"
-          className="rc-termo-dica"
+          className="rc-termo-dica rc-cursor-scope"
           data-tipo={termo.tipo}
-          /* `fixed` + coordenadas de viewport: o painel rola por dentro
-             (`overflow: auto`), então um tooltip absoluto dentro dele
-             seria recortado na primeira linha. */
-          style={{ left: `${em.x}px`, top: `${em.y}px` }}
+          /* O portal tira a dica de dentro do overflow/clip-path da
+             janela. As coordenadas continuam sendo as da viewport. */
+          style={{
+            left: `${em.x}px`,
+            top: `${em.y}px`,
+            "--rv-vertente-cor": em.vertenteCor,
+          } as CSSProperties}
         >
           <span className="rc-termo-dica-cab">
             {termo.nome}
@@ -73,7 +88,8 @@ export function TermoComDica({
               Sem descrição publicada para este termo.
             </span>
           )}
-        </span>
+        </span>,
+        document.body,
       )}
     </>
   );

@@ -500,6 +500,7 @@
    Console usa em `.rc-panel`. */
 .rm-card {
   position: relative;
+  border-radius: 4px 0 4px 0;
   background: var(--rm-surface);
   padding: var(--hud-space-4) var(--hud-space-5);
   clip-path: polygon(

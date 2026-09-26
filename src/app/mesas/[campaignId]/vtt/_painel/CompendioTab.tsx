@@ -303,9 +303,6 @@ export function CompendioTab({
           )}
           {mostrandoDetalhe && detalheAtual && (
             <div className="rv-fg-card" data-testid="painel-compendio-detalhe" style={{ "--fg-a": ACENTO_CATEGORIA[detalheAtual.categoria] } as React.CSSProperties}>
-              <div className="rv-fg-brackets" aria-hidden="true">
-                <span className="rv-fg-bk-tl" /><span className="rv-fg-bk-tr" /><span className="rv-fg-bk-bl" /><span className="rv-fg-bk-br" />
-              </div>
               <div className="rv-fg-espinha">
                 <span className="rv-fg-espinha-topo">§</span>
                 <span className="rv-fg-espinha-rotulo">Verbete</span>

@@ -652,9 +652,6 @@ export function GerenciadorToken({
       {/* Mesma casca das janelas de ferramenta: brackets nos quatro
           cantos e espinha vertical com índice e código. Esta janela era
           a única que ainda usava a moldura de modal antiga. */}
-      {(["tl", "tr", "bl", "br"] as const).map((c) => (
-        <span key={c} className="rv-fp-canto" data-canto={c} aria-hidden="true" />
-      ))}
       <span className="rv-fp-espinha" aria-hidden="true">
         <span className="rv-fp-espinha-indice">08</span>
         <span className="rv-fp-espinha-codigo">Token</span>

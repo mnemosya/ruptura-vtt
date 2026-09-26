@@ -162,6 +162,8 @@ export interface LinhaDiretorioProps {
   onAbrir?: () => void;
   /** Aquecimento no hover/foco — usado para pré-carregar o Console antes do clique. */
   onAquecer?: () => void;
+  /** Encerra uma prévia temporária quando ponteiro/foco deixa a linha. */
+  onEsfriar?: () => void;
   onMenuContextual?: (e: React.MouseEvent) => void;
   /** HTML5 drag — só quando a linha de fato pode ser arrastada pra algum destino autorizado. */
   arrastavel?: boolean;
@@ -195,6 +197,7 @@ export function LinhaDiretorio({
   acento = "var(--rv-cy)",
   onAbrir,
   onAquecer,
+  onEsfriar,
   onMenuContextual,
   arrastavel,
   onArrastarInicio,
@@ -229,7 +232,9 @@ export function LinhaDiretorio({
       onClick={onAbrir}
       onKeyDown={aoTeclar}
       onPointerEnter={onAquecer}
+      onPointerLeave={onEsfriar}
       onFocus={onAquecer}
+      onBlur={onEsfriar}
       onContextMenu={onMenuContextual}
       draggable={arrastavel}
       onDragStart={onArrastarInicio}

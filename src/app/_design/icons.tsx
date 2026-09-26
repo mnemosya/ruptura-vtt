@@ -210,13 +210,59 @@ export const PanelLeftOpen = (p: IconProps) => (
   </Svg>
 );
 
-export const Plus = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M5 12h14" />
-    <path d="M12 5v14" />
-  </Svg>
-);
+/* O "+" é o único do conjunto desenhado como PREENCHIMENTO e em
+   geometria INTEIRA, não como dois traços que se cruzam num viewBox de
+   24 escalado para o tamanho pedido.
 
+   Dois defeitos empilhados levaram até aqui. Com traço, os pixels do
+   cruzamento recebiam cobertura de antialiasing das duas linhas e
+   ficavam mais sólidos que os braços. Resolvido isso com um polígono
+   único, sobrou o pior: em viewBox 24 escalado para 14px a barra mede
+   0,93 pixel de CSS — fração — então cada braço caía numa fase
+   diferente da grade e saía com uma cobertura diferente (medido: 142 de
+   luminância no horizontal contra 131 no vertical).
+
+   Aqui o viewBox É o tamanho em pixels e toda coordenada é inteira, com
+   `shapeRendering="crispEdges"` por cima. Assim a figura encosta em
+   pixel inteiro em qualquer densidade de tela inteira (1x, 2x), e não
+   só no 2x exato. Em telas de escala fracionária o sistema reamostra a
+   imagem inteira depois, e isso nenhum SVG controla.
+
+   `strokeWidth` continua sendo a ESPESSURA dos braços, agora arredondada
+   para o pixel mais próximo (mínimo 1). */
+export const Plus = ({ size = 16, strokeWidth = 2, ...rest }: IconProps) => {
+  /* Cada medida sai de um inteiro, e os braços saem do MESMO inteiro nos
+     quatro lados: derivar a ponta e o início da barra de arredondamentos
+     separados dava 4px de um lado e 3px do outro num "+" de 14px, o que
+     lê como um sinal torto. Aqui só o comprimento do braço (`a`) é
+     arredondado; o resto é construído a partir dele, então a figura é
+     simétrica por construção. */
+  const t = Math.max(1, Math.round((size * strokeWidth) / 24));  // espessura
+  const a = Math.max(1, Math.round(((size * 14) / 24 - t) / 2)); // braço
+  const g = 2 * a + t;                                           // lado do sinal
+  const i = Math.floor((size - g) / 2);                          // ponta inicial
+  const c = i + a;                                               // início da barra
+  const f = i + g;                                               // ponta oposta
+  const d = [
+    `M${c} ${i}`, `H${c + t}`, `V${c}`, `H${f}`, `V${c + t}`, `H${c + t}`,
+    `V${f}`, `H${c}`, `V${c + t}`, `H${i}`, `V${c}`, `H${c}`, "Z",
+  ].join("");
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      fill="currentColor"
+      shapeRendering="crispEdges"
+      aria-hidden="true"
+      focusable="false"
+      {...rest}
+    >
+      <path d={d} />
+    </svg>
+  );
+};
 export const Search = (p: IconProps) => (
   <Svg {...p}>
     <circle cx="11" cy="11" r="8" />

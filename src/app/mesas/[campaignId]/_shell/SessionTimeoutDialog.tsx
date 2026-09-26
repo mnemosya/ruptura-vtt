@@ -51,14 +51,22 @@ export function SessionTimeoutDialog({ campaignId, session, clockOffset, syncErr
 
   return <dialog ref={ref} className={styles.dialog} aria-labelledby={titleId} aria-describedby={descriptionId}
     onCancel={event => event.preventDefault()} onKeyDown={event => event.stopPropagation()}>
-    <span className={styles.label}>SESSÃO ONLINE</span>
-    <h2 id={titleId}>Manter a sessão aberta?</h2>
-    <p id={descriptionId}>Nenhum jogador está conectado há 30 minutos. Você pode continuar sozinho ou encerrar a sessão. O histórico será preservado.</p>
-    <p className={styles.countdown} role="timer" aria-live="off">
-      {remaining > 0 ? `Encerramento automático em ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}` : "Prazo esgotado. Sincronizando encerramento…"}
-    </p>
-    <p className={styles.hint}>Continuar inicia um novo prazo de 30 minutos. Se um jogador voltar, este aviso será cancelado.</p>
-    {(error || syncError) && <p role="alert">{error || syncError}</p>}
+    <header className={styles.header}>
+      <span className={styles.label}>SESSÃO ONLINE</span>
+      <span className={styles.code} aria-hidden="true">SYS.TIMEOUT // 30M</span>
+    </header>
+    <div className={styles.body}>
+      <h2 id={titleId}>Manter a sessão aberta?</h2>
+      <p id={descriptionId} className={styles.description}>Nenhum jogador está conectado há 30 minutos. Você pode continuar sozinho ou encerrar a sessão. O histórico será preservado.</p>
+      <div className={styles.status}>
+        <span className={styles.statusLabel}>ENCERRAMENTO AUTOMÁTICO</span>
+        <p className={styles.countdown} role="timer" aria-live="off">
+          {remaining > 0 ? `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}` : "Prazo esgotado. Sincronizando encerramento…"}
+        </p>
+      </div>
+      <p className={styles.hint}>Continuar inicia um novo prazo de 30 minutos. Se um jogador voltar, este aviso será cancelado.</p>
+      {(error || syncError) && <p className={styles.error} role="alert">{error || syncError}</p>}
+    </div>
     <div className={styles.actions}>
       <button autoFocus disabled={busy || remaining === 0} onClick={() => void respond(true)}>Continuar</button>
       <button className={styles.danger} disabled={busy || remaining === 0} onClick={() => void respond(false)}>Encerrar</button>

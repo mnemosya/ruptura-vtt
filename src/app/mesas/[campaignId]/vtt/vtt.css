@@ -256,7 +256,7 @@
 .rv-palco { position: relative; min-width: 0; overflow: hidden; border-radius: var(--rv-r-peca); background: var(--rv-mapa-fundo); }
 .rv-mapa-camada { position: absolute; inset: 0; }
 .rv-mapa {
-  width: 100%; height: 100%; display: block; cursor: crosshair;
+  width: 100%; height: 100%; display: block;
   /* Qualquer arrasto real (Medir, pan, seleção por caixa) passa o
      cursor por cima de texto SVG (siglas de token, rótulos "×2",
      distância da régua) — sem isto, o navegador trata isso como
@@ -355,7 +355,13 @@
 .rv-token:focus { outline: none; }
 .rv-token:focus-visible circle:nth-of-type(1) { stroke: #fff; stroke-width: 3.5; }
 .rv-token-sigla { font-family: var(--font-mono), monospace; font-weight: 700; fill: #eef7fc; pointer-events: none; }
-.rv-token-cond { font-size: 10px; fill: var(--am); pointer-events: none; }
+.rv-token-condicao-badge {
+  fill: var(--am);
+  stroke: #0d141b;
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--am) 55%, transparent));
+}
+.rv-token:focus-visible .rv-token-condicao-badge { stroke: #0d141b; stroke-width: 1.5; }
 .rv-token.is-agiu { opacity: .62; }
 .rv-token-aura { animation: rv-pulso 1.9s ease-in-out infinite; }
 .rv-token-apto { animation: rv-gira 9s linear infinite; }
@@ -1954,6 +1960,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    linha só sem espremer cada alvo abaixo do confortável). */
 .rv-fp-tamanhos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
 .rv-fp-tamanhos .rv-fp-seg-btn { flex: none; }
+
 /* Favo do tamanho do pincel — comunica a forma, não só o número. */
 .rv-fp-favo { display: block; }
 .rv-fp-favo polygon { fill: currentColor; opacity: .28; transition: opacity .12s; }
@@ -4665,6 +4672,14 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
   background: var(--rv-ground); cursor: pointer;
   aspect-ratio: 16 / 10; overflow: hidden;
 }
+/* O card de cena é uma miniatura editorial, não um controle técnico:
+   mantém os cantos superiores arredondados e não recebe o chanfro
+   global aplicado aos botões do VTT. */
+.rv-gaveta .rv-cena-palco {
+  border-radius: var(--rv-r-md) var(--rv-r-md) 0 0 !important;
+  corner-shape: round !important;
+  clip-path: none !important;
+}
 .rv-cena-palco:disabled { cursor: default; }
 .rv-cena-palco:focus-visible { outline: 2px solid var(--jf-acento); outline-offset: -2px; }
 .rv-cena-mini-img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: inherit; }
@@ -5236,6 +5251,7 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 .rv-cena-busca-casca:focus-within { border-color: var(--jf-acento); color: var(--jf-acento); }
 .rv-cena-busca {
   width: 100%; border: none; background: none; padding: 0;
+  border-radius: 0 !important; corner-shape: round !important; clip-path: none !important;
   color: var(--rv-ink); font-family: var(--rv-body); font-size: 13.5px;
 }
 /* O PLACEHOLDER É DO VTT, não do navegador — mesma regra da busca do painel. */
@@ -5925,6 +5941,53 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
      hover, e uma animação longa em cima disso leria como lentidão. */
   animation: rv-cartao-token-entra .12s ease-out;
 }
+/* Seta ancorada no centro real do token. Duas camadas triangulares
+   reproduzem borda e fundo do cartão sem fresta ou linha atravessando
+   a junção. O lado acompanha a decisão de posicionamento do cartão. */
+.rv-cartao-token__seta {
+  position: absolute;
+  z-index: 1;
+  width: 14px;
+  height: 8px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.rv-cartao-token__seta::before,
+.rv-cartao-token__seta::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+}
+.rv-cartao-token[data-seta-lado="acima"] .rv-cartao-token__seta {
+  bottom: -8px;
+}
+.rv-cartao-token[data-seta-lado="acima"] .rv-cartao-token__seta::before {
+  border-top: 8px solid #18263f;
+}
+.rv-cartao-token[data-seta-lado="acima"] .rv-cartao-token__seta::after {
+  left: 1px;
+  top: -1px;
+  border-left-width: 6px;
+  border-right-width: 6px;
+  border-top: 7px solid #101c32;
+}
+.rv-cartao-token[data-seta-lado="abaixo"] .rv-cartao-token__seta {
+  top: -8px;
+}
+.rv-cartao-token[data-seta-lado="abaixo"] .rv-cartao-token__seta::before {
+  border-bottom: 8px solid #18263f;
+}
+.rv-cartao-token[data-seta-lado="abaixo"] .rv-cartao-token__seta::after {
+  left: 1px;
+  top: 1px;
+  border-left-width: 6px;
+  border-right-width: 6px;
+  border-bottom: 7px solid #101c32;
+}
 @keyframes rv-cartao-token-entra {
   from { opacity: 0; transform: translateY(3px); }
   to { opacity: 1; transform: none; }
@@ -5939,9 +6002,9 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
    bloco de barras — e no cartão de quem não vê recurso nenhum não há
    bloco: sobra o nome, e uma linha embaixo dele seria a moldura de um
    conteúdo que não existe.
-   `:not(:only-child)` porque é exatamente essa a condição: sem
-   recursos, o cabeçalho é filho único do cartão. */
-.rv-cartao-token__cab:not(:only-child) {
+   O atributo é explícito porque a seta também é filha do cartão e não
+   deve, sozinha, criar um divisor sob o cabeçalho. */
+.rv-cartao-token__cab[data-com-conteudo] {
   padding-bottom: 8px; border-bottom: 1px solid #18263f;
 }
 /* A ETIQUETA DE LADO fica no MESMO tamanho e entreletra do nome, um
@@ -5967,6 +6030,95 @@ fieldset.rv-field { border: none; margin: 0; padding: 0; }
 /* 8px acima, agora que o fio do cabeçalho é quem separa — os 12 de
    antes faziam o trabalho que a linha faz melhor. */
 .rv-cartao-token__recursos { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; }
+
+/* CONDIÇÕES — parte do mesmo cartão, não um segundo tooltip em SVG.
+   Assim a escala, a casca e o ritmo permanecem idênticos aos Recursos
+   em qualquer zoom do mapa. */
+.rv-cartao-token__condicoes {
+  padding-top: 8px;
+}
+.rv-cartao-token__recursos + .rv-cartao-token__condicoes {
+  margin-top: 8px;
+  border-top: 1px solid #18263f;
+}
+.rv-cartao-token__secao-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--rv-display), sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 15px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: rgba(211, 244, 255, .72);
+  cursor: pointer;
+  transition: color .12s ease;
+}
+.rv-cartao-token__secao-cab:hover { color: var(--rv-ink); }
+.rv-cartao-token__secao-cab:focus-visible {
+  outline: 1px solid var(--rv-cy);
+  outline-offset: 4px;
+  border-radius: var(--rv-r);
+}
+.rv-cartao-token__secao-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono), monospace;
+  color: rgba(211, 244, 255, .47);
+}
+.rv-cartao-token__secao-meta svg {
+  width: 10px;
+  height: 10px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform .14s ease;
+}
+.rv-cartao-token__condicoes[data-expandida] .rv-cartao-token__secao-meta svg {
+  transform: rotate(180deg);
+}
+.rv-cartao-token__condicoes-lista {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 10px;
+  min-width: 199px;
+  padding-top: 8px;
+}
+.rv-cartao-token__condicao {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 7px;
+  color: var(--rv-ink-dim);
+  font-family: var(--rv-body), sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 18px;
+}
+.rv-cartao-token__condicao-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border: 1px solid color-mix(in srgb, var(--am) 30%, #18263f);
+  border-radius: var(--rv-r);
+  background: color-mix(in srgb, var(--am) 7%, #0d182a);
+  color: var(--am);
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+}
 
 .rv-cartao-token__linha {
   display: grid; align-items: center; gap: 8px;
@@ -6153,4 +6305,56 @@ button.rv-cartao-token__val:focus-visible { outline: 2px solid var(--cy); outlin
   margin: 8px 0 0; padding: 8px 10px; border-radius: var(--rv-r);
   background: rgba(255, 255, 255, .04); font-size: 12px; line-height: 1.5;
   color: var(--txt-dim); max-height: 140px; overflow-y: auto;
+}
+
+/* ── Chanfro real das cascas de seleção ─────────────────────────────
+   Não usa `corner-shape`: o navegador do produto pode ignorá-lo e
+   deixar apenas um border-radius grande. Este é o padrão consolidado
+   do Console — polígono de 10px + reconstrução dos dois fios que o
+   `clip-path` recorta. */
+:is(.rv-cena-busca-casca, .rv-dados-tabs, .rv-dados-modo, .rv-dados-stepper, .rv-fp-tamanhos .rv-fp-seg-btn, .rv-fp-preset) {
+  --rv-selecao-chanfro: var(--rv-notch, 10px);
+  --rv-selecao-fio: #16233a;
+  position: relative;
+  border-radius: 4px 0 4px 0 !important;
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--rv-selecao-chanfro)) 0,
+    100% var(--rv-selecao-chanfro),
+    100% 100%,
+    var(--rv-selecao-chanfro) 100%,
+    0 calc(100% - var(--rv-selecao-chanfro))
+  );
+}
+
+:is(.rv-cena-busca-casca, .rv-dados-tabs, .rv-dados-modo, .rv-dados-stepper, .rv-fp-tamanhos .rv-fp-seg-btn, .rv-fp-preset)::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  background:
+    linear-gradient(45deg,
+      transparent calc(50% - 1px),
+      var(--rv-selecao-fio) calc(50% - 1px) 50%,
+      transparent 50%
+    ) top right / var(--rv-selecao-chanfro) var(--rv-selecao-chanfro) no-repeat,
+    linear-gradient(45deg,
+      transparent 50%,
+      var(--rv-selecao-fio) 50% calc(50% + 1px),
+      transparent calc(50% + 1px)
+    ) bottom left / var(--rv-selecao-chanfro) var(--rv-selecao-chanfro) no-repeat;
+}
+
+.rv-cena-busca-casca:focus-within {
+  --rv-selecao-fio: var(--jf-acento, #35c7d8);
+}
+
+.rv-fp-tamanhos .rv-fp-seg-btn:hover,
+.rv-fp-preset:hover {
+  --rv-selecao-fio: color-mix(in srgb, var(--jf-acento, #35c7d8) 40%, transparent);
+}
+
+.rv-fp-tamanhos .rv-fp-seg-btn[aria-pressed="true"],
+.rv-fp-preset[aria-pressed="true"] {
+  --rv-selecao-fio: var(--jf-acento, #35c7d8);
 }

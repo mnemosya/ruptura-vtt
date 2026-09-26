@@ -77,7 +77,7 @@ type Aux =
   | { tipo: "rolagem"; prefill: PrefillRolagem }
   | { tipo: "surto" }
   | { tipo: "mochila"; slot: BodySlotId }
-  | { tipo: "ataque"; instancia: InventoryItemInstance; modelo: ItemContent }
+  | { tipo: "ataque"; instancia: InventoryItemInstance; modelo: ItemContent; slot: BodySlotId }
   | { tipo: "recarga"; instancia: InventoryItemInstance }
   | { tipo: "condicao" }
   | { tipo: "defesa" }
@@ -309,7 +309,7 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
                 slots={projecao.slots}
                 api={api}
                 onAbrirVazio={(slot) => setAux({ tipo: "mochila", slot })}
-                onAbrirAtaque={(instancia, modelo) => setAux({ tipo: "ataque", instancia, modelo })}
+                onAbrirAtaque={(instancia, modelo, slot) => setAux({ tipo: "ataque", instancia, modelo, slot })}
                 onUsarItem={(instancia, modelo) =>
                   setAux({
                     tipo: "aviso",
@@ -353,8 +353,13 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
         <div className="rc-foco-personagem-col2">
           <VitalsRow api={api} onEstabilizar={api.estabilizarColapso} />
           <div className="rc-center-lower">
-            <SkillsGrid api={api} onRolar={rolarPericia} />
+            {/* Estados ANTES de Perícias: a coluna do meio é a leitura
+                do corpo (vitais → estados) antes da leitura do que se
+                sabe fazer. Condição ativa muda como toda rolagem da
+                tabela abaixo se resolve; ler isso depois de escolher a
+                perícia é tarde. */}
             <ConditionsPanel api={api} onAdicionar={onAdicionarCondicao} onDetalhes={onDetalhesCondicao} />
+            <SkillsGrid api={api} onRolar={rolarPericia} />
             <PinsRow api={api} onAbrirPin={onAbrirPin} />
             {api.erro && (
               <p className="rc-vazio" role="alert" style={{ color: "#ffc4cf" }}>
@@ -405,8 +410,8 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
             {/* Antigo lugar de Equipamentos — agora Perícias, fixo, fora
                 do sistema de abas. Fixados e Condições acompanham. */}
             <div className="rc-center-lower">
-              <SkillsGrid api={api} onRolar={rolarPericia} />
               <ConditionsPanel api={api} onAdicionar={onAdicionarCondicao} onDetalhes={onDetalhesCondicao} />
+              <SkillsGrid api={api} onRolar={rolarPericia} />
               <PinsRow api={api} onAbrirPin={onAbrirPin} />
               {api.erro && (
                 <p className="rc-vazio" role="alert" style={{ color: "#ffc4cf" }}>
@@ -433,6 +438,7 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
           não tem isso. */}
       {avatarParaRecortar && (
         <JanelaRecorte
+          centralizarNoConsole
           erro={avatarErro}
           arquivo={avatarParaRecortar}
           ocupado={avatarEnviando}
@@ -477,7 +483,19 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
         />
       )}
 
-      {aux?.tipo === "ataque" && <AttackModal instancia={aux.instancia} modelo={aux.modelo} onFechar={() => setAux(null)} />}
+      {aux?.tipo === "ataque" && (
+        <AttackModal
+          instancia={aux.instancia}
+          modelo={aux.modelo}
+          slot={aux.slot}
+          api={api}
+          // A rolagem de ataque entra pelo MESMO caminho de qualquer
+          // outra do Console: o Painel de Rolagem, prefilhado com a
+          // perícia da arma — nada de um motor paralelo aqui dentro.
+          onRolarPericia={(periciaId) => setAux({ tipo: "rolagem", prefill: { tipo: "pericia", periciaId } })}
+          onFechar={() => setAux(null)}
+        />
+      )}
 
       {aux?.tipo === "recarga" && (
         <ConfirmModal
@@ -494,8 +512,10 @@ export function CharacterConsole({ aberto, onClose, api }: { aberto: boolean; on
       {aux?.tipo === "condicao" && (
         <ConditionPickerModal
           disponiveis={api.condicoesDisponiveis}
-          onAplicar={(c) => {
-            api.adicionarCondicao({ conditionId: c.slug, nome: c.nome, descricao: "", origem: "Console", duracao: "" });
+          onAplicar={(condicoes) => {
+            for (const c of condicoes) {
+              api.adicionarCondicao({ conditionId: c.slug, nome: c.nome, descricao: "", origem: "Console", duracao: "" });
+            }
             setAux(null);
           }}
           onFechar={() => setAux(null)}

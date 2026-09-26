@@ -6,9 +6,12 @@
  *   - adição:    "+2"  → atual + 2
  *   - subtração: "-3"  → atual - 3
  *
- * Só inteiros. O resultado é sempre limitado entre 0 e `max`; o máximo
- * NUNCA é alterado por esta operação. Entrada inválida devolve
- * `{ ok: false }` para a UI dar feedback sem mexer no personagem.
+ * Só inteiros. O resultado é limitado entre `min` (zero por padrão) e
+ * `max`; o máximo NUNCA é alterado por esta operação. O piso é
+ * parâmetro porque o PE desce abaixo de zero, até −⌈pe_max/2⌉ — ver
+ * `pisoPeNegativo` em `lib/character/consoleMutations.ts`. Entrada
+ * inválida devolve `{ ok: false }` para a UI dar feedback sem mexer
+ * no personagem.
  */
 
 export type ResourceEditResult = { ok: true; value: number } | { ok: false; reason: "vazio" | "formato" };
@@ -16,7 +19,7 @@ export type ResourceEditResult = { ok: true; value: number } | { ok: false; reas
 /** Aceita apenas dígitos, com um "+"/"-" opcional na frente. */
 const PADRAO = /^([+-]?)(\d+)$/;
 
-export function parseResourceEdit(raw: string, atual: number, max: number): ResourceEditResult {
+export function parseResourceEdit(raw: string, atual: number, max: number, min = 0): ResourceEditResult {
   const texto = raw.trim();
   if (texto === "") return { ok: false, reason: "vazio" };
 
@@ -31,5 +34,6 @@ export function parseResourceEdit(raw: string, atual: number, max: number): Reso
   const bruto = sinal === "+" ? atual + n : sinal === "-" ? atual - n : n;
 
   const teto = Number.isFinite(max) && max > 0 ? Math.trunc(max) : 0;
-  return { ok: true, value: Math.max(0, Math.min(teto, bruto)) };
+  const piso = Number.isFinite(min) ? Math.trunc(min) : 0;
+  return { ok: true, value: Math.max(piso, Math.min(teto, bruto)) };
 }

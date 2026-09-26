@@ -481,8 +481,6 @@ export function FaixaResultado({ r, nota, testIdTotal }: {
 /*  já resolvidos.                                                     */
 /* ================================================================== */
 
-const CANTOS = ["tl", "tr", "bl", "br"] as const;
-
 /** Quanto da janela precisa continuar dentro da tela depois de arrastada. */
 const MARGEM_ALCANCAVEL = 48;
 
@@ -547,7 +545,7 @@ function useArrasto() {
   return { desloc, iniciarArrasto, arrastando, refJanela };
 }
 
-/** Casca de janela de ferramenta: brackets nos cantos, espinha vertical e cabeçalho. */
+/** Casca de janela de ferramenta: espinha vertical e cabeçalho. */
 export function MolduraRolagem({ indice, codigo, titulo, modo, acento = ACCENTS.cyan.hex, largura = 470, aoFechar, rotuloFechar, children, testId }: {
   /** Número da espinha, no formato de dois dígitos das outras ferramentas. */
   indice: string;
@@ -564,14 +562,6 @@ export function MolduraRolagem({ indice, codigo, titulo, modo, acento = ACCENTS.
   testId?: string;
 }) {
   const { desloc, iniciarArrasto, arrastando, refJanela } = useArrasto();
-  const canto = (c: (typeof CANTOS)[number]): CSSProperties => ({
-    position: "absolute", zIndex: 2, width: 11, height: 11, pointerEvents: "none", opacity: 0.55,
-    borderColor: acento,
-    ...(c === "tl" ? { left: 6, top: 6, borderLeft: "1px solid", borderTop: "1px solid" } : {}),
-    ...(c === "tr" ? { right: 6, top: 6, borderRight: "1px solid", borderTop: "1px solid" } : {}),
-    ...(c === "bl" ? { left: 6, bottom: 6, borderLeft: "1px solid", borderBottom: "1px solid" } : {}),
-    ...(c === "br" ? { right: 6, bottom: 6, borderRight: "1px solid", borderBottom: "1px solid" } : {}),
-  });
   return (
     <section
       ref={refJanela}
@@ -590,8 +580,6 @@ export function MolduraRolagem({ indice, codigo, titulo, modo, acento = ACCENTS.
         fontSize: 12, color: INK,
       }}
     >
-      {CANTOS.map((c) => <span key={c} aria-hidden="true" style={canto(c)} />)}
-
       {/* A espinha também arrasta: é a segunda alça natural da janela
           (a barra vertical inteira, à esquerda), e quem pega a janela
           por ali espera que ela venha junto. */}
@@ -733,7 +721,7 @@ export function Select({ label, value, onChange, options, disabled = false }: {
 export function Stepper({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   const fmt = value > 0 ? `+${value}` : `${value}`;
   return (
-    <div style={{ display: "inline-flex", alignItems: "center", borderRadius: 2, border: "1px solid #1c2b45" }}>
+    <div className="rv-dados-stepper" style={{ display: "inline-flex", alignItems: "center", borderRadius: 2, border: "1px solid #1c2b45" }}>
       <button type="button" onClick={() => onChange(value - 1)} {...aoPassarMouse({ background: "rgba(255,255,255,.05)", color: INK })}
         style={{ padding: "6px 12px", border: 0, background: "transparent", cursor: "pointer", fontFamily: MONO, fontSize: 14, color: INK_DIM, transition: "background .14s, color .14s" }}>−</button>
       <span style={{ minWidth: 40, textAlign: "center", fontFamily: MONO, fontSize: 13, fontWeight: 700, color: value === 0 ? "#8ea0bd" : value > 0 ? ACCENTS.good.hex : ACCENTS.danger.hex }}>{fmt}</span>
@@ -1028,4 +1016,3 @@ export function SeletorVisibilidade({ valor, onChange, ehNarrador }: {
     </div>
   );
 }
-

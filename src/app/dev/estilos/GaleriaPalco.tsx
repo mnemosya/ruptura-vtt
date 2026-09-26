@@ -17,7 +17,8 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
-import { ChevronDown, Minus, Plus } from "lucide-react";
+import { ChevronDown, Minus } from "lucide-react";
+import { Plus } from "../../_design/icons";
 import { MapaHex, type CenaMapa, type EstadoVisualToken } from "../../mesas/[campaignId]/vtt/_mapa/MapaHex";
 import type { AreaDesenhavel } from "../../mesas/[campaignId]/vtt/_mapa/CamadaAreas";
 import { AcoesAreaFlutuantes } from "../../mesas/[campaignId]/vtt/_shell/AcoesAreaFlutuantes";
@@ -206,6 +207,8 @@ export function VitrineMapa() {
           onSelecionarCaixa={selecionarCaixa}
           ferramenta="interagir"
           onHoverToken={setHover}
+          onAtivarCartaoToken={() => undefined}
+          onFecharCartaoToken={() => undefined}
           areas={areas}
           areasMostrarCelulas={mostrarCelulas}
           areasMostrarHalos

@@ -440,6 +440,7 @@
 /* PAINEL TÉCNICO — `.rc-panel`, canto cortado. */
 .pn-painel {
   position: relative; padding: 8px 10px;
+  border-radius: 4px 0 4px 0;
   border: 1px solid var(--pn-line-soft); background: var(--pn-panel);
   clip-path: polygon(0 0, calc(100% - var(--pn-notch)) 0, 100% var(--pn-notch), 100% 100%, var(--pn-notch) 100%, 0 calc(100% - var(--pn-notch)));
 }
@@ -758,6 +759,7 @@
    fim" é o que avisa que há mais conversa. */
 .rv-pn-chat .pn-cartao {
   padding: 8px 9px 8px 34px;
+  border-radius: 4px 0 4px 0;
   border-color: rgba(43,63,94,.72);
   background: linear-gradient(145deg, rgba(11,19,34,.97), rgba(7,13,23,.98));
   clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
@@ -790,7 +792,7 @@
 .rv-pn-chat .pn-cartao-autor { text-transform: uppercase; letter-spacing: .06em; font-size: 10px; }
 .rv-pn-chat .pn-cartao-corpo { padding-top: 2px; }
 .rv-pn-chat .pn-cartao-acoes { padding-top: 2px; border-top: 1px solid var(--pn-line-hair); }
-.rv-pn-chat .pn-btn[data-primario="true"] { clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px)); }
+.rv-pn-chat .pn-btn[data-primario="true"] { border-radius: 2px 0 2px 0; clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px)); }
 
 /* MENSAGEM — Figma "FioCardB", nó 469:7881.
    Duas faixas empilhadas: cabeçalho com fundo próprio e corpo com a
@@ -1671,7 +1673,43 @@
    aqui: superfície que se clica. */
 .rv-pn-scroll--pers .rv-pn-linha {
   align-items: stretch; gap: 0; padding: 0; overflow: hidden; min-height: 56px;
-  background: #0c1526;
+  background-color: #0c1526;
+  background-image:
+    linear-gradient(90deg, color-mix(in srgb, var(--fg-a, #45b8c9) 16%, transparent), rgba(22, 79, 106, 0.08)),
+    linear-gradient(90deg, color-mix(in srgb, var(--fg-a, #45b8c9) 4%, transparent), transparent 45%);
+  background-repeat: no-repeat;
+  background-size: 0% 100%, 100% 100%;
+  transition:
+    background-size 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* Mesmo gesto das linhas do Console: a luz varre da esquerda para a
+   direita, enquanto um fio de 1px é desenhado por cima da própria
+   borda. O fio ocupa a altura inteira — não nasce como um traço curto
+   paralelo ao contorno. */
+.rv-pn-scroll--pers .rv-pn-linha::before {
+  content: "";
+  /* `left: 0` porque o card recorta o conteúdo: em `-1px` o próprio
+     overflow esconderia o fio. Assim ele cobre o pixel interno da
+     borda, sem criar uma segunda linha ao lado. */
+  position: absolute; left: 0; top: 0; bottom: 0; z-index: 2;
+  width: 1px;
+  background: color-mix(in srgb, var(--fg-a, #45b8c9) 65%, #fff);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--fg-a, #45b8c9) 70%, transparent);
+  opacity: 0;
+  transform: scaleY(0); transform-origin: top;
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.1s ease-out;
+  pointer-events: none;
+}
+.rv-pn-scroll--pers .rv-pn-linha:hover,
+.rv-pn-scroll--pers .rv-pn-linha:focus-visible {
+  background-size: 100% 100%, 100% 100%;
+  border-color: color-mix(in srgb, var(--fg-a, #45b8c9) 26%, transparent);
+}
+.rv-pn-scroll--pers .rv-pn-linha:hover::before,
+.rv-pn-scroll--pers .rv-pn-linha:focus-visible::before {
+  opacity: 1;
+  transform: scaleY(1);
 }
 /* O SELECIONADO tem que vencer o fundo acima — as duas regras empatam
    em especificidade (`.rv-pn-scroll--pers .rv-pn-linha` contra
@@ -1707,11 +1745,7 @@
    altura sai do esticamento, a largura sairia da altura, e a altura da
    linha sai da largura do conteúdo. O navegador resolveu esse laço com
    um avatar de 513px. Os dois números são as alturas medidas da linha
-   menos as bordas: 41px com o switch desligado, 69px com ele ligado.
-
-   Uma linha com aviso de condições fica alguns pixels mais alta, e ali
-   o avatar sai levemente retangular — a altura cheia é a regra, o
-   quadrado é a proporção no caso comum. */
+   menos as bordas: 41px com o switch desligado, 69px com ele ligado. */
 .rv-pn-scroll--pers .rv-pn-face {
   align-self: stretch; width: 54px; height: auto;
   border: none; border-right: 1px solid #1c2b45; border-radius: 0;
@@ -1819,12 +1853,6 @@
 /* PV baixo avisa pela FRAÇÃO, em âmbar: a barra já é vermelha, e
    escurecer um vermelho pra dizer "agora é grave" não se lê. */
 .rv-pn-linha-rec-fracao[data-baixo="true"] { color: var(--rv-am); }
-.rv-pn-linha-cond {
-  display: block; margin-top: 3px;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--rv-am);
-}
-
 /* Barra de recurso (HpBar/BarMeter) — fina, contínua, com glow. Só
    aqui: o resto do painel usa células discretas de propósito (ver
    `.pn-recurso`); a referência mostra PV/PE/Mana como trilha contínua. */

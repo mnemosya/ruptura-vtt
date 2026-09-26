@@ -213,7 +213,7 @@ const BOTOES: Botao[] = [
   { c: "rc-ncond-x", n: 1, sis: "rc", folha: "console.css", papel: "Remover condição", icone: "X" },
   { c: "rc-ncond-add", n: 1, sis: "rc", folha: "console.css", papel: "Adicionar condição", rotulo: "Adicionar", icone: "Plus" },
   { c: "rc-eq-pipbtn", n: 1, sis: "rc", folha: "console.css", papel: "Pip de equipamento", rotulo: "◆" },
-  { c: "rc-skill", n: 1, sis: "rc", folha: "console.css", papel: "Perícia — clicar rola", rotulo: "Luta" },
+  { c: "rc-sensor-row", n: 1, sis: "rc", folha: "console.css", papel: "Perícia — clicar rola", rotulo: "Luta" },
   { c: "rc-nres-eye", n: 1, sis: "rc", folha: "vtt.css", papel: "Tornar recurso público/privado", icone: "Eye" },
   { c: "rc-ncol-pip", n: 1, sis: "rc", folha: "console.css", papel: "Pip de segmento de colapso", rotulo: "◆" },
   { c: "rc-ncol-estabilizar", n: 1, sis: "rc", folha: "console.css", papel: "Estabilizar o colapso", rotulo: "Estabilizar" },
@@ -365,9 +365,6 @@ export function RepetidosChips() {
         <EspecimeIsolado classe="rv-badge" folha="_design/auth.css" sistema="auth" familia="chips" altura={70} />
         <Especime classe="rc-ncond-tag" folha="_design/console.css" raiz="rc-window-wrap">
           <div className="gal-esp-linha"><span className="rc-ncond-tag">Sangrando</span></div>
-        </Especime>
-        <Especime classe="rc-skill-tag" folha="_design/console.css" raiz="rc-window-wrap">
-          <div className="gal-esp-linha"><span className="rc-skill-tag">Luta</span></div>
         </Especime>
       </Fileira>
     </>

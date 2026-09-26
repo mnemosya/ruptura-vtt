@@ -24,18 +24,21 @@
   .ra-root:not(.ra-no-cursor) select,
   .ra-root:not(.ra-no-cursor) label,
   .ra-root:not(.ra-no-cursor) [role="button"],
+  .ra-root:not(.ra-no-cursor) [data-cursor-action="true"],
   .rc-cursor-scope:not(.ra-no-cursor) button,
   .rc-cursor-scope:not(.ra-no-cursor) a,
   .rc-cursor-scope:not(.ra-no-cursor) input,
   .rc-cursor-scope:not(.ra-no-cursor) select,
   .rc-cursor-scope:not(.ra-no-cursor) label,
   .rc-cursor-scope:not(.ra-no-cursor) [role="button"],
+  .rc-cursor-scope:not(.ra-no-cursor) [data-cursor-action="true"],
   .rm-root:not(.ra-no-cursor) button,
   .rm-root:not(.ra-no-cursor) a,
   .rm-root:not(.ra-no-cursor) input,
   .rm-root:not(.ra-no-cursor) select,
   .rm-root:not(.ra-no-cursor) label,
-  .rm-root:not(.ra-no-cursor) [role="button"] { cursor: none; }
+  .rm-root:not(.ra-no-cursor) [role="button"],
+  .rm-root:not(.ra-no-cursor) [data-cursor-action="true"] { cursor: none; }
 }
 
 /* ── Cursor HUD ────────────────────────────────────────────────── */
