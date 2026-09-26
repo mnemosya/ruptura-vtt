@@ -48,13 +48,13 @@ Esta triagem considera o código existente, não apenas a lista de desejos:
 
 | Recorte | Quantidade |
 |---|---:|
-| Total de tarefas | 72 |
-| Prontas | 35 |
+| Total de tarefas | 73 |
+| Prontas | 36 |
 | Prontas após dependência | 3 |
 | Bloqueadas por regra, contrato ou referência indispensável | 34 |
 | Em validação | 0 |
 | P0 | 14 |
-| P1 | 42 |
+| P1 | 43 |
 | P2 | 15 |
 | P3 | 1 |
 
@@ -1245,6 +1245,18 @@ Ela não foi executada com `--apply` de propósito: o `--apply` leva junto duas 
 - **Dúvidas antes da implementação:** respondidas em ROLLTAB-01.
 
 ## 14. Apresentação de imagens
+
+### SCENE-01 — Preload seletivo da próxima cena pelo narrador
+
+- **Status:** Pronta
+- **Decisão de produto (2026-09-24):** a cena ativa é carregada obrigatoriamente para o jogador. O narrador pode preparar antecipadamente uma próxima cena para todos os jogadores conectados, seguindo o modelo de “Preload Scene” do Foundry VTT, sem ativá-la nem trocar a cena exibida.
+- **Descrição:** criar uma ação exclusiva do narrador que solicite aos clientes conectados o carregamento em segundo plano dos assets necessários para uma cena autorizada. O preload deve preparar a transição, mas não alterar câmera, presença, cena ativa ou estado de jogo até a ativação explícita da cena.
+- **Área afetada:** gerenciamento de cenas, realtime, cache de assets, loading/transição de campanha e telemetria de carregamento.
+- **Prioridade sugerida:** P1
+- **Dependências:** contrato atual de cenas e autorização; inventário dos assets que compõem uma cena.
+- **Critérios de aceite:** cena ativa continua sendo o único carregamento bloqueante; ação de preload aparece apenas para o narrador; solicitação alcança os jogadores conectados sem trocar sua cena; são preparados somente assets necessários à cena escolhida (mapa, tiles, tokens e mídia permitidos); imagens críticas são baixadas e decodificadas antes de o cliente declarar prontidão; operação é idempotente, cancelável ou substituível por uma nova solicitação e não duplica downloads já armazenados; progresso ou falha por cliente não bloqueia os demais; ativar uma cena previamente preparada evita tela vazia ou salto visual; reconexão recebe a cena ativa normalmente, sem depender de um preload antigo; clientes nunca recebem dados, URLs ou assets de camadas secretas aos quais não tenham autorização; há limite de concorrência e estratégia de descarte para não pressionar memória em campanhas grandes.
+- **Observabilidade:** registrar início, conclusão, falha, bytes e duração do preload por cliente, sem expor conteúdo secreto; o narrador deve receber um resumo útil como “4 de 5 jogadores prontos”, distinguindo falha de conexão de falha de asset.
+- **Dúvidas não bloqueadoras:** permitir preload de apenas uma próxima cena ou uma pequena fila? O narrador pode cancelar manualmente? Áudio deve ser somente baixado ou também preparado respeitando as restrições de autoplay do navegador?
 
 ### IMG-01 — Especificar experiência de apresentação aos jogadores
 
