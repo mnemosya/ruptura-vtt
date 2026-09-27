@@ -65,14 +65,14 @@ assert.equal(conjuracao.character.estado_jogo?.pa_gastos, 2);
 console.log("2. Conjurar com PA suficiente (custo_mana placeholder não bloqueia/não desconta) — OK");
 
 // -------------------------------------------------------------
-// 3. Conjurar sem PA suficiente — não muda nada.
+// 3. Conjurar sem PA suficiente — aviso consultivo, custo continua registrado.
 // -------------------------------------------------------------
 const personagemSemPa = { ...personagemComRecursos, estado_jogo: { pa_gastos: 3, reacoes_usadas: 0, defesas_sem_reacao: 0 } };
 const falhaConjuracao = castSpell({ character: personagemSemPa, spell: controle!, paMax: 3, manaMax: 10 });
-assert.equal(falhaConjuracao.ok, false);
+assert.equal(falhaConjuracao.ok, true);
 assert.ok(falhaConjuracao.reason?.includes("PA insuficiente"));
-assert.equal(falhaConjuracao.character, personagemSemPa);
-console.log("3. Conjurar sem PA suficiente — não muda o personagem — OK");
+assert.ok((falhaConjuracao.character.estado_jogo?.pa_gastos ?? 0) > 3);
+console.log("3. Conjurar sem PA suficiente — avisa e registra custo — OK");
 
 // -------------------------------------------------------------
 // 4. Magia com custo_mana REAL (se existir no DB) desconta Mana de verdade.

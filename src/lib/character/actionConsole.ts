@@ -84,6 +84,7 @@ export interface ActionConsoleItem {
   payloadAutomacao?: unknown;
   enabled: boolean;
   disabledReason?: string;
+  warning?: string;
   contentIssues: string[];
   isConditionEnabled: boolean;
   enabledByConditions: string[];
@@ -349,6 +350,7 @@ export function getActionCost(action: CombatActionContent): ActionCost {
 export interface CanPayResult {
   ok: boolean;
   reason?: string;
+  warning?: string;
 }
 
 /**
@@ -414,7 +416,7 @@ export function canPayActionCost(
     const paGastos = character.estado_jogo?.pa_gastos ?? 0;
     const paAtual = Math.max(0, paMax - paGastos);
     if (paAtual < cost.pa) {
-      return { ok: false, reason: `PA insuficiente (atual: ${paAtual}, necessário: ${cost.pa}).` };
+      return { ok: true, warning: `PA insuficiente (atual: ${paAtual}, necessário: ${cost.pa}). A ação pode ser executada.` };
     }
     return { ok: true };
   }
@@ -796,6 +798,7 @@ export function buildActionConsoleItems(
         payloadAutomacao: action.payload_automacao,
         enabled: contentIssues.length === 0 && canPay.ok && conditionLockReason == null,
         disabledReason: contentIssues[0] ?? conditionLockReason ?? canPay.reason,
+        warning: canPay.warning,
         contentIssues,
         isConditionEnabled: enabledByConditions.length > 0,
         enabledByConditions,
@@ -1030,7 +1033,7 @@ export function executeActionOnCharacter(
 
   const automatedEffects: string[] = [];
   const pendingEffects: string[] = [];
-  const warnings: string[] = [];
+  const warnings: string[] = canPay.warning ? [canPay.warning] : [];
   for (const efeito of payloadEffects) {
     const tratadoComoAutomatico =
       efeito.tipo === "remover_condicao" ||

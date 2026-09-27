@@ -200,6 +200,11 @@ export function deriveItemUseKind(item: Pick<ItemContent, "categoria" | "tags" |
   return null;
 }
 
+export function getItemUsePaCost(item: ItemContent): number | null {
+  const curaImediata = deriveItemUseKind(item) === "pharmacy" && getItemUseEffects(item).some(isImmediateHealEffect);
+  return item.custoPaUso ?? (curaImediata && item.custoPaUsoTexto == null ? 1 : null);
+}
+
 export interface ItemUseResourceChange {
   resource: "pv" | "pe";
   before: number;
@@ -322,8 +327,7 @@ export function useItemOnCharacter(params: {
   // (coerente com o custo de "Interagir", 1 PA no conteúdo canônico) — itens de remoção de
   // condição/estabilização/efeito manual e granadas/explosivos sem custo_pa estruturado
   // NUNCA gastam PA automaticamente (checkpoints pós-v0.61/v0.62).
-  const hasImmediateHeal = useKind === "pharmacy" && effects.some(isImmediateHealEffect);
-  const paCost = item.custoPaUso ?? (hasImmediateHeal && item.custoPaUsoTexto == null ? 1 : null);
+  const paCost = getItemUsePaCost(item);
 
   const blocked = (reason: string): ItemUseResult => ({
     character,
@@ -352,9 +356,7 @@ export function useItemOnCharacter(params: {
     return blocked("Sem cargas/quantidade disponíveis para usar este item.");
   }
 
-  if (paCost != null && paCost > paBefore) {
-    return blocked(`PA insuficiente (atual: ${paBefore}, necessário: ${paCost}).`);
-  }
+  const avisoPa = paCost != null && paCost > paBefore ? `PA insuficiente (atual: ${paBefore}, necessário: ${paCost}). A ação pode ser executada.` : null;
 
   // Remoção de condição é resolvida ANTES do consumo: item de remoção sem alvo válido
   // bloqueia sem gastar carga/PA (browser check do checkpoint pós-v0.61). Só farmácia —
@@ -403,7 +405,7 @@ export function useItemOnCharacter(params: {
 
   const resourceChanges: ItemUseResourceChange[] = [];
   const removedConditions: string[] = [];
-  const reminders: string[] = [];
+  const reminders: string[] = avisoPa ? [avisoPa] : [];
   const temporaryEffectsAdded: TemporaryEffect[] = [];
   let healingRolled: number | null = null;
   const damageRolled: ItemUseDamageRoll[] = [];
@@ -651,17 +653,14 @@ export function useItemOnAlly(params: {
 
   const effects = getItemUseEffects(item);
   const removalPrimary = isConditionRemovalPrimaryItem(item);
-  const hasImmediateHeal = effects.some(isImmediateHealEffect);
-  const paCost = item.custoPaUso ?? (hasImmediateHeal && item.custoPaUsoTexto == null ? 1 : null);
+  const paCost = getItemUsePaCost(item);
 
   const available = chargesMax != null ? (chargesBefore ?? 0) > 0 : quantityBefore > 0;
   if (!available) {
     return blocked("Sem cargas/quantidade disponíveis para usar este item.");
   }
 
-  if (paCost != null && paCost > paBefore) {
-    return blocked(`PA insuficiente (atual: ${paBefore}, necessário: ${paCost}).`);
-  }
+  const avisoPa = paCost != null && paCost > paBefore ? `PA insuficiente (atual: ${paBefore}, necessário: ${paCost}). A ação pode ser executada.` : null;
 
   // Remoção de condição resolvida contra o ALVO — nunca contra o usuário. Mesma regra do uso
   // próprio: sem condição compatível ativa NO ALVO, item de remoção não é consumido.
@@ -706,7 +705,7 @@ export function useItemOnAlly(params: {
   const targetResourceChanges: ItemUseResourceChange[] = [];
   const targetRemovedConditions: string[] = [];
   const targetTemporaryEffectsAdded: TemporaryEffect[] = [];
-  const reminders: string[] = [];
+  const reminders: string[] = avisoPa ? [avisoPa] : [];
   let healingRolled: number | null = null;
   let conditionRemovalApplied = false;
   let stabilizedCollapse: "pv" | "pe" | null = null;

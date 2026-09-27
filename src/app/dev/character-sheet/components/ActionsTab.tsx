@@ -330,6 +330,7 @@ function ActionCard({
           Habilitada por: {action.enabledByConditions.join(", ")}
         </p>
       )}
+      {action.warning && <p role="status" style={{ color: "#cf9a3e", fontSize: 12 }}>{action.warning}</p>}
       {!action.enabled && action.disabledReason && (
         <p data-testid="acao-motivo-desabilitada" style={{ fontSize: 11, color: "#ff6b6b", margin: 0 }}>
           {action.disabledReason}

@@ -59,6 +59,8 @@ export interface SpellStatistics {
   areaTipo: string | null;
   /** `estatisticas.area.texto` — texto da área, só exibição/lembrete. `null` quando ausente. */
   areaTexto: string | null;
+  /** Texto de duração publicado; ausente em catálogos antigos. */
+  duracaoTexto?: string | null;
 }
 
 export interface SpellEffect {
@@ -113,6 +115,10 @@ export function normalizeSpellContent(raw: Record<string, unknown>): SpellConten
       tipo_magia: typeof estatisticasRaw.tipo_magia === "string" ? estatisticasRaw.tipo_magia : "",
       custo_pa: typeof estatisticasRaw.custo_pa === "number" ? estatisticasRaw.custo_pa : 0,
       usa_reacao: estatisticasRaw.usa_reacao === true,
+      duracaoTexto: (() => {
+        const duracao = asRecord(estatisticasRaw.duracao);
+        return typeof duracao?.texto === "string" ? duracao.texto : null;
+      })(),
       custo_mana: typeof estatisticasRaw.custo_mana === "number" ? estatisticasRaw.custo_mana : null,
       resolucao: typeof estatisticasRaw.resolucao === "string" ? estatisticasRaw.resolucao : "",
       periciaTeste: typeof estatisticasRaw.pericia_teste === "string" ? estatisticasRaw.pericia_teste : null,
@@ -720,16 +726,7 @@ export function castSpell(params: {
 
   const custoPa = spell.estatisticas.custo_pa;
 
-  if (custoPa > paBefore) {
-    return {
-      character,
-      ok: false,
-      reason: `PA insuficiente (atual: ${paBefore}, necessário: ${custoPa}).`,
-      paBefore,
-      paAfter: paBefore,
-      manaCostUnknown: spell.estatisticas.custo_mana == null,
-    };
-  }
+  const avisoPa = custoPa > paBefore ? `PA insuficiente (atual: ${paBefore}, necessário: ${custoPa}). A ação pode ser executada.` : undefined;
 
   const manaCostUnknown = spell.estatisticas.custo_mana == null;
   const manaAntes = character.recursos_atuais?.mana ?? manaMax;
@@ -767,6 +764,7 @@ export function castSpell(params: {
     ok: true,
     paBefore,
     paAfter: paBefore - custoPa,
+    reason: avisoPa,
     manaBefore: manaAntes,
     manaAfter: manaDepois,
     manaTemporariaBefore: manaTemporariaAntes,
