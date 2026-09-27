@@ -425,8 +425,10 @@ export function PhysicsDiceArena({
     let arenaHalfZ = Math.max(el.clientHeight, 1) / (2 * pixelsPorUnidade);
     const camera = new THREE.OrthographicCamera(-arenaHalfX, arenaHalfX, arenaHalfZ, -arenaHalfZ, 0.1, 200);
 
-    const columns = Math.max(2, Math.ceil(Math.sqrt(dice.length)));
-    const rows = Math.max(1, Math.ceil(dice.length / columns));
+    // Punhado: todos os dados saem juntos, de um grupo compacto, na
+    // MESMA direção — como uma mão que solta vários dados de uma vez.
+    const columns = Math.ceil(Math.sqrt(dice.length));
+    const rows = Math.ceil(dice.length / columns);
     // Vista vertical: X/Z do mundo correspondem aos limites da tela,
     // independentemente da altura Y alcançada durante o lançamento.
     camera.up.set(0, 0, -1);
@@ -525,6 +527,24 @@ export function PhysicsDiceArena({
     const dentro = (valor: number, metade: number) =>
       Math.max(-Math.max(0, metade - margem), Math.min(Math.max(0, metade - margem), valor));
 
+    // Direção comum do punhado — sorteada, nunca escolhida pela força.
+    const anguloLancamento = randomBetween(0, Math.PI * 2);
+    const dirX = Math.cos(anguloLancamento);
+    const dirZ = Math.sin(anguloLancamento);
+    // Passo de um diâmetro + o jitter máximo dos dois vizinhos: juntos,
+    // mas sem nascer um dentro do outro (sobreposição na largada = o
+    // solver ejeta com violência).
+    const passo = (CIRCUNRAIO_ALVO * 2 + lancamento.jitterPosicao * 2 + 0.05) * escala;
+    const meioPunhadoX = ((columns - 1) * passo) / 2;
+    const meioPunhadoZ = ((rows - 1) * passo) / 2;
+    // O punhado nasce recuado em relação à direção do arremesso, pra
+    // atravessar a mesa — mas só até onde cabe inteiro sem a parede
+    // (`dentro`) esmagar dados vizinhos no mesmo ponto.
+    const recuo = (metade: number, meioPunhado: number) =>
+      Math.min(metade * 0.35, Math.max(0, metade - margem - meioPunhado));
+    const origemX = -dirX * recuo(arenaHalfX, meioPunhadoX);
+    const origemZ = -dirZ * recuo(arenaHalfZ, meioPunhadoZ);
+
     const physicalDice = dice.map((die, index) => {
       const model = buildDieModel(die.sides, escala);
       const material = new THREE.MeshPhongMaterial({
@@ -559,37 +579,34 @@ export function PhysicsDiceArena({
       body.addShape(model.shape);
       const column = index % columns;
       const row = Math.floor(index / columns);
-      // ATENÇÃO: 0.73×arenaHalf é o ponto da coluna/linha mais externa
-      // (nascença em `-arenaHalf*0.72 + step`). Passar de ~0.85 nasce o
-      // dado DENTRO da parede — o solver então o ejeta com um impulso
-      // violento (medido: um dado saindo a x≈35, arena com metade 8).
-      const xStep = (arenaHalfX * 1.45) / Math.max(columns - 1, 1);
-      const zStep = (arenaHalfZ * 1.18) / Math.max(rows - 1, 1);
       // O jitter de posição soma o textural de sempre com um pouco a
       // mais vindo da força — carregar o lançamento também baralha
-      // ONDE ele nasce, não só a velocidade.
+      // ONDE ele nasce, não só a velocidade. Já está descontado no
+      // `passo`, então não sobrepõe vizinhos.
       const jx = randomBetween(-lancamento.jitterPosicao, lancamento.jitterPosicao);
       const jz = randomBetween(-lancamento.jitterPosicao, lancamento.jitterPosicao);
       body.position.set(
-        dentro(columns === 1 ? 0 : -arenaHalfX * 0.72 + column * xStep + jx * escala, arenaHalfX),
-        (mesa ? 4.4 : 3.1) + row * 0.45 * escala + randomBetween(0, 1.2),
-        dentro(rows === 1 ? 0 : -arenaHalfZ * 0.59 + row * zStep + jz * escala, arenaHalfZ),
+        dentro(origemX + column * passo - meioPunhadoX + jx * escala, arenaHalfX),
+        (mesa ? 4.4 : 3.1) + randomBetween(0, 0.8),
+        dentro(origemZ + row * passo - meioPunhadoZ + jz * escala, arenaHalfZ),
       );
       body.quaternion.setFromEuler(
         randomBetween(0, Math.PI * 2),
         randomBetween(0, Math.PI * 2),
         randomBetween(0, Math.PI * 2),
       );
-      // Direção sempre aleatória — a FORÇA só entra como MÓDULO
-      // (`lancamento.velocidadeHorizontal`/`velocidadeVertical`), nunca
-      // decidindo o ângulo. Quem decide o número final é a face que
-      // fica pra cima depois que o corpo dorme (`topFaceValue`,
+      // Direção comum do punhado (sorteada) + um leque pequeno por dado,
+      // pra eles se abrirem um pouco ao rolar. A FORÇA só entra como
+      // MÓDULO (`lancamento.velocidadeHorizontal`/`velocidadeVertical`),
+      // nunca decidindo o ângulo. Quem decide o número final é a face
+      // que fica pra cima depois que o corpo dorme (`topFaceValue`,
       // adiante), nunca a força.
-      const anguloH = randomBetween(0, Math.PI * 2);
+      const anguloH = anguloLancamento + randomBetween(-0.22, 0.22);
+      const modulo = lancamento.velocidadeHorizontal * randomBetween(0.88, 1.12);
       body.velocity.set(
-        Math.cos(anguloH) * lancamento.velocidadeHorizontal,
+        Math.cos(anguloH) * modulo,
         lancamento.velocidadeVertical + randomBetween(-0.6, 0.6),
-        Math.sin(anguloH) * lancamento.velocidadeHorizontal,
+        Math.sin(anguloH) * modulo,
       );
       // Giro inicial menor na mesa: um dado maior guarda mais energia
       // de rotação no mesmo giro (rad/s), e essa energia extra é
