@@ -3857,7 +3857,10 @@ export function VttClient({
     return {
       selecionado: selecionadosIds.has(t.id), sobCursor: false, alvo: false,
       turnoAtual: !!trilha && trilha.agindoId === t.id,
-      podeAgir: !!p && !!trilha && elegibilidade(p, trilha, { acaoDireta: true }).apto,
+      // Anel "pode agir" segue a REGRA de turno (quem ainda deve agir
+      // nesta janela), não o botão Agir — que ficou liberado até pra
+      // quem já agiu e faria o anel girar em todo token.
+      podeAgir: !!p && !!trilha && elegibilidade(p, trilha, { ignorarAlternancia: true }).apto,
       jaAgiu: !!p && !!trilha && p.agiuEm.includes(trilha.janela) && p.fragmentouEm !== trilha.janela,
       fragmentado: !!p && p.fragmentouEm !== null,
       origemDeAura: t.id === tokenOrigemAuraId,

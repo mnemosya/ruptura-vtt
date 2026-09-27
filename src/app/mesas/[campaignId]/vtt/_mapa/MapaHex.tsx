@@ -103,6 +103,9 @@ import { type CantoImagem, CamadaImagens } from "./CamadaImagens";
 import { type ImagemCena, alturaEfetivaM, pxPorMetro, retanguloDaImagem } from "../_dominio/imagemCena";
 import { useAnimacaoToken } from "./useAnimacaoToken";
 
+/** Anel e selo de quem já agiu na janela — neutro, sem a cor do lado. */
+const COR_JA_AGIU = "#5f7492";
+
 export const TAM = 26; // raio do hexágono em px do mundo
 
 /**
@@ -3487,6 +3490,7 @@ function Token({
   // fingir 0/0.
   const temPv = token.pv !== null && token.pvMax !== null && token.pvMax > 0;
 
+  const jaAgiuMarca = estado.jaAgiu && !estado.turnoAtual;
   const classes = [
     "rv-token",
     `rv-token--${token.lado}`,
@@ -3646,11 +3650,14 @@ function Token({
           turno e o selo "OCULTO", então a caixa dele é bem maior que o
           token e o centro dela não é o centro do token — ancorar ali
           deixava o cartão visivelmente torto. */}
-      <circle data-token-disco="" r={raio} fill="#0d141b" stroke={cor} strokeWidth={estado.selecionado ? 3 : 2}
-        strokeDasharray={token.lado === "neutro" ? "5 4" : undefined} />
+      {/* Já agiu: o anel "descansa" — tracejado e neutro, sem a cor do
+          lado. O token em si não apaga nem é riscado: apagado + riscado
+          lia como morto (ver o selo de visto mais abaixo). */}
+      <circle data-token-disco="" r={raio} fill="#0d141b" stroke={jaAgiuMarca ? COR_JA_AGIU : cor} strokeWidth={estado.selecionado ? 3 : 2}
+        strokeDasharray={jaAgiuMarca ? "4 3" : token.lado === "neutro" ? "5 4" : undefined} />
       {/* PN: anel serrilhado por FORMA (não só cor) */}
       {token.lado === "pn" && (
-        <circle r={raio - 3.5} fill="none" stroke={cor} strokeWidth="1.4" strokeDasharray="2 3" opacity="0.9" />
+        <circle r={raio - 3.5} fill="none" stroke={jaAgiuMarca ? COR_JA_AGIU : cor} strokeWidth="1.4" strokeDasharray="2 3" opacity="0.9" />
       )}
 
       {/* ── Retrato ───────────────────────────────────────────────────
@@ -3873,12 +3880,13 @@ function Token({
           e continua sendo anunciado no `aria-label`: pra quem usa
           leitor de tela, aquele rótulo é o cartão. */}
 
-      {/* já agiu: dessaturação + barra diagonal */}
-      {estado.jaAgiu && !estado.turnoAtual && (
-        <>
-          <circle r={raio} fill="#070b10" opacity="0.5" />
-          <line x1={-raio * 0.75} y1={raio * 0.75} x2={raio * 0.75} y2={-raio * 0.75} stroke="#8fa3b0" strokeWidth="2" opacity="0.85" />
-        </>
+      {/* já agiu: selo de visto neutro no canto — "cumpriu a vez", não
+          "saiu de combate". Mesma cor apagada do anel. */}
+      {jaAgiuMarca && (
+        <g transform={`translate(${raio * 0.72} ${-raio * 0.72})`} aria-hidden="true">
+          <circle r={7.5} fill="#0b1a22" stroke={COR_JA_AGIU} strokeWidth="1.2" />
+          <path d="M-3.2 0.2 L-1 2.4 L3.3 -2" fill="none" stroke="#9fb2c9" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </g>
       )}
 
       {/* fragmentado: meia-lua âmbar (PA guardado) */}

@@ -362,7 +362,6 @@
   filter: drop-shadow(0 0 3px color-mix(in srgb, var(--am) 55%, transparent));
 }
 .rv-token:focus-visible .rv-token-condicao-badge { stroke: #0d141b; stroke-width: 1.5; }
-.rv-token.is-agiu { opacity: .62; }
 .rv-token-aura { animation: rv-pulso 1.9s ease-in-out infinite; }
 .rv-token-apto { animation: rv-gira 9s linear infinite; }
 .rv-token-alvo { animation: rv-pulso 1.3s ease-in-out infinite; }
