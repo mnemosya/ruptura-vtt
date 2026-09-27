@@ -3667,7 +3667,6 @@ export function VttClient({
     setEstadoAreas((e) => (e.fase === "ociosa" ? e : AREAS_OCIOSA));
     setAreaSelecionadaId(null);
     setCandidatoSnapId(null);
-    setAncoraAcoesTela(null);
     setHoverAreaId(null);
   }, [ferramenta]);
 
@@ -3917,39 +3916,39 @@ export function VttClient({
     return ancoraDaRegiao(regiao);
   }, [estadoAreas]);
 
-  const [ancoraAcoesTela, setAncoraAcoesTelaRaw] = useState<{ x: number; y: number } | null>(null);
   /**
-   * O mapa reconstrói a âncora de TELA a cada mudança de zoom/pan e
-   * entrega um objeto NOVO mesmo quando as coordenadas são as mesmas.
-   * Guardar isso direto marcava o estado como mudado a cada roda do
-   * mouse e fazia a cascata (card → obstáculos → posição dos lápis)
-   * rodar de novo sem nada ter mudado de fato — exatamente o tipo de
-   * update em cadeia que estoura o limite de profundidade do React.
-   * Comparar por VALOR corta a cadeia na origem.
+   * MUNDO → TELA pros botões que flutuam sobre o mapa (ações de área,
+   * edição rápida). Calculado AQUI, a partir do zoom/pan que este
+   * componente já guarda — antes o mapa devolvia a conversão por
+   * `setState` num efeito a cada quadro de pan, e num arrasto longo essa
+   * cadeia de updates dentro de efeito estourava o "Maximum update
+   * depth exceeded" (apontando pro `setPan`). O CTM do svg não depende
+   * de pan/zoom (eles moram no `<g>` de dentro), então ler o DOM na hora
+   * da chamada é seguro.
    */
-  const setAncoraAcoesTela = useCallback((nova: { x: number; y: number } | null) => {
-    setAncoraAcoesTelaRaw((atual) => {
-      if (atual === nova) return atual;
-      if (!atual || !nova) return nova;
-      return atual.x === nova.x && atual.y === nova.y ? atual : nova;
-    });
-  }, []);
+  const mundoParaTela = useMemo(() => {
+    const z = zoom, pa = pan;
+    return (mundo: { x: number; y: number }): { x: number; y: number } | null => {
+      const svg = document.querySelector<SVGSVGElement>(".rv-palco svg.rv-mapa");
+      const ctm = svg?.getScreenCTM();
+      if (!svg || !ctm) return null;
+      const pt = svg.createSVGPoint();
+      pt.x = mundo.x * z + pa.x;
+      pt.y = mundo.y * z + pa.y;
+      const tela = pt.matrixTransform(ctm);
+      return { x: tela.x, y: tela.y };
+    };
+  }, [zoom, pan]);
+  const ancoraAcoesTela = useMemo(
+    () => (ancoraAcoesArea ? mundoParaTela(ancoraAcoesArea) : null),
+    [ancoraAcoesArea, mundoParaTela],
+  );
 
   // ── Edição rápida de área persistida, direto no mapa ─────────────
   // Geometria real (hover), independente da ferramenta ativa — o
   // efeito em `MapaHex.tsx` só reage com "areas"/"interagir" e limpa
   // sozinho fora delas.
   const [hoverAreaId, setHoverAreaId] = useState<string | null>(null);
-  // Conversor MUNDO→TELA (pan/zoom/CTM), exposto pelo mapa — usado pra
-  // converter a âncora de QUALQUER área candidata, não só uma.
-  const [conversorEdicaoRapidaTela, setConversorEdicaoRapidaTelaRaw] = useState<((mundo: { x: number; y: number }) => { x: number; y: number }) | null>(null);
-  // `useState` trata um valor QUE É função como updater funcional — pra
-  // guardar a função em si (não o resultado de chamá-la) é preciso
-  // envolvê-la, senão o React chama o conversor com o estado anterior
-  // (`null` na primeira vez) em vez de guardá-lo.
-  const setConversorEdicaoRapidaTela = useCallback((c: ((mundo: { x: number; y: number }) => { x: number; y: number }) | null) => {
-    setConversorEdicaoRapidaTelaRaw(() => c);
-  }, []);
 
   const areasParaHover = useMemo(
     () => areasResolvidas.filter((a) => a.visivel).map((a) => ({ id: a.id, regiao: a.regiao })),
@@ -4062,9 +4061,11 @@ export function VttClient({
   }, [idsExibidosEdicaoRapida, areaPorId]);
 
   const ancorasEdicaoRapidaTela = useMemo(() => {
-    if (!conversorEdicaoRapidaTela) return [];
-    return ancorasEdicaoRapidaMundo.map((a) => ({ id: a.id, ponto: conversorEdicaoRapidaTela(a.ponto) }));
-  }, [ancorasEdicaoRapidaMundo, conversorEdicaoRapidaTela]);
+    return ancorasEdicaoRapidaMundo.flatMap((a) => {
+      const ponto = mundoParaTela(a.ponto);
+      return ponto ? [{ id: a.id, ponto }] : [];
+    });
+  }, [ancorasEdicaoRapidaMundo, mundoParaTela]);
 
   // Ordem de prioridade fixa pro desempate de posição — a selecionada
   // primeiro, resto por id (determinístico, nunca depende do ponteiro).
@@ -5969,9 +5970,6 @@ export function VttClient({
             areasGuia={guiaAreaAtual}
             areasCandidatoSnap={candidatoSnapPonto}
             areasEscolhendoToken={estadoAreas.fase === "escolhendo_token_da_aura"}
-            areasAncoraAcoes={ancoraAcoesArea}
-            onAncoraAcoesTela={setAncoraAcoesTela}
-            onConversorEdicaoRapidaTela={setConversorEdicaoRapidaTela}
             onConversorHexDaTela={guardarConversorHex}
             areasParaHover={areasParaHover}
             onHoverAreaEditavel={setHoverAreaId}

@@ -315,23 +315,6 @@ export interface PropsMapaHex {
    */
   areasEscolhendoToken?: boolean;
   /**
-   * Âncora (em coordenadas do MUNDO) dos botões contextuais de
-   * confirmar/descartar. Este componente converte pra coordenadas de
-   * TELA e devolve por `onAncoraAcoes` — é o único lugar que conhece o
-   * CTM/zoom/pan, então a conversão mora aqui, uma vez.
-   */
-  areasAncoraAcoes?: { x: number; y: number } | null;
-  onAncoraAcoesTela?: (p: { x: number; y: number } | null) => void;
-  /**
-   * Conversor MUNDO → TELA para os botões de edição rápida — exposto
-   * como FUNÇÃO (não uma âncora única) porque agora pode existir mais
-   * de um botão simultâneo (área selecionada + área em hover, cada uma
-   * com o seu). Quem chama decide QUANTAS âncoras converter; este
-   * componente só sabe reconstruir a função sempre que zoom/pan/CTM
-   * mudam — é o único lugar que conhece esse estado.
-   */
-  onConversorEdicaoRapidaTela?: (conversor: ((mundo: { x: number; y: number }) => { x: number; y: number }) | null) => void;
-  /**
    * Conversor TELA → HEX exposto pra quem precisa reagir a um evento
    * cujo alvo NÃO é este SVG — hoje só o arrasto HTML5 vindo do painel
    * lateral (`dragover`/`drop` acontecem no contêiner do mapa, não
@@ -653,9 +636,6 @@ export function MapaHex({
   areasGuia,
   areasCandidatoSnap,
   areasEscolhendoToken = false,
-  areasAncoraAcoes,
-  onAncoraAcoesTela,
-  onConversorEdicaoRapidaTela,
   onConversorHexDaTela,
   areasParaHover,
   onHoverAreaEditavel,
@@ -2183,45 +2163,10 @@ export function MapaHex({
     onAreaAlcaCancelar?.();
   }, [onAreaAlcaCancelar]);
 
-  /**
-   * Âncora dos botões contextuais: MUNDO → TELA. Recalculada quando a
-   * âncora, o zoom ou o pan mudam — é o que faz o grupo de botões
-   * acompanhar o mapa em vez de ficar preso numa coordenada morta.
-   */
-  useEffect(() => {
-    if (!onAncoraAcoesTela) return;
-    if (!areasAncoraAcoes) { onAncoraAcoesTela(null); return; }
-    const svg = svgRef.current;
-    const ctm = svg?.getScreenCTM();
-    if (!svg || !ctm) { onAncoraAcoesTela(null); return; }
-    const pt = svg.createSVGPoint();
-    pt.x = areasAncoraAcoes.x * zoom + pan.x;
-    pt.y = areasAncoraAcoes.y * zoom + pan.y;
-    const tela = pt.matrixTransform(ctm);
-    onAncoraAcoesTela({ x: tela.x, y: tela.y });
-  }, [areasAncoraAcoes?.x, areasAncoraAcoes?.y, zoom, pan.x, pan.y, onAncoraAcoesTela, areasAncoraAcoes]);
-
-  /**
-   * Conversor MUNDO → TELA reutilizável pros botões de edição rápida —
-   * pode haver mais de um simultâneo (seleção + hover), então em vez de
-   * converter UMA âncora este efeito expõe a FUNÇÃO de conversão em si;
-   * quem chama converte quantas âncoras precisar, cada botão com a sua
-   * posição independente. Reconstruída sempre que zoom/pan/CTM mudam —
-   * mesma regra de recálculo de `onAncoraAcoesTela` acima.
-   */
-  useEffect(() => {
-    if (!onConversorEdicaoRapidaTela) return;
-    const svg = svgRef.current;
-    const ctm = svg?.getScreenCTM();
-    if (!svg || !ctm) { onConversorEdicaoRapidaTela(null); return; }
-    onConversorEdicaoRapidaTela((mundo: { x: number; y: number }) => {
-      const pt = svg.createSVGPoint();
-      pt.x = mundo.x * zoom + pan.x;
-      pt.y = mundo.y * zoom + pan.y;
-      const tela = pt.matrixTransform(ctm);
-      return { x: tela.x, y: tela.y };
-    });
-  }, [zoom, pan.x, pan.y, onConversorEdicaoRapidaTela]);
+  /* A conversão MUNDO → TELA dos botões flutuantes (ações de área,
+     edição rápida) mora em `VttClient` (`mundoParaTela`), que já tem
+     zoom/pan — devolver daqui por `setState` a cada quadro de pan
+     estourava o limite de updates encadeados do React. */
 
   /**
    * Conversor TELA → HEX (ver a prop). Reconstruído junto com o de
